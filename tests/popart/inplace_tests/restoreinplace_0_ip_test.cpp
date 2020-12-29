@@ -87,9 +87,10 @@ BOOST_AUTO_TEST_CASE(test0) {
                   .enableInPlace(true)});
 
   auto sched = ir.getOpSchedule({}, RequireOptimalSchedule::Yes);
-  BOOST_CHECK(sched[1]->opid == Onnx::CustomOperators::Stash);
-  BOOST_CHECK(sched[2]->opid == Onnx::AiOnnx::OpSet9::Reshape);
-  BOOST_CHECK(sched[3]->opid == Onnx::CustomOperators::ReshapeInplace);
-  BOOST_CHECK(ir.opsOfType(Onnx::CustomOperators::Restore).size() == 0);
-  BOOST_CHECK(ir.opsOfType(Onnx::CustomOperators::RestoreInplace).size() == 1);
+  BOOST_CHECK_EQUAL(sched[1]->opid, Onnx::CustomOperators::Stash);
+  BOOST_CHECK_EQUAL(sched[2]->opid, Onnx::AiOnnx::OpSet9::Reshape);
+  BOOST_CHECK_EQUAL(sched[3]->opid, Onnx::CustomOperators::ReshapeInplace);
+  BOOST_CHECK_EQUAL(ir.opsOfType(Onnx::CustomOperators::Restore).size(), 0);
+  BOOST_CHECK_EQUAL(ir.opsOfType(Onnx::CustomOperators::RestoreInplace).size(),
+                    1);
 }

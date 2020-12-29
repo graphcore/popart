@@ -501,26 +501,26 @@ public:
 
   bool inputsUnmodifiable() const;
 
-  // A summary of the calculation in inputsUnmodifiable()
-  std::string getInputsUnmodifiableString() const;
-
-  bool consumesAnchor() const;
-  bool producesAnchor() const;
-  bool consumesCheckpointAndIsRecompute() const;
-  bool consumesImplicitLoopInput() const;
-  bool consumesRestoredInplaceTensor() const;
   bool consumesGraphOutput() const;
   bool producesGraphOutput() const;
 
-  //
-  /** Check if input is a variable or aliases a variable.
+  /** Check if input is unmodifiable or aliases an unmodifiable tensor.
    *
    * \param in    InIndex to check.
-   * \returns     true if any connected variable tensor has a non-empty alias
-   *              chain.
+   * \returns     true if any connected tensor has a non-empty alias
+   *              chain and is unmodifiable
    * \returns     false otherwise.
    */
-  bool inputVariableOrAlias(InIndex in) const;
+  bool inputUnmodifiable(InIndex in) const;
+
+  /** Check if input is restored inplace or aliases a restored inplace tensor.
+   *
+   * \param in    InIndex to check.
+   * \returns     true if any connected tensor has a non-empty alias
+   *              chain and is restored inplace
+   * \returns     false otherwise.
+   */
+  bool inputRestoredInplace(InIndex in) const;
 
   /** Check if output is modified by any consumer.
    *
@@ -530,6 +530,7 @@ public:
    * \returns     false otherwise.
    */
   bool hasAliasedModifiers(OutIndex out) const;
+
   // Helper functions for probing graph structure.
   bool isParentOf(const Op *) const;
   bool isChildOf(const Op *) const;

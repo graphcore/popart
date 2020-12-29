@@ -1234,61 +1234,6 @@ std::ostream &operator<<(std::ostream &ss, const GradOpInType &t) {
   return ss;
 }
 
-bool Op::consumesAnchor() const {
-  for (auto tensor : input->tensors()) {
-    if (getIr().isAnchored(tensor->id)) {
-      return true;
-    }
-  }
-  return false;
-}
-
-bool Op::producesAnchor() const {
-  for (auto tensor : output->tensors()) {
-    if (getIr().isAnchored(tensor->id)) {
-      return true;
-    }
-  }
-  return false;
-}
-
-bool Op::consumesCheckpointAndIsRecompute() const {
-  if (settings.recomputeType == RecomputeType::Recompute) {
-    for (auto &index_tensor : input->tensorMap()) {
-      auto inTensor = index_tensor.second;
-      // Tensors without producers are effectively Checkpointed
-      if (!inTensor->hasProducer() ||
-          (inTensor->hasProducer() &&
-           inTensor->getProducer()->settings.recomputeType ==
-               RecomputeType::Checkpoint)) {
-        return true;
-      }
-    }
-  }
-  return false;
-}
-
-bool Op::consumesImplicitLoopInput() const {
-  for (auto &index_tensor : input->tensorMap()) {
-    auto inTensor = index_tensor.second;
-    if (inTensor->isImplicitLoopInput()) {
-      return true;
-    }
-  }
-  return false;
-}
-
-bool Op::consumesRestoredInplaceTensor() const {
-  for (auto tensor : input->tensors()) {
-    for (auto consumer : tensor->consumers.getOps()) {
-      if (consumer->isConvertibleTo<RestoreInplaceOp>()) {
-        return true;
-      }
-    }
-  }
-  return false;
-}
-
 bool Op::consumesGraphOutput() const {
 
   const auto graphOutputs = getGraph().getOutputIds();
@@ -1330,27 +1275,52 @@ auto nonEmptyRegion = [](view::Regions &regions) {
   });
 };
 
-bool Op::inputVariableOrAlias(InIndex in) const {
+bool Op::inputUnmodifiable(InIndex in) const {
   auto t                = input->tensor(in);
   auto aliasedTensorMap = getGraph().getTensors().aliasChainsTo(t);
 
-  // if input is variable: check by using aliasChainsTo(input), if the
-  // aliases are updated properly, check any connected variable tensor if
+  // if input is unmodifiable: check by using aliasChainsTo(input), if the
+  // aliases are updated properly, check any connected unmodifiable tensor if
   // the aliasing chain is non-empty.
   for (auto &chain : aliasedTensorMap) {
-
-    if (chain.first->tensorType() == TensorType::Variable ||
-        chain.first->tensorType() == TensorType::Const) {
+    if (chain.first->isUnmodifiable()) {
 
       auto fullRegion = view::Region::getFull(chain.first->info.shape());
       auto regions    = chain.second.apply(fullRegion);
+
       if (nonEmptyRegion(regions)) {
+        // If any of the aliased tensors is unmodifiable
         return true;
       }
     }
   }
 
-  return false;
+  // If the input tensor itself is unmodifiable
+  return t->isUnmodifiable();
+}
+
+bool Op::inputRestoredInplace(InIndex in) const {
+  auto t                = input->tensor(in);
+  auto aliasedTensorMap = getGraph().getTensors().aliasChainsTo(t);
+
+  // if input is restored inplace: check by using aliasChainsTo(input), if the
+  // aliases are updated properly, check any connected restore inplace tensor if
+  // the aliasing chain is non-empty.
+  for (auto &chain : aliasedTensorMap) {
+    if (chain.first->isRestoreInplaceTensor()) {
+
+      auto fullRegion = view::Region::getFull(chain.first->info.shape());
+      auto regions    = chain.second.apply(fullRegion);
+
+      if (nonEmptyRegion(regions)) {
+        // If any of the aliased tensors is unmodifiable
+        return true;
+      }
+    }
+  }
+
+  // If the input tensor itself is unmodifiable
+  return t->isRestoreInplaceTensor();
 }
 
 bool Op::hasAliasedModifiers(OutIndex out) const {
@@ -1392,6 +1362,7 @@ bool Op::hasAliasedModifiers(OutIndex out) const {
   }
   return aliasedModifiers;
 }
+
 bool Op::isParentOf(const Op *op) const {
   // We're a parent of op if and only if op is our child.
   return op->isChildOf(this);
@@ -1414,16 +1385,6 @@ bool Op::isChildOf(const Op *op) const {
                                         inTensorIds.cend(),
                                         outTensor->id) != inTensorIds.cend();
                      });
-}
-
-std::string Op::getInputsUnmodifiableString() const {
-  std::ostringstream oss;
-  oss << "([produces anchor ? " << producesAnchor() << "], consumes anchor ? "
-      << consumesAnchor() << ", consumes checkpoint and is recompute ? "
-      << consumesCheckpointAndIsRecompute()
-      << ", consumes implicit loop input ? " << consumesImplicitLoopInput()
-      << ", consumes graph output ? " << consumesGraphOutput() << ')';
-  return oss.str();
 }
 
 bool Op::modifies() const {
@@ -1479,33 +1440,12 @@ bool Op::overwritesTensor(Tensor *t) const {
 }
 
 bool Op::inputsUnmodifiable() const {
-  return
-
-      // Anchor tensors must not be modified to ensure the correct values are
-      // returned. Here we conservatively assume anchors are returned at the
-      // very end of the computation
-      consumesAnchor()
-
-      // Checkpoint tensors must not be modified by recompute Ops to ensure
-      // the same value is used on first and second runs of the recompute Op
-      || consumesCheckpointAndIsRecompute()
-
-      // Implicit loop counter tensors must not be modified, because each loop
-      // iteration needs access to the unmodified original input.
-      || consumesImplicitLoopInput()
-
-      // A simple (but overly strict) way to ensure that an op is not inplaced
-      // if:
-      // - its input, or a tensor it aliases, is restored inplace
-      // - and its output, or a tensor that is an alias of it, is consumed
-      //   by an ipucopy
-      // TODO T19283: Make less strict once we can determine if any two
-      // tensors are aliases of eachother
-      || consumesRestoredInplaceTensor()
-
-      // Graph output tensors must not be modified to ensure the correct value
-      // is returned at the end of the computation
-      || consumesGraphOutput();
+  for (auto &in : input->tensorIdMap()) {
+    if (inputUnmodifiable(in.first)) {
+      return true;
+    }
+  }
+  return false;
 }
 
 ReplicatedTensorShardingIndices Op::getReplicatedTensorShardingIndices() const {

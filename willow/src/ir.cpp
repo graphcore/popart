@@ -3519,7 +3519,7 @@ void Ir::applyInplacePattern(Graph &graph) {
       // downstream modifies a non-empty region.
       // If both conditions true: do not inplace current op.
 
-      bool varOrModified = false;
+      bool inplaceBlocking = false;
       for (const auto &in_index : inplaceOp->input->tensorMap()) {
         for (const auto &out_index : inplaceOp->output->tensorMap()) {
           auto regions = inplaceOp->aliases(in_index.first, out_index.first);
@@ -3527,75 +3527,46 @@ void Ir::applyInplacePattern(Graph &graph) {
               std::any_of(regions.begin(),
                           regions.end(),
                           [](const view::Region &r) { return !r.isEmpty(); });
-          // 1. Is the input a variable, or alias of a variable?
-          bool var_or_alias = op->inputVariableOrAlias(in_index.first);
+          // Restored inplace (pipelining)
+          // 1. Is the input a restored inplace tensor?
+          bool restoredInplace = op->inputRestoredInplace(in_index.first);
+
+          // 2. Does the op alias?
+          if (restoredInplace && opAliases) {
+            logging::pattern::trace(
+                "[Inplacing] Not inplacing {} with {} as it aliases a "
+                "restore inplace tensor: {} -> {} ",
+                op->opid,
+                inplaceOp->opid,
+                in_index.second->id,
+                out_index.second->id);
+            inplaceBlocking = true;
+          }
+
+          // Unmodifiable
+          // 1. Is the input unmodifiable?
+          bool unmodifiable = op->inputUnmodifiable(in_index.first);
           // 2. Does it indirectly modify this tensor and alias it?
-          bool indirect_modify =
+          bool indirectModify =
               (op->hasAliasedModifiers(out_index.first) && opAliases);
           // 3. Does it directly modify a weight?
-          bool direct_modify = inplaceOp->modifiesIndex(in_index.first);
+          bool directModify = inplaceOp->modifiesIndex(in_index.first);
           // If ((1 and 2) or 3) : do not inplace.
-          if (var_or_alias && (indirect_modify || direct_modify)) {
-
-            std::ostringstream oss;
-            oss << "[Inplacing] Not inplacing " << op->opid << " with "
-                << inplaceOp->opid
-                << " as it aliases a variable, or another alias of a "
-                   "variable: "
-                << in_index.second->id
-                << " and either a downstream op modifies an alias of an "
-                   "output "
-                << out_index.second->id
-                << " , or the inplace op itself modifies the variable.";
-            logging::pattern::trace(oss.str());
-            varOrModified = true;
+          if (unmodifiable && (indirectModify || directModify)) {
+            logging::pattern::trace(
+                "[Inplacing] Not inplacing {} with {} as it aliases an "
+                "unmodifiable tensor: {} and either a downstream op "
+                "modifies an alias of an output {}, or the inplace op itself "
+                "modifies the tensor.",
+                op->opid,
+                inplaceOp->opid,
+                in_index.second->id,
+                out_index.second->id);
+            inplaceBlocking = true;
           }
         }
       }
-      if (varOrModified) {
-        continue;
-      }
-
-      // If any of the new topological constraints start at an Op whose inputs
-      // cannot be modified (consume anchors, certain recomputatation Ops, etc),
-      // then we cannot inplace op. This is because a constraint op -> op2 is
-      // inserted if and only if op2 modifies an input of op, which is exactly
-      // the case we must avoid if op->inputsUnmodifiable().
-      std::vector<const Op *> blockingTopoConFroms;
-      if (inplaceOp->modifies()) {
-        if (op->inputsUnmodifiable()) {
-          blockingTopoConFroms.push_back(op);
-        }
-        auto opFound = newTopoCons.find(op);
-        if (opFound != newTopoCons.end()) {
-          for (const auto before : opFound->second) {
-            if (before->inputsUnmodifiable()) {
-              blockingTopoConFroms.push_back(before);
-            }
-          }
-        }
-      }
-      for (const auto &after_befores : newTopoCons) {
-        const auto after = after_befores.first;
-        for (const auto before : after_befores.second) {
-          if (after->modifies() && before->inputsUnmodifiable()) {
-            blockingTopoConFroms.push_back(before);
-          }
-        }
-      }
-      if (!blockingTopoConFroms.empty()) {
-        std::ostringstream oss;
-        oss << "[Inplacing] The Op being considered for inplacing, "
-            << op->str() << " cannot be inplaced because it would effect "
-            << "inputs which cannot be modified. "
-            << "In particular, "
-            << "the following Ops have unmodifiable inputs "
-            << "which prevent inplacing:";
-        for (const auto before : blockingTopoConFroms) {
-          oss << "\n     " << before->id << " : "
-              << before->getInputsUnmodifiableString();
-        }
-        logging::pattern::debug(oss.str());
+      if (inplaceBlocking) {
         continue;
       }
 

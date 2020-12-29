@@ -165,6 +165,14 @@ public:
   OutIndex getGraphOutputIndex() const;
   bool isLoopInput() const;
   bool isImplicitLoopInput() const;
+  bool isExplicitLoopInput() const;
+  // Returns true if the tensor is not to be modified by an inplaced operation
+  bool isUnmodifiable() const;
+  // Returns true if the tensor is consumed by an implicit recompute operation
+  // (which means the tensor is consumed implicitly and must not be modified)
+  bool isCheckpointTensor() const;
+  // Returns true if the tensor is the target of a restore inplace
+  bool isRestoreInplaceTensor() const;
   // Returns true for stream tensors that are optimizer tensors, as
   // well as their copies
   bool isOptimizerTensor() const;

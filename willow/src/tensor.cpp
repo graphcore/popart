@@ -10,6 +10,7 @@
 #include <popart/op.hpp>
 #include <popart/op/ipucopy.hpp>
 #include <popart/op/loop.hpp>
+#include <popart/op/restore.hpp>
 #include <popart/tensor.hpp>
 #include <popart/tensordata.hpp>
 #include <popart/tensorindex.hpp>
@@ -60,6 +61,10 @@ bool Tensor::isModified() const {
         return true;
       }
     }
+  }
+  // All explicit loop inputs will be modified within the subgraph
+  if (isExplicitLoopInput()) {
+    return true;
   }
   return false;
 }
@@ -475,6 +480,57 @@ bool Tensor::isImplicitLoopInput() const {
     }
   }
   return false;
+}
+
+bool Tensor::isExplicitLoopInput() const {
+  return isLoopInput() && !isImplicitLoopInput();
+}
+
+bool Tensor::isUnmodifiable() const {
+  return
+      // Checkpoint tensors must not be modified by recompute Ops to ensure
+      // the same value is used on first and second runs of the recompute Op
+      isCheckpointTensor() ||
+      // A simple (but overly strict) way to ensure that an op is not inplaced
+      // if:
+      // - its input, or a tensor it aliases, is restored inplace
+      // - and its output, or a tensor that is an alias of it, is consumed
+      //   by an ipucopy
+      // TODO T19283: Make less strict once we can determine if any two
+      // tensors are aliases of eachother
+      isRestoreInplaceTensor() ||
+      // Implicit loop counter tensors must not be modified, because each loop
+      // iteration needs access to the unmodified original input.
+      isImplicitLoopInput() ||
+      // Anchor tensors must not be modified to ensure the correct values are
+      // returned. Here we conservatively assume anchors are returned at the
+      // very end of the computation
+      isAnchored() ||
+      // Graph output tensors must not be modified to ensure the correct value
+      // is returned at the end of the computation
+      isGraphOutput() ||
+      // Variables and constants must not be modified by inplacing operations
+      // (variables can still be updated by designated update operations)
+      tensorType() == TensorType::Variable || tensorType() == TensorType::Const;
+}
+
+bool Tensor::isCheckpointTensor() const {
+  auto cops = consumers.getOps();
+  return std::any_of(cops.begin(),
+                     cops.end(),
+                     [](const Op *op) {
+                       return op->settings.recomputeType ==
+                              RecomputeType::Recompute;
+                     }) &&
+         (!hasProducer() ||
+          getProducer()->settings.recomputeType == RecomputeType::Checkpoint);
+}
+
+bool Tensor::isRestoreInplaceTensor() const {
+  auto cops = consumers.getOps();
+  return std::any_of(cops.begin(), cops.end(), [](const Op *op) {
+    return op->isConvertibleTo<RestoreInplaceOp>();
+  });
 }
 
 bool Tensor::isOptimizerTensor() const {
