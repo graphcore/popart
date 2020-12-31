@@ -214,9 +214,11 @@ public:
   VGraphId getVirtualGraphIdUnsafe() const;
 
   // Return the virtual graph id and io tile flag
-  VGraphIdAndTileSet getVirtualGraphIdAndTileSet() const;
-  // return the virtual graph id, or {-1, false} if there is not one
-  VGraphIdAndTileSet getVirtualGraphIdAndTileSetUnsafe() const;
+  VGraphIdAndTileSet
+  getVirtualGraphIdAndTileSet(std::set<OpId> visited = {}) const;
+  // Return the virtual graph id, or {-1, false} if there is not one
+  VGraphIdAndTileSet
+  getVirtualGraphIdAndTileSetUnsafe(std::set<OpId> visited = {}) const;
 
   // Determine the batch axis for this Tensor
   int getBatchAxis() const;

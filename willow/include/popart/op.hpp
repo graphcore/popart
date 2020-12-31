@@ -185,8 +185,11 @@ public:
 
   const OptionalVGraphId getOptionalVGraphId() const;
   VGraphId getVirtualGraphId() const;
-  virtual VGraphIdAndTileSet getIntrospectionInVirtualGraphId(InIndex) const;
-  virtual VGraphIdAndTileSet getIntrospectionOutVirtualGraphId(OutIndex) const;
+  virtual VGraphIdAndTileSet
+  getIntrospectionInVirtualGraphId(InIndex, std::set<OpId> visited = {}) const;
+  virtual VGraphIdAndTileSet
+  getIntrospectionOutVirtualGraphId(OutIndex,
+                                    std::set<OpId> visited = {}) const;
   void setVirtualGraphId(const OptionalVGraphId);
   bool hasVirtualGraphId() const;
 

@@ -86,14 +86,14 @@ void LoopOpx::copyExplicitOpInputsToBodyOutputs(
               opInputTensor, bodyOutputTensor, false, debugContext("inputs"));
           prog.add(copyProg);
           logging::opx::trace(
-              "[LoopOpx] input {} -> output {} copied", inId, outId);
+              "[LoopOpx] explicit input {} -> output {} copied", inId, outId);
         } else {
           logging::opx::trace(
-              "[LoopOpx] input {} -> output {} skipped", inId, outId);
+              "[LoopOpx] explicit input {} -> output {} skipped", inId, outId);
         }
       } else {
         logging::opx::trace(
-            "[LoopOpx] input {} -> output {} aliased", inId, outId);
+            "[LoopOpx] explicit input {} -> output {} aliased", inId, outId);
       }
     }
   }
@@ -128,14 +128,20 @@ void LoopOpx::copyImplicitOpInputsToImplicitBodyInputs(
             opInputTensor, bodyInputTensor, false, debugContext("inputs"));
         prog.add(copyProg);
         logging::opx::trace(
-            "[LoopOpx] input {} -> input {} copied", opInId, bodyInId);
+            "[LoopOpx] implicit input {} -> implicit input {} copied",
+            opInId,
+            bodyInId);
       } else {
         logging::opx::trace(
-            "[LoopOpx] input {} -> input {} skipped", opInId, bodyInId);
+            "[LoopOpx] implicit input {} -> implicit input {} skipped",
+            opInId,
+            bodyInId);
       }
     } else {
       logging::opx::trace(
-          "[LoopOpx] input {} -> input {} aliased", opInId, bodyInId);
+          "[LoopOpx] implicit input {} -> implicit input {} aliased",
+          opInId,
+          bodyInId);
     }
   }
 }
@@ -177,14 +183,14 @@ void LoopOpx::copyBodyOutputsToExplicitBodyInputs(
         finalCopiesProg.add(poplar::program::Copy(
             tmp, bodyInputTensor, false, debugContext("finalCopies")));
         logging::opx::trace(
-            "[LoopOpx] output {} -> input {} copied", outId, inId);
+            "[LoopOpx] output {} -> explicit input {} copied", outId, inId);
       } else {
         logging::opx::trace(
-            "[LoopOpx] output {} -> input {} skipped", outId, inId);
+            "[LoopOpx] output {} -> explicit input {} skipped", outId, inId);
       }
     } else {
       logging::opx::trace(
-          "[LoopOpx] output {} -> input {} aliased", outId, inId);
+          "[LoopOpx] output {} -> explicit input {} aliased", outId, inId);
     }
   }
   // Do temporary copies before final copies to avoid overwriting results

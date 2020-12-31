@@ -73,7 +73,8 @@ VGraphId Tensor::getVirtualGraphIdUnsafe() const {
   return getVirtualGraphIdAndTileSetUnsafe().first;
 }
 
-VGraphIdAndTileSet Tensor::getVirtualGraphIdAndTileSetUnsafe() const {
+VGraphIdAndTileSet
+Tensor::getVirtualGraphIdAndTileSetUnsafe(std::set<OpId> visited) const {
 
   // If this Tensor has a Producer, use its VirtualGraphId if it has one
   if (hasProducer()) {
@@ -82,10 +83,12 @@ VGraphIdAndTileSet Tensor::getVirtualGraphIdAndTileSetUnsafe() const {
     if (ipucopy) {
       return {ipucopy->getDestIpu(), ipucopy->settings.tileSet};
     } else if (getProducer()->hasVirtualGraphId()) {
-      for (auto &indices : getProducer()->output->indicesMap()) {
-        if (indices.first == this) {
-          return getProducer()->getIntrospectionOutVirtualGraphId(
-              indices.second[0]);
+      if (visited.find(getProducer()->id) == visited.end()) {
+        for (auto &indices : getProducer()->output->indicesMap()) {
+          if (indices.first == this) {
+            return getProducer()->getIntrospectionOutVirtualGraphId(
+                indices.second[0]);
+          }
         }
       }
     }
@@ -94,10 +97,13 @@ VGraphIdAndTileSet Tensor::getVirtualGraphIdAndTileSetUnsafe() const {
   // No producer with an id. Try to get the virtual graph id from a consumer.
   // Use the id of the first consumer with an id, if there is one
   for (Op *consumer : consumers.getOps()) {
-    if (consumer->hasVirtualGraphId()) {
-      for (auto &indices : consumer->input->indicesMap()) {
-        if (indices.first == this) {
-          return consumer->getIntrospectionInVirtualGraphId(indices.second[0]);
+    if (visited.find(consumer->id) == visited.end()) {
+      if (consumer->hasVirtualGraphId()) {
+        for (auto &indices : consumer->input->indicesMap()) {
+          if (indices.first == this) {
+            return consumer->getIntrospectionInVirtualGraphId(
+                indices.second[0]);
+          }
         }
       }
     }
@@ -127,8 +133,9 @@ VGraphIdAndTileSet Tensor::getVirtualGraphIdAndTileSetUnsafe() const {
   return {unusedVGraphId, TileSet::Compute};
 }
 
-VGraphIdAndTileSet Tensor::getVirtualGraphIdAndTileSet() const {
-  auto vid = getVirtualGraphIdAndTileSetUnsafe();
+VGraphIdAndTileSet
+Tensor::getVirtualGraphIdAndTileSet(std::set<OpId> visited) const {
+  auto vid = getVirtualGraphIdAndTileSetUnsafe(visited);
   if (vid == VGraphIdAndTileSet(unusedVGraphId, TileSet::Compute)) {
     throw error("Invalid call to getVirtualGraphId, Tensor does not have one");
   }

@@ -674,12 +674,14 @@ VGraphId Op::getVirtualGraphId() const {
   return *(settings.vgraphId);
 }
 
-VGraphIdAndTileSet Op::getIntrospectionInVirtualGraphId(InIndex) const {
+VGraphIdAndTileSet
+Op::getIntrospectionInVirtualGraphId(InIndex, std::set<OpId> visited) const {
   return {hasVirtualGraphId() ? getVirtualGraphId() : unusedVGraphId,
           settings.tileSet};
 }
 
-VGraphIdAndTileSet Op::getIntrospectionOutVirtualGraphId(OutIndex) const {
+VGraphIdAndTileSet
+Op::getIntrospectionOutVirtualGraphId(OutIndex, std::set<OpId> visited) const {
   return {hasVirtualGraphId() ? getVirtualGraphId() : unusedVGraphId,
           settings.tileSet};
 }

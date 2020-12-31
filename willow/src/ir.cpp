@@ -3696,6 +3696,7 @@ const std::map<OpId, std::unique_ptr<Op>> &Ir::getMainGraphOps() const {
 std::vector<Op *> Ir::getAllOps() const {
   std::vector<Op *> ops;
   for (auto &graph : graphs) {
+    ops.reserve(ops.size() + graph.second->getOps().size());
     for (auto &op : graph.second->getOps()) {
       ops.push_back(op.second.get());
     }
