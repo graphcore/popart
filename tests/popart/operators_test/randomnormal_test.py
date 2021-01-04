@@ -184,4 +184,5 @@ def test_randomnormal_bad_dtype(op_tester):
     with pytest.raises(popart.popart_exception) as e_info:
         op_tester.run(init_builder, None)
 
-    assert ("Is there a poplar type for DOUBLE?" in e_info.value.args[0])
+    assert ("The data type DOUBLE is not supported in Poplar" in
+            e_info.value.args[0])

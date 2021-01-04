@@ -3636,7 +3636,8 @@ poplar::Type popType(const TensorInfo &info) {
   case DataType::COMPLEX64:
   case DataType::COMPLEX128:
   default:
-    throw error("Is there a poplar type for " + info.data_type() + "?");
+    throw error("The data type " + info.data_type() +
+                " is not supported in Poplar");
   }
 }
 
