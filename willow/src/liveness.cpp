@@ -11,31 +11,32 @@ namespace popart {
 namespace liveness {
 
 LivenessNode::LivenessNode(const OpStatus status_, int index_)
-    : callStack(), status(status_), index(index_) {}
+    : callStack({}), status(status_), index(index_) {}
 
 LivenessNode::LivenessNode(std::vector<Op *> callStack_,
                            const OpStatus status_,
                            int index_)
-    : callStack(callStack_), status(status_), index(index_) {}
+    : callStack(callStack_), status(status_), index(index_) {
+  setTensorIds();
+  setUsedTensorIds();
+}
 
-std::set<TensorId> LivenessNode::usedTensorIds() const {
-  std::set<TensorId> used;
-
+void LivenessNode::setUsedTensorIds() {
   switch (status) {
   case OpStatus::CopyInput:
   case OpStatus::CopyLoopCarried:
   case OpStatus::CopyModified:
   case OpStatus::CopyOutput: {
-    used.insert(getTensorIds().first);
-    used.insert(getTensorIds().second);
+    usedIds.insert(getTensorIds().first);
+    usedIds.insert(getTensorIds().second);
     break;
   }
   case OpStatus::Normal: {
     for (auto &input : getOp()->input->tensorIdMap()) {
-      used.insert(input.second);
+      usedIds.insert(input.second);
     }
     for (auto &output : getOp()->output->tensorIdMap()) {
-      used.insert(output.second);
+      usedIds.insert(output.second);
     }
     break;
   }
@@ -46,7 +47,7 @@ std::set<TensorId> LivenessNode::usedTensorIds() const {
         if (sgInIndex < 0 ||
             sgInIndex >= subgraphOp->getCalledGraph().getInputIds().size()) {
           // Op input which is not a subgraph input
-          used.insert(input.second);
+          usedIds.insert(input.second);
         }
       }
 
@@ -55,7 +56,7 @@ std::set<TensorId> LivenessNode::usedTensorIds() const {
         auto opInIndex = subgraphOp->subgraphInToOpInIndex(i);
         if (!subgraphOp->hasInput(opInIndex)) {
           // Subgraph input which is not an op input
-          used.insert(inputIds.at(i));
+          usedIds.insert(inputIds.at(i));
         }
       }
     }
@@ -68,7 +69,7 @@ std::set<TensorId> LivenessNode::usedTensorIds() const {
         if (sgOutIndex < 0 ||
             sgOutIndex >= subgraphOp->getCalledGraph().getOutputIds().size()) {
           // Op output which is not a subgraph output
-          used.insert(output.second);
+          usedIds.insert(output.second);
         }
       }
 
@@ -77,7 +78,7 @@ std::set<TensorId> LivenessNode::usedTensorIds() const {
         auto opOutIndex = subgraphOp->subgraphOutToOpOutIndex(i);
         if (!subgraphOp->output->hasIndex(opOutIndex)) {
           // Subgraph output which is not an op output
-          used.insert(outputIds.at(i));
+          usedIds.insert(outputIds.at(i));
         }
       }
     }
@@ -86,20 +87,34 @@ std::set<TensorId> LivenessNode::usedTensorIds() const {
   default:
     break;
   }
-
-  return used;
 }
 
-std::pair<TensorId, TensorId> LivenessNode::getTensorIds() const {
+void LivenessNode::setTensorIds() {
   switch (status) {
   case OpStatus::CopyInput:
   case OpStatus::CopyModified: {
     SubgraphOp *sgOp = static_cast<SubgraphOp *>(getOp());
     auto sgInIdx     = sgOp->opInToSubgraphInIndex(index);
+    TensorId sgInId  = sgOp->getCalledGraph().getInputId(sgInIdx);
+    Tensor *sgInT    = sgOp->getCalledGraph().getTensors().get(sgInId);
+
+    TensorId sgTensorId = sgInId;
+    if (sgInT->isExplicitLoopInput()) {
+      // Explicit loop inputs (except trip count)
+      // are copied to the body output tensors rather than the
+      // body input tensors
+      auto sgOutIdx = sgInIdx - 1;
+      if (sgOutIdx >= 0 &&
+          sgOutIdx < sgOp->getCalledGraph().getOutputIds().size()) {
+        TensorId sgOutId = sgOp->getCalledGraph().getOutputId(sgOutIdx);
+        sgTensorId       = sgOutId;
+      }
+    }
+
     if (sgInIdx > -1 && sgInIdx < sgOp->getCalledGraph().getInputIds().size()) {
-      return {getOp()->inId(index), sgOp->getCalledGraph().getInputId(sgInIdx)};
+      tensorIds = std::make_pair(getOp()->inId(index), sgTensorId);
     } else {
-      return {"", ""};
+      tensorIds = std::make_pair("", "");
     }
   } break;
   case OpStatus::CopyOutput: {
@@ -107,10 +122,10 @@ std::pair<TensorId, TensorId> LivenessNode::getTensorIds() const {
     auto sgOutIdx    = sgOp->opOutToSubgraphOutIndex(index);
     if (sgOutIdx > -1 &&
         sgOutIdx < sgOp->getCalledGraph().getOutputIds().size()) {
-      return {getOp()->outId(index),
-              sgOp->getCalledGraph().getOutputId(sgOutIdx)};
+      tensorIds = std::make_pair(getOp()->outId(index),
+                                 sgOp->getCalledGraph().getOutputId(sgOutIdx));
     } else {
-      return {"", ""};
+      tensorIds = std::make_pair("", "");
     }
   } break;
   case OpStatus::CopyLoopCarried: {
@@ -118,14 +133,14 @@ std::pair<TensorId, TensorId> LivenessNode::getTensorIds() const {
     // Loop carried dependencies
     auto sgOutIdx = index;
     auto sgInIdx  = index + 1;
-    return {sgOp->getCalledGraph().getOutputId(sgOutIdx),
-            sgOp->getCalledGraph().getInputId(sgInIdx)};
+    tensorIds     = std::make_pair(sgOp->getCalledGraph().getOutputId(sgOutIdx),
+                               sgOp->getCalledGraph().getInputId(sgInIdx));
   } break;
   case OpStatus::Normal:
   case OpStatus::Enter:
   case OpStatus::Exit:
   default:
-    return {"", ""};
+    tensorIds = std::make_pair("", "");
   }
 }
 
@@ -274,6 +289,7 @@ void LivenessAnalyzer::addToSchedule(const Graph *graphToAdd,
     enter_location = opSchedule.size();
     opScheduleMap[op].push_back(enter_location);
 
+    // Inspect subgraphs
     if (SubgraphOp *sgOp = dynamic_cast<SubgraphOp *>(op)) {
       opSchedule.emplace_back(current, OpStatus::Enter, 0);
       for (auto input : sgOp->input->tensorIdMap()) {
@@ -283,31 +299,29 @@ void LivenessAnalyzer::addToSchedule(const Graph *graphToAdd,
           opSchedule.push_back({current, OpStatus::CopyInput, input.first});
         }
       }
-    } else {
-      opSchedule.emplace_back(current, OpStatus::Normal, 0);
-    }
 
-    // Inspect subgraphs
-    if (SubgraphOp *sgOp = dynamic_cast<SubgraphOp *>(op)) {
       auto &subgraph  = sgOp->getCalledGraph();
       auto &callSites = graphCallSiteOps[subgraph.id];
       if (std::find(callSites.begin(), callSites.end(), op) ==
           callSites.end()) {
         callSites.push_back(op);
       }
-      addToSchedule(&subgraph, current);
 
       // Add the loop subgraph twice (iteration 0 and 1),
       // so that we can reason about loop-carried
       // dependencies (via inductive proof) properly
       if (op->isConvertibleTo<LoopOp>()) {
-        auto bodyOutputIds = subgraph.getOutputIds();
-        // Loop carried dependencies between iteration 0 and 1
-        // (see loop.hpp)
-        for (int64_t i = 0; i < bodyOutputIds.size(); ++i) {
-          opSchedule.emplace_back(current, OpStatus::CopyLoopCarried, i);
+        for (int64_t iteration = 0; iteration < 2; ++iteration) {
+          auto bodyOutputIds = subgraph.getOutputIds();
+          // Loop carried dependencies between iteration -1, 0 and 1
+          // (see loop.hpp)
+          for (int64_t i = 0; i < bodyOutputIds.size(); ++i) {
+            opSchedule.emplace_back(current, OpStatus::CopyLoopCarried, i);
+          }
+          // Loop iteration 0 & 1
+          addToSchedule(&subgraph, current);
         }
-        // Second loop iteration
+      } else {
         addToSchedule(&subgraph, current);
       }
 
@@ -337,6 +351,8 @@ void LivenessAnalyzer::addToSchedule(const Graph *graphToAdd,
       }
       opSchedule.emplace_back(current, OpStatus::Exit, 0);
       callSiteLinks[enter_location].push_back(opSchedule.size() - 1);
+    } else {
+      opSchedule.emplace_back(current, OpStatus::Normal, 0);
     }
   }
 }

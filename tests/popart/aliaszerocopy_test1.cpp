@@ -98,6 +98,9 @@ BOOST_AUTO_TEST_CASE(AliasZeroCopyLoopTest0) {
   // see loop.hpp, 0/1 skipped
   reference.emplace_back(OpStatus::CopyInput, 2);       // taId -> staId
   reference.emplace_back(OpStatus::CopyInput, 3);       // tbId -> stbId
+  reference.emplace_back(OpStatus::CopyLoopCarried, 0); // loop cond
+  reference.emplace_back(OpStatus::CopyLoopCarried, 1); // staId -> staId
+  reference.emplace_back(OpStatus::CopyLoopCarried, 2); // stdId -> stbId
   reference.emplace_back(OpStatus::Normal, 0);          // AddOp (iteration 0)
   reference.emplace_back(OpStatus::CopyLoopCarried, 0); // loop cond
   reference.emplace_back(OpStatus::CopyLoopCarried, 1); // staId -> staId
@@ -118,14 +121,15 @@ BOOST_AUTO_TEST_CASE(AliasZeroCopyLoopTest0) {
 
   // Check alias zero copy
   // Expected output:
-  // 11121112111
-  // *********** (A)
-  // *********** (B)
-  // ___________ (C)
-  // *********** (D)
-  // *********** (loop_subgraph(0)/A)
-  // __*___*____ (loop_subgraph(0)/B)
-  // ___***_**__ (loop_subgraph(0)/D)
+  // 11111121112111
+  // ************** (A)
+  // ************** (B)
+  // ______________ (C)
+  // ************** (D)
+  // ************** (loop_subgraph(0)/A)
+  // _____*___*____ (loop_subgraph(0)/B)
+  // __***_***_**__ (loop_subgraph(0)/D)
+
   zeroCopy.printLivenessIntervals(
       {
           ir.getTensor(taId),
@@ -139,15 +143,16 @@ BOOST_AUTO_TEST_CASE(AliasZeroCopyLoopTest0) {
       ProducerInterval::Enforce);
 
   Intervals refFull;
-  refFull.insert(0, 11);
+  refFull.insert(0, 14);
 
   Intervals refStbId;
-  refStbId.insert(2, 3);
-  refStbId.insert(6, 7);
+  refStbId.insert(5, 6);
+  refStbId.insert(9, 10);
 
   Intervals refStdId;
-  refStdId.insert(3, 6);
-  refStdId.insert(7, 9);
+  refStdId.insert(2, 5);
+  refStdId.insert(6, 9);
+  refStdId.insert(10, 12);
 
   BOOST_CHECK_EQUAL(zeroCopy.getCandidateLivenessIntervals(ir.getTensor(taId)),
                     refFull);

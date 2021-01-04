@@ -21,6 +21,7 @@
 #include <popart/tensors.hpp>
 #include <popart/topocons.hpp>
 #include <popart/transforms/batchserialize.hpp>
+#include <popart/transforms/decomposeloops.hpp>
 #include <popart/transforms/mergeloops.hpp>
 #include <popart/transforms/prune.hpp>
 
@@ -571,10 +572,21 @@ bool BatchSerialize::apply(Graph &graph) const {
 
     // If batchSchedule == Scheduler we defer any further scheduling to the
     // scheduler.
-    if (settings.batchSchedule != BatchSerializationBatchSchedule::Scheduler &&
-        settings.method != BatchSerializationMethod::Loop) {
-      BatchSerialScheduler scheduler(graph);
-      scheduler.apply();
+    if (settings.method == BatchSerializationMethod::Loop) {
+      if (settings.batchSchedule ==
+              BatchSerializationBatchSchedule::OverlapOnCompute ||
+          settings.batchSchedule ==
+              BatchSerializationBatchSchedule::OverlapOnIo) {
+        // Decompose loops
+        ir.updateVertices();
+        ir.applyTransform(DecomposeLoops::id(), graph);
+      }
+    } else {
+      if (settings.batchSchedule !=
+          BatchSerializationBatchSchedule::Scheduler) {
+        BatchSerialScheduler scheduler(graph);
+        scheduler.apply();
+      }
     }
 
     // Freeze the schedule completely, so that the batch serial order cannot be
