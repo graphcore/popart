@@ -132,6 +132,12 @@ private:
   bool opxTrace = false;
   poplar::Tensor opxTraceTensor;
 
+  // A set of tensor ids to print during graph execution.
+  // This is an alternative to the PrintTensor op.
+  // Tensors are specified using the environment variable POPART_PRINT_TENSORS.
+  // example: export POPART_PRINT_TENSORS="MatMul:0 L1:0"
+  std::unordered_set<TensorId> printTensorIds;
+
   // This keeps track of whether there the accumulateOuterFragment is empty
   // TODO T12001 a class which encapsulates framgments which has this attribute.
   bool outerLoopFragEmpty = true;

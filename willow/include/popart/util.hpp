@@ -210,6 +210,12 @@ std::ostream &operator<<(std::ostream &ss, const std::set<T> &v) {
   return ss;
 }
 
+template <typename T>
+std::ostream &operator<<(std::ostream &ss, const std::unordered_set<T> &v) {
+  popart::appendSequence(ss, v);
+  return ss;
+}
+
 template <typename Key, typename Value>
 std::ostream &operator<<(std::ostream &ss, const std::map<Key, Value> &v) {
   ss << "[";

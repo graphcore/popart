@@ -12,6 +12,7 @@
 #include <utility>
 #include <popart/popx/creatorx.hpp>
 
+#include <boost/algorithm/string.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/range/algorithm/find.hpp>
@@ -1920,8 +1921,19 @@ void IrLowering::growOpx(Opx *opx, poplar::program::Sequence &seq) {
   }
 
   // Grow code for the Op
-  poplar::program::Sequence opSeq;
+  poplar::program::Sequence opSeq({}, opx->debugContext());
   opx->grow(opSeq);
+
+  for (auto out : opx->op_p->output->tensorIdMap()) {
+    auto idx = out.first;
+    auto id  = out.second;
+    if (printTensorIds.find(id) != printTensorIds.end()) {
+      auto tensor = opx->getOutTensor(idx);
+      auto printProg =
+          poplar::program::PrintTensor(id, tensor, opx->debugContext());
+      opSeq.add(printProg);
+    }
+  }
 
   if (aliasZeroCopy->opRequired(opx->op_p)) {
     // Code of an Op can be skipped if the Op is not required,
@@ -2455,6 +2467,13 @@ void IrLowering::prepareGraph() {
 
   logging::devicex::info("Poplar version: {}", poplar::versionString());
   logging::devicex::info("Poplar release githash: {}", poplar::packageHash());
+
+  auto popartPrintTensors = getPopartEnvVar("PRINT_TENSORS");
+  if (popartPrintTensors && std::strcmp(popartPrintTensors, "") != 0) {
+    boost::split(
+        printTensorIds, popartPrintTensors, [](char c) { return c == ' '; });
+    logging::devicex::debug("Printing tensors {}", printTensorIds);
+  }
 
   initPoplarGraph();
 
