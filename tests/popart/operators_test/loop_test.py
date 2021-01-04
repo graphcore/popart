@@ -39,7 +39,7 @@ def test_simple_for_loop(op_tester):
             else:
                 a_out = loop_builder.aiOnnx.add([a_in, b])
 
-            # loop body outputs: [condition_out, a_out]
+            # loop body outputs: [condition_out, a_out
             loop_builder.addOutputTensor(keepgoing)
             loop_builder.addOutputTensor(a_out)
 
