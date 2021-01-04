@@ -169,16 +169,14 @@ int RemoteExchangeOp::numStores() const {
   return (input->tensorMap().size() / 2) - numLoads();
 }
 
-VGraphIdAndTileSet RemoteExchangeOp::getIntrospectionInVirtualGraphId(
-    InIndex in,
-    std::set<OpId> visited) const {
+VGraphIdAndTileSet
+RemoteExchangeOp::getIntrospectionInVirtualGraphId(InIndex in) const {
   auto vgid = vgidAndTiles.at(in % (numLoads() + numStores()));
   return {vgid.first ? *vgid.first : unusedVGraphId, vgid.second};
 }
 
-VGraphIdAndTileSet RemoteExchangeOp::getIntrospectionOutVirtualGraphId(
-    OutIndex out,
-    std::set<OpId> visited) const {
+VGraphIdAndTileSet
+RemoteExchangeOp::getIntrospectionOutVirtualGraphId(OutIndex out) const {
   auto vgid = vgidAndTiles.at(out % (numLoads() + numStores()));
   return {vgid.first ? *vgid.first : unusedVGraphId, vgid.second};
 }

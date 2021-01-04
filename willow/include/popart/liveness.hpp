@@ -47,13 +47,11 @@ public:
   int getIndex() const { return index; }
 
   // All tensor ids touched by this node
-  const std::set<TensorId> &usedTensorIds() const { return usedIds; }
+  std::set<TensorId> usedTensorIds() const;
 
   // Pair of matching tensors inside/outside of the subgraph associated with the
   // index returned by getIndex on CopyOutput, CopyInput and CopyModified nodes
-  const std::pair<TensorId, TensorId> &getTensorIds() const {
-    return tensorIds;
-  }
+  std::pair<TensorId, TensorId> getTensorIds() const;
 
   // If the operation produces or fully modifies t
   bool isProducerOf(Tensor *t) const;
@@ -62,14 +60,9 @@ public:
   bool isConsumerOf(Tensor *t) const;
 
 private:
-  void setUsedTensorIds();
-  void setTensorIds();
-
   std::vector<Op *> callStack;
   OpStatus status;
   int index;
-  std::pair<TensorId, TensorId> tensorIds;
-  std::set<TensorId> usedIds;
 };
 
 std::ostream &operator<<(std::ostream &os, const OpStatus &);

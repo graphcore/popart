@@ -172,10 +172,8 @@ def test_attention_streamingmemory(tmpdir):
                 "batchConcat"]
             opts.batchSerializationSettings.concatOnExecutionPhaseChange = options[
                 "batchConcat"]
-
-            if not options["batchConcat"]:
-                # Wait with loading activations until they are required
-                opts.executionPhaseSettings.activationIOSchedule = popart.ExecutionPhaseIOSchedule.OnDemand
+            # Wait with loading activations until they are required
+            opts.executionPhaseSettings.activationIOSchedule = popart.ExecutionPhaseIOSchedule.OnDemand
 
         if "batchSerialMethod" in options:
             if options["batchSerialMethod"] == "loop":
@@ -364,34 +362,19 @@ def test_attention_streamingmemory(tmpdir):
     # stored and loaded one-by-one
     # Batch serialization happens with loops
     test_variants.append({
-        "stages":
-        1,
-        "stride":
-        4,
-        "numLayers":
-        3,
-        "phasedExecution":
-        True,
-        "outlining":
-        True,
-        "explicitRecomputation":
-        True,
-        "aliasZeroCopy":
-        True,
-        "batchSerialize":
-        4,
-        "batchSerialMethod":
-        "loop",
-        "batchConcat":
-        False,
-        "replication":
-        2,
-        "tensorLocationSettings":
-        ioOffChip,
-        "ioTiles":
-        192,
-        "batchSchedule":
-        popart.BatchSerializationBatchSchedule.OverlapOnCompute,
+        "stages": 1,
+        "stride": 4,
+        "numLayers": 3,
+        "phasedExecution": True,
+        "outlining": True,
+        "explicitRecomputation": True,
+        "aliasZeroCopy": True,
+        "batchSerialize": 4,
+        "batchSerialMethod": "loop",
+        "batchConcat": False,
+        "replication": 2,
+        "tensorLocationSettings": ioOffChip,
+        "ioTiles": 192
     })
 
     # Test batch serialized single device per replica execution, where all

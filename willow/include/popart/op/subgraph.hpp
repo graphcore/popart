@@ -33,11 +33,9 @@ public:
   virtual void setCalledGraph(Graph &)  = 0;
 
   VGraphIdAndTileSet
-  getIntrospectionInVirtualGraphId(InIndex index,
-                                   std::set<OpId> visited = {}) const override;
+  getIntrospectionInVirtualGraphId(InIndex index) const override;
   VGraphIdAndTileSet
-  getIntrospectionOutVirtualGraphId(OutIndex index,
-                                    std::set<OpId> visited = {}) const override;
+  getIntrospectionOutVirtualGraphId(OutIndex index) const override;
 
   bool hasSideEffect() const override;
 

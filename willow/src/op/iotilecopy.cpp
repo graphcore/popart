@@ -26,16 +26,14 @@ void IoTileCopyOp::setup() {
 }
 
 VGraphIdAndTileSet
-IoTileCopyOp::getIntrospectionInVirtualGraphId(InIndex,
-                                               std::set<OpId> visited) const {
+IoTileCopyOp::getIntrospectionInVirtualGraphId(InIndex) const {
   return {hasVirtualGraphId() ? getVirtualGraphId() : unusedVGraphId,
           settings.tileSet == TileSet::Compute ? TileSet::IO
                                                : TileSet::Compute};
 }
 
 VGraphIdAndTileSet
-IoTileCopyOp::getIntrospectionOutVirtualGraphId(OutIndex,
-                                                std::set<OpId> visited) const {
+IoTileCopyOp::getIntrospectionOutVirtualGraphId(OutIndex) const {
   return {hasVirtualGraphId() ? getVirtualGraphId() : unusedVGraphId,
           settings.tileSet};
 }

@@ -78,8 +78,7 @@ public:
   bool empty() const;
 
   Intervals operator&(const Intervals &other) const;
-  Intervals &operator=(const Intervals &other);
-  Intervals &operator+=(const Intervals &other);
+  void operator+=(const Intervals &other);
   bool operator==(const Intervals &other) const;
   bool operator!=(const Intervals &other) const;
 
@@ -136,7 +135,7 @@ public:
   Intervals
   getCandidateLivenessIntervals(Tensor *,
                                 ProducerInterval = ProducerInterval::Enforce,
-                                bool forceUpdateCache = false);
+                                bool cached      = true);
 
 private:
   // Dead code elimination optimizations

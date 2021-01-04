@@ -18,12 +18,8 @@ public:
 
   float getSubgraphValue() const final { return getLowSubgraphValue(); }
 
-  VGraphIdAndTileSet
-  getIntrospectionInVirtualGraphId(InIndex,
-                                   std::set<OpId> visited = {}) const final;
-  VGraphIdAndTileSet
-  getIntrospectionOutVirtualGraphId(OutIndex,
-                                    std::set<OpId> visited = {}) const final;
+  VGraphIdAndTileSet getIntrospectionInVirtualGraphId(InIndex) const final;
+  VGraphIdAndTileSet getIntrospectionOutVirtualGraphId(OutIndex) const final;
 
   bool canShard() const override { return true; }
 };

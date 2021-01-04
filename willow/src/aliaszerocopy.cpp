@@ -61,16 +61,9 @@ Intervals Intervals::operator&(const Intervals &other) const {
   return newInterval;
 }
 
-Intervals &Intervals::operator=(const Intervals &other) {
-  *static_cast<BoostInterval *>(intervals.get()) =
-      *static_cast<BoostInterval *>(other.intervals.get());
-  return *this;
-}
-
-Intervals &Intervals::operator+=(const Intervals &other) {
+void Intervals::operator+=(const Intervals &other) {
   *static_cast<BoostInterval *>(intervals.get()) +=
       *static_cast<BoostInterval *>(other.intervals.get());
-  return *this;
 }
 
 bool Intervals::operator==(const Intervals &other) const {
@@ -294,27 +287,14 @@ void AliasZeroCopy::disableDeadCodeNodes() {
   bool changed = true;
   // Disable superfluous nodes, back to front
 
-  auto updateAssociatedIntervals = [this](const LivenessNode &node) {
-    std::set<TensorId> used = node.usedTensorIds();
-    for (auto &id : used) {
-      logging::devicex::trace(
-          "[AliasZeroCopy] Updating intervals for {}: {}", node, id);
-      Tensor *t = ir->getTensor(id);
-      // Force update cache for all associated tensors & their aliases
-      getCandidateLivenessIntervals(t, ProducerInterval::Ignore, true);
+  auto disableNode = [this, &changed](int64_t index) {
+    if (!disabledNodes[index]) {
+      changed              = true;
+      disabledNodes[index] = true;
+      logging::devicex::trace("[AliasZeroCopy] Disabling node {}",
+                              analyzer->getOpScheduleAt(index));
     }
   };
-
-  auto disableNode =
-      [this, &changed, &updateAssociatedIntervals](int64_t index) {
-        if (!disabledNodes[index]) {
-          logging::devicex::trace("[AliasZeroCopy] Disabling node {}",
-                                  analyzer->getOpScheduleAt(index));
-          changed              = true;
-          disabledNodes[index] = true;
-          updateAssociatedIntervals(analyzer->getOpScheduleAt(index));
-        }
-      };
 
   int64_t pass = 0;
   while (changed) {
@@ -333,7 +313,7 @@ void AliasZeroCopy::disableDeadCodeNodes() {
         auto tensorIds = node.getTensorIds();
         Tensor *t      = ir->getTensor(tensorIds.second);
         auto liveness =
-            getCandidateLivenessIntervals(t, ProducerInterval::Ignore);
+            getCandidateLivenessIntervals(t, ProducerInterval::Ignore, false);
 
         // If the input tensor is not required to be live after CopyInput,
         // then the CopyInput is not required either
@@ -348,7 +328,7 @@ void AliasZeroCopy::disableDeadCodeNodes() {
         // Second: input to iteration #1 <- produced
         Tensor *t = ir->getTensor(tensorIds.second);
         auto liveness =
-            getCandidateLivenessIntervals(t, ProducerInterval::Ignore);
+            getCandidateLivenessIntervals(t, ProducerInterval::Ignore, false);
 
         // If the input tensor is not required to be live after CopyLoopCarried,
         // then the CopyLoopCarried is not required either
@@ -361,7 +341,7 @@ void AliasZeroCopy::disableDeadCodeNodes() {
         auto tensorIds = node.getTensorIds();
         Tensor *t      = ir->getTensor(tensorIds.first);
         auto liveness =
-            getCandidateLivenessIntervals(t, ProducerInterval::Ignore);
+            getCandidateLivenessIntervals(t, ProducerInterval::Ignore, false);
 
         // If the modified tensor is not required to be live after CopyModified,
         // then the CopyModified is not required either
@@ -374,7 +354,7 @@ void AliasZeroCopy::disableDeadCodeNodes() {
         auto tensorIds = node.getTensorIds();
         Tensor *t      = ir->getTensor(tensorIds.first);
         auto liveness =
-            getCandidateLivenessIntervals(t, ProducerInterval::Ignore);
+            getCandidateLivenessIntervals(t, ProducerInterval::Ignore, false);
 
         // If the input tensor is not required to be live after CopyInput,
         // then the CopyInput is not required either
@@ -390,14 +370,14 @@ void AliasZeroCopy::disableDeadCodeNodes() {
           bool disable = true;
           for (auto &out : node.getOp()->output->tensorMap()) {
             auto liveness = getCandidateLivenessIntervals(
-                out.second, ProducerInterval::Ignore);
+                out.second, ProducerInterval::Ignore, false);
             // If none of the outputs are required to be live after this node
             // ...
             disable &= !doOverlap(liveness, probe);
           }
           for (auto &in : node.getOp()->input->tensorMap()) {
             auto liveness = getCandidateLivenessIntervals(
-                in.second, ProducerInterval::Ignore);
+                in.second, ProducerInterval::Ignore, false);
             // ... and none of the modified inputs either ...
             if (node.getOp()->modifiesIndex(in.first)) {
               disable &= !doOverlap(liveness, probe);
@@ -474,8 +454,7 @@ int64_t AliasZeroCopy::findStart(Tensor *consumedTensor,
 Intervals
 AliasZeroCopy::getLivenessIntervals(Tensor *t,
                                     ProducerInterval producerInterval) {
-  logging::devicex::trace("[AliasZeroCopy] Getting interval of tensor {}",
-                          t->id);
+  logging::trace("[AliasZeroCopy] Getting interval of tensor {}", t->id);
   Intervals intervals;
   auto insertInterval = [&](int64_t s, int64_t e) {
     if (s < 0) {
@@ -722,7 +701,7 @@ void AliasZeroCopy::logPostIRAliases() {
 Intervals
 AliasZeroCopy::getCandidateLivenessIntervals(Tensor *startTensor,
                                              ProducerInterval producerInterval,
-                                             bool forceUpdateCache) {
+                                             bool cached) {
   std::set<Tensor *, PTensorCmp> aliasedTensors;
   aliasedTensors.insert(startTensor);
 
@@ -731,13 +710,20 @@ AliasZeroCopy::getCandidateLivenessIntervals(Tensor *startTensor,
   Intervals combinedIntervals;
 
   for (Tensor *t : aliasedTensors) {
-    auto it = candidateLivenessIntervalsMap.find({t, producerInterval});
-    if (it == candidateLivenessIntervalsMap.end() || forceUpdateCache) {
-      Intervals candidateIntervals = getLivenessIntervals(t, producerInterval);
-      candidateLivenessIntervalsMap[{t, producerInterval}] = candidateIntervals;
-      combinedIntervals += candidateIntervals;
+    if (cached) {
+      auto it = candidateLivenessIntervalsMap.find({t, producerInterval});
+      if (it == candidateLivenessIntervalsMap.end()) {
+        Intervals candidateIntervals =
+            getLivenessIntervals(t, producerInterval);
+        candidateLivenessIntervalsMap.insert(
+            {{t, producerInterval}, candidateIntervals});
+        combinedIntervals += candidateIntervals;
+      } else {
+        combinedIntervals += it->second;
+      }
     } else {
-      combinedIntervals += it->second;
+      Intervals candidateIntervals = getLivenessIntervals(t, producerInterval);
+      combinedIntervals += candidateIntervals;
     }
   }
 
@@ -823,15 +809,19 @@ bool AliasZeroCopy::checkSubgraphInputCompatible(Tensor *ta, Tensor *tb) {
                   std::any_of(aliases.begin(), aliases.end(), [](Tensor *t) {
                     return t->isModified();
                   });
+
+              if (LoopOp *loopOp =
+                      dynamic_cast<LoopOp *>(callSiteOps.front())) {
+                // All explicit loop inputs will be modified within the subgraph
+                modified |= (opInIndex < loopOp->numExplicitInputs());
+              }
             }
           }
         }
         logging::devicex::trace("[AliasZeroCopy] Overlapping: {} {}, "
-                                "conflict: {}, overlapping: {}, modified: {}",
+                                "modified: {}",
                                 ta->id,
                                 tb->id,
-                                conflict,
-                                overlapping,
                                 modified);
         return !conflict && (!overlapping || !modified);
       }

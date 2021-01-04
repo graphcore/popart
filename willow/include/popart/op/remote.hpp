@@ -105,12 +105,8 @@ public:
     return remotebufferIds.at(index);
   }
 
-  VGraphIdAndTileSet
-  getIntrospectionInVirtualGraphId(InIndex,
-                                   std::set<OpId> visited = {}) const final;
-  VGraphIdAndTileSet
-  getIntrospectionOutVirtualGraphId(OutIndex,
-                                    std::set<OpId> visited = {}) const final;
+  VGraphIdAndTileSet getIntrospectionInVirtualGraphId(InIndex) const final;
+  VGraphIdAndTileSet getIntrospectionOutVirtualGraphId(OutIndex) const final;
 
   bool canShard() const final { return false; }
 
