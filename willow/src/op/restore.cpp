@@ -49,7 +49,7 @@ std::unique_ptr<Op> RestoreInplaceOp::clone() const {
 
 view::Regions RestoreInplaceOp::aliases(InIndex in, OutIndex) const {
   if (in == getActToRestoreInIndex()) {
-    return {view::Region::getFull(inShape(in))};
+    return {view::Region::getFull(inShape(in), view::AccessType::Write)};
   } else {
     return {view::Region::getEmpty(inRank(in))};
   }

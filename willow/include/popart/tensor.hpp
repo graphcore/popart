@@ -165,6 +165,16 @@ public:
   OutIndex getGraphOutputIndex() const;
   bool isLoopInput() const;
   bool isImplicitLoopInput() const;
+  bool isExplicitLoopInput() const;
+  // Returns true if the tensor is not to be modified by an inplaced operation
+  bool isUnmodifiable() const;
+  // Returns true if the tensor is consumed by an implicit recompute operation
+  // (which means the tensor is consumed implicitly and must not be modified)
+  bool isCheckpointTensor() const;
+  // Returns true if the tensor is produced by an implicit recompute operation
+  bool isImplicitRecomputeTensor() const;
+  // Returns true if the tensor is the target of a restore inplace
+  bool isRestoreInplaceTensor() const;
   // Returns true for stream tensors that are optimizer tensors, as
   // well as their copies
   bool isOptimizerTensor() const;
@@ -176,6 +186,9 @@ public:
   bool hasTensorData() const;
   TensorData *tensorData();
   const TensorData *tensorData() const;
+
+  // Returns true if the tensor or any of it's aliases fulfill the predicate
+  bool anyAlias(std::function<bool(Tensor *)> predicate) const;
 
   template <typename... Args> void setTensorData(Args &&... args) {
     // if data has already been created and had a stream
@@ -206,9 +219,11 @@ public:
   VGraphId getVirtualGraphIdUnsafe() const;
 
   // Return the virtual graph id and io tile flag
-  VGraphIdAndTileSet getVirtualGraphIdAndTileSet() const;
-  // return the virtual graph id, or {-1, false} if there is not one
-  VGraphIdAndTileSet getVirtualGraphIdAndTileSetUnsafe() const;
+  VGraphIdAndTileSet
+  getVirtualGraphIdAndTileSet(std::set<OpId> visited = {}) const;
+  // Return the virtual graph id, or {-1, false} if there is not one
+  VGraphIdAndTileSet
+  getVirtualGraphIdAndTileSetUnsafe(std::set<OpId> visited = {}) const;
 
   // Determine the batch axis for this Tensor
   int getBatchAxis() const;

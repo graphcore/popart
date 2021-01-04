@@ -547,5 +547,18 @@ std::ostream &operator<<(std::ostream &stream, const Region &r) {
   return stream;
 }
 
+bool regionsModified(const view::Regions &regions) {
+  return !std::all_of(
+      regions.begin(), regions.end(), [](const view::Region &r) {
+        return r.isEmpty() || r.getAccessType() == view::AccessType::Read;
+      });
+}
+
+bool nonEmptyRegion(const view::Regions &regions) {
+  return std::any_of(regions.begin(), regions.end(), [](const view::Region &r) {
+    return !r.isEmpty();
+  });
+}
+
 } // namespace view
 } // namespace popart

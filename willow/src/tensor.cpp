@@ -10,6 +10,7 @@
 #include <popart/op.hpp>
 #include <popart/op/ipucopy.hpp>
 #include <popart/op/loop.hpp>
+#include <popart/op/restore.hpp>
 #include <popart/tensor.hpp>
 #include <popart/tensordata.hpp>
 #include <popart/tensorindex.hpp>
@@ -61,6 +62,10 @@ bool Tensor::isModified() const {
       }
     }
   }
+  // All explicit loop inputs will be modified within the subgraph
+  if (isExplicitLoopInput()) {
+    return true;
+  }
   return false;
 }
 
@@ -68,7 +73,8 @@ VGraphId Tensor::getVirtualGraphIdUnsafe() const {
   return getVirtualGraphIdAndTileSetUnsafe().first;
 }
 
-VGraphIdAndTileSet Tensor::getVirtualGraphIdAndTileSetUnsafe() const {
+VGraphIdAndTileSet
+Tensor::getVirtualGraphIdAndTileSetUnsafe(std::set<OpId> visited) const {
 
   // If this Tensor has a Producer, use its VirtualGraphId if it has one
   if (hasProducer()) {
@@ -77,10 +83,12 @@ VGraphIdAndTileSet Tensor::getVirtualGraphIdAndTileSetUnsafe() const {
     if (ipucopy) {
       return {ipucopy->getDestIpu(), ipucopy->settings.tileSet};
     } else if (getProducer()->hasVirtualGraphId()) {
-      for (auto &indices : getProducer()->output->indicesMap()) {
-        if (indices.first == this) {
-          return getProducer()->getIntrospectionOutVirtualGraphId(
-              indices.second[0]);
+      if (visited.find(getProducer()->id) == visited.end()) {
+        for (auto &indices : getProducer()->output->indicesMap()) {
+          if (indices.first == this) {
+            return getProducer()->getIntrospectionOutVirtualGraphId(
+                indices.second[0]);
+          }
         }
       }
     }
@@ -89,10 +97,13 @@ VGraphIdAndTileSet Tensor::getVirtualGraphIdAndTileSetUnsafe() const {
   // No producer with an id. Try to get the virtual graph id from a consumer.
   // Use the id of the first consumer with an id, if there is one
   for (Op *consumer : consumers.getOps()) {
-    if (consumer->hasVirtualGraphId()) {
-      for (auto &indices : consumer->input->indicesMap()) {
-        if (indices.first == this) {
-          return consumer->getIntrospectionInVirtualGraphId(indices.second[0]);
+    if (visited.find(consumer->id) == visited.end()) {
+      if (consumer->hasVirtualGraphId()) {
+        for (auto &indices : consumer->input->indicesMap()) {
+          if (indices.first == this) {
+            return consumer->getIntrospectionInVirtualGraphId(
+                indices.second[0]);
+          }
         }
       }
     }
@@ -122,8 +133,9 @@ VGraphIdAndTileSet Tensor::getVirtualGraphIdAndTileSetUnsafe() const {
   return {unusedVGraphId, TileSet::Compute};
 }
 
-VGraphIdAndTileSet Tensor::getVirtualGraphIdAndTileSet() const {
-  auto vid = getVirtualGraphIdAndTileSetUnsafe();
+VGraphIdAndTileSet
+Tensor::getVirtualGraphIdAndTileSet(std::set<OpId> visited) const {
+  auto vid = getVirtualGraphIdAndTileSetUnsafe(visited);
   if (vid == VGraphIdAndTileSet(unusedVGraphId, TileSet::Compute)) {
     throw error("Invalid call to getVirtualGraphId, Tensor does not have one");
   }
@@ -400,10 +412,7 @@ Tensor::Tensor(TensorId n,
                const DebugContext &debugContext)
     : Vertex(), id(n), consumers(this), graph(g), producer(nullptr),
       tensorTypeInfo(&getTensorTypeInfoMap().at(t)), data_(nullptr),
-      di(debugContext, n, t) {
-  // graph is currently unused - this removes the compiler warning
-  (void)graph;
-}
+      di(debugContext, n, t) {}
 
 void Consumers::decrement(Op *op) {
   auto found = consumers_m.find(op);
@@ -477,6 +486,62 @@ bool Tensor::isImplicitLoopInput() const {
   return false;
 }
 
+bool Tensor::isExplicitLoopInput() const {
+  return isLoopInput() && !isImplicitLoopInput();
+}
+
+bool Tensor::isUnmodifiable() const {
+  return
+      // Checkpoint tensors must not be modified by recompute Ops to ensure
+      // the same value is used on first and second runs of the recompute Op
+      isCheckpointTensor() ||
+      // A simple (but overly strict) way to ensure that an op is not inplaced
+      // if:
+      // - its input, or a tensor it aliases, is restored inplace
+      // - and its output, or a tensor that is an alias of it, is consumed
+      //   by an ipucopy
+      // TODO T19283: Make less strict once we can determine if any two
+      // tensors are aliases of eachother
+      isRestoreInplaceTensor() ||
+      // Implicit loop counter tensors must not be modified, because each loop
+      // iteration needs access to the unmodified original input.
+      isImplicitLoopInput() ||
+      // Anchor tensors must not be modified to ensure the correct values are
+      // returned. Here we conservatively assume anchors are returned at the
+      // very end of the computation
+      isAnchored() ||
+      // Graph output tensors must not be modified to ensure the correct value
+      // is returned at the end of the computation
+      isGraphOutput() ||
+      // Variables and constants must not be modified by inplacing operations
+      // (variables can still be updated by designated update operations)
+      tensorType() == TensorType::Variable || tensorType() == TensorType::Const;
+}
+
+bool Tensor::isCheckpointTensor() const {
+  auto cops = consumers.getOps();
+  return std::any_of(cops.begin(),
+                     cops.end(),
+                     [](const Op *op) {
+                       return op->settings.recomputeType ==
+                              RecomputeType::Recompute;
+                     }) &&
+         (!hasProducer() ||
+          getProducer()->settings.recomputeType == RecomputeType::Checkpoint);
+}
+
+bool Tensor::isImplicitRecomputeTensor() const {
+  return (hasProducer() &&
+          getProducer()->settings.recomputeType == RecomputeType::Recompute);
+}
+
+bool Tensor::isRestoreInplaceTensor() const {
+  auto cops = consumers.getOps();
+  return std::any_of(cops.begin(), cops.end(), [](const Op *op) {
+    return op->isConvertibleTo<RestoreInplaceOp>();
+  });
+}
+
 bool Tensor::isOptimizerTensor() const {
 
   // TODO T11262 is to make an optimizer Tensor class, so that we don't need to
@@ -543,6 +608,32 @@ bool Tensor::isAccumulatorTensor() const {
 bool Tensor::isAnchored() const {
   auto &anchors = graph.getIr().getDataFlow().anchors();
   return std::find(anchors.begin(), anchors.end(), id) != anchors.end();
+}
+
+bool Tensor::anyAlias(std::function<bool(Tensor *)> predicate) const {
+  // Fetch non-const pointer to "this"
+  Tensor *t             = graph.getTensors().get(id);
+  auto aliasedTensorMap = graph.getTensors().aliasChainsFrom(t);
+  auto fullRegion       = view::Region::getFull(t->info.shape());
+
+  bool tChecked = false;
+  bool any      = false;
+
+  for (auto &chain : aliasedTensorMap) {
+    auto regions = chain.second.apply(fullRegion);
+    if (nonEmptyRegion(regions)) {
+      // We check if t itself is in the chain, if not we need to check it later.
+      if (chain.first == t) {
+        tChecked = true;
+      }
+      any |= predicate(chain.first);
+    }
+  }
+
+  if (!tChecked) {
+    any |= predicate(t);
+  }
+  return any;
 }
 
 void Consumers::increment(Op *op) {

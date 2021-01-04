@@ -174,6 +174,27 @@ def test_full_recompute_pipelining(tmpdir):
         assert 'mask' in stashedTensors
         assert 'mask_c1' in stashedTensors
 
+        # Verify inplacing
+        inplaces = [op for op in ir["maingraph"] if "Inplace" in op["type"]]
+
+        bins = dict()
+        for op in inplaces:
+            if op["type"] in bins:
+                bins[op["type"]] += 1
+            else:
+                bins[op["type"]] = 1
+
+        print(bins)
+        assert "ReshapeInplace" in bins and bins["ReshapeInplace"] == 39
+        assert "SliceInplace" in bins and bins["SliceInplace"] == 9
+        assert "TransposeInplace" in bins and bins["TransposeInplace"] == 41
+        assert "AddLhsInplace" in bins and bins["AddLhsInplace"] == 3
+        assert "IdentityInplace" in bins and bins["IdentityInplace"] == 34
+        assert "MulLhsInplace" in bins and bins["MulLhsInplace"] == 3
+        assert "ConcatInplace" in bins and bins["ConcatInplace"] == 3
+        assert "RestoreInplace" in bins and bins["RestoreInplace"] == 4
+        assert len(inplaces) == 136
+
     n_anchors = run_test()
     s_anchors = run_test(popart.RecomputationType.Standard)
     p_anchors = run_test(popart.RecomputationType.Pipeline, verify)

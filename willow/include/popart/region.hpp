@@ -74,6 +74,12 @@ private:
 
 std::ostream &operator<<(std::ostream &stream, const Region &r);
 
+// Returns true if any region is non empty and marked as written to
+bool regionsModified(const view::Regions &regions);
+
+// Returns true if any region is non empty
+bool nonEmptyRegion(const view::Regions &regions);
+
 } // namespace view
 } // namespace popart
 

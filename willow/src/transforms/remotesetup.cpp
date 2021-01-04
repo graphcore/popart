@@ -10,6 +10,7 @@
 #include <popart/op/dynamic/dynamicupdate.hpp>
 #include <popart/op/identity.hpp>
 #include <popart/op/ipucopy.hpp>
+#include <popart/op/loop.hpp>
 #include <popart/op/remote.hpp>
 #include <popart/op/reshape.hpp>
 #include <popart/op/slice.hpp>
@@ -81,8 +82,6 @@ bool RemoteSetup::apply(Graph &graph) const {
   std::map<std::pair<Op *, InIndex>, std::set<TensorId>, POpIntCmp> opArgMap;
   std::map<TensorId, std::pair<RemoteBufferId, RemoteBufferIndex>> argBufferMap;
 
-  // TODO T29076: Support for ID ranges per arg tensor ID in loops
-
   for (TensorId &tensor_id : graph.getTensors().getAllTensorIds()) {
     Tensor *tensor = graph.getTensors().get(tensor_id);
     if (tensor->isRemoteArgTensor() &&
@@ -92,20 +91,34 @@ bool RemoteSetup::apply(Graph &graph) const {
       std::vector<std::pair<Tensor *, std::vector<SubgraphOp *>>> traceFront;
       traceFront.push_back({tensor, {}});
 
+      std::set<std::pair<Tensor *, std::vector<SubgraphOp *>>> visited;
       while (traceFront.size() > 0) {
         auto front     = traceFront.back();
         Tensor *tfront = front.first;
         auto callStack = front.second;
-
         traceFront.pop_back();
 
+        if (visited.find(front) != visited.end()) {
+          continue;
+        }
+        visited.insert(front);
+
         if (tfront->isGraphOutput()) {
-          auto stack       = callStack;
-          SubgraphOp *sgOp = stack.back();
-          stack.pop_back();
+          auto nextStack   = callStack;
+          SubgraphOp *sgOp = nextStack.back();
+          nextStack.pop_back();
           auto sgOutIndex = sgOp->getCalledGraph().getOutputIndex(tfront->id);
           auto opOutIndex = sgOp->subgraphOutToOpOutIndex(sgOutIndex);
-          traceFront.push_back({sgOp->outTensor(opOutIndex), stack});
+          traceFront.push_back({sgOp->outTensor(opOutIndex), nextStack});
+          // Check for loop carried tensors
+          if (sgOp->isConvertibleTo<LoopOp>()) {
+            // See loop.hpp, output m maps to input m+1
+            InIndex sgInIndex = sgOutIndex + 1;
+            traceFront.push_back(
+                {sgOp->getCalledGraph().getTensors().get(
+                     sgOp->getCalledGraph().getInputId(sgInIndex)),
+                 callStack});
+          }
         }
 
         for (Op *consumer : tfront->consumers.getOps()) {
@@ -127,8 +140,9 @@ bool RemoteSetup::apply(Graph &graph) const {
                   sgIndex < subgraphOp->getCalledGraph().getInputIds().size()) {
                 auto t_id = subgraphOp->getCalledGraph().getInputId(sgIndex);
                 auto t    = subgraphOp->getCalledGraph().getTensors().get(t_id);
-                callStack.push_back(subgraphOp);
-                traceFront.push_back({t, callStack});
+                auto nextCallStack = callStack;
+                nextCallStack.push_back(subgraphOp);
+                traceFront.push_back({t, nextCallStack});
               }
             }
           } else if (consumer->isConvertibleTo<ElementWiseBinaryBaseOp>()) {
