@@ -164,19 +164,14 @@ void PopPrograms::addPipelineCycle(
     PipelineCycle pCycle,
     poplar::program::Sequence &sq,
     std::ostringstream &ss,
-    std::map<PipelineStage, poplar::Function> &mainFunctions) const {
-  // Inside each pipeline cycle
+    std::map<PipelineStage, poplar::Function> &fwdFunctions) const {
+  // Inside the each phase, conditionally do:
   //
-  // Always do:
   // 1. The pre-forward fragment
-  //
-  // Then conditionally do:
-  // 2. Host->Device copies for each pipeline stage
-  // 3. Main fragments for each pipeline stage
-  // 4. Device->Host copies for each pipeline stage
-  //
-  // Then always do:
-  // 5. Inter-IPU copies for all pipeline stages
+  // 2. Host->Device copies for each IPU
+  // 3. Forward fragments for each IPU
+  // 7. Device->Host copies for each IPU
+  // 8. Inter-IPU copies
 
   PipelineInfo pInfo = ir_lowering_p->pipelineInfo();
 
@@ -201,16 +196,30 @@ void PopPrograms::addPipelineCycle(
     }
   }
 
+  auto tryAddRestoreFragmentForStage = [&](PipelineStage stage) {
+    auto foundFragment = pipelineSeqs.find(PipelineFragmentId::Restore);
+    if (foundFragment != pipelineSeqs.end()) {
+      auto &stages_seqs = foundFragment->second;
+      auto foundStage   = stages_seqs.find(stage);
+      if (foundStage != stages_seqs.end()) {
+        auto &sequence = foundStage->second;
+        ss << "\n  ps" << stage << " : Restore";
+        sq.add(sequence);
+      }
+    }
+  };
+
   // 3.
-  for (auto &stage_seq : mainFunctions) {
+  for (auto &stage_seq : fwdFunctions) {
     auto stage = stage_seq.first;
     if (pInfo.doStage(pCycle, stage)) {
-      ss << "\n  ps" << stage << " : Main";
+      tryAddRestoreFragmentForStage(stage);
+      ss << "\n  ps" << stage << " : Forward";
       sq.add(poplar::program::Call(stage_seq.second));
     }
   }
 
-  // 4.
+  // 7.
   if (pipelineSeqs.find(PipelineFragmentId::ToHostStream) !=
       pipelineSeqs.end()) {
     for (auto &stage_seq : pipelineSeqs.at(PipelineFragmentId::ToHostStream)) {
@@ -221,7 +230,7 @@ void PopPrograms::addPipelineCycle(
     }
   }
 
-  // 5.
+  // Insert the IPU-copies.
   // Note: Always do all the copies. This is ensure that ALL copies are
   // outlined across pipelineCycles AND merged across pipelineStages.
   ss << logging::format("\n  IpuCopies");
@@ -229,158 +238,50 @@ void PopPrograms::addPipelineCycle(
 }
 
 poplar::program::Sequence
-PopPrograms::getFullProgramFromPipelineFragments() const {
-  // First, some terminology:
-  // - Pipeline Stage
-  //    - A partition of the graph that can be (in theory) executed in parallel
-  //      with any other pipeline stage (although multiple pipeline stages
-  //      mapped to a single IPU will in practice run serially).
-  //    - Each Pipeline Stage operates on a single and separate microbatch of
-  //      data.
-  //    - Excluding inter-IPU copies and host IO, operations on a Pipeline Stage
-  //      have no dependencies on other Pipeline Stages within a single Pipeline
-  //      Cycle.
-  //    - Pipeline Stages cannot span IPU boundaries.
-  // - Pipeline Cycle
-  //    - The time step with which mini-batches move through the pipeline.
-  //    - All Pipeline Stages are executed once within one Pipeline Cycle, in
-  //      parallel (except for some serialisation if multiple Pipeline Stages
-  //      are mapped to a single IPU).
+PopPrograms::getMainProgramFromPipelineFragments() const {
+
+  // What's happening here? Consider the model:
   //
-  // The way we assemble the full pipeline program from program fragments is
-  // based on two ideas:
+  // A  A' IPU0
+  // |  |
+  // B  B' IPU1
+  // |  |
+  // C--C' IPU2     (where X' is the grad op of X)
   //
-  // 1. Constraints are imposed on the order of fragments by Poplar lowering
-  //    optimisations to guarantee parallel execution over IPUs.
-  //    A poplar::program is constructed serially, like:
-  //
-  //        poplar::Program::Sequence seq;
-  //        seq.add(fragment0);
-  //        seq.add(fragment1);
-  //        ...
-  //        seq.add(fragmentN);
-  //
-  //    But a successfully pipelined model will have maximally parallelised
-  //    execution over IPUs. For fragments 0 to N to be parallelisable, they
-  //    must:
-  //      - run on different IPUs to one another
-  //      - not entail a global exchange
-  //
-  //    In PopART we enforce this by splitting operations assigned to each
-  //    Pipeline Stage into four fragments: ToDeviceStream (D), Main (M),
-  //    ToHostStream (H), and IpuCopy (C). The program for a Pipeline Cycle
-  //    is assembled by:
-  //      - Adding to the program D fragments for all Pipeline Stages
-  //        participating in the Pipeline Cycle.
-  //      - Followed by M framents for all Pipeline Stages participating in the
-  //        Pipeline Cycle.
-  //      - Followed by H framents for all Pipeline Stages participating in the
-  //        Pipeline Cycle.
-  //      - Followed by C framents for all Pipeline Stages (see (2) for an
-  //        explaination)
-  //    The full pipeline program is then assembled from the programs for each
-  //    Pipeline Cycle.
-  //
-  // 2. Not all Pipeline Stages execute in every Pipeline Cycle. The full
-  //    program starts with a 'fill phase' and ends with a 'flush phase',
-  //    each consisting of Pipeline Cycles in which some Pipeline Stages do
-  //    not participate.
-  //    The exception to this is the inter-IPU copy fragment. In order to get
-  //    Poplar to run these in parallel over IPUs inside the 'main' Pipeline
-  //    Cycle, they must run every Pipeline Cycle for all Pipeline Stages.
-  //
-  //
-  // To illustrate these two ideas, consider the model with three layers in
-  // the forward pass:
-  //
-  // clang-format off
-  //
-  // StreamFromHost
-  //    |
-  //    v
-  //    A->A' IPU0
-  //    |  ^
-  //    v  |
-  //    B->B' IPU1
-  //    |  ^
-  //    v  |
-  //    C->C' IPU2     (where X' is the grad layer of X)
-  //    |
-  //    v
-  // StreamToHost
-  //
-  // A simple layer-to-pipeline-stage mapping (either set by the user or
-  // inferred automatically based on Virtual Graph mapping) could be:
-  //
-  // Pipline Stage   Layers
-  // 0               {A}
-  // 1               {B}
-  // 2               {C}
-  //
-  // After auto-grad is applied, the complete graph will then have the mapping:
-  //
-  // Pipline Stage   Layers
-  // 0               {A}
-  // 1               {B}
-  // 2               {C, C'}
-  // 3               {B'}
-  // 4               {A'}
-  //
-  // Note that in order to satisfy the requirement that 'operations on a
-  // Pipeline Stage have no dependencies on other Pipeline Stages', layers
-  // that have dependents on other Pipeline Stages on the same IPU are
-  // augmented with Stash operations in the IR that copy thier activations to
-  // a FILO buffer, or stash. Also, layers that depend on other Pipeline Stages
-  // on the same IPU are augmented with Restore operations that restore their
-  // inputs from these stashes. The scheduling of these new operations are
-  // handled by the IR scheduler.
+  // The schedule on each IPU looks as follows:
+  // 1. F<i> - execute fwd ops on batch i on the IPU, and stash activations
+  // 2. B<i> - restore activations and run bwd ops on batch i on the IPU
+  // 3. C<i>F - copy activations for batch i to the next IPU
+  // 4. C<i>B - copy grads for batch i to the previous IPU
   //
   // A pipeline with the minimum number of steps for 3 IPUs looks as follows:
   //
-  // Pipeline Cycle -->
+  // Training mode:
   //
-  //      <-------------- fill --------------> <- main > <-------- flush --------->
-  // PS0: D0.M0.| D1.M1.| D2.M2   .| D3.M3   .|D4.M4   .|       |       |    |    | 
-  // PS1:       |    M0.|    M1   .|    M2   .|   M3   .| M4   .|       |    |    |              
-  // PS2:       C       C    M0.H0.C    M1.H1.C   M2.H2.C M3.H3.C M4.H4.C    C    C   
-  // PS3:       |       |          |    M0   .|   M1   .| M2   .| M3   .| M4.|    |                                                          
-  // PS4:       |       |          |          |   M0   .| M1   .| M2   .| M3.| M4.|    
+  // clang-format off
   //
-  // Program fragment key:
-  //   D - ToDeviceStream, M - Main, H - ToHostStream, C - IpuCopy
-  //   D<i> means fragment D executes on mini-batch i, etc.
-  //
-  // We can see from this diagram how the full pipeline program is assembled - 
-  // starting in the top-left corner, serialise the 2D 'schedule' by reading
-  // down the columns:
-  //
-  //     poplar::Program::Sequence seq;  // the full pipeline program
-  //     seq.add(ps0[D]);
-  //     seq.add(ps0[M]);
-  //     seq.add(C);
-  //     seq.add(ps0[D]);
-  //     seq.add(ps0[M]);
-  //     seq.add(ps1[M]);
-  //     seq.add(C);  // ... etc.
-  //
-  // We can also look at the full program from the perspective of IPU,
-  // cutilization, considering that Pipeline Stages on the same IPU must execute
-  // serially:
-  //
-  //       <-------------- fill ---------------> <--- main ---> <--------------- flush --------------->
-  // IPU0: PS0(0), PS0(1), PS0(2), PS0(3)       , PS0(4).PS4(0), PS4(1)        , PS4(2), PS4(3), PS4(4)
-  // IPU1:         PS1(0), PS1(1), PS1(2).PS3(0), PS1(3).PS3(1), PS1(4).PS3(2) , PS3(3), PS3(4)
-  // IPU2:                 PS2(0), PS2(1)       , PS2(2)       , PS2(3)        , PS2(4),
-  //
-  // The holes in this second diagram represent idle-time for an IPU. Maximizing
-  // utilization is therefore a case of 
-  //   - Maximizing the proportion of 'main' Pipeline Cycles, achieved by having
-  //     as large a 'batches per step' (or gradient accumulation factor, if
-  //     gradient accumulation is enabled).
-  //   - Optimally balancing the cycles required on each IPU in the main
-  //     Pipeline Cycle
+  //       <- fwd fill -> <-------- bwd fill --------> <--- main ---> <------ fwd flush ------> < bwd flush ->
+  // IPU0: F0.C0F, F1.C1F, F2.   C2F   , F3.C3F       , F4.B0.C0F    ,    B1        ,    B2    , B3    , B4
+  // IPU1:         F0.C0F, F1.   C1F   , F2.B0.C2F.C0B, F3.B1.C3F.C1B, F4.B2.C4F.C2B,    B3.C3B, B4.C4B,
+  // IPU2:                 F0.B0.   C0B, F1.B1.    C1B, F2.B2.    C2B, F3.B3.   .C3B, F4.B4.C4B,
   //
   // clang-format on
+  //
+  // Inference mode:
+  //
+  //       <- fwd fill -> < main> <fwd flush>
+  // IPU0: F0.C0F, F1.C1F, F2.C2F,
+  // IPU1:         F0.C0F, F1.C1F, F2.C2F,
+  // IPU2:                 F0.   , F1.   , F2
+  //
+  // The contents of the program inside the repeat loop should resemble
+  // a vertical slice of the the above diagrams (i.e. one pipeline cycle).
+  // To achieve the 'holes' in the fwd/bwd fill and fwd/bwd flush cycles,
+  // we run the fwd and bwd programs inside a conditional 'If' program.
+  //
+  // Note that the IPU copies are always run regardless of the conditionals.
+  // Host<->Device streams are run as normal with a the fwd/bwd program
+  // fragments.
 
   // Which parts of the Ir graph are run in each of the pipeline
   // fragments? Print this info here:
@@ -403,12 +304,11 @@ PopPrograms::getFullProgramFromPipelineFragments() const {
 
   PipelineInfo pInfo = ir_lowering_p->pipelineInfo();
 
-  std::map<PipelineStage, poplar::Function> mainFunctions;
+  std::map<PipelineStage, poplar::Function> fwdFunctions;
 
-  for (auto &stage_seq : pipelineSeqs.at(PipelineFragmentId::Main)) {
-    mainFunctions.insert(
-        {stage_seq.first,
-         ir_lowering_p->graph().addFunction(stage_seq.second)});
+  for (auto &stage_seq : pipelineSeqs.at(PipelineFragmentId::Forward)) {
+    fwdFunctions.insert({stage_seq.first,
+                         ir_lowering_p->graph().addFunction(stage_seq.second)});
   }
 
   poplar::program::Sequence fill({}, {"fill"});
@@ -416,7 +316,7 @@ PopPrograms::getFullProgramFromPipelineFragments() const {
        pCycle <= pInfo.fillPhase.end;
        pCycle++) {
     ss << "\nPipeline Cycle " + std::to_string(pCycle) + ":";
-    addPipelineCycle(pCycle, fill, ss, mainFunctions);
+    addPipelineCycle(pCycle, fill, ss, fwdFunctions);
   }
 
   // All pipeline cycles in the main phase are identical. So we create the
@@ -424,14 +324,14 @@ PopPrograms::getFullProgramFromPipelineFragments() const {
   poplar::program::Sequence main({}, {"main"});
   int64_t mainCycles = pInfo.mainPhase.end - pInfo.mainPhase.start + 1;
   ss << "\nPipeline Cycle 'Main', " + std::to_string(mainCycles) + " cycles";
-  addPipelineCycle(pInfo.mainPhase.start, main, ss, mainFunctions);
+  addPipelineCycle(pInfo.mainPhase.start, main, ss, fwdFunctions);
 
   poplar::program::Sequence flush({}, {"flush"});
   for (PipelineCycle pCycle = pInfo.flushPhase.start;
        pCycle <= pInfo.flushPhase.end;
        pCycle++) {
     ss << "\nPipeline Cycle " + std::to_string(pCycle) + ":";
-    addPipelineCycle(pCycle, flush, ss, mainFunctions);
+    addPipelineCycle(pCycle, flush, ss, fwdFunctions);
   }
 
   logging::devicex::debug("Pipelining program construction summary:");
@@ -474,7 +374,7 @@ poplar::program::Sequence PopPrograms::program() const {
 
   poplar::program::Sequence outer({}, {"outer"});
   if (ir_lowering_p->ir().getSessionOptions().enablePipelining) {
-    outer.add(getFullProgramFromPipelineFragments());
+    outer.add(getMainProgramFromPipelineFragments());
   } else {
     poplar::program::Sequence prog({}, {"program"});
     prog.add(preForwardFragment());
@@ -483,6 +383,7 @@ poplar::program::Sequence PopPrograms::program() const {
 
     outer.add(initFragment());
 
+    // auto accumulationFactor = static_cast<int>(
     auto accumulationFactor = ir_lowering_p->getAccumulationFactor();
     if (!ir_lowering_p->getOuterLoopFragEmpty()) {
       logging::devicex::trace(
@@ -652,9 +553,15 @@ PopPrograms::pipelineFragment(PipelineStage pipelineStage,
 }
 
 poplar::program::Sequence &
-PopPrograms::pipelineMainFragment(PipelineStage pipelineStage,
-                                  const std::string &desc) {
-  return pipelineFragment(pipelineStage, PipelineFragmentId::Main, desc);
+PopPrograms::pipelineRestoreFragment(PipelineStage pipelineStage,
+                                     const std::string &desc) {
+  return pipelineFragment(pipelineStage, PipelineFragmentId::Restore, desc);
+}
+
+poplar::program::Sequence &
+PopPrograms::pipelineForwardFragment(PipelineStage pipelineStage,
+                                     const std::string &desc) {
+  return pipelineFragment(pipelineStage, PipelineFragmentId::Forward, desc);
 }
 
 poplar::program::Sequence &
@@ -683,8 +590,11 @@ PopPrograms::getStrFromPipelineFragmentId(PipelineFragmentId fragId) const {
   case PipelineFragmentId::ToDeviceStream: {
     return "ToDeviceStream";
   }
-  case PipelineFragmentId::Main: {
-    return "Main";
+  case PipelineFragmentId::Restore: {
+    return "Restore";
+  }
+  case PipelineFragmentId::Forward: {
+    return "Forward";
   }
   case PipelineFragmentId::ToHostStream: {
     return "ToHostStream";

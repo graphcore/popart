@@ -38,14 +38,23 @@
 #include <popart/ir.hpp>
 #include <popart/liveness.hpp>
 #include <popart/logging.hpp>
+#include <popart/op.hpp>
+#include <popart/op/call.hpp>
 #include <popart/op/getrandomseed.hpp>
+#include <popart/op/if.hpp>
+#include <popart/op/ipucopy.hpp>
+#include <popart/op/remote.hpp>
+#include <popart/op/restore.hpp>
+#include <popart/op/subgraph.hpp>
+#include <popart/op/varupdate.hpp>
 #include <popart/patterns/pattern.hpp>
-#include <popart/poparttracepoint.hpp>
 #include <popart/popx/devicex.hpp>
 #include <popart/popx/devicexmanager.hpp>
 #include <popart/popx/executablex.hpp>
 #include <popart/popx/exporter.hpp>
 #include <popart/popx/irlowering.hpp>
+#include <popart/popx/op/callx.hpp>
+#include <popart/popx/op/collectives/collectivesx.hpp>
 #include <popart/popx/opx.hpp>
 #include <popart/popx/opxmanager.hpp>
 #include <popart/popx/poplaroptionsx.hpp>
@@ -54,9 +63,15 @@
 #include <popart/stepio.hpp>
 #include <popart/tensor.hpp>
 #include <popart/tensordata.hpp>
-#include <popart/tensornames.hpp>
 #include <popart/tensors.hpp>
 #include <popart/topocons.hpp>
+
+#include <popart/op/hostreducevarupdate.hpp>
+#include <popart/op/varupdate.hpp>
+#include <popart/popx/op/ipucopyx.hpp>
+#include <popart/tensornames.hpp>
+
+#include <popart/poparttracepoint.hpp>
 
 #include <stepiosplitter.hpp>
 
