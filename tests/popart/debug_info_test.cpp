@@ -579,7 +579,7 @@ BOOST_AUTO_TEST_CASE(DebugInfo_Test) {
       op.output->insert(0, &t3);
 
       op_id = op.id;
-      op.finalize();
+      op.finalizeDebugInfo();
     }
 
     poplar::DebugInfo::closeStreamer();
@@ -589,10 +589,6 @@ BOOST_AUTO_TEST_CASE(DebugInfo_Test) {
 
     // Load the json file in this ptree
     pt::read_json(tfm.name, root);
-
-    // std::stringstream ss;
-    // boost::property_tree::json_parser::write_json(ss, root);
-    // std::cout << ss.str() << std::endl;
 
     // 3 tensors & 1 op
     BOOST_CHECK(4 == root.get_child("contexts").size());

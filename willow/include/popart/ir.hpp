@@ -213,8 +213,8 @@ public:
   // the rest of the Ir preparation will be skipped.
   void prepare(const IrBundle &);
 
-  // Called when the prepare is complete
-  void prepareComplete();
+  // Called once the IR 'prepare' is complete to finalize DebugInfo for each Op
+  void finalizeOpDebugInfo();
 
   bool isPrepared() const { return isPrepared_; }
   bool hashMatched() const { return hashMatched_; }

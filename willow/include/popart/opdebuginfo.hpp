@@ -7,7 +7,7 @@
 namespace popart {
 class OpDebugInfo : public DebugInfo {
   const Op &op;
-  bool updateCalled = false;
+  bool finalizeCalled = false;
 
 public:
   OpDebugInfo(const DebugContext &debugContext, const Op &_op);
@@ -18,7 +18,7 @@ public:
 
   // Called when the op is fully configured. Sets the debug info
   // for this op.
-  void update();
+  void finalize();
 };
 } // namespace popart
 

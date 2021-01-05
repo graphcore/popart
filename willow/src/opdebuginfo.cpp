@@ -84,17 +84,16 @@ OpDebugInfo::OpDebugInfo(const DebugContext &debugContext, const Op &_op)
 }
 
 OpDebugInfo::~OpDebugInfo() {
-  if (updateCalled == false) {
-    logging::warn("SetupComplete not called for OpDebugInfo");
+  if (finalizeCalled == false) {
     setValue("discard", 1);
   } else {
     setValue("discard", 0);
   }
 }
 
-void OpDebugInfo::update() {
+void OpDebugInfo::finalize() {
 
-  updateCalled = true;
+  finalizeCalled = true;
 
   ProfileValue::Vector inputs;
   if (op.input) {

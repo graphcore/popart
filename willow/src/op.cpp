@@ -125,7 +125,7 @@ std::vector<std::unique_ptr<Op>> Op::getGradOps() { return {}; }
 
 void Op::setup() { throw error("No setup() for {}", opid); }
 
-void Op::finalize() { debugInfo.update(); }
+void Op::finalizeDebugInfo() { debugInfo.finalize(); }
 
 void Op::defaultConnectInTensor(InIndex inIndex, TensorId tenId) {
   if (input->hasIndex(inIndex)) {

@@ -1312,7 +1312,7 @@ void Ir::prepareImpl(const IrBundle &gb) {
   dotCheckpoint(DotCheck::Final);
   logIr();
 
-  prepareComplete();
+  finalizeOpDebugInfo();
 
   // some checks, now that prepare is complete
   for (auto &id_op : getMainGraph().getOps()) {
@@ -2922,11 +2922,11 @@ void Ir::append(std::stringstream &ss) const {
   }
 }
 
-void Ir::prepareComplete() {
+void Ir::finalizeOpDebugInfo() {
 
   for (auto graph : getGraphSchedule()) {
     for (auto &op : graph->getOpSchedule({}, RequireOptimalSchedule::Yes)) {
-      op->finalize();
+      op->finalizeDebugInfo();
     }
   }
 }

@@ -303,8 +303,8 @@ public:
   // TensorInfos for all outputs
   virtual void setup();
 
-  // Called after ir scheduling is complete
-  void finalize();
+  // Called once the IR 'prepare' is complete to finalize DebugInfo
+  void finalizeDebugInfo();
 
   // return a vector of 1 or several gradient Ops: for
   // obtaining the gradient of the inputs of this Op.
