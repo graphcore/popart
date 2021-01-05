@@ -107,6 +107,11 @@ public:
 
   /**
    * Write current model to ONNX file
+   *
+   * \param fn Path to file. Can be absolute or relative. If you plan to run
+   *           your program in multiple processes simultaneously, you should
+   *           avoid possible race conditions by writing to different paths, for
+   *           example by using temporary files.
    */
   void modelToHost(const std::string &fn);
 
