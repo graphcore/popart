@@ -110,7 +110,7 @@ public:
    *
    * \param fn Path to file. Can be absolute or relative. If you plan to run
    *           your program in multiple processes simultaneously, you should
-   *           avoid possible race conditions by writing to different paths, for
+   *           avoid possible race conditions by writing to different files, for
    *           example by using temporary files.
    */
   void modelToHost(const std::string &fn);

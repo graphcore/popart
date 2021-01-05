@@ -160,7 +160,7 @@ to the specified file.
   session.modelToHost("trained_model.onnx")
 
 Note that if you plan to run your program in multiple processes simultaneously,
-you should avoid possible race conditions by writing to different paths, for
+you should avoid possible race conditions by writing to different files, for
 example by using temporary files.
 
 A file of saved parameters, for example from an earlier execution session, can
