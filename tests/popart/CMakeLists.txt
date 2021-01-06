@@ -110,9 +110,6 @@ function(add_test_executable name)
       ${boost_targets}
       ${add_test_exe_TEST_UTILS}
   )
-  if (NOT Boost_UNIT_TEST_FRAMEWORK_LIBRARY MATCHES "\\.a$")
-    target_compile_definitions(${name} PRIVATE -DBOOST_TEST_DYN_LINK)
-  endif()
 
   set_property(TARGET ${name}
               APPEND_STRING PROPERTY

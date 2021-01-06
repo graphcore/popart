@@ -65,7 +65,6 @@ include(EnableCompilerWarnings)
 
 # Link Boost statically
 set(Boost_USE_STATIC_LIBS ON)
-set(Boost_USE_STATIC_RUNTIME ON)
 set(boost_components
     # FindBoost bug: finding filesystem component does not transitively find and
     # link the system component.
@@ -94,6 +93,7 @@ find_package(poprithms REQUIRED)
 
 # Onnx's config file fails to find protobuf, so we have to do it ourselves.
 # We use the find module provided by CMake.
+set(Protobuf_USE_STATIC_LIBS ON)
 find_package(Protobuf 3.6 REQUIRED)
 find_package(ONNX 1.6 REQUIRED)
 

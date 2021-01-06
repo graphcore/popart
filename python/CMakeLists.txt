@@ -18,10 +18,16 @@ message(STATUS "Found pybind11 v${pybind11_VERSION}: ${pybind11_INCLUDE_DIRS}")
 add_library(popart-py INTERFACE)
 
 function(add_popart_python_module module_name source_file)
+  # Newer versions of Pybind11 use CMake targets and CMake considers imported
+  # targets as SYSTEM by default so they removed the SYSTEM option.
+  if(pybind11_VERSION VERSION_LESS "2.6.0")
+    set(OLD_PYBIND11_SYSTEM_FLAG SYSTEM)
+  endif()
+
   # Creates a module library.
   pybind11_add_module(${module_name}
       # Use -isystem for pybind includes
-      SYSTEM
+      ${OLD_PYBIND11_SYSTEM_FLAG}
       # Use ThinLTO if available
       THIN_LTO
       # Sources
