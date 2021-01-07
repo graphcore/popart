@@ -52,7 +52,7 @@ void AdaDeltaUpdaterOpx::grow(poplar::program::Sequence &prog) const {
                grad.elementType()),
       tensors,
       prog,
-      debugPrefix(""));
+      debugContext(""));
 
   if (hasInViewChangers(AdaDeltaUpdaterOp::getGradInIndex())) {
     setOutViewChangers(AdaDeltaUpdaterOp::getUpdaterOutIndex(),

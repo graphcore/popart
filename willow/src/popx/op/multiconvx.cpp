@@ -78,7 +78,7 @@ MultiConvOpx::convolve(poplar::program::Sequence &prog,
                                         allConvArgs,
                                         false,
                                         prog,
-                                        debugPrefix("multiConvolution"),
+                                        debugContext("multiConvolution"),
                                         getGlobalOptions(),
                                         &dv_p->convCache);
 }
@@ -107,7 +107,7 @@ std::vector<poplar::Tensor> MultiConvWeightsGradOpx::calculateWeightDeltas(
                                       acts,
                                       getPoplarConvParams(op.getParameters(i)),
                                       prog,
-                                      debugPrefix("weightDeltas"),
+                                      debugContext("weightDeltas"),
                                       getConvOptions(i),
                                       &dv_p->convCache);
     outTensors.push_back(wGrad);

@@ -30,7 +30,7 @@ void IpuCopyOpx::grow(poplar::program::Sequence &prog) const {
                                 getInTensor(idx),
                                 prog,
                                 static_cast<int>(op.getDestIpu()),
-                                debugPrefix("ipuCopy"));
+                                debugContext("ipuCopy"));
     setOutTensor(idx, t);
   }
 }
@@ -52,7 +52,7 @@ void IpuCopyOpx::createPipelinedOutput() const {
                                     static_cast<int>(op.getDestIpu()),
                                     tForCopy,
                                     tLocalForCopy,
-                                    debugPrefix("createOutput"));
+                                    debugContext("createOutput"));
     setOutTensor(idx, t);
   }
 }
@@ -69,7 +69,7 @@ void IpuCopyOpx::growPipelined(poplar::program::Sequence &prog) const {
 
     // Using dontOutline=false will ensure the copies (buffers & code) are
     // reused.
-    prog.add(poplar::program::Copy(source, destination, false, debugPrefix()));
+    prog.add(poplar::program::Copy(source, destination, false, debugContext()));
   }
 }
 
@@ -85,7 +85,7 @@ poplar::Tensor IpuCopyOpx::unwindTensorLayout(poplar::Tensor tensor,
                                   static_cast<int>(srcIpu),
                                   tForCopy,
                                   tLocalForCopy,
-                                  debugPrefix("unwoundInput"));
+                                  debugContext("unwoundInput"));
   return t;
 }
 

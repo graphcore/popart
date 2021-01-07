@@ -59,7 +59,7 @@ void MaxArgGradOpx::grow(poplar::program::Sequence &prog) const {
        getInTensor(MaxArgGradOp::getFwdOutInIndex()),
        getInTensor(MaxArgGradOp::getGradInIndex())},
       prog,
-      debugPrefix("result"));
+      debugContext("result"));
 
   auto shapeOfOutputOfFwdOp = inInfo(MaxArgGradOp::getFwdOutInIndex()).shape();
   auto shapeOfInputToFwdOp  = inInfo(MaxArgGradOp::getFwdInIndex()).shape();
@@ -75,7 +75,7 @@ void MaxArgGradOpx::grow(poplar::program::Sequence &prog) const {
                             vXtoY<int64_t, std::size_t>(axes),
                             {popops::Operation::ADD},
                             prog,
-                            debugPrefix("reduce"));
+                            debugContext("reduce"));
 
   // Reshape the output, to add 1's if needed
   setOutTensor(MaxArgGradOp::getOutIndex(),

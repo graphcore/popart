@@ -26,7 +26,7 @@ void DynamicZeroOpx::grow(poplar::program::Sequence &prog) const {
 
   auto slice =
       popops::createSliceTensor(graph(), tensor, paxes, psizes, 1).squeeze({0});
-  popops::zero(graph(), slice, prog, debugPrefix("dynamic_zero_zero"));
+  popops::zero(graph(), slice, prog, debugContext("dynamic_zero_zero"));
 
   auto outTensor = cloneNcopyOpt(prog, tensor);
 
@@ -38,8 +38,8 @@ void DynamicZeroOpx::grow(poplar::program::Sequence &prog) const {
       paxes,
       psizes,
       prog,
-      debugPrefix("dynamic_zero_" +
-                  op.inId(DynamicBinaryBaseOp::getUpdateInIndex())));
+      debugContext("dynamic_zero_" +
+                   op.inId(DynamicBinaryBaseOp::getUpdateInIndex())));
 
   setOutTensor(DynamicBinaryBaseOp::getOutIndex(), outTensor);
 }

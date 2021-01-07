@@ -54,7 +54,7 @@ void IdentityLossGradOpx::grow(poplar::program::Sequence &prog) const {
   if (identitylossop.getReductionType() == ReductionType::NoReduction) {
     // Same as IdentityGradOpx
     prog.add(poplar::program::Copy(
-        output, reference, false, debugPrefix("copy_identity")));
+        output, reference, false, debugContext("copy_identity")));
   } else {
     if (identitylossop.getReductionType() == ReductionType::Mean) {
       // Divide broadcasted tensor by total number of samples
@@ -66,21 +66,21 @@ void IdentityLossGradOpx::grow(poplar::program::Sequence &prog) const {
                            pe::Divide(pe::_1, pe::Const(scale)),
                            {getInTensor(0)},
                            prog,
-                           debugPrefix("div"));
+                           debugContext("div"));
     } else if (identitylossop.getReductionType() != ReductionType::Sum) {
       // Only mean and sum are supported.
       throw error("Unsupported reduction type for Loss {}",
-                  debugPrefix().getPathName());
+                  debugContext().getPathName());
     }
     popops::zero(graph(),
                  reference,
                  prog,
-                 debugPrefix("zero_identity_reference_tensor"));
+                 debugContext("zero_identity_reference_tensor"));
     popops::addInPlace(graph(),
                        reference,
                        output,
                        prog,
-                       debugPrefix("add_gradient_to_reference"));
+                       debugContext("add_gradient_to_reference"));
   }
 }
 
@@ -117,7 +117,7 @@ void IdentityLossOpx::grow(poplar::program::Sequence &prog) const {
     case ReductionType::NoReduction:
     default: {
       throw error("Unsupported reduction type for Loss {}",
-                  debugPrefix().getPathName());
+                  debugContext().getPathName());
     }
     }
 
@@ -130,7 +130,7 @@ void IdentityLossOpx::grow(poplar::program::Sequence &prog) const {
                                     {0},
                                     {popops::Operation::ADD, false, t_scale},
                                     prog,
-                                    debugPrefix("add"));
+                                    debugContext("add"));
 
     setOutTensor(0, reduction);
   }

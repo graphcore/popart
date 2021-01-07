@@ -18,7 +18,7 @@ void SqrtOpx::grow(poplar::program::Sequence &prog) const {
                            popops::expr::UnaryOpType::SQRT,
                            getInTensor(0),
                            prog,
-                           debugPrefix()));
+                           debugContext()));
 }
 
 namespace {

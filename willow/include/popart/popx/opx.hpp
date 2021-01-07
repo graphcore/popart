@@ -156,17 +156,26 @@ public:
   //        callee location. This way we don't break older code.
   poplar::DebugContext debugPrefix(
       poplar::SourceLocation loc = poplar::SourceLocation::Current()) const {
+    logging::opx::warn(
+        "Opx::debugPrefix is deprecated and will be removed from a future "
+        "release. Please use Opx::debugContext instead.");
     return debugContext("", loc);
   }
   poplar::DebugContext debugPrefix(
       const std::string &prefix,
       poplar::SourceLocation loc = poplar::SourceLocation::Current()) const {
+    logging::opx::warn(
+        "Opx::debugPrefix is deprecated and will be removed from a future "
+        "release. Please use Opx::debugContext instead.");
     return debugContext(prefix, loc);
   }
   poplar::DebugContext debugPrefix(
       const std::string &p1,
       const std::string &p2,
       poplar::SourceLocation loc = poplar::SourceLocation::Current()) const {
+    logging::opx::warn(
+        "Opx::debugPrefix is deprecated and will be removed from a future "
+        "release. Please use Opx::debugContext instead.");
     return debugContext(p1 + sNameDelimiter + p2, loc);
   }
 

@@ -37,9 +37,9 @@ void SGD1VarUpdateOpx::grow(poplar::program::Sequence &prog) const {
         popops::neg(graph(),
                     getInTensor(SGD1VarUpdateOp::getSlr1InIndex()),
                     prog,
-                    debugPrefix("neg")),
+                    debugContext("neg")),
         prog,
-        debugPrefix("nonConstScaledSubtractSGD1"));
+        debugContext("nonConstScaledSubtractSGD1"));
   }
 
   // const scaled learning rate case
@@ -49,7 +49,7 @@ void SGD1VarUpdateOpx::grow(poplar::program::Sequence &prog) const {
                         velocity,
                         -sgd1varUpdateOp.initSlr1.val(),
                         prog,
-                        debugPrefix("constScaledSubtractSGD1"));
+                        debugContext("constScaledSubtractSGD1"));
   }
 
   if (hasInViewChangers(SGD1VarUpdateOp::getVarToUpdateInIndex())) {

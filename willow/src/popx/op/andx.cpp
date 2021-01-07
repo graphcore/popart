@@ -23,7 +23,7 @@ void AndOpx::grow(poplar::program::Sequence &prog) const {
                      get(inId(AndOp::getArg0InIndex())),
                      get(inId(AndOp::getArg1InIndex())),
                      prog,
-                     debugPrefix()));
+                     debugContext()));
 }
 
 namespace {

@@ -29,7 +29,7 @@ void PReluOpx::grow(poplar::program::Sequence &prog) const {
                             {getInTensor(PReluOp::getArg0InIndex()),
                              getInTensor(PReluOp::getArg1InIndex())},
                             prog,
-                            debugPrefix("prelu"));
+                            debugContext("prelu"));
 
   setOutTensor(PReluOp::getOutIndex(), result);
 }

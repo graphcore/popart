@@ -74,7 +74,7 @@ void AtanGradOpx::grow(poplar::program::Sequence &prog) const {
                             *exprs.back(),
                             {input, fwd_input},
                             prog,
-                            debugPrefix("inverse_tangent_grad"));
+                            debugContext("inverse_tangent_grad"));
 
   setOutTensor(AtanGradOp::getOutIndex(), output);
 }

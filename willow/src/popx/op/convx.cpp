@@ -44,7 +44,7 @@ ConvOpx::convolve(poplar::program::Sequence &prog,
                                        getPoplarConvParams(op.getParameters()),
                                        false,
                                        prog,
-                                       debugPrefix("convolution"),
+                                       debugContext("convolution"),
                                        getConvOptions(0),
                                        &(dv_p->convCache));
   return {outTensor};
@@ -68,7 +68,7 @@ std::vector<poplar::Tensor> ConvWeightsGradOpx::calculateWeightDeltas(
                                     acts,
                                     getPoplarConvParams(gradOp.getParameters()),
                                     prog,
-                                    debugPrefix("weightDeltas"),
+                                    debugContext("weightDeltas"),
                                     getConvOptions(),
                                     &dv_p->convCache);
   return {wGrad};
@@ -118,7 +118,7 @@ void ConvFlipWeightsGradOpx::grow(poplar::program::Sequence &seq) const {
         w,
         c,
         seq,
-        debugPrefix(logging::format("group{}_transposeXY", i)));
+        debugContext(logging::format("group{}_transposeXY", i)));
   }
 
   auto newShape = convWeights.shape();

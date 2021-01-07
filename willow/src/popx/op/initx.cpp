@@ -21,7 +21,7 @@ void InitOpx::grow(poplar::program::Sequence &prog) const {
 
   switch (initOp.getInitType()) {
   case InitType::Zero: {
-    popops::zero(graph(), outTensor, prog, debugPrefix("init_zero"));
+    popops::zero(graph(), outTensor, prog, debugContext("init_zero"));
     break;
   }
   case InitType::NoInit: {

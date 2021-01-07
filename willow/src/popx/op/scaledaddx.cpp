@@ -44,17 +44,17 @@ poplar::Tensor ScaledAddOpx::compute(poplar::program::Sequence &prog,
 
   if (s0.valid() && s1.valid()) {
     popops::scaledAddTo(
-        graph(), in0, s0, in1, s1, prog, debugPrefix("t_t_t_t"));
+        graph(), in0, s0, in1, s1, prog, debugContext("t_t_t_t"));
   } else if (s0.valid() && !s1.valid()) {
     throw error("Unsupported tensor scale0 with non-tensor scale1.");
   } else if (hasInput(ScaledAddOp::getScale1InIndex())) {
     if (s0f != 1.0) {
       throw error("Unsupported scale0 {} with tensor scale1.", s0f);
     }
-    popops::scaledAddTo(graph(), in0, in1, s1, prog, debugPrefix("t_1_t_t"));
+    popops::scaledAddTo(graph(), in0, in1, s1, prog, debugContext("t_1_t_t"));
   } else {
     popops::scaledAddTo(
-        graph(), in0, s0f, in1, s1f, prog, debugPrefix("t_c_t_c"));
+        graph(), in0, s0f, in1, s1f, prog, debugContext("t_c_t_c"));
   }
   return in0;
 }

@@ -60,7 +60,9 @@ void TileGradOpx::grow(poplar::program::Sequence &prog) const {
                            outTensor,
                            t,
                            prog,
-                           debugPrefix("reduceAdd", std::to_string(start)));
+                           debugContext(std::string("reduceAdd") +
+                                        sNameDelimiter +
+                                        std::to_string(start)));
       }
     }
     intermediateTensor = outTensor;

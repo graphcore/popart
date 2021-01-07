@@ -150,7 +150,7 @@ void AdamUpdaterOpx::grow(poplar::program::Sequence &prog) const {
   }
 
   poplar::Tensor updater = popops::map(
-      graph(), pe::Cast(expr, elemType), tensors, prog, debugPrefix(""));
+      graph(), pe::Cast(expr, elemType), tensors, prog, debugContext(""));
 
   if (hasInput(AdamUpdaterOp::getVarInIndex())) {
     if (hasInViewChangers(AdamUpdaterOp::getVarInIndex())) {

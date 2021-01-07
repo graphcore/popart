@@ -33,15 +33,15 @@ void AccumulatorUpdateOpx::grow(poplar::program::Sequence &prog) const {
   if (factor.isConst()) {
     auto val = factor.val();
     if (val == 0.0f) {
-      popops::zero(graph(), accum, prog, debugPrefix("accumulatorUpdate"));
+      popops::zero(graph(), accum, prog, debugContext("accumulatorUpdate"));
     } else {
       popops::mulInPlace(
-          graph(), accum, val, prog, debugPrefix("accumulatorUpdate"));
+          graph(), accum, val, prog, debugContext("accumulatorUpdate"));
     }
   } else {
     auto factor = getInTensor(AccumulatorUpdateOp::getFactorInIndex());
     popops::mulInPlace(
-        graph(), accum, factor, prog, debugPrefix("accumulatorUpdate"));
+        graph(), accum, factor, prog, debugContext("accumulatorUpdate"));
   }
 
   if (hasInViewChangers(AccumulatorUpdateOp::getVarToUpdateInIndex())) {

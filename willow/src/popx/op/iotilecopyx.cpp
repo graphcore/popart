@@ -26,7 +26,7 @@ void IoTileCopyOpx::grow(poplar::program::Sequence &prog) const {
   poplar::program::WriteUndef writeUndef(outTensor);
 
   // Copy from view to view
-  poplar::program::Copy outCopy(inView, outView, false, debugPrefix());
+  poplar::program::Copy outCopy(inView, outView, false, debugContext());
 
   prog.add(writeUndef);
   prog.add(outCopy);

@@ -65,7 +65,7 @@ void AsinGradOpx::grow(poplar::program::Sequence &prog) const {
                             *exprs.back(),
                             {input, fwd_input},
                             prog,
-                            debugPrefix("inverse_sine_grad"));
+                            debugContext("inverse_sine_grad"));
 
   setOutTensor(AsinGradOp::getOutIndex(), output);
 }

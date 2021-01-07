@@ -113,7 +113,7 @@ void HardSigmoidGradOpx::grow(poplar::program::Sequence &prog) const {
                             *exprs.back(),
                             {input, fwd_input},
                             prog,
-                            debugPrefix("hardsigmoid_grad"));
+                            debugContext("hardsigmoid_grad"));
 
   setOutTensor(HardSigmoidGradOp::getOutIndex(), output);
 }

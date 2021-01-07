@@ -32,7 +32,7 @@ void ReduceMeanOpx::grow(poplar::program::Sequence &prog) const {
                                       vector_cast<std::size_t>(op.getAxes()),
                                       {popops::Operation::ADD},
                                       prog,
-                                      debugPrefix("add"));
+                                      debugContext("add"));
 
   output_tensor = popops::map(
       graph(),
@@ -41,7 +41,7 @@ void ReduceMeanOpx::grow(poplar::program::Sequence &prog) const {
                            outInfo(ReduceMeanOp::getOutIndex()).nelms())),
       {output_tensor},
       prog,
-      debugPrefix("div"));
+      debugContext("div"));
 
   setOutTensor(
       ReduceMeanOp::getOutIndex(),
@@ -76,7 +76,7 @@ void ReduceMeanGradOpx::grow(poplar::program::Sequence &prog) const {
                            inInfo(ReduceMeanGradOp::getInIndex()).nelms())),
       {output},
       prog,
-      debugPrefix("div"));
+      debugContext("div"));
 
   // output now matches the shape of output_shape
   setOutTensor(ReduceMeanGradOp::getOutIndex(), output);

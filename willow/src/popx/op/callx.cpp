@@ -52,7 +52,7 @@ void CallOpx::copyModified(poplar::program::Sequence &prog) const {
                             graph_input_id,
                             callop.inId(i));
         poplar::program::Copy copy_prog(
-            graph_input, call_input, false, debugPrefix());
+            graph_input, call_input, false, debugContext());
         prog.add(copy_prog);
       } else {
         logging::opx::trace("[CallOpx] Skipping copy modified input {}->{}",
@@ -92,7 +92,7 @@ void CallOpx::copyInputs(poplar::program::Sequence &prog) const {
         logging::opx::trace(
             "[CallOpx] Copying input {}->{}", call_input_id, graph_input_id);
         poplar::program::Copy copy_prog(
-            call_input, graph_input, false, debugPrefix());
+            call_input, graph_input, false, debugContext());
         prog.add(copy_prog);
       } else {
         logging::opx::trace("[CallOpx] Skipping copy input {}->{} "
@@ -164,7 +164,7 @@ void CallOpx::doCall(poplar::program::Sequence &prog) const {
   auto &callop       = getOp<CallOp>();
   auto &called_graph = callop.getCalledGraph();
   auto &graph_prog   = dv_p->lowering().getFragmentFunction(called_graph);
-  prog.add(poplar::program::Call(graph_prog, debugPrefix()));
+  prog.add(poplar::program::Call(graph_prog, debugContext()));
 }
 
 void CallOpx::grow(poplar::program::Sequence &prog) const {

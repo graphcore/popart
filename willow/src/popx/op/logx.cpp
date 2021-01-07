@@ -18,7 +18,7 @@ void LogOpx::grow(poplar::program::Sequence &prog) const {
                                popops::expr::UnaryOpType::LOGARITHM,
                                getInTensor(LogOp::getInIndex()),
                                prog,
-                               debugPrefix());
+                               debugContext());
 
   setOutTensor(LogOp::getOutIndex(), outTensor);
 }

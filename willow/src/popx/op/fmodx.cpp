@@ -20,7 +20,7 @@ void FmodOpx::grow(poplar::program::Sequence &prog) const {
                            getInTensor(FmodOp::getArg0InIndex()),
                            getInTensor(FmodOp::getArg1InIndex()),
                            prog,
-                           debugPrefix()));
+                           debugContext()));
 }
 
 namespace {

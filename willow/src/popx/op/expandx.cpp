@@ -110,7 +110,7 @@ void ExpandGradOpx::grow(poplar::program::Sequence &prog) const {
   }
 
   auto dX = popops::reduce(
-      graph(), dY, axes, {popops::Operation::ADD}, prog, debugPrefix("add"));
+      graph(), dY, axes, {popops::Operation::ADD}, prog, debugContext("add"));
   dX = dX.reshape(xShape);
   setOutTensor(ExpandGradOp::getOutIndex(), cloneNcopy(prog, dX));
 }

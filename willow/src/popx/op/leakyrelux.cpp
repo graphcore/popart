@@ -94,7 +94,7 @@ void LeakyReluGradOpx::grow(poplar::program::Sequence &prog) const {
                                pe::_1);
 
   auto output = popops::map(
-      graph(), expression, {grad, input}, prog, debugPrefix("leakyrelu_grad"));
+      graph(), expression, {grad, input}, prog, debugContext("leakyrelu_grad"));
 
   setOutTensor(0, output);
 }

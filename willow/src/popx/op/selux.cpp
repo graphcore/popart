@@ -104,7 +104,7 @@ void SeluGradOpx::grow(poplar::program::Sequence &prog) const {
                             *exprs.back(),
                             {input, fwd_input},
                             prog,
-                            debugPrefix("selu_grad"));
+                            debugContext("selu_grad"));
 
   setOutTensor(SeluGradOp::getOutIndex(), output);
 }

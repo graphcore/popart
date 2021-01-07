@@ -59,7 +59,7 @@ void GroupNormOpx::grow(poplar::program::Sequence &prog) const {
                                      false,
                                      stable_algo,
                                      poplar::FLOAT,
-                                     debugPrefix("groupNormStatistics"));
+                                     debugContext("groupNormStatistics"));
 
   // Calculate the normalization
   auto result = popnn::gn::groupNormalise(graph(),
@@ -69,7 +69,7 @@ void GroupNormOpx::grow(poplar::program::Sequence &prog) const {
                                           mean,
                                           invStdDev,
                                           prog,
-                                          debugPrefix("groupNorm"));
+                                          debugContext("groupNorm"));
 
   // Convert the output back into the input format
   poplar::Tensor y =
@@ -101,7 +101,7 @@ void GroupNormGradOpx::grow(poplar::program::Sequence &prog) const {
   std::tie(yGradP, nonBroadcastDims) = convertOnnxInputToPoplarInput(yGrad);
 
   poplar::Tensor xWhitened = popnn::gn::groupNormWhiten(
-      graph(), xP, mean, invStdDev, prog, debugPrefix("whitenedActs"));
+      graph(), xP, mean, invStdDev, prog, debugContext("whitenedActs"));
 
   // Compute the delta for the operand
   poplar::Tensor xGrad =
@@ -112,7 +112,7 @@ void GroupNormGradOpx::grow(poplar::program::Sequence &prog) const {
                                     scale,
                                     prog,
                                     poplar::FLOAT,
-                                    debugPrefix("operandGrad"));
+                                    debugContext("operandGrad"));
 
   // Compute the deltas for scaled and offset
   poplar::Tensor scaleGrad;
@@ -123,7 +123,7 @@ void GroupNormGradOpx::grow(poplar::program::Sequence &prog) const {
                                          yGrad,
                                          prog,
                                          poplar::FLOAT,
-                                         debugPrefix("scaleOffsetGrads"));
+                                         debugContext("scaleOffsetGrads"));
 
   // Convert the output back into the input format
   xGrad = convertPoplarOutputToOnnxOutput(xGrad, nonBroadcastDims);

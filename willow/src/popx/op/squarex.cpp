@@ -19,7 +19,7 @@ void SquareOpx::grow(poplar::program::Sequence &prog) const {
                            popops::expr::UnaryOpType::SQUARE,
                            getInTensor(0),
                            prog,
-                           debugPrefix()));
+                           debugContext()));
 }
 
 namespace {

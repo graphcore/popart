@@ -20,7 +20,7 @@ void RandomUniformOpx::grow(poplar::program::Sequence &prog) const {
   auto refTensor = graph().addVariable(poplarType,
                                        shape,
                                        poplar::VariableMappingMethod::LINEAR,
-                                       debugPrefix("refTensor"));
+                                       debugContext("refTensor"));
 
   auto output = poprand::uniform(graph(),
                                  &getInTensor(op.getSeedInIndex()),
@@ -30,7 +30,7 @@ void RandomUniformOpx::grow(poplar::program::Sequence &prog) const {
                                  op.getLow(),
                                  op.getHigh(),
                                  prog,
-                                 debugPrefix());
+                                 debugContext());
 
   setOutTensor(op.getOutIndex(), output);
 }

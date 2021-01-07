@@ -30,7 +30,7 @@ poplar::Tensor ScaledVarUpdateOpx::getOrCreateLrTensor() const {
     poplar::Tensor lr = graph().addConstant(wd.elementType(),
                                             wd.shape(),
                                             adaptiveVarUpdateOp.initLr.val(),
-                                            debugPrefix("Lr"));
+                                            debugContext("Lr"));
     graph().setTileMapping(lr, graph().getTileMapping(wd));
     return lr;
   } else {
@@ -49,7 +49,7 @@ poplar::Tensor ScaledVarUpdateOpx::getOrCreateWdTensor() const {
     poplar::Tensor wd = graph().addConstant(lr.elementType(),
                                             lr.shape(),
                                             adaptiveVarUpdateOp.initWd.val(),
-                                            debugPrefix());
+                                            debugContext());
     graph().setTileMapping(wd, graph().getTileMapping(lr));
     return wd;
   } else {
@@ -76,7 +76,7 @@ void ScaledVarUpdateOpx::grow(poplar::program::Sequence &prog) const {
                           updater,
                           -adaptiveVarUpdateOp.initLr.val(),
                           prog,
-                          debugPrefix("_c_0"));
+                          debugContext("_c_0"));
     } else {
       popops::scaledAddTo(graph(),
                           var,
@@ -85,7 +85,7 @@ void ScaledVarUpdateOpx::grow(poplar::program::Sequence &prog) const {
                           updater,
                           -adaptiveVarUpdateOp.initLr.val(),
                           prog,
-                          debugPrefix("_c_c"));
+                          debugContext("_c_c"));
     }
   } else {
     poplar::Tensor lrt = getOrCreateLrTensor();
@@ -96,7 +96,7 @@ void ScaledVarUpdateOpx::grow(poplar::program::Sequence &prog) const {
     if (adaptiveVarUpdateOp.initWd.isConst() &&
         adaptiveVarUpdateOp.initWd.val() == 0.0f) {
       popops::scaledAddTo(
-          graph(), var, updater, lrt, prog, debugPrefix("_t_0"));
+          graph(), var, updater, lrt, prog, debugContext("_t_0"));
     } else {
       poplar::Tensor wdt = getOrCreateWdTensor();
 
@@ -108,7 +108,7 @@ void ScaledVarUpdateOpx::grow(poplar::program::Sequence &prog) const {
 
       // var = (1.0 + (-lr) * wd) * var + (-lr) * updater
       popops::scaledAddTo(
-          graph(), var, wdt, updater, lrt, prog, debugPrefix("_t_t"));
+          graph(), var, wdt, updater, lrt, prog, debugContext("_t_t"));
     }
   }
 

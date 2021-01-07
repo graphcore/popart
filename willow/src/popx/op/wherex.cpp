@@ -22,7 +22,7 @@ void WhereOpx::grow(poplar::program::Sequence &prog) const {
   const auto y         = getInTensor(WhereOp::yInIndex());
 
   const auto result = popops::select(
-      graph(), x, y, condition, prog, debugPrefix(), poplar::OptionFlags());
+      graph(), x, y, condition, prog, debugContext(), poplar::OptionFlags());
 
   setOutTensor(WhereOp::outIndex(), result);
 }
@@ -56,10 +56,10 @@ void WhereXGradOpx::grow(poplar::program::Sequence &prog) const {
                                  condition,
                                  whereOutGrad.elementType(),
                                  prog,
-                                 debugPrefix("cast_x"));
+                                 debugContext("cast_x"));
 
   auto gradX = popops::mul(
-      graph(), whereOutGrad, condition2, prog, debugPrefix("grad_x"));
+      graph(), whereOutGrad, condition2, prog, debugContext("grad_x"));
 
   // Reduces the output.
   auto gradX2 = popops::reduce(graph(),
@@ -67,7 +67,7 @@ void WhereXGradOpx::grow(poplar::program::Sequence &prog) const {
                                reduction_dims,
                                {popops::Operation::ADD},
                                prog,
-                               debugPrefix("add"));
+                               debugContext("add"));
   // The reduce above will have removed all the reduction dims.
   // Some dims of size 1 may need to be added back in, we reshape.
   gradX2 = gradX2.reshape(xShape);
@@ -100,23 +100,23 @@ void WhereYGradOpx::grow(poplar::program::Sequence &prog) const {
   }
 
   poplar::Tensor condition2 =
-      popops::logicalNot(graph(), condition, prog, debugPrefix("logical_not"));
+      popops::logicalNot(graph(), condition, prog, debugContext("logical_not"));
 
   auto condition3 = popops::cast(graph(),
                                  condition2,
                                  whereOutGrad.elementType(),
                                  prog,
-                                 debugPrefix("cast_y"));
+                                 debugContext("cast_y"));
 
   auto gradY = popops::mul(
-      graph(), whereOutGrad, condition3, prog, debugPrefix("grad_y"));
+      graph(), whereOutGrad, condition3, prog, debugContext("grad_y"));
 
   auto gradY2 = popops::reduce(graph(),
                                gradY,
                                reduction_dims,
                                {popops::Operation::ADD},
                                prog,
-                               debugPrefix("add"));
+                               debugContext("add"));
   gradY2      = gradY2.reshape(yShape);
 
   setOutTensor(WhereYGradOp::outIndex(), gradY2);

@@ -60,7 +60,7 @@ void ErfxGradOpx::grow(poplar::program::Sequence &prog) const {
 
   const poplar::Tensor &gradX = getInTensor(ErfGradOp::getGradInIndex());
   const poplar::Tensor dx =
-      popops::mul(graph(), x2, gradX, prog, debugPrefix("grad_x"));
+      popops::mul(graph(), x2, gradX, prog, debugContext("grad_x"));
 
   setOutTensor(ErfGradOp::getOutIndex(), dx);
 }

@@ -29,7 +29,7 @@ void ReplicatedAllGatherOpx::grow(poplar::program::Sequence &prog) const {
       gcl::allGather(graph(),
                      getInTensor(ReplicatedAllGatherOp::getInIndex()),
                      prog,
-                     debugPrefix("replicatedAllGather"),
+                     debugContext("replicatedAllGather"),
                      allGatherOptions);
   if (hasInput(ReplicatedAllGatherOp::getCollectiveLinkedIndex())) {
     auto cbr = getCollectiveBalancedReorder();
@@ -83,7 +83,7 @@ ReplicatedAllGatherOpx::createInput(InIndex index,
   if (index == ReplicatedAllGatherOp::getInIndex()) {
     auto outInfo   = op.outInfo(ReplicatedAllGatherOp::getOutIndex());
     auto outTensor = graph().addVariable(
-        popType(outInfo), outInfo.shape_szt(), debugPrefix(name));
+        popType(outInfo), outInfo.shape_szt(), debugContext(name));
     dv_p->lowering().getLinearMapper().mapTensor(graph(), outTensor);
     auto cbr = createCollectiveBalancedReorder(outTensor);
     return cbr->createReplicaSlice(popType(outInfo));

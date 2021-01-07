@@ -201,7 +201,7 @@ public:
                           popops::expr::_1),
         {getInTensor(0)},
         prog,
-        debugPrefix());
+        debugContext());
 
     setOutTensor(0, output);
   }
@@ -228,7 +228,7 @@ public:
                                           popops::expr::_2)),
                     {getInTensor(0), getInTensor(1)}, // FwdOut, GradOut
                     prog,
-                    debugPrefix()));
+                    debugContext()));
   }
 };
 

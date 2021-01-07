@@ -27,7 +27,7 @@ void EqualOpx::grow(poplar::program::Sequence &prog) const {
                      get(inId(EqualOp::getArg0InIndex())),
                      get(inId(EqualOp::getArg1InIndex())),
                      prog,
-                     debugPrefix()));
+                     debugContext()));
 }
 
 namespace {

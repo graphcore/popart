@@ -139,7 +139,7 @@ void SoftmaxGradDirectOpx::grow(poplar::program::Sequence &prog) const {
                      pe::Add(pe::Neg(pe::_1), pe::_2),
                      {oneHot, probs2D},
                      prog,
-                     debugPrefix("negsub"));
+                     debugContext("negsub"));
 
   // Output is reshaped to match probs input shape
   oneHot = oneHot.reshape(probs.shape());
@@ -184,7 +184,7 @@ void SoftmaxGradOpx::grow(poplar::program::Sequence &prog) const {
     nlType = popnn::NonLinearityType::SOFTMAX_STABLE;
   }
   auto probs = popnn::nonLinearity(
-      graph(), nlType, pre_probs, prog, debugPrefix("nonLinearity"));
+      graph(), nlType, pre_probs, prog, debugContext("nonLinearity"));
 
   // sum_j (p_j . g_j)
   // multiply probs by input gradient
@@ -193,7 +193,7 @@ void SoftmaxGradOpx::grow(poplar::program::Sequence &prog) const {
                         probs,
                         d_probs,
                         prog,
-                        debugPrefix("mul"));
+                        debugContext("mul"));
 
   // reduce along all dimensions except 0 (0 is the sample index)
   std::vector<size_t> redDims(probs.rank() - 1);
@@ -206,14 +206,14 @@ void SoftmaxGradOpx::grow(poplar::program::Sequence &prog) const {
                                redDims,
                                {popops::Operation::ADD},
                                prog,
-                               debugPrefix("reduce"))
+                               debugContext("reduce"))
                     .reshape(upRanked);
 
   auto dv = popops::map(graph(),
                         pe::Mul(pe::_1, pe::Sub(pe::_2, pe::_3)),
                         {probs, d_probs, sum_pg},
                         prog,
-                        debugPrefix("SubMul"));
+                        debugContext("SubMul"));
 
   dv = dv.reshape(inInfo(SoftmaxGradOp::getActsInIndex()).shape_szt());
   setOutTensor(0, dv);
@@ -242,7 +242,7 @@ void NlllWithSoftmaxGradDirectOpx::grow(poplar::program::Sequence &prog) const {
                                  oneHot,
                                  probs2D,
                                  prog,
-                                 debugPrefix("mul"));
+                                 debugContext("mul"));
 
   // Now compute the SoftmaxGrad:
 
@@ -253,7 +253,7 @@ void NlllWithSoftmaxGradDirectOpx::grow(poplar::program::Sequence &prog) const {
                      pe::Add(pe::Neg(pe::_1), pe::_2),
                      {oneHot, probs2D},
                      prog,
-                     debugPrefix("NegSub"));
+                     debugContext("NegSub"));
 
   // Output is reshaped to match probs input shape
   oneHot = oneHot.reshape(probs.shape());
@@ -277,7 +277,7 @@ void NlllWithSoftmaxGradDirectOpx::grow(poplar::program::Sequence &prog) const {
                                             {1},
                                             {popops::Operation::ADD},
                                             prog,
-                                            debugPrefix("add"));
+                                            debugContext("add"));
 
   // Create an epsilon value
   poplar::Tensor eps = getConst(probs.elementType(), {1}, 1.0e-7, "epsilon");
@@ -286,7 +286,7 @@ void NlllWithSoftmaxGradDirectOpx::grow(poplar::program::Sequence &prog) const {
                      pe::Log(pe::Add(pe::_1, pe::_2)),
                      {reduction, eps},
                      prog,
-                     debugPrefix("LogEpsMul"));
+                     debugContext("LogEpsMul"));
 
   // TODO: T8305, re-use the mask created above
   if (op.hasIgnoreIndex()) {

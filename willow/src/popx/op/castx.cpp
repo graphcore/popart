@@ -18,7 +18,7 @@ void CastOpx::grow(poplar::program::Sequence &prog) const {
                           getInTensor(CastOp::getInIndex()),
                           popType(op_p->outInfo(CastOp::getOutIndex())),
                           prog,
-                          debugPrefix());
+                          debugContext());
 
   if (hasInViewChangers(CastOp::getInIndex())) {
     setOutViewChangers(CastOp::getOutIndex(),

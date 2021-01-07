@@ -54,14 +54,14 @@ void GeluGradOpx::grow(poplar::program::Sequence &prog) const {
   const auto input = getInTensor(GeluGradOp::getFwdArgInIndex());
 
   auto gradRearranged = popops::rearrange::regroupIfBeneficial(
-      graph(), grad, input, prog, debugPrefix("regroup"));
+      graph(), grad, input, prog, debugContext("regroup"));
 
   auto output = popnn::nonLinearityInputGradient(graph(),
                                                  popnn::NonLinearityType::GELU,
                                                  input,
                                                  gradRearranged,
                                                  prog,
-                                                 debugPrefix("gelu_grad"));
+                                                 debugContext("gelu_grad"));
 
   setOutTensor(GeluGradOp::getOutIndex(), output);
 }

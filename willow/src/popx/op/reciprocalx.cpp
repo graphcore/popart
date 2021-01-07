@@ -24,7 +24,7 @@ void ReciprocalOpx::grow(poplar::program::Sequence &prog) const {
                            ones,
                            getInTensor(0),
                            prog,
-                           debugPrefix("divide")));
+                           debugContext("divide")));
 }
 
 namespace {

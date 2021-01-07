@@ -60,7 +60,7 @@ void RMSPropUpdaterOpx::grow(poplar::program::Sequence &prog) const {
                            grad.elementType()),
                   tensors,
                   prog,
-                  debugPrefix(""));
+                  debugContext(""));
 
   if (hasInViewChangers(RMSPropUpdaterOp::getGradInIndex())) {
     setOutViewChangers(RMSPropUpdaterOp::getUpdaterOutIndex(),

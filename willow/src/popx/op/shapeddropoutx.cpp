@@ -38,7 +38,7 @@ void ShapedDropoutOpx::grow(poplar::program::Sequence &prog) const {
                              keepProbability,
                              scale,
                              prog,
-                             debugPrefix("shapedDropout"));
+                             debugContext("shapedDropout"));
 
   setOutTensor(op.getOutIndex(), shapedDropout);
 }
@@ -55,7 +55,7 @@ poplar::Tensor ShapedDropoutOpx::getReferenceTensor() const {
   return graph().addVariable(poplarType,
                              dropoutShape,
                              poplar::VariableMappingMethod::LINEAR,
-                             debugPrefix("dropoutShape"));
+                             debugContext("dropoutShape"));
 }
 
 namespace {

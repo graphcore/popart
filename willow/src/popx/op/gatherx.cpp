@@ -42,7 +42,7 @@ void GatherOpx::grow(poplar::program::Sequence &prog) const {
   // shape
   if (indices.numElements() == 0) {
     auto result = graph().addVariable(
-        data.elementType(), outputShape, debugPrefix("result"));
+        data.elementType(), outputShape, debugContext("result"));
 
     setOutTensor(GatherOp::outIndex(), result);
   } else {
@@ -74,7 +74,7 @@ void GatherOpx::grow(poplar::program::Sequence &prog) const {
                                      prog,
                                      popops::SlicePlan(),
                                      poplar::OptionFlags(),
-                                     debugPrefix());
+                                     debugContext());
 
     // Reshape the result to "unflatten" the other dimensions.
     tmp_shape.front() = result.dim(0);
@@ -103,7 +103,7 @@ poplar::Tensor GatherOpx::createInput(int index,
                                    shape,
                                    static_cast<unsigned>(axis),
                                    popops::GatherParams{},
-                                   debugPrefix(name));
+                                   debugContext(name));
 }
 
 InputCreatorType GatherOpx::getInputCreatorType(int index0) const {
@@ -133,10 +133,10 @@ void GatherGradOpx::grow(poplar::program::Sequence &prog) const {
                                           outputShape,
                                           static_cast<unsigned>(axis),
                                           popops::GatherParams{},
-                                          debugPrefix("result"));
+                                          debugContext("result"));
 
   // Zero the result tensor
-  popops::zero(graph(), result, prog, debugPrefix("zero"));
+  popops::zero(graph(), result, prog, debugContext("zero"));
 
   if (result.numElements() == 0 || update.numElements() == 0 ||
       indices.numElements() == 0) {
@@ -145,7 +145,7 @@ void GatherGradOpx::grow(poplar::program::Sequence &prog) const {
   }
 
   auto scale = graph().addConstant(
-      update.elementType(), {}, 1.0f, debugPrefix("const_1"));
+      update.elementType(), {}, 1.0f, debugContext("const_1"));
   graph().setTileMapping(scale, 0);
 
   // Flatten the index shaped region of the update
@@ -183,7 +183,7 @@ void GatherGradOpx::grow(poplar::program::Sequence &prog) const {
                          prog,
                          popops::SlicePlan(),
                          poplar::OptionFlags(),
-                         debugPrefix());
+                         debugContext());
 
   setOutTensor(GatherGradOp::gradOutIndex(), result);
 }

@@ -70,7 +70,7 @@ void SinhGradOpx::grow(poplar::program::Sequence &prog) const {
                             *exprs.back(),
                             {input, fwd_input},
                             prog,
-                            debugPrefix("output_grad"));
+                            debugContext("output_grad"));
 
   setOutTensor(SinhGradOp::getOutIndex(), output);
 }

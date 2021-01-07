@@ -31,8 +31,8 @@ void ReduceL2Opx::grow(poplar::program::Sequence &prog) const {
                                       vector_cast<std::size_t>(op.getAxes()),
                                       {popops::Operation::SQUARE_ADD},
                                       prog,
-                                      debugPrefix("squareAdd"));
-  popops::sqrtInPlace(graph(), output_tensor, prog, debugPrefix("sqrt"));
+                                      debugContext("squareAdd"));
+  popops::sqrtInPlace(graph(), output_tensor, prog, debugContext("sqrt"));
   setOutTensor(
       ReduceL2Op::getOutIndex(),
       output_tensor.reshape(outInfo(ReduceL2Op::getOutIndex()).shape_szt()));
@@ -66,7 +66,7 @@ void ReduceL2GradOpx::grow(poplar::program::Sequence &prog) const {
                        pe::Divide(pe::Mul(pe::_1, pe::_2), pe::_3),
                        {output, fwd_input, scale},
                        prog,
-                       debugPrefix("output"));
+                       debugContext("output"));
 
   // output now matches the shape of output_shape
   setOutTensor(ReduceL2GradOp::getOutIndex(), output);

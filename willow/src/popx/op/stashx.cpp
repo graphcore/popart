@@ -28,7 +28,7 @@ void StashOpx::grow(poplar::program::Sequence &prog) const {
       getConst(poplar::UNSIGNED_INT, {}, stashOp.getStashSize(), "stash_size");
 
   poplar::Tensor stashIndex =
-      graph().addVariable(poplar::UNSIGNED_INT, {1}, debugPrefix());
+      graph().addVariable(poplar::UNSIGNED_INT, {1}, debugContext());
   graph().setTileMapping(stashIndex, 0);
   graph().setInitialValue(stashIndex, poplar::ArrayRef<uint32_t>({0}));
 
@@ -40,7 +40,7 @@ void StashOpx::grow(poplar::program::Sequence &prog) const {
                         {0},
                         {1},
                         prog,
-                        debugPrefix("stash"));
+                        debugContext("stash"));
 
   // Increment the stash index
   popops::addInPlace(graph(), stashIndex, one, prog);

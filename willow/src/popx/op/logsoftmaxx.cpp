@@ -91,7 +91,7 @@ void LogSoftmaxGradOpx::grow(poplar::program::Sequence &prog) const {
     nlType = popnn::NonLinearityType::SOFTMAX_STABLE;
   }
   auto probs = popnn::nonLinearity(
-      graph(), nlType, pre_probs, prog, debugPrefix("nonLinearity"));
+      graph(), nlType, pre_probs, prog, debugContext("nonLinearity"));
 
   // sum_j (g_j)
   // reduce along all dimensions except 0 (0 is the sample index)
@@ -105,7 +105,7 @@ void LogSoftmaxGradOpx::grow(poplar::program::Sequence &prog) const {
                               redDims,
                               {popops::Operation::ADD},
                               prog,
-                              debugPrefix("reduce"))
+                              debugContext("reduce"))
                    .reshape(upRanked);
 
   // g_i - softmax(x_i) * sum_j (g_j)
@@ -113,7 +113,7 @@ void LogSoftmaxGradOpx::grow(poplar::program::Sequence &prog) const {
                         pe::Sub(pe::_1, pe::Mul(pe::_2, pe::_3)),
                         {d_probs, probs, sum_g},
                         prog,
-                        debugPrefix("SubMul"));
+                        debugContext("SubMul"));
 
   dv = dv.reshape(inInfo(LogSoftmaxGradOp::getActsInIndex()).shape_szt());
   setOutTensor(0, dv);

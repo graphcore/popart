@@ -33,7 +33,7 @@ BaseSortOpx::getIotaTensor(poplar::program::Sequence &prog) const {
   auto c = graph().addConstant(poplar::INT,
                                {sortSize},
                                poplar::ArrayRef<int>(iotaVals),
-                               debugPrefix("sortSize"));
+                               debugContext("sortSize"));
   poputil::mapTensorLinearly(graph(), c);
 
   // Fill a tensor with [0, 1, 2, ... nToSort-1] along "axis"
@@ -50,7 +50,7 @@ BaseSortOpx::getIotaTensor(poplar::program::Sequence &prog) const {
 
   // Loop over the front dimension and copy in the constant.
   for (int i = 0; i < nToSort; ++i) {
-    prog.add(poplar::program::Copy(c, shuffledView[i], false, debugPrefix()));
+    prog.add(poplar::program::Copy(c, shuffledView[i], false, debugContext()));
   }
 
   return indices;
@@ -65,7 +65,7 @@ BaseSortOpx::growFullSortResult(poplar::program::Sequence &prog) const {
 
   // sort indices and values, using values as the "keys" to sort on
   popops::sortKeyValueInPlace(
-      graph(), values, indices, axis, prog, debugPrefix());
+      graph(), values, indices, axis, prog, debugContext());
   return FullSortResult(indices, values, axis);
 }
 
@@ -74,7 +74,7 @@ BaseSortOpx::growIndicesSort(poplar::program::Sequence &prog) const {
   auto input   = getInTensor(BaseSortOp::getInIndex());
   auto indices = getIotaTensor(prog);
   return popops::sortKeyValue(
-      graph(), input, indices, axis, prog, debugPrefix());
+      graph(), input, indices, axis, prog, debugContext());
 }
 
 poplar::Tensor BaseSortOpx::createInput(InIndex inIndex,
@@ -91,7 +91,7 @@ poplar::Tensor BaseSortOpx::createInput(InIndex inIndex,
     std::swap(shape[axis], shape.back());
 
     // Create a new variable of the modified shape
-    auto t = graph().addVariable(popType(info), shape, debugPrefix(name));
+    auto t = graph().addVariable(popType(info), shape, debugContext(name));
 
     // Map it linearly
     poputil::mapTensorLinearly(graph(), t);

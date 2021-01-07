@@ -25,7 +25,7 @@ void CopyVarUpdateOpx::grow(poplar::program::Sequence &prog) const {
       getInTensor(VarUpdateWithUpdaterOp::getUpdaterInIndex()),
       getInTensor(VarUpdateOp::getVarToUpdateInIndex()),
       false,
-      debugPrefix());
+      debugContext());
   prog.add(copy);
 
   // output is a reference to destination of the copy

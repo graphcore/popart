@@ -93,7 +93,7 @@ void ShrinkGradOpx::grow(poplar::program::Sequence &prog) const {
                             *exprs.back(),
                             {input, fwd_input},
                             prog,
-                            debugPrefix("output_grad"));
+                            debugContext("output_grad"));
 
   setOutTensor(ShrinkGradOp::getOutIndex(), output);
 }

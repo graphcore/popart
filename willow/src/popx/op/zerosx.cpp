@@ -19,7 +19,7 @@ void ZerosOpx::grow(poplar::program::Sequence &) const {
   auto poplarType = popType(op.outInfo(op.getOutIndex()));
   auto shape      = vXtoY<int64_t, std::size_t>(outputInfo.shape());
 
-  auto zeros = graph().addConstant(poplarType, shape, 0, debugPrefix("zeros"));
+  auto zeros = graph().addConstant(poplarType, shape, 0, debugContext("zeros"));
   graph().setTileMapping(zeros, 0);
 
   setOutTensor(ZerosOp::getOutIndex(), zeros);

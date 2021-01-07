@@ -50,7 +50,7 @@ void LSTMOpx::grow(poplar::program::Sequence &prog) const {
                            *weights,
                            intermediate.get(),
                            prog,
-                           debugPrefix("lstmFwd"),
+                           debugContext("lstmFwd"),
                            dv_p->lowering().lstmOptions,
                            &dv_p->matmulCache);
 
@@ -104,7 +104,7 @@ void LSTMOpx::growBias(poplar::program::Sequence &prog) const {
     auto bias_input = getInTensor(LSTMOp::getBiasInIndex());
 
     poplar::program::Copy copyProg(
-        bias_input.slice(0, 4 * hidden_size, 1), biases, false, debugPrefix());
+        bias_input.slice(0, 4 * hidden_size, 1), biases, false, debugContext());
     prog.add(copyProg);
 
     popops::mapInPlace(graph(),
@@ -112,9 +112,9 @@ void LSTMOpx::growBias(poplar::program::Sequence &prog) const {
                        biases,
                        bias_input.slice(4 * hidden_size, 8 * hidden_size, 1),
                        prog,
-                       debugPrefix("add"));
+                       debugContext("add"));
   } else {
-    popops::zero(graph(), biases, prog, debugPrefix("zero"));
+    popops::zero(graph(), biases, prog, debugContext("zero"));
   }
 }
 
@@ -184,7 +184,7 @@ poplar::Tensor LSTMOpx::createLSTMInput() const {
   auto cache       = &dv_p->matmulCache;
 
   return popnn::lstm::createInput(
-      graph(), lstm_params, debugPrefix("input"), options, cache);
+      graph(), lstm_params, debugContext("input"), options, cache);
 }
 
 popnn::lstm::LstmState LSTMOpx::getInitialState() const {
@@ -194,7 +194,7 @@ popnn::lstm::LstmState LSTMOpx::getInitialState() const {
     auto lstm_params = createLSTMParams();
 
     initial_state = createInitialState(
-        graph(), lstm_params, debugPrefix("initialState"), options, cache);
+        graph(), lstm_params, debugContext("initialState"), options, cache);
   }
 
   return *initial_state;
@@ -207,7 +207,7 @@ popnn::lstm::LstmWeights LSTMOpx::getLSTMWeights() const {
     auto cache       = &dv_p->matmulCache;
 
     weights = createWeights(
-        graph(), lstm_params, debugPrefix("weights"), options, cache);
+        graph(), lstm_params, debugContext("weights"), options, cache);
   }
 
   return *weights;
@@ -240,19 +240,19 @@ void LSTMOpx::prepareWeights(poplar::program::Sequence &prog) const {
       getInTensor(LSTMOp::getWeightsInIndex()),
       reshapePoplibWeightsForOnnx(getLSTMWeights().inputWeights, true),
       false,
-      debugPrefix()));
+      debugContext()));
   prog.add(poplar::program::Copy(
       getInTensor(LSTMOp::getRecurrenceInIndex()),
       reshapePoplibWeightsForOnnx(getLSTMWeights().outputWeights, true),
       false,
-      debugPrefix()));
+      debugContext()));
 }
 
 poplar::Tensor LSTMOpx::getInput(poplar::program::Sequence &prog) const {
   if (!inputCreated(LSTMOp::getInputInIndex())) {
     auto input     = createInput(LSTMOp::getInputInIndex(), "input");
     auto raw_input = getInTensor(LSTMOp::getInputInIndex());
-    prog.add(poplar::program::Copy(raw_input, input, false, debugPrefix()));
+    prog.add(poplar::program::Copy(raw_input, input, false, debugContext()));
     return input;
   } else {
     return getInTensor(LSTMOp::getInputInIndex());
@@ -270,11 +270,11 @@ void LSTMOpx::prepareInitialState(popnn::lstm::LstmState &init_state,
 
   // If initC and initH are not present, one or both will need zeroing.
   if (!hasInitC && !hasInitH) {
-    zeroInitialState(graph(), init_state, prog, debugPrefix());
+    zeroInitialState(graph(), init_state, prog, debugContext());
   } else if (!hasInitC) {
-    popops::zero(graph(), init_state.cellState, prog, debugPrefix());
+    popops::zero(graph(), init_state.cellState, prog, debugContext());
   } else if (!hasInitH) {
-    popops::zero(graph(), init_state.output, prog, debugPrefix());
+    popops::zero(graph(), init_state.output, prog, debugContext());
   }
 
   // Copy initC input to initialState.cellState is initC is provided.
@@ -285,7 +285,7 @@ void LSTMOpx::prepareInitialState(popnn::lstm::LstmState &init_state,
     prog.add(poplar::program::Copy(getInTensor(LSTMOp::getInitialCInIndex()),
                                    init_c,
                                    false,
-                                   debugPrefix()));
+                                   debugContext()));
   }
   // Copy initH input to initialState.output is initH is provided.
   if (hasInitH) {
@@ -295,7 +295,7 @@ void LSTMOpx::prepareInitialState(popnn::lstm::LstmState &init_state,
     prog.add(poplar::program::Copy(getInTensor(LSTMOp::getInitialHInIndex()),
                                    init_h,
                                    false,
-                                   debugPrefix()));
+                                   debugContext()));
   }
 }
 
@@ -339,7 +339,7 @@ void LSTMGradOpx::grow(poplar::program::Sequence &prog) const {
                      output_grad_copy[output_grad_copy.dim(0) - 1],
                      output_h_grad,
                      prog,
-                     debugPrefix());
+                     debugContext());
 
   poplar::Tensor input_grad;
   popnn::lstm::LstmWeights weights_grad;
@@ -356,7 +356,7 @@ void LSTMGradOpx::grow(poplar::program::Sequence &prog) const {
                                        &output_c_grad,
                                        &input_grad,
                                        weights_grad,
-                                       debugPrefix("lstmBwdWithWU"),
+                                       debugContext("lstmBwdWithWU"),
                                        dv_p->lowering().lstmOptions,
                                        &dv_p->matmulCache);
 

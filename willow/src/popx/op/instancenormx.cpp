@@ -57,7 +57,7 @@ void InstanceNormOpx::grow(poplar::program::Sequence &prog) const {
                                         false,
                                         stable_algo,
                                         poplar::FLOAT,
-                                        debugPrefix("instanceNormStatistics"));
+                                        debugContext("instanceNormStatistics"));
 
   // Calculate the normalization
   auto result = popnn::in::instanceNormalise(graph(),
@@ -67,7 +67,7 @@ void InstanceNormOpx::grow(poplar::program::Sequence &prog) const {
                                              mean,
                                              invStdDev,
                                              prog,
-                                             debugPrefix("instanceNorm"));
+                                             debugContext("instanceNorm"));
 
   // Convert the output back into the input format
   poplar::Tensor y =
@@ -98,7 +98,7 @@ void InstanceNormGradOpx::grow(poplar::program::Sequence &prog) const {
                                     mean,
                                     inv_std_dev,
                                     prog,
-                                    debugPrefix("instanceNormWhiten"));
+                                    debugContext("instanceNormWhiten"));
 
   auto input_grad = popnn::in::instanceNormGradients(
       graph(),
@@ -108,7 +108,7 @@ void InstanceNormGradOpx::grow(poplar::program::Sequence &prog) const {
       scale,
       prog,
       poplar::FLOAT, // TODO: could this be HALF?
-      debugPrefix("instanceNormGradients"));
+      debugContext("instanceNormGradients"));
 
   poplar::Tensor scale_grad, b_grad;
   std::tie(scale_grad, b_grad) = popnn::in::instanceNormParamGradients(
@@ -117,7 +117,7 @@ void InstanceNormGradOpx::grow(poplar::program::Sequence &prog) const {
       out_grad,
       prog,
       poplar::FLOAT,
-      debugPrefix("instanceNormParamGradients"));
+      debugContext("instanceNormParamGradients"));
 
   setOutTensor(InstanceNormGradOp::getInputOutIndex(), input_grad);
   setOutTensor(InstanceNormGradOp::getScaleOutIndex(), scale_grad);

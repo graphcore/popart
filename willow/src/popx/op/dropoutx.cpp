@@ -40,14 +40,14 @@ growDropout(poplar::Graph &graph,
                                  refTensor.elementType(),
                                  dropoutProbability,
                                  prog,
-                                 opx.debugPrefix("mask"));
+                                 opx.debugContext("mask"));
 
   // Use the mask to multiply by the input tensor and scale up.
   auto dropout = popops::map(graph,
                              pe::Mul(pe::Mul(pe::_1, pe::_2), pe::Const(scale)),
                              {mask, input},
                              prog,
-                             opx.debugPrefix("dropout"));
+                             opx.debugContext("dropout"));
 
   return {dropout, mask};
 }
@@ -86,7 +86,7 @@ void DropoutOpx::grow(poplar::program::Sequence &prog) const {
         setOutTensor(
             DropoutOp::getMaskOutIndex(),
             popops::cast(
-                graph(), mask, poplar::BOOL, prog, debugPrefix("mask")));
+                graph(), mask, poplar::BOOL, prog, debugContext("mask")));
       }
     } else {
       double dropoutProbability = 1. - static_cast<double>(op.getRatio());
@@ -99,7 +99,7 @@ void DropoutOpx::grow(poplar::program::Sequence &prog) const {
                                       dropoutProbability,
                                       scale,
                                       prog,
-                                      debugPrefix("dropout"));
+                                      debugContext("dropout"));
       setOutTensor(op.getOutIndex(), dropout);
     }
   } else {

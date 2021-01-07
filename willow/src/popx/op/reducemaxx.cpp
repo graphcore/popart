@@ -31,7 +31,7 @@ void ReduceMaxOpx::grow(poplar::program::Sequence &prog) const {
                                       vector_cast<std::size_t>(op.getAxes()),
                                       {popops::Operation::MAX},
                                       prog,
-                                      debugPrefix("max"));
+                                      debugContext("max"));
 
   setOutTensor(
       ReduceMaxOp::getOutIndex(),
@@ -69,7 +69,7 @@ void ReduceMaxGradOpx::grow(poplar::program::Sequence &prog) const {
               pe::_3),
       {mask, getInTensor(ReduceMaxGradOp::getFwdInInIndex()), output},
       prog,
-      debugPrefix("maskmul"));
+      debugContext("maskmul"));
 
   // output now matches the shape of output_shape
   setOutTensor(ReduceMaxGradOp::getOutIndex(), output);

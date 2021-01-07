@@ -123,7 +123,7 @@ poplar::Tensor ResizeGradOpx::padDimension(poplar::program::Sequence &prog,
   auto slices = split(input, dimension);
   auto paddingTensor =
       graph().addVariable(input.elementType(), slices.at(0).shape());
-  popops::zero(graph(), paddingTensor, prog, debugPrefix("zeroPadding"));
+  popops::zero(graph(), paddingTensor, prog, debugContext("zeroPadding"));
 
   std::vector<poplar::Tensor> toConcat(newSize, paddingTensor);
   for (int i = 0; i < slices.size(); i++) {

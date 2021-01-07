@@ -37,7 +37,7 @@ poplar::Tensor GRUOpx::getInitialState() const {
     initial_state_h =
         popnn::gru::createInitialState(graph(),
                                        createGRUParams(),
-                                       debugPrefix("initialState"),
+                                       debugContext("initialState"),
                                        dv_p->lowering().lstmOptions,
                                        &dv_p->matmulCache);
   }
@@ -50,7 +50,7 @@ void GRUOpx::prepareInitialState(poplar::Tensor &init_state_h,
   auto hasInitH = gru_op.hasInitialHInput();
 
   if (!hasInitH) {
-    popops::zero(graph(), init_state_h, prog, debugPrefix());
+    popops::zero(graph(), init_state_h, prog, debugContext());
   }
 
   // Check the inputs have been created
@@ -59,7 +59,7 @@ void GRUOpx::prepareInitialState(poplar::Tensor &init_state_h,
         poplar::program::Copy(getInTensor(GRUOp::getInitialHInIndex()),
                               createInput(GRUOp::getInitialHInIndex(), "initH"),
                               false,
-                              debugPrefix()));
+                              debugContext()));
   }
 }
 
@@ -84,7 +84,7 @@ void GRUOpx::grow(poplar::program::Sequence &prog) const {
                                 *weights,
                                 intermediate.get(),
                                 prog,
-                                debugPrefix("gruFwd"),
+                                debugContext("gruFwd"),
                                 dv_p->lowering().lstmOptions,
                                 &dv_p->matmulCache);
   } else if (gru_op.getDirectionAttribute() == "backward") {
@@ -95,7 +95,7 @@ void GRUOpx::grow(poplar::program::Sequence &prog) const {
                                 *weights,
                                 intermediate.get(),
                                 prog,
-                                debugPrefix("gruFwd"),
+                                debugContext("gruFwd"),
                                 dv_p->lowering().lstmOptions,
                                 &dv_p->matmulCache);
   } else if (gru_op.getDirectionAttribute() == "bidirectional") {
@@ -148,7 +148,7 @@ void GRUOpx::growBias(poplar::program::Sequence &prog) const {
     auto bias_input = getInTensor(GRUOp::getBiasInIndex());
 
     poplar::program::Copy copyProg(
-        bias_input.slice(0, 3 * hidden_size, 1), biases, false, debugPrefix());
+        bias_input.slice(0, 3 * hidden_size, 1), biases, false, debugContext());
     prog.add(copyProg);
 
     popops::mapInPlace(graph(),
@@ -156,9 +156,9 @@ void GRUOpx::growBias(poplar::program::Sequence &prog) const {
                        biases,
                        bias_input.slice(3 * hidden_size, 6 * hidden_size, 1),
                        prog,
-                       debugPrefix("add"));
+                       debugContext("add"));
   } else {
-    popops::zero(graph(), biases, prog, debugPrefix("zero"));
+    popops::zero(graph(), biases, prog, debugContext("zero"));
   }
 }
 
@@ -236,7 +236,7 @@ poplar::Tensor GRUOpx::createGRUInput() const {
   auto cache      = &dv_p->matmulCache;
 
   return popnn::gru::createInput(
-      graph(), gru_params, debugPrefix("input"), options, cache);
+      graph(), gru_params, debugContext("input"), options, cache);
 }
 
 popnn::gru::GruWeights GRUOpx::getGRUWeights() const {
@@ -246,7 +246,7 @@ popnn::gru::GruWeights GRUOpx::getGRUWeights() const {
     auto cache      = &dv_p->matmulCache;
 
     weights = createWeights(
-        graph(), gru_params, debugPrefix("weights"), options, cache);
+        graph(), gru_params, debugContext("weights"), options, cache);
   }
 
   return *weights;
@@ -279,19 +279,19 @@ void GRUOpx::prepareWeights(poplar::program::Sequence &prog) const {
       getInTensor(GRUOp::getWeightsInIndex()),
       reshapePoplibWeightsForOnnx(getGRUWeights().inputWeights, true),
       false,
-      debugPrefix()));
+      debugContext()));
   prog.add(poplar::program::Copy(
       getInTensor(GRUOp::getRecurrenceInIndex()),
       reshapePoplibWeightsForOnnx(getGRUWeights().outputWeights, true),
       false,
-      debugPrefix()));
+      debugContext()));
 }
 
 poplar::Tensor GRUOpx::getInput(poplar::program::Sequence &prog) const {
   if (!inputCreated(GRUOp::getInputInIndex())) {
     auto input     = createInput(GRUOp::getInputInIndex(), "input");
     auto raw_input = getInTensor(GRUOp::getInputInIndex());
-    prog.add(poplar::program::Copy(raw_input, input, false, debugPrefix()));
+    prog.add(poplar::program::Copy(raw_input, input, false, debugContext()));
     return input;
   } else {
     return getInTensor(GRUOp::getInputInIndex());
@@ -334,7 +334,7 @@ void GRUGradOpx::grow(poplar::program::Sequence &prog) const {
                      output_grad[output_grad.dim(0) - 1],
                      output_h_grad,
                      prog,
-                     debugPrefix());
+                     debugContext());
 
   poplar::Tensor input_grad;
   popnn::gru::GruWeights weights_grad;
@@ -350,7 +350,7 @@ void GRUGradOpx::grow(poplar::program::Sequence &prog) const {
                                       output_grad,
                                       &input_grad,
                                       weights_grad,
-                                      debugPrefix("gruBwdWithWU"),
+                                      debugContext("gruBwdWithWU"),
                                       dv_p->lowering().lstmOptions,
                                       &dv_p->matmulCache);
 

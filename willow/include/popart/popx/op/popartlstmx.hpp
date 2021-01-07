@@ -35,7 +35,7 @@ protected:
   poplar::Tensor createBiasesInput() const {
     return popnn::lstm::createWeightsBiases(graph(),
                                             createLSTMParams(),
-                                            debugPrefix("createWeights"),
+                                            debugContext("createWeights"),
                                             dv_p->lowering().lstmOptions,
                                             &dv_p->matmulCache);
   }
@@ -47,7 +47,7 @@ protected:
       return getInTensor(lstmOp.getBiasesInIndex());
     } else {
       auto biases = createBiasesInput();
-      popops::zero(graph(), biases, prog, debugPrefix("zeroBiases"));
+      popops::zero(graph(), biases, prog, debugContext("zeroBiases"));
       return biases;
     }
   }
@@ -55,7 +55,7 @@ protected:
   popnn::lstm::LstmState createInitialStateInput() const {
     return createInitialState(graph(),
                               createLSTMParams(),
-                              debugPrefix("createInitialState"),
+                              debugContext("createInitialState"),
                               dv_p->lowering().lstmOptions,
                               &dv_p->matmulCache);
   }

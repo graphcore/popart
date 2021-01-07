@@ -229,7 +229,7 @@ void ElementWiseBinaryOutplaceOpx::grow(poplar::program::Sequence &prog) const {
     throw internal_error(
         "Operation {} was configured for inplacing and attempting "
         "to compute out-of-place",
-        debugPrefix().getPathName());
+        debugContext().getPathName());
   }
 
   const auto arg0Idx = ElementWiseBinaryBaseOp::getArg0InIndex();
@@ -255,7 +255,7 @@ void ElementWiseBinaryInplaceOpx::grow(poplar::program::Sequence &prog) const {
   if (!cx->inplaceSupported()) {
     throw error("Invalid operation {} was not configured for inplacing and "
                 "attempting to compute in-place",
-                debugPrefix().getPathName());
+                debugContext().getPathName());
   }
 
   constexpr unsigned maxTileImbalance = 150000;
@@ -268,12 +268,12 @@ void ElementWiseBinaryInplaceOpx::grow(poplar::program::Sequence &prog) const {
   if (!tInOut.isParallelWriteable()) {
     logging::debug(
         "Unable to inplace operation {}, tensor is not parallel writeable",
-        debugPrefix().getPathName());
+        debugContext().getPathName());
     canComputeInplace = false;
   } else if (poputil::getTileImbalance(g, tInOut) > maxTileImbalance) {
     logging::debug("Unable to inplace operation {}, tensor tile imbalance ({}) "
                    "is too high",
-                   debugPrefix().getPathName(),
+                   debugContext().getPathName(),
                    poputil::getTileImbalance(g, tInOut));
     canComputeInplace = false;
   }

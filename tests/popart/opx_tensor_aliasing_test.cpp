@@ -64,7 +64,7 @@ public:
   void grow(poplar::program::Sequence &prog) const final {
     auto inTensor = getInTensor(OpxTensorAliasingTestOp::inIndex());
     popops::mulInPlace(
-        graph(), inTensor, inTensor, prog, debugPrefix("mulInPlace"));
+        graph(), inTensor, inTensor, prog, debugContext("mulInPlace"));
     setOutTensor(OpxTensorAliasingTestOp::outIndex(), inTensor);
   }
 };

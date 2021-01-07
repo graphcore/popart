@@ -33,8 +33,8 @@ void DynamicAddOpx::grow(poplar::program::Sequence &prog) const {
       paxes,
       psizes,
       prog,
-      debugPrefix("dynamic_add_slice_" +
-                  op.inId(DynamicTernaryBaseOp::getUpdateInIndex())));
+      debugContext("dynamic_add_slice_" +
+                   op.inId(DynamicTernaryBaseOp::getUpdateInIndex())));
 
   // Add inplace: s += slice
   popops::mapInPlace(
@@ -43,8 +43,8 @@ void DynamicAddOpx::grow(poplar::program::Sequence &prog) const {
       s,
       slice,
       prog,
-      debugPrefix("dynamic_add_mip_" +
-                  op.inId(DynamicTernaryBaseOp::getUpdateInIndex())));
+      debugContext("dynamic_add_mip_" +
+                   op.inId(DynamicTernaryBaseOp::getUpdateInIndex())));
 
   // Update: t[index:index+psizes] = s
   popops::dynamicUpdate(
@@ -55,8 +55,8 @@ void DynamicAddOpx::grow(poplar::program::Sequence &prog) const {
       paxes,
       psizes,
       prog,
-      debugPrefix("dynamic_add_" +
-                  op.inId(DynamicTernaryBaseOp::getUpdateInIndex())));
+      debugContext("dynamic_add_" +
+                   op.inId(DynamicTernaryBaseOp::getUpdateInIndex())));
 
   setOutTensor(DynamicTernaryBaseOp::getOutIndex(), outTensor);
 }

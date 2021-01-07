@@ -93,7 +93,7 @@ void EluGradOpx::grow(poplar::program::Sequence &prog) const {
                             *exprs.back(),
                             {input, fwd_input},
                             prog,
-                            debugPrefix("elu_grad"));
+                            debugContext("elu_grad"));
 
   setOutTensor(EluGradOp::getOutIndex(), output);
 }

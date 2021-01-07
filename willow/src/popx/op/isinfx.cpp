@@ -23,7 +23,7 @@ void IsInfx::grow(poplar::program::Sequence &prog) const {
               popops::expr::Not(popops::expr::IsFinite(popops::expr::_1))),
           {get(inId(0))},
           prog,
-          debugPrefix()));
+          debugContext()));
 }
 
 namespace {

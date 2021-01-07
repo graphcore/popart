@@ -127,7 +127,7 @@ void CumSumOpx::grow(poplar::program::Sequence &prog) const {
   poplar::Tensor triangularM =
       triangularMatrix(*this, xMulDim0, exclusive, reverse);
 
-  x = poplin::matMul(graph(), x, triangularM, prog, debugPrefix("cumsum_mul"));
+  x = poplin::matMul(graph(), x, triangularM, prog, debugContext("cumsum_mul"));
   x = x.reshape(xMiddleShape);
   x = x.dimShuffle(perm);
 
@@ -165,8 +165,8 @@ void CumSumGradOpx::grow(poplar::program::Sequence &prog) const {
   poplar::Tensor triangularM =
       triangularMatrix(*this, xMulDim0, exclusive, reverse, true);
 
-  dx =
-      poplin::matMul(graph(), dx, triangularM, prog, debugPrefix("cumsum_mul"));
+  dx = poplin::matMul(
+      graph(), dx, triangularM, prog, debugContext("cumsum_mul"));
   dx = dx.reshape(xMiddleShape);
   dx = dx.dimShuffle(perm);
 

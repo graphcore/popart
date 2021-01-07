@@ -18,7 +18,7 @@ void SinOpx::grow(poplar::program::Sequence &prog) const {
                            popops::expr::UnaryOpType::SIN,
                            getInTensor(SinOp::getInIndex()),
                            prog,
-                           debugPrefix()));
+                           debugContext()));
 }
 
 namespace {

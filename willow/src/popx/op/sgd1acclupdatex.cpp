@@ -33,14 +33,14 @@ void SGD1AcclUpdateOpx::grow(poplar::program::Sequence &prog) const {
   if (smm1Const) {
     auto smm1Val = vu_op.initSmm1.val();
     if (smm1Val == 0.0f) {
-      popops::zero(graph(), toUpdate, prog, debugPrefix("resetZeroMm"));
+      popops::zero(graph(), toUpdate, prog, debugContext("resetZeroMm"));
     } else {
       popops::mapInPlace(
           graph(),
           pe::Mul(pe::_1, pe::Const(smm1Val)),
           {toUpdate},
           prog,
-          debugPrefix("constMomentumScaling_" + std::to_string(smm1Val)));
+          debugContext("constMomentumScaling_" + std::to_string(smm1Val)));
     }
   } else {
     popops::mapInPlace(
@@ -48,7 +48,7 @@ void SGD1AcclUpdateOpx::grow(poplar::program::Sequence &prog) const {
         pe::Mul(pe::_1, pe::_2),
         {toUpdate, getInTensor(SGD1AcclUpdateOp::getSmm1InIndex())},
         prog,
-        debugPrefix("nonConstMomentumScaling"));
+        debugContext("nonConstMomentumScaling"));
   }
 
   if (swdf1Const) {
@@ -60,7 +60,7 @@ void SGD1AcclUpdateOpx::grow(poplar::program::Sequence &prog) const {
           getInTensor(VarUpdateWithUpdaterOp::getUpdaterInIndex()),
           swd1Val,
           prog,
-          debugPrefix("constScaledAddSwd1_" + std::to_string(swd1Val)));
+          debugContext("constScaledAddSwd1_" + std::to_string(swd1Val)));
     }
   } else {
     popops::scaledAddTo(
@@ -69,7 +69,7 @@ void SGD1AcclUpdateOpx::grow(poplar::program::Sequence &prog) const {
         getInTensor(VarUpdateWithUpdaterOp::getUpdaterInIndex()),
         getInTensor(SGD1AcclUpdateOp::getSwd1InIndex()),
         prog,
-        debugPrefix("nonConstScaledAddSwd1"));
+        debugContext("nonConstScaledAddSwd1"));
   }
 
   if (hasInViewChangers(VarUpdateOp::getVarToUpdateInIndex())) {

@@ -78,7 +78,7 @@ void MinArgGradOpx::grow(poplar::program::Sequence &prog) const {
        getInTensor(MinArgGradOp::getFwdInIndex()),
        getInTensor(MinArgGradOp::getGradInIndex())},
       prog,
-      debugPrefix("result"));
+      debugContext("result"));
 
   auto shapeOfOutputOfFwdOp = inInfo(MinArgGradOp::getFwdOutInIndex()).shape();
   auto shapeOfInputToFwdOp  = inInfo(MinArgGradOp::getFwdInIndex()).shape();
@@ -94,7 +94,7 @@ void MinArgGradOpx::grow(poplar::program::Sequence &prog) const {
                             vXtoY<int64_t, std::size_t>(axes),
                             {popops::Operation::ADD},
                             prog,
-                            debugPrefix("out"));
+                            debugContext("out"));
 
   // Reshape the output, to add 1's if needed
   setOutTensor(MinArgGradOp::getOutIndex(),

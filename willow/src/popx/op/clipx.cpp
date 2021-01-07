@@ -161,7 +161,7 @@ void ClipGradOpx::grow(poplar::program::Sequence &prog) const {
           pe::Cast(pe::NotEqual(pe::_2, pe::_4), gradIn.elementType())),
       {gradIn, fwdOut, clipmin, clipmax},
       prog,
-      debugPrefix("ApplyMinMaxMask"));
+      debugContext("ApplyMinMaxMask"));
 
   setOutTensor(clipGradOp->getOutIndex(), outTensor);
 }

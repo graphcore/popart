@@ -46,7 +46,7 @@ void SGD0VarUpdateOpx::grow(poplar::program::Sequence &prog) const {
                        {getInTensor(SGD0VarUpdateOp::getVarToUpdateInIndex()),
                         getInTensor(SGD0VarUpdateOp::getWdsf0InIndex())},
                        prog,
-                       debugPrefix("nonConstWeightDecay"));
+                       debugContext("nonConstWeightDecay"));
   }
 
   // const weight decay scale factor
@@ -58,7 +58,7 @@ void SGD0VarUpdateOpx::grow(poplar::program::Sequence &prog) const {
           pe::Mul(pe::_1, pe::Const(scaleFactor)),
           {getInTensor(SGD0VarUpdateOp::getVarToUpdateInIndex())},
           prog,
-          debugPrefix("constWeightDecay"));
+          debugContext("constWeightDecay"));
     }
   }
 
@@ -75,9 +75,9 @@ void SGD0VarUpdateOpx::grow(poplar::program::Sequence &prog) const {
         popops::neg(graph(),
                     getInTensor(SGD0VarUpdateOp::getSlr0InIndex()),
                     prog,
-                    debugPrefix("neg")),
+                    debugContext("neg")),
         prog,
-        debugPrefix("nonConstScaledSubtract"));
+        debugContext("nonConstScaledSubtract"));
   }
 
   // const scaled learning rate case
@@ -87,7 +87,7 @@ void SGD0VarUpdateOpx::grow(poplar::program::Sequence &prog) const {
                         weightDeltas, // weightDeltas
                         -vu_op.initSlr0.val(),
                         prog,
-                        debugPrefix("scaledSubtract"));
+                        debugContext("scaledSubtract"));
   }
 
   if (hasInViewChangers(SGD0VarUpdateOp::getVarToUpdateInIndex())) {

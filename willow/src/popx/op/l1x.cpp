@@ -33,7 +33,7 @@ void L1GradOpx::grow(poplar::program::Sequence &prog) const {
                   popops::expr::UnaryOpType::SIGNUM,
                   getInTensor(L1GradOp::getFwdActInIndex()),
                   prog,
-                  debugPrefix("Signum"));
+                  debugContext("Signum"));
 
   double scale = lambda;
   switch (l1gradop.getReductionType()) {
@@ -50,7 +50,7 @@ void L1GradOpx::grow(poplar::program::Sequence &prog) const {
   }
   default:
     throw error("Unsupported reduction type for Loss {}",
-                debugPrefix().getPathName());
+                debugContext().getPathName());
   }
 
   auto t_scale = getConst(getInTensor(0).elementType(), {}, scale, "scale");
@@ -64,14 +64,14 @@ void L1GradOpx::grow(poplar::program::Sequence &prog) const {
                                 pe::Mul(pe::_1, pe::_2),
                                 {signumTensor, t_scale},
                                 prog,
-                                debugPrefix("multiply"));
+                                debugContext("multiply"));
 
   auto gradIn = getInTensor(L1GradOp::getGradInIndex());
   popops::mapInPlace(graph(),
                      pe::Mul(pe::_1, pe::_2),
                      {gradTensor, gradIn},
                      prog,
-                     debugPrefix("scaledGradIn"));
+                     debugContext("scaledGradIn"));
 
   setOutTensor(0, gradTensor);
 }
@@ -87,7 +87,7 @@ void L1Opx::grow(poplar::program::Sequence &prog) const {
                                          popops::expr::UnaryOpType::ABSOLUTE,
                                          getInTensor(0),
                                          prog,
-                                         debugPrefix("abs"));
+                                         debugContext("abs"));
 
   if (absTensor.rank() == 0) {
     throw error("invalid tensor (rank-0) in L1Opx");
@@ -103,7 +103,7 @@ void L1Opx::grow(poplar::program::Sequence &prog) const {
                               absTensor,
                               t_scale,
                               prog,
-                              debugPrefix("add"));
+                              debugContext("add"));
     setOutTensor(0, scaled);
   } else {
     auto absTensor1D = absTensor.flatten();
@@ -123,7 +123,7 @@ void L1Opx::grow(poplar::program::Sequence &prog) const {
     case ReductionType::NoReduction:
     default: {
       throw error("Unsupported reduction type for Loss {}",
-                  debugPrefix().getPathName());
+                  debugContext().getPathName());
     }
     }
 
@@ -135,7 +135,7 @@ void L1Opx::grow(poplar::program::Sequence &prog) const {
                                     {0},
                                     {popops::Operation::ADD, false, t_scale},
                                     prog,
-                                    debugPrefix("add"));
+                                    debugContext("add"));
     setOutTensor(0, reduction);
   }
 }

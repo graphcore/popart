@@ -31,7 +31,7 @@ void AddBiasOpx::grow(poplar::program::Sequence &prog) const {
                   result,
                   getInTensor(AddBiasOp::getBiasInIndex()),
                   prog,
-                  debugPrefix());
+                  debugContext());
   setOutTensor(AddBiasOp::getOutIndex(), result);
 }
 
@@ -74,7 +74,7 @@ AddBiasBiasGradOpx::AddBiasBiasGradOpx(Op *op, Devicex *devicex)
 void AddBiasInplaceOpx::grow(poplar::program::Sequence &prog) const {
   auto dataIn = getInTensor(AddBiasOp::getDataInIndex());
   auto biasIn = getInTensor(AddBiasOp::getBiasInIndex());
-  poplin::addBias(graph(), dataIn, biasIn, prog, debugPrefix());
+  poplin::addBias(graph(), dataIn, biasIn, prog, debugContext());
   setOutTensor(AddBiasOp::getOutIndex(), dataIn);
 }
 

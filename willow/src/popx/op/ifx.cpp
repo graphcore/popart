@@ -28,7 +28,7 @@ void IfOpx::copyInputs(poplar::program::Sequence &thenProg,
     auto ifInput     = get(ifInputId);
     auto branchInput = get(branchInputId);
 
-    poplar::program::Copy copyProg(ifInput, branchInput, false, debugPrefix());
+    poplar::program::Copy copyProg(ifInput, branchInput, false, debugContext());
     prog.add(copyProg);
   };
 
@@ -69,14 +69,14 @@ void IfOpx::copyOutputs(poplar::program::Sequence &thenProg,
     auto opOutput     = outputs.at(opIndex);
     auto branchOutput = get(branchId);
     poplar::program::Copy copyProg(
-        branchOutput, opOutput, false, debugPrefix());
+        branchOutput, opOutput, false, debugContext());
     prog.add(copyProg);
   };
 
   auto zeroOutput = [&](poplar::program::Sequence &prog, OutIndex opIndex) {
     auto opId     = outId(opIndex);
     auto opOutput = outputs.at(opIndex);
-    popops::zero(graph(), opOutput, prog, debugPrefix("zero"));
+    popops::zero(graph(), opOutput, prog, debugContext("zero"));
   };
 
   auto copyOrZeroBranchOutput =

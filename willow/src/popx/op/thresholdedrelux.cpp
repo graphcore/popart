@@ -79,7 +79,7 @@ void ThresholdedReluGradOpx::grow(poplar::program::Sequence &prog) const {
                             expression,
                             {input, fwd_input},
                             prog,
-                            debugPrefix("thresholdedrelu_grad"));
+                            debugContext("thresholdedrelu_grad"));
 
   setOutTensor(ThresholdedReluGradOp::getOutIndex(), output);
 }

@@ -28,7 +28,7 @@ void ReduceSumOpx::grow(poplar::program::Sequence &prog) const {
                                       vector_cast<std::size_t>(op.getAxes()),
                                       {popops::Operation::ADD},
                                       prog,
-                                      debugPrefix("add"));
+                                      debugContext("add"));
 
   setOutTensor(
       ReduceSumOp::getOutIndex(),

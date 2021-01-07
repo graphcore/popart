@@ -23,7 +23,7 @@ void LambSquareOpx::grow(poplar::program::Sequence &prog) const {
                             {0},
                             {popops::Operation::SQUARE_ADD},
                             prog,
-                            debugPrefix("LambSquaredReducedFP32"));
+                            debugContext("LambSquaredReducedFP32"));
 
   setOutTensor(LambSquareOp::getOutIndex(), rsq);
 }

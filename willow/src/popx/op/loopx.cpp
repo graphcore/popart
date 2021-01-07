@@ -220,7 +220,7 @@ void LoopOpx::copyBodyOutputsToOpOutputs(
         auto bodyOutputTensor = get(bodyOutputTensorId);
         auto opOutputTensor   = get(opOutputTensorId);
         poplar::program::Copy copyProg(
-            bodyOutputTensor, opOutputTensor, false, debugPrefix("outputs"));
+            bodyOutputTensor, opOutputTensor, false, debugContext("outputs"));
         prog.add(copyProg);
         logging::opx::trace("[LoopOpx] output {} -> output {} copied",
                             bodyOutputTensorId,
@@ -269,7 +269,7 @@ void LoopOpx::grow(poplar::program::Sequence &prog) const {
   // 0: Set condOut to true if the cond is not shipped as op input
   if (!hasInput(LoopOp::getTerminationConditionInIndex())) {
     prog.add(poplar::program::Copy(
-        tconst, condOutTensor, {}, debugPrefix("cond_true")));
+        tconst, condOutTensor, {}, debugContext("cond_true")));
   }
 
   // 1: Copy explicit inputs to body outputs
@@ -282,24 +282,24 @@ void LoopOpx::grow(poplar::program::Sequence &prog) const {
   poplar::Tensor iteratorTensor;
   if (hasInput(LoopOp::getMaximumTripCountInIndex())) {
     iteratorTensor =
-        graph().addVariable(poplar::INT, {}, debugPrefix("iterator"));
+        graph().addVariable(poplar::INT, {}, debugContext("iterator"));
     poputil::mapTensorLinearly(graph(), iteratorTensor);
-    popops::zero(graph(), iteratorTensor, prog, debugPrefix("iterator_0"));
+    popops::zero(graph(), iteratorTensor, prog, debugContext("iterator_0"));
   }
 
   // 4: Create a poplar only boolean variable exit, set it to false
-  auto exitTensor = graph().addVariable(poplar::BOOL, {}, debugPrefix("exit"));
+  auto exitTensor = graph().addVariable(poplar::BOOL, {}, debugContext("exit"));
   poputil::mapTensorLinearly(graph(), exitTensor);
-  prog.add(
-      poplar::program::Copy(fconst, exitTensor, {}, debugPrefix("exit_false")));
+  prog.add(poplar::program::Copy(
+      fconst, exitTensor, {}, debugContext("exit_false")));
 
   // 5: Get the max trip count value
   auto maxTripCountValue = op.getTripCountValue();
 
   // 6: Create the three loop body programs
-  poplar::program::Sequence loopProg({}, debugPrefix("loop"));
-  poplar::program::Sequence loopExitProg({}, debugPrefix("exit"));
-  poplar::program::Sequence loopContinueProg({}, debugPrefix("continue"));
+  poplar::program::Sequence loopProg({}, debugContext("loop"));
+  poplar::program::Sequence loopExitProg({}, debugContext("exit"));
+  poplar::program::Sequence loopContinueProg({}, debugContext("continue"));
 
   // 7: Update the exit condition
   if (hasInput(LoopOp::getMaximumTripCountInIndex())) {
@@ -312,14 +312,14 @@ void LoopOpx::grow(poplar::program::Sequence &prog) const {
                          popops::expr::Gte(popops::expr::_3, popops::expr::_4)),
         {exitTensor, condOutTensor, iteratorTensor, maxTripCountTensor},
         loopProg,
-        debugPrefix("exit_update"));
+        debugContext("exit_update"));
   } else {
     popops::mapInPlace(
         graph(),
         popops::expr::Or(popops::expr::_1, popops::expr::Not(popops::expr::_2)),
         {exitTensor, condOutTensor},
         loopProg,
-        debugPrefix("exit_update"));
+        debugContext("exit_update"));
   }
 
   // 8: Copy body outputs to body inputs
@@ -345,18 +345,18 @@ void LoopOpx::grow(poplar::program::Sequence &prog) const {
         popops::expr::Add(popops::expr::_1, popops::expr::Const(1)),
         {iteratorTensor},
         loopContinueProg,
-        debugPrefix("iterator_update"));
+        debugContext("iterator_update"));
   }
 
   // 12: Add conditional around the loop body program
   loopProg.add(poplar::program::If(
-      exitTensor, loopExitProg, loopContinueProg, debugPrefix("condition")));
+      exitTensor, loopExitProg, loopContinueProg, debugContext("condition")));
 
   // 13: Repeat the loop conditional program
   logging::opx::debug(
       "[LoopOpx] Max trip count: {} ({})", maxTripCountValue, op.debugName());
   prog.add(poplar::program::Repeat(
-      maxTripCountValue, loopProg, debugPrefix("loop")));
+      maxTripCountValue, loopProg, debugContext("loop")));
 
   // 14: Copy body outputs to op outputs
   copyBodyOutputsToOpOutputs(prog);

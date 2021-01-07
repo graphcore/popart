@@ -31,7 +31,7 @@ void ReduceMinOpx::grow(poplar::program::Sequence &prog) const {
                                       vector_cast<std::size_t>(op.getAxes()),
                                       {popops::Operation::MIN},
                                       prog,
-                                      debugPrefix("min"));
+                                      debugContext("min"));
 
   setOutTensor(
       ReduceMinOp::getOutIndex(),
@@ -69,7 +69,7 @@ void ReduceMinGradOpx::grow(poplar::program::Sequence &prog) const {
               pe::_3),
       {mask, getInTensor(ReduceMinGradOp::getFwdInInIndex()), output},
       prog,
-      debugPrefix("maskmul"));
+      debugContext("maskmul"));
 
   // output now matches the shape of output_shape
   setOutTensor(ReduceMinGradOp::getOutIndex(), output);

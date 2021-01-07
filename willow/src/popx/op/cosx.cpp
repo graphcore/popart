@@ -18,7 +18,7 @@ void CosOpx::grow(poplar::program::Sequence &prog) const {
                            popops::expr::UnaryOpType::COS,
                            getInTensor(CosOp::getInIndex()),
                            prog,
-                           debugPrefix()));
+                           debugContext()));
 }
 
 namespace {

@@ -32,8 +32,8 @@ void ReduceLogSumOpx::grow(poplar::program::Sequence &prog) const {
                                       vector_cast<std::size_t>(op.getAxes()),
                                       {popops::Operation::ADD},
                                       prog,
-                                      debugPrefix("output"));
-  popops::logInPlace(graph(), output_tensor, prog, debugPrefix("log"));
+                                      debugContext("output"));
+  popops::logInPlace(graph(), output_tensor, prog, debugContext("log"));
 
   setOutTensor(ReduceLogSumOp::getOutIndex(),
                output_tensor.reshape(
@@ -65,7 +65,7 @@ void ReduceLogSumGradOpx::grow(poplar::program::Sequence &prog) const {
     }
   }
 
-  output = popops::div(graph(), output, scale, prog, debugPrefix("div"));
+  output = popops::div(graph(), output, scale, prog, debugContext("div"));
 
   // output now matches the shape of output_shape
   setOutTensor(ReduceLogSumGradOp::getOutIndex(), output);

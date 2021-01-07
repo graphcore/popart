@@ -19,7 +19,7 @@ void IsNaNx::grow(poplar::program::Sequence &prog) const {
                            getInTensor(IsNaN::getInIndex()),
                            getInTensor(IsNaN::getInIndex()),
                            prog,
-                           debugPrefix()));
+                           debugContext()));
 }
 
 namespace {

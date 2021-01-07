@@ -54,7 +54,7 @@ void ReluGradOpx::grow(poplar::program::Sequence &prog) const {
       getInTensor(rgop.getReludInIndex()),     // out,
       getInTensor(rgop.getGradReludInIndex()), // outGradient,
       prog,                                    // prog,
-      debugPrefix()                            // debugContext
+      debugContext()                           // debugContext
   );
 
   setOutTensor(0, outTensor);

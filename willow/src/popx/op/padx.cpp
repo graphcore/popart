@@ -212,7 +212,7 @@ poplar::Tensor BasePadOpx::constantModePadGrow(poplar::Tensor inTensor,
     auto outTensor    = graph().clone(propitious.second);
     auto chisseledDst = getChisseled(outTensor);
     s.add(poplar::program::Copy(
-        inTensor, chisseledDst.core, false, debugPrefix()));
+        inTensor, chisseledDst.core, false, debugContext()));
     auto allPads = chisseledDst.lows;
     allPads.insert(
         allPads.end(), chisseledDst.upps.cbegin(), chisseledDst.upps.cend());
@@ -220,7 +220,7 @@ poplar::Tensor BasePadOpx::constantModePadGrow(poplar::Tensor inTensor,
       x = x.flatten();
     }
     auto cat = poplar::concat(allPads, 0);
-    popops::zero(graph(), cat, s, debugPrefix("zero"));
+    popops::zero(graph(), cat, s, debugContext("zero"));
     return outTensor;
   }
 

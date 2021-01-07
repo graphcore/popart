@@ -51,7 +51,7 @@ void PopartLSTMOpx::grow(poplar::program::Sequence &prog) const {
                            lstmWeights,
                            intermediates.get(),
                            prog,
-                           debugPrefix("lstmFwd"),
+                           debugContext("lstmFwd"),
                            dv_p->lowering().lstmOptions,
                            &dv_p->matmulCache);
 
@@ -101,7 +101,7 @@ poplar::Tensor PopartLSTMOpx::createInput(InIndex index,
 poplar::Tensor PopartLSTMOpx::createLSTMInput() const {
   return popnn::lstm::createInput(graph(),
                                   createLSTMParams(),
-                                  debugPrefix("createLSTMInput"),
+                                  debugContext("createLSTMInput"),
                                   dv_p->lowering().lstmOptions,
                                   &dv_p->matmulCache);
 }
@@ -111,7 +111,7 @@ poplar::Tensor PopartLSTMOpx::createWeightsInput() const {
   std::tie(inputWeights, outputWeights) =
       popnn::lstm::createWeightsKernel(graph(),
                                        createLSTMParams(),
-                                       debugPrefix("weights"),
+                                       debugContext("weights"),
                                        dv_p->lowering().lstmOptions,
                                        &dv_p->matmulCache);
   return concatWeights(inputWeights, outputWeights);
@@ -157,7 +157,7 @@ void PopartLSTMGradOpx::grow(poplar::program::Sequence &prog) const {
                                      forwardCellStateGrad,
                                      &inputGrad,
                                      weightsGrad,
-                                     debugPrefix("lstmBwdWithWU"),
+                                     debugContext("lstmBwdWithWU"),
                                      dv_p->lowering().lstmOptions,
                                      &dv_p->matmulCache);
 

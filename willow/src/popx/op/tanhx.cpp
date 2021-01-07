@@ -19,7 +19,7 @@ void TanhOpx::grow(poplar::program::Sequence &prog) const {
                                         popnn::NonLinearityType::TANH,
                                         in_tensor,
                                         prog,
-                                        debugPrefix("nonLinearity"));
+                                        debugContext("nonLinearity"));
   setOutTensor(TanhOp::getOutIndex(), out_tensor);
 }
 
@@ -50,7 +50,7 @@ void TanhGradOpx::grow(poplar::program::Sequence &prog) const {
       fwd_out,
       grad_out,
       prog,
-      debugPrefix("nonLinearityInputGradient"));
+      debugContext("nonLinearityInputGradient"));
   setOutTensor(TanhGradOp::getOutIndex(), out_tensor);
 }
 

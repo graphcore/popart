@@ -48,7 +48,7 @@ void ArgExtremaOpx::grow(poplar::program::Sequence &prog) const {
   result = result.reshape(new_shape);
 
   result =
-      popops::cast(graph(), result, poplar::INT, prog, debugPrefix("cast"));
+      popops::cast(graph(), result, poplar::INT, prog, debugContext("cast"));
   setOutTensor(0, result);
 }
 

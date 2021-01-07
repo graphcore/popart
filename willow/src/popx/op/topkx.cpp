@@ -38,11 +38,11 @@ void TopKGradOpx::grow(poplar::program::Sequence &prog) const {
   auto gradIn = getInTensor(TopKGradOp::gradInIndex());
 
   poplar::Tensor dataGrad = graph().addVariable(
-      gradIn.elementType(), getGradOutShape(), debugPrefix("dataGrad"));
+      gradIn.elementType(), getGradOutShape(), debugContext("dataGrad"));
 
   poputil::mapTensorLinearly(graph(), dataGrad);
 
-  popops::zero(graph(), dataGrad, prog, debugPrefix("zero"));
+  popops::zero(graph(), dataGrad, prog, debugContext("zero"));
 
   scatterutilx::growScatter(
       prog, graph(), indices, gradIn, dataGrad, axis, getDebugInfo());
@@ -56,7 +56,7 @@ void TopKOpx::grow(poplar::program::Sequence &prog) const {
                        popops::expr::UnaryOpType::NEGATE,
                        x,
                        prog,
-                       debugPrefix("neg"));
+                       debugContext("neg"));
   };
 
   // Input shape, e.g. for rank = 4, axis = 2:
@@ -86,11 +86,16 @@ void TopKOpx::grow(poplar::program::Sequence &prog) const {
   auto indsShape = input.shape();
   indsShape[1]   = K;
   auto topKInds  = graph().addVariable(
-      poplar::UNSIGNED_INT, indsShape, debugPrefix("topKInds"));
+      poplar::UNSIGNED_INT, indsShape, debugContext("topKInds"));
   poputil::mapTensorLinearly(graph(), topKInds);
 
-  auto topKVals = popnn::topK(
-      graph(), input, topKInds, K, topk.getSorted(), prog, debugPrefix("topK"));
+  auto topKVals = popnn::topK(graph(),
+                              input,
+                              topKInds,
+                              K,
+                              topk.getSorted(),
+                              prog,
+                              debugContext("topK"));
   if (!topk.getLargest()) {
     topKVals = negateTensor(topKVals);
   }

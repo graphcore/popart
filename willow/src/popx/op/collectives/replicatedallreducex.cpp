@@ -26,7 +26,7 @@ void ReplicatedAllReduceOpx::grow(poplar::program::Sequence &prog) const {
                                          toReduce,
                                          popops::Operation::ADD,
                                          prog,
-                                         debugPrefix("replicatedAllReduce"),
+                                         debugContext("replicatedAllReduce"),
                                          allReduceOptions);
   setOutTensor(ReplicatedAllReduceOp::getOutIndex(), output);
 }
@@ -62,7 +62,7 @@ void ReplicatedAllReduceInplaceOpx::grow(
                         toReduce,
                         popops::Operation::ADD,
                         prog,
-                        debugPrefix("replicatedAllReduce"),
+                        debugContext("replicatedAllReduce"),
                         allReduceOptions);
   setOutTensor(ReplicatedAllReduceInplaceOp::getOutIndex(), toReduce);
 }

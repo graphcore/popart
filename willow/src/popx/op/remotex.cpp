@@ -17,7 +17,7 @@ void RemoteBaseOpx::postLoad(poplar::program::Sequence &prog,
                              const poplar::Tensor t) const {
   auto buffer             = dv_p->lowering().getRemoteBuffer(rbid);
   poplar::Tensor rbTensor = buffer.second.value();
-  poplar::program::Copy tmp_copy_prog(rbTensor, t, false, debugPrefix());
+  poplar::program::Copy tmp_copy_prog(rbTensor, t, false, debugContext());
   prog.add(tmp_copy_prog);
 }
 
@@ -35,7 +35,7 @@ void RemoteBaseOpx::preStore(poplar::Graph &sgraph,
   }
   auto buffer = dv_p->lowering().getRemoteBuffer(rbid);
   rbTensor    = buffer.second.value();
-  poplar::program::Copy tmp_copy_prog(t, rbTensor, false, debugPrefix());
+  poplar::program::Copy tmp_copy_prog(t, rbTensor, false, debugContext());
   prog.add(tmp_copy_prog);
 }
 
@@ -87,10 +87,10 @@ void RemoteBaseOpx::load(poplar::Graph &sgraph,
 
   if (offset.valid() && offset.numElements() > 0) {
     poplar::program::Copy copy_prog(
-        buffer.first, rbTensor, offset, debugPrefix());
+        buffer.first, rbTensor, offset, debugContext());
     prog.add(copy_prog);
   } else {
-    poplar::program::Copy copy_prog(buffer.first, rbTensor, debugPrefix());
+    poplar::program::Copy copy_prog(buffer.first, rbTensor, debugContext());
     prog.add(copy_prog);
   }
 }
@@ -103,10 +103,10 @@ void RemoteBaseOpx::store(poplar::program::Sequence &prog,
   poplar::Tensor rbTensor = buffer.second.value();
   if (offset.valid() && offset.numElements() > 0) {
     poplar::program::Copy copy_prog(
-        rbTensor, buffer.first, offset, debugPrefix());
+        rbTensor, buffer.first, offset, debugContext());
     prog.add(copy_prog);
   } else {
-    poplar::program::Copy copy_prog(rbTensor, buffer.first, debugPrefix());
+    poplar::program::Copy copy_prog(rbTensor, buffer.first, debugContext());
     prog.add(copy_prog);
   }
 }

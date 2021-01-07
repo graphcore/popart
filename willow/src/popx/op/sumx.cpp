@@ -54,7 +54,7 @@ void SumOpx::grow(poplar::program::Sequence &prog) const {
 
   // Compute the sum
   auto sum =
-      popops::map(graph(), *expr.front(), inputs, prog, debugPrefix("sum"));
+      popops::map(graph(), *expr.front(), inputs, prog, debugContext("sum"));
   setOutTensor(SumOp::getOutIndex(), sum);
 }
 
@@ -103,7 +103,7 @@ void SumArgGradOpx::grow(poplar::program::Sequence &prog) const {
                             vXtoY<int64_t, std::size_t>(axes),
                             {popops::Operation::ADD},
                             prog,
-                            debugPrefix("add"));
+                            debugContext("add"));
 
   logging::info("{} Shape of SumArgGradOpx output {} {}",
                 out,

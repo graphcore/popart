@@ -43,7 +43,7 @@ void ScatterDataGradOpx::grow(poplar::program::Sequence &prog) const {
   auto data = cloneNcopy(prog, getInTensor(ScatterDataGradOp::gradInIndex()));
   auto indices = getInTensor(ScatterDataGradOp::indicesInIndex());
   auto update  = graph().addConstant(
-      data.elementType(), indices.shape(), 0, debugPrefix("zeros"));
+      data.elementType(), indices.shape(), 0, debugContext("zeros"));
   poputil::mapTensorLinearly(graph(), update);
 
   // Build the implicit index coordinates
@@ -92,7 +92,7 @@ void ScatterDataGradOpx::grow(poplar::program::Sequence &prog) const {
                   inserted_window_dims,
                   scatter_dims_to_op,
                   prog,
-                  debugPrefix("scatter"));
+                  debugContext("scatter"));
 
   setOutTensor(ScatterDataGradOp::gradOutIndex(), data);
 }
@@ -158,7 +158,7 @@ void ScatterUpdateGradOpx::grow(poplar::program::Sequence &prog) const {
                                collapsedSliceDims,
                                startIndexMap,
                                prog,
-                               debugPrefix("gather"));
+                               debugContext("gather"));
 
   setOutTensor(ScatterDataGradOp::gradOutIndex(), result);
 }
