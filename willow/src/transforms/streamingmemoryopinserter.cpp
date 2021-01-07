@@ -412,6 +412,8 @@ void StreamingMemoryOpInserter::applyTensor(
   RemoteStoreOp *remoteStore       = nullptr;
   ReplicatedAllGatherOp *allGather = nullptr;
 
+  std::vector<RemoteStoreOp *> precedingRemoteStores;
+
   for (auto &contextAndConfig : tensorConfig.streamingMap) {
     auto &context = contextAndConfig.first;
     auto &config  = contextAndConfig.second;
@@ -457,11 +459,19 @@ void StreamingMemoryOpInserter::applyTensor(
       graph.topoCons->insert(remoteLoad, remoteStore);
     }
 
+    if (remoteLoad) {
+      // Remote load has to take place after any preceding remote store
+      for (auto precedingRemoteStore : precedingRemoteStores) {
+        graph.topoCons->insert(precedingRemoteStore, remoteLoad);
+      }
+    }
+
     if (remoteStore) {
       // Any modification has to take place before the remote store
       for (Op *modifyingOp : config.modifiers) {
         graph.topoCons->insert(modifyingOp, remoteStore);
       }
+      precedingRemoteStores.push_back(remoteStore);
     }
 
     if (tensorConfig.location.replicatedTensorSharding ==
@@ -1474,8 +1484,10 @@ RemoteLoadOp *StreamingMemoryOpInserter::insertRemoteLoadOp(
   // Setting the execution context ensures it's scheduled in the correct
   // fragment
   remoteLoad->settings.executionContext = context.context;
-  remoteLoad->settings.optimizerOp      = false;
-  remoteLoad->settings.recomputeType    = RecomputeType::Checkpoint;
+  remoteLoad->scheduledPreLoss          = context.preLoss;
+
+  remoteLoad->settings.optimizerOp   = false;
+  remoteLoad->settings.recomputeType = RecomputeType::Checkpoint;
   remoteLoad->setVirtualGraphId(
       tensorConfig.streamingMap.at(context).streamingVGID);
   graph.moveIntoGraph(std::move(remoteLoadOp));
@@ -1520,6 +1532,8 @@ RemoteLoadOp *StreamingMemoryOpInserter::insertRemoteLoadOp(
     init        = initOp.get();
 
     init->settings.executionContext = context.context;
+    init->scheduledPreLoss          = context.preLoss;
+
     init->setVirtualGraphId(
         tensorConfig.streamingMap.at(context).streamingVGID);
     graph.moveIntoGraph(std::move(initOp));
@@ -1582,6 +1596,7 @@ ReplicatedAllGatherOp *StreamingMemoryOpInserter::insertReplicatedAllGatherOp(
   allGather = allGatherOp.get();
 
   allGather->settings.executionContext = context.context;
+  allGather->scheduledPreLoss          = context.preLoss;
 
   if (isPhasedExecution() && context.phase) {
     allGather->setExecutionPhase(*(context.phase) - 1);
@@ -1631,17 +1646,20 @@ StreamingMemoryOpInserter::insertReplicatedReduceScatterOp(
   auto replicatedReduceScatter = replicatedReduceScatterOp.get();
   graph.moveIntoGraph(std::move(replicatedReduceScatterOp));
 
-  replicatedReduceScatter->connectInTensor(ReplicatedAllReduceOp::getInIndex(),
-                                           inTensorId);
+  replicatedReduceScatter->connectInTensor(
+      ReplicatedReduceScatterOp::getInIndex(), inTensorId);
 
   replicatedReduceScatter->connectInTensor(
       ReplicatedAllGatherOp::getCollectiveLinkedIndex(),
       getRemoteArg(weightTensorId));
 
   replicatedReduceScatter->connectOutTensor(
-      ReplicatedAllReduceOp::getOutIndex(), outTensorId);
+      ReplicatedReduceScatterOp::getOutIndex(), outTensorId);
 
   replicatedReduceScatter->setup();
+
+  replicatedReduceScatter->settings.executionContext = context.context;
+  replicatedReduceScatter->scheduledPreLoss          = context.preLoss;
 
   replicatedReduceScatter->settings.tileSet =
       tensorConfig.location.storageTileSet;
@@ -1713,6 +1731,7 @@ RemoteStoreOp *StreamingMemoryOpInserter::insertRemoteStoreOp(
   // Setting the execution context ensures it's scheduled in the correct
   // fragment
   remoteStore->settings.executionContext = context.context;
+  remoteStore->scheduledPreLoss          = context.preLoss;
 
   remoteStore->setup();
 

@@ -142,7 +142,9 @@ public:
         if (auto producer = t->getProducerUnsafe()) {
           g.insertConstraint(opAddresses[producer], opAddress);
         }
-        if (t->tensorType() != TensorType::Variable) {
+        // Don't consider allocs for variables and overwritten tensors
+        if (t->tensorType() != TensorType::Variable &&
+            !op->overwritesTensor(t)) {
           g.insertOpAlloc(opAddress, allocAddresses[t]);
         }
       }
@@ -398,6 +400,7 @@ public:
       // 2) descending priority for ops without batch-serial phase
       // 3) ascending batch-serial phase
       // 4) descending priority within batch-serial phase
+      // 5) ScheduledPreLoss::Yes before ScheduledPreLoss::No
       super.push_back({-op_phase_or,
                        op_priority_pre_or,
                        -op_batchserial_or,

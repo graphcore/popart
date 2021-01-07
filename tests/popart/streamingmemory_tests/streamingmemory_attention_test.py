@@ -300,6 +300,7 @@ def test_attention_streamingmemory(tmpdir):
         "replication": 1,
     })
 
+    # Test batch serialisation
     test_variants.append({
         "stages": 2,
         "numLayers": 3,
@@ -311,6 +312,20 @@ def test_attention_streamingmemory(tmpdir):
         "replication": 1,
     })
 
+    # Test off-chip without phases (full optimisations)
+    test_variants.append({
+        "stages": 2,
+        "numLayers": 3,
+        "phasedExecution": False,
+        "outlining": True,
+        "explicitRecomputation": True,
+        "aliasZeroCopy": True,
+        "batchSerialize": 1,
+        "replication": 1,
+        "tensorLocationSettings": defaultOffChip,
+    })
+
+    # Test off-chip with phases (conservative optimisations)
     test_variants.append({
         "stages": 2,
         "numLayers": 3,
@@ -323,6 +338,7 @@ def test_attention_streamingmemory(tmpdir):
         "tensorLocationSettings": defaultOffChip,
     })
 
+    # Test off-chip with phases, without recomputation
     test_variants.append({
         "stages": 2,
         "numLayers": 3,
@@ -335,6 +351,7 @@ def test_attention_streamingmemory(tmpdir):
         "tensorLocationSettings": defaultOffChip,
     })
 
+    # Test off-chip with phases, with recomputation
     test_variants.append({
         "stages": 2,
         "numLayers": 3,
@@ -347,6 +364,7 @@ def test_attention_streamingmemory(tmpdir):
         "tensorLocationSettings": defaultOffChip,
     })
 
+    # Test off-chip with phases (full optimisations)
     test_variants.append({
         "stages": 2,
         "numLayers": 3,
