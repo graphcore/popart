@@ -32,11 +32,12 @@ bool Mod::go(const NodeProto &node) {
         attributes.cbegin(), attributes.cend(), [](const auto &attr) {
           return attr.name() == std::string{"fmod"} && attr.i() == 1;
         });
-    if (isFmod)
+    if (isFmod) {
       binary(node, {node.input(0), node.input(1)}, node.output(0), "Fmod")
           .set_domain("ai.graphcore");
-    else
+    } else {
       remainderToFmod(node);
+    }
     return true;
   }
   return false;
