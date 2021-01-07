@@ -248,3 +248,51 @@ def test_replication_infer(op_tester):
     # Cant do opxModifyChecking wich replicated graphs.
     op_tester.options.opxModifyChecking = False
     op_tester.run(init_builder, reference, 'infer')
+
+
+@tu.requires_ipu
+def test_identity_loss_grad_replication():
+    """
+    Model:
+                        (mean reduce)
+    t0 -- Matmul - t2 - IdentityLoss - t3
+    t1 ----'
+    """
+    t_data = np.random.rand(8).astype(np.float32)
+
+    def getIdentityLossGradTensor(opToIdentityPattern):
+        builder = popart.Builder()
+        t0 = builder.addInputTensor("FLOAT", [1, 4])
+        # t1_data = np.random.rand(4, 1).astype(np.float32)
+        t1 = builder.addInputTensor("FLOAT", [4, 1])
+
+        t2 = builder.aiOnnx.matmul([t0, t1])
+        t3 = builder.aiGraphcore.identityloss(
+            [t2], reduction=popart.ReductionType.Mean)
+
+        opts = popart.SessionOptions()
+        opts.enableReplicatedGraphs = True
+        opts.replicatedGraphCount = 2
+
+        patterns = popart.Patterns()
+        patterns.OpToIdentity = opToIdentityPattern
+
+        session = popart.TrainingSession(
+            fnModel=builder.getModelProto(),
+            deviceInfo=tu.create_test_device(numIpus=2),
+            dataFlow=popart.DataFlow(
+                1, [t3, popart.reservedGradientPrefix() + t0]),
+            loss=t3,
+            optimizer=popart.ConstSGD(0.1),
+            userOptions=opts,
+            patterns=patterns)
+
+        anchors = session.initAnchorArrays()
+        session.prepareDevice()
+        stepio = popart.PyStepIO({t0: t_data, t1: t_data}, anchors)
+        session.run(stepio)
+        return anchors[popart.reservedGradientPrefix() + t0]
+
+    t2_grad = getIdentityLossGradTensor(True)
+    t2_grad_no_op_to_id = getIdentityLossGradTensor(False)
+    assert np.array_equal(t2_grad, t2_grad_no_op_to_id)

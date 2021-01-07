@@ -78,8 +78,29 @@ std::vector<std::unique_ptr<Op>> IdentityLossOp::getGradOps() {
 }
 
 bool IdentityLossOp::canBeReplacedByIdentity() const {
-  return getReductionType() == ReductionType::NoReduction ||
-         inRank(getInIndex()) == 0;
+  if (getReductionType() == ReductionType::NoReduction) {
+    return true;
+  }
+
+  // Scalar input
+  if (inInfo(getInIndex()).nelms() == 1) {
+    // If replaced by identity before auto-grad, then the corresponding grad op
+    // will be IdentityGradOp instead of IdentityLossGradOp, which has different
+    // behaviour in the case of graph replication when doing a 'mean' reduction
+    auto opts = getIr().getSessionOptions();
+    bool locallyReplicated =
+        opts.enableReplicatedGraphs && opts.replicatedGraphCount > 1;
+    bool globallyReplicated = opts.enableDistributedReplicatedGraphs &&
+                              opts.globalReplicationFactor > 1;
+    if (getReductionType() == ReductionType::Mean && getIr().canTrain() &&
+        (locallyReplicated || globallyReplicated)) {
+      return false;
+    } else {
+      return true;
+    }
+  }
+
+  return false;
 }
 
 IdentityLossOp::IdentityLossOp(const OperatorIdentifier &_opid,
