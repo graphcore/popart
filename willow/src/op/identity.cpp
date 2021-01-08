@@ -83,7 +83,7 @@ bool IdentityLossOp::canBeReplacedByIdentity() const {
   }
 
   // Scalar input
-  if (inInfo(getInIndex()).nelms() == 1) {
+  if (inRank(getInIndex()) == 0) {
     // If replaced by identity before auto-grad, then the corresponding grad op
     // will be IdentityGradOp instead of IdentityLossGradOp, which has different
     // behaviour in the case of graph replication when doing a 'mean' reduction
