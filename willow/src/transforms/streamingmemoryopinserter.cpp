@@ -826,7 +826,7 @@ void StreamingMemoryOpInserter::applyReplicatedOptimizerSharding(
   // consume the gathered tensor instead
   for (Op *op : opsToProcess) {
     logging::transform::trace(
-        "[StreamingMemory] Processing {} for replicated tensor sharding",
+        "[StreamingMemory] Resolving where RTS could not be propagated for {}",
         op->debugName());
     TensorId refId = opToRefTensorId.at(op);
 
@@ -877,15 +877,19 @@ void StreamingMemoryOpInserter::applyReplicatedOptimizerSharding(
         for (InIndex inIdx : indices.first) {
           Tensor *inTensor = op->input->tensor(inIdx);
           if (rtsTensors.hasShard(inTensor->id)) {
-            // Disconnect sharded input tensor
-            op->disconnectInTensor(inIdx, inTensor);
-
             TensorId gatheredId = rtsTensors.getGathered(inTensor->id);
             TensorId tensorId   = rtsTensors.getTensor(inTensor->id);
 
             if (gatheredId.empty()) {
-              TensorConfig tensorConfig =
-                  tensorConfigs.at(findRelatedVarTensor({inTensor}));
+              auto ref = findRelatedVarTensor({inTensor});
+              if (!ref) {
+                throw internal_error("[StreamingMemory] Could not find related "
+                                     "var tensor for sharded tensor {}. "
+                                     "Related var tensor is required to ensure "
+                                     "correct allGather output info.",
+                                     inTensor->id);
+              }
+              TensorConfig tensorConfig = tensorConfigs.at(ref);
               TensorStreamingContext context;
               context.context = op->settings.executionContext;
               if (context.context == ExecutionContext::Normal) {
@@ -895,6 +899,10 @@ void StreamingMemoryOpInserter::applyReplicatedOptimizerSharding(
                   context.preLoss = op->scheduledPreLoss;
                 }
               }
+
+              // Disconnect sharded input tensor. Important to be done after
+              // findRelatedVarTensor.
+              op->disconnectInTensor(inIdx, inTensor);
 
               insertReplicatedAllGatherOp(tensorConfig,
                                           context,
@@ -906,6 +914,9 @@ void StreamingMemoryOpInserter::applyReplicatedOptimizerSharding(
                                 gatheredId,
                                 tensorId,
                                 stripAllReservedPrefixes(refId));
+            } else {
+              // Disconnect sharded input tensor
+              op->disconnectInTensor(inIdx, inTensor);
             }
 
             Tensor *gatheredTensor = graph.getTensors().get(gatheredId);
