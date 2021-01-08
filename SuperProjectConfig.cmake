@@ -1,39 +1,50 @@
-include(GNUInstallDirs)
 
-set(CMAKE_POSITION_INDEPENDENT_CODE ON CACHE BOOL
-    "Default value for POSITION_INDEPENDENT_CODE of targets.")
+#
+# Usage:
+#   _popart_pass_through_cache_var(<var> [PATH])
+#
+# Implicitly passes through a variable to Popart that has been defined directly
+# on the super project, like -Dvar=val, instead of explicitly like
+# -DPOPART_CMAKE_ARGS=-Dvar=val.
+#
+# In general, for a path, an absolute path should be given, but for backwards
+# compatibility we support paths relative to the view build dir. Popart itself
+# (not the superproject, which this file is part of) documents that it expects
+# an absolute path; thus if you pass a relative path in POPART_CMAKE_ARGS, it
+# will not get evalulated correctly.
+#
+# If user for some reason defined both directly and in POPART_CMAKE_ARGS, the
+# definition in POPART_CMAKE_ARGS will get overwritten with this definition.
+macro(_popart_pass_through_cache_var var is_path)
+  if(DEFINED ${var})   
+    set(_val "${${var}}")
 
-set(POPLAR_INSTALL_DIR "" CACHE STRING "The Poplar install directory")
-list(APPEND POPART_CMAKE_ARGS -DPOPLAR_INSTALL_DIR=${POPLAR_INSTALL_DIR})
+    if(is_path STREQUAL "PATH")
+      get_filename_component(
+          _val "${_val}"
+          ABSOLUTE
+          BASE_DIR "${CMAKE_BINARY_DIR}"
+      )
+    endif()
 
-set(PoplarRunner_INSTALL_DIR "" CACHE STRING "The Poplar Runner install directory")
-list(APPEND POPART_CMAKE_ARGS -DPoplarRunner_INSTALL_DIR=${PoplarRunner_INSTALL_DIR})
+    list(APPEND POPART_CMAKE_ARGS -D${var}=${_val})
 
-set(C10_DIR "" CACHE STRING "Directory to install Cifar-10 dataset to")
-list(APPEND POPART_CMAKE_ARGS -DC10_DIR=${C10_DIR})
+    unset(_val)
+  endif()
+endmacro()
 
-set(POPART_PKG_DIR "" CACHE PATH
-    "Directory where the Popart package produced by CPack will be moved"
+# Automatically set for the user to the VIEW_DIR var provided by CBT.
+get_filename_component(
+    POPART_CBT_VIEW_DIR "${VIEW_DIR}"
+    ABSOLUTE
+    BASE_DIR "${CMAKE_BINARY_DIR}"
 )
-list(APPEND POPART_CMAKE_ARGS -DPOPART_PKG_DIR=${POPART_PKG_DIR})
 
-# If building a view, can default to the VIEW_DIR variable that CBT provides.
-if(DEFINED VIEW_DIR AND DEFINED CBT_DIR)
-  # Get absolute path.
-  get_filename_component(
-      VIEW_DIR_ABS "${VIEW_DIR}"
-      ABSOLUTE
-      BASE_DIR "${CMAKE_BINARY_DIR}"
-  )
-
-  set(POPART_CBT_VIEW_DIR "${VIEW_DIR_ABS}" CACHE PATH
-      "Directory of the view that is building Popart, used to compute a \
-version hash for the Popart package."
-  )
-  mark_as_advanced(POPART_CBT_VIEW_DIR)
-
-  list(APPEND POPART_CMAKE_ARGS -DPOPART_CBT_VIEW_DIR=${POPART_CBT_VIEW_DIR})
-endif()
+_popart_pass_through_cache_var(POPLAR_INSTALL_DIR PATH)
+_popart_pass_through_cache_var(PoplarRunner_INSTALL_DIR PATH)
+_popart_pass_through_cache_var(C10_DIR PATH)
+_popart_pass_through_cache_var(POPART_PKG_DIR PATH)
+_popart_pass_through_cache_var(POPART_CBT_VIEW_DIR PATH)
 
 set(CMAKE_CONFIGURATION_TYPES "Release" "Debug" "MinSizeRel" "RelWithDebInfo")
 set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS ${CMAKE_CONFIGURATION_TYPES})

@@ -58,14 +58,17 @@ set(INSTALL_TESTS ${CMAKE_INSTALL_PREFIX}/tests)
 # Don't allow C++ extensions.
 set (CMAKE_CXX_EXTENSIONS OFF)
 
+# Add Poplar SDK dir to prefix path so we can find its libraries.
+if(POPLAR_INSTALL_DIR)
+  message(VERBOSE "Appending to CMAKE_PREFIX_PATH: POPLAR_INSTALL_DIR = ${POPLAR_INSTALL_DIR}")
+  list(APPEND CMAKE_PREFIX_PATH ${POPLAR_INSTALL_DIR})
+endif()
+
 # Hardcode rpaths to things we link against outside of popart's build tree.
 set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 set(CMAKE_MACOSX_RPATH 1)
-set(CMAKE_INSTALL_RPATH "${POPLAR_INSTALL_DIR}/lib")
-
-# Add Poplar SDK dir to prefix path so we can find its libraries.
-if(DEFINED POPLAR_INSTALL_DIR)
-  list(APPEND CMAKE_PREFIX_PATH ${POPLAR_INSTALL_DIR})
+if (POPLAR_INSTALL_DIR)
+  set(CMAKE_INSTALL_RPATH "${POPLAR_INSTALL_DIR}/lib")
 endif()
 
 # Prefer to find static libraries

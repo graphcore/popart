@@ -1,5 +1,39 @@
 # cmake option definitions for popart
 
+if(DEFINED POPLAR_INSTALL_DIR AND NOT EXISTS "${POPLAR_INSTALL_DIR}")
+  message(WARNING "POPLAR_INSTALL_DIR does not exist: ${POPLAR_INSTALL_DIR}")
+endif()
+set(POPLAR_INSTALL_DIR "" CACHE PATH
+    "Absolute path to Poplar install directory"
+)
+
+set(PoplarRunner_INSTALL_DIR "" CACHE PATH
+    "Absolute path to Poplar Runner install directory"
+)
+
+set(C10_DIR "" CACHE PATH
+    "Absolute path to directory to install Cifar-10 dataset to"
+)
+
+# Paths used for packaging.
+# Default POPART_PKG_DIR to original path to ensure backwards compatability.
+if(NOT DEFINED POPART_PKG_DIR)
+  message(STATUS "Package directory defaulted to ../../../pkg")
+endif()
+if(NOT DEFINED POPART_CBT_VIEW_DIR)
+  message(VERBOSE "View directory defaulted to ${CMAKE_CURRENT_SOURCE_DIR}")
+endif()
+
+set(POPART_PKG_DIR "../../../pkg" CACHE PATH
+    "Absolute path to where the Popart package produced by CPack will be moved"
+)
+
+set(POPART_CBT_VIEW_DIR "${CMAKE_CURRENT_SOURCE_DIR}" CACHE PATH
+      "Absolute path to directory of the view that is building Popart, used to\
+  compute a version hash for the Popart package."
+)
+mark_as_advanced(POPART_CBT_VIEW_DIR)
+
 # colorful ninja, idea from
 # medium.com/@alasher/colored-c-compiler-output-with-ninja-clang-gcc-10bfe7f2b949
 option (FORCE_COLORED_OUTPUT "Always produce ANSI-colored output (GNU/Clang only)." TRUE)
@@ -38,17 +72,6 @@ if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
     endforeach()
   endif()
 endif()
-
-# Paths used for packaging.
-# Default to the original paths to ensure backwards compatability.
-if(NOT POPART_PKG_DIR)
-  set(POPART_PKG_DIR "../../../pkg")
-endif()
-if(NOT POPART_CBT_VIEW_DIR)
-  set(POPART_CBT_VIEW_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../..")
-endif()
-message(STATUS "Package directory is ${POPART_PKG_DIR}")
-message(STATUS "View directory is ${POPART_CBT_VIEW_DIR}")
 
 ## We have removed many custom Find<pkg> modules in popart. These used variables
 ## like ONNX_INSTALL_DIR etc. as hints. We now use the the standard methods of
