@@ -2204,6 +2204,12 @@ PYBIND11_MODULE(popart_core, m) {
             py::arg("value") = 0);
     cls.def(
         "executionPhase",
+        static_cast<void (Builder::*)(const std::set<TensorId> &,
+                                      int64_t phase)>(&Builder::executionPhase),
+        py::arg("nodeOutputNames"),
+        py::arg("value") = 0);
+    cls.def(
+        "executionPhase",
         [](Builder &self, int64_t phase) -> AttributeContextManager {
           AttributeContextManager acm(self, sExecutionPhaseAttribute, phase);
           return acm;
