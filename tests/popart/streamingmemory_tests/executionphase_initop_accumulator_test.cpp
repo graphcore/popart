@@ -102,9 +102,10 @@ BOOST_AUTO_TEST_CASE(TestInitOpAccumulator) {
   SessionOptions session_opts;
 
   // Large model settings
-  session_opts.enableOutlining = true;
-  session_opts.aliasZeroCopy   = true;
-  session_opts.constantWeights = false;
+  session_opts.explicitRecomputation = true;
+  session_opts.enableOutlining       = true;
+  session_opts.aliasZeroCopy         = true;
+  session_opts.constantWeights       = false;
 
   // TODO: T17972
   // AddOpx::getInputCreatorType currently has a constraint such that

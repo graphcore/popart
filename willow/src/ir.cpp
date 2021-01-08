@@ -490,7 +490,7 @@ void Ir::verifyExecutionPhaseSettings() const {
   if (userOptions.executionPhaseSettings.phases > 1 &&
       userOptions.virtualGraphMode != VirtualGraphMode::ExecutionPhases) {
     throw error(
-        "> 1 Execution phases requires VirtualGraphMode::ExecutionPhases");
+        "> 1 execution phases requires VirtualGraphMode::ExecutionPhases");
   }
 
   // if phased execution is enabled
@@ -506,6 +506,29 @@ void Ir::verifyExecutionPhaseSettings() const {
         auto &op = id_op.second;
         op->setExecutionPhase({});
       }
+    }
+  }
+
+  // Warn user that execution phases are not used if set to 0 or 1
+  if ((userOptions.virtualGraphMode == VirtualGraphMode::ExecutionPhases &&
+       userOptions.executionPhaseSettings.phases == 0) ||
+      userOptions.executionPhaseSettings.phases == 1) {
+    logging::ir::warn(
+        "Phased execution was enabled but only {} phases were defined. Phased "
+        "execution only works with >=2 phases. Disabling.",
+        userOptions.executionPhaseSettings.phases);
+  }
+}
+
+void Ir::verifyAliasZeroCopySettings() const {
+  if (userOptions.aliasZeroCopy) {
+    if (userOptions.enablePipelining) {
+      throw error(
+          "Alias zero copy is currently not supported with pipelining.");
+    }
+    if (!userOptions.explicitRecomputation) {
+      throw error("Alias zero copy is currently not supported with implicit "
+                  "recomputation.");
     }
   }
 }
@@ -953,6 +976,7 @@ void Ir::prepareImpl(const IrBundle &gb) {
   verifyPipelineSettings();
   verifyExecutionPhaseSettings();
   verifyDistributedReplicatedGraphSettings();
+  verifyAliasZeroCopySettings();
 
   dotCheckpoint(DotCheck::Fwd0);
 

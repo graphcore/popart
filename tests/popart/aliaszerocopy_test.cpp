@@ -150,6 +150,7 @@ BOOST_AUTO_TEST_CASE(AliasZeroCopyTest0) {
     auto device = popart::createTestDevice(TEST_TARGET);
 
     auto opts                           = SessionOptions();
+    opts.explicitRecomputation          = true;
     opts.enableOutlining                = true;
     opts.outlineThreshold               = -1.0;
     opts.enableOutliningCopyCostPruning = false;
