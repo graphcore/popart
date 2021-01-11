@@ -354,6 +354,7 @@ add_popart_py_unit_test(constant_op_test)
 add_popart_py_unit_test(nop_test)
 add_popart_py_unit_test(external_tensorproto_data_test)
 add_popart_py_unit_test(debug_info_test)
+add_popart_py_unit_test(logging_test)
 
 # Test to check for boost in popart headers.
 set(POPART_INCLUDE_DIR ${PROJECT_SOURCE_DIR}/willow/include)

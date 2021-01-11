@@ -43,6 +43,7 @@ class LoggingContext {
 
 public:
   static std::shared_ptr<spdlog::logger> getLogger(Module m);
+  static std::map<Module, std::shared_ptr<spdlog::logger>> getLoggers();
 
   static void setDefaultLogLevel(Level l) { instance().defaultLevel = l; }
 
@@ -241,6 +242,10 @@ std::shared_ptr<spdlog::logger> LoggingContext::getLogger(Module m) {
   }
 }
 
+std::map<Module, std::shared_ptr<spdlog::logger>> LoggingContext::getLoggers() {
+  return instance().loggers;
+}
+
 } // namespace
 
 // Implementation of public logging api
@@ -251,6 +256,12 @@ void configure(const std::map<std::string, std::string> &config) {
     if (moduleName == "all") {
       Level l = logLevelFromString(p.second);
       LoggingContext::setDefaultLogLevel(l);
+
+      // Set the log level of all instanced modules.
+      for (auto &module_logger : LoggingContext::getLoggers()) {
+        auto logger = module_logger.second;
+        logger->set_level(translate(l));
+      }
     } else {
       Module m = moduleFromString(moduleName);
       Level l  = logLevelFromString(p.second);
