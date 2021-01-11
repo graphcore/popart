@@ -11,7 +11,6 @@
 #include <popart/popx/opxmanager.hpp>
 
 #include <gcl/Collectives.hpp>
-#include <popops/Collectives.hpp>
 
 namespace popart {
 namespace popx {
@@ -51,13 +50,13 @@ void ReplicatedReduceScatterOpx::grow(poplar::program::Sequence &prog) const {
   poplar::OptionFlags reduceScatterOptions = dv_p->lowering().gclOptions;
   reduceScatterOptions.set("useReplicatedImplementation", "true");
 
-  poplar::Tensor reducedScattered = popops::replicatedReduceScatter(
-      graph(),
-      toReduceScatter.flatten(),
-      getPoplarCollectiveOperator(rrsOp.getCollectiveOp()),
-      prog,
-      debugContext("replicatedReduceScatter"),
-      reduceScatterOptions);
+  poplar::Tensor reducedScattered =
+      gcl::reduceScatter(graph(),
+                         toReduceScatter.flatten(),
+                         getPoplarCollectiveOperator(rrsOp.getCollectiveOp()),
+                         prog,
+                         debugContext("replicatedReduceScatter"),
+                         reduceScatterOptions);
 
   setOutTensor(ReplicatedReduceScatterOp::getOutIndex(), reducedScattered);
 }

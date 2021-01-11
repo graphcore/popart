@@ -8,7 +8,7 @@
 #include <popart/popx/opx.hpp>
 #include <popart/popx/viewchangers.hpp>
 
-#include <popops/Collectives.hpp>
+#include <popops/CollectiveTypes.hpp>
 
 namespace popart {
 namespace popx {
