@@ -1761,3 +1761,25 @@ def test_error_on_invalid_input_tensor():
 
     # Check error mentions unknown tensor name.
     assert ('\'blaaa\'' in str(e))
+
+
+# test_debugPrefix_deprecation_warning requires the log level to be at least WARN.
+# This needs to be set in the main scope, before any of the tests are called.
+# This is because the level doesn't seem to change once set. Calling another
+# test will set the log level to default, which is off for the tests.
+popart.getLogger().setLevel("WARN")
+
+
+def test_debugPrefix_deprecation_warning(capfd):
+    # POPART_LOG_LEVEL needs to be set before any other tests are run using the following statement:
+    #     popart.getLogger().setLevel("DEBUG")
+
+    builder = popart.Builder()
+    i1 = builder.addInputTensor(popart.TensorInfo("FLOAT", [1, 2, 32, 32]))
+    o = builder.aiOnnx.abs([i1], debugPrefix='foo')
+
+    out, err = capfd.readouterr()
+    with capfd.disabled():
+        print(f'out: {out}', flush=True)
+        print(f'err: {err}', flush=True)
+        assert "You appear to be using a deprecated keyword argument 'debugPrefix'" in err
