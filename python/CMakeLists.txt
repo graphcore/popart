@@ -31,8 +31,9 @@ function(add_popart_python_module module_name source_file)
       # Use ThinLTO if available
       THIN_LTO
       # Sources
-      ${source_file} np_utils.cpp
-  )
+    ${source_file}
+    np_utils.cpp)
+
 
   target_compile_features(${module_name} PUBLIC cxx_std_14)
 
@@ -74,8 +75,7 @@ add_custom_command(
     COMMAND cmake -E copy_directory 
       ${CMAKE_CURRENT_SOURCE_DIR}/popart
       ${CMAKE_CURRENT_BINARY_DIR}/popart
-    COMMENT "Copying python module"
-)
+  COMMENT "Copying python module")
 
 install(DIRECTORY popart
     DESTINATION ${INSTALL_PYDIR}

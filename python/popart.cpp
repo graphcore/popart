@@ -12,6 +12,8 @@
 #include <popart/builder.hpp>
 #include <popart/debugcontext.hpp>
 #include <popart/devicemanager.hpp>
+#include <popart/docs/pydocs_popart_core.hpp>
+#include <popart/docs/pydocs_popart_custom.hpp>
 #include <popart/error.hpp>
 #include <popart/graphtransformer.hpp>
 #include <popart/ir.hpp>
@@ -628,9 +630,9 @@ PYBIND11_MODULE(popart_core, m) {
     en.value("UNDEFINED", DataType::UNDEFINED);
   }
   {
-    py::enum_<InitType> en(m, "InitType");
-    en.value("NoInit", InitType::NoInit);
-    en.value("Zero", InitType::Zero);
+    py::enum_<InitType> en(m, "InitType", DOC(popart, InitType));
+    en.value("NoInit", InitType::NoInit, DOC(popart, InitType, NoInit));
+    en.value("Zero", InitType::Zero, DOC(popart, InitType, Zero));
   }
   {
     py::class_<OpDefinition::Input> cls(m, "OpDefinition::Input");
@@ -718,7 +720,10 @@ PYBIND11_MODULE(popart_core, m) {
     cls.def("isAnchored", &DataFlow::isAnchored);
     cls.def("nAnchors", &DataFlow::nAnchors);
     cls.def("batchesPerStep", &DataFlow::batchesPerStep);
-    cls.def("anchors", &DataFlow::anchors, pybind11::return_value_policy::copy);
+    cls.def("anchors",
+            &DataFlow::anchors,
+            pybind11::return_value_policy::copy,
+            DOC(popart, DataFlow, anchors));
     cls.def("art", &DataFlow::art);
   }
   {
@@ -778,7 +783,7 @@ PYBIND11_MODULE(popart_core, m) {
     }
 
     {
-      py::class_<SGD> sgd(m, "SGD", optimizer);
+      py::class_<SGD> sgd(m, "SGD", optimizer, DOC(popart, SGD));
       sgd.def(py::init([](py::dict pyd,
                           std::vector<ClipNormSettings> clipNormSettings) {
                 auto cppm = getOptimizerValueDictionary(pyd);
@@ -797,7 +802,7 @@ PYBIND11_MODULE(popart_core, m) {
       sgd.def("velocityScalings", &SGD::velocityScalings);
 
       { // This class is deprecated, and SGD should be preferred
-        py::class_<ConstSGD> cls(m, "ConstSGD", sgd);
+        py::class_<ConstSGD> cls(m, "ConstSGD", sgd, DOC(popart, ConstSGD));
         cls.def(py::init<float, float, float, std::vector<ClipNormSettings>>(),
                 py::arg("learning_rate"),
                 py::arg("weight_decay") = 0.0f,
@@ -815,7 +820,7 @@ PYBIND11_MODULE(popart_core, m) {
         en.value("LambNoBias", AdamMode::LambNoBias);
         en.value("AdaMax", AdamMode::AdaMax);
       }
-      py::class_<Adam> adam(m, "Adam", optimizer);
+      py::class_<Adam> adam(m, "Adam", optimizer, DOC(popart, Adam));
       adam.def(py::init([](py::dict pyd,
                            AdamMode mode,
                            WeightDecayMode wdmode,
@@ -903,11 +908,18 @@ PYBIND11_MODULE(popart_core, m) {
         py::arg("loadTileSet"),
         py::arg("storageTileSet"),
         py::arg("replicatedTensorSharding"));
-    cls.def_readwrite("storage", &TensorLocation::storage);
-    cls.def_readwrite("loadTileSet", &TensorLocation::loadTileSet);
-    cls.def_readwrite("storageTileSet", &TensorLocation::storageTileSet);
+    cls.def_readwrite("storage",
+                      &TensorLocation::storage,
+                      DOC(popart, TensorLocation, storage));
+    cls.def_readwrite("loadTileSet",
+                      &TensorLocation::loadTileSet,
+                      DOC(popart, TensorLocation, loadTileSet));
+    cls.def_readwrite("storageTileSet",
+                      &TensorLocation::storageTileSet,
+                      DOC(popart, TensorLocation, storageTileSet));
     cls.def_readwrite("replicatedTensorSharding",
-                      &TensorLocation::replicatedTensorSharding);
+                      &TensorLocation::replicatedTensorSharding,
+                      DOC(popart, TensorLocation, replicatedTensorSharding));
   }
   {
     py::class_<TensorLocationSettings> cls(m, "TensorLocationSettings");
@@ -920,9 +932,13 @@ PYBIND11_MODULE(popart_core, m) {
             py::arg("storage"),
             py::arg("minElementsForOffChip")                  = 2,
             py::arg("minElementsForReplicatedTensorSharding") = 8192);
-    cls.def_readwrite("location", &TensorLocationSettings::location);
-    cls.def_readwrite("minElementsForOffChip",
-                      &TensorLocationSettings::minElementsForOffChip);
+    cls.def_readwrite("location",
+                      &TensorLocationSettings::location,
+                      DOC(popart, TensorLocationSettings, location));
+    cls.def_readwrite(
+        "minElementsForOffChip",
+        &TensorLocationSettings::minElementsForOffChip,
+        DOC(popart, TensorLocationSettings, minElementsForOffChip));
     cls.def_readwrite(
         "minElementsForReplicatedTensorSharding",
         &TensorLocationSettings::minElementsForReplicatedTensorSharding);
@@ -984,7 +1000,8 @@ PYBIND11_MODULE(popart_core, m) {
     cls.def_readwrite("method", &BatchSerializationSettings::method);
     // This setting is experimental and may change.
     cls.def_readwrite("batchSchedule",
-                      &BatchSerializationSettings::batchSchedule);
+                      &BatchSerializationSettings::batchSchedule,
+                      DOC(popart, BatchSerializationSettings, batchSchedule));
   }
   {
     py::class_<ExecutionPhaseSettings> cls(m, "ExecutionPhaseSettings");
@@ -1003,17 +1020,30 @@ PYBIND11_MODULE(popart_core, m) {
             py::arg("optimizerStateIOSchedule"),
             py::arg("accumulatorIOSchedule"),
             py::arg("optimizerSchedule"));
-    cls.def_readwrite("phases", &ExecutionPhaseSettings::phases);
-    cls.def_readwrite("stages", &ExecutionPhaseSettings::stages);
+    cls.def_readwrite("phases",
+                      &ExecutionPhaseSettings::phases,
+                      DOC(popart, ExecutionPhaseSettings, phases));
+    cls.def_readwrite("stages",
+                      &ExecutionPhaseSettings::stages,
+                      DOC(popart, ExecutionPhaseSettings, stages));
     cls.def_readwrite("weightIOSchedule",
-                      &ExecutionPhaseSettings::weightIOSchedule);
-    cls.def_readwrite("activationIOSchedule",
-                      &ExecutionPhaseSettings::activationIOSchedule);
-    cls.def_readwrite("optimizerStateIOSchedule",
-                      &ExecutionPhaseSettings::optimizerStateIOSchedule);
-    cls.def_readwrite("accumulatorIOSchedule",
-                      &ExecutionPhaseSettings::accumulatorIOSchedule);
-    cls.def_readwrite("schedule", &ExecutionPhaseSettings::schedule);
+                      &ExecutionPhaseSettings::weightIOSchedule,
+                      DOC(popart, ExecutionPhaseSettings, weightIOSchedule));
+    cls.def_readwrite(
+        "activationIOSchedule",
+        &ExecutionPhaseSettings::activationIOSchedule,
+        DOC(popart, ExecutionPhaseSettings, activationIOSchedule));
+    cls.def_readwrite(
+        "optimizerStateIOSchedule",
+        &ExecutionPhaseSettings::optimizerStateIOSchedule,
+        DOC(popart, ExecutionPhaseSettings, optimizerStateIOSchedule));
+    cls.def_readwrite(
+        "accumulatorIOSchedule",
+        &ExecutionPhaseSettings::accumulatorIOSchedule,
+        DOC(popart, ExecutionPhaseSettings, accumulatorIOSchedule));
+    cls.def_readwrite("schedule",
+                      &ExecutionPhaseSettings::schedule,
+                      DOC(popart, ExecutionPhaseSettings, schedule));
   }
   {
     py::class_<AccumulateOuterFragmentSettings> cls(
@@ -1022,17 +1052,25 @@ PYBIND11_MODULE(popart_core, m) {
     cls.def(py::init<AccumulateOuterFragmentSchedule, std::vector<int>>(),
             py::arg("schedule"),
             py::arg("excludedVirtualGraphs") = std::vector<int>());
-    cls.def_readwrite("schedule", &AccumulateOuterFragmentSettings::schedule);
-    cls.def_readwrite("excludedVirtualGraphs",
-                      &AccumulateOuterFragmentSettings::excludedVirtualGraphs);
+    cls.def_readwrite("schedule",
+                      &AccumulateOuterFragmentSettings::schedule,
+                      DOC(popart, AccumulateOuterFragmentSettings, schedule));
+    cls.def_readwrite(
+        "excludedVirtualGraphs",
+        &AccumulateOuterFragmentSettings::excludedVirtualGraphs,
+        DOC(popart, AccumulateOuterFragmentSettings, excludedVirtualGraphs));
   }
   {
     py::class_<ClipNormSettings> cls(m, "ClipNormSettings");
     cls.def(py::init<std::vector<TensorId>, float>(),
             py::arg("weightIds"),
             py::arg("maxNorm"));
-    cls.def_readwrite("weightIds", &ClipNormSettings::weightIds);
-    cls.def_readwrite("maxNorm", &ClipNormSettings::maxNorm);
+    cls.def_readwrite("weightIds",
+                      &ClipNormSettings::weightIds,
+                      DOC(popart, ClipNormSettings, weightIds));
+    cls.def_readwrite("maxNorm",
+                      &ClipNormSettings::maxNorm,
+                      DOC(popart, ClipNormSettings, maxNorm));
   }
   {
     py::class_<SessionOptions::NumIOTiles> cls(m, "NumIOTiles");
@@ -1042,41 +1080,72 @@ PYBIND11_MODULE(popart_core, m) {
   {
     py::class_<SessionOptions> cls(m, "SessionOptions");
     cls.def(py::init<>());
-    cls.def_readwrite("logDir", &SessionOptions::logDir);
-    cls.def_readwrite("exportPoplarComputationGraph",
-                      &SessionOptions::exportPoplarComputationGraph);
+    cls.def_readwrite(
+        "logDir", &SessionOptions::logDir, DOC(popart, SessionOptions, logDir));
+    cls.def_readwrite(
+        "exportPoplarComputationGraph",
+        &SessionOptions::exportPoplarComputationGraph,
+        DOC(popart, SessionOptions, exportPoplarComputationGraph));
     cls.def_readwrite("exportPoplarVertexGraph",
-                      &SessionOptions::exportPoplarVertexGraph);
-    cls.def_readwrite("syntheticDataMode", &SessionOptions::syntheticDataMode);
-    cls.def_readwrite("instrumentWithHardwareCycleCounter",
-                      &SessionOptions::instrumentWithHardwareCycleCounter);
+                      &SessionOptions::exportPoplarVertexGraph,
+                      DOC(popart, SessionOptions, exportPoplarVertexGraph));
+    cls.def_readwrite("syntheticDataMode",
+                      &SessionOptions::syntheticDataMode,
+                      DOC(popart, SessionOptions, syntheticDataMode));
+    cls.def_readwrite(
+        "instrumentWithHardwareCycleCounter",
+        &SessionOptions::instrumentWithHardwareCycleCounter,
+        DOC(popart, SessionOptions, instrumentWithHardwareCycleCounter));
     cls.def_readwrite("hardwareInstrumentations",
-                      &SessionOptions::hardwareInstrumentations);
-    cls.def_readwrite("disableGradAccumulationTensorStreams",
-                      &SessionOptions::disableGradAccumulationTensorStreams);
-    cls.def_readwrite("enableOutlining", &SessionOptions::enableOutlining);
-    cls.def_readwrite("enableOutliningCopyCostPruning",
-                      &SessionOptions::enableOutliningCopyCostPruning);
-    cls.def_readwrite("outlineThreshold", &SessionOptions::outlineThreshold);
+                      &SessionOptions::hardwareInstrumentations,
+                      DOC(popart, SessionOptions, hardwareInstrumentations));
+    cls.def_readwrite(
+        "disableGradAccumulationTensorStreams",
+        &SessionOptions::disableGradAccumulationTensorStreams,
+        DOC(popart, SessionOptions, disableGradAccumulationTensorStreams));
+    cls.def_readwrite("enableOutlining",
+                      &SessionOptions::enableOutlining,
+                      DOC(popart, SessionOptions, enableOutlining));
+    cls.def_readwrite(
+        "enableOutliningCopyCostPruning",
+        &SessionOptions::enableOutliningCopyCostPruning,
+        DOC(popart, SessionOptions, enableOutliningCopyCostPruning));
+    cls.def_readwrite("outlineThreshold",
+                      &SessionOptions::outlineThreshold,
+                      DOC(popart, SessionOptions, outlineThreshold));
     cls.def_readwrite("outlineSequenceBreakCost",
-                      &SessionOptions::outlineSequenceBreakCost);
+                      &SessionOptions::outlineSequenceBreakCost,
+                      DOC(popart, SessionOptions, outlineSequenceBreakCost));
     cls.def_readwrite("accumulationFactor",
-                      &SessionOptions::accumulationFactor);
+                      &SessionOptions::accumulationFactor,
+                      DOC(popart, SessionOptions, accumulationFactor));
     cls.def_readwrite("enableGradientAccumulation",
-                      &SessionOptions::enableGradientAccumulation);
+                      &SessionOptions::enableGradientAccumulation,
+                      DOC(popart, SessionOptions, enableGradientAccumulation));
     cls.def_readwrite("accumulationReductionType",
-                      &SessionOptions::accumulationReductionType);
+                      &SessionOptions::accumulationReductionType,
+                      DOC(popart, SessionOptions, accumulationReductionType));
     cls.def_readwrite("enableNonStableSoftmax",
-                      &SessionOptions::enableNonStableSoftmax);
-    cls.def_readwrite("enablePipelining", &SessionOptions::enablePipelining);
-    cls.def_readwrite("autoRecomputation", &SessionOptions::autoRecomputation);
-    cls.def_readwrite("mergeVarUpdate", &SessionOptions::mergeVarUpdate);
+                      &SessionOptions::enableNonStableSoftmax,
+                      DOC(popart, SessionOptions, enableNonStableSoftmax));
+    cls.def_readwrite("enablePipelining",
+                      &SessionOptions::enablePipelining,
+                      DOC(popart, SessionOptions, enablePipelining));
+    cls.def_readwrite("autoRecomputation",
+                      &SessionOptions::autoRecomputation,
+                      DOC(popart, SessionOptions, autoRecomputation));
+    cls.def_readwrite("mergeVarUpdate",
+                      &SessionOptions::mergeVarUpdate,
+                      DOC(popart, SessionOptions, mergeVarUpdate));
     cls.def_readwrite("mergeVarUpdateMemThreshold",
-                      &SessionOptions::mergeVarUpdateMemThreshold);
+                      &SessionOptions::mergeVarUpdateMemThreshold,
+                      DOC(popart, SessionOptions, mergeVarUpdateMemThreshold));
     cls.def_readwrite("rearrangeAnchorsOnHost",
-                      &SessionOptions::rearrangeAnchorsOnHost);
+                      &SessionOptions::rearrangeAnchorsOnHost,
+                      DOC(popart, SessionOptions, rearrangeAnchorsOnHost));
     cls.def_readwrite("executionPhaseSettings",
-                      &SessionOptions::executionPhaseSettings);
+                      &SessionOptions::executionPhaseSettings,
+                      DOC(popart, SessionOptions, executionPhaseSettings));
     cls.def_property(
         "numIOTiles",
         [](const SessionOptions &s) -> int { return s.numIOTiles; },
@@ -1084,69 +1153,126 @@ PYBIND11_MODULE(popart_core, m) {
           s.numIOTiles = numIOTiles;
         });
     cls.def_readwrite("explicitRecomputation",
-                      &SessionOptions::explicitRecomputation);
+                      &SessionOptions::explicitRecomputation,
+                      DOC(popart, SessionOptions, explicitRecomputation));
     cls.def_readwrite("batchSerializationSettings",
-                      &SessionOptions::batchSerializationSettings);
-    cls.def_readwrite("aliasZeroCopy", &SessionOptions::aliasZeroCopy);
+                      &SessionOptions::batchSerializationSettings,
+                      DOC(popart, SessionOptions, batchSerializationSettings));
+    cls.def_readwrite("aliasZeroCopy",
+                      &SessionOptions::aliasZeroCopy,
+                      DOC(popart, SessionOptions, aliasZeroCopy));
     cls.def_readwrite("enablePrefetchDatastreams",
                       &SessionOptions::enablePrefetchDatastreams);
     cls.def_readwrite("prefetchBufferingDepthMap",
                       &SessionOptions::prefetchBufferingDepthMap);
     cls.def_readwrite("virtualGraphMode", &SessionOptions::virtualGraphMode);
     cls.def_readwrite("enableReplicatedGraphs",
-                      &SessionOptions::enableReplicatedGraphs);
+                      &SessionOptions::enableReplicatedGraphs,
+                      DOC(popart, SessionOptions, enableReplicatedGraphs));
     cls.def_readwrite("replicatedGraphCount",
-                      &SessionOptions::replicatedGraphCount);
-    cls.def_readwrite("compileEngine", &SessionOptions::compileEngine);
-    cls.def_readwrite("_engineOptions", &SessionOptions::engineOptions);
+                      &SessionOptions::replicatedGraphCount,
+                      DOC(popart, SessionOptions, replicatedGraphCount));
+    cls.def_readwrite("compileEngine",
+                      &SessionOptions::compileEngine,
+                      DOC(popart, SessionOptions, compileEngine));
+    cls.def_readwrite("_engineOptions",
+                      &SessionOptions::engineOptions,
+                      DOC(popart, SessionOptions, engineOptions));
     cls.def_readwrite("_convolutionOptions",
-                      &SessionOptions::convolutionOptions);
-    cls.def_readwrite("_reportOptions", &SessionOptions::reportOptions);
-    cls.def_readwrite("_gclOptions", &SessionOptions::gclOptions);
-    cls.def_readwrite("dotOpNames", &SessionOptions::dotOpNames);
+                      &SessionOptions::convolutionOptions,
+                      DOC(popart, SessionOptions, convolutionOptions));
+    cls.def_readwrite("_reportOptions",
+                      &SessionOptions::reportOptions,
+                      DOC(popart, SessionOptions, reportOptions));
+    cls.def_readwrite("_gclOptions",
+                      &SessionOptions::gclOptions,
+                      DOC(popart, SessionOptions, gclOptions));
+    cls.def_readwrite("dotOpNames",
+                      &SessionOptions::dotOpNames,
+                      DOC(popart, SessionOptions, dotOpNames));
     cls.def_readwrite("separateCallOpPdfs",
-                      &SessionOptions::separateCallOpPdfs);
-    cls.def_readwrite("finalDotOp", &SessionOptions::finalDotOp);
-    cls.def_readwrite("firstDotOp", &SessionOptions::firstDotOp);
-    cls.def_readwrite("constantWeights", &SessionOptions::constantWeights);
-    cls.def_readwrite("cachePath", &SessionOptions::cachePath);
+                      &SessionOptions::separateCallOpPdfs,
+                      DOC(popart, SessionOptions, separateCallOpPdfs));
+    cls.def_readwrite("finalDotOp",
+                      &SessionOptions::finalDotOp,
+                      DOC(popart, SessionOptions, finalDotOp));
+    cls.def_readwrite("firstDotOp",
+                      &SessionOptions::firstDotOp,
+                      DOC(popart, SessionOptions, firstDotOp));
+    cls.def_readwrite("constantWeights",
+                      &SessionOptions::constantWeights,
+                      DOC(popart, SessionOptions, constantWeights));
+    cls.def_readwrite("cachePath",
+                      &SessionOptions::cachePath,
+                      DOC(popart, SessionOptions, cachePath));
     cls.def_readwrite("enableEngineCaching",
-                      &SessionOptions::enableEngineCaching);
+                      &SessionOptions::enableEngineCaching,
+                      DOC(popart, SessionOptions, enableEngineCaching));
     cls.def_readwrite("enableFloatingPointChecks",
-                      &SessionOptions::enableFloatingPointChecks);
+                      &SessionOptions::enableFloatingPointChecks,
+                      DOC(popart, SessionOptions, enableFloatingPointChecks));
     cls.def_readwrite("enableStochasticRounding",
-                      &SessionOptions::enableStochasticRounding);
+                      &SessionOptions::enableStochasticRounding,
+                      DOC(popart, SessionOptions, enableStochasticRounding));
     cls.def_readwrite("enableFullyConnectedPass",
-                      &SessionOptions::enableFullyConnectedPass);
+                      &SessionOptions::enableFullyConnectedPass,
+                      DOC(popart, SessionOptions, enableFullyConnectedPass));
     cls.def_readwrite("enableGroupedMatmuls",
-                      &SessionOptions::enableGroupedMatmuls);
+                      &SessionOptions::enableGroupedMatmuls,
+                      DOC(popart, SessionOptions, enableGroupedMatmuls));
     cls.def_readwrite("partialsTypeMatMuls",
-                      &SessionOptions::partialsTypeMatMuls);
-    cls.def_readwrite("enableStableNorm", &SessionOptions::enableStableNorm);
+                      &SessionOptions::partialsTypeMatMuls,
+                      DOC(popart, SessionOptions, partialsTypeMatMuls));
+    cls.def_readwrite("enableStableNorm",
+                      &SessionOptions::enableStableNorm,
+                      DOC(popart, SessionOptions, enableStableNorm));
     // set in python use the python set constructor, so something like
     // mySessionOptions.dotChecks = {popart.DotCheck.FINAL}
-    cls.def_readwrite("dotChecks", &SessionOptions::dotChecks);
-    cls.def_readwrite("customCodelets", &SessionOptions::customCodelets);
+    cls.def_readwrite("dotChecks",
+                      &SessionOptions::dotChecks,
+                      DOC(popart, SessionOptions, dotChecks));
+    cls.def_readwrite("customCodelets",
+                      &SessionOptions::customCodelets,
+                      DOC(popart, SessionOptions, customCodelets));
     cls.def_readwrite("customCodeletCompileFlags",
-                      &SessionOptions::customCodeletCompileFlags);
-    cls.def_readwrite("hostAllReduce", &SessionOptions::hostAllReduce);
-    cls.def_readwrite("hostWeightUpdate", &SessionOptions::hostWeightUpdate);
+                      &SessionOptions::customCodeletCompileFlags,
+                      DOC(popart, SessionOptions, customCodeletCompileFlags));
+    cls.def_readwrite("hostAllReduce",
+                      &SessionOptions::hostAllReduce,
+                      DOC(popart, SessionOptions, hostAllReduce));
+    cls.def_readwrite("hostWeightUpdate",
+                      &SessionOptions::hostWeightUpdate,
+                      DOC(popart, SessionOptions, hostWeightUpdate));
     cls.def_readwrite("hostAllReduceRemoteBuffer",
-                      &SessionOptions::hostAllReduceRemoteBuffer);
-    cls.def_readwrite("hostWeightUpdate", &SessionOptions::hostWeightUpdate);
+                      &SessionOptions::hostAllReduceRemoteBuffer,
+                      DOC(popart, SessionOptions, hostAllReduceRemoteBuffer));
+    cls.def_readwrite("hostWeightUpdate",
+                      &SessionOptions::hostWeightUpdate,
+                      DOC(popart, SessionOptions, hostWeightUpdate));
 
-    cls.def_readwrite("kahnTieBreaker", &SessionOptions::kahnTieBreaker);
+    cls.def_readwrite("kahnTieBreaker",
+                      &SessionOptions::kahnTieBreaker,
+                      DOC(popart, SessionOptions, kahnTieBreaker));
     cls.def_readwrite("timeLimitScheduler",
-                      &SessionOptions::timeLimitScheduler);
+                      &SessionOptions::timeLimitScheduler,
+                      DOC(popart, SessionOptions, timeLimitScheduler));
     cls.def_readwrite("swapLimitScheduler",
-                      &SessionOptions::swapLimitScheduler);
-    cls.def_readwrite("decomposeGradSum", &SessionOptions::decomposeGradSum);
-    cls.def_readwrite("serializedPoprithmsAnnealGraphsDir",
-                      &SessionOptions::serializedPoprithmsAnnealGraphsDir);
-    cls.def_readwrite("enableDistributedReplicatedGraphs",
-                      &SessionOptions::enableDistributedReplicatedGraphs);
+                      &SessionOptions::swapLimitScheduler,
+                      DOC(popart, SessionOptions, swapLimitScheduler));
+    cls.def_readwrite("decomposeGradSum",
+                      &SessionOptions::decomposeGradSum,
+                      DOC(popart, SessionOptions, decomposeGradSum));
+    cls.def_readwrite(
+        "serializedPoprithmsAnnealGraphsDir",
+        &SessionOptions::serializedPoprithmsAnnealGraphsDir,
+        DOC(popart, SessionOptions, serializedPoprithmsAnnealGraphsDir));
+    cls.def_readwrite(
+        "enableDistributedReplicatedGraphs",
+        &SessionOptions::enableDistributedReplicatedGraphs,
+        DOC(popart, SessionOptions, enableDistributedReplicatedGraphs));
     cls.def_readwrite("globalReplicationFactor",
-                      &SessionOptions::globalReplicationFactor);
+                      &SessionOptions::globalReplicationFactor,
+                      DOC(popart, SessionOptions, globalReplicationFactor));
     cls.def_readwrite("globalReplicaOffset",
                       &SessionOptions::globalReplicaOffset);
     cls.def_readwrite("groupHostSync", &SessionOptions::groupHostSync);
@@ -1437,21 +1563,24 @@ PYBIND11_MODULE(popart_core, m) {
     cls.def("run",
             &InferenceSession::run,
             py::arg("stepio"),
-            py::arg("debugName") = "");
+            py::arg("debugName") = "",
+            DOC(popart, Session, run));
     cls.def("modelToHost", &InferenceSession::modelToHost);
     cls.def("updateExternallySavedTensorLocations",
             &InferenceSession::updateExternallySavedTensorLocations);
     cls.def("getInfo", &InferenceSession::getInfo);
     cls.def("getSummaryReport",
             &InferenceSession::getSummaryReport,
-            py::arg("resetProfile") = true);
+            py::arg("resetProfile") = true,
+            DOC(popart, Session, getSummaryReport));
     cls.def(
         "getGraphReport",
         [](const InferenceSession &session, bool useCbor) {
           auto report = session.getGraphReport(useCbor);
           return py::bytes(report);
         },
-        py::arg("useCbor") = false);
+        py::arg("useCbor") = false,
+        DOC(popart, Session, getGraphReport));
     cls.def(
         "getExecutionReport",
         [](const InferenceSession &session, bool useCbor, bool resetProfile) {
@@ -1459,7 +1588,8 @@ PYBIND11_MODULE(popart_core, m) {
           return py::bytes(report);
         },
         py::arg("useCbor")      = false,
-        py::arg("resetProfile") = true);
+        py::arg("resetProfile") = true,
+        DOC(popart, Session, getExecutionReport));
     cls.def("getSerializedGraph", [](const InferenceSession &session) {
       auto report = session.getSerializedGraph();
       return py::bytes(report);
@@ -1469,9 +1599,13 @@ PYBIND11_MODULE(popart_core, m) {
             &InferenceSession::resetHostWeights,
             py::arg("modelProtoOrFilename"),
             py::arg("ignoreWeightsInModelWithoutCorrespondingHostWeight") =
-                false);
+                false,
+            DOC(popart, Session, resetHostWeights));
     // Special test method to write serialise ir for analysis
-    cls.def("_serializeIr", &InferenceSession::serializeIr, py::arg("format"));
+    cls.def("_serializeIr",
+            &InferenceSession::serializeIr,
+            py::arg("format"),
+            DOC(popart, Session, serializeIr));
   }
   {
     py::class_<TrainingSession> cls(m, "_TrainingSessionCore");
@@ -1542,14 +1676,16 @@ PYBIND11_MODULE(popart_core, m) {
     cls.def("run",
             &TrainingSession::run,
             py::arg("stepio"),
-            py::arg("debugName") = "");
+            py::arg("debugName") = "",
+            DOC(popart, Session, run));
     cls.def("modelToHost", &TrainingSession::modelToHost);
     cls.def("updateExternallySavedTensorLocations",
             &TrainingSession::updateExternallySavedTensorLocations);
     cls.def("getInfo", &TrainingSession::getInfo);
     cls.def("getSummaryReport",
             &TrainingSession::getSummaryReport,
-            py::arg("resetProfile") = true);
+            py::arg("resetProfile") = true,
+            DOC(popart, Session, getSummaryReport));
     cls.def(
         "getGraphReport",
         [](const TrainingSession &session, bool useCbor) {
@@ -1574,7 +1710,8 @@ PYBIND11_MODULE(popart_core, m) {
             &TrainingSession::resetHostWeights,
             py::arg("modelProtoOrFilename"),
             py::arg("ignoreWeightsInModelWithoutCorrespondingHostWeight") =
-                false);
+                false,
+            DOC(popart, Session, resetHostWeights));
     // Special test method to write serialise ir for analysis
     cls.def("_serializeIr", &TrainingSession::serializeIr, py::arg("format"));
     // Accessor for internal objects
@@ -1599,7 +1736,8 @@ PYBIND11_MODULE(popart_core, m) {
     cls.def("convertINT16ToINT32", &GraphTransformer::convertINT16ToINT32);
     cls.def("convertINT64ToINT32",
             &GraphTransformer::convertINT64ToINT32,
-            py::arg("clip") = false);
+            py::arg("clip") = false,
+            DOC(popart, GraphTransformer, convertINT64ToINT32));
     cls.def("convertDoublesToFloats",
             &GraphTransformer::convertDoublesToFloats);
     cls.def("convertDoublesToHalfs", &GraphTransformer::convertDoublesToHalfs);
@@ -1607,13 +1745,15 @@ PYBIND11_MODULE(popart_core, m) {
             &GraphTransformer::convertBFloats16ToFloat32);
     cls.def("convertInitializersToConstants",
             &GraphTransformer::convertInitializersToConstants,
-            py::arg("ids"));
+            py::arg("ids"),
+            DOC(popart, GraphTransformer, convertInitializersToConstants));
     cls.def("convertAllFixedPointInitializersToConstants",
             &GraphTransformer::convertAllFixedPointInitializersToConstants);
     cls.def("saveInitializersExternally",
             &GraphTransformer::saveInitializersExternally,
             py::arg("ids"),
-            py::arg("filename"));
+            py::arg("filename"),
+            DOC(popart, GraphTransformer, saveInitializersExternally));
   }
   {
     py::class_<AiGraphcoreOpset1> cls(m, "AiGraphcoreOpset1");
@@ -1622,111 +1762,133 @@ PYBIND11_MODULE(popart_core, m) {
             py::arg("args"),
             py::arg("num_groups"),
             py::arg("epsilon")     = 1e-05f,
-            py::arg("debugPrefix") = std::string());
+            py::arg("debugPrefix") = std::string(),
+            DOC(popart, AiGraphcoreOpset1, groupnormalization));
     cls.def("groupnormalization",
             &AiGraphcoreOpset1::groupnormalization,
             py::arg("args"),
             py::arg("num_groups"),
             py::arg("epsilon")      = 1e-05f,
-            py::arg("debugContext") = std::string());
+            py::arg("debugContext") = std::string(),
+            DOC(popart, AiGraphcoreOpset1, groupnormalization));
     cls.def("printtensor",
             &AiGraphcoreOpset1::printtensor,
             py::arg("args"),
             py::arg("print_gradient") = 1,
             py::arg("debugPrefix")    = std::string(),
-            py::arg("title")          = std::string());
+            py::arg("title")          = std::string(),
+            DOC(popart, AiGraphcoreOpset1, printtensor));
     cls.def("printtensor",
             &AiGraphcoreOpset1::printtensor,
             py::arg("args"),
             py::arg("print_gradient") = 1,
             py::arg("debugContext")   = std::string(),
-            py::arg("title")          = std::string());
+            py::arg("title")          = std::string(),
+            DOC(popart, AiGraphcoreOpset1, printtensor));
     cls.def("nop",
             &AiGraphcoreOpset1::nop,
             py::arg("args"),
-            py::arg("debugPrefix") = std::string());
+            py::arg("debugPrefix") = std::string(),
+            DOC(popart, AiGraphcoreOpset1, nop));
     cls.def("nop",
             &AiGraphcoreOpset1::nop,
             py::arg("args"),
-            py::arg("debugContext") = std::string());
+            py::arg("debugContext") = std::string(),
+            DOC(popart, AiGraphcoreOpset1, nop));
     cls.def("scale",
             &AiGraphcoreOpset1::scale,
             py::arg("args"),
             py::arg("scale"),
-            py::arg("debugPrefix") = std::string());
+            py::arg("debugPrefix") = std::string(),
+            DOC(popart, AiGraphcoreOpset1, scale));
     cls.def("scale",
             &AiGraphcoreOpset1::scale,
             py::arg("args"),
             py::arg("scale"),
-            py::arg("debugContext") = std::string());
+            py::arg("debugContext") = std::string(),
+            DOC(popart, AiGraphcoreOpset1, scale));
     cls.def("scaledadd",
             &AiGraphcoreOpset1::scaledadd,
             py::arg("args"),
             py::arg("scale0")      = 1.0,
             py::arg("scale1")      = 1.0,
-            py::arg("debugPrefix") = std::string());
+            py::arg("debugPrefix") = std::string(),
+            DOC(popart, AiGraphcoreOpset1, scaledadd));
     cls.def("scaledadd",
             &AiGraphcoreOpset1::scaledadd,
             py::arg("args"),
             py::arg("scale0")       = 1.0,
             py::arg("scale1")       = 1.0,
-            py::arg("debugContext") = std::string());
+            py::arg("debugContext") = std::string(),
+            DOC(popart, AiGraphcoreOpset1, scaledadd));
     cls.def("lstm",
             &AiGraphcoreOpset1::lstm,
             py::arg("args"),
             py::arg("outputFullSequence") = 1,
-            py::arg("debugPrefix")        = std::string());
+            py::arg("debugPrefix")        = std::string(),
+            DOC(popart, AiGraphcoreOpset1, lstm));
     cls.def("lstm",
             &AiGraphcoreOpset1::lstm,
             py::arg("args"),
             py::arg("outputFullSequence") = 1,
-            py::arg("debugContext")       = std::string());
+            py::arg("debugContext")       = std::string(),
+            DOC(popart, AiGraphcoreOpset1, lstm));
     cls.def("subsample",
             &AiGraphcoreOpset1::subsample,
             py::arg("args"),
             py::arg("strides"),
-            py::arg("debugPrefix") = std::string());
+            py::arg("debugPrefix") = std::string(),
+            DOC(popart, AiGraphcoreOpset1, subsample));
     cls.def("subsample",
             &AiGraphcoreOpset1::subsample,
             py::arg("args"),
             py::arg("strides"),
-            py::arg("debugContext") = std::string());
+            py::arg("debugContext") = std::string(),
+            DOC(popart, AiGraphcoreOpset1, subsample));
     cls.def("gelu",
             &AiGraphcoreOpset1::gelu,
             py::arg("args"),
-            py::arg("debugPrefix") = std::string());
+            py::arg("debugPrefix") = std::string(),
+            DOC(popart, AiGraphcoreOpset1, gelu));
     cls.def("gelu",
             &AiGraphcoreOpset1::gelu,
             py::arg("args"),
-            py::arg("debugContext") = std::string());
+            py::arg("debugContext") = std::string(),
+            DOC(popart, AiGraphcoreOpset1, gelu));
     cls.def("detach",
             &AiGraphcoreOpset1::detach,
             py::arg("args"),
-            py::arg("debugPrefix") = std::string());
+            py::arg("debugPrefix") = std::string(),
+            DOC(popart, AiGraphcoreOpset1, detach));
     cls.def("detach",
             &AiGraphcoreOpset1::detach,
             py::arg("args"),
-            py::arg("debugContext") = std::string());
+            py::arg("debugContext") = std::string(),
+            DOC(popart, AiGraphcoreOpset1, detach));
     cls.def("round",
             &AiGraphcoreOpset1::round,
             py::arg("args"),
-            py::arg("debugPrefix") = std::string());
+            py::arg("debugPrefix") = std::string(),
+            DOC(popart, AiGraphcoreOpset1, round));
     cls.def("round",
             &AiGraphcoreOpset1::round,
             py::arg("args"),
-            py::arg("debugContext") = std::string());
+            py::arg("debugContext") = std::string(),
+            DOC(popart, AiGraphcoreOpset1, round));
     cls.def("depthtospace",
             &AiGraphcoreOpset1::depthtospace,
             py::arg("args"),
             py::arg("blocksize"),
             py::arg("mode"),
-            py::arg("debugPrefix") = std::string());
+            py::arg("debugPrefix") = std::string(),
+            DOC(popart, AiGraphcoreOpset1, depthtospace));
     cls.def("depthtospace",
             &AiGraphcoreOpset1::depthtospace,
             py::arg("args"),
             py::arg("blocksize"),
             py::arg("mode"),
-            py::arg("debugContext") = std::string());
+            py::arg("debugContext") = std::string(),
+            DOC(popart, AiGraphcoreOpset1, depthtospace));
     cls.def("init",
             py::overload_cast<Attributes::Ints,
                               Attributes::Int,
@@ -1737,7 +1899,8 @@ PYBIND11_MODULE(popart_core, m) {
             py::arg("data_type"),
             py::arg("init_type"),
             py::arg("batch_axis"),
-            py::arg("debugPrefix") = std::string());
+            py::arg("debugPrefix") = std::string(),
+            DOC(popart, AiGraphcoreOpset1, init));
     cls.def("init",
             py::overload_cast<Attributes::Ints,
                               Attributes::Int,
@@ -1748,7 +1911,8 @@ PYBIND11_MODULE(popart_core, m) {
             py::arg("data_type"),
             py::arg("init_type"),
             py::arg("batch_axis"),
-            py::arg("debugContext") = std::string());
+            py::arg("debugContext") = std::string(),
+            DOC(popart, AiGraphcoreOpset1, init));
     cls.def("init",
             py::overload_cast<Attributes::Ints,
                               Attributes::Int,
@@ -1757,7 +1921,8 @@ PYBIND11_MODULE(popart_core, m) {
             py::arg("shape"),
             py::arg("data_type"),
             py::arg("init_type"),
-            py::arg("debugPrefix") = std::string());
+            py::arg("debugPrefix") = std::string(),
+            DOC(popart, AiGraphcoreOpset1, init_2));
     cls.def("init",
             py::overload_cast<Attributes::Ints,
                               Attributes::Int,
@@ -1766,99 +1931,116 @@ PYBIND11_MODULE(popart_core, m) {
             py::arg("shape"),
             py::arg("data_type"),
             py::arg("init_type"),
-            py::arg("debugContext") = std::string());
+            py::arg("debugContext") = std::string(),
+            DOC(popart, AiGraphcoreOpset1, init_2));
     cls.def("dynamicslice",
             &AiGraphcoreOpset1::dynamicslice,
             py::arg("args"),
             py::arg("axes"),
             py::arg("sizes"),
             py::arg("noOverlap")   = 0,
-            py::arg("debugPrefix") = std::string());
+            py::arg("debugPrefix") = std::string(),
+            DOC(popart, AiGraphcoreOpset1, dynamicslice));
     cls.def("dynamicslice",
             &AiGraphcoreOpset1::dynamicslice,
             py::arg("args"),
             py::arg("axes"),
             py::arg("sizes"),
             py::arg("noOverlap")    = 0,
-            py::arg("debugContext") = std::string());
+            py::arg("debugContext") = std::string(),
+            DOC(popart, AiGraphcoreOpset1, dynamicslice));
     cls.def("dynamicupdate",
             &AiGraphcoreOpset1::dynamicupdate,
             py::arg("args"),
             py::arg("axes"),
             py::arg("sizes"),
             py::arg("noOverlap")   = 0,
-            py::arg("debugPrefix") = std::string());
+            py::arg("debugPrefix") = std::string(),
+            DOC(popart, AiGraphcoreOpset1, dynamicupdate));
     cls.def("dynamicupdate",
             &AiGraphcoreOpset1::dynamicupdate,
             py::arg("args"),
             py::arg("axes"),
             py::arg("sizes"),
             py::arg("noOverlap")    = 0,
-            py::arg("debugContext") = std::string());
+            py::arg("debugContext") = std::string(),
+            DOC(popart, AiGraphcoreOpset1, dynamicupdate));
     cls.def("dynamiczero",
             &AiGraphcoreOpset1::dynamiczero,
             py::arg("args"),
             py::arg("axes"),
             py::arg("sizes"),
-            py::arg("debugPrefix") = std::string());
+            py::arg("debugPrefix") = std::string(),
+            DOC(popart, AiGraphcoreOpset1, dynamiczero));
     cls.def("dynamiczero",
             &AiGraphcoreOpset1::dynamiczero,
             py::arg("args"),
             py::arg("axes"),
             py::arg("sizes"),
-            py::arg("debugContext") = std::string());
+            py::arg("debugContext") = std::string(),
+            DOC(popart, AiGraphcoreOpset1, dynamiczero));
     cls.def("dynamicadd",
             &AiGraphcoreOpset1::dynamicadd,
             py::arg("args"),
             py::arg("axes"),
             py::arg("sizes"),
-            py::arg("debugPrefix") = std::string());
+            py::arg("debugPrefix") = std::string(),
+            DOC(popart, AiGraphcoreOpset1, dynamicadd));
     cls.def("dynamicadd",
             &AiGraphcoreOpset1::dynamicadd,
             py::arg("args"),
             py::arg("axes"),
             py::arg("sizes"),
-            py::arg("debugContext") = std::string());
+            py::arg("debugContext") = std::string(),
+            DOC(popart, AiGraphcoreOpset1, dynamicadd));
     cls.def("call",
             &AiGraphcoreOpset1::call,
             py::arg("args"),
             py::arg("num_outputs"),
             py::arg("callee"),
-            py::arg("debugPrefix") = std::string());
+            py::arg("debugPrefix") = std::string(),
+            DOC(popart, AiGraphcoreOpset1, call));
     cls.def("call",
             &AiGraphcoreOpset1::call,
             py::arg("args"),
             py::arg("num_outputs"),
             py::arg("callee"),
-            py::arg("debugContext") = std::string());
+            py::arg("debugContext") = std::string(),
+            DOC(popart, AiGraphcoreOpset1, call));
     cls.def("fmod",
             &AiGraphcoreOpset1::fmod,
             py::arg("args"),
-            py::arg("debugContext") = std::string());
+            py::arg("debugContext") = std::string(),
+            DOC(popart, AiGraphcoreOpset1, fmod));
     cls.def("fmod",
             &AiGraphcoreOpset1::fmod,
             py::arg("args"),
-            py::arg("debugPrefix") = std::string());
+            py::arg("debugPrefix") = std::string(),
+            DOC(popart, AiGraphcoreOpset1, fmod));
     cls.def("replicatedallreduce",
             &AiGraphcoreOpset1::replicatedallreduce,
             py::arg("args"),
-            py::arg("debugPrefix") = std::string());
+            py::arg("debugPrefix") = std::string(),
+            DOC(popart, AiGraphcoreOpset1, replicatedallreduce));
     cls.def("replicatedallreduce",
             &AiGraphcoreOpset1::replicatedallreduce,
             py::arg("args"),
-            py::arg("debugContext") = std::string());
+            py::arg("debugContext") = std::string(),
+            DOC(popart, AiGraphcoreOpset1, replicatedallreduce));
     cls.def("l1loss",
             &AiGraphcoreOpset1::l1loss,
             py::arg("args"),
             py::arg("lambda"),
             py::arg("reduction")   = ReductionType::Mean,
-            py::arg("debugPrefix") = std::string());
+            py::arg("debugPrefix") = std::string(),
+            DOC(popart, AiGraphcoreOpset1, l1loss));
     cls.def("l1loss",
             &AiGraphcoreOpset1::l1loss,
             py::arg("args"),
             py::arg("lambda"),
             py::arg("reduction")    = ReductionType::Mean,
-            py::arg("debugContext") = std::string());
+            py::arg("debugContext") = std::string(),
+            DOC(popart, AiGraphcoreOpset1, l1loss));
     cls.def("nllloss",
             &AiGraphcoreOpset1::nllloss,
             py::arg("args"),
@@ -1877,12 +2059,14 @@ PYBIND11_MODULE(popart_core, m) {
             &AiGraphcoreOpset1::identityloss,
             py::arg("args"),
             py::arg("reduction")   = ReductionType::Mean,
-            py::arg("debugPrefix") = std::string());
+            py::arg("debugPrefix") = std::string(),
+            DOC(popart, AiGraphcoreOpset1, identityloss));
     cls.def("identityloss",
             &AiGraphcoreOpset1::identityloss,
             py::arg("args"),
             py::arg("reduction")    = ReductionType::Mean,
-            py::arg("debugContext") = std::string());
+            py::arg("debugContext") = std::string(),
+            DOC(popart, AiGraphcoreOpset1, identityloss));
     cls.def("multiconv",
             &AiGraphcoreOpset1::multiconv,
             py::arg("args"),
@@ -1894,7 +2078,8 @@ PYBIND11_MODULE(popart_core, m) {
             py::arg("planType")                   = pybind11::none(),
             py::arg("perConvReservedTiles")       = pybind11::none(),
             py::arg("cycleBackOff")               = pybind11::none(),
-            py::arg("debugPrefix")                = std::string());
+            py::arg("debugPrefix")                = std::string(),
+            DOC(popart, AiGraphcoreOpset1, multiconv));
     cls.def("multiconv",
             &AiGraphcoreOpset1::multiconv,
             py::arg("args"),
@@ -1906,7 +2091,8 @@ PYBIND11_MODULE(popart_core, m) {
             py::arg("planType")                   = pybind11::none(),
             py::arg("perConvReservedTiles")       = pybind11::none(),
             py::arg("cycleBackOff")               = pybind11::none(),
-            py::arg("debugContext")               = std::string());
+            py::arg("debugContext")               = std::string(),
+            DOC(popart, AiGraphcoreOpset1, multiconv));
     cls.def("shapeddropout",
             &AiGraphcoreOpset1::shapeddropout,
             py::arg("args"),
@@ -1967,6 +2153,10 @@ PYBIND11_MODULE(popart_core, m) {
     cls.def(py::init(&Builder::create));
     cls.def(py::init(&Builder::createFromOnnxModel),
             py::arg("modelProtoOrFilename"));
+    cls.def("setGraphName",
+            &Builder::setGraphName,
+            py::arg("name"),
+            DOC(popart, Builder, setGraphName));
     cls.def("setGraphName", &Builder::setGraphName, py::arg("name"));
     cls.def(
         "addInputTensor",
@@ -2003,13 +2193,16 @@ PYBIND11_MODULE(popart_core, m) {
         py::arg("debugContext") = "");
     cls.def("addUntypedInputTensor",
             &Builder::addUntypedInputTensor,
-            py::arg("debugPrefix") = std::string());
+            py::arg("debugPrefix") = std::string(),
+            DOC(popart, Builder, addUntypedInputTensor));
     cls.def("addUntypedInputTensor",
             &Builder::addUntypedInputTensor,
-            py::arg("debugContext") = "");
+            py::arg("debugContext") = "",
+            DOC(popart, Builder, addUntypedInputTensor));
     cls.def("addInputTensorFromParentGraph",
             &Builder::addInputTensorFromParentGraph,
-            py::arg("tensorId"));
+            py::arg("tensorId"),
+            DOC(popart, Builder, addInputTensorFromParentGraph));
     cls.def("exportDataset",
             &exportDataset,
             py::arg("inputs"),
@@ -2042,12 +2235,17 @@ PYBIND11_MODULE(popart_core, m) {
         "addOutputTensor", &Builder::addOutputTensor, py::arg("outputName"));
     cls.def("_createSubgraphBuilder",
             &Builder::createSubgraphBuilder,
-            pybind11::return_value_policy::reference);
-    cls.def("saveModelProto", &Builder::saveModelProto, py::arg("filename"));
+            pybind11::return_value_policy::reference,
+            DOC(popart, Builder, createSubgraphBuilder));
+    cls.def("saveModelProto",
+            &Builder::saveModelProto,
+            py::arg("filename"),
+            DOC(popart, Builder, saveModelProto));
     cls.def("saveInitializersExternally",
             &Builder::saveInitializersExternally,
             py::arg("ids"),
-            py::arg("filename"));
+            py::arg("filename"),
+            DOC(popart, Builder, saveInitializersExternally));
 
     // Accessors for the ai.onnx domain builder interface
     cls.def_property_readonly("aiOnnxOpset6", &Builder::aiOnnxOpset6);
@@ -2142,38 +2340,47 @@ PYBIND11_MODULE(popart_core, m) {
     cls.def("nodeHasAttribute",
             &Builder::nodeHasAttribute,
             py::arg("attributeName"),
-            py::arg("nodeOutputNames"));
+            py::arg("nodeOutputNames"),
+            DOC(popart, Builder, nodeHasAttribute));
     cls.def("getInt64NodeAttribute",
             &Builder::getInt64NodeAttribute,
             py::arg("attributeName"),
-            py::arg("nodeOutputNames"));
+            py::arg("nodeOutputNames"),
+            DOC(popart, Builder, getInt64NodeAttribute));
     cls.def("getInt64VectorNodeAttribute",
             &Builder::getInt64VectorNodeAttribute,
             py::arg("attributeName"),
-            py::arg("nodeOutputNames"));
+            py::arg("nodeOutputNames"),
+            DOC(popart, Builder, getInt64VectorNodeAttribute));
     cls.def("getFloatNodeAttribute",
             &Builder::getFloatNodeAttribute,
             py::arg("attributeName"),
-            py::arg("nodeOutputNames"));
+            py::arg("nodeOutputNames"),
+            DOC(popart, Builder, getFloatNodeAttribute));
     cls.def("getFloatVectorNodeAttribute",
             &Builder::getFloatVectorNodeAttribute,
             py::arg("attributeName"),
-            py::arg("nodeOutputNames"));
+            py::arg("nodeOutputNames"),
+            DOC(popart, Builder, getFloatVectorNodeAttribute));
     cls.def("getStringNodeAttribute",
             &Builder::getStringNodeAttribute,
             py::arg("attributeName"),
-            py::arg("nodeOutputNames"));
+            py::arg("nodeOutputNames"),
+            DOC(popart, Builder, getStringNodeAttribute));
     cls.def("getStringVectorNodeAttribute",
             &Builder::getStringVectorNodeAttribute,
             py::arg("attributeName"),
-            py::arg("nodeOutputNames"));
+            py::arg("nodeOutputNames"),
+            DOC(popart, Builder, getStringVectorNodeAttribute));
     cls.def("removeNodeAttribute",
             &Builder::removeNodeAttribute,
             py::arg("attributeName"),
-            py::arg("nodeOutputNames"));
+            py::arg("nodeOutputNames"),
+            DOC(popart, Builder, removeNodeAttribute));
     cls.def("getAllNodeAttributeNames",
             &Builder::getAllNodeAttributeNames,
-            py::arg("nodeOutputNames"));
+            py::arg("nodeOutputNames"),
+            DOC(popart, Builder, getAllNodeAttributeNames));
     cls.def("getModelProto", [](const Builder &builder) {
       return py::bytes(builder.getModelProto());
     });
@@ -2181,10 +2388,16 @@ PYBIND11_MODULE(popart_core, m) {
     cls.def("getOutputTensorIds", &Builder::getOutputTensorIds);
     cls.def("getValueTensorIds", &Builder::getValueTensorIds);
     cls.def("getTrainableTensorIds", &Builder::getTrainableTensorIds);
-    cls.def("getTensorShape", &Builder::getTensorShape, py::arg("id"));
+    cls.def("getTensorShape",
+            &Builder::getTensorShape,
+            py::arg("id"),
+            DOC(popart, Builder, getTensorShape));
     cls.def(
         "getTensorDtypeString", &Builder::getTensorDtypeString, py::arg("id"));
-    cls.def("isInitializer", &Builder::isInitializer, py::arg("id"));
+    cls.def("isInitializer",
+            &Builder::isInitializer,
+            py::arg("id"),
+            DOC(popart, Builder, isInitializer));
     cls.def("virtualGraph",
             static_cast<void (Builder::*)(const TensorId &, int64_t value)>(
                 &Builder::virtualGraph),
@@ -2296,14 +2509,17 @@ PYBIND11_MODULE(popart_core, m) {
     cls.def("setPartialsType",
             &Builder::setPartialsType,
             py::arg("nodeOutputName"),
-            py::arg("partialsType"));
+            py::arg("partialsType"),
+            DOC(popart, Builder, setPartialsType));
     cls.def("getPartialsType",
             &Builder::getPartialsType,
-            py::arg("nodeOutputName"));
+            py::arg("nodeOutputName"),
+            DOC(popart, Builder, getPartialsType));
     cls.def("setAvailableMemoryProportion",
             &Builder::setAvailableMemoryProportion,
             py::arg("nodeOutputName"),
-            py::arg("availableMemoryProportion"));
+            py::arg("availableMemoryProportion"),
+            DOC(popart, Builder, setAvailableMemoryProportion));
     cls.def(
         "setSerializeMatMul",
         [](Builder &self,
@@ -2437,7 +2653,8 @@ PYBIND11_MODULE(popart_core, m) {
             &DeviceManager::acquireDeviceById,
             py::arg("id"),
             py::arg("pattern")        = SyncPattern::Full,
-            py::arg("connectionType") = DeviceConnectionType::Always);
+            py::arg("connectionType") = DeviceConnectionType::Always,
+            DOC(popart, DeviceManager, acquireDeviceById));
     cls.def("createCpuDevice", &DeviceManager::createCpuDevice);
     cls.def("createIpuModelDevice", [](DeviceManager &dm, py::dict e) {
       std::map<std::string, std::string> options = getDictionary(e);
@@ -2460,10 +2677,12 @@ PYBIND11_MODULE(popart_core, m) {
             py::arg("numIpus")        = 1,
             py::arg("deviceType")     = DeviceType::Ipu,
             py::arg("connectionType") = DeviceConnectionType::Always,
-            py::arg("tilesPerIPU")    = 0);
+            py::arg("tilesPerIPU")    = 0,
+            DOC(popart, DeviceManager, enumerateDevices));
     cls.def("setOnDemandAttachTimeout",
             &DeviceManager::setOnDemandAttachTimeout,
-            py::arg("attachTimeout"));
+            py::arg("attachTimeout"),
+            DOC(popart, DeviceManager, setOnDemandAttachTimeout));
   }
   {
     py::class_<DeviceInfo, std::shared_ptr<DeviceInfo>> cls(m, "DeviceInfo");

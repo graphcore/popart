@@ -5,6 +5,7 @@
  * To regenerate this file run the gen_operators.py script
  */
 #include <pybind11/functional.h>
+#include <popart/docs/opset11_docs.hpp>
 
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
@@ -32,7 +33,8 @@ PYBIND11_MODULE(popart_opset11, m) {
             return opset.abs(args, debugContext);
           },
           py::arg("args"),
-          py::arg("debugContext") = std::string())
+          py::arg("debugContext") = std::string(),
+          DOC(popart, abs, opset11))
       .def(
           "abs",
           [](AiOnnxOpset11 &opset,
@@ -41,7 +43,8 @@ PYBIND11_MODULE(popart_opset11, m) {
             return opset.abs(args, debugContext);
           },
           py::arg("args"),
-          py::arg("debugPrefix") = std::string())
+          py::arg("debugPrefix") = std::string(),
+          DOC(popart, abs, opset11))
       .def(
           "acos",
           [](AiOnnxOpset11 &opset,
@@ -50,7 +53,8 @@ PYBIND11_MODULE(popart_opset11, m) {
             return opset.acos(args, debugContext);
           },
           py::arg("args"),
-          py::arg("debugContext") = std::string())
+          py::arg("debugContext") = std::string(),
+          DOC(popart, acos, opset11))
       .def(
           "acos",
           [](AiOnnxOpset11 &opset,
@@ -59,7 +63,8 @@ PYBIND11_MODULE(popart_opset11, m) {
             return opset.acos(args, debugContext);
           },
           py::arg("args"),
-          py::arg("debugPrefix") = std::string())
+          py::arg("debugPrefix") = std::string(),
+          DOC(popart, acos, opset11))
       .def(
           "acosh",
           [](AiOnnxOpset11 &opset,
@@ -68,7 +73,8 @@ PYBIND11_MODULE(popart_opset11, m) {
             return opset.acosh(args, debugContext);
           },
           py::arg("args"),
-          py::arg("debugContext") = std::string())
+          py::arg("debugContext") = std::string(),
+          DOC(popart, acosh, opset11))
       .def(
           "acosh",
           [](AiOnnxOpset11 &opset,
@@ -77,7 +83,8 @@ PYBIND11_MODULE(popart_opset11, m) {
             return opset.acosh(args, debugContext);
           },
           py::arg("args"),
-          py::arg("debugPrefix") = std::string())
+          py::arg("debugPrefix") = std::string(),
+          DOC(popart, acosh, opset11))
       .def(
           "add",
           [](AiOnnxOpset11 &opset,
@@ -86,7 +93,8 @@ PYBIND11_MODULE(popart_opset11, m) {
             return opset.add(args, debugContext);
           },
           py::arg("args"),
-          py::arg("debugContext") = std::string())
+          py::arg("debugContext") = std::string(),
+          DOC(popart, add, opset11))
       .def(
           "add",
           [](AiOnnxOpset11 &opset,
@@ -95,7 +103,8 @@ PYBIND11_MODULE(popart_opset11, m) {
             return opset.add(args, debugContext);
           },
           py::arg("args"),
-          py::arg("debugPrefix") = std::string())
+          py::arg("debugPrefix") = std::string(),
+          DOC(popart, add, opset11))
       .def(
           "logical_and",
           [](AiOnnxOpset11 &opset,
@@ -104,7 +113,8 @@ PYBIND11_MODULE(popart_opset11, m) {
             return opset.logical_and(args, debugContext);
           },
           py::arg("args"),
-          py::arg("debugContext") = std::string())
+          py::arg("debugContext") = std::string(),
+          DOC(popart, logical_and, opset11))
       .def(
           "logical_and",
           [](AiOnnxOpset11 &opset,
@@ -113,7 +123,8 @@ PYBIND11_MODULE(popart_opset11, m) {
             return opset.logical_and(args, debugContext);
           },
           py::arg("args"),
-          py::arg("debugPrefix") = std::string())
+          py::arg("debugPrefix") = std::string(),
+          DOC(popart, logical_and, opset11))
       .def(
           "argmax",
           [](AiOnnxOpset11 &opset,
@@ -126,7 +137,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           py::arg("args"),
           py::arg("axis")         = 0,
           py::arg("keepdims")     = 1,
-          py::arg("debugContext") = std::string())
+          py::arg("debugContext") = std::string(),
+          DOC(popart, argmax, opset11))
       .def(
           "argmax",
           [](AiOnnxOpset11 &opset,
@@ -139,7 +151,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           py::arg("args"),
           py::arg("axis")        = 0,
           py::arg("keepdims")    = 1,
-          py::arg("debugPrefix") = std::string())
+          py::arg("debugPrefix") = std::string(),
+          DOC(popart, argmax, opset11))
       .def(
           "argmin",
           [](AiOnnxOpset11 &opset,
@@ -152,7 +165,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           py::arg("args"),
           py::arg("axis")         = 0,
           py::arg("keepdims")     = 1,
-          py::arg("debugContext") = std::string())
+          py::arg("debugContext") = std::string(),
+          DOC(popart, argmin, opset11))
       .def(
           "argmin",
           [](AiOnnxOpset11 &opset,
@@ -165,7 +179,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           py::arg("args"),
           py::arg("axis")        = 0,
           py::arg("keepdims")    = 1,
-          py::arg("debugPrefix") = std::string())
+          py::arg("debugPrefix") = std::string(),
+          DOC(popart, argmin, opset11))
       .def(
           "asin",
           [](AiOnnxOpset11 &opset,
@@ -174,7 +189,8 @@ PYBIND11_MODULE(popart_opset11, m) {
             return opset.asin(args, debugContext);
           },
           py::arg("args"),
-          py::arg("debugContext") = std::string())
+          py::arg("debugContext") = std::string(),
+          DOC(popart, asin, opset11))
       .def(
           "asin",
           [](AiOnnxOpset11 &opset,
@@ -183,7 +199,8 @@ PYBIND11_MODULE(popart_opset11, m) {
             return opset.asin(args, debugContext);
           },
           py::arg("args"),
-          py::arg("debugPrefix") = std::string())
+          py::arg("debugPrefix") = std::string(),
+          DOC(popart, asin, opset11))
       .def(
           "asinh",
           [](AiOnnxOpset11 &opset,
@@ -192,7 +209,8 @@ PYBIND11_MODULE(popart_opset11, m) {
             return opset.asinh(args, debugContext);
           },
           py::arg("args"),
-          py::arg("debugContext") = std::string())
+          py::arg("debugContext") = std::string(),
+          DOC(popart, asinh, opset11))
       .def(
           "asinh",
           [](AiOnnxOpset11 &opset,
@@ -201,7 +219,8 @@ PYBIND11_MODULE(popart_opset11, m) {
             return opset.asinh(args, debugContext);
           },
           py::arg("args"),
-          py::arg("debugPrefix") = std::string())
+          py::arg("debugPrefix") = std::string(),
+          DOC(popart, asinh, opset11))
       .def(
           "atan",
           [](AiOnnxOpset11 &opset,
@@ -210,7 +229,8 @@ PYBIND11_MODULE(popart_opset11, m) {
             return opset.atan(args, debugContext);
           },
           py::arg("args"),
-          py::arg("debugContext") = std::string())
+          py::arg("debugContext") = std::string(),
+          DOC(popart, atan, opset11))
       .def(
           "atan",
           [](AiOnnxOpset11 &opset,
@@ -219,7 +239,8 @@ PYBIND11_MODULE(popart_opset11, m) {
             return opset.atan(args, debugContext);
           },
           py::arg("args"),
-          py::arg("debugPrefix") = std::string())
+          py::arg("debugPrefix") = std::string(),
+          DOC(popart, atan, opset11))
       .def(
           "atanh",
           [](AiOnnxOpset11 &opset,
@@ -228,7 +249,8 @@ PYBIND11_MODULE(popart_opset11, m) {
             return opset.atanh(args, debugContext);
           },
           py::arg("args"),
-          py::arg("debugContext") = std::string())
+          py::arg("debugContext") = std::string(),
+          DOC(popart, atanh, opset11))
       .def(
           "atanh",
           [](AiOnnxOpset11 &opset,
@@ -237,7 +259,8 @@ PYBIND11_MODULE(popart_opset11, m) {
             return opset.atanh(args, debugContext);
           },
           py::arg("args"),
-          py::arg("debugPrefix") = std::string())
+          py::arg("debugPrefix") = std::string(),
+          DOC(popart, atanh, opset11))
       .def(
           "averagepool",
           [](AiOnnxOpset11 &opset,
@@ -262,7 +285,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           py::arg("count_include_pad") = 0,
           py::arg("pads")              = std::vector<int64_t>(),
           py::arg("strides")           = std::vector<int64_t>(),
-          py::arg("debugContext")      = std::string())
+          py::arg("debugContext")      = std::string(),
+          DOC(popart, averagepool, opset11))
       .def(
           "averagepool",
           [](AiOnnxOpset11 &opset,
@@ -287,7 +311,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           py::arg("count_include_pad") = 0,
           py::arg("pads")              = std::vector<int64_t>(),
           py::arg("strides")           = std::vector<int64_t>(),
-          py::arg("debugPrefix")       = std::string())
+          py::arg("debugPrefix")       = std::string(),
+          DOC(popart, averagepool, opset11))
       .def(
           "batchnormalization",
           [](AiOnnxOpset11 &opset,
@@ -303,7 +328,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           py::arg("num_outputs"),
           py::arg("epsilon")      = 1e-05f,
           py::arg("momentum")     = 0.9f,
-          py::arg("debugContext") = std::string())
+          py::arg("debugContext") = std::string(),
+          DOC(popart, batchnormalization, opset11))
       .def(
           "batchnormalization",
           [](AiOnnxOpset11 &opset,
@@ -319,7 +345,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           py::arg("num_outputs"),
           py::arg("epsilon")     = 1e-05f,
           py::arg("momentum")    = 0.9f,
-          py::arg("debugPrefix") = std::string())
+          py::arg("debugPrefix") = std::string(),
+          DOC(popart, batchnormalization, opset11))
       .def(
           "bitshift",
           [](AiOnnxOpset11 &opset,
@@ -330,7 +357,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           },
           py::arg("args"),
           py::arg("direction"),
-          py::arg("debugContext") = std::string())
+          py::arg("debugContext") = std::string(),
+          DOC(popart, bitshift, opset11))
       .def(
           "bitshift",
           [](AiOnnxOpset11 &opset,
@@ -341,7 +369,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           },
           py::arg("args"),
           py::arg("direction"),
-          py::arg("debugPrefix") = std::string())
+          py::arg("debugPrefix") = std::string(),
+          DOC(popart, bitshift, opset11))
       .def(
           "cast",
           [](AiOnnxOpset11 &opset,
@@ -352,7 +381,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           },
           py::arg("args"),
           py::arg("to"),
-          py::arg("debugContext") = std::string())
+          py::arg("debugContext") = std::string(),
+          DOC(popart, cast, opset11))
       .def(
           "cast",
           [](AiOnnxOpset11 &opset,
@@ -363,7 +393,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           },
           py::arg("args"),
           py::arg("to"),
-          py::arg("debugPrefix") = std::string())
+          py::arg("debugPrefix") = std::string(),
+          DOC(popart, cast, opset11))
       .def(
           "ceil",
           [](AiOnnxOpset11 &opset,
@@ -372,7 +403,8 @@ PYBIND11_MODULE(popart_opset11, m) {
             return opset.ceil(args, debugContext);
           },
           py::arg("args"),
-          py::arg("debugContext") = std::string())
+          py::arg("debugContext") = std::string(),
+          DOC(popart, ceil, opset11))
       .def(
           "ceil",
           [](AiOnnxOpset11 &opset,
@@ -381,7 +413,8 @@ PYBIND11_MODULE(popart_opset11, m) {
             return opset.ceil(args, debugContext);
           },
           py::arg("args"),
-          py::arg("debugPrefix") = std::string())
+          py::arg("debugPrefix") = std::string(),
+          DOC(popart, ceil, opset11))
       .def(
           "clip",
           [](AiOnnxOpset11 &opset,
@@ -390,7 +423,8 @@ PYBIND11_MODULE(popart_opset11, m) {
             return opset.clip(args, debugContext);
           },
           py::arg("args"),
-          py::arg("debugContext") = std::string())
+          py::arg("debugContext") = std::string(),
+          DOC(popart, clip, opset11))
       .def(
           "clip",
           [](AiOnnxOpset11 &opset,
@@ -399,7 +433,8 @@ PYBIND11_MODULE(popart_opset11, m) {
             return opset.clip(args, debugContext);
           },
           py::arg("args"),
-          py::arg("debugPrefix") = std::string())
+          py::arg("debugPrefix") = std::string(),
+          DOC(popart, clip, opset11))
       .def(
           "compress",
           [](AiOnnxOpset11 &opset,
@@ -410,7 +445,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           },
           py::arg("args"),
           py::arg("axis")         = nonstd::optional<int64_t>(),
-          py::arg("debugContext") = std::string())
+          py::arg("debugContext") = std::string(),
+          DOC(popart, compress, opset11))
       .def(
           "compress",
           [](AiOnnxOpset11 &opset,
@@ -421,7 +457,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           },
           py::arg("args"),
           py::arg("axis")        = nonstd::optional<int64_t>(),
-          py::arg("debugPrefix") = std::string())
+          py::arg("debugPrefix") = std::string(),
+          DOC(popart, compress, opset11))
       .def(
           "concat",
           [](AiOnnxOpset11 &opset,
@@ -432,7 +469,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           },
           py::arg("args"),
           py::arg("axis"),
-          py::arg("debugContext") = std::string())
+          py::arg("debugContext") = std::string(),
+          DOC(popart, concat, opset11))
       .def(
           "concat",
           [](AiOnnxOpset11 &opset,
@@ -443,7 +481,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           },
           py::arg("args"),
           py::arg("axis"),
-          py::arg("debugPrefix") = std::string())
+          py::arg("debugPrefix") = std::string(),
+          DOC(popart, concat, opset11))
       .def(
           "concatfromsequence",
           [](AiOnnxOpset11 &opset,
@@ -456,7 +495,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           py::arg("args"),
           py::arg("axis"),
           py::arg("new_axis")     = 0,
-          py::arg("debugContext") = std::string())
+          py::arg("debugContext") = std::string(),
+          DOC(popart, concatfromsequence, opset11))
       .def(
           "concatfromsequence",
           [](AiOnnxOpset11 &opset,
@@ -469,7 +509,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           py::arg("args"),
           py::arg("axis"),
           py::arg("new_axis")    = 0,
-          py::arg("debugPrefix") = std::string())
+          py::arg("debugPrefix") = std::string(),
+          DOC(popart, concatfromsequence, opset11))
       .def(
           "constant",
           [](AiOnnxOpset11 &opset,
@@ -513,7 +554,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           },
           py::arg("args"),
           py::arg("value"),
-          py::arg("debugContext") = std::string())
+          py::arg("debugContext") = std::string(),
+          DOC(popart, constantofshape, opset11))
       .def(
           "constantofshape",
           [](AiOnnxOpset11 &opset,
@@ -527,7 +569,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           },
           py::arg("args"),
           py::arg("value"),
-          py::arg("debugPrefix") = std::string())
+          py::arg("debugPrefix") = std::string(),
+          DOC(popart, constantofshape, opset11))
       .def(
           "conv",
           [](AiOnnxOpset11 &opset,
@@ -552,7 +595,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           py::arg("kernel_shape") = std::vector<int64_t>(),
           py::arg("pads")         = std::vector<int64_t>(),
           py::arg("strides")      = std::vector<int64_t>(),
-          py::arg("debugContext") = std::string())
+          py::arg("debugContext") = std::string(),
+          DOC(popart, conv, opset11))
       .def(
           "conv",
           [](AiOnnxOpset11 &opset,
@@ -577,7 +621,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           py::arg("kernel_shape") = std::vector<int64_t>(),
           py::arg("pads")         = std::vector<int64_t>(),
           py::arg("strides")      = std::vector<int64_t>(),
-          py::arg("debugPrefix")  = std::string())
+          py::arg("debugPrefix")  = std::string(),
+          DOC(popart, conv, opset11))
       .def(
           "convinteger",
           [](AiOnnxOpset11 &opset,
@@ -602,7 +647,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           py::arg("kernel_shape") = std::vector<int64_t>(),
           py::arg("pads")         = std::vector<int64_t>(),
           py::arg("strides")      = std::vector<int64_t>(),
-          py::arg("debugContext") = std::string())
+          py::arg("debugContext") = std::string(),
+          DOC(popart, convinteger, opset11))
       .def(
           "convinteger",
           [](AiOnnxOpset11 &opset,
@@ -627,7 +673,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           py::arg("kernel_shape") = std::vector<int64_t>(),
           py::arg("pads")         = std::vector<int64_t>(),
           py::arg("strides")      = std::vector<int64_t>(),
-          py::arg("debugPrefix")  = std::string())
+          py::arg("debugPrefix")  = std::string(),
+          DOC(popart, convinteger, opset11))
       .def(
           "convtranspose",
           [](AiOnnxOpset11 &opset,
@@ -658,7 +705,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           py::arg("output_shape")   = std::vector<int64_t>(),
           py::arg("pads")           = std::vector<int64_t>(),
           py::arg("strides")        = std::vector<int64_t>(),
-          py::arg("debugContext")   = std::string())
+          py::arg("debugContext")   = std::string(),
+          DOC(popart, convtranspose, opset11))
       .def(
           "convtranspose",
           [](AiOnnxOpset11 &opset,
@@ -689,7 +737,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           py::arg("output_shape")   = std::vector<int64_t>(),
           py::arg("pads")           = std::vector<int64_t>(),
           py::arg("strides")        = std::vector<int64_t>(),
-          py::arg("debugPrefix")    = std::string())
+          py::arg("debugPrefix")    = std::string(),
+          DOC(popart, convtranspose, opset11))
       .def(
           "cos",
           [](AiOnnxOpset11 &opset,
@@ -698,7 +747,8 @@ PYBIND11_MODULE(popart_opset11, m) {
             return opset.cos(args, debugContext);
           },
           py::arg("args"),
-          py::arg("debugContext") = std::string())
+          py::arg("debugContext") = std::string(),
+          DOC(popart, cos, opset11))
       .def(
           "cos",
           [](AiOnnxOpset11 &opset,
@@ -707,7 +757,8 @@ PYBIND11_MODULE(popart_opset11, m) {
             return opset.cos(args, debugContext);
           },
           py::arg("args"),
-          py::arg("debugPrefix") = std::string())
+          py::arg("debugPrefix") = std::string(),
+          DOC(popart, cos, opset11))
       .def(
           "cosh",
           [](AiOnnxOpset11 &opset,
@@ -716,7 +767,8 @@ PYBIND11_MODULE(popart_opset11, m) {
             return opset.cosh(args, debugContext);
           },
           py::arg("args"),
-          py::arg("debugContext") = std::string())
+          py::arg("debugContext") = std::string(),
+          DOC(popart, cosh, opset11))
       .def(
           "cosh",
           [](AiOnnxOpset11 &opset,
@@ -725,7 +777,8 @@ PYBIND11_MODULE(popart_opset11, m) {
             return opset.cosh(args, debugContext);
           },
           py::arg("args"),
-          py::arg("debugPrefix") = std::string())
+          py::arg("debugPrefix") = std::string(),
+          DOC(popart, cosh, opset11))
       .def(
           "cumsum",
           [](AiOnnxOpset11 &opset,
@@ -738,7 +791,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           py::arg("args"),
           py::arg("exclusive")    = 0,
           py::arg("reverse")      = 0,
-          py::arg("debugContext") = std::string())
+          py::arg("debugContext") = std::string(),
+          DOC(popart, cumsum, opset11))
       .def(
           "cumsum",
           [](AiOnnxOpset11 &opset,
@@ -751,7 +805,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           py::arg("args"),
           py::arg("exclusive")   = 0,
           py::arg("reverse")     = 0,
-          py::arg("debugPrefix") = std::string())
+          py::arg("debugPrefix") = std::string(),
+          DOC(popart, cumsum, opset11))
       .def(
           "depthtospace",
           [](AiOnnxOpset11 &opset,
@@ -764,7 +819,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           py::arg("args"),
           py::arg("blocksize"),
           py::arg("mode")         = "DCR",
-          py::arg("debugContext") = std::string())
+          py::arg("debugContext") = std::string(),
+          DOC(popart, depthtospace, opset11))
       .def(
           "depthtospace",
           [](AiOnnxOpset11 &opset,
@@ -777,7 +833,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           py::arg("args"),
           py::arg("blocksize"),
           py::arg("mode")        = "DCR",
-          py::arg("debugPrefix") = std::string())
+          py::arg("debugPrefix") = std::string(),
+          DOC(popart, depthtospace, opset11))
       .def(
           "dequantizelinear",
           [](AiOnnxOpset11 &opset,
@@ -786,7 +843,8 @@ PYBIND11_MODULE(popart_opset11, m) {
             return opset.dequantizelinear(args, debugContext);
           },
           py::arg("args"),
-          py::arg("debugContext") = std::string())
+          py::arg("debugContext") = std::string(),
+          DOC(popart, dequantizelinear, opset11))
       .def(
           "dequantizelinear",
           [](AiOnnxOpset11 &opset,
@@ -795,7 +853,8 @@ PYBIND11_MODULE(popart_opset11, m) {
             return opset.dequantizelinear(args, debugContext);
           },
           py::arg("args"),
-          py::arg("debugPrefix") = std::string())
+          py::arg("debugPrefix") = std::string(),
+          DOC(popart, dequantizelinear, opset11))
       .def(
           "det",
           [](AiOnnxOpset11 &opset,
@@ -804,7 +863,8 @@ PYBIND11_MODULE(popart_opset11, m) {
             return opset.det(args, debugContext);
           },
           py::arg("args"),
-          py::arg("debugContext") = std::string())
+          py::arg("debugContext") = std::string(),
+          DOC(popart, det, opset11))
       .def(
           "det",
           [](AiOnnxOpset11 &opset,
@@ -813,7 +873,8 @@ PYBIND11_MODULE(popart_opset11, m) {
             return opset.det(args, debugContext);
           },
           py::arg("args"),
-          py::arg("debugPrefix") = std::string())
+          py::arg("debugPrefix") = std::string(),
+          DOC(popart, det, opset11))
       .def(
           "div",
           [](AiOnnxOpset11 &opset,
@@ -822,7 +883,8 @@ PYBIND11_MODULE(popart_opset11, m) {
             return opset.div(args, debugContext);
           },
           py::arg("args"),
-          py::arg("debugContext") = std::string())
+          py::arg("debugContext") = std::string(),
+          DOC(popart, div, opset11))
       .def(
           "div",
           [](AiOnnxOpset11 &opset,
@@ -831,7 +893,8 @@ PYBIND11_MODULE(popart_opset11, m) {
             return opset.div(args, debugContext);
           },
           py::arg("args"),
-          py::arg("debugPrefix") = std::string())
+          py::arg("debugPrefix") = std::string(),
+          DOC(popart, div, opset11))
       .def(
           "dropout",
           [](AiOnnxOpset11 &opset,
@@ -844,7 +907,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           py::arg("args"),
           py::arg("num_outputs"),
           py::arg("ratio")        = 0.5f,
-          py::arg("debugContext") = std::string())
+          py::arg("debugContext") = std::string(),
+          DOC(popart, dropout, opset11))
       .def(
           "dropout",
           [](AiOnnxOpset11 &opset,
@@ -857,7 +921,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           py::arg("args"),
           py::arg("num_outputs"),
           py::arg("ratio")       = 0.5f,
-          py::arg("debugPrefix") = std::string())
+          py::arg("debugPrefix") = std::string(),
+          DOC(popart, dropout, opset11))
       .def(
           "dynamicquantizelinear",
           [](AiOnnxOpset11 &opset,
@@ -866,7 +931,8 @@ PYBIND11_MODULE(popart_opset11, m) {
             return opset.dynamicquantizelinear(args, debugContext);
           },
           py::arg("args"),
-          py::arg("debugContext") = std::string())
+          py::arg("debugContext") = std::string(),
+          DOC(popart, dynamicquantizelinear, opset11))
       .def(
           "dynamicquantizelinear",
           [](AiOnnxOpset11 &opset,
@@ -875,7 +941,8 @@ PYBIND11_MODULE(popart_opset11, m) {
             return opset.dynamicquantizelinear(args, debugContext);
           },
           py::arg("args"),
-          py::arg("debugPrefix") = std::string())
+          py::arg("debugPrefix") = std::string(),
+          DOC(popart, dynamicquantizelinear, opset11))
       .def(
           "elu",
           [](AiOnnxOpset11 &opset,
@@ -886,7 +953,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           },
           py::arg("args"),
           py::arg("alpha")        = 1.0f,
-          py::arg("debugContext") = std::string())
+          py::arg("debugContext") = std::string(),
+          DOC(popart, elu, opset11))
       .def(
           "elu",
           [](AiOnnxOpset11 &opset,
@@ -897,7 +965,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           },
           py::arg("args"),
           py::arg("alpha")       = 1.0f,
-          py::arg("debugPrefix") = std::string())
+          py::arg("debugPrefix") = std::string(),
+          DOC(popart, elu, opset11))
       .def(
           "equal",
           [](AiOnnxOpset11 &opset,
@@ -906,7 +975,8 @@ PYBIND11_MODULE(popart_opset11, m) {
             return opset.equal(args, debugContext);
           },
           py::arg("args"),
-          py::arg("debugContext") = std::string())
+          py::arg("debugContext") = std::string(),
+          DOC(popart, equal, opset11))
       .def(
           "equal",
           [](AiOnnxOpset11 &opset,
@@ -915,7 +985,8 @@ PYBIND11_MODULE(popart_opset11, m) {
             return opset.equal(args, debugContext);
           },
           py::arg("args"),
-          py::arg("debugPrefix") = std::string())
+          py::arg("debugPrefix") = std::string(),
+          DOC(popart, equal, opset11))
       .def(
           "erf",
           [](AiOnnxOpset11 &opset,
@@ -924,7 +995,8 @@ PYBIND11_MODULE(popart_opset11, m) {
             return opset.erf(args, debugContext);
           },
           py::arg("args"),
-          py::arg("debugContext") = std::string())
+          py::arg("debugContext") = std::string(),
+          DOC(popart, erf, opset11))
       .def(
           "erf",
           [](AiOnnxOpset11 &opset,
@@ -933,7 +1005,8 @@ PYBIND11_MODULE(popart_opset11, m) {
             return opset.erf(args, debugContext);
           },
           py::arg("args"),
-          py::arg("debugPrefix") = std::string())
+          py::arg("debugPrefix") = std::string(),
+          DOC(popart, erf, opset11))
       .def(
           "exp",
           [](AiOnnxOpset11 &opset,
@@ -942,7 +1015,8 @@ PYBIND11_MODULE(popart_opset11, m) {
             return opset.exp(args, debugContext);
           },
           py::arg("args"),
-          py::arg("debugContext") = std::string())
+          py::arg("debugContext") = std::string(),
+          DOC(popart, exp, opset11))
       .def(
           "exp",
           [](AiOnnxOpset11 &opset,
@@ -951,7 +1025,8 @@ PYBIND11_MODULE(popart_opset11, m) {
             return opset.exp(args, debugContext);
           },
           py::arg("args"),
-          py::arg("debugPrefix") = std::string())
+          py::arg("debugPrefix") = std::string(),
+          DOC(popart, exp, opset11))
       .def(
           "expand",
           [](AiOnnxOpset11 &opset,
@@ -960,7 +1035,8 @@ PYBIND11_MODULE(popart_opset11, m) {
             return opset.expand(args, debugContext);
           },
           py::arg("args"),
-          py::arg("debugContext") = std::string())
+          py::arg("debugContext") = std::string(),
+          DOC(popart, expand, opset11))
       .def(
           "expand",
           [](AiOnnxOpset11 &opset,
@@ -969,7 +1045,8 @@ PYBIND11_MODULE(popart_opset11, m) {
             return opset.expand(args, debugContext);
           },
           py::arg("args"),
-          py::arg("debugPrefix") = std::string())
+          py::arg("debugPrefix") = std::string(),
+          DOC(popart, expand, opset11))
       .def(
           "eyelike",
           [](AiOnnxOpset11 &opset,
@@ -982,7 +1059,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           py::arg("args"),
           py::arg("dtype")        = nonstd::optional<int64_t>(),
           py::arg("k")            = 0,
-          py::arg("debugContext") = std::string())
+          py::arg("debugContext") = std::string(),
+          DOC(popart, eyelike, opset11))
       .def(
           "eyelike",
           [](AiOnnxOpset11 &opset,
@@ -995,7 +1073,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           py::arg("args"),
           py::arg("dtype")       = nonstd::optional<int64_t>(),
           py::arg("k")           = 0,
-          py::arg("debugPrefix") = std::string())
+          py::arg("debugPrefix") = std::string(),
+          DOC(popart, eyelike, opset11))
       .def(
           "flatten",
           [](AiOnnxOpset11 &opset,
@@ -1006,7 +1085,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           },
           py::arg("args"),
           py::arg("axis")         = 1,
-          py::arg("debugContext") = std::string())
+          py::arg("debugContext") = std::string(),
+          DOC(popart, flatten, opset11))
       .def(
           "flatten",
           [](AiOnnxOpset11 &opset,
@@ -1017,7 +1097,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           },
           py::arg("args"),
           py::arg("axis")        = 1,
-          py::arg("debugPrefix") = std::string())
+          py::arg("debugPrefix") = std::string(),
+          DOC(popart, flatten, opset11))
       .def(
           "floor",
           [](AiOnnxOpset11 &opset,
@@ -1026,7 +1107,8 @@ PYBIND11_MODULE(popart_opset11, m) {
             return opset.floor(args, debugContext);
           },
           py::arg("args"),
-          py::arg("debugContext") = std::string())
+          py::arg("debugContext") = std::string(),
+          DOC(popart, floor, opset11))
       .def(
           "floor",
           [](AiOnnxOpset11 &opset,
@@ -1035,7 +1117,8 @@ PYBIND11_MODULE(popart_opset11, m) {
             return opset.floor(args, debugContext);
           },
           py::arg("args"),
-          py::arg("debugPrefix") = std::string())
+          py::arg("debugPrefix") = std::string(),
+          DOC(popart, floor, opset11))
       .def(
           "gru",
           [](AiOnnxOpset11 &opset,
@@ -1069,7 +1152,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           py::arg("direction")           = "forward",
           py::arg("hidden_size")         = nonstd::optional<int64_t>(),
           py::arg("linear_before_reset") = 0,
-          py::arg("debugContext")        = std::string())
+          py::arg("debugContext")        = std::string(),
+          DOC(popart, gru, opset11))
       .def(
           "gru",
           [](AiOnnxOpset11 &opset,
@@ -1103,7 +1187,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           py::arg("direction")           = "forward",
           py::arg("hidden_size")         = nonstd::optional<int64_t>(),
           py::arg("linear_before_reset") = 0,
-          py::arg("debugPrefix")         = std::string())
+          py::arg("debugPrefix")         = std::string(),
+          DOC(popart, gru, opset11))
       .def(
           "gather",
           [](AiOnnxOpset11 &opset,
@@ -1114,7 +1199,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           },
           py::arg("args"),
           py::arg("axis")         = 0,
-          py::arg("debugContext") = std::string())
+          py::arg("debugContext") = std::string(),
+          DOC(popart, gather, opset11))
       .def(
           "gather",
           [](AiOnnxOpset11 &opset,
@@ -1125,7 +1211,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           },
           py::arg("args"),
           py::arg("axis")        = 0,
-          py::arg("debugPrefix") = std::string())
+          py::arg("debugPrefix") = std::string(),
+          DOC(popart, gather, opset11))
       .def(
           "gatherelements",
           [](AiOnnxOpset11 &opset,
@@ -1136,7 +1223,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           },
           py::arg("args"),
           py::arg("axis")         = 0,
-          py::arg("debugContext") = std::string())
+          py::arg("debugContext") = std::string(),
+          DOC(popart, gatherelements, opset11))
       .def(
           "gatherelements",
           [](AiOnnxOpset11 &opset,
@@ -1147,7 +1235,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           },
           py::arg("args"),
           py::arg("axis")        = 0,
-          py::arg("debugPrefix") = std::string())
+          py::arg("debugPrefix") = std::string(),
+          DOC(popart, gatherelements, opset11))
       .def(
           "gathernd",
           [](AiOnnxOpset11 &opset,
@@ -1156,7 +1245,8 @@ PYBIND11_MODULE(popart_opset11, m) {
             return opset.gathernd(args, debugContext);
           },
           py::arg("args"),
-          py::arg("debugContext") = std::string())
+          py::arg("debugContext") = std::string(),
+          DOC(popart, gathernd, opset11))
       .def(
           "gathernd",
           [](AiOnnxOpset11 &opset,
@@ -1165,7 +1255,8 @@ PYBIND11_MODULE(popart_opset11, m) {
             return opset.gathernd(args, debugContext);
           },
           py::arg("args"),
-          py::arg("debugPrefix") = std::string())
+          py::arg("debugPrefix") = std::string(),
+          DOC(popart, gathernd, opset11))
       .def(
           "gemm",
           [](AiOnnxOpset11 &opset,
@@ -1182,7 +1273,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           py::arg("beta")         = 1.0f,
           py::arg("transA")       = 0,
           py::arg("transB")       = 0,
-          py::arg("debugContext") = std::string())
+          py::arg("debugContext") = std::string(),
+          DOC(popart, gemm, opset11))
       .def(
           "gemm",
           [](AiOnnxOpset11 &opset,
@@ -1199,7 +1291,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           py::arg("beta")        = 1.0f,
           py::arg("transA")      = 0,
           py::arg("transB")      = 0,
-          py::arg("debugPrefix") = std::string())
+          py::arg("debugPrefix") = std::string(),
+          DOC(popart, gemm, opset11))
       .def(
           "globalaveragepool",
           [](AiOnnxOpset11 &opset,
@@ -1208,7 +1301,8 @@ PYBIND11_MODULE(popart_opset11, m) {
             return opset.globalaveragepool(args, debugContext);
           },
           py::arg("args"),
-          py::arg("debugContext") = std::string())
+          py::arg("debugContext") = std::string(),
+          DOC(popart, globalaveragepool, opset11))
       .def(
           "globalaveragepool",
           [](AiOnnxOpset11 &opset,
@@ -1217,7 +1311,8 @@ PYBIND11_MODULE(popart_opset11, m) {
             return opset.globalaveragepool(args, debugContext);
           },
           py::arg("args"),
-          py::arg("debugPrefix") = std::string())
+          py::arg("debugPrefix") = std::string(),
+          DOC(popart, globalaveragepool, opset11))
       .def(
           "globallppool",
           [](AiOnnxOpset11 &opset,
@@ -1228,7 +1323,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           },
           py::arg("args"),
           py::arg("p")            = 2,
-          py::arg("debugContext") = std::string())
+          py::arg("debugContext") = std::string(),
+          DOC(popart, globallppool, opset11))
       .def(
           "globallppool",
           [](AiOnnxOpset11 &opset,
@@ -1239,7 +1335,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           },
           py::arg("args"),
           py::arg("p")           = 2,
-          py::arg("debugPrefix") = std::string())
+          py::arg("debugPrefix") = std::string(),
+          DOC(popart, globallppool, opset11))
       .def(
           "globalmaxpool",
           [](AiOnnxOpset11 &opset,
@@ -1248,7 +1345,8 @@ PYBIND11_MODULE(popart_opset11, m) {
             return opset.globalmaxpool(args, debugContext);
           },
           py::arg("args"),
-          py::arg("debugContext") = std::string())
+          py::arg("debugContext") = std::string(),
+          DOC(popart, globalmaxpool, opset11))
       .def(
           "globalmaxpool",
           [](AiOnnxOpset11 &opset,
@@ -1257,7 +1355,8 @@ PYBIND11_MODULE(popart_opset11, m) {
             return opset.globalmaxpool(args, debugContext);
           },
           py::arg("args"),
-          py::arg("debugPrefix") = std::string())
+          py::arg("debugPrefix") = std::string(),
+          DOC(popart, globalmaxpool, opset11))
       .def(
           "greater",
           [](AiOnnxOpset11 &opset,
@@ -1266,7 +1365,8 @@ PYBIND11_MODULE(popart_opset11, m) {
             return opset.greater(args, debugContext);
           },
           py::arg("args"),
-          py::arg("debugContext") = std::string())
+          py::arg("debugContext") = std::string(),
+          DOC(popart, greater, opset11))
       .def(
           "greater",
           [](AiOnnxOpset11 &opset,
@@ -1275,7 +1375,8 @@ PYBIND11_MODULE(popart_opset11, m) {
             return opset.greater(args, debugContext);
           },
           py::arg("args"),
-          py::arg("debugPrefix") = std::string())
+          py::arg("debugPrefix") = std::string(),
+          DOC(popart, greater, opset11))
       .def(
           "hardsigmoid",
           [](AiOnnxOpset11 &opset,
@@ -1288,7 +1389,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           py::arg("args"),
           py::arg("alpha")        = 0.2f,
           py::arg("beta")         = 0.5f,
-          py::arg("debugContext") = std::string())
+          py::arg("debugContext") = std::string(),
+          DOC(popart, hardsigmoid, opset11))
       .def(
           "hardsigmoid",
           [](AiOnnxOpset11 &opset,
@@ -1301,7 +1403,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           py::arg("args"),
           py::arg("alpha")       = 0.2f,
           py::arg("beta")        = 0.5f,
-          py::arg("debugPrefix") = std::string())
+          py::arg("debugPrefix") = std::string(),
+          DOC(popart, hardsigmoid, opset11))
       .def(
           "hardmax",
           [](AiOnnxOpset11 &opset,
@@ -1312,7 +1415,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           },
           py::arg("args"),
           py::arg("axis")         = 1,
-          py::arg("debugContext") = std::string())
+          py::arg("debugContext") = std::string(),
+          DOC(popart, hardmax, opset11))
       .def(
           "hardmax",
           [](AiOnnxOpset11 &opset,
@@ -1323,7 +1427,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           },
           py::arg("args"),
           py::arg("axis")        = 1,
-          py::arg("debugPrefix") = std::string())
+          py::arg("debugPrefix") = std::string(),
+          DOC(popart, hardmax, opset11))
       .def(
           "identity",
           [](AiOnnxOpset11 &opset,
@@ -1332,7 +1437,8 @@ PYBIND11_MODULE(popart_opset11, m) {
             return opset.identity(args, debugContext);
           },
           py::arg("args"),
-          py::arg("debugContext") = std::string())
+          py::arg("debugContext") = std::string(),
+          DOC(popart, identity, opset11))
       .def(
           "identity",
           [](AiOnnxOpset11 &opset,
@@ -1341,7 +1447,8 @@ PYBIND11_MODULE(popart_opset11, m) {
             return opset.identity(args, debugContext);
           },
           py::arg("args"),
-          py::arg("debugPrefix") = std::string())
+          py::arg("debugPrefix") = std::string(),
+          DOC(popart, identity, opset11))
       .def(
           "logical_if",
           [](AiOnnxOpset11 &opset,
@@ -1357,7 +1464,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           py::arg("num_outputs"),
           py::arg("else_branch"),
           py::arg("then_branch"),
-          py::arg("debugContext") = std::string())
+          py::arg("debugContext") = std::string(),
+          DOC(popart, logical_if, opset11))
       .def(
           "logical_if",
           [](AiOnnxOpset11 &opset,
@@ -1373,7 +1481,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           py::arg("num_outputs"),
           py::arg("else_branch"),
           py::arg("then_branch"),
-          py::arg("debugPrefix") = std::string())
+          py::arg("debugPrefix") = std::string(),
+          DOC(popart, logical_if, opset11))
       .def(
           "instancenormalization",
           [](AiOnnxOpset11 &opset,
@@ -1384,7 +1493,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           },
           py::arg("args"),
           py::arg("epsilon")      = 1e-05f,
-          py::arg("debugContext") = std::string())
+          py::arg("debugContext") = std::string(),
+          DOC(popart, instancenormalization, opset11))
       .def(
           "instancenormalization",
           [](AiOnnxOpset11 &opset,
@@ -1395,7 +1505,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           },
           py::arg("args"),
           py::arg("epsilon")     = 1e-05f,
-          py::arg("debugPrefix") = std::string())
+          py::arg("debugPrefix") = std::string(),
+          DOC(popart, instancenormalization, opset11))
       .def(
           "isinf",
           [](AiOnnxOpset11 &opset,
@@ -1409,7 +1520,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           py::arg("args"),
           py::arg("detect_negative") = 1,
           py::arg("detect_positive") = 1,
-          py::arg("debugContext")    = std::string())
+          py::arg("debugContext")    = std::string(),
+          DOC(popart, isinf, opset11))
       .def(
           "isinf",
           [](AiOnnxOpset11 &opset,
@@ -1423,7 +1535,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           py::arg("args"),
           py::arg("detect_negative") = 1,
           py::arg("detect_positive") = 1,
-          py::arg("debugPrefix")     = std::string())
+          py::arg("debugPrefix")     = std::string(),
+          DOC(popart, isinf, opset11))
       .def(
           "isnan",
           [](AiOnnxOpset11 &opset,
@@ -1432,7 +1545,8 @@ PYBIND11_MODULE(popart_opset11, m) {
             return opset.isnan(args, debugContext);
           },
           py::arg("args"),
-          py::arg("debugContext") = std::string())
+          py::arg("debugContext") = std::string(),
+          DOC(popart, isnan, opset11))
       .def(
           "isnan",
           [](AiOnnxOpset11 &opset,
@@ -1441,7 +1555,8 @@ PYBIND11_MODULE(popart_opset11, m) {
             return opset.isnan(args, debugContext);
           },
           py::arg("args"),
-          py::arg("debugPrefix") = std::string())
+          py::arg("debugPrefix") = std::string(),
+          DOC(popart, isnan, opset11))
       .def(
           "lrn",
           [](AiOnnxOpset11 &opset,
@@ -1458,7 +1573,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           py::arg("alpha")        = 0.0001f,
           py::arg("beta")         = 0.75f,
           py::arg("bias")         = 1.0f,
-          py::arg("debugContext") = std::string())
+          py::arg("debugContext") = std::string(),
+          DOC(popart, lrn, opset11))
       .def(
           "lrn",
           [](AiOnnxOpset11 &opset,
@@ -1475,7 +1591,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           py::arg("alpha")       = 0.0001f,
           py::arg("beta")        = 0.75f,
           py::arg("bias")        = 1.0f,
-          py::arg("debugPrefix") = std::string())
+          py::arg("debugPrefix") = std::string(),
+          DOC(popart, lrn, opset11))
       .def(
           "lstm",
           [](AiOnnxOpset11 &opset,
@@ -1509,7 +1626,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           py::arg("direction")        = "forward",
           py::arg("hidden_size")      = nonstd::optional<int64_t>(),
           py::arg("input_forget")     = 0,
-          py::arg("debugContext")     = std::string())
+          py::arg("debugContext")     = std::string(),
+          DOC(popart, lstm, opset11))
       .def(
           "lstm",
           [](AiOnnxOpset11 &opset,
@@ -1543,7 +1661,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           py::arg("direction")        = "forward",
           py::arg("hidden_size")      = nonstd::optional<int64_t>(),
           py::arg("input_forget")     = 0,
-          py::arg("debugPrefix")      = std::string())
+          py::arg("debugPrefix")      = std::string(),
+          DOC(popart, lstm, opset11))
       .def(
           "leakyrelu",
           [](AiOnnxOpset11 &opset,
@@ -1554,7 +1673,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           },
           py::arg("args"),
           py::arg("alpha")        = 0.01f,
-          py::arg("debugContext") = std::string())
+          py::arg("debugContext") = std::string(),
+          DOC(popart, leakyrelu, opset11))
       .def(
           "leakyrelu",
           [](AiOnnxOpset11 &opset,
@@ -1565,7 +1685,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           },
           py::arg("args"),
           py::arg("alpha")       = 0.01f,
-          py::arg("debugPrefix") = std::string())
+          py::arg("debugPrefix") = std::string(),
+          DOC(popart, leakyrelu, opset11))
       .def(
           "less",
           [](AiOnnxOpset11 &opset,
@@ -1574,7 +1695,8 @@ PYBIND11_MODULE(popart_opset11, m) {
             return opset.less(args, debugContext);
           },
           py::arg("args"),
-          py::arg("debugContext") = std::string())
+          py::arg("debugContext") = std::string(),
+          DOC(popart, less, opset11))
       .def(
           "less",
           [](AiOnnxOpset11 &opset,
@@ -1583,7 +1705,8 @@ PYBIND11_MODULE(popart_opset11, m) {
             return opset.less(args, debugContext);
           },
           py::arg("args"),
-          py::arg("debugPrefix") = std::string())
+          py::arg("debugPrefix") = std::string(),
+          DOC(popart, less, opset11))
       .def(
           "log",
           [](AiOnnxOpset11 &opset,
@@ -1592,7 +1715,8 @@ PYBIND11_MODULE(popart_opset11, m) {
             return opset.log(args, debugContext);
           },
           py::arg("args"),
-          py::arg("debugContext") = std::string())
+          py::arg("debugContext") = std::string(),
+          DOC(popart, log, opset11))
       .def(
           "log",
           [](AiOnnxOpset11 &opset,
@@ -1601,7 +1725,8 @@ PYBIND11_MODULE(popart_opset11, m) {
             return opset.log(args, debugContext);
           },
           py::arg("args"),
-          py::arg("debugPrefix") = std::string())
+          py::arg("debugPrefix") = std::string(),
+          DOC(popart, log, opset11))
       .def(
           "logsoftmax",
           [](AiOnnxOpset11 &opset,
@@ -1612,7 +1737,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           },
           py::arg("args"),
           py::arg("axis")         = 1,
-          py::arg("debugContext") = std::string())
+          py::arg("debugContext") = std::string(),
+          DOC(popart, logsoftmax, opset11))
       .def(
           "logsoftmax",
           [](AiOnnxOpset11 &opset,
@@ -1623,7 +1749,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           },
           py::arg("args"),
           py::arg("axis")        = 1,
-          py::arg("debugPrefix") = std::string())
+          py::arg("debugPrefix") = std::string(),
+          DOC(popart, logsoftmax, opset11))
       .def(
           "loop",
           [](AiOnnxOpset11 &opset,
@@ -1636,7 +1763,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           py::arg("args"),
           py::arg("num_outputs"),
           py::arg("body"),
-          py::arg("debugContext") = std::string())
+          py::arg("debugContext") = std::string(),
+          DOC(popart, loop, opset11))
       .def(
           "loop",
           [](AiOnnxOpset11 &opset,
@@ -1649,7 +1777,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           py::arg("args"),
           py::arg("num_outputs"),
           py::arg("body"),
-          py::arg("debugPrefix") = std::string())
+          py::arg("debugPrefix") = std::string(),
+          DOC(popart, loop, opset11))
       .def(
           "lpnormalization",
           [](AiOnnxOpset11 &opset,
@@ -1662,7 +1791,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           py::arg("args"),
           py::arg("axis")         = -1,
           py::arg("p")            = 2,
-          py::arg("debugContext") = std::string())
+          py::arg("debugContext") = std::string(),
+          DOC(popart, lpnormalization, opset11))
       .def(
           "lpnormalization",
           [](AiOnnxOpset11 &opset,
@@ -1675,7 +1805,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           py::arg("args"),
           py::arg("axis")        = -1,
           py::arg("p")           = 2,
-          py::arg("debugPrefix") = std::string())
+          py::arg("debugPrefix") = std::string(),
+          DOC(popart, lpnormalization, opset11))
       .def(
           "lppool",
           [](AiOnnxOpset11 &opset,
@@ -1693,7 +1824,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           py::arg("p")            = 2,
           py::arg("pads")         = std::vector<int64_t>(),
           py::arg("strides")      = std::vector<int64_t>(),
-          py::arg("debugContext") = std::string())
+          py::arg("debugContext") = std::string(),
+          DOC(popart, lppool, opset11))
       .def(
           "lppool",
           [](AiOnnxOpset11 &opset,
@@ -1711,7 +1843,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           py::arg("p")           = 2,
           py::arg("pads")        = std::vector<int64_t>(),
           py::arg("strides")     = std::vector<int64_t>(),
-          py::arg("debugPrefix") = std::string())
+          py::arg("debugPrefix") = std::string(),
+          DOC(popart, lppool, opset11))
       .def(
           "matmul",
           [](AiOnnxOpset11 &opset,
@@ -1720,7 +1853,8 @@ PYBIND11_MODULE(popart_opset11, m) {
             return opset.matmul(args, debugContext);
           },
           py::arg("args"),
-          py::arg("debugContext") = std::string())
+          py::arg("debugContext") = std::string(),
+          DOC(popart, matmul, opset11))
       .def(
           "matmul",
           [](AiOnnxOpset11 &opset,
@@ -1729,7 +1863,8 @@ PYBIND11_MODULE(popart_opset11, m) {
             return opset.matmul(args, debugContext);
           },
           py::arg("args"),
-          py::arg("debugPrefix") = std::string())
+          py::arg("debugPrefix") = std::string(),
+          DOC(popart, matmul, opset11))
       .def(
           "matmulinteger",
           [](AiOnnxOpset11 &opset,
@@ -1738,7 +1873,8 @@ PYBIND11_MODULE(popart_opset11, m) {
             return opset.matmulinteger(args, debugContext);
           },
           py::arg("args"),
-          py::arg("debugContext") = std::string())
+          py::arg("debugContext") = std::string(),
+          DOC(popart, matmulinteger, opset11))
       .def(
           "matmulinteger",
           [](AiOnnxOpset11 &opset,
@@ -1747,7 +1883,8 @@ PYBIND11_MODULE(popart_opset11, m) {
             return opset.matmulinteger(args, debugContext);
           },
           py::arg("args"),
-          py::arg("debugPrefix") = std::string())
+          py::arg("debugPrefix") = std::string(),
+          DOC(popart, matmulinteger, opset11))
       .def(
           "max",
           [](AiOnnxOpset11 &opset,
@@ -1756,7 +1893,8 @@ PYBIND11_MODULE(popart_opset11, m) {
             return opset.max(args, debugContext);
           },
           py::arg("args"),
-          py::arg("debugContext") = std::string())
+          py::arg("debugContext") = std::string(),
+          DOC(popart, max, opset11))
       .def(
           "max",
           [](AiOnnxOpset11 &opset,
@@ -1765,7 +1903,8 @@ PYBIND11_MODULE(popart_opset11, m) {
             return opset.max(args, debugContext);
           },
           py::arg("args"),
-          py::arg("debugPrefix") = std::string())
+          py::arg("debugPrefix") = std::string(),
+          DOC(popart, max, opset11))
       .def(
           "maxpool",
           [](AiOnnxOpset11 &opset,
@@ -1796,7 +1935,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           py::arg("pads")          = std::vector<int64_t>(),
           py::arg("storage_order") = 0,
           py::arg("strides")       = std::vector<int64_t>(),
-          py::arg("debugContext")  = std::string())
+          py::arg("debugContext")  = std::string(),
+          DOC(popart, maxpool, opset11))
       .def(
           "maxpool",
           [](AiOnnxOpset11 &opset,
@@ -1827,7 +1967,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           py::arg("pads")          = std::vector<int64_t>(),
           py::arg("storage_order") = 0,
           py::arg("strides")       = std::vector<int64_t>(),
-          py::arg("debugPrefix")   = std::string())
+          py::arg("debugPrefix")   = std::string(),
+          DOC(popart, maxpool, opset11))
       .def(
           "maxroipool",
           [](AiOnnxOpset11 &opset,
@@ -1841,7 +1982,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           py::arg("args"),
           py::arg("pooled_shape"),
           py::arg("spatial_scale") = 1.0f,
-          py::arg("debugContext")  = std::string())
+          py::arg("debugContext")  = std::string(),
+          DOC(popart, maxroipool, opset11))
       .def(
           "maxroipool",
           [](AiOnnxOpset11 &opset,
@@ -1855,7 +1997,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           py::arg("args"),
           py::arg("pooled_shape"),
           py::arg("spatial_scale") = 1.0f,
-          py::arg("debugPrefix")   = std::string())
+          py::arg("debugPrefix")   = std::string(),
+          DOC(popart, maxroipool, opset11))
       .def(
           "maxunpool",
           [](AiOnnxOpset11 &opset,
@@ -1871,7 +2014,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           py::arg("kernel_shape"),
           py::arg("pads")         = std::vector<int64_t>(),
           py::arg("strides")      = std::vector<int64_t>(),
-          py::arg("debugContext") = std::string())
+          py::arg("debugContext") = std::string(),
+          DOC(popart, maxunpool, opset11))
       .def(
           "maxunpool",
           [](AiOnnxOpset11 &opset,
@@ -1887,7 +2031,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           py::arg("kernel_shape"),
           py::arg("pads")        = std::vector<int64_t>(),
           py::arg("strides")     = std::vector<int64_t>(),
-          py::arg("debugPrefix") = std::string())
+          py::arg("debugPrefix") = std::string(),
+          DOC(popart, maxunpool, opset11))
       .def(
           "mean",
           [](AiOnnxOpset11 &opset,
@@ -1896,7 +2041,8 @@ PYBIND11_MODULE(popart_opset11, m) {
             return opset.mean(args, debugContext);
           },
           py::arg("args"),
-          py::arg("debugContext") = std::string())
+          py::arg("debugContext") = std::string(),
+          DOC(popart, mean, opset11))
       .def(
           "mean",
           [](AiOnnxOpset11 &opset,
@@ -1905,7 +2051,8 @@ PYBIND11_MODULE(popart_opset11, m) {
             return opset.mean(args, debugContext);
           },
           py::arg("args"),
-          py::arg("debugPrefix") = std::string())
+          py::arg("debugPrefix") = std::string(),
+          DOC(popart, mean, opset11))
       .def(
           "meanvariancenormalization",
           [](AiOnnxOpset11 &opset,
@@ -1916,7 +2063,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           },
           py::arg("args"),
           py::arg("axes")         = std::vector<int64_t>(),
-          py::arg("debugContext") = std::string())
+          py::arg("debugContext") = std::string(),
+          DOC(popart, meanvariancenormalization, opset11))
       .def(
           "meanvariancenormalization",
           [](AiOnnxOpset11 &opset,
@@ -1927,7 +2075,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           },
           py::arg("args"),
           py::arg("axes")        = std::vector<int64_t>(),
-          py::arg("debugPrefix") = std::string())
+          py::arg("debugPrefix") = std::string(),
+          DOC(popart, meanvariancenormalization, opset11))
       .def(
           "min",
           [](AiOnnxOpset11 &opset,
@@ -1936,7 +2085,8 @@ PYBIND11_MODULE(popart_opset11, m) {
             return opset.min(args, debugContext);
           },
           py::arg("args"),
-          py::arg("debugContext") = std::string())
+          py::arg("debugContext") = std::string(),
+          DOC(popart, min, opset11))
       .def(
           "min",
           [](AiOnnxOpset11 &opset,
@@ -1945,7 +2095,8 @@ PYBIND11_MODULE(popart_opset11, m) {
             return opset.min(args, debugContext);
           },
           py::arg("args"),
-          py::arg("debugPrefix") = std::string())
+          py::arg("debugPrefix") = std::string(),
+          DOC(popart, min, opset11))
       .def(
           "mod",
           [](AiOnnxOpset11 &opset,
@@ -1956,7 +2107,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           },
           py::arg("args"),
           py::arg("fmod")         = 0,
-          py::arg("debugContext") = std::string())
+          py::arg("debugContext") = std::string(),
+          DOC(popart, mod, opset11))
       .def(
           "mod",
           [](AiOnnxOpset11 &opset,
@@ -1967,7 +2119,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           },
           py::arg("args"),
           py::arg("fmod")        = 0,
-          py::arg("debugPrefix") = std::string())
+          py::arg("debugPrefix") = std::string(),
+          DOC(popart, mod, opset11))
       .def(
           "mul",
           [](AiOnnxOpset11 &opset,
@@ -1976,7 +2129,8 @@ PYBIND11_MODULE(popart_opset11, m) {
             return opset.mul(args, debugContext);
           },
           py::arg("args"),
-          py::arg("debugContext") = std::string())
+          py::arg("debugContext") = std::string(),
+          DOC(popart, mul, opset11))
       .def(
           "mul",
           [](AiOnnxOpset11 &opset,
@@ -1985,7 +2139,8 @@ PYBIND11_MODULE(popart_opset11, m) {
             return opset.mul(args, debugContext);
           },
           py::arg("args"),
-          py::arg("debugPrefix") = std::string())
+          py::arg("debugPrefix") = std::string(),
+          DOC(popart, mul, opset11))
       .def(
           "multinomial",
           [](AiOnnxOpset11 &opset,
@@ -2001,7 +2156,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           py::arg("dtype")        = 6,
           py::arg("sample_size")  = 1,
           py::arg("seed")         = nonstd::optional<float>(),
-          py::arg("debugContext") = std::string())
+          py::arg("debugContext") = std::string(),
+          DOC(popart, multinomial, opset11))
       .def(
           "multinomial",
           [](AiOnnxOpset11 &opset,
@@ -2017,7 +2173,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           py::arg("dtype")       = 6,
           py::arg("sample_size") = 1,
           py::arg("seed")        = nonstd::optional<float>(),
-          py::arg("debugPrefix") = std::string())
+          py::arg("debugPrefix") = std::string(),
+          DOC(popart, multinomial, opset11))
       .def(
           "neg",
           [](AiOnnxOpset11 &opset,
@@ -2026,7 +2183,8 @@ PYBIND11_MODULE(popart_opset11, m) {
             return opset.neg(args, debugContext);
           },
           py::arg("args"),
-          py::arg("debugContext") = std::string())
+          py::arg("debugContext") = std::string(),
+          DOC(popart, neg, opset11))
       .def(
           "neg",
           [](AiOnnxOpset11 &opset,
@@ -2035,7 +2193,8 @@ PYBIND11_MODULE(popart_opset11, m) {
             return opset.neg(args, debugContext);
           },
           py::arg("args"),
-          py::arg("debugPrefix") = std::string())
+          py::arg("debugPrefix") = std::string(),
+          DOC(popart, neg, opset11))
       .def(
           "nonmaxsuppression",
           [](AiOnnxOpset11 &opset,
@@ -2047,7 +2206,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           },
           py::arg("args"),
           py::arg("center_point_box") = 0,
-          py::arg("debugContext")     = std::string())
+          py::arg("debugContext")     = std::string(),
+          DOC(popart, nonmaxsuppression, opset11))
       .def(
           "nonmaxsuppression",
           [](AiOnnxOpset11 &opset,
@@ -2059,7 +2219,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           },
           py::arg("args"),
           py::arg("center_point_box") = 0,
-          py::arg("debugPrefix")      = std::string())
+          py::arg("debugPrefix")      = std::string(),
+          DOC(popart, nonmaxsuppression, opset11))
       .def(
           "nonzero",
           [](AiOnnxOpset11 &opset,
@@ -2068,7 +2229,8 @@ PYBIND11_MODULE(popart_opset11, m) {
             return opset.nonzero(args, debugContext);
           },
           py::arg("args"),
-          py::arg("debugContext") = std::string())
+          py::arg("debugContext") = std::string(),
+          DOC(popart, nonzero, opset11))
       .def(
           "nonzero",
           [](AiOnnxOpset11 &opset,
@@ -2077,7 +2239,8 @@ PYBIND11_MODULE(popart_opset11, m) {
             return opset.nonzero(args, debugContext);
           },
           py::arg("args"),
-          py::arg("debugPrefix") = std::string())
+          py::arg("debugPrefix") = std::string(),
+          DOC(popart, nonzero, opset11))
       .def(
           "logical_not",
           [](AiOnnxOpset11 &opset,
@@ -2086,7 +2249,8 @@ PYBIND11_MODULE(popart_opset11, m) {
             return opset.logical_not(args, debugContext);
           },
           py::arg("args"),
-          py::arg("debugContext") = std::string())
+          py::arg("debugContext") = std::string(),
+          DOC(popart, logical_not, opset11))
       .def(
           "logical_not",
           [](AiOnnxOpset11 &opset,
@@ -2095,7 +2259,8 @@ PYBIND11_MODULE(popart_opset11, m) {
             return opset.logical_not(args, debugContext);
           },
           py::arg("args"),
-          py::arg("debugPrefix") = std::string())
+          py::arg("debugPrefix") = std::string(),
+          DOC(popart, logical_not, opset11))
       .def(
           "onehot",
           [](AiOnnxOpset11 &opset,
@@ -2106,7 +2271,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           },
           py::arg("args"),
           py::arg("axis")         = -1,
-          py::arg("debugContext") = std::string())
+          py::arg("debugContext") = std::string(),
+          DOC(popart, onehot, opset11))
       .def(
           "onehot",
           [](AiOnnxOpset11 &opset,
@@ -2117,7 +2283,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           },
           py::arg("args"),
           py::arg("axis")        = -1,
-          py::arg("debugPrefix") = std::string())
+          py::arg("debugPrefix") = std::string(),
+          DOC(popart, onehot, opset11))
       .def(
           "logical_or",
           [](AiOnnxOpset11 &opset,
@@ -2126,7 +2293,8 @@ PYBIND11_MODULE(popart_opset11, m) {
             return opset.logical_or(args, debugContext);
           },
           py::arg("args"),
-          py::arg("debugContext") = std::string())
+          py::arg("debugContext") = std::string(),
+          DOC(popart, logical_or, opset11))
       .def(
           "logical_or",
           [](AiOnnxOpset11 &opset,
@@ -2135,7 +2303,8 @@ PYBIND11_MODULE(popart_opset11, m) {
             return opset.logical_or(args, debugContext);
           },
           py::arg("args"),
-          py::arg("debugPrefix") = std::string())
+          py::arg("debugPrefix") = std::string(),
+          DOC(popart, logical_or, opset11))
       .def(
           "prelu",
           [](AiOnnxOpset11 &opset,
@@ -2144,7 +2313,8 @@ PYBIND11_MODULE(popart_opset11, m) {
             return opset.prelu(args, debugContext);
           },
           py::arg("args"),
-          py::arg("debugContext") = std::string())
+          py::arg("debugContext") = std::string(),
+          DOC(popart, prelu, opset11))
       .def(
           "prelu",
           [](AiOnnxOpset11 &opset,
@@ -2153,7 +2323,8 @@ PYBIND11_MODULE(popart_opset11, m) {
             return opset.prelu(args, debugContext);
           },
           py::arg("args"),
-          py::arg("debugPrefix") = std::string())
+          py::arg("debugPrefix") = std::string(),
+          DOC(popart, prelu, opset11))
       .def(
           "pad",
           [](AiOnnxOpset11 &opset,
@@ -2164,7 +2335,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           },
           py::arg("args"),
           py::arg("mode")         = "constant",
-          py::arg("debugContext") = std::string())
+          py::arg("debugContext") = std::string(),
+          DOC(popart, pad, opset11))
       .def(
           "pad",
           [](AiOnnxOpset11 &opset,
@@ -2175,7 +2347,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           },
           py::arg("args"),
           py::arg("mode")        = "constant",
-          py::arg("debugPrefix") = std::string())
+          py::arg("debugPrefix") = std::string(),
+          DOC(popart, pad, opset11))
       .def(
           "pow",
           [](AiOnnxOpset11 &opset,
@@ -2184,7 +2357,8 @@ PYBIND11_MODULE(popart_opset11, m) {
             return opset.pow(args, debugContext);
           },
           py::arg("args"),
-          py::arg("debugContext") = std::string())
+          py::arg("debugContext") = std::string(),
+          DOC(popart, pow, opset11))
       .def(
           "pow",
           [](AiOnnxOpset11 &opset,
@@ -2193,7 +2367,8 @@ PYBIND11_MODULE(popart_opset11, m) {
             return opset.pow(args, debugContext);
           },
           py::arg("args"),
-          py::arg("debugPrefix") = std::string())
+          py::arg("debugPrefix") = std::string(),
+          DOC(popart, pow, opset11))
       .def(
           "qlinearconv",
           [](AiOnnxOpset11 &opset,
@@ -2218,7 +2393,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           py::arg("kernel_shape") = std::vector<int64_t>(),
           py::arg("pads")         = std::vector<int64_t>(),
           py::arg("strides")      = std::vector<int64_t>(),
-          py::arg("debugContext") = std::string())
+          py::arg("debugContext") = std::string(),
+          DOC(popart, qlinearconv, opset11))
       .def(
           "qlinearconv",
           [](AiOnnxOpset11 &opset,
@@ -2243,7 +2419,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           py::arg("kernel_shape") = std::vector<int64_t>(),
           py::arg("pads")         = std::vector<int64_t>(),
           py::arg("strides")      = std::vector<int64_t>(),
-          py::arg("debugPrefix")  = std::string())
+          py::arg("debugPrefix")  = std::string(),
+          DOC(popart, qlinearconv, opset11))
       .def(
           "qlinearmatmul",
           [](AiOnnxOpset11 &opset,
@@ -2252,7 +2429,8 @@ PYBIND11_MODULE(popart_opset11, m) {
             return opset.qlinearmatmul(args, debugContext);
           },
           py::arg("args"),
-          py::arg("debugContext") = std::string())
+          py::arg("debugContext") = std::string(),
+          DOC(popart, qlinearmatmul, opset11))
       .def(
           "qlinearmatmul",
           [](AiOnnxOpset11 &opset,
@@ -2261,7 +2439,8 @@ PYBIND11_MODULE(popart_opset11, m) {
             return opset.qlinearmatmul(args, debugContext);
           },
           py::arg("args"),
-          py::arg("debugPrefix") = std::string())
+          py::arg("debugPrefix") = std::string(),
+          DOC(popart, qlinearmatmul, opset11))
       .def(
           "quantizelinear",
           [](AiOnnxOpset11 &opset,
@@ -2270,7 +2449,8 @@ PYBIND11_MODULE(popart_opset11, m) {
             return opset.quantizelinear(args, debugContext);
           },
           py::arg("args"),
-          py::arg("debugContext") = std::string())
+          py::arg("debugContext") = std::string(),
+          DOC(popart, quantizelinear, opset11))
       .def(
           "quantizelinear",
           [](AiOnnxOpset11 &opset,
@@ -2279,7 +2459,8 @@ PYBIND11_MODULE(popart_opset11, m) {
             return opset.quantizelinear(args, debugContext);
           },
           py::arg("args"),
-          py::arg("debugPrefix") = std::string())
+          py::arg("debugPrefix") = std::string(),
+          DOC(popart, quantizelinear, opset11))
       .def(
           "rnn",
           [](AiOnnxOpset11 &opset,
@@ -2310,7 +2491,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           py::arg("clip")             = nonstd::optional<float>(),
           py::arg("direction")        = "forward",
           py::arg("hidden_size")      = nonstd::optional<int64_t>(),
-          py::arg("debugContext")     = std::string())
+          py::arg("debugContext")     = std::string(),
+          DOC(popart, rnn, opset11))
       .def(
           "rnn",
           [](AiOnnxOpset11 &opset,
@@ -2341,7 +2523,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           py::arg("clip")             = nonstd::optional<float>(),
           py::arg("direction")        = "forward",
           py::arg("hidden_size")      = nonstd::optional<int64_t>(),
-          py::arg("debugPrefix")      = std::string())
+          py::arg("debugPrefix")      = std::string(),
+          DOC(popart, rnn, opset11))
       .def(
           "randomnormal",
           [](AiOnnxOpset11 &opset,
@@ -2359,7 +2542,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           py::arg("mean")         = 0.0f,
           py::arg("scale")        = 1.0f,
           py::arg("seed")         = nonstd::optional<float>(),
-          py::arg("debugContext") = std::string())
+          py::arg("debugContext") = std::string(),
+          DOC(popart, randomnormal, opset11))
       .def(
           "randomnormal",
           [](AiOnnxOpset11 &opset,
@@ -2377,7 +2561,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           py::arg("mean")        = 0.0f,
           py::arg("scale")       = 1.0f,
           py::arg("seed")        = nonstd::optional<float>(),
-          py::arg("debugPrefix") = std::string())
+          py::arg("debugPrefix") = std::string(),
+          DOC(popart, randomnormal, opset11))
       .def(
           "randomnormallike",
           [](AiOnnxOpset11 &opset,
@@ -2395,7 +2580,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           py::arg("mean")         = 0.0f,
           py::arg("scale")        = 1.0f,
           py::arg("seed")         = nonstd::optional<float>(),
-          py::arg("debugContext") = std::string())
+          py::arg("debugContext") = std::string(),
+          DOC(popart, randomnormallike, opset11))
       .def(
           "randomnormallike",
           [](AiOnnxOpset11 &opset,
@@ -2413,7 +2599,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           py::arg("mean")        = 0.0f,
           py::arg("scale")       = 1.0f,
           py::arg("seed")        = nonstd::optional<float>(),
-          py::arg("debugPrefix") = std::string())
+          py::arg("debugPrefix") = std::string(),
+          DOC(popart, randomnormallike, opset11))
       .def(
           "randomuniform",
           [](AiOnnxOpset11 &opset,
@@ -2431,7 +2618,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           py::arg("high")         = 1.0f,
           py::arg("low")          = 0.0f,
           py::arg("seed")         = nonstd::optional<float>(),
-          py::arg("debugContext") = std::string())
+          py::arg("debugContext") = std::string(),
+          DOC(popart, randomuniform, opset11))
       .def(
           "randomuniform",
           [](AiOnnxOpset11 &opset,
@@ -2449,7 +2637,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           py::arg("high")        = 1.0f,
           py::arg("low")         = 0.0f,
           py::arg("seed")        = nonstd::optional<float>(),
-          py::arg("debugPrefix") = std::string())
+          py::arg("debugPrefix") = std::string(),
+          DOC(popart, randomuniform, opset11))
       .def(
           "randomuniformlike",
           [](AiOnnxOpset11 &opset,
@@ -2467,7 +2656,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           py::arg("high")         = 1.0f,
           py::arg("low")          = 0.0f,
           py::arg("seed")         = nonstd::optional<float>(),
-          py::arg("debugContext") = std::string())
+          py::arg("debugContext") = std::string(),
+          DOC(popart, randomuniformlike, opset11))
       .def(
           "randomuniformlike",
           [](AiOnnxOpset11 &opset,
@@ -2485,7 +2675,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           py::arg("high")        = 1.0f,
           py::arg("low")         = 0.0f,
           py::arg("seed")        = nonstd::optional<float>(),
-          py::arg("debugPrefix") = std::string())
+          py::arg("debugPrefix") = std::string(),
+          DOC(popart, randomuniformlike, opset11))
       .def(
           "range",
           [](AiOnnxOpset11 &opset,
@@ -2494,7 +2685,8 @@ PYBIND11_MODULE(popart_opset11, m) {
             return opset.range(args, debugContext);
           },
           py::arg("args"),
-          py::arg("debugContext") = std::string())
+          py::arg("debugContext") = std::string(),
+          DOC(popart, range, opset11))
       .def(
           "range",
           [](AiOnnxOpset11 &opset,
@@ -2503,7 +2695,8 @@ PYBIND11_MODULE(popart_opset11, m) {
             return opset.range(args, debugContext);
           },
           py::arg("args"),
-          py::arg("debugPrefix") = std::string())
+          py::arg("debugPrefix") = std::string(),
+          DOC(popart, range, opset11))
       .def(
           "reciprocal",
           [](AiOnnxOpset11 &opset,
@@ -2512,7 +2705,8 @@ PYBIND11_MODULE(popart_opset11, m) {
             return opset.reciprocal(args, debugContext);
           },
           py::arg("args"),
-          py::arg("debugContext") = std::string())
+          py::arg("debugContext") = std::string(),
+          DOC(popart, reciprocal, opset11))
       .def(
           "reciprocal",
           [](AiOnnxOpset11 &opset,
@@ -2521,7 +2715,8 @@ PYBIND11_MODULE(popart_opset11, m) {
             return opset.reciprocal(args, debugContext);
           },
           py::arg("args"),
-          py::arg("debugPrefix") = std::string())
+          py::arg("debugPrefix") = std::string(),
+          DOC(popart, reciprocal, opset11))
       .def(
           "reducel1",
           [](AiOnnxOpset11 &opset,
@@ -2534,7 +2729,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           py::arg("args"),
           py::arg("axes")         = nonstd::optional<std::vector<int64_t>>(),
           py::arg("keepdims")     = 1,
-          py::arg("debugContext") = std::string())
+          py::arg("debugContext") = std::string(),
+          DOC(popart, reducel1, opset11))
       .def(
           "reducel1",
           [](AiOnnxOpset11 &opset,
@@ -2547,7 +2743,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           py::arg("args"),
           py::arg("axes")        = nonstd::optional<std::vector<int64_t>>(),
           py::arg("keepdims")    = 1,
-          py::arg("debugPrefix") = std::string())
+          py::arg("debugPrefix") = std::string(),
+          DOC(popart, reducel1, opset11))
       .def(
           "reducel2",
           [](AiOnnxOpset11 &opset,
@@ -2560,7 +2757,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           py::arg("args"),
           py::arg("axes")         = nonstd::optional<std::vector<int64_t>>(),
           py::arg("keepdims")     = 1,
-          py::arg("debugContext") = std::string())
+          py::arg("debugContext") = std::string(),
+          DOC(popart, reducel2, opset11))
       .def(
           "reducel2",
           [](AiOnnxOpset11 &opset,
@@ -2573,7 +2771,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           py::arg("args"),
           py::arg("axes")        = nonstd::optional<std::vector<int64_t>>(),
           py::arg("keepdims")    = 1,
-          py::arg("debugPrefix") = std::string())
+          py::arg("debugPrefix") = std::string(),
+          DOC(popart, reducel2, opset11))
       .def(
           "reducelogsum",
           [](AiOnnxOpset11 &opset,
@@ -2586,7 +2785,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           py::arg("args"),
           py::arg("axes")         = nonstd::optional<std::vector<int64_t>>(),
           py::arg("keepdims")     = 1,
-          py::arg("debugContext") = std::string())
+          py::arg("debugContext") = std::string(),
+          DOC(popart, reducelogsum, opset11))
       .def(
           "reducelogsum",
           [](AiOnnxOpset11 &opset,
@@ -2599,7 +2799,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           py::arg("args"),
           py::arg("axes")        = nonstd::optional<std::vector<int64_t>>(),
           py::arg("keepdims")    = 1,
-          py::arg("debugPrefix") = std::string())
+          py::arg("debugPrefix") = std::string(),
+          DOC(popart, reducelogsum, opset11))
       .def(
           "reducelogsumexp",
           [](AiOnnxOpset11 &opset,
@@ -2612,7 +2813,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           py::arg("args"),
           py::arg("axes")         = nonstd::optional<std::vector<int64_t>>(),
           py::arg("keepdims")     = 1,
-          py::arg("debugContext") = std::string())
+          py::arg("debugContext") = std::string(),
+          DOC(popart, reducelogsumexp, opset11))
       .def(
           "reducelogsumexp",
           [](AiOnnxOpset11 &opset,
@@ -2625,7 +2827,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           py::arg("args"),
           py::arg("axes")        = nonstd::optional<std::vector<int64_t>>(),
           py::arg("keepdims")    = 1,
-          py::arg("debugPrefix") = std::string())
+          py::arg("debugPrefix") = std::string(),
+          DOC(popart, reducelogsumexp, opset11))
       .def(
           "reducemax",
           [](AiOnnxOpset11 &opset,
@@ -2638,7 +2841,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           py::arg("args"),
           py::arg("axes")         = nonstd::optional<std::vector<int64_t>>(),
           py::arg("keepdims")     = 1,
-          py::arg("debugContext") = std::string())
+          py::arg("debugContext") = std::string(),
+          DOC(popart, reducemax, opset11))
       .def(
           "reducemax",
           [](AiOnnxOpset11 &opset,
@@ -2651,7 +2855,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           py::arg("args"),
           py::arg("axes")        = nonstd::optional<std::vector<int64_t>>(),
           py::arg("keepdims")    = 1,
-          py::arg("debugPrefix") = std::string())
+          py::arg("debugPrefix") = std::string(),
+          DOC(popart, reducemax, opset11))
       .def(
           "reducemean",
           [](AiOnnxOpset11 &opset,
@@ -2664,7 +2869,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           py::arg("args"),
           py::arg("axes")         = nonstd::optional<std::vector<int64_t>>(),
           py::arg("keepdims")     = 1,
-          py::arg("debugContext") = std::string())
+          py::arg("debugContext") = std::string(),
+          DOC(popart, reducemean, opset11))
       .def(
           "reducemean",
           [](AiOnnxOpset11 &opset,
@@ -2677,7 +2883,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           py::arg("args"),
           py::arg("axes")        = nonstd::optional<std::vector<int64_t>>(),
           py::arg("keepdims")    = 1,
-          py::arg("debugPrefix") = std::string())
+          py::arg("debugPrefix") = std::string(),
+          DOC(popart, reducemean, opset11))
       .def(
           "reducemin",
           [](AiOnnxOpset11 &opset,
@@ -2690,7 +2897,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           py::arg("args"),
           py::arg("axes")         = nonstd::optional<std::vector<int64_t>>(),
           py::arg("keepdims")     = 1,
-          py::arg("debugContext") = std::string())
+          py::arg("debugContext") = std::string(),
+          DOC(popart, reducemin, opset11))
       .def(
           "reducemin",
           [](AiOnnxOpset11 &opset,
@@ -2703,7 +2911,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           py::arg("args"),
           py::arg("axes")        = nonstd::optional<std::vector<int64_t>>(),
           py::arg("keepdims")    = 1,
-          py::arg("debugPrefix") = std::string())
+          py::arg("debugPrefix") = std::string(),
+          DOC(popart, reducemin, opset11))
       .def(
           "reduceprod",
           [](AiOnnxOpset11 &opset,
@@ -2716,7 +2925,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           py::arg("args"),
           py::arg("axes")         = nonstd::optional<std::vector<int64_t>>(),
           py::arg("keepdims")     = 1,
-          py::arg("debugContext") = std::string())
+          py::arg("debugContext") = std::string(),
+          DOC(popart, reduceprod, opset11))
       .def(
           "reduceprod",
           [](AiOnnxOpset11 &opset,
@@ -2729,7 +2939,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           py::arg("args"),
           py::arg("axes")        = nonstd::optional<std::vector<int64_t>>(),
           py::arg("keepdims")    = 1,
-          py::arg("debugPrefix") = std::string())
+          py::arg("debugPrefix") = std::string(),
+          DOC(popart, reduceprod, opset11))
       .def(
           "reducesum",
           [](AiOnnxOpset11 &opset,
@@ -2742,7 +2953,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           py::arg("args"),
           py::arg("axes")         = nonstd::optional<std::vector<int64_t>>(),
           py::arg("keepdims")     = 1,
-          py::arg("debugContext") = std::string())
+          py::arg("debugContext") = std::string(),
+          DOC(popart, reducesum, opset11))
       .def(
           "reducesum",
           [](AiOnnxOpset11 &opset,
@@ -2755,7 +2967,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           py::arg("args"),
           py::arg("axes")        = nonstd::optional<std::vector<int64_t>>(),
           py::arg("keepdims")    = 1,
-          py::arg("debugPrefix") = std::string())
+          py::arg("debugPrefix") = std::string(),
+          DOC(popart, reducesum, opset11))
       .def(
           "reducesumsquare",
           [](AiOnnxOpset11 &opset,
@@ -2768,7 +2981,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           py::arg("args"),
           py::arg("axes")         = nonstd::optional<std::vector<int64_t>>(),
           py::arg("keepdims")     = 1,
-          py::arg("debugContext") = std::string())
+          py::arg("debugContext") = std::string(),
+          DOC(popart, reducesumsquare, opset11))
       .def(
           "reducesumsquare",
           [](AiOnnxOpset11 &opset,
@@ -2781,7 +2995,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           py::arg("args"),
           py::arg("axes")        = nonstd::optional<std::vector<int64_t>>(),
           py::arg("keepdims")    = 1,
-          py::arg("debugPrefix") = std::string())
+          py::arg("debugPrefix") = std::string(),
+          DOC(popart, reducesumsquare, opset11))
       .def(
           "relu",
           [](AiOnnxOpset11 &opset,
@@ -2790,7 +3005,8 @@ PYBIND11_MODULE(popart_opset11, m) {
             return opset.relu(args, debugContext);
           },
           py::arg("args"),
-          py::arg("debugContext") = std::string())
+          py::arg("debugContext") = std::string(),
+          DOC(popart, relu, opset11))
       .def(
           "relu",
           [](AiOnnxOpset11 &opset,
@@ -2799,7 +3015,8 @@ PYBIND11_MODULE(popart_opset11, m) {
             return opset.relu(args, debugContext);
           },
           py::arg("args"),
-          py::arg("debugPrefix") = std::string())
+          py::arg("debugPrefix") = std::string(),
+          DOC(popart, relu, opset11))
       .def(
           "reshape",
           [](AiOnnxOpset11 &opset,
@@ -2808,7 +3025,8 @@ PYBIND11_MODULE(popart_opset11, m) {
             return opset.reshape(args, debugContext);
           },
           py::arg("args"),
-          py::arg("debugContext") = std::string())
+          py::arg("debugContext") = std::string(),
+          DOC(popart, reshape, opset11))
       .def(
           "reshape",
           [](AiOnnxOpset11 &opset,
@@ -2817,7 +3035,8 @@ PYBIND11_MODULE(popart_opset11, m) {
             return opset.reshape(args, debugContext);
           },
           py::arg("args"),
-          py::arg("debugPrefix") = std::string())
+          py::arg("debugPrefix") = std::string(),
+          DOC(popart, reshape, opset11))
       .def(
           "resize",
           [](AiOnnxOpset11 &opset,
@@ -2845,7 +3064,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           py::arg("extrapolation_value")            = 0.0f,
           py::arg("mode")                           = "nearest",
           py::arg("nearest_mode")                   = "round_prefer_floor",
-          py::arg("debugContext")                   = std::string())
+          py::arg("debugContext")                   = std::string(),
+          DOC(popart, resize, opset11))
       .def(
           "resize",
           [](AiOnnxOpset11 &opset,
@@ -2873,7 +3093,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           py::arg("extrapolation_value")            = 0.0f,
           py::arg("mode")                           = "nearest",
           py::arg("nearest_mode")                   = "round_prefer_floor",
-          py::arg("debugPrefix")                    = std::string())
+          py::arg("debugPrefix")                    = std::string(),
+          DOC(popart, resize, opset11))
       .def(
           "reversesequence",
           [](AiOnnxOpset11 &opset,
@@ -2887,7 +3108,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           py::arg("args"),
           py::arg("batch_axis")   = 1,
           py::arg("time_axis")    = 0,
-          py::arg("debugContext") = std::string())
+          py::arg("debugContext") = std::string(),
+          DOC(popart, reversesequence, opset11))
       .def(
           "reversesequence",
           [](AiOnnxOpset11 &opset,
@@ -2901,7 +3123,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           py::arg("args"),
           py::arg("batch_axis")  = 1,
           py::arg("time_axis")   = 0,
-          py::arg("debugPrefix") = std::string())
+          py::arg("debugPrefix") = std::string(),
+          DOC(popart, reversesequence, opset11))
       .def(
           "roialign",
           [](AiOnnxOpset11 &opset,
@@ -2926,7 +3149,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           py::arg("output_width")   = 1,
           py::arg("sampling_ratio") = 0,
           py::arg("spatial_scale")  = 1.0f,
-          py::arg("debugContext")   = std::string())
+          py::arg("debugContext")   = std::string(),
+          DOC(popart, roialign, opset11))
       .def(
           "roialign",
           [](AiOnnxOpset11 &opset,
@@ -2951,7 +3175,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           py::arg("output_width")   = 1,
           py::arg("sampling_ratio") = 0,
           py::arg("spatial_scale")  = 1.0f,
-          py::arg("debugPrefix")    = std::string())
+          py::arg("debugPrefix")    = std::string(),
+          DOC(popart, roialign, opset11))
       .def(
           "round",
           [](AiOnnxOpset11 &opset,
@@ -2960,7 +3185,8 @@ PYBIND11_MODULE(popart_opset11, m) {
             return opset.round(args, debugContext);
           },
           py::arg("args"),
-          py::arg("debugContext") = std::string())
+          py::arg("debugContext") = std::string(),
+          DOC(popart, round, opset11))
       .def(
           "round",
           [](AiOnnxOpset11 &opset,
@@ -2969,7 +3195,8 @@ PYBIND11_MODULE(popart_opset11, m) {
             return opset.round(args, debugContext);
           },
           py::arg("args"),
-          py::arg("debugPrefix") = std::string())
+          py::arg("debugPrefix") = std::string(),
+          DOC(popart, round, opset11))
       .def(
           "scan",
           [](AiOnnxOpset11 &opset,
@@ -3000,7 +3227,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           py::arg("scan_input_directions")  = std::vector<int64_t>(),
           py::arg("scan_output_axes")       = std::vector<int64_t>(),
           py::arg("scan_output_directions") = std::vector<int64_t>(),
-          py::arg("debugContext")           = std::string())
+          py::arg("debugContext")           = std::string(),
+          DOC(popart, scan, opset11))
       .def(
           "scan",
           [](AiOnnxOpset11 &opset,
@@ -3031,7 +3259,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           py::arg("scan_input_directions")  = std::vector<int64_t>(),
           py::arg("scan_output_axes")       = std::vector<int64_t>(),
           py::arg("scan_output_directions") = std::vector<int64_t>(),
-          py::arg("debugPrefix")            = std::string())
+          py::arg("debugPrefix")            = std::string(),
+          DOC(popart, scan, opset11))
       .def(
           "scatter",
           [](AiOnnxOpset11 &opset,
@@ -3042,7 +3271,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           },
           py::arg("args"),
           py::arg("axis")         = 0,
-          py::arg("debugContext") = std::string())
+          py::arg("debugContext") = std::string(),
+          DOC(popart, scatter, opset11))
       .def(
           "scatter",
           [](AiOnnxOpset11 &opset,
@@ -3053,7 +3283,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           },
           py::arg("args"),
           py::arg("axis")        = 0,
-          py::arg("debugPrefix") = std::string())
+          py::arg("debugPrefix") = std::string(),
+          DOC(popart, scatter, opset11))
       .def(
           "scatterelements",
           [](AiOnnxOpset11 &opset,
@@ -3064,7 +3295,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           },
           py::arg("args"),
           py::arg("axis")         = 0,
-          py::arg("debugContext") = std::string())
+          py::arg("debugContext") = std::string(),
+          DOC(popart, scatterelements, opset11))
       .def(
           "scatterelements",
           [](AiOnnxOpset11 &opset,
@@ -3075,7 +3307,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           },
           py::arg("args"),
           py::arg("axis")        = 0,
-          py::arg("debugPrefix") = std::string())
+          py::arg("debugPrefix") = std::string(),
+          DOC(popart, scatterelements, opset11))
       .def(
           "scatternd",
           [](AiOnnxOpset11 &opset,
@@ -3084,7 +3317,8 @@ PYBIND11_MODULE(popart_opset11, m) {
             return opset.scatternd(args, debugContext);
           },
           py::arg("args"),
-          py::arg("debugContext") = std::string())
+          py::arg("debugContext") = std::string(),
+          DOC(popart, scatternd, opset11))
       .def(
           "scatternd",
           [](AiOnnxOpset11 &opset,
@@ -3093,7 +3327,8 @@ PYBIND11_MODULE(popart_opset11, m) {
             return opset.scatternd(args, debugContext);
           },
           py::arg("args"),
-          py::arg("debugPrefix") = std::string())
+          py::arg("debugPrefix") = std::string(),
+          DOC(popart, scatternd, opset11))
       .def(
           "selu",
           [](AiOnnxOpset11 &opset,
@@ -3106,7 +3341,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           py::arg("args"),
           py::arg("alpha")        = 1.67326f,
           py::arg("gamma")        = 1.0507f,
-          py::arg("debugContext") = std::string())
+          py::arg("debugContext") = std::string(),
+          DOC(popart, selu, opset11))
       .def(
           "selu",
           [](AiOnnxOpset11 &opset,
@@ -3119,7 +3355,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           py::arg("args"),
           py::arg("alpha")       = 1.67326f,
           py::arg("gamma")       = 1.0507f,
-          py::arg("debugPrefix") = std::string())
+          py::arg("debugPrefix") = std::string(),
+          DOC(popart, selu, opset11))
       .def(
           "sequenceat",
           [](AiOnnxOpset11 &opset,
@@ -3128,7 +3365,8 @@ PYBIND11_MODULE(popart_opset11, m) {
             return opset.sequenceat(args, debugContext);
           },
           py::arg("args"),
-          py::arg("debugContext") = std::string())
+          py::arg("debugContext") = std::string(),
+          DOC(popart, sequenceat, opset11))
       .def(
           "sequenceat",
           [](AiOnnxOpset11 &opset,
@@ -3137,7 +3375,8 @@ PYBIND11_MODULE(popart_opset11, m) {
             return opset.sequenceat(args, debugContext);
           },
           py::arg("args"),
-          py::arg("debugPrefix") = std::string())
+          py::arg("debugPrefix") = std::string(),
+          DOC(popart, sequenceat, opset11))
       .def(
           "sequenceconstruct",
           [](AiOnnxOpset11 &opset,
@@ -3146,7 +3385,8 @@ PYBIND11_MODULE(popart_opset11, m) {
             return opset.sequenceconstruct(args, debugContext);
           },
           py::arg("args"),
-          py::arg("debugContext") = std::string())
+          py::arg("debugContext") = std::string(),
+          DOC(popart, sequenceconstruct, opset11))
       .def(
           "sequenceconstruct",
           [](AiOnnxOpset11 &opset,
@@ -3155,7 +3395,8 @@ PYBIND11_MODULE(popart_opset11, m) {
             return opset.sequenceconstruct(args, debugContext);
           },
           py::arg("args"),
-          py::arg("debugPrefix") = std::string())
+          py::arg("debugPrefix") = std::string(),
+          DOC(popart, sequenceconstruct, opset11))
       .def(
           "sequenceempty",
           [](AiOnnxOpset11 &opset,
@@ -3164,7 +3405,8 @@ PYBIND11_MODULE(popart_opset11, m) {
             return opset.sequenceempty(dtype, debugContext);
           },
           py::arg("dtype")        = nonstd::optional<int64_t>(),
-          py::arg("debugContext") = std::string())
+          py::arg("debugContext") = std::string(),
+          DOC(popart, sequenceempty, opset11))
       .def(
           "sequenceempty",
           [](AiOnnxOpset11 &opset,
@@ -3173,7 +3415,8 @@ PYBIND11_MODULE(popart_opset11, m) {
             return opset.sequenceempty(dtype, debugContext);
           },
           py::arg("dtype")       = nonstd::optional<int64_t>(),
-          py::arg("debugPrefix") = std::string())
+          py::arg("debugPrefix") = std::string(),
+          DOC(popart, sequenceempty, opset11))
       .def(
           "sequenceerase",
           [](AiOnnxOpset11 &opset,
@@ -3182,7 +3425,8 @@ PYBIND11_MODULE(popart_opset11, m) {
             return opset.sequenceerase(args, debugContext);
           },
           py::arg("args"),
-          py::arg("debugContext") = std::string())
+          py::arg("debugContext") = std::string(),
+          DOC(popart, sequenceerase, opset11))
       .def(
           "sequenceerase",
           [](AiOnnxOpset11 &opset,
@@ -3191,7 +3435,8 @@ PYBIND11_MODULE(popart_opset11, m) {
             return opset.sequenceerase(args, debugContext);
           },
           py::arg("args"),
-          py::arg("debugPrefix") = std::string())
+          py::arg("debugPrefix") = std::string(),
+          DOC(popart, sequenceerase, opset11))
       .def(
           "sequenceinsert",
           [](AiOnnxOpset11 &opset,
@@ -3200,7 +3445,8 @@ PYBIND11_MODULE(popart_opset11, m) {
             return opset.sequenceinsert(args, debugContext);
           },
           py::arg("args"),
-          py::arg("debugContext") = std::string())
+          py::arg("debugContext") = std::string(),
+          DOC(popart, sequenceinsert, opset11))
       .def(
           "sequenceinsert",
           [](AiOnnxOpset11 &opset,
@@ -3209,7 +3455,8 @@ PYBIND11_MODULE(popart_opset11, m) {
             return opset.sequenceinsert(args, debugContext);
           },
           py::arg("args"),
-          py::arg("debugPrefix") = std::string())
+          py::arg("debugPrefix") = std::string(),
+          DOC(popart, sequenceinsert, opset11))
       .def(
           "sequencelength",
           [](AiOnnxOpset11 &opset,
@@ -3218,7 +3465,8 @@ PYBIND11_MODULE(popart_opset11, m) {
             return opset.sequencelength(args, debugContext);
           },
           py::arg("args"),
-          py::arg("debugContext") = std::string())
+          py::arg("debugContext") = std::string(),
+          DOC(popart, sequencelength, opset11))
       .def(
           "sequencelength",
           [](AiOnnxOpset11 &opset,
@@ -3227,7 +3475,8 @@ PYBIND11_MODULE(popart_opset11, m) {
             return opset.sequencelength(args, debugContext);
           },
           py::arg("args"),
-          py::arg("debugPrefix") = std::string())
+          py::arg("debugPrefix") = std::string(),
+          DOC(popart, sequencelength, opset11))
       .def(
           "shape",
           [](AiOnnxOpset11 &opset,
@@ -3236,7 +3485,8 @@ PYBIND11_MODULE(popart_opset11, m) {
             return opset.shape(args, debugContext);
           },
           py::arg("args"),
-          py::arg("debugContext") = std::string())
+          py::arg("debugContext") = std::string(),
+          DOC(popart, shape, opset11))
       .def(
           "shape",
           [](AiOnnxOpset11 &opset,
@@ -3245,7 +3495,8 @@ PYBIND11_MODULE(popart_opset11, m) {
             return opset.shape(args, debugContext);
           },
           py::arg("args"),
-          py::arg("debugPrefix") = std::string())
+          py::arg("debugPrefix") = std::string(),
+          DOC(popart, shape, opset11))
       .def(
           "shrink",
           [](AiOnnxOpset11 &opset,
@@ -3258,7 +3509,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           py::arg("args"),
           py::arg("bias")         = 0.0f,
           py::arg("lambd")        = 0.5f,
-          py::arg("debugContext") = std::string())
+          py::arg("debugContext") = std::string(),
+          DOC(popart, shrink, opset11))
       .def(
           "shrink",
           [](AiOnnxOpset11 &opset,
@@ -3271,7 +3523,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           py::arg("args"),
           py::arg("bias")        = 0.0f,
           py::arg("lambd")       = 0.5f,
-          py::arg("debugPrefix") = std::string())
+          py::arg("debugPrefix") = std::string(),
+          DOC(popart, shrink, opset11))
       .def(
           "sigmoid",
           [](AiOnnxOpset11 &opset,
@@ -3280,7 +3533,8 @@ PYBIND11_MODULE(popart_opset11, m) {
             return opset.sigmoid(args, debugContext);
           },
           py::arg("args"),
-          py::arg("debugContext") = std::string())
+          py::arg("debugContext") = std::string(),
+          DOC(popart, sigmoid, opset11))
       .def(
           "sigmoid",
           [](AiOnnxOpset11 &opset,
@@ -3289,7 +3543,8 @@ PYBIND11_MODULE(popart_opset11, m) {
             return opset.sigmoid(args, debugContext);
           },
           py::arg("args"),
-          py::arg("debugPrefix") = std::string())
+          py::arg("debugPrefix") = std::string(),
+          DOC(popart, sigmoid, opset11))
       .def(
           "sign",
           [](AiOnnxOpset11 &opset,
@@ -3298,7 +3553,8 @@ PYBIND11_MODULE(popart_opset11, m) {
             return opset.sign(args, debugContext);
           },
           py::arg("args"),
-          py::arg("debugContext") = std::string())
+          py::arg("debugContext") = std::string(),
+          DOC(popart, sign, opset11))
       .def(
           "sign",
           [](AiOnnxOpset11 &opset,
@@ -3307,7 +3563,8 @@ PYBIND11_MODULE(popart_opset11, m) {
             return opset.sign(args, debugContext);
           },
           py::arg("args"),
-          py::arg("debugPrefix") = std::string())
+          py::arg("debugPrefix") = std::string(),
+          DOC(popart, sign, opset11))
       .def(
           "sin",
           [](AiOnnxOpset11 &opset,
@@ -3316,7 +3573,8 @@ PYBIND11_MODULE(popart_opset11, m) {
             return opset.sin(args, debugContext);
           },
           py::arg("args"),
-          py::arg("debugContext") = std::string())
+          py::arg("debugContext") = std::string(),
+          DOC(popart, sin, opset11))
       .def(
           "sin",
           [](AiOnnxOpset11 &opset,
@@ -3325,7 +3583,8 @@ PYBIND11_MODULE(popart_opset11, m) {
             return opset.sin(args, debugContext);
           },
           py::arg("args"),
-          py::arg("debugPrefix") = std::string())
+          py::arg("debugPrefix") = std::string(),
+          DOC(popart, sin, opset11))
       .def(
           "sinh",
           [](AiOnnxOpset11 &opset,
@@ -3334,7 +3593,8 @@ PYBIND11_MODULE(popart_opset11, m) {
             return opset.sinh(args, debugContext);
           },
           py::arg("args"),
-          py::arg("debugContext") = std::string())
+          py::arg("debugContext") = std::string(),
+          DOC(popart, sinh, opset11))
       .def(
           "sinh",
           [](AiOnnxOpset11 &opset,
@@ -3343,7 +3603,8 @@ PYBIND11_MODULE(popart_opset11, m) {
             return opset.sinh(args, debugContext);
           },
           py::arg("args"),
-          py::arg("debugPrefix") = std::string())
+          py::arg("debugPrefix") = std::string(),
+          DOC(popart, sinh, opset11))
       .def(
           "size",
           [](AiOnnxOpset11 &opset,
@@ -3352,7 +3613,8 @@ PYBIND11_MODULE(popart_opset11, m) {
             return opset.size(args, debugContext);
           },
           py::arg("args"),
-          py::arg("debugContext") = std::string())
+          py::arg("debugContext") = std::string(),
+          DOC(popart, size, opset11))
       .def(
           "size",
           [](AiOnnxOpset11 &opset,
@@ -3361,7 +3623,8 @@ PYBIND11_MODULE(popart_opset11, m) {
             return opset.size(args, debugContext);
           },
           py::arg("args"),
-          py::arg("debugPrefix") = std::string())
+          py::arg("debugPrefix") = std::string(),
+          DOC(popart, size, opset11))
       .def(
           "slice",
           [](AiOnnxOpset11 &opset,
@@ -3370,7 +3633,8 @@ PYBIND11_MODULE(popart_opset11, m) {
             return opset.slice(args, debugContext);
           },
           py::arg("args"),
-          py::arg("debugContext") = std::string())
+          py::arg("debugContext") = std::string(),
+          DOC(popart, slice, opset11))
       .def(
           "slice",
           [](AiOnnxOpset11 &opset,
@@ -3379,7 +3643,8 @@ PYBIND11_MODULE(popart_opset11, m) {
             return opset.slice(args, debugContext);
           },
           py::arg("args"),
-          py::arg("debugPrefix") = std::string())
+          py::arg("debugPrefix") = std::string(),
+          DOC(popart, slice, opset11))
       .def(
           "softmax",
           [](AiOnnxOpset11 &opset,
@@ -3390,7 +3655,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           },
           py::arg("args"),
           py::arg("axis")         = 1,
-          py::arg("debugContext") = std::string())
+          py::arg("debugContext") = std::string(),
+          DOC(popart, softmax, opset11))
       .def(
           "softmax",
           [](AiOnnxOpset11 &opset,
@@ -3401,7 +3667,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           },
           py::arg("args"),
           py::arg("axis")        = 1,
-          py::arg("debugPrefix") = std::string())
+          py::arg("debugPrefix") = std::string(),
+          DOC(popart, softmax, opset11))
       .def(
           "softplus",
           [](AiOnnxOpset11 &opset,
@@ -3410,7 +3677,8 @@ PYBIND11_MODULE(popart_opset11, m) {
             return opset.softplus(args, debugContext);
           },
           py::arg("args"),
-          py::arg("debugContext") = std::string())
+          py::arg("debugContext") = std::string(),
+          DOC(popart, softplus, opset11))
       .def(
           "softplus",
           [](AiOnnxOpset11 &opset,
@@ -3419,7 +3687,8 @@ PYBIND11_MODULE(popart_opset11, m) {
             return opset.softplus(args, debugContext);
           },
           py::arg("args"),
-          py::arg("debugPrefix") = std::string())
+          py::arg("debugPrefix") = std::string(),
+          DOC(popart, softplus, opset11))
       .def(
           "softsign",
           [](AiOnnxOpset11 &opset,
@@ -3428,7 +3697,8 @@ PYBIND11_MODULE(popart_opset11, m) {
             return opset.softsign(args, debugContext);
           },
           py::arg("args"),
-          py::arg("debugContext") = std::string())
+          py::arg("debugContext") = std::string(),
+          DOC(popart, softsign, opset11))
       .def(
           "softsign",
           [](AiOnnxOpset11 &opset,
@@ -3437,7 +3707,8 @@ PYBIND11_MODULE(popart_opset11, m) {
             return opset.softsign(args, debugContext);
           },
           py::arg("args"),
-          py::arg("debugPrefix") = std::string())
+          py::arg("debugPrefix") = std::string(),
+          DOC(popart, softsign, opset11))
       .def(
           "spacetodepth",
           [](AiOnnxOpset11 &opset,
@@ -3448,7 +3719,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           },
           py::arg("args"),
           py::arg("blocksize"),
-          py::arg("debugContext") = std::string())
+          py::arg("debugContext") = std::string(),
+          DOC(popart, spacetodepth, opset11))
       .def(
           "spacetodepth",
           [](AiOnnxOpset11 &opset,
@@ -3459,7 +3731,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           },
           py::arg("args"),
           py::arg("blocksize"),
-          py::arg("debugPrefix") = std::string())
+          py::arg("debugPrefix") = std::string(),
+          DOC(popart, spacetodepth, opset11))
       .def(
           "split",
           [](AiOnnxOpset11 &opset,
@@ -3474,7 +3747,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           py::arg("num_outputs"),
           py::arg("axis")         = 0,
           py::arg("split")        = std::vector<int64_t>(),
-          py::arg("debugContext") = std::string())
+          py::arg("debugContext") = std::string(),
+          DOC(popart, split, opset11))
       .def(
           "split",
           [](AiOnnxOpset11 &opset,
@@ -3489,7 +3763,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           py::arg("num_outputs"),
           py::arg("axis")        = 0,
           py::arg("split")       = std::vector<int64_t>(),
-          py::arg("debugPrefix") = std::string())
+          py::arg("debugPrefix") = std::string(),
+          DOC(popart, split, opset11))
       .def(
           "splittosequence",
           [](AiOnnxOpset11 &opset,
@@ -3502,7 +3777,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           py::arg("args"),
           py::arg("axis")         = 0,
           py::arg("keepdims")     = 1,
-          py::arg("debugContext") = std::string())
+          py::arg("debugContext") = std::string(),
+          DOC(popart, splittosequence, opset11))
       .def(
           "splittosequence",
           [](AiOnnxOpset11 &opset,
@@ -3515,7 +3791,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           py::arg("args"),
           py::arg("axis")        = 0,
           py::arg("keepdims")    = 1,
-          py::arg("debugPrefix") = std::string())
+          py::arg("debugPrefix") = std::string(),
+          DOC(popart, splittosequence, opset11))
       .def(
           "sqrt",
           [](AiOnnxOpset11 &opset,
@@ -3524,7 +3801,8 @@ PYBIND11_MODULE(popart_opset11, m) {
             return opset.sqrt(args, debugContext);
           },
           py::arg("args"),
-          py::arg("debugContext") = std::string())
+          py::arg("debugContext") = std::string(),
+          DOC(popart, sqrt, opset11))
       .def(
           "sqrt",
           [](AiOnnxOpset11 &opset,
@@ -3533,7 +3811,8 @@ PYBIND11_MODULE(popart_opset11, m) {
             return opset.sqrt(args, debugContext);
           },
           py::arg("args"),
-          py::arg("debugPrefix") = std::string())
+          py::arg("debugPrefix") = std::string(),
+          DOC(popart, sqrt, opset11))
       .def(
           "squeeze",
           [](AiOnnxOpset11 &opset,
@@ -3544,7 +3823,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           },
           py::arg("args"),
           py::arg("axes")         = std::vector<int64_t>(),
-          py::arg("debugContext") = std::string())
+          py::arg("debugContext") = std::string(),
+          DOC(popart, squeeze, opset11))
       .def(
           "squeeze",
           [](AiOnnxOpset11 &opset,
@@ -3555,7 +3835,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           },
           py::arg("args"),
           py::arg("axes")        = std::vector<int64_t>(),
-          py::arg("debugPrefix") = std::string())
+          py::arg("debugPrefix") = std::string(),
+          DOC(popart, squeeze, opset11))
       .def(
           "stringnormalizer",
           [](AiOnnxOpset11 &opset,
@@ -3577,7 +3858,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           py::arg("is_case_sensitive")  = 0,
           py::arg("locale")             = std::string(),
           py::arg("stopwords")          = std::vector<std::string>(),
-          py::arg("debugContext")       = std::string())
+          py::arg("debugContext")       = std::string(),
+          DOC(popart, stringnormalizer, opset11))
       .def(
           "stringnormalizer",
           [](AiOnnxOpset11 &opset,
@@ -3599,7 +3881,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           py::arg("is_case_sensitive")  = 0,
           py::arg("locale")             = std::string(),
           py::arg("stopwords")          = std::vector<std::string>(),
-          py::arg("debugPrefix")        = std::string())
+          py::arg("debugPrefix")        = std::string(),
+          DOC(popart, stringnormalizer, opset11))
       .def(
           "sub",
           [](AiOnnxOpset11 &opset,
@@ -3608,7 +3891,8 @@ PYBIND11_MODULE(popart_opset11, m) {
             return opset.sub(args, debugContext);
           },
           py::arg("args"),
-          py::arg("debugContext") = std::string())
+          py::arg("debugContext") = std::string(),
+          DOC(popart, sub, opset11))
       .def(
           "sub",
           [](AiOnnxOpset11 &opset,
@@ -3617,7 +3901,8 @@ PYBIND11_MODULE(popart_opset11, m) {
             return opset.sub(args, debugContext);
           },
           py::arg("args"),
-          py::arg("debugPrefix") = std::string())
+          py::arg("debugPrefix") = std::string(),
+          DOC(popart, sub, opset11))
       .def(
           "sum",
           [](AiOnnxOpset11 &opset,
@@ -3626,7 +3911,8 @@ PYBIND11_MODULE(popart_opset11, m) {
             return opset.sum(args, debugContext);
           },
           py::arg("args"),
-          py::arg("debugContext") = std::string())
+          py::arg("debugContext") = std::string(),
+          DOC(popart, sum, opset11))
       .def(
           "sum",
           [](AiOnnxOpset11 &opset,
@@ -3635,7 +3921,8 @@ PYBIND11_MODULE(popart_opset11, m) {
             return opset.sum(args, debugContext);
           },
           py::arg("args"),
-          py::arg("debugPrefix") = std::string())
+          py::arg("debugPrefix") = std::string(),
+          DOC(popart, sum, opset11))
       .def(
           "tan",
           [](AiOnnxOpset11 &opset,
@@ -3644,7 +3931,8 @@ PYBIND11_MODULE(popart_opset11, m) {
             return opset.tan(args, debugContext);
           },
           py::arg("args"),
-          py::arg("debugContext") = std::string())
+          py::arg("debugContext") = std::string(),
+          DOC(popart, tan, opset11))
       .def(
           "tan",
           [](AiOnnxOpset11 &opset,
@@ -3653,7 +3941,8 @@ PYBIND11_MODULE(popart_opset11, m) {
             return opset.tan(args, debugContext);
           },
           py::arg("args"),
-          py::arg("debugPrefix") = std::string())
+          py::arg("debugPrefix") = std::string(),
+          DOC(popart, tan, opset11))
       .def(
           "tanh",
           [](AiOnnxOpset11 &opset,
@@ -3662,7 +3951,8 @@ PYBIND11_MODULE(popart_opset11, m) {
             return opset.tanh(args, debugContext);
           },
           py::arg("args"),
-          py::arg("debugContext") = std::string())
+          py::arg("debugContext") = std::string(),
+          DOC(popart, tanh, opset11))
       .def(
           "tanh",
           [](AiOnnxOpset11 &opset,
@@ -3671,7 +3961,8 @@ PYBIND11_MODULE(popart_opset11, m) {
             return opset.tanh(args, debugContext);
           },
           py::arg("args"),
-          py::arg("debugPrefix") = std::string())
+          py::arg("debugPrefix") = std::string(),
+          DOC(popart, tanh, opset11))
       .def(
           "tfidfvectorizer",
           [](AiOnnxOpset11 &opset,
@@ -3708,7 +3999,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           py::arg("pool_int64s")  = std::vector<int64_t>(),
           py::arg("pool_strings") = std::vector<std::string>(),
           py::arg("weights")      = std::vector<float>(),
-          py::arg("debugContext") = std::string())
+          py::arg("debugContext") = std::string(),
+          DOC(popart, tfidfvectorizer, opset11))
       .def(
           "tfidfvectorizer",
           [](AiOnnxOpset11 &opset,
@@ -3745,7 +4037,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           py::arg("pool_int64s")  = std::vector<int64_t>(),
           py::arg("pool_strings") = std::vector<std::string>(),
           py::arg("weights")      = std::vector<float>(),
-          py::arg("debugPrefix")  = std::string())
+          py::arg("debugPrefix")  = std::string(),
+          DOC(popart, tfidfvectorizer, opset11))
       .def(
           "thresholdedrelu",
           [](AiOnnxOpset11 &opset,
@@ -3756,7 +4049,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           },
           py::arg("args"),
           py::arg("alpha")        = 1.0f,
-          py::arg("debugContext") = std::string())
+          py::arg("debugContext") = std::string(),
+          DOC(popart, thresholdedrelu, opset11))
       .def(
           "thresholdedrelu",
           [](AiOnnxOpset11 &opset,
@@ -3767,7 +4061,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           },
           py::arg("args"),
           py::arg("alpha")       = 1.0f,
-          py::arg("debugPrefix") = std::string())
+          py::arg("debugPrefix") = std::string(),
+          DOC(popart, thresholdedrelu, opset11))
       .def(
           "tile",
           [](AiOnnxOpset11 &opset,
@@ -3776,7 +4071,8 @@ PYBIND11_MODULE(popart_opset11, m) {
             return opset.tile(args, debugContext);
           },
           py::arg("args"),
-          py::arg("debugContext") = std::string())
+          py::arg("debugContext") = std::string(),
+          DOC(popart, tile, opset11))
       .def(
           "tile",
           [](AiOnnxOpset11 &opset,
@@ -3785,7 +4081,8 @@ PYBIND11_MODULE(popart_opset11, m) {
             return opset.tile(args, debugContext);
           },
           py::arg("args"),
-          py::arg("debugPrefix") = std::string())
+          py::arg("debugPrefix") = std::string(),
+          DOC(popart, tile, opset11))
       .def(
           "topk",
           [](AiOnnxOpset11 &opset,
@@ -3800,7 +4097,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           py::arg("axis")         = -1,
           py::arg("largest")      = 1,
           py::arg("sorted")       = 1,
-          py::arg("debugContext") = std::string())
+          py::arg("debugContext") = std::string(),
+          DOC(popart, topk, opset11))
       .def(
           "topk",
           [](AiOnnxOpset11 &opset,
@@ -3815,7 +4113,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           py::arg("axis")        = -1,
           py::arg("largest")     = 1,
           py::arg("sorted")      = 1,
-          py::arg("debugPrefix") = std::string())
+          py::arg("debugPrefix") = std::string(),
+          DOC(popart, topk, opset11))
       .def(
           "transpose",
           [](AiOnnxOpset11 &opset,
@@ -3826,7 +4125,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           },
           py::arg("args"),
           py::arg("perm")         = std::vector<int64_t>(),
-          py::arg("debugContext") = std::string())
+          py::arg("debugContext") = std::string(),
+          DOC(popart, transpose, opset11))
       .def(
           "transpose",
           [](AiOnnxOpset11 &opset,
@@ -3837,7 +4137,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           },
           py::arg("args"),
           py::arg("perm")        = std::vector<int64_t>(),
-          py::arg("debugPrefix") = std::string())
+          py::arg("debugPrefix") = std::string(),
+          DOC(popart, transpose, opset11))
       .def(
           "unique",
           [](AiOnnxOpset11 &opset,
@@ -3852,7 +4153,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           py::arg("num_outputs"),
           py::arg("axis")         = nonstd::optional<int64_t>(),
           py::arg("sorted")       = 1,
-          py::arg("debugContext") = std::string())
+          py::arg("debugContext") = std::string(),
+          DOC(popart, unique, opset11))
       .def(
           "unique",
           [](AiOnnxOpset11 &opset,
@@ -3867,7 +4169,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           py::arg("num_outputs"),
           py::arg("axis")        = nonstd::optional<int64_t>(),
           py::arg("sorted")      = 1,
-          py::arg("debugPrefix") = std::string())
+          py::arg("debugPrefix") = std::string(),
+          DOC(popart, unique, opset11))
       .def(
           "unsqueeze",
           [](AiOnnxOpset11 &opset,
@@ -3878,7 +4181,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           },
           py::arg("args"),
           py::arg("axes"),
-          py::arg("debugContext") = std::string())
+          py::arg("debugContext") = std::string(),
+          DOC(popart, unsqueeze, opset11))
       .def(
           "unsqueeze",
           [](AiOnnxOpset11 &opset,
@@ -3889,7 +4193,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           },
           py::arg("args"),
           py::arg("axes"),
-          py::arg("debugPrefix") = std::string())
+          py::arg("debugPrefix") = std::string(),
+          DOC(popart, unsqueeze, opset11))
       .def(
           "upsample",
           [](AiOnnxOpset11 &opset,
@@ -3900,7 +4205,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           },
           py::arg("args"),
           py::arg("mode")         = "nearest",
-          py::arg("debugContext") = std::string())
+          py::arg("debugContext") = std::string(),
+          DOC(popart, upsample, opset11))
       .def(
           "upsample",
           [](AiOnnxOpset11 &opset,
@@ -3911,7 +4217,8 @@ PYBIND11_MODULE(popart_opset11, m) {
           },
           py::arg("args"),
           py::arg("mode")        = "nearest",
-          py::arg("debugPrefix") = std::string())
+          py::arg("debugPrefix") = std::string(),
+          DOC(popart, upsample, opset11))
       .def(
           "where",
           [](AiOnnxOpset11 &opset,
@@ -3920,7 +4227,8 @@ PYBIND11_MODULE(popart_opset11, m) {
             return opset.where(args, debugContext);
           },
           py::arg("args"),
-          py::arg("debugContext") = std::string())
+          py::arg("debugContext") = std::string(),
+          DOC(popart, where, opset11))
       .def(
           "where",
           [](AiOnnxOpset11 &opset,
@@ -3929,7 +4237,8 @@ PYBIND11_MODULE(popart_opset11, m) {
             return opset.where(args, debugContext);
           },
           py::arg("args"),
-          py::arg("debugPrefix") = std::string())
+          py::arg("debugPrefix") = std::string(),
+          DOC(popart, where, opset11))
       .def(
           "logical_xor",
           [](AiOnnxOpset11 &opset,
@@ -3938,7 +4247,8 @@ PYBIND11_MODULE(popart_opset11, m) {
             return opset.logical_xor(args, debugContext);
           },
           py::arg("args"),
-          py::arg("debugContext") = std::string())
+          py::arg("debugContext") = std::string(),
+          DOC(popart, logical_xor, opset11))
       .def(
           "logical_xor",
           [](AiOnnxOpset11 &opset,
@@ -3947,5 +4257,6 @@ PYBIND11_MODULE(popart_opset11, m) {
             return opset.logical_xor(args, debugContext);
           },
           py::arg("args"),
-          py::arg("debugPrefix") = std::string());
+          py::arg("debugPrefix") = std::string(),
+          DOC(popart, logical_xor, opset11));
 }
