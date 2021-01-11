@@ -1,4 +1,11 @@
 
+# Other projects in the view (in particular Boost) will not get built with fPIC
+# unless we set this here. (CBT causes projects to inherit certain cache entires
+# including this one, then boost_scripts will add fPIC to the boost cxx flags if
+# it is set)
+set(CMAKE_POSITION_INDEPENDENT_CODE ON CACHE BOOL
+  "Default value for POSITION_INDEPENDENT_CODE of targets.")
+
 #
 # Usage:
 #   _popart_pass_through_cache_var(<var> [PATH])
