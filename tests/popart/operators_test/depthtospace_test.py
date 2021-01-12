@@ -4,7 +4,6 @@ import popart
 import torch
 from op_tester import op_tester
 
-
 def test_depthtospace(op_tester):
     # create test data
     d1 = np.random.rand(1, 8, 2, 3).astype(np.float32)
@@ -31,8 +30,6 @@ def test_depthtospace(op_tester):
              (blocks * blocks), d_shape[2] * blocks, d_shape[3] * blocks))
         return [out]
 
-    op_tester.setPatterns(['DepthToSpaceOpPattern'],
-                          enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference, 'infer')
 
 
@@ -61,8 +58,6 @@ def test_depthtospace1(op_tester):
              (blocks * blocks), d_shape[2] * blocks, d_shape[3] * blocks))
         return [out]
 
-    op_tester.setPatterns(['DepthToSpaceOpPattern'],
-                          enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference, 'infer')
 
 
@@ -90,10 +85,7 @@ def test_depthtospace_opset1(op_tester):
              (blocks * blocks), d_shape[2] * blocks, d_shape[3] * blocks))
         return [out]
 
-    op_tester.setPatterns(['DepthToSpaceOpPattern'],
-                          enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference, 'infer')
-
 
 def test_depthtospace_custom_op(op_tester):
     # create test data
@@ -120,10 +112,7 @@ def test_depthtospace_custom_op(op_tester):
              (blocks * blocks), d_shape[2] * blocks, d_shape[3] * blocks))
         return [out]
 
-    op_tester.setPatterns(['DepthToSpaceOpPattern'],
-                          enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference, 'infer')
-
 
 def test_depthtospace_grad0(op_tester):
     d1 = np.random.rand(1, 8, 2, 3).astype(np.float32)
@@ -156,10 +145,7 @@ def test_depthtospace_grad0(op_tester):
         out.backward(torch.tensor(d__o))
         return [out, tx.grad, None]
 
-    op_tester.setPatterns(['DepthToSpaceOpPattern'],
-                          enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference, 'train')
-
 
 def test_depthtospace_grad1(op_tester):
     d1 = np.random.rand(1, 8, 2, 3).astype(np.float32)
@@ -191,10 +177,7 @@ def test_depthtospace_grad1(op_tester):
         out.backward(torch.tensor(d__o))
         return [out, tx.grad, None]
 
-    op_tester.setPatterns(['DepthToSpaceOpPattern'],
-                          enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference, 'train')
-
 
 def test_spacetodepth0(op_tester):
     # create test data
@@ -214,10 +197,7 @@ def test_spacetodepth0(op_tester):
     def reference(ref_data):
         return [d1]
 
-    op_tester.setPatterns(['SpaceToDepthOpPattern', 'DepthToSpaceOpPattern'],
-                          enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference, 'infer')
-
 
 def test_spacetodepth1(op_tester):
     # create test data
@@ -240,10 +220,7 @@ def test_spacetodepth1(op_tester):
                                    d_shape[2] // blocks, d_shape[3] // blocks))
         return [out]
 
-    op_tester.setPatterns(['SpaceToDepthOpPattern'],
-                          enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference, 'infer')
-
 
 def test_spacetodepth_grad1(op_tester):
     d1 = np.random.rand(1, 2, 4, 6).astype(np.float32)
@@ -271,10 +248,7 @@ def test_spacetodepth_grad1(op_tester):
         out.backward(torch.tensor(d__o))
         return [out, tx.grad, None]
 
-    op_tester.setPatterns(['SpaceToDepthOpPattern'],
-                          enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference, 'train')
-
 
 def test_pixelshuffle0(op_tester):
     # depthtospace CRD onnx should be same as PixelShuffle pytorch.
@@ -301,10 +275,7 @@ def test_pixelshuffle0(op_tester):
             out = pixel_shuffle(tx)
             return [out]
 
-        op_tester.setPatterns(['DepthToSpaceOpPattern'],
-                              enableRuntimeAsserts=False)
         op_tester.run(init_builder, reference, 'infer')
-
 
 def test_pixelshuffle_custom(op_tester):
     # depthtospace CRD onnx should be same as PixelShuffle pytorch.
@@ -331,6 +302,4 @@ def test_pixelshuffle_custom(op_tester):
             out = pixel_shuffle(tx)
             return [out]
 
-        op_tester.setPatterns(['DepthToSpaceOpPattern'],
-                              enableRuntimeAsserts=False)
         op_tester.run(init_builder, reference, 'infer')
