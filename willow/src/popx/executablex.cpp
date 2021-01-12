@@ -118,10 +118,12 @@ bool Executablex::containsTensor(const TensorId &id) const {
 bool Executablex::shouldSerialize() {
   auto cachePath    = ir().getSessionOptions().cachePath;
   auto cacheEnabled = ir().getSessionOptions().enableEngineCaching;
+  auto type         = lowering().getDeviceInfo()->getType();
+  bool isHwCompatibleDevice =
+      type == DeviceType::Ipu || type == DeviceType::OfflineIpu;
 
-  const bool shouldSerialize =
-      cacheEnabled && !cachePath.empty() &&
-      lowering().getDeviceInfo()->getType() == DeviceType::Ipu && !deserialized;
+  const bool shouldSerialize = cacheEnabled && !cachePath.empty() &&
+                               isHwCompatibleDevice && !deserialized;
 
   return shouldSerialize;
 }

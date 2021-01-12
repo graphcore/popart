@@ -36,8 +36,7 @@ popart::DeviceType convertDeviceType(poplar::TargetType targetType) {
 
 poplar::TargetType convertDeviceType(popart::DeviceType deviceType) {
   switch (deviceType) {
-  case DeviceType::OfflineIpu:
-    return poplar::TargetType::IPU;
+  case DeviceType::OfflineIpu: // fallthrough
   case DeviceType::Ipu:
     return poplar::TargetType::IPU;
   case DeviceType::IpuModel:

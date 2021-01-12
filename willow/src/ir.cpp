@@ -257,7 +257,8 @@ bool Ir::useSyntheticData() const {
 
 bool Ir::usingEngineCache(const SessionOptions &opts, const DeviceInfo *di) {
   return opts.enableEngineCaching && !opts.cachePath.empty() &&
-         di->getType() == DeviceType::Ipu;
+         (di->getType() == DeviceType::Ipu ||
+          di->getType() == DeviceType::OfflineIpu);
 }
 std::string Ir::getPopartCachePath(const std::string &cachePath) {
   return cachePath + ".popart";
@@ -3897,8 +3898,8 @@ std::size_t std::hash<popart::Ir>::operator()(const popart::Ir &ir) const {
   return seed;
 }
 
-std::size_t
-std::hash<popart::IrBundle>::operator()(const popart::IrBundle &bundle) const {
+std::size_t std::hash<popart::IrBundle>::
+operator()(const popart::IrBundle &bundle) const {
   size_t seed = 0;
 
   boost::hash_combine(

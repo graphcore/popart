@@ -267,6 +267,10 @@ void Session::exportInputs(IStepIO &stepIO,
 void Session::run(IStepIO &stepio, std::string debugName) {
   POPART_TRACEPOINT();
   logging::session::trace("Session::run {}", debugName);
+  if (device_->getDeviceInfo()->getConnectionType() ==
+      DeviceConnectionType::Never) {
+    throw error("Offline IPU device is not configured for execution");
+  }
   if (!ir.canInfer()) {
     throw error("Trying to infer when not in inference mode");
   }

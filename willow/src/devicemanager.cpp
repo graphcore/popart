@@ -9,6 +9,7 @@
 
 #include <poplar/DeviceManager.hpp>
 #include <poplar/OptionFlags.hpp>
+#include <poplar/exceptions.hpp>
 #include <popart/devicemanager.hpp>
 #include <popart/error.hpp>
 
@@ -308,10 +309,33 @@ std::ostream &operator<<(std::ostream &os, const DeviceInfo &di) {
 } // namespace popart
 
 namespace std {
-std::size_t
-std::hash<popart::DeviceInfo>::operator()(const popart::DeviceInfo &di) const {
+std::size_t std::hash<popart::DeviceInfo>::
+operator()(const popart::DeviceInfo &di) const {
   std::size_t seed = 0;
-  boost::hash_combine(seed, static_cast<int>(di.getType()));
+  auto type        = di.getType();
+  bool isHwCompatible =
+      type == popart::DeviceType::Ipu || type == popart::DeviceType::OfflineIpu;
+
+  boost::hash_combine(seed, isHwCompatible);
+
+  poplar::StringRef targetArchString;
+  try {
+    // Some devices don't implement getTargetArchString()
+    targetArchString = di.getTarget().getTargetArchString();
+  } catch (const poplar::poplar_error &) {
+  }
+
+  if (targetArchString.empty()) {
+    const auto &options = di.getOptionFlags();
+    try {
+      targetArchString = options.at("ipuVersion");
+    } catch (const std::out_of_range &) {
+    }
+  }
+
+  if (!targetArchString.empty()) {
+    boost::hash_combine(seed, std::string{targetArchString});
+  }
   boost::hash_combine(seed, di.getNumIpus());
   boost::hash_combine(seed, di.getTilesPerIPU());
   boost::hash_combine(seed, di.getNumWorkerContexts());

@@ -21,7 +21,7 @@ namespace popart {
 
 // In CMakeLists.txt there is a regex on "Hw*" so be
 // careful when adding new enums that begin with Hw:
-enum class TestDeviceType { Cpu, Sim, Sim2, Hw, IpuModel };
+enum class TestDeviceType { Cpu, Sim, Sim2, Hw, IpuModel, OfflineIpu };
 
 // Slight hack to stop IDEs complaining the TEST_TARGET is not defined.
 #ifndef TEST_TARGET
@@ -53,12 +53,16 @@ createTestDevice(const TestDeviceType testDeviceType,
       {"numIPUs", std::to_string(numIPUs)},
       {"tilesPerIPU", std::to_string(tilesPerIPU)}};
 
+  deviceOpts.insert(opts.begin(), opts.end());
+
   auto &dm = DeviceManager::createDeviceManager();
   switch (testDeviceType) {
   case TestDeviceType::Cpu:
     return dm.createCpuDevice();
   case TestDeviceType::Sim:
     return dm.createSimDevice(deviceOpts);
+  case TestDeviceType::OfflineIpu:
+    return dm.createOfflineIPUDevice(deviceOpts);
   case TestDeviceType::Hw:
     // Keep trying to attach for 15 minutes before aborting
     dm.setOnDemandAttachTimeout(900);

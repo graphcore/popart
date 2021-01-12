@@ -1033,10 +1033,8 @@ void Devicex::prepare() {
   }
 
   if (getDeviceInfo()->getConnectionType() == DeviceConnectionType::Never) {
-    std::ostringstream oss;
-    oss << getDeviceInfo()->getType();
-    throw error("Cannot run on an {}, use \"compileAndExport\" instead",
-                oss.str());
+    prepareHasBeenCalled_ = true;
+    return;
   }
 
   if (ir().getSessionOptions().instrumentWithHardwareCycleCounter) {
