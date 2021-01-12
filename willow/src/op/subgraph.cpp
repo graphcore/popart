@@ -249,4 +249,82 @@ bool SubgraphOp::hasSideEffect() const {
   });
 }
 
+std::vector<const Graph *> SubgraphOp::getCalledGraphs() const {
+  std::vector<const Graph *> calledGraphs;
+  calledGraphs.push_back(&getCalledGraph());
+  return calledGraphs;
+}
+
+InIndex SubgraphOp::opInToSubgraphInIndex(SubgraphIndex subgraphIndex,
+                                          InIndex inIndex) {
+  if (subgraphIndex != 0) {
+    throw error("Invalid subgraphIndex for Op {} (expected 0, got {})",
+                debugName(),
+                subgraphIndex);
+  }
+
+  if (!input->hasIndex(inIndex)) {
+    throw error(
+        "Invalid inIndex for Op {} (op does not have an input with index {})",
+        debugName(),
+        inIndex);
+  }
+
+  return opInToSubgraphInIndex(inIndex);
+}
+
+InIndex SubgraphOp::subgraphInToOpInIndex(SubgraphIndex subgraphIndex,
+                                          InIndex inIndex) {
+  if (subgraphIndex != 0) {
+    throw error("Invalid subgraphIndex for Op {} (expected 0, got {})",
+                debugName(),
+                subgraphIndex);
+  }
+
+  if (inIndex < 0 || inIndex >= getCalledGraph().getInputIds().size()) {
+    throw error("Invalid inIndex for subgraph '{}' (subgraph does not have an "
+                "input with index {})",
+                getCalledGraph().id.str(),
+                inIndex);
+  }
+
+  return subgraphInToOpInIndex(inIndex);
+}
+
+OutIndex SubgraphOp::opOutToSubgraphOutIndex(SubgraphIndex subgraphIndex,
+                                             OutIndex outIndex) {
+  if (subgraphIndex != 0) {
+    throw error("Invalid subgraphIndex for Op {} (expected 0, got {})",
+                debugName(),
+                subgraphIndex);
+  }
+
+  if (!output->hasIndex(outIndex)) {
+    throw error(
+        "Invalid outIndex for Op {} (op does not have an output with index {})",
+        debugName(),
+        outIndex);
+  }
+
+  return opOutToSubgraphOutIndex(outIndex);
+}
+
+OutIndex SubgraphOp::subgraphOutToOpOutIndex(SubgraphIndex subgraphIndex,
+                                             OutIndex outIndex) {
+  if (subgraphIndex != 0) {
+    throw error("Invalid subgraphIndex for Op {} (expected 0, got {})",
+                debugName(),
+                subgraphIndex);
+  }
+
+  if (outIndex < 0 || outIndex >= getCalledGraph().getOutputIds().size()) {
+    throw error("Invalid inIndex for subgraph '{}' (subgraph does not have an "
+                "output with index {})",
+                getCalledGraph().id.str(),
+                outIndex);
+  }
+
+  return subgraphOutToOpOutIndex(outIndex);
+}
+
 } // namespace popart

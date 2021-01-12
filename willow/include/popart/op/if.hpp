@@ -43,7 +43,16 @@ public:
 
   float getSubgraphValue() const final { return getLowSubgraphValue(); }
 
-  std::vector<const Graph *> getCalledGraphs() const final;
+  std::vector<const Graph *> getCalledGraphs() const override;
+
+  virtual InIndex opInToSubgraphInIndex(SubgraphIndex subgraphIndex,
+                                        InIndex inIndex) override;
+  virtual InIndex subgraphInToOpInIndex(SubgraphIndex subgraphIndex,
+                                        InIndex inIndex) override;
+  virtual OutIndex opOutToSubgraphOutIndex(SubgraphIndex subgraphIndex,
+                                           OutIndex outIndex) override;
+  virtual OutIndex subgraphOutToOpOutIndex(SubgraphIndex subgraphIndex,
+                                           OutIndex outIndex) override;
 
 private:
   void appendInputs(const std::vector<TensorId> &inputIds, const Scope &);

@@ -8,6 +8,7 @@
 namespace popart {
 
 class Graph;
+class SubgraphOp;
 
 namespace liveness {
 
@@ -28,11 +29,12 @@ enum class OpStatus {
 
 class LivenessNode {
 public:
-  LivenessNode(const OpStatus status_, int index_);
+  LivenessNode(const OpStatus status_, int index_, SubgraphIndex subgraphIndex);
 
   LivenessNode(std::vector<Op *> callStack_,
                const OpStatus status_,
-               int index_);
+               int index_,
+               SubgraphIndex subgraphIndex);
 
   // Operation associated with this node
   Op *getOp() const { return callStack.back(); }
@@ -45,6 +47,10 @@ public:
 
   // Input or output index of the Op associated with this node
   int getIndex() const { return index; }
+
+  // For Enter, Exit, CopyInput, CopyOutput, CopyModified, CopyLoopCarried
+  // nodes this signifies the subgraph called by the op.
+  int getSubgraphIndex() const { return subgraphIndex; }
 
   // All tensor ids touched by this node
   const std::set<TensorId> &usedTensorIds() const { return usedIds; }
@@ -68,6 +74,7 @@ private:
   std::vector<Op *> callStack;
   OpStatus status;
   int index;
+  SubgraphIndex subgraphIndex;
   std::pair<TensorId, TensorId> tensorIds;
   std::set<TensorId> usedIds;
 };
@@ -141,6 +148,12 @@ public:
 private:
   // Global schedule including all subgraphs recursively
   void addToSchedule(const Graph *, std::vector<Op *>);
+  // Expand a subgraph.
+  void expandSubgraph(const Graph *graphToAdd,
+                      const Graph *subgraph,
+                      int64_t enterLocation,
+                      std::vector<Op *> callStack,
+                      SubgraphIndex subgraphIndex);
 
   const Ir *ir;
 

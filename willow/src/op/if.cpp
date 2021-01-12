@@ -318,6 +318,128 @@ std::vector<const Graph *> IfOp::getCalledGraphs() const {
   return {&getThenGraph(), &getElseGraph()};
 }
 
+InIndex IfOp::opInToSubgraphInIndex(SubgraphIndex subgraphIndex,
+                                    InIndex inIndex) {
+  if (!input->hasIndex(inIndex)) {
+    throw error(
+        "Invalid inIndex for Op {} (op does not have an input with index {})",
+        debugName(),
+        inIndex);
+  }
+
+  if (subgraphIndex == 0) {
+    if (thenInputIndicesMap.find(inIndex) != thenInputIndicesMap.end()) {
+      return thenInputIndicesMap.at(inIndex);
+    } else {
+      return -1;
+    }
+  } else if (subgraphIndex == 1) {
+    if (elseInputIndicesMap.find(inIndex) != elseInputIndicesMap.end()) {
+      return elseInputIndicesMap.at(inIndex);
+    } else {
+      return -1;
+    }
+  } else {
+    throw error("Invalid subgraphIndex for {} (expected 0 or 1, got {})",
+                debugName(),
+                subgraphIndex);
+  }
+}
+
+InIndex IfOp::subgraphInToOpInIndex(SubgraphIndex subgraphIndex,
+                                    InIndex inIndex) {
+
+  auto getInIndex = [inIndex](Graph &subgraph,
+                              const std::map<InIndex, InIndex> &map) {
+    if (inIndex < 0 || inIndex >= subgraph.getInputIds().size()) {
+      throw error("Invalid inIndex for subgraph '{}' (subgraph does not have "
+                  "an input with index {})",
+                  subgraph.id.str(),
+                  inIndex);
+    }
+
+    // NOTE: We currently don't have a reverse mapping pre-calculated. If
+    // performance is an issue, precalculate this mapping akin to subgraphops.
+    for (const auto &entry : map) {
+      if (entry.second == inIndex) {
+        return entry.first;
+      }
+    }
+    return -1;
+  };
+
+  if (subgraphIndex == 0) {
+    return getInIndex(getThenGraph(), thenInputIndicesMap);
+  } else if (subgraphIndex == 1) {
+    return getInIndex(getElseGraph(), elseInputIndicesMap);
+  } else {
+    throw error("Invalid subgraphIndex for {} (expected 0 or 1, got {})",
+                debugName(),
+                subgraphIndex);
+  }
+}
+
+OutIndex IfOp::opOutToSubgraphOutIndex(SubgraphIndex subgraphIndex,
+                                       OutIndex outIndex) {
+  if (!output->hasIndex(outIndex)) {
+    throw error(
+        "Invalid outIndex for Op {} (op does not have an output with index {})",
+        debugName(),
+        outIndex);
+  }
+
+  if (subgraphIndex == 0) {
+    if (thenOutputIndicesMap.find(outIndex) != thenOutputIndicesMap.end()) {
+      return thenOutputIndicesMap.at(outIndex);
+    } else {
+      return -1;
+    }
+  } else if (subgraphIndex == 1) {
+    if (elseOutputIndicesMap.find(outIndex) != elseOutputIndicesMap.end()) {
+      return elseOutputIndicesMap.at(outIndex);
+    } else {
+      return -1;
+    }
+  } else {
+    throw error("Invalid subgraphIndex for {} (expected 0 or 1, got {})",
+                debugName(),
+                subgraphIndex);
+  }
+}
+
+OutIndex IfOp::subgraphOutToOpOutIndex(SubgraphIndex subgraphIndex,
+                                       OutIndex outIndex) {
+
+  auto getOutIndex = [outIndex](Graph &subgraph,
+                                const std::map<OutIndex, OutIndex> &map) {
+    if (outIndex < 0 || outIndex >= subgraph.getOutputIds().size()) {
+      throw error("Invalid outIndex for subgraph '{}' (subgraph does not have "
+                  "an output with index {})",
+                  subgraph.id.str(),
+                  outIndex);
+    }
+
+    // NOTE: We currently don't have a reverse mapping pre-calculated. If
+    // performance is an issue, precalculate this mapping akin to subgraphops.
+    for (const auto &entry : map) {
+      if (entry.second == outIndex) {
+        return entry.first;
+      }
+    }
+    return -1;
+  };
+
+  if (subgraphIndex == 0) {
+    return getOutIndex(getThenGraph(), thenOutputIndicesMap);
+  } else if (subgraphIndex == 1) {
+    return getOutIndex(getElseGraph(), elseOutputIndicesMap);
+  } else {
+    throw error("Invalid subgraphIndex for {} (expected 0 or 1, got {})",
+                debugName(),
+                subgraphIndex);
+  }
+}
+
 IfGradOp::IfGradOp(const IfOp &fwdOp,
                    const std::vector<GradInOutMapper> &gradInInfo_,
                    const BranchInfo &thenBranchInfo,

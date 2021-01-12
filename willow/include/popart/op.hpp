@@ -462,13 +462,34 @@ public:
   // supposed to be functionally equivalent.
   virtual void appendOutlineAttributes(OpSerialiserBase &) const;
 
-  // All graph that this op may call during its execution
-  virtual std::vector<const Graph *> getCalledGraphs() const;
-
   // Calculate numpy broadcast shape for two shapes or generate an error if
   // the broadcast is not aligned. The error will have operator context.
   Shape prettyNpOut(const Shape &s0, const Shape &s1) const;
   TensorInfo prettyNpOut(const TensorInfo &i0, const TensorInfo &i1) const;
+
+  // All graph that this op may call during its execution
+  virtual std::vector<const Graph *> getCalledGraphs() const;
+
+  // For each subgraphIndex [0,getCalledGraphs().size()) and each valid InIndex
+  // for this op, return the associated subgraph's InIndex (or return -1
+  // to indicate it is not used by this subgraph).
+  virtual InIndex opInToSubgraphInIndex(SubgraphIndex subgraphIndex,
+                                        InIndex inIndex);
+  // For each subgraphIndex [0,getCalledGraphs().size()) and each valid
+  // subgraph's input index, return the associated op's input index (or return
+  // -1 to indicate there isn't one).
+  virtual InIndex subgraphInToOpInIndex(SubgraphIndex subgraphIndex,
+                                        InIndex inIndex);
+  // For each subgraphIndex [0,getCalledGraphs().size()) and each valid OutIndex
+  // for this op, return the associated subgraph's OutIndex (or return -1
+  // to indicate it is not used by this subgraph).
+  virtual OutIndex opOutToSubgraphOutIndex(SubgraphIndex subgraphIndex,
+                                           OutIndex outIndex);
+  // For each subgraphIndex [0,getCalledGraphs().size()) and each valid
+  // subgraph's output index, return the associated op's output index (or return
+  // -1 to indicate there isn't one).
+  virtual OutIndex subgraphOutToOpOutIndex(SubgraphIndex subgraphIndex,
+                                           OutIndex outIndex);
 
 protected:
   virtual void appendMore(OpSerialiserBase &) const;

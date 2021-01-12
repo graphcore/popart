@@ -42,6 +42,8 @@ using OpType       = std::string;
 using OpVersion    = unsigned;
 using OpId         = int;
 using ReturnPeriod = int;
+// The index of a subgraph for an Op.
+using SubgraphIndex = int;
 // The position at which a Tensor is consumed by an Op
 using InIndex = int;
 // The position at which a Tensor is output by an Op
