@@ -26,7 +26,7 @@ macro(_popart_pass_through_cache_var var is_path)
   if(DEFINED ${var})   
     set(_val "${${var}}")
 
-    if(is_path STREQUAL "PATH")
+    if("${is_path}" STREQUAL "PATH")
       get_filename_component(
           _val "${_val}"
           ABSOLUTE
