@@ -73,13 +73,17 @@ std::size_t Pipeline::id() { return typeid(Pipeline).hash_code(); }
 
 namespace {
 
-VGraphId getVirtualGraphIdOrSourceIpu(Op *op) {
-  if (op->isConvertibleTo<IpuCopyOp>()) {
-    auto ipuCopyOp = dynamic_cast<popart::IpuCopyOp *>(op);
-    return static_cast<int64_t>(ipuCopyOp->getSourceIpu());
-  } else {
-    return op->getVirtualGraphId();
+VGraphId getVirtualGraphIdOrSourceIpu(Op *op, Tensor *t) {
+  auto consumers = t->consumers.getOps();
+  if (t->getProducerUnsafe() == op) {
+    return op->getIntrospectionOutVirtualGraphId(op->output->indices(t).front())
+        .first;
+  } else if (std::find(consumers.begin(), consumers.end(), op) !=
+             consumers.end()) {
+    return op->getIntrospectionInVirtualGraphId(op->input->indices(t).front())
+        .first;
   }
+  return op->getVirtualGraphId();
 }
 
 void setIPUCopyPipelineStage(IpuCopyOp *op) {
@@ -209,20 +213,20 @@ std::string zeroCandidatesError(Tensor *t, Op *stashRefOp) {
     ss << logging::format("\n  Producer: {}, ps: {}, vg: {}",
                           prod->debugName(),
                           prod->getPipelineStage(),
-                          getVirtualGraphIdOrSourceIpu(prod));
+                          getVirtualGraphIdOrSourceIpu(prod, t));
   }
   ss << "\n  Consumers:";
   for (auto c : t->consumers.getOps()) {
     ss << logging::format("\n    {}, ps: {}, vg: {}",
                           c->debugName(),
                           c->getPipelineStage(),
-                          getVirtualGraphIdOrSourceIpu(c));
+                          getVirtualGraphIdOrSourceIpu(c, t));
   }
 
   ss << logging::format("\nStash Ref Op: {}, ps: {}, vg: {}",
                         stashRefOp->debugName(),
                         stashRefOp->getPipelineStage(),
-                        getVirtualGraphIdOrSourceIpu(stashRefOp));
+                        getVirtualGraphIdOrSourceIpu(stashRefOp, t));
 
   return ss.str();
 }
@@ -425,8 +429,8 @@ std::vector<Op *> getRestoreReferenceOps(Tensor *t, Op *stashRefOp) {
   std::vector<Op *> restoreCandidates;
   std::vector<PipelineStage> restorePipelineStages;
   for (auto c : consumers) {
-    if (getVirtualGraphIdOrSourceIpu(c) ==
-            getVirtualGraphIdOrSourceIpu(stashRefOp) &&
+    if (getVirtualGraphIdOrSourceIpu(c, t) ==
+            getVirtualGraphIdOrSourceIpu(stashRefOp, t) &&
         c->getPipelineStage() != stashRefOp->getPipelineStage()) {
       if (c->getPipelineStage() < stashRefOp->getPipelineStage()) {
         throw internal_error(
@@ -868,7 +872,7 @@ bool Pipeline::apply(Graph &graph) const {
     auto tensor = graph.getTensors().get(tid);
     std::set<VGraphId> virtualGraphs;
     for (auto c : tensor->consumers.getOps()) {
-      virtualGraphs.insert(getVirtualGraphIdOrSourceIpu(c));
+      virtualGraphs.insert(getVirtualGraphIdOrSourceIpu(c, tensor));
     }
 
     if (virtualGraphs.size() > 1) {
@@ -1092,7 +1096,8 @@ bool Pipeline::apply(Graph &graph) const {
         Onnx::CustomOperators::Stash, stashSize, settings);
     auto stashOp = stashOp_up.get();
     graph.moveIntoGraph(std::move(stashOp_up));
-    stashOp->setVirtualGraphId(getVirtualGraphIdOrSourceIpu(stashRefOp));
+    stashOp->setVirtualGraphId(
+        getVirtualGraphIdOrSourceIpu(stashRefOp, tensor));
     stashOp->setPipelineStage(stashRefOp->getPipelineStage());
     stashOp->connectInTensor(StashOp::getInIndex(), tid);
     auto stashId = stashOp->getStashedTensorId();
@@ -1108,7 +1113,7 @@ bool Pipeline::apply(Graph &graph) const {
       insertClonesBeforeIpuCopyConsumers(
           graph,
           tensor,
-          getVirtualGraphIdOrSourceIpu(stashRefOp),
+          getVirtualGraphIdOrSourceIpu(stashRefOp, tensor),
           stashRefOp->getPipelineStage());
     }
 
@@ -1175,7 +1180,8 @@ bool Pipeline::apply(Graph &graph) const {
         restoreOp = addNewRestoreOp(graph, stashSize);
       }
 
-      restoreOp->setVirtualGraphId(getVirtualGraphIdOrSourceIpu(restoreRefOp));
+      restoreOp->setVirtualGraphId(
+          getVirtualGraphIdOrSourceIpu(restoreRefOp, tensor));
       restoreOp->setPipelineStage(restoreRefOp->getPipelineStage());
       restoreOp->connectInTensor(RestoreOp::getStashInIndex(), stashId);
       auto restoreId = restoreOp->getRestoredTensorId();
@@ -1275,14 +1281,14 @@ bool Pipeline::apply(Graph &graph) const {
           insertClonesBeforeIpuCopyConsumers(
               graph,
               tensor,
-              getVirtualGraphIdOrSourceIpu(producer),
+              getVirtualGraphIdOrSourceIpu(producer, tensor),
               producer->getPipelineStage());
 
           if (ir.isAnchored(tid) && tensor->consumers.getTotal() > 0) {
             insertCloneBeforeCopiesToHost(
                 graph,
                 tensor,
-                getVirtualGraphIdOrSourceIpu(producer),
+                getVirtualGraphIdOrSourceIpu(producer, tensor),
                 producer->getPipelineStage());
           }
         }

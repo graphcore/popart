@@ -55,6 +55,13 @@ public:
                 .batchSerializationSettings.concatOnVirtualGraphChange;
   }
 
+  VGraphIdAndTileSet
+  getIntrospectionInVirtualGraphId(InIndex index,
+                                   std::set<OpId> visited = {}) const override;
+  VGraphIdAndTileSet
+  getIntrospectionOutVirtualGraphId(OutIndex index,
+                                    std::set<OpId> visited = {}) const override;
+
 private:
   void connectInTensor(InIndex, TensorId) override {
     throw error(

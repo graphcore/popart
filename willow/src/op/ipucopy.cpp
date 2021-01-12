@@ -150,6 +150,18 @@ void IpuCopyOp::disconnectInTensor(InIndex idx, Tensor *t) {
   Op::disconnectInTensor(idx, t);
 }
 
+VGraphIdAndTileSet
+IpuCopyOp::getIntrospectionInVirtualGraphId(InIndex index,
+                                            std::set<OpId> visited) const {
+  return {sourceIpus.at(inId(index)), settings.tileSet};
+}
+
+VGraphIdAndTileSet
+IpuCopyOp::getIntrospectionOutVirtualGraphId(OutIndex index,
+                                             std::set<OpId> visited) const {
+  return {destIpu, settings.tileSet};
+}
+
 // Have intentionally not added the IpuCopyOp to the OpManager. This IpuCopyOp
 // needs to be explicitly created as part of the interipucopy transform
 
