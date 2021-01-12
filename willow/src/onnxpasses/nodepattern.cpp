@@ -94,17 +94,6 @@ NodeProto &NodePattern::binaryConstScalar(const NodeProto &toCopy,
   return n;
 }
 
-void NodePattern::addIntsAttribute(NodeProto &node,
-                                   const std::string &name,
-                                   const std::vector<int64_t> &value) {
-  auto attr = node.add_attribute();
-  attr->set_name(name);
-  attr->set_type(ONNX_NAMESPACE::AttributeProto::INTS);
-  for (int64_t i : value) {
-    attr->add_ints(i);
-  }
-}
-
 NodeProto &NodePattern::setIO(NodeProto &n,
                               const std::vector<std::string> &inNames,
                               const std::vector<std::string> &outNames) {

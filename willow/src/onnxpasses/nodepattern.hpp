@@ -160,11 +160,6 @@ protected:
     return binaryConstScalar(toCopy, inName, outName, "Pow", inIndex, v);
   }
 
-  /** Add the attribute with name \a name and value \a value to \a node */
-  void addIntsAttribute(NodeProto &,
-                        const std::string &name,
-                        const std::vector<int64_t> &value);
-
 private:
   /** Insert a copy of \a toCopy into nodes, but change the operator type to
    * "BinaryConstScalar".
