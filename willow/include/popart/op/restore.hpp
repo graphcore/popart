@@ -46,6 +46,8 @@ public:
   // This Op aliases and modifies the input at index getVarIndex()
   view::Regions aliases(InIndex in, OutIndex) const final;
   view::Regions modifies(InIndex) const final;
+
+  bool requiredForRecompute = false;
 };
 
 } // namespace popart

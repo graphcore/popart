@@ -109,14 +109,13 @@ public:
   bool hasBeenRecomputed(OpId, ExecutionPhase) const;
   void recordRecomputed(OpId, ExecutionPhase);
 
-  enum class PipelineFragmentId {
-    ToDeviceStream = 0,
-    Restore,
-    Forward,
-    ToHostStream,
-    // IpuCopy fragment has been removed. There is now a single
-    // pipelineIpuCopySeq to which copies are added.
-  };
+  // Each Pipeline Stage is composed of these fragments. For a given Pipeline
+  // Stage, any of these fragments may be empty.
+  //
+  // Note: the preForwardFragment and IpuCopy fragment do not require a
+  // PipelineFragmentId, since they exist as a single fragment idependent of
+  // pipeline stage, and are run every Pipeline Cycle.
+  enum class PipelineFragmentId { ToDeviceStream = 0, Main, ToHostStream };
   std::string getStrFromPipelineFragmentId(PipelineFragmentId) const;
 
   // Program fragments specific to pipelined model. Each method to return
@@ -129,12 +128,10 @@ public:
   poplar::program::Sequence &
   pipelineToDeviceStreamFragment(PipelineStage pipelineStage,
                                  const std::string &desc);
-  poplar::program::Sequence &pipelineForwardFragment(PipelineStage,
-                                                     const std::string &desc);
-  poplar::program::Sequence &pipelineRestoreFragment(PipelineStage,
-                                                     const std::string &desc);
+  poplar::program::Sequence &pipelineMainFragment(PipelineStage,
+                                                  const std::string &desc);
 
-  // To stream anchors that are computed in the pipelineForwardFragment
+  // To stream anchors that are computed in the pipelineMainFragment
   poplar::program::Sequence &
   pipelineToHostStreamFragment(PipelineStage, const std::string &desc);
   poplar::program::Sequence &pipelineIpuCopyFragment(const std::string &desc);
@@ -143,7 +140,7 @@ public:
       PipelineCycle pCycle,
       poplar::program::Sequence &sq,
       std::ostringstream &ss,
-      std::map<PipelineStage, poplar::Function> &fwdFunctions) const;
+      std::map<PipelineStage, poplar::Function> &mainFunctions) const;
 
   IrLowering *ir_lowering_p;
 
@@ -171,7 +168,7 @@ private:
   poplar::program::Sequence pipelineIpuCopySeq;
   std::string pipelineIpuCopyDesc;
 
-  poplar::program::Sequence getMainProgramFromPipelineFragments() const;
+  poplar::program::Sequence getFullProgramFromPipelineFragments() const;
 
   std::set<std::pair<OpId, ExecutionPhase>> beenRecomputed;
 

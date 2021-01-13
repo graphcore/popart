@@ -29,7 +29,7 @@
 // that have to be stored in the pipelined model.
 //
 // We have decided on:
-//  - In-place the activation tensors when restoring
+//  - In-place the activation tensors when restoring, when possible
 //  - Running : Fwd/Stash/Restore/Bwd/Sync
 // resulting in a stash size of 2*(IPUs to end) + 1, except for the last
 // IPU, which has no stash.
@@ -820,6 +820,13 @@ bool containsSeedTensor(std::set<TensorId> ids) {
 
 } // namespace
 
+bool Pipeline::inplaceRestoreRequiredForRecompute(Op *op) {
+  if (dynamic_cast<RestoreInplaceOp *>(op)) {
+    return dynamic_cast<RestoreInplaceOp *>(op)->requiredForRecompute;
+  }
+  return false;
+}
+
 bool Pipeline::apply(Graph &graph) const {
 
   auto &ir            = graph.getIr();
@@ -1166,7 +1173,6 @@ bool Pipeline::apply(Graph &graph) const {
       }
     }
 
-    std::vector<RestoreOp *> restoreOps;
     for (size_t i = 0; i < restoreRefOps.size(); i++) {
       Op *restoreRefOp = restoreRefOps.at(i);
       RestoreOp *restoreOp;
@@ -1192,9 +1198,8 @@ bool Pipeline::apply(Graph &graph) const {
       restoreOp->createAndConnectOutTensor(RestoreOp::getRestoredActOutIndex(),
                                            restoreId);
 
-      // Disconnect tid from all consumers in the restore ops pipeline stage,
+      // Disconnect tid from all consumers in the restore op's pipeline stage,
       // reconnect to restoreId
-      bool inplaceRestoreRequiredForRecompute = false;
       for (Op *tidConsumer : tidConsumers) {
         if (tidConsumer->getPipelineStage() == restoreOp->getPipelineStage()) {
           for (auto i : tidConsumer->input->indicesMap().at(tensor)) {
@@ -1211,26 +1216,27 @@ bool Pipeline::apply(Graph &graph) const {
         if ((dynamic_cast<RestoreInplaceOp *>(restoreOp) &&
              tidConsumer->settings.recomputeType == RecomputeType::Recompute &&
              tidConsumer->getPipelineStage() < restoreOp->getPipelineStage())) {
-          inplaceRestoreRequiredForRecompute = true;
+          dynamic_cast<RestoreInplaceOp *>(restoreOp)->requiredForRecompute =
+              true;
         }
       }
 
-      // This InplaceRestoreOp may have no consumers as they are all inplicit
+      // This InplaceRestoreOp may have no consumers as they are all implicit
       // due to recomputation. Therefore it must not be pruned.
-      if (inplaceRestoreRequiredForRecompute) {
+      if (inplaceRestoreRequiredForRecompute(restoreOp)) {
         restoreOp->pruneable = false;
       }
 
       restoreOp->setup();
-      restoreOps.push_back(restoreOp);
-
-      // refresh consumers of tensor
-      tidConsumers = tensor->consumers.getOps();
 
       bool noConsumersOfRestore =
           restoreOp->output->tensor(0)->consumers.getOps().empty();
 
-      if (noConsumersOfRestore && !inplaceRestoreRequiredForRecompute) {
+      if (noConsumersOfRestore &&
+          !inplaceRestoreRequiredForRecompute(restoreOp)) {
+        // refresh consumers of tensor
+        tidConsumers = tensor->consumers.getOps();
+
         bool noRecomputeConsumersOfStash = std::none_of(
             tidConsumers.cbegin(), tidConsumers.cend(), [](const Op *op) {
               return op->settings.recomputeType == RecomputeType::Recompute;
@@ -1243,18 +1249,28 @@ bool Pipeline::apply(Graph &graph) const {
              << " where the tensor being stashed is " << tensor->str();
         throw internal_error(oss3.str());
       }
-    }
 
-    for (RestoreOp *restoreOp : restoreOps) {
-      for (auto ps_tidConsumers : preRestoreConsumers) {
-        PipelineStage ps               = ps_tidConsumers.first;
-        std::vector<Op *> tidConsumers = ps_tidConsumers.second;
+      // Restore comes after Stash
+      graph.topoCons->insert(stashOp, restoreOp);
 
-        // RestoreOp should be after all other consumers on a
-        // lower PipelineStage (required for inplacing to work)
-        if (ps < restoreOp->getPipelineStage()) {
-          for (Op *tidConsumer : tidConsumers) {
-            graph.topoCons->insert(tidConsumer, restoreOp);
+      if (inplaceRestoreRequiredForRecompute(restoreOp)) {
+        // Restore comes straight after Stash op
+        for (Op *after : graph.topoCons->getAfters(stashOp)) {
+          if (after != restoreOp) {
+            graph.topoCons->insert(restoreOp, after);
+          }
+        }
+      } else {
+        for (auto ps_tidConsumers : preRestoreConsumers) {
+          PipelineStage ps               = ps_tidConsumers.first;
+          std::vector<Op *> tidConsumers = ps_tidConsumers.second;
+
+          // RestoreOp should be after all other consumers on a
+          // lower PipelineStage (required for inplacing to work)
+          if (ps < restoreOp->getPipelineStage()) {
+            for (Op *tidConsumer : tidConsumers) {
+              graph.topoCons->insert(tidConsumer, restoreOp);
+            }
           }
         }
       }

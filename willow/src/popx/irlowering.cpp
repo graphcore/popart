@@ -47,7 +47,6 @@
 #include <popart/op/ipucopy.hpp>
 #include <popart/op/matmul.hpp>
 #include <popart/op/remote.hpp>
-#include <popart/op/restore.hpp>
 #include <popart/op/subgraph.hpp>
 #include <popart/op/varupdate.hpp>
 #include <popart/patterns/pattern.hpp>
@@ -2148,8 +2147,8 @@ void IrLowering::pipelinedOpTaskFunc(TaskId taskId, Op *op, SequenceMap &seqs) {
                                "requiredRecomputes");
         }
         progs.recordRecomputed(opToRerun->id, -1);
-        seqs[&progs.pipelineForwardFragment(op->getPipelineStage(),
-                                            "recompute of " + opToRerun->str())]
+        seqs[&progs.pipelineMainFragment(op->getPipelineStage(),
+                                         "recompute of " + opToRerun->str())]
             .add(progs.recomputeFragment(opToRerun->id));
 
         contextOpRegistry[{context, taskId}].push_back(opToRerun);
@@ -2163,10 +2162,6 @@ void IrLowering::pipelinedOpTaskFunc(TaskId taskId, Op *op, SequenceMap &seqs) {
       // the copy appears in, a new copy program is added to the cycles
       // sequence using `IpuCopyOpx::growPipelined`.
       dynamic_cast<IpuCopyOpx *>(opx)->createPipelinedOutput();
-    } else if (op->isConvertibleTo<RestoreOp>()) {
-      // Restore Operations are required to run at the start of a pipelineStage
-      growOpx(opx,
-              progs.pipelineRestoreFragment(op->getPipelineStage(), op->str()));
     } else if (op->settings.recomputeType == RecomputeType::Checkpoint ||
                op->settings.recomputeType == RecomputeType::Undefined) {
       logging::devicex::debug(
@@ -2174,7 +2169,7 @@ void IrLowering::pipelinedOpTaskFunc(TaskId taskId, Op *op, SequenceMap &seqs) {
           op->str(),
           op->debugName());
       auto seqsKey =
-          &progs.pipelineForwardFragment(op->getPipelineStage(), op->str());
+          &progs.pipelineMainFragment(op->getPipelineStage(), op->str());
       logging::devicex::debug("Obtained pipeline forward frag for ",
                               op->debugName());
       auto found_ = seqs.find(seqsKey);
@@ -2192,8 +2187,8 @@ void IrLowering::pipelinedOpTaskFunc(TaskId taskId, Op *op, SequenceMap &seqs) {
 
       growOpx(opx, progs.createRecomputeFragment(op->id));
 
-      seqs[&progs.pipelineForwardFragment(op->getPipelineStage(), op->str())]
-          .add(progs.recomputeFragment(op->id));
+      seqs[&progs.pipelineMainFragment(op->getPipelineStage(), op->str())].add(
+          progs.recomputeFragment(op->id));
     }
     contextOpRegistry[{context, taskId}].push_back(op);
   }

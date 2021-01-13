@@ -20,6 +20,7 @@
 #include <popart/tensorindex.hpp>
 #include <popart/tensors.hpp>
 #include <popart/topocons.hpp>
+#include <popart/transforms/pipeline.hpp>
 
 #include <poprithms/schedule/anneal/graph.hpp>
 
@@ -276,7 +277,16 @@ public:
         if (binIndex >= bins.size()) {
           bins.resize(binIndex + 1);
         }
-        bins[binIndex].push_back(opAddress);
+
+        if (Pipeline::inplaceRestoreRequiredForRecompute(toOp(opAddress))) {
+          // An inplace Restore op that is required for recompute should be
+          // scheduled before the ops in its corresponding recompute fragment
+          // These ops will have a different PipelineStage, and therefore not
+          // be inside this bin.
+          continue;
+        } else {
+          bins[binIndex].push_back(opAddress);
+        }
       }
     }
     g.insertBinConstraints(bins, "PipelineStageStart_");

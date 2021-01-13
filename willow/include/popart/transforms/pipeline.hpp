@@ -20,6 +20,8 @@ public:
 
   virtual std::string getName() const final { return "Pipeline"; }
 
+  static bool inplaceRestoreRequiredForRecompute(Op *);
+
 private:
   RestoreOp *addNewRestoreOp(Graph &graph, int64_t stashSize) const;
   RestoreInplaceOp *addNewRestoreInplaceOp(Graph &graph,
