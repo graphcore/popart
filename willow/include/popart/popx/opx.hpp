@@ -96,11 +96,6 @@ public:
   // adds poplar::Tensors to devicex_->popTensors,
   // one for each output of op_.
   virtual void grow(poplar::program::Sequence &) const;
-  // Akin to the grow function above except it allows for growing over multiple
-  // fragments. This is mostly for CallOp optimisations, the default behaviour
-  // is to call the single sequence grow function.
-  virtual void grow(std::vector<poplar::program::Sequence> &) const;
-
   // clone the poplar::Tensor identified by its TensorId, and copy the contents
   // of it.
   poplar::Tensor cloneNcopy(poplar::program::Sequence &, TensorId) const;

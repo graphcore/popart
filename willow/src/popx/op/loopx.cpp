@@ -329,17 +329,14 @@ void LoopOpx::grow(poplar::program::Sequence &prog) const {
   if (hasInput(LoopOp::getMaximumTripCountInIndex())) {
     auto bodyInputTensor = get(op.getCalledGraph().getInputId(
         op.opInToSubgraphInIndex(LoopOp::getMaximumTripCountInIndex())));
-    poplar::program::Copy copyProg(
-        iteratorTensor, bodyInputTensor, false, debugContext());
+    poplar::program::Copy copyProg(iteratorTensor, bodyInputTensor);
     loopContinueProg.add(copyProg);
   }
 
   // 10: Add the loop body itself
   auto &called_graph = op.getCalledGraph();
-  auto &graph_progs  = dv_p->lowering().getFragmentFunctions(called_graph);
-  for (auto &graph_prog : graph_progs) {
-    loopContinueProg.add(poplar::program::Call(graph_prog, debugContext()));
-  }
+  auto &graph_prog   = dv_p->lowering().getFragmentFunction(called_graph);
+  loopContinueProg.add(poplar::program::Call(graph_prog));
 
   // 11: Increment the loop iterator
   if (hasInput(LoopOp::getMaximumTripCountInIndex())) {

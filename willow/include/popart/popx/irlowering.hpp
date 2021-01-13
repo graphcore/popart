@@ -24,8 +24,6 @@
 #include <popart/popx/pritask.hpp>
 #include <popart/popx/virtualgraph.hpp>
 
-#include <subgraphpartitioner.hpp>
-
 #include <memory>
 #include <set>
 #include <tuple>
@@ -37,7 +35,7 @@
 namespace popart {
 namespace liveness {
 class LivenessAnalyzer;
-} // namespace liveness
+}
 namespace popx {
 
 // TODO: Find common location to share between devicex and IrLowering
@@ -150,9 +148,6 @@ private:
   // Helper class to reuse tensors and call subgraphs by reference
   std::unique_ptr<liveness::AliasZeroCopy> aliasZeroCopy;
 
-  // Helper class to interpret results of liveness analyzer.
-  std::unique_ptr<liveness::SubgraphPartitioner> subgraphPartitioner;
-
   poplar::Tensor rngStateTensor;
 
   // Non-const tensors used to keep track of batch count, modulo the return
@@ -264,7 +259,7 @@ private:
   PriTask opTask(Op *, double priority, TaskId prevOpTaskId);
   void opTaskFunc(TaskId taskId, Op *, SequenceMap &seqs);
   void pipelinedOpTaskFunc(TaskId taskId, Op *, SequenceMap &seqs);
-  void growOpx(Opx *, SequenceMap::SequenceInterval seqInterval);
+  void growOpx(Opx *, poplar::program::Sequence &);
 
   static TaskId opTaskId(Op *);
 
@@ -411,24 +406,10 @@ public:
 
   PipelineInfo pipelineInfo() const;
 
-  // The number of Poplar sequences associated with a graph.
-  int getNumFragments(const Graph &graph) const;
-  // Determine if any Poplar sequences associated with a graph are allocated.
-  bool containsFragments(const Graph &graph) const;
-  // Determine whether a specific Poplar sequence associated with a graph has
-  // been allocated.
-  bool containsFragment(const Graph &graph,
-                        SubgraphPartIndex subgraphPart) const;
+  bool containsFragment(const Graph &scope) const;
+  void createFragment(const Graph &);
 
-  // Ensure a specific Poplar sequence is allocated.
-  void createFragment(const Graph &graph, SubgraphPartIndex subgraphPart);
-  // Wrap all Poplar sequences associated with a graph in to a poplar function
-  // that can be called and return them all.
-  std::vector<poplar::Function> &getFragmentFunctions(const Graph &graph);
-  // Wrap all Poplar sequences associated with a graph in to a poplar function
-  // that can be called and return a specific one.
-  poplar::Function &getFragmentFunction(const Graph &graph,
-                                        SubgraphPartIndex subgraphPart);
+  poplar::Function &getFragmentFunction(const Graph &called_graph);
 
   // A forward search of graph:
   //   - from inputs of the graph
@@ -478,10 +459,6 @@ public:
 
   const liveness::LivenessAnalyzer *getLivenessAnalyzer() const {
     return livenessAnalyzer.get();
-  }
-
-  const liveness::SubgraphPartitioner *getSubgraphPartitioner() const {
-    return subgraphPartitioner.get();
   }
 
   liveness::AliasZeroCopy *getAliasZeroCopy() const {

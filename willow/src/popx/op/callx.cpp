@@ -10,8 +10,6 @@
 #include <popart/popx/opxmanager.hpp>
 #include <popart/tensorindex.hpp>
 
-#include <subgraphpartitioner.hpp>
-
 namespace popart {
 namespace popx {
 
@@ -23,228 +21,157 @@ InputCreatorType CallOpx::getInputCreatorType(InIndex) const {
   return InputCreatorType::CanDelegate;
 }
 
-void CallOpx::copyModified(poplar::program::Sequence &prog,
-                           InIndex inputIndex) const {
+void CallOpx::copyModified(poplar::program::Sequence &prog) const {
   auto &callop = getOp<CallOp>();
-  auto &i      = inputIndex;
 
-  auto modifiedRegions    = callop.modifies(i);
-  const auto &calledGraph = callop.getCalledGraph();
-  TensorId graph_input_id = calledGraph.getInputId(i);
+  for (int i = 0; i < callop.input->n(); i++) {
+    auto modifiedRegions    = callop.modifies(i);
+    const auto &calledGraph = callop.getCalledGraph();
+    TensorId graph_input_id = calledGraph.getInputId(i);
+    if (std::any_of(modifiedRegions.begin(),
+                    modifiedRegions.end(),
+                    [](const view::Region &r) { return !r.isEmpty(); })) {
+      TensorId call_input_id = callop.inId(i);
+      auto call_input        = get(call_input_id);
+      auto graph_input       = get(graph_input_id);
+      auto aliases =
+          dv_p->lowering().getAliasZeroCopy()->getActiveAliasedTensors(
+              {callop.input->tensor(i)}, true);
 
-  if (std::any_of(modifiedRegions.begin(),
-                  modifiedRegions.end(),
-                  [](const view::Region &r) { return !r.isEmpty(); })) {
-    TensorId call_input_id = callop.inId(i);
-    auto call_input        = get(call_input_id);
-    auto graph_input       = get(graph_input_id);
+      bool copy_modified_required = true;
+
+      copy_modified_required &=
+          aliases.find(callop.getIr().getTensor(graph_input_id)) ==
+          aliases.end();
+
+      copy_modified_required &=
+          dv_p->lowering().getAliasZeroCopy()->copyModifiedRequired(&callop, i);
+
+      if (copy_modified_required) {
+        logging::opx::trace("[CallOpx] Copying modified input {}->{}",
+                            graph_input_id,
+                            callop.inId(i));
+        poplar::program::Copy copy_prog(
+            graph_input, call_input, false, debugContext());
+        prog.add(copy_prog);
+      } else {
+        logging::opx::trace("[CallOpx] Skipping copy modified input {}->{}",
+                            graph_input_id,
+                            callop.inId(i));
+      }
+    }
+  }
+}
+
+void CallOpx::copyInputs(poplar::program::Sequence &prog) const {
+  auto &callop = getOp<CallOp>();
+
+  for (int i = 0; i < callop.input->n(); i++) {
+    TensorId call_input_id  = callop.inId(i);
+    auto call_input         = get(call_input_id);
+    TensorId graph_input_id = callop.getCalledGraph().getInputId(i);
+    auto graph_input        = get(graph_input_id);
 
     auto aliases = dv_p->lowering().getAliasZeroCopy()->getActiveAliasedTensors(
         {callop.input->tensor(i)}, true);
 
-    bool copy_modified_required = true;
+    view::AccessType accessType = view::AccessType::None;
+    for (auto &r : callop.modifies(i)) {
+      accessType = view::combine({accessType, r.getAccessType()});
+    }
 
-    copy_modified_required &=
-        aliases.find(callop.getIr().getTensor(graph_input_id)) == aliases.end();
-
-    copy_modified_required &=
-        dv_p->lowering().getAliasZeroCopy()->copyModifiedRequired(&callop, i);
-
-    if (copy_modified_required) {
-      logging::opx::trace("[CallOpx] Copying modified input {}->{}",
-                          graph_input_id,
-                          callop.inId(i));
-      poplar::program::Copy copy_prog(
-          graph_input, call_input, false, debugContext());
-      prog.add(copy_prog);
+    // Only copy inputs if
+    // a.) It is not aliased (no call by reference; call by value instead)
+    // b.) The access type is not write-only (at least one consumer of the
+    //     unmodified input tensor in the subgraph will read the contents
+    //     of the tensor)
+    if (aliases.find(callop.getIr().getTensor(graph_input_id)) ==
+        aliases.end()) {
+      if (accessType != view::AccessType::Write &&
+          dv_p->lowering().getAliasZeroCopy()->copyInputRequired(&callop, i)) {
+        logging::opx::trace(
+            "[CallOpx] Copying input {}->{}", call_input_id, graph_input_id);
+        poplar::program::Copy copy_prog(
+            call_input, graph_input, false, debugContext());
+        prog.add(copy_prog);
+      } else {
+        logging::opx::trace("[CallOpx] Skipping copy input {}->{} "
+                            "(tensor not read in subgraph)",
+                            call_input_id,
+                            graph_input_id);
+      }
     } else {
-      logging::opx::trace("[CallOpx] Skipping copy modified input {}->{}",
-                          graph_input_id,
-                          callop.inId(i));
+      logging::opx::trace(
+          "[CallOpx] Aliasing input {}->{}", call_input_id, graph_input_id);
+    }
+    if (accessType == view::AccessType::Write) {
+      logging::opx::trace("[CallOpx] Write undef tensor {}", graph_input_id);
+      prog.add(poplar::program::WriteUndef(graph_input));
     }
   }
 }
 
-void CallOpx::copyInput(poplar::program::Sequence &prog,
-                        InIndex inputIndex) const {
+void CallOpx::copyOutputs(poplar::program::Sequence &prog) const {
   auto &callop = getOp<CallOp>();
-  auto &i      = inputIndex;
+  for (int i = 0; i < callop.output->n(); i++) {
+    TensorId call_output_id = callop.outId(i);
+    auto call_output        = getOutTensor(i);
+    auto graph_output_id    = callop.getCalledGraph().getOutputId(i);
+    auto graph_output       = get(graph_output_id);
 
-  TensorId call_input_id  = callop.inId(i);
-  auto call_input         = get(call_input_id);
-  TensorId graph_input_id = callop.getCalledGraph().getInputId(i);
-  auto graph_input        = get(graph_input_id);
+    auto aliases = dv_p->lowering().getAliasZeroCopy()->getActiveAliasedTensors(
+        {callop.getIr().getTensor(graph_output_id)}, true);
 
-  auto aliases = dv_p->lowering().getAliasZeroCopy()->getActiveAliasedTensors(
-      {callop.input->tensor(i)}, true);
+    // Post IR aliased between subgraph output and CallOp output
+    bool aliased = (aliases.find(callop.getIr().getTensor(call_output_id)) !=
+                    aliases.end());
 
-  view::AccessType accessType = view::AccessType::None;
-  for (auto &r : callop.modifies(i)) {
-    accessType = view::combine({accessType, r.getAccessType()});
-  }
+    for (int j = 0; j < callop.input->n(); j++) {
+      auto input = get(callop.inId(j));
+      // Fully aliased from CallOp input to CallOp output & shape did not change
+      auto aliasRegions = callop.aliases(j, i);
 
-  // Only copy inputs if
-  // a.) It is not aliased (no call by reference; call by value instead)
-  // b.) The access type is not write-only (at least one consumer of the
-  //     unmodified input tensor in the subgraph will read the contents
-  //     of the tensor)
-  if (aliases.find(callop.getIr().getTensor(graph_input_id)) == aliases.end()) {
-    if (accessType != view::AccessType::Write &&
-        dv_p->lowering().getAliasZeroCopy()->copyInputRequired(&callop, i)) {
-      logging::opx::trace(
-          "[CallOpx] Copying input {}->{}", call_input_id, graph_input_id);
-      poplar::program::Copy copy_prog(
-          call_input, graph_input, false, debugContext());
-      prog.add(copy_prog);
-    } else {
-      logging::opx::trace("[CallOpx] Skipping copy input {}->{} "
-                          "(tensor not read in subgraph)",
-                          call_input_id,
-                          graph_input_id);
+      // Aliased from op input to op output
+      bool alias = aliasRegions.size() == 1 &&
+                   aliasRegions.front().nelms() == call_output.numElements() &&
+                   call_output.shape() == input.shape();
+      aliased |= alias;
     }
-  } else {
-    logging::opx::trace(
-        "[CallOpx] Aliasing input {}->{}", call_input_id, graph_input_id);
-  }
-  if (accessType == view::AccessType::Write) {
-    logging::opx::trace("[CallOpx] Write undef tensor {}", graph_input_id);
-    prog.add(poplar::program::WriteUndef(graph_input));
+
+    // Skip copy if aliased tensor -> is handled by copyModified, or is aliased
+    // from graph output to op output
+    if (!aliased) {
+      if (dv_p->lowering().getAliasZeroCopy()->copyOutputRequired(&callop, i)) {
+        logging::opx::trace("[CallOpx] Copying output {}->{}",
+                            graph_output_id,
+                            callop.outId(i));
+        poplar::program::Copy copy_prog(
+            graph_output, call_output, false, debugContext());
+        prog.add(copy_prog);
+      } else {
+        logging::opx::trace("[CallOpx] Skipping output {}->{}",
+                            graph_output_id,
+                            callop.outId(i));
+      }
+    } else {
+      logging::opx::trace(
+          "[CallOpx] Aliasing output {}->{}", graph_output_id, callop.outId(i));
+    }
   }
 }
 
-void CallOpx::copyOutput(poplar::program::Sequence &prog,
-                         OutIndex outputIndex) const {
-  auto &callop = getOp<CallOp>();
-  auto &i      = outputIndex;
-
-  TensorId call_output_id = callop.outId(i);
-  auto call_output        = getOutTensor(i);
-  auto graph_output_id    = callop.getCalledGraph().getOutputId(i);
-  auto graph_output       = get(graph_output_id);
-
-  auto aliases = dv_p->lowering().getAliasZeroCopy()->getActiveAliasedTensors(
-      {callop.getIr().getTensor(graph_output_id)}, true);
-
-  // Post IR aliased between subgraph output and CallOp output
-  bool aliased =
-      (aliases.find(callop.getIr().getTensor(call_output_id)) != aliases.end());
-
-  for (int j = 0; j < callop.input->n(); j++) {
-    auto input = get(callop.inId(j));
-    // Fully aliased from CallOp input to CallOp output & shape did not
-    // change
-    auto aliasRegions = callop.aliases(j, i);
-
-    // Aliased from op input to op output
-    bool alias = aliasRegions.size() == 1 &&
-                 aliasRegions.front().nelms() == call_output.numElements() &&
-                 call_output.shape() == input.shape();
-    aliased |= alias;
-  }
-
-  // Skip copy if aliased tensor -> is handled by copyModified, or is
-  // aliased from graph output to op output
-  if (!aliased) {
-    if (dv_p->lowering().getAliasZeroCopy()->copyOutputRequired(&callop, i)) {
-      logging::opx::trace(
-          "[CallOpx] Copying output {}->{}", graph_output_id, callop.outId(i));
-      poplar::program::Copy copy_prog(
-          graph_output, call_output, false, debugContext());
-      prog.add(copy_prog);
-    } else {
-      logging::opx::trace(
-          "[CallOpx] Skipping output {}->{}", graph_output_id, callop.outId(i));
-    }
-  } else {
-    logging::opx::trace(
-        "[CallOpx] Aliasing output {}->{}", graph_output_id, callop.outId(i));
-  }
-}
-
-void CallOpx::doCall(poplar::program::Sequence &prog,
-                     SubgraphPartIndex subgraphPart) const {
+void CallOpx::doCall(poplar::program::Sequence &prog) const {
   auto &callop       = getOp<CallOp>();
   auto &called_graph = callop.getCalledGraph();
-  auto &graph_prog =
-      dv_p->lowering().getFragmentFunction(called_graph, subgraphPart);
-
-  logging::opx::trace("[CallOpx] Calling {}, part {}",
-                      called_graph.getGraphString(),
-                      subgraphPart);
+  auto &graph_prog   = dv_p->lowering().getFragmentFunction(called_graph);
   prog.add(poplar::program::Call(graph_prog, debugContext()));
 }
 
-void CallOpx::grow(std::vector<poplar::program::Sequence> &sequences) const {
-
-  if (sequences.empty()) {
-    sequences.resize(1);
-  }
-
-  auto partitioner    = dv_p->lowering().getSubgraphPartitioner();
-  auto &callop        = getOp<CallOp>();
-  auto callOpSchedule = partitioner->getCallOpSchedule(&callop);
-
-  // Used to keep track of which fragment of the called subgraph to call.
-  int calledSubgraphPart = 0;
-
-  if (!callOpSchedule.empty()) {
-
-    // Used to determine a relative offset from first fragment this op affects.
-    int offsetSubgraphPart = std::get<1>(callOpSchedule.front());
-
-    for (const auto &tuple : callOpSchedule) {
-      const auto &callOpPart   = std::get<0>(tuple);
-      int relativeSubgraphPart = std::get<1>(tuple) - offsetSubgraphPart;
-
-      // Make sure we have enough sequences to lower this in.
-      if (sequences.size() <= relativeSubgraphPart) {
-        sequences.resize(relativeSubgraphPart + 1,
-                         poplar::program::Sequence({}, debugContext()));
-      }
-
-      using CallOpPartType = liveness::SubgraphPartitioner::CallOpPartType;
-
-      // Lower different things based on liveness analysis.
-      switch (callOpPart.type) {
-      case CallOpPartType::CopyInput: {
-        copyInput(sequences[relativeSubgraphPart], callOpPart.inIndex);
-        break;
-      }
-      case CallOpPartType::CopyOutput: {
-        copyOutput(sequences[relativeSubgraphPart], callOpPart.outIndex);
-        break;
-      }
-      case CallOpPartType::CopyModified: {
-        copyModified(sequences[relativeSubgraphPart], callOpPart.inIndex);
-        break;
-      }
-      case CallOpPartType::CallSubgraphPart: {
-        assert(callOpPart.subgraphPartIndex == calledSubgraphPart);
-        doCall(sequences[relativeSubgraphPart], calledSubgraphPart++);
-        break;
-      }
-      case CallOpPartType::Undefined:
-      default:
-        throw error("[CallOpx] Unexpected value of CallOpPartType");
-      }
-    }
-  }
-
-  // Do a sanity check -- did the CallOp call every subgraph part of the
-  // called subgraph? If not, something is wrong.
-  auto numCalls = partitioner->getNumSubgraphParts(callop.getCalledGraph());
-  if (calledSubgraphPart != numCalls) {
-    throw internal_error("[CallOpx] While lowering {} in {} {} subgraph "
-                         "parts were called (expected {})",
-                         callop.debugName(),
-                         callop.getGraph().getGraphString(),
-                         calledSubgraphPart,
-                         numCalls);
-  }
-}
-
 void CallOpx::grow(poplar::program::Sequence &prog) const {
-  throw error("growing CallOpx requires a vector of sequences {}", op_p->opid);
+  copyInputs(prog);
+  doCall(prog);
+  copyOutputs(prog);
+  copyModified(prog);
 }
 
 CallGradOpx::CallGradOpx(Op *op, Devicex *devicex) : CallOpx(op, devicex) {

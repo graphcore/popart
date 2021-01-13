@@ -23,7 +23,7 @@ bool GraphId::operator!=(const GraphId &other) const {
 
 const GraphId &GraphId::root() { return rootId; }
 
-const std::string &GraphId::str() const { return id; }
+std::string GraphId::str() const { return id; }
 
 std::ostream &operator<<(std::ostream &ss, const GraphId &graph_id) {
   ss << graph_id.str();

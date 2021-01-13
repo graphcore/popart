@@ -1103,13 +1103,6 @@ std::map<OpId, std::unordered_set<OpId>> Graph::getEdgeMap() const {
   return edges;
 }
 
-std::string Graph::getGraphString() const {
-  std::string graphStr = id.str() == ""
-                             ? "the main graph"
-                             : std::string("subgraph '") + id.str() + "'";
-  return graphStr;
-}
-
 } // namespace popart
 
 namespace {
