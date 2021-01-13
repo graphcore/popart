@@ -338,8 +338,12 @@ InputCreatorCandidate::createInput(const std::string &name) {
   return unwind(t);
 }
 
-std::vector<TensorId> InputCreatorCandidate::mustExistBeforeCreate() {
-  return getOpx()->mustExistBeforeCreate(getIndex());
+std::set<TensorId> InputCreatorCandidate::mustExistBeforeCreate() {
+  std::set<TensorId> tensor_ids;
+  for (TensorId tensor_id : getOpx()->mustExistBeforeCreate(getIndex())) {
+    tensor_ids.insert(tensor_id);
+  }
+  return tensor_ids;
 }
 
 std::string InputCreatorCandidate::str() {
@@ -384,11 +388,11 @@ InputMultiCreatorCandidate::unwind(poplar::Tensor) {
   throw("Not expected to unwind on InputMultiCreatorCandidate");
 }
 
-std::vector<TensorId> InputMultiCreatorCandidate::mustExistBeforeCreate() {
-  std::vector<TensorId> tensor_ids;
+std::set<TensorId> InputMultiCreatorCandidate::mustExistBeforeCreate() {
+  std::set<TensorId> tensor_ids;
   for (auto &candidate : candidates) {
     for (TensorId tensor_id : candidate.first->mustExistBeforeCreate()) {
-      tensor_ids.push_back(tensor_id);
+      tensor_ids.insert(tensor_id);
     }
   }
   return tensor_ids;

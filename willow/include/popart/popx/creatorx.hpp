@@ -45,7 +45,7 @@ public:
   createInput(const std::string &name) = 0;
 
   // Returns the list of tensors that must be created before this one
-  virtual std::vector<TensorId> mustExistBeforeCreate() = 0;
+  virtual std::set<TensorId> mustExistBeforeCreate() = 0;
 
   virtual double getMaxCreatorPriority() = 0;
 
@@ -81,7 +81,7 @@ public:
   std::pair<poplar::Tensor, ViewChangers>
   createInput(const std::string &name) override;
 
-  std::vector<TensorId> mustExistBeforeCreate() override;
+  std::set<TensorId> mustExistBeforeCreate() override;
 
   double getMaxCreatorPriority() override;
   int64_t getNumElems() override;
@@ -134,7 +134,7 @@ public:
 
   std::pair<poplar::Tensor, ViewChangers>
   createInput(const std::string &name) override;
-  std::vector<TensorId> mustExistBeforeCreate() override;
+  std::set<TensorId> mustExistBeforeCreate() override;
 
   double getMaxCreatorPriority() override;
   int64_t getNumElems() override;

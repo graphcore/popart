@@ -17,6 +17,7 @@
 #include <popart/devicemanager.hpp>
 #include <popart/popx/creatorx.hpp>
 #include <popart/popx/enigma.hpp>
+#include <popart/popx/inittensor.hpp>
 #include <popart/popx/linearmapper.hpp>
 #include <popart/popx/poplaroptionsx.hpp>
 #include <popart/popx/popprograms.hpp>
@@ -183,20 +184,21 @@ private:
   std::map<TensorId, poplar::DataStream> fromHostWeightLoadStreams;
   std::vector<TensorId> hostReduceStreamIds;
 
+  // The maximum number of inputs on any Op
+  int maxOpInputs;
+
+  void setMetadataFromIr();
+
   void verifyTaskOrder(const std::vector<TaskId> &taskOrder) const;
 
   // Task to create a poplar::Tensor from nothing, choosing
   // the correct create call (createWeights, addLinearly, etc)
-  PriTask initTensorTask(Tensor *);
-  PriTask initTensorByCloningTask(const Op *op,
-                                  TensorId srcId,
-                                  TensorId dstId,
-                                  const std::string postfix = "");
-  PriTask initTensorByAliasingTask(TensorId srcId, TensorId dstId);
+  InitTensorPtr getInitTensorCreator(Tensor *);
+
+  // Task to create a poplar::Tensor with methods defined by InitTensorPtrs
+  PriTask initTensorTask(InitTensorPtrs inits);
 
   static TaskId initTensorTaskId(TensorId);
-  bool tryInitTensorByPostIRAliasing(TensorId dstId,
-                                     const ViewChangers &viewChangers);
 
   PriTask initRandomSeed();
   static TaskId initRandomSeedTaskId();
@@ -318,11 +320,20 @@ public:
   void setLinearlyCreatedInputTensors(const std::set<TensorId> &s) {
     linearlyCreatedInputTensors = s;
   }
+  void addLinearlyCreatedInputTensors(TensorId id) {
+    linearlyCreatedInputTensors.insert(id);
+  }
 
   std::set<TensorId> getEfficientlyCreatedInputTensors() const;
   void setEfficientlyCreatedInputTensors(const std::set<TensorId> &s) {
     efficientlyCreatedInputTensors = s;
   }
+  void addEfficientlyCreatedInputTensors(TensorId id) {
+    efficientlyCreatedInputTensors.insert(id);
+  }
+
+  bool tryInitTensorByPostIRAliasing(TensorId dstId,
+                                     const ViewChangers &viewChangers);
 
   static std::string cycleCountStreamId(std::string id);
   const std::vector<std::string> &getCycleCountIds() const {
@@ -385,7 +396,7 @@ public:
 
   // Return the name of the task which initializes/creates a poplar::Tensor in a
   // poplar::Graph. This is NOT about creating a poplar::Program.
-  std::pair<TaskId, DependencyType> taskWhichCreates(TensorId);
+  PriTaskDependency taskWhichCreates(TensorId);
 
   // Return the name of the task which adds code which sets the initial
   // values of poplar::Tensor to a fragment. This IS about creating a

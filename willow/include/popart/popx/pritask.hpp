@@ -26,6 +26,31 @@ enum class DependencyType {
   SubGraph
 };
 
+// Conjunctive normal form (CNF) of dependencies
+class PriTaskDependency {
+public:
+  PriTaskDependency(TaskId taskId, DependencyType type);
+  PriTaskDependency(std::set<TaskId> taskIds, DependencyType type);
+
+  DependencyType getType() const { return type; }
+
+  bool satisfiedBy(TaskId taskId) const {
+    return taskIds.find(taskId) != taskIds.end();
+  }
+
+  const std::set<TaskId> &getTaskIds() const { return taskIds; }
+
+  bool operator==(PriTaskDependency const &rhs) const;
+
+private:
+  DependencyType type;
+  // Dependency is fulfilled if any of the tasks are done (CNF)
+  std::set<TaskId> taskIds;
+};
+
+std::ostream &operator<<(std::ostream &oss, const DependencyType &dt);
+std::ostream &operator<<(std::ostream &oss, const PriTaskDependency &ptd);
+
 /** A Pritask is a task which has a priority and a set of dependent tasks. */
 class PriTask {
 public:
@@ -33,18 +58,23 @@ public:
   // the name of this task, must be a unique identifier
   TaskId name;
   // the names of tasks which MUST appear before this task in a linearisation
-  std::vector<std::pair<TaskId, DependencyType>> dependsOn;
+  std::vector<PriTaskDependency> dependsOn;
   std::function<SequenceMap()> f;
 
   PriTask() = default;
   PriTask(double priority,
           TaskId,
-          const std::vector<std::pair<TaskId, DependencyType>> &deps,
+          const std::vector<PriTaskDependency> &deps,
           const std::function<SequenceMap()> &funcInst);
 
-  // remove dep from dependsOn.
-  void removeDep(const TaskId &dep);
-  void removeDep(DependencyType type);
+  // Remove dep from dependsOn.
+  // Returns true if a dependency has been removed.
+  bool removeDep(const TaskId &dep);
+
+  // Remove all dependencies of type from dependsOn.
+  // Returns true if a dependency has been removed.
+  bool removeDep(DependencyType type);
+
   std::set<TaskId> getDependenciesOfTypes(std::set<DependencyType>);
 };
 

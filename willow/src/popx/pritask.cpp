@@ -8,46 +8,56 @@
 
 namespace popart {
 
+PriTaskDependency::PriTaskDependency(TaskId taskId_, DependencyType type_)
+    : type(type_), taskIds({taskId_}) {}
+PriTaskDependency::PriTaskDependency(std::set<TaskId> taskIds_,
+                                     DependencyType type_)
+    : type(type_), taskIds(taskIds_) {}
+
+bool PriTaskDependency::operator==(PriTaskDependency const &rhs) const {
+  return type == rhs.type && taskIds == rhs.taskIds;
+}
+
 PriTask::PriTask(double p,
                  TaskId n,
-                 const std::vector<std::pair<TaskId, DependencyType>> &d,
+                 const std::vector<PriTaskDependency> &d,
                  const std::function<SequenceMap()> &f_)
     : priority(p), name(n), dependsOn(d), f(f_) {}
 
 // Remove all dependencies of TaskId dep
-void PriTask::removeDep(const TaskId &dep) {
-  std::vector<std::pair<TaskId, DependencyType>> newDependsOn;
+bool PriTask::removeDep(const TaskId &dep) {
+  std::vector<PriTaskDependency> newDependsOn;
   newDependsOn.reserve(dependsOn.size());
   for (auto &x : dependsOn) {
-    if (x.first != dep) {
+    if (!x.satisfiedBy(dep)) {
       newDependsOn.push_back(x);
     }
   }
-  // Multiple times the same dependency possible, with different type
-  if (newDependsOn.size() >= dependsOn.size()) {
-    throw error(
-        "failed to remove dependency '{}' for PriTask '{}'.", dep, name);
-  }
-  dependsOn = newDependsOn;
+  bool changed = newDependsOn.size() != dependsOn.size();
+  dependsOn    = newDependsOn;
+  return changed;
 }
 
-void PriTask::removeDep(DependencyType type) {
-  std::vector<std::pair<TaskId, DependencyType>> newDependsOn;
+bool PriTask::removeDep(DependencyType type) {
+  std::vector<PriTaskDependency> newDependsOn;
   newDependsOn.reserve(dependsOn.size());
   for (auto &x : dependsOn) {
-    if (x.second != type) {
+    if (x.getType() != type) {
       newDependsOn.push_back(x);
     }
   }
-  dependsOn = newDependsOn;
+  bool changed = newDependsOn.size() != dependsOn.size();
+  dependsOn    = newDependsOn;
+  return changed;
 }
 
 std::set<TaskId>
 PriTask::getDependenciesOfTypes(std::set<DependencyType> depTypes) {
   std::set<TaskId> taskIds;
   for (auto &dep : dependsOn) {
-    if (depTypes.find(dep.second) != depTypes.end()) {
-      taskIds.insert(dep.first);
+    if (depTypes.find(dep.getType()) != depTypes.end()) {
+      auto &depTaskIds = dep.getTaskIds();
+      taskIds.insert(depTaskIds.begin(), depTaskIds.end());
     }
   }
   return taskIds;
@@ -59,27 +69,37 @@ bool operator<(const PriTask &a, const PriTask &b) {
 
 void PriTasks::add(const PriTask &t) {
   if (tasksMap.find(t.name) != tasksMap.end()) {
-    throw error("already encountered name {} in tasks", t.name);
+    throw error("Already encountered name {} in tasks", t.name);
   }
 
   std::ostringstream oss;
   oss << "Adding Pritask " << t.name << " <- [ ";
   for (auto dep : t.dependsOn) {
-    oss << dep.first << ' ';
+    oss << dep;
   }
   oss << "]";
   logging::devicex::debug(oss.str());
 
   for (auto x : t.dependsOn) {
-    auto found = tasksMap.find(x.first);
-    if (found != tasksMap.end()) {
-      if (std::find(found->second.dependsOn.begin(),
-                    found->second.dependsOn.end(),
-                    std::make_pair(t.name, DependencyType::Output)) !=
-          found->second.dependsOn.end()) {
-        throw error("circular PriTask dependency " + x.first + " <-> " +
-                    t.name);
+    bool allConflicting = x.getTaskIds().size() > 0;
+    auto taskIds        = x.getTaskIds();
+    for (auto taskId : taskIds) {
+      auto found = tasksMap.find(taskId);
+      if (found != tasksMap.end()) {
+        if (std::find(found->second.dependsOn.begin(),
+                      found->second.dependsOn.end(),
+                      PriTaskDependency(t.name, DependencyType::Output)) ==
+            found->second.dependsOn.end()) {
+          allConflicting = false;
+        }
+      } else {
+        allConflicting = false;
       }
+    }
+    if (allConflicting) {
+      throw error("circular PriTask dependency {} <-> {}",
+                  logging::join(taskIds.begin(), taskIds.end(), ", "),
+                  t.name);
     }
   }
   tasksMap[t.name] = t;
@@ -122,17 +142,19 @@ PriTasks::getLinearised(std::set<DependencyType> dependencies) const {
     // when they have entered the task list, the dependency can be removed.
     else {
       for (auto &parent : task.dependsOn) {
-        if (dependencies.find(parent.second) != dependencies.end()) {
-          if (dependentsOf.find(parent.first) == dependentsOf.end()) {
-            std::stringstream ss;
-            ss << "In first step of building linearised priorities "
-               << "There is a task named " << name << " which claims to"
-               << " depend on " << parent.first
-               << " but there is no recorded task " << parent.first << ".";
-            throw error(ss.str());
+        if (dependencies.find(parent.getType()) != dependencies.end()) {
+          for (auto &taskId : parent.getTaskIds()) {
+            if (dependentsOf.find(taskId) == dependentsOf.end()) {
+              std::stringstream ss;
+              ss << "In first step of building linearised priorities "
+                 << "There is a task named " << name << " which claims to"
+                 << " depend on " << taskId << " but there is no recorded task "
+                 << taskId << ".";
+              throw error(ss.str());
+            }
+            // weird how you can just do this even if parent is not yet in map
+            dependentsOf[taskId].insert(name);
           }
-          // weird how you can just do this even if parent is not yet in map
-          dependentsOf[parent.first].insert(name);
         }
       }
     }
@@ -147,8 +169,8 @@ PriTasks::getLinearised(std::set<DependencyType> dependencies) const {
     // update the dependencies of child tasks, pushing child tasks
     // onto the priority queue if they become dep-free.
     for (auto &child : dependentsOf.at(parent)) {
-      tasksMapCopy[child].removeDep(parent);
-      if (tasksMapCopy[child].dependsOn.size() == 0) {
+      bool changed = tasksMapCopy[child].removeDep(parent);
+      if (changed && tasksMapCopy[child].dependsOn.size() == 0) {
         pq.push(tasksMapCopy[child]);
       }
     }
@@ -172,10 +194,8 @@ PriTasks::getLinearised(std::set<DependencyType> dependencies) const {
       if (present == false) {
         ss << parent << "   [ ";
         if (tasksMap.find(parent) != tasksMap.end()) {
-          for (auto &dep : tasksMap.at(parent).dependsOn) {
-            ss << "\n       " << dep.first << " ("
-               << static_cast<int>(dep.second) << ") ";
-          }
+          auto &depends = tasksMap.at(parent).dependsOn;
+          ss << logging::join(depends.begin(), depends.end(), ", ");
         } else {
           ss << "\n xxxxx ";
         }
@@ -187,6 +207,45 @@ PriTasks::getLinearised(std::set<DependencyType> dependencies) const {
 
   // ok, all tasks linearised.
   return linearisedTasks;
+}
+
+std::ostream &operator<<(std::ostream &oss, const DependencyType &dt) {
+  switch (dt) {
+  case (DependencyType::Output): {
+    oss << "Output";
+    break;
+  }
+
+  case (DependencyType::Tensor): {
+    oss << "Tensor";
+    break;
+  }
+
+  case (DependencyType::Scheduler): {
+    oss << "Scheduler";
+    break;
+  }
+
+  case (DependencyType::SubGraph): {
+    oss << "SubGraph";
+    break;
+  }
+  }
+  return oss;
+}
+
+std::ostream &operator<<(std::ostream &oss, const PriTaskDependency &ptd) {
+  oss << "PriTaskDependency[";
+  oss << ptd.getType() << " ";
+  oss << "(";
+  size_t j = 0;
+  for (auto taskId : ptd.getTaskIds()) {
+    oss << taskId << ((j < ptd.getTaskIds().size() - 1) ? " || " : "");
+    ++j;
+  }
+  oss << ") ";
+  oss << "]";
+  return oss;
 }
 
 } // namespace popart

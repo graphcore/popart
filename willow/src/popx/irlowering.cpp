@@ -32,6 +32,7 @@
 #include <poprand/RandomGen.hpp>
 #include <poprand/codelets.hpp>
 #include <poputil/exceptions.hpp>
+#include <popart/boollogic.hpp>
 #include <popart/devicemanager.hpp>
 #include <popart/error.hpp>
 #include <popart/filereader.hpp>
@@ -354,6 +355,14 @@ std::map<Op *, int, POpCmp> IrLowering::getMainGraphOpSeriesNums() const {
   return nums;
 }
 
+void IrLowering::setMetadataFromIr() {
+  // Maximum input of any Op (at least 1 to avoid division by 0)
+  maxOpInputs = 1;
+  for (Op *op : ir().getAllOps()) {
+    maxOpInputs = std::max(maxOpInputs, op->input->n());
+  }
+}
+
 void IrLowering::verifyTaskOrder(const std::vector<TaskId> &taskOrder) const {
   logging::debug("Verifying task order");
   int errors = 0;
@@ -666,7 +675,7 @@ std::unique_ptr<Opx> IrLowering::createOpx(Op *op) {
 }
 
 // The Id of the task which adds a Tensor to a poplar::Graph
-std::pair<TaskId, DependencyType> IrLowering::taskWhichCreates(TensorId id) {
+PriTaskDependency IrLowering::taskWhichCreates(TensorId id) {
   Tensor *tensor = ir().getTensor(id);
   if (!tensor->hasProducer()) {
     // Tensors without producers are created by special tasks
@@ -974,124 +983,25 @@ ICreatorCandidatePtr IrLowering::getTensorCreator(Tensor *tensor) const {
 
 // Design decision : leave the option for a Tensor to be
 // created based on complex global criteria open.
-PriTask IrLowering::initTensorTask(Tensor *tensor) {
+InitTensorPtr IrLowering::getInitTensorCreator(Tensor *tensor) {
   auto candidate = getTensorCreator(tensor);
-
-  // Initialising priMod to 0.0 since there is no guarantee that the tensor
-  // to be initialised has a consumer in it's graph.
-  double priMod = 0.0;
-
-  // Design decision:
-  // The order in which these initTensorTasks are run affects tensor
-  // layout. This can affect the behaviour of random operations, as well
-  // as overall memory consumption.
-  // Let's fix the order of execution of a set of initTensorTasks, based
-  // on some condition. We do this here by giving it a unique priority
-  // based on:
-  // - 0th consumer id
-  // - the index at which it is consumed by this consumer
-  if (tensor->consumers.getOps().size() > 0) {
-    // Tensor does have consumers
-    auto firstConsumer = tensor->consumers.getOps().front();
-    auto priMod0       = firstConsumer->id;
-    auto priMod1       = firstConsumer->input->indices(tensor).front();
-    // assumes an op has max 1000 inputs
-    priMod =
-        static_cast<double>(priMod0) + static_cast<double>(priMod1) / 1000.0;
-  }
 
   // 1. A unique candidate creator will create the tensor
   // 2. The tensor will be unwound (have its layout modified)
   //    by view-changing opxs on the path from the input to
   //    the candidate candidate
   if (candidate) {
-
-    auto f = [this, candidate, tensor]() {
-      logging::devicex::debug(
-          "Creating poplar::Tensor {}, with layout allocated by {}",
-          tensor->id,
-          candidate->str());
-
-      auto inputAndView = candidate->createInput(tensor->str() + "_tmp");
-
-      // Try if an existing Poplar tensor can be reused
-      if (tryInitTensorByPostIRAliasing(tensor->id, inputAndView.second)) {
-        return SequenceMap();
-      }
-
-      if (!inputAndView.second.empty()) {
-        // Underlying poplar::Tensor does not match IR expectations, supply
-        // view-changing transformation
-        tensors_.setViewChangers(tensor->id, inputAndView.second);
-      }
-
-      // The clone makes sure to only keep the necessary parts of the unwound
-      // tensor alive, and contiguate it,
-      // reducing IPU memory liveness and fragmentation (see T18661)
-      poplar::Tensor input = graph().clone(
-          inputAndView.first,
-          {poplar::DebugNameAndId(tensor->str(),
-                                  tensor->getDebugInfo().getId(),
-                                  tensor->getDebugInfo().getPathName())});
-
-      tensors_.insert(tensor->id, input);
-      efficientlyCreatedInputTensors.insert(tensor->id);
-      return SequenceMap();
-    };
     // the inputs of creator which must have poplar::Tensors
     // before creator creates input tensor at index inIndex.
-    std::vector<std::pair<TaskId, DependencyType>> deps;
-    for (TensorId tenId : candidate->mustExistBeforeCreate()) {
-      auto dep = taskWhichCreates(tenId);
-      deps.push_back(dep);
-    }
+    logging::devicex::debug(
+        "Creator candidate for poplar::Tensor {} is {}, must exist: {}",
+        tensor->id,
+        candidate->str(),
+        candidate->mustExistBeforeCreate());
 
-    // Discussion with David Norman suggests creating tensors as
-    // late as possible gives better IPU memory use, so
-    // giving this low priority.
-    return {-1e6 + priMod,
-            initTensorTaskId(tensor->id), // the task name
-            deps,
-            f};
+    return std::make_shared<InitTensorCreator>(candidate, tensor->id, 1.0f);
   } else {
-
-    auto f = [this, tensor]() {
-      // Try if an existing Poplar tensor can be reused
-      if (tryInitTensorByPostIRAliasing(tensor->id, ViewChangers())) {
-        return SequenceMap();
-      }
-
-      auto vgid = tensor->getVirtualGraphIdAndTileSetUnsafe();
-
-      logging::devicex::debug(
-          "Creating poplar::Tensor '{}' linearly on vgid: {}, tileset: {}. No "
-          "operator specific allocator found",
-          tensor->id,
-          vgid.first,
-          vgid.second);
-
-      auto &dstGraph = vgid.first == unusedVGraphId
-                           ? graph()
-                           : getVirtualGraph(vgid.first, vgid.second);
-
-      auto newTensor = dstGraph.addVariable(
-          popType(tensor->info),
-          tensor->info.shape_szt(),
-          {poplar::DebugNameAndId(tensor->str(),
-                                  tensor->getDebugInfo().getId(),
-                                  tensor->getDebugInfo().getPathName())});
-      linearMapper.mapTensor(dstGraph, newTensor);
-
-      tensors_.insert(tensor->id, newTensor);
-      linearlyCreatedInputTensors.insert(tensor->id);
-
-      return SequenceMap();
-    };
-
-    // Discussion with David Norman suggests creating tensors as
-    // late as possible gives better IPU memory use, so
-    // giving this low priority.
-    return {-1e6 + priMod, initTensorTaskId(tensor->id), {}, f};
+    return std::make_shared<InitTensorLinear>(tensor->id, 1.0f);
   }
 }
 
@@ -1110,7 +1020,7 @@ PriTask IrLowering::initRandomSeed() {
     return seqs;
   };
 
-  std::vector<std::pair<TaskId, DependencyType>> deps;
+  std::vector<PriTaskDependency> deps;
   deps.push_back(taskWhichCreates(updatedSeedId));
   // Stream the seed tensor to device before using to set PRNGs
   deps.push_back({fromHostTaskId(streamedSeedId), DependencyType::Scheduler});
@@ -1499,7 +1409,7 @@ PriTask IrLowering::pipelinedCopyTask(Op *op, TaskId prevTaskId) {
     return seqs;
   };
 
-  std::vector<std::pair<TaskId, DependencyType>> deps;
+  std::vector<PriTaskDependency> deps;
   if (!prevTaskId.empty()) {
     // Ensure the ops are scheduled in the order we're iterating through them
     // here.
@@ -1563,6 +1473,10 @@ void IrLowering::addOpTasks(PriTasks &tasks) {
 
   std::set<std::pair<Op *, ExecutionPhase>> seenRecomputeOps;
   FindRequiredRecomputes recomputeFinder(allOps);
+
+  // Map of TensorIds to possible initialization methods
+  std::map<TensorId, InitTensorPtrs> initTensorMap;
+
   // Iterate through Ops according to the Ir's schedule
   for (Op *op : allOps) {
 
@@ -1572,33 +1486,24 @@ void IrLowering::addOpTasks(PriTasks &tasks) {
       if (!tasks.contains(initTensorTaskId(std::get<1>(opInput)))) {
         if (std::get<0>(opInput).empty()) {
           // No tensor to clone or alias from
-          tasks.add(initTensorTask(ir().getTensor(std::get<1>(opInput))));
+          initTensorMap[std::get<1>(opInput)].insert(
+              getInitTensorCreator(ir().getTensor(std::get<1>(opInput))));
         } else {
           // Tensor can be cloned or aliased
           if (std::get<2>(opInput)) {
-            tasks.add(initTensorByAliasingTask(std::get<0>(opInput),
-                                               std::get<1>(opInput)));
-          } else {
-            if (ir().getTensor(std::get<0>(opInput))->hasProducer()) {
-              auto producer =
-                  ir().getTensor(std::get<0>(opInput))->getProducer();
-              std::string postfix =
-                  logging::format("{}/input/{}",
-                                  producer->settings.graph.get().getGraphId(),
-                                  i);
-
-              tasks.add(initTensorByCloningTask(producer,
-                                                std::get<0>(opInput),
-                                                std::get<1>(opInput),
-                                                postfix));
-            } else {
-              // This is a real input to the graph i.e not the output of another
-              // op. TBD: Would be nice to find the debug information for the
-              // source tensor
-              tasks.add(initTensorByCloningTask(
-                  nullptr, std::get<0>(opInput), std::get<1>(opInput)));
-            }
+            initTensorMap[std::get<1>(opInput)].insert(
+                std::make_shared<InitTensorAliasing>(
+                    std::get<0>(opInput), std::get<1>(opInput), 100.0f));
           }
+          initTensorMap[std::get<1>(opInput)].insert(
+              std::make_shared<InitTensorPostIrAliasing>(
+                  std::get<0>(opInput), std::get<1>(opInput), 50.0f));
+          initTensorMap[std::get<1>(opInput)].insert(
+              std::make_shared<InitTensorCloning>(
+                  std::get<0>(opInput),
+                  std::get<1>(opInput),
+                  logging::format("input/{}", i),
+                  10.0f));
         }
       }
     }
@@ -1609,32 +1514,24 @@ void IrLowering::addOpTasks(PriTasks &tasks) {
       if (!tasks.contains(initTensorTaskId(std::get<1>(opOutput)))) {
         if (std::get<0>(opOutput).empty()) {
           // No tensor to clone or alias from
-          tasks.add(initTensorTask(ir().getTensor(std::get<1>(opOutput))));
+          initTensorMap[std::get<1>(opOutput)].insert(
+              getInitTensorCreator(ir().getTensor(std::get<1>(opOutput))));
         } else {
           // Tensor can be cloned or aliased
           if (std::get<2>(opOutput)) {
-            tasks.add(initTensorByAliasingTask(std::get<0>(opOutput),
-                                               std::get<1>(opOutput)));
-          } else {
-            if (ir().getTensor(std::get<0>(opOutput))->hasProducer()) {
-              auto producer =
-                  ir().getTensor(std::get<0>(opOutput))->getProducer();
-              // std::string postfix = logging::format("{}/input/{}",
-              std::string postfix =
-                  logging::format("{}/output/{}",
-                                  producer->settings.graph.get().getGraphId(),
-                                  i);
-              tasks.add(initTensorByCloningTask(producer,
-                                                std::get<0>(opOutput),
-                                                std::get<1>(opOutput),
-                                                postfix));
-            } else {
-              // This is not valid an output tensor which does not have a
-              // producer
-              tasks.add(initTensorByCloningTask(
-                  nullptr, std::get<0>(opOutput), std::get<1>(opOutput)));
-            }
+            initTensorMap[std::get<1>(opOutput)].insert(
+                std::make_shared<InitTensorAliasing>(
+                    std::get<0>(opOutput), std::get<1>(opOutput), 100.0f));
           }
+          initTensorMap[std::get<1>(opOutput)].insert(
+              std::make_shared<InitTensorPostIrAliasing>(
+                  std::get<0>(opOutput), std::get<1>(opOutput), 50.0f));
+          initTensorMap[std::get<1>(opOutput)].insert(
+              std::make_shared<InitTensorCloning>(
+                  std::get<0>(opOutput),
+                  std::get<1>(opOutput),
+                  logging::format("output/{}", i),
+                  10.0f));
         }
       }
     }
@@ -1649,6 +1546,13 @@ void IrLowering::addOpTasks(PriTasks &tasks) {
     tasks.add(task);
     prevOpTaskId = task.name;
     priority -= 1.;
+  }
+
+  // Add tasks for tensors to be created
+  for (auto &tensorIdAndInits : initTensorMap) {
+    if (!tasks.contains(initTensorTaskId(tensorIdAndInits.first))) {
+      tasks.add(initTensorTask(tensorIdAndInits.second));
+    }
   }
 }
 
@@ -1693,65 +1597,126 @@ bool IrLowering::tryInitTensorByPostIRAliasing(
   return false;
 }
 
-PriTask IrLowering::initTensorByCloningTask(const Op *op,
-                                            TensorId srcId,
-                                            TensorId dstId,
-                                            const std::string postfix) {
-  auto f = [op, srcId, dstId, postfix, this]() {
-    // Try if an existing Poplar tensor can be reused
-    if (tryInitTensorByPostIRAliasing(dstId,
-                                      tensors_.hasViewChangers(srcId)
-                                          ? tensors_.getViewChangers(srcId)
-                                          : ViewChangers())) {
-      return SequenceMap();
+PriTask IrLowering::initTensorTask(InitTensorPtrs inits) {
+
+  TensorId dstId;
+  std::map<TensorId, bool> dependencyTensorValues;
+  std::vector<boollogic::Term> terms;
+  for (auto &init : inits) {
+    dstId = init->getDstId();
+    if (init->getDependsOnIds().empty()) {
+      // No dependencies
+      terms.push_back(true);
+    } else {
+      // Dependencies
+      std::vector<boollogic::Term> subterms;
+      for (auto srcId : init->getDependsOnIds()) {
+        subterms.push_back(boollogic::Term::varTerm(srcId));
+        dependencyTensorValues[srcId] = false;
+      }
+      terms.push_back(boollogic::Term::andTerm(subterms));
     }
+  }
 
-    auto vgid = ir().getTensor(srcId)->getVirtualGraphIdAndTileSetUnsafe();
+  // Conjunctive normal form of the term that has to be satisfied in order to
+  // allocate this tensor
+  auto cnfTerm = boollogic::Term::orTerm(terms).getCNF();
 
-    auto &dstGraph = vgid.first == unusedVGraphId
-                         ? graph()
-                         : getVirtualGraph(vgid.first, vgid.second);
+  // Translate from conjunctive normal form to dependencies
+  std::vector<PriTaskDependency> deps;
+  if (!cnfTerm.evaluate(dependencyTensorValues)) {
+    // The term does not evaluate to true if all variables are set to false,
+    // therefore, we have at least one PriTaskDepenceny
 
-    logging::debug("Cloning tensor {} to {} (vgid: {} tileset: {})",
-                   srcId,
-                   dstId,
-                   vgid.first,
-                   vgid.second);
-    auto src = tensors_.get(srcId);
-    auto dst =
-        op ? dstGraph.clone(
-                 src,
-                 {poplar::DebugNameAndId(postfix,
-                                         op->getDebugInfo().getId(),
-                                         op->getDebugInfo().getPathName())})
-           : dstGraph.clone(src);
+    // Evaluate the CNF
+    // Note: We only expect Var/And/Or terms, does not handle True/False/Not
+    std::function<void(boollogic::Term)> evaluate =
+        [this, &deps, &evaluate](boollogic::Term t) {
+          switch (t.getType()) {
+          case boollogic::Type::And: {
+            // Conjunction of dependencies
+            for (auto &st : t.getTerms()) {
+              evaluate(st);
+            }
+            break;
+          }
+          case boollogic::Type::Or: {
+            // Multiple tasks can fulfill the dependency
+            std::set<TaskId> orTaskIds;
+            for (auto &st : t.getTerms()) {
+              auto taskIds = taskWhichCreates(st.getVar()).getTaskIds();
+              for (auto &taskId : taskIds) {
+                orTaskIds.insert(taskId);
+              }
+            }
+            PriTaskDependency dep(orTaskIds, DependencyType::Tensor);
+            deps.push_back(dep);
+            break;
+          }
+          case boollogic::Type::Var: {
+            // Only one task can fulfill the dependency
+            PriTaskDependency dep(taskWhichCreates(t.getVar()).getTaskIds(),
+                                  DependencyType::Tensor);
+            deps.push_back(dep);
+            break;
+          }
+          case boollogic::Type::Not:
+            break;
+          case boollogic::Type::True:
+            break;
+          case boollogic::Type::False:
+            break;
+          default:
+            break;
+          }
+        };
+    evaluate(cnfTerm);
+  }
 
-    if (tensors_.hasViewChangers(srcId)) {
-      tensors_.setViewChangers(dstId, tensors_.getViewChangers(srcId));
+  Tensor *tensor = ir().getTensor(dstId);
+
+  // Initialising priMod to 0.0 since there is no guarantee that the tensor
+  // to be initialised has a consumer in it's graph.
+  double priMod = 0.0;
+
+  // Design decision:
+  // The order in which these initTensorTasks are run affects tensor
+  // layout. This can affect the behaviour of random operations, as well
+  // as overall memory consumption.
+  // Let's fix the order of execution of a set of initTensorTasks, based
+  // on some condition. We do this here by giving it a unique priority
+  // based on:
+  // - 0th consumer id
+  // - the index at which it is consumed by this consumer
+  if (tensor->consumers.getOps().size() > 0) {
+    // Tensor does have consumers
+    auto firstConsumer = tensor->consumers.getOps().front();
+    auto priMod0       = firstConsumer->id;
+    auto priMod1       = firstConsumer->input->indices(tensor).front();
+    priMod             = static_cast<double>(priMod0) +
+             static_cast<double>(priMod1) / maxOpInputs;
+  }
+
+  logging::devicex::trace(
+      "Adding initTensorTask for tensor: {}, dependencies: {}", dstId, deps);
+
+  auto f = [dstId, inits, this]() {
+    // Try each init, sorted by priority
+    for (auto &init : inits) {
+      bool success = init->initTensor(*this);
+      logging::devicex::trace("Trying to create {} with {} (success: {})",
+                              dstId,
+                              init->str(),
+                              success ? "yes" : "no");
+      if (success) {
+        return SequenceMap();
+      }
     }
-    tensors_.insert(dstId, dst);
-    return SequenceMap();
+    // None of the inits worked
+    throw error("Failed to initialize tensor {}", dstId);
   };
 
-  std::vector<std::pair<TaskId, DependencyType>> deps;
-  auto creatorTask = taskWhichCreates(srcId);
-  deps.push_back(creatorTask);
-
-  return {-1e6, initTensorTaskId(dstId), deps, f};
-}
-
-PriTask IrLowering::initTensorByAliasingTask(TensorId srcId, TensorId dstId) {
-  auto f = [srcId, dstId, this]() {
-    logging::debug("Aliasing tensor {} to {}", srcId, dstId);
-    tensors_.insertAliased(dstId, srcId);
-    return SequenceMap();
-  };
-
-  std::vector<std::pair<TaskId, DependencyType>> deps;
-  auto creatorTask = taskWhichCreates(srcId);
-  deps.push_back(creatorTask);
-
-  return {-1e6, initTensorTaskId(dstId), deps, f};
+  return {-1e6 - priMod, initTensorTaskId(dstId), deps, f};
 }
 
 PriTask IrLowering::opTask(Op *op, double priority, TaskId prevOpTaskId) {
@@ -1760,15 +1725,14 @@ PriTask IrLowering::opTask(Op *op, double priority, TaskId prevOpTaskId) {
   // we add a dependency to the input tensors, just
   // in case someone plays with the priorities.
   // Moreover, we must state the copy-from-host deps
-  std::vector<std::pair<TaskId, DependencyType>> deps;
+  std::vector<PriTaskDependency> deps;
   for (auto t_inds : op->input->indicesMap()) {
     Tensor *tensor = t_inds.first;
 
-    std::pair<TaskId, DependencyType> creatorTask =
-        taskWhichCreates(tensor->id);
+    PriTaskDependency creatorTask = taskWhichCreates(tensor->id);
 
-    std::pair<TaskId, DependencyType> populatorTask = {
-        taskWhichPopulates(tensor->id), DependencyType::Scheduler};
+    PriTaskDependency populatorTask = {taskWhichPopulates(tensor->id),
+                                       DependencyType::Scheduler};
 
     // Make sure we only add the creatorTask once in the dependency list
     if (std::find(deps.begin(), deps.end(), creatorTask) == deps.end()) {
@@ -1790,8 +1754,8 @@ PriTask IrLowering::opTask(Op *op, double priority, TaskId prevOpTaskId) {
                               op->debugName(),
                               tensor->id);
 
-      std::pair<TaskId, DependencyType> creatorTask = {
-          initTensorTaskId(tensor->id), DependencyType::Tensor};
+      PriTaskDependency creatorTask = {initTensorTaskId(tensor->id),
+                                       DependencyType::Tensor};
 
       // Make sure we only add the creatorTask once in the dependency list
       if (std::find(deps.begin(), deps.end(), creatorTask) == deps.end()) {
@@ -1802,16 +1766,14 @@ PriTask IrLowering::opTask(Op *op, double priority, TaskId prevOpTaskId) {
 
   auto addGraphOpsToDeps = [&](const Graph *graph) {
     for (auto graphOp : graph->getOpSchedule({}, RequireOptimalSchedule::Yes)) {
-      std::pair<TaskId, DependencyType> taskId = {opTaskId(graphOp),
-                                                  DependencyType::SubGraph};
+      PriTaskDependency taskId = {opTaskId(graphOp), DependencyType::SubGraph};
       if (std::find(deps.begin(), deps.end(), taskId) == deps.end()) {
         deps.push_back(taskId);
       }
 
       // Graph inputs
       for (auto &inputId : graph->getInputIds()) {
-        std::pair<TaskId, DependencyType> creatorTask =
-            taskWhichCreates(inputId);
+        PriTaskDependency creatorTask = taskWhichCreates(inputId);
         if (std::find(deps.begin(), deps.end(), creatorTask) == deps.end()) {
           deps.push_back(creatorTask);
         }
@@ -1819,8 +1781,7 @@ PriTask IrLowering::opTask(Op *op, double priority, TaskId prevOpTaskId) {
 
       // Graph outputs
       for (auto &outputId : graph->getOutputIds()) {
-        std::pair<TaskId, DependencyType> creatorTask =
-            taskWhichCreates(outputId);
+        PriTaskDependency creatorTask = taskWhichCreates(outputId);
         if (std::find(deps.begin(), deps.end(), creatorTask) == deps.end()) {
           deps.push_back(creatorTask);
         }
@@ -1835,8 +1796,7 @@ PriTask IrLowering::opTask(Op *op, double priority, TaskId prevOpTaskId) {
   // Depends on previous op task. This preserves op ordering from ir.
   // Note: the first opTask has no previous opTask
   if (prevOpTaskId != "") {
-    std::pair<TaskId, DependencyType> prevTask = {prevOpTaskId,
-                                                  DependencyType::Scheduler};
+    PriTaskDependency prevTask = {prevOpTaskId, DependencyType::Scheduler};
     // Add dependency only if not already added
     if (std::find(deps.begin(), deps.end(), prevTask) == deps.end()) {
       deps.push_back(prevTask);
@@ -1846,8 +1806,8 @@ PriTask IrLowering::opTask(Op *op, double priority, TaskId prevOpTaskId) {
   auto taskId = opTaskId(op);
   if (requiredRecomputes.find(taskId) != requiredRecomputes.end()) {
     for (const auto &recompOp : requiredRecomputes[taskId]) {
-      std::pair<TaskId, DependencyType> recompTask = {opTaskId(recompOp),
-                                                      DependencyType::Output};
+      PriTaskDependency recompTask = {opTaskId(recompOp),
+                                      DependencyType::Output};
       if (std::find(deps.begin(), deps.end(), recompTask) == deps.end()) {
         deps.push_back(recompTask);
       }
@@ -2497,6 +2457,9 @@ void IrLowering::prepareGraph() {
   setFloatingPointBehaviour(graph());
   setStochasticRoundingBehaviour(graph());
 
+  // Calcualte metadata gathered from the IR
+  setMetadataFromIr();
+
   // Initialize the liveness analyzer
   livenessAnalyzer.reset(new liveness::LivenessAnalyzer(&ir()));
   aliasZeroCopy.reset(
@@ -2630,7 +2593,7 @@ void IrLowering::prepareGraph() {
       continue;
 
     // 1
-    tasks.add(initTensorTask(tensor));
+    tasks.add(initTensorTask({getInitTensorCreator(tensor)}));
 
     if (!ir().streamingIsDisabledForTensor(id)) {
       // 2
@@ -2655,7 +2618,7 @@ void IrLowering::prepareGraph() {
     logging::devicex::debug("Adding initTensorTask for Const {}", id);
     Tensor *tensor = ir().getTensor(id);
     // 1
-    tasks.add(initTensorTask(tensor));
+    tasks.add(initTensorTask({getInitTensorCreator(tensor)}));
     // 2
     tasks.add(setInitTensorValTask(tensor));
   }
@@ -2673,7 +2636,7 @@ void IrLowering::prepareGraph() {
         logging::devicex::trace("Adding {} output initTensorTask for {}",
                                 op->debugName(),
                                 t_inds.first->id);
-        tasks.add(initTensorTask(t_inds.first));
+        tasks.add(initTensorTask({getInitTensorCreator(t_inds.first)}));
       }
     }
   }
@@ -2688,7 +2651,7 @@ void IrLowering::prepareGraph() {
     Tensor *tensor = ir().getTensor(id);
 
     // 1
-    tasks.add(initTensorTask(tensor));
+    tasks.add(initTensorTask({getInitTensorCreator(tensor)}));
     logging::devicex::debug("Adding initTensorTask for Stream {}", id);
 
     // 2
@@ -3330,7 +3293,7 @@ PriTask IrLowering::toHostTask(Tensor *tensor,
   logging::devicex::debug(
       "Final populator for {} is {} ", taskId, finalPopulator);
 
-  std::vector<std::pair<TaskId, DependencyType>> deps = {
+  std::vector<PriTaskDependency> deps = {
       // the dependencies:
       // poplar::Stream creation task,
       {streamToHostTaskId(tensor->id, stype != ToHostStreamType::NonAnchor),

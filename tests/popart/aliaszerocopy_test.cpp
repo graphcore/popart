@@ -291,9 +291,9 @@ BOOST_AUTO_TEST_CASE(AliasZeroCopyTest0) {
               checkAliased(call, outTensor(0), true); // X1
             }
             if (callIndex == 2) {
-              checkAliased(call, inTensor(0), false);  // X0
-              checkAliased(call, inTensor(1), true);   // X1
-              checkAliased(call, outTensor(0), false); // X2
+              checkAliased(call, inTensor(0), false); // X0
+              checkAliased(call, inTensor(1), true);  // X1
+              checkAliased(call, outTensor(0), true); // X2
             }
             if (callIndex == 3) {
               checkAliased(call, inTensor(0), false); // grad_X2
@@ -302,9 +302,9 @@ BOOST_AUTO_TEST_CASE(AliasZeroCopyTest0) {
               checkAliased(call, outTensor(0), true); // grad_X1
             }
             if (callIndex == 4) {
-              checkAliased(call, inTensor(0), false);  // grad_X2
-              checkAliased(call, inTensor(1), false);  // grad_X1
-              checkAliased(call, outTensor(0), false); // grad_X0
+              checkAliased(call, inTensor(0), false); // grad_X2
+              checkAliased(call, inTensor(1), false); // grad_X1
+              checkAliased(call, outTensor(0), true); // grad_X0
             }
             if (callIndex == 5) {
               checkAliased(call, inTensor(0), false); // grad_X0

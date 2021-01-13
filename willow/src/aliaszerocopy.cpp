@@ -237,8 +237,6 @@ void AliasZeroCopy::apply() {
           std::pair<Tensor *, Tensor *> parentToSubgraphTensors = {
               t, sgraph->getTensors().get(sgraph->getInputId(sgInIndex))};
 
-          // printLivenessIntervals(parentGraphTensors);
-
           processTensorAliasGroups(parentGraphTensors);
 
           if (checkSubgraphInputCompatible(parentToSubgraphTensors.first,
@@ -277,10 +275,9 @@ void AliasZeroCopy::apply() {
       // the subgraph tensor
       auto group = processTensorAliasGroups(parentGraphTensors);
 
-      // Aliasing to one of the group's tensor aliases to all of them
-      if (group.size() > 0) {
+      for (Tensor *parent : group) {
         insertAlias(sgraph->getTensors().get(sgraph->getOutputId(sgOutIndex)),
-                    (*group.begin()));
+                    parent);
       }
     }
   }
