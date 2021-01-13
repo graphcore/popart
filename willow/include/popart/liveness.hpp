@@ -4,6 +4,7 @@
 
 #include <popart/graphid.hpp>
 #include <popart/op.hpp>
+#include <popart/tensor.hpp>
 
 namespace popart {
 
@@ -116,6 +117,11 @@ public:
   // at a given schedule position (e.g. 7)
   const LivenessNode &getOpScheduleAt(int64_t scheduleIndex) const {
     return opSchedule.at(scheduleIndex);
+  }
+
+  // Get a graph's local schedule.
+  const std::vector<Op *> &getGraphOpSchedule(GraphId id) const {
+    return graphOpSchedule.at(id);
   }
 
   // Return all global schedule positions (e.g. 7, 24)

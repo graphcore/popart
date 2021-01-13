@@ -387,18 +387,22 @@ void LivenessAnalyzer::addToSchedule(const Graph *graphToAdd,
     auto newCallStack = callStack;
     newCallStack.push_back(op);
 
-    int64_t enterLocation = opSchedule.size();
-    opScheduleMap[op].push_back(enterLocation);
-
     // Expand subgraphs, if any.
     auto subgraphs = op->getCalledGraphs();
     if (!subgraphs.empty()) {
       // This op has subgraphs, expand them.
       for (SubgraphIndex g = 0; g < subgraphs.size(); ++g) {
+        // Work out enter location.
+        int64_t enterLocation = opSchedule.size();
+        opScheduleMap[op].push_back(enterLocation);
+        // Expand subgraph.
         expandSubgraph(
             graphToAdd, subgraphs[g], enterLocation, newCallStack, g);
       }
     } else {
+      // Work out enter location.
+      int64_t enterLocation = opSchedule.size();
+      opScheduleMap[op].push_back(enterLocation);
       // This op has no subgraphs.
       opSchedule.emplace_back(newCallStack, OpStatus::Normal, 0, 0);
     }

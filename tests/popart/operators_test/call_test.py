@@ -621,6 +621,64 @@ def test_stacked_subgraphs_2():
         assert np.allclose(sg_true[k1], sg_false[k2])
 
 
+# I used the example below for implementing subgraph partitioning, so it is
+# useful to keep, but it doesn't actually test subgraph partitioning properly,
+# so have disabled.
+@pytest.mark.skip(reason="Test not required")
+def test_subgraph_partitioning(op_tester):
+    """
+      What we're trying to achieve:
+      main:
+        a = 1                     # a = 1
+        b = Call{'Callee':0}(a)   # b = 4 * (2 + a) = 12
+        c = Call{'Callee':0}(b)   # c = 4 * (2 + b) = 62
+        d = Call{'Callee':1}(a,c) # d = a + c = 63
+      subgraph0(x0) -> 4 * subgraph1(2, x0):
+        a0 = 2
+        a1 = Call{'Callee':1}(a0, x0)
+        out0 = 4 * a1
+      subgraph1(x1,y1) -> x1 + y1:
+        out1 = x1 + y1
+    """
+
+    da = np.asarray([1]).astype(np.int32)
+
+    def init_builder(builder):
+        # subgraph1
+        sg1_builder = builder.createSubgraphBuilder()
+        x1 = sg1_builder.addUntypedInputTensor()
+        y1 = sg1_builder.addUntypedInputTensor()
+        out1 = sg1_builder.aiOnnx.add([x1, y1])
+        sg1_builder.addOutputTensor(out1)
+
+        # subgraph0
+        sg0_builder = builder.createSubgraphBuilder()
+        x0 = sg0_builder.addUntypedInputTensor()
+        a0 = sg0_builder.aiOnnx.constant(np.asarray([2]).astype(np.int32))
+        a1 = sg0_builder.aiGraphcore.call([a0, x0], 1, sg1_builder)[0]
+        out0 = sg0_builder.aiGraphcore.scale([a1], 4)
+        sg0_builder.addOutputTensor(out0)
+
+        # main
+        a = builder.addInputTensor(da)
+        b = builder.aiGraphcore.call([a], 1, sg0_builder)[0]
+        c = builder.aiGraphcore.call([b], 1, sg0_builder)[0]
+        d = builder.aiGraphcore.call([a, c], 1, sg1_builder)[0]
+        builder.addOutputTensor(d)
+        return [d]
+
+    def reference(ref_data):
+        def sg1(x1, y1):
+            return x1 + y1
+
+        def sg0(x0):
+            return sg1(2, x0) * 4
+
+        return [sg1(da, sg0(sg0(da)))]
+
+    op_tester.run(init_builder, reference, 'infer')
+
+
 # TODO: uncomment-out test when T15830 is complete
 #  Subgraph, sg:
 #  in0  in1

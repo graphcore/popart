@@ -40,6 +40,17 @@ void Opx::grow(poplar::program::Sequence &) const {
   throw error("adding poplar::Tensors not implemented for {}", op_p->opid);
 }
 
+void Opx::grow(std::vector<poplar::program::Sequence> &sequences) const {
+  if (sequences.empty()) {
+    sequences.resize(1, poplar::program::Sequence({}, debugContext()));
+  }
+
+  // By default, use the Opx::grow(poplar::program::Sequence &) function.
+  // Currently, only CallOpx overloads this Opx::grow method to grow over
+  // multiple fragments.
+  grow(*sequences.begin());
+}
+
 InputCreatorType Opx::getInputCreatorType(InIndex) const {
   return InputCreatorType::Deadend;
 }
