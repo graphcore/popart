@@ -4,6 +4,7 @@
 
 #include <popart/graphid.hpp>
 #include <popart/op.hpp>
+#include <popart/tensor.hpp>
 
 namespace popart {
 
@@ -29,12 +30,16 @@ enum class OpStatus {
 
 class LivenessNode {
 public:
-  LivenessNode(const OpStatus status_, int index_, SubgraphIndex subgraphIndex);
+  LivenessNode(const OpStatus status_,
+               int index_,
+               SubgraphIndex subgraphIndex,
+               bool isDuplicate);
 
   LivenessNode(std::vector<Op *> callStack_,
                const OpStatus status_,
                int index_,
-               SubgraphIndex subgraphIndex);
+               SubgraphIndex subgraphIndex,
+               bool isDuplicate);
 
   // Operation associated with this node
   Op *getOp() const { return callStack.back(); }
@@ -51,6 +56,9 @@ public:
   // For Enter, Exit, CopyInput, CopyOutput, CopyModified, CopyLoopCarried
   // nodes this signifies the subgraph called by the op.
   int getSubgraphIndex() const { return subgraphIndex; }
+
+  // Determine if this node is a duplicate (duplicates are used for loops).
+  bool getDuplicate() const { return isDuplicate; }
 
   // All tensor ids touched by this node
   const std::set<TensorId> &usedTensorIds() const { return usedIds; }
@@ -75,6 +83,7 @@ private:
   OpStatus status;
   int index;
   SubgraphIndex subgraphIndex;
+  bool isDuplicate;
   std::pair<TensorId, TensorId> tensorIds;
   std::set<TensorId> usedIds;
 };
@@ -118,6 +127,11 @@ public:
     return opSchedule.at(scheduleIndex);
   }
 
+  // Get a graph's local schedule.
+  const std::vector<Op *> &getGraphOpSchedule(GraphId id) const {
+    return graphOpSchedule.at(id);
+  }
+
   // Return all global schedule positions (e.g. 7, 24)
   // where an Op is called (e.g. F)
   const std::vector<int64_t> &getScheduleIndices(Op *op) const {
@@ -147,11 +161,12 @@ public:
 
 private:
   // Global schedule including all subgraphs recursively
-  void addToSchedule(const Graph *, std::vector<Op *>);
+  void addToSchedule(const Graph *, bool isDuplicate, std::vector<Op *>);
   // Expand a subgraph.
   void expandSubgraph(const Graph *graphToAdd,
                       const Graph *subgraph,
                       int64_t enterLocation,
+                      bool isDuplicate,
                       std::vector<Op *> callStack,
                       SubgraphIndex subgraphIndex);
 

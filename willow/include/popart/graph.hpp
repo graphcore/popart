@@ -238,7 +238,8 @@ public:
   // lightweight container, like `std::vector`.
   std::map<OpId, std::unordered_set<OpId>> getEdgeMap() const;
 
-  const std::string getGraphId() const { return id.str(); }
+  const std::string &getGraphId() const { return id.str(); }
+  std::string getGraphString() const;
 
 private:
   std::vector<Op *>

@@ -94,21 +94,21 @@ BOOST_AUTO_TEST_CASE(AliasZeroCopyLoopTest0) {
 
   // Ground truth
   std::vector<LivenessNode> reference;
-  reference.emplace_back(OpStatus::Enter, 0, 0); // LoopOp
+  reference.emplace_back(OpStatus::Enter, 0, 0, 0); // LoopOp
   // see loop.hpp, 0/1 skipped
-  reference.emplace_back(OpStatus::CopyInput, 2, 0);       // taId -> staId
-  reference.emplace_back(OpStatus::CopyInput, 3, 0);       // tbId -> stbId
-  reference.emplace_back(OpStatus::CopyLoopCarried, 0, 0); // loop cond
-  reference.emplace_back(OpStatus::CopyLoopCarried, 1, 0); // staId -> staId
-  reference.emplace_back(OpStatus::CopyLoopCarried, 2, 0); // stdId -> stbId
-  reference.emplace_back(OpStatus::Normal, 0, 0); // AddOp (iteration 0)
-  reference.emplace_back(OpStatus::CopyLoopCarried, 0, 0); // loop cond
-  reference.emplace_back(OpStatus::CopyLoopCarried, 1, 0); // staId -> staId
-  reference.emplace_back(OpStatus::CopyLoopCarried, 2, 0); // stdId -> stbId
-  reference.emplace_back(OpStatus::Normal, 0, 0);     // AddOp (iteration 1)
-  reference.emplace_back(OpStatus::CopyOutput, 0, 0); // staId -> tcId
-  reference.emplace_back(OpStatus::CopyOutput, 1, 0); // stdId -> tdId
-  reference.emplace_back(OpStatus::Exit, 0, 0);       // LoopOp
+  reference.emplace_back(OpStatus::CopyInput, 2, 0, 0);       // taId -> staId
+  reference.emplace_back(OpStatus::CopyInput, 3, 0, 0);       // tbId -> stbId
+  reference.emplace_back(OpStatus::CopyLoopCarried, 0, 0, 0); // loop cond
+  reference.emplace_back(OpStatus::CopyLoopCarried, 1, 0, 0); // staId -> staId
+  reference.emplace_back(OpStatus::CopyLoopCarried, 2, 0, 0); // stdId -> stbId
+  reference.emplace_back(OpStatus::Normal, 0, 0, 0); // AddOp (iteration 0)
+  reference.emplace_back(OpStatus::CopyLoopCarried, 0, 0, 0); // loop cond
+  reference.emplace_back(OpStatus::CopyLoopCarried, 1, 0, 0); // staId -> staId
+  reference.emplace_back(OpStatus::CopyLoopCarried, 2, 0, 0); // stdId -> stbId
+  reference.emplace_back(OpStatus::Normal, 0, 0, 0);     // AddOp (iteration 1)
+  reference.emplace_back(OpStatus::CopyOutput, 0, 0, 0); // staId -> tcId
+  reference.emplace_back(OpStatus::CopyOutput, 1, 0, 0); // stdId -> tdId
+  reference.emplace_back(OpStatus::Exit, 0, 0, 0);       // LoopOp
 
   BOOST_CHECK_EQUAL(analyzer.getOpScheduleSize(), reference.size());
   for (int64_t i = 0; i < analyzer.getOpScheduleSize(); ++i) {

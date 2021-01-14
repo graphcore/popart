@@ -15,16 +15,18 @@ namespace liveness {
 
 LivenessNode::LivenessNode(const OpStatus status_,
                            int index_,
-                           SubgraphIndex subgraphIndex_)
+                           SubgraphIndex subgraphIndex_,
+                           bool isDuplicate_)
     : callStack({}), status(status_), index(index_),
-      subgraphIndex(subgraphIndex_) {}
+      subgraphIndex(subgraphIndex_), isDuplicate(isDuplicate_) {}
 
 LivenessNode::LivenessNode(std::vector<Op *> callStack_,
                            const OpStatus status_,
                            int index_,
-                           SubgraphIndex subgraphIndex_)
+                           SubgraphIndex subgraphIndex_,
+                           bool isDuplicate_)
     : callStack(callStack_), status(status_), index(index_),
-      subgraphIndex(subgraphIndex_) {
+      subgraphIndex(subgraphIndex_), isDuplicate(isDuplicate_) {
   setTensorIds();
   setUsedTensorIds();
 }
@@ -292,7 +294,7 @@ void LivenessAnalyzer::apply() {
     graphOpSchedule[sgraph->id] =
         sgraph->getOpSchedule({}, RequireOptimalSchedule::Yes);
   }
-  addToSchedule(&(ir->getMainGraph()), {});
+  addToSchedule(&(ir->getMainGraph()), false, {});
 
   for (int64_t i = 0; i < opSchedule.size(); ++i) {
     for (TensorId tensorId : opSchedule.at(i).usedTensorIds()) {
@@ -311,18 +313,23 @@ void LivenessAnalyzer::apply() {
 void LivenessAnalyzer::expandSubgraph(const Graph *graphToAdd,
                                       const Graph *subgraph,
                                       int64_t enterLocation,
+                                      bool isDuplicate,
                                       std::vector<Op *> callStack,
                                       SubgraphIndex subgraphIndex) {
 
   assert(!callStack.empty());
   Op *op = callStack.back();
 
-  opSchedule.emplace_back(callStack, OpStatus::Enter, 0, subgraphIndex);
+  opSchedule.emplace_back(
+      callStack, OpStatus::Enter, 0, subgraphIndex, isDuplicate);
   for (auto input : op->input->tensorIdMap()) {
     auto sgInIndex = op->opInToSubgraphInIndex(subgraphIndex, input.first);
     if (sgInIndex >= 0) {
-      opSchedule.push_back(
-          {callStack, OpStatus::CopyInput, input.first, subgraphIndex});
+      opSchedule.push_back({callStack,
+                            OpStatus::CopyInput,
+                            input.first,
+                            subgraphIndex,
+                            isDuplicate});
     }
   }
 
@@ -340,14 +347,17 @@ void LivenessAnalyzer::expandSubgraph(const Graph *graphToAdd,
       // Loop carried dependencies between iteration -1, 0 and 1
       // (see loop.hpp)
       for (int64_t i = 0; i < bodyOutputIds.size(); ++i) {
-        opSchedule.emplace_back(
-            callStack, OpStatus::CopyLoopCarried, i, subgraphIndex);
+        opSchedule.emplace_back(callStack,
+                                OpStatus::CopyLoopCarried,
+                                i,
+                                subgraphIndex,
+                                isDuplicate || iteration > 0);
       }
       // Loop iteration 0 & 1
-      addToSchedule(subgraph, callStack);
+      addToSchedule(subgraph, isDuplicate || iteration > 0, callStack);
     }
   } else {
-    addToSchedule(subgraph, callStack);
+    addToSchedule(subgraph, isDuplicate, callStack);
   }
 
   // Insert the "exit" locations of subgraphs into the schedule
@@ -355,8 +365,11 @@ void LivenessAnalyzer::expandSubgraph(const Graph *graphToAdd,
     auto sgOutIndex = op->opOutToSubgraphOutIndex(subgraphIndex, output.first);
     if (sgOutIndex > -1 && sgOutIndex < subgraph->getOutputIds().size()) {
       // Copy subgraph outputs to the main graph
-      opSchedule.emplace_back(
-          callStack, OpStatus::CopyOutput, output.first, subgraphIndex);
+      opSchedule.emplace_back(callStack,
+                              OpStatus::CopyOutput,
+                              output.first,
+                              subgraphIndex,
+                              isDuplicate);
     }
   }
   for (auto input : op->input->tensorIdMap()) {
@@ -368,17 +381,22 @@ void LivenessAnalyzer::expandSubgraph(const Graph *graphToAdd,
                       modifiedRegions.end(),
                       [](const view::Region &r) { return !r.isEmpty(); })) {
         // Copy modified subgraph inputs to the main graph
-        opSchedule.push_back(
-            {callStack, OpStatus::CopyModified, input.first, subgraphIndex});
+        opSchedule.push_back({callStack,
+                              OpStatus::CopyModified,
+                              input.first,
+                              subgraphIndex,
+                              isDuplicate});
       }
     }
   }
 
-  opSchedule.emplace_back(callStack, OpStatus::Exit, 0, subgraphIndex);
+  opSchedule.emplace_back(
+      callStack, OpStatus::Exit, 0, subgraphIndex, isDuplicate);
   callSiteLinks[enterLocation].push_back(opSchedule.size() - 1);
 }
 
 void LivenessAnalyzer::addToSchedule(const Graph *graphToAdd,
+                                     bool isDuplicate,
                                      std::vector<Op *> callStack) {
   auto &schedule = graphOpSchedule.at(graphToAdd->id);
   for (Op *op : schedule) {
@@ -387,20 +405,29 @@ void LivenessAnalyzer::addToSchedule(const Graph *graphToAdd,
     auto newCallStack = callStack;
     newCallStack.push_back(op);
 
-    int64_t enterLocation = opSchedule.size();
-    opScheduleMap[op].push_back(enterLocation);
-
     // Expand subgraphs, if any.
     auto subgraphs = op->getCalledGraphs();
     if (!subgraphs.empty()) {
       // This op has subgraphs, expand them.
       for (SubgraphIndex g = 0; g < subgraphs.size(); ++g) {
-        expandSubgraph(
-            graphToAdd, subgraphs[g], enterLocation, newCallStack, g);
+        // Work out enter location.
+        int64_t enterLocation = opSchedule.size();
+        opScheduleMap[op].push_back(enterLocation);
+        // Expand subgraph.
+        expandSubgraph(graphToAdd,
+                       subgraphs[g],
+                       enterLocation,
+                       isDuplicate,
+                       newCallStack,
+                       g);
       }
     } else {
+      // Work out enter location.
+      int64_t enterLocation = opSchedule.size();
+      opScheduleMap[op].push_back(enterLocation);
       // This op has no subgraphs.
-      opSchedule.emplace_back(newCallStack, OpStatus::Normal, 0, 0);
+      opSchedule.emplace_back(
+          newCallStack, OpStatus::Normal, 0, 0, isDuplicate);
     }
   }
 }
@@ -455,6 +482,8 @@ std::ostream &operator<<(std::ostream &os, const LivenessNode &livenessNode) {
   os << livenessNode.getStatus() << " ";
   os << livenessNode.getIndex() << " ";
   os << livenessNode.getSubgraphIndex() << " ";
+  if (livenessNode.getDuplicate())
+    os << livenessNode.getSubgraphIndex() << " (duplicate)";
   os << "{" << livenessNode.getTensorIds().first << ", "
      << livenessNode.getTensorIds().second << "}";
   return os;

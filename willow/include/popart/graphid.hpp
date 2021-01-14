@@ -17,7 +17,7 @@ public:
 
   static const GraphId &root();
 
-  std::string str() const;
+  const std::string &str() const;
 
 private:
   std::string id;

@@ -557,36 +557,116 @@ PopPrograms::programFragment(PopPrograms::ProgramFragmentIndex index) {
   return seqs[static_cast<int>(index)];
 }
 
-poplar::program::Sequence &PopPrograms::scopeFragment(const Graph &graph) {
-  if (graph.id.str().empty()) {
-    throw error("There is no scope fragment for the main scope");
+int PopPrograms::getNumFragments(const Graph &graph) const {
+  auto scopeIt = scopeSeqs.find(graph.id.str());
+  if (scopeIt == scopeSeqs.end()) {
+    throw error("There are no scope fragments for {}", graph.getGraphString());
   } else {
-    return scopeSeqs.at(graph.id.str());
+    return scopeIt->second.size();
   }
 }
 
-bool PopPrograms::containsFragment(const Graph &graph) const {
-  if (graph.id.str().empty()) {
-    return true;
+std::vector<poplar::program::Sequence> &
+PopPrograms::scopeFragments(const Graph &graph) {
+  auto scopeIt = scopeSeqs.find(graph.id.str());
+  if (scopeIt == scopeSeqs.end()) {
+    throw error("There are no scope fragments for {}", graph.getGraphString());
   } else {
-    return scopeSeqs.find(graph.id.str()) != scopeSeqs.end();
+    return scopeIt->second;
   }
 }
 
-void PopPrograms::createFragment(const Graph &graph) {
-  scopeSeqs.insert({graph.id.str(), {}});
+poplar::program::Sequence &
+PopPrograms::scopeFragment(const Graph &graph, SubgraphPartIndex subgraphPart) {
+  return scopeSeqs.at(graph.id.str()).at(subgraphPart);
 }
 
-poplar::Function &PopPrograms::getFragmentFunction(const Graph &called_graph,
-                                                   poplar::Graph &popgraph) {
-  if (funcs.find(called_graph.id.str()) == funcs.end()) {
-    auto &fragment = scopeFragment(called_graph);
-    logging::devicex::trace("[getFragmentFunction] Creating function "
-                            "for graph {}",
-                            called_graph.id.str());
-    funcs.insert({called_graph.id.str(), popgraph.addFunction(fragment)});
+bool PopPrograms::containsFragments(const Graph &graph) const {
+  auto scopeIt = scopeSeqs.find(graph.id.str());
+  return (scopeIt != scopeSeqs.end());
+}
+
+bool PopPrograms::containsFragment(const Graph &graph,
+                                   SubgraphPartIndex subgraphPart) const {
+
+  auto scopeIt = scopeSeqs.find(graph.id.str());
+  return (scopeIt != scopeSeqs.end()) &&
+         (subgraphPart < scopeIt->second.size());
+}
+
+void PopPrograms::createFragment(const Graph &graph,
+                                 SubgraphPartIndex subgraphPart) {
+
+  // We only populate scopeSeqs here, funcs needs to be populated after
+  // sequences are grown because sequences are cloned on addFunction.
+  auto scopeIt = scopeSeqs.find(graph.id.str());
+
+  // Check if this graph has a vector already.
+  if (scopeIt != scopeSeqs.end()) {
+    // Vectors exists, check it contains the subgraphPart.
+    auto &seqs = scopeIt->second;
+    if (seqs.size() < subgraphPart + 1) {
+      // Check funcs matches scopeSeqs.
+      assert(funcs.size() < subgraphPart + 1);
+      // Resize scopeSeqs. The funcs vector will be resized to match below.
+      seqs.resize(subgraphPart + 1);
+    }
+  } else {
+    // Vector does not exist, create one that contains the subgraph part.
+    std::vector<poplar::program::Sequence> seqs;
+
+    for (size_t part = 0; part <= subgraphPart; ++part) {
+      std::stringstream dbgCtx;
+      if (graph.id.str() == "") {
+        dbgCtx << "main_graph/" << part;
+      } else {
+        dbgCtx << graph.id.str() << "/" << part;
+      }
+      seqs.push_back(poplar::program::Sequence({}, dbgCtx.str()));
+    }
+
+    scopeSeqs.insert({graph.id.str(), seqs});
   }
-  return funcs.at(called_graph.id.str());
+}
+
+std::vector<poplar::Function> &
+PopPrograms::getFragmentFunctions(const Graph &graph,
+                                  poplar::Graph &poplarGraph) {
+
+  auto seq2func = [&](poplar::program::Sequence &seq) {
+    return poplarGraph.addFunction(seq);
+  };
+
+  auto funcsIt = funcs.find(graph.id.str());
+  if (funcsIt == funcs.end()) {
+    // Funcs was never populated. Populate it now.
+    funcsIt     = funcs.insert({graph.id.str(), {}}).first;
+    auto &funcs = funcsIt->second;
+    auto &seqs  = scopeSeqs.at(graph.id.str());
+    std::transform(
+        seqs.begin(), seqs.end(), std::back_inserter(funcs), seq2func);
+  }
+
+  if (funcsIt == funcs.end()) {
+    throw error("There are no scope fragments for {}", graph.getGraphString());
+  }
+  return funcsIt->second;
+}
+
+poplar::Function &
+PopPrograms::getFragmentFunction(const Graph &graph,
+                                 SubgraphPartIndex subgraphPart,
+                                 poplar::Graph &poplarGraph) {
+
+  auto &funcs = getFragmentFunctions(graph, poplarGraph);
+
+  if (subgraphPart >= funcs.size()) {
+    throw error("There is no scope fragment for {}, part {}",
+                graph.getGraphString(),
+                subgraphPart);
+  } else {
+    return funcs[subgraphPart];
+  }
 }
 
 bool PopPrograms::hasBeenRecomputed(OpId id, ExecutionPhase phase) const {
@@ -598,17 +678,19 @@ void PopPrograms::recordRecomputed(OpId id, ExecutionPhase phase) {
   beenRecomputed.insert({id, phase});
 }
 
-poplar::program::Sequence &PopPrograms::recomputeFragment(OpId id) {
+std::vector<poplar::program::Sequence>::iterator
+PopPrograms::recomputeFragment(OpId id) {
   auto found = recomputeSeqs.find(id);
   if (found == recomputeSeqs.end()) {
     throw error("Recompute Fragment for Op {} has not been created.", id);
   }
-  return found->second;
+  return found->second.begin();
 }
 
-poplar::program::Sequence &PopPrograms::createRecomputeFragment(OpId id) {
-  recomputeSeqs.insert({id, poplar::program::Sequence{}});
-  return recomputeSeqs[id];
+SequenceMap::SequenceInterval PopPrograms::createRecomputeFragment(OpId id) {
+  recomputeSeqs.insert({id, {poplar::program::Sequence{}}});
+  return SequenceMap::SequenceInterval(recomputeSeqs[id].begin(),
+                                       recomputeSeqs[id].end());
 }
 
 poplar::program::Sequence &

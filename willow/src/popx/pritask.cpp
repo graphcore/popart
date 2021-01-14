@@ -8,6 +8,90 @@
 
 namespace popart {
 
+int SequenceMap::debugCtxNo = 0;
+
+void SequenceMap::addSingleSequence(Sequence &sequence) {
+  // Defensively check for misuse of this class.
+  auto it = indexMap.find(&sequence);
+  if (it != indexMap.end()) {
+    throw error("[SequenceMap] Sequence already mapped");
+  }
+
+  // NOTE: It would be nice to use the debug context of the input sequences
+  // here but this information is not accessible.
+  std::stringstream dbgCtx;
+  dbgCtx << "sequence_map/" << debugCtxNo++;
+  localSeqs.push_back({Sequence({}, dbgCtx.str())});
+  indexMap[&sequence] = std::make_tuple(localSeqs.size() - 1, 0);
+}
+
+void SequenceMap::addScopeFragments(Sequences &sequences) {
+  // Defensively check for misuse of this class.
+  for (auto &seq : sequences) {
+    auto it = indexMap.find(&seq);
+    if (it != indexMap.end()) {
+      error("[SequenceMap] Sequence in vector already mapped");
+    }
+  }
+
+  // Add a vector of sequences.
+  Sequences seqs;
+  for (size_t part = 0; part < sequences.size(); ++part) {
+    // NOTE: It would be nice to use the debug context of the input sequences
+    // here but this information is not accessible.
+    std::stringstream dbgCtx;
+    dbgCtx << "sequence_map/" << part << "/" << debugCtxNo;
+    seqs.push_back(Sequence({}, dbgCtx.str()));
+  }
+
+  debugCtxNo++;
+
+  localSeqs.push_back(seqs);
+
+  // Now for every sequence pointer we were given, set indexMap.
+  for (size_t offset = 0; offset < sequences.size(); ++offset) {
+    indexMap[&sequences[offset]] =
+        std::make_tuple(localSeqs.size() - 1, offset);
+  }
+}
+
+SequenceMap::SequenceInterval SequenceMap::operator[](Sequence *seq) {
+
+  auto it = indexMap.find(seq);
+
+  if (it == indexMap.end()) {
+    addSingleSequence(*seq);
+    it = indexMap.find(seq);
+  }
+
+  auto indexIntoLocalSeqs = std::get<0>(it->second);
+  auto offset             = std::get<1>(it->second);
+  auto &seqs              = localSeqs.at(indexIntoLocalSeqs);
+
+  if (offset >= seqs.size()) {
+    // This shouldn't happen.
+    throw error("[SequenceMap] Internal mapping error");
+  } else {
+    // Returning an interval of Sequences in which ops can be grown.
+    return SequenceInterval(seqs.begin() + offset, seqs.end());
+  }
+}
+
+SequenceMap::Sequence &SequenceMap::getSequence(Sequence *seq) {
+  return *operator[](seq).first;
+}
+
+std::map<SequenceMap::Sequence *, SequenceMap::Sequence *>
+SequenceMap::getFullSequenceMap() {
+  std::map<Sequence *, Sequence *> result;
+  for (auto entry : indexMap) {
+    auto indexIntoLocalSeqs = std::get<0>(entry.second);
+    auto offset             = std::get<1>(entry.second);
+    result[entry.first]     = &localSeqs.at(indexIntoLocalSeqs).at(offset);
+  }
+  return result;
+}
+
 PriTaskDependency::PriTaskDependency(TaskId taskId_, DependencyType type_)
     : type(type_), taskIds({taskId_}) {}
 PriTaskDependency::PriTaskDependency(std::set<TaskId> taskIds_,

@@ -8,6 +8,8 @@
 #include <poplar/Program.hpp>
 #include <popart/names.hpp>
 
+#include <popart/popx/pritask.hpp>
+
 namespace popart {
 
 enum class ScheduledPreLoss;
@@ -92,19 +94,39 @@ public:
 
   poplar::program::Sequence &programFragment(PopPrograms::ProgramFragmentIndex);
 
-  // Sub-graph program fragments, getters and setters
-  poplar::program::Sequence &scopeFragment(const Graph &);
-  bool containsFragment(const Graph &) const;
-  void createFragment(const Graph &);
+  // Sub-graph program fragments, getters and setters for poplar sequences and
+  // functions for subgraphs.
 
-  poplar::Function &getFragmentFunction(const Graph &called_graph,
-                                        poplar::Graph &popgraph);
+  // The number of Poplar sequences associated with a graph.
+  int getNumFragments(const Graph &graph) const;
+  // Get a vector of all Poplar sequences associated with a graph.
+  std::vector<poplar::program::Sequence> &scopeFragments(const Graph &);
+  // Get a specific Poplar sequence associated with a graph.
+  poplar::program::Sequence &scopeFragment(const Graph &,
+                                           SubgraphPartIndex subgraphPart);
+  // Determine if any Poplar sequences associated with a graph are allocated.
+  bool containsFragments(const Graph &graph) const;
+  // Determine whether a specific Poplar sequence associated with a graph has
+  // been allocated.
+  bool containsFragment(const Graph &graph,
+                        SubgraphPartIndex subgraphPart) const;
+  // Ensure a specific Poplar sequence is allocated.
+  void createFragment(const Graph &graph, SubgraphPartIndex subgraphPart);
+  // Wrap all Poplar sequences associated with a graph in to a poplar function
+  // that can be called and return them all.
+  std::vector<poplar::Function> &
+  getFragmentFunctions(const Graph &graph, poplar::Graph &poplarGraph);
+  // Wrap all Poplar sequences associated with a graph in to a poplar function
+  // that can be called and return a specific one.
+  poplar::Function &getFragmentFunction(const Graph &graph,
+                                        SubgraphPartIndex subgraphPart,
+                                        poplar::Graph &poplarGraph);
 
   // Get the program fragment for a recomputed op. createRecomputeFragment must
   // be called first.
-  poplar::program::Sequence &recomputeFragment(OpId);
+  std::vector<poplar::program::Sequence>::iterator recomputeFragment(OpId);
   // Create the program fragment for a recomputed op.
-  poplar::program::Sequence &createRecomputeFragment(OpId);
+  SequenceMap::SequenceInterval createRecomputeFragment(OpId);
 
   bool hasBeenRecomputed(OpId, ExecutionPhase) const;
   void recordRecomputed(OpId, ExecutionPhase);
@@ -149,11 +171,13 @@ private:
   std::array<poplar::program::Sequence, seqs_size> seqs;
 
   // The sub-graph program fragments will be stored here
-  std::unordered_map<std::string, poplar::program::Sequence> scopeSeqs;
-  std::unordered_map<std::string, poplar::Function> funcs;
+  std::unordered_map<std::string, std::vector<poplar::program::Sequence>>
+      scopeSeqs;
+  std::unordered_map<std::string, std::vector<poplar::Function>> funcs;
 
-  // The recompute program fragments will be stored here
-  std::map<OpId, poplar::program::Sequence> recomputeSeqs;
+  // The recompute program fragments will be stored here. We store the sequences
+  // in singleton vectors because grow code requires iterators to vectors.
+  std::map<OpId, std::vector<poplar::program::Sequence>> recomputeSeqs;
 
   // Pipelining fragments for each pipeline stage are stored here
   std::map<PipelineFragmentId,
