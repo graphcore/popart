@@ -62,6 +62,8 @@ protected:
    * generally used for IPU specific things like pipeline stage, IPU number,
    * etc. */
   NodeProto &copyUnderscorePrefixedAttributes(const NodeProto &src);
+  /** Add attributes from \a src which are prefixed with "__" to \a dst node. */
+  void copyUnderscorePrefixedAttributes(const NodeProto &src, NodeProto &dst);
 
   /** Insert a copy of the NodeProto \a toCopy into nodes. This is an exact
    * copy. */
@@ -159,6 +161,11 @@ protected:
                             float v) {
     return binaryConstScalar(toCopy, inName, outName, "Pow", inIndex, v);
   }
+
+  /** Add the attribute with name \a name and value \a value to \a node */
+  void addIntsAttribute(NodeProto &,
+                        const std::string &name,
+                        const std::vector<int64_t> &value);
 
 private:
   /** Insert a copy of \a toCopy into nodes, but change the operator type to

@@ -3,6 +3,7 @@
 #include <onnx/onnx_pb.h>
 #include <onnxpasses/nodepatterns/binary_ops.hpp>
 #include <onnxpasses/nodepatterns/conv.hpp>
+#include <onnxpasses/nodepatterns/spacedepth.hpp>
 #include <onnxpasses/nodepatterns/trig.hpp>
 #include <onnxpasses/onnxtoonnx.hpp>
 #include <onnxpasses/patterntarget.hpp>
@@ -35,6 +36,8 @@ void Canonnxalizer::canonnxalize(GraphProto &g) const {
   patterns.push_back(std::make_unique<Acos>(target));
   patterns.push_back(std::make_unique<Remainder>(target));
   patterns.push_back(std::make_unique<Mod>(target));
+  patterns.push_back(std::make_unique<DepthToSpace>(target));
+  patterns.push_back(std::make_unique<SpaceToDepth>(target));
 
   /**
    * The ONNX spec ensures that the Nodes appear in topological order.

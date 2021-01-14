@@ -55,8 +55,6 @@ enum class PreAliasPatternType {
   ZerosLikeOpPattern,
   ConvTranspose,
   DecomposeBinaryConstScalar,
-  DepthToSpaceOpPattern,
-  SpaceToDepthOpPattern,
   FmodArg0GradOp,
 };
 

@@ -45,14 +45,19 @@ std::string NodePattern::withUniqueSuffix(const std::string &n) const {
   return n + target->suffixer.getAndIncr();
 }
 
-NodeProto &NodePattern::copyUnderscorePrefixedAttributes(const NodeProto &src) {
-  auto &n = add();
+void NodePattern::copyUnderscorePrefixedAttributes(const NodeProto &src,
+                                                   NodeProto &dst) {
   for (const auto &srcAtt : src.attribute()) {
     if (srcAtt.name().find("__") == 0) {
-      auto pn = n.add_attribute();
+      auto pn = dst.add_attribute();
       *pn     = srcAtt;
     }
   }
+}
+
+NodeProto &NodePattern::copyUnderscorePrefixedAttributes(const NodeProto &src) {
+  auto &n = add();
+  copyUnderscorePrefixedAttributes(src, n);
   return n;
 }
 
@@ -92,6 +97,17 @@ NodeProto &NodePattern::binaryConstScalar(const NodeProto &toCopy,
   att2.set_i(inIndex == ScalarInIndex::One ? 1ll : 0ll);
 
   return n;
+}
+
+void NodePattern::addIntsAttribute(NodeProto &node,
+                                   const std::string &name,
+                                   const std::vector<int64_t> &value) {
+  auto attr = node.add_attribute();
+  attr->set_name(name);
+  attr->set_type(ONNX_NAMESPACE::AttributeProto::INTS);
+  for (int64_t i : value) {
+    attr->add_ints(i);
+  }
 }
 
 NodeProto &NodePattern::setIO(NodeProto &n,
