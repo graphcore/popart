@@ -9,6 +9,7 @@
 #include <popart/popx/op/collectives/collectivesx.hpp>
 #include <popart/popx/opxmanager.hpp>
 
+#include <popops/Collectives.hpp>
 #include <poputil/Util.hpp>
 
 namespace popart {
