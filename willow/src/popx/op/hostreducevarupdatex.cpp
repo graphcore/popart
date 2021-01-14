@@ -74,11 +74,8 @@ void GradCopyToHostOpx::grow(poplar::program::Sequence &prog) const {
     prog.add(gradientsToHostProg);
   }
 
-  // When running in pipelined mode the sync op is added after every copy
-  if (op_p->getIr().getSessionOptions().enablePipelining ||
-      op_p->getIr().getSessionOptions().hostAllReduceRemoteBuffer) {
-    prog.add(poplar::program::Sync(poplar::SyncType::INTERNAL));
-  }
+  // This will hurt performance and can be improved if we revisit this feature.
+  prog.add(poplar::program::Sync(poplar::SyncType::INTERNAL));
 }
 
 GradCopyFromHostOpx::GradCopyFromHostOpx(Op *op, Devicex *devicex)

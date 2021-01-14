@@ -35,58 +35,17 @@ using namespace popart;
 
 void checkOpSchedule(const std::vector<Op *> &opSchedule,
                      const SessionOptions &options) {
-  std::vector<Op *> partialOpSchedule;
-  for (const auto &op : opSchedule) {
-    if (dynamic_cast<GradCopyToHostOp *>(op) ||
-        dynamic_cast<GradCopyFromHostOp *>(op) || dynamic_cast<SyncOp *>(op) ||
-        dynamic_cast<HostSGD0VarUpdate *>(op)) {
-      partialOpSchedule.push_back(op);
-    }
-  }
   int numCopiesToHost   = 0;
   int numCopiesToDevice = 0;
-
-  int numSyncs = 0;
-  for (const auto &op : partialOpSchedule) {
-    if (op->isConvertibleTo<SyncOp>()) {
-      ++numSyncs;
-    }
-  }
-
-  if (options.enablePipelining || options.hostAllReduceRemoteBuffer) {
-    for (const auto &op : partialOpSchedule) {
-      if (op->isConvertibleTo<GradCopyToHostOp>()) {
-        ++numCopiesToHost;
-      } else if (op->isConvertibleTo<GradCopyFromHostOp>()) {
-        ++numCopiesToDevice;
-      } else if (op->isConvertibleTo<HostSGD0VarUpdate>()) {
-        ++numCopiesToDevice;
-      }
-    }
-  } else {
-    auto syncIt = std::find_if(
-        partialOpSchedule.begin(), partialOpSchedule.end(), [](Op *op) {
-          return dynamic_cast<SyncOp *>(op) != nullptr;
-        });
-    BOOST_CHECK(syncIt != partialOpSchedule.end());
-
-    BOOST_CHECK(numSyncs == 1);
-
-    for (auto it = partialOpSchedule.begin(); it != syncIt; ++it) {
-      BOOST_CHECK(dynamic_cast<GradCopyToHostOp *>(*it) != nullptr);
+  for (const auto &op : opSchedule) {
+    if (op->isConvertibleTo<GradCopyToHostOp>()) {
       ++numCopiesToHost;
-    }
-
-    for (auto it = std::next(syncIt, 1); it != partialOpSchedule.end(); ++it) {
-      if (options.hostWeightUpdate) {
-        BOOST_CHECK(dynamic_cast<HostSGD0VarUpdate *>(*it) != nullptr);
-      } else {
-        BOOST_CHECK(dynamic_cast<GradCopyFromHostOp *>(*it) != nullptr);
-      }
+    } else if (op->isConvertibleTo<GradCopyFromHostOp>()) {
+      ++numCopiesToDevice;
+    } else if (op->isConvertibleTo<HostSGD0VarUpdate>()) {
       ++numCopiesToDevice;
     }
   }
-
   BOOST_CHECK(numCopiesToHost == numCopiesToDevice);
 }
 
@@ -1246,8 +1205,7 @@ BOOST_AUTO_TEST_CASE(
 }
 
 // TODO see T24260
-BOOST_AUTO_TEST_CASE(HostReduceTransformationWithAccumulation,
-                     *boost::unit_test::disabled()) {
+BOOST_AUTO_TEST_CASE(HostReduceTransformationWithAccumulation) {
   auto run = [](bool hostAllReduce) {
     auto builder     = Builder::create();
     auto aiOnnx      = builder->aiOnnxOpset9();
@@ -1359,20 +1317,13 @@ BOOST_AUTO_TEST_CASE(HostReduceTransformationWithAccumulation,
         {reservedAcclToUpdatePrefix() + getGradId(w5), sampleInfo}};
 
     std::map<TensorId, std::vector<float>> idToGrad{
-        {reservedAcclToUpdatePrefix() + getGradId(w0),
-         std::vector<float>(sampleElms)},
-        {reservedAcclToUpdatePrefix() + getGradId(w1),
-         std::vector<float>(sampleElms)},
-        {reservedAcclToUpdatePrefix() + getGradId(w2),
-         std::vector<float>(sampleElms)},
-        {reservedAcclToUpdatePrefix() + getGradId(w3),
-         std::vector<float>(sampleElms)},
-        {reservedAcclToUpdatePrefix() + getGradId(w4),
-         std::vector<float>(sampleElms)},
-        {reservedAcclToUpdatePrefix() + getGradId(w5),
-         std::vector<float>(sampleElms)},
+        {reservedAcclToUpdatePrefix() + w0, std::vector<float>(sampleElms)},
+        {reservedAcclToUpdatePrefix() + w1, std::vector<float>(sampleElms)},
+        {reservedAcclToUpdatePrefix() + w2, std::vector<float>(sampleElms)},
+        {reservedAcclToUpdatePrefix() + w3, std::vector<float>(sampleElms)},
+        {reservedAcclToUpdatePrefix() + w4, std::vector<float>(sampleElms)},
+        {reservedAcclToUpdatePrefix() + w5, std::vector<float>(sampleElms)},
     };
-
     float learnRate = 1.0;
     auto optimizer  = ConstSGD(learnRate);
 
@@ -1756,8 +1707,7 @@ BOOST_AUTO_TEST_CASE(HostReduceTransformationWithPipelining) {
 }
 
 // TODO see T24260
-BOOST_AUTO_TEST_CASE(HostReduceTransformationWithPipeliningAndAccumulation,
-                     *boost::unit_test::disabled()) {
+BOOST_AUTO_TEST_CASE(HostReduceTransformationWithPipeliningAndAccumulation) {
   auto run = [](bool hostAllReduce) {
     auto builder     = Builder::create();
     auto aiOnnx      = builder->aiOnnxOpset9();
@@ -1881,12 +1831,12 @@ BOOST_AUTO_TEST_CASE(HostReduceTransformationWithPipeliningAndAccumulation,
     }
 
     std::map<TensorId, std::vector<float>> idToGrad{
-        {prefix + getGradId(w0), std::vector<float>(sampleElms)},
-        {prefix + getGradId(w1), std::vector<float>(sampleElms)},
-        {prefix + getGradId(w2), std::vector<float>(sampleElms)},
-        {prefix + getGradId(w3), std::vector<float>(sampleElms)},
-        {prefix + getGradId(w4), std::vector<float>(sampleElms)},
-        {prefix + getGradId(w5), std::vector<float>(sampleElms)},
+        {prefix + w0, std::vector<float>(sampleElms)},
+        {prefix + w1, std::vector<float>(sampleElms)},
+        {prefix + w2, std::vector<float>(sampleElms)},
+        {prefix + w3, std::vector<float>(sampleElms)},
+        {prefix + w4, std::vector<float>(sampleElms)},
+        {prefix + w5, std::vector<float>(sampleElms)},
     };
 
     auto device =

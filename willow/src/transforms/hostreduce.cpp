@@ -9,7 +9,6 @@
 #include <popart/op/sgd0varupdate.hpp>
 #include <popart/op/sgd1acclupdate.hpp>
 #include <popart/op/sgd1varupdate.hpp>
-#include <popart/op/sync.hpp>
 #include <popart/op/varupdate.hpp>
 #include <popart/tensor.hpp>
 #include <popart/tensors.hpp>
@@ -272,31 +271,15 @@ bool HostReduce::apply(Graph &graph) const {
       }
     }
   } else {
-    auto syncOp_up = std::make_unique<SyncOp>(
-        Op::Settings(graph, "HostReduceSync"), poplar::SyncType::INTERNAL);
-    auto syncOpId = graph.moveIntoGraph(std::move(syncOp_up));
-    auto syncOp   = graph.getOp(syncOpId);
-
-    syncOp->setup();
-
-    // Sync Op should run after all gradCopyToHost Ops
-    graph.topoCons->insert({{syncOp, gradCopyToHostOps}});
-
     if (ir.getSessionOptions().hostWeightUpdate) {
       // Ensure that all gradient copy op run before var copy ops
       for (auto &varCopyOp : varCopyOps) {
         graph.topoCons->insert({{varCopyOp, gradCopyToHostOps}});
-
-        // Sync Op should run before all varCopy Ops
-        graph.topoCons->insert(syncOp, varCopyOp);
       }
     } else {
       // Ensure that all gradient copy from host run after gradient copy to host
       for (auto &gradCopyFromHostOp : gradCopyFromHostOps) {
         graph.topoCons->insert({{gradCopyFromHostOp, gradCopyToHostOps}});
-
-        // Sync Op should run before all gradCopyFromHost Ops
-        graph.topoCons->insert(syncOp, gradCopyFromHostOp);
       }
     }
   }
