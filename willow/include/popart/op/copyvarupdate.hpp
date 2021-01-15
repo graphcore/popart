@@ -18,6 +18,10 @@ public:
   std::map<InIndex, TensorId> optimizerInputs() const final { return {}; }
 
   float getSubgraphValue() const final { return getLowSubgraphValue(); }
+
+  // Modifies differs from base class since copy will
+  // overwrite the tensor to update completely
+  view::Regions modifies(InIndex) const override;
 };
 
 } // namespace popart

@@ -8,6 +8,7 @@
 #include <popart/popx/opxmanager.hpp>
 
 #include <gcl/Collectives.hpp>
+#include <popops/Collectives.hpp>
 
 namespace popart {
 namespace popx {
@@ -18,16 +19,19 @@ ReplicatedAllReduceOpx::ReplicatedAllReduceOpx(Op *op, Devicex *devicex)
 }
 
 void ReplicatedAllReduceOpx::grow(poplar::program::Sequence &prog) const {
+  const auto &rarOp = getOp<ReplicatedAllReduceOp>();
+
   const auto inIndex                   = ReplicatedAllReduceOp::getInIndex();
   poplar::Tensor toReduce              = getInTensor(inIndex);
   poplar::OptionFlags allReduceOptions = dv_p->lowering().gclOptions;
   allReduceOptions.set("useReplicatedImplementation", "true");
-  poplar::Tensor output = gcl::allReduce(graph(),
-                                         toReduce,
-                                         popops::Operation::ADD,
-                                         prog,
-                                         debugContext("replicatedAllReduce"),
-                                         allReduceOptions);
+  poplar::Tensor output = popops::replicatedAllReduce(
+      graph(),
+      toReduce,
+      getPoplarCollectiveOperator(rarOp.getCollectiveOp()),
+      prog,
+      debugContext("replicatedAllReduce"),
+      allReduceOptions);
   setOutTensor(ReplicatedAllReduceOp::getOutIndex(), output);
 }
 
@@ -54,16 +58,19 @@ ReplicatedAllReduceInplaceOpx::ReplicatedAllReduceInplaceOpx(Op *op,
 
 void ReplicatedAllReduceInplaceOpx::grow(
     poplar::program::Sequence &prog) const {
+  const auto &rarOp = getOp<ReplicatedAllReduceOp>();
+
   const auto inIndex      = ReplicatedAllReduceInplaceOp::getInIndex();
   poplar::Tensor toReduce = getInTensor(inIndex);
   poplar::OptionFlags allReduceOptions = dv_p->lowering().gclOptions;
   allReduceOptions.set("useReplicatedImplementation", "true");
-  gcl::allReduceInPlace(graph(),
-                        toReduce,
-                        popops::Operation::ADD,
-                        prog,
-                        debugContext("replicatedAllReduce"),
-                        allReduceOptions);
+  popops::replicatedAllReduceInPlace(
+      graph(),
+      toReduce,
+      getPoplarCollectiveOperator(rarOp.getCollectiveOp()),
+      prog,
+      debugContext("replicatedAllReduce"),
+      allReduceOptions);
   setOutTensor(ReplicatedAllReduceInplaceOp::getOutIndex(), toReduce);
 }
 

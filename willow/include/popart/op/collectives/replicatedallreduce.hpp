@@ -9,6 +9,9 @@ namespace popart {
 class ReplicatedAllReduceOp : public CollectivesBaseOp {
 public:
   ReplicatedAllReduceOp(const OperatorIdentifier &_opid,
+                        CollectiveOperator op_,
+                        const Op::Settings &settings_);
+  ReplicatedAllReduceOp(const OperatorIdentifier &_opid,
                         const Op::Settings &settings_);
 
   std::unique_ptr<Op> clone() const override;
@@ -16,10 +19,18 @@ public:
   getInplaceVariant(const OperatorIdentifier &) const override;
   void setup() override;
   float getSubgraphValue() const final { return getHighSubgraphValue(); }
+  void appendOutlineAttributes(OpSerialiserBase &) const override;
+  CollectiveOperator getCollectiveOp() const { return op; }
+
+protected:
+  CollectiveOperator op;
 };
 
 class ReplicatedAllReduceInplaceOp : public ReplicatedAllReduceOp {
 public:
+  ReplicatedAllReduceInplaceOp(const OperatorIdentifier &_opid,
+                               CollectiveOperator op_,
+                               const Op::Settings &settings_);
   ReplicatedAllReduceInplaceOp(const OperatorIdentifier &_opid,
                                const Op::Settings &settings_);
   ReplicatedAllReduceInplaceOp(const ReplicatedAllReduceOp &);

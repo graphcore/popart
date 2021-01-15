@@ -110,79 +110,110 @@ BOOST_AUTO_TEST_CASE(ReplicatedAllReduceInplaceTest) {
 }
 
 BOOST_AUTO_TEST_CASE(ReplicatedAllReduceTest) {
+  for (auto variant : {CollectiveOperator::Add,
+                       CollectiveOperator::Mul,
+                       CollectiveOperator::Max,
+                       CollectiveOperator::Min}) {
+    const int numIPUs           = 2;
+    const int replicationFactor = 2;
+    int64_t N                   = 10;
+    auto bder                   = Builder::create();
+    auto aiOnnx                 = bder->aiOnnxOpset9();
+    auto aiGraphcore            = bder->aiGraphcoreOpset1();
 
-  const int numIPUs           = 2;
-  const int replicationFactor = 2;
-  int64_t N                   = 10;
-  auto bder                   = Builder::create();
-  auto aiOnnx                 = bder->aiOnnxOpset9();
-  auto aiGraphcore            = bder->aiGraphcoreOpset1();
+    // Tensor A of shape N
+    TensorInfo A_info{"FLOAT", std::vector<int64_t>{N}};
+    std::vector<float> v_A_init(A_info.nelms());
 
-  // Tensor A of shape N
-  TensorInfo A_info{"FLOAT", std::vector<int64_t>{N}};
-  std::vector<float> v_A_init(A_info.nelms());
+    TensorInfo A_info_replicated{"FLOAT",
+                                 std::vector<int64_t>{replicationFactor, N}};
+    std::vector<float> v_A_init_replicated(replicationFactor * A_info.nelms());
 
-  TensorInfo A_info_replicated{"FLOAT",
-                               std::vector<int64_t>{replicationFactor, N}};
-  std::vector<float> v_A_init_replicated(replicationFactor * A_info.nelms());
-
-  int k = 0;
-  for (int i = 0; i < replicationFactor; ++i) {
-    for (int j = 0; j < N; ++j) {
-      v_A_init_replicated[k] = (float)j;
-      ++k;
+    int k = 0;
+    for (int i = 0; i < replicationFactor; ++i) {
+      for (int j = 0; j < N; ++j) {
+        v_A_init_replicated[k] =
+            (float)(j * replicationFactor +
+                    ((j % replicationFactor == i) ? 1 : 0));
+        ++k;
+      }
     }
-  }
 
-  TensorId A_id = bder->addInputTensor(A_info, "A");
+    TensorId A_id = bder->addInputTensor(A_info, "A");
 
-  TensorInfo B_info{"FLOAT", std::vector<int64_t>{N}};
-  TensorId B_id = bder->customOp(
-      Onnx::CustomOperators::ReplicatedAllReduce, 1, {A_id}, 1, {})[0];
+    TensorInfo B_info{"FLOAT", std::vector<int64_t>{N}};
+    TensorId B_id = bder->customOp(Onnx::CustomOperators::ReplicatedAllReduce,
+                                   1,
+                                   {A_id},
+                                   1,
+                                   {{"op", static_cast<int>(variant)}})[0];
 
-  bder->addOutputTensor(B_id);
+    bder->addOutputTensor(B_id);
 
-  auto proto         = bder->getModelProto();
-  auto modelProto    = io::getModelFromString(proto);
-  auto art           = AnchorReturnType("All");
-  int batchesPerStep = 1;
-  auto dataFlow      = DataFlow(batchesPerStep, {{B_id, art}});
-  auto device        = createTestDevice(TEST_TARGET, numIPUs);
+    auto proto         = bder->getModelProto();
+    auto modelProto    = io::getModelFromString(proto);
+    auto art           = AnchorReturnType("All");
+    int batchesPerStep = 1;
+    auto dataFlow      = DataFlow(batchesPerStep, {{B_id, art}});
+    auto device        = createTestDevice(TEST_TARGET, numIPUs);
 
-  // inputs:
-  popart::NDArrayWrapper<float> A_wrapper(v_A_init_replicated.data(),
-                                          A_info_replicated);
+    // inputs:
+    popart::NDArrayWrapper<float> A_wrapper(v_A_init_replicated.data(),
+                                            A_info_replicated);
 
-  std::map<popart::TensorId, popart::IArray &> inputs = {{A_id, A_wrapper}};
+    std::map<popart::TensorId, popart::IArray &> inputs = {{A_id, A_wrapper}};
 
-  std::vector<float> raw_B_out(replicationFactor * B_info.nelms());
-  TensorInfo B_info_replicated{"FLOAT",
-                               std::vector<int64_t>{replicationFactor, N}};
+    std::vector<float> raw_B_out(replicationFactor * B_info.nelms());
+    TensorInfo B_info_replicated{"FLOAT",
+                                 std::vector<int64_t>{replicationFactor, N}};
 
-  popart::NDArrayWrapper<float> B_wrapper(raw_B_out.data(),
-                                          B_info_replicated.shape());
-  std::map<popart::TensorId, popart::IArray &> anchors = {
-      {B_id, B_wrapper},
-  };
+    popart::NDArrayWrapper<float> B_wrapper(raw_B_out.data(),
+                                            B_info_replicated.shape());
+    std::map<popart::TensorId, popart::IArray &> anchors = {
+        {B_id, B_wrapper},
+    };
 
-  if (device != nullptr) {
-    auto opts                   = SessionOptions();
-    opts.enableReplicatedGraphs = true;
-    opts.replicatedGraphCount   = replicationFactor;
+    if (device != nullptr) {
+      auto opts                   = SessionOptions();
+      opts.enableReplicatedGraphs = true;
+      opts.replicatedGraphCount   = replicationFactor;
 
-    auto session = popart::InferenceSession::createFromOnnxModel(
-        proto,
-        dataFlow,
-        device,
-        popart::InputShapeInfo(),
-        opts,
-        popart::Patterns(PatternsLevel::Default));
-    session->prepareDevice();
-    popart::StepIO stepio(inputs, anchors);
-    session->run(stepio);
+      auto session = popart::InferenceSession::createFromOnnxModel(
+          proto,
+          dataFlow,
+          device,
+          popart::InputShapeInfo(),
+          opts,
+          popart::Patterns(PatternsLevel::Default));
+      session->prepareDevice();
+      popart::StepIO stepio(inputs, anchors);
+      session->run(stepio);
 
-    for (int i = 0; i < N; ++i) {
-      BOOST_CHECK_CLOSE(raw_B_out[i], 2 * (float)i, 1e-6f);
+      int k = 0;
+      for (int i = 0; i < replicationFactor; ++i) {
+        for (int j = 0; j < N; ++j) {
+          switch (variant) {
+          case CollectiveOperator::Add:
+            BOOST_CHECK_CLOSE(raw_B_out[k], 4 * (float)j + 1, 1e-6f);
+            break;
+          case CollectiveOperator::Mul:
+            BOOST_CHECK_CLOSE(
+                raw_B_out[k], (float)((2 * j + 1) * (2 * j)), 1e-6f);
+            break;
+          case CollectiveOperator::Max:
+            BOOST_CHECK_CLOSE(
+                raw_B_out[k], (float)(std::max((2 * j + 1), (2 * j))), 1e-6f);
+            break;
+          case CollectiveOperator::Min:
+            BOOST_CHECK_CLOSE(
+                raw_B_out[k], (float)(std::min((2 * j + 1), (2 * j))), 1e-6f);
+            break;
+          default:
+            throw error("Unsupported variant {}", variant);
+          }
+          ++k;
+        }
+      }
     }
   }
 }
@@ -280,89 +311,130 @@ BOOST_AUTO_TEST_CASE(ReplicatedAllReduceIOTileTest) {
   }
 }
 
-BOOST_AUTO_TEST_CASE(ReplicatedReduceScatter) {
+BOOST_AUTO_TEST_CASE(ReplicatedReduceScatterTest) {
+  for (auto variant : {CollectiveOperator::Add,
+                       CollectiveOperator::Local,
+                       CollectiveOperator::Mul,
+                       CollectiveOperator::Max,
+                       CollectiveOperator::Min}) {
+    const int numIPUs           = 2;
+    const int replicationFactor = 2;
+    int64_t N                   = 11;
+    auto bder                   = Builder::create();
+    auto aiOnnx                 = bder->aiOnnxOpset9();
+    auto aiGraphcore            = bder->aiGraphcoreOpset1();
 
-  const int numIPUs           = 2;
-  const int replicationFactor = 2;
-  int64_t N                   = 11;
-  auto bder                   = Builder::create();
-  auto aiOnnx                 = bder->aiOnnxOpset9();
-  auto aiGraphcore            = bder->aiGraphcoreOpset1();
+    // Tensor A of shape N
+    TensorInfo A_info{"FLOAT", std::vector<int64_t>{N}};
+    std::vector<float> v_A_init(A_info.nelms());
 
-  // Tensor A of shape N
-  TensorInfo A_info{"FLOAT", std::vector<int64_t>{N}};
-  std::vector<float> v_A_init(A_info.nelms());
+    TensorInfo A_info_replicated{"FLOAT",
+                                 std::vector<int64_t>{replicationFactor, N}};
+    std::vector<float> v_A_init_replicated(replicationFactor * A_info.nelms());
 
-  TensorInfo A_info_replicated{"FLOAT",
-                               std::vector<int64_t>{replicationFactor, N}};
-  std::vector<float> v_A_init_replicated(replicationFactor * A_info.nelms());
-
-  int k = 0;
-  for (int i = 0; i < replicationFactor; ++i) {
-    for (int j = 0; j < N; ++j) {
-      v_A_init_replicated[k] = (float)j;
-      ++k;
-    }
-  }
-
-  TensorId A_id = bder->addInputTensor(A_info, "A");
-
-  int64_t out_shape = (N + replicationFactor - 1) / replicationFactor;
-  TensorInfo B_info{"FLOAT", std::vector<int64_t>{out_shape}};
-  TensorId B_id = bder->customOp(
-      Onnx::CustomOperators::ReplicatedReduceScatter, 1, {A_id}, 1, {})[0];
-
-  bder->addOutputTensor(B_id);
-
-  auto proto         = bder->getModelProto();
-  auto modelProto    = io::getModelFromString(proto);
-  auto art           = AnchorReturnType("All");
-  int batchesPerStep = 1;
-  auto dataFlow      = DataFlow(batchesPerStep, {{B_id, art}});
-  auto device        = createTestDevice(TEST_TARGET, numIPUs);
-
-  // inputs:
-  popart::NDArrayWrapper<float> A_wrapper(v_A_init_replicated.data(),
-                                          A_info_replicated);
-
-  std::map<popart::TensorId, popart::IArray &> inputs = {{A_id, A_wrapper}};
-
-  std::vector<float> raw_B_out(replicationFactor * out_shape);
-  TensorInfo B_info_replicated{
-      "FLOAT", std::vector<int64_t>{replicationFactor, out_shape}};
-
-  popart::NDArrayWrapper<float> B_wrapper(raw_B_out.data(),
-                                          B_info_replicated.shape());
-  std::map<popart::TensorId, popart::IArray &> anchors = {
-      {B_id, B_wrapper},
-  };
-
-  if (device != nullptr) {
-    auto opts                   = SessionOptions();
-    opts.enableReplicatedGraphs = true;
-    opts.replicatedGraphCount   = replicationFactor;
-
-    auto session = popart::InferenceSession::createFromOnnxModel(
-        proto,
-        dataFlow,
-        device,
-        popart::InputShapeInfo(),
-        opts,
-        popart::Patterns(PatternsLevel::Default));
-    session->prepareDevice();
-    popart::StepIO stepio(inputs, anchors);
-    session->run(stepio);
-
-    for (int i = 0; i < (N - 1); ++i) {
-      BOOST_CHECK_CLOSE(raw_B_out[i], 2 * (float)i, 1e-6f);
+    int k = 0;
+    for (int i = 0; i < replicationFactor; ++i) {
+      for (int j = 0; j < N; ++j) {
+        v_A_init_replicated[k] =
+            (float)(j * replicationFactor +
+                    ((j % replicationFactor == i) ? 1 : 0));
+        ++k;
+      }
     }
 
-    // Zero padded element at the end
-    BOOST_CHECK_CLOSE(raw_B_out.back(), 0.0f, 1e-6f);
+    TensorId A_id = bder->addInputTensor(A_info, "A");
+
+    int64_t out_shape = (N + replicationFactor - 1) / replicationFactor;
+    TensorInfo B_info{"FLOAT", std::vector<int64_t>{out_shape}};
+    TensorId B_id =
+        bder->customOp(Onnx::CustomOperators::ReplicatedReduceScatter,
+                       1,
+                       {A_id},
+                       1,
+                       {{"op", static_cast<int>(variant)}})[0];
+
+    bder->addOutputTensor(B_id);
+
+    auto proto         = bder->getModelProto();
+    auto modelProto    = io::getModelFromString(proto);
+    auto art           = AnchorReturnType("All");
+    int batchesPerStep = 1;
+    auto dataFlow      = DataFlow(batchesPerStep, {{B_id, art}});
+    auto device        = createTestDevice(TEST_TARGET, numIPUs);
+
+    // inputs:
+    popart::NDArrayWrapper<float> A_wrapper(v_A_init_replicated.data(),
+                                            A_info_replicated);
+
+    std::map<popart::TensorId, popart::IArray &> inputs = {{A_id, A_wrapper}};
+
+    std::vector<float> raw_B_out(replicationFactor * out_shape);
+    TensorInfo B_info_replicated{
+        "FLOAT", std::vector<int64_t>{replicationFactor, out_shape}};
+
+    popart::NDArrayWrapper<float> B_wrapper(raw_B_out.data(),
+                                            B_info_replicated.shape());
+    std::map<popart::TensorId, popart::IArray &> anchors = {
+        {B_id, B_wrapper},
+    };
+
+    if (device != nullptr) {
+      auto opts                   = SessionOptions();
+      opts.enableReplicatedGraphs = true;
+      opts.replicatedGraphCount   = replicationFactor;
+
+      auto session = popart::InferenceSession::createFromOnnxModel(
+          proto,
+          dataFlow,
+          device,
+          popart::InputShapeInfo(),
+          opts,
+          popart::Patterns(PatternsLevel::Default));
+      session->prepareDevice();
+      popart::StepIO stepio(inputs, anchors);
+      session->run(stepio);
+
+      int k = 0;
+      for (int i = 0; i < replicationFactor; ++i) {
+        for (int j = 0; j < (N - 1) / 2 + 1; ++j) {
+          if (k >= N) {
+            // Zero padded element at the end
+            BOOST_CHECK_CLOSE(raw_B_out.back(), 0.0f, 1e-6f);
+          } else {
+            switch (variant) {
+            case CollectiveOperator::Add:
+              BOOST_CHECK_CLOSE(raw_B_out[k], 4 * (float)k + 1, 1e-6f);
+              break;
+            case CollectiveOperator::Local:
+              BOOST_CHECK_CLOSE(raw_B_out[k],
+                                (float)(k * replicationFactor +
+                                        ((k % replicationFactor == i) ? 1 : 0)),
+                                1e-6f);
+              break;
+            case CollectiveOperator::Mul:
+              BOOST_CHECK_CLOSE(
+                  raw_B_out[k], (float)((2 * k + 1) * (2 * k)), 1e-6f);
+              break;
+            case CollectiveOperator::Max:
+              BOOST_CHECK_CLOSE(
+                  raw_B_out[k], (float)(std::max((2 * k + 1), (2 * k))), 1e-6f);
+              break;
+            case CollectiveOperator::Min:
+              BOOST_CHECK_CLOSE(
+                  raw_B_out[k], (float)(std::min((2 * k + 1), (2 * k))), 1e-6f);
+              break;
+            default:
+              throw error("Unsupported variant {}", variant);
+            }
+            ++k;
+          }
+        }
+      }
+    }
   }
 }
 
-BOOST_AUTO_TEST_CASE(ReplicatedAllGather) {
+BOOST_AUTO_TEST_CASE(ReplicatedAllGatherTest) {
 
   const int numIPUs           = 2;
   const int replicationFactor = 2;

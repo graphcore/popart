@@ -3,6 +3,7 @@
 #include <popart/ir.hpp>
 #include <popart/op/collectives/replicatedallreduce.hpp>
 #include <popart/opmanager.hpp>
+#include <popart/opserialiser.hpp>
 #include <popart/region.hpp>
 #include <popart/tensor.hpp>
 #include <popart/util.hpp>
@@ -10,8 +11,13 @@
 namespace popart {
 
 ReplicatedAllReduceOp::ReplicatedAllReduceOp(const OperatorIdentifier &_opid,
+                                             CollectiveOperator op_,
                                              const Op::Settings &settings_)
-    : CollectivesBaseOp(_opid, settings_) {}
+    : CollectivesBaseOp(_opid, settings_), op(op_) {}
+
+ReplicatedAllReduceOp::ReplicatedAllReduceOp(const OperatorIdentifier &_opid,
+                                             const Op::Settings &settings_)
+    : CollectivesBaseOp(_opid, settings_), op(CollectiveOperator::Add) {}
 
 std::unique_ptr<Op> ReplicatedAllReduceOp::clone() const {
   return std::make_unique<ReplicatedAllReduceOp>(*this);
@@ -30,6 +36,18 @@ void ReplicatedAllReduceOp::setup() {
   outInfo(getOutIndex()) = inInfo(getInIndex());
 }
 
+void ReplicatedAllReduceOp::appendOutlineAttributes(
+    OpSerialiserBase &os) const {
+  Op::appendOutlineAttributes(os);
+  os.appendAttribute("op", static_cast<int>(op));
+}
+
+ReplicatedAllReduceInplaceOp::ReplicatedAllReduceInplaceOp(
+    const OperatorIdentifier &_opid,
+    CollectiveOperator op_,
+    const Op::Settings &settings_)
+    : ReplicatedAllReduceOp(_opid, op_, settings_) {}
+
 ReplicatedAllReduceInplaceOp::ReplicatedAllReduceInplaceOp(
     const OperatorIdentifier &_opid,
     const Op::Settings &settings_)
@@ -39,6 +57,7 @@ ReplicatedAllReduceInplaceOp::ReplicatedAllReduceInplaceOp(
     const ReplicatedAllReduceOp &rop)
     : ReplicatedAllReduceInplaceOp(
           Onnx::CustomOperators::ReplicatedAllReduceInplace,
+          rop.getCollectiveOp(),
           rop.getSettings()) {}
 
 view::Regions ReplicatedAllReduceInplaceOp::modifies(InIndex index) const {
@@ -74,31 +93,40 @@ static OpDefinition::DataTypes T = {DataType::FLOAT,
                                     DataType::INT32,
                                     DataType::UINT32};
 
-static OpDefinition ReplicatedAllReduceOpDef({OpDefinition::Inputs({{"X", T}}),
-                                              OpDefinition::Outputs({{"Y", T}}),
-                                              OpDefinition::Attributes({})});
+static OpDefinition
+    ReplicatedAllReduceOpDef({OpDefinition::Inputs({{"X", T}}),
+                              OpDefinition::Outputs({{"Y", T}}),
+                              OpDefinition::Attributes({{"op", {"*"}}})});
 
 static OpCreator<ReplicatedAllReduceOp> ReplicatedAllReduceOpCreator(
     OpDefinitions({{Onnx::CustomOperators::ReplicatedAllReduce,
                     ReplicatedAllReduceOpDef}}),
     [](const OpCreatorInfo &info) {
+      CollectiveOperator op = static_cast<CollectiveOperator>(
+          info.attributes.getAttribute<Attributes::Int>(
+              "op", static_cast<int>(CollectiveOperator::Add)));
+
       return std::unique_ptr<ReplicatedAllReduceOp>(
-          new ReplicatedAllReduceOp(info.opid, info.settings));
+          new ReplicatedAllReduceOp(info.opid, op, info.settings));
     },
     true);
 
-static OpDefinition
-    ReplicatedAllReduceInplaceOpDef({OpDefinition::Inputs({{"X", T}}),
-                                     OpDefinition::Outputs({{"Y", T}}),
-                                     OpDefinition::Attributes({})});
+static OpDefinition ReplicatedAllReduceInplaceOpDef(
+    {OpDefinition::Inputs({{"X", T}}),
+     OpDefinition::Outputs({{"Y", T}}),
+     OpDefinition::Attributes({{"op", {"*"}}})});
 
 static OpCreator<ReplicatedAllReduceInplaceOp>
     ReplicatedAllReduceInplaceOpCreator(
         OpDefinitions({{Onnx::CustomOperators::ReplicatedAllReduceInplace,
                         ReplicatedAllReduceInplaceOpDef}}),
         [](const OpCreatorInfo &info) {
+          CollectiveOperator op = static_cast<CollectiveOperator>(
+              info.attributes.getAttribute<Attributes::Int>(
+                  "op", static_cast<int>(CollectiveOperator::Add)));
+
           return std::unique_ptr<ReplicatedAllReduceInplaceOp>(
-              new ReplicatedAllReduceInplaceOp(info.opid, info.settings));
+              new ReplicatedAllReduceInplaceOp(info.opid, op, info.settings));
         },
         true);
 

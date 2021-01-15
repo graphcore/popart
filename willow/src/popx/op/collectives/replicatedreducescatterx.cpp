@@ -11,6 +11,7 @@
 #include <popart/popx/opxmanager.hpp>
 
 #include <gcl/Collectives.hpp>
+#include <popops/Collectives.hpp>
 
 namespace popart {
 namespace popx {
@@ -22,6 +23,8 @@ ReplicatedReduceScatterOpx::ReplicatedReduceScatterOpx(Op *op, Devicex *devicex)
 }
 
 void ReplicatedReduceScatterOpx::grow(poplar::program::Sequence &prog) const {
+  const auto &rrsOp = getOp<ReplicatedReduceScatterOp>();
+
   const auto inIndex             = ReplicatedReduceScatterOp::getInIndex();
   poplar::Tensor toReduceScatter = getInTensor(inIndex);
 
@@ -48,13 +51,13 @@ void ReplicatedReduceScatterOpx::grow(poplar::program::Sequence &prog) const {
   poplar::OptionFlags reduceScatterOptions = dv_p->lowering().gclOptions;
   reduceScatterOptions.set("useReplicatedImplementation", "true");
 
-  poplar::Tensor reducedScattered =
-      gcl::reduceScatter(graph(),
-                         toReduceScatter.flatten(),
-                         popops::Operation::ADD,
-                         prog,
-                         "",
-                         reduceScatterOptions);
+  poplar::Tensor reducedScattered = popops::replicatedReduceScatter(
+      graph(),
+      toReduceScatter.flatten(),
+      getPoplarCollectiveOperator(rrsOp.getCollectiveOp()),
+      prog,
+      debugContext("replicatedReduceScatter"),
+      reduceScatterOptions);
 
   setOutTensor(ReplicatedReduceScatterOp::getOutIndex(), reducedScattered);
 }
@@ -83,21 +86,21 @@ ReplicatedReduceScatterOpx::createInput(int inIndex,
                 op_p->debugName());
   }
 
-  const auto &rrs_op = getOp<ReplicatedReduceScatterOp>();
-  const auto &type   = popType(rrs_op.inTensor(inIndex)->info);
+  const auto &rrsOp = getOp<ReplicatedReduceScatterOp>();
+  const auto &type  = popType(rrsOp.inTensor(inIndex)->info);
   return cbr->createCollectivesTensor(type, name);
 }
 
 std::vector<TensorId>
 ReplicatedReduceScatterOpx::mustExistBeforeCreate(InIndex) const {
-  const auto &rrs_op              = getOp<ReplicatedReduceScatterOp>();
+  const auto &rrsOp               = getOp<ReplicatedReduceScatterOp>();
   auto group                      = getCollectiveLinkedGroup();
   std::vector<TensorId> mustExist = {
       group.second.front()->inId(CollectivesBaseOp::getInIndex()),
       group.second.front()->outId(CollectivesBaseOp::getOutIndex())};
   logging::opx::trace("ReplicatedReduceScatterOpx::mustExistBeforeCreate, Op "
                       "{}, must exist: {}",
-                      rrs_op.debugName(),
+                      rrsOp.debugName(),
                       mustExist);
   return mustExist;
 }

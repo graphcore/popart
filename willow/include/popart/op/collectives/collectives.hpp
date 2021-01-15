@@ -6,6 +6,20 @@
 
 namespace popart {
 
+enum class CollectiveOperator {
+  Add = 0,
+  Mul,
+  Min,
+  Max,
+  LogicalAnd,
+  LogicalOr,
+  SquareAdd,
+  Local,
+  N
+};
+
+std::ostream &operator<<(std::ostream &os, const CollectiveOperator &op);
+
 class CollectivesBaseOp : public Op {
 public:
   CollectivesBaseOp(const OperatorIdentifier &_opid,

@@ -15,6 +15,29 @@
 namespace popart {
 namespace popx {
 
+popops::CollectiveOperator getPoplarCollectiveOperator(CollectiveOperator op) {
+  switch (op) {
+  case CollectiveOperator::Add:
+    return popops::CollectiveOperator::ADD;
+  case CollectiveOperator::Mul:
+    return popops::CollectiveOperator::MUL;
+  case CollectiveOperator::Min:
+    return popops::CollectiveOperator::MIN;
+  case CollectiveOperator::Max:
+    return popops::CollectiveOperator::MAX;
+  case CollectiveOperator::LogicalAnd:
+    return popops::CollectiveOperator::LOGICAL_AND;
+  case CollectiveOperator::LogicalOr:
+    return popops::CollectiveOperator::LOGICAL_OR;
+  case CollectiveOperator::SquareAdd:
+    return popops::CollectiveOperator::SQUARE_ADD;
+  case CollectiveOperator::Local:
+    return popops::CollectiveOperator::LOCAL;
+  default:
+    throw error("Unsupported operator {}", static_cast<int>(op));
+  }
+}
+
 static int64_t nextMultiple(int64_t val, int64_t multiple) {
   return ((val + multiple - 1) / multiple) * multiple;
 }

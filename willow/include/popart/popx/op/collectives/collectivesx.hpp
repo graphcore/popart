@@ -4,11 +4,16 @@
 
 #include <popart/debugcontext.hpp>
 #include <popart/names.hpp>
+#include <popart/op/collectives/collectives.hpp>
 #include <popart/popx/opx.hpp>
 #include <popart/popx/viewchangers.hpp>
 
+#include <popops/Collectives.hpp>
+
 namespace popart {
 namespace popx {
+
+popops::CollectiveOperator getPoplarCollectiveOperator(CollectiveOperator op);
 
 struct ReorderMetadata {
   ReorderMetadata(int64_t offset_,
