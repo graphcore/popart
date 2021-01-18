@@ -25,7 +25,7 @@
 #include <popart/popx/pritask.hpp>
 #include <popart/popx/virtualgraph.hpp>
 
-#include <subgraphpartitioner.hpp>
+#include <popart/subgraphpartitioner.hpp>
 
 #include <memory>
 #include <set>

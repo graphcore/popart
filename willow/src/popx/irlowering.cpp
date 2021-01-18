@@ -79,7 +79,7 @@
 #include <popart/poparttracepoint.hpp>
 
 #include <stepiosplitter.hpp>
-#include <subgraphpartitioner.hpp>
+#include <popart/subgraphpartitioner.hpp>
 
 namespace popart {
 namespace popx {

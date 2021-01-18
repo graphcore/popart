@@ -10,7 +10,7 @@
 #include <popart/op/call.hpp>
 #include <popart/op/if.hpp>
 
-#include <subgraphpartitioner.hpp>
+#include <popart/subgraphpartitioner.hpp>
 
 namespace popart {
 namespace liveness {

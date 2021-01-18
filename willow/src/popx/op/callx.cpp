@@ -10,7 +10,7 @@
 #include <popart/popx/opxmanager.hpp>
 #include <popart/tensorindex.hpp>
 
-#include <subgraphpartitioner.hpp>
+#include <popart/subgraphpartitioner.hpp>
 
 namespace popart {
 namespace popx {
