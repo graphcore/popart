@@ -300,7 +300,6 @@ bool AdaptiveDecompose::apply(Op *op) const {
 
   // Var update
   auto scaledVarUpdOpUp = std::make_unique<ScaledVarUpdateOp>(
-      weightId,
       combo->initLr,
       combo->decayMode == WeightDecayMode::Decay ? combo->initWd
                                                  : OptimizerValue(0.0f, true),

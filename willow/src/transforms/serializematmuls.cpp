@@ -470,9 +470,7 @@ static void serializeVarUpdate(int sliceDim,
 
       // Create the new var update op
 
-      auto slicedVarUpdateOp =
-          dynamic_cast<VarUpdateOp *>(varUpdate)->cloneWithNewName(
-              slicedWeight);
+      auto slicedVarUpdateOp = dynamic_cast<VarUpdateOp *>(varUpdate)->clone();
 
       for (auto &x : varUpdate->optimizerInputs()) {
         slicedVarUpdateOp->connectInTensor(x.first, x.second);

@@ -283,7 +283,6 @@ bool AdamDecompose::apply(Op *op) const {
 
   // Var update
   auto adamVarUpdOpUp = std::make_unique<AdamVarUpdateOp>(
-      weightId,
       combo->initLr,
       combo->initMwn,
       Op::Settings(graph, combo->name() + "_var_update"));

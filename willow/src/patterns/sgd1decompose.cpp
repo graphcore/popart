@@ -166,7 +166,6 @@ bool SGD1Decompose::apply(Op *op) const {
   // Outputs:
   // (4) an alias of acclIn
   auto acclOpUp = std::make_unique<AccumulateOp>(
-      acclIntoAccumulatorId,
       AccumulationType::DampenedAdd,
       combo->initDpsf1,
       Op::Settings(graph, combo->name() + "_accumulate"));
@@ -263,7 +262,6 @@ bool SGD1Decompose::apply(Op *op) const {
   // (5) acclFinal
 
   auto acclUpdateOpUp = std::make_unique<SGD1AcclUpdateOp>(
-      acclIntoUpdateId,
       combo->initSmm1,
       combo->initSwd1,
       Op::Settings(graph, combo->name() + "_accl_update"));
@@ -312,7 +310,6 @@ bool SGD1Decompose::apply(Op *op) const {
   // Outputs
   // (4) W_new
   auto sgd1VarUpdateOpUp = std::make_unique<SGD1VarUpdateOp>(
-      weightId,
       combo->initSlr1,
       Op::Settings(graph, combo->name() + "_var_update"));
   auto sgd1VarUpdateOp = sgd1VarUpdateOpUp.get();

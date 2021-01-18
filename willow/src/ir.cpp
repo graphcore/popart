@@ -2817,7 +2817,7 @@ void Ir::constructBackwards() {
 
 void Ir::growCopyVarUpdateOp(const TensorId &varId, const TensorId &from) {
   OpId opId = getMainGraph().moveIntoGraph(
-      std::unique_ptr<Op>(new CopyVarUpdateOp(varId, {getMainGraph(), ""})));
+      std::unique_ptr<Op>(new CopyVarUpdateOp({getMainGraph(), ""})));
 
   // The order of inputs is important
   std::vector<TensorId> inputs{varId, from};
@@ -2881,7 +2881,8 @@ void Ir::growVarUpdateOpInternal(OpId opId) {
   if (varUpdateOp == nullptr) {
     throw internal_error("Op {} expected to be a VarUpdateOp", op->str());
   }
-  TensorId updatedVarId = getUpdatedVarId(varUpdateOp->getVarId());
+  TensorId updatedVarId =
+      getUpdatedVarId(varUpdateOp->inId(VarUpdateOp::getVarToUpdateInIndex()));
   std::vector<TensorId> outputs{updatedVarId};
   getMainGraph().connectOutputs(OutputVecWrapper(outputs), opId);
   op->setup();
@@ -3898,8 +3899,8 @@ std::size_t std::hash<popart::Ir>::operator()(const popart::Ir &ir) const {
   return seed;
 }
 
-std::size_t std::hash<popart::IrBundle>::
-operator()(const popart::IrBundle &bundle) const {
+std::size_t
+std::hash<popart::IrBundle>::operator()(const popart::IrBundle &bundle) const {
   size_t seed = 0;
 
   boost::hash_combine(

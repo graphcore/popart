@@ -49,16 +49,10 @@ public:
 // Copy variables from the host
 class HostSGD0VarUpdate : public SGD0VarUpdateOpBase {
 public:
-  HostSGD0VarUpdate(const TensorId &,
-                    OptimizerValue initialScaledLearningRate,
+  HostSGD0VarUpdate(OptimizerValue initialScaledLearningRate,
                     OptimizerValue initialWeightDecayScaleFactor,
                     const Op::Settings &);
   std::unique_ptr<Op> clone() const final;
-
-  std::unique_ptr<Op> cloneWithNewName(const TensorId &x) const final {
-    return std::unique_ptr<Op>(
-        new HostSGD0VarUpdate(x, initSlr0, initWdsf0, settings));
-  }
 
   float getSubgraphValue() const final { return getHighSubgraphValue(); }
 };

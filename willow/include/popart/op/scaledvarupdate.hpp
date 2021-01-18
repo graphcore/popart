@@ -9,13 +9,11 @@ namespace popart {
 class ScaledVarUpdateOp : public VarUpdateWithUpdaterOp {
 
 public:
-  ScaledVarUpdateOp(const TensorId &varToUpdate,
-                    OptimizerValue initLr,
+  ScaledVarUpdateOp(OptimizerValue initLr,
                     OptimizerValue initWd,
                     const Op::Settings &);
 
   std::unique_ptr<Op> clone() const final;
-  std::unique_ptr<Op> cloneWithNewName(const TensorId &newName) const final;
   std::map<InIndex, TensorId> optimizerInputs() const final;
   void appendOutlineAttributes(OpSerialiserBase &) const final;
 

@@ -18,8 +18,7 @@ namespace popart {
 
 class SGD1ComboOp : public VarUpdateWithUpdaterOp {
 public:
-  SGD1ComboOp(const TensorId &varToUpdate,
-              OptimizerValue initialSmm1,
+  SGD1ComboOp(OptimizerValue initialSmm1,
               OptimizerValue initialDpsf1,
               OptimizerValue initialSwd1,
               OptimizerValue initialSlr1,
@@ -27,7 +26,6 @@ public:
               const Op::Settings &);
 
   std::unique_ptr<Op> clone() const final;
-  std::unique_ptr<Op> cloneWithNewName(const TensorId &newName) const final;
 
   // map of size 0/1/2, containing all non-const optimizer Tensors for this Op
   std::map<InIndex, TensorId> optimizerInputs() const final;

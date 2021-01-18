@@ -21,13 +21,11 @@ enum class AccumulationType {
 class AccumulateOp : public VarUpdateWithUpdaterOp {
 
 public:
-  AccumulateOp(const TensorId &varToUpdate,
-               AccumulationType type_,
+  AccumulateOp(AccumulationType type_,
                OptimizerValue factor_,
                const Op::Settings &);
 
   std::unique_ptr<Op> clone() const final;
-  std::unique_ptr<Op> cloneWithNewName(const TensorId &newName) const final;
   std::map<InIndex, TensorId> optimizerInputs() const final;
   void appendOutlineAttributes(OpSerialiserBase &) const final;
   static InIndex getFactorInIndex() { return 2; }

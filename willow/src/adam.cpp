@@ -341,7 +341,6 @@ std::unique_ptr<Op> Adam::createOp(const Tensor &w, Graph &graph) const {
 
   // velocity required
   return std::make_unique<AdamComboOp>(
-      w.id,
       lrhelper.getFromWeightId(w.id, *this),
       wdhelper.getFromWeightId(w.id, *this),
       b1helper.getFromWeightId(w.id, *this),

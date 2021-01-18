@@ -9,11 +9,6 @@
 #include <popart/tensornames.hpp>
 
 namespace popart {
-
-std::unique_ptr<Op> AdamVarUpdateOp::cloneWithNewName(const TensorId &x) const {
-  return std::make_unique<AdamVarUpdateOp>(x, initLr, initMwn, settings);
-}
-
 std::unique_ptr<Op> AdamVarUpdateOp::clone() const {
   return std::make_unique<AdamVarUpdateOp>(*this);
 }
@@ -39,13 +34,10 @@ void AdamVarUpdateOp::appendOutlineAttributes(OpSerialiserBase &os) const {
   }
 }
 
-AdamVarUpdateOp::AdamVarUpdateOp(const TensorId &varToUpdate,
-                                 OptimizerValue lr,
+AdamVarUpdateOp::AdamVarUpdateOp(OptimizerValue lr,
                                  OptimizerValue mwn,
                                  const Op::Settings &opSettings)
-    : VarUpdateWithUpdaterOp(Onnx::CustomOperators::AdamVarUpdate,
-                             varToUpdate,
-                             opSettings),
+    : VarUpdateWithUpdaterOp(Onnx::CustomOperators::AdamVarUpdate, opSettings),
       initLr(lr), initMwn(mwn) {}
 
 } // namespace popart

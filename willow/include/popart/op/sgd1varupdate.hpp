@@ -9,12 +9,9 @@ namespace popart {
 class SGD1VarUpdateOp : public VarUpdateWithUpdaterOp {
 
 public:
-  SGD1VarUpdateOp(const TensorId &varToUpdate,
-                  OptimizerValue initSlr1,
-                  const Op::Settings &);
+  SGD1VarUpdateOp(OptimizerValue initSlr1, const Op::Settings &);
 
   std::unique_ptr<Op> clone() const final;
-  std::unique_ptr<Op> cloneWithNewName(const TensorId &newName) const final;
   std::map<InIndex, TensorId> optimizerInputs() const final;
   void appendOutlineAttributes(OpSerialiserBase &) const final;
 

@@ -14,8 +14,7 @@ namespace popart {
 
 class AdaptiveComboOp : public VarUpdateWithUpdaterOp {
 public:
-  AdaptiveComboOp(const TensorId &varToUpdate,
-                  OptimizerValue initialLr,
+  AdaptiveComboOp(OptimizerValue initialLr,
                   OptimizerValue initialWd,
                   OptimizerValue initialA,
                   OptimizerValue initialM,
@@ -33,7 +32,6 @@ public:
                   const Op::Settings &);
 
   std::unique_ptr<Op> clone() const final;
-  std::unique_ptr<Op> cloneWithNewName(const TensorId &newName) const final;
 
   // map of size 0/1/2, containing all non-const optimizer Tensors for this Op
   std::map<InIndex, TensorId> optimizerInputs() const final;

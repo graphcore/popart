@@ -6,16 +6,13 @@
 
 namespace popart {
 
-SGD1ComboOp::SGD1ComboOp(const TensorId &varId_,
-                         OptimizerValue initialSmm1,
+SGD1ComboOp::SGD1ComboOp(OptimizerValue initialSmm1,
                          OptimizerValue initialDpsf1,
                          OptimizerValue initialSwd1,
                          OptimizerValue initialSlr1,
                          OptimizerReductionType reductionType_,
                          const Op::Settings &settings_)
-    : VarUpdateWithUpdaterOp(Onnx::CustomOperators::SGD1Combo,
-                             varId_,
-                             settings_),
+    : VarUpdateWithUpdaterOp(Onnx::CustomOperators::SGD1Combo, settings_),
       initSmm1(initialSmm1), initDpsf1(initialDpsf1), initSwd1(initialSwd1),
       initSlr1(initialSlr1), reductionType(reductionType_) {}
 
@@ -37,11 +34,6 @@ void SGD1ComboOp::appendOutlineAttributes(OpSerialiserBase &os) const {
   }
 
   os.appendAttribute("reduction type", static_cast<int>(reductionType));
-}
-
-std::unique_ptr<Op> SGD1ComboOp::cloneWithNewName(const TensorId &x) const {
-  return std::make_unique<SGD1ComboOp>(
-      x, initSmm1, initDpsf1, initSwd1, initSlr1, reductionType, settings);
 }
 
 std::unique_ptr<Op> SGD1ComboOp::clone() const {

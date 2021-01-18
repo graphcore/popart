@@ -6,8 +6,7 @@
 
 namespace popart {
 
-AdaptiveComboOp::AdaptiveComboOp(const TensorId &varToUpdate,
-                                 OptimizerValue initialLr,
+AdaptiveComboOp::AdaptiveComboOp(OptimizerValue initialLr,
                                  OptimizerValue initialWd,
                                  OptimizerValue initialA,
                                  OptimizerValue initialM,
@@ -23,9 +22,7 @@ AdaptiveComboOp::AdaptiveComboOp(const TensorId &varToUpdate,
                                  DataType accl2Type_,
                                  DataType accl3Type_,
                                  const Op::Settings &settings_)
-    : VarUpdateWithUpdaterOp(Onnx::CustomOperators::AdaptiveCombo,
-                             varToUpdate,
-                             settings_),
+    : VarUpdateWithUpdaterOp(Onnx::CustomOperators::AdaptiveCombo, settings_),
       initLr(initialLr), initWd(initialWd), initA(initialA), initM(initialM),
       initEps(initialEps), initLs(initialLs), initGs(initialGs), mode(mode_),
       decayMode(decayMode_), withGradAccum(withGradAccum_),
@@ -56,26 +53,6 @@ void AdaptiveComboOp::appendOutlineAttributes(OpSerialiserBase &os) const {
   os.appendAttribute("reduction type", static_cast<int>(reductionType));
   os.appendAttribute("adaptive mode", static_cast<int>(mode));
   os.appendAttribute("decay mode", static_cast<int>(decayMode));
-}
-
-std::unique_ptr<Op> AdaptiveComboOp::cloneWithNewName(const TensorId &x) const {
-  return std::make_unique<AdaptiveComboOp>(x,
-                                           initLr,
-                                           initWd,
-                                           initA,
-                                           initM,
-                                           initEps,
-                                           initLs,
-                                           initGs,
-                                           mode,
-                                           decayMode,
-                                           withGradAccum,
-                                           reductionType,
-                                           accumType,
-                                           accl1Type,
-                                           accl2Type,
-                                           accl3Type,
-                                           settings);
 }
 
 std::unique_ptr<Op> AdaptiveComboOp::clone() const {

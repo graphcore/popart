@@ -11,9 +11,8 @@
 
 namespace popart {
 VarUpdateOp::VarUpdateOp(const OperatorIdentifier &_opid,
-                         const TensorId &varId_,
                          const Op::Settings &settings_)
-    : Op(_opid, settings_), varId(varId_) {
+    : Op(_opid, settings_) {
   // TODO: Remove with T19212
   if (getIr().getSessionOptions().executionPhaseSettings.phases < 2 &&
       getIr().getSessionOptions().batchSerializationSettings.factor < 2 &&
@@ -23,9 +22,8 @@ VarUpdateOp::VarUpdateOp(const OperatorIdentifier &_opid,
 }
 
 VarUpdateWithUpdaterOp::VarUpdateWithUpdaterOp(const OperatorIdentifier &opid_,
-                                               const TensorId &varId_,
                                                const Op::Settings &settings_)
-    : VarUpdateOp(opid_, varId_, settings_) {}
+    : VarUpdateOp(opid_, settings_) {}
 
 void VarUpdateWithoutUpdaterOp::setup() {
   outInfo(getUpdatedVarOutIndex()) = inInfo(getVarToUpdateInIndex());

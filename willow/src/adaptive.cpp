@@ -275,7 +275,6 @@ std::unique_ptr<Op> Adaptive::createOp(const Tensor &w, Graph &graph) const {
   }
 
   return std::make_unique<AdaptiveComboOp>(
-      w.id,
       lrhelper.getFromWeightId(w.id, *this),
       wdhelper.getFromWeightId(w.id, *this),
       ahelper.getFromWeightId(w.id, *this),

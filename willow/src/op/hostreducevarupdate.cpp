@@ -36,12 +36,10 @@ void GradCopyFromHostOp::setup() {
   outInfo(getOutIndex()) = inInfo(getInIndex());
 }
 
-HostSGD0VarUpdate::HostSGD0VarUpdate(const TensorId &varId_,
-                                     OptimizerValue slr0,
+HostSGD0VarUpdate::HostSGD0VarUpdate(OptimizerValue slr0,
                                      OptimizerValue wdsf0,
                                      const Op::Settings &settings_)
     : SGD0VarUpdateOpBase(Onnx::CustomOperators::HostSGD0VarUpdate,
-                          varId_,
                           slr0,
                           wdsf0,
                           OptimizerReductionType::None,

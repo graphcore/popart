@@ -70,7 +70,7 @@ std::pair<Op *, TensorId> OptimizerDecompose::accl(Graph &graph,
                                                    std::string acclName,
                                                    bool gradAccum) const {
   auto acclOpUp = std::make_unique<AccumulateOp>(
-      acclId, type, value, Op::Settings(graph, combo->name() + acclName));
+      type, value, Op::Settings(graph, combo->name() + acclName));
   auto acclOp = acclOpUp.get();
   transferBaseProperties(combo, acclOp);
   graph.moveIntoGraph(std::move(acclOpUp));
@@ -117,7 +117,6 @@ TensorId OptimizerDecompose::gradAccum(Graph &graph,
                                        bool gradAccum) const {
   TensorId gradIntoAcclId;
   auto accumOpUp = std::make_unique<AccumulateOp>(
-      accumId,
       AccumulationType::Add,
       OptimizerValue(1.0f),
       Op::Settings(graph, combo->name() + "_accumulate"));
@@ -188,9 +187,7 @@ void OptimizerDecompose::accumUpdate(Graph &graph,
                                      std::vector<Op *> beforeOps,
                                      TensorId accumId) const {
   auto accumUpdateOpUp = std::make_unique<AccumulatorUpdateOp>(
-      accumId,
-      OptimizerValue(0),
-      Op::Settings(graph, combo->name() + "_accumupdate"));
+      OptimizerValue(0), Op::Settings(graph, combo->name() + "_accumupdate"));
   auto accumUpdateOp = accumUpdateOpUp.get();
   transferBaseProperties(combo, accumUpdateOp);
   graph.moveIntoGraph(std::move(accumUpdateOpUp));

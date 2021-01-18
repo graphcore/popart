@@ -10,11 +10,6 @@
 
 namespace popart {
 
-std::unique_ptr<Op>
-SGD1AcclUpdateOp::cloneWithNewName(const TensorId &x) const {
-  return std::make_unique<SGD1AcclUpdateOp>(x, initSmm1, initSwd1, settings);
-}
-
 std::unique_ptr<Op> SGD1AcclUpdateOp::clone() const {
   return std::make_unique<SGD1AcclUpdateOp>(*this);
 }
@@ -45,13 +40,10 @@ void SGD1AcclUpdateOp::appendOutlineAttributes(OpSerialiserBase &os) const {
   }
 }
 
-SGD1AcclUpdateOp::SGD1AcclUpdateOp(const TensorId &varToUpdate,
-                                   OptimizerValue smm1,
+SGD1AcclUpdateOp::SGD1AcclUpdateOp(OptimizerValue smm1,
                                    OptimizerValue swd1,
                                    const Op::Settings &opSettings)
-    : VarUpdateWithUpdaterOp(Onnx::CustomOperators::SGD1AcclUpdate,
-                             varToUpdate,
-                             opSettings),
+    : VarUpdateWithUpdaterOp(Onnx::CustomOperators::SGD1AcclUpdate, opSettings),
       initSmm1(smm1), initSwd1(swd1) {}
 
 namespace {} // namespace

@@ -13,11 +13,8 @@ class AccumulatorUpdateOp : public VarUpdateWithoutUpdaterOp {
   OptimizerValue factor;
 
 public:
-  AccumulatorUpdateOp(const TensorId &varToUpdate,
-                      const OptimizerValue factor_,
-                      const Op::Settings &);
+  AccumulatorUpdateOp(const OptimizerValue factor_, const Op::Settings &);
   std::unique_ptr<Op> clone() const final;
-  std::unique_ptr<Op> cloneWithNewName(const TensorId &newName) const final;
   std::map<InIndex, TensorId> optimizerInputs() const final;
   void appendOutlineAttributes(OpSerialiserBase &) const final;
   static InIndex getFactorInIndex() { return 2; }

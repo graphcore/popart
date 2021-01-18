@@ -22,8 +22,7 @@ namespace popart {
 
 class AdamComboOp : public VarUpdateWithUpdaterOp {
 public:
-  AdamComboOp(const TensorId &varToUpdate,
-              OptimizerValue initialLr,
+  AdamComboOp(OptimizerValue initialLr,
               OptimizerValue initialWd,
               OptimizerValue initialB1,
               OptimizerValue initialB2,
@@ -41,7 +40,6 @@ public:
               const Op::Settings &);
 
   std::unique_ptr<Op> clone() const final;
-  std::unique_ptr<Op> cloneWithNewName(const TensorId &newName) const final;
 
   // map of size 0/1/2, containing all non-const optimizer Tensors for this Op
   std::map<InIndex, TensorId> optimizerInputs() const final;

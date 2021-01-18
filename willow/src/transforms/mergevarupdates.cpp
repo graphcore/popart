@@ -703,7 +703,7 @@ bool MergeVarUpdates::apply(Graph &graph) const {
           concatGradsOp->outTensor(ConcatOp::getOutIndex())->id;
 
       // create the new, merged variable update
-      auto tempOp = canonTargetOp->cloneWithNewName(concatedWeightsTensorId);
+      auto tempOp = canonTargetOp->clone();
       for (auto &x : optimizerInputs) {
         tempOp->connectInTensor(x.first, x.second);
       }

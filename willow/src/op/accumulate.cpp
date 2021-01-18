@@ -10,10 +10,6 @@
 
 namespace popart {
 
-std::unique_ptr<Op> AccumulateOp::cloneWithNewName(const TensorId &x) const {
-  return std::make_unique<AccumulateOp>(x, type, factor, settings);
-}
-
 std::unique_ptr<Op> AccumulateOp::clone() const {
   return std::make_unique<AccumulateOp>(*this);
 }
@@ -39,13 +35,10 @@ void AccumulateOp::appendOutlineAttributes(OpSerialiserBase &os) const {
   }
 }
 
-AccumulateOp::AccumulateOp(const TensorId &varToUpdate,
-                           AccumulationType type_,
+AccumulateOp::AccumulateOp(AccumulationType type_,
                            OptimizerValue factor_,
                            const Op::Settings &opSettings)
-    : VarUpdateWithUpdaterOp(Onnx::CustomOperators::Accumulate,
-                             varToUpdate,
-                             opSettings),
+    : VarUpdateWithUpdaterOp(Onnx::CustomOperators::Accumulate, opSettings),
       type(type_), factor(factor_) {}
 
 } // namespace popart

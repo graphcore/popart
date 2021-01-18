@@ -10,9 +10,7 @@ namespace popart {
 
 class VarUpdateOp : public Op {
 public:
-  VarUpdateOp(const OperatorIdentifier &,
-              const TensorId &varId_,
-              const Op::Settings &);
+  VarUpdateOp(const OperatorIdentifier &, const Op::Settings &);
 
   // the Var to be updated received at this index
   static InIndex getVarToUpdateInIndex() { return 0; }
@@ -24,27 +22,18 @@ public:
   view::Regions aliases(InIndex in, OutIndex) const override;
   view::Regions modifies(InIndex) const override;
 
-  const TensorId &getVarId() const { return varId; }
-
   // Return a map of all optimizer specific input Tensors (learning rate, etc)
   virtual std::map<InIndex, TensorId> optimizerInputs() const = 0;
-
-  // Create a clone, but with a new name
-  virtual std::unique_ptr<Op> cloneWithNewName(const TensorId &) const = 0;
 
   virtual bool isOptimizerOp() const override { return true; }
 
   ReplicatedTensorShardingIndices
   getReplicatedTensorShardingIndices() const override;
-
-private:
-  TensorId varId;
 };
 
 class VarUpdateWithUpdaterOp : public VarUpdateOp {
 public:
   VarUpdateWithUpdaterOp(const OperatorIdentifier &opid,
-                         const TensorId &varId,
                          const Op::Settings &settings_);
 
   // the gradient (for SGD) or source of copy (for CopyVarUpdate) or any other
@@ -59,9 +48,8 @@ public:
 class VarUpdateWithoutUpdaterOp : public VarUpdateOp {
 public:
   VarUpdateWithoutUpdaterOp(const OperatorIdentifier &opid_,
-                            const TensorId &varId_,
                             const Op::Settings &settings_)
-      : VarUpdateOp(opid_, varId_, settings_) {}
+      : VarUpdateOp(opid_, settings_) {}
   void setup() final;
 };
 

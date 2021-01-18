@@ -5,10 +5,8 @@
 
 namespace popart {
 
-CopyVarUpdateOp::CopyVarUpdateOp(TensorId varId_, const Op::Settings &settings_)
-    : VarUpdateWithUpdaterOp(Onnx::CustomOperators::CopyVarUpdate,
-                             varId_,
-                             settings_) {}
+CopyVarUpdateOp::CopyVarUpdateOp(const Op::Settings &settings_)
+    : VarUpdateWithUpdaterOp(Onnx::CustomOperators::CopyVarUpdate, settings_) {}
 
 std::unique_ptr<Op> CopyVarUpdateOp::clone() const {
   return std::make_unique<CopyVarUpdateOp>(*this);

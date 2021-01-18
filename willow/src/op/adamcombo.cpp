@@ -6,8 +6,7 @@
 
 namespace popart {
 
-AdamComboOp::AdamComboOp(const TensorId &varToUpdate,
-                         OptimizerValue initialLr,
+AdamComboOp::AdamComboOp(OptimizerValue initialLr,
                          OptimizerValue initialWd,
                          OptimizerValue initialB1,
                          OptimizerValue initialB2,
@@ -23,9 +22,7 @@ AdamComboOp::AdamComboOp(const TensorId &varToUpdate,
                          DataType accl1Type_,
                          DataType accl2Type_,
                          const Op::Settings &settings_)
-    : VarUpdateWithUpdaterOp(Onnx::CustomOperators::AdamCombo,
-                             varToUpdate,
-                             settings_),
+    : VarUpdateWithUpdaterOp(Onnx::CustomOperators::AdamCombo, settings_),
       initLr(initialLr), initWd(initialWd), initB1(initialB1),
       initB2(initialB2), initEps(initialEps), initLs(initialLs),
       initMwn(initialMwn), initGs(initialGs), mode(mode_),
@@ -65,26 +62,6 @@ void AdamComboOp::appendOutlineAttributes(OpSerialiserBase &os) const {
   os.appendAttribute("reduction type", static_cast<int>(reductionType));
   os.appendAttribute("adam mode", static_cast<int>(mode));
   os.appendAttribute("decay mode", static_cast<int>(decayMode));
-}
-
-std::unique_ptr<Op> AdamComboOp::cloneWithNewName(const TensorId &x) const {
-  return std::make_unique<AdamComboOp>(x,
-                                       initLr,
-                                       initWd,
-                                       initB1,
-                                       initB2,
-                                       initEps,
-                                       initLs,
-                                       initMwn,
-                                       initGs,
-                                       mode,
-                                       decayMode,
-                                       withGradAccum,
-                                       reductionType,
-                                       accumType,
-                                       accl1Type,
-                                       accl2Type,
-                                       settings);
 }
 
 std::unique_ptr<Op> AdamComboOp::clone() const {

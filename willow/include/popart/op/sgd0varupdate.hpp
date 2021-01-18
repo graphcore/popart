@@ -10,7 +10,6 @@ namespace popart {
 class SGD0VarUpdateOpBase : public VarUpdateWithUpdaterOp {
 public:
   SGD0VarUpdateOpBase(const OperatorIdentifier &_opid,
-                      const TensorId &varToUpdate,
                       OptimizerValue initialSlr0,
                       OptimizerValue initialWdsf0,
                       OptimizerReductionType reductionType_,
@@ -48,14 +47,12 @@ public:
 // no gradient accumulation and no momentum (momentum factor is 0)
 class SGD0VarUpdateOp : public SGD0VarUpdateOpBase {
 public:
-  SGD0VarUpdateOp(const TensorId &varToUpdate,
-                  OptimizerValue initialSlr0,
+  SGD0VarUpdateOp(OptimizerValue initialSlr0,
                   OptimizerValue initialWdsf0,
                   OptimizerReductionType reductionType_,
                   const Op::Settings &);
 
   std::unique_ptr<Op> clone() const final;
-  std::unique_ptr<Op> cloneWithNewName(const TensorId &newName) const final;
   float getSubgraphValue() const final;
 };
 

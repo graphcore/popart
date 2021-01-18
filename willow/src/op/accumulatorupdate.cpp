@@ -8,11 +8,6 @@
 
 namespace popart {
 
-std::unique_ptr<Op>
-AccumulatorUpdateOp::cloneWithNewName(const TensorId &x) const {
-  return std::make_unique<AccumulatorUpdateOp>(x, factor, settings);
-}
-
 std::unique_ptr<Op> AccumulatorUpdateOp::clone() const {
   return std::make_unique<AccumulatorUpdateOp>(*this);
 }
@@ -30,11 +25,9 @@ void AccumulatorUpdateOp::appendOutlineAttributes(OpSerialiserBase &os) const {
   }
 }
 
-AccumulatorUpdateOp::AccumulatorUpdateOp(const TensorId &varToUpdate,
-                                         const OptimizerValue factor_,
+AccumulatorUpdateOp::AccumulatorUpdateOp(const OptimizerValue factor_,
                                          const Op::Settings &opSettings)
     : VarUpdateWithoutUpdaterOp(Onnx::CustomOperators::AccumulatorUpdate,
-                                varToUpdate,
                                 opSettings),
       factor(factor_) {}
 

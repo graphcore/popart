@@ -129,11 +129,8 @@ Op *HostReduce::insertVarCopyOp(Op *varUpdateOp,
   } else {
     varCopyOpName = hostReduceVarCopyPrefix() + vop->getName();
   }
-  auto varCopyOp_up =
-      std::make_unique<HostSGD0VarUpdate>(varTensorId,
-                                          vop->initSlr0,
-                                          vop->initWdsf0,
-                                          Op::Settings(graph, varCopyOpName));
+  auto varCopyOp_up = std::make_unique<HostSGD0VarUpdate>(
+      vop->initSlr0, vop->initWdsf0, Op::Settings(graph, varCopyOpName));
 
   auto varCopyOpId = graph.moveIntoGraph(std::move(varCopyOp_up));
   auto varCopyOp   = graph.getOp(varCopyOpId);

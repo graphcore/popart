@@ -354,7 +354,6 @@ std::unique_ptr<Op> SGD::createOp(const Tensor &w, Graph &graph) const {
     }
 
     return std::make_unique<SGD0VarUpdateOp>(
-        w.id,
         slr0helper.getFromWeightId(w.id, *this),
         wdsf0helper.getFromWeightId(w.id, *this),
         reductionType,
@@ -372,8 +371,7 @@ std::unique_ptr<Op> SGD::createOp(const Tensor &w, Graph &graph) const {
   }
 
   // velocity required
-  return std::make_unique<SGD1ComboOp>(w.id,
-                                       smm1helper.getFromWeightId(w.id, *this),
+  return std::make_unique<SGD1ComboOp>(smm1helper.getFromWeightId(w.id, *this),
                                        dpsf1helper.getFromWeightId(w.id, *this),
                                        swd1helper.getFromWeightId(w.id, *this),
                                        slr1helper.getFromWeightId(w.id, *this),

@@ -9,12 +9,6 @@
 #include <popart/tensornames.hpp>
 
 namespace popart {
-
-std::unique_ptr<Op>
-ScaledVarUpdateOp::cloneWithNewName(const TensorId &x) const {
-  return std::make_unique<ScaledVarUpdateOp>(x, initLr, initWd, settings);
-}
-
 std::unique_ptr<Op> ScaledVarUpdateOp::clone() const {
   return std::make_unique<ScaledVarUpdateOp>(*this);
 }
@@ -44,12 +38,10 @@ void ScaledVarUpdateOp::appendOutlineAttributes(OpSerialiserBase &os) const {
   }
 }
 
-ScaledVarUpdateOp::ScaledVarUpdateOp(const TensorId &varToUpdate,
-                                     OptimizerValue lr,
+ScaledVarUpdateOp::ScaledVarUpdateOp(OptimizerValue lr,
                                      OptimizerValue wd,
                                      const Op::Settings &opSettings)
     : VarUpdateWithUpdaterOp(Onnx::CustomOperators::ScaledVarUpdate,
-                             varToUpdate,
                              opSettings),
       initLr(lr), initWd(wd) {}
 
