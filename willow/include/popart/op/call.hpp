@@ -11,7 +11,11 @@ class CallOp : public SubgraphOp {
 public:
   // parent: Graph this CallOp belongs to
   // callee: Graph this CallOp executes
-  CallOp(const OperatorIdentifier &, Graph &parent, Graph &callee);
+  // NOTE: modifiedInputsViaAttrs is currently only used for testing purposes.
+  CallOp(const OperatorIdentifier &,
+         Graph &parent,
+         Graph &callee,
+         std::vector<int> modifiedInputsViaAttrs = {});
 
   void setup() final;
   std::unique_ptr<Op> clone() const final;
@@ -41,6 +45,10 @@ public:
 
 private:
   std::reference_wrapper<Graph> callee;
+  // Facility to auto-mark inputs as 'modified' on construction by setting the
+  // 'modifiedInputs' attribute. This is currently only used for testing
+  // purposes.
+  std::vector<int> modifiedInputsViaAttrs;
 
   std::vector<GradInOutMapper>
   getGradInInfo(const std::vector<TensorId> &gradOpInputIds) const;

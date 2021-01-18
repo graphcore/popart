@@ -12,8 +12,12 @@
 
 namespace popart {
 
-CallOp::CallOp(const OperatorIdentifier &opid_, Graph &parent_, Graph &callee_)
-    : SubgraphOp(opid_, {parent_, "", parent_.getScope()}), callee(callee_) {
+CallOp::CallOp(const OperatorIdentifier &opid_,
+               Graph &parent_,
+               Graph &callee_,
+               std::vector<int> modifiedInputsViaAttrs_)
+    : SubgraphOp(opid_, {parent_, "", parent_.getScope()}), callee(callee_),
+      modifiedInputsViaAttrs(modifiedInputsViaAttrs_) {
   settings.name = logging::format("Call_{}", callee_.id);
 }
 
@@ -23,6 +27,24 @@ void CallOp::setup() {
   for (int i = 0; i < callee.get().getOutputIds().size(); i++) {
     TensorId calleeOutputId = callee.get().getOutputId(i);
     outInfo(i) = callee.get().getTensors().get(calleeOutputId)->info;
+  }
+
+  // For testing purposes, allow setting modified regions via "modifiedInputs"
+  // attribute to full regions. This allows constructing a graph which will
+  // use CopyModified via the graph builder alone. This should not normally
+  // be used.
+  for (const auto &inIndex : modifiedInputsViaAttrs) {
+    if (!input->hasIndex(inIndex)) {
+      throw error("CallOp received invalid input index ({}) for "
+                  "'modifiedInputs' attribute",
+                  inIndex);
+    } else {
+      logging::warn("[CallOp] Adding modified input ({}). This should only be "
+                    "used for testing purposes.",
+                    inIndex);
+    }
+    auto region = view::Region::getFull(input->tensor(inIndex)->info.shape());
+    addModified(inIndex, {region});
   }
 }
 
@@ -100,6 +122,17 @@ static OpCreator<CallOp> callOpCreator(
       ONNX_NAMESPACE::GraphProto callee =
           info.attributes.getAttribute<Attributes::Graph>("callee");
 
+      // Adding 'modifiedInput' to CallOps to allow creation of CallOps
+      // that use CopyModified copies using the builder.
+      auto modifiedInputsInt64 = info.attributes.getAttribute<Attributes::Ints>(
+          "modifiedInputs", std::vector<int64_t>());
+      std::vector<int> modifiedInputs;
+      std::transform(
+          modifiedInputsInt64.begin(),
+          modifiedInputsInt64.end(),
+          std::back_inserter(modifiedInputs),
+          [](int64_t modifiedInput) -> int { return modifiedInput; });
+
       if (callee.name().empty()) {
         throw error("CallOp subgraph must be named, so that it can be "
                     "identified for re-use.");
@@ -153,8 +186,8 @@ static OpCreator<CallOp> callOpCreator(
         }
       }
 
-      return std::unique_ptr<Op>(
-          new CallOp(info.opid, info.settings.graph.get(), *calleeGraph));
+      return std::unique_ptr<Op>(new CallOp(
+          info.opid, info.settings.graph.get(), *calleeGraph, modifiedInputs));
     },
     true);
 } // namespace
