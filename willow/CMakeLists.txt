@@ -231,11 +231,7 @@ target_compile_features(popart-only PUBLIC cxx_std_14)
 
 # These definitions are private to popart-only, as the external user does not
 # need them, but they are needed by all internal targets.
-set(popart_common_definitions
-    # This allows us to deprecate the legacy op factory functions in our own
-    # code without breaking customers code.
-    DEPRECATE_LEGACY_OP_FACTORY=1
-)
+set(popart_common_definitions "")
 
 # Hack: Poptorch doesn't need onnx, but it includes the monolithic names.hpp,
 # which has many declarations intended to be private only that use

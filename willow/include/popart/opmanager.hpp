@@ -142,16 +142,6 @@ public:
   using OpFactoryFunc =
       std::function<std::unique_ptr<Op>(const OpCreatorInfo &)>;
 
-#ifndef DEPRECATE_LEGACY_OP_FACTORY
-  // This has the same role as the OpFactoryFunction, but is an old function
-  // signature. The signature was changed to OpCreatorInfo, as OpCreatorInfo
-  // could be extended without requiring changes to OpFactoryFunction.
-  using LegacyOpFactoryFunc =
-      std::function<std::unique_ptr<Op>(const OperatorIdentifier &_opid,
-                                        const Op::Settings &settings,
-                                        const Attributes &_attr)>;
-#endif
-
   // The complex op factory function is responsible for creating an op, adding
   // it to the graph, and connecting the inputs and outputs. Graph could have
   // been an attribute of OpCreatorInfo, but having the two factory funcs with
@@ -302,27 +292,6 @@ public:
       OpManager::registerOp({version.first, isPublic, version.second, func});
     }
   }
-
-#ifndef DEPRECATE_LEGACY_OP_FACTORY
-  OpCreator(const OpDefinitions &opDefinitions,
-            OpManager::LegacyOpFactoryFunc func,
-            bool isPublic = true) {
-    OpManager::OpFactoryFunc wrapper = [func](const OpCreatorInfo &info) {
-      // Adding this warning when the function is called, rather than when the
-      // function is registered, ensures that logging has been set up.
-      logging::warn("You are using a deprecated function signature for the "
-                    "factory function of {}. This will be removed in a future "
-                    "release. Please update it to use the signature "
-                    "`std::unique_ptr<Op> (const OpCreatorInfo &)`",
-                    info.opid.type);
-      return func(info.opid, info.settings, info.attributes);
-    };
-
-    for (const auto &version : opDefinitions) {
-      OpManager::registerOp({version.first, isPublic, version.second, wrapper});
-    }
-  }
-#endif
 
   OpCreator(const OpDefinitions &opDefinitions,
             OpManager::ComplexOpFactoryFunc func,
