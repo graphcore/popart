@@ -266,7 +266,7 @@ BOOST_AUTO_TEST_CASE(AliasZeroCopyTest0) {
               checkAliased(call, outTensor(0), true); // X1
             }
             if (callIndex == 2) {
-              checkAliased(call, inTensor(0), true);  // grad_X1
+              checkAliased(call, inTensor(0), false); // grad_X1
               checkAliased(call, inTensor(1), false); // C
               checkAliased(call, inTensor(2), false); // X0
               checkAliased(call, outTensor(0), true); // grad_X0

@@ -1742,7 +1742,7 @@ PriTask IrLowering::initTensorTask(InitTensorPtrs inits) {
     throw error("Failed to initialize tensor {}", dstId);
   };
 
-  return {-1e6 - priMod, initTensorTaskId(dstId), deps, f};
+  return {-1e6 + priMod, initTensorTaskId(dstId), deps, f};
 }
 
 PriTask IrLowering::opTask(Op *op, double priority, TaskId prevOpTaskId) {
