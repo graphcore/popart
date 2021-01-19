@@ -33,6 +33,7 @@ public:
   bool isEmpty() const;
   Region intersect(const Region &rhs) const;
   Region transpose(const Shape shape) const;
+  Region reverse(const Shape shape, const Shape dimensions) const;
   Regions sub(const Regions &rhs, bool include_empty = false) const;
   Regions sub(const Region &rhs, bool include_empty = false) const;
   Regions add(const Region &rhs) const;

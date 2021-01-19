@@ -542,6 +542,22 @@ Region Region::transpose(const Shape perm) const {
   return Region(l, u, accessType);
 }
 
+Region Region::reverse(const Shape shape, const Shape dims) const {
+  std::vector<int64_t> l(shape.size());
+  std::vector<int64_t> u(shape.size());
+
+  for (int64_t i = 0; i < shape.size(); ++i) {
+    if (std::find(dims.begin(), dims.end(), i) != dims.end()) {
+      l[i] = shape[i] - upper[i];
+      u[i] = shape[i] - lower[i];
+    } else {
+      l[i] = lower[i];
+      u[i] = upper[i];
+    }
+  }
+  return Region(l, u, accessType);
+}
+
 std::ostream &operator<<(std::ostream &stream, const Region &r) {
   r.append(stream);
   return stream;

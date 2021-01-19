@@ -559,6 +559,20 @@ public:
    */
   TensorId remainder(const std::vector<TensorId> &args,
                      const DebugContext &debugContext = {});
+
+  /*
+   * Add a reverse operator to the model.
+   *
+   * Reverse, or 'flip', the tensor along the specified dimensions
+   *
+   * \param args Input tensors.
+   * \param dimensions Dimensions along which to reverse the tensor. If this is
+   *        empty then this is equivalent to the identity operator
+   * \return The name of the result tensor.
+   */
+  TensorId reverse(const std::vector<TensorId> &args,
+                   const std::vector<int64_t> &dimensions,
+                   const DebugContext &debugContext = {});
 };
 
 /**

@@ -185,7 +185,7 @@ public:
 
   void assertNumElements(const popx::Executablex &) const final {}
 
-  ConstVoidData in(TensorId id, int64_t, bool prefetch)final {
+  ConstVoidData in(TensorId id, int64_t, bool prefetch) final {
     py::array a = inputCb(id, prefetch);
     if (!isContiguous(a)) {
       throw error(
@@ -2146,6 +2146,11 @@ PYBIND11_MODULE(popart_core, m) {
     cls.def("remainder",
             &AiGraphcoreOpset1::remainder,
             py::arg("args"),
+            py::arg("debugContext") = std::string());
+    cls.def("reverse",
+            &AiGraphcoreOpset1::reverse,
+            py::arg("args"),
+            py::arg("dimensions"),
             py::arg("debugContext") = std::string());
   }
   {

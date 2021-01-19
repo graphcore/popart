@@ -83,7 +83,7 @@ list(TRANSFORM boost_components PREPEND Boost:: OUTPUT_VARIABLE boost_targets)
 list(APPEND boost_targets Boost::boost)
 
 find_package(spdlog 1.8.0 REQUIRED)
-
+ 
 find_package(poplar REQUIRED)
 find_package(poplibs REQUIRED)
 find_package(libpvti REQUIRED)
@@ -96,7 +96,7 @@ find_package(poprithms REQUIRED)
 set(Protobuf_USE_STATIC_LIBS ON)
 find_package(Protobuf 3.6 REQUIRED)
 find_package(ONNX 1.6 REQUIRED)
-
+ 
 find_package(PoplarRunner)
 
 # Creates popart_capnp object library from generated sources.
@@ -147,7 +147,7 @@ set(POPART_INTERNAL_DEPS_LIBS
 ################################################################################
 ##### Sources
 ################################################################################
-
+ 
 # core popart source files:
 file(GLOB core_sources src/*cpp)
 file(GLOB op_sources src/op/*cpp)

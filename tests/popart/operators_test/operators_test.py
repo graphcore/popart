@@ -831,6 +831,73 @@ def test_reciprocal_grad(op_tester):
     op_tester.run(init_builder, reference, 'train')
 
 
+def test_reverse(op_tester):
+    d1 = np.random.rand(4, 1, 3).astype(np.float32)
+    reverse_dims = [2, 1]
+
+    def init_builder(builder):
+        i1 = builder.addInputTensor(d1)
+        o = builder.aiGraphcore.reverse([i1], reverse_dims)
+        builder.addOutputTensor(o)
+        return [o]
+
+    def init_builder_negative_dim(builder):
+        i1 = builder.addInputTensor(d1)
+        o = builder.aiGraphcore.reverse([i1], [2, -2])
+        return [o]
+
+    def init_builder_dim_appears_twice(builder):
+        i1 = builder.addInputTensor(d1)
+        o = builder.aiGraphcore.reverse([i1], [1, 1])
+        return [o]
+
+    def init_builder_dim_greater_than_rank(builder):
+        i1 = builder.addInputTensor(d1)
+        o = builder.aiGraphcore.reverse([i1], [3])
+        return [o]
+
+    def reference(ref_data):
+        out = torch.flip(torch.tensor(d1), reverse_dims)
+        return [out]
+
+    op_tester.run(init_builder, reference, 'infer')
+
+    with pytest.raises(popart.popart_exception) as e_info:
+        op_tester.run(init_builder_negative_dim, reference, 'infer')
+    assert "invalid dimension '-2'. Only positive dimensions are supported" in e_info.value.args[0]
+
+    with pytest.raises(popart.popart_exception) as e_info:
+        op_tester.run(init_builder_dim_appears_twice, reference, 'infer')
+    assert "Dimension 1 appears multiple times" in e_info.value.args[0]
+
+    with pytest.raises(popart.popart_exception) as e_info:
+        op_tester.run(init_builder_dim_greater_than_rank, reference, 'infer')
+    assert "invalid dimension '3' for input tensor of rank 3" in e_info.value.args[0]
+
+
+def test_reverse_grad(op_tester):
+    d1 = np.random.rand(4, 1, 3).astype(np.float32)
+    reverse_dims = [2, 1]
+
+    def init_builder(builder):
+        i1 = builder.addInputTensor(d1)
+        o = builder.aiGraphcore.reverse([i1], reverse_dims)
+        builder.addOutputTensor(o)
+        return [
+            o,
+            popart.reservedGradientPrefix() + i1,
+            popart.reservedGradientPrefix() + o
+        ]
+
+    def reference(ref_data):
+        a = torch.tensor(d1, requires_grad=True)
+        b = torch.flip(torch.tensor(d1), reverse_dims)
+        d__o = ref_data.getOutputTensorGrad(0)
+        return [b, torch.flip(torch.tensor(d__o), reverse_dims), None]
+
+    op_tester.run(init_builder, reference, 'train')
+
+
 def test_sqrt(op_tester):
     # create test data
     d1 = np.random.rand(4).astype(np.float32)
