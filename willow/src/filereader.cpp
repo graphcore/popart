@@ -9,6 +9,7 @@
 
 #include <cstdio>
 #include <fstream>
+#include <iomanip>
 #include <limits>
 #include <sstream>
 #include <unistd.h>
@@ -34,6 +35,52 @@ boost::filesystem::file_status statOrRaiseException(const std::string &path) {
   } catch (const boost::filesystem::filesystem_error &e) {
     throw popart::error("Error reading {}: {}", path, e.what());
   }
+}
+
+std::string formatModelProtoString(std::string modelProtoString,
+                                   int maxLength) {
+  std::stringstream s;
+
+  // Format `modelProto` as printable ASCII characters.
+  // This is the same formatting obtained when printing a bytes object in
+  // python.
+  int counter = 0;
+  for (const char c : modelProtoString) {
+    // This is the printable range of ACSII characters.
+    if (c >= ' ' && c <= '~') {
+      // The '{' and '}' characters need escaping to be used with our
+      // logging.
+      if (c == '{' || c == '}') {
+        s << c << c;
+      }
+      // print certain characters with a leading backslash.
+      else if (c == '\\' || c == '\'') {
+        s << '\\' << c;
+      } else {
+        s << c;
+      }
+    }
+    // Catch various escape sequences
+    else if (c == '\n') {
+      s << "\\n";
+    } else if (c == '\t') {
+      s << "\\t";
+    } else if (c == '\r') {
+      s << "\\r";
+    } else {
+      // two step cast. When casting a char to a uint32, char is signed so
+      // negative values wrap around.
+      uint8_t ci8 = static_cast<uint8_t>(c);
+      uint32_t ci = ci8;
+      s << "\\x" << std::hex << std::setw(2) << std::setfill('0') << ci;
+    }
+    counter++;
+    if (counter > maxLength) {
+      s << "...";
+      return s.str();
+    }
+  }
+  return s.str();
 }
 } // anonymous namespace
 
@@ -224,7 +271,11 @@ ONNX_NAMESPACE::ModelProto getModelFromString(const std::string &stringProto) {
   ONNX_NAMESPACE::ModelProto modelProto;
 
   if (!getModelFromStream(input, modelProto)) {
-    throw error("Failed to parse ModelProto from string");
+    throw error(
+        "Failed to load a ModelProto from the string '{}'.\nCheck "
+        "that it is either a valid path to an existing onnx model file, "
+        "or is a valid onnx ModelProto string.",
+        formatModelProtoString(stringProto, 100));
   }
 
   logModelInfo(modelProto);

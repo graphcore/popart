@@ -78,4 +78,5 @@ def test_net_failure2(tmpdir):
                                 deviceInfo=tu.create_test_device())
 
     assert (e_info.type == popart.popart_exception)
-    assert (e_info.value.args[0] == "Failed to parse ModelProto from string")
+    assert (e_info.value.args[0].startswith(
+        "Failed to load a ModelProto from the string"))
