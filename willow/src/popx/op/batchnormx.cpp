@@ -177,15 +177,10 @@ BatchNormOpx::growSpatial(poplar::program::Sequence &prog,
                                   nonstd::optional<poplar::Tensor>(),
                                   nonstd::optional<poplar::Tensor>()});
     } else {
-      // Convert input shape to poplar rules
-      poplar::Tensor xP;
-      poplar::Shape nonBroadcastDims;
-      std::tie(xP, nonBroadcastDims) = convertOnnxInputToPoplarInput(x);
-
       poplar::Tensor batchMean, invSd;
       std::tie(batchMean, invSd) =
           popnn::bn::batchNormStatistics(graph(),
-                                         xP,
+                                         x,
                                          epsilon,
                                          prog,
                                          false,
@@ -194,7 +189,7 @@ BatchNormOpx::growSpatial(poplar::program::Sequence &prog,
                                          debugContext("normStats"));
 
       // batch normalise
-      auto y = batchNormalise(prog, xP, scale, b, batchMean, invSd);
+      auto y = batchNormalise(prog, x, scale, b, batchMean, invSd);
 
       // convert updated inverse standard deviation back to variance.
 
@@ -202,7 +197,7 @@ BatchNormOpx::growSpatial(poplar::program::Sequence &prog,
       // Left this code in for now which computes the variance used in pytorch
       {
         // First we have to convert the invSd to the unbiased version
-        const auto numElements = xP.numElements() / xP.dim(1);
+        const auto numElements = x.numElements() / x.dim(1);
         invSd = popops::map(graph(),
                                   pe::Mul(pe::_1,
       pe::Sqrt(pe::Divide(pe::Const(numElements -1),pe::Const(numElements)))),
@@ -214,9 +209,6 @@ BatchNormOpx::growSpatial(poplar::program::Sequence &prog,
 
       // Then convert the invSd to the variance
       auto batchVar = convertInvSdToVar(prog, invSd, epsilon);
-
-      // Convert the output back into the input format
-      y = convertPoplarOutputToOnnxOutput(y, nonBroadcastDims);
 
       // Calculate the running mean
       auto runningMean = popops::map(
@@ -255,19 +247,11 @@ BatchNormOpx::growSpatial(poplar::program::Sequence &prog,
                                   nonstd::optional<poplar::Tensor>(),
                                   nonstd::optional<poplar::Tensor>()});
     } else {
-      // Convert input shape to poplar rules
-      poplar::Tensor xP;
-      poplar::Shape nonBroadcastDims;
-      std::tie(xP, nonBroadcastDims) = convertOnnxInputToPoplarInput(x);
-
       // convert variant to inverse standard deviation
       auto invSd = convertVarToInvSd(prog, var, epsilon);
 
       // batchnorm
-      auto y = batchNormalise(prog, xP, scale, b, mean, invSd);
-
-      // Convert the output back into the input format
-      y = convertPoplarOutputToOnnxOutput(y, nonBroadcastDims);
+      auto y = batchNormalise(prog, x, scale, b, mean, invSd);
 
       // return the result
       result = GrowSpatialOutput({y,
@@ -390,22 +374,12 @@ BatchNormGradOpx::growSpatial(poplar::program::Sequence &prog,
     result.scaleGrad = scaleGrad;
     result.bGrad     = bGrad;
   } else {
-
-    // Convert input's shape to poplar rules
-    poplar::Tensor xP, yGradP;
-    poplar::Shape nonBroadcastDims;
-    std::tie(xP, nonBroadcastDims)     = convertOnnxInputToPoplarInput(x);
-    std::tie(yGradP, nonBroadcastDims) = convertOnnxInputToPoplarInput(yGrad);
-
     auto invSd = convertVarToInvSd(prog, var, epsilon);
 
     // batchnormgrad
     poplar::Tensor xGrad, scaleGrad, bGrad;
     std::tie(xGrad, scaleGrad, bGrad) =
-        batchNormaliseGrad(prog, xP, scale, mean, invSd, yGradP);
-
-    // Convert the output back into the input format
-    xGrad = convertPoplarOutputToOnnxOutput(xGrad, nonBroadcastDims);
+        batchNormaliseGrad(prog, x, scale, mean, invSd, yGrad);
 
     // return the results
     result.xGrad     = xGrad;

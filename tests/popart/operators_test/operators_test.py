@@ -2473,6 +2473,81 @@ def test_instancenorm_grad(op_tester):
     op_tester.run(init_builder, reference, 'train')
 
 
+def test_instancenorm_grad_5D_input(op_tester):
+    batch_size = 3
+    features = 3
+    d1 = 4
+    d2 = 4
+    d3 = 4
+
+    non_zero_places = 10
+
+    data = np.random.rand(batch_size, features, d1,
+                          d2, d3).astype(np.float32)
+
+    a_few_places = np.zeros_like(data.flatten())
+
+    for _ in range(non_zero_places):
+        a_few_places[int(np.random.rand() * a_few_places.size)] = 1.0
+
+    a_few_places = a_few_places.reshape(*data.shape)
+
+    scale = np.random.rand(features).astype(np.float32)
+    bias = np.random.rand(features).astype(np.float32)
+
+    epsilon = 1e-05
+
+    def init_builder(builder):
+
+        i_data = builder.addInputTensor(data)
+        i_scale = builder.addInputTensor(scale)
+        i_bias = builder.addInputTensor(bias)
+
+        i_few_places = builder.addInputTensor(a_few_places)
+
+        normed = builder.aiOnnx.instancenormalization(
+            [i_data, i_scale, i_bias], epsilon)
+        out = builder.aiOnnx.mul([normed, i_few_places])
+
+        builder.addOutputTensor(out)
+
+        return [
+            out, normed,
+            popart.reservedGradientPrefix() + i_data,
+            popart.reservedGradientPrefix() + i_scale,
+            popart.reservedGradientPrefix() + i_bias,
+            popart.reservedGradientPrefix() + out
+        ]
+
+    def reference(ref_data):
+        i_data = torch.tensor(data, requires_grad=True)
+
+        m = torch.nn.InstanceNorm3d(features,
+                                    eps=epsilon,
+                                    momentum=0,
+                                    affine=True)
+        m.weight.data = torch.tensor(scale)
+        m.bias.data = torch.tensor(bias)
+        normed = m(i_data)
+
+        out = normed * torch.tensor(a_few_places, requires_grad=False)
+
+        d__o = ref_data.getOutputTensorGrad(0)
+
+        out.backward(torch.tensor(d__o))
+
+        assert i_data.grad is not None
+        assert m.weight.grad is not None
+        assert m.bias.grad is not None
+
+        return [out, normed, i_data.grad, m.weight.grad, m.bias.grad, None]
+
+    op_tester.atol *= 10
+    op_tester.setPatterns(['PreUniRepl', 'ReciprocalGradOp', 'MulArgGradOp'],
+                          enableRuntimeAsserts=False)
+    op_tester.run(init_builder, reference, 'train')
+
+
 def test_constantofshape(op_tester):
     shape = np.array([1, 2, 3]).astype(np.int64)
     value = np.array([3.1415]).astype(np.float32)

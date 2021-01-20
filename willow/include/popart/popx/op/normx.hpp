@@ -10,7 +10,7 @@
 
 #include <poplar/Tensor.hpp>
 
-// Base class for the norm options such as  group, instance, batch
+// Base class for the norm options such as group, instance, batch
 
 namespace poplar {
 using Shape = std::vector<std::size_t>;
@@ -24,13 +24,6 @@ public:
   NormOpx(Op *, Devicex *);
 
 protected:
-  std::pair<poplar::Tensor, poplar::Shape>
-  convertOnnxInputToPoplarInput(const poplar::Tensor &onnxInput) const;
-
-  poplar::Tensor convertPoplarOutputToOnnxOutput(
-      const poplar::Tensor &poplarOutput,
-      const poplar::Shape &nonBroadcastDimensions) const;
-
   poplar::Tensor convertInvSdToVar(poplar::program::Sequence &prog,
                                    const poplar::Tensor &invSd,
                                    float epsilon) const;

@@ -38,11 +38,6 @@ void InstanceNormOpx::grow(poplar::program::Sequence &prog) const {
   // Get the attributes
   float epsilon = getOp<InstanceNormOp>().getEpsilon();
 
-  // Convert input shape to poplar rules
-  poplar::Tensor inputP;
-  poplar::Shape nonBroadcastDims;
-  std::tie(inputP, nonBroadcastDims) = convertOnnxInputToPoplarInput(input);
-
   // Check for stable algorithm session option.
   bool stable_algo = op.getIr().getSessionOptions().enableStableNorm;
 
@@ -51,7 +46,7 @@ void InstanceNormOpx::grow(poplar::program::Sequence &prog) const {
   poplar::Tensor invStdDev;
   std::tie(mean, invStdDev) =
       popnn::in::instanceNormStatistics(graph(),
-                                        inputP,
+                                        input,
                                         epsilon,
                                         prog,
                                         false,
@@ -69,12 +64,8 @@ void InstanceNormOpx::grow(poplar::program::Sequence &prog) const {
                                              prog,
                                              debugContext("instanceNorm"));
 
-  // Convert the output back into the input format
-  poplar::Tensor y =
-      convertPoplarOutputToOnnxOutput(result.first, nonBroadcastDims);
-
   // Return the result
-  setOutTensor(InstanceNormOp::getOutIndex(), y);
+  setOutTensor(InstanceNormOp::getOutIndex(), result.first);
   setOutTensor(InstanceNormOp::getMeanOutIndex(), mean);
   setOutTensor(InstanceNormOp::getInvStdDevOutIndex(), invStdDev);
 }

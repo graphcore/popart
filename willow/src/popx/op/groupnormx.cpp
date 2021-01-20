@@ -42,17 +42,12 @@ void GroupNormOpx::grow(poplar::program::Sequence &prog) const {
   auto scale = getInTensor(GroupNormOp::getScaleInIndex());
   auto b     = getInTensor(GroupNormOp::getBInIndex());
 
-  // Convert input shape to poplar rules
-  poplar::Tensor inputP;
-  poplar::Shape nonBroadcastDims;
-  std::tie(inputP, nonBroadcastDims) = convertOnnxInputToPoplarInput(input);
-
   // Calculate the mean and the inverse standard deviation
   poplar::Tensor mean;
   poplar::Tensor invStdDev;
   std::tie(mean, invStdDev) =
       popnn::gn::groupNormStatistics(graph(),
-                                     inputP,
+                                     input,
                                      epsilon,
                                      prog,
                                      static_cast<unsigned int>(num_groups),
@@ -71,12 +66,8 @@ void GroupNormOpx::grow(poplar::program::Sequence &prog) const {
                                           prog,
                                           debugContext("groupNorm"));
 
-  // Convert the output back into the input format
-  poplar::Tensor y =
-      convertPoplarOutputToOnnxOutput(result.first, nonBroadcastDims);
-
   // Return the result
-  setOutTensor(GroupNormOp::getYOutIndex(), y);
+  setOutTensor(GroupNormOp::getYOutIndex(), result.first);
   setOutTensor(GroupNormOp::getMeanOutIndex(), mean);
   setOutTensor(GroupNormOp::getInvStdDevOutIndex(), invStdDev);
 }
@@ -94,14 +85,8 @@ void GroupNormGradOpx::grow(poplar::program::Sequence &prog) const {
   auto mean      = getInTensor(GroupNormGradOp::getMeanInIndex());
   auto invStdDev = getInTensor(GroupNormGradOp::getInvStdDevInIndex());
 
-  // Convert input shape to poplar rules
-  poplar::Tensor xP, yGradP;
-  poplar::Shape nonBroadcastDims;
-  std::tie(xP, nonBroadcastDims)     = convertOnnxInputToPoplarInput(x);
-  std::tie(yGradP, nonBroadcastDims) = convertOnnxInputToPoplarInput(yGrad);
-
   poplar::Tensor xWhitened = popnn::gn::groupNormWhiten(
-      graph(), xP, mean, invStdDev, prog, debugContext("whitenedActs"));
+      graph(), x, mean, invStdDev, prog, debugContext("whitenedActs"));
 
   // Compute the delta for the operand
   poplar::Tensor xGrad =
@@ -124,9 +109,6 @@ void GroupNormGradOpx::grow(poplar::program::Sequence &prog) const {
                                          prog,
                                          poplar::FLOAT,
                                          debugContext("scaleOffsetGrads"));
-
-  // Convert the output back into the input format
-  xGrad = convertPoplarOutputToOnnxOutput(xGrad, nonBroadcastDims);
 
   // Return the result
   setOutTensor(GroupNormGradOp::getXGradOutIndex(), xGrad);
