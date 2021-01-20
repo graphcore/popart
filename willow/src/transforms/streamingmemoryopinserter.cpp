@@ -1529,9 +1529,9 @@ RemoteLoadOp *StreamingMemoryOpInserter::insertRemoteLoadOp(
       // The original shape becomes the RTS shape
       // The actual tensor shape is now:
       // (initInfo.nelms() - 1) / replicationFactor + 1
-      initInfo.set(initInfo.dataType(),
-                   {(initInfo.nelms() - 1) / replicationFactor + 1},
-                   initInfo.shape());
+      Shape newShape = {(initInfo.nelms() - 1) / replicationFactor + 1};
+      Shape oldShape = initInfo.shape();
+      initInfo.set(initInfo.dataType(), newShape, oldShape);
     }
 
     // InitOp as a "producer" op
