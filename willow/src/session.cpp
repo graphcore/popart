@@ -37,14 +37,20 @@ void Session::setDevice(std::shared_ptr<DeviceInfo> deviceInfo) {
   logging::session::trace("Session::setDevice({})", *deviceInfo);
   deviceInfo_ = deviceInfo;
 
-  if (ir.hashMatched()) {
-    // The executable will be loaded during prepareDevice
-    return;
-  }
+  if (deviceInfo) {
+    if (ir.hashMatched()) {
+      // The executable will be loaded during prepareDevice
+      return;
+    }
 
-  lowering_.reset(new popx::IrLowering(ir, deviceInfo));
-  executable_ = popx::Executablex::createFromLoweredIr(*lowering_);
-  device_.reset(new popx::Devicex(*executable_, deviceInfo));
+    lowering_.reset(new popx::IrLowering(ir, deviceInfo));
+    executable_ = popx::Executablex::createFromLoweredIr(*lowering_);
+    device_.reset(new popx::Devicex(*executable_, deviceInfo));
+  } else {
+    lowering_.reset();
+    executable_.reset();
+    device_.reset();
+  }
 }
 
 std::vector<uint32_t> Session::getRNGState() {

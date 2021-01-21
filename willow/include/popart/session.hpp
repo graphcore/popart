@@ -222,13 +222,17 @@ public:
   const popx::IrLowering &getIrLowering() const { return *lowering_; }
   const popx::Executablex &getExecutable() const { return *executable_; }
 
-protected:
   /**
    * Select a device type.
    *
    * /param deviceInfo which defines the type of device to work on
    */
-  void setDevice(std::shared_ptr<DeviceInfo> deviceInfo); /**
+  void setDevice(std::shared_ptr<DeviceInfo> deviceInfo);
+
+  bool isDetached() const { return !bool{device_}; }
+
+protected:
+  /**
 
   * Attempts to load a serialized executable. If succesful then Ir
   * preparation and `poplar::Graph` compilation are skipped.
