@@ -280,6 +280,7 @@ const static AiGraphcoreOpIdV1 GradCopyToHost("GradCopyToHost");
 const static AiGraphcoreOpIdV1 GradientAccumulation("GradientAccl");
 const static AiGraphcoreOpIdV1 GroupNormalization_1("GroupNormalization", 3, 3);
 const static AiGraphcoreOpIdV1 HardSigmoidInplace("HardSigmoidInplace");
+const static AiGraphcoreOpIdV1 Histogram("Histogram", 1, 1);
 const static AiGraphcoreOpIdV1 HostSGD0VarUpdate("HostSGD0VarUpdate");
 const static AiGraphcoreOpIdV1 IdentityInplace("IdentityInplace");
 const static AiGraphcoreOpIdV1 IdentityLoss("IdentityLoss", 1, 1);

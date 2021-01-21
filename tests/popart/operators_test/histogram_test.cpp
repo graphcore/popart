@@ -1,0 +1,71 @@
+// Copyright (c) 2021 Graphcore Ltd. All rights reserved.
+#define BOOST_TEST_MODULE HistogramOpTest
+
+#include <boost/test/unit_test.hpp>
+
+#include <popart/builder.hpp>
+#include <popart/filereader.hpp>
+#include <popart/ndarraywrapper.hpp>
+#include <popart/op/histogram.hpp>
+#include <popart/opidentifier.hpp>
+#include <popart/session.hpp>
+#include <popart/testdevice.hpp>
+
+using namespace popart;
+
+template <typename T> std::string getTypeName();
+template <> std::string getTypeName<float>() { return "FLOAT"; }
+template <> std::string getTypeName<float16_t>() { return "FLOAT16"; }
+
+template <typename T> void run_test() {
+  auto builder = Builder::create();
+  TensorInfo t0_info{getTypeName<T>(), std::vector<int64_t>{10}};
+  auto t0 = builder->addInputTensor(t0_info);
+
+  std::vector<float> levels = {0.1, 7, 3.1};
+
+  // The HistogramOp has not been exposed directly in the Builder class,
+  // but can still be added to an Onnx model via the customOp method.
+  auto t1 = builder->customOp(
+      Onnx::CustomOperators::Histogram, 1, {t0}, 1, {{"levels", levels}})[0];
+
+  auto session = popart::InferenceSession::createFromOnnxModel(
+      builder->getModelProto(),
+      DataFlow(1, {{t1, AnchorReturnType("All")}}),
+      createTestDevice(TEST_TARGET),
+      popart::InputShapeInfo(),
+      SessionOptions(),
+      popart::Patterns(PatternsLevel::Default));
+
+  auto outElms = static_cast<int64_t>(levels.size() + 1);
+  std::vector<uint32_t> anchor_data(outElms);
+  popart::NDArrayWrapper<uint32_t> anchor_wrapper(anchor_data.data(),
+                                                  {outElms});
+  session->prepareDevice();
+
+  // anchor
+  std::map<popart::TensorId, popart::IArray &> anchors = {{t1, anchor_wrapper}};
+
+  // input
+  std::vector<T> input_vals{-10, -0.1, 0.01, 0.09, 1.1, 4, 6.9, 7.9, 8.0, 900};
+  popart::NDArrayWrapper<T> input_wrapper(input_vals.data(), t0_info);
+  std::map<popart::TensorId, popart::IArray &> inputs = {{t0, input_wrapper}};
+  popart::StepIO stepio(inputs, anchors);
+  session->run(stepio);
+
+  // expected result:
+  // x <= 0.1       : 4
+  // 0.1 < x <= 3.1 : 1
+  // 3.1 < x <= 7   : 2
+  // x > 7          : 3
+  std::vector<uint32_t> expected = {4, 1, 2, 3};
+
+  for (size_t i = 0; i < anchor_data.size(); ++i) {
+    BOOST_CHECK_EQUAL(anchor_data[i], expected[i]);
+  }
+}
+
+BOOST_AUTO_TEST_CASE(HistogramOp_test) {
+  run_test<float>();
+  run_test<float16_t>();
+}

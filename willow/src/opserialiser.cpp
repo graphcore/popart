@@ -27,6 +27,13 @@ OpSerialiser::OpSerialiser(const Op *op, std::stringstream &ss_)
 }
 
 void OpSerialiserBase::appendAttribute(const std::string &name,
+                                       const std::vector<float> &v) {
+  std::ostringstream oss;
+  oss << v;
+  appendStrAttr(name, oss.str());
+}
+
+void OpSerialiserBase::appendAttribute(const std::string &name,
                                        const std::vector<int64_t> &v) {
   std::ostringstream oss;
   oss << v;

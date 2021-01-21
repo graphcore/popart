@@ -1,0 +1,49 @@
+// Copyright (c) 2021 Graphcore Ltd. All rights reserved.
+#ifndef GUARD_NEURALNET_HISTOGRAM_HPP
+#define GUARD_NEURALNET_HISTOGRAM_HPP
+
+#include <popart/op.hpp>
+
+namespace popart {
+
+// This Op gathers a histogram representing the statistics of an input tensor.
+// It sorts each element of the input tensor into bins, the edges of which are
+// specified by 'levels' attributed, and returns a tensor containing the
+// counts in each bin.
+//
+// e.g. take the 1D input {-10, -0.1, 0.01, 0.09, 1.1, 4, 6.9, 7.9, 8.0, 900}
+// The bins and their counts are as follows:
+// x <= 0.1       : 4
+// 0.1 < x <= 3.1 : 1
+// 3.1 < x <= 7   : 2
+// x > 7          : 3
+//
+// So the output will be {4, 1, 2, 3}
+
+class HistogramOp : public Op {
+public:
+  HistogramOp(const OperatorIdentifier &_opid,
+              const std::vector<float> &levels_,
+              const Op::Settings &settings_);
+
+  void setup() final;
+
+  static InIndex getInIndex() { return 0; }
+  static OutIndex getOutIndex() { return 0; }
+
+  float getSubgraphValue() const final { return getHighSubgraphValue(); }
+
+  void appendOutlineAttributes(OpSerialiserBase &) const override;
+
+  std::unique_ptr<Op> clone() const override;
+
+  std::vector<float> getLevels() const { return levels; }
+
+private:
+  // The histogram's bin edges
+  std::vector<float> levels;
+};
+
+} // namespace popart
+
+#endif

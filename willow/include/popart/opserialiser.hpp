@@ -23,6 +23,7 @@ public:
   void appendAttribute(const std::string &, uint32_t);
   void appendAttribute(const std::string &, uint64_t);
   void appendAttribute(const std::string &, const std::string &);
+  void appendAttribute(const std::string &, const std::vector<float> &);
   void appendAttribute(const std::string &, const std::vector<int64_t> &);
   void appendAttribute(const std::string &, const Scope &);
   void appendAttribute(const std::string &, bool);
