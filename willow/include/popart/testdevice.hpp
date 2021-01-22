@@ -36,12 +36,13 @@ constexpr bool isIpuModel(TestDeviceType d) {
 }
 constexpr bool isHw(TestDeviceType d) { return d == TestDeviceType::Hw; }
 
-std::shared_ptr<popart::DeviceInfo>
-createTestDevice(const TestDeviceType testDeviceType,
-                 const unsigned numIPUs          = 1,
-                 unsigned tilesPerIPU            = 0,
-                 const SyncPattern pattern       = SyncPattern::Full,
-                 const poplar::OptionFlags &opts = {}) {
+std::shared_ptr<popart::DeviceInfo> createTestDevice(
+    const TestDeviceType testDeviceType,
+    const unsigned numIPUs              = 1,
+    unsigned tilesPerIPU                = 0,
+    const SyncPattern pattern           = SyncPattern::Full,
+    const poplar::OptionFlags &opts     = {},
+    DeviceConnectionType connectionType = DeviceConnectionType::OnDemand) {
 
   if (tilesPerIPU == 0 && ((testDeviceType == TestDeviceType::Sim) ||
                            (testDeviceType == TestDeviceType::IpuModel))) {
@@ -69,7 +70,7 @@ createTestDevice(const TestDeviceType testDeviceType,
     return dm.acquireAvailableDevice(numIPUs,
                                      tilesPerIPU,
                                      pattern,
-                                     DeviceConnectionType::OnDemand,
+                                     connectionType,
                                      DeviceSelectionCriterion::Random);
   case TestDeviceType::IpuModel:
     return dm.createIpuModelDevice(deviceOpts);

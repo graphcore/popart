@@ -642,8 +642,9 @@ BOOST_AUTO_TEST_CASE(session_run_on_ipu_from_offlineipu_serialized_exe) {
   std::vector<float> A_readback1(A_info.nelms(), -9.0f);
   std::vector<float> B_readback1(B_info.nelms(), -99.0f);
 
+  auto initialDevice   = popart::createTestDevice(TestDeviceType::Hw);
+  auto initialDeviceId = initialDevice->getId();
   {
-    auto device = popart::createTestDevice(TestDeviceType::Hw);
 
     // Engine caching is enabled so this session will store
     // the serialized PopART state and poplar executable
@@ -652,7 +653,7 @@ BOOST_AUTO_TEST_CASE(session_run_on_ipu_from_offlineipu_serialized_exe) {
         dataFlow,
         l1,
         optimizer,
-        device,
+        initialDevice,
         popart::InputShapeInfo(),
         opts,
         popart::Patterns(PatternsLevel::Default));
@@ -680,9 +681,8 @@ BOOST_AUTO_TEST_CASE(session_run_on_ipu_from_offlineipu_serialized_exe) {
   size_t irBundleHash1     = 0;
   std::string cacheFile;
   {
-    auto currentHwDeviceInfo = popart::createTestDevice(TestDeviceType::Hw);
-    const auto &archString =
-        currentHwDeviceInfo->getTarget().getTargetArchString();
+    const auto &archString = initialDevice->getTarget().getTargetArchString();
+    initialDevice->setOnDemandAttachTimeout(0);
     auto device = popart::createTestDevice(TestDeviceType::OfflineIpu,
                                            1,
                                            0,
@@ -721,9 +721,20 @@ BOOST_AUTO_TEST_CASE(session_run_on_ipu_from_offlineipu_serialized_exe) {
 
   std::vector<float> A_readback2_init(A_info.nelms(), -9.0f);
   std::vector<float> B_readback2_init(B_info.nelms(), -99.0f);
-  size_t irBundleHash2 = 0;
+  size_t irBundleHash2     = 0;
+  int deserializedDeviceId = -1;
   {
-    auto device = popart::createTestDevice(TestDeviceType::Hw);
+    // Ensure that this device connects immediately so that deserialized
+    // executable runs on a different device. This forces data to be copied
+    // instead of relying on unchanged memory on the device.
+    auto device          = popart::createTestDevice(TestDeviceType::Hw,
+                                           1,
+                                           0,
+                                           SyncPattern::Full,
+                                           {},
+                                           DeviceConnectionType::Always);
+    deserializedDeviceId = device->getId();
+    BOOST_REQUIRE_NE(initialDeviceId, deserializedDeviceId);
 
     // This session will load the PopART state and poplar
     // executable produced by the previous session.
