@@ -465,10 +465,10 @@ BOOST_AUTO_TEST_CASE(session_run_from_serialized_exe) {
     weightsRead1.insert(A_id, {A_readback1_init.data(), A_info});
     weightsRead1.insert(B_id, {B_readback1_init.data(), B_info});
 
+    session->weightsFromHost();
     session->weightsToHost();
     session->readWeights(weightsRead1);
 
-    session->weightsFromHost();
     session->run(stepio);
 
     WeightsIO weightsRead2;
@@ -523,10 +523,10 @@ BOOST_AUTO_TEST_CASE(session_run_from_serialized_exe) {
     weightsRead1.insert(A_id, {A_readback2_init.data(), A_info});
     weightsRead1.insert(B_id, {B_readback2_init.data(), B_info});
 
+    session->weightsFromHost();
     session->weightsToHost();
     session->readWeights(weightsRead1);
 
-    session->weightsFromHost();
     session->run(stepio);
 
     WeightsIO weightsRead2;
@@ -648,9 +648,6 @@ BOOST_AUTO_TEST_CASE(session_run_on_ipu_from_offlineipu_serialized_exe) {
   std::vector<float> A_readback1(A_info.nelms(), -9.0f);
   std::vector<float> B_readback1(B_info.nelms(), -99.0f);
 
-  std::vector<float> A_readback1_init(A_info.nelms(), -9.0f);
-  std::vector<float> B_readback1_init(B_info.nelms(), -99.0f);
-
   {
     auto device = popart::createTestDevice(TestDeviceType::Hw);
 
@@ -671,14 +668,8 @@ BOOST_AUTO_TEST_CASE(session_run_on_ipu_from_offlineipu_serialized_exe) {
     BOOST_CHECK(session->getIrLowering().usingCachedExecutable() == false);
     BOOST_CHECK(session->getIr().hashMatched() == false);
 
-    WeightsIO weightsRead1;
-    weightsRead1.insert(A_id, {A_readback1_init.data(), A_info});
-    weightsRead1.insert(B_id, {B_readback1_init.data(), B_info});
-
-    session->weightsToHost();
-    session->readWeights(weightsRead1);
-
     session->weightsFromHost();
+
     session->run(stepio);
 
     WeightsIO weightsRead2;
@@ -762,13 +753,6 @@ BOOST_AUTO_TEST_CASE(session_run_on_ipu_from_offlineipu_serialized_exe) {
     BOOST_CHECK(session->getIrLowering().usingCachedExecutable());
     BOOST_CHECK(session->getExecutable().isDeserialized());
 
-    WeightsIO weightsRead1;
-    weightsRead1.insert(A_id, {A_readback2_init.data(), A_info});
-    weightsRead1.insert(B_id, {B_readback2_init.data(), B_info});
-
-    session->weightsToHost();
-    session->readWeights(weightsRead1);
-
     session->weightsFromHost();
     session->run(stepio);
 
@@ -784,16 +768,6 @@ BOOST_AUTO_TEST_CASE(session_run_on_ipu_from_offlineipu_serialized_exe) {
                                 raw_C_out.end(),
                                 C_ground_truth.begin(),
                                 C_ground_truth.end());
-
-  BOOST_CHECK_EQUAL_COLLECTIONS(A_readback1_init.begin(),
-                                A_readback1_init.end(),
-                                A_readback2_init.begin(),
-                                A_readback2_init.end());
-
-  BOOST_CHECK_EQUAL_COLLECTIONS(B_readback1_init.begin(),
-                                B_readback1_init.end(),
-                                B_readback2_init.begin(),
-                                B_readback2_init.end());
 
   BOOST_CHECK_EQUAL_COLLECTIONS(A_readback1.begin(),
                                 A_readback1.end(),
