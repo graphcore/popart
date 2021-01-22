@@ -2,6 +2,7 @@
 import numpy as np
 import pytest
 import popart
+import onnx
 import torch
 
 # `import test_util` requires adding to sys.path
@@ -34,12 +35,13 @@ import test_util as tu
 @pytest.fixture
 def op_tester(tmpdir):
     class Builder:
-        def __init__(self, opsets=None):
+        def __init__(self, opsets=None, check_model=True):
             self._builder = popart.Builder(opsets=opsets)
 
             self._input_map = {}
             self._init_input_map = {}
             self._outputs = []
+            self._check_model = check_model
 
         def addInputTensor(self, data, debugName=""):
             shape = popart.TensorInfo(data)
@@ -59,6 +61,18 @@ def op_tester(tmpdir):
         def addOutputTensor(self, tensorId):
             self._outputs.append(tensorId)
             self._builder.addOutputTensor(tensorId)
+
+        def getModelProto(self):
+            proto = self._builder.getModelProto()
+
+            # TODO (T33079): decide if we can apply this check unconditionally
+            # in the underlying builder implementation
+            if self._check_model:
+                print("Checking model proto with onnx")
+                model = onnx.load_from_string(proto)
+                onnx.checker.check_model(model)
+
+            return proto
 
         def __getattr__(self, attr):
             return getattr(self._builder, attr)
@@ -94,6 +108,9 @@ def op_tester(tmpdir):
             self.equal_nan = False
             self.inplacing = True
             self.lossReduction = popart.ReductionType.Mean
+
+            # TODO (T33079): This can be removed when all tests pass model validation.
+            self.check_model = False
 
         def verifyTensor(self, t1, ref):
             if self.check_shapes:
@@ -144,7 +161,7 @@ def op_tester(tmpdir):
                 seed=None):
             assert step_type in ('infer', 'train')
 
-            bld = Builder(opsets=opsets)
+            bld = Builder(opsets=opsets, check_model=self.check_model)
 
             anchors = {}
 

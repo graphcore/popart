@@ -503,10 +503,15 @@ std::vector<TensorId> AiGraphcoreOpset1::multiconv(
   }
 
   std::map<std::string, popart::any> finalAttributes;
-  finalAttributes["strides"]   = flatStrides;
-  finalAttributes["pads"]      = flatPads;
-  finalAttributes["dilations"] = flatDilations;
-
+  if (flatStrides.size()) {
+    finalAttributes["strides"] = flatStrides;
+  }
+  if (flatPads.size()) {
+    finalAttributes["pads"] = flatPads;
+  }
+  if (flatDilations.size()) {
+    finalAttributes["dilations"] = flatDilations;
+  }
   if (planType) {
     finalAttributes["planType"] = *planType;
   }

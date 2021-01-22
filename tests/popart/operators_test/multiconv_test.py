@@ -83,6 +83,8 @@ def test_multiconv_infer(op_tester, dims):
         c1 = conv1(d1)
         return [c0, c1]
 
+    # TODO (T33079): This can be removed when all tests pass model validation.
+    op_tester.check_model = True
     op_tester.run(init_builder, reference, step_type='infer')
 
 
@@ -128,6 +130,8 @@ def test_multiconv_infer_default(op_tester):
         c1 = conv1(d1)
         return [c0, c1]
 
+    # TODO (T33079): This can be removed when all tests pass model validation.
+    op_tester.check_model = True
     op_tester.run(init_builder, reference, step_type='infer')
 
 
@@ -199,6 +203,8 @@ def test_multiconv_train_default_parameters_and_conv_options(op_tester, dims):
             conv1.bias.grad
         ]
 
+    # TODO (T33079): This can be removed when all tests pass model validation.
+    op_tester.check_model = True
     op_tester.setPatterns(['ConvDataGrad'], enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference, step_type='train')
 
@@ -267,6 +273,8 @@ def test_multiconv_train_all_conv_options(op_tester):
         out.backward()
         return [out, d0.grad, d1.grad, conv0.weight.grad, conv1.weight.grad]
 
+    # TODO (T33079): This can be removed when all tests pass model validation.
+    op_tester.check_model = True
     op_tester.setPatterns(['ConvDataGrad'], enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference, step_type='train')
 

@@ -863,38 +863,38 @@ ONNX_OPERATOR_SET_SCHEMA_EX(
             {"tensor(float16)", "tensor(float)"},
             "Input and output types can be any type supported by the IPU.")
         .Attr("strides",
-              "The concatenated strides for each convoltion.",
+              "The concatenated strides for each convolution.",
               AttributeProto::INTS,
-              true)
+              false)
         .Attr("pads",
-              "The concatenated pads for each convoltion.",
+              "The concatenated pads for each convolution.",
               AttributeProto::INTS,
-              true)
+              false)
         .Attr("dilations",
-              "The concatenated dilations for each convoltion.",
+              "The concatenated dilations for each convolution.",
               AttributeProto::INTS,
-              true)
-        .Attr("planType", "The plan type.", AttributeProto::STRING, true)
+              false)
+        .Attr("planType", "The plan type.", AttributeProto::STRING, false)
         .Attr("perConvReservedTiles",
               "The number of tiles reserved per convolution.",
               AttributeProto::INT,
-              true)
+              false)
         .Attr("perConvReservedTiles",
               "The number of tiles reserved per convolution.",
               AttributeProto::INT,
-              true)
+              false)
         .Attr("cycleBackOff",
               "The cycle back-off proportion.",
               AttributeProto::FLOAT,
-              true)
+              false)
         .Attr(popart::sAvailMemAttribute,
               "The available memory proportion per convolution.",
               AttributeProto::FLOATS,
-              true)
+              false)
         .Attr(popart::sPartialsTypeAttribute,
               "The partials type when computing each convolution.",
-              AttributeProto::FLOATS,
-              true)
+              AttributeProto::STRINGS,
+              false)
         .Attr("numConvs",
               "The number convolutions that the MultiConv comprises.",
               AttributeProto::INT,
