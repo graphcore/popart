@@ -22,7 +22,7 @@ void HistogramOpx::grow(poplar::program::Sequence &prog) const {
   auto out = popops::histogram(graph(),
                                getInTensor(op.getInIndex()),
                                levelsT,
-                               false,
+                               op.getAbsoluteOfInput(),
                                prog,
                                debugContext());
 

@@ -11,8 +11,9 @@ std::unique_ptr<Op> HistogramOp::clone() const {
 
 HistogramOp::HistogramOp(const OperatorIdentifier &_opid,
                          const std::vector<float> &levels_,
+                         const bool absoluteOfInput_,
                          const Op::Settings &settings_)
-    : Op(_opid, settings_), levels(levels_) {
+    : Op(_opid, settings_), levels(levels_), absoluteOfInput(absoluteOfInput_) {
 
   // The bin edges must appear in ascending order
   std::sort(levels.begin(), levels.end());
@@ -49,15 +50,18 @@ namespace {
 static OpDefinition
     histogramOpDef({OpDefinition::Inputs({{"data", supportedTypes}}),
                     OpDefinition::Outputs({{"counts", {outputType}}}),
-                    OpDefinition::Attributes({{"levels", {"*"}}})});
+                    OpDefinition::Attributes({{"levels", {"*"}},
+                                              {"absoluteOfInput", {"*"}}})});
 
 static OpCreator<HistogramOp> histogramOpCreator(
     OpDefinitions({{Onnx::CustomOperators::Histogram, histogramOpDef}}),
     [](const OpCreatorInfo &info) {
       std::vector<float> levels =
           info.attributes.getAttribute<Attributes::Floats>("levels");
+      bool absoluteOfInput =
+          info.attributes.getAttribute<Attributes::Int>("absoluteOfInput");
       return std::unique_ptr<HistogramOp>(
-          new HistogramOp(info.opid, levels, info.settings));
+          new HistogramOp(info.opid, levels, absoluteOfInput, info.settings));
     },
     true);
 
