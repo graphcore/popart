@@ -1,13 +1,9 @@
 #define BOOST_TEST_MODULE PrePlanMatMulsTest
 
-#include <chrono>
-#include <cmath>
-#include <memory>
-#include <vector>
-
 #include <boost/test/unit_test.hpp>
 #include <popart/builder.hpp>
 #include <popart/dataflow.hpp>
+#include <popart/error.hpp>
 #include <popart/filereader.hpp>
 #include <popart/ir.hpp>
 #include <popart/optimizer.hpp>
@@ -23,95 +19,83 @@
 
 using namespace popart;
 
+bool prePlanningFailed(const internal_error &ex) {
+  return std::string(ex.what()).find("Pre-planning failed for ") !=
+         std::string::npos;
+}
+
 BOOST_AUTO_TEST_CASE(PrePlanMatMuls_0) {
   // Build the graph:
-  //         w0 --.
-  // in0 ------- MatMul0 -- Slice ----.
-  //      |  w1 --.                    \
-  //      |----- MatMul1 -- Slice ----. \
-  //     ... wN --.                    \ \
-  //      '----- MatMulN -- Slice ------ Sum - out
+  //         w0 -- TopK -.
+  // in0 ------------ MatMul0 -- Slice ----.
+  //      |  w1 -- TopK -.                  \
+  //      |---------- MatMul1 -- Slice ----. \
+  //     ... wN -- TopK -.                    \
+  //      '---------- MatMulN -- Slice ------ Sum - out
 
-  // and verify that poplar compilation is shorter when
-  // matmuls are preplanned
-  auto test = [&](bool training) {
-    auto builder                    = Builder::create();
-    std::vector<int64_t> inputShape = {1, 2000};
-    int numLayers;
+  // and verify that the 'pre-plan matmul' option is turned off that
+  // the run-time check throws an exception
+  auto builder                    = Builder::create();
+  std::vector<int64_t> inputShape = {1, 20};
+  int numLayers                   = 3;
 
-    if (training) {
-      numLayers = 3;
-    } else {
-      numLayers = 5;
-    }
+  auto ip0 = builder->addInputTensor("FLOAT", inputShape);
+  std::vector<TensorId> outs;
+  for (int layer = 0; layer < numLayers; layer++) {
+    std::vector<int64_t> wShape = {23, layer + 1};
+    auto wN                     = builder->addInputTensor("FLOAT", wShape);
+    // Require a 'can-create-input' op before the matmul, such that the
+    // subsequent matmul doesn't create it's input. Why?:
+    // - we check at runtime (inside MatMulOpx::grow) if the plan has been
+    //   cached from pre-planning.
+    // - if it has not, we know that pre-planning has failed.
+    // - but if pre-planning is not run, a plan is still created before the grow
+    //   function when createWeights is called.
+    // - By inserting a topk op, we make sure that the matmul isn't creating
+    //   its weight input, making it easy to test that no plan is cached
+    //   when pre-planning is turned off.
+    auto topk   = builder->aiOnnxOpset6().topk({wN}, 20, 0)[0];
+    auto matmul = builder->aiOnnxOpset6().matmul({ip0, topk});
+    auto out = builder->aiOnnxOpset6().slice({matmul}, {1, 1}, {0, 0}, {0, 1});
+    outs.push_back(out);
+  }
+  auto sum = builder->aiOnnxOpset6().sum(outs);
+  auto out = builder->aiGraphcoreOpset1().identityloss({sum});
 
-    auto ip0 = builder->addInputTensor("FLOAT", inputShape);
-    std::vector<TensorId> outs;
-    for (int layer = 0; layer < numLayers; layer++) {
-      std::vector<int64_t> wShape = {2000, layer + 1};
-      auto wN                     = builder->addInputTensor("FLOAT", wShape);
-      auto matmul                 = builder->aiOnnxOpset6().matmul({ip0, wN});
-      auto out =
-          builder->aiOnnxOpset6().slice({matmul}, {1, 1}, {0, 0}, {0, 1});
-      outs.push_back(out);
-    }
-    auto sum = builder->aiOnnxOpset6().sum(outs);
-    auto out = builder->aiGraphcoreOpset1().identityloss({sum});
+  auto modelProto = io::getModelFromString(builder->getModelProto());
 
-    auto modelProto = io::getModelFromString(builder->getModelProto());
+  auto compileModel = [&](bool prePlanMatMuls) {
+    auto device = createTestDevice(TEST_TARGET);
+    SessionOptions opts;
 
-    auto getCompileTime = [&](bool prePlanMatMuls) {
-      auto device = createTestDevice(TEST_TARGET);
-      SessionOptions opts;
+    std::vector<TensorId> anchorIds = outs;
+    anchorIds.push_back(reservedGradientPrefix() + ip0);
+    TensorId loss  = out;
+    auto optimizer = ConstSGD(0.1);
 
-      std::vector<TensorId> anchorIds = outs;
-      TensorId loss                   = "";
-      auto optimizer                  = ConstSGD(0.1);
-      Optimizer *optimizer_ptr        = nullptr;
+    Ir ir;
+    ir.prepare({modelProto,
+                InputShapeInfo(),
+                DataFlow(1, anchorIds),
+                loss,
+                &optimizer,
+                *device,
+                opts,
+                Patterns(PatternsLevel::All)});
 
-      if (training) {
-        anchorIds.push_back(reservedGradientPrefix() + ip0);
-        loss          = out;
-        optimizer_ptr = &optimizer;
-      }
+    std::unique_ptr<popx::IrLowering> lowering;
+    lowering.reset(new popx::IrLowering(ir, device));
 
-      Ir ir;
-      ir.prepare({modelProto,
-                  InputShapeInfo(),
-                  DataFlow(1, anchorIds),
-                  loss,
-                  optimizer_ptr,
-                  *device,
-                  opts,
-                  Patterns(PatternsLevel::All)});
+    std::unique_ptr<popx::Executablex> executable =
+        std::move(popx::Executablex::createFromLoweredIr(*lowering));
 
-      std::unique_ptr<popx::IrLowering> lowering;
-      lowering.reset(new popx::IrLowering(ir, device));
+    const auto devicex = std::make_unique<popx::Devicex>(*executable, device);
 
-      std::unique_ptr<popx::Executablex> executable =
-          std::move(popx::Executablex::createFromLoweredIr(*lowering));
+    devicex->prePlanMatMuls = prePlanMatMuls;
 
-      const auto devicex = std::make_unique<popx::Devicex>(*executable, device);
-
-      devicex->prePlanMatMuls = prePlanMatMuls;
-
-      auto start = std::chrono::high_resolution_clock::now();
-      devicex->prepare();
-      auto finish = std::chrono::high_resolution_clock::now();
-      std::chrono::duration<double> compileTime = finish - start;
-
-      return compileTime.count();
-    };
-
-    // Verify that compilation is faster when pre-planning matmuls
-    // by at least 15%
-    // TODO T31376: The feature being tested relies on multi-processing.
-    // It is too flaky to compare wall-clock times when running on buildbots
-    // (different hardware, under different loads). Leaving this check
-    // commented out for now.
-    // BOOST_CHECK(getCompileTime(false) > getCompileTime(true) * 1.15);
+    devicex->prepare();
   };
 
-  test(false); // inference
-  test(true);  // training
+  compileModel(true); // No run-time exception; pre-planning works
+  BOOST_CHECK_EXCEPTION(compileModel(false), internal_error, prePlanningFailed);
 }

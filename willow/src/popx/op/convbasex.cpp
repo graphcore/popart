@@ -74,6 +74,14 @@ bool MultiConvBaseOpx::isDataInIndex(InIndex index) const {
   return false;
 }
 
+void MultiConvBaseOpx::verifyCacheSizeUnchanged(size_t beforeCacheSize) const {
+  if (beforeCacheSize != dv_p->convCache.size()) {
+    throw internal_error(
+        "Pre-planning failed for {}. It's plan was not found in the cache",
+        op_p->str());
+  }
+}
+
 poplar::Tensor MultiConvBaseOpx::createInput(InIndex index,
                                              const std::string &name) const {
   auto &op       = getOp<MultiConvBaseOp>();
@@ -148,6 +156,8 @@ void MultiConvBaseOpx::grow(poplar::program::Sequence &prog) const {
   MultiConvBaseOp &op = getOp<MultiConvBaseOp>();
   std::vector<poplar::Tensor> allWeights;
 
+  auto cacheSize = dv_p->convCache.size();
+
   for (int i = 0; i < op.numConvs(); i++) {
     auto params    = op.getParameters(i);
     auto weights   = getInTensor(MultiConvBaseOp::getWeightsInIndex(i));
@@ -170,6 +180,8 @@ void MultiConvBaseOpx::grow(poplar::program::Sequence &prog) const {
 
   std::vector<poplar::Tensor> outTensors = convolve(prog, allWeights);
 
+  verifyCacheSizeUnchanged(cacheSize);
+
   for (int i = 0; i < op.numConvs(); i++) {
     setOutTensor(MultiConvBaseOp::getOutIndex(i), outTensors[i]);
   }
@@ -187,10 +199,21 @@ MultiConvWeightsGradBaseOpx::getConvOptions(int convIndex) const {
   return optionFlags;
 }
 
+void MultiConvWeightsGradBaseOpx::verifyCacheSizeUnchanged(
+    size_t beforeCacheSize) const {
+  if (beforeCacheSize != dv_p->convCache.size()) {
+    throw internal_error(
+        "Pre-planning failed for {}. It's plan was not found in the cache",
+        op_p->str());
+  }
+}
+
 void MultiConvWeightsGradBaseOpx::grow(poplar::program::Sequence &prog) const {
   MultiConvWeightsGradBaseOp &op = getOp<MultiConvWeightsGradBaseOp>();
 
+  auto cacheSize                         = dv_p->convCache.size();
   std::vector<poplar::Tensor> outTensors = calculateWeightDeltas(prog);
+  verifyCacheSizeUnchanged(cacheSize);
 
   for (int i = 0; i < op.numConvs(); i++) {
     // If poplar::Tensor has an extra 0th (grouping) dimension, as in
@@ -213,10 +236,18 @@ void MultiConvWeightsGradBaseOpx::grow(poplar::program::Sequence &prog) const {
 }
 
 ConvParameters getConvGradParameters(const ConvParameters &fwdParams) {
-
-  // Let us cheat for now use poplar
   poplin::ConvParams popBwdParams =
       poplin::getGradientParams(getPoplarConvParams(fwdParams));
+
+  ConvParameters bwdParams = convertPoplarConvParameters(popBwdParams);
+  bwdParams.type           = fwdParams.type;
+
+  return bwdParams;
+}
+
+ConvParameters getConvWeightUpdateParameters(const ConvParameters &fwdParams) {
+  poplin::ConvParams popBwdParams =
+      poplin::getWeightUpdateParams(getPoplarConvParams(fwdParams));
 
   ConvParameters bwdParams = convertPoplarConvParameters(popBwdParams);
   bwdParams.type           = fwdParams.type;

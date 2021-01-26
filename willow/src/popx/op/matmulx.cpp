@@ -357,6 +357,24 @@ poplar::Type MatMulOpx::getOutputType(const poplar::Tensor &output) const {
   return outputType;
 }
 
+void MatMulOpx::verifyCacheSizeUnchanged(size_t beforeCacheSize) const {
+  bool expectedCacheSize;
+
+  auto opts = getPoplarOptionsForMatMul(getOp<MatMulOp>()).options;
+  if (opts.count("fullyConnectedPass") &&
+      opts["fullyConnectedPass"] != "INFERENCE_FWD") {
+    expectedCacheSize = dv_p->matmulCache.size() <= beforeCacheSize + 2;
+  } else {
+    expectedCacheSize = beforeCacheSize == dv_p->matmulCache.size();
+  }
+
+  if (!expectedCacheSize) {
+    throw internal_error(
+        "Pre-planning failed for {}. It's plan was not found in the cache",
+        op_p->str());
+  }
+}
+
 // Expand a matmul into a poplibs grouped matmul, following numpy rules
 //
 // For example,
@@ -432,6 +450,7 @@ void MatMulOpx::grow(poplar::program::Sequence &prog) const {
   setMatMulOptions(matmul, opts);
   auto outputType = getOutputType(combinedBroadcastTs.first);
 
+  auto cacheSize = dv_p->matmulCache.size();
   auto outTensor =
       poplin::matMulGrouped(graph(),                    // graph
                             combinedBroadcastTs.first,  // A
@@ -441,6 +460,8 @@ void MatMulOpx::grow(poplar::program::Sequence &prog) const {
                             debugContext("matmulGrouped"), // debugContext
                             opts,                          // options
                             &dv_p->matmulCache);           // cache
+
+  verifyCacheSizeUnchanged(cacheSize);
 
   // Log the report plan
   std::stringstream ss;

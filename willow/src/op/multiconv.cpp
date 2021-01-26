@@ -11,12 +11,6 @@
 
 namespace popart {
 
-// These are utility functions that are need by the Ir Conv.
-namespace popx {
-ConvParameters getConvGradParameters(const ConvParameters &fwdParams);
-ConvParameters canonicalizeConvParams(const ConvParameters &param);
-} // namespace popx
-
 MultiConvOp::MultiConvOp(const OperatorIdentifier &_opid,
                          const Settings &settings_,
                          const std::vector<int64_t> &flatStrides_,

@@ -38,14 +38,20 @@ public:
   }
   bool isWeightsInIndex(InIndex) const;
   bool isDataInIndex(InIndex) const;
+
+  void verifyCacheSizeUnchanged(size_t beforeCacheSize) const;
 };
 
 // Returned the canonicalized for of the conv parameters
 ConvParameters canonicalizeConvParams(const ConvParameters &param);
 
 // Convert the conv parameters from the fwd conv into the form that
-// can be used by the bwd conv
+// can be used by the data grad conv
 ConvParameters getConvGradParameters(const ConvParameters &fwdParams);
+
+// Convert the conv parameters from the fwd conv into the form that
+// can be used by the weights grad conv
+ConvParameters getConvWeightUpdateParameters(const ConvParameters &fwdParams);
 
 poplin::ConvParams getPoplarConvParams(const ConvParameters &param);
 ConvParameters convertPoplarConvParameters(const poplin::ConvParams &popParams);
@@ -65,6 +71,8 @@ public:
   }
 
   poplar::OptionFlags getConvOptions(int convIndex = 0) const;
+
+  void verifyCacheSizeUnchanged(size_t beforeCacheSize) const;
 };
 
 } // namespace popx

@@ -2385,8 +2385,9 @@ void IrLowering::prePlanConvolutions() {
         auto convOpx =
             dynamic_cast<MultiConvWeightsGradBaseOpx *>(getOpx(op->id));
         for (int i = 0; i < convOp->numConvs(); i++) {
-          allConvParams.push_back(
-              getPoplarConvParams(convOp->getParameters(i)));
+          auto wuConvParams =
+              getConvWeightUpdateParameters(convOp->getParameters(i));
+          allConvParams.push_back(getPoplarConvParams(wuConvParams));
           allOptionFlags.push_back(convOpx->getConvOptions(i));
         }
       }
