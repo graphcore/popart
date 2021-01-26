@@ -305,7 +305,7 @@ void Tensors::addStream(TensorId tenId,
 }
 
 void Tensors::addActGrad(TensorId tenId, const DebugContext &debugContext) {
-  popart::DebugInfo di(debugContext, "popart#addActGrad#" + tenId);
+  popart::TensorDebugInfo di(debugContext, tenId, TensorType::ActGrad);
   logging::debug("Adding ActGrad Tensor {}", tenId);
   insert(tenId,
          std::unique_ptr<Tensor>(
