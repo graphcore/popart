@@ -573,6 +573,15 @@ public:
   TensorId reverse(const std::vector<TensorId> &args,
                    const std::vector<int64_t> &dimensions,
                    const DebugContext &debugContext = {});
+
+  /*
+   * Add abort operation to the model.
+   *
+   * The operation can be conditional or unconditional.
+   * \param args Optional input tensor to test condition
+   */
+  void abort(const std::vector<TensorId> &args,
+             const DebugContext &debugContext = {});
 };
 
 /**

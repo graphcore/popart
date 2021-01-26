@@ -1119,6 +1119,19 @@ TensorId AiGraphcoreOpset1::reverse(const std::vector<TensorId> &args,
   return outputs.at(0);
 }
 
+void AiGraphcoreOpset1::abort(const std::vector<TensorId> &args,
+                              const DebugContext &debugContext) {
+  std::map<std::string, popart::any> attributes;
+  BuilderDebugInfo di(debugContext, __POPART_FUNCTION_NAME__, args, attributes);
+  attributes.insert({sDebugInfoId, di.getId()});
+
+  impl->op(Onnx::AiGraphcore::OpSet1::Abort,
+           getOpsetVersion(),
+           args,
+           attributes,
+           debugContext);
+}
+
 std::vector<TensorId>
 Builder::customOp(const OperatorIdentifier &opid,
                   int opsetVersion,

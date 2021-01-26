@@ -353,6 +353,7 @@ const static AiGraphcoreOpIdV1 ThresholdedReluInplace("ThresholdedReluInplace");
 const static AiGraphcoreOpIdV1 TransposeInplace("TransposeInplace");
 const static AiGraphcoreOpIdV1 Zeros_1("Zeros");
 const static AiGraphcoreOpIdV1 ZerosLike_1("ZerosLike");
+const static AiGraphcoreOpIdV1 Abort("Abort");
 } // namespace CustomOperators
 
 namespace AiGraphcore {
@@ -393,6 +394,7 @@ const static OperatorIdentifier BinaryConstScalar =
 const static OperatorIdentifier ShapedDropout =
     CustomOperators::ShapedDropout_1;
 const static OperatorIdentifier Subsample = CustomOperators::Subsample_1;
+const static OperatorIdentifier Abort     = CustomOperators::Abort;
 } // namespace OpSet1
 } // namespace AiGraphcore
 
