@@ -47,8 +47,12 @@ void withEdges(Graph &graph,
 
   /* 1. Create all the ops, assign their opIds, and move into graph. */
 
+  const auto settings = [&graph](const OpId opId) {
+    return Op::Settings{graph, "Dummy" + std::to_string(opId)};
+  };
+
   for (auto opId = 0; opId < nOps; opId++) {
-    auto op = std::make_unique<DummyOp>(graph);
+    auto op = std::make_unique<DummyOp>(graph, settings(opId));
     op->id  = opId;
     graph.moveIntoGraph(std::move(op));
   }

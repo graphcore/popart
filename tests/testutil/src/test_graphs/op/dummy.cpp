@@ -17,9 +17,8 @@ namespace test_graphs {
 
 // So far don't see a use case for allowing the OperatorIdentifier and
 // Op::Settings to be constructor parameters.
-DummyOp::DummyOp(Graph &graph)
-    : Op(test_graphs::CustomOperators::Dummy_1,
-         Op::Settings{graph, "test_graph::DummyOp::Settings"}) {}
+DummyOp::DummyOp(Graph &graph, const Op::Settings &settings)
+    : Op(test_graphs::CustomOperators::Dummy_1, settings) {}
 
 void DummyOp::setup() {
   if (nextInIndex == 0) {

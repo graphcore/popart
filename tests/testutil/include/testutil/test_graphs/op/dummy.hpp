@@ -18,7 +18,7 @@ const popart::OperatorIdentifier Dummy_1 = {
 
 class DummyOp : public popart::Op {
 public:
-  DummyOp(popart::Graph &graph);
+  DummyOp(popart::Graph &graph, const popart::Op::Settings &);
 
   popart::InIndex getNextInIndex() { return nextInIndex++; }
   static popart::OutIndex getOutIndex() { return 0; }
