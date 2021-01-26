@@ -757,6 +757,27 @@ void Ir::verifyRecomputeAttributes() const noexcept(false) {
   }
 }
 
+bool Ir::hasReplicatedTensorSharding() const {
+  if (userOptions.activationTensorLocationSettings.location
+          .replicatedTensorSharding == ReplicatedTensorSharding::On) {
+    return true;
+  }
+  if (userOptions.weightTensorLocationSettings.location
+          .replicatedTensorSharding == ReplicatedTensorSharding::On) {
+    return true;
+  }
+  if (userOptions.optimizerStateTensorLocationSettings.location
+          .replicatedTensorSharding == ReplicatedTensorSharding::On) {
+    return true;
+  }
+  if (userOptions.accumulatorTensorLocationSettings.location
+          .replicatedTensorSharding == ReplicatedTensorSharding::On) {
+    return true;
+  }
+
+  return false;
+}
+
 void Ir::verifyDistributedReplicatedGraphSettings() const {
   if (userOptions.enableDistributedReplicatedGraphs) {
     auto localReplicationFactor  = userOptions.replicatedGraphCount;
@@ -792,6 +813,11 @@ void Ir::verifyDistributedReplicatedGraphSettings() const {
                     localReplicationFactor,
                     globalReplicationFactor);
       }
+    }
+
+    if (hasReplicatedTensorSharding()) {
+      throw error("Distributed Replicated graphs are not supported with "
+                  "Replicated Tensor Sharding.");
     }
   }
 }

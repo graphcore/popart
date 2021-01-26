@@ -317,3 +317,44 @@ def test_distributed_hierarchical_replicated_weight_update():
     keys = ["A", "B", "C", "D"]
     for k in keys:
         assert np.allclose(anchors[k], torch_ground_truth[k].detach().numpy())
+
+
+@pytest.mark.parametrize(
+    "tensor", ["activation", "weight", "optimizerState", "accumulator"])
+def test_replicated_tensor_sharding_error(tensor):
+    builder = popart.Builder()
+
+    inShape = [2, 2]
+    inInfo = popart.TensorInfo("FLOAT", inShape)
+
+    i1 = builder.addInputTensor(inInfo)
+    w1 = builder.addInitializedInputTensor(np.zeros(inShape, dtype=np.float32),
+                                           "w1")
+    o = builder.aiOnnx.add([i1, w1])
+    l1 = builder.aiGraphcore.l1loss([o], 0.0)
+
+    proto = builder.getModelProto()
+
+    dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("All")})
+
+    opts = popart.SessionOptions()
+    userOption = tensor + "TensorLocationSettings"
+    locationSetting = getattr(opts, userOption)
+    locationSetting.location.replicatedTensorSharding = popart.ReplicatedTensorSharding.On
+    setattr(opts, userOption, locationSetting)
+    opts.enableDistributedReplicatedGraphs = True
+    opts.globalReplicaOffset = 0
+    opts.globalReplicationFactor = 2
+
+    with pytest.raises(popart.popart_exception) as e_info:
+        session = popart.TrainingSession(fnModel=proto,
+                                         dataFlow=dataFlow,
+                                         deviceInfo=tu.create_test_device(),
+                                         userOptions=opts,
+                                         loss=l1,
+                                         optimizer=popart.ConstSGD(0.01))
+
+    assert (
+        e_info.value.args[0] ==
+        "Distributed Replicated graphs are not supported with Replicated Tensor Sharding."
+    )

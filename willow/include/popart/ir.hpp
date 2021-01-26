@@ -461,6 +461,8 @@ public:
     return userOptions.autoRecomputation != RecomputationType::None;
   }
 
+  bool hasReplicatedTensorSharding() const;
+
   // The model requires a user-settable random seed tensor
   bool hasRandomOps() const;
   void setRequiresRandomSeed() { requiresRandomSeed_ = true; }
