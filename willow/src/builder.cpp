@@ -304,7 +304,7 @@ verify_AiOnnxOpset6_Pad_2(std::unique_ptr<BuilderImpl> &impl,
 
 #include "builder.cpp.gen"
 
-Builder::Builder() : impl_(new BuilderImpl()) {}
+Builder::Builder() : impl_(new BuilderImpl()), parent(nullptr) {}
 
 void Builder::configure() { impl_->configure(); }
 
@@ -314,6 +314,13 @@ std::unique_ptr<Builder> Builder::create() {
   return builder;
 }
 
+void Builder::setParent(Builder *parent) {
+  this->parent = parent;
+  this->impl_->setParent(parent->impl_.get());
+}
+
+Builder *Builder::getParent() const { return parent; }
+
 Builder &Builder::createSubgraphBuilder() {
   children[nChildren] = create();
   auto child          = children[nChildren].get();
@@ -322,8 +329,8 @@ Builder &Builder::createSubgraphBuilder() {
   // point this to child
   impl_->addChild(child->impl_.get());
 
-  // point child to this
-  child->impl_->setParent(this->impl_.get());
+  // Set the parent.
+  child->setParent(this);
 
   return *child;
 }

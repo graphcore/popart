@@ -149,7 +149,10 @@ void IfOpx::grow(poplar::program::Sequence &prog) const {
 
   copyOutputs(then_prog, else_prog, outputs);
 
-  auto condition = getInTensor(IfGradOp::getConditionInIndex());
+  poplar::Tensor condition = getInTensor(IfGradOp::getConditionInIndex());
+
+  // Reshape to scalar in case the user passed in tensor of shape [1]
+  condition = condition.reshape({});
   prog.add(poplar::program::If(
       condition, then_prog, else_prog, debugContext("condition")));
 

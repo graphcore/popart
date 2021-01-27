@@ -1398,6 +1398,23 @@ public:
    */
   void setGraphName(const std::string &name);
 
+  /**
+   * Sets the parent graph of this builder.
+   *
+   * \param parent the builder to become a parent.
+   */
+  void setParent(Builder *parent);
+
+  /**
+   * Returns the parent graph of this graph or null if there is no parent.
+   */
+  Builder *getParent() const;
+
+  /**
+   * Returns true if this builder represents a subgraph.
+   */
+  bool hasParent() const { return parent == nullptr; }
+
 private:
   void configure();
   void configure(const std::string &modelProtoOrFilename);
@@ -1413,6 +1430,8 @@ private:
   std::unique_ptr<BuilderImpl> impl_;
   std::map<int, std::unique_ptr<Builder>> children;
   int nChildren{0};
+
+  Builder *parent;
 };
 
 } // namespace popart
