@@ -26,11 +26,13 @@ public:
 protected:
   poplar::Tensor convertInvSdToVar(poplar::program::Sequence &prog,
                                    const poplar::Tensor &invSd,
-                                   float epsilon) const;
+                                   float epsilon,
+                                   const poplar::Type dstType) const;
 
   poplar::Tensor convertVarToInvSd(poplar::program::Sequence &prog,
                                    const poplar::Tensor &var,
-                                   float epsilon) const;
+                                   float epsilon,
+                                   const poplar::Type dstType) const;
 
 private:
 };

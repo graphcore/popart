@@ -1047,3 +1047,95 @@ def test_batchnorm_repeated():
         session.run(stepio)
 
         assert np.allclose(first_result, np.copy(anchors[o_y])) == True
+
+
+def test_batchnorm_train_half_fp32var(op_tester):
+    # create test data
+    d1 = np.random.rand(1, 3, 2, 2).astype(np.float16) * 100
+    scale = np.random.rand(3).astype(np.float16)
+    b = np.random.rand(3).astype(np.float16)
+    mean = np.random.rand(3).astype(np.float16)
+    var = np.random.rand(3).astype(np.float32)
+    epsilon = 1e-05
+    momentum = 0.1
+
+    builder = popart.Builder()
+    i1 = builder.addInputTensor(popart.TensorInfo(d1))
+    iScale = builder.addInitializedInputTensor(scale)
+    iB = builder.addInitializedInputTensor(b)
+    iMean = builder.addInitializedInputTensor(mean)
+    iVar = builder.addInitializedInputTensor(var)
+    o_y, o_mean, o_var, o_smean, o_svar = builder.aiOnnx.batchnormalization(
+        [i1, iScale, iB, iMean, iVar], 5, epsilon, momentum)
+    builder.addOutputTensor(o_y)
+    lossId = builder.aiGraphcore.identityloss([o_y])
+    proto = builder.getModelProto()
+
+    dataFlow = popart.DataFlow(1, {o_y: popart.AnchorReturnType("All")})
+
+    device = tu.create_test_device()
+
+    options = popart.SessionOptions()
+    options.enableStochasticRounding = False
+
+    session = popart.TrainingSession(fnModel=proto,
+                                     loss=lossId,
+                                     dataFlow=dataFlow,
+                                     deviceInfo=device,
+                                     optimizer=popart.ConstSGD(0.01),
+                                     userOptions=options)
+
+    anchors = session.initAnchorArrays()
+
+    session.prepareDevice()
+
+    inputs = {i1: d1}
+    stepio = popart.PyStepIO(inputs, anchors)
+    session.weightsFromHost()
+    session.run(stepio)
+    stepio = popart.PyStepIO(inputs, anchors)
+    session.run(stepio)
+
+
+def test_batchnorm_inference_half_fp32var(op_tester):
+    # create test data
+    d1 = np.random.rand(1, 3, 2, 2).astype(np.float16) * 100
+    scale = np.random.rand(3).astype(np.float16)
+    b = np.random.rand(3).astype(np.float16)
+    mean = np.random.rand(3).astype(np.float16)
+    var = np.random.rand(3).astype(np.float32)
+    epsilon = 1e-05
+    momentum = 0.1
+
+    builder = popart.Builder()
+    i1 = builder.addInputTensor(popart.TensorInfo(d1))
+    iScale = builder.addInitializedInputTensor(scale)
+    iB = builder.addInitializedInputTensor(b)
+    iMean = builder.addInitializedInputTensor(mean)
+    iVar = builder.addInitializedInputTensor(var)
+    (o_y, ) = builder.aiOnnx.batchnormalization([i1, iScale, iB, iMean, iVar],
+                                                1, epsilon, momentum)
+    builder.addOutputTensor(o_y)
+    proto = builder.getModelProto()
+
+    dataFlow = popart.DataFlow(1, {o_y: popart.AnchorReturnType("All")})
+
+    device = tu.create_test_device()
+
+    options = popart.SessionOptions()
+    options.enableStochasticRounding = False
+
+    session = popart.InferenceSession(fnModel=proto,
+                                      dataFlow=dataFlow,
+                                      deviceInfo=device,
+                                      userOptions=options)
+
+    anchors = session.initAnchorArrays()
+
+    session.prepareDevice()
+
+    inputs = {i1: d1}
+    stepio = popart.PyStepIO(inputs, anchors)
+    session.run(stepio)
+    stepio = popart.PyStepIO(inputs, anchors)
+    session.run(stepio)

@@ -24,23 +24,21 @@ namespace popx {
 // convert inverse standard deviation to variance
 poplar::Tensor NormOpx::convertInvSdToVar(poplar::program::Sequence &prog,
                                           const poplar::Tensor &invSd,
-                                          float epsilon) const {
-  return popops::map(graph(),
-                     pe::InvStdDevToVariance(pe::_1, pe::Const(epsilon)),
-                     {invSd},
-                     prog,
-                     debugContext("invSdToVar"));
+                                          float epsilon,
+                                          const poplar::Type dstType) const {
+
+  return popops::invStdDevToVariance(
+      graph(), invSd, epsilon, prog, dstType, debugContext("invSdToVar"));
 }
 
 // convert variant to inverse standard deviation
 poplar::Tensor NormOpx::convertVarToInvSd(poplar::program::Sequence &prog,
                                           const poplar::Tensor &var,
-                                          float epsilon) const {
-  return popops::map(graph(),
-                     pe::VarianceToInvStdDev(pe::_1, pe::Const(epsilon)),
-                     {var},
-                     prog,
-                     debugContext("varToInvSd"));
+                                          float epsilon,
+                                          const poplar::Type dstType) const {
+
+  return popops::varianceToInvStdDev(
+      graph(), var, epsilon, prog, dstType, debugContext("varToInvSd"));
 }
 
 NormOpx::NormOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {}

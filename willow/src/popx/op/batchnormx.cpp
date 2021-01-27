@@ -163,10 +163,10 @@ BatchNormOpx::growSpatial(poplar::program::Sequence &prog,
     if (isZeroElementArray(x.shape())) {
       auto y =
           graph().addConstant(x.elementType(), x.shape(), 0, debugContext("y"));
-      auto batchMean =
-          graph().addConstant(x.elementType(), {1}, NAN, debugContext("mean"));
+      auto batchMean = graph().addConstant(
+          mean.elementType(), {1}, NAN, debugContext("mean"));
       auto batchVar =
-          graph().addConstant(x.elementType(), {1}, NAN, debugContext("var"));
+          graph().addConstant(var.elementType(), {1}, NAN, debugContext("var"));
       graph().setTileMapping(y, 0);
       graph().setTileMapping(batchMean, 0);
       graph().setTileMapping(batchVar, 0);
@@ -208,7 +208,8 @@ BatchNormOpx::growSpatial(poplar::program::Sequence &prog,
       */
 
       // Then convert the invSd to the variance
-      auto batchVar = convertInvSdToVar(prog, invSd, epsilon);
+      auto batchVar =
+          convertInvSdToVar(prog, invSd, epsilon, var.elementType());
 
       // Calculate the running mean
       auto runningMean = popops::map(
@@ -248,7 +249,7 @@ BatchNormOpx::growSpatial(poplar::program::Sequence &prog,
                                   nonstd::optional<poplar::Tensor>()});
     } else {
       // convert variant to inverse standard deviation
-      auto invSd = convertVarToInvSd(prog, var, epsilon);
+      auto invSd = convertVarToInvSd(prog, var, epsilon, x.elementType());
 
       // batchnorm
       auto y = batchNormalise(prog, x, scale, b, mean, invSd);
@@ -374,7 +375,7 @@ BatchNormGradOpx::growSpatial(poplar::program::Sequence &prog,
     result.scaleGrad = scaleGrad;
     result.bGrad     = bGrad;
   } else {
-    auto invSd = convertVarToInvSd(prog, var, epsilon);
+    auto invSd = convertVarToInvSd(prog, var, epsilon, x.elementType());
 
     // batchnormgrad
     poplar::Tensor xGrad, scaleGrad, bGrad;
