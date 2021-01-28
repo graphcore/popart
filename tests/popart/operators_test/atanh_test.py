@@ -67,7 +67,7 @@ def test_atanh_grad(op_tester):
 
     def reference(ref_data):
         out = np.arctanh(d1)
-        d__o = derivative_atanh(d1)
+        d__o = derivative_atanh(d1) * ref_data.getOutputTensorGrad(0)
         return [out, d__o, None]
 
     op_tester.setPatterns([

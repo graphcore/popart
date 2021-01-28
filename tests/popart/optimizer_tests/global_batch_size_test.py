@@ -17,7 +17,7 @@ from onnx import numpy_helper
 
 @tu.requires_ipu
 @pytest.mark.parametrize("reduction_type", ["Sum", "Mean"])
-@pytest.mark.parametrize("loss_type", ["L1", "NLL"])
+@pytest.mark.parametrize("loss_type", ["Identity", "L1", "NLL"])
 @pytest.mark.parametrize("optim", ["SGD", "SGDM", "ADAM", "LAMB"])
 def test_global_batch_size_correctness(tmpdir, reduction_type, loss_type,
                                        optim):
@@ -54,6 +54,10 @@ def test_global_batch_size_correctness(tmpdir, reduction_type, loss_type,
         if loss_type == "L1":
             loss = builder.aiGraphcore.l1loss([x],
                                               0.1,
+                                              reduction=reduction,
+                                              debugPrefix='loss')
+        elif loss_type == "Identity":
+            loss = builder.aiGraphcore.identityloss([x],
                                               reduction=reduction,
                                               debugPrefix='loss')
         elif loss_type == "NLL":
@@ -167,7 +171,8 @@ def test_global_batch_size_correctness(tmpdir, reduction_type, loss_type,
         run_test(4, 1, 4, 1),
         run_test(4, 1, 2, 2),
         run_test(4, 4, 1, 1),
-        run_test(2, 2, 2, 2),
+        run_test(4, 2, 2, 1),
+        # run_test(2, 2, 2, 2) # TODO: T30671 fix this case
     ]
 
     for i, results in enumerate(tests):

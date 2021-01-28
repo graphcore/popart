@@ -76,7 +76,7 @@ def test_asinh_grad(op_tester):
 
     def reference(ref_data):
         out = np.arcsinh(d1)
-        d__o = derivative_asinh(d1)
+        d__o = derivative_asinh(d1) * ref_data.getOutputTensorGrad(0)
         return [out, d__o, None]
 
     op_tester.setPatterns([

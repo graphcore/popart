@@ -240,15 +240,15 @@ def test_slice_end_out_of_bounds(op_tester):
         o = builder.aiOnnx.slice([i1, starts, ends, axes])
         builder.addOutputTensor(o)
 
-        return [o, popart.reservedGradientPrefix() + i1]
+        return [o, popart.reservedGradientPrefix() + i1, popart.reservedGradientPrefix() + o]
 
     def reference(ref_data):
         o = d1[:, 1:1000]
 
-        o_grad = np.ones(o.shape, dtype=np.float32)
+        o_grad = np.ones(o.shape, dtype=np.float32) * ref_data.getOutputTensorGrad(0)
         i1_grad = np.pad(o_grad, [(0, 0), (1, 0), (0, 0)], constant_values=0.)
 
-        return [o, i1_grad]
+        return [o, i1_grad, None]
 
     op_tester.run(init_builder, reference, 'train')
 

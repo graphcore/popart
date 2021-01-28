@@ -29,6 +29,7 @@ Atan2Arg0GradOpPattern::makeAllReplacementOps(Op *op,
   auto squareX = makeReplacementOpInIr(Onnx::CustomOperators::Square, op);
   auto add     = makeReplacementOpInIr(Onnx::AiOnnx::OpSet9::Add, op);
   auto div     = makeReplacementOpInIr(Onnx::AiOnnx::OpSet9::Div, op);
+  auto mul     = makeReplacementOpInIr(Onnx::AiOnnx::OpSet9::Mul, op);
 
   // Connect up the new ops
   squareY->connectInTensor(0, fwdIn0.id);
@@ -51,7 +52,13 @@ Atan2Arg0GradOpPattern::makeAllReplacementOps(Op *op,
   div->createAndConnectOutTensor(0, ir->createIntermediateTensorId(fwdIn0.id));
   div->outInfo(0) = op->prettyNpOut(div->inInfo(0), div->inInfo(1));
 
-  return div->outTensor(0)->id;
+  mul->connectInTensor(0, gradIn.id);
+  mul->connectInTensor(1, div->outTensor(0)->id);
+  mul->createAndConnectOutTensor(
+      0, ir->createIntermediateTensorId(div->outTensor(0)->id));
+  mul->outInfo(0) = op->prettyNpOut(mul->inInfo(0), mul->inInfo(1));
+
+  return mul->outTensor(0)->id;
 }
 
 namespace {

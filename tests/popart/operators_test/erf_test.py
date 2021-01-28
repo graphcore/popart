@@ -123,7 +123,7 @@ def test_erf_grad_0b(op_tester):
 
         def reference(ref_data):
             out = expectedErf
-            d__o = derf(x)
+            d__o = derf(x) * ref_data.getOutputTensorGrad(0)
             return [out, d__o, None]
 
         # Lower precision for float16

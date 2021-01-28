@@ -1530,7 +1530,7 @@ def test_acosh_grad(op_tester):
 
     def reference(ref_data):
         out = np.arccosh(d1)
-        d__o = derivative_acosh(d1)
+        d__o = derivative_acosh(d1) * ref_data.getOutputTensorGrad(0)
         return [out, d__o, None]
 
     op_tester.setPatterns([
@@ -1603,7 +1603,6 @@ def test_atan_grad(op_tester):
         out.backward(torch.tensor(d__o))
         return [out, a.grad, None]
 
-    # op_tester.setPatterns(['OpToIdentity'], enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference, 'train')
 
 

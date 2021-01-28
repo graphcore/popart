@@ -45,7 +45,15 @@ FmodArg0GradOpPattern::makeAllReplacementOps(Op *op,
   auto castOutId = graph.getIr().createIntermediateTensorId(gradId);
   gradCastOp->createAndConnectOutTensor(CastOp::getOutIndex(), castOutId);
   gradCastOp->setup();
-  return castOutId;
+
+  auto mul = makeReplacementOpInIr(Onnx::AiOnnx::OpSet9::Mul, op);
+  mul->connectInTensor(0, gradIn.id);
+  mul->connectInTensor(1, gradCastOp->outTensor(0)->id);
+  mul->createAndConnectOutTensor(
+      0, ir->createIntermediateTensorId(gradCastOp->outTensor(0)->id));
+  mul->setup();
+
+  return mul->outTensor(0)->id;
 }
 
 namespace {
