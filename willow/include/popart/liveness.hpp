@@ -2,6 +2,10 @@
 #ifndef GUARD_NEURALNET_LIVENESS_HPP
 #define GUARD_NEURALNET_LIVENESS_HPP
 
+#include <set>
+#include <utility>
+#include <vector>
+
 #include <popart/graphid.hpp>
 #include <popart/op.hpp>
 #include <popart/tensor.hpp>
@@ -12,6 +16,11 @@ class Graph;
 class SubgraphOp;
 
 namespace liveness {
+
+class SubgraphCopyingStrategy;
+
+// A vector of Op*s comprising a call stack.
+using CallStack = std::vector<Op *>;
 
 // OP type and function in the global schedule
 enum class OpStatus {
@@ -35,7 +44,7 @@ public:
                SubgraphIndex subgraphIndex,
                bool isDuplicate);
 
-  LivenessNode(std::vector<Op *> callStack_,
+  LivenessNode(const CallStack &callStack_,
                const OpStatus status_,
                int index_,
                SubgraphIndex subgraphIndex,
@@ -45,7 +54,7 @@ public:
   Op *getOp() const { return callStack.back(); }
 
   // Call stack of operators that call each other
-  const std::vector<Op *> &getCallStack() const { return callStack; }
+  const CallStack &getCallStack() const { return callStack; }
 
   // Operation type and function in the global schedule
   OpStatus getStatus() const { return status; }
@@ -79,7 +88,7 @@ private:
   void setUsedTensorIds();
   void setTensorIds();
 
-  std::vector<Op *> callStack;
+  CallStack callStack;
   OpStatus status;
   int index;
   SubgraphIndex subgraphIndex;
@@ -111,12 +120,16 @@ std::ostream &operator<<(std::ostream &os, const LivenessNode &);
 //
 class LivenessAnalyzer {
 public:
-  LivenessAnalyzer(const Ir *ir_);
+  // List of pending copies.
+  using PendingCopies = std::vector<LivenessNode>;
+
+  LivenessAnalyzer(const Ir *ir_,
+                   const SubgraphCopyingStrategy *subgraphCopyingStrat);
   void apply();
 
   // For a given unique op call stack (e.g. X->Y->F),
   // return the global schedule position (e.g. 7)
-  int64_t getGlobalSchedulePosition(std::vector<Op *> callStack) const;
+  int64_t getGlobalSchedulePosition(CallStack callStack) const;
 
   // Size of the global schedule (e.g. 34)
   size_t getOpScheduleSize() const { return opSchedule.size(); }
@@ -154,6 +167,12 @@ public:
     return callSiteLinks.at(scheduleIndex);
   }
 
+  // Inverse of getCallSiteLinksAt (give positions of exit given an enter).
+  const std::vector<int64_t> &
+  getCallSiteLinksInvAt(int64_t scheduleIndex) const {
+    return callSiteLinksInv.at(scheduleIndex);
+  }
+
   // Graph call sites in total order (e.g. for the graph called by Y: 6, 23)
   const std::vector<Op *> &getGraphCallSites(GraphId id) const {
     return graphCallSiteOps.at(id);
@@ -161,16 +180,38 @@ public:
 
 private:
   // Global schedule including all subgraphs recursively
-  void addToSchedule(const Graph *, bool isDuplicate, std::vector<Op *>);
+  void addToSchedule(const Graph *graphToAdd,
+                     bool isDuplicate,
+                     CallStack callStack,
+                     PendingCopies &pendingCopies);
+
+  // Add a single liveness node to the schedule. Returns offset into schedule.
+  int64_t addNodeToSchedule(const LivenessNode &nodeToAdd,
+                            PendingCopies &pendingCopies);
+
+  // Process indices returned by SubgraphCopyStrategy.
+  void
+  processSubgraphCopyingStrategyIndices(PendingCopies &pendingCopies,
+                                        std::vector<size_t> &chosenIndices);
+
   // Expand a subgraph.
-  void expandSubgraph(const Graph *graphToAdd,
-                      const Graph *subgraph,
-                      int64_t enterLocation,
+  void expandSubgraph(const Graph *subgraph,
                       bool isDuplicate,
-                      std::vector<Op *> callStack,
-                      SubgraphIndex subgraphIndex);
+                      const CallStack &callStack,
+                      SubgraphIndex subgraphIndex,
+                      PendingCopies &pendingCopies);
+
+  // Add a copies needed for subgraph to pendingCopies. The
+  // SubgraphCopyingStrategy will be used to determine where they are added in
+  // the schedule.
+  void addCopiesToPending(const Graph *subgraph,
+                          bool isDuplicate,
+                          const CallStack &callStack,
+                          SubgraphIndex subgraphIndex,
+                          PendingCopies &pendingCopies);
 
   const Ir *ir;
+  const SubgraphCopyingStrategy *subgraphCopyingStrat;
 
   // Mapping from graph id to the graph's final schedule
   std::map<GraphId, std::vector<Op *>> graphOpSchedule;
@@ -187,6 +228,8 @@ private:
   // Map of all OpStatus::Enter positions to the matching OpStatus::Exit
   // positions
   std::map<int64_t, std::vector<int64_t>> callSiteLinks;
+  // Inverse of callSiteLinks
+  std::map<int64_t, std::vector<int64_t>> callSiteLinksInv;
 
   // Map of all ops that call the graph referred to by GraphId
   std::map<GraphId, std::vector<Op *>> graphCallSiteOps;

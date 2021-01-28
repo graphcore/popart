@@ -12,6 +12,7 @@
 #include <popart/op/call.hpp>
 #include <popart/op/init.hpp>
 #include <popart/op/loop.hpp>
+#include <popart/subgraphcopyingstrategy.hpp>
 
 #include <algorithm>
 #include <map>
@@ -84,8 +85,9 @@ BOOST_AUTO_TEST_CASE(AliasZeroCopyLoopTest0) {
   loopOp->setup();
 
   graph.markAsOutput(tdId);
-
-  LivenessAnalyzer analyzer(&ir);
+  OnEnterAndExitSubgraphCopyingStrategy strat;
+  LivenessAnalyzer analyzer(&ir, &strat);
+  strat.setLivenessAnalyzer(&analyzer);
   analyzer.apply();
   AliasZeroCopy zeroCopy(&ir, &analyzer);
   zeroCopy.apply();

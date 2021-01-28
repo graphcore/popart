@@ -223,6 +223,7 @@ std::size_t hash<popart::SessionOptions>::operator()(
   boost::hash_combine(seed, so.enableOutliningCopyCostPruning);
   boost::hash_combine(seed, so.outlineThreshold);
   boost::hash_combine(seed, so.outlineSequenceBreakCost);
+  boost::hash_combine(seed, so.subgraphCopyingStrategy);
   boost::hash_combine(seed, static_cast<int>(so.autoRecomputation));
   boost::hash_combine(seed, static_cast<int>(so.mergeVarUpdate));
   boost::hash_combine(seed, so.mergeVarUpdateMemThreshold);

@@ -46,6 +46,8 @@ Session options
 
 .. doxygenenum:: popart::VirtualGraphMode
 
+.. doxygenenum:: popart::SubgraphCopyingStrategy
+
 .. doxygenstruct:: popart::AccumulateOuterFragmentSettings
   :members:
 

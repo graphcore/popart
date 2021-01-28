@@ -2522,14 +2522,66 @@ void IrLowering::prepareGraph() {
   setFloatingPointBehaviour(graph());
   setStochasticRoundingBehaviour(graph());
 
-  // Calcualte metadata gathered from the IR
+  // Calculate metadata gathered from the IR
   setMetadataFromIr();
 
-  // Initialize the liveness analyzer
-  livenessAnalyzer.reset(new liveness::LivenessAnalyzer(&ir()));
-  aliasZeroCopy.reset(
-      new liveness::AliasZeroCopy(&ir(), livenessAnalyzer.get()));
+  // A quick diagram of how things are linked together (arrows are
+  // member associations):
+  //
+  // +--------------------------+     +------------------+
+  // | SubgraphCopyingStrategy  +<----+ LivenessAnalyzer |
+  // +--------------------------+     +------------------+
+  //                                    ^
+  //                                    |  +---------------------+
+  //                                    +--+ AliasZeroCopy       |
+  //                                    |  +---------------------+
+  //                                    |
+  //                                    |  +---------------------+
+  //                                    +--+ SubgraphPartitioner |
+  //                                       +---------------------+
+  //
+  // Where:
+  //
+  //  * LivenessAnalyzer uses SubgraphCopyingStrategy to determine where to
+  //    place copies in the global schedule.
+  //  * AliasZeroCopy uses the global schedule in LivenessAnalyzer to determine
+  //    which copies can be avoided when calling subgraphs.
+  //  * SubgraphPartitioner uses the global schedule in LivenessAnalyzer (and
+  //    in particular the position of the copies in it) to determine how to
+  //    partition subgraphs ready for lowering CallOp.
 
+  auto copyingStrategy = ir().getSessionOptions().subgraphCopyingStrategy;
+  switch (copyingStrategy) {
+  case SubgraphCopyingStrategy::OnEnterAndExit: {
+    logging::devicex::debug("Using 'OnEnterAndExit' subgraph IO copying "
+                            "strategy");
+    subgraphCopyingStrat =
+        std::make_unique<liveness::OnEnterAndExitSubgraphCopyingStrategy>();
+    break;
+  }
+  case SubgraphCopyingStrategy::JustInTime: {
+    logging::devicex::debug("Using 'JustInTime' subgraph IO copying strategy");
+    subgraphCopyingStrat =
+        std::make_unique<liveness::JustInTimeSubgraphCopyingStrategy>();
+    break;
+  }
+  default: {
+    throw error("Invalid value for SubgraphCopyingStrategy ({})",
+                static_cast<int>(copyingStrategy));
+  }
+  }
+
+  // Initialize the liveness analyzer
+  livenessAnalyzer = std::make_unique<liveness::LivenessAnalyzer>(
+      &ir(), subgraphCopyingStrat.get());
+
+  subgraphCopyingStrat->setIr(&ir());
+  subgraphCopyingStrat->setLivenessAnalyzer(livenessAnalyzer.get());
+
+  aliasZeroCopy =
+      std::make_unique<liveness::AliasZeroCopy>(&ir(), livenessAnalyzer.get());
+
+  subgraphCopyingStrat->apply();
   livenessAnalyzer->apply();
 
   if (ir().getSessionOptions().aliasZeroCopy) {

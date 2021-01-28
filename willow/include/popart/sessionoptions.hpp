@@ -373,6 +373,21 @@ struct AccumulateOuterFragmentSettings {
 };
 
 /**
+ * Enum type that describes how copies for inputs and outputs for subgraphs
+ * are lowered. Currently this only affects subgraphs associated with CallOps.
+ */
+enum class SubgraphCopyingStrategy {
+  /// Copy all inputs before the start of the subgraph, copy all outputs after
+  /// all ops in the subgraph. With this strategy subgraphs will always map
+  /// to a single Poplar function.
+  OnEnterAndExit = 0,
+  /// Copy inputs just before they are consumed and copy outputs as soon as
+  /// they are produced. With this strategy subgraphs may be lowered into
+  /// multiple Poplar functions.
+  JustInTime
+};
+
+/**
  * A structure containing user configuration options for the `Session` class
  */
 struct SessionOptions {
@@ -427,6 +442,15 @@ struct SessionOptions {
   /// (for example for overlapping compute and exchange) when outlined together
   /// Default value is set to ~10 * Op::getHighSubgraphValue().
   float outlineSequenceBreakCost = 10000.0f;
+
+  /// This setting determines how copies for inputs and outputs for subgraphs
+  /// are lowered. By setting this value to JustInTime you may save memory at
+  /// the cost of fragmenting subgraphs into multiple Poplar functions. This
+  /// may be particularly useful when a number of weight updates are outlined
+  /// in one subgraph, as it may prevent multiple weight tensors from being
+  /// live at the same time inside the subgraph.
+  SubgraphCopyingStrategy subgraphCopyingStrategy =
+      SubgraphCopyingStrategy::OnEnterAndExit;
 
   /// Enable recomputation of operations in the graph in the backwards pass to
   /// reduce model size at the cost of computation cycles

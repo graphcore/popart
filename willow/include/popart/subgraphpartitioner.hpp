@@ -1,4 +1,4 @@
-// Copyright (c) 2020 Graphcore Ltd. All rights reserved.
+// Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 #ifndef GUARD_NEURALNET_SUBGRAPH_PARTITIONER_HPP
 #define GUARD_NEURALNET_SUBGRAPH_PARTITIONER_HPP
 
@@ -134,6 +134,13 @@ public:
    */
   virtual CallOpSchedule getCallOpSchedule(CallOp *) const;
 
+  /**
+   * Returns true for a graph if we support it being 'broken' into multiple
+   * subgraph parts. The main graph does not support this. Subgraphs that are
+   * called by any op that is not a CallOp also do not support this.
+   */
+  static bool isPartitionable(const Graph &graph);
+
 private:
   // Class for internal use.
   class Node {
@@ -155,13 +162,14 @@ private:
 
   // Top-level function to work out a subgraph's lowering schedule.
   SubgraphPartition determineSubgraphPartition(const Graph &graph,
-                                               bool unbreakable);
+                                               bool partitionable);
   // Determine the order of things that are lowered (for specific instance).
   SubgraphPartitionTmp
   getSubgraphPartitionForInstance(const Graph &graph,
                                   const std::vector<Op *> &schedule,
-                                  const size_t enter,
-                                  const size_t exit);
+                                  size_t enter,
+                                  size_t exit,
+                                  size_t callstackSize);
   // Check sequence of events matches and combine subgraph partition boundaries.
   SubgraphPartitionTmp mergeSubgraphPartitions(const Graph &graph,
                                                const SubgraphPartitionTmp &,
@@ -179,7 +187,8 @@ private:
                                const SubgraphPartitionTmp &) const;
   // Helper function.
   void logSubgraphPartition(const Graph &graph,
-                            const SubgraphPartition &) const;
+                            const SubgraphPartition &,
+                            bool partitionable) const;
 
   // Ir instance (dependency).
   const Ir *ir;

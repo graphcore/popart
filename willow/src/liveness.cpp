@@ -1,5 +1,5 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
-
+#include <algorithm>
 #include <functional>
 
 #include <popart/graph.hpp>
@@ -9,6 +9,8 @@
 #include <popart/op/loop.hpp>
 #include <popart/op/subgraph.hpp>
 #include <popart/scheduler_requireoptimal.hpp>
+
+#include <popart/subgraphcopyingstrategy.hpp>
 
 namespace popart {
 namespace liveness {
@@ -20,7 +22,7 @@ LivenessNode::LivenessNode(const OpStatus status_,
     : callStack({}), status(status_), index(index_),
       subgraphIndex(subgraphIndex_), isDuplicate(isDuplicate_) {}
 
-LivenessNode::LivenessNode(std::vector<Op *> callStack_,
+LivenessNode::LivenessNode(const CallStack &callStack_,
                            const OpStatus status_,
                            int index_,
                            SubgraphIndex subgraphIndex_,
@@ -283,7 +285,10 @@ bool LivenessNode::isConsumerOf(Tensor *t) const {
   }
 }
 
-LivenessAnalyzer::LivenessAnalyzer(const Ir *ir_) : ir(ir_) {}
+LivenessAnalyzer::LivenessAnalyzer(
+    const Ir *ir_,
+    const SubgraphCopyingStrategy *subgraphCopyingStrat_)
+    : ir(ir_), subgraphCopyingStrat(subgraphCopyingStrat_) {}
 
 void LivenessAnalyzer::apply() {
 
@@ -294,7 +299,9 @@ void LivenessAnalyzer::apply() {
     graphOpSchedule[sgraph->id] =
         sgraph->getOpSchedule({}, RequireOptimalSchedule::Yes);
   }
-  addToSchedule(&(ir->getMainGraph()), false, {});
+
+  PendingCopies pendingCopies;
+  addToSchedule(&(ir->getMainGraph()), false, {}, pendingCopies);
 
   for (int64_t i = 0; i < opSchedule.size(); ++i) {
     for (TensorId tensorId : opSchedule.at(i).usedTensorIds()) {
@@ -310,68 +317,41 @@ void LivenessAnalyzer::apply() {
   }
 }
 
-void LivenessAnalyzer::expandSubgraph(const Graph *graphToAdd,
-                                      const Graph *subgraph,
-                                      int64_t enterLocation,
-                                      bool isDuplicate,
-                                      std::vector<Op *> callStack,
-                                      SubgraphIndex subgraphIndex) {
-
+void LivenessAnalyzer::addCopiesToPending(const Graph *subgraph,
+                                          bool isDuplicate,
+                                          const CallStack &callStack,
+                                          SubgraphIndex subgraphIndex,
+                                          PendingCopies &pendingCopies) {
   assert(!callStack.empty());
   Op *op = callStack.back();
 
-  opSchedule.emplace_back(
-      callStack, OpStatus::Enter, 0, subgraphIndex, isDuplicate);
+  // Get all required input copies.
   for (auto input : op->input->tensorIdMap()) {
     auto sgInIndex = op->opInToSubgraphInIndex(subgraphIndex, input.first);
-    if (sgInIndex >= 0) {
-      opSchedule.push_back({callStack,
-                            OpStatus::CopyInput,
-                            input.first,
-                            subgraphIndex,
-                            isDuplicate});
+    if (sgInIndex > -1 && sgInIndex < subgraph->getInputIds().size()) {
+      // Copy callsite's input tensor to subgraph's input tensor.
+      pendingCopies.push_back({callStack,
+                               OpStatus::CopyInput,
+                               input.first,
+                               subgraphIndex,
+                               isDuplicate});
     }
   }
 
-  auto &callSites = graphCallSiteOps[subgraph->id];
-  if (std::find(callSites.begin(), callSites.end(), op) == callSites.end()) {
-    callSites.push_back(op);
-  }
-
-  // Add the loop subgraph twice (iteration 0 and 1),
-  // so that we can reason about loop-carried
-  // dependencies (via inductive proof) properly
-  if (dynamic_cast<LoopOp *>(op)) {
-    for (int64_t iteration = 0; iteration < 2; ++iteration) {
-      auto bodyOutputIds = subgraph->getOutputIds();
-      // Loop carried dependencies between iteration -1, 0 and 1
-      // (see loop.hpp)
-      for (int64_t i = 0; i < bodyOutputIds.size(); ++i) {
-        opSchedule.emplace_back(callStack,
-                                OpStatus::CopyLoopCarried,
-                                i,
-                                subgraphIndex,
-                                isDuplicate || iteration > 0);
-      }
-      // Loop iteration 0 & 1
-      addToSchedule(subgraph, isDuplicate || iteration > 0, callStack);
-    }
-  } else {
-    addToSchedule(subgraph, isDuplicate, callStack);
-  }
-
-  // Insert the "exit" locations of subgraphs into the schedule
+  // Get all required output copies.
   for (auto output : op->output->tensorIdMap()) {
     auto sgOutIndex = op->opOutToSubgraphOutIndex(subgraphIndex, output.first);
     if (sgOutIndex > -1 && sgOutIndex < subgraph->getOutputIds().size()) {
-      // Copy subgraph outputs to the main graph
-      opSchedule.emplace_back(callStack,
-                              OpStatus::CopyOutput,
-                              output.first,
-                              subgraphIndex,
-                              isDuplicate);
+      // Copy subgraph's output tensor to callsite's output tensor.
+      pendingCopies.push_back({callStack,
+                               OpStatus::CopyOutput,
+                               output.first,
+                               subgraphIndex,
+                               isDuplicate});
     }
   }
+
+  // Get all input tensors that were modified (and hence need to be copied).
   for (auto input : op->input->tensorIdMap()) {
     auto sgInIndex = op->opInToSubgraphInIndex(subgraphIndex, input.first);
     if (sgInIndex >= 0) {
@@ -380,24 +360,132 @@ void LivenessAnalyzer::expandSubgraph(const Graph *graphToAdd,
       if (std::any_of(modifiedRegions.begin(),
                       modifiedRegions.end(),
                       [](const view::Region &r) { return !r.isEmpty(); })) {
-        // Copy modified subgraph inputs to the main graph
-        opSchedule.push_back({callStack,
-                              OpStatus::CopyModified,
-                              input.first,
-                              subgraphIndex,
-                              isDuplicate});
+        // Copy modified subgraph inputs to the callsite.
+        pendingCopies.push_back({callStack,
+                                 OpStatus::CopyModified,
+                                 input.first,
+                                 subgraphIndex,
+                                 isDuplicate});
       }
     }
   }
+}
 
-  opSchedule.emplace_back(
-      callStack, OpStatus::Exit, 0, subgraphIndex, isDuplicate);
+void LivenessAnalyzer::expandSubgraph(const Graph *subgraph,
+                                      bool isDuplicate,
+                                      const CallStack &callStack,
+                                      SubgraphIndex subgraphIndex,
+                                      PendingCopies &pendingCopies) {
+
+  assert(!callStack.empty());
+  Op *op = callStack.back();
+
+  // Add copy notes to pendingCopies.
+  addCopiesToPending(
+      subgraph, isDuplicate, callStack, subgraphIndex, pendingCopies);
+
+  // Add enter node to the stack.
+  int64_t enterLocation = addNodeToSchedule(
+      {callStack, OpStatus::Enter, 0, subgraphIndex, isDuplicate},
+      pendingCopies);
+
+  auto &callSites = graphCallSiteOps[subgraph->id];
+  if (std::find(callSites.begin(), callSites.end(), op) == callSites.end()) {
+    callSites.push_back(op);
+  }
+
+  if (dynamic_cast<LoopOp *>(op)) {
+    // Add the loop subgraph twice (iteration 0 and 1),
+    // so that we can reason about loop-carried
+    // dependencies (via inductive proof) properly
+    for (int64_t iteration = 0; iteration < 2; ++iteration) {
+      auto bodyOutputIds = subgraph->getOutputIds();
+      // Loop carried dependencies between iteration -1, 0 and 1
+      // (see loop.hpp)
+      for (int i = 0; i < bodyOutputIds.size(); ++i) {
+        addNodeToSchedule({callStack,
+                           OpStatus::CopyLoopCarried,
+                           i,
+                           subgraphIndex,
+                           isDuplicate || iteration > 0},
+                          pendingCopies);
+      }
+      // Loop iteration 0 & 1
+      addToSchedule(
+          subgraph, isDuplicate || iteration > 0, callStack, pendingCopies);
+    }
+  } else {
+    // Add ops in the subgraph once.
+    addToSchedule(subgraph, isDuplicate, callStack, pendingCopies);
+  }
+
+  // Add exit nodex.
+  addNodeToSchedule({callStack, OpStatus::Exit, 0, subgraphIndex, isDuplicate},
+                    pendingCopies);
+
   callSiteLinks[enterLocation].push_back(opSchedule.size() - 1);
+  callSiteLinksInv[opSchedule.size() - 1].push_back(enterLocation);
+}
+
+int64_t LivenessAnalyzer::addNodeToSchedule(const LivenessNode &nodeToAdd,
+                                            PendingCopies &pendingCopies) {
+
+  // Insert copies that our strategy suggests should come before the node.
+  auto before = subgraphCopyingStrat->getIndicesOfCopiesToInsertBeforeNode(
+      nodeToAdd, pendingCopies);
+  processSubgraphCopyingStrategyIndices(pendingCopies, before);
+
+  // Remember the position where we add nodeToAdd.
+  int64_t nodeToAddPosition = opSchedule.size();
+  opSchedule.push_back(nodeToAdd);
+
+  // Insert copies that our strategy suggests should come after the node.
+  auto after = subgraphCopyingStrat->getIndicesOfCopiesToInsertAfterNode(
+      nodeToAdd, pendingCopies);
+  processSubgraphCopyingStrategyIndices(pendingCopies, after);
+
+  // Return the position where the op was added.
+  return nodeToAddPosition;
+}
+
+void LivenessAnalyzer::processSubgraphCopyingStrategyIndices(
+    PendingCopies &pendingCopies,
+    std::vector<size_t> &chosenIndices) {
+
+  // Add the chosen indices to the schedule (order is important).
+  for (auto index : chosenIndices) {
+    opSchedule.push_back(pendingCopies.at(index));
+  }
+
+  // Remove all nodes in the indices list from pendingCopies. Achieve this
+  // by constructing a new pendingCopies list and copying nodes accross. The
+  // alternative would be to erase nodes from the existing list but this may
+  // be less efficient.
+  PendingCopies newPendingCopies;
+  newPendingCopies.reserve(pendingCopies.size() - chosenIndices.size());
+
+  // Work out which indices we're keeping.
+  std::vector<bool> keepNodeAtIndex(pendingCopies.size(), true);
+  for (auto index : chosenIndices) {
+    keepNodeAtIndex.at(index) = false;
+  }
+
+  // Populate newPendingCopies with nodes we are keeping.
+  for (size_t i = 0; i < pendingCopies.size(); ++i) {
+    if (keepNodeAtIndex.at(i)) {
+      newPendingCopies.push_back(pendingCopies[i]);
+    }
+  }
+
+  // Move newPendingCopies to pendingCopies.
+  pendingCopies = std::move(newPendingCopies);
 }
 
 void LivenessAnalyzer::addToSchedule(const Graph *graphToAdd,
                                      bool isDuplicate,
-                                     std::vector<Op *> callStack) {
+                                     CallStack callStack,
+                                     PendingCopies &pendingCopies) {
+
   auto &schedule = graphOpSchedule.at(graphToAdd->id);
   for (Op *op : schedule) {
     logging::trace("[LivenessAnalyzer] Adding Op {} to schedule.",
@@ -414,26 +502,21 @@ void LivenessAnalyzer::addToSchedule(const Graph *graphToAdd,
         int64_t enterLocation = opSchedule.size();
         opScheduleMap[op].push_back(enterLocation);
         // Expand subgraph.
-        expandSubgraph(graphToAdd,
-                       subgraphs[g],
-                       enterLocation,
-                       isDuplicate,
-                       newCallStack,
-                       g);
+        expandSubgraph(
+            subgraphs[g], isDuplicate, newCallStack, g, pendingCopies);
       }
     } else {
       // Work out enter location.
       int64_t enterLocation = opSchedule.size();
       opScheduleMap[op].push_back(enterLocation);
       // This op has no subgraphs.
-      opSchedule.emplace_back(
-          newCallStack, OpStatus::Normal, 0, 0, isDuplicate);
+      addNodeToSchedule({newCallStack, OpStatus::Normal, 0, 0, isDuplicate},
+                        pendingCopies);
     }
   }
 }
 
-int64_t
-LivenessAnalyzer::getGlobalSchedulePosition(std::vector<Op *> ops) const {
+int64_t LivenessAnalyzer::getGlobalSchedulePosition(CallStack ops) const {
   int64_t index = -1;
   for (Op *op : ops) {
     for (int64_t i : opScheduleMap.at(op)) {
@@ -478,6 +561,16 @@ std::ostream &operator<<(std::ostream &os, const OpStatus &opStatus) {
 }
 
 std::ostream &operator<<(std::ostream &os, const LivenessNode &livenessNode) {
+  // Output callstack as "[main>sg0>sg1]".
+  bool isFirst = true;
+  os << "[";
+  for (auto &op : livenessNode.getCallStack()) {
+    if (!isFirst)
+      os << ">";
+    os << op->getGraph().id.str();
+    isFirst = false;
+  }
+  os << "] ";
   os << livenessNode.getOp()->debugName() << " ";
   os << livenessNode.getStatus() << " ";
   os << livenessNode.getIndex() << " ";

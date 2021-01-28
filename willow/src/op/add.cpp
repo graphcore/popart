@@ -101,6 +101,9 @@ static OpDefinition addOpDef({OpDefinition::Inputs({{"A", T}, {"B", T}}),
 static OpCreator<AddOp> addOpCreator(OpDefinitions(
     {{Onnx::Operators::Add_6, addOpDef}, {Onnx::Operators::Add_7, addOpDef}}));
 
+static OpCreator<AddLhsInplaceOp> addAddLhsInplaceCreator(
+    OpDefinitions({{Onnx::CustomOperators::AddLhsInplace, addOpDef}}));
+
 } // namespace
 
 } // namespace popart

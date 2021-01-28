@@ -384,6 +384,23 @@ void AliasZeroCopy::disableDeadCodeNodes() {
       case OpStatus::Normal: {
         if (!node.getOp()->hasSideEffect()) {
           // Side-effect free node
+
+          if (node.getStatus() == OpStatus::Exit) {
+            // When using a JustInTime copying strategy an output tensor may not
+            // be live by the time you get to the exit node of a call, as
+            // outputs may have been copied early. We increase the probe
+            // interval for calls here to ensure we do not inadvertently prune
+            // out calls we think have no effect.
+            int64_t j      = analyzer->getCallSiteLinksInvAt(i).front();
+            auto enterNode = analyzer->getOpScheduleAt(j);
+            if (enterNode.getStatus() != OpStatus::Enter) {
+              throw error("[AliasZeroCopy] findFront: OpStatus {} unexpected.",
+                          static_cast<int>(enterNode.getStatus()));
+            }
+            probe = Intervals();
+            probe.insert(j, i + 1);
+          }
+
           bool disable = true;
           for (auto &out : node.getOp()->output->tensorMap()) {
             auto liveness = getCandidateLivenessIntervals(

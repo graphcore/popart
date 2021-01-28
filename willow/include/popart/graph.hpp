@@ -163,6 +163,7 @@ public:
   // Add new graph input with auto generated name
   TensorId addInput(const TensorInfo &);
   TensorId getInputId(InIndex idx) const { return graph_inputs.at(idx); }
+  bool hasInputId(const TensorId &id) const;
 
   void removeInput(const TensorId &);
   void removeInput(const InIndex &);
@@ -187,6 +188,7 @@ public:
   void removeOutput(const TensorId &);
   void removeOutput(const OutIndex &);
   TensorId getOutputId(OutIndex idx) const { return graph_outputs.at(idx); }
+  bool hasOutputId(const TensorId &id) const;
 
   TensorId addScope(const TensorId &) const;
   TensorId removeScope(const TensorId &) const;

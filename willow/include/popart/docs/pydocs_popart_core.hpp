@@ -2375,6 +2375,21 @@ replica)doc";
 static const char *__doc_popart_ExecutionPhaseSettings_weightIOSchedule =
     R"doc(The execution phase IO schedule for weight tensors.)doc";
 
+static const char *__doc_popart_SubgraphCopyingStrategy =
+    R"doc(Enum type that describes how copies for inputs and outputs for
+subgraphs are lowered. Currently this only affects subgraphs
+associated with CallOps.)doc";
+
+static const char *__doc_popart_SubgraphCopyingStrategy_JustInTime =
+    R"doc(Copy inputs just before they are consumed and copy outputs as soon as
+they are produced. With this strategy subgraphs may be lowered into
+multiple Poplar functions.)doc";
+
+static const char *__doc_popart_SubgraphCopyingStrategy_OnEnterAndExit =
+    R"doc(Copy all inputs before the start of the subgraph, copy all outputs
+after all ops in the subgraph. With this strategy subgraphs will
+always map to a single Poplar function.)doc";
+
 static const char *__doc_popart_GradNonGradPair = R"doc()doc";
 
 static const char *__doc_popart_GradNonGradPair_GradNonGradPair = R"doc()doc";
@@ -4190,6 +4205,12 @@ static const char
 
 static const char *__doc_popart_SessionOptions_aliasZeroCopy =
     R"doc(Enable zero-copy for subgraphs)doc";
+
+static const char *__doc_popart_SessionOptions_subgraphCopyingStrategy =
+    R"doc(This setting determines how copies for inputs and outputs for
+subgraphs are lowered. By setting this value to JustInTime you may
+save memory at the cost of fragmenting subgraphs into multiple Poplar
+functions.)doc";
 
 static const char *__doc_popart_SessionOptions_autoRecomputation =
     R"doc(Enable recomputation of operations in the graph in the backwards pass

@@ -33,7 +33,12 @@ import test_util as tu
 #        out
 
 
-def test_call(op_tester):
+@pytest.mark.parametrize("subgraphCopyingStrategy", [
+    popart.SubgraphCopyingStrategy.OnEnterAndExit,
+    popart.SubgraphCopyingStrategy.JustInTime
+])
+def test_call(op_tester, subgraphCopyingStrategy):
+    op_tester.options.subgraphCopyingStrategy = subgraphCopyingStrategy
     d0 = np.asarray([2, -1]).astype(np.int32)
     d1 = np.asarray([-4, 3]).astype(np.int32)
     d2 = np.asarray([1, 2]).astype(np.int32)
@@ -97,9 +102,12 @@ def test_call(op_tester):
 #     Call(sg)_1
 #         |
 #        out
-
-
-def test_call_grad_1(op_tester):
+@pytest.mark.parametrize("subgraphCopyingStrategy", [
+    popart.SubgraphCopyingStrategy.OnEnterAndExit,
+    popart.SubgraphCopyingStrategy.JustInTime
+])
+def test_call_grad_1(op_tester, subgraphCopyingStrategy):
+    op_tester.options.subgraphCopyingStrategy = subgraphCopyingStrategy
     shape = [4, 4]
     d0 = np.random.normal(size=shape).astype(np.float32)
     d1 = np.random.normal(size=shape).astype(np.float32)
@@ -184,7 +192,12 @@ def test_call_grad_1(op_tester):
 #     Call(sg)_1
 #         |
 #        out
-def test_nested_calls(op_tester):
+@pytest.mark.parametrize("subgraphCopyingStrategy", [
+    popart.SubgraphCopyingStrategy.OnEnterAndExit,
+    popart.SubgraphCopyingStrategy.JustInTime
+])
+def test_nested_calls(op_tester, subgraphCopyingStrategy):
+    op_tester.options.subgraphCopyingStrategy = subgraphCopyingStrategy
     d0 = np.asarray([2, -1]).astype(np.int32)
     d1 = np.asarray([-4, 3]).astype(np.int32)
     d2 = np.asarray([1, 2]).astype(np.int32)
@@ -224,7 +237,12 @@ def test_nested_calls(op_tester):
     op_tester.run(init_builder, reference, 'infer')
 
 
-def test_subgraph_with_zero_outputs(op_tester):
+@pytest.mark.parametrize("subgraphCopyingStrategy", [
+    popart.SubgraphCopyingStrategy.OnEnterAndExit,
+    popart.SubgraphCopyingStrategy.JustInTime
+])
+def test_subgraph_with_zero_outputs(op_tester, subgraphCopyingStrategy):
+    op_tester.options.subgraphCopyingStrategy = subgraphCopyingStrategy
     d0 = np.asarray([2, -1]).astype(np.int32)
 
     def init_builder(builder):
@@ -244,7 +262,12 @@ def test_subgraph_with_zero_outputs(op_tester):
         0] == "CallOp subgraph requires at least one output."
 
 
-def test_subgraph_call_mismatch0(op_tester):
+@pytest.mark.parametrize("subgraphCopyingStrategy", [
+    popart.SubgraphCopyingStrategy.OnEnterAndExit,
+    popart.SubgraphCopyingStrategy.JustInTime
+])
+def test_subgraph_call_mismatch0(op_tester, subgraphCopyingStrategy):
+    op_tester.options.subgraphCopyingStrategy = subgraphCopyingStrategy
     d0 = np.asarray([2, -1]).astype(np.int32)
 
     def init_builder(builder):
@@ -263,7 +286,12 @@ def test_subgraph_call_mismatch0(op_tester):
         0] == "For CallOp 'debug', number of outputs (2) does not match that of the callee subgraph (1)"
 
 
-def test_subgraph_call_mismatch1(op_tester):
+@pytest.mark.parametrize("subgraphCopyingStrategy", [
+    popart.SubgraphCopyingStrategy.OnEnterAndExit,
+    popart.SubgraphCopyingStrategy.JustInTime
+])
+def test_subgraph_call_mismatch1(op_tester, subgraphCopyingStrategy):
+    op_tester.options.subgraphCopyingStrategy = subgraphCopyingStrategy
     d0 = np.asarray([2, -1]).astype(np.int32)
 
     def init_builder(builder):
@@ -298,7 +326,12 @@ def test_subgraph_call_mismatch1(op_tester):
 #  Call(sg)_0
 #      |
 #     act
-def test_call_grad_2(op_tester):
+@pytest.mark.parametrize("subgraphCopyingStrategy", [
+    popart.SubgraphCopyingStrategy.OnEnterAndExit,
+    popart.SubgraphCopyingStrategy.JustInTime
+])
+def test_call_grad_2(op_tester, subgraphCopyingStrategy):
+    op_tester.options.subgraphCopyingStrategy = subgraphCopyingStrategy
     d0 = np.random.normal(size=[4, 4]).astype(np.float32)
     d1 = np.random.normal(size=[4, 4]).astype(np.float32)
 
@@ -341,7 +374,11 @@ def test_call_grad_2(op_tester):
     op_tester.run(init_builder, reference, 'train')
 
 
-def test_call_grad_3():
+@pytest.mark.parametrize("subgraphCopyingStrategy", [
+    popart.SubgraphCopyingStrategy.OnEnterAndExit,
+    popart.SubgraphCopyingStrategy.JustInTime
+])
+def test_call_grad_3(subgraphCopyingStrategy):
     # Generate some random input data
     trainingData = np.random.rand(1, 2).astype(np.float16)
     trainingDataLables = np.random.rand(1).astype(np.int32)
@@ -387,6 +424,7 @@ def test_call_grad_3():
             })
 
         trainingOptions = popart.SessionOptions()
+        trainingOptions.subgraphCopyingStrategy = subgraphCopyingStrategy
         trainingSession = popart.TrainingSession(
             fnModel=builder.getModelProto(),
             dataFlow=dataFlow,
@@ -499,7 +537,12 @@ def test_call_grad_scoped(op_tester):
 # Test:
 
 
-def test_stacked_subgraphs(op_tester):
+@pytest.mark.parametrize("subgraphCopyingStrategy", [
+    popart.SubgraphCopyingStrategy.OnEnterAndExit,
+    popart.SubgraphCopyingStrategy.JustInTime
+])
+def test_stacked_subgraphs(op_tester, subgraphCopyingStrategy):
+    op_tester.options.subgraphCopyingStrategy = subgraphCopyingStrategy
     np.random.seed(0)
     numLayers = 4
     shape = [4, 4]
@@ -551,7 +594,11 @@ def test_stacked_subgraphs(op_tester):
     op_tester.run(init_builder, reference, 'train')
 
 
-def test_stacked_subgraphs_2():
+@pytest.mark.parametrize("subgraphCopyingStrategy", [
+    popart.SubgraphCopyingStrategy.OnEnterAndExit,
+    popart.SubgraphCopyingStrategy.JustInTime
+])
+def test_stacked_subgraphs_2(subgraphCopyingStrategy):
     np.random.seed(0)
     shape = [4, 4]
     input_ = np.random.rand(*shape).astype('float32')
@@ -595,6 +642,7 @@ def test_stacked_subgraphs_2():
             popart.reservedGradientPrefix() + in0: art
         }
         opts = popart.SessionOptions()
+        opts.subgraphCopyingStrategy = subgraphCopyingStrategy
         session = popart.TrainingSession(fnModel=builder.getModelProto(),
                                          dataFlow=popart.DataFlow(
                                              1, anchor_returns),

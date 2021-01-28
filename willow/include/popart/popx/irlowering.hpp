@@ -25,6 +25,7 @@
 #include <popart/popx/pritask.hpp>
 #include <popart/popx/virtualgraph.hpp>
 
+#include <popart/subgraphcopyingstrategy.hpp>
 #include <popart/subgraphpartitioner.hpp>
 
 #include <memory>
@@ -144,6 +145,9 @@ private:
   // This keeps track of whether there the accumulateOuterFragment is empty
   // TODO T12001 a class which encapsulates framgments which has this attribute.
   bool outerLoopFragEmpty = true;
+
+  // Helper class to determine where to move input/output copies.
+  std::unique_ptr<liveness::SubgraphCopyingStrategy> subgraphCopyingStrat;
 
   // Helper class to analyze the global IR schedule and tensor liveness
   std::unique_ptr<liveness::LivenessAnalyzer> livenessAnalyzer;

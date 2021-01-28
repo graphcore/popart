@@ -174,6 +174,11 @@ TensorId Graph::addInput(const TensorInfo &tinfo) {
   return scopedId;
 }
 
+bool Graph::hasInputId(const TensorId &id) const {
+  return std::find(graph_inputs.begin(), graph_inputs.end(), id) !=
+         graph_inputs.end();
+}
+
 void Graph::markAsInput(const TensorId &tensorId) {
   if (!getTensors().contains(tensorId)) {
     throw error("Could not find tensor '{}' to mark as input", tensorId);
@@ -199,6 +204,11 @@ OutIndex Graph::getOutputIndex(TensorId tensorId) const {
     throw error("Could not find output tensor '{}'", tensorId);
   }
   return std::distance(graph_outputs.begin(), it);
+}
+
+bool Graph::hasOutputId(const TensorId &id) const {
+  return std::find(graph_outputs.begin(), graph_outputs.end(), id) !=
+         graph_outputs.end();
 }
 
 void Graph::markAsOutput(const OutIndex &index,

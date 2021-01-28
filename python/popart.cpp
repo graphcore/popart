@@ -1061,6 +1061,12 @@ PYBIND11_MODULE(popart_core, m) {
         DOC(popart, AccumulateOuterFragmentSettings, excludedVirtualGraphs));
   }
   {
+    // This setting is experimental and may change.
+    py::enum_<SubgraphCopyingStrategy> en(m, "SubgraphCopyingStrategy");
+    en.value("OnEnterAndExit", SubgraphCopyingStrategy::OnEnterAndExit);
+    en.value("JustInTime", SubgraphCopyingStrategy::JustInTime);
+  }
+  {
     py::class_<ClipNormSettings> cls(m, "ClipNormSettings");
     cls.def(py::init<std::vector<TensorId>, float>(),
             py::arg("weightIds"),
@@ -1131,6 +1137,9 @@ PYBIND11_MODULE(popart_core, m) {
     cls.def_readwrite("enablePipelining",
                       &SessionOptions::enablePipelining,
                       DOC(popart, SessionOptions, enablePipelining));
+    cls.def_readwrite("subgraphCopyingStrategy",
+                      &SessionOptions::subgraphCopyingStrategy,
+                      DOC(popart, SessionOptions, subgraphCopyingStrategy));
     cls.def_readwrite("autoRecomputation",
                       &SessionOptions::autoRecomputation,
                       DOC(popart, SessionOptions, autoRecomputation));

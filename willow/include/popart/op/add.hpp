@@ -29,6 +29,10 @@ private:
 
 class AddLhsInplaceOp : public ElementWiseBinaryInplaceLhsOp<AddLhsInplaceOp> {
 public:
+  AddLhsInplaceOp(const OperatorIdentifier &_, const Op::Settings &_settings)
+      : ElementWiseBinaryInplaceLhsOp(Onnx::CustomOperators::AddLhsInplace,
+                                      _settings) {}
+
   AddLhsInplaceOp(const Op::Settings &_settings)
       : ElementWiseBinaryInplaceLhsOp(Onnx::CustomOperators::AddLhsInplace,
                                       _settings) {}

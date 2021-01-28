@@ -1,4 +1,4 @@
-// Copyright (c) 2020 Graphcore Ltd. All rights reserved.
+// Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 #include <algorithm>
 #include <cassert>
 
@@ -48,13 +48,13 @@ bool isCopyCallSubgraphPart(const Graph &graph,
 
 bool isParentCopy(const Graph &graph,
                   const LivenessNode &node,
-                  const std::vector<Op *> &callStack) {
+                  size_t callstackSize) {
   if (node.getStatus() == OpStatus::CopyInput ||
       node.getStatus() == OpStatus::CopyOutput ||
       node.getStatus() == OpStatus::CopyModified) {
     // Check if it's from a parent.
     const auto &nodeCallStack = node.getCallStack();
-    return (nodeCallStack.size() < callStack.size());
+    return (nodeCallStack.size() <= callstackSize);
   } else {
     // Not a copy.
     return false;
@@ -87,8 +87,8 @@ int SubgraphPartitioner::getNumSubgraphParts(const Graph &graph) const {
   const auto &partition = cache.at(graph.id.str());
 
   if (partition.empty()) {
-    throw error("[SubgraphPartitioner] Subgraph partition for {} is empty",
-                graph.getGraphString());
+    // No ops in the partition. We accomodate this as an edge case.
+    return 0;
   }
 
   // Return size based on the subgraph part number of the last op.
@@ -156,9 +156,27 @@ SubgraphPartitioner::getCallOpSchedule(CallOp *callOp) const {
   return result;
 }
 
+bool SubgraphPartitioner::isPartitionable(const Graph &graph) {
+  const auto &ir = graph.getIr();
+  if (ir.getMainGraph().id == graph.id) {
+    return false;
+  } else {
+    bool isPartitionable = true;
+    // Iterate over all ops that call this graph.
+    for (const auto callSiteOp : graph.getCallSiteOps()) {
+      // If it isn't a call op, the graph isn't partitionable.
+      bool isCallOp = callSiteOp->isConvertibleTo<CallOp>();
+      if (!isCallOp) {
+        isPartitionable = false;
+      }
+    }
+    return isPartitionable;
+  }
+}
+
 SubgraphPartitioner::SubgraphPartition
 SubgraphPartitioner::determineSubgraphPartition(const Graph &graph,
-                                                bool unbreakable) {
+                                                bool partitionable) {
 
   if (!liveness)
     throw internal_error("[SubgraphPartitioner] LivenessAnalyzer not set.");
@@ -170,16 +188,17 @@ SubgraphPartitioner::determineSubgraphPartition(const Graph &graph,
 
   // Log what we are doing.
   logging::devicex::trace("[SubgraphPartitioner] Determining subgraph "
-                          "partition for {}.",
-                          graph.getGraphString());
+                          "partition for {} ({}).",
+                          graph.getGraphString(),
+                          partitionable ? "partitionable" : "unpartitionable");
 
   const auto &schedule = liveness->getGraphOpSchedule(graph.id);
-  if (graph.id.str().empty()) {
+  if (graph.id == ir->getMainGraph().id) {
 
     // It's the main graph, no call sites.
     auto lastIndex = liveness->getOpScheduleSize() - 1;
     auto partition =
-        getSubgraphPartitionForInstance(graph, schedule, 0, lastIndex);
+        getSubgraphPartitionForInstance(graph, schedule, 0, lastIndex, 0);
     result = finaliseSubgraphPartition(partition);
 
   } else {
@@ -222,8 +241,9 @@ SubgraphPartitioner::determineSubgraphPartition(const Graph &graph,
           size_t exit = exits.back();
 
           // Get a schedule for this instance of the subgraph.
-          auto newPartition =
-              getSubgraphPartitionForInstance(graph, schedule, enter, exit);
+          auto callstackSize = node.getCallStack().size();
+          auto newPartition  = getSubgraphPartitionForInstance(
+              graph, schedule, enter, exit, callstackSize);
 
           if (!havePartition) {
             partition     = newPartition;
@@ -245,23 +265,12 @@ SubgraphPartitioner::determineSubgraphPartition(const Graph &graph,
     }
 
     result = finaliseSubgraphPartition(partition);
-
-    // Log it.
-    logSubgraphPartition(graph, result);
-
-    return result;
   }
 
-  if (result.empty()) {
-    throw internal_error("[SubgraphPartitioner] Subgraph partition for {} is "
-                         "empty.",
-                         graph.getGraphString());
-  }
-
-  if (unbreakable && std::get<1>(result.back()) > 0) {
+  if (!partitionable && std::get<1>(result.back()) > 0) {
     throw internal_error("[SubgraphPartitioner] Found multiple subgraph parts "
-                         "for {} (which is currently marked as a graph that "
-                         "cannot be partitioned). This must be due to a parent"
+                         "for {} (which is a graph that cannot be "
+                         "partitioned). This must be due to a parent "
                          "graph copying inputs or outputs in the middle of "
                          "{}, which cannot be achieved without partitioning.",
                          graph.getGraphString(),
@@ -269,7 +278,7 @@ SubgraphPartitioner::determineSubgraphPartition(const Graph &graph,
   }
 
   // Log it.
-  logSubgraphPartition(graph, result);
+  logSubgraphPartition(graph, result, partitionable);
 
   return result;
 }
@@ -278,8 +287,9 @@ SubgraphPartitioner::SubgraphPartitionTmp
 SubgraphPartitioner::getSubgraphPartitionForInstance(
     const Graph &graph,
     const std::vector<Op *> &schedule,
-    const size_t enter,
-    const size_t exit) {
+    size_t enter,
+    size_t exit,
+    size_t callstackSize) {
 
   // Log what we are doing.
   logging::devicex::trace("[SubgraphPartitioner] Looking to extract subgraph "
@@ -295,8 +305,6 @@ SubgraphPartitioner::getSubgraphPartitionForInstance(
 
   // The CallOp in this subgraph that is active, if any.
   CallOp *activeCallOp = nullptr;
-  const std::vector<Op *> &callStack =
-      liveness->getOpScheduleAt(enter).getCallStack();
 
   // Keeps track of subgraph parts that have already been called.
   SubgraphPartIndex finalisedPart = -1;
@@ -368,11 +376,25 @@ SubgraphPartitioner::getSubgraphPartitionForInstance(
         syncCalls();
         nodes.push_back({op, {CallOpPartType::CopyInput, index, 0, 0}});
 
+        logging::devicex::trace("[SubgraphPartitioner] Liveness node #{} "
+                                "introduces CopyInput@{} into the subgraph "
+                                "partition for {}",
+                                i,
+                                index,
+                                graph.getGraphString());
+
       } else if (isCallOpWithStatus(graph, node, OpStatus::CopyOutput)) {
 
         // A CallOp copying output.
         syncCalls();
         nodes.push_back({op, {CallOpPartType::CopyOutput, 0, index, 0}});
+
+        logging::devicex::trace("[SubgraphPartitioner] Liveness node #{} "
+                                "introduces CopyOutput@{} into the subgraph "
+                                "partition for {}",
+                                i,
+                                index,
+                                graph.getGraphString());
 
       } else if (isCallOpWithStatus(graph, node, OpStatus::CopyModified)) {
 
@@ -380,38 +402,133 @@ SubgraphPartitioner::getSubgraphPartitionForInstance(
         syncCalls();
         nodes.push_back({op, {CallOpPartType::CopyModified, index, 0, 0}});
 
+        logging::devicex::trace("[SubgraphPartitioner] Liveness node #{} "
+                                "introduces CopyModified@{} into the subgraph "
+                                "partition for {}",
+                                i,
+                                index,
+                                graph.getGraphString());
+
       } else if (isCopyCallSubgraphPart(graph, node, activeCallOp)) {
 
-        // An op in a subgraph called by our active CallOp.
-        SubgraphPartIndex begin = getOpSubgraphPartBegin(op);
-        SubgraphPartIndex end   = getOpSubgraphPartEnd(op);
+        // We're dealing with an op in a subgraph called by our active CallOp.
 
-        if (begin <= finalisedPart) {
-          // Implies we need a call to a subgraph part we already called.
-          throw internal_error("[SubgraphPartitioner] Invalid schedule for {}. "
-                               "The schedule for {} (op {}) would need "
-                               "to call subgraph part {} of {} more than "
-                               "once with this schedule.",
-                               activeCallOp->getCalledGraph().getGraphString(),
-                               graph.getGraphString(),
-                               activeCallOp->debugName(),
-                               begin,
-                               activeCallOp->getCalledGraph().getGraphString());
+        CallOp *callOp = dynamic_cast<CallOp *>(node.getOp());
+        if (callOp == nullptr) {
 
-        } else if (!nodes.empty() && isParentCopy(graph, node, callStack)) {
+          // The op is a normal op in a child subgraph. Normal ops are currently
+          // always lowered over *exactly* 1 subgraph part.
 
-          // Add a boundary here as there's a parent copy. Note that it's
-          // possible this happens multiple times without adding a node but
-          // that's okay.
-          boundaries.insert(nodes.size());
+          SubgraphPartIndex begin = getOpSubgraphPartBegin(op);
+          SubgraphPartIndex end   = getOpSubgraphPartEnd(op);
+
+          if (end - begin != 1) {
+            // We shouldn't need multiple subgraph parts for non-call op.
+            throw internal_error("[SubgraphPartitioner] Lowering over multiple "
+                                 "subgraph parts is only supported for call "
+                                 "ops ({} suggests lowering over {} parts)",
+                                 op->debugName(),
+                                 end - begin);
+          }
+
+          if (begin <= finalisedPart) {
+            // Implies we need a call to a subgraph part we already called.
+            auto actGraphStr = activeCallOp->getCalledGraph().getGraphString();
+            throw internal_error("[SubgraphPartitioner] Invalid schedule for "
+                                 "{}. The schedule for {} (op {}) would need "
+                                 "to call subgraph part {} of {} more than "
+                                 "once with this schedule.",
+                                 actGraphStr,
+                                 graph.getGraphString(),
+                                 activeCallOp->debugName(),
+                                 begin,
+                                 actGraphStr);
+          }
+
+          logging::devicex::trace("[SubgraphPartitioner] Liveness node #{} "
+                                  "implies the need for a CallSubgraphPart({}) "
+                                  " in the subgraph partition for {}",
+                                  i,
+                                  end - 1,
+                                  graph.getGraphString());
+
+          // Make sure to insert calls to these subgraph parts in the schedule.
+          discoveredPart = std::max(discoveredPart, end - 1);
+
+        } else {
+
+          // The op is a CallOp. Multiple liveness nodes are associated with
+          // CallOps (Enter/Exit/CopyInputs/CopyOutputs/CopyModified). We need
+          // the *exact* subgraph part the node we're looking at is in as we
+          // don't want to include calls to subgraph parts we don't need yet.
+          // Use the call op schedule to determine the correct part.
+
+          const auto &callOpSchedule = getCallOpSchedule(callOp);
+          bool doLog                 = false;
+
+          for (const auto &entry : callOpSchedule) {
+            const auto &callOpPart = std::get<0>(entry);
+            const auto &part       = std::get<1>(entry);
+
+            if (node.getStatus() == OpStatus::CopyInput &&
+                callOpPart.type == CallOpPartType::CopyInput &&
+                node.getIndex() == callOpPart.inIndex) {
+
+              // Found relevant CopyInput in call op schedule, use the part.
+              discoveredPart = part;
+              doLog          = true;
+
+            } else if (node.getStatus() == OpStatus::CopyOutput &&
+                       callOpPart.type == CallOpPartType::CopyOutput &&
+                       node.getIndex() == callOpPart.outIndex) {
+
+              // Found relevant CopyOutput in call op schedule, use the part.
+              discoveredPart = part;
+              doLog          = true;
+
+            } else if (node.getStatus() == OpStatus::CopyModified &&
+                       callOpPart.type == CallOpPartType::CopyModified &&
+                       node.getIndex() == callOpPart.inIndex) {
+
+              // Found relevant CopyModified in call op schedule, use the part.
+              discoveredPart = part;
+              doLog          = true;
+            }
+          }
+
+          if (doLog) {
+            logging::devicex::trace("[SubgraphPartitioner] Liveness node #{} "
+                                    "implies a need for "
+                                    "CallSubgraphPart({}) in the subgraph "
+                                    "partition for {}",
+                                    i,
+                                    discoveredPart,
+                                    graph.getGraphString());
+          }
         }
 
-        // Make sure to insert calls to these subgraph parts in the schedule.
-        discoveredPart = std::max(discoveredPart, end - 1);
+      } else if (!nodes.empty() && isParentCopy(graph, node, callstackSize)) {
+
+        // Add a boundary here as there's a parent copy. Note that it's possible
+        // this happens multiple times without adding a node but that's okay.
+        boundaries.insert(nodes.size());
+
+        logging::devicex::trace("[SubgraphPartitioner] Liveness node #{} "
+                                "implies the need for partition boundary in "
+                                "the subgraph partition for {}",
+                                i,
+                                graph.getGraphString());
+
       } else if (isNormal(graph, node)) {
 
         // It's a normal op.
         nodes.push_back({op, {CallOpPartType::Undefined, 0, 0, 0}});
+
+        logging::devicex::trace("[SubgraphPartitioner] Liveness node #{} "
+                                "introduces a normal op node into the subgraph "
+                                "partition for {}",
+                                i,
+                                graph.getGraphString());
       }
     }
   }
@@ -502,44 +619,12 @@ void SubgraphPartitioner::populateCache(const Graph &graph) {
   if (!liveness)
     throw internal_error("[SubgraphPartitioner] LivenessAnalyzer not set");
 
-  // Work out if CallOps use this subgraph.
-  bool calledByCallOps  = false;
-  bool calledByOtherOps = false;
-
-  for (size_t i = 0; i < liveness->getOpScheduleSize(); i++) {
-    const auto &node       = liveness->getOpScheduleAt(i);
-    CallOp *callOp         = dynamic_cast<CallOp *>(node.getOp());
-    IfOp *ifOp             = dynamic_cast<IfOp *>(node.getOp());
-    SubgraphOp *subgraphOp = dynamic_cast<SubgraphOp *>(node.getOp());
-
-    bool isCallOp = callOp && (graph.id == callOp->getCalledGraph().id);
-    bool isIfOp   = ifOp && ((graph.id == ifOp->getThenGraph().id) ||
-                           (graph.id == ifOp->getElseGraph().id));
-    bool isSubgraphOp =
-        subgraphOp && (graph.id == subgraphOp->getCalledGraph().id);
-
-    calledByCallOps = calledByCallOps || (isCallOp);
-    calledByOtherOps =
-        calledByOtherOps || (!isCallOp && isSubgraphOp) || (isIfOp);
-  }
-
-  // We're not equipped to deal with use cases where a subgraph is both called
-  // and, e.g., used in a loop. To fix this in future, we eiter must avoid
-  // input/output copies crossing such a subgraph's boundary and always
-  // partition them into one part, or we must partition the lowering of other
-  // subgraph ops akin to how we did for CallOps.
-  if (calledByCallOps && calledByOtherOps) {
-    throw error("[SubgraphPartitioner] A problem was encountered while "
-                "processing {}. Currently, avoid using a subgraph in both a "
-                "CallOp and another type of subgraph op to avoid this issue.",
-                graph.getGraphString());
-  }
-
   // Use opCache to see if we previously determined this mapping.
   auto it = cache.find(graph.id.str());
   if (it == cache.end()) {
     // Determine and remember graph schedule.
-    auto graphSchedule = determineSubgraphPartition(graph, !calledByCallOps);
+    bool partitionable = isPartitionable(graph);
+    auto graphSchedule = determineSubgraphPartition(graph, partitionable);
     cache.insert(it, {graph.id.str(), graphSchedule});
   }
 }
@@ -547,8 +632,8 @@ void SubgraphPartitioner::populateCache(const Graph &graph) {
 void SubgraphPartitioner::populateCacheForCalledGraphs(const Graph &graph) {
   const auto &schedule = liveness->getGraphOpSchedule(graph.id);
   for (auto op : schedule) {
-    if (CallOp *callOp = dynamic_cast<CallOp *>(op)) {
-      populateCache(callOp->getCalledGraph());
+    for (auto graph : op->getCalledGraphs()) {
+      populateCache(*graph);
     }
   }
 }
@@ -646,12 +731,15 @@ void SubgraphPartitioner::logSubgraphPartitionTmp(
 
 void SubgraphPartitioner::logSubgraphPartition(
     const Graph &graph,
-    const SubgraphPartition &partition) const {
+    const SubgraphPartition &partition,
+    bool partitionable) const {
   if (logging::devicex::isEnabled(logging::Level::Debug)) {
 
     logging::devicex::debug("[SubgraphPartitioner] Determined subgraph "
-                            "partition for {}:",
-                            graph.getGraphString());
+                            "partition for {} ({}):",
+                            graph.getGraphString(),
+                            partitionable ? "partitionable"
+                                          : "unpartitionable");
     size_t i = 0;
     for (const auto &tup : partition) {
       // "[SubgraphPartitioner] #43->5: [CopyInput@1] <some call op>"

@@ -6,9 +6,14 @@ import onnx
 from onnx import numpy_helper
 import test_util as tu
 import json
+import pytest
 
 
-def test_weight_update(tmpdir):
+@pytest.mark.parametrize("subgraphCopyingStrategy", [
+    popart.SubgraphCopyingStrategy.OnEnterAndExit,
+    popart.SubgraphCopyingStrategy.JustInTime
+])
+def test_weight_update(tmpdir, subgraphCopyingStrategy):
     def run(model_file_name, enableOutlining):
         dsize = 10
         ratio = 0.5
@@ -42,6 +47,7 @@ def test_weight_update(tmpdir):
         opts = popart.SessionOptions()
         opts.enableOutlining = enableOutlining
         opts.separateCallOpPdfs = False
+        opts.subgraphCopyingStrategy = subgraphCopyingStrategy
 
         proto = builder.getModelProto()
 
@@ -80,7 +86,11 @@ def test_weight_update(tmpdir):
         assert np.allclose(lhs, rhs)
 
 
-def test_batches_per_step_greater_than_one():
+@pytest.mark.parametrize("subgraphCopyingStrategy", [
+    popart.SubgraphCopyingStrategy.OnEnterAndExit,
+    popart.SubgraphCopyingStrategy.JustInTime
+])
+def test_batches_per_step_greater_than_one(subgraphCopyingStrategy):
     def run(enableOutlining):
         dsize = 10
         ratio = 0.5
@@ -115,6 +125,7 @@ def test_batches_per_step_greater_than_one():
 
         opts = popart.SessionOptions()
         opts.enableOutlining = enableOutlining
+        opts.subgraphCopyingStrategy = subgraphCopyingStrategy
 
         session = popart.TrainingSession(
             fnModel=builder.getModelProto(),
@@ -147,7 +158,11 @@ def test_batches_per_step_greater_than_one():
         assert np.allclose(lhs, rhs)
 
 
-def test_outlining_in_subgraphs():
+@pytest.mark.parametrize("subgraphCopyingStrategy", [
+    popart.SubgraphCopyingStrategy.OnEnterAndExit,
+    popart.SubgraphCopyingStrategy.JustInTime
+])
+def test_outlining_in_subgraphs(subgraphCopyingStrategy):
     data = [np.random.rand(4, 4).astype(np.float32) for i in range(2)]
     weights = [np.random.rand(4, 4).astype(np.float32) for i in range(2)]
 
@@ -179,9 +194,13 @@ def test_outlining_in_subgraphs():
         o = x
         proto = bld.getModelProto()
 
+        opts = popart.SessionOptions()
+        opts.subgraphCopyingStrategy = subgraphCopyingStrategy
+
         sess = popart.InferenceSession(fnModel=proto,
                                        deviceInfo=tu.create_test_device(),
-                                       dataFlow=popart.DataFlow(1, [o]))
+                                       dataFlow=popart.DataFlow(1, [o]),
+                                       userOptions=opts)
         sess.prepareDevice()
 
         anchors = sess.initAnchorArrays()
