@@ -44,19 +44,26 @@ bool ClipNormSettings::operator==(const ClipNormSettings &other) const {
   return true;
 }
 
-bool Optimizer::validReplacement(const Optimizer &other) const {
+void Optimizer::validReplacement(const Optimizer &other) const {
   logging::ir::debug("Checking clip norm settings.");
   if (clipNormSettings.size() != other.clipNormSettings.size()) {
-    return false;
+    throw optimizer_replacement_error("Clip norm settings do not match.");
   }
 
   for (int i = 0; i < clipNormSettings.size(); i++) {
     if (clipNormSettings[i] != other.clipNormSettings[i]) {
-      return false;
+      throw optimizer_replacement_error(
+          "Clip norm settings at index {} do not match.", i);
     }
   }
 
-  return true;
+  logging::ir::debug("Checking optimizer types.");
+  if (other.type() != type()) {
+    throw optimizer_replacement_error(
+        "Can not replace optimizer of type {} with new optimizer of type {}",
+        type_s(),
+        other.type_s());
+  }
 }
 
 SGD SGD::fromDefaultMap(const std::map<std::string, OptimizerValue> &m) {
@@ -517,14 +524,8 @@ float SGD::getStoredValue(const TensorId &optId) const {
               optId);
 }
 
-bool SGD::validReplacement(const Optimizer &other) const {
-  if (!Optimizer::validReplacement(other)) {
-    return false;
-  }
-
-  if (other.type() != type()) {
-    return false;
-  }
+void SGD::validReplacement(const Optimizer &other) const {
+  Optimizer::validReplacement(other);
 
   auto asSgd = dynamic_cast<const SGD *>(&other);
   if (!asSgd) {
@@ -534,32 +535,11 @@ bool SGD::validReplacement(const Optimizer &other) const {
         "optimizer classes? if so this needs a rethink");
   }
 
-  logging::ir::debug("Checking loss scaling for compatibility");
-  if (!lossScaling().validReplacement(other.lossScaling())) {
-    return false;
-  }
-
-  logging::ir::debug("Checking learning rates for compatibility");
-  if (!lrs.validReplacement(asSgd->lrs)) {
-    return false;
-  }
-
-  logging::ir::debug("Checking weight decays for compatibility");
-  if (!wds.validReplacement(asSgd->wds)) {
-    return false;
-  }
-
-  logging::ir::debug("Checking momentums for compatibility");
-  if (!mms.validReplacement(asSgd->mms)) {
-    return false;
-  }
-
-  logging::ir::debug("Checking velocity scalings for compatibility");
-  if (!vss.validReplacement(asSgd->vss)) {
-    return false;
-  }
-
-  return true;
+  checkReplacementValue(lossScaling(), other.lossScaling(), "loss scaling");
+  checkReplacementValue(lrs, asSgd->lrs, "learning rates");
+  checkReplacementValue(wds, asSgd->wds, "weight decays");
+  checkReplacementValue(mms, asSgd->mms, "momentums");
+  checkReplacementValue(vss, asSgd->vss, "velocity scalings");
 }
 
 std::unique_ptr<Optimizer> SGD::clone() const {

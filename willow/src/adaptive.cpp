@@ -420,10 +420,8 @@ float Adaptive::getStoredValue(const TensorId &optId) const {
               optId);
 }
 
-bool Adaptive::validReplacement(const Optimizer &other) const {
-  if (other.type() != type()) {
-    return false;
-  }
+void Adaptive::validReplacement(const Optimizer &other) const {
+  Optimizer::validReplacement(other);
 
   auto asAdaptive = dynamic_cast<const Adaptive *>(&other);
   if (!asAdaptive) {
@@ -434,44 +432,19 @@ bool Adaptive::validReplacement(const Optimizer &other) const {
   }
 
   if (asAdaptive->mode != mode) {
-    return false;
+    throw optimizer_replacement_error("Adaptive modes do not match");
   }
 
   if (asAdaptive->decayMode != decayMode) {
-    return false;
+    throw optimizer_replacement_error("Weight decay modes do not match");
   }
 
-  logging::ir::debug("Checking loss scaling for compatibility");
-  if (!lossScaling().validReplacement(other.lossScaling())) {
-    return false;
-  }
-
-  logging::ir::debug("Checking learning rates for compatibility");
-  if (!lrs.validReplacement(asAdaptive->lrs)) {
-    return false;
-  }
-
-  logging::ir::debug("Checking weight decays for compatibility");
-  if (!wds.validReplacement(asAdaptive->wds)) {
-    return false;
-  }
-
-  logging::ir::debug("Checking alphas for compatibility");
-  if (!as.validReplacement(asAdaptive->as)) {
-    return false;
-  }
-
-  logging::ir::debug("Checking momentums for compatibility");
-  if (!ms.validReplacement(asAdaptive->ms)) {
-    return false;
-  }
-
-  logging::ir::debug("Checking eps for compatibility");
-  if (!epsvs.validReplacement(asAdaptive->epsvs)) {
-    return false;
-  }
-
-  return true;
+  checkReplacementValue(lossScaling(), other.lossScaling(), "loss scaling");
+  checkReplacementValue(lrs, asAdaptive->lrs, "learning rates");
+  checkReplacementValue(wds, asAdaptive->wds, "weight decays");
+  checkReplacementValue(as, asAdaptive->as, "alphas");
+  checkReplacementValue(ms, asAdaptive->ms, "momentums");
+  checkReplacementValue(epsvs, asAdaptive->epsvs, "eps");
 }
 
 std::unique_ptr<Optimizer> Adaptive::clone() const {

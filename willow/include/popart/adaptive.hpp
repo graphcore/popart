@@ -426,7 +426,7 @@ public:
   std::vector<std::tuple<TensorId, TensorInfo>>
   getOptimizerInputs(const Tensor &weight) const final;
 
-  bool validReplacement(const Optimizer &other) const final;
+  void validReplacement(const Optimizer &other) const final;
 
   void resetTensorData(Tensor &) const final;
   void setTensorData(Tensor &) const final;

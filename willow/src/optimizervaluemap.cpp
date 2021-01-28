@@ -25,14 +25,17 @@ OptimizerValue OptimizerValueMap::get(const TensorId &id) const {
   return defaultOptVal;
 }
 
-bool OptimizerValueMap::validReplacement(const OptimizerValueMap &ovm) const {
+void OptimizerValueMap::validReplacement(const OptimizerValueMap &ovm) const {
 
-  if (!defaultOptVal.validReplacement(ovm.defaultOptVal)) {
-    return false;
+  try {
+    defaultOptVal.validReplacement(ovm.defaultOptVal);
+  } catch (error &err) {
+    throw error("Default value is not a valid replacement. {}", err.what());
   }
 
   if (specifics.size() != ovm.specifics.size()) {
-    return false;
+    throw error("Replacement OptimizerValueMap has a different number of "
+                "specific tensors.");
   }
 
   for (const auto &id_ov : specifics) {
@@ -40,13 +43,17 @@ bool OptimizerValueMap::validReplacement(const OptimizerValueMap &ovm) const {
     const auto &ov     = id_ov.second;
     auto ovm_found     = ovm.specifics.find(id);
     if (ovm_found == ovm.specifics.end()) {
-      return false;
+      throw error("Could not find tensor {} in replacement OptimizerValueMap.",
+                  id);
     }
-    if (!ov.validReplacement(ovm_found->second)) {
-      return false;
+    try {
+      ov.validReplacement(ovm_found->second);
+    } catch (error &err) {
+      throw error("OptimizerValue for tensor {} is not a valid replacement.{}",
+                  id,
+                  err.what());
     }
   }
-  return true;
 }
 
 } // namespace popart

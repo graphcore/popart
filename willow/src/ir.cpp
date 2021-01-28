@@ -183,11 +183,8 @@ void Ir::updateOptimizer(const Optimizer &newOptimizer) {
   // TODO this will be cleaner when T12589 is done
   auto newOptimizerClone = newOptimizer.clone();
   newOptimizerClone->setFactorsFromOptions(getSessionOptions());
-  if (!optimizer->validReplacement(*newOptimizerClone)) {
-    throw error("This Optimizer of type " + newOptimizer.type_s() +
-                " is not a valid replacement for optimizer of type " +
-                optimizer->type_s());
-  }
+  // Throws if newOptimizerClone is not a valid replacement optimizer.
+  optimizer->validReplacement(*newOptimizerClone);
   optimizer = std::move(newOptimizerClone);
 }
 

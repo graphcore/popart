@@ -494,14 +494,8 @@ float Adam::getStoredValue(const TensorId &optId) const {
               optId);
 }
 
-bool Adam::validReplacement(const Optimizer &other) const {
-  if (!Optimizer::validReplacement(other)) {
-    return false;
-  }
-
-  if (other.type() != type()) {
-    return false;
-  }
+void Adam::validReplacement(const Optimizer &other) const {
+  Optimizer::validReplacement(other);
 
   auto asAdam = dynamic_cast<const Adam *>(&other);
   if (!asAdam) {
@@ -512,49 +506,20 @@ bool Adam::validReplacement(const Optimizer &other) const {
   }
 
   if (asAdam->mode != mode) {
-    return false;
+    throw optimizer_replacement_error("Adam modes do not match");
   }
 
   if (asAdam->decayMode != decayMode) {
-    return false;
+    throw optimizer_replacement_error("Weight decay modes do not match");
   }
 
-  logging::ir::debug("Checking loss scaling for compatibility");
-  if (!lossScaling().validReplacement(other.lossScaling())) {
-    return false;
-  }
-
-  logging::ir::debug("Checking learning rates for compatibility");
-  if (!lrs.validReplacement(asAdam->lrs)) {
-    return false;
-  }
-
-  logging::ir::debug("Checking weight decays for compatibility");
-  if (!wds.validReplacement(asAdam->wds)) {
-    return false;
-  }
-
-  logging::ir::debug("Checking beta1s for compatibility");
-  if (!b1s.validReplacement(asAdam->b1s)) {
-    return false;
-  }
-
-  logging::ir::debug("Checking beta2s for compatibility");
-  if (!b2s.validReplacement(asAdam->b2s)) {
-    return false;
-  }
-
-  logging::ir::debug("Checking eps for compatibility");
-  if (!epsvs.validReplacement(asAdam->epsvs)) {
-    return false;
-  }
-
-  logging::ir::debug("Checking mwn for compatibility");
-  if (!mwns.validReplacement(asAdam->mwns)) {
-    return false;
-  }
-
-  return true;
+  checkReplacementValue(lossScaling(), other.lossScaling(), "loss scaling");
+  checkReplacementValue(lrs, asAdam->lrs, "learning rates");
+  checkReplacementValue(wds, asAdam->wds, "weight decays");
+  checkReplacementValue(b1s, asAdam->b1s, "beta1s");
+  checkReplacementValue(b2s, asAdam->b2s, "beta2s");
+  checkReplacementValue(epsvs, asAdam->epsvs, "eps");
+  checkReplacementValue(mwns, asAdam->mwns, "mwn");
 }
 
 size_t Adam::hash() const {

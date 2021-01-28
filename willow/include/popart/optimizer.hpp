@@ -63,6 +63,19 @@ struct ClipNormSettings {
   }
 };
 
+class optimizer_replacement_error : public error {
+public:
+  template <typename... Args>
+  explicit optimizer_replacement_error(const char *s, const Args &... args)
+      : error(std::string("New optimizer is not a valid replacement. ") + s,
+              args...) {}
+
+  template <typename... Args>
+  explicit optimizer_replacement_error(const std::string &s,
+                                       const Args &... args)
+      : error("New optimizer is not a valid replacement. " + s, args...) {}
+};
+
 // The base Optimizer class
 class Optimizer {
 public:
@@ -75,7 +88,7 @@ public:
   // "other", without requiring a change to compute Graph? For example, a
   // VarUpdate which has a constant scaled learning rate cannot be modified to
   // have a variable scaled learning rate
-  virtual bool validReplacement(const Optimizer &other) const;
+  virtual void validReplacement(const Optimizer &other) const;
 
   virtual OptimizerType type() const               = 0;
   virtual std::string type_s() const               = 0;
@@ -114,6 +127,22 @@ public:
   }
 
   virtual size_t hash() const;
+
+protected:
+  // T can be of type OptimizerValue or OptimizerValueMap.
+  template <typename T>
+  void checkReplacementValue(const T &thisVal,
+                             const T &replacementVal,
+                             const char *valueName) const {
+    logging::ir::debug("Checking {} for compatibility", valueName);
+    try {
+      thisVal.validReplacement(replacementVal);
+    } catch (error &err) {
+      std::string error_message =
+          logging::format("Problem with {}. {}", valueName, err.what());
+      throw optimizer_replacement_error(error_message);
+    }
+  }
 
 private:
   OptimizerValue ls;
@@ -458,7 +487,7 @@ public:
   std::vector<std::tuple<TensorId, TensorInfo>>
   getOptimizerInputs(const Tensor &weight) const final;
 
-  bool validReplacement(const Optimizer &other) const final;
+  void validReplacement(const Optimizer &other) const final;
 
   void resetTensorData(Tensor &) const final;
   void setTensorData(Tensor &) const final;

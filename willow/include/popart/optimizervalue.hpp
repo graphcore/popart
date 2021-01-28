@@ -33,7 +33,7 @@ public:
   // can the user not change this value in the final computation Graph
   bool isConst() const { return isConst_; }
 
-  bool validReplacement(const OptimizerValue &rhs) const;
+  void validReplacement(const OptimizerValue &rhs) const;
 
 private:
   float val_;

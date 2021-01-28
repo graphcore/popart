@@ -30,7 +30,7 @@ public:
   // Check for compatibility of OptimizerValueMaps - can one replace another
   // after Graph construction without requiring changes to the compuatation
   // Graph?
-  bool validReplacement(const OptimizerValueMap &rhs) const;
+  void validReplacement(const OptimizerValueMap &rhs) const;
 
   const std::map<TensorId, OptimizerValue> &getSpecifics() const {
     return specifics;
