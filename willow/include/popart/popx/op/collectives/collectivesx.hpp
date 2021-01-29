@@ -10,6 +10,8 @@
 
 #include <popops/CollectiveTypes.hpp>
 
+#include <gcl/CollectiveBalancedReorder.hpp>
+
 namespace popart {
 namespace popx {
 
@@ -26,89 +28,6 @@ struct ReorderMetadata {
   int64_t rearranged_offset;
   int64_t size;
   int64_t tile;
-};
-
-// This class contains functions and data necessary to rearrange tensors on
-// the host side at runtime. The separation is made so that we can serialize
-// the state and restore it without having to create a `poplar::Graph`.
-class CollectiveBalancedHostRearrangement {
-public:
-  // Balanced reorder the tensor in a collective-friendly manner (host-side)
-  void
-  rearrangeForCollective(const char *in, char *out, int64_t elemByteSize) const;
-
-  // Reorder tensor back into the expected IR tensor shape and order (host-side)
-  void undoRearrangeForCollective(const char *in,
-                                  char *out,
-                                  int64_t elemByteSize) const;
-
-  // Number of elements in the collective balanced (reordered) tensor
-  size_t getNumRearrangedTensorElems() const;
-
-  // Host tensor rearrangement routine
-  void rearrange(const char *in,
-                 char *out,
-                 int64_t elemByteSize,
-                 bool refToGathered) const;
-
-  unsigned replicationFactor;
-  std::size_t totalElementsPerReplica;
-  std::vector<poplar::Interval> gatheredToRefSlices;
-};
-
-// Helper class to reorder a tensor in a per-tile-balanced fashion such that
-// each replica obtains (for inputs to AllGather or outputs of ReduceScatter)
-// an equally sized 1D tensor with equally sized regions.
-// The reordering process:
-//  - Flattens the input tensor
-//  - Analyzes the tile mapping
-//  - Determines reordering strategy and required internal padding
-//  - Can rearrange and undo the rearrangement on any tensor that
-//    has the same tile mapping
-//  - Can rearrange and undo the rearrangement on host tensors that are to be
-//    copied into CBR-rearranged RemoteBuffers
-class CollectiveBalancedReorder {
-public:
-  CollectiveBalancedReorder(poplar::Graph &graph_,
-                            poplar::Tensor tensor_,
-                            unsigned replicationFactor_,
-                            const poplar::DebugNameAndId &dnai_);
-
-  poplar::Tensor createReplicaSlice(const poplar::Type &type);
-
-  poplar::Tensor createCollectivesTensor(const poplar::Type &type,
-                                         const std::string &tensorPrefix);
-
-  // Reorder tensor back into the expected IR tensor shape and order
-  poplar::Tensor undoRearrangeForCollective(poplar::Tensor tensor) const;
-
-  std::vector<std::size_t> getReferenceShape() const {
-    return referenceTensor.shape();
-  }
-
-  const CollectiveBalancedHostRearrangement &getHostRearrangement() const {
-    return hostRearrangement;
-  }
-
-private:
-  // Host tensor rearrangement routine
-  void rearrange(const char *in,
-                 char *out,
-                 int64_t elemByteSize,
-                 bool refToGathered) const;
-
-  // Graph or subgraph on which the tensor and reordered tensor are allocated
-  poplar::Graph &graph;
-
-  unsigned replicationFactor;
-
-  std::vector<std::size_t> numReplicaElementsPerTile;
-  std::vector<poplar::Interval> gatheredToSimplifiedRefSlices;
-  poplar::Tensor referenceTensor;
-  poplar::TensorRearranger simplifier;
-
-  CollectiveBalancedHostRearrangement hostRearrangement;
-  const poplar::DebugNameAndId dnai;
 };
 
 // If the input/output to a collective op is padded,
@@ -146,8 +65,9 @@ private:
 // regions are included in the view and arranged correctly
 class ReplicatedGatherOutScatterInViewChanger : public ViewChanger {
 public:
-  ReplicatedGatherOutScatterInViewChanger(const CollectiveBalancedReorder *cbr_,
-                                          const std::set<TensorId> group_)
+  ReplicatedGatherOutScatterInViewChanger(
+      const gcl::CollectiveBalancedReorder *cbr_,
+      const std::set<TensorId> group_)
       : cbr(cbr_), group(group_) {}
   poplar::Tensor apply(poplar::Tensor tensor) const final {
     return cbr->undoRearrangeForCollective(tensor).reshape(
@@ -163,7 +83,7 @@ public:
   }
 
 private:
-  const CollectiveBalancedReorder *cbr;
+  const gcl::CollectiveBalancedReorder *cbr;
   std::set<TensorId> group;
 };
 
@@ -174,8 +94,8 @@ public:
   // mapping of collective inputs and outputs
   std::pair<std::set<TensorId>, std::vector<Op *>>
   getCollectiveLinkedGroup() const;
-  CollectiveBalancedReorder *getCollectiveBalancedReorder() const;
-  CollectiveBalancedReorder *
+  gcl::CollectiveBalancedReorder *getCollectiveBalancedReorder() const;
+  gcl::CollectiveBalancedReorder *
   createCollectiveBalancedReorder(poplar::Tensor tensor) const;
 };
 

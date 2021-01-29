@@ -2,6 +2,8 @@
 #ifndef GUARD_NEURALNET_IRLOWERING_HPP
 #define GUARD_NEURALNET_IRLOWERING_HPP
 
+#include <gcl/CollectiveBalancedReorder.hpp>
+
 #include <popart/vendored/optional.hpp>
 
 #include <poplar/DataStream.hpp>
@@ -64,7 +66,6 @@ public:
 using PopStreamId = std::string;
 
 class Opx;
-class CollectiveBalancedReorder;
 class CollectiveBalancedHostRearrangement;
 class Devicex;
 
@@ -118,7 +119,7 @@ private:
   std::map<TaskId, std::vector<Op *>> requiredRecomputes;
 
   // Collective balanced reordering information for replicated ops
-  std::map<TensorId, std::shared_ptr<CollectiveBalancedReorder>>
+  std::map<TensorId, std::shared_ptr<gcl::CollectiveBalancedReorder>>
       collectiveReorders;
 
   // Store input tensors based on how they are allocated
@@ -472,15 +473,16 @@ public:
                           double val,
                           const poplar::DebugContext &dc = {});
 
-  std::shared_ptr<CollectiveBalancedReorder>
+  std::shared_ptr<gcl::CollectiveBalancedReorder>
   getCollectiveBalancedReorder(TensorId tensor_id);
-  const CollectiveBalancedHostRearrangement &
+  const gcl::CollectiveBalancedHostRearrangement &
   getCollectiveBalancedHostRearrangement(const TensorId &tensor_id) const;
 
-  void setCollectiveBalancedReorder(TensorId tensor_id,
-                                    std::shared_ptr<CollectiveBalancedReorder>);
+  void
+  setCollectiveBalancedReorder(TensorId tensor_id,
+                               std::shared_ptr<gcl::CollectiveBalancedReorder>);
 
-  const std::map<TensorId, std::shared_ptr<CollectiveBalancedReorder>> &
+  const std::map<TensorId, std::shared_ptr<gcl::CollectiveBalancedReorder>> &
   getCollectiveReorders() const {
     return collectiveReorders;
   }

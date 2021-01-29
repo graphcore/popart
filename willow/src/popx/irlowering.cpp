@@ -1376,12 +1376,12 @@ void IrLowering::createRemoteBuffer(RemoteBufferId id, poplar::Tensor tensor) {
         nonstd::optional<poplar::Tensor>(tensor)}});
 }
 
-std::shared_ptr<CollectiveBalancedReorder>
+std::shared_ptr<gcl::CollectiveBalancedReorder>
 IrLowering::getCollectiveBalancedReorder(TensorId tensor_id) {
   return collectiveReorders[tensor_id];
 }
 
-const CollectiveBalancedHostRearrangement &
+const gcl::CollectiveBalancedHostRearrangement &
 IrLowering::getCollectiveBalancedHostRearrangement(
     const TensorId &tensor_id) const {
   return collectiveReorders.at(tensor_id)->getHostRearrangement();
@@ -1389,7 +1389,7 @@ IrLowering::getCollectiveBalancedHostRearrangement(
 
 void IrLowering::setCollectiveBalancedReorder(
     TensorId tensor_id,
-    std::shared_ptr<CollectiveBalancedReorder> cbr) {
+    std::shared_ptr<gcl::CollectiveBalancedReorder> cbr) {
   collectiveReorders[tensor_id] = cbr;
 }
 

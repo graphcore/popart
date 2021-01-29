@@ -54,7 +54,7 @@ Executablex::Executablex(IrLowering &ir_lowering_)
 Executablex::Executablex(
     IrLowering &ir_lowering_,
     std::unordered_map<TensorId, std::unique_ptr<Tensor>> &&tensorMap,
-    std::map<TensorId, CollectiveBalancedHostRearrangement> &&cbrMap)
+    std::map<TensorId, gcl::CollectiveBalancedHostRearrangement> &&cbrMap)
     : ir_lowering(ir_lowering_), deserialized(true),
       dataFlow(ir_lowering.ir().getDataFlow()),
       options(ir_lowering.ir().getSessionOptions()),
@@ -98,7 +98,7 @@ Executablex::createFromLoweredIr(IrLowering &ir_lowering_) {
 std::unique_ptr<Executablex> Executablex::createFromStream(
     IrLowering &ir_lowering_,
     std::unordered_map<TensorId, std::unique_ptr<Tensor>> &&tensorMap,
-    std::map<TensorId, CollectiveBalancedHostRearrangement> &&cbrMap) {
+    std::map<TensorId, gcl::CollectiveBalancedHostRearrangement> &&cbrMap) {
 
   return std::make_unique<Executablex>(
       ir_lowering_, std::move(tensorMap), std::move(cbrMap));
@@ -220,7 +220,7 @@ void Executablex::updateOptimizerTensors() {
   }
 }
 
-const CollectiveBalancedHostRearrangement &
+const gcl::CollectiveBalancedHostRearrangement &
 Executablex::getCollectiveBalancedHostRearrangement(const TensorId &id) const {
   if (!deserialized) {
     return lowering().getCollectiveBalancedHostRearrangement(id);
@@ -236,10 +236,11 @@ Executablex::getCollectiveBalancedHostRearrangement(const TensorId &id) const {
   return found->second;
 }
 
-const std::map<TensorId, CollectiveBalancedHostRearrangement>
+const std::map<TensorId, gcl::CollectiveBalancedHostRearrangement>
 Executablex::getCollectiveBalancedHostRearrangements() const {
   if (!deserialized) {
-    std::map<TensorId, CollectiveBalancedHostRearrangement> hostRearrangements;
+    std::map<TensorId, gcl::CollectiveBalancedHostRearrangement>
+        hostRearrangements;
     const auto &cbrs = lowering().getCollectiveReorders();
     for (const auto &kv : cbrs) {
       const auto id                = kv.first;

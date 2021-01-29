@@ -21,6 +21,8 @@
 #include <popart/popx/irlowering.hpp>
 #include <popart/popx/op/collectives/collectivesx.hpp>
 
+#include <gcl/CollectiveBalancedReorder.hpp>
+
 #include <capnp/compat/json.h>
 #include <capnp/message.h>
 #include <capnp/serialize.h>
@@ -546,7 +548,8 @@ deserializeExecutable(std::istream &in,
     ir.addAdditionalModelProtoTensors();
   }
 
-  std::map<TensorId, CollectiveBalancedHostRearrangement> cbrHostRearrangement;
+  std::map<TensorId, gcl::CollectiveBalancedHostRearrangement>
+      cbrHostRearrangement;
   {
     auto collectiveBalancedHostRearrangementsReader =
         executablexReader.getCollectiveBalancedHostRearrangements();
@@ -557,7 +560,7 @@ deserializeExecutable(std::istream &in,
       std::string id           = cbr.getId();
       auto rearrangementReader = cbr.getRearrangement();
 
-      CollectiveBalancedHostRearrangement cbhr;
+      gcl::CollectiveBalancedHostRearrangement cbhr;
       cbhr.replicationFactor = rearrangementReader.getReplicationFactor();
       cbhr.totalElementsPerReplica =
           rearrangementReader.getTotalElementsPerReplica();
