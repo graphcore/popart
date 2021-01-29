@@ -19,9 +19,4 @@ add_popart_py_unit_test(sgd_mixed_mode_test_py_0)
 add_popart_py_unit_test(sgd_mixed_mode_test_py_1)
 add_popart_py_unit_test(sgd1_accumulator_test)
 
-# TODO T33333: test hangs and times out intermittently
-# add_popart_py_unit_test(global_batch_size_test VARIANTS Hw)
-# # Test uses all IPUs, so run alone to avoid IPU attachment conflicts
-# if ("Hw" IN_LIST ENABLED_TEST_VARIANTS)
-#  set_tests_properties("Hw_default_global_batch_size_test" PROPERTIES RUN_SERIAL TRUE)
-# endif()
+add_popart_py_unit_test(global_batch_size_test VARIANTS Hw)

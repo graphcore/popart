@@ -167,12 +167,13 @@ def test_global_batch_size_correctness(tmpdir, reduction_type, loss_type,
     baseline_loss = loss_fn(baseline_outputs[-1])
 
     tests = [
-        run_test(4, 1, 1, 4),
+        # TODO T33333: tests with graph replication hang intermittently
+        # run_test(4, 1, 1, 4),
         run_test(4, 1, 4, 1),
-        run_test(4, 1, 2, 2),
+        # run_test(4, 1, 2, 2),
         run_test(4, 4, 1, 1),
         run_test(4, 2, 2, 1),
-        run_test(2, 2, 2, 2)
+        # run_test(2, 2, 2, 2)
     ]
 
     for i, results in enumerate(tests):
