@@ -93,7 +93,8 @@ bool IdentityLossOp::canBeReplacedByIdentity() const {
     bool globallyReplicated = opts.enableDistributedReplicatedGraphs &&
                               opts.globalReplicationFactor > 1;
     if (getReductionType() == ReductionType::Mean && getIr().canTrain() &&
-        (locallyReplicated || globallyReplicated)) {
+        (locallyReplicated || globallyReplicated) &&
+        (getScaleByReplication() == ScaleByReplication::Yes)) {
       return false;
     } else {
       return true;
@@ -105,8 +106,10 @@ bool IdentityLossOp::canBeReplacedByIdentity() const {
 
 IdentityLossOp::IdentityLossOp(const OperatorIdentifier &_opid,
                                const ReductionType &reduction,
-                               const Op::Settings &settings_)
-    : LossOp(_opid, settings_), reduction_type_(reduction) {}
+                               const Op::Settings &settings_,
+                               const ScaleByReplication scaleByReplication)
+    : LossOp(_opid, settings_), reduction_type_(reduction),
+      scaleByReplication_(scaleByReplication) {}
 
 void IdentityLossOp::setup() {
   TensorInfo info0 = inInfo(getInIndex());
@@ -123,6 +126,7 @@ void IdentityLossOp::setup() {
 IdentityLossGradOp::IdentityLossGradOp(const IdentityLossOp &op_)
     : Op(Onnx::GradOperators::IdentityLossGrad, op_.getSettings()),
       reduction_type_(op_.getReductionType()),
+      scaleByReplication_(op_.getScaleByReplication()),
       outShape_(op_.inShape(IdentityOp::getInIndex())) {
 
   // The general setting of an op's scheduledPreLoss setting looks like:

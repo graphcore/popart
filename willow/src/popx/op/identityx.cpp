@@ -58,8 +58,10 @@ void IdentityLossGradOpx::grow(poplar::program::Sequence &prog) const {
   } else {
     if (identitylossop.getReductionType() == ReductionType::Mean) {
       // Divide broadcasted tensor by total number of samples
-      uint64_t totalSamples =
-          dv_p->getGlobalReplicationFactor() * reference.numElements();
+      uint64_t totalSamples = reference.numElements();
+      if (identitylossop.getScaleByReplication() == ScaleByReplication::Yes) {
+        totalSamples *= dv_p->getGlobalReplicationFactor();
+      }
       float scale = static_cast<float>(totalSamples);
 
       output = popops::map(graph(),

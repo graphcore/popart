@@ -117,9 +117,9 @@ void NllOpx::applyScalingInPlaceForMeanReduction(
     poplar::Tensor t,
     poplar::Tensor scale,
     poplar::program::Sequence &prog,
-    bool include_replication) {
+    const ScaleByReplication scaleByReplication) {
   double totalSamples = static_cast<double>(t.dim(0));
-  if (include_replication) {
+  if (scaleByReplication == ScaleByReplication::Yes) {
     totalSamples *=
         static_cast<double>(opx.getDevicex()->getGlobalReplicationFactor());
   }
@@ -140,7 +140,7 @@ void NllOpx::applyScalingInPlaceForMeanReductionWithIgnoreIndex(
     poplar::Tensor scale,
     poplar::Tensor mask,
     poplar::program::Sequence &prog,
-    bool include_replication) {
+    const ScaleByReplication scaleByReplication) {
   // Determine the scale-factor for mean reduction dynamically from the
   // mask.
   // Any sample whose label index is the 'ignore index' should not be
@@ -153,7 +153,7 @@ void NllOpx::applyScalingInPlaceForMeanReductionWithIgnoreIndex(
                      prog,
                      opx.debugContext("numNonIgnoredSamples"));
 
-  if (include_replication) {
+  if (scaleByReplication == ScaleByReplication::Yes) {
     numNonIgnoredSamples = popops::mul(
         opx.graph(),
         numNonIgnoredSamples,
@@ -249,7 +249,7 @@ void NllOpx::handleLossOutReducedToScalar(const Opx &opx,
       auto scaleT = opx.getConst(reduction.elementType(), {}, 1.0, "One");
 
       applyScalingInPlaceForMeanReductionWithIgnoreIndex(
-          opx, reduction, scaleT, lossMask, prog, false);
+          opx, reduction, scaleT, lossMask, prog, ScaleByReplication::No);
       // Leave scale as 1.0 as already scaled
     } else {
       double totalSamples = static_cast<double>(reduction.dim(0));
