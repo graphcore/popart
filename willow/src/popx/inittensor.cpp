@@ -91,11 +91,14 @@ bool InitTensorCloning::initTensor(IrLowering &irLowering) const {
                        ? irLowering.graph()
                        : irLowering.getVirtualGraph(vgid.first, vgid.second);
 
-  logging::debug("Cloning tensor {} to {} (vgid: {} tileset: {})",
+  logging::debug("Cloning tensor {} to {} (vgid: {} tileset: {}). Source "
+                 "TensorInfo is: {}",
                  getSrcId(),
                  getDstId(),
                  vgid.first,
-                 vgid.second);
+                 vgid.second,
+                 t->info);
+
   auto src = irLowering.tensors().get(getSrcId());
 
   poplar::Tensor dst;
