@@ -17,7 +17,7 @@
 #include <popart/tensorinfo.hpp>
 #include <popart/topocons.hpp>
 
-#include <testutil/test_graphs/graphs.hpp>
+#include <testutil/test_graphs/ready_made.hpp>
 
 using namespace popart;
 
@@ -76,7 +76,7 @@ protected:
 
 struct SingleOpTestCase : EdgeMapTestCase<SingleOpTestCase> {
 
-  void initTestGraph_() { test_graphs::initSingleOpTestGraph(graph); }
+  void initTestGraph_() { test_graphs::ready_made::initSingleOp(graph); }
 
   EdgeMap mkExpectedEdges_() {
     return {mp(0, {})}; // add0 is OpId 0; has no dependents.
@@ -85,7 +85,7 @@ struct SingleOpTestCase : EdgeMapTestCase<SingleOpTestCase> {
 
 struct DiamondTestCase : EdgeMapTestCase<DiamondTestCase> {
 
-  void initTestGraph_() { test_graphs::initDiamondTestGraph(graph); }
+  void initTestGraph_() { test_graphs::ready_made::initDiamond(graph); }
 
   EdgeMap mkExpectedEdges_() {
     return {
@@ -102,7 +102,7 @@ struct DiamondTestCase : EdgeMapTestCase<DiamondTestCase> {
 
 struct ComplexTestCase : EdgeMapTestCase<ComplexTestCase> {
   void initTestGraph_() {
-    test_graphs::initMultiInputMultiOutputComplexTestCase(graph);
+    test_graphs::ready_made::initComplexMultiInputMultiOutput(graph);
   }
 
   EdgeMap mkExpectedEdges_() {

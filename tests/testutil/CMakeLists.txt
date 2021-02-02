@@ -14,12 +14,16 @@ set(test_graphs_test_util_public_headers_dir
 )
 
 set(test_graphs_test_util_sources
-    ${test_graphs_test_util_src_dir}/graphs.cpp
+    ${test_graphs_test_util_src_dir}/builder.cpp
+    ${test_graphs_test_util_src_dir}/dummy_builder.cpp
+    ${test_graphs_test_util_src_dir}/ready_made.cpp
     ${test_graphs_test_util_src_dir}/op/dummy.cpp
 )
 
 set(test_graphs_test_util_public_headers
-    ${test_graphs_test_util_public_headers_dir}/graphs.hpp
+    ${test_graphs_test_util_public_headers_dir}/builder.hpp
+    ${test_graphs_test_util_public_headers_dir}/dummy_builder.hpp
+    ${test_graphs_test_util_public_headers_dir}/ready_made.hpp
     ${test_graphs_test_util_public_headers_dir}/op/dummy.hpp
 )
 

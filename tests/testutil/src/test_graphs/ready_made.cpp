@@ -1,6 +1,6 @@
-#include <testutil/test_graphs/graphs.hpp>
+#include <testutil/test_graphs/ready_made.hpp>
 
-#include <testutil/test_graphs/op/dummy.hpp>
+#include <testutil/test_graphs/dummy_builder.hpp>
 
 #include <popart/error.hpp>
 #include <popart/filereader.hpp>
@@ -21,22 +21,16 @@
 #include <popart/op/reducesumsquare.hpp>
 #include <popart/op/relu.hpp>
 
-#include <limits>
-#include <map>
 #include <memory>
-#include <queue>
 #include <string>
 #include <vector>
 
 using namespace popart;
 
 namespace test_graphs {
+namespace ready_made {
 
-namespace {
-void transferProperties(const Op *from, Op *to);
-} // namespace
-
-void initSingleOpTestGraph(Graph &graph) {
+void initSingleOp(Graph &graph) {
   // Make an empty AddOp.
   Op::Settings settings{graph, ""};
   auto addOp = std::make_unique<AddOp>(Onnx::Operators::Add_7, settings);
@@ -70,7 +64,7 @@ void initSingleOpTestGraph(Graph &graph) {
   graph.moveIntoGraph(std::move(addOp));
 }
 
-void initDiamondTestGraph(Graph &graph) {
+void initDiamond(Graph &graph) {
   // Batch size and number channels for tensor we will create.
   constexpr int64_t B  = 8;
   constexpr int64_t C  = 4;
@@ -267,122 +261,7 @@ void initDiamondTestGraph(Graph &graph) {
   topoCons->insert(graph.getOp(5), graph.getOp(6));
 }
 
-const popart::TensorInfo &withEdgesDefaultTensorInfo() {
-  static const TensorInfo defaultTensorInfo = {
-      //
-      "FLOAT",
-      std::vector<int64_t>{4, 4, 4, 4} //
-  };
-  return defaultTensorInfo;
-}
-
-void withEdges(Graph &graph,
-               const std::vector<std::vector<OpId>> &edges,
-               const std::multimap<OpId, OpId> &topoCons,
-               const TensorInfo &tensorInfo) {
-
-  const auto nOps = edges.size();
-
-  /* 1. Create all the ops, assign their opIds, and move into graph. */
-
-  for (auto opId = 0; opId < nOps; opId++) {
-    auto op = std::make_unique<DummyOp>(graph);
-    op->id  = opId;
-    graph.moveIntoGraph(std::move(op));
-  }
-
-  /*
-    2. Construct the graph.
-
-    To do this, we essentially do a simple scheduling pass (kahn's algo) over
-    the edges, constructing the tensors and connecting them to the ops as we go
-    along.
-  */
-
-  // First, some helpers.
-
-  const auto connectInTensor = [&graph](const OpId opId, const TensorId tId) {
-    auto *op = dynamic_cast<DummyOp *>(graph.getOp(opId));
-    op->connectInTensor(op->getNextInIndex(), tId);
-  };
-
-  const auto createAndConnectOutTensorAndConnectToConsumers =
-      [&graph, &edges, connectInTensor](const OpId opId) {
-        auto *op = dynamic_cast<DummyOp *>(graph.getOp(opId));
-
-        const auto tOutId = TensorId{std::to_string(opId) + "-output"};
-
-        op->createAndConnectOutTensor(DummyOp::getOutIndex(), tOutId);
-        op->setup();
-
-        for (const auto &out : edges[opId]) {
-          connectInTensor(out, tOutId);
-        }
-      };
-
-  // Initialise the scheduling pass.
-
-  std::vector<OpId> outstanding(nOps, 0);
-  // Lowest OpId is at front of queue.
-  std::priority_queue<OpId, std::vector<OpId>, std::greater<OpId>> ready;
-
-  // Compute, for each op, how many incoming edges (dependencies) it has.
-  for (const auto &consumersOfOp : edges) {
-    for (const auto j : consumersOfOp) {
-      outstanding[j]++;
-    }
-  }
-
-  // Mark those ops with 0 dependencies as ready.
-  // Note, in our scheduling pass, when an op gets scheduled, we create its
-  // output tensor and hook it up as an input to the op's consumers. We do not
-  // create the inputs; the invariant is that the input tensors will already
-  // exist, created when their producer was scheduled. Thus, as part of
-  // initialising the scheduling pass, we need to create the input ops' input
-  // tensors.
-  for (OpId i = 0; i < nOps; i++) {
-    if (outstanding[i] == 0) {
-      ready.push(i);
-
-      const TensorId tId{std::to_string(i) + "-input"};
-      graph.addInput(tId, tensorInfo);
-      connectInTensor(i, tId);
-    }
-  }
-
-  int nScheduled = 0;
-
-  while (!ready.empty()) {
-    const OpId i = ready.top();
-    ready.pop();
-
-    nScheduled++;
-
-    createAndConnectOutTensorAndConnectToConsumers(i);
-
-    for (const auto &j : edges[i]) {
-      --outstanding[j];
-
-      if (outstanding[j] == 0) {
-        ready.push(j);
-      }
-    }
-  }
-
-  // Done!
-
-  if (nScheduled != static_cast<int>(nOps)) {
-    throw error("test_graphs::withEdges: Proposed graph is not schedulable.");
-  }
-
-  /* 3. Now we've built the graph, add all the topo cons. */
-
-  for (const auto &tc : topoCons) {
-    graph.topoCons->insert(graph.getOp(tc.first), graph.getOp(tc.second));
-  }
-}
-
-void initMultiInputMultiOutputComplexTestCase(Graph &graph) {
+void initComplexMultiInputMultiOutput(Graph &graph) {
   const auto edges = std::vector<std::vector<OpId>>{
       {1, 2, 3, 4, 13, 14}, // 0
       {2, 4},               // 1
@@ -408,101 +287,8 @@ void initMultiInputMultiOutputComplexTestCase(Graph &graph) {
   const auto topoCons =
       std::multimap<OpId, OpId>{{13, 8}, {17, 7}, {15, 6}, {7, 13}};
 
-  return withEdges(graph, edges, topoCons);
+  return dummy_builder::withEdges(graph, edges, topoCons);
 }
 
-VerticesDisconnectedByReplacement
-replaceOp(popart::Graph &graph,
-          const popart::OpId opIdToReplace,
-          std::unique_ptr<popart::Op> newOpUp,
-          const std::vector<popart::InIndex> mapInputsToNewOp,
-          const std::vector<popart::OutIndex> mapOutputsToNewOp) {
-
-  Op *oldOp = nullptr;
-  try {
-    oldOp = graph.getOp(opIdToReplace);
-  } catch (const error &err) {
-    throw error("test_graphs::replaceOp: Could not find op to replace in "
-                "provided graph. Error from Popart was:\n\n" +
-                std::string{err.what()});
-  }
-
-  Op *newOp = newOpUp.get();
-  if (!newOp) {
-    throw error("test_graphs::replaceOp: newOp is null.");
-  }
-
-  // 1. Transfer properties.
-  transferProperties(oldOp, newOp);
-
-  VerticesDisconnectedByReplacement disconnectedVertices;
-
-  // 2. Reconnect input tensors.
-
-  const auto nIn = mapInputsToNewOp.size();
-
-  for (InIndex oldIn = 0; oldIn < nIn; oldIn++) {
-    const auto newIn = mapInputsToNewOp[oldIn];
-
-    auto tensor = oldOp->inTensor(oldIn);
-    oldOp->disconnectInTensor(oldIn);
-
-    if (newIn != NoneInIndex) {
-      newOp->connectInTensor(newIn, tensor->id);
-    } else {
-      disconnectedVertices.inTensors.emplace(std::make_pair(oldIn, tensor));
-    }
-  }
-
-  // 3. Reconnect output tensors.
-
-  const auto nOut = mapOutputsToNewOp.size();
-
-  for (OutIndex oldOut = 0; oldOut < nOut; oldOut++) {
-    const auto newOut = mapOutputsToNewOp[oldOut];
-
-    auto tensor = oldOp->outTensor(oldOut);
-    oldOp->disconnectOutTensor(tensor);
-
-    if (newOut != NoneOutIndex) {
-      newOp->connectOutTensor(newOut, tensor->id);
-    } else {
-      disconnectedVertices.outTensors.emplace(std::make_pair(oldOut, tensor));
-    }
-  }
-
-  disconnectedVertices.op = oldOp;
-  graph.moveIntoGraph(std::move(newOpUp));
-
-  return disconnectedVertices;
-}
-
-namespace {
-
-void transferProperties(const Op *from, Op *to) {
-  // We want to replace id.
-  to->id               = from->id;
-  to->toLoss           = from->toLoss;
-  to->fromLoss         = from->fromLoss;
-  to->scheduledPreLoss = from->scheduledPreLoss;
-  to->nEdgesToLoss     = from->nEdgesToLoss;
-  to->pruneable        = from->pruneable;
-  // Preserve to->debugInfo. In the future, we should copy certain aspects
-  // of from->debugInfo, but this is not possible yet.
-
-  // Op::Settings we don't want to overwrite.
-  auto savedName              = std::move(to->settings.name);
-  const auto savedDebugInfoId = to->settings.debugInfoId;
-  const auto savedOptimizerOp = to->settings.optimizerOp;
-
-  // Can't move because we don't know that the user doesn't need from op.
-  to->settings = from->settings;
-
-  to->settings.name        = std::move(savedName);
-  to->settings.debugInfoId = savedDebugInfoId;
-  to->settings.optimizerOp = savedOptimizerOp;
-}
-
-} // namespace
-
+} // namespace ready_made
 } // namespace test_graphs
