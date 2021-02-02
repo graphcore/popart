@@ -109,6 +109,11 @@ public:
     return remoteBufferInfo;
   }
 
+  bool operator==(const TensorLocationInfo &rhs) const {
+    return (remote == rhs.remote) && (sharded == rhs.sharded) &&
+           (remoteBufferInfo == rhs.remoteBufferInfo);
+  }
+
 private:
   bool remote{false};
   bool sharded{false};
