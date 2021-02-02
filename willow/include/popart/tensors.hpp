@@ -20,6 +20,8 @@ public:
   void remove(TensorId);
   bool contains(TensorId) const;
 
+  std::size_t n() const { return M.size(); }
+
   // Search for a tensor with a scope
   // Return the scoped tensorId
   TensorId find(TensorId, const Scope &) const;
