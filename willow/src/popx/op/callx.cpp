@@ -171,14 +171,11 @@ void CallOpx::doCall(poplar::program::Sequence &prog,
   logging::opx::trace("[CallOpx] Calling {}, part {}",
                       called_graph.getGraphString(),
                       subgraphPart);
-  prog.add(poplar::program::Call(graph_prog, debugContext()));
+  auto dbgStr = logging::format("{}/{}", called_graph.id.str(), subgraphPart);
+  prog.add(poplar::program::Call(graph_prog, debugContext(dbgStr)));
 }
 
 void CallOpx::grow(std::vector<poplar::program::Sequence> &sequences) const {
-
-  if (sequences.empty()) {
-    sequences.resize(1);
-  }
 
   auto partitioner    = dv_p->lowering().getSubgraphPartitioner();
   auto &callop        = getOp<CallOp>();
@@ -197,9 +194,11 @@ void CallOpx::grow(std::vector<poplar::program::Sequence> &sequences) const {
       int relativeSubgraphPart = std::get<1>(tuple) - offsetSubgraphPart;
 
       // Make sure we have enough sequences to lower this in.
-      if (sequences.size() <= relativeSubgraphPart) {
-        sequences.resize(relativeSubgraphPart + 1,
-                         poplar::program::Sequence({}, debugContext()));
+      while (sequences.size() <= relativeSubgraphPart) {
+        int subgraphPart = (sequences.size() + offsetSubgraphPart);
+        std::stringstream ss;
+        ss << callop.getGraph().id.str() << "/" << subgraphPart;
+        sequences.push_back({{}, debugContext(ss.str())});
       }
 
       using CallOpPartType = liveness::SubgraphPartitioner::CallOpPartType;

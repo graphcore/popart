@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <cctype>
 #include <fstream>
+#include <ostream>
 #include <random>
 #include <set>
 
@@ -17,111 +18,190 @@
 namespace popart {
 namespace popx {
 
+std::ostream &operator<<(std::ostream &out,
+                         PopPrograms::ProgramFragmentIndex index) {
+  switch (index) {
+  case PopPrograms::ProgramFragmentIndex::StreamWeightsFromHost: {
+    out << "StreamWeightsFromHost";
+    break;
+  }
+  case PopPrograms::ProgramFragmentIndex::StreamOptimizerFromHost: {
+    out << "StreamOptimizerFromHost";
+    break;
+  }
+  case PopPrograms::ProgramFragmentIndex::SetRandomSeedFromHost: {
+    out << "SetRandomSeedFromHost";
+    break;
+  }
+  case PopPrograms::ProgramFragmentIndex::RngStateFromHost: {
+    out << "RngStateFromHost";
+    break;
+  }
+  case PopPrograms::ProgramFragmentIndex::Init: {
+    out << "Init";
+    break;
+  }
+  case PopPrograms::ProgramFragmentIndex::PreForward: {
+    out << "PreForward";
+    break;
+  }
+  case PopPrograms::ProgramFragmentIndex::Forward: {
+    out << "Forward";
+    break;
+  }
+  case PopPrograms::ProgramFragmentIndex::Backward: {
+    out << "Backward";
+    break;
+  }
+  case PopPrograms::ProgramFragmentIndex::VarUpdateFromAccumulator: {
+    out << "VarUpdateFromAccumulator";
+    break;
+  }
+  case PopPrograms::ProgramFragmentIndex::RngStateToHost: {
+    out << "RngStateToHost";
+    break;
+  }
+  case PopPrograms::ProgramFragmentIndex::WeightstoHost: {
+    out << "WeightstoHost";
+    break;
+  }
+  case PopPrograms::ProgramFragmentIndex::ToHostFinalCopy: {
+    out << "ToHostFinalCopy";
+    break;
+  }
+  case PopPrograms::ProgramFragmentIndex::CycleCountTensortoHost: {
+    out << "CycleCountTensortoHost";
+    break;
+  }
+  case PopPrograms::ProgramFragmentIndex::N: {
+    out << "N";
+    break;
+  }
+  default: {
+    throw internal_error("Invalid value for ProgramFragmentIndex");
+  }
+  };
+  return out;
+}
+
 PopPrograms::PopPrograms(IrLowering *ir_lowering_p_)
-    : ir_lowering_p(ir_lowering_p_) {}
+    : ir_lowering_p(ir_lowering_p_) {
+  // Populate seqs with Sequences that have names.
+  for (int i = 0; i < static_cast<int>(ProgramFragmentIndex::N); ++i) {
+    std::stringstream ss;
+    ss << static_cast<ProgramFragmentIndex>(i);
+    seqs.push_back(poplar::program::Sequence({}, ss.str()));
+  }
+}
 
 const poplar::program::Sequence &
 PopPrograms::streamWeightsFromHostFragment() const {
-  return seqs[static_cast<int>(ProgramFragmentIndex::StreamWeightsFromHost)];
+  return seqs.at(static_cast<int>(ProgramFragmentIndex::StreamWeightsFromHost));
 }
 poplar::program::Sequence &PopPrograms::streamWeightsFromHostFragment() {
-  return seqs[static_cast<int>(ProgramFragmentIndex::StreamWeightsFromHost)];
+  return seqs.at(static_cast<int>(ProgramFragmentIndex::StreamWeightsFromHost));
 }
 
 const poplar::program::Sequence &
 PopPrograms::streamOptimizerFromHostFragment() const {
-  return seqs[static_cast<int>(ProgramFragmentIndex::StreamOptimizerFromHost)];
+  return seqs.at(
+      static_cast<int>(ProgramFragmentIndex::StreamOptimizerFromHost));
 }
 poplar::program::Sequence &PopPrograms::streamOptimizerFromHostFragment() {
-  return seqs[static_cast<int>(ProgramFragmentIndex::StreamOptimizerFromHost)];
+  return seqs.at(
+      static_cast<int>(ProgramFragmentIndex::StreamOptimizerFromHost));
 }
 
 const poplar::program::Sequence &
 PopPrograms::setRandomSeedFromHostFragment() const {
-  return seqs[static_cast<int>(ProgramFragmentIndex::SetRandomSeedFromHost)];
+  return seqs.at(static_cast<int>(ProgramFragmentIndex::SetRandomSeedFromHost));
 }
 poplar::program::Sequence &PopPrograms::setRandomSeedFromHostFragment() {
-  return seqs[static_cast<int>(ProgramFragmentIndex::SetRandomSeedFromHost)];
+  return seqs.at(static_cast<int>(ProgramFragmentIndex::SetRandomSeedFromHost));
 }
 
 const poplar::program::Sequence &PopPrograms::rngStateFromHostFragment() const {
-  return seqs[static_cast<int>(ProgramFragmentIndex::RngStateFromHost)];
+  return seqs.at(static_cast<int>(ProgramFragmentIndex::RngStateFromHost));
 }
 
 poplar::program::Sequence &PopPrograms::rngStateFromHostFragment() {
-  return seqs[static_cast<int>(ProgramFragmentIndex::RngStateFromHost)];
+  return seqs.at(static_cast<int>(ProgramFragmentIndex::RngStateFromHost));
 }
 
 const poplar::program::Sequence &PopPrograms::rngStateToHostFragment() const {
-  return seqs[static_cast<int>(ProgramFragmentIndex::RngStateToHost)];
+  return seqs.at(static_cast<int>(ProgramFragmentIndex::RngStateToHost));
 }
 
 poplar::program::Sequence &PopPrograms::rngStateToHostFragment() {
-  return seqs[static_cast<int>(ProgramFragmentIndex::RngStateToHost)];
+  return seqs.at(static_cast<int>(ProgramFragmentIndex::RngStateToHost));
 }
 
 const poplar::program::Sequence &
 PopPrograms::cycleCountTensorToHostFragment() const {
-  return seqs[static_cast<int>(ProgramFragmentIndex::CycleCountTensortoHost)];
+  return seqs.at(
+      static_cast<int>(ProgramFragmentIndex::CycleCountTensortoHost));
 }
 poplar::program::Sequence &PopPrograms::cycleCountTensorToHostFragment() {
-  return seqs[static_cast<int>(ProgramFragmentIndex::CycleCountTensortoHost)];
+  return seqs.at(
+      static_cast<int>(ProgramFragmentIndex::CycleCountTensortoHost));
 }
 
 const poplar::program::Sequence &PopPrograms::initFragment() const {
-  return seqs[static_cast<int>(ProgramFragmentIndex::Init)];
+  return seqs.at(static_cast<int>(ProgramFragmentIndex::Init));
 }
 
 poplar::program::Sequence &PopPrograms::initFragment() {
-  return seqs[static_cast<int>(ProgramFragmentIndex::Init)];
+  return seqs.at(static_cast<int>(ProgramFragmentIndex::Init));
 }
 
 const poplar::program::Sequence &PopPrograms::preForwardFragment() const {
-  return seqs[static_cast<int>(ProgramFragmentIndex::PreForward)];
+  return seqs.at(static_cast<int>(ProgramFragmentIndex::PreForward));
 }
 
 poplar::program::Sequence &PopPrograms::preForwardFragment() {
-  return seqs[static_cast<int>(ProgramFragmentIndex::PreForward)];
+  return seqs.at(static_cast<int>(ProgramFragmentIndex::PreForward));
 }
 
 const poplar::program::Sequence &PopPrograms::forwardFragment() const {
-  return seqs[static_cast<int>(ProgramFragmentIndex::Forward)];
+  return seqs.at(static_cast<int>(ProgramFragmentIndex::Forward));
 }
 
 poplar::program::Sequence &PopPrograms::forwardFragment() {
-  return seqs[static_cast<int>(ProgramFragmentIndex::Forward)];
+  return seqs.at(static_cast<int>(ProgramFragmentIndex::Forward));
 }
 
 const poplar::program::Sequence &PopPrograms::backwardFragment() const {
-  return seqs[static_cast<int>(ProgramFragmentIndex::Backward)];
+  return seqs.at(static_cast<int>(ProgramFragmentIndex::Backward));
 }
 
 poplar::program::Sequence &PopPrograms::backwardFragment() {
-  return seqs[static_cast<int>(ProgramFragmentIndex::Backward)];
+  return seqs.at(static_cast<int>(ProgramFragmentIndex::Backward));
 }
 
 const poplar::program::Sequence &PopPrograms::toHostFinalCopyFragment() const {
-  return seqs[static_cast<int>(ProgramFragmentIndex::ToHostFinalCopy)];
+  return seqs.at(static_cast<int>(ProgramFragmentIndex::ToHostFinalCopy));
 }
 
 poplar::program::Sequence &PopPrograms::toHostFinalCopyFragment() {
-  return seqs[static_cast<int>(ProgramFragmentIndex::ToHostFinalCopy)];
+  return seqs.at(static_cast<int>(ProgramFragmentIndex::ToHostFinalCopy));
 }
 
 const poplar::program::Sequence &PopPrograms::accumulateOuterFragment() const {
-  return seqs[static_cast<int>(ProgramFragmentIndex::VarUpdateFromAccumulator)];
+  return seqs.at(
+      static_cast<int>(ProgramFragmentIndex::VarUpdateFromAccumulator));
 }
 
 poplar::program::Sequence &PopPrograms::accumulateOuterFragment() {
-  return seqs[static_cast<int>(ProgramFragmentIndex::VarUpdateFromAccumulator)];
+  return seqs.at(
+      static_cast<int>(ProgramFragmentIndex::VarUpdateFromAccumulator));
 }
 
 const poplar::program::Sequence &PopPrograms::weightsToHostFragment() const {
-  return seqs[static_cast<int>(ProgramFragmentIndex::WeightstoHost)];
+  return seqs.at(static_cast<int>(ProgramFragmentIndex::WeightstoHost));
 }
 
 poplar::program::Sequence &PopPrograms::weightsToHostFragment() {
-  return seqs[static_cast<int>(ProgramFragmentIndex::WeightstoHost)];
+  return seqs.at(static_cast<int>(ProgramFragmentIndex::WeightstoHost));
 }
 
 poplar::program::Sequence PopPrograms::weightsFromHost() const {
@@ -554,7 +634,7 @@ const std::vector<poplar::program::Program> PopPrograms::progs() const {
 
 poplar::program::Sequence &
 PopPrograms::programFragment(PopPrograms::ProgramFragmentIndex index) {
-  return seqs[static_cast<int>(index)];
+  return seqs.at(static_cast<int>(index));
 }
 
 int PopPrograms::getNumFragments(const Graph &graph) const {

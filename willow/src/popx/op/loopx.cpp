@@ -337,8 +337,11 @@ void LoopOpx::grow(poplar::program::Sequence &prog) const {
   // 10: Add the loop body itself
   auto &called_graph = op.getCalledGraph();
   auto &graph_progs  = dv_p->lowering().getFragmentFunctions(called_graph);
-  for (auto &graph_prog : graph_progs) {
-    loopContinueProg.add(poplar::program::Call(graph_prog, debugContext()));
+
+  for (size_t part = 0; part < graph_progs.size(); ++part) {
+    auto dbgStr = logging::format("{}/{}", called_graph.id.str(), part);
+    loopContinueProg.add(
+        poplar::program::Call(graph_progs.at(part), debugContext(dbgStr)));
   }
 
   // 11: Increment the loop iterator

@@ -137,8 +137,10 @@ IfOpx::IfOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
 void IfOpx::grow(poplar::program::Sequence &prog) const {
   auto &ifop = getOp<IfOp>();
 
-  poplar::program::Sequence then_prog({}, debugContext("then"));
-  poplar::program::Sequence else_prog({}, debugContext("else"));
+  auto thenDbgStr = logging::format("{}/then", ifop.getThenGraph().id);
+  auto elseDbgStr = logging::format("{}/else", ifop.getElseGraph().id);
+  poplar::program::Sequence then_prog({}, debugContext(thenDbgStr));
+  poplar::program::Sequence else_prog({}, debugContext(elseDbgStr));
 
   copyInputs(then_prog, else_prog);
 

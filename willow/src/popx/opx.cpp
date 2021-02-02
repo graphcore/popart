@@ -1,5 +1,6 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
 #include <popart/error.hpp>
+#include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/op/conv.hpp>
 #include <popart/popx/debugcontextx.hpp>
@@ -42,7 +43,12 @@ void Opx::grow(poplar::program::Sequence &) const {
 
 void Opx::grow(std::vector<poplar::program::Sequence> &sequences) const {
   if (sequences.empty()) {
-    sequences.resize(1, poplar::program::Sequence({}, debugContext()));
+    auto partitioner  = dv_p->lowering().getSubgraphPartitioner();
+    auto subgraphPart = partitioner->getOpSubgraphPartBegin(op_p);
+
+    std::stringstream ss;
+    ss << op_p->getGraph().id.str() << "/" << subgraphPart;
+    sequences.resize(1, poplar::program::Sequence({}, debugContext(ss.str())));
   }
 
   // By default, use the Opx::grow(poplar::program::Sequence &) function.

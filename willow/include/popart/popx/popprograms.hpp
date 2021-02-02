@@ -167,8 +167,7 @@ public:
   IrLowering *ir_lowering_p;
 
 private:
-  static constexpr int seqs_size = static_cast<int>(ProgramFragmentIndex::N);
-  std::array<poplar::program::Sequence, seqs_size> seqs;
+  std::vector<poplar::program::Sequence> seqs;
 
   // The sub-graph program fragments will be stored here
   std::unordered_map<std::string, std::vector<poplar::program::Sequence>>
