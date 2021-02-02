@@ -105,3 +105,4 @@ add_popart_py_unit_test(prelu_test)
 add_popart_py_unit_test(upsample_test)
 
 add_popart_cpp_unit_test(histogram_test histogram_test.cpp)
+add_popart_cpp_unit_test(lossscaleupdate_test loss_scale_update_test.cpp)

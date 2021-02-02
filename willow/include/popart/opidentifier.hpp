@@ -293,6 +293,7 @@ const static AiGraphcoreOpIdV1 LeakyReluInplace("LeakyReluInplace");
 const static AiGraphcoreOpIdV1 Log1p_1("Log1p", 1, 1);
 const static AiGraphcoreOpIdV1 Log1pInplace("Log1pInplace");
 const static AiGraphcoreOpIdV1 LogSoftmaxInplace("LogSoftmaxInplace");
+const static AiGraphcoreOpIdV1 LossScaleUpdate("LossScaleUpdate");
 const static AiGraphcoreOpIdV1 LSTM_1("LSTM", 4, 2);
 const static AiGraphcoreOpIdV1 MulLhsInplace("MulLhsInplace");
 const static AiGraphcoreOpIdV1 MulRhsInplace("MulRhsInplace");
