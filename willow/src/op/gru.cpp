@@ -104,8 +104,16 @@ void GRUOp::setup() {
 void GRUOp::createPassThroughOutput(const TensorId &new_id,
                                     OutIndex pass_through_index,
                                     const TensorInfo &out_info) {
-  auto tensor_id = logging::format("gru({})_{}", id, new_id);
-  createAndConnectOutTensor(pass_through_index, tensor_id);
+  auto tensor_id =
+      (getScope() / logging::format("gru({})_{}", id, new_id)).str();
+  if (hasOutput(pass_through_index)) {
+    disconnectOutTensor(outTensor(pass_through_index));
+  }
+  if (getGraph().getTensors().contains(tensor_id)) {
+    connectOutTensor(pass_through_index, tensor_id);
+  } else {
+    createAndConnectOutTensor(pass_through_index, tensor_id);
+  }
   outInfo(pass_through_index) = out_info;
 }
 

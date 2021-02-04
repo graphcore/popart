@@ -106,8 +106,16 @@ void LSTMOp::setup() {
 void LSTMOp::createPassThroughOutput(const TensorId &new_id,
                                      OutIndex pass_through_index,
                                      const TensorInfo &out_info) {
-  auto tensor_id = logging::format("lstm({})_{}", id, new_id);
-  createAndConnectOutTensor(pass_through_index, tensor_id);
+  auto tensor_id =
+      (getScope() / logging::format("lstm({})_{}", id, new_id)).str();
+  if (hasOutput(pass_through_index)) {
+    disconnectOutTensor(outTensor(pass_through_index));
+  }
+  if (getGraph().getTensors().contains(tensor_id)) {
+    connectOutTensor(pass_through_index, tensor_id);
+  } else {
+    createAndConnectOutTensor(pass_through_index, tensor_id);
+  }
   outInfo(pass_through_index) = out_info;
 }
 
@@ -341,8 +349,16 @@ void PopartLSTMOp::setup() {
   outInfo(getCellStateOutIndex()) = {dtype, {getBatchSize(), getHiddenSize()}};
 
   if (getIr().isTraining()) {
-    createAndConnectOutTensor(getIntermediatesOutIndex(),
-                              logging::format("{}_intermediates", id));
+    if (output->hasIndex(getIntermediatesOutIndex())) {
+      disconnectOutTensor(outTensor(getIntermediatesOutIndex()));
+    }
+    TensorId intermediates =
+        (getScope() / logging::format("{}_intermediates", id)).str();
+    if (getGraph().getTensors().contains(intermediates)) {
+      connectOutTensor(getIntermediatesOutIndex(), intermediates);
+    } else {
+      createAndConnectOutTensor(getIntermediatesOutIndex(), intermediates);
+    }
     outInfo(getIntermediatesOutIndex()) = {dtype,
                                            {getSeqLength(),
                                             getNumIntermediates(),
