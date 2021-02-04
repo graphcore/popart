@@ -253,7 +253,10 @@ void Op::createAndConnectOutTensor(OutIndex outIndex, TensorId tenId) {
         outIndex);
   }
 
-  tenId = (getScope() / tenId).str();
+  // Avoid double scoping (could be improved by making TensorId a class T33644)
+  if (tenId.find(getScope().str()) == std::string::npos) {
+    tenId = (getScope() / tenId).str();
+  }
 
   getGraph().getTensors().addActGrad(tenId, getDebugInfo());
   Tensor *ptensor = getGraph().getTensors().get(tenId);
