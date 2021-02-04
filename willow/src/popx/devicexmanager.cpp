@@ -255,23 +255,19 @@ std::shared_ptr<popart::DeviceInfo> DevicexManager::createHostDevice(
   return nullptr;
 }
 
-bool DevicexInfo::attach() { return device.attach(); }
-
-void DevicexInfo::detach() { device.detach(); }
-
-bool DevicexIpuInfo::attach() {
-  isAttached = true;
-  return DevicexInfo::attach();
+bool DevicexInfo::attach() {
+  isAttached_ = device.attach();
+  return isAttached_;
 }
 
-void DevicexIpuInfo::detach() {
-  isAttached = false;
-  DevicexInfo::detach();
+void DevicexInfo::detach() {
+  isAttached_ = false;
+  device.detach();
 }
 
 std::string DevicexIpuInfo::getVersion() const {
 
-  if (isAttached) {
+  if (isAttached_) {
     unsigned major, minor, point;
     device.getDriverVersion(major, minor, point);
 

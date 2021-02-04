@@ -57,6 +57,18 @@ def test_on_demand_connection_type():
     assert device.connectionType == popart.DeviceConnectionType.OnDemand
 
 
+@tu.requires_ipu
+def test_attached_state():
+    deviceManager = popart.DeviceManager()
+    device = deviceManager.acquireAvailableDevice(
+        1, connectionType=popart.DeviceConnectionType.OnDemand)
+    assert not device.isAttached
+    device.attach()
+    assert device.isAttached
+    device.detach()
+    assert not device.isAttached
+
+
 @tu.requires_ipu_model
 def test_set_and_get_ipu_model_version():
     dm = popart.DeviceManager()

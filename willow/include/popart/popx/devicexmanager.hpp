@@ -44,7 +44,7 @@ public:
               poplar::Device &_device,
               const poplar::OptionFlags &_flags)
       : popart::DeviceInfo(_provider, _type, _connectionType, _flags),
-        device(std::move(_device)) {}
+        device(std::move(_device)), isAttached_(false) {}
 
   virtual bool attach();
   virtual void detach();
@@ -65,8 +65,11 @@ public:
 
   std::set<Devicex *> previouslyLoadedDevicexs;
 
+  bool isAttached() const override { return isAttached_; }
+
 protected:
   poplar::Device device;
+  bool isAttached_;
 };
 
 class DevicexCpuInfo : public DevicexInfo {
@@ -121,16 +124,12 @@ public:
       : DevicexInfo(_provider, popart::DeviceType::Ipu, _dct, _device, _flags),
         id(_id) {}
 
-  virtual bool attach();
-  virtual void detach();
-
   virtual int getId() const { return id; }
   virtual std::string getVersion() const;
 
   virtual bool canCompileOffline() const { return true; }
 
 private:
-  bool isAttached = false;
   int id;
 };
 
@@ -163,6 +162,7 @@ public:
   virtual const poplar::Target &getTarget() const { return target; }
 
   virtual bool canCompileOffline() const { return true; }
+  virtual bool isAttached() const final { return false; }
 
 protected:
   poplar::Target target;

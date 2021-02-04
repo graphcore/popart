@@ -2719,6 +2719,7 @@ PYBIND11_MODULE(popart_core, m) {
     cls.def_property_readonly("tilesPerIPU", &DeviceInfo::getTilesPerIPU);
     cls.def_property_readonly("tilesPerIpu", &DeviceInfo::getTilesPerIPU);
     cls.def_property_readonly("driverIds", &DeviceInfo::getDriverIds);
+    cls.def_property_readonly("isAttached", &DeviceInfo::isAttached);
     cls.def("__enter__", [&](DeviceInfo &r) -> DeviceInfo & { return r; });
     cls.def("__exit__",
             [&](DeviceInfo &r,

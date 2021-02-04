@@ -87,6 +87,8 @@ public:
 
   bool tryAttachUntilTimeout();
 
+  virtual bool isAttached() const = 0;
+
 private:
   DeviceProvider &provider;
   DeviceType type;
