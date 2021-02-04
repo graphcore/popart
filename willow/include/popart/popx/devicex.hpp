@@ -157,6 +157,12 @@ public:
 
   bool prepareHasBeenCalled() const { return prepareHasBeenCalled_; }
 
+  // Wrapper for calls to poplar Engine API calls: loading
+  // engine onto the poplar device and connecting streams.
+  // Must be called before running a poplar program with a
+  // call to this Devicex's engine.
+  void loadEngineAndConnectStreams();
+
 private:
   std::unique_ptr<poplar::Engine> pEngine{nullptr};
 
@@ -244,12 +250,6 @@ private:
 
   // Stream buffer for storing RNG states for replicas (HwSeeds)
   std::map<uint16_t, std::vector<uint32_t>> rngBuffer;
-
-  // Wrapper for calls to poplar Engine API calls: loading
-  // engine onto the poplar device and connecting streams.
-  // Must be called before running a poplar program with a
-  // call to this Devicex's engine.
-  void loadEngineAndConnectStreams();
 
   // We may have prefetched data ready to be fed into the model, but we have
   // provided a new buffer which we want to be fetched. We invalidate the
