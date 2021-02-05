@@ -31,7 +31,7 @@ fi
 # Check poplar include dir was supplied.
 if [ -z "$1" ]
 then
-    echo "Please supply a poplar inlcude directory:"
+    echo "Please supply a poplar include directory:"
     echo $0 "<poplar include directory>"
     exit 0
 fi

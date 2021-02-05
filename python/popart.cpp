@@ -1516,7 +1516,8 @@ PYBIND11_MODULE(popart_core, m) {
             py::arg("deviceInfo"),
             py::arg("inputShapeInfo"),
             py::arg("userOptions"),
-            py::arg("patterns"));
+            py::arg("patterns"),
+            DOC(popart, InferenceSession, createFromOnnxModel));
     cls.def(
         "compileAndExport",
         [](InferenceSession &session,
@@ -1640,7 +1641,8 @@ PYBIND11_MODULE(popart_core, m) {
             py::arg("deviceInfo"),
             py::arg("inputShapeInfo"),
             py::arg("userOptions"),
-            py::arg("patterns"));
+            py::arg("patterns"),
+            DOC(popart, TrainingSession, createFromOnnxModel));
     cls.def(
         "compileAndExport",
         [](TrainingSession &session,
