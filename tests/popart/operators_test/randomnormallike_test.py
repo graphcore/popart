@@ -97,7 +97,7 @@ def test_randomnormallike_stats(op_tester, dtypes):
     expected_stddev = np.array(2.0, dtype=dtypes[0])
     numel = 10000
     N_1 = np.array(numel - 1, dtype=dtypes[0])
-    data = np.zeros((numel, 1), dtype=np.double)
+    data = np.zeros((numel, 1), dtype=dtypes[0])
 
     def init_builder(builder):
         T = builder.addInputTensor(data)

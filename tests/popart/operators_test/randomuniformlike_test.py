@@ -97,7 +97,7 @@ def test_randomuniformlike_stats(op_tester, dtypes):
     expected_max = np.array(1.0, dtype=dtypes[0])
     two = np.array(2.0, dtype=dtypes[0])
     expected_mean = (expected_max + expected_min) / two
-    data = np.zeros((10000, 1), dtype=np.double)
+    data = np.zeros((10000, 1), dtype=dtypes[0])
 
     def init_builder(builder):
         T = builder.addInputTensor(data)
