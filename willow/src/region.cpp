@@ -525,10 +525,14 @@ std::pair<int64_t, Region> Region::merge(const Region &rhs) const {
 }
 
 void Region::append(std::ostream &ss) const {
-  ss << "L:";
-  appendSequence(ss, lower);
-  ss << " U:";
-  appendSequence(ss, upper);
+  if (isEmpty()) {
+    ss << "Empty(r=" << rank() << ")";
+  } else {
+    ss << "L:";
+    appendSequence(ss, lower);
+    ss << " U:";
+    appendSequence(ss, upper);
+  }
 }
 
 Region Region::transpose(const Shape perm) const {

@@ -243,10 +243,25 @@ void ElementWiseBinaryOutplaceOpx::grow(poplar::program::Sequence &prog) const {
                                 getDebugNameAndId(),
                                 "");
 
-  if (hasInViewChangers(ElementWiseBinaryOp::getArg0InIndex())) {
+  if (hasInViewChangers(ElementWiseBinaryOp::getArg0InIndex()) &&
+      hasInViewChangers(ElementWiseBinaryOp::getArg1InIndex())) {
+    auto arg0vc = getInViewChangers(ElementWiseBinaryOp::getArg1InIndex());
+    auto arg1vc = getInViewChangers(ElementWiseBinaryOp::getArg1InIndex());
+    if (arg0vc == arg1vc) {
+      setOutViewChangers(
+          ElementWiseBinaryOp::getOutIndex(),
+          getInViewChangers(ElementWiseBinaryOp::getArg0InIndex()));
+    } else {
+      throw error("View changers of arg0 and arg1 do not match.");
+    }
+  } else if (hasInViewChangers(ElementWiseBinaryOp::getArg0InIndex())) {
     setOutViewChangers(
         ElementWiseBinaryOp::getOutIndex(),
         getInViewChangers(ElementWiseBinaryOp::getArg0InIndex()));
+  } else if (hasInViewChangers(ElementWiseBinaryOp::getArg1InIndex())) {
+    setOutViewChangers(
+        ElementWiseBinaryOp::getOutIndex(),
+        getInViewChangers(ElementWiseBinaryOp::getArg1InIndex()));
   }
   setOutTensor(outIdx, outTensor);
 }

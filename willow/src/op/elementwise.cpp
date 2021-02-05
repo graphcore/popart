@@ -10,8 +10,14 @@ view::RegMap binaryFwdRegMapImpl(const ElementWiseBinaryBaseOp &op,
   auto out_shape = op.outShape(op.getOutIndex());
   auto in_shape  = op.inShape(argIndex);
 
-  return [out_shape, in_shape](const view::Region &r) {
-    auto out_size  = out_shape.size();
+  auto fwdMap = [out_shape, in_shape](const view::Region &r) {
+    auto out_size = out_shape.size();
+
+    if (r.isEmpty()) {
+      // Make sure to handle rank-0 empty regions correctly
+      return view::Regions(1, view::Region::getEmpty(out_size));
+    }
+
     auto arg_shape = padShape(in_shape, out_size, int64_t{1});
     auto lower     = padShape(r.getLower(), out_size, int64_t{0});
     auto upper     = padShape(r.getUpper(), out_size, int64_t{1});
@@ -25,6 +31,7 @@ view::RegMap binaryFwdRegMapImpl(const ElementWiseBinaryBaseOp &op,
 
     return view::Regions(1, view::Region{lower, upper});
   };
+  return fwdMap;
 }
 
 view::RegMap binaryBwdRegMapImpl(const ElementWiseBinaryBaseOp &op,
@@ -33,7 +40,12 @@ view::RegMap binaryBwdRegMapImpl(const ElementWiseBinaryBaseOp &op,
   auto arg_size  = arg_shape.size();
   auto out_shape = unpadShape(op.outShape(op.getOutIndex()), arg_size);
 
-  return [arg_size, out_shape, arg_shape](const view::Region &r) {
+  auto bwdMap = [arg_size, out_shape, arg_shape](const view::Region &r) {
+    if (r.isEmpty()) {
+      // Make sure to handle rank-0 empty regions correctly
+      return view::Regions(1, view::Region::getEmpty(arg_shape.size()));
+    }
+
     auto lower = unpadShape(r.getLower(), arg_size);
     auto upper = unpadShape(r.getUpper(), arg_size);
 
@@ -47,6 +59,7 @@ view::RegMap binaryBwdRegMapImpl(const ElementWiseBinaryBaseOp &op,
 
     return view::Regions(1, view::Region{lower, upper});
   };
+  return bwdMap;
 }
 
 ElementWiseUnaryOp::ElementWiseUnaryOp(const OperatorIdentifier &_opid,
@@ -117,9 +130,22 @@ void ElementWiseBinaryBaseOp::setup() {
 ReplicatedTensorShardingIndices
 ElementWiseBinaryBaseOp::getReplicatedTensorShardingIndices() const {
   if (isOptimizerOp()) {
-    return {{{ElementWiseBinaryBaseOp::getArg0InIndex(),
-              ElementWiseBinaryBaseOp::getArg1InIndex()},
-             {ElementWiseBinaryBaseOp::getOutIndex()}}};
+    std::set<InIndex> rtsInIndices;
+
+    auto arg0Inf = inInfo(ElementWiseBinaryBaseOp::getArg0InIndex());
+    auto arg1Inf = inInfo(ElementWiseBinaryBaseOp::getArg1InIndex());
+    auto outInf  = outInfo(ElementWiseBinaryBaseOp::getOutIndex());
+
+    // Non-broadcasted inputs that match the output need to be RTS
+    if (arg0Inf == outInf) {
+      rtsInIndices.insert(ElementWiseBinaryBaseOp::getArg0InIndex());
+    }
+
+    if (arg1Inf == outInf) {
+      rtsInIndices.insert(ElementWiseBinaryBaseOp::getArg1InIndex());
+    }
+
+    return {{rtsInIndices, {ElementWiseBinaryBaseOp::getOutIndex()}}};
   } else {
     return {};
   }

@@ -190,10 +190,10 @@ def test_full_recompute_pipelining(tmpdir):
         assert "TransposeInplace" in bins and bins["TransposeInplace"] == 41
         assert "AddLhsInplace" in bins and bins["AddLhsInplace"] == 3
         assert "IdentityInplace" in bins and bins["IdentityInplace"] == 34
-        assert "MulLhsInplace" in bins and bins["MulLhsInplace"] == 3
+        assert "MulLhsInplace" in bins and bins["MulLhsInplace"] == 6
         assert "ConcatInplace" in bins and bins["ConcatInplace"] == 3
         assert "RestoreInplace" in bins and bins["RestoreInplace"] == 4
-        assert len(inplaces) == 136
+        assert len(inplaces) == 139
 
     n_anchors = run_test()
     s_anchors = run_test(popart.RecomputationType.Standard)
