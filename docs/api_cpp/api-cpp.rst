@@ -1,30 +1,88 @@
 PopART C++ API
 ==============
 
-.. TODO: Complete API documentation. Currently only includes objects which have (some) Doxygen comments
-
 Sessions
 --------
 
-.. doxygenclass:: popart::IStepIO
+.. code-block:: cpp
+
+  #include <popart/session.hpp>
+
+.. doxygenclass:: popart::Session
   :members:
 
-.. doxygenclass:: popart::InferenceSession
-  :members:
+
+Training session
+................
+
+.. code-block:: cpp
+
+  #include <popart/session.hpp>
 
 .. doxygenclass:: popart::TrainingSession
   :members:
 
+
+Inference session
+..................
+
+.. code-block:: cpp
+
+  #include <popart/session.hpp>
+
+.. doxygenclass:: popart::InferenceSession
+  :members:
+
+
+Data input and output (IStepIO)
+...............................
+
+.. code-block:: cpp
+
+  #include <popart/istepio.hpp>
+
+.. doxygenclass:: popart::IStepIO
+  :members:
+
+
+.. code-block:: cpp
+
+  #include <popart/stepio_generic.hpp>
+
+.. doxygenclass:: popart::StepIOGeneric
+  :members:
+
+
 Session options
 ..............
 
+.. code-block:: cpp
+
+  #include <popart/sessionoptions.hpp>
+
+.. doxygenstruct:: popart::SessionOptions
+  :members:
+
 .. doxygenenum:: popart::AccumulateOuterFragmentSchedule
 
+.. doxygenstruct:: popart::AccumulateOuterFragmentSettings
+  :members:
+
 .. doxygenenum:: popart::BatchSerializationBatchSchedule
+
+.. doxygenenum:: popart::BatchSerializationMethod
+
+.. doxygenstruct:: popart::BatchSerializationSettings
+  :members:
+
+.. doxygenenum:: popart::BatchSerializationTransformContext
 
 .. doxygenenum:: popart::DotCheck
 
 .. doxygenenum:: popart::ExecutionPhaseIOSchedule
+
+.. doxygenstruct:: popart::ExecutionPhaseSettings
+  :members:
 
 .. doxygenenum:: popart::ExecutionPhaseSchedule
 
@@ -34,48 +92,53 @@ Session options
 
 .. doxygenenum:: popart::MergeVarUpdateType
 
-.. doxygenenum:: popart::SyntheticDataMode
-
 .. doxygenenum:: popart::RecomputationType
 
-.. doxygenenum:: popart::ReplicatedTensorSharding
-
-.. doxygenenum:: popart::TensorStorage
-
-.. doxygenenum:: popart::TileSet
-
-.. doxygenenum:: popart::VirtualGraphMode
-
-.. doxygenenum:: popart::SubgraphCopyingStrategy
-
-.. doxygenstruct:: popart::AccumulateOuterFragmentSettings
-  :members:
-
-.. doxygenstruct:: popart::BatchSerializationSettings
-  :members:
-
-.. doxygenstruct:: popart::ExecutionPhaseSettings
-  :members:
+.. doxygenenum:: popart::SyntheticDataMode
 
 .. doxygenstruct:: popart::TensorLocationSettings
   :members:
 
-.. doxygenclass:: popart::TensorLocation
-  :members:
+.. doxygenenum:: popart::VirtualGraphMode
 
-.. doxygenstruct:: popart::SessionOptions
-  :members:
 
 Optimizers
 ----------
 
-.. doxygenclass:: popart::OptimizerValue
+.. code-block:: cpp
+
+<<<<<<< Updated upstream
+.. doxygenenum:: popart::SubgraphCopyingStrategy
+
+.. doxygenstruct:: popart::AccumulateOuterFragmentSettings
   :members:
+=======
+  #include <popart/optimizer.hpp>
+>>>>>>> Stashed changes
+
+.. doxygenclass:: popart::Optimizer
+  :members:
+
+.. doxygenenum:: popart::OptimizerType
+
+.. doxygenenum:: popart::OptimizerReductionType
 
 .. doxygenenum:: popart::WeightDecayMode
 
+.. code-block:: cpp
+
+  #include <popart/optimizervalue.hpp>
+
+.. doxygenclass:: popart::OptimizerValue
+  :members:
+
+
 Stochastic Gradient Descent (SGD)
 .................................
+
+.. code-block:: cpp
+
+  #include <popart/optimizer.hpp>
 
 .. doxygenstruct:: popart::ClipNormSettings
   :members:
@@ -86,24 +149,39 @@ Stochastic Gradient Descent (SGD)
 .. doxygenclass:: popart::ConstSGD
   :members:
 
+
 Adam, AdaMax & Lamb
 ...................
+
+.. code-block:: cpp
+
+  #include <popart/adam.hpp>
 
 .. doxygenenum:: popart::AdamMode
 
 .. doxygenclass:: popart::Adam
   :members:
 
+
 AdaDelta, RMSProp & AdaGrad
 .........................
+
+.. code-block:: cpp
+
+  #include <popart/adaptive.hpp>
 
 .. doxygenenum:: popart::AdaptiveMode
 
 .. doxygenclass:: popart::Adaptive
   :members:
 
+
 Builder
 -------
+
+.. code-block:: cpp
+
+  #include <popart/builder.hpp>
 
 .. doxygenclass:: popart::Builder
    :members:
@@ -111,12 +189,16 @@ Builder
 .. doxygenclass:: popart::AiGraphcoreOpset1
    :members:
 
-
 .. doxygenclass:: popart::BuilderImpl
    :members:
 
+
 Data flow
 ---------
+
+.. code-block:: cpp
+
+  #include <popart/dataflow.hpp>
 
 .. doxygenenum:: popart::AnchorReturnTypeId
 
@@ -126,8 +208,13 @@ Data flow
 .. doxygenclass:: popart::DataFlow
    :members:
 
+
 Device manager
 --------------
+
+.. code-block:: cpp
+
+  #include <popart/devicemanager.hpp>
 
 .. doxygenenum:: popart::DeviceType
 
@@ -144,8 +231,113 @@ Device manager
 .. doxygenclass:: popart::DeviceProvider
    :members:
 
+.. doxygenclass:: popart::popx::Devicex
+   :members:
+
+
+
+Op creation
+-----------
+
+Op definition for PopART IR
+...........................
+
+.. code-block:: cpp
+
+  #include <popart/op.hpp>
+
+.. doxygenclass:: popart::Op
+   :members:
+
+.. doxygenstruct:: popart::POpCmp
+   :members:
+
+.. code-block:: cpp
+
+  #include <popart/opmanager.hpp>
+
+.. doxygenclass:: popart::OpDefinition
+   :members:
+
+.. doxygenclass:: popart::OpCreatorInfo
+   :members:
+
+.. doxygenclass:: popart::OpManager
+   :members:
+
+
+.. code-block:: cpp
+
+  #include <popart/op/varupdate.hpp>
+
+.. doxygenclass:: popart::VarUpdateOp
+   :members:
+
+
+Op definition for Poplar implementation
+.......................................
+
+.. code-block:: cpp
+
+  #include <popart/popx/opx.hpp>
+
+.. doxygenclass:: popart::popx::Opx
+   :members:
+
+
+Utility classes
+---------------
+
+Tensor information
+..................
+
+.. code-block:: cpp
+
+  #include <popart/tensorinfo.hpp>
+
+.. doxygenenum:: popart::DataType
+
+.. doxygenclass:: popart::DataTypeInfo
+  :members:
+
+.. doxygenclass:: popart::TensorInfo
+  :members:
+
+
+Tensor location
+...............
+
+.. code-block:: cpp
+
+  #include <popart/tensorlocation.hpp>
+
+.. doxygenenum:: popart::ReplicatedTensorSharding
+
+.. doxygenclass:: popart::TensorLocation
+  :members:
+
+.. doxygenenum:: popart::TensorStorage
+
+.. doxygenenum:: popart::TileSet
+
+
+Region
+......
+
+.. code-block:: cpp
+
+  #include <popart/region.hpp>
+
+.. doxygenclass:: popart::view::Region
+  :members:
+
+
 Error handling
---------------
+..............
+
+.. code-block:: cpp
+
+  #include <popart/error.hpp>
 
 .. doxygenenum:: popart::ErrorSource
 
@@ -154,3 +346,68 @@ Error handling
 
 .. doxygenclass:: popart::memory_allocation_err
    :members:
+
+
+Debug context
+.............
+
+.. code-block:: cpp
+
+  #include <popart/debugcontext.hpp>
+
+.. doxygenclass:: popart::DebugContext
+   :members:
+
+
+Attributes
+..........
+
+.. code-block:: cpp
+
+  #include <popart/attributes.hpp>
+
+.. doxygenclass:: popart::Attributes
+   :members:
+
+
+Void data
+.........
+
+.. code-block:: cpp
+
+  #include <popart/voiddata.hpp>
+
+.. doxygenclass:: popart::ConstVoidData
+   :members:
+
+.. doxygenclass:: popart::MutableVoidData
+   :members:
+
+
+Input shape information
+.......................
+
+.. code-block:: cpp
+
+  #include <popart/inputshapeinfo.hpp>
+
+.. doxygenclass:: popart::InputShapeInfo
+   :members:
+
+
+Patterns
+........
+
+.. code-block:: cpp
+
+  #include <popart/patterns.hpp>
+
+.. doxygenclass:: popart::Patterns
+   :members:
+
+
+Type definitions
+................
+
+.. doxygenfile:: names.hpp
+  :sections: innernamespace typedef

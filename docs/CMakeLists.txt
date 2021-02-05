@@ -29,6 +29,8 @@ if (BUILD_DOCS)
 
   list(APPEND DOXYGEN_INPUT0 "")
   list(APPEND DOXYGEN_INPUT0 ${CMAKE_CURRENT_SOURCE_DIR}/../willow/include)
+  list(APPEND DOXYGEN_INPUT0 ${CMAKE_CURRENT_SOURCE_DIR}/../willow/include/op)
+  list(APPEND DOXYGEN_INPUT0 ${CMAKE_CURRENT_SOURCE_DIR}/../willow/include/popx)
 
   string(REPLACE ";" " " DOXYGEN_INPUT "${DOXYGEN_INPUT0}")
   configure_file(api_cpp/Doxyfile.in Doxyfile @ONLY)

@@ -1,7 +1,7 @@
 API changes
 -----------
 
-The following changes have been made to the PopART API in SDK 1.2. This may
+The following changes were made to the PopART API in SDK 1.2. This may
 require you to change your code.
 
 Breaking changes
