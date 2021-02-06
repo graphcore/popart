@@ -144,8 +144,10 @@ Shape MultiConvBaseOp::getOutShape(int convIndex) const {
       HasReceptiveFieldOp::getSpatialOutShape(getSpatialD(convIndex),
                                               getSpatialK(convIndex),
                                               pads[convIndex],
+                                              outPads[convIndex],
                                               strides[convIndex],
                                               dilations[convIndex],
+                                              inDilations[convIndex],
                                               padType);
 
   for (int spDim = 0; spDim < getNSpatialDims(convIndex); ++spDim) {
@@ -154,14 +156,48 @@ Shape MultiConvBaseOp::getOutShape(int convIndex) const {
   return outShape;
 }
 
-void MultiConvBaseOp::setupFromDataGradOp(const Op *op) {
+void MultiConvBaseOp::setParamsFromDataGradOp(const Op *op) {
   // Set output shape and parameters
   auto dataGradOp = dynamic_cast<const MultiConvDataGradBaseOp *>(op);
   for (int i = 0; i < numConvs(); i++) {
-    outInfo(getOutIndex(i)) = dataGradOp->getDataInfo(i);
-
     params.push_back(dataGradOp->getParameters(i));
   }
+  restoreAttributesFromParams();
+}
+
+void MultiConvBaseOp::restoreAttributesFromParams() {
+  // Restore Op parameters from Conv parameters so that setup() works
+  flatStrides.clear();
+  flatDilations.clear();
+  flatPads.clear();
+  flatOutPads.clear();
+
+  for (auto param : params) {
+    flatStrides.insert(flatStrides.end(),
+                       param.outputTransformation.stride.begin(),
+                       param.outputTransformation.stride.end());
+    flatDilations.insert(flatDilations.end(),
+                         param.kernelTransformation.dilation.begin(),
+                         param.kernelTransformation.dilation.end());
+    flatPads.insert(flatPads.end(),
+                    param.inputTransformation.lowerPadding.begin(),
+                    param.inputTransformation.lowerPadding.end());
+    flatPads.insert(flatPads.end(),
+                    param.inputTransformation.upperPadding.begin(),
+                    param.inputTransformation.upperPadding.end());
+    flatInDilations.insert(flatInDilations.begin(),
+                           param.inputTransformation.dilation.begin(),
+                           param.inputTransformation.dilation.end());
+    flatOutPads.insert(flatOutPads.begin(),
+                       param.outputTransformation.lowerPadding.begin(),
+                       param.outputTransformation.lowerPadding.end());
+    flatOutPads.insert(flatOutPads.begin(),
+                       param.outputTransformation.upperPadding.begin(),
+                       param.outputTransformation.upperPadding.end());
+  }
+
+  // The padding has been adjusted, so we can unset the AutoPad type
+  padType = AutoPad::NOTSET;
 }
 
 void MultiConvBaseOp::appendConvParameterAttributes(
@@ -235,7 +271,9 @@ void MultiConvBaseOp::appendOutlineAttributes(OpSerialiserBase &os) const {
 void MultiConvBaseOp::setup() {
   strides.resize(numConvs());
   pads.resize(numConvs());
+  outPads.resize(numConvs());
   dilations.resize(numConvs());
+  inDilations.resize(numConvs());
   params.resize(numConvs());
 
   // Check that all parameters are either empty, or unpackable (i.e. they
@@ -258,8 +296,21 @@ void MultiConvBaseOp::setup() {
                   str());
     }
   }
+  if (!flatOutPads.empty()) {
+    if (flatOutPads.size() != totalNumSpatialDims * 2) {
+      throw error("Unexpected number of pad parameters for convolution op '{}'",
+                  str());
+    }
+  }
   if (!flatDilations.empty()) {
     if (flatDilations.size() != totalNumSpatialDims) {
+      throw error(
+          "Unexpected number of dilation parameters for convolution op '{}'",
+          str());
+    }
+  }
+  if (!flatInDilations.empty()) {
+    if (flatInDilations.size() != totalNumSpatialDims) {
       throw error(
           "Unexpected number of dilation parameters for convolution op '{}'",
           str());
@@ -291,12 +342,26 @@ void MultiConvBaseOp::setup() {
       pads[i]                   = {flatPads.begin() + cumulativePads,
                  flatPads.begin() + cumulativePads + (nSpatialDims * 2)};
     }
+    if (flatOutPads.empty()) {
+      outPads[i].resize(2 * nSpatialDims, 0);
+    } else {
+      const auto cumulativePads = cumulativeSpatialDims * 2;
+      outPads[i]                = {flatOutPads.begin() + cumulativePads,
+                    flatOutPads.begin() + cumulativePads + (nSpatialDims * 2)};
+    }
     if (flatDilations.empty()) {
       dilations[i].resize(nSpatialDims, 1);
     } else {
       dilations[i] = {flatDilations.begin() + cumulativeSpatialDims,
                       flatDilations.begin() + cumulativeSpatialDims +
                           nSpatialDims};
+    }
+    if (flatInDilations.empty()) {
+      inDilations[i].resize(nSpatialDims, 1);
+    } else {
+      inDilations[i] = {flatInDilations.begin() + cumulativeSpatialDims,
+                        flatInDilations.begin() + cumulativeSpatialDims +
+                            nSpatialDims};
     }
 
     cumulativeSpatialDims += nSpatialDims;
@@ -334,7 +399,7 @@ void MultiConvBaseOp::setup() {
 
     params[i].inputTransformation.lowerTruncation = zeros;
     params[i].inputTransformation.upperTruncation = zeros;
-    params[i].inputTransformation.dilation        = ones;
+    params[i].inputTransformation.dilation        = inDilations[i];
     params[i].inputTransformation.lowerPadding    = lowerPads(i);
     params[i].inputTransformation.upperPadding    = upperPads(i);
     params[i].inputTransformation.flip            = falses;
@@ -349,8 +414,8 @@ void MultiConvBaseOp::setup() {
     params[i].outputTransformation.lowerTruncation = zeros;
     params[i].outputTransformation.upperTruncation = zeros;
     params[i].outputTransformation.stride          = strides[i];
-    params[i].outputTransformation.lowerPadding    = zeros;
-    params[i].outputTransformation.upperPadding    = zeros;
+    params[i].outputTransformation.lowerPadding    = lowerOutPads(i);
+    params[i].outputTransformation.upperPadding    = upperOutPads(i);
   }
 
   // Set output shapes

@@ -60,6 +60,11 @@ void ConvOp::setup() {
   MultiConvBaseOp::setup();
 }
 
+void ConvOp::restoreAttributesFromParams() {
+  setGroup();
+  MultiConvBaseOp::restoreAttributesFromParams();
+}
+
 ConvWeightsGradOp::ConvWeightsGradOp(const ConvOp &op_)
     : MultiConvWeightsGradBaseOp(op_, Onnx::GradOperators::ConvWeightsGrad) {}
 
@@ -76,7 +81,7 @@ std::unique_ptr<Op> ConvDataGradOp::clone() const {
 
 ConvFlipWeightsOp::ConvFlipWeightsOp(const OperatorIdentifier &opid_,
                                      const Op::Settings &settings_)
-    : Op(opid_, settings_), convOpts({}, {}) {}
+    : Op(opid_, settings_), groupReshape(false), convOpts({}, {}) {}
 
 std::unique_ptr<Op> ConvFlipWeightsOp::clone() const {
   return std::make_unique<ConvFlipWeightsOp>(*this);
@@ -88,10 +93,15 @@ void ConvFlipWeightsOp::setup() {
 
   auto &weightsIn = inInfo(getInIndex());
 
-  // Switch the first two dimensions
+  // Switch the first two dimensions, reshape for groups
   Shape weightsOutShape;
-  weightsOutShape.push_back(weightsIn.dim(1));
-  weightsOutShape.push_back(weightsIn.dim(0));
+  if (groupReshape) {
+    weightsOutShape.push_back(weightsIn.dim(1) * params.numGroups);
+    weightsOutShape.push_back(weightsIn.dim(0) / params.numGroups);
+  } else {
+    weightsOutShape.push_back(weightsIn.dim(1));
+    weightsOutShape.push_back(weightsIn.dim(0));
+  }
   for (int i = 2; i < weightsIn.shape().size(); ++i) {
     weightsOutShape.push_back(weightsIn.dim(i));
   }
@@ -106,6 +116,7 @@ void ConvFlipWeightsOp::appendOutlineAttributes(OpSerialiserBase &os) const {
   for (auto key_val : getConvOptions()) {
     os.appendAttribute(key_val.first, key_val.second);
   }
+  os.appendAttribute("groupReshape", groupReshape);
 }
 
 namespace {

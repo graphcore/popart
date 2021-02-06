@@ -60,8 +60,9 @@ bool ConvDataGradPattern::apply(Op *op) const {
         ConvFlipWeightsOp::getOutIndex(),
         weights_in->getIr().createIntermediateTensorId(weights_in->id));
 
-    flip->setup();
     flip->setParameters(gradOp->getParameters(i));
+    flip->setGroupReshape(true);
+    flip->setup();
 
     // Configure the conv op for the bwd pass
     conv->connectInTensor(
@@ -72,7 +73,8 @@ bool ConvDataGradPattern::apply(Op *op) const {
     conv->connectOutTensor(MultiConvBaseOp::getOutIndex(i), grad_out->id);
   }
 
-  conv->setupFromDataGradOp(gradOp);
+  conv->setParamsFromDataGradOp(gradOp);
+  conv->setup();
 
   // Remove the MultiConvGradOp
   op->getGraph().eraseOp(op->id);

@@ -40,10 +40,13 @@ static void verifyWindowParameters(std::unique_ptr<BuilderImpl> &impl,
                                    TensorId input,
                                    std::vector<int64_t> strides,
                                    std::vector<int64_t> padding,
+                                   std::vector<int64_t> outPadding,
                                    const std::vector<int64_t> kernel_shape,
-                                   std::vector<int64_t> dilation = {},
-                                   const std::string &auto_pad   = "NOTSET",
-                                   bool ceil_mode                = false) {
+                                   std::vector<int64_t> dilation   = {},
+                                   std::vector<int64_t> inDilation = {},
+                                   const std::string &auto_pad     = "NOTSET",
+                                   bool ceil_mode                  = false) {
+
   // TODO T17932 : We do not have a mechanism for infering the output shape
   // of custom ops, so this set of checks can only be applied if the tensor
   // shape is known
@@ -70,6 +73,12 @@ static void verifyWindowParameters(std::unique_ptr<BuilderImpl> &impl,
           dilation.size(),
           num_spatial_dims);
     }
+    if (inDilation.size() != 0 && inDilation.size() != num_spatial_dims) {
+      throw error(
+          "Length of inDilations vector {} != number of spatial dimensions {}",
+          inDilation.size(),
+          num_spatial_dims);
+    }
 
     // Validate that the input shape, kernel shape, strides, padding, and
     // optional dilation combine to produce a valid output shape
@@ -81,9 +90,15 @@ static void verifyWindowParameters(std::unique_ptr<BuilderImpl> &impl,
       if (padding.empty()) {
         padding.resize(2 * num_spatial_dims, 0);
       }
+      if (outPadding.empty()) {
+        outPadding.resize(2 * num_spatial_dims, 0);
+      }
       // Default 'ones'
       if (dilation.empty()) {
         dilation.resize(num_spatial_dims, 1);
+      }
+      if (inDilation.empty()) {
+        inDilation.resize(num_spatial_dims, 1);
       }
       if (strides.empty()) {
         strides.resize(num_spatial_dims, 1);
@@ -93,8 +108,10 @@ static void verifyWindowParameters(std::unique_ptr<BuilderImpl> &impl,
           inShape,
           kernel_shape,
           padding,
+          outPadding,
           strides,
           dilation,
+          inDilation,
           HasReceptiveFieldOp::getAutoPad(auto_pad),
           ceil_mode);
 
@@ -122,8 +139,14 @@ static void verifyPoolBase(std::unique_ptr<BuilderImpl> &impl,
   if (!attributes.count("pads")) {
     attributes["pads"] = emptyVec;
   }
+  if (!attributes.count("outPads")) {
+    attributes["outPads"] = emptyVec;
+  }
   if (!attributes.count("dilations")) {
     attributes["dilations"] = emptyVec;
+  }
+  if (!attributes.count("inDilations")) {
+    attributes["inDilations"] = emptyVec;
   }
   std::string emptyString;
   if (!attributes.count("auto_pad")) {
@@ -139,8 +162,10 @@ static void verifyPoolBase(std::unique_ptr<BuilderImpl> &impl,
       inputs[0],
       popart::any_cast<const std::vector<int64_t> &>(attributes["strides"]),
       popart::any_cast<const std::vector<int64_t> &>(attributes["pads"]),
+      popart::any_cast<const std::vector<int64_t> &>(attributes["outPads"]),
       popart::any_cast<std::vector<int64_t> &>(attributes["kernel_shape"]),
       popart::any_cast<std::vector<int64_t> &>(attributes["dilations"]),
+      popart::any_cast<std::vector<int64_t> &>(attributes["inDilations"]),
       popart::any_cast<const std::string &>(attributes["auto_pad"]),
       ceil_mode);
 }
@@ -191,8 +216,14 @@ static void verifyConvBase(std::unique_ptr<BuilderImpl> &impl,
   if (!attributes.count("pads")) {
     attributes["pads"] = emptyVec;
   }
+  if (!attributes.count("outPads")) {
+    attributes["outPads"] = emptyVec;
+  }
   if (!attributes.count("dilations")) {
     attributes["dilations"] = emptyVec;
+  }
+  if (!attributes.count("inDilations")) {
+    attributes["inDilations"] = emptyVec;
   }
   std::string emptyString;
   if (!attributes.count("auto_pad")) {
@@ -204,8 +235,10 @@ static void verifyConvBase(std::unique_ptr<BuilderImpl> &impl,
       inputs[0],
       popart::any_cast<const std::vector<int64_t> &>(attributes["strides"]),
       popart::any_cast<const std::vector<int64_t> &>(attributes["pads"]),
+      popart::any_cast<const std::vector<int64_t> &>(attributes["outPads"]),
       weightsKShape,
       popart::any_cast<std::vector<int64_t> &>(attributes["dilations"]),
+      popart::any_cast<std::vector<int64_t> &>(attributes["inDilations"]),
       popart::any_cast<std::string>(attributes["auto_pad"]));
 }
 
@@ -408,7 +441,9 @@ AiGraphcoreOpset1::groupnormalization(const std::vector<TensorId> &args,
 std::vector<TensorId> AiGraphcoreOpset1::multiconv(
     const MultiConvInputs &tensors,
     const MultiConvDilations &dilations,
+    const MultiConvDilations &inDilations,
     const MultiConvPads &pads,
+    const MultiConvPads &outPads,
     const MultiConvStrides &strides,
     const std::vector<float> &availableMemoryProportions,
     const std::vector<std::string> &partialsTypes,
@@ -457,7 +492,9 @@ std::vector<TensorId> AiGraphcoreOpset1::multiconv(
     }
   };
   checkParamSize(dilations.size(), "dilations");
+  checkParamSize(inDilations.size(), "inDilations");
   checkParamSize(pads.size(), "pads");
+  checkParamSize(outPads.size(), "outPads");
   checkParamSize(strides.size(), "strides");
   checkParamSize(availableMemoryProportions.size(),
                  "availableMemoryProportions");
@@ -469,7 +506,10 @@ std::vector<TensorId> AiGraphcoreOpset1::multiconv(
     std::map<std::string, popart::any> attributes;
     attributes["strides"]   = strides.empty() ? emptyParams : strides[i];
     attributes["pads"]      = pads.empty() ? emptyParams : pads[i];
+    attributes["outPads"]   = outPads.empty() ? emptyParams : outPads[i];
     attributes["dilations"] = dilations.empty() ? emptyParams : dilations[i];
+    attributes["inDilations"] =
+        inDilations.empty() ? emptyParams : inDilations[i];
     verifyConvBase(impl, tensors[i], attributes);
   }
 
@@ -485,7 +525,9 @@ std::vector<TensorId> AiGraphcoreOpset1::multiconv(
   // flatTensors: {data0, w0, data1, w1, data2, w2}
   ConvInputs flatTensors;
   ConvDilations flatDilations;
+  ConvDilations flatInDilations;
   ConvPads flatPads;
+  ConvPads flatOutPads;
   ConvStrides flatStrides;
   for (size_t i = 0; i < numConvs; i++) {
     flatTensors.insert(
@@ -501,8 +543,15 @@ std::vector<TensorId> AiGraphcoreOpset1::multiconv(
       flatDilations.insert(
           end(flatDilations), begin(dilations[i]), end(dilations[i]));
     }
+    if (!inDilations.empty()) {
+      flatInDilations.insert(
+          end(flatInDilations), begin(inDilations[i]), end(inDilations[i]));
+    }
     if (!pads.empty()) {
       flatPads.insert(end(flatPads), begin(pads[i]), end(pads[i]));
+    }
+    if (!outPads.empty()) {
+      flatOutPads.insert(end(flatOutPads), begin(outPads[i]), end(outPads[i]));
     }
     if (!strides.empty()) {
       flatStrides.insert(end(flatStrides), begin(strides[i]), end(strides[i]));
@@ -516,8 +565,14 @@ std::vector<TensorId> AiGraphcoreOpset1::multiconv(
   if (flatPads.size()) {
     finalAttributes["pads"] = flatPads;
   }
+  if (flatOutPads.size()) {
+    finalAttributes["outPads"] = flatOutPads;
+  }
   if (flatDilations.size()) {
     finalAttributes["dilations"] = flatDilations;
+  }
+  if (flatInDilations.size()) {
+    finalAttributes["inDilations"] = flatInDilations;
   }
   if (planType) {
     finalAttributes["planType"] = *planType;

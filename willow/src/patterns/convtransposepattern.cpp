@@ -44,6 +44,8 @@ bool ConvTransposePattern::apply(Op *op) const {
       ConvFlipWeightsOp::getOutIndex(),
       ir.createIntermediateTensorId(kernelTensor->id));
 
+  flip->setParameters(convTranspose->params);
+  flip->setGroupReshape(true);
   flip->setup();
 
   OperatorIdentifier gradOpId = Onnx::Operators::Conv_1;
@@ -76,9 +78,13 @@ bool ConvTransposePattern::apply(Op *op) const {
 
   conv->connectOutTensor(ConvOp::getOutIndex(), outTensor->id);
 
+  conv->setGroup();
   conv->params.push_back(convTranspose->params);
+  conv->restoreAttributesFromParams();
+  conv->setup();
 
   flip->setParameters(dynamic_cast<ConvOp *>(conv)->getParameters());
+  flip->setup();
 
   // Remove the ConvTransposeOp.
   graph.eraseOp(op->id);

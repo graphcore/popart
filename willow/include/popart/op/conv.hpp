@@ -30,12 +30,14 @@ public:
     return MultiConvBaseOp::getWeightsInIndex(0);
   }
   static OutIndex getOutIndex() { return MultiConvBaseOp::getOutIndex(0); }
-  int64_t getGroups() { return MultiConvBaseOp::getGroups(0); }
-  int64_t getNInChans() { return MultiConvBaseOp::getNInChans(0); }
-  int64_t getNOutChans() { return MultiConvBaseOp::getNOutChans(0); }
+  int64_t getGroups() const { return MultiConvBaseOp::getGroups(0); }
+  void setGroup() { group = MultiConvBaseOp::getGroups(0); }
+  int64_t getNInChans() const { return MultiConvBaseOp::getNInChans(0); }
+  int64_t getNOutChans() const { return MultiConvBaseOp::getNOutChans(0); }
   const ConvParameters &getParameters() const {
     return MultiConvBaseOp::getParameters(0);
   }
+  void restoreAttributesFromParams() override;
 
 private:
   // Can always be determined by input shapes. However, we check here that
@@ -79,6 +81,8 @@ public:
   const ConvParameters &getParameters() const { return params; }
   void setParameters(const ConvParameters &p) { params = p; }
 
+  void setGroupReshape(bool reshape) { groupReshape = reshape; }
+
   float getSubgraphValue() const final { return getLowSubgraphValue(); }
 
   void appendOutlineAttributes(OpSerialiserBase &os) const final;
@@ -89,6 +93,9 @@ public:
   }
 
 private:
+  // Reshape the weight such that the data grad convolution receives a weight
+  // shape which is valid
+  bool groupReshape;
   ConvParameters params;
   MultiConvOptions convOpts;
 };

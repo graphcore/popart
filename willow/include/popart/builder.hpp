@@ -120,7 +120,9 @@ public:
    *
    * \param tensors List of {DataId, WeightId, BiasId (optional)}
    * \param dilations The dilations attributes for each convolution.
+   * \param inDilations The input dilations attributes for each convolution.
    * \param pads The pads for each convolution.
+   * \param outPads The output padding for each convolution.
    * \param strides The strides for each convolution.
    * \param availableMemoryProportions The available memory proportions per
             conv, each [0, 1).
@@ -140,7 +142,9 @@ public:
   std::vector<TensorId>
   multiconv(const MultiConvInputs &tensors,
             const MultiConvDilations &dilations                  = {},
+            const MultiConvDilations &inDilations                = {},
             const MultiConvPads &pads                            = {},
+            const MultiConvPads &outPads                         = {},
             const MultiConvStrides &strides                      = {},
             const std::vector<float> &availableMemoryProportions = {},
             const std::vector<std::string> &partialsTypes        = {},

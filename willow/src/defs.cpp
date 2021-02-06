@@ -259,11 +259,15 @@ void MultiConvShapeInference(InferenceContext &ctx) {
   int64_t cumulativeSpatialDims = 0;
 
   popart::Shape flatPads;
+  popart::Shape flatOutPads;
   popart::Shape flatStrides;
   popart::Shape flatDilations;
+  popart::Shape flatInDilations;
   getRepeatedAttribute(ctx, "pads", flatPads);
+  getRepeatedAttribute(ctx, "outPads", flatOutPads);
   getRepeatedAttribute(ctx, "strides", flatStrides);
   getRepeatedAttribute(ctx, "dilations", flatDilations);
+  getRepeatedAttribute(ctx, "inDilations", flatInDilations);
 
   for (size_t outIdx = 0; outIdx < num_outputs; ++outIdx) {
     size_t dataIdx    = (3 * outIdx);
@@ -285,14 +289,23 @@ void MultiConvShapeInference(InferenceContext &ctx) {
 
     // Unflatten parameters
     popart::Shape pads;
+    popart::Shape outPads;
     popart::Shape strides;
     popart::Shape dilations;
+    popart::Shape inDilations;
     if (flatPads.empty()) {
       pads.assign(spatialSize * 2, 0);
     } else {
       const auto cumulativePads = cumulativeSpatialDims * 2;
       pads                      = {flatPads.begin() + cumulativePads,
               flatPads.begin() + cumulativePads + (spatialSize * 2)};
+    }
+    if (flatOutPads.empty()) {
+      outPads.assign(spatialSize * 2, 0);
+    } else {
+      const auto cumulativePads = cumulativeSpatialDims * 2;
+      outPads                   = {flatOutPads.begin() + cumulativePads,
+                 flatOutPads.begin() + cumulativePads + (spatialSize * 2)};
     }
     if (flatStrides.empty()) {
       strides.assign(spatialSize, 1);
@@ -305,6 +318,13 @@ void MultiConvShapeInference(InferenceContext &ctx) {
     } else {
       dilations = {flatDilations.begin() + cumulativeSpatialDims,
                    flatDilations.begin() + cumulativeSpatialDims + spatialSize};
+    }
+    if (flatInDilations.empty()) {
+      inDilations.assign(spatialSize, 1);
+    } else {
+      inDilations = {flatInDilations.begin() + cumulativeSpatialDims,
+                     flatInDilations.begin() + cumulativeSpatialDims +
+                         spatialSize};
     }
     cumulativeSpatialDims += spatialSize;
 
@@ -320,8 +340,10 @@ void MultiConvShapeInference(InferenceContext &ctx) {
             spatialDShape,
             spatialKShape,
             pads,
+            outPads,
             strides,
             dilations,
+            inDilations,
             popart::AutoPad::NOTSET);
 
     for (auto dim : spatialOutShape) {

@@ -181,25 +181,44 @@ public:
     return HasReceptiveFieldOp::upperPads(
         pads[convIndex], static_cast<int>(getNSpatialDims(convIndex)), padType);
   }
+  Shape lowerOutPads(int convIndex) const {
+    return HasReceptiveFieldOp::lowerPads(
+        outPads[convIndex],
+        static_cast<int>(getNSpatialDims(convIndex)),
+        AutoPad::NOTSET);
+  }
+  Shape upperOutPads(int convIndex) const {
+    return HasReceptiveFieldOp::upperPads(
+        outPads[convIndex],
+        static_cast<int>(getNSpatialDims(convIndex)),
+        AutoPad::NOTSET);
+  }
   Shape getOutShape(int convIndex) const;
 
   const ConvParameters &getParameters(int convIndex) const {
     return params[convIndex];
   }
 
-  void setupFromDataGradOp(const Op *dataGradOp);
+  virtual void setParamsFromDataGradOp(const Op *dataGradOp);
+  virtual void restoreAttributesFromParams();
   const MultiConvOptions &getConvOptions() const { return convOpts; }
   void setConvOptions(const MultiConvOptions &opts) { convOpts = opts; }
 
   // Directly passed in from onnx model attributes
   ConvStrides flatStrides;
   ConvPads flatPads;
+  ConvPads flatOutPads;
   ConvDilations flatDilations;
+  ConvDilations flatInDilations;
 
   // Re-packaged on a per-conv basis
   MultiConvStrides strides;
   MultiConvPads pads;
+  MultiConvPads outPads;
   MultiConvDilations dilations;
+
+  // Used for ConvTranspose
+  MultiConvDilations inDilations;
 
   // Above per-conv parameters, packaged into a single struct
   std::vector<ConvParameters> params;

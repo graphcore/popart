@@ -131,7 +131,10 @@ void ConvFlipWeightsGradOpx::grow(poplar::program::Sequence &seq) const {
     convWeights = convWeights.squeeze({0});
   }
 
-  setOutTensor(ConvFlipWeightsOp::getOutIndex(), convWeights);
+  setOutTensor(
+      ConvFlipWeightsOp::getOutIndex(),
+      convWeights.reshape(
+          outTensor(ConvFlipWeightsOp::getOutIndex())->info.shape_szt()));
 }
 
 namespace {

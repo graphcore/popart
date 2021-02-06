@@ -185,7 +185,7 @@ public:
 
   void assertNumElements(const popx::Executablex &) const final {}
 
-  ConstVoidData in(TensorId id, int64_t, bool prefetch)final {
+  ConstVoidData in(TensorId id, int64_t, bool prefetch) final {
     py::array a = inputCb(id, prefetch);
     if (!isContiguous(a)) {
       throw error(
@@ -2080,7 +2080,9 @@ PYBIND11_MODULE(popart_core, m) {
             &AiGraphcoreOpset1::multiconv,
             py::arg("args"),
             py::arg("dilations")                  = py::list(),
+            py::arg("inDilations")                = py::list(),
             py::arg("pads")                       = py::list(),
+            py::arg("outPads")                    = py::list(),
             py::arg("strides")                    = py::list(),
             py::arg("availableMemoryProportions") = py::list(),
             py::arg("partialsTypes")              = py::list(),
@@ -2093,7 +2095,9 @@ PYBIND11_MODULE(popart_core, m) {
             &AiGraphcoreOpset1::multiconv,
             py::arg("args"),
             py::arg("dilations")                  = py::list(),
+            py::arg("inDilations")                = py::list(),
             py::arg("pads")                       = py::list(),
+            py::arg("outPads")                    = py::list(),
             py::arg("strides")                    = py::list(),
             py::arg("availableMemoryProportions") = py::list(),
             py::arg("partialsTypes")              = py::list(),

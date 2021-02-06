@@ -18,8 +18,10 @@ public:
         : Op::Settings(graph_, name_, scope_) {}
 
     std::vector<int64_t> pads;
+    std::vector<int64_t> outPads;
     std::vector<int64_t> strides;
     std::vector<int64_t> dilations;
+    std::vector<int64_t> inDilations;
     std::string auto_pad;
     int64_t ceil_mode = 0;
 
@@ -37,10 +39,14 @@ public:
   Shape getStrides() const { return strides; }
   Shape getLowerPads() const { return lowerPads(); }
   Shape getUpperPads() const { return upperPads(); }
+  Shape getLowerOutPads() const { return lowerOutPads(); }
+  Shape getUpperOutPads() const { return upperOutPads(); }
 
   std::vector<int64_t> pads;
+  std::vector<int64_t> outPads;
   std::vector<int64_t> strides;
   std::vector<int64_t> dilations;
+  std::vector<int64_t> inDilations;
 
   AutoPad padType;
   bool ceilMode;
@@ -76,6 +82,9 @@ public:
   static std::vector<int64_t>
   upperPads(Shape pads, int nSpatialDims, AutoPad padType);
 
+  std::vector<int64_t> lowerOutPads() const;
+  std::vector<int64_t> upperOutPads() const;
+
   // backend might prefer a different number format.
   // These convenience functions reduce backend boilerplate.
   // Popart uses signed ints of strictly defined sizes, internally.
@@ -99,8 +108,10 @@ public:
   static Shape getSpatialOutShape(Shape spatialD_,
                                   Shape spatialK_,
                                   std::vector<int64_t> pads_,
+                                  std::vector<int64_t> outPads_,
                                   std::vector<int64_t> strides_,
                                   std::vector<int64_t> dilations_,
+                                  std::vector<int64_t> inDilations_,
                                   AutoPad auto_pad_,
                                   bool ceil_mode_ = false);
 
