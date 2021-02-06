@@ -1,8 +1,10 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
 
 #include <popart/graph.hpp>
+#include <popart/ir.hpp>
 #include <popart/op/elementwise.hpp>
 #include <popart/op/reducesum.hpp>
+#include <popart/op/reshape.hpp>
 #include <popart/patterns/binarygradoppattern.hpp>
 
 namespace popart {
@@ -39,7 +41,22 @@ bool BinaryGradOpPattern::apply(Op *op) const {
 
   reduce->connectInTensor(0, pre_reduce);
 
-  reduce->connectOutTensor(0, grad_out->id);
+  auto tmp_out_id = op->getIr().createIntermediateTensorId(grad_out->id);
+
+  reduce->createAndConnectOutTensor(0, tmp_out_id);
+
+  reduce->setup();
+
+  auto reshapeOpUp = std::make_unique<ReshapeOp>(
+      Onnx::Operators::Reshape_5,
+      op->getGraph().getTensors().get(grad_out->id)->info.shape(),
+      reduce->settings);
+  auto reshapeOp = reshapeOpUp.get();
+  op->getGraph().moveIntoGraph(std::move(reshapeOpUp));
+
+  reshapeOp->connectInTensor(ReshapeOp::getInIndex(), tmp_out_id);
+  reshapeOp->connectOutTensor(ReshapeOp::getOutIndex(), grad_out->id);
+  reshapeOp->setup();
 
   // Don't delete op until after the op->prettyNpOut calls.
   op->getGraph().eraseOp(op->id);

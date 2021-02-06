@@ -3,6 +3,7 @@
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/op/mul.hpp>
+#include <popart/op/reshape.hpp>
 #include <popart/patterns/mularggradoppattern.hpp>
 #include <popart/tensor.hpp>
 #include <popart/tensorindex.hpp>
@@ -59,9 +60,25 @@ bool MulArgGradOpPattern::apply(Op *op) const {
   mul->outInfo(0) = op->prettyNpOut(mul->inInfo(0), mul->inInfo(1));
 
   reduce->connectInTensor(0, mul->outTensor(0)->id);
-  reduce->connectOutTensor(0, grad_out->id);
 
-  // Eras the original op
+  auto tmp_out_id = op->getIr().createIntermediateTensorId(grad_out->id);
+
+  reduce->createAndConnectOutTensor(0, tmp_out_id);
+
+  reduce->setup();
+
+  auto reshapeOpUp = std::make_unique<ReshapeOp>(
+      Onnx::Operators::Reshape_5,
+      op->getGraph().getTensors().get(grad_out->id)->info.shape(),
+      reduce->settings);
+  auto reshapeOp = reshapeOpUp.get();
+  op->getGraph().moveIntoGraph(std::move(reshapeOpUp));
+
+  reshapeOp->connectInTensor(ReshapeOp::getInIndex(), tmp_out_id);
+  reshapeOp->connectOutTensor(ReshapeOp::getOutIndex(), grad_out->id);
+  reshapeOp->setup();
+
+  // Don't delete op until after the op->prettyNpOut calls.
   op->getGraph().eraseOp(op->id);
 
   return true;
