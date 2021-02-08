@@ -33,12 +33,16 @@ void InstanceNormOp::setup() {
 
   outInfo(getOutIndex()) = input_info;
 
-  createAndConnectOutTensor(getMeanOutIndex(),
-                            outTensor(getOutIndex())->id + "_mean");
+  if (!output->hasIndex(getMeanOutIndex())) {
+    createAndConnectOutTensor(getMeanOutIndex(),
+                              outTensor(getOutIndex())->id + "_mean");
+  }
   outInfo(getMeanOutIndex()) = {input_info.dataType(), {batch_size * features}};
 
-  createAndConnectOutTensor(getInvStdDevOutIndex(),
-                            outTensor(getOutIndex())->id + "_invStdDev");
+  if (!output->hasIndex(getInvStdDevOutIndex())) {
+    createAndConnectOutTensor(getInvStdDevOutIndex(),
+                              outTensor(getOutIndex())->id + "_invStdDev");
+  }
   outInfo(getInvStdDevOutIndex()) = {input_info.dataType(),
                                      Shape{batch_size * features}};
 }
