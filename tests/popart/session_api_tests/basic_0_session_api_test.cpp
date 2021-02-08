@@ -52,7 +52,6 @@ BOOST_AUTO_TEST_CASE(Basic0SessionApi) {
       popart::InputShapeInfo(),
       opts,
       popart::Patterns(PatternsLevel::NoPatterns).enableRuntimeAsserts(false));
-  BOOST_REQUIRE(!session->isDetached());
 
   // create anchor and co.
   std::vector<float> rawOutputValues(xInfo.nelms());
@@ -66,7 +65,4 @@ BOOST_AUTO_TEST_CASE(Basic0SessionApi) {
 
   popart::StepIO stepio(inputs, anchors);
   BOOST_CHECK_EXCEPTION(session->run(stepio), popart::error, prePrepCallError);
-  BOOST_REQUIRE(!session->isDetached());
-  session->setDevice({});
-  BOOST_REQUIRE(session->isDetached());
 }
