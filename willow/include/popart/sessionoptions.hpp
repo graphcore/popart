@@ -708,7 +708,7 @@ struct SessionOptions {
 
   /// The total number of replicas in a multi instance replicated graph training
   /// session (this should be left as the default value (1) if distributed
-  /// replicated graphs are disabled)
+  /// replicated graphs are disabled). This value includes local replication.
   int64_t globalReplicationFactor = 1;
 
   /// The first replica index that this PopART instance is running

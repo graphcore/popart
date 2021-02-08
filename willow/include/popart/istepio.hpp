@@ -30,7 +30,7 @@ class Executablex;
  * The expected total number of input (resp. output) buffers that are
  * 'completed' for a tensor in one Session::run call is `bps` \f$\times\f$
  * SessionOptions::accumulationFactor \f$\times\f$
- * SessionOptions::globalReplicationFactor, where `bps` is the number of
+ * SessionOptions::replicatedGraphCount, where `bps` is the number of
  * batches per call to Session::run (this is a value captured by the DataFlow
  * instance passed to Session).
  *
@@ -40,7 +40,7 @@ class Executablex;
  * Further more, the number of number of input (resp. output) buffers that may
  * be 'incomplete' *at a given time for a given tensor* should not normally be
  * higher than SessionOptions::bufferingDepth \f$\times\f$
- * SessionOptions::globalReplicationFactor, but this bound is not guaranteed.
+ * SessionOptions::replicatedGraphCount, but this bound is not guaranteed.
  *
  * **EXAMPLE**: Suppose a session is configured such that the total expected
  * number of input buffers is 6 and these are input buffers for a tensor with

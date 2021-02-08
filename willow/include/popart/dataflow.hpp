@@ -24,7 +24,7 @@ struct SessionOptions;
  *  * `accumulationFactor` is the value defined by
  *    SessionOptions::accumulationFactor.
  *  * `replicationFactor` is the value defined by
- *    SessionOptions::globalReplicationFactor.
+ *    SessionOptions::replicatedGraphCount.
  *
  * This enum type describes the strategy with which the micro batch values
  * for anchor tensors (or summaries thereof) are written or to the IStepIO
