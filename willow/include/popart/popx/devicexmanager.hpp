@@ -46,22 +46,24 @@ public:
       : popart::DeviceInfo(_provider, _type, _connectionType, _flags),
         device(std::move(_device)), isAttached_(false) {}
 
-  virtual bool attach();
-  virtual void detach();
+  bool attach() override;
+  void detach() override;
 
-  virtual int getNumIpus() const { return getTarget().getNumIPUs(); }
-  virtual int getTilesPerIPU() const { return getTarget().getTilesPerIPU(); }
-  virtual int getNumWorkerContexts() const {
+  int getNumIpus() const override { return getTarget().getNumIPUs(); }
+  int getTilesPerIPU() const override { return getTarget().getTilesPerIPU(); }
+  int getNumWorkerContexts() const override {
     return getTarget().getNumWorkerContexts();
   }
 
-  virtual std::vector<unsigned> getDriverIds() const {
+  std::vector<unsigned> getDriverIds() const override {
     return device.getDriverIDs();
   }
 
   poplar::Device &getDevice() { return device; }
 
-  virtual const poplar::Target &getTarget() const { return device.getTarget(); }
+  const poplar::Target &getTarget() const override {
+    return device.getTarget();
+  }
 
   std::set<Devicex *> previouslyLoadedDevicexs;
 
