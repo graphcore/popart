@@ -7,8 +7,8 @@
 #include <popart/builder.hpp>
 #include <popart/error.hpp>
 #include <popart/istepio.hpp>
-#include <popart/op/getrandomseed.hpp>
 #include <popart/popx/devicex.hpp>
+#include <popart/transforms/randomsetup.hpp>
 
 #ifdef POPLAR_RUNNER
 #include <ipu/poplar_executable_data.h>
@@ -248,9 +248,10 @@ void exportExecutable(poplar::Executable &executable,
   }
   unsigned replication_factor = device.getReplicationFactor();
   builder.SetConfig(replication_factor, numIPUs);
-  if (device.ir().getRequiresRandomSeed()) {
+
+  if (RandomSetup::hasRandomSeed(ir()) {
     builder.SetRandomNumberSeedHandle(
-        device.h2dId(GetRandomSeedOp::getStreamedSeedTensorId()));
+        device.h2dId(RandomSetup::getStreamedSeedTensorId()));
   }
   ipu::Metadata metadata = builder.BuildMetadata();
 

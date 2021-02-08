@@ -11,17 +11,18 @@ namespace popart {
 
 DropoutOp::DropoutOp(const OperatorIdentifier &opid_,
                      float ratio_,
-                     uint32_t seedModifier_,
                      RandomReferenceId referenceId_,
                      bool outputMask_,
-                     const Op::Settings &settings_)
-    : DropoutBaseOp(opid_, ratio_, seedModifier_, settings_),
+                     const Op::Settings &settings_,
+                     RandomSeedPlaceholder placeholder_)
+    : DropoutBaseOp(opid_, ratio_, settings_, placeholder_),
       referenceId(referenceId_), outputMask(outputMask_) {}
 
 DropoutOp::DropoutOp(const OperatorIdentifier &_opid,
                      float ratio_,
-                     const Op::Settings &settings_)
-    : DropoutBaseOp(_opid, ratio_, settings_) {
+                     const Op::Settings &settings_,
+                     RandomSeedPlaceholder placeholder_)
+    : DropoutBaseOp(_opid, ratio_, settings_, placeholder_) {
   referenceId = getIr().getAndIncrementRandomReferenceId();
 }
 
@@ -53,13 +54,6 @@ void DropoutOp::appendAttributes(OpSerialiserBase &os) const {
 void DropoutOp::appendOutlineAttributes(OpSerialiserBase &os) const {
   Op::appendOutlineAttributes(os);
   os.appendAttribute("ratio", getRatio());
-
-  // Appending the seedModfier ensures that caching can only occur
-  // between dropout ops in the same layer, i.e. between the forward op,
-  // the corresponding backwards op (if replaced by the dropout pattern),
-  // and the corresponding recompute op (if the fwd op is cloned for
-  // recomputation)
-  os.appendAttribute("seedModifier", getSeedModifier());
 }
 
 // Get the reference TensorId used for poplibs call for mask generation.
@@ -82,22 +76,28 @@ TensorId DropoutOp::getReferenceTensorId() {
 DropoutGradOp::DropoutGradOp(const DropoutOp &fwdOp)
     : DropoutOp(fwdOp.opid,
                 fwdOp.getRatio(),
-                fwdOp.getSeedModifier(),
                 fwdOp.getReferenceId(),
                 fwdOp.getOutputMask(),
-                fwdOp.getSettings()) {}
+                fwdOp.getSettings(),
+                fwdOp.getRandomSeedPlaceholder()) {}
 
 std::unique_ptr<Op> DropoutGradOp::clone() const {
   return std::make_unique<DropoutGradOp>(*this);
 }
 
 const std::vector<GradInOutMapper> &DropoutGradOp::gradInputInfo() const {
-  static const std::vector<GradInOutMapper> inInfo = {
-      {getGradInIndex(), DropoutOp::getOutIndex(), GradOpInType::GradOut},
-      // Dropout and DropoutGrad inherit from the same base op, so share the
-      // same seed InIndex
-      {getSeedInIndex(), getSeedInIndex(), GradOpInType::In}};
-  return inInfo;
+  if (input->hasIndex(getSeedInIndex())) {
+    static const std::vector<GradInOutMapper> inInfo = {
+        {getGradInIndex(), DropoutOp::getOutIndex(), GradOpInType::GradOut},
+        // Dropout and DropoutGrad inherit from the same base op, so share the
+        // same seed InIndex
+        {getSeedInIndex(), getSeedInIndex(), GradOpInType::In}};
+    return inInfo;
+  } else {
+    static const std::vector<GradInOutMapper> inInfo = {
+        {getGradInIndex(), DropoutOp::getOutIndex(), GradOpInType::GradOut}};
+    return inInfo;
+  }
 }
 
 const std::map<int, int> &DropoutGradOp::gradOutToNonGradIn() const {

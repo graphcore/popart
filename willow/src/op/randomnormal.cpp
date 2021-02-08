@@ -14,8 +14,14 @@ RandomNormalOp::RandomNormalOp(const OperatorIdentifier &opid_,
                                const OptionalDataType &dataType_,
                                float mean_,
                                float scale_,
-                               const Op::Settings &settings_)
-    : RandomNormalBaseOp(opid_, dataType_, mean_, scale_, settings_),
+                               const Op::Settings &settings_,
+                               RandomSeedPlaceholder placeholder_)
+    : RandomNormalBaseOp(opid_,
+                         dataType_,
+                         mean_,
+                         scale_,
+                         settings_,
+                         placeholder_),
       shape(shape_) {}
 
 std::unique_ptr<Op> RandomNormalOp::clone() const {
@@ -28,8 +34,14 @@ RandomNormalLikeOp::RandomNormalLikeOp(const OperatorIdentifier &opid_,
                                        const OptionalDataType &dataType_,
                                        float mean_,
                                        float scale_,
-                                       const Op::Settings &settings_)
-    : RandomNormalBaseOp(opid_, dataType_, mean_, scale_, settings_) {}
+                                       const Op::Settings &settings_,
+                                       RandomSeedPlaceholder placeholder_)
+    : RandomNormalBaseOp(opid_,
+                         dataType_,
+                         mean_,
+                         scale_,
+                         settings_,
+                         placeholder_) {}
 
 std::unique_ptr<Op> RandomNormalLikeOp::clone() const {
   return std::make_unique<RandomNormalLikeOp>(*this);

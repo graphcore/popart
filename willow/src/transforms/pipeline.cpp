@@ -17,6 +17,7 @@
 #include <popart/tensors.hpp>
 #include <popart/topocons.hpp>
 #include <popart/transforms/pipeline.hpp>
+#include <popart/transforms/randomsetup.hpp>
 #include <popart/vertex.hpp>
 
 // Which pipelining scheme should we use? There are some considerations to
@@ -954,7 +955,7 @@ bool Pipeline::apply(Graph &graph) const {
 
   auto toStashCandidateTensors = getStashCandidateTensors(graph);
 
-  if (ir.getRequiresRandomSeed() &&
+  if (RandomSetup::hasRandomSeed(ir) &&
       containsSeedTensor(toStashCandidateTensors)) {
     // Neither the input or the output of a GetRandomSeedOp should be stashed.
     auto getRandomSeedOp = findGetRandomSeedOp(graph);

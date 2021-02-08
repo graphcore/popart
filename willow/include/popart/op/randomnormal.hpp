@@ -15,7 +15,8 @@ public:
                  const OptionalDataType &dataType_,
                  float mean_,
                  float scale_,
-                 const Op::Settings &settings_);
+                 const Op::Settings &settings_,
+                 RandomSeedPlaceholder placeholder = RandomSeedPlaceholder());
 
   std::unique_ptr<Op> clone() const final;
   void setup() final;
@@ -27,11 +28,13 @@ private:
 
 class RandomNormalLikeOp : public RandomNormalBaseOp {
 public:
-  RandomNormalLikeOp(const OperatorIdentifier &opid_,
-                     const OptionalDataType &dataType_,
-                     float mean_,
-                     float scale_,
-                     const Op::Settings &settings_);
+  RandomNormalLikeOp(
+      const OperatorIdentifier &opid_,
+      const OptionalDataType &dataType_,
+      float mean_,
+      float scale_,
+      const Op::Settings &settings_,
+      RandomSeedPlaceholder placeholder = RandomSeedPlaceholder());
 
   std::unique_ptr<Op> clone() const final;
   void setup() final;

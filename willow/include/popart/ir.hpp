@@ -463,11 +463,8 @@ public:
 
   bool hasReplicatedTensorSharding() const;
 
-  // The model requires a user-settable random seed tensor
-  bool hasRandomOps() const;
   void setRequiresRandomSeed() { requiresRandomSeed_ = true; }
   bool getRequiresRandomSeed() const { return requiresRandomSeed_; }
-  uint32_t getAndIncrementSeedModifier();
 
   RandomReferenceId getAndIncrementRandomReferenceId();
 
@@ -522,10 +519,6 @@ private:
   // Grow loss operands. Return pointer to Op introduced for non-const loss
   // scaling, if one was needed.
   Op *growLossGradients();
-
-  bool requiresRandomSeed() const;
-
-  void initRandomSeed();
 
   // Verify the connectivity of the graph
   void verifyConnectivity() const;
@@ -609,8 +602,6 @@ private:
 
   // enable/disable a transform stage
   void enableTransform(std::size_t transformId, bool enable);
-
-  uint32_t seedModifier = 0;
 
   RandomReferenceId randomReferenceId = 0;
 

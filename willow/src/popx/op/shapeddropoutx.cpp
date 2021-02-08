@@ -25,14 +25,13 @@ void ShapedDropoutOpx::grow(poplar::program::Sequence &prog) const {
   }
 
   auto &op                 = getOp<ShapedDropoutOp>();
-  auto seedModifier        = op.getSeedModifier();
   poplar::Tensor refTensor = getReferenceTensor();
   double keepProbability   = 1. - static_cast<double>(op.getRatio());
   double scale             = 1. / keepProbability;
   auto shapedDropout =
       poprand::shapedDropout(graph(),
                              &getInTensor(op.getSeedInIndex()),
-                             seedModifier,
+                             0u,
                              getInTensor(ShapedDropoutOp::getInIndex()),
                              refTensor,
                              keepProbability,

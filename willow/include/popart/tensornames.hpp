@@ -60,6 +60,8 @@ constexpr const char *reservedLossScalingPrefix() { return "lossScaling_"; }
 
 constexpr const char *reservedRandomSeedPrefix() { return "randomSeed___"; }
 
+constexpr const char *reservedSeedModifierPrefix() { return "SeedModifier___"; }
+
 constexpr const char *reservedIndexPrefix() { return "Index___"; }
 
 constexpr const char *reservedLoopCondPrefix() { return "LoopCond___"; }

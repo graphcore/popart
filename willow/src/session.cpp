@@ -18,6 +18,7 @@
 #include <popart/tensor.hpp>
 #include <popart/tensordata.hpp>
 #include <popart/tensors.hpp>
+#include <popart/transforms/randomsetup.hpp>
 #include <popart/util.hpp>
 #include <popart/version.hpp>
 

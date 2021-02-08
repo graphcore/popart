@@ -14,8 +14,14 @@ RandomUniformOp::RandomUniformOp(const OperatorIdentifier &opid_,
                                  const OptionalDataType &dataType_,
                                  float high_,
                                  float low_,
-                                 const Op::Settings &settings_)
-    : RandomUniformBaseOp(opid_, dataType_, high_, low_, settings_),
+                                 const Op::Settings &settings_,
+                                 RandomSeedPlaceholder placeholder_)
+    : RandomUniformBaseOp(opid_,
+                          dataType_,
+                          high_,
+                          low_,
+                          settings_,
+                          placeholder_),
       shape(shape_) {}
 
 std::unique_ptr<Op> RandomUniformOp::clone() const {
@@ -28,8 +34,14 @@ RandomUniformLikeOp::RandomUniformLikeOp(const OperatorIdentifier &opid_,
                                          const OptionalDataType &dataType_,
                                          float high_,
                                          float low_,
-                                         const Op::Settings &settings_)
-    : RandomUniformBaseOp(opid_, dataType_, high_, low_, settings_) {}
+                                         const Op::Settings &settings_,
+                                         RandomSeedPlaceholder placeholder_)
+    : RandomUniformBaseOp(opid_,
+                          dataType_,
+                          high_,
+                          low_,
+                          settings_,
+                          placeholder_) {}
 
 std::unique_ptr<Op> RandomUniformLikeOp::clone() const {
   return std::make_unique<RandomUniformLikeOp>(*this);

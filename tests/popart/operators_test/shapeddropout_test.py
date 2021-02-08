@@ -144,7 +144,7 @@ def test_shapeddropout_droprows():
     # Large number of rows for statistical convergence
     nrows = 1000
     data = np.ones([nrows, 3], dtype=np.float32)
-    harness = ShapedDropoutHarness(data, drop_shape=[nrows, 1])
+    harness = ShapedDropoutHarness(data, seed=11583, drop_shape=[nrows, 1])
     anchors = harness.run()
     output = anchors[harness.output]
 
