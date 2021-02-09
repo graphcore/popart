@@ -36,13 +36,19 @@ void ReplicatedReduceScatterOp::setup() {
   // ceil(numElements / replicationFactor)
   auto outElms = (nelms + replicationFactor - 1) / replicationFactor;
 
-  outInfo(getOutIndex()) = TensorInfo(inInfo_.dataType(), {outElms});
+  outInfo(getOutIndex()) =
+      TensorInfo(inInfo_.dataType(), {outElms}, inInfo_.shape());
 }
 
 void ReplicatedReduceScatterOp::appendOutlineAttributes(
     OpSerialiserBase &os) const {
   Op::appendOutlineAttributes(os);
   os.appendAttribute("op", static_cast<int>(op));
+}
+
+ReplicatedTensorShardingIndices
+ReplicatedReduceScatterOp::getReplicatedTensorShardingIndices() const {
+  return {{{}, {ReplicatedReduceScatterOp::getOutIndex()}}};
 }
 
 static OpDefinition::DataTypes T = {DataType::FLOAT,

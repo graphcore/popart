@@ -6,6 +6,8 @@
 #include <map>
 
 #include <popart/op.hpp>
+#include <popart/op/collectives/collectives.hpp>
+#include <popart/op/copyvarupdate.hpp>
 #include <popart/sessionoptions.hpp>
 #include <popart/tensor.hpp>
 #include <popart/vendored/optional.hpp>
@@ -41,7 +43,7 @@ public:
   void createTensorSchedule();
 
   // Find the related weight tensor downstream of the tensorSet
-  Tensor *findRelatedVarTensor(std::vector<Tensor *> front);
+  Tensor *findRelatedVarTensor(std::vector<Tensor *> front) const;
 
   // Correct attributes on replicated reduction operations connected to the
   // optimizer
@@ -178,6 +180,87 @@ protected:
 
   using TensorConfigMap = std::map<Tensor *, TensorConfig, PTensorCmp>;
 
+  enum class ReplicatedTensorShardingMethod {
+    // Tensor is RTS root
+    Native = 0,
+    // RTS propagated forward through an operation
+    Forward,
+    // Converting an AllReduce to a ReduceScatter to obtain an RTS tensor
+    AllReduceToScatter,
+    // Scattering locally to obtain an RTS tensor
+    // (only possible if the non-RTS tensor is numerically
+    // identical between replicas, e.g. weights)
+    LocalScatter
+  };
+
+  friend std::ostream &operator<<(std::ostream &output,
+                                  const ReplicatedTensorShardingMethod &m);
+
+  class ReplicatedTensorShardingProposal {
+  public:
+    void insert(TensorId tensorId, ReplicatedTensorShardingMethod method) {
+      rtsProposedTensorIds[tensorId] = method;
+    }
+    void insert(OpId opId, TensorId refId) {
+      rtsProposedOpIds.insert(opId);
+      opIdToRefTensorId[opId] = refId;
+    }
+
+    void setRefTensorId(OpId opId, TensorId refId) {
+      opIdToRefTensorId[opId] = refId;
+    }
+
+    TensorId getRefTensorId(OpId opId) const {
+      auto it = opIdToRefTensorId.find(opId);
+      if (it != opIdToRefTensorId.end()) {
+        return it->second;
+      } else {
+        return "";
+      }
+    }
+
+    void remove(TensorId tensorId) { rtsProposedTensorIds.erase(tensorId); }
+    void remove(OpId opId) { rtsProposedOpIds.erase(opId); }
+
+    bool isProposed(TensorId tensorId) {
+      return rtsProposedTensorIds.find(tensorId) != rtsProposedTensorIds.end();
+    }
+
+    bool isProposed(OpId opId) const {
+      return rtsProposedOpIds.find(opId) != rtsProposedOpIds.end();
+    }
+
+    ReplicatedTensorShardingMethod getMethod(TensorId tensorId) const {
+      return rtsProposedTensorIds.at(tensorId);
+    }
+
+    const std::set<OpId> &getRtsProposedOpIds() const {
+      return rtsProposedOpIds;
+    }
+    const std::map<TensorId, ReplicatedTensorShardingMethod> &
+    getRtsProposedTensorIds() const {
+      return rtsProposedTensorIds;
+    }
+
+    const std::set<OpId> &getVarUpdatesWithCopies() const {
+      return varUpdatesWithCopies;
+    }
+
+    void insertVarUpdateWithCopies(OpId opId) {
+      varUpdatesWithCopies.insert(opId);
+    }
+
+    bool isVarUpdateWithCopies(OpId opId) {
+      return varUpdatesWithCopies.find(opId) != varUpdatesWithCopies.end();
+    }
+
+  private:
+    std::set<OpId> varUpdatesWithCopies;
+    std::map<OpId, TensorId> opIdToRefTensorId;
+    std::set<OpId> rtsProposedOpIds;
+    std::map<TensorId, ReplicatedTensorShardingMethod> rtsProposedTensorIds;
+  };
+
   class ReplicationShardedTensors {
   public:
     void insert(TensorId shardId,
@@ -221,8 +304,23 @@ protected:
   // Add streaming memory operations pertaining to one tensor.
   void applyTensor(Tensor *tensor, ReplicationShardedTensors &rtsTensors);
 
+  // Pre-plan which tensors can become RTS
+  const ReplicatedTensorShardingProposal getReplicatedTensorShardingProposal(
+      const ReplicationShardedTensors &rtsTensors) const;
+
   // Reconfigure optimizer for replicated tensor sharding
   void applyReplicatedOptimizerSharding(ReplicationShardedTensors &rtsTensors);
+
+  // Change AllReduce to ReduceScatter
+  void RTSAllReduceToScatter(ReplicationShardedTensors &rtsTensors,
+                             Tensor *inTensor,
+                             TensorId refId);
+
+  // Insert local ReduceScatter
+  void RTSLocalScatter(TensorStreamingContext context,
+                       ReplicationShardedTensors &rtsTensors,
+                       Tensor *inTensor,
+                       TensorId refId);
 
   // Helper functions to populate tensor config (the functions
   // below and TensorConfig could possibly be put in their own class.)
@@ -285,7 +383,14 @@ protected:
                                   const TensorStreamingContext context,
                                   const TensorId &inTensorId,
                                   const TensorId &outTensorId,
-                                  const TensorId &weightTensorId);
+                                  const TensorId &weightTensorId,
+                                  const CollectiveOperator collectiveOp);
+
+  // Helper function to insert a CopyVarUpdate.
+  CopyVarUpdateOp *insertCopyVarUpdateOp(VarUpdateOp *op,
+                                         const TensorId &varTensorId,
+                                         const TensorId &updaterTensorId,
+                                         const TensorId &outTensorId);
 
   // Execution mode helper functions.
   // Phased execution: Ops are annotated with the ExecutionPhase attribute that

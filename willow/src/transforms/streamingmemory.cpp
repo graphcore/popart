@@ -208,8 +208,11 @@ bool StreamingMemory::apply(Graph &graph) const {
     }
 
     // Figure out the right phase for ops that did not get a phase yet
-    while (true) {
-      int num_ops_without_phase = 0;
+    std::set<Op *, POpCmp> opsWithoutPhase;
+    bool changed = true;
+    while (changed) {
+      changed = false;
+      opsWithoutPhase.clear();
       // Need to get the schedule every time,
       // because setting phases can change schedule order
       for (Op *op : schedule) {
@@ -222,14 +225,21 @@ bool StreamingMemory::apply(Graph &graph) const {
             // Make sure phase adheres to producer/consumer and topological
             // constraints
             opInserter.sanitizePlacementAnnotation(op, op->getExecutionPhase());
+            changed = true;
           } else {
-            ++num_ops_without_phase;
+            opsWithoutPhase.insert(op);
           }
         }
       }
-      if (num_ops_without_phase == 0) {
-        break;
+    }
+    if (opsWithoutPhase.size()) {
+      std::vector<std::string> opNames;
+      for (Op *op : opsWithoutPhase) {
+        opNames.push_back(op->debugName());
       }
+      throw error(
+          "[StreamingMemory] Could not determine execution phase for {}",
+          logging::join(opNames.begin(), opNames.end(), ", "));
     }
   }
 

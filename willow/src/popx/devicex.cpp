@@ -797,11 +797,13 @@ void Devicex::loadEngineAndConnectStreams() {
     logging::devicex::debug("Connecting initializer streams");
 
     for (auto *tensor : executable_.getWeightTensors()) {
-      const auto &id = tensor->id;
-      if (!ir().streamingIsDisabledForTensor(tensor)) {
-        logging::devicex::debug("   {}", tensor->str());
-        pEngine->connectStream(lowering().h2dId(id),
-                               tensor->tensorData()->data());
+      if (!tensor->hasProducer()) {
+        const auto &id = tensor->id;
+        if (!ir().streamingIsDisabledForTensor(tensor)) {
+          logging::devicex::debug("   {}", tensor->str());
+          pEngine->connectStream(lowering().h2dId(id),
+                                 tensor->tensorData()->data());
+        }
       }
     }
 
@@ -932,20 +934,23 @@ void Devicex::loadEngineAndConnectStreams() {
 
     logging::devicex::debug("Connected d2h weight data streams");
     for (auto *tensor : executable_.getWeightTensors()) {
-      const auto &initId       = tensor->id;
-      int64_t n_bytes          = tensor->info.nbytes();
-      d2hWeightBuffers[initId] = std::vector<char>(n_bytes);
-      char *data0              = d2hWeightBuffers[initId].data();
-      if (!ir().streamingIsDisabledForTensor(tensor)) {
-        // Only connect non-cached tensor streams,
-        // RemoteBuffer handled separately
-        bool isAnchorStream  = false;
-        PopStreamId streamId = lowering().d2hId(initId, isAnchorStream);
-        logging::devicex::debug(" {}", initId);
-        engineToStreamVariables(data0, n_bytes, streamId, tensor->id);
-        logging::devicex::debug("Created buffer (size {} B) and stream for {}",
-                                n_bytes,
-                                tensor->id);
+      if (!tensor->hasProducer()) {
+        const auto &initId       = tensor->id;
+        int64_t n_bytes          = tensor->info.nbytes();
+        d2hWeightBuffers[initId] = std::vector<char>(n_bytes);
+        char *data0              = d2hWeightBuffers[initId].data();
+        if (!ir().streamingIsDisabledForTensor(tensor)) {
+          // Only connect non-cached tensor streams,
+          // RemoteBuffer handled separately
+          bool isAnchorStream  = false;
+          PopStreamId streamId = lowering().d2hId(initId, isAnchorStream);
+          logging::devicex::debug(" {}", initId);
+          engineToStreamVariables(data0, n_bytes, streamId, tensor->id);
+          logging::devicex::debug(
+              "Created buffer (size {} B) and stream for {}",
+              n_bytes,
+              tensor->id);
+        }
       }
     }
   }

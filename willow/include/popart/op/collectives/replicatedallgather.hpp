@@ -18,6 +18,9 @@ public:
 
   float getSubgraphValue() const final { return getHighSubgraphValue(); }
 
+  ReplicatedTensorShardingIndices
+  getReplicatedTensorShardingIndices() const override;
+
 private:
   TensorInfo gatheredOutInfo;
 };

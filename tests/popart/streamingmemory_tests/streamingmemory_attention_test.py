@@ -515,6 +515,10 @@ def test_attention_streamingmemory(tmpdir):
                                       minElementsForReplicatedTensorSharding=2)
     })
 
+    print("#variants: ", len(test_variants))
+    # Run only selected tests
+    # test_variants = test_variants[14:]
+
     index = 0
     for test_option in test_variants:
         print(f"Running {index}: {test_option}")

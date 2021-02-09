@@ -55,4 +55,9 @@ static OpCreator<ReplicatedAllGatherOp> ReplicatedAllGatherOpCreator(
     },
     true);
 
+ReplicatedTensorShardingIndices
+ReplicatedAllGatherOp::getReplicatedTensorShardingIndices() const {
+  return {{{ReplicatedAllGatherOp::getInIndex()}, {}}};
+}
+
 } // namespace popart

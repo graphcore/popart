@@ -119,17 +119,20 @@ def run_model(tmpdir,
 
     proto = builder.getModelProto()
 
+    patterns = popart.Patterns(popart.PatternsLevel.All)
+    # patterns.InPlace = False
+
     with tu.create_test_device(num_replicas * num_ipus,
                                pattern=popart.SyncPattern.Full) as device:
 
-        session = popart.TrainingSession(
-            fnModel=proto,
-            dataFlow=popart.DataFlow(1, dfAnchors),
-            optimizer=optimizer,
-            loss=l1,
-            patterns=popart.Patterns(popart.PatternsLevel.All),
-            userOptions=opts,
-            deviceInfo=device)
+        session = popart.TrainingSession(fnModel=proto,
+                                         dataFlow=popart.DataFlow(
+                                             1, dfAnchors),
+                                         optimizer=optimizer,
+                                         loss=l1,
+                                         patterns=patterns,
+                                         userOptions=opts,
+                                         deviceInfo=device)
 
         session.prepareDevice()
         session.weightsFromHost()
@@ -402,18 +405,20 @@ def test_replicated_adam_weight_update(tmpdir):
 
 # Check that 2 batches on 1 replica or 1 batch per replica on 2 replicas
 # results in the same updated weight with SGD1
+@pytest.mark.parametrize("isConst", [False, True])
 @tu.requires_ipu
-def test_replicated_lamb_weight_update(tmpdir):
-
+def test_replicated_lamb_weight_update(tmpdir, isConst):
+    # Test both const & non-const optimizer parameters
     optimizer_dict = {
-        "defaultLearningRate": (0.005, True),
-        "defaultBeta1": (0.7, True),
-        "defaultBeta2": (0.8, True),
-        "defaultWeightDecay": (0.1, True),
-        "defaultEps": (1e-6, True),
-        "lossScaling": (10.0, True),
+        "defaultLearningRate": (0.005, isConst),
+        "defaultBeta1": (0.7, isConst),
+        "defaultBeta2": (0.8, isConst),
+        "defaultWeightDecay": (0.1, isConst),
+        "defaultEps": (1e-6, isConst),
+        "lossScaling": (10.0, isConst),
     }
 
+    # Off-chip, but no RTS (1x replica)
     run_model(tmpdir,
               'phased.onnx',
               execution_mode="phased",
@@ -425,6 +430,8 @@ def test_replicated_lamb_weight_update(tmpdir):
               weight_tensor_location_settings=offChipLocation,
               optimizer_state_tensor_location_settings=offChipLocation,
               accumulator_tensor_location_settings=offChipLocation)
+
+    # Off-chip, but no RTS (2x replicas)
     run_model(tmpdir,
               'phased_replicated.onnx',
               execution_mode="phased",
@@ -436,6 +443,8 @@ def test_replicated_lamb_weight_update(tmpdir):
               weight_tensor_location_settings=offChipLocation,
               optimizer_state_tensor_location_settings=offChipLocation,
               accumulator_tensor_location_settings=offChipLocation)
+
+    # Weights and optimizer off-chip, RTS
     run_model(tmpdir,
               'phased_replicated_rws.onnx',
               execution_mode="phased",
@@ -447,6 +456,8 @@ def test_replicated_lamb_weight_update(tmpdir):
               weight_tensor_location_settings=offChipRtsLocation,
               optimizer_state_tensor_location_settings=offChipRtsLocation,
               accumulator_tensor_location_settings=offChipLocation)
+
+    # Weights and optimizer off-chip, accumulator off chip, RTS
     run_model(tmpdir,
               'phased_replicated_rws_acc.onnx',
               execution_mode="phased",
@@ -461,13 +472,31 @@ def test_replicated_lamb_weight_update(tmpdir):
               optimizer_state_tensor_location_settings=offChipRtsLocation,
               accumulator_tensor_location_settings=offChipLocation)
 
+    # Weights on-chip, non-RTS, optimizer state off-chip, RTS
+    run_model(tmpdir,
+              'phased_replicated_rws_acc_nw.onnx',
+              execution_mode="phased",
+              batch_size=1,
+              num_replicas=2,
+              num_iterations=5,
+              enable_accum=True,
+              accum_factor=2,
+              optimizer=popart.Adam(optimizer_dict, popart.AdamMode.Lamb),
+              activation_tensor_location_settings=offChipLocation,
+              weight_tensor_location_settings=onChipLocation,
+              optimizer_state_tensor_location_settings=offChipRtsLocation,
+              accumulator_tensor_location_settings=onChipLocation)
+
     phased = onnx.load(str(tmpdir / 'phased.onnx'))
     phased_replicated = onnx.load(str(tmpdir / 'phased_replicated.onnx'))
     phased_replicated_rws = onnx.load(
         str(tmpdir / 'phased_replicated_rws.onnx'))
     phased_replicated_rws_acc = onnx.load(
         str(tmpdir / 'phased_replicated_rws_acc.onnx'))
+    phased_replicated_rws_acc_nw = onnx.load(
+        str(tmpdir / 'phased_replicated_rws_acc_nw.onnx'))
 
     check_model(phased, phased_replicated)
     check_model(phased, phased_replicated_rws)
     check_model(phased, phased_replicated_rws_acc)
+    check_model(phased, phased_replicated_rws_acc_nw)

@@ -26,9 +26,9 @@ template <> DataType getDataType<std::string>() { return DataType::STRING; }
 TensorInfo::TensorInfo(DataType t, const Shape &s)
     : dataTypeInfo(&getDataTypeInfoMap().at(t)), shape_v(s), meta_shape_v() {}
 
-TensorInfo::TensorInfo(DataType t, const Shape &s, const Shape &rts_s)
+TensorInfo::TensorInfo(DataType t, const Shape &s, const Shape &meta_s)
     : dataTypeInfo(&getDataTypeInfoMap().at(t)), shape_v(s),
-      meta_shape_v(rts_s) {}
+      meta_shape_v(meta_s) {}
 
 TensorInfo::TensorInfo(std::string s_type, const Shape &s)
     : TensorInfo(dataTypeFromString(s_type), s) {}
@@ -236,7 +236,23 @@ TensorInfo npOut(const TensorInfo &i0,
     throw error(ss.str(), i0.shape(), i1.shape());
   }
 
-  return {i0.dataType(), npOut(i0.shape(), i1.shape(), debugName)};
+  // Propagate meta shape correctly (used for replicated tensor sharding)
+  Shape metaShape;
+
+  if (i0.metaShape().size() && i1.metaShape().size()) {
+    if (i0.metaShape() != i1.metaShape()) {
+      throw error(
+          "Incompatible meta shapes {} and {}", i0.metaShape(), i1.metaShape());
+    } else {
+      metaShape = i0.metaShape();
+    }
+  } else if (i0.metaShape().size()) {
+    metaShape = i0.metaShape();
+  } else if (i1.metaShape().size()) {
+    metaShape = i1.metaShape();
+  }
+
+  return {i0.dataType(), npOut(i0.shape(), i1.shape(), debugName), metaShape};
 }
 
 // Compute the reduction axis for a reduction op.
@@ -327,7 +343,7 @@ const std::string &TensorInfo::data_type_lcase() const {
 
 const Shape &TensorInfo::shape() const { return shape_v; }
 
-const Shape &TensorInfo::meta_shape() const { return meta_shape_v; }
+const Shape &TensorInfo::metaShape() const { return meta_shape_v; }
 
 int64_t TensorInfo::nbytes() const {
   return nelms() * static_cast<int64_t>(dataTypeInfo->nbytes());
@@ -340,10 +356,10 @@ void TensorInfo::set(DataType t, const Shape &s) {
   shape_v      = s;
 }
 
-void TensorInfo::set(DataType t, const Shape &s, const Shape &rts_s) {
+void TensorInfo::set(DataType t, const Shape &s, const Shape &meta_s) {
   dataTypeInfo = &getDataTypeInfoMap().at(t);
   shape_v      = s;
-  meta_shape_v = rts_s;
+  meta_shape_v = meta_s;
 }
 
 const std::map<DataType, DataTypeInfo> &getDataTypeInfoMap() {

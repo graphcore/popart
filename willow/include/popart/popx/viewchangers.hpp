@@ -17,6 +17,9 @@ public:
   virtual bool operator==(const ViewChanger &rhs) const {
     return typeid(&rhs) == typeid(ViewChanger);
   }
+  virtual bool operator!=(const ViewChanger &rhs) const {
+    return !(*this == rhs);
+  }
 };
 
 // Chain of view changers
@@ -28,6 +31,7 @@ public:
   bool empty() const { return viewChangers.empty(); }
 
   bool operator==(const ViewChangers &rhs) const;
+  bool operator!=(const ViewChangers &rhs) const;
 
 private:
   std::vector<std::shared_ptr<ViewChanger>> viewChangers;

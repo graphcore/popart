@@ -613,7 +613,7 @@ void Ir::verifyTensorProducerConnectivity() const {
 
     if (tensor->hasProducer() && tensor->tensorType() == TensorType::Variable) {
       auto op = tensor->getProducer();
-      if (!dynamic_cast<VarUpdateOp *>(op)) {
+      if (!dynamic_cast<VarUpdateOp *>(op) && !dynamic_cast<InitOp *>(op)) {
         throw error(
             "Tensor {} is a variable tensor, but has op {} as a producer",
             tensor->str(),
@@ -1990,7 +1990,7 @@ bool Ir::streamingIsDisabledForTensor(const Tensor *tensor) const {
     return true;
   }
 
-  // 3. The tensor is cached
+  // 3. The tensor is remote
   if (tensor->tensorLocationInfo.isRemote()) {
     return true;
   }
@@ -2015,6 +2015,11 @@ bool Ir::storingIsDisabledForTensor(const Tensor *tensor) const {
   //    has turned off streaming for this kind of tensor
   if ((tensor->isOptimizerStateTensor() || tensor->isAccumulatorTensor()) &&
       getSessionOptions().disableGradAccumulationTensorStreams) {
+    return true;
+  }
+
+  // 3. Tensor is variable but has a producer
+  if (tensor->hasProducer()) {
     return true;
   }
 
@@ -2765,8 +2770,6 @@ void Ir::constructBackwards() {
       case TensorType::Const: {
         break;
       }
-      case TensorType::Cache:
-      case TensorType::Momentum:
       case TensorType::Unknown:
       case TensorType::N:
         throw error("can't currently register gradient of " +

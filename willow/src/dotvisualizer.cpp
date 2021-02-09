@@ -54,9 +54,6 @@ std::string DotVisualizer::getTensorNodeColor(TensorType type) const {
     return "\"gold\"";
   case TensorType::Variable:
     return "\"blue\"";
-  case TensorType::Cache:
-    return "\"green\"";
-  case TensorType::Momentum:
   case TensorType::Unknown:
   case TensorType::ActGrad:
   case TensorType::N:

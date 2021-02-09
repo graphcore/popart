@@ -27,7 +27,8 @@ void AccumulateOpx::grow(poplar::program::Sequence &prog) const {
   auto isConst = accumulateOp.getFactor().isConst();
 
   auto accum = getInTensor(VarUpdateOp::getVarToUpdateInIndex());
-  auto grad  = getInTensor(VarUpdateWithUpdaterOp::getUpdaterInIndex());
+
+  auto grad = getInTensor(VarUpdateWithUpdaterOp::getUpdaterInIndex());
 
   switch (accumulateOp.getAccumulationType()) {
   case AccumulationType::Add: {

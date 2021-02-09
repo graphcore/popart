@@ -1,4 +1,5 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
+#include <popops/Zero.hpp>
 #include <popart/error.hpp>
 #include <popart/ir.hpp>
 #include <popart/op/collectives/replicatedallgather.hpp>
@@ -34,12 +35,18 @@ void ReplicatedReduceScatterOpx::grow(poplar::program::Sequence &prog) const {
             getCollectiveLinkedGroup().first)});
     setOutViewChangers(ReplicatedReduceScatterOp::getOutIndex(), viewChangers);
 
-    if (!hasInViewChangers(ReplicatedReduceScatterOp::getInIndex())) {
+    if (!hasInViewChangers(ReplicatedReduceScatterOp::getInIndex()) ||
+        getInViewChangers(ReplicatedReduceScatterOp::getInIndex()) !=
+            viewChangers) {
+      logging::opx::trace("ReplicatedReduceScatterOpx::grow rearranging {}",
+                          inId(ReplicatedReduceScatterOp::getInIndex()));
+
       // Tensor not rearranged for reduceScatter yet, do it now
       auto cbr = createCollectiveBalancedReorder(toReduceScatter);
       auto c   = cbr->createCollectivesTensor(
           toReduceScatter.elementType(),
           inId(ReplicatedReduceScatterOp::getInIndex()));
+      popops::zero(graph(), c, prog, debugContext());
       auto ref = cbr->undoRearrangeForCollective(c);
       prog.add(poplar::program::Copy(
           toReduceScatter.flatten(), ref.flatten(), false, debugContext()));
@@ -87,7 +94,8 @@ poplar::Tensor ReplicatedReduceScatterOpx::createInput(
 
   const auto &rrsOp = getOp<ReplicatedReduceScatterOp>();
   const auto &type  = popType(rrsOp.inTensor(inIndex)->info);
-  return cbr->createCollectivesTensor(type, dnai.getPathName());
+  auto input        = cbr->createCollectivesTensor(type, dnai.getPathName());
+  return input.reshape(rrsOp.inInfo(inIndex).shape_szt());
 }
 
 std::vector<TensorId>

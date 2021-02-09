@@ -21,11 +21,9 @@ namespace popart {
 enum class TensorType {
   ActGrad = 0, // an activation or a gradient, basically any output of an Op
   Const,
-  Momentum,
   Stream,
   Unknown,
   Variable,
-  Cache,
   N // number of tensor types
 };
 
@@ -187,6 +185,9 @@ public:
   bool isRandomSeedTensor() const;
   bool isOptimizerStateTensor() const;
   bool isAccumulatorTensor() const;
+  // Returns true for tensors that are weights (variables),
+  // but not optimizer states or accumulators
+  bool isWeightTensor() const;
   bool isAnchored() const;
   bool hasTensorData() const;
   TensorData *tensorData();

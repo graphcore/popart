@@ -72,16 +72,12 @@ popart::cap::TensorType toCapnpTensorType(popart::TensorType type) {
     return popart::cap::TensorType::ACT_GRAD;
   case popart::TensorType::Const:
     return popart::cap::TensorType::CONSTANT;
-  case popart::TensorType::Momentum:
-    return popart::cap::TensorType::MOMENTUM;
   case popart::TensorType::Stream:
     return popart::cap::TensorType::STREAM;
   case popart::TensorType::Unknown:
     return popart::cap::TensorType::UNKNOWN;
   case popart::TensorType::Variable:
     return popart::cap::TensorType::VARIABLE;
-  case popart::TensorType::Cache:
-    return popart::cap::TensorType::CACHE;
   case popart::TensorType::N:
     return popart::cap::TensorType::N;
   }
@@ -95,16 +91,12 @@ popart::TensorType toPopartTensorType(popart::cap::TensorType type) {
     return popart::TensorType::ActGrad;
   case popart::cap::TensorType::CONSTANT:
     return popart::TensorType::Const;
-  case popart::cap::TensorType::MOMENTUM:
-    return popart::TensorType::Momentum;
   case popart::cap::TensorType::STREAM:
     return popart::TensorType::Stream;
   case popart::cap::TensorType::UNKNOWN:
     return popart::TensorType::Unknown;
   case popart::cap::TensorType::VARIABLE:
     return popart::TensorType::Variable;
-  case popart::cap::TensorType::CACHE:
-    return popart::TensorType::Cache;
   case popart::cap::TensorType::N:
     return popart::TensorType::N;
   }
@@ -385,17 +377,19 @@ void serializeExecutable(std::ostream &out,
 
     size_t i = 0;
     for (auto &id : variableTensors) {
-      Tensor *tensor     = ir.getTensor(id);
-      auto tensorBuilder = tensors[i];
+      Tensor *tensor = ir.getTensor(id);
+      if (!tensor->hasProducer()) {
+        auto tensorBuilder = tensors[i];
 
-      // We don't store the tensorData for the variable tensors
-      // with initializers since they will be loaded from the onnx file.
-      bool isInitializer = popart::onnxutil::isInitializer(onnxModel, id);
-      bool serializeTensorData =
-          !isInitializer || tensor->isOptimizerStateTensor();
+        // We don't store the tensorData for the variable tensors
+        // with initializers since they will be loaded from the onnx file.
+        bool isInitializer = popart::onnxutil::isInitializer(onnxModel, id);
+        bool serializeTensorData =
+            !isInitializer || tensor->isOptimizerStateTensor();
 
-      serializeTensor(tensor, tensorBuilder, serializeTensorData);
-      ++i;
+        serializeTensor(tensor, tensorBuilder, serializeTensorData);
+        ++i;
+      }
     }
 
     for (auto &id : ir.getDataFlow().anchors()) {

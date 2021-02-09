@@ -202,7 +202,7 @@ private:
 
   // Task to create a poplar::Tensor from nothing, choosing
   // the correct create call (createWeights, addLinearly, etc)
-  InitTensorPtr getInitTensorCreator(Tensor *);
+  InitTensorPtrs getInitTensorCreators(Tensor *);
 
   // Task to create a poplar::Tensor with methods defined by InitTensorPtrs
   PriTask initTensorTask(InitTensorPtrs inits);
@@ -464,7 +464,7 @@ public:
 
   // Get a single creator candidate for creating a tensor
   // Will throw an error if multiple candidates that do not agree are found
-  ICreatorCandidatePtr getTensorCreator(Tensor *tensor) const;
+  std::vector<ICreatorCandidatePtr> getTensorCreators(Tensor *tensor) const;
 
   poplar::Tensor getConst(poplar::Graph &graph,
                           const poplar::Type &type,

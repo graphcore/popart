@@ -24,7 +24,9 @@ Executablex::Executablex(IrLowering &ir_lowering_)
       executionMode(ir_lowering.ir().getExecutionMode()) {
   for (auto &id : ir().getTensorIds(TensorType::Variable)) {
     Tensor *tensor = ir().getTensor(id);
-    weightTensors.push_back(tensor);
+    if (!tensor->hasProducer()) {
+      weightTensors.push_back(tensor);
+    }
   }
 
   for (auto &id : ir().getDataFlow().anchors()) {
@@ -62,7 +64,9 @@ Executablex::Executablex(
   weightTensors.reserve(weightTensorIds.size());
   for (auto &id : weightTensorIds) {
     Tensor *tensor = getTensor(id);
-    weightTensors.push_back(tensor);
+    if (!tensor->hasProducer()) {
+      weightTensors.push_back(tensor);
+    }
   }
 
   for (auto &id : ir().getDataFlow().anchors()) {

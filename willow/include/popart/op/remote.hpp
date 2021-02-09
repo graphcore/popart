@@ -32,6 +32,9 @@ public:
 
   bool canShard() const final { return true; }
 
+  ReplicatedTensorShardingIndices
+  getReplicatedTensorShardingIndices() const override;
+
 private:
   RemoteBufferId remotebuffer_id;
 };
@@ -65,6 +68,9 @@ public:
   RemoteBufferId getRemoteBufferId() const { return remotebuffer_id; }
 
   bool canShard() const final { return true; }
+
+  ReplicatedTensorShardingIndices
+  getReplicatedTensorShardingIndices() const override;
 
 private:
   RemoteBufferId remotebuffer_id;
@@ -115,6 +121,9 @@ public:
   bool canShard() const final { return false; }
 
   bool hasSideEffect() const override { return numStores() > 0; }
+
+  ReplicatedTensorShardingIndices
+  getReplicatedTensorShardingIndices() const override;
 
 private:
   std::vector<RemoteBufferId> remotebufferIds;

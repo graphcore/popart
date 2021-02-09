@@ -44,6 +44,7 @@ void ReduceOp::setup() {
 
   Shape output_shape;
   output_shape.reserve(input_shape.size());
+  backward_shape.clear();
   backward_shape.reserve(input_shape.size());
 
   for (int i = 0; i < input_shape.size(); ++i) {

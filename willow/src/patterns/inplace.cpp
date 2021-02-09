@@ -365,7 +365,7 @@ OpsBeforeKey Inplace::getNewTopoCons(Op *op, OperatorIdentifier inpid) const {
     std::stringstream ss;
     ss << "Modifier regions for " << op->str() << ": [ ";
     for (auto &x : modifier_regions) {
-      ss << x.first->str() << ' ';
+      ss << "(" << x.first->str() << ": " << x.second << ")";
     }
     ss << "]";
     logging::pattern::debug(ss.str());
@@ -375,7 +375,7 @@ OpsBeforeKey Inplace::getNewTopoCons(Op *op, OperatorIdentifier inpid) const {
     std::stringstream ss;
     ss << "Consumer regions for " << op->str() << ": [ ";
     for (auto &x : consumer_regions) {
-      ss << x.first->str() << ' ';
+      ss << "(" << x.first->str() << ": " << x.second << ")";
     }
     ss << "]";
     logging::pattern::debug(ss.str());

@@ -71,12 +71,13 @@ std::vector<Op *> TopoCons::getTiedBefores(Op *after) const {
   return getValsOrEmpty(after, valsBefore, true);
 }
 
-void TopoCons::transfer(Op *beforeTransfer, Op *afterTransfer) {
-  transferToMultiple(beforeTransfer, {afterTransfer});
+void TopoCons::transfer(Op *beforeTransfer, Op *afterTransfer, bool removeOld) {
+  transferToMultiple(beforeTransfer, {afterTransfer}, removeOld);
 }
 
 void TopoCons::transferToMultiple(Op *beforeTransfer,
-                                  const std::vector<Op *> &afterTransfer) {
+                                  const std::vector<Op *> &afterTransfer,
+                                  bool removeOld) {
 
   if (!getBefores(beforeTransfer).empty() ||
       !getAfters(beforeTransfer).empty()) {
@@ -113,7 +114,9 @@ void TopoCons::transferToMultiple(Op *beforeTransfer,
     }
   }
 
-  remove(beforeTransfer);
+  if (removeOld) {
+    remove(beforeTransfer);
+  }
 }
 
 bool TopoCons::contains(Op *before, Op *after) const {

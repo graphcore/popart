@@ -8,12 +8,10 @@ using TensorId = Text;
 enum TensorType{
   actGrad @0;
   constant @1;
-  momentum @2;
-  stream @3;
-  unknown @4;
-  variable @5;
-  cache @6;
-  n @7;
+  stream @2;
+  unknown @3;
+  variable @4;
+  n @5;
 }
 
 

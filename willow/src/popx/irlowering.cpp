@@ -372,11 +372,18 @@ void IrLowering::verifyTaskOrder(const std::vector<TaskId> &taskOrder) const {
   std::set<Op *> recomputeSeen;
 
   for (auto taskId : taskOrder) {
-    auto id_ops = contextOpRegistry.find({ExecutionContext::Normal, taskId});
-    if (id_ops == contextOpRegistry.end()) {
-      continue;
+    std::vector<Op *> taskOps;
+    for (ExecutionContext context : {ExecutionContext::WeightsFromHostFragment,
+                                     ExecutionContext::WeightsToHostFragment,
+                                     ExecutionContext::Normal,
+                                     ExecutionContext::AccumulateOuterFragment,
+                                     ExecutionContext::Subgraph}) {
+      auto id_ops = contextOpRegistry.find({context, taskId});
+      if (id_ops != contextOpRegistry.end()) {
+        taskOps = id_ops->second;
+        break;
+      }
     }
-    auto &taskOps = id_ops->second;
 
     for (auto op : taskOps) {
       // If this is the first time we are seeing this op, it is not a recompute
@@ -938,7 +945,8 @@ IrLowering::getCreatorEndpoints(const Tensor *startTensor,
   return endpoints;
 }
 
-ICreatorCandidatePtr IrLowering::getTensorCreator(Tensor *tensor) const {
+std::vector<ICreatorCandidatePtr>
+IrLowering::getTensorCreators(Tensor *tensor) const {
   // Search of the graph to get the candidate Opxs that
   // know how to create this tensor.
   // The pathFromInput argument is an empty vector, as
@@ -962,7 +970,17 @@ ICreatorCandidatePtr IrLowering::getTensorCreator(Tensor *tensor) const {
                               candidates.front()->str(),
                               candidates.front()->getMaxCreatorPriority());
       // A single top-priority candidate can initialize the tensor fully.
-      return candidates.front();
+      std::vector<ICreatorCandidatePtr> topCandidates;
+
+      for (auto candidate : candidates) {
+        if (candidate->getNumElems() == tensor->info.nelms() &&
+            candidate->getMaxCreatorPriority() ==
+                candidates.front()->getMaxCreatorPriority()) {
+          topCandidates.push_back(candidate);
+        }
+      }
+
+      return topCandidates;
     } else {
       logging::devicex::trace("Multiple candidates needed.");
       // Multiple creators need to be concatenated to form the full tensor.
@@ -975,35 +993,43 @@ ICreatorCandidatePtr IrLowering::getTensorCreator(Tensor *tensor) const {
       }
       logging::devicex::trace("Using multi-candidate {}.",
                               multiCandidate->str());
-      return multiCandidate;
+      return {multiCandidate};
     }
   } else {
     logging::devicex::trace("No suitable candidate.");
-    return nullptr;
+    return {};
   }
 }
 
 // Design decision : leave the option for a Tensor to be
 // created based on complex global criteria open.
-InitTensorPtr IrLowering::getInitTensorCreator(Tensor *tensor) {
-  auto candidate = getTensorCreator(tensor);
+InitTensorPtrs IrLowering::getInitTensorCreators(Tensor *tensor) {
+  auto candidates = getTensorCreators(tensor);
 
   // 1. A unique candidate creator will create the tensor
   // 2. The tensor will be unwound (have its layout modified)
   //    by view-changing opxs on the path from the input to
   //    the candidate candidate
-  if (candidate) {
+  if (candidates.size()) {
     // the inputs of creator which must have poplar::Tensors
     // before creator creates input tensor at index inIndex.
-    logging::devicex::debug(
-        "Creator candidate for poplar::Tensor {} is {}, must exist: {}",
-        tensor->id,
-        candidate->str(),
-        candidate->mustExistBeforeCreate());
 
-    return std::make_shared<InitTensorCreator>(candidate, tensor->id, 1.0f);
+    InitTensorPtrs creators;
+
+    for (auto candidate : candidates) {
+      logging::devicex::debug(
+          "Creator candidate for poplar::Tensor {} is {}, must exist: {}",
+          tensor->id,
+          candidate->str(),
+          candidate->mustExistBeforeCreate());
+      auto creator =
+          std::make_shared<InitTensorCreator>(candidate, tensor->id, 1.0f);
+      creators.insert(creator);
+    }
+
+    return creators;
   } else {
-    return std::make_shared<InitTensorLinear>(tensor->id, 1.0f);
+    return {std::make_shared<InitTensorLinear>(tensor->id, 1.0f)};
   }
 }
 
@@ -1513,8 +1539,10 @@ void IrLowering::addOpTasks(PriTasks &tasks) {
       if (!tasks.contains(initTensorTaskId(std::get<1>(opInput)))) {
         if (std::get<0>(opInput).empty()) {
           // No tensor to clone or alias from
-          initTensorMap[std::get<1>(opInput)].insert(
-              getInitTensorCreator(ir().getTensor(std::get<1>(opInput))));
+          auto creators =
+              getInitTensorCreators(ir().getTensor(std::get<1>(opInput)));
+          initTensorMap[std::get<1>(opInput)].insert(creators.begin(),
+                                                     creators.end());
         } else {
           // Tensor can be cloned or aliased
           if (std::get<2>(opInput)) {
@@ -1541,8 +1569,10 @@ void IrLowering::addOpTasks(PriTasks &tasks) {
       if (!tasks.contains(initTensorTaskId(std::get<1>(opOutput)))) {
         if (std::get<0>(opOutput).empty()) {
           // No tensor to clone or alias from
-          initTensorMap[std::get<1>(opOutput)].insert(
-              getInitTensorCreator(ir().getTensor(std::get<1>(opOutput))));
+          auto creators =
+              getInitTensorCreators(ir().getTensor(std::get<1>(opOutput)));
+          initTensorMap[std::get<1>(opOutput)].insert(creators.begin(),
+                                                      creators.end());
         } else {
           // Tensor can be cloned or aliased
           if (std::get<2>(opOutput)) {
@@ -2712,11 +2742,12 @@ void IrLowering::prepareGraph() {
   // 2) set initial value (if using synthetic data).
   for (auto id : ir().getTensorIds(TensorType::Variable)) {
     Tensor *tensor = ir().getTensor(id);
-    if (tensor->tensorLocationInfo.isRemote())
+    if (tensor->tensorLocationInfo.isRemote() || tensor->hasProducer()) {
       continue;
+    }
 
     // 1
-    tasks.add(initTensorTask({getInitTensorCreator(tensor)}));
+    tasks.add(initTensorTask(getInitTensorCreators(tensor)));
 
     if (!ir().streamingIsDisabledForTensor(id)) {
       // 2
@@ -2741,7 +2772,7 @@ void IrLowering::prepareGraph() {
     logging::devicex::debug("Adding initTensorTask for Const {}", id);
     Tensor *tensor = ir().getTensor(id);
     // 1
-    tasks.add(initTensorTask({getInitTensorCreator(tensor)}));
+    tasks.add(initTensorTask(getInitTensorCreators(tensor)));
     // 2
     tasks.add(setInitTensorValTask(tensor));
   }
@@ -2759,7 +2790,7 @@ void IrLowering::prepareGraph() {
         logging::devicex::trace("Adding {} output initTensorTask for {}",
                                 op->debugName(),
                                 t_inds.first->id);
-        tasks.add(initTensorTask({getInitTensorCreator(t_inds.first)}));
+        tasks.add(initTensorTask(getInitTensorCreators(t_inds.first)));
       }
     }
   }
@@ -2774,7 +2805,7 @@ void IrLowering::prepareGraph() {
     Tensor *tensor = ir().getTensor(id);
 
     // 1
-    tasks.add(initTensorTask({getInitTensorCreator(tensor)}));
+    tasks.add(initTensorTask(getInitTensorCreators(tensor)));
     logging::devicex::debug("Adding initTensorTask for Stream {}", id);
 
     // 2

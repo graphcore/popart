@@ -20,6 +20,9 @@ public:
   void appendOutlineAttributes(OpSerialiserBase &) const override;
   CollectiveOperator getCollectiveOp() const { return op; }
 
+  ReplicatedTensorShardingIndices
+  getReplicatedTensorShardingIndices() const override;
+
 protected:
   CollectiveOperator op;
 };

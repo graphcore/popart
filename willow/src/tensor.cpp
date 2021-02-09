@@ -250,9 +250,6 @@ std::ostream &operator<<(std::ostream &os, const TensorType &tt) {
   case TensorType::Const:
     os << "Const";
     break;
-  case TensorType::Momentum:
-    os << "Momentum";
-    break;
   case TensorType::Stream:
     os << "Stream";
     break;
@@ -261,9 +258,6 @@ std::ostream &operator<<(std::ostream &os, const TensorType &tt) {
     break;
   case TensorType::Variable:
     os << "Variable";
-    break;
-  case TensorType::Cache:
-    os << "Cache";
     break;
   case TensorType::N:
   default:
@@ -605,6 +599,16 @@ bool Tensor::isAccumulatorTensor() const {
   return false;
 }
 
+bool Tensor::isWeightTensor() const {
+  if (tensorType() != TensorType::Variable) {
+    return false;
+  }
+  if (isAccumulatorTensor() || isOptimizerStateTensor()) {
+    return false;
+  }
+  return true;
+}
+
 bool Tensor::isAnchored() const {
   auto &anchors = graph.getIr().getDataFlow().anchors();
   return std::find(anchors.begin(), anchors.end(), id) != anchors.end();
@@ -695,11 +699,9 @@ std::map<TensorType, TensorTypeInfo> initTensorTypeInfoMap() {
   std::map<TensorType, TensorTypeInfo> tensor_types_m = {
       {TensorType::ActGrad, {TensorType::ActGrad, "ActGrad"}},
       {TensorType::Const, {TensorType::Const, "Const"}},
-      {TensorType::Momentum, {TensorType::Momentum, "Momentum"}},
       {TensorType::Stream, {TensorType::Stream, "Stream"}},
       {TensorType::Unknown, {TensorType::Unknown, "Unknown"}},
-      {TensorType::Variable, {TensorType::Variable, "Variable"}},
-      {TensorType::Cache, {TensorType::Cache, "Cache"}}};
+      {TensorType::Variable, {TensorType::Variable, "Variable"}}};
   if (tensor_types_m.size() != static_cast<int64_t>(TensorType::N)) {
     throw error("missing element in TensorTypes");
   }

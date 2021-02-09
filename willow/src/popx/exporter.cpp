@@ -141,7 +141,8 @@ createBuilderAndExportWeights(const Devicex &device,
   // Listing input / output parameters
   for (auto id : device.ir().getTensorIds(TensorType::Variable)) {
     Tensor *tensor = device.ir().getTensor(id);
-    if (!device.ir().streamingIsDisabledForTensor(id)) {
+    if (!tensor->hasProducer() &&
+        !device.ir().streamingIsDisabledForTensor(id)) {
       ipu::TensorInfo info;
       info.SetHandle(device.h2dId(tensor->id));
       info.SetName(tensor->id);

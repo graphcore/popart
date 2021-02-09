@@ -38,7 +38,7 @@ public:
 
   // replace all topological constraints involving "beforeTransfer"
   // with "afterTransfer", on both ends of topological constraints
-  void transfer(Op *beforeTransfer, Op *afterTransfer);
+  void transfer(Op *beforeTransfer, Op *afterTransfer, bool removeOld = true);
 
   // Returns true if there is a constraints on this operation
   bool hasConstraint(Op *op);
@@ -47,7 +47,8 @@ public:
   // with afterTransfer.size() constraints, one for each element of
   // afterTransfer
   void transferToMultiple(Op *beforeTransfer,
-                          const std::vector<Op *> &afterTransfer);
+                          const std::vector<Op *> &afterTransfer,
+                          bool removeOld = true);
 
   bool contains(Op *before, Op *after) const;
   std::vector<Op *> getAfters(Op *before) const;

@@ -26,6 +26,10 @@ bool ViewChangers::operator==(const ViewChangers &rhs) const {
   return true;
 }
 
+bool ViewChangers::operator!=(const ViewChangers &rhs) const {
+  return !(*this == rhs);
+}
+
 ViewChangers::ViewChangers() {}
 
 ViewChangers::ViewChangers(

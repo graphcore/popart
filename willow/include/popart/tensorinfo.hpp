@@ -188,7 +188,7 @@ public:
   void set(DataType, const Shape &, const Shape &);
   const Shape &shape() const;
   //
-  const Shape &meta_shape() const;
+  const Shape &metaShape() const;
   // A helper functions for back-ends which
   // prefer the size as (unsigned) size_t.
   std::vector<size_t> shape_szt() const;

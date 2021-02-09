@@ -23,6 +23,11 @@ void RemoteStoreOp::appendOutlineAttributes(OpSerialiserBase &os) const {
   os.appendAttribute("bufferid", remotebuffer_id);
 }
 
+ReplicatedTensorShardingIndices
+RemoteStoreOp::getReplicatedTensorShardingIndices() const {
+  return {{{RemoteStoreOp::getLocalTensorInIndex()}, {}}};
+}
+
 RemoteLoadOp::RemoteLoadOp(const OperatorIdentifier &_opid,
                            const Op::Settings &settings_,
                            RemoteBufferId rbid_)
@@ -83,6 +88,12 @@ view::RegMap RemoteLoadOp::bwdRegMap(InIndex inIndex, OutIndex outIndex) const {
     };
   }
   return Op::bwdRegMap(inIndex, outIndex);
+}
+
+ReplicatedTensorShardingIndices
+RemoteLoadOp::getReplicatedTensorShardingIndices() const {
+  return {{{RemoteLoadOp::getLocalTensorInIndex()},
+           {RemoteLoadOp::getLocalTensorOutIndex()}}};
 }
 
 RemoteExchangeOp::RemoteExchangeOp(
@@ -181,6 +192,22 @@ VGraphIdAndTileSet RemoteExchangeOp::getIntrospectionOutVirtualGraphId(
     std::set<OpId> visited) const {
   auto vgid = vgidAndTiles.at(out % (numLoads() + numStores()));
   return {vgid.first ? *vgid.first : unusedVGraphId, vgid.second};
+}
+
+ReplicatedTensorShardingIndices
+RemoteExchangeOp::getReplicatedTensorShardingIndices() const {
+  ReplicatedTensorShardingIndices indices;
+
+  for (auto &out : output->tensorMap()) {
+    indices.insert({{out.first}, {out.first}});
+  }
+
+  for (InIndex inIndex = numLoads(); inIndex < numLoads() + numStores();
+       ++inIndex) {
+    indices.insert({{inIndex}, {}});
+  }
+
+  return indices;
 }
 
 static OpDefinition::DataTypes T = {DataType::FLOAT,

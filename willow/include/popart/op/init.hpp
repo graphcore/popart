@@ -40,7 +40,14 @@ public:
   InitType getInitType() const { return init_type; }
 
   float getSubgraphValue() const final { return getLowSubgraphValue(); }
-  bool isOutlineable() const final { return tensor_type != TensorType::Cache; }
+
+  bool isOutlineable() const final {
+    // The deal here is that off-chip variables have an on-chip counterpart.
+    // Variables, for now, can only exist in the main graph.
+    // This is such that the behaviour between InitOp created on-chip variables
+    // and normal variables is consistent: They must exist in the main graph.
+    return tensor_type != TensorType::Variable;
+  }
   void appendOutlineAttributes(OpSerialiserBase &) const override;
 
   int getOutBatchAxis(OutIndex) const override { return batch_axis; }

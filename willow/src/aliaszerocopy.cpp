@@ -184,20 +184,18 @@ void AliasZeroCopy::apply() {
     }
   }
 
-  // Cache tensor aliasing
+  // Init tensor aliasing
   std::map<int64_t, std::set<Tensor *, PTensorCmp>, std::greater<int64_t>>
-      cacheCandidates;
+      initCandidates;
 
   for (Op *op : ir->getAllOps()) {
     if (dynamic_cast<InitOp *>(op)) {
-      Tensor *cache = op->output->tensor(InitOp::getOutIndex());
-      if (cache->getTensorTypeInfo()->type() == TensorType::Cache) {
-        cacheCandidates[cache->info.nelms()].insert(cache);
-      }
+      Tensor *init = op->output->tensor(InitOp::getOutIndex());
+      initCandidates[init->info.nelms()].insert(init);
     }
   }
 
-  for (auto &cacheCandidate : cacheCandidates) {
+  for (auto &cacheCandidate : initCandidates) {
     processTensorAliasGroups(cacheCandidate.second);
   }
 
@@ -759,8 +757,9 @@ AliasZeroCopy::getCandidateLivenessIntervals(Tensor *startTensor,
 }
 
 bool AliasZeroCopy::checkCandidatesCompatible(Tensor *ta, Tensor *tb) {
-  bool compatible = (ta->info == tb->info && ta->getVirtualGraphIdUnsafe() ==
-                                                 tb->getVirtualGraphIdUnsafe());
+  bool compatible =
+      (ta->info == tb->info && ta->getVirtualGraphIdAndTileSetUnsafe() ==
+                                   tb->getVirtualGraphIdAndTileSetUnsafe());
   if (!compatible)
     return false;
 
@@ -775,8 +774,9 @@ bool AliasZeroCopy::checkCandidatesCompatible(Tensor *ta, Tensor *tb) {
 }
 
 bool AliasZeroCopy::checkSubgraphInputCompatible(Tensor *ta, Tensor *tb) {
-  bool compatible = (ta->info == tb->info && ta->getVirtualGraphIdUnsafe() ==
-                                                 tb->getVirtualGraphIdUnsafe());
+  bool compatible =
+      (ta->info == tb->info && ta->getVirtualGraphIdAndTileSetUnsafe() ==
+                                   tb->getVirtualGraphIdAndTileSetUnsafe());
   if (!compatible) {
     return false;
   }
@@ -855,8 +855,9 @@ bool AliasZeroCopy::checkSubgraphInputCompatible(Tensor *ta, Tensor *tb) {
 }
 
 bool AliasZeroCopy::checkSubgraphOutputCompatible(Tensor *ta, Tensor *tb) {
-  bool compatible = (ta->info == tb->info && ta->getVirtualGraphIdUnsafe() ==
-                                                 tb->getVirtualGraphIdUnsafe());
+  bool compatible =
+      (ta->info == tb->info && ta->getVirtualGraphIdAndTileSetUnsafe() ==
+                                   tb->getVirtualGraphIdAndTileSetUnsafe());
   if (!compatible) {
     return false;
   }

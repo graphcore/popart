@@ -1011,6 +1011,8 @@ void Op::inheritPlacementAttributes(bool inheritSerializations) {
     Op *op                  = connectedOp.first;
     ConnectedOpRelation rel = connectedOp.second;
 
+    settings.executionContext = op->settings.executionContext;
+
     if (pipeline) {
       setPipelineStage(op->getOptionalPipelineStage());
     }
