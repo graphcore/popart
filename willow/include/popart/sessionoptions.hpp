@@ -384,7 +384,9 @@ enum class SubgraphCopyingStrategy {
   /// Copy inputs just before they are consumed and copy outputs as soon as
   /// they are produced. With this strategy subgraphs may be lowered into
   /// multiple Poplar functions.
-  JustInTime
+  JustInTime,
+  /// The number of SubgraphCopyingStrategy values.
+  N
 };
 
 /**
