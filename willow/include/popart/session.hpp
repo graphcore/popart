@@ -23,7 +23,7 @@ class Executablex;
 } // namespace popx
 
 /**
- * Session is a runtime instance the provides an interface for executing ONNX
+ * Session is a runtime instance that provides an interface for executing ONNX
  * graphs on IPU hardware.
  */
 class Session {
@@ -46,23 +46,23 @@ public:
   void setRandomSeed(uint64_t seedValue);
 
   /**
-   * Compiles the graph and exports it to the specified path
+   * Compiles the graph and exports it to the specified path.
    *
-   * This will create a poplar::Graph and compile the poplar::Executable before
-   * exporting the executable and metadata to allow offline running.
+   * This will create a \c poplar::Graph and compile the \c poplar::Executable
+   * before exporting the executable and metadata to allow offline running.
 
-   * \arg executablePath path to output the compiled executable and associated
-   *                     metadata: if empty, these will not be exported
-   * \arg weightsPath path to output the weights: if empty, these will not be
-   *                  exported
+   * \param executablePath Path to output the compiled executable and associated
+   *                     metadata. If empty, these will not be exported.
+   * \param weightsPath Path to output the weights. If empty, these will not be
+   *                  exported.
    */
   void compileAndExport(std::string executablePath, std::string weightsPath);
 
   /**
    * Prepare the network for execution.
    *
-   * This will create the poplar::Graph, poplar::Engine, and setting up
-   * poplar::Streams.
+   * This will create the \c poplar::Graph and \c poplar::Engine, and set up
+   * \c poplar::Streams.
    */
   void prepareDevice();
 
@@ -72,26 +72,32 @@ public:
   void weightsFromHost();
 
   /**
-   * Copy the weights to host from the device
+   * Copy the weights to host from the device.
    */
   void weightsToHost();
 
   /**
-   * Copy the cycle count tensor to host from the device
+   * Copy the cycle count tensor to host from the device.
    */
   uint64_t getCycleCount(std::string id = "");
 
   /**
    * Perform one step.
    *
-   * input data  : from address in stepIO.in
-   * debug name  : debug string to identify this run in logs
-   * output data : to addresses in stepIO.out
+   * Read input data from address in \c stepIO.in.
+   * Write the output data to addresses in \c stepIO.out.
+   *
+   * \param stepIO Input and output data.
+   * \param debugName Debug string to identify this run in logs.
    */
   void run(IStepIO &stepIO, std::string debugName = "");
 
   /**
-   * Export numElements from stepIO.in
+   * Export elements from \c stepIO.in.
+   *
+   * \param stepIO Data to be exported.
+   * \param numElements Number of elements to export.
+   * \param outputFilename File to export to.
    */
   void exportInputs(IStepIO &stepIO,
                     int64_t numElements,
@@ -109,7 +115,7 @@ public:
                                             const std::string &toLocation);
 
   /**
-   * Write current model to ONNX file
+   * Write current model to ONNX file.
    *
    * \param fn Path to file. Can be absolute or relative. If you plan to run
    *           your program in multiple processes simultaneously, you should
@@ -119,104 +125,104 @@ public:
   void modelToHost(const std::string &fn);
 
   /**
-   * get the TensorInfo on a Tensor
+   * Get the TensorInfo on a Tensor.
    */
   TensorInfo getInfo(TensorId) const;
 
   /**
-   * Retrieve the summary from from the poplar::Engine
+   * Retrieve the summary from from the \c poplar::Engine.
    *
    * The options which were given to the constructor will influence the
    * information in the report.
    *
-   * This may only be called after the `prepareDevice()` call has been made.
-   * \arg resetProfile Resets the execution profile
-   * \return a string containing the report
+   * This may only be called after the prepareDevice() call has been made.
+   * \param resetProfile Resets the execution profile.
+   * \return A string containing the report.
    */
   std::string getSummaryReport(bool resetProfile = true) const;
 
   /**
-   * Retrieve the graph report from the poplar::Engine
+   * Retrieve the graph report from the \c poplar::Engine.
    *
    * The options which were given to the constructor will influence the
    * information in the report.  By default a JSON format report is produced.
    *
-   * This may only be called after the `prepareDevice()` call has been made.
+   * This may only be called after the prepareDevice() call has been made.
    *
-   * \arg useCbor Produce a CBOR formatted report
-   * \return a string containing the graph (compilation) report
+   * \param useCbor Produce a CBOR formatted report.
+   * \return A string containing the graph (compilation) report.
    */
   std::string getGraphReport(bool useCbor = false) const;
 
   /**
-   * Retrieve the execution report from the poplar::Engine
+   * Retrieve the execution report from the \c poplar::Engine.
    *
    * The options which were given to the constructor will influence the
    * information in the report.  By default a JSON format report is produced.
    *
-   * This may only be called after the `prepareDevice()` call has been made.
+   * This may only be called after the prepareDevice() call has been made.
    *
-   * \arg useCbor Produce a CBOR formatted report
-   * \arg resetProfile Resets the execution profile
-   * \return a string containing the execution report
+   * \param useCbor Produce a CBOR formatted report.
+   * \param resetProfile Resets the execution profile.
+   * \return A string containing the execution report.
    */
   std::string getExecutionReport(bool useCbor      = false,
                                  bool resetProfile = true) const;
 
   /**
-   * Retrieve the serialized graph from the poplar::Engine
+   * Retrieve the serialized graph from the \c poplar::Engine.
    *
    * A JSON format report is produced.
    *
-   * This may only be called after the `prepareDevice()` call has been made.
+   * This may only be called after the prepareDevice() call has been made.
    *
-   * \return a string containing the serialized graph
+   * \return A string containing the serialized graph.
    */
   std::string getSerializedGraph() const;
 
   /**
-   * Retrieve the tensor tile mapping from the poplar::Graph
+   * Retrieve the tensor tile mapping from the \c poplar::Graph.
    *
-   * This may only be called after the `prepareDevice()` call has been made.
+   * This may only be called after the prepareDevice() call has been made.
    *
-   *  \return a TensorTileMap object for all tensors in the graph
+   *  \return A TensorTileMap object for all tensors in the graph.
    */
   TensorTileMap getTensorTileMap() const;
 
   /**
-   * Reset the weights with the weights in a ONNX model that differs to the
+   * Reset the weights with the weights in an ONNX model that differs from the
    * current model only in weights. This only updates the weights on the host;
    * the user still needs to call weightsFromHost() after this to update the
    * weights on the device.
    *
    * \param model Either an ONNX model protobuf, or the name of a file
-   *              containing an ONNX model protobuf
+   *              containing an ONNX model protobuf.
    * \param ignoreWeightsInModelWithoutCorrespondingHostWeight If true, do
    *        not error if there are initializers in the ONNX model with no
-   *        corresponding initializer tensor in the session's IR
+   *        corresponding initializer tensor in the session's IR.
    */
   void resetHostWeights(
       const std::string &model,
       const bool ignoreWeightsInModelWithoutCorrespondingHostWeight = false);
 
   /**
-   * Read the weights. Must have called weightsToHost first
+   * Read the weights. Must have called weightsToHost() first.
    *
-   * weight data : to addresses in weightsIo.out
+   * The weight data is written to the addresses in \c weightsIo.out.
    */
   void readWeights(const IWeightsIO &weightsIo);
 
   /**
-   * Write the weights. Must call weightsFromHost after
+   * Write the weights. Must call weightsFromHost() after this.
    *
-   * weight data : to addresses in weightsIo.out
+   * The weight data is written to the addresses in \c weightsIo.out.
    */
   void writeWeights(const IWeightsIO &weightsIo);
 
   /**
-   * Serizalise the ir graph to a string
+   * Serizalise the IR graph to a string.
    *
-   * format : the format to serialize
+   * \param format The format to use for serializing.
    */
   std::string serializeIr(IrSerializationFormat format);
 
@@ -230,13 +236,13 @@ protected:
   /**
    * Select a device type.
    *
-   * /param deviceInfo which defines the type of device to work on
+   * \param deviceInfo Defines the type of device to work on.
    */
   void setDevice(std::shared_ptr<DeviceInfo> deviceInfo);
 
   /**
-   * Attempts to load a serialized executable. If succesful then Ir
-   * preparation and `poplar::Graph` compilation are skipped.
+   * Attempts to load a serialized executable. If successful then IR
+   * preparation and \c poplar::Graph compilation are skipped.
    */
   bool tryLoadExecutable();
 
@@ -246,21 +252,21 @@ protected:
   void assertExecutableLoaded() const;
 
   /**
-   * abstraction of the computation, the Ir is where
+   * Abstraction of the computation. The Ir is where
    * all the compute graph optimisations, backwards pass construction,
    * re-computation growing etc. happens.
    */
   Ir ir;
 
   /**
-   * Implementation of the computation, for IPU back-end this is
-   * where calls to poplar are made.
+   * Implementation of the computation. For the IPU back-end this is
+   * where calls to Poplar are made.
    */
   std::unique_ptr<popx::Devicex> device_;
 
   /**
    * Implementation of the lowering of the PopART Ir to the
-   * poplar Graph.
+   * Poplar Graph.
    */
   std::unique_ptr<popx::IrLowering> lowering_;
 
@@ -272,17 +278,17 @@ protected:
   std::unique_ptr<popx::Executablex> executable_;
 
   /**
-   * Information about the device which this session uses
+   * Information about the device which this session uses.
    */
   std::shared_ptr<DeviceInfo> deviceInfo_;
 
   /**
-   * Flag to indicate if weightsFromHost has been called
+   * Flag to indicate if weightsFromHost() has been called
    */
   bool weightsFromHostCalled = false;
 
   /**
-   * Flag to indicate if run has been called
+   * Flag to indicate if run() has been called.
    */
   bool runCalled = false;
 };
@@ -295,15 +301,15 @@ public:
   ~InferenceSession() override;
 
   /** Create a runtime class for executing an ONNX graph on a set of IPU
-   *  hardware for inference
+   *  hardware for inference.
    *
    * \param model Either an ONNX model protobuf, or the name of a file
-   *              containing an ONNX model protobuf
+   *              containing an ONNX model protobuf.
    * \param inputShapeInfo Information about the shapes of input and output
-   *                       tensors
-   * \param dataFlow Configuration for the data feeds and fetches
-   * \param userOptions String to configure session options
-   * \param patterns Optimization patterns to apply
+   *                       tensors.
+   * \param dataFlow Configuration for the data feeds and fetches.
+   * \param userOptions String to configure session options.
+   * \param patterns Optimization patterns to apply.
    */
 
   static std::unique_ptr<InferenceSession>
@@ -331,17 +337,17 @@ public:
   ~TrainingSession() override;
 
   /** Create a runtime class for executing an ONNX graph on a set of IPU
-   *  hardware for training
+   *  hardware for training.
    *
    * \param model Either an ONNX model protobuf, or the name of a file
-   *              containing an ONNX model protobuf
+   *              containing an ONNX model protobuf.
    * \param inputShapeInfo Information about the shapes of input and output
-   *                       tensors
-   * \param dataFlow Configuration for the data feeds and fetches
-   * \param loss The TensorId of the final scalar loss tensor for training
-   * \param optimizer The name of an optimizer to use when training
-   * \param userOptions String to configure session options
-   * \param patterns Optimization patterns to apply
+   *                       tensors.
+   * \param dataFlow Configuration for the data feeds and fetches.
+   * \param loss The TensorId of the final scalar loss tensor for training.
+   * \param optimizer The name of an optimizer to use when training.
+   * \param userOptions String to configure session options.
+   * \param patterns Optimization patterns to apply.
    */
 
   static std::unique_ptr<TrainingSession>
@@ -370,15 +376,15 @@ public:
 
   /**
    * Access the stream IDs for variables that are involved in host side
-   * reductions on the host. Only populated if hostAllReduce is enabled in the
-   * SessionOptions
+   * reductions on the host. Only populated if \c hostAllReduce is enabled in
+   * the SessionOptions
    */
   const std::vector<std::string> &getHostReduceStreamIds() const;
 
   /**
    * Access the remote buffers associated with gradient and weight streams
    * that are used in host side all reduce operations. Only populated if
-   * hostAllReduce and hostAllReduceRemoteBuffer are enabled.
+   * \c hostAllReduce and \c hostAllReduceRemoteBuffer are enabled.
    */
   const std::map<std::string, poplar::RemoteBuffer> &
   getHostReduceRemoteBuffers() const;
@@ -388,16 +394,16 @@ public:
    * `getGradAndVarStreamIds` the streams can be used to copy gradients to the
    * host to perform collective operations after which the variables can be
    * streamed back after they have been updated to the device.
-   * `index` referes to the replica index when using replicated graphs.
+   * \p index referes to the replica index when using replicated graphs.
    */
   void connectStreamToCallback(const std::string &streamHandle,
                                std::function<void(void *)> callback,
                                unsigned index = 0);
 
   /**
-   * Read from a RemoteBuffer object into a user space pointer w.
+   * Read from a RemoteBuffer object into a user space pointer \p w.
    * This can be useful when we run larger models with host side
-   * reductions since HEXOPT is currently limited to 128 MB
+   * reductions since HEXOPT is currently limited to 128 MB.
    */
   void copyFromRemoteBuffer(const std::string &buffer,
                             void *w,
@@ -405,9 +411,9 @@ public:
                             unsigned replication_index = 0);
 
   /**
-   * Write to a RemoteBuffer object from a user space pointer w.
+   * Write to a RemoteBuffer object from a user space pointer \p w.
    * This can be useful when we run larger models with host side
-   * reductions since HEXOPT is currently limited to 128 MB
+   * reductions since HEXOPT is currently limited to 128 MB.
    */
   void copyToRemoteBuffer(void *w,
                           const std::string &buffer,

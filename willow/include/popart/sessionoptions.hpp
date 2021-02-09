@@ -17,8 +17,8 @@
 namespace popart {
 
 /**
- * Enum type used to identify at which stages of IR construction to export .dot
- * files.
+ * Enum type used to identify at which stages of IR construction to export
+ * `.dot` files.
  */
 enum class DotCheck {
   /// Generate graph after construction of the forward pass.
@@ -31,7 +31,7 @@ enum class DotCheck {
   PreAlias,
   /// Generate graph after running aliasing patterns (the final IR).
   Final,
-  /// The number of DotCheck values.
+  /// The number of \c DotCheck values.
   N
 };
 
@@ -51,27 +51,27 @@ enum class RecomputationType {
   NormOnly,
   /// Recompute all forward pipeline stages.
   Pipeline,
-  /// The number of RecomputationTypes values.
+  /// The number of \c RecomputationTypes values.
   N
 };
 
 /**
- * Enum type used to specify which `VarUpdate` ops to merge.
+ * Enum type used to specify which `VarUpdateOp` ops to merge.
  */
 enum class MergeVarUpdateType {
-  /// Do not merge VarUpdate Ops.
+  /// Do not merge VarUpdateOp ops.
   None = 0,
-  /// Merge all VarUpdate Ops into as few groups as possible.
+  /// Merge all VarUpdateOp ops into as few groups as possible.
   /// This is a good choice when memory is not a constraint.
   All,
   /// Merge into groups while attempting not to increase maximum
   /// variable liveness, and also not slice tensor variables so
-  /// they they will need to be processed by different `VarUpdate` ops.
+  /// they they will need to be processed by different VarUpdateOp ops.
   AutoLoose,
-  /// Merge into groups, so that VarUpdateOps process tensors of
+  /// Merge into groups, so that VarUpdateOp ops process tensors of
   /// exactly `mergeVarUpdateMemThreshold` in size.
   AutoTight,
-  /// The number of MergeVarUpdateTypes values.
+  /// The number of \c MergeVarUpdateTypes values.
   N
 };
 
@@ -87,7 +87,7 @@ enum class VirtualGraphMode {
   Auto,
   /// Virtual graphs are tied to execution phases.
   ExecutionPhases,
-  /// The number of VirtualGraphModes values.
+  /// The number of \c VirtualGraphModes values.
   N
 };
 
@@ -109,7 +109,7 @@ enum class SyntheticDataMode {
   Zeros,
   /// Input tensors are initialised with distribution ~N(0,1).
   RandomNormal,
-  /// The number of SyntheticDataMode values.
+  /// The number of \c SyntheticDataMode values.
   N
 };
 
@@ -121,7 +121,7 @@ enum class Instrumentation {
   Outer = 0,
   /// Inner loop instrumentation, graph per IPU.
   Inner,
-  /// The number of Instrumentations values.
+  /// The number of \c Instrumentation values.
   N
 };
 
@@ -154,7 +154,7 @@ struct TensorLocationSettings {
   /// A minimum number of elements below which offloading won't be considered.
   int minElementsForOffChip = 2;
 
-  /// A minimum number of elements below which Replicated Tensor Sharding (RTS)
+  /// A minimum number of elements below which replicated tensor sharding (RTS)
   /// won't be considered.
   int minElementsForReplicatedTensorSharding = 8192;
 };
@@ -172,13 +172,13 @@ enum class BatchSerializationBatchSchedule {
   /// Encourage all ops within batch subgraphs to be scheduled identically and
   /// for each subgraph to be scheduled in sequence (good for outlineability).
   Isomorphic,
-  /// OverlapOnIo tries to put the RemoteLoad for batch N+1 right after the
+  /// Attempt to put the RemoteLoad for batch N+1 right after the
   /// compute phase of batch N.
   OverlapOnIo,
-  /// OverlapOnCompute tries to put the RemoteLoad for batch N+1 right before
+  /// Attempt to put the RemoteLoad for batch N+1 right before
   /// the compute phase of batch N.
   OverlapOnCompute,
-  /// The number of BatchSerializationBatchSchedule values.
+  /// The number of \c BatchSerializationBatchSchedule values.
   N
 };
 
@@ -191,7 +191,7 @@ enum class BatchSerializationTransformContext {
   Fwd = 0,
   /// Apply after growing the backward pass
   Bwd,
-  /// The number of BatchSerializationTransformContext values.
+  /// The number of \c BatchSerializationTransformContext values.
   N
 };
 
@@ -206,7 +206,7 @@ enum class BatchSerializationMethod {
   UnrollStatic,
   /// Loop over the batch dimension
   Loop,
-  /// The number of BatchSerializationMethod values.
+  /// The number of \c BatchSerializationMethod values.
   N
 };
 
@@ -254,11 +254,11 @@ struct BatchSerializationSettings {
  * Enum type to specify when to load tensors.
  */
 enum class ExecutionPhaseIOSchedule {
-  /// Preload tensors in previous phase for use in current phase
+  /// Preload tensors in previous phase for use in current phase.
   Preload = 0,
-  /// Load tensors just before they are required
+  /// Load tensors just before they are required.
   OnDemand,
-  /// The number of ExecutionPhaseIOSchedule values.
+  /// The number of \c ExecutionPhaseIOSchedule values.
   N
 };
 
@@ -287,7 +287,7 @@ enum class ExecutionPhaseSchedule {
   /// copy merges by keeping RemoteLoad/RemoteStore operations clustered
   /// (for example: 333, 111, 222, 444, 555, 666).
   BatchClusteredIO,
-  /// The number of ExecutionPhaseSchedule values.
+  /// The number of \c ExecutionPhaseSchedule values.
   N
 };
 
@@ -390,32 +390,32 @@ enum class SubgraphCopyingStrategy {
 };
 
 /**
- * A structure containing user configuration options for the `Session` class
+ * A structure containing user configuration options for the Session class.
  */
 struct SessionOptions {
 
   SessionOptions &operator=(const SessionOptions &rhs) = default;
 
-  /// A directory for log traces to be written into
+  /// A directory for log traces to be written into.
   std::string logDir;
 
-  /// When to write '.dot' files during Ir construction
+  /// When to write `.dot` files during Ir construction.
   std::set<DotCheck> dotChecks = {};
 
-  /// The ops to write to the .dot file will be a continuous interval
+  /// The ops to write to the `.dot` file will be a continuous interval
   /// of the schedule, controlled by firstDotOp and finalDotOp. In particular,
-  /// it will be [min(0, firstDotOp), max(N ops in Ir, finalDotOp))
+  /// it will be [min(0, firstDotOp), max(N ops in Ir, finalDotOp)).
   int firstDotOp = 0;
   /// See #firstDotOp.
   int finalDotOp = 10000;
 
-  /// Include the Op name in the .dot file (the Op type is always exported)
+  /// Include the Op name in the `.dot` file (the Op type is always exported).
   bool dotOpNames = false;
 
-  /// Export Poplar computation graph
+  /// Export Poplar computation graph.
   bool exportPoplarComputationGraph = false;
 
-  /// Export Poplar vertex graph
+  /// Export Poplar vertex graph.
   bool exportPoplarVertexGraph = false;
 
   /// When generating PDFs of IR graphs, create separate PDFs for each subgraph.
@@ -441,7 +441,7 @@ struct SessionOptions {
 
   /// The penalty applied to outlining potential sub-graphs if the sub-graph
   /// to be created breaks up a sequence of operations that are more efficient
-  /// (for example for overlapping compute and exchange) when outlined together
+  /// (for example for overlapping compute and exchange) when outlined together.
   /// Default value is set to ~10 * Op::getHighSubgraphValue().
   float outlineSequenceBreakCost = 10000.0f;
 
@@ -455,25 +455,30 @@ struct SessionOptions {
       SubgraphCopyingStrategy::OnEnterAndExit;
 
   /// Enable recomputation of operations in the graph in the backwards pass to
-  /// reduce model size at the cost of computation cycles
+  /// reduce model size at the cost of computation cycles.
   RecomputationType autoRecomputation = RecomputationType::None;
 
   /// Enable merging of VarUpdates into groups of VarUpdates, by flattening
-  /// and concatenating Variable Tensors and Updating Tensors
+  /// and concatenating variable tensors and updating tensors.
   MergeVarUpdateType mergeVarUpdate = MergeVarUpdateType::None;
 
-  /// The AutoLoose and AutoTight VarUpdate merging algorithm has a threshold on
-  /// the total memory of Variable Tensors to merge for updating. Memory in
-  /// bytes.
+  /// The #MergeVarUpdateType::AutoLoose and #MergeVarUpdateType::AutoTight
+  /// VarUpdateOp merging algorithms have a threshold on the total memory of
+  /// variable tensors to merge for updating. Defined as total memory in bytes.
   int64_t mergeVarUpdateMemThreshold = 1000000;
 
-  /// The AutoLoose VarUpudate merging algorithm has absolute threshold defined
-  /// by min(mergeVarUpdateMemThreshold,
-  ///        liveAtPeak - liveCurrently + looseThresholdAtPeak),
-  /// where liveAtPeak is an estimate of the maximum live memory of the
-  /// computation, and liveCurrently is an estimate of the live memory where the
-  /// threshold is being used to determine whether to schedule or postpone a
-  /// VarUpdate.
+  /// The #MergeVarUpdateType::AutoLoose VarUpdateOp merging algorithm has an
+  /// absolute threshold defined by:
+  ///
+  /// \c min(#mergeVarUpdateMemThreshold, \c liveAtPeak - \c liveCurrently +
+  /// #looseThresholdAtPeak)
+  ///
+  /// where:
+  ///  * \c liveAtPeak is an estimate of the maximum live memory of the
+  ///    computation; and
+  ///  * \c liveCurrently is an estimate of the live memory where the
+  ///    threshold is being used to determine whether to schedule or postpone a
+  ///    VarUpdateOp.
   int64_t looseThresholdAtPeak = 8000;
 
   /// Before anchor tensors are streamed from device to host, they are not
@@ -484,45 +489,46 @@ struct SessionOptions {
   bool rearrangeAnchorsOnHost = true;
 
   /// By default, we will use prefetching for input data streams. Poplar will
-  /// speculative read data for a stream before is is required to allow the
-  /// 'preparation' of the data to occur in parallel with compute
+  /// speculatively read data for a stream before is is required to allow the
+  /// 'preparation' of the data to occur in parallel with compute.
   bool enablePrefetchDatastreams = true;
 
   /// When #enablePrefetchDatastreams is set this mapping can be used to set
   /// tensor-specific buffering depths for tensors that are streamed to the
   /// host (typically input tensors). This buffering depth could be envisaged
   /// as being the size of a circular buffer that feeds data to Poplar.
-  /// A buffering depth greater than `1` may improve the performance
+  /// A buffering depth greater than 1 may improve the performance
   /// due to increased parallelisation but comes at the cost of increasing
   /// the memory footprint. Streams for tensors that have no entry in this
-  /// map default to a buffering depth of `1`.
+  /// map default to a buffering depth of 1.
   std::map<TensorId, unsigned> prefetchBufferingDepthMap;
 
-  /// By default, we use the stable-softmax Poplar function. This input tensor
-  /// to softmax, _x_, is preprocessed by subtracting max(_x_) to each element
+  /// By default, we use the stable softmax Poplar function. The input tensor
+  /// to softmax, _x_, is preprocessed by subtracting max(_x_) from each element
   /// before computing the exponentials, ensuring numerical stability. If you
   /// are sure the inputs to your softmax operations are small enough to not
   /// cause overflow when computing the exponential, you can enable the
-  /// non-stable version instead for speed-up
+  /// non-stable version instead, to increase the speed.
   bool enableNonStableSoftmax = false;
 
-  /// Enable replication of graphs
+  /// Enable replication of graphs.
   bool enableReplicatedGraphs = false;
 
-  /// Enable gradient accumulation
+  /// Enable gradient accumulation.
   bool enableGradientAccumulation = false;
 
   /// Specify how gradients are reduced when using gradient accumulation.
-  /// The options are equivilent to how gradients are reduced on lossOps.
+  /// The options are equivalent to how gradients are reduced on lossOps.
   ReductionType accumulationReductionType = ReductionType::Sum;
 
-  /// If enableReplicatedGraphs is true, replicatedGraphCount will set the
-  /// number of model replications. E.g. if your model uses 1 IPU, a
-  /// replicatedGraphCount of 2 will use 2 IPUs. If your model is
-  /// pipelined across 4 IPUs, a replicatedGraphCount of 4 will use 16 IPUs
-  /// total. Therefore the number of IPUs you request must be a multiple of
-  /// replicatedGraphCount. If the training is done across multiple instances
-  /// then the replicatedGraphCount is the number of replicas for this instance.
+  /// If enableReplicatedGraphs is true, \c replicatedGraphCount will set the
+  /// number of model replications. For example, if your model uses 1 IPU, a
+  /// \c replicatedGraphCount of 2 will use 2 IPUs. If your model is
+  /// pipelined across 4 IPUs, a \c replicatedGraphCount of 4 will use 16 IPUs
+  /// total. Therefore, the number of IPUs you request must be a multiple of
+  /// \c replicatedGraphCount. If the training is done across multiple instances
+  /// then the \c replicatedGraphCount is the number of replicas for this
+  /// instance.
   int64_t replicatedGraphCount = 1;
 
   /// Specify the number of micro-batches to accumulate before applying the
@@ -530,31 +536,32 @@ struct SessionOptions {
   int64_t accumulationFactor = 1;
 
   /// This option allows you to place ops on virtual graphs to achieve model
-  /// parallelism - either manually using model annotations, or automatically
+  /// parallelism - either manually using model annotations, or automatically.
   VirtualGraphMode virtualGraphMode = VirtualGraphMode::Off;
 
   /// Enable pipelining of virtual graphs
   bool enablePipelining = false;
 
-  /// Use synthetic data i.e. disable data transfer to/from the host
-  /// Set to 'Off' to use real data
+  /// Use synthetic data: disable data transfer to/from the host.
+  /// Set to #SyntheticDataMode::Off to use real data.
   SyntheticDataMode syntheticDataMode = SyntheticDataMode::Off;
 
   /// Add instrumentation to your program to count the number of device cycles
-  /// (a single tile, on a single IPU) that your main program takes to execute.
-  /// Expect this to have a small detrimental impact on performance.
+  /// (of a single tile, on a single IPU) that your main program takes to
+  /// execute. Expect this to have a small detrimental impact on performance.
   bool instrumentWithHardwareCycleCounter            = false;
   std::set<Instrumentation> hardwareInstrumentations = {Instrumentation::Outer};
 
   /// If true, the weight gradient tensors are not saved off the device
-  /// when devicex.weightsFromHost() is called. Note: this option is
-  /// overridden if syntheticDataMode is not Off.
+  /// when \c devicex.weightsFromHost() is called. Note: this option is
+  /// overridden if #syntheticDataMode is not #SyntheticDataMode::Off.
   bool disableGradAccumulationTensorStreams = false;
 
-  /// when false, the backend will build the Poplar graph, but do not compile it
-  /// into an Engine.  When this option is set, no execution can be performed,
-  /// and nothing can be transferred to the device.  Functions which retrieve
-  /// information from the graph building stage will be ok (tile mapping).
+  /// If false, the backend will build the Poplar graph but not compile it
+  /// into an Engine.  In this case, no execution can be performed,
+  /// and nothing can be transferred to the device. API calls which retrieve
+  /// information from the graph building stage, such as tile mapping
+  /// introspection, can still be used.
   bool compileEngine = true;
 
   /// An optimization for an inference session to have constant weights, true by
@@ -563,29 +570,29 @@ struct SessionOptions {
   /// been prepared. This option has no effect on a training session
   bool constantWeights = true;
 
-  /// Enable Poplar executable caching
+  /// Enable Poplar executable caching.
   bool enableEngineCaching = false;
 
-  /// Path to save the poplar::Executable to.
+  /// Path to save the \c poplar::Executable to.
   std::string cachePath = "session_cache";
 
   /// Throw an exception when floating point errors occur.
   bool enableFloatingPointChecks = false;
 
-  /// Enable stochastic rounding
+  /// Enable stochastic rounding.
   bool enableStochasticRounding = false;
 
-  /// Configuration settings for execution phases
+  /// Configuration settings for execution phases.
   ExecutionPhaseSettings executionPhaseSettings;
 
   /// Configuration setting for operations in the accumulate outer fragment.
   AccumulateOuterFragmentSettings accumulateOuterFragmentSettings;
 
-  /// Enable explicit recomputation
+  /// Enable explicit recomputation.
   bool explicitRecomputation = false;
 
   /**
-   * A wrapper class for the `numIOTiles` option that permits any int value and
+   * A wrapper class for the #numIOTiles option that permits any int value and
    * has an 'unassigned' state.
    */
   class NumIOTiles {
@@ -595,7 +602,7 @@ struct SessionOptions {
     /// Constructor.
     NumIOTiles(int numIOTiles);
 
-    /// Compare with ints.
+    /// Compare with int.
     bool operator==(const int &rhs) const;
 
     /// Auto convert to int.
@@ -612,20 +619,20 @@ struct SessionOptions {
   /// Number of IPU tiles dedicated to IO.
   NumIOTiles numIOTiles;
 
-  /// Enable zero-copy for subgraphs
+  /// Enable zero-copy for subgraphs.
   bool aliasZeroCopy = false;
 
-  /// Configuration setting for batch serialization
+  /// Configuration setting for batch serialization.
   BatchSerializationSettings batchSerializationSettings;
 
-  /// Options to delay var updates as much as possible
+  /// Options to delay variable updates as much as possible.
   // TODO: Remove with T19212
   bool delayVarUpdates = true;
 
-  /// Enable the global fullyConnectedPass option for matmuls
+  /// Enable the global #fullyConnectedPass option for matmuls.
   bool enableFullyConnectedPass = true;
 
-  /// Enable/disable the grouping of matmuls that are the same shape
+  /// Enable/disable the grouping of matmuls that are the same shape.
   bool enableGroupedMatmuls = false;
 
   /// Enable/disable the serializing of matmuls.
@@ -636,7 +643,7 @@ struct SessionOptions {
   // "float", "half" in any letter case.
 
   /// Set the partials type globally for matmuls. Can be overridden individually
-  /// with `builder.setPartialsType()`. Valid values are `"float"` and `"half"`.
+  /// with Builder.setPartialsType(). Valid values are `"float"` and `"half"`.
   /// By default, this is not set, so no global partials type is imposed.
   std::string partialsTypeMatMuls;
 
@@ -648,22 +655,22 @@ struct SessionOptions {
   /// order central moment is calculated.
   bool enableStableNorm = false;
 
-  /// Perform AllReduce operation on the host. Only useful for training session
+  /// Perform AllReduce operation on the host. Only useful for training session.
   bool hostAllReduce = false;
 
-  /// Perform weight update on the host. Only useful for training session
+  /// Perform weight update on the host. Only useful for training session.
   bool hostWeightUpdate = false;
 
-  /// Enable the use of poplar::RemoteBuffers for hostAllReduce operations
+  /// Enable the use of \c poplar::RemoteBuffers for hostAllReduce operations.
   bool hostAllReduceRemoteBuffer = false;
 
-  /// Poplar engine options
+  /// Poplar engine options.
   std::map<std::string, std::string> engineOptions;
 
-  /// Poplar convolution options
+  /// Poplar convolution options.
   std::map<std::string, std::string> convolutionOptions;
 
-  /// Poplar reporting options
+  /// Poplar reporting options.
   std::map<std::string, std::string> reportOptions;
 
   /// GCL options
@@ -677,35 +684,35 @@ struct SessionOptions {
   /// info.
   std::string customCodeletCompileFlags;
 
-  /// The maximum allowed time that can be spent searching for a good Graph
-  /// schedule before a solution must be returned
+  /// The maximum allowed time that can be spent searching for a good graph
+  /// schedule before a solution must be returned.
   double timeLimitScheduler = 1e9;
 
   /// The maximum number of improving steps allowed by the scheduling algorithm
-  /// before a solution must be returned
+  /// before a solution must be returned.
   int64_t swapLimitScheduler = static_cast<int64_t>(1e9);
 
-  /// PopART uses Poprithms for scheduling PopART Graphs. The Poprithms Graphs
+  /// PopART uses Poprithms for scheduling PopART graphs. The Poprithms graphs
   /// created for scheduling can be optionally serialised (written to file). The
-  /// string below specified the directory to serialize Poprithms Graphs to. If
-  /// it is empty, then the Graphs will not be serialised. The names of
-  /// serialization files will be poprithms_anneal_graph_`i'.json for the lowest
-  /// non-existing `i's. The directory must already exist, PopART will not
-  /// create it.
+  /// string below specified the directory to serialize Poprithms graphs to. If
+  /// it is empty, then the graphs will not be serialised. The names of
+  /// serialization files will be `poprithms_anneal_graph_i.json` for the lowest
+  /// non-existing values of `i`. The directory must already exist, PopART will
+  /// not create it.
   std::string serializedPoprithmsAnnealGraphsDir{};
 
   /// The initial scheduling is done with Kahn's algorithm. When several Ops are
-  /// free to be scheduled, this controls which method is used
+  /// free to be scheduled, this controls which method is used.
   std::string kahnTieBreaker = "greedy";
 
   /// Replaces single sums of partial gradients with a tree of additions.
   /// This can reduce max liveness at the cost of extra cycles. A typical
   /// use case for this would be if a large weight tensor is used as an
-  /// input to many operations
+  /// input to many operations.
   bool decomposeGradSum = false;
 
   /// Enable training with Poplar replicated graphs across multiple PopART
-  /// instances
+  /// instances.
   bool enableDistributedReplicatedGraphs = false;
 
   /// The total number of replicas in a multi instance replicated graph training
@@ -713,7 +720,7 @@ struct SessionOptions {
   /// replicated graphs are disabled). This value includes local replication.
   int64_t globalReplicationFactor = 1;
 
-  /// The first replica index that this PopART instance is running
+  /// The first replica index that this PopART instance is running.
   int64_t globalReplicaOffset = 0;
 
   /// Allows to group the streams from host at the beginning and the streams
@@ -729,17 +736,17 @@ struct SessionOptions {
   bool strictOpVersions = true;
 
   /// Run Opx checks to verify IR tensor aliasing information
-  /// corresponds to lowered Poplar tensor aliasing
+  /// corresponds to lowered Poplar tensor aliasing.
   bool opxAliasChecking = false;
 
   /// Run Opx checks to verify IR tensor modification information
-  /// corresponds to lowered Poplar tensor modifications
+  /// corresponds to lowered Poplar tensor modifications.
   bool opxModifyChecking = false;
 
-  // Allows to load/offload device RNG state from host
+  /// Allows to load/offload device RNG state from host.
   bool enableLoadAndOffloadRNGState = false;
 
-  // Tensor location settings for activation/gradient tensors.
+  /// Tensor location settings for activation/gradient tensors.
   TensorLocationSettings activationTensorLocationSettings =
       TensorLocationSettings{TensorLocation(), 2, 8192};
   /// Tensor location for weight tensors.
@@ -758,8 +765,9 @@ struct SessionOptions {
 
   // Get the buffering depth for a TensorId. Will return 1 unless
   // prefetching is enabled and the buffering depth is overwritten
-  // in the prefetchBufferingDepthMap variable.
-  // Not part of public API.
+  // in the \c prefetchBufferingDepthMap variable.
+  //
+  // **Not part of public API**
   unsigned getPrefetchBufferingDepth(const TensorId &id) const;
 };
 
