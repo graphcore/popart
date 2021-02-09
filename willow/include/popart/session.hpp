@@ -222,6 +222,7 @@ public:
 
   const Ir &getIr() const { return ir; }
   const popx::Devicex &getDevice() const { return *device_; }
+  popx::Devicex &getDevice() { return *device_; }
   const popx::IrLowering &getIrLowering() const { return *lowering_; }
   const popx::Executablex &getExecutable() const { return *executable_; }
 

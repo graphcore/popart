@@ -149,7 +149,8 @@ public:
 
   bool isReplicatedGraph() const;
 
-  const DeviceInfo *getDeviceInfo() { return deviceInfo.get(); }
+  const DeviceInfo *getDeviceInfo() const { return deviceInfo.get(); }
+  DeviceInfo *getDeviceInfo() { return deviceInfo.get(); }
 
   // Return stored input tensors based on how they are allocated
   std::set<TensorId> getLinearlyCreatedInputTensors() const;
