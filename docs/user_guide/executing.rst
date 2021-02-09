@@ -11,14 +11,39 @@ to execute the graph.
 Setting input/output data buffers for an execution
 ==================================================
 
-The ``PyStepIO`` class defines the input data for a specific execution.  It
-takes a dictionary with the input tensor names as keys, and Python
-arrays for the data values.  It also takes a similar dictionary of names and
-buffers for the output values.
+Input and output data is passed to and from a ``Session`` object via ``IStepIO``
+objects. Each call to ``session.run(...)`` takes such a ``IStepIO`` object.
+This object contains, for every input tensor, a number of buffers for
+``Session`` to read input data from and, analogously, for every anchored tensor,
+a number of buffers a number of buffers to write output data to (more about
+anchors in the next section).
 
-A convenience method ``initAnchorArrays`` can create the output buffers
-and dictionary for you, given the anchors (output nodes) which were
-specified in the ``DataFlow`` object during session construction.
+The number and shape of these buffers depend on a variety of factors including
+1) the shape of associated tensor in the ONNX model 2) the ``DataFlow``
+configuration (see next section) as passed to the ``Session``'s constructor 3)
+the number of local replicas and 3) the accumulation factor. This is explained
+in more detail in the
+`C++ API <https://docs.graphcore.ai/projects/popart-cpp-api/>`_ documentation
+under the ``IStepIO`` class (for inputs) and under the ``DataFlow`` class (for
+outputs).
+
+When using Python, the ``PyStepIO`` class is a convenient way of providing a
+``Session`` with input and output buffers. For both input and output, this
+class takes a dictionary with tensor names as keys and Python (or Numpy) arrays
+as values. PopART splits up these arrays internally to provide the ``Session``
+object with the buffers that it needs.
+
+Note that ``Session`` has a convenience method, ``initAnchorArrays``,
+that can create the output dictionary that ``PyStepIO`` needs automatically.
+
+An alternative to ``PyStepIO`` is the
+``PyStepIOCallback`` class, which you can use to implement ``IStepIO`` by means
+of a callback mechanism.
+
+The C++ equivalents of ``PyStepIO`` and ``PyStepIOCallback`` are ``StepIO`` and
+``StepIOCallback``, respectively.
+
+Below is an example of how to use ``PyStepIO``:
 
 .. code-block:: python
 
@@ -31,12 +56,13 @@ specified in the ``DataFlow`` object during session construction.
 
   stepio = popart.PyStepIO({'a': data_a, 'b': data_b}, anchors)
 
+  session.run(stepio)
+
 
 .. TODO: Add something about the pytorch data feeder.
 
-
 If there are any pre-defined inputs (such as weights or biases) in the graph
-then they will not be specified in the ``PyStepIO`` object.  However, before
+then they will not be specified in the ``IStepIO`` object. However, before
 executing the graph, they will need to the copied to the hardware.
 If there are any optimiser-specific parameters which can be modified,
 then these must be written to the device. For example:
@@ -58,15 +84,20 @@ These can also be updated between executions.
 Retrieving results
 ~~~~~~~~~~~~~~~~~~
 
-The ``DataFlow`` class describes how to execute the graph.  The second parameter is
-a description of the anchors, the results to fetch from the graph.
+The ``DataFlow`` class describes how to execute the graph. When you construct
+a ``DataFlow`` class it expects two parameters:
 
 .. code-block:: python
 
   df = popart.DataFlow(1, {o: popart.AnchorReturnType("ALL")})
 
-This is a Python dictionary with keys that are the names of the tensors to retrieve
-from the model. The associated values are an ``AnchorReturnType``, which is one of:
+The first argument is ``batchesPerStep``. This is the the number of
+batches a call to ``session.run(...)`` runs for returning control to the caller.
+
+The second argument is a Python dictionary with keys that are the names of the
+tensors to retrieve from the model via the ``IStepIO`` object. We call such
+tensors *anchors*. The associated values are ``AnchorReturnType`` values, which
+are one of:
 
 * ``popart.AnchorReturnType("ALL")``: a vector of results is returned, one for each
   iteration of the graph.
@@ -76,6 +107,18 @@ from the model. The associated values are an ``AnchorReturnType``, which is one 
   iteration through the graph.
 * ``popart.AnchorReturnType("SUM")``: the sum of the values of the tensor
   from each iteration through the graph.
+
+The effect of this setting on the number of output buffers is
+explained in more detail in our `C++ API
+<https://docs.graphcore.ai/projects/popart-cpp-api/>`_ documentation
+documentation (see documentation for the ``DataFlow`` class).
+
+Note that the set of tensors that are *anchored* may differ from those tensors
+marked as ONNX model *outputs* (via ``builder.addOutputTensor(...)``).
+That is, a model's output tensor need not be anchored and an anchored tensor
+need not be a model output -- any tensor can be anchored.
+It is the anchored tensors that are considered 'output' in the context of a
+``IStepIO`` object.
 
 Selecting a device for execution
 ================================

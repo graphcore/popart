@@ -30,4 +30,7 @@ IPU-specific annotations on ONNX operations allow the provider of the graph to
 control IPU-specific features, such as mapping an algorithm across multiple
 IPUs.
 
-APIs are available for C++ and Python. Most of the examples in this document use the Python API.
+PopART has both a `C++ API
+<https://docs.graphcore.ai/projects/popart-cpp-api>`_ and a `Python API
+<https://docs.graphcore.ai/projects/popart-python-api>`_. Most of the examples
+in this document use the Python API.
