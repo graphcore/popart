@@ -77,7 +77,7 @@ public:
   poplar::Tensor createReplicaSlice(const poplar::Type &type);
 
   poplar::Tensor createCollectivesTensor(const poplar::Type &type,
-                                         const std::string &debugPrefix);
+                                         const std::string &tensorPrefix);
 
   // Reorder tensor back into the expected IR tensor shape and order
   poplar::Tensor undoRearrangeForCollective(poplar::Tensor tensor) const;

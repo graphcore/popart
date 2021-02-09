@@ -17,7 +17,7 @@ MultiConvOpx::MultiConvOpx(Op *op, Devicex *devicex)
 }
 
 std::vector<poplin::multiconv::CreateTensorArgs>
-MultiConvOpx::getCreateTensorArgs(const std::string &name) const {
+MultiConvOpx::getCreateTensorArgs(const poplar::DebugNameAndId &dnai) const {
   auto &op = getOp<MultiConvOp>();
   std::vector<poplin::multiconv::CreateTensorArgs> allCreateTensorArgs;
 
@@ -25,7 +25,8 @@ MultiConvOpx::getCreateTensorArgs(const std::string &name) const {
     poplin::multiconv::CreateTensorArgs createTensorArgs;
     createTensorArgs.params  = getPoplarConvParams(op.getParameters(i));
     createTensorArgs.options = getConvOptions(i, getFwdPassFlagString());
-    createTensorArgs.name    = name;
+    // NOTE: Would be better if poplin took a debug object.
+    createTensorArgs.name = dnai.getPathName();
 
     allCreateTensorArgs.push_back(createTensorArgs);
   }
@@ -42,18 +43,19 @@ poplar::OptionFlags MultiConvOpx::getGlobalOptions() const {
   return optionFlags;
 }
 
-poplar::Tensor MultiConvOpx::createWeightsInput(const std::string &name,
-                                                int convIndex) const {
+poplar::Tensor
+MultiConvOpx::createWeightsInput(const poplar::DebugNameAndId &dnai,
+                                 int convIndex) const {
   return poplin::multiconv::createWeights(graph(),
-                                          getCreateTensorArgs(name),
+                                          getCreateTensorArgs(dnai),
                                           static_cast<unsigned>(convIndex),
                                           getGlobalOptions(),
                                           &dv_p->convCache);
 }
-poplar::Tensor MultiConvOpx::createDataInput(const std::string &name,
+poplar::Tensor MultiConvOpx::createDataInput(const poplar::DebugNameAndId &dnai,
                                              int convIndex) const {
   return poplin::multiconv::createInput(graph(),
-                                        getCreateTensorArgs(name),
+                                        getCreateTensorArgs(dnai),
                                         static_cast<unsigned>(convIndex),
                                         getGlobalOptions(),
                                         &dv_p->convCache);

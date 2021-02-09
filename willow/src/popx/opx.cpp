@@ -19,11 +19,12 @@ Opx::Opx(Op *op_p_, Devicex *dv_p_) : op_p(op_p_), dv_p(dv_p_) {}
 
 Opx::~Opx() = default;
 
-poplar::Tensor Opx::createInput(InIndex index, const std::string &name) const {
+poplar::Tensor Opx::createInput(InIndex index,
+                                const poplar::DebugNameAndId &dnai) const {
   throw error("Opx for {} cannot create Input index:{} name:{}",
               op_p->opid,
               index,
-              name);
+              dnai.getPathName());
 }
 
 bool Opx::createsEquiv(int, const Opx *, int) const {

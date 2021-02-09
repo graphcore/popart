@@ -83,8 +83,9 @@ InputCreatorType DynamicUpdateOpx::getInputCreatorType(InIndex index) const {
   return Opx::getInputCreatorType(index);
 }
 
-poplar::Tensor DynamicUpdateOpx::createInput(InIndex index,
-                                             const std::string &name) const {
+poplar::Tensor
+DynamicUpdateOpx::createInput(InIndex index,
+                              const poplar::DebugNameAndId &dnai) const {
   auto &op = getOp<DynamicTernaryBaseOp>();
 
   if (index == DynamicTernaryBaseOp::getInIndex()) {
@@ -97,7 +98,7 @@ poplar::Tensor DynamicUpdateOpx::createInput(InIndex index,
       std::vector<size_t> psizes(op.getSizes().begin(), op.getSizes().end());
 
       return popops::createSliceTensor(
-                 graph(), updateTensor, paxes, psizes, 1, name)
+                 graph(), updateTensor, paxes, psizes, 1, dnai)
           .squeeze({0});
     }
   }
@@ -116,7 +117,7 @@ poplar::Tensor DynamicUpdateOpx::createInput(InIndex index,
         numSlices[i] = updateShape[paxes[i]] / psizes[i];
       }
       return popops::createSliceableTensorFromSlice(
-          graph(), inTensor, paxes, numSlices, name);
+          graph(), inTensor, paxes, numSlices, dnai);
     }
   }
 

@@ -555,8 +555,9 @@ MatMulOp *MatMulOpx::getMatMulOp() const {
   return dynamic_cast<MatMulOp *>(op_p);
 }
 
-poplar::Tensor MatMulOpx::createInput(InIndex index,
-                                      const std::string &name) const {
+poplar::Tensor
+MatMulOpx::createInput(InIndex index,
+                       const poplar::DebugNameAndId &dnai) const {
   auto &matmul = getOp<MatMulOp>();
 
   std::vector<std::size_t> lhsShape =
@@ -602,7 +603,7 @@ poplar::Tensor MatMulOpx::createInput(InIndex index,
         popType(getMatMulOp()->lhsIn()->info.dataType()),
         lhsShape,
         rhsShape,
-        debugContext(name),
+        dnai,
         opts,
         &dv_p->matmulCache);
 
@@ -617,7 +618,7 @@ poplar::Tensor MatMulOpx::createInput(InIndex index,
         popType(getMatMulOp()->lhsIn()->info.dataType()),
         lhsShape,
         rhsShape,
-        debugContext(name),
+        dnai,
         opts,
         &dv_p->matmulCache);
 

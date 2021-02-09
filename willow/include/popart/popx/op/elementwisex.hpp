@@ -144,7 +144,7 @@ public:
   InputCreatorType getInputCreatorType(InIndex) const override;
   std::vector<TensorId> mustExistBeforeCreate(InIndex) const override;
   poplar::Tensor createInput(InIndex index,
-                             const std::string &name) const override;
+                             const poplar::DebugNameAndId &dnai) const override;
   poplar::Tensor
   unwindTensorLayout(poplar::Tensor tensor, InIndex, OutIndex) const override;
   view::RegMap unwindRegion(InIndex, OutIndex) const override;

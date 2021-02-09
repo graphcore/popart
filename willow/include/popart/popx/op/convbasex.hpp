@@ -14,7 +14,7 @@ class MultiConvBaseOpx : public Opx {
 public:
   MultiConvBaseOpx(Op *op, Devicex *dv) : Opx(op, dv) {}
   poplar::Tensor createInput(InIndex index,
-                             const std::string &name) const final;
+                             const poplar::DebugNameAndId &dnai) const final;
   std::vector<TensorId> mustExistBeforeCreate(InIndex index0) const final;
   InputCreatorType getInputCreatorType(InIndex) const final;
   bool createsEquiv(int, const Opx *, int) const final;
@@ -28,11 +28,11 @@ public:
            const std::vector<poplar::Tensor> &weights) const {
     throw error("No 'convolve' implementation for {}", op_p->opid);
   }
-  virtual poplar::Tensor createDataInput(const std::string &name,
+  virtual poplar::Tensor createDataInput(const poplar::DebugNameAndId &dnai,
                                          int convIndex) const {
     throw error("No 'createDataInput' implementation for {}", op_p->opid);
   }
-  virtual poplar::Tensor createWeightsInput(const std::string &name,
+  virtual poplar::Tensor createWeightsInput(const poplar::DebugNameAndId &dnai,
                                             int convIndex) const {
     throw error("No 'createWeightsInput' implementation for {}", op_p->opid);
   }

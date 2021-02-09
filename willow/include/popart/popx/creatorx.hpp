@@ -42,7 +42,7 @@ public:
 
   // Creates an input tensor
   virtual std::pair<poplar::Tensor, ViewChangers>
-  createInput(const std::string &name) = 0;
+  createInput(const poplar::DebugNameAndId &dnai) = 0;
 
   // Returns the list of tensors that must be created before this one
   virtual std::set<TensorId> mustExistBeforeCreate() = 0;
@@ -79,7 +79,7 @@ public:
   virtual ~InputCreatorCandidate() override = default;
 
   std::pair<poplar::Tensor, ViewChangers>
-  createInput(const std::string &name) override;
+  createInput(const poplar::DebugNameAndId &dnai) override;
 
   std::set<TensorId> mustExistBeforeCreate() override;
 
@@ -133,7 +133,7 @@ public:
   virtual ~InputMultiCreatorCandidate() override = default;
 
   std::pair<poplar::Tensor, ViewChangers>
-  createInput(const std::string &name) override;
+  createInput(const poplar::DebugNameAndId &dnai) override;
   std::set<TensorId> mustExistBeforeCreate() override;
 
   double getMaxCreatorPriority() override;

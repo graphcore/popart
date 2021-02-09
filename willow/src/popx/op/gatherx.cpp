@@ -89,8 +89,8 @@ void GatherOpx::grow(poplar::program::Sequence &prog) const {
   }
 }
 
-poplar::Tensor GatherOpx::createInput(int index,
-                                      const std::string &name) const {
+poplar::Tensor
+GatherOpx::createInput(int index, const poplar::DebugNameAndId &dnai) const {
   if (index != GatherOp::dataInIndex()) {
     throw error("GatherOpx::createInput Cannot create input {}", index);
   }
@@ -103,7 +103,7 @@ poplar::Tensor GatherOpx::createInput(int index,
                                    shape,
                                    static_cast<unsigned>(axis),
                                    popops::GatherParams{},
-                                   debugContext(name));
+                                   dnai);
 }
 
 InputCreatorType GatherOpx::getInputCreatorType(int index0) const {

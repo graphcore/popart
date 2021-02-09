@@ -69,9 +69,9 @@ ReplicatedReduceScatterOpx::getInputCreatorType(InIndex index) const {
              : Opx::getInputCreatorType(index);
 }
 
-poplar::Tensor
-ReplicatedReduceScatterOpx::createInput(int inIndex,
-                                        const std::string &name) const {
+poplar::Tensor ReplicatedReduceScatterOpx::createInput(
+    int inIndex,
+    const poplar::DebugNameAndId &dnai) const {
   if (inIndex != ReplicatedReduceScatterOp::getInIndex()) {
     throw error(
         "ReplicatedReduceScatterOpx::createInput, cannot create input at {}",
@@ -87,7 +87,7 @@ ReplicatedReduceScatterOpx::createInput(int inIndex,
 
   const auto &rrsOp = getOp<ReplicatedReduceScatterOp>();
   const auto &type  = popType(rrsOp.inTensor(inIndex)->info);
-  return cbr->createCollectivesTensor(type, name);
+  return cbr->createCollectivesTensor(type, dnai.getPathName());
 }
 
 std::vector<TensorId>

@@ -16,7 +16,7 @@ public:
       unwindTensorLayout(poplar::Tensor, InIndex, OutIndex) const final;
   view::RegMap unwindRegion(InIndex, OutIndex) const final;
   poplar::Tensor createInput(InIndex index,
-                             const std::string &name) const final;
+                             const poplar::DebugNameAndId &dnai) const final;
   std::vector<TensorId> mustExistBeforeCreate(InIndex index0) const final;
   bool hasCreatorViewChangers(InIndex index) const final;
   ViewChangers getCreatorViewChangers(InIndex index) const final;

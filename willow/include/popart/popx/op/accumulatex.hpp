@@ -15,7 +15,8 @@ public:
 
   // can create the accumulator input Tensor (@Var index)
   // from the weight gradient tensor (@Updater index)
-  poplar::Tensor createInput(InIndex, const std::string &name) const final;
+  poplar::Tensor createInput(InIndex,
+                             const poplar::DebugNameAndId &dnai) const final;
   InputCreatorType getInputCreatorType(InIndex) const final;
   std::vector<TensorId> mustExistBeforeCreate(InIndex) const final;
   bool hasCreatorViewChangers(InIndex index) const final;

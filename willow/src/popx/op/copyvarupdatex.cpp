@@ -33,8 +33,9 @@ void CopyVarUpdateOpx::grow(poplar::program::Sequence &prog) const {
                getInTensor(VarUpdateOp::getVarToUpdateInIndex()));
 }
 
-poplar::Tensor CopyVarUpdateOpx::createInput(int inIndex,
-                                             const std::string &name) const {
+poplar::Tensor
+CopyVarUpdateOpx::createInput(int inIndex,
+                              const poplar::DebugNameAndId &dnai) const {
 
   if (inIndex != VarUpdateWithUpdaterOp::getUpdaterInIndex()) {
     throw error(
@@ -42,7 +43,7 @@ poplar::Tensor CopyVarUpdateOpx::createInput(int inIndex,
         "only create the updater input Tensor",
         inIndex);
   }
-  return graph().clone(getInTensor(VarUpdateOp::getVarToUpdateInIndex()), name);
+  return graph().clone(getInTensor(VarUpdateOp::getVarToUpdateInIndex()), dnai);
 }
 
 InputCreatorType CopyVarUpdateOpx::getInputCreatorType(int inIndex) const {

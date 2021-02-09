@@ -57,7 +57,7 @@ public:
   // create the input poplar::Tensor for input at index with name
   // default : throw error (not all Opxs can createInput)
   virtual poplar::Tensor createInput(InIndex index,
-                                     const std::string &name) const;
+                                     const poplar::DebugNameAndId &dnai) const;
   // default return DEADEND, i.e. unable to create input tensor, and
   // cannot use downstream opxs as candidates to create input
   // tensor

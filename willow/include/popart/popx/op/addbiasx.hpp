@@ -18,7 +18,7 @@ public:
   std::vector<TensorId> mustExistBeforeCreate(int index0) const override;
   InputCreatorType getInputCreatorType(InIndex) const final;
   poplar::Tensor createInput(InIndex index,
-                             const std::string &name) const final;
+                             const poplar::DebugNameAndId &dnai) const final;
   bool createsEquiv(int index0, const Opx *opx1, int index1) const final;
 };
 

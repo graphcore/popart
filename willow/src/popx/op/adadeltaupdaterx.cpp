@@ -62,8 +62,9 @@ void AdaDeltaUpdaterOpx::grow(poplar::program::Sequence &prog) const {
   setOutTensor(AdaDeltaUpdaterOp::getUpdaterOutIndex(), updater);
 }
 
-poplar::Tensor AdaDeltaUpdaterOpx::createInput(int inIndex,
-                                               const std::string &name) const {
+poplar::Tensor
+AdaDeltaUpdaterOpx::createInput(int inIndex,
+                                const poplar::DebugNameAndId &dnai) const {
 
   if (inIndex != AdaDeltaUpdaterOp::getAccl2InIndex()) {
     throw error("AccumulateOpx::createInput, cannot create input at {}, it can "
@@ -74,7 +75,7 @@ poplar::Tensor AdaDeltaUpdaterOpx::createInput(int inIndex,
   auto accumulatorInfo = inInfo(inIndex);
   return graph().clone(popType(accumulatorInfo),
                        getInTensor(VarUpdateWithUpdaterOp::getUpdaterInIndex()),
-                       name);
+                       dnai);
 }
 
 InputCreatorType AdaDeltaUpdaterOpx::getInputCreatorType(int inIndex) const {

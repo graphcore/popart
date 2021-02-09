@@ -55,11 +55,11 @@ void GRUOpx::prepareInitialState(poplar::Tensor &init_state_h,
 
   // Check the inputs have been created
   if (hasInitH) {
-    prog.add(
-        poplar::program::Copy(getInTensor(GRUOp::getInitialHInIndex()),
-                              createInput(GRUOp::getInitialHInIndex(), "initH"),
-                              false,
-                              debugContext()));
+    prog.add(poplar::program::Copy(
+        getInTensor(GRUOp::getInitialHInIndex()),
+        createInput(GRUOp::getInitialHInIndex(), getDebugNameAndId("initH")),
+        false,
+        debugContext()));
   }
 }
 
@@ -173,7 +173,8 @@ InputCreatorType GRUOpx::getInputCreatorType(InIndex index) const {
   }
 }
 
-poplar::Tensor GRUOpx::createInput(InIndex index, const std::string &) const {
+poplar::Tensor GRUOpx::createInput(InIndex index,
+                                   const poplar::DebugNameAndId &) const {
   createdInputs.insert(index);
 
   if (index == GRUOp::getInputInIndex()) {
@@ -236,7 +237,7 @@ poplar::Tensor GRUOpx::createGRUInput() const {
   auto cache      = &dv_p->matmulCache;
 
   return popnn::gru::createInput(
-      graph(), gru_params, debugContext("input"), options, cache);
+      graph(), gru_params, getDebugNameAndId("input"), options, cache);
 }
 
 popnn::gru::GruWeights GRUOpx::getGRUWeights() const {
@@ -289,7 +290,8 @@ void GRUOpx::prepareWeights(poplar::program::Sequence &prog) const {
 
 poplar::Tensor GRUOpx::getInput(poplar::program::Sequence &prog) const {
   if (!inputCreated(GRUOp::getInputInIndex())) {
-    auto input     = createInput(GRUOp::getInputInIndex(), "input");
+    auto input =
+        createInput(GRUOp::getInputInIndex(), getDebugNameAndId("input"));
     auto raw_input = getInTensor(GRUOp::getInputInIndex());
     prog.add(poplar::program::Copy(raw_input, input, false, debugContext()));
     return input;

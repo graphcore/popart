@@ -77,8 +77,9 @@ BaseSortOpx::growIndicesSort(poplar::program::Sequence &prog) const {
       graph(), input, indices, axis, prog, debugContext());
 }
 
-poplar::Tensor BaseSortOpx::createInput(InIndex inIndex,
-                                        const std::string &name) const {
+poplar::Tensor
+BaseSortOpx::createInput(InIndex inIndex,
+                         const poplar::DebugNameAndId &dnai) const {
 
   if (inIndex == BaseSortOp::getInIndex()) {
     // Create an input that will minimise the amount of exchange in sort. This
@@ -91,7 +92,7 @@ poplar::Tensor BaseSortOpx::createInput(InIndex inIndex,
     std::swap(shape[axis], shape.back());
 
     // Create a new variable of the modified shape
-    auto t = graph().addVariable(popType(info), shape, debugContext(name));
+    auto t = graph().addVariable(popType(info), shape, dnai);
 
     // Map it linearly
     poputil::mapTensorLinearly(graph(), t);
@@ -102,7 +103,7 @@ poplar::Tensor BaseSortOpx::createInput(InIndex inIndex,
     std::swap(permutation[axis], permutation.back());
     return t.dimShuffle(permutation);
   } else {
-    return Opx::createInput(inIndex, name);
+    return Opx::createInput(inIndex, dnai);
   }
 }
 

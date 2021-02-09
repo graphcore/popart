@@ -53,15 +53,16 @@ InputCreatorType AddBiasOpx::getInputCreatorType(InIndex index) const {
                                               : InputCreatorType::Deadend;
 }
 
-poplar::Tensor AddBiasOpx::createInput(InIndex index,
-                                       const std::string &name) const {
+poplar::Tensor
+AddBiasOpx::createInput(InIndex index,
+                        const poplar::DebugNameAndId &dnai) const {
   if (index != AddBiasOp::getBiasInIndex()) {
     throw error("AddBiasOpx::createInput : Invalid index = " +
                 std::to_string(index));
   }
 
   return poplin::createBiases(
-      graph(), getInTensor(AddBiasOp::getDataInIndex()), name);
+      graph(), getInTensor(AddBiasOp::getDataInIndex()), dnai);
 }
 
 bool AddBiasOpx::createsEquiv(int, const Opx *, int) const { return false; }

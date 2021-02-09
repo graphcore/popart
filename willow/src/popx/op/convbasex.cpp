@@ -82,13 +82,14 @@ void MultiConvBaseOpx::verifyCacheSizeUnchanged(size_t beforeCacheSize) const {
   }
 }
 
-poplar::Tensor MultiConvBaseOpx::createInput(InIndex index,
-                                             const std::string &name) const {
+poplar::Tensor
+MultiConvBaseOpx::createInput(InIndex index,
+                              const poplar::DebugNameAndId &dnai) const {
   auto &op       = getOp<MultiConvBaseOp>();
   auto convIndex = MultiConvBaseOp::getConvIndexFromInIndex(index);
 
   if (isWeightsInIndex(index)) {
-    poplar::Tensor input = createWeightsInput(name, convIndex);
+    poplar::Tensor input = createWeightsInput(dnai, convIndex);
 
     // If the user supplies a 4D weights tensor as input to conv,
     // createWeights returns 5D tensor, with outer 'group' dim = 1
@@ -116,7 +117,7 @@ poplar::Tensor MultiConvBaseOpx::createInput(InIndex index,
     }
     return input;
   } else if (isDataInIndex(index)) {
-    return createDataInput(name, convIndex);
+    return createDataInput(dnai, convIndex);
   } else {
     throw error("conv opx cannot create tensor at this index yet");
   }

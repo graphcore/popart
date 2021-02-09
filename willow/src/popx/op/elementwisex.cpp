@@ -101,20 +101,20 @@ ElementWiseBinaryOpx::mustExistBeforeCreate(InIndex index) const {
 
 poplar::Tensor
 ElementWiseBinaryOpx::createInput(InIndex index,
-                                  const std::string &name) const {
+                                  const poplar::DebugNameAndId &dnai) const {
 
   const auto arg0Idx = ElementWiseBinaryBaseOp::getArg0InIndex();
   const auto arg1Idx = ElementWiseBinaryBaseOp::getArg1InIndex();
 
   if (index == arg0Idx) {
     if (dv_p->lowering().tensors().contains(op_p->input->id(arg1Idx))) {
-      return graph().clone(getInTensor(arg1Idx), name);
+      return graph().clone(getInTensor(arg1Idx), dnai);
     }
   }
 
   if (index == arg1Idx) {
     if (dv_p->lowering().tensors().contains(op_p->input->id(arg0Idx))) {
-      return graph().clone(getInTensor(arg0Idx), name);
+      return graph().clone(getInTensor(arg0Idx), dnai);
     }
   }
 

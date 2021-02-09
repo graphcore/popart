@@ -48,8 +48,9 @@ InputCreatorType DynamicSliceOpx::getInputCreatorType(InIndex index) const {
              : Opx::getInputCreatorType(index);
 }
 
-poplar::Tensor DynamicSliceOpx::createInput(InIndex index,
-                                            const std::string &name) const {
+poplar::Tensor
+DynamicSliceOpx::createInput(InIndex index,
+                             const poplar::DebugNameAndId &dnai) const {
   auto &op = getOp<DynamicSliceBaseOp>();
 
   if (index == DynamicSliceBaseOp::getInIndex()) {
@@ -70,7 +71,7 @@ poplar::Tensor DynamicSliceOpx::createInput(InIndex index,
     }
 
     return popops::createSliceableTensorFromSlice(
-        graph(), sliceTensor, paxes, numSlices, name);
+        graph(), sliceTensor, paxes, numSlices, dnai);
   }
 
   throw error("DynamicSliceOpx::createInput : Invalid index = " +

@@ -16,9 +16,9 @@ class MultiConvOpx : public MultiConvBaseOpx {
 public:
   MultiConvOpx(Op *, Devicex *);
 
-  poplar::Tensor createWeightsInput(const std::string &name,
+  poplar::Tensor createWeightsInput(const poplar::DebugNameAndId &dnai,
                                     int convIndex) const final;
-  poplar::Tensor createDataInput(const std::string &name,
+  poplar::Tensor createDataInput(const poplar::DebugNameAndId &dnai,
                                  int convIndex) const final;
   std::vector<poplar::Tensor>
   convolve(poplar::program::Sequence &,
@@ -26,7 +26,7 @@ public:
 
 private:
   std::vector<poplin::multiconv::CreateTensorArgs>
-  getCreateTensorArgs(const std::string &name) const;
+  getCreateTensorArgs(const poplar::DebugNameAndId &dnai) const;
   poplar::OptionFlags getGlobalOptions() const;
 };
 

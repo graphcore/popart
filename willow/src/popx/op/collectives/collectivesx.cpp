@@ -174,12 +174,12 @@ CollectiveBalancedReorder::createReplicaSlice(const poplar::Type &type) {
 
 poplar::Tensor CollectiveBalancedReorder::createCollectivesTensor(
     const poplar::Type &type,
-    const std::string &debugPrefix) {
+    const std::string &tensorPrefix) {
   // The full collectives (gathered) tensor is just the
   // concatenation of 'replicaFactor' slices.
   std::vector<poplar::Tensor> slices = {createReplicaSlice(type).expand({0})};
   for (unsigned i = 1; i < replicationFactor; ++i) {
-    auto name = debugPrefix + "_cbr_slice" + std::to_string(i);
+    auto name = tensorPrefix + "_cbr_slice" + std::to_string(i);
     slices.push_back(graph.clone(slices[0], {dnai, name}));
   }
   return concat(slices);

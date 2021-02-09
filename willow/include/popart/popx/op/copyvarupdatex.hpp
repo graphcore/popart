@@ -16,7 +16,7 @@ public:
   // can create updater Tensor from updated Tensor. That is, use the Var Tensor
   // to create the updater.
   poplar::Tensor createInput(InIndex,
-                             const std::string &updaterName) const final;
+                             const poplar::DebugNameAndId &dnai) const final;
 
   InputCreatorType getInputCreatorType(InIndex) const final;
   std::vector<TensorId> mustExistBeforeCreate(InIndex) const final;

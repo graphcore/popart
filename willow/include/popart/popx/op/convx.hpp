@@ -16,9 +16,9 @@ namespace popx {
 class ConvOpx : public MultiConvBaseOpx {
 public:
   ConvOpx(Op *, Devicex *);
-  poplar::Tensor createWeightsInput(const std::string &name,
+  poplar::Tensor createWeightsInput(const poplar::DebugNameAndId &dnai,
                                     int convIndex) const final;
-  poplar::Tensor createDataInput(const std::string &name,
+  poplar::Tensor createDataInput(const poplar::DebugNameAndId &dnai,
                                  int convIndex) const final;
   std::vector<poplar::Tensor>
   convolve(poplar::program::Sequence &,

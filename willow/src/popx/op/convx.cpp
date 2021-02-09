@@ -15,21 +15,21 @@ ConvOpx::ConvOpx(Op *op, Devicex *devicex) : MultiConvBaseOpx(op, devicex) {
   verifyOp<ConvOp>(op, {Onnx::Operators::Conv_1, Onnx::Operators::Conv_11});
 }
 
-poplar::Tensor ConvOpx::createWeightsInput(const std::string &name,
+poplar::Tensor ConvOpx::createWeightsInput(const poplar::DebugNameAndId &dnai,
                                            int convIndex) const {
   return poplin::createWeights(
       graph(),
       getPoplarConvParams(getOp<ConvOp>().getParameters()),
-      name,
+      dnai,
       getConvOptions(convIndex, getFwdPassFlagString()),
       &dv_p->convCache);
 }
-poplar::Tensor ConvOpx::createDataInput(const std::string &name,
+poplar::Tensor ConvOpx::createDataInput(const poplar::DebugNameAndId &dnai,
                                         int convIndex) const {
   return poplin::createInput(
       graph(),
       getPoplarConvParams(getOp<ConvOp>().getParameters()),
-      name,
+      dnai,
       getConvOptions(convIndex, getFwdPassFlagString()),
       &dv_p->convCache);
 }

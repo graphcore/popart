@@ -82,8 +82,9 @@ InputCreatorType PopartLSTMOpx::getInputCreatorType(InIndex index) const {
   }
 }
 
-poplar::Tensor PopartLSTMOpx::createInput(InIndex index,
-                                          const std::string &) const {
+poplar::Tensor
+PopartLSTMOpx::createInput(InIndex index,
+                           const poplar::DebugNameAndId &) const {
   if (index == PopartLSTMOp::getInputInIndex()) {
     return createLSTMInput();
   } else if (index == PopartLSTMOp::getWeightsInIndex()) {
@@ -101,7 +102,7 @@ poplar::Tensor PopartLSTMOpx::createInput(InIndex index,
 poplar::Tensor PopartLSTMOpx::createLSTMInput() const {
   return popnn::lstm::createInput(graph(),
                                   createLSTMParams(),
-                                  debugContext("createLSTMInput"),
+                                  getDebugNameAndId("createLSTMInput"),
                                   dv_p->lowering().lstmOptions,
                                   &dv_p->matmulCache);
 }

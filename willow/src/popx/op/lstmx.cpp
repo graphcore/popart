@@ -129,7 +129,7 @@ InputCreatorType LSTMOpx::getInputCreatorType(InIndex index) const {
 }
 
 poplar::Tensor LSTMOpx::createInput(InIndex index,
-                                    const std::string &name) const {
+                                    const poplar::DebugNameAndId &dnai) const {
   createdInputs.insert(index);
 
   if (index == LSTMOp::getInputInIndex()) {
@@ -184,7 +184,7 @@ poplar::Tensor LSTMOpx::createLSTMInput() const {
   auto cache       = &dv_p->matmulCache;
 
   return popnn::lstm::createInput(
-      graph(), lstm_params, debugContext("input"), options, cache);
+      graph(), lstm_params, getDebugNameAndId("input"), options, cache);
 }
 
 popnn::lstm::LstmState LSTMOpx::getInitialState() const {
@@ -193,8 +193,11 @@ popnn::lstm::LstmState LSTMOpx::getInitialState() const {
     auto cache       = &dv_p->matmulCache;
     auto lstm_params = createLSTMParams();
 
-    initial_state = createInitialState(
-        graph(), lstm_params, debugContext("initialState"), options, cache);
+    initial_state = createInitialState(graph(),
+                                       lstm_params,
+                                       getDebugNameAndId("initialState"),
+                                       options,
+                                       cache);
   }
 
   return *initial_state;
@@ -250,7 +253,8 @@ void LSTMOpx::prepareWeights(poplar::program::Sequence &prog) const {
 
 poplar::Tensor LSTMOpx::getInput(poplar::program::Sequence &prog) const {
   if (!inputCreated(LSTMOp::getInputInIndex())) {
-    auto input     = createInput(LSTMOp::getInputInIndex(), "input");
+    auto input =
+        createInput(LSTMOp::getInputInIndex(), getDebugNameAndId("input"));
     auto raw_input = getInTensor(LSTMOp::getInputInIndex());
     prog.add(poplar::program::Copy(raw_input, input, false, debugContext()));
     return input;

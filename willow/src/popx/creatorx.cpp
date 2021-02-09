@@ -330,8 +330,8 @@ InputCreatorCandidate::unwind(poplar::Tensor input) {
 }
 
 std::pair<poplar::Tensor, ViewChangers>
-InputCreatorCandidate::createInput(const std::string &name) {
-  poplar::Tensor t = getOpx()->createInput(getIndex(), name);
+InputCreatorCandidate::createInput(const poplar::DebugNameAndId &dnai) {
+  poplar::Tensor t = getOpx()->createInput(getIndex(), dnai);
   if (getOpx()->hasCreatorViewChangers(getIndex())) {
     return {t, getOpx()->getCreatorViewChangers(getIndex())};
   }
@@ -420,14 +420,14 @@ int64_t InputMultiCreatorCandidate::getNumElems() {
 
 // Create tensor by composing parts created by candidates
 std::pair<poplar::Tensor, ViewChangers>
-InputMultiCreatorCandidate::createInput(const std::string &name) {
+InputMultiCreatorCandidate::createInput(const poplar::DebugNameAndId &dnai) {
   auto candidateIdx = 0;
 
   std::vector<std::pair<view::Region, poplar::Tensor>> currentTensorRegions;
 
   for (auto &candidate : candidates) {
     auto tensorAndView = candidate.first->createInput(
-        name + "_fragment_" + std::to_string(candidateIdx));
+        {dnai, logging::format("fragment/{}", std::to_string(candidateIdx))});
     auto tensor = tensorAndView.first;
     logging::devicex::trace("Accepted candidate regions: {}, tensor shape: {}",
                             candidate.second,

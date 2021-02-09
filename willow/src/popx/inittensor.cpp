@@ -142,7 +142,11 @@ bool InitTensorCreator::initTensor(IrLowering &irLowering) const {
       getDstId(),
       candidate->str());
 
-  auto inputAndView = candidate->createInput(getDstId() + "_tmp");
+  Tensor *tensor    = irLowering.ir().getTensor(getDstId());
+  auto inputAndView = candidate->createInput(
+      {poplar::DebugNameAndId(getDstId() + "_tmp",
+                              tensor->getDebugInfo().getId(),
+                              tensor->getDebugInfo().getPathName())});
 
   // Try if an existing Poplar tensor can be reused
   if (irLowering.tryInitTensorByPostIRAliasing(getDstId(),
@@ -155,8 +159,6 @@ bool InitTensorCreator::initTensor(IrLowering &irLowering) const {
     // view-changing transformation
     irLowering.tensors().setViewChangers(getDstId(), inputAndView.second);
   }
-
-  Tensor *tensor = irLowering.ir().getTensor(getDstId());
 
   // The clone makes sure to only keep the necessary parts of the unwound
   // tensor alive, and contiguate it,
