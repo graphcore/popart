@@ -1551,33 +1551,47 @@ PYBIND11_MODULE(popart_core, m) {
             }
           }
         },
-        py::arg("err").none());
-    cls.def("exportInputs",
-            [](InferenceSession &session,
-               std::map<TensorId, py::iterable> inputs,
-               int64_t num_elements,
-               std::string output_filename) {
-              exportInputs(session, inputs, num_elements, output_filename);
-            });
+        py::arg("err").none(),
+        DOC(popart, Session, prepareDevice));
+    cls.def(
+        "exportInputs",
+        [](InferenceSession &session,
+           std::map<TensorId, py::iterable> inputs,
+           int64_t num_elements,
+           std::string output_filename) {
+          exportInputs(session, inputs, num_elements, output_filename);
+        },
+        DOC(popart, Session, exportInputs));
     cls.def("setRandomSeed",
             &InferenceSession::setRandomSeed,
-            py::arg("seedValue"));
+            py::arg("seedValue"),
+            DOC(popart, Session, setRandomSeed));
     cls.def("getRNGState", &InferenceSession::getRNGState);
     cls.def("setRNGState", &InferenceSession::setRNGState, py::arg("rngValue"));
 
-    cls.def(
-        "getCycleCount", &InferenceSession::getCycleCount, py::arg("id") = "");
-    cls.def("weightsFromHost", &InferenceSession::weightsFromHost);
-    cls.def("writeWeights", &TrainingSession::writeWeights);
+    cls.def("getCycleCount",
+            &InferenceSession::getCycleCount,
+            py::arg("id") = "",
+            DOC(popart, Session, getCycleCount));
+    cls.def("weightsFromHost",
+            &InferenceSession::weightsFromHost,
+            DOC(popart, Session, weightsFromHost));
+    cls.def("writeWeights",
+            &InferenceSession::writeWeights,
+            DOC(popart, Session, writeWeights));
     cls.def("run",
             &InferenceSession::run,
             py::arg("stepio"),
             py::arg("debugName") = "",
             DOC(popart, Session, run));
-    cls.def("modelToHost", &InferenceSession::modelToHost);
+    cls.def("modelToHost",
+            &InferenceSession::modelToHost,
+            DOC(popart, Session, modelToHost));
     cls.def("updateExternallySavedTensorLocations",
-            &InferenceSession::updateExternallySavedTensorLocations);
-    cls.def("getInfo", &InferenceSession::getInfo);
+            &InferenceSession::updateExternallySavedTensorLocations,
+            DOC(popart, Session, updateExternallySavedTensorLocations));
+    cls.def(
+        "getInfo", &InferenceSession::getInfo, DOC(popart, Session, getInfo));
     cls.def("getSummaryReport",
             &InferenceSession::getSummaryReport,
             py::arg("resetProfile") = true,
@@ -1661,36 +1675,56 @@ PYBIND11_MODULE(popart_core, m) {
             }
           }
         },
-        py::arg("err").none());
-    cls.def(
-        "setRandomSeed", &TrainingSession::setRandomSeed, py::arg("seedValue"));
-    cls.def("getRNGState", &InferenceSession::getRNGState);
-    cls.def("setRNGState", &InferenceSession::setRNGState, py::arg("rngValue"));
-    cls.def(
-        "getCycleCount", &TrainingSession::getCycleCount, py::arg("id") = "");
-    cls.def("weightsToHost", &TrainingSession::weightsToHost);
-    cls.def("weightsFromHost", &TrainingSession::weightsFromHost);
-    cls.def("readWeights", &TrainingSession::readWeights);
-    cls.def("writeWeights", &TrainingSession::writeWeights);
+        py::arg("err").none(),
+        DOC(popart, Session, prepareDevice));
+    cls.def("setRandomSeed",
+            &TrainingSession::setRandomSeed,
+            py::arg("seedValue"),
+            DOC(popart, Session, setRandomSeed));
+    cls.def("getRNGState", &TrainingSession::getRNGState);
+    cls.def("setRNGState", &TrainingSession::setRNGState, py::arg("rngValue"));
+    cls.def("getCycleCount",
+            &TrainingSession::getCycleCount,
+            py::arg("id") = "",
+            DOC(popart, Session, getCycleCount));
+    cls.def("weightsToHost",
+            &TrainingSession::weightsToHost,
+            DOC(popart, Session, weightsToHost));
+    cls.def("weightsFromHost",
+            &TrainingSession::weightsFromHost,
+            DOC(popart, Session, weightsFromHost));
+    cls.def("readWeights",
+            &TrainingSession::readWeights,
+            DOC(popart, Session, readWeights));
+    cls.def("writeWeights",
+            &TrainingSession::writeWeights,
+            DOC(popart, Session, writeWeights));
     cls.def("updateOptimizerFromHost",
             static_cast<void (TrainingSession::*)(const Optimizer *)>(
-                &TrainingSession::updateOptimizerFromHost));
-    cls.def("exportInputs",
-            [](TrainingSession &session,
-               std::map<TensorId, py::iterable> inputs,
-               int64_t num_elements,
-               std::string outputFilename) {
-              exportInputs(session, inputs, num_elements, outputFilename);
-            });
+                &TrainingSession::updateOptimizerFromHost),
+            DOC(popart, TrainingSession, updateOptimizerFromHost));
+    cls.def(
+        "exportInputs",
+        [](TrainingSession &session,
+           std::map<TensorId, py::iterable> inputs,
+           int64_t num_elements,
+           std::string outputFilename) {
+          exportInputs(session, inputs, num_elements, outputFilename);
+        },
+        DOC(popart, Session, exportInputs));
     cls.def("run",
             &TrainingSession::run,
             py::arg("stepio"),
             py::arg("debugName") = "",
             DOC(popart, Session, run));
-    cls.def("modelToHost", &TrainingSession::modelToHost);
+    cls.def("modelToHost",
+            &TrainingSession::modelToHost,
+            DOC(popart, Session, modelToHost));
     cls.def("updateExternallySavedTensorLocations",
-            &TrainingSession::updateExternallySavedTensorLocations);
-    cls.def("getInfo", &TrainingSession::getInfo);
+            &TrainingSession::updateExternallySavedTensorLocations,
+            DOC(popart, Session, updateExternallySavedTensorLocations));
+    cls.def(
+        "getInfo", &TrainingSession::getInfo, DOC(popart, Session, getInfo));
     cls.def("getSummaryReport",
             &TrainingSession::getSummaryReport,
             py::arg("resetProfile") = true,
@@ -1701,7 +1735,8 @@ PYBIND11_MODULE(popart_core, m) {
           auto report = session.getGraphReport(useCbor);
           return py::bytes(report);
         },
-        py::arg("useCbor") = false);
+        py::arg("useCbor") = false,
+        DOC(popart, Session, getGraphReport));
     cls.def(
         "getExecutionReport",
         [](const TrainingSession &session, bool useCbor, bool resetProfile) {
@@ -1709,12 +1744,18 @@ PYBIND11_MODULE(popart_core, m) {
           return py::bytes(report);
         },
         py::arg("useCbor")      = false,
-        py::arg("resetProfile") = true);
-    cls.def("getSerializedGraph", [](const TrainingSession &session) {
-      auto report = session.getSerializedGraph();
-      return py::bytes(report);
-    });
-    cls.def("getTensorTileMap", &TrainingSession::getTensorTileMap);
+        py::arg("resetProfile") = true,
+        DOC(popart, Session, getExecutionReport));
+    cls.def(
+        "getSerializedGraph",
+        [](const TrainingSession &session) {
+          auto report = session.getSerializedGraph();
+          return py::bytes(report);
+        },
+        DOC(popart, Session, getSerializedGraph));
+    cls.def("getTensorTileMap",
+            &TrainingSession::getTensorTileMap,
+            DOC(popart, Session, getTensorTileMap));
     cls.def("resetHostWeights",
             &TrainingSession::resetHostWeights,
             py::arg("modelProtoOrFilename"),
@@ -1725,9 +1766,12 @@ PYBIND11_MODULE(popart_core, m) {
     cls.def("_serializeIr", &TrainingSession::serializeIr, py::arg("format"));
     // Accessor for internal objects
     cls.def("getIr", &TrainingSession::getIr);
-    cls.def("getHostReduceStreamIds", &TrainingSession::getHostReduceStreamIds);
+    cls.def("getHostReduceStreamIds",
+            &TrainingSession::getHostReduceStreamIds,
+            DOC(popart, TrainingSession, getHostReduceStreamIds));
     cls.def("connectStreamToCallback",
-            &TrainingSession::connectStreamToCallback);
+            &TrainingSession::connectStreamToCallback,
+            DOC(popart, TrainingSession, connectStreamToCallback));
   }
   {
     py::class_<GraphTransformer> cls(m, "GraphTransformer");

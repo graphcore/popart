@@ -37,6 +37,12 @@ public:
   std::vector<uint32_t> getRNGState();
   void setRNGState(const std::vector<uint32_t>);
 
+  /**
+   * Sets the random number generator seed on all tiles of the device. This
+   * ensures deterministic behaviour of random operations in the graph.
+   *
+   * \param The seed value.
+   */
   void setRandomSeed(uint64_t seedValue);
 
   /**
@@ -61,10 +67,7 @@ public:
   void prepareDevice();
 
   /**
-   * write to device, from an ONNX model loaded from directory
-   * Currently, the weights are taken from the onnx Model passed to the
-   * constructor, but this should be relaxed so that the weights can
-   * come from any Model
+   * Write weights from host to the device.
    */
   void weightsFromHost();
 
@@ -228,11 +231,12 @@ protected:
    *
    * /param deviceInfo which defines the type of device to work on
    */
-  void setDevice(std::shared_ptr<DeviceInfo> deviceInfo); /**
+  void setDevice(std::shared_ptr<DeviceInfo> deviceInfo);
 
-  * Attempts to load a serialized executable. If succesful then Ir
-  * preparation and `poplar::Graph` compilation are skipped.
-  */
+  /**
+   * Attempts to load a serialized executable. If succesful then Ir
+   * preparation and `poplar::Graph` compilation are skipped.
+   */
   bool tryLoadExecutable();
 
   /**
