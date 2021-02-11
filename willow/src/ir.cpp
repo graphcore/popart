@@ -58,6 +58,7 @@
 #include <popart/transforms/groupmatmuls.hpp>
 #include <popart/transforms/hostreduce.hpp>
 #include <popart/transforms/inferpipelinestages.hpp>
+#include <popart/transforms/inplaceaccumulategradpartialsintooptimizeraccumtensor.hpp>
 #include <popart/transforms/interipucopy.hpp>
 #include <popart/transforms/iocomputetilecopy.hpp>
 #include <popart/transforms/mergecopies.hpp>
@@ -1275,6 +1276,11 @@ void Ir::prepareImpl(const IrBundle &gb) {
     applyTransform(BatchSerialize::id(2), getMainGraph());
     updateVertices();
   }
+
+  // Must be called after optimiser decomposition and decomposegradsum.
+  // Must be called before outlining.
+  applyTransform(InplaceAccumulateGradPartialsIntoOptimizerAccumTensor::id(),
+                 getMainGraph());
 
   dotCheckpoint(DotCheck::PreAlias);
 

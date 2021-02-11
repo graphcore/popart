@@ -35,6 +35,8 @@ public:
 
   void validReplacement(const OptimizerValue &rhs) const;
 
+  bool operator==(const OptimizerValue &rhs) const;
+
 private:
   float val_;
   bool isConst_;
