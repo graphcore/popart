@@ -159,6 +159,10 @@ bool RandomSetup::apply(Graph &graph) const {
       }
     }
 
+    if (ir.getSessionOptions().executionPhaseSettings.phases > 1) {
+      getSeedOp->setExecutionPhase(0);
+    }
+
     // 2. Create [randomSeed___updated] tensor.
     getSeedOp->connectInTensor(getSeedOp->getSeedInIndex(), seedId);
     TensorId updatedSeedId = GetRandomSeedOp::getUpdatedSeedTensorId();
