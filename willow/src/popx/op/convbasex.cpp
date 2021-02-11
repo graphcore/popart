@@ -76,8 +76,9 @@ bool MultiConvBaseOpx::isDataInIndex(InIndex index) const {
 
 void MultiConvBaseOpx::verifyCacheSizeUnchanged(size_t beforeCacheSize) const {
   if (beforeCacheSize != dv_p->convCache.size()) {
-    throw internal_error(
-        "Pre-planning failed for {}. It's plan was not found in the cache",
+    // TODO: T34143 replace this with error
+    logging::opx::info(
+        "Pre-planning failed for {}. Its plan was not found in the cache",
         op_p->str());
   }
 }
@@ -204,7 +205,7 @@ void MultiConvWeightsGradBaseOpx::verifyCacheSizeUnchanged(
     size_t beforeCacheSize) const {
   if (beforeCacheSize != dv_p->convCache.size()) {
     throw internal_error(
-        "Pre-planning failed for {}. It's plan was not found in the cache",
+        "Pre-planning failed for {}. Its plan was not found in the cache",
         op_p->str());
   }
 }

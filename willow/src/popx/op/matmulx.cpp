@@ -370,7 +370,7 @@ void MatMulOpx::verifyCacheSizeUnchanged(size_t beforeCacheSize) const {
 
   if (!expectedCacheSize) {
     throw internal_error(
-        "Pre-planning failed for {}. It's plan was not found in the cache",
+        "Pre-planning failed for {}. Its plan was not found in the cache",
         op_p->str());
   }
 }
