@@ -15,10 +15,13 @@ public:
   void grow(poplar::program::Sequence &) const final;
 
 private:
-  poplar::Tensor resize_nearest(poplar::Tensor &input,
-                                int dim,
-                                int64_t size,
-                                float scale) const;
+  poplar::Tensor
+  resizeDim(poplar::Tensor &input, int dim, int64_t size, float scale) const;
+
+  poplar::Tensor resizeNearestNeighbour(poplar::Tensor &input,
+                                        int dim,
+                                        int64_t size,
+                                        float scale) const;
 };
 
 class ResizeGradOpx : public Opx {

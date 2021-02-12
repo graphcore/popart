@@ -23,8 +23,7 @@ void ResizeOpx::grow(poplar::program::Sequence &prog) const {
   auto result = cloneNcopy(prog, input);
   for (int i = 0; i < input.rank(); i++) {
     if (result.shape().at(i) != outShape.at(i)) {
-      result =
-          resize_nearest(result, i, outShape.at(i), resizeOp.getScales().at(i));
+      result = resizeDim(result, i, outShape.at(i), resizeOp.getScales().at(i));
     }
   }
 
@@ -41,12 +40,36 @@ std::vector<poplar::Tensor> split(const poplar::Tensor &input, int dim) {
   return result;
 }
 
+poplar::Tensor nativeNonNegIntegerResize(poplar::Tensor &input,
+                                         const int dim,
+                                         const float scale) {
+  return input.upsample(scale, dim, poplar::UpsampleMethod::REPEAT);
+}
+
 } // namespace
 
-poplar::Tensor ResizeOpx::resize_nearest(poplar::Tensor &input,
-                                         int dim,
-                                         int64_t size,
-                                         float scale) const {
+poplar::Tensor ResizeOpx::resizeDim(poplar::Tensor &input,
+                                    int dim,
+                                    int64_t size,
+                                    float scale) const {
+  // Check float is an int.
+  // https://stackoverflow.com/a/25274904
+  constexpr float eps      = 0.00001f;
+  const float roundedScale = std::roundf(scale);
+  const bool scaleIsNonNegInt =
+      std::fabs(roundedScale - scale) <= eps && roundedScale >= 0.f;
+
+  // Use the native resize method where possible, as our generalised method for
+  // float scales is extremely expensive on tensor expressions.
+
+  return scaleIsNonNegInt ? nativeNonNegIntegerResize(input, dim, scale)
+                          : resizeNearestNeighbour(input, dim, size, scale);
+}
+
+poplar::Tensor ResizeOpx::resizeNearestNeighbour(poplar::Tensor &input,
+                                                 int dim,
+                                                 int64_t size,
+                                                 float scale) const {
   auto slices = split(input, dim);
 
   std::vector<poplar::Tensor> toConcat;

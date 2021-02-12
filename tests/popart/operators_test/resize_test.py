@@ -9,7 +9,9 @@ import test_util as tu
 import os
 from packaging import version
 import numbers
-os.environ['POPART_LOG_LEVEL'] = 'TRACE'
+
+# Uncomment for debugging:
+# os.environ['POPART_LOG_LEVEL'] = 'TRACE'
 
 
 # if the version of torch is greater or equal to 1.5.0, use
