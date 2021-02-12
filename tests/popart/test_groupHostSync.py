@@ -89,7 +89,7 @@ def test_groupHostSync():
             order.append("abs")
         if re.search(r"[0-9]{3}/add/ReduceExpression", l):
             order.append("reduce")
-        if re.search(r"\bStreamCopy\b", l):
+        if re.search(r"\bStreamCopy(Mid)?\b", l):
             order.append("streamcopy")
             countStreams += 1
 
