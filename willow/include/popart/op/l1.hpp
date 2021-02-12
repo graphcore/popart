@@ -53,6 +53,8 @@ public:
   ReductionType getReductionType() const { return reduction; }
 
   bool canShard() const override { return true; }
+  float getShardRescaleFactor(Op *const shardedOp,
+                              OutIndex index) const override;
 
 private:
   float lambda;

@@ -540,6 +540,7 @@ private:
   void verifyPipelineSettings() const;
   void verifyExecutionPhaseSettings() const;
   void verifyAliasZeroCopySettings() const;
+  void verifyBatchSerializationSettings() const;
   void verifySubgraphs() const;
   void verifyRecomputeAttributes() const noexcept(false);
   void verifyDistributedReplicatedGraphSettings() const;

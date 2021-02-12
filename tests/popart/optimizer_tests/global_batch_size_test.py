@@ -19,8 +19,9 @@ from onnx import numpy_helper
 @pytest.mark.parametrize("reduction_type", ["Sum", "Mean"])
 @pytest.mark.parametrize("loss_type", ["Identity", "L1", "NLL"])
 @pytest.mark.parametrize("optim", ["SGD", "SGDM", "ADAM", "LAMB"])
+@pytest.mark.parametrize("batchserial", ["Unroll", "Loop"])
 def test_global_batch_size_correctness(tmpdir, reduction_type, loss_type,
-                                       optim):
+                                       optim, batchserial):
     batches_per_step = 2
     hidden_size = 16
     reduction = popart.ReductionType.Sum if reduction_type == "Sum" else popart.ReductionType.Mean
@@ -58,8 +59,8 @@ def test_global_batch_size_correctness(tmpdir, reduction_type, loss_type,
                                               debugPrefix='loss')
         elif loss_type == "Identity":
             loss = builder.aiGraphcore.identityloss([x],
-                                              reduction=reduction,
-                                              debugPrefix='loss')
+                                                    reduction=reduction,
+                                                    debugPrefix='loss')
         elif loss_type == "NLL":
             x = builder.aiOnnx.softmax([x])
             l0 = builder.addInputTensor(
@@ -76,7 +77,6 @@ def test_global_batch_size_correctness(tmpdir, reduction_type, loss_type,
             loss = builder.aiGraphcore.nllloss([x, l0],
                                                reduction=reduction,
                                                debugPrefix='loss')
-
         return builder.getModelProto(), data, [x, loss], loss
 
     def run_test(compute_batch, batch_serialization_factor,
@@ -86,7 +86,7 @@ def test_global_batch_size_correctness(tmpdir, reduction_type, loss_type,
                                       accumulation_factor, replication_factor)
 
         options = popart.SessionOptions()
-        patterns = popart.Patterns()
+        patterns = popart.Patterns(popart.PatternsLevel.All)
 
         if optim is "SGD":
             optimizer = popart.SGD({
@@ -120,6 +120,11 @@ def test_global_batch_size_correctness(tmpdir, reduction_type, loss_type,
                 mode=popart.AdamMode.LambNoBias)  # to increase errors
 
         options.batchSerializationSettings.factor = batch_serialization_factor
+
+        if batch_serialization_factor > 1 and batchserial == "Loop":
+            options.batchSerializationSettings.method = popart.BatchSerializationMethod.Loop
+            options.batchSerializationSettings.transformContext = popart.BatchSerializationTransformContext.Bwd
+
         if accumulation_factor > 1:
             options.enableGradientAccumulation = True
             options.accumulationFactor = accumulation_factor
@@ -176,14 +181,20 @@ def test_global_batch_size_correctness(tmpdir, reduction_type, loss_type,
         # run_test(2, 2, 2, 2)
     ]
 
+    rtol = 1.e-5
+    atol = 1.e-5
+
     for i, results in enumerate(tests):
         print(f"Checking results of test {i}")
         outputs, proto = results
-        assert np.allclose(outputs[0].flatten(), baseline_outputs[0].flatten())
+        assert np.allclose(outputs[0].flatten(),
+                           baseline_outputs[0].flatten(),
+                           rtol=rtol,
+                           atol=atol)
 
         loss = loss_fn(outputs[-1])
         print(loss)
-        assert np.allclose(loss, baseline_loss)
+        assert np.allclose(loss, baseline_loss, rtol=rtol, atol=atol)
 
         for j in range(len(baseline_proto.graph.initializer)):
             gt = baseline_proto.graph.initializer[j]
@@ -193,4 +204,4 @@ def test_global_batch_size_correctness(tmpdir, reduction_type, loss_type,
             gt = numpy_helper.to_array(gt)
             val = proto.graph.initializer[j]
             val = numpy_helper.to_array(val)
-            assert np.allclose(val, gt, atol=1.e-5)
+            assert np.allclose(val, gt, rtol=rtol, atol=atol)

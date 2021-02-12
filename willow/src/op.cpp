@@ -492,8 +492,8 @@ std::ostream &operator<<(std::ostream &ost, const RecomputeType &rt) {
   return ost;
 }
 
-std::ostream &operator<<(std::ostream &ost, const ExecutionContext &rt) {
-  switch (rt) {
+std::ostream &operator<<(std::ostream &ost, const ExecutionContext &ec) {
+  switch (ec) {
   case (ExecutionContext::Normal): {
     ost << "Normal";
     break;
@@ -512,6 +512,24 @@ std::ostream &operator<<(std::ostream &ost, const ExecutionContext &rt) {
   }
   case (ExecutionContext::Subgraph): {
     ost << "Subgraph";
+    break;
+  }
+  }
+  return ost;
+}
+
+std::ostream &operator<<(std::ostream &ost, const ReductionType &rt) {
+  switch (rt) {
+  case (ReductionType::NoReduction): {
+    ost << "NoReduction";
+    break;
+  }
+  case (ReductionType::Sum): {
+    ost << "Sum";
+    break;
+  }
+  case (ReductionType::Mean): {
+    ost << "Mean";
     break;
   }
   }

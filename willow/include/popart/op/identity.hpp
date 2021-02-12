@@ -70,6 +70,11 @@ public:
   }
   float getSubgraphValue() const final { return getLowSubgraphValue(); }
 
+  bool canShard() const override { return true; }
+  ReductionType getShardReductionType(OutIndex index) const override {
+    return getReductionType();
+  }
+
 private:
   const ReductionType reduction_type_;
   // TODO: remove after T33184, as this is now redundant
@@ -94,6 +99,10 @@ public:
     return scaleByReplication_;
   }
   float getSubgraphValue() const final { return getLowSubgraphValue(); }
+
+  bool canShard() const override { return true; }
+  float getShardRescaleFactor(Op *const shardedOp,
+                              OutIndex index) const override;
 
 private:
   const ReductionType reduction_type_;

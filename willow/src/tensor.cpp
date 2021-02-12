@@ -221,8 +221,7 @@ int Tensor::getBatchAxisFromOp(Op *op,
   }
   // Sanity check the value
   if (proposedAxis >= info.rank()) {
-    throw error(
-        "Batch axis {} is out of range for tensor {}", proposedAxis, id);
+    return -1;
   }
   return proposedAxis;
 }
@@ -232,12 +231,17 @@ int Tensor::getBatchAxis() const {
   // If this Tensor has a Producer, get the batch axis from it
   if (hasProducer()) {
     proposedAxis = getBatchAxisFromOp(getProducer(), false, proposedAxis);
-    return proposedAxis;
+    if (proposedAxis > -1) {
+      return proposedAxis;
+    }
   }
 
   // Check the value of batch axis for this tensor from the consumers
   for (Op *consumer : consumers.getOps()) {
     proposedAxis = getBatchAxisFromOp(consumer, true, proposedAxis);
+    if (proposedAxis > -1) {
+      return proposedAxis;
+    }
   }
   return proposedAxis;
 }

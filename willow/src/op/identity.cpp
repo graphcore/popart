@@ -195,6 +195,15 @@ const std::map<int, int> &IdentityLossGradOp::gradOutToNonGradIn() const {
   return outInfo;
 }
 
+float IdentityLossGradOp::getShardRescaleFactor(Op *const shardedOp,
+                                                OutIndex index) const {
+  if (reduction_type_ == ReductionType::Mean) {
+    return static_cast<float>(shardedOp->outInfo(index).nelms()) /
+           static_cast<float>(outInfo(index).nelms());
+  }
+  return Op::getShardRescaleFactor(shardedOp, index);
+}
+
 namespace {
 
 static OpDefinition::DataTypes T = {DataType::UINT8,

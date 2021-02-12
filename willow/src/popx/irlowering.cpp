@@ -2118,7 +2118,7 @@ void IrLowering::opTaskFunc(TaskId taskId, Op *op, SequenceMap &seqs) {
                            oss.str());
     }
 
-    // 2 special case Ops when their is a gradient accumulator / velocity.
+    // 2 special case Ops when there is a gradient accumulator / velocity.
     // If we are doing gradient accumulation, we need to ensure the reset
     // and var update aren't run every time. Instead, these fragments sit
     // outside the "main" loop of the fowards and backwards passes.

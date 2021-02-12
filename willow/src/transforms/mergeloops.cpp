@@ -23,6 +23,10 @@ namespace popart {
 bool MergeLoops::canMerge(const LoopOp *const op0,
                           const LoopOp *const op1) const {
 
+  if (op0->settings.executionContext != op1->settings.executionContext) {
+    return false;
+  }
+
   if (op0->scheduledPreLoss != op1->scheduledPreLoss) {
     return false;
   }

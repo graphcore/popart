@@ -44,6 +44,7 @@ enum class ReductionType { Sum = 0, Mean, NoReduction };
 
 std::ostream &operator<<(std::ostream &, const RecomputeType &);
 std::ostream &operator<<(std::ostream &, const ExecutionContext &);
+std::ostream &operator<<(std::ostream &, const ReductionType &);
 
 class OpSerialiserBase;
 
@@ -554,7 +555,15 @@ public:
   // TODO: T16743: extend support for other dimensions than the batch
   virtual bool canShard() const;
 
+  // Get the reduction type to apply after sharding,
+  // if the output shape does not change
   virtual ReductionType getShardReductionType(OutIndex index) const;
+
+  // Get the scale factor to apply after sharding, if required
+  virtual float getShardRescaleFactor(Op *const shardedOp,
+                                      OutIndex index) const {
+    return 1.0f;
+  }
 
   // Shard operation into multiple operations according to the new,
   // already sharded input tensors. Returns the sharded output tensors.

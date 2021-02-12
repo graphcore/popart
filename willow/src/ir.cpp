@@ -534,6 +534,18 @@ void Ir::verifyAliasZeroCopySettings() const {
   }
 }
 
+void Ir::verifyBatchSerializationSettings() const {
+  if (userOptions.batchSerializationSettings.method ==
+          BatchSerializationMethod::Loop &&
+      userOptions.batchSerializationSettings.transformContext ==
+          BatchSerializationTransformContext::Fwd &&
+      isTraining()) {
+    throw error(
+        "Loop batch serialization is only supported in "
+        "BatchSerializationTransformContext::Bwd due to LoopGradOp missing.");
+  }
+}
+
 void Ir::verifyOpOutputConnectivity(const Graph &graph) const {
   logging::ir::debug("Checking op output tensor producers for graph '{}'",
                      graph.id.str());
@@ -2541,7 +2553,9 @@ void Ir::updateVertices() {
   for (auto &id_op : getMainGraph().getOps()) {
     auto op = id_op.second.get();
 
-    if (op->fromLoss == PathFromLoss::Yes) {
+    if (op->fromLoss == PathFromLoss::Yes ||
+        op->settings.executionContext ==
+            ExecutionContext::AccumulateOuterFragment) {
       op->scheduledPreLoss = ScheduledPreLoss::No;
     } else {
       op->scheduledPreLoss = ScheduledPreLoss::Yes;

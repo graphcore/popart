@@ -17,6 +17,7 @@
 #include <popart/op/mean.hpp>
 #include <popart/op/reshape.hpp>
 #include <popart/op/restore.hpp>
+#include <popart/op/scale.hpp>
 #include <popart/op/slice.hpp>
 #include <popart/op/sum.hpp>
 #include <popart/opsharding.hpp>
@@ -69,7 +70,7 @@ std::vector<Op *> ShardingHelper::reshapeForSlice(TensorId inId,
                                                   Shape newShape,
                                                   TensorId outId,
                                                   Op::Settings settings) const {
-  logging::trace(
+  logging::transform::trace(
       "[ShardingHelper] Reshaping {} -> {} {}", inId, outId, newShape);
   std::unique_ptr<ReshapeOp> reshapeOpUp = std::make_unique<ReshapeOp>(
       Onnx::AiOnnx::OpSet11::Reshape, newShape, settings);
@@ -650,6 +651,20 @@ Op *ShardingHelper::idLoss(ReductionType reductionType,
   return idLossOp;
 }
 
+Op *ShardingHelper::scale(float factor,
+                          TensorId inId,
+                          TensorId outId,
+                          Op::Settings settings) const {
+  auto scaleOpUp = std::make_unique<ScaleOp>(
+      Onnx::AiGraphcore::OpSet1::Scale, factor, settings);
+  Op *scaleOp = scaleOpUp.get();
+  graph->moveIntoGraph(std::move(scaleOpUp));
+  scaleOp->connectInTensor(ScaleOp::getInIndex(), inId);
+  scaleOp->connectOutTensor(ScaleOp::getOutIndex(), outId);
+  scaleOp->setup();
+  return scaleOp;
+}
+
 TensorId ShardingHelper::createOrGetIndexTensor(uint32_t index,
                                                 Op::Settings settings) const {
   std::stringstream ss;
@@ -862,6 +877,7 @@ Op::adjustShardPlans(const ShardingPlan inputPlan) {
 ShardingPlan Op::unrollShard(const ShardingPlan adjustedInputPlan,
                              ShardingPlan outputPlan) {
   auto &graph = getGraph();
+  auto &ir    = graph.getIr();
   ShardingHelper helper(&graph);
 
   // Construct shards
@@ -909,7 +925,8 @@ ShardingPlan Op::unrollShard(const ShardingPlan adjustedInputPlan,
           // Tensors not split
           connectInTensorFn(clonedOp, in.first, serializedTensor->second[0]);
         } else {
-          throw error("[Op] Number of input tensors must be 1 or match the "
+          throw error("[Op::unrollShard] Number of input tensors must be 1 or "
+                      "match the "
                       "serialziation factor {}",
                       num_shards);
         }
@@ -931,7 +948,27 @@ ShardingPlan Op::unrollShard(const ShardingPlan adjustedInputPlan,
     configureShardedOp(clonedOp, &cloneSettings);
     clonedOp->setup();
 
-    logging::op::trace("[Op::shard] Cloned op {} {} -> {}",
+    // Add rescaling if required
+    auto cloneOutMap = clonedOp->output->tensorMap();
+    for (const auto &out : cloneOutMap) {
+      float factor = getShardRescaleFactor(clonedOp, out.first);
+
+      if (factor != 1.0f) {
+        TensorId tmpOutId = ir.createIntermediateTensorId(out.second->id);
+        clonedOp->disconnectOutTensor(out.second);
+        clonedOp->createAndConnectOutTensor(out.first, tmpOutId);
+        clonedOp->setup();
+
+        logging::op::trace("[Op::unrollShard] Adding rescaling on {}->{} by {}",
+                           tmpOutId,
+                           out.second->id,
+                           factor);
+
+        helper.scale(factor, tmpOutId, out.second->id, clonedOp->settings);
+      }
+    }
+
+    logging::op::trace("[Op::unrollShard] Cloned op {} {} -> {}",
                        clonedOp->opid,
                        clonedOp->input->getIndexShapeMap(),
                        clonedOp->output->getIndexShapeMap());
@@ -944,11 +981,12 @@ ShardingPlan Op::unrollShard(const ShardingPlan adjustedInputPlan,
 
     Tensor *newOut = graph.getTensors().get(shardOutputs.at(oldOutId).front());
 
-    logging::trace("[Op] {}; old output shape: {}, new output shape: {}x{}",
-                   debugName(),
-                   oldOut->info.shape(),
-                   shardOutputs.at(oldOutId).size(),
-                   newOut->info.shape());
+    logging::op::trace(
+        "[Op::unrollShard] {}; old output shape: {}, new output shape: {}x{}",
+        debugName(),
+        oldOut->info.shape(),
+        shardOutputs.at(oldOutId).size(),
+        newOut->info.shape());
 
     if (reductionType != ReductionType::NoReduction) {
       Settings postSettings =
@@ -963,9 +1001,10 @@ ShardingPlan Op::unrollShard(const ShardingPlan adjustedInputPlan,
 
       if (oldOut->info.nelms() == newOut->info.nelms() &&
           shardOutputs.at(oldOutId).size() > 1) {
-        logging::trace("[Op] {}; adding reduction over {} shards.",
-                       debugName(),
-                       shardOutputs.at(oldOutId).size());
+        logging::op::trace(
+            "[Op::unrollShard] {}; adding reduction over {} shards.",
+            debugName(),
+            shardOutputs.at(oldOutId).size());
 
         Op *reduceOp;
 
@@ -987,8 +1026,9 @@ ShardingPlan Op::unrollShard(const ShardingPlan adjustedInputPlan,
           break;
         }
         case ReductionType::NoReduction:
-          throw error("Unsupported reduction type in shard() ({})",
-                      debugName());
+          throw error(
+              "[Op::unrollShard] Unsupported reduction type in shard() ({})",
+              debugName());
           break;
         }
         cloneOps.push_back(reduceOp);
@@ -1047,7 +1087,8 @@ ShardingPlan Op::loopShard(const ShardingPlan adjustedInputPlan,
   auto subgraph_scope = subgraph.getScope();
 
   // Ops inside the loop must use the correct subgraph
-  insideLoopSettings.graph = subgraph;
+  insideLoopSettings.graph            = subgraph;
+  insideLoopSettings.executionContext = ExecutionContext::Subgraph;
 
   // Iterate over Op outputs and inputs
   auto outputMap = output->tensorMap();
@@ -1190,7 +1231,7 @@ ShardingPlan Op::loopShard(const ShardingPlan adjustedInputPlan,
                               preInsideLoopSettings);
 
       } else {
-        throw error("[Op] Unsupported sharding tensor type.");
+        throw error("[Op::loopShard] Unsupported sharding tensor type.");
       }
 
       opInId = sliceScopedId;
@@ -1218,13 +1259,34 @@ ShardingPlan Op::loopShard(const ShardingPlan adjustedInputPlan,
   configureShardedOp(clonedOp, &insideLoopSettings);
   clonedOp->setup();
 
+  // Add rescaling if required
+  auto cloneOutMap = clonedOp->output->tensorMap();
+  for (const auto &out : cloneOutMap) {
+    float factor = getShardRescaleFactor(clonedOp, out.first);
+
+    if (factor != 1.0f) {
+      TensorId tmpOutId = ir.createIntermediateTensorId(out.second->id);
+      clonedOp->disconnectOutTensor(out.second);
+      clonedOp->createAndConnectOutTensor(out.first, tmpOutId);
+      clonedOp->setup();
+
+      logging::op::trace("[Op::loopShard] Adding rescaling on {}->{} by {}",
+                         tmpOutId,
+                         out.second->id,
+                         factor);
+
+      subgraphHelper.scale(
+          factor, tmpOutId, out.second->id, insideLoopSettings);
+    }
+  }
+
   // Add loop outputs and explicit inputs, add dynamic updates &
   // accumulation
   std::map<TensorId, ReductionType> outReductionMap;
   for (const auto &out : outputMap) {
     Shape outShape   = out.second->info.shape();
-    Shape sliceShape = clonedOp->outTensor(out.first)->info.shape();
-    TensorId sliceId = clonedOp->outTensor(out.first)->id;
+    Shape sliceShape = cloneOutMap.at(out.first)->info.shape();
+    TensorId sliceId = cloneOutMap.at(out.first)->id;
 
     bool reduce = outShape == sliceShape;
 
@@ -1267,7 +1329,9 @@ ShardingPlan Op::loopShard(const ShardingPlan adjustedInputPlan,
         addOp->createAndConnectOutTensor(AddOp::getOutIndex(), updatedTensorId);
         addOp->setup();
       } else {
-        throw error("Unsupported reduction type in shard() ({})", debugName());
+        throw error(
+            "[Op::loopShard] Unsupported reduction type in shard() ({})",
+            debugName());
         break;
       }
       // Reduced outputs aren't shardable, and are therefore not added
@@ -1310,7 +1374,8 @@ ShardingPlan Op::loopShard(const ShardingPlan adjustedInputPlan,
   for (const auto &out : outputMap) {
 
     // Add division for mean reduction, if required
-    if (outReductionMap.at(out.second->id) == ReductionType::Mean) {
+    auto outReduction = outReductionMap.at(out.second->id);
+    if (outReduction == ReductionType::Mean) {
       auto tmpOutId = graph.getIr().createIntermediateTensorId(out.second->id);
 
       Op *prod          = out.second->getProducer();
@@ -1319,23 +1384,22 @@ ShardingPlan Op::loopShard(const ShardingPlan adjustedInputPlan,
       prod->createAndConnectOutTensor(outIndex, tmpOutId);
       prod->setup();
 
-      TensorId dividerId = helper.createOrGetConstTensor<float>(
-          out.second->info.dataType(),
-          static_cast<float>(adjustedInputPlan.getTotalNumShards()),
-          loopSettings);
-
-      auto divOpUp = std::make_unique<DivOp>(
-          Onnx::Operators::Div_7,
-          adjustedInputPlan.getOpSettings().hasPostSetting()
-              ? adjustedInputPlan.getOpSettings().getPostSetting()
-              : settings);
-      Op *divOp = divOpUp.get();
-      graph.moveIntoGraph(std::move(divOpUp));
-      divOp->connectInTensor(AddOp::getArg0InIndex(), tmpOutId);
-      divOp->connectInTensor(AddOp::getArg1InIndex(), dividerId);
-      divOp->connectOutTensor(AddOp::getOutIndex(), out.second->id);
-      divOp->setup();
-      shardedOps.push_back(divOp);
+      float factor =
+          1.f / static_cast<float>(adjustedInputPlan.getTotalNumShards());
+      logging::op::trace(
+          "[Op::loopShard] Adding ReductionType::{} scaling on {}->{} by {}",
+          outReduction,
+          tmpOutId,
+          out.second->id,
+          factor);
+      auto scaleOp =
+          helper.scale(factor,
+                       tmpOutId,
+                       out.second->id,
+                       adjustedInputPlan.getOpSettings().hasPostSetting()
+                           ? adjustedInputPlan.getOpSettings().getPostSetting()
+                           : settings);
+      shardedOps.push_back(scaleOp);
     }
 
     // Add identity loss, if required

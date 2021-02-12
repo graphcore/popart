@@ -153,6 +153,15 @@ int NllGradOp::getIgnoreIndex() const {
   }
 }
 
+float NllGradOp::getShardRescaleFactor(Op *const shardedOp,
+                                       OutIndex index) const {
+  if (reduction_ == ReductionType::Mean && index == getOutIndex()) {
+    return static_cast<float>(shardedOp->inInfo(getProbsInIndex()).nelms()) /
+           static_cast<float>(inInfo(getProbsInIndex()).nelms());
+  }
+  return Op::getShardRescaleFactor(shardedOp, index);
+}
+
 namespace {
 
 static OpDefinition::DataTypes T1 = {DataType::FLOAT16, DataType::FLOAT};

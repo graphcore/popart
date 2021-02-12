@@ -75,6 +75,15 @@ const std::map<int, int> &L1GradOp::gradOutToNonGradIn() const {
   return outInfo;
 }
 
+float L1GradOp::getShardRescaleFactor(Op *const shardedOp,
+                                      OutIndex index) const {
+  if (reduction == ReductionType::Mean && index == getOutIndex()) {
+    return static_cast<float>(shardedOp->inInfo(getFwdActInIndex()).nelms()) /
+           static_cast<float>(inInfo(getFwdActInIndex()).nelms());
+  }
+  return Op::getShardRescaleFactor(shardedOp, index);
+}
+
 namespace {
 
 static OpDefinition::DataTypes T = {DataType::FLOAT16,

@@ -195,6 +195,15 @@ void NlllWithSoftmaxGradDirectOp::appendOutlineAttributes(
   }
 }
 
+float NlllWithSoftmaxGradDirectOp::getShardRescaleFactor(Op *const shardedOp,
+                                                         OutIndex index) const {
+  if (reduction_ == ReductionType::Mean && index == getGradOutIndex()) {
+    return static_cast<float>(shardedOp->inInfo(getProbsInIndex()).nelms()) /
+           static_cast<float>(inInfo(getProbsInIndex()).nelms());
+  }
+  return Op::getShardRescaleFactor(shardedOp, index);
+}
+
 namespace {
 
 static OpDefinition::DataTypes T = {DataType::FLOAT16, DataType::FLOAT};

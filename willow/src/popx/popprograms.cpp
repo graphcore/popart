@@ -520,7 +520,7 @@ PopPrograms::getFullProgramFromPipelineFragments() const {
   poplar::program::Sequence inner({}, {"inner"});
 
   inner.add(fill);
-  // This is the inner main cycles loop, if doing pipelining withour gradient
+  // This is the inner main cycles loop, if doing pipelining without gradient
   // accumulation, this the batches per step loop, as batch size = micro_batch
   // size
   inner.add(poplar::program::Repeat(
@@ -566,10 +566,10 @@ poplar::program::Sequence PopPrograms::program() const {
     auto accumulationFactor = ir_lowering_p->getAccumulationFactor();
     if (!ir_lowering_p->getOuterLoopFragEmpty()) {
       logging::devicex::trace(
-          "Adding gradient accumulation repeat loop with {} loops",
+          "Adding gradient accumulation repeat loop with {} iterations",
           accumulationFactor);
       prog = poplar::program::Repeat(
-          accumulationFactor, prog, {"accumalutionLoop"});
+          accumulationFactor, prog, {"accumulationLoop"});
       prog.add(accumulateOuterFragment());
     }
 
@@ -593,11 +593,12 @@ poplar::program::Sequence PopPrograms::program() const {
       }
     }
 
+    auto batchesPerStep = ir_lowering_p->ir().getDataFlow().batchesPerStep();
     // BatchesPerStep loop
-    outer.add(poplar::program::Repeat(
-        ir_lowering_p->ir().getDataFlow().batchesPerStep(),
-        prog,
-        {"batchesPerStep"}));
+    logging::devicex::trace("Adding batches per step loop with {} iterations",
+                            batchesPerStep);
+    outer.add(
+        poplar::program::Repeat(batchesPerStep, prog, {"batchesPerStep"}));
     outer.add(toHostFinalCopyFragment());
   }
 

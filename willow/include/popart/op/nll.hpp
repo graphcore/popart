@@ -70,6 +70,10 @@ public:
   TensorId getLossTensorId() const { return lossId_; }
   virtual void appendOutlineAttributes(OpSerialiserBase &) const final;
 
+  bool canShard() const override { return true; }
+  float getShardRescaleFactor(Op *const shardedOp,
+                              OutIndex index) const override;
+
 private:
   TensorId lossId_;
   ReductionType reduction_;

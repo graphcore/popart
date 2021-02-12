@@ -9,6 +9,7 @@
 #include <popart/op/concat.hpp>
 #include <popart/op/dynamic/dynamicslice.hpp>
 #include <popart/op/dynamic/dynamicupdate.hpp>
+#include <popart/op/identity.hpp>
 #include <popart/op/init.hpp>
 #include <popart/op/iotilecopy.hpp>
 #include <popart/op/ipucopy.hpp>
@@ -52,7 +53,10 @@ bool BatchSerialize::apply(Graph &graph) const {
         serializedTensorMap;
 
     for (TensorId id : ir.getTensorIds(TensorType::Stream)) {
-      tensorsWithBatch.insert(id);
+      Tensor *t = graph.getTensors().get(id);
+      if (t->getBatchAxis() != -1) {
+        tensorsWithBatch.insert(id);
+      }
     }
 
     for (Op *op : schedule) {
@@ -97,10 +101,13 @@ bool BatchSerialize::apply(Graph &graph) const {
         auto nelms = entry.first->info.nelms();
 
         // Check whether the producer is an init Op, if it has one
-        bool isProducerInitOp = false;
+        bool isProducerInitOp       = false;
+        bool isProducerIdLossGradOp = false;
         if (entry.first->hasProducer()) {
           isProducerInitOp =
               entry.first->getProducer()->isConvertibleTo<InitOp>();
+          isProducerIdLossGradOp =
+              entry.first->getProducer()->isConvertibleTo<IdentityLossGradOp>();
         }
 
         auto producerContext =
@@ -118,6 +125,7 @@ bool BatchSerialize::apply(Graph &graph) const {
         bool hasBatch =
             tensorsWithBatch.find(entry.first->id) != tensorsWithBatch.end() ||
             (isProducerInitOp && entry.first->getBatchAxis() != -1) ||
+            (isProducerIdLossGradOp && entry.first->getBatchAxis() != -1) ||
             isRemoteArg;
 
         logging::transform::trace(

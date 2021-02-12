@@ -83,32 +83,32 @@ void Optimizer::setFactorsFromOptions(const SessionOptions &opts) {
 
 bool Optimizer::replicatedGraphsEnabled() const {
   if (!factorsAreSetFromOptions) {
-    throw error("Cannot call SGD::replicatedGraphsEnabled until "
-                "SGD::setFactorsFromOptions has been called");
+    throw error("Cannot call Optimizer::replicatedGraphsEnabled until "
+                "Optimizer::setFactorsFromOptions has been called");
   }
   return enableReplicatedGraphs;
 }
 
 bool Optimizer::gradientAccumulationEnabled() const {
   if (!factorsAreSetFromOptions) {
-    throw error("Cannot call SGD::gradientAccumulationEnabled until "
-                "SGD::setFactorsFromOptions has been called");
+    throw error("Cannot call Optimizer::gradientAccumulationEnabled until "
+                "Optimizer::setFactorsFromOptions has been called");
   }
   return enableGradientAccumulation;
 }
 
 bool Optimizer::meanGradientAccumulationEnabled() const {
   if (!factorsAreSetFromOptions) {
-    throw error("Cannot call SGD::meanGradientAccumulationEnabled until "
-                "SGD::setFactorsFromOptions has been called");
+    throw error("Cannot call Optimizer::meanGradientAccumulationEnabled until "
+                "Optimizer::setFactorsFromOptions has been called");
   }
   return meanGradientAccumulation;
 }
 
 int64_t Optimizer::getReplicatedGraphCount() const {
   if (!factorsAreSetFromOptions) {
-    throw error("Cannot call SGD::getReplicatedGraphCount until "
-                "SGD::setFactorsFromOptions has been called");
+    throw error("Cannot call Optimizer::getReplicatedGraphCount until "
+                "Optimizer::setFactorsFromOptions has been called");
   }
   if (!enableReplicatedGraphs) {
     return 1LL;
@@ -119,8 +119,8 @@ int64_t Optimizer::getReplicatedGraphCount() const {
 
 int64_t Optimizer::getAccumulationFactor() const {
   if (!factorsAreSetFromOptions) {
-    throw error("Cannot call SGD::getAccumulationFactor until "
-                "SGD::setFactorsFromOptions has been called");
+    throw error("Cannot call Optimizer::getAccumulationFactor until "
+                "Optimizer::setFactorsFromOptions has been called");
   }
   return accumulationFactor;
 }

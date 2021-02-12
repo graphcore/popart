@@ -127,6 +127,8 @@ public:
   ReductionType getShardReductionType(OutIndex index) const override {
     return getReductionType();
   }
+  float getShardRescaleFactor(Op *const shardedOp,
+                              OutIndex index) const override;
 
 private:
   ReductionType reduction_;

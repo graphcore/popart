@@ -208,11 +208,24 @@ public:
                      Op::Settings settings) const;
 
   /// Create an IdLossOp with fromLoss/toLoss set to true (final loss)
-  /// \param
+  /// \param reductionType
+  /// \param intermediateId
+  /// \param lossOutId
+  /// \param settings
   Op *idLoss(ReductionType reductionType,
              TensorId intermediateId,
              TensorId lossOutId,
              Op::Settings settings) const;
+
+  /// Create a ScaleOp with factor
+  /// \param factor scaling factor
+  /// \param inId input to connect (must exist in the IR)
+  /// \param outId output to connect (must exist in the IR)
+  /// \param settings Op::Settings to apply to the ScaleOp
+  Op *scale(float factor,
+            TensorId inId,
+            TensorId outId,
+            Op::Settings settings) const;
 
   /// Connect tensor as output to an Op
   /// \param op Op to connect the output tensor to
