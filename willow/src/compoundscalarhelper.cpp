@@ -49,7 +49,7 @@ OptimizerValue CompoundScalarHelper<T>::getFromScalarId(const TensorId &optId,
   }
 
   else if (optId.find(defaultPrefix()) != std::string::npos) {
-    return getFromWeightId("fudgeCakeSpaghettiBonanza", sgd);
+    return getFromWeightId("defaultCompoundScalarPrefix", sgd);
   }
 
   throw internal_error("failed to determine optimizer type from id {}", optId);
