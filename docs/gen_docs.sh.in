@@ -9,7 +9,7 @@ source ${VENV}/bin/activate
 pip install numpy
 # There is an error when using sphinx 3.5.0.
 # https://github.com/sphinx-doc/sphinx/issues/8880
-pip install sphinx==3.4.3
+pip install sphinx==3.4.3 breathe==4.26.1
 
 source @POPLAR_ENABLE_SCRIPT@
 
