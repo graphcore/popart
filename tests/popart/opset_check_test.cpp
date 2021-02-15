@@ -23,8 +23,8 @@ public:
 };
 
 static OpDefinition hardmaxOpDef({OpDefinition::Inputs({}),
-                                       OpDefinition::Outputs({}),
-                                       OpDefinition::Attributes({})});
+                                  OpDefinition::Outputs({}),
+                                  OpDefinition::Attributes({})});
 
 static OpCreator<HardmaxOp> hardmaxOpCreator(OpDefinitions({
     {Onnx::Operators::Hardmax_1, hardmaxOpDef},
@@ -46,8 +46,8 @@ BOOST_AUTO_TEST_CASE(OpsetCheck) {
     auto input = builder->addInputTensor(inputInfo);
     std::vector<TensorId> outputs;
     if (strictOpsetVersions) {
-      outputs = builder->customOp(
-          Onnx::Operators::Hardmax_1, 11, {input}, 1, {});
+      outputs =
+          builder->customOp(Onnx::Operators::Hardmax_1, 11, {input}, 1, {});
     } else {
       outputs =
           builder->customOp(Onnx::Operators::Hardmax_1, 9, {input}, 1, {});
@@ -74,9 +74,10 @@ BOOST_AUTO_TEST_CASE(OpsetCheck) {
           auto expected_error = [&]() -> std::string {
             if (strictOpsetVersions) {
               return "For an opset 11 Model, the ONNX spec stipulates that a "
-                     "Hardmax op must be version 11. The highest version "
-                     "we have "
-                     "implemented less than or equal to 11 is 1, so bailing.";
+                     "Hardmax op must be version 11. The highest version we "
+                     "have implemented less than or equal to 11 is 1, so "
+                     "bailing. This check may be disabled by setting "
+                     "popart::SessionOptions::strictOpVersions to false.";
             } else {
               return "setup is unimplemented";
             }

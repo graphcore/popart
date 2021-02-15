@@ -246,11 +246,23 @@ void OpManager::checkOpVersionAgainstOpset(const OpInfo *opInfo,
 
   // Check the version we have for the op matches the version in the opset.
   if (ir.getSessionOptions().strictOpVersions && domain == Domain::ai_onnx) {
-    auto opid = getOpid(domain, opsetVersion, opType);
+    OperatorIdentifier opid = [&]() {
+      try {
+        return getOpid(domain, opsetVersion, opType);
+      } catch (internal_error &err) {
+        throw error("Internal error encounterd when checking op version "
+                    "against opset.\n{}This check may be disabled by setting "
+                    "popart::SessionOptions::strictOpVersions to false.",
+                    err.what());
+      }
+    }();
+
     if (opid.version != opVersion) {
       throw error("For an opset {} Model, the ONNX spec stipulates that a {} "
                   "op must be version {}. The highest version we have "
-                  "implemented less than or equal to {} is {}, so bailing.",
+                  "implemented less than or equal to {} is {}, so bailing. "
+                  "This check may be disabled by setting "
+                  "popart::SessionOptions::strictOpVersions to false.",
                   opsetVersion,
                   opType,
                   opid.version,
