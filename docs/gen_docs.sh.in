@@ -7,7 +7,9 @@ virtualenv -p python3 ${VENV}
 source ${VENV}/bin/activate
 
 pip install numpy
-pip install sphinx
+# There is an error when using sphinx 3.5.0.
+# https://github.com/sphinx-doc/sphinx/issues/8880
+pip install sphinx==3.4.3
 
 source @POPLAR_ENABLE_SCRIPT@
 
