@@ -17,6 +17,15 @@ public:
          Graph &callee,
          std::vector<int> modifiedInputsViaAttrs = {});
 
+  // parent: Graph this CallOp belongs to
+  // callee: Graph this CallOp executes
+  // NOTE: modifiedInputsViaAttrs is currently only used for testing purposes.
+  CallOp(const OperatorIdentifier &,
+         Graph &parent,
+         Graph &callee,
+         std::vector<int> modifiedInputsViaAttrs,
+         const Op::Settings &settings);
+
   void setup() final;
   std::unique_ptr<Op> clone() const final;
 

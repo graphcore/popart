@@ -16,7 +16,18 @@ CallOp::CallOp(const OperatorIdentifier &opid_,
                Graph &parent_,
                Graph &callee_,
                std::vector<int> modifiedInputsViaAttrs_)
-    : SubgraphOp(opid_, {parent_, "", parent_.getScope()}), callee(callee_),
+    : CallOp(opid_,
+             parent_,
+             callee_,
+             modifiedInputsViaAttrs_,
+             {parent_, "", parent_.getScope()}) {}
+
+CallOp::CallOp(const OperatorIdentifier &opid_,
+               Graph &parent_,
+               Graph &callee_,
+               std::vector<int> modifiedInputsViaAttrs_,
+               const Op::Settings &settings_)
+    : SubgraphOp(opid_, settings_), callee(callee_),
       modifiedInputsViaAttrs(modifiedInputsViaAttrs_) {
   settings.name = logging::format("Call_{}", callee_.id);
 }
@@ -186,8 +197,11 @@ static OpCreator<CallOp> callOpCreator(
         }
       }
 
-      return std::unique_ptr<Op>(new CallOp(
-          info.opid, info.settings.graph.get(), *calleeGraph, modifiedInputs));
+      return std::unique_ptr<Op>(new CallOp(info.opid,
+                                            info.settings.graph.get(),
+                                            *calleeGraph,
+                                            modifiedInputs,
+                                            info.settings));
     },
     true);
 } // namespace
