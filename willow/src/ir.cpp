@@ -1330,28 +1330,6 @@ void Ir::prepareImpl(const IrBundle &gb) {
     applyTransform(MergeRemote::id(), *id_graph.second);
   }
 
-  if (getSessionOptions().enableOutlining) {
-    updateAliases();
-    applyTransform(SubgraphOutline::id(), getMainGraph());
-    updateVertices();
-
-    if (getSessionOptions().batchSerializationSettings.factor > 1) {
-      // Run a second outlining step.
-      // This is necessary because in the first outlining pass we help the
-      // outlining algorithm by inserting boundaries between
-      // batch serialization phases.
-      // Because batch serialization phases are not copied from the ops to their
-      // parent subgraph, the second pass will ignore batch serialization phases
-      // and outline the repeated per-batch-element subgraphs/ops.
-      updateAliases();
-      applyTransform(SubgraphOutline::id(), getMainGraph());
-      updateVertices();
-    }
-  }
-
-  removeIsolatedTensors(true);
-  updateVertices();
-
   if (autoRecomputationEnabled() && !getSessionOptions().enablePipelining &&
       !getSessionOptions().explicitRecomputation &&
       getSessionOptions().executionPhaseSettings.phases < 2) {
@@ -1376,6 +1354,28 @@ void Ir::prepareImpl(const IrBundle &gb) {
     applyTransform(ClipWeightGradientsByNorm::id(), getMainGraph());
     updateVertices();
   }
+
+  if (getSessionOptions().enableOutlining) {
+    updateAliases();
+    applyTransform(SubgraphOutline::id(), getMainGraph());
+    updateVertices();
+
+    if (getSessionOptions().batchSerializationSettings.factor > 1) {
+      // Run a second outlining step.
+      // This is necessary because in the first outlining pass we help the
+      // outlining algorithm by inserting boundaries between
+      // batch serialization phases.
+      // Because batch serialization phases are not copied from the ops to their
+      // parent subgraph, the second pass will ignore batch serialization phases
+      // and outline the repeated per-batch-element subgraphs/ops.
+      updateAliases();
+      applyTransform(SubgraphOutline::id(), getMainGraph());
+      updateVertices();
+    }
+  }
+
+  removeIsolatedTensors(true);
+  updateVertices();
 
   applyTransform(MergeDuplicateOps::id(), getMainGraph());
 

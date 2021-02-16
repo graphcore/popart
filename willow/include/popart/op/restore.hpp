@@ -29,6 +29,8 @@ public:
 
   void appendOutlineAttributes(OpSerialiserBase &) const override;
 
+  bool isOutlineable() const override { return false; }
+
 private:
   int64_t stashSize;
 };
