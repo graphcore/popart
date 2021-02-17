@@ -17,6 +17,12 @@
 #include <popart/tensorindex.hpp>
 #include <popart/transforms/transform.hpp>
 
+namespace poprithms {
+namespace logging {
+class TimePartitionLogger;
+}
+} // namespace poprithms
+
 namespace popart {
 
 enum class RequireOptimalSchedule; /*
@@ -124,6 +130,42 @@ public:
 class Ir {
 
 public:
+  /**
+   * \return An object used to track and summarize where wall clock time is
+   *         spent in PopART compilation. This object is used to partition time
+   *         into different components (scheduling, outlining, poplar Graph
+   *         construction, etc.). It can be used as follows:
+   *
+   * <code>
+   * void foo() {
+   *     auto timer = timePartitionLogger().scopedStopwatch("In foo");
+   *     if (cond0()){
+   *        return;
+   *     }
+   *     bar();
+   *     return;
+   * }
+   * </code>
+   *
+   * When the method timePartitionLoggerStr() (see below) is called, there will
+   * be a line with "In foo" summarizing the time between between the
+   * construction and destruction of \a timer, above. Something like:
+   *
+   * In foo          : 0.03 [s]    :     30 %
+   * In bar          : 0.02 [s]    :     10 %
+   * unaccounted     : 0.05 [s]    :     50 %
+   * total           : 0.10 [s]    :    100 %.
+   *
+   * In the case where there are multiple timers which exist concurrently, only
+   * the most recently constructed one will accumulate time. This means that the
+   * most nested scope is the one which will accumulate time.
+   *
+   * For more information, see the poprithms SwitchingTimePartitionLogger class
+   * */
+  poprithms::logging::TimePartitionLogger &timePartitionLogger() const;
+
+  std::string timePartitionLoggerStr() const;
+
   enum class ExecutionMode { Inference, Training };
 
   enum class SerialiseFormat { JSON };
@@ -555,6 +597,8 @@ private:
 
 private:
   DataFlow dataFlow;
+
+  std::unique_ptr<poprithms::logging::TimePartitionLogger> timePartitionLogger_;
 
   std::unique_ptr<ONNX_NAMESPACE::ModelProto> onnxModel;
   // Additional tensors that we want to add to the model proto when saving to a

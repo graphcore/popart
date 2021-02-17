@@ -1,5 +1,6 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
 
+#include <poprithms/logging/timepartitionlogger.hpp>
 #include <popart/aliaszerocopy.hpp>
 #include <popart/chains.hpp>
 #include <popart/error.hpp>
@@ -102,6 +103,10 @@ AliasZeroCopy::AliasZeroCopy(const Ir *ir_, const LivenessAnalyzer *analyzer_)
 }
 
 void AliasZeroCopy::apply() {
+
+  const auto lifetimeTimer =
+      ir->timePartitionLogger().scopedStopwatch("AliasZeroCopy");
+
   logging::devicex::debug("[AliasZeroCopy] Started.");
 
   // Record all tensors that are fully aliased in the IR

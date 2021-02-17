@@ -31,6 +31,7 @@
 #include <popops/codelets.hpp>
 #include <poprand/RandomGen.hpp>
 #include <poprand/codelets.hpp>
+#include <poprithms/logging/timepartitionlogger.hpp>
 #include <poputil/exceptions.hpp>
 #include <popart/boollogic.hpp>
 #include <popart/devicemanager.hpp>
@@ -1474,6 +1475,9 @@ PriTask IrLowering::pipelinedCopyTask(Op *op, TaskId prevTaskId) {
 
 void IrLowering::addOpTasks(PriTasks &tasks) {
 
+  const auto addOpTasksTimer =
+      ir().timePartitionLogger().scopedStopwatch("adding Op tasks (Ir Lowering)");
+
   // Ensure there is a program fragment for every Ir Graph
   logging::devicex::trace("[addOpTasks] Graphs: {}",
                           ir().getGraphSchedule().size());
@@ -1950,7 +1954,12 @@ void IrLowering::growOpx(Opx *opx, SequenceMap::SequenceInterval seqInterval) {
   // now include code for this in the poplar program. But we need to grow it
   // in any case.
   std::vector<poplar::program::Sequence> seqVec;
-  opx->grow(seqVec);
+
+  {
+    const auto growTimeTracker =
+        ir().timePartitionLogger().scopedStopwatch("Lowering ops to poplar (\"grow\" methods)");
+    opx->grow(seqVec);
+  }
 
   // Sanity check: did the op grow over the correct number of subgraph parts?
   auto begin = subgraphPartitioner->getOpSubgraphPartBegin(opx->op_p);
@@ -2516,6 +2525,10 @@ void IrLowering::prePlanMatMuls() {
 
 void IrLowering::prepareGraph() {
   POPART_TRACEPOINT();
+
+  const auto prepareGraphTimer =
+      ir().timePartitionLogger().scopedStopwatch("Preparing poplar Graph (Ir lowering)");
+
   if (prepareGraphHasBeenCalled_) {
     logging::devicex::info("Poplar graph has already been prepared");
     return;
@@ -2535,19 +2548,25 @@ void IrLowering::prepareGraph() {
 
   logging::devicex::info("Poplar graph initialised");
 
-  popops::addCodelets(graph());
-  poplin::addCodelets(graph());
-  popnn::addCodelets(graph());
-  poprand::addCodelets(graph());
+  {
 
-  // Add custom codelets as per the user provided list of paths. Allow poplar to
-  // infer the file type from the extension. Also feed through the compile
-  // flags.
-  for (auto codelet : ir().getSessionOptions().customCodelets) {
-    logging::devicex::info("Adding codelet: {}", codelet);
-    graph().addCodelets(codelet,
-                        poplar::CodeletFileType::Auto,
-                        ir().getSessionOptions().customCodeletCompileFlags);
+    const auto addCodeletsTimer =
+        ir().timePartitionLogger().scopedStopwatch("Adding codelets");
+
+    popops::addCodelets(graph());
+    poplin::addCodelets(graph());
+    popnn::addCodelets(graph());
+    poprand::addCodelets(graph());
+
+    // Add custom codelets as per the user provided list of paths. Allow poplar
+    // to infer the file type from the extension. Also feed through the compile
+    // flags.
+    for (auto codelet : ir().getSessionOptions().customCodelets) {
+      logging::devicex::info("Adding codelet: {}", codelet);
+      graph().addCodelets(codelet,
+                          poplar::CodeletFileType::Auto,
+                          ir().getSessionOptions().customCodeletCompileFlags);
+    }
   }
 
   setFloatingPointBehaviour(graph());
@@ -2719,13 +2738,16 @@ void IrLowering::prepareGraph() {
     logging::devicex::trace("Creating OPX for {}", op->debugName());
     opxs[op->id] = createOpx(op);
   }
-
   // If the model contains convolutions or matmuls, generate plans for all of
   // them at the same time in advance of growing the ops. It saves time.
   if (dv_p->prePlanConvolutions) {
+    const auto preplanTimer =
+        ir().timePartitionLogger().scopedStopwatch("Convolution preplanning");
     prePlanConvolutions();
   }
   if (dv_p->prePlanMatMuls) {
+    const auto preplanTimer =
+        ir().timePartitionLogger().scopedStopwatch("Matmul preplanning");
     prePlanMatMuls();
   }
 
@@ -3096,6 +3118,7 @@ void IrLowering::prepareGraph() {
 
 void IrLowering::compileAndExport(const std::string &executablePath,
                                   const std::string &weightsPath) {
+
   POPART_TRACEPOINT();
   if (!getDeviceInfo()->canCompileOffline()) {
     std::ostringstream oss;
@@ -3680,6 +3703,10 @@ bool IrLowering::doRearrangeOnHost(Tensor *tensor) const {
 
 void IrLowering::initPoplarGraph() {
   POPART_TRACEPOINT();
+
+  const auto initPoplarGraphTimer =
+      ir().timePartitionLogger().scopedStopwatch("Initializing poplar Graph");
+
   poplar::Target popTarget;
   unsigned replicationFactor = 0;
 

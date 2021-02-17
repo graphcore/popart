@@ -13,6 +13,7 @@
 #include <boost/filesystem.hpp>
 #include <boost/functional/hash.hpp>
 #include <boost/random/normal_distribution.hpp>
+#include <poprithms/logging/timepartitionlogger.hpp>
 
 #include <popart/builder.hpp>
 #include <popart/builder_impl.hpp>
@@ -95,6 +96,16 @@
 #include <poplar/Target.hpp>
 
 namespace popart {
+
+poprithms::logging::TimePartitionLogger &Ir::timePartitionLogger() const {
+  return *timePartitionLogger_;
+}
+
+std::string Ir::timePartitionLoggerStr() const {
+  // Only log scopes which took 1% or more of the total time:
+  const auto thresholdPercentage = 1.0;
+  return timePartitionLogger().str(thresholdPercentage);
+}
 
 Ir::SavedInfo::SavedInfo(const popart::Ir &ir)
     : irHash(std::hash<popart::Ir>{}(ir)) {}
@@ -225,7 +236,25 @@ IrBundle::IrBundle(const ONNX_NAMESPACE::ModelProto &modelProto_,
       dataFlow(dataFlow_), loss(loss_), optimizer(optimizer_),
       deviceInfo(deviceInfo_), userOptions(userOptions_), patterns(patterns_) {}
 
-Ir::Ir() : onnxModel(nullptr) {
+namespace {
+
+const constexpr char *const partitionLoggerName{"TimePartitionLogger"};
+
+// If partitionLoggerName (above) is already taken by another
+// TimePartitionLogger, then add some random characters to it until a unique
+// name is found. This might be required for example when running popart tests
+// in parallel.
+constexpr bool appendToMakeUnique{true};
+
+} // namespace
+
+Ir::Ir()
+    : timePartitionLogger_(
+          std::make_unique<poprithms::logging::SwitchingTimePartitionLogger>(
+              partitionLoggerName,
+              appendToMakeUnique)),
+      onnxModel(nullptr) {
+
   graphs.insert(
       {GraphId::root(), std::make_unique<Graph>(*this, GraphId::root())});
 }
@@ -322,11 +351,11 @@ void Ir::setDeviceInfo(DeviceInfo &di) { deviceInfo = &di; }
 const DeviceInfo *Ir::getDeviceInfo() const { return deviceInfo; }
 
 void Ir::logIr() {
-  logging::ir::info("Logging the IR:");
+  logging::ir::debug("Logging the IR:");
   std::stringstream ss2;
   append(ss2);
-  logging::ir::info(ss2.str());
-  logging::ir::info("End IR");
+  logging::ir::debug(ss2.str());
+  logging::ir::debug("End IR");
 }
 
 void Ir::compareWithSavedHash(const IrBundle &gb) {
@@ -1354,6 +1383,10 @@ void Ir::prepareImpl(const IrBundle &gb) {
   // topological constraints. Currently, this is only one
   // in-placing Pattern.
   if (patterns.isInPlaceEnabled()) {
+
+    const auto scopedStopwatch =
+        timePartitionLogger().scopedStopwatch("Inplacing (Ir)");
+
     updateAliases();
     // Update the inplace priorities of ops before inplacing
     if (patterns.isUpdateInplacePrioritiesForIpuEnabled()) {
@@ -1394,17 +1427,27 @@ void Ir::prepareImpl(const IrBundle &gb) {
   }
 
   addAdditionalModelProtoTensors();
+  {
 
-  verifyConstExprFolding();
-  verifyConnectivity();
-  verifyTensorIds();
-  verifyVirtualGraphIds(true);
-  verifyVertexAttributesOnlyInMain();
-  verifySubgraphs();
-  verifyRecomputeAttributes();
+    auto scopedTimer =
+        timePartitionLogger().scopedStopwatch("Verifying Ir");
+
+    verifyConstExprFolding();
+    verifyConnectivity();
+    verifyTensorIds();
+    verifyVirtualGraphIds(true);
+    verifyVertexAttributesOnlyInMain();
+    verifySubgraphs();
+    verifyRecomputeAttributes();
+  }
   // end of checks
 
   setIsPrepared();
+
+  logging::devicex::info(
+      std::string(
+          "\nIr preparation complete. Breakdown of compile time so far:\n") +
+      timePartitionLoggerStr());
 }
 
 void Ir::setIsPrepared() { isPrepared_ = true; }
@@ -1871,6 +1914,10 @@ void Ir::validateAnchors() const {
 }
 
 bool Ir::applyPreAliasPattern(const PreAliasPattern *pattern, Graph &graph) {
+
+  const auto scopedTimer =
+      timePartitionLogger().scopedStopwatch(pattern->getPatternName());
+
   bool result = false;
 
   PopartTracepoint tp(
@@ -1947,6 +1994,7 @@ void Ir::applyPreAliasPatterns(Graph &graph) {
 }
 
 void Ir::applyTransform(std::size_t transformId, Graph &graph) {
+
   // Unless explictly set, a transform is enabled
   if (transformEnableMap.count(transformId) == 0 ||
       transformEnableMap.at(transformId)) {
@@ -2045,6 +2093,10 @@ bool Ir::storingIsDisabledForTensor(const Tensor *tensor) const {
 }
 
 void Ir::constructForwards() {
+
+  const auto scopedStopwatch =
+      timePartitionLogger().scopedStopwatch("Constructing forwards (Ir)");
+
   constructFromOnnxGraph(onnxModel->graph(), {});
   for (auto &id_op : getMainGraph().getOps()) {
     auto op      = id_op.second.get();
@@ -2597,6 +2649,8 @@ void Ir::updateVertices() {
 }
 
 void Ir::updateAliases() {
+  auto scopedStopwatch =
+      timePartitionLogger().scopedStopwatch("Updating aliases (Ir)");
   for (auto &graph : graphs) {
     graph.second->getTensors().clearAliases();
     for (auto &op : graph.second->getOps()) {

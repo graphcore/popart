@@ -310,8 +310,7 @@ bool SGD1Decompose::apply(Op *op) const {
   // Outputs
   // (4) W_new
   auto sgd1VarUpdateOpUp = std::make_unique<SGD1VarUpdateOp>(
-      combo->initSlr1,
-      Op::Settings(graph, combo->name() + "_var_update"));
+      combo->initSlr1, Op::Settings(graph, combo->name() + "_var_update"));
   auto sgd1VarUpdateOp = sgd1VarUpdateOpUp.get();
   transferBaseProperties(combo, sgd1VarUpdateOp);
   graph.moveIntoGraph(std::move(sgd1VarUpdateOpUp));

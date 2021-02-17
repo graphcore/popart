@@ -7,7 +7,6 @@
 #include <queue>
 #include <unordered_map>
 #include <vector>
-#include <poprithms/schedule/anneal/graph.hpp>
 #include <popart/error.hpp>
 #include <popart/filereader.hpp>
 #include <popart/graph.hpp>
@@ -22,6 +21,7 @@
 #include <popart/topocons.hpp>
 #include <popart/transforms/pipeline.hpp>
 
+#include <poprithms/logging/timepartitionlogger.hpp>
 #include <poprithms/schedule/anneal/graph.hpp>
 
 namespace popart {
@@ -587,6 +587,9 @@ Scheduler::getSchedule(const OpsBeforeKey &gCons,
                        const double timeLimitSeconds,
                        const int64_t swapLimitCount,
                        const std::string &kahnTieBreakerString) {
+
+  const auto schedulerTimeTracker =
+      pg.getIr().timePartitionLogger().scopedStopwatch("Scheduler");
 
   // TODO(jn) cache advancedOptions too
 

@@ -30,6 +30,7 @@
 #include <popops/codelets.hpp>
 #include <poprand/RandomGen.hpp>
 #include <poprand/codelets.hpp>
+#include <poprithms/logging/timepartitionlogger.hpp>
 #include <poputil/exceptions.hpp>
 #include <popart/devicemanager.hpp>
 #include <popart/error.hpp>
@@ -392,6 +393,7 @@ Devicex::~Devicex() = default;
 Devicex::Devicex(Executablex &exe, std::shared_ptr<DeviceInfo> deviceInfo_)
     : executable_(exe), deviceInfo(deviceInfo_), prepareHasBeenCalled_(false) {
   POPART_TRACEPOINT();
+
   logging::devicex::info("Setting selected device: {}", *deviceInfo);
 
   if (ir().getSessionOptions().enablePrefetchDatastreams) {
@@ -996,16 +998,30 @@ void Devicex::reconnectInputStreams() {
 
 // go all the way to creating the engine and connecting streams
 void Devicex::prepare() {
+
+  const auto lifetimeTimer =
+      ir().timePartitionLogger().scopedStopwatch("Preparing devicex");
+
   POPART_TRACEPOINT();
   if (!lowering().prepareGraphHasBeenCalled()) {
     lowering().prepareGraph();
   }
 
+  logging::devicex::info(std::string("\nNext step is poplar Engine creation. "
+                                     "Breakdown of compile time so far:\n") +
+                         ir().timePartitionLoggerStr());
+
   if (ir().getSessionOptions().compileEngine) {
+
+    const auto engineCreationTimer =
+        ir().timePartitionLogger().scopedStopwatch("Engine creation");
+
     try {
+
       auto executable = executable_.getPoplarExecutable();
       pEngine.reset(
           new poplar::Engine(std::move(executable), lowering().engineOptions));
+
     } catch (const poplar::graph_memory_allocation_error &e) {
       // If the creation of the engine throw an exception due to memory
       // allocation i.e. the program does not fit show graph profile and
@@ -1049,6 +1065,10 @@ void Devicex::prepare() {
   }
 
   prepareHasBeenCalled_ = true;
+
+  logging::devicex::info(
+      std::string("\nDevicex preparation complete. Breakdown of compile time:\n") +
+      ir().timePartitionLoggerStr());
 }
 
 void Devicex::doProfileChecks() const {

@@ -1,4 +1,5 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
+#include <poprithms/logging/timepartitionlogger.hpp>
 #include <popart/error.hpp>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
@@ -295,6 +296,11 @@ poplar::Tensor Opx::cloneNcopy(poplar::program::Sequence &prog,
 poplar::Tensor Opx::cloneNcopy(poplar::program::Sequence &prog,
                                const poplar::Tensor &tensor,
                                const std::string name) const {
+
+  const auto scopedTimer =
+      getDevicex()->ir().timePartitionLogger().scopedStopwatch(
+          "Clone (and copy)");
+
   // TODO Would be good to get the name of the tensor
   auto outTensor = graph().clone(tensor, debugContext(name));
   prog.add(poplar::program::Copy(tensor, outTensor, false, debugContext()));

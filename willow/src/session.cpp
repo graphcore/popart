@@ -31,6 +31,7 @@ Session::Session() {
   logging::session::info("Popart version: {}", popart::core::versionString());
   logging::session::info("Popart release githash: {}",
                          popart::core::packageHash());
+
 }
 
 void Session::setDevice(std::shared_ptr<DeviceInfo> deviceInfo) {
