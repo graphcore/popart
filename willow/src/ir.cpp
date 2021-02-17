@@ -3671,6 +3671,12 @@ void Ir::applyInplacePattern(Graph &graph) {
             inplaceBlocking = true;
           }
 
+          if (getSessionOptions().enablePipelining &&
+              Pipeline::inplaceRecomputationConflict(
+                  op, in_index.first, out_index.first)) {
+            inplaceBlocking = true;
+          }
+
           if (!inplaceBlocking && (restoreInplaceIn || restoreInplaceOut)) {
             logging::pattern::trace(
                 "[Inplacing] Inplacing of {} with {} not blocked, but an {} "

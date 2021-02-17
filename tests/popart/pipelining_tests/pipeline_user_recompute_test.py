@@ -62,6 +62,10 @@ def test_full_recompute_pipelining(tmpdir):
             x_1 = norm(x_1)
             x_1 = builder.aiOnnx.add([x_0, x_1])
 
+            # This checkpoint should be redundant as x_1 will be stashed
+            # at the start of stage1 on ipu1.
+            x_1 = builder.checkpointOutput([x_1])[0]
+
         with builder.virtualGraph(1), builder.pipelineStage(1):
             o = builder.aiOnnx.matmul([x_1, weight_3])
             l1 = builder.aiGraphcore.l1loss([o], 0.1)

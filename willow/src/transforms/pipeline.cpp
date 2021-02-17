@@ -828,6 +828,53 @@ bool Pipeline::inplaceRestoreRequiredForRecompute(Op *op) {
   return false;
 }
 
+bool Pipeline::inplaceRecomputationConflict(Op *op, InIndex in, OutIndex out) {
+  // PipelineCycles are not represented explicity in the IR. As such certain
+  // cases of inplace conflict must be handled here.
+  // A pipeline cycle with recomputation can cause tensors to be overwritten.
+  // On a single IPU a pipelineCycle will be lowered as:
+  //    {stageA}, {stageA_recompute, stageB}, ipuCopies
+  //
+  // This is represented in the IR as:
+  //    {StageA} ipuCopies {stageA_recompute, stageB}    (note: stageA_recompute
+  //    might be implicit)
+  //
+  // When inplacing operations in the IR, tensors in stageA that are consumed by
+  // ipuCopies will not present any conflicts as the tensors will already have
+  // been consumed before stageA_recompute where they will be modified.
+
+  // However, in the lowered version there is a conflict as {stageA_recompute}
+  // is executed before ipuCopies. As such there is a constaint that any Tensor
+  // produced by recomputation and is consumed by an ipuCopy must not be
+  // aliased.
+  //
+  // The case where there is a direct producer->consumer relationship is handled
+  // by insertClonesBeforeIpuCopyConsumers.
+
+  auto modifiedByImplicitRecompute = [](Tensor *t) {
+    return t->isImplicitRecomputeTensor();
+  };
+  auto isConsumedByIpuCopy = [](Tensor *t) {
+    for (Op *consumer : t->consumers.getOps()) {
+      if (consumer->isIpuCopyOp()) {
+        return true;
+      }
+    }
+    return false;
+  };
+
+  bool implicitRecomputeIn =
+      op->input->tensor(in)->anyAlias(modifiedByImplicitRecompute);
+  bool implicitRecomputeOut =
+      op->output->tensor(out)->anyAlias(modifiedByImplicitRecompute);
+
+  bool ipuCopyIn  = op->input->tensor(in)->anyAlias(isConsumedByIpuCopy);
+  bool ipuCopyOut = op->output->tensor(out)->anyAlias(isConsumedByIpuCopy);
+
+  return (implicitRecomputeIn && ipuCopyOut) ||
+         (implicitRecomputeOut && ipuCopyIn);
+}
+
 bool Pipeline::apply(Graph &graph) const {
 
   auto &ir            = graph.getIr();
