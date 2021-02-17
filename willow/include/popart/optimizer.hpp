@@ -14,19 +14,21 @@ namespace popart {
 
 struct SessionOptions;
 
-// Types of optimizers
+/// Types of optimizers.
 enum class OptimizerType { SGD = 0, Adam, Adaptive, NTYPES };
 
-// Replicated graph reduction mode (data parallel optimizer)
-// determines which replicated collective operations are inserted into the graph
+/// Replicated graph reduction mode (data parallel optimizer).
+/// Determines which replicated collective operations are inserted into the
+/// graph.
 enum class OptimizerReductionType {
-  // No replicated graph reduction
+  /// No replicated graph reduction
   None = 0,
-  // Gradient reduction (every iteration, after a weight's gradient is produced)
+  /// Gradient reduction (every iteration, after a weight's gradient is
+  /// produced)
   GradReduce,
-  // Momentum reduction (SGD1, every N-th iteration, gradient accumulation)
+  /// Momentum reduction (SGD1, every N-th iteration, gradient accumulation)
   AcclReduce,
-  // Accumulator reduction (Adam, every N-th iteration, gradient accumulation)
+  /// Accumulator reduction (Adam, every N-th iteration, gradient accumulation)
   AccumReduce
 };
 
@@ -48,9 +50,9 @@ getOptMap(const std::map<std::string, std::pair<float, bool>> &m);
  */
 struct ClipNormSettings {
   /// Constructor.
-  /// \param weightIds_ the weight tensor IDs that this constraint
+  /// \param weightIds_ The weight tensor IDs that this constraint
   ///     applies to.
-  /// \param maxNorm_ the maximum permissible value.
+  /// \param maxNorm_ The maximum permissible value.
   ClipNormSettings(const std::vector<TensorId> &weightIds_, float maxNorm_)
       : weightIds(weightIds_), maxNorm(maxNorm_) {}
 
@@ -76,7 +78,7 @@ public:
       : error("New optimizer is not a valid replacement. " + s, args...) {}
 };
 
-// The base Optimizer class
+/// The base Optimizer class
 class Optimizer {
 public:
   virtual ~Optimizer() = default;
@@ -84,28 +86,28 @@ public:
             const std::vector<ClipNormSettings> &clipNormSettings);
   Optimizer(const Optimizer &) = default;
 
-  // If a Graph has been constructed with this Optimizer, can it be updated with
-  // "other", without requiring a change to compute Graph? For example, a
-  // VarUpdate which has a constant scaled learning rate cannot be modified to
-  // have a variable scaled learning rate
+  // If true, a graph that has been constructed with this optimizer can be
+  // updated with \p other, without requiring a change to the compute graph.
+  // For example, a VarUpdateOp which has a constant scaled learning rate
+  // cannot be modified to have a variable scaled learning rate.
   virtual void validReplacement(const Optimizer &other) const;
 
   virtual OptimizerType type() const               = 0;
   virtual std::string type_s() const               = 0;
   virtual std::unique_ptr<Optimizer> clone() const = 0;
 
-  // (re)set the data in Tensor from a relevant value stored by this Optimizer.
-  // The particular value used is determined from the Tensor's name/type
+  // Set the data in tensor from a relevant value stored by this optimizer.
+  // The particular value used is determined from the tensor's name and type.
   virtual void resetTensorData(Tensor &) const = 0;
   virtual void setTensorData(Tensor &) const   = 0;
 
-  // Create a VarUpdate Op for a specific weight Tensor using this Optimizer,
-  // and get the names of inputs to the VarUpdate Op fo a specific Tensor
+  // Create a VarUpdateOp for a specific weight tensor using this optimizer,
+  // and get the names of inputs to the VarUpdateOp for a specific tensor.
   virtual std::unique_ptr<Op> createOp(const Tensor &weight, Graph &) const = 0;
 
   virtual std::vector<TensorId> getInputIds(const Tensor &weight) const = 0;
 
-  // Unique non-const optimizers
+  // Unique non-constant optimizers.
   virtual std::vector<std::tuple<TensorId, TensorInfo>>
   getOptimizerInputs(const Tensor &weight) const = 0;
 
@@ -317,18 +319,18 @@ private:
 //
 
 /**
- * Stochastic Gradient Descent (SGD) optimizer.
+ * Stochastic Gradient Descent (%SGD) optimizer.
  *
  * Akin to any optimizer implementation, this class is responsible for updating
  * each weight tensor (\f$w\f$) in the model using the gradient (\f$g\f$) of
  * the loss function with respect to the weight as calculated during the
  * backwards pass.
  *
- * The SGD optimizer has the following **state** for each weight:
+ * The %SGD optimizer has the following **state** for each weight:
  *
  *  * *velocity* (\f$v\f$)
  *
- * The SGD optimizer has the following **hyper parameters**:
+ * The %SGD optimizer has the following **hyper parameters**:
  *
  *  * *learning rate* (\f$\text{lr}\f$)
  *  * *momentum* (\f$\text{mm}\f$)
@@ -418,23 +420,24 @@ public:
   }
 
 public:
-  // Does "w" have specific OptimizerValues, or will it use default?
+  // Returns true if \p w has specific OptimizerValues, false if it will use
+  // the default.
   bool hasSpecific(const Tensor &w) const;
 
   /// Constructor.
-  /// \param defaultLearningRate the learning rate value to use for weights
+  /// \param defaultLearningRate The learning rate value to use for weights
   ///     for which no weight-specific hyper parameter have been inserted.
-  /// \param defaultWeightDecay the weight decay value  to use for weights
+  /// \param defaultWeightDecay The weight decay value  to use for weights
   ///     for which no weight-specific hyper parameter have been inserted.
-  /// \param defaultMomentum the momentum value to use for weights
+  /// \param defaultMomentum The momentum value to use for weights
   ///     for which no weight-specific hyper parameter have been inserted.
-  /// \param defaultDampening the dampening value to use for weights
+  /// \param defaultDampening The dampening value to use for weights
   ///     for which no weight-specific hyper parameter have been inserted.
-  /// \param defaultVelocityScaling the velocity scaling value to use for
+  /// \param defaultVelocityScaling The velocity scaling value to use for
   ///     weights for which no weight-specific hyper parameter have been
   ///     inserted.
-  /// \param lossScaling the loss scaling value to use.
-  /// \param clipNormSettings a vector of ClipNormSettings (this can be used
+  /// \param lossScaling The loss scaling value to use.
+  /// \param clipNormSettings A vector of ClipNormSettings (this can be used
   ///     to set maximum values for weights).
   SGD(OptimizerValue defaultLearningRate,
       OptimizerValue defaultWeightDecay,
@@ -445,14 +448,14 @@ public:
       const std::vector<ClipNormSettings> &clipNormSettings = {});
 
   /// Constructor.
-  /// \param params a parameter map where keys are one of
+  /// \param params A parameter map where the keys are one or more of
   ///     `"defaultLearningRate"`, `"defaultWeightDecay"`, `"defaultMomentum"`,
-  ///     `"defaultDampening"`, `"defaultVelocityScaling"` or `"lossScaling"`
-  ///     and the map's values pairs of floats and booleans representing
+  ///     `"defaultDampening"`, `"defaultVelocityScaling"` or `"lossScaling"`.
+  ///     The map's values are pairs of floats and booleans representing
   ///     OptimizerValue constructor arguments. The map does not have to
-  ///     specify each hyper parameter as default values will be used where
+  ///     specify each hyper parameter because default values will be used where
   ///     parameters are missing.
-  /// \param clipNormSettings a vector of ClipNormSettings (this can be used
+  /// \param clipNormSettings A vector of ClipNormSettings (this can be used
   ///     to set maximum values for weights).
   ///
   /// **EXAMPLE**:
@@ -478,12 +481,12 @@ public:
 
   std::unique_ptr<Op> createOp(const Tensor &weight, Graph &) const final;
 
-  // The names of the inputs for the VarUpdateOp for the Variable Tensor
-  // "weight". In the returned vector,  a "" is used as a placeholder for
-  // constant inputs
+  /// The names of the inputs for the VarUpdateOp for the variable tensor
+  /// \p weight. In the returned vector, an empty string ("") is used as a
+  /// placeholder for constant inputs.
   std::vector<TensorId> getInputIds(const Tensor &weight) const final;
 
-  // The names and infos of the optimizer Tensors
+  /// The names and information for the optimizer tensors.
   std::vector<std::tuple<TensorId, TensorInfo>>
   getOptimizerInputs(const Tensor &weight) const final;
 
@@ -492,21 +495,21 @@ public:
   void resetTensorData(Tensor &) const final;
   void setTensorData(Tensor &) const final;
 
-  // Tensor "opt" has an id, based on which it matches a compound scalar which
-  // this object can compute from the atomic scalars
+  /// Tensor "opt" has an id, which it uses to match a compound scalar which
+  /// this object can compute from the atomic scalars.
   float getStoredValue(const TensorId &optId) const;
 
   /// Insert a weight-specific set of hyper parameters.
-  /// \param weight the TensorId of the weight.
-  /// \param learningRate the learning rate value to use for this specific
+  /// \param weight The TensorId of the weight.
+  /// \param learningRate The learning rate value to use for this specific
   ///     weight.
-  /// \param weightDecay the weight decay value to use for this specific
+  /// \param weightDecay The weight decay value to use for this specific
   ///     weight.
-  /// \param momentum the momentum value to use for this specific
+  /// \param momentum The momentum value to use for this specific
   ///     weight.
-  /// \param dampening the dampening value to use for this specific
+  /// \param dampening The dampening value to use for this specific
   ///     weight.
-  /// \param velocityScaling the velocity scaling value to use for this
+  /// \param velocityScaling The velocity scaling value to use for this
   ///     specific weight.
   void insertSpecific(const TensorId &weight,
                       OptimizerValue learningRate,
@@ -516,8 +519,8 @@ public:
                       OptimizerValue velocityScaling);
 
   /// Insert a weight-specific set of hyper parameters.
-  /// \param weight the TensorId of the weight.
-  /// \param params a parameter map where keys are one of
+  /// \param weight The TensorId of the weight.
+  /// \param params A parameter map where keys are one of
   ///     `"defaultLearningRate"`, `"defaultWeightDecay"`, `"defaultMomentum"`,
   ///     `"defaultDampening"`, `"defaultVelocityScaling"` or `"lossScaling"`
   ///     and the map's values pairs of floats and booleans representing
@@ -528,8 +531,9 @@ public:
   insertSpecific(const TensorId &weight,
                  const std::map<std::string, std::pair<float, bool>> &params);
 
-  // If velocity (accumulation) is required, either because of gradient
-  // accumulation or because of momentum : return true, otherwise return false.
+  /// If velocity (accumulation) is required, either because of gradient
+  /// accumulation or because of momentum, then return true otherwise return
+  /// false.
   bool requiresAccl(const Tensor &weight) const;
 
   const OptimizerValueMap &learningRates() const { return lrs; }
@@ -598,10 +602,10 @@ private:
 class ConstSGD : public SGD {
 public:
   /// Constructor.
-  /// \param learningRate a constant learning rate.
-  /// \param weightDecay a constant weight decay value.
-  /// \param lossScaling a constant loss scaling value.
-  /// \param clipNormSettings a vector of ClipNormSettings (this can be used
+  /// \param learningRate A constant learning rate.
+  /// \param weightDecay A constant weight decay value.
+  /// \param lossScaling A constant loss scaling value.
+  /// \param clipNormSettings A vector of ClipNormSettings (this can be used
   ///     to set maximum values for weights).
   ConstSGD(float learningRate,
            float weightDecay                                     = 0,

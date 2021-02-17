@@ -16,8 +16,8 @@ public:
   /// Equivalent to OptimizerValue(v, true).
   OptimizerValue(float v) : val_(v), isConst_(true) {}
   /// Constructor.
-  /// \param v the current value of the hyper parameter.
-  /// \param c a boolean flag to indicate whether the parameter will remain
+  /// \param v The current value of the hyper parameter.
+  /// \param c A boolean flag to indicate whether the parameter will remain
   ///     at this value forever (`true`) or may change over time (`false`).
   OptimizerValue(float v, bool c) : val_(v), isConst_(c) {}
   OptimizerValue(std::pair<float, bool> x)

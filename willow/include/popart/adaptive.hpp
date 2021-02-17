@@ -317,25 +317,25 @@ public:
   bool hasSpecific(const Tensor &w) const;
 
   /// Constructor.
-  /// \param defaultLearningRate the learning rate value to use for weights
+  /// \param defaultLearningRate The learning rate value to use for weights
   ///     for which no weight-specific hyper parameter have been inserted.
-  /// \param defaultWeightDecay the weight decay value to use for weights
+  /// \param defaultWeightDecay The weight decay value to use for weights
   ///     for which no weight-specific hyper parameter have been inserted.
-  /// \param defaultAlpha the alpha value to use for weights
+  /// \param defaultAlpha The alpha value to use for weights
   ///     for which no weight-specific hyper parameter have been inserted.
-  /// \param defaultMomentum the momentum value to use for weights
+  /// \param defaultMomentum The momentum value to use for weights
   ///     for which no weight-specific hyper parameter have been inserted.
-  /// \param defaultEps the epsilon value to use for weights
+  /// \param defaultEps The epsilon value to use for weights
   ///     for which no weight-specific hyper parameter have been inserted.
-  /// \param lossScaling the loss scaling value to use.
-  /// \param adaptiveMode the AdaptiveMode value to use.
-  /// \param weightDecayMode the WeightDecayMode value to use.
-  /// \param accumType data type to use for gradient accumulation.
-  /// \param accl1Type data type to use for tensor that stores first-order
+  /// \param lossScaling The loss scaling value to use.
+  /// \param adaptiveMode The AdaptiveMode value to use.
+  /// \param weightDecayMode The WeightDecayMode value to use.
+  /// \param accumType Data type to use for gradient accumulation.
+  /// \param accl1Type Data type to use for tensor that stores first-order
   ///     momentum optimizer state.
-  /// \param accl2Type data type to use for tensor that stores second-order
+  /// \param accl2Type Data type to use for tensor that stores second-order
   ///     momentum optimizer state.
-  /// \param accl2Type data type to use for tensor that stores third-order
+  /// \param accl2Type Data type to use for tensor that stores third-order
   ///     momentum optimizer state.
   Adaptive(OptimizerValue defaultLearningRate,
            OptimizerValue defaultWeightDecay,
@@ -364,21 +364,21 @@ public:
   //
 
   /// Constructor.
-  /// \param params a parameter map where keys are one of
+  /// \param params A parameter map where keys are one of
   ///     `"defaultLearningRate"`, `"defaultWeightDecay"`, `"defaultAlpha"`,
   ///     `"defaultMomentum"`, `"defaultEps"` or `"lossScaling"`, and the
   ///     map's values pairs of floats and booleans
   ///     representing OptimizerValue constructor arguments. The map does not
   ///     have to specify each hyper parameter as default values will be used
   ///     where parameters are missing.
-  /// \param adaptiveMode the AdaptiveMode value to use.
-  /// \param weightDecayMode the WeightDecayMode value to use.
-  /// \param accumType data type to use for gradient accumulation.
-  /// \param accl1Type data type to use for tensor that stores first-order
+  /// \param adaptiveMode The AdaptiveMode value to use.
+  /// \param weightDecayMode The WeightDecayMode value to use.
+  /// \param accumType Data type to use for gradient accumulation.
+  /// \param accl1Type Data type to use for tensor that stores first-order
   ///     momentum optimizer state.
-  /// \param accl2Type data type to use for tensor that stores second-order
+  /// \param accl2Type Data type to use for tensor that stores second-order
   ///     momentum optimizer state.
-  /// \param accl2Type data type to use for tensor that stores third-order
+  /// \param accl2Type Data type to use for tensor that stores third-order
   ///     momentum optimizer state.
   ///
   /// **EXAMPLE**:
@@ -417,12 +417,12 @@ public:
 
   std::unique_ptr<Op> createOp(const Tensor &weight, Graph &) const final;
 
-  // The names of the inputs for the VarUpdateOp for the Variable Tensor
-  // "weight". In the returned vector,  a "" is used as a placeholder for
-  // constant inputs
+  /// The names of the inputs for the VarUpdateOp for the Variable Tensor
+  /// "weight". In the returned vector,  an empty string ("") is used as a
+  /// placeholder for constant inputs.
   std::vector<TensorId> getInputIds(const Tensor &weight) const final;
 
-  // The names and infos of the optimizer Tensors
+  /// The names and infos of the optimizer tensors.
   std::vector<std::tuple<TensorId, TensorInfo>>
   getOptimizerInputs(const Tensor &weight) const final;
 
@@ -431,21 +431,21 @@ public:
   void resetTensorData(Tensor &) const final;
   void setTensorData(Tensor &) const final;
 
-  // Tensor "opt" has an id, based on which it matches a compound scalar which
-  // this object can compute from the atomic scalars
+  /// Tensor "opt" has an id, based on which it matches a compound scalar which
+  /// this object can compute from the atomic scalars.
   float getStoredValue(const TensorId &optId) const;
 
   /// Insert a weight-specific set of hyper parameters.
-  /// \param weight the TensorId of the weight.
-  /// \param learningRate the learning rate value to use for this specific
+  /// \param weight The TensorId of the weight.
+  /// \param learningRate The learning rate value to use for this specific
   ///     weight.
-  /// \param weightDecay the weight decay value to use for this specific
+  /// \param weightDecay The weight decay value to use for this specific
   ///     weight.
-  /// \param alpha the alpha value to use for this specific
+  /// \param alpha The alpha value to use for this specific
   ///     weight.
-  /// \param momentum the momentum value to use for this specific
+  /// \param momentum The momentum value to use for this specific
   ///     weight.
-  /// \param eps the epsilon value to use for this specific
+  /// \param eps The epsilon value to use for this specific
   ///     weight.
   void insertSpecific(const TensorId &weight,
                       OptimizerValue learningRate,
@@ -459,8 +459,8 @@ public:
   void setStep(std::map<TensorId, int64_t> steps);
 
   /// Insert a weight-specific set of hyper parameters.
-  /// \param weight the TensorId of the weight.
-  /// \param params a parameter map where keys are one of
+  /// \param weight The TensorId of the weight.
+  /// \param params A parameter map where keys are one of
   ///     `"defaultLearningRate"`, `"defaultWeightDecay"`, `"defaultAlpha"`,
   ///     `"defaultMomentum"`, `"defaultEps"` or `"lossScaling"`
   ///     and the map's values pairs of floats and booleans representing
