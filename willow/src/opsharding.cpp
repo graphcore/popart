@@ -1347,6 +1347,15 @@ ShardingPlan Op::loopShard(const ShardingPlan adjustedInputPlan,
         }
       }
 
+      logging::op::trace("[Op::loopShard] Dynamic update {} {} -> {} {} (num "
+                         "shards: {}, axis: {})",
+                         sliceId,
+                         sliceShape,
+                         updatedTensorId,
+                         outShape,
+                         num_shards,
+                         axis);
+
       subgraphHelper.dynamicUpdate(axis,
                                    num_shards,
                                    sliceId,

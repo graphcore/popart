@@ -8,6 +8,7 @@
 #include <popart/ir.hpp>
 #include <popart/onnxutil.hpp>
 #include <popart/op.hpp>
+#include <popart/op/init.hpp>
 #include <popart/op/ipucopy.hpp>
 #include <popart/op/loop.hpp>
 #include <popart/op/restore.hpp>
@@ -231,6 +232,10 @@ int Tensor::getBatchAxis() const {
   // If this Tensor has a Producer, get the batch axis from it
   if (hasProducer()) {
     proposedAxis = getBatchAxisFromOp(getProducer(), false, proposedAxis);
+    if (getProducer()->isConvertibleTo<InitOp>()) {
+      // InitOp decides batch axis ultimately
+      return proposedAxis;
+    }
     if (proposedAxis > -1) {
       return proposedAxis;
     }
