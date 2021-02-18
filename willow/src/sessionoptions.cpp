@@ -193,6 +193,16 @@ unsigned SessionOptions::getPrefetchBufferingDepth(const TensorId &id) const {
   }
 }
 
+int64_t SessionOptions::getGlobalReplicationFactor() const {
+  if (enableDistributedReplicatedGraphs) {
+    return globalReplicationFactor;
+  }
+  if (enableReplicatedGraphs) {
+    return replicatedGraphCount;
+  }
+  return 1LL;
+}
+
 // No implementation required
 
 } // namespace popart

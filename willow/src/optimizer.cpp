@@ -71,22 +71,13 @@ SGD SGD::fromDefaultMap(const std::map<std::string, OptimizerValue> &m) {
 }
 
 void Optimizer::setFactorsFromOptions(const SessionOptions &opts) {
-  enableReplicatedGraphs     = opts.enableReplicatedGraphs;
+  replicatedGraphCount       = opts.getGlobalReplicationFactor();
   enableGradientAccumulation = opts.enableGradientAccumulation;
-  replicatedGraphCount       = opts.replicatedGraphCount;
   accumulationFactor         = opts.accumulationFactor;
   meanGradientAccumulation =
       enableGradientAccumulation &&
       opts.accumulationReductionType == ReductionType::Mean;
   factorsAreSetFromOptions = true;
-}
-
-bool Optimizer::replicatedGraphsEnabled() const {
-  if (!factorsAreSetFromOptions) {
-    throw error("Cannot call Optimizer::replicatedGraphsEnabled until "
-                "Optimizer::setFactorsFromOptions has been called");
-  }
-  return enableReplicatedGraphs;
 }
 
 bool Optimizer::gradientAccumulationEnabled() const {
@@ -110,10 +101,6 @@ int64_t Optimizer::getReplicatedGraphCount() const {
     throw error("Cannot call Optimizer::getReplicatedGraphCount until "
                 "Optimizer::setFactorsFromOptions has been called");
   }
-  if (!enableReplicatedGraphs) {
-    return 1LL;
-  }
-
   return replicatedGraphCount;
 }
 

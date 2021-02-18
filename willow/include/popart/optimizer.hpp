@@ -118,7 +118,6 @@ public:
 
   void setFactorsFromOptions(const SessionOptions &);
 
-  bool replicatedGraphsEnabled() const;
   bool gradientAccumulationEnabled() const;
   bool meanGradientAccumulationEnabled() const;
   int64_t getReplicatedGraphCount() const;
@@ -150,12 +149,10 @@ private:
   OptimizerValue ls;
   std::vector<ClipNormSettings> clipNormSettings;
 
-  // factors from SessionOptions (TODO adopt permanently T12588, T12589)
-  bool enableReplicatedGraphs;
   bool enableGradientAccumulation;
   bool meanGradientAccumulation;
-  int64_t replicatedGraphCount;
   int64_t accumulationFactor;
+  int64_t replicatedGraphCount;
 
   bool factorsAreSetFromOptions{false};
 };

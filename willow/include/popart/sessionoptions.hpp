@@ -723,6 +723,15 @@ struct SessionOptions {
   /// The first replica index that this PopART instance is running.
   int64_t globalReplicaOffset = 0;
 
+  // Helper method to handle the different replication options.
+  // If enableDistributedReplicatedGraphs is true
+  //   return globalReplicationFactor
+  // if enableReplicatedGraphs
+  //   return replicatedGraphCount
+  // otherwise
+  //   return 1
+  int64_t getGlobalReplicationFactor() const;
+
   /// Allows to group the streams from host at the beginning and the streams
   /// to host at the end, this trades off sum-liveness efficiency for cycle
   /// efficiency.
