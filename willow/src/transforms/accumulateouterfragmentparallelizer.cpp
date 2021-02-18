@@ -33,7 +33,9 @@ namespace popart {
 AccumulateOuterFragmentParallelizer::OpCluster::OpCluster(const Graph *graph,
                                                           Op *op)
     : graph{graph}, ops{op}, adjacentOps{}, remoteLoadOps{}, remoteStoreOps{},
-      virtualGraphId{op->getVirtualGraphId()}, tensorIds{} {
+      virtualGraphId{op->hasVirtualGraphId() ? op->getVirtualGraphId()
+                                             : unusedVGraphId},
+      tensorIds{} {
   gatherTensorIds(op, tensorIds);
 
   // Populate adjacentOps.
@@ -174,7 +176,8 @@ bool AccumulateOuterFragmentParallelizer::OpCluster::hasVirtualGraphId() const {
 
 VGraphId
 AccumulateOuterFragmentParallelizer::OpCluster::getVirtualGraphId() const {
-  return ops[0]->getVirtualGraphId();
+  return ops[0]->hasVirtualGraphId() ? ops[0]->getVirtualGraphId()
+                                     : unusedVGraphId;
 }
 
 int64_t
@@ -186,7 +189,9 @@ AccumulateOuterFragmentParallelizer::OpCluster::calcNumLoadBytes() const {
 
   for (auto remoteLoadOp : remoteLoadOps) {
     // RemoteLoadOp will do exactly one load.
-    loadBytesPerVgid[remoteLoadOp->getVirtualGraphId()] +=
+    loadBytesPerVgid[remoteLoadOp->hasVirtualGraphId()
+                         ? remoteLoadOp->getVirtualGraphId()
+                         : unusedVGraphId] +=
         remoteLoadOp->outInfo(RemoteLoadOp::getLocalTensorOutIndex()).nbytes();
   }
   for (auto remoteExchangeOp : remoteExchangeOps) {
@@ -194,7 +199,9 @@ AccumulateOuterFragmentParallelizer::OpCluster::calcNumLoadBytes() const {
     // by number of output tensors.
     auto numLoads = remoteExchangeOp->output->tensors().size();
     for (size_t load = 0; load < numLoads; ++load) {
-      loadBytesPerVgid[remoteExchangeOp->getVirtualGraphId()] +=
+      loadBytesPerVgid[remoteExchangeOp->hasVirtualGraphId()
+                           ? remoteExchangeOp->getVirtualGraphId()
+                           : unusedVGraphId] +=
           remoteExchangeOp->outInfo(load).nbytes();
     }
   }
