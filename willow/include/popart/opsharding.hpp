@@ -12,8 +12,9 @@ namespace popart {
  * the graph.
  *
  * Static vs. dynamic methods:
+ *
  * - Static methods can't be outlined since the slicing/concatenation index
- *   is fixed at compile time.
+ *   is fixed at compile time
  * - Static methods can be eliminated during compile time / IR lowering
  * - Static methods can be inplaced fully
  * - Dynamic methods can be outlined, the slicing/concatenation index is a
@@ -26,11 +27,11 @@ class ShardingHelper {
 public:
   ShardingHelper(Graph *graph_);
 
-  /// Concatenate tensors with a static ConcatOp (not outlineable)
-  /// \param axis tensor axis along which to concatenate
-  /// \param tensorIds tensors to concatenate (must exist in the IR)
-  /// \param concatId output tensor name (must not exist in the IR)
-  /// \param settings Op::Settings to apply to the ConcatOp
+  /// Concatenate tensors with a static ConcatOp (not outlineable).
+  /// \param axis Tensor axis along which to concatenate.
+  /// \param tensorIds Tensors to concatenate (must exist in the IR).
+  /// \param concatId Output tensor name (must not exist in the IR).
+  /// \param settings Op::Settings to apply to the ConcatOp.
   ///
   /// <pre>
   /// tensorIds(0) tensorIds(1) ... tensorIds(n)
@@ -44,12 +45,12 @@ public:
                                  TensorId concatId,
                                  Op::Settings settings) const;
 
-  /// Shard tensors with a set of SliceOps (not outlineable)
-  /// \param axis tensor axis along which to slice
-  /// \param tensorIds slice tensors to generate (must not exist in the IR)
-  /// \param concatId input tensor name (must exist in the IR)
+  /// Shard tensors with a set of SliceOps (not outlineable).
+  /// \param axis Tensor axis along which to slice.
+  /// \param tensorIds Slice tensors to generate (must not exist in the IR).
+  /// \param concatId Input tensor name (must exist in the IR).
   /// \param settings Op::Settings to apply to the ConcatOp
-  ///                 (1 setting in total or 1 setting per slice tensor)
+  ///                 (1 setting in total or 1 setting per slice tensor).
   ///
   /// <pre>
   ///           concatId
@@ -63,11 +64,10 @@ public:
                                 TensorId concatId,
                                 std::vector<Op::Settings> settings) const;
 
-  /// Create an AddOps to create an offset version of the input tensor
-  /// \param tensorId slice tensor to generate (must not exist in the IR)
-  /// \param concatId input tensor name (must exist in the IR)
-  /// \param offsetId offset tensor name (must exist in the IR)
-  /// \param settings Op::Settings to apply to the AddOp
+  /// Create an AddOps to create an offset version of the input tensor.
+  /// \param tensorId Input tensor name (must exist in the IR).
+  /// \param offsetId Offset tensor name (must exist in the IR).
+  /// \param settings Op::Settings to apply to the AddOp.
   /// <pre>
   /// concatId  offsetId
   ///       |  /
@@ -81,11 +81,11 @@ public:
                            Op::Settings settings) const;
 
   /// Shard tensors with a set of AddOps to create offset versions of the input
-  /// tensor
-  /// \param tensorIds slice tensors to generate (must not exist in the IR)
-  /// \param concatId input tensor name (must exist in the IR)
+  /// tensor.
+  /// \param tensorIds Slice tensors to generate (must not exist in the IR).
+  /// \param concatId Input tensor name (must exist in the IR).
   /// \param settings Op::Settings to apply to the AddOp
-  ///                 (1 setting in total or 1 setting per slice tensor)
+  ///                 (1 setting in total or 1 setting per slice tensor).
   /// <pre>
   ///
   /// Const(0)  concatId   Const(n)
@@ -98,16 +98,16 @@ public:
                             TensorId concatId,
                             std::vector<Op::Settings> settings) const;
 
-  /// Update tensor with a dynamic DynamicUpdateOp (outlineable)
-  /// \param axis tensor axis along which to concatenate
-  /// \param num_shards number of addressable indices along the axis
-  /// \param sliceId slice tensor to update into the concatOutId tensor
-  ///        (must exist in IR)
-  /// \param concatInId tensor to be updated (must exist in the IR)
-  /// \param concatOutId updated tensor (must not exist in the IR)
-  /// \param indexId index tensor to indicate where to apply the update
-  ///        (must exist in the IR)
-  /// \param settings Op::Settings to apply to the DynamicUpdateOp
+  /// Update tensor with a dynamic DynamicUpdateOp (outlineable).
+  /// \param axis Tensor axis along which to concatenate,
+  /// \param num_shards Number of addressable indices along the axis.
+  /// \param sliceId Slice tensor to update into the concatOutId tensor
+  ///        (must exist in IR).
+  /// \param concatInId Tensor to be updated (must exist in the IR).
+  /// \param concatOutId Updated tensor (must not exist in the IR).
+  /// \param indexId Index tensor to indicate where to apply the update
+  ///        (must exist in the IR).
+  /// \param settings Op::Settings to apply to the DynamicUpdateOp.
   ///
   /// <pre>
   /// sliceId concatInId indexId
@@ -124,13 +124,13 @@ public:
                                   TensorId indexId,
                                   Op::Settings settings) const;
 
-  /// Concatenate tensors with a set of DynamicUpdateOps (outlineable)
-  /// \param axis tensor axis along which to concatenate
-  /// \param tensorIds tensors to concatenate (must exist in the IR)
-  /// \param concatId output tensor name (can exist in the IR)
+  /// Concatenate tensors with a set of DynamicUpdateOps (outlineable).
+  /// \param axis Tensor axis along which to concatenate.
+  /// \param tensorIds Tensors to concatenate (must exist in the IR).
+  /// \param concatId Output tensor name (can exist in the IR).
   /// \param settings Op::Settings to apply to the DynamicUpdateOps
   ///                 (1 setting in total or 1 setting per slice tensor, plus
-  ///                  2 additional settings for pre/post processing Ops)
+  ///                  2 additional settings for pre/post processing Ops).
   ///
   /// <pre>
   ///                   InitOp          < settings.at(n)
@@ -150,15 +150,15 @@ public:
                                   TensorId concatId,
                                   std::vector<Op::Settings> settings) const;
 
-  /// Slice tensor with a dynamic DynamicSliceOp (outlineable)
-  /// \param axis tensor axis along which to concatenate
-  /// \param num_shards number of addressable indices along the axis
-  /// \param sliceId slice tensor to cut from the concatId tensor
-  ///        (must not exist in IR)
-  /// \param concatId tensor to be sliced (must exist in the IR)
-  /// \param indexId index tensor to indicate where to slice the tensor
-  ///        (must exist in the IR)
-  /// \param settings Op::Settings to apply to the DynamicSliceOp
+  /// Slice tensor with a dynamic DynamicSliceOp (outlineable).
+  /// \param axis Tensor axis along which to concatenate.
+  /// \param num_shards Number of addressable indices along the axis.
+  /// \param sliceId Slice tensor to cut from the concatId tensor
+  ///        (must not exist in IR).
+  /// \param concatId Tensor to be sliced (must exist in the IR).
+  /// \param indexId Index tensor to indicate where to slice the tensor
+  ///        (must exist in the IR).
+  /// \param settings Op::Settings to apply to the DynamicSliceOp.
   ///
   /// <pre>
   ///   concatId  indexId
@@ -174,13 +174,13 @@ public:
                                  TensorId indexId,
                                  Op::Settings settings) const;
 
-  /// Shard tensors with a set of DynamicSliceOps (outlineable)
-  /// \param axis tensor axis along which to slice
-  /// \param tensorIds slice tensors to generate (must not exist in the IR)
-  /// \param concatId input tensor name (must exist in the IR)
+  /// Shard tensors with a set of DynamicSliceOps (outlineable).
+  /// \param axis Tensor axis along which to slice.
+  /// \param tensorIds Slice tensors to generate (must not exist in the IR).
+  /// \param concatId Input tensor name (must exist in the IR).
   /// \param settings Op::Settings to apply to the ConcatOp
   ///                 (1 setting in total or 1 setting per slice tensor, plus
-  ///                  2 additional settings for pre/post processing Ops)
+  ///                  2 additional settings for pre/post processing Ops).
   ///
   /// <pre>
   ///               concatId
@@ -196,18 +196,18 @@ public:
                                  TensorId concatId,
                                  std::vector<Op::Settings> settings) const;
 
-  /// Create an InitOp that produces a tensor
-  /// \param info data type and shape of the output tensor
-  /// \param id tensor name from which to derive the output tensor ID
-  /// \param type initialization type for the created tensor
-  ///             (uninitialized or zero)
-  /// \returns Tensor with TensorId based on the graph-scope, id and type
+  /// Create an InitOp that produces a tensor.
+  /// \param info Data type and shape of the output tensor.
+  /// \param id Tensor name from which to derive the output tensor ID.
+  /// \param type Initialization type for the created tensor
+  ///             (uninitialized or zero).
+  /// \returns Tensor with TensorId based on the graph-scope, id and type.
   Tensor *initTensor(TensorInfo info,
                      TensorId id,
                      InitType type,
                      Op::Settings settings) const;
 
-  /// Create an IdLossOp with fromLoss/toLoss set to true (final loss)
+  /// Create an IdLossOp with fromLoss/toLoss set to true (final loss).
   /// \param reductionType
   /// \param intermediateId
   /// \param lossOutId
@@ -217,51 +217,51 @@ public:
              TensorId lossOutId,
              Op::Settings settings) const;
 
-  /// Create a ScaleOp with factor
-  /// \param factor scaling factor
-  /// \param inId input to connect (must exist in the IR)
-  /// \param outId output to connect (must exist in the IR)
-  /// \param settings Op::Settings to apply to the ScaleOp
+  /// Create a ScaleOp with factor.
+  /// \param factor scaling factor.
+  /// \param inId input to connect (must exist in the IR).
+  /// \param outId output to connect (must exist in the IR).
+  /// \param settings Op::Settings to apply to the ScaleOp.
   Op *scale(float factor,
             TensorId inId,
             TensorId outId,
             Op::Settings settings) const;
 
-  /// Connect tensor as output to an Op
-  /// \param op Op to connect the output tensor to
-  /// \param id output to connect (can be a new or existing tensor ID)
-  /// \param index OutIndex at which to connect the output to the Op
+  /// Connect tensor as output to an Op.
+  /// \param op Op to connect the output tensor to.
+  /// \param id output to connect (can be a new or existing tensor ID).
+  /// \param index OutIndex at which to connect the output to the Op.
   void connectOutTensor(Op *op, TensorId id, OutIndex index) const;
 
-  /// Create a ReshapeOp
-  /// \param inId tensor to reshape
-  /// \param newShape shape to reshape the in tensor into
-  /// \param outId tensor to create (can be a new or existing tensor ID)
-  /// \param settings Op::Settings to apply to the ConcatOp
-  /// \returns the ReshapeOp created
+  /// Create a ReshapeOp.
+  /// \param inId Tensor to reshape.
+  /// \param newShape Shape to reshape the in tensor into.
+  /// \param outId Tensor to create (can be a new or existing tensor ID).
+  /// \param settings Op::Settings to apply to the ConcatOp.
+  /// \returns The ReshapeOp created.
   std::vector<Op *> reshapeForSlice(TensorId inId,
                                     Shape newShape,
                                     TensorId outId,
                                     Op::Settings settings) const;
 
-  /// Create a constant index tensor
-  /// \param index unsigned integer index
-  /// \param settings settings to derive virtual graph and tile set from
-  /// \returns the ID of the constant index tensor created
+  /// Create a constant index tensor.
+  /// \param index Unsigned integer index.
+  /// \param settings Settings to derive virtual graph and tile set from.
+  /// \returns The ID of the constant index tensor created.
   TensorId createOrGetIndexTensor(uint32_t index, Op::Settings settings) const;
 
-  /// Create a constant value tensor
-  /// \param type DataType of the tensor to generate
-  /// \param value value of the tensor to be generated, with a type T compatible
-  ///              to the DataType type
-  /// \param settings settings to derive virtual graph and tile set from
-  /// \returns the ID of the constant tensor created
+  /// Create a constant value tensor.
+  /// \param type DataType of the tensor to generate.
+  /// \param value Value of the tensor to be generated, with a type T compatible
+  ///              to the DataType type.
+  /// \param settings Settings to derive virtual graph and tile set from.
+  /// \returns The ID of the constant tensor created.
   template <class T>
   TensorId
   createOrGetConstTensor(DataType type, T value, Op::Settings settings) const;
 
 private:
-  /// The graph on which to operate
+  /// The graph on which to operate.
   Graph *graph;
 };
 

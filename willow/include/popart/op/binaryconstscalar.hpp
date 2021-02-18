@@ -8,11 +8,11 @@ namespace popart {
 
 /**
  * A unary Op, which performs a binary operation (Mul, Div, etc) between its
- * single input Tensor and a scalar, whose value is stored as an Op attribute.
- * The input index (0 or 1) of the Tensor and scalar are controlled by the
+ * single input tensor and a scalar, whose value is stored as an Op attribute.
+ * The input index (0 or 1) of the tensor and scalar are controlled by the
  * scalarInIndex attribute.
  *
- * Some examples. Let T be the input Tensor of this Op.
+ * Some examples. Let T be the input tensor of this Op.
  *
  * [value = 2, opType = "Div", scalarInIndex = 1]:
  *    T / 2.0

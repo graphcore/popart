@@ -1,4 +1,7 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
+/** \file varupdate.hpp
+ * VarUpdate ops.
+ */
 #ifndef GUARD_NEURALNET_VARUPDATE_HPP
 #define GUARD_NEURALNET_VARUPDATE_HPP
 
@@ -8,6 +11,9 @@
 
 namespace popart {
 
+/**
+ *  Base class used to define PopART ops that update variable tensors.
+ */
 class VarUpdateOp : public Op {
 public:
   VarUpdateOp(const OperatorIdentifier &, const Op::Settings &);

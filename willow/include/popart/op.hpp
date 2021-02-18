@@ -33,14 +33,18 @@ enum class ExecutionContext {
   Subgraph
 };
 
-// When weight updates of a batch are computed in one go, we
-// are reducing over the gradients of the whole minibatch.
-// What type of reduction should this be?
-// Sum : Sum the output of the loss values and do not scale the gradient
-// Mean : Take the mean of the loss values and divide the gradient by the number
-//        of samples
-// NoReduction : Leave the loss values as they are and do not scale the gradient
-enum class ReductionType { Sum = 0, Mean, NoReduction };
+/// Defines the type of reduction used when weight updates of a batch are
+/// computed in one go and are reduced over the gradients of the whole
+/// minibatch.
+enum class ReductionType {
+  /// Sum the output of the loss values and do not scale the gradient.
+  Sum = 0,
+  /// Take the mean of the loss values and divide the gradient by the number
+  /// of samples.
+  Mean,
+  /// Leave the loss values as they are and do not scale the gradient.
+  NoReduction
+};
 
 std::ostream &operator<<(std::ostream &, const RecomputeType &);
 std::ostream &operator<<(std::ostream &, const ExecutionContext &);
@@ -50,8 +54,8 @@ class OpSerialiserBase;
 
 class ShardingPlan;
 
-// the input tensor of a grad-op has what kind of
-// relationship with the corresponding non-grad-op?
+/// The relationship between the input tensor of a grad-op and the
+/// corresponding non-grad-op.
 // design note: it's not possible for an input to a
 // grad-op to NOT be directly related to
 // the corresponding non-grad-op.
@@ -338,37 +342,37 @@ public:
   virtual view::RegMap bwdRegMap(InIndex, OutIndex) const;
 
   /**
-   * \return true if there is an input which aliases an output.
+   * \return True if there is an input which aliases an output.
    * */
   bool doesAlias() const;
 
   bool isOutplace() const { return !doesAlias(); }
 
   /**
-   * \return true if the input at \a inIndex aliases the output at \a outIndex
+   * \return True if the input at \p inIndex aliases the output at \p outIndex.
    * */
   bool doesAlias(InIndex inIndex, OutIndex outIndex) const;
 
   /** Is modifies(i) non-empty for any input index i?
    *
-   * \returns     true if modifies(i) is non-empty for any i
-   * \returns     false otherwise.
+   * \returns     True if modifies(i) is non-empty for any i,
+   *              false otherwise.
    */
   bool modifies() const;
 
   /** Check if an op modifies a tensor at a specific index in.
    *
-   * \param in    Index to check
-   * \returns     true if it modifies the tensor.
-   * \returns     false otherwise.
+   * \param in    Index to check.
+   * \returns     True if it modifies the tensor,
+   *              false otherwise.
    */
   bool modifiesIndex(InIndex in) const;
 
   /** Check if an op overwrites a tensor at a specific index in.
    *
-   * \param t      Tensor to check
-   * \returns     true if it overwrites the tensor.
-   * \returns     false otherwise.
+   * \param t     Tensor to check.
+   * \returns     True if it overwrites the tensor,
+   *              false otherwise.
    */
   bool overwritesTensor(Tensor *t) const;
 
@@ -532,18 +536,16 @@ public:
   /** Check if input is unmodifiable or aliases an unmodifiable tensor.
    *
    * \param in    InIndex to check.
-   * \returns     true if any connected tensor has a non-empty alias
-   *              chain and is unmodifiable
-   * \returns     false otherwise.
+   * \returns     True if any connected variable tensor has a non-empty alias
+   *              chain and is unmodifiable, false otherwise.
    */
   bool inputUnmodifiable(InIndex in) const;
 
   /** Check if output is modified by any consumer.
    *
    * \param out   OutIndex to check.
-   * \returns     true if any consumer of any aliased tensor downstream modifies
-   *              a non-empty region.
-   * \returns     false otherwise.
+   * \returns     True if any consumer of any aliased tensor downstream modifies
+   *              a non-empty region, false otherwise.
    */
   bool hasAliasedModifiers(OutIndex out) const;
 
@@ -608,8 +610,8 @@ std::ostream &operator<<(std::ostream &, const GradOpInType &);
 // A note on non-determinism. For maps with
 // pointers as keys, iterating through them
 // is non-deterministic with the default comparator.
-// To prevent non-determinism, POpCmp is used on any sets and maps that use
-// pointers to operators as a set/map key.
+/// To prevent non-determinism, POpCmp is used on any sets and maps that use
+/// pointers to operators as a set/map key.
 struct POpCmp {
   bool operator()(Op *const &a, Op *const &b) const { return a->id < b->id; }
 };
