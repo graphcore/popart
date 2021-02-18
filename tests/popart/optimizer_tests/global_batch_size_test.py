@@ -18,10 +18,45 @@ from onnx import numpy_helper
 @tu.requires_ipu
 @pytest.mark.parametrize("reduction_type", ["Sum", "Mean"])
 @pytest.mark.parametrize("loss_type", ["Identity", "L1", "NLL"])
-@pytest.mark.parametrize("optim", ["SGD", "SGDM", "ADAM", "LAMB"])
 @pytest.mark.parametrize("batchserial", ["Unroll", "Loop"])
-def test_global_batch_size_correctness(tmpdir, reduction_type, loss_type,
-                                       optim, batchserial):
+def test_global_batch_size_correctness_test_sgd_(tmpdir, reduction_type,
+                                                 loss_type, batchserial):
+    run_global_batch_size_correctness_test(tmpdir, reduction_type, loss_type,
+                                           "SGD", batchserial)
+
+
+@tu.requires_ipu
+@pytest.mark.parametrize("reduction_type", ["Sum", "Mean"])
+@pytest.mark.parametrize("loss_type", ["Identity", "L1", "NLL"])
+@pytest.mark.parametrize("batchserial", ["Unroll", "Loop"])
+def test_global_batch_size_correctness_test_sgdm(tmpdir, reduction_type,
+                                                 loss_type, batchserial):
+    run_global_batch_size_correctness_test(tmpdir, reduction_type, loss_type,
+                                           "SGDM", batchserial)
+
+
+@tu.requires_ipu
+@pytest.mark.parametrize("reduction_type", ["Sum", "Mean"])
+@pytest.mark.parametrize("loss_type", ["Identity", "L1", "NLL"])
+@pytest.mark.parametrize("batchserial", ["Unroll", "Loop"])
+def test_global_batch_size_correctness_test_adam(tmpdir, reduction_type,
+                                                 loss_type, batchserial):
+    run_global_batch_size_correctness_test(tmpdir, reduction_type, loss_type,
+                                           "ADAM", batchserial)
+
+
+@tu.requires_ipu
+@pytest.mark.parametrize("reduction_type", ["Sum", "Mean"])
+@pytest.mark.parametrize("loss_type", ["Identity", "L1", "NLL"])
+@pytest.mark.parametrize("batchserial", ["Unroll", "Loop"])
+def test_global_batch_size_correctness_test_lamb(tmpdir, reduction_type,
+                                                 loss_type, batchserial):
+    run_global_batch_size_correctness_test(tmpdir, reduction_type, loss_type,
+                                           "LAMB", batchserial)
+
+
+def run_global_batch_size_correctness_test(tmpdir, reduction_type, loss_type,
+                                           optim, batchserial):
     batches_per_step = 2
     hidden_size = 16
     reduction = popart.ReductionType.Sum if reduction_type == "Sum" else popart.ReductionType.Mean
