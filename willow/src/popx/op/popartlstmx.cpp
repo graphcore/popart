@@ -118,7 +118,7 @@ poplar::Tensor PopartLSTMOpx::createWeightsInput() const {
   return concatWeights(inputWeights, outputWeights);
 }
 
-std::vector<TensorId> PopartLSTMOpx::mustExistBeforeCreate(InIndex) const {
+std::set<TensorId> PopartLSTMOpx::mustExistBeforeCreate(InIndex) const {
   return {};
 }
 

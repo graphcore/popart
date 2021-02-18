@@ -125,13 +125,14 @@ bool InitTensorCloning::initTensor(IrLowering &irLowering) const {
 }
 
 InitTensorCreator::InitTensorCreator(ICreatorCandidatePtr candidate_,
+                                     std::set<TensorId> mustExist_,
                                      TensorId dstId_,
                                      double priority_)
     : InitTensorBase(InitMethod::Creator, dstId_, priority_),
-      candidate(candidate_) {}
+      candidate(candidate_), mustExist(mustExist_) {}
 
 bool InitTensorCreator::initTensor(IrLowering &irLowering) const {
-  for (auto tensorId : candidate->mustExistBeforeCreate()) {
+  for (auto tensorId : mustExist) {
     if (!irLowering.tensors().contains(tensorId)) {
       return false;
     }
@@ -177,7 +178,7 @@ bool InitTensorCreator::initTensor(IrLowering &irLowering) const {
 std::string InitTensorCreator::extraStr() const { return candidate->str(); }
 
 std::set<TensorId> InitTensorCreator::getDependsOnIds() const {
-  return candidate->mustExistBeforeCreate();
+  return mustExist;
 }
 
 InitTensorLinear::InitTensorLinear(TensorId dstId_, double priority_)

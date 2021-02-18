@@ -150,11 +150,11 @@ view::RegMap DynamicUpdateOpx::unwindRegion(InIndex index, OutIndex) const {
   };
 }
 
-std::vector<TensorId>
+std::set<TensorId>
 DynamicUpdateOpx::mustExistBeforeCreate(InIndex index) const {
   DynamicTernaryBaseOp *op = dynamic_cast<DynamicTernaryBaseOp *>(this->op_p);
 
-  std::vector<TensorId> mustExist;
+  std::set<TensorId> mustExist;
 
   auto it = op->settings.inferTensorMappingToFrom.find(index);
 
@@ -163,7 +163,7 @@ DynamicUpdateOpx::mustExistBeforeCreate(InIndex index) const {
         it->second == DynamicTernaryBaseOp::getUpdateInIndex()) ||
        (it->first == DynamicTernaryBaseOp::getUpdateInIndex() &&
         it->second == DynamicTernaryBaseOp::getInIndex()))) {
-    mustExist.push_back(op->input->tensor(it->second)->id);
+    mustExist.insert(op->input->tensor(it->second)->id);
   }
 
   return mustExist;

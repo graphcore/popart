@@ -84,7 +84,7 @@ InputCreatorType AdaDeltaUpdaterOpx::getInputCreatorType(int inIndex) const {
              : Opx::getInputCreatorType(inIndex);
 }
 
-std::vector<TensorId>
+std::set<TensorId>
 AdaDeltaUpdaterOpx::mustExistBeforeCreate(InIndex index) const {
   if (index != AdaDeltaUpdaterOp::getAccl2InIndex()) {
     throw internal_error(

@@ -14,7 +14,7 @@ namespace popart {
 
 namespace popx {
 
-std::vector<TensorId> MultiConvBaseOpx::mustExistBeforeCreate(InIndex) const {
+std::set<TensorId> MultiConvBaseOpx::mustExistBeforeCreate(InIndex) const {
   // creation of both weights and of input are done
   // without requiring the pre-existance of any
   // other poplar::Tensor, so returning empty TensorId vector

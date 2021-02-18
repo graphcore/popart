@@ -18,7 +18,7 @@ public:
   poplar::Tensor createInput(InIndex,
                              const poplar::DebugNameAndId &dnai) const final;
   InputCreatorType getInputCreatorType(InIndex) const final;
-  std::vector<TensorId> mustExistBeforeCreate(InIndex) const final;
+  std::set<TensorId> mustExistBeforeCreate(InIndex) const final;
   bool hasCreatorViewChangers(InIndex index) const final;
   ViewChangers getCreatorViewChangers(InIndex index) const final;
 };

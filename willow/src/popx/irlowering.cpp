@@ -1018,14 +1018,18 @@ InitTensorPtrs IrLowering::getInitTensorCreators(Tensor *tensor) {
     InitTensorPtrs creators;
 
     for (auto candidate : candidates) {
-      logging::devicex::debug(
-          "Creator candidate for poplar::Tensor {} is {}, must exist: {}",
-          tensor->id,
-          candidate->str(),
-          candidate->mustExistBeforeCreate());
-      auto creator =
-          std::make_shared<InitTensorCreator>(candidate, tensor->id, 1.0f);
-      creators.insert(creator);
+      for (auto &mustExist : candidate->mustExistBeforeCreate()) {
+        // Every candidate can be enrolled multiple times,
+        // with a different set of mustExist tensors
+        logging::devicex::debug(
+            "Creator candidate for poplar::Tensor {} is {}, must exist: {}",
+            tensor->id,
+            candidate->str(),
+            mustExist);
+        auto creator = std::make_shared<InitTensorCreator>(
+            candidate, mustExist, tensor->id, 1.0f);
+        creators.insert(creator);
+      }
     }
 
     return creators;
@@ -1475,8 +1479,8 @@ PriTask IrLowering::pipelinedCopyTask(Op *op, TaskId prevTaskId) {
 
 void IrLowering::addOpTasks(PriTasks &tasks) {
 
-  const auto addOpTasksTimer =
-      ir().timePartitionLogger().scopedStopwatch("adding Op tasks (Ir Lowering)");
+  const auto addOpTasksTimer = ir().timePartitionLogger().scopedStopwatch(
+      "adding Op tasks (Ir Lowering)");
 
   // Ensure there is a program fragment for every Ir Graph
   logging::devicex::trace("[addOpTasks] Graphs: {}",
@@ -1956,8 +1960,8 @@ void IrLowering::growOpx(Opx *opx, SequenceMap::SequenceInterval seqInterval) {
   std::vector<poplar::program::Sequence> seqVec;
 
   {
-    const auto growTimeTracker =
-        ir().timePartitionLogger().scopedStopwatch("Lowering ops to poplar (\"grow\" methods)");
+    const auto growTimeTracker = ir().timePartitionLogger().scopedStopwatch(
+        "Lowering ops to poplar (\"grow\" methods)");
     opx->grow(seqVec);
   }
 
@@ -2526,8 +2530,8 @@ void IrLowering::prePlanMatMuls() {
 void IrLowering::prepareGraph() {
   POPART_TRACEPOINT();
 
-  const auto prepareGraphTimer =
-      ir().timePartitionLogger().scopedStopwatch("Preparing poplar Graph (Ir lowering)");
+  const auto prepareGraphTimer = ir().timePartitionLogger().scopedStopwatch(
+      "Preparing poplar Graph (Ir lowering)");
 
   if (prepareGraphHasBeenCalled_) {
     logging::devicex::info("Poplar graph has already been prepared");

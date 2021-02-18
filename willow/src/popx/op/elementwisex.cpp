@@ -79,21 +79,21 @@ ElementWiseBinaryOpx::getInputCreatorType(InIndex index) const {
   return InputCreatorType::CanUnwind;
 }
 
-std::vector<TensorId>
+std::set<TensorId>
 ElementWiseBinaryOpx::mustExistBeforeCreate(InIndex index) const {
 
   const auto &settings = this->op_p->settings;
   const auto arg0Idx   = ElementWiseBinaryBaseOp::getArg0InIndex();
   const auto arg1Idx   = ElementWiseBinaryBaseOp::getArg1InIndex();
 
-  std::vector<TensorId> mustExist;
+  std::set<TensorId> mustExist;
 
   auto it = settings.inferTensorMappingToFrom.find(index);
 
   if (it != settings.inferTensorMappingToFrom.end() &&
       ((it->first == arg0Idx && it->second == arg1Idx) ||
        (it->first == arg1Idx && it->second == arg0Idx))) {
-    mustExist.push_back(op_p->input->tensor(it->second)->id);
+    mustExist.insert(op_p->input->tensor(it->second)->id);
   }
 
   return mustExist;

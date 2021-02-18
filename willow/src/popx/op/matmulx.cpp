@@ -661,7 +661,7 @@ bool MatMulOpx::createsEquiv(int ind0, const Opx *opx1, int ind1) const {
   return true;
 }
 
-std::vector<TensorId> MatMulOpx::mustExistBeforeCreate(InIndex) const {
+std::set<TensorId> MatMulOpx::mustExistBeforeCreate(InIndex) const {
   return {};
 }
 
