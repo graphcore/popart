@@ -70,11 +70,11 @@ public:
   TensorLocation(TensorStorage storage,
                  ReplicatedTensorSharding replicatedTensorSharding);
   /// Construct a TensorLocation from parameters.
-  /// \param storage the memory location of the tensor(s).
-  /// \param loadTileSet the tiles through which the tensor(s) are loaded onto
+  /// \param storage The memory location of the tensor(s).
+  /// \param loadTileSet The tiles through which the tensor(s) are loaded onto
   ///    the chip.
-  /// \param storageTileSet the tiles on which the tensor(s) are stored.
-  /// \param replicatedTensorSharding whether to apply replicated tensor
+  /// \param storageTileSet The tiles on which the tensor(s) are stored.
+  /// \param replicatedTensorSharding Whether to apply replicated tensor.
   ///    sharding.
   TensorLocation(TensorStorage storage,
                  TileSet loadTileSet,

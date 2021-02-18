@@ -49,19 +49,19 @@ public:
   ShardTensorInfo() : id(), info(), infos(), type() {}
 
   /// Construct ShardTensorInfo from parameters.
-  /// \param id_ the method of sharding the Op
-  /// \param info_ the sharded TensorIds to be connected
-  /// \param infos_ the graph which contains the TensorIds
+  /// \param id_ The method of sharding the Op
+  /// \param info_ The sharded TensorIds to be connected
+  /// \param infos_ The graph which contains the TensorIds
   ShardTensorInfo(TensorId id_,
                   TensorInfo info_,
                   std::vector<TensorInfo> infos_)
       : id(id_), info(info_), infos(infos_), type() {}
 
   /// Construct ShardTensorInfo from parameters.
-  /// \param id_ the method of sharding the Op
-  /// \param info_ the sharded TensorIds to be connected
-  /// \param infos_ the graph which contains the TensorIds
-  /// \param type_ the settings to apply onto the sharded ops
+  /// \param id_ The method of sharding the Op
+  /// \param info_ The sharded TensorIds to be connected
+  /// \param infos_ The graph which contains the TensorIds
+  /// \param type_ The settings to apply onto the sharded ops
   ShardTensorInfo(TensorId id_,
                   TensorInfo info_,
                   std::vector<TensorInfo> infos_,
@@ -130,25 +130,25 @@ private:
 class ShardingPlan {
 public:
   /// Construct a ShardingPlan from parameters.
-  /// \param method the method of sharding the Op
-  /// \param settings the settings to apply onto the sharded ops
+  /// \param method The method of sharding the Op
+  /// \param settings The settings to apply onto the sharded ops
   ShardingPlan(ShardingMethod method,
                ShardOpSettings settings = ShardOpSettings());
 
   /// Construct a ShardingPlan from parameters.
-  /// \param method the method of sharding the Op
-  /// \param shardMap the sharded TensorIds to be connected
-  /// \param graph the graph which contains the TensorIds
-  /// \param settings the settings to apply onto the sharded ops
+  /// \param method The method of sharding the Op
+  /// \param shardMap The sharded TensorIds to be connected
+  /// \param graph The graph which contains the TensorIds
+  /// \param settings The settings to apply onto the sharded ops
   ShardingPlan(ShardingMethod method,
                const ShardIdMap &shardMap,
                Graph &graph,
                ShardOpSettings settings = ShardOpSettings());
 
   /// Construct a ShardingPlan from parameters.
-  /// \param method the method of sharding the Op
-  /// \param shardMap the sharded TensorInfos to be connected
-  /// \param settings the settings to apply onto the sharded ops
+  /// \param method The method of sharding the Op
+  /// \param shardMap The sharded TensorInfos to be connected
+  /// \param settings The settings to apply onto the sharded ops
   ShardingPlan(ShardingMethod method,
                const ShardInfoMap &shardMap,
                ShardOpSettings settings = ShardOpSettings());

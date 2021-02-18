@@ -10,7 +10,7 @@
 #include <stdio.h>
 #include <string.h>
 
-/** \verbatim
+/*
  *
  * This is a simple logging system for Popart based on Poplar based on spdlog.
  * The easiest way to use it is to simply call `logging::<module>::<level>()`

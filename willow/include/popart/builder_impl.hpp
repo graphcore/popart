@@ -45,16 +45,16 @@ public:
   void setGraphName(const std::string &name);
 
   /**
-   * Add an op to the model
+   * Add an op to the model.
    *
    *
-   * \param opid The operator identifier
-   * \param opsetVersion The opset for the domain of the op
-   * \param inputs The input tensor ids
-   * \param outputs The output tensor ids
-   * \param opAttributes The attributes of the op
-   * \param debugContext Debug context
-   * \param validateInput Callback function to validate the inputs & attributes
+   * \param opid The operator identifier.
+   * \param opsetVersion The opset for the domain of the op.
+   * \param inputs The input tensor ids.
+   * \param outputs The output tensor ids.
+   * \param opAttributes The attributes of the op.
+   * \param debugContext Debug context.
+   * \param validateInput Callback function to validate the inputs & attributes.
    */
 
   void op(const OperatorIdentifier &opid,
@@ -68,16 +68,16 @@ public:
               validateInput = nullptr);
 
   /**
-   * Add an op to the model
+   * Add an op to the model.
    *
    *
-   * \param opid The operator identifier
-   * \param opsetVersion The opset for the domain of the op
-   * \param inputs The input tensor ids
-   * \param opAttributes The attributes of the op
-   * \param debugContext Debug context
-   * \param validateInput Callback function to validate the inputs & attributes
-   * \return A list of output tensor ids. Size is given by numberOfOutputs
+   * \param opid The operator identifier.
+   * \param opsetVersion The opset for the domain of the op.
+   * \param inputs The input tensor ids.
+   * \param opAttributes The attributes of the op.
+   * \param debugContext Debug context.
+   * \param validateInput Callback function to validate the inputs & attributes.
+   * \return A list of output tensor ids. Size is given by \c numberOfOutputs.
    */
 
   std::vector<TensorId>
@@ -99,17 +99,17 @@ public:
   }
 
   /**
-   * Add an op to the model
+   * Add an op to the model.
    *
    *
-   * \param opid The operator identifier
-   * \param opsetVersion The opset for the domain of the op
-   * \param inputs The input tensor ids
-   * \param numOutputs The number if output tensors
-   * \param opAttributes The attributes of the op
-   * \param name Debug information
-   * \param validateInput Callback function to validate the inputs & attributes
-   * \return A list of output tensor ids. Size is given by numberOfOutputs
+   * \param opid The operator identifier.
+   * \param opsetVersion The opset for the domain of the op.
+   * \param inputs The input tensor ids.
+   * \param numOutputs The number if output tensors.
+   * \param opAttributes The attributes of the op.
+   * \param name Debug information.
+   * \param validateInput Callback function to validate the inputs & attributes.
+   * \return A list of output tensor ids. Size is given by \c numberOfOutputs.
    */
 
   std::vector<TensorId>

@@ -22,7 +22,7 @@ struct PoplarOptions {
   /**
    * Converts popart Options to poplar OptionFlags.
    *
-   * \return converted poplar OptionFlags
+   * \return Converted poplar OptionFlags.
    */
   poplar::OptionFlags toOptionFlags() const {
     poplar::OptionFlags flags;

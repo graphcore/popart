@@ -34,7 +34,7 @@ class DeviceProvider;
 
 // TODO : When the Device/DeviceX classes are renamed to be ?backend? (Need to
 // think of a good name) Then we can rename DeviceInfo to Device. There is no
-// seperate Target. is that ok?
+// separate Target. is that ok?
 /// Represents a device
 class DeviceInfo {
 
@@ -46,11 +46,11 @@ public:
 
   virtual ~DeviceInfo();
 
-  /// Attach to the IPU.
-  /// \return Returns true if successfully attaches to the device
+  /// Attach to the device.
+  /// \return True if successfully attached to the device.
   virtual bool attach() = 0;
 
-  /// Detach from the IPU.
+  /// Detach from the device.
   virtual void detach() = 0;
 
   /// Get the type of the device.
@@ -114,9 +114,9 @@ public:
   /**
    * Get the list of all devices fulfilling the specified criteria.
    *
-   * \param devices Devices to get
+   * \param devices Devices to get.
    * \param requiredNumIPUs Number of IPUs to request.
-   * \param syncPattern Sync pattern
+   * \param syncPattern Sync pattern.
    * \param requiredTilesPerIPU Number of tiles per IPU to request.
    */
   virtual void enumerate(std::vector<std::shared_ptr<DeviceInfo>> &devices,
@@ -126,7 +126,7 @@ public:
                          DeviceConnectionType connectionType,
                          uint32_t requiredTilesPerIPU) = 0;
 
-  /// Create a host device for testing
+  /// Create a host device for testing.
   virtual std::shared_ptr<DeviceInfo>
   createHostDevice(DeviceType type,
                    const std::map<std::string, std::string> &options,
@@ -141,19 +141,19 @@ class DeviceManager {
 
 public:
   /** Accessor for the device manager.
-   * \return A reference to the DeviceManager
+   * \return A reference to the DeviceManager.
    */
   static DeviceManager &createDeviceManager();
 
   /** Used to register a device provider.
-   * \param provider A provider
+   * \param provider A provider.
    */
   void registerDeviceProvider(DeviceProvider *provider);
 
   /**
    * Get the Device object of a device by ID.
    *
-   * \param syncPattern Sync pattern
+   * \param syncPattern Sync pattern.
    * \param deviceManagerId Number of IPUs to request.
    * \return List of requested IPUs.
    */
@@ -168,7 +168,7 @@ public:
    * \param pattern Sync pattern.
    * \param numIpus Number of IPUs to request.
    * \param deviceType Type of device required.
-   * \param tilesPerIPU The number of tiles per ipu required.
+   * \param tilesPerIPU The number of tiles per IPU required.
    * \return List of requested IPUs.
    */
   std::vector<std::shared_ptr<DeviceInfo>> enumerateDevices(
@@ -180,11 +180,11 @@ public:
 
   /** Finds the first available hardware device, with a certain number of IPUs.
    * This method will attach to the device.
-   * \param numIpus The number of IPUs on the device [=1]
+   * \param numIpus The number of IPUs on the device [=1].
    * \param tilesPerIPU The number of tiles per IPU (0 will match any number)
    * [=0]
    * \return A device, which can be used with a session. Will return
-   * nullptr if no device is available
+   * nullptr if no device is available.
    */
   std::shared_ptr<DeviceInfo> acquireAvailableDevice(
       int numIpus                         = 1,
@@ -194,10 +194,10 @@ public:
       DeviceSelectionCriterion selectionCriterion =
           DeviceSelectionCriterion::First);
 
-  /** Allocates the hardware device by id. This id can be found running 'gc-info
-   *  -l'. This method will attach to the device.
-   * \param id The index of the IPU to be used
-   * \return A device. Will return nullptr if the device is not available
+  /** Allocates the hardware device by id. This id can be found running `gc-info
+   *  -l`. This method will attach to the device.
+   * \param id The index of the IPU to be used.
+   * \return A device. Will return nullptr if the device is not available.
    */
   std::shared_ptr<DeviceInfo> acquireDeviceById(
       int id,
@@ -205,7 +205,7 @@ public:
       DeviceConnectionType connectionType = DeviceConnectionType::Always);
 
   /** Create a 'simulated' CPU device.
-   * \return A device
+   * \return A device.
    */
   std::shared_ptr<DeviceInfo> createCpuDevice();
 
@@ -217,8 +217,8 @@ public:
    * * ``compileIPUCode``:  Whether or not to compile real IPU code for
    *   modelling
    *
-   * \param options Configuration settings for the IPU Model
-   * \return A device
+   * \param options Configuration settings for the IPU Model.
+   * \return A device.
    */
   std::shared_ptr<DeviceInfo>
   createIpuModelDevice(std::map<std::string, std::string> &options);
@@ -231,13 +231,13 @@ public:
    * * ``ge``:     The number of tiles per IPU [=defaultFewTiles]
    * * ``ipuVersion``:     The ipu architecture [="ipu2"]
    *
-   * \param options Configuration settings for the Sim
-   * \return A device
+   * \param options Configuration settings for the Sim.
+   * \return A device.
    */
   std::shared_ptr<DeviceInfo>
   createSimDevice(std::map<std::string, std::string> &options);
 
-  /** Create a device resembling an IPU for offline compilation
+  /** Create a device resembling an IPU for offline compilation,
    * The following options are supported:
    *
    * * ``numIPUs``:        The number of IPUs to compile for
@@ -247,8 +247,8 @@ public:
    *                       full/singlePipline/replicaAndLadder,
    *                       defaults to full
    *
-   * \param options Configuration settings for the IPU Model
-   * \return A device
+   * \param options Configuration settings for the IPU Model.
+   * \return A device.
    */
   std::shared_ptr<DeviceInfo>
   createOfflineIPUDevice(std::map<std::string, std::string> &options);
@@ -257,36 +257,36 @@ public:
    * set here is the length of time (in seconds) that the DeviceManager
    * will wait to try and attach. Note: this only takes effect when trying
    * to attach with a DeviceConnectionType::OnDemand DeviceConnectionType.
-   * \param seconds The attach timeout in seconds
+   * \param seconds The attach timeout in seconds.
    */
   void setOnDemandAttachTimeout(const unsigned seconds);
 
 private:
-  // How many seconds to wait when trying to attach to an IPU
+  // How many seconds to wait when trying to attach to an IPU.
   unsigned attachTimeout = 0;
 };
 
 /** Write a representation of a DeviceType to an output stream.
  *
- * \param os Output stream
- * \param dt Device type reference
- * \return The same output stream for chaining
+ * \param os Output stream.
+ * \param dt Device type reference.
+ * \return The same output stream for chaining.
  */
 std::ostream &operator<<(std::ostream &os, const DeviceType &dt);
 
 /** Write a representation of a DeviceConnectionType to an output stream.
  *
- * \param os Output stream
- * \param dct Device connection type reference
- * \return The same output stream for chaining
+ * \param os Output stream.
+ * \param dct Device connection type reference.
+ * \return The same output stream for chaining.
  */
 std::ostream &operator<<(std::ostream &os, const DeviceConnectionType &dct);
 
 /** Write a representation of a SyncPattern to an output stream.
  *
- * \param os Output stream
- * \param sp Sync pattern reference
- * \return The same output stream for chaining
+ * \param os Output stream.
+ * \param sp Sync pattern reference.
+ * \return The same output stream for chaining.
  */
 std::ostream &operator<<(std::ostream &, const SyncPattern &);
 

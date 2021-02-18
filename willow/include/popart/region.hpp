@@ -19,7 +19,7 @@ AccessType combine(std::set<AccessType> accessTypes);
 
 Regions mergeRegions(Regions regions);
 
-// a rectangular sub-region of a Shape
+/// A rectangular sub-region of a Shape
 class Region {
 
 public:

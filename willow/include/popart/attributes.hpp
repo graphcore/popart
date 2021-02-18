@@ -9,12 +9,12 @@
 
 namespace popart {
 
-// Wrapper around the container of ONNX_NAMESPACE::AtrributeProtos
-// of a Node, provides faster and cleaner reads of values
-// from keys (strings) than ONNX_NAMESPACE::AttributesProto
+/// Wrapper around the container of \c ONNX_NAMESPACE::AtrributeProtos
+/// of a \c Node. Provides faster and cleaner reads of values
+/// from keys (strings) than \c ONNX_NAMESPACE::AttributesProto.
 class Attributes {
 public:
-  // The types of attributes as defined in the onnx spec
+  /// The types of attributes as defined in the ONNX spec
   using Ints    = std::vector<int64_t>;
   using Int     = int64_t;
   using Floats  = std::vector<float>;
@@ -34,10 +34,10 @@ public:
   template <typename T> void set(T &, const std::string &key) const;
   bool hasAttribute(const std::string &key) const;
 
-  // Take an attribute identified by `key` from the given `Attributes` object
+  /// Take an attribute identified by `key` from the given `Attributes` object
   void takeAttribute(const std::string &key, const Attributes &attributes);
 
-  // Take the set of attributes that match the given predicate
+  /// Take the set of attributes that match the given predicate
   template <typename UnaryPredicate> Attributes filter(UnaryPredicate p) const {
     Attributes result;
 

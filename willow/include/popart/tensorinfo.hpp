@@ -13,11 +13,10 @@
 
 namespace popart {
 
-// There is a 1-1 correspondence
-// between popart::DataTypes
-// and ONNX_NAMESPACE::TensorProto_DataTypes, aka
-// decltype(ONNX_NAMESPACE::TensorProto().data_type()).
-
+/// There is a one-to-one correspondence
+/// between \c popart::DataTypes
+/// and \c ONNX_NAMESPACE::TensorProto_DataTypes, or
+/// \c decltype(ONNX_NAMESPACE::TensorProto().data_type()).
 enum class DataType {
   // fixed point types
   UINT8 = 0,
@@ -60,8 +59,8 @@ template <> DataType getDataType<std::string>();
 
 class TensorInfo;
 
-// Check if two tensors can be (numpy) broadcasted based on
-// https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html
+/// Check if two tensors can be (numpy) broadcasted based on
+/// https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html
 bool npBroadcastable(const std::vector<int64_t> &s0,
                      const std::vector<int64_t> &s1);
 bool npBroadcastable(const std::vector<int64_t> &s0,
@@ -69,13 +68,13 @@ bool npBroadcastable(const std::vector<int64_t> &s0,
                      size_t &overlap);
 bool npBroadcastable(const TensorInfo &i0, const TensorInfo &i1);
 
-// Calculate the numpy broadcast shape as described in
-// https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html
+/// Calculate the numpy broadcast shape as described in
+/// https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html
 std::vector<int64_t> npOut(const std::vector<int64_t> &s0,
                            const std::vector<int64_t> &s1,
                            const std::string &debugName = "");
 
-// Compute the reduction axis for a reduction op.
+/// Compute the reduction axis for a reduction op.
 std::vector<int64_t> npReductionAxis(const std::vector<int64_t> &in,
                                      const std::vector<int64_t> &out);
 
@@ -164,18 +163,18 @@ int64_t getONNXDataTypeAsInt(const DataType dtype);
 
 class TensorInfo {
 public:
-  /// Create TensorInformation based on data type and shape
+  /// Create TensorInformation based on data type and shape.
   ///
-  /// \param data_type    - The data type
-  /// \param shape        - The actual shape of the tensor
+  /// \param data_type    - The data type.
+  /// \param shape        - The actual shape of the tensor.
   TensorInfo(DataType, const Shape &);
   /// Create TensorInformation based on data type, shape and meta shape
   ///
-  /// \param data_type    - The data type
-  /// \param shape        - The actual shape of the tensor
+  /// \param data_type    - The data type.
+  /// \param shape        - The actual shape of the tensor.
   /// \param meta_shape   - The meta shape of the tensor, which can for example
   ///                       be used to store the original tensor shape before
-  ///                       replicated tensor sharding was applied
+  ///                       replicated tensor sharding was applied.
   TensorInfo(DataType data_type, const Shape &shape, const Shape &meta_shape);
   TensorInfo(std::string data_type, std::string shape);
   TensorInfo(std::string data_type, const Shape &);

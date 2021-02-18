@@ -12,7 +12,7 @@
 
 namespace popart {
 
-// A class to point to constant data
+/// A class to point to constant data.
 class ConstVoidData {
 public:
   ConstVoidData() = default;
@@ -30,7 +30,7 @@ private:
   bool hasOptionalData{false};
 };
 
-// A class to point to non-const data
+/// A class to point to non-constant data.
 class MutableVoidData {
 public:
   void *data = nullptr;

@@ -22,7 +22,7 @@ class Executablex;
  * be taken to mean that the buffer at the tail-end of the list is no longer
  * being used by PopART. This buffer is removed from the conceptual list.
  *
- * Note that a IStepIO::in call with the *prefetch* flag set is only
+ * Note that a IStepIO::in call with the \c prefetch flag set is only
  * considered successful when it returns data.
  *
  * Output works analogously to input.
@@ -73,19 +73,19 @@ public:
   /// **NOTE**: Failing to provide a valid data buffer will result in a runtime
   /// failure if prefetch is set to `false`.
   ///
-  /// \param id the tensor ID to return data for.
-  /// \param numElements the number of elements in the tensor.
-  /// \param prefetch if set to `true` the inability to provide data is not
+  /// \param id The tensor ID to return data for.
+  /// \param numElements The number of elements in the tensor.
+  /// \param prefetch If set to `true` the inability to provide data is not
   ///     considered an error.
-  /// \return the input buffer for this tensor (or nullptr on failure) wrapped
+  /// \return The input buffer for this tensor (or nullptr on failure) wrapped
   ///     in a ConstVoidData object.
   virtual ConstVoidData in(TensorId id, int64_t numElements, bool prefetch) = 0;
 
   /// Called to notify the user that a previously retrieved input data buffer
   /// is no longer used by PopART and it's memory can be reused.
   ///
-  /// \param id the tensor ID to return data for.
-  /// \param numElements the number of elements in the tensor.
+  /// \param id The tensor ID to return data for.
+  /// \param numElements The number of elements in the tensor.
   virtual void inComplete(TensorId id, int64_t numElements) = 0;
 
   /// Called to request a new output data buffer. The memory in this buffer be
@@ -95,17 +95,17 @@ public:
   /// **NOTE**: Failing to provide a valid data buffer will result in a runtime
   /// failure.
   ///
-  /// \param id the tensor ID to return data for.
-  /// \param numElements the number of elements in the tensor.
-  /// \return the output buffer for this tensor wrapped in a MutableVoidData
+  /// \param id The tensor ID to return data for.
+  /// \param numElements The number of elements in the tensor.
+  /// \return The output buffer for this tensor wrapped in a MutableVoidData
   ///     object.
   virtual MutableVoidData out(TensorId id, int64_t numElements) = 0;
 
   /// Called to notify the user that a previously retrieved output data buffer
   /// is no longer used by PopART and it's memory can be reused.
   ///
-  /// \param id the tensor ID to return data for.
-  /// \param numElements the number of elements in the tensor.
+  /// \param id The tensor ID to return data for.
+  /// \param numElements The number of elements in the tensor.
   virtual void outComplete(TensorId) {}
 
   void enableRuntimeAsserts(bool b) { runtimeAssertsOn = b; }
