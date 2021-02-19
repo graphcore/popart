@@ -233,9 +233,7 @@ popnn::lstm::LstmParams LSTMOpx::createLSTMParams() const {
   return createLSTMParams(lstm_op);
 }
 
-std::vector<TensorId> LSTMOpx::mustExistBeforeCreate(InIndex) const {
-  return {};
-}
+std::set<TensorId> LSTMOpx::mustExistBeforeCreate(InIndex) const { return {}; }
 
 void LSTMOpx::prepareWeights(poplar::program::Sequence &prog) const {
   // check to see if the weights were created

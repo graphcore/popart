@@ -39,7 +39,7 @@ void AddBiasDataGradOpx::grow(poplar::program::Sequence &prog) const {
   setOutTensor(0, Opx::cloneNcopy(prog, getInTensor(0)));
 }
 
-std::vector<TensorId> AddBiasOpx::mustExistBeforeCreate(InIndex index) const {
+std::set<TensorId> AddBiasOpx::mustExistBeforeCreate(InIndex index) const {
   if (index != AddBiasOp::getBiasInIndex()) {
     throw error("AddBiasOpx::mustExistBeforeCreate : Invalid index = " +
                 std::to_string(index));

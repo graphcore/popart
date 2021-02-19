@@ -35,6 +35,7 @@ namespace popart {
 using Shape        = std::vector<int64_t>;
 using Rank         = int;
 using TensorId     = std::string;
+using DnfTensorIds = std::vector<std::set<TensorId>>;
 using TaskId       = std::string;
 using OpName       = std::string;
 using OpDomain     = std::string;

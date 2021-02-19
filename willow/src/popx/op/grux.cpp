@@ -270,9 +270,7 @@ popnn::gru::GruParams GRUOpx::createGRUParams() const {
   return createGRUParams(gru_op);
 }
 
-std::vector<TensorId> GRUOpx::mustExistBeforeCreate(InIndex) const {
-  return {};
-}
+std::set<TensorId> GRUOpx::mustExistBeforeCreate(InIndex) const { return {}; }
 
 void GRUOpx::prepareWeights(poplar::program::Sequence &prog) const {
   // check to see if the weights were created

@@ -20,7 +20,7 @@ public:
   InputCreatorType getInputCreatorType(InIndex) const final;
   poplar::Tensor createInput(InIndex index,
                              const poplar::DebugNameAndId &dnai) const final;
-  std::vector<TensorId> mustExistBeforeCreate(InIndex) const;
+  std::set<TensorId> mustExistBeforeCreate(InIndex) const;
 
   static popnn::lstm::LstmParams createLSTMParams(const LSTMOp &);
   static poplar::Tensor reshapePoplibWeightsForOnnx(poplar::Tensor,

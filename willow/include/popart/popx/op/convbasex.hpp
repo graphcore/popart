@@ -15,7 +15,7 @@ public:
   MultiConvBaseOpx(Op *op, Devicex *dv) : Opx(op, dv) {}
   poplar::Tensor createInput(InIndex index,
                              const poplar::DebugNameAndId &dnai) const final;
-  std::vector<TensorId> mustExistBeforeCreate(InIndex index0) const final;
+  std::set<TensorId> mustExistBeforeCreate(InIndex index0) const final;
   InputCreatorType getInputCreatorType(InIndex) const final;
   bool createsEquiv(int, const Opx *, int) const final;
   void grow(poplar::program::Sequence &) const final;

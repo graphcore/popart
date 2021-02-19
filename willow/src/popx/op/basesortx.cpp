@@ -115,7 +115,7 @@ InputCreatorType BaseSortOpx::getInputCreatorType(InIndex inIndex) const {
   }
 }
 
-std::vector<TensorId> BaseSortOpx::mustExistBeforeCreate(InIndex) const {
+std::set<TensorId> BaseSortOpx::mustExistBeforeCreate(InIndex) const {
   return {};
 }
 

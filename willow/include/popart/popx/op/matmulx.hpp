@@ -18,7 +18,7 @@ public:
                              const poplar::DebugNameAndId &dnai) const final;
   InputCreatorType getInputCreatorType(InIndex index) const final;
   bool createsEquiv(int, const Opx *, int) const final;
-  std::vector<TensorId> mustExistBeforeCreate(InIndex index0) const final;
+  std::set<TensorId> mustExistBeforeCreate(InIndex index0) const final;
 
   MatMulOp *getMatMulOp() const;
   void grow(poplar::program::Sequence &) const final;

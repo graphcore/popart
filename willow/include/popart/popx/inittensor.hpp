@@ -140,6 +140,7 @@ private:
 class InitTensorCreator : public InitTensorBase {
 public:
   InitTensorCreator(ICreatorCandidatePtr candidate,
+                    std::set<TensorId> mustExist,
                     TensorId dstId,
                     double priority);
   bool initTensor(IrLowering &irLowering) const override;
@@ -148,6 +149,7 @@ public:
 
 private:
   ICreatorCandidatePtr candidate;
+  std::set<TensorId> mustExist;
 };
 
 /**
