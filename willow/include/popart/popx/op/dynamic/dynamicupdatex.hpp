@@ -18,7 +18,7 @@ public:
   view::RegMap unwindRegion(InIndex, OutIndex) const final;
   poplar::Tensor createInput(InIndex index,
                              const poplar::DebugNameAndId &dnai) const final;
-  std::set<TensorId> mustExistBeforeCreate(InIndex) const final;
+  std::vector<TensorId> mustExistBeforeCreate(InIndex) const final;
   virtual poplar::Tensor cloneNcopyOpt(poplar::program::Sequence &,
                                        const poplar::Tensor &) const;
 };

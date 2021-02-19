@@ -15,7 +15,7 @@ public:
   AddBiasOpx(Op *, Devicex *);
   void grow(poplar::program::Sequence &) const override;
 
-  std::set<TensorId> mustExistBeforeCreate(int index0) const override;
+  std::vector<TensorId> mustExistBeforeCreate(int index0) const override;
   InputCreatorType getInputCreatorType(InIndex) const final;
   poplar::Tensor createInput(InIndex index,
                              const poplar::DebugNameAndId &dnai) const final;

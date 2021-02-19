@@ -142,7 +142,7 @@ class ElementWiseBinaryOpx : public Opx {
 public:
   ElementWiseBinaryOpx(Op *, Devicex *);
   InputCreatorType getInputCreatorType(InIndex) const override;
-  std::set<TensorId> mustExistBeforeCreate(InIndex) const override;
+  std::vector<TensorId> mustExistBeforeCreate(InIndex) const override;
   poplar::Tensor createInput(InIndex index,
                              const poplar::DebugNameAndId &dnai) const override;
   poplar::Tensor

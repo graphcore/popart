@@ -338,8 +338,12 @@ InputCreatorCandidate::createInput(const poplar::DebugNameAndId &dnai) {
   return unwind(t);
 }
 
-DnfTensorIds InputCreatorCandidate::mustExistBeforeCreate() {
-  return getOpx()->mustExistBeforeCreateDNF(getIndex());
+std::set<TensorId> InputCreatorCandidate::mustExistBeforeCreate() {
+  std::set<TensorId> tensor_ids;
+  for (TensorId tensor_id : getOpx()->mustExistBeforeCreate(getIndex())) {
+    tensor_ids.insert(tensor_id);
+  }
+  return tensor_ids;
 }
 
 std::string InputCreatorCandidate::str() {
@@ -384,27 +388,14 @@ InputMultiCreatorCandidate::unwind(poplar::Tensor) {
   throw("Not expected to unwind on InputMultiCreatorCandidate");
 }
 
-DnfTensorIds InputMultiCreatorCandidate::mustExistBeforeCreate() {
-  DnfTensorIds cumulativeTensorIds;
+std::set<TensorId> InputMultiCreatorCandidate::mustExistBeforeCreate() {
+  std::set<TensorId> tensor_ids;
   for (auto &candidate : candidates) {
-    if (!candidate.first->mustExistBeforeCreate().empty()) {
-      if (cumulativeTensorIds.empty()) {
-        cumulativeTensorIds = candidate.first->mustExistBeforeCreate();
-      } else {
-        // Distribute DNF over DNF
-        DnfTensorIds newCumulativeTensorIds;
-        for (auto tensorIds0 : cumulativeTensorIds) {
-          for (auto tensorIds1 : candidate.first->mustExistBeforeCreate()) {
-            std::set<TensorId> tensorIds2 = tensorIds0;
-            tensorIds2.insert(tensorIds1.begin(), tensorIds1.end());
-            newCumulativeTensorIds.push_back(tensorIds2);
-          }
-        }
-        cumulativeTensorIds = newCumulativeTensorIds;
-      }
+    for (TensorId tensor_id : candidate.first->mustExistBeforeCreate()) {
+      tensor_ids.insert(tensor_id);
     }
   }
-  return cumulativeTensorIds;
+  return tensor_ids;
 }
 
 int64_t InputMultiCreatorCandidate::getScheduleIndex() const {

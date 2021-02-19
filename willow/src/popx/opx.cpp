@@ -32,15 +32,11 @@ bool Opx::createsEquiv(int, const Opx *, int) const {
   throw error("No check for equivalent tensor create for type {}", op_p->opid);
 }
 
-std::set<TensorId> Opx::mustExistBeforeCreate(int index0) const {
+std::vector<TensorId> Opx::mustExistBeforeCreate(int index0) const {
   throw error("Opx for {} cannot say which poplar Tensors must exist to create "
               "at index {}",
               op_p->opid,
               index0);
-}
-
-DnfTensorIds Opx::mustExistBeforeCreateDNF(int index0) const {
-  return {mustExistBeforeCreate(index0)};
 }
 
 void Opx::grow(poplar::program::Sequence &) const {

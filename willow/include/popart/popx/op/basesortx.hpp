@@ -26,7 +26,7 @@ public:
   poplar::Tensor createInput(InIndex index,
                              const poplar::DebugNameAndId &dnai) const final;
   InputCreatorType getInputCreatorType(InIndex index) const final;
-  std::set<TensorId> mustExistBeforeCreate(InIndex index0) const final;
+  std::vector<TensorId> mustExistBeforeCreate(InIndex index0) const final;
 
 protected:
   // sorted values, and indices of sorted values

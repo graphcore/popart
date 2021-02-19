@@ -18,7 +18,9 @@ public:
   view::RegMap unwindRegion(InIndex, OutIndex) const final;
   poplar::Tensor createInput(InIndex index,
                              const poplar::DebugNameAndId &dnai) const final;
-  std::set<TensorId> mustExistBeforeCreate(InIndex) const final { return {}; }
+  std::vector<TensorId> mustExistBeforeCreate(InIndex) const final {
+    return {};
+  }
 
 protected:
   poplar::Tensor getTiledTensor(poplar::Tensor tensor) const;

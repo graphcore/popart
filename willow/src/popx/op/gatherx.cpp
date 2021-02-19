@@ -113,7 +113,7 @@ InputCreatorType GatherOpx::getInputCreatorType(int index0) const {
 
 bool GatherOpx::createsEquiv(int, const Opx *, int) const { return false; }
 
-std::set<TensorId> GatherOpx::mustExistBeforeCreate(int) const { return {}; }
+std::vector<TensorId> GatherOpx::mustExistBeforeCreate(int) const { return {}; }
 
 GatherGradOpx::GatherGradOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
   verifyOp<GatherGradOp>(op, Onnx::GradOperators::GatherGrad);

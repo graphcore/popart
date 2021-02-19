@@ -70,31 +70,8 @@ void ReplicatedReduceScatterOpx::grow(poplar::program::Sequence &prog) const {
 
 InputCreatorType
 ReplicatedReduceScatterOpx::getInputCreatorType(InIndex index) const {
-  const auto &rrsOp = getOp<ReplicatedReduceScatterOp>();
-
-  bool canCreate = false;
-
-  if (hasInput(ReplicatedAllGatherOp::getCollectiveLinkedIndex())) {
-    auto group = getCollectiveLinkedGroup();
-    for (Op *cbrOp : group.second) {
-      // Can't exist on itself
-      if (cbrOp->id != rrsOp.id) {
-        // This ReplicatedReduceScatterOp is not alone in a group, and can
-        // use a pre-existing CBR to create the tensor layout
-        canCreate = true;
-      }
-    }
-
-    if (rrsOp.getCollectiveOp() == CollectiveOperator::Local) {
-      // We currently have to disable canCreate for local reductions, because
-      // it (with RTS) leads to circular dependencies where a weight's
-      // layout can depend on itself, if the weight's other consumers
-      // aren't higher-priority creators
-      canCreate = false;
-    }
-  }
-
-  return index == ReplicatedReduceScatterOp::getInIndex() && canCreate
+  return index == ReplicatedReduceScatterOp::getInIndex() &&
+                 hasInput(ReplicatedAllGatherOp::getCollectiveLinkedIndex())
              ? InputCreatorType::CanCreate
              : Opx::getInputCreatorType(index);
 }
@@ -121,25 +98,17 @@ poplar::Tensor ReplicatedReduceScatterOpx::createInput(
   return input.reshape(rrsOp.inInfo(inIndex).shape_szt());
 }
 
-DnfTensorIds
-ReplicatedReduceScatterOpx::mustExistBeforeCreateDNF(InIndex) const {
-  const auto &rrsOp = getOp<ReplicatedReduceScatterOp>();
-  auto group        = getCollectiveLinkedGroup();
-  DnfTensorIds mustExist;
-  for (Op *cbrOp : group.second) {
-    // Can't exist on itself
-    if (cbrOp->id != rrsOp.id) {
-      mustExist.push_back({cbrOp->inId(CollectivesBaseOp::getInIndex()),
-                           cbrOp->outId(CollectivesBaseOp::getOutIndex())});
-    }
-  }
-
-  logging::opx::trace(
-      "ReplicatedReduceScatterOpx::mustExistBeforeCreateDNF, Op "
-      "{}, must exist: {}",
-      rrsOp.debugName(),
-      mustExist);
-
+std::vector<TensorId>
+ReplicatedReduceScatterOpx::mustExistBeforeCreate(InIndex) const {
+  const auto &rrsOp               = getOp<ReplicatedReduceScatterOp>();
+  auto group                      = getCollectiveLinkedGroup();
+  std::vector<TensorId> mustExist = {
+      group.second.front()->inId(CollectivesBaseOp::getInIndex()),
+      group.second.front()->outId(CollectivesBaseOp::getOutIndex())};
+  logging::opx::trace("ReplicatedReduceScatterOpx::mustExistBeforeCreate, Op "
+                      "{}, must exist: {}",
+                      rrsOp.debugName(),
+                      mustExist);
   return mustExist;
 }
 

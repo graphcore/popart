@@ -70,7 +70,7 @@ view::RegMap ReplicatedAllGatherOpx::unwindRegion(InIndex, OutIndex) const {
   };
 }
 
-std::set<TensorId>
+std::vector<TensorId>
 ReplicatedAllGatherOpx::mustExistBeforeCreate(InIndex) const {
   return {};
 }

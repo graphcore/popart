@@ -44,10 +44,8 @@ public:
   virtual std::pair<poplar::Tensor, ViewChangers>
   createInput(const poplar::DebugNameAndId &dnai) = 0;
 
-  // Returns the list of tensors (DNF) that must be created before this one
-  // Allows disjunctive normal form of must exist tensors, i.e.
-  // at least one full set of TensorIds in the vector must exist
-  virtual DnfTensorIds mustExistBeforeCreate() = 0;
+  // Returns the list of tensors that must be created before this one
+  virtual std::set<TensorId> mustExistBeforeCreate() = 0;
 
   virtual double getMaxCreatorPriority() = 0;
 
@@ -83,7 +81,7 @@ public:
   std::pair<poplar::Tensor, ViewChangers>
   createInput(const poplar::DebugNameAndId &dnai) override;
 
-  DnfTensorIds mustExistBeforeCreate() override;
+  std::set<TensorId> mustExistBeforeCreate() override;
 
   double getMaxCreatorPriority() override;
   int64_t getNumElems() override;
@@ -136,7 +134,7 @@ public:
 
   std::pair<poplar::Tensor, ViewChangers>
   createInput(const poplar::DebugNameAndId &dnai) override;
-  DnfTensorIds mustExistBeforeCreate() override;
+  std::set<TensorId> mustExistBeforeCreate() override;
 
   double getMaxCreatorPriority() override;
   int64_t getNumElems() override;

@@ -27,7 +27,7 @@ public:
   bool createsEquiv(int index0, const Opx *opx1, int index1) const override;
   // To create a poplar::Tensor for input index index0, which
   // poplar::Tensors must already exist?
-  std::set<TensorId> mustExistBeforeCreate(int index0) const override;
+  std::vector<TensorId> mustExistBeforeCreate(int index0) const override;
 
 private:
   int64_t axis;

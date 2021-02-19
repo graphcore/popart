@@ -92,14 +92,7 @@ public:
 
   // To create a poplar::Tensor for input index index0, which
   // poplar::Tensors must already exist?
-  virtual std::set<TensorId> mustExistBeforeCreate(int index0) const;
-
-  // To create a poplar::Tensor for input index index0, which
-  // poplar::Tensors must already exist?
-  // Allows disjunctive normal form of must exist tensors, i.e.
-  // at least one full set of TensorIds in the vector must exist
-  virtual DnfTensorIds mustExistBeforeCreateDNF(int index0) const;
-
+  virtual std::vector<TensorId> mustExistBeforeCreate(int index0) const;
   // adds poplar::Tensors to devicex_->popTensors,
   // one for each output of op_.
   virtual void grow(poplar::program::Sequence &) const;

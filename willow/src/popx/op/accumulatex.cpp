@@ -257,7 +257,8 @@ InputCreatorType AccumulateOpx::getInputCreatorType(int inIndex) const {
              : Opx::getInputCreatorType(inIndex);
 }
 
-std::set<TensorId> AccumulateOpx::mustExistBeforeCreate(InIndex index) const {
+std::vector<TensorId>
+AccumulateOpx::mustExistBeforeCreate(InIndex index) const {
   if (index != VarUpdateOp::getVarToUpdateInIndex()) {
     throw internal_error(
         "AccumulateOpx::mustExistBeforeCreate : Invalid index");

@@ -52,7 +52,8 @@ InputCreatorType CopyVarUpdateOpx::getInputCreatorType(int inIndex) const {
              : Opx::getInputCreatorType(inIndex);
 }
 
-std::set<TensorId> CopyVarUpdateOpx::mustExistBeforeCreate(int index1) const {
+std::vector<TensorId>
+CopyVarUpdateOpx::mustExistBeforeCreate(int index1) const {
   if (index1 != VarUpdateWithUpdaterOp::getUpdaterInIndex()) {
     throw internal_error(
         "CopyVarUpdate::mustExistBeforeCreate : Invalid index");

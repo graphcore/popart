@@ -19,7 +19,7 @@ public:
   InputCreatorType getInputCreatorType(InIndex) const final;
   poplar::Tensor createInput(InIndex index,
                              const poplar::DebugNameAndId &dnai) const final;
-  std::set<TensorId> mustExistBeforeCreate(InIndex) const;
+  std::vector<TensorId> mustExistBeforeCreate(InIndex) const;
 
   static popnn::gru::GruParams createGRUParams(const GRUOp &);
   static poplar::Tensor reshapePoplibWeightsForOnnx(poplar::Tensor,
