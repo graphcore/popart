@@ -317,6 +317,11 @@ IrLowering::IrLowering(const Ir &ir,
     lstmOptions.set("inferenceOnly", "true");
   }
 
+  for (auto it : ir.getSessionOptions().lstmOptions) {
+    logging::devicex::info("Setting LSTM option {} = {}", it.first, it.second);
+    lstmOptions.set(it.first, it.second);
+  }
+
   const auto &userGclOptions = ir.getSessionOptions().gclOptions;
   validateGclOptions(userGclOptions);
 

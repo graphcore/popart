@@ -97,6 +97,8 @@ SessionOptions.engineOptions = property(_get_options_dict('_engineOptions'),
 SessionOptions.convolutionOptions = property(
     _get_options_dict('_convolutionOptions'),
     _set_options_dict('_convolutionOptions'))
+SessionOptions.lstmOptions = property(_get_options_dict('_lstmOptions'),
+                                      _set_options_dict('_lstmOptions'))
 SessionOptions.reportOptions = property(_get_options_dict('_reportOptions'),
                                         _set_options_dict('_reportOptions'))
 SessionOptions.gclOptions = property(_get_options_dict('_gclOptions'),

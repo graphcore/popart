@@ -4239,6 +4239,9 @@ session)doc";
 static const char *__doc_popart_SessionOptions_convolutionOptions =
     R"doc(Poplar convolution options)doc";
 
+static const char *__doc_popart_SessionOptions_lstmOptions =
+    R"doc(Poplar LSTM options)doc";
+
 static const char *__doc_popart_SessionOptions_customCodeletCompileFlags =
     R"doc(Compile flags for the custom codelets. For example `-g` to generate
 debug info.)doc";

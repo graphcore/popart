@@ -670,6 +670,9 @@ struct SessionOptions {
   /// Poplar convolution options.
   std::map<std::string, std::string> convolutionOptions;
 
+  /// Poplar LSTM options.
+  std::map<std::string, std::string> lstmOptions;
+
   /// Poplar reporting options.
   std::map<std::string, std::string> reportOptions;
 

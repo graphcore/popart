@@ -185,7 +185,7 @@ public:
 
   void assertNumElements(const popx::Executablex &) const final {}
 
-  ConstVoidData in(TensorId id, int64_t, bool prefetch) final {
+  ConstVoidData in(TensorId id, int64_t, bool prefetch)final {
     py::array a = inputCb(id, prefetch);
     if (!isContiguous(a)) {
       throw error(
@@ -1190,6 +1190,9 @@ PYBIND11_MODULE(popart_core, m) {
     cls.def_readwrite("_convolutionOptions",
                       &SessionOptions::convolutionOptions,
                       DOC(popart, SessionOptions, convolutionOptions));
+    cls.def_readwrite("_lstmOptions",
+                      &SessionOptions::lstmOptions,
+                      DOC(popart, SessionOptions, lstmOptions));
     cls.def_readwrite("_reportOptions",
                       &SessionOptions::reportOptions,
                       DOC(popart, SessionOptions, reportOptions));
