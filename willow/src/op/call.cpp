@@ -91,10 +91,12 @@ std::vector<std::unique_ptr<Op>> CallOp::getGradOps() {
 
 CallGradOp::CallGradOp(CallOp &fwdOp,
                        const std::vector<GradInOutMapper> &gradInInfo_)
-    : CallOp(Onnx::CustomOperators::Call_1,
-             fwdOp.getGraph(),
-             fwdOp.getCalledGraph().getBackwardsGraph(
-                 fwdOp.getBackwardsGraphId())),
+    : CallOp(
+          Onnx::CustomOperators::Call_1,
+          fwdOp.getGraph(),
+          fwdOp.getCalledGraph().getBackwardsGraph(fwdOp.getBackwardsGraphId()),
+          {},
+          fwdOp.settings),
       gradInInfo(gradInInfo_) {
   // An output for every input to the forward CallOp
   for (int i = 0; i < fwdOp.input->n(); i++) {
@@ -194,6 +196,39 @@ static OpCreator<CallOp> callOpCreator(
         for (auto &output : callee.output()) {
           auto scopedId = calleeGraph->addScope(output.name());
           calleeGraph->markAsOutput(scopedId);
+        }
+      }
+
+      // If pipelining is enabled, subgraph ops must have a virtual graph id and
+      // it must match the calling ops virtual graph id.
+      // If in the future we allow pipeline stages to span multiple virtual
+      // graphs, this will have to change to check that the subgraph op has a
+      // valid virtual graph id for the pipeline stage it is called from.
+      if (ir.getSessionOptions().enablePipelining) {
+        VGraphId vgid = *info.settings.vgraphId;
+        for (auto &id_op : calleeGraph->getOps()) {
+          auto op = id_op.second.get();
+          if (!op->hasVirtualGraphId()) {
+            throw error(
+                "Op {} in subgraph \"{}\" does not have a virtual graph id. "
+                "When "
+                "pipelining, subgraph ops must have a virtual graph id set.",
+                op->debugName(),
+                callee.name());
+          } else if (op->getVirtualGraphId() != vgid) {
+            throw error(
+                "The virtual graph id ({}) for Op {} in subgraph \"{}\" "
+                "does not match the virtual graph id ({}) of the "
+                "calling op. When pipelining, subgraph ops must have a "
+                "virtual graph id matching the calling op. If you are trying "
+                "to call the same subgraph from different pipeline stages, you "
+                "will need to create a separate subgraph for each virtual "
+                "graph.",
+                op->getVirtualGraphId(),
+                op->debugName(),
+                callee.name(),
+                vgid);
+          }
         }
       }
 
