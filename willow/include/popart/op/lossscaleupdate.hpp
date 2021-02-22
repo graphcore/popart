@@ -20,9 +20,18 @@ public:
   void setup() final;
 
   static InIndex getLossScaleInIndex() { return 0; }
-  // Gradient tensor statistics are inputs at indices 1-N
+
+  // This is the compound scalar tensor that has been divided by the loss
+  // scale factor. Depending on the optimizer chosen by the user, this could
+  // be one of 'scaledLearningRate0' or 'dampeningScaleFactor1'. See
+  // optimizer.hpp for details.
+  static InIndex getInverseLossScaleInIndex() { return 1; }
+
+  // Gradient tensor statistics are inputs at indices 2-N
+  static InIndex getFirstStatisticsTensorInIndex() { return 2; }
 
   static OutIndex getUpdatedLossScaleOutIndex() { return 0; }
+  static OutIndex getUpdatedInverseLossScaleOutIndex() { return 1; }
 
   float getSubgraphValue() const final { return getLowSubgraphValue(); }
 

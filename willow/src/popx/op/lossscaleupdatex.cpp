@@ -14,7 +14,8 @@ namespace popx {
 void LossScaleUpdateOpx::grow(poplar::program::Sequence &prog) const {
   auto &op = getOp<LossScaleUpdateOp>();
 
-  auto lossScale = getInTensor(op.getLossScaleInIndex());
+  auto lossScale        = getInTensor(op.getLossScaleInIndex());
+  auto inverseLossScale = getInTensor(op.getInverseLossScaleInIndex());
 
   // Check there is at least one 'gradient statistics' input
   if (!hasInput(1)) {
@@ -37,16 +38,18 @@ void LossScaleUpdateOpx::grow(poplar::program::Sequence &prog) const {
   // where f = t/(1-t)
   float f = thresholdUpperCountProportion / (1 - thresholdUpperCountProportion);
 
-  auto sumLowerBinCounts =
-      getScalarVariable(popType(op.inInfo(1).dataType()), "sumLowerBinCounts");
-  auto sumUpperBinCounts =
-      getScalarVariable(popType(op.inInfo(1).dataType()), "sumUpperBinCounts");
+  auto sumLowerBinCounts = getScalarVariable(
+      popType(op.inInfo(op.getFirstStatisticsTensorInIndex()).dataType()),
+      "sumLowerBinCounts");
+  auto sumUpperBinCounts = getScalarVariable(
+      popType(op.inInfo(op.getFirstStatisticsTensorInIndex()).dataType()),
+      "sumUpperBinCounts");
   popops::zero(
       graph(), sumLowerBinCounts, prog, debugContext("zeroLowerBinCounts"));
   popops::zero(
       graph(), sumUpperBinCounts, prog, debugContext("zeroUpperBinCounts"));
 
-  for (int i = 1; i < op.input->n(); i++) {
+  for (int i = op.getFirstStatisticsTensorInIndex(); i < op.input->n(); i++) {
     auto gradStats     = getInTensor(i);
     auto lowerBinCount = gradStats.slice(0, 1, 0);
     auto upperBinCount = gradStats.slice(1, 2, 0);
@@ -81,15 +84,21 @@ void LossScaleUpdateOpx::grow(poplar::program::Sequence &prog) const {
                                      debugContext());
 
   poplar::program::Sequence scaleUp;
-  poplar::program::Sequence scaleDown;
   popops::mulInPlace(graph(), lossScale, 2.0, scaleUp, debugContext("scaleUp"));
   popops::mulInPlace(
+      graph(), inverseLossScale, 0.5, scaleUp, debugContext("scaleUp"));
+
+  poplar::program::Sequence scaleDown;
+  popops::mulInPlace(
       graph(), lossScale, 0.5, scaleDown, debugContext("scaleDown"));
+  popops::mulInPlace(
+      graph(), inverseLossScale, 2.0, scaleDown, debugContext("scaleDown"));
 
   prog.add(poplar::program::If(
       shouldScaleDown, scaleDown, scaleUp, debugContext("lossScaleUpdate")));
 
   setOutTensor(op.getUpdatedLossScaleOutIndex(), lossScale);
+  setOutTensor(op.getUpdatedInverseLossScaleOutIndex(), inverseLossScale);
 }
 
 LossScaleUpdateOpx::LossScaleUpdateOpx(Op *op, Devicex *devicex)
