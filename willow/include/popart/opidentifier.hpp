@@ -253,6 +253,7 @@ const static AiGraphcoreOpIdV1 ConcatGradInplace("ConcatGradInplace");
 const static AiGraphcoreOpIdV1 ConcatInplace("ConcatInplace");
 const static AiGraphcoreOpIdV1 ConvFlipWeights("ConvFlipWeights");
 const static AiGraphcoreOpIdV1 CopyVarUpdate("CopyVarUpdate");
+const static AiGraphcoreOpIdV1 Ctc("Ctc", 4, 2);
 const static AiGraphcoreOpIdV1 DepthToSpace("DepthToSpace", 1, 1);
 const static AiGraphcoreOpIdV1 Detach_1("Detach", 1, 1);
 const static AiGraphcoreOpIdV1 DetachInplace("DetachInplace");
@@ -361,6 +362,7 @@ namespace AiGraphcore {
 namespace OpSet1 {
 const static OperatorIdentifier Atan2        = CustomOperators::Atan2_1;
 const static OperatorIdentifier Call         = CustomOperators::Call_1;
+const static OperatorIdentifier Ctc          = CustomOperators::Ctc;
 const static OperatorIdentifier DepthToSpace = CustomOperators::DepthToSpace;
 const static OperatorIdentifier Detach       = CustomOperators::Detach_1;
 const static OperatorIdentifier DynamicAdd   = CustomOperators::DynamicAdd_1;
@@ -416,6 +418,7 @@ const static AiGraphcoreOpIdV1 IfConditionGrad("IfConditionGrad");
 const static AiGraphcoreOpIdV1 IfGrad("IfGrad");
 const static AiGraphcoreOpIdV1 L1Grad("L1Grad");
 const static AiGraphcoreOpIdV1 NllGrad("NllGrad");
+const static AiGraphcoreOpIdV1 CtcGrad("CtcGrad");
 const static AiGraphcoreOpIdV1 SoftmaxGradDirect("SoftmaxGradDirect");
 const static AiGraphcoreOpIdV1 SubsampleGrad("SubsampleGrad");
 const static AiGraphcoreOpIdV1 UnaryZeroGradOp("UnaryZeroGrad");

@@ -1047,6 +1047,31 @@ TensorId AiGraphcoreOpset1::identityloss(const std::vector<TensorId> &args,
   return outputs.at(0);
 }
 
+TensorId AiGraphcoreOpset1::ctcloss(const std::vector<TensorId> &args,
+                                    const ReductionType reduction,
+                                    const unsigned blank,
+                                    const DebugContext &debugContext) {
+  std::string reductionString = LossOp::reductionTypeToString(reduction);
+
+  std::map<std::string, popart::any> attributes = {
+      {"reduction", reductionString}, {"blank", blank}};
+
+  // if (ignoreIndex.has_value()) {
+  //  attributes.emplace("ignoreIndex", ignoreIndex.value());
+  //}
+
+  BuilderDebugInfo di(
+      debugContext, "AiGraphcoreOpset1::ctcloss", args, attributes);
+  attributes.insert({sDebugInfoId, di.getId()});
+  auto outputs = impl->op(Onnx::AiGraphcore::OpSet1::Ctc,
+                          getOpsetVersion(),
+                          args,
+                          attributes,
+                          debugContext);
+  di.setOutputs(outputs);
+  return outputs.at(0);
+}
+
 TensorId AiGraphcoreOpset1::shapeddropout(const std::vector<TensorId> &args,
                                           const std::vector<int64_t> &shape,
                                           float ratio,

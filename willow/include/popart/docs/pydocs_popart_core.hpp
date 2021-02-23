@@ -674,6 +674,34 @@ Parameter ``name``:
 Parameter ``debugContext``:
     Optional debug context)doc";
 
+static const char *__doc_popart_AiGraphcoreOpset1_ctcloss =
+    R"doc(Add an connectionist temporal classification (CTC) loss operation to
+the model.
+
+With T being maximum input length, N being batch size, C being number of
+classes, S being a maximum target length, this op calculates the CTC loss
+for a logarithmised probabilities tensor with shape [T, N, C], a class
+target tensor with shape [N, S], a input lengths tensor [N] and a target
+lengths tensor [N].
+
+Note that C includes a blank class (default=0). The probabilities tensor
+is padded as required. Target sequences are also padded and are
+populated with values <=C not including the blank class, up to their
+respective target lengths. Note that target lengths cannot exceed input
+lengths.
+
+Parameter ``args``:
+    [log_probs,targets,input_lengths,target_lengths]
+
+Parameter ``reduction``:
+    Type of reduction to perform on the individual losses
+
+Parameter ``blank``:
+    The integer representing the blank class.
+
+Parameter ``debugContext``:
+    Optional debug context)doc";
+
 static const char *__doc_popart_AiGraphcoreOpset1_init =
     R"doc(Add an init operation to the model
 

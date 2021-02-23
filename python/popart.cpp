@@ -2054,6 +2054,13 @@ PYBIND11_MODULE(popart_core, m) {
             py::arg("reduction")    = ReductionType::Mean,
             py::arg("debugContext") = std::string(),
             DOC(popart, AiGraphcoreOpset1, identityloss));
+    cls.def("ctcloss",
+            &AiGraphcoreOpset1::ctcloss,
+            py::arg("args"),
+            py::arg("reduction")    = ReductionType::Mean,
+            py::arg("blank")        = 0,
+            py::arg("debugContext") = std::string(),
+            DOC(popart, AiGraphcoreOpset1, ctcloss));
     cls.def("multiconv",
             &AiGraphcoreOpset1::multiconv,
             py::arg("args"),

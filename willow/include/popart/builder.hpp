@@ -470,12 +470,39 @@ public:
    *
    * \param args Vector of input tensor ids.
    * \param reduction Type of reduction to perform on the individual losses.
-   * \param name Optional identifier for operation.
    * \param debugContext Optional debug context.
+   * \return The name of the result tensor
    */
   TensorId identityloss(const std::vector<TensorId> &args,
                         const ReductionType reduction    = ReductionType::Mean,
                         const DebugContext &debugContext = {});
+
+  /**
+   * Add an connectionist temporal classification (CTC) loss operation to the
+   * model.
+   *
+   * With T being maximum input length, N being batch size, C being number of
+   * classes, S being a maximum target length, this op calculates the CTC loss
+   * for a logarithmised probabilities tensor with shape [T, N, C], a class
+   * target tensor with shape [N, S], a input lengths tensor [N] and a target
+   * lengths tensor [N].
+   *
+   * Note that C includes a blank class (default=0). The probabilities tensor
+   * is padded as required. Target sequences are also padded and are
+   * populated with values <=C not including the blank class, up to their
+   * respective target lengths. Note that target lengths cannot exceed input
+   * lengths.
+   *
+   * \param args [log_probs,targets,input_lengths,target_lengths]
+   * \param reduction Type of reduction to perform on the individual losses
+   * \param blank The integer representing the blank class.
+   * \param debugContext Optional debug context
+   * \return The name of the result tensor
+   */
+  TensorId ctcloss(const std::vector<TensorId> &args,
+                   const ReductionType reduction    = ReductionType::Mean,
+                   const unsigned blank             = 0,
+                   const DebugContext &debugContext = {});
 
   /**
    * Add a shaped dropout operation to the model.
