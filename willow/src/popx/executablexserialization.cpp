@@ -36,37 +36,21 @@
 namespace popart {
 namespace popx {
 namespace serialization {
+namespace {
 
-popart::cap::AnchorReturnTypeId toCapnpArtId(popart::AnchorReturnTypeId id) {
-  switch (id) {
-  case popart::AnchorReturnTypeId::Final:
-    return popart::cap::AnchorReturnTypeId::FINAL;
-  case popart::AnchorReturnTypeId::EveryN:
-    return popart::cap::AnchorReturnTypeId::EVERY_N;
-  case popart::AnchorReturnTypeId::All:
-    return popart::cap::AnchorReturnTypeId::ALL;
-  case popart::AnchorReturnTypeId::Sum:
-    return popart::cap::AnchorReturnTypeId::SUM;
+struct Header {
+  Header(kj::std::StdInputStream &sis) {
+    capnp::InputStreamMessageReader message(sis);
+    auto header     = message.getRoot<popart::popx::cap::Header>();
+    hash            = header.getHash();
+    poplarExeOffset = header.getPoplarExeOffset();
+    popartExeOffset = header.getPopartExeOffset();
   }
-
-  throw error("Invalid AnchorReturnTypeId {}", id);
-}
-
-popart::cap::SyntheticDataMode
-toCapnpSyntheticDataMode(popart::SyntheticDataMode mode) {
-  switch (mode) {
-  case popart::SyntheticDataMode::Off:
-    return popart::cap::SyntheticDataMode::OFF;
-  case popart::SyntheticDataMode::Zeros:
-    return popart::cap::SyntheticDataMode::ZEROS;
-  case popart::SyntheticDataMode::RandomNormal:
-    return popart::cap::SyntheticDataMode::RANDOM_NORMAL;
-  case popart::SyntheticDataMode::N:
-    return popart::cap::SyntheticDataMode::N;
-  }
-
-  throw error("Invalid SyntheticDataMode {}", static_cast<int>(mode));
-}
+  size_t hash;
+  int64_t poplarExeOffset;
+  int64_t popartExeOffset;
+  size_t totalSize;
+};
 
 popart::cap::TensorType toCapnpTensorType(popart::TensorType type) {
   switch (type) {
@@ -282,8 +266,8 @@ deserializeTensor(popart::Ir &ir,
   return tensor;
 }
 
-void serializeExecutable(std::ostream &out,
-                         const popart::popx::Executablex &executable) {
+void serializePopartExecutable(std::ostream &out,
+                               const popart::popx::Executablex &executable) {
 
   ::capnp::MallocMessageBuilder message;
   auto executablexBuilder = message.initRoot<popart::popx::cap::Executablex>();
@@ -461,12 +445,108 @@ void serializeExecutable(std::ostream &out,
   kj::std::StdOutputStream sos(out);
   capnp::writeMessage(sos, message);
 }
+} // namespace
+
+void serializeExecutable(std::ostream &out,
+                         const poplar::Executable *poplarExecutable,
+                         const popart::popx::Executablex *executable,
+                         size_t hash) {
+  std::streampos start = out.tellp();
+  kj::std::StdOutputStream sos(out);
+  ::capnp::MallocMessageBuilder message;
+
+  auto headerBuilder = message.initRoot<popart::popx::cap::Header>();
+  headerBuilder.setHash(hash);
+  headerBuilder.setPoplarExeOffset(0);
+  headerBuilder.setPopartExeOffset(0);
+  headerBuilder.setTotalSize(0);
+  int64_t popartOffset = 0;
+  int64_t poplarOffset = 0;
+
+  // placeholder
+  capnp::writeMessage(sos, message);
+
+  // Export Popart IR
+  if (executable) {
+    popartOffset = out.tellp() - start;
+    serializePopartExecutable(out, *executable);
+  }
+
+  // Export Poplar executable
+  if (poplarExecutable) {
+    poplarOffset = out.tellp() - start;
+    poplarExecutable->serialize(out);
+  }
+  auto totalSize = out.tellp() - start;
+
+  // Move back to the beginning of the file and write the real header
+  // now that we know the offsets.
+  out.seekp(start);
+  headerBuilder.setPoplarExeOffset(poplarOffset);
+  headerBuilder.setPopartExeOffset(popartOffset);
+  headerBuilder.setTotalSize(totalSize);
+  capnp::writeMessage(sos, message);
+
+  // Move the stream position back to the end.
+  out.seekp(start + totalSize);
+}
+
+size_t readExecutableHash(std::istream &in) {
+  auto start = in.tellg();
+  kj::std::StdInputStream sis(in);
+  Header header{sis};
+  // Reset feed position
+  in.clear(); // Just in case we reached eof
+  in.seekg(start);
+
+  return header.hash;
+}
+
+bool containsPoplarExecutable(std::istream &in) {
+  auto start = in.tellg();
+  kj::std::StdInputStream sis(in);
+  Header header{sis};
+  // Reset feed position
+  in.clear(); // Just in case we reached eof
+  in.seekg(start);
+
+  return header.poplarExeOffset != 0;
+}
+
+bool containsExecutable(std::istream &in) {
+  auto start = in.tellg();
+  kj::std::StdInputStream sis(in);
+  Header header{sis};
+  // Reset feed position
+  in.clear(); // Just in case we reached eof
+  in.seekg(start);
+
+  return header.popartExeOffset != 0;
+}
+
+poplar::Executable deserializePoplarExecutable(std::istream &in) {
+  auto start = in.tellg();
+
+  kj::std::StdInputStream sis(in);
+  Header header{sis};
+
+  in.seekg(start + header.poplarExeOffset);
+  auto exe = poplar::Executable::deserialize(in);
+  // Reset feed position
+  in.clear(); // Just in case we reached eof
+  in.seekg(start);
+  return exe;
+}
 
 std::unique_ptr<popart::popx::Executablex>
 deserializeExecutable(std::istream &in,
                       popart::Ir &ir,
                       popart::popx::IrLowering &lowering) {
+  auto start = in.tellg();
+
   kj::std::StdInputStream sis(in);
+  Header header{sis};
+  in.seekg(start + header.popartExeOffset);
 
   capnp::ReaderOptions opts;
   // Increase default size from 64 MB to handle larger models.
@@ -577,10 +657,15 @@ deserializeExecutable(std::istream &in,
     }
   }
 
-  return popart::popx::Executablex::createFromStream(
+  auto exe = popart::popx::Executablex::createFromStream(
       lowering,
       std::move(deserializedTensors),
       std::move(cbrHostRearrangement));
+
+  // Reset feed position
+  in.clear(); // Just in case we reached eof
+  in.seekg(start);
+  return exe;
 }
 
 } // namespace serialization

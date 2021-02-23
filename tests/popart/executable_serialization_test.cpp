@@ -192,7 +192,7 @@ BOOST_AUTO_TEST_CASE(serialize_deserialize) {
   const auto &executable                   = session->getExecutable();
   {
     std::ofstream out(serializedExecutableFilePath);
-    popx::serialization::serializeExecutable(out, executable);
+    popx::serialization::serializeExecutable(out, nullptr, &executable, 0);
   }
 
   {
@@ -201,6 +201,9 @@ BOOST_AUTO_TEST_CASE(serialize_deserialize) {
     ir.setUserOptions(opts);
     ir.setOnnxModel(modelProto);
     std::ifstream ifs(serializedExecutableFilePath);
+    BOOST_CHECK(popx::serialization::containsExecutable(ifs));
+    BOOST_CHECK(!popx::serialization::containsPoplarExecutable(ifs));
+
     bool skipGraphCompilation = true;
     popx::IrLowering ir_lowering(ir, device, skipGraphCompilation);
     auto deserializedExecutable =
@@ -333,7 +336,7 @@ BOOST_AUTO_TEST_CASE(
   const auto &executable                   = session->getExecutable();
   {
     std::ofstream out(serializedExecutableFilePath);
-    popx::serialization::serializeExecutable(out, executable);
+    popx::serialization::serializeExecutable(out, nullptr, &executable, 0);
   }
 
   {
@@ -342,6 +345,8 @@ BOOST_AUTO_TEST_CASE(
     ir.setUserOptions(opts);
     ir.setOnnxModel(modelProto);
     std::ifstream ifs(serializedExecutableFilePath);
+    BOOST_CHECK(popx::serialization::containsExecutable(ifs));
+    BOOST_CHECK(!popx::serialization::containsPoplarExecutable(ifs));
     bool skipGraphCompilation = true;
     popx::IrLowering ir_lowering(ir, device, skipGraphCompilation);
     auto deserializedExecutable =
@@ -398,17 +403,13 @@ BOOST_AUTO_TEST_CASE(session_run_from_serialized_exe) {
   auto dataFlow      = DataFlow(batchesPerStep, {{C_id, art}});
 
   auto cacheDir = "./tmp_1" + randomString(10);
+  boost::filesystem::remove(cacheDir);
   BOOST_CHECK(boost::filesystem::create_directory(cacheDir));
   auto d                      = boost::filesystem::path(cacheDir);
   const std::string cacheName = "session_cache1";
   auto n                      = boost::filesystem::path(cacheName);
   auto cachePath_             = d / n;
   auto cachePath              = cachePath_.string();
-
-  boost::filesystem::remove(popart::Ir::getPopartCachePath(cachePath));
-  boost::filesystem::remove(popx::IrLowering::getPoplarCachePath(cachePath));
-  boost::filesystem::remove(
-      popx::Executablex::getExecutablexCachePath(cachePath));
 
   auto opts                = SessionOptions();
   opts.enableEngineCaching = true;
@@ -440,6 +441,7 @@ BOOST_AUTO_TEST_CASE(session_run_from_serialized_exe) {
   std::vector<float> B_readback1_init(B_info.nelms(), -99.0f);
 
   size_t irBundleHash1 = 0;
+  std::string cacheFile;
   {
     auto device = popart::createTestDevice(TestDeviceType::Hw);
 
@@ -477,6 +479,7 @@ BOOST_AUTO_TEST_CASE(session_run_from_serialized_exe) {
 
     session->weightsToHost();
     session->readWeights(weightsRead2);
+    cacheFile = session->getExecutable().getExecutablexCachePath(cachePath);
   }
 
   auto C_ground_truth = raw_C_out;
@@ -484,12 +487,7 @@ BOOST_AUTO_TEST_CASE(session_run_from_serialized_exe) {
   // reset output values
   std::fill(raw_C_out.begin(), raw_C_out.end(), -9.0f);
 
-  BOOST_CHECK(
-      boost::filesystem::exists(popart::Ir::getPopartCachePath(cachePath)));
-  BOOST_CHECK(boost::filesystem::exists(
-      popx::IrLowering::getPoplarCachePath(cachePath)));
-  BOOST_CHECK(boost::filesystem::exists(
-      popx::Executablex::getExecutablexCachePath(cachePath)));
+  BOOST_CHECK(boost::filesystem::exists(cacheFile));
 
   std::vector<float> A_readback2(A_info.nelms(), -9.0f);
   std::vector<float> B_readback2(B_info.nelms(), -99.0f);
@@ -611,17 +609,13 @@ BOOST_AUTO_TEST_CASE(session_run_on_ipu_from_offlineipu_serialized_exe) {
   auto dataFlow      = DataFlow(batchesPerStep, {{C_id, art}});
 
   auto cacheDir = "./tmp_1" + randomString(10);
+  boost::filesystem::remove(cacheDir);
   BOOST_CHECK(boost::filesystem::create_directory(cacheDir));
   auto d                      = boost::filesystem::path(cacheDir);
   const std::string cacheName = "session_cache1";
   auto n                      = boost::filesystem::path(cacheName);
   auto cachePath_             = d / n;
   auto cachePath              = cachePath_.string();
-
-  boost::filesystem::remove(popart::Ir::getPopartCachePath(cachePath));
-  boost::filesystem::remove(popx::IrLowering::getPoplarCachePath(cachePath));
-  boost::filesystem::remove(
-      popx::Executablex::getExecutablexCachePath(cachePath));
 
   auto opts                = SessionOptions();
   opts.enableEngineCaching = false;
@@ -684,6 +678,7 @@ BOOST_AUTO_TEST_CASE(session_run_on_ipu_from_offlineipu_serialized_exe) {
 
   opts.enableEngineCaching = true;
   size_t irBundleHash1     = 0;
+  std::string cacheFile;
   {
     auto currentHwDeviceInfo = popart::createTestDevice(TestDeviceType::Hw);
     const auto &archString =
@@ -713,17 +708,13 @@ BOOST_AUTO_TEST_CASE(session_run_on_ipu_from_offlineipu_serialized_exe) {
     BOOST_CHECK(session->getExecutable().isDeserialized() == false);
     BOOST_CHECK(session->getIrLowering().usingCachedExecutable() == false);
     BOOST_CHECK(session->getIr().hashMatched() == false);
+    cacheFile = session->getExecutable().getExecutablexCachePath(cachePath);
   }
 
   // reset output values
   std::fill(raw_C_out.begin(), raw_C_out.end(), -9.0f);
 
-  BOOST_CHECK(
-      boost::filesystem::exists(popart::Ir::getPopartCachePath(cachePath)));
-  BOOST_CHECK(boost::filesystem::exists(
-      popx::IrLowering::getPoplarCachePath(cachePath)));
-  BOOST_CHECK(boost::filesystem::exists(
-      popx::Executablex::getExecutablexCachePath(cachePath)));
+  BOOST_CHECK(boost::filesystem::exists(cacheFile));
 
   std::vector<float> A_readback2(A_info.nelms(), -9.0f);
   std::vector<float> B_readback2(B_info.nelms(), -99.0f);
@@ -897,6 +888,7 @@ BOOST_AUTO_TEST_CASE(
   popart::StepIO stepio(inputs, anchors);
 
   auto cacheDir = "./tmp_2" + randomString(10);
+  boost::filesystem::remove(cacheDir);
   BOOST_CHECK(boost::filesystem::create_directory(cacheDir));
   auto d                      = boost::filesystem::path(cacheDir);
   const std::string cacheName = "session_cache2";
@@ -913,17 +905,13 @@ BOOST_AUTO_TEST_CASE(
   // training info
   float learnRate = 0.321;
 
-  boost::filesystem::remove(popart::Ir::getPopartCachePath(cachePath));
-  boost::filesystem::remove(popx::IrLowering::getPoplarCachePath(cachePath));
-  boost::filesystem::remove(
-      popx::Executablex::getExecutablexCachePath(cachePath));
-
   // R replicas doing the same work: compensate by dividing learning rate by R
   auto optimizer = ConstSGD(learnRate / R);
   std::vector<float> A_readback1(A_info.nelms(), -1.0f);
   std::vector<float> B_readback1(B_info.nelms(), -1.0f);
   std::vector<float> D_readback1(D_info.nelms(), -1.0f);
   size_t irBundleHash1 = 0;
+  std::string cacheFile;
   {
     auto device = createTestDevice(TestDeviceType::Hw,
                                    2 * opts.replicatedGraphCount,
@@ -956,6 +944,7 @@ BOOST_AUTO_TEST_CASE(
 
     session->weightsToHost();
     session->readWeights(weightsRead);
+    cacheFile = session->getExecutable().getExecutablexCachePath(cachePath);
   }
 
   std::vector<float> A_readback2(A_info.nelms(), -1.0f);
@@ -964,12 +953,7 @@ BOOST_AUTO_TEST_CASE(
 
   auto C_ground_truth = raw_C_out;
 
-  BOOST_CHECK(
-      boost::filesystem::exists(popart::Ir::getPopartCachePath(cachePath)));
-  BOOST_CHECK(boost::filesystem::exists(
-      popx::IrLowering::getPoplarCachePath(cachePath)));
-  BOOST_CHECK(boost::filesystem::exists(
-      popx::Executablex::getExecutablexCachePath(cachePath)));
+  BOOST_CHECK(boost::filesystem::exists(cacheFile));
 
   // reset output values
   std::fill(raw_C_out.begin(), raw_C_out.end(), -9.0f);
@@ -1079,17 +1063,13 @@ BOOST_AUTO_TEST_CASE(session_run_from_serialized_exe_inference) {
   auto dataFlow      = DataFlow(batchesPerStep, {{C_id, art}});
 
   auto cacheDir = "./tmp_3" + randomString(10);
+  boost::filesystem::remove(cacheDir);
   BOOST_CHECK(boost::filesystem::create_directory(cacheDir));
   auto d                      = boost::filesystem::path(cacheDir);
   const std::string cacheName = "session_cache1";
   auto n                      = boost::filesystem::path(cacheName);
   auto cachePath_             = d / n;
   auto cachePath              = cachePath_.string();
-
-  boost::filesystem::remove(popart::Ir::getPopartCachePath(cachePath));
-  boost::filesystem::remove(popx::IrLowering::getPoplarCachePath(cachePath));
-  boost::filesystem::remove(
-      popx::Executablex::getExecutablexCachePath(cachePath));
 
   auto opts                = SessionOptions();
   opts.enableEngineCaching = true;
@@ -1114,6 +1094,7 @@ BOOST_AUTO_TEST_CASE(session_run_from_serialized_exe_inference) {
   std::vector<float> A_readback1(A_info.nelms(), -9.0f);
   std::vector<float> B_readback1(B_info.nelms(), -99.0f);
   size_t irBundleHash1 = 0;
+  std::string cacheFile;
   {
     auto device = popart::createTestDevice(TestDeviceType::Hw);
 
@@ -1142,6 +1123,7 @@ BOOST_AUTO_TEST_CASE(session_run_from_serialized_exe_inference) {
 
     session->weightsToHost();
     session->readWeights(weightsRead);
+    cacheFile = session->getExecutable().getExecutablexCachePath(cachePath);
   }
 
   auto C_ground_truth = raw_C_out;
@@ -1149,12 +1131,7 @@ BOOST_AUTO_TEST_CASE(session_run_from_serialized_exe_inference) {
   // reset output values
   std::fill(raw_C_out.begin(), raw_C_out.end(), -9.0f);
 
-  BOOST_CHECK(
-      boost::filesystem::exists(popart::Ir::getPopartCachePath(cachePath)));
-  BOOST_CHECK(boost::filesystem::exists(
-      popx::IrLowering::getPoplarCachePath(cachePath)));
-  BOOST_CHECK(boost::filesystem::exists(
-      popx::Executablex::getExecutablexCachePath(cachePath)));
+  BOOST_CHECK(boost::filesystem::exists(cacheFile));
 
   std::vector<float> A_readback2(A_info.nelms(), -9.0f);
   std::vector<float> B_readback2(B_info.nelms(), -99.0f);
@@ -1254,17 +1231,13 @@ BOOST_AUTO_TEST_CASE(session_run_from_serialized_exe_random_seed) {
   auto dataFlow      = DataFlow(batchesPerStep, {{C_id, art}});
 
   auto cacheDir = "./tmp_4" + randomString(10);
+  boost::filesystem::remove(cacheDir);
   BOOST_CHECK(boost::filesystem::create_directory(cacheDir));
   auto d                      = boost::filesystem::path(cacheDir);
   const std::string cacheName = "session_cache3";
   auto n                      = boost::filesystem::path(cacheName);
   auto cachePath_             = d / n;
   auto cachePath              = cachePath_.string();
-
-  boost::filesystem::remove(popart::Ir::getPopartCachePath(cachePath));
-  boost::filesystem::remove(popx::IrLowering::getPoplarCachePath(cachePath));
-  boost::filesystem::remove(
-      popx::Executablex::getExecutablexCachePath(cachePath));
 
   auto opts                     = SessionOptions();
   opts.enableEngineCaching      = true;
@@ -1294,6 +1267,7 @@ BOOST_AUTO_TEST_CASE(session_run_from_serialized_exe_random_seed) {
   std::vector<float> B_readback1(B_info.nelms(), -99.0f);
   size_t irBundleHash1   = 0;
   const uint64_t seedVal = 42;
+  std::string cacheFile;
   {
     auto device = popart::createTestDevice(TestDeviceType::Hw);
 
@@ -1331,6 +1305,7 @@ BOOST_AUTO_TEST_CASE(session_run_from_serialized_exe_random_seed) {
 
     session->weightsToHost();
     session->readWeights(weightsRead);
+    cacheFile = session->getExecutable().getExecutablexCachePath(cachePath);
   }
 
   auto C_ground_truth = raw_C_out;
@@ -1338,12 +1313,7 @@ BOOST_AUTO_TEST_CASE(session_run_from_serialized_exe_random_seed) {
   // reset output values
   std::fill(raw_C_out.begin(), raw_C_out.end(), -9.0f);
 
-  BOOST_CHECK(
-      boost::filesystem::exists(popart::Ir::getPopartCachePath(cachePath)));
-  BOOST_CHECK(boost::filesystem::exists(
-      popx::IrLowering::getPoplarCachePath(cachePath)));
-  BOOST_CHECK(boost::filesystem::exists(
-      popx::Executablex::getExecutablexCachePath(cachePath)));
+  BOOST_CHECK(boost::filesystem::exists(cacheFile));
 
   std::vector<float> A_readback2(A_info.nelms(), -9.0f);
   std::vector<float> B_readback2(B_info.nelms(), -99.0f);
@@ -1451,17 +1421,13 @@ BOOST_AUTO_TEST_CASE(session_run_from_serialized_exe_reset_host_weights) {
   auto dataFlow      = DataFlow(batchesPerStep, {{C_id, art}});
 
   auto cacheDir = "./tmp_5" + randomString(10);
+  boost::filesystem::remove(cacheDir);
   BOOST_CHECK(boost::filesystem::create_directory(cacheDir));
   auto d                      = boost::filesystem::path(cacheDir);
   const std::string cacheName = "session_cache1";
   auto n                      = boost::filesystem::path(cacheName);
   auto cachePath_             = d / n;
   auto cachePath              = cachePath_.string();
-
-  boost::filesystem::remove(popart::Ir::getPopartCachePath(cachePath));
-  boost::filesystem::remove(popx::IrLowering::getPoplarCachePath(cachePath));
-  boost::filesystem::remove(
-      popx::Executablex::getExecutablexCachePath(cachePath));
 
   auto opts                = SessionOptions();
   opts.enableEngineCaching = true;
@@ -1489,6 +1455,7 @@ BOOST_AUTO_TEST_CASE(session_run_from_serialized_exe_reset_host_weights) {
   std::vector<float> A_readback1(A_info.nelms(), -9.0f);
   std::vector<float> B_readback1(B_info.nelms(), -99.0f);
   size_t irBundleHash1 = 0;
+  std::string cacheFile;
   {
     auto device = popart::createTestDevice(TestDeviceType::Hw);
 
@@ -1519,6 +1486,7 @@ BOOST_AUTO_TEST_CASE(session_run_from_serialized_exe_reset_host_weights) {
 
     session->weightsToHost();
     session->readWeights(weightsRead);
+    cacheFile = session->getExecutable().getExecutablexCachePath(cachePath);
   }
 
   auto C_ground_truth = raw_C_out;
@@ -1526,12 +1494,7 @@ BOOST_AUTO_TEST_CASE(session_run_from_serialized_exe_reset_host_weights) {
   // reset output values
   std::fill(raw_C_out.begin(), raw_C_out.end(), -9.0f);
 
-  BOOST_CHECK(
-      boost::filesystem::exists(popart::Ir::getPopartCachePath(cachePath)));
-  BOOST_CHECK(boost::filesystem::exists(
-      popx::IrLowering::getPoplarCachePath(cachePath)));
-  BOOST_CHECK(boost::filesystem::exists(
-      popx::Executablex::getExecutablexCachePath(cachePath)));
+  BOOST_CHECK(boost::filesystem::exists(cacheFile));
 
   std::vector<float> A_readback2(A_info.nelms(), -9.0f);
   std::vector<float> B_readback2(B_info.nelms(), -99.0f);
@@ -1630,17 +1593,13 @@ BOOST_AUTO_TEST_CASE(session_run_from_serialized_exe_checkpoint) {
   auto dataFlow      = DataFlow(batchesPerStep, {{C_id, art}});
 
   auto cacheDir = "./tmp_6" + randomString(10);
+  boost::filesystem::remove(cacheDir);
   BOOST_CHECK(boost::filesystem::create_directory(cacheDir));
   auto dir                    = boost::filesystem::path(cacheDir);
   const std::string cacheName = "session_cache1";
   auto n                      = boost::filesystem::path(cacheName);
   auto cachePath_             = dir / n;
   auto cachePath              = cachePath_.string();
-
-  boost::filesystem::remove(popart::Ir::getPopartCachePath(cachePath));
-  boost::filesystem::remove(popx::IrLowering::getPoplarCachePath(cachePath));
-  boost::filesystem::remove(
-      popx::Executablex::getExecutablexCachePath(cachePath));
 
   auto opts                = SessionOptions();
   opts.enableEngineCaching = true;
@@ -1674,6 +1633,7 @@ BOOST_AUTO_TEST_CASE(session_run_from_serialized_exe_checkpoint) {
   std::string modelPath_ = "model.onnx";
   auto relModelPath_     = dir / modelPath_;
   auto modelPath         = relModelPath_.string();
+  std::string cacheFile;
   {
     auto device = popart::createTestDevice(TestDeviceType::Hw);
 
@@ -1712,6 +1672,7 @@ BOOST_AUTO_TEST_CASE(session_run_from_serialized_exe_checkpoint) {
 
     session->weightsToHost();
     session->readWeights(weightsRead);
+    cacheFile = session->getExecutable().getExecutablexCachePath(cachePath);
   }
 
   auto C_ground_truth = raw_C_out;
@@ -1719,12 +1680,7 @@ BOOST_AUTO_TEST_CASE(session_run_from_serialized_exe_checkpoint) {
   // reset output values
   std::fill(raw_C_out.begin(), raw_C_out.end(), -9.0f);
 
-  BOOST_CHECK(
-      boost::filesystem::exists(popart::Ir::getPopartCachePath(cachePath)));
-  BOOST_CHECK(boost::filesystem::exists(
-      popx::IrLowering::getPoplarCachePath(cachePath)));
-  BOOST_CHECK(boost::filesystem::exists(
-      popx::Executablex::getExecutablexCachePath(cachePath)));
+  BOOST_CHECK(boost::filesystem::exists(cacheFile));
 
   BOOST_CHECK(boost::filesystem::exists(modelPath));
 
@@ -1843,17 +1799,13 @@ BOOST_AUTO_TEST_CASE(session_run_from_serialized_exe_update_optimizer) {
   auto dataFlow      = DataFlow(batchesPerStep, {{C_id, art}});
 
   auto cacheDir = "./tmp_7" + randomString(10);
+  boost::filesystem::remove(cacheDir);
   BOOST_CHECK(boost::filesystem::create_directory(cacheDir));
   auto d                      = boost::filesystem::path(cacheDir);
   const std::string cacheName = "session_cache1";
   auto n                      = boost::filesystem::path(cacheName);
   auto cachePath_             = d / n;
   auto cachePath              = cachePath_.string();
-
-  boost::filesystem::remove(popart::Ir::getPopartCachePath(cachePath));
-  boost::filesystem::remove(popx::IrLowering::getPoplarCachePath(cachePath));
-  boost::filesystem::remove(
-      popx::Executablex::getExecutablexCachePath(cachePath));
 
   auto opts                = SessionOptions();
   opts.enableEngineCaching = true;
@@ -1886,6 +1838,7 @@ BOOST_AUTO_TEST_CASE(session_run_from_serialized_exe_update_optimizer) {
   std::vector<float> B_readback1_init(B_info.nelms(), -99.0f);
 
   size_t irBundleHash1 = 0;
+  std::string cacheFile;
   {
     auto device = popart::createTestDevice(TestDeviceType::Hw);
 
@@ -1906,17 +1859,13 @@ BOOST_AUTO_TEST_CASE(session_run_from_serialized_exe_update_optimizer) {
     BOOST_CHECK(session->getExecutable().isDeserialized() == false);
     BOOST_CHECK(session->getIrLowering().usingCachedExecutable() == false);
     BOOST_CHECK(session->getIr().hashMatched() == false);
+    cacheFile = session->getExecutable().getExecutablexCachePath(cachePath);
   }
 
   // reset output values
   std::fill(raw_C_out.begin(), raw_C_out.end(), -9.0f);
 
-  BOOST_CHECK(
-      boost::filesystem::exists(popart::Ir::getPopartCachePath(cachePath)));
-  BOOST_CHECK(boost::filesystem::exists(
-      popx::IrLowering::getPoplarCachePath(cachePath)));
-  BOOST_CHECK(boost::filesystem::exists(
-      popx::Executablex::getExecutablexCachePath(cachePath)));
+  BOOST_CHECK(boost::filesystem::exists(cacheFile));
 
   size_t irBundleHash2 = 0;
   {

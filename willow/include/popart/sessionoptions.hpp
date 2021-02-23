@@ -573,7 +573,7 @@ struct SessionOptions {
   /// Enable Poplar executable caching.
   bool enableEngineCaching = false;
 
-  /// Path to save the \c poplar::Executable to.
+  /// Folder to save the \c poplar::Executable to.
   std::string cachePath = "session_cache";
 
   /// Throw an exception when floating point errors occur.

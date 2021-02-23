@@ -278,12 +278,12 @@ target_include_directories(popart-only
 # targets. See [comment-willow-targets].
 
 target_link_libraries(popart-only
-  PUBLIC
-    ${POPART_ONLY_DEPS_LIBS}
   PRIVATE
     ${POPART_PRIVATE_DEPS_LIBS}
     ${POPART_DEPS_LIBS}
     ${POPART_INTERNAL_DEPS_LIBS}
+  PUBLIC
+    ${POPART_ONLY_DEPS_LIBS}
 )
 target_include_directories(popart-only SYSTEM
   PUBLIC

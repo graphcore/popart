@@ -105,25 +105,6 @@ std::string Ir::timePartitionLoggerStr() const {
   return timePartitionLogger().str(thresholdPercentage);
 }
 
-Ir::SavedInfo::SavedInfo(const popart::Ir &ir)
-    : irHash(std::hash<popart::Ir>{}(ir)) {}
-Ir::SavedInfo::SavedInfo(std::size_t hash) : irHash(hash) {}
-
-void Ir::SavedInfo::serialize(std::ostream &os) { os << irHash; }
-
-Ir::SavedInfo Ir::SavedInfo::deserialize(std::istream &is) {
-  Ir::SavedInfo result;
-  is >> result.irHash;
-  return result;
-}
-
-std::string Ir::SavedInfo::toString() const {
-  std::stringstream ss;
-  ss << std::hex << std::setfill('0') << std::setw(2 * sizeof(std::size_t))
-     << irHash;
-  return ss.str();
-}
-
 Ir::~Ir() = default;
 
 void Ir::confirmNonReservedId(const TensorId &tenId) const {
@@ -287,10 +268,6 @@ bool Ir::usingEngineCache(const SessionOptions &opts, const DeviceInfo *di) {
          (di->getType() == DeviceType::Ipu ||
           di->getType() == DeviceType::OfflineIpu);
 }
-std::string Ir::getPopartCachePath(const std::string &cachePath) {
-  return cachePath + ".popart";
-}
-
 void Ir::setUserOptions(const SessionOptions &flags) { userOptions = flags; }
 
 void Ir::setInputShapeInfo(const InputShapeInfo &info) {
@@ -356,58 +333,19 @@ void Ir::logIr() {
   logging::ir::debug("End IR");
 }
 
-void Ir::compareWithSavedHash(const IrBundle &gb) {
+void Ir::compareWithSavedHash(const IrBundle &gb,
+                              const HashesMap &cacheEntries) {
   if (false == Ir::usingEngineCache(userOptions, deviceInfo)) {
     logging::ir::warn("Engine caching disabled. Skipping Ir hashing.");
     return;
   }
 
-  auto cachePath       = userOptions.cachePath;
-  auto popartCachePath = getPopartCachePath(cachePath);
-
-  size_t hash = std::hash<Ir>()(*this);
+  auto cachePath = userOptions.cachePath;
+  size_t hash    = std::hash<Ir>()(*this);
   setHash(hash);
 
-  if (boost::filesystem::exists(popartCachePath)) {
-    std::ifstream popartFs(popartCachePath, std::ifstream::binary);
-    hashMatched_ = false;
-    if (popartFs.is_open()) {
-      size_t savedHash = SavedInfo::deserialize(popartFs).irHash;
-
-      if (hash == savedHash) {
-        hashMatched_ = true;
-        return;
-      } else {
-        logging::ir::warn("Ir hash mismatch with cached value.");
-      }
-    } else {
-      logging::ir::warn("Could not open ir hash file `{}'", popartCachePath);
-    }
-  }
-}
-
-void Ir::saveHash() const {
-  auto hash            = getHash();
-  auto cachePath       = userOptions.cachePath;
-  auto popartCachePath = getPopartCachePath(cachePath);
-
-  // If target directory does not exist, create it
-  auto cachePathObj = boost::filesystem::path(cachePath);
-  if (cachePathObj.has_parent_path()) {
-    auto cacheDir = cachePathObj.parent_path();
-    if (!boost::filesystem::exists(cacheDir)) {
-      logging::ir::warn("Specified cache directory not found. "
-                        "Creating {} directory ",
-                        cacheDir);
-      if (!boost::filesystem::create_directory(cacheDir))
-        throw error("Cannot create cache directory. Aborting.");
-    }
-  }
-
-  std::ofstream popartFs(popartCachePath, std::ofstream::binary);
-  logging::ir::warn("Saving popart ir hash to '{}'", popartCachePath);
-  SavedInfo savedInfo(hash);
-  savedInfo.serialize(popartFs);
+  // Is the hash present in cacheEntries?
+  hashMatched_ = cacheEntries.count(hash) > 0;
 }
 
 void Ir::verifyPipelineSettings() const {
@@ -947,7 +885,7 @@ void Ir::verifyConstExprFolding() {
   }
 }
 
-void Ir::prepare(const IrBundle &gb) {
+void Ir::prepare(const IrBundle &gb, const HashesMap &cacheEntries) {
   auto tryDumpIr = [&](auto logLevel) {
     auto irDumpDest = getPopartEnvVar("IR_DUMP");
     if (irDumpDest) {
@@ -967,7 +905,7 @@ void Ir::prepare(const IrBundle &gb) {
   };
 
   try {
-    prepareImpl(gb);
+    prepareImpl(gb, cacheEntries);
   } catch (...) {
     tryDumpIr(logging::Level::Err);
     throw;
@@ -975,7 +913,7 @@ void Ir::prepare(const IrBundle &gb) {
   tryDumpIr(logging::Level::Debug);
 }
 
-void Ir::prepareImpl(const IrBundle &gb) {
+void Ir::prepareImpl(const IrBundle &gb, const HashesMap &cacheEntries) {
   setDeviceInfo(gb.deviceInfo);
 
   if (isPrepared()) {
@@ -1022,7 +960,8 @@ void Ir::prepareImpl(const IrBundle &gb) {
   // Check if cached Ir hash matches the current one and skip
   // the rest of the Ir preparation if true.
   setIrBundleHash(std::hash<popart::IrBundle>()(gb));
-  compareWithSavedHash(gb);
+
+  compareWithSavedHash(gb, cacheEntries);
   if (hashMatched()) {
     logging::ir::info("Ir hash matched cached value. Skipping Ir preparation");
     if (gb.optimizer) {

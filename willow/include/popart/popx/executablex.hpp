@@ -115,10 +115,7 @@ public:
   const std::map<TensorId, gcl::CollectiveBalancedHostRearrangement>
   getCollectiveBalancedHostRearrangements() const;
 
-  static std::string getExecutablexCachePath(const std::string &cachePath);
-
-  // Serialize this object and save the ouptut to disk.
-  void saveExecutablex();
+  std::string getExecutablexCachePath(const std::string &cacheDir) const;
 
   void updateOptimizerTensors();
 
@@ -130,6 +127,10 @@ public:
   // also serialized and stored to `ir().getSessionOptions().cachePath'.
   // The logic has been kept this way to
   poplar::Executable getPoplarExecutable();
+
+private:
+  void serialize(const poplar::Executable &poplarExecutable,
+                 const std::string &filename);
 };
 
 } // namespace popx

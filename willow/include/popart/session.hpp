@@ -291,6 +291,11 @@ protected:
    * Flag to indicate if run() has been called.
    */
   bool runCalled = false;
+
+  /**
+   * Map of hashes / filenames of cached executables.
+   */
+  HashesMap cacheEntries;
 };
 
 class InferenceSession : public Session {

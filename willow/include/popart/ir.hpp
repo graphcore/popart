@@ -127,6 +127,8 @@ public:
   uint64_t repeats;
 };
 
+using HashesMap = std::map<size_t, std::string>;
+
 class Ir {
 
 public:
@@ -169,25 +171,6 @@ public:
   enum class ExecutionMode { Inference, Training };
 
   enum class SerialiseFormat { JSON };
-
-  class SavedInfo {
-  public:
-    SavedInfo(const popart::Ir &ir);
-    SavedInfo(std::size_t);
-
-    void serialize(std::ostream &os);
-
-    static SavedInfo deserialize(std::istream &is);
-
-    bool operator==(const SavedInfo &rhs) const { return irHash == rhs.irHash; }
-
-    std::string toString() const;
-
-    std::size_t irHash;
-
-  private:
-    SavedInfo() : irHash(0) {}
-  };
 
   Ir();
   ~Ir();
@@ -245,15 +228,14 @@ public:
   // Log the IR in a human readable format.
   void logIr();
 
-  void compareWithSavedHash(const IrBundle &gb);
-  void saveHash() const;
+  void compareWithSavedHash(const IrBundle &gb, const HashesMap &cacheEntries);
 
   // Prepare the IR based on the IrBundle configuration.
   // If engine caching is enabled then the IR hash which is
   // based on the IrBundle and the forward graph will be
   // compared to a saved file. If the hash matches then
   // the rest of the Ir preparation will be skipped.
-  void prepare(const IrBundle &);
+  void prepare(const IrBundle &, const HashesMap &cacheEntries = {});
 
   // Called once the IR 'prepare' is complete to finalize DebugInfo for each Op
   void finalizeOpDebugInfo();
@@ -346,7 +328,6 @@ public:
 
 public:
   static bool usingEngineCache(const SessionOptions &, const DeviceInfo *);
-  static std::string getPopartCachePath(const std::string &);
 
   OpId getOpsCounter() const;
   OpId getAndIncrOpsCounter();
@@ -528,7 +509,7 @@ public:
   PipelineStage getNumPipelineStages() const;
 
 private:
-  void prepareImpl(const IrBundle &);
+  void prepareImpl(const IrBundle &, const HashesMap &cacheEntries);
 
   void setIsPrepared();
 

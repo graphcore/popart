@@ -15,7 +15,7 @@
 #include <popart/tensorindex.hpp>
 #include <popart/tensors.hpp>
 
-#include <boost/math/common_factor.hpp>
+#include <boost/integer/common_factor.hpp>
 
 namespace popart {
 
@@ -69,7 +69,7 @@ bool SplitGatherPattern::matches(Op *op) const {
       inputShape.begin(), inputShape.end(), 1, std::multiplies<int64_t>());
 
   const auto split =
-      boost::math::gcd(virtualGraphCount, numElements / inputShape[axis]);
+      boost::integer::gcd(virtualGraphCount, numElements / inputShape[axis]);
 
   // We won't split the gather
   if (split < 2) {
@@ -180,7 +180,7 @@ bool SplitGatherPattern::apply(Op *op) const {
       inputShape.begin(), inputShape.end(), 1, std::multiplies<int64_t>());
 
   const auto split =
-      boost::math::gcd(virtualGraphCount, numElements / inputShape[axis]);
+      boost::integer::gcd(virtualGraphCount, numElements / inputShape[axis]);
   const auto stride      = (numElements / inputShape[axis]) / split;
   const auto inTensorId  = op->input->id(GatherOp::dataInIndex());
   const auto idxTensorId = op->input->id(GatherOp::indicesInIndex());

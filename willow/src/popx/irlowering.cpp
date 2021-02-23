@@ -54,6 +54,7 @@
 #include <popart/patterns/pattern.hpp>
 #include <popart/popx/debugcontextx.hpp>
 #include <popart/popx/devicex.hpp>
+#include <popart/popx/executablexserialization.hpp>
 #include <popart/popx/exporter.hpp>
 #include <popart/popx/irlowering.hpp>
 #include <popart/popx/op/callx.hpp>
@@ -3195,7 +3196,7 @@ void IrLowering::compileAndExport(const std::string &executablePath,
                      *dv_p,
                      engineOptions,
                      deviceInfo->getOptionFlags(),
-                     Ir::SavedInfo(ir()).toString(),
+                     std::to_string(ir().getHash()),
                      numIPUs,
                      executablePath);
   } catch (const poplar::graph_memory_allocation_error &e) {
@@ -3279,61 +3280,12 @@ poplar::Executable IrLowering::getExecutable() {
   }
 }
 
-std::string IrLowering::getPoplarCachePath(const std::string &userCachePath) {
-  return userCachePath + ".poplar";
-}
-
-void IrLowering::trySavePoplarExecutable(poplar::Executable &executable) {
+void IrLowering::loadPoplarExecutable(std::istream &in) {
   POPART_TRACEPOINT();
 
-  if (Ir::usingEngineCache(ir().getSessionOptions(), getDeviceInfo())) {
-
-    auto cachePath = ir().getSessionOptions().cachePath;
-    // If target directory does not exist, create it
-    auto cachePathObj = boost::filesystem::path(cachePath);
-    if (cachePathObj.has_parent_path()) {
-      auto cacheDir = cachePathObj.parent_path();
-      if (!boost::filesystem::exists(cacheDir)) {
-        logging::devicex::warn("Specified cache directory not found. "
-                               "Creating {} directory ",
-                               cacheDir);
-        if (!boost::filesystem::create_directory(cacheDir))
-          throw error("Cannot create cache directory. Aborting.");
-      }
-    }
-    // save the poplar executable
-    auto poplarCachePath = getPoplarCachePath(cachePath);
-    std::ofstream poplarFs(poplarCachePath, std::ofstream::binary);
-    logging::devicex::warn("Saving poplar Executable to '{}'", poplarCachePath);
-    executable.serialize(poplarFs);
-  }
-}
-
-bool IrLowering::tryLoadPoplarExecutable() {
-  POPART_TRACEPOINT();
-  auto warn = [&](const std::string &msg) {
-    logging::devicex::warn("Unable to load cached poplar::Executable, {}", msg);
-  };
-
-  auto cachePath       = ir().getSessionOptions().cachePath;
-  auto poplarCachePath = getPoplarCachePath(cachePath);
-  if (!boost::filesystem::exists(poplarCachePath)) {
-    logging::devicex::warn("Poplar executable {} does not exist",
-                           poplarCachePath);
-    return false;
-  }
-
-  std::ifstream poplarFs(poplarCachePath, std::ifstream::binary);
-  if (poplarFs.is_open()) {
-    logging::devicex::warn("Loading poplar Executable from '{}'", cachePath);
-    cachedExecutable.emplace(poplar::Executable::deserialize(poplarFs));
-    usingCachedExecutable_ = true;
-    return true;
-  } else {
-    warn(logging::format("could not open file `{}'", poplarCachePath));
-  }
-
-  return false;
+  cachedExecutable.emplace(
+      popx::serialization::deserializePoplarExecutable(in));
+  usingCachedExecutable_ = true;
 }
 
 TaskId IrLowering::streamFromHostTaskId(TensorId id) {

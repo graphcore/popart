@@ -25,12 +25,30 @@
 
 namespace popart {
 
+namespace {
+HashesMap getCacheEntries(const std::string &cachePath) {
+  HashesMap cacheEntries;
+  if (!boost::filesystem::is_directory(cachePath)) {
+    return cacheEntries;
+  }
+  for (auto &entry : boost::filesystem::directory_iterator(cachePath)) {
+    if (boost::filesystem::is_regular_file(entry)) {
+      std::ifstream in(entry.path().string(), std::ifstream::binary);
+      auto hash = popart::popx::serialization::readExecutableHash(in);
+      if (hash != 0) {
+        cacheEntries.emplace(hash, entry.path().string());
+      }
+    }
+  }
+  return cacheEntries;
+}
+} // namespace
+
 Session::Session() {
   POPART_TRACEPOINT();
   logging::session::info("Popart version: {}", popart::core::versionString());
   logging::session::info("Popart release githash: {}",
                          popart::core::packageHash());
-
 }
 
 void Session::setDevice(std::shared_ptr<DeviceInfo> deviceInfo) {
@@ -78,30 +96,16 @@ bool Session::tryLoadExecutable() {
     return false;
   }
 
-  auto popartCachePath =
-      popx::Executablex::getExecutablexCachePath(userOptions.cachePath);
-  if (false == boost::filesystem::exists(popartCachePath)) {
-    return false;
-  }
-
-  auto poplarCachePath =
-      popx::IrLowering::getPoplarCachePath(userOptions.cachePath);
-  if (false == boost::filesystem::exists(poplarCachePath)) {
-    return false;
-  }
-
+  auto popartCachePath = cacheEntries.at(ir.getHash());
   std::ifstream executableFs(popartCachePath, std::ifstream::binary);
   if (executableFs.is_open()) {
     logging::session::warn("Loading serialized PopART executable from {}",
                            popartCachePath);
-
     bool skipGraphCompilation = true;
     lowering_.reset(
         new popx::IrLowering(ir, deviceInfo_, skipGraphCompilation));
 
-    if (!lowering_->tryLoadPoplarExecutable()) {
-      throw error("Failed to load serialized poplar executable.");
-    }
+    lowering_->loadPoplarExecutable(executableFs);
 
     executable_ = popx::serialization::deserializeExecutable(
         executableFs, ir, *lowering_);
@@ -510,8 +514,10 @@ void InferenceSession::configureFromOnnx(
 
   auto modelProto = onnxutil::getModelProto(modelProtoOrFilename);
 
+  cacheEntries = getCacheEntries(userOptions.cachePath);
   ir.prepare(
-      {modelProto, perk, df, {}, nullptr, *deviceInfo, userOptions, patterns});
+      {modelProto, perk, df, {}, nullptr, *deviceInfo, userOptions, patterns},
+      cacheEntries);
   setDevice(deviceInfo);
 }
 
@@ -554,6 +560,7 @@ void TrainingSession::configureFromOnnx(const std::string &modelProtoOrFilename,
 
   auto modelProto = onnxutil::getModelProto(modelProtoOrFilename);
 
+  cacheEntries = getCacheEntries(userOptions.cachePath);
   ir.prepare({modelProto,
               perk,
               df,
@@ -561,7 +568,8 @@ void TrainingSession::configureFromOnnx(const std::string &modelProtoOrFilename,
               &optimizerIn,
               *deviceInfo,
               userOptions,
-              patterns});
+              patterns},
+             cacheEntries);
   setDevice(deviceInfo);
 }
 

@@ -253,35 +253,30 @@ Executablex::getCollectiveBalancedHostRearrangements() const {
   return cbrHostRearrangement.value();
 }
 
-std::string Executablex::getExecutablexCachePath(const std::string &cachePath) {
-  return cachePath + ".popart.exe";
+std::string
+Executablex::getExecutablexCachePath(const std::string &cacheDir) const {
+  size_t hash = ir().getHash();
+  return logging::format("{}/{}.popart", cacheDir, hash);
 }
 
-void Executablex::saveExecutablex() {
-  if (false == shouldSerialize()) {
-    logging::devicex::warn("Serialization is disabled. Skipping save.");
-    return;
-  }
-
-  auto cachePath = ir().getSessionOptions().cachePath;
-
+void Executablex::serialize(const poplar::Executable &poplarExecutable,
+                            const std::string &filename) {
   // If target directory does not exist, create it
-  auto cachePathObj = boost::filesystem::path(cachePath);
-  if (cachePathObj.has_parent_path()) {
-    auto cacheDir = cachePathObj.parent_path();
-    if (!boost::filesystem::exists(cacheDir)) {
-      logging::devicex::warn("Specified cache directory not found. "
+  auto target = boost::filesystem::path(filename);
+  if (target.has_parent_path()) {
+    auto targetDir = target.parent_path();
+    if (!boost::filesystem::exists(targetDir)) {
+      logging::devicex::warn("Specified directory not found. "
                              "Creating {} directory ",
-                             cacheDir);
-      if (!boost::filesystem::create_directory(cacheDir))
+                             targetDir);
+      if (!boost::filesystem::create_directory(targetDir))
         throw error("Cannot create cache directory. Aborting.");
     }
   }
-  auto serializedExecutableFilePath = getExecutablexCachePath(cachePath);
-  logging::devicex::warn("Saving serialized Executablex to {}",
-                         serializedExecutableFilePath);
-  std::ofstream out(serializedExecutableFilePath);
-  popx::serialization::serializeExecutable(out, *this);
+  logging::devicex::warn("Saving serialized Executablex to {}", filename);
+  std::ofstream out(filename, std::ofstream::binary);
+  popx::serialization::serializeExecutable(
+      out, &poplarExecutable, this, ir().getHash());
 }
 
 poplar::Executable Executablex::getPoplarExecutable() {
@@ -289,9 +284,8 @@ poplar::Executable Executablex::getPoplarExecutable() {
 
   if (!deserialized) {
     if (shouldSerialize()) {
-      saveExecutablex();
-      lowering().trySavePoplarExecutable(exe);
-      ir().saveHash();
+      const std::string cachePath = ir().getSessionOptions().cachePath;
+      serialize(exe, getExecutablexCachePath(cachePath));
     }
   }
 

@@ -379,23 +379,15 @@ public:
   // Prepares the graph ready for poplar compilation
   void prepareGraph();
 
-  // Try to save the argument executable to a file at
-  // `ir().getSessionOptions().cachePath'.
-  void trySavePoplarExecutable(poplar::Executable &);
-
-  // Try to load a poplar::Executable from a file at
-  // `ir().getSessionOptions().cachePath'. If successful,
-  // `this->cachedExecutable' will be set else, `this->cachedExecutable' will
-  // remain set to `nonstd::nullopt'.
-  bool tryLoadPoplarExecutable();
+  // Load a poplar::Executable from a stream and set
+  // `this->cachedExecutable'.
+  void loadPoplarExecutable(std::istream &in);
 
   // Either return the executable in cachedExecutable
   // or compile `rootGraph' and try to save the generated executable before
   // returning it. After calling `getExecutable', `cachedExecutable' will always
   // be set to `nonstd::nullopt'.
   poplar::Executable getExecutable();
-
-  static std::string getPoplarCachePath(const std::string &);
 
   std::string getSerializedGraph() const;
 
