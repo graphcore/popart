@@ -536,11 +536,6 @@ public:
 
   bool usingCachedExecutable() const { return usingCachedExecutable_; }
 
-  // Compile the graph and export the executable and metadata to the
-  // specified paths
-  void compileAndExport(const std::string &executablePath,
-                        const std::string &weightsPath);
-
   // The ID of the poplar::Stream host->device for poplar::Tensor
   static PopStreamId h2dId(TensorId);
 

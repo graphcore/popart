@@ -260,9 +260,9 @@ Executablex::getExecutablexCachePath(const std::string &cacheDir) const {
 }
 
 void Executablex::serialize(const poplar::Executable &poplarExecutable,
-                            const std::string &filename) {
+                            const std::string &path) {
   // If target directory does not exist, create it
-  auto target = boost::filesystem::path(filename);
+  auto target = boost::filesystem::path(path);
   if (target.has_parent_path()) {
     auto targetDir = target.parent_path();
     if (!boost::filesystem::exists(targetDir)) {
@@ -273,8 +273,25 @@ void Executablex::serialize(const poplar::Executable &poplarExecutable,
         throw error("Cannot create cache directory. Aborting.");
     }
   }
-  logging::devicex::warn("Saving serialized Executablex to {}", filename);
+  std::string filename = path;
+  if (boost::filesystem::is_directory(target)) {
+    filename = logging::format("{}/executable.popart", filename);
+    logging::devicex::warn(
+        "{} is a directory, saving serialized Executablex to {}",
+        target.string(),
+        filename);
+  } else {
+    logging::devicex::warn("Saving serialized Executablex to {}", filename);
+  }
   std::ofstream out(filename, std::ofstream::binary);
+  if (!out.is_open()) {
+    throw error("Unable to open file '{}'", filename);
+  }
+  serialize(poplarExecutable, out);
+}
+
+void Executablex::serialize(const poplar::Executable &poplarExecutable,
+                            std::ostream &out) {
   popx::serialization::serializeExecutable(
       out, &poplarExecutable, this, ir().getHash());
 }

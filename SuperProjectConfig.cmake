@@ -75,7 +75,6 @@ get_filename_component(
 )
 
 _popart_pass_through_cache_var(POPLAR_INSTALL_DIR PATH)
-_popart_pass_through_cache_var(PoplarRunner_INSTALL_DIR PATH)
 _popart_pass_through_cache_var(C10_DIR PATH)
 _popart_pass_through_cache_var(POPART_PKG_DIR PATH)
 _popart_pass_through_cache_var(POPART_CBT_VIEW_DIR PATH)

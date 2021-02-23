@@ -228,7 +228,7 @@ public:
   // Log the IR in a human readable format.
   void logIr();
 
-  void compareWithSavedHash(const IrBundle &gb, const HashesMap &cacheEntries);
+  void compareWithSavedHash(const HashesMap &cacheEntries);
 
   // Prepare the IR based on the IrBundle configuration.
   // If engine caching is enabled then the IR hash which is
@@ -676,7 +676,7 @@ public:
   getAccumulateOuterFragmentBinConstraints(const Graph &graph) const;
 
   size_t getHash() const;
-  void setHash(size_t);
+  void computeHash();
   size_t getIrBundleHash() const;
   void setIrBundleHash(size_t);
 

@@ -333,20 +333,17 @@ void Ir::logIr() {
   logging::ir::debug("End IR");
 }
 
-void Ir::compareWithSavedHash(const IrBundle &gb,
-                              const HashesMap &cacheEntries) {
+void Ir::compareWithSavedHash(const HashesMap &cacheEntries) {
   if (false == Ir::usingEngineCache(userOptions, deviceInfo)) {
     logging::ir::warn("Engine caching disabled. Skipping Ir hashing.");
     return;
   }
 
-  auto cachePath = userOptions.cachePath;
-  size_t hash    = std::hash<Ir>()(*this);
-  setHash(hash);
-
   // Is the hash present in cacheEntries?
-  hashMatched_ = cacheEntries.count(hash) > 0;
+  hashMatched_ = cacheEntries.count(*hash_) > 0;
 }
+
+void Ir::computeHash() { hash_ = std::hash<Ir>()(*this); }
 
 void Ir::verifyPipelineSettings() const {
   if (!getSessionOptions().enablePipelining) {
@@ -961,7 +958,8 @@ void Ir::prepareImpl(const IrBundle &gb, const HashesMap &cacheEntries) {
   // the rest of the Ir preparation if true.
   setIrBundleHash(std::hash<popart::IrBundle>()(gb));
 
-  compareWithSavedHash(gb, cacheEntries);
+  computeHash();
+  compareWithSavedHash(cacheEntries);
   if (hashMatched()) {
     logging::ir::info("Ir hash matched cached value. Skipping Ir preparation");
     if (gb.optimizer) {
@@ -3918,8 +3916,6 @@ size_t Ir::getHash() const {
 
   return hash_.value();
 }
-
-void Ir::setHash(size_t v) { hash_ = v; }
 
 size_t Ir::getIrBundleHash() const { return irBundleHash; }
 

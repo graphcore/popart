@@ -12,7 +12,6 @@
 #include <popart/popx/devicex.hpp>
 #include <popart/popx/executablex.hpp>
 #include <popart/popx/executablexserialization.hpp>
-#include <popart/popx/exporter.hpp>
 #include <popart/session.hpp>
 #include <popart/sessionoptions.hpp>
 #include <popart/tensor.hpp>
@@ -192,22 +191,50 @@ TensorInfo Session::getInfo(TensorId id) const {
 
 Session::~Session() = default;
 
-void Session::compileAndExport(std::string executablePath,
-                               std::string weightsPath) {
+void Session::compileAndExport(std::ostream &out) {
   POPART_TRACEPOINT();
   logging::session::trace("Session::compileAndExport()");
 
-  if (executablePath.length() > 0) {
-    executablePath = io::getCanonicalDirName(executablePath);
-    io::assertDirectoryWritable(executablePath);
+  if (!device_->getDeviceInfo()->canCompileOffline()) {
+    std::ostringstream oss;
+    oss << device_->getDeviceInfo()->getType();
+
+    throw error("Offline compilation is not supported for device type {}",
+                oss.str());
   }
 
-  if (weightsPath.length() > 0) {
-    weightsPath = io::getCanonicalDirName(weightsPath);
-    io::assertDirectoryWritable(weightsPath);
+  // TODO(T34668): Ideally we'd just call prepareDevice() here
+  // but we can't keep a copy of the poplar Executable or retrieve
+  // it later so while we're waiting for this to be implemented
+  // in Poplar we need to build the executable here.
+  if (!tryLoadExecutable()) {
+    lowering_->prepareGraph();
+  }
+  auto poplarExecutable = executable_->getPoplarExecutable();
+  executable_->serialize(poplarExecutable, out);
+}
+
+void Session::compileAndExport(std::string filename) {
+  POPART_TRACEPOINT();
+  logging::session::trace("Session::compileAndExport()");
+
+  if (!device_->getDeviceInfo()->canCompileOffline()) {
+    std::ostringstream oss;
+    oss << device_->getDeviceInfo()->getType();
+
+    throw error("Offline compilation is not supported for device type {}",
+                oss.str());
   }
 
-  lowering_->compileAndExport(executablePath, weightsPath);
+  // TODO(T34668): Ideally we'd just call prepareDevice() here
+  // but we can't keep a copy of the poplar Executable or retrieve
+  // it later so while we're waiting for this to be implemented
+  // in Poplar we need to build the executable here.
+  if (!tryLoadExecutable()) {
+    lowering_->prepareGraph();
+  }
+  auto poplarExecutable = executable_->getPoplarExecutable();
+  executable_->serialize(poplarExecutable, filename);
 }
 
 void Session::prepareDevice() {
@@ -259,14 +286,6 @@ void Session::writeWeights(const IWeightsIO &weightsIo) {
   }
 
   device_->writeWeights(weightsIo);
-}
-
-void Session::exportInputs(IStepIO &stepIO,
-                           int64_t num_elements,
-                           const std::string &output_filename) {
-  POPART_TRACEPOINT();
-  logging::session::trace("Session::exportInputs");
-  exportStepIO(stepIO, *device_, num_elements, output_filename);
 }
 
 void Session::run(IStepIO &stepio, std::string debugName) {

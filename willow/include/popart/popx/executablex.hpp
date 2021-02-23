@@ -128,9 +128,13 @@ public:
   // The logic has been kept this way to
   poplar::Executable getPoplarExecutable();
 
-private:
+  // Serialize the popart executable, poplar executable and IR hash
+  // to the given file
   void serialize(const poplar::Executable &poplarExecutable,
-                 const std::string &filename);
+                 const std::string &path);
+  // Serialize the popart executable, poplar executable and IR hash
+  // to the given stream
+  void serialize(const poplar::Executable &poplarExecutable, std::ostream &out);
 };
 
 } // namespace popx

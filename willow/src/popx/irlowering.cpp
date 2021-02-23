@@ -55,7 +55,6 @@
 #include <popart/popx/debugcontextx.hpp>
 #include <popart/popx/devicex.hpp>
 #include <popart/popx/executablexserialization.hpp>
-#include <popart/popx/exporter.hpp>
 #include <popart/popx/irlowering.hpp>
 #include <popart/popx/op/callx.hpp>
 #include <popart/popx/op/collectives/collectivesx.hpp>
@@ -3123,94 +3122,6 @@ void IrLowering::prepareGraph() {
   }
 
   prepareGraphHasBeenCalled_ = true;
-}
-
-void IrLowering::compileAndExport(const std::string &executablePath,
-                                  const std::string &weightsPath) {
-
-  POPART_TRACEPOINT();
-  if (!getDeviceInfo()->canCompileOffline()) {
-    std::ostringstream oss;
-    oss << getDeviceInfo()->getType();
-
-    throw error("Offline compilation is not supported for device type {}",
-                oss.str());
-  }
-  if (weightsPath.empty() && executablePath.empty()) {
-    throw error(
-        "At least one of weightsPath or executablePath must be provided");
-  }
-  if (!exporterIsAvailable()) {
-    throw error("Exporter not available");
-  }
-
-  prepareGraph();
-
-  if (!ir().getSessionOptions().compileEngine) {
-    throw error(
-        "The engine must be compiled before the executable can be exported");
-  }
-  if (!weightsPath.empty()) {
-    if (dv_p == nullptr) {
-      throw error("IrLowering::setDevice has not been called.");
-    }
-    exportWeights(*dv_p, weightsPath);
-  }
-  if (executablePath.empty()) {
-    return;
-  }
-  try {
-    // Regroup programs in 3 programs: HOST_TO_DEVICE / MAIN_SEQUENCE /
-    // DEVICE_TO_HOST
-    std::vector<poplar::program::Program> fusedProgs;
-    const auto programs = progs.progs();
-    poplar::program::Sequence fusedH2d({}, {"fusedHostToDevice"});
-    poplar::program::Sequence fusedMain({}, {"fusedMain"});
-    poplar::program::Sequence fusedD2h({}, {"fusedDeviceToHost"});
-
-    static_assert(PopPrograms::ProgramIndex::N == 8,
-                  "Make sure all the programs are added to one of the 3 "
-                  "sequences below.");
-
-    fusedH2d.add(programs[PopPrograms::ProgramIndex::WeightsFromHost]);
-    fusedH2d.add(programs[PopPrograms::ProgramIndex::OptimizerFromHost]);
-    fusedH2d.add(programs[PopPrograms::ProgramIndex::SetRandomSeedFromHost]);
-
-    fusedMain.add(programs[PopPrograms::ProgramIndex::Program]);
-
-    fusedD2h.add(programs[PopPrograms::ProgramIndex::WeightstoHost]);
-    fusedD2h.add(programs[PopPrograms::ProgramIndex::CycleCountTensortoHost]);
-
-    fusedProgs.push_back(fusedH2d);
-    fusedProgs.push_back(fusedMain);
-    fusedProgs.push_back(fusedD2h);
-
-    auto executable = poplar::compileGraph(
-        graph(), fusedProgs, engineOptions, progressLogger);
-    auto numIPUs = graph().getTarget().getNumIPUs();
-    logging::devicex::info("Exporting compiled executable");
-    if (dv_p == nullptr) {
-      throw error("IrLowering::setDevice has not been called.");
-    }
-    exportExecutable(executable,
-                     *dv_p,
-                     engineOptions,
-                     deviceInfo->getOptionFlags(),
-                     std::to_string(ir().getHash()),
-                     numIPUs,
-                     executablePath);
-  } catch (const poplar::graph_memory_allocation_error &e) {
-    // If the creation of the engine throw an exception due to memory
-    // allocation i.e. the program does not fit show graph profile and
-    // re-throw the exception In certain cases poplar will throw the error
-    // without a graph profile. The following engine option needs to be set to
-    // enable the graph profile in this case "debug.allowOutOfMemory":"true"
-
-    trySaveTensorTileMap();
-
-    logging::devicex::err("Memory allocation error : {}", e.what());
-    throw devicex_memory_allocation_err(e, reportOptions);
-  }
 }
 
 poplar::program::Sequence &IrLowering::getAnchorReturnFragment(Tensor *tensor) {

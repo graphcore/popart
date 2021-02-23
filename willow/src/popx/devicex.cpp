@@ -45,7 +45,6 @@
 #include <popart/popx/devicex.hpp>
 #include <popart/popx/devicexmanager.hpp>
 #include <popart/popx/executablex.hpp>
-#include <popart/popx/exporter.hpp>
 #include <popart/popx/irlowering.hpp>
 #include <popart/popx/opx.hpp>
 #include <popart/popx/opxmanager.hpp>

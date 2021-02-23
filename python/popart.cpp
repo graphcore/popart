@@ -27,7 +27,6 @@
 #include <popart/optimizervalue.hpp>
 #include <popart/patterns/patterns.hpp>
 #include <popart/popx/devicex.hpp>
-#include <popart/popx/exporter.hpp>
 #include <popart/session.hpp>
 #include <popart/sessionoptions.hpp>
 #include <popart/stepio_generic.hpp>
@@ -247,67 +246,6 @@ private:
   py::dict outDict = py::dict();
 };
 
-namespace {
-
-void exportDataset(Builder &builder,
-                   std::map<TensorId, py::iterable> inputs,
-                   int64_t numElements,
-                   std::string outputFilename,
-                   std::string metadataFilename) {
-  // Create some iterators for each input
-  std::map<TensorId, py::iterator> iterators;
-  std::vector<TensorId> feeds;
-  for (auto &input : inputs) {
-    iterators.emplace(input.first, input.second.begin());
-    feeds.push_back(input.first);
-  }
-  // Wrap the iterators in a stepio object
-  PyStepIOCallback stepio{
-      [&](std::string id, bool prefetch) {
-        if (prefetch) {
-          return py::array{};
-        }
-        auto current = iterators.at(id);
-        if (current == py::iterator::sentinel()) {
-          throw error(
-              "Unexpectedly reached the end of the StepIO for feed '{}'", id);
-        }
-        return current->cast<py::array>();
-      },
-      [&](std::string id) { ++iterators.at(id); },
-      // No outputs
-      [](std::string) { return py::array{}; },
-      [](std::string) {}};
-  popart::popx::exportStepIO(
-      builder, stepio, numElements, feeds, outputFilename, metadataFilename);
-}
-
-void exportInputs(Session &session,
-                  std::map<TensorId, py::iterable> inputs,
-                  int64_t num_elements,
-                  const std::string &output_filename) {
-  // Create some iterators for each input
-  std::map<TensorId, py::iterator> iterators;
-  for (auto &input : inputs) {
-    iterators.emplace(input.first, input.second.begin());
-  }
-
-  // Wrap the iterators in a stepio object
-  PyStepIOCallback stepio{[&](std::string id, bool prefetch) {
-                            if (prefetch) {
-                              return py::array{};
-                            }
-                            return iterators.at(id)->cast<py::array>();
-                          },
-                          [&](std::string id) { ++iterators.at(id); },
-                          // No outputs
-                          [](std::string) { return py::array{}; },
-                          [](std::string) {}};
-
-  session.exportInputs(stepio, num_elements, output_filename);
-}
-} // namespace
-
 class PyWeightsIO : public IWeightsIO {
 public:
   PyWeightsIO(std::map<TensorId, py::array> weights_) : weights(weights_) {}
@@ -512,7 +450,6 @@ PYBIND11_MODULE(popart_core, m) {
   m.def("getLogger", &Logger::getLogger, py::arg("name") = "all");
 
   m.def("versionString", &popart::core::versionString);
-  m.def("exporterIsAvailable", &popart::popx::exporterIsAvailable);
   m.def("packageHash", &popart::core::packageHash);
   {
     py::class_<Logger> cls(m, "Logger");
@@ -1524,11 +1461,10 @@ PYBIND11_MODULE(popart_core, m) {
     cls.def(
         "compileAndExport",
         [](InferenceSession &session,
-           const std::string &executablePath,
-           const std::string &weightsPath,
+           const std::string &filename,
            OutOfMemoryError *status) {
           try {
-            session.compileAndExport(executablePath, weightsPath);
+            session.compileAndExport(filename);
           } catch (const popart::memory_allocation_err &e) {
             if (status != nullptr) {
               status->exception = e.clone();
@@ -1538,8 +1474,7 @@ PYBIND11_MODULE(popart_core, m) {
             }
           }
         },
-        py::arg("executablePath").none(true),
-        py::arg("weightsPath").none(true),
+        py::arg("filename"),
         py::arg("err").none());
     cls.def(
         "prepareDevice",
@@ -1557,15 +1492,6 @@ PYBIND11_MODULE(popart_core, m) {
         },
         py::arg("err").none(),
         DOC(popart, Session, prepareDevice));
-    cls.def(
-        "exportInputs",
-        [](InferenceSession &session,
-           std::map<TensorId, py::iterable> inputs,
-           int64_t num_elements,
-           std::string output_filename) {
-          exportInputs(session, inputs, num_elements, output_filename);
-        },
-        DOC(popart, Session, exportInputs));
     cls.def("setRandomSeed",
             &InferenceSession::setRandomSeed,
             py::arg("seedValue"),
@@ -1649,11 +1575,10 @@ PYBIND11_MODULE(popart_core, m) {
     cls.def(
         "compileAndExport",
         [](TrainingSession &session,
-           const std::string &executablePath,
-           const std::string &weightsPath,
+           const std::string &filename,
            OutOfMemoryError *status) {
           try {
-            session.compileAndExport(executablePath, weightsPath);
+            session.compileAndExport(filename);
           } catch (const popart::memory_allocation_err &e) {
             if (status != nullptr) {
               status->exception = e.clone();
@@ -1663,8 +1588,7 @@ PYBIND11_MODULE(popart_core, m) {
             }
           }
         },
-        py::arg("executablePath").none(true),
-        py::arg("weightsPath").none(true),
+        py::arg("filename"),
         py::arg("err").none());
     cls.def(
         "prepareDevice",
@@ -1708,15 +1632,6 @@ PYBIND11_MODULE(popart_core, m) {
             static_cast<void (TrainingSession::*)(const Optimizer *)>(
                 &TrainingSession::updateOptimizerFromHost),
             DOC(popart, TrainingSession, updateOptimizerFromHost));
-    cls.def(
-        "exportInputs",
-        [](TrainingSession &session,
-           std::map<TensorId, py::iterable> inputs,
-           int64_t num_elements,
-           std::string outputFilename) {
-          exportInputs(session, inputs, num_elements, outputFilename);
-        },
-        DOC(popart, Session, exportInputs));
     cls.def("run",
             &TrainingSession::run,
             py::arg("stepio"),
@@ -2278,12 +2193,6 @@ PYBIND11_MODULE(popart_core, m) {
             &Builder::addInputTensorFromParentGraph,
             py::arg("tensorId"),
             DOC(popart, Builder, addInputTensorFromParentGraph));
-    cls.def("exportDataset",
-            &exportDataset,
-            py::arg("inputs"),
-            py::arg("numElements"),
-            py::arg("outputFilename"),
-            py::arg("metadataFilename") = std::string());
     cls.def(
         "addInitializedInputTensor",
         [](Builder &builder, py::array array, const popart::DebugContext &dc) {

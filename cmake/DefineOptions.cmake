@@ -7,10 +7,6 @@ set(POPLAR_INSTALL_DIR "" CACHE PATH
     "Absolute path to Poplar install directory"
 )
 
-set(PoplarRunner_INSTALL_DIR "" CACHE PATH
-    "Absolute path to Poplar Runner install directory"
-)
-
 set(C10_DIR "" CACHE PATH
     "Absolute path to directory to install Cifar-10 dataset to"
 )

@@ -97,8 +97,6 @@ set(Protobuf_USE_STATIC_LIBS ON)
 find_package(Protobuf 3.6 REQUIRED)
 find_package(ONNX 1.6 REQUIRED)
  
-find_package(PoplarRunner)
-
 # Creates popart_capnp object library from generated sources.
 set(CAPNPC_OUTPUT_DIR "${CMAKE_CURRENT_BINARY_DIR}/include/popart/capnp")
 add_subdirectory(capnp)
@@ -134,9 +132,6 @@ set(POPART_DEPS_LIBS
     onnx
     onnx_proto
 )
-if (PoplarRunner_FOUND)
-  list(APPEND POPART_DEPS_LIBS PoplarRunner::PoplarExecutableData)
-endif()
 
 set(POPART_INTERNAL_DEPS_INCLUDES
 )
@@ -251,10 +246,6 @@ target_compile_definitions(popart-only
 
     ${popart_common_definitions}
 )
-
-if (PoplarRunner_FOUND)
-  target_compile_definitions(popart-only PUBLIC POPLAR_RUNNER)
-endif()
 
 # These includes are private to popart-only, as the external user does not
 # need them, but they are needed by all internal targets.

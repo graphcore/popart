@@ -49,15 +49,23 @@ public:
    * Compiles the graph and exports it to the specified path.
    *
    * This will create a \c poplar::Graph and compile the \c poplar::Executable
-   * before exporting the executable and metadata to allow offline running.
+   * before exporting the executable and metadata.
 
-   * \param executablePath Path to output the compiled executable and associated
-   *                     metadata. If empty, these will not be exported.
-   * \param weightsPath Path to output the weights. If empty, these will not be
-   *                  exported.
+   * \param filename Name of the file where the compiled executable and
+   *                 associated metadata will be saved.
    */
-  void compileAndExport(std::string executablePath, std::string weightsPath);
+  void compileAndExport(std::string filename);
 
+  /**
+   * Compiles the graph and exports it to the specified stream.
+   *
+   * This will create a \c poplar::Graph and compile the \c poplar::Executable
+   * before exporting the executable and metadata.
+
+   * \param out Stream where the compiled executable and
+   *            associated metadata will be written to.
+   */
+  void compileAndExport(std::ostream &out);
   /**
    * Prepare the network for execution.
    *
@@ -91,17 +99,6 @@ public:
    * \param debugName Debug string to identify this run in logs.
    */
   void run(IStepIO &stepIO, std::string debugName = "");
-
-  /**
-   * Export elements from \c stepIO.in.
-   *
-   * \param stepIO Data to be exported.
-   * \param numElements Number of elements to export.
-   * \param outputFilename File to export to.
-   */
-  void exportInputs(IStepIO &stepIO,
-                    int64_t numElements,
-                    const std::string &outputFilename);
 
   /**
    * Update the tensor locations of the tensors in the Session's ONNX model.

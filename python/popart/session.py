@@ -152,19 +152,15 @@ class InferenceSession(_InferenceSessionCore):
         """
         return _initAnchorArrays(self)
 
-    def compileAndExport(self, executablePath=None, weightsPath=None) -> None:
-        """Compiles the graph and exports it to the specified paths.
+    def compileAndExport(self, filename) -> None:
+        """Compiles the graph and exports it to the specified file.
 
         This will form the poplar::Graph and compile the polar::Executable
-        before exporting the executable and metadata to allow offline running.
+        before exporting the executable and metadata.
 
         Arguments:
-            executablePath: The path to export the executable and metadata. If
-            it does not exist, it will be created. If empty, the executable is
-            not exported.
-            weightsPath: The path to export the weights. If it does
-            not exist, it will be created. If empty, the weights are not
-            exported.           not exported
+            filename: Where to save the executable and metadata. If
+            it does not exist, it will be created.
 
         Raises:
             popart.OutOfMemoryException: If an out of memory event occurs
@@ -172,21 +168,11 @@ class InferenceSession(_InferenceSessionCore):
                      during the export
 
         """
-        if executablePath:
-            executablePath = os.path.expanduser(executablePath)
-            makedirsAndCheckWritable(executablePath)
-        else:
-            executablePath = ""
-
-        if weightsPath:
-            weightsPath = os.path.expanduser(weightsPath)
-            makedirsAndCheckWritable(weightsPath)
-        else:
-            weightsPath = ""
+        filename = os.path.expanduser(filename)
+        makedirsAndCheckWritable(filename)
 
         err = popart.OutOfMemoryError()
-        super(InferenceSession, self).compileAndExport(executablePath,
-                                                       weightsPath, err)
+        super(InferenceSession, self).compileAndExport(filename, err)
 
         if not err.isSuccessful():
             raise popart.OutOfMemoryException(err)
@@ -264,19 +250,15 @@ class TrainingSession(_TrainingSessionCore):
         """
         return _initAnchorArrays(self)
 
-    def compileAndExport(self, executablePath=None, weightsPath=None) -> None:
-        """Compiles the graph and exports it to the specified paths.
+    def compileAndExport(self, filename) -> None:
+        """Compiles the graph and exports it to the specified file.
 
         This will form the poplar::Graph and compile the polar::Executable
-        before exporting the executable and metadata to allow offline running.
+        before exporting the executable and metadata.
 
         Arguments:
-            executablePath: The path to export the executable and metadata. If
-            it does not exist, it will be created. If empty, the executable is
-            not exported.
-            weightsPath: The path to export the weights. If it does
-            not exist, it will be created. If empty, the weights are not
-            exported.           not exported
+            filename: Where to save the executable and metadata. If
+            it does not exist, it will be created.
 
         Raises:
             popart.OutOfMemoryException: If an out of memory event occurs
@@ -284,21 +266,11 @@ class TrainingSession(_TrainingSessionCore):
                      during the export
 
         """
-        if executablePath:
-            executablePath = os.path.expanduser(executablePath)
-            makedirsAndCheckWritable(executablePath)
-        else:
-            executablePath = ""
-
-        if weightsPath:
-            weightsPath = os.path.expanduser(weightsPath)
-            makedirsAndCheckWritable(weightsPath)
-        else:
-            weightsPath = ""
+        filename = os.path.expanduser(filename)
+        makedirsAndCheckWritable(filename)
 
         err = popart.OutOfMemoryError()
-        super(TrainingSession, self).compileAndExport(executablePath,
-                                                      weightsPath, err)
+        super(TrainingSession, self).compileAndExport(filename, err)
 
         if not err.isSuccessful():
             raise popart.OutOfMemoryException(err)
