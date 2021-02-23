@@ -169,7 +169,10 @@ class InferenceSession(_InferenceSessionCore):
 
         """
         filename = os.path.expanduser(filename)
-        makedirsAndCheckWritable(filename)
+        if os.path.isdir(filename):
+            makedirsAndCheckWritable(filename)
+        else:
+            makedirsAndCheckWritable(os.path.dirname(filename))
 
         err = popart.OutOfMemoryError()
         super(InferenceSession, self).compileAndExport(filename, err)
@@ -267,7 +270,10 @@ class TrainingSession(_TrainingSessionCore):
 
         """
         filename = os.path.expanduser(filename)
-        makedirsAndCheckWritable(filename)
+        if os.path.isdir(filename):
+            makedirsAndCheckWritable(filename)
+        else:
+            makedirsAndCheckWritable(os.path.dirname(filename))
 
         err = popart.OutOfMemoryError()
         super(TrainingSession, self).compileAndExport(filename, err)

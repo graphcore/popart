@@ -49,7 +49,7 @@ struct Header {
   size_t hash;
   int64_t poplarExeOffset;
   int64_t popartExeOffset;
-  size_t totalSize;
+  int64_t totalSize;
 };
 
 popart::cap::TensorType toCapnpTensorType(popart::TensorType type) {
@@ -536,6 +536,15 @@ poplar::Executable deserializePoplarExecutable(std::istream &in) {
   in.clear(); // Just in case we reached eof
   in.seekg(start);
   return exe;
+}
+
+void moveStreamToEnd(std::istream &in) {
+  auto start = in.tellg();
+
+  kj::std::StdInputStream sis(in);
+  Header header{sis};
+
+  in.seekg(start + header.totalSize);
 }
 
 std::unique_ptr<popart::popx::Executablex>

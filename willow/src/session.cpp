@@ -100,20 +100,34 @@ bool Session::tryLoadExecutable() {
   if (executableFs.is_open()) {
     logging::session::warn("Loading serialized PopART executable from {}",
                            popartCachePath);
-    bool skipGraphCompilation = true;
-    lowering_.reset(
-        new popx::IrLowering(ir, deviceInfo_, skipGraphCompilation));
-
-    lowering_->loadPoplarExecutable(executableFs);
-
-    executable_ = popx::serialization::deserializeExecutable(
-        executableFs, ir, *lowering_);
-
-    device_.reset(new popx::Devicex(*executable_, deviceInfo_));
+    loadExecutableFromStream(executableFs);
     return true;
   }
   logging::session::warn("Could not open file {}", popartCachePath);
   return false;
+}
+
+void Session::loadExecutableFromFile(std::string filename) {
+  std::ifstream executableFs(filename, std::ifstream::binary);
+  if (!executableFs.is_open()) {
+    throw error("Could not open file {}", filename);
+  }
+  logging::session::warn("Loading serialized PopART executable from {}",
+                         filename);
+  loadExecutableFromStream(executableFs);
+}
+
+void Session::loadExecutableFromStream(std::istream &in) {
+  bool skipGraphCompilation = true;
+  lowering_.reset(new popx::IrLowering(ir, deviceInfo_, skipGraphCompilation));
+
+  lowering_->loadPoplarExecutable(in);
+
+  executable_ = popx::serialization::deserializeExecutable(in, ir, *lowering_);
+
+  device_.reset(new popx::Devicex(*executable_, deviceInfo_));
+
+  popx::serialization::moveStreamToEnd(in);
 }
 
 void Session::assertExecutableLoaded() const {
@@ -195,6 +209,14 @@ void Session::compileAndExport(std::ostream &out) {
   POPART_TRACEPOINT();
   logging::session::trace("Session::compileAndExport()");
 
+  // TODO(T34668): Ideally we'd just call prepareDevice() here
+  // but we can't keep a copy of the poplar Executable or retrieve
+  // it later so while we're waiting for this to be implemented
+  // in Poplar we need to build the executable here.
+  if (!tryLoadExecutable()) {
+    lowering_->prepareGraph();
+  }
+
   if (!device_->getDeviceInfo()->canCompileOffline()) {
     std::ostringstream oss;
     oss << device_->getDeviceInfo()->getType();
@@ -203,13 +225,6 @@ void Session::compileAndExport(std::ostream &out) {
                 oss.str());
   }
 
-  // TODO(T34668): Ideally we'd just call prepareDevice() here
-  // but we can't keep a copy of the poplar Executable or retrieve
-  // it later so while we're waiting for this to be implemented
-  // in Poplar we need to build the executable here.
-  if (!tryLoadExecutable()) {
-    lowering_->prepareGraph();
-  }
   auto poplarExecutable = executable_->getPoplarExecutable();
   executable_->serialize(poplarExecutable, out);
 }
@@ -218,6 +233,14 @@ void Session::compileAndExport(std::string filename) {
   POPART_TRACEPOINT();
   logging::session::trace("Session::compileAndExport()");
 
+  // TODO(T34668): Ideally we'd just call prepareDevice() here
+  // but we can't keep a copy of the poplar Executable or retrieve
+  // it later so while we're waiting for this to be implemented
+  // in Poplar we need to build the executable here.
+  if (!tryLoadExecutable()) {
+    lowering_->prepareGraph();
+  }
+
   if (!device_->getDeviceInfo()->canCompileOffline()) {
     std::ostringstream oss;
     oss << device_->getDeviceInfo()->getType();
@@ -226,13 +249,6 @@ void Session::compileAndExport(std::string filename) {
                 oss.str());
   }
 
-  // TODO(T34668): Ideally we'd just call prepareDevice() here
-  // but we can't keep a copy of the poplar Executable or retrieve
-  // it later so while we're waiting for this to be implemented
-  // in Poplar we need to build the executable here.
-  if (!tryLoadExecutable()) {
-    lowering_->prepareGraph();
-  }
   auto poplarExecutable = executable_->getPoplarExecutable();
   executable_->serialize(poplarExecutable, filename);
 }

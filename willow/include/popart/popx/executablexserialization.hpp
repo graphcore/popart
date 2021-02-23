@@ -37,6 +37,10 @@ bool containsPoplarExecutable(std::istream &in);
 // Note: this function will not change the stream position
 bool containsExecutable(std::istream &in);
 
+// Move the given stream to the end of the data.
+// The input stream must be pointing at the beginning of a Header
+void moveStreamToEnd(std::istream &in);
+
 // Load a popart executable from the given stream.
 //
 // The input stream must be pointing at the beginning of a Header

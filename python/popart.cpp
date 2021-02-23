@@ -1477,6 +1477,13 @@ PYBIND11_MODULE(popart_core, m) {
         py::arg("filename"),
         py::arg("err").none());
     cls.def(
+        "loadExecutable",
+        [](InferenceSession &session, const std::string &filename) {
+          session.loadExecutableFromFile(filename);
+        },
+        py::arg("filename"),
+        DOC(popart, Session, loadExecutableFromFile));
+    cls.def(
         "prepareDevice",
         [](InferenceSession &session, OutOfMemoryError *status) {
           try {
@@ -1590,6 +1597,13 @@ PYBIND11_MODULE(popart_core, m) {
         },
         py::arg("filename"),
         py::arg("err").none());
+    cls.def(
+        "loadExecutable",
+        [](InferenceSession &session, const std::string &filename) {
+          session.loadExecutableFromFile(filename);
+        },
+        py::arg("filename"),
+        DOC(popart, Session, loadExecutableFromFile));
     cls.def(
         "prepareDevice",
         [](TrainingSession &session, OutOfMemoryError *status) {

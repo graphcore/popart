@@ -66,7 +66,6 @@ willow/include/popart/optimizer.hpp \
 willow/include/popart/optimizervalue.hpp \
 willow/include/popart/patterns/patterns.hpp \
 willow/include/popart/popx/devicex.hpp \
-willow/include/popart/popx/exporter.hpp \
 willow/include/popart/session.hpp \
 willow/include/popart/sessionoptions.hpp \
 willow/include/popart/stepio_generic.hpp \

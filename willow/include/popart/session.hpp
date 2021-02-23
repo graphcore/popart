@@ -66,6 +66,23 @@ public:
    *            associated metadata will be written to.
    */
   void compileAndExport(std::ostream &out);
+
+  /**
+   * Load the \c poplar::Executable and the PopART metadata from the given
+   * file. The file must have been created with compileAndExport()
+   *
+   * \param filename Name of the file to load the executable from.
+   */
+  void loadExecutableFromFile(std::string filename);
+
+  /**
+   * Load the \c poplar::Executable and the PopART metadata from the given
+   * stream. The stream must have been created with compileAndExport()
+   *
+   * \param in Stream to load the executable from.
+   */
+  void loadExecutableFromStream(std::istream &in);
+
   /**
    * Prepare the network for execution.
    *

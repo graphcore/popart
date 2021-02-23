@@ -4650,6 +4650,20 @@ static const char *__doc_popart_Session_ir =
 optimisations, backwards pass construction, re-computation growing
 etc. happens.)doc";
 
+static const char *__doc_popart_Session_loadExecutableFromFile =
+    R"doc(Load the ``poplar::Executable`` and the PopART metadata from the given
+file. The file must have been created with compileAndExport()
+
+Parameter ``filename``:
+    Name of the file to load the executable from.)doc";
+
+static const char *__doc_popart_Session_loadExecutableFromStream =
+    R"doc(Load the ``poplar::Executable`` and the PopART metadata from the given
+stream. The stream must have been created with compileAndExport()
+
+Parameter ``in``:
+    Stream to load the executable from.)doc";
+
 static const char *__doc_popart_Session_lowering =
     R"doc(Implementation of the lowering of the PopART Ir to the poplar Graph.)doc";
 
