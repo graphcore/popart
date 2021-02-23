@@ -76,28 +76,36 @@ def test_add(op_tester):
     op_tester.run(init_builder, reference, 'train')
 
 
-def test_cast(op_tester):
-    d1 = np.random.uniform(0, 20, 5).astype(np.int32)
+@pytest.mark.parametrize("npSrcType,npDstType,builderDstType",
+                         [(np.int32, np.float32, "FLOAT"),
+                          (np.int8, np.float16, "FLOAT16")])
+def test_cast(op_tester, npSrcType, npDstType, builderDstType):
+    d1 = np.random.uniform(0, 20, 5).astype(npSrcType)
 
     def init_builder(builder):
         i1 = builder.addInputTensor(d1)
-        o = builder.aiOnnx.cast([i1], "FLOAT")
+        o = builder.aiOnnx.cast([i1], builderDstType)
 
         builder.addOutputTensor(o)
         return [o]
 
     def reference(ref_data):
-        return [d1.astype(np.float32)]
+        return [d1.astype(npDstType)]
+
+    if npSrcType == np.int8: op_tester.options.opxModifyChecking = False
 
     op_tester.run(init_builder, reference, 'infer')
 
 
-def test_cast_grad(op_tester):
-    d1 = np.random.uniform(0, 10, 10).astype(np.int32)
+@pytest.mark.parametrize("npSrcType,torchDstType,builderDstType",
+                         [(np.int32, torch.float32, "FLOAT"),
+                          (np.int8, torch.float32, "FLOAT")])
+def test_cast_grad(op_tester, npSrcType, torchDstType, builderDstType):
+    d1 = np.random.uniform(0, 10, 10).astype(npSrcType)
 
     def init_builder(builder):
         i1 = builder.addInputTensor(d1)
-        c = builder.aiOnnx.cast([i1], "FLOAT")
+        c = builder.aiOnnx.cast([i1], builderDstType)
         # Add an op that produces a gradient so we can test CastGrad properly
         o = builder.aiOnnx.sqrt([c])
         builder.addOutputTensor(o)
@@ -108,12 +116,14 @@ def test_cast_grad(op_tester):
         ]
 
     def reference(ref_data):
-        c = torch.tensor(d1, dtype=torch.float32, requires_grad=True)
+        c = torch.tensor(d1, dtype=torchDstType, requires_grad=True)
         out = torch.sqrt(c)
         d_o = ref_data.getOutputTensorGrad(0)
         out.backward(torch.tensor(d_o))
-        d_i1 = c.grad.numpy().astype(np.int32)
+        d_i1 = c.grad.numpy().astype(npSrcType)
         return [out, d_i1, d_o]
+
+    if npSrcType == np.int8: op_tester.options.opxModifyChecking = False
 
     op_tester.setPatterns(['PreUniRepl', 'PostNRepl', 'SqrtGradOp'],
                           enableRuntimeAsserts=False)

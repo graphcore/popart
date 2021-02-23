@@ -3656,10 +3656,12 @@ poplar::Type popType(const TensorInfo &info) {
   case DataType::UINT32: {
     return poplar::UNSIGNED_INT;
   }
+  case DataType::INT8: {
+    return poplar::SIGNED_CHAR;
+  }
 
   case DataType::UNDEFINED:
   case DataType::UINT8:
-  case DataType::INT8:
   case DataType::UINT16:
   case DataType::INT16:
   case DataType::INT64:
