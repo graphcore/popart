@@ -295,7 +295,6 @@ const static AiGraphcoreOpIdV1 Log1pInplace("Log1pInplace");
 const static AiGraphcoreOpIdV1 LogSoftmaxInplace("LogSoftmaxInplace");
 const static AiGraphcoreOpIdV1 LossScaleUpdate("LossScaleUpdate");
 const static AiGraphcoreOpIdV1 LSTM_1("LSTM", 4, 2);
-const static AiGraphcoreOpIdV1 ModifyRandomSeed("ModifyRandomSeed");
 const static AiGraphcoreOpIdV1 MulLhsInplace("MulLhsInplace");
 const static AiGraphcoreOpIdV1 MulRhsInplace("MulRhsInplace");
 const static AiGraphcoreOpIdV1 MultiConv_1("MultiConv");

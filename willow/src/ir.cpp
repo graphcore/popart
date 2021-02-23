@@ -68,7 +68,6 @@
 #include <popart/transforms/mergevarupdates.hpp>
 #include <popart/transforms/pipeline.hpp>
 #include <popart/transforms/prune.hpp>
-#include <popart/transforms/randomsetup.hpp>
 #include <popart/transforms/remotesetup.hpp>
 #include <popart/transforms/serializematmuls.hpp>
 #include <popart/transforms/streamingmemory.hpp>
@@ -78,7 +77,6 @@
 #include <popart/op/batchnorm.hpp>
 #include <popart/op/copyvarupdate.hpp>
 #include <popart/op/ipucopy.hpp>
-#include <popart/op/modifyrandomseed.hpp>
 #include <popart/op/placeholder.hpp>
 #include <popart/op/sgd0varupdate.hpp>
 #include <popart/op/sum.hpp>
@@ -1054,8 +1052,9 @@ void Ir::prepareImpl(const IrBundle &gb) {
   }
   dotCheckpoint(DotCheck::Fwd1);
 
-  if (RandomSetup::requiresRandomSeed(*this)) {
+  if (requiresRandomSeed()) {
     setRequiresRandomSeed();
+    initRandomSeed();
   }
 
   enableTransform(AutoVirtualGraph::id(),
@@ -1151,8 +1150,6 @@ void Ir::prepareImpl(const IrBundle &gb) {
     applyTransform(ExplicitRecompute::id(), getMainGraph());
     updateVertices();
   }
-
-  applyTransform(RandomSetup::id(), getMainGraph());
 
   // Dynamicoptransform decomposes grad sums that contain
   // DynamicAdd/DynamicUpdate gradients, which can be decomposed efficiently
@@ -1429,8 +1426,7 @@ void Ir::prepareImpl(const IrBundle &gb) {
   addAdditionalModelProtoTensors();
   {
 
-    auto scopedTimer =
-        timePartitionLogger().scopedStopwatch("Verifying Ir");
+    auto scopedTimer = timePartitionLogger().scopedStopwatch("Verifying Ir");
 
     verifyConstExprFolding();
     verifyConnectivity();
@@ -3362,6 +3358,60 @@ std::vector<const Graph *> Ir::getGraphSchedule() const {
   return sorted;
 }
 
+bool Ir::hasRandomOps() const {
+  for (auto op : getAllOps()) {
+    if (op->requiresRandomSeed()) {
+      return true;
+    }
+  }
+  return false;
+}
+
+bool Ir::requiresRandomSeed() const {
+  return (getSessionOptions().enableStochasticRounding || hasRandomOps());
+}
+
+void Ir::initRandomSeed() {
+  // 1. create seed tensor
+  TensorId seedId = GetRandomSeedOp::getStreamedSeedTensorId();
+  DataType dtype  = DataType::UINT32;
+  TensorInfo info(dtype, {2});
+  getTensors().addStream(seedId, {dtype, {2}});
+  Tensor &seedTensor = *getTensors().get(seedId);
+  seedTensor.setReplicatedStreamMode(Tensor::ReplicatedStreamMode::Replicate);
+
+  Op::Settings settings(getMainGraph(), "");
+  auto getSeedOp_up = std::make_unique<GetRandomSeedOp>(
+      Onnx::CustomOperators::GetRandomSeed, settings);
+  auto getSeedOp = getSeedOp_up.get();
+
+  auto allOtherOps                  = getAllOps();
+  bool allOtherOpsHavePipelineStage = true;
+  for (auto op : allOtherOps) {
+    if (!op->hasPipelineStage()) {
+      allOtherOpsHavePipelineStage = false;
+    }
+  }
+  getMainGraph().moveIntoGraph(std::move(getSeedOp_up));
+  if (virtualGraphsEnabled()) {
+    getSeedOp->setVirtualGraphId(0);
+    if (getSessionOptions().enablePipelining && allOtherOpsHavePipelineStage) {
+      getSeedOp->setPipelineStage(0);
+    }
+  }
+  getSeedOp->connectInTensor(getSeedOp->getSeedInIndex(), seedId);
+  TensorId updatedSeedId = GetRandomSeedOp::getUpdatedSeedTensorId();
+  getSeedOp->createAndConnectOutTensor(
+      GetRandomSeedOp::getUpdatedSeedOutIndex(), updatedSeedId);
+  getSeedOp->setup();
+
+  for (auto op : getAllOps()) {
+    if (op->requiresRandomSeed()) {
+      op->connectInTensor(op->getSeedInIndex(), updatedSeedId);
+    }
+  }
+}
+
 std::vector<Op *> Ir::getOpSchedule(const OpsBeforeKey &gCons,
                                     const RequireOptimalSchedule ros) const {
   std::vector<Op *> sorted;
@@ -3831,6 +3881,11 @@ Tensors &Ir::getMainGraphTensors() { return getMainGraph().getTensors(); }
 
 const Tensors &Ir::getMainGraphTensors() const {
   return getMainGraph().getTensors();
+}
+
+uint32_t Ir::getAndIncrementSeedModifier() {
+  seedModifier += 1;
+  return seedModifier;
 }
 
 RandomReferenceId Ir::getAndIncrementRandomReferenceId() {

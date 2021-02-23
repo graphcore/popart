@@ -71,7 +71,6 @@
 #include <popart/tensors.hpp>
 #include <popart/tojson.hpp>
 #include <popart/topocons.hpp>
-#include <popart/transforms/randomsetup.hpp>
 
 #include <popart/op/hostreducevarupdate.hpp>
 #include <popart/op/varupdate.hpp>
@@ -2848,8 +2847,8 @@ void IrLowering::prepareGraph() {
   }
 
   // Init the random seed
-  if (RandomSetup::hasRandomSeed(ir()) and !ir().useSyntheticData()) {
-    auto seedTen = ir().getTensor(RandomSetup::getStreamedSeedTensorId());
+  if (ir().getRequiresRandomSeed() and !ir().useSyntheticData()) {
+    auto seedTen = ir().getTensor(GetRandomSeedOp::getStreamedSeedTensorId());
     tasks.add(fromHostTask(seedTen, progs.setRandomSeedFromHostFragment()));
     tasks.add(initRandomSeed());
   }

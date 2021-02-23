@@ -184,9 +184,9 @@ bool Prune::apply(Graph &graph) const {
   // even though they may not have a path to the loss.
   // This is the case for:
   //  - the random seed tensor
-  auto seedId = GetRandomSeedOp::getUpdatedSeedTensorId();
-  if (graph.getTensors().contains(seedId)) {
-    auto t = graph.getTensors().get(seedId);
+  if (ir.getSessionOptions().enableStochasticRounding) {
+    auto seedId = GetRandomSeedOp::getUpdatedSeedTensorId();
+    auto t      = graph.getTensors().get(seedId);
     tensorFront.push_back(t);
   }
 

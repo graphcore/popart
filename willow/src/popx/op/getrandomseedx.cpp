@@ -6,7 +6,6 @@
 #include <popart/popx/opxmanager.hpp>
 #include <popart/tensor.hpp>
 #include <popart/tensorindex.hpp>
-#include <popart/transforms/randomsetup.hpp>
 
 #include <popops/ElementWise.hpp>
 
@@ -16,12 +15,11 @@ namespace popx {
 void GetRandomSeedOpx::grow(poplar::program::Sequence &prog) const {
   auto seed = getInTensor(op_p->getSeedInIndex());
 
-  if (RandomSetup::hasRandomSeed(dv_p->ir())) {
+  if (dv_p->ir().hasRandomOps()) {
     // Increment the seed
     auto one = getConst(seed.elementType(), {}, 1.0, "one");
     popops::addInPlace(graph(), seed, one, prog);
   }
-
   setOutTensor(GetRandomSeedOp::getUpdatedSeedOutIndex(), seed);
 }
 

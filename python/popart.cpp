@@ -2810,7 +2810,6 @@ PYBIND11_MODULE(popart_core, m) {
   m.def("reservedRestoredPrefix", &reservedRestoredPrefix);
   m.def("reservedLossScalingPrefix", &reservedLossScalingPrefix);
   m.def("reservedRandomSeedPrefix", &reservedRandomSeedPrefix);
-  m.def("reservedSeedModifierPrefix", &reservedSeedModifierPrefix);
 
   m.def("reservedRemoteArgPrefix", &reservedRemoteArgPrefix);
 
