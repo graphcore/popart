@@ -74,6 +74,7 @@ willow/include/popart/tensordata.hpp \
 willow/include/popart/tensorlocation.hpp \
 willow/include/popart/tensornames.hpp \
 willow/include/popart/tensors.hpp \
+willow/include/popart/tensor.hpp \
 -o willow/include/popart/docs/pydocs_popart_core.hpp"
 
 eval $CMD

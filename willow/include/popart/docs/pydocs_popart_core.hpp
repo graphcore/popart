@@ -178,49 +178,49 @@ static const char *__doc_popart_Adam_Adam =
     R"doc(Constructor.
 
 Parameter ``defaultLearningRate``:
-    the learning rate value to use for weights for which no weight-
+    The learning rate value to use for weights for which no weight-
     specific hyper parameter have been inserted.
 
 Parameter ``defaultWeightDecay``:
-    the weight decay value to use for weights for which no weight-
+    The weight decay value to use for weights for which no weight-
     specific hyper parameter have been inserted.
 
 Parameter ``defaultBeta1``:
-    the beta1 value to use for weights for which no weight-specific
+    The beta1 value to use for weights for which no weight-specific
     hyper parameter have been inserted.
 
 Parameter ``defaultBeta2``:
-    the beta2 value value to use for weights for which no weight-
+    The beta2 value value to use for weights for which no weight-
     specific hyper parameter have been inserted.
 
 Parameter ``defaultEps``:
-    the epsilon value to use for weights for which no weight-specific
+    The epsilon value to use for weights for which no weight-specific
     hyper parameter have been inserted.
 
 Parameter ``lossScaling``:
-    the loss scaling value to use.
+    The loss scaling value to use.
 
 Parameter ``maxWeightNorm``:
-    the maxWeightNorm value to use.
+    The maxWeightNorm value to use.
 
 Parameter ``adamMode``:
-    the AdamMode value to use.
+    The AdamMode value to use.
 
 Parameter ``weightDecayMode``:
-    the WeightDecayMode value to use.
+    The WeightDecayMode value to use.
 
 Parameter ``maxWeightNorm``:
-    the maxWeightNorm value to use.
+    The maxWeightNorm value to use.
 
 Parameter ``accumType``:
-    data type to use for gradient accumulation.
+    Data type to use for gradient accumulation.
 
 Parameter ``accl1Type``:
-    data type to use for tensor that stores first-order momentum
+    Data type to use for tensor that stores first-order momentum
     optimizer state.
 
 Parameter ``accl2Type``:
-    data type to use for tensor that stores second-order momentum
+    Data type to use for tensor that stores second-order momentum
     optimizer state.)doc";
 
 static const char *__doc_popart_Adam_Adam_2 = R"doc()doc";
@@ -233,7 +233,7 @@ static const char *__doc_popart_Adam_Adam_5 =
     R"doc(Constructor.
 
 Parameter ``params``:
-    a parameter map where keys are one of `"defaultLearningRate"`,
+    A parameter map where keys are one of `"defaultLearningRate"`,
     `"defaultWeightDecay"`, `"defaultBeta1"`, `"defaultBeta2"`,
     `"defaultEps"`, `"lossScaling"` or `"maxWeightNorm"`, and the
     map's values pairs of floats and booleans representing
@@ -242,23 +242,23 @@ Parameter ``params``:
     parameters are missing.
 
 Parameter ``adamMode``:
-    the AdamMode value to use.
+    The AdamMode value to use.
 
 Parameter ``weightDecayMode``:
-    the WeightDecayMode value to use.
+    The WeightDecayMode value to use.
 
 Parameter ``maxWeightNorm``:
-    the maxWeightNorm value to use.
+    The maxWeightNorm value to use.
 
 Parameter ``accumType``:
-    data type to use for gradient accumulation.
+    Data type to use for gradient accumulation.
 
 Parameter ``accl1Type``:
-    data type to use for tensor that stores first-order momentum
+    Data type to use for tensor that stores first-order momentum
     optimizer state.
 
 Parameter ``accl2Type``:
-    data type to use for tensor that stores second-order momentum
+    Data type to use for tensor that stores second-order momentum
     optimizer state.
 
 **EXAMPLE**:
@@ -312,11 +312,17 @@ static const char *__doc_popart_Adam_fromDefaultMap = R"doc()doc";
 
 static const char *__doc_popart_Adam_getComplete = R"doc()doc";
 
-static const char *__doc_popart_Adam_getInputIds = R"doc()doc";
+static const char *__doc_popart_Adam_getInputIds =
+    R"doc(The names of the inputs for the VarUpdateOp for the Variable Tensor
+"weight". In the returned vector, an empty string ("") is used as a
+placeholder for constant inputs.)doc";
 
-static const char *__doc_popart_Adam_getOptimizerInputs = R"doc()doc";
+static const char *__doc_popart_Adam_getOptimizerInputs =
+    R"doc(The names and infos of the optimizer tensors.)doc";
 
-static const char *__doc_popart_Adam_getStoredValue = R"doc()doc";
+static const char *__doc_popart_Adam_getStoredValue =
+    R"doc(Tensor "opt" has an id, based on which it matches a compound scalar
+which this object can compute from the atomic scalars.)doc";
 
 static const char *__doc_popart_Adam_getUnsetBeta1 =
     R"doc(Default beta1 value.)doc";
@@ -349,31 +355,31 @@ static const char *__doc_popart_Adam_insertSpecific =
     R"doc(Insert a weight-specific set of hyper parameters.
 
 Parameter ``weight``:
-    the TensorId of the weight.
+    The TensorId of the weight.
 
 Parameter ``learningRate``:
-    the learning rate value to use for this specific weight.
+    The learning rate value to use for this specific weight.
 
 Parameter ``weightDecay``:
-    the weight decay value to use for this specific weight.
+    The weight decay value to use for this specific weight.
 
 Parameter ``beta1``:
-    the beta1 value to use for this specific weight.
+    The beta1 value to use for this specific weight.
 
 Parameter ``beta2``:
-    the beta2 value to use for this specific weight.
+    The beta2 value to use for this specific weight.
 
 Parameter ``eps``:
-    the epsilon value to use for this specific weight.)doc";
+    The epsilon value to use for this specific weight.)doc";
 
 static const char *__doc_popart_Adam_insertSpecific_2 =
     R"doc(Insert a weight-specific set of hyper parameters.
 
 Parameter ``weight``:
-    the TensorId of the weight.
+    The TensorId of the weight.
 
 Parameter ``params``:
-    a parameter map where keys are one of `"defaultLearningRate"`,
+    A parameter map where keys are one of `"defaultLearningRate"`,
     `"defaultWeightDecay"`, `"defaultBeta1"`, `"defaultBeta2"`,
     `"defaultEps"`, `"lossScaling"` or `"maxWeightNorm"` and the map's
     values pairs of floats and booleans representing OptimizerValue
@@ -430,45 +436,48 @@ static const char *__doc_popart_AiGraphcoreOpset1 = R"doc()doc";
 static const char *__doc_popart_AiGraphcoreOpset1_AiGraphcoreOpset1 =
     R"doc()doc";
 
+static const char *__doc_popart_AiGraphcoreOpset1_abort = R"doc()doc";
+
 static const char *__doc_popart_AiGraphcoreOpset1_atan2 =
-    R"doc(Add an atan2 operation to the model
+    R"doc(Add an ``atan2`` operation to the model.
 
 Returns the element-wise angle theta as a tensor, -pi < theta <= pi,
 such that for two input tensors x and y and given r != 0, x = r cos
 theta, and y = r sin theta, element-wise.
 
-In the case of x > 0, theta = arctan(y/x)
+In the case of x > 0, theta = arctan(y/x).
 
 Parameter ``args``:
-    A vector of inputs tensors (y, x)
+    Vector of input tensor ids: [y, x].
 
 Parameter ``name``:
-    Optional identifier for operation
+    Optional identifier for operation.
 
 Returns:
-    The name of the result tensor containing element wise theta values)doc";
+    The name of the result tensor containing element wise theta
+    values.)doc";
 
 static const char *__doc_popart_AiGraphcoreOpset1_call =
-    R"doc(Add a call operation to the model
+    R"doc(Add a call operation to the model.
 
-This is a poplar extension, to expose manual code re-use to the
-builder
+This is a Poplar extension, to expose manual code re-use to the
+builder.
 
 Parameter ``args``:
-    Tensor T
+    Vector of input tensor ids.
 
 Parameter ``callee``:
-    The subgraph to call into
+    The subgraph to call into.
 
 Parameter ``debugContext``:
-    Optional debug context
+    Optional debug context.
 
 Returns:
-    A vector of tensors; the subgraph outputs)doc";
+    A vector of tensors; the subgraph outputs.)doc";
 
 static const char *__doc_popart_AiGraphcoreOpset1_depthtospace =
-    R"doc(Add the 'DepthToSpace' to the model (This allows DepthToSpace_11 to be
-targeted from earlier opsets)
+    R"doc(Add the ``DepthToSpace`` to the model. (This allows DepthToSpace_11 to
+be targeted from earlier opsets.)
 
 The purpose of Depth to Space, also known as pixel shuffling, is to
 rearrange data from the depth (channels) dimension into the spacial
@@ -480,130 +489,138 @@ https://github.com/onnx/onnx/blob/master/docs/Operators.md#DepthToSpac
 e
 
 Parameter ``args``:
-    List containing single tensor input
+    Vector containing single tensor input id.
 
 Parameter ``blocksize``:
     Indicates the scale factor: if the input is [N, C, H, W] and the
-    blocksize is B, the output will be [N, C/(B*B), H*B, W*B]
+    blocksize is B, the output will be [N, C/(B*B), H*B, W*B].
 
 Parameter ``mode``:
-    Specifies how the data is rearranged "DCR": depth-column-row order
-    "CRD": column-row-depth order
+    Specifies how the data is rearranged: * "DCR": depth-column-row
+    order * "CRD": column-row-depth order
 
 Parameter ``debugContext``:
-    Optional debug context
+    Optional debug context.
 
 Returns:
-    A tensor which is a rearrangement of the input tensor)doc";
+    A tensor which is a rearrangement of the input tensor.)doc";
 
 static const char *__doc_popart_AiGraphcoreOpset1_detach =
-    R"doc(Add a detach operation to the model
+    R"doc(Add a detach operation to the model.
 
 Parameter ``args``:
-    Tensor T Input tensor.
+    Vector of input tensor ids.
 
 Parameter ``debugContext``:
-    Optional debug context
+    Optional debug context.
 
 Returns:
-    The name of the result tensor)doc";
+    The name of the result tensor.)doc";
 
 static const char *__doc_popart_AiGraphcoreOpset1_dynamicadd =
-    R"doc(Add a dynamic add operation to the model
+    R"doc(Add a dynamic add operation to the model.
 
-Creates a copy of "tensor" with "slice" added at "offset", e.g. out =
-tensor, out[offset] += slice
+Creates a copy of ``tensor`` with ``slice`` added at ``offset``. For
+example:
+
+out = tensor, out[offset] += slice
 
 Parameter ``args``:
-    [tensor, offset, slice]
+    Vector of input tensor ids: [tensor, offset, slice].
 
 Parameter ``axes``:
-    Axes along which to add
+    Axes along which to add.
 
 Parameter ``sizes``:
-    Size of the slice in each axis
+    Size of the slice in each axis.
 
 Parameter ``debugContext``:
-    Optional debug context
+    Optional debug context.
 
 Returns:
-    The name of the result tensor)doc";
+    The name of the result tensor.)doc";
 
 static const char *__doc_popart_AiGraphcoreOpset1_dynamicslice =
-    R"doc(Add a dynamic slice operation to the model
+    R"doc(Add a dynamic slice operation to the model.
 
-Creates a new slice tensor, e.g. slice = tensor[offset]
+Creates a new slice tensor. For example:
+
+slice = tensor[offset]
 
 Parameter ``args``:
-    [tensor, offset]
+    Vector of input tensor ids: [tensor, offset].
 
 Parameter ``axes``:
-    Axes along which to slice
+    Axes along which to slice.
 
 Parameter ``sizes``:
-    Size of the slice in each axis
+    Size of the slice in each axis.
 
 Parameter ``debugContext``:
-    Optional debug context
+    Optional debug context.
 
 Returns:
-    The name of the result tensor)doc";
+    The name of the result tensor.)doc";
 
 static const char *__doc_popart_AiGraphcoreOpset1_dynamicupdate =
-    R"doc(Add a dynamic update operation to the model
+    R"doc(Add a dynamic update operation to the model.
 
-Creates a copy of "tensor" with "slice" inserted at "offset", e.g. out
-= tensor, out[offset] = slice
+Creates a copy of a ``tensor`` with a ``slice`` inserted at
+``offset``. For example:
+
+out = tensor, out[offset] = slice
 
 Parameter ``args``:
-    [tensor, offset, slice]
+    Vector of input tensor ids: [tensor, offset, slice].
 
 Parameter ``axes``:
-    Axes along which to update
+    Axes along which to update.
 
 Parameter ``sizes``:
-    Size of the slice in each axis
+    Size of the slice in each axis.
 
 Parameter ``debugContext``:
-    Optional debug context
+    Optional debug context.
 
 Returns:
-    The name of the result tensor)doc";
+    The name of the result tensor.)doc";
 
 static const char *__doc_popart_AiGraphcoreOpset1_dynamiczero =
-    R"doc(Add a dynamic zero operation to the model
+    R"doc(Add a dynamic zero operation to the model.
 
-Creates a copy of "tensor" with a slice at "offset" set to zero, e.g.
+Creates a copy of ``tensor`` with a slice at ``offset`` set to zero.
+For example:
+
 out = tensor, out[offset] = 0.0
 
 Parameter ``args``:
-    [tensor, offset]
+    Vector of input tensor ids [tensor, offset].
 
 Parameter ``axes``:
-    Axes along which to erase
+    Axes along which to erase.
 
 Parameter ``sizes``:
-    Size of the slice in each axis
+    Size of the slice in each axis.
 
 Parameter ``debugContext``:
-    Optional debug context
+    Optional debug context.
 
 Returns:
-    The name of the result tensor)doc";
+    The name of the result tensor.)doc";
 
 static const char *__doc_popart_AiGraphcoreOpset1_expm1 =
-    R"doc(Add expm1 operation to the model It computes exp(x) - 1. Calculates
-the exponential of the given input tensor and subtract one. Element-
-wise.
+    R"doc(Add ``expm1`` operation to the model. It computes exp(x) - 1.
+Calculates the element-wise exponential of the input tensor and
+subtracts one.
 
 Parameter ``args``:
-    Tensor T
+    Vector of input tensor ids.
 
 Parameter ``name``:
-    Optional identifier for operation
+    Optional identifier for operation.
 
 Returns:
-    The name of the result tensor)doc";
+    The name of the result tensor.)doc";
 
 static const char *__doc_popart_AiGraphcoreOpset1_fmod =
     R"doc(Add fmod operation to the model.
@@ -619,60 +636,59 @@ Returns:
     the same sign as the dividend.)doc";
 
 static const char *__doc_popart_AiGraphcoreOpset1_gelu =
-    R"doc(Add a gelu operation to the model
+    R"doc(Add a GELU operation to the model.
 
-This is a poplar extension, to replace the experimental scale operator
-that has been removed
+This is a Poplar extension.
 
 Parameter ``args``:
-    Tensor T
+    Vector of input tensor ids.
 
 Parameter ``debugContext``:
-    Optional debug context
+    Optional debug context.
 
 Returns:
-    The name of the result tensor)doc";
+    The name of the result tensor.)doc";
 
 static const char *__doc_popart_AiGraphcoreOpset1_getOpsetVersion = R"doc()doc";
 
 static const char *__doc_popart_AiGraphcoreOpset1_groupnormalization =
-    R"doc(Add a groupnormalization operation to the model
+    R"doc(Add a group normalization operation to the model.
 
-This is a poplar extension
+This is a Poplar extension.
 
-The group will be created from a strided input
+The group will be created from a strided input.
 
 Parameter ``args``:
-    A vector of input tensors (x, scale, bias)
+    A vector of input tensors: [x, scale, bias].
 
 Parameter ``num_groups``:
-    The number of groups to separate the channels into
+    The number of groups to separate the channels into.
 
 Parameter ``epsilon``:
     The epsilon value to use to avoid division by zero.
 
 Parameter ``debugContext``:
-    Optional debug context
+    Optional debug context.
 
 Returns:
-    A vector of tensors (y, mean, var))doc";
+    A vector of tensors: [y, mean, var].)doc";
 
 static const char *__doc_popart_AiGraphcoreOpset1_identityloss =
-    R"doc(Add an identity loss operation to the model
+    R"doc(Add an identity loss operation to the model.
 
 Calculates the loss using the identity operator.
 
 Parameter ``args``:
-    [tensor]
+    Vector of input tensor ids.
 
 Parameter ``reduction``:
-    Type of reduction to perform on the individual losses
+    Type of reduction to perform on the individual losses.
 
 Parameter ``name``:
-    Optional identifier for operation
+    Optional identifier for operation.
 
 Parameter ``debugContext``:
-    Optional debug context)doc";
+    Optional debug context.)doc";
 
 static const char *__doc_popart_AiGraphcoreOpset1_ctcloss =
     R"doc(Add an connectionist temporal classification (CTC) loss operation to
@@ -703,121 +719,128 @@ Parameter ``debugContext``:
     Optional debug context)doc";
 
 static const char *__doc_popart_AiGraphcoreOpset1_init =
-    R"doc(Add an init operation to the model
+    R"doc(Add an init operation to the model.
 
 Parameter ``shape``:
-    Shape of the tensor to initialise
+    Shape of the tensor to initialise.
 
 Parameter ``data_type``:
-    Data type to initialise tensor with
+    Data type to initialise tensor with.
 
 Parameter ``init_type``:
-    Mode of tensor initialisations
+    Mode of tensor initialisations.
 
 Parameter ``batch_axis``:
-    Axis relative to batch size
+    Axis relative to batch size.
 
 Parameter ``debugContext``:
-    Optional debug context
+    Optional debug context.
 
 Returns:
-    The name of the result tensor)doc";
+    The name of the result tensor.)doc";
 
 static const char *__doc_popart_AiGraphcoreOpset1_init_2 =
-    R"doc(Add an init operation to the model
+    R"doc(Add an init operation to the model.
 
 Parameter ``shape``:
-    Shape of the tensor to initialise
+    Shape of the tensor to initialise.
 
 Parameter ``data_type``:
-    Data type to initialise tensor with
+    Data type to initialise tensor with.
 
 Parameter ``init_type``:
-    Mode of tensor initialisations
+    Mode of tensor initialisations.
 
 Parameter ``debugContext``:
-    Optional debug context
+    Optional debug context.
 
 Returns:
-    The name of the result tensor)doc";
+    The name of the result tensor.)doc";
 
 static const char *__doc_popart_AiGraphcoreOpset1_l1loss =
-    R"doc(Add an l1 loss operation to the model
+    R"doc(Add an ``l1`` loss operation to the model.
 
 Calculates the mean absolute error between each element in the input
-with a zero target
+with a zero target.
 
 Parameter ``args``:
-    [tensor]
+    Vector of input tensor ids.
 
 Parameter ``lambda``:
-    Scale factor of L1 loss
+    Scale factor of L1 loss.
 
 Parameter ``reduction``:
-    Type of reduction to perform on the individual losses
+    Type of reduction to perform on the individual losses.
 
 Parameter ``debugContext``:
-    Optional debug context
+    Optional debug context.
 
 Returns:
-    The name of the result tensor)doc";
+    The name of the result tensor.)doc";
 
 static const char *__doc_popart_AiGraphcoreOpset1_log1p =
-    R"doc(Add log1p operation to the model It computes log(x + 1). Calculates
-the logarithm of the given input tensor plus one. Element-wise.
+    R"doc(Add ``log1p`` operation to the model. It computes log(x + 1). This
+calculates the element-wise logarithm of the input tensor plus one.
 
 Parameter ``args``:
-    Tensor T
+    Vector of input tensor ids.
 
 Parameter ``name``:
-    Optional identifier for operation
+    Optional identifier for operation.
 
 Returns:
-    The name of the result tensor)doc";
+    The name of the result tensor.)doc";
 
 static const char *__doc_popart_AiGraphcoreOpset1_lstm = R"doc()doc";
 
 static const char *__doc_popart_AiGraphcoreOpset1_multiconv =
-    R"doc(Add a multi-convolution to the model
+    R"doc(Add a multi-convolution to the model.
 
 Using this multi-convolution API ensures that the convolutions are
-executed in parallel on the device,
+executed in parallel on the device.
 
 Functionally, a multi-convolution is equivalent to a series of single
 convolutions. Using this multi-convolution API is always equivalent to
 calling the single-convolution API (conv) once for each argument.
 
-For example, calling
+For example, calling:
 
-> A0 = conv({X0, W0, B0}) > A1 = conv({X1, W1})
+A0 = conv({X0, W0, B0}) A1 = conv({X1, W1})
 
-is functionally equivalent to calling
+Is functionally equivalent to calling:
 
-> {A0, A1} = multiconv({{X0, W0, B0}, {X1, Q1}).
+{A0, A1} = multiconv({{X0, W0, B0}, {X1, Q1}).
 
 It is possible that any two convolutions cannot be executed in
-parallel due to topological constraints. For example,
+parallel due to topological constraints. For example, the following:
 
-> B = conv({A, W0}); > C = B + A > D = conv({C, W1});
+B = conv({A, W0}); C = B + A D = conv({C, W1});
 
-cannot be converted to,
+Cannot be converted to:
 
-> {B, D} = multiconv({{A, W0}, {C, W1}}).
+{B, D} = multiconv({{A, W0}, {C, W1}}).
 
 Note that it is not possible to create such a cycle by adding a multi-
 convolution with this API.
 
-Calls to multiconv eventually map to PopLibs'
-poplin::multiconv::convolution
+Calls to multiconv() are mapped to
+poplar::poplin::multiconv::convolution().
 
 Parameter ``tensors``:
-    List of {DataId, WeightId, BiasId (optional)}
+    List of [DataId, WeightId, BiasId (optional)] for each
+    convolution.
 
 Parameter ``dilations``:
     The dilations attributes for each convolution.
 
+Parameter ``inDilations``:
+    The input dilations attributes for each convolution.
+
 Parameter ``pads``:
     The pads for each convolution.
+
+Parameter ``outPads``:
+    The output padding for each convolution.
 
 Parameter ``strides``:
     The strides for each convolution.
@@ -826,7 +849,7 @@ Parameter ``availableMemoryProportions``:
     The available memory proportions per conv, each [0, 1).
 
 Parameter ``partialsTypes``:
-    The partials type per conv
+    The partials type per convolution.
 
 Parameter ``planType``:
     Run convolutions in parallel or series.
@@ -835,148 +858,164 @@ Parameter ``perConvReservedTiles``:
     Tiles to reserve per convolution when planning.
 
 Parameter ``cycleBackOff``:
-    Cycle back off proportion, [0, 1).
+    Cycle back-off proportion, [0, 1).
 
 Parameter ``debugContext``:
-    Optional debug context
+    Optional debug context.
 
 All input vectors must be either empty, or equal in length to the
 number of convolutions. Note that groups for each convolution are
 automatically inferred from the shapes of the data and weight inputs.
 
 Returns:
-    The TensorId of the output Tensor from each convolution.)doc";
+    The TensorId of the output tensor from each convolution.)doc";
 
 static const char *__doc_popart_AiGraphcoreOpset1_nllloss =
-    R"doc(Add a negative log-likelihood loss operation to the model
+    R"doc(Add a negative log-likelihood loss operation to the model.
 
 Calculates the nll loss given a probability tensor over classes, and a
-target tensor containing class labels
+target tensor containing class labels.
 
 Parameter ``args``:
-    [probs, target]
+    Vector of input tensor ids: probability and tensor.
 
 Parameter ``reduction``:
-    Type of reduction to perform on the individual losses
+    Type of reduction to perform on the individual losses.
 
 Parameter ``ignoreIndex``:
-    Optional class index to ignore in loss calculation
+    Optional class index to ignore in loss calculation.
 
 Parameter ``inputIsLogProbability``:
     Specifies if the input tensor contains log-probabilities or raw
     probabilities (false, default).
 
 Parameter ``debugContext``:
-    Optional debug context
+    Optional debug context.
 
 Returns:
-    The name of the result tensor)doc";
+    The name of the result tensor.)doc";
 
 static const char *__doc_popart_AiGraphcoreOpset1_nop =
-    R"doc(Add a nop operation to the model
+    R"doc(Add a no-op operation to the model.
 
 Parameter ``args``:
-    Tensor T
+    Vector of input tensor ids.
 
 Parameter ``debugContext``:
-    Optional debug context
+    Optional debug context.
 
 Returns:
-    The name of the result tensor)doc";
+    The name of the result tensor.)doc";
 
 static const char *__doc_popart_AiGraphcoreOpset1_printtensor =
-    R"doc(Add a print tensor operation to the model
+    R"doc(Add a print tensor operation to the model.
 
-This is a poplar extension)doc";
+This is a Poplar extension.
+
+Parameter ``args``:
+    Vector of tensor ids to print.
+
+Parameter ``print_gradient``:
+    $Parameter ``debugContext``:
+
+Optional debug context.
+
+Parameter ``title``:
+    $Returns:
+
+The name of the result tensor.)doc";
 
 static const char *__doc_popart_AiGraphcoreOpset1_remainder = R"doc()doc";
 
 static const char *__doc_popart_AiGraphcoreOpset1_replicatedallreduce =
-    R"doc(Add a replicated all reduce operation to the model
+    R"doc(Add a replicated all-reduce operation to the model.
 
-This is a poplar extension, to expose manual code re-use to the
-builder
+This is a Poplar extension, to expose manual code re-use to the
+builder.
 
 Parameter ``args``:
-    Tensor T to reduce across
+    Vector of input tensor ids to reduce across.
 
 Parameter ``debugContext``:
-    Optional debug context
+    Optional debug context.
 
 Returns:
-    The name of the result tensor)doc";
+    The name of the result tensor.)doc";
 
 static const char *__doc_popart_AiGraphcoreOpset1_reshape =
     R"doc(Add reshape operation to the model. Reshape the input tensor. This
 reshape takes the shape to reshape into as an attribute instead of a
-tensor input as the onnx reshape op.
+tensor input as the ONNX reshape op.
 
 Parameter ``arg``:
-    Single input Tensor.
+    Vector with single input tensor id.
 
 Parameter ``shape``:
     The shape of the output Tensor. The output Tensor must contain the
     same number of elements as the input Tensor.
 
 Parameter ``name``:
-    Optional identifier for operation
+    Optional identifier for operation.
 
 Returns:
-    The name of the result tensor)doc";
+    The name of the result tensor.)doc";
+
+static const char *__doc_popart_AiGraphcoreOpset1_reverse = R"doc()doc";
 
 static const char *__doc_popart_AiGraphcoreOpset1_round =
-    R"doc(Add the 'Round' to the model (This allows Round_11 to be targeted from
-earlier opsets)
+    R"doc(Add a ``Round`` operation to the model. (This allows ``Round_11`` to
+be targeted from earlier opsets.)
 
 https://github.com/onnx/onnx/blob/master/docs/Operators.md#Round
 
 Parameter ``args``:
-    List of input tensor ids
+    Vector of input tensor ids.
 
 Parameter ``debugContext``:
-    Optional debug context
+    Optional debug context.
 
 Returns:
-    The normalized output tensor ids)doc";
+    The normalized output tensor ids.)doc";
 
 static const char *__doc_popart_AiGraphcoreOpset1_scale =
-    R"doc(Add a scale operation to the model
+    R"doc(Add a scale operation to the model.
 
-This is a poplar extension, to replace the experimental scale operator
-that has been removed
+This is a Poplar extension.
 
 Parameter ``args``:
-    Tensor T
+    Vector of input tensor ids.
 
 Parameter ``scale``:
-    The scale to apply
+    The scale to apply.
 
 Parameter ``debugContext``:
-    Optional debug context
+    Optional debug context.
 
 Returns:
-    The name of the result tensor)doc";
+    The name of the result tensor.)doc";
 
 static const char *__doc_popart_AiGraphcoreOpset1_scaledadd =
-    R"doc(Add a scaledadd operation to the model X = scale0 * T0 + scale1 * T1
+    R"doc(Add a scaled add operation to the model.
+
+X = scale0 * T0 + scale1 * T1
 
 Parameter ``args``:
-    Tensor {T0, T1, scale0, scale1}
+    Vector of input tensor ids: [T0, T1, scale0, scale1].
 
 Parameter ``scale0``:
-    The scale to apply (if no scale0 tensor is supplied)
+    The scale to apply (if no ``scale0`` tensor is supplied).
 
 Parameter ``scale1``:
-    The scale to apply (if no scale1 tensor is supplied)
+    The scale to apply (if no ``scale1`` tensor is supplied).
 
 Parameter ``debugContext``:
-    Optional debug context
+    Optional debug context.
 
 Returns:
-    The name of the result tensor)doc";
+    The name of the result tensor.)doc";
 
 static const char *__doc_popart_AiGraphcoreOpset1_shapeddropout =
-    R"doc(Add a shaped dropout operation to the model
+    R"doc(Add a shaped dropout operation to the model.
 
 Applies a shaped dropout to the input tensor. This operator requires a
 shape parameter that is used to define the shape of the dropout mask
@@ -986,7 +1025,7 @@ tensor. Note that this operation targets the poprand library function
 of the same name.
 
 Parameter ``args``:
-    [tensor]
+    Vector of input tensor ids.
 
 Parameter ``shape``:
     Shape of dropout mask. Must be broadcastable to the input.
@@ -995,29 +1034,30 @@ Parameter ``ratio``:
     Probability of dropping an input feature (default = 0.5).
 
 Parameter ``name``:
-    Optional identifier for operation
+    Optional identifier for operation.
 
 Returns:
-    The name of the result tensor)doc";
+    The name of the result tensor.)doc";
 
 static const char *__doc_popart_AiGraphcoreOpset1_subsample =
-    R"doc(Add a subsample operation to the model
+    R"doc(Add a sub-sample operation to the model.
 
-This is a poplar extension
+This is a Poplar extension.
 
-If multiple tensors are provided that strides will applied to them all
+If multiple tensors are provided that strides will applied to them
+all.
 
 Parameter ``args``:
-    Tensor T
+    Vector of tensor ids to sub-sample.
 
 Parameter ``strides``:
-    The strides
+    The strides to use.
 
 Parameter ``debugContext``:
-    Optional debug context
+    Optional debug context.
 
 Returns:
-    The name of the result tensor)doc";
+    The name of the result tensor.)doc";
 
 static const char *__doc_popart_AiOnnxMlOpset1 = R"doc()doc";
 
@@ -1026,25 +1066,23 @@ static const char *__doc_popart_AiOnnxMlOpset1_AiOnnxMlOpset1 = R"doc()doc";
 static const char *__doc_popart_AiOnnxMlOpset1_getOpsetVersion = R"doc()doc";
 
 static const char *__doc_popart_AnchorReturnType =
-    R"doc(A class that captures an AnchorReturnTypeId value and, when this value
-is AnchorReturnTypeId::EVERYN, the associated `N` number. The
+    R"doc(A class that captures an #AnchorReturnTypeId value and, when this
+value is ``AnchorReturnTypeId::EVERYN``, the associated *N* value. The
 constructor takes `std::string` values and converts them as
-appropriate.
-
-See also: #AnchorReturnTypeId.)doc";
+appropriate.)doc";
 
 static const char *__doc_popart_AnchorReturnTypeId =
     R"doc(An anchor tensor is a tensor that the user wants returned after a call
-to Session::run. Each call to Session::run results in `batchesPerStep
-x accumulationFactor x replicationFactor` of such tensors being
-computed. We refer to the samples associated with each such
-computation as a micro batch. The dimensions are user-specified by the
-following parameters:
+to Session::run(). Each call to Session::run() results in
+`batchesPerStep x accumulationFactor x replicationFactor` of such
+tensors being computed. We refer to the samples associated with each
+such computation as a micro batch. The dimensions are user-specified
+by the following parameters:
 
 * `batchesPerStep` is the value in DataFlow. * `accumulationFactor` is
 the value defined by SessionOptions::accumulationFactor. *
 `replicationFactor` is the value defined by
-SessionOptions::globalReplicationFactor.
+SessionOptions::replicatedGraphCount.
 
 This enum type describes the strategy with which the micro batch
 values for anchor tensors (or summaries thereof) are written or to the
@@ -1052,69 +1090,65 @@ IStepIO instance passed to Session::run.
 
 See also: AnchorReturnType.
 
-**NOTE**: Anchors are essentially what tensorflow calls "fetches".)doc";
+**NOTE**: Anchors are essentially what TensorFlow calls "fetches".)doc";
 
 static const char *__doc_popart_AnchorReturnTypeId_All =
     R"doc(Return the tensor value for *all* micro batches for each replica.
 
 The buffer shape required for this anchor in IStepIO is
-`[batchesPerStep, accumulationFactor, replicationFactor,
-<anchorTensorShape>]` (with dimensions of size 1 removed).)doc";
+[`batchesPerStep`, `accumulationFactor`, `replicationFactor`,
+`<anchorTensorShape>`] (with dimensions of size 1 removed).)doc";
 
 static const char *__doc_popart_AnchorReturnTypeId_EveryN =
-    R"doc(Return the tensor value for every `N`th global batch for each replica
-and for all accumulation steps in that global batch. Note that the
-value of `N` is captured by AnchorReturnType.
+    R"doc(Return the tensor value for every *N*\ th global batch for each
+replica and for all accumulation steps in that global batch. Note that
+the value of *N* is captured by AnchorReturnType.
 
 The buffer shape required for this anchor in IStepIO is
-`[batchesPerStep // N, accumulationFactor, replicationFactor,
-<anchorTensorShape>]` (with dimensions of size 1 removed).)doc";
+[`batchesPerStep // N`, `accumulationFactor`, `replicationFactor`,
+`<anchorTensorShape>`] (with dimensions of size 1 removed).)doc";
 
 static const char *__doc_popart_AnchorReturnTypeId_Final =
     R"doc(Only return the tensor value for the last micro batch of the
 Session::run call for each replica.
 
 The buffer shape required for this anchor in IStepIO is
-`[replicationFactor, <anchorTensorShape>]` (with dimensions of size 1
-removed).)doc";
+[`replicationFactor`, `<anchorTensorShape>`] (with dimensions of size
+1 removed).)doc";
 
 static const char *__doc_popart_AnchorReturnTypeId_Sum =
     R"doc(Return one tensor value for each replica, doing a sum reduction over
 the `batchesPerStep` and `accumulationFactor` dimensions.
 
 The buffer shape required for this anchor in IStepIO is
-`[replicationFactor, <anchorTensorShape>]` (with dimensions of size 1
-removed).)doc";
+[`replicationFactor`, `<anchorTensorShape>`] (with dimensions of size
+1 removed).)doc";
 
 static const char *__doc_popart_AnchorReturnType_AnchorReturnType =
     R"doc(Constructor.
 
 Parameter ``artString``:
     - the string to convert to an #AnchorReturnTypeId value. The
-    following values are acceptable (case insensitive): * `"final"` -
-    AnchorReturnTypeId::FINAL * `"all"` - AnchorReturnTypeId::ALL *
-    `"sum"` - AnchorReturnTypeId::SUM
+    following values are acceptable (case insensitive): * "final" =
+    ``AnchorReturnTypeId::FINAL`` * "all" =
+    ``AnchorReturnTypeId::ALL`` * "sum" = ``AnchorReturnTypeId::SUM``
 
-**NOTE**: Constructing an AnchorReturnType with of type
-AnchorReturnTypeId::EVERYN using this constructor will result in an
-error. Use the constructor that also specifies a return period.)doc";
+**NOTE**: Attempting to construct an AnchorReturnType for
+``AnchorReturnTypeId::EVERYN`` using this constructor will result in
+an error. Use the constructor that also specifies the return period.)doc";
 
 static const char *__doc_popart_AnchorReturnType_AnchorReturnType_2 =
     R"doc(Constructor.
 
 Parameter ``artString``:
-    the string to convert to an #AnchorReturnTypeId value. The
-    following values are acceptable (case insensitive): * `"final"` -
-    AnchorReturnTypeId::FINAL * `"everyn"` -
-    AnchorReturnTypeId::EVERYN * `"all"` - AnchorReturnTypeId::ALL *
-    `"sum"` - AnchorReturnTypeId::SUM
+    The string to convert to an #AnchorReturnTypeId value. The
+    following values are acceptable (case insensitive): * "final" =
+    ``AnchorReturnTypeId::FINAL`` * "everyn" =
+    ``AnchorReturnTypeId::EVERYN`` * "all" =
+    ``AnchorReturnTypeId::ALL`` * "sum" = ``AnchorReturnTypeId::SUM``
 
 Parameter ``returnPeriod``:
-    the value of `N` in case of AnchorReturnTypeId::EVERYN.
-
-**NOTE**: Constructing a #AnchorReturnType with of type
-AnchorReturnTypeId::EVERYN will result in an error. Use the
-constructor that also specifies the return period.)doc";
+    The value of *N* in the case of ``AnchorReturnTypeId::EVERYN``.)doc";
 
 static const char *__doc_popart_AnchorReturnType_artId = R"doc()doc";
 
@@ -1124,11 +1158,15 @@ static const char *__doc_popart_AnchorReturnType_getIdFromStr = R"doc()doc";
 
 static const char *__doc_popart_AnchorReturnType_hash = R"doc()doc";
 
-static const char *__doc_popart_AnchorReturnType_id = R"doc()doc";
+static const char *__doc_popart_AnchorReturnType_id =
+    R"doc(Return the associated #AnchorReturnTypeId, not currently part of
+public API.)doc";
 
 static const char *__doc_popart_AnchorReturnType_returnPeriod = R"doc()doc";
 
-static const char *__doc_popart_AnchorReturnType_rp = R"doc()doc";
+static const char *__doc_popart_AnchorReturnType_rp =
+    R"doc(Return the associated return period (*N*) if the #AnchorReturnTypeId
+is ``AnchorReturnTypeId::EVERYN``, not currently part of public API.)doc";
 
 static const char *__doc_popart_AnchorReturnType_str = R"doc()doc";
 
@@ -1143,16 +1181,15 @@ and for each subgraph to be scheduled in sequence (good for
 outlineability).)doc";
 
 static const char *__doc_popart_BatchSerializationBatchSchedule_N =
-    R"doc(The number of BatchSerializationBatchSchedule values.)doc";
+    R"doc(The number of ``BatchSerializationBatchSchedule`` values.)doc";
 
-static const char
-    *__doc_popart_BatchSerializationBatchSchedule_OverlapOnCompute =
-        R"doc(OverlapOnCompute tries to put the RemoteLoad for batch N+1 right
-before the compute phase of batch N.)doc";
+static const char *__doc_popart_BatchSerializationBatchSchedule_OverlapOnCompute =
+    R"doc(Attempt to put the RemoteLoad for batch N+1 right before the compute
+phase of batch N.)doc";
 
 static const char *__doc_popart_BatchSerializationBatchSchedule_OverlapOnIo =
-    R"doc(OverlapOnIo tries to put the RemoteLoad for batch N+1 right after the
-compute phase of batch N.)doc";
+    R"doc(Attempt to put the RemoteLoad for batch N+1 right after the compute
+phase of batch N.)doc";
 
 static const char *__doc_popart_BatchSerializationBatchSchedule_Scheduler =
     R"doc(Don't encourage any particular scheduling for ops within batch
@@ -1167,7 +1204,7 @@ static const char *__doc_popart_BatchSerializationMethod_Loop =
     R"doc(Loop over the batch dimension)doc";
 
 static const char *__doc_popart_BatchSerializationMethod_N =
-    R"doc(The number of BatchSerializationMethod values.)doc";
+    R"doc(The number of ``BatchSerializationMethod`` values.)doc";
 
 static const char *__doc_popart_BatchSerializationMethod_UnrollDynamic =
     R"doc(Unroll the batch with dynamic slicing)doc";
@@ -1227,7 +1264,7 @@ static const char *__doc_popart_BatchSerializationTransformContext_Fwd =
     R"doc(Apply before growing the backward pass)doc";
 
 static const char *__doc_popart_BatchSerializationTransformContext_N =
-    R"doc(The number of BatchSerializationTransformContext values.)doc";
+    R"doc(The number of ``BatchSerializationTransformContext`` values.)doc";
 
 static const char *__doc_popart_Builder =
     R"doc(An interface for a Builder, used for creating ONNX graphs.)doc";
@@ -1235,53 +1272,51 @@ static const char *__doc_popart_Builder =
 static const char *__doc_popart_Builder_2 =
     R"doc(An interface for a Builder, used for creating ONNX graphs.)doc";
 
-static const char *__doc_popart_Builder_3 = R"doc()doc";
-
 static const char *__doc_popart_BuilderImpl = R"doc()doc";
 
 static const char *__doc_popart_Builder_Builder = R"doc()doc";
 
 static const char *__doc_popart_Builder_addInitializedInputTensor =
-    R"doc(Add a new preinitialized input tensor to the model
+    R"doc(Add a new pre-initialized input tensor to the model.
 
 Parameter ``initData``:
-    The initial data of the input tensor
+    The initial data of the input tensor.
 
 Parameter ``debugContext``:
-    Optional debug information
+    Optional debug information.
 
 Returns:
-    The unique name of the input tensor)doc";
+    The unique name of the input tensor.)doc";
 
 static const char *__doc_popart_Builder_addInputTensor =
-    R"doc(Add a new input tensor to the model
+    R"doc(Add a new input tensor to the model.
 
 Parameter ``tensorInfo``:
-    The shape and type of the input tensor
+    The shape and type of the input tensor.
 
 Parameter ``debugContext``:
-    Optional debug information
+    Optional debug information.
 
 Returns:
-    The unique name of the input tensor)doc";
+    The unique name of the input tensor.)doc";
 
 static const char *__doc_popart_Builder_addInputTensor_2 =
-    R"doc(Add a new input tensor to the model
+    R"doc(Add a new input tensor to the model.
 
 Parameter ``dataType``:
-    The type of the input tensor
+    The type of the input tensor.
 
 Parameter ``shape``:
-    The shape of the input tensor
+    The shape of the input tensor.
 
 Parameter ``debugContext``:
-    Optional debug information
+    Optional debug information.
 
 Returns:
-    The unique name of the input tensor)doc";
+    The unique name of the input tensor.)doc";
 
 static const char *__doc_popart_Builder_addInputTensorFromParentGraph =
-    R"doc(Add a new named input tensor to the model
+    R"doc(Add a new named input tensor to the model.
 
 Parameter ``tensorId``:
     The identifier string of the input tensor. This identifier must
@@ -1297,7 +1332,7 @@ Parameter ``attributeName``:
     The name of the attribute to add.
 
 Parameter ``attributeValue``:
-    An int64_t value of the attribute to add.
+    An ``int64_t`` value of the attribute to add.
 
 Parameter ``nodeOutputNames``:
     Names of the output tensors of the ONNX node used to find the node
@@ -1312,7 +1347,7 @@ Parameter ``attributeName``:
     The name of the attribute to add.
 
 Parameter ``attributeValue``:
-    An std::vector<int64_t> value of the attribute to add.
+    A ``std::vector``<int64_t> value of the attribute to add.
 
 Parameter ``nodeOutputNames``:
     Names of the output tensors of the ONNX node used to find the node
@@ -1327,7 +1362,7 @@ Parameter ``attributeName``:
     The name of the attribute to add.
 
 Parameter ``attributeValue``:
-    A float value of the attribute to add.
+    A ``float`` value of the attribute to add.
 
 Parameter ``nodeOutputNames``:
     Names of the output tensors of the ONNX node used to find the node
@@ -1342,7 +1377,7 @@ Parameter ``attributeName``:
     The name of the attribute to add.
 
 Parameter ``attributeValue``:
-    An std::vector<float> value of the attribute to add.
+    The ``std::vector``<float> value of the attribute to add.
 
 Parameter ``nodeOutputNames``:
     Names of the output tensors of the ONNX node used to find the node
@@ -1357,7 +1392,7 @@ Parameter ``attributeName``:
     The name of the attribute to add.
 
 Parameter ``attributeValue``:
-    A std::string value of the attribute to add.
+    A ``std::string`` value of the attribute to add.
 
 Parameter ``nodeOutputNames``:
     Names of the output tensors of the ONNX node used to find the node
@@ -1374,7 +1409,7 @@ Parameter ``attributeName``:
     The name of the attribute to add.
 
 Parameter ``attributeValue``:
-    An std::vector<std::string> value of the attribute to add.
+    A ``std::vector``<std::string> value of the attribute to add.
 
 Parameter ``nodeOutputNames``:
     Names of the output tensors of the ONNX node used to find the node
@@ -1389,7 +1424,7 @@ Parameter ``attributeName``:
     The name of the attribute to add.
 
 Parameter ``attributeValue``:
-    An bool value of the attribute to add
+    A bool value of the attribute to add.
 
 Parameter ``nodeOutputNames``:
     Names of the output tensors of the ONNX node used to find the node
@@ -1404,7 +1439,7 @@ Parameter ``attributeName``:
     The name of the attribute to add.
 
 Parameter ``attributeValue``:
-    An constant tensor initializer
+    A constant tensor initializer.
 
 Parameter ``nodeOutputNames``:
     Names of the output tensors of the ONNX node used to find the node
@@ -1415,55 +1450,55 @@ static const char *__doc_popart_Builder_addOutputTensor =
 output tensors.)doc";
 
 static const char *__doc_popart_Builder_addUntypedInputTensor =
-    R"doc(Add a new input tensor without a type or shape to the model
+    R"doc(Add a new input tensor without a type or shape to the model.
 
 Parameter ``debugContext``:
-    Optional debug information
+    Optional debug information.
 
 Returns:
-    The unique name of the input tensor)doc";
+    The unique name of the input tensor.)doc";
 
 static const char *__doc_popart_Builder_aiGraphcoreOpset1 =
-    R"doc(Return the builder interface for ai.graphcore opset 1)doc";
+    R"doc(Return the builder interface for ai.graphcore opset 1.)doc";
 
 static const char *__doc_popart_Builder_aiOnnxMlOpset1 =
-    R"doc(Return the builder interface for ai.onnx.ml opset 1)doc";
+    R"doc(Return the builder interface for ai.onnx.ml opset 1.)doc";
 
 static const char *__doc_popart_Builder_aiOnnxOpset10 =
-    R"doc(Return the builder interface for ai.onnx opset 10)doc";
+    R"doc(Return the builder interface for ai.onnx opset 10.)doc";
 
 static const char *__doc_popart_Builder_aiOnnxOpset11 =
-    R"doc(Return the builder interface for ai.onnx opset 11)doc";
+    R"doc(Return the builder interface for ai.onnx opset 11.)doc";
 
 static const char *__doc_popart_Builder_aiOnnxOpset6 =
-    R"doc(Return the builder interface for ai.onnx opset 6)doc";
+    R"doc(Return the builder interface for ai.onnx opset 6.)doc";
 
 static const char *__doc_popart_Builder_aiOnnxOpset7 =
-    R"doc(Return the builder interface for ai.onnx opset 7)doc";
+    R"doc(Return the builder interface for ai.onnx opset 7.)doc";
 
 static const char *__doc_popart_Builder_aiOnnxOpset8 =
-    R"doc(Return the builder interface for ai.onnx opset 7)doc";
+    R"doc(Return the builder interface for ai.onnx opset 7.)doc";
 
 static const char *__doc_popart_Builder_aiOnnxOpset9 =
-    R"doc(Return the builder interface for ai.onnx opset 9)doc";
+    R"doc(Return the builder interface for ai.onnx opset 9.)doc";
 
 static const char *__doc_popart_Builder_checkpointOutput =
-    R"doc(Add checkpoint operations to the model
+    R"doc(Add checkpoint operations to the model.
 
 This is the same as an identity but is recomputeType Checkpoint by
 default. Use this to checkpoint a subset of an operation's output
 tensors.
 
 Parameter ``nodeOutputNames``:
-    Tensors to checkpoint
+    Tensors to checkpoint.
 
 Returns:
-    The checkpointed tensors)doc";
+    The checkpointed tensors.)doc";
 
 static const char *__doc_popart_Builder_children = R"doc()doc";
 
 static const char *__doc_popart_Builder_clearAttribute =
-    R"doc(Unset an attribute that will be set on all subsequent operations)doc";
+    R"doc(Unset an attribute that will be set on all subsequent operations.)doc";
 
 static const char *__doc_popart_Builder_configure = R"doc()doc";
 
@@ -1496,10 +1531,10 @@ static const char *__doc_popart_Builder_executionPhase =
     R"doc(Set the execution phase that computes the given node.
 
 Parameter ``nodeOutputName``:
-    Name of the output tensor of the ONNX node
+    Name of the output tensor of the ONNX node.
 
 Parameter ``value``:
-    The index of the virtual graph that computes this node)doc";
+    The index of the virtual graph that computes this node.)doc";
 
 static const char *__doc_popart_Builder_executionPhase_2 = R"doc()doc";
 
@@ -1512,24 +1547,25 @@ Parameter ``nodeOutputNames``:
     in the ONNX model.)doc";
 
 static const char *__doc_popart_Builder_getAttribute =
-    R"doc(Get an attribute that has been set for all subsequent operations)doc";
+    R"doc(Get an attribute that has been set for all subsequent operations.)doc";
 
 static const char *__doc_popart_Builder_getAttribute_2 =
-    R"doc(Get current attribute value)doc";
+    R"doc(Get the current attribute value.)doc";
 
 static const char *__doc_popart_Builder_getBoolNodeAttribute = R"doc()doc";
 
 static const char *__doc_popart_Builder_getExecutionPhase =
-    R"doc(A convenience function for the execution phase attribute)doc";
+    R"doc(A convenience function for getting the execution phase attribute.)doc";
 
 static const char *__doc_popart_Builder_getExecutionPhase_2 = R"doc()doc";
 
 static const char *__doc_popart_Builder_getExecutionPhase_3 = R"doc()doc";
 
 static const char *__doc_popart_Builder_getFloatNodeAttribute =
-    R"doc(Get the float value of the attribute for the ONNX node. This functions
-will throw an exception if it can't find the unique node or the
-attribute does not exist or it has not been set to the float type.
+    R"doc(Get the ``float`` value of the attribute for the ONNX node. This
+functions will throw an exception if it can't find the unique node or
+the attribute does not exist or it has not been set to the ``float``
+type.
 
 Parameter ``attributeName``:
     The name of the attribute to find.
@@ -1539,125 +1575,10 @@ Parameter ``nodeOutputNames``:
     in the ONNX model.
 
 Returns:
-    Value of the attribute)doc";
+    Value of the attribute.)doc";
 
 static const char *__doc_popart_Builder_getFloatVectorNodeAttribute =
-    R"doc(Get the std::vector<float> value of the attribute for the ONNX node.
-This functions will throw an exception if it can't find the unique
-node or the attribute does not exist.
-
-Parameter ``attributeName``:
-    The name of the attribute to find.
-
-Parameter ``nodeOutputNames``:
-    Names of the output tensors of the ONNX node used to find the node
-    in the ONNX model.
-
-Returns:
-    Value of the attribute)doc";
-
-static const char *__doc_popart_Builder_getInputTensorIds =
-    R"doc(Return a list of ONNX graph input tensor ids
-
-Returns:
-    A vector of input tensor names)doc";
-
-static const char *__doc_popart_Builder_getInt64NodeAttribute =
-    R"doc(Get the int64_t value of the attribute for the ONNX node. This
-functions will throw an exception if it can't find the unique node or
-the attribute does not exist or it has not been set to the int64_t
-type.
-
-Parameter ``attributeName``:
-    The name of the attribute to find.
-
-Parameter ``nodeOutputNames``:
-    Names of the output tensors of the ONNX node used to find the node
-    in the ONNX model.
-
-Returns:
-    Value of the attribute)doc";
-
-static const char *__doc_popart_Builder_getInt64VectorNodeAttribute =
-    R"doc(Get the std::vector<int64_t> value of the attribute for the ONNX node.
-This functions will throw an exception if it can't find the unique
-node or the attribute does not exist or it has not been set to the
-std::vector<int64_t> type.
-
-Parameter ``attributeName``:
-    The name of the attribute to find.
-
-Parameter ``nodeOutputNames``:
-    Names of the output tensors of the ONNX node used to find the node
-    in the ONNX model.
-
-Returns:
-    Value of the attribute)doc";
-
-static const char *__doc_popart_Builder_getModelProto =
-    R"doc(Retrieve the ONNX serialized ModelProto
-
-Returns:
-    A serialized ONNX ModelProto)doc";
-
-static const char *__doc_popart_Builder_getNameScope =
-    R"doc(Get the current namescope stack using the default delimiter
-
-Parameter ``name``:
-    Optional string to concatenate to the end of the stack
-
-Returns:
-    A string of the concatenated namescope stack.)doc";
-
-static const char *__doc_popart_Builder_getOutputTensorIds =
-    R"doc(Return a list of ONNX graph output tensor ids
-
-Returns:
-    A vector of output tensor names)doc";
-
-static const char *__doc_popart_Builder_getPartialsType =
-    R"doc(Get the partials type for the given node.
-
-Parameter ``nodeOutputName``:
-    Name of the output tensor of the ONNX node)doc";
-
-static const char *__doc_popart_Builder_getPipelineStage =
-    R"doc(A convenience function for the pipeline stage attribute)doc";
-
-static const char *__doc_popart_Builder_getRecomputeOutputInBackwardPass =
-    R"doc(Get whether the given node will have its output recomputed in the
-backward pass.
-
-Parameter ``nodeOutputName``:
-    Name of the output tensor of the ONNX node used to find the node
-    in the ONNX model.)doc";
-
-static const char *__doc_popart_Builder_getRecomputeOutputInBackwardPass_2 =
-    R"doc(Get whether the given node will have its output recomputed in the
-backward pass.
-
-Parameter ``nodeOutputNames``:
-    Names of the output tensors of the ONNX node used to find the node
-    in the ONNX model.)doc";
-
-static const char *__doc_popart_Builder_getStringNodeAttribute =
-    R"doc(Get the std::string value of the attribute for the ONNX node. This
-functions will throw an exception if it can't find the unique node or
-the attribute does not exist or it has not been set to the std::string
-type.
-
-Parameter ``attributeName``:
-    The name of the attribute to find.
-
-Parameter ``nodeOutputNames``:
-    Names of the output tensors of the ONNX node used to find the node
-    in the ONNX model.
-
-Returns:
-    Value of the attribute)doc";
-
-static const char *__doc_popart_Builder_getStringVectorNodeAttribute =
-    R"doc(Get the std::vector<std::string> value of the attribute for the ONNX
+    R"doc(Get the ``std::vector``<float> value of the attribute for the ONNX
 node. This functions will throw an exception if it can't find the
 unique node or the attribute does not exist.
 
@@ -1669,58 +1590,176 @@ Parameter ``nodeOutputNames``:
     in the ONNX model.
 
 Returns:
-    Value of the attribute)doc";
+    Value of the attribute.)doc";
+
+static const char *__doc_popart_Builder_getInputTensorIds =
+    R"doc(Return a list of ONNX graph input tensor ids.
+
+Returns:
+    A vector of input tensor names.)doc";
+
+static const char *__doc_popart_Builder_getInt64NodeAttribute =
+    R"doc(Get the ``int64_t`` value of the attribute for the ONNX node. This
+functions will throw an exception if it can't find the unique node or
+the attribute does not exist or it has not been set to the ``int64_t``
+type.
+
+Parameter ``attributeName``:
+    The name of the attribute to find.
+
+Parameter ``nodeOutputNames``:
+    Names of the output tensors of the ONNX node used to find the node
+    in the ONNX model.
+
+Returns:
+    Value of the attribute.)doc";
+
+static const char *__doc_popart_Builder_getInt64VectorNodeAttribute =
+    R"doc(Get the ``std::vector``<int64_t> value of the attribute for the ONNX
+node. This functions will throw an exception if it can't find the
+unique node or the attribute does not exist or it has not been set to
+the ``std::vector``<int64_t> type.
+
+Parameter ``attributeName``:
+    The name of the attribute to find.
+
+Parameter ``nodeOutputNames``:
+    Names of the output tensors of the ONNX node used to find the node
+    in the ONNX model.
+
+Returns:
+    Value of the attribute.)doc";
+
+static const char *__doc_popart_Builder_getModelProto =
+    R"doc(Retrieve the ONNX serialized ModelProto.
+
+Returns:
+    A serialized ONNX ModelProto.)doc";
+
+static const char *__doc_popart_Builder_getNameScope =
+    R"doc(Get the current namescope stack using the default delimiter.
+
+Parameter ``name``:
+    Optional string to concatenate to the end of the stack
+
+Returns:
+    A string of the concatenated namescope stack.)doc";
+
+static const char *__doc_popart_Builder_getOutputTensorIds =
+    R"doc(Return a list of ONNX graph output tensor ids.
+
+Returns:
+    A vector of output tensor names.)doc";
+
+static const char *__doc_popart_Builder_getParent =
+    R"doc(Returns the parent graph of this graph or null if there is no parent.)doc";
+
+static const char *__doc_popart_Builder_getPartialsType =
+    R"doc(Get the partials type for the given node.
+
+Parameter ``nodeOutputName``:
+    Name of the output tensor of the ONNX node.)doc";
+
+static const char *__doc_popart_Builder_getPipelineStage =
+    R"doc(A convenience function for getting the pipeline stage attribute.)doc";
+
+static const char *__doc_popart_Builder_getRecomputeOutputInBackwardPass =
+    R"doc(Return whether the given node will have its output recomputed in the
+backward pass.
+
+Parameter ``nodeOutputName``:
+    Name of the output tensor of the ONNX node used to find the node
+    in the ONNX model.)doc";
+
+static const char *__doc_popart_Builder_getRecomputeOutputInBackwardPass_2 =
+    R"doc(Return whether the given node will have its output recomputed in the
+backward pass.
+
+Parameter ``nodeOutputNames``:
+    Names of the output tensors of the ONNX node used to find the node
+    in the ONNX model.)doc";
+
+static const char *__doc_popart_Builder_getStringNodeAttribute =
+    R"doc(Get the ``std::string`` value of the attribute for the ONNX node. This
+functions will throw an exception if it can't find the unique node or
+the attribute does not exist or it has not been set to the
+``std::string`` type.
+
+Parameter ``attributeName``:
+    The name of the attribute to find.
+
+Parameter ``nodeOutputNames``:
+    Names of the output tensors of the ONNX node used to find the node
+    in the ONNX model.
+
+Returns:
+    Value of the attribute.)doc";
+
+static const char *__doc_popart_Builder_getStringVectorNodeAttribute =
+    R"doc(Get the ``std::vector``<std::string> value of the attribute for the
+ONNX node. This functions will throw an exception if it can't find the
+unique node or the attribute does not exist.
+
+Parameter ``attributeName``:
+    The name of the attribute to find.
+
+Parameter ``nodeOutputNames``:
+    Names of the output tensors of the ONNX node used to find the node
+    in the ONNX model.
+
+Returns:
+    Value of the attribute.)doc";
 
 static const char *__doc_popart_Builder_getTensorDataType =
     R"doc(Return a tensor type from either the input, output, or value_info
-lists in the GraphProto
+lists in the GraphProto.
 
 Parameter ``id``:
-    Tensor id
+    Tensor id.
 
 Returns:
-    A tensor type)doc";
+    A tensor type.)doc";
 
 static const char *__doc_popart_Builder_getTensorDtypeString =
     R"doc(Return an ONNX graph tensor type as a lower case string, from either
-the input, output, or value_info lists in the GraphProto
+the input, output, or value_info lists in the GraphProto.
 
 Parameter ``id``:
-    Tensor id
+    Tensor id.
 
 Returns:
-    A lower case string of tensor type)doc";
+    A lower case string of tensor type.)doc";
 
 static const char *__doc_popart_Builder_getTensorShape =
     R"doc(Return an ONNX graph tensor shape, from either the input, output, or
-value_info lists in the GraphProto
+value_info lists in the GraphProto.
 
 Parameter ``id``:
-    Tensor id
+    Tensor id.
 
 Returns:
-    A vector of tensor dimensions)doc";
+    A vector of tensor dimensions.)doc";
 
 static const char *__doc_popart_Builder_getTrainableTensorIds =
-    R"doc(Return a list of ONNX graph initialized tensor ids
+    R"doc(Return a list of ONNX graph initialized tensor ids.
 
 These tensors are stored in the `initialized` section of the ONNX
-GraphProto structure.
+GraphProto structure..
 
 Returns:
-    A vector of tensor names)doc";
+    A vector of tensor names.)doc";
 
 static const char *__doc_popart_Builder_getValueTensorIds =
-    R"doc(Return a list of ONNX graph value tensor ids
+    R"doc(Return a list of ONNX graph value tensor ids.
 
 These tensors are stored in the `value_info` section of the ONNX
 GraphProto structure.
 
 Returns:
-    A vector of output tensor names)doc";
+    A vector of output tensor names.)doc";
 
 static const char *__doc_popart_Builder_getVirtualGraph =
-    R"doc(A convenience function for the virtual graph attribute)doc";
+    R"doc(A convenience function for getting the virtual graph attribute.)doc";
 
 static const char *__doc_popart_Builder_getVirtualGraph_2 =
     R"doc(Get the index of the virtual graph that computes this node. This
@@ -1741,19 +1780,22 @@ Parameter ``nodeOutputNames``:
 static const char *__doc_popart_Builder_hasAttribute = R"doc()doc";
 
 static const char *__doc_popart_Builder_hasAttribute_2 =
-    R"doc(Check if attribute is set)doc";
+    R"doc(Check if an attribute is set.)doc";
+
+static const char *__doc_popart_Builder_hasParent =
+    R"doc(Returns true if this builder represents a subgraph.)doc";
 
 static const char *__doc_popart_Builder_impl = R"doc()doc";
 
 static const char *__doc_popart_Builder_isInitializer =
     R"doc(Returns true if the ONNX tensor is in the initializer list of the
-GraphProto
+GraphProto.
 
 Parameter ``id``:
-    Tensor id
+    Tensor id.
 
 Returns:
-    A boolean)doc";
+    A boolean.)doc";
 
 static const char *__doc_popart_Builder_loadModelProto =
     R"doc(Load a serialized ONNX ModelProto into the builder and validate it.
@@ -1777,12 +1819,14 @@ Parameter ``nodeOutputNames``:
 
 static const char *__doc_popart_Builder_outputTensorLocation = R"doc()doc";
 
+static const char *__doc_popart_Builder_parent = R"doc()doc";
+
 static const char *__doc_popart_Builder_pipelineStage = R"doc()doc";
 
 static const char *__doc_popart_Builder_pipelineStage_2 = R"doc()doc";
 
 static const char *__doc_popart_Builder_popNameScope =
-    R"doc(Remove the last entry in the name scope stack)doc";
+    R"doc(Remove the last entry in the name scope stack.)doc";
 
 static const char *__doc_popart_Builder_pushNameScope =
     R"doc(Push a name onto the name scope stack.
@@ -1797,20 +1841,20 @@ static const char *__doc_popart_Builder_recomputeOutputInBackwardPass =
 pass.
 
 Parameter ``nodeOutputName``:
-    Name of the output tensor of the ONNX node
+    Name of the output tensor of the ONNX node.
 
 Parameter ``value``:
-    If the recompute is enabled/disabled)doc";
+    If the recompute is enabled/disabled.)doc";
 
 static const char *__doc_popart_Builder_recomputeOutputInBackwardPass_2 =
     R"doc(Enable/disable recomputation of the output of the node in the backward
 pass.
 
 Parameter ``nodeOutputNames``:
-    Names of the output tensors of the ONNX node
+    Names of the output tensors of the ONNX node.
 
 Parameter ``value``:
-    If the recompute is enabled/disabled)doc";
+    If the recompute is enabled/disabled.)doc";
 
 static const char *__doc_popart_Builder_removeNodeAttribute =
     R"doc(Remove an attribute from the ONNX node. This functions will throw an
@@ -1829,16 +1873,18 @@ static const char *__doc_popart_Builder_reshape_const =
 the provided domain.)doc";
 
 static const char *__doc_popart_Builder_saveInitializersExternally =
-    R"doc(The model data cannot exceed 2GB - the maximum size of a Protobuf
-message. To prevent this for large models, ONNX tensor data can be
-saved separately.
+    R"doc(Save tensor data externally.
+
+The model data cannot exceed 2GB - the maximum size of a Protobuf
+message. To avoid this, for large models ONNX tensor data can be saved
+separately.
 
 Parameter ``ids``:
     The names of tensors whose data is to be saved externally.
 
 Parameter ``fn``:
     The name of a file containing the binary tensor data. This can be
-    an absolute or relative path. If a relative path, when the onnx
+    an absolute or relative path. If a relative path, when the ONNX
     model is saved, external tensor data will be written to a path
     relative to your current working directory.)doc";
 
@@ -1849,69 +1895,76 @@ Parameter ``fn``:
     The name of a file containing an ONNX model protobuf.)doc";
 
 static const char *__doc_popart_Builder_setAttribute =
-    R"doc(Set an attribute that will be set on all subsequent operations)doc";
+    R"doc(Set an attribute that will be set on all subsequent operations.)doc";
 
 static const char *__doc_popart_Builder_setAvailableMemoryProportion =
     R"doc(Set the available memory for the given node. Used on the convolution
 op.
 
 Parameter ``nodeOutputName``:
-    Name of the output tensor of the ONNX node
+    Name of the output tensor of the ONNX node.
 
 Parameter ``availableMemoryProportion``:
     The available memory proportion 0 < x <= 1.)doc";
 
 static const char *__doc_popart_Builder_setGraphName =
-    R"doc(Specifies a graph name
+    R"doc(Specifies a graph name.
 
 Parameter ``name``:
-    string to name the graph)doc";
+    String to name the graph.)doc";
 
 static const char *__doc_popart_Builder_setInplacePreferences = R"doc()doc";
+
+static const char *__doc_popart_Builder_setParent =
+    R"doc(Sets the parent graph of this builder.
+
+Parameter ``parent``:
+    the builder to become a parent.)doc";
 
 static const char *__doc_popart_Builder_setPartialsType =
     R"doc(Set the partials type for the given node. Used on the convolution op.
 
 Parameter ``nodeOutputName``:
-    Name of the output tensor of the ONNX node
+    Name of the output tensor of the ONNX node.
 
 Parameter ``partialsType``:
     The type for the partials. Can be either FLOAT or HALF.)doc";
 
 static const char *__doc_popart_Builder_setSerializeMatMul =
     R"doc(Set the settings for matmuls that should be serialized. This option
-will split a matmul into seperate smaller matmuls that will be excuted
-in series. This will also serialize the grad operations if training.
+will split a matmul into separate smaller matmuls that will be
+executed in series. This will also serialize the grad operations if
+training.
 
 Parameter ``nodeOutputNames``:
-    Name of the output matmul tensors of the ONNX node
+    Name of the output matmul tensors of the ONNX node.
 
 Parameter ``mode``:
     Which dimension of the mat mul to serialize on.
 
 Parameter ``factor``:
     The number of serialised matmuls, must be a factor of the
-    dimentions to serialise on.)doc";
+    dimensions to serialise on.)doc";
 
 static const char *__doc_popart_Builder_virtualGraph =
     R"doc(Set the virtual graph that computes the given node. Applies when
 creating a graph for a multi-IPU configuration.
 
 Parameter ``nodeOutputName``:
-    Name of the output tensor of the ONNX node
+    Name of the output tensor of the ONNX node.
 
 Parameter ``value``:
-    The index of the virtual graph that computes this node)doc";
+    The index of the virtual graph that computes this node.)doc";
 
 static const char *__doc_popart_Builder_virtualGraph_2 =
     R"doc(Set the virtual graph that computes the given node. Applies when
 creating a graph for a multi-IPU configuration.
 
 Parameter ``nodeOutputNames``:
-    Names of the output tensors of the ONNX node
+    Names of the output tensors of the ONNX node.
 
 Parameter ``value``:
-    The index of the virtual graph that computes this node)doc";
+    The index of the virtual graph that computes this node.)doc";
 
 static const char *__doc_popart_ClipNormSettings =
     R"doc(A data structure used to represent a maximum value constaint on one or
@@ -1921,10 +1974,10 @@ static const char *__doc_popart_ClipNormSettings_ClipNormSettings =
     R"doc(Constructor.
 
 Parameter ``weightIds_``:
-    the weight tensor IDs that this constraint applies to.
+    The weight tensor IDs that this constraint applies to.
 
 Parameter ``maxNorm_``:
-    the maximum permissible value.)doc";
+    The maximum permissible value.)doc";
 
 static const char *__doc_popart_ClipNormSettings_maxNorm = R"doc()doc";
 
@@ -1948,17 +2001,48 @@ static const char *__doc_popart_ConstSGD_ConstSGD =
     R"doc(Constructor.
 
 Parameter ``learningRate``:
-    a constant learning rate.
+    A constant learning rate.
 
 Parameter ``weightDecay``:
-    a constant weight decay value.
+    A constant weight decay value.
 
 Parameter ``lossScaling``:
-    a constant loss scaling value.
+    A constant loss scaling value.
 
 Parameter ``clipNormSettings``:
-    a vector of ClipNormSettings (this can be used to set maximum
+    A vector of ClipNormSettings (this can be used to set maximum
     values for weights).)doc";
+
+static const char *__doc_popart_Consumers = R"doc()doc";
+
+static const char *__doc_popart_Consumers_Consumers = R"doc()doc";
+
+static const char *__doc_popart_Consumers_append = R"doc()doc";
+
+static const char *__doc_popart_Consumers_consumers_m = R"doc()doc";
+
+static const char *__doc_popart_Consumers_decrement = R"doc()doc";
+
+static const char *__doc_popart_Consumers_extend = R"doc()doc";
+
+static const char *__doc_popart_Consumers_findHighestPipelineStage =
+    R"doc()doc";
+
+static const char *__doc_popart_Consumers_findLowestPipelineStage = R"doc()doc";
+
+static const char *__doc_popart_Consumers_getMap = R"doc()doc";
+
+static const char *__doc_popart_Consumers_getOps = R"doc()doc";
+
+static const char *__doc_popart_Consumers_getPipelineStages = R"doc()doc";
+
+static const char *__doc_popart_Consumers_getTotal = R"doc()doc";
+
+static const char *__doc_popart_Consumers_increment = R"doc()doc";
+
+static const char *__doc_popart_Consumers_n = R"doc()doc";
+
+static const char *__doc_popart_Consumers_tensorConsumed = R"doc()doc";
 
 static const char *__doc_popart_DataFlow =
     R"doc(This class specifies parameters for host-device data streams. The
@@ -1984,12 +2068,12 @@ static const char *__doc_popart_DataFlow_DataFlow_3 =
     R"doc(Constructor DataFlow instance with anchor tensors.
 
 Parameter ``batchesPerStep``:
-    the number of global batches to run the inference or training
+    The number of global batches to run the inference or training
     session for per call to Session::run before returning control to
     the caller.
 
 Parameter ``anchorMap``:
-    a mapping from output tensor TensorId to AnchorReturnType
+    A mapping from output tensor TensorId to AnchorReturnType
     indicating the strategy with which to write the anchor tensor
     values to the IStepIO object provided to Session::run.)doc";
 
@@ -1997,15 +2081,15 @@ static const char *__doc_popart_DataFlow_DataFlow_4 =
     R"doc(Constructor DataFlow instance with anchor tensors.
 
 Parameter ``batchesPerStep``:
-    the number of global batches to run the inference or training
+    The number of global batches to run the inference or training
     session for per call to Session::run before returning control to
     the caller.
 
 Parameter ``anchorTensorIds``:
-    the tensor ID of anchor tensors.
+    The tensor ID of anchor tensors.
 
 Parameter ``anchorReturnType``:
-    the strategy with which to write anchor tensor values to the
+    The strategy with which to write anchor tensor values to the
     IStepIO object provided to Session::run.)doc";
 
 static const char *__doc_popart_DataFlow_DataFlow_5 = R"doc()doc";
@@ -2045,7 +2129,10 @@ static const char *__doc_popart_DataFlow_v_anchors = R"doc()doc";
 
 static const char *__doc_popart_DataFlow_v_rps = R"doc()doc";
 
-static const char *__doc_popart_DataType = R"doc()doc";
+static const char *__doc_popart_DataType =
+    R"doc(There is a one-to-one correspondence between ``popart::DataTypes`` and
+``ONNX_NAMESPACE::TensorProto_DataTypes``, or
+``decltype``(ONNX_NAMESPACE::TensorProto().data_type()).)doc";
 
 static const char *__doc_popart_DeviceConnectionType = R"doc()doc";
 
@@ -2062,10 +2149,10 @@ static const char *__doc_popart_DeviceInfo_2 = R"doc(Represents a device)doc";
 static const char *__doc_popart_DeviceInfo_DeviceInfo = R"doc()doc";
 
 static const char *__doc_popart_DeviceInfo_attach =
-    R"doc(Attach to the IPU.
+    R"doc(Attach to the device.
 
 Returns:
-    Returns true if successfully attaches to the device)doc";
+    True if successfully attached to the device.)doc";
 
 static const char *__doc_popart_DeviceInfo_attachTimeout = R"doc()doc";
 
@@ -2074,7 +2161,7 @@ static const char *__doc_popart_DeviceInfo_canCompileOffline = R"doc()doc";
 static const char *__doc_popart_DeviceInfo_connectionType = R"doc()doc";
 
 static const char *__doc_popart_DeviceInfo_detach =
-    R"doc(Detach from the IPU.)doc";
+    R"doc(Detach from the device.)doc";
 
 static const char *__doc_popart_DeviceInfo_flags = R"doc()doc";
 
@@ -2108,6 +2195,8 @@ static const char *__doc_popart_DeviceInfo_getType =
 static const char *__doc_popart_DeviceInfo_getVersion =
     R"doc(Get the version of the software on the IPU.)doc";
 
+static const char *__doc_popart_DeviceInfo_isAttached = R"doc()doc";
+
 static const char *__doc_popart_DeviceInfo_provider = R"doc()doc";
 
 static const char *__doc_popart_DeviceInfo_setOnDemandAttachTimeout =
@@ -2128,24 +2217,24 @@ static const char *__doc_popart_DeviceManager_acquireAvailableDevice =
 IPUs. This method will attach to the device.
 
 Parameter ``numIpus``:
-    The number of IPUs on the device [=1]
+    The number of IPUs on the device [=1].
 
 Parameter ``tilesPerIPU``:
     The number of tiles per IPU (0 will match any number) [=0]
 
 Returns:
     A device, which can be used with a session. Will return nullptr if
-    no device is available)doc";
+    no device is available.)doc";
 
 static const char *__doc_popart_DeviceManager_acquireDeviceById =
-    R"doc(Allocates the hardware device by id. This id can be found running 'gc-
-info -l'. This method will attach to the device.
+    R"doc(Allocates the hardware device by id. This id can be found running `gc-
+info -l`. This method will attach to the device.
 
 Parameter ``id``:
-    The index of the IPU to be used
+    The index of the IPU to be used.
 
 Returns:
-    A device. Will return nullptr if the device is not available)doc";
+    A device. Will return nullptr if the device is not available.)doc";
 
 static const char *__doc_popart_DeviceManager_attachTimeout = R"doc()doc";
 
@@ -2153,13 +2242,13 @@ static const char *__doc_popart_DeviceManager_createCpuDevice =
     R"doc(Create a 'simulated' CPU device.
 
 Returns:
-    A device)doc";
+    A device.)doc";
 
 static const char *__doc_popart_DeviceManager_createDeviceManager =
     R"doc(Accessor for the device manager.
 
 Returns:
-    A reference to the DeviceManager)doc";
+    A reference to the DeviceManager.)doc";
 
 static const char *__doc_popart_DeviceManager_createIpuModelDevice =
     R"doc(Create a 'simulated' IPU Model device. The following options are
@@ -2170,13 +2259,13 @@ number of tiles per IPU [=defaultFewTiles] * ``compileIPUCode``:
 Whether or not to compile real IPU code for modelling
 
 Parameter ``options``:
-    Configuration settings for the IPU Model
+    Configuration settings for the IPU Model.
 
 Returns:
-    A device)doc";
+    A device.)doc";
 
 static const char *__doc_popart_DeviceManager_createOfflineIPUDevice =
-    R"doc(Create a device resembling an IPU for offline compilation The
+    R"doc(Create a device resembling an IPU for offline compilation, The
 following options are supported:
 
 * ``numIPUs``: The number of IPUs to compile for * ``ge``: The number
@@ -2185,10 +2274,10 @@ architecture [="ipu1"] * ``syncPattern``: The sync pattern to use:
 full/singlePipline/replicaAndLadder, defaults to full
 
 Parameter ``options``:
-    Configuration settings for the IPU Model
+    Configuration settings for the IPU Model.
 
 Returns:
-    A device)doc";
+    A device.)doc";
 
 static const char *__doc_popart_DeviceManager_createSimDevice = R"doc()doc";
 
@@ -2205,7 +2294,7 @@ Parameter ``deviceType``:
     Type of device required.
 
 Parameter ``tilesPerIPU``:
-    The number of tiles per ipu required.
+    The number of tiles per IPU required.
 
 Returns:
     List of requested IPUs.)doc";
@@ -2214,7 +2303,7 @@ static const char *__doc_popart_DeviceManager_getDevice =
     R"doc(Get the Device object of a device by ID.
 
 Parameter ``syncPattern``:
-    Sync pattern
+    Sync pattern.
 
 Parameter ``deviceManagerId``:
     Number of IPUs to request.
@@ -2228,7 +2317,7 @@ static const char *__doc_popart_DeviceManager_registerDeviceProvider =
     R"doc(Used to register a device provider.
 
 Parameter ``provider``:
-    A provider)doc";
+    A provider.)doc";
 
 static const char *__doc_popart_DeviceManager_setOnDemandAttachTimeout =
     R"doc(If unable to attach to a device on first try, the attach timeout set
@@ -2237,7 +2326,7 @@ wait to try and attach. Note: this only takes effect when trying to
 attach with a DeviceConnectionType::OnDemand DeviceConnectionType.
 
 Parameter ``seconds``:
-    The attach timeout in seconds)doc";
+    The attach timeout in seconds.)doc";
 
 static const char *__doc_popart_DeviceProvider =
     R"doc(The interface for device providers which are registered with the
@@ -2248,19 +2337,19 @@ static const char *__doc_popart_DeviceProvider_2 =
 device manager.)doc";
 
 static const char *__doc_popart_DeviceProvider_createHostDevice =
-    R"doc(Create a host device for testing)doc";
+    R"doc(Create a host device for testing.)doc";
 
 static const char *__doc_popart_DeviceProvider_enumerate =
     R"doc(Get the list of all devices fulfilling the specified criteria.
 
 Parameter ``devices``:
-    Devices to get
+    Devices to get.
 
 Parameter ``requiredNumIPUs``:
     Number of IPUs to request.
 
 Parameter ``syncPattern``:
-    Sync pattern
+    Sync pattern.
 
 Parameter ``requiredTilesPerIPU``:
     Number of tiles per IPU to request.)doc";
@@ -2297,7 +2386,7 @@ static const char *__doc_popart_DomainOpSet_impl = R"doc()doc";
 
 static const char *__doc_popart_DotCheck =
     R"doc(Enum type used to identify at which stages of IR construction to
-export .dot files.)doc";
+export `.dot` files.)doc";
 
 static const char *__doc_popart_DotCheck_Bwd0 =
     R"doc(Generate graph after backwards construction.)doc";
@@ -2312,7 +2401,7 @@ static const char *__doc_popart_DotCheck_Fwd1 =
     R"doc(Generate graph after running pre-aliasing patterns.)doc";
 
 static const char *__doc_popart_DotCheck_N =
-    R"doc(The number of DotCheck values.)doc";
+    R"doc(The number of ``DotCheck`` values.)doc";
 
 static const char *__doc_popart_DotCheck_PreAlias =
     R"doc(Generate graph after all transformations, patterns, except the
@@ -2334,13 +2423,13 @@ static const char *__doc_popart_ExecutionPhaseIOSchedule =
     R"doc(Enum type to specify when to load tensors.)doc";
 
 static const char *__doc_popart_ExecutionPhaseIOSchedule_N =
-    R"doc(The number of ExecutionPhaseIOSchedule values.)doc";
+    R"doc(The number of ``ExecutionPhaseIOSchedule`` values.)doc";
 
 static const char *__doc_popart_ExecutionPhaseIOSchedule_OnDemand =
-    R"doc(Load tensors just before they are required)doc";
+    R"doc(Load tensors just before they are required.)doc";
 
 static const char *__doc_popart_ExecutionPhaseIOSchedule_Preload =
-    R"doc(Preload tensors in previous phase for use in current phase)doc";
+    R"doc(Preload tensors in previous phase for use in current phase.)doc";
 
 static const char *__doc_popart_ExecutionPhaseSchedule =
     R"doc(Enum type to specify the order of processing optimizer operations for
@@ -2367,7 +2456,7 @@ static const char *__doc_popart_ExecutionPhaseSchedule_Interleaving =
 123456, 123456). The scheduler may interleave these steps.)doc";
 
 static const char *__doc_popart_ExecutionPhaseSchedule_N =
-    R"doc(The number of ExecutionPhaseSchedule values.)doc";
+    R"doc(The number of ``ExecutionPhaseSchedule`` values.)doc";
 
 static const char *__doc_popart_ExecutionPhaseSettings =
     R"doc(A structure containing ExecutionPhase settings.)doc";
@@ -2402,21 +2491,6 @@ replica)doc";
 
 static const char *__doc_popart_ExecutionPhaseSettings_weightIOSchedule =
     R"doc(The execution phase IO schedule for weight tensors.)doc";
-
-static const char *__doc_popart_SubgraphCopyingStrategy =
-    R"doc(Enum type that describes how copies for inputs and outputs for
-subgraphs are lowered. Currently this only affects subgraphs
-associated with CallOps.)doc";
-
-static const char *__doc_popart_SubgraphCopyingStrategy_JustInTime =
-    R"doc(Copy inputs just before they are consumed and copy outputs as soon as
-they are produced. With this strategy subgraphs may be lowered into
-multiple Poplar functions.)doc";
-
-static const char *__doc_popart_SubgraphCopyingStrategy_OnEnterAndExit =
-    R"doc(Copy all inputs before the start of the subgraph, copy all outputs
-after all ops in the subgraph. With this strategy subgraphs will
-always map to a single Poplar function.)doc";
 
 static const char *__doc_popart_GradNonGradPair = R"doc()doc";
 
@@ -2500,8 +2574,6 @@ Parameter ``ids``:
 Parameter ``fn``:
     The name of a file containing the binary tensor data.)doc";
 
-static const char *__doc_popart_IStepIO = R"doc()doc";
-
 static const char *__doc_popart_IdentityGradOp = R"doc()doc";
 
 static const char *__doc_popart_IdentityGradOp_IdentityGradOp = R"doc()doc";
@@ -2538,6 +2610,8 @@ static const char *__doc_popart_IdentityLossGradOp_IdentityLossGradOp =
 static const char *__doc_popart_IdentityLossGradOp_canBeReplacedByIdentity =
     R"doc()doc";
 
+static const char *__doc_popart_IdentityLossGradOp_canShard = R"doc()doc";
+
 static const char *__doc_popart_IdentityLossGradOp_clone = R"doc()doc";
 
 static const char *__doc_popart_IdentityLossGradOp_getInIndex = R"doc()doc";
@@ -2545,6 +2619,12 @@ static const char *__doc_popart_IdentityLossGradOp_getInIndex = R"doc()doc";
 static const char *__doc_popart_IdentityLossGradOp_getOutIndex = R"doc()doc";
 
 static const char *__doc_popart_IdentityLossGradOp_getReductionType =
+    R"doc()doc";
+
+static const char *__doc_popart_IdentityLossGradOp_getScaleByReplication =
+    R"doc()doc";
+
+static const char *__doc_popart_IdentityLossGradOp_getShardRescaleFactor =
     R"doc()doc";
 
 static const char *__doc_popart_IdentityLossGradOp_getSubgraphValue =
@@ -2559,6 +2639,9 @@ static const char *__doc_popart_IdentityLossGradOp_outShape = R"doc()doc";
 
 static const char *__doc_popart_IdentityLossGradOp_reduction_type = R"doc()doc";
 
+static const char *__doc_popart_IdentityLossGradOp_scaleByReplication =
+    R"doc()doc";
+
 static const char *__doc_popart_IdentityLossGradOp_setup = R"doc()doc";
 
 static const char *__doc_popart_IdentityLossOp = R"doc()doc";
@@ -2567,6 +2650,8 @@ static const char *__doc_popart_IdentityLossOp_IdentityLossOp = R"doc()doc";
 
 static const char *__doc_popart_IdentityLossOp_canBeReplacedByIdentity =
     R"doc()doc";
+
+static const char *__doc_popart_IdentityLossOp_canShard = R"doc()doc";
 
 static const char *__doc_popart_IdentityLossOp_clone = R"doc()doc";
 
@@ -2578,9 +2663,17 @@ static const char *__doc_popart_IdentityLossOp_getOutIndex = R"doc()doc";
 
 static const char *__doc_popart_IdentityLossOp_getReductionType = R"doc()doc";
 
+static const char *__doc_popart_IdentityLossOp_getScaleByReplication =
+    R"doc()doc";
+
+static const char *__doc_popart_IdentityLossOp_getShardReductionType =
+    R"doc()doc";
+
 static const char *__doc_popart_IdentityLossOp_getSubgraphValue = R"doc()doc";
 
 static const char *__doc_popart_IdentityLossOp_reduction_type = R"doc()doc";
+
+static const char *__doc_popart_IdentityLossOp_scaleByReplication = R"doc()doc";
 
 static const char *__doc_popart_IdentityLossOp_setup = R"doc()doc";
 
@@ -2605,23 +2698,23 @@ static const char *__doc_popart_InferenceSession_configureFromOnnx =
 
 static const char *__doc_popart_InferenceSession_createFromOnnxModel =
     R"doc(Create a runtime class for executing an ONNX graph on a set of IPU
-hardware for inference
+hardware for inference.
 
 Parameter ``model``:
     Either an ONNX model protobuf, or the name of a file containing an
-    ONNX model protobuf
+    ONNX model protobuf.
 
 Parameter ``inputShapeInfo``:
-    Information about the shapes of input and output tensors
+    Information about the shapes of input and output tensors.
 
 Parameter ``dataFlow``:
-    Configuration for the data feeds and fetches
+    Configuration for the data feeds and fetches.
 
 Parameter ``userOptions``:
-    String to configure session options
+    String to configure session options.
 
 Parameter ``patterns``:
-    Optimization patterns to apply)doc";
+    Optimization patterns to apply.)doc";
 
 static const char *__doc_popart_InitOp = R"doc()doc";
 
@@ -2670,7 +2763,7 @@ static const char *__doc_popart_Instrumentation_Inner =
     R"doc(Inner loop instrumentation, graph per IPU.)doc";
 
 static const char *__doc_popart_Instrumentation_N =
-    R"doc(The number of Instrumentations values.)doc";
+    R"doc(The number of ``Instrumentation`` values.)doc";
 
 static const char *__doc_popart_Instrumentation_Outer =
     R"doc(Outer loop instrumentation, graph over all IPUs.)doc";
@@ -2711,24 +2804,6 @@ static const char *__doc_popart_Ir_ExecutionMode_Training = R"doc()doc";
 
 static const char *__doc_popart_Ir_Ir = R"doc()doc";
 
-static const char *__doc_popart_Ir_SavedInfo = R"doc()doc";
-
-static const char *__doc_popart_Ir_SavedInfo_SavedInfo = R"doc()doc";
-
-static const char *__doc_popart_Ir_SavedInfo_SavedInfo_2 = R"doc()doc";
-
-static const char *__doc_popart_Ir_SavedInfo_SavedInfo_3 = R"doc()doc";
-
-static const char *__doc_popart_Ir_SavedInfo_deserialize = R"doc()doc";
-
-static const char *__doc_popart_Ir_SavedInfo_irHash = R"doc()doc";
-
-static const char *__doc_popart_Ir_SavedInfo_operator_eq = R"doc()doc";
-
-static const char *__doc_popart_Ir_SavedInfo_serialize = R"doc()doc";
-
-static const char *__doc_popart_Ir_SavedInfo_toString = R"doc()doc";
-
 static const char *__doc_popart_Ir_SerialiseFormat = R"doc()doc";
 
 static const char *__doc_popart_Ir_SerialiseFormat_JSON = R"doc()doc";
@@ -2764,6 +2839,8 @@ static const char *__doc_popart_Ir_canInfer = R"doc()doc";
 static const char *__doc_popart_Ir_canTrain = R"doc()doc";
 
 static const char *__doc_popart_Ir_compareWithSavedHash = R"doc()doc";
+
+static const char *__doc_popart_Ir_computeHash = R"doc()doc";
 
 static const char *__doc_popart_Ir_confirmConstIds = R"doc()doc";
 
@@ -2816,6 +2893,8 @@ static const char *__doc_popart_Ir_executionPhasesReady = R"doc()doc";
 static const char *__doc_popart_Ir_finalLossId = R"doc()doc";
 
 static const char *__doc_popart_Ir_finalLossOpId = R"doc()doc";
+
+static const char *__doc_popart_Ir_finalizeOpDebugInfo = R"doc()doc";
 
 static const char *__doc_popart_Ir_foldConstants = R"doc()doc";
 
@@ -2906,8 +2985,6 @@ static const char *__doc_popart_Ir_getPatternLevelStr = R"doc()doc";
 
 static const char *__doc_popart_Ir_getPatterns = R"doc()doc";
 
-static const char *__doc_popart_Ir_getPopartCachePath = R"doc()doc";
-
 static const char *__doc_popart_Ir_getRemoteBufferInfo = R"doc()doc";
 
 static const char *__doc_popart_Ir_getRequiresRandomSeed = R"doc()doc";
@@ -2952,6 +3029,8 @@ static const char *__doc_popart_Ir_hasDecomposedOptimizers = R"doc()doc";
 static const char *__doc_popart_Ir_hasGraph = R"doc()doc";
 
 static const char *__doc_popart_Ir_hasRandomOps = R"doc()doc";
+
+static const char *__doc_popart_Ir_hasReplicatedTensorSharding = R"doc()doc";
 
 static const char *__doc_popart_Ir_hash = R"doc()doc";
 
@@ -3005,8 +3084,6 @@ static const char *__doc_popart_Ir_patterns = R"doc()doc";
 
 static const char *__doc_popart_Ir_prepare = R"doc()doc";
 
-static const char *__doc_popart_Ir_prepareComplete = R"doc()doc";
-
 static const char *__doc_popart_Ir_prepareImpl = R"doc()doc";
 
 static const char *__doc_popart_Ir_randomReferenceId = R"doc()doc";
@@ -3025,8 +3102,6 @@ static const char *__doc_popart_Ir_requiresRandomSeed = R"doc()doc";
 
 static const char *__doc_popart_Ir_requiresRandomSeed_2 = R"doc()doc";
 
-static const char *__doc_popart_Ir_saveHash = R"doc()doc";
-
 static const char *__doc_popart_Ir_seedModifier = R"doc()doc";
 
 static const char *__doc_popart_Ir_serialise = R"doc()doc";
@@ -3042,8 +3117,6 @@ static const char *__doc_popart_Ir_setExecutionPhasesReady = R"doc()doc";
 static const char *__doc_popart_Ir_setExternalTensorDataInfo = R"doc()doc";
 
 static const char *__doc_popart_Ir_setFinalLoss = R"doc()doc";
-
-static const char *__doc_popart_Ir_setHash = R"doc()doc";
 
 static const char *__doc_popart_Ir_setInputShapeInfo = R"doc()doc";
 
@@ -3081,6 +3154,36 @@ static const char *__doc_popart_Ir_syntheticDataMode = R"doc()doc";
 
 static const char *__doc_popart_Ir_tensorExistsInInitialisers = R"doc()doc";
 
+static const char *__doc_popart_Ir_timePartitionLogger =
+    R"doc(Returns:
+    An object used to track and summarize where wall clock time is
+    spent in PopART compilation. This object is used to partition time
+    into different components (scheduling, outlining, poplar Graph
+    construction, etc.). It can be used as follows:
+
+<code> void foo() { auto timer =
+timePartitionLogger().scopedStopwatch("In foo"); if (cond0()){ return;
+} bar(); return; } </code>
+
+When the method timePartitionLoggerStr() (see below) is called, there
+will be a line with "In foo" summarizing the time between between the
+construction and destruction of *timer*, above. Something like:
+
+In foo : 0.03 [s] : 30 % In bar : 0.02 [s] : 10 % unaccounted : 0.05
+[s] : 50 % total : 0.10 [s] : 100 %.
+
+In the case where there are multiple timers which exist concurrently,
+only the most recently constructed one will accumulate time. This
+means that the most nested scope is the one which will accumulate
+time.
+
+For more information, see the poprithms SwitchingTimePartitionLogger
+class)doc";
+
+static const char *__doc_popart_Ir_timePartitionLogger_2 = R"doc()doc";
+
+static const char *__doc_popart_Ir_timePartitionLoggerStr = R"doc()doc";
+
 static const char *__doc_popart_Ir_transformEnableMap = R"doc()doc";
 
 static const char *__doc_popart_Ir_unsetAllVirtualGraphIds = R"doc()doc";
@@ -3098,6 +3201,11 @@ static const char *__doc_popart_Ir_userOptions = R"doc()doc";
 static const char *__doc_popart_Ir_usingEngineCache = R"doc()doc";
 
 static const char *__doc_popart_Ir_validateAnchors = R"doc()doc";
+
+static const char *__doc_popart_Ir_verifyAliasZeroCopySettings = R"doc()doc";
+
+static const char *__doc_popart_Ir_verifyBatchSerializationSettings =
+    R"doc()doc";
 
 static const char *__doc_popart_Ir_verifyConnectivity = R"doc()doc";
 
@@ -3154,6 +3262,8 @@ static const char *__doc_popart_L1GradOp_getOutIndex = R"doc()doc";
 
 static const char *__doc_popart_L1GradOp_getReductionType = R"doc()doc";
 
+static const char *__doc_popart_L1GradOp_getShardRescaleFactor = R"doc()doc";
+
 static const char *__doc_popart_L1GradOp_getSubgraphValue = R"doc()doc";
 
 static const char *__doc_popart_L1GradOp_gradInputInfo = R"doc()doc";
@@ -3195,32 +3305,34 @@ static const char *__doc_popart_L1Op_reduction = R"doc()doc";
 static const char *__doc_popart_L1Op_setup = R"doc()doc";
 
 static const char *__doc_popart_MergeVarUpdateType =
-    R"doc(Enum type used to specify which `VarUpdate` ops to merge.)doc";
+    R"doc(Enum type used to specify which `VarUpdateOp` ops to merge.)doc";
 
 static const char *__doc_popart_MergeVarUpdateType_All =
-    R"doc(Merge all VarUpdate Ops into as few groups as possible. This is a good
-choice when memory is not a constraint.)doc";
+    R"doc(Merge all VarUpdateOp ops into as few groups as possible. This is a
+good choice when memory is not a constraint.)doc";
 
 static const char *__doc_popart_MergeVarUpdateType_AutoLoose =
     R"doc(Merge into groups while attempting not to increase maximum variable
 liveness, and also not slice tensor variables so they they will need
-to be processed by different `VarUpdate` ops.)doc";
+to be processed by different VarUpdateOp ops.)doc";
 
 static const char *__doc_popart_MergeVarUpdateType_AutoTight =
-    R"doc(Merge into groups, so that VarUpdateOps process tensors of exactly
+    R"doc(Merge into groups, so that VarUpdateOp ops process tensors of exactly
 `mergeVarUpdateMemThreshold` in size.)doc";
 
 static const char *__doc_popart_MergeVarUpdateType_N =
-    R"doc(The number of MergeVarUpdateTypes values.)doc";
+    R"doc(The number of ``MergeVarUpdateTypes`` values.)doc";
 
 static const char *__doc_popart_MergeVarUpdateType_None =
-    R"doc(Do not merge VarUpdate Ops.)doc";
+    R"doc(Do not merge VarUpdateOp ops.)doc";
 
 static const char *__doc_popart_NllGradOp = R"doc()doc";
 
 static const char *__doc_popart_NllGradOp_NllGradOp = R"doc()doc";
 
 static const char *__doc_popart_NllGradOp_appendOutlineAttributes = R"doc()doc";
+
+static const char *__doc_popart_NllGradOp_canShard = R"doc()doc";
 
 static const char *__doc_popart_NllGradOp_clone = R"doc()doc";
 
@@ -3239,6 +3351,8 @@ static const char *__doc_popart_NllGradOp_getOutIndex = R"doc()doc";
 static const char *__doc_popart_NllGradOp_getProbsInIndex = R"doc()doc";
 
 static const char *__doc_popart_NllGradOp_getReductionType = R"doc()doc";
+
+static const char *__doc_popart_NllGradOp_getShardRescaleFactor = R"doc()doc";
 
 static const char *__doc_popart_NllGradOp_getSubgraphValue = R"doc()doc";
 
@@ -3338,8 +3452,6 @@ static const char *__doc_popart_OpCreator_OpCreator = R"doc()doc";
 static const char *__doc_popart_OpCreator_OpCreator_2 = R"doc()doc";
 
 static const char *__doc_popart_OpCreator_OpCreator_3 = R"doc()doc";
-
-static const char *__doc_popart_OpCreator_OpCreator_4 = R"doc()doc";
 
 static const char *__doc_popart_OpDefinition = R"doc()doc";
 
@@ -3453,20 +3565,27 @@ static const char *__doc_popart_OpManager_opMap = R"doc()doc";
 
 static const char *__doc_popart_OpManager_registerOp = R"doc()doc";
 
-static const char *__doc_popart_Optimizer = R"doc()doc";
+static const char *__doc_popart_Optimizer = R"doc(The base Optimizer class)doc";
 
-static const char *__doc_popart_OptimizerReductionType = R"doc()doc";
+static const char *__doc_popart_OptimizerReductionType =
+    R"doc(Replicated graph reduction mode (data parallel optimizer). Determines
+which replicated collective operations are inserted into the graph.)doc";
 
-static const char *__doc_popart_OptimizerReductionType_AcclReduce = R"doc()doc";
+static const char *__doc_popart_OptimizerReductionType_AcclReduce =
+    R"doc(Momentum reduction (SGD1, every N-th iteration, gradient accumulation))doc";
 
 static const char *__doc_popart_OptimizerReductionType_AccumReduce =
-    R"doc()doc";
+    R"doc(Accumulator reduction (Adam, every N-th iteration, gradient
+accumulation))doc";
 
-static const char *__doc_popart_OptimizerReductionType_GradReduce = R"doc()doc";
+static const char *__doc_popart_OptimizerReductionType_GradReduce =
+    R"doc(Gradient reduction (every iteration, after a weight's gradient is
+produced))doc";
 
-static const char *__doc_popart_OptimizerReductionType_None = R"doc()doc";
+static const char *__doc_popart_OptimizerReductionType_None =
+    R"doc(No replicated graph reduction)doc";
 
-static const char *__doc_popart_OptimizerType = R"doc()doc";
+static const char *__doc_popart_OptimizerType = R"doc(Types of optimizers.)doc";
 
 static const char *__doc_popart_OptimizerType_Adam = R"doc()doc";
 
@@ -3489,10 +3608,10 @@ static const char *__doc_popart_OptimizerValue_OptimizerValue_3 =
     R"doc(Constructor.
 
 Parameter ``v``:
-    the current value of the hyper parameter.
+    The current value of the hyper parameter.
 
 Parameter ``c``:
-    a boolean flag to indicate whether the parameter will remain at
+    A boolean flag to indicate whether the parameter will remain at
     this value forever (`true`) or may change over time (`false`).)doc";
 
 static const char *__doc_popart_OptimizerValue_OptimizerValue_4 = R"doc()doc";
@@ -3504,6 +3623,8 @@ static const char *__doc_popart_OptimizerValue_isConst = R"doc()doc";
 static const char *__doc_popart_OptimizerValue_isConst_2 = R"doc()doc";
 
 static const char *__doc_popart_OptimizerValue_operator_assign = R"doc()doc";
+
+static const char *__doc_popart_OptimizerValue_operator_eq = R"doc()doc";
 
 static const char *__doc_popart_OptimizerValue_val = R"doc()doc";
 
@@ -3517,6 +3638,8 @@ static const char *__doc_popart_Optimizer_Optimizer_2 = R"doc()doc";
 
 static const char *__doc_popart_Optimizer_accumulationFactor = R"doc()doc";
 
+static const char *__doc_popart_Optimizer_checkReplacementValue = R"doc()doc";
+
 static const char *__doc_popart_Optimizer_clipNormSettings = R"doc()doc";
 
 static const char *__doc_popart_Optimizer_clone = R"doc()doc";
@@ -3525,8 +3648,6 @@ static const char *__doc_popart_Optimizer_createOp = R"doc()doc";
 
 static const char *__doc_popart_Optimizer_enableGradientAccumulation =
     R"doc()doc";
-
-static const char *__doc_popart_Optimizer_enableReplicatedGraphs = R"doc()doc";
 
 static const char *__doc_popart_Optimizer_factorsAreSetFromOptions =
     R"doc()doc";
@@ -3562,8 +3683,6 @@ static const char *__doc_popart_Optimizer_meanGradientAccumulationEnabled =
 
 static const char *__doc_popart_Optimizer_replicatedGraphCount = R"doc()doc";
 
-static const char *__doc_popart_Optimizer_replicatedGraphsEnabled = R"doc()doc";
-
 static const char *__doc_popart_Optimizer_resetTensorData = R"doc()doc";
 
 static const char *__doc_popart_Optimizer_setFactorsFromOptions = R"doc()doc";
@@ -3575,6 +3694,10 @@ static const char *__doc_popart_Optimizer_type = R"doc()doc";
 static const char *__doc_popart_Optimizer_type_s = R"doc()doc";
 
 static const char *__doc_popart_Optimizer_validReplacement = R"doc()doc";
+
+static const char *__doc_popart_PTensorCmp = R"doc()doc";
+
+static const char *__doc_popart_PTensorCmp_operator_call = R"doc()doc";
 
 static const char *__doc_popart_PatternCreator = R"doc()doc";
 
@@ -3625,9 +3748,6 @@ static const char *__doc_popart_Patterns_enableAtan2Arg1GradOp = R"doc()doc";
 static const char *__doc_popart_Patterns_enableCosGradOp = R"doc()doc";
 
 static const char *__doc_popart_Patterns_enableDecomposeBinaryConstScalar =
-    R"doc()doc";
-
-static const char *__doc_popart_Patterns_enableDepthToSpaceOpPattern =
     R"doc()doc";
 
 static const char *__doc_popart_Patterns_enableDivArg0GradOp = R"doc()doc";
@@ -3693,9 +3813,6 @@ static const char *__doc_popart_Patterns_enableSinGradOp = R"doc()doc";
 
 static const char *__doc_popart_Patterns_enableSoftMaxGradDirect = R"doc()doc";
 
-static const char *__doc_popart_Patterns_enableSpaceToDepthOpPattern =
-    R"doc()doc";
-
 static const char *__doc_popart_Patterns_enableSplitGather = R"doc()doc";
 
 static const char *__doc_popart_Patterns_enableSqrtGradOp = R"doc()doc";
@@ -3733,9 +3850,6 @@ static const char *__doc_popart_Patterns_isAtan2Arg1GradOpEnabled = R"doc()doc";
 static const char *__doc_popart_Patterns_isCosGradOpEnabled = R"doc()doc";
 
 static const char *__doc_popart_Patterns_isDecomposeBinaryConstScalarEnabled =
-    R"doc()doc";
-
-static const char *__doc_popart_Patterns_isDepthToSpaceOpPatternEnabled =
     R"doc()doc";
 
 static const char *__doc_popart_Patterns_isDivArg0GradOpEnabled = R"doc()doc";
@@ -3803,9 +3917,6 @@ static const char *__doc_popart_Patterns_isReciprocalGradOpEnabled =
 static const char *__doc_popart_Patterns_isSinGradOpEnabled = R"doc()doc";
 
 static const char *__doc_popart_Patterns_isSoftMaxGradDirectEnabled =
-    R"doc()doc";
-
-static const char *__doc_popart_Patterns_isSpaceToDepthOpPatternEnabled =
     R"doc()doc";
 
 static const char *__doc_popart_Patterns_isSplitGatherEnabled = R"doc()doc";
@@ -3899,7 +4010,7 @@ static const char *__doc_popart_RecomputationType =
 doing auto-recomputation.)doc";
 
 static const char *__doc_popart_RecomputationType_N =
-    R"doc(The number of RecomputationTypes values.)doc";
+    R"doc(The number of ``RecomputationTypes`` values.)doc";
 
 static const char *__doc_popart_RecomputationType_None =
     R"doc(No ops are recomputed.)doc";
@@ -3935,18 +4046,18 @@ static const char *__doc_popart_ReplicatedTensorSharding_On =
 static const char *__doc_popart_RequireOptimalSchedule = R"doc()doc";
 
 static const char *__doc_popart_SGD =
-    R"doc(Stochastic Gradient Descent (SGD) optimizer.
+    R"doc(Stochastic Gradient Descent (%SGD) optimizer.
 
 Akin to any optimizer implementation, this class is responsible for
 updating each weight tensor ($w$) in the model using the gradient
 ($g$) of the loss function with respect to the weight as calculated
 during the backwards pass.
 
-The SGD optimizer has the following **state** for each weight:
+The %SGD optimizer has the following **state** for each weight:
 
 * *velocity* ($v$)
 
-The SGD optimizer has the following **hyper parameters**:
+The %SGD optimizer has the following **hyper parameters**:
 
 * *learning rate* ($\text{lr}$) * *momentum* ($\text{mm}$) * *weight
 decay* ($\text{wd}$) * *dampening* ($\text{dm}$) * *velocity scaling*
@@ -4000,46 +4111,47 @@ static const char *__doc_popart_SGD_SGD =
     R"doc(Constructor.
 
 Parameter ``defaultLearningRate``:
-    the learning rate value to use for weights for which no weight-
+    The learning rate value to use for weights for which no weight-
     specific hyper parameter have been inserted.
 
 Parameter ``defaultWeightDecay``:
-    the weight decay value to use for weights for which no weight-
+    The weight decay value to use for weights for which no weight-
     specific hyper parameter have been inserted.
 
 Parameter ``defaultMomentum``:
-    the momentum value to use for weights for which no weight-specific
+    The momentum value to use for weights for which no weight-specific
     hyper parameter have been inserted.
 
 Parameter ``defaultDampening``:
-    the dampening value to use for weights for which no weight-
+    The dampening value to use for weights for which no weight-
     specific hyper parameter have been inserted.
 
 Parameter ``defaultVelocityScaling``:
-    the velocity scaling value to use for weights for which no weight-
+    The velocity scaling value to use for weights for which no weight-
     specific hyper parameter have been inserted.
 
 Parameter ``lossScaling``:
-    the loss scaling value to use.
+    The loss scaling value to use.
 
 Parameter ``clipNormSettings``:
-    a vector of ClipNormSettings (this can be used to set maximum
+    A vector of ClipNormSettings (this can be used to set maximum
     values for weights).)doc";
 
 static const char *__doc_popart_SGD_SGD_2 =
     R"doc(Constructor.
 
 Parameter ``params``:
-    a parameter map where keys are one of `"defaultLearningRate"`,
-    `"defaultWeightDecay"`, `"defaultMomentum"`, `"defaultDampening"`,
-    `"defaultVelocityScaling"` or `"lossScaling"` and the map's values
-    pairs of floats and booleans representing OptimizerValue
+    A parameter map where the keys are one or more of
+    `"defaultLearningRate"`, `"defaultWeightDecay"`,
+    `"defaultMomentum"`, `"defaultDampening"`,
+    `"defaultVelocityScaling"` or `"lossScaling"`. The map's values
+    are pairs of floats and booleans representing OptimizerValue
     constructor arguments. The map does not have to specify each hyper
-    parameter as default values will be used where parameters are
+    parameter because default values will be used where parameters are
     missing.
 
 Parameter ``clipNormSettings``:
-    a vector of ClipNormSettings (this can be used to set maximum
+    A vector of ClipNormSettings (this can be used to set maximum
     values for weights).
 
 **EXAMPLE**:
@@ -4073,11 +4185,17 @@ static const char *__doc_popart_SGD_fromDefaultMap = R"doc()doc";
 
 static const char *__doc_popart_SGD_getComplete = R"doc()doc";
 
-static const char *__doc_popart_SGD_getInputIds = R"doc()doc";
+static const char *__doc_popart_SGD_getInputIds =
+    R"doc(The names of the inputs for the VarUpdateOp for the variable tensor \p
+weight. In the returned vector, an empty string ("") is used as a
+placeholder for constant inputs.)doc";
 
-static const char *__doc_popart_SGD_getOptimizerInputs = R"doc()doc";
+static const char *__doc_popart_SGD_getOptimizerInputs =
+    R"doc(The names and information for the optimizer tensors.)doc";
 
-static const char *__doc_popart_SGD_getStoredValue = R"doc()doc";
+static const char *__doc_popart_SGD_getStoredValue =
+    R"doc(Tensor "opt" has an id, which it uses to match a compound scalar which
+this object can compute from the atomic scalars.)doc";
 
 static const char *__doc_popart_SGD_getUnsetDampening =
     R"doc(Default dampening value.)doc";
@@ -4105,31 +4223,31 @@ static const char *__doc_popart_SGD_insertSpecific =
     R"doc(Insert a weight-specific set of hyper parameters.
 
 Parameter ``weight``:
-    the TensorId of the weight.
+    The TensorId of the weight.
 
 Parameter ``learningRate``:
-    the learning rate value to use for this specific weight.
+    The learning rate value to use for this specific weight.
 
 Parameter ``weightDecay``:
-    the weight decay value to use for this specific weight.
+    The weight decay value to use for this specific weight.
 
 Parameter ``momentum``:
-    the momentum value to use for this specific weight.
+    The momentum value to use for this specific weight.
 
 Parameter ``dampening``:
-    the dampening value to use for this specific weight.
+    The dampening value to use for this specific weight.
 
 Parameter ``velocityScaling``:
-    the velocity scaling value to use for this specific weight.)doc";
+    The velocity scaling value to use for this specific weight.)doc";
 
 static const char *__doc_popart_SGD_insertSpecific_2 =
     R"doc(Insert a weight-specific set of hyper parameters.
 
 Parameter ``weight``:
-    the TensorId of the weight.
+    The TensorId of the weight.
 
 Parameter ``params``:
-    a parameter map where keys are one of `"defaultLearningRate"`,
+    A parameter map where keys are one of `"defaultLearningRate"`,
     `"defaultWeightDecay"`, `"defaultMomentum"`, `"defaultDampening"`,
     `"defaultVelocityScaling"` or `"lossScaling"` and the map's values
     pairs of floats and booleans representing OptimizerValue
@@ -4145,7 +4263,10 @@ static const char *__doc_popart_SGD_mms = R"doc()doc";
 
 static const char *__doc_popart_SGD_momentums = R"doc()doc";
 
-static const char *__doc_popart_SGD_requiresAccl = R"doc()doc";
+static const char *__doc_popart_SGD_requiresAccl =
+    R"doc(If velocity (accumulation) is required, either because of gradient
+accumulation or because of momentum, then return true otherwise return
+false.)doc";
 
 static const char *__doc_popart_SGD_resetTensorData = R"doc()doc";
 
@@ -4177,8 +4298,14 @@ static const char *__doc_popart_SGD_wdsf0helper = R"doc()doc";
 
 static const char *__doc_popart_SGD_weightDecays = R"doc()doc";
 
+static const char *__doc_popart_ScaleByReplication = R"doc()doc";
+
+static const char *__doc_popart_ScaleByReplication_No = R"doc()doc";
+
+static const char *__doc_popart_ScaleByReplication_Yes = R"doc()doc";
+
 static const char *__doc_popart_Session =
-    R"doc(Session is a runtime instance the provides an interface for executing
+    R"doc(Session is a runtime instance that provides an interface for executing
 ONNX graphs on IPU hardware.)doc";
 
 static const char *__doc_popart_SessionOptions = R"doc()doc";
@@ -4186,11 +4313,11 @@ static const char *__doc_popart_SessionOptions = R"doc()doc";
 static const char *__doc_popart_SessionOptions_2 = R"doc()doc";
 
 static const char *__doc_popart_SessionOptions_3 =
-    R"doc(A structure containing user configuration options for the `Session`
-class)doc";
+    R"doc(A structure containing user configuration options for the Session
+class.)doc";
 
 static const char *__doc_popart_SessionOptions_NumIOTiles =
-    R"doc(A wrapper class for the `numIOTiles` option that permits any int value
+    R"doc(A wrapper class for the #numIOTiles option that permits any int value
 and has an 'unassigned' state.)doc";
 
 static const char *__doc_popart_SessionOptions_NumIOTiles_NumIOTiles =
@@ -4203,7 +4330,7 @@ static const char *__doc_popart_SessionOptions_NumIOTiles_operator_assign =
     R"doc(Assign value using int.)doc";
 
 static const char *__doc_popart_SessionOptions_NumIOTiles_operator_eq =
-    R"doc(Compare with ints.)doc";
+    R"doc(Compare with int.)doc";
 
 static const char *__doc_popart_SessionOptions_NumIOTiles_operator_int =
     R"doc(Auto convert to int.)doc";
@@ -4222,40 +4349,35 @@ varUpdate.)doc";
 
 static const char *__doc_popart_SessionOptions_accumulationReductionType =
     R"doc(Specify how gradients are reduced when using gradient accumulation.
-The options are equivilent to how gradients are reduced on lossOps.)doc";
+The options are equivalent to how gradients are reduced on lossOps.)doc";
 
 static const char
     *__doc_popart_SessionOptions_accumulatorTensorLocationSettings =
         R"doc(Tensor location for gradient accumulator tensors.)doc";
 
 static const char
-    *__doc_popart_SessionOptions_activationTensorLocationSettings = R"doc()doc";
+    *__doc_popart_SessionOptions_activationTensorLocationSettings =
+        R"doc(Tensor location settings for activation/gradient tensors.)doc";
 
 static const char *__doc_popart_SessionOptions_aliasZeroCopy =
-    R"doc(Enable zero-copy for subgraphs)doc";
-
-static const char *__doc_popart_SessionOptions_subgraphCopyingStrategy =
-    R"doc(This setting determines how copies for inputs and outputs for
-subgraphs are lowered. By setting this value to JustInTime you may
-save memory at the cost of fragmenting subgraphs into multiple Poplar
-functions.)doc";
+    R"doc(Enable zero-copy for subgraphs.)doc";
 
 static const char *__doc_popart_SessionOptions_autoRecomputation =
     R"doc(Enable recomputation of operations in the graph in the backwards pass
-to reduce model size at the cost of computation cycles)doc";
+to reduce model size at the cost of computation cycles.)doc";
 
 static const char *__doc_popart_SessionOptions_batchSerializationSettings =
-    R"doc(Configuration setting for batch serialization)doc";
+    R"doc(Configuration setting for batch serialization.)doc";
 
 static const char *__doc_popart_SessionOptions_cachePath =
-    R"doc(Path to save the poplar::Executable to.)doc";
+    R"doc(Folder to save the ``poplar::Executable`` to.)doc";
 
 static const char *__doc_popart_SessionOptions_compileEngine =
-    R"doc(when false, the backend will build the Poplar graph, but do not
-compile it into an Engine. When this option is set, no execution can
-be performed, and nothing can be transferred to the device. Functions
-which retrieve information from the graph building stage will be ok
-(tile mapping).)doc";
+    R"doc(If false, the backend will build the Poplar graph but not compile it
+into an Engine. In this case, no execution can be performed, and
+nothing can be transferred to the device. API calls which retrieve
+information from the graph building stage, such as tile mapping
+introspection, can still be used.)doc";
 
 static const char *__doc_popart_SessionOptions_constantWeights =
     R"doc(An optimization for an inference session to have constant weights,
@@ -4265,10 +4387,7 @@ session has been prepared. This option has no effect on a training
 session)doc";
 
 static const char *__doc_popart_SessionOptions_convolutionOptions =
-    R"doc(Poplar convolution options)doc";
-
-static const char *__doc_popart_SessionOptions_lstmOptions =
-    R"doc(Poplar LSTM options)doc";
+    R"doc(Poplar convolution options.)doc";
 
 static const char *__doc_popart_SessionOptions_customCodeletCompileFlags =
     R"doc(Compile flags for the custom codelets. For example `-g` to generate
@@ -4282,52 +4401,53 @@ static const char *__doc_popart_SessionOptions_decomposeGradSum =
     R"doc(Replaces single sums of partial gradients with a tree of additions.
 This can reduce max liveness at the cost of extra cycles. A typical
 use case for this would be if a large weight tensor is used as an
-input to many operations)doc";
+input to many operations.)doc";
 
 static const char *__doc_popart_SessionOptions_delayVarUpdates =
-    R"doc(Options to delay var updates as much as possible)doc";
+    R"doc(Options to delay variable updates as much as possible.)doc";
 
 static const char
     *__doc_popart_SessionOptions_disableGradAccumulationTensorStreams =
         R"doc(If true, the weight gradient tensors are not saved off the device when
-devicex.weightsFromHost() is called. Note: this option is overridden
-if syntheticDataMode is not Off.)doc";
+``devicex``.weightsFromHost() is called. Note: this option is
+overridden if #syntheticDataMode is not #SyntheticDataMode::Off.)doc";
 
 static const char *__doc_popart_SessionOptions_dotChecks =
-    R"doc(When to write '.dot' files during Ir construction)doc";
+    R"doc(When to write `.dot` files during Ir construction.)doc";
 
 static const char *__doc_popart_SessionOptions_dotOpNames =
-    R"doc(Include the Op name in the .dot file (the Op type is always exported))doc";
+    R"doc(Include the Op name in the `.dot` file (the Op type is always
+exported).)doc";
 
 static const char *__doc_popart_SessionOptions_enableDistributedReplicatedGraphs =
     R"doc(Enable training with Poplar replicated graphs across multiple PopART
-instances)doc";
+instances.)doc";
 
 static const char *__doc_popart_SessionOptions_enableEngineCaching =
-    R"doc(Enable Poplar executable caching)doc";
+    R"doc(Enable Poplar executable caching.)doc";
 
 static const char *__doc_popart_SessionOptions_enableFloatingPointChecks =
     R"doc(Throw an exception when floating point errors occur.)doc";
 
 static const char *__doc_popart_SessionOptions_enableFullyConnectedPass =
-    R"doc(Enable the global fullyConnectedPass option for matmuls)doc";
+    R"doc(Enable the global #fullyConnectedPass option for matmuls.)doc";
 
 static const char *__doc_popart_SessionOptions_enableGradientAccumulation =
-    R"doc(Enable gradient accumulation)doc";
+    R"doc(Enable gradient accumulation.)doc";
 
 static const char *__doc_popart_SessionOptions_enableGroupedMatmuls =
-    R"doc(Enable/disable the grouping of matmuls that are the same shape)doc";
+    R"doc(Enable/disable the grouping of matmuls that are the same shape.)doc";
 
 static const char *__doc_popart_SessionOptions_enableLoadAndOffloadRNGState =
-    R"doc()doc";
+    R"doc(Allows to load/offload device RNG state from host.)doc";
 
 static const char *__doc_popart_SessionOptions_enableNonStableSoftmax =
-    R"doc(By default, we use the stable-softmax Poplar function. This input
-tensor to softmax, _x_, is preprocessed by subtracting max(_x_) to
+    R"doc(By default, we use the stable softmax Poplar function. The input
+tensor to softmax, _x_, is preprocessed by subtracting max(_x_) from
 each element before computing the exponentials, ensuring numerical
 stability. If you are sure the inputs to your softmax operations are
 small enough to not cause overflow when computing the exponential, you
-can enable the non-stable version instead for speed-up)doc";
+can enable the non-stable version instead, to increase the speed.)doc";
 
 static const char *__doc_popart_SessionOptions_enableOutlining =
     R"doc(Identify and extract repeated parts of computational graph into
@@ -4342,11 +4462,11 @@ static const char *__doc_popart_SessionOptions_enablePipelining =
 
 static const char *__doc_popart_SessionOptions_enablePrefetchDatastreams =
     R"doc(By default, we will use prefetching for input data streams. Poplar
-will speculative read data for a stream before is is required to allow
-the 'preparation' of the data to occur in parallel with compute)doc";
+will speculatively read data for a stream before is is required to
+allow the 'preparation' of the data to occur in parallel with compute.)doc";
 
 static const char *__doc_popart_SessionOptions_enableReplicatedGraphs =
-    R"doc(Enable replication of graphs)doc";
+    R"doc(Enable replication of graphs.)doc";
 
 static const char *__doc_popart_SessionOptions_enableSerializedMatmuls =
     R"doc(Enable/disable the serializing of matmuls.)doc";
@@ -4359,44 +4479,48 @@ the first order moment to be estimated and applied to the sample set
 before the second order central moment is calculated.)doc";
 
 static const char *__doc_popart_SessionOptions_enableStochasticRounding =
-    R"doc(Enable stochastic rounding)doc";
+    R"doc(Enable stochastic rounding.)doc";
 
 static const char *__doc_popart_SessionOptions_engineOptions =
-    R"doc(Poplar engine options)doc";
+    R"doc(Poplar engine options.)doc";
 
 static const char *__doc_popart_SessionOptions_executionPhaseSettings =
-    R"doc(Configuration settings for execution phases)doc";
+    R"doc(Configuration settings for execution phases.)doc";
 
 static const char *__doc_popart_SessionOptions_explicitRecomputation =
-    R"doc(Enable explicit recomputation)doc";
+    R"doc(Enable explicit recomputation.)doc";
 
 static const char *__doc_popart_SessionOptions_exportPoplarComputationGraph =
-    R"doc(Export Poplar computation graph)doc";
+    R"doc(Export Poplar computation graph.)doc";
 
 static const char *__doc_popart_SessionOptions_exportPoplarVertexGraph =
-    R"doc(Export Poplar vertex graph)doc";
+    R"doc(Export Poplar vertex graph.)doc";
 
 static const char *__doc_popart_SessionOptions_finalDotOp =
     R"doc(See #firstDotOp.)doc";
 
 static const char *__doc_popart_SessionOptions_firstDotOp =
-    R"doc(The ops to write to the .dot file will be a continuous interval of the
-schedule, controlled by firstDotOp and finalDotOp. In particular, it
-will be [min(0, firstDotOp), max(N ops in Ir, finalDotOp)))doc";
+    R"doc(The ops to write to the `.dot` file will be a continuous interval of
+the schedule, controlled by firstDotOp and finalDotOp. In particular,
+it will be [min(0, firstDotOp), max(N ops in Ir, finalDotOp)).)doc";
 
 static const char *__doc_popart_SessionOptions_gclOptions =
     R"doc(GCL options)doc";
+
+static const char *__doc_popart_SessionOptions_getGlobalReplicationFactor =
+    R"doc()doc";
 
 static const char *__doc_popart_SessionOptions_getPrefetchBufferingDepth =
     R"doc()doc";
 
 static const char *__doc_popart_SessionOptions_globalReplicaOffset =
-    R"doc(The first replica index that this PopART instance is running)doc";
+    R"doc(The first replica index that this PopART instance is running.)doc";
 
 static const char *__doc_popart_SessionOptions_globalReplicationFactor =
     R"doc(The total number of replicas in a multi instance replicated graph
 training session (this should be left as the default value (1) if
-distributed replicated graphs are disabled))doc";
+distributed replicated graphs are disabled). This value includes local
+replication.)doc";
 
 static const char *__doc_popart_SessionOptions_groupHostSync =
     R"doc(Allows to group the streams from host at the beginning and the streams
@@ -4408,44 +4532,53 @@ static const char *__doc_popart_SessionOptions_hardwareInstrumentations =
 
 static const char *__doc_popart_SessionOptions_hostAllReduce =
     R"doc(Perform AllReduce operation on the host. Only useful for training
-session)doc";
+session.)doc";
 
 static const char *__doc_popart_SessionOptions_hostAllReduceRemoteBuffer =
-    R"doc(Enable the use of poplar::RemoteBuffers for hostAllReduce operations)doc";
+    R"doc(Enable the use of ``poplar::RemoteBuffers`` for hostAllReduce
+operations.)doc";
 
 static const char *__doc_popart_SessionOptions_hostWeightUpdate =
-    R"doc(Perform weight update on the host. Only useful for training session)doc";
+    R"doc(Perform weight update on the host. Only useful for training session.)doc";
 
 static const char
     *__doc_popart_SessionOptions_instrumentWithHardwareCycleCounter =
         R"doc(Add instrumentation to your program to count the number of device
-cycles (a single tile, on a single IPU) that your main program takes
-to execute. Expect this to have a small detrimental impact on
+cycles (of a single tile, on a single IPU) that your main program
+takes to execute. Expect this to have a small detrimental impact on
 performance.)doc";
 
 static const char *__doc_popart_SessionOptions_kahnTieBreaker =
     R"doc(The initial scheduling is done with Kahn's algorithm. When several Ops
-are free to be scheduled, this controls which method is used)doc";
+are free to be scheduled, this controls which method is used.)doc";
 
 static const char *__doc_popart_SessionOptions_logDir =
-    R"doc(A directory for log traces to be written into)doc";
+    R"doc(A directory for log traces to be written into.)doc";
 
 static const char *__doc_popart_SessionOptions_looseThresholdAtPeak =
-    R"doc(The AutoLoose VarUpudate merging algorithm has absolute threshold
-defined by min(mergeVarUpdateMemThreshold, liveAtPeak - liveCurrently
-+ looseThresholdAtPeak), where liveAtPeak is an estimate of the
-maximum live memory of the computation, and liveCurrently is an
-estimate of the live memory where the threshold is being used to
-determine whether to schedule or postpone a VarUpdate.)doc";
+    R"doc(The #MergeVarUpdateType::AutoLoose VarUpdateOp merging algorithm has
+an absolute threshold defined by:
+
+``min``(#mergeVarUpdateMemThreshold, ``liveAtPeak`` -
+``liveCurrently`` + #looseThresholdAtPeak)
+
+where: * ``liveAtPeak`` is an estimate of the maximum live memory of
+the computation; and * ``liveCurrently`` is an estimate of the live
+memory where the threshold is being used to determine whether to
+schedule or postpone a VarUpdateOp.)doc";
+
+static const char *__doc_popart_SessionOptions_lstmOptions =
+    R"doc(Poplar LSTM options.)doc";
 
 static const char *__doc_popart_SessionOptions_mergeVarUpdate =
     R"doc(Enable merging of VarUpdates into groups of VarUpdates, by flattening
-and concatenating Variable Tensors and Updating Tensors)doc";
+and concatenating variable tensors and updating tensors.)doc";
 
 static const char *__doc_popart_SessionOptions_mergeVarUpdateMemThreshold =
-    R"doc(The AutoLoose and AutoTight VarUpdate merging algorithm has a
-threshold on the total memory of Variable Tensors to merge for
-updating. Memory in bytes.)doc";
+    R"doc(The #MergeVarUpdateType::AutoLoose and #MergeVarUpdateType::AutoTight
+VarUpdateOp merging algorithms have a threshold on the total memory of
+variable tensors to merge for updating. Defined as total memory in
+bytes.)doc";
 
 static const char *__doc_popart_SessionOptions_numIOTiles =
     R"doc(Number of IPU tiles dedicated to IO.)doc";
@@ -4458,17 +4591,17 @@ static const char
 
 static const char *__doc_popart_SessionOptions_opxAliasChecking =
     R"doc(Run Opx checks to verify IR tensor aliasing information corresponds to
-lowered Poplar tensor aliasing)doc";
+lowered Poplar tensor aliasing.)doc";
 
 static const char *__doc_popart_SessionOptions_opxModifyChecking =
     R"doc(Run Opx checks to verify IR tensor modification information
-corresponds to lowered Poplar tensor modifications)doc";
+corresponds to lowered Poplar tensor modifications.)doc";
 
 static const char *__doc_popart_SessionOptions_outlineSequenceBreakCost =
     R"doc(The penalty applied to outlining potential sub-graphs if the sub-graph
 to be created breaks up a sequence of operations that are more
 efficient (for example for overlapping compute and exchange) when
-outlined together Default value is set to ~10 *
+outlined together. Default value is set to ~10 *
 Op::getHighSubgraphValue().)doc";
 
 static const char *__doc_popart_SessionOptions_outlineThreshold =
@@ -4484,7 +4617,7 @@ Value operations such as Relu will not be.)doc";
 
 static const char *__doc_popart_SessionOptions_partialsTypeMatMuls =
     R"doc(Set the partials type globally for matmuls. Can be overridden
-individually with `builder.setPartialsType()`. Valid values are
+individually with Builder.setPartialsType(). Valid values are
 `"float"` and `"half"`. By default, this is not set, so no global
 partials type is imposed.)doc";
 
@@ -4493,10 +4626,10 @@ static const char *__doc_popart_SessionOptions_prefetchBufferingDepthMap =
 tensor-specific buffering depths for tensors that are streamed to the
 host (typically input tensors). This buffering depth could be
 envisaged as being the size of a circular buffer that feeds data to
-Poplar. A buffering depth greater than `1` may improve the performance
+Poplar. A buffering depth greater than 1 may improve the performance
 due to increased parallelisation but comes at the cost of increasing
 the memory footprint. Streams for tensors that have no entry in this
-map default to a buffering depth of `1`.)doc";
+map default to a buffering depth of 1.)doc";
 
 static const char *__doc_popart_SessionOptions_rearrangeAnchorsOnHost =
     R"doc(Before anchor tensors are streamed from device to host, they are not
@@ -4506,17 +4639,17 @@ host. Done on host by default to save memory, but often at the expense
 of cycles, especially for larger anchor tensors.)doc";
 
 static const char *__doc_popart_SessionOptions_replicatedGraphCount =
-    R"doc(If enableReplicatedGraphs is true, replicatedGraphCount will set the
-number of model replications. E.g. if your model uses 1 IPU, a
-replicatedGraphCount of 2 will use 2 IPUs. If your model is pipelined
-across 4 IPUs, a replicatedGraphCount of 4 will use 16 IPUs total.
-Therefore the number of IPUs you request must be a multiple of
-replicatedGraphCount. If the training is done across multiple
-instances then the replicatedGraphCount is the number of replicas for
-this instance.)doc";
+    R"doc(If enableReplicatedGraphs is true, ``replicatedGraphCount`` will set
+the number of model replications. For example, if your model uses 1
+IPU, a ``replicatedGraphCount`` of 2 will use 2 IPUs. If your model is
+pipelined across 4 IPUs, a ``replicatedGraphCount`` of 4 will use 16
+IPUs total. Therefore, the number of IPUs you request must be a
+multiple of ``replicatedGraphCount``. If the training is done across
+multiple instances then the ``replicatedGraphCount`` is the number of
+replicas for this instance.)doc";
 
 static const char *__doc_popart_SessionOptions_reportOptions =
-    R"doc(Poplar reporting options)doc";
+    R"doc(Poplar reporting options.)doc";
 
 static const char *__doc_popart_SessionOptions_separateCallOpPdfs =
     R"doc(When generating PDFs of IR graphs, create separate PDFs for each
@@ -4524,13 +4657,13 @@ subgraph.)doc";
 
 static const char
     *__doc_popart_SessionOptions_serializedPoprithmsAnnealGraphsDir =
-        R"doc(PopART uses Poprithms for scheduling PopART Graphs. The Poprithms
-Graphs created for scheduling can be optionally serialised (written to
+        R"doc(PopART uses Poprithms for scheduling PopART graphs. The Poprithms
+graphs created for scheduling can be optionally serialised (written to
 file). The string below specified the directory to serialize Poprithms
-Graphs to. If it is empty, then the Graphs will not be serialised. The
-names of serialization files will be poprithms_anneal_graph_`i'.json
-for the lowest non-existing `i's. The directory must already exist,
-PopART will not create it.)doc";
+graphs to. If it is empty, then the graphs will not be serialised. The
+names of serialization files will be `poprithms_anneal_graph_i.json`
+for the lowest non-existing values of `i`. The directory must already
+exist, PopART will not create it.)doc";
 
 static const char *__doc_popart_SessionOptions_strictOpVersions =
     R"doc(Strict op version checks will throw an error if the exact version of
@@ -4539,26 +4672,34 @@ check off will cause PopART to fall back to the latest implementation
 of the op that is supported. Warning, turning off these checks may
 cause undefined behaviour.)doc";
 
+static const char *__doc_popart_SessionOptions_subgraphCopyingStrategy =
+    R"doc(This setting determines how copies for inputs and outputs for
+subgraphs are lowered. By setting this value to JustInTime you may
+save memory at the cost of fragmenting subgraphs into multiple Poplar
+functions. This may be particularly useful when a number of weight
+updates are outlined in one subgraph, as it may prevent multiple
+weight tensors from being live at the same time inside the subgraph.)doc";
+
 static const char *__doc_popart_SessionOptions_swapLimitScheduler =
     R"doc(The maximum number of improving steps allowed by the scheduling
-algorithm before a solution must be returned)doc";
+algorithm before a solution must be returned.)doc";
 
 static const char *__doc_popart_SessionOptions_syntheticDataMode =
-    R"doc(Use synthetic data i.e. disable data transfer to/from the host Set to
-'Off' to use real data)doc";
+    R"doc(Use synthetic data: disable data transfer to/from the host. Set to
+#SyntheticDataMode::Off to use real data.)doc";
 
 static const char *__doc_popart_SessionOptions_tensorLocationSettingsOverride =
     R"doc(Override tensor location for specific tensors by setting a
 TensorLocation for specific TensorId values.)doc";
 
 static const char *__doc_popart_SessionOptions_timeLimitScheduler =
-    R"doc(The maximum allowed time that can be spent searching for a good Graph
-schedule before a solution must be returned)doc";
+    R"doc(The maximum allowed time that can be spent searching for a good graph
+schedule before a solution must be returned.)doc";
 
 static const char *__doc_popart_SessionOptions_virtualGraphMode =
     R"doc(This option allows you to place ops on virtual graphs to achieve model
 parallelism - either manually using model annotations, or
-automatically)doc";
+automatically.)doc";
 
 static const char *__doc_popart_SessionOptions_weightTensorLocationSettings =
     R"doc(Tensor location for weight tensors.)doc";
@@ -4568,72 +4709,85 @@ static const char *__doc_popart_Session_Session = R"doc()doc";
 static const char *__doc_popart_Session_assertExecutableLoaded =
     R"doc(Throws an error if there is no executable.)doc";
 
+static const char *__doc_popart_Session_cacheEntries =
+    R"doc(Map of hashes / filenames of cached executables.)doc";
+
 static const char *__doc_popart_Session_compileAndExport =
-    R"doc(Compiles the graph and exports it to the specified path
+    R"doc(Compiles the graph and exports it to the specified path.
 
-This will create a poplar::Graph and compile the poplar::Executable
-before exporting the executable and metadata to allow offline running.
+This will create a ``poplar::Graph`` and compile the
+``poplar::Executable`` before exporting the executable and metadata.
 
-\arg executablePath path to output the compiled executable and
-associated metadata: if empty, these will not be exported \arg
-weightsPath path to output the weights: if empty, these will not be
-exported)doc";
+Parameter ``filename``:
+    Name of the file where the compiled executable and associated
+    metadata will be saved.)doc";
+
+static const char *__doc_popart_Session_compileAndExport_2 =
+    R"doc(Compiles the graph and exports it to the specified stream.
+
+This will create a ``poplar::Graph`` and compile the
+``poplar::Executable`` before exporting the executable and metadata.
+
+Parameter ``out``:
+    Stream where the compiled executable and associated metadata will
+    be written to.)doc";
 
 static const char *__doc_popart_Session_device =
-    R"doc(Implementation of the computation, for IPU back-end this is where
-calls to poplar are made.)doc";
+    R"doc(Implementation of the computation. For the IPU back-end this is where
+calls to Poplar are made.)doc";
 
 static const char *__doc_popart_Session_deviceInfo =
-    R"doc(Information about the device which this session uses)doc";
+    R"doc(Information about the device which this session uses.)doc";
 
 static const char *__doc_popart_Session_executable =
     R"doc(The final executable which contains all the data, metadata and
 configuration parameters necessary to start running the program on the
 device.)doc";
 
-static const char *__doc_popart_Session_exportInputs =
-    R"doc(Export numElements from stepIO.in)doc";
-
 static const char *__doc_popart_Session_getCycleCount =
-    R"doc(Copy the cycle count tensor to host from the device)doc";
+    R"doc(Copy the cycle count tensor to host from the device.)doc";
 
 static const char *__doc_popart_Session_getDevice = R"doc()doc";
+
+static const char *__doc_popart_Session_getDevice_2 = R"doc()doc";
 
 static const char *__doc_popart_Session_getExecutable = R"doc()doc";
 
 static const char *__doc_popart_Session_getExecutionReport =
-    R"doc(Retrieve the execution report from the poplar::Engine
+    R"doc(Retrieve the execution report from the ``poplar::Engine``.
 
 The options which were given to the constructor will influence the
 information in the report. By default a JSON format report is
 produced.
 
-This may only be called after the `prepareDevice()` call has been
-made.
+This may only be called after the prepareDevice() call has been made.
 
-\arg useCbor Produce a CBOR formatted report \arg resetProfile Resets
-the execution profile
+Parameter ``useCbor``:
+    Produce a CBOR formatted report.
+
+Parameter ``resetProfile``:
+    Resets the execution profile.
 
 Returns:
-    a string containing the execution report)doc";
+    A string containing the execution report.)doc";
 
 static const char *__doc_popart_Session_getGraphReport =
-    R"doc(Retrieve the graph report from the poplar::Engine
+    R"doc(Retrieve the graph report from the ``poplar::Engine``.
 
 The options which were given to the constructor will influence the
 information in the report. By default a JSON format report is
 produced.
 
-This may only be called after the `prepareDevice()` call has been
-made.
+This may only be called after the prepareDevice() call has been made.
 
-\arg useCbor Produce a CBOR formatted report
+Parameter ``useCbor``:
+    Produce a CBOR formatted report.
 
 Returns:
-    a string containing the graph (compilation) report)doc";
+    A string containing the graph (compilation) report.)doc";
 
 static const char *__doc_popart_Session_getInfo =
-    R"doc(get the TensorInfo on a Tensor)doc";
+    R"doc(Get the TensorInfo on a Tensor.)doc";
 
 static const char *__doc_popart_Session_getIr = R"doc()doc";
 
@@ -4642,39 +4796,39 @@ static const char *__doc_popart_Session_getIrLowering = R"doc()doc";
 static const char *__doc_popart_Session_getRNGState = R"doc()doc";
 
 static const char *__doc_popart_Session_getSerializedGraph =
-    R"doc(Retrieve the serialized graph from the poplar::Engine
+    R"doc(Retrieve the serialized graph from the ``poplar::Engine``.
 
 A JSON format report is produced.
 
-This may only be called after the `prepareDevice()` call has been
-made.
+This may only be called after the prepareDevice() call has been made.
 
 Returns:
-    a string containing the serialized graph)doc";
+    A string containing the serialized graph.)doc";
 
 static const char *__doc_popart_Session_getSummaryReport =
-    R"doc(Retrieve the summary from from the poplar::Engine
+    R"doc(Retrieve the summary from from the ``poplar::Engine``.
 
 The options which were given to the constructor will influence the
 information in the report.
 
-This may only be called after the `prepareDevice()` call has been
-made. \arg resetProfile Resets the execution profile
+This may only be called after the prepareDevice() call has been made.
+
+Parameter ``resetProfile``:
+    Resets the execution profile.
 
 Returns:
-    a string containing the report)doc";
+    A string containing the report.)doc";
 
 static const char *__doc_popart_Session_getTensorTileMap =
-    R"doc(Retrieve the tensor tile mapping from the poplar::Graph
+    R"doc(Retrieve the tensor tile mapping from the ``poplar::Graph``.
 
-This may only be called after the `prepareDevice()` call has been
-made.
+This may only be called after the prepareDevice() call has been made.
 
 Returns:
-    a TensorTileMap object for all tensors in the graph)doc";
+    A TensorTileMap object for all tensors in the graph.)doc";
 
 static const char *__doc_popart_Session_ir =
-    R"doc(abstraction of the computation, the Ir is where all the compute graph
+    R"doc(Abstraction of the computation. The Ir is where all the compute graph
 optimisations, backwards pass construction, re-computation growing
 etc. happens.)doc";
 
@@ -4693,62 +4847,81 @@ Parameter ``in``:
     Stream to load the executable from.)doc";
 
 static const char *__doc_popart_Session_lowering =
-    R"doc(Implementation of the lowering of the PopART Ir to the poplar Graph.)doc";
+    R"doc(Implementation of the lowering of the PopART Ir to the Poplar Graph.)doc";
 
 static const char *__doc_popart_Session_modelToHost =
-    R"doc(Write current model to ONNX file)doc";
+    R"doc(Write current model to ONNX file.
+
+Parameter ``fn``:
+    Path to file. Can be absolute or relative. If you plan to run your
+    program in multiple processes simultaneously, you should avoid
+    possible race conditions by writing to different files, for
+    example by using temporary files.)doc";
 
 static const char *__doc_popart_Session_prepareDevice =
     R"doc(Prepare the network for execution.
 
-This will create the poplar::Graph, poplar::Engine, and setting up
-poplar::Streams.)doc";
+This will create the ``poplar::Graph`` and ``poplar::Engine``, and set
+up ``poplar::Streams``.)doc";
 
 static const char *__doc_popart_Session_readWeights =
-    R"doc(Read the weights. Must have called weightsToHost first
+    R"doc(Read the weights. Must have called weightsToHost() first.
 
-weight data : to addresses in weightsIo.out)doc";
+The weight data is written to the addresses in ``weightsIo``.out.)doc";
 
 static const char *__doc_popart_Session_resetHostWeights =
-    R"doc(Reset the weights with the weights in a ONNX model that differs to the
-current model only in weights. This only updates the weights on the
-host; the user still needs to call weightsFromHost() after this to
+    R"doc(Reset the weights with the weights in an ONNX model that differs from
+the current model only in weights. This only updates the weights on
+the host; the user still needs to call weightsFromHost() after this to
 update the weights on the device.
 
 Parameter ``model``:
     Either an ONNX model protobuf, or the name of a file containing an
-    ONNX model protobuf
+    ONNX model protobuf.
 
 Parameter ``ignoreWeightsInModelWithoutCorrespondingHostWeight``:
     If true, do not error if there are initializers in the ONNX model
-    with no corresponding initializer tensor in the session's IR)doc";
+    with no corresponding initializer tensor in the session's IR.)doc";
 
 static const char *__doc_popart_Session_run =
     R"doc(Perform one step.
 
-input data : from address in stepIO.in debug name : debug string to
-identify this run in logs output data : to addresses in stepIO.out)doc";
+Read input data from address in ``stepIO``.in. Write the output data
+to addresses in ``stepIO``.out.
+
+Parameter ``stepIO``:
+    Input and output data.
+
+Parameter ``debugName``:
+    Debug string to identify this run in logs.)doc";
 
 static const char *__doc_popart_Session_runCalled =
-    R"doc(Flag to indicate if run has been called)doc";
+    R"doc(Flag to indicate if run() has been called.)doc";
 
 static const char *__doc_popart_Session_serializeIr =
-    R"doc(Serizalise the ir graph to a string
+    R"doc(Serizalise the IR graph to a string.
 
-format : the format to serialize)doc";
+Parameter ``format``:
+    The format to use for serializing.)doc";
 
 static const char *__doc_popart_Session_setDevice =
     R"doc(Select a device type.
 
-/param deviceInfo which defines the type of device to work on)doc";
+Parameter ``deviceInfo``:
+    Defines the type of device to work on.)doc";
 
 static const char *__doc_popart_Session_setRNGState = R"doc()doc";
 
-static const char *__doc_popart_Session_setRandomSeed = R"doc()doc";
+static const char *__doc_popart_Session_setRandomSeed =
+    R"doc(Sets the random number generator seed on all tiles of the device. This
+ensures deterministic behaviour of random operations in the graph.
+
+Parameter ``The``:
+    seed value.)doc";
 
 static const char *__doc_popart_Session_tryLoadExecutable =
-    R"doc(Attempts to load a serialized executable. If succesful then Ir
-preparation and `poplar::Graph` compilation are skipped.)doc";
+    R"doc(Attempts to load a serialized executable. If successful then IR
+preparation and ``poplar::Graph`` compilation are skipped.)doc";
 
 static const char *__doc_popart_Session_updateExternallySavedTensorLocations =
     R"doc(Update the tensor locations of the tensors in the Session's ONNX
@@ -4763,20 +4936,18 @@ Parameter ``toLocation``:
     The updated location. Must not already exist.)doc";
 
 static const char *__doc_popart_Session_weightsFromHost =
-    R"doc(write to device, from an ONNX model loaded from directory Currently,
-the weights are taken from the onnx Model passed to the constructor,
-but this should be relaxed so that the weights can come from any Model)doc";
+    R"doc(Write weights from host to the device.)doc";
 
 static const char *__doc_popart_Session_weightsFromHostCalled =
-    R"doc(Flag to indicate if weightsFromHost has been called)doc";
+    R"doc(Flag to indicate if weightsFromHost() has been called)doc";
 
 static const char *__doc_popart_Session_weightsToHost =
-    R"doc(Copy the weights to host from the device)doc";
+    R"doc(Copy the weights to host from the device.)doc";
 
 static const char *__doc_popart_Session_writeWeights =
-    R"doc(Write the weights. Must call weightsFromHost after
+    R"doc(Write the weights. Must call weightsFromHost() after this.
 
-weight data : to addresses in weightsIo.out)doc";
+The weight data is written to the addresses in ``weightsIo``.out.)doc";
 
 static const char *__doc_popart_StepIOGeneric = R"doc()doc";
 
@@ -4808,6 +4979,24 @@ static const char *__doc_popart_StepIOGeneric_outputsInfo = R"doc()doc";
 
 static const char *__doc_popart_StepIOSplitter = R"doc()doc";
 
+static const char *__doc_popart_SubgraphCopyingStrategy =
+    R"doc(Enum type that describes how copies for inputs and outputs for
+subgraphs are lowered. Currently this only affects subgraphs
+associated with CallOps.)doc";
+
+static const char *__doc_popart_SubgraphCopyingStrategy_JustInTime =
+    R"doc(Copy inputs just before they are consumed and copy outputs as soon as
+they are produced. With this strategy subgraphs may be lowered into
+multiple Poplar functions.)doc";
+
+static const char *__doc_popart_SubgraphCopyingStrategy_N =
+    R"doc(The number of SubgraphCopyingStrategy values.)doc";
+
+static const char *__doc_popart_SubgraphCopyingStrategy_OnEnterAndExit =
+    R"doc(Copy all inputs before the start of the subgraph, copy all outputs
+after all ops in the subgraph. With this strategy subgraphs will
+always map to a single Poplar function.)doc";
+
 static const char *__doc_popart_SyncPattern = R"doc()doc";
 
 static const char *__doc_popart_SyncPattern_Full = R"doc()doc";
@@ -4820,7 +5009,7 @@ static const char *__doc_popart_SyntheticDataMode =
     R"doc(Enum type used to specify the data source for input tensors.)doc";
 
 static const char *__doc_popart_SyntheticDataMode_N =
-    R"doc(The number of SyntheticDataMode values.)doc";
+    R"doc(The number of ``SyntheticDataMode`` values.)doc";
 
 static const char *__doc_popart_SyntheticDataMode_Off =
     R"doc(Use real data.)doc";
@@ -4830,6 +5019,8 @@ static const char *__doc_popart_SyntheticDataMode_RandomNormal =
 
 static const char *__doc_popart_SyntheticDataMode_Zeros =
     R"doc(Input tensors are initialised to all zeros.)doc";
+
+static const char *__doc_popart_Tensor = R"doc()doc";
 
 static const char *__doc_popart_TensorData = R"doc()doc";
 
@@ -4877,6 +5068,31 @@ tensors.
 
 See also: SessionOptions.)doc";
 
+static const char *__doc_popart_TensorLocationInfo = R"doc()doc";
+
+static const char *__doc_popart_TensorLocationInfo_getRemoteBufferInfo =
+    R"doc()doc";
+
+static const char *__doc_popart_TensorLocationInfo_isRemote = R"doc()doc";
+
+static const char *__doc_popart_TensorLocationInfo_isSharded = R"doc()doc";
+
+static const char *__doc_popart_TensorLocationInfo_operator_eq = R"doc()doc";
+
+static const char *__doc_popart_TensorLocationInfo_remote = R"doc()doc";
+
+static const char *__doc_popart_TensorLocationInfo_remoteBufferInfo =
+    R"doc()doc";
+
+static const char *__doc_popart_TensorLocationInfo_setRemote = R"doc()doc";
+
+static const char *__doc_popart_TensorLocationInfo_setRemoteBufferInfo =
+    R"doc()doc";
+
+static const char *__doc_popart_TensorLocationInfo_setSharded = R"doc()doc";
+
+static const char *__doc_popart_TensorLocationInfo_sharded = R"doc()doc";
+
 static const char *__doc_popart_TensorLocationSettings =
     R"doc(A structure containing user configuration for cache/offloading
 settings.)doc";
@@ -4899,7 +5115,7 @@ considered.)doc";
 
 static const char *
     __doc_popart_TensorLocationSettings_minElementsForReplicatedTensorSharding =
-        R"doc(A minimum number of elements below which Replicated Tensor Sharding
+        R"doc(A minimum number of elements below which replicated tensor sharding
 (RTS) won't be considered.)doc";
 
 static const char *__doc_popart_TensorLocationSettings_operator_assign =
@@ -4921,16 +5137,16 @@ static const char *__doc_popart_TensorLocation_TensorLocation_4 =
     R"doc(Construct a TensorLocation from parameters.
 
 Parameter ``storage``:
-    the memory location of the tensor(s).
+    The memory location of the tensor(s).
 
 Parameter ``loadTileSet``:
-    the tiles through which the tensor(s) are loaded onto the chip.
+    The tiles through which the tensor(s) are loaded onto the chip.
 
 Parameter ``storageTileSet``:
-    the tiles on which the tensor(s) are stored.
+    The tiles on which the tensor(s) are stored.
 
 Parameter ``replicatedTensorSharding``:
-    whether to apply replicated tensor sharding.)doc";
+    Whether to apply replicated tensor. sharding.)doc";
 
 static const char *__doc_popart_TensorLocation_TensorLocation_5 = R"doc()doc";
 
@@ -4967,6 +5183,172 @@ static const char *__doc_popart_TensorStorage_OnChip =
 
 static const char *__doc_popart_TensorStorage_Undefined =
     R"doc(Location unspecified.)doc";
+
+static const char *__doc_popart_TensorType = R"doc()doc";
+
+static const char *__doc_popart_TensorTypeInfo = R"doc()doc";
+
+static const char *__doc_popart_TensorTypeInfo_TensorTypeInfo = R"doc()doc";
+
+static const char *__doc_popart_TensorTypeInfo_tensorType = R"doc()doc";
+
+static const char *__doc_popart_TensorTypeInfo_tensor_type = R"doc()doc";
+
+static const char *__doc_popart_TensorTypeInfo_type = R"doc()doc";
+
+static const char *__doc_popart_TensorTypeInfo_type_s = R"doc()doc";
+
+static const char *__doc_popart_TensorType_ActGrad = R"doc()doc";
+
+static const char *__doc_popart_TensorType_Const = R"doc()doc";
+
+static const char *__doc_popart_TensorType_N = R"doc()doc";
+
+static const char *__doc_popart_TensorType_Stream = R"doc()doc";
+
+static const char *__doc_popart_TensorType_Unknown = R"doc()doc";
+
+static const char *__doc_popart_TensorType_Variable = R"doc()doc";
+
+static const char *__doc_popart_Tensor_ReplicatedStreamMode = R"doc()doc";
+
+static const char *__doc_popart_Tensor_ReplicatedStreamMode_Broadcast =
+    R"doc()doc";
+
+static const char *__doc_popart_Tensor_ReplicatedStreamMode_Replicate =
+    R"doc()doc";
+
+static const char *__doc_popart_Tensor_Tensor = R"doc()doc";
+
+static const char *__doc_popart_Tensor_anyAlias = R"doc()doc";
+
+static const char *__doc_popart_Tensor_associatedOps = R"doc()doc";
+
+static const char *__doc_popart_Tensor_clone = R"doc()doc";
+
+static const char *__doc_popart_Tensor_consumers = R"doc()doc";
+
+static const char *__doc_popart_Tensor_consumersAllPreLoss = R"doc()doc";
+
+static const char *__doc_popart_Tensor_data = R"doc()doc";
+
+static const char *__doc_popart_Tensor_di = R"doc()doc";
+
+static const char *__doc_popart_Tensor_getBatchAxis = R"doc()doc";
+
+static const char *__doc_popart_Tensor_getBatchAxisFromOp = R"doc()doc";
+
+static const char *__doc_popart_Tensor_getDataViaRecursion = R"doc()doc";
+
+static const char *__doc_popart_Tensor_getDebugInfo = R"doc()doc";
+
+static const char *__doc_popart_Tensor_getGraph = R"doc()doc";
+
+static const char *__doc_popart_Tensor_getGraph_2 = R"doc()doc";
+
+static const char *__doc_popart_Tensor_getGraphInputIndex = R"doc()doc";
+
+static const char *__doc_popart_Tensor_getGraphOutputIndex = R"doc()doc";
+
+static const char *__doc_popart_Tensor_getIr = R"doc()doc";
+
+static const char *__doc_popart_Tensor_getIr_2 = R"doc()doc";
+
+static const char *__doc_popart_Tensor_getPipelineStages = R"doc()doc";
+
+static const char *__doc_popart_Tensor_getProducer = R"doc()doc";
+
+static const char *__doc_popart_Tensor_getProducerUnsafe = R"doc()doc";
+
+static const char *__doc_popart_Tensor_getReplicatedStreamMode = R"doc()doc";
+
+static const char *__doc_popart_Tensor_getTensorTypeInfo = R"doc()doc";
+
+static const char *__doc_popart_Tensor_getVirtualGraphId = R"doc()doc";
+
+static const char *__doc_popart_Tensor_getVirtualGraphIdAndTileSet =
+    R"doc()doc";
+
+static const char *__doc_popart_Tensor_getVirtualGraphIdAndTileSetUnsafe =
+    R"doc()doc";
+
+static const char *__doc_popart_Tensor_getVirtualGraphIdUnsafe = R"doc()doc";
+
+static const char *__doc_popart_Tensor_graph = R"doc()doc";
+
+static const char *__doc_popart_Tensor_hasProducer = R"doc()doc";
+
+static const char *__doc_popart_Tensor_hasTensorData = R"doc()doc";
+
+static const char *__doc_popart_Tensor_hasVirtualGraphId = R"doc()doc";
+
+static const char *__doc_popart_Tensor_id = R"doc()doc";
+
+static const char *__doc_popart_Tensor_info = R"doc()doc";
+
+static const char *__doc_popart_Tensor_isAccumulatorTensor = R"doc()doc";
+
+static const char *__doc_popart_Tensor_isAliased = R"doc()doc";
+
+static const char *__doc_popart_Tensor_isAnchored = R"doc()doc";
+
+static const char *__doc_popart_Tensor_isCheckpointTensor = R"doc()doc";
+
+static const char *__doc_popart_Tensor_isExplicitLoopInput = R"doc()doc";
+
+static const char *__doc_popart_Tensor_isGraphInput = R"doc()doc";
+
+static const char *__doc_popart_Tensor_isGraphOutput = R"doc()doc";
+
+static const char *__doc_popart_Tensor_isImplicitLoopInput = R"doc()doc";
+
+static const char *__doc_popart_Tensor_isImplicitRecomputeTensor = R"doc()doc";
+
+static const char *__doc_popart_Tensor_isLoopInput = R"doc()doc";
+
+static const char *__doc_popart_Tensor_isModified = R"doc()doc";
+
+static const char *__doc_popart_Tensor_isOptimizerStateTensor = R"doc()doc";
+
+static const char *__doc_popart_Tensor_isOptimizerTensor = R"doc()doc";
+
+static const char *__doc_popart_Tensor_isRandomSeedTensor = R"doc()doc";
+
+static const char *__doc_popart_Tensor_isRemoteArgTensor = R"doc()doc";
+
+static const char *__doc_popart_Tensor_isRestoreInplaceTensor = R"doc()doc";
+
+static const char *__doc_popart_Tensor_isUnmodifiable = R"doc()doc";
+
+static const char *__doc_popart_Tensor_isWeightTensor = R"doc()doc";
+
+static const char *__doc_popart_Tensor_producer = R"doc()doc";
+
+static const char *__doc_popart_Tensor_replicatedStreamMode = R"doc()doc";
+
+static const char *__doc_popart_Tensor_resetProducer = R"doc()doc";
+
+static const char *__doc_popart_Tensor_setProducer = R"doc()doc";
+
+static const char *__doc_popart_Tensor_setReplicatedStreamMode = R"doc()doc";
+
+static const char *__doc_popart_Tensor_setTensorData = R"doc()doc";
+
+static const char *__doc_popart_Tensor_setTensorType = R"doc()doc";
+
+static const char *__doc_popart_Tensor_str = R"doc()doc";
+
+static const char *__doc_popart_Tensor_tensorData = R"doc()doc";
+
+static const char *__doc_popart_Tensor_tensorData_2 = R"doc()doc";
+
+static const char *__doc_popart_Tensor_tensorLocationInfo = R"doc()doc";
+
+static const char *__doc_popart_Tensor_tensorType = R"doc()doc";
+
+static const char *__doc_popart_Tensor_tensorTypeInfo = R"doc()doc";
+
+static const char *__doc_popart_Tensor_tensor_type = R"doc()doc";
 
 static const char *__doc_popart_Tensors = R"doc()doc";
 
@@ -5034,6 +5416,8 @@ static const char *__doc_popart_Tensors_makeConstInit = R"doc()doc";
 
 static const char *__doc_popart_Tensors_moveIntoTensors = R"doc()doc";
 
+static const char *__doc_popart_Tensors_n = R"doc()doc";
+
 static const char *__doc_popart_Tensors_remove = R"doc()doc";
 
 static const char *__doc_popart_Tensors_removeIsolated = R"doc()doc";
@@ -5059,54 +5443,54 @@ static const char *__doc_popart_TrainingSession_connectStreamToCallback =
     R"doc(Connect Poplar stream callbacks. In conjunction with
 `getGradAndVarStreamIds` the streams can be used to copy gradients to
 the host to perform collective operations after which the variables
-can be streamed back after they have been updated to the device.
-`index` referes to the replica index when using replicated graphs.)doc";
+can be streamed back after they have been updated to the device. \p
+index referes to the replica index when using replicated graphs.)doc";
 
 static const char *__doc_popart_TrainingSession_copyFromRemoteBuffer =
-    R"doc(Read from a RemoteBuffer object into a user space pointer w. This can
-be useful when we run larger models with host side reductions since
-HEXOPT is currently limited to 128 MB)doc";
+    R"doc(Read from a RemoteBuffer object into a user space pointer \p w. This
+can be useful when we run larger models with host side reductions
+since HEXOPT is currently limited to 128 MB.)doc";
 
 static const char *__doc_popart_TrainingSession_copyToRemoteBuffer =
-    R"doc(Write to a RemoteBuffer object from a user space pointer w. This can
-be useful when we run larger models with host side reductions since
-HEXOPT is currently limited to 128 MB)doc";
+    R"doc(Write to a RemoteBuffer object from a user space pointer \p w. This
+can be useful when we run larger models with host side reductions
+since HEXOPT is currently limited to 128 MB.)doc";
 
 static const char *__doc_popart_TrainingSession_createFromOnnxModel =
     R"doc(Create a runtime class for executing an ONNX graph on a set of IPU
-hardware for training
+hardware for training.
 
 Parameter ``model``:
     Either an ONNX model protobuf, or the name of a file containing an
-    ONNX model protobuf
+    ONNX model protobuf.
 
 Parameter ``inputShapeInfo``:
-    Information about the shapes of input and output tensors
+    Information about the shapes of input and output tensors.
 
 Parameter ``dataFlow``:
-    Configuration for the data feeds and fetches
+    Configuration for the data feeds and fetches.
 
 Parameter ``loss``:
-    The TensorId of the final scalar loss tensor for training
+    The TensorId of the final scalar loss tensor for training.
 
 Parameter ``optimizer``:
-    The name of an optimizer to use when training
+    The name of an optimizer to use when training.
 
 Parameter ``userOptions``:
-    String to configure session options
+    String to configure session options.
 
 Parameter ``patterns``:
-    Optimization patterns to apply)doc";
+    Optimization patterns to apply.)doc";
 
 static const char *__doc_popart_TrainingSession_getHostReduceRemoteBuffers =
     R"doc(Access the remote buffers associated with gradient and weight streams
 that are used in host side all reduce operations. Only populated if
-hostAllReduce and hostAllReduceRemoteBuffer are enabled.)doc";
+``hostAllReduce`` and ``hostAllReduceRemoteBuffer`` are enabled.)doc";
 
 static const char *__doc_popart_TrainingSession_getHostReduceStreamIds =
     R"doc(Access the stream IDs for variables that are involved in host side
-reductions on the host. Only populated if hostAllReduce is enabled in
-the SessionOptions)doc";
+reductions on the host. Only populated if ``hostAllReduce`` is enabled
+in the SessionOptions)doc";
 
 static const char *__doc_popart_TrainingSession_updateOptimizerFromHost =
     R"doc(Update the optimizer and the associated hyperparameters but not the
@@ -5121,6 +5505,34 @@ change the IR after it has been constructed.
 Parameter ``optimizer``:
     A pointer to a popart::Optimizer.)doc";
 
+static const char *__doc_popart_VariableTensor = R"doc()doc";
+
+static const char *__doc_popart_VariableTensor_VariableTensor = R"doc()doc";
+
+static const char *__doc_popart_VariableTensor_clone = R"doc()doc";
+
+static const char *__doc_popart_VariableTensor_copyFromTensor = R"doc()doc";
+
+static const char *__doc_popart_VariableTensor_getCopyFromTensor = R"doc()doc";
+
+static const char *__doc_popart_VariableTensor_getVariableUpdateType =
+    R"doc()doc";
+
+static const char *__doc_popart_VariableTensor_setCopyFromTensor = R"doc()doc";
+
+static const char *__doc_popart_VariableTensor_setVariableUpdateType =
+    R"doc()doc";
+
+static const char *__doc_popart_VariableTensor_variableUpdateType = R"doc()doc";
+
+static const char *__doc_popart_VariableUpdateType = R"doc()doc";
+
+static const char *__doc_popart_VariableUpdateType_Copy = R"doc()doc";
+
+static const char *__doc_popart_VariableUpdateType_Gradient = R"doc()doc";
+
+static const char *__doc_popart_VariableUpdateType_None = R"doc()doc";
+
 static const char *__doc_popart_VirtualGraphMode =
     R"doc(Enum type used to specify a virtual graph mode.)doc";
 
@@ -5134,7 +5546,7 @@ static const char *__doc_popart_VirtualGraphMode_Manual =
     R"doc(User must set the `virtualGraph` attribute on all ops.)doc";
 
 static const char *__doc_popart_VirtualGraphMode_N =
-    R"doc(The number of VirtualGraphModes values.)doc";
+    R"doc(The number of ``VirtualGraphModes`` values.)doc";
 
 static const char *__doc_popart_VirtualGraphMode_Off =
     R"doc(Virtual graphs are not enabled.)doc";
@@ -5197,6 +5609,8 @@ static const char *__doc_popart_getRecompId = R"doc()doc";
 
 static const char *__doc_popart_getRemoteArgTensorId = R"doc()doc";
 
+static const char *__doc_popart_getTensorTypeInfoMap = R"doc()doc";
+
 static const char *__doc_popart_getUpdatedVarId = R"doc()doc";
 
 static const char *__doc_popart_hash_value = R"doc()doc";
@@ -5208,6 +5622,8 @@ static const char *__doc_popart_hash_value_3 = R"doc()doc";
 static const char *__doc_popart_hostReduceGradCopyPrefix = R"doc()doc";
 
 static const char *__doc_popart_hostReduceVarCopyPrefix = R"doc()doc";
+
+static const char *__doc_popart_initTensorTypeInfoMap = R"doc()doc";
 
 static const char *__doc_popart_internal_error =
     R"doc(Exception class specific to internal errors This should be used as an
@@ -5346,37 +5762,37 @@ static const char *__doc_popart_operator_lshift_3 =
     R"doc(Write a representation of a DeviceType to an output stream.
 
 Parameter ``os``:
-    Output stream
+    Output stream.
 
 Parameter ``dt``:
-    Device type reference
+    Device type reference.
 
 Returns:
-    The same output stream for chaining)doc";
+    The same output stream for chaining.)doc";
 
 static const char *__doc_popart_operator_lshift_4 =
     R"doc(Write a representation of a DeviceConnectionType to an output stream.
 
 Parameter ``os``:
-    Output stream
+    Output stream.
 
 Parameter ``dct``:
-    Device connection type reference
+    Device connection type reference.
 
 Returns:
-    The same output stream for chaining)doc";
+    The same output stream for chaining.)doc";
 
 static const char *__doc_popart_operator_lshift_5 =
     R"doc(Write a representation of a SyncPattern to an output stream.
 
 Parameter ``os``:
-    Output stream
+    Output stream.
 
 Parameter ``sp``:
-    Sync pattern reference
+    Sync pattern reference.
 
 Returns:
-    The same output stream for chaining)doc";
+    The same output stream for chaining.)doc";
 
 static const char *__doc_popart_operator_lshift_6 = R"doc()doc";
 
@@ -5394,11 +5810,21 @@ static const char *__doc_popart_operator_lshift_12 = R"doc()doc";
 
 static const char *__doc_popart_operator_lshift_13 = R"doc()doc";
 
+static const char *__doc_popart_operator_lshift_14 = R"doc()doc";
+
+static const char *__doc_popart_optimizer_replacement_error = R"doc()doc";
+
+static const char
+    *__doc_popart_optimizer_replacement_error_optimizer_replacement_error =
+        R"doc()doc";
+
+static const char
+    *__doc_popart_optimizer_replacement_error_optimizer_replacement_error_2 =
+        R"doc()doc";
+
 static const char *__doc_popart_popx_Devicex = R"doc()doc";
 
 static const char *__doc_popart_popx_Devicex_2 = R"doc()doc";
-
-static const char *__doc_popart_popx_Devicex_3 = R"doc()doc";
 
 static const char *__doc_popart_popx_Devicex_Datastream = R"doc()doc";
 
@@ -5497,6 +5923,8 @@ static const char *__doc_popart_popx_Devicex_getAccumulationFactor =
     R"doc()doc";
 
 static const char *__doc_popart_popx_Devicex_getDeviceInfo = R"doc()doc";
+
+static const char *__doc_popart_popx_Devicex_getDeviceInfo_2 = R"doc()doc";
 
 static const char *__doc_popart_popx_Devicex_getEfficientlyCreatedInputTensors =
     R"doc()doc";
@@ -5617,16 +6045,6 @@ static const char *__doc_popart_popx_Executablex_3 = R"doc()doc";
 static const char *__doc_popart_popx_IrLowering = R"doc()doc";
 
 static const char *__doc_popart_popx_IrLowering_2 = R"doc()doc";
-
-static const char *__doc_popart_popx_exportExecutable = R"doc()doc";
-
-static const char *__doc_popart_popx_exportStepIO = R"doc()doc";
-
-static const char *__doc_popart_popx_exportStepIO_2 = R"doc()doc";
-
-static const char *__doc_popart_popx_exportWeights = R"doc()doc";
-
-static const char *__doc_popart_popx_exporterIsAvailable = R"doc()doc";
 
 static const char *__doc_popart_popx_popType = R"doc()doc";
 
@@ -5801,13 +6219,11 @@ static const char *__doc_popart_toString = R"doc()doc";
 
 static const char *__doc_popart_toString_2 = R"doc()doc";
 
-static const char *__doc_poplar_Executable = R"doc()doc";
-
 static const char *__doc_poplar_OptionFlags = R"doc()doc";
 
-static const char *__doc_poplar_OptionFlags_2 = R"doc()doc";
-
 static const char *__doc_poplar_Target = R"doc()doc";
+
+static const char *__doc_poprithms_logging_TimePartitionLogger = R"doc()doc";
 
 static const char *__doc_std_hash = R"doc()doc";
 
