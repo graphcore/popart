@@ -422,6 +422,9 @@ public:
   // the default.
   bool hasSpecific(const Tensor &w) const;
 
+  // Do any weights have specific OptimizerValues, or do they all use default?
+  bool hasSpecific() const;
+
   /// Constructor.
   /// \param defaultLearningRate The learning rate value to use for weights
   ///     for which no weight-specific hyper parameter have been inserted.
@@ -533,6 +536,8 @@ public:
   /// accumulation or because of momentum, then return true otherwise return
   /// false.
   bool requiresAccl(const Tensor &weight) const;
+
+  TensorId getInverseLossScalingTensorId(const Tensor &weight) const;
 
   const OptimizerValueMap &learningRates() const { return lrs; }
   const OptimizerValueMap &weightDecays() const { return wds; }

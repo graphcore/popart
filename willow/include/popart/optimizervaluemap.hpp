@@ -25,6 +25,8 @@ public:
     return specifics.find(id) != specifics.end();
   }
 
+  bool hasSpecific() const { return specifics.size() > 0; }
+
   OptimizerValue getDefault() const { return defaultOptVal; }
 
   // Check for compatibility of OptimizerValueMaps - can one replace another

@@ -207,6 +207,16 @@ bool SGD::hasSpecific(const Tensor &w) const {
   return counter > 0;
 }
 
+bool SGD::hasSpecific() const {
+  auto specifics = {lrs.hasSpecific(),
+                    wds.hasSpecific(),
+                    mms.hasSpecific(),
+                    dps.hasSpecific(),
+                    vss.hasSpecific()};
+  return std::any_of(
+      specifics.begin(), specifics.end(), [](bool s) { return s; });
+}
+
 bool SGD::requiresAccl(const Tensor &weight) const {
   OptimizerValue mm = mms.get(weight.id);
   return gradientAccumulationEnabled() || !mm.isConst() || mm.val() != 0.0f;
@@ -531,6 +541,14 @@ void SGD::validReplacement(const Optimizer &other) const {
 
 std::unique_ptr<Optimizer> SGD::clone() const {
   return std::make_unique<SGD>(*this);
+}
+
+TensorId SGD::getInverseLossScalingTensorId(const Tensor &weight) const {
+  if (requiresAccl(weight)) {
+    return getInputIds(weight).at(SGD1ComboOp::getDpsf1InIndex());
+  } else {
+    return getInputIds(weight).at(SGD0VarUpdateOp::getSlr0InIndex());
+  }
 }
 
 size_t SGD::hash() const {
