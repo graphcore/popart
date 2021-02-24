@@ -33,9 +33,13 @@ HashesMap getCacheEntries(const std::string &cachePath) {
   for (auto &entry : boost::filesystem::directory_iterator(cachePath)) {
     if (boost::filesystem::is_regular_file(entry)) {
       std::ifstream in(entry.path().string(), std::ifstream::binary);
-      auto hash = popart::popx::serialization::readExecutableHash(in);
-      if (hash != 0) {
+      try {
+        auto hash = popart::popx::serialization::readExecutableHash(in);
         cacheEntries.emplace(hash, entry.path().string());
+      } catch (const std::exception &e) {
+        logging::session::trace("Ignoring invalid cache file {}: {}",
+                                entry.path().string(),
+                                e.what());
       }
     }
   }
@@ -100,8 +104,16 @@ bool Session::tryLoadExecutable() {
   if (executableFs.is_open()) {
     logging::session::warn("Loading serialized PopART executable from {}",
                            popartCachePath);
-    loadExecutableFromStream(executableFs);
-    return true;
+    try {
+      loadExecutableFromStream(executableFs);
+      return true;
+    } catch (const std::exception &e) {
+      logging::session::warn(
+          "Failed to load cached PopART executable from {}: {}",
+          popartCachePath,
+          e.what());
+      return false;
+    }
   }
   logging::session::warn("Could not open file {}", popartCachePath);
   return false;
@@ -114,7 +126,13 @@ void Session::loadExecutableFromFile(std::string filename) {
   }
   logging::session::warn("Loading serialized PopART executable from {}",
                          filename);
-  loadExecutableFromStream(executableFs);
+  try {
+    loadExecutableFromStream(executableFs);
+  } catch (...) {
+    logging::session::err(
+        "Failed to load serialized PopART executable from {}:", filename);
+    throw;
+  }
 }
 
 void Session::loadExecutableFromStream(std::istream &in) {
@@ -548,8 +566,9 @@ void InferenceSession::configureFromOnnx(
   logging::session::trace("InferenceSession::configureFromOnnx");
 
   auto modelProto = onnxutil::getModelProto(modelProtoOrFilename);
-
-  cacheEntries = getCacheEntries(userOptions.cachePath);
+  if (userOptions.enableEngineCaching) {
+    cacheEntries = getCacheEntries(userOptions.cachePath);
+  }
   ir.prepare(
       {modelProto, perk, df, {}, nullptr, *deviceInfo, userOptions, patterns},
       cacheEntries);
@@ -595,7 +614,9 @@ void TrainingSession::configureFromOnnx(const std::string &modelProtoOrFilename,
 
   auto modelProto = onnxutil::getModelProto(modelProtoOrFilename);
 
-  cacheEntries = getCacheEntries(userOptions.cachePath);
+  if (userOptions.enableEngineCaching) {
+    cacheEntries = getCacheEntries(userOptions.cachePath);
+  }
   ir.prepare({modelProto,
               perk,
               df,
