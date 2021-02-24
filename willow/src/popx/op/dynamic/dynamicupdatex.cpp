@@ -8,6 +8,7 @@
 #include <popart/tensor.hpp>
 #include <popart/tensorindex.hpp>
 
+#include <popops/Cast.hpp>
 #include <popops/DynamicSlice.hpp>
 #include <popops/ElementWise.hpp>
 #include <popops/Zero.hpp>
@@ -36,7 +37,11 @@ void DynamicUpdateOpx::grow(poplar::program::Sequence &prog) const {
       graph(),
       outTensor,
       slice,
-      index,
+      popops::cast(graph(),
+                   index.reshape({op.getAxes().size()}),
+                   poplar::UNSIGNED_INT,
+                   prog,
+                   debugContext()),
       paxes,
       psizes,
       prog,

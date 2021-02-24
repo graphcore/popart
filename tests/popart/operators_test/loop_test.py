@@ -118,3 +118,52 @@ def test_loop_matmul(op_tester):
     op_tester.setPatterns(popart.PatternsLevel.NoPatterns,
                           enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference, step_type='infer')
+
+
+def test_loop_stop(op_tester):
+    i1 = np.array([1]).astype(np.float32)
+    i2 = np.array([4]).astype(np.float32)
+    trip_count = 10
+
+    def init_builder(builder):
+        builder.setGraphName("main_graph")
+        a = builder.addInputTensor(i1)
+        b = builder.addInputTensor(i2)
+
+        M = builder.aiOnnx.constant(np.array(trip_count).astype(np.int64))
+        cond = builder.aiOnnx.constant(np.array(True).astype(np.bool), "cond")
+
+        loop_builder = builder.createSubgraphBuilder()
+        loop_builder.setGraphName("body")
+        # Inputs: [iteration_number, condition_in, a_in]
+        loop_builder.addInputTensor(popart.TensorInfo("INT64", []))
+        cond_in = loop_builder.addUntypedInputTensor(cond)
+        a_in = loop_builder.addUntypedInputTensor(a)
+        a_out = loop_builder.aiOnnx.mul([a_in, b])
+        max = loop_builder.aiOnnx.constant(
+            np.array([128]).astype(np.float32), "max")
+        keepgoing = loop_builder.aiOnnx.less([a_out, max])
+
+        # Outputs: [condition_out, a_out]
+        loop_builder.addOutputTensor(keepgoing)
+        loop_builder.addOutputTensor(a_out)
+
+        o = builder.aiOnnx.loop([M, cond, a], 1, loop_builder)[0]
+        builder.addOutputTensor(o)
+        return [o]
+
+    def reference(ref_data):
+        a = i1
+        b = i2
+
+        x = a
+        for i in range(trip_count):
+            x = x * b
+            if x >= 128:
+                break
+
+        return [x]
+
+    op_tester.setPatterns(popart.PatternsLevel.NoPatterns,
+                          enableRuntimeAsserts=False)
+    op_tester.run(init_builder, reference, step_type='infer')

@@ -1,6 +1,8 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
 #include <fstream>
 
+#include <google/protobuf/text_format.h>
+
 #include <boost/filesystem.hpp>
 
 #include <popart/error.hpp>
@@ -538,6 +540,14 @@ void visitModelValueInfos(
   for (auto &vip : *model.mutable_graph()->mutable_input()) {
     f(vip);
   }
+}
+
+void printOnnxModel(const std::string &modelProtoOrFilename) {
+  auto modelProto = onnxutil::getModelProto(modelProtoOrFilename);
+  std::string readableModelString;
+  google::protobuf::TextFormat::PrintToString(modelProto, &readableModelString);
+
+  logging::session::trace("ONNX Model:\n {}", readableModelString);
 }
 
 } // namespace onnxutil

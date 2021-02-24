@@ -1,5 +1,6 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
 #include <memory>
+#include <onnx/onnx_pb.h>
 #include <popart/graph.hpp>
 #include <popart/op/ipucopy.hpp>
 #include <popart/op/subgraph.hpp>
@@ -8,6 +9,71 @@
 #include <popart/tensorindex.hpp>
 
 namespace popart {
+
+bool SubgraphOp::existsInBodyInputs(std::vector<std::string> &bodyInputIds,
+                                    TensorId &tensorId) {
+  auto found =
+      std::find(std::begin(bodyInputIds), std::end(bodyInputIds), tensorId);
+  return found != std::end(bodyInputIds);
+}
+
+bool SubgraphOp::existsInOpInputs(
+    std::vector<std::pair<TensorId, TensorInfo>> &opInputs,
+    TensorId &tensorId) {
+  auto found =
+      std::find_if(std::begin(opInputs),
+                   std::end(opInputs),
+                   [&tensorId](const std::pair<TensorId, TensorInfo> &kv) {
+                     return kv.first == tensorId;
+                   });
+  return found != std::end(opInputs);
+}
+
+std::vector<TensorId>
+SubgraphOp::getBodyInputIds(const ONNX_NAMESPACE::GraphProto &bodyProto) {
+  std::vector<TensorId> bodyInputs;
+  for (int i = 0; i < bodyProto.input_size(); ++i) {
+    bodyInputs.push_back(bodyProto.input(i).name());
+  }
+  return bodyInputs;
+}
+
+std::vector<TensorId>
+SubgraphOp::getBodyOutputIds(const ONNX_NAMESPACE::GraphProto &bodyProto) {
+  std::vector<TensorId> bodyOutputs;
+  for (int i = 0; i < bodyProto.output_size(); ++i) {
+    bodyOutputs.push_back(bodyProto.output(i).name());
+  }
+  return bodyOutputs;
+}
+
+std::vector<TensorId> SubgraphOp::getImplicitTensors(
+    const ONNX_NAMESPACE::GraphProto &bodyProto,
+    popart::Tensors &tensors,
+    std::vector<std::pair<TensorId, TensorInfo>> &allOpInputs) {
+
+  auto bodyInputIds = SubgraphOp::getBodyInputIds(bodyProto);
+  std::vector<TensorId> implicitTensors;
+
+  for (int i = 0; i < bodyProto.node_size(); ++i) {
+    auto &nodeProto = bodyProto.node(i);
+    for (int j = 0; j < nodeProto.input_size(); ++j) {
+      auto tid        = nodeProto.input(j);
+      auto inLoopBody = SubgraphOp::existsInBodyInputs(bodyInputIds, tid);
+      if (!inLoopBody) {
+        auto inOpInputs = SubgraphOp::existsInOpInputs(allOpInputs, tid);
+        if (!inOpInputs) {
+          if (tensors.contains(tid)) {
+            implicitTensors.push_back(tid);
+            allOpInputs.push_back(std::make_pair(tid, tensors.get(tid)->info));
+          }
+        }
+      }
+    }
+  }
+
+  return implicitTensors;
+}
 
 SubgraphOp::SubgraphOp(const OperatorIdentifier &_opid,
                        const Op::Settings &settings_)

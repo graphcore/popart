@@ -13,93 +13,6 @@
 
 namespace popart {
 
-namespace {
-GraphId generateSubgraphUID(const std::string &postfix) {
-  static int uid = 0;
-  return GraphId(logging::format("loopop_subgraph_{}_{}", uid++, postfix));
-}
-
-bool existsInLoopBodyInputs(std::vector<std::string> &loopBodyInputIds,
-                            TensorId &tensorId) {
-  auto found = std::find(
-      std::begin(loopBodyInputIds), std::end(loopBodyInputIds), tensorId);
-  if (found != std::end(loopBodyInputIds)) {
-    return true;
-  }
-  return false;
-}
-
-bool existsInOpInputs(std::vector<std::pair<TensorId, TensorInfo>> &opInputs,
-                      TensorId &tensorId) {
-  auto found =
-      std::find_if(std::begin(opInputs),
-                   std::end(opInputs),
-                   [&tensorId](const std::pair<TensorId, TensorInfo> &kv) {
-                     return kv.first == tensorId;
-                   });
-  if (found != std::end(opInputs)) {
-    return true;
-  }
-  return false;
-}
-
-std::vector<TensorId>
-getBodyInputIds(const ONNX_NAMESPACE::GraphProto &bodyProto) {
-  std::vector<TensorId> bodyInputIds;
-  for (const auto &input : bodyProto.input()) {
-    bodyInputIds.push_back(input.name());
-  }
-  return bodyInputIds;
-}
-
-std::vector<TensorId>
-loopBodyInputIds(const ONNX_NAMESPACE::GraphProto &bodyProto) {
-  std::vector<TensorId> bodyInputs;
-  for (int i = 0; i < bodyProto.input_size(); ++i) {
-    bodyInputs.push_back(bodyProto.input(i).name());
-  }
-  return bodyInputs;
-}
-
-std::vector<TensorId>
-loopBodyOutputIds(const ONNX_NAMESPACE::GraphProto &bodyProto) {
-  std::vector<TensorId> bodyOutputs;
-  for (int i = 0; i < bodyProto.output_size(); ++i) {
-    bodyOutputs.push_back(bodyProto.output(i).name());
-  }
-  return bodyOutputs;
-}
-
-std::vector<TensorId>
-addImplicitTensors(const ONNX_NAMESPACE::GraphProto &bodyProto,
-                   popart::Tensors &tensors,
-                   std::vector<std::pair<TensorId, TensorInfo>> &allOpInputs) {
-
-  auto loopBodyInputIds = getBodyInputIds(bodyProto);
-  std::vector<TensorId> implicitTensors;
-
-  for (int i = 0; i < bodyProto.node_size(); ++i) {
-    auto &nodeProto = bodyProto.node(i);
-    for (int j = 0; j < nodeProto.input_size(); ++j) {
-      auto tid        = nodeProto.input(j);
-      auto inLoopBody = existsInLoopBodyInputs(loopBodyInputIds, tid);
-      if (!inLoopBody) {
-        auto inOpInputs = existsInOpInputs(allOpInputs, tid);
-        if (!inOpInputs) {
-          if (tensors.contains(tid)) {
-            implicitTensors.push_back(tid);
-            allOpInputs.push_back(std::make_pair(tid, tensors.get(tid)->info));
-          }
-        }
-      }
-    }
-  }
-
-  return implicitTensors;
-}
-
-} // namespace
-
 LoopOp::LoopOp(const OperatorIdentifier &_opid,
                const Op::Settings &settings_,
                Graph &callee_)
@@ -304,11 +217,11 @@ static OpCreator<LoopOp> loopOpCreator(
     [](const OpCreatorInfo &info) -> std::unique_ptr<Op> {
       const ONNX_NAMESPACE::GraphProto &callee =
           info.attributes.getAttribute<Attributes::Graph>("body");
-      auto &mainGraph = info.settings.graph.get();
-      auto &tensors   = mainGraph.getTensors();
+      auto &parentGraph = info.settings.graph.get();
+      auto &tensors     = parentGraph.getTensors();
 
-      auto loopBodyInputs  = loopBodyInputIds(callee);
-      auto loopBodyOutputs = loopBodyOutputIds(callee);
+      auto loopBodyInputs  = SubgraphOp::getBodyInputIds(callee);
+      auto loopBodyOutputs = SubgraphOp::getBodyOutputIds(callee);
 
       std::vector<std::pair<TensorId, TensorInfo>> opInputs;
 
@@ -317,11 +230,16 @@ static OpCreator<LoopOp> loopOpCreator(
                             tensors.get(info.getInputIds().at(i))->info});
       }
 
-      auto implicitTensors = addImplicitTensors(callee, tensors, opInputs);
+      auto implicitTensors =
+          SubgraphOp::getImplicitTensors(callee, tensors, opInputs);
+
+      logging::op::trace("[LoopOp] Implicit tensors: {}", implicitTensors);
 
       auto subgraphId =
-          callee.name().empty() ? generateSubgraphUID("loop") : callee.name();
-      auto &ir          = mainGraph.getIr();
+          callee.name().empty()
+              ? parentGraph.getIr().createUniqueSubgraphId({"loop"})
+              : callee.name();
+      auto &ir          = parentGraph.getIr();
       auto &calleeGraph = ir.createGraph(subgraphId);
 
       for (int i = 0; i < opInputs.size(); ++i) {

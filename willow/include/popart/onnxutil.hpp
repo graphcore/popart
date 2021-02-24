@@ -66,6 +66,9 @@ void visitModelValueInfos(
     ONNX_NAMESPACE::ModelProto &model,
     std::function<void(ONNX_NAMESPACE::ValueInfoProto &)> f);
 
+// Print human-readable version of the ONNX model for debugging purposes
+void printOnnxModel(const std::string &modelProtoOrFilename);
+
 } // namespace onnxutil
 } // namespace popart
 

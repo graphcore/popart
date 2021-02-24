@@ -80,15 +80,15 @@ BOOST_AUTO_TEST_CASE(TestOutliningWithExtraAttributes) {
     runner.checkIr([&](Ir &ir) {
       std::map<GraphId, size_t> numCallsToSubgraph = getNumCallsToSubgraph(ir);
 
-      BOOST_CHECK(numCallsToSubgraph.find(GraphId("_subgraph(0)")) !=
+      BOOST_CHECK(numCallsToSubgraph.find(GraphId("call_subgraph(0)")) !=
                   numCallsToSubgraph.end());
-      BOOST_CHECK(numCallsToSubgraph.find(GraphId("_subgraph(1)")) !=
+      BOOST_CHECK(numCallsToSubgraph.find(GraphId("call_subgraph(1)")) !=
                   numCallsToSubgraph.end());
-      BOOST_CHECK(numCallsToSubgraph.find(GraphId("_subgraph(2)")) !=
+      BOOST_CHECK(numCallsToSubgraph.find(GraphId("call_subgraph(2)")) !=
                   numCallsToSubgraph.end());
-      BOOST_CHECK(numCallsToSubgraph.find(GraphId("_subgraph(3)")) !=
+      BOOST_CHECK(numCallsToSubgraph.find(GraphId("call_subgraph(3)")) !=
                   numCallsToSubgraph.end());
-      BOOST_CHECK(numCallsToSubgraph.find(GraphId("_subgraph(4)")) !=
+      BOOST_CHECK(numCallsToSubgraph.find(GraphId("call_subgraph(4)")) !=
                   numCallsToSubgraph.end());
       for (auto &graphIdAndCount : numCallsToSubgraph) {
         logging::trace("Calls to subgraph: {} {}",
@@ -96,43 +96,43 @@ BOOST_AUTO_TEST_CASE(TestOutliningWithExtraAttributes) {
                        graphIdAndCount.second);
         switch (numOutliningContexts) {
         case 1:
-          BOOST_CHECK(graphIdAndCount.first != GraphId("_subgraph(0)") ||
+          BOOST_CHECK(graphIdAndCount.first != GraphId("call_subgraph(0)") ||
                       graphIdAndCount.second == 4);
-          BOOST_CHECK(graphIdAndCount.first != GraphId("_subgraph(1)") ||
+          BOOST_CHECK(graphIdAndCount.first != GraphId("call_subgraph(1)") ||
                       graphIdAndCount.second == 4);
-          BOOST_CHECK(graphIdAndCount.first != GraphId("_subgraph(2)") ||
+          BOOST_CHECK(graphIdAndCount.first != GraphId("call_subgraph(2)") ||
                       graphIdAndCount.second == 1);
-          BOOST_CHECK(graphIdAndCount.first != GraphId("_subgraph(3)") ||
+          BOOST_CHECK(graphIdAndCount.first != GraphId("call_subgraph(3)") ||
                       graphIdAndCount.second == 4);
-          BOOST_CHECK(graphIdAndCount.first != GraphId("_subgraph(4)") ||
+          BOOST_CHECK(graphIdAndCount.first != GraphId("call_subgraph(4)") ||
                       graphIdAndCount.second == 3);
           break;
         case 3:
-          BOOST_CHECK(graphIdAndCount.first != GraphId("_subgraph(0)") ||
+          BOOST_CHECK(graphIdAndCount.first != GraphId("call_subgraph(0)") ||
                       graphIdAndCount.second == 2);
-          BOOST_CHECK(graphIdAndCount.first != GraphId("_subgraph(1)") ||
+          BOOST_CHECK(graphIdAndCount.first != GraphId("call_subgraph(1)") ||
                       graphIdAndCount.second == 2);
-          BOOST_CHECK(graphIdAndCount.first != GraphId("_subgraph(2)") ||
+          BOOST_CHECK(graphIdAndCount.first != GraphId("call_subgraph(2)") ||
                       graphIdAndCount.second == 1);
-          BOOST_CHECK(graphIdAndCount.first != GraphId("_subgraph(3)") ||
+          BOOST_CHECK(graphIdAndCount.first != GraphId("call_subgraph(3)") ||
                       graphIdAndCount.second == 4);
-          BOOST_CHECK(graphIdAndCount.first != GraphId("_subgraph(4)") ||
+          BOOST_CHECK(graphIdAndCount.first != GraphId("call_subgraph(4)") ||
                       graphIdAndCount.second == 3);
           break;
         case 4:
-          BOOST_CHECK(graphIdAndCount.first != GraphId("_subgraph(0)") ||
+          BOOST_CHECK(graphIdAndCount.first != GraphId("call_subgraph(0)") ||
                       graphIdAndCount.second == 2);
-          BOOST_CHECK(graphIdAndCount.first != GraphId("_subgraph(1)") ||
+          BOOST_CHECK(graphIdAndCount.first != GraphId("call_subgraph(1)") ||
                       graphIdAndCount.second == 2);
-          BOOST_CHECK(graphIdAndCount.first != GraphId("_subgraph(2)") ||
+          BOOST_CHECK(graphIdAndCount.first != GraphId("call_subgraph(2)") ||
                       graphIdAndCount.second == 2);
-          BOOST_CHECK(graphIdAndCount.first != GraphId("_subgraph(3)") ||
+          BOOST_CHECK(graphIdAndCount.first != GraphId("call_subgraph(3)") ||
                       graphIdAndCount.second == 2);
-          BOOST_CHECK(graphIdAndCount.first != GraphId("_subgraph(4)") ||
+          BOOST_CHECK(graphIdAndCount.first != GraphId("call_subgraph(4)") ||
                       graphIdAndCount.second == 1);
-          BOOST_CHECK(graphIdAndCount.first != GraphId("_subgraph(5)") ||
+          BOOST_CHECK(graphIdAndCount.first != GraphId("call_subgraph(5)") ||
                       graphIdAndCount.second == 4);
-          BOOST_CHECK(graphIdAndCount.first != GraphId("_subgraph(6)") ||
+          BOOST_CHECK(graphIdAndCount.first != GraphId("call_subgraph(6)") ||
                       graphIdAndCount.second == 3);
           break;
         }

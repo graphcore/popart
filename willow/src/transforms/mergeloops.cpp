@@ -374,6 +374,7 @@ void MergeLoops::merge(const std::vector<LoopOp *> loops) const {
         auto clonedOpUp = op->clone();
         auto *clonedOp  = clonedOpUp.get();
         graph0.moveIntoGraph(std::move(clonedOpUp));
+        clonedOp->setScope(graph0.getScope());
         for (auto &input : op->input->tensorMap()) {
           TensorId loop0sgId = sgTensorRemap.at(input.second->id);
           clonedOp->connectInTensor(input.first, loop0sgId);

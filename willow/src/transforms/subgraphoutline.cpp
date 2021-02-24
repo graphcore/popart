@@ -908,7 +908,7 @@ void verifyMatchInstances(const Match &match) {
 }
 
 Graph &createSubgraph(const Match &match, Ir &ir) {
-  auto subgraph_id    = ir.createUniqueSubgraphId({""});
+  auto subgraph_id    = ir.createUniqueSubgraphId({"call"});
   auto &subgraph      = ir.createGraph(subgraph_id);
   auto subgraph_scope = subgraph.getScope();
   auto &instance      = match.instances[0];

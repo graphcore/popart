@@ -8,6 +8,24 @@ namespace popart {
 
 class SubgraphOp : public Op {
 public:
+  static bool existsInBodyInputs(std::vector<std::string> &loopBodyInputIds,
+                                 TensorId &tensorId);
+
+  static bool
+  existsInOpInputs(std::vector<std::pair<TensorId, TensorInfo>> &opInputs,
+                   TensorId &tensorId);
+
+  static std::vector<TensorId>
+  getBodyInputIds(const ONNX_NAMESPACE::GraphProto &bodyProto);
+
+  static std::vector<TensorId>
+  getBodyOutputIds(const ONNX_NAMESPACE::GraphProto &bodyProto);
+
+  static std::vector<TensorId>
+  getImplicitTensors(const ONNX_NAMESPACE::GraphProto &bodyProto,
+                     popart::Tensors &tensors,
+                     std::vector<std::pair<TensorId, TensorInfo>> &allOpInputs);
+
   // parent: Graph this CallOp belongs to
   SubgraphOp(const OperatorIdentifier &_opid, const Op::Settings &settings_);
 

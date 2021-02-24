@@ -1661,30 +1661,46 @@ void Ir::registerInputTensors() {
     }
   };
 
-  // populate consumerTypes
-  for (auto &node : onnxGraph.node()) {
-    for (int i = 0; i < node.input_size(); ++i) {
-      addConsumerType(node.input(i), node, i);
-    }
+  std::function<void(const Attributes::Graph &)> addGraphNode =
+      [&](const Attributes::Graph &graph) {
+        // populate consumerTypes
+        for (auto &node : graph.node()) {
+          logging::ir::trace("Node Op type: {}", node.op_type());
+          for (int i = 0; i < node.input_size(); ++i) {
+            addConsumerType(node.input(i), node, i);
+          }
 
-    // need to look at the subgraph inputs for If, Call nodes
-    auto addSubgraphInputs = [&](std::string branchName, Attributes attr) {
-      auto branch = attr.getAttribute<Attributes::Graph>(branchName);
-      for (int i = 0; i < branch.input_size(); i++) {
-        auto inputId = branch.input(i).name();
-        addConsumerType(inputId, node, i);
-      }
-    };
-    if (node.op_type() == Onnx::AiOnnx::OpSet9::If.type) {
-      Attributes attr{node.attribute()};
-      addSubgraphInputs("then_branch", attr);
-      addSubgraphInputs("else_branch", attr);
-    }
-    if (node.op_type() == Onnx::AiGraphcore::OpSet1::Call.type) {
-      Attributes attr{node.attribute()};
-      addSubgraphInputs("callee", attr);
-    }
-  }
+          // need to look at the subgraph inputs for If, Call, Loop, Scan nodes
+          auto addSubgraphInputs = [&](std::string branchName,
+                                       Attributes attr) {
+            auto branch = attr.getAttribute<Attributes::Graph>(branchName);
+            for (int i = 0; i < branch.input_size(); i++) {
+              auto inputId = branch.input(i).name();
+              addConsumerType(inputId, node, i);
+            }
+
+            // need to look at the subgraph consumers of parent scope tensors
+            addGraphNode(branch);
+          };
+          if (node.op_type() == Onnx::AiOnnx::OpSet9::If.type) {
+            Attributes attr{node.attribute()};
+            addSubgraphInputs("then_branch", attr);
+            addSubgraphInputs("else_branch", attr);
+          }
+          if (node.op_type() == Onnx::AiGraphcore::OpSet1::Call.type) {
+            Attributes attr{node.attribute()};
+            addSubgraphInputs("callee", attr);
+          }
+          if (node.op_type() == Onnx::AiOnnx::OpSet9::Loop.type ||
+              node.op_type() == Onnx::AiOnnx::OpSet9::Scan.type ||
+              node.op_type() == Onnx::AiOnnx::OpSet11::Loop.type ||
+              node.op_type() == Onnx::AiOnnx::OpSet11::Scan.type) {
+            Attributes attr{node.attribute()};
+            addSubgraphInputs("body", attr);
+          }
+        }
+      };
+  addGraphNode(onnxGraph);
 
   auto logCreationInfo = [&consumerTypes](std::string tensor_type,
                                           TensorId tensorId) {

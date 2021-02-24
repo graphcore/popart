@@ -280,12 +280,10 @@ void LoopOpx::grow(poplar::program::Sequence &prog) const {
 
   // 3: Create a poplar only iterator variable i, set it to 0
   poplar::Tensor iteratorTensor;
-  if (hasInput(LoopOp::getMaximumTripCountInIndex())) {
-    iteratorTensor =
-        graph().addVariable(poplar::INT, {}, debugContext("iterator"));
-    poputil::mapTensorLinearly(graph(), iteratorTensor);
-    popops::zero(graph(), iteratorTensor, prog, debugContext("iterator_0"));
-  }
+  iteratorTensor =
+      graph().addVariable(poplar::INT, {}, debugContext("iterator"));
+  poputil::mapTensorLinearly(graph(), iteratorTensor);
+  popops::zero(graph(), iteratorTensor, prog, debugContext("iterator_0"));
 
   // 4: Create a poplar only boolean variable exit, set it to false
   auto exitTensor = graph().addVariable(poplar::BOOL, {}, debugContext("exit"));
@@ -326,13 +324,11 @@ void LoopOpx::grow(poplar::program::Sequence &prog) const {
   copyBodyOutputsToExplicitBodyInputs(loopContinueProg);
 
   // 9: Copy iterator to body input
-  if (hasInput(LoopOp::getMaximumTripCountInIndex())) {
-    auto bodyInputTensor = get(op.getCalledGraph().getInputId(
-        op.opInToSubgraphInIndex(LoopOp::getMaximumTripCountInIndex())));
-    poplar::program::Copy copyProg(
-        iteratorTensor, bodyInputTensor, false, debugContext());
-    loopContinueProg.add(copyProg);
-  }
+  auto bodyInputTensor = get(op.getCalledGraph().getInputId(
+      op.opInToSubgraphInIndex(LoopOp::getMaximumTripCountInIndex())));
+  poplar::program::Copy copyProg(
+      iteratorTensor, bodyInputTensor, false, debugContext());
+  loopContinueProg.add(copyProg);
 
   // 10: Add the loop body itself
   auto &called_graph = op.getCalledGraph();
@@ -345,14 +341,12 @@ void LoopOpx::grow(poplar::program::Sequence &prog) const {
   }
 
   // 11: Increment the loop iterator
-  if (hasInput(LoopOp::getMaximumTripCountInIndex())) {
-    popops::mapInPlace(
-        graph(),
-        popops::expr::Add(popops::expr::_1, popops::expr::Const(1)),
-        {iteratorTensor},
-        loopContinueProg,
-        debugContext("iterator_update"));
-  }
+  popops::mapInPlace(
+      graph(),
+      popops::expr::Add(popops::expr::_1, popops::expr::Const(1)),
+      {iteratorTensor},
+      loopContinueProg,
+      debugContext("iterator_update"));
 
   // 12: Add conditional around the loop body program
   loopProg.add(poplar::program::If(

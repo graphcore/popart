@@ -1082,13 +1082,14 @@ ShardingPlan Op::loopShard(const ShardingPlan adjustedInputPlan,
           : settings;
   Settings insideLoopSettings = loopSettings;
 
-  auto subgraph_id    = ir.createUniqueSubgraphId({""});
-  auto &subgraph      = ir.createGraph(subgraph_id);
-  auto subgraph_scope = subgraph.getScope();
+  auto subgraphId    = ir.createUniqueSubgraphId({"loop"});
+  auto &subgraph     = ir.createGraph(subgraphId);
+  auto subgraphScope = subgraph.getScope();
 
   // Ops inside the loop must use the correct subgraph
   insideLoopSettings.graph            = subgraph;
   insideLoopSettings.executionContext = ExecutionContext::Subgraph;
+  insideLoopSettings.scope            = subgraphScope;
 
   // Iterate over Op outputs and inputs
   auto outputMap = output->tensorMap();

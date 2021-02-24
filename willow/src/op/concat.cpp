@@ -108,12 +108,16 @@ Shape ConcatOp::getOutputShape(int64_t axis,
     if (outShape.size() != shape.size()) {
       throw error(
           "Input {} of {} to concat does not have matching output rank. "
-          "Input {} has rank {} while the output has rank {}",
+          "Input {} has rank {} ({}) while the output has rank {} ({})."
+          "Concat axis {}.",
           i,
           inputs.size(),
           i,
+          shape.size(),
+          shape,
           outShape.size(),
-          shape.size());
+          outShape,
+          axis);
     }
 
     auto outShapePrefixBegin = std::begin(outShape);
