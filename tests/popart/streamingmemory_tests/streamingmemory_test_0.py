@@ -31,7 +31,8 @@ def run_model(tmpdir,
               batch_size=1,
               num_iterations=1,
               num_replicas=1,
-              optimizer=popart.SGD({"defaultLearningRate": (0.5, False)})):
+              optimizer=popart.SGD({"defaultLearningRate": (0.5, False)}),
+              reduction=popart.ReductionType.Sum):
 
     np.random.seed(10911)
     matmul_serialization_mode = 'output_channels'
@@ -69,8 +70,7 @@ def run_model(tmpdir,
         if i == num_layers - 1:
             with builder.executionPhase(i), builder.pipelineStage(
                     i), builder.virtualGraph(vgid):
-                l1 = builder.aiGraphcore.l1loss([out], 0.1,
-                                                popart.ReductionType.Sum)
+                l1 = builder.aiGraphcore.l1loss([out], 0.1, reduction)
 
     anchorIds = []
 
@@ -95,6 +95,7 @@ def run_model(tmpdir,
     opts.replicatedGraphCount = num_replicas
     opts.enableGradientAccumulation = enable_accum
     opts.accumulationFactor = accum_factor
+    opts.accumulationReductionType = reduction
 
     if activation_tensor_location_settings is not None:
         opts.activationTensorLocationSettings = activation_tensor_location_settings
@@ -404,10 +405,12 @@ def test_replicated_adam_weight_update(tmpdir):
 
 
 # Check that 2 batches on 1 replica or 1 batch per replica on 2 replicas
-# results in the same updated weight with SGD1
+# results in the same updated weight with Lamb
 @pytest.mark.parametrize("isConst", [False, True])
+@pytest.mark.parametrize("reduction",
+                         [popart.ReductionType.Sum, popart.ReductionType.Mean])
 @tu.requires_ipu
-def test_replicated_lamb_weight_update(tmpdir, isConst):
+def test_replicated_lamb_weight_update(tmpdir, isConst, reduction):
     # Test both const & non-const optimizer parameters
     optimizer_dict = {
         "defaultLearningRate": (0.005, isConst),
@@ -429,7 +432,8 @@ def test_replicated_lamb_weight_update(tmpdir, isConst):
               activation_tensor_location_settings=offChipLocation,
               weight_tensor_location_settings=offChipLocation,
               optimizer_state_tensor_location_settings=offChipLocation,
-              accumulator_tensor_location_settings=offChipLocation)
+              accumulator_tensor_location_settings=offChipLocation,
+              reduction=reduction)
 
     # Off-chip, but no RTS (2x replicas)
     run_model(tmpdir,
@@ -442,7 +446,8 @@ def test_replicated_lamb_weight_update(tmpdir, isConst):
               activation_tensor_location_settings=offChipLocation,
               weight_tensor_location_settings=offChipLocation,
               optimizer_state_tensor_location_settings=offChipLocation,
-              accumulator_tensor_location_settings=offChipLocation)
+              accumulator_tensor_location_settings=offChipLocation,
+              reduction=reduction)
 
     # Weights and optimizer off-chip, RTS
     run_model(tmpdir,
@@ -455,7 +460,8 @@ def test_replicated_lamb_weight_update(tmpdir, isConst):
               activation_tensor_location_settings=offChipLocation,
               weight_tensor_location_settings=offChipRtsLocation,
               optimizer_state_tensor_location_settings=offChipRtsLocation,
-              accumulator_tensor_location_settings=offChipLocation)
+              accumulator_tensor_location_settings=offChipLocation,
+              reduction=reduction)
 
     # Weights and optimizer off-chip, accumulator off chip, RTS
     run_model(tmpdir,
@@ -470,7 +476,8 @@ def test_replicated_lamb_weight_update(tmpdir, isConst):
               activation_tensor_location_settings=offChipLocation,
               weight_tensor_location_settings=offChipRtsLocation,
               optimizer_state_tensor_location_settings=offChipRtsLocation,
-              accumulator_tensor_location_settings=offChipLocation)
+              accumulator_tensor_location_settings=offChipLocation,
+              reduction=reduction)
 
     # Weights on-chip, non-RTS, optimizer state off-chip, RTS
     run_model(tmpdir,
@@ -485,7 +492,8 @@ def test_replicated_lamb_weight_update(tmpdir, isConst):
               activation_tensor_location_settings=offChipLocation,
               weight_tensor_location_settings=onChipLocation,
               optimizer_state_tensor_location_settings=offChipRtsLocation,
-              accumulator_tensor_location_settings=onChipLocation)
+              accumulator_tensor_location_settings=onChipLocation,
+              reduction=reduction)
 
     phased = onnx.load(str(tmpdir / 'phased.onnx'))
     phased_replicated = onnx.load(str(tmpdir / 'phased_replicated.onnx'))
