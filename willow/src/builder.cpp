@@ -916,6 +916,24 @@ TensorId AiGraphcoreOpset1::dynamicadd(const std::vector<TensorId> &args,
   return outputs.at(0);
 }
 
+TensorId AiGraphcoreOpset1::sequenceslice(const std::vector<TensorId> &args,
+                                          Attributes::Int zeroUnused,
+                                          const DebugContext &debugContext) {
+  std::map<std::string, popart::any> attributes = {{"zeroUnused", zeroUnused}};
+
+  BuilderDebugInfo di(debugContext, __POPART_FUNCTION_NAME__, args, attributes);
+  attributes.insert({sDebugInfoId, di.getId()});
+
+  auto outputs = impl->op(Onnx::AiGraphcore::OpSet1::SequenceSlice,
+                          getOpsetVersion(),
+                          args,
+                          attributes,
+                          debugContext);
+
+  di.setOutputs(outputs);
+  return outputs.at(0);
+}
+
 std::vector<TensorId>
 AiGraphcoreOpset1::call(const std::vector<TensorId> &args,
                         unsigned num_outputs,

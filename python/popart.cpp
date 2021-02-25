@@ -1980,6 +1980,12 @@ PYBIND11_MODULE(popart_core, m) {
             py::arg("sizes"),
             py::arg("debugContext") = std::string(),
             DOC(popart, AiGraphcoreOpset1, dynamicadd));
+    cls.def("sequenceslice",
+            &AiGraphcoreOpset1::sequenceslice,
+            py::arg("args"),
+            py::arg("zeroUnused")   = 0,
+            py::arg("debugContext") = std::string(),
+            DOC(popart, AiGraphcoreOpset1, sequenceslice));
     cls.def("call",
             &AiGraphcoreOpset1::call,
             py::arg("args"),

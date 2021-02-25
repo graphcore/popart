@@ -608,6 +608,29 @@ Parameter ``debugContext``:
 Returns:
     The name of the result tensor.)doc";
 
+static const char *__doc_popart_AiGraphcoreOpset1_sequenceslice =
+    R"doc(Add a ``sequenceslice`` operation to the model.
+Sequence slice slices a 2d tensor based on offsets specified by a tensor.
+The outermost dimension is sliced for each entry in tN/tInOffset/tOutOffset:
+  tOut[tOutOffset:tOutOffset+tN][...] = tIn[tInOffset:tInOffset+tN][...]
+Entries after the first tN==0 may be ignored.
+Unreferenced elements of tOut are zeroed if zeroUnused is set.
+The same output element should not be written by multiple inputs.
+
+tIn and tOut must have rank >=2. The outer dimension is sliced; the product
+of the inner dimensions must match.
+tInOffset, tOutOffset and tN must be 1d and the same size.
+
+Parameter ``args``:
+    Vector of input tensor ids.
+Parameter ``zeroUnused``
+    Whether to zero unreferenced tOut elements.
+Parameter ``debugContext``
+    Optional debug context.
+
+Returns:
+    The name of the result tensor.)doc";
+
 static const char *__doc_popart_AiGraphcoreOpset1_expm1 =
     R"doc(Add ``expm1`` operation to the model. It computes exp(x) - 1.
 Calculates the element-wise exponential of the input tensor and

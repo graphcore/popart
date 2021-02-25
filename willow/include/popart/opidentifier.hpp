@@ -260,6 +260,9 @@ const static AiGraphcoreOpIdV1 DetachInplace("DetachInplace");
 const static AiGraphcoreOpIdV1 DynamicAdd_1("DynamicAdd", 3, 1);
 const static AiGraphcoreOpIdV1 DynamicAddInplace("DynamicAddInplace", 3, 1);
 const static AiGraphcoreOpIdV1 DynamicSlice_1("DynamicSlice", 2, 1);
+const static AiGraphcoreOpIdV1 SequenceSlice_1("SequenceSlice", 5, 1);
+const static AiGraphcoreOpIdV1
+    SequenceSliceInplace("SequenceSliceInplace", 5, 1);
 const static AiGraphcoreOpIdV1 DynamicUpdate_1("DynamicUpdate", 3, 1);
 const static AiGraphcoreOpIdV1
     DynamicUpdateInplace("DynamicUpdateInplace", 3, 1);
@@ -367,6 +370,8 @@ const static OperatorIdentifier DepthToSpace = CustomOperators::DepthToSpace;
 const static OperatorIdentifier Detach       = CustomOperators::Detach_1;
 const static OperatorIdentifier DynamicAdd   = CustomOperators::DynamicAdd_1;
 const static OperatorIdentifier DynamicSlice = CustomOperators::DynamicSlice_1;
+const static OperatorIdentifier SequenceSlice =
+    CustomOperators::SequenceSlice_1;
 const static OperatorIdentifier DynamicUpdate =
     CustomOperators::DynamicUpdate_1;
 const static OperatorIdentifier DynamicZero = CustomOperators::DynamicZero_1;

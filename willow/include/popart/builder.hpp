@@ -396,7 +396,27 @@ public:
                       const DebugContext &debugContext = {});
 
   /**
-   * Add a call operation to the model.
+   * Slice a 2d tensor based on offsets specified by a tensor.
+   *
+   * The outermost dimension is sliced;
+   *   tOut[tOutOffset:tOutOffset+tN][...] = tIn[tInOffset:tInOffset+tN][...]
+   * for each entry in tN/tInOffset/tOutOffset; entries after the first tN==0
+   * may be ignored. Unreferenced elements of tOut are zeroed if zeroUnused is
+   * set. The same output element should not be written by multiple inputs.
+   *
+   * tIn and tOut must have rank >=2. The outer dimension is sliced; the product
+   * of the inner dimensions must match.
+   * tInOffset, tOutOffset and tN must be 1d and the same size.
+   * \param [source, destination, N, sourceOffset, destinationOffset]
+   * \param zeroUnused    Whether to zero unreferenced tOut elements.
+   * \param debugContext     Optional debug context.
+   */
+  TensorId sequenceslice(const std::vector<TensorId> &args,
+                         Attributes::Int zeroUnused,
+                         const DebugContext &debugContext = {});
+
+  /**
+   * Add a call operation to the model
    *
    * This is a Poplar extension, to expose manual code re-use to
    * the builder.

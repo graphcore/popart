@@ -28,6 +28,7 @@ void DynamicUpdateShapeInference(InferenceContext &ctx);
 void DynamicSliceInference(InferenceContext &ctx);
 void DynamicZeroShapeInference(InferenceContext &ctx);
 void DynamicAddShapeInference(InferenceContext &ctx);
+void SequenceSliceInference(InferenceContext &ctx);
 void MultiConvShapeInference(InferenceContext &ctx);
 void NopShapeInference(InferenceContext &ctx);
 void ShapedDropoutShapeInference(InferenceContext &ctx);
@@ -235,6 +236,11 @@ void DynamicAddShapeInference(InferenceContext &ctx) {
   propagateShapeAndTypeFromFirstInput(ctx);
 }
 
+void SequenceSliceShapeInference(InferenceContext &ctx) {
+  propagateShapeFromInputToOutput(ctx, 1, 0);
+  propagateElemTypeFromInputToOutput(ctx, 1, 0);
+}
+
 template <unsigned int infer_shape_index>
 void LossShapeInference(InferenceContext &ctx) {
   propagateElemTypeFromInputToOutput(ctx, 0, 0);
@@ -426,6 +432,7 @@ extern size_t dbg_count_check_DynamicUpdate_AiGraphcore_ver1;
 extern size_t dbg_count_check_DynamicSlice_AiGraphcore_ver1;
 extern size_t dbg_count_check_DynamicZero_AiGraphcore_ver1;
 extern size_t dbg_count_check_DynamicAdd_AiGraphcore_ver1;
+extern size_t dbg_count_check_SequenceSlice_AiGraphcore_ver1;
 extern size_t dbg_count_check_MultiConv_AiGraphcore_ver1;
 extern size_t dbg_count_check_Nop_AiGraphcore_ver1;
 extern size_t dbg_count_check_ShapedDropout_AiGraphcore_ver1;
@@ -751,6 +758,41 @@ ONNX_OPERATOR_SET_SCHEMA_EX(
               AttributeProto::INTS,
               true)
         .TypeAndShapeInferenceFunction(DynamicAddShapeInference))
+
+ONNX_OPERATOR_SET_SCHEMA_EX(
+    SequenceSlice,
+    AiGraphcore,
+    popart::Domain::ai_graphcore,
+    1,
+    false,
+    OpSchema()
+        .SetDoc("Slice a 2d tensor based on offsets specified by a tensor.")
+        .Input(0, "source", "Source tensor", "T")
+        .Input(1, "destination", "Destination tensor", "T")
+        .Input(2, "N", "The number of elements to copy", "T")
+        .Input(3, "sourceOffset", "First element from source to read from", "T")
+        .Input(4,
+               "destinationOffset",
+               "First element in destination to wite to",
+               "T")
+        .Output(0, "output", "TensorId of the output", "T")
+        .TypeConstraint(
+            "T",
+            {"tensor(float16)",
+             "tensor(float)",
+             "tensor(int8)",
+             "tensor(int16)",
+             "tensor(int32)",
+             "tensor(uint8)",
+             "tensor(uint16)",
+             "tensor(uint32)",
+             "tensor(bool)"},
+            "Input and output types can be any type supported by the IPU.")
+        .Attr("zeroUnused",
+              "Zero unreference elements",
+              AttributeProto::INT,
+              true)
+        .TypeAndShapeInferenceFunction(SequenceSliceShapeInference))
 
 ONNX_OPERATOR_SET_SCHEMA_EX(
     L1,
