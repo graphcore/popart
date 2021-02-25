@@ -192,7 +192,7 @@ SubgraphOp::getIntrospectionInVirtualGraphId(InIndex index,
             // Also works if the callee is another subgraph
             auto vgId =
                 consumer->getIntrospectionInVirtualGraphId(subindex, visited);
-            if (vgId.first > -1)
+            if (vgId.first > unusedVGraphId)
               return vgId;
           }
         }
@@ -211,7 +211,7 @@ SubgraphOp::getIntrospectionInVirtualGraphId(InIndex index,
       if (output->hasIndex(opOutIndex)) {
         auto vgId = output->tensor(opOutIndex)
                         ->getVirtualGraphIdAndTileSetUnsafe(visited);
-        if (vgId.first > -1) {
+        if (vgId.first > unusedVGraphId) {
           return vgId;
         }
       }
@@ -224,7 +224,7 @@ SubgraphOp::getIntrospectionInVirtualGraphId(InIndex index,
     if (tensor->hasVirtualGraphId()) {
       // Tensor has VirtualGraphID given by it's producer or consumer
       auto vgId = tensor->getVirtualGraphIdAndTileSet(visited);
-      if (vgId.first > -1) {
+      if (vgId.first > unusedVGraphId) {
         return vgId;
       }
     }
@@ -268,7 +268,7 @@ SubgraphOp::getIntrospectionOutVirtualGraphId(OutIndex index,
             // Also works if the callee is another subgraph
             auto vgId =
                 producer->getIntrospectionOutVirtualGraphId(subindex, visited);
-            if (vgId.first > -1) {
+            if (vgId.first > unusedVGraphId) {
               return vgId;
             }
           }
@@ -279,12 +279,14 @@ SubgraphOp::getIntrospectionOutVirtualGraphId(OutIndex index,
     // Fallback 1: The tensor has no producer inside the graph,
     // look before the graph
     if (tensor->isGraphInput()) {
-      OutIndex sgInIndex = tensor->getGraphInputIndex();
-      OutIndex opInIndex = subgraphInToOpInIndex(sgInIndex);
-      auto vgId =
-          output->tensor(opInIndex)->getVirtualGraphIdAndTileSetUnsafe(visited);
-      if (vgId.first > -1) {
-        return vgId;
+      InIndex sgInIndex = tensor->getGraphInputIndex();
+      InIndex opInIndex = subgraphInToOpInIndex(sgInIndex);
+      if (hasInput(opInIndex)) {
+        auto vgId = input->tensor(opInIndex)->getVirtualGraphIdAndTileSetUnsafe(
+            visited);
+        if (vgId.first > unusedVGraphId) {
+          return vgId;
+        }
       }
     }
 
@@ -295,7 +297,7 @@ SubgraphOp::getIntrospectionOutVirtualGraphId(OutIndex index,
     if (tensor->hasVirtualGraphId()) {
       // Tensor has VirtualGraphID given by it's producer or consumer
       auto vgId = tensor->getVirtualGraphIdAndTileSet(visited);
-      if (vgId.first > -1) {
+      if (vgId.first > unusedVGraphId) {
         return vgId;
       }
     }
