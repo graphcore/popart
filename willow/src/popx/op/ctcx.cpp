@@ -269,7 +269,9 @@ CtcGradOpx::applyReductionGrad(poplar::program::Sequence &prog,
     // over replicas) is currently done within the grow functions of the loss
     // grad ops. We do this here.
     // TODO: To be removed as part of T33184.
-    totalSamples *= dv_p->getGlobalReplicationFactor();
+    if (op.getScaleByReplication() == ScaleByReplication::Yes) {
+      totalSamples *= dv_p->getGlobalReplicationFactor();
+    }
 
     // Take into account gradient for mean reduction.
     auto newCtcLossGrad =

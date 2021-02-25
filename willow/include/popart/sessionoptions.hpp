@@ -518,8 +518,15 @@ struct SessionOptions {
   bool enableGradientAccumulation = false;
 
   /// Specify how gradients are reduced when using gradient accumulation.
-  /// The options are equivalent to how gradients are reduced on lossOps.
+  /// Note, this option has been deprecated in favour of \c
+  /// accumulationAndReplicationReductionType, and will be removed in a later
+  /// release.
   ReductionType accumulationReductionType = ReductionType::Sum;
+
+  /// Specify how gradients are reduced when using gradient accumulation
+  /// and graph replication. This option replaces \c accumulationReductionType.
+  ReductionType accumulationAndReplicationReductionType =
+      ReductionType::NoReduction;
 
   /// If enableReplicatedGraphs is true, \c replicatedGraphCount will set the
   /// number of model replications. For example, if your model uses 1 IPU, a
@@ -734,6 +741,10 @@ struct SessionOptions {
   // otherwise
   //   return 1
   int64_t getGlobalReplicationFactor() const;
+
+  // Helper method to get the accumulation reduction type.
+  // TODO : remove as part of T34809
+  ReductionType getAccumulationReductionType() const;
 
   /// Allows to group the streams from host at the beginning and the streams
   /// to host at the end, this trades off sum-liveness efficiency for cycle

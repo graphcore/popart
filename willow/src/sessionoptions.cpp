@@ -203,6 +203,22 @@ int64_t SessionOptions::getGlobalReplicationFactor() const {
   return 1LL;
 }
 
+ReductionType SessionOptions::getAccumulationReductionType() const {
+  if (accumulationAndReplicationReductionType != ReductionType::NoReduction) {
+    return accumulationAndReplicationReductionType;
+  } else {
+    if (enableGradientAccumulation) {
+      logging::warn(
+          "SessionOption 'accumulationReductionType' is being used to specify "
+          "how gradients are reduced when using the gradient accumulation "
+          "execution mode. This option is deprecated and will be removed in a "
+          "future release. Please specify this behaviour with SessionOption "
+          "accumulationAndReplicationReductionType instead");
+    }
+    return accumulationReductionType;
+  }
+}
+
 // No implementation required
 
 } // namespace popart
@@ -221,6 +237,8 @@ std::size_t hash<popart::SessionOptions>::operator()(
   boost::hash_combine(seed, so.enablePipelining);
   boost::hash_combine(seed, so.accumulationFactor);
   boost::hash_combine(seed, static_cast<int>(so.accumulationReductionType));
+  boost::hash_combine(
+      seed, static_cast<int>(so.accumulationAndReplicationReductionType));
   boost::hash_combine(seed, so.enableFloatingPointChecks);
   boost::hash_combine(seed, so.enableStochasticRounding);
   boost::hash_combine(seed, so.enableFullyConnectedPass);

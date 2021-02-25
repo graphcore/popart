@@ -273,6 +273,7 @@ void NllOpx::handleLossGradScaling(const Opx &opx,
                                    bool hasIgnoreIndex,
                                    int64_t ignoreIndex,
                                    bool meanReduce,
+                                   ScaleByReplication scaleByReplication,
                                    poplar::Tensor &oneHot,
                                    poplar::Tensor &gradIn,
                                    poplar::Tensor &label1D,
@@ -293,11 +294,12 @@ void NllOpx::handleLossGradScaling(const Opx &opx,
 
     if (meanReduce) {
       NllOpx::applyScalingInPlaceForMeanReductionWithIgnoreIndex(
-          opx, oneHot, gradIn, lossMask, prog);
+          opx, oneHot, gradIn, lossMask, prog, scaleByReplication);
     }
   } else {
     if (meanReduce) {
-      NllOpx::applyScalingInPlaceForMeanReduction(opx, oneHot, gradIn, prog);
+      NllOpx::applyScalingInPlaceForMeanReduction(
+          opx, oneHot, gradIn, prog, scaleByReplication);
     }
   }
 
@@ -385,6 +387,7 @@ void NllGradOpx::grow(poplar::program::Sequence &prog) const {
       gradOp.hasIgnoreIndex(),
       gradOp.hasIgnoreIndex() ? gradOp.getIgnoreIndex() : 0,
       gradOp.getReductionType() == ReductionType::Mean,
+      gradOp.getScaleByReplication(),
       oneHot,
       gradIn,
       label1D,

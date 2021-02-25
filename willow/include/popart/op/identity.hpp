@@ -47,15 +47,13 @@ public:
   static OutIndex getOutIndex() { return 0; }
 };
 
-enum class ScaleByReplication { Yes, No };
-
 class IdentityLossOp : public LossOp {
 public:
-  IdentityLossOp(
-      const OperatorIdentifier &_opid,
-      const ReductionType &reduction,
-      const Op::Settings &settings_,
-      const ScaleByReplication scaleByReplication = ScaleByReplication::Yes);
+  IdentityLossOp(const OperatorIdentifier &_opid,
+                 const ReductionType &reduction,
+                 const Op::Settings &settings_,
+                 const ScaleByReplication scaleByReplicationOverride =
+                     ScaleByReplication::Yes);
   std::unique_ptr<Op> clone() const final;
   std::vector<std::unique_ptr<Op>> getGradOps() final;
   void setup() final;
@@ -64,10 +62,6 @@ public:
   static InIndex getInIndex() { return 0; }
   static OutIndex getOutIndex() { return 0; }
 
-  ReductionType getReductionType() const { return reduction_type_; }
-  ScaleByReplication getScaleByReplication() const {
-    return scaleByReplication_;
-  }
   float getSubgraphValue() const final { return getLowSubgraphValue(); }
 
   bool canShard() const override { return true; }
@@ -75,10 +69,12 @@ public:
     return getReductionType();
   }
 
+  ScaleByReplication getScaleByReplicationOverride() const {
+    return scaleByReplicationOverride_;
+  }
+
 private:
-  const ReductionType reduction_type_;
-  // TODO: remove after T33184, as this is now redundant
-  const ScaleByReplication scaleByReplication_;
+  const ScaleByReplication scaleByReplicationOverride_;
 };
 
 class IdentityLossGradOp : public Op {
@@ -106,8 +102,10 @@ public:
 
 private:
   const ReductionType reduction_type_;
-  // TODO: remove after T33184, as this is now redundant
-  const ScaleByReplication scaleByReplication_;
+
+  // TODO: remove after T34809, as this is now redundant
+  ScaleByReplication scaleByReplication_;
+
   Shape outShape_;
 };
 

@@ -61,6 +61,7 @@ bool NlllWithSoftmaxGradDirect::apply(Op *op) const {
   OpId nlllsfmgdId = graph.moveIntoGraph(std::unique_ptr<Op>(
       new NlllWithSoftmaxGradDirectOp(sfmgdOp->getOptionalIgnoreIndex(),
                                       sfmgdOp->getReductionType(),
+                                      sfmgdOp->getScaleByReplication(),
                                       sfmgdOp->getSettings())));
   Op *nlllsfmgd    = graph.getOp(nlllsfmgdId);
 

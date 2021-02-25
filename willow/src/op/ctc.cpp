@@ -20,8 +20,8 @@ CtcOp::CtcOp(const OperatorIdentifier &_opid,
              const ReductionType reduction_,
              const unsigned blank_,
              const Op::Settings &_settings)
-    : LossOp(_opid, _settings), reduction(reduction_), blank(blank_),
-      batchSize(0u), maxInputLength(0u), maxTargetLength(0u), numClasses(0u) {}
+    : LossOp(_opid, _settings, reduction_), blank(blank_), batchSize(0u),
+      maxInputLength(0u), maxTargetLength(0u), numClasses(0u) {}
 
 std::unique_ptr<Op> CtcOp::clone() const {
   return std::make_unique<CtcOp>(*this);
@@ -155,7 +155,8 @@ void CtcOp::setup() {
 
 void CtcOp::appendOutlineAttributes(OpSerialiserBase &os) const {
   Op::appendOutlineAttributes(os);
-  os.appendAttribute("reduction_type", static_cast<int64_t>(reduction));
+  os.appendAttribute("reduction_type",
+                     static_cast<int64_t>(getReductionType()));
   os.appendAttribute("blank", static_cast<int64_t>(blank));
 }
 
@@ -167,7 +168,8 @@ void CtcGradOp::setup() {
 CtcGradOp::CtcGradOp(const CtcOp &op_)
     : Op(Onnx::CustomGradOperators::CtcGrad, op_.getSettings()),
       reduction(op_.getReductionType()),
-      logProbsInfo(op_.inInfo(CtcOp::getLogProbsInIndex())) {}
+      logProbsInfo(op_.inInfo(CtcOp::getLogProbsInIndex())),
+      scaleByReplication_(op_.getScaleByReplication(op_.getReductionType())) {}
 
 std::unique_ptr<Op> CtcGradOp::clone() const {
   return std::make_unique<CtcGradOp>(*this);

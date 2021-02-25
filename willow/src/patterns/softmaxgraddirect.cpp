@@ -28,6 +28,7 @@ OpId SoftmaxGradDirect::moveMergedIntoIr(Op *opRoot) const {
       new SoftmaxGradDirectOp(nllgrad->getLossTensorId(),
                               nllgrad->getOptionalIgnoreIndex(),
                               nllgrad->getReductionType(),
+                              nllgrad->getScaleByReplication(),
                               nllgrad->getSettings())));
 }
 

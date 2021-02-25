@@ -54,7 +54,6 @@ public:
   static OutIndex getLogProbsGradientWrtCtcLossOutIndex() { return 1; }
 
   float getSubgraphValue() const final { return getLowSubgraphValue(); }
-  ReductionType getReductionType() const { return reduction; }
   unsigned getBlank() const { return blank; }
   virtual void appendOutlineAttributes(OpSerialiserBase &) const final;
 
@@ -66,7 +65,6 @@ public:
   bool canShard() const override { return false; }
 
 private:
-  ReductionType reduction;
   unsigned blank;
   unsigned batchSize;
   unsigned maxInputLength;
@@ -96,10 +94,16 @@ public:
   virtual void appendOutlineAttributes(OpSerialiserBase &) const final;
 
   bool canShard() const override { return false; }
+  ScaleByReplication getScaleByReplication() const {
+    return scaleByReplication_;
+  }
 
 private:
   ReductionType reduction;
   TensorInfo logProbsInfo;
+
+  // TODO: remove after T34809, as this is now redundant
+  const ScaleByReplication scaleByReplication_;
 };
 
 } // namespace popart

@@ -25,7 +25,6 @@ public:
   static OutIndex getOutIndex() { return 0; }
 
   float getSubgraphValue() const final { return getLowSubgraphValue(); }
-  ReductionType getReductionType() const { return reduction_; }
   bool hasIgnoreIndex() const { return ignoreIndex_ != nonstd::nullopt; }
   nonstd::optional<int> getOptionalIgnoreIndex() const { return ignoreIndex_; }
   int getIgnoreIndex() const;
@@ -38,8 +37,6 @@ public:
   }
 
 private:
-  ReductionType reduction_;
-
   // Specifies a target value that is masked when calculating the loss and
   // input gradient
   nonstd::optional<int> ignoreIndex_;
@@ -73,12 +70,18 @@ public:
   bool canShard() const override { return true; }
   float getShardRescaleFactor(Op *const shardedOp,
                               OutIndex index) const override;
+  ScaleByReplication getScaleByReplication() const {
+    return scaleByReplication_;
+  }
 
 private:
   TensorId lossId_;
   ReductionType reduction_;
   nonstd::optional<int> ignoreIndex_;
   bool inputIsLogProbability_;
+
+  // TODO: remove after T34809, as this is now redundant
+  const ScaleByReplication scaleByReplication_;
 };
 
 } // namespace popart

@@ -77,13 +77,13 @@ NllOp::NllOp(const OperatorIdentifier &_opid,
              const ReductionType reduction,
              bool inputIsLogProbability,
              const Op::Settings &_settings)
-    : LossOp(_opid, _settings), reduction_(reduction),
-      ignoreIndex_(ignoreIndex), inputIsLogProbability_(inputIsLogProbability) {
-}
+    : LossOp(_opid, _settings, reduction), ignoreIndex_(ignoreIndex),
+      inputIsLogProbability_(inputIsLogProbability) {}
 
 void NllOp::appendOutlineAttributes(OpSerialiserBase &os) const {
   Op::appendOutlineAttributes(os);
-  os.appendAttribute("reduction_type", static_cast<int64_t>(reduction_));
+  os.appendAttribute("reduction_type",
+                     static_cast<int64_t>(getReductionType()));
   if (hasIgnoreIndex()) {
     os.appendAttribute("ignore_index", static_cast<int64_t>(*ignoreIndex_));
   }
@@ -108,7 +108,8 @@ NllGradOp::NllGradOp(const NllOp &op_)
       lossId_(op_.outId(NllOp::getOutIndex())),
       reduction_(op_.getReductionType()),
       ignoreIndex_(op_.getOptionalIgnoreIndex()),
-      inputIsLogProbability_(op_.inputIsLogProbability()) {}
+      inputIsLogProbability_(op_.inputIsLogProbability()),
+      scaleByReplication_(op_.getScaleByReplication(op_.getReductionType())) {}
 
 std::unique_ptr<Op> NllGradOp::clone() const {
   return std::make_unique<NllGradOp>(*this);

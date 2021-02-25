@@ -45,7 +45,8 @@ enum class AdaptiveMode {
 // rf = replication factor
 // af = gradient accumulation factor
 //
-// If accumulationReductionType is set to ReductionType::Sum 'af' is set to 1
+// If accumulationAndReplicationReductionType is set to ReductionType::Sum 'af'
+// is set to 1
 //
 // accumulator (only used if gradient accumulation is enabled):
 // s = s + g                             (otherwise: s = g)

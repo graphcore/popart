@@ -28,7 +28,7 @@ L1Op::L1Op(const OperatorIdentifier &_opid,
            const float lambda_,
            const ReductionType reduction_,
            const Op::Settings &settings_)
-    : LossOp(_opid, settings_), lambda(lambda_), reduction(reduction_) {}
+    : LossOp(_opid, settings_, reduction_), lambda(lambda_) {}
 
 void L1GradOp::setup() {
   // gradient of input has same shape as input to L1
@@ -51,7 +51,8 @@ void L1Op::setup() {
 
 L1GradOp::L1GradOp(const L1Op &op_)
     : Op(Onnx::CustomGradOperators::L1Grad, op_.getSettings()),
-      lambda(op_.getLambda()), reduction(op_.getReductionType()) {}
+      lambda(op_.getLambda()), reduction(op_.getReductionType()),
+      scaleByReplication_(op_.getScaleByReplication(op_.getReductionType())) {}
 
 std::unique_ptr<Op> L1GradOp::clone() const {
   return std::make_unique<L1GradOp>(*this);

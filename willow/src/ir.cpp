@@ -32,6 +32,7 @@
 #include <popart/op/getrandomseed.hpp>
 #include <popart/op/init.hpp>
 #include <popart/op/loss.hpp>
+#include <popart/op/scale.hpp>
 #include <popart/opmanager.hpp>
 #include <popart/optimizer.hpp>
 #include <popart/pbwrap.hpp>
@@ -3156,7 +3157,6 @@ unsigned Ir::getMaxVirtualGraphId() const {
 
 Op *Ir::growLossGradients() {
 
-  float lossScale            = 1.0f;
   TensorId gradStarterId     = getGradId(getFinalLossId());
   TensorInfo gradStarterInfo = getTensors().get(getFinalLossId())->info;
 
@@ -3166,7 +3166,12 @@ Op *Ir::growLossGradients() {
 
   if (optimizer->lossScaling().isConst()) {
     // By default this will be 1.0f.
-    lossScale = optimizer->lossScaling().val();
+    float lossScale = optimizer->lossScaling().val();
+
+    if (getSessionOptions().accumulationAndReplicationReductionType ==
+        ReductionType::Mean) {
+      lossScale /= getSessionOptions().getGlobalReplicationFactor();
+    }
 
     switch (gradStarterInfo.dataType()) {
     case DataType::FLOAT: {
@@ -3257,9 +3262,9 @@ Op *Ir::growLossGradients() {
     TensorId lossScalingId =
         optimizer->getLossScalingTensorId(gradStarterInfo.dataType());
     std::unique_ptr<popart::Op> lossScalingInputOp =
-        OpManager::createOp(Domain::ai_onnx,
-                            "Identity",
-                            getOpSetVersionFromModel(Domain::ai_onnx),
+        OpManager::createOp(Domain::ai_graphcore,
+                            "Scale",
+                            getOpSetVersionFromModel(Domain::ai_graphcore),
                             getMainGraph());
 
     OpId lossScalingInputOpId =
@@ -3271,6 +3276,13 @@ Op *Ir::growLossGradients() {
     getMainGraph().connectOutputs(OutputVecWrapper(outputs),
                                   lossScalingInputOpId);
     Op *op = getMainGraph().getOp(lossScalingInputOpId);
+    if (getSessionOptions().accumulationAndReplicationReductionType ==
+        ReductionType::Mean) {
+      dynamic_cast<ScaleOp *>(op)->setScaleFactor(
+          1 / getSessionOptions().getGlobalReplicationFactor());
+    } else {
+      dynamic_cast<ScaleOp *>(op)->setScaleFactor(1.0f);
+    }
     op->setup();
     return op;
   }

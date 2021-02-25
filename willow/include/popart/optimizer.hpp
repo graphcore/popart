@@ -68,13 +68,13 @@ struct ClipNormSettings {
 class optimizer_replacement_error : public error {
 public:
   template <typename... Args>
-  explicit optimizer_replacement_error(const char *s, const Args &... args)
+  explicit optimizer_replacement_error(const char *s, const Args &...args)
       : error(std::string("New optimizer is not a valid replacement. ") + s,
               args...) {}
 
   template <typename... Args>
   explicit optimizer_replacement_error(const std::string &s,
-                                       const Args &... args)
+                                       const Args &...args)
       : error("New optimizer is not a valid replacement. " + s, args...) {}
 };
 
@@ -230,7 +230,8 @@ private:
 //   rf : data replication factor.
 //   af : gradient accumulation factor.
 //
-// If accumulationReductionType is set to ReductionType::Sum 'af' is set to 1
+// If accumulationAndReplicationReductionType is set to ReductionType::Sum
+// 'af' is set to 1
 //
 // Special case a)
 // --------------

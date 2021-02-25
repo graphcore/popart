@@ -184,7 +184,7 @@ public:
 
   void assertNumElements(const popx::Executablex &) const final {}
 
-  ConstVoidData in(TensorId id, int64_t, bool prefetch)final {
+  ConstVoidData in(TensorId id, int64_t, bool prefetch) final {
     py::array a = inputCb(id, prefetch);
     if (!isContiguous(a)) {
       throw error(
@@ -1067,6 +1067,9 @@ PYBIND11_MODULE(popart_core, m) {
                       DOC(popart, SessionOptions, enableGradientAccumulation));
     cls.def_readwrite("accumulationReductionType",
                       &SessionOptions::accumulationReductionType,
+                      DOC(popart, SessionOptions, accumulationReductionType));
+    cls.def_readwrite("accumulationAndReplicationReductionType",
+                      &SessionOptions::accumulationAndReplicationReductionType,
                       DOC(popart, SessionOptions, accumulationReductionType));
     cls.def_readwrite("enableNonStableSoftmax",
                       &SessionOptions::enableNonStableSoftmax,

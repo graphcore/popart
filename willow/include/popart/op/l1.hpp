@@ -22,7 +22,6 @@ public:
 
   float getSubgraphValue() const final { return getLowSubgraphValue(); }
   float getLambda() const { return lambda; }
-  ReductionType getReductionType() const { return reduction; }
 
   bool canShard() const override { return true; }
   ReductionType getShardReductionType(OutIndex index) const override {
@@ -31,7 +30,6 @@ public:
 
 private:
   float lambda;
-  ReductionType reduction;
 };
 
 class L1GradOp : public Op {
@@ -56,9 +54,16 @@ public:
   float getShardRescaleFactor(Op *const shardedOp,
                               OutIndex index) const override;
 
+  ScaleByReplication getScaleByReplication() const {
+    return scaleByReplication_;
+  }
+
 private:
   float lambda;
   ReductionType reduction;
+
+  // TODO: remove after T34809, as this is now redundant
+  const ScaleByReplication scaleByReplication_;
 };
 
 } // namespace popart

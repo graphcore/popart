@@ -62,6 +62,7 @@ public:
                                     bool hasIgnoreIndex,
                                     int64_t ignoreIndex,
                                     bool meanReduce,
+                                    ScaleByReplication scaleByReplication,
                                     poplar::Tensor &oneHot,
                                     poplar::Tensor &gradIn,
                                     poplar::Tensor &label1D,

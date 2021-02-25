@@ -87,6 +87,7 @@ bool IdentityLossOp::canBeReplacedByIdentity() const {
     // If replaced by identity before auto-grad, then the corresponding grad op
     // will be IdentityGradOp instead of IdentityLossGradOp, which has different
     // behaviour in the case of graph replication when doing a 'mean' reduction
+    // TODO : remove as part of T34809
     auto opts = getIr().getSessionOptions();
     bool locallyReplicated =
         opts.enableReplicatedGraphs && opts.replicatedGraphCount > 1;
@@ -94,7 +95,8 @@ bool IdentityLossOp::canBeReplacedByIdentity() const {
                               opts.globalReplicationFactor > 1;
     if (getReductionType() == ReductionType::Mean && getIr().canTrain() &&
         (locallyReplicated || globallyReplicated) &&
-        (getScaleByReplication() == ScaleByReplication::Yes)) {
+        (getScaleByReplication(getReductionType()) ==
+         ScaleByReplication::Yes)) {
       return false;
     } else {
       return true;
@@ -104,12 +106,13 @@ bool IdentityLossOp::canBeReplacedByIdentity() const {
   return false;
 }
 
-IdentityLossOp::IdentityLossOp(const OperatorIdentifier &_opid,
-                               const ReductionType &reduction,
-                               const Op::Settings &settings_,
-                               const ScaleByReplication scaleByReplication)
-    : LossOp(_opid, settings_), reduction_type_(reduction),
-      scaleByReplication_(scaleByReplication) {}
+IdentityLossOp::IdentityLossOp(
+    const OperatorIdentifier &_opid,
+    const ReductionType &reduction,
+    const Op::Settings &settings_,
+    const ScaleByReplication scaleByReplicationOverride)
+    : LossOp(_opid, settings_, reduction),
+      scaleByReplicationOverride_(scaleByReplicationOverride) {}
 
 void IdentityLossOp::setup() {
   TensorInfo info0 = inInfo(getInIndex());
@@ -126,7 +129,6 @@ void IdentityLossOp::setup() {
 IdentityLossGradOp::IdentityLossGradOp(const IdentityLossOp &op_)
     : Op(Onnx::GradOperators::IdentityLossGrad, op_.getSettings()),
       reduction_type_(op_.getReductionType()),
-      scaleByReplication_(op_.getScaleByReplication()),
       outShape_(op_.inShape(IdentityOp::getInIndex())) {
 
   // The general setting of an op's scheduledPreLoss setting looks like:
@@ -164,6 +166,13 @@ IdentityLossGradOp::IdentityLossGradOp(const IdentityLossOp &op_)
        getIr().getMainGraph().hasUserRecomputeOps()) &&
       !getIr().getSessionOptions().explicitRecomputation) {
     settings.schedulePriority = std::numeric_limits<double>::lowest();
+  }
+
+  // A 'logical and' of the two settings
+  if (op_.getScaleByReplicationOverride() == ScaleByReplication::No) {
+    scaleByReplication_ = ScaleByReplication::No;
+  } else {
+    scaleByReplication_ = op_.getScaleByReplication(reduction_type_);
   }
 }
 
