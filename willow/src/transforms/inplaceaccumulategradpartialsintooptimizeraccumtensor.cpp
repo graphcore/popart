@@ -103,6 +103,9 @@ findInplaceAddTreesIntoOptimiserAccums(const Graph &graph) {
       // Try to find initial treeAccum and establish invariants on it.
 
       if (!optimiserAccumOp->hasInput(AccumulateOp::getUpdaterInIndex())) {
+        logging::transform::trace("[InplaceAccumulateGradPartialsIntoOptimizerA"
+                                  "ccumTensor] {} - no updater - stopping.",
+                                  optimiserAccumOp->debugName());
         continue;
       }
       treeAccum = optimiserAccumOp->inTensor(AccumulateOp::getUpdaterInIndex());
@@ -110,6 +113,10 @@ findInplaceAddTreesIntoOptimiserAccums(const Graph &graph) {
       noOtherConsumers =
           noOtherConsumers && treeAccum->consumers.getTotal() == 1;
       if (!noOtherConsumers) {
+        logging::transform::trace(
+            "[InplaceAccumulateGradPartialsIntoOptimizerAccumTensor] {} - no "
+            "other consumers - stopping.",
+            optimiserAccumOp->debugName());
         continue;
       }
 
@@ -160,18 +167,29 @@ findInplaceAddTreesIntoOptimiserAccums(const Graph &graph) {
 
       // If there was no inplace addition tree, there is nothing to do.
       if (addInplaceOps.empty()) {
+        logging::transform::trace(
+            "[InplaceAccumulateGradPartialsIntoOptimizerAccumTensor] {} - no "
+            "inplace add ops - stopping.",
+            optimiserAccumOp->debugName());
         continue;
       }
 
       // Skip if treeAccum not created by Zero InitOp.
       InitOp *initOp = dynamic_cast<InitOp *>(treeAccum->getProducerUnsafe());
       if (!(initOp && initOp->getInitType() == InitType::Zero)) {
+        logging::transform::trace(
+            "[InplaceAccumulateGradPartialsIntoOptimizerAccumTensor] {} - not "
+            "zero initialized - stopping.",
+            optimiserAccumOp->debugName());
         continue;
       }
 
       // Reverse addInplaceOps so they are in forward order.
       std::reverse(addInplaceOps.begin(), addInplaceOps.end());
 
+      logging::transform::trace("[InplaceAccumulateGradPartialsIntoOptimizerAcc"
+                                "umTensor] {} - tree found.",
+                                optimiserAccumOp->debugName());
       trees.push_back(
           {optimiserAccumOp->inTensor(AccumulateOp::getVarToUpdateInIndex()),
            optimiserAccumOp,
@@ -187,6 +205,12 @@ findInplaceAddTreesIntoOptimiserAccums(const Graph &graph) {
 void rewriteAsAccumulateTreeOnOptimiserAccum(
     Graph &graph,
     const InplaceAddTreeIntoOptimiserAccum &tree) {
+  logging::transform::debug(
+      "[InplaceAccumulateGradPartialsIntoOptimizerAccumTensor] "
+      "Rewriting tree: {} {}",
+      tree.initialTreeAccum->id,
+      tree.optimiserAccum->id);
+
   /*
     The following diagrams correspond to `tree` as so:
       - dw0               = initialTreeAccum
