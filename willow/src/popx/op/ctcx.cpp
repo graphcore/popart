@@ -20,7 +20,7 @@ namespace popart {
 namespace popx {
 
 CtcOpx::CtcOpx(Op *op_, Devicex *devicex)
-    : Opx(op_, devicex), plan(std::move(std::make_unique<popnn::ctc::Plan>())) {
+    : Opx(op_, devicex), plan(std::make_unique<popnn::ctc::Plan>()) {
   verifyOp<CtcOp>(op_, Onnx::CustomOperators::Ctc);
 
   const auto &op    = getOp<CtcOp>();

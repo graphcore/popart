@@ -139,9 +139,8 @@ bool ScanToLoopPattern::apply(Op *op) const {
 
       Op::Settings sliceSettings = settings;
 
-      for (Op *c : scanSgIn->consumers.getOps()) {
-        sliceSettings = c->settings;
-        break;
+      if (scanSgIn->consumers.getTotal() >= 1) {
+        sliceSettings = scanSgIn->consumers.getOps()[0]->settings;
       }
       sliceSettings.scope = loopSubgraphScope;
 
