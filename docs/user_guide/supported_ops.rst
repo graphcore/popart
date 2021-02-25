@@ -1,7 +1,7 @@
 Supported operators
 -------------------
 
-PopART is compatible with ONNX version 1.3
+PopART is compatible with ONNX versions up to and including 1.6.
 (see `ONNX Versioning <https://github.com/onnx/onnx/blob/master/docs/Versioning.md>`_).
 This section lists the supported operators.
 
