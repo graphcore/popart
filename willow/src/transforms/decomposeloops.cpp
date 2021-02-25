@@ -288,6 +288,7 @@ void DecomposeLoops::decomposeLoop(Graph &graph,
 
       // Move from loop body graph to parent graph
       graph.moveIntoGraph(std::move(cloneOpUp));
+      cloneOp->setScope(graph.getScope());
 
       cloneOp->setPipelineStage(loopOp->getOptionalPipelineStage());
       cloneOp->setExecutionPhase(loopOp->getOptionalExecutionPhase());
