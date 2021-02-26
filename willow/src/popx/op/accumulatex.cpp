@@ -30,16 +30,6 @@ void AccumulateOpx::grow(poplar::program::Sequence &prog) const {
 
   auto grad = getInTensor(VarUpdateWithUpdaterOp::getUpdaterInIndex());
 
-  // If the accl/accum tensor to update has a view changer,
-  // but the updater does not, update the view instead
-  // This may occur if the VarToUpdate tensor is CBR-rearranged
-  // (see GCL CollectivesBalancedReorder.cpp)
-  // (e.g. accumulator), but the Updater is not (e.g. gradient)
-  if (hasInViewChangers(VarUpdateOp::getVarToUpdateInIndex()) &&
-      !hasInViewChangers(VarUpdateWithUpdaterOp::getUpdaterInIndex())) {
-    accum = getInView(VarUpdateOp::getVarToUpdateInIndex());
-  }
-
   switch (accumulateOp.getAccumulationType()) {
   case AccumulationType::Add: {
     // accum += grad
@@ -236,14 +226,13 @@ void AccumulateOpx::grow(poplar::program::Sequence &prog) const {
   }
   }
 
-  if (hasInViewChangers(VarUpdateWithUpdaterOp::getVarToUpdateInIndex())) {
+  if (hasInViewChangers(VarUpdateWithUpdaterOp::getUpdaterInIndex())) {
     setOutViewChangers(
         VarUpdateOp::getUpdatedVarOutIndex(),
-        getInViewChangers(VarUpdateWithUpdaterOp::getVarToUpdateInIndex()));
+        getInViewChangers(VarUpdateWithUpdaterOp::getUpdaterInIndex()));
   }
-  // reference accum returned (as tensor, including view changers)
-  setOutTensor(VarUpdateOp::getUpdatedVarOutIndex(),
-               getInTensor(VarUpdateWithUpdaterOp::getVarToUpdateInIndex()));
+  // reference accum returned
+  setOutTensor(VarUpdateOp::getUpdatedVarOutIndex(), accum);
 }
 
 poplar::Tensor

@@ -48,18 +48,8 @@ void ReplicatedReduceScatterOpx::grow(poplar::program::Sequence &prog) const {
           inId(ReplicatedReduceScatterOp::getInIndex()));
       popops::zero(graph(), c, prog, debugContext());
       auto ref = cbr->undoRearrangeForCollective(c);
-      if (hasInViewChangers(ReplicatedReduceScatterOp::getInIndex())) {
-        prog.add(poplar::program::Copy(
-            getInViewChangers(ReplicatedReduceScatterOp::getInIndex())
-                .apply(toReduceScatter)
-                .flatten(),
-            ref.flatten(),
-            false,
-            debugContext()));
-      } else {
-        prog.add(poplar::program::Copy(
-            toReduceScatter.flatten(), ref.flatten(), false, debugContext()));
-      }
+      prog.add(poplar::program::Copy(
+          toReduceScatter.flatten(), ref.flatten(), false, debugContext()));
       toReduceScatter = c;
     }
   }
@@ -91,10 +81,7 @@ ReplicatedReduceScatterOpx::getInputCreatorType(InIndex index) const {
       if (cbrOp->id != rrsOp.id) {
         // This ReplicatedReduceScatterOp is not alone in a group, and can
         // use a pre-existing CBR to create the tensor layout
-        // T34831 currently always disable creator, because it can lead to
-        // rearrangements & padding in the created tensor that other consumers
-        // may not be able to deal with
-        canCreate = false;
+        canCreate = true;
       }
     }
 
@@ -131,7 +118,7 @@ poplar::Tensor ReplicatedReduceScatterOpx::createInput(
   const auto &rrsOp = getOp<ReplicatedReduceScatterOp>();
   const auto &type  = popType(rrsOp.inTensor(inIndex)->info);
   auto input        = cbr->createCollectivesTensor(type, dnai.getPathName());
-  return input;
+  return input.reshape(rrsOp.inInfo(inIndex).shape_szt());
 }
 
 DnfTensorIds

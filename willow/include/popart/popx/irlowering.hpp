@@ -230,7 +230,8 @@ private:
   static TaskId streamFromHostTaskId(TensorId);
 
   // Task to append a Copy from poplar::Stream to poplar::Tensor
-  PriTask fromHostTask(Tensor *tensor, poplar::program::Sequence &streamSq);
+  PriTask fromHostTask(Tensor *tensor,
+                       poplar::program::Sequence &streamSq) const;
 
   static TaskId fromHostTaskId(TensorId);
 
