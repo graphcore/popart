@@ -524,6 +524,16 @@ public:
                    const unsigned blank             = 0,
                    const DebugContext &debugContext = {});
 
+  // Additional version of ctcloss that returns both output tensors. The second
+  // tensor is a tensor that is only expected to be used internally by CtcGradOp
+  // to calculate gradients during the backwards pass. This prototype is useful
+  // for poptorch but need not be included in doxygen documentation.
+  std::vector<TensorId>
+  _ctcloss(const std::vector<TensorId> &args,
+           const ReductionType reduction    = ReductionType::Mean,
+           const unsigned blank             = 0,
+           const DebugContext &debugContext = {});
+
   /**
    * Add a shaped dropout operation to the model.
    *

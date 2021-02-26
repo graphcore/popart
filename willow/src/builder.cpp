@@ -1069,6 +1069,16 @@ TensorId AiGraphcoreOpset1::ctcloss(const std::vector<TensorId> &args,
                                     const ReductionType reduction,
                                     const unsigned blank,
                                     const DebugContext &debugContext) {
+  // Call _ctcloss but only return the first output.
+  auto outputs = _ctcloss(args, reduction, blank, debugContext);
+  return outputs.at(0);
+}
+
+std::vector<TensorId>
+AiGraphcoreOpset1::_ctcloss(const std::vector<TensorId> &args,
+                            const ReductionType reduction,
+                            const unsigned blank,
+                            const DebugContext &debugContext) {
   std::string reductionString = LossOp::reductionTypeToString(reduction);
 
   std::map<std::string, popart::any> attributes = {
@@ -1087,7 +1097,7 @@ TensorId AiGraphcoreOpset1::ctcloss(const std::vector<TensorId> &args,
                           attributes,
                           debugContext);
   di.setOutputs(outputs);
-  return outputs.at(0);
+  return outputs;
 }
 
 TensorId AiGraphcoreOpset1::shapeddropout(const std::vector<TensorId> &args,
