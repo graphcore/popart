@@ -15,24 +15,25 @@ sys.path.append(str(Path(__file__).resolve().parent.parent))
 import test_util as tu
 
 
-def run_model(tmpdir,
-              model_file_name,
-              execution_mode="normal",
-              enable_matmul_serialization=False,
-              enable_outlining=False,
-              enable_accum=False,
-              accum_factor=1,
-              activation_tensor_location_settings=None,
-              weight_tensor_location_settings=None,
-              optimizer_state_tensor_location_settings=None,
-              accumulator_tensor_location_settings=None,
-              num_layers=3,
-              dsize=48,
-              batch_size=1,
-              num_iterations=1,
-              num_replicas=1,
-              optimizer=popart.SGD({"defaultLearningRate": (0.5, False)}),
-              reduction=popart.ReductionType.Sum):
+def run_model(
+        tmpdir,
+        model_file_name,
+        execution_mode="normal",
+        enable_matmul_serialization=False,
+        enable_outlining=False,
+        enable_accum=False,
+        accum_factor=1,
+        activation_tensor_location_settings=None,
+        weight_tensor_location_settings=None,
+        optimizer_state_tensor_location_settings=None,
+        accumulator_tensor_location_settings=None,
+        num_layers=3,
+        dsize=37,  # Choose a prime number to force padding
+        batch_size=1,
+        num_iterations=1,
+        num_replicas=1,
+        optimizer=popart.SGD({"defaultLearningRate": (0.5, False)}),
+        reduction=popart.ReductionType.Sum):
 
     np.random.seed(10911)
     matmul_serialization_mode = 'output_channels'
