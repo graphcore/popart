@@ -3260,7 +3260,7 @@ TaskId IrLowering::pipelinedCopyTaskId(Op *op) {
 }
 
 PriTask IrLowering::fromHostTask(Tensor *tensor,
-                                 poplar::program::Sequence &sq) const {
+                                 poplar::program::Sequence &sq) {
   double priority;
   if (ir().getSessionOptions().groupHostSync) {
     priority = std::numeric_limits<double>::max();
@@ -3272,9 +3272,23 @@ PriTask IrLowering::fromHostTask(Tensor *tensor,
     logging::devicex::debug("Adding poplar::program::Copy from host " +
                             tensor->id);
 
+    if (tensors_.hasViewChangers(tensor->id)) {
+      if (tensors_.get(tensor->id).numElements() >
+          tensors_.getView(tensor->id).numElements()) {
+        // The view is not covering the whole tensor, therefore it is necessary
+        // to zero-init it
+        popops::zero(graph(),
+                     tensors_.get(tensor->id),
+                     seqs.getSequence(&sq),
+                     {"copyFromHost"});
+      }
+    }
+
     seqs.getSequence(&sq).add(
+        // Tensors with views: Use the view instead, so that e.g.
+        // replicated tensor sharding padding is ignored
         poplar::program::Copy(fromHostStreams.at(tensor->id),
-                              tensors_.get(tensor->id),
+                              tensors_.getView(tensor->id),
                               doRearrangeOnHost(tensor),
                               {"copyFromHost"}));
     return seqs;
@@ -3306,10 +3320,12 @@ PriTask IrLowering::toHostTask(Tensor *tensor,
       pToHostStreams = &toHostWeightStreams;
     }
     const auto &poplarStream = pToHostStreams->at(tensor->id);
+    // Tensors with views: Use the view instead, so that e.g.
+    // replicated tensor sharding padding is ignored
     const auto &anchorTensor =
         stype == ToHostStreamType::SumAnchor
-            ? tensors_.get(anchorSumPrefix() + tensor->id)
-            : tensors_.get(tensor->id);
+            ? tensors_.getView(anchorSumPrefix() + tensor->id)
+            : tensors_.getView(tensor->id);
     // verify that number of elements of poplar Tensor and poplar Stream are the
     // same
     auto nElmsStream = poplarStream.numElements();

@@ -19,7 +19,7 @@ bool ViewChangers::operator==(const ViewChangers &rhs) const {
   }
 
   for (size_t i = 0; i < viewChangers.size(); ++i) {
-    if (viewChangers.at(i) != rhs.viewChangers.at(i)) {
+    if (*viewChangers.at(i) != *rhs.viewChangers.at(i)) {
       return false;
     }
   }
