@@ -39,9 +39,7 @@ def numpy_array_from_printtensor_string(string):
     return data
 
 
-# TODO see T16010
-# @tu.requires_ipu
-@pytest.mark.skip("Test currently failing on hardware")
+@tu.requires_ipu
 def test_verify_synthetic_inputs(capfd):
     """
     For each synthetic data mode:
