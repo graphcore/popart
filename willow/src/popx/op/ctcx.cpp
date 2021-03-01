@@ -23,14 +23,16 @@ CtcOpx::CtcOpx(Op *op_, Devicex *devicex)
     : Opx(op_, devicex), plan(std::make_unique<popnn::ctc::Plan>()) {
   verifyOp<CtcOp>(op_, Onnx::CustomOperators::Ctc);
 
-  const auto &op    = getOp<CtcOp>();
-  auto popartTensor = op.input->tensor(CtcOp::getLogProbsInIndex());
-  auto dtype        = popType(popartTensor->info.getDataTypeInfo()->type());
+  const auto &op            = getOp<CtcOp>();
+  auto logProbsPopartTensor = op.input->tensor(CtcOp::getLogProbsInIndex());
+  auto ctcLossPopartTensor  = op.output->tensor(CtcOp::getCtcLossOutIndex());
+  auto inDtype  = popType(logProbsPopartTensor->info.getDataTypeInfo()->type());
+  auto outDtype = popType(ctcLossPopartTensor->info.getDataTypeInfo()->type());
 
   // Create plan once and re-use for growing and createInput.
   *plan = popnn::ctc::plan(graph(),
-                           dtype,
-                           dtype,
+                           inDtype,
+                           outDtype,
                            op.getBatchSize(),
                            op.getMaxInputLength(),
                            op.getMaxTargetLength(),
@@ -47,6 +49,11 @@ void CtcOpx::grow(poplar::program::Sequence &prog) const {
     throw error("CtcOpx is currently not supported for infererence sessions");
   } else {
 
+    const auto &op           = getOp<CtcOp>();
+    auto ctcLossPopartTensor = op.output->tensor(CtcOp::getCtcLossOutIndex());
+    auto outDtype =
+        popType(ctcLossPopartTensor->info.getDataTypeInfo()->type());
+
     const auto &logProbs      = getInTensor(CtcOp::getLogProbsInIndex());
     const auto &targets       = getInTensor(CtcOp::getTargetsInIndex());
     const auto &inputLengths  = getInTensor(CtcOp::getInputLengthsInIndex());
@@ -54,7 +61,7 @@ void CtcOpx::grow(poplar::program::Sequence &prog) const {
 
     auto result = popnn::ctc::calcLossAndGradientLogProbabilities(
         graph(),
-        logProbs.elementType(),
+        outDtype,
         logProbs,
         targets,
         inputLengths,
@@ -221,9 +228,17 @@ void CtcGradOpx::grow(poplar::program::Sequence &prog) const {
       adjustedCtcLossGrad.expand({0, 1}).broadcast(T, 0).broadcast(C, 2);
 
   // Apply chain rule for CTC loss.
+  auto inType  = adjustedCtcLossGrad.elementType();
+  auto outType = popType(outTensor->info.getDataTypeInfo()->type());
+
+  // If the output type differs from the input, do something.
+  auto expr = (inType == outType) ? pe::Mul(pe::_1, pe::_2)
+                                  : pe::Mul(pe::Cast(pe::_1, outType),
+                                            pe::Cast(pe::_2, outType));
+
   auto logProbsGradient =
       popops::map(graph(),
-                  pe::Mul(pe::_1, pe::_2),
+                  expr,
                   {logProbsGradientWrtCtcLoss, adjustedCtcLossGrad},
                   prog,
                   debugContext("chainRule"));

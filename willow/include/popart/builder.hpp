@@ -522,6 +522,7 @@ public:
   TensorId ctcloss(const std::vector<TensorId> &args,
                    const ReductionType reduction    = ReductionType::Mean,
                    const unsigned blank             = 0,
+                   const std::string &outDataType   = "UNDEFINED",
                    const DebugContext &debugContext = {});
 
   // Additional version of ctcloss that returns both output tensors. The second
@@ -532,6 +533,7 @@ public:
   _ctcloss(const std::vector<TensorId> &args,
            const ReductionType reduction    = ReductionType::Mean,
            const unsigned blank             = 0,
+           const std::string &outDataType   = "UNDEFINED",
            const DebugContext &debugContext = {});
 
   /**

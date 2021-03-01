@@ -4,6 +4,7 @@
 #include <popart/error.hpp>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
+#include <popart/onnxutil.hpp>
 #include <popart/op/ctc.hpp>
 #include <popart/op/mean.hpp>
 #include <popart/op/sum.hpp>
@@ -19,9 +20,11 @@ namespace popart {
 CtcOp::CtcOp(const OperatorIdentifier &_opid,
              const ReductionType reduction_,
              const unsigned blank_,
-             const Op::Settings &_settings)
-    : LossOp(_opid, _settings, reduction_), blank(blank_), batchSize(0u),
-      maxInputLength(0u), maxTargetLength(0u), numClasses(0u) {}
+             const Op::Settings &_settings,
+             const DataType userOutputType_)
+    : LossOp(_opid, _settings, reduction_), blank(blank_),
+      userOutputType(userOutputType_), batchSize(0u), maxInputLength(0u),
+      maxTargetLength(0u), numClasses(0u) {}
 
 std::unique_ptr<Op> CtcOp::clone() const {
   return std::make_unique<CtcOp>(*this);
@@ -56,6 +59,16 @@ void CtcOp::setup() {
         getLogProbsInIndex(),
         str(),
         logProbsInInfo.getDataTypeInfo()->type());
+  }
+
+  if (userOutputType != DataType::UNDEFINED &&
+      getDataTypeInfoMap().at(userOutputType).isFixedPoint()) {
+    throw error(
+        "Unsupported data type for output {} of Op {} (expected a floating "
+        "point type, got {}).",
+        getCtcLossOutIndex(),
+        str(),
+        userOutputType);
   }
 
   maxInputLength = logProbsInShape.at(0);
@@ -139,18 +152,26 @@ void CtcOp::setup() {
                 targetLengthsInInfo.getDataTypeInfo()->type());
   }
 
+  // Default output data types to the type of the first input.
+  DataType outputType = logProbsInInfo.dataType();
+
+  // User can specify output type.
+  if (userOutputType != DataType::UNDEFINED) {
+    outputType = userOutputType;
+  }
+
   // Loss output info.
   if (getReductionType() != ReductionType::NoReduction) {
     // With any reduction, output is scalar.
-    outInfo(getCtcLossOutIndex()).set(logProbsInInfo.dataType(), {});
+    outInfo(getCtcLossOutIndex()).set(outputType, {});
   } else {
     // With no reduction, output is [N].
-    outInfo(getCtcLossOutIndex()).set(logProbsInInfo.dataType(), {batchSize});
+    outInfo(getCtcLossOutIndex()).set(outputType, {batchSize});
   }
 
   // With no reduction, output is [T, N, C].
   outInfo(getLogProbsGradientWrtCtcLossOutIndex())
-      .set(logProbsInInfo.dataType(), {maxInputLength, batchSize, numClasses});
+      .set(outputType, {maxInputLength, batchSize, numClasses});
 }
 
 void CtcOp::appendOutlineAttributes(OpSerialiserBase &os) const {
@@ -208,13 +229,14 @@ void CtcGradOp::appendOutlineAttributes(OpSerialiserBase &os) const {
 namespace {
 
 static OpDefinition::DataTypes T1 = {DataType::FLOAT16, DataType::FLOAT};
-
 static OpDefinition::DataTypes T2 = {DataType::UINT32};
 
 static OpDefinition ctclossOpDef(
     {OpDefinition::Inputs({{"A", T1}, {"B", T2}, {"C", T2}, {"D", T2}}),
      OpDefinition::Outputs({{"E", T1}, {"F", T1}}),
-     OpDefinition::Attributes({{"reduction", {"*"}}, {"blank", {"*"}}})});
+     OpDefinition::Attributes({{"reduction", {"*"}},
+                               {"blank", {"*"}},
+                               {"outDataType", {"FLOAT|FLOAT16|UNDEFINED"}}})});
 
 static OpCreator<CtcOp> ctclossOpCreator(
     OpDefinitions({{Onnx::CustomOperators::Ctc, ctclossOpDef}}),
@@ -226,8 +248,14 @@ static OpCreator<CtcOp> ctclossOpCreator(
           info.attributes.getAttribute<Attributes::Int>("blank"));
       ReductionType reduction = LossOp::reductionTypeFromString(reductionStr);
 
+      // Get data type from attributes.
+      int64_t i64_to;
+      info.attributes.set(i64_to, "outDataType");
+      auto tpdt_to = static_cast<ONNX_NAMESPACE::TensorProto_DataType>(i64_to);
+      DataType outDataType = onnxutil::getDataType(tpdt_to);
+
       return std::unique_ptr<CtcOp>(
-          new CtcOp(info.opid, reduction, blank, info.settings));
+          new CtcOp(info.opid, reduction, blank, info.settings, outDataType));
     },
     true);
 

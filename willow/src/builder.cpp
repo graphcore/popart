@@ -1068,9 +1068,10 @@ TensorId AiGraphcoreOpset1::identityloss(const std::vector<TensorId> &args,
 TensorId AiGraphcoreOpset1::ctcloss(const std::vector<TensorId> &args,
                                     const ReductionType reduction,
                                     const unsigned blank,
+                                    const std::string &outDataType,
                                     const DebugContext &debugContext) {
   // Call _ctcloss but only return the first output.
-  auto outputs = _ctcloss(args, reduction, blank, debugContext);
+  auto outputs = _ctcloss(args, reduction, blank, outDataType, debugContext);
   return outputs.at(0);
 }
 
@@ -1078,15 +1079,16 @@ std::vector<TensorId>
 AiGraphcoreOpset1::_ctcloss(const std::vector<TensorId> &args,
                             const ReductionType reduction,
                             const unsigned blank,
+                            const std::string &outDataType,
                             const DebugContext &debugContext) {
   std::string reductionString = LossOp::reductionTypeToString(reduction);
 
-  std::map<std::string, popart::any> attributes = {
-      {"reduction", reductionString}, {"blank", blank}};
+  DataType toDataType = dataTypeFromString(outDataType);
 
-  // if (ignoreIndex.has_value()) {
-  //  attributes.emplace("ignoreIndex", ignoreIndex.value());
-  //}
+  std::map<std::string, popart::any> attributes = {
+      {"reduction", reductionString},
+      {"blank", blank},
+      {"outDataType", static_cast<int>(onnxutil::getTPDataType(toDataType))}};
 
   BuilderDebugInfo di(
       debugContext, "AiGraphcoreOpset1::ctcloss", args, attributes);

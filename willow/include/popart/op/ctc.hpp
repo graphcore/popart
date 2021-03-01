@@ -39,7 +39,8 @@ public:
   CtcOp(const OperatorIdentifier &_opid,
         const ReductionType reduction,
         const unsigned blank,
-        const Op::Settings &settings_);
+        const Op::Settings &settings_,
+        const DataType outDataType = DataType::UNDEFINED);
 
   std::unique_ptr<Op> clone() const final;
   std::vector<std::unique_ptr<Op>> getGradOps() final;
@@ -66,6 +67,7 @@ public:
 
 private:
   unsigned blank;
+  DataType userOutputType;
   unsigned batchSize;
   unsigned maxInputLength;
   unsigned maxTargetLength;

@@ -184,7 +184,7 @@ public:
 
   void assertNumElements(const popx::Executablex &) const final {}
 
-  ConstVoidData in(TensorId id, int64_t, bool prefetch) final {
+  ConstVoidData in(TensorId id, int64_t, bool prefetch)final {
     py::array a = inputCb(id, prefetch);
     if (!isContiguous(a)) {
       throw error(
@@ -2068,6 +2068,7 @@ PYBIND11_MODULE(popart_core, m) {
             py::arg("args"),
             py::arg("reduction")    = ReductionType::Mean,
             py::arg("blank")        = 0,
+            py::arg("outDataType")  = "UNDEFINED",
             py::arg("debugContext") = std::string(),
             DOC(popart, AiGraphcoreOpset1, ctcloss));
     cls.def("multiconv",
