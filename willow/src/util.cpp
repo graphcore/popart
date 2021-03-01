@@ -1,4 +1,5 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
+#include <cmath>
 #include <iostream>
 #include <popart/logging.hpp>
 #include <popart/names.hpp>
@@ -30,6 +31,12 @@ void OpSearchHelper::pushOutputConsumers(Op *op) {
   }
 }
 
+int roundToInt(float d) { return static_cast<int>(std::roundf(d)); }
+
+unsigned roundToUnsigned(float d) {
+  return static_cast<unsigned>(std::roundf(d));
+}
+
 // convert a float to the DataType `dtype`
 std::vector<char> convertFloatToDataType(DataType dtype, float data) {
   if (dtype == DataType::FLOAT) {
@@ -41,11 +48,15 @@ std::vector<char> convertFloatToDataType(DataType dtype, float data) {
   }
 
   else if (dtype == DataType::INT32) {
-    return convertIntTo<int>(static_cast<int>(data));
+    return convertIntTo<int>(roundToInt(data));
   }
 
   else if (dtype == DataType::UINT32) {
-    return convertUnsignedIntTo<uint32_t>(static_cast<uint32_t>(data));
+    return convertUnsignedIntTo<uint32_t>(roundToUnsigned(data));
+  }
+
+  else if (dtype == DataType::INT8) {
+    return convertIntTo<int8_t>(roundToInt(data));
   }
 
   throw error("Can't convert float to DataType {}",
@@ -64,8 +75,8 @@ template <typename T> std::vector<char> convertFloatTo(float data) {
 // convert an int to type T
 template <typename T> std::vector<char> convertIntTo(int data) {
   std::vector<char> data_out;
-  T converted_data{data};
   data_out.resize(sizeof(T));
+  T converted_data{static_cast<T>(data)};
   *reinterpret_cast<T *>(data_out.data()) = converted_data;
   return data_out;
 }

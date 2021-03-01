@@ -210,7 +210,8 @@ def test_training_min_batches():
 
 
 @tu.requires_ipu_model
-def test_output_matches_train():
+@pytest.mark.parametrize("int8Input", [False, True])
+def test_output_matches_train(int8Input):
     """
     In this test we check that the anchors of equivalent non-sharded, sharded
     and non-pipelined, and sharded and pipelined models are equal when doing
@@ -221,15 +222,18 @@ def test_output_matches_train():
     singleIpu_anchors = get_model_anchors(doSharding=False,
                                           doPipelining=False,
                                           batchesPerStep=bps,
-                                          doTraining=True)
+                                          doTraining=True,
+                                          int8Input=int8Input)
     multiIpu_anchors = get_model_anchors(doSharding=True,
                                          doPipelining=False,
                                          batchesPerStep=bps,
-                                         doTraining=True)
+                                         doTraining=True,
+                                         int8Input=int8Input)
     pipelined_anchors = get_model_anchors(doSharding=True,
                                           doPipelining=True,
                                           batchesPerStep=bps,
-                                          doTraining=True)
+                                          doTraining=True,
+                                          int8Input=int8Input)
     # TODO, depends on T9630, add a case with grad accumulation. All tensor
     # outputs should be exactly the same when doing pipelined vs non-pipelined
     # when grad accumulation is turned on
@@ -249,7 +253,8 @@ def test_output_matches_train():
 
 
 @tu.requires_ipu_model
-def test_acts_match_restored_acts():
+@pytest.mark.parametrize("int8Input", [False, True])
+def test_acts_match_restored_acts(int8Input):
     """
     In this test we check that the stashed tensors and their equivalent
     Restored tensors have the same values for all batches. This confirms
@@ -265,24 +270,30 @@ def test_acts_match_restored_acts():
                                           batchesPerStep=bps,
                                           doTraining=True,
                                           anchorRestoredTensors=True,
-                                          returnRawInput=True)
+                                          returnRawInput=True,
+                                          int8Input=int8Input)
 
     for (tId, t) in pipelined_anchors.items():
         for i in range(np.shape(t)[0]):
             print("batch: ", i, tId, np.sum(t[i]))
 
+    # Can't seem to make the cast op produce a tensor with id "input", so we
+    # have to do this instead.
+    input_name = "Cast:0" if int8Input else "input"
+
     assert np.allclose(
         pipelined_anchors[popart.reservedRestoredPrefix() + "Exp:0"],
         pipelined_anchors["Exp:0"])
     assert np.allclose(
-        pipelined_anchors[popart.reservedRestoredPrefix() + "input"],
-        pipelined_anchors["input"])
+        pipelined_anchors[popart.reservedRestoredPrefix() + input_name],
+        pipelined_anchors[input_name])
     assert np.allclose(pipelined_anchors["input_raw"],
-                       pipelined_anchors["input"])
+                       pipelined_anchors[input_name])
 
 
 @tu.requires_ipu_model
-def test_output_matches_infer():
+@pytest.mark.parametrize("int8Input", [False, True])
+def test_output_matches_infer(int8Input):
     """
     In this test we check that the anchors of equivalent non-sharded, sharded
     and non-pipelined, and sharded and pipelined models are equal when doing
@@ -292,15 +303,18 @@ def test_output_matches_infer():
     singleIpu_anchors = get_model_anchors(doSharding=False,
                                           doPipelining=False,
                                           batchesPerStep=bps,
-                                          doTraining=False)
+                                          doTraining=False,
+                                          int8Input=int8Input)
     multiIpu_anchors = get_model_anchors(doSharding=True,
                                          doPipelining=False,
                                          batchesPerStep=bps,
-                                         doTraining=False)
+                                         doTraining=False,
+                                         int8Input=int8Input)
     pipelined_anchors = get_model_anchors(doSharding=True,
                                           doPipelining=True,
                                           batchesPerStep=bps,
-                                          doTraining=False)
+                                          doTraining=False,
+                                          int8Input=int8Input)
 
     for (tId1, t1), (tId2, t2) in zip(singleIpu_anchors.items(),
                                       multiIpu_anchors.items()):
@@ -330,19 +344,28 @@ def get_model_anchors(doSharding,
                       doProfiling=False,
                       doDevicex=True,
                       anchorRestoredTensors=False,
-                      returnRawInput=False):
+                      returnRawInput=False,
+                      int8Input=False):
     np.random.seed(seed=1)
 
     builder = popart.Builder()
     batchSize = 2
     shape_d0 = [batchSize, 2, 4, 4]
     shape_l0 = [batchSize]
-    d0 = builder.addInputTensor(popart.TensorInfo("FLOAT", shape_d0))
+    if int8Input:
+        d0 = builder.addInputTensor(popart.TensorInfo("INT8", shape_d0))
+    else:
+        d0 = builder.addInputTensor(popart.TensorInfo("FLOAT", shape_d0))
     data_w0 = np.ones(shape=[2, 2, 3, 3]).astype(np.float32)
     w0 = builder.addInitializedInputTensor(data_w0)
     l0 = builder.addInputTensor(popart.TensorInfo("INT32", shape_l0))
 
-    s0 = builder.aiOnnx.sin([d0], "s0")
+    if int8Input:
+        d0_cast = builder.aiOnnx.cast([d0], "FLOAT")
+    else:
+        d0_cast = d0
+
+    s0 = builder.aiOnnx.sin([d0_cast], "s0")
     e0 = builder.aiOnnx.exp([s0], "e0")
     c0 = builder.aiOnnx.conv([e0, w0],
                              dilations=[1, 1],
@@ -357,11 +380,11 @@ def get_model_anchors(doSharding,
 
     anchor_map = {nll: art, w0: art, e0: art}
     if doTraining is True:
-        anchor_map[popart.reservedGradientPrefix() + d0] = art
+        anchor_map[popart.reservedGradientPrefix() + d0_cast] = art
         if doPipelining is True and anchorRestoredTensors is True:
             anchor_map[popart.reservedRestoredPrefix() + e0] = art
-            anchor_map[d0] = art
-            anchor_map[popart.reservedRestoredPrefix() + d0] = art
+            anchor_map[d0_cast] = art
+            anchor_map[popart.reservedRestoredPrefix() + d0_cast] = art
 
     opts = popart.SessionOptions()
     opts.reportOptions = {"showExecutionSteps": "true"}
@@ -372,6 +395,7 @@ def get_model_anchors(doSharding,
     else:
         opts.virtualGraphMode = popart.VirtualGraphMode.Manual
         numIPUs = 3
+        if int8Input: builder.virtualGraph(d0_cast, 0)
         builder.virtualGraph(s0, 0)
         builder.virtualGraph(e0, 1)
         builder.virtualGraph(c0, 1)
@@ -403,8 +427,9 @@ def get_model_anchors(doSharding,
     if batchesPerStep > 1:
         shape_d0.insert(0, batchesPerStep)
         shape_l0.insert(0, batchesPerStep)
+    d0_host_type = np.int8 if int8Input else np.float32
     data = np.random.uniform(low=-10.0, high=10.0,
-                             size=shape_d0).astype(np.float32)
+                             size=shape_d0).astype(d0_host_type)
     classes = np.prod(shape_d0) / (batchSize * batchesPerStep)
     label = np.random.randint(low=0, high=classes,
                               size=shape_l0).astype(np.int32)
@@ -429,6 +454,7 @@ def get_model_anchors(doSharding,
 def get_simple_linear_model(streamInputToOp1AndOp2=False):
     builder = popart.Builder()
     shape_d = [10]
+
     d0 = builder.addInputTensor(popart.TensorInfo("FLOAT", shape_d))
     d1 = builder.addInputTensor(popart.TensorInfo("FLOAT", shape_d))
 
@@ -633,12 +659,14 @@ def test_multiple_stages_per_virtual_graph_inference():
 
 # run the same model with and without revisiting ipus and compare the resultant weights.
 @tu.requires_ipu_model
-def test_multiple_stages_per_virtual_graph_training():
+@pytest.mark.parametrize("int8Input", [False, True])
+def test_multiple_stages_per_virtual_graph_training(int8Input):
     accumulation_factor = 5
     micro_batches_per_step = 5
     bps = micro_batches_per_step // accumulation_factor
-    dummy_data = np.random.rand(2, 2).astype(np.float32)
-    data = np.random.rand(accumulation_factor, 2, 2).astype(np.float32)
+    data_type = np.int8 if int8Input else np.float32
+    dummy_data = np.random.rand(2, 2).astype(data_type)
+    data = np.random.rand(accumulation_factor, 2, 2).astype(data_type)
     weight_data = np.random.rand(2, 2).astype(np.float32)
 
     def run_test(set_pipeline_stages):
@@ -649,8 +677,11 @@ def test_multiple_stages_per_virtual_graph_training():
             w0 = builder.addInitializedInputTensor(weight_data)
             weights[w0] = np.empty(shape=weight_data.shape,
                                    dtype=weight_data.dtype)
-
-            t0 = builder.aiOnnx.matmul([d0, w0])
+            if int8Input:
+                d0_float = builder.aiOnnx.cast([d0], "FLOAT")
+                t0 = builder.aiOnnx.matmul([d0_float, w0])
+            else:
+                t0 = builder.aiOnnx.matmul([d0, w0])
             t1 = builder.aiOnnx.sin([t0])
             t2 = builder.aiOnnx.matmul([t1, w0])
             loss = builder.aiGraphcore.identityloss([t2])
@@ -658,11 +689,13 @@ def test_multiple_stages_per_virtual_graph_training():
             builder.addOutputTensor(loss)
 
             if set_pipeline_stages:
+                if int8Input: builder.pipelineStage(d0_float, 0)
                 builder.pipelineStage(t0, 0)
                 builder.pipelineStage(t1, 1)
                 builder.pipelineStage(t2, 2)
                 builder.pipelineStage(loss, 2)
 
+                if int8Input: builder.virtualGraph(d0_float, 0)
                 builder.virtualGraph(t0, 0)
                 builder.virtualGraph(t1, 1)
                 builder.virtualGraph(t2, 0)
@@ -716,14 +749,18 @@ def test_multiple_stages_per_virtual_graph_training():
 
 # run the same model with and without recomputation and check the updated weights
 @tu.requires_ipu_model
-def test_recomputation():
+@pytest.mark.parametrize("int8Input", [False, True])
+def test_recomputation(int8Input):
     accumulationFactor = 3
     microBatchesPerStep = 3
     bps = microBatchesPerStep // accumulationFactor
-    dummy_data = np.zeros((2, 2)).astype(np.float32)
-    data = np.array([i for i in range(accumulationFactor * 2 * 2)]).astype(
-        np.float32) * 0.1
+
+    data_type, f = (np.int8, 1) if int8Input else (np.float32, 0.1)
+    dummy_data = np.zeros((2, 2)).astype(data_type)
+    data = np.array([i for i in range(accumulationFactor * 2 * 2)
+                     ]).astype(data_type) * f
     data = np.reshape(data, (accumulationFactor, 2, 2))
+
     weight_data = np.array([i for i in range(2 * 2)]).astype(np.float32) * 0.25
     weight_data = np.reshape(weight_data, (2, 2))
 
@@ -736,10 +773,17 @@ def test_recomputation():
             weights[w0] = np.empty(shape=weight_data.shape,
                                    dtype=weight_data.dtype)
 
-            t0 = builder.aiOnnx.mul([d0, w0])
+            if int8Input:
+                d0_float = builder.aiOnnx.cast([d0], "FLOAT")
+                t0 = builder.aiOnnx.mul([d0_float, w0])
+            else:
+                t0 = builder.aiOnnx.mul([d0, w0])
             t1 = builder.aiOnnx.sigmoid([t0])
             t2 = builder.aiGraphcore.scale([t1], 2.0)
             loss = builder.aiGraphcore.identityloss([t2])
+
+            if int8Input:
+                builder.virtualGraph(d0_float, 0)
 
             for t in (t0, t1, t2):
                 builder.virtualGraph(t, 0)

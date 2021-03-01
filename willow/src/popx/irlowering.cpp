@@ -1186,10 +1186,12 @@ PriTask IrLowering::setInitTensorValTask(Tensor *tensor) {
       setInitVal<uint32_t>(tensor);
       break;
     }
-
+    case DataType::INT8: {
+      setInitVal<int8_t>(tensor);
+      break;
+    }
     case DataType::UNDEFINED:
     case DataType::UINT8:
-    case DataType::INT8:
     case DataType::INT64:
     case DataType::UINT16:
     case DataType::INT16:

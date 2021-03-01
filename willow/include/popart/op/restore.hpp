@@ -25,7 +25,7 @@ public:
 
   float getSubgraphValue() const final { return getLowSubgraphValue(); }
 
-  int64_t getStashSize() { return stashSize; }
+  int64_t getStashSize() const { return stashSize; }
 
   void appendOutlineAttributes(OpSerialiserBase &) const override;
 

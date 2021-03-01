@@ -358,6 +358,7 @@ add_popart_py_unit_test(debug_info_test)
 add_popart_py_unit_test(logging_test)
 add_popart_py_unit_test(model_loading_test)
 add_popart_py_unit_test(loss_grad_scaling_with_replication VARIANTS Hw)
+add_popart_py_unit_test(int8_host_stream_test VARIANTS IpuModel)
 
 # Test to check for boost in popart headers.
 set(POPART_INCLUDE_DIR ${PROJECT_SOURCE_DIR}/willow/include)

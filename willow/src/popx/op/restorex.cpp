@@ -1,5 +1,6 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #include <popart/error.hpp>
+#include <popart/names.hpp>
 #include <popart/op/restore.hpp>
 #include <popart/popx/devicex.hpp>
 #include <popart/popx/op/restorex.hpp>
@@ -12,76 +13,124 @@
 namespace popart {
 namespace popx {
 
-namespace {
+template <typename Derived>
+RestoreBaseOpx<Derived>::RestoreBaseOpx(Op *op, Devicex *devicex)
+    : Opx(op, devicex) {
+  verifyOp<typename Derived::OpType>(op);
 
-poplar::Tensor grow_restore_dynamic_slice(const Opx &opx,
-                                          int64_t stashSize,
-                                          poplar::Tensor &stash,
-                                          poplar::program::Sequence &prog) {
-  auto &graph = opx.graph();
+  // Note RestoreInplaceOp derives RestoreOp.
+  canDynamicSliceRestore =
+      inInfo(RestoreOp::getStashInIndex()).dataType() != DataType::INT8;
+}
 
-  // Create the index tensor
-  poplar::Tensor stashIndex =
-      graph.addVariable(poplar::UNSIGNED_INT, {1}, opx.debugContext());
-  graph.setTileMapping(stashIndex, 0);
-  graph.setInitialValue(stashIndex, poplar::ArrayRef<uint32_t>({0}));
+template <typename Derived>
+poplar::Tensor
+RestoreBaseOpx<Derived>::growRestore(poplar::program::Sequence &prog,
+                                     const poplar::Tensor &stash) const {
+  const auto &op       = getOp<typename Derived::OpType>();
+  const auto stashSize = op.getStashSize();
 
-  // Read the stash
+  // Create the stash index tensor.
+  const auto stashIndex =
+      graph().addVariable(poplar::UNSIGNED_INT, {1}, debugContext());
+  graph().setTileMapping(stashIndex, 0);
+  graph().setInitialValue(stashIndex, poplar::ArrayRef<uint32_t>({0}));
+
+  // Create the stash size tensor.
+  const auto stashSizeTensor =
+      getConst(poplar::UNSIGNED_INT, {}, stashSize, "stash_size");
+
+  // Grow program to take slice of stash at the stash index.
+  poplar::Tensor actFromStash;
+
+  if (canDynamicSliceRestore) {
+    actFromStash = growDynamicSliceRestore(prog, stashIndex, stash);
+  } else {
+    actFromStash = growStaticSliceRestore(prog, stashSize, stashIndex, stash);
+  }
+
+  // Create a "1" tensor and grow program to increment stash index by 1.
+  auto one = getConst(poplar::UNSIGNED_INT, {}, 1.0, "one");
+  popops::addInPlace(graph(), stashIndex, one, prog, debugContext());
+  popops::remInPlace(
+      graph(), stashIndex, stashSizeTensor, prog, debugContext());
+
+  return actFromStash;
+}
+
+template <typename Derived>
+poplar::Tensor RestoreBaseOpx<Derived>::growStaticSliceRestore(
+    poplar::program::Sequence &prog,
+    const int64_t stashSize,
+    const poplar::Tensor &stashIndex,
+    const poplar::Tensor &stash) const {
+
+  // stash is (N, a, b, c). Output is (a, b, c) at index stashIndex.
+
+  // Creates (1, a, b, c) tensor.
+  poplar::Tensor actFromStash = popops::createSliceTensor(
+      graph(), stash, {0}, {1}, 1, debugContext("static-restore/out-slice"));
+
+  poplar::program::Switch switchCase(stashIndex.reshape({}));
+
+  for (int64_t i = 0; i < stashSize; i++) {
+    const auto inSliceAtIdx = stash.slice(i, i + 1, 0);
+    switchCase.add(
+        i,
+        poplar::program::Copy(
+            inSliceAtIdx,
+            actFromStash,
+            false,
+            debugContext("static-restore/switch-copy-" + std::to_string(i))));
+  }
+
+  prog.add(switchCase);
+
+  return actFromStash.squeeze({0});
+}
+
+template <typename Derived>
+poplar::Tensor RestoreBaseOpx<Derived>::growDynamicSliceRestore(
+    poplar::program::Sequence &prog,
+    const poplar::Tensor &stashIndex,
+    const poplar::Tensor &stash) const {
+
   auto actFromStash =
-      popops::dynamicSlice(graph,
+      popops::dynamicSlice(graph(),
                            stash,
                            stashIndex,
                            {0},
                            {1},
                            prog,
-                           opx.debugContext("grow_restore_dynamic_slice"));
+                           debugContext("grow_restore_dynamic_slice"));
 
-  // Increment the index
-  auto one = opx.getConst(poplar::UNSIGNED_INT, {}, 1.0, "one");
-  popops::addInPlace(graph, stashIndex, one, prog, opx.debugContext());
-
-  // Wrap the index
-  auto stashSizeTensor =
-      opx.getConst(poplar::UNSIGNED_INT, {}, stashSize, "stash_size");
-  popops::remInPlace(
-      graph, stashIndex, stashSizeTensor, prog, opx.debugContext());
-
-  return actFromStash;
+  return actFromStash.squeeze({0});
 }
 
-} // namespace
-
 void RestoreInplaceOpx::grow(poplar::program::Sequence &prog) const {
-  auto &op          = getOp<RestoreInplaceOp>();
   auto actToRestore = getInTensor(RestoreInplaceOp::getActToRestoreInIndex());
   auto stash        = getInTensor(RestoreInplaceOp::getStashInIndex());
 
-  auto actFromStash =
-      grow_restore_dynamic_slice(*this, op.getStashSize(), stash, prog);
+  const auto actFromStash = growRestore(prog, stash);
 
-  prog.add(poplar::program::Copy(
-      actFromStash.squeeze({0}), actToRestore, false, debugContext()));
+  prog.add(
+      poplar::program::Copy(actFromStash, actToRestore, false, debugContext()));
   setOutTensor(RestoreInplaceOp::getRestoredActOutIndex(), actToRestore);
 }
 
 RestoreInplaceOpx::RestoreInplaceOpx(Op *op, Devicex *devicex)
-    : Opx(op, devicex) {
-  verifyOp<RestoreInplaceOp>(op);
-}
+    : RestoreBaseOpx(op, devicex) {}
 
 void RestoreOpx::grow(poplar::program::Sequence &prog) const {
-  auto &op   = getOp<RestoreOp>();
   auto stash = getInTensor(RestoreOp::getStashInIndex());
 
-  auto actFromStash =
-      grow_restore_dynamic_slice(*this, op.getStashSize(), stash, prog);
+  auto actFromStash = growRestore(prog, stash);
 
-  setOutTensor(RestoreOp::getRestoredActOutIndex(), actFromStash.squeeze({0}));
+  setOutTensor(RestoreOp::getRestoredActOutIndex(), actFromStash);
 }
 
-RestoreOpx::RestoreOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
-  verifyOp<RestoreOp>(op);
-}
+RestoreOpx::RestoreOpx(Op *op, Devicex *devicex)
+    : RestoreBaseOpx(op, devicex) {}
 
 namespace {
 OpxCreator<RestoreOpx> restoreOpxCreator(Onnx::CustomOperators::Restore);
