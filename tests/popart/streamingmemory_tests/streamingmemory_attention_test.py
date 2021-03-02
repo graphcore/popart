@@ -455,65 +455,68 @@ def test_attention_streamingmemory(tmpdir):
             "ioTiles": 192
         })
 
-    # Test replicated tensor sharding + on chip (no outlining).
-    test_variants.append({
-        "stages":
-        2,
-        "numLayers":
-        3,
-        "phasedExecution":
-        True,
-        "outlining":
-        False,
-        "explicitRecomputation":
-        False,
-        "aliasZeroCopy":
-        False,
-        "batchSerialize":
-        1,
-        "replication":
-        2,
-        "tensorLocationSettings":
-        defaultOffChip,
-        "weightTensorLocationSettings":
-        popart.TensorLocationSettings(location=popart.TensorLocation(
-            storage=popart.TensorStorage.OnChip,
-            loadTileSet=popart.TileSet.Compute,
-            storageTileSet=popart.TileSet.Compute,
-            replicatedTensorSharding=popart.ReplicatedTensorSharding.On),
-                                      minElementsForOffChip=0,
-                                      minElementsForReplicatedTensorSharding=2)
-    })
+    for outlining in [False, True]:
+        # Test replicated tensor sharding + on chip
+        test_variants.append({
+            "stages":
+            2,
+            "numLayers":
+            3,
+            "phasedExecution":
+            True,
+            "outlining":
+            outlining,
+            "explicitRecomputation":
+            outlining,
+            "aliasZeroCopy":
+            outlining,
+            "batchSerialize":
+            1,
+            "replication":
+            2,
+            "tensorLocationSettings":
+            defaultOffChip,
+            "weightTensorLocationSettings":
+            popart.
+            TensorLocationSettings(location=popart.TensorLocation(
+                storage=popart.TensorStorage.OnChip,
+                loadTileSet=popart.TileSet.Compute,
+                storageTileSet=popart.TileSet.Compute,
+                replicatedTensorSharding=popart.ReplicatedTensorSharding.On),
+                                   minElementsForOffChip=0,
+                                   minElementsForReplicatedTensorSharding=2)
+        })
 
-    # Test replicated tensor sharding + off chip (no outlining).
-    test_variants.append({
-        "stages":
-        2,
-        "numLayers":
-        3,
-        "phasedExecution":
-        True,
-        "outlining":
-        False,
-        "explicitRecomputation":
-        False,
-        "aliasZeroCopy":
-        False,
-        "batchSerialize":
-        1,
-        "replication":
-        2,
-        "tensorLocationSettings":
-        defaultOffChip,
-        "weightTensorLocationSettings":
-        popart.TensorLocationSettings(location=popart.TensorLocation(
-            storage=popart.TensorStorage.OffChip,
-            loadTileSet=popart.TileSet.Compute,
-            storageTileSet=popart.TileSet.Compute,
-            replicatedTensorSharding=popart.ReplicatedTensorSharding.On),
-                                      minElementsForOffChip=0,
-                                      minElementsForReplicatedTensorSharding=2)
-    })
+        # Test replicated tensor sharding + off chip
+        test_variants.append({
+            "stages":
+            2,
+            "numLayers":
+            3,
+            "phasedExecution":
+            True,
+            "outlining":
+            outlining,
+            "explicitRecomputation":
+            outlining,
+            "aliasZeroCopy":
+            outlining,
+            "batchSerialize":
+            1,
+            "replication":
+            2,
+            "tensorLocationSettings":
+            defaultOffChip,
+            "weightTensorLocationSettings":
+            popart.
+            TensorLocationSettings(location=popart.TensorLocation(
+                storage=popart.TensorStorage.OffChip,
+                loadTileSet=popart.TileSet.Compute,
+                storageTileSet=popart.TileSet.Compute,
+                replicatedTensorSharding=popart.ReplicatedTensorSharding.On),
+                                   minElementsForOffChip=0,
+                                   minElementsForReplicatedTensorSharding=2)
+        })
 
     print("#variants: ", len(test_variants))
     # Run only selected tests

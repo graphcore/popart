@@ -442,6 +442,7 @@ Op::Op(const Op &op)
 }
 
 bool Op::hasInput(InIndex index) const { return input->hasIndex(index); }
+bool Op::hasOutput(InIndex index) const { return output->hasIndex(index); }
 
 Tensor *Op::inTensor(InIndex index) { return input->tensor(index); }
 const Tensor *Op::inTensor(InIndex index) const { return input->tensor(index); }

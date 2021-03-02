@@ -429,6 +429,7 @@ public:
   virtual InIndex getSeedInIndex() const;
 
   bool hasInput(InIndex index) const;
+  bool hasOutput(OutIndex index) const;
 
   // helper functions, access fields of input and output
   Tensor *inTensor(InIndex index);

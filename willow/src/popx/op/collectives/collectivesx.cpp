@@ -1,9 +1,13 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
 #include <popart/error.hpp>
 #include <popart/graph.hpp>
+#include <popart/graphutils.hpp>
 #include <popart/ir.hpp>
 #include <popart/liveness.hpp>
 #include <popart/op/collectives/collectives.hpp>
+#include <popart/op/collectives/replicatedallgather.hpp>
+#include <popart/op/collectives/replicatedreducescatter.hpp>
+#include <popart/op/subgraph.hpp>
 #include <popart/popx/devicex.hpp>
 #include <popart/popx/irlowering.hpp>
 #include <popart/popx/op/collectives/collectivesx.hpp>
@@ -42,77 +46,124 @@ CollectivesBaseOpx::CollectivesBaseOpx(Op *op, Devicex *devicex)
 
 std::pair<std::set<TensorId>, std::vector<Op *>>
 CollectivesBaseOpx::getCollectiveLinkedGroup() const {
-  // Mapping from each RemoteArg to it's final consumers
-  std::map<TensorId, std::set<Op *>> linkOpMap;
-  std::map<Op *, std::set<TensorId>> opLinkMap;
-
-  Ir &ir = op_p->getIr();
-  const liveness::LivenessAnalyzer *liveness =
-      dv_p->lowering().getLivenessAnalyzer();
-
-  for (Op *op : ir.getAllOps()) {
-    if (CollectivesBaseOp *collectiveOp =
-            dynamic_cast<CollectivesBaseOp *>(op)) {
-
-      if (!collectiveOp->input->hasIndex(
-              CollectivesBaseOp::getCollectiveLinkedIndex())) {
-        continue;
-      }
-
-      std::vector<Tensor *> traceFront;
-      traceFront.push_back(collectiveOp->input->tensor(
-          CollectivesBaseOp::getCollectiveLinkedIndex()));
-
-      while (traceFront.size() > 0) {
-        Tensor *front = traceFront.back();
-        traceFront.pop_back();
-        auto inputIds = front->getGraph().getInputIds();
-        if (front->hasProducer()) {
-          // The link tensor is only allowed to come through subgraph ops, and
-          // should not be touched by other ops
-          throw error("Op {} not expected on the path from the "
-                      "link tensor to the collective operation {}",
-                      front->getProducer()->debugName(),
-                      op->debugName());
-        } else {
-          auto it = std::find(inputIds.begin(), inputIds.end(), front->id);
-          if (it != inputIds.end()) {
-            InIndex index =
-                static_cast<InIndex>(std::distance(inputIds.begin(), it));
-            auto &callSites = liveness->getGraphCallSites(front->getGraph().id);
-            for (Op *callSite : callSites) {
-              traceFront.push_back(callSite->input->tensor(index));
-            }
-          } else {
-            linkOpMap[front->id].insert(op);
-            opLinkMap[op].insert(front->id);
-          }
-        }
-      }
-    }
-  }
 
   std::set<TensorId> groupTensorIds;
   std::vector<Op *> groupCollectiveOps;
 
-  std::vector<Op *> front(1, op_p);
-  while (front.size() > 0) {
-    Op *frontOp = front.back();
-    front.pop_back();
-    for (TensorId tensor_id : opLinkMap.at(frontOp)) {
-      if (groupTensorIds.find(tensor_id) == groupTensorIds.end()) {
-        groupTensorIds.insert(tensor_id);
-        for (Op *op : linkOpMap.at(tensor_id)) {
-          if (std::find(groupCollectiveOps.begin(),
-                        groupCollectiveOps.end(),
-                        op) == groupCollectiveOps.end()) {
-            groupCollectiveOps.push_back(op);
-            front.push_back(op);
+  Shape metaShape;
+  if (op_p->isConvertibleTo<ReplicatedReduceScatterOp>()) {
+    metaShape = op_p->outTensor(ReplicatedReduceScatterOp::getOutIndex())
+                    ->info.metaShape();
+  }
+  if (op_p->isConvertibleTo<ReplicatedAllGatherOp>()) {
+    metaShape =
+        op_p->inTensor(ReplicatedAllGatherOp::getInIndex())->info.metaShape();
+  }
+
+  auto visitor = [&metaShape, &groupTensorIds, &groupCollectiveOps](Tensor *t) {
+    bool keep_going = false;
+
+    for (Op *c : t->consumers.getOps()) {
+      if (CollectivesBaseOp *collectiveOp =
+              dynamic_cast<CollectivesBaseOp *>(c)) {
+        auto indices = collectiveOp->input->indices(t);
+        if (std::find(indices.begin(),
+                      indices.end(),
+                      CollectivesBaseOp::getCollectiveLinkedIndex()) !=
+            indices.end()) {
+          for (auto root : graphutils::rootTensors(t)) {
+            groupTensorIds.insert(root->id);
           }
+          groupCollectiveOps.push_back(collectiveOp);
+          keep_going = true;
         }
       }
     }
-  }
+
+    if (t->isRemoteArgTensor()) {
+      keep_going = true;
+    }
+
+    // Same meta shape -> connected RTS domain
+    if (t->info.metaShape() == metaShape) {
+      keep_going = true;
+    }
+
+    logging::opx::trace("[CollectivesBaseOpx::getCollectiveLinkedGroup] "
+                        "visiting: {} (keep_going: {})",
+                        t->id,
+                        keep_going ? "true" : "false");
+
+    return keep_going;
+  };
+
+  auto filter = [](Op *op, Tensor *tq, Tensor *tn) {
+    // Subgraph inputs/outputs should be traversed
+    if (op->isConvertibleTo<SubgraphOp>()) {
+      return true;
+    }
+
+    // Collective ops should be traversed
+    if (op->isConvertibleTo<CollectivesBaseOp>()) {
+      return true;
+    }
+
+    // All other ops should be traversed if the input/output tensors
+    // are RTS related
+    auto rtsIndices = op->getReplicatedTensorShardingIndices();
+
+    std::vector<InIndex> tqIn;
+    std::vector<InIndex> tnIn;
+    std::vector<OutIndex> tqOut;
+    std::vector<OutIndex> tnOut;
+
+    if (op->input->contains(tq)) {
+      tqIn = op->input->indices(tq);
+    }
+    if (op->input->contains(tn)) {
+      tnIn = op->input->indices(tn);
+    }
+    if (op->output->contains(tq)) {
+      tqOut = op->output->indices(tq);
+    }
+    if (op->output->contains(tn)) {
+      tnOut = op->output->indices(tn);
+    }
+
+    for (auto rtsIndex : rtsIndices) {
+      bool tqInSet = false;
+      bool tnInSet = false;
+      for (auto index : tqIn) {
+        tqInSet |= rtsIndex.first.find(index) != rtsIndex.first.end();
+      }
+      for (auto index : tqOut) {
+        tqInSet |= rtsIndex.second.find(index) != rtsIndex.second.end();
+      }
+      for (auto index : tnIn) {
+        tnInSet |= rtsIndex.first.find(index) != rtsIndex.first.end();
+      }
+      for (auto index : tnOut) {
+        tnInSet |= rtsIndex.second.find(index) != rtsIndex.second.end();
+      }
+      if (tqInSet && tnInSet) {
+        // Input and output tensor are in the same RTS domain
+        return true;
+      }
+    }
+
+    return false;
+  };
+
+  graphutils::traverse(
+      {op_p->inTensor(CollectivesBaseOp::getCollectiveLinkedIndex())},
+      visitor,
+      filter,
+      graphutils::TraversalType::DepthFirst,
+      graphutils::VisitType::Pre,
+      graphutils::TraversalDirection::ForwardBackward);
+
+  const liveness::LivenessAnalyzer *liveness =
+      dv_p->lowering().getLivenessAnalyzer();
 
   // Sort by schedule order in the IR
   std::sort(groupCollectiveOps.begin(),
@@ -122,6 +173,9 @@ CollectivesBaseOpx::getCollectiveLinkedGroup() const {
                      liveness->getScheduleIndices(rhs).front();
             });
 
+  logging::opx::trace(
+      "[CollectivesBaseOpx::getCollectiveLinkedGroup] group: {}",
+      groupTensorIds);
   return {groupTensorIds, groupCollectiveOps};
 }
 
