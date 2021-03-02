@@ -155,6 +155,44 @@ static bool keepPrecision(MatMulBaseOp *matmul) {
          matmul->getPartialsType() == MatMulPartialsType::FLOAT;
 }
 
+static TensorId slice(TransformBuilder &builder,
+                      TensorId input,
+                      Shape starts,
+                      Shape ends,
+                      Shape axes,
+                      OptionalVGraphId vgraph,
+                      OptionalPipelineStage pstage,
+                      OptionalExecutionPhase phase,
+                      std::string name,
+                      bool inPlace = false) {
+  TensorId output;
+  if (inPlace) {
+    output = builder.sliceInPlace(input,
+                                  starts,
+                                  ends,
+                                  axes,
+                                  vgraph,
+                                  pstage,
+                                  phase,
+                                  name,
+                                  builder.getNextId(name));
+  } else {
+    output = builder.slice(input,
+                           starts,
+                           ends,
+                           axes,
+                           vgraph,
+                           pstage,
+                           phase,
+                           name,
+                           builder.getNextId(name));
+  }
+  static unsigned uid = 0;
+  builder.getProducer(output)->settings.extraOutlineAttributes.insert(
+      {"matmulSerialSlice", std::to_string(uid++)});
+  return output;
+}
+
 static void serializeMatMul(TransformBuilder &builder,
                             Tensor *lhs,
                             int sliceLhsDim, // -1 indicates no slice
@@ -183,15 +221,15 @@ static void serializeMatMul(TransformBuilder &builder,
       Shape ends   = {(i + 1) * size};
       Shape axes   = {sliceDim};
 
-      lhsMatMulInput = builder.slice(lhs->id,
-                                     starts,
-                                     ends,
-                                     axes,
-                                     virtualGraphId,
-                                     pipelineStage,
-                                     executionPhase,
-                                     name + "_SliceLhs",
-                                     builder.getNextId(name + "_SliceLhs"));
+      lhsMatMulInput = slice(builder,
+                             lhs->id,
+                             starts,
+                             ends,
+                             axes,
+                             virtualGraphId,
+                             pipelineStage,
+                             executionPhase,
+                             name + "_SliceLhs");
     }
 
     if (sliceRhsDim != -1) {
@@ -204,15 +242,15 @@ static void serializeMatMul(TransformBuilder &builder,
       Shape ends   = {(i + 1) * size};
       Shape axes   = {sliceDim};
 
-      rhsMatMulInput = builder.slice(rhs->id,
-                                     starts,
-                                     ends,
-                                     axes,
-                                     virtualGraphId,
-                                     pipelineStage,
-                                     executionPhase,
-                                     name + "_SliceRhs",
-                                     builder.getNextId(name + "_SliceRhs"));
+      rhsMatMulInput = slice(builder,
+                             rhs->id,
+                             starts,
+                             ends,
+                             axes,
+                             virtualGraphId,
+                             pipelineStage,
+                             executionPhase,
+                             name + "_SliceRhs");
     }
 
     std::map<std::string, popart::any> attrs = {};
@@ -453,16 +491,16 @@ static void serializeVarUpdate(int sliceDim,
         }
       }
 
-      auto slicedWeight =
-          builder.sliceInPlace(weightTensor->id,
-                               starts,
-                               ends,
-                               axes,
-                               virtualGraphId,
-                               pipelineStage,
-                               executionPhase,
-                               name + "_Slice",
-                               builder.getNextId(name + "_Slice"));
+      auto slicedWeight = slice(builder,
+                                weightTensor->id,
+                                starts,
+                                ends,
+                                axes,
+                                virtualGraphId,
+                                pipelineStage,
+                                executionPhase,
+                                name + "_Slice",
+                                true);
 
       // Make sure the slice the weight after the output has been serialized
       builder.getGraph().topoCons->insert(builder.getProducer(output),
