@@ -53,6 +53,9 @@ public:
   /// Detach from the device.
   virtual void detach() = 0;
 
+  /// True if attached.
+  virtual bool isAttached() const = 0;
+
   /// Get the type of the device.
   DeviceType getType() const { return type; }
 
@@ -86,8 +89,6 @@ public:
   const unsigned &getOnDemandAttachTimeout() const { return attachTimeout; }
 
   bool tryAttachUntilTimeout();
-
-  virtual bool isAttached() const = 0;
 
 private:
   DeviceProvider &provider;

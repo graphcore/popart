@@ -493,6 +493,11 @@ struct SessionOptions {
   /// 'preparation' of the data to occur in parallel with compute.
   bool enablePrefetchDatastreams = true;
 
+  /// When #enablePrefetchDatastreams is set this is the default buffering
+  /// depth value used for input streams that are not re-arranged on the host.
+  /// This value can be overridden via #prefetchBufferingDepthMap.
+  unsigned defaultPrefetchBufferingDepth = 4;
+
   /// When #enablePrefetchDatastreams is set this mapping can be used to set
   /// tensor-specific buffering depths for tensors that are streamed to the
   /// host (typically input tensors). This buffering depth could be envisaged
@@ -791,7 +796,8 @@ struct SessionOptions {
   // in the \c prefetchBufferingDepthMap variable.
   //
   // **Not part of public API**
-  unsigned getPrefetchBufferingDepth(const TensorId &id) const;
+  unsigned getPrefetchBufferingDepth(const TensorId &id,
+                                     unsigned defaultValue) const;
 };
 
 } // namespace popart

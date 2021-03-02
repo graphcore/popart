@@ -37,6 +37,7 @@ def test_out_of_memory_exception():
     builder.addOutputTensor(out)
 
     options = popart.SessionOptions()
+    options.defaultPrefetchBufferingDepth = 1
     options.engineOptions = {"debug.allowOutOfMemory": "true"}
     patterns = popart.Patterns(popart.PatternsLevel.NoPatterns)
     patterns.enableRuntimeAsserts(False)
