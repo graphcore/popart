@@ -284,6 +284,10 @@ private:
 
   bool doRearrangeOnHost(Tensor *tensor) const;
 
+  // Determine stream properties.
+  poplar::ReplicatedStreamMode getReplicatedStreamMode(Tensor *tensor) const;
+  unsigned getBufferingDepth(Tensor *tensor) const;
+
   void initPoplarGraph();
 
   template <typename T> void setInitVal(Tensor *tensor);

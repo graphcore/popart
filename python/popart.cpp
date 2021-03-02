@@ -1112,6 +1112,8 @@ PYBIND11_MODULE(popart_core, m) {
                       DOC(popart, SessionOptions, aliasZeroCopy));
     cls.def_readwrite("enablePrefetchDatastreams",
                       &SessionOptions::enablePrefetchDatastreams);
+    cls.def_readwrite("defaultPrefetchBufferingDepth",
+                      &SessionOptions::defaultPrefetchBufferingDepth);
     cls.def_readwrite("prefetchBufferingDepthMap",
                       &SessionOptions::prefetchBufferingDepthMap);
     cls.def_readwrite("virtualGraphMode", &SessionOptions::virtualGraphMode);

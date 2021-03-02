@@ -173,24 +173,25 @@ SessionOptions::NumIOTiles::operator=(const int &x) {
   return *this;
 }
 
-unsigned SessionOptions::getPrefetchBufferingDepth(const TensorId &id) const {
-  if (!enablePrefetchDatastreams) {
-    return 1;
-  } else {
+unsigned
+SessionOptions::getPrefetchBufferingDepth(const TensorId &id,
+                                          unsigned defaultValue) const {
+  unsigned result = 1;
+  if (enablePrefetchDatastreams) {
     auto mapIt = prefetchBufferingDepthMap.find(id);
     if (mapIt == prefetchBufferingDepthMap.end()) {
-      return 1;
+      result = defaultValue;
     } else {
-      auto bufferingDepth = mapIt->second;
-      if (bufferingDepth < 1) {
-        throw error("Unable to support a buffering depth of {} for tensor {} "
-                    "(minimum buffering depth is 1)",
-                    bufferingDepth,
-                    id);
-      }
-      return bufferingDepth;
+      result = mapIt->second;
     }
   }
+  if (result < 1) {
+    throw error("Unable to support a buffering depth of {} for tensor {} "
+                "(minimum buffering depth is 1)",
+                result,
+                id);
+  }
+  return result;
 }
 
 int64_t SessionOptions::getGlobalReplicationFactor() const {

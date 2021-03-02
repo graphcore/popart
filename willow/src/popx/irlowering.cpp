@@ -1245,60 +1245,24 @@ PriTask IrLowering::streamFromHostTask(Tensor *tensor) {
 
           poplar::OptionFlags options{};
 
-          // Get bufferingDepth from SessionOptions.
-          auto depth =
-              ir().getSessionOptions().getPrefetchBufferingDepth(tensor->id);
+          // Determine stream configuration.
+          auto mode           = getReplicatedStreamMode(tensor);
+          auto bufferingDepth = getBufferingDepth(tensor);
 
-          if (depth > 1) {
-            if (doRearrangeOnHost(tensor)) {
-              // There is a problem. This tensor is set to re-arrange on the
-              // host but we've configured the engine option
-              // "exchange.streamBufferOverlap" to "hostRearrangeOnly", meaning
-              // that Poplar could overlap the memory of streams that are
-              // rearranged on the host. This makes it incompatible with
-              // bufferingDepths >1.
-              throw error(
-                  "Unable to support a buffering depth >1 for tensor {} "
-                  "because the stream is set to rearrange on the host (and "
-                  "PopART allows streams that are rearranged on the host to "
-                  "overlap in memory, making this unsafe)",
-                  tensor->id);
-            }
-
+          if (bufferingDepth > 1) {
             // Configure the buffering depth of the stream.
-            options.set("bufferingDepth", std::to_string(depth));
+            options.set("bufferingDepth", std::to_string(bufferingDepth));
           }
 
-          logging::devicex::debug("Creating host-to-device FIFO {} copied to "
-                                  "ipu:{} (with buffering depth {})",
-                                  tensor->id,
-                                  vgid,
-                                  depth);
-
-          poplar::ReplicatedStreamMode mode =
-              poplar::ReplicatedStreamMode::BROADCAST;
-
-          if (tensor->tensorType() == TensorType::Variable) {
-            // If it is a variable we 'broadcast' the same tensor
-            // to all replicants
-            mode = poplar::ReplicatedStreamMode::BROADCAST;
-
-          } else if (tensor->tensorType() == TensorType::Stream) {
-
-            switch (tensor->getReplicatedStreamMode()) {
-            case Tensor::ReplicatedStreamMode::Broadcast:
-              mode = poplar::ReplicatedStreamMode::BROADCAST;
-              break;
-            case Tensor::ReplicatedStreamMode::Replicate:
-              mode = poplar::ReplicatedStreamMode::REPLICATE;
-              break;
-            }
-
-          } else {
-            throw error("Tensor {} of type {} are not stream to device",
-                        tensor->id,
-                        tensor->tensorType());
-          }
+          logging::devicex::debug(
+              "Creating host-to-device FIFO {} copied to "
+              "ipu:{} (mode: {}, memory: {}, buffering depth: {})",
+              tensor->id,
+              vgid,
+              (mode == poplar::ReplicatedStreamMode::REPLICATE) ? "replicate"
+                                                                : "broadcast",
+              "hexopt",
+              bufferingDepth);
 
           fromHostStreams.emplace(
               tensor->id,
@@ -3588,6 +3552,71 @@ bool IrLowering::doRearrangeOnHost(Tensor *tensor) const {
     return ir().getSessionOptions().rearrangeAnchorsOnHost;
   }
   return true;
+}
+
+poplar::ReplicatedStreamMode
+IrLowering::getReplicatedStreamMode(Tensor *tensor) const {
+  poplar::ReplicatedStreamMode mode = poplar::ReplicatedStreamMode::BROADCAST;
+
+  if (tensor->tensorType() == TensorType::Variable) {
+    // If it is a variable we 'broadcast' the same tensor
+    // to all replicants
+    mode = poplar::ReplicatedStreamMode::BROADCAST;
+
+  } else if (tensor->tensorType() == TensorType::Stream) {
+
+    switch (tensor->getReplicatedStreamMode()) {
+    case Tensor::ReplicatedStreamMode::Broadcast:
+      mode = poplar::ReplicatedStreamMode::BROADCAST;
+      break;
+    case Tensor::ReplicatedStreamMode::Replicate:
+      mode = poplar::ReplicatedStreamMode::REPLICATE;
+      break;
+    }
+
+  } else {
+    throw error("Tensor {} of type {} are not stream to device",
+                tensor->id,
+                tensor->tensorType());
+  }
+
+  return mode;
+}
+
+unsigned IrLowering::getBufferingDepth(Tensor *tensor) const {
+
+  // We should default to 1 when re-arranging on host because not doing this
+  // could result in problems. We still let the user override this value
+  // but they will get an error if it is >1.
+  auto &sessionOpts   = ir().getSessionOptions();
+  auto bufferingDepth = sessionOpts.defaultPrefetchBufferingDepth;
+
+  // Default to buffering depth 1 if rearranging on host.
+  if (doRearrangeOnHost(tensor)) {
+    bufferingDepth = 1;
+  }
+
+  // Get bufferingDepth from SessionOptions.
+  bufferingDepth =
+      sessionOpts.getPrefetchBufferingDepth(tensor->id, bufferingDepth);
+
+  if (bufferingDepth > 1) {
+    if (doRearrangeOnHost(tensor)) {
+      // There is a problem. This tensor is set to re-arrange on the
+      // host but we've configured the engine option
+      // "exchange.streamBufferOverlap" to "hostRearrangeOnly", meaning
+      // that Poplar could overlap the memory of streams that are
+      // rearranged on the host. This makes it incompatible with
+      // bufferingDepths >1.
+      throw error("Unable to support a buffering depth >1 for tensor {} "
+                  "because the stream is set to rearrange on the host (and "
+                  "PopART allows streams that are rearranged on the host to "
+                  "overlap in memory, making this unsafe)",
+                  tensor->id);
+    }
+  }
+
+  return bufferingDepth;
 }
 
 void IrLowering::initPoplarGraph() {

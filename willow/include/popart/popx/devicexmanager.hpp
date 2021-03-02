@@ -67,7 +67,7 @@ public:
 
   std::set<Devicex *> previouslyLoadedDevicexs;
 
-  bool isAttached() const override { return isAttached_; }
+  virtual bool isAttached() const override { return isAttached_; }
 
 protected:
   poplar::Device device;
@@ -164,7 +164,7 @@ public:
   virtual const poplar::Target &getTarget() const { return target; }
 
   virtual bool canCompileOffline() const { return true; }
-  virtual bool isAttached() const final { return false; }
+  virtual bool isAttached() const override { return false; }
 
 protected:
   poplar::Target target;
