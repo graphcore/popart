@@ -1,9 +1,11 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
 #include <memory>
+#include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/op/identity.hpp>
 #include <popart/op/negate.hpp>
 #include <popart/op/reducesum.hpp>
+#include <popart/op/reshape.hpp>
 #include <popart/op/subtract.hpp>
 #include <popart/patterns/subtractarg1gradoppattern.hpp>
 #include <popart/tensor.hpp>
@@ -18,13 +20,18 @@ std::vector<std::unique_ptr<Op>>
 SubtractArg1GradOpPattern::sequence(Op *op) const {
   // we assume this dynamic_cast call has been confirmed
   // to be valid via a previous call to SubtractArg1GradOp::matches
-  auto axes = dynamic_cast<SubtractArg1GradOp *>(op)->getReductionAxes();
+  auto axes     = dynamic_cast<SubtractArg1GradOp *>(op)->getReductionAxes();
+  auto grad_out = op->outTensor(ElementWiseBinaryGradOp::getOutIndex());
 
   std::vector<std::unique_ptr<Op>> seq;
 
   seq.push_back(makeReplacementOp(Onnx::AiOnnx::OpSet9::Neg, op));
   seq.push_back(std::make_unique<ReduceSumOp>(
       Onnx::AiOnnx::OpSet9::ReduceSum, axes, false, op->getSettings()));
+  seq.push_back(std::make_unique<ReshapeOp>(
+      Onnx::Operators::Reshape_5,
+      op->getGraph().getTensors().get(grad_out->id)->info.shape(),
+      op->getSettings()));
 
   return seq;
 }
