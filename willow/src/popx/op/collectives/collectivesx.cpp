@@ -50,52 +50,68 @@ CollectivesBaseOpx::getCollectiveLinkedGroup() const {
   std::set<TensorId> groupTensorIds;
   std::vector<Op *> groupCollectiveOps;
 
+  Shape shape;
   Shape metaShape;
   if (op_p->isConvertibleTo<ReplicatedReduceScatterOp>()) {
+    shape =
+        op_p->outTensor(ReplicatedReduceScatterOp::getOutIndex())->info.shape();
     metaShape = op_p->outTensor(ReplicatedReduceScatterOp::getOutIndex())
                     ->info.metaShape();
   }
   if (op_p->isConvertibleTo<ReplicatedAllGatherOp>()) {
+    shape = op_p->inTensor(ReplicatedAllGatherOp::getInIndex())->info.shape();
     metaShape =
         op_p->inTensor(ReplicatedAllGatherOp::getInIndex())->info.metaShape();
   }
 
-  auto visitor = [&metaShape, &groupTensorIds, &groupCollectiveOps](Tensor *t) {
-    bool keep_going = false;
+  auto visitor =
+      [&shape, &metaShape, &groupTensorIds, &groupCollectiveOps](Tensor *t) {
+        bool keep_going = false;
 
-    for (Op *c : t->consumers.getOps()) {
-      if (CollectivesBaseOp *collectiveOp =
-              dynamic_cast<CollectivesBaseOp *>(c)) {
-        auto indices = collectiveOp->input->indices(t);
-        if (std::find(indices.begin(),
-                      indices.end(),
-                      CollectivesBaseOp::getCollectiveLinkedIndex()) !=
-            indices.end()) {
-          for (auto root : graphutils::rootTensors(t)) {
-            groupTensorIds.insert(root->id);
+        for (Op *c : t->consumers.getOps()) {
+          if (CollectivesBaseOp *collectiveOp =
+                  dynamic_cast<CollectivesBaseOp *>(c)) {
+            auto indices = collectiveOp->input->indices(t);
+            if (std::find(indices.begin(),
+                          indices.end(),
+                          CollectivesBaseOp::getCollectiveLinkedIndex()) !=
+                indices.end()) {
+              for (auto root : graphutils::rootTensors(t)) {
+                groupTensorIds.insert(root->id);
+              }
+              groupCollectiveOps.push_back(collectiveOp);
+              keep_going = true;
+            }
           }
-          groupCollectiveOps.push_back(collectiveOp);
+        }
+
+        if (t->isRemoteArgTensor()) {
           keep_going = true;
         }
-      }
-    }
 
-    if (t->isRemoteArgTensor()) {
-      keep_going = true;
-    }
+        // Same meta shape -> connected RTS domain
+        if (t->info.metaShape() == metaShape) {
+          keep_going = true;
+        }
 
-    // Same meta shape -> connected RTS domain
-    if (t->info.metaShape() == metaShape) {
-      keep_going = true;
-    }
+        if (t->info.shape() == shape && t->info.metaShape() != metaShape) {
+          logging::opx::warn("[CollectivesBaseOpx::getCollectiveLinkedGroup] "
+                             "tensor {} matches in shape ({} vs. {}) but not "
+                             "meta-shape ({} vs. {})",
+                             t->id,
+                             t->info.shape(),
+                             shape,
+                             t->info.metaShape(),
+                             metaShape);
+        }
 
-    logging::opx::trace("[CollectivesBaseOpx::getCollectiveLinkedGroup] "
-                        "visiting: {} (keep_going: {})",
-                        t->id,
-                        keep_going ? "true" : "false");
+        logging::opx::trace("[CollectivesBaseOpx::getCollectiveLinkedGroup] "
+                            "visiting: {} (keep_going: {})",
+                            t->id,
+                            keep_going ? "true" : "false");
 
-    return keep_going;
-  };
+        return keep_going;
+      };
 
   auto filter = [](Op *op, Tensor *tq, Tensor *tn) {
     // Subgraph inputs/outputs should be traversed
