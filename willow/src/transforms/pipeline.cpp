@@ -1213,9 +1213,13 @@ bool Pipeline::apply(Graph &graph) const {
     for (Op *tidConsumer : tidConsumers) {
       if (tidConsumer->settings.recomputeType == RecomputeType::Recompute) {
         if (isInplace == false) {
-          throw error("A recompute Op consumes a stashed Tensor, therefore "
-                      "the stashing must be in-place. But some previous logic "
-                      "has set the stashing to be non-inplace");
+          throw error("A recompute Op consumes a stashed Tensor, {}. Therefore "
+                      "the restoring of the tensor must be in-place. But some "
+                      "previous logic has set the stashing to be non-inplace. "
+                      "To resolve, either do not anchor this tensor (if "
+                      "anchored), or change the 'autoRecomputation' "
+                      "SessionOption from 'RecomputationType::Pipeline'",
+                      tid);
         }
       }
     }
