@@ -32,3 +32,5 @@ add_popart_cpp_unit_test(merge_duplicate_ops_test
 add_popart_py_unit_test(test_excludes)
 
 add_popart_py_unit_test(test_enable_patterns)
+
+add_popart_py_unit_test(test_transpose_to_identity_or_reshape VARIANTS IpuModel)
