@@ -496,7 +496,7 @@ struct SessionOptions {
   /// When #enablePrefetchDatastreams is set this is the default buffering
   /// depth value used for input streams that are not re-arranged on the host.
   /// This value can be overridden via #prefetchBufferingDepthMap.
-  unsigned defaultPrefetchBufferingDepth = 4;
+  unsigned defaultPrefetchBufferingDepth = 1;
 
   /// When #enablePrefetchDatastreams is set this mapping can be used to set
   /// tensor-specific buffering depths for tensors that are streamed to the
