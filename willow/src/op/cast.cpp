@@ -21,7 +21,12 @@ std::vector<std::unique_ptr<Op>> CastOp::getGradOps() {
   return upops;
 }
 
-void CastOp::setup() { outInfo(getOutIndex()) = {to, inShape(getInIndex())}; }
+void CastOp::setup() {
+  auto info = inInfo(getInIndex());
+  // Change data type
+  info.set(to);
+  outInfo(getOutIndex()) = info;
+}
 
 CastGradOp::CastGradOp(const CastOp &fwdOp)
     : CastOp(Onnx::GradOperators::CastGrad,

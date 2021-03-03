@@ -183,6 +183,7 @@ public:
   void set(const ONNX_NAMESPACE::TensorProto &);
   void set(const ONNX_NAMESPACE::TypeProto &);
   TensorInfo() = default;
+  void set(DataType);
   void set(DataType, const Shape &);
   void set(DataType, const Shape &, const Shape &);
   const Shape &shape() const;

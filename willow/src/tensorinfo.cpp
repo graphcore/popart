@@ -351,6 +351,8 @@ int64_t TensorInfo::nbytes() const {
 
 DataType TensorInfo::dataType() const { return dataTypeInfo->type(); }
 
+void TensorInfo::set(DataType t) { dataTypeInfo = &getDataTypeInfoMap().at(t); }
+
 void TensorInfo::set(DataType t, const Shape &s) {
   dataTypeInfo = &getDataTypeInfoMap().at(t);
   shape_v      = s;
