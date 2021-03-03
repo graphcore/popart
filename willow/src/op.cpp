@@ -533,6 +533,10 @@ std::ostream &operator<<(std::ostream &ost, const ReductionType &rt) {
     ost << "Mean";
     break;
   }
+  case (ReductionType::N): {
+    throw error("[Op::operator<<] Unsupported reduction type");
+    break;
+  }
   }
   return ost;
 }

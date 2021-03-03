@@ -1026,6 +1026,7 @@ ShardingPlan Op::unrollShard(const ShardingPlan adjustedInputPlan,
           break;
         }
         case ReductionType::NoReduction:
+        case ReductionType::N:
           throw error(
               "[Op::unrollShard] Unsupported reduction type in shard() ({})",
               debugName());

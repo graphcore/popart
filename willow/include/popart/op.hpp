@@ -43,7 +43,9 @@ enum class ReductionType {
   /// of samples.
   Mean,
   /// Leave the loss values as they are and do not scale the gradient.
-  NoReduction
+  NoReduction,
+  /// The number of ReductionType values.
+  N
 };
 
 std::ostream &operator<<(std::ostream &, const RecomputeType &);
