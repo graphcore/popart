@@ -60,7 +60,7 @@ void LSTMOpx::grow(poplar::program::Sequence &prog) const {
 
   reshapeAndInsert(LSTMOp::getOutputOutIndex(), output);
 
-  auto output_h_state = output[createLSTMParams().timeSteps - 1];
+  auto output_h_state = output[createLSTMParams().rnn.timeSteps - 1];
 
   // cloneNcopy to ensure outputs are not aliases of each other
   // TODO T18126 remove requirement for this cloneNcopy

@@ -110,7 +110,7 @@ void GRUOpx::grow(poplar::program::Sequence &prog) const {
 
   reshapeAndInsert(GRUOp::getOutputOutIndex(), output);
 
-  auto output_h_state = output[createGRUParams().timeSteps - 1];
+  auto output_h_state = output[createGRUParams().rnn.timeSteps - 1];
 
   // cloneNcopy to ensure outputs are not aliases of each other
   // TODO T18126 remove requirement for this cloneNcopy
