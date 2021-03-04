@@ -28,6 +28,16 @@ void CastOp::setup() {
   outInfo(getOutIndex()) = info;
 }
 
+bool CastOp::canBeReplacedByIdentity() const {
+  if (!hasInput(getInIndex())) {
+    // Cannot determine whether Op can be replaced by identity, as its input
+    // is not connected. Return default false.
+    return false;
+  }
+
+  return toDataType() == inInfo(getInIndex()).dataType();
+}
+
 CastGradOp::CastGradOp(const CastOp &fwdOp)
     : CastOp(Onnx::GradOperators::CastGrad,
              fwdOp.inInfo(getInIndex()).dataType(),

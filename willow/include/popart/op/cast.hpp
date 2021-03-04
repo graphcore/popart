@@ -18,7 +18,7 @@ public:
   static InIndex getInIndex() { return 0; }
   static OutIndex getOutIndex() { return 0; }
 
-  DataType toDataType() { return to; }
+  DataType toDataType() const { return to; }
 
   float getSubgraphValue() const final { return getLowSubgraphValue(); }
 
@@ -28,6 +28,8 @@ public:
   getReplicatedTensorShardingIndices() const override {
     return {{{CastOp::getInIndex()}, {CastOp::getOutIndex()}}};
   }
+
+  bool canBeReplacedByIdentity() const;
 
 private:
   DataType to;
