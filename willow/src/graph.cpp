@@ -22,8 +22,11 @@
 #include <popart/op/if.hpp>
 
 // The layers required to construct the backwards pass
+#include <popart/op/accumulate.hpp>
+#include <popart/op/accumulatorupdate.hpp>
 #include <popart/op/conv.hpp>
 #include <popart/op/ipucopy.hpp>
+#include <popart/op/remote.hpp>
 #include <popart/op/sgd0varupdate.hpp>
 #include <popart/op/sgd1acclupdate.hpp>
 #include <popart/op/sgd1varupdate.hpp>
@@ -450,14 +453,22 @@ void Graph::setVarUpdateConstraints() {
           for (Op *consumer : t->consumers.getOps()) {
 
             // Accl Updater doesn't come before anything
-            if (dynamic_cast<SGD1AcclUpdateOp *>(consumer)) {
+            if (consumer->isConvertibleTo<SGD1AcclUpdateOp>()) {
               continue;
             }
             // Don't have consumer -> modifier if consumer is VarUpdater (we
             // need better aliasing and modifying analysis here to disable this,
             // because of the TightVarMerge)
-            if (!dynamic_cast<SGD1AcclUpdateOp *>(modifier) &&
-                dynamic_cast<VarUpdateOp *>(consumer)) {
+            if (!modifier->isConvertibleTo<SGD1AcclUpdateOp>() &&
+                consumer->isConvertibleTo<VarUpdateOp>()) {
+              continue;
+            }
+
+            // Modifiers that don't force all consumers to occur before
+            if (modifier->isConvertibleTo<RemoteLoadOp>() ||
+                modifier->isConvertibleTo<RemoteExchangeOp>() ||
+                modifier->isConvertibleTo<AccumulateOp>() ||
+                modifier->isConvertibleTo<AccumulatorUpdateOp>()) {
               continue;
             }
 
