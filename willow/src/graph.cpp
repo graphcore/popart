@@ -472,6 +472,13 @@ void Graph::setVarUpdateConstraints() {
               continue;
             }
 
+            // Consumers that don't need to run before modifiers
+            if (consumer->isConvertibleTo<RemoteLoadOp>() ||
+                consumer->isConvertibleTo<RemoteExchangeOp>() ||
+                consumer->isConvertibleTo<RemoteStoreOp>()) {
+              continue;
+            }
+
             if (consumer == modifier) {
               continue;
             }
