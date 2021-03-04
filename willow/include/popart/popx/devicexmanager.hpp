@@ -146,24 +146,30 @@ public:
                            _flags),
         target(std::move(_target)) {}
 
-  virtual bool attach() { throw error("Cannot attach virtual device"); }
+  virtual bool attach() override {
+    throw error("Cannot attach virtual device");
+  }
 
-  virtual void detach() { throw error("Cannot detach virtual device"); }
+  virtual void detach() override {
+    throw error("Cannot detach virtual device");
+  }
 
-  virtual int getId() const { return 0; }
-  virtual std::string getVersion() const { return "<offline-ipu>"; }
+  virtual int getId() const override { return 0; }
+  virtual std::string getVersion() const override { return "<offline-ipu>"; }
 
-  virtual int getNumIpus() const { return target.getNumIPUs(); }
-  virtual int getTilesPerIPU() const { return target.getTilesPerIPU(); }
-  virtual int getNumWorkerContexts() const {
+  virtual int getNumIpus() const override { return target.getNumIPUs(); }
+  virtual int getTilesPerIPU() const override {
+    return target.getTilesPerIPU();
+  }
+  virtual int getNumWorkerContexts() const override {
     return target.getNumWorkerContexts();
   }
 
-  virtual std::vector<unsigned> getDriverIds() const { return {0}; }
+  virtual std::vector<unsigned> getDriverIds() const override { return {0}; }
 
-  virtual const poplar::Target &getTarget() const { return target; }
+  virtual const poplar::Target &getTarget() const override { return target; }
 
-  virtual bool canCompileOffline() const { return true; }
+  virtual bool canCompileOffline() const override { return true; }
   virtual bool isAttached() const override { return false; }
 
 protected:
