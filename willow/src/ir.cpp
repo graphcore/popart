@@ -1170,7 +1170,6 @@ void Ir::prepareImpl(const IrBundle &gb, const HashesMap &cacheEntries) {
   applyPreAliasPattern(&adamDecomposer, getMainGraph());
   AdaptiveDecompose adaptiveDecomposer;
   applyPreAliasPattern(&adaptiveDecomposer, getMainGraph());
-  getMainGraph().setVarUpdateConstraints();
   decomposedOptimizers = true;
 
   if (getSessionOptions().hostWeightUpdate &&
@@ -1214,7 +1213,7 @@ void Ir::prepareImpl(const IrBundle &gb, const HashesMap &cacheEntries) {
   applyTransform(StreamingMemory::id(2), getMainGraph());
   // Remove extra RemoteLoad, RemoteStore and Replicated ops that are not used
   applyTransform(Prune::id(), getMainGraph());
-  getMainGraph().setVarUpdateConstraints();
+
   if (userOptions.virtualGraphMode == VirtualGraphMode::ExecutionPhases &&
       userOptions.executionPhaseSettings.phases > 1) {
     verifyVirtualGraphIds(true);
@@ -3968,8 +3967,8 @@ std::size_t std::hash<popart::Ir>::operator()(const popart::Ir &ir) const {
   return seed;
 }
 
-std::size_t std::hash<popart::IrBundle>::
-operator()(const popart::IrBundle &bundle) const {
+std::size_t
+std::hash<popart::IrBundle>::operator()(const popart::IrBundle &bundle) const {
   size_t seed = 0;
 
   boost::hash_combine(

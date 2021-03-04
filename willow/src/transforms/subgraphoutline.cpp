@@ -656,9 +656,8 @@ static Op *replaceWithCallOp(const Match::Instance &instance, Graph &subgraph) {
       }
     }
     std::vector<std::pair<Op *, int64_t>> consumersOrdered;
-    for (auto it = beforeOps.begin(); it != beforeOps.end(); ++it) {
+    for (auto it = beforeOps.begin(); it != beforeOps.end(); ++it)
       consumersOrdered.push_back(*it);
-    }
 
     std::sort(
         consumersOrdered.begin(),
