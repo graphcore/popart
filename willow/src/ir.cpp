@@ -1170,7 +1170,10 @@ void Ir::prepareImpl(const IrBundle &gb, const HashesMap &cacheEntries) {
   applyPreAliasPattern(&adamDecomposer, getMainGraph());
   AdaptiveDecompose adaptiveDecomposer;
   applyPreAliasPattern(&adaptiveDecomposer, getMainGraph());
-  getMainGraph().setVarUpdateConstraints();
+  if (canTrain()) {
+    updateAliases();
+    getMainGraph().setVarUpdateConstraints();
+  }
   decomposedOptimizers = true;
 
   if (getSessionOptions().hostWeightUpdate &&
@@ -1214,7 +1217,10 @@ void Ir::prepareImpl(const IrBundle &gb, const HashesMap &cacheEntries) {
   applyTransform(StreamingMemory::id(2), getMainGraph());
   // Remove extra RemoteLoad, RemoteStore and Replicated ops that are not used
   applyTransform(Prune::id(), getMainGraph());
-  getMainGraph().setVarUpdateConstraints();
+  updateAliases();
+  if (canTrain()) {
+    getMainGraph().setVarUpdateConstraints();
+  }
   if (userOptions.virtualGraphMode == VirtualGraphMode::ExecutionPhases &&
       userOptions.executionPhaseSettings.phases > 1) {
     verifyVirtualGraphIds(true);
