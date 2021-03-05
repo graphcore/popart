@@ -8,6 +8,7 @@
 #include <popart/ces/constexpr.hpp>
 #include <popart/ces/onnxconstexpr.hpp>
 #include <popart/graph.hpp>
+#include <popart/graphutils.hpp>
 #include <popart/ir.hpp>
 #include <popart/opmanager.hpp>
 #include <popart/pbwrap.hpp>
@@ -30,6 +31,7 @@
 #include <popart/op/sgd0varupdate.hpp>
 #include <popart/op/sgd1acclupdate.hpp>
 #include <popart/op/sgd1varupdate.hpp>
+#include <popart/op/slice.hpp>
 #include <popart/op/varupdate.hpp>
 
 #include <onnxpasses/onnxtoonnx.hpp>
@@ -379,77 +381,39 @@ void Graph::setVarUpdateConstraints() {
       auto proposalTensor = inIndex_tensor.second;
 
       auto regions = proposalOp->modifies(proposalIndex);
-      if (!std::all_of(regions.begin(),
-                       regions.end(),
-                       [](const view::Region &r) { return r.isEmpty(); })) {
+      if (std::any_of(regions.begin(),
+                      regions.end(),
+                      [](const view::Region &r) { return !r.isEmpty(); })) {
 
-        // the input is modified.
+        // The input is modified.
         auto modifiedTensor = proposalTensor;
         auto modifier       = proposalOp;
 
-        // collect all tensors aliased to modifiedTensor. The consumers of these
-        // aliasing Ops will need topological constraints
+        // Collect all tensors aliased to modifiedTensor, but not downstream of
+        // the modifier. The consumers of these aliasing Ops will need
+        // topological constraints.
 
-        std::set<Tensor *> aliased{
-            modifiedTensor}; // , modifier->output->tensor(0)};
-        std::vector<Tensor *> frontier{modifiedTensor};
+        std::set<TensorId> excludes;
+        // Visit any tensor downstream of the modifier
+        graphutils::traverse(
+            modifier->output->tensors(),
+            [&excludes](Tensor *t) {
+              excludes.insert(t->id);
+              return true;
+            },
+            [](Op *, Tensor *, Tensor *) { return true; },
+            graphutils::TraversalType::BreadthFirst,
+            graphutils::VisitType::Pre,
+            graphutils::TraversalDirection::Forward);
 
-        while (!frontier.empty()) {
-          auto t = frontier.back();
-          frontier.pop_back();
-
-          // finding new aliasing tensors going up through the producer
-          if (t->hasProducer()) {
-            auto prod = t->getProducer();
-            for (auto inIn_inTen : prod->input->tensorMap()) {
-              auto inIn  = inIn_inTen.first;
-              auto inTen = inIn_inTen.second;
-              for (OutIndex out = 0; out < prod->output->n(); ++out) {
-                regions = prod->aliases(inIn, out);
-                if (!std::all_of(
-                        regions.begin(),
-                        regions.end(),
-                        [](const view::Region &r) { return r.isEmpty(); })) {
-                  if (aliased.count(inTen) == 0) {
-                    frontier.push_back(inTen);
-                    aliased.emplace(inTen);
-                  }
-                }
-              }
-            }
-          }
-
-          // finding new aliasing tensors going down through the consumers (but
-          // not down through modifier)
-          for (auto consumer : t->consumers.getOps()) {
-            for (InIndex conInIndex : consumer->input->indices(t)) {
-              for (OutIndex conOutIndex = 0;
-                   conOutIndex < consumer->output->n();
-                   ++conOutIndex) {
-                auto aliasedRegions =
-                    consumer->aliases(conInIndex, conOutIndex);
-                if (!std::all_of(
-                        aliasedRegions.begin(),
-                        aliasedRegions.end(),
-                        [](const view::Region &r) { return r.isEmpty(); }) &&
-                    consumer != modifier) {
-                  auto outTen = consumer->output->tensor(0);
-                  if (aliased.count(outTen) == 0) {
-                    frontier.push_back(outTen);
-                    aliased.emplace(outTen);
-                  }
-                }
-              }
-            }
-          }
-        }
-
-        // aliased.erase(modifier->output->tensor(0));
-
-        // for all consumers of aliasing tensors, add the topological constraint
         auto OpCompare = [](Op *a, Op *b) { return a->id < b->id; };
         std::set<Op *, decltype(OpCompare)> befores(OpCompare);
-        for (Tensor *t : aliased) {
+
+        auto applyTopoCons = [&excludes, &befores, &modifier](Tensor *t) {
+          if (excludes.find(t->id) != excludes.end()) {
+            return false;
+          }
+
           for (Op *consumer : t->consumers.getOps()) {
 
             // Accl Updater doesn't come before anything
@@ -475,7 +439,8 @@ void Graph::setVarUpdateConstraints() {
             // Consumers that don't need to run before modifiers
             if (consumer->isConvertibleTo<RemoteLoadOp>() ||
                 consumer->isConvertibleTo<RemoteExchangeOp>() ||
-                consumer->isConvertibleTo<RemoteStoreOp>()) {
+                consumer->isConvertibleTo<RemoteStoreOp>() ||
+                consumer->isConvertibleTo<SliceInplaceOp>()) {
               continue;
             }
 
@@ -483,9 +448,18 @@ void Graph::setVarUpdateConstraints() {
               continue;
             }
 
+            if (consumer->getGraph().id != modifier->getGraph().id) {
+              continue;
+            }
+
             befores.emplace(consumer);
           }
-        }
+          return true;
+        };
+
+        // For all consumers of aliasing modifiedTensor tensors, add the
+        // topological constraint
+        modifiedTensor->anyAlias(applyTopoCons);
 
         for (auto before : befores) {
           topoCons->insert(before, modifier);
