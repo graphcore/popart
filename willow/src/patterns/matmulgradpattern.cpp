@@ -216,6 +216,23 @@ bool MatMulGradPattern::apply(Op *op) const {
   auto matmulOp = dynamic_cast<MatMulOp *>(
       makeReplacementOpInIr(Onnx::Operators::MatMul_9, op));
 
+  // The Reshape and Transpose operations are on the path from the input of the
+  // Matmul in the forward pass. They can therefore be scheduled before the
+  // loss operation.
+  // Therefore these Ops should not inherit 'toLoss' and 'fromLoss' properties
+  // from the MatmulGradOp. Let's unset these properties, and leave it to
+  // Ir::updateVertices to set these correctly.
+  // Note that an exception is when doing explicit recomputation, which relies
+  // on grad ops, when being decomposed as they are here, retaining these
+  // properties. This is so it can correctly connect a computed tensor in the
+  // IR to the operations in the backwards pass.
+  if (op->getIr().getSessionOptions().explicitRecomputation == false) {
+    reshapeOpInExpand->fromLoss = PathFromLoss::Undefined;
+    reshapeOpInExpand->toLoss   = PathToLoss::Undefined;
+    transposeOp->fromLoss       = PathFromLoss::Undefined;
+    transposeOp->toLoss         = PathToLoss::Undefined;
+  }
+
   // Copy over the matmul settings from original `matmulBaseOp`
   auto matmulBaseOp = dynamic_cast<MatMulBaseOp *>(op);
   matmulOp->setAvailableMemoryProportion(
