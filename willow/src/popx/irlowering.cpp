@@ -1945,18 +1945,6 @@ void IrLowering::growOpx(Opx *opx, SequenceMap::SequenceInterval seqInterval) {
                          seqVec.size());
   }
 
-  // Add print tensor for tensors in POPART_PRINT_TENSORS.
-  for (auto out : opx->op_p->output->tensorIdMap()) {
-    auto idx = out.first;
-    auto id  = out.second;
-    if (printTensorIds.find(id) != printTensorIds.end()) {
-      auto tensor = opx->getOutTensor(idx);
-      auto printProg =
-          poplar::program::PrintTensor(id, tensor, opx->debugContext());
-      seqIt->add(printProg);
-    }
-  }
-
   if (aliasZeroCopy->opRequired(opx->op_p)) {
     // Code of an Op can be skipped if the Op is not required,
     // meaning the Op has:
@@ -1991,6 +1979,18 @@ void IrLowering::growOpx(Opx *opx, SequenceMap::SequenceInterval seqInterval) {
         "Skipping code sequence for Op {} with debugName {}",
         opx->op_p->str(),
         opx->op_p->debugName());
+  }
+
+  // Add print tensor for tensors in POPART_PRINT_TENSORS.
+  for (auto out : opx->op_p->output->tensorIdMap()) {
+    auto idx = out.first;
+    auto id  = out.second;
+    if (printTensorIds.find(id) != printTensorIds.end()) {
+      auto tensor = opx->getOutTensor(idx);
+      auto printProg =
+          poplar::program::PrintTensor(id, tensor, opx->debugContext());
+      seqIt->add(printProg);
+    }
   }
 
   if (ir().getSessionOptions().opxModifyChecking) {
