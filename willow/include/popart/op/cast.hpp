@@ -29,7 +29,7 @@ public:
     return {{{CastOp::getInIndex()}, {CastOp::getOutIndex()}}};
   }
 
-  bool canBeReplacedByIdentity() const;
+  bool canBeReplacedByIdentity() const override;
 
 private:
   DataType to;
