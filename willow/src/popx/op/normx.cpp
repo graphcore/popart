@@ -36,9 +36,21 @@ poplar::Tensor NormOpx::convertVarToInvSd(poplar::program::Sequence &prog,
                                           const poplar::Tensor &var,
                                           float epsilon,
                                           const poplar::Type dstType) const {
-
-  return popops::varianceToInvStdDev(
-      graph(), var, epsilon, prog, dstType, debugContext("varToInvSd"));
+  // Investigation into the regression
+  // https://phabricator.sourcevertex.net/T35286 has found that the call to
+  // popops::map is faster. This should be investigated in poplibs, but while
+  // the issue is present, the popops::map call should still be used if
+  // possible.
+  if (var.elementType() == dstType) {
+    return popops::map(graph(),
+                       pe::VarianceToInvStdDev(pe::_1, pe::Const(epsilon)),
+                       {var},
+                       prog,
+                       debugContext("varToInvSd"));
+  } else {
+    return popops::varianceToInvStdDev(
+        graph(), var, epsilon, prog, dstType, debugContext("varToInvSd"));
+  }
 }
 
 NormOpx::NormOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {}
