@@ -518,7 +518,11 @@ bool Tensor::isUnmodifiable() const {
       isGraphOutput() ||
       // Variables and constants must not be modified by inplacing operations
       // (variables can still be updated by designated update operations)
-      tensorType() == TensorType::Variable || tensorType() == TensorType::Const;
+      tensorType() == TensorType::Variable ||
+      tensorType() == TensorType::Const ||
+      // Optimiser tensors must not change during the training loop as they are
+      // only streamed to the IPU when the user calls get ir::setOptimizer
+      isOptimizerTensor();
 }
 
 bool Tensor::isCheckpointTensor() const {

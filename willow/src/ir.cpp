@@ -3286,7 +3286,7 @@ Op *Ir::growLossGradients() {
     if (getSessionOptions().accumulationAndReplicationReductionType ==
         ReductionType::Mean) {
       dynamic_cast<ScaleOp *>(op)->setScaleFactor(
-          1 / getSessionOptions().getGlobalReplicationFactor());
+          1.0f / getSessionOptions().getGlobalReplicationFactor());
     } else {
       dynamic_cast<ScaleOp *>(op)->setScaleFactor(1.0f);
     }
@@ -3974,8 +3974,8 @@ std::size_t std::hash<popart::Ir>::operator()(const popart::Ir &ir) const {
   return seed;
 }
 
-std::size_t std::hash<popart::IrBundle>::
-operator()(const popart::IrBundle &bundle) const {
+std::size_t
+std::hash<popart::IrBundle>::operator()(const popart::IrBundle &bundle) const {
   size_t seed = 0;
 
   boost::hash_combine(
