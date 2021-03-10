@@ -185,15 +185,16 @@ def test_full_recompute_pipelining(tmpdir):
                 bins[op["type"]] = 1
 
         print(bins)
+        # T35025 : Adjusted due to inplace tensors being consumed by implicit recompute
         assert "ReshapeInplace" in bins and bins["ReshapeInplace"] == 39
         assert "SliceInplace" in bins and bins["SliceInplace"] == 9
         assert "TransposeInplace" in bins and bins["TransposeInplace"] == 41
-        assert "AddLhsInplace" in bins and bins["AddLhsInplace"] == 3
+        assert "AddLhsInplace" in bins and bins["AddLhsInplace"] == 1
         assert "IdentityInplace" in bins and bins["IdentityInplace"] == 34
-        assert "MulLhsInplace" in bins and bins["MulLhsInplace"] == 6
+        assert "MulLhsInplace" in bins and bins["MulLhsInplace"] == 4
         assert "ConcatInplace" in bins and bins["ConcatInplace"] == 3
         assert "RestoreInplace" in bins and bins["RestoreInplace"] == 4
-        assert len(inplaces) == 139
+        assert len(inplaces) == 135
 
     n_anchors = run_test()
     s_anchors = run_test(popart.RecomputationType.Standard)

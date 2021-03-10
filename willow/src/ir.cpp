@@ -3640,6 +3640,9 @@ void Ir::applyInplacePattern(Graph &graph) {
           auto restoreInplaceTensor = [](Tensor *t) {
             return t->isRestoreInplaceTensor();
           };
+          auto isImplicitRecomputeTensor = [](Tensor *t) {
+            return t->isImplicitRecomputeTensor();
+          };
 
           bool restoreInplaceIn =
               op->input->tensor(in_index.first)->anyAlias(restoreInplaceTensor);
@@ -3690,6 +3693,19 @@ void Ir::applyInplacePattern(Graph &graph) {
                 inplaceOp->opid,
                 in_index.second->id,
                 out_index.second->id);
+            inplaceBlocking = true;
+          }
+
+          if ((indirectModify || directModify) &&
+              op->input->tensor(in_index.first)
+                  ->anyAlias(isImplicitRecomputeTensor)) {
+            logging::pattern::trace("[Inplacing] Not inplacing {} with {} as "
+                                    "it would be modified by a recomputation "
+                                    "{} -> {} ",
+                                    op->debugName(),
+                                    inplaceOp->opid,
+                                    in_index.second->id,
+                                    out_index.second->id);
             inplaceBlocking = true;
           }
 
