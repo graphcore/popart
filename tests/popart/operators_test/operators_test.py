@@ -3442,3 +3442,43 @@ def test_where_grad5(op_tester):
         return [out, tx.grad, ty.grad, None]
 
     op_tester.run(init_builder, reference, 'train')
+
+
+@pytest.mark.parametrize("npType", [np.int32, np.uint32])
+def test_bitwise_not(op_tester, npType):
+    d1 = np.random.uniform(-10, 10, 10).astype(npType)
+
+    def init_builder(builder):
+        i1 = builder.addInputTensor(d1)
+        o = builder.aiGraphcore.bitwisenot([i1], "test_bitwisenot")
+        builder.addOutputTensor(o)
+        return [o]
+
+    def reference(ref_data):
+        out = np.bitwise_not(d1)
+        return [out]
+
+    op_tester.run(init_builder, reference, 'infer')
+
+
+@pytest.mark.parametrize("npType", [np.int32, np.uint32])
+@pytest.mark.parametrize("npOp",
+                         [np.bitwise_and, np.bitwise_or, np.bitwise_xor])
+def test_bitwise_binary_op(op_tester, npType, npOp):
+    d1 = np.random.uniform(-10, 10, 10).astype(npType)
+    d2 = np.random.uniform(-10, 10, 10).astype(npType)
+
+    def init_builder(builder):
+        opname = npOp.__name__.replace("_", "")
+        gcOp = getattr(builder.aiGraphcore, opname)
+        i1 = builder.addInputTensor(d1)
+        i2 = builder.addInputTensor(d2)
+        o = gcOp([i1, i2], "test_bitwise_binary_op")
+        builder.addOutputTensor(o)
+        return [o]
+
+    def reference(ref_data):
+        out = npOp(d1, d2)
+        return [out]
+
+    op_tester.run(init_builder, reference, 'infer')

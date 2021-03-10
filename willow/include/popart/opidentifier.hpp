@@ -359,11 +359,21 @@ const static AiGraphcoreOpIdV1 TransposeInplace("TransposeInplace");
 const static AiGraphcoreOpIdV1 Zeros_1("Zeros");
 const static AiGraphcoreOpIdV1 ZerosLike_1("ZerosLike");
 const static AiGraphcoreOpIdV1 Abort("Abort");
+const static AiGraphcoreOpIdV1 BitwiseAnd("BitwiseAnd", 2, 1);
+const static AiGraphcoreOpIdV1 BitwiseNot("BitwiseNot", 1, 1);
+const static AiGraphcoreOpIdV1 BitwiseOr("BitwiseOr", 2, 1);
+const static AiGraphcoreOpIdV1 BitwiseXor("BitwiseXor", 2, 1);
+const static AiGraphcoreOpIdV1 BitwiseXnor("BitwiseXnor", 2, 1);
 } // namespace CustomOperators
 
 namespace AiGraphcore {
 namespace OpSet1 {
 const static OperatorIdentifier Atan2        = CustomOperators::Atan2_1;
+const static OperatorIdentifier BitwiseAnd   = CustomOperators::BitwiseAnd;
+const static OperatorIdentifier BitwiseNot   = CustomOperators::BitwiseNot;
+const static OperatorIdentifier BitwiseOr    = CustomOperators::BitwiseOr;
+const static OperatorIdentifier BitwiseXor   = CustomOperators::BitwiseXor;
+const static OperatorIdentifier BitwiseXnor  = CustomOperators::BitwiseXnor;
 const static OperatorIdentifier Call         = CustomOperators::Call_1;
 const static OperatorIdentifier Ctc          = CustomOperators::Ctc;
 const static OperatorIdentifier DepthToSpace = CustomOperators::DepthToSpace;

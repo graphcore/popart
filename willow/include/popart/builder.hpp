@@ -53,6 +53,10 @@ public:
 };
 
 class AiGraphcoreOpset1 : public DomainOpSet {
+  // Builds an op for specified bitwise operator id.
+  TensorId bitwiseGenericOp(const OperatorIdentifier &opid,
+                            const std::vector<TensorId> &args,
+                            const DebugContext &debugContext = {});
 
 protected:
   using DomainOpSet::impl;
@@ -662,6 +666,17 @@ public:
    */
   void abort(const std::vector<TensorId> &args,
              const DebugContext &debugContext = {});
+
+  TensorId bitwisenot(const std::vector<TensorId> &args,
+                      const DebugContext &debugContext = {});
+  TensorId bitwiseand(const std::vector<TensorId> &args,
+                      const DebugContext &debugContext = {});
+  TensorId bitwiseor(const std::vector<TensorId> &args,
+                     const DebugContext &debugContext = {});
+  TensorId bitwisexor(const std::vector<TensorId> &args,
+                      const DebugContext &debugContext = {});
+  TensorId bitwisexnor(const std::vector<TensorId> &args,
+                       const DebugContext &debugContext = {});
 };
 
 /**

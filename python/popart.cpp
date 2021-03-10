@@ -2172,6 +2172,26 @@ PYBIND11_MODULE(popart_core, m) {
             &AiGraphcoreOpset1::abort,
             py::arg("args")         = pybind11::list(),
             py::arg("debugContext") = std::string());
+    cls.def("bitwiseand",
+            &AiGraphcoreOpset1::bitwiseand,
+            py::arg("args")         = pybind11::list(),
+            py::arg("debugContext") = std::string());
+    cls.def("bitwisenot",
+            &AiGraphcoreOpset1::bitwisenot,
+            py::arg("args")         = pybind11::list(),
+            py::arg("debugContext") = std::string());
+    cls.def("bitwiseor",
+            &AiGraphcoreOpset1::bitwiseor,
+            py::arg("args")         = pybind11::list(),
+            py::arg("debugContext") = std::string());
+    cls.def("bitwisexor",
+            &AiGraphcoreOpset1::bitwisexor,
+            py::arg("args")         = pybind11::list(),
+            py::arg("debugContext") = std::string());
+    cls.def("bitwisexnor",
+            &AiGraphcoreOpset1::bitwisexnor,
+            py::arg("args")         = pybind11::list(),
+            py::arg("debugContext") = std::string());
   }
   {
     py::class_<Builder> cls(m, "_BuilderCore");

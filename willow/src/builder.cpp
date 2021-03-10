@@ -1249,6 +1249,50 @@ void AiGraphcoreOpset1::abort(const std::vector<TensorId> &args,
            debugContext);
 }
 
+TensorId AiGraphcoreOpset1::bitwiseGenericOp(const OperatorIdentifier &opid,
+                                             const std::vector<TensorId> &args,
+                                             const DebugContext &debugContext) {
+  std::map<std::string, popart::any> attributes;
+  BuilderDebugInfo di(debugContext, __POPART_FUNCTION_NAME__, args, attributes);
+  attributes.insert({sDebugInfoId, di.getId()});
+
+  auto outputs =
+      impl->op(opid, getOpsetVersion(), args, attributes, debugContext);
+
+  di.setOutputs(outputs);
+  return outputs.at(0);
+}
+
+TensorId AiGraphcoreOpset1::bitwisenot(const std::vector<TensorId> &args,
+                                       const DebugContext &debugContext) {
+  return bitwiseGenericOp(
+      Onnx::AiGraphcore::OpSet1::BitwiseNot, args, debugContext);
+}
+
+TensorId AiGraphcoreOpset1::bitwiseand(const std::vector<TensorId> &args,
+                                       const DebugContext &debugContext) {
+  return bitwiseGenericOp(
+      Onnx::AiGraphcore::OpSet1::BitwiseAnd, args, debugContext);
+}
+
+TensorId AiGraphcoreOpset1::bitwiseor(const std::vector<TensorId> &args,
+                                      const DebugContext &debugContext) {
+  return bitwiseGenericOp(
+      Onnx::AiGraphcore::OpSet1::BitwiseOr, args, debugContext);
+}
+
+TensorId AiGraphcoreOpset1::bitwisexor(const std::vector<TensorId> &args,
+                                       const DebugContext &debugContext) {
+  return bitwiseGenericOp(
+      Onnx::AiGraphcore::OpSet1::BitwiseXor, args, debugContext);
+}
+
+TensorId AiGraphcoreOpset1::bitwisexnor(const std::vector<TensorId> &args,
+                                        const DebugContext &debugContext) {
+  return bitwiseGenericOp(
+      Onnx::AiGraphcore::OpSet1::BitwiseXnor, args, debugContext);
+}
+
 std::vector<TensorId>
 Builder::customOp(const OperatorIdentifier &opid,
                   int opsetVersion,
