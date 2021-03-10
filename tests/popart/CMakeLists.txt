@@ -110,6 +110,12 @@ function(add_test_executable name)
       ${boost_targets}
       ${add_test_exe_TEST_UTILS}
   )
+  if(BUILD_SHARED_LIBS)
+    target_compile_definitions(${name}
+      PRIVATE
+        BOOST_TEST_DYN_LINK
+    )
+  endif()
 
   set_property(TARGET ${name}
               APPEND_STRING PROPERTY

@@ -2,8 +2,9 @@
 # for more useful warnings
 include(EnableCompilerWarnings)
 
-# Link Boost statically
-set(Boost_USE_STATIC_LIBS ON)
+if(NOT BUILD_SHARED_LIBS)
+  set(Boost_USE_STATIC_LIBS ON)
+endif()
 find_package(Boost 1.70 REQUIRED COMPONENTS program_options)
 
 add_custom_target(popart_examples)

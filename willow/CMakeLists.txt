@@ -63,8 +63,9 @@ include(EnableCompilerWarnings)
 
 # Versions are not given where packages don't support them.
 
-# Link Boost statically
-set(Boost_USE_STATIC_LIBS ON)
+if(NOT BUILD_SHARED_LIBS)
+  set(Boost_USE_STATIC_LIBS ON)
+endif()
 set(boost_components
     # FindBoost bug: finding filesystem component does not transitively find and
     # link the system component.
