@@ -144,7 +144,7 @@ def test_loss_grad_scaling_with_replication_2(optimizer):
             optimizer=optimizer,
             loss=t5,
             userOptions=options,
-            deviceInfo=popart.DeviceManager().acquireAvailableDevice(repl))
+            deviceInfo=tu.create_test_device(repl))
         session.prepareDevice()
         session.weightsFromHost()
         anchors = session.initAnchorArrays()
