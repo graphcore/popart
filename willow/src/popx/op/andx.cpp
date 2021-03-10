@@ -28,8 +28,8 @@ void AndOpx::grow(poplar::program::Sequence &prog) const {
 
 namespace {
 
-OpxCreator<AndOpx> greaterOpxCreator_7(Onnx::Operators::And_1);
-OpxCreator<AndOpx> greaterOpxCreator_9(Onnx::Operators::And_7);
+OpxCreator<AndOpx> andOpxCreator_1(Onnx::Operators::And_1);
+OpxCreator<AndOpx> andOpxCreator_7(Onnx::Operators::And_7);
 
 } // namespace
 

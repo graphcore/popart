@@ -28,8 +28,8 @@ void OrOpx::grow(poplar::program::Sequence &prog) const {
 
 namespace {
 
-OpxCreator<OrOpx> greaterOpxCreator_7(Onnx::Operators::Or_1);
-OpxCreator<OrOpx> greaterOpxCreator_9(Onnx::Operators::Or_7);
+OpxCreator<OrOpx> orOpxCreator_1(Onnx::Operators::Or_1);
+OpxCreator<OrOpx> orOpxCreator_7(Onnx::Operators::Or_7);
 
 } // namespace
 

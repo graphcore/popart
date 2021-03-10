@@ -27,7 +27,7 @@ void NotOpx::grow(poplar::program::Sequence &prog) const {
 
 namespace {
 
-OpxCreator<NotOpx> greaterOpxCreator_1(Onnx::Operators::Not_1);
+OpxCreator<NotOpx> notOpxCreator_1(Onnx::Operators::Not_1);
 
 } // namespace
 
