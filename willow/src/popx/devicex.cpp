@@ -1020,6 +1020,11 @@ void Devicex::prepare() {
       pEngine.reset(
           new poplar::Engine(std::move(executable), lowering().engineOptions));
 
+      logging::devicex::info(
+          std::string("\npoplar Engine construction complete. Breakdown of "
+                      "compile time:\n") +
+          ir().timePartitionLoggerStr());
+
     } catch (const poplar::graph_memory_allocation_error &e) {
       // If the creation of the engine throw an exception due to memory
       // allocation i.e. the program does not fit show graph profile and
@@ -1063,11 +1068,6 @@ void Devicex::prepare() {
   }
 
   prepareHasBeenCalled_ = true;
-
-  logging::devicex::info(
-      std::string(
-          "\nDevicex preparation complete. Breakdown of compile time:\n") +
-      ir().timePartitionLoggerStr());
 }
 
 void Devicex::doProfileChecks() const {

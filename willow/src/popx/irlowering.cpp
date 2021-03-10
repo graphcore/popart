@@ -1594,6 +1594,10 @@ void IrLowering::addOpTasks(PriTasks &tasks) {
 bool IrLowering::tryInitTensorByPostIRAliasing(
     TensorId dstId,
     const ViewChangers &viewChangers) {
+
+  const auto addOpTasksTimer = ir().timePartitionLogger().scopedStopwatch(
+      "Initializing Tensor By Post IR Aliasing (Ir Lowering)");
+
   for (Tensor *aliased :
        aliasZeroCopy->getPostIRAliases(ir().getTensor(dstId))) {
     if (tensors_.contains(aliased->id)) {

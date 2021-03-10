@@ -1,4 +1,5 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
+#include <poprithms/logging/timepartitionlogger.hpp>
 #include <popart/error.hpp>
 #include <popart/op/ipucopy.hpp>
 #include <popart/popx/devicex.hpp>
@@ -36,6 +37,11 @@ void IpuCopyOpx::grow(poplar::program::Sequence &prog) const {
 }
 
 void IpuCopyOpx::createPipelinedOutput() const {
+
+  const auto growTimeTracker =
+      op_p->getIr().timePartitionLogger().scopedStopwatch(
+          "Creating IpuCopy pipeline output (Ir Lowering)");
+
   IpuCopyOp &op = getOp<IpuCopyOp>();
 
   logging::devicex::trace(

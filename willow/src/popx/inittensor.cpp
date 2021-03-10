@@ -2,6 +2,7 @@
 #include <algorithm>
 
 #include <sstream>
+#include <poprithms/logging/timepartitionlogger.hpp>
 #include <popart/graph.hpp>
 #include <popart/popx/creatorx.hpp>
 #include <popart/popx/inittensor.hpp>
@@ -138,12 +139,17 @@ bool InitTensorCreator::initTensor(IrLowering &irLowering) const {
     }
   }
 
+  const auto addOpTasksTimer =
+      irLowering.ir().timePartitionLogger().scopedStopwatch(
+          "Initializing Tensor Creator (Ir Lowering)");
+
   logging::devicex::debug(
       "Creating poplar::Tensor {}, with layout allocated by {}",
       getDstId(),
       candidate->str());
 
-  Tensor *tensor    = irLowering.ir().getTensor(getDstId());
+  Tensor *tensor = irLowering.ir().getTensor(getDstId());
+
   auto inputAndView = candidate->createInput(
       {poplar::DebugNameAndId(getDstId() + "_tmp",
                               tensor->getDebugInfo().getId(),
@@ -160,6 +166,8 @@ bool InitTensorCreator::initTensor(IrLowering &irLowering) const {
     // view-changing transformation
     irLowering.tensors().setViewChangers(getDstId(), inputAndView.second);
   }
+
+  logging::devicex::trace("Cloning poplar::Tensor {}.", getDstId());
 
   // The clone makes sure to only keep the necessary parts of the unwound
   // tensor alive, and contiguate it,

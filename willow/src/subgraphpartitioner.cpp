@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <cassert>
 
+#include <poprithms/logging/timepartitionlogger.hpp>
 #include <popart/error.hpp>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
@@ -64,8 +65,12 @@ bool isParentCopy(const Graph &graph,
 } // namespace
 
 void SubgraphPartitioner::apply() {
-  if (!ir)
+
+  const auto lifetimeTimer =
+      ir->timePartitionLogger().scopedStopwatch("SubGraphPartitioner");
+  if (!ir) {
     throw internal_error("[SubgraphPartitioner] Ir not set.");
+  }
 
   // Cache main graph results.
   populateCache(ir->getMainGraph());

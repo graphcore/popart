@@ -1,4 +1,5 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
+#include <poprithms/logging/timepartitionlogger.hpp>
 #include <popart/error.hpp>
 #include <popart/ir.hpp>
 #include <popart/op/batchnorm.hpp>
@@ -66,6 +67,10 @@ static bool isZeroElementArray(const poplar::Shape &shape) {
 }
 
 void BatchNormOpx::grow(poplar::program::Sequence &prog) const {
+
+  const auto growTimeTracker =
+      op_p->getIr().timePartitionLogger().scopedStopwatch(
+          "Lowering BatchNorm to Poplar (\"grow\")");
 
   auto &op = getOp<BatchNormOp>();
 

@@ -1,4 +1,5 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
+#include <poprithms/logging/timepartitionlogger.hpp>
 #include <popart/op/elementwise.hpp>
 #include <popart/popx/devicex.hpp>
 #include <popart/popx/irlowering.hpp>
@@ -123,6 +124,11 @@ ElementWiseBinaryOpx::createInput(InIndex index,
 }
 
 void ElementWiseUnaryInplaceOpx::grow(poplar::program::Sequence &prog) const {
+
+  const auto growTimeTracker =
+      op_p->getIr().timePartitionLogger().scopedStopwatch(
+          "Lowering ElementwiseUnaryInplace to Poplar (\"grow\")");
+
   auto outTensor = getInTensor(ElementWiseUnaryOp::getInIndex());
 
   // if all of the elements in the tensor are distinct in memory,
