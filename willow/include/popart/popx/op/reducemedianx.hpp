@@ -1,0 +1,47 @@
+// Copyright (c) 2021 Graphcore Ltd. All rights reserved.
+#ifndef GUARD_NEURALNET_REDUCEMEDIANX_HPP
+#define GUARD_NEURALNET_REDUCEMEDIANX_HPP
+
+#include <poplar/Tensor.hpp>
+#include <popart/op/reducemedian.hpp>
+#include <popart/popx/opx.hpp>
+
+namespace popart {
+namespace popx {
+
+class ReduceMedianOpx : public Opx {
+public:
+  ReduceMedianOpx(Op *, Devicex *);
+  void grow(poplar::program::Sequence &) const override;
+};
+
+class ReduceMedianGradOpx : public Opx {
+public:
+  ReduceMedianGradOpx(Op *, Devicex *);
+  void grow(poplar::program::Sequence &) const override;
+};
+
+namespace reducemedianinternal {
+
+struct PreprocessingParams {
+  // Axes that are not reduced during the forward pass.
+  std::vector<int64_t> axes_complement;
+  // Permutations to move all the reduction axes to the end and back.
+  std::vector<unsigned> dim_permute;
+  std::vector<unsigned> dim_permute_reverse;
+};
+
+// During the forward and backward passes we make sure all reduction axes come
+// at the end, then flatten them and finally calculate the median values. The
+// result is then reshaped back to the original number of axes and
+// reverse-permuted. This function computes the needed permutations.
+PreprocessingParams
+computePreprocessingParams(const Shape &input_shape,
+                           const std::vector<int64_t> &axes);
+
+} // namespace reducemedianinternal
+
+} // namespace popx
+} // namespace popart
+
+#endif

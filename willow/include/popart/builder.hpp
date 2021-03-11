@@ -690,6 +690,33 @@ public:
                       const DebugContext &debugContext = {});
   TensorId bitwisexnor(const std::vector<TensorId> &args,
                        const DebugContext &debugContext = {});
+
+  /*
+   * Add reducemedian operation to the model.
+   *
+   * It computes the median values along the specified axes. In the case of even
+   * number of elements, the lower of the two medians is selected. By default,
+   * the input tensor is reduced over all axes. Additionally, the operation also
+   * returns the indices of found median values in the reduction axis. If
+   * reduction is performed over multiple axes, the indices is a flattened index
+   * over the reduced axes, similar to numpy.ndarray.flat. The index may not be
+   * the first occurrence of the median value found in the input tensor.
+   *
+   * \param args Vector with single input tensor id.
+   * \param axes Axes over which the reduction is performed.
+   * \param keepdims If true, the result tensors are of equal size as the input,
+   *        but with reduction axes of size 1. Otherwise, the reduction
+   *        axes are squeezed and the result tensors have fewer dimensions
+   *        compared to the input.
+   * \param debugContext Optional debug information.
+   * \return The names of the two result tensors, one for median values and one
+   *         for indices.
+   */
+  std::vector<TensorId> reducemedian(
+      const std::vector<TensorId> &args,
+      const nonstd::optional<std::vector<int64_t>> &axes = nonstd::nullopt,
+      int64_t keepdims                                   = 1,
+      const DebugContext &debugContext                   = {});
 };
 
 /**

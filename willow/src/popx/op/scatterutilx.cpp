@@ -62,8 +62,7 @@ void growScatter(poplar::program::Sequence &prog,
                  const poplar::Tensor &replacementValues,
                  const poplar::Tensor &dataToUpdateInPlace,
                  int64_t axis,
-                 const popart::DebugInfo &di) {
-
+                 const poplar::DebugNameAndId &dnai) {
   // Build the implicit index coordinates
   //
   // popops::scatter requires the indices to be complete coordinates into the
@@ -73,7 +72,7 @@ void growScatter(poplar::program::Sequence &prog,
     auto t = linspace(graph,
                       0,
                       static_cast<int>(indices.dim(i)),
-                      {di.getId()},
+                      {dnai, "linspace"},
                       1,
                       indices.elementType());
 

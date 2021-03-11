@@ -2417,6 +2417,13 @@ PYBIND11_MODULE(popart_core, m) {
             py::arg("args")         = pybind11::list(),
             py::arg("debugContext") = std::string(),
             DOC(popart, AiGraphcoreOpset1, bitwisexnor));
+    cls.def("reducemedian",
+            &AiGraphcoreOpset1::reducemedian,
+            py::arg("args"),
+            py::arg("axes")         = pybind11::none(),
+            py::arg("keepdims")     = 1,
+            py::arg("debugContext") = std::string(),
+            DOC(popart, AiGraphcoreOpset1, reducemedian));
   }
   {
     py::class_<Builder> cls(m, "_BuilderCore");

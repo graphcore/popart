@@ -33,7 +33,7 @@ void growScatter(poplar::program::Sequence &prog,
                  const poplar::Tensor &replacementValues,
                  const poplar::Tensor &dataToUpdateInPlace,
                  int64_t axis,
-                 const popart::DebugInfo &di);
+                 const poplar::DebugNameAndId &dnai);
 } // namespace scatterutilx
 } // namespace popx
 } // namespace popart

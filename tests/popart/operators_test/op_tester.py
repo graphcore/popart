@@ -264,6 +264,8 @@ def op_tester(tmpdir):
                     return t
                 elif isinstance(t, np.float16):
                     return t
+                elif isinstance(t, np.int32):
+                    return t
                 elif t is None:
                     return None
                 else:

@@ -37,9 +37,6 @@ protected:
 
   // axis to sort on
   unsigned axis;
-
-private:
-  poplar::Tensor getIotaTensor(poplar::program::Sequence &prog) const;
 };
 
 } // namespace popx

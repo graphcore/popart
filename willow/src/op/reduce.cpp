@@ -18,8 +18,6 @@ ReduceOp::ReduceOp(const OperatorIdentifier &_opid,
   if (axes_) {
     // We do have axes on construction, copy them now.
     axes = *axes_;
-    // Sorting the axes for general backend compatibility
-    std::sort(axes.begin(), axes.end());
   }
 }
 
@@ -28,18 +26,19 @@ std::unique_ptr<Op> ReduceOp::clone() const {
 }
 
 void ReduceOp::setup() {
-
-  // Normalize to positive axes
-  normalizeAxes();
-  // Check the axes are all in the right range.
-  validateAxes();
-
   const auto input_shape = inShape(getInIndex());
 
   if (has_default_axes) {
     // We didn't have axes during construction, we should reduce over ALL axes.
     axes.resize(input_shape.size());
     std::iota(axes.begin(), axes.end(), int64_t(0));
+  } else {
+    // Normalize to positive axes.
+    normalizeAxes();
+    // Sort the axes for general backend compatibility.
+    std::sort(axes.begin(), axes.end());
+    // Check the axes are all in the right range.
+    validateAxes();
   }
 
   Shape output_shape;

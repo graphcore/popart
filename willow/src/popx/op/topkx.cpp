@@ -44,8 +44,13 @@ void TopKGradOpx::grow(poplar::program::Sequence &prog) const {
 
   popops::zero(graph(), dataGrad, prog, debugContext("zero"));
 
-  scatterutilx::growScatter(
-      prog, graph(), indices, gradIn, dataGrad, axis, getDebugInfo());
+  scatterutilx::growScatter(prog,
+                            graph(),
+                            indices,
+                            gradIn,
+                            dataGrad,
+                            axis,
+                            getDebugNameAndId("scatter"));
 
   setOutTensor(TopKGradOp::gradOutIndex(), dataGrad);
 }

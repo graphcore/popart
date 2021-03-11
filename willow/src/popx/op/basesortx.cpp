@@ -2,6 +2,7 @@
 #include <popart/op/basesort.hpp>
 #include <popart/popx/devicex.hpp>
 #include <popart/popx/op/basesortx.hpp>
+#include <popart/popx/op/sortutilx.hpp>
 #include <popart/popx/opxmanager.hpp>
 
 #include <popops/Sort.hpp>
@@ -16,65 +17,27 @@ BaseSortOpx::BaseSortOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
   axis          = static_cast<unsigned>(baseSort->getAxis());
 }
 
-poplar::Tensor
-BaseSortOpx::getIotaTensor(poplar::program::Sequence &prog) const {
-
-  const auto &input = getInTensor(BaseSortOp::getInIndex());
-
-  // The number of elements to be sorted per 1-D vector
-  const auto sortSize = input.dim(axis);
-
-  // The number of 1-D vectors to be sorted
-  const auto nToSort = input.numElements() / sortSize;
-
-  std::vector<int> iotaVals(sortSize);
-  std::iota(iotaVals.begin(), iotaVals.end(), 0);
-
-  auto c = graph().addConstant(poplar::INT,
-                               {sortSize},
-                               poplar::ArrayRef<int>(iotaVals),
-                               debugContext("sortSize"));
-  poputil::mapTensorLinearly(graph(), c);
-
-  // Fill a tensor with [0, 1, 2, ... nToSort-1] along "axis"
-  auto indices = graph().clone(poplar::INT, input);
-  prog.add(poplar::program::WriteUndef(indices));
-
-  // new view of indices, dim-shuffling the given axis
-  // to the back, and making 2-D
-  std::vector<unsigned> permutation(indices.rank());
-  std::iota(permutation.begin(), permutation.end(), 0);
-  std::swap(permutation[axis], permutation.back());
-  poplar::Tensor shuffledView =
-      indices.dimShuffle(permutation).reshape({nToSort, sortSize});
-
-  // Loop over the front dimension and copy in the constant.
-  for (int i = 0; i < nToSort; ++i) {
-    prog.add(poplar::program::Copy(c, shuffledView[i], false, debugContext()));
-  }
-
-  return indices;
-}
-
 FullSortResult
 BaseSortOpx::growFullSortResult(poplar::program::Sequence &prog) const {
 
   auto input   = getInTensor(BaseSortOp::getInIndex());
   auto values  = cloneNcopy(prog, input);
-  auto indices = getIotaTensor(prog);
+  auto indices = sortutilx::getIotaTensor(
+      graph(), input, axis, prog, getDebugNameAndId("iotaTensor"));
 
   // sort indices and values, using values as the "keys" to sort on
   popops::sortKeyValueInPlace(
-      graph(), values, indices, axis, prog, debugContext());
+      graph(), values, indices, axis, prog, debugContext("sort"));
   return FullSortResult(indices, values, axis);
 }
 
 poplar::Tensor
 BaseSortOpx::growIndicesSort(poplar::program::Sequence &prog) const {
   auto input   = getInTensor(BaseSortOp::getInIndex());
-  auto indices = getIotaTensor(prog);
+  auto indices = sortutilx::getIotaTensor(
+      graph(), input, axis, prog, getDebugNameAndId("iotaTensor"));
   return popops::sortKeyValue(
-      graph(), input, indices, axis, prog, debugContext());
+      graph(), input, indices, axis, prog, debugContext("sort"));
 }
 
 poplar::Tensor

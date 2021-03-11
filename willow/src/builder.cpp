@@ -1293,6 +1293,30 @@ TensorId AiGraphcoreOpset1::bitwisexnor(const std::vector<TensorId> &args,
       Onnx::AiGraphcore::OpSet1::BitwiseXnor, args, debugContext);
 }
 
+std::vector<TensorId> AiGraphcoreOpset1::reducemedian(
+    const std::vector<TensorId> &args,
+    const nonstd::optional<std::vector<int64_t>> &axes,
+    int64_t keepdims,
+    const DebugContext &debugContext) {
+  std::map<std::string, popart::any> attributes = {{"keepdims", keepdims}};
+
+  if (axes) {
+    attributes["axes"] = *axes;
+  }
+
+  BuilderDebugInfo di(debugContext, __POPART_FUNCTION_NAME__, args, attributes);
+  attributes.insert({sDebugInfoId, di.getId()});
+
+  auto outputs = impl->op(Onnx::AiGraphcore::OpSet1::ReduceMedian,
+                          getOpsetVersion(),
+                          args,
+                          attributes,
+                          debugContext);
+
+  di.setOutputs(outputs);
+  return outputs;
+}
+
 std::vector<TensorId>
 Builder::customOp(const OperatorIdentifier &opid,
                   int opsetVersion,

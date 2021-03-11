@@ -470,6 +470,8 @@ static const char *__doc_popart_AiGraphcoreOpset1_bitwisexnor = R"doc()doc";
 
 static const char *__doc_popart_AiGraphcoreOpset1_bitwisexor = R"doc()doc";
 
+static const char *__doc_popart_AiGraphcoreOpset1_reducemedian = R"doc()doc";
+
 static const char *__doc_popart_AiGraphcoreOpset1_call =
     R"doc(Add a call operation to the model
 

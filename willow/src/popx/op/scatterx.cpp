@@ -28,7 +28,7 @@ void ScatterOpx::grow(poplar::program::Sequence &prog) const {
   auto data    = cloneNcopy(prog, getInTensor(ScatterOp::dataInIndex()));
   auto values  = getInTensor(ScatterOp::updatesInIndex());
   scatterutilx::growScatter(
-      prog, graph(), indices, values, data, axis, getDebugInfo());
+      prog, graph(), indices, values, data, axis, getDebugNameAndId("scatter"));
   setOutTensor(ScatterOp::outIndex(), data);
 }
 
@@ -52,8 +52,10 @@ void ScatterDataGradOpx::grow(poplar::program::Sequence &prog) const {
   // data tensor, but ONNX scatter only provides an axis and a scalar index.
   std::vector<poplar::Tensor> indices_mapped(indices.rank());
   for (int i = 0; i < indices.rank(); ++i) {
-    auto t = scatterutilx::linspace(
-        graph(), 0, static_cast<int>(indices.dim(i)), getDebugNameAndId());
+    auto t = scatterutilx::linspace(graph(),
+                                    0,
+                                    static_cast<int>(indices.dim(i)),
+                                    getDebugNameAndId("linspace"));
 
     // Match the rank of indices
     t = scatterutilx::matchRank(indices, t, i);
@@ -114,8 +116,10 @@ void ScatterUpdateGradOpx::grow(poplar::program::Sequence &prog) const {
   // Start by creating 1D linspaced constant tensors
   std::vector<poplar::Tensor> indices_mapped(gradIn.rank());
   for (int i = 0; i < gradIn.rank(); ++i) {
-    indices_mapped[i] = scatterutilx::linspace(
-        graph(), 0, static_cast<int>(indices.dim(i)), getDebugNameAndId());
+    indices_mapped[i] = scatterutilx::linspace(graph(),
+                                               0,
+                                               static_cast<int>(indices.dim(i)),
+                                               getDebugNameAndId("linspace"));
   }
 
   // Match the rank of the indices to the update tensor
