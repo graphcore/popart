@@ -184,7 +184,7 @@ public:
 
   void assertNumElements(const popx::Executablex &) const final {}
 
-  ConstVoidData in(TensorId id, int64_t, bool prefetch)final {
+  ConstVoidData in(TensorId id, int64_t, bool prefetch) final {
     py::array a = inputCb(id, prefetch);
     if (!isContiguous(a)) {
       throw error(
@@ -1247,6 +1247,8 @@ PYBIND11_MODULE(popart_core, m) {
                       &SessionOptions::accumulateOuterFragmentSettings);
     cls.def_readwrite("enableLoadAndOffloadRNGState",
                       &SessionOptions::enableLoadAndOffloadRNGState);
+    cls.def_readwrite("enableAutomaticLossScaling",
+                      &SessionOptions::enableAutomaticLossScaling);
   }
   {
     py::enum_<PatternsLevel> en(m, "PatternsLevel");

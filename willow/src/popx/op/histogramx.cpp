@@ -20,7 +20,7 @@ void HistogramOpx::grow(poplar::program::Sequence &prog) const {
   poputil::mapTensorLinearly(graph(), levelsT);
 
   auto out = popops::histogram(graph(),
-                               getInTensor(op.getInIndex()),
+                               getInTensor(op.getInIndex()).flatten(),
                                levelsT,
                                op.getAbsoluteOfInput(),
                                prog,

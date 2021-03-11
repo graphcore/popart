@@ -1,8 +1,10 @@
 # Copyright (c) 2020 Graphcore Ltd. All rights reserved.
-import popart
-import test_util as tu
-
 import numpy as np
+import popart
+import onnx
+from onnx import numpy_helper
+import pytest
+import test_util as tu
 import torch
 
 
@@ -106,3 +108,428 @@ def test_loss_scaling_with_const():
 
 def test_loss_scaling_with_nonconst():
     loss_scaling_test(False)
+
+
+def test_auto_loss_scaling_with_inference_session():
+    """
+    Create an InferenceSession with auto loss scaling enabled. Observe an
+    error from the auto loss scale transform
+    """
+    builder = popart.Builder()
+
+    t0 = builder.addInputTensor("FLOAT", [2, 2])
+    out = builder.aiOnnx.matmul([t0, t0])
+
+    opts = popart.SessionOptions()
+    opts.enableAutomaticLossScaling = True
+
+    with pytest.raises(popart.popart_exception) as e_info:
+        session = popart.InferenceSession(builder.getModelProto(),
+                                          deviceInfo=tu.create_test_device(),
+                                          dataFlow=popart.DataFlow(1, [out]),
+                                          userOptions=opts)
+    assert e_info.value.args[0].endswith("Only compatible when doing training")
+
+
+def test_auto_loss_scaling_with_const_loss_scale_tensor():
+    """
+    Create a session with auto loss scaling enabled, and with an optimizer
+    with a constant loss scale value. Observe an error from the auto loss
+    scale transform
+    """
+    builder = popart.Builder()
+
+    t0 = builder.addInputTensor("FLOAT", [2, 2])
+    t1_data = np.random.rand(2, 2).astype(np.float32)
+    t1 = builder.addInitializedInputTensor(t1_data)
+    out = builder.aiOnnx.matmul([t0, t1])
+    loss = builder.aiGraphcore.identityloss([out])
+
+    makeLossScalingTensorConst = True
+    optimizer = popart.SGD({"lossScaling": (2, makeLossScalingTensorConst)})
+
+    opts = popart.SessionOptions()
+    opts.enableAutomaticLossScaling = True
+
+    with pytest.raises(popart.popart_exception) as e_info:
+        session = popart.TrainingSession(builder.getModelProto(),
+                                         deviceInfo=tu.create_test_device(),
+                                         dataFlow=popart.DataFlow(1, []),
+                                         loss=loss,
+                                         optimizer=optimizer,
+                                         userOptions=opts)
+    assert e_info.value.args[0].endswith("The optimizer must have non-const loss scaling")
+
+
+def test_auto_loss_scaling_with_no_tracked_tensors():
+    """
+    Build a model with ops, the outputs of which the auto loss scale transform
+    does not decide to 'track'. Observe an error from the auto loss scale
+    transform
+    """
+    builder = popart.Builder()
+
+    t0 = builder.addInputTensor("FLOAT", [2, 2])
+    out = builder.aiOnnx.relu([t0])
+    loss = builder.aiGraphcore.identityloss([out])
+
+    optimizer = popart.SGD({"lossScaling": (2, False)})
+
+    opts = popart.SessionOptions()
+    opts.enableAutomaticLossScaling = True
+
+    with pytest.raises(popart.popart_exception) as e_info:
+        session = popart.TrainingSession(builder.getModelProto(),
+                                         deviceInfo=tu.create_test_device(),
+                                         dataFlow=popart.DataFlow(1, [loss]),
+                                         loss=loss,
+                                         optimizer=optimizer,
+                                         userOptions=opts)
+    assert e_info.value.args[0].endswith("No tracked tensors were found")
+
+
+def getModelProto(shard=False):
+    """
+    Create a simple model:
+
+    in0 -- Matmul -- t0 -- Relu -- t1 -- Conv -- t1 -- NllLoss -- loss
+    w0  ---'                              /             /
+    w1  ---------------------------------       label -
+
+    whose graph after auto-grad will contain tensors whose statistics the
+    automatic loss scale transform will track to adjust the loss scale factor
+    """
+    builder = popart.Builder()
+
+    t_shape = [2, 1, 2, 2]
+    t0 = builder.addInputTensor("FLOAT16", t_shape)
+    t_data = np.random.rand(*t_shape).astype(np.float16)
+    t1 = builder.addInitializedInputTensor(t_data)
+    t2 = builder.addInitializedInputTensor(t_data)    
+    mm = builder.aiOnnx.matmul([t0, t1])
+    r = builder.aiOnnx.relu([mm])
+    conv = builder.aiOnnx.conv([r, t2])
+    rs = builder.reshape_const(builder.aiOnnx, [conv], [2, 2])
+    sf = builder.aiOnnx.softmax([rs])
+    label_shape = [2]
+    labels = builder.addInputTensor("INT32", label_shape)
+    loss = builder.aiGraphcore.nllloss([sf, labels])
+
+    if shard:
+        builder.virtualGraph(mm, 0)
+        builder.virtualGraph(r, 0)
+        builder.virtualGraph(conv, 1)
+        builder.virtualGraph(rs, 1)
+        builder.virtualGraph(sf, 1)
+        builder.virtualGraph(loss, 1)
+
+    return loss, builder.getModelProto(), t0, t_shape, labels, label_shape
+
+
+def test_auto_loss_scaling_expected_loss_scale_tensor_values():
+    """
+    Pick a very small loss scale value so that gradient tensor values occupy
+    the lower part of the fp16 dynamic range.
+    Observe that this is the case, and that the loss scale factor is adjusted
+    as expected after each weight update.
+    """
+    init_loss_scale = np.finfo(np.float16).eps * 2
+    optimizer = popart.SGD({"lossScaling": (init_loss_scale, False)})
+
+    opts = popart.SessionOptions()
+    opts.enableAutomaticLossScaling = True
+
+    loss, proto, t0, t_shape, label, label_shape = getModelProto()
+    bps = 4
+
+    loss_scale_id = "lossScaling_FLOAT16_updated"
+    gradient_anchor_ids = ["Gradient___init_input/1", "Gradient___init_input"]
+    anchor_ids = gradient_anchor_ids + [loss_scale_id]
+
+    session = popart.TrainingSession(fnModel=proto,
+                                     deviceInfo=tu.create_test_device(),
+                                     dataFlow=popart.DataFlow(bps, anchor_ids),
+                                     loss=loss,
+                                     optimizer=optimizer,
+                                     userOptions=opts)
+    session.prepareDevice()
+    session.weightsFromHost()
+    anchors = session.initAnchorArrays()
+
+    t0_data = np.random.rand(bps, *t_shape).astype(np.float16)
+    label_data = np.random.randint(0, label_shape[0], bps*label_shape[0]).astype(np.int32)
+    stepio = popart.PyStepIO({t0: t0_data, label: label_data}, anchors)
+    session.run(stepio)
+
+    # Manually determine the direction of the loss scale update
+    f16_max = np.finfo(np.float16).max
+    histogram_bin_edges = [-1, 0.5 * f16_max, f16_max]
+    prev_loss_scale = init_loss_scale
+    for i in range(bps):
+        num_small_grad_elements = 0
+        num_large_grad_elements = 0
+        print(anchors[loss_scale_id][i])
+        for id in gradient_anchor_ids:
+            abs_grad_data = np.abs(anchors[id][i])
+            hist, _ = np.histogram(abs_grad_data, histogram_bin_edges)
+            num_small_grad_elements += hist[0]
+            num_large_grad_elements += hist[1]
+
+        proportion_small_grad_elements = num_small_grad_elements / (num_small_grad_elements + num_large_grad_elements)
+        # Observe that the proportion of small grad elements is large, as we
+        # have started with a very small loss scale
+        assert proportion_small_grad_elements > 0.9
+
+        # Therefore the loss scale will increase for each batch in the step
+        if i > 0:
+            assert anchors[loss_scale_id][i] > prev_loss_scale
+            prev_loss_scale = anchors[loss_scale_id][i]
+
+
+def test_auto_loss_scaling_and_grad_accumulation_and_graph_replication():
+    """
+    1. Create a Session with automatic loss scaling and gradient accumulation
+       enabled, and see that an incompatibility error is thrown.
+    2. Create a Session with automatic loss scaling and graph replication
+       enabled, and see that an incompatibility error is thrown.
+    """
+    builder = popart.Builder()
+
+    t0 = builder.addInputTensor("FLOAT", [2, 2])
+    mm0 = builder.aiOnnx.matmul([t0, t0])
+    loss = builder.aiGraphcore.identityloss([mm0])
+
+    optimizer = popart.SGD({"lossScaling": (2, False)})
+
+    opts = popart.SessionOptions()
+    opts.enableAutomaticLossScaling = True
+    opts.enableGradientAccumulation = True
+
+    # 1.
+    with pytest.raises(popart.popart_exception) as e_info:
+        session = popart.TrainingSession(builder.getModelProto(),
+                                         deviceInfo=tu.create_test_device(),
+                                         dataFlow=popart.DataFlow(1, [loss]),
+                                         loss=loss,
+                                         optimizer=optimizer,
+                                         userOptions=opts)
+    assert e_info.value.args[0].endswith("Automatic loss scaling is not currently supported when the 'enableGradientAccumulation' SessionOption is set to 'true'")
+
+    #2.
+    opts.enableReplicatedGraphs = True
+    with pytest.raises(popart.popart_exception) as e_info:
+        session = popart.TrainingSession(builder.getModelProto(),
+                                         deviceInfo=tu.create_test_device(),
+                                         dataFlow=popart.DataFlow(1, [loss]),
+                                         loss=loss,
+                                         optimizer=optimizer,
+                                         userOptions=opts)
+    assert e_info.value.args[0].endswith("Automatic loss scaling is not currently supported when the 'enableReplicatedGraphs' SessionOption is set to 'true'")
+
+
+def test_auto_loss_scaling_with_non_sgd_optimizer():
+    """
+    Create a Session with automatic loss scaling and a non-sgd optimizer,
+    and see that an incompatibility error is thrown.
+    """
+    builder = popart.Builder()
+
+    t0 = builder.addInputTensor("FLOAT", [2, 2])
+    mm0 = builder.aiOnnx.matmul([t0, t0])
+    loss = builder.aiGraphcore.identityloss([mm0])
+
+    optimizer = popart.Adam({"lossScaling": (2, False)})
+
+    opts = popart.SessionOptions()
+    opts.enableAutomaticLossScaling = True
+
+    with pytest.raises(popart.popart_exception) as e_info:
+        session = popart.TrainingSession(builder.getModelProto(),
+                                         deviceInfo=tu.create_test_device(),
+                                         dataFlow=popart.DataFlow(1, [loss]),
+                                         loss=loss,
+                                         optimizer=optimizer,
+                                         userOptions=opts)
+    assert e_info.value.args[0].endswith("Only compatible when using the SGD optimizer type, but you are using 'Adam'")
+
+
+@tu.requires_ipu_model
+def test_auto_loss_scaling_with_sharding():
+    """
+    Create a Session with automatic loss scaling and virtual graphs enabled,
+    and see that an incompatibility error is thrown.
+    """
+    builder = popart.Builder()
+
+    t0 = builder.addInputTensor("FLOAT", [2, 2])
+    t1_data = np.random.rand(2, 2).astype(np.float32)
+    t1 = builder.addInitializedInputTensor(t1_data)
+    mm0 = builder.aiOnnx.matmul([t0, t1])
+    loss = builder.aiGraphcore.identityloss([mm0])
+
+    optimizer = popart.SGD({"lossScaling": (2, False)})
+
+    opts = popart.SessionOptions()
+    opts.enableAutomaticLossScaling = True
+    opts.virtualGraphMode = popart.VirtualGraphMode.Auto
+
+    with pytest.raises(popart.popart_exception) as e_info:
+        session = popart.TrainingSession(builder.getModelProto(),
+                                         deviceInfo=tu.create_test_device(2),
+                                         dataFlow=popart.DataFlow(1, [loss]),
+                                         loss=loss,
+                                         optimizer=optimizer,
+                                         userOptions=opts)
+    assert e_info.value.args[0].endswith("Automatic loss scaling is not currently supported when the 'virtualGraphMode' SessionOption is not set to VirtualGraphMode::Off")
+
+
+def test_auto_loss_scaling_sgd_with_specific_optimizer_values():
+    """
+    Create a Session with automatic loss scaling and an optimizer with a
+    weight-specific optimizer value, and see that an incompatibility error is
+    thrown.
+    """
+    builder = popart.Builder()
+    t0 = builder.addInputTensor("FLOAT", [2, 2])
+    t1_data = np.random.rand(2, 2).astype(np.float32)
+    t1 = builder.addInitializedInputTensor(t1_data)
+    mm0 = builder.aiOnnx.matmul([t0, t1])
+    loss = builder.aiGraphcore.identityloss([mm0])
+
+    optimizer = popart.SGD({"lossScaling": (2, False),
+                            "defaultLearningRate": (0.2, False)})
+    optimizer.insertSpecific(t1, {"learningRate": (0.1, False)})
+
+    opts = popart.SessionOptions()
+    opts.enableAutomaticLossScaling = True
+
+    with pytest.raises(popart.popart_exception) as e_info:
+        session = popart.TrainingSession(builder.getModelProto(),
+                                         deviceInfo=tu.create_test_device(),
+                                         dataFlow=popart.DataFlow(1, [loss]),
+                                         loss=loss,
+                                         optimizer=optimizer,
+                                         userOptions=opts)
+    assert e_info.value.args[0].endswith("Not compatible with weight-specific optimizer values")
+
+
+def test_auto_loss_scaling_with_mixed_precision_trackable_tensors():
+    """
+    Create a Session with automatic loss scaling and a model that contains
+    both fp32 and fp16 initializers, and see that no incompatibility error is
+    thrown.
+    """
+    builder = popart.Builder()
+    t0 = builder.addInputTensor("FLOAT", [2, 2])
+    t1_data = np.random.rand(2, 2).astype(np.float32)
+    t1 = builder.addInitializedInputTensor(t1_data)
+    mm0 = builder.aiOnnx.matmul([t0, t1])
+    t2 = builder.aiOnnx.cast([mm0], "FLOAT16")
+    t3 = builder.addInputTensor("FLOAT16", [2, 2])
+    mm1 = builder.aiOnnx.matmul([t2, t3])
+    loss = builder.aiGraphcore.identityloss([mm1])
+
+    optimizer = popart.SGD({"lossScaling": (2, False)})
+
+    opts = popart.SessionOptions()
+    opts.enableAutomaticLossScaling = True
+
+    session = popart.TrainingSession(builder.getModelProto(),
+                                     deviceInfo=tu.create_test_device(),
+                                     dataFlow=popart.DataFlow(1, [loss]),
+                                     loss=loss,
+                                     optimizer=optimizer,
+                                     userOptions=opts)
+    session.prepareDevice()
+
+def compare_weights(session0, session1, tmpdir):
+    ref_path = str(tmpdir / f"ref_session.onnx")
+    session0.modelToHost(ref_path)
+    session0_proto = onnx.load(ref_path)
+    session0_weights = {}
+    session1_weights = {}
+    for i in range(len(session0_proto.graph.initializer)):
+        init = session0_proto.graph.initializer[i]
+        session0_weights[init.name] = np.empty(shape=init.dims, dtype=np.float16)
+        session1_weights[init.name] = np.empty(shape=init.dims, dtype=np.float16)
+
+    session0.weightsToHost()
+    session0.readWeights(popart.PyWeightsIO(session0_weights))
+    session1.weightsToHost()
+    session1.readWeights(popart.PyWeightsIO(session1_weights))
+
+    for i in range(len(session0_proto.graph.initializer)):
+        init_name = session0_proto.graph.initializer[i].name
+        print("Comparing ", init_name)
+        print(session0_weights[init_name])
+        print(session1_weights[init_name])
+        assert np.array_equal(session0_weights[init_name], session1_weights[init_name])
+
+
+def run_automatic_loss_scaling_comparison_test(tmpdir, shard):
+    """
+    An integration test: verify that the weight updats computed by a session
+    with auto loss scaling (ALS) enabled are identical to those with ALS
+    disabled.
+    """
+    loss, proto, t0, t_shape, label, label_shape = getModelProto(shard=shard)
+    bps = 4
+    init_ls = 10.0
+    optimizer = popart.SGD({"lossScaling": (init_ls, False),
+                            "defaultMomentum": (0.5, False),
+                            "defaultVelocityScaling": (0.5, False),
+                            "defaultDampening": (0.5, False),
+                            "defaultWeightDecay": (0.5, False)})
+
+    ref_session = popart.TrainingSession(fnModel=proto,
+                                         deviceInfo=tu.create_test_device(),
+                                         dataFlow=popart.DataFlow(bps, []),
+                                         loss=loss,
+                                         optimizer=optimizer)
+    ref_session.prepareDevice()
+    ref_session.weightsFromHost()
+    ref_anchors = ref_session.initAnchorArrays()
+
+    opts = popart.SessionOptions()
+    if shard:
+        num_ipus = 2
+        opts.virtualGraphMode = popart.VirtualGraphMode.Manual
+    else:
+        num_ipus = 1
+    opts.enableAutomaticLossScaling = True
+
+    ls_id = "lossScaling_FLOAT16_updated"
+    als_session = popart.TrainingSession(fnModel=proto,
+                                         deviceInfo=tu.create_test_device(num_ipus),
+                                         dataFlow=popart.DataFlow(bps, [ls_id]),
+                                         loss=loss,
+                                         optimizer=optimizer,
+                                         userOptions=opts)
+    als_session.prepareDevice()
+    als_session.weightsFromHost()
+    als_anchors = als_session.initAnchorArrays()
+
+    t0_data = np.random.rand(bps, *t_shape).astype(np.float16)
+    label_data = np.random.randint(0, label_shape[0], bps*label_shape[0]).astype(np.int32)
+    inputs = {t0: t0_data, label: label_data}
+
+    ref_session.run(popart.PyStepIO(inputs, ref_anchors))
+    als_session.run(popart.PyStepIO(inputs, als_anchors))
+
+    # Verify that the loss scale has changed from its initial value
+    for i in range(bps):
+        assert als_anchors[ls_id][i] != init_ls
+
+    # Verify that the weight updates are identitcal for a.l.s vs a reference
+    # session
+    compare_weights(ref_session, als_session, tmpdir)
+
+
+def test_auto_loss_scaling_identical_weight_updates(tmpdir):
+    run_automatic_loss_scaling_comparison_test(tmpdir, shard=False)
+
+
+@tu.requires_ipu_model
+@pytest.mark.skip("T33956: ALS not supported with sharded models")
+def test_auto_loss_scaling_identical_weight_updates_sharded(tmpdir):
+    run_automatic_loss_scaling_comparison_test(tmpdir, shard=True)

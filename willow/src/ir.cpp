@@ -52,6 +52,7 @@
 #include <popart/recompute.hpp>
 #include <popart/transforms/accumulateouterfragmentparallelizer.hpp>
 #include <popart/transforms/auto_virtual_graph.hpp>
+#include <popart/transforms/automaticlossscaling.hpp>
 #include <popart/transforms/batchserialize.hpp>
 #include <popart/transforms/clipweightgradientsbynorm.hpp>
 #include <popart/transforms/decomposegradsum.hpp>
@@ -1151,6 +1152,10 @@ void Ir::prepareImpl(const IrBundle &gb, const HashesMap &cacheEntries) {
 
   applyTransform(Prune::id(), getMainGraph());
   updateVertices();
+
+  if (getSessionOptions().enableAutomaticLossScaling) {
+    applyTransform(AutomaticLossScale::id(), getMainGraph());
+  }
 
   // Make sure that matmuls are serialized before gradient accumalation
   if (getSessionOptions().enableSerializedMatmuls) {

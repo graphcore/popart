@@ -271,6 +271,7 @@ std::size_t hash<popart::SessionOptions>::operator()(
   boost::hash_combine(seed, so.groupHostSync);
   boost::hash_combine(seed, so.enableLoadAndOffloadRNGState);
   boost::hash_combine(seed, so.kahnTieBreaker);
+  boost::hash_combine(seed, so.enableAutomaticLossScaling);
 
   boost::hash_combine(
       seed, static_cast<int>(so.accumulateOuterFragmentSettings.schedule));

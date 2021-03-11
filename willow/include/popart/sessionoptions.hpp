@@ -791,6 +791,11 @@ struct SessionOptions {
   /// for specific TensorId values.
   std::map<TensorId, TensorLocation> tensorLocationSettingsOverride;
 
+  // If true, keep track of the distribution of gradient tensor elements over
+  // the floating point range. Adjust the value loss scaling tensor accordingly,
+  // with the aim of preventing underflow or overflow.
+  bool enableAutomaticLossScaling = false;
+
   // Get the buffering depth for a TensorId. Will return 1 unless
   // prefetching is enabled and the buffering depth is overwritten
   // in the \c prefetchBufferingDepthMap variable.
