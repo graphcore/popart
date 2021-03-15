@@ -14,7 +14,6 @@
 #include <popart/topocons.hpp>
 
 #include <memory>
-#include <queue>
 #include <string>
 
 using namespace popart;
@@ -90,7 +89,7 @@ void withEdges(Graph &graph,
 
   std::vector<OpId> outstanding(nOps, 0);
   // Lowest OpId is at front of queue.
-  std::priority_queue<OpId, std::vector<OpId>, std::greater<OpId>> ready;
+  std::vector<OpId> ready;
 
   // Compute, for each op, how many incoming edges (dependencies) it has.
   for (const auto &consumersOfOp : edges) {
@@ -108,7 +107,7 @@ void withEdges(Graph &graph,
   // tensors.
   for (OpId i = 0; i < nOps; i++) {
     if (outstanding[i] == 0) {
-      ready.push(i);
+      ready.push_back(i);
 
       const TensorId tId{std::to_string(i) + "-input"};
       graph.addInput(tId, tensorInfo);
@@ -119,8 +118,8 @@ void withEdges(Graph &graph,
   int nScheduled = 0;
 
   while (!ready.empty()) {
-    const OpId i = ready.top();
-    ready.pop();
+    const OpId i = ready.back();
+    ready.pop_back();
 
     nScheduled++;
 
@@ -130,7 +129,7 @@ void withEdges(Graph &graph,
       --outstanding[j];
 
       if (outstanding[j] == 0) {
-        ready.push(j);
+        ready.push_back(j);
       }
     }
   }
