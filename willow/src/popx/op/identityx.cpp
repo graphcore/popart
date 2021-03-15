@@ -95,10 +95,7 @@ void IdentityLossOpx::grow(poplar::program::Sequence &prog) const {
   const poplar::Tensor &inTensor(getInTensor(0));
 
   if (op.getReductionType() == ReductionType::NoReduction) {
-    // throw error("This should have been replaced by an Identity op rather
-    // than"
-    //             "an IdentityLoss op");
-    setOutTensor(0, inTensor);
+    setOutTensor(0, Opx::cloneNcopy(prog, inTensor));
   } else {
 
     auto inTensor1D = inTensor.flatten();
