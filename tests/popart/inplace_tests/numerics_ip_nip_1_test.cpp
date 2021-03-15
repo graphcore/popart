@@ -210,7 +210,7 @@ BOOST_AUTO_TEST_CASE(Inplace_numericsIpNip1) {
     // opts.dotOpNames      = false;
     // opts.logDir          = "./dotfiles";
     // if (!boost::filesystem::exists(opts.logDir)) {
-    //  boost::filesystem::create_directory(opts.logDir);
+    //  boost::filesystem::create_directories(opts.logDir);
     // }
 
     opts.enableOutlining = outlining;

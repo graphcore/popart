@@ -238,7 +238,7 @@ BOOST_AUTO_TEST_CASE(Inplace_numericsIpNip0) {
       opts.outlineThreshold = 1e-7f;
     }
     if (!boost::filesystem::exists(opts.logDir)) {
-      boost::filesystem::create_directory(opts.logDir);
+      boost::filesystem::create_directories(opts.logDir);
     }
 
     auto device = popart::createTestDevice(TEST_TARGET);

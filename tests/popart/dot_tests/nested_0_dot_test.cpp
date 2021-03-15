@@ -38,7 +38,7 @@ BOOST_AUTO_TEST_CASE(Dot_nested0) {
     opts.dotChecks.insert(DotCheck::Final);
 
     opts.logDir = "./nestedDotTest" + randomString(14);
-    boost::filesystem::create_directory(opts.logDir);
+    boost::filesystem::create_directories(opts.logDir);
 
     TensorInfo shape{"FLOAT", std::vector<int64_t>{1}};
     auto in0 = builder->addInputTensor(shape);

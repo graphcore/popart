@@ -209,7 +209,7 @@ BOOST_AUTO_TEST_CASE(QuadraticEpsilolTest0) {
     if (exportFinalDotFiles) {
       userOptions.dotChecks.insert(DotCheck::Final);
       userOptions.logDir = "./dotTestContinuous_" + std::to_string(continuous);
-      boost::filesystem::create_directory(userOptions.logDir);
+      boost::filesystem::create_directories(userOptions.logDir);
     }
 
     if (continuous == true) {

@@ -120,7 +120,7 @@ BOOST_AUTO_TEST_CASE(DatalessTrainingMatmul) {
       opts.dotChecks.insert(DotCheck::Final);
       opts.logDir = "./dotfiles";
       if (!boost::filesystem::exists(opts.logDir)) {
-        boost::filesystem::create_directory(opts.logDir);
+        boost::filesystem::create_directories(opts.logDir);
       }
     }
 

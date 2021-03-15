@@ -41,7 +41,7 @@ BOOST_AUTO_TEST_CASE(Dot_basic0) {
   opts.dotChecks.insert(DotCheck::Final);
 
   opts.logDir = "./dotTestTmp" + randomString(14);
-  boost::filesystem::create_directory(opts.logDir);
+  boost::filesystem::create_directories(opts.logDir);
 
   TensorInfo shape{"FLOAT", std::vector<int64_t>{1}};
   auto in0   = builder->addInputTensor(shape);
@@ -95,7 +95,7 @@ BOOST_AUTO_TEST_CASE(Dot_dotOpNames0) {
     opts.dotChecks.insert(DotCheck::Bwd0);
     opts.dotOpNames = dotOpNames;
     opts.logDir     = "./dotTestTmp" + randomString(14);
-    boost::filesystem::create_directory(opts.logDir);
+    boost::filesystem::create_directories(opts.logDir);
     TensorInfo shape{"FLOAT", std::vector<int64_t>{1}};
     auto in0   = builder->addInputTensor(shape);
     auto preId = aiOnnx.exp({in0}, expName);
@@ -175,7 +175,7 @@ BOOST_AUTO_TEST_CASE(Dot_dotStartEnd) {
         opts.firstDotOp = start;
         opts.finalDotOp = end;
         opts.logDir     = "./dotTestTmp" + randomString(14);
-        boost::filesystem::create_directory(opts.logDir);
+        boost::filesystem::create_directories(opts.logDir);
         TensorInfo shape{"FLOAT", std::vector<int64_t>{1}};
 
         auto in0 = builder->addInputTensor(shape);

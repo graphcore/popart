@@ -269,7 +269,7 @@ void Executablex::serialize(const poplar::Executable &poplarExecutable,
       logging::devicex::warn("Specified directory not found. "
                              "Creating {} directory ",
                              targetDir);
-      if (!boost::filesystem::create_directory(targetDir))
+      if (!boost::filesystem::create_directories(targetDir))
         throw error("Cannot create cache directory. Aborting.");
     }
   }

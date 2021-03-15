@@ -147,11 +147,11 @@ public:
         target(std::move(_target)) {}
 
   virtual bool attach() override {
-    throw error("Cannot attach virtual device");
+    throw error("Cannot attach to offline device");
   }
 
   virtual void detach() override {
-    throw error("Cannot detach virtual device");
+    throw error("Cannot detach from offline device");
   }
 
   virtual int getId() const override { return 0; }

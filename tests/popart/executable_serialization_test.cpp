@@ -404,7 +404,7 @@ BOOST_AUTO_TEST_CASE(session_run_from_serialized_exe) {
 
   auto cacheDir = "./tmp_1" + randomString(10);
   boost::filesystem::remove(cacheDir);
-  BOOST_CHECK(boost::filesystem::create_directory(cacheDir));
+  BOOST_CHECK(boost::filesystem::create_directories(cacheDir));
   auto d                      = boost::filesystem::path(cacheDir);
   const std::string cacheName = "session_cache1";
   auto n                      = boost::filesystem::path(cacheName);
@@ -610,7 +610,7 @@ BOOST_AUTO_TEST_CASE(session_run_on_ipu_from_offlineipu_serialized_exe) {
 
   auto cacheDir = "./tmp_1" + randomString(10);
   boost::filesystem::remove(cacheDir);
-  BOOST_CHECK(boost::filesystem::create_directory(cacheDir));
+  BOOST_CHECK(boost::filesystem::create_directories(cacheDir));
   auto d                      = boost::filesystem::path(cacheDir);
   const std::string cacheName = "session_cache1";
   auto n                      = boost::filesystem::path(cacheName);
@@ -900,7 +900,7 @@ BOOST_AUTO_TEST_CASE(
 
   auto cacheDir = "./tmp_2" + randomString(10);
   boost::filesystem::remove(cacheDir);
-  BOOST_CHECK(boost::filesystem::create_directory(cacheDir));
+  BOOST_CHECK(boost::filesystem::create_directories(cacheDir));
   auto d                      = boost::filesystem::path(cacheDir);
   const std::string cacheName = "session_cache2";
   auto n                      = boost::filesystem::path(cacheName);
@@ -1075,7 +1075,7 @@ BOOST_AUTO_TEST_CASE(session_run_from_serialized_exe_inference) {
 
   auto cacheDir = "./tmp_3" + randomString(10);
   boost::filesystem::remove(cacheDir);
-  BOOST_CHECK(boost::filesystem::create_directory(cacheDir));
+  BOOST_CHECK(boost::filesystem::create_directories(cacheDir));
   auto d                      = boost::filesystem::path(cacheDir);
   const std::string cacheName = "session_cache1";
   auto n                      = boost::filesystem::path(cacheName);
@@ -1243,7 +1243,7 @@ BOOST_AUTO_TEST_CASE(session_run_from_serialized_exe_random_seed) {
 
   auto cacheDir = "./tmp_4" + randomString(10);
   boost::filesystem::remove(cacheDir);
-  BOOST_CHECK(boost::filesystem::create_directory(cacheDir));
+  BOOST_CHECK(boost::filesystem::create_directories(cacheDir));
   auto d                      = boost::filesystem::path(cacheDir);
   const std::string cacheName = "session_cache3";
   auto n                      = boost::filesystem::path(cacheName);
@@ -1433,7 +1433,7 @@ BOOST_AUTO_TEST_CASE(session_run_from_serialized_exe_reset_host_weights) {
 
   auto cacheDir = "./tmp_5" + randomString(10);
   boost::filesystem::remove(cacheDir);
-  BOOST_CHECK(boost::filesystem::create_directory(cacheDir));
+  BOOST_CHECK(boost::filesystem::create_directories(cacheDir));
   auto d                      = boost::filesystem::path(cacheDir);
   const std::string cacheName = "session_cache1";
   auto n                      = boost::filesystem::path(cacheName);
@@ -1605,7 +1605,7 @@ BOOST_AUTO_TEST_CASE(session_run_from_serialized_exe_checkpoint) {
 
   auto cacheDir = "./tmp_6" + randomString(10);
   boost::filesystem::remove(cacheDir);
-  BOOST_CHECK(boost::filesystem::create_directory(cacheDir));
+  BOOST_CHECK(boost::filesystem::create_directories(cacheDir));
   auto dir                    = boost::filesystem::path(cacheDir);
   const std::string cacheName = "session_cache1";
   auto n                      = boost::filesystem::path(cacheName);
@@ -1811,7 +1811,7 @@ BOOST_AUTO_TEST_CASE(session_run_from_serialized_exe_update_optimizer) {
 
   auto cacheDir = "./tmp_7" + randomString(10);
   boost::filesystem::remove(cacheDir);
-  BOOST_CHECK(boost::filesystem::create_directory(cacheDir));
+  BOOST_CHECK(boost::filesystem::create_directories(cacheDir));
   auto d                      = boost::filesystem::path(cacheDir);
   const std::string cacheName = "session_cache1";
   auto n                      = boost::filesystem::path(cacheName);
