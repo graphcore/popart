@@ -21,6 +21,19 @@
 namespace popart {
 
 class BuilderImpl;
+/**
+ * \class Builder
+ * \brief A builder interface for creating ONNX graphs.
+ *
+ * ONNX defines a specification for describing graphs and serialising them as
+ * protobuf files. This class provides a builder interface for creating such a
+ * graph.
+ *
+ * Note, in ONNX, all Ops belong to an "Opset". The Builder itself does not have
+ * methods for creating Ops in the ONNX graph, but instead has accessors to
+ * Opsets, like AiGraphcoreOpset1, which contain the methods for creating Ops in
+ * the graph.
+ */
 class Builder;
 enum class DataType;
 enum class RecomputeType;

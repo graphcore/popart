@@ -53,6 +53,7 @@ willow/include/popart/adam.hpp \
 willow/include/popart/builder.hpp \
 willow/include/popart/devicemanager.hpp \
 willow/include/popart/dataflow.hpp \
+willow/include/popart/op.hpp \
 willow/include/popart/error.hpp \
 willow/include/popart/graphtransformer.hpp \
 willow/include/popart/ir.hpp \

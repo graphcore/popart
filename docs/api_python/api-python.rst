@@ -48,9 +48,53 @@ Session
 .. autoclass:: popart_core._TrainingSessionCore
     :members:
 
+Patterns
+--------
+
+.. autoclass:: popart::Patterns
+    :members:
 
 Session Options
 ---------------
+
+.. autoclass:: popart::AccumulateOuterFragmentSettings
+  :members:
+.. autoclass:: popart::AccumulateOuterFragmentSchedule
+
+.. autoclass:: popart::BatchSerializationSettings
+  :members:
+.. autoclass:: popart::BatchSerializationBatchSchedule
+
+.. autoclass:: popart::DotCheck
+  :members:
+
+.. autoclass:: popart::ExecutionPhaseSchedule
+
+.. autoclass:: popart::TensorLocationSettings
+  :members:
+
+.. autoclass:: popart::ReplicatedTensorSharding
+
+.. autoclass:: popart::TensorLocation
+
+.. autoclass:: popart::TensorStorage
+
+.. autoclass:: popart::TileSet
+
+.. autoclass:: popart::Instrumentation
+
+.. autoclass:: popart::MergeVarUpdateType
+
+.. autoclass:: popart::SyntheticDataMode
+
+.. autoclass:: popart::RecomputationType
+
+.. autoclass:: popart::VirtualGraphMode
+
+.. autoclass:: popart::SubgraphCopyingStrategy
+
+.. autoclass:: popart::ExecutionPhaseSettings
+  :members:
 
 .. autoclass:: popart_core.SessionOptions
     :members:
