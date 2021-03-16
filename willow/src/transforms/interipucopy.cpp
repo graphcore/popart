@@ -168,6 +168,11 @@ void InterIpuCopy::insertIpuCopy(Graph &graph,
   ipuCopy->createAndConnectOutTensor(0, copiedTensor);
   ipuCopy->setup();
 
+  if (ipuCopy->copiesOptimizerTensors()) {
+    ipuCopy->settings.executionContext =
+        ExecutionContext::OptimizerFromHostFragment;
+  }
+
   // Add the copied input tensor to the to op for each index
   for (auto i : indices) {
     logging::transform::debug(

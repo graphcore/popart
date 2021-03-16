@@ -378,11 +378,13 @@ void IrLowering::verifyTaskOrder(const std::vector<TaskId> &taskOrder) const {
 
   for (auto taskId : taskOrder) {
     std::vector<Op *> taskOps;
-    for (ExecutionContext context : {ExecutionContext::WeightsFromHostFragment,
-                                     ExecutionContext::WeightsToHostFragment,
-                                     ExecutionContext::Normal,
-                                     ExecutionContext::AccumulateOuterFragment,
-                                     ExecutionContext::Subgraph}) {
+    for (ExecutionContext context :
+         {ExecutionContext::WeightsFromHostFragment,
+          ExecutionContext::WeightsToHostFragment,
+          ExecutionContext::Normal,
+          ExecutionContext::AccumulateOuterFragment,
+          ExecutionContext::OptimizerFromHostFragment,
+          ExecutionContext::Subgraph}) {
       auto id_ops = contextOpRegistry.find({context, taskId});
       if (id_ops != contextOpRegistry.end()) {
         taskOps = id_ops->second;
@@ -2050,6 +2052,8 @@ void IrLowering::opTaskFunc(TaskId taskId, Op *op, SequenceMap &seqs) {
   Opx *opx                 = getOpx(op->id);
   ExecutionContext context = op->settings.executionContext;
 
+  contextOpRegistry[{context, taskId}].push_back(op);
+
   if (op->copiesOptimizerTensors()) {
     growOpx(opx, seqs[&progs.streamOptimizerFromHostFragment()]);
   }
@@ -2057,13 +2061,11 @@ void IrLowering::opTaskFunc(TaskId taskId, Op *op, SequenceMap &seqs) {
   // Special case for running operators before the main loop.
   else if (context == ExecutionContext::WeightsFromHostFragment) {
     growOpx(opx, seqs[&progs.streamWeightsFromHostFragment()]);
-    contextOpRegistry[{context, taskId}].push_back(op);
   }
 
   // Special case for running operators after the main loop.
   else if (context == ExecutionContext::WeightsToHostFragment) {
     growOpx(opx, seqs[&progs.weightsToHostFragment()]);
-    contextOpRegistry[{context, taskId}].push_back(op);
   }
 
   // pre-loss : create vertices for all recompute types
@@ -2092,7 +2094,6 @@ void IrLowering::opTaskFunc(TaskId taskId, Op *op, SequenceMap &seqs) {
     else {
       throw internal_error("Unrecognised recompute type");
     }
-    contextOpRegistry[{context, taskId}].push_back(op);
   }
 
   // post-loss
@@ -2114,7 +2115,6 @@ void IrLowering::opTaskFunc(TaskId taskId, Op *op, SequenceMap &seqs) {
         context == ExecutionContext::AccumulateOuterFragment) {
       outerLoopFragEmpty = false;
       growOpx(opx, seqs[&progs.accumulateOuterFragment()]);
-      contextOpRegistry[{context, taskId}].push_back(op);
     } else {
       auto found = requiredRecomputes.find(taskId);
       if (found != requiredRecomputes.end()) {
@@ -2141,7 +2141,6 @@ void IrLowering::opTaskFunc(TaskId taskId, Op *op, SequenceMap &seqs) {
                               op->debugName());
 
       growOpx(opx, seqs[&progs.backwardFragment()]);
-      contextOpRegistry[{context, taskId}].push_back(op);
     }
   }
 
@@ -2155,6 +2154,8 @@ void IrLowering::pipelinedOpTaskFunc(TaskId taskId, Op *op, SequenceMap &seqs) {
   Opx *opx                 = getOpx(op->id);
   ExecutionContext context = op->settings.executionContext;
 
+  contextOpRegistry[{context, taskId}].push_back(op);
+
   if (op->copiesOptimizerTensors()) {
     growOpx(opx, seqs[&progs.streamOptimizerFromHostFragment()]);
   }
@@ -2163,20 +2164,17 @@ void IrLowering::pipelinedOpTaskFunc(TaskId taskId, Op *op, SequenceMap &seqs) {
            context == ExecutionContext::AccumulateOuterFragment) {
     outerLoopFragEmpty = false;
     growOpx(opx, seqs[&progs.accumulateOuterFragment()]);
-    contextOpRegistry[{context, taskId}].push_back(op);
   }
 
   // Special case for running operators before the main loop.
   else if (context == ExecutionContext::WeightsFromHostFragment) {
     growOpx(opx, seqs[&progs.streamWeightsFromHostFragment()]);
-    contextOpRegistry[{context, taskId}].push_back(op);
   }
 
   // Special case for running operators before the main loop.
   else if (context == ExecutionContext::WeightsToHostFragment) {
     // Special case for running operators before the main loop.
     growOpx(opx, seqs[&progs.weightsToHostFragment()]);
-    contextOpRegistry[{context, taskId}].push_back(op);
   }
 
   else {
@@ -2232,7 +2230,6 @@ void IrLowering::pipelinedOpTaskFunc(TaskId taskId, Op *op, SequenceMap &seqs) {
               &progs.pipelineMainFragment(op->getPipelineStage(), op->str()))
           .add(*progs.recomputeFragment(op->id));
     }
-    contextOpRegistry[{context, taskId}].push_back(op);
   }
 }
 
@@ -3078,6 +3075,8 @@ void IrLowering::prepareGraph() {
       getContextOpString(ExecutionContext::AccumulateOuterFragment, taskOrder));
   logging::devicex::debug(
       getContextOpString(ExecutionContext::WeightsToHostFragment, taskOrder));
+  logging::devicex::debug(getContextOpString(
+      ExecutionContext::OptimizerFromHostFragment, taskOrder));
 
   if (ir().getSessionOptions().exportPoplarVertexGraph) {
     std::ofstream strm;

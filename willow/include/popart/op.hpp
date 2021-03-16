@@ -30,6 +30,7 @@ enum class ExecutionContext {
   AccumulateOuterFragment,
   WeightsFromHostFragment,
   WeightsToHostFragment,
+  OptimizerFromHostFragment,
   Subgraph
 };
 

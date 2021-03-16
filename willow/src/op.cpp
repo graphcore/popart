@@ -511,6 +511,10 @@ std::ostream &operator<<(std::ostream &ost, const ExecutionContext &ec) {
     ost << "WeightsToHostFragment";
     break;
   }
+  case (ExecutionContext::OptimizerFromHostFragment): {
+    ost << "OptimizerFromHostFragment";
+    break;
+  }
   case (ExecutionContext::Subgraph): {
     ost << "Subgraph";
     break;

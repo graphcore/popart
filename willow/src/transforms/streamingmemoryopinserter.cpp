@@ -2521,6 +2521,8 @@ bool StreamingMemoryOpInserter::TensorStreamingContext::operator<(
       return 2;
     case ExecutionContext::WeightsToHostFragment:
       return 3;
+    case ExecutionContext::OptimizerFromHostFragment:
+      return 4;
     default:
       throw error("Unexpected ExecutionContext {}", c.context);
     }

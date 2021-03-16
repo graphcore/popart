@@ -210,6 +210,7 @@ public:
     std::vector<OpAddress> normalOps;
     std::vector<OpAddress> accumulateOuter;
     std::vector<OpAddress> weightsFromOps;
+    std::vector<OpAddress> optimizerFromOps;
     for (const auto &x : pg.getOps()) {
       auto op        = x.second.get();
       auto opAddress = opAddresses[op];
@@ -228,6 +229,10 @@ public:
       }
       case (ExecutionContext::WeightsToHostFragment): {
         weightsToOps.push_back(opAddress);
+        break;
+      }
+      case (ExecutionContext::OptimizerFromHostFragment): {
+        // do nothing.
         break;
       }
       case (ExecutionContext::Subgraph): {
