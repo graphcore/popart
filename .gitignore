@@ -8,5 +8,6 @@ data
 *.so
 *.dylib
 *.html
+*.onnx
 experimental
 .vscode/*

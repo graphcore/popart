@@ -82,7 +82,6 @@ if (BUILD_DOCS)
     ${PROJECT_BINARY_DIR}/enable.sh
     ${CMAKE_CURRENT_BINARY_DIR}/latex
     ${SUPPORTED_OPS_GEN}
-    popart_examples
     popart-py
   )
 
@@ -92,7 +91,6 @@ if (BUILD_DOCS)
     COMMENT "Building html user guide documentation"
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
     DEPENDS ${SUPPORTED_OPS_GEN}
-    popart_examples
     popart-py
   )
 
@@ -103,7 +101,6 @@ if (BUILD_DOCS)
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
     DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
     ${SUPPORTED_OPS_GEN}
-    popart_examples
     popart-py
   )
 
@@ -115,7 +112,6 @@ if (BUILD_DOCS)
     DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/gen_docs.sh
     ${PROJECT_BINARY_DIR}/enable.sh
     ${SUPPORTED_OPS_GEN}
-    popart_examples
     popart-py
   )
 
@@ -168,3 +164,8 @@ if (BUILD_DOCS)
 else()
   install(FILES)
 endif()
+
+install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/user_guide/files
+        DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/user_guide)
+
+add_test(NAME popart_examples_test COMMAND ${Python3_EXECUTABLE} -m pytest ${CMAKE_CURRENT_BINARY_DIR}/user_guide/files/tests/test_examples.py)

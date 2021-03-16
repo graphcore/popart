@@ -8,4 +8,6 @@
 add_popart_cpp_unit_test(basic_0_dot_test basic_0_dot_test.cpp)
 add_popart_cpp_unit_test(nested_0_dot_test nested_0_dot_test.cpp)
 
+add_popart_cpp_unit_test(dot_inference_graph_test dot_inference_graph_test.cpp)
+
 add_popart_py_unit_test(dot_env_test)

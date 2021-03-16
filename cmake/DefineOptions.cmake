@@ -52,7 +52,6 @@ if (${POPART_USE_STACKTRACE})
 endif()
 
 option(POPART_BUILD_TESTING "Build the popart tests" ON)
-option(POPART_BUILD_EXAMPLES "Build the popart examples" ON)
 
 # Generate compile_commands.json file for IDE integration
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)

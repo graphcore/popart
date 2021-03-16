@@ -299,7 +299,6 @@ You could use any method supported by CMake to point it at dependencies. See the
 **NOTE**: Other cmake switches are available:
 
 * `-DPOPART_BUILD_TESTING=0` - Switch that can be used to avoid compiling PopART test.
-* `-DPOPART_BUILD_EXAMPLES=0` - Switch that can be used to avoid compiling PopART examples.
 * `-DPOPLIBS_INCLUDE_DIR=<dir>`, `-DLIBPVTI_INCLUDE_DIR=<dir>`, etc. - Internal switches that could be used to target alternative internal Poplar libraries.
 
 **NOTE**: If you prefer building with `make` instead of `ninja`, remove the `-GNinja` switch.
@@ -310,41 +309,6 @@ You could use any method supported by CMake to point it at dependencies. See the
 
 
 ## Using PopART
-
-##### Running Python Examples
-
-To setup your environment ready for running PopART, do the following:
-
-```
-source $POPART_INSTALL_DIR/enable.sh
-```
-
-This script will change your `PYTHONPATH` environment variable so that python can find the `popart` module. Now, to run, say, the `simple_addition.py` python example, you can now do the following:
-
-```
-python3 $POPART_INSTALL_DIR/examples/python/simple_addition.py
-```
-
-**NOTE**: Other python examples are available in the `$POPART_INSTALL_DIR/examples/python/` directory.
-
-##### Running C++ Examples
-
-To setup your environment ready for running PopART, do the following:
-
-```
-source $POPLAR_INSTALL_DIR/enable.sh
-source $POPART_INSTALL_DIR/enable.sh
-```
-
-This will add Poplar's and PopART's header directories to the `CPATH` environment variable and their shared library directories to `LD_LIBRARY_PATH` environment variable, meaning your compiler and linker can find them. Now you can compile and run the `simple_addition.cpp` example as follows:
-
-```
-cd $POPAR_INSTALL_DIR/examples/cplusplus/
-g++ -DONNX_NAMESPACE=onnx simple_addition.cpp -o simple_addition -lpoplar -lpopart
-./simple_addition
-```
-
-**NOTE**: Other python examples are available in the `$POPART_INSTALL_DIR/examples/cplusplus/` directory.
 
 ##### Application Examples
 

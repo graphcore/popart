@@ -46,7 +46,6 @@ include(GNUInstallDirs)
 
 # Distribution path
 set(INSTALL_PYDIR python)
-set(INSTALL_EXAMPLES examples)
 
 # Tests path
 set(INSTALL_TESTS ${CMAKE_INSTALL_PREFIX}/tests)
@@ -97,9 +96,6 @@ add_subdirectory(python)
 # Examples and tests
 if (POPART_BUILD_TESTING AND BUILD_TESTING)
   add_subdirectory(tests)
-endif()
-if (POPART_BUILD_EXAMPLES)
-  add_subdirectory(examples)
 endif()
 
 #------ end of configure sources

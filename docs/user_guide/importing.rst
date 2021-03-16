@@ -16,7 +16,7 @@ is used to create a pre-trained AlexNet graph, with a 4 x 3 x 244 x 244 input. T
 graph has an ONNX output called ``out``, and the ``DataFlow`` object
 contains an entry to fetch that anchor.
 
-.. literalinclude:: python_examples/importing_graphs.py
+.. literalinclude:: files/importing_graphs.py
   :language: python
 
 
@@ -49,7 +49,7 @@ the network and the optimiser to use.
 
 An example of creating a session object from an ONNX model is shown below.
 
-.. literalinclude:: python_examples/importing_session.py
+.. literalinclude:: files/importing_session.py
   :language: python
 
 
