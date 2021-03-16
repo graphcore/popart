@@ -645,7 +645,7 @@ public:
   TensorId fmod(const std::vector<TensorId> &args,
                 const DebugContext &debugContext = {});
 
-  /*
+  /**
    * Add remainder operation to the model.
    *
    * This is equivalent to Python's modulo operator %. The result has the same
@@ -657,7 +657,7 @@ public:
   TensorId remainder(const std::vector<TensorId> &args,
                      const DebugContext &debugContext = {});
 
-  /*
+  /**
    * Add a reverse operator to the model.
    *
    * Reverse, or 'flip', the tensor along the specified dimensions
@@ -671,7 +671,7 @@ public:
                    const std::vector<int64_t> &dimensions,
                    const DebugContext &debugContext = {});
 
-  /*
+  /**
    * Add abort operation to the model.
    *
    * The operation can be conditional or unconditional.
@@ -680,14 +680,53 @@ public:
   void abort(const std::vector<TensorId> &args,
              const DebugContext &debugContext = {});
 
+  /**
+   * Add a bitwise NOT operation to the model.
+   *
+   * The operation computes the bitwise NOT of a given integer tensor.
+   * \param args Input tensor of type integer.
+   * \return The name of the result tensor.
+   */
   TensorId bitwisenot(const std::vector<TensorId> &args,
                       const DebugContext &debugContext = {});
+
+  /**
+   * Add a bitwise AND operation to the model.
+   *
+   * The operation computes the bitwise AND of given two integer tensors.
+   * \param args Two broadcastable input tensors of type integer.
+   * \return The name of the result tensor.
+   */
   TensorId bitwiseand(const std::vector<TensorId> &args,
                       const DebugContext &debugContext = {});
+
+  /**
+   * Add a bitwise OR operation to the model.
+   *
+   * The operation computes the bitwise OR of given two integer tensors.
+   * \param args Two broadcastable input tensors of type integer.
+   * \return The name of the result tensor.
+   */
   TensorId bitwiseor(const std::vector<TensorId> &args,
                      const DebugContext &debugContext = {});
+
+  /**
+   * Add a bitwise XOR operation to the model.
+   *
+   * The operation computes the bitwise XOR of given two integer tensors.
+   * \param args Two broadcastable input tensors of type integer.
+   * \return The name of the result tensor.
+   */
   TensorId bitwisexor(const std::vector<TensorId> &args,
                       const DebugContext &debugContext = {});
+
+  /**
+   * Add a bitwise XNOR operation to the model.
+   *
+   * The operation computes the bitwise XNOR of given two integer tensors.
+   * \param args Two broadcastable input tensors of type integer.
+   * \return The name of the result tensor.
+   */
   TensorId bitwisexnor(const std::vector<TensorId> &args,
                        const DebugContext &debugContext = {});
 
