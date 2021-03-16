@@ -5,8 +5,10 @@
 #include <array>
 #include <onnx/onnx_pb.h>
 #include <onnxpasses/onnxnames.hpp>
+#include <onnxpasses/patterntarget.hpp>
 #include <string>
 #include <poprithms/ndarray/shape.hpp>
+#include <poprithmshosttensor.hpp>
 
 namespace popart {
 namespace onnxpasses {
@@ -25,6 +27,9 @@ protected:
 
   // Get the Shape of a Tensor, retrieved from the target's GraphProto.
   poprithms::ndarray::Shape shape(const std::string &name) const;
+  // Get the constant Tensors obtained by constant folding from the target's
+  // GraphProto.
+  std::shared_ptr<Constants> constants() { return target->constants(); }
 
 private:
   // Multiple NodePatterns modify a single GraphProto, and use shared

@@ -7,6 +7,7 @@
 #include <onnxpasses/suffixer.hpp>
 #include <string>
 #include <poprithms/ndarray/shape.hpp>
+#include <poprithmshosttensor.hpp>
 
 namespace popart {
 namespace onnxpasses {
@@ -31,12 +32,16 @@ public:
   Suffixer suffixer;
 
   poprithms::ndarray::Shape shape(const std::string &) const;
+  std::shared_ptr<Constants> constants() { return foldConstants; };
 
   uint64_t nShapes() const { return shapes.size(); }
 
 private:
   // Shapes of Tensors in the GraphProto, g.
   std::map<std::string, poprithms::ndarray::Shape> shapes;
+
+  // Constant Tensors obtained by constant folding of GraphProto, g.
+  std::shared_ptr<Constants> foldConstants;
 
   // Methods for taking Tensor Shapes from the GraphProto, and putting them into
   // the shapes map.

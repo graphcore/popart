@@ -1,7 +1,5 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
 #include <onnxpasses/nodepattern.hpp>
-#include <onnxpasses/onnxnames.hpp>
-#include <onnxpasses/patterntarget.hpp>
 #include <ostream>
 #include <popart/error.hpp>
 

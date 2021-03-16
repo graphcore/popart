@@ -237,4 +237,12 @@ std::ostream &operator<<(std::ostream &ss, const std::map<Key, Value> &v) {
 }
 } // namespace std
 
+namespace popart {
+// Support squeeze.
+// map negative indices to positive indices, and cast to uint64_t.
+std::vector<uint64_t> getAxes_u64(const std::vector<int64_t> &axes,
+                                  uint64_t outRank);
+
+} // namespace popart
+
 #endif

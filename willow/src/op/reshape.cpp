@@ -13,6 +13,7 @@
 #include <popart/tensorindex.hpp>
 #include <popart/tensors.hpp>
 #include <popart/topocons.hpp>
+#include <popart/util.hpp>
 
 namespace popart {
 
@@ -267,28 +268,6 @@ static OpDefinition
 static OpCreator<ReshapeOp> reshapeOpCreator(OpDefinitions({
     {Onnx::Operators::Reshape_5, reshapeOpDef},
 }));
-
-// map negative indices to positive indices, and cast to uint64_t.
-std::vector<uint64_t> getAxes_u64(const std::vector<int64_t> &axes,
-                                  uint64_t outRank) {
-
-  std::vector<uint64_t> axes_u64;
-  for (auto d : axes) {
-    if (d < 0) {
-      d += outRank;
-    }
-    if (d < 0) {
-      std::ostringstream oss;
-      oss << "Invalid axis in getAxes_u64(axes=";
-      poprithms::util::append(oss, axes);
-      oss << ", outRank=" << outRank << "). ";
-      throw error(oss.str());
-    }
-    d = d % outRank;
-    axes_u64.push_back(d);
-  }
-  return axes_u64;
-}
 
 poprithms::ndarray::Shape getShapeToReshape(const OpCreatorInfo &info) {
   return poprithms::ndarray::Shape(info.settings.graph.get()

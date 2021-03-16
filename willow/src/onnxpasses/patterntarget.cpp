@@ -13,6 +13,7 @@ namespace onnxpasses {
 PatternTarget::PatternTarget(GraphProto &g_)
     : g(g_), nodes(g.mutable_node()), suffixer(g_) {
   extractShapes();
+  foldConstants = std::make_shared<Constants>();
 }
 
 void PatternTarget::appendShapes(ValueInfoProtos &valueInfoProtos) {
