@@ -2004,19 +2004,29 @@ void IrLowering::growOpx(Opx *opx, SequenceMap::SequenceInterval seqInterval) {
       // Compare input tensor with the input tensor clone before executing the
       // Op, skip checking non-finite numbers
       // (which always evaluate to non-equal)
-      auto check = popops::map(
-          opx->graph(),
-          popops::expr::NotEqual(
-              popops::expr::Select(popops::expr::_1,
-                                   popops::expr::Const(0),
-                                   popops::expr::IsFinite(popops::expr::_1)),
-              popops::expr::Select(popops::expr::_2,
-                                   popops::expr::Const(0),
-                                   popops::expr::IsFinite(popops::expr::_2))),
-          {nonModified.second.first, nonModified.second.second},
-          *seqIt,
-          opx->debugContext("opxModifyChecking"),
-          {});
+
+      popops::expr::Any lhsExpr = popops::expr::_1;
+      popops::expr::Any rhsExpr = popops::expr::_2;
+
+      if (nonModified.second.first.elementType() == poplar::FLOAT ||
+          nonModified.second.first.elementType() == poplar::HALF) {
+        lhsExpr =
+            popops::expr::Select(popops::expr::_1,
+                                 popops::expr::Const(0),
+                                 popops::expr::IsFinite(popops::expr::_1));
+        rhsExpr =
+            popops::expr::Select(popops::expr::_2,
+                                 popops::expr::Const(0),
+                                 popops::expr::IsFinite(popops::expr::_2));
+      }
+
+      auto check =
+          popops::map(opx->graph(),
+                      popops::expr::NotEqual(lhsExpr, rhsExpr),
+                      {nonModified.second.first, nonModified.second.second},
+                      *seqIt,
+                      opx->debugContext("opxModifyChecking"),
+                      {});
       auto checkReduced = check.flatten();
       // Convert result to boolean scalar
       if (check.numElements() > 1) {
