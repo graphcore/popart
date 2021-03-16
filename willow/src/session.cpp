@@ -278,7 +278,20 @@ void Session::prepareDevice() {
   }
 
   logging::session::trace("Session::prepareDevice()");
+  if (!device_) {
+    throw error("Must call setDevice before {}", __func__);
+  }
   device_->prepare();
+}
+
+void Session::loadEngineAndConnectStreams() {
+  POPART_TRACEPOINT();
+
+  logging::session::trace("Session::loadEngineAndConnectStreams()");
+  if (!device_) {
+    throw error("Must call setDevice before {}", __func__);
+  }
+  device_->loadEngineAndConnectStreams();
 }
 
 void Session::weightsFromHost() {

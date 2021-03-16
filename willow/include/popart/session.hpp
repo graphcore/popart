@@ -86,10 +86,19 @@ public:
   /**
    * Prepare the network for execution.
    *
-   * This will create the \c poplar::Graph and \c poplar::Engine, and set up
-   * \c poplar::Streams.
+   * This will create the \c poplar::Graph and \c poplar::Engine.
    */
   void prepareDevice();
+
+  /**
+   * Load the engine on the device and connect the streams
+   *
+   * This will set up the \c poplar::Streams.
+   *
+   * Note: This call is optional. The engine will implicitly be loaded
+   * on the device when required.
+   */
+  void loadEngineAndConnectStreams();
 
   /**
    * Write weights from host to the device.

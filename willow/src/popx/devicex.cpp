@@ -465,6 +465,9 @@ void Devicex::weightsFromHost() {
 
 void Devicex::remoteBufferWeightsFromHost() {
   POPART_TRACEPOINT();
+  if (isEngineLoaded() == false) {
+    loadEngineAndConnectStreams();
+  }
   for (auto *tensor : executable_.getWeightTensors()) {
     const auto &initId = tensor->id;
     if (tensor->tensorLocationInfo.isRemote()) {
@@ -566,6 +569,9 @@ void Devicex::anchorsHostToHostStreams(IStepIO &stepio) {
   POPART_TRACEPOINT();
 
   if (ir().useSyntheticData() == false) {
+    if (isEngineLoaded() == false) {
+      loadEngineAndConnectStreams();
+    }
     std::string prefix = "     ";
     logging::devicex::debug(prefix + "Copying to h2d stream address(es) ");
     if (stepIoSplitter) {
@@ -580,6 +586,9 @@ void Devicex::anchorsHostFromHostStreams(IStepIO &stepio) {
   POPART_TRACEPOINT();
 
   if (ir().useSyntheticData() == false) {
+    if (isEngineLoaded() == false) {
+      loadEngineAndConnectStreams();
+    }
     std::string prefix = "     ";
     logging::devicex::debug(prefix + "Copying from d2h stream address(es) ");
     if (stepIoSplitter) {
@@ -963,6 +972,12 @@ void Devicex::loadEngineAndConnectStreams() {
                              static_cast<void *>(kv.second.data()));
     }
   }
+
+  setRandomSeedFromHost(); // Stream random seed value by default (prog empty if
+                           // no randomness)
+  if (ir().canTrain()) {
+    optimizerFromHost();
+  }
 }
 
 void Devicex::reconnectInputStreams() {
@@ -1055,19 +1070,10 @@ void Devicex::prepare() {
     }
   }
 
-  loadEngineAndConnectStreams();
-  logging::devicex::info("Loaded engine and connect streams");
-
-  setRandomSeedFromHost(); // Stream random seed value by default (prog empty if
-                           // no randomness)
-
   lowering().trySaveTensorTileMap();
 
-  if (ir().canTrain()) {
-    optimizerFromHost();
-  }
-
   prepareHasBeenCalled_ = true;
+  setEngineIsLoaded(false);
 }
 
 void Devicex::doProfileChecks() const {
