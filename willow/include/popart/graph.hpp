@@ -243,6 +243,9 @@ public:
   const std::string &getGraphId() const { return id.str(); }
   std::string getGraphString() const;
 
+  // Copy all contents from another graph to this graph
+  void copyFrom(const Graph &other);
+
 private:
   std::vector<Op *>
   growGradOps(Op *nonGradOp, const std::map<TensorId, TensorId> &gradTensorMap);

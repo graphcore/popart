@@ -108,8 +108,8 @@ void LoopOpx::copyImplicitOpInputsToImplicitBodyInputs(
   // Op input M+2   ->  Body input M+2
   // ..
   // Op input N     ->  Body input N
-  for (int i = op.numExplicitInputs();
-       i < op.numExplicitInputs() + op.numImplicitInputs();
+  for (int i = op.getNumExplicitInputs();
+       i < op.getNumExplicitInputs() + op.getNumImplicitInputs();
        ++i) {
 
     auto aliases = dv_p->lowering().getAliasZeroCopy()->getActiveAliasedTensors(
@@ -259,6 +259,12 @@ void LoopOpx::grow(poplar::program::Sequence &prog) const {
   //
 
   auto &op = getOp<LoopOp>();
+
+  if (op.getNumImplicitScanOutputs()) {
+    throw error("[LoopOpx] numImplicitScanOutputs > 0 not supported. "
+                "Implicit scan outputs should have been removed by "
+                "LoopScanOutPattern.");
+  }
 
   auto tconst = getConst(poplar::BOOL, {}, true, "tconst");
 

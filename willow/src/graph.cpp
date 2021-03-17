@@ -722,68 +722,7 @@ void BackwardPassCreator::growGradGraph() {
 }
 
 void BackwardPassCreator::cloneGraph(const Graph &from, Graph &to) {
-  // clone all the ops
-  std::map<Op *, Op *> cloneMap;
-  for (auto &id_op : from.getOps()) {
-    auto op                 = id_op.second.get();
-    auto clone              = op->clone();
-    clone->toLoss           = op->toLoss;
-    clone->fromLoss         = op->fromLoss;
-    clone->scheduledPreLoss = op->scheduledPreLoss;
-    clone->settings.graph   = to;
-    clone->settings.scope   = to.getScope();
-    auto cloneId            = to.moveIntoGraph(std::move(clone));
-    cloneMap.insert({op, to.getOp(cloneId)});
-  }
-
-  // clone all the tensors
-  std::map<Tensor *, Tensor *> tensorMap;
-  for (auto &id : from.getTensors().getAllTensorIds()) {
-    auto tensor = from.getTensors().get(id);
-
-    auto newId = to.addScope(from.removeScope(id));
-
-    auto tensorClone = tensor->clone(to);
-    tensorClone->id  = newId;
-    to.getTensors().moveIntoTensors(std::move(tensorClone));
-    auto tensorClonePtr = to.getTensors().get(newId);
-    tensorMap.insert({tensor, tensorClonePtr});
-  }
-
-  // hook up op inputs and outputs
-  for (auto &id_op : from.getOps()) {
-    auto op    = id_op.second.get();
-    auto clone = cloneMap.at(op);
-
-    // connect inputs
-    for (auto &idx_tensor : op->input->tensorMap()) {
-      auto idx             = idx_tensor.first;
-      auto tensor          = idx_tensor.second;
-      auto clone_tensor_id = tensorMap.at(tensor)->id;
-      clone->connectInTensor(idx, clone_tensor_id);
-    }
-
-    // connect outputs
-    for (auto &idx_tensor : op->output->tensorMap()) {
-      auto idx             = idx_tensor.first;
-      auto tensor          = idx_tensor.second;
-      auto clone_tensor_id = tensorMap.at(tensor)->id;
-      clone->connectOutTensor(idx, clone_tensor_id);
-    }
-  }
-
-  // add graph inputs and outputs
-  for (auto &id : from.getInputIds()) {
-    auto unscopedId = from.removeScope(id);
-    auto newId      = to.addScope(unscopedId);
-    to.markAsInput(newId);
-  }
-
-  for (auto &id : from.getOutputIds()) {
-    auto unscopedId = from.removeScope(id);
-    auto newId      = to.addScope(unscopedId);
-    to.markAsOutput(newId);
-  }
+  to.copyFrom(from);
 }
 
 void BackwardPassCreator::registerBwdOp(Op *fwdOp, Op *bwdOp) {
@@ -1110,6 +1049,72 @@ std::string Graph::getGraphString() const {
                              ? "the main graph"
                              : std::string("subgraph '") + id.str() + "'";
   return graphStr;
+}
+
+// Copy all contents from another graph to this graph
+void Graph::copyFrom(const Graph &other) {
+  // clone all the ops
+  std::map<Op *, Op *> cloneMap;
+  for (auto &id_op : other.getOps()) {
+    auto op                 = id_op.second.get();
+    auto clone              = op->clone();
+    clone->toLoss           = op->toLoss;
+    clone->fromLoss         = op->fromLoss;
+    clone->scheduledPreLoss = op->scheduledPreLoss;
+    clone->settings.graph   = *this;
+    clone->settings.scope   = this->getScope();
+    auto cloneId            = this->moveIntoGraph(std::move(clone));
+    cloneMap.insert({op, this->getOp(cloneId)});
+  }
+
+  // clone all the tensors
+  std::map<Tensor *, Tensor *> tensorMap;
+  for (auto &id : other.getTensors().getAllTensorIds()) {
+    auto tensor = other.getTensors().get(id);
+
+    auto newId = this->addScope(other.removeScope(id));
+
+    auto tensorClone = tensor->clone(*this);
+    tensorClone->id  = newId;
+    this->getTensors().moveIntoTensors(std::move(tensorClone));
+    auto tensorClonePtr = this->getTensors().get(newId);
+    tensorMap.insert({tensor, tensorClonePtr});
+  }
+
+  // hook up op inputs and outputs
+  for (auto &id_op : other.getOps()) {
+    auto op    = id_op.second.get();
+    auto clone = cloneMap.at(op);
+
+    // connect inputs
+    for (auto &idx_tensor : op->input->tensorMap()) {
+      auto idx             = idx_tensor.first;
+      auto tensor          = idx_tensor.second;
+      auto clone_tensor_id = tensorMap.at(tensor)->id;
+      clone->connectInTensor(idx, clone_tensor_id);
+    }
+
+    // connect outputs
+    for (auto &idx_tensor : op->output->tensorMap()) {
+      auto idx             = idx_tensor.first;
+      auto tensor          = idx_tensor.second;
+      auto clone_tensor_id = tensorMap.at(tensor)->id;
+      clone->connectOutTensor(idx, clone_tensor_id);
+    }
+  }
+
+  // add graph inputs and outputs
+  for (auto &id : other.getInputIds()) {
+    auto unscopedId = other.removeScope(id);
+    auto newId      = this->addScope(unscopedId);
+    this->markAsInput(newId);
+  }
+
+  for (auto &id : other.getOutputIds()) {
+    auto unscopedId = other.removeScope(id);
+    auto newId      = this->addScope(unscopedId);
+    this->markAsOutput(newId);
+  }
 }
 
 } // namespace popart

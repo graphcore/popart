@@ -480,7 +480,7 @@ bool Tensor::isImplicitLoopInput() const {
     auto ops = graph.getCallSiteOps();
     for (Op *op : ops) {
       if (LoopOp *loop = dynamic_cast<LoopOp *>(op)) {
-        if (getGraphInputIndex() >= loop->numExplicitInputs()) {
+        if (getGraphInputIndex() >= loop->getNumExplicitInputs()) {
           return true;
         }
       }

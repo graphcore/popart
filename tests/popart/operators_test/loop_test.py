@@ -167,3 +167,60 @@ def test_loop_stop(op_tester):
     op_tester.setPatterns(popart.PatternsLevel.NoPatterns,
                           enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference, step_type='infer')
+
+
+def test_loop_scanout(op_tester):
+    i1 = np.array([[1, 2], [3, 4]]).astype(np.float32)
+    i2 = np.array([[1, 2], [3, 4]]).astype(np.float32)
+    i3 = np.array([[-1, -2], [-3, -4]]).astype(np.float32)
+    trip_count = 10
+
+    def init_builder(builder):
+        builder.setGraphName("main_graph")
+        a = builder.addInputTensor(i1)
+        b = builder.addInputTensor(i2)
+        c = builder.addInputTensor(i3)
+
+        M = builder.aiOnnx.constant(np.array(trip_count).astype(np.int64))
+        cond = builder.aiOnnx.constant(np.array(True).astype(np.bool), "cond")
+
+        loop_builder = builder.createSubgraphBuilder()
+        loop_builder.setGraphName("body")
+        # Inputs: [iteration_number, condition_in, a_in]
+        loop_builder.addInputTensor(popart.TensorInfo("INT64", []))
+        keepgoing = loop_builder.addInputTensor(popart.TensorInfo("BOOL", []))
+        a_in = loop_builder.addUntypedInputTensor(a)
+        a_out = loop_builder.aiOnnx.matmul([a_in, b])
+        d_out = loop_builder.aiOnnx.add([a_out, c])
+
+        # Outputs: [condition_out, a_out]
+        loop_builder.addOutputTensor(keepgoing)
+        # Loop carried dependency
+        loop_builder.addOutputTensor(a_out)
+        # Loop scan outputs
+        loop_builder.addOutputTensor(a_out)
+        loop_builder.addOutputTensor(d_out)
+
+        o, co0, co1 = builder.aiOnnx.loop([M, cond, a], 3, loop_builder)
+        builder.addOutputTensor(o)
+        builder.addOutputTensor(co0)
+        builder.addOutputTensor(co1)
+        return [o, co0, co1]
+
+    def reference(ref_data):
+        a = i1
+        b = i2
+        c = i3
+
+        x = a
+        scanx = []
+        scany = []
+        for i in range(trip_count):
+            x = np.matmul(x, b)
+            y = np.add(x, c)
+            scanx.append(x)
+            scany.append(y)
+
+        return [x, np.asarray(scanx), np.asarray(scany)]
+
+    op_tester.run(init_builder, reference, step_type='infer')

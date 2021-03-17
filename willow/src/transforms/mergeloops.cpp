@@ -246,9 +246,9 @@ void MergeLoops::merge(const std::vector<LoopOp *> loops) const {
                               loop1->debugName(),
                               loop0->debugName());
 
-    auto num_explicit0 = loop0->numExplicitInputs();
+    auto num_explicit0 = loop0->getNumExplicitInputs();
     // auto num_implicit0 = loop0->numImplicitInputs();
-    auto num_explicit1 = loop1->numExplicitInputs();
+    auto num_explicit1 = loop1->getNumExplicitInputs();
     // auto num_implicit1 = loop1->numImplicitInputs();
 
     // Map from old to new subgraph tensor ID
@@ -690,8 +690,8 @@ bool MergeLoops::checkIdenticalPaths(
     return false;
   }
 
-  if (opInT0->id == opInT1->id && opIn0 >= loop0->numExplicitInputs() &&
-      opIn1 >= loop1->numExplicitInputs()) {
+  if (opInT0->id == opInT1->id && opIn0 >= loop0->getNumExplicitInputs() &&
+      opIn1 >= loop1->getNumExplicitInputs()) {
     // Identical implicit inputs, only one needs to be wired up
     return true;
   }

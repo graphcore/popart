@@ -24,11 +24,18 @@ namespace popart {
 // 1     output --------------------+  |
 // ..    ..                         |  |
 // M-1   output --------------------|--+
-//                                  |  |
-// Loop op outputs:                 |  |
-// 0     output <-------------------'  |
-// ..    ..                            |
-// M-2   output <----------------------'
+// M     implicit scan output ------|--|-----.
+// ..    ..                         |  |     |
+// K     implicit scan output ------|--|--.  |
+//                                  |  |  |  |
+// Loop op outputs:                 |  |  |  |
+// 0     output <-------------------'  |  |  |
+// ..    ..                            |  |  |
+// M-2   output <----------------------'  |  |
+// M-1   implicit scan output <-----------'  |  } Only supported pre
+// ..    ..                                  |  } LoopScanOutPattern
+// K-1   implicit scan output <--------------'  }
+//
 //
 // Explicit inputs are loop-carried inputs that are copied into the loop body,
 // copied from loop body output to loop body input after each iteration,
@@ -56,7 +63,8 @@ public:
          const Op::Settings &,
          Graph &callee_,
          std::vector<std::pair<TensorId, TensorInfo>> opInputs_,
-         std::vector<TensorId> implicitTensors_);
+         std::vector<TensorId> implicitTensors_,
+         int numImplicitScanOutputs_);
 
   void setup() final;
   void appendOutlineAttributes(OpSerialiserBase &) const override;
@@ -71,8 +79,12 @@ public:
 
   int getTripCountValue() const { return tripCountValue; }
   void setTripCountValue(int value) { tripCountValue = value; }
-  int numExplicitInputs() const;
-  int numImplicitInputs() const;
+  int getNumExplicitInputs() const;
+  int getNumImplicitInputs() const;
+  int getNumImplicitScanOutputs() { return numImplicitScanOutputs; }
+  void setNumImplicitScanOutputs(int numOutputs) {
+    numImplicitScanOutputs = numOutputs;
+  }
 
   InIndex subgraphInToOpInIndex(InIndex index) const override;
   InIndex opInToSubgraphInIndex(InIndex index) const override;
@@ -105,6 +117,7 @@ public:
 private:
   std::reference_wrapper<Graph> callee;
   int tripCountValue;
+  int numImplicitScanOutputs;
 };
 
 } // namespace popart

@@ -388,8 +388,8 @@ bool ScanToLoopPattern::apply(Op *op) const {
         "[ScanToLoopPattern] Converted ScanOp to {} "
         "(explicit inputs: {}, implicit inputs: {}, outputs: {})",
         loopOp->debugName(),
-        loopOp->numExplicitInputs(),
-        loopOp->numImplicitInputs(),
+        loopOp->getNumExplicitInputs(),
+        loopOp->getNumImplicitInputs(),
         loopOp->output->n());
     return true;
   } else {

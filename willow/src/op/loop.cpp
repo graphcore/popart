@@ -16,14 +16,17 @@ namespace popart {
 LoopOp::LoopOp(const OperatorIdentifier &_opid,
                const Op::Settings &settings_,
                Graph &callee_)
-    : SubgraphOp(_opid, settings_), callee(callee_), tripCountValue(0) {}
+    : SubgraphOp(_opid, settings_), callee(callee_), tripCountValue(0),
+      numImplicitScanOutputs(0) {}
 
 LoopOp::LoopOp(const OperatorIdentifier &_opid,
                const Op::Settings &settings_,
                Graph &callee_,
                std::vector<std::pair<TensorId, TensorInfo>> opInputs_,
-               std::vector<TensorId> implicitTensors_)
-    : SubgraphOp(_opid, settings_), callee(callee_), tripCountValue(0) {
+               std::vector<TensorId> implicitTensors_,
+               int numImplicitScanOutputs_)
+    : SubgraphOp(_opid, settings_), callee(callee_), tripCountValue(0),
+      numImplicitScanOutputs(numImplicitScanOutputs_) {
   for (int i = 0; i < opInputs_.size(); ++i) {
     TensorId inId = opInputs_.at(i).first;
     if (std::find(implicitTensors_.begin(), implicitTensors_.end(), inId) !=
@@ -41,10 +44,19 @@ void LoopOp::setup() {
   // Body out 1   ->  Loop out 0
   // ..
   // Body out M-1 ->  Loop out M-2
+  // Body out M   ->  Loop out M-1 (implicit scan output)
+  // ..
+  // Body out K   ->  Loop out K-1 (implicit scan output)
   for (int i = 0; i < output->n(); ++i) {
     auto tensorId = getCalledGraph().getOutputId(i + 1);
     auto tensor   = getCalledGraph().getTensors().get(tensorId);
     outInfo(i)    = tensor->info;
+    // Implicit scan output
+    if (i >= output->n() - getNumImplicitScanOutputs()) {
+      auto shape = outInfo(i).shape();
+      shape.insert(shape.begin(), static_cast<int64_t>(getTripCountValue()));
+      outInfo(i).set(outInfo(i).dataType(), shape, outInfo(i).metaShape());
+    }
   }
 }
 
@@ -62,15 +74,16 @@ Graph &LoopOp::getCalledGraph() const { return callee.get(); }
 
 void LoopOp::setCalledGraph(Graph &graph) { callee = graph; }
 
-int LoopOp::numExplicitInputs() const {
-  int numOutputs = getCalledGraph().getOutputIds().size() - 1;
+int LoopOp::getNumExplicitInputs() const {
+  int numOutputs =
+      getCalledGraph().getOutputIds().size() - 1 - numImplicitScanOutputs;
   // User defined explicit inputs + trip count and termination condition
   int numExplicitInputs = numOutputs + 2;
   return numExplicitInputs;
 }
 
-int LoopOp::numImplicitInputs() const {
-  return input->maxIndex() + 1 - numExplicitInputs();
+int LoopOp::getNumImplicitInputs() const {
+  return input->maxIndex() + 1 - getNumExplicitInputs();
 }
 
 InIndex LoopOp::subgraphInToOpInIndex(InIndex index) const { return index; }
@@ -267,8 +280,15 @@ static OpCreator<LoopOp> loopOpCreator(
         calleeGraph.markAsOutput(scopedTensorId);
       }
 
-      return std::unique_ptr<Op>(new LoopOp(
-          info.opid, info.settings, calleeGraph, opInputs, implicitTensors));
+      int numImplicitScanOutputs =
+          calleeGraph.getOutputIds().size() - loopBodyInputs.size() + 1;
+
+      return std::unique_ptr<Op>(new LoopOp(info.opid,
+                                            info.settings,
+                                            calleeGraph,
+                                            opInputs,
+                                            implicitTensors,
+                                            numImplicitScanOutputs));
     },
     true);
 

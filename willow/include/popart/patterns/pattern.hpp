@@ -57,6 +57,7 @@ enum class PreAliasPatternType {
   DecomposeBinaryConstScalar,
   FmodArg0GradOp,
   ScanToLoop,
+  LoopScanOut,
 };
 
 // Definition: A tensor is "touched" by a Pattern if

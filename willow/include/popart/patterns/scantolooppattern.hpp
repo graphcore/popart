@@ -1,6 +1,6 @@
-// Copyright (c) 2018 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_RECIPROCAL_GRAD_OP_PATTERN_HPP
-#define GUARD_NEURALNET_RECIPROCAL_GRAD_OP_PATTERN_HPP
+// Copyright (c) 2021 Graphcore Ltd. All rights reserved.
+#ifndef GUARD_NEURALNET_SCAN_TO_LOOP_PATTERN_HPP
+#define GUARD_NEURALNET_SCAN_TO_LOOP_PATTERN_HPP
 
 #include <popart/patterns/patterns.hpp>
 
