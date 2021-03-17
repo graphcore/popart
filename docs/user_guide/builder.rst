@@ -58,7 +58,7 @@ In some cases other arguments are required, for instance:
 
 .. code-block:: python
 
-  output = builder.aiOnnx.gather(['input', 'indices'], axis=1, debugPrefix="My-Gather")
+  output = builder.aiOnnx.gather(['input', 'indices'], axis=1, debugContext="My-Gather")
 
 Adding parameters to the graph
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

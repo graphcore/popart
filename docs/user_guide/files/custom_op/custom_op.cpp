@@ -167,7 +167,7 @@ public:
                        expression,
                        {input},
                        prog,
-                       debugPrefix("LeakyRelu"),
+                       debugContext("LeakyRelu"),
                        poplar::OptionFlags());
 
     setOutTensor(0, input);
@@ -202,7 +202,7 @@ public:
                               expression,
                               {grad, input},
                               prog,
-                              debugPrefix("LeakyReluGrad"),
+                              debugContext("LeakyReluGrad"),
                               poplar::OptionFlags());
 
     setOutTensor(0, output);
