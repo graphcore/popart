@@ -137,7 +137,7 @@ class IpuBackend(onnx.backend.base.Backend):
     @classmethod
     def supports_device(cls, device):  # type: (Text) -> bool
         d = Device(device)
-        if d.type == DeviceType.IPU:
+        if hasattr(DeviceType, 'IPU') and d.type == DeviceType.IPU:
             return True
         return False
 
