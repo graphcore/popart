@@ -188,7 +188,7 @@ def test_auto_loss_scaling_with_no_tracked_tensors():
     assert e_info.value.args[0].endswith("No tracked tensors were found")
 
 
-def getModelProto(shard=False):
+def getModelProto(shard=False, pipeline=False):
     """
     Create a simple model:
 
@@ -222,6 +222,13 @@ def getModelProto(shard=False):
         builder.virtualGraph(rs, 1)
         builder.virtualGraph(sf, 1)
         builder.virtualGraph(loss, 1)
+    if pipeline:
+        builder.pipelineStage(mm, 0)
+        builder.pipelineStage(r, 0)
+        builder.pipelineStage(conv, 1)
+        builder.pipelineStage(rs, 1)
+        builder.pipelineStage(sf, 1)
+        builder.pipelineStage(loss, 1)
 
     return loss, builder.getModelProto(), t0, t_shape, labels, label_shape
 
@@ -353,36 +360,6 @@ def test_auto_loss_scaling_with_non_sgd_optimizer():
     assert e_info.value.args[0].endswith("Only compatible when using the SGD optimizer type, but you are using 'Adam'")
 
 
-@tu.requires_ipu_model
-def test_auto_loss_scaling_with_sharding():
-    """
-    Create a Session with automatic loss scaling and virtual graphs enabled,
-    and see that an incompatibility error is thrown.
-    """
-    builder = popart.Builder()
-
-    t0 = builder.addInputTensor("FLOAT", [2, 2])
-    t1_data = np.random.rand(2, 2).astype(np.float32)
-    t1 = builder.addInitializedInputTensor(t1_data)
-    mm0 = builder.aiOnnx.matmul([t0, t1])
-    loss = builder.aiGraphcore.identityloss([mm0])
-
-    optimizer = popart.SGD({"lossScaling": (2, False)})
-
-    opts = popart.SessionOptions()
-    opts.enableAutomaticLossScaling = True
-    opts.virtualGraphMode = popart.VirtualGraphMode.Auto
-
-    with pytest.raises(popart.popart_exception) as e_info:
-        session = popart.TrainingSession(builder.getModelProto(),
-                                         deviceInfo=tu.create_test_device(2),
-                                         dataFlow=popart.DataFlow(1, [loss]),
-                                         loss=loss,
-                                         optimizer=optimizer,
-                                         userOptions=opts)
-    assert e_info.value.args[0].endswith("Automatic loss scaling is not currently supported when the 'virtualGraphMode' SessionOption is not set to VirtualGraphMode::Off")
-
-
 def test_auto_loss_scaling_sgd_with_specific_optimizer_values():
     """
     Create a Session with automatic loss scaling and an optimizer with a
@@ -466,13 +443,13 @@ def compare_weights(session0, session1, tmpdir):
         assert np.array_equal(session0_weights[init_name], session1_weights[init_name])
 
 
-def run_automatic_loss_scaling_comparison_test(tmpdir, shard):
+def run_automatic_loss_scaling_comparison_test(tmpdir, shard=False, pipeline=False):
     """
     An integration test: verify that the weight updats computed by a session
     with auto loss scaling (ALS) enabled are identical to those with ALS
     disabled.
     """
-    loss, proto, t0, t_shape, label, label_shape = getModelProto(shard=shard)
+    loss, proto, t0, t_shape, label, label_shape = getModelProto(shard=shard, pipeline=pipeline)
     bps = 4
     init_ls = 10.0
     optimizer = popart.SGD({"lossScaling": (init_ls, False),
@@ -491,11 +468,16 @@ def run_automatic_loss_scaling_comparison_test(tmpdir, shard):
     ref_anchors = ref_session.initAnchorArrays()
 
     opts = popart.SessionOptions()
+
+    num_ipus = 1
     if shard:
         num_ipus = 2
         opts.virtualGraphMode = popart.VirtualGraphMode.Manual
-    else:
-        num_ipus = 1
+    if pipeline:
+        num_ipus = 2
+        opts.virtualGraphMode = popart.VirtualGraphMode.Manual
+        opts.enablePipelining = True
+
     opts.enableAutomaticLossScaling = True
 
     ls_id = "lossScaling_FLOAT16_updated"
@@ -513,6 +495,7 @@ def run_automatic_loss_scaling_comparison_test(tmpdir, shard):
     label_data = np.random.randint(0, label_shape[0], bps*label_shape[0]).astype(np.int32)
     inputs = {t0: t0_data, label: label_data}
 
+    # Run once
     ref_session.run(popart.PyStepIO(inputs, ref_anchors))
     als_session.run(popart.PyStepIO(inputs, als_anchors))
 
@@ -520,16 +503,35 @@ def run_automatic_loss_scaling_comparison_test(tmpdir, shard):
     for i in range(bps):
         assert als_anchors[ls_id][i] != init_ls
 
+    # Update the optimizer
+    new_optimizer = popart.SGD({"lossScaling": (0.2, False),
+                                "defaultMomentum": (0.2, False),
+                                "defaultVelocityScaling": (0.2, False),
+                                "defaultDampening": (0.2, False),
+                                "defaultWeightDecay": (0.2, False)})
+    ref_session.updateOptimizerFromHost(new_optimizer)
+    als_session.updateOptimizerFromHost(new_optimizer)
+
+    # Run a second time
+    ref_session.run(popart.PyStepIO(inputs, ref_anchors))
+    als_session.run(popart.PyStepIO(inputs, als_anchors))
+
     # Verify that the weight updates are identitcal for a.l.s vs a reference
     # session
     compare_weights(ref_session, als_session, tmpdir)
 
 
 def test_auto_loss_scaling_identical_weight_updates(tmpdir):
-    run_automatic_loss_scaling_comparison_test(tmpdir, shard=False)
+    run_automatic_loss_scaling_comparison_test(tmpdir)
 
 
 @tu.requires_ipu_model
-@pytest.mark.skip("T33956: ALS not supported with sharded models")
 def test_auto_loss_scaling_identical_weight_updates_sharded(tmpdir):
     run_automatic_loss_scaling_comparison_test(tmpdir, shard=True)
+
+
+@pytest.mark.skip("T33956: ALS not supported with pipelined models")
+@tu.requires_ipu_model
+def test_auto_loss_scaling_identical_weight_updates_pipelined(tmpdir):
+    run_automatic_loss_scaling_comparison_test(tmpdir, shard=True, pipeline=True)
+

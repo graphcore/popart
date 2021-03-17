@@ -84,6 +84,10 @@ static void mergeCopies(const std::vector<Tensor *> &copy_group, Graph &graph) {
   auto dest_ipu = getDestIpu(copy_group);
   auto copy_op  = createCopyOp(graph, dest_ipu);
 
+  // Get the execution context of the copy group (assuming all have the same)
+  copy_op->settings.executionContext =
+      copy_group.back()->getProducer()->settings.executionContext;
+
   // move the copies
   for (auto t : copy_group) {
     auto source    = getSourceTensor(t);
@@ -168,6 +172,19 @@ bool MergeCopies::apply(Graph &graph) const {
   for (auto op : multiple_copy_consumers) {
     const auto copy_group = createCopyGroup(op, op_schedule);
     if (copy_group.size() > 1) {
+
+      // Skip if not all copies in the group have the same execution context
+      bool allSameExecutionContext = true;
+      auto executionConstext0 =
+          copy_group.back()->getProducer()->settings.executionContext;
+      for (auto t : copy_group) {
+        if (t->getProducer()->settings.executionContext != executionConstext0) {
+          allSameExecutionContext = false;
+        }
+      }
+      if (!allSameExecutionContext) {
+        continue;
+      }
 
       // without pipelining, we merge copies with different sources
       if (!graph.getIr().getSessionOptions().enablePipelining) {

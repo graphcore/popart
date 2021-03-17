@@ -9,6 +9,7 @@
 #include <popart/tensor.hpp>
 #include <popart/tensors.hpp>
 
+#include <popart/transforms/automaticlossscaling.hpp>
 #include <popart/transforms/interipucopy.hpp>
 
 namespace popart {
@@ -351,11 +352,50 @@ bool InterIpuCopy::apply(Graph &graph) const {
     }
   }
 
+  auto belongsInOptimizerFromHostFragment = [&graph](Op *op) {
+    auto copyOp = dynamic_cast<IpuCopyOp *>(op);
+    if (copyOp->copiesOptimizerTensors()) {
+      if (copyOp->inTensor(0)->hasProducer() &&
+          copyOp->inTensor(0)->getProducer()->settings.executionContext !=
+              ExecutionContext::OptimizerFromHostFragment) {
+        return false;
+      }
+
+      else if (op->getIr().getSessionOptions().enableAutomaticLossScaling) {
+        bool copiesLossScaleTensor =
+            copyOp->inTensor(0) ==
+            AutomaticLossScale::getLossScaleTensor(graph);
+        bool copiesInverseLossScaleTensor =
+            copyOp->inTensor(0) ==
+            AutomaticLossScale::getInverseLossScaleTensor(graph);
+        if (copiesLossScaleTensor || copiesInverseLossScaleTensor) {
+          // If auto loss scaling is enabled, and the copy op copies the loss
+          // scale tensor, or the inverse loss scale tensor, then it must
+          // execute in the Normal execution context.
+          return false;
+        } else {
+          return true;
+        }
+      } else {
+        return true;
+      }
+    }
+
+    // Non optimizer-tensor-copying op
+    return false;
+  };
+
   // Inherit placement attributes to IPUCopyOps
   for (auto &copied : copiedTensors.getTensorMap()) {
     for (Op *op : graph.getTensors().get(copied.first)->consumers.getOps()) {
       if (op->isIpuCopyOp()) {
         op->inheritPlacementAttributes(false);
+
+        // Set the execution context of the copy op in special case
+        if (belongsInOptimizerFromHostFragment(op)) {
+          op->settings.executionContext =
+              ExecutionContext::OptimizerFromHostFragment;
+        }
       }
     }
   }

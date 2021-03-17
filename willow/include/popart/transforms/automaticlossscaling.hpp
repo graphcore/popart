@@ -84,6 +84,10 @@ public:
   virtual std::size_t getId() const final { return id(); }
 
   virtual std::string getName() const final { return "AutomaticLossScale"; }
+
+  static Tensor *getLossScaleTensor(const Graph &graph);
+
+  static Tensor *getInverseLossScaleTensor(const Graph &graph);
 };
 
 } // namespace popart

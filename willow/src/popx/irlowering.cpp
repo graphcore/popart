@@ -2064,7 +2064,7 @@ void IrLowering::opTaskFunc(TaskId taskId, Op *op, SequenceMap &seqs) {
 
   contextOpRegistry[{context, taskId}].push_back(op);
 
-  if (op->copiesOptimizerTensors()) {
+  if (context == ExecutionContext::OptimizerFromHostFragment) {
     growOpx(opx, seqs[&progs.streamOptimizerFromHostFragment()]);
   }
 

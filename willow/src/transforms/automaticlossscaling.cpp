@@ -85,7 +85,13 @@ std::vector<float> getLevels(Tensor *tensor) {
   }
 }
 
-Tensor *getLossScaleTensor(const Graph &graph) {
+} // namespace
+
+std::size_t AutomaticLossScale::id() {
+  return typeid(AutomaticLossScale).hash_code();
+}
+
+Tensor *AutomaticLossScale::getLossScaleTensor(const Graph &graph) {
   const Ir &ir               = graph.getIr();
   const Optimizer &optimizer = ir.getOptimizer();
 
@@ -117,7 +123,7 @@ Tensor *getLossScaleTensor(const Graph &graph) {
   return lossScaleTensor;
 }
 
-Tensor *getInverseLossScaleTensor(const Graph &graph) {
+Tensor *AutomaticLossScale::getInverseLossScaleTensor(const Graph &graph) {
   const Ir &ir               = graph.getIr();
   const Optimizer &optimizer = ir.getOptimizer();
 
@@ -165,18 +171,12 @@ Tensor *getInverseLossScaleTensor(const Graph &graph) {
   }
 }
 
-} // namespace
-
-std::size_t AutomaticLossScale::id() {
-  return typeid(AutomaticLossScale).hash_code();
-}
-
 bool AutomaticLossScale::apply(Graph &graph) const {
   // Some checks:
   // 1. Must be a training session
   // 2. The optimizer's loss scaling is non-const
   // 3. Not compatible with gradient accumulation or graph replication: (T33956)
-  // 4. Not compatible with sharding or pipelining: (T33956)
+  // 4. Not compatible with pipelining: (T33956)
   // 5. Not compatible with non-SGD optimizer
 
   // 1.
@@ -205,10 +205,10 @@ bool AutomaticLossScale::apply(Graph &graph) const {
   }
 
   // 4.
-  if (ir.getSessionOptions().virtualGraphMode != VirtualGraphMode::Off) {
+  if (ir.getSessionOptions().enablePipelining == true) {
     throw error("[AutomaticLossScale transform] Automatic loss scaling is not "
-                "currently supported when the 'virtualGraphMode' SessionOption "
-                "is not set to VirtualGraphMode::Off");
+                "currently supported when the 'enablePipelining' SessionOption "
+                "is set to 'true'");
   }
 
   // 5.
