@@ -11,6 +11,7 @@ namespace onnxpasses {
 class ConstFoldOp {
 public:
   ConstFoldOp(const std::string &type) : constType(type) {}
+  virtual ~ConstFoldOp() = default;
 
   /**
    * Constant fold the Tensors \a input of the NodeProto
@@ -26,6 +27,7 @@ private:
 class AbsCFold : public ConstFoldOp {
 public:
   AbsCFold() : ConstFoldOp("Abs") {}
+  virtual ~AbsCFold() = default;
 
   Constants fold(const NodeProto &, const Constants &) final;
 };
@@ -33,6 +35,7 @@ public:
 class BinaryCFold : public ConstFoldOp {
 public:
   BinaryCFold() : ConstFoldOp("Binary") {}
+  virtual ~BinaryCFold() = default;
 
   Constants fold(const NodeProto &, const Constants &) final;
 };
@@ -40,6 +43,7 @@ public:
 class CastCFold : public ConstFoldOp {
 public:
   CastCFold() : ConstFoldOp("Cast") {}
+  virtual ~CastCFold() = default;
 
   Constants fold(const NodeProto &, const Constants &) final;
 };
@@ -47,6 +51,7 @@ public:
 class ConcatCFold : public ConstFoldOp {
 public:
   ConcatCFold() : ConstFoldOp("Concat") {}
+  virtual ~ConcatCFold() = default;
 
   Constants fold(const NodeProto &, const Constants &) final;
 };
@@ -54,6 +59,7 @@ public:
 class ConstantCFold : public ConstFoldOp {
 public:
   ConstantCFold() : ConstFoldOp("Constant") {}
+  virtual ~ConstantCFold() = default;
 
   Constants fold(const NodeProto &, const Constants &) final;
 };
@@ -61,6 +67,7 @@ public:
 class ConstantOfShapeCFold : public ConstFoldOp {
 public:
   ConstantOfShapeCFold() : ConstFoldOp("ConstantOfShape") {}
+  virtual ~ConstantOfShapeCFold() = default;
 
   Constants fold(const NodeProto &, const Constants &) final;
 };
@@ -68,6 +75,7 @@ public:
 class ExpCFold : public ConstFoldOp {
 public:
   ExpCFold() : ConstFoldOp("Exp") {}
+  virtual ~ExpCFold() = default;
 
   Constants fold(const NodeProto &, const Constants &) final;
 };
@@ -75,6 +83,7 @@ public:
 class ExpandCFold : public ConstFoldOp {
 public:
   ExpandCFold() : ConstFoldOp("Expand") {}
+  virtual ~ExpandCFold() = default;
 
   Constants fold(const NodeProto &, const Constants &) final;
 };
@@ -82,6 +91,7 @@ public:
 class FloorCFold : public ConstFoldOp {
 public:
   FloorCFold() : ConstFoldOp("Floor") {}
+  virtual ~FloorCFold() = default;
 
   Constants fold(const NodeProto &, const Constants &) final;
 };
@@ -89,6 +99,7 @@ public:
 class FmodCFold : public ConstFoldOp {
 public:
   FmodCFold() : ConstFoldOp("Fmod") {}
+  virtual ~FmodCFold() = default;
 
   Constants fold(const NodeProto &, const Constants &) final;
 };
@@ -96,6 +107,7 @@ public:
 class GatherCFold : public ConstFoldOp {
 public:
   GatherCFold() : ConstFoldOp("Gather") {}
+  virtual ~GatherCFold() = default;
 
   Constants fold(const NodeProto &, const Constants &) final;
 };
@@ -103,6 +115,7 @@ public:
 class IdentityCFold : public ConstFoldOp {
 public:
   IdentityCFold() : ConstFoldOp("Identity") {}
+  virtual ~IdentityCFold() = default;
 
   Constants fold(const NodeProto &, const Constants &) final;
 };
@@ -110,6 +123,7 @@ public:
 class IdentityLossCFold : public ConstFoldOp {
 public:
   IdentityLossCFold() : ConstFoldOp("IdentityLoss") {}
+  virtual ~IdentityLossCFold() = default;
 
   Constants fold(const NodeProto &, const Constants &) final;
 };
@@ -117,6 +131,7 @@ public:
 class NegCFold : public ConstFoldOp {
 public:
   NegCFold() : ConstFoldOp("Neg") {}
+  virtual ~NegCFold() = default;
 
   Constants fold(const NodeProto &, const Constants &) final;
 };
@@ -124,6 +139,7 @@ public:
 class ReciprocalCFold : public ConstFoldOp {
 public:
   ReciprocalCFold() : ConstFoldOp("Reciprocal") {}
+  virtual ~ReciprocalCFold() = default;
 
   Constants fold(const NodeProto &, const Constants &) final;
 };
@@ -131,6 +147,7 @@ public:
 class ReluCFold : public ConstFoldOp {
 public:
   ReluCFold() : ConstFoldOp("Relu") {}
+  virtual ~ReluCFold() = default;
 
   Constants fold(const NodeProto &, const Constants &) final;
 };
@@ -138,6 +155,7 @@ public:
 class ReshapeCFold : public ConstFoldOp {
 public:
   ReshapeCFold() : ConstFoldOp("Reshape") {}
+  virtual ~ReshapeCFold() = default;
 
   Constants fold(const NodeProto &, const Constants &) final;
 };
@@ -145,6 +163,7 @@ public:
 class ScaleCFold : public ConstFoldOp {
 public:
   ScaleCFold() : ConstFoldOp("Scale") {}
+  virtual ~ScaleCFold() = default;
 
   Constants fold(const NodeProto &, const Constants &) final;
 };
@@ -152,6 +171,7 @@ public:
 class SliceCFold : public ConstFoldOp {
 public:
   SliceCFold() : ConstFoldOp("Slice") {}
+  virtual ~SliceCFold() = default;
 
   Constants fold(const NodeProto &, const Constants &) final;
 };
@@ -159,6 +179,7 @@ public:
 class SqueezeCFold : public ConstFoldOp {
 public:
   SqueezeCFold() : ConstFoldOp("Squeeze") {}
+  virtual ~SqueezeCFold() = default;
 
   Constants fold(const NodeProto &, const Constants &) final;
 };
@@ -166,6 +187,7 @@ public:
 class TransposeCFold : public ConstFoldOp {
 public:
   TransposeCFold() : ConstFoldOp("Transpose") {}
+  virtual ~TransposeCFold() = default;
 
   Constants fold(const NodeProto &, const Constants &) final;
 };
@@ -173,6 +195,7 @@ public:
 class UnsqueezeCFold : public ConstFoldOp {
 public:
   UnsqueezeCFold() : ConstFoldOp("Unsqueeze") {}
+  virtual ~UnsqueezeCFold() = default;
 
   Constants fold(const NodeProto &, const Constants &) final;
 };

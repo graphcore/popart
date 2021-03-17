@@ -32,7 +32,7 @@ public:
   Suffixer suffixer;
 
   poprithms::ndarray::Shape shape(const std::string &) const;
-  std::shared_ptr<Constants> constants() { return foldConstants; };
+  std::shared_ptr<Constants> constants() { return foldConstants; }
 
   uint64_t nShapes() const { return shapes.size(); }
 
