@@ -10,7 +10,8 @@
     "spdlog",
     "boost",
     "protobuf",
-    "capnproto"
+    "capnproto",
+    "trompeloeil"
   ],
   "superproject_cmake_includes" : [ "SuperProjectConfig.cmake" ]
 }
