@@ -38,7 +38,7 @@ def test_outlining_accumulation_context(pipeline, tmpdir):
                 x = builder.aiOnnx.matmul([x, w3])
 
         with builder.virtualGraph(i):
-            loss = builder.aiGraphcore.l1loss([x], 0.1, debugPrefix='loss')
+            loss = builder.aiGraphcore.l1loss([x], 0.1, debugContext='loss')
 
         return builder.getModelProto(), {d0: input_data}, x, loss
 

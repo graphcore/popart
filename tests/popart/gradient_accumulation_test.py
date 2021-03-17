@@ -120,10 +120,10 @@ def get_complex_model(accum_factor):
                              dilations=[1, 1],
                              pads=[1, 1, 1, 1],
                              strides=[1, 1],
-                             debugPrefix="c0")
+                             debugContext="c0")
 
     r0 = builder.reshape_const(builder.aiOnnx, [c0], [micro_batch_size, 32])
-    sm = builder.aiOnnx.softmax([r0], axis=1, debugPrefix="sfm")
+    sm = builder.aiOnnx.softmax([r0], axis=1, debugContext="sfm")
     output_tensor_name = builder.aiGraphcore.identityloss(
         [sm], reduction=popart.ReductionType.Sum)
 

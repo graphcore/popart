@@ -36,21 +36,6 @@ PYBIND11_MODULE(popart_opset7, m) {
           py::arg("debugContext") = std::string(),
           DOC(popart, abs, opset7))
       .def(
-          "abs",
-          [](AiOnnxOpset7 &opset,
-             const std::vector<TensorId> &args,
-             const DebugContext &debugContext) -> TensorId {
-            logging::builder::warn(
-                "You appear to be using a deprecated keyword argument "
-                "'debugPrefix' in the function abs. This argument is "
-                "deprecated and will be removed in a future release, please "
-                "use 'debugContext' instead");
-            return opset.abs(args, debugContext);
-          },
-          py::arg("args"),
-          py::arg("debugPrefix") = std::string(),
-          DOC(popart, abs, opset7))
-      .def(
           "acos",
           [](AiOnnxOpset7 &opset,
              const std::vector<TensorId> &args,
@@ -59,21 +44,6 @@ PYBIND11_MODULE(popart_opset7, m) {
           },
           py::arg("args"),
           py::arg("debugContext") = std::string(),
-          DOC(popart, acos, opset7))
-      .def(
-          "acos",
-          [](AiOnnxOpset7 &opset,
-             const std::vector<TensorId> &args,
-             const DebugContext &debugContext) -> TensorId {
-            logging::builder::warn(
-                "You appear to be using a deprecated keyword argument "
-                "'debugPrefix' in the function acos. This argument is "
-                "deprecated and will be removed in a future release, please "
-                "use 'debugContext' instead");
-            return opset.acos(args, debugContext);
-          },
-          py::arg("args"),
-          py::arg("debugPrefix") = std::string(),
           DOC(popart, acos, opset7))
       .def(
           "add",
@@ -86,21 +56,6 @@ PYBIND11_MODULE(popart_opset7, m) {
           py::arg("debugContext") = std::string(),
           DOC(popart, add, opset7))
       .def(
-          "add",
-          [](AiOnnxOpset7 &opset,
-             const std::vector<TensorId> &args,
-             const DebugContext &debugContext) -> TensorId {
-            logging::builder::warn(
-                "You appear to be using a deprecated keyword argument "
-                "'debugPrefix' in the function add. This argument is "
-                "deprecated and will be removed in a future release, please "
-                "use 'debugContext' instead");
-            return opset.add(args, debugContext);
-          },
-          py::arg("args"),
-          py::arg("debugPrefix") = std::string(),
-          DOC(popart, add, opset7))
-      .def(
           "logical_and",
           [](AiOnnxOpset7 &opset,
              const std::vector<TensorId> &args,
@@ -109,21 +64,6 @@ PYBIND11_MODULE(popart_opset7, m) {
           },
           py::arg("args"),
           py::arg("debugContext") = std::string(),
-          DOC(popart, logical_and, opset7))
-      .def(
-          "logical_and",
-          [](AiOnnxOpset7 &opset,
-             const std::vector<TensorId> &args,
-             const DebugContext &debugContext) -> TensorId {
-            logging::builder::warn(
-                "You appear to be using a deprecated keyword argument "
-                "'debugPrefix' in the function logical_and. This argument is "
-                "deprecated and will be removed in a future release, please "
-                "use 'debugContext' instead");
-            return opset.logical_and(args, debugContext);
-          },
-          py::arg("args"),
-          py::arg("debugPrefix") = std::string(),
           DOC(popart, logical_and, opset7))
       .def(
           "argmax",
@@ -140,25 +80,6 @@ PYBIND11_MODULE(popart_opset7, m) {
           py::arg("debugContext") = std::string(),
           DOC(popart, argmax, opset7))
       .def(
-          "argmax",
-          [](AiOnnxOpset7 &opset,
-             const std::vector<TensorId> &args,
-             int64_t axis,
-             int64_t keepdims,
-             const DebugContext &debugContext) -> TensorId {
-            logging::builder::warn(
-                "You appear to be using a deprecated keyword argument "
-                "'debugPrefix' in the function argmax. This argument is "
-                "deprecated and will be removed in a future release, please "
-                "use 'debugContext' instead");
-            return opset.argmax(args, axis, keepdims, debugContext);
-          },
-          py::arg("args"),
-          py::arg("axis")        = 0,
-          py::arg("keepdims")    = 1,
-          py::arg("debugPrefix") = std::string(),
-          DOC(popart, argmax, opset7))
-      .def(
           "argmin",
           [](AiOnnxOpset7 &opset,
              const std::vector<TensorId> &args,
@@ -173,25 +94,6 @@ PYBIND11_MODULE(popart_opset7, m) {
           py::arg("debugContext") = std::string(),
           DOC(popart, argmin, opset7))
       .def(
-          "argmin",
-          [](AiOnnxOpset7 &opset,
-             const std::vector<TensorId> &args,
-             int64_t axis,
-             int64_t keepdims,
-             const DebugContext &debugContext) -> TensorId {
-            logging::builder::warn(
-                "You appear to be using a deprecated keyword argument "
-                "'debugPrefix' in the function argmin. This argument is "
-                "deprecated and will be removed in a future release, please "
-                "use 'debugContext' instead");
-            return opset.argmin(args, axis, keepdims, debugContext);
-          },
-          py::arg("args"),
-          py::arg("axis")        = 0,
-          py::arg("keepdims")    = 1,
-          py::arg("debugPrefix") = std::string(),
-          DOC(popart, argmin, opset7))
-      .def(
           "asin",
           [](AiOnnxOpset7 &opset,
              const std::vector<TensorId> &args,
@@ -202,21 +104,6 @@ PYBIND11_MODULE(popart_opset7, m) {
           py::arg("debugContext") = std::string(),
           DOC(popart, asin, opset7))
       .def(
-          "asin",
-          [](AiOnnxOpset7 &opset,
-             const std::vector<TensorId> &args,
-             const DebugContext &debugContext) -> TensorId {
-            logging::builder::warn(
-                "You appear to be using a deprecated keyword argument "
-                "'debugPrefix' in the function asin. This argument is "
-                "deprecated and will be removed in a future release, please "
-                "use 'debugContext' instead");
-            return opset.asin(args, debugContext);
-          },
-          py::arg("args"),
-          py::arg("debugPrefix") = std::string(),
-          DOC(popart, asin, opset7))
-      .def(
           "atan",
           [](AiOnnxOpset7 &opset,
              const std::vector<TensorId> &args,
@@ -225,21 +112,6 @@ PYBIND11_MODULE(popart_opset7, m) {
           },
           py::arg("args"),
           py::arg("debugContext") = std::string(),
-          DOC(popart, atan, opset7))
-      .def(
-          "atan",
-          [](AiOnnxOpset7 &opset,
-             const std::vector<TensorId> &args,
-             const DebugContext &debugContext) -> TensorId {
-            logging::builder::warn(
-                "You appear to be using a deprecated keyword argument "
-                "'debugPrefix' in the function atan. This argument is "
-                "deprecated and will be removed in a future release, please "
-                "use 'debugContext' instead");
-            return opset.atan(args, debugContext);
-          },
-          py::arg("args"),
-          py::arg("debugPrefix") = std::string(),
           DOC(popart, atan, opset7))
       .def(
           "averagepool",
@@ -265,34 +137,6 @@ PYBIND11_MODULE(popart_opset7, m) {
           py::arg("debugContext")      = std::string(),
           DOC(popart, averagepool, opset7))
       .def(
-          "averagepool",
-          [](AiOnnxOpset7 &opset,
-             const std::vector<TensorId> &args,
-             const std::vector<int64_t> &kernel_shape,
-             int64_t count_include_pad,
-             const std::vector<int64_t> &pads,
-             const std::vector<int64_t> &strides,
-             const DebugContext &debugContext) -> TensorId {
-            logging::builder::warn(
-                "You appear to be using a deprecated keyword argument "
-                "'debugPrefix' in the function averagepool. This argument is "
-                "deprecated and will be removed in a future release, please "
-                "use 'debugContext' instead");
-            return opset.averagepool(args,
-                                     kernel_shape,
-                                     count_include_pad,
-                                     pads,
-                                     strides,
-                                     debugContext);
-          },
-          py::arg("args"),
-          py::arg("kernel_shape"),
-          py::arg("count_include_pad") = 0,
-          py::arg("pads")              = std::vector<int64_t>(),
-          py::arg("strides")           = std::vector<int64_t>(),
-          py::arg("debugPrefix")       = std::string(),
-          DOC(popart, averagepool, opset7))
-      .def(
           "batchnormalization",
           [](AiOnnxOpset7 &opset,
              const std::vector<TensorId> &args,
@@ -312,30 +156,6 @@ PYBIND11_MODULE(popart_opset7, m) {
           py::arg("debugContext") = std::string(),
           DOC(popart, batchnormalization, opset7))
       .def(
-          "batchnormalization",
-          [](AiOnnxOpset7 &opset,
-             const std::vector<TensorId> &args,
-             unsigned num_outputs,
-             float epsilon,
-             float momentum,
-             int64_t spatial,
-             const DebugContext &debugContext) -> std::vector<TensorId> {
-            logging::builder::warn(
-                "You appear to be using a deprecated keyword argument "
-                "'debugPrefix' in the function batchnormalization. This "
-                "argument is deprecated and will be removed in a future "
-                "release, please use 'debugContext' instead");
-            return opset.batchnormalization(
-                args, num_outputs, epsilon, momentum, spatial, debugContext);
-          },
-          py::arg("args"),
-          py::arg("num_outputs"),
-          py::arg("epsilon")     = 1e-05f,
-          py::arg("momentum")    = 0.9f,
-          py::arg("spatial")     = 1,
-          py::arg("debugPrefix") = std::string(),
-          DOC(popart, batchnormalization, opset7))
-      .def(
           "cast",
           [](AiOnnxOpset7 &opset,
              const std::vector<TensorId> &args,
@@ -348,23 +168,6 @@ PYBIND11_MODULE(popart_opset7, m) {
           py::arg("debugContext") = std::string(),
           DOC(popart, cast, opset7))
       .def(
-          "cast",
-          [](AiOnnxOpset7 &opset,
-             const std::vector<TensorId> &args,
-             const std::string &to,
-             const DebugContext &debugContext) -> TensorId {
-            logging::builder::warn(
-                "You appear to be using a deprecated keyword argument "
-                "'debugPrefix' in the function cast. This argument is "
-                "deprecated and will be removed in a future release, please "
-                "use 'debugContext' instead");
-            return opset.cast(args, to, debugContext);
-          },
-          py::arg("args"),
-          py::arg("to"),
-          py::arg("debugPrefix") = std::string(),
-          DOC(popart, cast, opset7))
-      .def(
           "ceil",
           [](AiOnnxOpset7 &opset,
              const std::vector<TensorId> &args,
@@ -373,21 +176,6 @@ PYBIND11_MODULE(popart_opset7, m) {
           },
           py::arg("args"),
           py::arg("debugContext") = std::string(),
-          DOC(popart, ceil, opset7))
-      .def(
-          "ceil",
-          [](AiOnnxOpset7 &opset,
-             const std::vector<TensorId> &args,
-             const DebugContext &debugContext) -> TensorId {
-            logging::builder::warn(
-                "You appear to be using a deprecated keyword argument "
-                "'debugPrefix' in the function ceil. This argument is "
-                "deprecated and will be removed in a future release, please "
-                "use 'debugContext' instead");
-            return opset.ceil(args, debugContext);
-          },
-          py::arg("args"),
-          py::arg("debugPrefix") = std::string(),
           DOC(popart, ceil, opset7))
       .def(
           "clip",
@@ -404,25 +192,6 @@ PYBIND11_MODULE(popart_opset7, m) {
           py::arg("debugContext") = std::string(),
           DOC(popart, clip, opset7))
       .def(
-          "clip",
-          [](AiOnnxOpset7 &opset,
-             const std::vector<TensorId> &args,
-             float max,
-             float min,
-             const DebugContext &debugContext) -> TensorId {
-            logging::builder::warn(
-                "You appear to be using a deprecated keyword argument "
-                "'debugPrefix' in the function clip. This argument is "
-                "deprecated and will be removed in a future release, please "
-                "use 'debugContext' instead");
-            return opset.clip(args, max, min, debugContext);
-          },
-          py::arg("args"),
-          py::arg("max")         = 3.4028234663852886e+38f,
-          py::arg("min")         = -3.4028234663852886e+38f,
-          py::arg("debugPrefix") = std::string(),
-          DOC(popart, clip, opset7))
-      .def(
           "concat",
           [](AiOnnxOpset7 &opset,
              const std::vector<TensorId> &args,
@@ -433,23 +202,6 @@ PYBIND11_MODULE(popart_opset7, m) {
           py::arg("args"),
           py::arg("axis"),
           py::arg("debugContext") = std::string(),
-          DOC(popart, concat, opset7))
-      .def(
-          "concat",
-          [](AiOnnxOpset7 &opset,
-             const std::vector<TensorId> &args,
-             int64_t axis,
-             const DebugContext &debugContext) -> TensorId {
-            logging::builder::warn(
-                "You appear to be using a deprecated keyword argument "
-                "'debugPrefix' in the function concat. This argument is "
-                "deprecated and will be removed in a future release, please "
-                "use 'debugContext' instead");
-            return opset.concat(args, axis, debugContext);
-          },
-          py::arg("args"),
-          py::arg("axis"),
-          py::arg("debugPrefix") = std::string(),
           DOC(popart, concat, opset7))
       .def(
           "constant",
@@ -464,20 +216,6 @@ PYBIND11_MODULE(popart_opset7, m) {
           },
           py::arg("value"),
           py::arg("debugContext") = std::string(),
-          DOC(popart, constant, opset7))
-      .def(
-          "constant",
-          [](AiOnnxOpset7 &opset,
-             py::array array,
-             const DebugContext &debugContext) {
-            array = makeContiguous(array);
-            ConstVoidData initData;
-            initData.data = array.request().ptr;
-            initData.info = getTensorInfo(array);
-            return opset.constant(initData, debugContext);
-          },
-          py::arg("value"),
-          py::arg("debugPrefix") = std::string(),
           DOC(popart, constant, opset7))
       .def(
           "conv",
@@ -504,37 +242,6 @@ PYBIND11_MODULE(popart_opset7, m) {
           py::arg("pads")         = std::vector<int64_t>(),
           py::arg("strides")      = std::vector<int64_t>(),
           py::arg("debugContext") = std::string(),
-          DOC(popart, conv, opset7))
-      .def(
-          "conv",
-          [](AiOnnxOpset7 &opset,
-             const std::vector<TensorId> &args,
-             const std::vector<int64_t> &dilations,
-             int64_t group,
-             const std::vector<int64_t> &kernel_shape,
-             const std::vector<int64_t> &pads,
-             const std::vector<int64_t> &strides,
-             const DebugContext &debugContext) -> TensorId {
-            logging::builder::warn(
-                "You appear to be using a deprecated keyword argument "
-                "'debugPrefix' in the function conv. This argument is "
-                "deprecated and will be removed in a future release, please "
-                "use 'debugContext' instead");
-            return opset.conv(args,
-                              dilations,
-                              group,
-                              kernel_shape,
-                              pads,
-                              strides,
-                              debugContext);
-          },
-          py::arg("args"),
-          py::arg("dilations")    = std::vector<int64_t>(),
-          py::arg("group")        = 1,
-          py::arg("kernel_shape") = std::vector<int64_t>(),
-          py::arg("pads")         = std::vector<int64_t>(),
-          py::arg("strides")      = std::vector<int64_t>(),
-          py::arg("debugPrefix")  = std::string(),
           DOC(popart, conv, opset7))
       .def(
           "convtranspose",
@@ -569,43 +276,6 @@ PYBIND11_MODULE(popart_opset7, m) {
           py::arg("debugContext")   = std::string(),
           DOC(popart, convtranspose, opset7))
       .def(
-          "convtranspose",
-          [](AiOnnxOpset7 &opset,
-             const std::vector<TensorId> &args,
-             const std::vector<int64_t> &dilations,
-             int64_t group,
-             const std::vector<int64_t> &kernel_shape,
-             const std::vector<int64_t> &output_padding,
-             const std::vector<int64_t> &output_shape,
-             const std::vector<int64_t> &pads,
-             const std::vector<int64_t> &strides,
-             const DebugContext &debugContext) -> TensorId {
-            logging::builder::warn(
-                "You appear to be using a deprecated keyword argument "
-                "'debugPrefix' in the function convtranspose. This argument is "
-                "deprecated and will be removed in a future release, please "
-                "use 'debugContext' instead");
-            return opset.convtranspose(args,
-                                       dilations,
-                                       group,
-                                       kernel_shape,
-                                       output_padding,
-                                       output_shape,
-                                       pads,
-                                       strides,
-                                       debugContext);
-          },
-          py::arg("args"),
-          py::arg("dilations")      = std::vector<int64_t>(),
-          py::arg("group")          = 1,
-          py::arg("kernel_shape")   = std::vector<int64_t>(),
-          py::arg("output_padding") = std::vector<int64_t>(),
-          py::arg("output_shape")   = std::vector<int64_t>(),
-          py::arg("pads")           = std::vector<int64_t>(),
-          py::arg("strides")        = std::vector<int64_t>(),
-          py::arg("debugPrefix")    = std::string(),
-          DOC(popart, convtranspose, opset7))
-      .def(
           "cos",
           [](AiOnnxOpset7 &opset,
              const std::vector<TensorId> &args,
@@ -614,21 +284,6 @@ PYBIND11_MODULE(popart_opset7, m) {
           },
           py::arg("args"),
           py::arg("debugContext") = std::string(),
-          DOC(popart, cos, opset7))
-      .def(
-          "cos",
-          [](AiOnnxOpset7 &opset,
-             const std::vector<TensorId> &args,
-             const DebugContext &debugContext) -> TensorId {
-            logging::builder::warn(
-                "You appear to be using a deprecated keyword argument "
-                "'debugPrefix' in the function cos. This argument is "
-                "deprecated and will be removed in a future release, please "
-                "use 'debugContext' instead");
-            return opset.cos(args, debugContext);
-          },
-          py::arg("args"),
-          py::arg("debugPrefix") = std::string(),
           DOC(popart, cos, opset7))
       .def(
           "depthtospace",
@@ -643,23 +298,6 @@ PYBIND11_MODULE(popart_opset7, m) {
           py::arg("debugContext") = std::string(),
           DOC(popart, depthtospace, opset7))
       .def(
-          "depthtospace",
-          [](AiOnnxOpset7 &opset,
-             const std::vector<TensorId> &args,
-             int64_t blocksize,
-             const DebugContext &debugContext) -> TensorId {
-            logging::builder::warn(
-                "You appear to be using a deprecated keyword argument "
-                "'debugPrefix' in the function depthtospace. This argument is "
-                "deprecated and will be removed in a future release, please "
-                "use 'debugContext' instead");
-            return opset.depthtospace(args, blocksize, debugContext);
-          },
-          py::arg("args"),
-          py::arg("blocksize"),
-          py::arg("debugPrefix") = std::string(),
-          DOC(popart, depthtospace, opset7))
-      .def(
           "div",
           [](AiOnnxOpset7 &opset,
              const std::vector<TensorId> &args,
@@ -668,21 +306,6 @@ PYBIND11_MODULE(popart_opset7, m) {
           },
           py::arg("args"),
           py::arg("debugContext") = std::string(),
-          DOC(popart, div, opset7))
-      .def(
-          "div",
-          [](AiOnnxOpset7 &opset,
-             const std::vector<TensorId> &args,
-             const DebugContext &debugContext) -> TensorId {
-            logging::builder::warn(
-                "You appear to be using a deprecated keyword argument "
-                "'debugPrefix' in the function div. This argument is "
-                "deprecated and will be removed in a future release, please "
-                "use 'debugContext' instead");
-            return opset.div(args, debugContext);
-          },
-          py::arg("args"),
-          py::arg("debugPrefix") = std::string(),
           DOC(popart, div, opset7))
       .def(
           "dropout",
@@ -699,25 +322,6 @@ PYBIND11_MODULE(popart_opset7, m) {
           py::arg("debugContext") = std::string(),
           DOC(popart, dropout, opset7))
       .def(
-          "dropout",
-          [](AiOnnxOpset7 &opset,
-             const std::vector<TensorId> &args,
-             unsigned num_outputs,
-             float ratio,
-             const DebugContext &debugContext) -> std::vector<TensorId> {
-            logging::builder::warn(
-                "You appear to be using a deprecated keyword argument "
-                "'debugPrefix' in the function dropout. This argument is "
-                "deprecated and will be removed in a future release, please "
-                "use 'debugContext' instead");
-            return opset.dropout(args, num_outputs, ratio, debugContext);
-          },
-          py::arg("args"),
-          py::arg("num_outputs"),
-          py::arg("ratio")       = 0.5f,
-          py::arg("debugPrefix") = std::string(),
-          DOC(popart, dropout, opset7))
-      .def(
           "elu",
           [](AiOnnxOpset7 &opset,
              const std::vector<TensorId> &args,
@@ -730,23 +334,6 @@ PYBIND11_MODULE(popart_opset7, m) {
           py::arg("debugContext") = std::string(),
           DOC(popart, elu, opset7))
       .def(
-          "elu",
-          [](AiOnnxOpset7 &opset,
-             const std::vector<TensorId> &args,
-             float alpha,
-             const DebugContext &debugContext) -> TensorId {
-            logging::builder::warn(
-                "You appear to be using a deprecated keyword argument "
-                "'debugPrefix' in the function elu. This argument is "
-                "deprecated and will be removed in a future release, please "
-                "use 'debugContext' instead");
-            return opset.elu(args, alpha, debugContext);
-          },
-          py::arg("args"),
-          py::arg("alpha")       = 1.0f,
-          py::arg("debugPrefix") = std::string(),
-          DOC(popart, elu, opset7))
-      .def(
           "equal",
           [](AiOnnxOpset7 &opset,
              const std::vector<TensorId> &args,
@@ -757,21 +344,6 @@ PYBIND11_MODULE(popart_opset7, m) {
           py::arg("debugContext") = std::string(),
           DOC(popart, equal, opset7))
       .def(
-          "equal",
-          [](AiOnnxOpset7 &opset,
-             const std::vector<TensorId> &args,
-             const DebugContext &debugContext) -> TensorId {
-            logging::builder::warn(
-                "You appear to be using a deprecated keyword argument "
-                "'debugPrefix' in the function equal. This argument is "
-                "deprecated and will be removed in a future release, please "
-                "use 'debugContext' instead");
-            return opset.equal(args, debugContext);
-          },
-          py::arg("args"),
-          py::arg("debugPrefix") = std::string(),
-          DOC(popart, equal, opset7))
-      .def(
           "exp",
           [](AiOnnxOpset7 &opset,
              const std::vector<TensorId> &args,
@@ -780,21 +352,6 @@ PYBIND11_MODULE(popart_opset7, m) {
           },
           py::arg("args"),
           py::arg("debugContext") = std::string(),
-          DOC(popart, exp, opset7))
-      .def(
-          "exp",
-          [](AiOnnxOpset7 &opset,
-             const std::vector<TensorId> &args,
-             const DebugContext &debugContext) -> TensorId {
-            logging::builder::warn(
-                "You appear to be using a deprecated keyword argument "
-                "'debugPrefix' in the function exp. This argument is "
-                "deprecated and will be removed in a future release, please "
-                "use 'debugContext' instead");
-            return opset.exp(args, debugContext);
-          },
-          py::arg("args"),
-          py::arg("debugPrefix") = std::string(),
           DOC(popart, exp, opset7))
       .def(
           "flatten",
@@ -809,23 +366,6 @@ PYBIND11_MODULE(popart_opset7, m) {
           py::arg("debugContext") = std::string(),
           DOC(popart, flatten, opset7))
       .def(
-          "flatten",
-          [](AiOnnxOpset7 &opset,
-             const std::vector<TensorId> &args,
-             int64_t axis,
-             const DebugContext &debugContext) -> TensorId {
-            logging::builder::warn(
-                "You appear to be using a deprecated keyword argument "
-                "'debugPrefix' in the function flatten. This argument is "
-                "deprecated and will be removed in a future release, please "
-                "use 'debugContext' instead");
-            return opset.flatten(args, axis, debugContext);
-          },
-          py::arg("args"),
-          py::arg("axis")        = 1,
-          py::arg("debugPrefix") = std::string(),
-          DOC(popart, flatten, opset7))
-      .def(
           "floor",
           [](AiOnnxOpset7 &opset,
              const std::vector<TensorId> &args,
@@ -834,21 +374,6 @@ PYBIND11_MODULE(popart_opset7, m) {
           },
           py::arg("args"),
           py::arg("debugContext") = std::string(),
-          DOC(popart, floor, opset7))
-      .def(
-          "floor",
-          [](AiOnnxOpset7 &opset,
-             const std::vector<TensorId> &args,
-             const DebugContext &debugContext) -> TensorId {
-            logging::builder::warn(
-                "You appear to be using a deprecated keyword argument "
-                "'debugPrefix' in the function floor. This argument is "
-                "deprecated and will be removed in a future release, please "
-                "use 'debugContext' instead");
-            return opset.floor(args, debugContext);
-          },
-          py::arg("args"),
-          py::arg("debugPrefix") = std::string(),
           DOC(popart, floor, opset7))
       .def(
           "gru",
@@ -886,46 +411,6 @@ PYBIND11_MODULE(popart_opset7, m) {
           py::arg("debugContext")        = std::string(),
           DOC(popart, gru, opset7))
       .def(
-          "gru",
-          [](AiOnnxOpset7 &opset,
-             const std::vector<TensorId> &args,
-             unsigned num_outputs,
-             const std::vector<float> &activation_alpha,
-             const std::vector<float> &activation_beta,
-             const std::vector<std::string> &activations,
-             nonstd::optional<float> clip,
-             const std::string &direction,
-             nonstd::optional<int64_t> hidden_size,
-             int64_t linear_before_reset,
-             const DebugContext &debugContext) -> std::vector<TensorId> {
-            logging::builder::warn(
-                "You appear to be using a deprecated keyword argument "
-                "'debugPrefix' in the function gru. This argument is "
-                "deprecated and will be removed in a future release, please "
-                "use 'debugContext' instead");
-            return opset.gru(args,
-                             num_outputs,
-                             activation_alpha,
-                             activation_beta,
-                             activations,
-                             clip,
-                             direction,
-                             hidden_size,
-                             linear_before_reset,
-                             debugContext);
-          },
-          py::arg("args"),
-          py::arg("num_outputs"),
-          py::arg("activation_alpha")    = std::vector<float>(),
-          py::arg("activation_beta")     = std::vector<float>(),
-          py::arg("activations")         = std::vector<std::string>(),
-          py::arg("clip")                = nonstd::optional<float>(),
-          py::arg("direction")           = "forward",
-          py::arg("hidden_size")         = nonstd::optional<int64_t>(),
-          py::arg("linear_before_reset") = 0,
-          py::arg("debugPrefix")         = std::string(),
-          DOC(popart, gru, opset7))
-      .def(
           "gather",
           [](AiOnnxOpset7 &opset,
              const std::vector<TensorId> &args,
@@ -936,23 +421,6 @@ PYBIND11_MODULE(popart_opset7, m) {
           py::arg("args"),
           py::arg("axis")         = 0,
           py::arg("debugContext") = std::string(),
-          DOC(popart, gather, opset7))
-      .def(
-          "gather",
-          [](AiOnnxOpset7 &opset,
-             const std::vector<TensorId> &args,
-             int64_t axis,
-             const DebugContext &debugContext) -> TensorId {
-            logging::builder::warn(
-                "You appear to be using a deprecated keyword argument "
-                "'debugPrefix' in the function gather. This argument is "
-                "deprecated and will be removed in a future release, please "
-                "use 'debugContext' instead");
-            return opset.gather(args, axis, debugContext);
-          },
-          py::arg("args"),
-          py::arg("axis")        = 0,
-          py::arg("debugPrefix") = std::string(),
           DOC(popart, gather, opset7))
       .def(
           "gemm",
@@ -973,29 +441,6 @@ PYBIND11_MODULE(popart_opset7, m) {
           py::arg("debugContext") = std::string(),
           DOC(popart, gemm, opset7))
       .def(
-          "gemm",
-          [](AiOnnxOpset7 &opset,
-             const std::vector<TensorId> &args,
-             float alpha,
-             float beta,
-             int64_t transA,
-             int64_t transB,
-             const DebugContext &debugContext) -> TensorId {
-            logging::builder::warn(
-                "You appear to be using a deprecated keyword argument "
-                "'debugPrefix' in the function gemm. This argument is "
-                "deprecated and will be removed in a future release, please "
-                "use 'debugContext' instead");
-            return opset.gemm(args, alpha, beta, transA, transB, debugContext);
-          },
-          py::arg("args"),
-          py::arg("alpha")       = 1.0f,
-          py::arg("beta")        = 1.0f,
-          py::arg("transA")      = 0,
-          py::arg("transB")      = 0,
-          py::arg("debugPrefix") = std::string(),
-          DOC(popart, gemm, opset7))
-      .def(
           "globalaveragepool",
           [](AiOnnxOpset7 &opset,
              const std::vector<TensorId> &args,
@@ -1004,21 +449,6 @@ PYBIND11_MODULE(popart_opset7, m) {
           },
           py::arg("args"),
           py::arg("debugContext") = std::string(),
-          DOC(popart, globalaveragepool, opset7))
-      .def(
-          "globalaveragepool",
-          [](AiOnnxOpset7 &opset,
-             const std::vector<TensorId> &args,
-             const DebugContext &debugContext) -> TensorId {
-            logging::builder::warn(
-                "You appear to be using a deprecated keyword argument "
-                "'debugPrefix' in the function globalaveragepool. This "
-                "argument is deprecated and will be removed in a future "
-                "release, please use 'debugContext' instead");
-            return opset.globalaveragepool(args, debugContext);
-          },
-          py::arg("args"),
-          py::arg("debugPrefix") = std::string(),
           DOC(popart, globalaveragepool, opset7))
       .def(
           "globallppool",
@@ -1033,23 +463,6 @@ PYBIND11_MODULE(popart_opset7, m) {
           py::arg("debugContext") = std::string(),
           DOC(popart, globallppool, opset7))
       .def(
-          "globallppool",
-          [](AiOnnxOpset7 &opset,
-             const std::vector<TensorId> &args,
-             int64_t p,
-             const DebugContext &debugContext) -> TensorId {
-            logging::builder::warn(
-                "You appear to be using a deprecated keyword argument "
-                "'debugPrefix' in the function globallppool. This argument is "
-                "deprecated and will be removed in a future release, please "
-                "use 'debugContext' instead");
-            return opset.globallppool(args, p, debugContext);
-          },
-          py::arg("args"),
-          py::arg("p")           = 2,
-          py::arg("debugPrefix") = std::string(),
-          DOC(popart, globallppool, opset7))
-      .def(
           "globalmaxpool",
           [](AiOnnxOpset7 &opset,
              const std::vector<TensorId> &args,
@@ -1060,21 +473,6 @@ PYBIND11_MODULE(popart_opset7, m) {
           py::arg("debugContext") = std::string(),
           DOC(popart, globalmaxpool, opset7))
       .def(
-          "globalmaxpool",
-          [](AiOnnxOpset7 &opset,
-             const std::vector<TensorId> &args,
-             const DebugContext &debugContext) -> TensorId {
-            logging::builder::warn(
-                "You appear to be using a deprecated keyword argument "
-                "'debugPrefix' in the function globalmaxpool. This argument is "
-                "deprecated and will be removed in a future release, please "
-                "use 'debugContext' instead");
-            return opset.globalmaxpool(args, debugContext);
-          },
-          py::arg("args"),
-          py::arg("debugPrefix") = std::string(),
-          DOC(popart, globalmaxpool, opset7))
-      .def(
           "greater",
           [](AiOnnxOpset7 &opset,
              const std::vector<TensorId> &args,
@@ -1083,21 +481,6 @@ PYBIND11_MODULE(popart_opset7, m) {
           },
           py::arg("args"),
           py::arg("debugContext") = std::string(),
-          DOC(popart, greater, opset7))
-      .def(
-          "greater",
-          [](AiOnnxOpset7 &opset,
-             const std::vector<TensorId> &args,
-             const DebugContext &debugContext) -> TensorId {
-            logging::builder::warn(
-                "You appear to be using a deprecated keyword argument "
-                "'debugPrefix' in the function greater. This argument is "
-                "deprecated and will be removed in a future release, please "
-                "use 'debugContext' instead");
-            return opset.greater(args, debugContext);
-          },
-          py::arg("args"),
-          py::arg("debugPrefix") = std::string(),
           DOC(popart, greater, opset7))
       .def(
           "hardsigmoid",
@@ -1114,25 +497,6 @@ PYBIND11_MODULE(popart_opset7, m) {
           py::arg("debugContext") = std::string(),
           DOC(popart, hardsigmoid, opset7))
       .def(
-          "hardsigmoid",
-          [](AiOnnxOpset7 &opset,
-             const std::vector<TensorId> &args,
-             float alpha,
-             float beta,
-             const DebugContext &debugContext) -> TensorId {
-            logging::builder::warn(
-                "You appear to be using a deprecated keyword argument "
-                "'debugPrefix' in the function hardsigmoid. This argument is "
-                "deprecated and will be removed in a future release, please "
-                "use 'debugContext' instead");
-            return opset.hardsigmoid(args, alpha, beta, debugContext);
-          },
-          py::arg("args"),
-          py::arg("alpha")       = 0.2f,
-          py::arg("beta")        = 0.5f,
-          py::arg("debugPrefix") = std::string(),
-          DOC(popart, hardsigmoid, opset7))
-      .def(
           "hardmax",
           [](AiOnnxOpset7 &opset,
              const std::vector<TensorId> &args,
@@ -1145,23 +509,6 @@ PYBIND11_MODULE(popart_opset7, m) {
           py::arg("debugContext") = std::string(),
           DOC(popart, hardmax, opset7))
       .def(
-          "hardmax",
-          [](AiOnnxOpset7 &opset,
-             const std::vector<TensorId> &args,
-             int64_t axis,
-             const DebugContext &debugContext) -> TensorId {
-            logging::builder::warn(
-                "You appear to be using a deprecated keyword argument "
-                "'debugPrefix' in the function hardmax. This argument is "
-                "deprecated and will be removed in a future release, please "
-                "use 'debugContext' instead");
-            return opset.hardmax(args, axis, debugContext);
-          },
-          py::arg("args"),
-          py::arg("axis")        = 1,
-          py::arg("debugPrefix") = std::string(),
-          DOC(popart, hardmax, opset7))
-      .def(
           "identity",
           [](AiOnnxOpset7 &opset,
              const std::vector<TensorId> &args,
@@ -1170,21 +517,6 @@ PYBIND11_MODULE(popart_opset7, m) {
           },
           py::arg("args"),
           py::arg("debugContext") = std::string(),
-          DOC(popart, identity, opset7))
-      .def(
-          "identity",
-          [](AiOnnxOpset7 &opset,
-             const std::vector<TensorId> &args,
-             const DebugContext &debugContext) -> TensorId {
-            logging::builder::warn(
-                "You appear to be using a deprecated keyword argument "
-                "'debugPrefix' in the function identity. This argument is "
-                "deprecated and will be removed in a future release, please "
-                "use 'debugContext' instead");
-            return opset.identity(args, debugContext);
-          },
-          py::arg("args"),
-          py::arg("debugPrefix") = std::string(),
           DOC(popart, identity, opset7))
       .def(
           "logical_if",
@@ -1202,28 +534,6 @@ PYBIND11_MODULE(popart_opset7, m) {
           py::arg("else_branch"),
           py::arg("then_branch"),
           py::arg("debugContext") = std::string(),
-          DOC(popart, logical_if, opset7))
-      .def(
-          "logical_if",
-          [](AiOnnxOpset7 &opset,
-             const std::vector<TensorId> &args,
-             unsigned num_outputs,
-             const Builder &else_branch,
-             const Builder &then_branch,
-             const DebugContext &debugContext) -> std::vector<TensorId> {
-            logging::builder::warn(
-                "You appear to be using a deprecated keyword argument "
-                "'debugPrefix' in the function logical_if. This argument is "
-                "deprecated and will be removed in a future release, please "
-                "use 'debugContext' instead");
-            return opset.logical_if(
-                args, num_outputs, else_branch, then_branch, debugContext);
-          },
-          py::arg("args"),
-          py::arg("num_outputs"),
-          py::arg("else_branch"),
-          py::arg("then_branch"),
-          py::arg("debugPrefix") = std::string(),
           DOC(popart, logical_if, opset7))
       .def(
           "instancenormalization",
@@ -1236,23 +546,6 @@ PYBIND11_MODULE(popart_opset7, m) {
           py::arg("args"),
           py::arg("epsilon")      = 1e-05f,
           py::arg("debugContext") = std::string(),
-          DOC(popart, instancenormalization, opset7))
-      .def(
-          "instancenormalization",
-          [](AiOnnxOpset7 &opset,
-             const std::vector<TensorId> &args,
-             float epsilon,
-             const DebugContext &debugContext) -> TensorId {
-            logging::builder::warn(
-                "You appear to be using a deprecated keyword argument "
-                "'debugPrefix' in the function instancenormalization. This "
-                "argument is deprecated and will be removed in a future "
-                "release, please use 'debugContext' instead");
-            return opset.instancenormalization(args, epsilon, debugContext);
-          },
-          py::arg("args"),
-          py::arg("epsilon")     = 1e-05f,
-          py::arg("debugPrefix") = std::string(),
           DOC(popart, instancenormalization, opset7))
       .def(
           "lrn",
@@ -1273,29 +566,6 @@ PYBIND11_MODULE(popart_opset7, m) {
           py::arg("debugContext") = std::string(),
           DOC(popart, lrn, opset7))
       .def(
-          "lrn",
-          [](AiOnnxOpset7 &opset,
-             const std::vector<TensorId> &args,
-             int64_t size,
-             float alpha,
-             float beta,
-             float bias,
-             const DebugContext &debugContext) -> TensorId {
-            logging::builder::warn(
-                "You appear to be using a deprecated keyword argument "
-                "'debugPrefix' in the function lrn. This argument is "
-                "deprecated and will be removed in a future release, please "
-                "use 'debugContext' instead");
-            return opset.lrn(args, size, alpha, beta, bias, debugContext);
-          },
-          py::arg("args"),
-          py::arg("size"),
-          py::arg("alpha")       = 0.0001f,
-          py::arg("beta")        = 0.75f,
-          py::arg("bias")        = 1.0f,
-          py::arg("debugPrefix") = std::string(),
-          DOC(popart, lrn, opset7))
-      .def(
           "lstm",
           [](AiOnnxOpset7 &opset,
              const std::vector<TensorId> &args,
@@ -1331,46 +601,6 @@ PYBIND11_MODULE(popart_opset7, m) {
           py::arg("debugContext")     = std::string(),
           DOC(popart, lstm, opset7))
       .def(
-          "lstm",
-          [](AiOnnxOpset7 &opset,
-             const std::vector<TensorId> &args,
-             unsigned num_outputs,
-             const std::vector<float> &activation_alpha,
-             const std::vector<float> &activation_beta,
-             const std::vector<std::string> &activations,
-             nonstd::optional<float> clip,
-             const std::string &direction,
-             nonstd::optional<int64_t> hidden_size,
-             int64_t input_forget,
-             const DebugContext &debugContext) -> std::vector<TensorId> {
-            logging::builder::warn(
-                "You appear to be using a deprecated keyword argument "
-                "'debugPrefix' in the function lstm. This argument is "
-                "deprecated and will be removed in a future release, please "
-                "use 'debugContext' instead");
-            return opset.lstm(args,
-                              num_outputs,
-                              activation_alpha,
-                              activation_beta,
-                              activations,
-                              clip,
-                              direction,
-                              hidden_size,
-                              input_forget,
-                              debugContext);
-          },
-          py::arg("args"),
-          py::arg("num_outputs"),
-          py::arg("activation_alpha") = std::vector<float>(),
-          py::arg("activation_beta")  = std::vector<float>(),
-          py::arg("activations")      = std::vector<std::string>(),
-          py::arg("clip")             = nonstd::optional<float>(),
-          py::arg("direction")        = "forward",
-          py::arg("hidden_size")      = nonstd::optional<int64_t>(),
-          py::arg("input_forget")     = 0,
-          py::arg("debugPrefix")      = std::string(),
-          DOC(popart, lstm, opset7))
-      .def(
           "leakyrelu",
           [](AiOnnxOpset7 &opset,
              const std::vector<TensorId> &args,
@@ -1383,23 +613,6 @@ PYBIND11_MODULE(popart_opset7, m) {
           py::arg("debugContext") = std::string(),
           DOC(popart, leakyrelu, opset7))
       .def(
-          "leakyrelu",
-          [](AiOnnxOpset7 &opset,
-             const std::vector<TensorId> &args,
-             float alpha,
-             const DebugContext &debugContext) -> TensorId {
-            logging::builder::warn(
-                "You appear to be using a deprecated keyword argument "
-                "'debugPrefix' in the function leakyrelu. This argument is "
-                "deprecated and will be removed in a future release, please "
-                "use 'debugContext' instead");
-            return opset.leakyrelu(args, alpha, debugContext);
-          },
-          py::arg("args"),
-          py::arg("alpha")       = 0.01f,
-          py::arg("debugPrefix") = std::string(),
-          DOC(popart, leakyrelu, opset7))
-      .def(
           "less",
           [](AiOnnxOpset7 &opset,
              const std::vector<TensorId> &args,
@@ -1410,21 +623,6 @@ PYBIND11_MODULE(popart_opset7, m) {
           py::arg("debugContext") = std::string(),
           DOC(popart, less, opset7))
       .def(
-          "less",
-          [](AiOnnxOpset7 &opset,
-             const std::vector<TensorId> &args,
-             const DebugContext &debugContext) -> TensorId {
-            logging::builder::warn(
-                "You appear to be using a deprecated keyword argument "
-                "'debugPrefix' in the function less. This argument is "
-                "deprecated and will be removed in a future release, please "
-                "use 'debugContext' instead");
-            return opset.less(args, debugContext);
-          },
-          py::arg("args"),
-          py::arg("debugPrefix") = std::string(),
-          DOC(popart, less, opset7))
-      .def(
           "log",
           [](AiOnnxOpset7 &opset,
              const std::vector<TensorId> &args,
@@ -1433,21 +631,6 @@ PYBIND11_MODULE(popart_opset7, m) {
           },
           py::arg("args"),
           py::arg("debugContext") = std::string(),
-          DOC(popart, log, opset7))
-      .def(
-          "log",
-          [](AiOnnxOpset7 &opset,
-             const std::vector<TensorId> &args,
-             const DebugContext &debugContext) -> TensorId {
-            logging::builder::warn(
-                "You appear to be using a deprecated keyword argument "
-                "'debugPrefix' in the function log. This argument is "
-                "deprecated and will be removed in a future release, please "
-                "use 'debugContext' instead");
-            return opset.log(args, debugContext);
-          },
-          py::arg("args"),
-          py::arg("debugPrefix") = std::string(),
           DOC(popart, log, opset7))
       .def(
           "logsoftmax",
@@ -1462,23 +645,6 @@ PYBIND11_MODULE(popart_opset7, m) {
           py::arg("debugContext") = std::string(),
           DOC(popart, logsoftmax, opset7))
       .def(
-          "logsoftmax",
-          [](AiOnnxOpset7 &opset,
-             const std::vector<TensorId> &args,
-             int64_t axis,
-             const DebugContext &debugContext) -> TensorId {
-            logging::builder::warn(
-                "You appear to be using a deprecated keyword argument "
-                "'debugPrefix' in the function logsoftmax. This argument is "
-                "deprecated and will be removed in a future release, please "
-                "use 'debugContext' instead");
-            return opset.logsoftmax(args, axis, debugContext);
-          },
-          py::arg("args"),
-          py::arg("axis")        = 1,
-          py::arg("debugPrefix") = std::string(),
-          DOC(popart, logsoftmax, opset7))
-      .def(
           "loop",
           [](AiOnnxOpset7 &opset,
              const std::vector<TensorId> &args,
@@ -1491,25 +657,6 @@ PYBIND11_MODULE(popart_opset7, m) {
           py::arg("num_outputs"),
           py::arg("body"),
           py::arg("debugContext") = std::string(),
-          DOC(popart, loop, opset7))
-      .def(
-          "loop",
-          [](AiOnnxOpset7 &opset,
-             const std::vector<TensorId> &args,
-             unsigned num_outputs,
-             const Builder &body,
-             const DebugContext &debugContext) -> std::vector<TensorId> {
-            logging::builder::warn(
-                "You appear to be using a deprecated keyword argument "
-                "'debugPrefix' in the function loop. This argument is "
-                "deprecated and will be removed in a future release, please "
-                "use 'debugContext' instead");
-            return opset.loop(args, num_outputs, body, debugContext);
-          },
-          py::arg("args"),
-          py::arg("num_outputs"),
-          py::arg("body"),
-          py::arg("debugPrefix") = std::string(),
           DOC(popart, loop, opset7))
       .def(
           "lpnormalization",
@@ -1526,25 +673,6 @@ PYBIND11_MODULE(popart_opset7, m) {
           py::arg("debugContext") = std::string(),
           DOC(popart, lpnormalization, opset7))
       .def(
-          "lpnormalization",
-          [](AiOnnxOpset7 &opset,
-             const std::vector<TensorId> &args,
-             int64_t axis,
-             int64_t p,
-             const DebugContext &debugContext) -> TensorId {
-            logging::builder::warn(
-                "You appear to be using a deprecated keyword argument "
-                "'debugPrefix' in the function lpnormalization. This argument "
-                "is deprecated and will be removed in a future release, please "
-                "use 'debugContext' instead");
-            return opset.lpnormalization(args, axis, p, debugContext);
-          },
-          py::arg("args"),
-          py::arg("axis")        = -1,
-          py::arg("p")           = 2,
-          py::arg("debugPrefix") = std::string(),
-          DOC(popart, lpnormalization, opset7))
-      .def(
           "lppool",
           [](AiOnnxOpset7 &opset,
              const std::vector<TensorId> &args,
@@ -1564,30 +692,6 @@ PYBIND11_MODULE(popart_opset7, m) {
           py::arg("debugContext") = std::string(),
           DOC(popart, lppool, opset7))
       .def(
-          "lppool",
-          [](AiOnnxOpset7 &opset,
-             const std::vector<TensorId> &args,
-             const std::vector<int64_t> &kernel_shape,
-             int64_t p,
-             const std::vector<int64_t> &pads,
-             const std::vector<int64_t> &strides,
-             const DebugContext &debugContext) -> TensorId {
-            logging::builder::warn(
-                "You appear to be using a deprecated keyword argument "
-                "'debugPrefix' in the function lppool. This argument is "
-                "deprecated and will be removed in a future release, please "
-                "use 'debugContext' instead");
-            return opset.lppool(
-                args, kernel_shape, p, pads, strides, debugContext);
-          },
-          py::arg("args"),
-          py::arg("kernel_shape"),
-          py::arg("p")           = 2,
-          py::arg("pads")        = std::vector<int64_t>(),
-          py::arg("strides")     = std::vector<int64_t>(),
-          py::arg("debugPrefix") = std::string(),
-          DOC(popart, lppool, opset7))
-      .def(
           "matmul",
           [](AiOnnxOpset7 &opset,
              const std::vector<TensorId> &args,
@@ -1598,21 +702,6 @@ PYBIND11_MODULE(popart_opset7, m) {
           py::arg("debugContext") = std::string(),
           DOC(popart, matmul, opset7))
       .def(
-          "matmul",
-          [](AiOnnxOpset7 &opset,
-             const std::vector<TensorId> &args,
-             const DebugContext &debugContext) -> TensorId {
-            logging::builder::warn(
-                "You appear to be using a deprecated keyword argument "
-                "'debugPrefix' in the function matmul. This argument is "
-                "deprecated and will be removed in a future release, please "
-                "use 'debugContext' instead");
-            return opset.matmul(args, debugContext);
-          },
-          py::arg("args"),
-          py::arg("debugPrefix") = std::string(),
-          DOC(popart, matmul, opset7))
-      .def(
           "max",
           [](AiOnnxOpset7 &opset,
              const std::vector<TensorId> &args,
@@ -1621,21 +710,6 @@ PYBIND11_MODULE(popart_opset7, m) {
           },
           py::arg("args"),
           py::arg("debugContext") = std::string(),
-          DOC(popart, max, opset7))
-      .def(
-          "max",
-          [](AiOnnxOpset7 &opset,
-             const std::vector<TensorId> &args,
-             const DebugContext &debugContext) -> TensorId {
-            logging::builder::warn(
-                "You appear to be using a deprecated keyword argument "
-                "'debugPrefix' in the function max. This argument is "
-                "deprecated and will be removed in a future release, please "
-                "use 'debugContext' instead");
-            return opset.max(args, debugContext);
-          },
-          py::arg("args"),
-          py::arg("debugPrefix") = std::string(),
           DOC(popart, max, opset7))
       .def(
           "maxpool",
@@ -1653,28 +727,6 @@ PYBIND11_MODULE(popart_opset7, m) {
           py::arg("pads")         = std::vector<int64_t>(),
           py::arg("strides")      = std::vector<int64_t>(),
           py::arg("debugContext") = std::string(),
-          DOC(popart, maxpool, opset7))
-      .def(
-          "maxpool",
-          [](AiOnnxOpset7 &opset,
-             const std::vector<TensorId> &args,
-             const std::vector<int64_t> &kernel_shape,
-             const std::vector<int64_t> &pads,
-             const std::vector<int64_t> &strides,
-             const DebugContext &debugContext) -> TensorId {
-            logging::builder::warn(
-                "You appear to be using a deprecated keyword argument "
-                "'debugPrefix' in the function maxpool. This argument is "
-                "deprecated and will be removed in a future release, please "
-                "use 'debugContext' instead");
-            return opset.maxpool(
-                args, kernel_shape, pads, strides, debugContext);
-          },
-          py::arg("args"),
-          py::arg("kernel_shape"),
-          py::arg("pads")        = std::vector<int64_t>(),
-          py::arg("strides")     = std::vector<int64_t>(),
-          py::arg("debugPrefix") = std::string(),
           DOC(popart, maxpool, opset7))
       .def(
           "maxroipool",
@@ -1692,26 +744,6 @@ PYBIND11_MODULE(popart_opset7, m) {
           py::arg("debugContext")  = std::string(),
           DOC(popart, maxroipool, opset7))
       .def(
-          "maxroipool",
-          [](AiOnnxOpset7 &opset,
-             const std::vector<TensorId> &args,
-             const std::vector<int64_t> &pooled_shape,
-             float spatial_scale,
-             const DebugContext &debugContext) -> TensorId {
-            logging::builder::warn(
-                "You appear to be using a deprecated keyword argument "
-                "'debugPrefix' in the function maxroipool. This argument is "
-                "deprecated and will be removed in a future release, please "
-                "use 'debugContext' instead");
-            return opset.maxroipool(
-                args, pooled_shape, spatial_scale, debugContext);
-          },
-          py::arg("args"),
-          py::arg("pooled_shape"),
-          py::arg("spatial_scale") = 1.0f,
-          py::arg("debugPrefix")   = std::string(),
-          DOC(popart, maxroipool, opset7))
-      .def(
           "mean",
           [](AiOnnxOpset7 &opset,
              const std::vector<TensorId> &args,
@@ -1720,21 +752,6 @@ PYBIND11_MODULE(popart_opset7, m) {
           },
           py::arg("args"),
           py::arg("debugContext") = std::string(),
-          DOC(popart, mean, opset7))
-      .def(
-          "mean",
-          [](AiOnnxOpset7 &opset,
-             const std::vector<TensorId> &args,
-             const DebugContext &debugContext) -> TensorId {
-            logging::builder::warn(
-                "You appear to be using a deprecated keyword argument "
-                "'debugPrefix' in the function mean. This argument is "
-                "deprecated and will be removed in a future release, please "
-                "use 'debugContext' instead");
-            return opset.mean(args, debugContext);
-          },
-          py::arg("args"),
-          py::arg("debugPrefix") = std::string(),
           DOC(popart, mean, opset7))
       .def(
           "min",
@@ -1747,21 +764,6 @@ PYBIND11_MODULE(popart_opset7, m) {
           py::arg("debugContext") = std::string(),
           DOC(popart, min, opset7))
       .def(
-          "min",
-          [](AiOnnxOpset7 &opset,
-             const std::vector<TensorId> &args,
-             const DebugContext &debugContext) -> TensorId {
-            logging::builder::warn(
-                "You appear to be using a deprecated keyword argument "
-                "'debugPrefix' in the function min. This argument is "
-                "deprecated and will be removed in a future release, please "
-                "use 'debugContext' instead");
-            return opset.min(args, debugContext);
-          },
-          py::arg("args"),
-          py::arg("debugPrefix") = std::string(),
-          DOC(popart, min, opset7))
-      .def(
           "mul",
           [](AiOnnxOpset7 &opset,
              const std::vector<TensorId> &args,
@@ -1770,21 +772,6 @@ PYBIND11_MODULE(popart_opset7, m) {
           },
           py::arg("args"),
           py::arg("debugContext") = std::string(),
-          DOC(popart, mul, opset7))
-      .def(
-          "mul",
-          [](AiOnnxOpset7 &opset,
-             const std::vector<TensorId> &args,
-             const DebugContext &debugContext) -> TensorId {
-            logging::builder::warn(
-                "You appear to be using a deprecated keyword argument "
-                "'debugPrefix' in the function mul. This argument is "
-                "deprecated and will be removed in a future release, please "
-                "use 'debugContext' instead");
-            return opset.mul(args, debugContext);
-          },
-          py::arg("args"),
-          py::arg("debugPrefix") = std::string(),
           DOC(popart, mul, opset7))
       .def(
           "multinomial",
@@ -1804,28 +791,6 @@ PYBIND11_MODULE(popart_opset7, m) {
           py::arg("debugContext") = std::string(),
           DOC(popart, multinomial, opset7))
       .def(
-          "multinomial",
-          [](AiOnnxOpset7 &opset,
-             const std::vector<TensorId> &args,
-             int64_t dtype,
-             int64_t sample_size,
-             nonstd::optional<float> seed,
-             const DebugContext &debugContext) -> TensorId {
-            logging::builder::warn(
-                "You appear to be using a deprecated keyword argument "
-                "'debugPrefix' in the function multinomial. This argument is "
-                "deprecated and will be removed in a future release, please "
-                "use 'debugContext' instead");
-            return opset.multinomial(
-                args, dtype, sample_size, seed, debugContext);
-          },
-          py::arg("args"),
-          py::arg("dtype")       = 6,
-          py::arg("sample_size") = 1,
-          py::arg("seed")        = nonstd::optional<float>(),
-          py::arg("debugPrefix") = std::string(),
-          DOC(popart, multinomial, opset7))
-      .def(
           "neg",
           [](AiOnnxOpset7 &opset,
              const std::vector<TensorId> &args,
@@ -1834,21 +799,6 @@ PYBIND11_MODULE(popart_opset7, m) {
           },
           py::arg("args"),
           py::arg("debugContext") = std::string(),
-          DOC(popart, neg, opset7))
-      .def(
-          "neg",
-          [](AiOnnxOpset7 &opset,
-             const std::vector<TensorId> &args,
-             const DebugContext &debugContext) -> TensorId {
-            logging::builder::warn(
-                "You appear to be using a deprecated keyword argument "
-                "'debugPrefix' in the function neg. This argument is "
-                "deprecated and will be removed in a future release, please "
-                "use 'debugContext' instead");
-            return opset.neg(args, debugContext);
-          },
-          py::arg("args"),
-          py::arg("debugPrefix") = std::string(),
           DOC(popart, neg, opset7))
       .def(
           "logical_not",
@@ -1861,21 +811,6 @@ PYBIND11_MODULE(popart_opset7, m) {
           py::arg("debugContext") = std::string(),
           DOC(popart, logical_not, opset7))
       .def(
-          "logical_not",
-          [](AiOnnxOpset7 &opset,
-             const std::vector<TensorId> &args,
-             const DebugContext &debugContext) -> TensorId {
-            logging::builder::warn(
-                "You appear to be using a deprecated keyword argument "
-                "'debugPrefix' in the function logical_not. This argument is "
-                "deprecated and will be removed in a future release, please "
-                "use 'debugContext' instead");
-            return opset.logical_not(args, debugContext);
-          },
-          py::arg("args"),
-          py::arg("debugPrefix") = std::string(),
-          DOC(popart, logical_not, opset7))
-      .def(
           "logical_or",
           [](AiOnnxOpset7 &opset,
              const std::vector<TensorId> &args,
@@ -1886,21 +821,6 @@ PYBIND11_MODULE(popart_opset7, m) {
           py::arg("debugContext") = std::string(),
           DOC(popart, logical_or, opset7))
       .def(
-          "logical_or",
-          [](AiOnnxOpset7 &opset,
-             const std::vector<TensorId> &args,
-             const DebugContext &debugContext) -> TensorId {
-            logging::builder::warn(
-                "You appear to be using a deprecated keyword argument "
-                "'debugPrefix' in the function logical_or. This argument is "
-                "deprecated and will be removed in a future release, please "
-                "use 'debugContext' instead");
-            return opset.logical_or(args, debugContext);
-          },
-          py::arg("args"),
-          py::arg("debugPrefix") = std::string(),
-          DOC(popart, logical_or, opset7))
-      .def(
           "prelu",
           [](AiOnnxOpset7 &opset,
              const std::vector<TensorId> &args,
@@ -1909,21 +829,6 @@ PYBIND11_MODULE(popart_opset7, m) {
           },
           py::arg("args"),
           py::arg("debugContext") = std::string(),
-          DOC(popart, prelu, opset7))
-      .def(
-          "prelu",
-          [](AiOnnxOpset7 &opset,
-             const std::vector<TensorId> &args,
-             const DebugContext &debugContext) -> TensorId {
-            logging::builder::warn(
-                "You appear to be using a deprecated keyword argument "
-                "'debugPrefix' in the function prelu. This argument is "
-                "deprecated and will be removed in a future release, please "
-                "use 'debugContext' instead");
-            return opset.prelu(args, debugContext);
-          },
-          py::arg("args"),
-          py::arg("debugPrefix") = std::string(),
           DOC(popart, prelu, opset7))
       .def(
           "pad",
@@ -1942,27 +847,6 @@ PYBIND11_MODULE(popart_opset7, m) {
           py::arg("debugContext") = std::string(),
           DOC(popart, pad, opset7))
       .def(
-          "pad",
-          [](AiOnnxOpset7 &opset,
-             const std::vector<TensorId> &args,
-             const std::vector<int64_t> &pads,
-             const std::string &mode,
-             float value,
-             const DebugContext &debugContext) -> TensorId {
-            logging::builder::warn(
-                "You appear to be using a deprecated keyword argument "
-                "'debugPrefix' in the function pad. This argument is "
-                "deprecated and will be removed in a future release, please "
-                "use 'debugContext' instead");
-            return opset.pad(args, pads, mode, value, debugContext);
-          },
-          py::arg("args"),
-          py::arg("pads"),
-          py::arg("mode")        = "constant",
-          py::arg("value")       = 0.0f,
-          py::arg("debugPrefix") = std::string(),
-          DOC(popart, pad, opset7))
-      .def(
           "pow",
           [](AiOnnxOpset7 &opset,
              const std::vector<TensorId> &args,
@@ -1971,21 +855,6 @@ PYBIND11_MODULE(popart_opset7, m) {
           },
           py::arg("args"),
           py::arg("debugContext") = std::string(),
-          DOC(popart, pow, opset7))
-      .def(
-          "pow",
-          [](AiOnnxOpset7 &opset,
-             const std::vector<TensorId> &args,
-             const DebugContext &debugContext) -> TensorId {
-            logging::builder::warn(
-                "You appear to be using a deprecated keyword argument "
-                "'debugPrefix' in the function pow. This argument is "
-                "deprecated and will be removed in a future release, please "
-                "use 'debugContext' instead");
-            return opset.pow(args, debugContext);
-          },
-          py::arg("args"),
-          py::arg("debugPrefix") = std::string(),
           DOC(popart, pow, opset7))
       .def(
           "rnn",
@@ -2020,43 +889,6 @@ PYBIND11_MODULE(popart_opset7, m) {
           py::arg("debugContext")     = std::string(),
           DOC(popart, rnn, opset7))
       .def(
-          "rnn",
-          [](AiOnnxOpset7 &opset,
-             const std::vector<TensorId> &args,
-             unsigned num_outputs,
-             const std::vector<float> &activation_alpha,
-             const std::vector<float> &activation_beta,
-             const std::vector<std::string> &activations,
-             nonstd::optional<float> clip,
-             const std::string &direction,
-             nonstd::optional<int64_t> hidden_size,
-             const DebugContext &debugContext) -> std::vector<TensorId> {
-            logging::builder::warn(
-                "You appear to be using a deprecated keyword argument "
-                "'debugPrefix' in the function rnn. This argument is "
-                "deprecated and will be removed in a future release, please "
-                "use 'debugContext' instead");
-            return opset.rnn(args,
-                             num_outputs,
-                             activation_alpha,
-                             activation_beta,
-                             activations,
-                             clip,
-                             direction,
-                             hidden_size,
-                             debugContext);
-          },
-          py::arg("args"),
-          py::arg("num_outputs"),
-          py::arg("activation_alpha") = std::vector<float>(),
-          py::arg("activation_beta")  = std::vector<float>(),
-          py::arg("activations")      = std::vector<std::string>(),
-          py::arg("clip")             = nonstd::optional<float>(),
-          py::arg("direction")        = "forward",
-          py::arg("hidden_size")      = nonstd::optional<int64_t>(),
-          py::arg("debugPrefix")      = std::string(),
-          DOC(popart, rnn, opset7))
-      .def(
           "randomnormal",
           [](AiOnnxOpset7 &opset,
              const std::vector<int64_t> &shape,
@@ -2074,30 +906,6 @@ PYBIND11_MODULE(popart_opset7, m) {
           py::arg("scale")        = 1.0f,
           py::arg("seed")         = nonstd::optional<float>(),
           py::arg("debugContext") = std::string(),
-          DOC(popart, randomnormal, opset7))
-      .def(
-          "randomnormal",
-          [](AiOnnxOpset7 &opset,
-             const std::vector<int64_t> &shape,
-             int64_t dtype,
-             float mean,
-             float scale,
-             nonstd::optional<float> seed,
-             const DebugContext &debugContext) -> TensorId {
-            logging::builder::warn(
-                "You appear to be using a deprecated keyword argument "
-                "'debugPrefix' in the function randomnormal. This argument is "
-                "deprecated and will be removed in a future release, please "
-                "use 'debugContext' instead");
-            return opset.randomnormal(
-                shape, dtype, mean, scale, seed, debugContext);
-          },
-          py::arg("shape"),
-          py::arg("dtype")       = 1,
-          py::arg("mean")        = 0.0f,
-          py::arg("scale")       = 1.0f,
-          py::arg("seed")        = nonstd::optional<float>(),
-          py::arg("debugPrefix") = std::string(),
           DOC(popart, randomnormal, opset7))
       .def(
           "randomnormallike",
@@ -2119,30 +927,6 @@ PYBIND11_MODULE(popart_opset7, m) {
           py::arg("debugContext") = std::string(),
           DOC(popart, randomnormallike, opset7))
       .def(
-          "randomnormallike",
-          [](AiOnnxOpset7 &opset,
-             const std::vector<TensorId> &args,
-             nonstd::optional<int64_t> dtype,
-             float mean,
-             float scale,
-             nonstd::optional<float> seed,
-             const DebugContext &debugContext) -> TensorId {
-            logging::builder::warn(
-                "You appear to be using a deprecated keyword argument "
-                "'debugPrefix' in the function randomnormallike. This argument "
-                "is deprecated and will be removed in a future release, please "
-                "use 'debugContext' instead");
-            return opset.randomnormallike(
-                args, dtype, mean, scale, seed, debugContext);
-          },
-          py::arg("args"),
-          py::arg("dtype")       = nonstd::optional<int64_t>(),
-          py::arg("mean")        = 0.0f,
-          py::arg("scale")       = 1.0f,
-          py::arg("seed")        = nonstd::optional<float>(),
-          py::arg("debugPrefix") = std::string(),
-          DOC(popart, randomnormallike, opset7))
-      .def(
           "randomuniform",
           [](AiOnnxOpset7 &opset,
              const std::vector<int64_t> &shape,
@@ -2160,30 +944,6 @@ PYBIND11_MODULE(popart_opset7, m) {
           py::arg("low")          = 0.0f,
           py::arg("seed")         = nonstd::optional<float>(),
           py::arg("debugContext") = std::string(),
-          DOC(popart, randomuniform, opset7))
-      .def(
-          "randomuniform",
-          [](AiOnnxOpset7 &opset,
-             const std::vector<int64_t> &shape,
-             int64_t dtype,
-             float high,
-             float low,
-             nonstd::optional<float> seed,
-             const DebugContext &debugContext) -> TensorId {
-            logging::builder::warn(
-                "You appear to be using a deprecated keyword argument "
-                "'debugPrefix' in the function randomuniform. This argument is "
-                "deprecated and will be removed in a future release, please "
-                "use 'debugContext' instead");
-            return opset.randomuniform(
-                shape, dtype, high, low, seed, debugContext);
-          },
-          py::arg("shape"),
-          py::arg("dtype")       = 1,
-          py::arg("high")        = 1.0f,
-          py::arg("low")         = 0.0f,
-          py::arg("seed")        = nonstd::optional<float>(),
-          py::arg("debugPrefix") = std::string(),
           DOC(popart, randomuniform, opset7))
       .def(
           "randomuniformlike",
@@ -2205,30 +965,6 @@ PYBIND11_MODULE(popart_opset7, m) {
           py::arg("debugContext") = std::string(),
           DOC(popart, randomuniformlike, opset7))
       .def(
-          "randomuniformlike",
-          [](AiOnnxOpset7 &opset,
-             const std::vector<TensorId> &args,
-             nonstd::optional<int64_t> dtype,
-             float high,
-             float low,
-             nonstd::optional<float> seed,
-             const DebugContext &debugContext) -> TensorId {
-            logging::builder::warn(
-                "You appear to be using a deprecated keyword argument "
-                "'debugPrefix' in the function randomuniformlike. This "
-                "argument is deprecated and will be removed in a future "
-                "release, please use 'debugContext' instead");
-            return opset.randomuniformlike(
-                args, dtype, high, low, seed, debugContext);
-          },
-          py::arg("args"),
-          py::arg("dtype")       = nonstd::optional<int64_t>(),
-          py::arg("high")        = 1.0f,
-          py::arg("low")         = 0.0f,
-          py::arg("seed")        = nonstd::optional<float>(),
-          py::arg("debugPrefix") = std::string(),
-          DOC(popart, randomuniformlike, opset7))
-      .def(
           "reciprocal",
           [](AiOnnxOpset7 &opset,
              const std::vector<TensorId> &args,
@@ -2237,21 +973,6 @@ PYBIND11_MODULE(popart_opset7, m) {
           },
           py::arg("args"),
           py::arg("debugContext") = std::string(),
-          DOC(popart, reciprocal, opset7))
-      .def(
-          "reciprocal",
-          [](AiOnnxOpset7 &opset,
-             const std::vector<TensorId> &args,
-             const DebugContext &debugContext) -> TensorId {
-            logging::builder::warn(
-                "You appear to be using a deprecated keyword argument "
-                "'debugPrefix' in the function reciprocal. This argument is "
-                "deprecated and will be removed in a future release, please "
-                "use 'debugContext' instead");
-            return opset.reciprocal(args, debugContext);
-          },
-          py::arg("args"),
-          py::arg("debugPrefix") = std::string(),
           DOC(popart, reciprocal, opset7))
       .def(
           "reducel1",
@@ -2268,25 +989,6 @@ PYBIND11_MODULE(popart_opset7, m) {
           py::arg("debugContext") = std::string(),
           DOC(popart, reducel1, opset7))
       .def(
-          "reducel1",
-          [](AiOnnxOpset7 &opset,
-             const std::vector<TensorId> &args,
-             nonstd::optional<std::vector<int64_t>> axes,
-             int64_t keepdims,
-             const DebugContext &debugContext) -> TensorId {
-            logging::builder::warn(
-                "You appear to be using a deprecated keyword argument "
-                "'debugPrefix' in the function reducel1. This argument is "
-                "deprecated and will be removed in a future release, please "
-                "use 'debugContext' instead");
-            return opset.reducel1(args, axes, keepdims, debugContext);
-          },
-          py::arg("args"),
-          py::arg("axes")        = nonstd::optional<std::vector<int64_t>>(),
-          py::arg("keepdims")    = 1,
-          py::arg("debugPrefix") = std::string(),
-          DOC(popart, reducel1, opset7))
-      .def(
           "reducel2",
           [](AiOnnxOpset7 &opset,
              const std::vector<TensorId> &args,
@@ -2299,25 +1001,6 @@ PYBIND11_MODULE(popart_opset7, m) {
           py::arg("axes")         = nonstd::optional<std::vector<int64_t>>(),
           py::arg("keepdims")     = 1,
           py::arg("debugContext") = std::string(),
-          DOC(popart, reducel2, opset7))
-      .def(
-          "reducel2",
-          [](AiOnnxOpset7 &opset,
-             const std::vector<TensorId> &args,
-             nonstd::optional<std::vector<int64_t>> axes,
-             int64_t keepdims,
-             const DebugContext &debugContext) -> TensorId {
-            logging::builder::warn(
-                "You appear to be using a deprecated keyword argument "
-                "'debugPrefix' in the function reducel2. This argument is "
-                "deprecated and will be removed in a future release, please "
-                "use 'debugContext' instead");
-            return opset.reducel2(args, axes, keepdims, debugContext);
-          },
-          py::arg("args"),
-          py::arg("axes")        = nonstd::optional<std::vector<int64_t>>(),
-          py::arg("keepdims")    = 1,
-          py::arg("debugPrefix") = std::string(),
           DOC(popart, reducel2, opset7))
       .def(
           "reducelogsum",
@@ -2334,25 +1017,6 @@ PYBIND11_MODULE(popart_opset7, m) {
           py::arg("debugContext") = std::string(),
           DOC(popart, reducelogsum, opset7))
       .def(
-          "reducelogsum",
-          [](AiOnnxOpset7 &opset,
-             const std::vector<TensorId> &args,
-             nonstd::optional<std::vector<int64_t>> axes,
-             int64_t keepdims,
-             const DebugContext &debugContext) -> TensorId {
-            logging::builder::warn(
-                "You appear to be using a deprecated keyword argument "
-                "'debugPrefix' in the function reducelogsum. This argument is "
-                "deprecated and will be removed in a future release, please "
-                "use 'debugContext' instead");
-            return opset.reducelogsum(args, axes, keepdims, debugContext);
-          },
-          py::arg("args"),
-          py::arg("axes")        = nonstd::optional<std::vector<int64_t>>(),
-          py::arg("keepdims")    = 1,
-          py::arg("debugPrefix") = std::string(),
-          DOC(popart, reducelogsum, opset7))
-      .def(
           "reducelogsumexp",
           [](AiOnnxOpset7 &opset,
              const std::vector<TensorId> &args,
@@ -2365,25 +1029,6 @@ PYBIND11_MODULE(popart_opset7, m) {
           py::arg("axes")         = nonstd::optional<std::vector<int64_t>>(),
           py::arg("keepdims")     = 1,
           py::arg("debugContext") = std::string(),
-          DOC(popart, reducelogsumexp, opset7))
-      .def(
-          "reducelogsumexp",
-          [](AiOnnxOpset7 &opset,
-             const std::vector<TensorId> &args,
-             nonstd::optional<std::vector<int64_t>> axes,
-             int64_t keepdims,
-             const DebugContext &debugContext) -> TensorId {
-            logging::builder::warn(
-                "You appear to be using a deprecated keyword argument "
-                "'debugPrefix' in the function reducelogsumexp. This argument "
-                "is deprecated and will be removed in a future release, please "
-                "use 'debugContext' instead");
-            return opset.reducelogsumexp(args, axes, keepdims, debugContext);
-          },
-          py::arg("args"),
-          py::arg("axes")        = nonstd::optional<std::vector<int64_t>>(),
-          py::arg("keepdims")    = 1,
-          py::arg("debugPrefix") = std::string(),
           DOC(popart, reducelogsumexp, opset7))
       .def(
           "reducemax",
@@ -2400,25 +1045,6 @@ PYBIND11_MODULE(popart_opset7, m) {
           py::arg("debugContext") = std::string(),
           DOC(popart, reducemax, opset7))
       .def(
-          "reducemax",
-          [](AiOnnxOpset7 &opset,
-             const std::vector<TensorId> &args,
-             nonstd::optional<std::vector<int64_t>> axes,
-             int64_t keepdims,
-             const DebugContext &debugContext) -> TensorId {
-            logging::builder::warn(
-                "You appear to be using a deprecated keyword argument "
-                "'debugPrefix' in the function reducemax. This argument is "
-                "deprecated and will be removed in a future release, please "
-                "use 'debugContext' instead");
-            return opset.reducemax(args, axes, keepdims, debugContext);
-          },
-          py::arg("args"),
-          py::arg("axes")        = nonstd::optional<std::vector<int64_t>>(),
-          py::arg("keepdims")    = 1,
-          py::arg("debugPrefix") = std::string(),
-          DOC(popart, reducemax, opset7))
-      .def(
           "reducemean",
           [](AiOnnxOpset7 &opset,
              const std::vector<TensorId> &args,
@@ -2431,25 +1057,6 @@ PYBIND11_MODULE(popart_opset7, m) {
           py::arg("axes")         = nonstd::optional<std::vector<int64_t>>(),
           py::arg("keepdims")     = 1,
           py::arg("debugContext") = std::string(),
-          DOC(popart, reducemean, opset7))
-      .def(
-          "reducemean",
-          [](AiOnnxOpset7 &opset,
-             const std::vector<TensorId> &args,
-             nonstd::optional<std::vector<int64_t>> axes,
-             int64_t keepdims,
-             const DebugContext &debugContext) -> TensorId {
-            logging::builder::warn(
-                "You appear to be using a deprecated keyword argument "
-                "'debugPrefix' in the function reducemean. This argument is "
-                "deprecated and will be removed in a future release, please "
-                "use 'debugContext' instead");
-            return opset.reducemean(args, axes, keepdims, debugContext);
-          },
-          py::arg("args"),
-          py::arg("axes")        = nonstd::optional<std::vector<int64_t>>(),
-          py::arg("keepdims")    = 1,
-          py::arg("debugPrefix") = std::string(),
           DOC(popart, reducemean, opset7))
       .def(
           "reducemin",
@@ -2466,25 +1073,6 @@ PYBIND11_MODULE(popart_opset7, m) {
           py::arg("debugContext") = std::string(),
           DOC(popart, reducemin, opset7))
       .def(
-          "reducemin",
-          [](AiOnnxOpset7 &opset,
-             const std::vector<TensorId> &args,
-             nonstd::optional<std::vector<int64_t>> axes,
-             int64_t keepdims,
-             const DebugContext &debugContext) -> TensorId {
-            logging::builder::warn(
-                "You appear to be using a deprecated keyword argument "
-                "'debugPrefix' in the function reducemin. This argument is "
-                "deprecated and will be removed in a future release, please "
-                "use 'debugContext' instead");
-            return opset.reducemin(args, axes, keepdims, debugContext);
-          },
-          py::arg("args"),
-          py::arg("axes")        = nonstd::optional<std::vector<int64_t>>(),
-          py::arg("keepdims")    = 1,
-          py::arg("debugPrefix") = std::string(),
-          DOC(popart, reducemin, opset7))
-      .def(
           "reduceprod",
           [](AiOnnxOpset7 &opset,
              const std::vector<TensorId> &args,
@@ -2497,25 +1085,6 @@ PYBIND11_MODULE(popart_opset7, m) {
           py::arg("axes")         = nonstd::optional<std::vector<int64_t>>(),
           py::arg("keepdims")     = 1,
           py::arg("debugContext") = std::string(),
-          DOC(popart, reduceprod, opset7))
-      .def(
-          "reduceprod",
-          [](AiOnnxOpset7 &opset,
-             const std::vector<TensorId> &args,
-             nonstd::optional<std::vector<int64_t>> axes,
-             int64_t keepdims,
-             const DebugContext &debugContext) -> TensorId {
-            logging::builder::warn(
-                "You appear to be using a deprecated keyword argument "
-                "'debugPrefix' in the function reduceprod. This argument is "
-                "deprecated and will be removed in a future release, please "
-                "use 'debugContext' instead");
-            return opset.reduceprod(args, axes, keepdims, debugContext);
-          },
-          py::arg("args"),
-          py::arg("axes")        = nonstd::optional<std::vector<int64_t>>(),
-          py::arg("keepdims")    = 1,
-          py::arg("debugPrefix") = std::string(),
           DOC(popart, reduceprod, opset7))
       .def(
           "reducesum",
@@ -2532,25 +1101,6 @@ PYBIND11_MODULE(popart_opset7, m) {
           py::arg("debugContext") = std::string(),
           DOC(popart, reducesum, opset7))
       .def(
-          "reducesum",
-          [](AiOnnxOpset7 &opset,
-             const std::vector<TensorId> &args,
-             nonstd::optional<std::vector<int64_t>> axes,
-             int64_t keepdims,
-             const DebugContext &debugContext) -> TensorId {
-            logging::builder::warn(
-                "You appear to be using a deprecated keyword argument "
-                "'debugPrefix' in the function reducesum. This argument is "
-                "deprecated and will be removed in a future release, please "
-                "use 'debugContext' instead");
-            return opset.reducesum(args, axes, keepdims, debugContext);
-          },
-          py::arg("args"),
-          py::arg("axes")        = nonstd::optional<std::vector<int64_t>>(),
-          py::arg("keepdims")    = 1,
-          py::arg("debugPrefix") = std::string(),
-          DOC(popart, reducesum, opset7))
-      .def(
           "reducesumsquare",
           [](AiOnnxOpset7 &opset,
              const std::vector<TensorId> &args,
@@ -2565,25 +1115,6 @@ PYBIND11_MODULE(popart_opset7, m) {
           py::arg("debugContext") = std::string(),
           DOC(popart, reducesumsquare, opset7))
       .def(
-          "reducesumsquare",
-          [](AiOnnxOpset7 &opset,
-             const std::vector<TensorId> &args,
-             nonstd::optional<std::vector<int64_t>> axes,
-             int64_t keepdims,
-             const DebugContext &debugContext) -> TensorId {
-            logging::builder::warn(
-                "You appear to be using a deprecated keyword argument "
-                "'debugPrefix' in the function reducesumsquare. This argument "
-                "is deprecated and will be removed in a future release, please "
-                "use 'debugContext' instead");
-            return opset.reducesumsquare(args, axes, keepdims, debugContext);
-          },
-          py::arg("args"),
-          py::arg("axes")        = nonstd::optional<std::vector<int64_t>>(),
-          py::arg("keepdims")    = 1,
-          py::arg("debugPrefix") = std::string(),
-          DOC(popart, reducesumsquare, opset7))
-      .def(
           "relu",
           [](AiOnnxOpset7 &opset,
              const std::vector<TensorId> &args,
@@ -2594,21 +1125,6 @@ PYBIND11_MODULE(popart_opset7, m) {
           py::arg("debugContext") = std::string(),
           DOC(popart, relu, opset7))
       .def(
-          "relu",
-          [](AiOnnxOpset7 &opset,
-             const std::vector<TensorId> &args,
-             const DebugContext &debugContext) -> TensorId {
-            logging::builder::warn(
-                "You appear to be using a deprecated keyword argument "
-                "'debugPrefix' in the function relu. This argument is "
-                "deprecated and will be removed in a future release, please "
-                "use 'debugContext' instead");
-            return opset.relu(args, debugContext);
-          },
-          py::arg("args"),
-          py::arg("debugPrefix") = std::string(),
-          DOC(popart, relu, opset7))
-      .def(
           "reshape",
           [](AiOnnxOpset7 &opset,
              const std::vector<TensorId> &args,
@@ -2617,21 +1133,6 @@ PYBIND11_MODULE(popart_opset7, m) {
           },
           py::arg("args"),
           py::arg("debugContext") = std::string(),
-          DOC(popart, reshape, opset7))
-      .def(
-          "reshape",
-          [](AiOnnxOpset7 &opset,
-             const std::vector<TensorId> &args,
-             const DebugContext &debugContext) -> TensorId {
-            logging::builder::warn(
-                "You appear to be using a deprecated keyword argument "
-                "'debugPrefix' in the function reshape. This argument is "
-                "deprecated and will be removed in a future release, please "
-                "use 'debugContext' instead");
-            return opset.reshape(args, debugContext);
-          },
-          py::arg("args"),
-          py::arg("debugPrefix") = std::string(),
           DOC(popart, reshape, opset7))
       .def(
           "selu",
@@ -2648,25 +1149,6 @@ PYBIND11_MODULE(popart_opset7, m) {
           py::arg("debugContext") = std::string(),
           DOC(popart, selu, opset7))
       .def(
-          "selu",
-          [](AiOnnxOpset7 &opset,
-             const std::vector<TensorId> &args,
-             float alpha,
-             float gamma,
-             const DebugContext &debugContext) -> TensorId {
-            logging::builder::warn(
-                "You appear to be using a deprecated keyword argument "
-                "'debugPrefix' in the function selu. This argument is "
-                "deprecated and will be removed in a future release, please "
-                "use 'debugContext' instead");
-            return opset.selu(args, alpha, gamma, debugContext);
-          },
-          py::arg("args"),
-          py::arg("alpha")       = 1.67326f,
-          py::arg("gamma")       = 1.0507f,
-          py::arg("debugPrefix") = std::string(),
-          DOC(popart, selu, opset7))
-      .def(
           "shape",
           [](AiOnnxOpset7 &opset,
              const std::vector<TensorId> &args,
@@ -2675,21 +1157,6 @@ PYBIND11_MODULE(popart_opset7, m) {
           },
           py::arg("args"),
           py::arg("debugContext") = std::string(),
-          DOC(popart, shape, opset7))
-      .def(
-          "shape",
-          [](AiOnnxOpset7 &opset,
-             const std::vector<TensorId> &args,
-             const DebugContext &debugContext) -> TensorId {
-            logging::builder::warn(
-                "You appear to be using a deprecated keyword argument "
-                "'debugPrefix' in the function shape. This argument is "
-                "deprecated and will be removed in a future release, please "
-                "use 'debugContext' instead");
-            return opset.shape(args, debugContext);
-          },
-          py::arg("args"),
-          py::arg("debugPrefix") = std::string(),
           DOC(popart, shape, opset7))
       .def(
           "sigmoid",
@@ -2702,21 +1169,6 @@ PYBIND11_MODULE(popart_opset7, m) {
           py::arg("debugContext") = std::string(),
           DOC(popart, sigmoid, opset7))
       .def(
-          "sigmoid",
-          [](AiOnnxOpset7 &opset,
-             const std::vector<TensorId> &args,
-             const DebugContext &debugContext) -> TensorId {
-            logging::builder::warn(
-                "You appear to be using a deprecated keyword argument "
-                "'debugPrefix' in the function sigmoid. This argument is "
-                "deprecated and will be removed in a future release, please "
-                "use 'debugContext' instead");
-            return opset.sigmoid(args, debugContext);
-          },
-          py::arg("args"),
-          py::arg("debugPrefix") = std::string(),
-          DOC(popart, sigmoid, opset7))
-      .def(
           "sin",
           [](AiOnnxOpset7 &opset,
              const std::vector<TensorId> &args,
@@ -2727,21 +1179,6 @@ PYBIND11_MODULE(popart_opset7, m) {
           py::arg("debugContext") = std::string(),
           DOC(popart, sin, opset7))
       .def(
-          "sin",
-          [](AiOnnxOpset7 &opset,
-             const std::vector<TensorId> &args,
-             const DebugContext &debugContext) -> TensorId {
-            logging::builder::warn(
-                "You appear to be using a deprecated keyword argument "
-                "'debugPrefix' in the function sin. This argument is "
-                "deprecated and will be removed in a future release, please "
-                "use 'debugContext' instead");
-            return opset.sin(args, debugContext);
-          },
-          py::arg("args"),
-          py::arg("debugPrefix") = std::string(),
-          DOC(popart, sin, opset7))
-      .def(
           "size",
           [](AiOnnxOpset7 &opset,
              const std::vector<TensorId> &args,
@@ -2750,21 +1187,6 @@ PYBIND11_MODULE(popart_opset7, m) {
           },
           py::arg("args"),
           py::arg("debugContext") = std::string(),
-          DOC(popart, size, opset7))
-      .def(
-          "size",
-          [](AiOnnxOpset7 &opset,
-             const std::vector<TensorId> &args,
-             const DebugContext &debugContext) -> TensorId {
-            logging::builder::warn(
-                "You appear to be using a deprecated keyword argument "
-                "'debugPrefix' in the function size. This argument is "
-                "deprecated and will be removed in a future release, please "
-                "use 'debugContext' instead");
-            return opset.size(args, debugContext);
-          },
-          py::arg("args"),
-          py::arg("debugPrefix") = std::string(),
           DOC(popart, size, opset7))
       .def(
           "slice",
@@ -2783,27 +1205,6 @@ PYBIND11_MODULE(popart_opset7, m) {
           py::arg("debugContext") = std::string(),
           DOC(popart, slice, opset7))
       .def(
-          "slice",
-          [](AiOnnxOpset7 &opset,
-             const std::vector<TensorId> &args,
-             const std::vector<int64_t> &ends,
-             const std::vector<int64_t> &starts,
-             const std::vector<int64_t> &axes,
-             const DebugContext &debugContext) -> TensorId {
-            logging::builder::warn(
-                "You appear to be using a deprecated keyword argument "
-                "'debugPrefix' in the function slice. This argument is "
-                "deprecated and will be removed in a future release, please "
-                "use 'debugContext' instead");
-            return opset.slice(args, ends, starts, axes, debugContext);
-          },
-          py::arg("args"),
-          py::arg("ends"),
-          py::arg("starts"),
-          py::arg("axes")        = std::vector<int64_t>(),
-          py::arg("debugPrefix") = std::string(),
-          DOC(popart, slice, opset7))
-      .def(
           "softmax",
           [](AiOnnxOpset7 &opset,
              const std::vector<TensorId> &args,
@@ -2816,23 +1217,6 @@ PYBIND11_MODULE(popart_opset7, m) {
           py::arg("debugContext") = std::string(),
           DOC(popart, softmax, opset7))
       .def(
-          "softmax",
-          [](AiOnnxOpset7 &opset,
-             const std::vector<TensorId> &args,
-             int64_t axis,
-             const DebugContext &debugContext) -> TensorId {
-            logging::builder::warn(
-                "You appear to be using a deprecated keyword argument "
-                "'debugPrefix' in the function softmax. This argument is "
-                "deprecated and will be removed in a future release, please "
-                "use 'debugContext' instead");
-            return opset.softmax(args, axis, debugContext);
-          },
-          py::arg("args"),
-          py::arg("axis")        = 1,
-          py::arg("debugPrefix") = std::string(),
-          DOC(popart, softmax, opset7))
-      .def(
           "softplus",
           [](AiOnnxOpset7 &opset,
              const std::vector<TensorId> &args,
@@ -2841,21 +1225,6 @@ PYBIND11_MODULE(popart_opset7, m) {
           },
           py::arg("args"),
           py::arg("debugContext") = std::string(),
-          DOC(popart, softplus, opset7))
-      .def(
-          "softplus",
-          [](AiOnnxOpset7 &opset,
-             const std::vector<TensorId> &args,
-             const DebugContext &debugContext) -> TensorId {
-            logging::builder::warn(
-                "You appear to be using a deprecated keyword argument "
-                "'debugPrefix' in the function softplus. This argument is "
-                "deprecated and will be removed in a future release, please "
-                "use 'debugContext' instead");
-            return opset.softplus(args, debugContext);
-          },
-          py::arg("args"),
-          py::arg("debugPrefix") = std::string(),
           DOC(popart, softplus, opset7))
       .def(
           "softsign",
@@ -2868,21 +1237,6 @@ PYBIND11_MODULE(popart_opset7, m) {
           py::arg("debugContext") = std::string(),
           DOC(popart, softsign, opset7))
       .def(
-          "softsign",
-          [](AiOnnxOpset7 &opset,
-             const std::vector<TensorId> &args,
-             const DebugContext &debugContext) -> TensorId {
-            logging::builder::warn(
-                "You appear to be using a deprecated keyword argument "
-                "'debugPrefix' in the function softsign. This argument is "
-                "deprecated and will be removed in a future release, please "
-                "use 'debugContext' instead");
-            return opset.softsign(args, debugContext);
-          },
-          py::arg("args"),
-          py::arg("debugPrefix") = std::string(),
-          DOC(popart, softsign, opset7))
-      .def(
           "spacetodepth",
           [](AiOnnxOpset7 &opset,
              const std::vector<TensorId> &args,
@@ -2893,23 +1247,6 @@ PYBIND11_MODULE(popart_opset7, m) {
           py::arg("args"),
           py::arg("blocksize"),
           py::arg("debugContext") = std::string(),
-          DOC(popart, spacetodepth, opset7))
-      .def(
-          "spacetodepth",
-          [](AiOnnxOpset7 &opset,
-             const std::vector<TensorId> &args,
-             int64_t blocksize,
-             const DebugContext &debugContext) -> TensorId {
-            logging::builder::warn(
-                "You appear to be using a deprecated keyword argument "
-                "'debugPrefix' in the function spacetodepth. This argument is "
-                "deprecated and will be removed in a future release, please "
-                "use 'debugContext' instead");
-            return opset.spacetodepth(args, blocksize, debugContext);
-          },
-          py::arg("args"),
-          py::arg("blocksize"),
-          py::arg("debugPrefix") = std::string(),
           DOC(popart, spacetodepth, opset7))
       .def(
           "split",
@@ -2928,27 +1265,6 @@ PYBIND11_MODULE(popart_opset7, m) {
           py::arg("debugContext") = std::string(),
           DOC(popart, split, opset7))
       .def(
-          "split",
-          [](AiOnnxOpset7 &opset,
-             const std::vector<TensorId> &args,
-             unsigned num_outputs,
-             int64_t axis,
-             const std::vector<int64_t> &split,
-             const DebugContext &debugContext) -> std::vector<TensorId> {
-            logging::builder::warn(
-                "You appear to be using a deprecated keyword argument "
-                "'debugPrefix' in the function split. This argument is "
-                "deprecated and will be removed in a future release, please "
-                "use 'debugContext' instead");
-            return opset.split(args, num_outputs, axis, split, debugContext);
-          },
-          py::arg("args"),
-          py::arg("num_outputs"),
-          py::arg("axis")        = 0,
-          py::arg("split")       = std::vector<int64_t>(),
-          py::arg("debugPrefix") = std::string(),
-          DOC(popart, split, opset7))
-      .def(
           "sqrt",
           [](AiOnnxOpset7 &opset,
              const std::vector<TensorId> &args,
@@ -2957,21 +1273,6 @@ PYBIND11_MODULE(popart_opset7, m) {
           },
           py::arg("args"),
           py::arg("debugContext") = std::string(),
-          DOC(popart, sqrt, opset7))
-      .def(
-          "sqrt",
-          [](AiOnnxOpset7 &opset,
-             const std::vector<TensorId> &args,
-             const DebugContext &debugContext) -> TensorId {
-            logging::builder::warn(
-                "You appear to be using a deprecated keyword argument "
-                "'debugPrefix' in the function sqrt. This argument is "
-                "deprecated and will be removed in a future release, please "
-                "use 'debugContext' instead");
-            return opset.sqrt(args, debugContext);
-          },
-          py::arg("args"),
-          py::arg("debugPrefix") = std::string(),
           DOC(popart, sqrt, opset7))
       .def(
           "squeeze",
@@ -2986,23 +1287,6 @@ PYBIND11_MODULE(popart_opset7, m) {
           py::arg("debugContext") = std::string(),
           DOC(popart, squeeze, opset7))
       .def(
-          "squeeze",
-          [](AiOnnxOpset7 &opset,
-             const std::vector<TensorId> &args,
-             const std::vector<int64_t> &axes,
-             const DebugContext &debugContext) -> TensorId {
-            logging::builder::warn(
-                "You appear to be using a deprecated keyword argument "
-                "'debugPrefix' in the function squeeze. This argument is "
-                "deprecated and will be removed in a future release, please "
-                "use 'debugContext' instead");
-            return opset.squeeze(args, axes, debugContext);
-          },
-          py::arg("args"),
-          py::arg("axes")        = std::vector<int64_t>(),
-          py::arg("debugPrefix") = std::string(),
-          DOC(popart, squeeze, opset7))
-      .def(
           "sub",
           [](AiOnnxOpset7 &opset,
              const std::vector<TensorId> &args,
@@ -3011,21 +1295,6 @@ PYBIND11_MODULE(popart_opset7, m) {
           },
           py::arg("args"),
           py::arg("debugContext") = std::string(),
-          DOC(popart, sub, opset7))
-      .def(
-          "sub",
-          [](AiOnnxOpset7 &opset,
-             const std::vector<TensorId> &args,
-             const DebugContext &debugContext) -> TensorId {
-            logging::builder::warn(
-                "You appear to be using a deprecated keyword argument "
-                "'debugPrefix' in the function sub. This argument is "
-                "deprecated and will be removed in a future release, please "
-                "use 'debugContext' instead");
-            return opset.sub(args, debugContext);
-          },
-          py::arg("args"),
-          py::arg("debugPrefix") = std::string(),
           DOC(popart, sub, opset7))
       .def(
           "sum",
@@ -3038,21 +1307,6 @@ PYBIND11_MODULE(popart_opset7, m) {
           py::arg("debugContext") = std::string(),
           DOC(popart, sum, opset7))
       .def(
-          "sum",
-          [](AiOnnxOpset7 &opset,
-             const std::vector<TensorId> &args,
-             const DebugContext &debugContext) -> TensorId {
-            logging::builder::warn(
-                "You appear to be using a deprecated keyword argument "
-                "'debugPrefix' in the function sum. This argument is "
-                "deprecated and will be removed in a future release, please "
-                "use 'debugContext' instead");
-            return opset.sum(args, debugContext);
-          },
-          py::arg("args"),
-          py::arg("debugPrefix") = std::string(),
-          DOC(popart, sum, opset7))
-      .def(
           "tan",
           [](AiOnnxOpset7 &opset,
              const std::vector<TensorId> &args,
@@ -3061,21 +1315,6 @@ PYBIND11_MODULE(popart_opset7, m) {
           },
           py::arg("args"),
           py::arg("debugContext") = std::string(),
-          DOC(popart, tan, opset7))
-      .def(
-          "tan",
-          [](AiOnnxOpset7 &opset,
-             const std::vector<TensorId> &args,
-             const DebugContext &debugContext) -> TensorId {
-            logging::builder::warn(
-                "You appear to be using a deprecated keyword argument "
-                "'debugPrefix' in the function tan. This argument is "
-                "deprecated and will be removed in a future release, please "
-                "use 'debugContext' instead");
-            return opset.tan(args, debugContext);
-          },
-          py::arg("args"),
-          py::arg("debugPrefix") = std::string(),
           DOC(popart, tan, opset7))
       .def(
           "tanh",
@@ -3088,21 +1327,6 @@ PYBIND11_MODULE(popart_opset7, m) {
           py::arg("debugContext") = std::string(),
           DOC(popart, tanh, opset7))
       .def(
-          "tanh",
-          [](AiOnnxOpset7 &opset,
-             const std::vector<TensorId> &args,
-             const DebugContext &debugContext) -> TensorId {
-            logging::builder::warn(
-                "You appear to be using a deprecated keyword argument "
-                "'debugPrefix' in the function tanh. This argument is "
-                "deprecated and will be removed in a future release, please "
-                "use 'debugContext' instead");
-            return opset.tanh(args, debugContext);
-          },
-          py::arg("args"),
-          py::arg("debugPrefix") = std::string(),
-          DOC(popart, tanh, opset7))
-      .def(
           "tile",
           [](AiOnnxOpset7 &opset,
              const std::vector<TensorId> &args,
@@ -3111,21 +1335,6 @@ PYBIND11_MODULE(popart_opset7, m) {
           },
           py::arg("args"),
           py::arg("debugContext") = std::string(),
-          DOC(popart, tile, opset7))
-      .def(
-          "tile",
-          [](AiOnnxOpset7 &opset,
-             const std::vector<TensorId> &args,
-             const DebugContext &debugContext) -> TensorId {
-            logging::builder::warn(
-                "You appear to be using a deprecated keyword argument "
-                "'debugPrefix' in the function tile. This argument is "
-                "deprecated and will be removed in a future release, please "
-                "use 'debugContext' instead");
-            return opset.tile(args, debugContext);
-          },
-          py::arg("args"),
-          py::arg("debugPrefix") = std::string(),
           DOC(popart, tile, opset7))
       .def(
           "topk",
@@ -3142,25 +1351,6 @@ PYBIND11_MODULE(popart_opset7, m) {
           py::arg("debugContext") = std::string(),
           DOC(popart, topk, opset7))
       .def(
-          "topk",
-          [](AiOnnxOpset7 &opset,
-             const std::vector<TensorId> &args,
-             int64_t k,
-             int64_t axis,
-             const DebugContext &debugContext) -> std::vector<TensorId> {
-            logging::builder::warn(
-                "You appear to be using a deprecated keyword argument "
-                "'debugPrefix' in the function topk. This argument is "
-                "deprecated and will be removed in a future release, please "
-                "use 'debugContext' instead");
-            return opset.topk(args, k, axis, debugContext);
-          },
-          py::arg("args"),
-          py::arg("k"),
-          py::arg("axis")        = -1,
-          py::arg("debugPrefix") = std::string(),
-          DOC(popart, topk, opset7))
-      .def(
           "transpose",
           [](AiOnnxOpset7 &opset,
              const std::vector<TensorId> &args,
@@ -3173,23 +1363,6 @@ PYBIND11_MODULE(popart_opset7, m) {
           py::arg("debugContext") = std::string(),
           DOC(popart, transpose, opset7))
       .def(
-          "transpose",
-          [](AiOnnxOpset7 &opset,
-             const std::vector<TensorId> &args,
-             const std::vector<int64_t> &perm,
-             const DebugContext &debugContext) -> TensorId {
-            logging::builder::warn(
-                "You appear to be using a deprecated keyword argument "
-                "'debugPrefix' in the function transpose. This argument is "
-                "deprecated and will be removed in a future release, please "
-                "use 'debugContext' instead");
-            return opset.transpose(args, perm, debugContext);
-          },
-          py::arg("args"),
-          py::arg("perm")        = std::vector<int64_t>(),
-          py::arg("debugPrefix") = std::string(),
-          DOC(popart, transpose, opset7))
-      .def(
           "unsqueeze",
           [](AiOnnxOpset7 &opset,
              const std::vector<TensorId> &args,
@@ -3200,23 +1373,6 @@ PYBIND11_MODULE(popart_opset7, m) {
           py::arg("args"),
           py::arg("axes"),
           py::arg("debugContext") = std::string(),
-          DOC(popart, unsqueeze, opset7))
-      .def(
-          "unsqueeze",
-          [](AiOnnxOpset7 &opset,
-             const std::vector<TensorId> &args,
-             const std::vector<int64_t> &axes,
-             const DebugContext &debugContext) -> TensorId {
-            logging::builder::warn(
-                "You appear to be using a deprecated keyword argument "
-                "'debugPrefix' in the function unsqueeze. This argument is "
-                "deprecated and will be removed in a future release, please "
-                "use 'debugContext' instead");
-            return opset.unsqueeze(args, axes, debugContext);
-          },
-          py::arg("args"),
-          py::arg("axes"),
-          py::arg("debugPrefix") = std::string(),
           DOC(popart, unsqueeze, opset7))
       .def(
           "upsample",
@@ -3233,25 +1389,6 @@ PYBIND11_MODULE(popart_opset7, m) {
           py::arg("debugContext") = std::string(),
           DOC(popart, upsample, opset7))
       .def(
-          "upsample",
-          [](AiOnnxOpset7 &opset,
-             const std::vector<TensorId> &args,
-             const std::vector<float> &scales,
-             const std::string &mode,
-             const DebugContext &debugContext) -> TensorId {
-            logging::builder::warn(
-                "You appear to be using a deprecated keyword argument "
-                "'debugPrefix' in the function upsample. This argument is "
-                "deprecated and will be removed in a future release, please "
-                "use 'debugContext' instead");
-            return opset.upsample(args, scales, mode, debugContext);
-          },
-          py::arg("args"),
-          py::arg("scales"),
-          py::arg("mode")        = "nearest",
-          py::arg("debugPrefix") = std::string(),
-          DOC(popart, upsample, opset7))
-      .def(
           "logical_xor",
           [](AiOnnxOpset7 &opset,
              const std::vector<TensorId> &args,
@@ -3260,20 +1397,5 @@ PYBIND11_MODULE(popart_opset7, m) {
           },
           py::arg("args"),
           py::arg("debugContext") = std::string(),
-          DOC(popart, logical_xor, opset7))
-      .def(
-          "logical_xor",
-          [](AiOnnxOpset7 &opset,
-             const std::vector<TensorId> &args,
-             const DebugContext &debugContext) -> TensorId {
-            logging::builder::warn(
-                "You appear to be using a deprecated keyword argument "
-                "'debugPrefix' in the function logical_xor. This argument is "
-                "deprecated and will be removed in a future release, please "
-                "use 'debugContext' instead");
-            return opset.logical_xor(args, debugContext);
-          },
-          py::arg("args"),
-          py::arg("debugPrefix") = std::string(),
           DOC(popart, logical_xor, opset7));
 }

@@ -131,7 +131,7 @@ def test_matmul_grouping_test_1(tmpdir):
 
         r2_t = builder.aiOnnx.transpose([r2],
                                         perm=[0, 2, 1],
-                                        debugPrefix="rhs.transpose")
+                                        debugContext="rhs.transpose")
 
         o = builder.aiOnnx.matmul([r1, r2_t])
 
@@ -237,7 +237,7 @@ def test_matmul_grouping_test_2(tmpdir):
         c = builder.addInputTensor(popart.TensorInfo("FLOAT", C), "D")
         d = builder.addInputTensor(popart.TensorInfo("FLOAT", D), "D")
 
-        b_t = builder.aiOnnx.transpose([b], perm=[0, 2, 1], debugPrefix="B.T")
+        b_t = builder.aiOnnx.transpose([b], perm=[0, 2, 1], debugContext="B.T")
 
         r1 = builder.aiOnnx.matmul([a, b_t], "MATMUL_A")
 
@@ -335,7 +335,7 @@ def test_matmul_grouping_test_3(tmpdir):
         c = builder.addInputTensor(popart.TensorInfo("FLOAT", C), "D")
         d = builder.addInputTensor(popart.TensorInfo("FLOAT", D), "D")
 
-        b_t = builder.aiOnnx.transpose([b], perm=[1, 0], debugPrefix="B.T")
+        b_t = builder.aiOnnx.transpose([b], perm=[1, 0], debugContext="B.T")
 
         r1 = builder.aiOnnx.matmul([a, b_t], "MATMUL_A")
 

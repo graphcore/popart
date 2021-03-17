@@ -25,7 +25,7 @@ def test_lrn(op_tester):
                                      beta=beta,
                                      bias=bias,
                                      size=nsize,
-                                     debugPrefix="test_lrn_{0}".format(nsize))
+                                     debugContext="test_lrn_{0}".format(nsize))
             builder.addOutputTensor(out)
             result.append(out)
         return result
@@ -68,20 +68,20 @@ def test_lrn_training(op_tester):
                                      beta=beta,
                                      bias=bias,
                                      size=nsize,
-                                     debugPrefix="test_lrn_{0}".format(nsize))
+                                     debugContext="test_lrn_{0}".format(nsize))
             result.append(out)
             result.append(popart.reservedGradientPrefix() + tensor)
         sum = builder.aiOnnx.sum([
             builder.aiOnnx.reducesum([r],
                                      axes=range(len(data.shape)),
                                      keepdims=False,
-                                     debugPrefix="test_reducesum_all")
+                                     debugContext="test_reducesum_all")
             for r in result[0::2]
         ],
-                                 debugPrefix="test_sum")
+                                 debugContext="test_sum")
         reshaped_sum = builder.aiOnnx.unsqueeze([sum],
                                                 axes=[0],
-                                                debugPrefix="test_reshape")
+                                                debugContext="test_reshape")
         builder.addOutputTensor(reshaped_sum)
         result = [
             reshaped_sum,

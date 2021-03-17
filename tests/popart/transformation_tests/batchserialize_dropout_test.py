@@ -35,13 +35,13 @@ def test_batchserialisation_dropout(tmpdir):
 
         w0 = builder.addInitializedInputTensor(weight_data, 'weight0')
         x = builder.aiOnnx.matmul([d0, w0])
-        x1 = builder.aiOnnx.dropout([x], 1, debugPrefix="dropout0")[0]
+        x1 = builder.aiOnnx.dropout([x], 1, debugContext="dropout0")[0]
 
-        x2 = builder.aiOnnx.dropout([x], 1, debugPrefix="dropout1")[0]
+        x2 = builder.aiOnnx.dropout([x], 1, debugContext="dropout1")[0]
 
         o = builder.aiOnnx.add([x1, x2])
 
-        loss = builder.aiGraphcore.l1loss([o], 0.1, debugPrefix='loss')
+        loss = builder.aiGraphcore.l1loss([o], 0.1, debugContext='loss')
 
         return builder.getModelProto(), {d0: input_data}, [x1, x2], loss
 

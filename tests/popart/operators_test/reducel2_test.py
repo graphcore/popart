@@ -24,13 +24,14 @@ def test_reducel2(op_tester):
                 out = builder.aiOnnx.reducel2(
                     [tensor],
                     keepdims=keepdims,
-                    debugPrefix="test_reducel2_default_{0}".format(keepdims))
+                    debugContext="test_reducel2_default_{0}".format(keepdims))
             else:
                 out = builder.aiOnnx.reducel2(
                     [tensor],
                     axes=axes,
                     keepdims=keepdims,
-                    debugPrefix="test_reducel2_{0}_{1}".format(axes, keepdims))
+                    debugContext="test_reducel2_{0}_{1}".format(
+                        axes, keepdims))
             builder.addOutputTensor(out)
             result.append(out)
         return result
@@ -65,13 +66,14 @@ def test_reducel2_training(op_tester):
                 out = builder.aiOnnx.reducel2(
                     [tensor],
                     keepdims=keepdims,
-                    debugPrefix="test_reducel2_default_{0}".format(keepdims))
+                    debugContext="test_reducel2_default_{0}".format(keepdims))
             else:
                 out = builder.aiOnnx.reducel2(
                     [tensor],
                     axes=axes,
                     keepdims=keepdims,
-                    debugPrefix="test_reducel2_{0}_{1}".format(axes, keepdims))
+                    debugContext="test_reducel2_{0}_{1}".format(
+                        axes, keepdims))
             result.append(out)
             result.append(popart.reservedGradientPrefix() + tensor)
             axes_len = len(axes) if axes is not USE_DEFAULT_AXES else 3
@@ -80,13 +82,13 @@ def test_reducel2_training(op_tester):
             builder.aiOnnx.reducesum([r],
                                      axes=axes,
                                      keepdims=False,
-                                     debugPrefix="test_reducel2_all")
+                                     debugContext="test_reducel2_all")
             for r, axes in zip(result[0::2], axes_reduce)
         ],
-                                 debugPrefix="test_sum")
+                                 debugContext="test_sum")
         reshaped_sum = builder.aiOnnx.unsqueeze([sum],
                                                 axes=[0],
-                                                debugPrefix="test_reshape")
+                                                debugContext="test_reshape")
         builder.addOutputTensor(reshaped_sum)
         result = [
             reshaped_sum,

@@ -153,13 +153,13 @@ def test_detach_grad_branches(detach_branch_popart, detach_branch_pytorch):
                                 dilations=[1, 1],
                                 pads=[1, 1, 1, 1],
                                 strides=[1, 1],
-                                debugPrefix="conv")
+                                debugContext="conv")
     r1 = builder.reshape_const(builder.aiOnnx, [conv1], [Batchsize, Classes])
     conv2 = builder.aiOnnx.conv([input_, w2],
                                 dilations=[1, 1],
                                 pads=[1, 1, 1, 1],
                                 strides=[1, 1],
-                                debugPrefix="conv")
+                                debugContext="conv")
     r2 = builder.reshape_const(builder.aiOnnx, [conv2], [Batchsize, Classes])
     if detach_branch_popart:
         r2 = builder.aiGraphcore.detach([r2])
@@ -296,7 +296,7 @@ def test_detach_error():
                                 dilations=[1, 1],
                                 pads=[1, 1, 1, 1],
                                 strides=[1, 1],
-                                debugPrefix="conv")
+                                debugContext="conv")
     o = builder.reshape_const(builder.aiOnnx, [conv1], [Batchsize, Classes])
     o = builder.aiGraphcore.detach([o])
 

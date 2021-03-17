@@ -245,9 +245,9 @@ def get_model_anchors_model2(doSharding,
                              dilations=[1, 1],
                              pads=[1, 1, 1, 1],
                              strides=[1, 1],
-                             debugPrefix="c0")
+                             debugContext="c0")
     r0 = builder.reshape_const(builder.aiOnnx, [c0], [micro_batch_size, 32])
-    out = builder.aiOnnx.softmax([r0], axis=1, debugPrefix="sfm")
+    out = builder.aiOnnx.softmax([r0], axis=1, debugContext="sfm")
 
     label_shape = [micro_batch_size]
     l0 = builder.addInputTensor(popart.TensorInfo("INT32", label_shape),

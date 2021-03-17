@@ -559,7 +559,7 @@ def test_nll_no_underflow():
     labels = builder.addInputTensor(popart.TensorInfo("INT32", [5]))
     loss = builder.aiGraphcore.nllloss([probs, labels],
                                        popart.ReductionType.Sum,
-                                       debugPrefix="nllLossVal")
+                                       debugContext="nllLossVal")
 
     anchor_desc = {
         dprobs: popart.AnchorReturnType("ALL"),

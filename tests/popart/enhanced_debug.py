@@ -31,7 +31,7 @@ def test_basic(tmpdir):
                                  dilations=[1, 1],
                                  pads=[1, 1, 1, 1],
                                  strides=[1, 1],
-                                 debugPrefix="conv1")
+                                 debugContext="conv1")
         o = builder.aiOnnx.conv([c1, i2, ibias1],
                                 dilations=[1, 1],
                                 pads=[1, 1, 1, 1],

@@ -889,27 +889,16 @@ def genPythonBuilderBinds(schema: Schema) -> None:
                 f.write(f"py::class_<{classname}>(m, \"{classname}\")\n")
                 for op in sorted(ops):
 
-                    def getFunc(f, op, debugContextString):
+                    def getFunc(f, op):
                         # Operator
                         f.write(f"  .def(\"{op.CppName()}\",\n")
-
-                        if debugContextString == 'debugPrefix':
-                            warning_line = (
-                                "logging::builder::warn(\"You appear to "
-                                "be using a deprecated keyword argument "
-                                "'debugPrefix' in the function "
-                                f"{op.CppName()}. This argument is deprecated"
-                                " and will be removed in a future release, "
-                                "please use 'debugContext' instead\");\n")
-                        else:
-                            warning_line = ''
 
                         # Special case of the constant operator
                         if op.name == "Constant":
                             if (op.version == 11):
                                 x = f"""
                                     []({classname} &opset, py::array array, bool is_value_sparse, const DebugContext& debugContext) {{
-                                    {warning_line}array = makeContiguous(array);
+                                    array = makeContiguous(array);
                                     ConstVoidData initData;
                                     initData.data = array.request().ptr;
                                     initData.info = getTensorInfo(array);
@@ -917,7 +906,7 @@ def genPythonBuilderBinds(schema: Schema) -> None:
                                     }},
                                     py::arg("value"),
                                     py::arg("is_value_sparse") = false,
-                                    py::arg("{debugContextString}") = std::string())
+                                    py::arg("debugContext") = std::string())
                                     """
                                 x = format_method(x, 7)
                                 f.write(x)
@@ -941,7 +930,7 @@ def genPythonBuilderBinds(schema: Schema) -> None:
                                 const std::vector<TensorId> &args,\
                                 py::array array,\
                                 const DebugContext &debugContext) {{\
-                                {warning_line}ConstVoidData initData;\
+                                ConstVoidData initData;\
                                 initData.data = array.request().ptr;\
                                 initData.info = getTensorInfo(array);\
                                 return opset.constantofshape(args, initData, debugContext);\
@@ -975,8 +964,6 @@ def genPythonBuilderBinds(schema: Schema) -> None:
                                 f.write("std::vector<TensorId>")
 
                             f.write("{\n")
-                            if debugContextString == 'debugPrefix':
-                                f.write(warning_line)
                             f.write(f"return opset.{op.CppName()}(")
 
                             if op.inputs > 0:
@@ -1012,14 +999,12 @@ def genPythonBuilderBinds(schema: Schema) -> None:
                                 f.write(",\n")
 
                         f.write(
-                            f"py::arg(\"{debugContextString}\") = std::string(),\n"
-                        )
+                            f"py::arg(\"debugContext\") = std::string(),\n")
                         f.write(
                             f"DOC(popart, {op.CppName()}, opset{opset_version}))\n"
                         )
 
-                    getFunc(f, op, 'debugContext')
-                    getFunc(f, op, 'debugPrefix')
+                    getFunc(f, op)
 
                 f.write(";\n")
                 f.write("}\n")
@@ -1219,7 +1204,9 @@ OpsetMap getOpsets() {
 
             domain_name = domain_name.replace('.', '_')
 
-            for opset_version, opset in domain.opsets.items():
+            for opset_version, opset in sorted(domain.opsets.items(),
+                                               key=lambda x: int(x[0]),
+                                               reverse=True):
                 ops = getOpsInOpset(domain, int(opset_version))
 
                 f.write(

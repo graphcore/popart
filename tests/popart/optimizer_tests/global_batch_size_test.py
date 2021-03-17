@@ -91,11 +91,11 @@ def run_global_batch_size_correctness_test(tmpdir, reduction_type, loss_type,
             loss = builder.aiGraphcore.l1loss([x],
                                               0.1,
                                               reduction=reduction,
-                                              debugPrefix='loss')
+                                              debugContext='loss')
         elif loss_type == "Identity":
             loss = builder.aiGraphcore.identityloss([x],
                                                     reduction=reduction,
-                                                    debugPrefix='loss')
+                                                    debugContext='loss')
         elif loss_type == "NLL":
             x = builder.aiOnnx.softmax([x])
             l0 = builder.addInputTensor(
@@ -111,7 +111,7 @@ def run_global_batch_size_correctness_test(tmpdir, reduction_type, loss_type,
                         .astype(np.uint32)
             loss = builder.aiGraphcore.nllloss([x, l0],
                                                reduction=reduction,
-                                               debugPrefix='loss')
+                                               debugContext='loss')
         return builder.getModelProto(), data, [x, loss], loss
 
     def run_test(compute_batch, batch_serialization_factor,

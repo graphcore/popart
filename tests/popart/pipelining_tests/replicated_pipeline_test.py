@@ -46,13 +46,13 @@ def get_model_anchors(doSharding,
                              dilations=[1, 1],
                              pads=[1, 1, 1, 1],
                              strides=[1, 1],
-                             debugPrefix="c0")
+                             debugContext="c0")
     r0 = builder.reshape_const(builder.aiOnnx, [c0], [microBatchSize, 32])
     if doDropout:
         do0 = builder.aiOnnx.dropout([r0], num_outputs=1, ratio=0.2)[0]
-        out = builder.aiOnnx.softmax([do0], axis=1, debugPrefix="sfm")
+        out = builder.aiOnnx.softmax([do0], axis=1, debugContext="sfm")
     else:
-        out = builder.aiOnnx.softmax([r0], axis=1, debugPrefix="sfm")
+        out = builder.aiOnnx.softmax([r0], axis=1, debugContext="sfm")
     nll = builder.aiGraphcore.nllloss([out, l0],
                                       reduction=popart.ReductionType.Sum)
 

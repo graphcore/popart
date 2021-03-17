@@ -55,7 +55,7 @@ def test_streamingmemory_momentum(tmpdir):
         with builder.executionPhase(4), builder.virtualGraph(
                 0), builder.nameScope("pp4"):
             x = builder.aiOnnx.matmul([x, w0])
-            loss = builder.aiGraphcore.l1loss([x], 0.1, debugPrefix='loss')
+            loss = builder.aiGraphcore.l1loss([x], 0.1, debugContext='loss')
 
         return builder.getModelProto(), {d0: input_data}, x, loss
 
