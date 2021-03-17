@@ -524,7 +524,7 @@ struct SessionOptions {
 
   /// Specify how gradients are reduced when using gradient accumulation.
   /// Note, this option has been deprecated in favour of \c
-  /// accumulationAndReplicationReductionType, and will be removed in a later
+  /// accumulationAndReplicationReductionType, and will be removed in a future
   /// release.
   ReductionType accumulationReductionType = ReductionType::Sum;
 

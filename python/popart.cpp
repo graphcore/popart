@@ -2250,14 +2250,16 @@ PYBIND11_MODULE(popart_core, m) {
             py::arg("reduction")             = ReductionType::Mean,
             py::arg("ignoreIndex")           = pybind11::none(),
             py::arg("inputIsLogProbability") = false,
-            py::arg("debugPrefix")           = std::string());
+            py::arg("debugPrefix")           = std::string(),
+            DOC(popart, AiGraphcoreOpset1, nllloss));
     cls.def("nllloss",
             &AiGraphcoreOpset1::nllloss,
             py::arg("args"),
             py::arg("reduction")             = ReductionType::Mean,
             py::arg("ignoreIndex")           = pybind11::none(),
             py::arg("inputIsLogProbability") = false,
-            py::arg("debugContext")          = std::string());
+            py::arg("debugContext")          = std::string(),
+            DOC(popart, AiGraphcoreOpset1, nllloss));
     cls.def("identityloss",
             &AiGraphcoreOpset1::identityloss,
             py::arg("args"),
@@ -2313,88 +2315,108 @@ PYBIND11_MODULE(popart_core, m) {
             py::arg("args"),
             py::arg("shape"),
             py::arg("ratio")       = 0.5f,
-            py::arg("debugPrefix") = std::string());
+            py::arg("debugPrefix") = std::string(),
+            DOC(popart, AiGraphcoreOpset1, shapeddropout));
     cls.def("shapeddropout",
             &AiGraphcoreOpset1::shapeddropout,
             py::arg("args"),
             py::arg("shape"),
             py::arg("ratio")        = 0.5f,
-            py::arg("debugContext") = std::string());
+            py::arg("debugContext") = std::string(),
+            DOC(popart, AiGraphcoreOpset1, shapeddropout));
     cls.def("atan2",
             &AiGraphcoreOpset1::atan2,
             py::arg("args"),
-            py::arg("debugPrefix") = std::string());
+            py::arg("debugPrefix") = std::string(),
+            DOC(popart, AiGraphcoreOpset1, atan2));
     cls.def("atan2",
             &AiGraphcoreOpset1::atan2,
             py::arg("args"),
-            py::arg("debugContext") = std::string());
+            py::arg("debugContext") = std::string(),
+            DOC(popart, AiGraphcoreOpset1, atan2));
     cls.def("expm1",
             &AiGraphcoreOpset1::expm1,
             py::arg("args"),
-            py::arg("debugPrefix") = std::string());
+            py::arg("debugPrefix") = std::string(),
+            DOC(popart, AiGraphcoreOpset1, expm1));
     cls.def("expm1",
             &AiGraphcoreOpset1::expm1,
             py::arg("args"),
-            py::arg("debugContext") = std::string());
+            py::arg("debugContext") = std::string(),
+            DOC(popart, AiGraphcoreOpset1, expm1));
     cls.def("log1p",
             &AiGraphcoreOpset1::log1p,
             py::arg("args"),
-            py::arg("debugPrefix") = std::string());
+            py::arg("debugPrefix") = std::string(),
+            DOC(popart, AiGraphcoreOpset1, log1p));
     cls.def("log1p",
             &AiGraphcoreOpset1::log1p,
             py::arg("args"),
-            py::arg("debugContext") = std::string());
+            py::arg("debugContext") = std::string(),
+            DOC(popart, AiGraphcoreOpset1, log1p));
     cls.def("reshape",
             &AiGraphcoreOpset1::reshape,
             py::arg("args"),
             py::arg("shape"),
-            py::arg("debugPrefix") = std::string());
+            py::arg("debugPrefix") = std::string(),
+            DOC(popart, AiGraphcoreOpset1, reshape));
     cls.def("reshape",
             &AiGraphcoreOpset1::reshape,
             py::arg("args"),
             py::arg("shape"),
-            py::arg("debugContext") = std::string());
+            py::arg("debugContext") = std::string(),
+            DOC(popart, AiGraphcoreOpset1, reshape));
     cls.def("remainder",
             &AiGraphcoreOpset1::remainder,
             py::arg("args"),
-            py::arg("debugPrefix") = std::string());
+            py::arg("debugPrefix") = std::string(),
+            DOC(popart, AiGraphcoreOpset1, remainder));
     cls.def("remainder",
             &AiGraphcoreOpset1::remainder,
             py::arg("args"),
-            py::arg("debugContext") = std::string());
+            py::arg("debugContext") = std::string(),
+            DOC(popart, AiGraphcoreOpset1, remainder));
     cls.def("reverse",
             &AiGraphcoreOpset1::reverse,
             py::arg("args"),
             py::arg("dimensions"),
-            py::arg("debugContext") = std::string());
+            py::arg("debugContext") = std::string(),
+            DOC(popart, AiGraphcoreOpset1, reverse));
     cls.def("abort",
             &AiGraphcoreOpset1::abort,
             py::arg("args")        = pybind11::list(),
-            py::arg("debugPrefix") = std::string());
+            py::arg("debugPrefix") = std::string(),
+            DOC(popart, AiGraphcoreOpset1, abort));
     cls.def("abort",
             &AiGraphcoreOpset1::abort,
             py::arg("args")         = pybind11::list(),
-            py::arg("debugContext") = std::string());
+            py::arg("debugContext") = std::string(),
+            DOC(popart, AiGraphcoreOpset1, abort));
     cls.def("bitwiseand",
             &AiGraphcoreOpset1::bitwiseand,
             py::arg("args")         = pybind11::list(),
-            py::arg("debugContext") = std::string());
+            py::arg("debugContext") = std::string(),
+            DOC(popart, AiGraphcoreOpset1, bitwiseand));
     cls.def("bitwisenot",
             &AiGraphcoreOpset1::bitwisenot,
             py::arg("args")         = pybind11::list(),
-            py::arg("debugContext") = std::string());
+            py::arg("debugContext") = std::string(),
+            DOC(popart, AiGraphcoreOpset1, bitwisenot));
     cls.def("bitwiseor",
             &AiGraphcoreOpset1::bitwiseor,
             py::arg("args")         = pybind11::list(),
-            py::arg("debugContext") = std::string());
+            py::arg("debugContext") = std::string(),
+            DOC(popart, AiGraphcoreOpset1, bitwiseor));
     cls.def("bitwisexor",
             &AiGraphcoreOpset1::bitwisexor,
             py::arg("args")         = pybind11::list(),
-            py::arg("debugContext") = std::string());
+            py::arg("debugContext") = std::string(),
+            DOC(popart, AiGraphcoreOpset1, bitwisexor));
     cls.def("bitwisexnor",
             &AiGraphcoreOpset1::bitwisexnor,
             py::arg("args")         = pybind11::list(),
-            py::arg("debugContext") = std::string());
+            py::arg("debugContext") = std::string(),
+            DOC(popart, AiGraphcoreOpset1, bitwisexnor));
   }
   {
     py::class_<Builder> cls(m, "_BuilderCore");

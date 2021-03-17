@@ -39,6 +39,13 @@ Builder
 .. autoclass:: popart_core._BuilderCore
     :members:
 
+AiGraphcoreOpset1
+^^^^^^^^^^^^^^^^^
+
+.. autoclass:: popart_core.AiGraphcoreOpset1
+    :members:
+
+
 Session
 -------
 

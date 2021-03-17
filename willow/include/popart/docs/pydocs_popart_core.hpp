@@ -489,20 +489,20 @@ Returns:
     A vector of tensors; the subgraph outputs.)doc";
 
 static const char *__doc_popart_AiGraphcoreOpset1_ctcloss =
-    R"doc(Add an connectionist temporal classification (CTC) loss operation to
+    R"doc(Add a connectionist temporal classification (CTC) loss operation to
 the model.
 
 With T being maximum input length, N being batch size, C being number
 of classes, S being a maximum target length, this op calculates the
 CTC loss for a logarithmised probabilities tensor with shape [T, N,
-C], a class target tensor with shape [N, S], a input lengths tensor
+C], a class target tensor with shape [N, S], an input lengths tensor
 [N] and a target lengths tensor [N].
 
 Note that C includes a blank class (default=0). The probabilities
 tensor is padded as required. Target sequences are also padded and are
-populated with values <=C not including the blank class, up to their
-respective target lengths. Note that target lengths cannot exceed
-input lengths.
+populated with values less than equal to C, not including the blank
+class, up to their respective target lengths. Note that target lengths
+cannot exceed input lengths.
 
 Parameter ``args``:
     [log_probs,targets,input_lengths,target_lengths]
@@ -1033,7 +1033,7 @@ Returns:
     The name of the result tensor.)doc";
 
 static const char *__doc_popart_AiGraphcoreOpset1_sequenceslice =
-    R"doc(Slice a 2d tensor based on offsets specified by a tensor.
+    R"doc(Slice a 2D tensor based on offsets specified by a tensor.
 
 The outermost dimension is sliced; tOut[tOutOffset:tOutOffset+tN][...]
 = tIn[tInOffset:tInOffset+tN][...] for each entry in
@@ -1041,10 +1041,10 @@ tN/tInOffset/tOutOffset; entries after the first tN==0 may be ignored.
 Unreferenced elements of tOut are zeroed if zeroUnused is set. The
 same output element should not be written by multiple inputs.
 
-tIn and tOut must have rank >=2. The outer dimension is sliced; the
-product of the inner dimensions must match. tInOffset, tOutOffset and
-tN must be 1d and the same size. \param [source, destination, N,
-sourceOffset, destinationOffset]
+tIn and tOut must have rank greater than or equal to 2. The outer
+dimension is sliced; the product of the inner dimensions must match.
+tInOffset, tOutOffset and tN must be 1d and the same size. \param
+[source, destination, N, sourceOffset, destinationOffset]
 
 Parameter ``zeroUnused``:
     Whether to zero unreferenced tOut elements.
@@ -4886,7 +4886,7 @@ static const char *__doc_popart_SessionOptions_accumulationReductionType =
     R"doc(Specify how gradients are reduced when using gradient accumulation.
 Note, this option has been deprecated in favour of
 ``accumulationAndReplicationReductionType``, and will be removed in a
-later release.)doc";
+future release.)doc";
 
 static const char
     *__doc_popart_SessionOptions_accumulatorTensorLocationSettings =
