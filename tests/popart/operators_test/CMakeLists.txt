@@ -40,7 +40,6 @@ add_popart_py_unit_test(groupnorm_test)
 add_popart_py_unit_test(gru_test)
 add_popart_py_unit_test(gt_lt_test)
 add_popart_py_unit_test(hardsigmoid_test)
-# add_popart_py_unit_test(ipu_op_tester) Utility
 add_popart_py_unit_test(isnotfinite_test)
 add_popart_py_unit_test(l1_test)
 add_popart_py_unit_test(leakyrelu_test)
