@@ -30,7 +30,7 @@ void SequenceMap::addScopeFragments(Sequences &sequences) {
   for (auto &seq : sequences) {
     auto it = indexMap.find(&seq);
     if (it != indexMap.end()) {
-      error("[SequenceMap] Sequence in vector already mapped");
+      throw error("[SequenceMap] Sequence in vector already mapped");
     }
   }
 
