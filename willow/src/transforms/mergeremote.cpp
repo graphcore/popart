@@ -23,7 +23,7 @@ void MergeRemote::insertRemoteExchange(Graph &graph,
   for (Op *op0 : remoteOps) {
     for (Op *op1 : remoteOps) {
       if (graph.topoCons->contains(op0, op1)) {
-        logging::transform::warn(
+        logging::transform::info(
             "[RemoteExchange] Removed topological constraint {} -> {}",
             op0->debugName(),
             op1->debugName());

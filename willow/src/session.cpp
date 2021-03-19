@@ -102,7 +102,7 @@ bool Session::tryLoadExecutable() {
   auto popartCachePath = cacheEntries.at(ir.getHash());
   std::ifstream executableFs(popartCachePath, std::ifstream::binary);
   if (executableFs.is_open()) {
-    logging::session::warn("Loading serialized PopART executable from {}",
+    logging::session::info("Loading serialized PopART executable from {}",
                            popartCachePath);
     try {
       loadExecutableFromStream(executableFs);
@@ -115,7 +115,7 @@ bool Session::tryLoadExecutable() {
       return false;
     }
   }
-  logging::session::warn("Could not open file {}", popartCachePath);
+  logging::session::info("Could not open file {}", popartCachePath);
   return false;
 }
 
@@ -124,7 +124,7 @@ void Session::loadExecutableFromFile(std::string filename) {
   if (!executableFs.is_open()) {
     throw error("Could not open file {}", filename);
   }
-  logging::session::warn("Loading serialized PopART executable from {}",
+  logging::session::info("Loading serialized PopART executable from {}",
                          filename);
   try {
     loadExecutableFromStream(executableFs);

@@ -103,7 +103,7 @@ std::vector<const Graph *> LoopOp::getCalledGraphs() const {
 
 void LoopOp::connectInTensor(InIndex inIndex, TensorId tensorId) {
   if (inIndex == LoopOp::getMaximumTripCountInIndex()) {
-    logging::op::warn(
+    logging::op::info(
         "INT64 is currently not supported. Casting loop input {} to INT32",
         tensorId);
     Tensor *tensor     = getGraph().getTensors().get(tensorId);

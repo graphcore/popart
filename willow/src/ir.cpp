@@ -337,7 +337,7 @@ void Ir::logIr() {
 
 void Ir::compareWithSavedHash(const HashesMap &cacheEntries) {
   if (false == Ir::usingEngineCache(userOptions, deviceInfo)) {
-    logging::ir::warn("Engine caching disabled. Skipping Ir hashing.");
+    logging::ir::info("Engine caching disabled. Skipping Ir hashing.");
     return;
   }
 
@@ -876,7 +876,7 @@ void Ir::verifyConstExprFolding() {
       }
     }
     if (shouldHaveFoldedTensor) {
-      logging::ir::warn(
+      logging::ir::info(
           "ConstExpr folding has failed to remove input tensor {}, even though "
           "none of the root inputs to its consumers are variable tensors",
           tensor->id);
@@ -1366,7 +1366,7 @@ void Ir::prepareImpl(const IrBundle &gb, const HashesMap &cacheEntries) {
   // some checks, now that prepare is complete
   for (auto &id_op : getMainGraph().getOps()) {
     if (id_op.second->opid == Onnx::CustomGradOperators::NllGrad) {
-      logging::ir::warn("Computing gradient of the probabilities to Nll "
+      logging::ir::info("Computing gradient of the probabilities to Nll "
                         "might be less efficient than computing "
                         "pre-probability gradients directly with Pattern "
                         "SoftMaxGradDirect");
@@ -2638,7 +2638,7 @@ void Ir::unsetAllVirtualGraphIds() {
   }
 
   if (hadToUnsetAny) {
-    logging::ir::warn("Virtual graph settings ignored because virtual "
+    logging::ir::info("Virtual graph settings ignored because virtual "
                       "graphs are not enabled.");
   }
 }

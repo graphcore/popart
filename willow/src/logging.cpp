@@ -158,7 +158,7 @@ std::string moduleName(const Module m) {
 }
 
 const char *defaultLoggerDestination = "stderr";
-const char *defaultLoggerLevel       = "OFF";
+const char *defaultLoggerLevel       = "WARN";
 
 LoggingContext::LoggingContext() {
 

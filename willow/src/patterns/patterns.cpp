@@ -475,7 +475,7 @@ Patterns &Patterns::enableDecomposeBinaryConstScalar(bool v) {
 }
 
 Patterns &Patterns::enablePattern(const std::type_index &t, bool v) {
-  logging::pattern::warn(
+  logging::pattern::info(
       "Pattern {} {}", PreAliasPatternManager::getPatternName(t), v);
   if (!v) {
     // Check the user is not disabling a mandatory pattern.

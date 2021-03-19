@@ -281,7 +281,7 @@ void Executablex::serialize(const poplar::Executable &poplarExecutable,
         target.string(),
         filename);
   } else {
-    logging::devicex::warn("Saving serialized Executablex to {}", filename);
+    logging::devicex::info("Saving serialized Executablex to {}", filename);
   }
   std::ofstream out(filename, std::ofstream::binary);
   if (!out.is_open()) {

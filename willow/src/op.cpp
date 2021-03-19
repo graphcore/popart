@@ -1083,7 +1083,7 @@ void Op::inheritPlacementAttributes(bool inheritSerializations) {
   }
 
   if (!inherited) {
-    logging::op::warn("Could not inherit placement attributes to Op {}",
+    logging::op::info("Could not inherit placement attributes to Op {}",
                       debugName());
   }
 }
