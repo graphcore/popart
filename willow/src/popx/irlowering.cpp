@@ -87,7 +87,7 @@ namespace popx {
 
 namespace {
 
-void progressLogger(int progress, int total) {
+void defaultLogPrinter(int progress, int total) {
   if (total != 0) {
     float percentage = std::floor(100.0f * static_cast<float>(progress) /
                                   static_cast<float>(total));
@@ -248,7 +248,31 @@ void gclEnvironmentDeprecationWarning(const std::string &envVarName,
                 optName);
 }
 
+constexpr int progressTotal = 100;
+
 } // namespace
+
+int ProgressLogger::current(int start, int end, int progress, int total) {
+  float ratio = static_cast<float>(progress) / static_cast<float>(total);
+  return start + std::floor(static_cast<float>(end - start) * ratio);
+}
+
+ProgressLogger::ProgressLogger(std::function<void(int, int)> callback)
+    : callback_(callback ? callback : defaultLogPrinter) {}
+
+void ProgressLogger::compilationStart() { callback_(0, progressTotal); }
+
+void ProgressLogger::preplanningStart() { callback_(1, progressTotal); }
+
+void ProgressLogger::preplanningEnd() { callback_(3, progressTotal); }
+
+void ProgressLogger::creatingSequence(int task, int numTasks) {
+  callback_(current(4, 40, task, numTasks), progressTotal);
+}
+
+void ProgressLogger::operator()(int progress, int total) {
+  callback_(current(41, progressTotal, progress, total), progressTotal);
+}
 
 devicex_memory_allocation_err::devicex_memory_allocation_err(
     const devicex_memory_allocation_err &rhs)
@@ -302,6 +326,7 @@ IrLowering::IrLowering(const Ir &ir,
                        std::shared_ptr<DeviceInfo> deviceInfo_,
                        bool prepareGraphHasBeenCalled)
     : _ir(ir), deviceInfo(deviceInfo_),
+      progressLogger(ir.getSessionOptions().compilationProgressLogger),
       prepareGraphHasBeenCalled_(prepareGraphHasBeenCalled), tensors_(ir),
       progs(PopPrograms(this)) {
   POPART_TRACEPOINT();
@@ -2510,6 +2535,7 @@ void IrLowering::prePlanMatMuls() {
 
 void IrLowering::prepareGraph() {
   POPART_TRACEPOINT();
+  progressLogger.compilationStart();
 
   const auto prepareGraphTimer = ir().timePartitionLogger().scopedStopwatch(
       "Preparing poplar Graph (Ir lowering)");
@@ -2723,6 +2749,7 @@ void IrLowering::prepareGraph() {
     logging::devicex::trace("Creating OPX for {}", op->debugName());
     opxs[op->id] = createOpx(op);
   }
+  progressLogger.preplanningStart();
   // If the model contains convolutions or matmuls, generate plans for all of
   // them at the same time in advance of growing the ops. It saves time.
   if (dv_p->prePlanConvolutions) {
@@ -2730,6 +2757,7 @@ void IrLowering::prepareGraph() {
         ir().timePartitionLogger().scopedStopwatch("Convolution preplanning");
     prePlanConvolutions();
   }
+  progressLogger.preplanningEnd();
   if (dv_p->prePlanMatMuls) {
     const auto preplanTimer =
         ir().timePartitionLogger().scopedStopwatch("Matmul preplanning");
@@ -3058,7 +3086,10 @@ void IrLowering::prepareGraph() {
   // dependencies are avoided, when the scheduler order disagrees with the
   // tensor creation order
 
+  int currentTask = 0;
   for (auto &createTask : createSchedule) {
+    progressLogger.creatingSequence(currentTask++, createSchedule.size());
+
     logging::devicex::debug("Creating sequence for task {}", createTask.name);
     std::set<TaskId> subgraphTaskNames =
         createTask.getDependenciesOfTypes({DependencyType::SubGraph});
@@ -3151,7 +3182,7 @@ poplar::Executable IrLowering::getExecutable() {
       logging::devicex::info("Starting Engine compilation");
 
       auto executable = poplar::compileGraph(
-          graph(), progs.progs(), engineOptions, progressLogger);
+          graph(), progs.progs(), engineOptions, std::ref(progressLogger));
 
       logging::devicex::info("Graph compiled");
       return executable;

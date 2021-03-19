@@ -2,6 +2,7 @@
 #ifndef GUARD_OPTION_FLAGS_HPP
 #define GUARD_OPTION_FLAGS_HPP
 
+#include <functional>
 #include <iterator>
 #include <map>
 #include <set>
@@ -803,6 +804,20 @@ struct SessionOptions {
   // **Not part of public API**
   unsigned getPrefetchBufferingDepth(const TensorId &id,
                                      unsigned defaultValue) const;
+
+  // Callback function used to to indicate
+  // PopART compilation progress. The function is
+  // passed two integers. The first is the progress
+  // value and the second is the maximum value for
+  // the progress.
+  //
+  // The function should not block. All calls
+  // to the callback function will be made from the main thread so
+  // blocking in the callback will block compilation from progressing.
+  //
+  // If this logger is not set then compilation progress will be
+  // printed on the info channel.
+  std::function<void(int, int)> compilationProgressLogger;
 };
 
 } // namespace popart

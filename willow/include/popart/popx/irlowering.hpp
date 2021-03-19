@@ -103,6 +103,33 @@ public:
 poplar::Type popType(const TensorInfo &);
 poplar::Type popType(DataType);
 
+// Log compilation progress for the whole compilation.
+// For consistency we try to stick to roughly the same distribution as TF:
+// 0-1    % high level passes
+// 1-3    % preplanning
+// 3-40   % graph construction
+// 40-100 % Poplar compilation
+class ProgressLogger {
+public:
+  ProgressLogger(std::function<void(int, int)> callback);
+  void compilationStart();
+  void preplanningStart();
+  void preplanningEnd();
+  void creatingSequence(int task, int numTasks);
+  // Called by Poplar
+  void operator()(int progress, int total);
+
+private:
+  // Return the ratio progress / total
+  // Return the current position given the current position given a
+  // ratio (progress / total) between a start and end points.
+  int current(int start, int end, int progress, int total);
+
+private:
+  std::function<void(int, int)> callback_;
+  const int total_ = 100;
+};
+
 class IrLowering {
 private:
   const Ir &_ir;
@@ -111,6 +138,8 @@ private:
   std::vector<VirtualGraph> virtualGraphs;
 
   std::shared_ptr<DeviceInfo> deviceInfo;
+
+  ProgressLogger progressLogger;
 
   std::map<PipelineStage, VGraphId> getPipelineToVGraphIdMap() const;
 
