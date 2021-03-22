@@ -58,6 +58,7 @@ BranchInfo::BranchInfo(const GraphId &graphId_,
     : graphId(graphId_), inputIndicesMap(inputIndicesMap_),
       outputIndicesMap(outputIndicesMap_) {}
 
+// Deprecated constructor can be removed after release.
 IfOp::IfOp(const OperatorIdentifier &opid_,
            const std::vector<TensorId> inputIds_,
            const BranchInfo &thenBranchInfo,
@@ -65,6 +66,21 @@ IfOp::IfOp(const OperatorIdentifier &opid_,
            const Op::Settings &settings_)
     : Op(opid_, settings_), inputIds(inputIds_),
       thenInputIndicesMap(thenBranchInfo.inputIndicesMap),
+      elseInputIndicesMap(elseBranchInfo.inputIndicesMap),
+      thenOutputIndicesMap(thenBranchInfo.outputIndicesMap),
+      elseOutputIndicesMap(elseBranchInfo.outputIndicesMap),
+      thenGraphId(thenBranchInfo.graphId), elseGraphId(elseBranchInfo.graphId) {
+  logging::op::warn(
+      "Using deprecated IfOp constructor. Parameter inputIds "
+      "will be removed in an upcoming release. Inputs in `inputIds` should be "
+      "connected to the op using `Op::connectInTensor`");
+}
+
+IfOp::IfOp(const OperatorIdentifier &opid_,
+           const BranchInfo &thenBranchInfo,
+           const BranchInfo &elseBranchInfo,
+           const Op::Settings &settings_)
+    : Op(opid_, settings_), thenInputIndicesMap(thenBranchInfo.inputIndicesMap),
       elseInputIndicesMap(elseBranchInfo.inputIndicesMap),
       thenOutputIndicesMap(thenBranchInfo.outputIndicesMap),
       elseOutputIndicesMap(elseBranchInfo.outputIndicesMap),
@@ -280,6 +296,7 @@ IfOp::getBranchOutIndicesMap(const Graph &branchGraph) const {
 }
 
 void IfOp::setup() {
+  // Once the deprecated constructor is removed, this loop may be removed.
   for (auto &inputId : inputIds) {
     connectInTensor(input->n(), inputId);
   }
@@ -511,7 +528,7 @@ static OpDefinition ifOpDef({OpDefinition::Inputs({{"cond", B}}),
 static OpCreator<IfOp> ifOpCreator(
     OpDefinitions({{Onnx::Operators::If_1, ifOpDef},
                    {Onnx::Operators::If_11, ifOpDef}}),
-    [](const OpCreatorInfo &info) {
+    [](const OpCreatorInfo &info, Graph &graph) -> Op * {
       auto elseBranch =
           info.attributes.getAttribute<Attributes::Graph>("else_branch");
       auto thenBranch =
@@ -611,14 +628,29 @@ static OpCreator<IfOp> ifOpCreator(
         thenAndElseOutputIndicesMap.insert({i, i});
       }
 
-      return std::make_unique<IfOp>(
+      Op *op = graph.createOp<IfOp>(
           info.opid,
-          inputIds,
+          std::vector<TensorId>{},
           BranchInfo{
               thenGraphId, thenInputIndicesMap, thenAndElseOutputIndicesMap},
           BranchInfo{
               elseGraphId, elseInputIndicesMap, thenAndElseOutputIndicesMap},
           info.settings);
+
+      // Connect IfOp inputs.
+      for (auto id : info.getInputIds()) {
+        op->connectInTensor(op->input->n(), id);
+      }
+      for (auto &inputId : inputIds) {
+        op->connectInTensor(op->input->n(), inputId);
+      }
+
+      // Connect IfOp outputs
+      for (auto id : info.getOutputIds()) {
+        op->createAndConnectOutTensor(op->output->n(), id);
+      }
+
+      return op;
     },
     true);
 } // namespace
