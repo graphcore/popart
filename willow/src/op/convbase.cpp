@@ -143,11 +143,11 @@ Shape MultiConvBaseOp::getOutShape(int convIndex) const {
   Shape spatialOutShape =
       HasReceptiveFieldOp::getSpatialOutShape(getSpatialD(convIndex),
                                               getSpatialK(convIndex),
-                                              pads[convIndex],
-                                              outPads[convIndex],
-                                              strides[convIndex],
-                                              dilations[convIndex],
-                                              inDilations[convIndex],
+                                              getPads(convIndex),
+                                              getOutPads(convIndex),
+                                              getStrides(convIndex),
+                                              getDilations(convIndex),
+                                              getInDilations(convIndex),
                                               padType);
 
   for (int spDim = 0; spDim < getNSpatialDims(convIndex); ++spDim) {
@@ -159,20 +159,22 @@ Shape MultiConvBaseOp::getOutShape(int convIndex) const {
 void MultiConvBaseOp::setParamsFromDataGradOp(const Op *op) {
   // Set output shape and parameters
   auto dataGradOp = dynamic_cast<const MultiConvDataGradBaseOp *>(op);
+  std::vector<ConvParameters> ps;
   for (int i = 0; i < numConvs(); i++) {
-    params.push_back(dataGradOp->getParameters(i));
+    ps.push_back(dataGradOp->getParameters(i));
   }
-  restoreAttributesFromParams();
+  restoreAttributesFromParams(ps);
 }
 
-void MultiConvBaseOp::restoreAttributesFromParams() {
+void MultiConvBaseOp::restoreAttributesFromParams(
+    const std::vector<ConvParameters> &ps) {
   // Restore Op parameters from Conv parameters so that setup() works
   flatStrides.clear();
   flatDilations.clear();
   flatPads.clear();
   flatOutPads.clear();
 
-  for (auto param : params) {
+  for (auto param : ps) {
     flatStrides.insert(flatStrides.end(),
                        param.outputTransformation.stride.begin(),
                        param.outputTransformation.stride.end());
@@ -259,7 +261,7 @@ void MultiConvBaseOp::appendOutlineAttributes(OpSerialiserBase &os) const {
   for (int64_t i = 0; i < numConvs(); i++) {
     std::string suffix = "[" + std::to_string(i) + "]";
 
-    appendConvParameterAttributes(params[i], suffix, os);
+    appendConvParameterAttributes(getParameters(i), suffix, os);
 
     // Append per-conv options
     for (auto key_val : getConvOptions().getConvOptions(i)) {
@@ -268,14 +270,116 @@ void MultiConvBaseOp::appendOutlineAttributes(OpSerialiserBase &os) const {
   }
 }
 
-void MultiConvBaseOp::setup() {
-  strides.resize(numConvs());
-  pads.resize(numConvs());
-  outPads.resize(numConvs());
-  dilations.resize(numConvs());
-  inDilations.resize(numConvs());
-  params.resize(numConvs());
+int64_t MultiConvBaseOp::getCumulativeSpatialDims(int64_t convIndex) const {
+  int64_t cumulativeSpatialDims = 0;
 
+  for (int i = 0; i < convIndex; i++) {
+    cumulativeSpatialDims += getNSpatialDims(i);
+  }
+
+  return cumulativeSpatialDims;
+}
+
+ConvStrides MultiConvBaseOp::getStrides(int64_t convIndex) const {
+  const auto nSpatialDims          = getNSpatialDims(convIndex);
+  const auto cumulativeSpatialDims = getCumulativeSpatialDims(convIndex);
+
+  ConvStrides result;
+  if (flatStrides.empty()) {
+    result.resize(nSpatialDims, 1);
+  } else {
+    result = {flatStrides.begin() + cumulativeSpatialDims,
+              flatStrides.begin() + cumulativeSpatialDims + nSpatialDims};
+  }
+
+  return result;
+}
+
+ConvPads MultiConvBaseOp::getPads(int64_t convIndex) const {
+  const auto nSpatialDims          = getNSpatialDims(convIndex);
+  const auto cumulativeSpatialDims = getCumulativeSpatialDims(convIndex);
+
+  ConvPads result;
+  if (flatPads.empty()) {
+    result.resize(2 * nSpatialDims, 0);
+  } else {
+    const auto cumulativePads = cumulativeSpatialDims * 2;
+    result                    = {flatPads.begin() + cumulativePads,
+              flatPads.begin() + cumulativePads + (nSpatialDims * 2)};
+  }
+
+  // Alter pads if necessary, based on AutoPad type
+  if (padType == AutoPad::SAME_LOWER || padType == AutoPad::SAME_UPPER) {
+    const auto outShape = getOutShape(convIndex);
+    Shape spatialO(nSpatialDims, 0);
+    for (int j = 0; j < nSpatialDims; ++j) {
+      spatialO[j] = outShape[j + 2];
+    }
+
+    HasReceptiveFieldOp::alterPads(result,
+                                   spatialO,
+                                   getSpatialD(convIndex),
+                                   getSpatialK(convIndex),
+                                   getStrides(convIndex));
+  }
+
+  return result;
+}
+
+ConvPads MultiConvBaseOp::getOutPads(int64_t convIndex) const {
+  const auto nSpatialDims          = getNSpatialDims(convIndex);
+  const auto cumulativeSpatialDims = getCumulativeSpatialDims(convIndex);
+
+  ConvPads result;
+  if (flatOutPads.empty()) {
+    result.resize(2 * nSpatialDims, 0);
+  } else {
+    const auto cumulativePads = cumulativeSpatialDims * 2;
+    result                    = {flatOutPads.begin() + cumulativePads,
+              flatOutPads.begin() + cumulativePads + (nSpatialDims * 2)};
+  }
+  return result;
+}
+
+ConvDilations MultiConvBaseOp::getDilations(int64_t convIndex) const {
+  const auto nSpatialDims          = getNSpatialDims(convIndex);
+  const auto cumulativeSpatialDims = getCumulativeSpatialDims(convIndex);
+
+  ConvDilations result;
+  if (flatDilations.empty()) {
+    result.resize(nSpatialDims, 1);
+  } else {
+    result = {flatDilations.begin() + cumulativeSpatialDims,
+              flatDilations.begin() + cumulativeSpatialDims + nSpatialDims};
+  }
+  return result;
+}
+
+ConvDilations MultiConvBaseOp::getInDilations(int64_t convIndex) const {
+  const auto nSpatialDims          = getNSpatialDims(convIndex);
+  const auto cumulativeSpatialDims = getCumulativeSpatialDims(convIndex);
+
+  ConvDilations result;
+  if (flatInDilations.empty()) {
+    result.resize(nSpatialDims, 1);
+  } else {
+    result = {flatInDilations.begin() + cumulativeSpatialDims,
+              flatInDilations.begin() + cumulativeSpatialDims + nSpatialDims};
+  }
+  return result;
+}
+
+void MultiConvBaseOp::setup() {
+  checkParameters();
+
+  // Set output shapes
+  for (int i = 0; i < numConvs(); i++) {
+    outInfo(getOutIndex(i))
+        .set(inInfo(getDataInIndex(i)).dataType(), getOutShape(i));
+  }
+}
+
+void MultiConvBaseOp::checkParameters() const {
   // Check that all parameters are either empty, or unpackable (i.e. they
   // contain N * sum(nSpatialDims) elements each, where N == 1 for dilantions
   // and strides, and N == 2 for pads.
@@ -316,113 +420,46 @@ void MultiConvBaseOp::setup() {
           str());
     }
   }
+}
 
-  // Set defaults if empty:
-  // dilations - 1 along each spatial axis.
-  // pads - 0 along each input axis
-  // strides - 1 along each spatial axis
-  // Otherwise, unpack.
+ConvParameters MultiConvBaseOp::getParameters(int convIndex) const {
+  const auto nSpatialDims = getNSpatialDims(convIndex);
+  std::vector<int64_t> zeros(nSpatialDims, 0);
+  std::vector<int64_t> ones(nSpatialDims, 1);
+  std::vector<bool> falses(nSpatialDims, false);
 
-  // Keep track of sizes of each conv of multiconv, for unpacking
-  int64_t cumulativeSpatialDims = 0;
+  ConvParameters result;
+  result.type        = inInfo(getDataInIndex(convIndex)).dataType();
+  result.batchSize   = inInfo(getDataInIndex(convIndex)).dim(0);
+  result.inputShape  = getSpatialD(convIndex);
+  result.kernelShape = getSpatialK(convIndex);
+  result.numInChannelsPerGroup =
+      inInfo(getDataInIndex(convIndex)).dim(1) / getGroups(convIndex);
+  result.numOutChannelsPerGroup =
+      getNOutChans(convIndex) / getGroups(convIndex);
+  result.numGroups = getGroups(convIndex);
 
-  for (int i = 0; i < numConvs(); i++) {
-    const auto nSpatialDims = getNSpatialDims(i);
+  result.inputTransformation.lowerTruncation = zeros;
+  result.inputTransformation.upperTruncation = zeros;
+  result.inputTransformation.dilation        = getInDilations(convIndex);
+  result.inputTransformation.lowerPadding    = lowerPads(convIndex);
+  result.inputTransformation.upperPadding    = upperPads(convIndex);
+  result.inputTransformation.flip            = falses;
 
-    if (flatStrides.empty()) {
-      strides[i].resize(nSpatialDims, 1);
-    } else {
-      strides[i] = {flatStrides.begin() + cumulativeSpatialDims,
-                    flatStrides.begin() + cumulativeSpatialDims + nSpatialDims};
-    }
-    if (flatPads.empty()) {
-      pads[i].resize(2 * nSpatialDims, 0);
-    } else {
-      const auto cumulativePads = cumulativeSpatialDims * 2;
-      pads[i]                   = {flatPads.begin() + cumulativePads,
-                 flatPads.begin() + cumulativePads + (nSpatialDims * 2)};
-    }
-    if (flatOutPads.empty()) {
-      outPads[i].resize(2 * nSpatialDims, 0);
-    } else {
-      const auto cumulativePads = cumulativeSpatialDims * 2;
-      outPads[i]                = {flatOutPads.begin() + cumulativePads,
-                    flatOutPads.begin() + cumulativePads + (nSpatialDims * 2)};
-    }
-    if (flatDilations.empty()) {
-      dilations[i].resize(nSpatialDims, 1);
-    } else {
-      dilations[i] = {flatDilations.begin() + cumulativeSpatialDims,
-                      flatDilations.begin() + cumulativeSpatialDims +
-                          nSpatialDims};
-    }
-    if (flatInDilations.empty()) {
-      inDilations[i].resize(nSpatialDims, 1);
-    } else {
-      inDilations[i] = {flatInDilations.begin() + cumulativeSpatialDims,
-                        flatInDilations.begin() + cumulativeSpatialDims +
-                            nSpatialDims};
-    }
+  result.kernelTransformation.lowerTruncation = zeros;
+  result.kernelTransformation.upperTruncation = zeros;
+  result.kernelTransformation.dilation        = getDilations(convIndex);
+  result.kernelTransformation.lowerPadding    = zeros;
+  result.kernelTransformation.upperPadding    = zeros;
+  result.kernelTransformation.flip            = falses;
 
-    cumulativeSpatialDims += nSpatialDims;
-  }
+  result.outputTransformation.lowerTruncation = zeros;
+  result.outputTransformation.upperTruncation = zeros;
+  result.outputTransformation.stride          = getStrides(convIndex);
+  result.outputTransformation.lowerPadding    = lowerOutPads(convIndex);
+  result.outputTransformation.upperPadding    = upperOutPads(convIndex);
 
-  // Alter pads if necessary, based on AutoPad type
-  for (int i = 0; i < numConvs(); i++) {
-    const auto nSpatialDims = getNSpatialDims(i);
-    const auto outShape     = getOutShape(i);
-    Shape spatialO(nSpatialDims, 0);
-    for (int j = 0; j < nSpatialDims; ++j) {
-      spatialO[j] = outShape[j + 2];
-    }
-    if (padType == AutoPad::SAME_LOWER || padType == AutoPad::SAME_UPPER) {
-      HasReceptiveFieldOp::alterPads(
-          pads[i], spatialO, getSpatialD(i), getSpatialK(i), strides[i]);
-    }
-  }
-
-  // Set up the conv parameters
-  for (int i = 0; i < numConvs(); i++) {
-    const auto nSpatialDims = getNSpatialDims(i);
-    std::vector<int64_t> zeros(nSpatialDims, 0);
-    std::vector<int64_t> ones(nSpatialDims, 1);
-    std::vector<bool> falses(nSpatialDims, false);
-
-    params[i].type        = inInfo(getDataInIndex(i)).dataType();
-    params[i].batchSize   = inInfo(getDataInIndex(i)).dim(0);
-    params[i].inputShape  = getSpatialD(i);
-    params[i].kernelShape = getSpatialK(i);
-    params[i].numInChannelsPerGroup =
-        inInfo(getDataInIndex(i)).dim(1) / getGroups(i);
-    params[i].numOutChannelsPerGroup = getNOutChans(i) / getGroups(i);
-    params[i].numGroups              = getGroups(i);
-
-    params[i].inputTransformation.lowerTruncation = zeros;
-    params[i].inputTransformation.upperTruncation = zeros;
-    params[i].inputTransformation.dilation        = inDilations[i];
-    params[i].inputTransformation.lowerPadding    = lowerPads(i);
-    params[i].inputTransformation.upperPadding    = upperPads(i);
-    params[i].inputTransformation.flip            = falses;
-
-    params[i].kernelTransformation.lowerTruncation = zeros;
-    params[i].kernelTransformation.upperTruncation = zeros;
-    params[i].kernelTransformation.dilation        = dilations[i];
-    params[i].kernelTransformation.lowerPadding    = zeros;
-    params[i].kernelTransformation.upperPadding    = zeros;
-    params[i].kernelTransformation.flip            = falses;
-
-    params[i].outputTransformation.lowerTruncation = zeros;
-    params[i].outputTransformation.upperTruncation = zeros;
-    params[i].outputTransformation.stride          = strides[i];
-    params[i].outputTransformation.lowerPadding    = lowerOutPads(i);
-    params[i].outputTransformation.upperPadding    = upperOutPads(i);
-  }
-
-  // Set output shapes
-  for (int i = 0; i < numConvs(); i++) {
-    outInfo(getOutIndex(i))
-        .set(inInfo(getDataInIndex(i)).dataType(), getOutShape(i));
-  }
+  return result;
 }
 
 MultiConvWeightsGradBaseOp::MultiConvWeightsGradBaseOp(

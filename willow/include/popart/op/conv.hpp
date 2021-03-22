@@ -34,10 +34,11 @@ public:
   void setGroup() { group = MultiConvBaseOp::getGroups(0); }
   int64_t getNInChans() const { return MultiConvBaseOp::getNInChans(0); }
   int64_t getNOutChans() const { return MultiConvBaseOp::getNOutChans(0); }
-  const ConvParameters &getParameters() const {
+  ConvParameters getParameters() const {
     return MultiConvBaseOp::getParameters(0);
   }
-  void restoreAttributesFromParams() override;
+  void
+  restoreAttributesFromParams(const std::vector<ConvParameters> &) override;
 
 private:
   // Can always be determined by input shapes. However, we check here that

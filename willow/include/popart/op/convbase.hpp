@@ -175,34 +175,50 @@ public:
   }
   Shape lowerPads(int convIndex) const {
     return HasReceptiveFieldOp::lowerPads(
-        pads[convIndex], static_cast<int>(getNSpatialDims(convIndex)), padType);
+        getPads(convIndex),
+        static_cast<int>(getNSpatialDims(convIndex)),
+        padType);
   }
   Shape upperPads(int convIndex) const {
     return HasReceptiveFieldOp::upperPads(
-        pads[convIndex], static_cast<int>(getNSpatialDims(convIndex)), padType);
+        getPads(convIndex),
+        static_cast<int>(getNSpatialDims(convIndex)),
+        padType);
   }
   Shape lowerOutPads(int convIndex) const {
     return HasReceptiveFieldOp::lowerPads(
-        outPads[convIndex],
+        getOutPads(convIndex),
         static_cast<int>(getNSpatialDims(convIndex)),
         AutoPad::NOTSET);
   }
   Shape upperOutPads(int convIndex) const {
     return HasReceptiveFieldOp::upperPads(
-        outPads[convIndex],
+        getOutPads(convIndex),
         static_cast<int>(getNSpatialDims(convIndex)),
         AutoPad::NOTSET);
   }
   Shape getOutShape(int convIndex) const;
 
-  const ConvParameters &getParameters(int convIndex) const {
-    return params[convIndex];
-  }
+  // Conv parameters, packaged into a single struct
+  ConvParameters getParameters(int convIndex) const;
 
   virtual void setParamsFromDataGradOp(const Op *dataGradOp);
-  virtual void restoreAttributesFromParams();
+  virtual void restoreAttributesFromParams(const std::vector<ConvParameters> &);
   const MultiConvOptions &getConvOptions() const { return convOpts; }
   void setConvOptions(const MultiConvOptions &opts) { convOpts = opts; }
+
+  int64_t getCumulativeSpatialDims(int64_t i) const;
+
+  ConvStrides getStrides(int64_t convIndex) const;
+  ConvPads getPads(int64_t convIndex) const;
+  ConvPads getOutPads(int64_t convIndex) const;
+  ConvDilations getDilations(int64_t convIndex) const;
+
+  // Used for ConvTranspose
+  ConvDilations getInDilations(int64_t convIndex) const;
+
+private:
+  void checkParameters() const;
 
   // Directly passed in from onnx model attributes
   ConvStrides flatStrides;
@@ -210,18 +226,6 @@ public:
   ConvPads flatOutPads;
   ConvDilations flatDilations;
   ConvDilations flatInDilations;
-
-  // Re-packaged on a per-conv basis
-  MultiConvStrides strides;
-  MultiConvPads pads;
-  MultiConvPads outPads;
-  MultiConvDilations dilations;
-
-  // Used for ConvTranspose
-  MultiConvDilations inDilations;
-
-  // Above per-conv parameters, packaged into a single struct
-  std::vector<ConvParameters> params;
 
   // Encapsulates per-conv and global options
   MultiConvOptions convOpts;

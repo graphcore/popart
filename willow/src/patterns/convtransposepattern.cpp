@@ -79,8 +79,7 @@ bool ConvTransposePattern::apply(Op *op) const {
   conv->connectOutTensor(ConvOp::getOutIndex(), outTensor->id);
 
   conv->setGroup();
-  conv->params.push_back(convTranspose->params);
-  conv->restoreAttributesFromParams();
+  conv->restoreAttributesFromParams({convTranspose->params});
   conv->setup();
 
   flip->setParameters(dynamic_cast<ConvOp *>(conv)->getParameters());

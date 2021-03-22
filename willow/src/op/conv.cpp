@@ -57,12 +57,13 @@ void ConvOp::setup() {
         inInfo(getWeightsInIndex()).dim(1));
   }
 
-  MultiConvBaseOp::setup();
+  return MultiConvBaseOp::setup();
 }
 
-void ConvOp::restoreAttributesFromParams() {
+void ConvOp::restoreAttributesFromParams(
+    const std::vector<ConvParameters> &params) {
   setGroup();
-  MultiConvBaseOp::restoreAttributesFromParams();
+  MultiConvBaseOp::restoreAttributesFromParams(params);
 }
 
 ConvWeightsGradOp::ConvWeightsGradOp(const ConvOp &op_)
