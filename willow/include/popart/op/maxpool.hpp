@@ -16,7 +16,8 @@ public:
   MaxPoolOp(const OperatorIdentifier &_opid,
             const std::vector<int64_t> &kernelShape_,
             int64_t storageOrder,
-            const HasReceptiveFieldOp::Settings &settings);
+            const HasReceptiveFieldOp::ReceptiveOpAttributes &attributes,
+            const Op::Settings &settings);
   std::unique_ptr<Op> clone() const final;
   std::vector<std::unique_ptr<Op>> getGradOps() final;
   int64_t getNOutChans() const final;
@@ -29,9 +30,10 @@ public:
   float getSubgraphValue() const final { return getLowSubgraphValue(); }
   bool canBeReplacedByIdentity() const override;
 
+  Shape getSpatialK() const final;
+
 private:
-  void setup0() final;
-  void setSpatialK() final;
+  void setup0() const final;
 
   int64_t storageOrder;
   std::vector<int64_t> kernelShape;
@@ -50,8 +52,6 @@ public:
   static InIndex getGradPooledInIndex() { return 2; }
   static OutIndex getOutIndex() { return 0; }
 
-  const MaxPoolOp *getCloneOfCreator() const;
-
   void appendOutlineAttributes(OpSerialiserBase &) const override;
 
   float getSubgraphValue() const final { return getLowSubgraphValue(); }
@@ -60,13 +60,12 @@ private:
   // The shape and type of the input to the
   // forward op which creates this backwards op
   TensorInfo unpooledInfo;
-  // A copy of the forward op which creates
-  // this backwards op. Note
-  // 1) backends will need a copy of this op to determine
-  //    how to do the backwards pass (padding, striding, etc)
-  // 2) we DON'T store a pointer to the creating forward op,
-  //    which might be optimised out and deleted
-  std::shared_ptr<Op> cloneOfCreator;
+
+public:
+  const Shape creatorSpatialK;
+  const Shape creatorStrides;
+  const Shape creatorLowerPads;
+  const Shape creatorUpperPads;
 };
 
 } // namespace popart

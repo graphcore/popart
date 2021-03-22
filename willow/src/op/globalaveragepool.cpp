@@ -57,12 +57,17 @@ std::vector<std::unique_ptr<Op>> GlobalAveragePoolOp::getGradOps() {
 GlobalAveragePoolGradOp::GlobalAveragePoolGradOp(const GlobalAveragePoolOp &op_)
     : Op(Onnx::GradOperators::GlobalAveragePoolGrad, op_.getSettings()),
       unpooledInfo(op_.inInfo(GlobalAveragePoolOp::getInIndex())),
-      cloneOfCreator(op_.clone()) {}
+      creatorSpatialK(op_.getSpatialK()), creatorStrides(op_.getStrides()),
+      creatorLowerPads(op_.getLowerPads()),
+      creatorUpperPads(op_.getUpperPads()) {}
 
 void GlobalAveragePoolGradOp::appendOutlineAttributes(
     OpSerialiserBase &os) const {
   Op::appendOutlineAttributes(os);
-  os.appendForwardOp(getCloneOfCreator());
+  os.appendAttribute("creatorSpatialK", creatorSpatialK);
+  os.appendAttribute("creatorStrides", creatorStrides);
+  os.appendAttribute("creatorLowerPads", creatorLowerPads);
+  os.appendAttribute("creatorUpperPads", creatorUpperPads);
 }
 
 const std::vector<GradInOutMapper> &
@@ -102,10 +107,6 @@ void GlobalAveragePoolGradOp::setup() { outInfo(getOutIndex()) = unpooledInfo; }
 
 std::unique_ptr<Op> GlobalAveragePoolGradOp::clone() const {
   return std::make_unique<GlobalAveragePoolGradOp>(*this);
-}
-
-const GlobalAveragePoolOp *GlobalAveragePoolGradOp::getCloneOfCreator() const {
-  return dynamic_cast<GlobalAveragePoolOp *>(cloneOfCreator.get());
 }
 
 namespace {

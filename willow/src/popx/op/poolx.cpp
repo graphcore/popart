@@ -126,15 +126,14 @@ public:
       : PoolOpx(op_, devicex_), pooling_type(pooling_type_) {}
 
   void grow(poplar::program::Sequence &prog) const {
-    GRADOP &agOp  = getOp<GRADOP>();
-    const OP *aOp = agOp.getCloneOfCreator();
+    GRADOP &agOp = getOp<GRADOP>();
 
     auto pool_params = GetPoolingParameters(pooling_type,
                                             op_p->inInfo(0),
-                                            aOp->getSpatialK(),
-                                            aOp->getStrides(),
-                                            aOp->getLowerPads(),
-                                            aOp->getUpperPads());
+                                            agOp.creatorSpatialK,
+                                            agOp.creatorStrides,
+                                            agOp.creatorLowerPads,
+                                            agOp.creatorUpperPads);
 
     logging::opx::debug("Pooling Grad InputField:{} Kernel:{} Strides:{} "
                         "Pads L:{} U:{} C:{} Bs:{}",

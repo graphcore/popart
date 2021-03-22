@@ -12,11 +12,7 @@ enum class AutoPad { NOTSET = 0, SAME_UPPER, SAME_LOWER, VALID };
 // MaxPoolOp and AveragePoolOp
 class HasReceptiveFieldOp : public Op {
 public:
-  struct Settings : public Op::Settings {
-
-    Settings(Graph &graph_, const std::string &name_, const Scope &scope_)
-        : Op::Settings(graph_, name_, scope_) {}
-
+  struct ReceptiveOpAttributes {
     std::vector<int64_t> pads;
     std::vector<int64_t> outPads;
     std::vector<int64_t> strides;
@@ -25,31 +21,37 @@ public:
     std::string auto_pad;
     int64_t ceil_mode = 0;
 
-    void setFromAttributes(const Attributes &attributes) override;
+    void setFromAttributes(const Attributes &attributes);
   };
 
-  HasReceptiveFieldOp(const OperatorIdentifier &_opid,
-                      const HasReceptiveFieldOp::Settings &settings);
+  HasReceptiveFieldOp(
+      const OperatorIdentifier &_opid,
+      const HasReceptiveFieldOp::ReceptiveOpAttributes &attributes,
+      const Op::Settings &settings);
 
-  int nSpatialDims;
-  int64_t batchSize;
-  int64_t nInChans;
+  int getNSpatialDims() const;
+  int64_t getBatchSize() const;
+  int64_t getNInChans() const;
 
-  Shape getSpatialK() const { return spatialK; }
-  Shape getStrides() const { return strides; }
+  virtual Shape getSpatialK() const = 0;
+  Shape getStrides() const;
   Shape getLowerPads() const { return lowerPads(); }
   Shape getUpperPads() const { return upperPads(); }
   Shape getLowerOutPads() const { return lowerOutPads(); }
   Shape getUpperOutPads() const { return upperOutPads(); }
+  Shape getPads() const;
+  Shape getOutPads() const;
+  Shape getDilations() const;
+  Shape getInDilations() const;
 
-  std::vector<int64_t> pads;
-  std::vector<int64_t> outPads;
-  std::vector<int64_t> strides;
-  std::vector<int64_t> dilations;
-  std::vector<int64_t> inDilations;
+  const std::vector<int64_t> basePads;
+  const std::vector<int64_t> baseOutPads;
+  const std::vector<int64_t> baseStrides;
+  const std::vector<int64_t> baseDilations;
+  const std::vector<int64_t> baseInDilations;
 
-  AutoPad padType;
-  bool ceilMode;
+  const AutoPad padType;
+  const bool ceilMode;
 
   static AutoPad getAutoPad(const std::string &autoPadStr);
   std::string getAutoPadStr(const AutoPad &x) const;
@@ -60,15 +62,10 @@ public:
                         Shape spatialK_,
                         std::vector<int64_t> strides_);
 
-  // the spatial dimensions of the operator
-  //   : kernel size for convolution
-  //   : window size for pooling
-  std::vector<int64_t> spatialK;
   // the spatial dimensions of the data
-  std::vector<int64_t> spatialD;
-  DataType outType;
+  std::vector<int64_t> getSpatialD() const;
   // the spatial dimensions of the output
-  std::vector<int64_t> spatialO;
+  std::vector<int64_t> getSpatialO() const;
 
   void setup() override;
   virtual int64_t getNOutChans() const = 0;
@@ -102,7 +99,6 @@ public:
 
   void appendOutlineAttributes(OpSerialiserBase &) const override;
 
-  virtual Shape getOutShape() const;
   // Determine the spatial dimensions of the output - a subset of the
   // dimensions of the complete output shape
   static Shape getSpatialOutShape(Shape spatialD_,
@@ -116,10 +112,10 @@ public:
                                   bool ceil_mode_ = false);
 
 private:
-  // set the public vector "spatialK"
-  virtual void setSpatialK() = 0;
+  Shape getOutShape(const Shape &pads) const;
+
   // anything else that a sub-class needs to do should go here:
-  virtual void setup0() = 0;
+  virtual void setup0() const = 0;
 };
 
 } // namespace popart

@@ -57,8 +57,6 @@ public:
   static InIndex getGradPooledInIndex() { return 2; }
   static OutIndex getOutIndex() { return 0; }
 
-  const GlobalAveragePoolOp *getCloneOfCreator() const;
-
   void appendOutlineAttributes(OpSerialiserBase &) const override;
 
   float getSubgraphValue() const final { return getLowSubgraphValue(); }
@@ -67,13 +65,12 @@ private:
   // The shape and type of the input to the
   // forward op which creates this backwards op
   TensorInfo unpooledInfo;
-  // A copy of the forward op which creates
-  // this backwards op. Note
-  // 1) backends will need a copy of this op to determine
-  //    how to do the backwards pass (padding, striding, etc)
-  // 2) we DON'T store a pointer to the creating forward op,
-  //    which might be optimised out and deleted
-  std::shared_ptr<Op> cloneOfCreator;
+
+public:
+  const Shape creatorSpatialK;
+  const Shape creatorStrides;
+  const Shape creatorLowerPads;
+  const Shape creatorUpperPads;
 };
 
 } // namespace popart

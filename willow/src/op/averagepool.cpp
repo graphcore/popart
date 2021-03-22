@@ -12,17 +12,19 @@ namespace popart {
 
 // TODO : Support "count_include_pad" T6249
 
-AveragePoolOp::AveragePoolOp(const OperatorIdentifier &_opid,
-                             int64_t _countIncludePad,
-                             const std::vector<int64_t> &_kernelShape,
-                             const HasReceptiveFieldOp::Settings &settings_)
-    : HasReceptiveFieldOp(_opid, settings_), kernelShape(_kernelShape),
-      countIncludePad(_countIncludePad) {}
+AveragePoolOp::AveragePoolOp(
+    const OperatorIdentifier &_opid,
+    int64_t _countIncludePad,
+    const std::vector<int64_t> &_kernelShape,
+    const HasReceptiveFieldOp::ReceptiveOpAttributes &attributes,
+    const Op::Settings &settings_)
+    : HasReceptiveFieldOp(_opid, attributes, settings_),
+      kernelShape(_kernelShape), countIncludePad(_countIncludePad) {}
 
-void AveragePoolOp::setup0() {}
+void AveragePoolOp::setup0() const {}
 
-void AveragePoolOp::setSpatialK() {
-  spatialK.resize(nSpatialDims);
+Shape AveragePoolOp::getSpatialK() const {
+  std::vector<int64_t> spatialK(getNSpatialDims());
 
   if (kernelShape.size() != inRank(getInIndex()) - 2) {
     throw error(
@@ -32,13 +34,11 @@ void AveragePoolOp::setSpatialK() {
   if (countIncludePad) {
     throw error("`count_include_pad` is not supported");
   }
-  for (int spDim = 0; spDim < nSpatialDims; ++spDim) {
+  for (int spDim = 0; spDim < getNSpatialDims(); ++spDim) {
     spatialK[spDim] = kernelShape[spDim];
   }
-}
 
-const AveragePoolOp *AveragePoolGradOp::getCloneOfCreator() const {
-  return dynamic_cast<AveragePoolOp *>(cloneOfCreator.get());
+  return spatialK;
 }
 
 std::unique_ptr<Op> AveragePoolOp::clone() const {
@@ -47,7 +47,7 @@ std::unique_ptr<Op> AveragePoolOp::clone() const {
 
 // Pooling does not change the number of channels,
 // i.e it is the same as the number of input channels
-int64_t AveragePoolOp::getNOutChans() const { return nInChans; }
+int64_t AveragePoolOp::getNOutChans() const { return getNInChans(); }
 
 std::vector<std::unique_ptr<Op>> AveragePoolOp::getGradOps() {
   std::vector<std::unique_ptr<Op>> upops;
@@ -62,6 +62,8 @@ void AveragePoolOp::appendOutlineAttributes(OpSerialiserBase &os) const {
 }
 
 bool AveragePoolOp::canBeReplacedByIdentity() const {
+  auto pads              = getPads();
+  auto strides           = getStrides();
   int64_t padsSum        = std::accumulate(pads.begin(), pads.end(), 0);
   int64_t stridesProduct = std::accumulate(
       strides.begin(), strides.end(), 1, std::multiplies<int64_t>());
@@ -76,11 +78,16 @@ bool AveragePoolOp::canBeReplacedByIdentity() const {
 AveragePoolGradOp::AveragePoolGradOp(const AveragePoolOp &op_)
     : Op(Onnx::GradOperators::AveragePoolGrad, op_.getSettings()),
       unpooledInfo(op_.inInfo(AveragePoolOp::getInIndex())),
-      cloneOfCreator(op_.clone()) {}
+      creatorSpatialK(op_.getSpatialK()), creatorStrides(op_.getStrides()),
+      creatorLowerPads(op_.getLowerPads()),
+      creatorUpperPads(op_.getUpperPads()) {}
 
 void AveragePoolGradOp::appendOutlineAttributes(OpSerialiserBase &os) const {
   Op::appendOutlineAttributes(os);
-  os.appendForwardOp(getCloneOfCreator());
+  os.appendAttribute("creatorSpatialK", creatorSpatialK);
+  os.appendAttribute("creatorStrides", creatorStrides);
+  os.appendAttribute("creatorLowerPads", creatorLowerPads);
+  os.appendAttribute("creatorUpperPads", creatorUpperPads);
 }
 
 const std::vector<GradInOutMapper> &AveragePoolGradOp::gradInputInfo() const {
@@ -141,17 +148,22 @@ static OpCreator<AveragePoolOp> averagePoolOpCreator(
         {Onnx::Operators::AveragePool_11, averagePoolOpDef},
     }),
     [](const OpCreatorInfo &info) {
-      HasReceptiveFieldOp::Settings receptiveSettings(
+      Op::Settings receptiveSettings(
           info.settings.graph, info.settings.name, info.settings.scope);
-      receptiveSettings.setFromAttributes(info.attributes);
+
+      HasReceptiveFieldOp::ReceptiveOpAttributes receptiveAttributes;
+      receptiveAttributes.setFromAttributes(info.attributes);
 
       std::vector<int64_t> kernelShape =
           info.attributes.getAttribute<Attributes::Ints>("kernel_shape", {});
       int64_t countIncludePad =
           info.attributes.getAttribute<Attributes::Int>("count_include_pad", 0);
 
-      return std::unique_ptr<Op>(new AveragePoolOp(
-          info.opid, countIncludePad, kernelShape, receptiveSettings));
+      return std::unique_ptr<Op>(new AveragePoolOp(info.opid,
+                                                   countIncludePad,
+                                                   kernelShape,
+                                                   receptiveAttributes,
+                                                   receptiveSettings));
     },
     true);
 } // namespace

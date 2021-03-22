@@ -14,45 +14,69 @@ namespace popart {
 
 HasReceptiveFieldOp::HasReceptiveFieldOp(
     const OperatorIdentifier &_opid,
-    const HasReceptiveFieldOp::Settings &settings_)
-    : Op(_opid, settings_), pads(settings_.pads), outPads(settings_.outPads),
-      strides(settings_.strides), dilations(settings_.dilations),
-      inDilations(settings_.inDilations),
-      padType(getAutoPad(settings_.auto_pad)), ceilMode(settings_.ceil_mode) {}
+    const HasReceptiveFieldOp::ReceptiveOpAttributes &attributes,
+    const Op::Settings &settings_)
+    : Op(_opid, settings_), basePads(attributes.pads),
+      baseOutPads(attributes.outPads), baseStrides(attributes.strides),
+      baseDilations(attributes.dilations),
+      baseInDilations(attributes.inDilations),
+      padType(getAutoPad(attributes.auto_pad)), ceilMode(attributes.ceil_mode) {
+}
 
-void HasReceptiveFieldOp::setup() {
-
+int HasReceptiveFieldOp::getNSpatialDims() const {
   auto &inputInfo = inInfo(getInIndex());
+  return inputInfo.rank() - 2;
+}
 
-  batchSize    = inputInfo.dim(0);
-  nInChans     = inputInfo.dim(1);
-  nSpatialDims = inputInfo.rank() - 2;
-  spatialD.resize(nSpatialDims);
+int64_t HasReceptiveFieldOp::getBatchSize() const {
+  return inInfo(getInIndex()).dim(0);
+}
+
+int64_t HasReceptiveFieldOp::getNInChans() const {
+  return inInfo(getInIndex()).dim(1);
+}
+
+std::vector<int64_t> HasReceptiveFieldOp::getSpatialD() const {
+  auto nSpatialDims = getNSpatialDims();
+  auto &inputInfo   = inInfo(getInIndex());
+
+  std::vector<int64_t> spatialD(nSpatialDims);
   for (int i = 0; i < nSpatialDims; ++i) {
     spatialD[i] = inputInfo.dim(i + 2);
   }
-  spatialO.resize(nSpatialDims);
 
-  // default values:
+  return spatialD;
+}
+
+std::vector<int64_t> HasReceptiveFieldOp::getSpatialO() const {
+  auto nSpatialDims = getNSpatialDims();
+
+  auto pads = basePads;
   pads.resize(nSpatialDims * 2, 0);
-  outPads.resize(nSpatialDims * 2, 0);
-  strides.resize(nSpatialDims, 1);
-  dilations.resize(nSpatialDims, 1);
-  inDilations.resize(nSpatialDims, 1);
+  Shape outShape = getOutShape(pads);
 
-  setSpatialK();
-
-  // set-up whatever else the specific HasReceptiveFieldOp requires
-  // need to be careful with the ordering here.
-  setup0();
-
-  Shape outShape = getOutShape();
+  std::vector<int64_t> spatialO(nSpatialDims);
   for (int i = 0; i < nSpatialDims; ++i) {
     spatialO[i] = outShape[i + 2];
   }
 
+  return spatialO;
+}
+
+Shape HasReceptiveFieldOp::getOutPads() const {
+  auto outPads = baseOutPads;
+  outPads.resize(getNSpatialDims() * 2, 0);
+  return outPads;
+}
+
+Shape HasReceptiveFieldOp::getPads() const {
+  auto nSpatialDims = getNSpatialDims();
+
+  auto pads = basePads;
+  pads.resize(nSpatialDims * 2, 0);
+
   if (padType == AutoPad::SAME_LOWER || padType == AutoPad::SAME_UPPER) {
-    alterPads(pads, spatialO, spatialD, spatialK, strides);
+    alterPads(pads, getSpatialO(), getSpatialD(), getSpatialK(), getStrides());
   }
 
   if (ceilMode) {
@@ -61,20 +85,56 @@ void HasReceptiveFieldOp::setup() {
     // such that the newly calculated output shape is the non-integer value
     // rounded up to the nearest integer.
     for (int i = 0; i < nSpatialDims; i++) {
-      auto inferredUpperPad = ((spatialO[i] - 1) * strides[i]) + spatialK[i] -
-                              spatialD[i] - pads[i];
+      auto inferredUpperPad = ((getSpatialO()[i] - 1) * getStrides()[i]) +
+                              getSpatialK()[i] - getSpatialD()[i] - pads[i];
       pads[i + nSpatialDims] = inferredUpperPad;
     }
   }
 
-  // we assume that the output type is the same as the input type
-  outType = inputInfo.dataType();
+  return pads;
+}
 
-  outInfo(getOutIndex()).set(outType, getOutShape());
+Shape HasReceptiveFieldOp::getStrides() const {
+  auto nSpatialDims = getNSpatialDims();
+
+  auto strides = baseStrides;
+  strides.resize(nSpatialDims, 1);
+
+  return strides;
+}
+
+Shape HasReceptiveFieldOp::getDilations() const {
+  auto nSpatialDims = getNSpatialDims();
+
+  auto dilations = baseDilations;
+  dilations.resize(nSpatialDims, 1);
+
+  return dilations;
+}
+
+Shape HasReceptiveFieldOp::getInDilations() const {
+  int nSpatialDims = getNSpatialDims();
+
+  auto inDilations = baseInDilations;
+  inDilations.resize(nSpatialDims, 1);
+
+  return inDilations;
+}
+
+void HasReceptiveFieldOp::setup() {
+  // set-up whatever else the specific HasReceptiveFieldOp requires
+  // need to be careful with the ordering here.
+  setup0();
+
+  // we assume that the output type is the same as the input type
+  auto &inputInfo = inInfo(getInIndex());
+  auto outType    = inputInfo.dataType();
+
+  outInfo(getOutIndex()).set(outType, getOutShape(getPads()));
 }
 
 std::vector<int64_t> HasReceptiveFieldOp::lowerPads() const {
-  return lowerPads(pads, nSpatialDims, padType);
+  return lowerPads(getPads(), getNSpatialDims(), padType);
 }
 
 std::vector<int64_t> HasReceptiveFieldOp::lowerPads(Shape pads_,
@@ -98,7 +158,7 @@ std::vector<int64_t> HasReceptiveFieldOp::lowerPads(Shape pads_,
 }
 
 std::vector<int64_t> HasReceptiveFieldOp::upperPads() const {
-  return upperPads(pads, nSpatialDims, padType);
+  return upperPads(getPads(), getNSpatialDims(), padType);
 }
 
 std::vector<int64_t> HasReceptiveFieldOp::upperPads(Shape pads_,
@@ -125,11 +185,15 @@ std::vector<int64_t> HasReceptiveFieldOp::upperPads(Shape pads_,
 }
 
 std::vector<int64_t> HasReceptiveFieldOp::lowerOutPads() const {
-  return std::vector<int64_t>(outPads.begin(), outPads.begin() + nSpatialDims);
+  auto outPads = getOutPads();
+  return std::vector<int64_t>(outPads.begin(),
+                              outPads.begin() + getNSpatialDims());
 }
 
 std::vector<int64_t> HasReceptiveFieldOp::upperOutPads() const {
-  return std::vector<int64_t>(outPads.begin() + nSpatialDims, outPads.end());
+  auto outPads = getOutPads();
+  return std::vector<int64_t>(outPads.begin() + getNSpatialDims(),
+                              outPads.end());
 }
 
 void HasReceptiveFieldOp::alterPads(Shape &pads_,
@@ -140,24 +204,25 @@ void HasReceptiveFieldOp::alterPads(Shape &pads_,
   for (auto i = 0; i < spatialO_.size(); i++) {
     pads_[i] = (spatialO_[i] - 1) * strides_[i] + spatialK_[i] - spatialD_[i];
   }
+  logging::debug("result pads {}", pads_);
 }
 
-Shape HasReceptiveFieldOp::getOutShape() const {
-  Shape outShape(2 + nSpatialDims, 0);
-  outShape[0] = batchSize;
+Shape HasReceptiveFieldOp::getOutShape(const Shape &pads) const {
+  Shape outShape(2 + getNSpatialDims(), 0);
+  outShape[0] = getBatchSize();
   outShape[1] = getNOutChans();
 
-  Shape spatialOutShape = getSpatialOutShape(spatialD,
-                                             spatialK,
+  Shape spatialOutShape = getSpatialOutShape(getSpatialD(),
+                                             getSpatialK(),
                                              pads,
-                                             outPads,
-                                             strides,
-                                             dilations,
-                                             inDilations,
+                                             getOutPads(),
+                                             getStrides(),
+                                             getDilations(),
+                                             getInDilations(),
                                              padType,
                                              ceilMode);
 
-  for (int spDim = 0; spDim < nSpatialDims; ++spDim) {
+  for (int spDim = 0; spDim < getNSpatialDims(); ++spDim) {
     outShape[spDim + 2] = spatialOutShape[spDim];
   }
 
@@ -216,11 +281,11 @@ Shape HasReceptiveFieldOp::getSpatialOutShape(Shape spatialD_,
 }
 
 std::vector<size_t> HasReceptiveFieldOp::spatialD_szt() const {
-  return vXtoY<int64_t, size_t>(spatialD);
+  return vXtoY<int64_t, size_t>(getSpatialD());
 }
 
 std::vector<size_t> HasReceptiveFieldOp::spatialK_szt() const {
-  return vXtoY<int64_t, size_t>(spatialK);
+  return vXtoY<int64_t, size_t>(getSpatialK());
 }
 
 std::vector<uint32_t> HasReceptiveFieldOp::lowerPads_u32() const {
@@ -240,18 +305,18 @@ std::vector<int> HasReceptiveFieldOp::upperPads_i32() const {
 }
 
 std::vector<uint32_t> HasReceptiveFieldOp::dilations_u32() const {
-  return vXtoY<int64_t, uint32_t>(dilations);
+  return vXtoY<int64_t, uint32_t>(getDilations());
 }
 
 std::vector<uint32_t> HasReceptiveFieldOp::strides_u32() const {
-  return vXtoY<int64_t, uint32_t>(strides);
+  return vXtoY<int64_t, uint32_t>(getStrides());
 }
 
 void HasReceptiveFieldOp::appendOutlineAttributes(OpSerialiserBase &os) const {
   Op::appendOutlineAttributes(os);
-  os.appendAttribute("pads", pads);
-  os.appendAttribute("strides", strides);
-  os.appendAttribute("dilations", dilations);
+  os.appendAttribute("basePads", basePads);
+  os.appendAttribute("baseStrides", baseStrides);
+  os.appendAttribute("baseDilations", baseDilations);
   os.appendAttribute("auto_pad", getAutoPadStr(padType));
 }
 
@@ -285,10 +350,8 @@ std::string HasReceptiveFieldOp::getAutoPadStr(const AutoPad &x) const {
   }
 }
 
-void HasReceptiveFieldOp::Settings::setFromAttributes(
+void HasReceptiveFieldOp::ReceptiveOpAttributes::setFromAttributes(
     const Attributes &attributes) {
-  Op::Settings::setFromAttributes(attributes);
-
   attributes.setIfPresent(pads, "pads");
   attributes.setIfPresent(outPads, "outPads");
   attributes.setIfPresent(strides, "strides");

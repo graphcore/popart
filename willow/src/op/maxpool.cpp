@@ -10,34 +10,33 @@
 
 namespace popart {
 
-MaxPoolOp::MaxPoolOp(const OperatorIdentifier &_opid,
-                     const std::vector<int64_t> &kernelShape_,
-                     int64_t storageOrder_,
-                     const HasReceptiveFieldOp::Settings &settings_)
-    : HasReceptiveFieldOp(_opid, settings_), storageOrder(storageOrder_),
-      kernelShape(kernelShape_) {}
+MaxPoolOp::MaxPoolOp(
+    const OperatorIdentifier &_opid,
+    const std::vector<int64_t> &kernelShape_,
+    int64_t storageOrder_,
+    const HasReceptiveFieldOp::ReceptiveOpAttributes &attributes,
+    const Op::Settings &settings_)
+    : HasReceptiveFieldOp(_opid, attributes, settings_),
+      storageOrder(storageOrder_), kernelShape(kernelShape_) {}
 
-void MaxPoolOp::setup0() {
+void MaxPoolOp::setup0() const {
 
   if (storageOrder != 0) {
     throw error("storage_order != 0, not supported");
   }
 }
 
-void MaxPoolOp::setSpatialK() {
-  spatialK.resize(nSpatialDims);
+Shape MaxPoolOp::getSpatialK() const {
+  std::vector<int64_t> spatialK(getNSpatialDims());
 
   if (kernelShape.size() != inRank(getInIndex()) - 2) {
     throw error(
         "invalid kernel_shape, not same rank as the tensor operated on");
   }
-  for (int spDim = 0; spDim < nSpatialDims; ++spDim) {
+  for (int spDim = 0; spDim < getNSpatialDims(); ++spDim) {
     spatialK[spDim] = kernelShape[spDim];
   }
-}
-
-const MaxPoolOp *MaxPoolGradOp::getCloneOfCreator() const {
-  return dynamic_cast<MaxPoolOp *>(cloneOfCreator.get());
+  return spatialK;
 }
 
 std::unique_ptr<Op> MaxPoolOp::clone() const {
@@ -46,7 +45,7 @@ std::unique_ptr<Op> MaxPoolOp::clone() const {
 
 // Pooling does not change the number of channels,
 // i.e it is the same as the number of input channels
-int64_t MaxPoolOp::getNOutChans() const { return nInChans; }
+int64_t MaxPoolOp::getNOutChans() const { return getNInChans(); }
 
 std::vector<std::unique_ptr<Op>> MaxPoolOp::getGradOps() {
   std::vector<std::unique_ptr<Op>> upops;
@@ -61,6 +60,8 @@ void MaxPoolOp::appendOutlineAttributes(OpSerialiserBase &os) const {
 }
 
 bool MaxPoolOp::canBeReplacedByIdentity() const {
+  auto pads              = getPads();
+  auto strides           = getStrides();
   int64_t padsSum        = std::accumulate(pads.begin(), pads.end(), 0);
   int64_t stridesProduct = std::accumulate(
       strides.begin(), strides.end(), 1, std::multiplies<int64_t>());
@@ -75,11 +76,16 @@ bool MaxPoolOp::canBeReplacedByIdentity() const {
 MaxPoolGradOp::MaxPoolGradOp(const MaxPoolOp &op_)
     : Op(Onnx::GradOperators::MaxPoolGrad, op_.getSettings()),
       unpooledInfo(op_.inInfo(MaxPoolOp::getInIndex())),
-      cloneOfCreator(op_.clone()) {}
+      creatorSpatialK(op_.getSpatialK()), creatorStrides(op_.getStrides()),
+      creatorLowerPads(op_.getLowerPads()),
+      creatorUpperPads(op_.getUpperPads()) {}
 
 void MaxPoolGradOp::appendOutlineAttributes(OpSerialiserBase &os) const {
   Op::appendOutlineAttributes(os);
-  os.appendForwardOp(getCloneOfCreator());
+  os.appendAttribute("creatorSpatialK", creatorSpatialK);
+  os.appendAttribute("creatorStrides", creatorStrides);
+  os.appendAttribute("creatorLowerPads", creatorLowerPads);
+  os.appendAttribute("creatorUpperPads", creatorUpperPads);
 }
 
 const std::vector<GradInOutMapper> &MaxPoolGradOp::gradInputInfo() const {
@@ -164,9 +170,11 @@ static OpCreator<MaxPoolOp> maxPoolOpCreator(
         {Onnx::Operators::MaxPool_11, maxPoolOpDef},
     }),
     [](const OpCreatorInfo &info) {
-      HasReceptiveFieldOp::Settings receptiveSettings(
+      Op::Settings receptiveSettings(
           info.settings.graph, info.settings.name, info.settings.scope);
-      receptiveSettings.setFromAttributes(info.attributes);
+
+      HasReceptiveFieldOp::ReceptiveOpAttributes receptiveAttributes;
+      receptiveAttributes.setFromAttributes(info.attributes);
 
       int64_t storageOrder =
           info.attributes.getAttribute<Attributes::Int>("storage_order", 0);
@@ -187,8 +195,11 @@ static OpCreator<MaxPoolOp> maxPoolOpCreator(
         }
       }
 
-      return std::unique_ptr<Op>(new MaxPoolOp(
-          info.opid, kernelShape, storageOrder, receptiveSettings));
+      return std::unique_ptr<Op>(new MaxPoolOp(info.opid,
+                                               kernelShape,
+                                               storageOrder,
+                                               receptiveAttributes,
+                                               receptiveSettings));
     },
     true);
 } // namespace

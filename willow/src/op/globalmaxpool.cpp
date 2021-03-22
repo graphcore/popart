@@ -59,11 +59,16 @@ std::vector<std::unique_ptr<Op>> GlobalMaxPoolOp::getGradOps() {
 GlobalMaxPoolGradOp::GlobalMaxPoolGradOp(const GlobalMaxPoolOp &op_)
     : Op(Onnx::GradOperators::GlobalMaxPoolGrad, op_.getSettings()),
       unpooledInfo(op_.inInfo(GlobalMaxPoolOp::getInIndex())),
-      cloneOfCreator(op_.clone()) {}
+      creatorSpatialK(op_.getSpatialK()), creatorStrides(op_.getStrides()),
+      creatorLowerPads(op_.getLowerPads()),
+      creatorUpperPads(op_.getUpperPads()) {}
 
 void GlobalMaxPoolGradOp::appendOutlineAttributes(OpSerialiserBase &os) const {
   Op::appendOutlineAttributes(os);
-  os.appendForwardOp(getCloneOfCreator());
+  os.appendAttribute("creatorSpatialK", creatorSpatialK);
+  os.appendAttribute("creatorStrides", creatorStrides);
+  os.appendAttribute("creatorLowerPads", creatorLowerPads);
+  os.appendAttribute("creatorUpperPads", creatorUpperPads);
 }
 
 const std::vector<GradInOutMapper> &GlobalMaxPoolGradOp::gradInputInfo() const {
@@ -98,10 +103,6 @@ void GlobalMaxPoolGradOp::setup() { outInfo(getOutIndex()) = unpooledInfo; }
 
 std::unique_ptr<Op> GlobalMaxPoolGradOp::clone() const {
   return std::make_unique<GlobalMaxPoolGradOp>(*this);
-}
-
-const GlobalMaxPoolOp *GlobalMaxPoolGradOp::getCloneOfCreator() const {
-  return dynamic_cast<GlobalMaxPoolOp *>(cloneOfCreator.get());
 }
 
 namespace {
