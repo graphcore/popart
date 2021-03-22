@@ -2,10 +2,12 @@
 
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
+#include <popart/op/collectives/replicatedallreduce.hpp>
 #include <popart/op/convbase.hpp>
 #include <popart/op/histogram.hpp>
 #include <popart/op/lossscaleupdate.hpp>
 #include <popart/op/matmul.hpp>
+#include <popart/op/sum.hpp>
 #include <popart/optimizer.hpp>
 #include <popart/tensorindex.hpp>
 #include <popart/topocons.hpp>
@@ -175,7 +177,7 @@ bool AutomaticLossScale::apply(Graph &graph) const {
   // Some checks:
   // 1. Must be a training session
   // 2. The optimizer's loss scaling is non-const
-  // 3. Not compatible with gradient accumulation or graph replication: (T33956)
+  // 3. Not compatible with gradient accumulation: (T33956)
   // 4. Not compatible with pipelining: (T33956)
   // 5. Not compatible with non-SGD optimizer
 
@@ -193,11 +195,6 @@ bool AutomaticLossScale::apply(Graph &graph) const {
   }
 
   // 3.
-  if (ir.getSessionOptions().enableReplicatedGraphs) {
-    throw error("[AutomaticLossScale transform] Automatic loss scaling is not "
-                "currently supported when the 'enableReplicatedGraphs' "
-                "SessionOption is set to 'true'");
-  }
   if (ir.getSessionOptions().enableGradientAccumulation) {
     throw error("[AutomaticLossScale transform] Automatic loss scaling is not "
                 "currently supported when the 'enableGradientAccumulation' "
@@ -227,13 +224,7 @@ bool AutomaticLossScale::apply(Graph &graph) const {
                               tensor->id);
 
     // Attach a newly created HistogramOp to each tensor
-    auto histogramOp_up =
-        std::make_unique<HistogramOp>(Onnx::CustomOperators::Histogram,
-                                      getLevels(tensor),
-                                      absoluteOfInput(),
-                                      Op::Settings(graph, ""));
-    auto histogramOp = histogramOp_up.get();
-    graph.moveIntoGraph(std::move(histogramOp_up));
+    auto histogramOp = graph.createOp<HistogramOp>(Onnx::CustomOperators::Histogram, getLevels(tensor), absoluteOfInput(), Op::Settings(graph, ""));
 
     histogramOp->connectInTensor(HistogramOp::getInIndex(), tensor->id);
     histogramOp->createAndConnectOutTensor(HistogramOp::getOutIndex(),
@@ -254,20 +245,56 @@ bool AutomaticLossScale::apply(Graph &graph) const {
   }
 
   // Pass loss scale tensor and HistogramOp outputs into the LossScaleUpdateOp
-  auto lossScaleUpdateOp_up = std::make_unique<LossScaleUpdateOp>(
+  auto lossScaleUpdateOp = graph.createOp<LossScaleUpdateOp>(
       Onnx::CustomOperators::LossScaleUpdate, Op::Settings(graph, ""));
-  auto lossScaleUpdateOp = lossScaleUpdateOp_up.get();
-  graph.moveIntoGraph(std::move(lossScaleUpdateOp_up));
 
   lossScaleUpdateOp->connectInTensor(LossScaleUpdateOp::getLossScaleInIndex(),
                                      lossScaleTensor->id);
   lossScaleUpdateOp->connectInTensor(
       LossScaleUpdateOp::getInverseLossScaleInIndex(),
       inverseLossScaleTensor->id);
-  for (int i = 0; i < histogramOutputs.size(); i++) {
-    Tensor *tensor = histogramOutputs.at(i);
+
+  if (ir.getSessionOptions().enableReplicatedGraphs &&
+      ir.getSessionOptions().replicatedGraphCount > 1) {
+    // To minimise the number of reductions over replicas, first sum the
+    // histogram tensors, then perform a single sum reduction, then pass
+    // the result to the LossScaleUpdateOp
+    auto statsSumOp =
+        graph.createOp<SumOp>(Onnx::Operators::Sum_8, Op::Settings(graph, ""));
+
+    for (int i = 0; i < histogramOutputs.size(); i++) {
+      Tensor *tensor = histogramOutputs.at(i);
+      statsSumOp->connectInTensor(i, tensor->id);
+    }
+
+    statsSumOp->createAndConnectOutTensor(SumOp::getOutIndex(),
+                                          "summedHistograms");
+    statsSumOp->setup();
+
+    auto reduceOp = graph.createOp<ReplicatedAllReduceOp>(
+        Onnx::CustomOperators::ReplicatedAllReduce,
+        Op::Settings(graph, statsSumOp->name() + "_reduce"));
+
+    reduceOp->connectInTensor(ReplicatedAllReduceOp::getInIndex(),
+                              statsSumOp->outTensor(SumOp::getOutIndex())->id);
+    reduceOp->createAndConnectOutTensor(ReplicatedAllReduceOp::getOutIndex(),
+                                        "summedHistograms_reduced");
+    reduceOp->setup();
+
     lossScaleUpdateOp->connectInTensor(
-        i + LossScaleUpdateOp::getFirstStatisticsTensorInIndex(), tensor->id);
+        LossScaleUpdateOp::getFirstStatisticsTensorInIndex(),
+        reduceOp->outId(ReplicatedAllReduceOp::getOutIndex()));
+
+    if (lossScaleTensor->hasVirtualGraphId()) {
+      statsSumOp->setVirtualGraphId(lossScaleTensor->getVirtualGraphId());
+      reduceOp->setVirtualGraphId(lossScaleTensor->getVirtualGraphId());
+    }
+  } else {
+    for (int i = 0; i < histogramOutputs.size(); i++) {
+      Tensor *tensor = histogramOutputs.at(i);
+      lossScaleUpdateOp->connectInTensor(
+          i + LossScaleUpdateOp::getFirstStatisticsTensorInIndex(), tensor->id);
+    }
   }
 
   if (lossScaleTensor->hasVirtualGraphId()) {

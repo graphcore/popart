@@ -293,12 +293,10 @@ def test_auto_loss_scaling_expected_loss_scale_tensor_values():
             prev_loss_scale = anchors[loss_scale_id][i]
 
 
-def test_auto_loss_scaling_and_grad_accumulation_and_graph_replication():
+def test_auto_loss_scaling_and_grad_accumulation():
     """
-    1. Create a Session with automatic loss scaling and gradient accumulation
-       enabled, and see that an incompatibility error is thrown.
-    2. Create a Session with automatic loss scaling and graph replication
-       enabled, and see that an incompatibility error is thrown.
+    Create a Session with automatic loss scaling and gradient accumulation
+    enabled, and see that an incompatibility error is thrown.
     """
     builder = popart.Builder()
 
@@ -312,7 +310,6 @@ def test_auto_loss_scaling_and_grad_accumulation_and_graph_replication():
     opts.enableAutomaticLossScaling = True
     opts.enableGradientAccumulation = True
 
-    # 1.
     with pytest.raises(popart.popart_exception) as e_info:
         session = popart.TrainingSession(builder.getModelProto(),
                                          deviceInfo=tu.create_test_device(),
@@ -321,17 +318,6 @@ def test_auto_loss_scaling_and_grad_accumulation_and_graph_replication():
                                          optimizer=optimizer,
                                          userOptions=opts)
     assert e_info.value.args[0].endswith("Automatic loss scaling is not currently supported when the 'enableGradientAccumulation' SessionOption is set to 'true'")
-
-    #2.
-    opts.enableReplicatedGraphs = True
-    with pytest.raises(popart.popart_exception) as e_info:
-        session = popart.TrainingSession(builder.getModelProto(),
-                                         deviceInfo=tu.create_test_device(),
-                                         dataFlow=popart.DataFlow(1, [loss]),
-                                         loss=loss,
-                                         optimizer=optimizer,
-                                         userOptions=opts)
-    assert e_info.value.args[0].endswith("Automatic loss scaling is not currently supported when the 'enableReplicatedGraphs' SessionOption is set to 'true'")
 
 
 def test_auto_loss_scaling_with_non_sgd_optimizer():
@@ -443,7 +429,7 @@ def compare_weights(session0, session1, tmpdir):
         assert np.array_equal(session0_weights[init_name], session1_weights[init_name])
 
 
-def run_automatic_loss_scaling_comparison_test(tmpdir, shard=False, pipeline=False):
+def run_automatic_loss_scaling_comparison_test(tmpdir, shard=False, pipeline=False, replicate=False):
     """
     An integration test: verify that the weight updats computed by a session
     with auto loss scaling (ALS) enabled are identical to those with ALS
@@ -451,21 +437,16 @@ def run_automatic_loss_scaling_comparison_test(tmpdir, shard=False, pipeline=Fal
     """
     loss, proto, t0, t_shape, label, label_shape = getModelProto(shard=shard, pipeline=pipeline)
     bps = 4
+    step_size = bps
+    if replicate:
+        replicas = 2
+        step_size *= replicas
     init_ls = 10.0
     optimizer = popart.SGD({"lossScaling": (init_ls, False),
                             "defaultMomentum": (0.5, False),
                             "defaultVelocityScaling": (0.5, False),
                             "defaultDampening": (0.5, False),
                             "defaultWeightDecay": (0.5, False)})
-
-    ref_session = popart.TrainingSession(fnModel=proto,
-                                         deviceInfo=tu.create_test_device(),
-                                         dataFlow=popart.DataFlow(bps, []),
-                                         loss=loss,
-                                         optimizer=optimizer)
-    ref_session.prepareDevice()
-    ref_session.weightsFromHost()
-    ref_anchors = ref_session.initAnchorArrays()
 
     opts = popart.SessionOptions()
 
@@ -477,6 +458,21 @@ def run_automatic_loss_scaling_comparison_test(tmpdir, shard=False, pipeline=Fal
         num_ipus = 2
         opts.virtualGraphMode = popart.VirtualGraphMode.Manual
         opts.enablePipelining = True
+    if replicate:
+        num_ipus *= replicas
+        opts.enableReplicatedGraphs = True
+        opts.replicatedGraphCount = replicas
+
+    ref_session = popart.TrainingSession(fnModel=proto,
+                                         deviceInfo=tu.create_test_device(num_ipus),
+                                         dataFlow=popart.DataFlow(bps, []),
+                                         loss=loss,
+                                         optimizer=optimizer,
+                                         userOptions=opts)
+    ref_session.prepareDevice()
+    ref_session.weightsFromHost()
+    ref_anchors = ref_session.initAnchorArrays()
+
 
     opts.enableAutomaticLossScaling = True
 
@@ -491,8 +487,8 @@ def run_automatic_loss_scaling_comparison_test(tmpdir, shard=False, pipeline=Fal
     als_session.weightsFromHost()
     als_anchors = als_session.initAnchorArrays()
 
-    t0_data = np.random.rand(bps, *t_shape).astype(np.float16)
-    label_data = np.random.randint(0, label_shape[0], bps*label_shape[0]).astype(np.int32)
+    t0_data = np.random.rand(step_size, *t_shape).astype(np.float16)
+    label_data = np.random.randint(0, label_shape[0], step_size*label_shape[0]).astype(np.int32)
     inputs = {t0: t0_data, label: label_data}
 
     # Run once
@@ -501,7 +497,8 @@ def run_automatic_loss_scaling_comparison_test(tmpdir, shard=False, pipeline=Fal
 
     # Verify that the loss scale has changed from its initial value
     for i in range(bps):
-        assert als_anchors[ls_id][i] != init_ls
+        for ls in als_anchors[ls_id].flatten():
+            assert ls != init_ls
 
     # Update the optimizer
     new_optimizer = popart.SGD({"lossScaling": (0.2, False),
@@ -534,4 +531,3 @@ def test_auto_loss_scaling_identical_weight_updates_sharded(tmpdir):
 @tu.requires_ipu_model
 def test_auto_loss_scaling_identical_weight_updates_pipelined(tmpdir):
     run_automatic_loss_scaling_comparison_test(tmpdir, shard=True, pipeline=True)
-
