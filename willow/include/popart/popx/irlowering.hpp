@@ -127,7 +127,6 @@ private:
 
 private:
   std::function<void(int, int)> callback_;
-  const int total_ = 100;
 };
 
 class IrLowering {
