@@ -1,14 +1,133 @@
+// Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #ifndef GUARD_NEURALNET_VERSION_HPP
 #define GUARD_NEURALNET_VERSION_HPP
+
+#include <cstdint>
+
+#if defined(POPART_VERSION_MAJOR) || defined(POPART_VERSION_MINOR) ||          \
+    defined(POPART_VERSION_PATCH) || defined(POPART_VERSION_STRING) ||         \
+    defined(POPART_VERSION_HASH) || defined(POPART_PACKAGE_HASH) ||            \
+    defined(POPART_VERSION_STRING_WITH_HASH)
+#error "Version macros must only be defined by this header."
+#endif
+
+// clang-format off
+#define POPART_VERSION_MAJOR @POPART_VERSION_MAJOR@
+#define POPART_VERSION_MINOR @POPART_VERSION_MINOR@
+#define POPART_VERSION_PATCH @POPART_VERSION_PATCH@
+#define POPART_VERSION_STRING "@VERSION@"
+#define POPART_VERSION_HASH "@GIT_COMMIT_HASH@"
+#define POPART_PACKAGE_HASH "@VIEW_SHORT_HASH@"
+// clang-format on
+#define POPART_VERSION_STRING_WITH_HASH                                        \
+  POPART_VERSION_STRING " (" POPART_VERSION_HASH ")"
 
 namespace popart {
 namespace core {
 
-inline std::string versionString() { return "@VERSION@ (@GIT_COMMIT_HASH@)"; }
+struct VersionNumber {
+  uint32_t major; ///< Major version
+  uint32_t minor; ///< Minor version
+  uint32_t point; ///< Point version
+};
 
-inline std::string packageHash() { return "@VIEW_HASH@"; }
+constexpr bool operator<(const VersionNumber &x,
+                         const VersionNumber &y) noexcept {
+  // Avoid including <tuple>. Also, std::tie isn't constexpr in C++11.
+  return x.major < y.major
+             ? true
+             : y.major < x.major
+                   ? false
+                   : x.minor < y.minor
+                         ? true
+                         : y.minor < x.minor ? false
+                                             : x.point < y.point ? true : false;
+}
+constexpr bool operator==(const VersionNumber &x,
+                          const VersionNumber &y) noexcept {
+  return x.major == y.major && x.minor == y.minor && x.point == y.point;
+}
+constexpr bool operator!=(const VersionNumber &x,
+                          const VersionNumber &y) noexcept {
+  return !(x == y);
+}
+
+/**
+ * Make a \ref VersionNumber from given version parts.
+ *
+ * Returns a \ref VersionNumber struct that is made from the specified version
+ * parts.
+ *
+ * \param major Major version.
+ * \param minor Minor version.
+ * \param patch Patch version.
+ * \return \ref VersionNumber containining version information.
+ */
+static constexpr VersionNumber
+versionMake(uint8_t major, uint8_t minor, uint8_t patch) {
+  return VersionNumber{
+      major,
+      minor,
+      patch,
+  };
+}
+
+/**
+ * Compute the current PopART version from compile-time information.
+ *
+ * Returns the current PopART version. The result contains version information
+ * known at compile-time through version macros that are generated when this
+ * version of PopART is built. Users can call this function to determine the
+ * PopART version they are building their code with. The version information of
+ * a PopART library can be retrieved at run-time with
+ * \ref versionNumber function.
+ *
+ * \return \ref VersionNumber containing current PopART library version.
+ */
+static constexpr VersionNumber versionGetCurrent() {
+  return versionMake(
+      POPART_VERSION_MAJOR, POPART_VERSION_MINOR, POPART_VERSION_PATCH);
+}
+
+/**
+ * Get the version from PopART library.
+ *
+ * Returns the version of the currently loaded PopART library.
+ *
+ * \return \ref VersionNumber containing current PopART library version.
+ */
+VersionNumber versionNumber();
+
+/**
+ * Get the version string from PopART library.
+ *
+ * Returns the version of the PopART library. This string contains both
+ * numerical version information, and a hash value.
+ *
+ * \return String representation of the PopART library version.
+ */
+const char *versionString();
+
+/**
+ * Get the git commit hash from PopART library.
+ *
+ * Returns the git hash of the PopART library.
+ *
+ * \return Hash of the git HEAD when PopART library was built.
+ */
+const char *versionHashString();
+
+/**
+ * Get the package version string from PopART library.
+ *
+ * Returns the package version of the PopART library. This string is a hash
+ * value of the PopART package.
+ *
+ * \return String representation of the current PopART version.
+ */
+const char *packageHash();
 
 } // namespace core
 } // namespace popart
 
-#endif
+#endif // !GUARD_NEURALNET_VERSION_HPP

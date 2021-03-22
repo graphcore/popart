@@ -333,6 +333,12 @@ install(EXPORT popart-targets
 
 install(DIRECTORY "include/popart"
     DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+    PATTERN "version.hpp.in" EXCLUDE
+)
+
+install(FILES
+    ${CMAKE_CURRENT_BINARY_DIR}/include/popart/version.hpp
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/popart
 )
 
 include(CMakePackageConfigHelpers)

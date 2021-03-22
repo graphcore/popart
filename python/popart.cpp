@@ -451,6 +451,10 @@ PYBIND11_MODULE(popart_core, m) {
   m.def("getLogger", &Logger::getLogger, py::arg("name") = "all");
 
   m.def("versionString", &popart::core::versionString);
+  m.def("versionNumber", []() {
+    auto version = popart::core::versionNumber();
+    return py::make_tuple(version.major, version.minor, version.point);
+  });
   m.def("packageHash", &popart::core::packageHash);
   {
     py::class_<Logger> cls(m, "Logger");

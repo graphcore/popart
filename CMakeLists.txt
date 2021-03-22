@@ -87,6 +87,20 @@ find_package(Python3 3.6 REQUIRED COMPONENTS Interpreter Development)
 
 set(POPART_PYTHON_DIR ${CMAKE_CURRENT_SOURCE_DIR}/python)
 
+execute_process(
+  COMMAND git rev-parse HEAD
+  WORKING_DIRECTORY "${POPART_CBT_VIEW_DIR}"
+  OUTPUT_VARIABLE VIEW_HASH
+  OUTPUT_STRIP_TRAILING_WHITESPACE)
+if("${VIEW_HASH}" STREQUAL "")
+  set(VIEW_SHORT_HASH "0000000000")
+else()
+  string(SUBSTRING ${VIEW_HASH} 0 10 VIEW_SHORT_HASH)
+endif()
+message(STATUS "View hash is " ${VIEW_SHORT_HASH})
+
+set(SNAPSHOT ${VIEW_SHORT_HASH})
+
 add_subdirectory(willow)
 
 # light-weight wrapper using pybind11, plus python support libraries
@@ -101,20 +115,6 @@ endif()
 #------ end of configure sources
 
 #------ cpack information
-
-execute_process(
-  COMMAND git rev-parse HEAD
-  WORKING_DIRECTORY "${POPART_CBT_VIEW_DIR}"
-  OUTPUT_VARIABLE VIEW_HASH
-  OUTPUT_STRIP_TRAILING_WHITESPACE)
-if("${VIEW_HASH}" STREQUAL "")
-  set(VIEW_SHORT_HASH "0000000000")
-else()
-  string(SUBSTRING ${VIEW_HASH} 0 10 VIEW_SHORT_HASH)
-endif()
-message(STATUS "View hash is " ${VIEW_SHORT_HASH})
-
-set(SNAPSHOT ${VIEW_SHORT_HASH})
 
 set(CPACK_PACKAGE_VENDOR graphcore)
 set(CPACK_GENERATOR TGZ)
