@@ -14,7 +14,6 @@ class Opset():
         builder: An interface for a Builder, used for creating ONNX graphs.
         version: Opset version to use for the given opset sub-class.
     """
-
     def __init__(self, builder: "Builder", version: int) -> None:
         self._builder = builder
         self.version = version
@@ -31,7 +30,6 @@ class Builder():
         builderCore: ``_BuilderCore`` object if you want to create a subgraph
             builder using an existing ``buildercore`` object. Default: ``None``.
     """
-
     def __init__(self,
                  modelProtoOrFilename: Union[str, bytes] = None,
                  opsets: Dict[str, int] = None,
@@ -132,7 +130,7 @@ class Builder():
                       aiOnnx: Opset,
                       args: List[str],
                       shape: Iterable[int],
-                      debugPrefix: str = "") -> List[int]:
+                      debugContext: str = "") -> List[int]:
         """Const version of the reshape op.
 
         Arguments:
@@ -141,15 +139,15 @@ class Builder():
             shape: Shape to reshape to, for example ``[3, 2, 4]``.
 
         Keyword Arguments:
-            debugPrefix: String to use as a debug prefix. Default: "".
+            debugContext: String to use as a debug Context. Default: "".
 
         Returns:
             Output tensor ids.
         """
 
         newShape = aiOnnx.constant(
-            np.array(shape).astype(np.int64), debugPrefix + "_const")
-        return aiOnnx.reshape([args[0], newShape], debugPrefix)
+            np.array(shape).astype(np.int64), debugContext + "_const")
+        return aiOnnx.reshape([args[0], newShape], debugContext)
 
     def createSubgraphBuilder(self) -> 'Builder':
         """Create a child builder to add ops to a subgraph using a call operation.
@@ -175,7 +173,6 @@ class AiOnnx(Opset):
             Default: 10.
 
     """
-
     def __init__(self, builder: Builder, version: int) -> None:
         super(AiOnnx, self).__init__(builder, version)
 
@@ -225,7 +222,7 @@ class AiOnnx(Opset):
              args: List[str],
              num_outputs: int,
              body: Builder,
-             debugPrefix: str = "") -> List[str]:
+             debugContext: str = "") -> List[str]:
         """Generic Looping construct op.
 
         Arguments:
@@ -234,18 +231,17 @@ class AiOnnx(Opset):
             body: SubgraphBuilder for the graph to run in the loop.
 
         Keyword Arguments:
-            debugPrefix: A string to prepend to the name of the tensor. Default: "".
+            debugContext: A string to prepend to the name of the tensor. Default: "".
 
         Returns:
             Output tensor ids.
         """
-        return self.aiOnnx.loop(args, num_outputs, body._impl, debugPrefix)
+        return self.aiOnnx.loop(args, num_outputs, body._impl, debugContext)
 
 
 class AiOnnx6(AiOnnx):
     """Minimal builder interface for ai.onnx version 6.
     """
-
     def __init__(self, builder: Builder, version: int) -> None:
         super(AiOnnx6, self).__init__(builder, version)
         self.aiOnnx = self._builder._impl.aiOnnxOpset6
@@ -254,7 +250,6 @@ class AiOnnx6(AiOnnx):
 class AiOnnx7(AiOnnx6):
     """Minimal builder interface for ai.onnx version 7.
     """
-
     def __init__(self, builder: Builder, version: int) -> None:
         super(AiOnnx7, self).__init__(builder, version)
         self.aiOnnx = self._builder._impl.aiOnnxOpset7
@@ -263,7 +258,6 @@ class AiOnnx7(AiOnnx6):
 class AiOnnx8(AiOnnx7):
     """Minimal builder interface for ai.onnx version 8.
     """
-
     def __init__(self, builder: Builder, version: int) -> None:
         super(AiOnnx8, self).__init__(builder, version)
         self.aiOnnx = self._builder._impl.aiOnnxOpset8
@@ -274,7 +268,7 @@ class AiOnnx8(AiOnnx7):
              body: Builder,
              num_scan_inputs: int,
              directions: List[int] = [],
-             debugPrefix: str = "") -> List[str]:
+             debugContext: str = "") -> List[str]:
         """Scan-8 specific construct op.
 
         Arguments:
@@ -288,19 +282,18 @@ class AiOnnx8(AiOnnx7):
             will be scanned in the forward direction.
 
         Keyword Arguments:
-            debugPrefix: A string to prepend to the name of the tensor. Default: "".
+            debugContext: A string to prepend to the name of the tensor. Default: "".
 
         Returns:
             Output tensor ids.
         """
         return self.aiOnnx.scan(args, num_outputs, body._impl, num_scan_inputs,
-                                directions, debugPrefix)
+                                directions, debugContext)
 
 
 class AiOnnx9(AiOnnx8):
     """Minimal builder interface for ai.onnx version 9.
     """
-
     def __init__(self, builder: Builder, version: int) -> None:
         super(AiOnnx9, self).__init__(builder, version)
         self.aiOnnx = self._builder._impl.aiOnnxOpset9
@@ -314,7 +307,7 @@ class AiOnnx9(AiOnnx8):
              scan_input_directions: List[int] = [],
              scan_output_axes: List[int] = [],
              scan_output_directions: List[int] = [],
-             debugPrefix: str = "") -> List[str]:
+             debugContext: str = "") -> List[str]:
         """Generic Scan construct op.
 
         Arguments:
@@ -341,7 +334,7 @@ class AiOnnx9(AiOnnx8):
                 produced by appending a value in each iteration.
 
         Keyword Arguments:
-            debugPrefix: A string to prepend to the name of the tensor. Default: "".
+            debugContext: A string to prepend to the name of the tensor. Default: "".
 
         Returns:
             Output tensor ids.
@@ -349,7 +342,7 @@ class AiOnnx9(AiOnnx8):
         return self.aiOnnx.scan(args, num_outputs, body._impl, num_scan_inputs,
                                 scan_input_axes, scan_input_directions,
                                 scan_output_axes, scan_output_directions,
-                                debugPrefix)
+                                debugContext)
 
 
 class AiOnnx10(AiOnnx9):
@@ -358,7 +351,6 @@ class AiOnnx10(AiOnnx9):
     this class must be updated to inherit from AiOnnx11, as
     described in T12084
     """
-
     def __init__(self, builder: Builder, version: int) -> None:
         super(AiOnnx10, self).__init__(builder, version)
         self.aiOnnx = self._builder._impl.aiOnnxOpset10
@@ -367,7 +359,6 @@ class AiOnnx10(AiOnnx9):
 class AiOnnx11(AiOnnx10):
     """Minimal builder interface for ai.onnx version 11.
     """
-
     def __init__(self, builder: Builder, version: int) -> None:
         super(AiOnnx11, self).__init__(builder, version)
         self.aiOnnx = self._builder._impl.aiOnnxOpset11
@@ -379,7 +370,6 @@ class AiOnnxMl(Opset):
     Raises:
         ValueError: Thrown if an invalid ai.onnx.ml opset version provided.
     """
-
     def __init__(self, builder: Builder, version: int) -> None:
         super(AiOnnxMl, self).__init__(builder, version)
         if self.version == 1:
@@ -399,7 +389,6 @@ class AiGraphcore(Opset):
     Raises:
         ValueError: Thrown if an invalid ai.graphcore opset version provided.
     """
-
     def __init__(self, builder: Builder, version: int) -> None:
         super(AiGraphcore, self).__init__(builder, version)
         if self.version == 1:
@@ -448,6 +437,5 @@ class AiGraphcore(Opset):
 class AiGraphcoreOpset1(AiGraphcore):
     """Sub-class for backwards compatibility. Will forward all calls to AiGraphcore class.
     """
-
     def __init__(self, builder: Builder, version: int) -> None:
         super(AiGraphcoreOpset1, self).__init__(builder, version)
