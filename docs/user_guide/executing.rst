@@ -13,24 +13,28 @@ Setting input/output data buffers for an execution
 
 Input and output data is passed to and from a ``Session`` object via ``IStepIO``
 objects. Each call to ``session.run(...)`` takes such a ``IStepIO`` object.
-This object contains, for every input tensor, a number of buffers for
-``Session`` to read input data from and, analogously, for every anchored tensor,
-a number of buffers a number of buffers to write output data to (more about
-anchors in the next section).
+For every input tensor, this object contains a number of buffers that the
+session can read input data from. And for every anchored tensor, it contains a
+number of buffers to write output data to. There is more information about
+anchors in :numref:`retrieving_results`.
 
 The number and shape of these buffers depend on a variety of factors including
-1) the shape of associated tensor in the ONNX model 2) the ``DataFlow``
-configuration (see next section) as passed to the ``Session``'s constructor 3)
-the number of local replicas and 3) the accumulation factor. This is explained
-in more detail in the
+
+1) the shape of associated tensor in the ONNX model
+2) | the ``DataFlow`` configuration (see next section) as passed to the
+     ``Session`` object's constructor
+3) the number of local replicas, and
+4) | the accumulation factor.
+
+This is explained in more detail in the
 `C++ API <https://docs.graphcore.ai/projects/popart-cpp-api/>`_ documentation
 under the ``IStepIO`` class (for inputs) and under the ``DataFlow`` class (for
 outputs).
 
 When using Python, the ``PyStepIO`` class is a convenient way of providing a
-``Session`` with input and output buffers. For both input and output, this
-class takes a dictionary with tensor names as keys and Python (or Numpy) arrays
-as values. PopART splits up these arrays internally to provide the ``Session``
+session with input and output buffers. For both input and output, this class
+takes a dictionary with tensor names as keys and Python (or Numpy) arrays as
+values. PopART splits up these arrays internally to provide the ``Session``
 object with the buffers that it needs.
 
 Note that ``Session`` has a convenience method, ``initAnchorArrays``,
@@ -81,6 +85,8 @@ These can also be updated between executions.
   session.updateOptimizerFromHost(popart.SGD(stepLr))
 
 
+.. _retrieving_results:
+
 Retrieving results
 ~~~~~~~~~~~~~~~~~~
 
@@ -92,7 +98,8 @@ a ``DataFlow`` class it expects two parameters:
   df = popart.DataFlow(1, {o: popart.AnchorReturnType("ALL")})
 
 The first argument is ``batchesPerStep``. This is the the number of
-batches a call to ``session.run(...)`` runs for returning control to the caller.
+batches a call to ``session.run(...)`` executes for before returning control to
+the caller.
 
 The second argument is a Python dictionary with keys that are the names of the
 tensors to retrieve from the model via the ``IStepIO`` object. We call such
