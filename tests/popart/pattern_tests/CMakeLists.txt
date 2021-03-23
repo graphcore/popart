@@ -33,4 +33,5 @@ add_popart_py_unit_test(test_excludes)
 
 add_popart_py_unit_test(test_enable_patterns)
 
-add_popart_py_unit_test(test_transpose_to_identity_or_reshape VARIANTS IpuModel)
+# TODO(T36508): Re-enable.
+# add_popart_py_unit_test(test_transpose_to_identity_or_reshape VARIANTS IpuModel)
