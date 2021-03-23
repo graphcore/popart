@@ -28,14 +28,6 @@ std::unique_ptr<Op> ConcatOp::clone() const {
 }
 
 void ConcatOp::regMapPreChecks(InIndex inIndex) const {
-  if (outOffsets.size() != input->tensorMap().size() + 1) {
-    throw internal_error(
-        "ConcatOp::(fwd/bwd)RegMap, outOffsets not set correctly. It "
-        "has size {} and the input tensorMap has size {}, this for Op {}",
-        outOffsets.size(),
-        input->tensorMap().size(),
-        str());
-  }
   if (inIndex >= input->tensorMap().size() || inIndex < 0) {
     throw error("invalid index in ConcatOp::fwdRegMap");
   }
@@ -43,7 +35,7 @@ void ConcatOp::regMapPreChecks(InIndex inIndex) const {
 
 view::RegMap ConcatOp::fwdRegMap(InIndex inIndex, OutIndex) const {
   regMapPreChecks(inIndex);
-  int64_t offset = outOffsets[inIndex];
+  int64_t offset = getOutOffset(inIndex);
   int64_t axisIn = getAxis();
   return [axisIn, offset](const view::Region &r_in) {
     view::LowBounds lower = r_in.getLower();
@@ -56,7 +48,7 @@ view::RegMap ConcatOp::fwdRegMap(InIndex inIndex, OutIndex) const {
 
 view::RegMap ConcatOp::bwdRegMap(InIndex inIndex, OutIndex) const {
   regMapPreChecks(inIndex);
-  int64_t offset = outOffsets[inIndex];
+  int64_t offset = getOutOffset(inIndex);
   int64_t axisIn = getAxis();
   return [axisIn, offset](const view::Region &r_out) {
     view::LowBounds lower = r_out.getLower();
@@ -184,13 +176,16 @@ void ConcatOp::setup() {
     throw;
   }
 
-  outOffsets = {0};
-  for (int i = 0; i < input_count; ++i) {
-    const auto shape = inShape(getInIndex(i));
-    outOffsets.push_back(outOffsets.back() + shape[getAxis()]);
-  }
-
   outInfo(getOutIndex()) = TensorInfo(outType, outShape);
+}
+
+int64_t ConcatOp::getOutOffset(int64_t dim) const {
+  int64_t offset = 0;
+  for (int i = 0; i < dim; i++) {
+    const auto shape = inShape(getInIndex(i));
+    offset += shape.at(getAxis());
+  }
+  return offset;
 }
 
 std::vector<std::unique_ptr<Op>> ConcatOp::getGradOps() {

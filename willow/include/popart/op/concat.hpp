@@ -63,7 +63,7 @@ private:
   // 2: [0:2, 11:12, 0:3]
   // outOffests are where these regions start/end along "axis", so
   // in this case {0,5,11,12}
-  std::vector<int64_t> outOffsets;
+  int64_t getOutOffset(int64_t dim) const;
 
   void regMapPreChecks(InIndex inIndex) const;
 };
