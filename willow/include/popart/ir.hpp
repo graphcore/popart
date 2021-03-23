@@ -108,6 +108,12 @@ public:
   Ir();
   ~Ir();
 
+  Ir(Ir &&);
+  Ir &operator=(Ir &&);
+
+  Ir(const Ir &) = delete;
+  Ir &operator=(const Ir &) = delete;
+
   // Set the onnxModel.
   // A note on constant tensors: The outputs of ONNX Constant Operators
   // will always be treated as constants, so left unchanged if in training mode
