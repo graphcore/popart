@@ -77,9 +77,7 @@ std::ostream &operator<<(std::ostream &out,
     out << "N";
     break;
   }
-  default: {
-    throw internal_error("Invalid value for ProgramFragmentIndex");
-  }
+  default: { throw internal_error("Invalid value for ProgramFragmentIndex"); }
   };
   return out;
 }
@@ -420,17 +418,17 @@ PopPrograms::getFullProgramFromPipelineFragments() const {
   // Pipeline Cycle -->
   //
   //      <-------------- fill --------------> <- main > <-------- flush --------->
-  // PS0: D0.M0.| D1.M1.| D2.M2   .| D3.M3   .|D4.M4   .|       |       |    |    | 
-  // PS1:       |    M0.|    M1   .|    M2   .|   M3   .| M4   .|       |    |    |              
-  // PS2:       C       C    M0.H0.C    M1.H1.C   M2.H2.C M3.H3.C M4.H4.C    C    C   
-  // PS3:       |       |          |    M0   .|   M1   .| M2   .| M3   .| M4.|    |                                                          
-  // PS4:       |       |          |          |   M0   .| M1   .| M2   .| M3.| M4.|    
+  // PS0: D0.M0.| D1.M1.| D2.M2   .| D3.M3   .|D4.M4   .|       |       |    |    |
+  // PS1:       |    M0.|    M1   .|    M2   .|   M3   .| M4   .|       |    |    |
+  // PS2:       C       C    M0.H0.C    M1.H1.C   M2.H2.C M3.H3.C M4.H4.C    C    C
+  // PS3:       |       |          |    M0   .|   M1   .| M2   .| M3   .| M4.|    |
+  // PS4:       |       |          |          |   M0   .| M1   .| M2   .| M3.| M4.|
   //
   // Program fragment key:
   //   D - ToDeviceStream, M - Main, H - ToHostStream, C - IpuCopy
   //   D<i> means fragment D executes on mini-batch i, etc.
   //
-  // We can see from this diagram how the full pipeline program is assembled - 
+  // We can see from this diagram how the full pipeline program is assembled -
   // starting in the top-left corner, serialise the 2D 'schedule' by reading
   // down the columns:
   //
@@ -453,7 +451,7 @@ PopPrograms::getFullProgramFromPipelineFragments() const {
   // IPU2:                 PS2(0), PS2(1)       , PS2(2)       , PS2(3)        , PS2(4),
   //
   // The holes in this second diagram represent idle-time for an IPU. Maximizing
-  // utilization is therefore a case of 
+  // utilization is therefore a case of
   //   - Maximizing the proportion of 'main' Pipeline Cycles, achieved by having
   //     as large a 'batches per step' (or gradient accumulation factor, if
   //     gradient accumulation is enabled).
@@ -568,8 +566,8 @@ poplar::program::Sequence PopPrograms::program() const {
       logging::devicex::trace(
           "Adding gradient accumulation repeat loop with {} iterations",
           accumulationFactor);
-      prog = poplar::program::Repeat(
-          accumulationFactor, prog, {"accumulationLoop"});
+      prog = {poplar::program::Repeat(
+          accumulationFactor, prog, {"accumulationLoop"})};
       prog.add(accumulateOuterFragment());
     }
 
