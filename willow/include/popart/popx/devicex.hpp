@@ -97,9 +97,6 @@ public:
   std::string getGraphReport(bool useCbor = false) const;
   std::string getExecutionReport(bool useCbor      = false,
                                  bool resetProfile = true) const;
-  void trySaveTensorTileMap(const std::string &);
-  void saveTensorTileMap(const std::string &) const;
-  TensorTileMap getTensorTileMap() const;
   std::string getSerializedGraph() const;
 
   bool isEngineLoaded() const;

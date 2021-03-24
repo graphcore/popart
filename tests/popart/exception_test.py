@@ -57,5 +57,3 @@ def test_out_of_memory_exception():
     print(e.value.getGraphReport())
     assert e.value.args[0].startswith(
         "Out of memory: Cannot fit all variable data onto one or more tiles")
-
-    session.getTensorTileMap()

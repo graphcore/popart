@@ -336,8 +336,6 @@ private:
   std::vector<std::string> cycleCountIds;
   PopTensors tensors_;
 
-  TensorTileMap tensorTileMap;
-
 public:
   IrLowering(const Ir &,
              std::shared_ptr<DeviceInfo> deviceInfo,
@@ -559,11 +557,6 @@ public:
   bool prepareGraphHasBeenCalled() const { return prepareGraphHasBeenCalled_; }
 
   bool getOuterLoopFragEmpty() const { return outerLoopFragEmpty; }
-
-  void trySaveTensorTileMap() const;
-  void saveTensorTileMap(const std::string &) const;
-  TensorTileMap getTensorTileMap() const;
-  void setTensorTileMap(const TensorTileMap &);
 
   bool usingCachedExecutable() const { return usingCachedExecutable_; }
 

@@ -256,50 +256,6 @@ def test_execution_report_cbor(tmpdir):
 
 
 @tu.requires_ipu_model
-def test_tensor_tile_mapping(tmpdir):
-
-    builder = popart.Builder()
-
-    shape = popart.TensorInfo("FLOAT", [1])
-
-    i1 = builder.addInputTensor(shape)
-    i2 = builder.addInputTensor(shape)
-    o = builder.aiOnnx.add([i1, i2])
-    builder.addOutputTensor(o)
-
-    proto = builder.getModelProto()
-
-    dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("All")})
-
-    session = popart.InferenceSession(fnModel=proto,
-                                      dataFlow=dataFlow,
-                                      deviceInfo=tu.create_test_device(
-                                          tilesPerIPU=128,
-                                          opts={
-                                              "compileIPUCode": False,
-                                          }))
-
-    anchors = session.initAnchorArrays()
-
-    session.prepareDevice()
-
-    m = session.getTensorTileMap()
-
-    assert (len(m) == 3)
-    assert (sorted(list(m.keys())) == sorted([i1, i2, o]))
-
-    assert (len(m[o]) == 128)
-
-    # There should only be one tile with a non zero interval
-    non_zero_intervals = [(tile, i) for tile, i in enumerate(m[o])
-                          if len(i) > 0]
-    assert len(non_zero_intervals) == 1
-
-    tile, intervals = non_zero_intervals[0]
-    assert intervals[0] == (0, 1)
-
-
-@tu.requires_ipu_model
 def test_no_compile(tmpdir):
 
     builder = popart.Builder()

@@ -132,7 +132,6 @@ using UppBounds = std::vector<int64_t>;
 // A mapping from tensor name to the layout on each tile
 using TensorInterval     = std::pair<size_t, size_t>;
 using TensorIntervalList = std::vector<TensorInterval>;
-using TensorTileMap = std::map<std::string, std::vector<TensorIntervalList>>;
 
 // equivalent to decltype(&ONNX_NAMESPACE::NodeProto().attribute(0))
 using onnxAttPtr = const ONNX_NAMESPACE::AttributeProto *;

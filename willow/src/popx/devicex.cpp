@@ -1050,9 +1050,6 @@ void Devicex::prepare() {
       // re-throw the exception In certain cases poplar will throw the error
       // without a graph profile. The following engine option needs to be set to
       // enable the graph profile in this case "debug.allowOutOfMemory":"true"
-
-      lowering().trySaveTensorTileMap();
-
       logging::devicex::err("Memory allocation error : {}", e.what());
       throw devicex_memory_allocation_err(e, lowering().reportOptions);
     }
@@ -1073,8 +1070,6 @@ void Devicex::prepare() {
       cycleCount[id] = zeros;
     }
   }
-
-  lowering().trySaveTensorTileMap();
 
   prepareHasBeenCalled_ = true;
   setEngineIsLoaded(false);
@@ -1144,14 +1139,6 @@ std::string Devicex::getSerializedGraph() const {
   POPART_TRACEPOINT();
   doProfileChecks();
   return lowering().getSerializedGraph();
-}
-
-TensorTileMap Devicex::getTensorTileMap() const {
-  return lowering().getTensorTileMap();
-}
-
-void Devicex::saveTensorTileMap(const std::string &mapFileName) const {
-  lowering().saveTensorTileMap(mapFileName);
 }
 
 std::set<TensorId> Devicex::getLinearlyCreatedInputTensors() const {

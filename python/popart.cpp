@@ -1775,7 +1775,6 @@ PYBIND11_MODULE(popart_core, m) {
       auto report = session.getSerializedGraph();
       return py::bytes(report);
     });
-    cls.def("getTensorTileMap", &InferenceSession::getTensorTileMap);
     cls.def("resetHostWeights",
             &InferenceSession::resetHostWeights,
             py::arg("modelProtoOrFilename"),
@@ -1914,9 +1913,6 @@ PYBIND11_MODULE(popart_core, m) {
           return py::bytes(report);
         },
         DOC(popart, Session, getSerializedGraph));
-    cls.def("getTensorTileMap",
-            &TrainingSession::getTensorTileMap,
-            DOC(popart, Session, getTensorTileMap));
     cls.def("resetHostWeights",
             &TrainingSession::resetHostWeights,
             py::arg("modelProtoOrFilename"),

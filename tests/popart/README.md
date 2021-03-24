@@ -76,8 +76,4 @@ To run `pytest` and specify a device type, use:
 ```
 TEST_TARGET=<variant> pytest --forked tests/popart/../<test_name>.py
 ```
-e.g. 
-```
-TEST_TARGET=IpuModel pytest --forked tests/popart/mapping_test.py 
-```
 See existing tests for more info on how to use the `test_util` functions.

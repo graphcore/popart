@@ -219,15 +219,6 @@ public:
   std::string getSerializedGraph() const;
 
   /**
-   * Retrieve the tensor tile mapping from the \c poplar::Graph.
-   *
-   * This may only be called after the prepareDevice() call has been made.
-   *
-   *  \return A TensorTileMap object for all tensors in the graph.
-   */
-  TensorTileMap getTensorTileMap() const;
-
-  /**
    * Reset the weights with the weights in an ONNX model that differs from the
    * current model only in weights. This only updates the weights on the host;
    * the user still needs to call weightsFromHost() after this to update the

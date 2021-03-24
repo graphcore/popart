@@ -14,14 +14,6 @@ using TensorIntervalList = List(TensorInterval);
 using TensorId = Text;
 
 struct IrLowering {
-  struct TensorTileMap{
-    mappings @0: List(Mapping);
-    struct Mapping{
-      id @0 :Text;
-      tensorIntervalLists @1 :List(TensorIntervalList);
-    }
-  }
-
   ir @0: Ir.Ir;
   linearlyCreatedInputTensors @1: List(TensorId);
   efficientlyCreatedInputTensors @2: List(TensorId);

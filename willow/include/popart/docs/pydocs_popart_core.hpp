@@ -5369,14 +5369,6 @@ Parameter ``resetProfile``:
 Returns:
     A string containing the report.)doc";
 
-static const char *__doc_popart_Session_getTensorTileMap =
-    R"doc(Retrieve the tensor tile mapping from the ``poplar::Graph``.
-
-This may only be called after the prepareDevice() call has been made.
-
-Returns:
-    A TensorTileMap object for all tensors in the graph.)doc";
-
 static const char *__doc_popart_Session_ir =
     R"doc(Abstraction of the computation. The Ir is where all the compute graph
 optimisations, backwards pass construction, re-computation growing
@@ -6526,8 +6518,6 @@ static const char *__doc_popart_popx_Devicex_getSerializedGraph = R"doc()doc";
 
 static const char *__doc_popart_popx_Devicex_getSummaryReport = R"doc()doc";
 
-static const char *__doc_popart_popx_Devicex_getTensorTileMap = R"doc()doc";
-
 static const char *__doc_popart_popx_Devicex_hostStreamToHost = R"doc()doc";
 
 static const char *__doc_popart_popx_Devicex_inputStreams = R"doc()doc";
@@ -6583,8 +6573,6 @@ static const char *__doc_popart_popx_Devicex_run = R"doc()doc";
 
 static const char *__doc_popart_popx_Devicex_run_2 = R"doc()doc";
 
-static const char *__doc_popart_popx_Devicex_saveTensorTileMap = R"doc()doc";
-
 static const char *__doc_popart_popx_Devicex_setEngineIsLoaded = R"doc()doc";
 
 static const char *__doc_popart_popx_Devicex_setRandomSeedFromHost =
@@ -6595,8 +6583,6 @@ static const char *__doc_popart_popx_Devicex_setRngStateFromHost = R"doc()doc";
 static const char *__doc_popart_popx_Devicex_setRngStateValue = R"doc()doc";
 
 static const char *__doc_popart_popx_Devicex_stepIoSplitter = R"doc()doc";
-
-static const char *__doc_popart_popx_Devicex_trySaveTensorTileMap = R"doc()doc";
 
 static const char *__doc_popart_popx_Devicex_weightsFromHost = R"doc()doc";
 

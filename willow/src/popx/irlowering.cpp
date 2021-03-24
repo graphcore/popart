@@ -523,52 +523,6 @@ std::map<Op *, int, POpCmp> IrLowering::getMainGraphOpCounts() const {
   return counts;
 }
 
-void IrLowering::trySaveTensorTileMap() const {
-  auto popartTensorTileMap = getPopartEnvVar("TENSOR_TILE_MAP");
-  if (popartTensorTileMap && strcmp(popartTensorTileMap, "") != 0) {
-    saveTensorTileMap(popartTensorTileMap);
-  }
-}
-
-void IrLowering::saveTensorTileMap(const std::string &mapFileName) const {
-  auto tt = getTensorTileMap();
-
-  std::string finalPath =
-      io::appendDirFn(ir().getSessionOptions().logDir, mapFileName);
-
-  std::ofstream ofs(finalPath, std::ofstream::out);
-  if (!ofs.is_open()) {
-    throw error("Unable to open file '{}'", finalPath);
-  }
-
-  writeJSON(tt, ofs);
-}
-
-TensorTileMap IrLowering::getTensorTileMap() const {
-  if (!tensorTileMap.empty()) {
-    return tensorTileMap;
-  }
-
-  TensorTileMap map;
-  for (const auto &t : tensors_.getTensors()) {
-    std::vector<TensorIntervalList> mapping;
-    for (auto tile : graph().getTileMapping(*t.second.get())) {
-      TensorIntervalList intervalList;
-      std::transform(tile.begin(),
-                     tile.end(),
-                     std::back_inserter(intervalList),
-                     [](poplar::Interval i) {
-                       return std::pair<size_t, size_t>(i.begin(), i.end());
-                     });
-      mapping.emplace_back(intervalList);
-    }
-    map.insert(std::make_pair(t.first, mapping));
-  }
-  return map;
-}
-
-void IrLowering::setTensorTileMap(const TensorTileMap &m) { tensorTileMap = m; }
-
 void IrLowering::instrumentWithHardwareCycleCounter(
     poplar::program::Sequence &sq,
     int64_t tileId,
@@ -3192,9 +3146,6 @@ poplar::Executable IrLowering::getExecutable() {
       // re-throw the exception In certain cases poplar will throw the error
       // without a graph profile. The following engine option needs to be set to
       // enable the graph profile in this case "debug.allowOutOfMemory":"true"
-
-      trySaveTensorTileMap();
-
       logging::devicex::err("Memory allocation error : {}", e.what());
       throw devicex_memory_allocation_err(e, reportOptions);
     }

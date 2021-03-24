@@ -80,22 +80,6 @@ DOT graphs for the FWD0 and FINAL stages.
 The values in ``POPART_DOT_CHECKS`` will be combined with any values
 that are defined in the session options.
 
-Saving the tensor map
----------------------
-
-POPART_TENSOR_TILE_MAP
-~~~~~~~~~~~~~~~~~~~~~~~
-
-The mapping of tensors to tiles in the session can be saved to a file by setting this variable
-to the name of a file. The tensor tile map will be written in JSON format.
-
-The tensor tile map will be saved when you call ``Session::prepareDevice``.
-For example, to save the tensor tile map to ``ttm.js`` you would set the variable as shown:
-
-.. code-block:: console
-
-  export POPART_TENSOR_TILE_MAP=ttm.js
-
 Inspecting the Ir
 -----------------
 
