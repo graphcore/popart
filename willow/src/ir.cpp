@@ -3365,7 +3365,7 @@ bool Ir::hasConstructedBackwards() const { return constructedBackwards; }
 
 bool Ir::hasDecomposedOptimizers() const { return decomposedOptimizers; }
 
-bool Ir::containsInitialisers() {
+bool Ir::containsInitialisers() const {
   return !(onnxModel->graph().initializer().empty());
 }
 

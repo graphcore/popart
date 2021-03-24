@@ -340,7 +340,7 @@ public:
   bool hasDecomposedOptimizers() const;
 
   // returns true if there are initializers in the onnx model
-  bool containsInitialisers();
+  bool containsInitialisers() const;
 
   // returns true if tensor Id matches the name of any tensor the onnx
   // model's initialisers

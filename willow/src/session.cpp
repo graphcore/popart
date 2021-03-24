@@ -48,11 +48,19 @@ HashesMap getCacheEntries(const std::string &cachePath) {
 }
 } // namespace
 
-Session::Session() {
+void Session::ctorCommonLogic() {
   POPART_TRACEPOINT();
   logging::session::info("Popart version: {}", popart::core::versionString());
   logging::session::info("Popart release githash: {}",
                          popart::core::packageHash());
+}
+
+Session::Session() { ctorCommonLogic(); }
+
+Session::Session(Ir ir_, std::shared_ptr<DeviceInfo> deviceInfo)
+    : ir(std::move(ir_)) {
+  ctorCommonLogic();
+  setDevice(std::move(deviceInfo));
 }
 
 void Session::setDevice(std::shared_ptr<DeviceInfo> deviceInfo) {
@@ -592,9 +600,26 @@ void Session::configureFromOnnx(const std::string &modelProtoOrFilename,
   setDevice(deviceInfo);
 }
 
-InferenceSession::InferenceSession() : Session() { POPART_TRACEPOINT(); }
-
 InferenceSession::~InferenceSession() = default;
+
+std::unique_ptr<InferenceSession>
+InferenceSession::createFromIr(Ir ir, std::shared_ptr<DeviceInfo> deviceInfo) {
+  POPART_TRACEPOINT();
+  logging::session::trace("InferenceSession::createFromIr");
+
+  if (!deviceInfo) {
+    throw error("InferenceSession::createFromIr: Must pass valid DeviceInfo.");
+  }
+
+  if (!ir.isPrepared()) {
+    throw error("InferenceSession::createFromIr: Ir must be prepared.");
+  }
+
+  auto session = std::unique_ptr<InferenceSession>(
+      new InferenceSession(std::move(ir), std::move(deviceInfo)));
+
+  return session;
+}
 
 std::unique_ptr<InferenceSession>
 InferenceSession::createFromOnnxModel(const std::string &model,
@@ -611,24 +636,42 @@ InferenceSession::createFromOnnxModel(const std::string &model,
                 "InferenceSession::createFromOnnxModel");
   }
 
-  auto session = std::unique_ptr<InferenceSession>(new InferenceSession());
   const TensorId nullLoss        = {};
   const Optimizer *nullOptimizer = nullptr;
+
+  auto session = std::unique_ptr<InferenceSession>(new InferenceSession());
   session->configureFromOnnx(model,
                              dataFlow,
                              nullLoss,
                              nullOptimizer,
                              inputShapeInfo,
-                             deviceInfo,
+                             std::move(deviceInfo),
                              userOptions,
                              patterns);
 
   return session;
 }
 
-TrainingSession::TrainingSession() : Session() { POPART_TRACEPOINT(); }
-
 TrainingSession::~TrainingSession() = default;
+
+std::unique_ptr<TrainingSession>
+TrainingSession::createFromIr(Ir ir, std::shared_ptr<DeviceInfo> deviceInfo) {
+  POPART_TRACEPOINT();
+  logging::session::trace("TrainingSession::createFromIr");
+
+  if (!deviceInfo) {
+    throw error("TrainingSession::createFromIr: Must pass valid DeviceInfo.");
+  }
+
+  if (!ir.isPrepared()) {
+    throw error("TrainingSession::createFromIr: Ir must be prepared.");
+  }
+
+  auto session = std::unique_ptr<TrainingSession>(
+      new TrainingSession(std::move(ir), std::move(deviceInfo)));
+
+  return session;
+}
 
 std::unique_ptr<TrainingSession>
 TrainingSession::createFromOnnxModel(const std::string &model,

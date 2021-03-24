@@ -27,9 +27,12 @@ class Executablex;
  * graphs on IPU hardware.
  */
 class Session {
+private:
+  void ctorCommonLogic();
 
 protected:
   Session();
+  Session(Ir ir, std::shared_ptr<DeviceInfo> deviceInfo);
 
   void configureFromOnnx(const std::string &modelProtoOrFilename,
                          const DataFlow &df,
@@ -332,10 +335,13 @@ protected:
 
 class InferenceSession : public Session {
 
-  InferenceSession();
+  using Session::Session;
 
 public:
   ~InferenceSession() override;
+
+  static std::unique_ptr<InferenceSession>
+  createFromIr(Ir ir, std::shared_ptr<DeviceInfo> deviceInfo);
 
   /** Create a runtime class for executing an ONNX graph on a set of IPU
    *  hardware for inference.
@@ -360,10 +366,13 @@ public:
 
 class TrainingSession : public Session {
 
-  TrainingSession();
+  using Session::Session;
 
 public:
   ~TrainingSession() override;
+
+  static std::unique_ptr<TrainingSession>
+  createFromIr(Ir ir, std::shared_ptr<DeviceInfo> deviceInfo);
 
   /** Create a runtime class for executing an ONNX graph on a set of IPU
    *  hardware for training.
