@@ -15,6 +15,11 @@
 #include <popart/tensors.hpp>
 #include <popart/topocons.hpp>
 
+static size_t batchSizeDimension       = 1;
+static size_t maxInputLengthDimension  = 0;
+static size_t maxTargetLengthDimension = 1;
+static size_t numClassesDimension      = 2;
+
 namespace popart {
 
 CtcOp::CtcOp(const OperatorIdentifier &_opid,
@@ -23,8 +28,7 @@ CtcOp::CtcOp(const OperatorIdentifier &_opid,
              const Op::Settings &_settings,
              const DataType userOutputType_)
     : LossOp(_opid, _settings, reduction_), blank(blank_),
-      userOutputType(userOutputType_), batchSize(0u), maxInputLength(0u),
-      maxTargetLength(0u), numClasses(0u) {}
+      userOutputType(userOutputType_) {}
 
 std::unique_ptr<Op> CtcOp::clone() const {
   return std::make_unique<CtcOp>(*this);
@@ -34,6 +38,22 @@ std::vector<std::unique_ptr<Op>> CtcOp::getGradOps() {
   std::vector<std::unique_ptr<Op>> upops;
   upops.emplace_back(std::make_unique<CtcGradOp>(*this));
   return upops;
+}
+
+unsigned CtcOp::getBatchSize() const {
+  return inShape(getLogProbsInIndex()).at(batchSizeDimension);
+}
+
+unsigned CtcOp::getMaxInputLength() const {
+  return inShape(getLogProbsInIndex()).at(maxInputLengthDimension);
+}
+
+unsigned CtcOp::getMaxTargetLength() const {
+  return inShape(getTargetsInIndex()).at(maxTargetLengthDimension);
+}
+
+unsigned CtcOp::getNumClasses() const {
+  return inShape(getLogProbsInIndex()).at(numClassesDimension);
 }
 
 void CtcOp::setup() {
@@ -71,14 +91,11 @@ void CtcOp::setup() {
         userOutputType);
   }
 
-  maxInputLength = logProbsInShape.at(0);
-  batchSize      = logProbsInShape.at(1);
-  numClasses     = logProbsInShape.at(2);
-
   // Check second input.
   const auto &targetsInInfo  = inInfo(getTargetsInIndex());
   const auto &targetsInShape = inShape(getTargetsInIndex());
 
+  auto batchSize = getBatchSize();
   if (targetsInShape.size() != 2 || targetsInShape.at(0) != batchSize) {
     throw error(
         "Unsupported shape for input {} of Op {} (expected a 'targets' tensor "
@@ -100,8 +117,6 @@ void CtcOp::setup() {
         DataType::UINT32,
         targetsInInfo.getDataTypeInfo()->type());
   }
-
-  maxTargetLength = targetsInShape.at(1);
 
   // Check third input.
   Shape expectedLengthShape;
@@ -171,7 +186,7 @@ void CtcOp::setup() {
 
   // With no reduction, output is [T, N, C].
   outInfo(getLogProbsGradientWrtCtcLossOutIndex())
-      .set(outputType, {maxInputLength, batchSize, numClasses});
+      .set(outputType, {getMaxInputLength(), batchSize, getNumClasses()});
 }
 
 void CtcOp::appendOutlineAttributes(OpSerialiserBase &os) const {

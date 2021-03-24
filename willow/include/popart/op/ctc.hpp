@@ -58,20 +58,16 @@ public:
   unsigned getBlank() const { return blank; }
   virtual void appendOutlineAttributes(OpSerialiserBase &) const final;
 
-  unsigned getBatchSize() const { return batchSize; }
-  unsigned getMaxInputLength() const { return maxInputLength; }
-  unsigned getMaxTargetLength() const { return maxTargetLength; }
-  unsigned getNumClasses() const { return numClasses; }
+  unsigned getBatchSize() const;
+  unsigned getMaxInputLength() const;
+  unsigned getMaxTargetLength() const;
+  unsigned getNumClasses() const;
 
   bool canShard() const override { return false; }
 
 private:
-  unsigned blank;
-  DataType userOutputType;
-  unsigned batchSize;
-  unsigned maxInputLength;
-  unsigned maxTargetLength;
-  unsigned numClasses;
+  const unsigned blank;
+  const DataType userOutputType;
 };
 
 class CtcGradOp : public Op {
