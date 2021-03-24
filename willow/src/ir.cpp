@@ -92,6 +92,10 @@
 
 #include <popart/dotvisualizer.hpp>
 
+#include <transforms/autodiff/gradnongradpair.hpp>
+#include <transforms/autodiff/opgradregistry.hpp>
+#include <transforms/autodiff/tensorgradregistry.hpp>
+
 // used for float to half conversion
 #include <poplar/Target.hpp>
 
@@ -118,10 +122,6 @@ void Ir::confirmNonReservedId(const TensorId &tenId) const {
     }
   }
 }
-
-GradNonGradPair::GradNonGradPair(Op *g_, Op *ng_) : grad(g_), nongrad(ng_) {}
-
-GradNonGradPair::GradNonGradPair() : GradNonGradPair(nullptr, nullptr) {}
 
 const ONNX_NAMESPACE::ModelProto &Ir::getModel() const { return *onnxModel; }
 
@@ -2350,88 +2350,6 @@ std::vector<Op *> Ir::growGradOps(Op *nonGradOp) {
   }
 
   return gradOps;
-}
-
-void TensorGradRegistry::insert(Tensor *nonGrad, Tensor *grad) {
-  // The expected number of edges is assumed to be the same as the
-  // number of edges to the loss for the non-grad tensor.
-  if (expectedNumEdges.find(nonGrad->id) == expectedNumEdges.end()) {
-    expectedNumEdges.insert({nonGrad->id, nonGrad->nEdgesToLoss});
-  }
-
-  auto found = partial.find(nonGrad->id);
-  if (found == partial.end()) {
-    partial.insert({nonGrad->id, {grad}});
-  } else {
-    partial[nonGrad->id].push_back(grad);
-  }
-
-  tryMakeComplete(nonGrad);
-}
-
-void TensorGradRegistry::decrementNumberExpectedEdges(Tensor *nonGrad) {
-  auto found = expectedNumEdges.find(nonGrad->id);
-  if (found == expectedNumEdges.end()) {
-    expectedNumEdges.insert({nonGrad->id, nonGrad->nEdgesToLoss - 1});
-  } else {
-    found->second--;
-  }
-
-  // Only make complete if this is already in partials.
-  // This prevents adding entries with 0 gradient edges.
-  if (partial.find(nonGrad->id) != partial.end()) {
-    tryMakeComplete(nonGrad);
-  }
-}
-
-int TensorGradRegistry::getNumberExpectedEdges(Tensor *nonGrad) {
-  auto found = expectedNumEdges.find(nonGrad->id);
-  if (found != expectedNumEdges.end()) {
-    return found->second;
-  } else {
-    return nonGrad->nEdgesToLoss;
-  }
-}
-
-void TensorGradRegistry::tryMakeComplete(Tensor *nonGrad) {
-  if (partial[nonGrad->id].size() == expectedNumEdges.at(nonGrad->id)) {
-    complete[nonGrad->id] = partial[nonGrad->id];
-    partial.erase(nonGrad->id);
-  }
-}
-
-void OpGradRegistry::insert(Op *nonGrad, int index) {
-  auto found = partial.find(nonGrad->id);
-  // so far NO gradients for nonGrad are in:
-  if (found == partial.end()) {
-    partial.insert({nonGrad->id, {}});
-  }
-  // this should be removed when we're happy the IL (internal logic)
-  // is correct:
-  if (partial[nonGrad->id].count(index) != 0) {
-    throw internal_error("index already present in OpGradRegistry::insert");
-  }
-
-  partial[nonGrad->id].insert(index);
-
-  // probably just checks that the size of partial is
-  // nonGrad->output->n(), but maybe not.
-  if (nonGrad->readyToCreateGradients(partial[nonGrad->id])) {
-    complete.push_back(nonGrad);
-    partial.erase(nonGrad->id);
-  }
-}
-
-std::map<TensorId, std::vector<Tensor *>> TensorGradRegistry::popComplete() {
-  auto toRet = complete;
-  complete   = {};
-  return toRet;
-}
-
-std::vector<Op *> OpGradRegistry::popComplete() {
-  auto toRet = complete;
-  complete   = {};
-  return toRet;
 }
 
 // design choice: we could have an "irHasChanged"
