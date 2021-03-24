@@ -280,7 +280,7 @@ void Session::compileAndExport(std::string filename) {
   executable_->serialize(poplarExecutable, filename);
 }
 
-void Session::prepareDevice() {
+void Session::prepareDevice(bool loadEngine) {
   POPART_TRACEPOINT();
   if (!tryLoadExecutable()) {
     lowering_->prepareGraph();
@@ -291,6 +291,10 @@ void Session::prepareDevice() {
     throw error("Must call setDevice before {}", __func__);
   }
   device_->prepare();
+
+  if (ir.getSessionOptions().compileEngine && loadEngine) {
+    loadEngineAndConnectStreams();
+  }
 }
 
 void Session::loadEngineAndConnectStreams() {

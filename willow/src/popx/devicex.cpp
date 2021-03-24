@@ -775,6 +775,10 @@ void Devicex::loadEngineAndConnectStreams() {
   if (deviceInfo->getConnectionType() == DeviceConnectionType::Never) {
     throw error("Trying to load an engine on an offline device");
   }
+  if (!pEngine) {
+    throw error("Trying to load an engine but no compiled engine. Did you "
+                "forget to call prepareDevice()?");
+  }
   DevicexInfo &di = dynamic_cast<DevicexInfo &>(*deviceInfo);
 
   // Let the device info know that this devicex's engine

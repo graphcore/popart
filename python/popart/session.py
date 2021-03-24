@@ -180,18 +180,22 @@ class InferenceSession(_InferenceSessionCore):
         if not err.isSuccessful():
             raise popart.OutOfMemoryException(err)
 
-    def prepareDevice(self) -> None:
+    def prepareDevice(self, loadEngine: bool = True) -> None:
         """Prepare the network for execution.
 
         This will create the ``poplar::Graph`` and ``poplar::Engine``, and set up
         ``poplar::Streams``.
+
+        Arguments:
+            loadEngine: Load the engine and connect the streams once
+                        the device is ready.
 
         Raises:
             popart.OutOfMemoryException: If an out of memory event occurs
         """
 
         err = popart.OutOfMemoryError()
-        super(InferenceSession, self).prepareDevice(err)
+        super(InferenceSession, self).prepareDevice(loadEngine, err)
 
         if not err.isSuccessful():
             raise popart.OutOfMemoryException(err)
@@ -281,18 +285,22 @@ class TrainingSession(_TrainingSessionCore):
         if not err.isSuccessful():
             raise popart.OutOfMemoryException(err)
 
-    def prepareDevice(self) -> None:
+    def prepareDevice(self, loadEngine: bool = True) -> None:
         """Prepare the network for execution.
 
         This will create the ``poplar::Graph`` and ``poplar::Engine``, and set up
         ``poplar::Streams``.
+
+        Arguments:
+            loadEngine: Load the engine and connect the streams once
+                        the device is ready.
 
         Raises:
             popart.OutOfMemoryException: If an out of memory event occurs
         """
 
         err = popart.OutOfMemoryError()
-        super(TrainingSession, self).prepareDevice(err)
+        super(TrainingSession, self).prepareDevice(loadEngine, err)
 
         if not err.isSuccessful():
             raise popart.OutOfMemoryException(err)

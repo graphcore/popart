@@ -5382,6 +5382,14 @@ static const char *__doc_popart_Session_ir =
 optimisations, backwards pass construction, re-computation growing
 etc. happens.)doc";
 
+static const char *__doc_popart_Session_loadEngineAndConnectStreams =
+    R"doc(Load the engine on the device and connect the streams
+
+This will set up the ``poplar::Streams``.
+
+Note: This call is optional. The engine will implicitly be loaded on
+the device when required.)doc";
+
 static const char *__doc_popart_Session_loadExecutableFromFile =
     R"doc(Load the ``poplar::Executable`` and the PopART metadata from the given
 file. The file must have been created with compileAndExport()

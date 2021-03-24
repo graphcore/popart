@@ -1695,9 +1695,11 @@ PYBIND11_MODULE(popart_core, m) {
         DOC(popart, Session, loadExecutableFromFile));
     cls.def(
         "prepareDevice",
-        [](InferenceSession &session, OutOfMemoryError *status) {
+        [](InferenceSession &session,
+           bool loadEngine,
+           OutOfMemoryError *status) {
           try {
-            session.prepareDevice();
+            session.prepareDevice(loadEngine);
           } catch (const popart::memory_allocation_err &e) {
             if (status != nullptr) {
               status->exception = e.clone();
@@ -1707,6 +1709,7 @@ PYBIND11_MODULE(popart_core, m) {
             }
           }
         },
+        py::arg("loadEngine") = true,
         py::arg("err").none(),
         DOC(popart, Session, prepareDevice));
     cls.def("setRandomSeed",
@@ -1720,6 +1723,9 @@ PYBIND11_MODULE(popart_core, m) {
             &InferenceSession::getCycleCount,
             py::arg("id") = "",
             DOC(popart, Session, getCycleCount));
+    cls.def("loadEngineAndConnectStreams",
+            &InferenceSession::loadEngineAndConnectStreams,
+            DOC(popart, Session, loadEngineAndConnectStreams));
     cls.def("weightsFromHost",
             &InferenceSession::weightsFromHost,
             DOC(popart, Session, weightsFromHost));
@@ -1816,9 +1822,11 @@ PYBIND11_MODULE(popart_core, m) {
         DOC(popart, Session, loadExecutableFromFile));
     cls.def(
         "prepareDevice",
-        [](TrainingSession &session, OutOfMemoryError *status) {
+        [](TrainingSession &session,
+           bool loadEngine,
+           OutOfMemoryError *status) {
           try {
-            session.prepareDevice();
+            session.prepareDevice(loadEngine);
           } catch (const popart::memory_allocation_err &e) {
             if (status != nullptr) {
               status->exception = e.clone();
@@ -1828,6 +1836,7 @@ PYBIND11_MODULE(popart_core, m) {
             }
           }
         },
+        py::arg("loadEngine") = true,
         py::arg("err").none(),
         DOC(popart, Session, prepareDevice));
     cls.def("setRandomSeed",
@@ -1840,6 +1849,9 @@ PYBIND11_MODULE(popart_core, m) {
             &TrainingSession::getCycleCount,
             py::arg("id") = "",
             DOC(popart, Session, getCycleCount));
+    cls.def("loadEngineAndConnectStreams",
+            &TrainingSession::loadEngineAndConnectStreams,
+            DOC(popart, Session, loadEngineAndConnectStreams));
     cls.def("weightsToHost",
             &TrainingSession::weightsToHost,
             DOC(popart, Session, weightsToHost));

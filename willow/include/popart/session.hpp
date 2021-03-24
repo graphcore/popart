@@ -99,8 +99,11 @@ public:
    * Prepare the network for execution.
    *
    * This will create the \c poplar::Graph and \c poplar::Engine.
+   *
+   * \param loadEngine Load the engine and connect the streams once
+   *                   the device is ready.
    */
-  void prepareDevice();
+  void prepareDevice(bool loadEngine = true);
 
   /**
    * Load the engine on the device and connect the streams

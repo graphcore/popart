@@ -700,7 +700,7 @@ BOOST_AUTO_TEST_CASE(session_run_on_ipu_from_offlineipu_serialized_exe) {
         popart::InputShapeInfo(),
         opts,
         popart::Patterns(PatternsLevel::Default));
-    session->prepareDevice();
+    session->prepareDevice(false);
     irBundleHash1 = session->getIr().getIrBundleHash();
 
     BOOST_CHECK_THROW(session->run(stepio), popart::error);
