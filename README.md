@@ -230,6 +230,22 @@ popd
 
 For more information, see: https://capnproto.org/install.html
 
+##### Trompeloeil (version 35 or compatible)
+
+Trompeloeil can be downloaded from [here](https://github.com/rollbear/trompeloeil/releases/tag/v35). In a directory of your choice, download and install as follows:
+
+```
+export TROMPELOEIL_INSTALL_DIR=$(pwd)/trompeloeil-35/install_dir/
+wget https://github.com/rollbear/trompeloeil/archive/refs/tags/v35.tar.gz
+tar xvfz v35.tar.gz
+rm v35.tar.gz
+pushd trompeloeil-35
+mkdir build ; cd build
+cmake .. -DCMAKE_INSTALL_PREFIX=$TROMPELOEIL_INSTALL_DIR
+cmake --build . --target install
+popd
+```
+
 ### Installing Graphcore Library Dependencies
 
 ##### Poprithms
@@ -285,6 +301,7 @@ cmake .. \
   -DProtobuf_ROOT=$PROTOBUF_INSTALL_DIR \
   -Dpybind11_ROOT=$PYBIND11_INSTALL_DIR \
   -Dspdlog_ROOT=$SPDLOG_INSTALL_DIR \
+  -Dtrompeloeil_ROOT=$TROMPELOEIL_INSTALL_DIR \
   -DCMAKE_INSTALL_PREFIX=$POPART_INSTALL_DIR \
   -GNinja
 ninja

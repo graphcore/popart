@@ -119,6 +119,18 @@ RUN make install
 # Tell pkg-config where to find CapnProto
 ENV PKG_CONFIG_PATH=$CAPNPROTO_INSTALL_DIR/lib/pkgconfig:$PKG_CONFIG_PATH
 
+# Trompeloeil v35
+WORKDIR /workspace/libs/third-party/
+ENV TROMPELOEIL_INSTALL_DIR /workspace/libs/third-party/trompeloeil-35/install_dir/
+RUN wget https://github.com/rollbear/trompeloeil/archive/refs/tags/v35.tar.gz
+RUN tar xvfz v35.tar.gz
+RUN rm v35.tar.gz
+WORKDIR /workspace/libs/third-party/trompeloeil-35
+RUN mkdir build
+WORKDIR /workspace/libs/third-party/trompeloeil-35/build
+RUN cmake .. -DCMAKE_INSTALL_PREFIX=$TROMPELOEIL_INSTALL_DIR
+RUN cmake --build . --target install
+
 # -- Set workdir.
 
 WORKDIR /workspace
