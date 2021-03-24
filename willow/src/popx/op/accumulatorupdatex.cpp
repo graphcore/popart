@@ -24,12 +24,6 @@ void AccumulatorUpdateOpx::grow(poplar::program::Sequence &prog) const {
 
   auto factor = accumulateOp.getFactor();
 
-  if (!accum.isParallelWriteable()) {
-    throw error("Expected accumulator {} to be writable in {}.",
-                accumulateOp.inId(AccumulatorUpdateOp::getVarToUpdateInIndex()),
-                accumulateOp.debugName());
-  }
-
   if (factor.isConst()) {
     auto val = factor.val();
     if (val == 0.0f) {
