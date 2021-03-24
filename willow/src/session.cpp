@@ -9,6 +9,7 @@
 #include <popart/ir.hpp>
 #include <popart/logging.hpp>
 #include <popart/onnxutil.hpp>
+#include <popart/optimizer.hpp>
 #include <popart/popx/devicex.hpp>
 #include <popart/popx/executablex.hpp>
 #include <popart/popx/executablexserialization.hpp>
@@ -563,30 +564,37 @@ std::string Session::serializeIr(IrSerializationFormat format) {
   return ss.str();
 }
 
-InferenceSession::InferenceSession() : Session() { POPART_TRACEPOINT(); }
-
-InferenceSession::~InferenceSession() = default;
-
-void InferenceSession::configureFromOnnx(
-    const std::string &modelProtoOrFilename,
-    const DataFlow &df,
-    const InputShapeInfo &perk,
-    std::shared_ptr<DeviceInfo> deviceInfo,
-    const SessionOptions &userOptions,
-    const Patterns &patterns) {
+void Session::configureFromOnnx(const std::string &modelProtoOrFilename,
+                                const DataFlow &df,
+                                const TensorId &lossIn,
+                                const Optimizer *optimizerIn,
+                                const InputShapeInfo &perk,
+                                std::shared_ptr<DeviceInfo> deviceInfo,
+                                const SessionOptions &userOptions,
+                                const Patterns &patterns) {
   POPART_TRACEPOINT();
-
-  logging::session::trace("InferenceSession::configureFromOnnx");
+  logging::session::trace("Session::configureFromOnnx");
 
   auto modelProto = onnxutil::getModelProto(modelProtoOrFilename);
+
   if (userOptions.enableEngineCaching) {
     cacheEntries = getCacheEntries(userOptions.cachePath);
   }
-  ir.prepare(
-      {modelProto, perk, df, {}, nullptr, *deviceInfo, userOptions, patterns},
-      cacheEntries);
+  ir.prepare({modelProto,
+              perk,
+              df,
+              lossIn,
+              optimizerIn,
+              *deviceInfo,
+              userOptions,
+              patterns},
+             cacheEntries);
   setDevice(deviceInfo);
 }
+
+InferenceSession::InferenceSession() : Session() { POPART_TRACEPOINT(); }
+
+InferenceSession::~InferenceSession() = default;
 
 std::unique_ptr<InferenceSession>
 InferenceSession::createFromOnnxModel(const std::string &model,
@@ -604,8 +612,16 @@ InferenceSession::createFromOnnxModel(const std::string &model,
   }
 
   auto session = std::unique_ptr<InferenceSession>(new InferenceSession());
-  session->configureFromOnnx(
-      model, dataFlow, inputShapeInfo, deviceInfo, userOptions, patterns);
+  const TensorId nullLoss        = {};
+  const Optimizer *nullOptimizer = nullptr;
+  session->configureFromOnnx(model,
+                             dataFlow,
+                             nullLoss,
+                             nullOptimizer,
+                             inputShapeInfo,
+                             deviceInfo,
+                             userOptions,
+                             patterns);
 
   return session;
 }
@@ -613,34 +629,6 @@ InferenceSession::createFromOnnxModel(const std::string &model,
 TrainingSession::TrainingSession() : Session() { POPART_TRACEPOINT(); }
 
 TrainingSession::~TrainingSession() = default;
-
-void TrainingSession::configureFromOnnx(const std::string &modelProtoOrFilename,
-                                        const DataFlow &df,
-                                        const TensorId &lossIn,
-                                        const Optimizer &optimizerIn,
-                                        const InputShapeInfo &perk,
-                                        std::shared_ptr<DeviceInfo> deviceInfo,
-                                        const SessionOptions &userOptions,
-                                        const Patterns &patterns) {
-  POPART_TRACEPOINT();
-  logging::session::trace("TrainingSession::configureFromOnnx");
-
-  auto modelProto = onnxutil::getModelProto(modelProtoOrFilename);
-
-  if (userOptions.enableEngineCaching) {
-    cacheEntries = getCacheEntries(userOptions.cachePath);
-  }
-  ir.prepare({modelProto,
-              perk,
-              df,
-              lossIn,
-              &optimizerIn,
-              *deviceInfo,
-              userOptions,
-              patterns},
-             cacheEntries);
-  setDevice(deviceInfo);
-}
 
 std::unique_ptr<TrainingSession>
 TrainingSession::createFromOnnxModel(const std::string &model,
@@ -663,7 +651,7 @@ TrainingSession::createFromOnnxModel(const std::string &model,
   session->configureFromOnnx(model,
                              dataFlow,
                              loss,
-                             optimizer,
+                             &optimizer,
                              inputShapeInfo,
                              deviceInfo,
                              userOptions,

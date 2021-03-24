@@ -31,6 +31,15 @@ class Session {
 protected:
   Session();
 
+  void configureFromOnnx(const std::string &modelProtoOrFilename,
+                         const DataFlow &df,
+                         const TensorId &lossIn,
+                         const Optimizer *optimizerIn,
+                         const InputShapeInfo &perk,
+                         std::shared_ptr<DeviceInfo> deviceInfo,
+                         const SessionOptions &userOptions,
+                         const Patterns &patterns);
+
 public:
   virtual ~Session() = 0;
 
@@ -347,14 +356,6 @@ public:
                       const InputShapeInfo &inputShapeInfo = InputShapeInfo(),
                       const SessionOptions &userOptions    = SessionOptions(),
                       const Patterns &patterns             = Patterns());
-
-private:
-  void configureFromOnnx(const std::string &model,
-                         const DataFlow &dataFlow,
-                         const InputShapeInfo &inputShapeInfo,
-                         std::shared_ptr<DeviceInfo> deviceInfo,
-                         const SessionOptions &userOptions,
-                         const Patterns &patterns);
 };
 
 class TrainingSession : public Session {
@@ -447,16 +448,6 @@ public:
                           const std::string &buffer,
                           int repeat_index,
                           unsigned replication_index = 0);
-
-private:
-  void configureFromOnnx(const std::string &model,
-                         const DataFlow &dataFlow,
-                         const TensorId &loss,
-                         const Optimizer &optimizer,
-                         const InputShapeInfo &inputShapeInfo,
-                         std::shared_ptr<DeviceInfo> deviceInfo,
-                         const SessionOptions &userOptions,
-                         const Patterns &patterns);
 };
 
 } // namespace popart
