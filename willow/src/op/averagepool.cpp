@@ -148,9 +148,6 @@ static OpCreator<AveragePoolOp> averagePoolOpCreator(
         {Onnx::Operators::AveragePool_11, averagePoolOpDef},
     }),
     [](const OpCreatorInfo &info) {
-      Op::Settings receptiveSettings(
-          info.settings.graph, info.settings.name, info.settings.scope);
-
       HasReceptiveFieldOp::ReceptiveOpAttributes receptiveAttributes;
       receptiveAttributes.setFromAttributes(info.attributes);
 
@@ -163,7 +160,7 @@ static OpCreator<AveragePoolOp> averagePoolOpCreator(
                                                    countIncludePad,
                                                    kernelShape,
                                                    receptiveAttributes,
-                                                   receptiveSettings));
+                                                   info.settings));
     },
     true);
 } // namespace

@@ -170,9 +170,6 @@ static OpCreator<MaxPoolOp> maxPoolOpCreator(
         {Onnx::Operators::MaxPool_11, maxPoolOpDef},
     }),
     [](const OpCreatorInfo &info) {
-      Op::Settings receptiveSettings(
-          info.settings.graph, info.settings.name, info.settings.scope);
-
       HasReceptiveFieldOp::ReceptiveOpAttributes receptiveAttributes;
       receptiveAttributes.setFromAttributes(info.attributes);
 
@@ -199,7 +196,7 @@ static OpCreator<MaxPoolOp> maxPoolOpCreator(
                                                kernelShape,
                                                storageOrder,
                                                receptiveAttributes,
-                                               receptiveSettings));
+                                               info.settings));
     },
     true);
 } // namespace
