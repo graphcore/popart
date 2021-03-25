@@ -34,6 +34,13 @@ void growScatter(poplar::program::Sequence &prog,
                  const poplar::Tensor &dataToUpdateInPlace,
                  int64_t axis,
                  const poplar::DebugNameAndId &dnai);
+
+poplar::Tensor growScatterUpdateGrad(poplar::program::Sequence &prog,
+                                     poplar::Graph &graph,
+                                     const poplar::Tensor &gradIn,
+                                     const poplar::Tensor &indices,
+                                     int64_t axis,
+                                     const poplar::DebugNameAndId &dnai);
 } // namespace scatterutilx
 } // namespace popx
 } // namespace popart

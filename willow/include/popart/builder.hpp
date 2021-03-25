@@ -11,6 +11,7 @@
 #include <popart/names.hpp>
 #include <popart/op.hpp>
 #include <popart/op/loss.hpp>
+#include <popart/op/scatterreduce.hpp>
 #include <popart/opidentifier.hpp>
 #include <popart/tensorinfo.hpp>
 #include <popart/tensorlocation.hpp>
@@ -756,6 +757,27 @@ public:
       const nonstd::optional<std::vector<int64_t>> &axes = nonstd::nullopt,
       int64_t keepdims                                   = 1,
       const DebugContext &debugContext                   = {});
+
+  /**
+   * Add a scatterreduce operation to the model
+   *
+   * Reduces all the values from the src tensor at the indices specified along
+   * the given axis.
+   *
+   *  for i in range(axis_size):
+   *      output[i] = reduce(src[index == i])
+   *
+   * \param args list of [src, index] tensors
+   * \param axis_size Size in the reduced axis
+   * \param axis Axis to reduce along (default = -1)
+   * \param reduction The type of reduction to apply (default = "sum")
+   * \return The name of the result tensor.
+   */
+  TensorId scatterreduce(const std::vector<TensorId> &args,
+                         Attributes::Int axis_size,
+                         Attributes::Int axis       = -1,
+                         ScatterReduction reduction = ScatterReduction::Sum,
+                         const DebugContext &debugContext = {});
 };
 
 /**

@@ -110,7 +110,72 @@ void growScatter(poplar::program::Sequence &prog,
                   update_window_dims,
                   inserted_window_dims,
                   scatter_dims_to_op,
-                  prog);
+                  prog,
+                  dnai);
+}
+
+poplar::Tensor growScatterUpdateGrad(poplar::program::Sequence &prog,
+                                     poplar::Graph &graph,
+                                     const poplar::Tensor &gradIn,
+                                     const poplar::Tensor &indices,
+                                     int64_t axis,
+                                     const poplar::DebugNameAndId &dnai) {
+  // Build the implicit index coordinates
+  //
+  // Create a grid of linspaced indices
+  // Start by creating 1D linspaced constant tensors
+  std::vector<poplar::Tensor> indicesMapped(gradIn.rank());
+  for (int i = 0; i < gradIn.rank(); ++i) {
+    indicesMapped[i] = linspace(graph,
+                                0,
+                                static_cast<int>(indices.dim(i)),
+                                {dnai, "linspace"},
+                                1,
+                                indices.elementType());
+  }
+
+  // Match the rank of the indices to the update tensor
+  for (int i = 0; i < gradIn.rank(); ++i) {
+    indicesMapped[i] = matchRank(indices, indicesMapped[i], i);
+  }
+
+  for (auto &index : indicesMapped) {
+    // Match the shape of update
+    index = broadcastShape(indices, index);
+  }
+
+  // Replace the axis indices with the user provided indices
+  indicesMapped[axis] = indices;
+
+  for (auto &index : indicesMapped) {
+    // Add a degenerate dimension for concatenation
+    index = index.expand({index.rank()});
+  }
+
+  // Concat the indices on the degenerate dimension
+  auto indicesGrid = poplar::concat(indicesMapped, indices.rank());
+  indicesGrid      = indicesGrid.reinterpret(poplar::UNSIGNED_INT);
+
+  const auto indexVectorDim = indicesGrid.rank() - 1;
+  std::vector<std::size_t> sliceSizes(gradIn.rank(), 1);
+
+  std::vector<std::size_t> collapsedSliceDims(gradIn.rank());
+  std::iota(collapsedSliceDims.begin(), collapsedSliceDims.end(), 0);
+
+  std::vector<unsigned> startIndexMap(indicesGrid.rank() - 1);
+  std::iota(startIndexMap.begin(), startIndexMap.end(), 0);
+
+  // Gather the elements from the grad input
+  return popops::gather(graph,
+                        gradIn,
+                        indicesGrid,
+                        indexVectorDim,
+                        {},
+                        sliceSizes,
+                        collapsedSliceDims,
+                        startIndexMap,
+                        prog,
+                        {dnai, "gather"});
 }
 
 } // namespace scatterutilx

@@ -107,64 +107,18 @@ ScatterUpdateGradOpx::ScatterUpdateGradOpx(Op *op, Devicex *devicex)
 }
 
 void ScatterUpdateGradOpx::grow(poplar::program::Sequence &prog) const {
-  const auto gradIn = getInTensor(ScatterUpdateGradOp::gradInIndex());
-  auto indices      = getInTensor(ScatterDataGradOp::indicesInIndex());
+  auto gradIn  = getInTensor(ScatterUpdateGradOp::gradInIndex());
+  auto indices = getInTensor(ScatterDataGradOp::indicesInIndex());
 
-  // Build the implicit index coordinates
-  //
-  // Create a grid of linspaced indices
-  // Start by creating 1D linspaced constant tensors
-  std::vector<poplar::Tensor> indices_mapped(gradIn.rank());
-  for (int i = 0; i < gradIn.rank(); ++i) {
-    indices_mapped[i] = scatterutilx::linspace(graph(),
-                                               0,
-                                               static_cast<int>(indices.dim(i)),
-                                               getDebugNameAndId("linspace"));
-  }
+  auto gradOut = scatterutilx::growScatterUpdateGrad(
+      prog,
+      graph(),
+      gradIn,
+      indices,
+      axis,
+      getDebugNameAndId("scatter_update_grad"));
 
-  // Match the rank of the indices to the update tensor
-  for (int i = 0; i < gradIn.rank(); ++i) {
-    indices_mapped[i] = scatterutilx::matchRank(indices, indices_mapped[i], i);
-  }
-
-  for (auto &index : indices_mapped) {
-    // Match the shape of update
-    index = scatterutilx::broadcastShape(indices, index);
-  }
-
-  // Replace the axis indices with the user provided indices
-  indices_mapped[axis] = indices;
-
-  for (auto &index : indices_mapped) {
-    // Add a degenerate dimension for concatenation
-    index = index.expand({index.rank()});
-  }
-
-  // Concat the indices on the degenerate dimension
-  indices = poplar::concat(indices_mapped, indices.rank());
-
-  const auto index_vector_dim = indices.rank() - 1;
-  std::vector<std::size_t> sliceSizes(gradIn.rank(), 1);
-
-  std::vector<std::size_t> collapsedSliceDims(gradIn.rank());
-  std::iota(collapsedSliceDims.begin(), collapsedSliceDims.end(), 0);
-
-  std::vector<unsigned> startIndexMap(indices.rank() - 1);
-  std::iota(startIndexMap.begin(), startIndexMap.end(), 0);
-
-  // Gather the elements from the grad input
-  auto result = popops::gather(graph(),
-                               gradIn,
-                               indices.reinterpret(poplar::UNSIGNED_INT),
-                               index_vector_dim,
-                               {},
-                               sliceSizes,
-                               collapsedSliceDims,
-                               startIndexMap,
-                               prog,
-                               debugContext("gather"));
-
-  setOutTensor(ScatterDataGradOp::gradOutIndex(), result);
+  setOutTensor(ScatterUpdateGradOp::gradOutIndex(), gradOut);
 }
 
 namespace {

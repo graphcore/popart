@@ -1316,6 +1316,27 @@ std::vector<TensorId> AiGraphcoreOpset1::reducemedian(
   di.setOutputs(outputs);
   return outputs;
 }
+TensorId AiGraphcoreOpset1::scatterreduce(const std::vector<TensorId> &args,
+                                          Attributes::Int axis_size,
+                                          Attributes::Int axis,
+                                          ScatterReduction reduction,
+                                          const DebugContext &debugContext) {
+  auto reductionStr = ScatterReduceOp::reductionToString(reduction);
+
+  std::map<std::string, popart::any> attributes = {
+      {"axis", axis}, {"axis_size", axis_size}, {"reduction", reductionStr}};
+  BuilderDebugInfo di(debugContext, __POPART_FUNCTION_NAME__, args, attributes);
+  attributes.insert({sDebugInfoId, di.getId()});
+
+  auto outputs = impl->op(Onnx::AiGraphcore::OpSet1::ScatterReduce,
+                          getOpsetVersion(),
+                          args,
+                          attributes,
+                          debugContext);
+
+  di.setOutputs(outputs);
+  return outputs.at(0);
+}
 
 std::vector<TensorId>
 Builder::customOp(const OperatorIdentifier &opid,

@@ -38,6 +38,7 @@ void Expm1ShapeInference(InferenceContext &ctx);
 void Log1pShapeInference(InferenceContext &ctx);
 void ReshapeShapeInference(InferenceContext &ctx);
 void ReverseShapeInference(InferenceContext &ctx);
+void ScatterReduceShapeInference(InferenceContext &ctx);
 
 void SubsampleShapeInference(InferenceContext &ctx) {
   propagateElemTypeFromInputToOutput(ctx, 0, 0);
@@ -419,6 +420,35 @@ void ReverseShapeInference(InferenceContext &ctx) {
   propagateShapeAndTypeFromFirstInput(ctx);
 }
 
+void ScatterReduceShapeInference(InferenceContext &ctx) {
+  propagateElemTypeFromInputToOutput(ctx, 0, 0);
+
+  // Helper for extracting required INT attribute
+  auto getIntAttribute = [&](const std::string &attrName) {
+    auto proto = ctx.getAttribute(attrName);
+
+    if (proto && proto->has_i()) {
+      return proto->i();
+    }
+
+    throw popart::internal_error("{} must be supplied as an integer", attrName);
+  };
+
+  // The output shape is same as the data source tensor.
+  // Except in the scatter axis is equal to the axis_size
+  auto axis     = getIntAttribute("axis");
+  auto axisSize = getIntAttribute("axis_size");
+
+  auto &inputShape  = getInputShape(ctx, 0);
+  auto rank         = inputShape.dim_size();
+  auto *outputShape = getOutputShape(ctx, 0);
+
+  for (int i = 0; i < rank; i++) {
+    auto value = i == axis ? axisSize : inputShape.dim(i).dim_value();
+    outputShape->add_dim()->set_dim_value(value);
+  }
+}
+
 extern size_t dbg_count_check_GroupNormalization_AiGraphcore_ver1;
 extern size_t dbg_count_check_Subsample_AiGraphcore_ver1;
 extern size_t dbg_count_check_PrintTensor_AiGraphcore_ver1;
@@ -442,6 +472,7 @@ extern size_t dbg_count_check_Expm1_AiGraphcore_ver1;
 extern size_t dbg_count_check_Log1p_AiGraphcore_ver1;
 extern size_t dbg_count_check_Reshape_AiGraphcore_ver1;
 extern size_t dbg_count_check_Resize_AiGraphcore_ver1;
+extern size_t dbg_count_check_ScatterReduce_AiGraphcore_ver1;
 
 static const char groupnormalizationDoc[] =
     "GroupNormalization applies Group Normalization over a mini-batch of "
@@ -1132,6 +1163,46 @@ ONNX_OPERATOR_SET_SCHEMA_EX(
               true)
         .TypeAndShapeInferenceFunction(ReverseShapeInference))
 
+ONNX_OPERATOR_SET_SCHEMA_EX(
+    ScatterReduce,
+    AiGraphcore,
+    popart::Domain::ai_graphcore,
+    1,
+    false,
+    OpSchema()
+        .SetDoc("Reduces all the values from the input data tensor at the "
+                "specified indices along the given axis.")
+        .Input(0, "data", "Input tensor", "T")
+        .Input(1, "indices", "Indices defining the scatter operation", "T")
+        .Output(0, "output", "Output tensor", "T")
+        .TypeConstraint(
+            "T",
+            {"tensor(uint8)",
+             "tensor(uint16)",
+             "tensor(uint32)",
+             "tensor(uint64)",
+             "tensor(int8)",
+             "tensor(int16)",
+             "tensor(int32)",
+             "tensor(int64)",
+             "tensor(float16)",
+             "tensor(float)",
+             "tensor(bool)"},
+            "Input and output types can be any type supported by the IPU.")
+        .Attr("axis_size",
+              "The size of the output in the scatter axis.",
+              AttributeProto::INT,
+              true)
+        .Attr("axis",
+              "axis to apply the scatter reduction on (default = -1)",
+              AttributeProto::INT,
+              static_cast<int64_t>(-1))
+        .Attr("reduction",
+              "Reduction applied to the scatter operation (default = \"sum\")",
+              AttributeProto::STRING,
+              "sum")
+        .TypeAndShapeInferenceFunction(ScatterReduceShapeInference))
+
 static bool registerOps() {
   auto &d = ONNX_NAMESPACE::OpSchemaRegistry::DomainToVersionRange::Instance();
   d.AddDomainToVersion(popart::Domain::ai_graphcore, 1, 1);
@@ -1213,6 +1284,10 @@ static bool registerOps() {
   ONNX_NAMESPACE::RegisterSchema(
       GetOpSchema<ONNX_OPERATOR_SET_SCHEMA_CLASS_NAME(
           AiGraphcore, 1, Reverse)>());
+
+  ONNX_NAMESPACE::RegisterSchema(
+      GetOpSchema<ONNX_OPERATOR_SET_SCHEMA_CLASS_NAME(
+          AiGraphcore, 1, ScatterReduce)>());
 
   return true;
 }

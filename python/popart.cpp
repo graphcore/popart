@@ -22,6 +22,7 @@
 #include <popart/op/init.hpp>
 #include <popart/op/l1.hpp>
 #include <popart/op/nll.hpp>
+#include <popart/op/scatterreduce.hpp>
 #include <popart/opmanager.hpp>
 #include <popart/optimizer.hpp>
 #include <popart/optimizervalue.hpp>
@@ -702,6 +703,10 @@ PYBIND11_MODULE(popart_core, m) {
              ReductionType::NoReduction,
              DOC(popart, ReductionType, NoReduction));
     en.value("Sum", ReductionType::Sum, DOC(popart, ReductionType, Sum));
+  }
+  {
+    py::enum_<ScatterReduction> en(m, "ScatterReduction");
+    en.value("Sum", ScatterReduction::Sum);
   }
   {
     py::class_<OptimizerValue> optimizerValue(m, "OptimizerValue");
@@ -2436,6 +2441,13 @@ PYBIND11_MODULE(popart_core, m) {
             py::arg("keepdims")     = 1,
             py::arg("debugContext") = std::string(),
             DOC(popart, AiGraphcoreOpset1, reducemedian));
+    cls.def("scatterreduce",
+            &AiGraphcoreOpset1::scatterreduce,
+            py::arg("args") = pybind11::list(),
+            py::arg("axis_size"),
+            py::arg("axis")         = -1,
+            py::arg("reduction")    = ScatterReduction::Sum,
+            py::arg("debugContext") = std::string());
   }
   {
     py::class_<Builder> cls(m, "_BuilderCore");

@@ -338,6 +338,7 @@ const static AiGraphcoreOpIdV1 ScaledAddLhsInplace("ScaledAddLhsInplace");
 const static AiGraphcoreOpIdV1 ScaledAddRhsInplace("ScaledAddRhsInplace");
 const static AiGraphcoreOpIdV1 ScaledVarUpdate("ScaledVarUpdate");
 const static AiGraphcoreOpIdV1 ScaleInplace("ScaleInplace");
+const static AiGraphcoreOpIdV1 ScatterReduce("ScatterReduce", 2, 1);
 const static AiGraphcoreOpIdV1 SeluInplace("SeluInplace");
 const static AiGraphcoreOpIdV1 SGD0VarUpdate("SGD0VarUpdate");
 const static AiGraphcoreOpIdV1 SGD1AcclUpdate("SGD1AcclUpdate");
@@ -414,8 +415,9 @@ const static OperatorIdentifier BinaryConstScalar =
     CustomOperators::BinaryConstScalar;
 const static OperatorIdentifier ShapedDropout =
     CustomOperators::ShapedDropout_1;
-const static OperatorIdentifier Subsample = CustomOperators::Subsample_1;
-const static OperatorIdentifier Abort     = CustomOperators::Abort;
+const static OperatorIdentifier Subsample     = CustomOperators::Subsample_1;
+const static OperatorIdentifier Abort         = CustomOperators::Abort;
+const static OperatorIdentifier ScatterReduce = CustomOperators::ScatterReduce;
 } // namespace OpSet1
 } // namespace AiGraphcore
 
@@ -437,6 +439,7 @@ const static AiGraphcoreOpIdV1 IfGrad("IfGrad");
 const static AiGraphcoreOpIdV1 L1Grad("L1Grad");
 const static AiGraphcoreOpIdV1 NllGrad("NllGrad");
 const static AiGraphcoreOpIdV1 CtcGrad("CtcGrad");
+const static AiGraphcoreOpIdV1 ScatterReduceGradOp("ScatterReduceGradOp");
 const static AiGraphcoreOpIdV1 SoftmaxGradDirect("SoftmaxGradDirect");
 const static AiGraphcoreOpIdV1 SubsampleGrad("SubsampleGrad");
 const static AiGraphcoreOpIdV1 UnaryZeroGradOp("UnaryZeroGrad");
