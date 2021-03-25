@@ -51,12 +51,16 @@
 // LossScaleUpdateOp takes both of these scalars as inputs, and outputs updated
 // versions.
 
+// In the simplest case, the transform is as follows.
+//
 // Before:
 //
 // lossGrad -- ... -- ConvWeightsGrad -- t0 -- ...
 //  (*= ls)    ... -- Matmul -- t1 -- ...
 
 // After:
+
+// (Case 0, No graph replication or gradient accumulation)
 //
 // lossGrad -- ... -- ConvWeightsGrad --- t0 -- ...
 //  (*= ls)                                |
@@ -70,6 +74,68 @@
 //                                   inverse_ls ---'     ||
 //                                                       |'- ls_updated
 //                                                       '-- inverse_ls_updated
+
+// (Case 1, With graph replication enabled)
+//
+// .. HistogramOp -- t0_stats -.
+//                              \
+// .. HistogramOp -- t1_stats -- SumOp
+//                                |
+//                           stats_summed
+//                                |
+//                       ReplicatedAllReduceOp
+//                                |
+//                        stats_summed_reduced
+//                                |
+//              ls ------ LossScaleUpdateOp
+//          inverse_ls ---'     ||
+//                              |'- ls_updated
+//                              '-- inverse_ls_updated
+
+// (Case 2, With gradient accumulation enabled)
+//
+// .. HistogramOp -- t0_stats -.
+//                              \
+// .. HistogramOp -- t1_stats -- SumOp
+//                                |
+//                           stats_summed   stats_to_accl
+//                                |          /    |
+//                             AddRhsInplaceOp     - AccumulatorUpdateOp (a.o.f)
+//                                    |                         |
+//                               stats_accld             stats_to_accl_reset
+//                                    |
+//                  ls ------ LossScaleUpdateOp (a.o.f)
+//              inverse_ls ---'     ||
+//                                  |'- ls_updated
+//                                  '-- inverse_ls_updated
+//
+// (where a.o.f means is assigned to the
+//  ExecutionContext::AccumulateOuterFragment)
+
+// (Case 3, With both graph replication and gradient accumulation enabled)
+//
+// .. HistogramOp -- t0_stats -.
+//                              \
+// .. HistogramOp -- t1_stats -- SumOp
+//                                |
+//                           stats_summed   stats_to_accl
+//                                |          /    |
+//                             AddRhsInplaceOp     - AccumulatorUpdateOp (a.o.f)
+//                                    |                         |
+//                               stats_accld             stats_to_accl_reset
+//                                    |
+//                        ReplicatedAllReduceOp (a.o.f)
+//                                    |
+//                            stats_accld_reduced
+//                                    |
+//                  ls ------ LossScaleUpdateOp (a.o.f)
+//              inverse_ls ---'     ||
+//                                  |'- ls_updated
+//                                  '-- inverse_ls_updated
+//
+// (where a.o.f means is assigned to the
+//  ExecutionContext::AccumulateOuterFragment)
+
 namespace popart {
 
 class AutomaticLossScale : public Transform {

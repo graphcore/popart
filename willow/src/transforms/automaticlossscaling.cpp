@@ -2,6 +2,8 @@
 
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
+#include <popart/op/accumulatorupdate.hpp>
+#include <popart/op/add.hpp>
 #include <popart/op/collectives/replicatedallreduce.hpp>
 #include <popart/op/convbase.hpp>
 #include <popart/op/histogram.hpp>
@@ -87,6 +89,20 @@ std::vector<float> getLevels(Tensor *tensor) {
   }
 }
 
+bool doingGraphReplication(const Graph &graph) {
+  auto &ir = graph.getIr();
+
+  return ir.getSessionOptions().enableReplicatedGraphs &&
+         ir.getSessionOptions().replicatedGraphCount > 1;
+}
+
+bool doingGradientAccumulation(const Graph &graph) {
+  auto &ir = graph.getIr();
+
+  return ir.getSessionOptions().enableGradientAccumulation &&
+         ir.getSessionOptions().accumulationFactor > 1;
+}
+
 } // namespace
 
 std::size_t AutomaticLossScale::id() {
@@ -125,6 +141,10 @@ Tensor *AutomaticLossScale::getLossScaleTensor(const Graph &graph) {
   return lossScaleTensor;
 }
 
+TensorId getStatisticsAccumulatorTensorId() {
+  return reservedAcclPrefix() + std::string("autoLossScaleStats");
+}
+
 Tensor *AutomaticLossScale::getInverseLossScaleTensor(const Graph &graph) {
   const Ir &ir               = graph.getIr();
   const Optimizer &optimizer = ir.getOptimizer();
@@ -150,10 +170,19 @@ Tensor *AutomaticLossScale::getInverseLossScaleTensor(const Graph &graph) {
     auto variables = graph.getTensors().getOfType(TensorType::Variable);
     auto dtype     = variables.front()->info.dataType();
     for (Tensor *variable : variables) {
+      if (variable->id == getStatisticsAccumulatorTensorId()) {
+        continue;
+      }
+
       if (variable->info.dataType() != dtype) {
         throw error("[AutomaticLossScale transform] All Variable tensors must "
                     "have the same data type to ensure there is only one "
-                    "inverse loss scale tensor used in the graph.");
+                    "inverse loss scale tensor used in the graph. Tensor '{}' "
+                    "has dtype {}, but tensor '{}' has dtype {}",
+                    variable->id,
+                    variable->info.data_type(),
+                    variables.front()->id,
+                    variables.front()->info.data_type());
       }
     }
 
@@ -177,9 +206,8 @@ bool AutomaticLossScale::apply(Graph &graph) const {
   // Some checks:
   // 1. Must be a training session
   // 2. The optimizer's loss scaling is non-const
-  // 3. Not compatible with gradient accumulation: (T33956)
-  // 4. Not compatible with pipelining: (T33956)
-  // 5. Not compatible with non-SGD optimizer
+  // 3. Not compatible with pipelining: (T33956)
+  // 4. Not compatible with non-SGD optimizer
 
   // 1.
   auto &ir = graph.getIr();
@@ -195,20 +223,13 @@ bool AutomaticLossScale::apply(Graph &graph) const {
   }
 
   // 3.
-  if (ir.getSessionOptions().enableGradientAccumulation) {
-    throw error("[AutomaticLossScale transform] Automatic loss scaling is not "
-                "currently supported when the 'enableGradientAccumulation' "
-                "SessionOption is set to 'true'");
-  }
-
-  // 4.
   if (ir.getSessionOptions().enablePipelining == true) {
     throw error("[AutomaticLossScale transform] Automatic loss scaling is not "
                 "currently supported when the 'enablePipelining' SessionOption "
                 "is set to 'true'");
   }
 
-  // 5.
+  // 4.
   if (ir.getOptimizer().type() != OptimizerType::SGD) {
     throw error("[AutomaticLossScale transform] Only compatible when using the "
                 "SGD optimizer type, but you are using '{}'",
@@ -224,7 +245,11 @@ bool AutomaticLossScale::apply(Graph &graph) const {
                               tensor->id);
 
     // Attach a newly created HistogramOp to each tensor
-    auto histogramOp = graph.createOp<HistogramOp>(Onnx::CustomOperators::Histogram, getLevels(tensor), absoluteOfInput(), Op::Settings(graph, ""));
+    auto histogramOp =
+        graph.createOp<HistogramOp>(Onnx::CustomOperators::Histogram,
+                                    getLevels(tensor),
+                                    absoluteOfInput(),
+                                    Op::Settings(graph, ""));
 
     histogramOp->connectInTensor(HistogramOp::getInIndex(), tensor->id);
     histogramOp->createAndConnectOutTensor(HistogramOp::getOutIndex(),
@@ -254,11 +279,17 @@ bool AutomaticLossScale::apply(Graph &graph) const {
       LossScaleUpdateOp::getInverseLossScaleInIndex(),
       inverseLossScaleTensor->id);
 
-  if (ir.getSessionOptions().enableReplicatedGraphs &&
-      ir.getSessionOptions().replicatedGraphCount > 1) {
-    // To minimise the number of reductions over replicas, first sum the
-    // histogram tensors, then perform a single sum reduction, then pass
-    // the result to the LossScaleUpdateOp
+  // The grad statistics tensors to connect to the LossScaleUpdateOp
+  std::vector<Tensor *> finalStatisticsTensors;
+
+  // Case 0
+  if (!(doingGraphReplication(graph) || doingGradientAccumulation(graph))) {
+    finalStatisticsTensors = histogramOutputs;
+  }
+
+  // Case 1, 2 or 3: Sum the statistics tensors
+  else {
+    // Sum the histogram tensors
     auto statsSumOp =
         graph.createOp<SumOp>(Onnx::Operators::Sum_8, Op::Settings(graph, ""));
 
@@ -269,40 +300,93 @@ bool AutomaticLossScale::apply(Graph &graph) const {
 
     statsSumOp->createAndConnectOutTensor(SumOp::getOutIndex(),
                                           "summedHistograms");
+    statsSumOp->inheritPlacementAttributes(false);
     statsSumOp->setup();
+
+    finalStatisticsTensors = {statsSumOp->outTensor(SumOp::getOutIndex())};
+  }
+
+  // Case 2 or 3, Accumulate the summed gradient statistics in the inner loop,
+  // reset the accumulator in the outer loop.
+  if (doingGradientAccumulation(graph)) {
+    Tensor *inTensor = finalStatisticsTensors.back();
+
+    // 1. add variable accl tensor, set tensor data to zeros
+    TensorId toAcclId = getStatisticsAccumulatorTensorId();
+    std::vector<uint32_t> d(inTensor->info.nelms(), 0);
+    graph.getTensors().addVarInit(toAcclId, inTensor->info, d.data());
+
+    // 2. add op to accumulate
+    auto statsAcclOp = graph.createOp<AddRhsInplaceOp>(Op::Settings(graph, ""));
+    statsAcclOp->connectInTensor(AddRhsInplaceOp::getArg0InIndex(),
+                                 inTensor->id);
+    statsAcclOp->connectInTensor(AddRhsInplaceOp::getArg1InIndex(), toAcclId);
+    statsAcclOp->createAndConnectOutTensor(AddRhsInplaceOp::getOutIndex(),
+                                           inTensor->id + "_accld");
+    statsAcclOp->inheritPlacementAttributes(false);
+    statsAcclOp->setup();
+    TensorId accldId = statsAcclOp->outId(AddRhsInplaceOp::getOutIndex());
+
+    // 3. add AccumulatorUpdateOp to reset the accl tensor
+    auto statsAcclResetOp = graph.createOp<AccumulatorUpdateOp>(
+        OptimizerValue(0.0f), Op::Settings(graph, ""));
+    statsAcclResetOp->connectInTensor(
+        AccumulatorUpdateOp::getVarToUpdateInIndex(), toAcclId);
+    statsAcclResetOp->createAndConnectOutTensor(
+        AccumulatorUpdateOp::getUpdatedVarOutIndex(),
+        inTensor->id + "_accld_reset");
+    statsAcclResetOp->inheritPlacementAttributes(false);
+    statsAcclResetOp->setup();
+
+    // Reset the accumulator, and update the loss in the outer fragment
+    statsAcclResetOp->settings.executionContext =
+        ExecutionContext::AccumulateOuterFragment;
+    lossScaleUpdateOp->settings.executionContext =
+        ExecutionContext::AccumulateOuterFragment;
+
+    graph.topoCons->insert(lossScaleUpdateOp, statsAcclResetOp);
+
+    finalStatisticsTensors = {
+        statsAcclOp->outTensor(AddRhsInplaceOp::getOutIndex())};
+  }
+
+  // Case 1 or 3, Reduce the summed or accumulated statistics tensor
+  if (doingGraphReplication(graph)) {
+    TensorId inId = finalStatisticsTensors.back()->id;
 
     auto reduceOp = graph.createOp<ReplicatedAllReduceOp>(
         Onnx::CustomOperators::ReplicatedAllReduce,
-        Op::Settings(graph, statsSumOp->name() + "_reduce"));
+        Op::Settings(graph, inId + "_reduced"));
 
-    reduceOp->connectInTensor(ReplicatedAllReduceOp::getInIndex(),
-                              statsSumOp->outTensor(SumOp::getOutIndex())->id);
+    reduceOp->connectInTensor(ReplicatedAllReduceOp::getInIndex(), inId);
     reduceOp->createAndConnectOutTensor(ReplicatedAllReduceOp::getOutIndex(),
                                         "summedHistograms_reduced");
+    reduceOp->inheritPlacementAttributes(false);
     reduceOp->setup();
 
-    lossScaleUpdateOp->connectInTensor(
-        LossScaleUpdateOp::getFirstStatisticsTensorInIndex(),
-        reduceOp->outId(ReplicatedAllReduceOp::getOutIndex()));
+    // Case 3
+    if (doingGradientAccumulation(graph)) {
+      reduceOp->settings.executionContext =
+          ExecutionContext::AccumulateOuterFragment;
+    }
+    // Case 1
+    else {
+      reduceOp->settings.executionContext = ExecutionContext::Normal;
+    }
 
-    if (lossScaleTensor->hasVirtualGraphId()) {
-      statsSumOp->setVirtualGraphId(lossScaleTensor->getVirtualGraphId());
-      reduceOp->setVirtualGraphId(lossScaleTensor->getVirtualGraphId());
-    }
-  } else {
-    for (int i = 0; i < histogramOutputs.size(); i++) {
-      Tensor *tensor = histogramOutputs.at(i);
-      lossScaleUpdateOp->connectInTensor(
-          i + LossScaleUpdateOp::getFirstStatisticsTensorInIndex(), tensor->id);
-    }
+    finalStatisticsTensors = {
+        reduceOp->outTensor(ReplicatedAllReduceOp::getOutIndex())};
+  }
+
+  for (int i = 0; i < finalStatisticsTensors.size(); i++) {
+    Tensor *tensor = finalStatisticsTensors.at(i);
+    lossScaleUpdateOp->connectInTensor(
+        i + LossScaleUpdateOp::getFirstStatisticsTensorInIndex(), tensor->id);
   }
 
   if (lossScaleTensor->hasVirtualGraphId()) {
     lossScaleUpdateOp->setVirtualGraphId(lossScaleTensor->getVirtualGraphId());
   }
-
-  // TODO: T33956 if pipelining, cannot be continuous updates.
-  // assign lossScaleUpdateOp to outer accumulation scope.
 
   lossScaleUpdateOp->createAndConnectOutTensor(
       LossScaleUpdateOp::getUpdatedLossScaleOutIndex(),
@@ -311,6 +395,16 @@ bool AutomaticLossScale::apply(Graph &graph) const {
       LossScaleUpdateOp::getUpdatedInverseLossScaleOutIndex(),
       inverseLossScaleTensor->id + "_updated");
   lossScaleUpdateOp->setup();
+
+  // Case 2 or 3, execute the loss scale update in the outer fragment
+  if (doingGradientAccumulation(graph)) {
+    lossScaleUpdateOp->settings.executionContext =
+        ExecutionContext::AccumulateOuterFragment;
+  }
+  // Case 0 or 1
+  else {
+    lossScaleUpdateOp->settings.executionContext = ExecutionContext::Normal;
+  }
 
   // Ensure that all other consumers of loss scale tensor run before the loss
   // scale update runs. The loss is scaled at the start of the backwards pass,

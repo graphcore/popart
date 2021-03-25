@@ -293,33 +293,6 @@ def test_auto_loss_scaling_expected_loss_scale_tensor_values():
             prev_loss_scale = anchors[loss_scale_id][i]
 
 
-def test_auto_loss_scaling_and_grad_accumulation():
-    """
-    Create a Session with automatic loss scaling and gradient accumulation
-    enabled, and see that an incompatibility error is thrown.
-    """
-    builder = popart.Builder()
-
-    t0 = builder.addInputTensor("FLOAT", [2, 2])
-    mm0 = builder.aiOnnx.matmul([t0, t0])
-    loss = builder.aiGraphcore.identityloss([mm0])
-
-    optimizer = popart.SGD({"lossScaling": (2, False)})
-
-    opts = popart.SessionOptions()
-    opts.enableAutomaticLossScaling = True
-    opts.enableGradientAccumulation = True
-
-    with pytest.raises(popart.popart_exception) as e_info:
-        session = popart.TrainingSession(builder.getModelProto(),
-                                         deviceInfo=tu.create_test_device(),
-                                         dataFlow=popart.DataFlow(1, [loss]),
-                                         loss=loss,
-                                         optimizer=optimizer,
-                                         userOptions=opts)
-    assert e_info.value.args[0].endswith("Automatic loss scaling is not currently supported when the 'enableGradientAccumulation' SessionOption is set to 'true'")
-
-
 def test_auto_loss_scaling_with_non_sgd_optimizer():
     """
     Create a Session with automatic loss scaling and a non-sgd optimizer,
@@ -429,7 +402,7 @@ def compare_weights(session0, session1, tmpdir):
         assert np.array_equal(session0_weights[init_name], session1_weights[init_name])
 
 
-def run_automatic_loss_scaling_comparison_test(tmpdir, shard=False, pipeline=False, replicate=False):
+def run_automatic_loss_scaling_comparison_test(tmpdir, shard=False, pipeline=False, replicate=False, grad_accumulate=False):
     """
     An integration test: verify that the weight updats computed by a session
     with auto loss scaling (ALS) enabled are identical to those with ALS
@@ -441,6 +414,10 @@ def run_automatic_loss_scaling_comparison_test(tmpdir, shard=False, pipeline=Fal
     if replicate:
         replicas = 2
         step_size *= replicas
+    if grad_accumulate:
+        accumulation_factor = 3
+        step_size *= accumulation_factor
+
     init_ls = 10.0
     optimizer = popart.SGD({"lossScaling": (init_ls, False),
                             "defaultMomentum": (0.5, False),
@@ -462,6 +439,9 @@ def run_automatic_loss_scaling_comparison_test(tmpdir, shard=False, pipeline=Fal
         num_ipus *= replicas
         opts.enableReplicatedGraphs = True
         opts.replicatedGraphCount = replicas
+    if grad_accumulate:
+        opts.enableGradientAccumulation = True
+        opts.accumulationFactor = accumulation_factor
 
     ref_session = popart.TrainingSession(fnModel=proto,
                                          deviceInfo=tu.create_test_device(num_ipus),
@@ -497,7 +477,11 @@ def run_automatic_loss_scaling_comparison_test(tmpdir, shard=False, pipeline=Fal
 
     # Verify that the loss scale has changed from its initial value
     for i in range(bps):
-        for ls in als_anchors[ls_id].flatten():
+        if grad_accumulate:
+            updated_loss_scales = [als_anchors[ls_id].flatten()[-1]]
+        else:
+            updated_loss_scales = als_anchors[ls_id].flatten()
+        for ls in updated_loss_scales:
             assert ls != init_ls
 
     # Update the optimizer
@@ -531,3 +515,75 @@ def test_auto_loss_scaling_identical_weight_updates_sharded(tmpdir):
 @tu.requires_ipu_model
 def test_auto_loss_scaling_identical_weight_updates_pipelined(tmpdir):
     run_automatic_loss_scaling_comparison_test(tmpdir, shard=True, pipeline=True)
+
+
+def test_auto_loss_scaling_identical_weight_updates_grad_accumulation(tmpdir):
+    run_automatic_loss_scaling_comparison_test(tmpdir, grad_accumulate=True)
+
+
+@pytest.mark.skip("T33956: ALS not supported with pipelined models")
+@tu.requires_ipu_model
+def test_auto_loss_scaling_identical_weight_updates_grad_accumulation_pipeline(tmpdir):
+    run_automatic_loss_scaling_comparison_test(tmpdir, grad_accumulate=True, shard=True, pipeline=True)
+
+
+def test_loss_scale_updates_with_grad_accumulation_correctness():
+    """
+    Run a session that has gradient accumulation and auto loss scaling
+    enabled. Verify that:
+    1. the loss scale is updated in the outer loop
+    2. the gradient statistics are accumulated in the inner loop
+    """
+    init_ls = 1000.0
+    optimizer = popart.SGD({"lossScaling": (init_ls, False)})
+    accumulation_factor = 5
+
+    opts = popart.SessionOptions()
+    opts.enableAutomaticLossScaling = True
+    opts.enableGradientAccumulation = True
+    opts.accumulationFactor = accumulation_factor
+
+    loss, proto, t0, t_shape, label, label_shape = getModelProto()
+    bps = 4
+
+    accl_stats_id = "Accl___autoLossScaleStats"
+    ls_id = "lossScaling_FLOAT16_updated"
+    session = popart.TrainingSession(fnModel=proto,
+                                     deviceInfo=tu.create_test_device(),
+                                     dataFlow=popart.DataFlow(bps, [accl_stats_id, ls_id]),
+                                     loss=loss,
+                                     optimizer=optimizer,
+                                     userOptions=opts)
+    session.prepareDevice()
+    session.weightsFromHost()
+    anchors = session.initAnchorArrays()
+
+    step_size = bps * accumulation_factor
+    t0_data = 10000.0 * np.random.rand(step_size, *t_shape).astype(np.float16)
+    label_data = np.random.randint(0, label_shape[0], step_size*label_shape[0]).astype(np.int32)
+    inputs = {t0: t0_data, label: label_data}
+
+    session.run(popart.PyStepIO(inputs, anchors))
+
+    # 1.
+    prev_ls0 = init_ls
+    for i in range(len(anchors[ls_id])):
+        ls0 = anchors[ls_id][i][0]
+        for j in range(len(anchors[ls_id][0])):
+            # loss scale is the same within inner loops
+            assert anchors[ls_id][i][j] == ls0
+
+        if i > 0:
+            # loss scale has been updated between outer loops
+            assert ls0 != prev_ls0
+
+    # 2.
+    for batch_stats in anchors[accl_stats_id]:
+        for minibatch_idx, minibatch in enumerate(batch_stats):
+            # how many elements are there in the grad tensors to be tracked?
+            # np.prod(t_shape) for each of:
+            #  - conv weights grad
+            #  - conv data grad
+            #  - matmul weights grad
+            num_elms_gradstats = 3 * np.prod(t_shape)
+            assert np.sum(minibatch) == num_elms_gradstats * (minibatch_idx + 1)
