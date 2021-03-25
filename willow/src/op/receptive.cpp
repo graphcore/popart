@@ -204,7 +204,6 @@ void HasReceptiveFieldOp::alterPads(Shape &pads_,
   for (auto i = 0; i < spatialO_.size(); i++) {
     pads_[i] = (spatialO_[i] - 1) * strides_[i] + spatialK_[i] - spatialD_[i];
   }
-  logging::debug("result pads {}", pads_);
 }
 
 Shape HasReceptiveFieldOp::getOutShape(const Shape &pads) const {

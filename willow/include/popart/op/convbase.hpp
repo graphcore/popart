@@ -197,7 +197,7 @@ public:
         static_cast<int>(getNSpatialDims(convIndex)),
         AutoPad::NOTSET);
   }
-  Shape getOutShape(int convIndex) const;
+  Shape getOutShape(int convIndex, const ConvPads &pads) const;
 
   // Conv parameters, packaged into a single struct
   ConvParameters getParameters(int convIndex) const;

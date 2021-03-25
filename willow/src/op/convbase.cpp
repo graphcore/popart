@@ -135,7 +135,7 @@ MultiConvBaseOp::MultiConvBaseOp(const OperatorIdentifier &_opid,
     : Op(_opid, settings_), flatStrides(flatStrides_), flatPads(flatPads_),
       flatDilations(flatDilations_), convOpts(convOpts_), padType(padType_) {}
 
-Shape MultiConvBaseOp::getOutShape(int convIndex) const {
+Shape MultiConvBaseOp::getOutShape(int convIndex, const ConvPads &pads) const {
   Shape outShape(2 + getNSpatialDims(convIndex), 0);
   outShape[0] = inInfo(getDataInIndex(convIndex)).dim(0); // batch size
   outShape[1] = getNOutChans(convIndex);
@@ -143,7 +143,7 @@ Shape MultiConvBaseOp::getOutShape(int convIndex) const {
   Shape spatialOutShape =
       HasReceptiveFieldOp::getSpatialOutShape(getSpatialD(convIndex),
                                               getSpatialK(convIndex),
-                                              getPads(convIndex),
+                                              pads,
                                               getOutPads(convIndex),
                                               getStrides(convIndex),
                                               getDilations(convIndex),
@@ -299,31 +299,31 @@ ConvPads MultiConvBaseOp::getPads(int64_t convIndex) const {
   const auto nSpatialDims          = getNSpatialDims(convIndex);
   const auto cumulativeSpatialDims = getCumulativeSpatialDims(convIndex);
 
-  ConvPads result;
+  ConvPads pads;
   if (flatPads.empty()) {
-    result.resize(2 * nSpatialDims, 0);
+    pads.resize(2 * nSpatialDims, 0);
   } else {
     const auto cumulativePads = cumulativeSpatialDims * 2;
-    result                    = {flatPads.begin() + cumulativePads,
-              flatPads.begin() + cumulativePads + (nSpatialDims * 2)};
+    pads                      = {flatPads.begin() + cumulativePads,
+            flatPads.begin() + cumulativePads + (nSpatialDims * 2)};
   }
 
   // Alter pads if necessary, based on AutoPad type
   if (padType == AutoPad::SAME_LOWER || padType == AutoPad::SAME_UPPER) {
-    const auto outShape = getOutShape(convIndex);
+    const auto outShape = getOutShape(convIndex, pads);
     Shape spatialO(nSpatialDims, 0);
     for (int j = 0; j < nSpatialDims; ++j) {
       spatialO[j] = outShape[j + 2];
     }
 
-    HasReceptiveFieldOp::alterPads(result,
+    HasReceptiveFieldOp::alterPads(pads,
                                    spatialO,
                                    getSpatialD(convIndex),
                                    getSpatialK(convIndex),
                                    getStrides(convIndex));
   }
 
-  return result;
+  return pads;
 }
 
 ConvPads MultiConvBaseOp::getOutPads(int64_t convIndex) const {
@@ -375,7 +375,7 @@ void MultiConvBaseOp::setup() {
   // Set output shapes
   for (int i = 0; i < numConvs(); i++) {
     outInfo(getOutIndex(i))
-        .set(inInfo(getDataInIndex(i)).dataType(), getOutShape(i));
+        .set(inInfo(getDataInIndex(i)).dataType(), getOutShape(i, getPads(i)));
   }
 }
 
