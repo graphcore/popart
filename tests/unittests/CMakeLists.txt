@@ -32,3 +32,7 @@
 add_popart_cpp_unit_test(unittest_example unittest_example.cpp TEST_UTILS trompeloeil)
 add_popart_cpp_unit_test(unittest_utils unittest_utils.cpp TEST_UTILS trompeloeil)
 add_popart_cpp_unit_test(unittest_Session_createFromIr session_createFromIr.cpp)
+
+add_popart_cpp_unit_test(unittest_irquerier testutil/unittest_irquerier.cpp TEST_UTILS ir-query-test-util trompeloeil)
+
+add_popart_cpp_unit_test(unittest_autodiff transforms/unittest_autodiff.cpp TEST_UTILS ir-query-test-util)

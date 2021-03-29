@@ -81,6 +81,19 @@ function(extract_targets variants targets)
   set(${targets} ${extracted_targets} PARENT_SCOPE)
 endfunction()
 
+function(link_boost target)
+  target_link_libraries(${target}
+    PRIVATE
+      ${boost_targets}
+  )
+  if(BUILD_SHARED_LIBS)
+    target_compile_definitions(${target}
+      PRIVATE
+        BOOST_TEST_DYN_LINK
+  )
+  endif()
+endfunction()
+
 # Usage: add_test_exectuable(<exe_name> <src1> ... TESTUTILS <util1> ...)
 # 
 # `exe_name`: name of executable.
@@ -111,15 +124,9 @@ function(add_test_executable name)
     PRIVATE
       popart-internal
       ${CMAKE_THREAD_LIBS_INIT}
-      ${boost_targets}
       ${add_test_exe_TEST_UTILS}
   )
-  if(BUILD_SHARED_LIBS)
-    target_compile_definitions(${name}
-      PRIVATE
-        BOOST_TEST_DYN_LINK
-    )
-  endif()
+  link_boost(${name})
 
   set_property(TARGET ${name}
               APPEND_STRING PROPERTY

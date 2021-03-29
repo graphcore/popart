@@ -58,3 +58,52 @@ set_target_properties(test-graphs-test-util
       POSITION_INDEPENDENT_CODE ON
 )
 target_compile_features(test-graphs-test-util PUBLIC cxx_std_14)
+
+############# irquery #############
+
+set(irquery_test_util_src_dir ${test_util_root_src_dir}/irquery)
+set(irquery_test_util_public_headers_dir
+    ${test_util_root_public_headers_dir}/irquery
+)
+
+set(irquery_test_util_sources
+    ${irquery_test_util_src_dir}/irquerier.cpp
+)
+
+set(irquery_test_util_public_headers
+    ${irquery_test_util_public_headers_dir}/irquerier.hpp
+)
+
+add_library(ir-query-test-util SHARED
+    ${irquery_test_util_sources}
+    ${irquery_test_util_public_headers}
+)
+target_include_directories(ir-query-test-util
+    PUBLIC
+      ${test_util_include_dir_for_libs}
+)
+target_link_libraries(ir-query-test-util
+    PUBLIC popart
+)
+link_boost(ir-query-test-util)
+
+set_target_properties(ir-query-test-util
+    PROPERTIES
+      # Must use C++14 as popart is only C++14 and has headers that define
+      # the same things differently depending on the C++ standard, e.g.
+      # optional.hpp. Thus, using C++17 will result in undefined symbols at link
+      # time.
+      #
+      # This is because, when libpopart.so was compiled, which has the
+      # implementation of the function, the symbols will have certain names
+      # based on the defines in the header.
+      #
+      # When we include those same headers under C++17, the defines are
+      # different, so different symbol names are generated. This then results in
+      # undefined references at link time.
+      CXX_EXTENSIONS OFF
+
+      # Need pic to make dynamic library with static libs.
+      POSITION_INDEPENDENT_CODE ON
+)
+target_compile_features(ir-query-test-util PUBLIC cxx_std_14)
