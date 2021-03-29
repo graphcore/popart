@@ -13,27 +13,30 @@ BOOST_AUTO_TEST_CASE(SgdMixedModeTestCpp1_8) {
       {"defaultVelocityScaling", {14.15f, false}},
       {"lossScaling", {0.15f, false}},
   });
-  auto opt1    = opt0;
-  auto opt2    = opt0;
-  bool wAccl   = true;
-  bool wRepl   = true;
-  auto results = getResults<float>(opt0, opt1, opt2, wAccl, wRepl);
+  auto opt1  = opt0;
+  auto opt2  = opt0;
+  bool wAccl = true;
 
-  if (results != acquisitionFailure) {
-    // int64_t correction = replicationFactor * accumulationFactor;
-    int64_t correction =
-        (wRepl ? replicationFactor : 1) * (wAccl ? accumulationFactor : 1);
+  for (auto wRepl : {true, false}) {
+    auto results = getResults<float>(opt0, opt1, opt2, wAccl, wRepl);
 
-    // including factor 2 for accumulation factor and 3 for replication factor
-    auto absdiff0 =
-        getAbsDiff(100 - correction * 6 * learningRate, std::get<0>(results));
-    BOOST_CHECK(absdiff0 < 1e-5f);
-    auto absdiff1 =
-        getAbsDiff(200 - correction * 6 * learningRate, std::get<1>(results));
-    BOOST_CHECK(absdiff1 < 1e-5f);
-  }
+    if (results != acquisitionFailure) {
+      // int64_t correction = replicationFactor * accumulationFactor;
+      int64_t correction =
+          (wRepl ? replicationFactor : 1) * (wAccl ? accumulationFactor : 1);
 
-  else {
-    std::cout << "Failed to acquire device, test not run!";
+      // including factor 2 for accumulation factor and 3 for replication factor
+      auto absdiff0 =
+          getAbsDiff(100 - correction * 6 * learningRate, std::get<0>(results));
+
+      BOOST_CHECK(absdiff0 < 1e-9f);
+      auto absdiff1 =
+          getAbsDiff(200 - correction * 6 * learningRate, std::get<1>(results));
+      BOOST_CHECK(absdiff1 < 1e-9f);
+    }
+
+    else {
+      std::cout << "Failed to acquire device, test not run!";
+    }
   }
 }
