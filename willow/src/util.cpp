@@ -10,6 +10,8 @@
 #include <popart/tensorindex.hpp>
 #include <popart/util.hpp>
 
+#include <boost/lexical_cast.hpp>
+
 namespace popart {
 
 char *getPopartEnvVar(std::string env_var) {
@@ -112,6 +114,90 @@ std::vector<uint64_t> getAxes_u64(const std::vector<int64_t> &axes,
     axes_u64.push_back(d);
   }
   return axes_u64;
+}
+
+namespace {
+template <typename S, typename D>
+void cast(const void *src, void *dst, size_t nelms) {
+  for (size_t i = 0; i < nelms; ++i) {
+    *(reinterpret_cast<D *>(dst) + i) =
+        boost::numeric_cast<D, S>(*(reinterpret_cast<const S *>(src) + i));
+  }
+}
+} // namespace
+
+std::vector<char>
+cast(DataType src, DataType dst, const void *data, size_t nbytes) {
+  const DataTypeInfo *srcDataTypeInfo = &getDataTypeInfoMap().at(src);
+  const DataTypeInfo *dstDataTypeInfo = &getDataTypeInfoMap().at(dst);
+
+  size_t nelms     = nbytes / srcDataTypeInfo->nbytes();
+  size_t dstnbytes = nelms * dstDataTypeInfo->nbytes();
+
+  if (dstnbytes < nbytes) {
+    logging::info("[cast] Narrowing cast from {} to {}", src, dst);
+  }
+
+  std::vector<char> outData(dstnbytes);
+
+  const void *srcData = data;
+  void *dstData       = static_cast<void *>(outData.data());
+
+  auto err = [&src, &dst]() {
+    throw error("[cast] Unsupported cast data types {} -> {}", src, dst);
+  };
+
+  try {
+    switch (src) {
+    case DataType::INT32:
+      switch (dst) {
+      case DataType::INT64:
+        cast<int32_t, int64_t>(srcData, dstData, nelms);
+        break;
+      default:
+        err();
+      }
+      break;
+    case DataType::UINT32:
+      switch (dst) {
+      case DataType::UINT64:
+        cast<uint32_t, uint64_t>(srcData, dstData, nelms);
+        break;
+      default:
+        err();
+      }
+      break;
+    case DataType::INT64:
+      switch (dst) {
+      case DataType::INT32:
+        cast<int64_t, int32_t>(srcData, dstData, nelms);
+        break;
+      default:
+        err();
+      }
+      break;
+    case DataType::UINT64:
+      switch (dst) {
+      case DataType::UINT32:
+        cast<uint64_t, uint32_t>(srcData, dstData, nelms);
+        break;
+      default:
+        err();
+      }
+      break;
+    default:
+      err();
+    }
+  } catch (boost::bad_numeric_cast &e) {
+    throw error("[cast] Cast {} -> {} failed: {}", src, dst, e.what());
+  }
+
+  return outData;
+}
+
+std::vector<char>
+cast(DataType src, DataType dst, const std::vector<char> &data) {
+  return cast(src, dst, static_cast<const void *>(data.data()), data.size());
 }
 
 } // namespace popart

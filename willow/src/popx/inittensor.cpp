@@ -212,8 +212,14 @@ bool InitTensorLinear::initTensor(IrLowering &irLowering) const {
                        ? irLowering.graph()
                        : irLowering.getVirtualGraph(vgid.first, vgid.second);
 
+  auto dataType = tensor->info.dataType();
+
+  if (irLowering.ir().getSessionOptions().enableSupportedDataTypeCasting) {
+    dataType = getCompatibleDataType(dataType);
+  }
+
   auto newTensor = dstGraph.addVariable(
-      popType(tensor->info),
+      popType(dataType),
       tensor->info.shape_szt(),
       {poplar::DebugNameAndId(tensor->str(),
                               tensor->getDebugInfo().getId(),

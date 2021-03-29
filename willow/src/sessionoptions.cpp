@@ -166,8 +166,8 @@ SessionOptions::NumIOTiles::operator int() const {
 }
 
 // Assign value using int.
-SessionOptions::NumIOTiles &
-SessionOptions::NumIOTiles::operator=(const int &x) {
+SessionOptions::NumIOTiles &SessionOptions::NumIOTiles::
+operator=(const int &x) {
   value             = x;
   userAssignedValue = true;
   return *this;
@@ -225,8 +225,8 @@ ReductionType SessionOptions::getAccumulationReductionType() const {
 } // namespace popart
 
 namespace std {
-std::size_t hash<popart::SessionOptions>::operator()(
-    const popart::SessionOptions &so) const {
+std::size_t hash<popart::SessionOptions>::
+operator()(const popart::SessionOptions &so) const {
   // Hash based on all the SessionOptions attributes that
   // can affect compiled program
   std::size_t seed = 0;
@@ -272,6 +272,7 @@ std::size_t hash<popart::SessionOptions>::operator()(
   boost::hash_combine(seed, so.enableLoadAndOffloadRNGState);
   boost::hash_combine(seed, so.kahnTieBreaker);
   boost::hash_combine(seed, so.enableAutomaticLossScaling);
+  boost::hash_combine(seed, so.enableSupportedDataTypeCasting);
 
   boost::hash_combine(
       seed, static_cast<int>(so.accumulateOuterFragmentSettings.schedule));

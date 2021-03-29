@@ -2,6 +2,7 @@
 #include <onnx/onnx_pb.h>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
+#include <popart/onnxutil.hpp>
 #include <popart/op/ipucopy.hpp>
 #include <popart/op/scan.hpp>
 #include <popart/opmanager.hpp>
@@ -17,25 +18,16 @@ ScanOp::ScanOp(const OperatorIdentifier &_opid,
                const Op::Settings &settings_,
                Graph &callee_,
                int numScanInputs_,
+               int numImplicitInputs_,
                std::vector<int64_t> scanInputAxes_,
                std::vector<int64_t> scanInputDirections_,
                std::vector<int64_t> scanOutputAxes_,
-               std::vector<int64_t> scanOutputDirections_,
-               std::vector<std::pair<TensorId, TensorInfo>> opInputs_,
-               std::vector<TensorId> implicitTensors_)
+               std::vector<int64_t> scanOutputDirections_)
     : SubgraphOp(_opid, settings_), callee(callee_), tripCountValue(-1),
-      numImplicitInputs(implicitTensors_.size()), numScanInputs(numScanInputs_),
+      numImplicitInputs(numImplicitInputs_), numScanInputs(numScanInputs_),
       scanInputAxes(scanInputAxes_), scanInputDirections(scanInputDirections_),
       scanOutputAxes(scanOutputAxes_),
-      scanOutputDirections(scanOutputDirections_) {
-  for (int i = 0; i < opInputs_.size(); ++i) {
-    TensorId inId = opInputs_.at(i).first;
-    if (std::find(implicitTensors_.begin(), implicitTensors_.end(), inId) !=
-        implicitTensors_.end()) {
-      connectInTensor(i, opInputs_.at(i).first);
-    }
-  }
-}
+      scanOutputDirections(scanOutputDirections_) {}
 
 std::unique_ptr<Op> ScanOp::clone() const {
   return std::make_unique<ScanOp>(*this);
@@ -156,7 +148,7 @@ static OpDefinition scanOpDef({OpDefinition::Inputs({{"inputs", V}}),
 static OpCreator<ScanOp> scanOpCreator(
     OpDefinitions({{Onnx::Operators::Scan_9, scanOpDef},
                    {Onnx::Operators::Scan_11, scanOpDef}}),
-    [](const OpCreatorInfo &info) -> std::unique_ptr<Op> {
+    [](const OpCreatorInfo &info, Graph &graph) -> Op * {
       // Parse attributes
       auto numScanInputs =
           info.attributes.getAttribute<Attributes::Int>("num_scan_inputs");
@@ -180,19 +172,33 @@ static OpCreator<ScanOp> scanOpCreator(
 
       std::vector<std::pair<TensorId, TensorInfo>> opInputs;
 
-      for (int i = 0; i < info.getInputIds().size(); ++i) {
-        opInputs.push_back({info.getInputIds().at(i),
-                            tensors.get(info.getInputIds().at(i))->info});
+      if (info.hasInputIds()) {
+        for (int i = 0; i < info.getInputIds().size(); ++i) {
+          logging::op::trace(
+              "[ScanOp] Op input: {} - {}", i, info.getInputIds().at(i));
+          opInputs.push_back({info.getInputIds().at(i),
+                              tensors.get(info.getInputIds().at(i))->info});
+        }
       }
 
       int64_t numVariables = (opInputs.size() - numScanInputs);
 
       scanInputAxes.resize(numScanInputs, 0);
 
-      auto implicitTensors =
-          SubgraphOp::getImplicitTensors(callee, tensors, opInputs);
+      std::vector<TensorId> parentScopedImplicitTensorIds;
+      auto implicitTensorIds = onnxutil::getImplicitTensorIds(callee);
+      for (auto implicitTensorId : implicitTensorIds) {
+        auto parentScopedImplicitTensorId =
+            parentGraph.addScope(implicitTensorId);
+        Tensor *tensor =
+            parentGraph.getTensors().get(parentScopedImplicitTensorId);
+        opInputs.push_back({implicitTensorId, tensor->info});
+        parentScopedImplicitTensorIds.push_back(parentScopedImplicitTensorId);
+      }
 
-      logging::op::trace("[ScanOp] Implicit tensors: {}", implicitTensors);
+      logging::op::trace("[ScanOp] Callee: {}, implicit tensors: {}",
+                         callee.name(),
+                         implicitTensorIds);
 
       auto subgraphId =
           callee.name().empty()
@@ -201,7 +207,7 @@ static OpCreator<ScanOp> scanOpCreator(
       auto &ir          = parentGraph.getIr();
       auto &calleeGraph = ir.createGraph(subgraphId);
 
-      int64_t numImplicit = implicitTensors.size();
+      int64_t numImplicit = implicitTensorIds.size();
 
       logging::op::trace("[ScanOp] Adding {} variables, {} scan inputs, {} "
                          "implicit inputs ({} total)",
@@ -219,6 +225,12 @@ static OpCreator<ScanOp> scanOpCreator(
           // L implicit inputs
           scopedTensorId = calleeGraph.addScope(kv.first);
         }
+        logging::op::trace("[ScanOp] Callee: {}, input: {} - {} -> {}",
+                           callee.name(),
+                           i,
+                           kv.first,
+                           scopedTensorId);
+
         auto info = kv.second;
 
         auto m = i - numVariables;
@@ -242,24 +254,52 @@ static OpCreator<ScanOp> scanOpCreator(
         calleeGraph.addInput(scopedTensorId, info);
       }
 
+      Op *op = graph.createOp<ScanOp>(info.opid,
+                                      info.settings,
+                                      calleeGraph,
+                                      numScanInputs,
+                                      numImplicit,
+                                      scanInputAxes,
+                                      scanInputDirections,
+                                      scanOutputAxes,
+                                      scanOutputDirections);
+
+      // Connect explicit inputs
+      if (info.hasInputIds()) {
+        for (InIndex i = 0; i < info.getInputIds().size(); ++i) {
+          auto scopedName =
+              graph.getTensors().find(info.getInputIds().at(i), op->getScope());
+          op->connectInTensor(i, scopedName);
+        }
+      }
+
+      // Connect implicit inputs
+      for (auto parentScopedImplicitTensorId : parentScopedImplicitTensorIds) {
+        op->connectInTensor(op->input->maxIndex() + 1,
+                            parentScopedImplicitTensorId);
+      }
+
+      // Construct body graph
       calleeGraph.constructFromOnnxGraph(callee);
 
+      // Mark body outputs
       for (TensorId outputId : scanBodyOutputs) {
         TensorId scopedTensorId = calleeGraph.addScope(outputId);
         calleeGraph.markAsOutput(scopedTensorId);
       }
 
-      logging::op::trace("[ScanOp] ScanOp created.");
-      return std::unique_ptr<Op>(new ScanOp(info.opid,
-                                            info.settings,
-                                            calleeGraph,
-                                            numScanInputs,
-                                            scanInputAxes,
-                                            scanInputDirections,
-                                            scanOutputAxes,
-                                            scanOutputDirections,
-                                            opInputs,
-                                            implicitTensors));
+      // Connect outputs
+      if (info.hasOutputIds()) {
+        for (OutIndex i = 0; i < info.getOutputIds().size(); ++i) {
+          op->createAndConnectOutTensor(i, info.getOutputIds().at(i));
+        }
+      }
+
+      logging::op::trace("[ScanOp] Callee: {}, inputs: {}, outputs: {}",
+                         calleeGraph.id.str(),
+                         calleeGraph.getInputIds(),
+                         calleeGraph.getOutputIds());
+      return op;
     },
     true);
 

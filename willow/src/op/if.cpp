@@ -5,6 +5,7 @@
 #include <onnx/onnx_pb.h>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
+#include <popart/onnxutil.hpp>
 #include <popart/op/if.hpp>
 #include <popart/opmanager.hpp>
 #include <popart/tensor.hpp>
@@ -538,19 +539,37 @@ static OpCreator<IfOp> ifOpCreator(
         throw error("IfOp: else_branch and then_branch have different outputs");
       }
 
-      auto &tensors = info.settings.graph.get().getTensors();
+      auto &parentGraph = info.settings.graph.get();
+      auto &ir          = parentGraph.getIr();
+      auto &tensors     = parentGraph.getTensors();
       std::map<TensorId, TensorInfo> inputInfos;
 
       // Collect all input names
       std::vector<TensorId> thenInputIds;
       for (auto &input : thenBranch.input()) {
         thenInputIds.push_back(input.name());
-        inputInfos[input.name()] = tensors.get(input.name())->info;
+        inputInfos[input.name()] =
+            tensors.get(parentGraph.addScope(input.name()))->info;
       }
       std::vector<TensorId> elseInputIds;
       for (auto &input : elseBranch.input()) {
         elseInputIds.push_back(input.name());
-        inputInfos[input.name()] = tensors.get(input.name())->info;
+        inputInfos[input.name()] =
+            tensors.get(parentGraph.addScope(input.name()))->info;
+      }
+
+      std::vector<TensorId> parentScopedImplicitTensorIds;
+      auto thenImplicitTensorIds = onnxutil::getImplicitTensorIds(thenBranch);
+      for (auto implicitTensorId : thenImplicitTensorIds) {
+        thenInputIds.push_back(implicitTensorId);
+        inputInfos[implicitTensorId] =
+            tensors.get(parentGraph.addScope(implicitTensorId))->info;
+      }
+      auto elseImplicitTensorIds = onnxutil::getImplicitTensorIds(elseBranch);
+      for (auto implicitTensorId : elseImplicitTensorIds) {
+        elseInputIds.push_back(implicitTensorId);
+        inputInfos[implicitTensorId] =
+            tensors.get(parentGraph.addScope(implicitTensorId))->info;
       }
 
       // Collect all output names
@@ -563,36 +582,28 @@ static OpCreator<IfOp> ifOpCreator(
         elseOutputIds.push_back(output.name());
       }
 
-      auto thenGraphId = thenBranch.name().empty()
-                             ? generateSubgraphUniqueId("then")
-                             : thenBranch.name();
-      auto elseGraphId = elseBranch.name().empty()
-                             ? generateSubgraphUniqueId("else")
-                             : elseBranch.name();
+      GraphId thenGraphId("");
 
-      // Construct then graph
-      auto &ir        = info.settings.graph.get().getIr();
-      auto &thenGraph = ir.createGraph(thenGraphId);
-      for (auto id : thenInputIds) {
-        auto scopedId = thenGraph.addScope(id);
-        thenGraph.addInput(scopedId, inputInfos.at(id));
-      }
-      thenGraph.constructFromOnnxGraph(thenBranch);
-      for (auto id : thenOutputIds) {
-        auto scopedId = thenGraph.addScope(id);
-        thenGraph.markAsOutput(scopedId);
+      if (thenBranch.name().empty()) {
+        thenGraphId = parentGraph.getIr().createUniqueSubgraphId({"loop"});
+      } else {
+        thenGraphId = thenBranch.name();
       }
 
-      // Construct else graph
-      auto &elseGraph = ir.createGraph(elseGraphId);
-      for (auto id : elseInputIds) {
-        auto scopedId = elseGraph.addScope(id);
-        elseGraph.addInput(scopedId, inputInfos.at(id));
+      if (ir.hasGraph(thenGraphId)) {
+        thenGraphId = parentGraph.getIr().createUniqueSubgraphId(thenGraphId);
       }
-      elseGraph.constructFromOnnxGraph(elseBranch);
-      for (auto id : elseOutputIds) {
-        auto scopedId = elseGraph.addScope(id);
-        elseGraph.markAsOutput(scopedId);
+
+      GraphId elseGraphId("");
+
+      if (elseBranch.name().empty()) {
+        elseGraphId = parentGraph.getIr().createUniqueSubgraphId({"loop"});
+      } else {
+        elseGraphId = elseBranch.name();
+      }
+
+      if (ir.hasGraph(elseGraphId)) {
+        elseGraphId = parentGraph.getIr().createUniqueSubgraphId(elseGraphId);
       }
 
       // Get all the inputIds
@@ -628,6 +639,9 @@ static OpCreator<IfOp> ifOpCreator(
         thenAndElseOutputIndicesMap.insert({i, i});
       }
 
+      auto &thenGraph = ir.createGraph(thenGraphId);
+      auto &elseGraph = ir.createGraph(elseGraphId);
+
       Op *op = graph.createOp<IfOp>(
           info.opid,
           std::vector<TensorId>{},
@@ -642,7 +656,29 @@ static OpCreator<IfOp> ifOpCreator(
         op->connectInTensor(op->input->n(), id);
       }
       for (auto &inputId : inputIds) {
-        op->connectInTensor(op->input->n(), inputId);
+        op->connectInTensor(op->input->n(), parentGraph.addScope(inputId));
+      }
+
+      // Construct then graph
+      for (auto id : thenInputIds) {
+        auto scopedId = thenGraph.addScope(id);
+        thenGraph.addInput(scopedId, inputInfos.at(id));
+      }
+      thenGraph.constructFromOnnxGraph(thenBranch);
+      for (auto id : thenOutputIds) {
+        auto scopedId = thenGraph.addScope(id);
+        thenGraph.markAsOutput(scopedId);
+      }
+
+      // Construct else graph
+      for (auto id : elseInputIds) {
+        auto scopedId = elseGraph.addScope(id);
+        elseGraph.addInput(scopedId, inputInfos.at(id));
+      }
+      elseGraph.constructFromOnnxGraph(elseBranch);
+      for (auto id : elseOutputIds) {
+        auto scopedId = elseGraph.addScope(id);
+        elseGraph.markAsOutput(scopedId);
       }
 
       // Connect IfOp outputs

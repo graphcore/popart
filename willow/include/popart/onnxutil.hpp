@@ -18,6 +18,14 @@ public:
   ExternalTensorProtoInfo(const ONNX_NAMESPACE::TensorProto &tp);
 };
 
+// Get all tensors that are referenced in subgraph scopes,
+// but not explicitly passed from higher-level scopes
+std::vector<TensorId>
+getImplicitTensorIds(const ONNX_NAMESPACE::GraphProto &bodyProto);
+std::vector<TensorId>
+getImplicitTensorIds(const ONNX_NAMESPACE::GraphProto &bodyProto,
+                     std::set<TensorId> existingTensors);
+
 // for many types (float16, float, int, etc) ONNX_NAMESPACE::TensorProto has
 // 2 ways of storing the data: either in field raw_data or a field
 // specific to the type. These functions handle these 2 possibilities.

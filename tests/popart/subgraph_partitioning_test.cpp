@@ -1183,7 +1183,7 @@ BOOST_AUTO_TEST_CASE(EdgeCase_Loop_Model6_JustInTime) {
   // clang-format off
   CHECK_LIVENESS_SCHEDULE(model6, JustInTime, {
     {"",     "Enter",                   ""},
-    {"",     "CopyInput",               "'sg1/input' := 'Constant:0__t0'"},
+    {"",     "CopyInput",               "'sg1/input' := 'Constant:0'"},
     {"",     "CopyInput",               "'sg1/input/1' := 'Constant:0/1'"},
     {"",     "CopyInput",               "'sg1/Add:0' := 'a'"},
     {"",     "CopyInput",               "'sg1/Add:0/1' := 'a'"},

@@ -46,8 +46,15 @@ void PopTensors::verify(TensorId id, const poplar::Tensor &pt) {
     }
   }
 
+  auto dtype = ir.getTensor(id)->info.dataType();
+
+  if (ir.getSessionOptions().enableSupportedDataTypeCasting) {
+    dtype = getCompatibleDataType(dtype);
+  }
+
   // confirm types agree
-  auto expectedType = popType(ir.getTensor(id)->info);
+  auto expectedType = popType(dtype);
+
   if (pt.elementType() != expectedType) {
     std::stringstream ss;
     ss << "poplar::Tensor " << id << " of unexpected Type. "

@@ -597,7 +597,8 @@ protected:
   // exception if it could not access the data.
   void getInTensorData(TensorId tensorId,
                        std::vector<int64_t> &data,
-                       std::vector<DataType> dataTypes = {DataType::INT64});
+                       std::vector<DataType> dataTypes = {DataType::INT64,
+                                                          DataType::INT32});
 
 private:
   std::pair<ShardingPlan, ShardingPlan>

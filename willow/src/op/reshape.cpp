@@ -258,7 +258,10 @@ static OpDefinition::DataTypes T  = {DataType::UINT8,
                                     DataType::FLOAT16,
                                     DataType::FLOAT,
                                     DataType::BOOL};
-static OpDefinition::DataTypes T1 = {DataType::INT64};
+static OpDefinition::DataTypes T1 = {DataType::INT64,
+                                     DataType::UINT64,
+                                     DataType::INT32,
+                                     DataType::UINT32};
 
 static OpDefinition
     reshapeOpDef({OpDefinition::Inputs({{"data", T}, {"shape", T1, true}}),

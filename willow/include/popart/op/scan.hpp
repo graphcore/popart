@@ -38,12 +38,11 @@ public:
          const Op::Settings &settings_,
          Graph &callee_,
          int numScanInputs_,
+         int numImplicitInputs_,
          std::vector<int64_t> scanInputAxes_,
          std::vector<int64_t> scanInputDirections_,
          std::vector<int64_t> scanOutputAxes_,
-         std::vector<int64_t> scanOutputDirections_,
-         std::vector<std::pair<TensorId, TensorInfo>> opInputs_,
-         std::vector<TensorId> implicitTensors_);
+         std::vector<int64_t> scanOutputDirections_);
 
   void setup() final;
 

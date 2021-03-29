@@ -797,6 +797,15 @@ struct SessionOptions {
   // with the aim of preventing underflow or overflow.
   bool enableAutomaticLossScaling = false;
 
+  // If enabled, casts any tensor of unsupported data types to supported data
+  // types when lowering to Poplar
+  // Currently, this implies casting:
+  // INT64 -> INT32
+  // UINT64 -> UINT32
+  // The cast will error for incompatible data types and over/underflows, and
+  // inform on narrowing casts
+  bool enableSupportedDataTypeCasting = true;
+
   // Get the buffering depth for a TensorId. Will return 1 unless
   // prefetching is enabled and the buffering depth is overwritten
   // in the \c prefetchBufferingDepthMap variable.

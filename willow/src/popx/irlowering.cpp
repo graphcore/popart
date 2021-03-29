@@ -1120,12 +1120,28 @@ PriTask IrLowering::rngStateToHost() {
           rngStateToHostTask};
 }
 
-template <typename T> void IrLowering::setInitVal(Tensor *tensor) {
+template <typename T>
+void IrLowering::setInitVal(Tensor *tensor, DataType dst) {
+  auto src = tensor->info.dataType();
+  if (dst == DataType::UNDEFINED) {
+    dst = src;
+  }
 
-  graph().setInitialValue<T>(
-      tensors_.get(tensor->id),
-      poplar::ArrayRef<T>(static_cast<const T *>(tensor->tensorData()->data()),
-                          tensor->info.nelms()));
+  auto setValue = [this, tensor](const void *ptr) {
+    graph().setInitialValue<T>(
+        tensors_.get(tensor->id),
+        poplar::ArrayRef<T>(static_cast<const T *>(ptr), tensor->info.nelms()));
+  };
+
+  const void *ptr = static_cast<const void *>(tensor->tensorData()->data());
+
+  if (src == dst) {
+    setValue(ptr);
+  } else {
+    std::vector<char> castData = cast(src, dst, ptr, tensor->info.nbytes());
+    ptr                        = static_cast<const void *>(castData.data());
+    setValue(ptr);
+  }
 }
 
 // Using specialised poplar function for setting init val for FLOAT16
@@ -1144,9 +1160,17 @@ PriTask IrLowering::setInitTensorValTask(Tensor *tensor) {
     logging::devicex::debug("Setting initial value for tensor {}",
                             tensor->str());
 
+    auto srcDataType = tensor->info.dataType();
+    auto dstDataType = srcDataType;
+
+    if (ir().getSessionOptions().enableSupportedDataTypeCasting) {
+      dstDataType = getCompatibleDataType(srcDataType);
+    }
+
     // see T5925 for making a more compact way of matching
     // types than using this switch statement
-    switch (tensor->info.dataType()) {
+
+    switch (dstDataType) {
     case DataType::FLOAT: {
       setInitVal<float>(tensor);
       break;

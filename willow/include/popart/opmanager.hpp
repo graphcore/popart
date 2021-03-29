@@ -75,6 +75,9 @@ public:
       : opid(_opid), settings(_settings), attributes(_attributes),
         inputIds(_inputIds), outputIds(_outputIds) {}
 
+  bool hasInputIds() const { return !inputIds.empty(); }
+  bool hasOutputIds() const { return !outputIds.empty(); }
+
   const std::vector<TensorId> &getInputIds() const;
   const std::vector<TensorId> &getOutputIds() const;
   Tensor *getInputTensor(int index) const;

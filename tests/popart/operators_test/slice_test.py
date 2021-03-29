@@ -159,8 +159,10 @@ def test_slice_error_start_input(op_tester):
 
     assert (
         e_info.value.args[0] ==
-        "Need the value of the ai.onnx.Slice:10 input 'starts' to detemine the output shape, but was unable because the tensor `input/1` does not have data"
-    )
+        "Need the value of the ai.onnx.Slice:10 input 'starts' to detemine the "
+        "output shape, but was unable because "
+        "[Tensor::getDataViaGraphTraversal] Could not work out tensor data for "
+        "input/1.")
 
 
 def test_slice_start_out_of_bounds(op_tester):
@@ -240,12 +242,17 @@ def test_slice_end_out_of_bounds(op_tester):
         o = builder.aiOnnx.slice([i1, starts, ends, axes])
         builder.addOutputTensor(o)
 
-        return [o, popart.reservedGradientPrefix() + i1, popart.reservedGradientPrefix() + o]
+        return [
+            o,
+            popart.reservedGradientPrefix() + i1,
+            popart.reservedGradientPrefix() + o
+        ]
 
     def reference(ref_data):
         o = d1[:, 1:1000]
 
-        o_grad = np.ones(o.shape, dtype=np.float32) * ref_data.getOutputTensorGrad(0)
+        o_grad = np.ones(o.shape,
+                         dtype=np.float32) * ref_data.getOutputTensorGrad(0)
         i1_grad = np.pad(o_grad, [(0, 0), (1, 0), (0, 0)], constant_values=0.)
 
         return [o, i1_grad, None]

@@ -1216,12 +1216,8 @@ void Op::getInTensorData(TensorId tensorId,
 
   Tensor *tensor = getGraph().getTensors().get(tensorId);
 
-  // check 2 : that the tensor has data
-  if (!tensor->hasTensorData()) {
-    throw error("the tensor `" + tensorId + "` does not have data");
-  }
-
-  TensorData *tensorData = tensor->tensorData();
+  std::vector<char> tensorData = tensor->getDataViaGraphTraversal();
+  void *ptr                    = static_cast<void *>(tensorData.data());
 
   // check 3 : that the data is the expected type
   bool validType = false;
@@ -1243,12 +1239,12 @@ void Op::getInTensorData(TensorId tensorId,
   }
 
   if (tensor->info.dataType() == DataType::INT32) {
-    int32_t *pdata = static_cast<int32_t *>(tensorData->data());
+    int32_t *pdata = static_cast<int32_t *>(ptr);
     for (int i = 0; i < tensor->info.nelms(); ++i) {
       data.push_back(pdata[i]);
     }
   } else if (tensor->info.dataType() == DataType::INT64) {
-    int64_t *pdata = static_cast<int64_t *>(tensorData->data());
+    int64_t *pdata = static_cast<int64_t *>(ptr);
     for (int i = 0; i < tensor->info.nelms(); ++i) {
       data.push_back(pdata[i]);
     }

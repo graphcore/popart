@@ -53,7 +53,7 @@ void addAcclInTensor(SGD1ComboOp &comboOp,
     const void *outTemp = weight.tensorData()->data();
     weightVal0          = static_cast<const T *>(outTemp);
   } else {
-    tempData   = weight.getDataViaRecursion();
+    tempData   = weight.getDataViaGraphTraversal();
     weightVal0 = reinterpret_cast<const T *>(tempData.data());
   }
   // We add to the initialized velocity a weight decay term (see the equations)

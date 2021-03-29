@@ -5,6 +5,7 @@
 #include <popart/ces/constexpr.hpp>
 #include <popart/error.hpp>
 #include <popart/graph.hpp>
+#include <popart/graphutils.hpp>
 #include <popart/ir.hpp>
 #include <popart/onnxutil.hpp>
 #include <popart/op.hpp>
@@ -155,26 +156,127 @@ bool Tensor::hasVirtualGraphId() const {
   return getVirtualGraphIdUnsafe() != unusedVGraphId;
 }
 
-std::vector<char> Tensor::getDataViaRecursion() const {
-  if (hasProducer()) {
-    if (ConstExprOpManager::hasConstExprOp(producer)) {
-      for (auto inTensor : producer->input->tensors()) {
-        if (!inTensor->hasTensorData()) {
-          auto outTemp = inTensor->getDataViaRecursion();
-          inTensor->setTensorData(inTensor->info, outTemp.data());
+std::vector<char> Tensor::getDataViaGraphTraversal() const {
+
+  Tensor *thisTensor = graph.getTensors().get(id);
+
+  std::vector<Tensor *> start;
+  start.push_back(thisTensor);
+
+  std::vector<Tensor *> roots;
+  std::set<Tensor *> tensorsOnPath;
+  tensorsOnPath.insert(thisTensor);
+
+  // Find roots
+  graphutils::traverse(
+      start,
+      [&roots, &tensorsOnPath](Tensor *t) {
+        tensorsOnPath.insert(t);
+        if (t->hasTensorData()) {
+          roots.push_back(t);
         }
-      }
-      auto ceOp = ConstExprOpManager::createConstExprOp(producer);
-      return ceOp->compute();
-    } else {
-      throw error("Recursing up the tree of producers for {}, the op {} was "
-                  "found which has no const expr version.",
-                  id,
-                  producer->opid);
-    }
-  } else {
-    throw error("Tensor {} has no producer, so can't work back to find data.",
+        return true;
+      },
+      [](Op *op, Tensor *t0, Tensor *t1) { return true; },
+      graphutils::TraversalType::DepthFirst,
+      graphutils::VisitType::Pre,
+      graphutils::TraversalDirection::Backward);
+
+  logging::ir::trace("[Tensor::getDataViaGraphTraversal] Tensor {}: {} roots, "
+                     "{} tensors on path",
+                     id,
+                     roots.size(),
+                     tensorsOnPath.size());
+
+  // Propagate const data
+  graphutils::traverse(
+      roots,
+      [&tensorsOnPath](Tensor *t) {
+        if (tensorsOnPath.find(t) != tensorsOnPath.end()) {
+          if (t->hasProducer()) {
+            // Producer const expr resolving
+            if (ConstExprOpManager::hasConstExprOp(t->getProducer())) {
+              bool allInputsResolved = true;
+              for (auto inTensor : t->getProducer()->input->tensors()) {
+                if (!inTensor->hasTensorData()) {
+                  allInputsResolved = false;
+                }
+              }
+              if (allInputsResolved) {
+                auto ceOp =
+                    ConstExprOpManager::createConstExprOp(t->getProducer());
+                t->setTensorData(t->info, ceOp->compute().data());
+              }
+            }
+          } else if (t->isGraphInput()) {
+            // Caller const expr resolving
+            auto callSites = t->getGraph().getCallSiteOps();
+
+            bool callSitesAgree = true;
+
+            std::vector<std::vector<char>> constData;
+
+            for (Op *c : callSites) {
+              for (int i = 0; i < c->getCalledGraphs().size(); ++i) {
+                if (c->getCalledGraphs().at(i)->id == t->getGraph().id) {
+                  InIndex index =
+                      c->subgraphInToOpInIndex(i, t->getGraphInputIndex());
+                  if (c->hasInput(index) &&
+                      c->inTensor(index)->hasTensorData()) {
+                    // Technically, if the graph is well-formed,
+                    // we'd expect each call site to produce the
+                    // same const value here, but it's not guaranteed.
+                    const char *ptr = static_cast<const char *>(
+                        c->inTensor(index)->tensorData()->data());
+                    std::vector<char> data;
+                    data.assign(ptr, ptr + t->info.nbytes());
+                    constData.push_back(data);
+                    callSitesAgree &=
+                        constData.at(0) == constData.at(constData.size() - 1);
+                  }
+                }
+              }
+            }
+
+            if (constData.size() > 0 && callSitesAgree) {
+              t->setTensorData(t->info,
+                               static_cast<void *>(constData.front().data()));
+            }
+          }
+        } else {
+          // Not interested in propagating through this tensor
+          // (was not on the backward path)
+          return false;
+        }
+        bool hasData = t->hasTensorData();
+
+        logging::ir::trace(
+            "[Tensor::getDataViaGraphTraversal] Tensor {} {} constant data.",
+            t->id,
+            hasData ? "has" : "does not have");
+
+        if (hasData) {
+          // Continue forward propagation
+          return true;
+        } else {
+          // Stop forward propagation
+          return false;
+        }
+      },
+      [](Op *op, Tensor *t0, Tensor *t1) { return true; },
+      graphutils::TraversalType::BreadthFirst,
+      graphutils::VisitType::Pre,
+      graphutils::TraversalDirection::Forward);
+
+  if (!hasTensorData()) {
+    throw error("[Tensor::getDataViaGraphTraversal] Could not work out tensor "
+                "data for {}.",
                 id);
+  } else {
+    const char *ptr = static_cast<const char *>(tensorData()->data());
+    std::vector<char> data;
+    data.assign(ptr, ptr + info.nbytes());
+    return data;
   }
 }
 

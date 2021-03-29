@@ -259,7 +259,7 @@ def test_subgraph_with_zero_outputs(op_tester, subgraphCopyingStrategy):
     with pytest.raises(popart.popart_exception) as e_info:
         op_tester.run(init_builder, None, 'infer')
     assert e_info.value.args[
-        0] == "CallOp subgraph requires at least one output."
+        0] == "For CallOp '', number of outputs (1) does not match that of the callee subgraph (0)"
 
 
 @pytest.mark.parametrize("subgraphCopyingStrategy", [

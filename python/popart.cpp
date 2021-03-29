@@ -1340,6 +1340,10 @@ PYBIND11_MODULE(popart_core, m) {
     cls.def_readwrite("enableAutomaticLossScaling",
                       &SessionOptions::enableAutomaticLossScaling,
                       DOC(popart, SessionOptions, enableAutomaticLossScaling));
+    cls.def_readwrite(
+        "enableSupportedDataTypeCasting",
+        &SessionOptions::enableSupportedDataTypeCasting,
+        DOC(popart, SessionOptions, enableSupportedDataTypeCasting));
   }
   {
     py::enum_<PatternsLevel> en(m, "PatternsLevel", DOC(popart, PatternsLevel));

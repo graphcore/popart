@@ -318,7 +318,8 @@ private:
 
   void initPoplarGraph();
 
-  template <typename T> void setInitVal(Tensor *tensor);
+  template <typename T>
+  void setInitVal(Tensor *tensor, DataType dstType = DataType::UNDEFINED);
   void setInitValHalf(Tensor *tensor);
 
   void setFloatingPointBehaviour(poplar::Graph &graph);

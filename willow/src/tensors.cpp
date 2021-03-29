@@ -1,8 +1,10 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #include <popart/chains.hpp>
 #include <popart/graph.hpp>
+#include <popart/ir.hpp>
 #include <popart/names.hpp>
 #include <popart/op.hpp>
+#include <popart/sessionoptions.hpp>
 #include <popart/tensor.hpp>
 #include <popart/tensordebuginfo.hpp>
 #include <popart/tensorindex.hpp>

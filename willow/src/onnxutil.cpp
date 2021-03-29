@@ -5,6 +5,7 @@
 
 #include <boost/filesystem.hpp>
 
+#include <popart/attributes.hpp>
 #include <popart/error.hpp>
 #include <popart/filereader.hpp>
 #include <popart/onnxutil.hpp>
@@ -189,6 +190,47 @@ ExternalTensorProtoInfo::ExternalTensorProtoInfo(
                 "not have an external data location",
                 name);
   }
+}
+
+std::vector<TensorId>
+getImplicitTensorIds(const ONNX_NAMESPACE::GraphProto &bodyProto) {
+  return getImplicitTensorIds(bodyProto, {});
+}
+
+std::vector<TensorId>
+getImplicitTensorIds(const ONNX_NAMESPACE::GraphProto &bodyProto,
+                     std::set<TensorId> existingTensors) {
+
+  std::vector<TensorId> implicitTensors;
+
+  for (int i = 0; i < bodyProto.input_size(); ++i) {
+    existingTensors.insert(bodyProto.input(i).name());
+  }
+
+  for (int i = 0; i < bodyProto.node_size(); ++i) {
+    auto &nodeProto               = bodyProto.node(i);
+    popart::Attributes attributes = nodeProto.attribute();
+    // Any possible subgraph
+    for (Attributes::Graph subGraphProto : attributes.getAllGraphAttributes()) {
+      auto subImplicitTensors =
+          getImplicitTensorIds(subGraphProto, existingTensors);
+      implicitTensors.insert(implicitTensors.end(),
+                             subImplicitTensors.begin(),
+                             subImplicitTensors.end());
+    }
+    for (int j = 0; j < nodeProto.input_size(); ++j) {
+      auto tid = nodeProto.input(j);
+      if (existingTensors.find(tid) == existingTensors.end()) {
+        implicitTensors.push_back(tid);
+      }
+    }
+    for (int j = 0; j < nodeProto.output_size(); ++j) {
+      auto tid = nodeProto.output(j);
+      existingTensors.insert(tid);
+    }
+  }
+
+  return implicitTensors;
 }
 
 ConstVoidData getConstData(const ONNX_NAMESPACE::TensorProto &tp) {

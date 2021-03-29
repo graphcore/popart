@@ -242,11 +242,12 @@ public:
   // Any of the consumers alias this tensor
   bool isAliased() const;
 
-  // Backtrack through input ops in order to get data from initializer tensors
-  // (if they exist). When ops are performed on initializers (e.g. slice), the
-  // data is (intentionally) not inhereted by the output tensors, this method
+  // Backtrack through input and parent graph tensors in order to get data from
+  // initializer tensors (if they exist).
+  // When ops are performed on initializers (e.g. slice), the
+  // data is (intentionally) not inherited by the output tensors, this method
   // finds the original data and sets the data of the callee tensor.
-  std::vector<char> getDataViaRecursion() const;
+  std::vector<char> getDataViaGraphTraversal() const;
 
   const popart::DebugInfo &getDebugInfo() const { return di; }
 

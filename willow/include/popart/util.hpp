@@ -13,6 +13,11 @@
 
 namespace popart {
 
+std::vector<char>
+cast(DataType src, DataType dst, const void *data, size_t nbytes);
+std::vector<char>
+cast(DataType src, DataType dst, const std::vector<char> &data);
+
 char *getPopartEnvVar(std::string env_var);
 
 std::vector<char> convertFloatToDataType(DataType dtype, float data);

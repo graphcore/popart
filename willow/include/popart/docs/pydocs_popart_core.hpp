@@ -4966,6 +4966,9 @@ exported).)doc";
 static const char *__doc_popart_SessionOptions_enableAutomaticLossScaling =
     R"doc()doc";
 
+static const char *__doc_popart_SessionOptions_enableSupportedDataTypeCasting =
+    R"doc()doc";
+
 static const char *__doc_popart_SessionOptions_enableDistributedReplicatedGraphs =
     R"doc(Enable training with Poplar replicated graphs across multiple PopART
 instances.)doc";

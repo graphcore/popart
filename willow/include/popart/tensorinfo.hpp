@@ -59,6 +59,12 @@ template <> DataType getDataType<std::string>();
 
 class TensorInfo;
 
+/// Return the IPU-compatible data type of any data type
+/// (Hardware) unsupported data types that have a compatible counterpart:
+/// INT64 -> INT32
+/// UINT64 -> UINT32
+DataType getCompatibleDataType(DataType type);
+
 /// Check if two tensors can be (numpy) broadcasted based on
 /// https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html
 bool npBroadcastable(const std::vector<int64_t> &s0,

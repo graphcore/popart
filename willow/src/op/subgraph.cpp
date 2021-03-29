@@ -47,34 +47,6 @@ SubgraphOp::getBodyOutputIds(const ONNX_NAMESPACE::GraphProto &bodyProto) {
   return bodyOutputs;
 }
 
-std::vector<TensorId> SubgraphOp::getImplicitTensors(
-    const ONNX_NAMESPACE::GraphProto &bodyProto,
-    popart::Tensors &tensors,
-    std::vector<std::pair<TensorId, TensorInfo>> &allOpInputs) {
-
-  auto bodyInputIds = SubgraphOp::getBodyInputIds(bodyProto);
-  std::vector<TensorId> implicitTensors;
-
-  for (int i = 0; i < bodyProto.node_size(); ++i) {
-    auto &nodeProto = bodyProto.node(i);
-    for (int j = 0; j < nodeProto.input_size(); ++j) {
-      auto tid        = nodeProto.input(j);
-      auto inLoopBody = SubgraphOp::existsInBodyInputs(bodyInputIds, tid);
-      if (!inLoopBody) {
-        auto inOpInputs = SubgraphOp::existsInOpInputs(allOpInputs, tid);
-        if (!inOpInputs) {
-          if (tensors.contains(tid)) {
-            implicitTensors.push_back(tid);
-            allOpInputs.push_back(std::make_pair(tid, tensors.get(tid)->info));
-          }
-        }
-      }
-    }
-  }
-
-  return implicitTensors;
-}
-
 SubgraphOp::SubgraphOp(const OperatorIdentifier &_opid,
                        const Op::Settings &settings_)
     : Op(_opid, settings_) {}

@@ -74,6 +74,22 @@ std::vector<size_t> TensorInfo::shape_szt() const {
   return szts;
 }
 
+DataType getCompatibleDataType(DataType type) {
+  switch (type) {
+  case DataType::INT64:
+    return DataType::INT32;
+  case DataType::UINT64:
+    return DataType::UINT32;
+  case DataType::COMPLEX64:
+  case DataType::COMPLEX128:
+  case DataType::STRING:
+  case DataType::UNDEFINED:
+    throw error("Unsupported data type {} for IPUs.", type);
+  default:
+    return type;
+  }
+}
+
 static bool isBroadcastableDims(int64_t a, int64_t b) {
   if ((a > 0) && (b > 0) && ((a == b) || (a == 1) || (b == 1))) {
     return true;

@@ -944,13 +944,9 @@ AiGraphcoreOpset1::call(const std::vector<TensorId> &args,
   // ONNX_NAMESPACE::checker::check_model(modelProto);
   ONNX_NAMESPACE::GraphProto calleeProto = modelProto.graph();
   // Some checks:
-  // A subgraph must have at least one input and output, and the
-  // number of inputs and outputs must match that of the callee
+  // The number of inputs and outputs must match that of the callee
   // subgraph
   auto checkInOuts = [&](int64_t callSize, int64_t sgSize, std::string dir) {
-    if (sgSize == 0) {
-      throw error("CallOp subgraph requires at least one {}.", dir);
-    }
     if (callSize != sgSize) {
       throw error("For CallOp '{}', number of {}s ({}) does not match that of "
                   "the callee subgraph ({})",

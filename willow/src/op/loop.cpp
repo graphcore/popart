@@ -2,6 +2,7 @@
 #include <onnx/onnx_pb.h>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
+#include <popart/onnxutil.hpp>
 #include <popart/op/ipucopy.hpp>
 #include <popart/op/loop.hpp>
 #include <popart/opmanager.hpp>
@@ -22,19 +23,9 @@ LoopOp::LoopOp(const OperatorIdentifier &_opid,
 LoopOp::LoopOp(const OperatorIdentifier &_opid,
                const Op::Settings &settings_,
                Graph &callee_,
-               std::vector<std::pair<TensorId, TensorInfo>> opInputs_,
-               std::vector<TensorId> implicitTensors_,
                int numImplicitScanOutputs_)
     : SubgraphOp(_opid, settings_), callee(callee_), tripCountValue(0),
-      numImplicitScanOutputs(numImplicitScanOutputs_) {
-  for (int i = 0; i < opInputs_.size(); ++i) {
-    TensorId inId = opInputs_.at(i).first;
-    if (std::find(implicitTensors_.begin(), implicitTensors_.end(), inId) !=
-        implicitTensors_.end()) {
-      connectInTensor(i, opInputs_.at(i).first);
-    }
-  }
-}
+      numImplicitScanOutputs(numImplicitScanOutputs_) {}
 
 void LoopOp::setup() {
   // Connect the output of the subgraph with the output from the main graph
@@ -102,25 +93,48 @@ std::vector<const Graph *> LoopOp::getCalledGraphs() const {
 }
 
 void LoopOp::connectInTensor(InIndex inIndex, TensorId tensorId) {
+  defaultConnectInTensor(inIndex, tensorId);
+
   if (inIndex == LoopOp::getMaximumTripCountInIndex()) {
-    logging::op::info(
-        "INT64 is currently not supported. Casting loop input {} to INT32",
-        tensorId);
-    Tensor *tensor     = getGraph().getTensors().get(tensorId);
-    int64_t tensorData = *static_cast<int64_t *>(tensor->tensorData()->data());
-
-    std::vector<int32_t> castTensorData{static_cast<int32_t>(tensorData)};
-    tripCountValue        = castTensorData.front();
-    TensorId castTensorId = getIr().createIntermediateTensorId(tensorId);
-
-    getGraph().getTensors().addConstInit(castTensorId,
-                                         {DataType::INT32, {}},
-                                         castTensorData.data(),
-                                         tensor->getDebugInfo());
-    defaultConnectInTensor(inIndex, castTensorId);
-  } else {
-    defaultConnectInTensor(inIndex, tensorId);
-  };
+    Tensor *tensor = getGraph().getTensors().get(tensorId);
+    switch (tensor->info.dataType()) {
+    case DataType::INT32: {
+      int32_t tensorData = *reinterpret_cast<int32_t *>(
+          tensor->getDataViaGraphTraversal().data());
+      std::vector<int32_t> castTensorData{static_cast<int32_t>(tensorData)};
+      tripCountValue = castTensorData.front();
+      break;
+    }
+    case DataType::UINT32: {
+      uint32_t tensorData = *reinterpret_cast<uint32_t *>(
+          tensor->getDataViaGraphTraversal().data());
+      std::vector<int32_t> castTensorData{static_cast<int32_t>(tensorData)};
+      tripCountValue = castTensorData.front();
+      break;
+    }
+    case DataType::INT64: {
+      int64_t tensorData = *reinterpret_cast<int64_t *>(
+          tensor->getDataViaGraphTraversal().data());
+      std::vector<int32_t> castTensorData{static_cast<int32_t>(tensorData)};
+      tripCountValue = castTensorData.front();
+      break;
+    }
+    case DataType::UINT64: {
+      uint64_t tensorData = *reinterpret_cast<uint64_t *>(
+          tensor->getDataViaGraphTraversal().data());
+      std::vector<int32_t> castTensorData{static_cast<int32_t>(tensorData)};
+      tripCountValue = castTensorData.front();
+      break;
+    }
+    default:
+      throw error("[LoopOp] unsupported trip count data type {}",
+                  tensor->info.dataType());
+    }
+    logging::op::debug("[LoopOp] {} updated trip count to {} (from {})",
+                       debugName(),
+                       tripCountValue,
+                       tensor->id);
+  }
 }
 
 void LoopOp::addLoopInput(InIndex index,
@@ -227,10 +241,11 @@ static OpDefinition
 static OpCreator<LoopOp> loopOpCreator(
     OpDefinitions({{Onnx::Operators::Loop_1, loopOpDef},
                    {Onnx::Operators::Loop_11, loopOpDef}}),
-    [](const OpCreatorInfo &info) -> std::unique_ptr<Op> {
+    [](const OpCreatorInfo &info, Graph &graph) -> Op * {
       const ONNX_NAMESPACE::GraphProto &callee =
           info.attributes.getAttribute<Attributes::Graph>("body");
       auto &parentGraph = info.settings.graph.get();
+      auto &ir          = parentGraph.getIr();
       auto &tensors     = parentGraph.getTensors();
 
       auto loopBodyInputs  = SubgraphOp::getBodyInputIds(callee);
@@ -238,21 +253,42 @@ static OpCreator<LoopOp> loopOpCreator(
 
       std::vector<std::pair<TensorId, TensorInfo>> opInputs;
 
-      for (int i = 0; i < info.getInputIds().size(); ++i) {
-        opInputs.push_back({info.getInputIds().at(i),
-                            tensors.get(info.getInputIds().at(i))->info});
+      if (info.hasInputIds()) {
+        for (int i = 0; i < info.getInputIds().size(); ++i) {
+          logging::op::trace(
+              "[LoopOp] Op input: {} - {}", i, info.getInputIds().at(i));
+          opInputs.push_back({info.getInputIds().at(i),
+                              tensors.get(info.getInputIds().at(i))->info});
+        }
       }
 
-      auto implicitTensors =
-          SubgraphOp::getImplicitTensors(callee, tensors, opInputs);
+      std::vector<TensorId> parentScopedImplicitTensorIds;
+      auto implicitTensorIds = onnxutil::getImplicitTensorIds(callee);
+      for (auto implicitTensorId : implicitTensorIds) {
+        auto parentScopedImplicitTensorId =
+            parentGraph.addScope(implicitTensorId);
+        Tensor *tensor =
+            parentGraph.getTensors().get(parentScopedImplicitTensorId);
+        opInputs.push_back({implicitTensorId, tensor->info});
+        parentScopedImplicitTensorIds.push_back(parentScopedImplicitTensorId);
+      }
 
-      logging::op::trace("[LoopOp] Implicit tensors: {}", implicitTensors);
+      logging::op::trace("[LoopOp] Callee: {}, implicit tensors: {}",
+                         callee.name(),
+                         implicitTensorIds);
 
-      auto subgraphId =
-          callee.name().empty()
-              ? parentGraph.getIr().createUniqueSubgraphId({"loop"})
-              : callee.name();
-      auto &ir          = parentGraph.getIr();
+      GraphId subgraphId("");
+
+      if (callee.name().empty()) {
+        subgraphId = parentGraph.getIr().createUniqueSubgraphId({"loop"});
+      } else {
+        subgraphId = callee.name();
+      }
+
+      if (ir.hasGraph(subgraphId)) {
+        subgraphId = parentGraph.getIr().createUniqueSubgraphId(subgraphId);
+      }
+
       auto &calleeGraph = ir.createGraph(subgraphId);
 
       for (int i = 0; i < opInputs.size(); ++i) {
@@ -265,30 +301,55 @@ static OpCreator<LoopOp> loopOpCreator(
           // Implicit
           scopedTensorId = calleeGraph.addScope(kv.first);
         }
-        if (i == 0) {
-          TensorInfo tensorInfo = {DataType::INT32, kv.second.shape()};
-          calleeGraph.addInput(scopedTensorId, tensorInfo);
-        } else {
-          calleeGraph.addInput(scopedTensorId, kv.second);
+        logging::op::trace("[LoopOp] Callee: {}, input: {} - {} -> {}",
+                           callee.name(),
+                           i,
+                           kv.first,
+                           scopedTensorId);
+        calleeGraph.addInput(scopedTensorId, kv.second);
+      }
+
+      int numImplicitScanOutputs =
+          loopBodyOutputs.size() - loopBodyInputs.size() + 1;
+      Op *op = graph.createOp<LoopOp>(
+          info.opid, info.settings, calleeGraph, numImplicitScanOutputs);
+
+      // Connect explicit inputs
+      if (info.hasInputIds()) {
+        for (InIndex i = 0; i < info.getInputIds().size(); ++i) {
+          auto scopedName =
+              graph.getTensors().find(info.getInputIds().at(i), op->getScope());
+          op->connectInTensor(i, scopedName);
         }
       }
 
+      // Connect implicit inputs
+      for (auto parentScopedImplicitTensorId : parentScopedImplicitTensorIds) {
+        op->connectInTensor(op->input->maxIndex() + 1,
+                            parentScopedImplicitTensorId);
+      }
+
+      // Construct body graph
       calleeGraph.constructFromOnnxGraph(callee);
 
+      // Mark body outputs
       for (TensorId outputId : loopBodyOutputs) {
         TensorId scopedTensorId = calleeGraph.addScope(outputId);
         calleeGraph.markAsOutput(scopedTensorId);
       }
 
-      int numImplicitScanOutputs =
-          calleeGraph.getOutputIds().size() - loopBodyInputs.size() + 1;
+      // Connect outputs
+      if (info.hasOutputIds()) {
+        for (OutIndex i = 0; i < info.getOutputIds().size(); ++i) {
+          op->createAndConnectOutTensor(i, info.getOutputIds().at(i));
+        }
+      }
 
-      return std::unique_ptr<Op>(new LoopOp(info.opid,
-                                            info.settings,
-                                            calleeGraph,
-                                            opInputs,
-                                            implicitTensors,
-                                            numImplicitScanOutputs));
+      logging::op::trace("[LoopOp] Callee: {}, inputs: {}, outputs: {}",
+                         calleeGraph.id.str(),
+                         calleeGraph.getInputIds(),
+                         calleeGraph.getOutputIds());
+      return op;
     },
     true);
 

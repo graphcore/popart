@@ -21,11 +21,6 @@ public:
   static std::vector<TensorId>
   getBodyOutputIds(const ONNX_NAMESPACE::GraphProto &bodyProto);
 
-  static std::vector<TensorId>
-  getImplicitTensors(const ONNX_NAMESPACE::GraphProto &bodyProto,
-                     popart::Tensors &tensors,
-                     std::vector<std::pair<TensorId, TensorInfo>> &allOpInputs);
-
   // parent: Graph this CallOp belongs to
   SubgraphOp(const OperatorIdentifier &_opid, const Op::Settings &settings_);
 

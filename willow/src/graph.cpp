@@ -237,8 +237,16 @@ void Graph::constructFromOnnxGraph(
   for (const auto &node : g0.node()) {
     if (OnnxConstExprUtil::isConst(node)) {
       OnnxConstExprUtil::processNode(node, this);
+      logging::ir::trace("Growing const: {}, from node: {}, into graph: {}",
+                         node.op_type(),
+                         node.name(),
+                         id.str());
     } else {
       Op *op = growFromNode(node);
+      logging::ir::trace("Growing Op: {}, from node: {}, into graph: {}",
+                         op->debugName(),
+                         node.name(),
+                         id.str());
       // process ops as they are created
       // Reshape requires a const input tensor at creation time
       // if const folding is left till after the ir is completly constructed

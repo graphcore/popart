@@ -381,6 +381,21 @@ Attributes::Graph Attributes::getAttribute(const std::string &key) const {
 
   throw error("no attribute key {}", key);
 }
+template <>
+Attributes::Graphs Attributes::getAttribute(const std::string &key) const {
+  auto found = att_map.find(key);
+  if (found != att_map.end()) {
+    Attributes::Graphs vs;
+    vs.resize(0);
+    vs.reserve(found->second->graphs_size());
+    for (auto &v : found->second->graphs()) {
+      vs.push_back(v);
+    }
+    return vs;
+  }
+
+  throw error("no attribute key {}", key);
+}
 
 // Adds the key and value
 template <>
@@ -422,6 +437,20 @@ void Attributes::setAttribute(const std::string &key, std::string &value) {
   attribute->set_name(key);
   attribute->set_s(value.c_str());
   att_map[key] = attribute;
+}
+
+Attributes::Graphs Attributes::getAllGraphAttributes() const {
+  std::vector<Attributes::Graph> graphs;
+  for (auto &att : att_map) {
+    if (att.second->has_g()) {
+      graphs.push_back(att.second->g());
+    }
+    graphs.reserve(graphs.size() + att.second->graphs_size());
+    for (auto &graph : att.second->graphs()) {
+      graphs.push_back(graph);
+    }
+  }
+  return graphs;
 }
 
 } // namespace popart

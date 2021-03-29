@@ -3,6 +3,7 @@
 #include <onnx/onnx_pb.h>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
+#include <popart/onnxutil.hpp>
 #include <popart/op/call.hpp>
 #include <popart/op/ipucopy.hpp>
 #include <popart/opmanager.hpp>
@@ -131,9 +132,27 @@ static OpDefinition callOpDef({OpDefinition::Inputs({{"inputs", T}}),
 
 static OpCreator<CallOp> callOpCreator(
     OpDefinitions({{Onnx::CustomOperators::Call_1, callOpDef}}),
-    [](const OpCreatorInfo &info) -> std::unique_ptr<Op> {
+    [](const OpCreatorInfo &info, Graph &graph) -> Op * {
       ONNX_NAMESPACE::GraphProto callee =
           info.attributes.getAttribute<Attributes::Graph>("callee");
+
+      if (callee.name().empty()) {
+        throw error("CallOp subgraph must be named, so that it can be "
+                    "identified for re-use.");
+      }
+
+      auto &parentGraph = info.settings.graph.get();
+
+      std::vector<TensorId> parentScopedImplicitTensorIds;
+      auto implicitTensorIds = onnxutil::getImplicitTensorIds(callee);
+      for (auto implicitTensorId : implicitTensorIds) {
+        auto parentScopedImplicitTensorId =
+            parentGraph.addScope(implicitTensorId);
+        parentScopedImplicitTensorIds.push_back(parentScopedImplicitTensorId);
+      }
+      logging::op::trace("[CallOp] Callee: {}, implicit tensors: {}",
+                         callee.name(),
+                         implicitTensorIds);
 
       // Adding 'modifiedInput' to CallOps to allow creation of CallOps
       // that use CopyModified copies using the builder.
@@ -146,49 +165,85 @@ static OpCreator<CallOp> callOpCreator(
           std::back_inserter(modifiedInputs),
           [](int64_t modifiedInput) -> int { return modifiedInput; });
 
-      if (callee.name().empty()) {
-        throw error("CallOp subgraph must be named, so that it can be "
-                    "identified for re-use.");
-      }
-
       // If the callee subgraph has already been constructed, get that.
       // Otherwise, construct here.
       auto &ir = info.settings.graph.get().getIr();
       Graph *calleeGraph;
-      if (ir.hasGraph(callee.name())) {
+      bool hasGraph = ir.hasGraph(callee.name());
+
+      if (hasGraph) {
         calleeGraph = &ir.getGraph(callee.name());
       } else {
         calleeGraph = &ir.createGraph(callee.name());
+      }
 
+      Op *op = graph.createOp<CallOp>(info.opid,
+                                      info.settings.graph.get(),
+                                      *calleeGraph,
+                                      modifiedInputs,
+                                      info.settings);
+      // Connect explicit inputs
+      if (info.hasInputIds()) {
+        for (InIndex i = 0; i < info.getInputIds().size(); ++i) {
+          auto scopedName =
+              graph.getTensors().find(info.getInputIds().at(i), op->getScope());
+          op->connectInTensor(i, scopedName);
+        }
+      }
+
+      // Connect implicit inputs
+      for (auto parentScopedImplicitTensorId : parentScopedImplicitTensorIds) {
+        op->connectInTensor(op->input->n(), parentScopedImplicitTensorId);
+      }
+
+      if (!hasGraph) {
         // Find the input tensors in the parent graph (or its called
         // graphs) to determine the tensor type
-        auto inputs = info.getInputIds();
-        std::map<TensorId, TensorInfo> inputInfos;
-        for (auto &graph : ir.getAllGraphs()) {
-          for (TensorId input : inputs) {
-            if (graph->getTensors().contains(input, graph->getScope())) {
-              TensorId tid = graph->getTensors().find(input, graph->getScope());
-              Tensor *tensor = graph->getTensors().get(tid);
-              inputInfos.emplace(input, tensor->info);
+        if (info.hasInputIds()) {
+          auto inputs = info.getInputIds();
+          std::map<TensorId, TensorInfo> inputInfos;
+          for (auto &graph : ir.getAllGraphs()) {
+            for (TensorId input : inputs) {
+              if (graph->getTensors().contains(input, graph->getScope())) {
+                TensorId tid =
+                    graph->getTensors().find(input, graph->getScope());
+                Tensor *tensor = graph->getTensors().get(tid);
+                inputInfos.emplace(input, tensor->info);
+              }
             }
           }
-        }
 
-        // Check that an InputInfo was found for all inputs
-        for (TensorId input : inputs) {
-          if (inputInfos.count(input) == 0) {
-            throw error(
-                "Unable to determine tensor info for input to CallOp, {}",
-                input);
+          // Check that an InputInfo was found for all inputs
+          for (TensorId input : inputs) {
+            if (inputInfos.count(input) == 0) {
+              throw error(
+                  "Unable to determine tensor info for input to CallOp, {}",
+                  input);
+            }
+          }
+
+          // Explicit inputs
+          for (int i = 0; i < callee.input_size(); i++) {
+            // Assume callee graph inputs are in the same order as this
+            // op's node inputs
+            TensorInfo calleeInputInfo = inputInfos.at(inputs.at(i));
+            auto scopedId = calleeGraph->addScope(callee.input(i).name());
+            calleeGraph->addInput(scopedId, calleeInputInfo);
           }
         }
 
-        for (int i = 0; i < callee.input_size(); i++) {
-          // Assume callee graph inputs are in the same order as this
-          // op's node inputs
-          TensorInfo calleeInputInfo = inputInfos.at(inputs.at(i));
-          auto scopedId = calleeGraph->addScope(callee.input(i).name());
-          calleeGraph->addInput(scopedId, calleeInputInfo);
+        // Implicit inputs
+        for (auto implicitTensorId : implicitTensorIds) {
+          auto parentScopedImplicitTensorId =
+              parentGraph.addScope(implicitTensorId);
+          Tensor *tensor =
+              parentGraph.getTensors().get(parentScopedImplicitTensorId);
+          auto calleeScopedId = calleeGraph->addScope(implicitTensorId);
+          calleeGraph->addInput(calleeScopedId, tensor->info);
+          logging::op::trace("[CallOp] Callee: {}, implicit tensor: {} -> {}",
+                             callee.name(),
+                             parentScopedImplicitTensorId,
+                             calleeScopedId);
         }
 
         calleeGraph->constructFromOnnxGraph(callee);
@@ -232,11 +287,14 @@ static OpCreator<CallOp> callOpCreator(
         }
       }
 
-      return std::unique_ptr<Op>(new CallOp(info.opid,
-                                            info.settings.graph.get(),
-                                            *calleeGraph,
-                                            modifiedInputs,
-                                            info.settings));
+      // Connect outputs
+      if (info.hasOutputIds()) {
+        for (OutIndex i = 0; i < info.getOutputIds().size(); ++i) {
+          op->createAndConnectOutTensor(i, info.getOutputIds().at(i));
+        }
+      }
+
+      return op;
     },
     true);
 } // namespace

@@ -62,8 +62,6 @@ public:
   LoopOp(const OperatorIdentifier &,
          const Op::Settings &,
          Graph &callee_,
-         std::vector<std::pair<TensorId, TensorInfo>> opInputs_,
-         std::vector<TensorId> implicitTensors_,
          int numImplicitScanOutputs_);
 
   void setup() final;

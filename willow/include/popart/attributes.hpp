@@ -21,6 +21,7 @@ public:
   using Float   = float;
   using Strings = std::vector<std::string>;
   using String  = std::string;
+  using Graphs  = std::vector<ONNX_NAMESPACE::GraphProto>;
   using Graph   = ONNX_NAMESPACE::GraphProto;
 
   Attributes(const NodeAttributes &);
@@ -54,6 +55,8 @@ public:
   // the default value
   template <typename T>
   T getAttribute(const std::string &key, const T &defaultValue) const;
+
+  Attributes::Graphs getAllGraphAttributes() const;
 
   // Attempt to get the value of attribute assigned to the key, else throw an
   // exception

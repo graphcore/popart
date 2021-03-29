@@ -20,18 +20,18 @@ OpDomain sanitizeDomain(const OpDomain &domain) {
   }
 }
 
-std::vector<TensorId> getInputIds(const Node &node) {
+std::vector<TensorId> getInputIds(const Node &node, const Graph &graph) {
   std::vector<TensorId> inputIds;
   for (int i = 0; i < node.input_size(); i++) {
-    inputIds.push_back(node.input(i));
+    inputIds.push_back(graph.addScope(node.input(i)));
   }
   return inputIds;
 }
 
-std::vector<TensorId> getOutputIds(const Node &node) {
+std::vector<TensorId> getOutputIds(const Node &node, const Graph &graph) {
   std::vector<TensorId> outputIds;
   for (int i = 0; i < node.output_size(); i++) {
-    outputIds.push_back(node.output(i));
+    outputIds.push_back(graph.addScope(node.output(i)));
   }
   return outputIds;
 }
@@ -346,8 +346,8 @@ Op *OpManager::createOpInGraph(const Node &node, Graph &graph) {
   OpInfo *opInfo = self.findOpInfo(node.domain(), node.op_type(), opsetVersion);
   self.checkOpVersionAgainstOpset(opInfo, opsetVersion, graph);
 
-  std::vector<TensorId> inputIds  = getInputIds(node);
-  std::vector<TensorId> outputIds = getOutputIds(node);
+  std::vector<TensorId> inputIds  = getInputIds(node, graph);
+  std::vector<TensorId> outputIds = getOutputIds(node, graph);
   Op *op                          = nullptr;
 
   // Find the debugInfoId attribute if is exists. Otherwise 0
