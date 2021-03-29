@@ -5,8 +5,6 @@
 #include <popart/names.hpp>
 #include <popart/popx/opx.hpp>
 
-#include <popops/DynamicSlice.hpp>
-
 namespace popart {
 namespace popx {
 
@@ -32,7 +30,6 @@ public:
   std::set<TensorId> mustExistBeforeCreate(int index0) const override;
 
 private:
-  popops::SlicePlan plan;
   int64_t axis;
 };
 
