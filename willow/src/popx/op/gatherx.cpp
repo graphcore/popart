@@ -4,27 +4,26 @@
 #include <popart/popx/devicex.hpp>
 #include <popart/popx/irlowering.hpp>
 #include <popart/popx/op/gatherx.hpp>
+#include <popart/popx/op/sliceplanx.hpp>
 #include <popart/popx/opxmanager.hpp>
 #include <popart/util.hpp>
 
-#include <popops/DynamicSlice.hpp>
 #include <popops/ElementWise.hpp>
 #include <popops/Gather.hpp>
 #include <popops/Zero.hpp>
 #include <poputil/TileMapping.hpp>
 
-#include <boost/range/algorithm.hpp>
-#include <boost/range/algorithm_ext.hpp>
-#include <boost/range/numeric.hpp>
-
 namespace popart {
 namespace popx {
 
-GatherOpx::GatherOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
+GatherOpx::GatherOpx(Op *op, Devicex *devicex)
+    : Opx(op, devicex), plan(), axis() {
   verifyOp<GatherOp>(op,
                      {Onnx::Operators::Gather_1, Onnx::Operators::Gather_11});
-
-  axis = dynamic_cast<GatherOp *>(op)->getAxis();
+  auto &gop = getOp<GatherOp>();
+  axis      = gop.getAxis();
+  plan      = createSlicePlan(
+      graph(), gop.inInfo(gop.dataInIndex()), gop.inInfo(gop.indicesInIndex()));
 
   // We always want the gather to layout its inputs
   inputCreatorPriority = std::numeric_limits<double>::max();
@@ -45,70 +44,81 @@ void GatherOpx::grow(poplar::program::Sequence &prog) const {
         data.elementType(), outputShape, debugContext("result"));
 
     setOutTensor(GatherOp::outIndex(), result);
-  } else {
-    // Flatten the scalar indices.
-    auto offsets = indices.flatten();
-    // Add a degenerate dimension at the end.
-    offsets = offsets.expand({1});
-    // reinterpret the indices as unsigned int. This assumes negative indices.
-    // are impossible.
-    offsets = offsets.reinterpret(poplar::UNSIGNED_INT);
-
-    // Create a permutation that swaps the gather axis for the front.
-    std::vector<unsigned> permutation(data.rank(), 0);
-    boost::iota(permutation, 0);
-    std::swap(permutation.front(), permutation[axis]);
-
-    // Place the gather axis at the front.
-    data = data.dimShuffle(permutation);
-    // Store the shape for later.
-    auto tmp_shape = data.shape();
-    // Flatten the other dimensions.
-    data = data.flatten(1, data.rank());
-
-    auto result = popops::multiSlice(graph(),
-                                     data,
-                                     offsets,
-                                     {0},
-                                     {1},
-                                     prog,
-                                     popops::SlicePlan(),
-                                     poplar::OptionFlags(),
-                                     debugContext());
-
-    // Reshape the result to "unflatten" the other dimensions.
-    tmp_shape.front() = result.dim(0);
-    result            = result.reshape(tmp_shape);
-    // Put the gather axis dimension back in the right place.
-    result = result.dimShuffle(permutation);
-
-    // Reshape into the expected ONNX shape.
-    result = result.reshape(outputShape);
-
-    setOutTensor(GatherOp::outIndex(), result);
+    return;
   }
+
+  // Flatten the scalar indices.
+  auto offsets = indices.flatten();
+  // Add a degenerate dimension at the end.
+  offsets = offsets.expand({1});
+  // reinterpret the indices as unsigned int. This assumes negative indices.
+  // are impossible.
+  offsets = offsets.reinterpret(poplar::UNSIGNED_INT);
+
+  // Place the gather axis at the front.
+  data = data.dimRoll(static_cast<unsigned>(axis));
+  // Store the shape for later.
+  auto tmp_shape = data.shape();
+  // Flatten the other dimensions.
+  data = data.flatten(1, data.rank());
+
+  auto result = popops::multiSlice(graph(),
+                                   data,
+                                   offsets,
+                                   {0},
+                                   {1},
+                                   prog,
+                                   plan,
+                                   poplar::OptionFlags(),
+                                   debugContext());
+
+  // Reshape the result to "unflatten" the other dimensions.
+  tmp_shape.front() = result.dim(0);
+  result            = result.reshape(tmp_shape);
+  // Put the gather axis dimension back in the right place.
+  result = result.dimRoll(0, static_cast<unsigned>(axis));
+
+  // Reshape into the expected ONNX shape.
+  result = result.reshape(outputShape);
+
+  setOutTensor(GatherOp::outIndex(), result);
 }
 
 poplar::Tensor
 GatherOpx::createInput(int index, const poplar::DebugNameAndId &dnai) const {
-  if (index != GatherOp::dataInIndex()) {
+  if (index != GatherOp::dataInIndex() && index != GatherOp::indicesInIndex()) {
     throw error("GatherOpx::createInput Cannot create input {}", index);
   }
+  std::vector<size_t> dims  = {static_cast<size_t>(axis)};
+  std::vector<size_t> sizes = {1};
 
-  auto info        = inInfo(GatherOp::dataInIndex());
-  const auto shape = info.shape_szt();
+  if (index == GatherOp::dataInIndex()) {
+    auto dataInfo        = inInfo(index);
+    const auto dataShape = dataInfo.shape_szt();
 
-  return popops::createGatherInput(graph(),
-                                   popType(info),
-                                   shape,
-                                   static_cast<unsigned>(axis),
-                                   popops::GatherParams{},
-                                   dnai);
+    return popops::createSliceableTensor(graph(),
+                                         popType(dataInfo),
+                                         dataShape,
+                                         dims,
+                                         sizes,
+                                         plan,
+                                         poplar::OptionFlags(),
+                                         dnai);
+  }
+
+  auto indicesInfo = inInfo(index);
+  auto indices     = popops::createIndicesTensor(
+      graph(), dims, indicesInfo.nelms(), plan, poplar::OptionFlags(), dnai);
+  indices = indices.reinterpret(popType(indicesInfo));
+  return indices.reshape(indicesInfo.shape_szt());
 }
 
-InputCreatorType GatherOpx::getInputCreatorType(int index0) const {
-  return index0 == GatherOp::dataInIndex() ? InputCreatorType::CanCreate
-                                           : Opx::getInputCreatorType(index0);
+InputCreatorType GatherOpx::getInputCreatorType(int index) const {
+  if (index == GatherOp::dataInIndex() || index == GatherOp::indicesInIndex()) {
+    return InputCreatorType::CanCreate;
+  }
+
+  return Opx::getInputCreatorType(index);
 }
 
 bool GatherOpx::createsEquiv(int, const Opx *, int) const { return false; }

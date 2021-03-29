@@ -4,6 +4,7 @@
 #include <popart/popx/irlowering.hpp>
 #include <popart/popx/op/scatterreducex.hpp>
 #include <popart/popx/op/scatterutilx.hpp>
+#include <popart/popx/op/sliceplanx.hpp>
 #include <popart/popx/opxmanager.hpp>
 #include <popart/util.hpp>
 
@@ -16,30 +17,15 @@
 namespace popart {
 namespace popx {
 
-namespace {
-popops::SlicePlan generatePlan(const poplar::Graph &graph,
-                               const ScatterReduceOp &op,
-                               size_t axis) {
-
-  auto dataInfo    = op.inInfo(op.dataInIndex());
-  auto indicesInfo = op.inInfo(op.indicesInIndex());
-
-  size_t numEntries = dataInfo.nelms();
-  size_t outputSize = 1;
-  size_t numLookups = indicesInfo.nelms();
-
-  return popops::embedding::plan(
-      graph, popType(dataInfo), numEntries, outputSize, {numLookups}, {});
-}
-} // namespace
-
 ScatterReduceOpx::ScatterReduceOpx(Op *op, Devicex *devicex)
     : Opx(op, devicex), plan(), axis() {
   verifyOp<ScatterReduceOp>(op, {Onnx::CustomOperators::ScatterReduce});
 
   auto &srop = getOp<ScatterReduceOp>();
   axis       = static_cast<size_t>(srop.getAxis());
-  plan       = generatePlan(graph(), srop, axis);
+  plan       = createSlicePlan(graph(),
+                         srop.inInfo(srop.dataInIndex()),
+                         srop.inInfo(srop.indicesInIndex()));
 
   // We always want the ScatterReduce to layout its inputs
   inputCreatorPriority = std::numeric_limits<double>::max();
