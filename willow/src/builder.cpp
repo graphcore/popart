@@ -6,6 +6,7 @@
 #include <popart/filereader.hpp>
 #include <popart/logging.hpp>
 #include <popart/onnxutil.hpp>
+#include <popart/op/collectives/collectives.hpp>
 #include <popart/op/receptive.hpp>
 #include <popart/opidentifier.hpp>
 #include <popart/poparttracepoint.hpp>
@@ -976,12 +977,16 @@ AiGraphcoreOpset1::call(const std::vector<TensorId> &args,
   return outputs;
 }
 
-TensorId
-AiGraphcoreOpset1::replicatedallreduce(const std::vector<TensorId> &args,
-                                       const DebugContext &debugContext) {
+TensorId AiGraphcoreOpset1::replicatedallreduce(
+    const std::vector<TensorId> &args,
+    const nonstd::optional<std::vector<int64_t>> &commGroup,
+    const DebugContext &debugContext) {
   std::map<std::string, popart::any> attributes;
   BuilderDebugInfo di(debugContext, __POPART_FUNCTION_NAME__, args, attributes);
   attributes.insert({sDebugInfoId, di.getId()});
+  if (commGroup) {
+    attributes.insert({sCollectiveCommGroup, *commGroup});
+  }
   auto outputs = impl->op(Onnx::AiGraphcore::OpSet1::ReplicatedAllReduce,
                           getOpsetVersion(),
                           args,

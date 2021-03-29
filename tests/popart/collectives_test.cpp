@@ -8,6 +8,8 @@
 #include <popart/filereader.hpp>
 #include <popart/inputshapeinfo.hpp>
 #include <popart/ndarraywrapper.hpp>
+#include <popart/op/collectives/replicatedallgather.hpp>
+#include <popart/op/collectives/replicatedallreduce.hpp>
 #include <popart/op/dynamic/dynamicslice.hpp>
 #include <popart/op/init.hpp>
 #include <popart/op/l1.hpp>
@@ -516,5 +518,135 @@ BOOST_AUTO_TEST_CASE(ReplicatedAllGatherTest) {
         }
       }
     }
+  }
+}
+
+template <typename OpTy> struct OpToIdentifierMap {};
+
+template <> struct OpToIdentifierMap<popart::ReplicatedAllGatherOp> {
+  static const OperatorIdentifier id;
+};
+
+template <> struct OpToIdentifierMap<popart::ReplicatedAllReduceOp> {
+  static const OperatorIdentifier id;
+};
+
+const OperatorIdentifier OpToIdentifierMap<popart::ReplicatedAllGatherOp>::id =
+    Onnx::CustomOperators::ReplicatedAllGather;
+
+const OperatorIdentifier OpToIdentifierMap<popart::ReplicatedAllReduceOp>::id =
+    Onnx::CustomOperators::ReplicatedAllReduce;
+
+template <typename OpTy>
+static std::vector<const OpTy *>
+findAllOps(const std::unique_ptr<popart::Session> &session) {
+  const auto allOps = session->getIr().getAllOps();
+  std::vector<const OpTy *> result;
+
+  std::copy_if(
+      allOps.cbegin(),
+      allOps.cend(),
+      std::back_inserter(result),
+      [](const Op *op) { return op->opid == OpToIdentifierMap<OpTy>::id; });
+  return result;
+}
+
+template <typename OpTy, typename SessionTy>
+static const OpTy *findFirstOp(const std::unique_ptr<SessionTy> &session) {
+  const auto allOps = session->getIr().getAllOps();
+  auto iter = std::find_if(allOps.cbegin(), allOps.cend(), [](const Op *op) {
+    return op->opid == OpToIdentifierMap<OpTy>::id;
+  });
+  BOOST_ASSERT(iter != allOps.cend());
+  return static_cast<const OpTy *>(*iter);
+}
+
+BOOST_AUTO_TEST_CASE(ReplicatedAllGatherTest_CommGroup_All) {
+  const int numIPUs           = 2;
+  const int replicationFactor = 2;
+  int64_t N                   = 11;
+  auto bder                   = Builder::create();
+  auto aiOnnx                 = bder->aiOnnxOpset9();
+  auto aiGraphcore            = bder->aiGraphcoreOpset1();
+
+  // Tensor A of shape N
+  TensorInfo A_info{"FLOAT", std::vector<int64_t>{N}};
+  std::vector<float> v_A_init(A_info.nelms());
+
+  TensorInfo A_info_replicated{"FLOAT",
+                               std::vector<int64_t>{replicationFactor, N}};
+  std::vector<float> v_A_init_replicated(replicationFactor * A_info.nelms());
+
+  int k = 0;
+  for (int i = 0; i < replicationFactor; ++i) {
+    for (int j = 0; j < N; ++j) {
+      v_A_init_replicated[k] = i * N + (float)j;
+      ++k;
+    }
+  }
+
+  TensorId A_id = bder->addInputTensor(A_info, "A");
+
+  int64_t out_shape = replicationFactor * N;
+  TensorInfo B_info{"FLOAT", std::vector<int64_t>{out_shape}};
+  TensorId B_id =
+      bder->customOp(Onnx::CustomOperators::ReplicatedAllGather,
+                     1,
+                     {A_id},
+                     1,
+                     {{sCollectiveCommGroup, std::vector<int64_t>{0, 4}}})[0];
+  TensorId B2_id =
+      bder->customOp(Onnx::CustomOperators::ReplicatedAllReduce,
+                     1,
+                     {A_id},
+                     1,
+                     {{sCollectiveCommGroup, std::vector<int64_t>{1, 42}}})[0];
+
+  bder->addOutputTensor(B_id);
+
+  auto proto         = bder->getModelProto();
+  auto modelProto    = io::getModelFromString(proto);
+  auto art           = AnchorReturnType("All");
+  int batchesPerStep = 1;
+  auto dataFlow      = DataFlow(batchesPerStep, {{B_id, art}});
+  auto device        = createTestDevice(TEST_TARGET, numIPUs);
+
+  // inputs:
+  popart::NDArrayWrapper<float> A_wrapper(v_A_init_replicated.data(),
+                                          A_info_replicated);
+
+  std::map<popart::TensorId, popart::IArray &> inputs = {{A_id, A_wrapper}};
+
+  std::vector<float> raw_B_out(replicationFactor * out_shape);
+  TensorInfo B_info_replicated{
+      "FLOAT", std::vector<int64_t>{replicationFactor, out_shape}};
+
+  popart::NDArrayWrapper<float> B_wrapper(raw_B_out.data(),
+                                          B_info_replicated.shape());
+  std::map<popart::TensorId, popart::IArray &> anchors = {
+      {B_id, B_wrapper},
+  };
+
+  if (device != nullptr) {
+    auto opts                   = SessionOptions();
+    opts.enableReplicatedGraphs = true;
+    opts.replicatedGraphCount   = replicationFactor;
+
+    auto session = popart::InferenceSession::createFromOnnxModel(
+        proto,
+        dataFlow,
+        device,
+        popart::InputShapeInfo(),
+        opts,
+        popart::Patterns(PatternsLevel::Default));
+    session->prepareDevice();
+    popart::StepIO stepio(inputs, anchors);
+    session->run(stepio);
+
+    const popart::ReplicatedAllGatherOp *allGather =
+        findFirstOp<popart::ReplicatedAllGatherOp>(session);
+    BOOST_ASSERT(allGather->getGCLCommGroup().type ==
+                 popart::CommGroupType::All);
+    BOOST_ASSERT(allGather->getGCLCommGroup().replicaGroupSize == 4);
   }
 }

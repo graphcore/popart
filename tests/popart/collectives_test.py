@@ -40,3 +40,32 @@ def test_replicated_allreduce():
     ground_truth = 2.0 * np.array(range(10), dtype=np.float32)
     for i in range(replicatedGraphCount):
         assert np.allclose(anchors[o][i], ground_truth)
+
+
+@tu.requires_ipu
+def test_gcl_comm_group_attrs():
+    input_data = np.array(range(10), dtype=np.float32)
+    builder = popart.Builder()
+    t = builder.addInitializedInputTensor(input_data, "input")
+    o1 = builder.aiGraphcore.replicatedallreduce(
+        [t], commGroup=[popart.CommGroupType.All, 4])
+    with builder.commGroup(popart.CommGroupType.Consecutive, 4):
+        o2 = builder.aiGraphcore.replicatedallreduce([t])
+    with builder.commGroup(popart.CommGroupType.Orthogonal, 4):
+        o3 = builder.aiGraphcore.replicatedallreduce([t])
+    builder.addOutputTensor(o1)
+    builder.addOutputTensor(o2)
+    builder.addOutputTensor(o3)
+    attributes = builder.getAllNodeAttributeNames(set([o2]))
+    assert "__collectiveCommGroup" in attributes
+    attr = builder.getInt64VectorNodeAttribute("__collectiveCommGroup",
+                                               set([o2]))
+    assert attr == [int(popart.CommGroupType.Consecutive), 4]
+
+    attributes = builder.getAllNodeAttributeNames(set([o3]))
+    assert "__collectiveCommGroup" in attributes
+
+    attr = builder.getInt64VectorNodeAttribute("__collectiveCommGroup",
+                                               set([o3]))
+
+    assert attr == [int(popart.CommGroupType.Orthogonal), 4]

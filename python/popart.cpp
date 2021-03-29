@@ -18,6 +18,7 @@
 #include <popart/graphtransformer.hpp>
 #include <popart/ir.hpp>
 #include <popart/numerics.hpp>
+#include <popart/op/collectives/collectives.hpp>
 #include <popart/op/identity.hpp>
 #include <popart/op/init.hpp>
 #include <popart/op/l1.hpp>
@@ -2242,11 +2243,13 @@ PYBIND11_MODULE(popart_core, m) {
     cls.def("replicatedallreduce",
             &AiGraphcoreOpset1::replicatedallreduce,
             py::arg("args"),
+            py::arg("commGroup")   = py::none(),
             py::arg("debugPrefix") = std::string(),
             DOC(popart, AiGraphcoreOpset1, replicatedallreduce));
     cls.def("replicatedallreduce",
             &AiGraphcoreOpset1::replicatedallreduce,
             py::arg("args"),
+            py::arg("commGroup")    = py::none(),
             py::arg("debugContext") = std::string(),
             DOC(popart, AiGraphcoreOpset1, replicatedallreduce));
     cls.def("l1loss",
@@ -2787,6 +2790,19 @@ PYBIND11_MODULE(popart_core, m) {
           return acm;
         },
         py::arg("value"));
+    cls.def(
+        "commGroup",
+        [](Builder &self,
+           int64_t type,
+           int64_t groupSize) -> AttributeContextManager {
+          AttributeContextManager acm(self,
+                                      sCollectiveCommGroup,
+                                      std::vector<int64_t>{type, groupSize});
+          return acm;
+        },
+        py::arg("type")      = 0,
+        py::arg("groupSize") = 0);
+
     cls.def("excludePatterns",
             static_cast<void (Builder::*)(
                 const TensorId &, const std::vector<std::string> &value)>(
@@ -2934,6 +2950,16 @@ PYBIND11_MODULE(popart_core, m) {
     en.value("Random",
              DeviceSelectionCriterion::Random,
              DOC(popart, DeviceSelectionCriterion, Random));
+  }
+  {
+    py::enum_<CommGroupType> en(m, "CommGroupType");
+    en.value("All", CommGroupType::All, DOC(popart, CommGroupType, All));
+    en.value("Consecutive",
+             CommGroupType::Consecutive,
+             DOC(popart, CommGroupType, Consecutive));
+    en.value("Orthogonal",
+             CommGroupType::Orthogonal,
+             DOC(popart, CommGroupType, Orthogonal));
   }
 
   {

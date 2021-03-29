@@ -456,11 +456,14 @@ public:
    * the builder.
    *
    * \param args Vector of input tensor ids to reduce across.
+   * \param commGroup GCL CommGroup parameter.
    * \param debugContext Optional debug context.
    * \return The name of the result tensor.
    */
-  TensorId replicatedallreduce(const std::vector<TensorId> &args,
-                               const DebugContext &debugContext = {});
+  TensorId replicatedallreduce(
+      const std::vector<TensorId> &args,
+      const nonstd::optional<std::vector<int64_t>> &commGroup = nonstd::nullopt,
+      const DebugContext &debugContext                        = {});
 
   /**
    * Add an \c l1 loss operation to the model.

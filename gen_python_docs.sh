@@ -58,6 +58,7 @@ willow/include/popart/error.hpp \
 willow/include/popart/graphtransformer.hpp \
 willow/include/popart/ir.hpp \
 willow/include/popart/numerics.hpp \
+willow/include/popart/op/collectives/collectives.hpp \
 willow/include/popart/op/identity.hpp \
 willow/include/popart/op/init.hpp \
 willow/include/popart/op/l1.hpp \

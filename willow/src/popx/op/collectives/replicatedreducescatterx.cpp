@@ -72,6 +72,7 @@ void ReplicatedReduceScatterOpx::grow(poplar::program::Sequence &prog) const {
                          toReduceScatter.flatten(),
                          getPoplarCollectiveOperator(rrsOp.getCollectiveOp()),
                          prog,
+                         toGCLCommGroup(rrsOp.getGCLCommGroup()),
                          debugContext("replicatedReduceScatter"),
                          reduceScatterOptions);
 

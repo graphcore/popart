@@ -10,6 +10,7 @@ class ReplicatedAllReduceOp : public CollectivesBaseOp {
 public:
   ReplicatedAllReduceOp(const OperatorIdentifier &_opid,
                         CollectiveOperator op_,
+                        CommGroup group,
                         const Op::Settings &settings_);
   ReplicatedAllReduceOp(const OperatorIdentifier &_opid,
                         const Op::Settings &settings_);
@@ -21,15 +22,18 @@ public:
   float getSubgraphValue() const final { return getHighSubgraphValue(); }
   void appendOutlineAttributes(OpSerialiserBase &) const override;
   CollectiveOperator getCollectiveOp() const { return op; }
+  CommGroup getGCLCommGroup() const;
 
 protected:
   CollectiveOperator op;
+  CommGroup group;
 };
 
 class ReplicatedAllReduceInplaceOp : public ReplicatedAllReduceOp {
 public:
   ReplicatedAllReduceInplaceOp(const OperatorIdentifier &_opid,
                                CollectiveOperator op_,
+                               CommGroup group,
                                const Op::Settings &settings_);
   ReplicatedAllReduceInplaceOp(const OperatorIdentifier &_opid,
                                const Op::Settings &settings_);
@@ -40,6 +44,9 @@ public:
   std::unique_ptr<Op> clone() const final;
   void setup() final;
 };
+
+class Attributes;
+CommGroup extractCommGroupFromAttrs(const Attributes &attrs);
 
 } // namespace popart
 

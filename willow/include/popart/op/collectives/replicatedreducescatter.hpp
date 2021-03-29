@@ -10,6 +10,7 @@ class ReplicatedReduceScatterOp : public CollectivesBaseOp {
 public:
   ReplicatedReduceScatterOp(const OperatorIdentifier &_opid,
                             CollectiveOperator op_,
+                            CommGroup group,
                             const Op::Settings &settings_);
   ReplicatedReduceScatterOp(const OperatorIdentifier &_opid,
                             const Op::Settings &settings_);

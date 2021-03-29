@@ -1873,6 +1873,7 @@ ReplicatedAllGatherOp *StreamingMemoryOpInserter::insertReplicatedAllGatherOp(
   // tensor from the individual replicas
   auto allGatherOp = std::make_unique<ReplicatedAllGatherOp>(
       Onnx::CustomOperators::ReplicatedAllGather,
+      CommGroup{},
       tensorConfig.settings,
       gatherInfo);
   allGather = allGatherOp.get();
@@ -1965,6 +1966,7 @@ StreamingMemoryOpInserter::insertReplicatedReduceScatterOp(
   auto replicatedReduceScatterOp = std::make_unique<ReplicatedReduceScatterOp>(
       Onnx::CustomOperators::ReplicatedReduceScatter,
       collectiveOp,
+      CommGroup{},
       tensorConfig.settings);
   auto replicatedReduceScatter = replicatedReduceScatterOp.get();
   graph.moveIntoGraph(std::move(replicatedReduceScatterOp));

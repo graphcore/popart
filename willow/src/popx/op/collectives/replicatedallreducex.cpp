@@ -8,6 +8,7 @@
 #include <popart/popx/opxmanager.hpp>
 
 #include <gcl/Collectives.hpp>
+#include <type_traits>
 
 namespace popart {
 namespace popx {
@@ -29,6 +30,7 @@ void ReplicatedAllReduceOpx::grow(poplar::program::Sequence &prog) const {
                      toReduce,
                      getPoplarCollectiveOperator(rarOp.getCollectiveOp()),
                      prog,
+                     toGCLCommGroup(rarOp.getGCLCommGroup()),
                      debugContext("replicatedAllReduce"),
                      allReduceOptions);
   setOutTensor(ReplicatedAllReduceOp::getOutIndex(), output);

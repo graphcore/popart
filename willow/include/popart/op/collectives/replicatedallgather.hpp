@@ -8,8 +8,11 @@ namespace popart {
 
 class ReplicatedAllGatherOp : public CollectivesBaseOp {
 public:
-  ReplicatedAllGatherOp(const OperatorIdentifier &, const Op::Settings &);
   ReplicatedAllGatherOp(const OperatorIdentifier &,
+                        CommGroup group,
+                        const Op::Settings &);
+  ReplicatedAllGatherOp(const OperatorIdentifier &,
+                        CommGroup group,
                         const Op::Settings &,
                         TensorInfo outInfo);
 

@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
+#include <popart/op/collectives/collectives.hpp>
 #include <popart/op/collectives/replicatedallgather.hpp>
 #include <popart/opmanager.hpp>
 #include <popart/opserialiser.hpp>
@@ -10,13 +11,16 @@
 namespace popart {
 
 ReplicatedAllGatherOp::ReplicatedAllGatherOp(const OperatorIdentifier &_opid,
+                                             CommGroup group,
                                              const Op::Settings &settings_)
-    : CollectivesBaseOp(_opid, settings_) {}
+    : CollectivesBaseOp(_opid, group, settings_) {}
 
 ReplicatedAllGatherOp::ReplicatedAllGatherOp(const OperatorIdentifier &_opid,
+                                             CommGroup group,
                                              const Op::Settings &settings_,
                                              TensorInfo gatheredOutInfo_)
-    : CollectivesBaseOp(_opid, settings_), gatheredOutInfo(gatheredOutInfo_) {}
+    : CollectivesBaseOp(_opid, group, settings_),
+      gatheredOutInfo(gatheredOutInfo_) {}
 
 std::unique_ptr<Op> ReplicatedAllGatherOp::clone() const {
   return std::make_unique<ReplicatedAllGatherOp>(*this);
@@ -51,7 +55,9 @@ static OpCreator<ReplicatedAllGatherOp> ReplicatedAllGatherOpCreator(
                     ReplicatedAllGatherOpDef}}),
     [](const OpCreatorInfo &info) {
       return std::unique_ptr<ReplicatedAllGatherOp>(
-          new ReplicatedAllGatherOp(info.opid, info.settings));
+          new ReplicatedAllGatherOp(info.opid,
+                                    extractCommGroupFromAttrs(info.attributes),
+                                    info.settings));
     },
     true);
 

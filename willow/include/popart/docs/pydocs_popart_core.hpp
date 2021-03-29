@@ -25,6 +25,10 @@
 #pragma GCC diagnostic ignored "-Wunused-variable"
 #endif
 
+static const char *__doc_gcl_CommGroup = R"doc()doc";
+
+static const char *__doc_gcl_CommGroup_2 = R"doc()doc";
+
 static const char *__doc_popart_AccumulateOuterFragmentSchedule =
     R"doc(Enum type that determines how the operations in the accumulate outer
 fragment will be scheduled accross virtual graphs (only relevant to
@@ -2004,6 +2008,9 @@ builder.
 Parameter ``args``:
     Vector of input tensor ids to reduce across.
 
+Parameter ``commGroup``:
+    GCL CommGroup parameter.
+
 Parameter ``debugContext``:
     Optional debug context.
 
@@ -2018,6 +2025,9 @@ builder.
 
 Parameter ``args``:
     Vector of input tensor ids to reduce across.
+
+Parameter ``commGroup``:
+    GCL CommGroup parameter.
 
 Parameter ``debugContext``:
     Optional debug context.
@@ -4263,6 +4273,207 @@ static const char *__doc_popart_ClipNormSettings_operator_ne_2 = R"doc()doc";
 static const char *__doc_popart_ClipNormSettings_weightIds = R"doc()doc";
 
 static const char *__doc_popart_ClipNormSettings_weightIds_2 = R"doc()doc";
+
+static const char *__doc_popart_CollectiveOperator = R"doc()doc";
+
+static const char *__doc_popart_CollectiveOperator_2 = R"doc()doc";
+
+static const char *__doc_popart_CollectiveOperator_Add = R"doc()doc";
+
+static const char *__doc_popart_CollectiveOperator_Add_2 = R"doc()doc";
+
+static const char *__doc_popart_CollectiveOperator_Local = R"doc()doc";
+
+static const char *__doc_popart_CollectiveOperator_Local_2 = R"doc()doc";
+
+static const char *__doc_popart_CollectiveOperator_LogicalAnd = R"doc()doc";
+
+static const char *__doc_popart_CollectiveOperator_LogicalAnd_2 = R"doc()doc";
+
+static const char *__doc_popart_CollectiveOperator_LogicalOr = R"doc()doc";
+
+static const char *__doc_popart_CollectiveOperator_LogicalOr_2 = R"doc()doc";
+
+static const char *__doc_popart_CollectiveOperator_Max = R"doc()doc";
+
+static const char *__doc_popart_CollectiveOperator_Max_2 = R"doc()doc";
+
+static const char *__doc_popart_CollectiveOperator_Min = R"doc()doc";
+
+static const char *__doc_popart_CollectiveOperator_Min_2 = R"doc()doc";
+
+static const char *__doc_popart_CollectiveOperator_Mul = R"doc()doc";
+
+static const char *__doc_popart_CollectiveOperator_Mul_2 = R"doc()doc";
+
+static const char *__doc_popart_CollectiveOperator_N = R"doc()doc";
+
+static const char *__doc_popart_CollectiveOperator_N_2 = R"doc()doc";
+
+static const char *__doc_popart_CollectiveOperator_SquareAdd = R"doc()doc";
+
+static const char *__doc_popart_CollectiveOperator_SquareAdd_2 = R"doc()doc";
+
+static const char *__doc_popart_CollectivesBaseOp = R"doc()doc";
+
+static const char *__doc_popart_CollectivesBaseOp_2 = R"doc()doc";
+
+static const char *__doc_popart_CollectivesBaseOp_CollectivesBaseOp =
+    R"doc()doc";
+
+static const char *__doc_popart_CollectivesBaseOp_CollectivesBaseOp_2 =
+    R"doc()doc";
+
+static const char *__doc_popart_CollectivesBaseOp_appendOutlineAttributes =
+    R"doc()doc";
+
+static const char *__doc_popart_CollectivesBaseOp_appendOutlineAttributes_2 =
+    R"doc()doc";
+
+static const char *__doc_popart_CollectivesBaseOp_getCollectiveLinkedIndex =
+    R"doc()doc";
+
+static const char *__doc_popart_CollectivesBaseOp_getCollectiveLinkedIndex_2 =
+    R"doc()doc";
+
+static const char *__doc_popart_CollectivesBaseOp_getGCLCommGroup = R"doc()doc";
+
+static const char *__doc_popart_CollectivesBaseOp_getGCLCommGroup_2 =
+    R"doc()doc";
+
+static const char *__doc_popart_CollectivesBaseOp_getInIndex = R"doc()doc";
+
+static const char *__doc_popart_CollectivesBaseOp_getInIndex_2 = R"doc()doc";
+
+static const char *__doc_popart_CollectivesBaseOp_getOutIndex = R"doc()doc";
+
+static const char *__doc_popart_CollectivesBaseOp_getOutIndex_2 = R"doc()doc";
+
+static const char *__doc_popart_CollectivesBaseOp_group = R"doc()doc";
+
+static const char *__doc_popart_CollectivesBaseOp_group_2 = R"doc()doc";
+
+static const char *__doc_popart_CommGroup =
+    R"doc(Struct to specify sub-groups of replicas.
+
+Examples of derived sub-groups: - IPU-link domain sub-rack:
+
+```
+type == Consecutive && replicaGroupSize == 64/replica-size/N
+```
+
+where N is power of two and replicaGroupSize > 1. - Complete IPU-link
+domain / full rack:
+
+```
+type == Consecutive && replicaGroupSize == 64/replica-size
+```
+
+- Using GW-links only:
+
+```
+type == Orthogonal && replicaGroupSize == 64/replica-size
+```)doc";
+
+static const char *__doc_popart_CommGroup_2 =
+    R"doc(Struct to specify sub-groups of replicas.
+
+Examples of derived sub-groups: - IPU-link domain sub-rack:
+
+```
+type == Consecutive && replicaGroupSize == 64/replica-size/N
+```
+
+where N is power of two and replicaGroupSize > 1. - Complete IPU-link
+domain / full rack:
+
+```
+type == Consecutive && replicaGroupSize == 64/replica-size
+```
+
+- Using GW-links only:
+
+```
+type == Orthogonal && replicaGroupSize == 64/replica-size
+```)doc";
+
+static const char *__doc_popart_CommGroupType =
+    R"doc(PopART equivalent of GCL CommGroupType. Each of these enumeration
+constants have a corresponding GCL CommGroupType value.)doc";
+
+static const char *__doc_popart_CommGroupType_2 =
+    R"doc(PopART equivalent of GCL CommGroupType. Each of these enumeration
+constants have a corresponding GCL CommGroupType value.)doc";
+
+static const char *__doc_popart_CommGroupType_All =
+    R"doc(All replicas viewed as one group, replica group size is ignored. */)doc";
+
+static const char *__doc_popart_CommGroupType_All_2 =
+    R"doc(All replicas viewed as one group, replica group size is ignored. */)doc";
+
+static const char *__doc_popart_CommGroupType_Consecutive =
+    R"doc(Groups are consecutive in replica. If there are N replicas denoted
+{0....N-1} and group size is k then the groups are: {0, 1, ... k-1},
+{k, ... 2k-1} ... {N-k-1, ... N-1})doc";
+
+static const char *__doc_popart_CommGroupType_Consecutive_2 =
+    R"doc(Groups are consecutive in replica. If there are N replicas denoted
+{0....N-1} and group size is k then the groups are: {0, 1, ... k-1},
+{k, ... 2k-1} ... {N-k-1, ... N-1})doc";
+
+static const char *__doc_popart_CommGroupType_N =
+    R"doc(Groups are sliced orthogonal to the replica ordering. If there are N
+replicas denoted {0....N-1} and group size is k then the groups are:
+{0, k, 2k, ...}, {1, k+1, 2k+1, ...} ... {k-1, 2k-1, ..., N-1})doc";
+
+static const char *__doc_popart_CommGroupType_N_2 =
+    R"doc(Groups are sliced orthogonal to the replica ordering. If there are N
+replicas denoted {0....N-1} and group size is k then the groups are:
+{0, k, 2k, ...}, {1, k+1, 2k+1, ...} ... {k-1, 2k-1, ..., N-1})doc";
+
+static const char *__doc_popart_CommGroupType_Orthogonal =
+    R"doc(Groups are sliced orthogonal to the replica ordering. If there are N
+replicas denoted {0....N-1} and group size is k then the groups are:
+{0, k, 2k, ...}, {1, k+1, 2k+1, ...} ... {k-1, 2k-1, ..., N-1})doc";
+
+static const char *__doc_popart_CommGroupType_Orthogonal_2 =
+    R"doc(Groups are sliced orthogonal to the replica ordering. If there are N
+replicas denoted {0....N-1} and group size is k then the groups are:
+{0, k, 2k, ...}, {1, k+1, 2k+1, ...} ... {k-1, 2k-1, ..., N-1})doc";
+
+static const char *__doc_popart_CommGroup_CommGroup = R"doc()doc";
+
+static const char *__doc_popart_CommGroup_CommGroup_2 =
+    R"doc(Construct CommGroup
+
+Parameter ``groupType``:
+    replica group type
+
+Parameter ``groupSize``:
+    replica group size)doc";
+
+static const char *__doc_popart_CommGroup_CommGroup_3 = R"doc()doc";
+
+static const char *__doc_popart_CommGroup_CommGroup_4 =
+    R"doc(Construct CommGroup
+
+Parameter ``groupType``:
+    replica group type
+
+Parameter ``groupSize``:
+    replica group size)doc";
+
+static const char *__doc_popart_CommGroup_replicaGroupSize =
+    R"doc(Replica group size */)doc";
+
+static const char *__doc_popart_CommGroup_replicaGroupSize_2 =
+    R"doc(Replica group size */)doc";
+
+static const char *__doc_popart_CommGroup_type =
+    R"doc(Replica group type */)doc";
+
+static const char *__doc_popart_CommGroup_type_2 =
+    R"doc(Replica group type */)doc";
 
 static const char *__doc_popart_ConstSGD =
     R"doc(Stochastic Gradient Descent (SGD) optimizer with constant learning
@@ -12132,6 +12343,48 @@ static const char *__doc_popart_error_logMessage =
 static const char *__doc_popart_error_logMessage_2 =
     R"doc(Log the exception message)doc";
 
+static const char *__doc_popart_extractCommGroupFromAttrs =
+    R"doc(Extracts CommGroup from op's attributes. If the attribute isn't set,
+then the function returns a default constructed CommGroup.
+
+Parameter ``attrs``:
+    Op's attributes.
+
+Returns:
+    CommGroup that is extracted from attributes.)doc";
+
+static const char *__doc_popart_extractCommGroupFromAttrs_2 =
+    R"doc(Extracts CommGroup from op's attributes. If the attribute isn't set,
+then the function returns a default constructed CommGroup.
+
+Parameter ``attrs``:
+    Op's attributes.
+
+Returns:
+    CommGroup that is extracted from attributes.)doc";
+
+static const char *__doc_popart_extractCommGroupFromVector =
+    R"doc(Extracts CommGroup from vector of two integers. If the vector is
+empty, then the function returns a default constructed CommGroup.
+
+Parameter ``vec``:
+    Vector of two integers corresponding to the CommGroupType and
+    replicaGroupSize.
+
+Returns:
+    CommGroup that is extracted from the input vector.)doc";
+
+static const char *__doc_popart_extractCommGroupFromVector_2 =
+    R"doc(Extracts CommGroup from vector of two integers. If the vector is
+empty, then the function returns a default constructed CommGroup.
+
+Parameter ``vec``:
+    Vector of two integers corresponding to the CommGroupType and
+    replicaGroupSize.
+
+Returns:
+    CommGroup that is extracted from the input vector.)doc";
+
 static const char *__doc_popart_getDotCheckString = R"doc()doc";
 
 static const char *__doc_popart_getDotCheckString_2 = R"doc()doc";
@@ -12588,6 +12841,18 @@ static const char *__doc_popart_operator_lshift_35 = R"doc()doc";
 static const char *__doc_popart_operator_lshift_36 = R"doc()doc";
 
 static const char *__doc_popart_operator_lshift_37 = R"doc()doc";
+
+static const char *__doc_popart_operator_lshift_38 = R"doc()doc";
+
+static const char *__doc_popart_operator_lshift_39 = R"doc()doc";
+
+static const char *__doc_popart_operator_lshift_40 = R"doc()doc";
+
+static const char *__doc_popart_operator_lshift_41 = R"doc()doc";
+
+static const char *__doc_popart_operator_lshift_42 = R"doc()doc";
+
+static const char *__doc_popart_operator_lshift_43 = R"doc()doc";
 
 static const char *__doc_popart_optimizer_replacement_error = R"doc()doc";
 
@@ -13398,6 +13663,24 @@ static const char *__doc_popart_syncPatternFromString_2 = R"doc()doc";
 static const char *__doc_popart_syncPatternToString = R"doc()doc";
 
 static const char *__doc_popart_syncPatternToString_2 = R"doc()doc";
+
+static const char *__doc_popart_toGCLCommGroup =
+    R"doc(Converts give CommGroup to GCL's CommGroup type.
+
+Parameter ``input``:
+    PopART CommGroup.
+
+Returns:
+    GCL CommGroup.)doc";
+
+static const char *__doc_popart_toGCLCommGroup_2 =
+    R"doc(Converts give CommGroup to GCL's CommGroup type.
+
+Parameter ``input``:
+    PopART CommGroup.
+
+Returns:
+    GCL CommGroup.)doc";
 
 static const char *__doc_popart_toString = R"doc()doc";
 

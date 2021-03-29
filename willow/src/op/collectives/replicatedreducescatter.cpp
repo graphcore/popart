@@ -13,13 +13,15 @@ namespace popart {
 ReplicatedReduceScatterOp::ReplicatedReduceScatterOp(
     const OperatorIdentifier &_opid,
     CollectiveOperator op_,
+    CommGroup group,
     const Op::Settings &settings_)
-    : CollectivesBaseOp(_opid, settings_), op(op_) {}
+    : CollectivesBaseOp(_opid, group, settings_), op(op_) {}
 
 ReplicatedReduceScatterOp::ReplicatedReduceScatterOp(
     const OperatorIdentifier &_opid,
     const Op::Settings &settings_)
-    : CollectivesBaseOp(_opid, settings_), op(CollectiveOperator::Add) {}
+    : CollectivesBaseOp(_opid, CommGroup{}, settings_),
+      op(CollectiveOperator::Add) {}
 
 std::unique_ptr<Op> ReplicatedReduceScatterOp::clone() const {
   return std::make_unique<ReplicatedReduceScatterOp>(*this);
@@ -68,9 +70,9 @@ static OpCreator<ReplicatedReduceScatterOp> ReplicatedReduceScatterOpCreator(
       CollectiveOperator op = static_cast<CollectiveOperator>(
           info.attributes.getAttribute<Attributes::Int>(
               "op", static_cast<int>(CollectiveOperator::Add)));
-
+      CommGroup group = extractCommGroupFromAttrs(info.attributes);
       return std::unique_ptr<ReplicatedReduceScatterOp>(
-          new ReplicatedReduceScatterOp(info.opid, op, info.settings));
+          new ReplicatedReduceScatterOp(info.opid, op, group, info.settings));
     },
     true);
 

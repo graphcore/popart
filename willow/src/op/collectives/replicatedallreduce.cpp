@@ -1,6 +1,7 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
 #include <memory>
 #include <popart/ir.hpp>
+#include <popart/op/collectives/collectives.hpp>
 #include <popart/op/collectives/replicatedallreduce.hpp>
 #include <popart/opmanager.hpp>
 #include <popart/opserialiser.hpp>
@@ -12,12 +13,14 @@ namespace popart {
 
 ReplicatedAllReduceOp::ReplicatedAllReduceOp(const OperatorIdentifier &_opid,
                                              CollectiveOperator op_,
+                                             CommGroup group,
                                              const Op::Settings &settings_)
-    : CollectivesBaseOp(_opid, settings_), op(op_) {}
+    : CollectivesBaseOp(_opid, group, settings_), op(op_) {}
 
 ReplicatedAllReduceOp::ReplicatedAllReduceOp(const OperatorIdentifier &_opid,
                                              const Op::Settings &settings_)
-    : CollectivesBaseOp(_opid, settings_), op(CollectiveOperator::Add) {}
+    : CollectivesBaseOp(_opid, CommGroup{}, settings_),
+      op(CollectiveOperator::Add) {}
 
 std::unique_ptr<Op> ReplicatedAllReduceOp::clone() const {
   return std::make_unique<ReplicatedAllReduceOp>(*this);
@@ -42,11 +45,14 @@ void ReplicatedAllReduceOp::appendOutlineAttributes(
   os.appendAttribute("op", static_cast<int>(op));
 }
 
+CommGroup ReplicatedAllReduceOp::getGCLCommGroup() const { return group; }
+
 ReplicatedAllReduceInplaceOp::ReplicatedAllReduceInplaceOp(
     const OperatorIdentifier &_opid,
     CollectiveOperator op_,
+    CommGroup group,
     const Op::Settings &settings_)
-    : ReplicatedAllReduceOp(_opid, op_, settings_) {}
+    : ReplicatedAllReduceOp(_opid, op_, group, settings_) {}
 
 ReplicatedAllReduceInplaceOp::ReplicatedAllReduceInplaceOp(
     const OperatorIdentifier &_opid,
@@ -58,6 +64,7 @@ ReplicatedAllReduceInplaceOp::ReplicatedAllReduceInplaceOp(
     : ReplicatedAllReduceInplaceOp(
           Onnx::CustomOperators::ReplicatedAllReduceInplace,
           rop.getCollectiveOp(),
+          rop.getGCLCommGroup(),
           rop.getSettings()) {}
 
 view::Regions ReplicatedAllReduceInplaceOp::modifies(InIndex index) const {
@@ -102,12 +109,13 @@ static OpCreator<ReplicatedAllReduceOp> ReplicatedAllReduceOpCreator(
     OpDefinitions({{Onnx::CustomOperators::ReplicatedAllReduce,
                     ReplicatedAllReduceOpDef}}),
     [](const OpCreatorInfo &info) {
+      CommGroup group       = extractCommGroupFromAttrs(info.attributes);
       CollectiveOperator op = static_cast<CollectiveOperator>(
           info.attributes.getAttribute<Attributes::Int>(
               "op", static_cast<int>(CollectiveOperator::Add)));
 
       return std::unique_ptr<ReplicatedAllReduceOp>(
-          new ReplicatedAllReduceOp(info.opid, op, info.settings));
+          new ReplicatedAllReduceOp(info.opid, op, group, info.settings));
     },
     true);
 
@@ -121,12 +129,14 @@ static OpCreator<ReplicatedAllReduceInplaceOp>
         OpDefinitions({{Onnx::CustomOperators::ReplicatedAllReduceInplace,
                         ReplicatedAllReduceInplaceOpDef}}),
         [](const OpCreatorInfo &info) {
+          CommGroup group       = extractCommGroupFromAttrs(info.attributes);
           CollectiveOperator op = static_cast<CollectiveOperator>(
               info.attributes.getAttribute<Attributes::Int>(
                   "op", static_cast<int>(CollectiveOperator::Add)));
 
           return std::unique_ptr<ReplicatedAllReduceInplaceOp>(
-              new ReplicatedAllReduceInplaceOp(info.opid, op, info.settings));
+              new ReplicatedAllReduceInplaceOp(
+                  info.opid, op, group, info.settings));
         },
         true);
 
