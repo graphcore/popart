@@ -71,7 +71,7 @@ public:
   OpId moveIntoGraph(std::unique_ptr<Op> op);
 
   // Create an op in this graph.
-  template <typename OP, typename... Args> Op *createOp(Args &&... args);
+  template <typename OP, typename... Args> OP *createOp(Args &&... args);
 
   std::vector<const Graph *> getCalledGraphs() const;
 
@@ -302,10 +302,10 @@ void Graph::connectInputs(const T &inContainer, OpId opId) {
   }
 }
 
-template <typename OP, typename... Args> Op *Graph::createOp(Args &&... args) {
+template <typename OP, typename... Args> OP *Graph::createOp(Args &&... args) {
   auto ptr  = std::unique_ptr<Op>(new OP(std::forward<Args>(args)...));
   auto opId = moveIntoGraph(std::move(ptr));
-  return getOp(opId);
+  return static_cast<OP *>(getOp(opId));
 }
 
 template <typename T>
