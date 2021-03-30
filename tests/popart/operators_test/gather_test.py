@@ -71,10 +71,11 @@ def test_gather_rank2_2(op_tester):
 
 
 def test_gather_rank3_1(op_tester):
-    d1 = np.array([[[-1, -2, -3], [4, 5, 6], [7, 8, 9]]]).astype(np.float32)
+    np.random.seed(0)
+    d1 = np.random.randn(3, 3, 3).astype(np.float32)
     d2 = np.arange(2, dtype=np.int32)
-    d_d1 = np.array([[[1.0, 1.0, 0], [1.0, 1.0, 0], [1.0, 1.0,
-                                                     0]]]).astype(np.float32)
+    d_d1 = np.zeros((3, 3, 3), dtype=np.float32)
+    d_d1[:, :, d2] = 1.0
     axis = 2
 
     def init_builder(builder):
