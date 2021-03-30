@@ -8,6 +8,7 @@
 #include <popart/opmanager.hpp>
 #include <popart/poprithmstransitiveclosure.hpp>
 
+#include <transforms/autodiff/gradgrowersumop.hpp>
 #include <popart/transforms/decomposegradsum.hpp>
 
 #include <algorithm>
@@ -69,7 +70,7 @@ DecomposeGradSum::getDecomposableGradSumOps(const Graph &graph) const {
   std::vector<Op *> decomposableGradSumOps;
   // An op in the graph is deemed a decomposable GradSumOp if:
   // 1. it is a SumOp
-  // 2. its name contains Ir::getGradSumOpNamePrefix()
+  // 2. its name contains GradGrowerSumOp::getGradSumOpNamePrefix()
   // 3. it produces a tensor with an id that contains reservedGradientPrefix()
   // 4. it has a path from the loss
   // 5. it consumes >2 ActGrad tensors
@@ -78,7 +79,7 @@ DecomposeGradSum::getDecomposableGradSumOps(const Graph &graph) const {
     // 1.
     if (op->isConvertibleTo<SumOp>()) {
       // 2.
-      if (op->settings.name.find(graph.getIr().getGradSumOpNamePrefix()) !=
+      if (op->settings.name.find(GradGrowerSumOp::getGradSumOpNamePrefix()) !=
           std::string::npos) {
         // 3.
         if (op->outId(SumOp::getOutIndex()).find(reservedGradientPrefix()) !=

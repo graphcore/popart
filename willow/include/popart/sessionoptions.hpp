@@ -827,6 +827,9 @@ struct SessionOptions {
   // If this logger is not set then compilation progress will be
   // printed on the info channel.
   std::function<void(int, int)> compilationProgressLogger;
+
+  // Returns true if auto-recomputation is enabled.
+  bool autoRecomputationEnabled() const;
 };
 
 } // namespace popart

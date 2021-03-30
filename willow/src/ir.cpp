@@ -52,6 +52,7 @@
 #include <popart/recompute.hpp>
 #include <popart/transforms/accumulateouterfragmentparallelizer.hpp>
 #include <popart/transforms/auto_virtual_graph.hpp>
+#include <popart/transforms/autodiff.hpp>
 #include <popart/transforms/automaticlossscaling.hpp>
 #include <popart/transforms/batchserialize.hpp>
 #include <popart/transforms/clipweightgradientsbynorm.hpp>
@@ -91,10 +92,6 @@
 #include <popart/patterns/updateinplaceprioritiesforipu.hpp>
 
 #include <popart/dotvisualizer.hpp>
-
-#include <transforms/autodiff/gradnongradpair.hpp>
-#include <transforms/autodiff/opgradregistry.hpp>
-#include <transforms/autodiff/tensorgradregistry.hpp>
 
 // used for float to half conversion
 #include <poplar/Target.hpp>
@@ -2131,35 +2128,6 @@ Ir::getVirtualGraphIdFromTensorProducers(std::vector<Tensor *> ts) {
   return OptionalVGraphId(it->first);
 }
 
-std::string Ir::getGradSumOpNamePrefix() const { return "GradSum"; }
-
-Op *Ir::growGradSumOp(Tensor *target, const std::vector<Tensor *> &toSum) {
-  TensorId gradientId = getGradId(target->id);
-
-  std::unique_ptr<popart::Op> gradSum =
-      OpManager::createOp(Domain::ai_onnx,
-                          "Sum",
-                          getOpSetVersionFromModel(Domain::ai_onnx),
-                          getMainGraph(),
-                          getGradSumOpNamePrefix() + "_" + gradientId);
-
-  OpId opId = getMainGraph().moveIntoGraph(std::move(gradSum));
-
-  std::vector<TensorId> inputs;
-  inputs.reserve(toSum.size());
-  for (auto &tensor : toSum) {
-    inputs.push_back(tensor->id);
-  }
-  std::vector<TensorId> outputs{gradientId};
-
-  getMainGraph().connectInputs(InputVecWrapper(inputs), opId);
-  getMainGraph().connectOutputs(OutputVecWrapper(outputs), opId);
-  Op *op = getMainGraph().getOps()[opId].get();
-  op->setup();
-  op->inheritPlacementAttributes(true);
-  return op;
-}
-
 PipelineStage Ir::getFinalLossPipelineStage() const {
   auto finalLossOpFound = getMainGraph().getOps().find(finalLossOpId);
   if (finalLossOpFound != getMainGraph().getOps().end()) {
@@ -2191,169 +2159,6 @@ int64_t Ir::getNumPipelineStages() const {
     }
   }
   return numStages;
-}
-
-std::vector<Op *> Ir::growGradOps(Op *nonGradOp) {
-  PipelineStage maxPipelineStage = 0;
-  if (getSessionOptions().enablePipelining) {
-    // the last fwd pass pipeline stage is also the first bwd pass pipeline
-    // stage.
-    maxPipelineStage = getFinalLossPipelineStage() * 2;
-  }
-
-  OpId nonGradOpId = nonGradOp->id;
-  auto backOps     = nonGradOp->getGradOps();
-  if (backOps.size() < 1) {
-    logging::ir::debug("Cannot get gradients for {}", nonGradOp->debugName());
-  }
-  std::vector<Op *> gradOps;
-  for (auto &upop : backOps) {
-    Op *gradOp    = upop.get();
-    OpId gradOpId = getMainGraph().moveIntoGraph(std::move(upop));
-
-    // Reset priority, since fwd priority should not influence bwd priority
-    //
-    // TODO: Uncomment this. This prevented explicit priorities on certain
-    // gradient ops being set which was necessary as a short term fix for
-    // sharded training regressions seen in T17036. This could be replaced
-    // once explicit priorities are no longer needed for this purpose. T17311
-    // should fix this.
-    //
-    // gradOp->settings.schedulePriority = 0.0;
-
-    if (gradOp->hasExecutionPhase()) {
-      // Remap from forward to backward execution phase
-      gradOp->setExecutionPhase(
-          2 * getSessionOptions().executionPhaseSettings.phases - 2 -
-          gradOp->getExecutionPhase());
-    }
-
-    if (nonGradOp->settings.recomputeType == RecomputeType::Recompute &&
-        autoRecomputationEnabled() &&
-        getSessionOptions().executionPhaseSettings.phases < 2) {
-      throw error("Grad Ops should be grown before recompute annotation");
-    }
-
-    // No gradOp should be of type Recompute.
-    gradOp->settings.recomputeType = RecomputeType::Checkpoint;
-
-    if (nonGradOp->hasPipelineStage()) {
-      gradOp->setPipelineStage(maxPipelineStage -
-                               nonGradOp->getPipelineStage());
-    }
-
-    // connect inputs of gradOp
-    {
-      // inputs to gradOp (to populate in this scope):
-      std::map<int, std::string> m_inputs;
-      auto isInputOptional = [](Op *op, InIndex i) {
-        auto optionalInputs = op->optionalInputs();
-        return optionalInputs.find(i) != optionalInputs.end();
-      };
-      for (auto &inOutMapper : gradOp->gradInputInfo()) {
-
-        int indexGrad     = inOutMapper.iGrad;
-        int indexFwd      = inOutMapper.iNonGrad;
-        GradOpInType type = inOutMapper.type;
-
-        // the input at index 'indexGrad' to gradOp is
-        switch (type) {
-        //  (1) the INPUT at index 'indexFwd' of nonGradOp
-        case GradOpInType::In: {
-          if (nonGradOp->input->hasIndex(indexFwd)) {
-            m_inputs[indexGrad] = nonGradOp->input->tensor(indexFwd)->id;
-          } else if (isInputOptional(nonGradOp, indexFwd)) {
-            m_inputs[indexGrad] = TensorId();
-          } else {
-            throw error(
-                "Invalid configuration of gradOp {}. nonGradOp ({}) INPUT {} "
-                "is not marked as optional, but is not defined",
-                gradOp->debugName(),
-                nonGradOp->debugName(),
-                indexFwd);
-          }
-          break;
-        }
-
-        //  (2) the OUTPUT at index 'indexFwd' of nonGradOp
-        case GradOpInType::Out: {
-          if (!nonGradOp->output->hasIndex(indexFwd)) {
-            throw error("Invalid configuration of gradOp {}. nonGradOp ({}) "
-                        "OUTPUT {} is not defined ",
-                        gradOp->debugName(),
-                        nonGradOp->debugName(),
-                        indexFwd);
-          }
-          m_inputs[indexGrad] = nonGradOp->output->tensor(indexFwd)->id;
-          break;
-        }
-
-        //  (3) the GRADIENT of the OUTPUT
-        //      at index 'indexFwd' of nonGradOp.
-        case GradOpInType::GradOut: {
-          if (!nonGradOp->output->hasIndex(indexFwd)) {
-            throw error("Invalid configuration of gradOp {}. nonGradOp ({}) "
-                        "OUTPUT {} is not defined ",
-                        gradOp->debugName(),
-                        nonGradOp->debugName(),
-                        indexFwd);
-          }
-
-          auto gradTensorId =
-              getGradId(nonGradOp->output->tensor(indexFwd)->id);
-          if (getMainGraph().getTensors().contains(gradTensorId,
-                                                   gradOp->getScope())) {
-            m_inputs[indexGrad] = gradTensorId;
-          } else {
-            if (isInputOptional(gradOp, indexGrad)) {
-              m_inputs[indexGrad] = TensorId();
-            } else {
-              throw error("No gradient for non-grad-op {} at index {}, but "
-                          "input {} is not marked as optional on grad-op {}. "
-                          "Could it be that "
-                          "the path along that index did not lead to the final "
-                          "loss, in which case the gradient is zero?",
-                          nonGradOp->debugName(),
-                          indexFwd,
-                          indexGrad,
-                          gradOp->debugName());
-            }
-          }
-          break;
-        }
-        }
-      }
-
-      getMainGraph().connectInputs(InputMapWrapper(m_inputs), gradOpId);
-    }
-
-    // connect outputs of gradOp
-    {
-      std::vector<TensorId> v_outputs;
-      for (auto out_in : gradOp->gradOutToNonGradIn()) {
-        int gradOut   = out_in.first;
-        int nonGradIn = out_in.second;
-
-        if (v_outputs.size() < gradOut + 1) {
-          v_outputs.resize(gradOut + 1, TensorId());
-        }
-
-        if (nonGradOp->input->hasIndex(nonGradIn)) {
-          TensorId inId      = nonGradOp->input->tensor(nonGradIn)->id;
-          TensorId outId     = getEdgeGradId(inId, nonGradOpId, nonGradIn);
-          v_outputs[gradOut] = outId;
-        }
-      }
-      getMainGraph().connectOutputs(OutputVecWrapper(v_outputs), gradOpId);
-    }
-    gradOp->setup();
-
-    // note, as the outputs of gradOp are edge-grad-tensors and not
-    // edge-grads, we do not need to match them to non-grad tensors.
-    gradOps.push_back(gradOp);
-  }
-
-  return gradOps;
 }
 
 // design choice: we could have an "irHasChanged"
@@ -2612,152 +2417,7 @@ void Ir::constructBackwards() {
 
   logging::ir::info("Constructing backwards pass");
 
-  // definition: edge-gradient. What is output by a grad-op,
-  // and which will be summed with other edge-gradients to create
-  // a gradient. It is possible that an edge-gradient has the same
-  // value as a gradient, if a tensor has only 1 consumer.
-
-  // design decision w.r.t. lambda functions in this function:
-  // see-sawing between lambda functions (see two following here)
-  // and member functions. In general I don't like lambda functions,
-  // their return types are not easily visible and capturing parameters
-  // is tedious. However, I also don't like having class variables
-  // which are only used in one bit of functionality, because it becomes
-  // unclear whether they should be maintained in a valid state throughout
-  // the objects life. In this case, I think the second is worse, so
-  // going for the lambda solution.
-
-  TensorGradRegistry tensor_grad_registry;
-  OpGradRegistry op_grad_registry;
-
-  // signal that a grad-op has created edge-gradients
-  auto registerOpGrads = [&tensor_grad_registry](Op *gradOp, Op *nonGradOp) {
-    for (auto &index_tensor : gradOp->output->tensorMap()) {
-      int opOutInd     = index_tensor.first;
-      Tensor *partGrad = index_tensor.second;
-      // what input index of nonGradOp does the
-      // edge-gradient correspond to?
-      int nonGradInInd      = gradOp->getNonGradInIndex(opOutInd);
-      Tensor *nonGradTensor = nonGradOp->input->tensor(nonGradInInd);
-      tensor_grad_registry.insert(nonGradTensor, partGrad);
-    }
-  };
-
-  // register an op that doesn't create any grad ops
-  std::function<void(Op *)> registerOpWithoutGrads;
-  registerOpWithoutGrads = [&tensor_grad_registry,
-                            &registerOpWithoutGrads](Op *nonGradOp) {
-    for (auto &index_tensor : nonGradOp->input->tensorMap()) {
-      auto input = index_tensor.second;
-      tensor_grad_registry.decrementNumberExpectedEdges(input);
-
-      if (tensor_grad_registry.getNumberExpectedEdges(input) == 0 &&
-          input->hasProducer()) {
-        registerOpWithoutGrads(input->getProducer());
-      }
-    }
-  };
-
-  // communicate that a new gradient tensor
-  // (which is a sum along edges) is ready
-  auto registerTensorGrad = [this, &op_grad_registry](Tensor *sum) {
-    Tensor *nonGrad = getTensors().get(getNonGradId(sum->id));
-    if (nonGrad->hasProducer()) {
-      Op *producer = nonGrad->getProducer();
-      // the index at which nonGrad was produced
-      int index = producer->output->indices(nonGrad).at(0);
-      op_grad_registry.insert(producer, index);
-    }
-  };
-
-  // Link up loss / loss scaling ops.
-  Op *nonConstLossScaleOp = growLossGradients();
-
-  // grad-ops which have created edge-gradients, but the
-  // edge-gradients haven't signalled their existance.
-  // initialised as the gradients of the loss
-  std::vector<GradNonGradPair> opsToRegister;
-
-  // Add loss op gradients.
-  auto finalLossOpFound = getMainGraph().getOps().find(finalLossOpId);
-  if (finalLossOpFound != getMainGraph().getOps().end()) {
-    std::vector<GradNonGradPair> pairs;
-    auto finalLossOp = getMainGraph().getOp(finalLossOpId);
-    for (Op *gradOp : growGradOps(finalLossOp)) {
-      opsToRegister.push_back({gradOp, finalLossOp});
-    }
-  } else {
-    throw error("Call to growLossGradients, but finalLossOpId not found");
-  }
-
-  while (!opsToRegister.empty() || !tensor_grad_registry.complete.empty()) {
-
-    if (!opsToRegister.empty()) {
-      auto &toRegister = opsToRegister.back();
-      registerOpGrads(toRegister.grad, toRegister.nongrad);
-      opsToRegister.resize(opsToRegister.size() - 1);
-    }
-
-    for (auto &nongrad_egrads : tensor_grad_registry.popComplete()) {
-      Tensor *nongrad = getTensors().get(nongrad_egrads.first);
-
-      const std::vector<Tensor *> &egrads = nongrad_egrads.second;
-      // nongrad required below, as the name of the output of the
-      // created op (sumOp) will be based off of it. Also, we
-      // register the link between sumOp's output and nongrad
-      Op *sumOp       = growGradSumOp(nongrad, egrads);
-      sumOp->fromLoss = PathFromLoss::Yes;
-
-      switch (nongrad->tensorType()) {
-      // if sumOp creates the gradient of an activation tensor,
-      case TensorType::ActGrad: {
-        registerTensorGrad(sumOp->output->tensor(0));
-        break;
-      }
-      case TensorType::Variable: {
-        // nothing to do, variable updates
-        // follows at the end of this function
-        break;
-      }
-      case TensorType::Stream: {
-        // if the user wants the gradient of the
-        // input data (unusual case) maybe we won't
-        // break here. Example case : generating adversarials
-        break;
-      }
-      case TensorType::Const: {
-        break;
-      }
-      case TensorType::Unknown:
-      case TensorType::N:
-        throw error("can't currently register gradient of " +
-                    nongrad->tensor_type() + " tensor, " + nongrad->str());
-
-      default:
-        throw error("only handling ActGrad and Variable for now");
-      }
-    }
-
-    for (Op *op : op_grad_registry.popComplete()) {
-      auto gradOps = growGradOps(op);
-      if (gradOps.size() == 0) {
-        registerOpWithoutGrads(op);
-      } else {
-        for (auto &gradOp : gradOps) {
-          opsToRegister.push_back({gradOp, op});
-        }
-      }
-    }
-  }
-
-  if (nonConstLossScaleOp) {
-    // Only now inherit attributes for the non-const loss scaling op, if there
-    // was one. The reason we do it here is because the inherit function relies
-    // on the op having input or output tensors linked to it to inherit the
-    // attributes from, but at the time growLossGradients is called this op's
-    // outputs have yet to be grown.
-    nonConstLossScaleOp->inheritPlacementAttributes(true);
-  }
+  applyTransform(Autodiff::id(), getMainGraph());
 
   logging::ir::info("Creating Variable Tensor update Ops");
   // add weight update ops (we are ignoring momentums for now)
@@ -2780,24 +2440,8 @@ void Ir::constructBackwards() {
     }
   }
 
-  // All Ops and Tensors at this point with a reserved gradient prefix have a
-  // path from the final Loss (before any Patterns and Transformations). After
-  // Patterns, this is no longer true as names get mangled.
-  for (auto &id_op : getMainGraph().getOps()) {
-    Op *op = id_op.second.get();
-    for (auto inArr : op->input->tensors()) {
-      if (inArr->id.find(reservedGradientPrefix()) != std::string::npos) {
-        inArr->fromLoss = PathFromLoss::Yes;
-        op->fromLoss    = PathFromLoss::Yes;
-      }
-    }
-    for (auto outArr : op->output->tensors()) {
-      if (outArr->id.find(reservedGradientPrefix()) != std::string::npos) {
-        outArr->fromLoss = PathFromLoss::Yes;
-        op->fromLoss     = PathFromLoss::Yes;
-      }
-    }
-  }
+  setMainGraphPathFromLoss();
+
   logging::ir::info("Constructing backwards complete");
   constructedBackwards = true;
 }
@@ -3087,139 +2731,6 @@ unsigned Ir::getMaxVirtualGraphId() const {
     maxVirtualGraphId = numIPUs;
   }
   return maxVirtualGraphId;
-}
-
-Op *Ir::growLossGradients() {
-
-  TensorId gradStarterId     = getGradId(getFinalLossId());
-  TensorInfo gradStarterInfo = getTensors().get(getFinalLossId())->info;
-
-  // If our optimiser uses loss scaling we need to multiply our loss gradient by
-  // the loss scale. If the loss scale is a constant then we can do this here to
-  // avoid doing an additional operation.
-
-  if (optimizer->lossScaling().isConst()) {
-    // By default this will be 1.0f.
-    float lossScale = optimizer->lossScaling().val();
-
-    if (getSessionOptions().accumulationAndReplicationReductionType ==
-        ReductionType::Mean) {
-      lossScale /= getSessionOptions().getGlobalReplicationFactor();
-    }
-
-    switch (gradStarterInfo.dataType()) {
-    case DataType::FLOAT: {
-      std::vector<float> gradStarterData(1, lossScale);
-      getTensors().addConstInit(
-          gradStarterId,
-          gradStarterInfo,
-          reinterpret_cast<void *>(gradStarterData.data()));
-      break;
-    }
-    case DataType::FLOAT16: {
-      std::vector<float> floatData(1, lossScale);
-      std::vector<char> gradStarterData(2);
-      poplar::copyFloatToDeviceHalf(
-          poplar::Target(), floatData.data(), gradStarterData.data(), 1);
-      getTensors().addConstInit(
-          gradStarterId,
-          gradStarterInfo,
-          reinterpret_cast<void *>(gradStarterData.data()));
-      break;
-    }
-    case DataType::INT16: {
-      std::vector<int16_t> gradStarterData(1, static_cast<int16_t>(lossScale));
-      getTensors().addConstInit(
-          gradStarterId,
-          gradStarterInfo,
-          reinterpret_cast<void *>(gradStarterData.data()));
-      break;
-    }
-    case DataType::INT32: {
-      std::vector<int32_t> gradStarterData(1, static_cast<int32_t>(lossScale));
-      getTensors().addConstInit(
-          gradStarterId,
-          gradStarterInfo,
-          reinterpret_cast<void *>(gradStarterData.data()));
-      break;
-    }
-    case DataType::INT64: {
-      std::vector<int64_t> gradStarterData(1, static_cast<int64_t>(lossScale));
-      getTensors().addConstInit(
-          gradStarterId,
-          gradStarterInfo,
-          reinterpret_cast<void *>(gradStarterData.data()));
-      break;
-    }
-    case DataType::UINT32: {
-      std::vector<uint32_t> gradStarterData(1,
-                                            static_cast<uint32_t>(lossScale));
-      getTensors().addConstInit(
-          gradStarterId,
-          gradStarterInfo,
-          reinterpret_cast<void *>(gradStarterData.data()));
-      break;
-    }
-    case DataType::UINT64: {
-      std::vector<uint64_t> gradStarterData(1,
-                                            static_cast<uint64_t>(lossScale));
-      getTensors().addConstInit(
-          gradStarterId,
-          gradStarterInfo,
-          reinterpret_cast<void *>(gradStarterData.data()));
-      break;
-    }
-    // Making it explicit which data types we're not handling. Note that
-    // the logic will fall through to the error.
-    case DataType::UINT8:
-    case DataType::INT8:
-    case DataType::UINT16:
-    case DataType::BOOL:
-    case DataType::BFLOAT16:
-    case DataType::DOUBLE:
-    case DataType::COMPLEX64:
-    case DataType::COMPLEX128:
-    case DataType::STRING:
-    case DataType::UNDEFINED:
-    default: {
-      throw error("Unexpected loss data-type, '{}'",
-                  gradStarterInfo.getDataTypeInfo()->name());
-    }
-    }
-
-    return nullptr;
-  } else {
-    // In the case where the user wants to apply loss scaling with a scaling
-    // factor that is not constant we need to apply scaling differently. We need
-    // the finalLossOp gradient tensor to match the optimizer's loss scaling
-    // tensor.
-    TensorId lossScalingId =
-        optimizer->getLossScalingTensorId(gradStarterInfo.dataType());
-    std::unique_ptr<popart::Op> lossScalingInputOp =
-        OpManager::createOp(Domain::ai_graphcore,
-                            "Scale",
-                            getOpSetVersionFromModel(Domain::ai_graphcore),
-                            getMainGraph());
-
-    OpId lossScalingInputOpId =
-        getMainGraph().moveIntoGraph(std::move(lossScalingInputOp));
-
-    std::vector<TensorId> inputs{lossScalingId};
-    std::vector<TensorId> outputs{getGradId(getFinalLossId())};
-    getMainGraph().connectInputs(InputVecWrapper(inputs), lossScalingInputOpId);
-    getMainGraph().connectOutputs(OutputVecWrapper(outputs),
-                                  lossScalingInputOpId);
-    Op *op = getMainGraph().getOp(lossScalingInputOpId);
-    if (getSessionOptions().accumulationAndReplicationReductionType ==
-        ReductionType::Mean) {
-      dynamic_cast<ScaleOp *>(op)->setScaleFactor(
-          1.0f / getSessionOptions().getGlobalReplicationFactor());
-    } else {
-      dynamic_cast<ScaleOp *>(op)->setScaleFactor(1.0f);
-    }
-    op->setup();
-    return op;
-  }
 }
 
 OpId Ir::getFinalLossOpId() const { return finalLossOpId; }
@@ -3746,6 +3257,27 @@ Graph &Ir::getMainGraph() { return getGraph(GraphId::root()); }
 
 Graph &Ir::getGraph(const GraphId &graphId) const {
   return *graphs.at(graphId);
+}
+
+void Ir::setMainGraphPathFromLoss() {
+  // All Ops and Tensors at this point with a reserved gradient prefix have a
+  // path from the final Loss (before any Patterns and Transformations). After
+  // Patterns, this is no longer true as names get mangled.
+  for (auto &id_op : getMainGraph().getOps()) {
+    Op *op = id_op.second.get();
+    for (auto inArr : op->input->tensors()) {
+      if (inArr->id.find(reservedGradientPrefix()) != std::string::npos) {
+        inArr->fromLoss = PathFromLoss::Yes;
+        op->fromLoss    = PathFromLoss::Yes;
+      }
+    }
+    for (auto outArr : op->output->tensors()) {
+      if (outArr->id.find(reservedGradientPrefix()) != std::string::npos) {
+        outArr->fromLoss = PathFromLoss::Yes;
+        op->fromLoss     = PathFromLoss::Yes;
+      }
+    }
+  }
 }
 
 std::vector<const Graph *> Ir::getAllGraphs() const {

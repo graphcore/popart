@@ -220,6 +220,10 @@ ReductionType SessionOptions::getAccumulationReductionType() const {
   }
 }
 
+bool SessionOptions::autoRecomputationEnabled() const {
+  return autoRecomputation != RecomputationType::None;
+}
+
 // No implementation required
 
 } // namespace popart

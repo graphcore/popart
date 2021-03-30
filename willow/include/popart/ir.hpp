@@ -417,10 +417,8 @@ public:
   // Return the opset version in use for a domain
   int getOpSetVersionFromModel(const std::string &domain) const;
 
-  std::string getGradSumOpNamePrefix() const;
-
   bool autoRecomputationEnabled() const {
-    return userOptions.autoRecomputation != RecomputationType::None;
+    return userOptions.autoRecomputationEnabled();
   }
 
   bool hasReplicatedTensorSharding() const;
@@ -446,6 +444,8 @@ public:
   bool getExecutionPhasesReady() { return executionPhasesReady; }
 
   PipelineStage getNumPipelineStages() const;
+
+  void setMainGraphPathFromLoss();
 
 private:
   void prepareImpl(const IrBundle &, const HashesMap &cacheEntries);
@@ -476,14 +476,6 @@ private:
   // to minimise graph<->graph communication
   OptionalVGraphId
   getVirtualGraphIdFromTensorProducers(std::vector<Tensor *> ts);
-
-  Op *growGradSumOp(Tensor *target, const std::vector<Tensor *> &toSum);
-
-  std::vector<Op *> growGradOps(Op *forwardOp);
-
-  // Grow loss operands. Return pointer to Op introduced for non-const loss
-  // scaling, if one was needed.
-  Op *growLossGradients();
 
   bool requiresRandomSeed() const;
 
@@ -520,6 +512,7 @@ private:
   bool isCandidateForConstExprFolding(const Tensor &tensor) const;
   std::set<Tensor *> getRootInputsToOp(Op *op);
 
+public:
   PipelineStage getFinalLossPipelineStage() const;
 
 private:
