@@ -22,6 +22,7 @@ class Tensor;
  */
 class GradGrowerSumOpInterface {
 public:
+  virtual ~GradGrowerSumOpInterface() = default;
   // Grow a grad sum op, combining a number of gradients into one.
   virtual Op *growGradSumOp(Tensor *target,
                             const std::vector<Tensor *> &toSum) = 0;
@@ -39,6 +40,7 @@ class GradGrowerSumOp : public GradGrowerSumOpInterface, private GradGrower {
 public:
   // Constructor.
   explicit GradGrowerSumOp(AutodiffIrInterface &dep);
+  virtual ~GradGrowerSumOp() = default;
 
   // Grow a grad sum op, combining a number of gradients into one.
   virtual Op *growGradSumOp(Tensor *target, const std::vector<Tensor *> &toSum);

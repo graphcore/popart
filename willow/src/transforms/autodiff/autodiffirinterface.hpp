@@ -12,7 +12,7 @@ class Ir;
 class Op;
 class Optimizer;
 class Tensor;
-class SessionOptions;
+struct SessionOptions;
 
 // NOTE: In this file we declare an interface that encapsulates the dependency
 // that a collection of grad growing functions (that previously lived in

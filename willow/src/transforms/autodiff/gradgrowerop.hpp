@@ -18,6 +18,7 @@ class Op;
  */
 class GradGrowerOpInterface {
 public:
+  virtual ~GradGrowerOpInterface() = default;
   // Grow a collection of gradient ops for a forward op.
   virtual std::vector<Op *> growGradOps(Op *forwardOp) = 0;
 };
@@ -33,6 +34,7 @@ class GradGrowerOp : public GradGrowerOpInterface, private GradGrower {
 public:
   // Constructor.
   explicit GradGrowerOp(AutodiffIrInterface &dep);
+  virtual ~GradGrowerOp() = default;
 
   // Grow a collection of gradient ops for a forward op.
   virtual std::vector<Op *> growGradOps(Op *forwardOp);

@@ -19,7 +19,8 @@ class Op;
  */
 class GradGrowerLossInterface {
 public:
-  virtual Op *growLossGradients() = 0;
+  virtual ~GradGrowerLossInterface() = default;
+  virtual Op *growLossGradients()    = 0;
 };
 
 /**
@@ -33,6 +34,7 @@ class GradGrowerLoss : public GradGrowerLossInterface, private GradGrower {
 public:
   // Constructor.
   explicit GradGrowerLoss(AutodiffIrInterface &dep);
+  virtual ~GradGrowerLoss() = default;
 
   virtual Op *growLossGradients();
 };
