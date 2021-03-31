@@ -79,6 +79,15 @@ bool PostNRepl::matches(Op *op) const {
     return false;
   }
 
+  // Don't match if any of the outputs are graph outputs, because removing them
+  // may result in a subgraph op (like CallOp) using tensors that no longer
+  // exist.
+  for (auto &ind_t : op->output->tensorIdMap()) {
+    if (op->getGraph().hasOutputId(ind_t.second)) {
+      return false;
+    }
+  }
+
   // we have a viable match
   return true;
 }
