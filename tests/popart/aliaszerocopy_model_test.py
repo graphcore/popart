@@ -11,9 +11,10 @@ from onnx import numpy_helper
 
 def test_streamingmemory_momentum(tmpdir):
     def model():
+        t_size = 4096  # any smaller and poplar will use 64bit copies
         np.random.seed(1984)
         input_data = np.random.randint(0, 512, (16, )).astype(np.uint32)
-        weight_data = np.random.rand(256, 512).astype(np.float32)
+        weight_data = np.random.rand(t_size, 512).astype(np.float32)
 
         builder = popart.Builder()
 
@@ -33,7 +34,7 @@ def test_streamingmemory_momentum(tmpdir):
             x = builder.aiOnnx.add([
                 x,
                 builder.addInitializedInputTensor(
-                    np.random.rand(256).astype(np.float32), 'weight1')
+                    np.random.rand(t_size).astype(np.float32), 'weight1')
             ])
 
         with builder.executionPhase(2), builder.virtualGraph(
@@ -41,7 +42,7 @@ def test_streamingmemory_momentum(tmpdir):
             x = builder.aiOnnx.sub([
                 x,
                 builder.addInitializedInputTensor(
-                    np.random.rand(256).astype(np.float32), 'weight2')
+                    np.random.rand(t_size).astype(np.float32), 'weight2')
             ])
 
         with builder.executionPhase(3), builder.virtualGraph(
@@ -49,7 +50,7 @@ def test_streamingmemory_momentum(tmpdir):
             x = builder.aiOnnx.mul([
                 x,
                 builder.addInitializedInputTensor(
-                    np.random.rand(256).astype(np.float32), 'weight3')
+                    np.random.rand(t_size).astype(np.float32), 'weight3')
             ])
 
         with builder.executionPhase(4), builder.virtualGraph(
@@ -124,7 +125,8 @@ def test_streamingmemory_momentum(tmpdir):
     outputs_1, proto_1, total_memory_1 = run_test(False)
     outputs_2, proto_2, total_memory_2 = run_test(True)
 
-    # Reference values: 900284 900108
+    # Reference value: on 37570548
+    # Reference value: off 37570942
     diff = total_memory_1 - total_memory_2
     print(f"aliasZeroCopy = on  : {total_memory_2}")
     print(f"aliasZeroCopy = off : {total_memory_1}")
