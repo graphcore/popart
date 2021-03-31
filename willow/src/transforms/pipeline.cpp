@@ -502,7 +502,8 @@ void chainCopiesTransform(Graph &graph) {
   std::map<TensorId, std::vector<IpuCopyOp *>> copyMap;
   for (auto &id_op : graph.getOps()) {
     auto op = id_op.second.get();
-    if (!op->copiesOptimizerTensors() && op->isConvertibleTo<IpuCopyOp>()) {
+    if (op->isConvertibleTo<IpuCopyOp>() &&
+        op->settings.executionContext == ExecutionContext::Normal) {
       auto copyOp = dynamic_cast<IpuCopyOp *>(op);
       for (auto tensor : op->input->tensors()) {
         copyMap[tensor->id].push_back(copyOp);
@@ -550,7 +551,9 @@ void mergeConsecutivePipelineStages(Graph &graph) {
   // Apply stageTransformation
   for (auto &id_op : graph.getOps()) {
     auto op = id_op.second.get();
-    op->setPipelineStage(stageTransformation[op->getPipelineStage()]);
+    if (op->hasPipelineStage()) {
+      op->setPipelineStage(stageTransformation[op->getPipelineStage()]);
+    }
   }
 }
 

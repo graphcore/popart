@@ -1414,7 +1414,8 @@ void IrLowering::addPipelinedCopyTasks(PriTasks &tasks) {
 
   for (auto iter = schedule.rbegin(); iter != schedule.rend(); iter++) {
     auto &op = *iter;
-    if (op->isConvertibleTo<IpuCopyOp>() && !op->copiesOptimizerTensors()) {
+    if (op->isConvertibleTo<IpuCopyOp>() &&
+        op->settings.executionContext == ExecutionContext::Normal) {
       auto task = pipelinedCopyTask(op, prevTaskId);
       tasks.add(task);
       prevTaskId = task.name;
@@ -2169,7 +2170,7 @@ void IrLowering::pipelinedOpTaskFunc(TaskId taskId, Op *op, SequenceMap &seqs) {
 
   contextOpRegistry[{context, taskId}].push_back(op);
 
-  if (op->copiesOptimizerTensors()) {
+  if (context == ExecutionContext::OptimizerFromHostFragment) {
     growOpx(opx, seqs[&progs.streamOptimizerFromHostFragment()]);
   }
 

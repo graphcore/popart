@@ -293,6 +293,40 @@ def test_auto_loss_scaling_expected_loss_scale_tensor_values():
             prev_loss_scale = anchors[loss_scale_id][i]
 
 
+@tu.requires_ipu_model
+def test_auto_loss_scaling_and_continuous_update_pipelining():
+    """
+    Create a Session with automatic loss scaling and pipelining
+    enabled, but gradient accumulation disabled, and see that an
+    incompatibility error is thrown.
+    """
+    builder = popart.Builder()
+
+    t0 = builder.addInputTensor("FLOAT", [2, 2])
+    mm0 = builder.aiOnnx.matmul([t0, t0])
+    loss = builder.aiGraphcore.identityloss([mm0])
+
+    optimizer = popart.SGD({"lossScaling": (2, False)})
+
+    builder.virtualGraph(mm0, 0)
+    builder.virtualGraph(loss, 0)
+
+    opts = popart.SessionOptions()
+    opts.enableAutomaticLossScaling = True
+    opts.enablePipelining = True
+    opts.enableGradientAccumulation = False
+    opts.virtualGraphMode = popart.VirtualGraphMode.Manual
+
+    with pytest.raises(popart.popart_exception) as e_info:
+        session = popart.TrainingSession(builder.getModelProto(),
+                                         deviceInfo=tu.create_test_device(2),
+                                         dataFlow=popart.DataFlow(1, [loss]),
+                                         loss=loss,
+                                         optimizer=optimizer,
+                                         userOptions=opts)
+    assert e_info.value.args[0].endswith("Automatic loss scaling is not currently supported when the 'enablePipelining' SessionOption is set to 'true', but the 'enableGradientAccumulation' SessionOption is set to 'false'")
+
+
 def test_auto_loss_scaling_with_non_sgd_optimizer():
     """
     Create a Session with automatic loss scaling and a non-sgd optimizer,
@@ -511,17 +545,15 @@ def test_auto_loss_scaling_identical_weight_updates_sharded(tmpdir):
     run_automatic_loss_scaling_comparison_test(tmpdir, shard=True)
 
 
-@pytest.mark.skip("T33956: ALS not supported with pipelined models")
-@tu.requires_ipu_model
-def test_auto_loss_scaling_identical_weight_updates_pipelined(tmpdir):
-    run_automatic_loss_scaling_comparison_test(tmpdir, shard=True, pipeline=True)
-
-
 def test_auto_loss_scaling_identical_weight_updates_grad_accumulation(tmpdir):
     run_automatic_loss_scaling_comparison_test(tmpdir, grad_accumulate=True)
 
 
-@pytest.mark.skip("T33956: ALS not supported with pipelined models")
+@tu.requires_ipu_model
+def test_auto_loss_scaling_identical_weight_updates_grad_accumulation_shard(tmpdir):
+    run_automatic_loss_scaling_comparison_test(tmpdir, grad_accumulate=True, shard=True)
+
+
 @tu.requires_ipu_model
 def test_auto_loss_scaling_identical_weight_updates_grad_accumulation_pipeline(tmpdir):
     run_automatic_loss_scaling_comparison_test(tmpdir, grad_accumulate=True, shard=True, pipeline=True)

@@ -133,12 +133,6 @@ void InterIpuCopy::insertIpuCopy(Graph &graph,
 
   // Link debug information to fromOp
   settings.debugInfoId = fromOp->debugInfo.getId();
-  /*
-  @SL@
-  // Set the name of the output of the copy based on the output name of the
-  // fromOp
-  settings.name = fromOp->settings.name;
-  */
 
   // Inherit important settings from the fromOp
   // Tensor caching is inherited
@@ -168,11 +162,6 @@ void InterIpuCopy::insertIpuCopy(Graph &graph,
 
   ipuCopy->createAndConnectOutTensor(0, copiedTensor);
   ipuCopy->setup();
-
-  if (ipuCopy->copiesOptimizerTensors()) {
-    ipuCopy->settings.executionContext =
-        ExecutionContext::OptimizerFromHostFragment;
-  }
 
   // Add the copied input tensor to the to op for each index
   for (auto i : indices) {
