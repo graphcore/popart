@@ -49,6 +49,35 @@ template <class T> void appendSequence(std::ostream &ss, const T &t) {
   }
   ss << ']';
 }
+template <class T> void appendPair(std::ostream &ss, const T &t) {
+  ss << '(';
+  ss << t.first;
+  ss << ", ";
+  ss << t.second;
+  ss << ')';
+}
+
+template <size_t n, typename... T>
+typename std::enable_if<(n >= sizeof...(T))>::type
+appendTuple(std::ostream &ss, const std::tuple<T...> &) {
+  // Do nothing for n >= sizeof(T).
+}
+
+template <size_t n, typename... T>
+typename std::enable_if<(n < sizeof...(T))>::type
+appendTuple(std::ostream &ss, const std::tuple<T...> &t) {
+  // For n < sizeof(T), print n-th element and call n+1.
+  if (n == 0) {
+    ss << "(";
+  } else {
+    ss << ", ";
+  }
+  ss << std::get<n>(t);
+  if (n == sizeof...(T) - 1) {
+    ss << ")";
+  }
+  appendTuple<n + 1>(ss, t);
+}
 
 std::ostream &operator<<(std::ostream &ss, const std::vector<std::size_t> &v);
 
@@ -212,6 +241,18 @@ std::ostream &operator<<(std::ostream &ss, const std::vector<T> &v) {
 template <typename T>
 std::ostream &operator<<(std::ostream &ss, const std::set<T> &v) {
   popart::appendSequence(ss, v);
+  return ss;
+}
+
+template <typename T, typename U>
+std::ostream &operator<<(std::ostream &ss, const std::pair<T, U> &v) {
+  popart::appendPair<std::pair<T, U>>(ss, v);
+  return ss;
+}
+
+template <typename... T>
+std::ostream &operator<<(std::ostream &ss, const std::tuple<T...> &v) {
+  popart::appendTuple<0>(ss, v);
   return ss;
 }
 

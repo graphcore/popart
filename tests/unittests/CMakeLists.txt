@@ -29,5 +29,6 @@
 # Please prefix all test names in this folder with 'unittest_' so that
 # developers can run `./test.sh popart -R unittest_` to run only these tests.
 
-add_popart_cpp_unit_test(unittest_example example_unittest.cpp TEST_UTILS trompeloeil)
+add_popart_cpp_unit_test(unittest_example unittest_example.cpp TEST_UTILS trompeloeil)
+add_popart_cpp_unit_test(unittest_utils unittest_utils.cpp TEST_UTILS trompeloeil)
 add_popart_cpp_unit_test(unittest_Session_createFromIr session_createFromIr.cpp)
