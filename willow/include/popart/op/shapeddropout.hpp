@@ -7,14 +7,6 @@
 namespace popart {
 
 class ShapedDropoutOp : public DropoutBaseOp {
-protected:
-  // protected constructor used in grad op
-  ShapedDropoutOp(const OperatorIdentifier &opid_,
-                  float ratio_,
-                  const std::vector<int64_t> &shape_,
-                  uint32_t seedModifier_,
-                  const Op::Settings &settings_);
-
 public:
   ShapedDropoutOp(const OperatorIdentifier &_opid,
                   float ratio_,

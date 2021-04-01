@@ -4,6 +4,8 @@
 
 #include <popart/op/shapeorlike.hpp>
 
+#include <memory>
+
 namespace popart {
 
 // Shared base class for RNG ops
@@ -17,16 +19,11 @@ public:
 
   bool requiresRandomSeed() const final { return true; }
 
-  uint32_t getSeedModifier() const { return seedModifier; }
-
   std::vector<DataType> getSupportedDataTypes() const {
     return supportedDataTypes();
   }
 
   static void errorIfSeedIsSet(const Attributes &attr, OperatorIdentifier opid);
-
-private:
-  uint32_t seedModifier;
 };
 
 // Shared base class for RandomNormal and RandomNormalLike ops

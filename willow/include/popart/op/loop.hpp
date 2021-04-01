@@ -99,6 +99,9 @@ public:
   // The first regular, user-defined loop input
   static InIndex getFirstInputInIndex() { return 2; }
 
+  // The first regular, user-defined loop output
+  static OutIndex getFirstOutputOutIndex() { return 1; }
+
   void addLoopInput(InIndex index,
                     TensorId tensorId,
                     TensorId subgraphTensorId,

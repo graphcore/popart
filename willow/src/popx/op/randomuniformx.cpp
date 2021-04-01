@@ -24,7 +24,7 @@ void RandomUniformOpx::grow(poplar::program::Sequence &prog) const {
 
   auto output = poprand::uniform(graph(),
                                  &getInTensor(op.getSeedInIndex()),
-                                 op.getSeedModifier(),
+                                 0u,
                                  refTensor,
                                  poplarType,
                                  op.getLow(),

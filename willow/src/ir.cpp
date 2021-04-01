@@ -71,6 +71,7 @@
 #include <popart/transforms/mergevarupdates.hpp>
 #include <popart/transforms/pipeline.hpp>
 #include <popart/transforms/prune.hpp>
+#include <popart/transforms/randomsetup.hpp>
 #include <popart/transforms/remotesetup.hpp>
 #include <popart/transforms/serializematmuls.hpp>
 #include <popart/transforms/streamingmemory.hpp>
@@ -80,6 +81,7 @@
 #include <popart/op/batchnorm.hpp>
 #include <popart/op/copyvarupdate.hpp>
 #include <popart/op/ipucopy.hpp>
+#include <popart/op/modifyrandomseed.hpp>
 #include <popart/op/placeholder.hpp>
 #include <popart/op/sgd0varupdate.hpp>
 #include <popart/op/sum.hpp>
@@ -991,10 +993,11 @@ void Ir::prepareImpl(const IrBundle &gb, const HashesMap &cacheEntries) {
   }
   dotCheckpoint(DotCheck::Fwd1);
 
-  if (requiresRandomSeed()) {
+  if (RandomSetup::requiresRandomSeed(*this)) {
     setRequiresRandomSeed();
-    initRandomSeed();
   }
+
+  applyTransform(RandomSetup::id(), getMainGraph());
 
   enableTransform(AutoVirtualGraph::id(),
                   userOptions.virtualGraphMode == VirtualGraphMode::Auto);
@@ -2768,60 +2771,6 @@ std::vector<const Graph *> Ir::getGraphSchedule() const {
   return sorted;
 }
 
-bool Ir::hasRandomOps() const {
-  for (auto op : getAllOps()) {
-    if (op->requiresRandomSeed()) {
-      return true;
-    }
-  }
-  return false;
-}
-
-bool Ir::requiresRandomSeed() const {
-  return (getSessionOptions().enableStochasticRounding || hasRandomOps());
-}
-
-void Ir::initRandomSeed() {
-  // 1. create seed tensor
-  TensorId seedId = GetRandomSeedOp::getStreamedSeedTensorId();
-  DataType dtype  = DataType::UINT32;
-  TensorInfo info(dtype, {2});
-  getTensors().addStream(seedId, {dtype, {2}});
-  Tensor &seedTensor = *getTensors().get(seedId);
-  seedTensor.setReplicatedStreamMode(Tensor::ReplicatedStreamMode::Replicate);
-
-  Op::Settings settings(getMainGraph(), "");
-  auto getSeedOp_up = std::make_unique<GetRandomSeedOp>(
-      Onnx::CustomOperators::GetRandomSeed, settings);
-  auto getSeedOp = getSeedOp_up.get();
-
-  auto allOtherOps                  = getAllOps();
-  bool allOtherOpsHavePipelineStage = true;
-  for (auto op : allOtherOps) {
-    if (!op->hasPipelineStage()) {
-      allOtherOpsHavePipelineStage = false;
-    }
-  }
-  getMainGraph().moveIntoGraph(std::move(getSeedOp_up));
-  if (virtualGraphsEnabled()) {
-    getSeedOp->setVirtualGraphId(0);
-    if (getSessionOptions().enablePipelining && allOtherOpsHavePipelineStage) {
-      getSeedOp->setPipelineStage(0);
-    }
-  }
-  getSeedOp->connectInTensor(getSeedOp->getSeedInIndex(), seedId);
-  TensorId updatedSeedId = GetRandomSeedOp::getUpdatedSeedTensorId();
-  getSeedOp->createAndConnectOutTensor(
-      GetRandomSeedOp::getUpdatedSeedOutIndex(), updatedSeedId);
-  getSeedOp->setup();
-
-  for (auto op : getAllOps()) {
-    if (op->requiresRandomSeed()) {
-      op->connectInTensor(op->getSeedInIndex(), updatedSeedId);
-    }
-  }
-}
-
 std::vector<Op *> Ir::getOpSchedule(const OpsBeforeKey &gCons,
                                     const RequireOptimalSchedule ros) const {
   std::vector<Op *> sorted;
@@ -3330,11 +3279,6 @@ const Tensors &Ir::getMainGraphTensors() const {
   return getMainGraph().getTensors();
 }
 
-uint32_t Ir::getAndIncrementSeedModifier() {
-  seedModifier += 1;
-  return seedModifier;
-}
-
 RandomReferenceId Ir::getAndIncrementRandomReferenceId() {
   randomReferenceId += 1;
   return randomReferenceId;
@@ -3449,8 +3393,8 @@ std::size_t std::hash<popart::Ir>::operator()(const popart::Ir &ir) const {
   return seed;
 }
 
-std::size_t std::hash<popart::IrBundle>::
-operator()(const popart::IrBundle &bundle) const {
+std::size_t
+std::hash<popart::IrBundle>::operator()(const popart::IrBundle &bundle) const {
   size_t seed = 0;
 
   boost::hash_combine(

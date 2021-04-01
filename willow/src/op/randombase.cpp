@@ -22,8 +22,7 @@ void RandomBaseOp::errorIfSeedIsSet(const Attributes &attr,
 RandomBaseOp::RandomBaseOp(const OperatorIdentifier &opid_,
                            const OptionalDataType &dataType_,
                            const Op::Settings &settings_)
-    : ShapeOrLikeOp(opid_, dataType_, settings_),
-      seedModifier(settings_.getIr().getAndIncrementSeedModifier()) {}
+    : ShapeOrLikeOp(opid_, dataType_, settings_) {}
 
 RandomNormalBaseOp::RandomNormalBaseOp(const OperatorIdentifier &opid_,
                                        const OptionalDataType &dataType_,
@@ -36,7 +35,6 @@ void RandomNormalBaseOp::appendOutlineAttributes(OpSerialiserBase &os) const {
   Op::appendOutlineAttributes(os);
   os.appendAttribute("mean", mean);
   os.appendAttribute("scale", scale);
-  os.appendAttribute("seedModifier", getSeedModifier());
 }
 
 RandomUniformBaseOp::RandomUniformBaseOp(const OperatorIdentifier &opid_,
@@ -50,7 +48,6 @@ void RandomUniformBaseOp::appendOutlineAttributes(OpSerialiserBase &os) const {
   Op::appendOutlineAttributes(os);
   os.appendAttribute("high", high);
   os.appendAttribute("low", low);
-  os.appendAttribute("seedModifier", getSeedModifier());
 }
 
 } // namespace popart

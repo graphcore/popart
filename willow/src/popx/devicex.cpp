@@ -57,6 +57,7 @@
 #include <popart/tensornames.hpp>
 #include <popart/tensors.hpp>
 #include <popart/topocons.hpp>
+#include <popart/transforms/randomsetup.hpp>
 
 #include <stepiosplitter.hpp>
 
@@ -640,7 +641,7 @@ void Devicex::connectRandomSeedStream() {
        ++replicaId) {
 
     auto callback = [this, replicaId](void *ptr) {
-      TensorId seedId          = GetRandomSeedOp::getStreamedSeedTensorId();
+      TensorId seedId          = RandomSetup::getStreamedSeedTensorId();
       const Tensor *seedTensor = executable_.getSeedTensor();
       const uint64_t *seedVal =
           reinterpret_cast<const uint64_t *>(seedTensor->tensorData()->data());
@@ -656,7 +657,7 @@ void Devicex::connectRandomSeedStream() {
     };
 
     pEngine->connectStreamToCallback(
-        lowering().h2dId(GetRandomSeedOp::getStreamedSeedTensorId()),
+        lowering().h2dId(RandomSetup::getStreamedSeedTensorId()),
         replicaId,
         callback);
   }

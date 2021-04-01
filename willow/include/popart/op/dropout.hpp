@@ -11,7 +11,6 @@ protected:
   // protected constructor used in grad op
   DropoutOp(const OperatorIdentifier &opid_,
             float ratio_,
-            uint32_t seedModifier_,
             RandomReferenceId referenceId_,
             bool outputMask_,
             const Op::Settings &settings_);
@@ -34,9 +33,6 @@ public:
   bool getOutputMask() const { return outputMask; }
 
   void appendOutlineAttributes(OpSerialiserBase &) const final;
-
-  // TODO (T25465): this setter can be removed once dropout is outlineable
-  void setSeedModifier(uint32_t sm) { seedModifier = sm; }
 
   void setReferenceId(RandomReferenceId id) { referenceId = id; }
   RandomReferenceId getReferenceId() const { return referenceId; }

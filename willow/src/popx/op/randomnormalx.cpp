@@ -23,7 +23,7 @@ void RandomNormalOpx::grow(poplar::program::Sequence &prog) const {
 
   auto output = poprand::normal(graph(),
                                 &getInTensor(op.getSeedInIndex()),
-                                op.getSeedModifier(),
+                                0u,
                                 refTensor,
                                 poplarType,
                                 op.getMean(),

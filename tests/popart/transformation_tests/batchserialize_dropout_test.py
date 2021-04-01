@@ -45,7 +45,7 @@ def test_batchserialisation_dropout(tmpdir):
 
         return builder.getModelProto(), {d0: input_data}, [x1, x2], loss
 
-    def run_test():
+    def run_test(enableOutlining):
         proto, data, xs, loss = model()
 
         options = popart.SessionOptions()
@@ -53,7 +53,7 @@ def test_batchserialisation_dropout(tmpdir):
 
         optimizer = popart.SGD({"defaultLearningRate": (0.1, True)})
 
-        options.enableOutlining = False
+        options.enableOutlining = enableOutlining
         options.autoRecomputation = popart.RecomputationType.Standard
         options.explicitRecomputation = True
         options.batchSerializationSettings.factor = 4
@@ -85,12 +85,13 @@ def test_batchserialisation_dropout(tmpdir):
         device.detach()
         return [anchors[x] for x in xs]
 
-    dropout0, dropout1 = run_test()
+    for enableOutlining in [False, True]:
+        dropout0, dropout1 = run_test(enableOutlining)
 
-    # Check all dropout patterns are different
-    batch_outputs = [t for output in [dropout0, dropout1] for t in output]
-    for i, t1 in enumerate(batch_outputs):
-        for j, t2 in enumerate(batch_outputs):
-            if i == j:
-                continue
-            assert np.any((t1 == 0) != (t2 == 0))
+        # Check all dropout patterns are different
+        batch_outputs = [t for output in [dropout0, dropout1] for t in output]
+        for i, t1 in enumerate(batch_outputs):
+            for j, t2 in enumerate(batch_outputs):
+                if i == j:
+                    continue
+                assert np.any((t1 == 0) != (t2 == 0))

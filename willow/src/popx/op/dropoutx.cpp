@@ -23,7 +23,6 @@ growDropout(poplar::Graph &graph,
             const poplar::Tensor &seed,
             const poplar::Tensor &refTensor,
             float ratio,
-            uint32_t seedModifier,
             const Opx &opx,
             poplar::program::Sequence &prog) {
   double dropoutProbability = 1. - static_cast<double>(ratio);
@@ -35,7 +34,7 @@ growDropout(poplar::Graph &graph,
   // Calculate the dropout mask using poplibs and a tensor of ones.
   auto mask = poprand::bernoulli(graph,
                                  &seed,
-                                 seedModifier,
+                                 0u,
                                  refTensor,
                                  refTensor.elementType(),
                                  dropoutProbability,
@@ -63,8 +62,7 @@ DropoutOpx::DropoutOpx(Op *op, Devicex *devicex)
 }
 
 void DropoutOpx::grow(poplar::program::Sequence &prog) const {
-  auto &op          = getOp<DropoutOp>();
-  auto seedModifier = op.getSeedModifier();
+  auto &op = getOp<DropoutOp>();
 
   if (op_p->getIr().canTrain()) {
     const poplar::Tensor &refTensor = get(op.getReferenceTensorId());
@@ -75,7 +73,6 @@ void DropoutOpx::grow(poplar::program::Sequence &prog) const {
                                       getInTensor(op.getSeedInIndex()),
                                       refTensor,
                                       op.getRatio(),
-                                      seedModifier,
                                       *this,
                                       prog);
       auto dropout      = dropout_mask.first;
@@ -93,7 +90,7 @@ void DropoutOpx::grow(poplar::program::Sequence &prog) const {
       double scale = 1. / (1. - static_cast<double>(op.getRatio()));
       auto dropout = poprand::dropout(graph(),
                                       &getInTensor(op.getSeedInIndex()),
-                                      seedModifier,
+                                      0u,
                                       getInTensor(DropoutOp::getInIndex()),
                                       refTensor,
                                       dropoutProbability,

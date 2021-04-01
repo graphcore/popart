@@ -135,22 +135,6 @@ def test_pipelined_dropout():
 
         return anchors
 
-    # Compare pipelined and non-pipelined models to confirm random
-    # dropout behaviour is the same
-    # Note: Because the random behaviour of ops such as dropout depend on a
-    # reference tensor layout, which is not constant between these models
-    # (since they all have a different IR), this behaviour is not always
-    # guaranteed. However, we have chosen a model where the random behaviour
-    # is the same between non-sharded, sharded, and sharded-pipelined
-    # configurations
-    singleipu_anchors = test(do_sharding=False, do_pipelining=False)
-    shard_anchors = test(do_sharding=True, do_pipelining=False)
-    pipe_anchors = test(do_sharding=True, do_pipelining=True)
-    for tId in singleipu_anchors:
-        assert np.array_equal(singleipu_anchors[tId], shard_anchors[tId])
-        assert np.array_equal(singleipu_anchors[tId], pipe_anchors[tId])
-
-
 @tu.requires_ipu
 def test_pipelined_recomputed_dropout():
     dsize = 10

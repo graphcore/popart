@@ -9,33 +9,18 @@ namespace popart {
 
 DropoutBaseOp::DropoutBaseOp(const OperatorIdentifier &opid_,
                              float ratio_,
-                             uint32_t seedModifier_,
                              const Op::Settings &settings_)
-    : Op(opid_, settings_), ratio(ratio_), seedModifier(seedModifier_) {}
-
-DropoutBaseOp::DropoutBaseOp(const OperatorIdentifier &opid_,
-                             float ratio_,
-                             const Op::Settings &settings_)
-    : Op(opid_, settings_), ratio(ratio_), seedModifier(0) {
-  updateSeedModifier();
-}
+    : RandomBaseOp(opid_, OptionalDataType(), settings_), ratio(ratio_) {}
 
 // Dropout in testing mode can be replaced by the identity
 bool DropoutBaseOp::canBeReplacedByIdentity() const {
   return (getIr().isTesting() || ratio == 0);
 }
 
-void DropoutBaseOp::updateSeedModifier() {
-  seedModifier = getIr().getAndIncrementSeedModifier();
-}
-
 void DropoutBaseOp::configureShardedOp(Op *const shardedOp,
                                        const Settings *const settings_) const {
   Op::configureShardedOp(shardedOp, settings_);
-  if (!hasInput(DropoutBaseOp::getSeedInIndex())) {
-    // Fetch a unique seed modifier
-    dynamic_cast<DropoutBaseOp *>(shardedOp)->updateSeedModifier();
-  }
+  // TODO: T29800
 }
 
 float DropoutBaseOp::validateRatioAttribute(const OpCreatorInfo &info) {
