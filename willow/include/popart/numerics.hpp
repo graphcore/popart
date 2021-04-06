@@ -4,7 +4,10 @@
 
 #include <cmath>
 
+#include <sstream>
+#include <string>
 #include <popart/names.hpp>
+
 namespace popart {
 namespace numerics {
 

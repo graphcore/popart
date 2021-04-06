@@ -4,6 +4,7 @@
 
 #include <popart/op.hpp>
 #include <popart/op/elementwise.hpp>
+#include <popart/tensor.hpp>
 
 namespace popart {
 
