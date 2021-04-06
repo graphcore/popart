@@ -7,6 +7,8 @@
 #include <transforms/autodiff/tensorgradmapregister.hpp>
 
 #include <map>
+#include <memory>
+#include <vector>
 
 namespace popart {
 
@@ -27,6 +29,8 @@ private:
   TensorId getGradId(const TensorId &);
   void populateGradInInfo(
       const std::map<TensorId, TensorId> &bwdInputIdToFwdTensorId);
+  bool hasInputTensorId(Op *nonGradOp, const GradInOutMapper &inOutMapper);
+  TensorId getInputTensorId(Op *nonGradOp, const GradInOutMapper &inOutMapper);
 
   static void cloneGraph(const Graph &from, Graph &to);
   static void doPrune(Graph &);
@@ -37,6 +41,7 @@ private:
   // A map of fwd tensors to their corresponding gradient tensors
   std::map<TensorId, TensorId> gradTensorMap;
   TensorGradMapRegister gradRegister;
+  std::map<Op *, std::vector<std::unique_ptr<Op>>> gradOpStore;
 };
 
 } // namespace popart

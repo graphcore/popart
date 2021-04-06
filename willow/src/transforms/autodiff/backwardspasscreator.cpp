@@ -13,7 +13,7 @@
 namespace popart {
 
 BackwardPassCreator::BackwardPassCreator(Graph &fwdGraph_, Graph &bwdGraph_)
-    : fwdGraph(fwdGraph_), bwdGraph(bwdGraph_) {
+    : fwdGraph(fwdGraph_), bwdGraph(bwdGraph_), gradOpStore() {
   growGradGraph();
 
   // create map of bwdGraph input TensorIds to fwdGraph input/gradient TensorIds
@@ -48,6 +48,7 @@ void BackwardPassCreator::populateGradInInfo(
     partialGradInfo.insert({id, {-1, i, GradOpInType::GradOut}});
   }
 
+  // Populate bwdGraph.gradInInfo.
   auto bwdInputIds = bwdGraph.getInputIds();
   for (int bIdx = 0; bIdx < bwdInputIds.size(); bIdx++) {
     auto bwdId       = bwdInputIds.at(bIdx);
@@ -63,13 +64,37 @@ void BackwardPassCreator::populateGradInInfo(
           bwdId);
     }
   }
+
+  // bwdGraph.gradOutInfo which maps grad out to non-grad inputs.
+  auto fwdInputIds  = fwdGraph.getInputIds();
+  auto bwdOutputIds = bwdGraph.getOutputIds();
+  for (int fIdx = 0; fIdx < fwdInputIds.size(); fIdx++) {
+    auto fwdId  = fwdInputIds.at(fIdx);
+    auto gradIt = gradTensorMap.find(fwdId);
+    if (gradIt != gradTensorMap.end()) {
+      // There is a grad tensor for this fwd-input. This may not be true for,
+      // e.g., things like random seeds.
+      auto bwdId = gradIt->second;
+      if (!bwdGraph.hasOutputId(bwdId)) {
+        throw error("Grad tensor {} is unexpectedly not marked as an output of "
+                    " {}",
+                    bwdId,
+                    bwdGraph.getGraphString());
+      } else {
+        bwdGraph.gradOutInfo.insert({bwdGraph.getOutputIndex(bwdId), fIdx});
+      }
+    }
+  }
 }
 
 void BackwardPassCreator::growGradGraph() {
   // clone ops from the fwdGraph into the bwdGraph
   cloneGraph(fwdGraph, bwdGraph);
   // cloned outputs are not required
-  for (auto &id : bwdGraph.getOutputIds()) {
+  // Copying outputs because removing elements from a list we're iterating over
+  // is a bad idea.
+  auto bwdOutputIds = bwdGraph.getOutputIds();
+  for (auto &id : bwdOutputIds) {
     bwdGraph.removeOutput(id);
   }
 
@@ -86,6 +111,12 @@ void BackwardPassCreator::growGradGraph() {
   for (auto &id_op : fwdGraph.getOps()) {
     auto op = id_op.second.get();
     pendingOps.insert(op);
+  }
+
+  // Get all grad ops now, but don't link them up.
+  for (auto &id_op : fwdGraph.getOps()) {
+    auto op         = id_op.second.get();
+    gradOpStore[op] = op->getGradOps();
   }
 
   while (!pendingOps.empty()) {
@@ -112,11 +143,10 @@ void BackwardPassCreator::growGradGraph() {
 
   // connect up outputs
   for (auto &scopedId : fwdGraph.getInputIds()) {
-    if (gradTensorMap.find(scopedId) == gradTensorMap.end()) {
-      throw error("Could not find tensor {} in gradTensorMap", scopedId);
+    if (gradTensorMap.find(scopedId) != gradTensorMap.end()) {
+      auto gradId = getGradId(scopedId);
+      bwdGraph.markAsOutput(gradId);
     }
-    auto gradId = getGradId(scopedId);
-    bwdGraph.markAsOutput(gradId);
   }
 }
 
@@ -186,21 +216,101 @@ TensorId BackwardPassCreator::getGradId(const TensorId &id) {
 }
 
 bool BackwardPassCreator::opIsReadyToCreateGradients(Op *op) {
-  for (auto output : op->output->tensors()) {
-    if (gradTensorMap.find(output->id) == gradTensorMap.end()) {
-      return false;
+  // Get our grad ops from the grad op store.
+  auto gradOpStoreIt = gradOpStore.find(op);
+  if (gradOpStoreIt == gradOpStore.end()) {
+    throw error("Unexpectedly unable to find grad ops for {}", op->debugName());
+  }
+
+  // Check if all of the grad's inputs are available.
+  for (auto &gradOp : gradOpStoreIt->second) {
+    for (auto &inOutMapper : gradOp->gradInputInfo()) {
+      if (!hasInputTensorId(op, inOutMapper)) {
+        return false;
+      }
+      auto inputId = getInputTensorId(op, inOutMapper);
+      if (!bwdGraph.getTensors().contains(inputId)) {
+        return false;
+      }
     }
   }
 
   return true;
 }
 
-std::vector<Op *> BackwardPassCreator::growGradOps(Op *nonGradOp) {
-  auto nonGradOpId = nonGradOp->id;
-  auto bwdOps      = nonGradOp->getGradOps();
-  if (bwdOps.empty()) {
-    throw error("Cannot get gradients for {}", nonGradOp->debugName());
+bool BackwardPassCreator::hasInputTensorId(Op *nonGradOp,
+                                           const GradInOutMapper &inOutMapper) {
+  int indexFwd      = inOutMapper.iNonGrad;
+  GradOpInType type = inOutMapper.type;
+
+  switch (type) {
+  case GradOpInType::In:
+  case GradOpInType::Out: {
+    return true;
   }
+  case GradOpInType::GradOut: {
+    auto fwdId = nonGradOp->outId(indexFwd);
+    auto found = gradTensorMap.find(fwdId);
+    return (found != gradTensorMap.end());
+  }
+  default: {
+    return false;
+  }
+  }
+}
+
+TensorId
+BackwardPassCreator::getInputTensorId(Op *nonGradOp,
+                                      const GradInOutMapper &inOutMapper) {
+  TensorId result;
+
+  int indexFwd      = inOutMapper.iNonGrad;
+  GradOpInType type = inOutMapper.type;
+
+  // the input at index 'indexGrad' to gradOp is
+  switch (type) {
+  //  (1) the INPUT at index 'indexFwd' of nonGradOp
+  //  This will be a tensor internal to fwdGraph
+  case GradOpInType::In: {
+    auto fwdId = nonGradOp->inId(indexFwd);
+    auto bwdId = bwdGraph.addScope(fwdGraph.removeScope(fwdId));
+    return bwdId;
+  }
+
+  //  (2) the OUTPUT at index 'indexFwd' of nonGradOp
+  //  This will be a tensor internal to fwdGraph
+  case GradOpInType::Out: {
+    auto fwdId = nonGradOp->outId(indexFwd);
+    auto bwdId = bwdGraph.addScope(fwdGraph.removeScope(fwdId));
+    return bwdId;
+  }
+
+  //  (3) the GRADIENT of the OUTPUT
+  //      at index 'indexFwd' of nonGradOp.
+  case GradOpInType::GradOut: {
+    auto fwdId = nonGradOp->outId(indexFwd);
+    auto found = gradTensorMap.find(fwdId);
+    if (found == gradTensorMap.end()) {
+      throw error("Could not find TensorId '{}' in gradTensorMap", fwdId);
+    }
+    return found->second;
+  }
+
+  default: {
+    throw internal_error("Unsupported value for GradOpInType");
+  }
+  }
+}
+
+std::vector<Op *> BackwardPassCreator::growGradOps(Op *nonGradOp) {
+  auto nonGradOpId   = nonGradOp->id;
+  auto gradOpStoreIt = gradOpStore.find(nonGradOp);
+  if (gradOpStoreIt == gradOpStore.end()) {
+    throw error("Unexpectedly unable to find grad ops for {}",
+                nonGradOp->debugName());
+  }
+  auto bwdOps = std::move(gradOpStoreIt->second);
+  gradOpStore.erase(gradOpStoreIt);
 
   std::vector<Op *> result;
 
@@ -232,43 +342,9 @@ std::vector<Op *> BackwardPassCreator::growGradOps(Op *nonGradOp) {
       // inputs to gradOp (to populate in this scope):
       std::map<int, std::string> m_inputs;
       for (auto &inOutMapper : gradOp->gradInputInfo()) {
-
-        int indexGrad     = inOutMapper.iGrad;
-        int indexFwd      = inOutMapper.iNonGrad;
-        GradOpInType type = inOutMapper.type;
-
-        // the input at index 'indexGrad' to gradOp is
-        switch (type) {
-        //  (1) the INPUT at index 'indexFwd' of nonGradOp
-        //  This will be a tensor internal to fwdGraph
-        case GradOpInType::In: {
-          auto fwdId          = nonGradOp->inId(indexFwd);
-          auto bwdId          = bwdGraph.addScope(fwdGraph.removeScope(fwdId));
-          m_inputs[indexGrad] = bwdId;
-          break;
-        }
-
-        //  (2) the OUTPUT at index 'indexFwd' of nonGradOp
-        //  This will be a tensor internal to fwdGraph
-        case GradOpInType::Out: {
-          auto fwdId          = nonGradOp->outId(indexFwd);
-          auto bwdId          = bwdGraph.addScope(fwdGraph.removeScope(fwdId));
-          m_inputs[indexGrad] = bwdId;
-          break;
-        }
-
-        //  (3) the GRADIENT of the OUTPUT
-        //      at index 'indexFwd' of nonGradOp.
-        case GradOpInType::GradOut: {
-          auto fwdId = nonGradOp->outId(indexFwd);
-          auto found = gradTensorMap.find(fwdId);
-          if (found == gradTensorMap.end()) {
-            throw error("Could not find TensorId '{}' in gradTensorMap", fwdId);
-          }
-          m_inputs[indexGrad] = found->second;
-          break;
-        }
-        }
+        int indexGrad       = inOutMapper.iGrad;
+        auto inputId        = getInputTensorId(nonGradOp, inOutMapper);
+        m_inputs[indexGrad] = inputId;
       }
 
       bwdGraph.connectInputs(InputMapWrapper(m_inputs), gradOpId);

@@ -141,6 +141,11 @@ public:
   getLiveSets(const std::vector<Op *> &topoOps) const;
 
   const std::vector<TensorId> &getInputIds() const { return graph_inputs; }
+  /// Get the index of the graph input with a specific id. If the id is not
+  /// a valid input id then a error will be raised.
+  /// \param id Tensor name to find the index for.
+  /// \return The input index for the specified id, if it exists.
+  InIndex getInputIndex(TensorId id) const;
 
   /// Add a graph input at a specific index in the list
   /// \param index Force the input to be at the specified index in the graph.
@@ -200,6 +205,10 @@ public:
   const std::vector<GradInOutMapper> &gradInputInfo() const {
     return gradInInfo;
   }
+
+  // For grad-graphs, mapping from output indices to
+  // corresponding IN indices of non-grad graph.
+  std::map<OutIndex, InIndex> gradOutputInfo() const { return gradOutInfo; }
 
   /// Replace oldId with newId on any consumers.
   /// Both tensors need to exist.
@@ -270,6 +279,7 @@ private:
   std::vector<TensorId> graph_outputs;
   std::unique_ptr<Scheduler> scheduler;
   std::vector<GradInOutMapper> gradInInfo;
+  std::map<OutIndex, InIndex> gradOutInfo;
   std::unique_ptr<onnxpasses::IOnnxToOnnx> onnxToOnnx;
 
   Ir &ir;

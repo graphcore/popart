@@ -159,7 +159,7 @@ void Graph::markAsInput(const TensorId &tensorId) {
 void Graph::removeInput(const TensorId &tensorId) {
   auto found = boost::range::find(graph_inputs, tensorId);
   if (found == graph_inputs.end()) {
-    throw error("Could not find tensor '{}' in graph {} outputs", tensorId, id);
+    throw error("Could not find tensor '{}' in graph {} inputs", tensorId, id);
   }
   graph_inputs.erase(found);
 }
@@ -558,6 +558,14 @@ Graph::getLiveSets(const std::vector<Op *> &topoOps) const {
   return liveSets;
 }
 
+InIndex Graph::getInputIndex(TensorId id) const {
+  auto it = std::find(graph_inputs.begin(), graph_inputs.end(), id);
+  if (it == graph_inputs.end()) {
+    throw error("Could not find input tensor '{}'", id);
+  }
+  return std::distance(graph_inputs.begin(), it);
+}
+
 int64_t Graph::getVirtualGraphId(const Op &op) {
   if (op.hasVirtualGraphId()) {
     return op.getVirtualGraphId();
@@ -681,6 +689,9 @@ void Graph::copyFrom(const Graph &other) {
 
     auto tensorClone = tensor->clone(*this);
     tensorClone->id  = newId;
+    if (tensor->hasTensorData()) {
+      tensorClone->setTensorData(tensor->info, tensor->tensorData()->data());
+    }
     this->getTensors().moveIntoTensors(std::move(tensorClone));
     auto tensorClonePtr = this->getTensors().get(newId);
     tensorMap.insert({tensor, tensorClonePtr});

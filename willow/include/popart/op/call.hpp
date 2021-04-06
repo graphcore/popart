@@ -65,7 +65,9 @@ private:
 
 class CallGradOp : public CallOp {
 public:
-  CallGradOp(CallOp &fwdOp, const std::vector<GradInOutMapper> &gradInInfo_);
+  CallGradOp(CallOp &fwdOp,
+             const std::vector<GradInOutMapper> &gradInInfo_,
+             const std::map<int, int> &gradOutInfo_);
 
   // std::unique_ptr<Op> clone() const override;
 
