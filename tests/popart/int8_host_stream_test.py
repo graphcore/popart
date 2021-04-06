@@ -1,12 +1,19 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
+from collections import namedtuple
 import numpy as np
 import pytest
 import popart
 
 import test_util as tu
 
+_DataType = namedtuple('_DataType', ['builder_type', 'np_type'])
+_INT8 = _DataType('INT8', np.int8)
+_UINT8 = _DataType('UINT8', np.uint8)
 
-def test_int8_hd_stream_then_cast_then_op_then_cast_then_int8_dh_stream():
+
+@pytest.mark.parametrize("cast_type", [_INT8, _UINT8])
+def test_int8_hd_stream_then_cast_then_op_then_cast_then_int8_dh_stream(
+        cast_type):
     """
     Test can stream an int8 input to device, and an int8 output back to host.
 
@@ -17,22 +24,20 @@ def test_int8_hd_stream_then_cast_then_op_then_cast_then_int8_dh_stream():
     -> stream int8 device to host
     Check returned host tensor is correct.
     """
-
     scale_factor = 5
 
     #### Build model ###
-
     builder = popart.Builder()
 
-    in0_host = np.array([1, 3], dtype=np.int8)
+    in0_host = np.array([1, 3], dtype=cast_type.np_type)
     shape = list(in0_host.shape)
 
-    in0 = builder.addInputTensor("INT8", shape)
+    in0 = builder.addInputTensor(cast_type.builder_type, shape)
     t1 = builder.aiOnnx.cast([in0], "FLOAT16")
 
     t2 = builder.aiGraphcore.scale([t1], scale_factor)
 
-    out = builder.aiOnnx.cast([t2], "INT8")
+    out = builder.aiOnnx.cast([t2], cast_type.builder_type)
 
     ### Create session and run program ###
     s = popart.InferenceSession(fnModel=builder.getModelProto(),
@@ -56,7 +61,8 @@ def test_int8_hd_stream_then_cast_then_op_then_cast_then_int8_dh_stream():
     assert (np.array_equal(anchors[out], expected))
 
 
-def test_fail_stream_int8_no_cast_then_op():
+@pytest.mark.parametrize("cast_type", [_INT8, _UINT8])
+def test_fail_stream_int8_no_cast_then_op(cast_type):
     """
     Test using the int8 tensors in an add op before casting fails.
 
@@ -67,7 +73,7 @@ def test_fail_stream_int8_no_cast_then_op():
 
     builder = popart.Builder()
 
-    tinfo = popart.TensorInfo("INT8", [2])
+    tinfo = popart.TensorInfo(cast_type.builder_type, [2])
     i1 = builder.addInputTensor(tinfo)
     i2 = builder.addInputTensor(tinfo)
 
@@ -89,7 +95,8 @@ def test_fail_stream_int8_no_cast_then_op():
         session.prepareDevice()
 
 
-def test_pipelining_recomp():
+@pytest.mark.parametrize("cast_type", [_INT8, _UINT8])
+def test_pipelining_recomp(cast_type):
     """
     We test all the following conditions for int8 tensors:
       1. When recomputing a pipeline stage, the input to that stage is stashed.
@@ -105,13 +112,13 @@ def test_pipelining_recomp():
 
     dshape = [1, 2, 4, 4]
     w_data = np.random.rand(*dshape).astype(np.float16)
-    x_i8_data = np.random.rand(bps, *dshape).astype(np.int8)
+    x_i8_data = np.random.rand(bps, *dshape).astype(cast_type.np_type)
 
     #### Build model ###
 
     builder = popart.Builder()
 
-    x_i8 = builder.addInputTensor("INT8", dshape, "x")
+    x_i8 = builder.addInputTensor(cast_type.builder_type, dshape, "x")
     w = builder.addInitializedInputTensor(w_data)
 
     with builder.virtualGraph(0), builder.pipelineStage(0):
@@ -119,7 +126,7 @@ def test_pipelining_recomp():
         x = builder.aiOnnx.cast([x_i8], "FLOAT16")
         y = builder.aiOnnx.mul([x, w])
         # (2, 3) IpuCopy'd to stage 1, and stashed as also consumed by stage 2.
-        y = builder.aiOnnx.cast([y], "INT8")
+        y = builder.aiOnnx.cast([y], cast_type.builder_type)
 
     with builder.virtualGraph(1), builder.pipelineStage(1):
         y = builder.aiOnnx.cast([y], "FLOAT16")
@@ -128,7 +135,7 @@ def test_pipelining_recomp():
     with builder.virtualGraph(0), builder.pipelineStage(2):
         y = builder.aiOnnx.mul([w, y])
         loss = builder.aiGraphcore.identityloss([y])
-        loss_i8 = builder.aiOnnx.cast([loss], "INT8")
+        loss_i8 = builder.aiOnnx.cast([loss], cast_type.builder_type)
         builder.addOutputTensor(loss_i8)
 
     opts = popart.SessionOptions()
@@ -136,6 +143,7 @@ def test_pipelining_recomp():
     opts.enablePipelining = True
     opts.enableGradientAccumulation = True
     opts.accumulationFactor = bps
+    opts.accumulationAndReplicationReductionType = popart.ReductionType.Mean
     opts.decomposeGradSum = True
     opts.autoRecomputation = popart.RecomputationType.Pipeline
     opts.explicitRecomputation = False

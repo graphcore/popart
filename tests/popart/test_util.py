@@ -34,9 +34,9 @@ def create_test_device(
         opts: Dict = None,
         pattern: popart.SyncPattern = popart.SyncPattern.Full,
         connectionType: popart.DeviceConnectionType = popart.
-    DeviceConnectionType.OnDemand,
+        DeviceConnectionType.OnDemand,
         selectionCriterion: popart.DeviceSelectionCriterion = popart.
-    DeviceSelectionCriterion.Random,
+        DeviceSelectionCriterion.Random,
         tilesPerIPU=None):
     testDeviceType = os.environ.get("TEST_TARGET")
 

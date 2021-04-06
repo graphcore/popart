@@ -1,4 +1,5 @@
 # Copyright (c) 2019 Graphcore Ltd. All rights reserved.
+from collections import namedtuple
 import numpy as np
 import popart
 import pytest
@@ -11,11 +12,16 @@ import test_util as tu
 
 np.random.seed(0)
 
+_DataType = namedtuple('_DataType', ['builder_type', 'np_type'])
+_INT8 = _DataType('INT8', np.int8)
+_UINT8 = _DataType('UINT8', np.uint8)
 
-def run_pt_session(syntheticDataMode, int8Input=False, d_shape=[100]):
+
+def run_pt_session(syntheticDataMode, inputType=None, d_shape=[100]):
     builder = popart.Builder()
-    if int8Input:
-        d0_i8 = builder.addInputTensor(popart.TensorInfo("INT8", d_shape))
+    if inputType is not None:
+        d0_i8 = builder.addInputTensor(
+            popart.TensorInfo(inputType.builder_type, d_shape))
         d0 = builder.aiOnnx.cast([d0_i8], "FLOAT")
         in_name = d0_i8
     else:
@@ -45,8 +51,8 @@ def numpy_array_from_printtensor_string(string):
 
 
 @tu.requires_ipu
-@pytest.mark.parametrize("int8Input", [False, True])
-def test_verify_synthetic_inputs(capfd, int8Input):
+@pytest.mark.parametrize("inputType", [_INT8, _UINT8, None])
+def test_verify_synthetic_inputs(capfd, inputType):
     """
     For each synthetic data mode:
     1. Get a session that prints the input tensor value to stderr
@@ -63,15 +69,19 @@ def test_verify_synthetic_inputs(capfd, int8Input):
 
     ## A) Expect input is all zeros
     run_pt_session(popart.SyntheticDataMode.Zeros,
-                   int8Input=int8Input,
+                   inputType=inputType,
                    d_shape=d_shape)
     _, err0 = capfd.readouterr()
     zeroData = numpy_array_from_printtensor_string(err0)
     assert np.all(zeroData == 0)
 
     ## B) Expect input is random normal, T~N(0,1)
+    if inputType == _UINT8:
+        # Casting normal data to unsigned results in non-normal data.
+        return
+
     run_pt_session(popart.SyntheticDataMode.RandomNormal,
-                   int8Input=int8Input,
+                   inputType=inputType,
                    d_shape=d_shape)
     _, err1 = capfd.readouterr()
     rnData = numpy_array_from_printtensor_string(err1)

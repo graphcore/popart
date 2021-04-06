@@ -95,7 +95,8 @@ StashOpx::StashOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
   verifyOp<StashOp>(op);
   hStashSize = static_cast<size_t>(getOp<StashOp>().getStashSize());
   canDynamicUpdateStash =
-      inInfo(StashOp::getInIndex()).dataType() != DataType::INT8;
+      !(inInfo(StashOp::getInIndex()).dataType() == DataType::INT8 ||
+        inInfo(StashOp::getInIndex()).dataType() == DataType::UINT8);
 }
 
 namespace {

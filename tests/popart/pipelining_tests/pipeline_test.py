@@ -1,4 +1,5 @@
 # Copyright (c) 2019 Graphcore Ltd. All rights reserved.
+from collections import namedtuple
 import numpy as np
 import popart
 import pytest
@@ -209,9 +210,14 @@ def test_training_min_batches():
         "For pipelining, depth (batchesPerStep) must")
 
 
+_DataType = namedtuple('_DataType', ['builder_type', 'np_type'])
+_INT8 = _DataType('INT8', np.int8)
+_UINT8 = _DataType('UINT8', np.uint8)
+
+
 @tu.requires_ipu_model
-@pytest.mark.parametrize("int8Input", [False, True])
-def test_output_matches_train(int8Input):
+@pytest.mark.parametrize("inputType", [_INT8, _UINT8, None])
+def test_output_matches_train(inputType):
     """
     In this test we check that the anchors of equivalent non-sharded, sharded
     and non-pipelined, and sharded and pipelined models are equal when doing
@@ -223,17 +229,17 @@ def test_output_matches_train(int8Input):
                                           doPipelining=False,
                                           batchesPerStep=bps,
                                           doTraining=True,
-                                          int8Input=int8Input)
+                                          inputType=inputType)
     multiIpu_anchors = get_model_anchors(doSharding=True,
                                          doPipelining=False,
                                          batchesPerStep=bps,
                                          doTraining=True,
-                                         int8Input=int8Input)
+                                         inputType=inputType)
     pipelined_anchors = get_model_anchors(doSharding=True,
                                           doPipelining=True,
                                           batchesPerStep=bps,
                                           doTraining=True,
-                                          int8Input=int8Input)
+                                          inputType=inputType)
     # TODO, depends on T9630, add a case with grad accumulation. All tensor
     # outputs should be exactly the same when doing pipelined vs non-pipelined
     # when grad accumulation is turned on
@@ -253,8 +259,8 @@ def test_output_matches_train(int8Input):
 
 
 @tu.requires_ipu_model
-@pytest.mark.parametrize("int8Input", [False, True])
-def test_acts_match_restored_acts(int8Input):
+@pytest.mark.parametrize("inputType", [_INT8, _UINT8, None])
+def test_acts_match_restored_acts(inputType):
     """
     In this test we check that the stashed tensors and their equivalent
     Restored tensors have the same values for all batches. This confirms
@@ -271,7 +277,7 @@ def test_acts_match_restored_acts(int8Input):
                                           doTraining=True,
                                           anchorRestoredTensors=True,
                                           returnRawInput=True,
-                                          int8Input=int8Input)
+                                          inputType=inputType)
 
     for (tId, t) in pipelined_anchors.items():
         for i in range(np.shape(t)[0]):
@@ -279,7 +285,7 @@ def test_acts_match_restored_acts(int8Input):
 
     # Can't seem to make the cast op produce a tensor with id "input", so we
     # have to do this instead.
-    input_name = "Cast:0" if int8Input else "input"
+    input_name = "Cast:0" if inputType is not None else "input"
 
     assert np.allclose(
         pipelined_anchors[popart.reservedRestoredPrefix() + "Exp:0"],
@@ -292,8 +298,8 @@ def test_acts_match_restored_acts(int8Input):
 
 
 @tu.requires_ipu_model
-@pytest.mark.parametrize("int8Input", [False, True])
-def test_output_matches_infer(int8Input):
+@pytest.mark.parametrize("inputType", [_INT8, _UINT8, None])
+def test_output_matches_infer(inputType):
     """
     In this test we check that the anchors of equivalent non-sharded, sharded
     and non-pipelined, and sharded and pipelined models are equal when doing
@@ -304,17 +310,17 @@ def test_output_matches_infer(int8Input):
                                           doPipelining=False,
                                           batchesPerStep=bps,
                                           doTraining=False,
-                                          int8Input=int8Input)
+                                          inputType=inputType)
     multiIpu_anchors = get_model_anchors(doSharding=True,
                                          doPipelining=False,
                                          batchesPerStep=bps,
                                          doTraining=False,
-                                         int8Input=int8Input)
+                                         inputType=inputType)
     pipelined_anchors = get_model_anchors(doSharding=True,
                                           doPipelining=True,
                                           batchesPerStep=bps,
                                           doTraining=False,
-                                          int8Input=int8Input)
+                                          inputType=inputType)
 
     for (tId1, t1), (tId2, t2) in zip(singleIpu_anchors.items(),
                                       multiIpu_anchors.items()):
@@ -345,22 +351,23 @@ def get_model_anchors(doSharding,
                       doDevicex=True,
                       anchorRestoredTensors=False,
                       returnRawInput=False,
-                      int8Input=False):
+                      inputType=None):
     np.random.seed(seed=1)
 
     builder = popart.Builder()
     batchSize = 2
     shape_d0 = [batchSize, 2, 4, 4]
     shape_l0 = [batchSize]
-    if int8Input:
-        d0 = builder.addInputTensor(popart.TensorInfo("INT8", shape_d0))
+    if inputType is not None:
+        d0 = builder.addInputTensor(
+            popart.TensorInfo(inputType.builder_type, shape_d0))
     else:
         d0 = builder.addInputTensor(popart.TensorInfo("FLOAT", shape_d0))
     data_w0 = np.ones(shape=[2, 2, 3, 3]).astype(np.float32)
     w0 = builder.addInitializedInputTensor(data_w0)
     l0 = builder.addInputTensor(popart.TensorInfo("INT32", shape_l0))
 
-    if int8Input:
+    if inputType is not None:
         d0_cast = builder.aiOnnx.cast([d0], "FLOAT")
     else:
         d0_cast = d0
@@ -395,7 +402,8 @@ def get_model_anchors(doSharding,
     else:
         opts.virtualGraphMode = popart.VirtualGraphMode.Manual
         numIPUs = 3
-        if int8Input: builder.virtualGraph(d0_cast, 0)
+        if inputType is not None:
+            builder.virtualGraph(d0_cast, 0)
         builder.virtualGraph(s0, 0)
         builder.virtualGraph(e0, 1)
         builder.virtualGraph(c0, 1)
@@ -427,7 +435,7 @@ def get_model_anchors(doSharding,
     if batchesPerStep > 1:
         shape_d0.insert(0, batchesPerStep)
         shape_l0.insert(0, batchesPerStep)
-    d0_host_type = np.int8 if int8Input else np.float32
+    d0_host_type = inputType.np_type if inputType is not None else np.float32
     data = np.random.uniform(low=-10.0, high=10.0,
                              size=shape_d0).astype(d0_host_type)
     classes = np.prod(shape_d0) / (batchSize * batchesPerStep)
@@ -659,12 +667,12 @@ def test_multiple_stages_per_virtual_graph_inference():
 
 # run the same model with and without revisiting ipus and compare the resultant weights.
 @tu.requires_ipu_model
-@pytest.mark.parametrize("int8Input", [False, True])
-def test_multiple_stages_per_virtual_graph_training(int8Input):
+@pytest.mark.parametrize("inputType", [_INT8, _UINT8, None])
+def test_multiple_stages_per_virtual_graph_training(inputType):
     accumulation_factor = 5
     micro_batches_per_step = 5
     bps = micro_batches_per_step // accumulation_factor
-    data_type = np.int8 if int8Input else np.float32
+    data_type = inputType.np_type if inputType is not None else np.float32
     dummy_data = np.random.rand(2, 2).astype(data_type)
     data = np.random.rand(accumulation_factor, 2, 2).astype(data_type)
     weight_data = np.random.rand(2, 2).astype(np.float32)
@@ -677,7 +685,7 @@ def test_multiple_stages_per_virtual_graph_training(int8Input):
             w0 = builder.addInitializedInputTensor(weight_data)
             weights[w0] = np.empty(shape=weight_data.shape,
                                    dtype=weight_data.dtype)
-            if int8Input:
+            if inputType is not None:
                 d0_float = builder.aiOnnx.cast([d0], "FLOAT")
                 t0 = builder.aiOnnx.matmul([d0_float, w0])
             else:
@@ -689,13 +697,15 @@ def test_multiple_stages_per_virtual_graph_training(int8Input):
             builder.addOutputTensor(loss)
 
             if set_pipeline_stages:
-                if int8Input: builder.pipelineStage(d0_float, 0)
+                if inputType is not None:
+                    builder.pipelineStage(d0_float, 0)
                 builder.pipelineStage(t0, 0)
                 builder.pipelineStage(t1, 1)
                 builder.pipelineStage(t2, 2)
                 builder.pipelineStage(loss, 2)
 
-                if int8Input: builder.virtualGraph(d0_float, 0)
+                if inputType is not None:
+                    builder.virtualGraph(d0_float, 0)
                 builder.virtualGraph(t0, 0)
                 builder.virtualGraph(t1, 1)
                 builder.virtualGraph(t2, 0)
@@ -749,13 +759,14 @@ def test_multiple_stages_per_virtual_graph_training(int8Input):
 
 # run the same model with and without recomputation and check the updated weights
 @tu.requires_ipu_model
-@pytest.mark.parametrize("int8Input", [False, True])
-def test_recomputation(int8Input):
+@pytest.mark.parametrize("inputType", [_INT8, _UINT8, None])
+def test_recomputation(inputType):
     accumulationFactor = 3
     microBatchesPerStep = 3
     bps = microBatchesPerStep // accumulationFactor
 
-    data_type, f = (np.int8, 1) if int8Input else (np.float32, 0.1)
+    data_type, f = (inputType.np_type,
+                    1) if inputType is not None else (np.float32, 0.1)
     dummy_data = np.zeros((2, 2)).astype(data_type)
     data = np.array([i for i in range(accumulationFactor * 2 * 2)
                      ]).astype(data_type) * f
@@ -773,7 +784,7 @@ def test_recomputation(int8Input):
             weights[w0] = np.empty(shape=weight_data.shape,
                                    dtype=weight_data.dtype)
 
-            if int8Input:
+            if inputType is not None:
                 d0_float = builder.aiOnnx.cast([d0], "FLOAT")
                 t0 = builder.aiOnnx.mul([d0_float, w0])
             else:
@@ -782,7 +793,7 @@ def test_recomputation(int8Input):
             t2 = builder.aiGraphcore.scale([t1], 2.0)
             loss = builder.aiGraphcore.identityloss([t2])
 
-            if int8Input:
+            if inputType is not None:
                 builder.virtualGraph(d0_float, 0)
 
             for t in (t0, t1, t2):

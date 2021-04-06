@@ -63,6 +63,10 @@ std::vector<char> convertFloatToDataType(DataType dtype, float data) {
     return convertIntTo<int8_t>(roundToInt(data));
   }
 
+  else if (dtype == DataType::UINT8) {
+    return convertUnsignedIntTo<uint8_t>(roundToUnsigned(data));
+  }
+
   throw error("Can't convert float to DataType {}",
               getDataTypeInfoMap().at(dtype).name());
 }
@@ -88,7 +92,7 @@ template <typename T> std::vector<char> convertIntTo(int data) {
 // convert an unsigned int to type T
 template <typename T> std::vector<char> convertUnsignedIntTo(uint32_t data) {
   std::vector<char> data_out;
-  T converted_data{data};
+  T converted_data{static_cast<T>(data)};
   data_out.resize(sizeof(T));
   *reinterpret_cast<T *>(data_out.data()) = converted_data;
   return data_out;

@@ -20,7 +20,8 @@ RestoreBaseOpx<Derived>::RestoreBaseOpx(Op *op, Devicex *devicex)
 
   // Note RestoreInplaceOp derives RestoreOp.
   canDynamicSliceRestore =
-      inInfo(RestoreOp::getStashInIndex()).dataType() != DataType::INT8;
+      !(inInfo(RestoreOp::getStashInIndex()).dataType() == DataType::INT8 ||
+        inInfo(RestoreOp::getStashInIndex()).dataType() == DataType::UINT8);
 }
 
 template <typename Derived>
