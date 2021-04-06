@@ -2,7 +2,7 @@
 
 # How to use:
 # First, install the mkdoc python module:
-# `python -m pip install git+git://github.com/pybind/pybind11_mkdoc.git@master` 
+# `python3 -m pip install git+git://github.com/pybind/pybind11_mkdoc.git@master`
 # Also install python-clang if you don't have it already:
 # `pip install clang`
 # Then run this file with a poplar include directory :
@@ -11,12 +11,12 @@
 # for the python bindings. See the githib repo above for details on how to access them, or
 # look at some other docstrings for examples.
 
-# Re-run this every time you make a change to .hpp dcumentation you want reflected in the 
+# Re-run this every time you make a change to .hpp dcumentation you want reflected in the
 # python docs. E.g. if you update the doxygen comments to sessionoptions.globalReplicationFactor
-#  in willow/include/popart/sessionoptions.hpp, Run this, and it will copy the changes to pydocs_popart_core.hpp 
+#  in willow/include/popart/sessionoptions.hpp, Run this, and it will copy the changes to pydocs_popart_core.hpp
 # and the changes will appear in the python docs.
 
-CMD="python -c 'import pkgutil; print(1 if pkgutil.find_loader(\"pybind11_mkdoc\") else 0)'"
+CMD="python3 -c 'import pkgutil; print(1 if pkgutil.find_loader(\"pybind11_mkdoc\") else 0)'"
 INSTALLED=`eval $CMD`
 
 # Check python module installed
@@ -38,7 +38,7 @@ fi
 
 # Run the generation command.
 # The below hpp files are taken from python/popart.cpp and seem to be sufficient to give
-# pybind11_mkdoc enough info to generate the required docstrings. In future, more hpp files may need to 
+# pybind11_mkdoc enough info to generate the required docstrings. In future, more hpp files may need to
 # be added to ensure full coverage, mostly decided by trial and error.
 # TODO: T29154 generate this list of files automatically.
 
