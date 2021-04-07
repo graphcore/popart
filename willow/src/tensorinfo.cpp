@@ -399,7 +399,7 @@ std::map<DataType, DataTypeInfo> initDataTypeInfoMap() {
 
   return {
       // fixed point types
-      {DataType::UINT8, {DataType::UINT8, 1, true, "UINT8", "uint"}},
+      {DataType::UINT8, {DataType::UINT8, 1, true, "UINT8", "uint8"}},
       {DataType::INT8, {DataType::INT8, 1, true, "INT8", "int8"}},
       {DataType::UINT16, {DataType::UINT16, 2, true, "UINT16", "uint16"}},
       {DataType::INT16, {DataType::INT16, 2, true, "INT16", "int16"}},
