@@ -9,7 +9,7 @@ namespace popart {
 
 // Update accumulator by dividing it by the replication factor in case of
 // multi-replica gradient accumulation
-class AccumulatorUpdateOp : public VarUpdateWithoutUpdaterOp {
+class AccumulatorUpdateOp : public VarUpdateOp {
   OptimizerValue factor;
 
 public:

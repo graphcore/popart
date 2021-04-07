@@ -27,8 +27,7 @@ void AccumulatorUpdateOp::appendOutlineAttributes(OpSerialiserBase &os) const {
 
 AccumulatorUpdateOp::AccumulatorUpdateOp(const OptimizerValue factor_,
                                          const Op::Settings &opSettings)
-    : VarUpdateWithoutUpdaterOp(Onnx::CustomOperators::AccumulatorUpdate,
-                                opSettings),
+    : VarUpdateOp(Onnx::CustomOperators::AccumulatorUpdate, opSettings),
       factor(factor_) {}
 
 view::Regions AccumulatorUpdateOp::modifies(InIndex index) const {

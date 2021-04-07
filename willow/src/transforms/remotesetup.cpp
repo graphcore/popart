@@ -188,10 +188,10 @@ bool RemoteSetup::apply(Graph &graph) const {
                 {consumer->output->tensor(ReshapeInplaceOp::getOutIndex()),
                  callStack});
           } else {
-            logging::warn("[RemoteSetup] Unsupported Op {} in path from"
-                          "RemoteArg tensor {}.",
-                          consumer->debugName(),
-                          tensor->id);
+            logging::debug("[RemoteSetup] Unsupported Op {} in path from"
+                           "RemoteArg tensor {}.",
+                           consumer->debugName(),
+                           tensor->id);
           }
         }
       }

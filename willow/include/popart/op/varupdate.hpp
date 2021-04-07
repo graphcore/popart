@@ -24,6 +24,8 @@ public:
   // Return (a reference to) the updated Var at this index
   static OutIndex getUpdatedVarOutIndex() { return 0; }
 
+  void setup() final;
+
   // This Op aliases and modifies the input at index getVarIndex()
   view::Regions aliases(InIndex in, OutIndex) const override;
   view::Regions modifies(InIndex) const override;
@@ -45,18 +47,9 @@ public:
   // the gradient (for SGD) or source of copy (for CopyVarUpdate) or any other
   // tensor used to update the variable tensor is received at this index
   static InIndex getUpdaterInIndex() { return 1; }
-  void setup() final;
 
   ReplicatedTensorShardingIndices
   getReplicatedTensorShardingIndices() const override;
-};
-
-class VarUpdateWithoutUpdaterOp : public VarUpdateOp {
-public:
-  VarUpdateWithoutUpdaterOp(const OperatorIdentifier &opid_,
-                            const Op::Settings &settings_)
-      : VarUpdateOp(opid_, settings_) {}
-  void setup() final;
 };
 
 } // namespace popart

@@ -25,23 +25,8 @@ VarUpdateWithUpdaterOp::VarUpdateWithUpdaterOp(const OperatorIdentifier &opid_,
                                                const Op::Settings &settings_)
     : VarUpdateOp(opid_, settings_) {}
 
-void VarUpdateWithoutUpdaterOp::setup() {
+void VarUpdateOp::setup() {
   outInfo(getUpdatedVarOutIndex()) = inInfo(getVarToUpdateInIndex());
-}
-
-void VarUpdateWithUpdaterOp::setup() {
-  auto info0 = inInfo(getVarToUpdateInIndex());
-  auto info1 = inInfo(getUpdaterInIndex());
-  if (info0 != info1) {
-    std::ostringstream oss;
-    oss << "In VarUpdateOp::setup(), the VarToUpdate has TensorInfo \n"
-        << info0 << "\nbut the Updater has TensorInfo\n"
-        << info1;
-
-    // TODO T12001 : sort this out (serialize matmuls meets grad accl)
-    logging::ir::warn(oss.str());
-  }
-  outInfo(getUpdatedVarOutIndex()) = info0;
 }
 
 view::Regions VarUpdateOp::aliases(InIndex in, OutIndex) const {
