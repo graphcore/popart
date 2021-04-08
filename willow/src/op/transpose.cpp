@@ -136,7 +136,7 @@ TransposeOp::getInplaceVariant(const OperatorIdentifier &operator_id) const {
 }
 std::vector<std::tuple<OperatorIdentifier, float>>
 TransposeOp::inplacePriorityDefault() const {
-  return {{Onnx::CustomOperators::TransposeInplace, 10}};
+  return {{Onnx::CustomOperators::TransposeInplace, 100}};
 }
 
 TransposeGradOp::TransposeGradOp(const TransposeOp &fwdOp)
