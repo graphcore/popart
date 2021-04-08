@@ -16,10 +16,10 @@ public:
   const std::vector<int64_t> &getShape() const { return shape; }
 
   std::unique_ptr<Op> clone() const override;
-  std::vector<std::unique_ptr<Op>> getGradOps() final;
-  void setup() final;
+  std::vector<std::unique_ptr<Op>> getGradOps() override;
+  void setup() override;
 
-  void appendOutlineAttributes(OpSerialiserBase &) const final;
+  void appendOutlineAttributes(OpSerialiserBase &) const override;
 
 private:
   std::vector<int64_t> shape;
@@ -29,9 +29,9 @@ class ShapedDropoutGradOp : public ShapedDropoutOp {
 public:
   ShapedDropoutGradOp(const ShapedDropoutOp &fwdOp);
 
-  std::unique_ptr<Op> clone() const final;
-  const std::vector<GradInOutMapper> &gradInputInfo() const final;
-  const std::map<int, int> &gradOutToNonGradIn() const final;
+  std::unique_ptr<Op> clone() const override;
+  const std::vector<GradInOutMapper> &gradInputInfo() const override;
+  const std::map<int, int> &gradOutToNonGradIn() const override;
 
   static InIndex getGradInIndex() { return 0; }
   static OutIndex getOutIndex() { return 0; }

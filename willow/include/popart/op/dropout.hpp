@@ -21,8 +21,8 @@ public:
             const Op::Settings &settings_);
 
   std::unique_ptr<Op> clone() const override;
-  std::vector<std::unique_ptr<Op>> getGradOps() final;
-  void setup() final;
+  std::vector<std::unique_ptr<Op>> getGradOps() override;
+  void setup() override;
 
   void appendAttributes(OpSerialiserBase &os) const override;
 
@@ -32,7 +32,7 @@ public:
   void setOutputMask(bool v) { outputMask = v; }
   bool getOutputMask() const { return outputMask; }
 
-  void appendOutlineAttributes(OpSerialiserBase &) const final;
+  void appendOutlineAttributes(OpSerialiserBase &) const override;
 
   void setReferenceId(RandomReferenceId id) { referenceId = id; }
   RandomReferenceId getReferenceId() const { return referenceId; }
@@ -50,9 +50,9 @@ class DropoutGradOp : public DropoutOp {
 public:
   DropoutGradOp(const DropoutOp &fwdOp);
 
-  std::unique_ptr<Op> clone() const final;
-  const std::vector<GradInOutMapper> &gradInputInfo() const final;
-  const std::map<int, int> &gradOutToNonGradIn() const final;
+  std::unique_ptr<Op> clone() const override;
+  const std::vector<GradInOutMapper> &gradInputInfo() const override;
+  const std::map<int, int> &gradOutToNonGradIn() const override;
 
   static InIndex getGradInIndex() { return 0; }
   static OutIndex getOutIndex() { return 0; }

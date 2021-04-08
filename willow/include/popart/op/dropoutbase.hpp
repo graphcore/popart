@@ -23,17 +23,17 @@ public:
   // Outputs
   static OutIndex getOutIndex() { return 0; }
 
-  bool canBeReplacedByIdentity() const final;
+  bool canBeReplacedByIdentity() const override;
 
   float getRatio() const { return ratio; }
   void setRatio(float r) { ratio = r; }
 
-  InIndex getSeedInIndex() const final { return 1; }
+  InIndex getSeedInIndex() const override { return 1; }
 
-  bool canShard() const final { return true; }
+  bool canShard() const override { return true; }
 
   void configureShardedOp(Op *const shardedOp,
-                          const Settings *const settings_) const final;
+                          const Settings *const settings_) const override;
 
   static float validateRatioAttribute(const OpCreatorInfo &info);
 
