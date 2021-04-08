@@ -2,7 +2,7 @@
 import numpy as np
 import popart
 import onnx
-from onnx import numpy_helper
+from onnx import TensorProto, mapping
 import pytest
 import test_util as tu
 import torch
@@ -158,7 +158,8 @@ def test_auto_loss_scaling_with_const_loss_scale_tensor():
                                          loss=loss,
                                          optimizer=optimizer,
                                          userOptions=opts)
-    assert e_info.value.args[0].endswith("The optimizer must have non-const loss scaling")
+    assert e_info.value.args[0].endswith(
+        "The optimizer must have non-const loss scaling")
 
 
 def test_auto_loss_scaling_with_no_tracked_tensors():
@@ -205,7 +206,7 @@ def getModelProto(shard=False, pipeline=False):
     t0 = builder.addInputTensor("FLOAT16", t_shape)
     t_data = np.random.rand(*t_shape).astype(np.float16)
     t1 = builder.addInitializedInputTensor(t_data)
-    t2 = builder.addInitializedInputTensor(t_data)    
+    t2 = builder.addInitializedInputTensor(t_data)
     mm = builder.aiOnnx.matmul([t0, t1])
     r = builder.aiOnnx.relu([mm])
     conv = builder.aiOnnx.conv([r, t2])
@@ -264,7 +265,8 @@ def test_auto_loss_scaling_expected_loss_scale_tensor_values():
     anchors = session.initAnchorArrays()
 
     t0_data = np.random.rand(bps, *t_shape).astype(np.float16)
-    label_data = np.random.randint(0, label_shape[0], bps*label_shape[0]).astype(np.int32)
+    label_data = np.random.randint(0, label_shape[0],
+                                   bps * label_shape[0]).astype(np.int32)
     stepio = popart.PyStepIO({t0: t0_data, label: label_data}, anchors)
     session.run(stepio)
 
@@ -282,7 +284,8 @@ def test_auto_loss_scaling_expected_loss_scale_tensor_values():
             num_small_grad_elements += hist[0]
             num_large_grad_elements += hist[1]
 
-        proportion_small_grad_elements = num_small_grad_elements / (num_small_grad_elements + num_large_grad_elements)
+        proportion_small_grad_elements = num_small_grad_elements / (
+            num_small_grad_elements + num_large_grad_elements)
         # Observe that the proportion of small grad elements is large, as we
         # have started with a very small loss scale
         assert proportion_small_grad_elements > 0.9
@@ -324,33 +327,9 @@ def test_auto_loss_scaling_and_continuous_update_pipelining():
                                          loss=loss,
                                          optimizer=optimizer,
                                          userOptions=opts)
-    assert e_info.value.args[0].endswith("Automatic loss scaling is not currently supported when the 'enablePipelining' SessionOption is set to 'true', but the 'enableGradientAccumulation' SessionOption is set to 'false'")
-
-
-def test_auto_loss_scaling_with_non_sgd_optimizer():
-    """
-    Create a Session with automatic loss scaling and a non-sgd optimizer,
-    and see that an incompatibility error is thrown.
-    """
-    builder = popart.Builder()
-
-    t0 = builder.addInputTensor("FLOAT", [2, 2])
-    mm0 = builder.aiOnnx.matmul([t0, t0])
-    loss = builder.aiGraphcore.identityloss([mm0])
-
-    optimizer = popart.Adam({"lossScaling": (2, False)})
-
-    opts = popart.SessionOptions()
-    opts.enableAutomaticLossScaling = True
-
-    with pytest.raises(popart.popart_exception) as e_info:
-        session = popart.TrainingSession(builder.getModelProto(),
-                                         deviceInfo=tu.create_test_device(),
-                                         dataFlow=popart.DataFlow(1, [loss]),
-                                         loss=loss,
-                                         optimizer=optimizer,
-                                         userOptions=opts)
-    assert e_info.value.args[0].endswith("Only compatible when using the SGD optimizer type, but you are using 'Adam'")
+    assert e_info.value.args[0].endswith(
+        "Automatic loss scaling is not currently supported when the 'enablePipelining' SessionOption is set to 'true', but the 'enableGradientAccumulation' SessionOption is set to 'false'"
+    )
 
 
 def test_auto_loss_scaling_sgd_with_specific_optimizer_values():
@@ -366,8 +345,10 @@ def test_auto_loss_scaling_sgd_with_specific_optimizer_values():
     mm0 = builder.aiOnnx.matmul([t0, t1])
     loss = builder.aiGraphcore.identityloss([mm0])
 
-    optimizer = popart.SGD({"lossScaling": (2, False),
-                            "defaultLearningRate": (0.2, False)})
+    optimizer = popart.SGD({
+        "lossScaling": (2, False),
+        "defaultLearningRate": (0.2, False)
+    })
     optimizer.insertSpecific(t1, {"learningRate": (0.1, False)})
 
     opts = popart.SessionOptions()
@@ -380,7 +361,8 @@ def test_auto_loss_scaling_sgd_with_specific_optimizer_values():
                                          loss=loss,
                                          optimizer=optimizer,
                                          userOptions=opts)
-    assert e_info.value.args[0].endswith("Not compatible with weight-specific optimizer values")
+    assert e_info.value.args[0].endswith(
+        "Not compatible with weight-specific optimizer values")
 
 
 def test_auto_loss_scaling_with_mixed_precision_trackable_tensors():
@@ -412,6 +394,7 @@ def test_auto_loss_scaling_with_mixed_precision_trackable_tensors():
                                      userOptions=opts)
     session.prepareDevice()
 
+
 def compare_weights(session0, session1, tmpdir):
     ref_path = str(tmpdir / f"ref_session.onnx")
     session0.modelToHost(ref_path)
@@ -420,8 +403,10 @@ def compare_weights(session0, session1, tmpdir):
     session1_weights = {}
     for i in range(len(session0_proto.graph.initializer)):
         init = session0_proto.graph.initializer[i]
-        session0_weights[init.name] = np.empty(shape=init.dims, dtype=np.float16)
-        session1_weights[init.name] = np.empty(shape=init.dims, dtype=np.float16)
+        dtype = mapping.TENSOR_TYPE_TO_NP_TYPE[init.data_type]
+        empty_init = np.empty(shape=init.dims, dtype=dtype)
+        session0_weights[init.name] = empty_init
+        session1_weights[init.name] = empty_init
 
     session0.weightsToHost()
     session0.readWeights(popart.PyWeightsIO(session0_weights))
@@ -433,16 +418,23 @@ def compare_weights(session0, session1, tmpdir):
         print("Comparing ", init_name)
         print(session0_weights[init_name])
         print(session1_weights[init_name])
-        assert np.array_equal(session0_weights[init_name], session1_weights[init_name])
+        assert np.array_equal(session0_weights[init_name],
+                              session1_weights[init_name])
 
 
-def run_automatic_loss_scaling_comparison_test(tmpdir, shard=False, pipeline=False, replicate=False, grad_accumulate=False):
+def run_automatic_loss_scaling_comparison_test(tmpdir,
+                                               optimizer,
+                                               shard=False,
+                                               pipeline=False,
+                                               replicate=False,
+                                               grad_accumulate=False):
     """
     An integration test: verify that the weight updats computed by a session
     with auto loss scaling (ALS) enabled are identical to those with ALS
     disabled.
     """
-    loss, proto, t0, t_shape, label, label_shape = getModelProto(shard=shard, pipeline=pipeline)
+    loss, proto, t0, t_shape, label, label_shape = getModelProto(
+        shard=shard, pipeline=pipeline)
     bps = 4
     step_size = bps
     if replicate:
@@ -451,13 +443,6 @@ def run_automatic_loss_scaling_comparison_test(tmpdir, shard=False, pipeline=Fal
     if grad_accumulate:
         accumulation_factor = 3
         step_size *= accumulation_factor
-
-    init_ls = 10.0
-    optimizer = popart.SGD({"lossScaling": (init_ls, False),
-                            "defaultMomentum": (0.5, False),
-                            "defaultVelocityScaling": (0.5, False),
-                            "defaultDampening": (0.5, False),
-                            "defaultWeightDecay": (0.5, False)})
 
     opts = popart.SessionOptions()
 
@@ -477,32 +462,37 @@ def run_automatic_loss_scaling_comparison_test(tmpdir, shard=False, pipeline=Fal
         opts.enableGradientAccumulation = True
         opts.accumulationFactor = accumulation_factor
 
-    ref_session = popart.TrainingSession(fnModel=proto,
-                                         deviceInfo=tu.create_test_device(num_ipus),
-                                         dataFlow=popart.DataFlow(bps, []),
-                                         loss=loss,
-                                         optimizer=optimizer,
-                                         userOptions=opts)
+    init_optimizer, new_optimizer = optimizer
+    init_ls = init_optimizer.getLossScalingVal()
+
+    ref_session = popart.TrainingSession(
+        fnModel=proto,
+        deviceInfo=tu.create_test_device(num_ipus),
+        dataFlow=popart.DataFlow(bps, []),
+        loss=loss,
+        optimizer=init_optimizer,
+        userOptions=opts)
     ref_session.prepareDevice()
     ref_session.weightsFromHost()
     ref_anchors = ref_session.initAnchorArrays()
 
-
     opts.enableAutomaticLossScaling = True
 
     ls_id = "lossScaling_FLOAT16_updated"
-    als_session = popart.TrainingSession(fnModel=proto,
-                                         deviceInfo=tu.create_test_device(num_ipus),
-                                         dataFlow=popart.DataFlow(bps, [ls_id]),
-                                         loss=loss,
-                                         optimizer=optimizer,
-                                         userOptions=opts)
+    als_session = popart.TrainingSession(
+        fnModel=proto,
+        deviceInfo=tu.create_test_device(num_ipus),
+        dataFlow=popart.DataFlow(bps, [ls_id]),
+        loss=loss,
+        optimizer=init_optimizer,
+        userOptions=opts)
     als_session.prepareDevice()
     als_session.weightsFromHost()
     als_anchors = als_session.initAnchorArrays()
 
     t0_data = np.random.rand(step_size, *t_shape).astype(np.float16)
-    label_data = np.random.randint(0, label_shape[0], step_size*label_shape[0]).astype(np.int32)
+    label_data = np.random.randint(0, label_shape[0],
+                                   step_size * label_shape[0]).astype(np.int32)
     inputs = {t0: t0_data, label: label_data}
 
     # Run once
@@ -519,11 +509,6 @@ def run_automatic_loss_scaling_comparison_test(tmpdir, shard=False, pipeline=Fal
             assert ls != init_ls
 
     # Update the optimizer
-    new_optimizer = popart.SGD({"lossScaling": (0.2, False),
-                                "defaultMomentum": (0.2, False),
-                                "defaultVelocityScaling": (0.2, False),
-                                "defaultDampening": (0.2, False),
-                                "defaultWeightDecay": (0.2, False)})
     ref_session.updateOptimizerFromHost(new_optimizer)
     als_session.updateOptimizerFromHost(new_optimizer)
 
@@ -536,27 +521,104 @@ def run_automatic_loss_scaling_comparison_test(tmpdir, shard=False, pipeline=Fal
     compare_weights(ref_session, als_session, tmpdir)
 
 
-def test_auto_loss_scaling_identical_weight_updates(tmpdir):
-    run_automatic_loss_scaling_comparison_test(tmpdir)
+optimizers = []
+
+# SGD
+sgd0 = popart.SGD({
+    "lossScaling": (10.0, False),
+    "defaultMomentum": (0.5, False),
+    "defaultVelocityScaling": (0.5, False),
+    "defaultDampening": (0.5, False),
+    "defaultWeightDecay": (0.5, False)
+})
+sgd1 = popart.SGD({
+    "lossScaling": (0.2, False),
+    "defaultMomentum": (0.2, False),
+    "defaultVelocityScaling": (0.2, False),
+    "defaultDampening": (0.2, False),
+    "defaultWeightDecay": (0.2, False)
+})
+optimizers.append([sgd0, sgd1])
+
+# Adam
+adam0 = popart.Adam({
+    "lossScaling": (10.0, False),
+    "defaultLearningRate": (0.5, False),
+    "defaultWeightDecay": (0.5, False),
+    "defaultBeta1": (0.5, False),
+    "defaultBeta2": (0.5, False),
+    "defaultEps": (0.5, False)
+})
+adam1 = popart.Adam({
+    "lossScaling": (0.2, False),
+    "defaultLearningRate": (0.2, False),
+    "defaultWeightDecay": (0.2, False),
+    "defaultBeta1": (0.2, False),
+    "defaultBeta2": (0.2, False),
+    "defaultEps": (0.2, False)
+})
+optimizers.append([adam0, adam1])
+
+# Adaptive
+adaptive0 = popart.Adaptive({
+    "lossScaling": (10.0, False),
+    "defaultLearningRate": (0.5, False),
+    "defaultAlpha": (0.5, False),
+    "defaultMomentum": (0.5, False),
+    "defaultWeightDecay": (0.5, False),
+    "defaultEps": (0.5, False)
+})
+adaptive1 = popart.Adaptive({
+    "lossScaling": (0.2, False),
+    "defaultLearningRate": (0.2, False),
+    "defaultAlpha": (0.2, False),
+    "defaultMomentum": (0.2, False),
+    "defaultWeightDecay": (0.2, False),
+    "defaultEps": (0.2, False)
+})
+optimizers.append([adaptive0, adaptive1])
+
+
+@pytest.mark.parametrize("optimizer", optimizers)
+def test_auto_loss_scaling_identical_weight_updates(tmpdir, optimizer):
+    run_automatic_loss_scaling_comparison_test(tmpdir, optimizer)
 
 
 @tu.requires_ipu_model
-def test_auto_loss_scaling_identical_weight_updates_sharded(tmpdir):
-    run_automatic_loss_scaling_comparison_test(tmpdir, shard=True)
+@pytest.mark.parametrize("optimizer", optimizers)
+def test_auto_loss_scaling_identical_weight_updates_sharded(tmpdir, optimizer):
+    run_automatic_loss_scaling_comparison_test(tmpdir,
+                                               shard=True,
+                                               optimizer=optimizer)
 
 
-def test_auto_loss_scaling_identical_weight_updates_grad_accumulation(tmpdir):
-    run_automatic_loss_scaling_comparison_test(tmpdir, grad_accumulate=True)
+@pytest.mark.parametrize("optimizer", optimizers)
+def test_auto_loss_scaling_identical_weight_updates_grad_accumulation(
+        tmpdir, optimizer):
+    run_automatic_loss_scaling_comparison_test(tmpdir,
+                                               grad_accumulate=True,
+                                               optimizer=optimizer)
 
 
 @tu.requires_ipu_model
-def test_auto_loss_scaling_identical_weight_updates_grad_accumulation_shard(tmpdir):
-    run_automatic_loss_scaling_comparison_test(tmpdir, grad_accumulate=True, shard=True)
+@pytest.mark.parametrize("optimizer", optimizers)
+def test_auto_loss_scaling_identical_weight_updates_grad_accumulation_shard(
+        tmpdir, optimizer):
+    run_automatic_loss_scaling_comparison_test(tmpdir,
+                                               grad_accumulate=True,
+                                               shard=True,
+                                               optimizer=optimizer)
 
 
 @tu.requires_ipu_model
-def test_auto_loss_scaling_identical_weight_updates_grad_accumulation_pipeline(tmpdir):
-    run_automatic_loss_scaling_comparison_test(tmpdir, grad_accumulate=True, shard=True, pipeline=True)
+@pytest.mark.parametrize("optimizer", optimizers)
+def test_auto_loss_scaling_identical_weight_updates_grad_accumulation_pipeline(
+        tmpdir, optimizer):
+    run_automatic_loss_scaling_comparison_test(tmpdir,
+                                               grad_accumulate=True,
+                                               shard=True,
+                                               pipeline=True,
+                                               optimizer=optimizer)
 
 
 def test_loss_scale_updates_with_grad_accumulation_correctness():
@@ -578,11 +640,12 @@ def test_loss_scale_updates_with_grad_accumulation_correctness():
     loss, proto, t0, t_shape, label, label_shape = getModelProto()
     bps = 4
 
-    accl_stats_id = "Accl___autoLossScaleStats"
+    accl_stats_id = "Accum___autoLossScaleStats"
     ls_id = "lossScaling_FLOAT16_updated"
     session = popart.TrainingSession(fnModel=proto,
                                      deviceInfo=tu.create_test_device(),
-                                     dataFlow=popart.DataFlow(bps, [accl_stats_id, ls_id]),
+                                     dataFlow=popart.DataFlow(
+                                         bps, [accl_stats_id, ls_id]),
                                      loss=loss,
                                      optimizer=optimizer,
                                      userOptions=opts)
@@ -592,7 +655,8 @@ def test_loss_scale_updates_with_grad_accumulation_correctness():
 
     step_size = bps * accumulation_factor
     t0_data = 10000.0 * np.random.rand(step_size, *t_shape).astype(np.float16)
-    label_data = np.random.randint(0, label_shape[0], step_size*label_shape[0]).astype(np.int32)
+    label_data = np.random.randint(0, label_shape[0],
+                                   step_size * label_shape[0]).astype(np.int32)
     inputs = {t0: t0_data, label: label_data}
 
     session.run(popart.PyStepIO(inputs, anchors))
@@ -618,4 +682,5 @@ def test_loss_scale_updates_with_grad_accumulation_correctness():
             #  - conv data grad
             #  - matmul weights grad
             num_elms_gradstats = 3 * np.prod(t_shape)
-            assert np.sum(minibatch) == num_elms_gradstats * (minibatch_idx + 1)
+            assert np.sum(minibatch) == num_elms_gradstats * (minibatch_idx +
+                                                              1)

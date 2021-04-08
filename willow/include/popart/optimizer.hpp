@@ -115,6 +115,10 @@ public:
   float getLossScalingVal() const { return ls.val(); }
 
   static TensorId getLossScalingTensorId(DataType);
+  virtual TensorId
+  // Either the scalar tensor representing the inverse loss scale factor, or
+  // compound scalar tensor which contains the inverse loss scale factor
+  getInverseLossScalingTensorId(const Tensor &weight) const = 0;
 
   void setFactorsFromOptions(const SessionOptions &);
 
@@ -126,6 +130,13 @@ public:
   const std::vector<ClipNormSettings> &getClipNormSettings() const {
     return clipNormSettings;
   }
+
+  // Returns true if \p w has specific OptimizerValues, false if it will use
+  // the default.
+  virtual bool hasSpecific(const Tensor &w) const = 0;
+
+  // Do any weights have specific OptimizerValues, or do they all use default?
+  virtual bool hasSpecific() const = 0;
 
   virtual size_t hash() const;
 
@@ -418,13 +429,6 @@ public:
   }
 
 public:
-  // Returns true if \p w has specific OptimizerValues, false if it will use
-  // the default.
-  bool hasSpecific(const Tensor &w) const;
-
-  // Do any weights have specific OptimizerValues, or do they all use default?
-  bool hasSpecific() const;
-
   /// Constructor.
   /// \param defaultLearningRate The learning rate value to use for weights
   ///     for which no weight-specific hyper parameter have been inserted.
@@ -531,6 +535,12 @@ public:
   void
   insertSpecific(const TensorId &weight,
                  const std::map<std::string, std::pair<float, bool>> &params);
+
+  // Does "w" have specific OptimizerValues, or will it use default?
+  bool hasSpecific(const Tensor &w) const final;
+
+  // Do any weights have specific OptimizerValues, or do they all use default?
+  bool hasSpecific() const final;
 
   /// If velocity (accumulation) is required, either because of gradient
   /// accumulation or because of momentum, then return true otherwise return

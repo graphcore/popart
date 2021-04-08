@@ -118,6 +118,16 @@ bool Adaptive::hasSpecific(const Tensor &w) const {
   return counter > 0;
 }
 
+bool Adaptive::hasSpecific() const {
+  auto specifics = {lrs.hasSpecific(),
+                    wds.hasSpecific(),
+                    as.hasSpecific(),
+                    ms.hasSpecific(),
+                    epsvs.hasSpecific()};
+  return std::any_of(
+      specifics.begin(), specifics.end(), [](bool s) { return s; });
+}
+
 void Adaptive::insertSpecific(const TensorId &id,
                               OptimizerValue lr,
                               OptimizerValue wd,
@@ -132,6 +142,10 @@ void Adaptive::insertSpecific(const TensorId &id,
   epsvs.insertSpecific(id, eps);
 
   runValueChecks(lr, wd, a, m, eps);
+}
+
+TensorId Adaptive::getInverseLossScalingTensorId(const Tensor &weight) const {
+  return getInputIds(weight).at(AdaptiveComboOp::getGsInIndex());
 }
 
 void Adaptive::runValueChecks(OptimizerValue lr,

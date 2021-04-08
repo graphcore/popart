@@ -112,6 +112,16 @@ bool Adam::hasSpecific(const Tensor &w) const {
   return counter > 0;
 }
 
+bool Adam::hasSpecific() const {
+  auto specifics = {lrs.hasSpecific(),
+                    wds.hasSpecific(),
+                    b1s.hasSpecific(),
+                    b2s.hasSpecific(),
+                    epsvs.hasSpecific()};
+  return std::any_of(
+      specifics.begin(), specifics.end(), [](bool s) { return s; });
+}
+
 void Adam::insertSpecific(const TensorId &id,
                           OptimizerValue lr,
                           OptimizerValue wd,
@@ -126,6 +136,10 @@ void Adam::insertSpecific(const TensorId &id,
   epsvs.insertSpecific(id, eps);
 
   runValueChecks(lr, wd, b1, b2, eps);
+}
+
+TensorId Adam::getInverseLossScalingTensorId(const Tensor &weight) const {
+  return getInputIds(weight).at(AdamComboOp::getGsInIndex());
 }
 
 void Adam::runValueChecks(OptimizerValue lr,

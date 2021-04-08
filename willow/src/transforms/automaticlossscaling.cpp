@@ -142,71 +142,86 @@ Tensor *AutomaticLossScale::getLossScaleTensor(const Graph &graph) {
 }
 
 TensorId getStatisticsAccumulatorTensorId() {
-  return reservedAcclPrefix() + std::string("autoLossScaleStats");
+  return reservedAccumPrefix() + std::string("autoLossScaleStats");
 }
 
 Tensor *AutomaticLossScale::getInverseLossScaleTensor(const Graph &graph) {
   const Ir &ir               = graph.getIr();
   const Optimizer &optimizer = ir.getOptimizer();
 
-  if (optimizer.type() == OptimizerType::SGD) {
-    auto sgd = static_cast<const SGD &>(optimizer);
+  // We assume that all VarUpdateOps consume a single compound scalar tensor
+  // that contains the inverse scale factor. So none of the atomic scalars
+  // that are combined to produce this compound scalar can have a per-weight
+  // specific value. Therefore we perform the (stricter than necessary) check
+  // that no specific optimizer values have been added.
+  if (optimizer.hasSpecific()) {
+    throw error("[AutomaticLossScale transform] Not compatible with "
+                "weight-specific optimizer values");
+  }
 
-    // We assume that all VarUpdateOps consume a single compound scalar tensor
-    // that contains the inverse scale factor. So none of the atomic scalars
-    // that are combined to produce this compound scalar can have a per-weight
-    // specific value. Therefore we perform the (stricter than necessary) check
-    // that no specific optimizer values have been added.
-    if (sgd.hasSpecific()) {
-      throw error("[AutomaticLossScale transform] Not compatible with "
-                  "weight-specific optimizer values");
+  // To ensure that the tensor we return from this method is the compound
+  // scalar this is used to apply the inverse loss scale in all VarUpdateOps
+  // in this graph, we check that all Variable tensors have the same type.
+  // Otherwise the graph will contain more than one of these tensors; one
+  // per type.
+  auto variables = graph.getTensors().getOfType(TensorType::Variable);
+
+  // Variable tensors that can not be used to determine the data type of the
+  // inverse loss scale tensor
+  auto isSpecialCaseVariable = [&](Tensor *variable) {
+    TensorId variableId = variable->id;
+
+    if (variableId == getStatisticsAccumulatorTensorId()) {
+      return true;
     }
 
-    // To ensure that the tensor we return from this method is the compound
-    // scalar this is used to apply the inverse loss scale in all VarUpdateOps
-    // in this graph, we check that all Variable tensors have the same type.
-    // Otherwise the graph will contain more than one of these tensors; one
-    // per type.
-    auto variables = graph.getTensors().getOfType(TensorType::Variable);
-    Tensor *variableWithCorrectDtype = nullptr;
-    for (Tensor *variable : variables) {
-      if (variable->id != getStatisticsAccumulatorTensorId()) {
-        if (variableWithCorrectDtype &&
-            variable->info.dataType() !=
-                variableWithCorrectDtype->info.dataType()) {
-          throw error(
-              "[AutomaticLossScale transform] All Variable tensors must have "
-              "the same data type to ensure there is only one inverse loss "
-              "scale tensor used in the graph. Variable tensors have at least "
-              "2 data types. Variable tensor {} is of type {}, and variable "
-              "tensor {} is of type {}.",
-              variableWithCorrectDtype->id,
-              variableWithCorrectDtype->info.dataType(),
-              variable->id,
-              variable->info.dataType());
-        }
-        variableWithCorrectDtype = variable;
+    // Some optimizer state is stored in fp32, even if the initializers are
+    // stored in fp16
+    for (auto prefix : reservedOptimizerStatePrefixes()) {
+      if (variableId.find(prefix) != std::string::npos) {
+        return true;
       }
     }
 
-    if (variableWithCorrectDtype == nullptr) {
-      throw error("[AutomaticLossScale transform] Unable to find the correct "
-                  "data type of variable tensors");
-    }
+    return false;
+  };
 
-    TensorId inverseLossScaleId =
-        sgd.getInverseLossScalingTensorId(*variableWithCorrectDtype);
-
-    if (graph.getTensors().contains(inverseLossScaleId)) {
-      return graph.getTensors().get(inverseLossScaleId);
-    } else {
-      throw error("[AutomaticLossScale transform] Unable to find inverse loss "
-                  "scale tensor, '{}', in graph '{}'",
-                  inverseLossScaleId,
-                  graph.id);
+  Tensor *variableWithCorrectDtype = nullptr;
+  for (Tensor *variable : variables) {
+    if (!isSpecialCaseVariable(variable)) {
+      if (variableWithCorrectDtype &&
+          variable->info.dataType() !=
+              variableWithCorrectDtype->info.dataType()) {
+        throw error(
+            "[AutomaticLossScale transform] All Variable tensors must have "
+            "the same data type to ensure there is only one inverse loss "
+            "scale tensor used in the graph. Variable tensors have at least "
+            "2 data types. Variable tensor {} is of type {}, and variable "
+            "tensor {} is of type {}.",
+            variableWithCorrectDtype->id,
+            variableWithCorrectDtype->info.dataType(),
+            variable->id,
+            variable->info.dataType());
+      }
+      variableWithCorrectDtype = variable;
     }
+  }
+
+  if (variableWithCorrectDtype == nullptr) {
+    throw error("[AutomaticLossScale transform] Unable to find the correct "
+                "data type of variable tensors");
+  }
+
+  TensorId inverseLossScaleId =
+      optimizer.getInverseLossScalingTensorId(*variableWithCorrectDtype);
+
+  if (graph.getTensors().contains(inverseLossScaleId)) {
+    return graph.getTensors().get(inverseLossScaleId);
   } else {
-    throw internal_error("[AutomaticLossScale transform] Only SGD supported");
+    throw error("[AutomaticLossScale transform] Unable to find inverse loss "
+                "scale tensor, '{}', in graph '{}'",
+                inverseLossScaleId,
+                graph.id);
   }
 }
 
@@ -215,7 +230,6 @@ bool AutomaticLossScale::apply(Graph &graph) const {
   // 1. Must be a training session
   // 2. The optimizer's loss scaling is non-const
   // 3. Not compatible with continuous pipelining
-  // 4. Not compatible with non-SGD optimizer
 
   // 1.
   auto &ir = graph.getIr();
@@ -237,13 +251,6 @@ bool AutomaticLossScale::apply(Graph &graph) const {
                 "currently supported when the 'enablePipelining' SessionOption "
                 "is set to 'true', but the 'enableGradientAccumulation' "
                 "SessionOption is set to 'false'");
-  }
-
-  // 4.
-  if (ir.getOptimizer().type() != OptimizerType::SGD) {
-    throw error("[AutomaticLossScale transform] Only compatible when using the "
-                "SGD optimizer type, but you are using '{}'",
-                ir.getOptimizer().type_s());
   }
 
   // Get all tensors whose statistics are to be tracked.
@@ -407,6 +414,8 @@ bool AutomaticLossScale::apply(Graph &graph) const {
   if (doingGradientAccumulation(graph)) {
     lossScaleUpdateOp->settings.executionContext =
         ExecutionContext::AccumulateOuterFragment;
+    OptionalPipelineStage optionalPs;
+    lossScaleUpdateOp->setPipelineStage(optionalPs);
   }
   // Case 0 or 1
   else {

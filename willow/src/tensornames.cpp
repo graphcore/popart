@@ -124,6 +124,8 @@ std::vector<std::string> reservedOptimizerStatePrefixes() {
 
 std::vector<std::string> reservedAccumulatorPrefixes() {
   std::vector<std::string> prefs = {reservedAccumPrefix(),
+                                    // Accumulator/momentum combination tensors,
+                                    // specifically used for the SGD1 optimizer
                                     reservedAcclPrefix(),
                                     reservedAcclToReducePrefix(),
                                     reservedAcclToUpdatePrefix(),

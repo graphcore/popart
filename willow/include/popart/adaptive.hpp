@@ -317,6 +317,11 @@ public:
   // Does "w" have specific OptimizerValues, or will it use default?
   bool hasSpecific(const Tensor &w) const;
 
+  // Do any weights have specific OptimizerValues, or do they all use default?
+  bool hasSpecific() const;
+
+  TensorId getInverseLossScalingTensorId(const Tensor &weight) const;
+
   /// Constructor.
   /// \param defaultLearningRate The learning rate value to use for weights
   ///     for which no weight-specific hyper parameter have been inserted.

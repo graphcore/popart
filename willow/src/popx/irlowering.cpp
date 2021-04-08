@@ -3121,21 +3121,27 @@ poplar::program::Sequence &IrLowering::getAnchorReturnFragment(Tensor *tensor) {
              dynamic_cast<IpuCopyOp *>(x)->copiesOptimizerTensors();
     };
 
-    PipelineStage ps;
-    // Copies of optimizer tensors do not have a pipeline stage.
     if (tensor->hasProducer() &&
-        !isOptimizerTensorCopy(tensor->getProducer())) {
-      ps = tensor->getProducer()->getPipelineStage();
-    } else if (tensor->tensorType() == TensorType::Stream) {
-      ps = *tensor->consumers.findLowestPipelineStage();
-    } else if (tensor->tensorType() == TensorType::Variable) {
-      ps = *tensor->consumers.findHighestPipelineStage();
+        tensor->getProducer()->settings.executionContext ==
+            ExecutionContext::AccumulateOuterFragment) {
+      return progs.accumulateOuterFragment();
+    } else {
+      PipelineStage ps;
+      // Copies of optimizer tensors do not have a pipeline stage.
+      if (tensor->hasProducer() &&
+          !isOptimizerTensorCopy(tensor->getProducer())) {
+        ps = tensor->getProducer()->getPipelineStage();
+      } else if (tensor->tensorType() == TensorType::Stream) {
+        ps = *tensor->consumers.findLowestPipelineStage();
+      } else if (tensor->tensorType() == TensorType::Variable) {
+        ps = *tensor->consumers.findHighestPipelineStage();
+      }
+      // Edge cases where we have a const or optimizer tensor.
+      else {
+        ps = *tensor->consumers.findHighestPipelineStage();
+      }
+      return progs.pipelineToHostStreamFragment(ps, tensor->str());
     }
-    // Edge cases where we have a const or optimizer tensor.
-    else {
-      ps = *tensor->consumers.findHighestPipelineStage();
-    }
-    return progs.pipelineToHostStreamFragment(ps, tensor->str());
   } else {
     return tensor->tensorType() == TensorType::Variable
                ? progs.backwardFragment()
