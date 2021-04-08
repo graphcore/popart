@@ -85,12 +85,11 @@ std::unique_ptr<Op> SoftmaxGradOp::clone() const {
 }
 
 const std::vector<GradInOutMapper> &SoftmaxGradOp::gradInputInfo() const {
-  // input at index 0 (probGradInputIndex()) : gradient of output of softmax
-  // input at index 1 (actsIn()): input of softmax (activations before p)
-  // the (1-sparse) gradient of the output will be used
+  // input at index 0 (getGradProbsInIndex()) : gradient of output of softmax
+  // input at index 1 (getProbsInIndex())     : output of softmax
   static const std::vector<GradInOutMapper> inInfo = {
       {getGradProbsInIndex(), SoftmaxOp::getOutIndex(), GradOpInType::GradOut},
-      {getActsInIndex(), SoftmaxOp::getInIndex(), GradOpInType::In}};
+      {getProbsInIndex(), SoftmaxOp::getOutIndex(), GradOpInType::Out}};
   return inInfo;
 }
 

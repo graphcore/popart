@@ -157,67 +157,26 @@ void SoftmaxGradDirectOpx::grow(poplar::program::Sequence &prog) const {
   setOutTensor(0, oneHot);
 }
 
-// The maths for SoftmaxGradOp:
-//   let L : any loss
-//   p_i = sm (v_i) where sm is softmax
-//   we define g_i = dL/dp_i
-//   we want dL/dv_i
-//   dL / dv_i = sum_j dL/dp_j dp_j/dv_i
-//             = sum_j g_j [(i == j) p_j - p_i p_j]
-//             = p_i g_i - p_i * sum_j ( p_j g_j)
-
 void SoftmaxGradOpx::grow(poplar::program::Sequence &prog) const {
   const auto axis = getOp<SoftmaxGradOp>().getAxis();
 
-  // The gradient of the loss w.r.t. the probabilities (g in above description)
-  auto d_probs = getInTensor(SoftmaxGradOp::getGradProbsInIndex());
-  d_probs      = EwuComputex::coerceTo2D(d_probs, axis);
+  // Note: Implementation for SOFTMAX and SOFTMAX_STABLE gradient
+  //       are the same.
 
-  // The input to the softmax (which we are computing the gradient of here)
-  auto pre_probs = getInTensor(SoftmaxGradOp::getActsInIndex());
-  pre_probs      = EwuComputex::coerceTo2D(pre_probs, axis);
+  auto outActs   = getInTensor(SoftmaxGradOp::getProbsInIndex());
+  auto outActs2D = EwuComputex::coerceTo2D(outActs, axis);
+  auto outGrad   = getInTensor(SoftmaxGradOp::getGradProbsInIndex())
+                     .reshape(outActs2D.shape());
+  auto outTensor = popnn::nonLinearityInputGradient(
+      graph(),                                 // graph,
+      popnn::NonLinearityType::SOFTMAX_STABLE, // nonLinearityType
+      outActs2D,                               // out,
+      outGrad,                                 // outGradient,
+      prog,                                    // prog,
+      debugContext("SoftmaxGrad")              // debugContext
+  );
 
-  // recomputing the probabilities (p in the above description)
-  popnn::NonLinearityType nlType;
-  if (dv_p->ir().getSessionOptions().enableNonStableSoftmax) {
-    nlType = popnn::NonLinearityType::SOFTMAX;
-  } else {
-    nlType = popnn::NonLinearityType::SOFTMAX_STABLE;
-  }
-  auto probs = popnn::nonLinearity(
-      graph(), nlType, pre_probs, prog, debugContext("nonLinearity"));
-
-  // sum_j (p_j . g_j)
-  // multiply probs by input gradient
-  auto pg = popops::map(graph(),
-                        popops::expr::BinaryOpType::MULTIPLY,
-                        probs,
-                        d_probs,
-                        prog,
-                        debugContext("mul"));
-
-  // reduce along all dimensions except 0 (0 is the sample index)
-  std::vector<size_t> redDims(probs.rank() - 1);
-  std::iota(redDims.begin(), redDims.end(), 1);
-
-  std::vector<size_t> upRanked(probs.rank(), 1);
-  upRanked[0] = probs.dim(0);
-  auto sum_pg = popops::reduce(graph(),
-                               pg,
-                               redDims,
-                               {popops::Operation::ADD},
-                               prog,
-                               debugContext("reduce"))
-                    .reshape(upRanked);
-
-  auto dv = popops::map(graph(),
-                        pe::Mul(pe::_1, pe::Sub(pe::_2, pe::_3)),
-                        {probs, d_probs, sum_pg},
-                        prog,
-                        debugContext("SubMul"));
-
-  dv = dv.reshape(inInfo(SoftmaxGradOp::getActsInIndex()).shape_szt());
-  setOutTensor(0, dv);
+  setOutTensor(0, outTensor.reshape(outActs.shape()));
 }
 
 void NlllWithSoftmaxGradDirectOpx::grow(poplar::program::Sequence &prog) const {

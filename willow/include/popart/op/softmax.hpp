@@ -47,12 +47,10 @@ public:
   const std::vector<GradInOutMapper> &gradInputInfo() const final;
   const std::map<int, int> &gradOutToNonGradIn() const final;
   void setup() final;
-  int gradProbsIn() const;
-  int actsIn() const;
   int64_t getAxis() const;
 
   static InIndex getGradProbsInIndex() { return 0; }
-  static InIndex getActsInIndex() { return 1; }
+  static InIndex getProbsInIndex() { return 1; }
   static OutIndex getOutIndex() { return 0; }
 
   void appendOutlineAttributes(OpSerialiserBase &) const override;
