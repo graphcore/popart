@@ -165,7 +165,7 @@ public:
   bool isTesting() const { return executionMode == ExecutionMode::Inference; }
 
   // Log the IR in a human readable format.
-  void logIr();
+  void logIr() const;
 
   void compareWithSavedHash(const HashesMap &cacheEntries);
 

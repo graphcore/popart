@@ -165,7 +165,7 @@ bool TransposeToIdentityOrReshapePattern::apply(Op *op) const {
 
   op->getGraph().eraseOp(op->id);
 
-  return false;
+  return true;
 }
 
 namespace {

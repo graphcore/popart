@@ -329,7 +329,7 @@ void Ir::setDeviceInfo(DeviceInfo &di) { deviceInfo = &di; }
 
 const DeviceInfo *Ir::getDeviceInfo() const { return deviceInfo; }
 
-void Ir::logIr() {
+void Ir::logIr() const {
   logging::ir::debug("Logging the IR:");
   std::stringstream ss2;
   append(ss2);
@@ -1910,6 +1910,11 @@ bool Ir::applyPreAliasPattern(const PreAliasPattern *pattern, Graph &graph) {
     // doesn't touch the inputs to the loss.
     if (this->canTrain() && !this->constructedFinalLoss &&
         touchesInputToLoss(op)) {
+      return false;
+    }
+
+    if (this->canTrain() && getSessionOptions().hostAllReduce &&
+        HostReduce::includesRequiredTensor(pattern->touches(op))) {
       return false;
     }
 

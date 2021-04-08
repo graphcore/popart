@@ -1521,6 +1521,11 @@ BOOST_AUTO_TEST_CASE(HostReduceTransformationWithPipelining) {
       x = fdis(eng);
     }
 
+    builder->virtualGraph({a0}, 0);
+    builder->virtualGraph({act1}, 0);
+    builder->virtualGraph({act2}, 0);
+    builder->virtualGraph({act3}, 0);
+
     std::vector<float> w4Vals(sampleElms);
     ConstVoidData w4Data = {w4Vals.data(), sampleInfo};
     auto w4              = builder->addInitializedInputTensor(w4Data);
@@ -1529,6 +1534,9 @@ BOOST_AUTO_TEST_CASE(HostReduceTransformationWithPipelining) {
     for (auto &x : w4Vals) {
       x = fdis(eng);
     }
+
+    builder->virtualGraph({act4}, 1);
+    builder->virtualGraph({a4}, 1);
 
     std::vector<float> w5Vals(sampleElms);
     ConstVoidData w5Data = {w5Vals.data(), sampleInfo};
@@ -1543,6 +1551,10 @@ BOOST_AUTO_TEST_CASE(HostReduceTransformationWithPipelining) {
     }
     builder->addOutputTensor(a5);
 
+    builder->virtualGraph({act5}, 2);
+    builder->virtualGraph({a5}, 2);
+    builder->virtualGraph({l1}, 2);
+
     float learnRate = 1.0;
     auto optimizer  = ConstSGD(learnRate);
 
@@ -1552,12 +1564,13 @@ BOOST_AUTO_TEST_CASE(HostReduceTransformationWithPipelining) {
 
     SessionOptions userOptions;
     userOptions.enablePipelining = enablePipelining;
+    userOptions.enableOutlining  = false;
 
     std::map<std::string, std::string> deviceOpts;
     if (!userOptions.enablePipelining) {
       deviceOpts = std::map<std::string, std::string>({{"numIPUs", "1"}});
     } else {
-      userOptions.virtualGraphMode = VirtualGraphMode::Auto;
+      userOptions.virtualGraphMode = VirtualGraphMode::Manual;
       deviceOpts = std::map<std::string, std::string>({{"numIPUs", "3"}});
     }
 
@@ -1782,6 +1795,11 @@ BOOST_AUTO_TEST_CASE(HostReduceTransformationWithPipeliningAndAccumulation) {
       x = fdis(eng);
     }
 
+    builder->virtualGraph({a0}, 0);
+    builder->virtualGraph({act1}, 0);
+    builder->virtualGraph({act2}, 0);
+    builder->virtualGraph({act3}, 0);
+
     std::vector<float> w4Vals(sampleElms);
     ConstVoidData w4Data = {w4Vals.data(), sampleInfo};
     auto w4              = builder->addInitializedInputTensor(w4Data);
@@ -1790,6 +1808,9 @@ BOOST_AUTO_TEST_CASE(HostReduceTransformationWithPipeliningAndAccumulation) {
     for (auto &x : w4Vals) {
       x = fdis(eng);
     }
+
+    builder->virtualGraph({act4}, 1);
+    builder->virtualGraph({a4}, 1);
 
     std::vector<float> w5Vals(sampleElms);
     ConstVoidData w5Data = {w5Vals.data(), sampleInfo};
@@ -1802,6 +1823,10 @@ BOOST_AUTO_TEST_CASE(HostReduceTransformationWithPipeliningAndAccumulation) {
       x = fdis(eng);
     }
     builder->addOutputTensor(a5);
+
+    builder->virtualGraph({act5}, 2);
+    builder->virtualGraph({a5}, 2);
+    builder->virtualGraph({l1}, 2);
 
     float learnRate = 1.0;
     auto optimizer  = ConstSGD(learnRate);
@@ -1817,7 +1842,7 @@ BOOST_AUTO_TEST_CASE(HostReduceTransformationWithPipeliningAndAccumulation) {
     if (!userOptions.enablePipelining) {
       deviceOpts = std::map<std::string, std::string>({{"numIPUs", "1"}});
     } else {
-      userOptions.virtualGraphMode = VirtualGraphMode::Auto;
+      userOptions.virtualGraphMode = VirtualGraphMode::Manual;
       deviceOpts = std::map<std::string, std::string>({{"numIPUs", "3"}});
     }
 

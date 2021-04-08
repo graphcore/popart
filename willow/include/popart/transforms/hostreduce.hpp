@@ -25,6 +25,8 @@ public:
   virtual std::size_t getId() const final { return id(); }
 
   virtual std::string getName() const final { return "HostReduce"; }
+
+  static bool includesRequiredTensor(std::vector<const Tensor *>);
 };
 
 } // namespace popart
