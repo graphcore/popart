@@ -3,10 +3,12 @@
 
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
-#include <popart/opmanager.hpp>
+#include <popart/op/sum.hpp>
 #include <popart/pbwrap.hpp>
 #include <popart/tensor.hpp>
 #include <popart/tensorindex.hpp>
+
+#include <transforms/autodiff/gradgrowersumop.hpp>
 
 #include <boost/range/algorithm/find.hpp>
 
@@ -183,13 +185,13 @@ std::vector<OpId> Graph::getOpIds() const {
 
 Op *BackwardPassCreator::growGradSumOp(Tensor *nonGradTensor,
                                        const std::vector<Tensor *> &partials) {
-  std::unique_ptr<popart::Op> gradSum = OpManager::createOp(
-      Domain::ai_onnx,
-      "Sum",
-      bwdGraph.getIr().getOpSetVersionFromModel(Domain::ai_onnx),
-      bwdGraph,
-      "GradSum");
-
+  auto gradId = getGradId(nonGradTensor->id);
+  // TODO: T36603 Growing the grad sum with a fixed version may result
+  // in suboptimal outlining (it's included as an outline attribute).
+  auto gradSum = std::make_unique<SumOp>(
+      Onnx::Operators::Sum_8,
+      Op::Settings{bwdGraph,
+                   GradGrowerSumOp::getGradSumOpNamePrefix() + "_" + gradId});
   OpId opId = bwdGraph.moveIntoGraph(std::move(gradSum));
 
   std::vector<TensorId> inputs;
@@ -197,8 +199,6 @@ Op *BackwardPassCreator::growGradSumOp(Tensor *nonGradTensor,
   for (auto &tensor : partials) {
     inputs.push_back(tensor->id);
   }
-
-  auto gradId = getGradId(nonGradTensor->id);
 
   std::vector<TensorId> outputs{gradId};
 
