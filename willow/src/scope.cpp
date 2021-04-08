@@ -52,7 +52,7 @@ std::string Scope::str() const {
 
   std::stringstream ss;
   for (int i = 0; i < names.size() - 1; i++) {
-    ss << names[i] << "/";
+    ss << names[i] << Scope::delimiter();
   }
   ss << names.back();
 

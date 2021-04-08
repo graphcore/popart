@@ -271,16 +271,21 @@ TensorId Graph::addScope(const TensorId &tensorId) const {
 }
 
 TensorId Graph::removeScope(const TensorId &scopedId) const {
-  using boost::algorithm::starts_with;
 
-  auto scopeStr = getScope().str();
-  if (!starts_with(scopedId, scopeStr)) {
-    throw error(
-        "Cannot remove scope from {} as it does not start with scope {}",
-        scopedId,
-        scopeStr);
+  if (getScope().str().empty()) {
+    return scopedId;
+  } else {
+    using boost::algorithm::starts_with;
+
+    auto scopeStr = getScope().str() + Scope::delimiter();
+    if (!starts_with(scopedId, scopeStr)) {
+      throw error(
+          "Cannot remove scope from {} as it does not start with scope {}",
+          scopedId,
+          scopeStr);
+    }
+    return scopedId.substr(scopeStr.size());
   }
-  return scopedId.substr(scopeStr.size() + 1);
 }
 
 Graph &Graph::getBackwardsGraph(const GraphId &bwdId) {

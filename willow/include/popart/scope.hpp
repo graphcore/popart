@@ -11,6 +11,8 @@ class Op;
 
 class Scope {
 public:
+  static std::string delimiter() { return sNameDelimiter; }
+
   bool empty() const { return names.empty(); }
 
   void pop();
