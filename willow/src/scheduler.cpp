@@ -297,6 +297,64 @@ public:
     g.insertBinConstraints(bins, "PipelineStageStart_");
   }
 
+  // The general setting of an op's scheduledPreLoss setting may look like:
+  //
+  //         scheduledPreLoss?
+  // Op0     Yes
+  // Op1     Yes
+  //     ...
+  // Loss    No
+  // Loss'   No
+  //     ...
+  // OpN-1   No
+  // OpN     No
+  //
+  // However, the loss final loss can be computed arbitrarily, and therefore
+  // gradient operations can be grown in the auto-diff transform that do not
+  // have a dependency of any operations with a path to the loss. For example,
+  // if:
+  //   loss = Mul(ReduceSum(Reshape(probs)), const)
+  // the ReshapeGrad, ReduceSumGrad and MulGrad operations that produce the
+  // gradient of 'loss' tensor do not depend on operations with a path to the
+  // 'loss' tensor. Therefore they can be scheduled early, leading to corrupted
+  // scheduledPreLoss settings, such as:
+  //
+  //         scheduledPreLoss?
+  // Op0     Yes
+  // Loss'   No
+  // Op1     No
+  //     ...
+  // Loss    No
+  //     ...
+  // OpN-1   No
+  // OpN     No.
+  //
+  // The implicit recomputation transform depends on this setting
+  // correctly indicating whether an op is in the forward or backward
+  // pass, so insert scheduler constraints to prevent this from happening.
+  void annotateToLossFromLoss() {
+    // All ops that have:
+    //   op.fromLoss == PathFromLoss::Yes, and
+    //   op.toLoss == PathToLoss::No
+    // are scheduled after all ops that have:
+    //   op.toLoss == PathToLoss::Yes
+    std::vector<OpAddress> toLoss;
+    std::vector<OpAddress> fromLossOnly;
+
+    for (const auto &x : pg.getOps()) {
+      auto op        = x.second.get();
+      auto opAddress = opAddresses[op];
+
+      if (op->toLoss == PathToLoss::Yes) {
+        toLoss.push_back(opAddress);
+      } else if (op->toLoss == PathToLoss::No &&
+                 op->fromLoss == PathFromLoss::Yes) {
+        fromLossOnly.push_back(opAddress);
+      }
+    }
+    g.insertBinConstraints({toLoss, fromLossOnly}, "PreOrPostLoss_");
+  }
+
   void annotateAccumulateOuterFragmentOps() {
     // The scheduler can be slow when there are a lot of ops unconstrained in
     // the accumulate outer fragment. To battle this, we sometimes add
@@ -555,6 +613,11 @@ void defaultAnnotate(GraphGrower *grower,
   }
   if (pg.getIr().getSessionOptions().enablePipelining) {
     grower->annotatePipelineStages();
+  }
+  if ((pg.getIr().autoRecomputationEnabled() ||
+       pg.getIr().getMainGraph().hasUserRecomputeOps()) &&
+      !pg.getIr().getSessionOptions().explicitRecomputation) {
+    grower->annotateToLossFromLoss();
   }
   if (optimizeForAnnealing) {
     grower->annotateAccumulateOuterFragmentOps();

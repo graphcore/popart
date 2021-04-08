@@ -131,43 +131,6 @@ IdentityLossGradOp::IdentityLossGradOp(const IdentityLossOp &op_)
       reduction_type_(op_.getReductionType()),
       outShape_(op_.inShape(IdentityOp::getInIndex())) {
 
-  // The general setting of an op's scheduledPreLoss setting looks like:
-  //
-  //         scheduledPreLoss?
-  // Op0     Yes
-  // Op1     Yes
-  //     ...
-  // Loss    No
-  // Loss'   No
-  //     ...
-  // OpN-1   No
-  // OpN     No
-  //
-  // Because the IdentityLossGradOp does not have a dependency on the
-  // forward pass, it can be scheduled early, leading to corrupted
-  // scheduledPreLoss settings, such as:
-  //
-  //         scheduledPreLoss?
-  // Op0     Yes
-  // IdLoss' No
-  // Op1     No
-  //     ...
-  // IdLoss  No
-  //     ...
-  // OpN-1   No
-  // OpN     No.
-  //
-  // The implicit recomputation transform depends on this setting
-  // correctly indicating whether an op is in the forward or backward
-  // pass, so push IdentityLossGrad as far back in the schedule
-  // as possible (i.e. post-loss) to prevent this from happening.
-  // Note: this cannot have a negative effect on sum-liveness.
-  if ((getIr().autoRecomputationEnabled() ||
-       getIr().getMainGraph().hasUserRecomputeOps()) &&
-      !getIr().getSessionOptions().explicitRecomputation) {
-    settings.schedulePriority = std::numeric_limits<double>::lowest();
-  }
-
   // A 'logical and' of the two settings
   if (op_.getScaleByReplicationOverride() == ScaleByReplication::No) {
     scaleByReplication_ = ScaleByReplication::No;
