@@ -633,11 +633,8 @@ Op *ShardingHelper::idLoss(ReductionType reductionType,
                            TensorId lossOutId,
                            Op::Settings settings) const {
   // Do not include graph replication factor in the reduction
-  auto idLossOpUp =
-      std::make_unique<IdentityLossOp>(Onnx::AiGraphcore::OpSet1::IdentityLoss,
-                                       reductionType,
-                                       settings,
-                                       ScaleByReplication::No);
+  auto idLossOpUp = std::make_unique<IdentityLossOp>(
+      Onnx::AiGraphcore::OpSet1::IdentityLoss, reductionType, settings);
   Op *idLossOp = idLossOpUp.get();
   graph->moveIntoGraph(std::move(idLossOpUp));
 

@@ -3,6 +3,7 @@
 # 'import test_util' requires adding to sys.path
 import sys
 from pathlib import Path
+
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 
 import numpy as np
@@ -160,10 +161,11 @@ def run_global_batch_size_correctness_test(tmpdir, reduction_type, loss_type,
             options.batchSerializationSettings.method = popart.BatchSerializationMethod.Loop
             options.batchSerializationSettings.transformContext = popart.BatchSerializationTransformContext.Bwd
 
+        options.accumulationAndReplicationReductionType = reduction
+
         if accumulation_factor > 1:
             options.enableGradientAccumulation = True
             options.accumulationFactor = accumulation_factor
-            options.accumulationReductionType = reduction
         if replication_factor > 1:
             options.enableReplicatedGraphs = True
             options.replicatedGraphCount = replication_factor

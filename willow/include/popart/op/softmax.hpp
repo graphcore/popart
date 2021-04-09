@@ -71,7 +71,6 @@ public:
   SoftmaxGradDirectOp(const TensorId lossId,
                       const nonstd::optional<int> ignoreIndex,
                       const ReductionType reduction,
-                      const ScaleByReplication scaleByReplication,
                       const Op::Settings &settings);
   std::unique_ptr<Op> clone() const final;
   void setup() final;
@@ -89,17 +88,11 @@ public:
   nonstd::optional<int> getOptionalIgnoreIndex() const { return ignoreIndex_; }
   int getIgnoreIndex() const { return ignoreIndex_.value(); }
   virtual void appendOutlineAttributes(OpSerialiserBase &) const final;
-  ScaleByReplication getScaleByReplication() const {
-    return scaleByReplication_;
-  }
 
 private:
   TensorId lossId_;
   ReductionType reduction_;
   nonstd::optional<int> ignoreIndex_;
-
-  // TODO: remove after T34809, as this is now redundant
-  const ScaleByReplication scaleByReplication_;
 };
 
 class NlllWithSoftmaxGradDirectOp : public Op {
@@ -109,7 +102,6 @@ public:
   // and an NllGradOp
   NlllWithSoftmaxGradDirectOp(const nonstd::optional<int> ignoreIndex,
                               const ReductionType reduction,
-                              const ScaleByReplication scaleByReplication,
                               const Op::Settings &settings);
 
   std::unique_ptr<Op> clone() const final;
@@ -135,16 +127,10 @@ public:
   }
   float getShardRescaleFactor(Op *const shardedOp,
                               OutIndex index) const override;
-  ScaleByReplication getScaleByReplication() const {
-    return scaleByReplication_;
-  }
 
 private:
   ReductionType reduction_;
   nonstd::optional<int> ignoreIndex_;
-
-  // TODO: remove after T34809, as this is now redundant
-  const ScaleByReplication scaleByReplication_;
 };
 
 } // namespace popart

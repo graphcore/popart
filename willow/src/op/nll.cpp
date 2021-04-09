@@ -108,8 +108,7 @@ NllGradOp::NllGradOp(const NllOp &op_)
       lossId_(op_.outId(NllOp::getOutIndex())),
       reduction_(op_.getReductionType()),
       ignoreIndex_(op_.getOptionalIgnoreIndex()),
-      inputIsLogProbability_(op_.inputIsLogProbability()),
-      scaleByReplication_(op_.getScaleByReplication(op_.getReductionType())) {}
+      inputIsLogProbability_(op_.inputIsLogProbability()) {}
 
 std::unique_ptr<Op> NllGradOp::clone() const {
   return std::make_unique<NllGradOp>(*this);

@@ -51,9 +51,7 @@ class IdentityLossOp : public LossOp {
 public:
   IdentityLossOp(const OperatorIdentifier &_opid,
                  const ReductionType &reduction,
-                 const Op::Settings &settings_,
-                 const ScaleByReplication scaleByReplicationOverride =
-                     ScaleByReplication::Yes);
+                 const Op::Settings &settings_);
   std::unique_ptr<Op> clone() const final;
   std::vector<std::unique_ptr<Op>> getGradOps() final;
   void setup() final;
@@ -68,13 +66,6 @@ public:
   ReductionType getShardReductionType(OutIndex index) const override {
     return getReductionType();
   }
-
-  ScaleByReplication getScaleByReplicationOverride() const {
-    return scaleByReplicationOverride_;
-  }
-
-private:
-  const ScaleByReplication scaleByReplicationOverride_;
 };
 
 class IdentityLossGradOp : public Op {
@@ -91,9 +82,6 @@ public:
   static OutIndex getOutIndex() { return 0; }
 
   ReductionType getReductionType() const { return reduction_type_; }
-  ScaleByReplication getScaleByReplication() const {
-    return scaleByReplication_;
-  }
   float getSubgraphValue() const final { return getLowSubgraphValue(); }
 
   bool canShard() const override { return true; }
@@ -102,10 +90,6 @@ public:
 
 private:
   const ReductionType reduction_type_;
-
-  // TODO: remove after T34809, as this is now redundant
-  ScaleByReplication scaleByReplication_;
-
   Shape outShape_;
 };
 

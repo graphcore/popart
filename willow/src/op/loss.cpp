@@ -39,32 +39,4 @@ LossOp::LossOp(const OperatorIdentifier &_opid,
 
 bool LossOp::isLossOp() const { return true; }
 
-ScaleByReplication
-LossOp::getScaleByReplication(ReductionType reduction) const {
-  // We are only interested in grad op behaviour when doing training
-  if (!getIr().isTraining()) {
-    return ScaleByReplication::No;
-  }
-
-  auto opts = getIr().getSessionOptions();
-
-  if (opts.getGlobalReplicationFactor() > 1 &&
-      reduction == ReductionType::Mean &&
-      opts.accumulationAndReplicationReductionType ==
-          ReductionType::NoReduction) {
-    logging::warn(
-        "Loss Op, {}, has 'mean' reduction type, and graph replication is "
-        "enabled. In the corresponding backwards op, the output gradient will "
-        "be scaled by the inverse of the replication factor so that the "
-        "gradient reduction computes the mean. This behaviour has been "
-        "deprecated and will be removed in a future release. Instead, please "
-        "set the SessionOption 'accumulationAndReplicationReductionType' to "
-        "ReductionType::Mean for the equivalent behaviour.",
-        str());
-    return ScaleByReplication::Yes;
-  } else {
-    return ScaleByReplication::No;
-  }
-}
-
 } // namespace popart

@@ -189,8 +189,7 @@ void CtcGradOp::setup() {
 CtcGradOp::CtcGradOp(const CtcOp &op_)
     : Op(Onnx::CustomGradOperators::CtcGrad, op_.getSettings()),
       reduction(op_.getReductionType()),
-      logProbsInfo(op_.inInfo(CtcOp::getLogProbsInIndex())),
-      scaleByReplication_(op_.getScaleByReplication(op_.getReductionType())) {}
+      logProbsInfo(op_.inInfo(CtcOp::getLogProbsInIndex())) {}
 
 std::unique_ptr<Op> CtcGradOp::clone() const {
   return std::make_unique<CtcGradOp>(*this);

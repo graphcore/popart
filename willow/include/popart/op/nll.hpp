@@ -70,18 +70,12 @@ public:
   bool canShard() const override { return true; }
   float getShardRescaleFactor(Op *const shardedOp,
                               OutIndex index) const override;
-  ScaleByReplication getScaleByReplication() const {
-    return scaleByReplication_;
-  }
 
 private:
   TensorId lossId_;
   ReductionType reduction_;
   nonstd::optional<int> ignoreIndex_;
   bool inputIsLogProbability_;
-
-  // TODO: remove after T34809, as this is now redundant
-  const ScaleByReplication scaleByReplication_;
 };
 
 } // namespace popart

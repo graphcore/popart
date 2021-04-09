@@ -54,16 +54,9 @@ public:
   float getShardRescaleFactor(Op *const shardedOp,
                               OutIndex index) const override;
 
-  ScaleByReplication getScaleByReplication() const {
-    return scaleByReplication_;
-  }
-
 private:
   float lambda;
   ReductionType reduction;
-
-  // TODO: remove after T34809, as this is now redundant
-  const ScaleByReplication scaleByReplication_;
 };
 
 } // namespace popart

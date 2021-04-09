@@ -10,8 +10,6 @@
 
 namespace popart {
 
-enum class ScaleByReplication { Yes, No };
-
 class LossOp : public Op {
 public:
   LossOp(const OperatorIdentifier &_opid,
@@ -22,9 +20,6 @@ public:
 
   static std::string reductionTypeToString(ReductionType reduction);
   static ReductionType reductionTypeFromString(std::string reduction);
-
-  // TODO : remove as part of T34809
-  ScaleByReplication getScaleByReplication(ReductionType reduction) const;
 
   ReductionType getReductionType() const { return reduction_type_; }
 

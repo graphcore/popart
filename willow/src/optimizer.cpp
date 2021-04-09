@@ -76,7 +76,7 @@ void Optimizer::setFactorsFromOptions(const SessionOptions &opts) {
   accumulationFactor         = opts.accumulationFactor;
   meanGradientAccumulation =
       enableGradientAccumulation &&
-      opts.getAccumulationReductionType() == ReductionType::Mean;
+      opts.accumulationAndReplicationReductionType == ReductionType::Mean;
   factorsAreSetFromOptions = true;
 }
 

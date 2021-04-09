@@ -84,35 +84,16 @@ bool IdentityLossOp::canBeReplacedByIdentity() const {
 
   // Scalar input
   if (inRank(getInIndex()) == 0) {
-    // If replaced by identity before auto-grad, then the corresponding grad op
-    // will be IdentityGradOp instead of IdentityLossGradOp, which has different
-    // behaviour in the case of graph replication when doing a 'mean' reduction
-    // TODO : remove as part of T34809
-    auto opts = getIr().getSessionOptions();
-    bool locallyReplicated =
-        opts.enableReplicatedGraphs && opts.replicatedGraphCount > 1;
-    bool globallyReplicated = opts.enableDistributedReplicatedGraphs &&
-                              opts.globalReplicationFactor > 1;
-    if (getReductionType() == ReductionType::Mean && getIr().canTrain() &&
-        (locallyReplicated || globallyReplicated) &&
-        (getScaleByReplication(getReductionType()) ==
-         ScaleByReplication::Yes)) {
-      return false;
-    } else {
-      return true;
-    }
+    return true;
   }
 
   return false;
 }
 
-IdentityLossOp::IdentityLossOp(
-    const OperatorIdentifier &_opid,
-    const ReductionType &reduction,
-    const Op::Settings &settings_,
-    const ScaleByReplication scaleByReplicationOverride)
-    : LossOp(_opid, settings_, reduction),
-      scaleByReplicationOverride_(scaleByReplicationOverride) {}
+IdentityLossOp::IdentityLossOp(const OperatorIdentifier &_opid,
+                               const ReductionType &reduction,
+                               const Op::Settings &settings_)
+    : LossOp(_opid, settings_, reduction) {}
 
 void IdentityLossOp::setup() {
   TensorInfo info0 = inInfo(getInIndex());
@@ -129,15 +110,7 @@ void IdentityLossOp::setup() {
 IdentityLossGradOp::IdentityLossGradOp(const IdentityLossOp &op_)
     : Op(Onnx::GradOperators::IdentityLossGrad, op_.getSettings()),
       reduction_type_(op_.getReductionType()),
-      outShape_(op_.inShape(IdentityOp::getInIndex())) {
-
-  // A 'logical and' of the two settings
-  if (op_.getScaleByReplicationOverride() == ScaleByReplication::No) {
-    scaleByReplication_ = ScaleByReplication::No;
-  } else {
-    scaleByReplication_ = op_.getScaleByReplication(reduction_type_);
-  }
-}
+      outShape_(op_.inShape(IdentityOp::getInIndex())) {}
 
 void IdentityLossGradOp::setup() {
   // gradient of input has same shape as input to Id

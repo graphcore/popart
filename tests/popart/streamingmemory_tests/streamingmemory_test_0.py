@@ -11,6 +11,7 @@ import pytest
 # `import test_util` requires adding to sys.path
 import sys
 from pathlib import Path
+
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 import test_util as tu
 
@@ -96,7 +97,7 @@ def run_model(
     opts.replicatedGraphCount = num_replicas
     opts.enableGradientAccumulation = enable_accum
     opts.accumulationFactor = accum_factor
-    opts.accumulationReductionType = reduction
+    opts.accumulationAndReplicationReductionType = reduction
 
     if activation_tensor_location_settings is not None:
         opts.activationTensorLocationSettings = activation_tensor_location_settings

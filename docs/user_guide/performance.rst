@@ -52,10 +52,10 @@ replication is a means of parallelising your inference or training workloads.
 
 When training, weight updates are coordinated between replicas to ensure
 replicas benefit from each other's weight updates. A reduction is
-applied on the loss gradients across replicas according to the
-``ReductionType`` specified when constructing the loss operation.
-The reduction and subsequent weight update both involve some communication
-between replicas. This communication is managed by PopART.
+applied on the weight updates across replicas according to the
+``ReductionType`` specified by the ``accumulationAndReplicationReductionType``
+session option. The reductions involve some communication between replicas. This
+communication is managed by PopART.
 
 When you use replication, PopART also manages the splitting and distribution of
 input data, making sure the data specified in the ``StepIO`` is split evenly

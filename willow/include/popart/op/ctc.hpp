@@ -96,16 +96,10 @@ public:
   virtual void appendOutlineAttributes(OpSerialiserBase &) const final;
 
   bool canShard() const override { return false; }
-  ScaleByReplication getScaleByReplication() const {
-    return scaleByReplication_;
-  }
 
 private:
   ReductionType reduction;
   TensorInfo logProbsInfo;
-
-  // TODO: remove after T34809, as this is now redundant
-  const ScaleByReplication scaleByReplication_;
 };
 
 } // namespace popart

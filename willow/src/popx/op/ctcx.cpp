@@ -280,14 +280,6 @@ CtcGradOpx::applyReductionGrad(poplar::program::Sequence &prog,
 
     float totalSamples = static_cast<float>(N);
 
-    // NOTE: The scaling of the replica losses (to give the effect of averaging
-    // over replicas) is currently done within the grow functions of the loss
-    // grad ops. We do this here.
-    // TODO: To be removed as part of T33184.
-    if (op.getScaleByReplication() == ScaleByReplication::Yes) {
-      totalSamples *= dv_p->getGlobalReplicationFactor();
-    }
-
     // Take into account gradient for mean reduction.
     auto newCtcLossGrad =
         popops::map(graph(),
