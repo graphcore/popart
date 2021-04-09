@@ -5,6 +5,8 @@
 #include <popart/logging.hpp>
 #include <popart/names.hpp>
 #include <popart/op.hpp>
+#include <popart/op/hostcopy.hpp>
+#include <popart/op/init.hpp>
 #include <popart/tensor.hpp>
 #include <popart/tensorindex.hpp>
 #include <popart/transforms/auto_virtual_graph.hpp>
@@ -170,6 +172,26 @@ bool AutoVirtualGraph::apply(Graph &graph) const {
         next_subgraph_id++;
         return iter;
       };
+
+  if (ir.getSessionOptions().useOverlappedIO) {
+    // If using overlapped IO, start at the init ops, as e don't have data
+    // stream tensors.
+    for (auto op : ir.getAllOps()) {
+      if (op->isConvertibleTo<InitOp>()) {
+        auto init = static_cast<InitOp *>(op);
+        logging::transform::info(
+            "Starting at {} {}.", init->debugName(), init->id);
+        startNewSubgraph(init->id);
+      }
+    }
+    for (auto *t : ir.getHostLoadTensors()) {
+      for (Op *consumer_op : t->consumers.getOps()) {
+        startNewSubgraph(consumer_op->id);
+        logging::transform::trace(
+            "Starting at {} {}.", consumer_op->debugName(), consumer_op->id);
+      }
+    }
+  }
 
   for (auto *t : ir.dataStreamTensors()) {
     for (Op *consumer_op : t->consumers.getOps()) {

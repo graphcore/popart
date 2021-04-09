@@ -272,7 +272,7 @@ SubgraphPartitioner::determineSubgraphPartition(const Graph &graph,
     result = finaliseSubgraphPartition(partition);
   }
 
-  if (!partitionable && std::get<1>(result.back()) > 0) {
+  if (!partitionable && result.size() > 0 && std::get<1>(result.back()) > 0) {
     throw internal_error("[SubgraphPartitioner] Found multiple subgraph parts "
                          "for {} (which is a graph that cannot be "
                          "partitioned). This must be due to a parent "

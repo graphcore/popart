@@ -1344,6 +1344,7 @@ PYBIND11_MODULE(popart_core, m) {
     cls.def_readwrite("enableAutomaticLossScaling",
                       &SessionOptions::enableAutomaticLossScaling,
                       DOC(popart, SessionOptions, enableAutomaticLossScaling));
+    cls.def_readwrite("useOverlappedIO", &SessionOptions::useOverlappedIO);
     cls.def_readwrite(
         "enableSupportedDataTypeCasting",
         &SessionOptions::enableSupportedDataTypeCasting,

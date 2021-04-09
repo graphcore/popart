@@ -152,8 +152,10 @@ bool Graph::hasInputId(const TensorId &id) const {
 void Graph::markAsInput(const TensorId &tensorId) {
   if (!getTensors().contains(tensorId)) {
     throw error("Could not find tensor '{}' to mark as input", tensorId);
+  } else if (std::find(graph_inputs.begin(), graph_inputs.end(), tensorId) ==
+             graph_inputs.end()) {
+    graph_inputs.push_back(tensorId);
   }
-  graph_inputs.push_back(tensorId);
 }
 
 void Graph::removeInput(const TensorId &tensorId) {

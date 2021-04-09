@@ -28,8 +28,10 @@
 #include <popart/ir.hpp>
 #include <popart/logging.hpp>
 #include <popart/onnxdebuginfo.hpp>
+#include <popart/op/call.hpp>
 #include <popart/op/dropout.hpp>
 #include <popart/op/getrandomseed.hpp>
+#include <popart/op/hostcopy.hpp>
 #include <popart/op/init.hpp>
 #include <popart/op/loss.hpp>
 #include <popart/op/scale.hpp>
@@ -60,6 +62,7 @@
 #include <popart/transforms/dynamicoptransform.hpp>
 #include <popart/transforms/explicitrecompute.hpp>
 #include <popart/transforms/groupmatmuls.hpp>
+#include <popart/transforms/hostiosetup.hpp>
 #include <popart/transforms/hostreduce.hpp>
 #include <popart/transforms/inferpipelinestages.hpp>
 #include <popart/transforms/inplaceaccumulategradpartialsintooptimizeraccumtensor.hpp>
@@ -164,6 +167,28 @@ std::vector<Tensor *> Ir::dataStreamTensors() const {
     }
   }
   return dsTensors;
+}
+
+std::vector<Tensor *> Ir::getHostLoadTensors() const {
+  std::vector<Tensor *> hlTensors;
+  for (auto op : getAllOps()) {
+    if (op->isConvertibleTo<HostLoadOp>()) {
+      hlTensors.push_back(
+          op->output->tensor(HostLoadOp::getLocalTensorOutIndex()));
+    }
+  }
+  return hlTensors;
+}
+
+std::vector<Tensor *> Ir::getHostStoreTensors() const {
+  std::vector<Tensor *> hsTensors;
+  for (auto op : getAllOps()) {
+    if (op->isConvertibleTo<HostStoreOp>()) {
+      hsTensors.push_back(
+          op->input->tensor(HostStoreOp::getLocalTensorInIndex()));
+    }
+  }
+  return hsTensors;
 }
 
 std::vector<Tensor *> Ir::optimizerTensors() const {
@@ -957,6 +982,10 @@ void Ir::prepareImpl(const IrBundle &gb, const HashesMap &cacheEntries) {
 
   // construct the forward pass from ONNX,
   constructForwards();
+
+  if (getSessionOptions().useOverlappedIO) {
+    applyTransform(HostIOSetup::id(), getMainGraph());
+  }
 
   // Check if cached Ir hash matches the current one and skip
   // the rest of the Ir preparation if true.

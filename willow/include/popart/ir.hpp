@@ -219,6 +219,20 @@ public:
   // The tensors specific to the optimization. Learning rate(s), momentum(s) etc
   std::vector<Tensor *> optimizerTensors() const;
 
+  /**
+   * The tensors produced by a host load op.
+   *
+   */
+  std::vector<Tensor *> getHostLoadTensors() const;
+  /**
+   * The tensors consumed by a host store op.
+   *
+   */
+  std::vector<Tensor *> getHostStoreTensors() const;
+
+  HostStreamId currentHostLoadId() const { return hostLoadTensorInfo.size(); }
+  HostStreamId currentHostStoreId() const { return hostStoreTensorInfo.size(); }
+
   // The input data tensors. label(s), image(s), etc. This does not include
   // optimizer stream tensors (they are not data)
   std::vector<Tensor *> dataStreamTensors() const;
@@ -566,6 +580,21 @@ private:
   std::map<RandomReferenceId, TensorId> randomReferenceTensorMap;
 
   std::map<RemoteBufferId, RemoteBufferInfo> remoteBufferInfoMap;
+
+  /**
+   * A map of child -> parent where the parent tensor is the "original" input
+   * (e.g. data, labels), and child is the host load tensor created to recieve
+   * the stream instead of the input. See hostcopy.hpp for more info.
+   *
+   */
+  std::map<TensorId, TensorId> hostLoadTensorInfo;
+
+  /**
+   * The same as hostLoadTensorInfo, but parent is the output tensor and
+   * children are the host store tensors.
+   *
+   */
+  std::map<TensorId, TensorId> hostStoreTensorInfo;
 
   // Store a hash which can identify the Ir when deserializing
   // PopART state.

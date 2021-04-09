@@ -66,8 +66,10 @@ public:
   void append(std::stringstream &ss);
 
   std::set<PipelineStage> getPipelineStages() const;
+  std::set<VGraphId> getVirtualGraphIds() const;
   OptionalPipelineStage findLowestPipelineStage() const;
   OptionalPipelineStage findHighestPipelineStage() const;
+  OptionalVGraphId findLowestVirtualGraphID() const;
 
 private:
   // The number of times an Op consumes the Tensor which
@@ -185,6 +187,13 @@ public:
   bool isRandomSeedTensor() const;
   bool isOptimizerStateTensor() const;
   bool isAccumulatorTensor() const;
+  /**
+   * Is this tensor produced by a hostLoad op?
+   *
+   * \returns true If producer is a hostLoad Op
+   * \returns false Otherwise.
+   */
+  bool isHostLoadTensor() const;
   // Returns true for tensors that are weights (variables),
   // but not optimizer states or accumulators
   bool isWeightTensor() const;

@@ -936,6 +936,15 @@ void Devicex::loadEngineAndConnectStreams() {
       logging::devicex::debug(" {}", tensor->id);
       engineToInputStreamWithCallback(tensor, lowering().h2dId(tensor->id));
     }
+    if (ir().getSessionOptions().useOverlappedIO) {
+      // If using overlapped IO, there are no stream tensors, so loop through
+      // host load tensors instead.
+      logging::devicex::debug("Connected h2d host load data streams");
+      for (Tensor *tensor : ir().getHostLoadTensors()) {
+        logging::devicex::debug(" {}", tensor->id);
+        engineToInputStreamWithCallback(tensor, lowering().h2dId(tensor->id));
+      }
+    }
 
     logging::devicex::debug("Connected d2h anchor data streams");
     for (Tensor *tensor : executable_.getAnchorTensors()) {

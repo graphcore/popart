@@ -9,6 +9,7 @@
 #include <popart/ir.hpp>
 #include <popart/onnxutil.hpp>
 #include <popart/op.hpp>
+#include <popart/op/hostcopy.hpp>
 #include <popart/op/init.hpp>
 #include <popart/op/ipucopy.hpp>
 #include <popart/op/loop.hpp>
@@ -17,6 +18,7 @@
 #include <popart/tensordata.hpp>
 #include <popart/tensorindex.hpp>
 #include <popart/tensornames.hpp>
+#include <popart/topocons.hpp>
 #include <popart/util.hpp>
 
 namespace popart {
@@ -400,6 +402,16 @@ std::set<PipelineStage> Consumers::getPipelineStages() const {
   return stages;
 }
 
+std::set<VGraphId> Consumers::getVirtualGraphIds() const {
+  std::set<VGraphId> vgIDs;
+  for (auto op : getOps()) {
+    if (op->hasVirtualGraphId()) {
+      vgIDs.insert(op->getVirtualGraphId());
+    }
+  }
+  return vgIDs;
+}
+
 OptionalPipelineStage Consumers::findLowestPipelineStage() const {
   auto stages = getPipelineStages();
 
@@ -417,6 +429,16 @@ OptionalPipelineStage Consumers::findHighestPipelineStage() const {
     return {};
   } else {
     return *std::max_element(stages.begin(), stages.end());
+  }
+}
+
+OptionalVGraphId Consumers::findLowestVirtualGraphID() const {
+  auto vgIDs = getVirtualGraphIds();
+
+  if (vgIDs.size() == 0) {
+    return {};
+  } else {
+    return *std::min_element(vgIDs.begin(), vgIDs.end());
   }
 }
 
@@ -712,6 +734,10 @@ bool Tensor::isAccumulatorTensor() const {
     return true;
   }
   return false;
+}
+
+bool Tensor::isHostLoadTensor() const {
+  return (hasProducer() && getProducer()->isConvertibleTo<HostLoadOp>());
 }
 
 bool Tensor::isWeightTensor() const {

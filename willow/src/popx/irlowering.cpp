@@ -45,7 +45,9 @@
 #include <popart/op/call.hpp>
 #include <popart/op/convbase.hpp>
 #include <popart/op/getrandomseed.hpp>
+#include <popart/op/hostcopy.hpp>
 #include <popart/op/if.hpp>
+#include <popart/op/init.hpp>
 #include <popart/op/ipucopy.hpp>
 #include <popart/op/matmul.hpp>
 #include <popart/op/remote.hpp>
@@ -1585,6 +1587,13 @@ void IrLowering::addOpTasks(PriTasks &tasks) {
 
     auto task = opTask(op, priority, prevOpTaskId);
 
+    if (op->isConvertibleTo<HostLoadOp>()) {
+      auto hlTensor = op->outTensor(HostLoadOp::getLocalTensorOutIndex());
+      auto x        = PriTaskDependency(streamFromHostTaskId(hlTensor->id),
+                                 DependencyType::Tensor);
+      task.dependsOn.push_back(x);
+    }
+
     tasks.add(task);
     prevOpTaskId = task.name;
     priority -= 1.;
@@ -2173,6 +2182,10 @@ void IrLowering::pipelinedOpTaskFunc(TaskId taskId, Op *op, SequenceMap &seqs) {
 
   if (context == ExecutionContext::OptimizerFromHostFragment) {
     growOpx(opx, seqs[&progs.streamOptimizerFromHostFragment()]);
+  } else if (op->isConvertibleTo<HostLoadOp>()) {
+    growOpx(opx,
+            seqs[&progs.pipelineToDeviceStreamFragment(op->getPipelineStage(),
+                                                       op->debugName())]);
   }
 
   else if (ir().getSessionOptions().enableGradientAccumulation &&
@@ -2831,6 +2844,17 @@ void IrLowering::prepareGraph() {
     }
   }
 
+  // Host load tensor stream tasks.
+  if (ir().getSessionOptions().useOverlappedIO) {
+    for (auto tensor : ir().getHostLoadTensors()) {
+      logging::devicex::debug("Adding initTensorTask for host load input {}",
+                              tensor->id);
+      tasks.add(initTensorTask(getInitTensorCreators(tensor)));
+      logging::devicex::debug(
+          "Adding streamFromHostTask for host load input {}", tensor->id);
+      tasks.add(streamFromHostTask(tensor));
+    }
+  }
   // Init the random seed
   if (RandomSetup::hasRandomSeed(ir()) and !ir().useSyntheticData()) {
     auto seedTen = ir().getTensor(RandomSetup::getStreamedSeedTensorId());
@@ -2855,7 +2879,8 @@ void IrLowering::prepareGraph() {
   // stream-to-host tensors : 1) make streams 2) make copy programs
   // note that the order in which tasks are added does not matter,
   // they will be topologically sorted before running
-  if (ir().useSyntheticData() == false) {
+  if (ir().useSyntheticData() == false &&
+      !ir().getSessionOptions().useOverlappedIO) {
     for (auto anchorId : ir().getDataFlow().anchors()) {
       Tensor *tensor = ir().getTensor(anchorId);
 
@@ -2917,6 +2942,12 @@ void IrLowering::prepareGraph() {
         auto &sq = progs.forwardOrBackwardFragment(tensor->scheduledPreLoss);
         tasks.add(fromHostTask(tensor, sq));
       }
+    }
+  } else if (ir().getSessionOptions().useOverlappedIO) {
+    for (auto anchorId : ir().getDataFlow().anchors()) {
+      Tensor *tensor = ir().getTensor(anchorId);
+
+      tasks.add(streamToHostTask(tensor, true));
     }
   }
 
@@ -3277,13 +3308,25 @@ PriTask IrLowering::fromHostTask(Tensor *tensor,
       }
     }
 
-    seqs.getSequence(&sq).add(
-        // Tensors with views: Use the view instead, so that e.g.
-        // replicated tensor sharding padding is ignored
-        poplar::program::Copy(fromHostStreams.at(tensor->id),
-                              tensors_.getView(tensor->id),
-                              doRearrangeOnHost(tensor),
-                              {"copyFromHost"}));
+    // If this tensor is the output from a host load op, we 'defer' adding the
+    // copy program here, and instead add it during hostload opx creation.
+    if (ir().getSessionOptions().useOverlappedIO &&
+        tensor->isHostLoadTensor()) {
+      logging::devicex::debug(
+          "Deffering adding copy program for {} until host load opx",
+          tensor->id);
+    } else {
+      logging::devicex::debug("Adding poplar::program::Copy from host " +
+                              tensor->id);
+
+      seqs.getSequence(&sq).add(
+          // Tensors with views: Use the view instead, so that e.g.
+          // replicated tensor sharding padding is ignored
+          poplar::program::Copy(fromHostStreams.at(tensor->id),
+                                tensors_.getView(tensor->id),
+                                doRearrangeOnHost(tensor),
+                                {"copyFromHost"}));
+    }
     return seqs;
   };
   return {priority,
@@ -3584,6 +3627,18 @@ bool IrLowering::doRearrangeOnHost(Tensor *tensor) const {
 poplar::ReplicatedStreamMode
 IrLowering::getReplicatedStreamMode(Tensor *tensor) const {
   poplar::ReplicatedStreamMode mode = poplar::ReplicatedStreamMode::BROADCAST;
+
+  if (ir().getSessionOptions().useOverlappedIO) {
+    switch (tensor->getReplicatedStreamMode()) {
+    case Tensor::ReplicatedStreamMode::Broadcast:
+      mode = poplar::ReplicatedStreamMode::BROADCAST;
+      break;
+    case Tensor::ReplicatedStreamMode::Replicate:
+      mode = poplar::ReplicatedStreamMode::REPLICATE;
+      break;
+    }
+    return mode;
+  }
 
   if (tensor->tensorType() == TensorType::Variable) {
     // If it is a variable we 'broadcast' the same tensor

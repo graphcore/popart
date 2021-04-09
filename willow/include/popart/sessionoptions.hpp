@@ -772,6 +772,9 @@ struct SessionOptions {
   /// corresponds to lowered Poplar tensor modifications.
   bool opxModifyChecking = false;
 
+  /// TODO doc
+  bool useOverlappedIO = false;
+
   /// Allows to load/offload device RNG state from host.
   bool enableLoadAndOffloadRNGState = false;
 

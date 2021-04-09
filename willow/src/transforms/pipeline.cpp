@@ -7,7 +7,9 @@
 #include <popart/names.hpp>
 #include <popart/op.hpp>
 #include <popart/op/getrandomseed.hpp>
+#include <popart/op/hostcopy.hpp>
 #include <popart/op/identity.hpp>
+#include <popart/op/init.hpp>
 #include <popart/op/ipucopy.hpp>
 #include <popart/op/loss.hpp>
 #include <popart/op/restore.hpp>
@@ -273,7 +275,12 @@ bool isProducedOnIPU(Tensor *tensor) {
       dynamic_cast<IpuCopyOp *>(tensor->getProducer())) {
     return false;
   }
-
+  if (tensor->hasProducer() &&
+      tensor->getProducer()->isConvertibleTo<InitOp>()) {
+    return true;
+  } else if (tensor->isHostLoadTensor()) {
+    return false;
+  }
   // Doesn't have a producer and it's a stream
   if (!tensor->hasProducer() && tensor->tensorType() == TensorType::Stream) {
     return false;
@@ -641,6 +648,12 @@ bool isRecomputable(Op *op) {
   if (op->settings.executionContext != ExecutionContext::Normal) {
     return false;
   }
+  if (op->isConvertibleTo<HostLoadOp>()) {
+    return false;
+  }
+  if (op->isConvertibleTo<InitOp>()) {
+    return false;
+  }
 
   // Copy ops are never recomputable
   if (op->isConvertibleTo<IpuCopyOp>()) {
@@ -686,6 +699,17 @@ void setRecomputation(Graph &graph,
     return false;
   };
 
+  auto isConsumedByHostLoad = [](Op *op) {
+    for (auto tensor : op->output->tensors()) {
+      for (auto consumer : tensor->consumers.getOps()) {
+        if (consumer->isConvertibleTo<HostLoadOp>()) {
+          return true;
+        }
+      }
+    }
+    return false;
+  };
+
   // Initialise ops to be Recompute, except Ops whose output enters an IpuCopy.
   for (auto &id_op : graph.getOps()) {
     auto op = id_op.second.get();
@@ -699,7 +723,7 @@ void setRecomputation(Graph &graph,
           op->settings.recomputeType = RecomputeType::Recompute;
         }
       } else {
-        if (isConsumedByCopy(op)) {
+        if (isConsumedByCopy(op) || isConsumedByHostLoad(op)) {
           op->settings.recomputeType = RecomputeType::Checkpoint;
         } else {
           op->settings.recomputeType = RecomputeType::Recompute;

@@ -315,6 +315,8 @@ const static AiGraphcoreOpIdV1 Remainder("Remainder", 2, 1);
 const static AiGraphcoreOpIdV1 RemoteExchange("RemoteExchange");
 const static AiGraphcoreOpIdV1 RemoteLoad("RemoteLoad", {1, 2}, 1);
 const static AiGraphcoreOpIdV1 RemoteStore("RemoteStore", {1, 2}, 0);
+const static AiGraphcoreOpIdV1 HostLoad("HostLoad", {1, 1}, 0);
+const static AiGraphcoreOpIdV1 HostStore("HostStore", {1, 0}, 0);
 const static AiGraphcoreOpIdV1 ReplicatedAllGather("ReplicatedAllGather");
 const static AiGraphcoreOpIdV1 ReplicatedAllReduce("ReplicatedAllReduce", 1, 1);
 const static AiGraphcoreOpIdV1

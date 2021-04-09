@@ -8,6 +8,7 @@ add_popart_cpp_unit_test(remotebuffer_test remotebuffer_test.cpp VARIANTS "Hw")
 add_popart_cpp_unit_test(executionphase_sharding_test executionphase_sharding_test.cpp VARIANTS "Cpu")
 add_popart_cpp_unit_test(executionphase_initop_accumulator_test executionphase_initop_accumulator_test.cpp VARIANTS "IpuModel")
 add_popart_cpp_unit_test(streamingmemoryopinserter_test streamingmemoryopinserter_test.cpp VARIANTS "Cpu")
+add_popart_cpp_unit_test(host_stream_op_schedule_test host_stream_op_schedule_test.cpp VARIANTS "IpuModel")
 
 add_popart_py_unit_test(streamingmemory_test_0 MATCHEXPR "test_weight_update or test_onchip_memory" VARIANTS "Hw")
 add_popart_py_unit_test(streamingmemory_test_0 MATCHEXPR "test_replicated_sgd0_weight_update" VARIANTS "Hw")
@@ -22,3 +23,4 @@ add_popart_py_unit_test(streamingmemory_tensor_location_test VARIANTS "Hw")
 
 # T26754 && T26968
 #add_popart_py_unit_test(streamingmemory_overlap_test VARIANTS "Hw")
+add_popart_py_unit_test(host_stream_test VARIANTS "IpuModel")
