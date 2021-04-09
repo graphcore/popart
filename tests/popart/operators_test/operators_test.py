@@ -78,13 +78,11 @@ def test_add(op_tester):
 
 @pytest.mark.parametrize("npSrcType,npDstType,builderDstType",
                          [(np.int32, np.float32, "FLOAT"),
-                          (np.float32, np.int32, "INT32"),
                           (np.int8, np.float16, "FLOAT16"),
                           (np.float16, np.int8, "INT8"),
                           (np.uint8, np.float16, "FLOAT16"),
                           (np.float16, np.uint8, "UINT8"),
-                          (np.int32, np.int32, "INT32"),
-                          (np.float16, np.float32, "FLOAT")])
+                          (np.int32, np.int32, "INT32")])
 def test_cast(op_tester, npSrcType, npDstType, builderDstType):
     d1 = np.random.uniform(0, 20, 5).astype(npSrcType)
 
@@ -107,14 +105,7 @@ def test_cast(op_tester, npSrcType, npDstType, builderDstType):
 @pytest.mark.parametrize("npSrcType,torchDstType,builderDstType",
                          [(np.int32, torch.float32, "FLOAT"),
                           (np.int8, torch.float32, "FLOAT"),
-                          (np.uint8, torch.float32, "FLOAT"),
-                          (np.float32, torch.float32, "FLOAT"),
-                          (np.float16, torch.float32, "FLOAT"),
-                          (np.int32, torch.float16, "FLOAT16"),
-                          (np.int8, torch.float16, "FLOAT16"),
-                          (np.uint8, torch.float16, "FLOAT16"),
-                          (np.float16, torch.float16, "FLOAT16"),
-                          (np.float32, torch.float16, "FLOAT16")])
+                          (np.uint8, torch.float32, "FLOAT")])
 def test_cast_grad(op_tester, npSrcType, torchDstType, builderDstType):
     d1 = np.random.uniform(0, 10, 10).astype(npSrcType)
 
