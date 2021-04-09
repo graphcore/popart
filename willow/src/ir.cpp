@@ -95,6 +95,7 @@
 #include <popart/patterns/sgd0decompose.hpp>
 #include <popart/patterns/sgd1decompose.hpp>
 #include <popart/patterns/updateinplaceprioritiesforipu.hpp>
+#include <popart/patterns/viewsimplifypattern.hpp>
 
 #include <popart/dotvisualizer.hpp>
 
@@ -1335,6 +1336,14 @@ void Ir::prepareImpl(const IrBundle &gb, const HashesMap &cacheEntries) {
   }
 
   if (getSessionOptions().enableOutlining) {
+    if (getSessionOptions().batchSerializationSettings.factor <= 1) {
+      // This pattern attempts to remove aliasing chains that outlining
+      // is prone to break up causing outplace copies where it is not
+      // required.
+      ViewSimplifyPattern viewSimplifier;
+      applyPreAliasPattern(&viewSimplifier, getMainGraph());
+    }
+
     updateAliases();
     applyTransform(SubgraphOutline::id(), getMainGraph());
     updateVertices();

@@ -44,7 +44,6 @@
 #include <popart/patterns/powarg1gradoppattern.hpp>
 #include <popart/patterns/preunirepl.hpp>
 #include <popart/patterns/reciprocalgradoppattern.hpp>
-#include <popart/patterns/reshapecollapsepattern.hpp>
 #include <popart/patterns/sequenceexpander.hpp>
 #include <popart/patterns/sgd1decompose.hpp>
 #include <popart/patterns/softmaxgraddirect.hpp>
@@ -550,7 +549,6 @@ std::vector<std::unique_ptr<PreAliasPattern>> Patterns::getPreAliasList() {
       {std::type_index(typeid(PostNRepl)), 35},
       {std::type_index(typeid(SoftmaxGradDirect)), 34},
       {std::type_index(typeid(NlllWithSoftmaxGradDirect)), 33},
-      {std::type_index(typeid(ReshapeCollapsePattern)), 32},
       {std::type_index(typeid(OpToIdentityPattern)), 31},
       {std::type_index(typeid(SubtractArg1GradOpPattern)), 30},
       {std::type_index(typeid(MulArgGradOpPattern)), 29},

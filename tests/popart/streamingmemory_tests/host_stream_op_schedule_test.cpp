@@ -138,24 +138,32 @@ void createAndRun(bool hostIO = false) {
     int initOpscount = 0;
     int hlOpscount   = 0;
 
+    std::string schedule_str = "";
     for (auto op : schedule) {
       std::cout << op->debugName() << std::endl;
       if (op->opid == Onnx::CustomOperators::Init_1) {
         initOpscount += 1;
+        schedule_str += "i";
       } else if (op->opid == Onnx::CustomOperators::HostLoad) {
         hlOpscount += 1;
+        schedule_str += "l";
+      } else {
+        schedule_str += "_";
       }
     }
     if (hostIO) {
       BOOST_CHECK(hlOpscount == 2);
       BOOST_CHECK(initOpscount == 2);
 
-      BOOST_CHECK(schedule.at(7)->opid == Onnx::CustomOperators::Init_1);
-      BOOST_CHECK(schedule.at(8)->opid == Onnx::CustomOperators::HostLoad);
-
-      BOOST_CHECK(schedule.at(1)->opid == Onnx::CustomOperators::Init_1);
-      BOOST_CHECK(schedule.at(2)->opid == Onnx::CustomOperators::HostLoad);
-
+      std::cout << schedule_str << std::endl;
+      // Find occurences of il in schedule_str
+      int count = 0;
+      auto pos  = schedule_str.find("il", 0);
+      while (pos != std::string::npos) {
+        count++;
+        pos = schedule_str.find("il", pos + 2);
+      }
+      BOOST_CHECK(count == 2);
     } else {
       BOOST_CHECK(hlOpscount == 0);
       BOOST_CHECK(initOpscount == 0);

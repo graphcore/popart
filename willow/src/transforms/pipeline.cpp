@@ -331,7 +331,7 @@ std::unique_ptr<IdentityOp> createIdenityCopyOp(Graph &graph,
   }
 
   // ensure that op is not inplaced
-  op->settings.inplacePriorityVeto = {{"IdentityInplace", -1}};
+  op->settings.excludePatterns.insert({"InPlace", "ViewSimplifyPattern"});
 
   op->setVirtualGraphId(vGraphId);
   op->setPipelineStage(pStage);
@@ -819,8 +819,8 @@ TensorId createStashableRandomSeed(GetRandomSeedOp *randomSeedOp) {
     auto x = std::make_unique<IdentityOp>(Onnx::Operators::Identity_1,
                                           identitySettings);
     // ensure that op is not inplaced
-    x->settings.inplacePriorityVeto = {{"IdentityInplace", -1}};
-    auto op                         = x.get();
+    x->settings.excludePatterns.insert({"InPlace", "ViewSimplifyPattern"});
+    auto op = x.get();
     randomSeedOp->getGraph().moveIntoGraph(std::move(x));
     return op;
   }();

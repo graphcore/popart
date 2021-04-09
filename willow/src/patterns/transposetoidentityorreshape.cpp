@@ -10,6 +10,7 @@
 #include <popart/tensor.hpp>
 #include <popart/tensorindex.hpp>
 #include <popart/tensorinfo.hpp>
+#include <popart/topocons.hpp>
 
 namespace popart {
 
@@ -163,7 +164,10 @@ bool TransposeToIdentityOrReshapePattern::apply(Op *op) const {
   }
   replacement->setup();
 
-  op->getGraph().eraseOp(op->id);
+  auto &graph = op->getGraph();
+  graph.topoCons->transfer(op, replacement);
+
+  graph.eraseOp(op->id);
 
   return true;
 }
