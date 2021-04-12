@@ -395,13 +395,6 @@ public:
   // throws an error if not appropriate (non-grad)
   virtual const std::map<int, int> &gradOutToNonGradIn() const;
 
-  // for non-grad-op `op', takes in the set of output indices
-  // of `op' for which a gradient is available and returns
-  // if all the gradients needed to create grad-ops are present
-  // currently this will just compare the size of
-  // the set passed in with number of paths to final loss
-  bool readyToCreateGradients(std::set<int> &) const;
-
   // return a copy of self, similar to
   // cpppatterns.com/patterns/virtual-constructor.html
   // some people call it "covariant return type"

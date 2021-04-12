@@ -19,9 +19,11 @@ void OpGradRegistry::insert(Op *nonGrad, int index) {
 
   partial[nonGrad->id].insert(index);
 
-  // probably just checks that the size of partial is
-  // nonGrad->output->n(), but maybe not.
-  if (nonGrad->readyToCreateGradients(partial[nonGrad->id])) {
+  // Check whether an Op is ready to grow gradients based on the set of output
+  // indices of `op' for which a gradient is available. Currently, this will
+  // just compare the size of the set passed in with number of paths to final
+  // loss.
+  if (nonGrad->nEdgesToLoss == partial[nonGrad->id].size()) {
     complete.push_back(nonGrad);
     partial.erase(nonGrad->id);
   }

@@ -345,10 +345,6 @@ Op::getInplaceVariant(const OperatorIdentifier &operator_id) const {
   throw error("Op {} cannot return inplace variant {} ", opid, operator_id);
 }
 
-bool Op::readyToCreateGradients(std::set<int> &s) const {
-  return s.size() == nEdgesToLoss;
-}
-
 int64_t Op::memOfOutputs() const {
   int64_t mem = 0;
   for (auto &t_inds : output->indicesMap()) {
