@@ -129,3 +129,121 @@ def test_full_recompute_pipelining(tmpdir):
 
     for key in n_anchors:
         assert np.allclose(n_anchors[key], p_anchors[key])
+
+
+@tu.requires_ipu_model
+def test_delayed_restore_operations(tmpdir):
+    np.random.seed(0)
+
+    gradient_accumulation = 5
+    batch_size = 1
+    hidden_size = 16
+
+    input_shape = [batch_size, hidden_size]
+
+    weight_data = np.random.normal(0, 0.02, [hidden_size, hidden_size]).astype(
+        np.float32)
+
+    input_data = np.random.normal(
+        0, 0.02, [gradient_accumulation] + input_shape).astype(np.float32)
+
+    def run_test(mode=None, verify=None):
+        builder = popart.Builder()
+
+        x_in = builder.addInputTensor(popart.TensorInfo("FLOAT", input_shape),
+                                      "x_in")
+
+        weight_1 = builder.addInitializedInputTensor(weight_data, "weight_1")
+
+        # We want a bwd pass that looks like:
+        #
+        # restore, op1, restore, op2, restore, op3
+        #
+        # Where op1, op2 & op3 are gradient operations that
+        # have implicit recompute inputs.
+
+        with builder.virtualGraph(0), builder.pipelineStage(0):
+            x = builder.aiOnnx.matmul([x_in, weight_1])
+            x = builder.checkpointOutput([x])[0]
+
+            x = builder.aiOnnx.add([x, x])
+            # Gelu is a unary operation that takes the fwd input
+            # activation. This satisfies our requirement above
+            # of needing an implicit recompute input.
+            x = builder.aiGraphcore.gelu([x])
+
+            x = builder.checkpointOutput([x])[0]
+
+            x = builder.aiOnnx.add([x, x])
+            x = builder.aiGraphcore.gelu([x])
+
+            x = builder.checkpointOutput([x])[0]
+            o = x
+
+        with builder.virtualGraph(1), builder.pipelineStage(1):
+            l1 = builder.aiGraphcore.l1loss([o], 0.1)
+
+        proto = builder.getModelProto()
+
+        dataFlow = popart.DataFlow(1, [
+            o,
+            popart.reservedGradientPrefix() + weight_1,
+        ])
+
+        opts = popart.SessionOptions()
+        opts.enableOutlining = False
+        opts.enablePipelining = True
+        opts.enableGradientAccumulation = True
+        opts.accumulationFactor = gradient_accumulation
+        opts.optimizerStateTensorLocationSettings.location.storage = popart.TensorStorage.OffChip
+        if mode is not None:
+            opts.autoRecomputation = mode
+        opts.virtualGraphMode = popart.VirtualGraphMode.Manual
+
+        session = popart.TrainingSession(fnModel=proto,
+                                         dataFlow=dataFlow,
+                                         userOptions=opts,
+                                         loss=l1,
+                                         optimizer=popart.Adam({}),
+                                         deviceInfo=tu.create_test_device(
+                                             numIpus=2,
+                                             opts={"compileIPUCode": False}))
+
+        session.prepareDevice()
+
+        session.weightsFromHost()
+
+        anchors = session.initAnchorArrays()
+
+        inputs = {x_in: input_data}
+        stepio = popart.PyStepIO(inputs, anchors)
+
+        for _ in range(10):
+            session.run(stepio)
+
+        if verify is not None:
+            verify(session)
+
+        return anchors
+
+    def verify(session):
+        ''' Verify the the matmul in the main graphs is correct'''
+        ir = json.loads(session._serializeIr(
+            popart.IrSerializationFormat.JSON))
+        schedule_string = ""
+        for op in ir["maingraph"]:
+            if "Add" in op["type"]:
+                schedule_string += "a"
+            elif "GeluGrad" in op["type"]:
+                schedule_string += "g"
+            elif "RestoreInplace" in op["type"]:
+                schedule_string += "r"
+            else:
+                schedule_string += "_"
+        assert schedule_string.count("rga") == 2
+
+    n_anchors = run_test()
+    p_anchors = run_test(popart.RecomputationType.Pipeline, verify)
+
+    for key in n_anchors:
+        assert np.allclose(n_anchors[key], p_anchors[key])

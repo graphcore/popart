@@ -269,6 +269,35 @@ std::vector<Op *> findDescendentsOnDifferentPipelineStages(Tensor *t,
   return differentPipelineStageDescendents;
 }
 
+std::vector<Op *> findImplicitRecomputeDependants(Op *restoreOp) {
+  OpSearchHelper toCheck;
+
+  std::vector<Op *> dependants;
+  toCheck.pushConsumers(
+      restoreOp->inTensor(RestoreInplaceOp::getActToRestoreInIndex()));
+  while (!toCheck.empty()) {
+    auto op = toCheck.pop();
+    if (op->isConvertibleTo<IpuCopyOp>()) {
+      // do nothing
+    } else if (op->getOptionalVGraphId() != restoreOp->getOptionalVGraphId()) {
+      // e.g. not a IpuCopyOp, but is an op that spans multiple VirtualGraphs,
+      // such a collective op - do nothing
+    } else if (op->settings.executionContext !=
+               restoreOp->settings.executionContext) {
+      // do nothing
+    } else if (op->settings.recomputeType != RecomputeType::Recompute) {
+      // Only follow sequences of Recompute operations.
+      if (op->getPipelineStage() == restoreOp->getPipelineStage()) {
+        dependants.push_back(op);
+      }
+    } else {
+      toCheck.pushOutputConsumers(op);
+    }
+  }
+
+  return dependants;
+}
+
 bool isProducedOnIPU(Tensor *tensor) {
   // Has a producer and it's a copy
   if (tensor->hasProducer() &&
@@ -1333,10 +1362,13 @@ bool Pipeline::apply(Graph &graph) const {
       graph.topoCons->insert(stashOp, restoreOp);
 
       if (inplaceRestoreRequiredForRecompute(restoreOp)) {
-        // Restore comes straight after Stash op
-        for (Op *after : graph.topoCons->getAfters(stashOp)) {
-          if (after != restoreOp) {
-            graph.topoCons->insert(restoreOp, after);
+        logging::debug("Inserting topocons for inplaceRestoreOp required for "
+                       "implicit recomputation");
+        restoreOp->settings.schedulePriority =
+            std::numeric_limits<double>::lowest();
+        for (auto op : findImplicitRecomputeDependants(restoreOp)) {
+          if (restoreOp->id != op->id) {
+            graph.topoCons->insert(restoreOp, op);
           }
         }
       } else {
