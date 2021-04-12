@@ -2,6 +2,7 @@
 #include <popart/transforms/autodiff.hpp>
 
 #include <popart/graph.hpp>
+#include <popart/ir.hpp>
 
 #include <transforms/autodiff/autodiffiradapter.hpp>
 #include <transforms/autodiff/gradgrowerloss.hpp>
@@ -14,6 +15,11 @@ namespace popart {
 std::size_t Autodiff::id() { return typeid(Autodiff).hash_code(); }
 
 bool Autodiff::apply(Graph &graph) const {
+
+  if (graph.getIr().isTesting()) {
+    throw internal_error(
+        "Call to Autodiff::apply() in Testing mode is not valid");
+  }
 
   AutodiffIrAdapter irAdapter(graph.getIr());
   auto gradGrowerOp    = std::make_unique<GradGrowerOp>(irAdapter);

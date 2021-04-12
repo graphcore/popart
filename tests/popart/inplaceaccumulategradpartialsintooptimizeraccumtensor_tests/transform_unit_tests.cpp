@@ -197,7 +197,6 @@ private:
     BOOST_REQUIRE_EQUAL(v->fromLoss, w->fromLoss);
     BOOST_REQUIRE_EQUAL(v->toLoss, w->toLoss);
     BOOST_REQUIRE_EQUAL(v->scheduledPreLoss, w->scheduledPreLoss);
-    BOOST_REQUIRE_EQUAL(v->nEdgesToLoss, w->nEdgesToLoss);
   }
 };
 

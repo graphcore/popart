@@ -8,6 +8,8 @@
 
 #include <popart/names.hpp>
 
+#include <transforms/autodiff/autodiffirinterface.hpp>
+
 namespace popart {
 
 // Forward declarations.
@@ -20,6 +22,9 @@ public:
   void insert(Op *nonGrad, int index);
   std::vector<Op *> popComplete();
 
+  // Populate edgesToLoss.
+  void initialize(AutodiffIrInterface &ir);
+
 private:
   // For a non-grad-op, which of its outputs (by index)
   // have had a gradient computed
@@ -27,6 +32,9 @@ private:
   // When all required gradient inputs are in,
   // move the key of partial from partial to complete
   std::vector<Op *> complete;
+
+  // Mapping from Op* to the number of outputs it has that lead to the loss.
+  std::map<Op *, int> edgesToLoss;
 };
 
 } // namespace popart

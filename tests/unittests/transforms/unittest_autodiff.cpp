@@ -176,13 +176,11 @@ BOOST_AUTO_TEST_CASE(autodiff_0) {
   ir.setFinalLoss("t1");
   ir.getMainGraph().setLoss("t1");
 
-  // NOTE: We need to do a few boilerplate things to apply autodiff. For
-  // example, we need to put the IR in a state where nEdgesToLoss is populated
-  // correctly. In future, we'd like to refactor autodiff so this isn't the
-  // case. We also need an optimizer for autodiff to work.
+  // NOTE: We need to do a few boilerplate things to apply autodiff. In future,
+  // we'd like to refactor autodiff so this isn't the case. We also need an
+  // optimizer for autodiff to work.
   ir.setOptimizer(ConstSGD(0.1));
   ir.updateVertices();
-  ir.setNEdgesToLoss();
 
   // Now apply the transform.
   ir.applyTransform(Autodiff::id(), ir.getMainGraph());
@@ -345,13 +343,11 @@ BOOST_AUTO_TEST_CASE(autodiff_1) {
   ir.setFinalLoss("main_out");
   ir.getMainGraph().setLoss("main_out");
 
-  // NOTE: We need to do a few boilerplate things to apply autodiff. For
-  // example, we need to put the IR in a state where nEdgesToLoss is populated
-  // correctly. In future, we'd like to refactor autodiff so this isn't the
-  // case. We also need an optimizer for autodiff to work.
+  // NOTE: We need to do a few boilerplate things to apply autodiff. In future,
+  // we'd like to refactor autodiff so this isn't the case. We also need an
+  // optimizer for autodiff to work.
   ir.setOptimizer(ConstSGD(0.1));
   ir.updateVertices();
-  ir.setNEdgesToLoss();
 
   // Now apply the transform.
   ir.applyTransform(Autodiff::id(), ir.getMainGraph());

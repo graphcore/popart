@@ -42,6 +42,9 @@ void GradGrowerMainGraph::growGradMainGraph() {
   TensorGradRegistry tensor_grad_registry;
   OpGradRegistry op_grad_registry;
 
+  tensor_grad_registry.initialize(dep);
+  op_grad_registry.initialize(dep);
+
   // signal that a grad-op has created edge-gradients
   auto registerOpGrads = [&tensor_grad_registry](Op *gradOp, Op *nonGradOp) {
     for (auto &index_tensor : gradOp->output->tensorMap()) {

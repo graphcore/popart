@@ -36,15 +36,10 @@ public:
   // Is this Vertex currently scheduled before the final loss Op?
   ScheduledPreLoss scheduledPreLoss{ScheduledPreLoss::Undefined};
 
-  int nEdgesToLoss{undefinedNEdges};
-
   virtual std::string str() const = 0;
 
   // A string summarising toLoss, fromLoss, scheduledPreLoss
   std::string wrtLossStr() const;
-
-private:
-  static constexpr int undefinedNEdges = -9;
 };
 
 } // namespace popart

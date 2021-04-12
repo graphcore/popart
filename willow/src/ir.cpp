@@ -1054,17 +1054,13 @@ void Ir::prepareImpl(const IrBundle &gb, const HashesMap &cacheEntries) {
   }
 
   // Batch serialisation, step 1
-  // (has to occur before setNEdgesToLoss, but after setFinalLoss)
+  // (has to occur after setFinalLoss)
   if (userOptions.batchSerializationSettings.factor > 1 &&
       userOptions.batchSerializationSettings.transformContext ==
           BatchSerializationTransformContext::Fwd) {
     applyTransform(BatchSerialize::id(1), getMainGraph());
     removeIsolatedTensors(true);
     updateVertices();
-  }
-
-  if (canTrain()) {
-    setNEdgesToLoss();
   }
 
   if (autoRecomputationEnabled() && getMainGraph().hasUserRecomputeOps() &&
@@ -1096,10 +1092,6 @@ void Ir::prepareImpl(const IrBundle &gb, const HashesMap &cacheEntries) {
   for (auto &id_graph : graphs) {
     auto &graph = getGraph(id_graph.first);
     applyPreAliasPatterns(graph);
-  }
-
-  if (canTrain()) {
-    setNEdgesToLoss();
   }
 
   // tensors with no producer and no
@@ -2414,49 +2406,6 @@ void Ir::unsetAllVirtualGraphIds() {
   if (hadToUnsetAny) {
     logging::ir::info("Virtual graph settings ignored because virtual "
                       "graphs are not enabled.");
-  }
-}
-
-void Ir::setNEdgesToLoss() {
-
-  if (isTesting()) {
-    throw internal_error(
-        "Call to setNEdgesToLoss() in Testing  mode is not valid");
-  }
-
-  // set all edge counts to zero (we set from scratch in this function)
-  for (auto &id_op : getMainGraph().getOps()) {
-    Op *op           = id_op.second.get();
-    op->nEdgesToLoss = 0;
-  }
-  for (TensorId tid : getMainGraph().getTensors().getAllTensorIds()) {
-    Tensor *t       = getMainGraph().getTensors().get(tid);
-    t->nEdgesToLoss = 0;
-  }
-
-  for (auto &id_op : getMainGraph().getOps()) {
-    Op *op = id_op.second.get();
-
-    // For each Op, how many OutIndices lead to loss?
-    for (auto index_tensor : op->output->tensorMap()) {
-      auto outTensor = index_tensor.second;
-      if (outTensor->toLoss == PathToLoss::Yes) {
-        ++op->nEdgesToLoss;
-      }
-    }
-
-    // If Op goes to Loss, then for each of its inputs, +1 path
-    if (op->toLoss == PathToLoss::Yes) {
-      for (auto index_tensor : op->input->tensorMap()) {
-        auto inTensor = index_tensor.second;
-        ++inTensor->nEdgesToLoss;
-      }
-    }
-  }
-
-  for (TensorId tid : getMainGraph().getTensors().getAllTensorIds()) {
-    Tensor *t = getMainGraph().getTensors().get(tid);
-    logging::trace("Edges to loss: {} {}", tid, t->nEdgesToLoss);
   }
 }
 

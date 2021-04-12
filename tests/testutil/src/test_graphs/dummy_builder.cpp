@@ -222,7 +222,6 @@ void transferProperties(const Op *from, Op *to) {
   to->toLoss           = from->toLoss;
   to->fromLoss         = from->fromLoss;
   to->scheduledPreLoss = from->scheduledPreLoss;
-  to->nEdgesToLoss     = from->nEdgesToLoss;
   to->pruneable        = from->pruneable;
   // Preserve to->debugInfo. In the future, we should copy certain aspects
   // of from->debugInfo, but this is not possible yet.

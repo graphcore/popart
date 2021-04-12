@@ -379,12 +379,6 @@ public:
   // Stream and which are Variable.
   void registerInputTensors();
 
-  // Consider the number of out edges a Vertex (Op/Tensor) has which lead to the
-  // final loss Tensor is used in constructing the backwards pass. This function
-  // sets this number for all Vertices. Out edges go to consumers for Tensors,
-  // and to output Tensors for Ops.
-  void setNEdgesToLoss();
-
   // For all vertices set the phase, and whether or not
   // there is a path to vertex in whose phase is BWD.
   void updateVertices();
