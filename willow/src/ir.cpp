@@ -3215,8 +3215,8 @@ Tensor *Ir::getTensor(const TensorId &tensor_id) const {
     }
   }
 
-  throw error("no Ir::Tensor with TensorId " + tensor_id +
-              ", in Ir::getTensor(..) ");
+  throw error("No Ir::Tensor with TensorId '" + tensor_id +
+              "' in Ir::getTensor(..) ");
 }
 
 bool Ir::containsTensor(const TensorId &tensor_id) const {

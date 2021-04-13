@@ -136,8 +136,8 @@ Tensors::Tensors(Graph &pg) : graph(pg) {}
 Tensor *Tensors::get(TensorId tenId) const {
   auto found = M.find(tenId);
   if (found == M.end()) {
-    throw error("No Ir::Tensor with TensorId " + tenId +
-                " in Tensors::get(..)");
+    throw error("No Ir::Tensor with TensorId '" + tenId +
+                "' in Tensors::get(..)");
   }
   return found->second.get();
 }
