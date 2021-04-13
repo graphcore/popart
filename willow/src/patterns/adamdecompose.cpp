@@ -157,7 +157,15 @@ bool AdamDecompose::apply(Op *op) const {
   TensorId updatedAccl2Id = accl2.second;
 
   // The accumulator updater
-  if (combo->withGradAccum) {
+  bool runningMeanReduce =
+      graph.getIr()
+              .getSessionOptions()
+              .accumulationAndReplicationReductionType == ReductionType::Mean &&
+      graph.getIr().getSessionOptions().meanAccumulationReductionStrategy ==
+          MeanReductionStrategy::Running;
+  if (combo->withGradAccum && !runningMeanReduce) {
+    // Setting the counter in gradAccum Mean will zero the accumulator in the
+    // first instance of calling accumulateOp so no need to zero here.
     accumUpdate(graph, combo, {accl1Op, accl2Op}, accumId);
   }
 

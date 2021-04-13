@@ -36,6 +36,7 @@ constexpr const char *reservedAccl1Prefix() { return "Accl1___"; }
 constexpr const char *reservedAccl2Prefix() { return "Accl2___"; }
 constexpr const char *reservedAccl3Prefix() { return "Accl3___"; }
 constexpr const char *reservedStepPrefix() { return "Step___"; }
+constexpr const char *reservedCounterPrefix() { return "Counter___"; }
 constexpr const char *reservedAcclToReducePrefix() {
   return "AcclIntoReduce___";
 }

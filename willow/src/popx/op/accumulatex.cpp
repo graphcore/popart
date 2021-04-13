@@ -7,6 +7,7 @@
 #include <popart/ir.hpp>
 #include <popart/op/accumulate.hpp>
 #include <popart/popx/devicex.hpp>
+#include <popart/popx/irlowering.hpp>
 #include <popart/popx/op/accumulatex.hpp>
 #include <popart/popx/opxmanager.hpp>
 
@@ -45,6 +46,17 @@ void AccumulateOpx::grow(poplar::program::Sequence &prog) const {
     // accum += grad
     popops::scaledAddTo(
         graph(), accum, grad, 1.0f, prog, debugContext("constAdd"));
+    break;
+  }
+  case AccumulationType::Mean: {
+    poplar::Tensor counter = getInTensor(AccumulateOp::getFactorInIndex());
+
+    auto counter_1 = popops::add(graph(), counter, 1.0f, prog);
+    auto a         = popops::div(graph(), counter, counter_1, prog);
+    auto b         = popops::div(graph(), 1.0f, counter_1, prog);
+
+    popops::scaledAddTo(
+        graph(), accum, a, grad, b, prog, debugContext("constAdd"));
     break;
   }
   case AccumulationType::DampenedAdd: {

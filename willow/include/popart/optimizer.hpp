@@ -68,13 +68,13 @@ struct ClipNormSettings {
 class optimizer_replacement_error : public error {
 public:
   template <typename... Args>
-  explicit optimizer_replacement_error(const char *s, const Args &...args)
+  explicit optimizer_replacement_error(const char *s, const Args &... args)
       : error(std::string("New optimizer is not a valid replacement. ") + s,
               args...) {}
 
   template <typename... Args>
   explicit optimizer_replacement_error(const std::string &s,
-                                       const Args &...args)
+                                       const Args &... args)
       : error("New optimizer is not a valid replacement. " + s, args...) {}
 };
 
@@ -124,6 +124,7 @@ public:
 
   bool gradientAccumulationEnabled() const;
   bool meanGradientAccumulationEnabled() const;
+  bool postMeanGradientAccumulationEnabled() const;
   int64_t getReplicatedGraphCount() const;
   int64_t getAccumulationFactor() const;
 
@@ -162,6 +163,7 @@ private:
 
   bool enableGradientAccumulation;
   bool meanGradientAccumulation;
+  bool postMeanGradientAccumulation;
   int64_t accumulationFactor;
   int64_t replicatedGraphCount;
 
