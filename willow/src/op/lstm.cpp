@@ -40,6 +40,30 @@ void LSTMOp::trySetOutInfo(OutIndex index, const TensorInfo &info) {
   }
 }
 
+namespace {
+
+int64_t lstmGetNumIntermediates(const SessionOptions &opts) {
+  auto found = opts.lstmOptions.find("recomputationMode");
+  if (found == opts.lstmOptions.end() || found->second == "none") {
+    return 6;
+  } else if (found->second == "cellAndTanh") {
+    return 4;
+  } else if (found->second == "full") {
+    // Currently 'full' causes a poplibs error 'Unhandled recomputation type'.
+    // I would think that the intermediates output is not required with full
+    // recomputation.
+    return 0;
+  } else {
+    throw error("Unrecognised lstm recomputation mode '{}'", found->second);
+  }
+}
+
+} // namespace
+
+int64_t LSTMOp::getNumIntermediates() const {
+  return lstmGetNumIntermediates(getIr().getSessionOptions());
+}
+
 void LSTMOp::setup() {
   if (input->hasIndex(getPeepholeInIndex())) {
     throw error("Popart does not support peephole connections");
@@ -309,6 +333,10 @@ std::vector<std::unique_ptr<Op>> PopartLSTMOp::getGradOps() {
   std::vector<std::unique_ptr<Op>> upops;
   upops.emplace_back(std::make_unique<PopartLSTMGradOp>(*this));
   return upops;
+}
+
+int64_t PopartLSTMOp::getNumIntermediates() const {
+  return lstmGetNumIntermediates(getIr().getSessionOptions());
 }
 
 void PopartLSTMOp::setup() {

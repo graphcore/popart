@@ -75,7 +75,9 @@ private:
   void createPassThroughOutput(const TensorId &new_id,
                                OutIndex pass_through_index,
                                const TensorInfo &out_info);
-  static int getNumIntermediates() { return 6; }
+  // Intermediate results that are retained in the forward pass of training for
+  // use in the backward pass.
+  int64_t getNumIntermediates() const;
   void trySetOutInfo(OutIndex, const TensorInfo &);
 
   nonstd::optional<int64_t> hidden_size_attribute;
@@ -170,7 +172,9 @@ public:
   int64_t getInputSize() const;
   int64_t getHiddenSize() const;
 
-  static int64_t getNumIntermediates() { return 6; }
+  // Intermediate results that are retained in the forward pass of training for
+  // use in the backward pass.
+  int64_t getNumIntermediates() const;
 
   int getInBatchAxis(InIndex) const override;
   int getOutBatchAxis(OutIndex) const override;
