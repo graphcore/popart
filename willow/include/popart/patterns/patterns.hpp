@@ -233,7 +233,6 @@ public:
   bool isExpm1GradOpEnabled();
   bool isLog1pGradOpEnabled();
   bool isLogGradOpEnabled();
-  bool isGemmDecompositionEnabled();
   bool isNegativeOneScaleEnabled();
   bool isMatMulOpEnabled();
   bool isMatMulLhsGradOpEnabled();
@@ -279,7 +278,6 @@ public:
   Patterns &enableExpm1GradOp(bool v);
   Patterns &enableLog1pGradOp(bool v);
   Patterns &enableLogGradOp(bool v);
-  Patterns &enableGemmDecomposition(bool v);
   Patterns &enableNegativeOneScale(bool v);
   Patterns &enableMatMulOp(bool v);
   Patterns &enableMatMulLhsGradOp(bool v);

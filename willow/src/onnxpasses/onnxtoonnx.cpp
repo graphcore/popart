@@ -4,6 +4,7 @@
 #include <onnxpasses/nodepatterns/binary_ops.hpp>
 #include <onnxpasses/nodepatterns/constfolder.hpp>
 #include <onnxpasses/nodepatterns/conv.hpp>
+#include <onnxpasses/nodepatterns/gemm.hpp>
 #include <onnxpasses/nodepatterns/spacedepth.hpp>
 #include <onnxpasses/nodepatterns/trig.hpp>
 #include <onnxpasses/onnxtoonnx.hpp>
@@ -40,6 +41,7 @@ void Canonnxalizer::canonnxalize(GraphProto &g) const {
   patterns.push_back(std::make_unique<DepthToSpace>(target));
   patterns.push_back(std::make_unique<SpaceToDepth>(target));
   patterns.push_back(std::make_unique<ConstFolder>(target));
+  patterns.push_back(std::make_unique<Gemm>(target));
 
   /**
    * The ONNX spec ensures that the Nodes appear in topological order.

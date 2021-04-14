@@ -1602,9 +1602,6 @@ PYBIND11_MODULE(popart_core, m) {
     en.value("Expm1GradOp",
              PreAliasPatternType::Expm1GradOp,
              DOC(popart, Patterns, enableExpm1GradOp));
-    en.value("GemmDecomposition",
-             PreAliasPatternType::GemmDecomposition,
-             DOC(popart, Patterns, enableGemmDecomposition));
     en.value("NegativeOneScale",
              PreAliasPatternType::NegativeOneScale,
              DOC(popart, Patterns, enableNegativeOneScale));
