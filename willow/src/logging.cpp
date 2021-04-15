@@ -321,7 +321,27 @@ std::string format(std::string ref, std::size_t numArgs, Value args[]) {
     throw FormatError(e.what());
   }
 }
+
 } // namespace internal
+
+std::string escape(const std::string &ref) {
+
+  std::string result = ref;
+
+  auto replace = [&](char charToRepl, const std::string &replacement) {
+    size_t pos = 0;
+    pos        = result.find_first_of(charToRepl, pos);
+    while (pos != std::string::npos) {
+      result.replace(pos, 1, replacement);
+      pos = result.find_first_of(charToRepl, pos + replacement.size());
+    }
+  };
+
+  replace('{', "{{");
+  replace('}', "}}");
+
+  return result;
+}
 
 } // namespace logging
 } // namespace popart

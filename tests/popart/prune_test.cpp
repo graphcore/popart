@@ -66,7 +66,7 @@ BOOST_AUTO_TEST_CASE(PruneTest) {
   ir.setDataFlow(dataFlow);
   ir.registerInputTensors();
   ir.constructForwards();
-  ir.applyTransform(Prune::id(), ir.getMainGraph());
+  ir.applyTransform<Prune>(std::ref(ir.getMainGraph()));
 
   // All but the original 6 operations should be pruned
   BOOST_CHECK(ir.getMainGraphOps().size() == 6);
@@ -110,7 +110,7 @@ BOOST_AUTO_TEST_CASE(SelectivePruning) {
   auto c1Producer       = c1Tensor->getProducer();
   c1Producer->pruneable = false;
 
-  ir.applyTransform(Prune::id(), ir.getMainGraph());
+  ir.applyTransform<Prune>(std::ref(ir.getMainGraph()));
   ir.logIr();
 
   // Only 2 chains of ops should be left
@@ -169,7 +169,7 @@ BOOST_AUTO_TEST_CASE(KeepOpsWithSideEffects) {
   ir.constructForwards();
 
   // When: Running the prune transform.
-  ir.applyTransform(Prune::id(), ir.getMainGraph());
+  ir.applyTransform<Prune>(std::ref(ir.getMainGraph()));
   ir.logIr();
 
   // Then: All the ops should have been kept.

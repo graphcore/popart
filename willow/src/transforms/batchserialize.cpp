@@ -580,7 +580,7 @@ bool BatchSerialize::apply(Graph &graph) const {
     if (settings.method == BatchSerializationMethod::Loop) {
       // Merge loops
       ir.updateVertices();
-      ir.applyTransform(MergeLoops::id(), graph);
+      ir.applyTransformIfEnabled(MergeLoops::id(), graph);
     }
   }
 
@@ -597,7 +597,7 @@ bool BatchSerialize::apply(Graph &graph) const {
               BatchSerializationBatchSchedule::OverlapOnIo) {
         // Decompose loops
         ir.updateVertices();
-        ir.applyTransform(DecomposeLoops::id(), graph);
+        ir.applyTransformIfEnabled(DecomposeLoops::id(), graph);
       }
     } else {
       if (settings.batchSchedule !=

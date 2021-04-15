@@ -26,7 +26,7 @@ void error::logMessage() {
       // empty name -> truncate stack report
       break;
     }
-    stackreport << "[" << i << "] " << st[i].name() << "\n";
+    stackreport << "[" << i << "] " << logging::escape(st[i].name()) << "\n";
   }
 
   if (stackreport.tellp() > 0) {
