@@ -1,8 +1,5 @@
 # Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-# gemm = alpha * A * B + beta * c, where onnx gemm node pattern decomposes that into
-# binaryConstScalar op which has a tensor and scalar as attribute.
-# This can represent, for example, Tensor * scalar, or Tensor / scalar. See binaryconstscalar.hpp.
-# This test checks the output of const folding after the DecomposeBinaryConstScalar pattern has been applied.
+# this test checks the output of const folding after the GemmDecomposition pattern has been applied
 # gemm_ce_test.cpp checks the const folding actually happens
 import numpy as np
 from op_tester import op_tester
@@ -44,6 +41,5 @@ def test_gemm_basic(op_tester):
         o = alpha * np.dot(a, b) + beta * c
         return [o]
 
-    op_tester.setPatterns(['DecomposeBinaryConstScalar'],
-                          enableRuntimeAsserts=False)
+    op_tester.setPatterns(['GemmDecomposition'], enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference, 'infer')

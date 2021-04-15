@@ -31,6 +31,7 @@ enum class PreAliasPatternType {
   Log1pGradOp,
   LogGradOp,
   CoshOp,
+  GemmDecomposition,
   NegativeOneScale,
   PadSum,
   AbsGradOp,

@@ -10,6 +10,7 @@
 #include <popart/inputshapeinfo.hpp>
 #include <popart/ir.hpp>
 #include <popart/onnxutil.hpp>
+#include <popart/op/gemm.hpp>
 #include <popart/op/identity.hpp>
 #include <popart/op/l1.hpp>
 #include <popart/op/nll.hpp>

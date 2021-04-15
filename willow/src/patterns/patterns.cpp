@@ -25,6 +25,7 @@
 #include <popart/patterns/expgradoppattern.hpp>
 #include <popart/patterns/expm1gradoppattern.hpp>
 #include <popart/patterns/fmodarg0gradoppattern.hpp>
+#include <popart/patterns/gemmdecompositionpattern.hpp>
 #include <popart/patterns/initaccumulatepattern.hpp>
 #include <popart/patterns/inplace.hpp>
 #include <popart/patterns/likeopspattern.hpp>
@@ -303,6 +304,10 @@ bool Patterns::isLogGradOpEnabled() {
   return isPatternEnabled<LogGradOpPattern>();
 }
 
+bool Patterns::isGemmDecompositionEnabled() {
+  return isPatternEnabled<GemmDecompositionPattern>();
+}
+
 bool Patterns::isNegativeOneScaleEnabled() {
   return isPatternEnabled<NegativeOneScalePattern>();
 }
@@ -433,6 +438,10 @@ Patterns &Patterns::enableLogGradOp(bool v) {
   return enablePattern<LogGradOpPattern>(v);
 }
 
+Patterns &Patterns::enableGemmDecomposition(bool v) {
+  return enablePattern<GemmDecompositionPattern>(v);
+}
+
 Patterns &Patterns::enableNegativeOneScale(bool v) {
   return enablePattern<NegativeOneScalePattern>(v);
 }
@@ -552,6 +561,7 @@ std::vector<std::unique_ptr<PreAliasPattern>> Patterns::getPreAliasList() {
       {std::type_index(typeid(ExpGradOpPattern)), 21},
       {std::type_index(typeid(LogGradOpPattern)), 20},
       {std::type_index(typeid(CoshOpPattern)), 19},
+      {std::type_index(typeid(GemmDecompositionPattern)), 17},
       {std::type_index(typeid(NegativeOneScalePattern)), 16},
       {std::type_index(typeid(PadSumPattern)), 15},
       {std::type_index(typeid(ElementWiseGradOpPattern<AbsGradOp, SignOp>)),
