@@ -297,7 +297,7 @@ float AdamGradientScalingHelper::val(const TensorId &weightId,
                                      const Adam &adam) const {
   auto ls = adam.lossScaling().val();
   return val(ls,
-             adam.postMeanGradientAccumulationEnabled()
+             adam.meanGradientAccumulationEnabled()
                  ? adam.getAccumulationFactor()
                  : 1);
 }
@@ -377,7 +377,7 @@ float AdaptiveGradientScalingHelper::val(const TensorId &weightId,
                                          const Adaptive &adaptive) const {
   auto ls = adaptive.lossScaling().val();
   return val(ls,
-             adaptive.postMeanGradientAccumulationEnabled()
+             adaptive.meanGradientAccumulationEnabled()
                  ? adaptive.getAccumulationFactor()
                  : 1);
 }

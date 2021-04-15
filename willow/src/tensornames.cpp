@@ -129,8 +129,7 @@ std::vector<std::string> reservedAccumulatorPrefixes() {
                                     reservedAcclPrefix(),
                                     reservedAcclToReducePrefix(),
                                     reservedAcclToUpdatePrefix(),
-                                    reservedAcclFinalOutPrefix(),
-                                    reservedCounterPrefix()};
+                                    reservedAcclFinalOutPrefix()};
   return prefs;
 }
 

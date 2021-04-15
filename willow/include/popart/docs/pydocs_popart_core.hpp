@@ -10144,23 +10144,6 @@ Note, this option has been deprecated in favour of
 ``accumulationAndReplicationReductionType``, and will be removed in a
 future release.)doc";
 
-static const char *__doc_popart_SessionOptions_meanAccumulationReductionStrategy =
-    R"doc(Specify when to divide by a mean reduction factor when using gradient
-accumulation. This option only applies when
-``accumulationAndReplicationReductionType`` is set to ReductionType::Mean.
-Only effects Adam and Adaptive optimisers.)doc";
-
-static const char *__doc_popart_MeanReductionStrategy_Running =
-    R"doc(This keeps the reduction buffer as the current mean. See
-``AccumulationType::Mean``.
-This is preferred for numerical stability as the buffer is guarenteed
-not to overflow and is strictly better than dividing before the
-accumulation.)doc";
-
-static const char *__doc_popart_MeanReductionStrategy_Post =
-    R"doc(This divides by the required factor after all of the accumulation has finished.
-In some cases this can be faster then using Running, however is more likely to overflow.)doc";
-
 static const char
     *__doc_popart_SessionOptions_accumulatorTensorLocationSettings =
         R"doc(Tensor location for gradient accumulator tensors.)doc";

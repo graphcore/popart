@@ -37,7 +37,7 @@ def test_global_batch_size_correctness_test_sgdm(tmpdir, reduction_type,
 
 
 @tu.requires_ipu
-@pytest.mark.parametrize("reduction_type", ["Sum", "Mean", "MeanPost"])
+@pytest.mark.parametrize("reduction_type", ["Sum", "Mean"])
 @pytest.mark.parametrize("loss_type", ["Identity", "L1", "NLL"])
 @pytest.mark.parametrize("batchserial", ["Unroll", "Loop"])
 def test_global_batch_size_correctness_test_adam(tmpdir, reduction_type,
@@ -47,7 +47,7 @@ def test_global_batch_size_correctness_test_adam(tmpdir, reduction_type,
 
 
 @tu.requires_ipu
-@pytest.mark.parametrize("reduction_type", ["Sum", "Mean", "MeanPost"])
+@pytest.mark.parametrize("reduction_type", ["Sum", "Mean"])
 @pytest.mark.parametrize("loss_type", ["Identity", "L1", "NLL"])
 @pytest.mark.parametrize("batchserial", ["Unroll", "Loop"])
 def test_global_batch_size_correctness_test_lamb(tmpdir, reduction_type,
@@ -166,8 +166,6 @@ def run_global_batch_size_correctness_test(tmpdir, reduction_type, loss_type,
         if accumulation_factor > 1:
             options.enableGradientAccumulation = True
             options.accumulationFactor = accumulation_factor
-            if reduction_type == "MeanPost":
-                options.meanAccumulationReductionStrategy = popart.MeanReductionStrategy.Post
         if replication_factor > 1:
             options.enableReplicatedGraphs = True
             options.replicatedGraphCount = replication_factor
@@ -207,7 +205,7 @@ def run_global_batch_size_correctness_test(tmpdir, reduction_type, loss_type,
 
     baseline_outputs, baseline_proto = run_test(16, 1, 1, 1)
 
-    loss_fn = np.sum if reduction_type == "Sum" else np.mean
+    loss_fn = np.mean if reduction_type == "Mean" else np.sum
     baseline_loss = loss_fn(baseline_outputs[-1])
 
     tests = [

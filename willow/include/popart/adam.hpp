@@ -61,18 +61,15 @@ enum class AdamMode {
 // rf = replication factor
 // af = gradient accumulation factor
 //
-// accumulator (only if gradient accumulation is enabled. otherwise: s = g):
-// If accumulationAndReplicationReductionType is set to ReductionType::Mean
-//   for f in range(af):
-//     s = (f/(f+1)) * s + (1/(f+1)) * g
-// else
-//   for f in range(af):
-//     s = s + g
+// If accumulationAndReplicationReductionType is set to ReductionType::Sum 'af'
+// is set to 1
 //
+// accumulator (only used if gradient accumulation is enabled):
+// s = s + g                             (otherwise: s = g)
 //
 // remove loss scaling factor:
 // s = cast(s, FP16/FP32)
-// s = s / ls
+// s = s / (ls * af)
 //
 // L2 regularization (if wd > 0.0 and weight decay mode: L2 regularization)
 // s = s + wd * w

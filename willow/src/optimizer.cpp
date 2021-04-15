@@ -77,9 +77,6 @@ void Optimizer::setFactorsFromOptions(const SessionOptions &opts) {
   meanGradientAccumulation =
       enableGradientAccumulation &&
       opts.accumulationAndReplicationReductionType == ReductionType::Mean;
-  postMeanGradientAccumulation =
-      meanGradientAccumulation &&
-      opts.meanAccumulationReductionStrategy == MeanReductionStrategy::Post;
   factorsAreSetFromOptions = true;
 }
 
@@ -97,15 +94,6 @@ bool Optimizer::meanGradientAccumulationEnabled() const {
                 "Optimizer::setFactorsFromOptions has been called");
   }
   return meanGradientAccumulation;
-}
-
-bool Optimizer::postMeanGradientAccumulationEnabled() const {
-  if (!factorsAreSetFromOptions) {
-    throw error(
-        "Cannot call Optimizer::postMeanGradientAccumulationEnabled until "
-        "Optimizer::setFactorsFromOptions has been called");
-  }
-  return postMeanGradientAccumulation;
 }
 
 int64_t Optimizer::getReplicatedGraphCount() const {

@@ -115,18 +115,10 @@ TensorId OptimizerDecompose::gradAccum(Graph &graph,
                                        TensorId gradIntoAccumId,
                                        bool accumReduce,
                                        bool gradAccum) const {
-  bool runningMeanReduce =
-      gradAccum &&
-      graph.getIr()
-              .getSessionOptions()
-              .accumulationAndReplicationReductionType == ReductionType::Mean &&
-      graph.getIr().getSessionOptions().meanAccumulationReductionStrategy ==
-          MeanReductionStrategy::Running;
-
   TensorId gradIntoAcclId;
   auto accumOpUp = std::make_unique<AccumulateOp>(
-      runningMeanReduce ? AccumulationType::Mean : AccumulationType::Add,
-      OptimizerValue(1.0f, !runningMeanReduce),
+      AccumulationType::Add,
+      OptimizerValue(1.0f),
       Op::Settings(graph, combo->name() + "_accumulate"));
   auto accumOp = accumOpUp.get();
   transferBaseProperties(combo, accumOp);
@@ -144,62 +136,6 @@ TensorId OptimizerDecompose::gradAccum(Graph &graph,
                           VarUpdateWithUpdaterOp::getUpdaterInIndex());
   accumOp->connectInTensor(VarUpdateWithUpdaterOp::getUpdaterInIndex(),
                            gradIntoAccumId);
-
-  if (runningMeanReduce) {
-    auto counterId = reservedCounterPrefix() + accumId;
-    addStateTensor<float>(graph, counterId, TensorInfo(DataType::FLOAT, {}));
-    graph.getIr().addAdditionalModelProtoTensor(counterId);
-
-    accumOp->connectInTensor(AccumulateOp::getFactorInIndex(), counterId);
-
-    // increment counter
-    auto counterIncrementOpUp = std::make_unique<AccumulateOp>(
-        AccumulationType::Add,
-        OptimizerValue(1.0f),
-        Op::Settings(graph, combo->name() + "_accumulate"));
-    auto counterIncrementOp = counterIncrementOpUp.get();
-    transferBaseProperties(combo, counterIncrementOp);
-    graph.moveIntoGraph(std::move(counterIncrementOpUp));
-
-    counterIncrementOp->connectInTensor(VarUpdateOp::getVarToUpdateInIndex(),
-                                        counterId);
-
-    TensorInfo gradInfo(DataType::FLOAT, {});
-    std::vector<float> gradData(gradInfo.nelms(), 1);
-    const auto &increment = graph.getIr().createIntermediateTensorId("one");
-    graph.getTensors().addConstInit(increment, gradInfo, gradData.data());
-    counterIncrementOp->connectInTensor(
-        VarUpdateWithUpdaterOp::getUpdaterInIndex(), increment);
-
-    TensorId updatedCounterId =
-        graph.getIr().createIntermediateTensorId(counterId);
-    counterIncrementOp->createAndConnectOutTensor(
-        VarUpdateOp::getUpdatedVarOutIndex(), updatedCounterId);
-    counterIncrementOp->setup();
-    graph.topoCons->insert(accumOp, counterIncrementOp);
-
-    // reset counter
-    auto counterResetOpUp = std::make_unique<AccumulatorUpdateOp>(
-        OptimizerValue(0),
-        Op::Settings(graph, combo->name() + "_counterupdate"));
-    auto counterResetOp = counterResetOpUp.get();
-    transferBaseProperties(combo, counterResetOp);
-    graph.moveIntoGraph(std::move(counterResetOpUp));
-
-    counterResetOp->connectInTensor(
-        AccumulatorUpdateOp::getVarToUpdateInIndex(), updatedCounterId);
-
-    TensorId resetCounterId =
-        graph.getIr().createIntermediateTensorId(counterId);
-    counterResetOp->createAndConnectOutTensor(
-        AccumulatorUpdateOp::getUpdatedVarOutIndex(), resetCounterId);
-    counterResetOp->setup();
-
-    counterResetOp->settings.executionContext =
-        ExecutionContext::AccumulateOuterFragment;
-    counterResetOp->setExecutionPhase({});
-    counterResetOp->settings.schedulePriority = 0.0;
-  }
 
   // The updated accumulator
   TensorId updatedAccumId = graph.getIr().createIntermediateTensorId(accumId);

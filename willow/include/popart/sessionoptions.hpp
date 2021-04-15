@@ -293,27 +293,6 @@ enum class ExecutionPhaseSchedule {
 };
 
 /**
- * Enum type to specify when to divide by a mean reduction factor
- */
-enum class MeanReductionStrategy {
-  /// This keeps the reduction buffer as the current mean. See \c
-  /// AccumulationType::Mean.
-  /// This is preferred for numerical stability as the buffer is guarenteed
-  /// not to overflow and is strictly better than dividing before the
-  /// accumulation.
-  Running = 0,
-  /// This divides by the required factor after all of the accumulation has
-  /// finished.
-  /// In some cases this can be faster then using Running, however is more
-  /// likely to overflow.
-  Post,
-  // PreLoss - This is how Replication factor is handled.
-  //           Include when collective operations support Mean reduction.
-  //           (T36825)
-  N
-};
-
-/**
  * A structure containing ExecutionPhase settings.
  */
 struct ExecutionPhaseSettings {
@@ -547,13 +526,6 @@ struct SessionOptions {
   /// Specify how gradients are reduced when using gradient accumulation
   /// and graph replication.
   ReductionType accumulationAndReplicationReductionType = ReductionType::Sum;
-
-  /// Specify when to divide by a mean reduction factor when using gradient
-  /// accumulation. This option only applies when \c
-  /// accumulationAndReplicationReductionType is set to ReductionType::Mean.
-  /// Only effects Adam and Adaptive optimisers.
-  MeanReductionStrategy meanAccumulationReductionStrategy =
-      MeanReductionStrategy::Running;
 
   /// If enableReplicatedGraphs is true, \c replicatedGraphCount will set the
   /// number of model replications. For example, if your model uses 1 IPU, a
