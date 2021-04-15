@@ -497,8 +497,13 @@ Patterns &Patterns::enablePattern(const std::type_index &t, bool v) {
 }
 
 Patterns &Patterns::enablePattern(const std::string &t, bool v) {
-  auto ti = PreAliasPatternManager::getTypeIndex(t);
-  return enablePattern(ti, v);
+  if (t == "InPlace") {
+    // InPlace needs to be handled separately as it is not a PreAliasPattern.
+    return enableInPlace(v);
+  } else {
+    auto ti = PreAliasPatternManager::getTypeIndex(t);
+    return enablePattern(ti, v);
+  }
 }
 
 Patterns &Patterns::enablePattern(PreAliasPatternType t, bool v) {
