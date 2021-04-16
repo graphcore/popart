@@ -221,13 +221,15 @@ BOOST_AUTO_TEST_CASE(OpToIdentity) {
   auto device    = createTestDevice(TEST_TARGET);
 
   Ir ir;
+  SessionOptions opts;
+  opts.enableOutlining = false;
   ir.prepare({modelProto,
               InputShapeInfo(),
               dataFlow,
               l1,
               &optimizer,
               *device,
-              {},
+              opts,
               Patterns({PreAliasPatternType::OptoIdentity})
                   .enableRuntimeAsserts(false)});
 
@@ -523,6 +525,7 @@ BOOST_AUTO_TEST_CASE(Attribute_Inheritance) {
 
   SessionOptions opts;
   opts.virtualGraphMode = VirtualGraphMode::Manual;
+  opts.enableOutlining  = false;
 
   Ir ir;
   ir.prepare({modelProto,

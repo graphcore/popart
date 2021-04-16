@@ -140,6 +140,10 @@ def test_inplace_exclude():
         return [x]
 
     session = PopartTestSession()
+    # Outlining will run ViewSimplifyPattern that
+    # will simplify chains of identityOps to a single
+    # identityOp.
+    session.options.enableOutlining = False
     session.prepare(init_builder)
 
     ir = json.loads(

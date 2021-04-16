@@ -1342,6 +1342,7 @@ void Ir::prepareImpl(const IrBundle &gb, const HashesMap &cacheEntries) {
       // required.
       ViewSimplifyPattern viewSimplifier;
       applyPreAliasPattern(&viewSimplifier, getMainGraph());
+      applyTransform(Prune::id(), getMainGraph());
     }
 
     updateAliases();
