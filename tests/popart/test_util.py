@@ -54,7 +54,11 @@ def create_test_device(
     if testDeviceType == "Cpu":
         device = popart.DeviceManager().createCpuDevice()
     elif testDeviceType == "Sim":
-        device = popart.DeviceManager().createSimDevice()
+        if opts is None:
+            opts = {}
+        opts["numIPUs"] = numIpus
+        opts["tilesPerIPU"] = tilesPerIPU
+        device = popart.DeviceManager().createSimDevice(opts)
     elif testDeviceType == "Hw":
         dm = popart.DeviceManager()
         # Keep trying to attach for 15 minutes before aborting
