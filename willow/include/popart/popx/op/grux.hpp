@@ -22,8 +22,8 @@ public:
   std::set<TensorId> mustExistBeforeCreate(InIndex) const;
 
   static popnn::gru::GruParams createGRUParams(const GRUOp &);
-  static poplar::Tensor reshapePoplibWeightsForOnnx(poplar::Tensor,
-                                                    bool transpose);
+  static poplar::Tensor reshapePoplibWeightsForOnnx(poplar::Tensor);
+  static poplar::Tensor reshapePoplibBiasesForOnnx(poplar::Tensor);
 
 private:
   void growBias(poplar::program::Sequence &) const;

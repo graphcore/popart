@@ -159,7 +159,10 @@ def test_gru_torch(op_tester):
         i1 = builder.addInputTensor(d1)
         i2 = builder.addInputTensor(d2)
         i3 = builder.addInputTensor(d3)
-        Y, Y_h = builder.aiOnnx.gru([i1, i2, i3], 2, clip=None)
+        Y, Y_h = builder.aiOnnx.gru([i1, i2, i3],
+                                    2,
+                                    clip=None,
+                                    linear_before_reset=1)
 
         builder.addOutputTensor(Y_h)
         return [Y, Y_h]
@@ -289,6 +292,72 @@ def test_gru_biases(op_tester):
 
     op_tester.atol = 1e-06
     op_tester.rtol = 1e-03
+    op_tester.run(init_builder, reference, 'infer')
+
+
+def test_gru_biases_torch(op_tester):
+    d1 = np.array([[[1., 2., 3.], [4., 5., 6.]],
+                   [[7., 8., 9.], [10., 11., 12.]]]).astype(np.float32)
+
+    input_size = d1.shape[2]
+    hidden_size = 3
+
+    wz = np.random.rand(1, hidden_size, input_size).astype(np.float32)
+    wr = np.random.rand(1, hidden_size, input_size).astype(np.float32)
+    wh = np.random.rand(1, hidden_size, input_size).astype(np.float32)
+
+    whz = np.random.rand(1, hidden_size, hidden_size).astype(np.float32)
+    whr = np.random.rand(1, hidden_size, hidden_size).astype(np.float32)
+    whh = np.random.rand(1, hidden_size, hidden_size).astype(np.float32)
+
+    bz = np.random.rand(1, hidden_size).astype(np.float32)
+    br = np.random.rand(1, hidden_size).astype(np.float32)
+    bh = np.random.rand(1, hidden_size).astype(np.float32)
+
+    bhz = np.random.rand(1, hidden_size).astype(np.float32)
+    bhr = np.random.rand(1, hidden_size).astype(np.float32)
+    bhh = np.random.rand(1, hidden_size).astype(np.float32)
+
+    d2 = np.concatenate((wz, wr, wh), axis=1)
+    d2_torch = np.concatenate((wr, wz, wh), axis=1)
+
+    d3 = np.concatenate((whz, whr, whh), axis=1)
+    d3_torch = np.concatenate((whr, whz, whh), axis=1)
+
+    d4 = np.concatenate((bz, br, bh), axis=1)
+    d4_torch = np.concatenate((br, bz, bh), axis=1)
+
+    d5 = np.concatenate((bhz, bhr, bhh), axis=1)
+    d5_torch = np.concatenate((bhr, bhz, bhh), axis=1)
+
+    d6 = np.concatenate((d4, d5), axis=1)
+
+    def init_builder(builder):
+        i1 = builder.addInputTensor(d1)
+        i2 = builder.addInputTensor(d2)
+        i3 = builder.addInputTensor(d3)
+        i4 = builder.addInputTensor(d6)
+        Y, Y_h = builder.aiOnnx.gru([i1, i2, i3, i4],
+                                    2,
+                                    clip=None,
+                                    linear_before_reset=1)
+
+        builder.addOutputTensor(Y_h)
+        return [Y, Y_h]
+
+    def reference(ref_data):
+        gru = torch.nn.GRU(input_size, hidden_size, 1)
+        gru.weight_ih_l0.data = torch.tensor(d2_torch[0])
+        gru.weight_hh_l0.data = torch.tensor(d3_torch[0])
+        gru.bias_ih_l0.data = torch.tensor(d4_torch)
+        gru.bias_hh_l0.data = torch.tensor(d5_torch)
+
+        a = torch.tensor(d1, requires_grad=True)
+        Y, Y_h = gru(a)
+        Y = torch.unsqueeze(Y, 1)
+
+        return [Y, Y_h]
+
     op_tester.run(init_builder, reference, 'infer')
 
 

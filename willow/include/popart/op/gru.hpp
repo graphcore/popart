@@ -11,6 +11,7 @@ public:
   GRUOp(const OperatorIdentifier &_opid,
         nonstd::optional<int64_t> hidden_size,
         const std::string direction,
+        bool linear_before_reset,
         const Op::Settings &settings_);
   std::unique_ptr<Op> clone() const final;
   std::vector<std::unique_ptr<Op>> getGradOps() final;
@@ -65,6 +66,10 @@ public:
     return hidden_size_attribute;
   }
 
+  int getLinearBeforeResetAttribute() const {
+    return linear_before_reset_attribute;
+  }
+
   view::Regions aliases(InIndex, OutIndex) const final;
 
   view::RegMap fwdRegMap(InIndex, OutIndex) const final;
@@ -74,11 +79,13 @@ private:
   void createPassThroughOutput(const TensorId &new_id,
                                OutIndex pass_through_index,
                                const TensorInfo &out_info);
-  static int getNumIntermediates() { return 3; }
+  int getNumIntermediates() { return 3 + (linear_before_reset_attribute != 0); }
+  int getNumBiases() { return 3 * (1 + (linear_before_reset_attribute != 0)); }
   void trySetOutInfo(OutIndex, const TensorInfo &);
 
   nonstd::optional<int64_t> hidden_size_attribute;
-  std::string direction_attribute = "forward";
+  std::string direction_attribute   = "forward";
+  int linear_before_reset_attribute = 0;
 };
 
 class GRUGradOp : public Op {

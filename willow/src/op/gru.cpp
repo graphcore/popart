@@ -16,9 +16,11 @@ namespace popart {
 GRUOp::GRUOp(const OperatorIdentifier &_opid,
              nonstd::optional<int64_t> hidden_size,
              std::string direction,
+             bool linear_before_reset,
              const Op::Settings &settings_)
     : Op(_opid, settings_), hidden_size_attribute(hidden_size),
-      direction_attribute(direction) {
+      direction_attribute(direction),
+      linear_before_reset_attribute(linear_before_reset) {
   // TODO : Use the output_sequence attribute in version 1, if needed. Currently
   // GRU_1 not supported.
 }
@@ -88,7 +90,7 @@ void GRUOp::setup() {
                           {data_type, Shape{3, hidden_size, hidden_size}});
   createPassThroughOutput("biases",
                           getBiasesPassThroughIndex(),
-                          {data_type, Shape{3, hidden_size}});
+                          {data_type, Shape{getNumBiases(), hidden_size}});
   createPassThroughOutput(
       "input",
       getInputPassThroughIndex(),
@@ -153,6 +155,7 @@ void GRUOp::appendOutlineAttributes(OpSerialiserBase &os) const {
   Op::appendOutlineAttributes(os);
   os.appendAttribute("hidden_size", getHiddenSizeAttribute());
   os.appendAttribute("direction", getDirectionAttribute());
+  os.appendAttribute("linear_before_reset", getLinearBeforeResetAttribute());
 }
 
 view::Regions GRUOp::aliases(InIndex in, OutIndex out) const {
@@ -309,6 +312,11 @@ static OpCreator<GRUOp> gruOpCreator(
         direction =
             info.attributes.getAttribute<Attributes::String>("direction");
       }
+      bool linear_before_reset = 0;
+      if (info.attributes.hasAttribute("linear_before_reset")) {
+        linear_before_reset = info.attributes.getAttribute<Attributes::Int>(
+            "linear_before_reset");
+      }
       // cannot check hidden_size till inputs are connected
       nonstd::optional<int64_t> hidden_size;
       if (info.attributes.hasAttribute("hidden_size")) {
@@ -316,8 +324,11 @@ static OpCreator<GRUOp> gruOpCreator(
             info.attributes.getAttribute<Attributes::Int>("hidden_size");
       }
 
-      return std::unique_ptr<Op>(
-          new GRUOp(info.opid, hidden_size, direction, info.settings));
+      return std::unique_ptr<Op>(new GRUOp(info.opid,
+                                           hidden_size,
+                                           direction,
+                                           linear_before_reset,
+                                           info.settings));
     },
     true);
 
