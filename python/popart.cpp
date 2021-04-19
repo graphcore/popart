@@ -1282,6 +1282,12 @@ PYBIND11_MODULE(popart_core, m) {
     cls.def_readwrite("swapLimitScheduler",
                       &SessionOptions::swapLimitScheduler,
                       DOC(popart, SessionOptions, swapLimitScheduler));
+    cls.def_readwrite(
+        "transitiveClosureOptimizationThreshold",
+        &SessionOptions::transitiveClosureOptimizationThreshold
+        // TODO(matthewha)
+        // DOC(popart, SessionOptions, transitiveClosureOptimizationThreshold)
+    );
     cls.def_readwrite("decomposeGradSum",
                       &SessionOptions::decomposeGradSum,
                       DOC(popart, SessionOptions, decomposeGradSum));

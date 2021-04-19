@@ -333,6 +333,8 @@ bool Ir::isPatternsLevel(const Patterns &p, PatternsLevel level) {
 }
 
 void Ir::removeIsolatedTensors(bool retainCached) {
+  auto scopedStopwatch =
+      timePartitionLogger().scopedStopwatch("Removing isolated Tensors");
   getTensors().removeIsolated(retainCached);
 }
 
@@ -2263,8 +2265,11 @@ void Ir::updateVertices() {
   //  2) fromLoss (is there a path from the final loss?)
   //  3) scheduledPreLoss (is it scheduled before the final loss?)
 
-  logging::ir::trace(
-      "\nUpdating all Vertices (toLoss, fromLoss, scheduledPreLoss)");
+  auto scopedStopwatch =
+      timePartitionLogger().scopedStopwatch("Updating Vertices.");
+
+  logging::ir::info(
+      "Updating all Vertices (toLoss, fromLoss, scheduledPreLoss)");
 
   // 1) Get all Ops which have toLoss Yes, and backwards propagate
   std::vector<Op *> toLossFrontier;

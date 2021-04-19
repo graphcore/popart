@@ -21,6 +21,8 @@ def getBaseOptions():
     opts.swapLimitScheduler = -1
     # TODO(T14786) investigate why GREEDY causes some tests to fail
     opts.kahnTieBreaker = "FIFO"
+    # TODO(T14786) investigate why tighter initialization causes some tests to fail
+    opts.transitiveClosureOptimizationThreshold = 0
     return opts
 
 

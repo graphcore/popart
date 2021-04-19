@@ -4,6 +4,7 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/range/algorithm.hpp>
 #include <onnx/onnx_pb.h>
+#include <poprithms/logging/timepartitionlogger.hpp>
 
 #include <popart/ces/constexpr.hpp>
 #include <popart/ces/onnxconstexpr.hpp>
@@ -333,6 +334,9 @@ void Graph::eraseOp(OpId opid) {
 // T12001
 // Remove AddInplace, VarUpdate should be only modifier
 void Graph::setVarUpdateConstraints() {
+
+  auto scopedStopwatch = getIr().timePartitionLogger().scopedStopwatch(
+      "Setting VarUpdate constraints");
   // For every Op, for every input, is it input modified?
   for (const auto &id_up : getOps()) {
     auto proposalOp = id_up.second.get();

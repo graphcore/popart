@@ -714,6 +714,14 @@ struct SessionOptions {
   /// free to be scheduled, this controls which method is used.
   std::string kahnTieBreaker = "greedy";
 
+  /// The transitive closure optimization pass can significantly accelerate the
+  /// scheduler. It does not in general affect the final schedule returned. It
+  /// is run between initialization with Kahn's algorithms and the annealing
+  /// swaps. The transitive closure optimization pass is O(nOps^2) and so should
+  /// not be used for extremely large Graphs. If a Graph is above the following
+  /// threshold, the transitive closure optimization pass is not run.
+  size_t transitiveClosureOptimizationThreshold{100000};
+
   /// Replaces single sums of partial gradients with a tree of additions.
   /// This can reduce max liveness at the cost of extra cycles. A typical
   /// use case for this would be if a large weight tensor is used as an

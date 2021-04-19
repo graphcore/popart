@@ -5,8 +5,10 @@
 #include <array>
 #include <numeric>
 #include <queue>
+#include <sstream>
 #include <unordered_map>
 #include <vector>
+#include <poprithms/logging/timepartitionlogger.hpp>
 #include <popart/error.hpp>
 #include <popart/filereader.hpp>
 #include <popart/graph.hpp>
@@ -21,8 +23,10 @@
 #include <popart/topocons.hpp>
 #include <popart/transforms/pipeline.hpp>
 
+#include <poprithms/logging/logging.hpp>
 #include <poprithms/logging/timepartitionlogger.hpp>
 #include <poprithms/schedule/anneal/graph.hpp>
+#include <poprithms/schedule/anneal/transitiveclosureoptimizations.hpp>
 
 namespace popart {
 
@@ -73,6 +77,7 @@ public:
   // The RithmicGraph must have already been initialised through a call to
   // `GraphGrower::initialize`.
   std::vector<Op *> getSchedule() const {
+
     // 1. Get vector of all ops.
     // We know all op addresses are 0..nOps
     std::vector<OpAddress> opAddrs(nOps);
@@ -94,6 +99,16 @@ public:
   }
 
   void minSumLivenessAnneal(const std::map<std::string, std::string> &a) {
+
+    const auto scopedStopwatch =
+        pg.getIr().timePartitionLogger().scopedStopwatch(
+            "Scheduler annealing step");
+
+    std::ostringstream oss;
+    oss << "[Scheduler] Graph with N=" << g.nOps() << " Poprithms Ops and "
+        << " N=" << opAddresses.size() << " PopART Ops, entering annealing. ";
+    logging::ir::debug(oss.str());
+
     auto ll = logging::Level::Trace;
     std::string strBefore;
     if (logging::shouldLog(logging::Module::ir, ll)) {
@@ -107,10 +122,33 @@ public:
       oss << "Liveness string AFTER  annealing:\n" << strAfter << "\n\n";
       logging::log(logging::Module::ir, ll, oss.str());
     }
+
+    logging::ir::debug("[Scheduler] annealing step complete.");
   }
-  void initialize(KahnTieBreaker ktb) {
+  void initialize(KahnTieBreaker ktb, bool requireOptimal_b) {
+
+    const auto scopedStopwatch =
+        pg.getIr().timePartitionLogger().scopedStopwatch(
+            "Initializing scheduler");
     POPART_TRACEPOINT();
-    g.initialize(ktb);
+
+    // if an optimal schedule is not required, or if there are too many Ops in
+    // this Graph, initialize cheaply, otherwise invest in a good initialization
+    // by running transitive closure optimizations. See poprithms::anneal
+    // project for more information about the transitive closure optimizations.
+    if (!requireOptimal_b ||
+        g.nOps() > pg.getIr()
+                       .getSessionOptions()
+                       .transitiveClosureOptimizationThreshold) {
+      // the cheap (fast) initialization:
+      g.initialize(ktb);
+    } else {
+      // the expensive (slow) initialization:
+      g.initialize(
+          ktb,
+          1011,
+          poprithms::schedule::anneal::TransitiveClosureOptimizations::allOn());
+    }
   }
   void finalize() { g.finalize(); }
   bool isSchedulable() const { return g.isSchedulable(); }
@@ -180,32 +218,8 @@ public:
     g.insertBinConstraints(bins, "executionPhaseStart_");
   }
 
-  // Given a preliminary feasible schedule initSchedule, fix sections of the
-  // schedule that have a batch serialization phase set against sections that
-  // don't, resulting in dramatically faster scheduling
-  void annotateBatchSerializationPhase(const std::vector<Op *> &initSchedule) {
-    // Insert bin constraints to ensure ops are sorted by batch serialization
-    // phases
-    std::vector<std::vector<OpAddress>> bins(1);
-
-    OptionalBatchSerializedPhase prevPhase;
-    size_t binIndex = 0;
-
-    for (Op *op : initSchedule) {
-      OptionalBatchSerializedPhase currPhase =
-          op->getOptionalBatchSerializedPhase();
-      if (currPhase != prevPhase) {
-        ++binIndex;
-        bins.resize(binIndex + 1);
-        prevPhase = currPhase;
-      }
-      auto opAddress = opAddresses[op];
-      bins[binIndex].push_back(opAddress);
-    }
-    g.insertBinConstraints(bins, "batchSerialGroupStart_");
-  }
-
   void annotateExecutionContext() {
+
     std::vector<OpAddress> weightsToOps;
     std::vector<OpAddress> normalOps;
     std::vector<OpAddress> accumulateOuter;
@@ -259,6 +273,7 @@ public:
       bins.push_back(weightsToOps);
     }
     if (bins.size() > 1) {
+
       g.insertBinConstraints(bins, "executionContext_");
     }
   }
@@ -285,6 +300,7 @@ public:
         bins[binIndex].push_back(opAddress);
       }
     }
+
     g.insertBinConstraints(bins, "PipelineStageStart_");
   }
 
@@ -486,6 +502,8 @@ public:
       }
     }
   }
+
+  poprithms::schedule::anneal::Graph getGraph() const { return g; }
 };
 
 } // namespace
@@ -557,6 +575,7 @@ KahnTieBreaker kahnTieBreakerFromString(const std::string &ktbString) {
 void serializePoprithmsGraph(
     const GraphGrower *grower,
     const std::string &serializedPoprithmsAnnealGraphsDir) {
+
   auto dirName =
       boost::filesystem::canonical(serializedPoprithmsAnnealGraphsDir).string();
 
@@ -589,6 +608,8 @@ void serializePoprithmsGraph(
   }
   ofs << grower->getSerializationString();
   ofs.close();
+
+  logging::ir::info("[Scheduler] written {} ", filename);
 }
 
 void defaultAnnotate(GraphGrower *grower,
@@ -623,6 +644,7 @@ void defaultAnnotate(GraphGrower *grower,
 void defaultMinSumLivenessAnneal(GraphGrower *grower,
                                  double timeLimitSeconds,
                                  int64_t swapLimitCount) {
+
   POPART_TRACEPOINT();
   grower->minSumLivenessAnneal(
       {{"debug", "0"},
@@ -637,6 +659,20 @@ void defaultMinSumLivenessAnneal(GraphGrower *grower,
 // 1) smallest cycle function, to report with on failure.
 // 2) we currently assume that each Tensor is a unique allocation. Improve this,
 // so that inplace Ops are accurately described.
+
+poprithms::schedule::anneal::Graph
+getScheduledGraph(const Graph &g, const std::vector<Op *> schedule) {
+
+  auto grower = std::make_unique<GraphGrower>(g);
+  grower->setBasic();
+  OpsBeforeKey cons;
+  for (uint64_t i = 1; i < schedule.size(); ++i) {
+    cons.insert({schedule[i], {schedule[i - 1]}});
+  }
+  grower->appendGCons(cons);
+  grower->initialize(KahnTieBreaker::GREEDY, false);
+  return grower->getGraph();
+}
 
 std::vector<Op *>
 Scheduler::getSchedule(const OpsBeforeKey &gCons,
@@ -712,6 +748,9 @@ Scheduler::getSchedule(const OpsBeforeKey &gCons,
   if (!pg.getIr()
            .getSessionOptions()
            .serializedPoprithmsAnnealGraphsDir.empty()) {
+
+    auto scopedStopwatch = pg.getIr().timePartitionLogger().scopedStopwatch(
+        "Serializing anneal Graph");
     serializePoprithmsGraph(
         grower.get(),
         pg.getIr().getSessionOptions().serializedPoprithmsAnnealGraphsDir);
@@ -719,21 +758,11 @@ Scheduler::getSchedule(const OpsBeforeKey &gCons,
 
   const auto ktb = kahnTieBreakerFromString(kahnTieBreakerString);
 
-  if (pg.getIr().getSessionOptions().batchSerializationSettings.factor > 1) {
-    // Add additional constraints based on the preliminary schedule to speed up
-    // the annealing algorithm
-    grower->initialize(ktb);
-    std::vector<Op *> initSchedule = grower->getSchedule();
-    grower->annotateBatchSerializationPhase(initSchedule);
-  }
-
-  grower->initialize(ktb);
+  grower->initialize(ktb, requireOptimal_b);
 
   // Using a time and swap limit of 0 will force no annealing to happen.
   if (requireOptimal_b) {
     defaultMinSumLivenessAnneal(grower.get(), timeLimitSeconds, swapLimitCount);
-  } else {
-    defaultMinSumLivenessAnneal(grower.get(), 0.0, 0);
   }
 
   const std::vector<Op *> finalSchedule = grower->getSchedule();
