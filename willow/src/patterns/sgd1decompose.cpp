@@ -132,12 +132,10 @@ bool SGD1Decompose::apply(Op *op) const {
   // Gradient reduction (mutually exclusive with accl reduction)
   if (combo->reductionType == OptimizerReductionType::GradReduce) {
     // GradReduceOp
-    auto reduceOpUp = std::make_unique<ReplicatedAllReduceOp>(
+    auto reduceOp = graph.createOp<ReplicatedAllReduceOp>(
         Onnx::CustomOperators::ReplicatedAllReduce,
         Op::Settings(graph, combo->name() + "_reduce"));
-    auto reduceOp = reduceOpUp.get();
     transferBaseProperties(combo, reduceOp);
-    graph.moveIntoGraph(std::move(reduceOpUp));
 
     logging::pattern::trace("Connecting input {} to {} at {}",
                             weightGradId,
@@ -165,13 +163,11 @@ bool SGD1Decompose::apply(Op *op) const {
   //
   // Outputs:
   // (4) an alias of acclIn
-  auto acclOpUp = std::make_unique<AccumulateOp>(
+  auto acclOp = graph.createOp<AccumulateOp>(
       AccumulationType::DampenedAdd,
       combo->initDpsf1,
       Op::Settings(graph, combo->name() + "_accumulate"));
-  auto acclOp = acclOpUp.get();
   transferBaseProperties(combo, acclOp);
-  graph.moveIntoGraph(std::move(acclOpUp));
 
   // (1)
   logging::pattern::trace("Connecting input {} to {} at {}",
@@ -223,12 +219,10 @@ bool SGD1Decompose::apply(Op *op) const {
     //
     // Outputs:
     // (2) alias of input
-    auto reduceOpUp = std::make_unique<ReplicatedAllReduceInplaceOp>(
+    auto reduceOp = graph.createOp<ReplicatedAllReduceInplaceOp>(
         Onnx::CustomOperators::ReplicatedAllReduceInplace,
         Op::Settings(graph, combo->name() + "_reduce"));
-    auto reduceOp = reduceOpUp.get();
     transferBaseProperties(combo, reduceOp);
-    graph.moveIntoGraph(std::move(reduceOpUp));
 
     // (1)
     logging::pattern::trace("Connecting input {} to {} at {}",
@@ -261,13 +255,11 @@ bool SGD1Decompose::apply(Op *op) const {
   // Outputs
   // (5) acclFinal
 
-  auto acclUpdateOpUp = std::make_unique<SGD1AcclUpdateOp>(
+  auto acclUpdateOp = graph.createOp<SGD1AcclUpdateOp>(
       combo->initSmm1,
       combo->initSwd1,
       Op::Settings(graph, combo->name() + "_accl_update"));
-  auto acclUpdateOp = acclUpdateOpUp.get();
   transferBaseProperties(combo, acclUpdateOp);
-  graph.moveIntoGraph(std::move(acclUpdateOpUp));
 
   // (1)
   logging::pattern::trace("Connecting input {} to {} at {}",
@@ -309,11 +301,9 @@ bool SGD1Decompose::apply(Op *op) const {
   //
   // Outputs
   // (4) W_new
-  auto sgd1VarUpdateOpUp = std::make_unique<SGD1VarUpdateOp>(
+  auto sgd1VarUpdateOp = graph.createOp<SGD1VarUpdateOp>(
       combo->initSlr1, Op::Settings(graph, combo->name() + "_var_update"));
-  auto sgd1VarUpdateOp = sgd1VarUpdateOpUp.get();
   transferBaseProperties(combo, sgd1VarUpdateOp);
-  graph.moveIntoGraph(std::move(sgd1VarUpdateOpUp));
 
   // (1)
   sgd1VarUpdateOp->connectInTensor(VarUpdateOp::getVarToUpdateInIndex(),
