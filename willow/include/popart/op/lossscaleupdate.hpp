@@ -6,40 +6,37 @@
 
 namespace popart {
 
-// This op takes inputs:
-// - the loss scale scalar tensor
+// This op takes as inputs:
 // - any number > 0 of 'gradient statistics' tensors, each of which is 1D
 //   tensor with 2 elements
-
+//
+// and outputs:
+// - The loss scale update factor - a scalar tensor. This can be used to
+//   inplace-modify the loss scale and inverse loss scale optimizer tensors
+//   in the automatic loss scaling Transform
 class LossScaleUpdateOp : public Op {
 public:
   LossScaleUpdateOp(const OperatorIdentifier &_opid,
+                    const DataType &updateFactorDType_,
                     const Op::Settings &settings_)
-      : Op(_opid, settings_) {}
+      : Op(_opid, settings_), updateFactorDType(updateFactorDType_) {}
 
   void setup() final;
 
-  static InIndex getLossScaleInIndex() { return 0; }
+  // Gradient tensor statistics are inputs at indices 0-N
+  static InIndex getFirstStatisticsTensorInIndex() { return 0; }
 
-  // This is the compound scalar tensor that has been divided by the loss
-  // scale factor. Depending on the optimizer chosen by the user, this could
-  // be one of 'scaledLearningRate0' or 'dampeningScaleFactor1'. See
-  // optimizer.hpp for details.
-  static InIndex getInverseLossScaleInIndex() { return 1; }
-
-  // Gradient tensor statistics are inputs at indices 2-N
-  static InIndex getFirstStatisticsTensorInIndex() { return 2; }
-
-  static OutIndex getUpdatedLossScaleOutIndex() { return 0; }
-  static OutIndex getUpdatedInverseLossScaleOutIndex() { return 1; }
+  // The factor by which to multiply the loss scale tensor
+  static OutIndex getLossScaleUpdateFactorOutIndex() { return 0; }
 
   float getSubgraphValue() const final { return getLowSubgraphValue(); }
 
   std::unique_ptr<Op> clone() const override;
 
-  // This Op aliases and modifies the input at index getLossScaleInIndex()
-  view::Regions aliases(InIndex in, OutIndex) const override;
-  view::Regions modifies(InIndex) const override;
+  DataType getUpdateFactorDType() const { return updateFactorDType; }
+
+private:
+  DataType updateFactorDType;
 };
 
 } // namespace popart

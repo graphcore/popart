@@ -4,11 +4,14 @@
 #include <popart/ir.hpp>
 #include <popart/op/accumulatorupdate.hpp>
 #include <popart/op/add.hpp>
+#include <popart/op/cast.hpp>
 #include <popart/op/collectives/replicatedallreduce.hpp>
 #include <popart/op/convbase.hpp>
 #include <popart/op/histogram.hpp>
 #include <popart/op/lossscaleupdate.hpp>
 #include <popart/op/matmul.hpp>
+#include <popart/op/mul.hpp>
+#include <popart/op/reciprocal.hpp>
 #include <popart/op/sum.hpp>
 #include <popart/optimizer.hpp>
 #include <popart/tensorindex.hpp>
@@ -278,23 +281,15 @@ bool AutomaticLossScale::apply(Graph &graph) const {
   }
 
   // Get the loss scale tensor and the inverse loss scale tensor:
-  // the tensors to updated
-  Tensor *lossScaleTensor         = getLossScaleTensor(graph);
-  Tensor *inverseLossScaleTensor  = getInverseLossScaleTensor(graph);
-  auto originalLossScaleConsumers = lossScaleTensor->consumers.getOps();
-  for (Op *op : inverseLossScaleTensor->consumers.getOps()) {
-    originalLossScaleConsumers.push_back(op);
-  }
+  // the tensors to be updated
+  Tensor *lossScaleTensor        = getLossScaleTensor(graph);
+  Tensor *inverseLossScaleTensor = getInverseLossScaleTensor(graph);
 
   // Pass loss scale tensor and HistogramOp outputs into the LossScaleUpdateOp
-  auto lossScaleUpdateOp = graph.createOp<LossScaleUpdateOp>(
-      Onnx::CustomOperators::LossScaleUpdate, Op::Settings(graph, ""));
-
-  lossScaleUpdateOp->connectInTensor(LossScaleUpdateOp::getLossScaleInIndex(),
-                                     lossScaleTensor->id);
-  lossScaleUpdateOp->connectInTensor(
-      LossScaleUpdateOp::getInverseLossScaleInIndex(),
-      inverseLossScaleTensor->id);
+  auto lossScaleUpdateOp =
+      graph.createOp<LossScaleUpdateOp>(Onnx::CustomOperators::LossScaleUpdate,
+                                        lossScaleTensor->info.dataType(),
+                                        Op::Settings(graph, ""));
 
   // The grad statistics tensors to connect to the LossScaleUpdateOp
   std::vector<Tensor *> finalStatisticsTensors;
@@ -358,8 +353,6 @@ bool AutomaticLossScale::apply(Graph &graph) const {
     // Reset the accumulator, and update the loss in the outer fragment
     statsAcclResetOp->settings.executionContext =
         ExecutionContext::AccumulateOuterFragment;
-    lossScaleUpdateOp->settings.executionContext =
-        ExecutionContext::AccumulateOuterFragment;
 
     graph.topoCons->insert(lossScaleUpdateOp, statsAcclResetOp);
 
@@ -402,34 +395,96 @@ bool AutomaticLossScale::apply(Graph &graph) const {
   }
 
   lossScaleUpdateOp->createAndConnectOutTensor(
-      LossScaleUpdateOp::getUpdatedLossScaleOutIndex(),
-      lossScaleTensor->id + "_updated");
-  lossScaleUpdateOp->createAndConnectOutTensor(
-      LossScaleUpdateOp::getUpdatedInverseLossScaleOutIndex(),
-      inverseLossScaleTensor->id + "_updated");
+      LossScaleUpdateOp::getLossScaleUpdateFactorOutIndex(),
+      "loss_scale_update_factor");
   lossScaleUpdateOp->inheritPlacementAttributes(false);
   lossScaleUpdateOp->setup();
 
+  std::vector<Op *> lossScaleUpdateOps = {lossScaleUpdateOp};
+  // Apply the loss scale update factor in place to:
+  // - loss scale tensor
+  // - the inverse loss scale tensor(s)
+  auto lossScaleUpdateFactor = lossScaleUpdateOp->outTensor(
+      LossScaleUpdateOp::getLossScaleUpdateFactorOutIndex());
+
+  auto lsMulOp = graph.createOp<MulLhsInplaceOp>(Op::Settings(graph, ""));
+  lsMulOp->connectInTensor(MulLhsInplaceOp::getArg0InIndex(),
+                           lossScaleTensor->id);
+  lsMulOp->connectInTensor(MulLhsInplaceOp::getArg1InIndex(),
+                           lossScaleUpdateFactor->id);
+  lsMulOp->createAndConnectOutTensor(MulLhsInplaceOp::getOutIndex(),
+                                     lossScaleTensor->id + "_updated");
+  lsMulOp->inheritPlacementAttributes(false);
+  lsMulOp->setup();
+  lossScaleUpdateOps.push_back(lsMulOp);
+
+  auto reciprocalOp = graph.createOp<ReciprocalOp>(
+      Onnx::Operators::Reciprocal_6, Op::Settings(graph, ""));
+  reciprocalOp->connectInTensor(ReciprocalOp::getInIndex(),
+                                lossScaleUpdateFactor->id);
+  reciprocalOp->createAndConnectOutTensor(
+      ReciprocalOp::getOutIndex(), lossScaleUpdateFactor->id + "_reciprocal");
+  reciprocalOp->inheritPlacementAttributes(false);
+  reciprocalOp->setup();
+  lossScaleUpdateOps.push_back(reciprocalOp);
+
+  auto reciprocalLossScaleUpdateFactor =
+      reciprocalOp->outTensor(ReciprocalOp::getOutIndex());
+  auto castOp = graph.createOp<CastOp>(Onnx::Operators::Cast_9,
+                                       inverseLossScaleTensor->info.dataType(),
+                                       Op::Settings(graph, ""));
+  castOp->connectInTensor(CastOp::getInIndex(),
+                          reciprocalLossScaleUpdateFactor->id);
+  castOp->createAndConnectOutTensor(
+      CastOp::getOutIndex(), lossScaleUpdateFactor->id + "_reciprocal_cast");
+  castOp->inheritPlacementAttributes(false);
+  castOp->setup();
+  lossScaleUpdateOps.push_back(castOp);
+
+  reciprocalLossScaleUpdateFactor = castOp->outTensor(CastOp::getOutIndex());
+  auto ilsMulOp = graph.createOp<MulLhsInplaceOp>(Op::Settings(graph, ""));
+  ilsMulOp->connectInTensor(MulLhsInplaceOp::getArg0InIndex(),
+                            inverseLossScaleTensor->id);
+  ilsMulOp->connectInTensor(MulLhsInplaceOp::getArg1InIndex(),
+                            reciprocalLossScaleUpdateFactor->id);
+  ilsMulOp->createAndConnectOutTensor(MulLhsInplaceOp::getOutIndex(),
+                                      inverseLossScaleTensor->id + "_updated");
+  ilsMulOp->inheritPlacementAttributes(false);
+  ilsMulOp->setup();
+  lossScaleUpdateOps.push_back(ilsMulOp);
+
   // Case 2 or 3, execute the loss scale update in the outer fragment
   if (doingGradientAccumulation(graph)) {
-    lossScaleUpdateOp->settings.executionContext =
-        ExecutionContext::AccumulateOuterFragment;
     OptionalPipelineStage optionalPs;
-    lossScaleUpdateOp->setPipelineStage(optionalPs);
+    for (Op *op : lossScaleUpdateOps) {
+      op->settings.executionContext = ExecutionContext::AccumulateOuterFragment;
+      op->setPipelineStage(optionalPs);
+    }
   }
   // Case 0 or 1
   else {
-    lossScaleUpdateOp->settings.executionContext = ExecutionContext::Normal;
+    for (Op *op : lossScaleUpdateOps) {
+      op->settings.executionContext = ExecutionContext::Normal;
+    }
   }
 
   // Ensure that all other consumers of loss scale tensor run before the loss
   // scale update runs. The loss is scaled at the start of the backwards pass,
   // and then inversely right before the they are applied as a weight update.
   // The loss scale tensor must have the same value at these two points.
-  for (Op *consumer : originalLossScaleConsumers) {
-    graph.topoCons->insert(consumer, lossScaleUpdateOp);
+  for (Op *consumer : lossScaleTensor->consumers.getOps()) {
+    if (consumer != lsMulOp) {
+      graph.topoCons->insert(consumer, lsMulOp);
+    }
   }
-  lossScaleUpdateOp->pruneable = false;
+  lsMulOp->pruneable = false;
+
+  for (Op *consumer : inverseLossScaleTensor->consumers.getOps()) {
+    if (consumer != ilsMulOp) {
+      graph.topoCons->insert(consumer, ilsMulOp);
+    }
+  }
+  ilsMulOp->pruneable = false;
 
   return true;
 }

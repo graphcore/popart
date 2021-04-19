@@ -14,11 +14,8 @@ namespace popx {
 void LossScaleUpdateOpx::grow(poplar::program::Sequence &prog) const {
   auto &op = getOp<LossScaleUpdateOp>();
 
-  auto lossScale        = getInTensor(op.getLossScaleInIndex());
-  auto inverseLossScale = getInTensor(op.getInverseLossScaleInIndex());
-
   // Check there is at least one 'gradient statistics' input
-  if (!hasInput(1)) {
+  if (!hasInput(op.getFirstStatisticsTensorInIndex())) {
     throw error("LossScaleUpdateOpx {} does not have any input at InIndex 1",
                 op.str());
   }
@@ -83,22 +80,19 @@ void LossScaleUpdateOpx::grow(poplar::program::Sequence &prog) const {
                                      prog,
                                      debugContext());
 
-  poplar::program::Sequence scaleUp;
-  popops::mulInPlace(graph(), lossScale, 2.0, scaleUp, debugContext("scaleUp"));
-  popops::mulInPlace(
-      graph(), inverseLossScale, 0.5, scaleUp, debugContext("scaleUp"));
-
-  poplar::program::Sequence scaleDown;
-  popops::mulInPlace(
-      graph(), lossScale, 0.5, scaleDown, debugContext("scaleDown"));
-  popops::mulInPlace(
-      graph(), inverseLossScale, 2.0, scaleDown, debugContext("scaleDown"));
+  auto updateFactorDType = popType(op.getUpdateFactorDType());
+  auto scaleUpTensor     = getConst(updateFactorDType, {}, 2.0, "scaleUp");
+  auto scaleDownTensor   = getConst(updateFactorDType, {}, 0.5, "scaledown");
+  auto updateFactor      = getScalarVariable(updateFactorDType, "updateFactor");
+  poplar::program::Copy scaleUp(
+      scaleUpTensor, updateFactor, false, debugContext("scaleDown"));
+  poplar::program::Copy scaleDown(
+      scaleDownTensor, updateFactor, false, debugContext("scaleDown"));
 
   prog.add(poplar::program::If(
       shouldScaleDown, scaleDown, scaleUp, debugContext("lossScaleUpdate")));
 
-  setOutTensor(op.getUpdatedLossScaleOutIndex(), lossScale);
-  setOutTensor(op.getUpdatedInverseLossScaleOutIndex(), inverseLossScale);
+  setOutTensor(op.getLossScaleUpdateFactorOutIndex(), updateFactor);
 }
 
 LossScaleUpdateOpx::LossScaleUpdateOpx(Op *op, Devicex *devicex)

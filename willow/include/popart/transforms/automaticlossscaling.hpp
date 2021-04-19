@@ -65,15 +65,25 @@
 // lossGrad -- ... -- ConvWeightsGrad --- t0 -- ...
 //  (*= ls)                                |
 //                                          - HistogramOp -- t0_stats
-//             ... -- Matmul -- t1 -- ...                       |
-//                               |                              |
-//                                - HistogramOp -- t1_stats     |
-//                                                      |       |
-//                                                      |       |
-//                                       ls ------ LossScaleUpdateOp
-//                                   inverse_ls ---'     ||
-//                                                       |'- ls_updated
-//                                                       '-- inverse_ls_updated
+//             ... -- Matmul -- t1 -- ...                     |
+//                               |                            |
+//                                - HistogramOp -- t1_stats   |
+//                                                      |     |
+//                                                      |     |
+//                                             LossScaleUpdateOp
+//                                                 |
+//                                          ls_update_factor
+//                                                 |
+//                                                 |  ls -.
+//                                                 |-- MulInplaceOp
+//                                                 |       '- ls_updated
+//                                            ReciprocalOp
+//                                                 |
+//                                     ls_update_factor_reciprocal
+//                                                 |
+//                                                 |  inverse_ls -.
+//                                                 '----- MulInplaceOp
+//                                                         '- inverse_ls_updated
 
 // (Case 1, With graph replication enabled)
 //
@@ -87,10 +97,20 @@
 //                                |
 //                        stats_summed_reduced
 //                                |
-//              ls ------ LossScaleUpdateOp
-//          inverse_ls ---'     ||
-//                              |'- ls_updated
-//                              '-- inverse_ls_updated
+//                        LossScaleUpdateOp
+//                                |
+//                         ls_update_factor
+//                                |
+//                                |  ls -.
+//                                |-- MulInplaceOp
+//                                |       '- ls_updated
+//                           ReciprocalOp
+//                                |
+//                    ls_update_factor_reciprocal
+//                                |
+//                                |  inverse_ls -.
+//                                '-- MulInplaceOp
+//                                        '- inverse_ls_updated
 
 // (Case 2, With gradient accumulation enabled)
 //
@@ -104,10 +124,20 @@
 //                                    |                         |
 //                               stats_accld             stats_to_accl_reset
 //                                    |
-//                  ls ------ LossScaleUpdateOp (a.o.f)
-//              inverse_ls ---'     ||
-//                                  |'- ls_updated
-//                                  '-- inverse_ls_updated
+//                            LossScaleUpdateOp (a.o.f)
+//                                  |
+//                           ls_update_factor
+//                                  |
+//                                  |  ls -.
+//                                  |-- MulInplaceOp
+//                                  |       '- ls_updated
+//                             ReciprocalOp
+//                                  |
+//                      ls_update_factor_reciprocal
+//                                  |
+//                                  |  inverse_ls -.
+//                                  '----- MulInplaceOp
+//                                          '- inverse_ls_updated
 //
 // (where a.o.f means is assigned to the
 //  ExecutionContext::AccumulateOuterFragment)
@@ -128,10 +158,20 @@
 //                                    |
 //                            stats_accld_reduced
 //                                    |
-//                  ls ------ LossScaleUpdateOp (a.o.f)
-//              inverse_ls ---'     ||
-//                                  |'- ls_updated
-//                                  '-- inverse_ls_updated
+//                            LossScaleUpdateOp (a.o.f)
+//                                  |
+//                           ls_update_factor
+//                                  |
+//                                  |  ls -.
+//                                  |-- MulInplaceOp
+//                                  |       '- ls_updated
+//                             ReciprocalOp
+//                                  |
+//                      ls_update_factor_reciprocal
+//                                  |
+//                                  |  inverse_ls -.
+//                                  '----- MulInplaceOp
+//                                          '- inverse_ls_updated
 //
 // (where a.o.f means is assigned to the
 //  ExecutionContext::AccumulateOuterFragment)
