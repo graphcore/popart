@@ -749,6 +749,11 @@ struct SessionOptions {
   //   return 1
   int64_t getGlobalReplicationFactor() const;
 
+  // Helper method to check the accumulation factor settings for consistency
+  // if gradient accumulation is not enabled and the factor is set to >1.
+  // Returns the accumulation factor otherwise.
+  unsigned getAccumulationFactor() const;
+
   /// Allows to group the streams from host at the beginning and the streams
   /// to host at the end, this trades off sum-liveness efficiency for cycle
   /// efficiency.
@@ -769,8 +774,8 @@ struct SessionOptions {
   /// corresponds to lowered Poplar tensor modifications.
   bool opxModifyChecking = false;
 
-  /// TODO doc
-  bool useOverlappedIO = false;
+  /// Uses IR graph operations for data and anchor streams
+  bool useHostCopyOps = false;
 
   /// Allows to load/offload device RNG state from host.
   bool enableLoadAndOffloadRNGState = false;

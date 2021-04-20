@@ -204,6 +204,19 @@ int64_t SessionOptions::getGlobalReplicationFactor() const {
   return 1LL;
 }
 
+unsigned SessionOptions::getAccumulationFactor() const {
+
+  unsigned af = static_cast<unsigned>(accumulationFactor);
+  if (!enableGradientAccumulation && static_cast<unsigned>(af) > 1) {
+    // A check on user input consistency
+    throw error(
+        "enableGradientAccumulation is false, but accumulationFactor > 1. "
+        "Either enable gradient accumulation, or set the accumulation factor "
+        "to 1");
+  }
+  return af;
+}
+
 bool SessionOptions::autoRecomputationEnabled() const {
   return autoRecomputation != RecomputationType::None;
 }

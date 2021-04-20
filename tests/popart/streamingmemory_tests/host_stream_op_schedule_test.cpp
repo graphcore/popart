@@ -86,7 +86,7 @@ void createAndRun(bool hostIO = false) {
 
   SessionOptions opts;
 
-  opts.useOverlappedIO = hostIO;
+  opts.useHostCopyOps = hostIO;
 
   auto proto      = builder->getModelProto();
   auto modelProto = io::getModelFromString(proto);

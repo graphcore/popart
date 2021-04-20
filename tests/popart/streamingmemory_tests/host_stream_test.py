@@ -68,7 +68,7 @@ def create_model_pipelined(bufferStreams: bool = False,
 
     opts = popart.SessionOptions()
     opts.enableOutlining = True
-    opts.useOverlappedIO = bufferStreams
+    opts.useHostCopyOps = bufferStreams
 
     numIPUs = 1
 
@@ -138,8 +138,9 @@ def check_ops(session: popart.TrainingSession, bufferStreams: bool,
         assert len(hostLoadOps) == 0
 
 
+# Pipelining disabled until explicit pipelining supported (T35924)
 @tu.requires_ipu_model
-@pytest.mark.parametrize("enable_pipelining", [True, False])
+@pytest.mark.parametrize("enable_pipelining", [False])
 def test_basic_host_load_output(enable_pipelining: bool):
     """Run a simple model comparing outputs with buffer stream copies on and off.
     See T29603 for description of bufferStreamCopiesToDevice
@@ -219,7 +220,7 @@ def get_model(input_shape: List[int], weight_array: np.array,
     })
 
     opts = popart.SessionOptions()
-    opts.useOverlappedIO = buffer_streams
+    opts.useHostCopyOps = buffer_streams
     # TODO: Fix outlining
     opts.enableOutlining = False
 

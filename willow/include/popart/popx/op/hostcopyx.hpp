@@ -13,9 +13,10 @@ public:
   HostBaseOpx(Op *, Devicex *);
 
 protected:
-  void load(poplar::program::Sequence &, HostStreamId, const TensorId) const;
-  void store(poplar::program::Sequence &, HostStreamId, const TensorId) const;
-  void copyOutputToInput(poplar::program::Sequence &) const;
+  poplar::Tensor
+  load(poplar::program::Sequence &, const TensorId &, const TensorId &) const;
+  void
+  store(poplar::program::Sequence &, const TensorId &, const TensorId &) const;
 };
 
 class HostLoadOpx : public HostBaseOpx {

@@ -11,8 +11,8 @@ namespace popart {
 
 HostLoadOp::HostLoadOp(const OperatorIdentifier &_opid,
                        const Op::Settings &settings_,
-                       HostStreamId hsid_)
-    : Op(_opid, settings_), stream_id(hsid_) {}
+                       TensorId sid_)
+    : Op(_opid, settings_), hostStreamTensorId(sid_) {}
 
 std::unique_ptr<Op> HostLoadOp::clone() const {
   return std::make_unique<HostLoadOp>(*this);
@@ -20,7 +20,7 @@ std::unique_ptr<Op> HostLoadOp::clone() const {
 
 void HostLoadOp::appendOutlineAttributes(OpSerialiserBase &os) const {
   Op::appendOutlineAttributes(os);
-  os.appendAttribute("streamid", stream_id);
+  os.appendAttribute("hostStreamTensorId", hostStreamTensorId);
 }
 
 void HostLoadOp::setup() {
@@ -54,8 +54,8 @@ view::RegMap HostLoadOp::bwdRegMap(InIndex inIndex, OutIndex outIndex) const {
 
 HostStoreOp::HostStoreOp(const OperatorIdentifier &_opid,
                          const Op::Settings &settings_,
-                         HostStreamId hsid_)
-    : Op(_opid, settings_), stream_id(hsid_) {}
+                         TensorId sid_)
+    : Op(_opid, settings_), hostStreamTensorId(sid_) {}
 
 std::unique_ptr<Op> HostStoreOp::clone() const {
   return std::make_unique<HostStoreOp>(*this);
@@ -63,7 +63,7 @@ std::unique_ptr<Op> HostStoreOp::clone() const {
 
 void HostStoreOp::appendOutlineAttributes(OpSerialiserBase &os) const {
   Op::appendOutlineAttributes(os);
-  os.appendAttribute("streamid", stream_id);
+  os.appendAttribute("hostStreamTensorId", hostStreamTensorId);
 }
 
 void HostStoreOp::setup() { logging::op::debug("HostStoreOp setup started"); }
@@ -106,8 +106,8 @@ static OpDefinition hostLoadOpDef({OpDefinition::Inputs({{"X", T}}),
 static OpCreator<HostLoadOp> hostLoadOpCreator(
     OpDefinitions({{Onnx::CustomOperators::HostLoad, hostLoadOpDef}}),
     [](const OpCreatorInfo &info) {
-      int64_t streamid =
-          info.attributes.getAttribute<Attributes::Int>("streamid");
+      TensorId streamid =
+          info.attributes.getAttribute<Attributes::String>("streamid");
       return std::unique_ptr<HostLoadOp>(
           new HostLoadOp(info.opid, info.settings, streamid));
     },
@@ -120,8 +120,8 @@ static OpDefinition hostStoreOpDef({OpDefinition::Inputs({{"X", T}}),
 static OpCreator<HostStoreOp> hostStoreOpCreator(
     OpDefinitions({{Onnx::CustomOperators::HostStore, hostStoreOpDef}}),
     [](const OpCreatorInfo &info) {
-      int64_t streamid =
-          info.attributes.getAttribute<Attributes::Int>("streamid");
+      TensorId streamid =
+          info.attributes.getAttribute<Attributes::String>("streamid");
       return std::unique_ptr<HostStoreOp>(
           new HostStoreOp(info.opid, info.settings, streamid));
     },

@@ -254,7 +254,8 @@ private:
   // Task to create a poplar::Stream to write to poplar::Tensor
   // C++ Note: if a lambda function which modifies `this' is created
   // it must be const w.r.t this, even if it not run
-  PriTask streamFromHostTask(Tensor *);
+  PriTask streamFromHostTask(TensorId streamTensorId,
+                             std::vector<Tensor *> tensors);
   static TaskId streamFromHostTaskId(TensorId);
 
   // Task to append a Copy from poplar::Stream to poplar::Tensor
@@ -263,7 +264,9 @@ private:
   static TaskId fromHostTaskId(TensorId);
 
   // Task to create a poplar::Stream to write from poplar::Tensor to host
-  PriTask streamToHostTask(Tensor *, bool isAnchorStream);
+  PriTask streamToHostTask(TensorId streamTensorId,
+                           std::vector<Tensor *> tensors,
+                           bool isAnchorStream);
   static TaskId streamToHostTaskId(TensorId, bool isAnchorStream);
 
   poplar::program::Sequence &getAnchorReturnFragment(Tensor *tensor);
@@ -428,7 +431,7 @@ public:
 
   // Return the name of the task which initializes/creates a poplar::Tensor in a
   // poplar::Graph. This is NOT about creating a poplar::Program.
-  PriTaskDependency taskWhichCreates(TensorId);
+  PriTaskDependency taskWhichCreates(TensorId) const;
 
   // Return the name of the task which adds code which sets the initial
   // values of poplar::Tensor to a fragment. This IS about creating a

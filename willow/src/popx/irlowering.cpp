@@ -673,7 +673,7 @@ std::unique_ptr<Opx> IrLowering::createOpx(Op *op) {
 }
 
 // The Id of the task which adds a Tensor to a poplar::Graph
-PriTaskDependency IrLowering::taskWhichCreates(TensorId id) {
+PriTaskDependency IrLowering::taskWhichCreates(TensorId id) const {
   Tensor *tensor = ir().getTensor(id);
   if (!tensor->hasProducer()) {
     // Tensors without producers are created by special tasks
@@ -1232,13 +1232,24 @@ PriTask IrLowering::setInitTensorValTask(Tensor *tensor) {
           f};
 }
 
-PriTask IrLowering::streamFromHostTask(Tensor *tensor) {
-  auto f = [this, tensor]() {
+PriTask IrLowering::streamFromHostTask(TensorId streamTensorId,
+                                       std::vector<Tensor *> tensors) {
+  auto f = [this, streamTensorId, tensors]() {
     std::vector<VGraphId> ipus;
 
-    auto consumerOps = tensor->consumers.getOps();
+    std::vector<std::pair<Tensor *, Op *>> consumerOps;
 
-    for (auto *op : consumerOps) {
+    for (Tensor *t : tensors) {
+      auto consumers = t->consumers.getOps();
+      for (auto c : consumers) {
+        consumerOps.push_back({t, c});
+      }
+    }
+
+    for (auto &tensorAndOp : consumerOps) {
+      Tensor *tensor = tensorAndOp.first;
+      Op *op         = tensorAndOp.second;
+
       // Assume another op will copy the tensor for an ipucopy
       if (op->opid != Onnx::CustomOperators::IpuCopy) {
         auto &graph = getOpx(op->id)->graph();
@@ -1268,7 +1279,7 @@ PriTask IrLowering::streamFromHostTask(Tensor *tensor) {
           logging::devicex::debug(
               "Creating host-to-device FIFO {} copied to "
               "ipu:{} (mode: {}, memory: {}, buffering depth: {})",
-              tensor->id,
+              streamTensorId,
               vgid,
               (mode == poplar::ReplicatedStreamMode::REPLICATE) ? "replicate"
                                                                 : "broadcast",
@@ -1276,8 +1287,8 @@ PriTask IrLowering::streamFromHostTask(Tensor *tensor) {
               bufferingDepth);
 
           fromHostStreams.emplace(
-              tensor->id,
-              graph.addHostToDeviceFIFO(h2dId(tensor->id),
+              streamTensorId,
+              graph.addHostToDeviceFIFO(h2dId(streamTensorId),
                                         popType(tensor->info),
                                         tensor->info.nelms(),
                                         mode,
@@ -1291,21 +1302,22 @@ PriTask IrLowering::streamFromHostTask(Tensor *tensor) {
   };
 
   return {
-      0,                                // priority unimportant
-      streamFromHostTaskId(tensor->id), // name of this task
-      // poplar::Tensor must exist
-      {{initTensorTaskId(tensor->id), DependencyType::Tensor}},
+      0,                                    // priority unimportant
+      streamFromHostTaskId(streamTensorId), // name of this task
+      {{}},
       f // what to run when the task is executed
   };
 }
 
-PriTask IrLowering::streamToHostTask(Tensor *tensor, bool isAnchorStream) {
-  auto f = [this, tensor, isAnchorStream]() {
+PriTask IrLowering::streamToHostTask(TensorId streamTensorId,
+                                     std::vector<Tensor *> tensors,
+                                     bool isAnchorStream) {
+  auto f = [this, tensors, streamTensorId, isAnchorStream]() {
     logging::devicex::debug("Creating device-to-host FIFO for poplar::Tensor "
                             "{} (isAnchorStream = {}) with {} elements",
-                            tensor->id,
+                            streamTensorId,
                             isAnchorStream,
-                            tensor->info.nelms());
+                            tensors.front()->info.nelms());
 
     auto pToHostStreams = &toHostAnchorStreams;
     if (!isAnchorStream) {
@@ -1313,18 +1325,18 @@ PriTask IrLowering::streamToHostTask(Tensor *tensor, bool isAnchorStream) {
     }
 
     pToHostStreams->emplace(
-        tensor->id,
-        graph().addDeviceToHostFIFO(d2hId(tensor->id, isAnchorStream),
-                                    popType(tensor->info),
-                                    tensor->info.nelms()));
+        streamTensorId,
+        graph().addDeviceToHostFIFO(d2hId(streamTensorId, isAnchorStream),
+                                    popType(tensors.front()->info),
+                                    tensors.front()->info.nelms()));
     return SequenceMap();
   };
 
   return {
-      0,                                              // priority unimportant
-      streamToHostTaskId(tensor->id, isAnchorStream), // name of this task
-      {taskWhichCreates(tensor->id)}, // poplar::Tensor must exist
-      f                               // what to run when the task is executed,
+      0, // priority unimportant
+      streamToHostTaskId(streamTensorId, isAnchorStream), // name of this task
+      {},
+      f // what to run when the task is executed,
   };
 }
 
@@ -1590,10 +1602,17 @@ void IrLowering::addOpTasks(PriTasks &tasks) {
 
     auto task = opTask(op, priority, prevOpTaskId);
 
-    if (op->isConvertibleTo<HostLoadOp>()) {
-      auto hlTensor = op->outTensor(HostLoadOp::getLocalTensorOutIndex());
-      auto x        = PriTaskDependency(streamFromHostTaskId(hlTensor->id),
-                                 DependencyType::Tensor);
+    if (HostLoadOp *hlop = dynamic_cast<HostLoadOp *>(op)) {
+      auto x =
+          PriTaskDependency(streamFromHostTaskId(hlop->getHostStreamTensorId()),
+                            DependencyType::Tensor);
+      task.dependsOn.push_back(x);
+    }
+
+    if (HostStoreOp *hsop = dynamic_cast<HostStoreOp *>(op)) {
+      auto x = PriTaskDependency(
+          streamToHostTaskId(hsop->getHostStreamTensorId(), true),
+          DependencyType::Tensor);
       task.dependsOn.push_back(x);
     }
 
@@ -1931,8 +1950,10 @@ void IrLowering::growOpx(Opx *opx, SequenceMap::SequenceInterval seqInterval) {
                       regions.end(),
                       [](const view::Region &r) { return r.isEmpty(); })) {
         poplar::Tensor inTensor = opx->get(inputMap.second->id);
-        // Check that this isn't a phony tensor
-        if (inTensor.numElements() > 0) {
+        // Check that this isn't a phony tensor or a tensor with post-IR aliases
+        if (inTensor.numElements() > 0 &&
+            aliasZeroCopy->getActiveAliasedTensors({inputMap.second}, false)
+                .empty()) {
           // Clone the input tensor with its current values
           // to check if the original input tensor has been modified
           // during opx->grow(seq)
@@ -2318,25 +2339,7 @@ bool IrLowering::isReplicatedGraph() const {
 }
 
 unsigned IrLowering::getAccumulationFactor() const {
-
-  unsigned accumulationFactor = 1;
-  if (ir().getSessionOptions().enableGradientAccumulation) {
-    accumulationFactor =
-        static_cast<unsigned>(ir().getSessionOptions().accumulationFactor);
-  }
-
-  else {
-    // A check on user input consistency
-    if (static_cast<unsigned>(ir().getSessionOptions().accumulationFactor) >
-        1) {
-      throw error(
-          "enableGradientAccumulation is false, but accumulationFactor > 1. "
-          "Either enable gradient accumulation, or set the accumulation factor "
-          "to 1");
-    }
-  }
-
-  return accumulationFactor;
+  return ir().getSessionOptions().getAccumulationFactor();
 }
 
 PipelineInfo IrLowering::pipelineInfo() const {
@@ -2782,11 +2785,11 @@ void IrLowering::prepareGraph() {
 
     if (!ir().streamingIsDisabledForTensor(id)) {
       // 2
-      tasks.add(streamFromHostTask(tensor));
+      tasks.add(streamFromHostTask(tensor->id, {tensor}));
       // 3
       tasks.add(fromHostTask(tensor, progs.streamWeightsFromHostFragment()));
       // 4
-      tasks.add(streamToHostTask(tensor, false));
+      tasks.add(streamToHostTask(tensor->id, {tensor}, false));
       // 5
       tasks.add(toHostTask(
           tensor, progs.weightsToHostFragment(), ToHostStreamType::NonAnchor));
@@ -2826,6 +2829,16 @@ void IrLowering::prepareGraph() {
     }
   }
 
+  // Host load tensor stream tasks.
+  if (ir().getSessionOptions().useHostCopyOps) {
+    for (auto idAndTensors : ir().getHostLoadTensors()) {
+      logging::devicex::debug(
+          "Adding streamFromHostTask for host load stream tensor id {}",
+          idAndTensors.first);
+      tasks.add(streamFromHostTask(idAndTensors.first, idAndTensors.second));
+    }
+  }
+
   // stream-to-device tensors :
   // 1) make tensor
   // THEN
@@ -2833,31 +2846,22 @@ void IrLowering::prepareGraph() {
   // OR
   // 2) set initial value (if using synthetic data).
   for (auto id : ir().getTensorIds(TensorType::Stream)) {
-    Tensor *tensor = ir().getTensor(id);
+    if (!tasks.contains(streamFromHostTaskId(id))) {
+      Tensor *tensor = ir().getTensor(id);
 
-    // 1
-    tasks.add(initTensorTask(getInitTensorCreators(tensor)));
-    logging::devicex::debug("Adding initTensorTask for Stream {}", id);
-
-    // 2
-    if (ir().useSyntheticData()) {
-      tasks.add(setInitTensorValTask(tensor));
-    } else {
-      tasks.add(streamFromHostTask(tensor));
-    }
-  }
-
-  // Host load tensor stream tasks.
-  if (ir().getSessionOptions().useOverlappedIO) {
-    for (auto tensor : ir().getHostLoadTensors()) {
-      logging::devicex::debug("Adding initTensorTask for host load input {}",
-                              tensor->id);
+      // 1
       tasks.add(initTensorTask(getInitTensorCreators(tensor)));
-      logging::devicex::debug(
-          "Adding streamFromHostTask for host load input {}", tensor->id);
-      tasks.add(streamFromHostTask(tensor));
+      logging::devicex::debug("Adding initTensorTask for Stream {}", id);
+
+      // 2
+      if (ir().useSyntheticData()) {
+        tasks.add(setInitTensorValTask(tensor));
+      } else {
+        tasks.add(streamFromHostTask(tensor->id, {tensor}));
+      }
     }
   }
+
   // Init the random seed
   if (RandomSetup::hasRandomSeed(ir()) and !ir().useSyntheticData()) {
     auto seedTen = ir().getTensor(RandomSetup::getStreamedSeedTensorId());
@@ -2883,11 +2887,11 @@ void IrLowering::prepareGraph() {
   // note that the order in which tasks are added does not matter,
   // they will be topologically sorted before running
   if (ir().useSyntheticData() == false &&
-      !ir().getSessionOptions().useOverlappedIO) {
-    for (auto anchorId : ir().getDataFlow().anchors()) {
+      !ir().getSessionOptions().useHostCopyOps) {
+    for (auto anchorId : ir().getRootAnchors()) {
       Tensor *tensor = ir().getTensor(anchorId);
 
-      tasks.add(streamToHostTask(tensor, true));
+      tasks.add(streamToHostTask(tensor->id, {tensor}, true));
 
       // 2
       switch (ir().getDataFlow().art(anchorId).id()) {
@@ -2931,11 +2935,6 @@ void IrLowering::prepareGraph() {
       }
     }
 
-    // create Program to write optimizer tensors to device
-    for (auto tensor : ir().optimizerTensors()) {
-      tasks.add(fromHostTask(tensor, progs.streamOptimizerFromHostFragment()));
-    }
-
     for (Tensor *tensor : ir().dataStreamTensors()) {
       if (ir().getSessionOptions().enablePipelining) {
         PipelineStage ps = *tensor->consumers.findLowestPipelineStage();
@@ -2946,12 +2945,19 @@ void IrLowering::prepareGraph() {
         tasks.add(fromHostTask(tensor, sq));
       }
     }
-  } else if (ir().getSessionOptions().useOverlappedIO) {
-    for (auto anchorId : ir().getDataFlow().anchors()) {
-      Tensor *tensor = ir().getTensor(anchorId);
-
-      tasks.add(streamToHostTask(tensor, true));
+  } else if (ir().getSessionOptions().useHostCopyOps) {
+    for (auto idAndTensors : ir().getHostStoreTensors()) {
+      logging::devicex::debug(
+          "Adding streamToHostTask for host load stream tensor id {}",
+          idAndTensors.first);
+      tasks.add(
+          streamToHostTask(idAndTensors.first, idAndTensors.second, true));
     }
+  }
+
+  // create Program to write optimizer tensors to device
+  for (auto tensor : ir().optimizerTensors()) {
+    tasks.add(fromHostTask(tensor, progs.streamOptimizerFromHostFragment()));
   }
 
   addOpTasks(tasks);
@@ -3311,25 +3317,13 @@ PriTask IrLowering::fromHostTask(Tensor *tensor,
       }
     }
 
-    // If this tensor is the output from a host load op, we 'defer' adding the
-    // copy program here, and instead add it during hostload opx creation.
-    if (ir().getSessionOptions().useOverlappedIO &&
-        tensor->isHostLoadTensor()) {
-      logging::devicex::debug(
-          "Deffering adding copy program for {} until host load opx",
-          tensor->id);
-    } else {
-      logging::devicex::debug("Adding poplar::program::Copy from host " +
-                              tensor->id);
-
-      seqs.getSequence(&sq).add(
-          // Tensors with views: Use the view instead, so that e.g.
-          // replicated tensor sharding padding is ignored
-          poplar::program::Copy(fromHostStreams.at(tensor->id),
-                                tensors_.getView(tensor->id),
-                                doRearrangeOnHost(tensor),
-                                {"copyFromHost"}));
-    }
+    seqs.getSequence(&sq).add(
+        // Tensors with views: Use the view instead, so that e.g.
+        // replicated tensor sharding padding is ignored
+        poplar::program::Copy(fromHostStreams.at(tensor->id),
+                              tensors_.getView(tensor->id),
+                              doRearrangeOnHost(tensor),
+                              {"copyFromHost"}));
     return seqs;
   };
   return {priority,
@@ -3400,6 +3394,8 @@ PriTask IrLowering::toHostTask(Tensor *tensor,
 
   std::vector<PriTaskDependency> deps = {
       // the dependencies:
+      // poplar::Tensor exists
+      taskWhichCreates(tensor->id),
       // poplar::Stream creation task,
       {streamToHostTaskId(tensor->id, stype != ToHostStreamType::NonAnchor),
        DependencyType::Output},
@@ -3409,6 +3405,9 @@ PriTask IrLowering::toHostTask(Tensor *tensor,
   if (stype == ToHostStreamType::SumAnchor) {
     deps.push_back({anchorSumTaskId(tensor->id), DependencyType::Tensor});
   }
+
+  deps.push_back(taskWhichCreates(tensor->id));
+
   double priority;
   if (ir().getSessionOptions().groupHostSync) {
     priority = -std::numeric_limits<double>::max();
@@ -3455,6 +3454,8 @@ PriTask IrLowering::anchorReturnTypeSumTask(Tensor *tensor,
   return {+1e7, // Increments before any other host streams
           taskId,
           {// the dependencies:
+           // poplar::Tensor exists
+           taskWhichCreates(tensor->id),
            // poplar::Stream creation task,
            {streamToHostTaskId(tensor->id, true), DependencyType::Output},
            // poplar::Tensor has its final values
@@ -3607,6 +3608,8 @@ PriTask IrLowering::toHostEveryNBatchesTask(Tensor *tensor,
       +1e6, // writes to host: always as early as possible
       toHostTaskId(tensor->id, isAnchorStream),
       {// the dependencies:
+       // poplar::Tensor needs to exist
+       taskWhichCreates(tensor->id),
        // updating poplar::Tensor task,
        {updateBatchCountTaskId(), DependencyType::Output},
        // poplar::Stream creation task,
@@ -3621,7 +3624,7 @@ bool IrLowering::doRearrangeOnHost(Tensor *tensor) const {
     return true;
   } else if (tensor->tensorType() == TensorType::Stream) {
     return false;
-  } else if (ir().isAnchored(tensor->id)) {
+  } else if (ir().isAnchored(tensor->id) || ir().isRootAnchor(tensor->id)) {
     return ir().getSessionOptions().rearrangeAnchorsOnHost;
   }
   return true;
@@ -3631,7 +3634,7 @@ poplar::ReplicatedStreamMode
 IrLowering::getReplicatedStreamMode(Tensor *tensor) const {
   poplar::ReplicatedStreamMode mode = poplar::ReplicatedStreamMode::BROADCAST;
 
-  if (ir().getSessionOptions().useOverlappedIO) {
+  if (ir().getSessionOptions().useHostCopyOps) {
     switch (tensor->getReplicatedStreamMode()) {
     case Tensor::ReplicatedStreamMode::Broadcast:
       mode = poplar::ReplicatedStreamMode::BROADCAST;

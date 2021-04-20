@@ -170,22 +170,22 @@ std::vector<Tensor *> Ir::dataStreamTensors() const {
   return dsTensors;
 }
 
-std::vector<Tensor *> Ir::getHostLoadTensors() const {
-  std::vector<Tensor *> hlTensors;
+std::map<TensorId, std::vector<Tensor *>> Ir::getHostLoadTensors() const {
+  std::map<TensorId, std::vector<Tensor *>> hlTensors;
   for (auto op : getAllOps()) {
-    if (op->isConvertibleTo<HostLoadOp>()) {
-      hlTensors.push_back(
-          op->output->tensor(HostLoadOp::getLocalTensorOutIndex()));
+    if (HostLoadOp *hlop = dynamic_cast<HostLoadOp *>(op)) {
+      hlTensors[hlop->getHostStreamTensorId()].push_back(
+          hlop->output->tensor(HostLoadOp::getLocalTensorOutIndex()));
     }
   }
   return hlTensors;
 }
 
-std::vector<Tensor *> Ir::getHostStoreTensors() const {
-  std::vector<Tensor *> hsTensors;
+std::map<TensorId, std::vector<Tensor *>> Ir::getHostStoreTensors() const {
+  std::map<TensorId, std::vector<Tensor *>> hsTensors;
   for (auto op : getAllOps()) {
-    if (op->isConvertibleTo<HostStoreOp>()) {
-      hsTensors.push_back(
+    if (HostStoreOp *hsop = dynamic_cast<HostStoreOp *>(op)) {
+      hsTensors[hsop->getHostStreamTensorId()].push_back(
           op->input->tensor(HostStoreOp::getLocalTensorInIndex()));
     }
   }
@@ -279,6 +279,11 @@ void Ir::setDataFlow(const DataFlow &df) {
   } else {
     dataFlow = df;
   }
+
+  // Populate anchor remap
+  for (auto &anchor : dataFlow.anchors()) {
+    anchorRemap.insert(anchor, anchor);
+  }
 }
 
 bool Ir::virtualGraphsEnabled() const {
@@ -332,10 +337,10 @@ bool Ir::isPatternsLevel(const Patterns &p, PatternsLevel level) {
   }
 }
 
-void Ir::removeIsolatedTensors(bool retainCached) {
+void Ir::removeIsolatedTensors(bool retainIoTensors) {
   auto scopedStopwatch =
       timePartitionLogger().scopedStopwatch("Removing isolated Tensors");
-  getTensors().removeIsolated(retainCached);
+  getTensors().removeIsolated(retainIoTensors);
 }
 
 void Ir::setExecutionMode(const ExecutionMode &mode) { executionMode = mode; }
@@ -628,7 +633,8 @@ void Ir::verifyTensorProducerConnectivity() const {
       }
     }
 
-    if (!tensor->hasProducer() && tensor->tensorType() == TensorType::ActGrad) {
+    if (!(tensor->isRootAnchor() || tensor->hasProducer()) &&
+        tensor->tensorType() == TensorType::ActGrad) {
       throw error("Tensor {} is an actgrad tensor, but doesn't have a producer",
                   tensor->str());
     }
@@ -986,8 +992,9 @@ void Ir::prepareImpl(const IrBundle &gb, const HashesMap &cacheEntries) {
   // construct the forward pass from ONNX,
   constructForwards();
 
-  if (getSessionOptions().useOverlappedIO) {
-    applyTransform(HostIOSetup::id(), getMainGraph());
+  if (getSessionOptions().useHostCopyOps) {
+    // Add input HostLoad operations
+    applyTransform(HostIOSetup::id(1), getMainGraph());
   }
 
   // Check if cached Ir hash matches the current one and skip
@@ -1298,6 +1305,11 @@ void Ir::prepareImpl(const IrBundle &gb, const HashesMap &cacheEntries) {
                  getMainGraph());
 
   dotCheckpoint(DotCheck::PreAlias);
+
+  if (getSessionOptions().useHostCopyOps) {
+    // Add anchor HostStore operations
+    applyTransform(HostIOSetup::id(2), getMainGraph());
+  }
 
   // Merge remote loads/stores into exchanges
   for (auto &id_graph : graphs) {
@@ -1890,14 +1902,16 @@ void Ir::registerInputTensors() {
 }
 
 void Ir::validateAnchors() const {
-  for (TensorId id : dataFlow.anchors()) {
-    if (!getTensors().contains(id)) {
+
+  auto check = [this](TensorId id) {
+    auto allTensorIds = getAllTensorIds();
+    if (allTensorIds.find(id) == allTensorIds.end()) {
       std::stringstream ss;
       ss << "Anchor tensor `" << id << "' not in Ir Tensors. ";
       // add some trouble-shooting for a case I stumbled upon:
       if (id.find(reservedGradientPrefix()) != std::string::npos) {
         std::string degrad = getNonGradId(id);
-        if (getTensors().contains(degrad)) {
+        if (allTensorIds.find(degrad) != allTensorIds.end()) {
           ss << "\nInterestingly, `" << degrad << '\'' << " IS in tensors.\n";
           ss << "Note that not all tensors can have their gradients "
              << "anchored:\nif an activation tensor does not lead "
@@ -1905,10 +1919,17 @@ void Ir::validateAnchors() const {
         }
       } else {
         ss << "The tensors are:\n";
-        getTensors().append(ss);
+        ss << allTensorIds;
       }
       throw error(ss.str());
     }
+  };
+
+  for (auto ids : anchorRemap.leftMap()) {
+    // Check the anchor tensor providing the data
+    check(ids.first);
+    // Check the anchor root providing metainformation
+    check(ids.second);
   }
 }
 
@@ -2037,7 +2058,42 @@ bool Ir::isConsumedByOpOfType(TensorId tid, const OperatorIdentifier &opid) {
 }
 
 bool Ir::isAnchored(const TensorId &tenId) const {
-  return dataFlow.isAnchored(tenId);
+  return anchorRemap.hasLeft(tenId);
+}
+
+bool Ir::isRootAnchor(const TensorId &tenId) const {
+  return anchorRemap.hasRight(tenId);
+}
+
+std::set<TensorId> Ir::getAnchors() const {
+  std::set<TensorId> anchors;
+
+  for (auto &anchor : anchorRemap.leftMap()) {
+    anchors.insert(anchor.first);
+  }
+
+  return anchors;
+}
+
+std::set<TensorId> Ir::getRootAnchors() const {
+  std::set<TensorId> anchors;
+
+  for (auto &anchor : anchorRemap.rightMap()) {
+    anchors.insert(anchor.first);
+  }
+
+  return anchors;
+}
+
+void Ir::remapAnchor(const TensorId &from, const TensorId &to) {
+  if (!anchorRemap.hasLeft(from)) {
+    throw error("[Ir::remapAnchor] {} is not an anchor.", from);
+  }
+  anchorRemap.remapLeft(from, to);
+}
+
+const BiMap<TensorId, TensorId> &Ir::getAnchorRemap() const {
+  return anchorRemap;
 }
 
 bool Ir::streamingIsDisabledForTensor(const TensorId &tensorId) const {
@@ -3162,11 +3218,12 @@ std::vector<TensorId> Ir::getTensorIds(TensorType tensor_type) const {
 }
 
 Tensor *Ir::getTensor(const TensorId &tensor_id) const {
-  for (auto &id_graph : graphs) {
-    auto graph = id_graph.second.get();
-    if (graph->getTensors().contains(tensor_id)) {
-      return graph->getTensors().get(tensor_id);
-    }
+  TensorId id = tensor_id;
+
+  auto tensors = getAllTensors();
+  auto it      = tensors.find(id);
+  if (it != tensors.end()) {
+    return it->second;
   }
 
   throw error("No Ir::Tensor with TensorId '" + tensor_id +
@@ -3174,11 +3231,12 @@ Tensor *Ir::getTensor(const TensorId &tensor_id) const {
 }
 
 bool Ir::containsTensor(const TensorId &tensor_id) const {
-  for (auto &id_graph : graphs) {
-    auto graph = id_graph.second.get();
-    if (graph->getTensors().contains(tensor_id)) {
-      return true;
-    }
+  TensorId id = tensor_id;
+
+  auto tensors = getAllTensors();
+  auto it      = tensors.find(id);
+  if (it != tensors.end()) {
+    return true;
   }
   return false;
 }
@@ -3196,8 +3254,42 @@ std::vector<TensorId> Ir::getGraphInputIds() const {
   return result;
 }
 
+std::vector<TensorId> Ir::getGraphOutputIds() const {
+  std::vector<TensorId> result;
+  for (auto &id_graph : graphs) {
+    auto graph = id_graph.second.get();
+    auto &ids  = graph->getOutputIds();
+    result.reserve(result.size() + ids.size());
+    result.insert(result.end(), ids.begin(), ids.end());
+  }
+
+  return result;
+}
+
 const Tensors &Ir::getTensors() const { return getMainGraph().getTensors(); }
 Tensors &Ir::getTensors() { return getMainGraph().getTensors(); }
+
+std::map<TensorId, Tensor *> Ir::getAllTensors() const {
+  std::map<TensorId, Tensor *> allTensors;
+  for (const Graph *graph : getAllGraphs()) {
+    auto ids = graph->getTensors().getAllTensorIds();
+    for (auto id : ids) {
+      allTensors.insert({id, graph->getTensors().get(id)});
+    }
+  }
+  return allTensors;
+}
+
+std::set<TensorId> Ir::getAllTensorIds() const {
+  std::set<TensorId> allTensorIds;
+  for (const Graph *graph : getAllGraphs()) {
+    auto ids = graph->getTensors().getAllTensorIds();
+    for (auto id : ids) {
+      allTensorIds.insert(id);
+    }
+  }
+  return allTensorIds;
+}
 
 const Graph &Ir::getMainGraph() const { return getGraph(GraphId::root()); }
 Graph &Ir::getMainGraph() { return getGraph(GraphId::root()); }
@@ -3391,8 +3483,8 @@ std::size_t std::hash<popart::Ir>::operator()(const popart::Ir &ir) const {
   return seed;
 }
 
-std::size_t
-std::hash<popart::IrBundle>::operator()(const popart::IrBundle &bundle) const {
+std::size_t std::hash<popart::IrBundle>::
+operator()(const popart::IrBundle &bundle) const {
   size_t seed = 0;
 
   boost::hash_combine(

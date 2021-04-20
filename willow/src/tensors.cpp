@@ -100,11 +100,16 @@ std::vector<TensorId> Tensors::getAllTensorIds() const {
 }
 
 // remove all Tensors with no producer and no consumers
-void Tensors::removeIsolated(bool retainRemote) {
+void Tensors::removeIsolated(bool retainIoTensors) {
+  auto hostLoadTensors = graph.getIr().getHostLoadTensors();
   for (auto &id : getAllTensorIds()) {
     Tensor *tensor = M[id].get();
     if (tensor->hasProducer() == false && tensor->consumers.getTotal() == 0 &&
-        !(retainRemote && tensor->tensorLocationInfo.isRemote())) {
+        !(retainIoTensors &&
+          (tensor->tensorLocationInfo.isRemote() || tensor->isAnchored() ||
+           tensor->isRootAnchor() ||
+           (tensor->tensorType() == TensorType::Stream &&
+            hostLoadTensors.find(tensor->id) != hostLoadTensors.end())))) {
       M.erase(id);
       logging::ir::debug("Removing isolated Tensor {}", id);
     }
@@ -117,6 +122,16 @@ std::vector<Tensor *> Tensors::getOfType(TensorType type) const {
     if (id_pt.second->tensorType() == type) {
       ofType.push_back(id_pt.second.get());
     }
+  }
+  return ofType;
+}
+
+std::vector<Tensor *>
+Tensors::getOfType(const std::vector<TensorType> &tTypes) const {
+  std::vector<Tensor *> ofType;
+  for (auto type : tTypes) {
+    auto ofTypesTemp = getOfType(type);
+    ofType.insert(ofType.end(), ofTypesTemp.cbegin(), ofTypesTemp.cend());
   }
   return ofType;
 }

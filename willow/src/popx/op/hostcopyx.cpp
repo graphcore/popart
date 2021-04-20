@@ -12,50 +12,55 @@ namespace popx {
 
 HostBaseOpx::HostBaseOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {}
 
-void HostBaseOpx::load(poplar::program::Sequence &prog,
-                       HostStreamId hsid,
-                       TensorId tid) const {
+poplar::Tensor HostBaseOpx::load(poplar::program::Sequence &prog,
+                                 const TensorId &outTensorId,
+                                 const TensorId &streamTensorId) const {
   auto streams = dv_p->lowering().getFromHostStreams();
 
-  auto it = streams.find(tid);
+  auto it = streams.find(streamTensorId);
 
   if (it != streams.end()) {
-    logging::opx::debug("Found host stream in getFromHostStreams {}", tid);
-    auto stream      = streams.at(tid);
-    poplar::Tensor t = getOutTensor(
-        dynamic_cast<HostLoadOp *>(op_p)->getLocalTensorOutIndex());
+    logging::opx::debug("Found host stream in getFromHostStreams {}",
+                        streamTensorId);
+    auto stream      = streams.at(streamTensorId);
+    poplar::Tensor t = get(outTensorId);
 
     if (!t.isParallelWriteable()) {
       logging::opx::debug("Tensor {} is not a writable host load tensor "
                           " target, cloning. "
                           "The aliasing properties have changed implicitly.",
-                          tid);
+                          outTensorId);
       poplar::Tensor tw = graph().clone(
           t,
-          debugContext(tid + "_Writable"),
+          debugContext(outTensorId + "_Writable"),
           poplar::TensorCloneMethod::PRESERVE_ORDER_UNLESS_ALIASES);
-      poplar::program::Copy copy_prog(stream, tw, false, {tid + "_copy_clone"});
+      poplar::program::Copy copy_prog(
+          stream, tw, false, {outTensorId + "_copy_clone"});
       prog.add(copy_prog);
+
     } else {
-      poplar::program::Copy copy_prog(stream, t, false, {tid + "_copy"});
+      poplar::program::Copy copy_prog(
+          stream, t, false, {outTensorId + "_copy"});
       prog.add(copy_prog);
     }
+    return t;
 
   } else {
     throw error("Stream for from host op {}, tensor {} not found",
                 op_p->debugName(),
-                tid);
+                streamTensorId);
   }
+  return poplar::Tensor();
 }
 
 void HostBaseOpx::store(poplar::program::Sequence &prog,
-                        HostStreamId hsid,
-                        TensorId tid) const {
+                        const TensorId &inTensorId,
+                        const TensorId &streamTensorId) const {
   poplar::Tensor t;
   ToHostStreamType stype;
   auto &ir = op_p->getIr();
 
-  switch (ir.getDataFlow().art(tid).id()) {
+  switch (ir.getDataFlow().art(streamTensorId).id()) {
   // Copy program runs after every batch
   case (AnchorReturnTypeId::All): {
     stype = ToHostStreamType::NonSumAnchor;
@@ -87,11 +92,12 @@ void HostBaseOpx::store(poplar::program::Sequence &prog,
     streams = dv_p->lowering().getToHostWeightStreams();
   }
 
-  auto it = streams.find(tid);
+  auto it = streams.find(streamTensorId);
 
   if (it != streams.end()) {
-    logging::opx::debug("Found host stream in getFromHostStreams {}", tid);
-    auto stream = streams.at(tid);
+    logging::opx::debug("Found host stream in getFromHostStreams {}",
+                        streamTensorId);
+    auto stream = streams.at(streamTensorId);
     poplar::Tensor t =
         getInTensor(dynamic_cast<HostStoreOp *>(op_p)->getLocalTensorInIndex());
 
@@ -113,13 +119,13 @@ void HostBaseOpx::store(poplar::program::Sequence &prog,
     }
 
     poplar::program::Copy copy_prog(
-        anchorTensor, stream, false, {tid + "_copy"});
+        anchorTensor, stream, false, {inTensorId + "_copy"});
     prog.add(copy_prog);
 
   } else {
     throw error("Stream for to host op {}, tensor {} not found",
                 op_p->debugName(),
-                tid);
+                streamTensorId);
   }
 }
 
@@ -130,19 +136,19 @@ HostLoadOpx::HostLoadOpx(Op *op, Devicex *devicex) : HostBaseOpx(op, devicex) {
 void HostLoadOpx::grow(poplar::program::Sequence &prog) const {
   auto &hostLoadOp = getOp<HostLoadOp>();
 
-  // Always inplace
-  // setOutTensor(0, getInTensor(0));
-  TensorId outTensorId =
-      hostLoadOp.output->tensor(HostLoadOp::getLocalTensorOutIndex())->id;
+  TensorId inTensorId =
+      hostLoadOp.input->tensor(HostLoadOp::getLocalTensorInIndex())->id;
 
   logging::opx::debug(
       "[HostLoadOpx] Growing HostLoad for tensor {} -> {}, "
       "using Stream {}",
       hostLoadOp.input->tensor(HostLoadOp::getLocalTensorInIndex())->id,
       hostLoadOp.output->tensor(HostLoadOp::getLocalTensorOutIndex())->id,
-      hostLoadOp.getHostStreamId());
+      hostLoadOp.getHostStreamTensorId());
 
-  load(prog, hostLoadOp.getHostStreamId(), outTensorId);
+  auto t = load(prog, inTensorId, hostLoadOp.getHostStreamTensorId());
+
+  setOutTensor(HostLoadOp::getLocalTensorOutIndex(), t);
 
   if (hasInViewChangers(HostLoadOp::getLocalTensorInIndex())) {
     setOutViewChangers(HostLoadOp::getLocalTensorOutIndex(),
@@ -180,9 +186,9 @@ void HostStoreOpx::grow(poplar::program::Sequence &prog) const {
   logging::opx::debug(
       "[HostStoreOpx] Growing HostStore for tensor {} using Stream {}",
       hostStoreOp.input->tensor(HostStoreOp::getLocalTensorInIndex())->id,
-      hostStoreOp.getHostStreamId());
+      hostStoreOp.getHostStreamTensorId());
 
-  store(prog, hostStoreOp.getHostStreamId(), inTensorId);
+  store(prog, inTensorId, hostStoreOp.getHostStreamTensorId());
 }
 
 InputCreatorType HostStoreOpx::getInputCreatorType(InIndex index) const {

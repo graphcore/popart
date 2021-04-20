@@ -21,9 +21,7 @@ namespace popart {
  */
 class HostLoadOp : public Op {
 public:
-  HostLoadOp(const OperatorIdentifier &,
-             const Op::Settings &,
-             HostStreamId hsid_ = std::numeric_limits<uint64_t>::max() - 1);
+  HostLoadOp(const OperatorIdentifier &, const Op::Settings &, TensorId sid_);
 
   std::unique_ptr<Op> clone() const override;
   void setup() final;
@@ -41,20 +39,20 @@ public:
   bool isOutlineable() const final { return true; }
   void appendOutlineAttributes(OpSerialiserBase &) const override;
 
-  void setStreamId(HostStreamId stream_id_) { stream_id = stream_id_; }
-  HostStreamId getHostStreamId() const { return stream_id; }
+  void setHostStreamTensorId(TensorId stream_id_) {
+    hostStreamTensorId = stream_id_;
+  }
+  TensorId getHostStreamTensorId() const { return hostStreamTensorId; }
 
   bool canShard() const final { return false; }
 
 private:
-  HostStreamId stream_id;
+  TensorId hostStreamTensorId;
 };
 
 class HostStoreOp : public Op {
 public:
-  HostStoreOp(const OperatorIdentifier &,
-              const Op::Settings &,
-              HostStreamId hsid_ = std::numeric_limits<uint64_t>::max() - 1);
+  HostStoreOp(const OperatorIdentifier &, const Op::Settings &, TensorId sid_);
 
   std::unique_ptr<Op> clone() const override;
   void setup() final;
@@ -71,13 +69,17 @@ public:
   bool isOutlineable() const final { return true; }
   void appendOutlineAttributes(OpSerialiserBase &) const override;
 
-  void setStreamId(HostStreamId stream_id_) { stream_id = stream_id_; }
-  HostStreamId getHostStreamId() const { return stream_id; }
+  void setHostStreamTensorId(TensorId stream_id_) {
+    hostStreamTensorId = stream_id_;
+  }
+  TensorId getHostStreamTensorId() const { return hostStreamTensorId; }
 
   bool canShard() const final { return false; }
 
+  bool hasSideEffect() const override { return true; };
+
 private:
-  HostStreamId stream_id;
+  TensorId hostStreamTensorId;
 };
 } // namespace popart
 

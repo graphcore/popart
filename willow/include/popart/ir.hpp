@@ -6,6 +6,7 @@
 #include <memory>
 #include <set>
 
+#include <popart/bimap.hpp>
 #include <popart/dataflow.hpp>
 #include <popart/devicemanager.hpp>
 #include <popart/inputshapeinfo.hpp>
@@ -154,7 +155,7 @@ public:
 
   // Remove from the IR any tensors which are unconnected, i.e.
   // the have no producers or consumers
-  void removeIsolatedTensors(bool retainCached);
+  void removeIsolatedTensors(bool retainIoTensors);
 
   // Set which execution mode we are using
   void setExecutionMode(const ExecutionMode &mode);
@@ -200,8 +201,22 @@ public:
     return additionalModelProtoTensors;
   }
 
-  // if the tensor is returned to user (passes call to DataFlow).
+  // if the tensor provides data that is returned to the host
   bool isAnchored(const TensorId &) const;
+
+  // if the tensor was requested by the user as an anchor
+  bool isRootAnchor(const TensorId &) const;
+
+  // return all current anchors
+  std::set<TensorId> getAnchors() const;
+
+  // return all current root anchors
+  std::set<TensorId> getRootAnchors() const;
+
+  // remap anchor tensors (if the tensor to be copied to the host changes)
+  void remapAnchor(const TensorId &from, const TensorId &to);
+  const BiMap<TensorId, TensorId> &getAnchorRemap() const;
+
   bool streamingIsDisabledForTensor(const Tensor *) const;
   bool streamingIsDisabledForTensor(const TensorId &) const;
   bool storingIsDisabledForTensor(const Tensor *) const;
@@ -220,18 +235,18 @@ public:
   std::vector<Tensor *> optimizerTensors() const;
 
   /**
-   * The tensors produced by a host load op.
+   * The original input tensor ID (used to identify streams) and the tensors
+   * produced by associated HostLoadOp.
    *
    */
-  std::vector<Tensor *> getHostLoadTensors() const;
-  /**
-   * The tensors consumed by a host store op.
-   *
-   */
-  std::vector<Tensor *> getHostStoreTensors() const;
+  std::map<TensorId, std::vector<Tensor *>> getHostLoadTensors() const;
 
-  HostStreamId currentHostLoadId() const { return hostLoadTensorInfo.size(); }
-  HostStreamId currentHostStoreId() const { return hostStoreTensorInfo.size(); }
+  /**
+   * The original anchor tensor ID (used to identify streams) and the tensors
+   * consumed by associated HostStoreOp.
+   *
+   */
+  std::map<TensorId, std::vector<Tensor *>> getHostStoreTensors() const;
 
   // The input data tensors. label(s), image(s), etc. This does not include
   // optimizer stream tensors (they are not data)
@@ -301,6 +316,7 @@ public:
   Tensor *getTensor(const TensorId &) const;
   bool containsTensor(const TensorId &) const;
   std::vector<TensorId> getGraphInputIds() const;
+  std::vector<TensorId> getGraphOutputIds() const;
 
   const Graph &getMainGraph() const;
   Graph &getMainGraph();
@@ -457,9 +473,15 @@ private:
 
   void setIsPrepared();
 
-  // Accessors for the tensors
+  // Accessors for the tensors in the top-level graph
   const Tensors &getTensors() const;
   Tensors &getTensors();
+
+  // Get all tensors in all graphs
+  std::map<TensorId, Tensor *> getAllTensors() const;
+
+  // Get all tensorIds in all graphs
+  std::set<TensorId> getAllTensorIds() const;
 
   // modify the Ir using with pattern matching
   // Returns true if a change to the Ir was made.
@@ -576,19 +598,11 @@ private:
   std::map<RemoteBufferId, RemoteBufferInfo> remoteBufferInfoMap;
 
   /**
-   * A map of child -> parent where the parent tensor is the "original" input
-   * (e.g. data, labels), and child is the host load tensor created to recieve
-   * the stream instead of the input. See hostcopy.hpp for more info.
-   *
+   * Map between actual tensor that provides
+   * the expected data and user-defined anchor tensor,
+   * based on how the graph was transformed and the anchor return type
    */
-  std::map<TensorId, TensorId> hostLoadTensorInfo;
-
-  /**
-   * The same as hostLoadTensorInfo, but parent is the output tensor and
-   * children are the host store tensors.
-   *
-   */
-  std::map<TensorId, TensorId> hostStoreTensorInfo;
+  BiMap<TensorId, TensorId> anchorRemap;
 
   // Store a hash which can identify the Ir when deserializing
   // PopART state.

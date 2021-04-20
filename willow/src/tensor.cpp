@@ -750,10 +750,9 @@ bool Tensor::isWeightTensor() const {
   return true;
 }
 
-bool Tensor::isAnchored() const {
-  auto &anchors = graph.getIr().getDataFlow().anchors();
-  return std::find(anchors.begin(), anchors.end(), id) != anchors.end();
-}
+bool Tensor::isAnchored() const { return graph.getIr().isAnchored(id); }
+
+bool Tensor::isRootAnchor() const { return graph.getIr().isRootAnchor(id); }
 
 bool Tensor::anyAlias(std::function<bool(Tensor *)> predicate) const {
   // Fetch non-const pointer to "this"

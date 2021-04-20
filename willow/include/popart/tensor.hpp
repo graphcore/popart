@@ -198,6 +198,7 @@ public:
   // but not optimizer states or accumulators
   bool isWeightTensor() const;
   bool isAnchored() const;
+  bool isRootAnchor() const;
   bool hasTensorData() const;
   TensorData *tensorData();
   const TensorData *tensorData() const;

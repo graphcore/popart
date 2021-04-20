@@ -173,7 +173,7 @@ bool AutoVirtualGraph::apply(Graph &graph) const {
         return iter;
       };
 
-  if (ir.getSessionOptions().useOverlappedIO) {
+  if (ir.getSessionOptions().useHostCopyOps) {
     // If using overlapped IO, start at the init ops, as e don't have data
     // stream tensors.
     for (auto op : ir.getAllOps()) {
@@ -184,11 +184,13 @@ bool AutoVirtualGraph::apply(Graph &graph) const {
         startNewSubgraph(init->id);
       }
     }
-    for (auto *t : ir.getHostLoadTensors()) {
-      for (Op *consumer_op : t->consumers.getOps()) {
-        startNewSubgraph(consumer_op->id);
-        logging::transform::trace(
-            "Starting at {} {}.", consumer_op->debugName(), consumer_op->id);
+    for (auto &idAndTensors : ir.getHostLoadTensors()) {
+      for (Tensor *t : idAndTensors.second) {
+        for (Op *consumer_op : t->consumers.getOps()) {
+          startNewSubgraph(consumer_op->id);
+          logging::transform::trace(
+              "Starting at {} {}.", consumer_op->debugName(), consumer_op->id);
+        }
       }
     }
   }
