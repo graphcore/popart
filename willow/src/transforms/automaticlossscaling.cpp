@@ -148,19 +148,10 @@ TensorId getStatisticsAccumulatorTensorId() {
   return reservedAccumPrefix() + std::string("autoLossScaleStats");
 }
 
-Tensor *AutomaticLossScale::getInverseLossScaleTensor(const Graph &graph) {
+std::set<Tensor *>
+AutomaticLossScale::getInverseLossScaleTensors(const Graph &graph) {
   const Ir &ir               = graph.getIr();
   const Optimizer &optimizer = ir.getOptimizer();
-
-  // We assume that all VarUpdateOps consume a single compound scalar tensor
-  // that contains the inverse scale factor. So none of the atomic scalars
-  // that are combined to produce this compound scalar can have a per-weight
-  // specific value. Therefore we perform the (stricter than necessary) check
-  // that no specific optimizer values have been added.
-  if (optimizer.hasSpecific()) {
-    throw error("[AutomaticLossScale transform] Not compatible with "
-                "weight-specific optimizer values");
-  }
 
   // To ensure that the tensor we return from this method is the compound
   // scalar this is used to apply the inverse loss scale in all VarUpdateOps
@@ -169,63 +160,24 @@ Tensor *AutomaticLossScale::getInverseLossScaleTensor(const Graph &graph) {
   // per type.
   auto variables = graph.getTensors().getOfType(TensorType::Variable);
 
-  // Variable tensors that can not be used to determine the data type of the
-  // inverse loss scale tensor
-  auto isSpecialCaseVariable = [&](Tensor *variable) {
-    TensorId variableId = variable->id;
-
-    if (variableId == getStatisticsAccumulatorTensorId()) {
-      return true;
-    }
-
-    // Some optimizer state is stored in fp32, even if the initializers are
-    // stored in fp16
-    for (auto prefix : reservedOptimizerStatePrefixes()) {
-      if (variableId.find(prefix) != std::string::npos) {
-        return true;
-      }
-    }
-
-    return false;
-  };
-
-  Tensor *variableWithCorrectDtype = nullptr;
+  std::set<Tensor *> inverseLossScaleTensors;
   for (Tensor *variable : variables) {
-    if (!isSpecialCaseVariable(variable)) {
-      if (variableWithCorrectDtype &&
-          variable->info.dataType() !=
-              variableWithCorrectDtype->info.dataType()) {
-        throw error(
-            "[AutomaticLossScale transform] All Variable tensors must have "
-            "the same data type to ensure there is only one inverse loss "
-            "scale tensor used in the graph. Variable tensors have at least "
-            "2 data types. Variable tensor {} is of type {}, and variable "
-            "tensor {} is of type {}.",
-            variableWithCorrectDtype->id,
-            variableWithCorrectDtype->info.dataType(),
-            variable->id,
-            variable->info.dataType());
+    if (ir.tensorExistsInInitialisers(variable->id)) {
+      TensorId inverseLossScaleId =
+          optimizer.getInverseLossScalingTensorId(*variable);
+      if (graph.getTensors().contains(inverseLossScaleId)) {
+        inverseLossScaleTensors.insert(
+            graph.getTensors().get(inverseLossScaleId));
+      } else {
+        throw error("[AutomaticLossScale transform] Unable to find inverse "
+                    "loss scale tensor, '{}', in graph '{}'",
+                    inverseLossScaleId,
+                    graph.id);
       }
-      variableWithCorrectDtype = variable;
     }
   }
 
-  if (variableWithCorrectDtype == nullptr) {
-    throw error("[AutomaticLossScale transform] Unable to find the correct "
-                "data type of variable tensors");
-  }
-
-  TensorId inverseLossScaleId =
-      optimizer.getInverseLossScalingTensorId(*variableWithCorrectDtype);
-
-  if (graph.getTensors().contains(inverseLossScaleId)) {
-    return graph.getTensors().get(inverseLossScaleId);
-  } else {
-    throw error("[AutomaticLossScale transform] Unable to find inverse loss "
-                "scale tensor, '{}', in graph '{}'",
-                inverseLossScaleId,
-                graph.id);
-  }
+  return inverseLossScaleTensors;
 }
 
 bool AutomaticLossScale::apply(Graph &graph) const {
@@ -282,8 +234,9 @@ bool AutomaticLossScale::apply(Graph &graph) const {
 
   // Get the loss scale tensor and the inverse loss scale tensor:
   // the tensors to be updated
-  Tensor *lossScaleTensor        = getLossScaleTensor(graph);
-  Tensor *inverseLossScaleTensor = getInverseLossScaleTensor(graph);
+  Tensor *lossScaleTensor = getLossScaleTensor(graph);
+  std::set<Tensor *> inverseLossScaleTensors =
+      getInverseLossScaleTensors(graph);
 
   // Pass loss scale tensor and HistogramOp outputs into the LossScaleUpdateOp
   auto lossScaleUpdateOp =
@@ -416,7 +369,18 @@ bool AutomaticLossScale::apply(Graph &graph) const {
                                      lossScaleTensor->id + "_updated");
   lsMulOp->inheritPlacementAttributes(false);
   lsMulOp->setup();
+  lsMulOp->pruneable = false;
   lossScaleUpdateOps.push_back(lsMulOp);
+
+  // Ensure that all other consumers of loss scale tensor run before the loss
+  // scale update runs. The loss is scaled at the start of the backwards pass,
+  // and then inversely right before the they are applied as a weight update.
+  // The loss scale tensor must have the same value at these two points.
+  for (Op *consumer : lossScaleTensor->consumers.getOps()) {
+    if (consumer != lsMulOp) {
+      graph.topoCons->insert(consumer, lsMulOp);
+    }
+  }
 
   auto reciprocalOp = graph.createOp<ReciprocalOp>(
       Onnx::Operators::Reciprocal_6, Op::Settings(graph, ""));
@@ -427,31 +391,63 @@ bool AutomaticLossScale::apply(Graph &graph) const {
   reciprocalOp->inheritPlacementAttributes(false);
   reciprocalOp->setup();
   lossScaleUpdateOps.push_back(reciprocalOp);
-
   auto reciprocalLossScaleUpdateFactor =
       reciprocalOp->outTensor(ReciprocalOp::getOutIndex());
-  auto castOp = graph.createOp<CastOp>(Onnx::Operators::Cast_9,
-                                       inverseLossScaleTensor->info.dataType(),
-                                       Op::Settings(graph, ""));
-  castOp->connectInTensor(CastOp::getInIndex(),
-                          reciprocalLossScaleUpdateFactor->id);
-  castOp->createAndConnectOutTensor(
-      CastOp::getOutIndex(), lossScaleUpdateFactor->id + "_reciprocal_cast");
-  castOp->inheritPlacementAttributes(false);
-  castOp->setup();
-  lossScaleUpdateOps.push_back(castOp);
 
-  reciprocalLossScaleUpdateFactor = castOp->outTensor(CastOp::getOutIndex());
-  auto ilsMulOp = graph.createOp<MulLhsInplaceOp>(Op::Settings(graph, ""));
-  ilsMulOp->connectInTensor(MulLhsInplaceOp::getArg0InIndex(),
-                            inverseLossScaleTensor->id);
-  ilsMulOp->connectInTensor(MulLhsInplaceOp::getArg1InIndex(),
-                            reciprocalLossScaleUpdateFactor->id);
-  ilsMulOp->createAndConnectOutTensor(MulLhsInplaceOp::getOutIndex(),
-                                      inverseLossScaleTensor->id + "_updated");
-  ilsMulOp->inheritPlacementAttributes(false);
-  ilsMulOp->setup();
-  lossScaleUpdateOps.push_back(ilsMulOp);
+  // Sort inverse loss scale tensors by data type
+  std::map<DataType, std::vector<Tensor *>> inverseLossScaleTensorsMap;
+  for (Tensor *tensor : inverseLossScaleTensors) {
+    const auto iter = inverseLossScaleTensorsMap.find(tensor->info.dataType());
+    if (iter == inverseLossScaleTensorsMap.end()) {
+      inverseLossScaleTensorsMap.emplace(tensor->info.dataType(),
+                                         std::vector<Tensor *>{tensor});
+    } else {
+      iter->second.push_back(tensor);
+    }
+  }
+
+  for (auto dtype_tensors : inverseLossScaleTensorsMap) {
+    DataType dtype                = dtype_tensors.first;
+    std::vector<Tensor *> tensors = dtype_tensors.second;
+
+    Tensor *finalReciprocalLossScaleUpdateFactor = nullptr;
+    if (dtype != reciprocalLossScaleUpdateFactor->info.dataType()) {
+      auto castOp = graph.createOp<CastOp>(
+          Onnx::Operators::Cast_9, dtype, Op::Settings(graph, ""));
+      castOp->connectInTensor(CastOp::getInIndex(),
+                              reciprocalLossScaleUpdateFactor->id);
+      castOp->createAndConnectOutTensor(
+          CastOp::getOutIndex(), reciprocalLossScaleUpdateFactor->id + "_cast");
+      castOp->inheritPlacementAttributes(false);
+      castOp->setup();
+      lossScaleUpdateOps.push_back(castOp);
+      finalReciprocalLossScaleUpdateFactor =
+          castOp->outTensor(CastOp::getOutIndex());
+    } else {
+      finalReciprocalLossScaleUpdateFactor = reciprocalLossScaleUpdateFactor;
+    }
+
+    for (Tensor *inverseLossScaleTensor : tensors) {
+      auto ilsMulOp = graph.createOp<MulLhsInplaceOp>(Op::Settings(graph, ""));
+      ilsMulOp->connectInTensor(MulLhsInplaceOp::getArg0InIndex(),
+                                inverseLossScaleTensor->id);
+      ilsMulOp->connectInTensor(MulLhsInplaceOp::getArg1InIndex(),
+                                finalReciprocalLossScaleUpdateFactor->id);
+      ilsMulOp->createAndConnectOutTensor(MulLhsInplaceOp::getOutIndex(),
+                                          inverseLossScaleTensor->id +
+                                              "_updated");
+      ilsMulOp->inheritPlacementAttributes(false);
+      ilsMulOp->setup();
+      ilsMulOp->pruneable = false;
+      lossScaleUpdateOps.push_back(ilsMulOp);
+
+      for (Op *consumer : inverseLossScaleTensor->consumers.getOps()) {
+        if (consumer != ilsMulOp) {
+          graph.topoCons->insert(consumer, ilsMulOp);
+        }
+      }
+    }
+  }
 
   // Case 2 or 3, execute the loss scale update in the outer fragment
   if (doingGradientAccumulation(graph)) {
@@ -467,24 +463,6 @@ bool AutomaticLossScale::apply(Graph &graph) const {
       op->settings.executionContext = ExecutionContext::Normal;
     }
   }
-
-  // Ensure that all other consumers of loss scale tensor run before the loss
-  // scale update runs. The loss is scaled at the start of the backwards pass,
-  // and then inversely right before the they are applied as a weight update.
-  // The loss scale tensor must have the same value at these two points.
-  for (Op *consumer : lossScaleTensor->consumers.getOps()) {
-    if (consumer != lsMulOp) {
-      graph.topoCons->insert(consumer, lsMulOp);
-    }
-  }
-  lsMulOp->pruneable = false;
-
-  for (Op *consumer : inverseLossScaleTensor->consumers.getOps()) {
-    if (consumer != ilsMulOp) {
-      graph.topoCons->insert(consumer, ilsMulOp);
-    }
-  }
-  ilsMulOp->pruneable = false;
 
   return true;
 }

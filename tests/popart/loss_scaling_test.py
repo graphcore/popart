@@ -193,45 +193,47 @@ def getModelProto(shard=False, pipeline=False):
     """
     Create a simple model:
 
-    in0 -- Matmul -- t0 -- Relu -- t1 -- Conv -- t1 -- NllLoss -- loss
-    w0  ---'                              /             /
-    w1  ---------------------------------       label -
+    in0 - Matmul - t0 - Relu - t1 - Batchnorm - t2 - Conv -- t3 -- NllLoss -- loss
+    w0  --'                                          /             /
+    w1  ---------------------------------------------       label -
 
     whose graph after auto-grad will contain tensors whose statistics the
     automatic loss scale transform will track to adjust the loss scale factor
     """
     builder = popart.Builder()
 
-    t_shape = [2, 1, 2, 2]
+    t_shape = [2, 4, 2, 2]
     t0 = builder.addInputTensor("FLOAT16", t_shape)
     t_data = np.random.rand(*t_shape).astype(np.float16)
     t1 = builder.addInitializedInputTensor(t_data)
     t2 = builder.addInitializedInputTensor(t_data)
-    mm = builder.aiOnnx.matmul([t0, t1])
-    r = builder.aiOnnx.relu([mm])
-    conv = builder.aiOnnx.conv([r, t2])
-    rs = builder.reshape_const(builder.aiOnnx, [conv], [2, 2])
-    sf = builder.aiOnnx.softmax([rs])
-    label_shape = [2]
-    labels = builder.addInputTensor("INT32", label_shape)
-    loss = builder.aiGraphcore.nllloss([sf, labels])
 
-    if shard:
-        builder.virtualGraph(mm, 0)
-        builder.virtualGraph(r, 0)
-        builder.virtualGraph(conv, 1)
-        builder.virtualGraph(rs, 1)
-        builder.virtualGraph(sf, 1)
-        builder.virtualGraph(loss, 1)
-    if pipeline:
-        builder.pipelineStage(mm, 0)
-        builder.pipelineStage(r, 0)
-        builder.pipelineStage(conv, 1)
-        builder.pipelineStage(rs, 1)
-        builder.pipelineStage(sf, 1)
-        builder.pipelineStage(loss, 1)
+    with builder.virtualGraph(0), builder.pipelineStage(0):
+        mm = builder.aiOnnx.matmul([t0, t1])
+        r = builder.aiOnnx.relu([mm])
 
-    return loss, builder.getModelProto(), t0, t_shape, labels, label_shape
+        bn_data = np.random.rand(4).astype(np.float16)
+        bias = builder.addInitializedInputTensor(bn_data)
+        scale = builder.addInitializedInputTensor(bn_data)
+        mean = builder.addInitializedInputTensor(bn_data)
+        var = builder.addInitializedInputTensor(bn_data)
+        bn, o_mean, o_var, o_smean, o_svar = builder.aiOnnx.batchnormalization(
+            [r, scale, bias, mean, var], 5, 1e-05, 0.1)
+
+    with builder.virtualGraph(1), builder.pipelineStage(1):
+        conv = builder.aiOnnx.conv([bn, t2])
+        rs = builder.reshape_const(builder.aiOnnx, [conv], [2, 2])
+        sf = builder.aiOnnx.softmax([rs])
+        label_shape = [2]
+        labels = builder.addInputTensor("INT32", label_shape)
+        loss = builder.aiGraphcore.nllloss([sf, labels])
+
+    # Pick some weight tensors that we want to set specific optimizer tensor
+    # values for
+    specifics = [scale, bias]
+
+    return loss, builder.getModelProto(
+    ), t0, t_shape, labels, label_shape, specifics
 
 
 def test_auto_loss_scaling_expected_loss_scale_tensor_values():
@@ -247,7 +249,7 @@ def test_auto_loss_scaling_expected_loss_scale_tensor_values():
     opts = popart.SessionOptions()
     opts.enableAutomaticLossScaling = True
 
-    loss, proto, t0, t_shape, label, label_shape = getModelProto()
+    loss, proto, t0, t_shape, label, label_shape, _ = getModelProto()
     bps = 4
 
     loss_scale_id = "lossScaling_FLOAT16_updated"
@@ -332,39 +334,6 @@ def test_auto_loss_scaling_and_continuous_update_pipelining():
     )
 
 
-def test_auto_loss_scaling_sgd_with_specific_optimizer_values():
-    """
-    Create a Session with automatic loss scaling and an optimizer with a
-    weight-specific optimizer value, and see that an incompatibility error is
-    thrown.
-    """
-    builder = popart.Builder()
-    t0 = builder.addInputTensor("FLOAT", [2, 2])
-    t1_data = np.random.rand(2, 2).astype(np.float32)
-    t1 = builder.addInitializedInputTensor(t1_data)
-    mm0 = builder.aiOnnx.matmul([t0, t1])
-    loss = builder.aiGraphcore.identityloss([mm0])
-
-    optimizer = popart.SGD({
-        "lossScaling": (2, False),
-        "defaultLearningRate": (0.2, False)
-    })
-    optimizer.insertSpecific(t1, {"learningRate": (0.1, False)})
-
-    opts = popart.SessionOptions()
-    opts.enableAutomaticLossScaling = True
-
-    with pytest.raises(popart.popart_exception) as e_info:
-        session = popart.TrainingSession(builder.getModelProto(),
-                                         deviceInfo=tu.create_test_device(),
-                                         dataFlow=popart.DataFlow(1, [loss]),
-                                         loss=loss,
-                                         optimizer=optimizer,
-                                         userOptions=opts)
-    assert e_info.value.args[0].endswith(
-        "Not compatible with weight-specific optimizer values")
-
-
 def test_auto_loss_scaling_with_mixed_precision_trackable_tensors():
     """
     Create a Session with automatic loss scaling and a model that contains
@@ -433,7 +402,7 @@ def run_automatic_loss_scaling_comparison_test(tmpdir,
     with auto loss scaling (ALS) enabled are identical to those with ALS
     disabled.
     """
-    loss, proto, t0, t_shape, label, label_shape = getModelProto(
+    loss, proto, t0, t_shape, label, label_shape, specifics = getModelProto(
         shard=shard, pipeline=pipeline)
     bps = 4
     step_size = bps
@@ -464,6 +433,9 @@ def run_automatic_loss_scaling_comparison_test(tmpdir,
 
     init_optimizer, new_optimizer = optimizer
     init_ls = init_optimizer.getLossScalingVal()
+    for specific in specifics:
+        init_optimizer.insertSpecific(specific, {"weightDecay": (0.01, False)})
+        new_optimizer.insertSpecific(specific, {"weightDecay": (0.01, False)})
 
     ref_session = popart.TrainingSession(
         fnModel=proto,
@@ -521,78 +493,81 @@ def run_automatic_loss_scaling_comparison_test(tmpdir,
     compare_weights(ref_session, als_session, tmpdir)
 
 
-optimizers = []
+def getOptimizers():
+    optimizers = []
 
-# SGD
-sgd0 = popart.SGD({
-    "lossScaling": (10.0, False),
-    "defaultMomentum": (0.5, False),
-    "defaultVelocityScaling": (0.5, False),
-    "defaultDampening": (0.5, False),
-    "defaultWeightDecay": (0.5, False)
-})
-sgd1 = popart.SGD({
-    "lossScaling": (0.2, False),
-    "defaultMomentum": (0.2, False),
-    "defaultVelocityScaling": (0.2, False),
-    "defaultDampening": (0.2, False),
-    "defaultWeightDecay": (0.2, False)
-})
-optimizers.append([sgd0, sgd1])
+    # SGD
+    sgd0 = popart.SGD({
+        "lossScaling": (10.0, False),
+        "defaultMomentum": (0.5, False),
+        "defaultVelocityScaling": (0.5, False),
+        "defaultDampening": (0.5, False),
+        "defaultWeightDecay": (0.5, False)
+    })
+    sgd1 = popart.SGD({
+        "lossScaling": (0.2, False),
+        "defaultMomentum": (0.2, False),
+        "defaultVelocityScaling": (0.2, False),
+        "defaultDampening": (0.2, False),
+        "defaultWeightDecay": (0.2, False)
+    })
+    optimizers.append([sgd0, sgd1])
 
-# Adam
-adam0 = popart.Adam({
-    "lossScaling": (10.0, False),
-    "defaultLearningRate": (0.5, False),
-    "defaultWeightDecay": (0.5, False),
-    "defaultBeta1": (0.5, False),
-    "defaultBeta2": (0.5, False),
-    "defaultEps": (0.5, False)
-})
-adam1 = popart.Adam({
-    "lossScaling": (0.2, False),
-    "defaultLearningRate": (0.2, False),
-    "defaultWeightDecay": (0.2, False),
-    "defaultBeta1": (0.2, False),
-    "defaultBeta2": (0.2, False),
-    "defaultEps": (0.2, False)
-})
-optimizers.append([adam0, adam1])
+    # Adam
+    adam0 = popart.Adam({
+        "lossScaling": (10.0, False),
+        "defaultLearningRate": (0.5, False),
+        "defaultWeightDecay": (0.5, False),
+        "defaultBeta1": (0.5, False),
+        "defaultBeta2": (0.5, False),
+        "defaultEps": (0.5, False)
+    })
+    adam1 = popart.Adam({
+        "lossScaling": (0.2, False),
+        "defaultLearningRate": (0.2, False),
+        "defaultWeightDecay": (0.2, False),
+        "defaultBeta1": (0.2, False),
+        "defaultBeta2": (0.2, False),
+        "defaultEps": (0.2, False)
+    })
+    optimizers.append([adam0, adam1])
 
-# Adaptive
-adaptive0 = popart.Adaptive({
-    "lossScaling": (10.0, False),
-    "defaultLearningRate": (0.5, False),
-    "defaultAlpha": (0.5, False),
-    "defaultMomentum": (0.5, False),
-    "defaultWeightDecay": (0.5, False),
-    "defaultEps": (0.5, False)
-})
-adaptive1 = popart.Adaptive({
-    "lossScaling": (0.2, False),
-    "defaultLearningRate": (0.2, False),
-    "defaultAlpha": (0.2, False),
-    "defaultMomentum": (0.2, False),
-    "defaultWeightDecay": (0.2, False),
-    "defaultEps": (0.2, False)
-})
-optimizers.append([adaptive0, adaptive1])
+    # Adaptive
+    adaptive0 = popart.Adaptive({
+        "lossScaling": (10.0, False),
+        "defaultLearningRate": (0.5, False),
+        "defaultAlpha": (0.5, False),
+        "defaultMomentum": (0.5, False),
+        "defaultWeightDecay": (0.5, False),
+        "defaultEps": (0.5, False)
+    })
+    adaptive1 = popart.Adaptive({
+        "lossScaling": (0.2, False),
+        "defaultLearningRate": (0.2, False),
+        "defaultAlpha": (0.2, False),
+        "defaultMomentum": (0.2, False),
+        "defaultWeightDecay": (0.2, False),
+        "defaultEps": (0.2, False)
+    })
+    optimizers.append([adaptive0, adaptive1])
+
+    return optimizers
 
 
-@pytest.mark.parametrize("optimizer", optimizers)
+@pytest.mark.parametrize("optimizer", getOptimizers())
 def test_auto_loss_scaling_identical_weight_updates(tmpdir, optimizer):
     run_automatic_loss_scaling_comparison_test(tmpdir, optimizer)
 
 
 @tu.requires_ipu_model
-@pytest.mark.parametrize("optimizer", optimizers)
+@pytest.mark.parametrize("optimizer", getOptimizers())
 def test_auto_loss_scaling_identical_weight_updates_sharded(tmpdir, optimizer):
     run_automatic_loss_scaling_comparison_test(tmpdir,
                                                shard=True,
                                                optimizer=optimizer)
 
 
-@pytest.mark.parametrize("optimizer", optimizers)
+@pytest.mark.parametrize("optimizer", getOptimizers())
 def test_auto_loss_scaling_identical_weight_updates_grad_accumulation(
         tmpdir, optimizer):
     run_automatic_loss_scaling_comparison_test(tmpdir,
@@ -601,7 +576,7 @@ def test_auto_loss_scaling_identical_weight_updates_grad_accumulation(
 
 
 @tu.requires_ipu_model
-@pytest.mark.parametrize("optimizer", optimizers)
+@pytest.mark.parametrize("optimizer", getOptimizers())
 def test_auto_loss_scaling_identical_weight_updates_grad_accumulation_shard(
         tmpdir, optimizer):
     run_automatic_loss_scaling_comparison_test(tmpdir,
@@ -611,7 +586,7 @@ def test_auto_loss_scaling_identical_weight_updates_grad_accumulation_shard(
 
 
 @tu.requires_ipu_model
-@pytest.mark.parametrize("optimizer", optimizers)
+@pytest.mark.parametrize("optimizer", getOptimizers())
 def test_auto_loss_scaling_identical_weight_updates_grad_accumulation_pipeline(
         tmpdir, optimizer):
     run_automatic_loss_scaling_comparison_test(tmpdir,
@@ -637,7 +612,7 @@ def test_loss_scale_updates_with_grad_accumulation_correctness():
     opts.enableGradientAccumulation = True
     opts.accumulationFactor = accumulation_factor
 
-    loss, proto, t0, t_shape, label, label_shape = getModelProto()
+    loss, proto, t0, t_shape, label, label_shape, _ = getModelProto()
     bps = 4
 
     accl_stats_id = "Accum___autoLossScaleStats"

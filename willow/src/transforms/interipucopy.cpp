@@ -354,9 +354,11 @@ bool InterIpuCopy::apply(Graph &graph) const {
         bool copiesLossScaleTensor =
             copyOp->inTensor(0) ==
             AutomaticLossScale::getLossScaleTensor(graph);
+        auto inverseLossScaleTensors =
+            AutomaticLossScale::getInverseLossScaleTensors(graph);
         bool copiesInverseLossScaleTensor =
-            copyOp->inTensor(0) ==
-            AutomaticLossScale::getInverseLossScaleTensor(graph);
+            inverseLossScaleTensors.find(copyOp->inTensor(0)) !=
+            inverseLossScaleTensors.end();
         if (copiesLossScaleTensor || copiesInverseLossScaleTensor) {
           // If auto loss scaling is enabled, and the copy op copies the loss
           // scale tensor, or the inverse loss scale tensor, then it must

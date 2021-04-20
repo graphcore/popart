@@ -193,7 +193,7 @@ public:
 
   static Tensor *getLossScaleTensor(const Graph &graph);
 
-  static Tensor *getInverseLossScaleTensor(const Graph &graph);
+  static std::set<Tensor *> getInverseLossScaleTensors(const Graph &graph);
 };
 
 } // namespace popart
