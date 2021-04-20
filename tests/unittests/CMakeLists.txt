@@ -34,7 +34,13 @@ add_popart_cpp_unit_test(unittest_graphutils unittest_graphutils.cpp TEST_UTILS 
 add_popart_cpp_unit_test(unittest_utils unittest_utils.cpp TEST_UTILS trompeloeil)
 add_popart_cpp_unit_test(unittest_Session_createFromIr session_createFromIr.cpp)
 
-add_popart_cpp_unit_test(unittest_irquerier testutil/unittest_irquerier.cpp TEST_UTILS ir-query-test-util trompeloeil)
+add_popart_cpp_unit_test(unittest_graphtestwrapper testutil/irquery/unittest_graphtestwrapper.cpp TEST_UTILS ir-query-test-util trompeloeil)
+add_popart_cpp_unit_test(unittest_irtestwrapper testutil/irquery/unittest_irtestwrapper.cpp TEST_UTILS ir-query-test-util trompeloeil)
+add_popart_cpp_unit_test(unittest_opstestwrapper testutil/irquery/unittest_opstestwrapper.cpp TEST_UTILS ir-query-test-util trompeloeil)
+add_popart_cpp_unit_test(unittest_optestwrapper testutil/irquery/unittest_optestwrapper.cpp TEST_UTILS ir-query-test-util trompeloeil)
+add_popart_cpp_unit_test(unittest_tensorindexmaptestwrapper testutil/irquery/unittest_tensorindexmaptestwrapper.cpp TEST_UTILS ir-query-test-util trompeloeil)
+add_popart_cpp_unit_test(unittest_tensorindextestwrapper testutil/irquery/unittest_tensorindextestwrapper.cpp TEST_UTILS ir-query-test-util trompeloeil)
+add_popart_cpp_unit_test(unittest_tensortestwrapper testutil/irquery/unittest_tensortestwrapper.cpp TEST_UTILS ir-query-test-util trompeloeil)
 
 add_popart_cpp_unit_test(unittest_autodiff transforms/unittest_autodiff.cpp TEST_UTILS ir-query-test-util)
 add_popart_cpp_unit_test(unittest_backwardsgraphcreatorhelper transforms/autodiff/unittest_backwardsgraphcreatorhelper.cpp)

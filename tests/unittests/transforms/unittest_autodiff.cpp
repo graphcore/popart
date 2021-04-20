@@ -16,10 +16,10 @@
 #include <popart/tensornames.hpp>
 #include <popart/transforms/autodiff.hpp>
 
-#include <testutil/irquery/irquerier.hpp>
+#include <testutil/irquery/irquery.hpp>
 
 using namespace popart;
-using namespace popart::testing;
+using namespace popart::irquery;
 
 // In tests below we use TestOps to build up a popart::Ir object. We apply
 // the autodiff transform on this Ir and check that the resulting Ir is
@@ -111,11 +111,20 @@ void printIr(Ir &ir) {
   std::cout << ss.str() << std::endl;
 }
 
+/**
+ * Helper function that gets the unique index of an input.
+ */
+InIndex getUniqInIndex(Op *op, const TensorId &id) {
+  const auto &indices = op->input->indices(op->getGraph().getTensors().get(id));
+  BOOST_REQUIRE(indices.size() == 1);
+  return indices.at(0);
+};
+
 } // namespace
 
 BOOST_AUTO_TEST_CASE(autodiff_0) {
 
-  // Check that autodiff adds parts of the IR marked below.
+  // Check that autodiff (`bool apply(Ir&)`) adds parts of the IR marked below.
   //
   // This is a very basic IR that comprises of only a main graph with one simple
   // test op.
@@ -149,7 +158,6 @@ BOOST_AUTO_TEST_CASE(autodiff_0) {
   // - _g0    is an arbitrary edge gradient TensorId.
 
   Ir ir;
-  IrQuerier q;
 
   // First we build up the Ir's left hand side as per the diagram above. Note
   // that we avoid using the builder to do this (which is used in most tests)
@@ -186,46 +194,37 @@ BOOST_AUTO_TEST_CASE(autodiff_0) {
   ir.applyTransform(Autodiff::id(), ir.getMainGraph());
 
   // Now check that autodiff added the right things.
-  //
-  // Start by finding the SimpleTestGradOp that consumed "t0" and
+
+  // Start by getting a test wrapper for the main graph.
+  IrTestWrapper tw_ir{ir};
+  auto tw_mainGraph = tw_ir.hasGraph(ir.getMainGraph().id, Require::MustBeTrue);
+
+  // Now find the SimpleTestGradOp that consumed "t0" and
   // getGradId("t1") and produces _g0.
-  auto simpleTestGradOp = q.graphHasOp(
-      ir.getMainGraph(),
-      [&](Op *op) {
-        return (dynamic_cast<SimpleTestGradOp *>(op) != nullptr) &&
-               (q.opHasInputIdAt(op, 0, getGradId("t1")) &&
-                (q.opHasInputIdAt(op, 1, "t0")) && (q.opHasOutputAt(op, 0)));
+  auto tw_simpleTestGradOp = tw_mainGraph->ops().hasOp<SimpleTestGradOp>(
+      [&](auto &tw_op) -> bool {
+        return (tw_op.inputs().hasIdAtIndex(0, getGradId("t1")) &&
+                (tw_op.inputs().hasIdAtIndex(1, "t0")) &&
+                (tw_op.outputs().hasIndex(0)));
       },
       Require::MustBeTrue);
 
-  // NOTE: The next three tests are redundant as they should already hold by
-  // construction of the predicate above. We test them anyway to illustrate how
-  // you could use them.
-
-  // Check the TestGradOp has #0 input for getGradId("t1").
-  q.opHasInputIdAt(simpleTestGradOp, 0, getGradId("t1"), Require::MustBeTrue);
-  // Now, check the TestGradOp we found has a #1 input for t0.
-  q.opHasInputIdAt(simpleTestGradOp, 1, "t0", Require::MustBeTrue);
-  // Now, check the TestGradOp has a #0 output to some tensor.
-  q.opHasOutputAt(simpleTestGradOp, 0, Require::MustBeTrue);
-
-  // Figure out what _g0 is.
-  auto _g0 = simpleTestGradOp->outId(0);
+  // Now, get the value of _g0.
+  auto _g0 =
+      tw_simpleTestGradOp->outputs().hasIndex(0, Require::MustBeTrue)->id();
 
   // Find the gradsum op that consumes _g0 and produces getGradId("t0").
-  auto gradSumOp = q.graphHasOp(
-      ir.getMainGraph(),
-      [&](Op *op) {
-        return (dynamic_cast<SumOp *>(op) != nullptr) &&
-               (q.opHasExactInputIds(op, {_g0})) &&
-               (q.opHasOutputIdAt(op, 0, getGradId("t0")));
+  auto tw_gradSumOp = tw_mainGraph->ops().hasOp<SumOp>(
+      [&](auto &tw_op) -> bool {
+        return (tw_op.inputs().hasExactIds({_g0})) &&
+               (tw_op.outputs().hasIdAtIndex(0, getGradId("t0")));
       },
       Require::MustBeTrue);
 }
 
 BOOST_AUTO_TEST_CASE(autodiff_1) {
 
-  // Check that autodiff adds parts of the IR marked below.
+  // Check that autodiff (`bool apply(Ir&)`) adds parts of the IR marked below.
   //
   // This test case comprises a subgraph with two test ops and a main graph
   // with one callop to the subgraph.
@@ -292,7 +291,6 @@ BOOST_AUTO_TEST_CASE(autodiff_1) {
   // - _g0, _g1, _g2   are arbitrary edge gradient TensorIds.
 
   Ir ir;
-  IrQuerier q;
 
   // Tensor info for tensors in the IR.
   TensorInfo tInfo{DataType::INT32, {}};
@@ -354,119 +352,117 @@ BOOST_AUTO_TEST_CASE(autodiff_1) {
   // Now apply the transform.
   ir.applyTransform(Autodiff::id(), ir.getMainGraph());
 
-  // First we check the main graph. Start by checking the main graph now has a
-  // CallOp with "main_in" and getGradId("main_out") inputs.
-  auto bwdCallOp = dynamic_cast<CallOp *>(q.graphHasOp(
-      ir.getMainGraph(),
-      [&](Op *op) -> bool {
-        return (dynamic_cast<CallOp *>(op) != nullptr) &&
-               (q.opHasInputIds(op, {"main_in", getGradId("main_out")})) &&
-               (q.opHasOutputAt(op, 0));
-      },
-      Require::MustBeTrue));
+  // First we check the main graph. We start by getting a test wrapper for the
+  // main graph.
+  IrTestWrapper tw_ir{ir};
+  auto tw_mainGraph = tw_ir.hasGraph(ir.getMainGraph().id, Require::MustBeTrue);
 
-  // Get the #0 output of bwdCallOp (_g0).
-  auto _g0 = bwdCallOp->outId(0);
-
-  // Find the gradsum op op that takes _g0.
-  auto gradSumOp0 = q.graphHasOp(
-      ir.getMainGraph(),
-      [&](Op *op) {
-        return (dynamic_cast<SumOp *>(op) != nullptr) &&
-               (q.opHasExactInputIds(op, {_g0})) &&
-               (q.opHasOutputIdAt(op, 0, getGradId("main_in")));
+  // Start by checking the main graph now has a CallOp with "main_in" and
+  // getGradId("main_out") inputs. This is the backward call op.
+  auto tw_bwdCallOp = tw_mainGraph->ops().hasOp<CallOp>(
+      [&](auto &tw_op) -> bool {
+        return (tw_op.inputs().containsIds(
+                   {"main_in", getGradId("main_out")})) &&
+               (tw_op.outputs().hasIndex(0));
       },
       Require::MustBeTrue);
 
-  // Now it's time to find and check subgraph "_k".
-  Graph &_k          = bwdCallOp->getCalledGraph();
-  auto _k_a_in       = _k.addScope("a_in");
-  auto _k_a_tmp      = _k.addScope("a_tmp");
-  auto _k_a_in_grad  = _k.addScope(getGradId("a_in"));
-  auto _k_a_tmp_grad = _k.addScope(getGradId("a_tmp"));
-  auto _k_a_out_grad = _k.addScope(getGradId("a_out"));
+  // We will the actual CallOp* to get the called graph ID.
+  auto bwdCallOp = tw_bwdCallOp->unwrap();
+
+  // Get the #0 output of bwdCallOp (_g0).
+  auto _g0 = tw_bwdCallOp->outputs().hasIndex(0)->id();
+
+  // Find the gradsum op op that takes _g0.
+  auto gradSumOp0 = tw_mainGraph->ops().hasOp<SumOp>(
+      [&](auto &tw_op) -> bool {
+        return (tw_op.inputs().hasExactIds({_g0})) &&
+               (tw_op.outputs().hasIdAtIndex(0, getGradId("main_in")));
+      },
+      Require::MustBeTrue);
+
+  // Now it's time to find and check subgraph bwdGraph with id "_k".
+  GraphId _k       = bwdCallOp->getCalledGraph().id;
+  auto tw_bwdGraph = tw_ir.hasGraph(_k, Require::MustBeTrue);
+
+  // OK, create expected tensor IDs.
+  auto &bwdGraph     = tw_bwdGraph->unwrap().get();
+  auto _k_a_in       = bwdGraph.addScope("a_in");
+  auto _k_a_tmp      = bwdGraph.addScope("a_tmp");
+  auto _k_a_in_grad  = bwdGraph.addScope(getGradId("a_in"));
+  auto _k_a_tmp_grad = bwdGraph.addScope(getGradId("a_tmp"));
+  auto _k_a_out_grad = bwdGraph.addScope(getGradId("a_out"));
 
   // We don't actually know the values of indices _x and _y, let's determine
   // them. We know CallOps always have contiguous indices from 0 and we know
   // we have two inputs, so it's just working out which is 0 and which is 1.
 
-  auto getUniqInIndex = [](Op *op, const TensorId &id) -> InIndex {
-    // NOTE: Refactor to be reusable if used in multiple tests.
-    const auto &indices =
-        op->input->indices(op->getGraph().getTensors().get(id));
-    BOOST_REQUIRE(indices.size() == 1);
-    return indices.at(0);
-  };
-
   // Get the input index of "main_in" in bwdCallOp.
-  auto _x = getUniqInIndex(bwdCallOp, "main_in");
+  auto _x =
+      tw_bwdCallOp->inputs().hasId("main_in", Require::MustBeTrue)->index();
   // Get the input index of getGradId("main_out").
-  auto _y = getUniqInIndex(bwdCallOp, getGradId("main_out"));
+  auto _y = tw_bwdCallOp->inputs()
+                .hasId(getGradId("main_out"), Require::MustBeTrue)
+                ->index();
 
-  // Check the subgraphs inputs/ouputs.
-  BOOST_REQUIRE(_k.getInputIds().size() == 2);
-  BOOST_REQUIRE(_k.getInputIds()[_x] == _k_a_in);
-  BOOST_REQUIRE(_k.getInputIds()[_y] == _k_a_out_grad);
-  BOOST_REQUIRE(_k.getOutputIds().size() == 1);
-  BOOST_REQUIRE(_k.getOutputIds()[0] == _k_a_in_grad);
+  // Check the subgraphs inputs/outputs.
+  tw_bwdGraph->inputs().hasExactIds({_k_a_in, _k_a_out_grad});
+  tw_bwdGraph->inputs().hasIdAtIndex(_x, _k_a_in);
+  tw_bwdGraph->inputs().hasIdAtIndex(_y, _k_a_out_grad);
+  tw_bwdGraph->outputs().hasExactIds({_k_a_in_grad});
+  tw_bwdGraph->outputs().hasIdAtIndex(0, _k_a_in_grad);
 
-  // Find the forward SimpleTestOp clone in subgraph _k that consumes
+  // Find the forward SimpleTestOp clone in subgraph bwdGraph that consumes
   // _k/"a_in" and produces _k/"a_tmp".
-  auto simpleTestOpClone = q.graphHasOp(
-      _k,
-      [&](Op *op) {
-        return (dynamic_cast<SimpleTestOp *>(op) != nullptr) &&
-               (q.opHasInputIdAt(op, 0, _k_a_in)) &&
-               (q.opHasOutputIdAt(op, 0, _k_a_tmp));
+  auto tw_simpleTestOpClone = tw_bwdGraph->ops().hasOp<SimpleTestOp>(
+      [&](auto &tw_op) -> bool {
+        return (tw_op.inputs().hasIdAtIndex(0, _k_a_in)) &&
+               (tw_op.outputs().hasIdAtIndex(0, _k_a_tmp));
       },
       Require::MustBeTrue);
 
   // Find the SimpleTestGradOp in subgraph _k that consumes _k/"a_tmp" and
   // _k/getGradId("a_out") and produces _g1.
-  auto simpleTestGradOp1 = q.graphHasOp(
-      _k,
-      [&](Op *op) {
-        return (dynamic_cast<SimpleTestGradOp *>(op) != nullptr) &&
-               (q.opHasInputIdAt(op, 0, _k_a_out_grad)) &&
-               (q.opHasInputIdAt(op, 1, _k_a_tmp)) && (q.opHasOutputAt(op, 0));
+  auto tw_simpleTestGradOp1 = tw_bwdGraph->ops().hasOp<SimpleTestGradOp>(
+      [&](auto &tw_op) -> bool {
+        return (tw_op.inputs().hasIdAtIndex(0, _k_a_out_grad)) &&
+               (tw_op.inputs().hasIdAtIndex(1, _k_a_tmp)) &&
+               (tw_op.outputs().hasIndex(0));
       },
       Require::MustBeTrue);
 
   // Figure out what _g1 is.
-  auto _g1 = simpleTestGradOp1->outId(0);
+  auto _g1 =
+      tw_simpleTestGradOp1->outputs().hasIndex(0, Require::MustBeTrue)->id();
 
   // Find the gradsum op in subgraph _k that consumes _g1 and produces
   // _k/getGradId("a_tmp").
-  auto gradSumOp1 = q.graphHasOp(
-      _k,
-      [&](Op *op) {
-        return (dynamic_cast<SumOp *>(op) != nullptr) &&
-               (q.opHasExactInputIds(op, {_g1})) &&
-               (q.opHasOutputIdAt(op, 0, _k_a_tmp_grad));
+  auto tw_gradSumOp1 = tw_bwdGraph->ops().hasOp<SumOp>(
+      [&](auto &tw_op) -> bool {
+        return (tw_op.inputs().hasExactIds({_g1})) &&
+               (tw_op.outputs().hasIdAtIndex(0, _k_a_tmp_grad));
       },
       Require::MustBeTrue);
 
   // Find the SimpleTestGradOp in subgraph _k that consumes
   // _k/"a_in" and _k/getGradId("a_tmp") and produces _g2.
-  auto simpleTestGradOp2 = q.graphHasOp(
-      _k,
-      [&](Op *op) {
-        return (dynamic_cast<SimpleTestGradOp *>(op) != nullptr) &&
-               (q.opHasInputIdAt(op, 0, _k_a_tmp_grad)) &&
-               (q.opHasInputIdAt(op, 1, _k_a_in)) && (q.opHasOutputAt(op, 0));
+  auto tw_simpleTestGradOp2 = tw_bwdGraph->ops().hasOp<SimpleTestGradOp>(
+      [&](auto &tw_op) -> bool {
+        return (tw_op.inputs().hasIdAtIndex(0, _k_a_tmp_grad)) &&
+               (tw_op.inputs().hasIdAtIndex(1, _k_a_in)) &&
+               (tw_op.outputs().hasIndex(0));
       },
       Require::MustBeTrue);
 
-  // Figure what _g2 is.
-  auto _g2 = simpleTestGradOp2->outId(0);
+  // Figure out what _g2 is.
+  auto _g2 =
+      tw_simpleTestGradOp2->outputs().hasIndex(0, Require::MustBeTrue)->id();
 
   // Find the gradsum op that takes _g2 and produces _k/getGradId("a_in").
-  auto gradSumOp2 = q.graphHasOp(
-      _k,
-      [&](Op *op) {
-        return (dynamic_cast<SumOp *>(op) != nullptr) &&
-               (q.opHasExactInputIds(op, {_g2})) &&
-               (q.opHasOutputIdAt(op, 0, _k_a_in_grad));
+  auto tw_gradSumOp2 = tw_bwdGraph->ops().hasOp<SumOp>(
+      [&](auto &tw_op) -> bool {
+        return (tw_op.inputs().hasExactIds({_g2})) &&
+               (tw_op.outputs().hasIdAtIndex(0, _k_a_in_grad));
       },
       Require::MustBeTrue);
 }

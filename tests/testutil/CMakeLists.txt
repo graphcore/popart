@@ -69,11 +69,27 @@ set(irquery_test_util_public_headers_dir
 )
 
 set(irquery_test_util_sources
-    ${irquery_test_util_src_dir}/irquerier.cpp
+    ${irquery_test_util_src_dir}/graphtestwrapper.cpp
+    ${irquery_test_util_src_dir}/irtestwrapper.cpp
+    ${irquery_test_util_src_dir}/opstestwrapper.cpp
+    ${irquery_test_util_src_dir}/tensorindexmaptestwrapper.cpp
+    ${irquery_test_util_src_dir}/tensorindextestwrapper.cpp
+    ${irquery_test_util_src_dir}/tensortestwrapper.cpp
+    ${irquery_test_util_src_dir}/testfailuretriggerer.cpp
 )
 
 set(irquery_test_util_public_headers
-    ${irquery_test_util_public_headers_dir}/irquerier.hpp
+    ${irquery_test_util_public_headers_dir}/irquery.hpp
+    ${irquery_test_util_public_headers_dir}/require.hpp
+    ${irquery_test_util_public_headers_dir}/graphtestwrapper.hpp
+    ${irquery_test_util_public_headers_dir}/irtestwrapper.hpp
+    ${irquery_test_util_public_headers_dir}/opstestwrapper.hpp
+    ${irquery_test_util_public_headers_dir}/optestwrapper.hpp
+    ${irquery_test_util_public_headers_dir}/tensorindexmaptestwrapper.hpp
+    ${irquery_test_util_public_headers_dir}/tensorindextestwrapper.hpp
+    ${irquery_test_util_public_headers_dir}/tensortestwrapper.hpp
+    ${irquery_test_util_public_headers_dir}/testfailuretriggerer.hpp
+    ${irquery_test_util_public_headers_dir}/testwrapper.hpp
 )
 
 add_library(ir-query-test-util SHARED
