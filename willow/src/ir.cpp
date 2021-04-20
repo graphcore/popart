@@ -2822,6 +2822,19 @@ unsigned Ir::getMaxVirtualGraphId() const {
 OpId Ir::getFinalLossOpId() const { return finalLossOpId; }
 
 std::vector<const Graph *> Ir::getGraphSchedule() const {
+
+  auto sorted = getGraphSchedule(getMainGraph().id);
+
+  if (sorted.size() != graphs.size()) {
+    throw error("Unable to schedule all graphs. {} != {}",
+                sorted.size(),
+                graphs.size());
+  }
+
+  return sorted;
+}
+
+std::vector<const Graph *> Ir::getGraphSchedule(GraphId root) const {
   std::vector<const Graph *> sorted;
   std::set<const Graph *> seen;
 
@@ -2843,13 +2856,7 @@ std::vector<const Graph *> Ir::getGraphSchedule() const {
     }
   };
 
-  scheduleGraph(&getMainGraph());
-
-  if (sorted.size() != graphs.size()) {
-    throw error("Unable to schedule all graphs. {} != {}",
-                sorted.size(),
-                graphs.size());
-  }
+  scheduleGraph(&getGraph(root));
 
   return sorted;
 }

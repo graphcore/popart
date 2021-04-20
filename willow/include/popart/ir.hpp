@@ -260,6 +260,7 @@ public:
 
   // Simple recursive depth first search
   std::vector<const Graph *> getGraphSchedule() const;
+  std::vector<const Graph *> getGraphSchedule(GraphId root) const;
 
   // Essentially Kahn's algorithm (1962),
   // https://en.wikipedia.org/wiki/Topological_sorting

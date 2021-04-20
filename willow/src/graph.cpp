@@ -674,7 +674,10 @@ std::string Graph::getGraphString() const {
 }
 
 // Copy all contents from another graph to this graph
-void Graph::copyFrom(const Graph &other) {
+void Graph::copyFrom(const Graph &other,
+                     CopyInputMarkings copyInputMarkings,
+                     CopyOutputMarkings copyOutputMarkings) {
+
   // clone all the ops
   std::map<Op *, Op *> cloneMap;
   for (auto &id_op : other.getOps()) {
@@ -696,14 +699,18 @@ void Graph::copyFrom(const Graph &other) {
 
     auto newId = this->addScope(other.removeScope(id));
 
-    auto tensorClone = tensor->clone(*this);
-    tensorClone->id  = newId;
-    if (tensor->hasTensorData()) {
-      tensorClone->setTensorData(tensor->info, tensor->tensorData()->data());
+    if (!getTensors().contains(newId)) {
+      auto tensorClone = tensor->clone(*this);
+      tensorClone->id  = newId;
+      if (tensor->hasTensorData()) {
+        tensorClone->setTensorData(tensor->info, tensor->tensorData()->data());
+      }
+      this->getTensors().moveIntoTensors(std::move(tensorClone));
+      auto tensorClonePtr = this->getTensors().get(newId);
+      tensorMap.insert({tensor, tensorClonePtr});
+    } else {
+      tensorMap.insert({tensor, getTensors().get(newId)});
     }
-    this->getTensors().moveIntoTensors(std::move(tensorClone));
-    auto tensorClonePtr = this->getTensors().get(newId);
-    tensorMap.insert({tensor, tensorClonePtr});
   }
 
   // hook up op inputs and outputs
@@ -728,17 +735,21 @@ void Graph::copyFrom(const Graph &other) {
     }
   }
 
-  // add graph inputs and outputs
-  for (auto &id : other.getInputIds()) {
-    auto unscopedId = other.removeScope(id);
-    auto newId      = this->addScope(unscopedId);
-    this->markAsInput(newId);
+  if (copyInputMarkings == CopyInputMarkings::Yes) {
+    // add graph inputs and outputs
+    for (auto &id : other.getInputIds()) {
+      auto unscopedId = other.removeScope(id);
+      auto newId      = this->addScope(unscopedId);
+      this->markAsInput(newId);
+    }
   }
 
-  for (auto &id : other.getOutputIds()) {
-    auto unscopedId = other.removeScope(id);
-    auto newId      = this->addScope(unscopedId);
-    this->markAsOutput(newId);
+  if (copyOutputMarkings == CopyOutputMarkings::Yes) {
+    for (auto &id : other.getOutputIds()) {
+      auto unscopedId = other.removeScope(id);
+      auto newId      = this->addScope(unscopedId);
+      this->markAsOutput(newId);
+    }
   }
 }
 

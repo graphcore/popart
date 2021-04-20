@@ -9,6 +9,7 @@
 #include <popart/names.hpp>
 
 #include <transforms/autodiff/autodiffirinterface.hpp>
+#include <transforms/autodiff/gradgrowergraph.hpp>
 #include <transforms/autodiff/gradgrowerloss.hpp>
 #include <transforms/autodiff/gradgrowerop.hpp>
 #include <transforms/autodiff/gradgrowersumop.hpp>
@@ -32,14 +33,15 @@ public:
  * GradGrowerMainGraph instance.
  */
 class GradGrowerMainGraph : public GradGrowerMainGraphInterface,
-                            private GradGrower {
+                            private AutodiffHelper {
 public:
   // Constructor.
   GradGrowerMainGraph(
       AutodiffIrInterface &dep,
       std::unique_ptr<GradGrowerOpInterface> gradOpGrower,
       std::unique_ptr<GradGrowerLossInterface> gradLossGrower,
-      std::unique_ptr<GradGrowerSumOpInterface> gradSumOpGrower);
+      std::unique_ptr<GradGrowerSumOpInterface> gradSumOpGrower,
+      std::unique_ptr<GradGrowerGraphInterface> gradGraphGrower);
 
   // Grow backwards pass.
   virtual void growGradMainGraph();
@@ -51,6 +53,8 @@ private:
   std::unique_ptr<GradGrowerLossInterface> gradLossGrower;
   // Helper class to grow grad sum ops.
   std::unique_ptr<GradGrowerSumOpInterface> gradSumOpGrower;
+  // Helper class to grow graphs.
+  std::unique_ptr<GradGrowerGraphInterface> gradGraphGrower;
 };
 
 } // namespace popart

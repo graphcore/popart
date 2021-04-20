@@ -10,7 +10,7 @@
 namespace popart {
 
 BackwardsGraphCreator::BackwardsGraphCreator(AutodiffIrInterface &dep)
-    : GradGrower(dep) {}
+    : AutodiffHelper(dep) {}
 
 BwdGraphInfo BackwardsGraphCreator::createBackwardsGraph(
     const Graph &fwdGraph,
@@ -25,8 +25,24 @@ BwdGraphInfo BackwardsGraphCreator::createBackwardsGraph(
   }
 
   Graph &bwdGraph = dep.get().createGraph(bwdGraphId);
-  BackwardsGraphCreatorHelper helper(fwdGraph, bwdGraph, calledGraphsGradInfo);
-  return helper.populateBwdGraph();
+  BackwardsGraphCreatorHelper helper(fwdGraph, bwdGraph);
+  return helper.populateBwdGraph(calledGraphsGradInfo);
+}
+
+GraphId
+BackwardsGraphCreator::genNewBwdGraphId(const GraphId &fwdGraphId) const {
+
+  GraphId result = GraphId(logging::format("{}_bwd", fwdGraphId));
+
+  static int64_t counter = 0ll;
+  while (dep.get().hasGraph(result)) {
+    // Graph already contains result id, try a new one. This could be expensive
+    // if repeated a lot of times, but generally there is no need to create
+    // the autodiff of a graph twice, so this probably won't be used much.
+    result = GraphId(logging::format("{}_bwd_{}", fwdGraphId, counter++));
+  }
+
+  return result;
 }
 
 } // namespace popart

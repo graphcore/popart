@@ -2,7 +2,7 @@
 #ifndef GUARD_NEURALNET_BACKWARDS_GRAPH_CREATOR_HPP
 #define GUARD_NEURALNET_BACKWARDS_GRAPH_CREATOR_HPP
 
-#include <transforms/autodiff/gradgrower.hpp>
+#include <transforms/autodiff/autodiffhelper.hpp>
 #include <popart/bwdgraphinfo.hpp>
 
 namespace popart {
@@ -16,7 +16,7 @@ class AutodiffIrInterface;
 /**
  * Class that can create backwards graphs.
  **/
-class BackwardsGraphCreator : public GradGrower {
+class BackwardsGraphCreator : public AutodiffHelper {
 public:
   /**
    * Constructor.
@@ -36,6 +36,11 @@ public:
   createBackwardsGraph(const Graph &fwdGraph,
                        const GraphId &bwdGraphId,
                        const FwdGraphToBwdGraphInfo &calledGraphsGradInfo);
+
+  /**
+   * Create a new, unused ID for the backwards graph.
+   **/
+  GraphId genNewBwdGraphId(const GraphId &fwdGraphId) const;
 };
 
 } // namespace popart

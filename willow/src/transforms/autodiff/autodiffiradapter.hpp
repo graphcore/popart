@@ -21,6 +21,8 @@ public:
   virtual Graph &getMainGraph() override;
   // Get schedule order of graphs where parent comes before child.
   virtual std::vector<const Graph *> getGraphSchedule() override;
+  // Get schedule order of graphs where parent comes before child.
+  virtual std::vector<const Graph *> getGraphSchedule(GraphId root) override;
   // Determine if graph exists.
   virtual bool hasGraph(const GraphId &) const override;
   // Get graph.

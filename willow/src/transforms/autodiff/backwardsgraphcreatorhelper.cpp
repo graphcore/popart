@@ -16,16 +16,14 @@
 
 namespace popart {
 
-BackwardsGraphCreatorHelper::BackwardsGraphCreatorHelper(
-    const Graph &fwdGraph_,
-    Graph &bwdGraph_,
-    const FwdGraphToBwdGraphInfo &calledGraphsGradInfo_)
-    : fwdGraph(fwdGraph_), bwdGraph(bwdGraph_),
-      calledGraphsGradInfo(calledGraphsGradInfo_), gradOpStore() {}
+BackwardsGraphCreatorHelper::BackwardsGraphCreatorHelper(const Graph &fwdGraph_,
+                                                         Graph &bwdGraph_)
+    : fwdGraph(fwdGraph_), bwdGraph(bwdGraph_), gradOpStore() {}
 
-BwdGraphInfo BackwardsGraphCreatorHelper::populateBwdGraph() {
+BwdGraphInfo BackwardsGraphCreatorHelper::populateBwdGraph(
+    const FwdGraphToBwdGraphInfo &calledGraphsGradInfo) {
 
-  growGradGraph();
+  growGradGraph(calledGraphsGradInfo);
 
   // Remove fwd ops from bwdGraph that we don't need.
   doPrune(bwdGraph);
@@ -69,18 +67,28 @@ BwdGraphInfo BackwardsGraphCreatorHelper::makeGradInfo() {
   return BwdGraphInfo{bwdGraph.id, expectedInputs, expectedOutputs};
 }
 
-void BackwardsGraphCreatorHelper::growGradGraph() {
+void BackwardsGraphCreatorHelper::growGradGraph(
+    const FwdGraphToBwdGraphInfo &calledGraphsGradInfo) {
   // clone ops from the fwdGraph into the bwdGraph
-  cloneGraph(fwdGraph, bwdGraph);
-  // cloned outputs are not required
-  // Copying outputs because removing elements from a list we're iterating over
-  // is a bad idea.
-  auto bwdOutputIds = bwdGraph.getOutputIds();
-  for (auto &id : bwdOutputIds) {
-    bwdGraph.removeOutput(id);
+
+  // Clone all tensors in fwdGraph as tensors in bwdGraph and keep track in
+  // fwdToBwdTensorIdMap for later processing. Mapping key is TensorId rather
+  // than Tensor* to make ordering independent of memory allocation.
+  std::map<TensorId, TensorId> fwdToBwdTensorIdMap;
+  for (auto &fwdId : fwdGraph.getTensors().getAllTensorIds()) {
+    auto fwdTensor = fwdGraph.getTensors().get(fwdId);
+    auto bwdId     = bwdGraph.addScope(fwdGraph.removeScope(fwdId));
+    auto bwdTensor = fwdTensor->clone(bwdGraph);
+    bwdTensor->id  = bwdId;
+    if (fwdTensor->hasTensorData()) {
+      bwdTensor->setTensorData(fwdTensor->info,
+                               fwdTensor->tensorData()->data());
+    }
+    fwdToBwdTensorIdMap[fwdTensor->id] = bwdTensor->id;
+    bwdGraph.getTensors().moveIntoTensors(std::move(bwdTensor));
   }
 
-  // Create an input tensor for each output tensor of fwdGraph
+  // Create a gradient input tensor for each output tensor of fwdGraph
   for (auto &scopedId : fwdGraph.getOutputIds()) {
     auto gradId   = fwdIdToBwdGradId(scopedId);
     auto gradInfo = fwdGraph.getTensors().get(scopedId)->info;
@@ -149,10 +157,24 @@ void BackwardsGraphCreatorHelper::growGradGraph() {
       bwdGraph.markAsOutput(gradId);
     }
   }
-}
 
-void BackwardsGraphCreatorHelper::cloneGraph(const Graph &from, Graph &to) {
-  to.copyFrom(from);
+  // Go over cloned forward tensors in fwdToBwdTensorIdMap to see if they are
+  // actually being used. Any actually used, mark them as input. Any unused,
+  // remove them.
+  for (const auto &entry : fwdToBwdTensorIdMap) {
+    const auto &bwdId = entry.second;
+    auto bwdTensor    = bwdGraph.getTensors().get(bwdId);
+
+    if (bwdTensor->consumers.getTotal() <= 0) {
+      // If the tensor is not consumed by any grad ops then it's not really
+      // needed in bwdGraph. Let's remove it.
+      bwdGraph.getTensors().remove(bwdId);
+      bwdTensor = nullptr;
+    } else {
+      // If the tensor is used, mark it as an input.
+      bwdGraph.markAsInput(bwdId);
+    }
+  }
 }
 
 void BackwardsGraphCreatorHelper::registerBwdOp(Op *fwdOp, Op *bwdOp) {

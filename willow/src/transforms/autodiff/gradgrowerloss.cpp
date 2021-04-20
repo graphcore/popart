@@ -19,7 +19,7 @@
 namespace popart {
 
 GradGrowerLoss::GradGrowerLoss(AutodiffIrInterface &dep)
-    : GradGrowerLossInterface(), GradGrower(dep) {}
+    : GradGrowerLossInterface(), AutodiffHelper(dep) {}
 
 Op *GradGrowerLoss::growLossGradients() {
 

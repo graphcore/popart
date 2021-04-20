@@ -5,8 +5,9 @@
 #include <popart/bwdgraphinfo.hpp>
 #include <popart/names.hpp>
 
-#include "popart/patterns/patterns.hpp"
 #include <transforms/autodiff/tensorgradmapregister.hpp>
+#include <popart/graph.hpp>
+#include <popart/patterns/patterns.hpp>
 
 #include <map>
 #include <memory>
@@ -16,7 +17,8 @@ namespace popart {
 
 // Forward declaration.
 class Op;
-class Graph;
+class CopyInputMarkings;
+class CopyOutputMarkings;
 
 /**
  * Class to help populate a backwards graphs. This helper is supposed to be
@@ -28,19 +30,21 @@ public:
   /**
    * Constructor.
    **/
-  BackwardsGraphCreatorHelper(
-      const Graph &fwdGraph,
-      Graph &bwdGraph,
-      const FwdGraphToBwdGraphInfo &calledGraphsGradInfo);
+  BackwardsGraphCreatorHelper(const Graph &fwdGraph, Graph &bwdGraph);
 
   /**
    * Function that populates the bwdGraph passed in the constructor.
    * \return Return information about the backwards graph.
    */
-  virtual BwdGraphInfo populateBwdGraph();
+  virtual BwdGraphInfo
+  populateBwdGraph(const FwdGraphToBwdGraphInfo &calledGraphsGradInfo);
+
+  virtual BwdGraphInfo makeGradInfo();
+
+  static void doPrune(Graph &);
 
 private:
-  void growGradGraph();
+  void growGradGraph(const FwdGraphToBwdGraphInfo &calledGraphsGradInfo);
   std::vector<Op *> growGradOps(Op *nonGradOp);
   bool opIsReadyToCreateGradients(Op *);
   std::string opNotReadyExplanation(Op *op);
@@ -56,16 +60,11 @@ private:
   TensorId bwdGradIdToFwdId(const TensorId &);
   // Convert a bwdGraph gradient tensor into a fwdGraph non-gradient tensor.
   TensorId bwdNonGradIdToFwdId(const TensorId &);
-  BwdGraphInfo makeGradInfo();
   bool hasInputTensorId(Op *nonGradOp, const GradInOutMapper &inOutMapper);
   TensorId getInputTensorId(Op *nonGradOp, const GradInOutMapper &inOutMapper);
 
-  static void cloneGraph(const Graph &from, Graph &to);
-  static void doPrune(Graph &);
-
   const Graph &fwdGraph;
   Graph &bwdGraph;
-  const FwdGraphToBwdGraphInfo &calledGraphsGradInfo;
 
   // A map of fwd tensors to their corresponding gradient tensors
   std::map<TensorId, TensorId> gradTensorMap;

@@ -15,14 +15,14 @@ namespace popart {
  * implemented as private members of popart::Ir. To facilitate this refactoring
  * some popart::Ir methods are wrapped as protected methods in this base class.
  *
- * Note that GradGrower objects are designed to be short life-time objects that
- * persist no longer than the duration of some function. The lifetime of the
- * dependency must be guaranteed by the users of this class.
+ * Note that AutodiffHelper objects are designed to be short life-time objects
+ * that persist no longer than the duration of some function. The lifetime of
+ * the dependency must be guaranteed by the users of this class.
  */
-class GradGrower {
+class AutodiffHelper {
 public:
   // Constructor.
-  explicit GradGrower(AutodiffIrInterface &dep);
+  explicit AutodiffHelper(AutodiffIrInterface &dep);
 
 protected:
   // Reference to ir.

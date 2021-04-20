@@ -1,7 +1,7 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#include "popart/bwdgraphinfo.hpp"
 #include <transforms/autodiff/gradgrowerop.hpp>
 
+#include <popart/bwdgraphinfo.hpp>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/op.hpp>
@@ -11,7 +11,7 @@
 namespace popart {
 
 GradGrowerOp::GradGrowerOp(AutodiffIrInterface &dep)
-    : GradGrowerOpInterface(), GradGrower(dep) {}
+    : GradGrowerOpInterface(), AutodiffHelper(dep) {}
 
 std::vector<Op *>
 GradGrowerOp::growGradOps(Op *nonGradOp,

@@ -14,6 +14,10 @@ std::vector<const Graph *> AutodiffIrAdapter::getGraphSchedule() {
   return ir.get().getGraphSchedule();
 }
 
+std::vector<const Graph *> AutodiffIrAdapter::getGraphSchedule(GraphId root) {
+  return ir.get().getGraphSchedule(root);
+}
+
 bool AutodiffIrAdapter::hasGraph(const GraphId &id) const {
   return ir.get().hasGraph(id);
 }

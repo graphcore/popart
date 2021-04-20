@@ -35,6 +35,8 @@ public:
   virtual Graph &getMainGraph() = 0;
   // Get schedule order of graphs where parent comes before child.
   virtual std::vector<const Graph *> getGraphSchedule() = 0;
+  // Get schedule order of graphs where parent comes before child.
+  virtual std::vector<const Graph *> getGraphSchedule(GraphId root) = 0;
   // Determine if graph exists.
   virtual bool hasGraph(const GraphId &) const = 0;
   // Get graph.

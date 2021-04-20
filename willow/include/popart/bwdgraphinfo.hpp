@@ -2,6 +2,8 @@
 #ifndef GUARD_NEURALNET_CALLED_SUBGRAPHS_GRAD_INFO_HPP
 #define GUARD_NEURALNET_CALLED_SUBGRAPHS_GRAD_INFO_HPP
 
+#include <ostream>
+
 #include <popart/graphid.hpp>
 #include <popart/names.hpp>
 
@@ -52,6 +54,13 @@ struct BwdGraphInfo {
  * Mapping from fwdGraph to info on the bwdGraph.
  **/
 using FwdGraphToBwdGraphInfo = std::map<GraphId, BwdGraphInfo>;
+
+// Stream operators.
+std::ostream &operator<<(std::ostream &out, ExpectedConnectionType);
+std::ostream &operator<<(std::ostream &out, const ExpectedConnection &);
+std::ostream &operator<<(std::ostream &out, const ExpectedConnections &);
+std::ostream &operator<<(std::ostream &out, const BwdGraphInfo &);
+std::ostream &operator<<(std::ostream &out, const FwdGraphToBwdGraphInfo &);
 
 } // namespace popart
 

@@ -5,8 +5,8 @@
 
 #include <popart/names.hpp>
 
+#include <transforms/autodiff/autodiffhelper.hpp>
 #include <transforms/autodiff/autodiffirinterface.hpp>
-#include <transforms/autodiff/gradgrower.hpp>
 
 namespace popart {
 
@@ -30,7 +30,7 @@ public:
  * It is the caller's responsibility to ensure the lifetime of this dependency
  * exceeds that of the GradGrowerLoss instance.
  */
-class GradGrowerLoss : public GradGrowerLossInterface, private GradGrower {
+class GradGrowerLoss : public GradGrowerLossInterface, private AutodiffHelper {
 public:
   // Constructor.
   explicit GradGrowerLoss(AutodiffIrInterface &dep);

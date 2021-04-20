@@ -32,6 +32,10 @@ class Graph {
   friend class BackwardsGraphCreatorHelper;
 
 public:
+  enum class CopyInputMarkings { Yes = 1, No = 0 };
+
+  enum class CopyOutputMarkings { Yes = 1, No = 0 };
+
   Graph(Ir &, const GraphId &);
   ~Graph();
 
@@ -247,7 +251,10 @@ public:
   std::string getGraphString() const;
 
   // Copy all contents from another graph to this graph
-  void copyFrom(const Graph &other);
+  void
+  copyFrom(const Graph &other,
+           CopyInputMarkings copyInputMarkings   = CopyInputMarkings::Yes,
+           CopyOutputMarkings copyOutputMarkings = CopyOutputMarkings::Yes);
 
 private:
   std::vector<Op *>

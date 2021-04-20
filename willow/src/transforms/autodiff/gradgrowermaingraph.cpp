@@ -1,16 +1,17 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#include "popart/bwdgraphinfo.hpp"
-#include "transforms/autodiff/backwardsgraphcreator.hpp"
 #include <transforms/autodiff/gradgrowermaingraph.hpp>
 
+#include <popart/bwdgraphinfo.hpp>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/op.hpp>
 #include <popart/tensorindex.hpp>
 #include <popart/tensornames.hpp>
 
+#include <transforms/autodiff/backwardsgraphcreator.hpp>
 #include <transforms/autodiff/gradnongradpair.hpp>
 #include <transforms/autodiff/opgradregistry.hpp>
+#include <transforms/autodiff/recomputestitcher.hpp>
 #include <transforms/autodiff/tensorgradregistry.hpp>
 
 namespace popart {
@@ -19,34 +20,32 @@ GradGrowerMainGraph::GradGrowerMainGraph(
     AutodiffIrInterface &dep,
     std::unique_ptr<GradGrowerOpInterface> gradOpGrower_,
     std::unique_ptr<GradGrowerLossInterface> gradLossGrower_,
-    std::unique_ptr<GradGrowerSumOpInterface> gradSumOpGrower_)
-    : GradGrowerMainGraphInterface(), GradGrower(dep),
+    std::unique_ptr<GradGrowerSumOpInterface> gradSumOpGrower_,
+    std::unique_ptr<GradGrowerGraphInterface> gradGraphGrower_)
+    : GradGrowerMainGraphInterface(), AutodiffHelper(dep),
       gradOpGrower(std::move(gradOpGrower_)),
       gradLossGrower(std::move(gradLossGrower_)),
-      gradSumOpGrower(std::move(gradSumOpGrower_)) {}
+      gradSumOpGrower(std::move(gradSumOpGrower_)),
+      gradGraphGrower(std::move(gradGraphGrower_)) {}
 
 void GradGrowerMainGraph::growGradMainGraph() {
 
+  auto &mainGraph = dep.get().getMainGraph();
+
   // We need to grow called graphs before we grow the main graph.
-  BackwardsGraphCreator bwdGraphCreator{dep};
   FwdGraphToBwdGraphInfo calledGraphGradInfo;
 
-  // Reverse order because parents need called graph grad info for children.
-  auto graphSched = dep.get().getGraphSchedule();
-  for (auto fwdGraphIt = graphSched.rbegin(); fwdGraphIt != graphSched.rend();
-       ++fwdGraphIt) {
+  for (auto g : mainGraph.getCalledGraphs()) {
 
-    // We need a non-const reference to the fwdGraph.
-    auto &fwdGraph = dep.get().getGraph((*fwdGraphIt)->id);
-    if (fwdGraph.id != dep.get().getMainGraph().id) {
-      GraphId bwdGraphId = logging::format("{}_bwd", fwdGraph.id);
-
-      // Create the bwdGraph.
-      auto bwdGraphGradInfo = bwdGraphCreator.createBackwardsGraph(
-          fwdGraph, bwdGraphId, calledGraphGradInfo);
-
-      // Store the result info for parents graphs.
-      calledGraphGradInfo.insert({fwdGraph.id, bwdGraphGradInfo});
+    if (calledGraphGradInfo.find(g->id) == calledGraphGradInfo.end()) {
+      calledGraphGradInfo = gradGraphGrower->growBackwardsGraph(
+          g->id,
+          // Assume we provide all fwd outputs as gradients.
+          g->getOutputIds(),
+          // Require no fwd inputs as gradients as some won't be possible.
+          nonstd::optional<std::vector<TensorId>>(),
+          calledGraphGradInfo,
+          Autodiff::StitchStrategy::Recompute);
     }
   }
 

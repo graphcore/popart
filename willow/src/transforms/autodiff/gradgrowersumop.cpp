@@ -14,7 +14,7 @@
 namespace popart {
 
 GradGrowerSumOp::GradGrowerSumOp(AutodiffIrInterface &dep)
-    : GradGrowerSumOpInterface(), GradGrower(dep) {}
+    : GradGrowerSumOpInterface(), AutodiffHelper(dep) {}
 
 Op *GradGrowerSumOp::growGradSumOp(Tensor *target,
                                    const std::vector<Tensor *> &toSum) {
