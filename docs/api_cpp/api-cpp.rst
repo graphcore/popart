@@ -94,6 +94,8 @@ Session options
 
 .. doxygenenum:: popart::RecomputationType
 
+.. doxygenenum:: popart::SubgraphCopyingStrategy
+
 .. doxygenenum:: popart::SyntheticDataMode
 
 .. doxygenstruct:: popart::TensorLocationSettings
@@ -101,20 +103,12 @@ Session options
 
 .. doxygenenum:: popart::VirtualGraphMode
 
-
 Optimizers
 ----------
 
 .. code-block:: cpp
 
-<<<<<<< Updated upstream
-.. doxygenenum:: popart::SubgraphCopyingStrategy
-
-.. doxygenstruct:: popart::AccumulateOuterFragmentSettings
-  :members:
-=======
   #include <popart/optimizer.hpp>
->>>>>>> Stashed changes
 
 .. doxygenclass:: popart::Optimizer
   :members:
