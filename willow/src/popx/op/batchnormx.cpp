@@ -10,6 +10,7 @@
 #include <poplar/Tensor.hpp>
 #include <poplin/Norms.hpp>
 #include <popnn/BatchNorm.hpp>
+#include <popops/Cast.hpp>
 #include <popops/ElementWise.hpp>
 #include <popops/Expr.hpp>
 
@@ -211,6 +212,14 @@ BatchNormOpx::growSpatial(poplar::program::Sequence &prog,
                                   idStr() + "/unbiasedInvSd");
       }
       */
+
+      // Ensure batch mean is the same type as mean so that running mean can
+      // be calculated
+      batchMean = popops::cast(graph(),
+                               batchMean,
+                               mean.elementType(),
+                               prog,
+                               debugContext("cast_batchMean"));
 
       // Then convert the invSd to the variance
       auto batchVar =
