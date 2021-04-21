@@ -91,6 +91,12 @@ sudo pip3 install pytest pytest-forked
 sudo pip3 install numpy==1.19.2
 ```
 
+##### **PyTorch** (torch 1.7.1+cpu and torchvision 0.8.2+cpu)
+
+```
+sudo pip3 install torch==1.7.1+cpu torchvision==0.8.2+cpu -f https://download.pytorch.org/whl/torch_stable.html
+```
+
 ### Installing Third-Party Library Dependencies
 
 PopART compiles against a number of libraries that you will need to have available on your system:
