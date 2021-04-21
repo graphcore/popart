@@ -10,6 +10,7 @@
 #include <popart/opserialiser.hpp>
 #include <popart/scope.hpp>
 #include <popart/tensorindex.hpp>
+#include <popart/transforms/autodiff/calledgraphgradophelper.hpp>
 
 namespace popart {
 
@@ -69,31 +70,43 @@ std::vector<const Graph *> CallOp::getCalledGraphs() const {
 
 void CallOp::setCalledGraph(Graph &graph) { callee = graph; }
 
-GraphId CallOp::getBackwardsGraphId() const {
-  return GraphId(logging::format("{}_bwd", callee.get().id));
-}
-
 std::vector<std::unique_ptr<Op>> CallOp::getGradOps() {
-  auto gradInInfo =
-      getCalledGraph().getBackwardsGraph(getBackwardsGraphId()).gradInputInfo();
-  auto gradOutInfo = getCalledGraph()
-                         .getBackwardsGraph(getBackwardsGraphId())
-                         .gradOutputInfo();
+
+  // A SubgraphOp only has one subgraph, so index is always 0.
+  SubgraphIndex subgraphIndex = 0;
+
+  // Get required info.
+  auto &bwdGraph = calledGraphGradOpHelper.getBwdGraph(subgraphIndex);
+
+  // The implementation of `subgraphInToOpInIndex` for CallOps does not depend
+  // on any members. Also, our grad op is a CallOp itself. So it's safe to pass
+  // `subgraphInToOpInIndex` bound to this op.
+  auto bwdGraphInToGradOpInIndex =
+      std::bind(&CallOp::subgraphInToOpInIndex, this, std::placeholders::_1);
+  // Get info pertaining to grad op's required inputs.
+  auto gradInInfo = calledGraphGradOpHelper.getCalledGraphGradInInfo(
+      subgraphIndex, bwdGraphInToGradOpInIndex);
+
+  // The implementation of `subgraphOutToOpOutIndex` for CallOps does not depend
+  // on any members. Also, our grad op is a CallOp itself. So it's safe to pass
+  // `subgraphOutToOpOutIndex` bound to this op.
+  auto bwdGraphOutToGradOpOutIndex =
+      std::bind(&CallOp::subgraphOutToOpOutIndex, this, std::placeholders::_1);
+  // Get info pertaining to grad op's outputs.
+  auto gradOutInfo = calledGraphGradOpHelper.getCalledGraphGradOutToNonGradIn(
+      subgraphIndex, bwdGraphOutToGradOpOutIndex);
 
   std::vector<std::unique_ptr<Op>> upops;
   upops.emplace_back(
-      std::make_unique<CallGradOp>(*this, gradInInfo, gradOutInfo));
+      std::make_unique<CallGradOp>(*this, bwdGraph, gradInInfo, gradOutInfo));
   return upops;
 }
 
 CallGradOp::CallGradOp(CallOp &fwdOp,
+                       Graph &bwdGraph,
                        const std::vector<GradInOutMapper> &gradInInfo_,
                        const std::map<OutIndex, InIndex> &gradOutToNonGradIn_)
-    : CallOp(
-          Onnx::CustomOperators::Call_1,
-          fwdOp.getCalledGraph().getBackwardsGraph(fwdOp.getBackwardsGraphId()),
-          {},
-          fwdOp.settings),
+    : CallOp(Onnx::CustomOperators::Call_1, bwdGraph, {}, fwdOp.settings),
       gradInInfo(gradInInfo_), outInfoMap(gradOutToNonGradIn_) {}
 
 const std::vector<GradInOutMapper> &CallGradOp::gradInputInfo() const {

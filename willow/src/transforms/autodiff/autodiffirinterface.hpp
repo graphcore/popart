@@ -33,6 +33,14 @@ class AutodiffIrInterface {
 public:
   // Get a reference to the main graph.
   virtual Graph &getMainGraph() = 0;
+  // Get schedule order of graphs where parent comes before child.
+  virtual std::vector<const Graph *> getGraphSchedule() = 0;
+  // Determine if graph exists.
+  virtual bool hasGraph(const GraphId &) const = 0;
+  // Get graph.
+  virtual Graph &getGraph(const GraphId &) = 0;
+  // Create a new graph.
+  virtual Graph &createGraph(const GraphId &) = 0;
   // Get the main graph's tensors.
   virtual Tensors &getTensors() = 0;
   // Get a reference to session options.

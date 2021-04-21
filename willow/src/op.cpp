@@ -116,6 +116,10 @@ InIndex Op::getSeedInIndex() const {
 
 Op::~Op() = default;
 
+void Op::setCalledSubgraphGradInfo(const FwdGraphToBwdGraphInfo &info_) {
+  // do nothing.
+}
+
 // return a vector of 1 or several OpAndTensorIds for
 // obtaining the gradient of the inputs of this Op.
 // The Op in the OpAndTensorIds is the gradient op, and
@@ -1200,6 +1204,51 @@ Op::getSubgraphOutputs() const {
     cmap[out_index] = consumers;
   }
   return cmap;
+}
+
+float Op::calcAutoVirtualGraphCost(std::set<int> &inputs_seen) {
+
+  std::set<int> outputs_seen;
+  float total = 0.0f;
+
+  // Check if backwards pass
+  std::set<TensorId> backwardsTensors;
+  for (auto &gradOp : getGradOps()) {
+    for (auto &inOutMapper : gradOp->gradInputInfo()) {
+      int indexFwd      = inOutMapper.iNonGrad;
+      GradOpInType type = inOutMapper.type;
+      // the input at index 'indexGrad' to gradOp is
+      switch (type) {
+      // An input to the fwd Op. Ignore weights seen previously.
+      case GradOpInType::In: {
+        bool exists = inputs_seen.insert(indexFwd).second;
+        if (exists) {
+          // This will need checking
+          total += static_cast<float>(input->tensor(indexFwd)->info.nbytes());
+        }
+        break;
+      }
+
+      //  An output from the fwd Op.
+      case GradOpInType::Out: {
+        bool exists = outputs_seen.insert(indexFwd).second;
+        if (exists) {
+          total += static_cast<float>(output->tensor(indexFwd)->info.nbytes());
+        }
+        break;
+      }
+
+      // This is the data that passes through the backwards pass.
+      // Unless the VarUpdate is done as a single compute_set
+      // This input can be ignored as not 'always live'
+      case GradOpInType::GradOut: {
+        break;
+      }
+      }
+    }
+  }
+
+  return total;
 }
 
 bool Op::isOutlineable() const { return true; }

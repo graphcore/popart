@@ -19,6 +19,14 @@ public:
 
   // Get a reference to the main graph.
   virtual Graph &getMainGraph() override;
+  // Get schedule order of graphs where parent comes before child.
+  virtual std::vector<const Graph *> getGraphSchedule() override;
+  // Determine if graph exists.
+  virtual bool hasGraph(const GraphId &) const override;
+  // Get graph.
+  virtual Graph &getGraph(const GraphId &) override;
+  // Create a new graph.
+  virtual Graph &createGraph(const GraphId &) override;
   // Get the main graph's tensors.
   virtual Tensors &getTensors() override;
   // Get a reference to session options.

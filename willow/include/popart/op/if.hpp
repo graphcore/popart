@@ -5,6 +5,7 @@
 #include <popart/graphid.hpp>
 #include <popart/op.hpp>
 #include <popart/op/identity.hpp>
+#include <popart/transforms/autodiff/calledgraphgradophelper.hpp>
 
 namespace popart {
 
@@ -60,6 +61,13 @@ public:
   virtual OutIndex subgraphOutToOpOutIndex(SubgraphIndex subgraphIndex,
                                            OutIndex outIndex) override;
 
+  // Override to avoid getGradOps being called before we're ready.
+  virtual float calcAutoVirtualGraphCost(std::set<int> &inputs_seen) override;
+
+  // Pass on to `calledGraphGradOpHelper`
+  virtual void setCalledSubgraphGradInfo(
+      const FwdGraphToBwdGraphInfo &calledGraphsGradInfo) override;
+
 private:
   void appendInputs(const std::vector<TensorId> &inputIds, const Scope &);
 
@@ -96,6 +104,8 @@ private:
 
   const GraphId thenGraphId;
   const GraphId elseGraphId;
+
+  CalledGraphGradOpHelper calledGraphGradOpHelper;
 };
 
 class IfGradOp : public IfOp {

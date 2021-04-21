@@ -3,6 +3,7 @@
 #define GUARD_NEURALNET_SUBGRAPHOP_HPP
 
 #include <popart/op.hpp>
+#include <popart/transforms/autodiff/calledgraphgradophelper.hpp>
 
 namespace popart {
 
@@ -65,6 +66,16 @@ public:
                                            OutIndex outIndex) override;
   virtual OutIndex subgraphOutToOpOutIndex(SubgraphIndex subgraphIndex,
                                            OutIndex outIndex) override;
+
+  // Override to avoid getGradOps being called before we're ready.
+  virtual float calcAutoVirtualGraphCost(std::set<int> &inputs_seen) override;
+
+  // Pass on to `calledGraphGradOpHelper`
+  virtual void setCalledSubgraphGradInfo(
+      const FwdGraphToBwdGraphInfo &calledGraphsGradInfo) override;
+
+protected:
+  CalledGraphGradOpHelper calledGraphGradOpHelper;
 
 private:
   // Regions of Input Tensors (InIndex) are aliased by Output Tensors (OutIndex)

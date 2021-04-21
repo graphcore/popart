@@ -1,4 +1,5 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
+#include "popart/bwdgraphinfo.hpp"
 #include <transforms/autodiff/gradgrowerop.hpp>
 
 #include <popart/graph.hpp>
@@ -12,7 +13,10 @@ namespace popart {
 GradGrowerOp::GradGrowerOp(AutodiffIrInterface &dep)
     : GradGrowerOpInterface(), GradGrower(dep) {}
 
-std::vector<Op *> GradGrowerOp::growGradOps(Op *nonGradOp) {
+std::vector<Op *>
+GradGrowerOp::growGradOps(Op *nonGradOp,
+                          const FwdGraphToBwdGraphInfo &calledGraphsGradInfo) {
+
   PipelineStage maxPipelineStage = 0;
   if (dep.get().getSessionOptions().enablePipelining) {
     // the last fwd pass pipeline stage is also the first bwd pass pipeline
@@ -20,8 +24,12 @@ std::vector<Op *> GradGrowerOp::growGradOps(Op *nonGradOp) {
     maxPipelineStage = dep.get().getFinalLossPipelineStage() * 2;
   }
 
-  OpId nonGradOpId = nonGradOp->id;
-  auto backOps     = nonGradOp->getGradOps();
+  OpId nonGradOpId  = nonGradOp->id;
+  auto calledGraphs = nonGradOp->getCalledGraphs();
+  if (!nonGradOp->getCalledGraphs().empty()) {
+    nonGradOp->setCalledSubgraphGradInfo(calledGraphsGradInfo);
+  }
+  auto backOps = nonGradOp->getGradOps();
   if (backOps.size() < 1) {
     logging::ir::debug("Cannot get gradients for {}", nonGradOp->debugName());
   }

@@ -1,8 +1,9 @@
-// Copyright (c) 2019 Graphcore Ltd. All rights reserved.
+// Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 #include <boost/range/algorithm/copy.hpp>
 
 #include <memory>
 #include <onnx/onnx_pb.h>
+#include <popart/bwdgraphinfo.hpp>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/onnxutil.hpp>
@@ -11,15 +12,14 @@
 #include <popart/tensor.hpp>
 #include <popart/tensornames.hpp>
 #include <popart/tensors.hpp>
+#include <popart/transforms/autodiff/calledgraphgradophelper.hpp>
 
 namespace popart {
 
 namespace {
 
-GraphId generateSubgraphUniqueId(const std::string postfix) {
-  static int uid = 0;
-  return GraphId(logging::format("ifop_subgraph_{}_{}", uid++, postfix));
-}
+SubgraphIndex thenSubgraphIndex = 0;
+SubgraphIndex elseSubgraphIndex = 1;
 
 } // namespace
 
@@ -70,7 +70,8 @@ IfOp::IfOp(const OperatorIdentifier &opid_,
       elseInputIndicesMap(elseBranchInfo.inputIndicesMap),
       thenOutputIndicesMap(thenBranchInfo.outputIndicesMap),
       elseOutputIndicesMap(elseBranchInfo.outputIndicesMap),
-      thenGraphId(thenBranchInfo.graphId), elseGraphId(elseBranchInfo.graphId) {
+      thenGraphId(thenBranchInfo.graphId),
+      elseGraphId(elseBranchInfo.graphId), calledGraphGradOpHelper{this} {
   logging::op::warn(
       "Using deprecated IfOp constructor. Parameter inputIds "
       "will be removed in an upcoming release. Inputs in `inputIds` should be "
@@ -85,8 +86,8 @@ IfOp::IfOp(const OperatorIdentifier &opid_,
       elseInputIndicesMap(elseBranchInfo.inputIndicesMap),
       thenOutputIndicesMap(thenBranchInfo.outputIndicesMap),
       elseOutputIndicesMap(elseBranchInfo.outputIndicesMap),
-      thenGraphId(thenBranchInfo.graphId), elseGraphId(elseBranchInfo.graphId) {
-}
+      thenGraphId(thenBranchInfo.graphId),
+      elseGraphId(elseBranchInfo.graphId), calledGraphGradOpHelper{this} {}
 
 std::unique_ptr<Op> IfOp::clone() const {
   return std::make_unique<IfOp>(*this);
@@ -120,31 +121,49 @@ std::vector<TensorId> IfOp::getGradOpInputIds(const Graph &gradThenGraph,
 
   std::set<TensorId> requiredGradOpInputs;
 
-  auto addInputTensors = [&](const Graph &fwdGraph, const Graph &gradGraph) {
-    for (auto m : gradGraph.gradInputInfo()) {
-      switch (m.type) {
-      case GradOpInType::In: {
-        auto scopedId   = fwdGraph.getInputId(m.iNonGrad);
+  auto addInputTensors = [&](const Graph &fwdGraph,
+                             const Graph &bwdGraph,
+                             const BwdGraphInfo &gradInfo) {
+    for (InIndex i = 0; i < gradInfo.expectedInputs.size(); ++i) {
+      auto &expIn = gradInfo.expectedInputs.at(i);
+      switch (expIn.type) {
+      case ExpectedConnectionType::Fwd: {
+        auto scopedId   = expIn.fwdId;
         auto unscopedId = fwdGraph.removeScope(scopedId);
         requiredGradOpInputs.insert(unscopedId);
         break;
       }
-      case GradOpInType::GradOut: {
-        auto scopedId = getThenGraph().getOutputId(m.iNonGrad);
-        auto opOutId  = branchOutIdToOpOutId.at(scopedId);
-        auto gradId   = getGradId(opOutId);
-        requiredGradOpInputs.insert(gradId);
+      case ExpectedConnectionType::FwdGrad: {
+        auto scopedId  = expIn.fwdId;
+        auto opOutIdIt = branchOutIdToOpOutId.find(scopedId);
+        if (opOutIdIt != branchOutIdToOpOutId.end()) {
+          auto opOutId = opOutIdIt->second;
+          auto gradId  = getGradId(opOutId);
+          requiredGradOpInputs.insert(gradId);
+        } else {
+          throw error("[IfOp::getGradOpInputIds] Expected the forward tensor "
+                      "'{}' of {} (the gradient of which is a graph input, "
+                      "'{}', of {}) to be a graph output of {}",
+                      scopedId,
+                      fwdGraph.getGraphString(),
+                      bwdGraph.getInputId(i),
+                      bwdGraph.getGraphString(),
+                      fwdGraph.getGraphString());
+        }
         break;
       }
-      case GradOpInType::Out:
       default:
-        throw error("Unsupported GradOpInType {}", m.type);
+        throw error("Unsupported ExpectedConnectionType");
       }
     }
   };
 
-  addInputTensors(getThenGraph(), gradThenGraph);
-  addInputTensors(getElseGraph(), gradElseGraph);
+  const auto &calledGraphsGradInfo =
+      calledGraphGradOpHelper.getCalledSubgraphGradInfo();
+  auto &thenGradInfo = calledGraphsGradInfo.at(getThenGraph().id);
+  auto &elseGradInfo = calledGraphsGradInfo.at(getElseGraph().id);
+  addInputTensors(getThenGraph(), gradThenGraph, thenGradInfo);
+  addInputTensors(getElseGraph(), gradElseGraph, elseGradInfo);
 
   // condition tensor must be first
   std::vector<TensorId> result{inId(getConditionInIndex())};
@@ -156,27 +175,42 @@ std::map<TensorId, int>
 IfOp::getOpInIdToBwdGraphInIndexMap(const Graph &fwdGraph,
                                     const Graph &bwdGraph) const {
   auto branchOutIdToOpOutId = getBranchOutIdToOpOutIdMap();
+  const auto &calledGraphsGradInfo =
+      calledGraphGradOpHelper.getCalledSubgraphGradInfo();
+  auto &gradInfo = calledGraphsGradInfo.at(fwdGraph.id);
 
   std::map<TensorId, int> result;
-  for (auto m : bwdGraph.gradInputInfo()) {
-    switch (m.type) {
-    case GradOpInType::In: {
+  for (InIndex i = 0; i < gradInfo.expectedInputs.size(); ++i) {
+    auto &expIn = gradInfo.expectedInputs.at(i);
+    switch (expIn.type) {
+    case ExpectedConnectionType::Fwd: {
       // branch input to tensor id
-      auto branchInId = fwdGraph.getInputId(m.iNonGrad);
+      auto branchInId = expIn.fwdId;
       auto opInId     = fwdGraph.removeScope(branchInId);
-      result.insert({opInId, m.iGrad});
+      result.insert({opInId, i});
       break;
     }
-    case GradOpInType::GradOut: {
-      auto branchOutId = fwdGraph.getOutputId(m.iNonGrad);
-      auto opOutId     = branchOutIdToOpOutId.at(branchOutId);
-      auto gradId      = getGradId(opOutId);
-      result.insert({gradId, m.iGrad});
+    case ExpectedConnectionType::FwdGrad: {
+      auto branchOutId = expIn.fwdId;
+      auto opOutIdIt   = branchOutIdToOpOutId.find(branchOutId);
+      if (opOutIdIt != branchOutIdToOpOutId.end()) {
+        auto opOutId = opOutIdIt->second;
+        auto gradId  = getGradId(opOutId);
+        result.insert({gradId, i});
+      } else {
+        throw error("[IfOp::getGradOpInputIds] Expected the forward tensor "
+                    "'{}' of {} (the gradient of which is a graph input, "
+                    "'{}', of {}) to be a graph output of {}",
+                    branchOutId,
+                    fwdGraph.getGraphString(),
+                    bwdGraph.getInputId(i),
+                    bwdGraph.getGraphString(),
+                    fwdGraph.getGraphString());
+      }
       break;
     }
-    case GradOpInType::Out:
     default:
-      throw error("Unsupported GradOpInType {}", m.type);
+      throw error("Unsupported ExpectedConnectionType");
     }
   }
 
@@ -252,14 +286,10 @@ IfOp::getBwdGraphBranchInfo(const Graph &fwdGraph,
 }
 
 std::vector<std::unique_ptr<Op>> IfOp::getGradOps() {
-  auto bwdThenGraphId = generateSubgraphUniqueId("thenGrad");
-  auto bwdElseGraphId = generateSubgraphUniqueId("elseGrad");
-
-  auto &bwdThenGraph = getThenGraph().getBackwardsGraph(bwdThenGraphId);
-  auto &bwdElseGraph = getElseGraph().getBackwardsGraph(bwdElseGraphId);
+  auto &bwdThenGraph = calledGraphGradOpHelper.getBwdGraph(thenSubgraphIndex);
+  auto &bwdElseGraph = calledGraphGradOpHelper.getBwdGraph(elseSubgraphIndex);
 
   auto gradOpInputIds = getGradOpInputIds(bwdThenGraph, bwdElseGraph);
-
   auto bwdThenBranchInfo =
       getBwdGraphBranchInfo(getThenGraph(), bwdThenGraph, gradOpInputIds);
   auto bwdElseBranchInfo =
@@ -345,13 +375,13 @@ InIndex IfOp::opInToSubgraphInIndex(SubgraphIndex subgraphIndex,
         inIndex);
   }
 
-  if (subgraphIndex == 0) {
+  if (subgraphIndex == thenSubgraphIndex) {
     if (thenInputIndicesMap.find(inIndex) != thenInputIndicesMap.end()) {
       return thenInputIndicesMap.at(inIndex);
     } else {
       return -1;
     }
-  } else if (subgraphIndex == 1) {
+  } else if (subgraphIndex == elseSubgraphIndex) {
     if (elseInputIndicesMap.find(inIndex) != elseInputIndicesMap.end()) {
       return elseInputIndicesMap.at(inIndex);
     } else {
@@ -386,9 +416,9 @@ InIndex IfOp::subgraphInToOpInIndex(SubgraphIndex subgraphIndex,
     return -1;
   };
 
-  if (subgraphIndex == 0) {
+  if (subgraphIndex == thenSubgraphIndex) {
     return getInIndex(getThenGraph(), thenInputIndicesMap);
-  } else if (subgraphIndex == 1) {
+  } else if (subgraphIndex == elseSubgraphIndex) {
     return getInIndex(getElseGraph(), elseInputIndicesMap);
   } else {
     throw error("Invalid subgraphIndex for {} (expected 0 or 1, got {})",
@@ -406,13 +436,13 @@ OutIndex IfOp::opOutToSubgraphOutIndex(SubgraphIndex subgraphIndex,
         outIndex);
   }
 
-  if (subgraphIndex == 0) {
+  if (subgraphIndex == thenSubgraphIndex) {
     if (thenOutputIndicesMap.find(outIndex) != thenOutputIndicesMap.end()) {
       return thenOutputIndicesMap.at(outIndex);
     } else {
       return -1;
     }
-  } else if (subgraphIndex == 1) {
+  } else if (subgraphIndex == elseSubgraphIndex) {
     if (elseOutputIndicesMap.find(outIndex) != elseOutputIndicesMap.end()) {
       return elseOutputIndicesMap.at(outIndex);
     } else {
@@ -447,15 +477,24 @@ OutIndex IfOp::subgraphOutToOpOutIndex(SubgraphIndex subgraphIndex,
     return -1;
   };
 
-  if (subgraphIndex == 0) {
+  if (subgraphIndex == thenSubgraphIndex) {
     return getOutIndex(getThenGraph(), thenOutputIndicesMap);
-  } else if (subgraphIndex == 1) {
+  } else if (subgraphIndex == elseSubgraphIndex) {
     return getOutIndex(getElseGraph(), elseOutputIndicesMap);
   } else {
     throw error("Invalid subgraphIndex for {} (expected 0 or 1, got {})",
                 debugName(),
                 subgraphIndex);
   }
+}
+
+float IfOp::calcAutoVirtualGraphCost(std::set<int> &inputs_seen) {
+  return 0.0f;
+}
+
+void IfOp::setCalledSubgraphGradInfo(
+    const FwdGraphToBwdGraphInfo &calledGraphsGradInfo) {
+  calledGraphGradOpHelper.setCalledSubgraphGradInfo(calledGraphsGradInfo);
 }
 
 IfGradOp::IfGradOp(const IfOp &fwdOp,

@@ -1,4 +1,6 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
+#include "popart/bwdgraphinfo.hpp"
+#include "transforms/autodiff/backwardsgraphcreator.hpp"
 #include <transforms/autodiff/gradgrowermaingraph.hpp>
 
 #include <popart/graph.hpp>
@@ -24,6 +26,30 @@ GradGrowerMainGraph::GradGrowerMainGraph(
       gradSumOpGrower(std::move(gradSumOpGrower_)) {}
 
 void GradGrowerMainGraph::growGradMainGraph() {
+
+  // We need to grow called graphs before we grow the main graph.
+  BackwardsGraphCreator bwdGraphCreator{dep};
+  FwdGraphToBwdGraphInfo calledGraphGradInfo;
+
+  // Reverse order because parents need called graph grad info for children.
+  auto graphSched = dep.get().getGraphSchedule();
+  for (auto fwdGraphIt = graphSched.rbegin(); fwdGraphIt != graphSched.rend();
+       ++fwdGraphIt) {
+
+    // We need a non-const reference to the fwdGraph.
+    auto &fwdGraph = dep.get().getGraph((*fwdGraphIt)->id);
+    if (fwdGraph.id != dep.get().getMainGraph().id) {
+      GraphId bwdGraphId = logging::format("{}_bwd", fwdGraph.id);
+
+      // Create the bwdGraph.
+      auto bwdGraphGradInfo = bwdGraphCreator.createBackwardsGraph(
+          fwdGraph, bwdGraphId, calledGraphGradInfo);
+
+      // Store the result info for parents graphs.
+      calledGraphGradInfo.insert({fwdGraph.id, bwdGraphGradInfo});
+    }
+  }
+
   // definition: edge-gradient. What is output by a grad-op,
   // and which will be summed with other edge-gradients to create
   // a gradient. It is possible that an edge-gradient has the same
@@ -100,7 +126,8 @@ void GradGrowerMainGraph::growGradMainGraph() {
     std::vector<GradNonGradPair> pairs;
     auto finalLossOp =
         dep.get().getMainGraph().getOp(dep.get().getFinalLossOpId());
-    for (Op *gradOp : gradOpGrower->growGradOps(finalLossOp)) {
+    for (Op *gradOp :
+         gradOpGrower->growGradOps(finalLossOp, calledGraphGradInfo)) {
       opsToRegister.push_back({gradOp, finalLossOp});
     }
   } else {
@@ -156,7 +183,7 @@ void GradGrowerMainGraph::growGradMainGraph() {
     }
 
     for (Op *op : op_grad_registry.popComplete()) {
-      auto gradOps = gradOpGrower->growGradOps(op);
+      auto gradOps = gradOpGrower->growGradOps(op, calledGraphGradInfo);
       if (gradOps.size() == 0) {
         registerOpWithoutGrads(op);
       } else {

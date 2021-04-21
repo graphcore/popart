@@ -10,6 +10,22 @@ AutodiffIrAdapter::AutodiffIrAdapter(Ir &ir_) : ir(ir_) {}
 
 Graph &AutodiffIrAdapter::getMainGraph() { return ir.get().getMainGraph(); }
 
+std::vector<const Graph *> AutodiffIrAdapter::getGraphSchedule() {
+  return ir.get().getGraphSchedule();
+}
+
+bool AutodiffIrAdapter::hasGraph(const GraphId &id) const {
+  return ir.get().hasGraph(id);
+}
+
+Graph &AutodiffIrAdapter::getGraph(const GraphId &id) {
+  return ir.get().getGraph(id);
+}
+
+Graph &AutodiffIrAdapter::createGraph(const GraphId &id) {
+  return ir.get().createGraph(id);
+}
+
 Tensors &AutodiffIrAdapter::getTensors() {
   return ir.get().getMainGraph().getTensors();
 }

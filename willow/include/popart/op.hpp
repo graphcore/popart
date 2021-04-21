@@ -8,6 +8,7 @@
 #include <vector>
 #include <popart/attributes.hpp>
 #include <popart/basicoptionals.hpp>
+#include <popart/bwdgraphinfo.hpp>
 #include <popart/debugcontext.hpp>
 #include <popart/names.hpp>
 #include <popart/opdebuginfo.hpp>
@@ -320,6 +321,12 @@ public:
   // Called once the IR 'prepare' is complete to finalize DebugInfo
   void finalizeDebugInfo();
 
+  // if the op has called graphs (that is, `!getCalledSubgraphs().empty()`) then
+  // this method will get called prior to `getGradOps` to provide the op with
+  // the information it needs to call the grad version of the called subgraphs.
+  virtual void
+  setCalledSubgraphGradInfo(const FwdGraphToBwdGraphInfo &calledGraphsGradInfo);
+
   // return a vector of 1 or several gradient Ops: for
   // obtaining the gradient of the inputs of this Op.
   // If this Op is already a gradient Op, throws error
@@ -527,6 +534,8 @@ public:
   constexpr float getHighSubgraphValue() const { return 1000.0f; }
   // and relu has this value.
   constexpr float getLowSubgraphValue() const { return 0.1f; }
+  // Get approximation of cost of activations between fwd/bwd graph.
+  virtual float calcAutoVirtualGraphCost(std::set<int> &inputs_seen);
 
   // Allow an op to exclude itself from caching. If this method returns false
   // it will mean that any possiable subgraph that this op is part of will

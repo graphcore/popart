@@ -37,8 +37,6 @@ public:
   std::vector<const Graph *> getCalledGraphs() const override;
   void setCalledGraph(Graph &) override;
 
-  GraphId getBackwardsGraphId() const;
-
   InIndex subgraphInToOpInIndex(InIndex index) const override { return index; }
   InIndex opInToSubgraphInIndex(InIndex index) const override { return index; }
   OutIndex subgraphOutToOpOutIndex(OutIndex index) const override {
@@ -62,6 +60,7 @@ private:
 class CallGradOp : public CallOp {
 public:
   CallGradOp(CallOp &fwdOp,
+             Graph &bwdGraph,
              const std::vector<GradInOutMapper> &gradInInfo_,
              const std::map<int, int> &gradOutInfo_);
 

@@ -398,8 +398,12 @@ def test_distinct_random_behaviour_with_subgraphs():
 
 def test_random_op_in_loop_body():
     """
-    Create a model with 1 dropout in a loop body and check each loop iteration
-    yields distinct random behaviour.
+    Create a model with 1 uniform random op in a loop body and check each
+    loop iteration yields distinct random behaviour.
+
+    NOTE: This can't currently use a training session because LoopOp does not
+    yet work with autodiff. Because of this we can't use Dropout here
+    because Dropouts don't have any effect in inference mode.
     """
 
     num_steps = 2
@@ -429,7 +433,7 @@ def test_random_op_in_loop_body():
         loop_res = loop_builder.addInputTensor(
             popart.TensorInfo("FLOAT", [num_elems]))
         # do the dropout (note: use tensor from parent scope as input).
-        loop_rnd0 = loop_builder.aiOnnx.dropout([main_in0], 1, 0.5)[0]
+        loop_rnd0 = loop_builder.aiOnnx.randomuniform(shape=[num_elems])
         # Calculate dynamic slice offset.
         offset = loop_builder.aiGraphcore.scale([loop_iters], num_elems)
         # Dynamic slice to stack the dropout result tensors.
@@ -445,18 +449,15 @@ def test_random_op_in_loop_body():
                                             popart.DataType.FLOAT,
                                             popart.InitType.NoInit)
 
-        main_dropouts = builder.aiOnnx.loop([M, cond, loop_var], 1,
-                                            loop_builder)[0]
+        main_rnd = builder.aiOnnx.loop([M, cond, loop_var], 1, loop_builder)[0]
         loss = builder.aiGraphcore.identityloss(
-            [main_dropouts], reduction=popart.ReductionType.Mean)
-        return loss, {
-            main_in0: d0
-        }, {
-            'loss': loss,
-            'main_dropouts': main_dropouts
-        }
+            [main_rnd], reduction=popart.ReductionType.Mean)
+        return loss, {main_in0: d0}, {'loss': loss, 'main_rnd': main_rnd}
 
-    run0 = run_model(builder_fn=model_fn, steps=num_steps, seed=0)
+    run0 = run_model(builder_fn=model_fn,
+                     steps=num_steps,
+                     seed=0,
+                     training=False)
 
     # no step should yield the same mask.
     for s0, s1 in itertools.product(range(num_steps), repeat=2):
@@ -465,12 +466,12 @@ def test_random_op_in_loop_body():
                 # yapf: disable
                 slice0 = Slice(index=i0, total_slices=num_iters)
                 slice1 = Slice(index=i1, total_slices=num_iters)
-                ensure_mask_not_equal(run0, 'main_dropouts', s0, slice0,
-                                      run0, 'main_dropouts', s1, slice1)
+                ensure_value_not_equal(run0, 'main_rnd', s0, slice0,
+                                       run0, 'main_rnd', s1, slice1)
                 # yapf: enable
 
 
-def run_model(builder_fn, steps, seed):
+def run_model(builder_fn, steps, seed, training=True):
     """
     Helper function that runs a model and returns the anchors.
 
@@ -499,13 +500,20 @@ def run_model(builder_fn, steps, seed):
 
     device = tu.create_test_device(1, pattern=popart.SyncPattern.Full)
 
-    session = popart.TrainingSession(fnModel=proto,
-                                     dataFlow=dataFlow,
-                                     userOptions=options,
-                                     loss=loss,
-                                     optimizer=optimizer,
-                                     patterns=patterns,
-                                     deviceInfo=device)
+    if training:
+        session = popart.TrainingSession(fnModel=proto,
+                                         dataFlow=dataFlow,
+                                         userOptions=options,
+                                         loss=loss,
+                                         optimizer=optimizer,
+                                         patterns=patterns,
+                                         deviceInfo=device)
+    else:
+        session = popart.InferenceSession(fnModel=proto,
+                                          dataFlow=dataFlow,
+                                          userOptions=options,
+                                          patterns=patterns,
+                                          deviceInfo=device)
 
     session.prepareDevice()
     session.weightsFromHost()
@@ -580,6 +588,22 @@ def ensure_mask_not_equal(run0, anchor0, step0, slice0, run1, anchor1, step1,
     """
     tensor0 = get_anchor_step(run0, anchor0, step0, slice0) == 0
     tensor1 = get_anchor_step(run1, anchor1, step1, slice1) == 0
+    assert (not np.array_equal(tensor0, tensor1)), f"""
+      Expected output '{anchor0}', step {step0}, slice={slice_to_str(slice0)} (seed={run0.seed})
+        {tensor0}
+      to be different from output '{anchor1}', step {step1}, slice={slice_to_str(slice1)} (seed={run1.seed})
+        {tensor1}"""
+
+
+def ensure_value_not_equal(run0, anchor0, step0, slice0, run1, anchor1, step1,
+                           slice1):
+    """
+    Helper function to compare two random op outputs, ensuring they are different.
+
+    See get_anchor_step for details on arguments.
+    """
+    tensor0 = get_anchor_step(run0, anchor0, step0, slice0)
+    tensor1 = get_anchor_step(run1, anchor1, step1, slice1)
     assert (not np.array_equal(tensor0, tensor1)), f"""
       Expected output '{anchor0}', step {step0}, slice={slice_to_str(slice0)} (seed={run0.seed})
         {tensor0}

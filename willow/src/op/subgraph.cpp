@@ -1,4 +1,5 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
+#include <functional>
 #include <memory>
 #include <onnx/onnx_pb.h>
 #include <popart/graph.hpp>
@@ -49,7 +50,7 @@ SubgraphOp::getBodyOutputIds(const ONNX_NAMESPACE::GraphProto &bodyProto) {
 
 SubgraphOp::SubgraphOp(const OperatorIdentifier &_opid,
                        const Op::Settings &settings_)
-    : Op(_opid, settings_) {}
+    : Op(_opid, settings_), calledGraphGradOpHelper{this} {}
 
 void SubgraphOp::addAlias(InIndex in,
                           OutIndex out,
@@ -405,6 +406,15 @@ OutIndex SubgraphOp::subgraphOutToOpOutIndex(SubgraphIndex subgraphIndex,
   }
 
   return subgraphOutToOpOutIndex(outIndex);
+}
+
+float SubgraphOp::calcAutoVirtualGraphCost(std::set<int> &inputs_seen) {
+  return 0.0f;
+}
+
+void SubgraphOp::setCalledSubgraphGradInfo(
+    const FwdGraphToBwdGraphInfo &calledGraphsGradInfo) {
+  calledGraphGradOpHelper.setCalledSubgraphGradInfo(calledGraphsGradInfo);
 }
 
 } // namespace popart

@@ -1,12 +1,14 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#include <transforms/autodiff/backwardspasscreator.hpp>
+#include <transforms/autodiff/backwardsgraphcreatorhelper.hpp>
 
+#include <popart/bwdgraphinfo.hpp>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/op/sum.hpp>
 #include <popart/pbwrap.hpp>
 #include <popart/tensor.hpp>
 #include <popart/tensorindex.hpp>
+#include <popart/tensornames.hpp>
 
 #include <transforms/autodiff/gradgrowersumop.hpp>
 
@@ -14,82 +16,60 @@
 
 namespace popart {
 
-BackwardPassCreator::BackwardPassCreator(Graph &fwdGraph_, Graph &bwdGraph_)
-    : fwdGraph(fwdGraph_), bwdGraph(bwdGraph_), gradOpStore() {
+BackwardsGraphCreatorHelper::BackwardsGraphCreatorHelper(
+    const Graph &fwdGraph_,
+    Graph &bwdGraph_,
+    const FwdGraphToBwdGraphInfo &calledGraphsGradInfo_)
+    : fwdGraph(fwdGraph_), bwdGraph(bwdGraph_),
+      calledGraphsGradInfo(calledGraphsGradInfo_), gradOpStore() {}
+
+BwdGraphInfo BackwardsGraphCreatorHelper::populateBwdGraph() {
+
   growGradGraph();
 
-  // create map of bwdGraph input TensorIds to fwdGraph input/gradient TensorIds
-  // must be done before pruning
-  std::map<TensorId, TensorId> bwdInputIdToFwdTensorId;
-  for (int i = 0; i < fwdGraph.getInputIds().size(); i++) {
-    auto fwdIn = fwdGraph.getInputId(i);
-    auto bwdIn = bwdGraph.getInputId(i);
-    bwdInputIdToFwdTensorId.insert({bwdIn, fwdIn});
-  }
-  for (auto &fwdOut : fwdGraph.getOutputIds()) {
-    auto gradId = getGradId(fwdOut);
-    bwdInputIdToFwdTensorId.insert({gradId, fwdOut});
-  }
-
+  // Remove fwd ops from bwdGraph that we don't need.
   doPrune(bwdGraph);
 
-  populateGradInInfo(bwdInputIdToFwdTensorId);
+  return makeGradInfo();
 }
 
-void BackwardPassCreator::populateGradInInfo(
-    const std::map<TensorId, TensorId> &bwdInputIdToFwdTensorId) {
-  // Populate bwdGraph.gradInInfo
-  using boost::range::find;
-  std::map<TensorId, GradInOutMapper> partialGradInfo;
-  for (int i = 0; i < fwdGraph.getInputIds().size(); i++) {
-    auto id = fwdGraph.getInputId(i);
-    partialGradInfo.insert({id, {-1, i, GradOpInType::In}});
-  }
-  for (int i = 0; i < fwdGraph.getOutputIds().size(); i++) {
-    auto id = fwdGraph.getOutputId(i);
-    partialGradInfo.insert({id, {-1, i, GradOpInType::GradOut}});
-  }
+BwdGraphInfo BackwardsGraphCreatorHelper::makeGradInfo() {
 
-  // Populate bwdGraph.gradInInfo.
-  auto bwdInputIds = bwdGraph.getInputIds();
-  for (int bIdx = 0; bIdx < bwdInputIds.size(); bIdx++) {
-    auto bwdId       = bwdInputIds.at(bIdx);
-    auto fwdTensorId = bwdInputIdToFwdTensorId.at(bwdId);
-    auto found       = partialGradInfo.find(fwdTensorId);
-    if (found != partialGradInfo.end()) {
-      auto gradInOutMapper  = found->second;
-      gradInOutMapper.iGrad = bIdx;
-      bwdGraph.gradInInfo.push_back(gradInOutMapper);
-    } else {
-      throw error(
-          "Could not find corresponding input tensor for graph input {}",
-          bwdId);
-    }
-  }
+  // NOTE: Code later on in the stack (getGradOps for subgraph ops) has certain
+  // requirements on what expected inputs/outputs can be. Namely, expected
+  // inputs can be non-grad of an input of fwdGraph or a non-grad or grad of
+  // of an output of fwdGraph. Expected outputs must be grads of fwdGraph
+  // inputs. This is currently true by construction but `makeGradInfo` is able
+  // to deal with the general case. If these requirements are broken by a future
+  // version of BackwardsGraphCreatorHelper then it is likely that this
+  // results in an error in, say, `OpWithCalledGraphs` code.
 
-  // bwdGraph.gradOutInfo which maps grad out to non-grad inputs.
-  auto fwdInputIds  = fwdGraph.getInputIds();
-  auto bwdOutputIds = bwdGraph.getOutputIds();
-  for (int fIdx = 0; fIdx < fwdInputIds.size(); fIdx++) {
-    auto fwdId  = fwdInputIds.at(fIdx);
-    auto gradIt = gradTensorMap.find(fwdId);
-    if (gradIt != gradTensorMap.end()) {
-      // There is a grad tensor for this fwd-input. This may not be true for,
-      // e.g., things like random seeds.
-      auto bwdId = gradIt->second;
-      if (!bwdGraph.hasOutputId(bwdId)) {
-        throw error("Grad tensor {} is unexpectedly not marked as an output of "
-                    " {}",
-                    bwdId,
-                    bwdGraph.getGraphString());
+  auto populateExpConns = [this](ExpectedConnections &expConns,
+                                 const std::vector<TensorId> &bwdIds) {
+    for (InIndex i = 0; i < bwdIds.size(); i++) {
+      auto bwdId = bwdIds.at(i);
+      if (bwdIdIsNonGrad(bwdId)) {
+        // Non-grad tensor in bwdGraph.
+        auto fwdId = bwdNonGradIdToFwdId(bwdId);
+        expConns.push_back({fwdId, ExpectedConnectionType::Fwd});
       } else {
-        bwdGraph.gradOutInfo.insert({bwdGraph.getOutputIndex(bwdId), fIdx});
+        // Grad tensor in bwdGraph.
+        auto fwdId = bwdGradIdToFwdId(bwdId);
+        expConns.push_back({fwdId, ExpectedConnectionType::FwdGrad});
       }
     }
-  }
+  };
+
+  ExpectedConnections expectedInputs;
+  ExpectedConnections expectedOutputs;
+
+  populateExpConns(expectedInputs, bwdGraph.getInputIds());
+  populateExpConns(expectedOutputs, bwdGraph.getOutputIds());
+
+  return BwdGraphInfo{bwdGraph.id, expectedInputs, expectedOutputs};
 }
 
-void BackwardPassCreator::growGradGraph() {
+void BackwardsGraphCreatorHelper::growGradGraph() {
   // clone ops from the fwdGraph into the bwdGraph
   cloneGraph(fwdGraph, bwdGraph);
   // cloned outputs are not required
@@ -102,7 +82,7 @@ void BackwardPassCreator::growGradGraph() {
 
   // Create an input tensor for each output tensor of fwdGraph
   for (auto &scopedId : fwdGraph.getOutputIds()) {
-    auto gradId   = getGradId(scopedId);
+    auto gradId   = fwdIdToBwdGradId(scopedId);
     auto gradInfo = fwdGraph.getTensors().get(scopedId)->info;
     bwdGraph.addInput(gradId, gradInfo);
     gradTensorMap.insert({scopedId, gradId});
@@ -117,17 +97,36 @@ void BackwardPassCreator::growGradGraph() {
 
   // Get all grad ops now, but don't link them up.
   for (auto &id_op : fwdGraph.getOps()) {
-    auto op         = id_op.second.get();
+    auto op           = id_op.second.get();
+    auto calledGraphs = op->getCalledGraphs();
+    if (!op->getCalledGraphs().empty()) {
+      op->setCalledSubgraphGradInfo(calledGraphsGradInfo);
+    }
     gradOpStore[op] = op->getGradOps();
   }
 
   while (!pendingOps.empty()) {
+    logging::trace("[ ] !pendingOps.empty()");
     // get all the ops that are ready to grow grad ops
     std::vector<Op *> readyOps;
     for (auto op : pendingOps) {
       if (opIsReadyToCreateGradients(op)) {
         readyOps.push_back(op);
       }
+    }
+    if (readyOps.empty()) {
+      // we're stuck.
+      std::stringstream ss;
+      ss << "[Autodiff] Unable to create backwards graph for "
+         << fwdGraph.getGraphString() << " "
+         << "because none of the following ops are ready to grow their grad "
+         << "ops:" << std::endl;
+
+      for (auto op : pendingOps) {
+        ss << " - " << op->str() << " (" << opNotReadyExplanation(op) << ")"
+           << std::endl;
+      }
+      throw error(ss.str());
     }
     // remove ready ops from pending
     for (auto op : readyOps) {
@@ -146,17 +145,17 @@ void BackwardPassCreator::growGradGraph() {
   // connect up outputs
   for (auto &scopedId : fwdGraph.getInputIds()) {
     if (gradTensorMap.find(scopedId) != gradTensorMap.end()) {
-      auto gradId = getGradId(scopedId);
+      auto gradId = fwdIdToBwdGradId(scopedId);
       bwdGraph.markAsOutput(gradId);
     }
   }
 }
 
-void BackwardPassCreator::cloneGraph(const Graph &from, Graph &to) {
+void BackwardsGraphCreatorHelper::cloneGraph(const Graph &from, Graph &to) {
   to.copyFrom(from);
 }
 
-void BackwardPassCreator::registerBwdOp(Op *fwdOp, Op *bwdOp) {
+void BackwardsGraphCreatorHelper::registerBwdOp(Op *fwdOp, Op *bwdOp) {
   for (auto &idx_tensor : bwdOp->output->tensorMap()) {
     auto bwdOutIndex = idx_tensor.first;
     auto bwdTensor   = idx_tensor.second;
@@ -183,9 +182,10 @@ std::vector<OpId> Graph::getOpIds() const {
   return opIds;
 }
 
-Op *BackwardPassCreator::growGradSumOp(Tensor *nonGradTensor,
-                                       const std::vector<Tensor *> &partials) {
-  auto gradId = getGradId(nonGradTensor->id);
+Op *BackwardsGraphCreatorHelper::growGradSumOp(
+    Tensor *nonGradTensor,
+    const std::vector<Tensor *> &partials) {
+  auto gradId = fwdIdToBwdGradId(nonGradTensor->id);
   // TODO: T36603 Growing the grad sum with a fixed version may result
   // in suboptimal outlining (it's included as an outline attribute).
   auto gradSum = std::make_unique<SumOp>(
@@ -209,13 +209,34 @@ Op *BackwardPassCreator::growGradSumOp(Tensor *nonGradTensor,
   return op;
 }
 
-TensorId BackwardPassCreator::getGradId(const TensorId &id) {
+bool BackwardsGraphCreatorHelper::bwdIdIsGrad(const TensorId &id) {
+  auto x = bwdGraph.removeScope(id);
+  return popart::isGradId(x);
+}
+
+bool BackwardsGraphCreatorHelper::bwdIdIsNonGrad(const TensorId &id) {
+  auto x = bwdGraph.removeScope(id);
+  return !popart::isGradId(x);
+}
+
+TensorId BackwardsGraphCreatorHelper::fwdIdToBwdGradId(const TensorId &id) {
   auto x = fwdGraph.removeScope(id);
   x      = popart::getGradId(x);
   return bwdGraph.addScope(x);
 }
 
-bool BackwardPassCreator::opIsReadyToCreateGradients(Op *op) {
+TensorId BackwardsGraphCreatorHelper::bwdGradIdToFwdId(const TensorId &id) {
+  auto x = bwdGraph.removeScope(id);
+  x      = popart::getNonGradId(x);
+  return fwdGraph.addScope(x);
+}
+
+TensorId BackwardsGraphCreatorHelper::bwdNonGradIdToFwdId(const TensorId &id) {
+  auto x = bwdGraph.removeScope(id);
+  return fwdGraph.addScope(x);
+}
+
+bool BackwardsGraphCreatorHelper::opIsReadyToCreateGradients(Op *op) {
   // Get our grad ops from the grad op store.
   auto gradOpStoreIt = gradOpStore.find(op);
   if (gradOpStoreIt == gradOpStore.end()) {
@@ -238,8 +259,49 @@ bool BackwardPassCreator::opIsReadyToCreateGradients(Op *op) {
   return true;
 }
 
-bool BackwardPassCreator::hasInputTensorId(Op *nonGradOp,
-                                           const GradInOutMapper &inOutMapper) {
+std::string BackwardsGraphCreatorHelper::opNotReadyExplanation(Op *op) {
+
+  // Get our grad ops from the grad op store.
+  auto gradOpStoreIt = gradOpStore.find(op);
+  if (gradOpStoreIt == gradOpStore.end()) {
+    throw error("Unexpectedly unable to find grad ops for {}", op->debugName());
+  }
+
+  std::stringstream ss;
+  bool isFirst = true;
+
+  // Check if all of the grad's inputs are available.
+  for (auto &gradOp : gradOpStoreIt->second) {
+    for (auto &inOutMapper : gradOp->gradInputInfo()) {
+      if (inOutMapper.type == GradOpInType::GradOut) {
+        auto fwdId = op->outId(inOutMapper.iNonGrad);
+        if (gradTensorMap.find(fwdId) == gradTensorMap.end()) {
+          if (!isFirst) {
+            ss << "and ";
+          }
+          ss << "it needs the gradient tensor for '" << fwdId
+             << "', which has not been produced by any gradient op so far";
+          isFirst = false;
+        }
+        continue;
+      }
+      auto inputId = getInputTensorId(op, inOutMapper);
+      if (!bwdGraph.getTensors().contains(inputId)) {
+        if (!isFirst) {
+          ss << "and ";
+        }
+        ss << "it needs tensor '" << inputId << "' which is not available yet";
+        isFirst = false;
+      }
+    }
+  }
+
+  return ss.str();
+}
+
+bool BackwardsGraphCreatorHelper::hasInputTensorId(
+    Op *nonGradOp,
+    const GradInOutMapper &inOutMapper) {
   int indexFwd      = inOutMapper.iNonGrad;
   GradOpInType type = inOutMapper.type;
 
@@ -259,9 +321,9 @@ bool BackwardPassCreator::hasInputTensorId(Op *nonGradOp,
   }
 }
 
-TensorId
-BackwardPassCreator::getInputTensorId(Op *nonGradOp,
-                                      const GradInOutMapper &inOutMapper) {
+TensorId BackwardsGraphCreatorHelper::getInputTensorId(
+    Op *nonGradOp,
+    const GradInOutMapper &inOutMapper) {
   TensorId result;
 
   int indexFwd      = inOutMapper.iNonGrad;
@@ -302,7 +364,7 @@ BackwardPassCreator::getInputTensorId(Op *nonGradOp,
   }
 }
 
-std::vector<Op *> BackwardPassCreator::growGradOps(Op *nonGradOp) {
+std::vector<Op *> BackwardsGraphCreatorHelper::growGradOps(Op *nonGradOp) {
   auto nonGradOpId   = nonGradOp->id;
   auto gradOpStoreIt = gradOpStore.find(nonGradOp);
   if (gradOpStoreIt == gradOpStore.end()) {
@@ -382,7 +444,7 @@ std::vector<Op *> BackwardPassCreator::growGradOps(Op *nonGradOp) {
   return result;
 }
 
-void BackwardPassCreator::doPrune(Graph &graph) {
+void BackwardsGraphCreatorHelper::doPrune(Graph &graph) {
   using boost::range::find;
 
   const auto outputIds = graph.getOutputIds();

@@ -5,6 +5,8 @@
 
 #include <vector>
 
+#include <popart/bwdgraphinfo.hpp>
+
 #include <transforms/autodiff/autodiffirinterface.hpp>
 #include <transforms/autodiff/gradgrower.hpp>
 
@@ -20,7 +22,9 @@ class GradGrowerOpInterface {
 public:
   virtual ~GradGrowerOpInterface() = default;
   // Grow a collection of gradient ops for a forward op.
-  virtual std::vector<Op *> growGradOps(Op *forwardOp) = 0;
+  virtual std::vector<Op *>
+  growGradOps(Op *forwardOp,
+              const FwdGraphToBwdGraphInfo &calledGraphsGradInfo) = 0;
 };
 
 /**
@@ -37,7 +41,9 @@ public:
   virtual ~GradGrowerOp() = default;
 
   // Grow a collection of gradient ops for a forward op.
-  virtual std::vector<Op *> growGradOps(Op *forwardOp);
+  virtual std::vector<Op *>
+  growGradOps(Op *forwardOp,
+              const FwdGraphToBwdGraphInfo &calledGraphsGradInfo);
 };
 
 } // namespace popart

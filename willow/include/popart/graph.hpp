@@ -17,7 +17,7 @@
 
 namespace popart {
 
-class BackwardPassCreator;
+class BackwardsGraphCreatorHelper;
 
 namespace onnxpasses {
 class IOnnxToOnnx;
@@ -29,7 +29,7 @@ enum class RequireOptimalSchedule; /*
 */
 
 class Graph {
-  friend class BackwardPassCreator;
+  friend class BackwardsGraphCreatorHelper;
 
 public:
   Graph(Ir &, const GraphId &);
@@ -64,7 +64,6 @@ public:
 
   void constructFromOnnxGraph(const ONNX_NAMESPACE::GraphProto &onnx_graph);
   Op *growFromNode(const Node &node);
-  Graph &getBackwardsGraph(const GraphId &bwdId);
 
   // moves ownership of created Op into the Graph,
   // and returns the Op's OpId
@@ -205,17 +204,6 @@ public:
   TensorId removeScope(const TensorId &) const;
   Scope getScope() const;
 
-  // For grad-graphs, matching input indices to
-  // corresponding IN/OUT/GRADOUT indices of
-  // corresponding non-grad-graph.
-  const std::vector<GradInOutMapper> &gradInputInfo() const {
-    return gradInInfo;
-  }
-
-  // For grad-graphs, mapping from output indices to
-  // corresponding IN indices of non-grad graph.
-  std::map<OutIndex, InIndex> gradOutputInfo() const { return gradOutInfo; }
-
   /// Replace oldId with newId on any consumers.
   /// Both tensors need to exist.
   /// \param oldId Tensor to disconenct from consumers & graph outputs
@@ -284,8 +272,6 @@ private:
   std::vector<TensorId> graph_inputs;
   std::vector<TensorId> graph_outputs;
   std::unique_ptr<Scheduler> scheduler;
-  std::vector<GradInOutMapper> gradInInfo;
-  std::map<OutIndex, InIndex> gradOutInfo;
   std::unique_ptr<onnxpasses::IOnnxToOnnx> onnxToOnnx;
 
   Ir &ir;

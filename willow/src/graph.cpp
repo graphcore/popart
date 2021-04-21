@@ -37,7 +37,6 @@
 
 #include <onnxpasses/onnxtoonnx.hpp>
 
-#include <transforms/autodiff/backwardspasscreator.hpp>
 #include <transforms/autodiff/tensorgradmapregister.hpp>
 
 // Prototypes
@@ -288,16 +287,6 @@ TensorId Graph::removeScope(const TensorId &scopedId) const {
           scopeStr);
     }
     return scopedId.substr(scopeStr.size());
-  }
-}
-
-Graph &Graph::getBackwardsGraph(const GraphId &bwdId) {
-  if (ir.hasGraph(bwdId)) {
-    return ir.getGraph(bwdId);
-  } else {
-    auto &bwdGraph = ir.createGraph(bwdId);
-    BackwardPassCreator(*this, bwdGraph);
-    return bwdGraph;
   }
 }
 

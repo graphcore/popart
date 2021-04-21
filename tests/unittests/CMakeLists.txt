@@ -37,3 +37,5 @@ add_popart_cpp_unit_test(unittest_Session_createFromIr session_createFromIr.cpp)
 add_popart_cpp_unit_test(unittest_irquerier testutil/unittest_irquerier.cpp TEST_UTILS ir-query-test-util trompeloeil)
 
 add_popart_cpp_unit_test(unittest_autodiff transforms/unittest_autodiff.cpp TEST_UTILS ir-query-test-util)
+add_popart_cpp_unit_test(unittest_backwardsgraphcreatorhelper transforms/autodiff/unittest_backwardsgraphcreatorhelper.cpp)
+add_popart_cpp_unit_test(unittest_calledgraphgradophelper transforms/autodiff/unittest_calledgraphgradophelper.cpp)

@@ -49,7 +49,6 @@ float AutoVirtualGraph::costFn(Op *op,
   float total = 0;
 
   std::set<int> inputs_seen;
-  std::set<int> outputs_seen;
 
   for (auto map : op->input->indicesMap()) {
     if (map.first->tensorType() == TensorType::Variable ||
@@ -62,46 +61,7 @@ float AutoVirtualGraph::costFn(Op *op,
     }
   }
   if (training) {
-    // Check if backwards pass
-    std::set<TensorId> backwardsTensors;
-    for (auto &gradOp : op->getGradOps()) {
-      for (auto &inOutMapper : gradOp->gradInputInfo()) {
-        int indexFwd      = inOutMapper.iNonGrad;
-        GradOpInType type = inOutMapper.type;
-        // the input at index 'indexGrad' to gradOp is
-        switch (type) {
-        // An input to the fwd Op. Ignore weights seen previously.
-        case GradOpInType::In: {
-          bool exists = inputs_seen.insert(indexFwd).second;
-          if (exists) {
-            // This will need checking
-            total +=
-                w_activations *
-                static_cast<float>(op->input->tensor(indexFwd)->info.nbytes());
-          }
-          break;
-        }
-
-        //  An output from the fwd Op.
-        case GradOpInType::Out: {
-          bool exists = outputs_seen.insert(indexFwd).second;
-          if (exists) {
-            total +=
-                w_activations *
-                static_cast<float>(op->output->tensor(indexFwd)->info.nbytes());
-          }
-          break;
-        }
-
-        // This is the data that passes through the backwards pass.
-        // Unless the VarUpdate is done as a single compute_set
-        // This input can be ignored as not 'always live'
-        case GradOpInType::GradOut: {
-          break;
-        }
-        }
-      }
-    }
+    total += w_activations * op->calcAutoVirtualGraphCost(inputs_seen);
   }
   return total;
 }
