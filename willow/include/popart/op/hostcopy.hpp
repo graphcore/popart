@@ -76,7 +76,7 @@ public:
 
   bool canShard() const final { return false; }
 
-  bool hasSideEffect() const override { return true; };
+  bool hasSideEffect() const override { return true; }
 
 private:
   TensorId hostStreamTensorId;
