@@ -50,8 +50,11 @@ def test_view_simplify(a, b, target):
     sess.run(stepio)
     ir = json.loads(sess._serializeIr(popart.IrSerializationFormat.JSON))
 
-    # Prune should have removed the first Op
-    assert len(ir["maingraph"]) == 1
-    # The remaining Op should be target.
-    assert target in ir["maingraph"][0]["type"]
+    def outputs_o(op):
+        return o in map(lambda t: t["name"], op["outputs"])
+
+    def matches_target(op):
+        return target in op["type"] and outputs_o(op)
+
+    assert len(list(filter(matches_target, ir["maingraph"]))) == 1
     assert np.allclose(anchors[o].flatten(), d1.flatten())

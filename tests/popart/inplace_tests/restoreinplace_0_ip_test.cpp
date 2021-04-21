@@ -65,9 +65,6 @@ BOOST_AUTO_TEST_CASE(test0) {
   auto opts             = SessionOptions();
   opts.virtualGraphMode = VirtualGraphMode::Manual;
   opts.enablePipelining = true;
-  // Outlining will run ViewSimplfiyPattern which will remove `reshape` ->
-  // `reshape` chains.
-  opts.enableOutlining = false;
   builder->virtualGraph(t0, 0);
   builder->virtualGraph(t1, 0);
   builder->virtualGraph(t2, 0);
@@ -91,8 +88,8 @@ BOOST_AUTO_TEST_CASE(test0) {
 
   auto sched = ir.getOpSchedule({}, RequireOptimalSchedule::Yes);
   BOOST_CHECK_EQUAL(sched[1]->opid, Onnx::CustomOperators::Stash);
-  BOOST_CHECK_EQUAL(sched[2]->opid, Onnx::AiOnnx::OpSet9::Reshape);
-  BOOST_CHECK_EQUAL(sched[3]->opid, Onnx::CustomOperators::ReshapeInplace);
+  BOOST_CHECK_EQUAL(sched[2]->opid, Onnx::CustomOperators::ReshapeInplace);
+  BOOST_CHECK_EQUAL(sched[3]->opid, Onnx::AiOnnx::OpSet9::Reshape);
   BOOST_CHECK_EQUAL(ir.opsOfType(Onnx::CustomOperators::Restore).size(), 0);
   BOOST_CHECK_EQUAL(ir.opsOfType(Onnx::CustomOperators::RestoreInplace).size(),
                     1);
