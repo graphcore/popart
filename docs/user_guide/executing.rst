@@ -170,7 +170,7 @@ device attachment until it is required by PopART.
 .. code-block:: python
 
   # Acquire four IPUs on demand
-  connectionType=DeviceConnectionType.OnDemand
+  connectionType=popart.DeviceConnectionType.OnDemand
   dev = popart.DeviceManager().acquireAvailableDevice(4, connectionType=connectionType)
 
 Executing a session
