@@ -11,13 +11,15 @@ namespace popart {
 class ShapeInferenceContext {
 public:
   ShapeInferenceContext(const std::map<int, TensorInfo> &inputInfos_,
-                        const Attributes &);
+                        const Attributes &,
+                        int outputSize);
   const TensorInfo &inInfo(int index) const;
   const Shape &inShape(int index) const;
   DataType inType(int index) const;
   TensorInfo &outInfo(int index);
   const std::map<int, TensorInfo> &getOutputInfos();
   const Attributes &getAttributes() const;
+  int getNumOutputs() const;
 
   template <typename T> T getAttribute(const std::string &key) {
     return attributes.getAttribute<T>(key);
@@ -32,6 +34,7 @@ private:
   std::map<int, TensorInfo> inputInfos;
   std::map<int, TensorInfo> outputInfos;
   Attributes attributes;
+  int outputSize;
 };
 
 using ShapeInferenceFunction = std::function<void(ShapeInferenceContext &)>;
@@ -59,6 +62,21 @@ public:
   RegisterShapeInferenceFunction(const OperatorIdentifier &opid,
                                  ShapeInferenceFunction);
 };
+
+// Popart equivalents of onnx functions, /onnx/defs/shape_inference.h.
+inline void propagateElemTypeFromInputToOutput(ShapeInferenceContext &ctx,
+                                               size_t inputIndex,
+                                               size_t outputIndex) {
+  ctx.outInfo(outputIndex) = {ctx.inType(inputIndex),
+                              ctx.outInfo(outputIndex).shape()};
+}
+
+inline void propagateShapeFromInputToOutput(ShapeInferenceContext &ctx,
+                                            size_t inputIndex,
+                                            size_t outputIndex) {
+  ctx.outInfo(outputIndex) = {ctx.outInfo(outputIndex).dataType(),
+                              ctx.inShape(inputIndex)};
+}
 
 } // namespace popart
 

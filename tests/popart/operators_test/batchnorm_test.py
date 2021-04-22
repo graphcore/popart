@@ -1139,3 +1139,58 @@ def test_batchnorm_inference_half_fp32var(op_tester):
     session.run(stepio)
     stepio = popart.PyStepIO(inputs, anchors)
     session.run(stepio)
+
+
+def test_batchnorm_shapeinference(op_tester):
+    # create test data
+    d1 = np.random.rand(1, 3, 2, 2).astype(np.float32) * 100
+    scale = np.random.rand(3).astype(np.float32)
+    b = np.random.rand(3).astype(np.float32)
+    mean = np.random.rand(3).astype(np.float32)
+    var = np.random.rand(3).astype(np.float32)
+    epsilon = 1e-05
+    momentum = 0.1
+    builder = popart.Builder()
+    i1 = builder.addInputTensor(popart.TensorInfo(d1))
+    iScale = builder.addInitializedInputTensor(scale)
+    iB = builder.addInitializedInputTensor(b)
+    iMean = builder.addInitializedInputTensor(mean)
+    iVar = builder.addInitializedInputTensor(var)
+    o_y, o_mean, o_var, o_smean, o_svar = builder.aiOnnx.batchnormalization(
+        [i1, iScale, iB, iMean, iVar], 5, epsilon, momentum)
+    builder.addOutputTensor(o_y)
+    builder.addOutputTensor(o_mean)
+    builder.addOutputTensor(o_var)
+    builder.addOutputTensor(o_smean)
+    builder.addOutputTensor(o_svar)
+    lossId = builder.aiGraphcore.identityloss([o_y])
+    proto = builder.getModelProto()
+    anchors = [o_y, o_mean, o_var, o_smean, o_svar]
+    art = popart.AnchorReturnType("All")
+    dataFlow = popart.DataFlow(1, {
+        a: art for a in anchors
+    })
+    device = tu.create_test_device()
+    options = popart.SessionOptions()
+    options.enableStochasticRounding = False
+    # store the shapes here to make sure we are checking shapes
+    #  before the IR is complete (i.e. testing onnx shape inference)
+    shapes = []
+    for a in anchors:
+        shapes.append(tuple(builder.getTensorShape(a)))
+    session = popart.TrainingSession(fnModel=proto,
+                                     loss=lossId,
+                                     dataFlow=dataFlow,
+                                     deviceInfo=device,
+                                     optimizer=popart.ConstSGD(0.01),
+                                     userOptions=options)
+    anchors = session.initAnchorArrays()
+    session.prepareDevice()
+    inputs = {i1: d1}
+    stepio = popart.PyStepIO(inputs, anchors)
+    session.weightsFromHost()
+    session.run(stepio)
+    stepio = popart.PyStepIO(inputs, anchors)
+    # This tests the shape inference has run 
+    for a, b in zip([o_y, o_mean, o_var, o_smean, o_svar], shapes):
+        assert anchors[a].shape == b

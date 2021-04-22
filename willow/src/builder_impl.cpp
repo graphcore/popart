@@ -118,7 +118,8 @@ void BuilderImpl::runShapeInference(ONNX_NAMESPACE::NodeProto *node,
       auto dtype = getTensorDataType(id);
       inputInfos.insert({i, {dtype, shape}});
     }
-    ShapeInferenceContext ctx(inputInfos, node->attribute());
+    ShapeInferenceContext ctx(
+        inputInfos, node->attribute(), node->output_size());
     // Call the inference function.
     func(ctx);
     // Create the ValueInfoProtos for the nodes outputs.
