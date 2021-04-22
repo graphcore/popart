@@ -2886,8 +2886,7 @@ void IrLowering::prepareGraph() {
   // stream-to-host tensors : 1) make streams 2) make copy programs
   // note that the order in which tasks are added does not matter,
   // they will be topologically sorted before running
-  if (ir().useSyntheticData() == false &&
-      !ir().getSessionOptions().useHostCopyOps) {
+  if (!ir().useSyntheticData() && !ir().getSessionOptions().useHostCopyOps) {
     for (auto anchorId : ir().getRootAnchors()) {
       Tensor *tensor = ir().getTensor(anchorId);
 
@@ -2955,9 +2954,11 @@ void IrLowering::prepareGraph() {
     }
   }
 
-  // create Program to write optimizer tensors to device
-  for (auto tensor : ir().optimizerTensors()) {
-    tasks.add(fromHostTask(tensor, progs.streamOptimizerFromHostFragment()));
+  if (!ir().useSyntheticData()) {
+    // create Program to write optimizer tensors to device
+    for (auto tensor : ir().optimizerTensors()) {
+      tasks.add(fromHostTask(tensor, progs.streamOptimizerFromHostFragment()));
+    }
   }
 
   addOpTasks(tasks);
