@@ -1334,7 +1334,7 @@ PYBIND11_MODULE(popart_core, m) {
         &SessionOptions::accumulatorTensorLocationSettings,
         DOC(popart, SessionOptions, accumulatorTensorLocationSettings));
     cls.def_readwrite(
-        "tensorLocationSettingsOverride",
+        "_tensorLocationSettingsOverride",
         &SessionOptions::tensorLocationSettingsOverride,
         DOC(popart, SessionOptions, tensorLocationSettingsOverride));
     cls.def_readwrite(

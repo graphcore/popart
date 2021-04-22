@@ -103,3 +103,6 @@ SessionOptions.reportOptions = property(_get_options_dict('_reportOptions'),
                                         _set_options_dict('_reportOptions'))
 SessionOptions.gclOptions = property(_get_options_dict('_gclOptions'),
                                      _set_options_dict('_gclOptions'))
+SessionOptions.tensorLocationSettingsOverride = property(
+    _get_options_dict('_tensorLocationSettingsOverride'),
+    _set_options_dict('_tensorLocationSettingsOverride'))
