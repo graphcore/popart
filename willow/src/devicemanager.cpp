@@ -309,8 +309,8 @@ std::ostream &operator<<(std::ostream &os, const DeviceInfo &di) {
 } // namespace popart
 
 namespace std {
-std::size_t std::hash<popart::DeviceInfo>::
-operator()(const popart::DeviceInfo &di) const {
+std::size_t
+std::hash<popart::DeviceInfo>::operator()(const popart::DeviceInfo &di) const {
   std::size_t seed = 0;
   auto type        = di.getType();
   bool isHwCompatible =

@@ -77,7 +77,9 @@ std::ostream &operator<<(std::ostream &out,
     out << "N";
     break;
   }
-  default: { throw internal_error("Invalid value for ProgramFragmentIndex"); }
+  default: {
+    throw internal_error("Invalid value for ProgramFragmentIndex");
+  }
   };
   return out;
 }
