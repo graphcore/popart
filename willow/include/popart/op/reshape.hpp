@@ -78,7 +78,7 @@ public:
 
   std::vector<std::tuple<OperatorIdentifier, float>>
   inplacePriorityDefault() const final {
-    return {{Onnx::CustomOperators::ReshapeInplace, 100}};
+    return {{Onnx::CustomOperators::ReshapeInplace, 10}};
   }
 };
 
