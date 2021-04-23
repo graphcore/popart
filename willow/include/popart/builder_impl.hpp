@@ -245,6 +245,8 @@ public:
 
   bool isValueTensor(const TensorId &id) const;
 
+  bool hasValueInfo(const TensorId &id) const;
+
   bool hasTensorShape(const TensorId &id) const;
 
   std::vector<int64_t> getTensorShape(const TensorId &id);

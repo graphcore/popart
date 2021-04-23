@@ -1125,6 +1125,13 @@ bool BuilderImpl::isValueTensor(const TensorId &id) const {
   return std::find(valueIds.begin(), valueIds.end(), id) != valueIds.end();
 }
 
+bool BuilderImpl::hasValueInfo(const TensorId &id) const {
+  if (isInputTensor(id) || isOutputTensor(id) || isValueTensor(id)) {
+    return true;
+  }
+  return false;
+}
+
 std::string BuilderImpl::getStrFromTensorIdVec(std::vector<TensorId> v) const {
   const char *const delim = " ";
   std::ostringstream s;
@@ -1214,7 +1221,7 @@ BuilderImpl::getValueInfoProto(TensorId id) const {
 }
 
 bool BuilderImpl::hasTensorShape(const TensorId &id) const {
-  if (isInputTensor(id) || isOutputTensor(id) || isValueTensor(id)) {
+  if (hasValueInfo(id)) {
     auto &t = getValueInfoProto(id);
     if (t.type().tensor_type().shape().dim_size() > 0) {
       return true;

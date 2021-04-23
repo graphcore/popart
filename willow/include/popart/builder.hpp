@@ -1538,6 +1538,16 @@ public:
   std::vector<TensorId> getTrainableTensorIds() const;
 
   /**
+   * Return whether or not the specified tensor has value info
+   *
+   * A tensor may not have value info if has simply does not exist or if
+   * shape inference  failed
+   *
+   * \return A boolean.
+   */
+  bool hasValueInfo(const TensorId &id) const;
+
+  /**
    * Return an ONNX graph tensor shape, from either the input,
    * output, or value_info lists in the GraphProto.
    *
