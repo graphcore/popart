@@ -29,6 +29,10 @@ def test_dynamicslice(op_tester):
                                                    sizes=sizes,
                                                    noOverlap=True)
             builder.addOutputTensor(out)
+
+            # Check the shape inference has run.
+            assert builder.getTensorShape(out) == list(data.shape)
+
             result.append(out)
         return result
 
@@ -61,6 +65,10 @@ def test_dynamicslice_training(op_tester):
                                                    sizes=sizes,
                                                    noOverlap=True)
             out = builder.aiGraphcore.scale([out], float(1 + sliceid))
+
+            # Check the shape inference has run.
+            assert builder.getTensorShape(out) == list(data.shape)
+
             outputs.append(out)
             result.append(out)
 
@@ -69,6 +77,7 @@ def test_dynamicslice_training(op_tester):
         sum = builder.aiOnnx.unsqueeze([sum], axes=[0])
 
         builder.addOutputTensor(sum)
+
         result = [
             sum,
             popart.reservedGradientPrefix() + sum,
@@ -117,6 +126,10 @@ def test_dynamicslice_overlap_wrong(op_tester):
                                                    sizes=sizes,
                                                    noOverlap=True)
             out = builder.aiGraphcore.scale([out], float(1 + sliceid))
+
+            # Check the shape inference has run.
+            assert builder.getTensorShape(out) == list(data.shape)
+
             outputs.append(out)
             result.append(out)
 
@@ -179,6 +192,10 @@ def test_dynamicslice_overlap_correct(op_tester):
                                                    sizes=sizes,
                                                    noOverlap=False)
             out = builder.aiGraphcore.scale([out], float(1 + sliceid))
+
+            # Check the shape inference has run.
+            assert builder.getTensorShape(out) == list(data.shape)
+
             outputs.append(out)
             result.append(out)
 

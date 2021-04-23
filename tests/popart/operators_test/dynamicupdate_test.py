@@ -38,6 +38,9 @@ def test_dynamicupdate(op_tester):
         result = []
         out = builder.aiGraphcore.init([5, 12, 7], popart.DataType.FLOAT,
                                        popart.InitType.NoInit, "test_init")
+
+        assert builder.getTensorShape(out) == [5, 12, 7]
+
         for sliceid in range(3):
             index = builder.addInputTensor(np.asarray([sliceid * 4],
                                                       np.uint32))
@@ -46,6 +49,9 @@ def test_dynamicupdate(op_tester):
                 axes=axes,
                 sizes=sizes,
                 noOverlap=True)
+
+            assert builder.getTensorShape(out) == [5, 12, 7]
+
             builder.addOutputTensor(out)
         result.append(out)
         return result
@@ -271,6 +277,7 @@ def test_dynamicupdate_shape():
 output shape is correctly inferred inside a call op. Previously this would fail
 as the shape inference for the dynamicupdate, and thus the subgraph would not run.
 """
+
     def get_test_conf():
         conf = Mock()
         conf.samples_per_device_for_inference = 2

@@ -33,6 +33,10 @@ def test_dynamiczero_training(op_tester):
             out = builder.aiGraphcore.dynamiczero([out, index],
                                                   axes=axes,
                                                   sizes=sizes)
+
+            # Check shape inference has worked.
+            assert builder.getTensorShape(out) == list(data.shape)
+
             if i == 0:
                 out = builder.aiOnnx.add([out, inject_tensor])
         result.append(out)

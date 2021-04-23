@@ -25,7 +25,7 @@ void GeluShapeInference(InferenceContext &ctx);
 void DetachShapeInference(InferenceContext &ctx);
 void CallShapeInference(InferenceContext &ctx);
 void DynamicUpdateShapeInference(InferenceContext &ctx);
-void DynamicSliceInference(InferenceContext &ctx);
+void DynamicSliceShapeInference(InferenceContext &ctx);
 void DynamicZeroShapeInference(InferenceContext &ctx);
 void DynamicAddShapeInference(InferenceContext &ctx);
 void SequenceSliceInference(InferenceContext &ctx);
@@ -420,6 +420,11 @@ void ReverseShapeInference(InferenceContext &ctx) {
   propagateShapeAndTypeFromFirstInput(ctx);
 }
 
+void InitShapeInference(InferenceContext &ctx) {
+  propagateElemTypeFromAttributeToOutput(ctx, "data_type", 0);
+  propagateShapeFromAttributeToOutput(ctx, "shape", 0);
+}
+
 void ScatterReduceShapeInference(InferenceContext &ctx) {
   propagateElemTypeFromInputToOutput(ctx, 0, 0);
 
@@ -473,6 +478,7 @@ extern size_t dbg_count_check_Log1p_AiGraphcore_ver1;
 extern size_t dbg_count_check_Reshape_AiGraphcore_ver1;
 extern size_t dbg_count_check_Resize_AiGraphcore_ver1;
 extern size_t dbg_count_check_ScatterReduce_AiGraphcore_ver1;
+extern size_t dbg_count_check_Init_AiGraphcore_ver1;
 
 static const char groupnormalizationDoc[] =
     "GroupNormalization applies Group Normalization over a mini-batch of "
@@ -1203,6 +1209,39 @@ ONNX_OPERATOR_SET_SCHEMA_EX(
               "sum")
         .TypeAndShapeInferenceFunction(ScatterReduceShapeInference))
 
+ONNX_OPERATOR_SET_SCHEMA_EX(
+    Init,
+    AiGraphcore,
+    popart::Domain::ai_graphcore,
+    1,
+    false,
+    OpSchema()
+        .SetDoc(
+            "Initialize a new tensor given shape, data type, tensor type and "
+            "initialization type. Allows to create initialized tensors in any "
+            "graph. The InitOp has no tensor inputs and one tensor output.")
+        .Output(0, "output", "Output tensor", "T")
+        .TypeConstraint(
+            "T",
+            {"tensor(uint8)",
+             "tensor(uint16)",
+             "tensor(uint32)",
+             "tensor(uint64)",
+             "tensor(int8)",
+             "tensor(int16)",
+             "tensor(int32)",
+             "tensor(int64)",
+             "tensor(float16)",
+             "tensor(float)",
+             "tensor(bool)"},
+            "Input and output types can be any type supported by the IPU.")
+        .Attr("shape", "The shape of the output.", AttributeProto::INTS, true)
+        .Attr("data_type", "", AttributeProto::INT)
+        .Attr("tensor_type", "", AttributeProto::INT)
+        .Attr("init_type", "", AttributeProto::INT)
+        .Attr("batch_axis", "", AttributeProto::INT)
+        .TypeAndShapeInferenceFunction(InitShapeInference))
+
 static bool registerOps() {
   auto &d = ONNX_NAMESPACE::OpSchemaRegistry::DomainToVersionRange::Instance();
   d.AddDomainToVersion(popart::Domain::ai_graphcore, 1, 1);
@@ -1232,10 +1271,6 @@ static bool registerOps() {
   ONNX_NAMESPACE::RegisterSchema(
       GetOpSchema<ONNX_OPERATOR_SET_SCHEMA_CLASS_NAME(
           AiGraphcore, 1, Detach)>());
-
-  ONNX_NAMESPACE::RegisterSchema(
-      GetOpSchema<ONNX_OPERATOR_SET_SCHEMA_CLASS_NAME(
-          AiGraphcore, 1, DynamicUpdate)>());
 
   ONNX_NAMESPACE::RegisterSchema(
       GetOpSchema<ONNX_OPERATOR_SET_SCHEMA_CLASS_NAME(AiGraphcore, 1, Call)>());
@@ -1288,6 +1323,25 @@ static bool registerOps() {
   ONNX_NAMESPACE::RegisterSchema(
       GetOpSchema<ONNX_OPERATOR_SET_SCHEMA_CLASS_NAME(
           AiGraphcore, 1, ScatterReduce)>());
+
+  ONNX_NAMESPACE::RegisterSchema(
+      GetOpSchema<ONNX_OPERATOR_SET_SCHEMA_CLASS_NAME(
+          AiGraphcore, 1, DynamicSlice)>());
+
+  ONNX_NAMESPACE::RegisterSchema(
+      GetOpSchema<ONNX_OPERATOR_SET_SCHEMA_CLASS_NAME(
+          AiGraphcore, 1, DynamicAdd)>());
+
+  ONNX_NAMESPACE::RegisterSchema(
+      GetOpSchema<ONNX_OPERATOR_SET_SCHEMA_CLASS_NAME(
+          AiGraphcore, 1, DynamicZero)>());
+
+  ONNX_NAMESPACE::RegisterSchema(
+      GetOpSchema<ONNX_OPERATOR_SET_SCHEMA_CLASS_NAME(
+          AiGraphcore, 1, DynamicUpdate)>());
+
+  ONNX_NAMESPACE::RegisterSchema(
+      GetOpSchema<ONNX_OPERATOR_SET_SCHEMA_CLASS_NAME(AiGraphcore, 1, Init)>());
 
   return true;
 }

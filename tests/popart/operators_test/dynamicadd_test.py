@@ -39,6 +39,9 @@ def test_dynamicadd_training(op_tester):
             out = builder.aiGraphcore.dynamicadd([out, index, add],
                                                  axes=axes,
                                                  sizes=sizes)
+            # Check the shape inference has run.
+            assert builder.getTensorShape(out) == list(data.shape)
+
         result.append(out)
 
         sum = builder.aiOnnx.reducesum([out], axes=[0, 1, 2], keepdims=False)
