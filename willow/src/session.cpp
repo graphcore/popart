@@ -231,6 +231,12 @@ TensorInfo Session::getInfo(TensorId id) const {
   return info;
 }
 
+bool Session::hasInfo(TensorId id) const {
+  assertExecutableLoaded();
+  TensorInfo info = executable_->getTensor(id)->info;
+  return info.isSet();
+}
+
 Session::~Session() = default;
 
 void Session::compileAndExport(std::ostream &out) {

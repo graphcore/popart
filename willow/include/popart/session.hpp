@@ -168,6 +168,14 @@ public:
   TensorInfo getInfo(TensorId) const;
 
   /**
+   * Returns whether or not a the tensor for the specified ID has info.
+   *
+   * If the return value is false, you will be unable to obtain an instance of
+   * TensorInfo using getInfo.
+   */
+  bool hasInfo(TensorId) const;
+
+  /**
    * Retrieve the summary from from the \c poplar::Engine.
    *
    * The options which were given to the constructor will influence the
