@@ -289,7 +289,7 @@ GRUOpx::reshapePoplibBiasesForOnnx(poplar::Tensor poplib_biases) {
   poplib_biases      = poplib_biases.reshape({6, hidden_size});
 
   std::vector<poplar::Interval> intervals{
-      {0, 1}, {1, 2}, {2, 3}, {3, 4}, {4, 5}, {6, 7}};
+      {0, 1}, {1, 2}, {2, 3}, {3, 4}, {4, 5}, {5, 6}};
   auto slices = poplib_biases.slices(intervals, 0);
 
   auto bz = slices[0];
@@ -403,6 +403,12 @@ void GRUGradOpx::grow(poplar::program::Sequence &prog) const {
 
   auto output_h_grad = getHiddenStateGrad();
 
+  if (gru_op.getLinearBeforeResetAttribute()) {
+    // poplibs shapes the gradient tensors just like the corresponding
+    // weights - need to ensure correct shape here
+    weights.biases = weights.biases.reshape({3, 2, hidden_size});
+  }
+
   popops::addInPlace(graph(),
                      output_grad[output_grad.dim(0) - 1],
                      output_h_grad,
@@ -438,7 +444,7 @@ void GRUGradOpx::grow(poplar::program::Sequence &prog) const {
 
     if (gru_op.getLinearBeforeResetAttribute()) {
       // separate gradients for input and hidden bias
-      b_grad = b_grad.reshape({6, hidden_size});
+      b_grad = b_grad.reshape({1, 6 * hidden_size});
       setOutTensor(GRUGradOp::getBiasOutIndex(), b_grad);
     } else {
       // propagate same gradient to both input and hidden bias

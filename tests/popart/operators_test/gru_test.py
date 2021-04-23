@@ -450,7 +450,9 @@ def test_gru_torch_grad_all_inputs(op_tester):
         i4 = builder.addInputTensor(biases)
         i5 = builder.addInputTensor(seq_lens)
         i6 = builder.addInputTensor(initial_h)
-        Y, Y_h = builder.aiOnnx.gru([i1, i2, i3, i4, i5, i6], 2)
+        Y, Y_h = builder.aiOnnx.gru([i1, i2, i3, i4, i5, i6],
+                                    2,
+                                    linear_before_reset=1)
         Ys = builder.aiOnnx.squeeze([Y], [])
         Y1 = builder.aiOnnx.add([Ys, Y_h])
 
