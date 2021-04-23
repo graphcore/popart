@@ -73,6 +73,12 @@ public:
   // Create an op in this graph.
   template <typename OP, typename... Args> OP *createOp(Args &&... args);
 
+  // Create an op in this graph, connecting inputs and outputs
+  template <typename OP, typename... Args>
+  OP *createConnectedOp(const std::map<InIndex, TensorId> &in,
+                        const std::map<OutIndex, TensorId> &out,
+                        Args &&... args);
+
   std::vector<const Graph *> getCalledGraphs() const;
 
   // called from growFromNode and many other places where Ops created
@@ -316,6 +322,33 @@ template <typename OP, typename... Args> OP *Graph::createOp(Args &&... args) {
   auto ptr  = std::unique_ptr<Op>(new OP(std::forward<Args>(args)...));
   auto opId = moveIntoGraph(std::move(ptr));
   return static_cast<OP *>(getOp(opId));
+}
+
+template <typename OP, typename... Args>
+OP *Graph::createConnectedOp(const std::map<InIndex, TensorId> &in,
+                             const std::map<OutIndex, TensorId> &out,
+                             Args &&... args) {
+  OP *op = createOp<OP>(std::forward<Args>(args)...);
+
+  for (auto &input : in) {
+    op->connectInTensor(input.first, input.second);
+  }
+
+  for (auto &output : out) {
+    if (getTensors().contains(output.second)) {
+      Tensor *t = getTensors().get(output.second);
+      if (t->hasProducer()) {
+        t->getProducer()->disconnectOutTensor(t);
+      }
+      op->connectInTensor(output.first, output.second);
+    } else {
+      op->createAndConnectOutTensor(output.first, output.second);
+    }
+  }
+
+  op->setup();
+
+  return op;
 }
 
 template <typename T>

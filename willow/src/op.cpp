@@ -383,6 +383,26 @@ void Op::appendOutlineAttributes(OpSerialiserBase &os) const {
 
 std::vector<const Graph *> Op::getCalledGraphs() const { return {}; }
 
+std::vector<GraphId> Op::getCalledGraphIds() const {
+  std::vector<GraphId> graphIds;
+  for (auto graph : getCalledGraphs()) {
+    graphIds.push_back(graph->id);
+  }
+  return graphIds;
+}
+
+SubgraphIndex Op::getCalledGraphIndex(const GraphId &id) const {
+  auto calledGraphs = getCalledGraphIds();
+  auto it           = std::find(calledGraphs.begin(), calledGraphs.end(), id);
+  if (it == calledGraphs.end()) {
+    throw error("[getCalledGraphIndex] Op {} does not call graph {}.",
+                debugName(),
+                id.str());
+  } else {
+    return std::distance(calledGraphs.begin(), it);
+  }
+}
+
 Shape Op::prettyNpOut(const Shape &s0, const Shape &s1) const {
   std::stringstream ss;
   ss << "Op " << str();

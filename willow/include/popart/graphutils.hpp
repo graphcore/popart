@@ -97,6 +97,15 @@ void traverseDepthFirst(std::vector<Tensor *> tensors,
  */
 std::vector<Tensor *> rootTensors(Tensor *tensor);
 
+/**
+ * Return pointers to Ops, together with which
+ * of the other Ops have to occur
+ * (by topo cons and input/output relations)
+ * before the current Op
+ */
+std::map<Op *, std::set<Op *>> getOpsWithBefores(const std::set<Op *> &ops);
+std::map<Op *, std::set<Op *>> getOpsWithBefores(const std::vector<Op *> &ops);
+
 } // namespace graphutils
 } // namespace popart
 

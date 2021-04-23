@@ -606,7 +606,9 @@ static Op *replaceWithCallOp(const Match::Instance &instance, Graph &subgraph) {
   // Create the call op. Note that toLoss and fromLoss are set in the
   // constructor
   auto up_call_op = std::make_unique<CallOp>(
-      Onnx::CustomOperators::Call_1, instance.getGraph(), subgraph);
+      Onnx::CustomOperators::Call_1,
+      subgraph,
+      Op::Settings{instance.getGraph(), "", instance.getGraph().getScope()});
   auto call_op_id = instance.getGraph().moveIntoGraph(std::move(up_call_op));
   CallOp *call_op =
       dynamic_cast<CallOp *>(instance.getGraph().getOp(call_op_id));

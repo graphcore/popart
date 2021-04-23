@@ -9,6 +9,7 @@
 #include <popart/tensors.hpp>
 #include <popart/topocons.hpp>
 
+#include <popart/graphutils.hpp>
 #include <popart/op/boundary.hpp>
 #include <popart/op/init.hpp>
 #include <popart/op/remote.hpp>
@@ -122,16 +123,95 @@ void PruneHelper::setRequired(std::set<Op *> required_) {
 bool Prune::apply(Graph &graph) const {
   auto &ir = graph.getIr();
 
-  // initialise with all the var
-  // update ops for training,
-  // and work backwards. This
-  // is the set which is returned
-  std::set<Op *> required = ir.getTrainTargetOps();
+  // initialise with all operations modifying weights (directly or indirectly)
+  std::set<Op *> required;
 
-  // Find all ops which are not marked as pruneable and add those to required.
+  // Don't prune Ops that modify inputs which are required
+  auto modifiedInputRequired = [](Op *op, InIndex index) {
+    if (op->modifiesIndex(index)) {
+      Tensor *t = op->input->tensor(index);
+      if (t->anyAlias([](Tensor *ta) {
+            if (ta->tensorType() == TensorType::Variable) {
+              // Modified variables are always required (e.g. training target)
+              return true;
+            }
+            if (ta->isGraphInput()) {
+              auto callSites = ta->getGraph().getCallSiteOps();
+              for (Op *sgOp : callSites) {
+                InIndex opInIndex = sgOp->subgraphInToOpInIndex(
+                    sgOp->getCalledGraphIndex(ta->getGraph().id),
+                    ta->getGraph().getInputIndex(ta->id));
+                if (sgOp->hasInput(opInIndex) &&
+                    sgOp->modifiesIndex(opInIndex)) {
+                  // Modified graph inputs which are promoted through a call
+                  // site are always required
+                  return true;
+                }
+              }
+            }
+            return false;
+          })) {
+        return true;
+      }
+
+      std::set<Op *> consumers;
+      std::set<TensorId> excludes;
+
+      // Visit any tensor downstream of the modifier
+      graphutils::traverse(
+          op->output->tensors(),
+          [&excludes](Tensor *ts) {
+            excludes.insert(ts->id);
+            return true;
+          },
+          [](Op *, Tensor *, Tensor *) { return true; },
+          graphutils::TraversalType::BreadthFirst,
+          graphutils::VisitType::Pre,
+          graphutils::TraversalDirection::Forward);
+
+      // Collect any consumer of t and any of t's aliases not on the path of the
+      // modifying Op
+      t->anyAlias([&consumers, &excludes](Tensor *ts) {
+        if (excludes.find(ts->id) == excludes.end()) {
+          auto tsconsumers = ts->consumers.getOps();
+          consumers.insert(tsconsumers.begin(), tsconsumers.end());
+        }
+        return true;
+      });
+
+      auto opsWithBefores = graphutils::getOpsWithBefores(consumers);
+      if (logging::shouldLog(logging::Module::transform,
+                             logging::Level::Trace)) {
+        for (auto befores : opsWithBefores) {
+          logging::transform::trace(
+              "[Prune] Op {} numBefores: {} total: {} (for tensor: {})",
+              befores.first->debugName(),
+              befores.second.size(),
+              opsWithBefores.size(),
+              t->id);
+        }
+      }
+      // Modifying operations are required if they are not guaranteed to be the
+      // last consumer
+      if (opsWithBefores.at(op).size() < consumers.size()) {
+        // Not guaranteed to be the last consumer
+        return true;
+      }
+    }
+    return false;
+  };
+
+  // Find all ops which are not marked as pruneable and add those to
+  // required.
   for (auto &id_op : graph.getOps()) {
-    auto op = id_op.second.get();
-    if (!op->pruneable) {
+    auto op     = id_op.second.get();
+    auto inputs = op->input->tensorIdMap();
+    if (!op->pruneable || op->hasSideEffect() ||
+        std::any_of(inputs.begin(),
+                    inputs.end(),
+                    [&op, &modifiedInputRequired](const auto &idxAndTensorId) {
+                      return modifiedInputRequired(op, idxAndTensorId.first);
+                    })) {
       required.insert(op);
     }
   }
@@ -145,13 +225,12 @@ bool Prune::apply(Graph &graph) const {
   std::set<Tensor *> tensorsVisited;
 
   // the "front" is initialsed with (1) anchor tensors,
-  for (auto &tensorId : ir.getDataFlow().anchors()) {
-
+  auto addAnchor = [&graph, &tensorFront, &tensorsVisited](TensorId tensorId) {
     // Pruning can be run before anchors are validated.
     // There may be anchored tensors that aren't yet
     // present in the Ir.
     if (!graph.getTensors().contains(tensorId)) {
-      continue;
+      return;
     }
 
     Tensor *t = graph.getTensors().get(tensorId);
@@ -160,17 +239,30 @@ bool Prune::apply(Graph &graph) const {
     if (tensorsVisited.count(t) == 0) {
       tensorFront.push_back(t);
     }
+  };
+
+  for (auto &tensorId : ir.getAnchors()) {
+    addAnchor(tensorId);
+  }
+  for (auto &tensorId : ir.getRootAnchors()) {
+    addAnchor(tensorId);
   }
 
-  // and (2), graph outputs
+  // and (2), graph inputs/outputs
   for (auto &tensorId : graph.getOutputIds()) {
     Tensor *t = graph.getTensors().get(tensorId);
     if (tensorsVisited.count(t) == 0) {
       tensorFront.push_back(t);
     }
   }
+  for (auto &tensorId : graph.getInputIds()) {
+    Tensor *t = graph.getTensors().get(tensorId);
+    if (tensorsVisited.count(t) == 0) {
+      tensorFront.push_back(t);
+    }
+  }
 
-  // and (3), inputs to the training targets.
+  // and (3), inputs to the required operations.
   for (auto &op : required) {
     for (auto t_inds : op->input->indicesMap()) {
       Tensor *t = t_inds.first;
@@ -190,15 +282,6 @@ bool Prune::apply(Graph &graph) const {
     tensorFront.push_back(t);
   }
 
-  // and (5), input tensors to ops with side effects.
-  for (Op *op : ir.getAllOps()) {
-    if (op->hasSideEffect()) {
-      for (auto &tensor : op->input->tensorMap()) {
-        tensorFront.push_back(tensor.second);
-      }
-    }
-  }
-
   PruneHelper helper(&graph);
   helper.setFront(tensorFront);
   helper.setRequired(required);
@@ -209,11 +292,11 @@ bool Prune::apply(Graph &graph) const {
   helper.deleteTensors(tensorsToDelete);
 
   if (graph.getOps().size() == 0) {
-    // The graph is empty, nothing to do. Error message depends on whether this
-    // is the top-level graph.
+    // The graph is empty, nothing to do. Error message depends on whether
+    // this is the top-level graph.
     if (graph.id == graph.getIr().getMainGraph().id) {
-      throw error(
-          "All operations in the main graph were pruned, nothing to compute");
+      throw error("All operations in the main graph were pruned, nothing "
+                  "to compute");
     } else {
       throw error("All operations in graph {} were pruned, nothing to compute",
                   graph.id.str());

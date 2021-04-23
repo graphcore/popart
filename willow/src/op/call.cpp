@@ -14,24 +14,16 @@
 namespace popart {
 
 CallOp::CallOp(const OperatorIdentifier &opid_,
-               Graph &parent_,
                Graph &callee_,
-               std::vector<int> modifiedInputsViaAttrs_)
-    : CallOp(opid_,
-             parent_,
-             callee_,
-             modifiedInputsViaAttrs_,
-             {parent_, "", parent_.getScope()}) {}
+               const Op::Settings &settings_)
+    : CallOp(opid_, callee_, {}, settings_) {}
 
 CallOp::CallOp(const OperatorIdentifier &opid_,
-               Graph &parent_,
                Graph &callee_,
                std::vector<int> modifiedInputsViaAttrs_,
                const Op::Settings &settings_)
     : SubgraphOp(opid_, settings_), callee(callee_),
-      modifiedInputsViaAttrs(modifiedInputsViaAttrs_) {
-  settings.name = logging::format("Call_{}", callee_.id);
-}
+      modifiedInputsViaAttrs(modifiedInputsViaAttrs_) {}
 
 void CallOp::setup() {
   // Assume output tensors are ordered the same as those
@@ -99,7 +91,6 @@ CallGradOp::CallGradOp(CallOp &fwdOp,
                        const std::map<OutIndex, InIndex> &gradOutToNonGradIn_)
     : CallOp(
           Onnx::CustomOperators::Call_1,
-          fwdOp.getGraph(),
           fwdOp.getCalledGraph().getBackwardsGraph(fwdOp.getBackwardsGraphId()),
           {},
           fwdOp.settings),
@@ -177,11 +168,8 @@ static OpCreator<CallOp> callOpCreator(
         calleeGraph = &ir.createGraph(callee.name());
       }
 
-      Op *op = graph.createOp<CallOp>(info.opid,
-                                      info.settings.graph.get(),
-                                      *calleeGraph,
-                                      modifiedInputs,
-                                      info.settings);
+      Op *op = graph.createOp<CallOp>(
+          info.opid, *calleeGraph, modifiedInputs, info.settings);
       // Connect explicit inputs
       if (info.hasInputIds()) {
         for (InIndex i = 0; i < info.getInputIds().size(); ++i) {

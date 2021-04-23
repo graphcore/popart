@@ -6,6 +6,7 @@
 
 #include <boost/test/unit_test.hpp>
 
+#include <testutil/test_graphs/graph_test_models.hpp>
 #include <popart/builder.hpp>
 #include <popart/dataflow.hpp>
 #include <popart/filereader.hpp>
@@ -173,4 +174,75 @@ BOOST_AUTO_TEST_CASE(KeepOpsWithSideEffects) {
 
   // Then: All the ops should have been kept.
   BOOST_TEST(ir.getMainGraphOps().size() == 3);
+}
+
+BOOST_AUTO_TEST_CASE(PruneGraphModel1Test) {
+  GraphTestModel1 model;
+
+  Prune prune;
+
+  // Expected ops
+  std::map<std::string, bool> expectedOps;
+  expectedOps.insert({"Concat", true});
+  expectedOps.insert({"Slice0", true});
+  expectedOps.insert({"Slice1", false}); // pruned
+  expectedOps.insert({"Slice2", true});
+  expectedOps.insert({"AddLhsInplace", true});
+  expectedOps.insert({"Call0", true});
+  expectedOps.insert({"Call1", false}); // pruned
+
+  // Expected tensors
+  std::map<std::string, bool> expectedTensors;
+  expectedTensors.insert({"t0", true});
+  expectedTensors.insert({"t1", true});
+  expectedTensors.insert({"t2", false}); // pruned
+  expectedTensors.insert({"t3", true});
+  expectedTensors.insert({"t4", true});
+  expectedTensors.insert({"t5", true});
+  expectedTensors.insert({"t6", true});
+  expectedTensors.insert({"t7", true});
+  expectedTensors.insert({"t8", false}); // pruned
+
+  // Test
+  auto testExistingOpsAndTensors = [&model, &expectedOps, &expectedTensors](
+                                       bool isAfter) {
+    auto &ops = model.getIr().getMainGraph().getOps();
+    std::set<std::string> opNames;
+    for (auto &op : ops) {
+      opNames.insert(op.second->name());
+    }
+
+    auto tensors = model.getIr().getMainGraph().getTensors().getAllTensorIds();
+
+    if (!isAfter) {
+      // Check that all tensors and ops are in the expected map
+      BOOST_CHECK_EQUAL(ops.size(), expectedOps.size());
+      BOOST_CHECK_EQUAL(tensors.size(), expectedTensors.size());
+    }
+
+    for (auto &expected : expectedOps) {
+      logging::trace("Checking: {}", expected.first);
+      if (expected.second || !isAfter) {
+        BOOST_CHECK(opNames.find(expected.first) != opNames.end());
+      } else {
+        BOOST_CHECK(opNames.find(expected.first) == opNames.end());
+      }
+    }
+
+    for (auto &expected : expectedTensors) {
+      logging::trace("Checking: {}", expected.first);
+      if (expected.second || !isAfter) {
+        BOOST_CHECK(std::find(tensors.begin(), tensors.end(), expected.first) !=
+                    tensors.end());
+      } else {
+        BOOST_CHECK(std::find(tensors.begin(), tensors.end(), expected.first) ==
+                    tensors.end());
+      }
+    }
+  };
+
+  // Test before
+  testExistingOpsAndTensors(false);
+  prune.apply(model.getIr().getMainGraph());
+  testExistingOpsAndTensors(true);
 }

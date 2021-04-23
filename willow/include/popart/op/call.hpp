@@ -9,19 +9,15 @@ namespace popart {
 
 class CallOp : public SubgraphOp {
 public:
-  // parent: Graph this CallOp belongs to
   // callee: Graph this CallOp executes
   // NOTE: modifiedInputsViaAttrs is currently only used for testing purposes.
   CallOp(const OperatorIdentifier &,
-         Graph &parent,
          Graph &callee,
-         std::vector<int> modifiedInputsViaAttrs = {});
+         const Op::Settings &settings);
 
-  // parent: Graph this CallOp belongs to
   // callee: Graph this CallOp executes
   // NOTE: modifiedInputsViaAttrs is currently only used for testing purposes.
   CallOp(const OperatorIdentifier &,
-         Graph &parent,
          Graph &callee,
          std::vector<int> modifiedInputsViaAttrs,
          const Op::Settings &settings);

@@ -333,7 +333,9 @@ BOOST_AUTO_TEST_CASE(autodiff_1) {
       "main_in", tInfo, static_cast<void *>(&tData));
 
   auto callOp = mainGraph.createOp<CallOp>(
-      Onnx::AiGraphcore::OpSet1::Call, mainGraph, subgraphA);
+      Onnx::AiGraphcore::OpSet1::Call,
+      subgraphA,
+      Op::Settings{mainGraph, "", mainGraph.getScope()});
 
   callOp->connectInTensor(0, "main_in");
   callOp->createAndConnectOutTensor(0, "main_out");

@@ -9,6 +9,7 @@
 #include <popart/op/subgraph.hpp>
 #include <popart/tensorindex.hpp>
 #include <popart/tensors.hpp>
+#include <popart/topocons.hpp>
 
 namespace popart {
 namespace graphutils {
@@ -57,13 +58,16 @@ void traverse(std::vector<Tensor *> tensors,
 
     std::vector<Tensor *> toEnqueue;
 
-    auto addOp = [&toEnqueue, &tq, &filter](Op *op) {
+    auto addOpBwd = [&toEnqueue, &tq, &filter](Op *op) {
       for (auto &input : op->input->tensorMap()) {
         Tensor *tn = input.second;
         if (filter(op, tq, tn)) {
           toEnqueue.push_back(tn);
         }
       }
+    };
+
+    auto addOpFwd = [&toEnqueue, &tq, &filter](Op *op) {
       for (auto &output : op->output->tensorMap()) {
         Tensor *tn = output.second;
         if (filter(op, tq, tn)) {
@@ -72,7 +76,7 @@ void traverse(std::vector<Tensor *> tensors,
       }
     };
 
-    auto bwd = [&tq, &addOp, &toEnqueue, &filter]() {
+    auto bwd = [&tq, &addOpBwd, &toEnqueue, &filter]() {
       // Producer Ops
       if (tq->hasProducer()) {
         Op *p = tq->getProducer();
@@ -92,7 +96,7 @@ void traverse(std::vector<Tensor *> tensors,
           }
         } else {
           // Regular Op
-          addOp(p);
+          addOpBwd(p);
         }
       }
 
@@ -112,7 +116,7 @@ void traverse(std::vector<Tensor *> tensors,
       }
     };
 
-    auto fwd = [&tq, &addOp, &toEnqueue, &filter]() {
+    auto fwd = [&tq, &addOpFwd, &toEnqueue, &filter]() {
       // Consumer Ops
       for (Op *c : tq->consumers.getOps()) {
         if (SubgraphOp *sgOp = dynamic_cast<SubgraphOp *>(c)) {
@@ -131,7 +135,7 @@ void traverse(std::vector<Tensor *> tensors,
           }
         } else {
           // Regular Op
-          addOp(c);
+          addOpFwd(c);
         }
       }
 
@@ -153,13 +157,23 @@ void traverse(std::vector<Tensor *> tensors,
 
     switch (traversalDirection) {
     case TraversalDirection::ForwardBackward: {
-      fwd();
-      bwd();
+      if (traversalType == TraversalType::BreadthFirst) {
+        fwd();
+        bwd();
+      } else {
+        bwd();
+        fwd();
+      }
       break;
     }
     case TraversalDirection::BackwardForward: {
-      bwd();
-      fwd();
+      if (traversalType == TraversalType::BreadthFirst) {
+        bwd();
+        fwd();
+      } else {
+        fwd();
+        bwd();
+      }
       break;
     }
     case TraversalDirection::Forward: {
@@ -228,6 +242,76 @@ std::vector<Tensor *> rootTensors(Tensor *tensor) {
            VisitType::Pre,
            TraversalDirection::Backward);
   return roots;
+}
+
+std::map<Op *, std::set<Op *>> getOpsWithBefores(const std::set<Op *> &ops) {
+  std::map<Op *, std::set<Op *>> opsWithBefores;
+
+  for (Op *op0 : ops) {
+    opsWithBefores.insert({op0, {}});
+  }
+
+  if (ops.empty()) {
+    return opsWithBefores;
+  }
+
+  Graph &graph = (*ops.begin())->getGraph();
+
+  for (Op *op0 : ops) {
+    // Graph connections
+    std::queue<Op *> queue;
+    queue.push(op0);
+    while (!queue.empty()) {
+      Op *op1 = queue.front();
+      queue.pop();
+      if (op1 != op0 && ops.find(op1) != ops.end()) {
+        // Op1 occurs before Op0
+        opsWithBefores[op0].insert(op1);
+      }
+      for (Tensor *input : op1->input->tensors()) {
+        if (input->hasProducer()) {
+          queue.push(input->getProducer());
+        }
+      }
+    }
+
+    // Topological constraints
+    auto befores     = graph.topoCons->getBefores(op0);
+    auto tiedBefores = graph.topoCons->getTiedBefores(op0);
+
+    for (Op *op1 : befores) {
+      if (ops.find(op1) != ops.end()) {
+        opsWithBefores[op0].insert(op1);
+      }
+    }
+    for (Op *op1 : tiedBefores) {
+      if (ops.find(op1) != ops.end()) {
+        opsWithBefores[op0].insert(op1);
+      }
+    }
+  }
+
+  // Transitive closure
+  bool changed = true;
+  while (changed) {
+    changed = false;
+    for (auto &befores : opsWithBefores) {
+      for (auto &existingBefore : befores.second) {
+        auto &newBefores = opsWithBefores.at(existingBefore);
+        auto oldSize     = befores.second.size();
+        befores.second.insert(newBefores.begin(), newBefores.end());
+        changed |= befores.second.size() > oldSize;
+      }
+    }
+  }
+
+  return opsWithBefores;
+}
+
+std::map<Op *, std::set<Op *>> getOpsWithBefores(const std::vector<Op *> &ops) {
+  std::set<Op *> opss;
+  opss.insert(ops.begin(), ops.end());
+  return getOpsWithBefores(opss);
 }
 
 } // namespace graphutils

@@ -190,85 +190,100 @@ std::vector<char> Tensor::getDataViaGraphTraversal() const {
                      roots.size(),
                      tensorsOnPath.size());
 
-  // Propagate const data
-  graphutils::traverse(
-      roots,
-      [&tensorsOnPath](Tensor *t) {
-        if (tensorsOnPath.find(t) != tensorsOnPath.end()) {
-          if (t->hasProducer()) {
-            // Producer const expr resolving
-            if (ConstExprOpManager::hasConstExprOp(t->getProducer())) {
-              bool allInputsResolved = true;
-              for (auto inTensor : t->getProducer()->input->tensors()) {
-                if (!inTensor->hasTensorData()) {
-                  allInputsResolved = false;
-                }
-              }
-              if (allInputsResolved) {
-                auto ceOp =
-                    ConstExprOpManager::createConstExprOp(t->getProducer());
-                t->setTensorData(t->info, ceOp->compute().data());
-              }
-            }
-          } else if (t->isGraphInput()) {
-            // Caller const expr resolving
-            auto callSites = t->getGraph().getCallSiteOps();
-
-            bool callSitesAgree = true;
-
-            std::vector<std::vector<char>> constData;
-
-            for (Op *c : callSites) {
-              for (int i = 0; i < c->getCalledGraphs().size(); ++i) {
-                if (c->getCalledGraphs().at(i)->id == t->getGraph().id) {
-                  InIndex index =
-                      c->subgraphInToOpInIndex(i, t->getGraphInputIndex());
-                  if (c->hasInput(index) &&
-                      c->inTensor(index)->hasTensorData()) {
-                    // Technically, if the graph is well-formed,
-                    // we'd expect each call site to produce the
-                    // same const value here, but it's not guaranteed.
-                    const char *ptr = static_cast<const char *>(
-                        c->inTensor(index)->tensorData()->data());
-                    std::vector<char> data;
-                    data.assign(ptr, ptr + t->info.nbytes());
-                    constData.push_back(data);
-                    callSitesAgree &=
-                        constData.at(0) == constData.at(constData.size() - 1);
+  bool changed = true;
+  while (changed) {
+    changed = false;
+    // Propagate const data
+    graphutils::traverse(
+        roots,
+        [&changed, &tensorsOnPath](Tensor *t) {
+          bool hasData = t->hasTensorData();
+          if (!hasData) {
+            if (tensorsOnPath.find(t) != tensorsOnPath.end()) {
+              if (t->hasProducer()) {
+                // Producer const expr resolving
+                if (ConstExprOpManager::hasConstExprOp(t->getProducer())) {
+                  bool allInputsResolved = true;
+                  for (auto inTensor : t->getProducer()->input->tensors()) {
+                    if (!inTensor->hasTensorData()) {
+                      logging::ir::trace(
+                          "[Tensor::getDataViaGraphTraversal] Tensor {}: no "
+                          "tensor "
+                          "data. Not all inputs resolved for tensor {}.",
+                          inTensor->id,
+                          t->id);
+                      allInputsResolved = false;
+                    }
+                  }
+                  if (allInputsResolved) {
+                    auto ceOp =
+                        ConstExprOpManager::createConstExprOp(t->getProducer());
+                    t->setTensorData(t->info, ceOp->compute().data());
+                    changed = true;
                   }
                 }
-              }
-            }
+              } else if (t->isGraphInput()) {
+                // Caller const expr resolving
+                auto callSites = t->getGraph().getCallSiteOps();
 
-            if (constData.size() > 0 && callSitesAgree) {
-              t->setTensorData(t->info,
-                               static_cast<void *>(constData.front().data()));
+                bool callSitesAgree = true;
+
+                std::vector<std::vector<char>> constData;
+
+                for (Op *c : callSites) {
+                  for (int i = 0; i < c->getCalledGraphs().size(); ++i) {
+                    if (c->getCalledGraphs().at(i)->id == t->getGraph().id) {
+                      InIndex index =
+                          c->subgraphInToOpInIndex(i, t->getGraphInputIndex());
+                      if (c->hasInput(index) &&
+                          c->inTensor(index)->hasTensorData()) {
+                        // Technically, if the graph is well-formed,
+                        // we'd expect each call site to produce the
+                        // same const value here, but it's not guaranteed.
+                        const char *ptr = static_cast<const char *>(
+                            c->inTensor(index)->tensorData()->data());
+                        std::vector<char> data;
+                        data.assign(ptr, ptr + t->info.nbytes());
+                        constData.push_back(data);
+                        callSitesAgree &= constData.at(0) ==
+                                          constData.at(constData.size() - 1);
+                      }
+                    }
+                  }
+                }
+
+                if (constData.size() > 0 && callSitesAgree) {
+                  t->setTensorData(
+                      t->info, static_cast<void *>(constData.front().data()));
+                  changed = true;
+                }
+              }
+            } else {
+              // Not interested in propagating through this tensor
+              // (was not on the backward path)
+              return false;
             }
           }
-        } else {
-          // Not interested in propagating through this tensor
-          // (was not on the backward path)
-          return false;
-        }
-        bool hasData = t->hasTensorData();
+          hasData = t->hasTensorData();
 
-        logging::ir::trace(
-            "[Tensor::getDataViaGraphTraversal] Tensor {} {} constant data.",
-            t->id,
-            hasData ? "has" : "does not have");
+          logging::ir::trace(
+              "[Tensor::getDataViaGraphTraversal] Tensor {} {} constant data.",
+              t->id,
+              hasData ? "has" : "does not have");
 
-        if (hasData) {
-          // Continue forward propagation
-          return true;
-        } else {
-          // Stop forward propagation
-          return false;
-        }
-      },
-      [](Op *op, Tensor *t0, Tensor *t1) { return true; },
-      graphutils::TraversalType::BreadthFirst,
-      graphutils::VisitType::Pre,
-      graphutils::TraversalDirection::Forward);
+          if (hasData) {
+            // Continue forward propagation
+            return true;
+          } else {
+            // Stop forward propagation
+            return false;
+          }
+        },
+        [](Op *op, Tensor *t0, Tensor *t1) { return true; },
+        graphutils::TraversalType::BreadthFirst,
+        graphutils::VisitType::Pre,
+        graphutils::TraversalDirection::Forward);
+  }
 
   if (!hasTensorData()) {
     throw error("[Tensor::getDataViaGraphTraversal] Could not work out tensor "

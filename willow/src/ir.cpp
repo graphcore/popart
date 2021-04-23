@@ -1254,6 +1254,7 @@ void Ir::prepareImpl(const IrBundle &gb, const HashesMap &cacheEntries) {
   // Streaming memory transformation 2 needs up-to-date aliasing information
   updateAliases();
   applyTransform(StreamingMemory::id(2), getMainGraph());
+  updateAliases();
   // Remove extra RemoteLoad, RemoteStore and Replicated ops that are not used
   applyTransform(Prune::id(), getMainGraph());
   updateAliases();
@@ -2576,16 +2577,6 @@ void Ir::growVarUpdateOpInternal(OpId opId) {
   op->inheritPlacementAttributes(false);
 }
 
-std::set<Op *> Ir::getTrainTargetOps() const {
-  std::set<Op *> trainTargets;
-  for (auto &op : getMainGraph().getOps()) {
-    if (op.second->isConvertibleTo<VarUpdateOp>()) {
-      trainTargets.insert(op.second.get());
-    }
-  }
-  return trainTargets;
-}
-
 void Ir::setFinalLoss(const TensorId &loss) {
   logging::ir::info("Growing final loss");
 
@@ -3482,8 +3473,8 @@ std::size_t std::hash<popart::Ir>::operator()(const popart::Ir &ir) const {
   return seed;
 }
 
-std::size_t
-std::hash<popart::IrBundle>::operator()(const popart::IrBundle &bundle) const {
+std::size_t std::hash<popart::IrBundle>::
+operator()(const popart::IrBundle &bundle) const {
   size_t seed = 0;
 
   boost::hash_combine(

@@ -109,6 +109,12 @@ public:
     virtual ~Settings()        = default;
     Settings(const Settings &) = default;
 
+    Settings copy(const std::string &new_name) {
+      Settings s = *this;
+      s.name     = new_name;
+      return s;
+    }
+
     std::reference_wrapper<Graph> graph;
 
     std::string name = "";
@@ -471,6 +477,10 @@ public:
 
   // All graph that this op may call during its execution
   virtual std::vector<const Graph *> getCalledGraphs() const;
+  std::vector<GraphId> getCalledGraphIds() const;
+
+  // The index of the called graph
+  SubgraphIndex getCalledGraphIndex(const GraphId &id) const;
 
   // For each subgraphIndex [0,getCalledGraphs().size()) and each valid InIndex
   // for this op, return the associated subgraph's InIndex (or return -1
