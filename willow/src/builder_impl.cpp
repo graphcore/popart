@@ -159,7 +159,7 @@ void BuilderImpl::runShapeInference(ONNX_NAMESPACE::NodeProto *node,
     auto &id         = node->output(i);
     auto *value_info = getValueInfo(id);
     if (!value_info) {
-      logging::builder::warn(
+      logging::builder::info(
           "Shape inference failed for output '{}' of node '{}'",
           id,
           node->op_type());
