@@ -1,8 +1,11 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
+#include <iostream>
 #include <memory>
+#include <popart/graph.hpp>
 #include <popart/onnxutil.hpp>
 #include <popart/op/cast.hpp>
 #include <popart/opmanager.hpp>
+#include <popart/tensor.hpp>
 
 namespace popart {
 
@@ -17,7 +20,13 @@ std::unique_ptr<Op> CastOp::clone() const {
 
 std::vector<std::unique_ptr<Op>> CastOp::getGradOps() {
   std::vector<std::unique_ptr<Op>> upops;
-  upops.emplace_back(std::make_unique<CastGradOp>(*this));
+  DataType fromDataType =
+      getGraph().getTensors().get(inId(getInIndex()))->info.dataType();
+
+  // Only insert into graph if source is a floating point.
+  if (fromDataType == DataType::FLOAT || fromDataType == DataType::FLOAT16) {
+    upops.emplace_back(std::make_unique<CastGradOp>(*this));
+  }
   return upops;
 }
 
