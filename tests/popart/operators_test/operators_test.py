@@ -76,6 +76,67 @@ def test_add(op_tester):
     op_tester.run(init_builder, reference, 'train')
 
 
+@pytest.mark.parametrize("npSrcType,npDstType,builderDstType",
+                         [(np.int32, np.float32, "FLOAT"),
+                          (np.int8, np.float16, "FLOAT16"),
+                          (np.float16, np.int8, "INT8"),
+                          (np.uint8, np.float16, "FLOAT16"),
+                          (np.float16, np.uint8, "UINT8"),
+                          (np.int32, np.int32, "INT32")])
+def test_cast(op_tester, npSrcType, npDstType, builderDstType):
+    d1 = np.random.uniform(0, 20, 5).astype(npSrcType)
+
+    def init_builder(builder):
+        i1 = builder.addInputTensor(d1)
+        o = builder.aiOnnx.cast([i1], builderDstType)
+
+        builder.addOutputTensor(o)
+        return [o]
+
+    def reference(ref_data):
+        return [d1.astype(npDstType)]
+
+    if npSrcType in (np.int8, np.uint8):
+        op_tester.options.opxModifyChecking = False
+
+    op_tester.run(init_builder, reference, 'infer')
+
+
+@pytest.mark.parametrize("npSrcType,torchDstType,builderDstType",
+                         [(np.int32, torch.float32, "FLOAT"),
+                          (np.int8, torch.float32, "FLOAT"),
+                          (np.uint8, torch.float32, "FLOAT")])
+def test_cast_grad(op_tester, npSrcType, torchDstType, builderDstType):
+    d1 = np.random.uniform(0, 10, 10).astype(npSrcType)
+
+    def init_builder(builder):
+        i1 = builder.addInputTensor(d1)
+        c = builder.aiOnnx.cast([i1], builderDstType)
+        # Add an op that produces a gradient so we can test CastGrad properly
+        o = builder.aiOnnx.reducesum([c])
+        builder.addOutputTensor(o)
+        return [
+            o,
+            popart.reservedGradientPrefix() + i1,
+            popart.reservedGradientPrefix() + o
+        ]
+
+    def reference(ref_data):
+        c = torch.tensor(d1, dtype=torchDstType, requires_grad=True)
+        out = torch.sum(c).reshape((1,))
+        d_o = ref_data.getOutputTensorGrad(0)
+        out.backward(torch.tensor(d_o))
+        d_i1 = c.grad.numpy().astype(npSrcType)
+        return [out, d_i1, d_o]
+
+    if npSrcType in (np.int8, np.uint8):
+        op_tester.options.opxModifyChecking = False
+
+    op_tester.setPatterns(['PreUniRepl', 'PostNRepl', 'SqrtGradOp'],
+                          enableRuntimeAsserts=False)
+    op_tester.run(init_builder, reference, 'train')
+
+
 def test_logical_if(op_tester):
     def test(then_branch):
         d1 = np.asarray([0, 20, 5]).astype(np.int32)
@@ -820,8 +881,7 @@ def test_reverse(op_tester):
 
     with pytest.raises(popart.popart_exception) as e_info:
         op_tester.run(init_builder_negative_dim, reference, 'infer')
-    assert "invalid dimension '-2'. Only positive dimensions are supported" in e_info.value.args[
-        0]
+    assert "invalid dimension '-2'. Only positive dimensions are supported" in e_info.value.args[0]
 
     with pytest.raises(popart.popart_exception) as e_info:
         op_tester.run(init_builder_dim_appears_twice, reference, 'infer')
@@ -829,8 +889,7 @@ def test_reverse(op_tester):
 
     with pytest.raises(popart.popart_exception) as e_info:
         op_tester.run(init_builder_dim_greater_than_rank, reference, 'infer')
-    assert "invalid dimension '3' for input tensor of rank 3" in e_info.value.args[
-        0]
+    assert "invalid dimension '3' for input tensor of rank 3" in e_info.value.args[0]
 
 
 def test_reverse_grad(op_tester):
@@ -2439,7 +2498,8 @@ def test_instancenorm_grad_5D_input(op_tester):
 
     non_zero_places = 10
 
-    data = np.random.rand(batch_size, features, d1, d2, d3).astype(np.float32)
+    data = np.random.rand(batch_size, features, d1,
+                          d2, d3).astype(np.float32)
 
     a_few_places = np.zeros_like(data.flatten())
 
