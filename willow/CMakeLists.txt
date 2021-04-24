@@ -191,6 +191,10 @@ execute_process(COMMAND
   OUTPUT_VARIABLE GIT_COMMIT_HASH
   OUTPUT_STRIP_TRAILING_WHITESPACE
 )
+# Provide fallback for building without a .git directory.
+if(GIT_COMMIT_HASH STREQUAL "")
+  set(GIT_COMMIT_HASH "0000000000")
+endif()
 
 configure_file(
     include/popart/version.hpp.in
