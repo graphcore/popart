@@ -1171,6 +1171,12 @@ Devicex::getHostReduceRemoteBuffers() const {
   return lowering().getHostReduceRemoteBuffers();
 }
 
+void Devicex::connectStream(const std::string &streamHandle,
+                            void *host_buffer) {
+  POPART_TRACEPOINT();
+  pEngine->connectStream(streamHandle, host_buffer);
+}
+
 void Devicex::connectStreamToCallback(const std::string &streamHandle,
                                       std::function<void(void *)> callback,
                                       unsigned index) {

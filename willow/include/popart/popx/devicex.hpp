@@ -111,9 +111,14 @@ public:
 
   void connectRngStateStream();
 
+  // Connect a callback to the given poplar stream handle.
   void connectStreamToCallback(const std::string &streamHandle,
                                std::function<void(void *)> callback,
                                unsigned index);
+
+  // Connect the poplar stream handle to the default poplar callback with the
+  // given pointer.
+  void connectStream(const std::string &streamHandle, void *host_buffer);
 
   void copyFromRemoteBuffer(const PopStreamId buffer,
                             void *w,

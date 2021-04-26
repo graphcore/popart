@@ -131,6 +131,23 @@ public:
   uint64_t getCycleCount(std::string id = "");
 
   /**
+   * Connect Poplar stream callbacks. In conjunction with
+   * `getGradAndVarStreamIds` the streams can be used to copy gradients to the
+   * host to perform collective operations after which the variables can be
+   * streamed back after they have been updated to the device.
+   * \p index referes to the replica index when using replicated graphs.
+   */
+  void connectStreamToCallback(const std::string &streamHandle,
+                               std::function<void(void *)> callback,
+                               unsigned index = 0);
+
+  /**
+   * Connect a given poplar stream handle with a buffer to copy the memory to or
+   * from IPU.
+   */
+  void connectStream(const std::string &streamHandle, void *buffer);
+
+  /**
    * Perform one step.
    *
    * Read input data from address in \c stepIO.in.
@@ -433,17 +450,6 @@ public:
    */
   const std::map<std::string, poplar::RemoteBuffer> &
   getHostReduceRemoteBuffers() const;
-
-  /**
-   * Connect Poplar stream callbacks. In conjunction with
-   * `getGradAndVarStreamIds` the streams can be used to copy gradients to the
-   * host to perform collective operations after which the variables can be
-   * streamed back after they have been updated to the device.
-   * \p index referes to the replica index when using replicated graphs.
-   */
-  void connectStreamToCallback(const std::string &streamHandle,
-                               std::function<void(void *)> callback,
-                               unsigned index = 0);
 
   /**
    * Read from a RemoteBuffer object into a user space pointer \p w.

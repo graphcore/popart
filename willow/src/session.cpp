@@ -356,6 +356,18 @@ void Session::writeWeights(const IWeightsIO &weightsIo) {
   device_->writeWeights(weightsIo);
 }
 
+void Session::connectStreamToCallback(const std::string &streamHandle,
+                                      std::function<void(void *)> callback,
+                                      unsigned index) {
+  POPART_TRACEPOINT();
+  device_->connectStreamToCallback(streamHandle, callback, index);
+}
+
+void Session::connectStream(const std::string &streamHandle, void *buffer) {
+  POPART_TRACEPOINT();
+  device_->connectStream(streamHandle, buffer);
+}
+
 void Session::run(IStepIO &stepio, std::string debugName) {
   POPART_TRACEPOINT();
   logging::session::trace("Session::run {}", debugName);
@@ -739,14 +751,6 @@ TrainingSession::getHostReduceStreamIds() const {
 const std::map<std::string, poplar::RemoteBuffer> &
 TrainingSession::getHostReduceRemoteBuffers() const {
   return device_->getHostReduceRemoteBuffers();
-}
-
-void TrainingSession::connectStreamToCallback(
-    const std::string &streamHandle,
-    std::function<void(void *)> callback,
-    unsigned index) {
-  POPART_TRACEPOINT();
-  device_->connectStreamToCallback(streamHandle, callback, index);
 }
 
 void TrainingSession::copyFromRemoteBuffer(const std::string &buffer,
