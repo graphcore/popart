@@ -1,7 +1,6 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 #include <testutil/test_graphs/graph_test_models.hpp>
 
-#include <boost/test/unit_test.hpp>
 #include <popart/dataflow.hpp>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
