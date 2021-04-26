@@ -797,18 +797,18 @@ struct SessionOptions {
   /// for specific TensorId values.
   std::map<TensorId, TensorLocation> tensorLocationSettingsOverride;
 
-  // If true, keep track of the distribution of gradient tensor elements over
-  // the floating point range. Adjust the value loss scaling tensor accordingly,
-  // with the aim of preventing underflow or overflow.
+  /// If true, keep track of the distribution of gradient tensor elements over
+  /// the floating point range. Adjust the value loss scaling tensor
+  /// accordingly, with the aim of preventing underflow or overflow.
   bool enableAutomaticLossScaling = false;
 
-  // If enabled, casts any tensor of unsupported data types to supported data
-  // types when lowering to Poplar
-  // Currently, this implies casting:
-  // INT64 -> INT32
-  // UINT64 -> UINT32
-  // The cast will error for incompatible data types and over/underflows, and
-  // inform on narrowing casts
+  /// If enabled, casts any tensor of unsupported data types to supported data
+  /// types when lowering to Poplar
+  /// Currently, this implies casting:
+  /// INT64 -> INT32
+  /// UINT64 -> UINT32
+  /// The cast will error for incompatible data types and over/underflows, and
+  /// inform on narrowing casts
   bool enableSupportedDataTypeCasting = true;
 
   // Get the buffering depth for a TensorId. Will return 1 unless
@@ -819,21 +819,21 @@ struct SessionOptions {
   unsigned getPrefetchBufferingDepth(const TensorId &id,
                                      unsigned defaultValue) const;
 
-  // Callback function used to to indicate
-  // PopART compilation progress. The function is
-  // passed two integers. The first is the progress
-  // value and the second is the maximum value for
-  // the progress.
-  //
-  // The function should not block. All calls
-  // to the callback function will be made from the main thread so
-  // blocking in the callback will block compilation from progressing.
-  //
-  // If this logger is not set then compilation progress will be
-  // printed on the info channel.
+  /// Callback function used to to indicate
+  /// PopART compilation progress. The function is
+  /// passed two integers. The first is the progress
+  /// value and the second is the maximum value for
+  /// the progress.
+  ///
+  /// The function should not block. All calls
+  /// to the callback function will be made from the main thread so
+  /// blocking in the callback will block compilation from progressing.
+  ///
+  /// If this logger is not set then compilation progress will be
+  /// printed on the info channel.
   std::function<void(int, int)> compilationProgressLogger;
 
-  // Total progress ticks until compilation complete
+  /// Total progress ticks until compilation complete
   int compilationProgressTotal = 100;
 
   // Returns true if auto-recomputation is enabled.
