@@ -833,6 +833,9 @@ struct SessionOptions {
   // printed on the info channel.
   std::function<void(int, int)> compilationProgressLogger;
 
+  // Total progress ticks until compilation complete
+  int compilationProgressTotal = 100;
+
   // Returns true if auto-recomputation is enabled.
   bool autoRecomputationEnabled() const;
 };

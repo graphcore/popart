@@ -105,17 +105,19 @@ poplar::Type popType(DataType);
 
 // Log compilation progress for the whole compilation.
 // For consistency we try to stick to roughly the same distribution as TF:
-// 0-1    % high level passes
-// 1-3    % preplanning
-// 3-40   % graph construction
+// 0-3    % ir preparation
+// 3-4    % high level passes
+// 4-7    % preplanning
+// 7-40   % graph construction
 // 40-100 % Poplar compilation
 class ProgressLogger {
 public:
-  ProgressLogger(std::function<void(int, int)> callback);
+  ProgressLogger(const SessionOptions &);
   void compilationStart();
   void preplanningStart();
   void preplanningEnd();
   void creatingSequence(int task, int numTasks);
+  void complete();
   // Called by Poplar
   void operator()(int progress, int total);
 
@@ -127,6 +129,7 @@ private:
 
 private:
   std::function<void(int, int)> callback_;
+  int progressTotal;
 };
 
 class IrLowering {

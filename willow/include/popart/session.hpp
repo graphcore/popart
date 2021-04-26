@@ -289,6 +289,11 @@ protected:
   void assertExecutableLoaded() const;
 
   /**
+   * Initializes the progress logger to zero
+   */
+  void initProgressLogger(const SessionOptions &userOptions);
+
+  /**
    * Abstraction of the computation. The Ir is where
    * all the compute graph optimisations, backwards pass construction,
    * re-computation growing etc. happens.

@@ -251,8 +251,6 @@ void gclEnvironmentDeprecationWarning(const std::string &envVarName,
                 optName);
 }
 
-constexpr int progressTotal = 100;
-
 } // namespace
 
 int ProgressLogger::current(int start, int end, int progress, int total) {
@@ -260,22 +258,31 @@ int ProgressLogger::current(int start, int end, int progress, int total) {
   return start + std::floor(static_cast<float>(end - start) * ratio);
 }
 
-ProgressLogger::ProgressLogger(std::function<void(int, int)> callback)
-    : callback_(callback ? callback : defaultLogPrinter) {}
+ProgressLogger::ProgressLogger(const SessionOptions &options) {
+  if (options.compilationProgressLogger) {
+    callback_ = options.compilationProgressLogger;
+  } else {
+    callback_ = defaultLogPrinter;
+  }
 
-void ProgressLogger::compilationStart() { callback_(0, progressTotal); }
+  progressTotal = options.compilationProgressTotal;
+}
 
-void ProgressLogger::preplanningStart() { callback_(1, progressTotal); }
+void ProgressLogger::compilationStart() { callback_(3, progressTotal); }
 
-void ProgressLogger::preplanningEnd() { callback_(3, progressTotal); }
+void ProgressLogger::preplanningStart() { callback_(4, progressTotal); }
+
+void ProgressLogger::preplanningEnd() { callback_(6, progressTotal); }
 
 void ProgressLogger::creatingSequence(int task, int numTasks) {
-  callback_(current(4, 40, task, numTasks), progressTotal);
+  callback_(current(7, 40, task, numTasks), progressTotal);
 }
 
 void ProgressLogger::operator()(int progress, int total) {
   callback_(current(41, progressTotal, progress, total), progressTotal);
 }
+
+void ProgressLogger::complete() { callback_(progressTotal, progressTotal); }
 
 devicex_memory_allocation_err::devicex_memory_allocation_err(
     const devicex_memory_allocation_err &rhs)
@@ -328,8 +335,7 @@ std::string devicex_memory_allocation_err::getGraphReport(bool useCbor) const {
 IrLowering::IrLowering(const Ir &ir,
                        std::shared_ptr<DeviceInfo> deviceInfo_,
                        bool prepareGraphHasBeenCalled)
-    : _ir(ir), deviceInfo(deviceInfo_),
-      progressLogger(ir.getSessionOptions().compilationProgressLogger),
+    : _ir(ir), deviceInfo(deviceInfo_), progressLogger(ir.getSessionOptions()),
       prepareGraphHasBeenCalled_(prepareGraphHasBeenCalled), tensors_(ir),
       progs(PopPrograms(this)) {
   POPART_TRACEPOINT();
@@ -3203,6 +3209,7 @@ poplar::Executable IrLowering::getExecutable() {
     boost::swap(cachedExecutable, result);
     logging::devicex::info("Returning CachedExecutable");
 
+    progressLogger.complete();
     return std::move(result.value());
   } else {
     try {
@@ -3219,6 +3226,7 @@ poplar::Executable IrLowering::getExecutable() {
       // re-throw the exception In certain cases poplar will throw the error
       // without a graph profile. The following engine option needs to be set to
       // enable the graph profile in this case "debug.allowOutOfMemory":"true"
+      progressLogger.complete();
       logging::devicex::err("Memory allocation error : {}", e.what());
       throw devicex_memory_allocation_err(e, reportOptions);
     }

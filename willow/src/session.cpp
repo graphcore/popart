@@ -62,6 +62,7 @@ Session::Session(Ir ir_, std::shared_ptr<DeviceInfo> deviceInfo)
     : ir(std::move(ir_)) {
   ctorCommonLogic();
   setDevice(std::move(deviceInfo));
+  initProgressLogger(ir.getSessionOptions());
 }
 
 void Session::setDevice(std::shared_ptr<DeviceInfo> deviceInfo) {
@@ -572,6 +573,13 @@ std::string Session::serializeIr(IrSerializationFormat format) {
   return ss.str();
 }
 
+void Session::initProgressLogger(const SessionOptions &userOptions) {
+  if (userOptions.compilationProgressLogger) {
+    int total = userOptions.compilationProgressTotal;
+    userOptions.compilationProgressLogger(0, total);
+  }
+}
+
 void Session::configureFromOnnx(const std::string &modelProtoOrFilename,
                                 const DataFlow &df,
                                 const TensorId &lossIn,
@@ -582,12 +590,14 @@ void Session::configureFromOnnx(const std::string &modelProtoOrFilename,
                                 const Patterns &patterns) {
   POPART_TRACEPOINT();
   logging::session::trace("Session::configureFromOnnx");
+  initProgressLogger(userOptions);
 
   auto modelProto = onnxutil::getModelProto(modelProtoOrFilename);
 
   if (userOptions.enableEngineCaching) {
     cacheEntries = getCacheEntries(userOptions.cachePath);
   }
+
   ir.prepare({modelProto,
               perk,
               df,
