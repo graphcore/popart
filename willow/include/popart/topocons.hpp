@@ -50,6 +50,20 @@ public:
                           const std::vector<Op *> &afterTransfer,
                           bool removeOld = true);
 
+  // replace each topological constraint from opRemap to either the replacement
+  // Op (the subgraphing Op, external topocons),
+  // or the subgraph Ops (internal topocons of the subgraph)
+  // Before (arrows indicate topocons between Ops):
+  //    A -> B -> C -> D
+  //         ~    ~ (move into subgraph)
+  //
+  // After (E replaces B, C):
+  //    A -> E -> D
+  //    E: B -> C
+  static void transferToSubgraph(Op *replacementOp,
+                                 std::map<Op *, std::vector<Op *>> opRemaps,
+                                 bool removeOld = true);
+
   bool contains(Op *before, Op *after) const;
   std::vector<Op *> getAfters(Op *before) const;
   std::vector<Op *> getBefores(Op *after) const;

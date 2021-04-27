@@ -59,7 +59,7 @@ std::unique_ptr<Op> CallOp::clone() const {
 Graph &CallOp::getCalledGraph() const { return callee.get(); }
 
 void CallOp::appendOutlineAttributes(OpSerialiserBase &os) const {
-  Op::appendOutlineAttributes(os);
+  SubgraphOp::appendOutlineAttributes(os);
   os.appendAttribute("callee", callee.get().id.str());
 }
 

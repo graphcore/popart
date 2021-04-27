@@ -25,14 +25,14 @@ std::map<int, Shape> TensorIndexMap::getIndexShapeMap() {
 
 int TensorIndexMap::minIndex() const {
   if (tensor_map.empty()) {
-    return 0;
+    return -1;
   }
   return (tensor_map.begin())->first;
 }
 
 int TensorIndexMap::maxIndex() const {
   if (tensor_map.empty()) {
-    return 0;
+    return -1;
   }
   return (--tensor_map.end())->first;
 }
@@ -40,7 +40,7 @@ int TensorIndexMap::maxIndex() const {
 TensorIndexMap::~TensorIndexMap() = default;
 
 std::vector<TensorId> TensorIndexMap::getSerialised() const {
-  int maxIndex = 0;
+  int maxIndex = -1;
   for (auto &ind_tensor : tensor_map) {
     if (ind_tensor.first > maxIndex) {
       maxIndex = ind_tensor.first;

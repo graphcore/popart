@@ -24,6 +24,8 @@ public:
   // parent: Graph this CallOp belongs to
   SubgraphOp(const OperatorIdentifier &_opid, const Op::Settings &settings_);
 
+  void appendOutlineAttributes(OpSerialiserBase &os) const override;
+
   view::Regions modifies(InIndex) const override;
   view::Regions aliases(InIndex, OutIndex) const override;
   void addAlias(InIndex in,

@@ -265,29 +265,6 @@ void Op::createAndConnectOutTensor(OutIndex outIndex, TensorId tenId) {
 }
 
 std::string Op::getSubgraphEquivId() const {
-
-  // Are any of the inputs aliased by output?
-  bool noAliases = true;
-  for (auto &in_tensor : input->tensorMap()) {
-    for (auto &out_tensor : output->tensorMap()) {
-      auto regions = aliases(in_tensor.first, out_tensor.first);
-      noAliases    = noAliases && std::all_of(regions.begin(),
-                                           regions.end(),
-                                           [](const view::Region &r) {
-                                             return r.isEmpty();
-                                           });
-    }
-  }
-
-  // Of all aliasing Ops, we only allow the VarUpdateOp to be outlined.
-  // This partially resolves the failure to the propagate inplace modifications
-  // through calls, T8604.
-
-  /*
-  bool aliasAndNotVarUpdate =
-      !noAliases && !(dynamic_cast<const VarUpdateOp *>(this));
-  */
-
   std::stringstream ss;
   if (isOutlineable()) { // && !aliasAndNotVarUpdate) {
     OpEquivIdCreator os(this);
@@ -1157,18 +1134,26 @@ std::string Op::debugName() const {
     out_ids.push_back(i.second);
   }
 
-  std::vector<std::string> subgraph_ids;
+  std::vector<std::string> subgraphs;
   for (auto &g : getCalledGraphs()) {
-    subgraph_ids.push_back(g->id.str());
+    std::stringstream ss;
+    ss << g->id.str();
+    ss << "(";
+    ss << logging::join(g->getInputIds().begin(), g->getInputIds().end(), ", ");
+    ss << "; ";
+    ss << logging::join(
+        g->getOutputIds().begin(), g->getOutputIds().end(), ", ");
+    ss << ")";
+    subgraphs.push_back(ss.str());
   }
 
-  std::string subgraph_fmt = logging::format(
-      "subgraphs=[{}], ",
-      logging::join(subgraph_ids.begin(), subgraph_ids.end(), ", "));
+  std::string subgraph_fmt =
+      logging::format("subgraphs=[{}], ",
+                      logging::join(subgraphs.begin(), subgraphs.end(), ", "));
 
   return logging::format("Op({}, {}inputs=[{}], outputs=[{}])",
                          debug_id,
-                         subgraph_ids.empty() ? "" : subgraph_fmt,
+                         subgraphs.empty() ? "" : subgraph_fmt,
                          logging::join(in_ids.begin(), in_ids.end(), ", "),
                          logging::join(out_ids.begin(), out_ids.end(), ", "));
 }

@@ -56,7 +56,7 @@ std::unique_ptr<Op> LoopOp::clone() const {
 }
 
 void LoopOp::appendOutlineAttributes(OpSerialiserBase &os) const {
-  Op::appendOutlineAttributes(os);
+  SubgraphOp::appendOutlineAttributes(os);
   os.appendAttribute("callee", callee.get().id.str());
   os.appendAttribute("tripCountValue", tripCountValue);
 }

@@ -113,6 +113,46 @@ view::Regions SubgraphOp::aliases(InIndex in, OutIndex out) const {
   return aliasRegions;
 }
 
+void SubgraphOp::appendOutlineAttributes(OpSerialiserBase &os) const {
+  Op::appendOutlineAttributes(os);
+
+  {
+    std::stringstream ss;
+    ss << "_aliases[";
+    for (auto &alias : aliasMap) {
+
+      auto t0 = inTensor(alias.first.first);
+      auto t1 = outTensor(alias.first.second);
+
+      auto fullRegion0 = view::Region::getFull(t0->info.shape());
+      auto regions0    = alias.second.first.apply(fullRegion0);
+      auto fullRegion1 = view::Region::getFull(t1->info.shape());
+      auto regions1    = alias.second.second.apply(fullRegion1);
+
+      ss << "(" << alias.first.first << ":" << alias.first.second << "):"
+         << "(" << regions0 << ":" << regions1 << ")";
+    }
+    ss << "]";
+    os.appendAttribute("aliases", ss.str());
+  }
+
+  {
+    std::stringstream ss;
+    ss << "_modifies[";
+    for (auto &modifies : modifiesMap) {
+      if (std::any_of(modifies.second.begin(),
+                      modifies.second.end(),
+                      [](const view::Region &r) { return !r.isEmpty(); })) {
+        ss << "(" << modifies.first;
+        ss << ":";
+        ss << modifies.second << ")";
+      }
+    }
+    ss << "]";
+    os.appendAttribute("modifies", ss.str());
+  }
+}
+
 view::Regions SubgraphOp::modifies(InIndex in) const {
   // If not in modifiesMap, return empty region
   if (modifiesMap.count(in) == 0) {

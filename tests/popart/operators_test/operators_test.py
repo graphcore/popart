@@ -123,7 +123,7 @@ def test_cast_grad(op_tester, npSrcType, torchDstType, builderDstType):
 
     def reference(ref_data):
         c = torch.tensor(d1, dtype=torchDstType, requires_grad=True)
-        out = torch.sum(c).reshape((1,))
+        out = torch.sum(c).reshape((1, ))
         d_o = ref_data.getOutputTensorGrad(0)
         out.backward(torch.tensor(d_o))
         d_i1 = c.grad.numpy().astype(npSrcType)
@@ -248,7 +248,6 @@ def test_convolution_2(op_tester):
     Test the convolution when the conv in the bwd pass is not the same as the conv in the
     forward pass
     '''
-
     def init_builder(builder):
         data = np.ones([1, 2, 4, 4], dtype=np.float32)
         filt = np.ones([4, 2, 1, 1], dtype=np.float32)
@@ -881,7 +880,8 @@ def test_reverse(op_tester):
 
     with pytest.raises(popart.popart_exception) as e_info:
         op_tester.run(init_builder_negative_dim, reference, 'infer')
-    assert "invalid dimension '-2'. Only positive dimensions are supported" in e_info.value.args[0]
+    assert "invalid dimension '-2'. Only positive dimensions are supported" in e_info.value.args[
+        0]
 
     with pytest.raises(popart.popart_exception) as e_info:
         op_tester.run(init_builder_dim_appears_twice, reference, 'infer')
@@ -889,7 +889,8 @@ def test_reverse(op_tester):
 
     with pytest.raises(popart.popart_exception) as e_info:
         op_tester.run(init_builder_dim_greater_than_rank, reference, 'infer')
-    assert "invalid dimension '3' for input tensor of rank 3" in e_info.value.args[0]
+    assert "invalid dimension '3' for input tensor of rank 3" in e_info.value.args[
+        0]
 
 
 def test_reverse_grad(op_tester):
@@ -1842,7 +1843,11 @@ def test_pad11(op_tester):
                   })
 
 
-def _test_pad(op_tester, data, lower_padding, upper_padding, mode,
+def _test_pad(op_tester,
+              data,
+              lower_padding,
+              upper_padding,
+              mode,
               pad_value=0):
     def init_builder(builder):
         i1 = builder.addInputTensor(data)
@@ -2498,8 +2503,7 @@ def test_instancenorm_grad_5D_input(op_tester):
 
     non_zero_places = 10
 
-    data = np.random.rand(batch_size, features, d1,
-                          d2, d3).astype(np.float32)
+    data = np.random.rand(batch_size, features, d1, d2, d3).astype(np.float32)
 
     a_few_places = np.zeros_like(data.flatten())
 

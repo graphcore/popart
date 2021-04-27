@@ -346,7 +346,7 @@ void serializePopartExecutable(std::ostream &out,
 
   {
     auto variableTensors   = ir.getTensorIds(TensorType::Variable);
-    auto anchorTensors     = ir.getDataFlow().anchors();
+    auto anchorTensors     = ir.getRootAnchors();
     auto optimizerTensors  = ir.optimizerTensors();
     auto dataStreamTensors = ir.dataStreamTensors();
 
@@ -378,7 +378,7 @@ void serializePopartExecutable(std::ostream &out,
       }
     }
 
-    for (auto &id : ir.getDataFlow().anchors()) {
+    for (auto &id : anchorTensors) {
       Tensor *tensor     = ir.getTensor(id);
       auto tensorBuilder = tensors[i];
       serializeTensor(tensor, tensorBuilder, false);

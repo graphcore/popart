@@ -62,6 +62,7 @@ public:
   // the pointers to the consumers, no duplication for
   // Ops which consume multiple times
   std::vector<Op *> getOps() const;
+
   // append information about this object
   void append(std::stringstream &ss);
 
@@ -171,6 +172,7 @@ public:
   bool isLoopInput() const;
   bool isImplicitLoopInput() const;
   bool isExplicitLoopInput() const;
+  bool isLoopTripCounter() const;
   // Returns true if the tensor is not to be modified by an inplaced operation
   bool isUnmodifiable() const;
   // Returns true if the tensor is consumed by an implicit recompute operation
@@ -251,6 +253,12 @@ public:
 
   // Any of the consumers alias this tensor
   bool isAliased() const;
+
+  // All regions modified by any of the Ops specified.
+  // The Ops are tested in order, and the evaluation stops once the whole
+  // tensor has been modified, or if all Ops have been tested
+  view::Regions modifiedRegionsByOps(std::vector<Op *> ops) const;
+  view::Regions modifiedRegionsByOps(std::vector<OpId> opIds) const;
 
   // Backtrack through input and parent graph tensors in order to get data from
   // initializer tensors (if they exist).

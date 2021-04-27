@@ -421,7 +421,7 @@ void MergeLoops::merge(const std::vector<LoopOp *> loops) const {
           }
         }
 
-        auto &anchors = ir.getDataFlow().anchors();
+        auto anchors = ir.getAnchors();
         if (std::find(anchors.begin(), anchors.end(), output.second->id) !=
             anchors.end()) {
           // Identity Op to preserve both loop0 & loop1 output tensors

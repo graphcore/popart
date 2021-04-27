@@ -20,44 +20,48 @@ from onnx import numpy_helper
 @pytest.mark.parametrize("reduction_type", ["Sum", "Mean"])
 @pytest.mark.parametrize("loss_type", ["Identity", "L1", "NLL"])
 @pytest.mark.parametrize("batchserial", ["Unroll", "Loop"])
-def test_global_batch_size_correctness_test_sgd_(tmpdir, reduction_type,
-                                                 loss_type, batchserial):
+@pytest.mark.parametrize("explicit_loops", [True, False])
+def test_global_batch_size_correctness_test_sgd_(
+        tmpdir, reduction_type, loss_type, batchserial, explicit_loops):
     run_global_batch_size_correctness_test(tmpdir, reduction_type, loss_type,
-                                           "SGD", batchserial)
+                                           "SGD", batchserial, explicit_loops)
 
 
 @tu.requires_ipu
 @pytest.mark.parametrize("reduction_type", ["Sum", "Mean"])
 @pytest.mark.parametrize("loss_type", ["Identity", "L1", "NLL"])
 @pytest.mark.parametrize("batchserial", ["Unroll", "Loop"])
-def test_global_batch_size_correctness_test_sgdm(tmpdir, reduction_type,
-                                                 loss_type, batchserial):
+@pytest.mark.parametrize("explicit_loops", [True, False])
+def test_global_batch_size_correctness_test_sgdm(
+        tmpdir, reduction_type, loss_type, batchserial, explicit_loops):
     run_global_batch_size_correctness_test(tmpdir, reduction_type, loss_type,
-                                           "SGDM", batchserial)
+                                           "SGDM", batchserial, explicit_loops)
 
 
 @tu.requires_ipu
 @pytest.mark.parametrize("reduction_type", ["Sum", "Mean"])
 @pytest.mark.parametrize("loss_type", ["Identity", "L1", "NLL"])
 @pytest.mark.parametrize("batchserial", ["Unroll", "Loop"])
-def test_global_batch_size_correctness_test_adam(tmpdir, reduction_type,
-                                                 loss_type, batchserial):
+@pytest.mark.parametrize("explicit_loops", [True, False])
+def test_global_batch_size_correctness_test_adam(
+        tmpdir, reduction_type, loss_type, batchserial, explicit_loops):
     run_global_batch_size_correctness_test(tmpdir, reduction_type, loss_type,
-                                           "ADAM", batchserial)
+                                           "ADAM", batchserial, explicit_loops)
 
 
 @tu.requires_ipu
 @pytest.mark.parametrize("reduction_type", ["Sum", "Mean"])
 @pytest.mark.parametrize("loss_type", ["Identity", "L1", "NLL"])
 @pytest.mark.parametrize("batchserial", ["Unroll", "Loop"])
-def test_global_batch_size_correctness_test_lamb(tmpdir, reduction_type,
-                                                 loss_type, batchserial):
+@pytest.mark.parametrize("explicit_loops", [True, False])
+def test_global_batch_size_correctness_test_lamb(
+        tmpdir, reduction_type, loss_type, batchserial, explicit_loops):
     run_global_batch_size_correctness_test(tmpdir, reduction_type, loss_type,
-                                           "LAMB", batchserial)
+                                           "LAMB", batchserial, explicit_loops)
 
 
 def run_global_batch_size_correctness_test(tmpdir, reduction_type, loss_type,
-                                           optim, batchserial):
+                                           optim, batchserial, explicit_loops):
     batches_per_step = 2
     hidden_size = 16
     reduction = popart.ReductionType.Sum if reduction_type == "Sum" else popart.ReductionType.Mean
@@ -116,7 +120,7 @@ def run_global_batch_size_correctness_test(tmpdir, reduction_type, loss_type,
         return builder.getModelProto(), data, [x, loss], loss
 
     def run_test(compute_batch, batch_serialization_factor,
-                 accumulation_factor, replication_factor):
+                 accumulation_factor, replication_factor, explicit_loops):
         proto, data, xs, loss = model(compute_batch,
                                       batch_serialization_factor,
                                       accumulation_factor, replication_factor)
@@ -154,6 +158,12 @@ def run_global_batch_size_correctness_test(tmpdir, reduction_type, loss_type,
                     "lossScaling": (20, False),
                 },
                 mode=popart.AdamMode.LambNoBias)  # to increase errors
+
+        if explicit_loops:
+            options.enableExplicitMainLoops = True
+            options.aliasZeroCopy = True
+            options.explicitRecomputation = True
+            options.useHostCopyOps = True
 
         options.batchSerializationSettings.factor = batch_serialization_factor
 
@@ -203,19 +213,19 @@ def run_global_batch_size_correctness_test(tmpdir, reduction_type, loss_type,
 
         return [anchors[x] for x in xs], post_proto
 
-    baseline_outputs, baseline_proto = run_test(16, 1, 1, 1)
+    baseline_outputs, baseline_proto = run_test(16, 1, 1, 1, False)
 
     loss_fn = np.mean if reduction_type == "Mean" else np.sum
     baseline_loss = loss_fn(baseline_outputs[-1])
 
     tests = [
         # TODO T33333: tests with graph replication hang intermittently
-        # run_test(4, 1, 1, 4),
-        run_test(4, 1, 4, 1),
-        # run_test(4, 1, 2, 2),
-        run_test(4, 4, 1, 1),
-        run_test(4, 2, 2, 1),
-        # run_test(2, 2, 2, 2)
+        # run_test(4, 1, 1, 4, explicit_loops),
+        run_test(4, 1, 4, 1, explicit_loops),
+        # run_test(4, 1, 2, 2, explicit_loops),
+        run_test(4, 4, 1, 1, explicit_loops),
+        #run_test(4, 2, 2, 1, explicit_loops),
+        # run_test(2, 2, 2, 2, explicit_loops)
     ]
 
     rtol = 1.e-5

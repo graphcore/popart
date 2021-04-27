@@ -55,7 +55,7 @@ void CorrectnessAsserter::throwMissingOutput(const TensorId &id) const {
   std::ostringstream oss;
   oss << "Testing that the buffer provided by user for output Tensor " << id
       << " has the correct number of elements, "
-      << " But there is no Tensor named " << id << " in the Ir's main Graph. ";
+      << " But there is no Tensor named " << id << " in the Ir's tensors. ";
   throw error(oss.str());
 }
 

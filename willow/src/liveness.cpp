@@ -61,6 +61,15 @@ void LivenessNode::setUsedTensorIds() {
     for (auto &input : op->input->tensorIdMap()) {
       auto sgInIndex =
           op->opInToSubgraphInIndex(getSubgraphIndex(), input.first);
+
+      if (sgInIndex > -1 && sgInIndex < calledGraph->getInputIds().size() &&
+          calledGraph->getTensors()
+              .get(calledGraph->getInputId(sgInIndex))
+              ->isLoopTripCounter()) {
+        // Loop trip count is not copied
+        usedIds.insert(input.second);
+      }
+
       if (sgInIndex < 0 || sgInIndex >= calledGraph->getInputIds().size()) {
         // Op input which is not a subgraph input
         usedIds.insert(input.second);
@@ -70,6 +79,12 @@ void LivenessNode::setUsedTensorIds() {
     auto inputIds = calledGraph->getInputIds();
     for (int64_t i = 0; i < inputIds.size(); ++i) {
       auto opInIndex = op->subgraphInToOpInIndex(getSubgraphIndex(), i);
+
+      if (calledGraph->getTensors().get(inputIds.at(i))->isLoopTripCounter()) {
+        // Loop trip count is not copied
+        usedIds.insert(inputIds.at(i));
+      }
+
       if (!op->hasInput(opInIndex)) {
         // Subgraph input which is not an op input
         usedIds.insert(inputIds.at(i));
@@ -192,13 +207,24 @@ bool LivenessNode::isProducerOf(Tensor *t) const {
     auto calledGraph  = calledGraphs.at(getSubgraphIndex());
 
     // Produces tensor inside subgraph (if no CopyInput exists for this input)
-    auto inputIds     = calledGraph->getInputIds();
-    auto it           = std::find(inputIds.begin(), inputIds.end(), t->id);
-    InIndex opInIndex = op->subgraphInToOpInIndex(
-        getSubgraphIndex(), std::distance(inputIds.begin(), it));
-    if (it != inputIds.end() && !op->hasInput(opInIndex)) {
-      // Is a subgraph input, but not an op input
-      return true;
+    auto inputIds = calledGraph->getInputIds();
+    auto it       = std::find(inputIds.begin(), inputIds.end(), t->id);
+
+    // Check if the tensor is an input tensor of the called graph
+    if (it != inputIds.end()) {
+      InIndex sgInIndex = std::distance(inputIds.begin(), it);
+
+      if (calledGraph->getTensors().get(t->id)->isLoopTripCounter()) {
+        // Loop trip count is not copied
+        return true;
+      }
+
+      InIndex opInIndex =
+          op->subgraphInToOpInIndex(getSubgraphIndex(), sgInIndex);
+      if (!op->hasInput(opInIndex)) {
+        // Is a subgraph input, but not an op input
+        return true;
+      }
     }
     return false;
   }
@@ -256,6 +282,15 @@ bool LivenessNode::isConsumerOf(Tensor *t) const {
       for (InIndex opInIndex : indices) {
         InIndex sgInIndex =
             op->opInToSubgraphInIndex(getSubgraphIndex(), opInIndex);
+
+        if (sgInIndex > -1 && sgInIndex < calledGraph->getInputIds().size() &&
+            calledGraph->getTensors()
+                .get(calledGraph->getInputId(sgInIndex))
+                ->isLoopTripCounter()) {
+          // Loop trip count is not copied
+          return true;
+        }
+
         if (sgInIndex < 0 || calledGraph->getInputIds().size()) {
           // Is an op input, but not a subgraph input
           return true;
@@ -330,11 +365,17 @@ void LivenessAnalyzer::addCopiesToPending(const Graph *subgraph,
     auto sgInIndex = op->opInToSubgraphInIndex(subgraphIndex, input.first);
     if (sgInIndex > -1 && sgInIndex < subgraph->getInputIds().size()) {
       // Copy callsite's input tensor to subgraph's input tensor.
-      pendingCopies.push_back({callStack,
-                               OpStatus::CopyInput,
-                               input.first,
-                               subgraphIndex,
-                               isDuplicate});
+
+      Tensor *sgTensor =
+          subgraph->getTensors().get(subgraph->getInputIds().at(sgInIndex));
+      // Loop trip count is not copied
+      if (!sgTensor->isLoopTripCounter()) {
+        pendingCopies.push_back({callStack,
+                                 OpStatus::CopyInput,
+                                 input.first,
+                                 subgraphIndex,
+                                 isDuplicate});
+      }
     }
   }
 
@@ -355,17 +396,22 @@ void LivenessAnalyzer::addCopiesToPending(const Graph *subgraph,
   for (auto input : op->input->tensorIdMap()) {
     auto sgInIndex = op->opInToSubgraphInIndex(subgraphIndex, input.first);
     if (sgInIndex >= 0) {
-      // Check for subgraph modified input
-      auto modifiedRegions = op->modifies(input.first);
-      if (std::any_of(modifiedRegions.begin(),
-                      modifiedRegions.end(),
-                      [](const view::Region &r) { return !r.isEmpty(); })) {
-        // Copy modified subgraph inputs to the callsite.
-        pendingCopies.push_back({callStack,
-                                 OpStatus::CopyModified,
-                                 input.first,
-                                 subgraphIndex,
-                                 isDuplicate});
+      Tensor *sgTensor =
+          subgraph->getTensors().get(subgraph->getInputIds().at(sgInIndex));
+      // Loop trip count is not copied
+      if (!sgTensor->isLoopTripCounter()) {
+        // Check for subgraph modified input
+        auto modifiedRegions = op->modifies(input.first);
+        if (std::any_of(modifiedRegions.begin(),
+                        modifiedRegions.end(),
+                        [](const view::Region &r) { return !r.isEmpty(); })) {
+          // Copy modified subgraph inputs to the callsite.
+          pendingCopies.push_back({callStack,
+                                   OpStatus::CopyModified,
+                                   input.first,
+                                   subgraphIndex,
+                                   isDuplicate});
+        }
       }
     }
   }

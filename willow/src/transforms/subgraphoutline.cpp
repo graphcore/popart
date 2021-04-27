@@ -404,26 +404,6 @@ Match::Instance::Instance(const std::vector<OpId> &ops_, Graph *graph_)
   }
 }
 
-/*
-bool Match::Instance::contains(const Op *op) const {
-  for (auto opid : ops) {
-    if (op->id == opid) {
-      return true;
-    }
-  }
-  return false;
-}
-*/
-
-int Match::Instance::getIndex(const Op *op) const {
-  for (int i = 0; i < ops.size(); i++) {
-    if (op->id == ops[i]) {
-      return i;
-    }
-  }
-  return -1;
-}
-
 void Match::Instance::addExternalInput(Tensor *tensor) {
   // dont add inputs more than once
   if (find(external_inputs, tensor) == external_inputs.end()) {
@@ -484,74 +464,9 @@ void Match::equalizeInstanceOutputs() {
   }
 }
 
-void updateTopoCons(const std::vector<OpId> &ops,
-                    const OpId &replacement_op,
-                    Graph &graph) {
-
-  if (logging::shouldLog(logging::Module::none, logging::Level::Trace)) {
-    std::vector<std::string> graph_ops;
-    for (OpId opid : ops) {
-      graph_ops.push_back(graph.getOp(opid)->debugName());
-    }
-
-    logging::transform::trace(
-        "[SubgraphOutline] Updating TopoCons for {} ops {}",
-        graph.getOp(replacement_op)->debugName(),
-        graph_ops);
-  }
-
-  // dont include any of the ops being replaced
-  auto include_op = [&](OpId opid) { return find(ops, opid) == ops.end(); };
-
-  auto OpCompare = [](const std::pair<Op *, bool> &a,
-                      const std::pair<Op *, bool> &b) {
-    return std::pair<OpId, bool>(a.first->id, a.second) <
-           std::pair<OpId, bool>(b.first->id, b.second);
-  };
-  std::set<std::pair<Op *, bool>, decltype(OpCompare)> befores(OpCompare);
-  std::set<std::pair<Op *, bool>, decltype(OpCompare)> afters(OpCompare);
-
-  // Get all befores and afters that are not in ops
-  for (auto &opid : ops) {
-    for (auto before : graph.topoCons->getBefores(graph.getOp(opid))) {
-      if (include_op(before->id)) {
-        befores.insert({before, false});
-      }
-    }
-    for (auto after : graph.topoCons->getAfters(graph.getOp(opid))) {
-      if (include_op(after->id)) {
-        afters.insert({after, false});
-      }
-    }
-    for (auto before : graph.topoCons->getTiedBefores(graph.getOp(opid))) {
-      if (include_op(before->id)) {
-        befores.insert({before, true});
-      }
-    }
-    for (auto after : graph.topoCons->getTiedAfters(graph.getOp(opid))) {
-      if (include_op(after->id)) {
-        afters.insert({after, true});
-      }
-    }
-  }
-
-  // Remove the existing topocons
-  for (auto &opid : ops) {
-    graph.topoCons->remove(graph.getOp(opid));
-  }
-
-  // Add the topoCons for the replacement Op
-  for (auto before : befores) {
-    graph.topoCons->insert(
-        before.first, graph.getOp(replacement_op), before.second);
-  }
-  for (auto after : afters) {
-    graph.topoCons->insert(
-        graph.getOp(replacement_op), after.first, after.second);
-  }
-}
-
-static Op *replaceWithCallOp(const Match::Instance &instance, Graph &subgraph) {
+static Op *replaceWithCallOp(const Match::Instance &instance,
+                             Graph &subgraph,
+                             const std::map<Op *, int> &index_map) {
 
   // Copy some attributes with heuristics from the instance ops
   nonstd::optional<Scope> scope;
@@ -610,20 +525,20 @@ static Op *replaceWithCallOp(const Match::Instance &instance, Graph &subgraph) {
       subgraph,
       Op::Settings{instance.getGraph(), "", instance.getGraph().getScope()});
   auto call_op_id = instance.getGraph().moveIntoGraph(std::move(up_call_op));
-  CallOp *call_op =
+  CallOp *callOp =
       dynamic_cast<CallOp *>(instance.getGraph().getOp(call_op_id));
   if (scope) {
-    call_op->settings.scope = scope.value();
+    callOp->settings.scope = scope.value();
   }
   if (recompute) {
-    call_op->settings.recomputeType = recompute.value();
+    callOp->settings.recomputeType = recompute.value();
   }
-  call_op->setVirtualGraphId(vgid);
-  call_op->setExecutionPhase(phase);
-  call_op->setPipelineStage(pipeline_stage);
-  call_op->setBatchSerializedPhase(batchserial);
+  callOp->setVirtualGraphId(vgid);
+  callOp->setExecutionPhase(phase);
+  callOp->setPipelineStage(pipeline_stage);
+  callOp->setBatchSerializedPhase(batchserial);
   if (execution_context) {
-    call_op->settings.executionContext = execution_context.value();
+    callOp->settings.executionContext = execution_context.value();
   }
 
   // Set the position w.r.t loss, if possible. If any of the internal ops
@@ -632,10 +547,10 @@ static Op *replaceWithCallOp(const Match::Instance &instance, Graph &subgraph) {
   for (auto opid : instance.ops) {
     auto instanceOp = instance.graph->getOp(opid);
     if (instanceOp->toLoss == PathToLoss::Yes) {
-      call_op->toLoss = PathToLoss::Yes;
+      callOp->toLoss = PathToLoss::Yes;
     }
     if (instanceOp->fromLoss == PathFromLoss::Yes) {
-      call_op->fromLoss = PathFromLoss::Yes;
+      callOp->fromLoss = PathFromLoss::Yes;
     }
   }
 
@@ -643,83 +558,8 @@ static Op *replaceWithCallOp(const Match::Instance &instance, Graph &subgraph) {
   for (int i = 0; i < instance.external_inputs.size(); i++) {
     Tensor *inTensor = instance.external_inputs[i];
 
-    std::map<Op *, int64_t> beforeOps;
-    for (Op *consumer : inTensor->consumers.getOps()) {
-      if (std::find(instance.ops.begin(), instance.ops.end(), consumer->id) !=
-          instance.ops.end()) {
-        beforeOps.insert({consumer, 0});
-      }
-    }
-    for (Op *consumer : inTensor->consumers.getOps()) {
-      for (Op *after : instance.getGraph().topoCons->getAfters(consumer)) {
-        if (beforeOps.find(after) != beforeOps.end()) {
-          beforeOps[after]++;
-        }
-      }
-    }
-    std::vector<std::pair<Op *, int64_t>> consumersOrdered;
-    for (auto it = beforeOps.begin(); it != beforeOps.end(); ++it) {
-      consumersOrdered.push_back(*it);
-    }
-
-    std::sort(
-        consumersOrdered.begin(),
-        consumersOrdered.end(),
-        [](const std::pair<Op *, int64_t> &a,
-           const std::pair<Op *, int64_t> &b) { return a.second < b.second; });
-
-    view::Regions modifiedRegions;
-    view::AccessType accessType = view::AccessType::None;
-
-    // As soon as a consumer modified the whole input, we can stop
-    for (auto &consumerOrdered : consumersOrdered) {
-      Op *c        = consumerOrdered.first;
-      auto indices = c->input->indices(inTensor);
-      for (InIndex index : indices) {
-        auto regions = consumerOrdered.first->modifies(index);
-
-        // If an op consumes the tensor without specifying modifies we assume
-        // (conservatively) full read access to the tensor
-        if (regions.empty() ||
-            std::any_of(regions.begin(),
-                        regions.end(),
-                        [](const view::Region &r) { return r.isEmpty(); })) {
-          accessType = view::combine({accessType, view::AccessType::Read});
-        }
-
-        modifiedRegions.insert(
-            modifiedRegions.end(), regions.begin(), regions.end());
-      }
-      modifiedRegions = view::mergeRegions(modifiedRegions);
-      for (auto &r : modifiedRegions) {
-        view::AccessType regionAccessType = r.getAccessType();
-        if (!r.isEmpty() && (regionAccessType == view::AccessType::None ||
-                             regionAccessType == view::AccessType::Read)) {
-          throw error("Unexpected modified region access type None or Read");
-        }
-        accessType = view::combine({accessType, regionAccessType});
-      }
-      if (modifiedRegions.size() > 0 &&
-          modifiedRegions.front() ==
-              view::Region::getFull(inTensor->info.shape()) &&
-          accessType == view::AccessType::Write) {
-        // The whole input tensor has been touched, conclude
-        //  If the whole tensor has been write-accessed first, we say that
-        //  the CallOp consumes the tensor write-only.
-        //  If any read access to the tensor happens before the write-only
-        //  access, the modified tensor is read-write.
-        //  Read-only does not make sense, since we ask about modified regions.
-        // Examples:
-        //  1.) VarUpdate will cause read-write access to modified input.
-        //  2.) RemoteLoad will cause write-only access to modified input.
-        break;
-      }
-    }
-    // Update access type
-    for (auto &r : modifiedRegions) {
-      r.setAccessType(accessType);
-    }
-    call_op->addModified(i, modifiedRegions);
+    auto modifiedRegions = inTensor->modifiedRegionsByOps(instance.ops);
+    callOp->addModified(i, modifiedRegions);
 
     for (int j = 0; j < instance.external_outputs.size(); j++) {
       Tensor *outTensor = instance.external_outputs[j];
@@ -736,7 +576,7 @@ static Op *replaceWithCallOp(const Match::Instance &instance, Graph &subgraph) {
       auto bwdAliasRegions =
           instance.getGraph().getTensors().getChainsFromTo(outTensor, inTensor);
 
-      call_op->addAlias(i, j, fwdAliasRegions, bwdAliasRegions);
+      callOp->addAlias(i, j, fwdAliasRegions, bwdAliasRegions);
       if (logging::shouldLog(logging::Module::transform,
                              logging::Level::Trace)) {
         logging::transform::trace("[SubgraphOutline] Alias {} ({}) -> {} ({})",
@@ -752,150 +592,46 @@ static Op *replaceWithCallOp(const Match::Instance &instance, Graph &subgraph) {
 
   // Disconnect the old ops
   for (auto opid : instance.ops) {
-    auto old_op = instance.getGraph().getOp(opid);
-    old_op->disconnectAllInputs();
-    old_op->disconnectAllOutputs();
-    priority = std::max(priority, old_op->settings.schedulePriority);
+    auto oldOp = instance.getGraph().getOp(opid);
+    oldOp->disconnectAllInputs();
+    oldOp->disconnectAllOutputs();
+    priority = std::max(priority, oldOp->settings.schedulePriority);
   }
 
   // CallOp's priority should be the max priority of the Op's that it replaces
-  call_op->settings.schedulePriority = priority;
+  callOp->settings.schedulePriority = priority;
 
   // Connect inputs
   for (int i = 0; i < instance.external_inputs.size(); i++) {
     auto input = instance.external_inputs.at(i);
-    call_op->connectInTensor(i, input->id);
+    callOp->connectInTensor(i, input->id);
   }
 
   // Connect outputs
   for (int i = 0; i < instance.external_outputs.size(); i++) {
     auto output = instance.external_outputs.at(i);
-    call_op->connectOutTensor(i, output->id);
+    callOp->connectOutTensor(i, output->id);
   }
 
-  updateTopoCons(instance.ops, call_op_id, instance.getGraph());
+  std::map<Op *, std::vector<Op *>> opRemaps;
+
+  // Remap between instance ops and subgraph ops (used to transfer topocons)
+  for (auto &opAndIndex : index_map) {
+    opRemaps.insert({instance.graph->getOp(instance.ops.at(opAndIndex.second)),
+                     {opAndIndex.first}});
+  }
+
+  TopoCons::transferToSubgraph(callOp, opRemaps);
 
   // Erase the old ops
   for (auto opid : instance.ops) {
     instance.getGraph().eraseOp(opid);
   }
 
-  call_op->setup();
+  callOp->setup();
 
-  return call_op;
+  return callOp;
 }
-
-class InstanceConstraints {
-public:
-  /*
-  InstanceConstraints(const Match::Instance &instance, Graph &graph) {
-    for (auto opid : instance.ops) {
-      auto op = graph.getOp(opid);
-
-      for (auto &before : graph.topoCons->getBefores(op)) {
-        if (instance.contains(before)) {
-          insertInternal(instance.getIndex(before), instance.getIndex(op));
-        }
-      }
-
-      for (auto &after : graph.topoCons->getAfters(op)) {
-        if (instance.contains(after)) {
-          insertInternal(instance.getIndex(op), instance.getIndex(after));
-        }
-      }
-    }
-  }
-
-  void insertInternal(int before, int after) {
-    auto foundBefore = internalBefores.find(after);
-    if (foundBefore == internalBefores.end()) {
-      internalBefores.insert({after, {before}});
-    } else {
-      foundBefore->second.insert(before);
-    }
-
-    auto foundAfter = internalAfters.find(before);
-    if (foundAfter == internalAfters.end()) {
-      internalAfters.insert({before, {after}});
-    } else {
-      foundAfter->second.insert(after);
-    }
-  }
-
-
-  bool operator!=(const InstanceConstraints &rhs) { return !(*this == rhs); }
-
-
-  bool operator==(const InstanceConstraints &rhs) {
-    return (internalBefores == rhs.internalBefores) &&
-           (internalAfters == rhs.internalAfters);
-  }
-
-  */
-
-  std::map<int, std::set<int>> internalBefores;
-  std::map<int, std::set<int>> internalAfters;
-};
-
-/*
-std::ostream &operator<<(std::ostream &os, const InstanceConstraints &ic) {
-  os << "InstanceConstraints:";
-
-  os << "\n  internalBefores:";
-  for (auto &i_befores : ic.internalBefores) {
-    auto i        = i_befores.first;
-    auto &befores = i_befores.second;
-    os << logging::format("\n    {}:", i);
-    for (auto &before : befores) {
-      os << logging::format("\n      {}", before);
-    }
-  }
-
-  os << "\n  internalAfters:";
-  for (auto &i_afters : ic.internalAfters) {
-    auto i       = i_afters.first;
-    auto &afters = i_afters.second;
-    os << logging::format("\n    {}:", i);
-    for (auto &after : afters) {
-      os << logging::format("\n      {}", after);
-    }
-  }
-
-  return os;
-};
-
-void verifyTopologicalConstraints(const Match &match, Graph &graph) {
-  logging::debug("Checking topological constraints");
-  InstanceConstraints c0(match.instances.at(0), graph);
-  for (int i = 1; i < match.instances.size(); i++) {
-    InstanceConstraints c(match.instances.at(i), graph);
-
-    if (c0 != c) {
-
-      std::vector<std::string> c0_ops;
-      std::vector<std::string> c_ops;
-
-      for (auto opid : match.instances.at(0).ops) {
-        c0_ops.push_back(graph.getOp(opid)->debugName());
-      }
-
-      for (auto opid : match.instances.at(i).ops) {
-        c_ops.push_back(graph.getOp(opid)->debugName());
-      }
-
-      throw internal_error("Internal constraints between match "
-                  "instance \n{} \nand \n{} \n do not match "
-                  "(Ops: {} {}, {} {}).",
-                  c0,
-                  c,
-                  match.instances.at(0).ops,
-                  c0_ops,
-                  match.instances.at(i).ops,
-                  c_ops);
-    }
-  }
-}
-*/
 
 void verifyMatchInstances(const Match &match) {
   logging::debug("Checking match instances for inconsistencies");
@@ -910,7 +646,8 @@ void verifyMatchInstances(const Match &match) {
   }
 }
 
-Graph &createSubgraph(const Match &match, Ir &ir) {
+Graph &
+createSubgraph(const Match &match, Ir &ir, std::map<Op *, int> &index_map) {
   auto subgraph_id    = ir.createUniqueSubgraphId({"call"});
   auto &subgraph      = ir.createGraph(subgraph_id);
   auto subgraph_scope = subgraph.getScope();
@@ -956,46 +693,8 @@ Graph &createSubgraph(const Match &match, Ir &ir) {
     auto cloneid                     = subgraph.moveIntoGraph(std::move(clone));
     Op *clone_op                     = subgraph.getOp(cloneid);
     clone_map.insert({op, clone_op});
+    index_map.insert({clone_op, i});
     clones.push_back(clone_op);
-  }
-
-  // Map out constraints by schedule match positions for all instances.
-  // If different constraints per instance exist, they either clash or can
-  // coexist. We assume instance.ops preserves schedule order.
-  std::set<std::tuple<int, int, bool>> constraints;
-  for (auto &instanceForConstraints : match.instances) {
-    for (int i = 0; i < instanceForConstraints.ops.size(); i++) {
-      auto opid = instanceForConstraints.ops.at(i);
-      auto op   = instanceForConstraints.getGraph().getOp(opid);
-      {
-        auto afters = instanceForConstraints.getGraph().topoCons->getAfters(op);
-        for (Op *after_op : afters) {
-          auto j = instanceForConstraints.getIndex(after_op);
-          if (j > 0) {
-            // i before j
-            constraints.insert({i, j, false});
-          }
-        }
-      }
-      {
-        auto afters =
-            instanceForConstraints.getGraph().topoCons->getTiedAfters(op);
-        for (Op *after_op : afters) {
-          auto j = instanceForConstraints.getIndex(after_op);
-          if (j > 0) {
-            // i before j
-            constraints.insert({i, j, true});
-          }
-        }
-      }
-    }
-  }
-
-  // Preserve topological constraints between ops being added to the subgraph
-  for (auto &constraint : constraints) {
-    subgraph.topoCons->insert(clones[std::get<0>(constraint)],
-                              clones[std::get<1>(constraint)],
-                              std::get<2>(constraint));
   }
 
   // duplicate all the output tensors
@@ -1088,7 +787,9 @@ static std::vector<Replacement> applyMatch(const Match &match, Ir &ir) {
   // TODO: Verify. This is possibly too strict. Can probably be dropped.
   // verifyTopologicalConstraints(match, graph);
 
-  auto &subgraph = createSubgraph(match, ir);
+  std::map<Op *, int> index_map;
+
+  auto &subgraph = createSubgraph(match, ir, index_map);
 
   handleRandomReferences(match, ir);
 
@@ -1096,7 +797,7 @@ static std::vector<Replacement> applyMatch(const Match &match, Ir &ir) {
 
   // Replace the matches with call ops
   for (auto &instance : match.instances) {
-    auto call_op = replaceWithCallOp(instance, subgraph);
+    auto call_op = replaceWithCallOp(instance, subgraph, index_map);
     replacements.push_back({instance.ops, call_op});
   }
 

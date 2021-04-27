@@ -59,6 +59,16 @@ bool BatchSerialize::apply(Graph &graph) const {
       }
     }
 
+    for (auto hlt : ir.getHostLoadTensors()) {
+      for (Tensor *t : hlt.second) {
+        if (t->getGraph().id == graph.id) {
+          if (t->getBatchAxis() != -1) {
+            tensorsWithBatch.insert(t->id);
+          }
+        }
+      }
+    }
+
     for (Op *op : schedule) {
       // Context in which the tensors are consumed
       BatchSerialTensorContext consumerContext =
@@ -499,7 +509,7 @@ bool BatchSerialize::apply(Graph &graph) const {
       };
 
       // Anchors that need the concatenated tensor
-      auto &anchors = ir.getDataFlow().anchors();
+      auto anchors = ir.getAnchors();
       if (std::find(anchors.begin(), anchors.end(), tensor->id) !=
           anchors.end()) {
         concatIfNecessary();

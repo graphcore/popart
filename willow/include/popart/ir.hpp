@@ -341,8 +341,6 @@ public:
   // Accessors for the dataFlow
   const DataFlow &getDataFlow() const { return dataFlow; }
 
-  std::set<Op *> getTrainTargetOps() const;
-
   // modify a Graph using a graph transformation
   // (public for unit testing only)
   void applyTransform(std::size_t transformId, Graph &graph);
@@ -524,6 +522,7 @@ private:
   void verifyPipelineSettings() const;
   void verifyExecutionPhaseSettings() const;
   void verifyAliasZeroCopySettings() const;
+  void verifyExplicitMainLoopsSettings() const;
   void verifyBatchSerializationSettings() const;
   void verifySubgraphs() const;
   void verifyRecomputeAttributes() const noexcept(false);

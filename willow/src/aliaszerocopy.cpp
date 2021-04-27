@@ -521,7 +521,7 @@ AliasZeroCopy::getLivenessIntervals(Tensor *t,
     return intervals;
   }
 
-  auto &anchors = ir->getDataFlow().anchors();
+  auto anchors = ir->getRootAnchors();
   if (std::find(anchors.begin(), anchors.end(), t->id) != anchors.end()) {
     // Being conservative and keeping anchored tensors always live
     insertInterval(0, analyzer->getOpScheduleSize());

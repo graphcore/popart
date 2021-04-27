@@ -553,53 +553,62 @@ poplar::program::Sequence PopPrograms::program() const {
       ir_lowering_p->ir().getSessionOptions().hardwareInstrumentations;
 
   poplar::program::Sequence outer({}, {"outer"});
-  if (ir_lowering_p->ir().getSessionOptions().enablePipelining) {
-    outer.add(getFullProgramFromPipelineFragments());
-  } else {
-    poplar::program::Sequence prog({}, {"program"});
-    prog.add(preForwardFragment());
-    prog.add(forwardFragment());
-    prog.add(backwardFragment());
 
+  if (ir_lowering_p->ir().getSessionOptions().enableExplicitMainLoops) {
     outer.add(initFragment());
-
-    auto accumulationFactor = ir_lowering_p->getAccumulationFactor();
-    if (!ir_lowering_p->getOuterLoopFragEmpty()) {
-      logging::devicex::trace(
-          "Adding gradient accumulation repeat loop with {} iterations",
-          accumulationFactor);
-      prog = {poplar::program::Repeat(
-          accumulationFactor, prog, {"accumulationLoop"})};
-      prog.add(accumulateOuterFragment());
-    }
-
-    if (ir_lowering_p->ir()
-            .getSessionOptions()
-            .instrumentWithHardwareCycleCounter &&
-        instrumentations.find(Instrumentation::Inner) !=
-            instrumentations.end()) {
-      // Instrument first tile of every IPU for inner program
-      auto numIpus = ir_lowering_p->getDeviceInfo()->getNumIpus() /
-                     ir_lowering_p->getReplicationFactor();
-      for (int64_t i = 0; i < numIpus; ++i) {
-        std::stringstream ss;
-        // String to identify instrumentation
-        ss << "inner_ipu_" << i;
-        ir_lowering_p->instrumentWithHardwareCycleCounter(
-            prog,
-            i * static_cast<int64_t>(
-                    ir_lowering_p->getDeviceInfo()->getTilesPerIPU()),
-            ss.str());
-      }
-    }
-
-    auto batchesPerStep = ir_lowering_p->ir().getDataFlow().batchesPerStep();
-    // BatchesPerStep loop
-    logging::devicex::trace("Adding batches per step loop with {} iterations",
-                            batchesPerStep);
-    outer.add(
-        poplar::program::Repeat(batchesPerStep, prog, {"batchesPerStep"}));
+    outer.add(preForwardFragment());
+    outer.add(forwardFragment());
+    outer.add(backwardFragment());
     outer.add(toHostFinalCopyFragment());
+  } else {
+    if (ir_lowering_p->ir().getSessionOptions().enablePipelining) {
+      outer.add(getFullProgramFromPipelineFragments());
+    } else {
+      poplar::program::Sequence prog({}, {"program"});
+      prog.add(preForwardFragment());
+      prog.add(forwardFragment());
+      prog.add(backwardFragment());
+
+      outer.add(initFragment());
+
+      auto accumulationFactor = ir_lowering_p->getAccumulationFactor();
+      if (!ir_lowering_p->getOuterLoopFragEmpty()) {
+        logging::devicex::trace(
+            "Adding gradient accumulation repeat loop with {} iterations",
+            accumulationFactor);
+        prog = {poplar::program::Repeat(
+            accumulationFactor, prog, {"accumulationLoop"})};
+        prog.add(accumulateOuterFragment());
+      }
+
+      if (ir_lowering_p->ir()
+              .getSessionOptions()
+              .instrumentWithHardwareCycleCounter &&
+          instrumentations.find(Instrumentation::Inner) !=
+              instrumentations.end()) {
+        // Instrument first tile of every IPU for inner program
+        auto numIpus = ir_lowering_p->getDeviceInfo()->getNumIpus() /
+                       ir_lowering_p->getReplicationFactor();
+        for (int64_t i = 0; i < numIpus; ++i) {
+          std::stringstream ss;
+          // String to identify instrumentation
+          ss << "inner_ipu_" << i;
+          ir_lowering_p->instrumentWithHardwareCycleCounter(
+              prog,
+              i * static_cast<int64_t>(
+                      ir_lowering_p->getDeviceInfo()->getTilesPerIPU()),
+              ss.str());
+        }
+      }
+
+      auto batchesPerStep = ir_lowering_p->ir().getDataFlow().batchesPerStep();
+      // BatchesPerStep loop
+      logging::devicex::trace("Adding batches per step loop with {} iterations",
+                              batchesPerStep);
+      outer.add(
+          poplar::program::Repeat(batchesPerStep, prog, {"batchesPerStep"}));
+      outer.add(toHostFinalCopyFragment());
+    }
   }
 
   if (ir_lowering_p->ir()

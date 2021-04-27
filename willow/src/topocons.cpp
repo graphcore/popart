@@ -1,4 +1,5 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
+#include <popart/graph.hpp>
 #include <popart/op.hpp>
 #include <popart/tensor.hpp>
 #include <popart/topocons.hpp>
@@ -73,6 +74,96 @@ std::vector<Op *> TopoCons::getTiedBefores(Op *after) const {
 
 void TopoCons::transfer(Op *beforeTransfer, Op *afterTransfer, bool removeOld) {
   transferToMultiple(beforeTransfer, {afterTransfer}, removeOld);
+}
+
+void TopoCons::transferToSubgraph(Op *replacementOp,
+                                  std::map<Op *, std::vector<Op *>> opRemaps,
+                                  bool removeOld) {
+  Graph &graph = replacementOp->getGraph();
+
+  auto opInRemaps = [&](Op *op) { return opRemaps.find(op) != opRemaps.end(); };
+
+  auto OpCompare = [](const std::pair<Op *, bool> &a,
+                      const std::pair<Op *, bool> &b) {
+    return std::pair<OpId, bool>(a.first->id, a.second) <
+           std::pair<OpId, bool>(b.first->id, b.second);
+  };
+  std::set<std::pair<Op *, bool>, decltype(OpCompare)> befores(OpCompare);
+  std::set<std::pair<Op *, bool>, decltype(OpCompare)> afters(OpCompare);
+
+  for (auto &opRemap : opRemaps) {
+    for (auto before : graph.topoCons->getBefores(opRemap.first)) {
+      if (opInRemaps(before)) {
+        // Internal topocon
+        for (Op *opr0 : opRemap.second) {
+          Graph &subgraph = opr0->getGraph();
+          for (Op *opr1 : opRemaps.at(before)) {
+            subgraph.topoCons->insert(opr1, opr0, false);
+          }
+        }
+      } else {
+        // External topocon
+        befores.insert({before, false});
+      }
+    }
+    for (auto after : graph.topoCons->getAfters(opRemap.first)) {
+      if (opInRemaps(after)) {
+        // Internal topocon
+        for (Op *opr0 : opRemap.second) {
+          Graph &subgraph = opr0->getGraph();
+          for (Op *opr1 : opRemaps.at(after)) {
+            subgraph.topoCons->insert(opr0, opr1, false);
+          }
+        }
+      } else {
+        // External topocon
+        afters.insert({after, false});
+      }
+    }
+    for (auto before : graph.topoCons->getTiedBefores(opRemap.first)) {
+      if (opInRemaps(before)) {
+        // Internal topocon
+        for (Op *opr0 : opRemap.second) {
+          Graph &subgraph = opr0->getGraph();
+          for (Op *opr1 : opRemaps.at(before)) {
+            subgraph.topoCons->insert(opr1, opr0, true);
+          }
+        }
+      } else {
+        // External topocon
+        befores.insert({before, true});
+      }
+    }
+    for (auto after : graph.topoCons->getTiedAfters(opRemap.first)) {
+      if (opInRemaps(after)) {
+        // Internal topocon
+        for (Op *opr0 : opRemap.second) {
+          Graph &subgraph = opr0->getGraph();
+          for (Op *opr1 : opRemaps.at(after)) {
+            subgraph.topoCons->insert(opr0, opr1, true);
+          }
+        }
+      } else {
+        // External topocon
+        afters.insert({after, true});
+      }
+    }
+  }
+
+  if (removeOld) {
+    // Remove the existing topocons
+    for (auto &opRemap : opRemaps) {
+      graph.topoCons->remove(opRemap.first);
+    }
+  }
+
+  // Add the topoCons for the replacement Op (external topocons)
+  for (auto before : befores) {
+    graph.topoCons->insert(before.first, replacementOp, before.second);
+  }
+  for (auto after : afters) {
+    graph.topoCons->insert(replacementOp, after.first, after.second);
+  }
 }
 
 void TopoCons::transferToMultiple(Op *beforeTransfer,

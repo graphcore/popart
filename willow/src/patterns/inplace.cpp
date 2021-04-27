@@ -1,6 +1,7 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
 #include <popart/chains.hpp>
 #include <popart/graph.hpp>
+#include <popart/ir.hpp>
 #include <popart/op.hpp>
 #include <popart/patterns/inplace.hpp>
 #include <popart/patterns/patterns.hpp>
@@ -22,8 +23,8 @@ ExternOpTensorBundle::ExternOpTensorBundle(Op *opCopy,
     std::unique_ptr<Tensor> up_t_clone =
         index_tensor.second->clone(index_tensor.second->getGraph());
     Tensor *t_clone = up_t_clone.get();
-    // t_clone->id += "/" + std::to_string(index_tensor.first);
-    t_clone->id += std::to_string(index_tensor.first);
+    t_clone->id =
+        opCopy->getGraph().getIr().createIntermediateTensorId(t_clone->id);
     if (tensors.find(t_clone->id) != tensors.end()) {
       throw internal_error(
           "Trying to add an input tensor that is already in tensors {}",

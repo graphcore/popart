@@ -1353,6 +1353,9 @@ PYBIND11_MODULE(popart_core, m) {
         "enableSupportedDataTypeCasting",
         &SessionOptions::enableSupportedDataTypeCasting,
         DOC(popart, SessionOptions, enableSupportedDataTypeCasting));
+    cls.def_readwrite("enableExplicitMainLoops",
+                      &SessionOptions::enableExplicitMainLoops,
+                      DOC(popart, SessionOptions, enableExplicitMainLoops));
   }
   {
     py::enum_<PatternsLevel> en(m, "PatternsLevel", DOC(popart, PatternsLevel));

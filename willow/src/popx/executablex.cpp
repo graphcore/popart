@@ -29,9 +29,8 @@ Executablex::Executablex(IrLowering &ir_lowering_)
     }
   }
 
-  for (auto &id : ir().getDataFlow().anchors()) {
+  for (auto &id : ir().getRootAnchors()) {
     Tensor *tensor = ir().getTensor(id);
-    // anchorTensors[id] = tensor;
     anchorTensors.push_back(tensor);
   }
 
@@ -69,7 +68,7 @@ Executablex::Executablex(
     }
   }
 
-  for (auto &id : ir().getDataFlow().anchors()) {
+  for (auto &id : ir().getRootAnchors()) {
     Tensor *tensor = getTensor(id);
     anchorTensors.push_back(tensor);
   }

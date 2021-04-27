@@ -44,6 +44,7 @@ void HostIOSetup::setupHostLoadOps(Tensor *inTensor) const {
 
   auto &graph             = inTensor->getGraph();
   auto &ir                = graph.getIr();
+  auto &sessionOptions    = ir.getSessionOptions();
   TensorId streamTensorId = inTensor->id;
 
   logging::ir::debug(
@@ -57,7 +58,16 @@ void HostIOSetup::setupHostLoadOps(Tensor *inTensor) const {
   } else {
     settings.executionContext = ExecutionContext::Subgraph;
   }
-  settings.schedulePriority = std::numeric_limits<double>::lowest();
+
+  const auto num_phases =
+      sessionOptions.virtualGraphMode == VirtualGraphMode::ExecutionPhases
+          ? sessionOptions.executionPhaseSettings.phases
+          : 0;
+
+  // Only force priority if batch serialisation or phased execution is not used
+  if (sessionOptions.batchSerializationSettings.factor < 2 && num_phases < 2) {
+    settings.schedulePriority = std::numeric_limits<double>::lowest();
+  }
 
   auto init = std::make_unique<InitOp>(Onnx::CustomOperators::Init_1,
                                        inTensor->info,
@@ -112,8 +122,9 @@ void HostIOSetup::setupHostLoadOps(Tensor *inTensor) const {
 
 void HostIOSetup::setupHostStoreOps(Tensor *anchorTensor) const {
 
-  auto &graph = anchorTensor->getGraph();
-  auto &ir    = graph.getIr();
+  auto &graph          = anchorTensor->getGraph();
+  auto &ir             = graph.getIr();
+  auto &sessionOptions = ir.getSessionOptions();
 
   TensorId streamTensorId = ir.getAnchorRemap().getRight(anchorTensor->id);
 
@@ -128,7 +139,16 @@ void HostIOSetup::setupHostStoreOps(Tensor *anchorTensor) const {
   } else {
     settings.executionContext = ExecutionContext::Subgraph;
   }
-  settings.schedulePriority = std::numeric_limits<double>::lowest();
+
+  const auto num_phases =
+      sessionOptions.virtualGraphMode == VirtualGraphMode::ExecutionPhases
+          ? sessionOptions.executionPhaseSettings.phases
+          : 0;
+
+  // Only force priority if batch serialisation or phased execution is not used
+  if (sessionOptions.batchSerializationSettings.factor < 2 && num_phases < 2) {
+    settings.schedulePriority = std::numeric_limits<double>::lowest();
+  }
 
   auto hostStoreOpUp = std::make_unique<HostStoreOp>(
       Onnx::CustomOperators::HostStore, settings, streamTensorId);

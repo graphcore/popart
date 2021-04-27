@@ -1,6 +1,6 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_DEOCMPOSELOOPS_HPP
-#define GUARD_NEURALNET_DEOCMPOSELOOPS_HPP
+#ifndef GUARD_NEURALNET_DECOMPOSELOOPS_HPP
+#define GUARD_NEURALNET_DECOMPOSELOOPS_HPP
 
 #include <popart/op/loop.hpp>
 #include <popart/transforms/transform.hpp>

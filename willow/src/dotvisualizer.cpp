@@ -119,10 +119,19 @@ int DotVisualizer::getNextGraphIndex(const FullGraphName &gString) {
 // Create a tensor node in the .dot file
 void DotVisualizer::makeNodeIfRequired(const Tensor *tensor,
                                        std::ofstream &ofs) {
-  if (tensorsVisited.count(tensor->id) == 0) {
+  if (tensorsVisited.count(tensor->id) == 0 || tensor->isGraphInput() ||
+      tensor->isGraphOutput()) {
     tensorsVisited.insert(tensor->id);
     ofs << tensorDotId(tensor->id) << " [shape= \"egg\", label=\""
         << tensor->info << "  nc:" << tensor->consumers.getTotal()
+        << (tensor->isGraphInput()
+                ? "\ngraph input: " +
+                      std::to_string(tensor->getGraphInputIndex())
+                : "")
+        << (tensor->isGraphOutput()
+                ? "\ngraph output: " +
+                      std::to_string(tensor->getGraphOutputIndex())
+                : "")
         << "\", color = " << getTensorNodeColor(tensor->tensorType()) << "];\n";
   }
 }

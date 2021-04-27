@@ -75,9 +75,6 @@ using RemoteBufferId = int64_t;
 // The index within a remote buffer
 using RemoteBufferIndex = int64_t;
 
-// The identifier of a host stream
-using HostStreamId = int64_t;
-
 // Identifier for Random Reference Tensors
 using RandomReferenceId = int64_t;
 

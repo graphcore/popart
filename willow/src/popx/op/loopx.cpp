@@ -238,6 +238,56 @@ void LoopOpx::copyBodyOutputsToOpOutputs(
   }
 }
 
+void LoopOpx::copyModifiedBodyInputsToOpInputs(
+    poplar::program::Sequence &prog) const {
+  auto &op                = getOp<LoopOp>();
+  const auto &graph       = op.getGraph();
+  const auto &calledGraph = op.getCalledGraph();
+
+  for (auto input : op.input->tensorIdMap()) {
+    InIndex opInIndex   = input.first;
+    TensorId opTensorId = input.second;
+    InIndex sgInIndex   = op.opInToSubgraphInIndex(opInIndex);
+    TensorId sgTensorId = calledGraph.getInputId(sgInIndex);
+
+    auto modifiedRegions = op.modifies(opInIndex);
+
+    if (std::any_of(modifiedRegions.begin(),
+                    modifiedRegions.end(),
+                    [](const view::Region &r) { return !r.isEmpty(); })) {
+      auto opTensor = graph.getTensors().get(opTensorId);
+      auto sgTensor = calledGraph.getTensors().get(sgTensorId);
+
+      auto opPopTensor = get(opTensorId);
+      auto sgPopTensor = get(sgTensorId);
+
+      auto aliases =
+          dv_p->lowering().getAliasZeroCopy()->getActiveAliasedTensors(
+              {opTensor}, true);
+
+      bool copy_modified_required = true;
+
+      copy_modified_required &= aliases.find(sgTensor) == aliases.end();
+
+      copy_modified_required &=
+          dv_p->lowering().getAliasZeroCopy()->copyModifiedRequired(&op,
+                                                                    opInIndex);
+
+      if (copy_modified_required) {
+        logging::opx::trace(
+            "[CallOpx] Copying modified input {}->{}", sgTensorId, opTensorId);
+        poplar::program::Copy copy_prog(
+            sgPopTensor, opPopTensor, false, debugContext());
+        prog.add(copy_prog);
+      } else {
+        logging::opx::trace("[CallOpx] Skipping copy modified input {}->{}",
+                            sgTensorId,
+                            opTensorId);
+      }
+    }
+  }
+}
+
 void LoopOpx::grow(poplar::program::Sequence &prog) const {
   // Builds the logic for loops (pseudocode):
   //
@@ -256,6 +306,7 @@ void LoopOpx::grow(poplar::program::Sequence &prog) const {
   //   }
   // }
   // copyBodyOutputsToOpOutputs();
+  // copyModifiedBodyInputsToOpInputs();
   //
 
   auto &op = getOp<LoopOp>();
@@ -354,9 +405,18 @@ void LoopOpx::grow(poplar::program::Sequence &prog) const {
       loopContinueProg,
       debugContext("iterator_update"));
 
-  // 12: Add conditional around the loop body program
-  loopProg.add(poplar::program::If(
-      exitTensor, loopExitProg, loopContinueProg, debugContext("condition")));
+  // Test if the loop continue condition will not change, and if the loop
+  // will always run until the max iteration count
+  if (op.getCalledGraph().getInputId(1) == op.getCalledGraph().getOutputId(0) &&
+      !op.hasInput(LoopOp::getMaximumTripCountInIndex()) &&
+      !op.hasInput(LoopOp::getTerminationConditionInIndex())) {
+    // 12: Add loop body program directly
+    loopProg.add(loopContinueProg);
+  } else {
+    // 12: Add conditional around the loop body program
+    loopProg.add(poplar::program::If(
+        exitTensor, loopExitProg, loopContinueProg, debugContext("condition")));
+  }
 
   // 13: Repeat the loop conditional program
   logging::opx::debug(
@@ -366,6 +426,9 @@ void LoopOpx::grow(poplar::program::Sequence &prog) const {
 
   // 14: Copy body outputs to op outputs
   copyBodyOutputsToOpOutputs(prog);
+
+  // 15: Copy modified inputs
+  copyModifiedBodyInputsToOpInputs(prog);
 }
 
 namespace {

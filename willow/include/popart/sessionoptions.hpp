@@ -811,6 +811,10 @@ struct SessionOptions {
   /// inform on narrowing casts
   bool enableSupportedDataTypeCasting = true;
 
+  // Enables explicit main loop transformation, and disables implicit training
+  // loops. This will become deprecated and enabled by default.
+  bool enableExplicitMainLoops = false;
+
   // Get the buffering depth for a TensorId. Will return 1 unless
   // prefetching is enabled and the buffering depth is overwritten
   // in the \c prefetchBufferingDepthMap variable.

@@ -73,6 +73,140 @@ bool Tensor::isModified() const {
   return false;
 }
 
+view::Regions Tensor::modifiedRegionsByOps(std::vector<OpId> opIds) const {
+  std::vector<Op *> ops;
+  ops.reserve(opIds.size());
+  for (auto &opId : opIds) {
+    ops.push_back(graph.getOp(opId));
+  }
+  return modifiedRegionsByOps(ops);
+}
+
+view::Regions Tensor::modifiedRegionsByOps(std::vector<Op *> ops) const {
+  // t0: non-const pointer to this
+  Tensor *t0    = graph.getTensors().get(id);
+  auto &aliases = graph.getTensors().getAliases();
+  auto chains   = aliases.aliasChainsFrom(t0);
+
+  std::map<Op *, std::set<Op *>> beforeOps;
+  std::map<Op *, view::Regions> opToT0ModifiedRegions;
+
+  // All chains from t0
+  for (auto &chain : chains) {
+    // All aliases t1 of t0
+    Tensor *t1 = chain.first;
+
+    // All consumers of t1
+    for (Op *consumer : t1->consumers.getOps()) {
+      if (std::find(ops.begin(), ops.end(), consumer) != ops.end()) {
+        beforeOps.insert({consumer, {}});
+      }
+
+      view::AccessType accessType = view::AccessType::None;
+      view::Regions subModifiedRegions1;
+      view::Regions subModifiedRegions0;
+
+      auto indices = consumer->input->indices(t1);
+
+      for (InIndex index : indices) {
+        // Any consumer modified region of t1
+        auto regions = consumer->modifies(index);
+
+        // If an Op consumes the tensor without specifying modifies we assume
+        // (conservatively) full read access to the tensor
+        if (regions.empty() ||
+            std::any_of(regions.begin(),
+                        regions.end(),
+                        [](const view::Region &r) { return r.isEmpty(); })) {
+          accessType = view::combine({accessType, view::AccessType::Read});
+        }
+
+        // Collect modified regions of t1
+        subModifiedRegions1.insert(
+            subModifiedRegions1.end(), regions.begin(), regions.end());
+      }
+
+      // Convert regions of t1 to regions of t0
+      subModifiedRegions1 = view::mergeRegions(subModifiedRegions1);
+      for (auto &subModifiedRegion1 : subModifiedRegions1) {
+        auto regions =
+            aliases.getChainsFromTo(t1, t0).apply(subModifiedRegion1);
+        subModifiedRegions0.insert(
+            subModifiedRegions0.end(), regions.begin(), regions.end());
+      }
+      subModifiedRegions0 = view::mergeRegions(subModifiedRegions0);
+
+      // Register what part of t0 the consumer of t1 modifies (indirectly)
+      if (std::any_of(subModifiedRegions0.begin(),
+                      subModifiedRegions0.end(),
+                      [](const view::Region &r) { return !r.isEmpty(); })) {
+        auto &regions = opToT0ModifiedRegions[consumer];
+        regions.insert(regions.end(),
+                       subModifiedRegions0.begin(),
+                       subModifiedRegions0.end());
+      }
+    }
+
+    // Ensure Op access order
+    for (Op *consumer : t1->consumers.getOps()) {
+      for (Op *after : t1->getGraph().topoCons->getAfters(consumer)) {
+        if (beforeOps.find(after) != beforeOps.end()) {
+          beforeOps[after].insert(consumer);
+        }
+      }
+    }
+  }
+
+  // Assemble all t0 modified regions
+  view::Regions modifiedRegions;
+  view::AccessType accessType = view::AccessType::None;
+
+  // As soon as a consumer modified the whole input, we can stop
+  for (Op *op : ops) {
+    auto it = opToT0ModifiedRegions.find(op);
+    if (it == opToT0ModifiedRegions.end()) {
+      continue;
+    }
+
+    auto opModifiedRegions = view::mergeRegions(it->second);
+    modifiedRegions.insert(modifiedRegions.end(),
+                           opModifiedRegions.begin(),
+                           opModifiedRegions.end());
+    modifiedRegions = view::mergeRegions(modifiedRegions);
+
+    for (auto &r : opModifiedRegions) {
+      view::AccessType regionAccessType = r.getAccessType();
+      if (!r.isEmpty() && (regionAccessType == view::AccessType::None ||
+                           regionAccessType == view::AccessType::Read)) {
+        throw error("Unexpected modified region access type None or Read");
+      }
+      accessType = view::combine({accessType, regionAccessType});
+    }
+    if (modifiedRegions.size() > 0 &&
+        modifiedRegions.front() == view::Region::getFull(t0->info.shape()) &&
+        accessType == view::AccessType::Write) {
+      // The whole input tensor has been touched, conclude
+      //  If the whole tensor has been write-accessed first, we say that
+      //  the list of ops passed to this method consume the tensor write-only.
+      //  If any read access to the tensor happens before the write-only
+      //  access, the modified tensor is read-write.
+      //  Read-only does not make sense, since we ask about modified regions.
+      // Examples:
+      //  1.) VarUpdate will cause read-write access to modified input.
+      //  2.) RemoteLoad will cause write-only access to modified input.
+      break;
+    }
+  }
+
+  // Update access type
+  for (auto &r : modifiedRegions) {
+    r.setAccessType(accessType);
+  }
+
+  // Return all regions touched
+  return modifiedRegions;
+}
+
 VGraphId Tensor::getVirtualGraphIdUnsafe() const {
   return getVirtualGraphIdAndTileSetUnsafe().first;
 }
@@ -630,6 +764,22 @@ bool Tensor::isImplicitLoopInput() const {
 
 bool Tensor::isExplicitLoopInput() const {
   return isLoopInput() && !isImplicitLoopInput();
+}
+
+bool Tensor::isLoopTripCounter() const {
+  if (isGraphInput()) {
+    auto ops = graph.getCallSiteOps();
+    for (Op *op : ops) {
+      if (LoopOp *loop = dynamic_cast<LoopOp *>(op)) {
+        auto sgInIdx = getGraphInputIndex();
+        if (sgInIdx == 0 && loop->subgraphInToOpInIndex(sgInIdx) ==
+                                LoopOp::getMaximumTripCountInIndex()) {
+          return true;
+        }
+      }
+    }
+  }
+  return false;
 }
 
 bool Tensor::isUnmodifiable() const {

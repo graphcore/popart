@@ -205,7 +205,6 @@ int64_t SessionOptions::getGlobalReplicationFactor() const {
 }
 
 unsigned SessionOptions::getAccumulationFactor() const {
-
   unsigned af = static_cast<unsigned>(accumulationFactor);
   if (!enableGradientAccumulation && static_cast<unsigned>(af) > 1) {
     // A check on user input consistency

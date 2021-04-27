@@ -68,6 +68,7 @@
 #include <popart/transforms/inplaceaccumulategradpartialsintooptimizeraccumtensor.hpp>
 #include <popart/transforms/interipucopy.hpp>
 #include <popart/transforms/iocomputetilecopy.hpp>
+#include <popart/transforms/mainloops.hpp>
 #include <popart/transforms/mergecopies.hpp>
 #include <popart/transforms/mergeduplicateops.hpp>
 #include <popart/transforms/mergeremote.hpp>
@@ -533,6 +534,12 @@ void Ir::verifyAliasZeroCopySettings() const {
   }
 }
 
+void Ir::verifyExplicitMainLoopsSettings() const {
+  if (userOptions.enableExplicitMainLoops && !userOptions.useHostCopyOps) {
+    throw error("enableExplicitMainLoops requires useHostCopyOps.");
+  }
+}
+
 void Ir::verifyBatchSerializationSettings() const {
   if (userOptions.batchSerializationSettings.method ==
           BatchSerializationMethod::Loop &&
@@ -733,25 +740,6 @@ void Ir::verifyTensorIds() const {
   }
 
   logging::ir::info("TensorId check passed");
-}
-
-void Ir::verifySubgraphs() const {
-  for (auto graph : getAllGraphs()) {
-    // Verify that no subgraph contains an Op that is not outlinable
-    if (graph->id == getMainGraph().id) {
-      continue;
-    }
-    for (auto &id_op : graph->getOps()) {
-      auto op = id_op.second.get();
-      if (op->isOutlineable() == false) {
-        throw error("Subgraph '{}' contains op '{}', but ops of type '{}' are "
-                    "not outlineable",
-                    graph->id,
-                    op->debugName(),
-                    op->opid);
-      }
-    }
-  }
 }
 
 void Ir::verifyRecomputeAttributes() const noexcept(false) {
@@ -1023,6 +1011,7 @@ void Ir::prepareImpl(const IrBundle &gb, const HashesMap &cacheEntries) {
   verifyExecutionPhaseSettings();
   verifyDistributedReplicatedGraphSettings();
   verifyAliasZeroCopySettings();
+  verifyExplicitMainLoopsSettings();
 
   dotCheckpoint(DotCheck::Fwd0);
 
@@ -1307,6 +1296,11 @@ void Ir::prepareImpl(const IrBundle &gb, const HashesMap &cacheEntries) {
 
   dotCheckpoint(DotCheck::PreAlias);
 
+  if (getSessionOptions().enableExplicitMainLoops) {
+    // Add explicit training loops
+    applyTransform(MainLoops::id(), getMainGraph());
+  }
+
   if (getSessionOptions().useHostCopyOps) {
     // Add anchor HostStore operations
     applyTransform(HostIOSetup::id(2), getMainGraph());
@@ -1431,7 +1425,6 @@ void Ir::prepareImpl(const IrBundle &gb, const HashesMap &cacheEntries) {
     verifyTensorIds();
     verifyVirtualGraphIds(true);
     verifyVertexAttributesOnlyInMain();
-    verifySubgraphs();
     verifyRecomputeAttributes();
   }
   // end of checks
