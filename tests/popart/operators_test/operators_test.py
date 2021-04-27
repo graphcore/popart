@@ -2010,6 +2010,25 @@ def test_shape(op_tester):
     op_tester.run(init_builder, reference, 'infer')
 
 
+def test_shape2(op_tester):
+    d1 = np.random.rand(2, 4, 3).astype(np.float32)
+    d2 = np.zeros((4, 6), dtype=np.float32)
+
+    def init_builder(builder):
+        i1 = builder.aiOnnx.constant(d1)
+        i2 = builder.aiOnnx.constant(d2)
+        c = builder.aiOnnx.shape([i2])
+        o = builder.aiOnnx.reshape([i1, c])
+        builder.addOutputTensor(o)
+        return [o]
+
+    def reference(ref_data):
+        out = np.reshape(d1, d2.shape)
+        return [out]
+
+    op_tester.run(init_builder, reference, 'infer')
+
+
 def test_flatten_infer(op_tester):
     d1 = np.random.rand(2, 3, 4, 5).astype(np.float32)
     axis = 2

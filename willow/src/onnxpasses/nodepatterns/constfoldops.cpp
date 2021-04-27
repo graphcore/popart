@@ -321,5 +321,20 @@ Constants UnsqueezeCFold::fold(const NodeProto &node, const Constants &inputs) {
   return res;
 }
 
+// ShapeCFold takes a tensor as input and outputs an 1D int64 tensor containing
+// the shape of the input tensor.
+// Example: For input tensor of shape (2,3,5) output tensor is {2,3,5}.
+Constants ShapeCFold::fold(const NodeProto &node, const Constants &inputs) {
+  using namespace poprithms::compute;
+
+  const auto inShape = inputs.at(node.input(0)).shape();
+
+  Constants res;
+  res.insert({node.output(0),
+              host::Tensor::int64({inShape.rank_i64()}, inShape.get())});
+
+  return res;
+}
+
 } // namespace onnxpasses
 } // namespace popart

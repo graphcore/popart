@@ -200,6 +200,14 @@ public:
   Constants fold(const NodeProto &, const Constants &) final;
 };
 
+class ShapeCFold : public ConstFoldOp {
+public:
+  ShapeCFold() : ConstFoldOp("Shape") {}
+  virtual ~ShapeCFold() = default;
+
+  Constants fold(const NodeProto &, const Constants &) final;
+};
+
 } // namespace onnxpasses
 } // namespace popart
 

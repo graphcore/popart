@@ -73,6 +73,7 @@ void ConstFolder::registerConstFoldOpMap() {
   tmpConstFoldOps.push_back(std::make_unique<ReluCFold>());
   tmpConstFoldOps.push_back(std::make_unique<ReshapeCFold>());
   tmpConstFoldOps.push_back(std::make_unique<ScaleCFold>());
+  tmpConstFoldOps.push_back(std::make_unique<ShapeCFold>());
   tmpConstFoldOps.push_back(std::make_unique<SliceCFold>());
   tmpConstFoldOps.push_back(std::make_unique<SqueezeCFold>());
   tmpConstFoldOps.push_back(std::make_unique<TransposeCFold>());
