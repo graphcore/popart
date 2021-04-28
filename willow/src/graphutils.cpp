@@ -20,22 +20,45 @@ void traverse(std::vector<Tensor *> tensors,
               TraversalType traversalType,
               VisitType visitType,
               TraversalDirection traversalDirection) {
-  std::deque<Tensor *> deque;
-  std::set<Tensor *> visited;
+  std::vector<TensorAndCallStack> tensorsAndStack;
+  tensorsAndStack.reserve(tensors.size());
+  for (Tensor *t : tensors) {
+    tensorsAndStack.push_back({t, {}});
+  }
+  traverse(tensorsAndStack,
+           visitor,
+           filter,
+           traversalType,
+           visitType,
+           traversalDirection);
+}
 
-  auto enqueue = [&deque, &visited](Tensor *t) {
-    if (visited.find(t) == visited.end()) {
-      visited.insert(t);
+void traverse(std::vector<TensorAndCallStack> tensors,
+              std::function<bool(Tensor *)> visitor,
+              std::function<bool(Op *, Tensor *, Tensor *)> filter,
+              TraversalType traversalType,
+              VisitType visitType,
+              TraversalDirection traversalDirection) {
+  std::deque<TensorAndCallStack> deque;
+  std::map<Tensor *, std::set<CallStack>> visited;
+
+  auto enqueue = [&deque, &visited](TensorAndCallStack &t) {
+    if (visited.find(t.first) == visited.end() ||
+        (visited[t.first].find({}) == visited[t.first].end() &&
+         visited[t.first].find(t.second) == visited[t.first].end())) {
+      // No generic (no call stack) or call-stack specific visit of t has
+      // occured
+      visited[t.first].insert(t.second);
       deque.push_back(t);
     }
   };
 
-  for (Tensor *t : tensors) {
+  for (auto &t : tensors) {
     enqueue(t);
   }
 
   while (!deque.empty()) {
-    Tensor *tq;
+    TensorAndCallStack tq;
 
     switch (traversalType) {
     case TraversalType::BreadthFirst: {
@@ -53,104 +76,137 @@ void traverse(std::vector<Tensor *> tensors,
     bool keep_going = false;
 
     if (visitType == VisitType::Pre) {
-      keep_going = visitor(tq);
+      keep_going = visitor(tq.first);
     }
 
-    std::vector<Tensor *> toEnqueue;
+    std::vector<TensorAndCallStack> toEnqueue;
 
-    auto addOpBwd = [&toEnqueue, &tq, &filter](Op *op) {
+    auto addOpBwd = [&toEnqueue, &tq, &filter](Op *op, CallStack stack) {
       for (auto &input : op->input->tensorMap()) {
         Tensor *tn = input.second;
-        if (filter(op, tq, tn)) {
-          toEnqueue.push_back(tn);
+        if (filter(op, tq.first, tn)) {
+          toEnqueue.push_back({tn, stack});
         }
       }
     };
 
-    auto addOpFwd = [&toEnqueue, &tq, &filter](Op *op) {
+    auto addOpFwd = [&toEnqueue, &tq, &filter](Op *op, CallStack stack) {
       for (auto &output : op->output->tensorMap()) {
         Tensor *tn = output.second;
-        if (filter(op, tq, tn)) {
-          toEnqueue.push_back(tn);
+        if (filter(op, tq.first, tn)) {
+          toEnqueue.push_back({tn, stack});
         }
       }
     };
 
     auto bwd = [&tq, &addOpBwd, &toEnqueue, &filter]() {
       // Producer Ops
-      if (tq->hasProducer()) {
-        Op *p = tq->getProducer();
-        if (SubgraphOp *sgOp = dynamic_cast<SubgraphOp *>(p)) {
+      if (tq.first->hasProducer()) {
+        Op *p = tq.first->getProducer();
+        if (!p->getCalledGraphIds().empty()) {
           // Subgraph Op
-          auto indices = sgOp->output->indices(tq);
+          auto indices = p->output->indices(tq.first);
+          auto stack   = tq.second;
+          stack.push_back(p);
           for (OutIndex opOutIndex : indices) {
-            OutIndex sgOutIndex = sgOp->opOutToSubgraphOutIndex(opOutIndex);
-            if (sgOutIndex >= 0 &&
-                sgOutIndex < sgOp->getCalledGraph().getOutputIds().size()) {
-              TensorId sgOutId = sgOp->getCalledGraph().getOutputId(sgOutIndex);
-              Tensor *sgOut = sgOp->getCalledGraph().getTensors().get(sgOutId);
-              if (filter(sgOp, tq, sgOut)) {
-                toEnqueue.push_back(sgOut);
+            for (auto pgraph : p->getCalledGraphs()) {
+              OutIndex sgOutIndex = p->opOutToSubgraphOutIndex(
+                  p->getCalledGraphIndex(pgraph->id), opOutIndex);
+              if (sgOutIndex >= 0 &&
+                  sgOutIndex < pgraph->getOutputIds().size()) {
+                TensorId sgOutId = pgraph->getOutputId(sgOutIndex);
+                Tensor *sgOut    = pgraph->getTensors().get(sgOutId);
+                if (filter(p, tq.first, sgOut)) {
+                  toEnqueue.push_back({sgOut, stack});
+                }
               }
             }
           }
         } else {
           // Regular Op
-          addOpBwd(p);
+          addOpBwd(p, tq.second);
         }
       }
 
       // Graph inputs
-      if (tq->isGraphInput()) {
-        auto callSites = tq->getGraph().getCallSiteOps();
-        for (Op *callSite : callSites) {
-          if (SubgraphOp *sgOp = dynamic_cast<SubgraphOp *>(callSite)) {
-            InIndex index =
-                sgOp->subgraphInToOpInIndex(tq->getGraphInputIndex());
-            if (sgOp->hasInput(index) &&
-                filter(sgOp, tq, sgOp->inTensor(index))) {
-              toEnqueue.push_back(sgOp->inTensor(index));
+      if (tq.first->isGraphInput()) {
+        auto processCallSite = [&toEnqueue, &filter, &tq](Op *sgOp) {
+          InIndex index = sgOp->subgraphInToOpInIndex(
+              sgOp->getCalledGraphIndex(tq.first->getGraph().id),
+              tq.first->getGraphInputIndex());
+          if (sgOp->hasInput(index) &&
+              filter(sgOp, tq.first, sgOp->inTensor(index))) {
+            auto stack = tq.second;
+            if (!stack.empty() && stack.back() == sgOp) {
+              stack.pop_back();
             }
+            toEnqueue.push_back({sgOp->inTensor(index), stack});
           }
+        };
+
+        if (tq.second.empty()) {
+          auto callSites = tq.first->getGraph().getCallSiteOps();
+          for (Op *sgOp : callSites) {
+            processCallSite(sgOp);
+          }
+        } else {
+          processCallSite(tq.second.back());
         }
       }
     };
 
     auto fwd = [&tq, &addOpFwd, &toEnqueue, &filter]() {
       // Consumer Ops
-      for (Op *c : tq->consumers.getOps()) {
-        if (SubgraphOp *sgOp = dynamic_cast<SubgraphOp *>(c)) {
+      for (Op *c : tq.first->consumers.getOps()) {
+        if (!c->getCalledGraphIds().empty()) {
           // Subgraph Op
-          auto indices = sgOp->input->indices(tq);
+          auto indices = c->input->indices(tq.first);
+          auto stack   = tq.second;
+          stack.push_back(c);
           for (InIndex opInIndex : indices) {
-            InIndex sgInIndex = sgOp->opInToSubgraphInIndex(opInIndex);
-            if (sgInIndex >= 0 &&
-                sgInIndex < sgOp->getCalledGraph().getInputIds().size()) {
-              TensorId sgInId = sgOp->getCalledGraph().getInputId(sgInIndex);
-              Tensor *sgIn    = sgOp->getCalledGraph().getTensors().get(sgInId);
-              if (filter(sgOp, tq, sgIn)) {
-                toEnqueue.push_back(sgIn);
+            for (auto cgraph : c->getCalledGraphs()) {
+              InIndex sgInIndex = c->opInToSubgraphInIndex(
+                  c->getCalledGraphIndex(cgraph->id), opInIndex);
+              if (sgInIndex >= 0 && sgInIndex < cgraph->getInputIds().size()) {
+                TensorId sgInId = cgraph->getInputId(sgInIndex);
+                Tensor *sgIn    = cgraph->getTensors().get(sgInId);
+                if (filter(c, tq.first, sgIn)) {
+                  toEnqueue.push_back({sgIn, stack});
+                }
               }
             }
           }
         } else {
           // Regular Op
-          addOpFwd(c);
+          addOpFwd(c, tq.second);
         }
       }
 
       // Graph outputs
-      if (tq->isGraphOutput()) {
-        auto callSites = tq->getGraph().getCallSiteOps();
-        for (Op *callSite : callSites) {
-          if (SubgraphOp *sgOp = dynamic_cast<SubgraphOp *>(callSite)) {
-            InIndex index =
-                sgOp->subgraphOutToOpOutIndex(tq->getGraphOutputIndex());
-            if (sgOp->hasOutput(index) &&
-                filter(sgOp, tq, sgOp->outTensor(index))) {
-              toEnqueue.push_back(sgOp->outTensor(index));
+      if (tq.first->isGraphOutput()) {
+        auto processCallSite = [&toEnqueue, &filter, &tq](Op *sgOp) {
+          InIndex index = sgOp->subgraphOutToOpOutIndex(
+              sgOp->getCalledGraphIndex(tq.first->getGraph().id),
+              tq.first->getGraphOutputIndex());
+          if (sgOp->hasOutput(index) &&
+              filter(sgOp, tq.first, sgOp->outTensor(index))) {
+            auto stack = tq.second;
+            if (!stack.empty() && stack.back() == sgOp) {
+              stack.pop_back();
             }
+            toEnqueue.push_back({sgOp->outTensor(index), stack});
           }
+        };
+
+        if (tq.second.empty()) {
+          // Exit through all call sites
+          auto callSites = tq.first->getGraph().getCallSiteOps();
+          for (Op *sgOp : callSites) {
+            processCallSite(sgOp);
+          }
+        } else {
+          // Exit through the current call stack call site
+          processCallSite(tq.second.back());
         }
       }
     };
@@ -187,12 +243,12 @@ void traverse(std::vector<Tensor *> tensors,
     }
 
     if (visitType == VisitType::Post) {
-      keep_going = visitor(tq);
+      keep_going = visitor(tq.first);
     }
 
     // Explore graph further along this tensor
     if (keep_going) {
-      for (Tensor *te : toEnqueue) {
+      for (TensorAndCallStack &te : toEnqueue) {
         enqueue(te);
       }
     }
@@ -259,21 +315,22 @@ std::map<Op *, std::set<Op *>> getOpsWithBefores(const std::set<Op *> &ops) {
 
   for (Op *op0 : ops) {
     // Graph connections
-    std::queue<Op *> queue;
-    queue.push(op0);
-    while (!queue.empty()) {
-      Op *op1 = queue.front();
-      queue.pop();
-      if (op1 != op0 && ops.find(op1) != ops.end()) {
-        // Op1 occurs before Op0
-        opsWithBefores[op0].insert(op1);
-      }
-      for (Tensor *input : op1->input->tensors()) {
-        if (input->hasProducer()) {
-          queue.push(input->getProducer());
-        }
-      }
-    }
+
+    graphutils::traverse(
+        op0->input->tensors(),
+        [&opsWithBefores, &op0, &ops](Tensor *t) {
+          if (t->hasProducer()) {
+            Op *op1 = t->getProducer();
+            if (op0 != op1 && ops.find(op1) != ops.end()) {
+              opsWithBefores[op0].insert(op1);
+            }
+          }
+          return true;
+        },
+        [](Op *, Tensor *, Tensor *) { return true; },
+        TraversalType::BreadthFirst,
+        VisitType::Pre,
+        TraversalDirection::Backward);
 
     // Topological constraints
     auto befores     = graph.topoCons->getBefores(op0);

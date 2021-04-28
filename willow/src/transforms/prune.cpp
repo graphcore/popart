@@ -35,9 +35,9 @@ void PruneHelper::analyze() {
         // does it modify t?
         for (InIndex index : consumer->input->indices(t)) {
           auto modified = consumer->modifies(index);
-          if (!std::all_of(modified.begin(),
-                           modified.end(),
-                           [](const view::Region &r) { return r.isEmpty(); })) {
+          if (std::any_of(modified.begin(),
+                          modified.end(),
+                          [](const view::Region &r) { return !r.isEmpty(); })) {
             newRequired.insert(consumer);
           }
         }
@@ -164,7 +164,20 @@ bool Prune::apply(Graph &graph) const {
             excludes.insert(ts->id);
             return true;
           },
-          [](Op *, Tensor *, Tensor *) { return true; },
+          [](Op *op, Tensor *t0, Tensor *t1) {
+            if (op->input->contains(t0) && op->output->contains(t1)) {
+              auto inIndices  = op->input->indices(t0);
+              auto outIndices = op->output->indices(t1);
+              for (InIndex i : inIndices) {
+                for (OutIndex o : outIndices) {
+                  if (op->doesAlias(i, o)) {
+                    return true;
+                  }
+                }
+              }
+            }
+            return false;
+          },
           graphutils::TraversalType::BreadthFirst,
           graphutils::VisitType::Pre,
           graphutils::TraversalDirection::Forward);

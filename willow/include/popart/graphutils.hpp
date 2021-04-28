@@ -16,6 +16,12 @@ namespace popart {
 namespace graphutils {
 
 /**
+ * CallStack representation
+ */
+using CallStack          = std::vector<Op *>;
+using TensorAndCallStack = std::pair<Tensor *, CallStack>;
+
+/**
  * Enum type that specifies how a graph should be traversed
  */
 enum class TraversalType {
@@ -52,14 +58,38 @@ enum class TraversalDirection {
 };
 
 /**
+ * Traverse a graph starting from tensors (with call stack)
+ *
+ * \param tensors            The \a tensors (and call stack) to start from
+ * \param visitor            The \a visitor function to call. The \a visitor
+ *                           should return true if further tensors along that
+ *                           path should be explored.
+ * \param filter             The \a filter function to call. The \a filter
+ *                           should return true if Tensor A -> B through Op is a
+ *                           path that should be traversed.
+ * \param traversal          Type How a  graph should be traversed
+ * \param visitType          When the visitor should be called
+ * \param traversalDirection Which directions should be traversed
+ */
+void traverse(std::vector<TensorAndCallStack> tensors,
+              std::function<bool(Tensor *)> visitor,
+              std::function<bool(Op *, Tensor *, Tensor *)> filter,
+              TraversalType traversalType,
+              VisitType visitType,
+              TraversalDirection traversalDirection);
+
+/**
  * Traverse a graph starting from tensors
  *
- * \param tensors The \a tensors to start from
- * \param visitor The \a visitor function to call. The \a visitor should return
- * true if further tensors along that path should be explored. \param filter The
- * \a filter function to call. The \a filter should return true if Tensor A -> B
- * through Op is a path that should be traversed. \param traversalType How a
- * graph should be traversed \param visitType When the visitor should be called
+ * \param tensors            The \a tensors to start from
+ * \param visitor            The \a visitor function to call. The \a visitor
+ *                           should return true if further tensors along that
+ *                           path should be explored.
+ * \param filter             The \a filter function to call. The \a filter
+ *                           should return true if Tensor A -> B through Op is a
+ *                           path that should be traversed.
+ * \param traversal          Type How a  graph should be traversed
+ * \param visitType          When the visitor should be called
  * \param traversalDirection Which directions should be traversed
  */
 void traverse(std::vector<Tensor *> tensors,
