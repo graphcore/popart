@@ -220,8 +220,8 @@ protected:
   using Strand                  = std::tuple<VGraphId, PipelineStage>;
   using Strands                 = std::vector<Strand>;
   using StrandToTensorId        = std::map<Strand, TensorId>;
-  using OpToStrands             = std::map<Op *, std::vector<Strand>>;
-  using OpToStrandToTensorId    = std::map<Op *, StrandToTensorId>;
+  using OpToStrands             = std::map<Op *, std::vector<Strand>, POpCmp>;
+  using OpToStrandToTensorId    = std::map<Op *, StrandToTensorId, POpCmp>;
   using GraphToInIndex          = std::map<GraphId, InIndex>;
   using GraphToOutIndex         = std::map<GraphId, OutIndex>;
   using GraphToStrands          = std::map<GraphId, Strands>;
