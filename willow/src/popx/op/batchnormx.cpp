@@ -215,11 +215,13 @@ BatchNormOpx::growSpatial(poplar::program::Sequence &prog,
 
       // Ensure batch mean is the same type as mean so that running mean can
       // be calculated
-      batchMean = popops::cast(graph(),
-                               batchMean,
-                               mean.elementType(),
-                               prog,
-                               debugContext("cast_batchMean"));
+      if (batchMean.elementType() != mean.elementType()) {
+        batchMean = popops::cast(graph(),
+                                 batchMean,
+                                 mean.elementType(),
+                                 prog,
+                                 debugContext("cast_batchMean"));
+      }
 
       // Then convert the invSd to the variance
       auto batchVar =
@@ -264,6 +266,13 @@ BatchNormOpx::growSpatial(poplar::program::Sequence &prog,
     } else {
       // convert variant to inverse standard deviation
       auto invSd = convertVarToInvSd(prog, var, epsilon, x.elementType());
+
+      // mean might have a different type so cast is required before
+      // batchNormalise calculation
+      if (mean.elementType() != x.elementType()) {
+        mean = popops::cast(
+            graph(), mean, x.elementType(), prog, debugContext("cast_mean"));
+      }
 
       // batchnorm
       auto y = batchNormalise(prog, x, scale, b, mean, invSd);
@@ -390,6 +399,13 @@ BatchNormGradOpx::growSpatial(poplar::program::Sequence &prog,
     result.bGrad     = bGrad;
   } else {
     auto invSd = convertVarToInvSd(prog, var, epsilon, x.elementType());
+
+    // mean might have a different type so cast is required before
+    // batchNormaliseGrad calculation
+    if (mean.elementType() != x.elementType()) {
+      mean = popops::cast(
+          graph(), mean, x.elementType(), prog, debugContext("cast_mean"));
+    }
 
     // batchnormgrad
     poplar::Tensor xGrad, scaleGrad, bGrad;
