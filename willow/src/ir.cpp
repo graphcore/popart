@@ -2,7 +2,6 @@
 #include <algorithm>
 #include <array>
 #include <fstream>
-#include <functional>
 #include <iomanip>
 #include <map>
 #include <random>
@@ -983,7 +982,7 @@ void Ir::prepareImpl(const IrBundle &gb, const HashesMap &cacheEntries) {
 
   if (getSessionOptions().useHostCopyOps) {
     // Add input HostLoad operations
-    applyTransformIfEnabled(HostIOSetup::id(1), getMainGraph());
+    applyTransform(HostIOSetup::id(1), getMainGraph());
   }
 
   // Check if cached Ir hash matches the current one and skip
@@ -1026,18 +1025,18 @@ void Ir::prepareImpl(const IrBundle &gb, const HashesMap &cacheEntries) {
     setRequiresRandomSeed();
   }
 
-  applyTransformIfEnabled(RandomSetup::id(), getMainGraph());
+  applyTransform(RandomSetup::id(), getMainGraph());
 
   enableTransform(AutoVirtualGraph::id(),
                   userOptions.virtualGraphMode == VirtualGraphMode::Auto);
-  applyTransformIfEnabled(AutoVirtualGraph::id(), getMainGraph());
+  applyTransform(AutoVirtualGraph::id(), getMainGraph());
 
   // Required transform order for StreamingMemory is:
   // FWD -> StreamingMemory1 -> BWD -> IpuCopy -> StreamingMemory2 ->
   // Outline -> RemoteSetup
 
   if (getSessionOptions().enablePipelining) {
-    applyTransformIfEnabled(InferPipelineStages::id(), getMainGraph());
+    applyTransform(InferPipelineStages::id(), getMainGraph());
   }
 
   if (canTrain()) {
@@ -1046,7 +1045,7 @@ void Ir::prepareImpl(const IrBundle &gb, const HashesMap &cacheEntries) {
   }
 
   // First streaming memory transformation pass (fwd)
-  applyTransformIfEnabled(StreamingMemory::id(1), getMainGraph());
+  applyTransform(StreamingMemory::id(1), getMainGraph());
   if (userOptions.virtualGraphMode == VirtualGraphMode::ExecutionPhases &&
       userOptions.executionPhaseSettings.phases > 1) {
     verifyVirtualGraphIds(true);
@@ -1057,7 +1056,7 @@ void Ir::prepareImpl(const IrBundle &gb, const HashesMap &cacheEntries) {
   if (userOptions.batchSerializationSettings.factor > 1 &&
       userOptions.batchSerializationSettings.transformContext ==
           BatchSerializationTransformContext::Fwd) {
-    applyTransformIfEnabled(BatchSerialize::id(1), getMainGraph());
+    applyTransform(BatchSerialize::id(1), getMainGraph());
     removeIsolatedTensors(true);
     updateVertices();
   }
@@ -1086,7 +1085,7 @@ void Ir::prepareImpl(const IrBundle &gb, const HashesMap &cacheEntries) {
   updateVertices();
   dotCheckpoint(DotCheck::Bwd0);
 
-  applyTransformIfEnabled(Prune::id(), getMainGraph());
+  applyTransform(Prune::id(), getMainGraph());
 
   for (auto &id_graph : graphs) {
     auto &graph = getGraph(id_graph.first);
@@ -1110,13 +1109,13 @@ void Ir::prepareImpl(const IrBundle &gb, const HashesMap &cacheEntries) {
                               getSessionOptions().autoRecomputation);
     }
     // Transform from implicit to explicit recomputation
-    applyTransformIfEnabled(ExplicitRecompute::id(), getMainGraph());
+    applyTransform(ExplicitRecompute::id(), getMainGraph());
     updateVertices();
   }
 
   // Dynamicoptransform decomposes grad sums that contain
   // DynamicAdd/DynamicUpdate gradients, which can be decomposed efficiently
-  applyTransformIfEnabled(DynamicOpTransform::id(), getMainGraph());
+  applyTransform(DynamicOpTransform::id(), getMainGraph());
 
   // DecomposeGradSum decomposes remaining grad sums
   if ((getSessionOptions().batchSerializationSettings.factor <= 1 &&
@@ -1124,26 +1123,26 @@ void Ir::prepareImpl(const IrBundle &gb, const HashesMap &cacheEntries) {
       (getSessionOptions().batchSerializationSettings.factor > 1 &&
        getSessionOptions().batchSerializationSettings.transformContext ==
            BatchSerializationTransformContext::Fwd)) {
-    applyTransformIfEnabled(DecomposeGradSum::id(), getMainGraph());
+    applyTransform(DecomposeGradSum::id(), getMainGraph());
   }
 
   switch (userOptions.mergeVarUpdate) {
 
   case (MergeVarUpdateType::All): {
     enableTransform(MergeAllVarUpdates::id(), true);
-    applyTransformIfEnabled(MergeAllVarUpdates::id(), getMainGraph());
+    applyTransform(MergeAllVarUpdates::id(), getMainGraph());
     updateVertices();
     break;
   }
   case (MergeVarUpdateType::AutoTight): {
     enableTransform(MergeTightThreshold::id(), true);
-    applyTransformIfEnabled(MergeTightThreshold::id(), getMainGraph());
+    applyTransform(MergeTightThreshold::id(), getMainGraph());
     updateVertices();
     break;
   }
   case (MergeVarUpdateType::AutoLoose): {
     enableTransform(MergeLooseThreshold::id(), true);
-    applyTransformIfEnabled(MergeLooseThreshold::id(), getMainGraph());
+    applyTransform(MergeLooseThreshold::id(), getMainGraph());
     updateVertices();
     break;
   }
@@ -1174,20 +1173,20 @@ void Ir::prepareImpl(const IrBundle &gb, const HashesMap &cacheEntries) {
     getMainGraph().setConvFlipWeightConstraints();
   }
 
-  applyTransformIfEnabled(Prune::id(), getMainGraph());
+  applyTransform(Prune::id(), getMainGraph());
   updateVertices();
 
   if (getSessionOptions().enableAutomaticLossScaling) {
-    applyTransformIfEnabled(AutomaticLossScale::id(), getMainGraph());
+    applyTransform(AutomaticLossScale::id(), getMainGraph());
   }
 
   // Make sure that matmuls are serialized before gradient accumalation
   if (getSessionOptions().enableSerializedMatmuls) {
-    applyTransformIfEnabled(SerializeMatMuls::id(), getMainGraph());
+    applyTransform(SerializeMatMuls::id(), getMainGraph());
   }
 
   if (getSessionOptions().enableGroupedMatmuls) {
-    applyTransformIfEnabled(GroupMatMuls::id(), getMainGraph());
+    applyTransform(GroupMatMuls::id(), getMainGraph());
   }
 
   // Accumulator Tensor for gradient accumulation / momentum is added here
@@ -1222,7 +1221,7 @@ void Ir::prepareImpl(const IrBundle &gb, const HashesMap &cacheEntries) {
         throw error("hostAllReduce does not work with MergeVarUpdates");
       }
 
-      applyTransformIfEnabled(HostReduce::id(), getMainGraph());
+      applyTransform(HostReduce::id(), getMainGraph());
       updateVertices();
     } else {
       logging::ir::info("Skipping hostAllReduce transform when running "
@@ -1231,11 +1230,11 @@ void Ir::prepareImpl(const IrBundle &gb, const HashesMap &cacheEntries) {
   }
 
   // Add internal ops to copy tensors between ipu's as needed
-  applyTransformIfEnabled(InterIpuCopy::id(), getMainGraph());
+  applyTransform(InterIpuCopy::id(), getMainGraph());
 
   // Pipelining optimizes copies separately, so only run if this is disabled
   if (!getSessionOptions().enablePipelining) {
-    applyTransformIfEnabled(MergeCopies::id(), getMainGraph());
+    applyTransform(MergeCopies::id(), getMainGraph());
   }
 
   updateVertices();
@@ -1243,10 +1242,10 @@ void Ir::prepareImpl(const IrBundle &gb, const HashesMap &cacheEntries) {
   // Second streaming memory transformation pass (cut)
   // Streaming memory transformation 2 needs up-to-date aliasing information
   updateAliases();
-  applyTransformIfEnabled(StreamingMemory::id(2), getMainGraph());
+  applyTransform(StreamingMemory::id(2), getMainGraph());
   updateAliases();
   // Remove extra RemoteLoad, RemoteStore and Replicated ops that are not used
-  applyTransformIfEnabled(Prune::id(), getMainGraph());
+  applyTransform(Prune::id(), getMainGraph());
   updateAliases();
   if (canTrain()) {
     getMainGraph().setVarUpdateConstraints();
@@ -1258,7 +1257,7 @@ void Ir::prepareImpl(const IrBundle &gb, const HashesMap &cacheEntries) {
 
   updateVertices();
 
-  applyTransformIfEnabled(IoComputeTileCopy::id(), getMainGraph());
+  applyTransform(IoComputeTileCopy::id(), getMainGraph());
   updateVertices();
 
   // Optimizer accumulate outer fragment.
@@ -1266,8 +1265,7 @@ void Ir::prepareImpl(const IrBundle &gb, const HashesMap &cacheEntries) {
           AccumulateOuterFragmentSchedule::OverlapCycleOptimized ||
       userOptions.accumulateOuterFragmentSettings.schedule ==
           AccumulateOuterFragmentSchedule::OverlapMemoryOptimized) {
-    applyTransformIfEnabled(AccumulateOuterFragmentParallelizer::id(),
-                            getMainGraph());
+    applyTransform(AccumulateOuterFragmentParallelizer::id(), getMainGraph());
   }
 
   for (auto &id_graph : graphs) {
@@ -1281,37 +1279,36 @@ void Ir::prepareImpl(const IrBundle &gb, const HashesMap &cacheEntries) {
   if (userOptions.batchSerializationSettings.factor > 1) {
     if (userOptions.batchSerializationSettings.transformContext ==
         BatchSerializationTransformContext::Bwd) {
-      applyTransformIfEnabled(BatchSerialize::id(1), getMainGraph());
+      applyTransform(BatchSerialize::id(1), getMainGraph());
       // DecomposeGradSum decomposes remaining grad sums
-      applyTransformIfEnabled(DecomposeGradSum::id(), getMainGraph());
-      applyTransformIfEnabled(Prune::id(), getMainGraph());
+      applyTransform(DecomposeGradSum::id(), getMainGraph());
+      applyTransform(Prune::id(), getMainGraph());
       removeIsolatedTensors(true);
     }
-    applyTransformIfEnabled(BatchSerialize::id(2), getMainGraph());
+    applyTransform(BatchSerialize::id(2), getMainGraph());
     updateVertices();
   }
 
   // Must be called after optimiser decomposition and decomposegradsum.
   // Must be called before outlining.
-  applyTransformIfEnabled(
-      InplaceAccumulateGradPartialsIntoOptimizerAccumTensor::id(),
-      getMainGraph());
+  applyTransform(InplaceAccumulateGradPartialsIntoOptimizerAccumTensor::id(),
+                 getMainGraph());
 
   dotCheckpoint(DotCheck::PreAlias);
 
   if (getSessionOptions().enableExplicitMainLoops) {
     // Add explicit training loops
-    applyTransformIfEnabled(MainLoops::id(), getMainGraph());
+    applyTransform(MainLoops::id(), getMainGraph());
   }
 
   if (getSessionOptions().useHostCopyOps) {
     // Add anchor HostStore operations
-    applyTransformIfEnabled(HostIOSetup::id(2), getMainGraph());
+    applyTransform(HostIOSetup::id(2), getMainGraph());
   }
 
   // Merge remote loads/stores into exchanges
   for (auto &id_graph : graphs) {
-    applyTransformIfEnabled(MergeRemote::id(), *id_graph.second);
+    applyTransform(MergeRemote::id(), *id_graph.second);
   }
 
   if (autoRecomputationEnabled() && !getSessionOptions().enablePipelining &&
@@ -1330,12 +1327,12 @@ void Ir::prepareImpl(const IrBundle &gb, const HashesMap &cacheEntries) {
   // restore them when needed in the backwards pass, allowing
   // for greater parallelism during compute.
   if (getSessionOptions().enablePipelining) {
-    applyTransformIfEnabled(Pipeline::id(), getMainGraph());
+    applyTransform(Pipeline::id(), getMainGraph());
     updateVertices();
   }
 
   if (optimizer && optimizer->getClipNormSettings().size() > 0) {
-    applyTransformIfEnabled(ClipWeightGradientsByNorm::id(), getMainGraph());
+    applyTransform(ClipWeightGradientsByNorm::id(), getMainGraph());
     updateVertices();
   }
 
@@ -1349,7 +1346,7 @@ void Ir::prepareImpl(const IrBundle &gb, const HashesMap &cacheEntries) {
     }
 
     updateAliases();
-    applyTransformIfEnabled(SubgraphOutline::id(), getMainGraph());
+    applyTransform(SubgraphOutline::id(), getMainGraph());
     updateVertices();
 
     if (getSessionOptions().batchSerializationSettings.factor > 1) {
@@ -1361,7 +1358,7 @@ void Ir::prepareImpl(const IrBundle &gb, const HashesMap &cacheEntries) {
       // parent subgraph, the second pass will ignore batch serialization phases
       // and outline the repeated per-batch-element subgraphs/ops.
       updateAliases();
-      applyTransformIfEnabled(SubgraphOutline::id(), getMainGraph());
+      applyTransform(SubgraphOutline::id(), getMainGraph());
       updateVertices();
     }
   }
@@ -1369,7 +1366,7 @@ void Ir::prepareImpl(const IrBundle &gb, const HashesMap &cacheEntries) {
   removeIsolatedTensors(true);
   updateVertices();
 
-  applyTransformIfEnabled(MergeDuplicateOps::id(), getMainGraph());
+  applyTransform(MergeDuplicateOps::id(), getMainGraph());
 
   // Now, we apply the Patterns which can handle and create
   // topological constraints. Currently, this is only one
@@ -1393,7 +1390,7 @@ void Ir::prepareImpl(const IrBundle &gb, const HashesMap &cacheEntries) {
   // Update aliases a final time
   updateAliases();
 
-  applyTransformIfEnabled(RemoteSetup::id(), getMainGraph());
+  applyTransform(RemoteSetup::id(), getMainGraph());
 
   removeIsolatedTensors(true);
 
@@ -2014,21 +2011,17 @@ void Ir::applyPreAliasPatterns(Graph &graph) {
   }
 }
 
-void Ir::applyTransformIfEnabled(std::size_t transformId, Graph &graph) {
+void Ir::applyTransform(std::size_t transformId, Graph &graph) {
 
   // Unless explictly set, a transform is enabled
-  if (isEnabledTransform(transformId)) {
+  if (transformEnableMap.count(transformId) == 0 ||
+      transformEnableMap.at(transformId)) {
     Transform::applyTransform(transformId, graph);
   }
 }
 
 void Ir::enableTransform(std::size_t transformId, bool enable) {
   transformEnableMap[transformId] = enable;
-}
-
-bool Ir::isEnabledTransform(std::size_t transformId) {
-  auto it = transformEnableMap.find(transformId);
-  return (it == transformEnableMap.end() || it->second);
 }
 
 std::vector<Op *> Ir::opsOfType(const OperatorIdentifier &opid) {
@@ -2474,7 +2467,7 @@ void Ir::constructBackwards() {
 
   logging::ir::info("Constructing backwards pass");
 
-  applyTransform<Autodiff>(std::ref(*this));
+  applyTransform(Autodiff::id(), getMainGraph());
 
   logging::ir::info("Creating Variable Tensor update Ops");
   // add weight update ops (we are ignoring momentums for now)
@@ -3473,8 +3466,8 @@ std::size_t std::hash<popart::Ir>::operator()(const popart::Ir &ir) const {
   return seed;
 }
 
-std::size_t
-std::hash<popart::IrBundle>::operator()(const popart::IrBundle &bundle) const {
+std::size_t std::hash<popart::IrBundle>::
+operator()(const popart::IrBundle &bundle) const {
   size_t seed = 0;
 
   boost::hash_combine(

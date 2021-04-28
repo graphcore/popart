@@ -14,14 +14,14 @@ namespace popart {
 
 std::size_t Autodiff::id() { return typeid(Autodiff).hash_code(); }
 
-bool Autodiff::apply(Ir &ir) const {
+bool Autodiff::apply(Graph &graph) const {
 
-  if (ir.isTesting()) {
+  if (graph.getIr().isTesting()) {
     throw internal_error(
         "Call to Autodiff::apply() in Testing mode is not valid");
   }
 
-  AutodiffIrAdapter irAdapter(ir);
+  AutodiffIrAdapter irAdapter(graph.getIr());
   auto gradGrowerOp    = std::make_unique<GradGrowerOp>(irAdapter);
   auto gradGrowerLoss  = std::make_unique<GradGrowerLoss>(irAdapter);
   auto gradGrowerSumOp = std::make_unique<GradGrowerSumOp>(irAdapter);
@@ -32,10 +32,6 @@ bool Autodiff::apply(Ir &ir) const {
   gradMainGraphGrower.growGradMainGraph();
 
   return true;
-}
-
-bool Autodiff::apply(Graph &graph) const {
-  throw error("Autodiff::apply is not implemented for this prototype.");
 }
 
 namespace {

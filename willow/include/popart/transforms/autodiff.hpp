@@ -16,10 +16,6 @@ public:
   Autodiff() : Transform() {}
   virtual ~Autodiff() override {}
 
-  // Apply autodiff to entire IR.
-  virtual bool apply(Ir &ir) const final;
-
-  // This method is not implemented at the moment.
   virtual bool apply(Graph &graph) const final;
 
   virtual std::size_t getId() const final { return id(); }

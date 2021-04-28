@@ -2,10 +2,10 @@
 #define BOOST_TEST_MODULE TransformTest
 
 #include <boost/test/unit_test.hpp>
+#include <popart/transforms/transform.hpp>
 
 #define private public
 #include <popart/ir.hpp>
-#include <popart/transforms/transform.hpp>
 #undef private
 
 using namespace popart;
@@ -41,7 +41,7 @@ BOOST_AUTO_TEST_CASE(TransformDefault) {
 
   int initialCount = TestTransform::executedCount;
 
-  ir.applyTransformIfEnabled(TestTransform::id(), ir.getMainGraph());
+  ir.applyTransform(TestTransform::id(), ir.getMainGraph());
 
   BOOST_CHECK_EQUAL(TestTransform::executedCount, initialCount + 1);
 }
@@ -52,7 +52,7 @@ BOOST_AUTO_TEST_CASE(TransformEnabled) {
   int initialCount = TestTransform::executedCount;
 
   ir.enableTransform(TestTransform::id(), true);
-  ir.applyTransformIfEnabled(TestTransform::id(), ir.getMainGraph());
+  ir.applyTransform(TestTransform::id(), ir.getMainGraph());
 
   BOOST_CHECK_EQUAL(TestTransform::executedCount, initialCount + 1);
 }
@@ -63,74 +63,7 @@ BOOST_AUTO_TEST_CASE(TransformDisabled) {
   int initialCount = TestTransform::executedCount;
 
   ir.enableTransform(TestTransform::id(), false);
-  ir.applyTransformIfEnabled(TestTransform::id(), ir.getMainGraph());
+  ir.applyTransform(TestTransform::id(), ir.getMainGraph());
 
   BOOST_CHECK_EQUAL(TestTransform::executedCount, initialCount);
-}
-
-BOOST_AUTO_TEST_CASE(TransformDefaultGenericConditional) {
-
-  Ir ir;
-
-  int initialCount = TestTransform::executedCount;
-
-  ir.applyTransformIfEnabled<TestTransform>(std::ref(ir.getMainGraph()));
-
-  BOOST_CHECK_EQUAL(TestTransform::executedCount, initialCount + 1);
-}
-
-BOOST_AUTO_TEST_CASE(TransformEnabledGenericConditional) {
-  Ir ir;
-
-  int initialCount = TestTransform::executedCount;
-
-  ir.enableTransform(TestTransform::id(), true);
-  ir.applyTransformIfEnabled<TestTransform>(std::ref(ir.getMainGraph()));
-
-  BOOST_CHECK_EQUAL(TestTransform::executedCount, initialCount + 1);
-}
-
-BOOST_AUTO_TEST_CASE(TransformDisabledGenericConditional) {
-  Ir ir;
-
-  int initialCount = TestTransform::executedCount;
-
-  ir.enableTransform(TestTransform::id(), false);
-  ir.applyTransformIfEnabled<TestTransform>(std::ref(ir.getMainGraph()));
-
-  BOOST_CHECK_EQUAL(TestTransform::executedCount, initialCount);
-}
-
-BOOST_AUTO_TEST_CASE(TransformDefaultGenericUnconditional) {
-
-  Ir ir;
-
-  int initialCount = TestTransform::executedCount;
-
-  ir.applyTransform<TestTransform>(std::ref(ir.getMainGraph()));
-
-  BOOST_CHECK_EQUAL(TestTransform::executedCount, initialCount + 1);
-}
-
-BOOST_AUTO_TEST_CASE(TransformEnabledGenericUnconditional) {
-  Ir ir;
-
-  int initialCount = TestTransform::executedCount;
-
-  ir.enableTransform(TestTransform::id(), true);
-  ir.applyTransform<TestTransform>(std::ref(ir.getMainGraph()));
-
-  BOOST_CHECK_EQUAL(TestTransform::executedCount, initialCount + 1);
-}
-
-BOOST_AUTO_TEST_CASE(TransformDisabledGenericUnconditional) {
-  Ir ir;
-
-  int initialCount = TestTransform::executedCount;
-
-  ir.enableTransform(TestTransform::id(), false);
-  ir.applyTransform<TestTransform>(std::ref(ir.getMainGraph()));
-
-  // Application of transform is unconditional.
-  BOOST_CHECK_EQUAL(TestTransform::executedCount, initialCount + 1);
 }

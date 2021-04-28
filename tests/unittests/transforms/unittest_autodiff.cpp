@@ -183,7 +183,7 @@ BOOST_AUTO_TEST_CASE(autodiff_0) {
   ir.updateVertices();
 
   // Now apply the transform.
-  ir.applyTransform<Autodiff>(std::ref(ir));
+  ir.applyTransform(Autodiff::id(), ir.getMainGraph());
 
   // Now check that autodiff added the right things.
   //
@@ -352,7 +352,7 @@ BOOST_AUTO_TEST_CASE(autodiff_1) {
   ir.updateVertices();
 
   // Now apply the transform.
-  ir.applyTransform<Autodiff>(std::ref(ir));
+  ir.applyTransform(Autodiff::id(), ir.getMainGraph());
 
   // First we check the main graph. Start by checking the main graph now has a
   // CallOp with "main_in" and getGradId("main_out") inputs.

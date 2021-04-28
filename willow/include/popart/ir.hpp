@@ -16,12 +16,12 @@
 #include <popart/scheduler_requireoptimal.hpp>
 #include <popart/sessionoptions.hpp>
 #include <popart/tensorindex.hpp>
+#include <popart/transforms/transform.hpp>
 
 namespace poprithms {
 namespace logging {
 class TimePartitionLogger;
-class ScopedStopwatch;
-} // namespace logging
+}
 } // namespace poprithms
 
 namespace popart {
@@ -341,82 +341,9 @@ public:
   // Accessors for the dataFlow
   const DataFlow &getDataFlow() const { return dataFlow; }
 
-  /**
-   * Call Transform::apply(graph) on a registered instance of a transform unless
-   * it has been disabled via `enableTransform`.
-   *
-   * As a side effect this method will both create a PVTI checkpoint and a
-   * Poprithms timer for performance monitoring reasons. It will also write
-   * a meaningful log entry.
-   *
-   * NOTE: This version exists for backwards compatibility. Consider using the
-   * generic version of `applyTransformIfEnabled` instead.
-   *
-   * \param transformId The ID with which the transform was registered.
-   * \param args A graph to be passed to the transform.
-   **/
-  void applyTransformIfEnabled(std::size_t transformId, Graph &graph);
-
-  /**
-   * A call to `applyTransform<TransformType>(args)` is
-   * functionally equivalent to:
-   * ```
-   * TransformType t;
-   * return t.apply(ir, args...);
-   * ```
-   * The transform is applied unconditionally, irregardless of whether it
-   * was disabled via `enableTransform`.
-   *
-   * The identifier `T::id()` is used to determine whether the transform is set
-   * to enabled or disabled via `enableTransform`.
-   *
-   * As a side effect this method will both create a PVTI checkpoint and a
-   * Poprithms timer for performance monitoring reasons. It will also write
-   * a meaningful log entry.
-   *
-   * This method of calling transforms is not restrictive in terms of either
-   * the return type or argument type that the apply function has. However,
-   * this implementation does not use the transform registry and creates a new
-   * transform object for each call -- meaning your transform needs to be
-   * stateless.
-   *
-   * \param args A list of arguments to be passed to the transform.
-   * \return The value returned by the transform.
-   */
-  template <typename T, typename... Args>
-  auto applyTransform(Args... args)
-      // Return type of this function matches that of the transform's apply.
-      -> decltype(T().apply(std::forward<Args>(args)...));
-
-  /**
-   * A call to `applyTransformIfEnabled<TransformType>(args)` is
-   * functionally equivalent to:
-   * ```
-   * if (isEnabledTransform(TransformType::id())) {
-   *   TransformType t;
-   *   return t.apply(ir, args...);
-   * }
-   * ```
-   * The identifier `T::id()` is used to determine whether the transform is set
-   * to enabled or disabled via `enableTransform`.
-   *
-   * As a side effect this method will both create a PVTI checkpoint and a
-   * Poprithms timer for performance monitoring reasons. It will also write
-   * a meaningful log entry.
-   *
-   * This method of calling transforms is not restrictive in terms of either
-   * the return type or argument type that the apply function has. However,
-   * this implementation does not use the transform registry and creates a new
-   * transform object for each call -- meaning your transform needs to be
-   * stateless.
-   *
-   * \param args A list of arguments to be passed to the transform.
-   * \return The value returned by the transform, wrapped in nonstd::optional.
-   */
-  template <typename T, typename... Args>
-  auto applyTransformIfEnabled(Args... args)
-      // Return type of this function matches that of the transform's apply.
-      -> nonstd::optional<decltype(T().apply(std::forward<Args>(args)...))>;
+  // modify a Graph using a graph transformation
+  // (public for unit testing only)
+  void applyTransform(std::size_t transformId, Graph &graph);
 
   // run after creating the backwards pass, checks that
   // the user provided anchor tensors actually exist.
@@ -662,8 +589,6 @@ private:
 
   // enable/disable a transform stage
   void enableTransform(std::size_t transformId, bool enable);
-  // check if transform is enabled.
-  bool isEnabledTransform(std::size_t transformId);
 
   RandomReferenceId randomReferenceId = 0;
 
@@ -721,7 +646,15 @@ private:
 
 } // namespace popart
 
-// template definitions.
-#include <popart/ir_impl.hpp>
+namespace std {
+template <> struct hash<popart::Ir> {
+  std::size_t operator()(const popart::Ir &ir) const;
+};
+
+template <> struct hash<popart::IrBundle> {
+  std::size_t operator()(const popart::IrBundle &irBundle) const;
+};
+
+} // namespace std
 
 #endif

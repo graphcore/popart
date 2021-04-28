@@ -48,15 +48,3 @@ BOOST_AUTO_TEST_CASE(LoggingTest_7) {
   f.j = 600;
   (popart::logging::ir::debug("at 12'{}'12", f));
 }
-
-BOOST_AUTO_TEST_CASE(LoggingTest_8) {
-  BOOST_REQUIRE("{{}}" == popart::logging::escape("{}"));
-  BOOST_REQUIRE("{{}}{{}}" == popart::logging::escape("{}{}"));
-  BOOST_REQUIRE("blah{{}}bloop" == popart::logging::escape("blah{}bloop"));
-  BOOST_REQUIRE("{{foobar}}" == popart::logging::escape("{foobar}"));
-  BOOST_REQUIRE("blah{{}}bloop{{}}" ==
-                popart::logging::escape("blah{}bloop{}"));
-  BOOST_REQUIRE("something with {{}} spaces" ==
-                popart::logging::escape("something with {} spaces"));
-  BOOST_REQUIRE("no_braces" == popart::logging::escape("no_braces"));
-}
