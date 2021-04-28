@@ -790,10 +790,10 @@ void BuilderImpl::addNodeAttribute(const std::string &attributeName,
     attr.set_i(popart::any_cast<uint32_t>(attributeValue));
   } else if (tinfo == typeid(int64_t)) {
     attr.set_type(ONNX_NAMESPACE::AttributeProto::INT);
-    attr.set_i(static_cast<int>(popart::any_cast<int64_t>(attributeValue)));
+    attr.set_i(popart::any_cast<int64_t>(attributeValue));
   } else if (tinfo == typeid(uint64_t)) {
     attr.set_type(ONNX_NAMESPACE::AttributeProto::INT);
-    attr.set_i(static_cast<int>(popart::any_cast<uint64_t>(attributeValue)));
+    attr.set_i(popart::any_cast<uint64_t>(attributeValue));
   } else if (tinfo == typeid(std::vector<int64_t>)) {
     attr.set_type(ONNX_NAMESPACE::AttributeProto::INTS);
     const std::vector<int64_t> &values =
