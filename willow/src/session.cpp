@@ -234,6 +234,11 @@ TensorInfo Session::getInfo(TensorId id) const {
 
 bool Session::hasInfo(TensorId id) const {
   assertExecutableLoaded();
+
+  if (!executable_->containsTensor(id)) {
+    return false;
+  }
+
   TensorInfo info = executable_->getTensor(id)->info;
   return info.isSet();
 }
