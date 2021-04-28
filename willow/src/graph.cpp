@@ -474,13 +474,17 @@ std::vector<Op *> Graph::getOpSchedule(
   const std::string &ktb = getIr().getSessionOptions().kahnTieBreaker;
   const auto timeLimit   = getIr().getSessionOptions().timeLimitScheduler;
 
-  return scheduler->getSchedule(gCons,
-                                *this,
-                                requireOptimalSchedule,
-                                respectExecutionPhases,
-                                timeLimit,
-                                swapLimit,
-                                ktb);
+  const auto opSchedule = scheduler->getSchedule(gCons,
+                                                 *this,
+                                                 requireOptimalSchedule,
+                                                 respectExecutionPhases,
+                                                 timeLimit,
+                                                 swapLimit,
+                                                 ktb);
+
+  logging::ir::debug("Returning schedule of size {}", opSchedule.size());
+
+  return opSchedule;
 }
 
 void Graph::freezeSchedule(const OpsBeforeKey &gCons) {

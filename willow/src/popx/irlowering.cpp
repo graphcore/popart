@@ -1436,6 +1436,7 @@ void IrLowering::addPipelinedCopyTasks(PriTasks &tasks) {
       ir().getMainGraph().getOpSchedule({}, RequireOptimalSchedule::Yes);
   std::string prevTaskId = "";
 
+  logging::devicex::debug("Adding pipelined copy tasks");
   for (auto iter = schedule.rbegin(); iter != schedule.rend(); iter++) {
     auto &op = *iter;
     if (op->isConvertibleTo<IpuCopyOp>() &&
@@ -1522,6 +1523,7 @@ void IrLowering::addOpTasks(PriTasks &tasks) {
     }
   };
 
+  logging::devicex::debug("Adding Graphs for all Ops in main Graph schedule");
   for (auto op : mainGraphSchedule) {
     for (auto calledGraph : op->getCalledGraphs()) {
       addGraph(calledGraph);
@@ -1606,6 +1608,8 @@ void IrLowering::addOpTasks(PriTasks &tasks) {
       requiredRecomputes[opTaskId(op)] = rerunSchedule;
     }
 
+    logging::devicex::debug(
+        "Created task for {}, adding dependencies and enqueueing", op->str());
     auto task = opTask(op, priority, prevOpTaskId);
 
     if (HostLoadOp *hlop = dynamic_cast<HostLoadOp *>(op)) {
@@ -1848,7 +1852,12 @@ PriTask IrLowering::opTask(Op *op, double priority, TaskId prevOpTaskId) {
   }
 
   auto addGraphOpsToDeps = [&](const Graph *graph) {
-    for (auto graphOp : graph->getOpSchedule({}, RequireOptimalSchedule::Yes)) {
+    const auto schedule = graph->getOpSchedule({}, RequireOptimalSchedule::Yes);
+
+    logging::devicex::debug("Add Graph Ops to dependencies, for {} Ops",
+                            schedule.size());
+
+    for (auto graphOp : schedule) {
       PriTaskDependency taskId = {opTaskId(graphOp), DependencyType::SubGraph};
       if (std::find(deps.begin(), deps.end(), taskId) == deps.end()) {
         deps.push_back(taskId);
@@ -1875,6 +1884,8 @@ PriTask IrLowering::opTask(Op *op, double priority, TaskId prevOpTaskId) {
   for (auto &graph : op->getCalledGraphs()) {
     addGraphOpsToDeps(graph);
   }
+
+  logging::devicex::debug("Adding PriTaskDep to the order of the Ir schedule");
 
   // Depends on previous op task. This preserves op ordering from ir.
   // Note: the first opTask has no previous opTask
@@ -2719,7 +2730,10 @@ void IrLowering::prepareGraph() {
     }
 
     // Make sure that the virtual graph information is valid
-    for (Op *op : ir().getOpSchedule({}, RequireOptimalSchedule::Yes)) {
+    const auto schedule = ir().getOpSchedule({}, RequireOptimalSchedule::Yes);
+    logging::devicex::debug(
+        "Asserting that the virtual graph information is valid");
+    for (Op *op : schedule) {
       if (op->hasVirtualGraphId()) {
         VGraphId index = op->getVirtualGraphId();
         if (index < 0 || index >= numIPUs) {
@@ -2747,10 +2761,11 @@ void IrLowering::prepareGraph() {
     opxTraceTensor = getConst(graph(), poplar::HALF, {1}, 0, "traceTensor");
   }
 
-  logging::devicex::info("Turning Ops into Opxes");
-
   // create an Opx for every Op
-  for (Op *op : ir().getOpSchedule({}, RequireOptimalSchedule::Yes)) {
+  const auto schedule = ir().getOpSchedule({}, RequireOptimalSchedule::Yes);
+
+  logging::devicex::info("Turning Ops into Opxes");
+  for (Op *op : schedule) {
     logging::devicex::trace("Creating OPX for {}", op->debugName());
     opxs[op->id] = createOpx(op);
   }
