@@ -175,7 +175,8 @@ void AccumulateOpx::grow(poplar::program::Sequence &prog) const {
       popops::mapInPlace(
           graph(),
           pe::Add(pe::Mul(pe::Cast(pe::_3, accum.elementType()), pe::_1),
-                  pe::Mul(pe::Sub(pe::Const(1.0f), pe::_3),
+                  pe::Mul(pe::Cast(pe::Sub(pe::Const(1.0f), pe::_3),
+                                   accum.elementType()),
                           pe::Cast(pe::_2, accum.elementType()))),
           {accum, grad, factor},
           prog,
