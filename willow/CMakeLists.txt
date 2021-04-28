@@ -227,7 +227,8 @@ set_target_properties(popart-only PROPERTIES
     # Need position indepenent code to make dynamic library with static libs.
     POSITION_INDEPENDENT_CODE ON
 )
-target_compile_features(popart-only PUBLIC cxx_std_14)
+target_compile_features(popart-only PRIVATE cxx_std_14)
+target_compile_features(popart-only INTERFACE cxx_std_11)
 
 # These definitions are private to popart-only, as the external user does not
 # need them, but they are needed by all internal targets.
