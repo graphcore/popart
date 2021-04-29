@@ -22,7 +22,17 @@
 
 #include <popart/subgraph/subgraphnames.hpp>
 
+namespace poprithms {
+namespace memory {
+namespace inplace {
+class Proposal;
+} // namespace inplace
+} // namespace memory
+} // namespace poprithms
+
 namespace popart {
+
+struct PoprithmsAliaser;
 
 enum class RecomputeType { Undefined = 0, Checkpoint, Recompute, Recomputed };
 
@@ -345,6 +355,61 @@ public:
   virtual std::unique_ptr<Op>
   getInplaceVariant(const OperatorIdentifier &) const;
 
+  /**
+   * For certain tasks which involve analysing how Tensors alias each other,
+   * such as inplacing, a poprithms::memory::inplace::Graph, which corresponds
+   * to this Op's Graph, is constructed. The poprithms Graph can then be queried
+   * for aliasing information, and can have algorithms run on it.
+   *
+   * To construct the poprithms Graph, each PopART Op defines what its
+   * poprithms equivalents Op are. This method inserts this Op's
+   * poprithms::memory::inplace::Op equivalents into the poprithms Graph, which
+   * is the container \a popAliaser.
+   *
+   * \sa PoprithmsAliaser
+   * */
+  virtual void growAliaser(PoprithmsAliaser &popAliaser) const;
+
+  /**
+   * Translate an inplacing proposal, which replaces this non-inplace Op with an
+   * inplace Op of type #inplaceId, into a poprithms equivalent.
+   *
+   * \param proposal The poprithms Proposal to set
+   *
+   * \param aliaser Contains the mapping between this Op's (PopART) Graph and
+   *                the poprithms Graph.
+   *
+   * \param inplaceId The OperatorIdentifier to translate to the poprithms
+   *                  equivalent.
+   *
+   *
+   * This method is defined as a void method which sets a value passed by
+   * reference, as opposed to a getter method, so that no poprithms headers need
+   * to be included in this file.
+   * */
+  virtual void setProposal(poprithms::memory::inplace::Proposal &proposal,
+                           const PoprithmsAliaser &aliaser,
+                           OperatorIdentifier) const;
+
+protected:
+  /**
+   * This method is a possible implementation of the virtual method
+   * growAliaser, which can be used by Ops which do not have more than 1
+   * variant (that is, they have no "inplace" variants), and do no non-trivial
+   * view-changing. Examples: LSTM, Conv, Matmul, SumReduce, etc.
+   * */
+  void growAliaserMulti(PoprithmsAliaser &) const;
+
+  /**
+   * Set the Proposal to open the poprithms::AliasGate which corresponds to this
+   * Op, at input index 0. For information on AliasGates and inplacing
+   * proposals, see the poprithms memory::inplace project.
+   * */
+  virtual void setProposalGate0(poprithms::memory::inplace::Proposal &proposal,
+                                const PoprithmsAliaser &aliaser,
+                                OperatorIdentifier opId) const;
+
+public:
   // The input Region which this Op modifies (for inplace ops)
   virtual view::Regions modifies(InIndex) const;
   // The input Region which this Op uses

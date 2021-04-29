@@ -34,6 +34,7 @@
 #include <popart/op/hostcopy.hpp>
 #include <popart/op/init.hpp>
 #include <popart/op/loss.hpp>
+#include <popart/op/pad.hpp>
 #include <popart/op/scale.hpp>
 #include <popart/opmanager.hpp>
 #include <popart/optimizer.hpp>
@@ -103,7 +104,21 @@
 // used for float to half conversion
 #include <poplar/Target.hpp>
 
+#include <poprithmsinplace.hpp>
+
 namespace popart {
+
+std::ostream &operator<<(std::ostream &ost, const OpsBeforeKey &o) {
+  for (auto after_befores : o) {
+    ost << '\n' << after_befores.first->str();
+    ost << "   <-   (";
+    for (auto b : after_befores.second) {
+      ost << " " << b->str();
+    }
+    ost << " ).";
+  }
+  return ost;
+}
 
 poprithms::logging::TimePartitionLogger &Ir::timePartitionLogger() const {
   return *timePartitionLogger_;
@@ -2895,6 +2910,10 @@ void Ir::applyInplacePattern(Graph &graph) {
 
   logging::ir::debug("Applying Inplace Pattern to Graph \"{}\"", graph.id);
 
+  // The decision of where topological constraints need to be inserted is made
+  // by a poprithms Graph whose Ops mirror those in \a graph.
+  auto popMem = getPoprithmsAliaser(graph);
+
   Inplace inplace;
 
   // <0> the id of the Op to inplace
@@ -2990,10 +3009,44 @@ void Ir::applyInplacePattern(Graph &graph) {
         continue;
       }
 
-      // This is where the hard work of inplacing gets done: if op is inplaced,
-      // what additional topological constraints are needed to ensure
-      // correctness?
-      OpsBeforeKey newTopoCons = inplace.getNewTopoCons(op, identifier);
+      poprithms::memory::inplace::Proposal proposal(0, 0);
+      op->setProposal(proposal, popMem, identifier);
+      auto result = popMem.g.tryOpeningPartial(
+          proposal, poprithms::memory::inplace::CheckParallelWriteable::No);
+
+      if (!result.isValid()) {
+        std::ostringstream oss;
+        oss << "[Inplacing] Proposal " << proposal << " result : " << result;
+        logging::pattern::debug(oss.str());
+        popMem.g.backoutOpening(proposal);
+        continue;
+      }
+
+      // Convert poprithms topological constraints into popart constraints
+      OpsBeforeKey newTopoCons;
+      for (auto from_to : result.constraints()) {
+        const auto rithmFrom = std::get<0>(from_to);
+        const auto rithmTo   = std::get<1>(from_to);
+        if (popMem.contains(rithmFrom) && popMem.contains(rithmTo)) {
+          const auto fromOpId = popMem.getOpId(rithmFrom);
+          const auto toOpId   = popMem.getOpId(rithmTo);
+          const auto from     = graph.getOp(fromOpId);
+          const auto to       = graph.getOp(toOpId);
+          if (fromOpId != toOpId) {
+            auto found = newTopoCons.find(to);
+            if (found == newTopoCons.cend()) {
+              newTopoCons.insert({to, {from}});
+            } else {
+              found->second.push_back(from);
+            }
+          }
+        } else {
+          std::ostringstream oss;
+          oss << "No PopART Ops for either " << rithmFrom << " or " << rithmTo
+              << ", skipping constraint. ";
+          logging::pattern::debug(oss.str());
+        }
+      }
 
       // beforeProducesOutput flag is used to prevent inplacing if any of the
       // new constraints requried to inplace a node has a before node that
@@ -3019,10 +3072,13 @@ void Ir::applyInplacePattern(Graph &graph) {
             break;
           }
         }
-        if (beforeProducesOutput)
+        if (beforeProducesOutput) {
+          popMem.g.backoutOpening(proposal);
           break;
+        }
       }
       if (beforeProducesOutput) {
+        popMem.g.backoutOpening(proposal);
         continue;
       }
 
@@ -3152,6 +3208,7 @@ void Ir::applyInplacePattern(Graph &graph) {
         }
       }
       if (inplaceBlocking) {
+        popMem.g.backoutOpening(proposal);
         continue;
       }
 
@@ -3164,15 +3221,30 @@ void Ir::applyInplacePattern(Graph &graph) {
         oss << "[Inplacing] The new topological constraints prevent Op "
             << op->id << " from being inplaced, as they would created a cycle ";
         logging::pattern::debug(oss.str());
+        popMem.g.backoutOpening(proposal);
         continue;
       }
 
       {
         std::ostringstream oss;
         oss << "[Inplacing] Inplacing Op " << op->str();
+
+        if (op->output->n() != 1) {
+          throw error("no support for inplacing ops with n-outputs != 1, this "
+                      "for Op {} ",
+                      op->str());
+        }
+        const auto opOutput = op->output->tensorMap().cbegin()->second;
+
         logging::pattern::debug(oss.str());
         inplacedAlready.insert(op->id);
+
         inplace.apply(op, identifier, newTopoCons);
+
+        popMem.g.completeOpening(result);
+        // The Op in graph has changed, mirror the change in the poprithms
+        // Graph
+        popMem.update(id, opOutput->getProducer()->id);
       }
     }
   }
@@ -3466,8 +3538,8 @@ std::size_t std::hash<popart::Ir>::operator()(const popart::Ir &ir) const {
   return seed;
 }
 
-std::size_t std::hash<popart::IrBundle>::
-operator()(const popart::IrBundle &bundle) const {
+std::size_t
+std::hash<popart::IrBundle>::operator()(const popart::IrBundle &bundle) const {
   size_t seed = 0;
 
   boost::hash_combine(

@@ -46,6 +46,12 @@ public:
     return index;
   }
 
+  // TODO(T30050) fully support this, at the moment it assumes no aliasing
+  // between inputs and outputs.
+  virtual void growAliaser(PoprithmsAliaser &m) const override {
+    growAliaserMulti(m);
+  }
+
 private:
   std::reference_wrapper<Graph> callee;
   // Facility to auto-mark inputs as 'modified' on construction by setting the

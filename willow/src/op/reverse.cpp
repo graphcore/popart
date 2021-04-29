@@ -1,4 +1,5 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
+#include <poprithmsinplace.hpp>
 #include <popart/op/reverse.hpp>
 #include <popart/opmanager.hpp>
 #include <popart/opserialiser.hpp>
@@ -110,6 +111,19 @@ ReverseOp::getInplaceVariant(const OperatorIdentifier &operator_id) const {
   }
   // catch remaining cases and throw an error
   return Op::getInplaceVariant(operator_id);
+}
+
+void ReverseOp::setProposal(poprithms::memory::inplace::Proposal &proposal,
+                            const PoprithmsAliaser &aliaser,
+                            OperatorIdentifier opId) const {
+  setProposalGate0(proposal, aliaser, opId);
+}
+
+void ReverseBaseOp::growAliaser(PoprithmsAliaser &m) const {
+  std::vector<uint64_t> dims_u64{dimensions.cbegin(), dimensions.cend()};
+  const auto vc = m.g.reverse(m.getPoprithmsTensorId(inId(0)),
+                              poprithms::memory::inplace::Dimensions(dims_u64));
+  m.insertViewChange(vc, *outTensor(0), isOutplace());
 }
 
 namespace {

@@ -50,6 +50,9 @@ public:
   view::Regions modifies(InIndex) const final;
 
   bool requiredForRecompute = false;
+  virtual void growAliaser(PoprithmsAliaser &m) const override {
+    growAliaserMulti(m);
+  }
 };
 
 } // namespace popart

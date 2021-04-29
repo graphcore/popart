@@ -25,6 +25,9 @@
 #include <popart/op/varupdate.hpp>
 
 #include <sstream>
+#include <poprithms/memory/inplace/crosslink.hpp>
+#include <poprithms/memory/inplace/graph.hpp>
+#include <poprithmsinplace.hpp>
 
 namespace {
 using namespace popart;
@@ -1481,6 +1484,71 @@ void Op::configureForReplicatedTensorSharding(
   setup();
 }
 
+void Op::growAliaserMulti(PoprithmsAliaser &m) const {
+
+  // poprithms::memory::inplace::Ops have contiguous input indices. PopART Ops
+  // do not.
+  //
+  // We therefore remove the gaps in the PopART Tensor's input indices, back
+  // packing contiguously (compactly). For example, if a PopART Op has inputs at
+  // indices (0,2,3) the poprithms equivalent will have inputs at (0,1,2): the
+  // "gap" at 1 is removed, and all the subsequent inputs shift down one index.
+  //
+  // The same is true for the outputs: all gaps are removed in for the poprithms
+  // Op.
+
+  std::vector<poprithms::memory::inplace::TensorId> inIds;
+  for (const auto &index_tensor : input->tensorMap()) {
+    inIds.push_back(m.getPoprithmsTensorId(index_tensor.second->id));
+  }
+
+  poprithms::memory::inplace::Shapes outShapes;
+  for (const auto &kv : output->tensorMap()) {
+    outShapes.push_back(kv.second->info.shape());
+  }
+
+  // Use PopART Ops' virtual methods to determine where the aliases lie between
+  // inputs and outputs, and which of the are modifying (as opposed to just pure
+  // "identity" aliases).
+
+  std::vector<poprithms::memory::inplace::CrossLink> crossAliases;
+  uint64_t poprInIndex{0};
+
+  for (const auto &in_index_tensor : input->tensorMap()) {
+    uint64_t poprOutIndex{0};
+    const auto inIndex = in_index_tensor.first;
+    for (const auto &out_index_tensor : output->tensorMap()) {
+      const auto outIndex = out_index_tensor.first;
+
+      // If there is an alias between the PopART Op from inIndex->outIndex, then
+      // the corresponding poprithms Op must have an alias from
+      // poprInIndex->poprOutIndex. If the PopART alias is modifying, then so
+      // too must the poprithms Op be.
+
+      if (doesAlias(inIndex, outIndex)) {
+        auto m = modifiesIndex(inIndex)
+                     ? poprithms::memory::inplace::CrossLink::modifies(inIndex,
+                                                                       outIndex)
+                     : poprithms::memory::inplace::CrossLink::pureAliases(
+                           poprInIndex, poprOutIndex);
+        crossAliases.push_back(m);
+      }
+      ++poprOutIndex;
+    }
+    ++poprInIndex;
+  }
+
+  const auto opId = m.g.multi(inIds, outShapes, crossAliases);
+
+  uint64_t outIndex{0};
+  for (const auto &kv : output->tensorMap()) {
+    m.insertTensor({opId, outIndex}, *kv.second);
+    ++outIndex;
+  }
+  // This still required in case no outputs
+  m.insertOp(opId, id);
+}
+
 bool Op::doesAlias(InIndex inIndex, OutIndex outIndex) const {
   const auto regions = aliases(inIndex, outIndex);
   return std::any_of(regions.cbegin(),
@@ -1497,6 +1565,46 @@ bool Op::doesAlias() const {
     }
   }
   return false;
+}
+
+void Op::setProposal(poprithms::memory::inplace::Proposal &proposal,
+                     const PoprithmsAliaser &aliaser,
+                     OperatorIdentifier opId) const {
+  if (!isOutplace()) {
+    throw error("Invalid call to setProposal for {}, as it is not outplace.",
+                str());
+  }
+
+  throw error("setProposal not implemented for {}", str());
+}
+
+void Op::growAliaser(PoprithmsAliaser &m) const {
+  if (doesAlias()) {
+    throw error("Ops which alias must implement growAliaser, this for {} ",
+                this->str());
+  }
+
+  if (!inplacePriorityDefault().empty()) {
+    throw error(
+        "Ops with inplace variants must implement growAliaser, this for {} ",
+        this->str());
+  }
+  growAliaserMulti(m);
+}
+
+void Op::setProposalGate0(poprithms::memory::inplace::Proposal &proposal,
+                          const PoprithmsAliaser &aliaser,
+                          OperatorIdentifier opId) const {
+
+  if (!isOutplace()) {
+    std::ostringstream oss;
+    oss << "Inplacing logic error: "
+        << "Ops which are not outplace should never set Proposals. "
+        << "This for Op " << str() << ". ";
+    throw error(oss.str());
+  }
+
+  proposal = {aliaser.getGate(id), 0};
 }
 
 } // namespace popart

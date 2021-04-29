@@ -71,6 +71,9 @@ public:
 
   ReplicatedTensorShardingIndices
   getReplicatedTensorShardingIndices() const override;
+  virtual void growAliaser(PoprithmsAliaser &m) const override {
+    growAliaserMulti(m);
+  }
 
 private:
   RemoteBufferId remotebuffer_id;
@@ -79,7 +82,7 @@ private:
 // The inputs to a RemoteExchangeOp (N loads, M stores) are:
 // [load-data0, ..., load-dataN, store-data0, ..., store-dataM]
 // [arg-load-data0, ..., arg-load-dataN, arg-store-data0, ..., arg-store-dataM]
-// The inputs to a remote exchange op are:
+// The outputs to a remote exchange op are:
 // [load-data0, ..., load-dataN]
 class RemoteExchangeOp : public Op {
 public:
@@ -117,6 +120,9 @@ public:
   VGraphIdAndTileSet
   getIntrospectionOutVirtualGraphId(OutIndex,
                                     std::set<OpId> visited = {}) const final;
+  virtual void growAliaser(PoprithmsAliaser &m) const override {
+    growAliaserMulti(m);
+  }
 
   bool canShard() const final { return false; }
 

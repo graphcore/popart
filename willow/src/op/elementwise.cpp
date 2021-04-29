@@ -1,7 +1,10 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
+#include <poprithmsinplace.hpp>
 #include <popart/broadcastutil.hpp>
 #include <popart/op/elementwise.hpp>
+#include <popart/op/identity.hpp>
 #include <popart/tensor.hpp>
+#include <popart/tensorindex.hpp>
 
 namespace popart {
 
@@ -245,6 +248,40 @@ void BinaryComparisonOp::setup() {
   outInfo(getOutIndex()) = {DataType::BOOL,
                             prettyNpOut(inInfo(getArg0InIndex()).shape(),
                                         inInfo(getArg1InIndex()).shape())};
+}
+
+void ElementWiseBinaryBaseOp::growAliaser(PoprithmsAliaser &m) const {
+  m.insertBinaryModifier(*this);
+}
+
+void ElementWiseBinaryOp::setProposal(
+    poprithms::memory::inplace::Proposal &proposal,
+    const PoprithmsAliaser &aliaser,
+    OperatorIdentifier opId) const {
+
+  const std::string inplaceName = opId.type;
+  auto index = (inplaceName.find("Rhs") != std::string::npos) ? 1 : 0;
+  proposal   = {aliaser.getGate(id), index};
+}
+
+void ElementWiseUnaryOp::setProposal(
+    poprithms::memory::inplace::Proposal &proposal,
+    const PoprithmsAliaser &aliaser,
+    OperatorIdentifier opId) const {
+  setProposalGate0(proposal, aliaser, opId);
+}
+
+void ElementWiseUnaryOp::growAliaser(PoprithmsAliaser &m) const {
+  if (!isIdentity()) {
+    m.insertUnaryModifier0(*this);
+  } else {
+
+    auto id0 = m.getPoprithmsTensorId(inId(0));
+
+    const auto gate =
+        isOutplace() ? m.g.aliasGate({id0}) : m.g.aliasGate({id0}, 0);
+    m.insertTensor(gate, *outTensor(0));
+  }
 }
 
 } // namespace popart

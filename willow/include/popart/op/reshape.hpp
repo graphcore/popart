@@ -44,6 +44,8 @@ public:
   void configureShardedOp(Op *const shardedOp,
                           const Settings *const settings_) const override;
 
+  virtual void growAliaser(PoprithmsAliaser &) const override;
+
 protected:
   // The shape of the data output tensor
   Shape outShape;
@@ -80,6 +82,10 @@ public:
   inplacePriorityDefault() const final {
     return {{Onnx::CustomOperators::ReshapeInplace, 10}};
   }
+
+  void setProposal(poprithms::memory::inplace::Proposal &,
+                   const PoprithmsAliaser &,
+                   OperatorIdentifier) const override;
 };
 
 class ReshapeInplaceOp : public ReshapeBaseOp {

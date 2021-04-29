@@ -21,6 +21,8 @@ public:
   getInplaceVariant(const OperatorIdentifier &o) const final;
   std::vector<std::tuple<OperatorIdentifier, float>>
   inplacePriorityDefault() const final;
+
+  bool isIdentity() const final { return true; }
 };
 
 class IdentityInplaceOp : public IdentityOp {

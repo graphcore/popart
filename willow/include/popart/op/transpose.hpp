@@ -21,6 +21,8 @@ public:
   void setPerm(const Shape &value) { perm = value; }
   const Shape &getPerm() const { return perm; }
 
+  std::vector<uint64_t> getPerm_u64() const;
+
   view::RegMap fwdRegMap(InIndex, OutIndex) const final;
   view::RegMap bwdRegMap(InIndex, OutIndex) const final;
 
@@ -35,6 +37,8 @@ public:
   bool canShard() const override { return true; }
 
   int getOutBatchAxis(OutIndex) const override;
+
+  virtual void growAliaser(PoprithmsAliaser &) const override;
 
 private:
   // the new permutation of the tensor axes
@@ -59,6 +63,10 @@ public:
   getInplaceVariant(const OperatorIdentifier &o) const final;
   std::vector<std::tuple<OperatorIdentifier, float>>
   inplacePriorityDefault() const final;
+
+  void setProposal(poprithms::memory::inplace::Proposal &,
+                   const PoprithmsAliaser &,
+                   OperatorIdentifier) const override;
 };
 
 class TransposeInplaceOp : public TransposeBaseOp {

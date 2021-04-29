@@ -23,6 +23,7 @@ public:
   void appendOutlineAttributes(OpSerialiserBase &) const override;
   CollectiveOperator getCollectiveOp() const { return op; }
   CommGroup getGCLCommGroup() const;
+  virtual void growAliaser(PoprithmsAliaser &) const override;
 
 protected:
   CollectiveOperator op;

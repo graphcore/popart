@@ -1,5 +1,6 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
 #include <memory>
+#include <poprithmsinplace.hpp>
 #include <popart/ir.hpp>
 #include <popart/op/collectives/collectives.hpp>
 #include <popart/op/collectives/replicatedallreduce.hpp>
@@ -77,14 +78,19 @@ view::Regions ReplicatedAllReduceInplaceOp::modifies(InIndex index) const {
 
 view::Regions ReplicatedAllReduceInplaceOp::aliases(InIndex in,
                                                     OutIndex out) const {
+
   if (in != out) {
-    throw error("In index and out index are uneqal");
+    throw error("In index and out index not equal");
   }
   if (in == getInIndex()) {
     return {view::Region::getFull(inShape(in))};
   } else {
     throw error("Invalid index passed to aliases");
   }
+}
+
+void ReplicatedAllReduceOp::growAliaser(PoprithmsAliaser &m) const {
+  m.insertUnaryModifier0(*this);
 }
 
 std::unique_ptr<Op> ReplicatedAllReduceInplaceOp::clone() const {

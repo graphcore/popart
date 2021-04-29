@@ -19,6 +19,11 @@ public:
   getInplaceVariant(const OperatorIdentifier &o) const final;
   std::vector<std::tuple<OperatorIdentifier, float>>
   inplacePriorityDefault() const final;
+
+  // mathematically equivalent to identity, but we don't want it to be replaced
+  // by identity because it's behaviour is different (no backwards pass Op for
+  // Detach)
+  bool isIdentity() const final { return true; }
 };
 
 class DetachInplaceOp : public DetachOp {
