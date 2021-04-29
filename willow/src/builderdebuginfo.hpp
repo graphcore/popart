@@ -3,9 +3,9 @@
 #define GUARD_NEURALNET_BUILDER_DEBUGINFO_HPP
 
 #include <popart/debugcontext.hpp>
-#include <popart/poparttracepoint.hpp>
 #include <popart/tensor.hpp>
 #include <popart/vendored/any.hpp>
+#include <poparttracepoint.hpp>
 
 namespace popart {
 class BuilderDebugInfo : public DebugInfo {

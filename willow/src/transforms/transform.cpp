@@ -4,8 +4,8 @@
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/logging.hpp>
-#include <popart/poparttracepoint.hpp>
 #include <popart/transforms/transform.hpp>
+#include <poparttracepoint.hpp>
 
 namespace popart {
 

@@ -13,11 +13,11 @@
 #include <popart/ir.hpp>
 #include <popart/opmanager.hpp>
 #include <popart/pbwrap.hpp>
-#include <popart/poparttracepoint.hpp>
 #include <popart/scheduler.hpp>
 #include <popart/tensornames.hpp>
 #include <popart/tensors.hpp>
 #include <popart/topocons.hpp>
+#include <poparttracepoint.hpp>
 
 // Ops required for Graph::getCalledOps
 #include <popart/op/call.hpp>

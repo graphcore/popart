@@ -1,5 +1,5 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
-#include <popart/builderdebuginfo.hpp>
+#include <builderdebuginfo.hpp>
 #include <popart/tensorinfo.hpp>
 #include <popart/util.hpp>
 #include <popart/vendored/optional.hpp>
