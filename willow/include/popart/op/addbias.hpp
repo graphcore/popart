@@ -34,12 +34,6 @@ public:
 
   view::RegMap fwdRegMap(InIndex, OutIndex) const override;
   view::RegMap bwdRegMap(InIndex, OutIndex) const override;
-
-  virtual void growAliaser(PoprithmsAliaser &) const override;
-
-  void setProposal(poprithms::memory::inplace::Proposal &,
-                   const PoprithmsAliaser &,
-                   OperatorIdentifier) const override;
 };
 
 class AddBiasInplaceOp : public AddBiasOp {

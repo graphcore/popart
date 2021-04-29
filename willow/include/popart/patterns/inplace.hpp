@@ -36,6 +36,10 @@ public:
   // Replace "op" with an Op of type "inpl", using already calculated
   // constraints (with "op" in places where "inpl" should be) cons
   bool apply(Op *op, OperatorIdentifier inpl, const OpsBeforeKey &cons) const;
+
+  // What are the additional topological constraints
+  // required if oldOp is replaced by newOp?
+  OpsBeforeKey getNewTopoCons(Op *oldOp, OperatorIdentifier) const;
 };
 
 } // namespace popart

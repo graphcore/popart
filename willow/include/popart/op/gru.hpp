@@ -71,7 +71,6 @@ public:
   }
 
   view::Regions aliases(InIndex, OutIndex) const final;
-  void growAliaser(PoprithmsAliaser &m) const override { growAliaserMulti(m); }
 
   view::RegMap fwdRegMap(InIndex, OutIndex) const final;
   view::RegMap bwdRegMap(InIndex, OutIndex) const final;

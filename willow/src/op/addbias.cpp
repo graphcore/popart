@@ -2,7 +2,6 @@
 #include <algorithm>
 #include <memory>
 #include <numeric>
-#include <poprithmsinplace.hpp>
 #include <popart/op/addbias.hpp>
 #include <popart/op/conv.hpp>
 #include <popart/opmanager.hpp>
@@ -142,16 +141,6 @@ view::Regions AddBiasInplaceOp::aliases(InIndex in, OutIndex) const {
   } else {
     throw error("Invalid index passed to AddBiasInplaceOp::modifies");
   }
-}
-
-void AddBiasOp::growAliaser(PoprithmsAliaser &m) const {
-  m.insertUnaryModifier0(*this);
-}
-
-void AddBiasOp::setProposal(poprithms::memory::inplace::Proposal &proposal,
-                            const PoprithmsAliaser &aliaser,
-                            OperatorIdentifier id) const {
-  setProposalGate0(proposal, aliaser, id);
 }
 
 AddBiasBiasGradOp::AddBiasBiasGradOp(const AddBiasOp &op_,

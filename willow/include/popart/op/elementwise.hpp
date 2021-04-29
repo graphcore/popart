@@ -30,22 +30,8 @@ public:
 
   bool canShard() const override { return true; }
 
-  void setProposal(poprithms::memory::inplace::Proposal &,
-                   const PoprithmsAliaser &,
-                   OperatorIdentifier) const override;
-
   ReplicatedTensorShardingIndices
   getReplicatedTensorShardingIndices() const override;
-
-  virtual void growAliaser(PoprithmsAliaser &) const override;
-
-  /**
-   * \return true, if and only if (iff) this Op is mathematically equivalent to
-   *        f(x) = x. This is slightly different to canBeReplacedByIdentity; for
-   *        example Detach and Identity have isIdentity overriden to return
-   *        true, but still return false for canBeReplacedByIdentity.
-   */
-  virtual bool isIdentity() const { return canBeReplacedByIdentity(); }
 };
 
 // Base class for elementwise unary boolean output operations
@@ -120,8 +106,6 @@ public:
 
   bool canShard() const override { return true; }
 
-  virtual void growAliaser(PoprithmsAliaser &) const override;
-
   ReplicatedTensorShardingIndices
   getReplicatedTensorShardingIndices() const override;
 
@@ -148,10 +132,6 @@ public:
 
   void setInplacePriority(const OperatorIdentifier &, float);
   float getInplacePriority(const OperatorIdentifier &) const;
-
-  void setProposal(poprithms::memory::inplace::Proposal &,
-                   const PoprithmsAliaser &,
-                   OperatorIdentifier) const override;
 
 private:
   virtual bool hasLhsInplaceVariant() const;

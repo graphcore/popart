@@ -48,12 +48,6 @@ public:
 
   float getSubgraphValue() const override { return getLowSubgraphValue(); }
 
-  virtual void growAliaser(PoprithmsAliaser &) const override;
-
-  void setProposal(poprithms::memory::inplace::Proposal &,
-                   const PoprithmsAliaser &,
-                   OperatorIdentifier) const override;
-
 protected:
   float scale_0;
   float scale_1;

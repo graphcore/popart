@@ -33,10 +33,6 @@ public:
   // This updated seed aliases and in-place modifies the input seed
   view::Regions aliases(InIndex, OutIndex) const final;
   view::Regions modifies(InIndex) const final;
-
-  virtual void growAliaser(PoprithmsAliaser &m) const override {
-    growAliaserMulti(m);
-  }
 };
 } // namespace popart
 

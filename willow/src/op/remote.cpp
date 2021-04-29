@@ -1,6 +1,5 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #include <algorithm>
-#include <poprithmsinplace.hpp>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/op/remote.hpp>
@@ -48,7 +47,13 @@ void RemoteLoadOp::setup() {
 }
 
 view::Regions RemoteLoadOp::modifies(InIndex index) const {
-  return aliases(index, 0);
+  if (index == getLocalTensorInIndex()) {
+    return {view::Region::getFull(inShape(index), view::AccessType::Write)};
+  } else if (index == getRemoteBufferOffsetInIndex()) {
+    return {view::Region::getEmpty(inRank(index))};
+  } else {
+    throw error("Invalid index passed to RemoteLoadOp::modifies");
+  }
 }
 
 view::Regions RemoteLoadOp::aliases(InIndex in, OutIndex) const {

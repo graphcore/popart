@@ -1,14 +1,12 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
 #include <algorithm>
 #include <memory>
-#include <poprithmsinplace.hpp>
 #include <popart/graph.hpp>
 #include <popart/op/pad.hpp>
 #include <popart/op/padgrad.hpp>
 #include <popart/opmanager.hpp>
 #include <popart/opserialiser.hpp>
 #include <popart/tensor.hpp>
-#include <popart/tensorindex.hpp>
 
 namespace popart {
 
@@ -89,31 +87,6 @@ std::vector<std::unique_ptr<Op>> PadOp::getGradOps() {
                 "not \"constant\".");
   }
   return upops;
-}
-
-void BasePadOp::growAliaser(PoprithmsAliaser &m) const {
-
-  runtimeConfirmShapes();
-
-  const auto in0 = m.getPoprithmsTensorId(inId(0));
-
-  auto toPad = doesAlias() ? m.g.aliasGate({in0}, 0) : m.g.aliasGate({in0});
-  m.insertOp(toPad.opId(), id);
-
-  const auto lowerPadding = getLowerPadding();
-  const auto upperPadding = getUpperPadding();
-  const auto out0         = m.g.pad(toPad,
-                            {getLowerPadding(), getUpperPadding()},
-                            /*paddingIsParallelWriteable*/ false);
-
-  m.insertTensor(out0, *outTensor(0));
-}
-
-void BasePadOutplaceOp::setProposal(
-    poprithms::memory::inplace::Proposal &proposal,
-    const PoprithmsAliaser &aliaser,
-    OperatorIdentifier opId) const {
-  proposal = {aliaser.getGate(id), 0};
 }
 
 std::unique_ptr<Op> BasePadOutplaceOp::getInplaceVariant(

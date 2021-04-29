@@ -1,6 +1,5 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #include <memory>
-#include <poprithmsinplace.hpp>
 #include <popart/op/pad.hpp>
 #include <popart/op/slice.hpp>
 #include <popart/opmanager.hpp>
@@ -19,13 +18,6 @@ std::vector<int64_t> BaseSliceOp::getPads() const {
     pads[slice.axis + t_rank] = in_shape[slice.axis] - slice.end;
   }
   return pads;
-}
-
-void BaseSliceOp::growAliaser(PoprithmsAliaser &m) const {
-  const auto lu = getLowerUpper();
-  const auto vc = m.g.slice(
-      m.getPoprithmsTensorId(inId(0)), std::get<0>(lu), std::get<1>(lu));
-  m.insertViewChange(vc, *outTensor(0), isOutplace());
 }
 
 std::vector<unsigned> BaseSliceOp::getFlips() const {
@@ -101,7 +93,7 @@ view::Regions BaseSliceOp::uses(InIndex inIndex) const {
   if (inIndex != 0) {
     throw internal_error(
         "[BaseSliceOp::uses] "
-        "BaseSliceOp has input index {}, but only 0 permitted. "
+        "BaseSliceOp has has input index {}, but only 0 permitted. "
         "This for op ",
         inIndex,
         str());
@@ -118,12 +110,6 @@ SliceOp::getInplaceVariant(const OperatorIdentifier &operator_id) const {
 
   // catch remaining cases and throw an error
   return Op::getInplaceVariant(operator_id);
-}
-
-void SliceOp::setProposal(poprithms::memory::inplace::Proposal &proposal,
-                          const PoprithmsAliaser &aliaser,
-                          OperatorIdentifier opId) const {
-  setProposalGate0(proposal, aliaser, opId);
 }
 
 view::Region BaseSliceOp::getFullOutRegion() const {
@@ -246,16 +232,6 @@ BaseSliceOp::normalizeIndex(int64_t index, int64_t dim_size, bool flip) const {
   return index;
 }
 
-std::array<std::vector<int64_t>, 2> BaseSliceOp::getLowerUpper() const {
-  auto upp = inShape(0);
-  std::vector<int64_t> low(upp.size(), 0);
-  for (auto slice : getSlices()) {
-    low[slice.axis] = slice.start;
-    upp[slice.axis] = slice.end;
-  }
-  return {low, upp};
-}
-
 BaseSliceOp::BaseSliceOp(const OperatorIdentifier &_opid,
                          const std::vector<int64_t> &starts_,
                          const std::vector<int64_t> &ends_,
@@ -335,12 +311,6 @@ std::unique_ptr<Op> SliceInplaceOp::clone() const {
 
 std::vector<std::tuple<OperatorIdentifier, float>>
 SliceOp::inplacePriorityDefault() const {
-
-  // TODO(T9253)
-  if (!getFlips().empty()) {
-    return {};
-  }
-
   // see T6768: choosing default priorities
   return {{Onnx::CustomOperators::SliceInplace, 10.0f}};
 }

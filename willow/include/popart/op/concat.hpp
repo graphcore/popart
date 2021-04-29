@@ -45,12 +45,6 @@ public:
   float getSubgraphValue() const final { return getLowSubgraphValue(); }
   bool canShard() const override { return true; }
 
-  void growAliaser(PoprithmsAliaser &) const override;
-
-  void setProposal(poprithms::memory::inplace::Proposal &,
-                   const PoprithmsAliaser &,
-                   OperatorIdentifier) const override;
-
 private:
   void validateAxis() const;
 

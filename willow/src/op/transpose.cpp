@@ -1,20 +1,12 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
 #include <algorithm>
-#include <functional>
 #include <memory>
-#include <poprithmsinplace.hpp>
 #include <popart/op/transpose.hpp>
 #include <popart/opmanager.hpp>
 #include <popart/opserialiser.hpp>
 #include <popart/tensor.hpp>
 
 namespace popart {
-
-void TransposeOp::setProposal(poprithms::memory::inplace::Proposal &proposal,
-                              const PoprithmsAliaser &aliaser,
-                              OperatorIdentifier opId) const {
-  setProposalGate0(proposal, aliaser, opId);
-}
 
 TransposeBaseOp::TransposeBaseOp(const OperatorIdentifier &_opid,
                                  const std::vector<int64_t> &perm_,
@@ -37,17 +29,6 @@ view::RegMap TransposeBaseOp::fwdRegMap(InIndex inIndex, OutIndex) const {
     }
     return view::Regions(1, r.transpose(permutation));
   };
-}
-
-void TransposeBaseOp::growAliaser(PoprithmsAliaser &m) const {
-  const auto vc = m.g.dimShuffle(m.getPoprithmsTensorId(inId(0)),
-                                 poprithms::util::Permutation(getPerm_u64()));
-  m.insertViewChange(vc, *outTensor(0), isOutplace());
-}
-
-std::vector<uint64_t> TransposeBaseOp::getPerm_u64() const {
-  std::vector<uint64_t> p_u64(perm.cbegin(), perm.cend());
-  return p_u64;
 }
 
 view::RegMap TransposeBaseOp::bwdRegMap(InIndex inIndex, OutIndex) const {

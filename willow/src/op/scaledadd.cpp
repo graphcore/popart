@@ -1,23 +1,11 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
 #include <memory>
-#include <poprithmsinplace.hpp>
 #include <popart/op/scaledadd.hpp>
 #include <popart/opmanager.hpp>
 #include <popart/opserialiser.hpp>
 #include <popart/tensor.hpp>
-#include <popart/tensorindex.hpp>
 
 namespace popart {
-
-void ScaledAddOp::setProposal(poprithms::memory::inplace::Proposal &proposal,
-                              const PoprithmsAliaser &aliaser,
-                              OperatorIdentifier opId) const {
-  const std::string inplaceName = opId.type;
-  auto index                    = (inplaceName.find("Rhs") != std::string::npos)
-                   ? getArg1InIndex()
-                   : getArg0InIndex();
-  proposal = {aliaser.getGate(id), index};
-}
 
 std::vector<std::tuple<OperatorIdentifier, float>>
 ScaledAddOp::inplacePriorityDefault() const {
@@ -37,10 +25,6 @@ ScaledAddOp::inplacePriorityDefault() const {
   }
 
   return {};
-}
-
-void ScaledAddOp::growAliaser(PoprithmsAliaser &m) const {
-  m.insertBinaryModifier(*this);
 }
 
 ScaledAddLhsInplaceOp::ScaledAddLhsInplaceOp(const ScaledAddOp &scale_op)

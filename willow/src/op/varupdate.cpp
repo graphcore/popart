@@ -1,7 +1,6 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
 #include <limits>
 #include <memory>
-#include <poprithmsinplace.hpp>
 #include <popart/ir.hpp>
 #include <popart/logging.hpp>
 #include <popart/op/varupdate.hpp>
@@ -36,9 +35,6 @@ view::Regions VarUpdateOp::aliases(InIndex in, OutIndex) const {
   } else {
     return {view::Region::getEmpty(inRank(in))};
   }
-}
-void VarUpdateOp::growAliaser(PoprithmsAliaser &m) const {
-  m.insertUnaryModifier(*this, getVarToUpdateInIndex());
 }
 
 view::Regions VarUpdateOp::modifies(InIndex index) const {

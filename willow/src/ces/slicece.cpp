@@ -13,11 +13,15 @@ namespace popart {
 ConstExprSlice::ConstExprSlice(Op *op_) : ConstExprOp(op_) {}
 
 std::vector<char> ConstExprSlice::compute() {
-
-  const auto lu = getOp<BaseSliceOp>().getLowerUpper();
+  auto upp = inShape(0);
+  std::vector<int64_t> low(upp.size(), 0);
+  for (auto slice : getOp<BaseSliceOp>().getSlices()) {
+    low[slice.axis] = slice.start;
+    upp[slice.axis] = slice.end;
+  }
 
   return getPoprithmsComputeHostTensor(*inTensor(0))
-      .slice(std::get<0>(lu), std::get<1>(lu))
+      .slice(low, upp)
       .getNativeCharVector();
 }
 
