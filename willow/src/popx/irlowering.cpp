@@ -1034,21 +1034,29 @@ InitTensorPtrs IrLowering::getInitTensorCreators(Tensor *tensor) {
 
 PriTask IrLowering::initRandomSeed() {
   auto streamedSeedId = GetRandomSeedOp::getStreamedSeedTensorId();
-  auto updatedSeedId  = GetRandomSeedOp::getUpdatedSeedTensorId();
 
-  auto initRandomSeedTask = [this, updatedSeedId]() {
+  auto initRandomSeedTask = [this, streamedSeedId]() {
     logging::devicex::debug("Initializing random seed.");
     SequenceMap seqs;
-    poprand::setSeed(graph(),
-                     tensors_.get(updatedSeedId),
-                     0,
-                     seqs.getSequence(&progs.setRandomSeedFromHostFragment()),
-                     logging::format("{}/set", updatedSeedId));
+    auto &prog = seqs.getSequence(&progs.setRandomSeedFromHostFragment());
+    auto &seed = tensors_.get(streamedSeedId);
+    // Set the seed to the same value for each replica. When combined with
+    // Poplar Engine Option "target.deterministicWorkers":"portable" this should
+    // ensure the same stochastic rounding on each replica.
+    poprand::setSeed(
+        graph(), seed, 0, prog, logging::format("{}/set", streamedSeedId));
+
+    // After setting the seed, offset the tensor by replication index.
+    // This seed will be used for random operations, such as Dropout, and is
+    // required to provide distinct behaviour for each replia.
+    auto offset = graph().addReplicationIndexConstant();
+    graph().setTileMapping(offset, 0);
+    popops::addInPlace(graph(), seed[0], offset, prog);
     return seqs;
   };
 
   std::vector<PriTaskDependency> deps;
-  deps.push_back(taskWhichCreates(updatedSeedId));
+  deps.push_back(taskWhichCreates(streamedSeedId));
   // Stream the seed tensor to device before using to set PRNGs
   deps.push_back({fromHostTaskId(streamedSeedId), DependencyType::Scheduler});
 
