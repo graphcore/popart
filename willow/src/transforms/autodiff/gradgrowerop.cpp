@@ -17,6 +17,8 @@ std::vector<Op *>
 GradGrowerOp::growGradOps(Op *nonGradOp,
                           const FwdGraphToBwdGraphInfo &calledGraphsGradInfo) {
 
+  logging::ir::debug("Growing grad ops for {}", nonGradOp->debugName());
+
   PipelineStage maxPipelineStage = 0;
   if (dep.get().getSessionOptions().enablePipelining) {
     // the last fwd pass pipeline stage is also the first bwd pass pipeline
