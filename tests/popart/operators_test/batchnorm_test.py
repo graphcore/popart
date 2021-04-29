@@ -1167,9 +1167,7 @@ def test_batchnorm_shapeinference(op_tester):
     proto = builder.getModelProto()
     anchors = [o_y, o_mean, o_var, o_smean, o_svar]
     art = popart.AnchorReturnType("All")
-    dataFlow = popart.DataFlow(1, {
-        a: art for a in anchors
-    })
+    dataFlow = popart.DataFlow(1, {a: art for a in anchors})
     device = tu.create_test_device()
     options = popart.SessionOptions()
     options.enableStochasticRounding = False
@@ -1191,6 +1189,6 @@ def test_batchnorm_shapeinference(op_tester):
     session.weightsFromHost()
     session.run(stepio)
     stepio = popart.PyStepIO(inputs, anchors)
-    # This tests the shape inference has run 
+    # This tests the shape inference has run
     for a, b in zip([o_y, o_mean, o_var, o_smean, o_svar], shapes):
         assert anchors[a].shape == b

@@ -160,6 +160,7 @@ def test_np_memory_layout_add_input_tensor_pystepio():
 
     assert "contiguous" in e_info.value.args[0]
 
+
 def test_np_memory_layout_add_input_tensor_pystepiocallback():
     """ In the case of input / output data a conversion could have significant
         impact on performance and hence we do not allow it. Here, we test it is

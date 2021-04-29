@@ -233,14 +233,16 @@ def test_prepareDevice_training(loadEngine, capfd):
     assertLogContains(expectedCompilation=False,
                       expectedEngineLoad=not loadEngine)
 
+
 def test_create_sim_device():
     dm = popart.DeviceManager()
     device = dm.createSimDevice({'numIPUs': 2, 'tilesPerIPU': 8})
     assert device.numIpus == 2
     assert device.tilesPerIPU == 8
 
+
 def test_create_sim_default_device():
     dm = popart.DeviceManager()
     device = dm.createSimDevice({})
     assert device.numIpus == 1
-    assert device.tilesPerIPU == 4 
+    assert device.tilesPerIPU == 4

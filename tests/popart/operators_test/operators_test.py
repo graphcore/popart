@@ -248,6 +248,7 @@ def test_convolution_2(op_tester):
     Test the convolution when the conv in the bwd pass is not the same as the conv in the
     forward pass
     '''
+
     def init_builder(builder):
         data = np.ones([1, 2, 4, 4], dtype=np.float32)
         filt = np.ones([4, 2, 1, 1], dtype=np.float32)
@@ -1843,11 +1844,7 @@ def test_pad11(op_tester):
                   })
 
 
-def _test_pad(op_tester,
-              data,
-              lower_padding,
-              upper_padding,
-              mode,
+def _test_pad(op_tester, data, lower_padding, upper_padding, mode,
               pad_value=0):
     def init_builder(builder):
         i1 = builder.addInputTensor(data)

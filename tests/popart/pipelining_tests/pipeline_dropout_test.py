@@ -135,6 +135,7 @@ def test_pipelined_dropout():
 
         return anchors
 
+
 @tu.requires_ipu
 def test_pipelined_recomputed_dropout():
     dsize = 10

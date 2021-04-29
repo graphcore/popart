@@ -247,7 +247,6 @@ def test_gemm_grad_error(op_tester):
         "This op should have been removed by pattern GemmDecomposition"))
 
 
-
 def test_cosh_grad_error(op_tester):
     d1 = np.random.rand(2, 7).astype(np.float32)
     d2 = np.random.rand(2, 7).astype(np.float32)

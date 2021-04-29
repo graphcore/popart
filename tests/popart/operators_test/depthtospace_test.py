@@ -4,6 +4,7 @@ import popart
 import torch
 from op_tester import op_tester
 
+
 def test_depthtospace(op_tester):
     # create test data
     d1 = np.random.rand(1, 8, 2, 3).astype(np.float32)
@@ -87,6 +88,7 @@ def test_depthtospace_opset1(op_tester):
 
     op_tester.run(init_builder, reference, 'infer')
 
+
 def test_depthtospace_custom_op(op_tester):
     # create test data
     d1 = np.random.rand(1, 8, 2, 3).astype(np.float32)
@@ -113,6 +115,7 @@ def test_depthtospace_custom_op(op_tester):
         return [out]
 
     op_tester.run(init_builder, reference, 'infer')
+
 
 def test_depthtospace_grad0(op_tester):
     d1 = np.random.rand(1, 8, 2, 3).astype(np.float32)
@@ -147,6 +150,7 @@ def test_depthtospace_grad0(op_tester):
 
     op_tester.run(init_builder, reference, 'train')
 
+
 def test_depthtospace_grad1(op_tester):
     d1 = np.random.rand(1, 8, 2, 3).astype(np.float32)
     blocks = 2
@@ -179,6 +183,7 @@ def test_depthtospace_grad1(op_tester):
 
     op_tester.run(init_builder, reference, 'train')
 
+
 def test_spacetodepth0(op_tester):
     # create test data
     d1 = np.random.rand(1, 8, 2, 3).astype(np.float32)
@@ -198,6 +203,7 @@ def test_spacetodepth0(op_tester):
         return [d1]
 
     op_tester.run(init_builder, reference, 'infer')
+
 
 def test_spacetodepth1(op_tester):
     # create test data
@@ -221,6 +227,7 @@ def test_spacetodepth1(op_tester):
         return [out]
 
     op_tester.run(init_builder, reference, 'infer')
+
 
 def test_spacetodepth_grad1(op_tester):
     d1 = np.random.rand(1, 2, 4, 6).astype(np.float32)
@@ -250,6 +257,7 @@ def test_spacetodepth_grad1(op_tester):
 
     op_tester.run(init_builder, reference, 'train')
 
+
 def test_pixelshuffle0(op_tester):
     # depthtospace CRD onnx should be same as PixelShuffle pytorch.
     # create test data
@@ -276,6 +284,7 @@ def test_pixelshuffle0(op_tester):
             return [out]
 
         op_tester.run(init_builder, reference, 'infer')
+
 
 def test_pixelshuffle_custom(op_tester):
     # depthtospace CRD onnx should be same as PixelShuffle pytorch.
