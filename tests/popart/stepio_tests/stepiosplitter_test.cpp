@@ -123,43 +123,45 @@ TensorId tensorId{"testTensor1"};
 TensorInfo tensorInfo{DataType::FLOAT, Shape{1}};
 int64_t tensorNelms{tensorInfo.nelms()};
 
-auto setupSplitter = [](int repl, int bsp, int accum, int runs = 1) {
-  const unsigned numData = repl * bsp * accum * runs;
+auto setupSplitter =
+    [](int repl, int bsp, int accum, int runs = 1, bool threadSafe = false) {
+      const unsigned numData = repl * bsp * accum * runs;
 
-  auto splitter = std::make_shared<StepIOSplitter>(
-      repl,
-      [&](const TensorId &id) { return bsp * accum; },
-      [&](const TensorId &id) { return bsp * accum; });
-  auto upstream    = std::make_shared<TestStepIO>();
-  auto downstreams = std::vector<IStepIO *>();
-  auto inbuf       = std::make_shared<std::vector<unsigned>>(numData, 0u);
-  auto outbuf      = std::make_shared<std::vector<unsigned>>(numData, 0u);
+      auto splitter = std::make_shared<StepIOSplitter>(
+          repl,
+          [&](const TensorId &id) { return bsp * accum; },
+          [&](const TensorId &id) { return bsp * accum; },
+          threadSafe);
+      auto upstream    = std::make_shared<TestStepIO>();
+      auto downstreams = std::vector<IStepIO *>();
+      auto inbuf       = std::make_shared<std::vector<unsigned>>(numData, 0u);
+      auto outbuf      = std::make_shared<std::vector<unsigned>>(numData, 0u);
 
-  // Link upstream IStepIO to splitter.
-  splitter->setUpstreamIo(upstream.get());
+      // Link upstream IStepIO to splitter.
+      splitter->setUpstreamIo(upstream.get());
 
-  // Set upstream return values (for testing).
-  for (int i = 0; i < numData; ++i) {
-    upstream->inReturnValues.push_back(
-        ConstVoidData{reinterpret_cast<void *>(&(*inbuf)[i]), tensorInfo});
-    logging::debug(
-        "buffer in[{}]  - {}", i, reinterpret_cast<void *>(&(*inbuf)[i]));
-  }
-  for (int i = 0; i < numData; ++i) {
-    upstream->outReturnValues.push_back(
-        MutableVoidData{reinterpret_cast<void *>(&(*outbuf)[i]), tensorInfo});
-    logging::debug(
-        "buffer out[{}] - {}", i, reinterpret_cast<void *>(&(*outbuf)[i]));
-  }
+      // Set upstream return values (for testing).
+      for (int i = 0; i < numData; ++i) {
+        upstream->inReturnValues.push_back(
+            ConstVoidData{reinterpret_cast<void *>(&(*inbuf)[i]), tensorInfo});
+        logging::debug(
+            "buffer in[{}]  - {}", i, reinterpret_cast<void *>(&(*inbuf)[i]));
+      }
+      for (int i = 0; i < numData; ++i) {
+        upstream->outReturnValues.push_back(MutableVoidData{
+            reinterpret_cast<void *>(&(*outbuf)[i]), tensorInfo});
+        logging::debug(
+            "buffer out[{}] - {}", i, reinterpret_cast<void *>(&(*outbuf)[i]));
+      }
 
-  // Get downstream IStepIO adapters from splitter.
-  for (unsigned r = 0; r < repl; ++r) {
-    downstreams.push_back(
-        splitter->getDownstreamStepIO(tensorId, tensorInfo, r));
-  }
+      // Get downstream IStepIO adapters from splitter.
+      for (unsigned r = 0; r < repl; ++r) {
+        downstreams.push_back(
+            splitter->getDownstreamStepIO(tensorId, tensorInfo, r));
+      }
 
-  return std::make_tuple(splitter, upstream, downstreams, inbuf, outbuf);
-};
+      return std::make_tuple(splitter, upstream, downstreams, inbuf, outbuf);
+    };
 
 // Create function that returns buffer addresses for a given offset.
 auto getAddr = [](auto &setup, TestDirection &dir) {

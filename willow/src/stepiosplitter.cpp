@@ -5,6 +5,19 @@ namespace popart {
 namespace popx {
 class Executablex;
 }
+namespace {
+class Lock {
+public:
+  Lock(std::mutex &m, bool doLock) : lock(m, std::defer_lock) {
+    if (doLock) {
+      lock.lock();
+    }
+  }
+
+private:
+  std::unique_lock<std::mutex> lock;
+};
+} // namespace
 
 StepIOSplitterAdapter::StepIOSplitterAdapter(StepIOSplitter *splitter_,
                                              SplitIOTensorInfo *tensorInfo_,
@@ -34,6 +47,7 @@ StepIOSplitterAdapter::in(TensorId id, int64_t numElements, bool prefetch) {
   }
 
   // If we have no data, ask for data.
+  Lock lock(tensorInfo->inMutex, splitter->threadSafetyEnabled());
   if (inData.empty()) {
     inLog("Received Poplar callback 'in' with no input buffer from IStepIO "
           "already cached");
@@ -69,6 +83,7 @@ void StepIOSplitterAdapter::inComplete(TensorId id, int64_t numElements) {
                 id);
   }
 
+  Lock lock(tensorInfo->inMutex, splitter->threadSafetyEnabled());
   if (numInIncompleteDownstream > 0) {
     numInIncompleteDownstream--;
     numInIncompleteUpstream++;
@@ -88,6 +103,7 @@ MutableVoidData StepIOSplitterAdapter::out(TensorId id, int64_t numElements) {
                 id);
   }
 
+  Lock lock(tensorInfo->outMutex, splitter->threadSafetyEnabled());
   // If we have no data, ask for data.
   if (outData.empty()) {
     outLog("Received Poplar callback 'out' with no output buffer from IStepIO "
@@ -120,6 +136,7 @@ void StepIOSplitterAdapter::outComplete(TensorId id) {
                 id);
   }
 
+  Lock lock(tensorInfo->outMutex, splitter->threadSafetyEnabled());
   if (numOutIncompleteDownstream > 0) {
     numOutIncompleteDownstream--;
     numOutIncompleteUpstream++;
@@ -265,11 +282,12 @@ SplitIOTensorInfo::SplitIOTensorInfo()
 StepIOSplitter::StepIOSplitter(
     unsigned replicationFactor_,
     std::function<unsigned(const TensorId &)> maxInFetchesPerReplFun_,
-    std::function<unsigned(const TensorId &)> maxOutFetchesPerReplFun_)
+    std::function<unsigned(const TensorId &)> maxOutFetchesPerReplFun_,
+    bool makeThreadSafe_)
     : replicationFactor(replicationFactor_),
       maxInFetchesPerReplFun(maxInFetchesPerReplFun_),
       maxOutFetchesPerReplFun(maxOutFetchesPerReplFun_), upstreamIo(nullptr),
-      downstreamIoMap() {}
+      downstreamIoMap(), makeThreadSafe(makeThreadSafe_) {}
 
 void StepIOSplitter::reset() {
   for (auto &entry1 : downstreamIoMap) {
@@ -451,6 +469,8 @@ void StepIOSplitter::assertNumElements(const popx::Executablex &exe) const {
   }
 }
 
+bool StepIOSplitter::threadSafetyEnabled() const { return makeThreadSafe; }
+
 IStepIO *StepIOSplitter::getDownstreamStepIO(TensorId id,
                                              const TensorInfo &info,
                                              unsigned replicationIndex) {
@@ -509,6 +529,10 @@ void StepIOSplitter::inCompletionCallback(TensorId id,
   auto &inCompleteIndex   = splitIoTensorInfo.inCompleteIndex;
 
   while (true) {
+    // We want to call the complete callbacks in order, so
+    // check if the next index expected to finish has finished
+    // (instead of replicationIndex), then keep incrementing
+    // until encountering an access which is still in progress
     auto it2 = splitIoTensorInfo.adapterMap.find(inCompleteIndex);
 
     if (it2 != splitIoTensorInfo.adapterMap.end()) {

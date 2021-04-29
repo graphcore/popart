@@ -135,8 +135,9 @@ std::map<std::string, popart::any> getDictionaryVar(py::dict pydict) {
 }
 } // namespace
 
-class PyStepIO
-    : public StepIOGeneric<py::array, StepIONS::PyArrayAccessor, py::array> {
+class PyStepIO : public StepIOGeneric<StepIONS::PyArray,
+                                      StepIONS::PyArrayAccessor,
+                                      StepIONS::PyArray> {
 public:
   PyStepIO(std::map<TensorId, py::array> inputs,
            std::map<TensorId, py::array> outputs) {
