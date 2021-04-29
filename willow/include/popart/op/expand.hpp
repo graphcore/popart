@@ -14,7 +14,9 @@ public:
            const Shape &_outShape,
            const Op::Settings &settings);
 
-  std::unique_ptr<Op> clone() const override;
+  std::unique_ptr<Op> clone() const override {
+    return std::make_unique<ExpandOp>(*this);
+  }
   void setup() final;
 
   std::vector<std::unique_ptr<Op>> getGradOps() final;
@@ -61,7 +63,9 @@ public:
                   const Op::Settings &settings_);
   ExpandInplaceOp(const ExpandOp &expandOp);
 
-  std::unique_ptr<Op> clone() const override;
+  std::unique_ptr<Op> clone() const override {
+    return std::make_unique<ExpandInplaceOp>(*this);
+  }
 
   std::vector<std::tuple<OperatorIdentifier, float>>
   inplacePriorityDefault() const final {

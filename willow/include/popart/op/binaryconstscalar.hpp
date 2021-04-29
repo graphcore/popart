@@ -45,7 +45,9 @@ public:
       : ElementWiseUnaryOp(x, settings), value_(value), opType_(t),
         scalarInIndex_(index) {}
 
-  std::unique_ptr<Op> clone() const override;
+  std::unique_ptr<Op> clone() const override {
+    return std::make_unique<BinaryConstScalarOp>(*this);
+  }
 
   // The Op will be eliminated by a Pattern before auto-grad is run, so we don't
   // need to implement this method.

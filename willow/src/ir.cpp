@@ -38,6 +38,7 @@
 #include <popart/opmanager.hpp>
 #include <popart/optimizer.hpp>
 #include <popart/pbwrap.hpp>
+#include <popart/poparttracepoint.hpp>
 #include <popart/scheduler.hpp>
 #include <popart/sessionoptions.hpp>
 #include <popart/tensor.hpp>
@@ -48,7 +49,6 @@
 #include <popart/tensors.hpp>
 #include <popart/topocons.hpp>
 #include <popart/util.hpp>
-#include <poparttracepoint.hpp>
 
 // The transformations
 #include <popart/recompute.hpp>
@@ -3466,8 +3466,8 @@ std::size_t std::hash<popart::Ir>::operator()(const popart::Ir &ir) const {
   return seed;
 }
 
-std::size_t
-std::hash<popart::IrBundle>::operator()(const popart::IrBundle &bundle) const {
+std::size_t std::hash<popart::IrBundle>::
+operator()(const popart::IrBundle &bundle) const {
   size_t seed = 0;
 
   boost::hash_combine(

@@ -3,7 +3,7 @@
 #define BOOST_TEST_MODULE DebugInfoTest
 
 #include <boost/test/unit_test.hpp>
-#include <builderdebuginfo.hpp>
+#include <popart/builderdebuginfo.hpp>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/onnxdebuginfo.hpp>

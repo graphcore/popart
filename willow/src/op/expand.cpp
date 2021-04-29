@@ -27,14 +27,6 @@ void ExpandOp::regMapPreChecks(InIndex inIndex) const {
   }
 }
 
-std::unique_ptr<Op> ExpandInplaceOp::clone() const {
-  return std::make_unique<ExpandInplaceOp>(*this);
-}
-
-std::unique_ptr<Op> ExpandOp::clone() const {
-  return std::make_unique<ExpandOp>(*this);
-}
-
 view::RegMap ExpandOp::fwdRegMap(InIndex inIndex, OutIndex) const {
   regMapPreChecks(inIndex);
 

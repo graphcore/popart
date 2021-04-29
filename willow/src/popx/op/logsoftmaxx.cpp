@@ -17,28 +17,17 @@ namespace pe = popops::expr;
 namespace popart {
 namespace popx {
 
-template <typename T>
-std::unique_ptr<LogSoftmaxComputex> createLogSoftmaxComputex(Op *op) {
-  auto lsmop = dynamic_cast<T *>(op);
-  if (lsmop == nullptr) {
-    throw error("Cannot create LogSoftmaxComputex from {}", op->str());
-  }
-
-  int64_t axis         = lsmop->getAxis();
-  const auto &outShape = lsmop->outInfo(lsmop->getOutIndex()).shape_szt();
-  return std::make_unique<LogSoftmaxComputex>(axis, outShape);
-}
-
 LogSoftmaxOpx::LogSoftmaxOpx(Op *op, Devicex *devicex)
-    : ElementWiseUnaryOutplaceOpx(op,
-                                  devicex,
-                                  createLogSoftmaxComputex<LogSoftmaxOp>(op)) {}
+    : ElementWiseUnaryOutplaceOpx(
+          op,
+          devicex,
+          LogSoftmaxComputex::create<LogSoftmaxOp>(op)) {}
 
 LogSoftmaxInplaceOpx::LogSoftmaxInplaceOpx(Op *op, Devicex *devicex)
     : ElementWiseUnaryInplaceOpx(
           op,
           devicex,
-          createLogSoftmaxComputex<LogSoftmaxInplaceOp>(op)) {}
+          LogSoftmaxComputex::create<LogSoftmaxInplaceOp>(op)) {}
 
 poplar::Tensor LogSoftmaxComputex::outplace(poplar::program::Sequence &p,
                                             poplar::Graph &g,

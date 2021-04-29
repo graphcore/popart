@@ -15,13 +15,13 @@
 #include <popart/ir.hpp>
 #include <popart/op.hpp>
 #include <popart/op/remote.hpp>
+#include <popart/poparttracepoint.hpp>
 #include <popart/scheduler.hpp>
 #include <popart/tensor.hpp>
 #include <popart/tensorindex.hpp>
 #include <popart/tensors.hpp>
 #include <popart/topocons.hpp>
 #include <popart/transforms/pipeline.hpp>
-#include <poparttracepoint.hpp>
 
 #include <poprithms/logging/logging.hpp>
 #include <poprithms/logging/timepartitionlogger.hpp>

@@ -10,10 +10,6 @@ std::vector<std::unique_ptr<Op>> BinaryConstScalarOp::getGradOps() {
       "BinaryConstScalar Op should be removed by Pattern before auto-grad");
 }
 
-std::unique_ptr<Op> BinaryConstScalarOp::clone() const {
-  return std::make_unique<BinaryConstScalarOp>(*this);
-}
-
 namespace {
 
 auto fromString(const std::string &n) {
