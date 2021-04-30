@@ -466,10 +466,14 @@ public:
 
   void setMainGraphPathFromLoss();
 
+  /**
+   * Marks the Ir as "prepared". This means the Ir is now ready to be lowered.
+   * Failing to do this before lowering the Ir will result in an error.
+   */
+  void setIsPrepared();
+
 private:
   void prepareImpl(const IrBundle &, const HashesMap &cacheEntries);
-
-  void setIsPrepared();
 
   // Accessors for the tensors in the top-level graph
   const Tensors &getTensors() const;
