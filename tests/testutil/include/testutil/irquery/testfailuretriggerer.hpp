@@ -12,6 +12,7 @@ namespace irquery {
  */
 class TestFailureTriggerer {
 public:
+  virtual ~TestFailureTriggerer() = default;
   /**
    * Function that triggers a test failure with a message. It's basically a
    * wrapper around BOOST_REQUIRE that is exposed so that IrQuery objects
