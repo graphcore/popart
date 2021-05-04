@@ -132,9 +132,6 @@ std::string Ir::timePartitionLoggerStr() const {
 
 Ir::~Ir() = default;
 
-Ir &Ir::operator=(Ir &&) = default;
-Ir::Ir(Ir &&)            = default;
-
 void Ir::confirmNonReservedId(const TensorId &tenId) const {
   for (auto reservedPrefix : reservedPrefixes()) {
     if (tenId.find(reservedPrefix) != std::string::npos) {

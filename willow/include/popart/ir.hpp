@@ -109,8 +109,11 @@ public:
   Ir();
   ~Ir();
 
-  Ir(Ir &&);
-  Ir &operator=(Ir &&);
+  // NOTE: Ir owns Graph objects that have a reverse reference to the Ir, thus
+  // moving the Ir would require updating those references. Thus, if you want to
+  // implement movability for Ir, you will have to account for this.
+  Ir(Ir &&) = delete;
+  Ir &operator=(Ir &&) = delete;
 
   Ir(const Ir &) = delete;
   Ir &operator=(const Ir &) = delete;
