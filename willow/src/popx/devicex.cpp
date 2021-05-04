@@ -434,9 +434,9 @@ Devicex::Devicex(Executablex &exe, std::shared_ptr<DeviceInfo> deviceInfo_)
       ir().getSessionOptions().engineOptions.end()) {
     logging::devicex::info("Setting engine option {} = {}",
                            "target.maxStreamCallbackThreadsPerNumaNode",
-                           "0");
+                           "auto");
     lowering().engineOptions.set("target.maxStreamCallbackThreadsPerNumaNode",
-                                 "0");
+                                 "auto");
   }
 
   if (ir().getSessionOptions().engineOptions.find("autoReport.directory") ==

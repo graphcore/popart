@@ -188,6 +188,7 @@ public:
   void assertNumElements(const popx::Executablex &) const final {}
 
   ConstVoidData in(TensorId id, int64_t, bool prefetch)final {
+    py::gil_scoped_acquire acquire;
     py::array a = inputCb(id, prefetch);
     if (!isContiguous(a)) {
       throw error(
@@ -211,11 +212,13 @@ public:
   }
 
   void inComplete(TensorId id, int64_t) final {
+    py::gil_scoped_acquire acquire;
     inputCompleteCb(id);
     inDict[py::str(id)] = py::none();
   }
 
   MutableVoidData out(TensorId id, int64_t) final {
+    py::gil_scoped_acquire acquire;
     py::array a = outputCb(id);
     if (!isContiguous(a)) {
       throw error(
@@ -235,6 +238,7 @@ public:
   }
 
   void outComplete(TensorId id) final {
+    py::gil_scoped_acquire acquire;
     outputCompleteCb(id);
     outDict[py::str(id)] = py::none();
   }
@@ -1758,7 +1762,8 @@ PYBIND11_MODULE(popart_core, m) {
             &InferenceSession::run,
             py::arg("stepio"),
             py::arg("debugName") = "",
-            DOC(popart, Session, run));
+            DOC(popart, Session, run),
+            py::call_guard<py::gil_scoped_release>());
     cls.def("modelToHost",
             &InferenceSession::modelToHost,
             DOC(popart, Session, modelToHost));
@@ -1893,7 +1898,8 @@ PYBIND11_MODULE(popart_core, m) {
             &TrainingSession::run,
             py::arg("stepio"),
             py::arg("debugName") = "",
-            DOC(popart, Session, run));
+            DOC(popart, Session, run),
+            py::call_guard<py::gil_scoped_release>());
     cls.def("modelToHost",
             &TrainingSession::modelToHost,
             DOC(popart, Session, modelToHost));
