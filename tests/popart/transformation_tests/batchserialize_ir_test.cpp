@@ -24,13 +24,10 @@
 #include <popart/op/remote.hpp>
 #include <popart/op/reshape.hpp>
 #include <popart/op/sum.hpp>
+#include <popart/session.hpp>
 #include <popart/tensorinfo.hpp>
 #include <popart/tensornames.hpp>
 #include <popart/testdevice.hpp>
-
-#define protected public
-#include <popart/session.hpp>
-#undef protected
 
 using namespace popart;
 
@@ -541,7 +538,8 @@ BOOST_AUTO_TEST_CASE(NllBatchSerializedTest) {
             .enableNlllWithSoftMaxGradDirect(false)
             .enableSoftMaxGradDirect(false));
 
-    auto sched = session->ir.getOpSchedule({}, RequireOptimalSchedule::Yes);
+    auto sched =
+        session->getIr().getOpSchedule({}, RequireOptimalSchedule::Yes);
 
     int num_nll  = 0;
     int num_sum  = 0;

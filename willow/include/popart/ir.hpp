@@ -252,7 +252,7 @@ public:
   // optimizer stream tensors (they are not data)
   std::vector<Tensor *> dataStreamTensors() const;
 
-  std::vector<Op *> opsOfType(const OperatorIdentifier &opid);
+  std::vector<Op *> opsOfType(const OperatorIdentifier &opid) const;
   bool isConsumedByOpOfType(TensorId tid, const OperatorIdentifier &opid);
 
   // Simple recursive depth first search

@@ -26,7 +26,7 @@ checkErrorMsgFunc(const std::string &expectedPrefix) {
 
 template <typename SessionTy>
 void requireThrowsOnNullDeviceInfo(const std::string &sesionTyName) {
-  Ir ir;
+  auto ir = std::make_unique<Ir>();
   const std::shared_ptr<DeviceInfo> di;
 
   BOOST_REQUIRE_EXCEPTION(
@@ -41,7 +41,7 @@ template <typename SessionTy>
 void requireThrowsOnUnpreparedIr(const std::string &sesionTyName) {
   // TODO(T36404 follow-up): Create Ir whose isPrepared() always returns false,
   // so test is not tied to semantics of default ctor.
-  Ir ir;
+  auto ir       = std::make_unique<Ir>();
   const auto di = DeviceManager::createDeviceManager().createCpuDevice();
 
   BOOST_REQUIRE_EXCEPTION(

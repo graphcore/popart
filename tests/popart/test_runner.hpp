@@ -84,7 +84,7 @@ public:
           proto, dataFlow, deviceInfo, {}, opts, patterns);
     }
 
-    irChecker(session->ir);
+    irChecker(*session->ir);
 
     ran_checkIr = true;
   }

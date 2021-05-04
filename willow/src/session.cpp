@@ -56,13 +56,14 @@ void Session::ctorCommonLogic() {
                          popart::core::packageHash());
 }
 
-Session::Session() { ctorCommonLogic(); }
+Session::Session() : ir(std::make_unique<Ir>()) { ctorCommonLogic(); }
 
-Session::Session(Ir ir_, std::shared_ptr<DeviceInfo> deviceInfo)
+Session::Session(std::unique_ptr<Ir> ir_,
+                 std::shared_ptr<DeviceInfo> deviceInfo)
     : ir(std::move(ir_)) {
   ctorCommonLogic();
   setDevice(std::move(deviceInfo));
-  initProgressLogger(ir.getSessionOptions());
+  initProgressLogger(ir->getSessionOptions());
 }
 
 void Session::setDevice(std::shared_ptr<DeviceInfo> deviceInfo) {
@@ -70,18 +71,18 @@ void Session::setDevice(std::shared_ptr<DeviceInfo> deviceInfo) {
   logging::session::trace("Session::setDevice({})", *deviceInfo);
   deviceInfo_ = deviceInfo;
 
-  if (ir.hashMatched()) {
+  if (ir->hashMatched()) {
     // The executable will be loaded during prepareDevice
     return;
   }
 
-  lowering_.reset(new popx::IrLowering(ir, deviceInfo));
+  lowering_.reset(new popx::IrLowering(*ir, deviceInfo));
   executable_ = popx::Executablex::createFromLoweredIr(*lowering_);
   device_.reset(new popx::Devicex(*executable_, deviceInfo));
 }
 
 std::vector<uint32_t> Session::getRNGState() {
-  if (!ir.getSessionOptions().enableLoadAndOffloadRNGState) {
+  if (!ir->getSessionOptions().enableLoadAndOffloadRNGState) {
     throw error("Trying to get the RNG state, but the session option "
                 "enableLoadAndOffloadRNGState must be set to True.");
   }
@@ -96,21 +97,21 @@ std::vector<uint32_t> Session::getRNGState() {
 
 bool Session::tryLoadExecutable() {
   logging::session::trace("Session::tryLoadExecutable()");
-  if (false == ir.isPrepared()) {
+  if (false == ir->isPrepared()) {
     throw error("Ir::prepare() must be called before trying to load a cached "
                 "executable");
   }
-  const SessionOptions &userOptions = ir.getSessionOptions();
+  const SessionOptions &userOptions = ir->getSessionOptions();
 
   if (false == Ir::usingEngineCache(userOptions, deviceInfo_.get())) {
     return false;
   }
 
-  if (false == ir.hashMatched()) {
+  if (false == ir->hashMatched()) {
     return false;
   }
 
-  auto popartCachePath = cacheEntries.at(ir.getHash());
+  auto popartCachePath = cacheEntries.at(ir->getHash());
   std::ifstream executableFs(popartCachePath, std::ifstream::binary);
   if (executableFs.is_open()) {
     logging::session::info("Loading serialized PopART executable from {}",
@@ -148,11 +149,11 @@ void Session::loadExecutableFromFile(std::string filename) {
 
 void Session::loadExecutableFromStream(std::istream &in) {
   bool skipGraphCompilation = true;
-  lowering_.reset(new popx::IrLowering(ir, deviceInfo_, skipGraphCompilation));
+  lowering_.reset(new popx::IrLowering(*ir, deviceInfo_, skipGraphCompilation));
 
   lowering_->loadPoplarExecutable(in);
 
-  executable_ = popx::serialization::deserializeExecutable(in, ir, *lowering_);
+  executable_ = popx::serialization::deserializeExecutable(in, *ir, *lowering_);
 
   device_.reset(new popx::Devicex(*executable_, deviceInfo_));
 
@@ -167,7 +168,7 @@ void Session::assertExecutableLoaded() const {
 }
 
 void Session::setRNGState(const std::vector<uint32_t> stateValue) {
-  if (!ir.getSessionOptions().enableLoadAndOffloadRNGState) {
+  if (!ir->getSessionOptions().enableLoadAndOffloadRNGState) {
     throw error("Trying to set the RNG state, but the session option "
                 "enableLoadAndOffloadRNGState must be set to True.");
   }
@@ -185,7 +186,7 @@ void Session::setRNGState(const std::vector<uint32_t> stateValue) {
 void Session::setRandomSeed(uint64_t seedValue) {
   POPART_TRACEPOINT();
   logging::session::trace("Session::setRandomSeed({})", seedValue);
-  if (!ir.getRequiresRandomSeed()) {
+  if (!ir->getRequiresRandomSeed()) {
     logging::session::warn("Trying to set the random seed, but this session "
                            "has no random behaviour. Doing nothing.");
     return;
@@ -305,7 +306,7 @@ void Session::prepareDevice(bool loadEngine) {
   }
   device_->prepare();
 
-  if (ir.getSessionOptions().compileEngine && loadEngine) {
+  if (ir->getSessionOptions().compileEngine && loadEngine) {
     loadEngineAndConnectStreams();
   }
 }
@@ -380,12 +381,12 @@ void Session::run(IStepIO &stepio, std::string debugName) {
       DeviceConnectionType::Never) {
     throw error("Offline IPU device is not configured for execution");
   }
-  if (!ir.canInfer()) {
+  if (!ir->canInfer()) {
     throw error("Trying to infer when not in inference mode");
   }
 
-  if (weightsFromHostCalled == false && ir.containsInitialisers() &&
-      ir.isTraining()) {
+  if (weightsFromHostCalled == false && ir->containsInitialisers() &&
+      ir->isTraining()) {
     throw error(
         "Must call weightsFromHost before run as the model has initializers "
         "and the session has been created in training mode");
@@ -416,7 +417,7 @@ void Session::updateExternallySavedTensorLocations(
                 fromLocation);
   }
 
-  ONNX_NAMESPACE::ModelProto model = ir.getModel();
+  ONNX_NAMESPACE::ModelProto model = ir->getModel();
   std::vector<TensorId> tIds;
   for (int init_index = 0; init_index < model.graph().initializer_size();
        ++init_index) {
@@ -452,7 +453,7 @@ void Session::updateExternallySavedTensorLocations(
   // Update the external tensor info of the Ir's ONNX model, so that
   // modelToHost will write tensor data to the new location, fn.
   for (auto tId : tIds) {
-    ir.setExternalTensorDataInfo(tId, onnxutil::getTensorProto(model, tId));
+    ir->setExternalTensorDataInfo(tId, onnxutil::getTensorProto(model, tId));
   }
 }
 
@@ -463,7 +464,7 @@ void Session::modelToHost(const std::string &fn) {
 
   assertExecutableLoaded();
 
-  ONNX_NAMESPACE::ModelProto model = ir.getModel();
+  ONNX_NAMESPACE::ModelProto model = ir->getModel();
 
   std::map<TensorId, MutableVoidData> initMap;
   // For storing tensor data for externally stored tensors.
@@ -522,8 +523,8 @@ void Session::modelToHost(const std::string &fn) {
 
   io::writeModel(model, fn);
 
-  if (!ir.getSessionOptions().constantWeights ||
-      ir.getExecutionMode() != Ir::ExecutionMode::Inference) {
+  if (!ir->getSessionOptions().constantWeights ||
+      ir->getExecutionMode() != Ir::ExecutionMode::Inference) {
     // Weights in executable, device, and disk now all match
     executable_->resetWeights(model);
   }
@@ -562,8 +563,8 @@ void Session::resetHostWeights(
   assertExecutableLoaded();
 
   logging::session::trace("Session::resetHostWeights");
-  if (ir.getSessionOptions().constantWeights &&
-      ir.getExecutionMode() == Ir::ExecutionMode::Inference) {
+  if (ir->getSessionOptions().constantWeights &&
+      ir->getExecutionMode() == Ir::ExecutionMode::Inference) {
     throw error("Cannot call resetHostWeights when constantWeights is set");
   }
   auto modelProto = onnxutil::getModelProto(modelProtoOrFilename);
@@ -586,7 +587,7 @@ std::string Session::serializeIr(IrSerializationFormat format) {
   }
 
   std::stringstream ss;
-  ir.serialise(Ir::SerialiseFormat::JSON, ss);
+  ir->serialise(Ir::SerialiseFormat::JSON, ss);
   return ss.str();
 }
 
@@ -615,22 +616,23 @@ void Session::configureFromOnnx(const std::string &modelProtoOrFilename,
     cacheEntries = getCacheEntries(userOptions.cachePath);
   }
 
-  ir.prepare({modelProto,
-              perk,
-              df,
-              lossIn,
-              optimizerIn,
-              *deviceInfo,
-              userOptions,
-              patterns},
-             cacheEntries);
+  ir->prepare({modelProto,
+               perk,
+               df,
+               lossIn,
+               optimizerIn,
+               *deviceInfo,
+               userOptions,
+               patterns},
+              cacheEntries);
   setDevice(deviceInfo);
 }
 
 InferenceSession::~InferenceSession() = default;
 
 std::unique_ptr<InferenceSession>
-InferenceSession::createFromIr(Ir ir, std::shared_ptr<DeviceInfo> deviceInfo) {
+InferenceSession::createFromIr(std::unique_ptr<Ir> ir,
+                               std::shared_ptr<DeviceInfo> deviceInfo) {
   POPART_TRACEPOINT();
   logging::session::trace("InferenceSession::createFromIr");
 
@@ -638,7 +640,7 @@ InferenceSession::createFromIr(Ir ir, std::shared_ptr<DeviceInfo> deviceInfo) {
     throw error("InferenceSession::createFromIr: Must pass valid DeviceInfo.");
   }
 
-  if (!ir.isPrepared()) {
+  if (!ir->isPrepared()) {
     throw error("InferenceSession::createFromIr: Ir must be prepared.");
   }
 
@@ -682,7 +684,8 @@ InferenceSession::createFromOnnxModel(const std::string &model,
 TrainingSession::~TrainingSession() = default;
 
 std::unique_ptr<TrainingSession>
-TrainingSession::createFromIr(Ir ir, std::shared_ptr<DeviceInfo> deviceInfo) {
+TrainingSession::createFromIr(std::unique_ptr<Ir> ir,
+                              std::shared_ptr<DeviceInfo> deviceInfo) {
   POPART_TRACEPOINT();
   logging::session::trace("TrainingSession::createFromIr");
 
@@ -690,7 +693,7 @@ TrainingSession::createFromIr(Ir ir, std::shared_ptr<DeviceInfo> deviceInfo) {
     throw error("TrainingSession::createFromIr: Must pass valid DeviceInfo.");
   }
 
-  if (!ir.isPrepared()) {
+  if (!ir->isPrepared()) {
     throw error("TrainingSession::createFromIr: Ir must be prepared.");
   }
 
@@ -736,7 +739,7 @@ void TrainingSession::updateOptimizerFromHost(const Optimizer *optimizer) {
 
   assertExecutableLoaded();
 
-  ir.updateOptimizer(*optimizer);
+  ir->updateOptimizer(*optimizer);
   executable_->updateOptimizerTensors();
 
   // There has been a change to the TensorData of the optimizer tensors

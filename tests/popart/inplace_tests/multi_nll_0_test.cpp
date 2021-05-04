@@ -20,14 +20,11 @@
 #include <popart/op/nll.hpp>
 #include <popart/optimizer.hpp>
 #include <popart/popx/devicex.hpp>
+#include <popart/session.hpp>
 #include <popart/stepio.hpp>
 #include <popart/tensordata.hpp>
 #include <popart/tensornames.hpp>
 #include <popart/testdevice.hpp>
-
-#define protected public
-#include <popart/session.hpp>
-#undef protected
 
 using namespace popart;
 
@@ -110,7 +107,8 @@ BOOST_AUTO_TEST_CASE(test) {
             .enableInPlace(doInplace)
             .enablePattern("PadSum", false));
 
-    auto sched = session->ir.getOpSchedule({}, RequireOptimalSchedule::Yes);
+    auto sched =
+        session->getIr().getOpSchedule({}, RequireOptimalSchedule::Yes);
     std::cout << "The op schedule with inplace=" << doInplace << " is :\n";
     int nAdds = 0;
     for (const auto *op : sched) {
@@ -129,11 +127,13 @@ BOOST_AUTO_TEST_CASE(test) {
     BOOST_CHECK(nAdds == 1);
 
     int expectedAddInplace = doInplace ? 1 : 0;
-    BOOST_CHECK(
-        session->ir.opsOfType(Onnx::CustomOperators::AddLhsInplace).size() +
-            session->ir.opsOfType(Onnx::CustomOperators::AddRhsInplace)
-                .size() ==
-        expectedAddInplace);
+    BOOST_CHECK(session->getIr()
+                        .opsOfType(Onnx::CustomOperators::AddLhsInplace)
+                        .size() +
+                    session->getIr()
+                        .opsOfType(Onnx::CustomOperators::AddRhsInplace)
+                        .size() ==
+                expectedAddInplace);
 
     session->prepareDevice();
 

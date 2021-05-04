@@ -32,7 +32,7 @@ private:
 
 protected:
   Session();
-  Session(Ir ir, std::shared_ptr<DeviceInfo> deviceInfo);
+  Session(std::unique_ptr<Ir> ir, std::shared_ptr<DeviceInfo> deviceInfo);
 
   void configureFromOnnx(const std::string &modelProtoOrFilename,
                          const DataFlow &df,
@@ -280,7 +280,7 @@ public:
    */
   std::string serializeIr(IrSerializationFormat format);
 
-  const Ir &getIr() const { return ir; }
+  const Ir &getIr() const { return *ir; }
   const popx::Devicex &getDevice() const { return *device_; }
   popx::Devicex &getDevice() { return *device_; }
   const popx::IrLowering &getIrLowering() const { return *lowering_; }
@@ -315,7 +315,7 @@ protected:
    * all the compute graph optimisations, backwards pass construction,
    * re-computation growing etc. happens.
    */
-  Ir ir;
+  std::unique_ptr<Ir> ir;
 
   /**
    * Implementation of the computation. For the IPU back-end this is
@@ -365,7 +365,7 @@ public:
   ~InferenceSession() override;
 
   static std::unique_ptr<InferenceSession>
-  createFromIr(Ir ir, std::shared_ptr<DeviceInfo> deviceInfo);
+  createFromIr(std::unique_ptr<Ir> ir, std::shared_ptr<DeviceInfo> deviceInfo);
 
   /** Create a runtime class for executing an ONNX graph on a set of IPU
    *  hardware for inference.
@@ -396,7 +396,7 @@ public:
   ~TrainingSession() override;
 
   static std::unique_ptr<TrainingSession>
-  createFromIr(Ir ir, std::shared_ptr<DeviceInfo> deviceInfo);
+  createFromIr(std::unique_ptr<Ir> ir, std::shared_ptr<DeviceInfo> deviceInfo);
 
   /** Create a runtime class for executing an ONNX graph on a set of IPU
    *  hardware for training.

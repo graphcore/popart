@@ -2039,7 +2039,7 @@ void Ir::enableTransform(std::size_t transformId, bool enable) {
   transformEnableMap[transformId] = enable;
 }
 
-std::vector<Op *> Ir::opsOfType(const OperatorIdentifier &opid) {
+std::vector<Op *> Ir::opsOfType(const OperatorIdentifier &opid) const {
   std::vector<Op *> typedOps;
   for (auto &id_graph : graphs) {
     auto graph = id_graph.second.get();

@@ -22,12 +22,12 @@
 #include <popart/op/restore.hpp>
 #include <popart/op/stash.hpp>
 #include <popart/optimizer.hpp>
-#include <popart/session.hpp>
 #include <popart/tensorinfo.hpp>
 #include <popart/tensornames.hpp>
 #include <popart/testdevice.hpp>
-
 #undef protected
+
+#include <popart/session.hpp>
 
 // The tricky thing with testing continuous pipelining is that we don't
 // have a baseline, as it is not exact SGD. But "theory predicts" that as
@@ -234,7 +234,7 @@ BOOST_AUTO_TEST_CASE(QuadraticEpsilolTest0) {
 
     if (continuous) {
       auto opSchedule =
-          session->ir.getOpSchedule({}, RequireOptimalSchedule::Yes);
+          session->getIr().getOpSchedule({}, RequireOptimalSchedule::Yes);
       for (auto op : opSchedule) {
         auto stashOp = dynamic_cast<StashOp *>(op);
         if (stashOp) {

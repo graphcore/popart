@@ -22,11 +22,12 @@
 #include <popart/op/restore.hpp>
 #include <popart/op/stash.hpp>
 #include <popart/optimizer.hpp>
-#include <popart/session.hpp>
 #include <popart/tensorinfo.hpp>
 #include <popart/tensornames.hpp>
 #include <popart/testdevice.hpp>
 #undef protected
+
+#include <popart/session.hpp>
 
 // A test of quadratic convergence for continuous pipelining.
 // Comparison between
@@ -246,7 +247,7 @@ BOOST_AUTO_TEST_CASE(QuadraticEpsilonTest1) {
         popart::Patterns(PatternsLevel::Default));
 
     auto opSchedule =
-        session->ir.getOpSchedule({}, RequireOptimalSchedule::Yes);
+        session->getIr().getOpSchedule({}, RequireOptimalSchedule::Yes);
     int nRecomp = 0;
     for (auto op : opSchedule) {
       if (op->settings.recomputeType == RecomputeType::Recompute) {

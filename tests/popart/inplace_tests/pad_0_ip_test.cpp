@@ -9,17 +9,13 @@
 #include <popart/filereader.hpp>
 #include <popart/inputshapeinfo.hpp>
 #include <popart/ndarraywrapper.hpp>
-#include <popart/stepio.hpp>
-#include <popart/testdevice.hpp>
-
-#define protected public
 #include <popart/session.hpp>
-#undef protected
-
+#include <popart/stepio.hpp>
 #include <popart/tensor.hpp>
 #include <popart/tensorinfo.hpp>
 #include <popart/tensornames.hpp>
 #include <popart/tensors.hpp>
+#include <popart/testdevice.hpp>
 
 using namespace popart;
 
@@ -120,11 +116,14 @@ BOOST_AUTO_TEST_CASE(Inplace_pad0) {
     // this is [12, 12]
 
     if (padInplacePriority < 0) {
-      BOOST_CHECK(session->ir.opsOfType(Onnx::AiOnnx::OpSet9::Pad).size() == 2);
+      BOOST_CHECK(
+          session->getIr().opsOfType(Onnx::AiOnnx::OpSet9::Pad).size() == 2);
     } else if (padInplacePriority > std::max(s0priority, s1priority)) {
-      BOOST_CHECK(session->ir.opsOfType(Onnx::AiOnnx::OpSet9::Pad).size() == 0);
+      BOOST_CHECK(
+          session->getIr().opsOfType(Onnx::AiOnnx::OpSet9::Pad).size() == 0);
     } else {
-      BOOST_CHECK(session->ir.opsOfType(Onnx::AiOnnx::OpSet9::Pad).size() == 1);
+      BOOST_CHECK(
+          session->getIr().opsOfType(Onnx::AiOnnx::OpSet9::Pad).size() == 1);
     }
 
     BOOST_CHECK_EQUAL_COLLECTIONS(
