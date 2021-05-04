@@ -2,6 +2,7 @@
 #include <algorithm>
 
 #include <memory>
+#include <poprithmsinplace.hpp>
 #include <popart/graph.hpp>
 #include <popart/op/concat.hpp>
 #include <popart/opmanager.hpp>
@@ -25,6 +26,23 @@ ConcatInplaceOp::ConcatInplaceOp(const ConcatOp &op, int64_t axis_)
 
 std::unique_ptr<Op> ConcatOp::clone() const {
   return std::make_unique<ConcatOp>(*this);
+}
+
+void ConcatOp::growAliaser(PoprithmsAliaser &m) const {
+
+  std::vector<poprithms::memory::inplace::TensorId> inIds;
+  inIds.reserve(input->n());
+  for (const auto &x : input->tensorMap()) {
+    inIds.push_back(m.getPoprithmsTensorId(x.second->id));
+  }
+  const auto cat = m.g.concat(inIds, getAxis());
+  m.insertViewChange(cat, *outTensor(0), isOutplace());
+}
+
+void ConcatOp::setProposal(poprithms::memory::inplace::Proposal &proposal,
+                           const PoprithmsAliaser &aliaser,
+                           OperatorIdentifier opId) const {
+  setProposalGate0(proposal, aliaser, opId);
 }
 
 void ConcatOp::regMapPreChecks(InIndex inIndex) const {

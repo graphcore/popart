@@ -1,3 +1,4 @@
+#include <poprithmsinplace.hpp>
 #include <popart/broadcastutil.hpp>
 #include <popart/op/expand.hpp>
 #include <popart/opmanager.hpp>
@@ -25,6 +26,11 @@ void ExpandOp::regMapPreChecks(InIndex inIndex) const {
   if (inIndex >= input->tensorMap().size() || inIndex < 0) {
     throw error("invalid index in ExpandOp::fwdRegMap");
   }
+}
+
+void ExpandOp::growAliaser(PoprithmsAliaser &m) const {
+  const auto vc = m.g.expand(m.getPoprithmsTensorId(inId(0)), getOutShape());
+  m.insertViewChange(vc, *outTensor(0), isOutplace());
 }
 
 view::RegMap ExpandOp::fwdRegMap(InIndex inIndex, OutIndex) const {
@@ -137,6 +143,12 @@ void ExpandOp::finaliseShape() {
     }
     outShape[i] = std::max(shape_x, shape_y);
   }
+}
+
+void ExpandOp::setProposal(poprithms::memory::inplace::Proposal &proposal,
+                           const PoprithmsAliaser &aliaser,
+                           OperatorIdentifier id) const {
+  setProposalGate0(proposal, aliaser, id);
 }
 
 ExpandGradOp::ExpandGradOp(const ExpandOp &fwd)

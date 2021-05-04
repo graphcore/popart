@@ -34,6 +34,8 @@ public:
   view::RegMap fwdRegMap(InIndex, OutIndex) const final;
   view::RegMap bwdRegMap(InIndex, OutIndex) const final;
 
+  virtual void growAliaser(PoprithmsAliaser &) const override;
+
   float getSubgraphValue() const final { return getLowSubgraphValue(); }
 
 public:
@@ -53,6 +55,10 @@ public:
   inplacePriorityDefault() const final {
     return {{Onnx::CustomOperators::SubsampleInplace, 10}};
   }
+
+  void setProposal(poprithms::memory::inplace::Proposal &,
+                   const PoprithmsAliaser &,
+                   OperatorIdentifier) const override;
 };
 
 class SubsampleInplaceOp : public SubsampleBaseOp {

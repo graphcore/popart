@@ -4,6 +4,7 @@
 #include <onnx/onnx_pb.h>
 #include <poprithms/ndarray/shape.hpp>
 #include <poprithms/util/printiter.hpp>
+#include <poprithmsinplace.hpp>
 #include <popart/error.hpp>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
@@ -16,6 +17,17 @@
 #include <popart/util.hpp>
 
 namespace popart {
+
+void ReshapeBaseOp::growAliaser(PoprithmsAliaser &m) const {
+  const auto vc = m.g.reshape(m.getPoprithmsTensorId(inId(0)), getOutShape());
+  m.insertViewChange(vc, *outTensor(0), isOutplace());
+}
+
+void ReshapeOp::setProposal(poprithms::memory::inplace::Proposal &proposal,
+                            const PoprithmsAliaser &aliaser,
+                            OperatorIdentifier opId) const {
+  setProposalGate0(proposal, aliaser, opId);
+}
 
 std::unique_ptr<Op>
 ReshapeOp::getInplaceVariant(const OperatorIdentifier &operator_id) const {

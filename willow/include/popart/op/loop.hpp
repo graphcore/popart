@@ -115,6 +115,10 @@ public:
   void removeLoopInput(InIndex index);
   void removeLoopOutput(OutIndex index);
 
+  virtual void growAliaser(PoprithmsAliaser &m) const override {
+    growAliaserMulti(m);
+  }
+
 private:
   std::reference_wrapper<Graph> callee;
   int tripCountValue;

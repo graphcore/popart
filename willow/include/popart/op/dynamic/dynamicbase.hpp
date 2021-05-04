@@ -91,6 +91,12 @@ public:
   static InIndex getIndexInIndex() { return 1; }
   static OutIndex getOutIndex() { return 0; }
 
+  virtual void growAliaser(PoprithmsAliaser &m) const final;
+
+  void setProposal(poprithms::memory::inplace::Proposal &,
+                   const PoprithmsAliaser &,
+                   OperatorIdentifier) const final;
+
 protected:
   TensorInfo updateInInfo;
 };

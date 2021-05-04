@@ -2,6 +2,8 @@
 #include <algorithm>
 #include <memory>
 #include <onnx/defs/schema.h>
+#include <poprithms/ndarray/accessors.hpp>
+#include <poprithmsinplace.hpp>
 #include <popart/op/subsample.hpp>
 #include <popart/opmanager.hpp>
 #include <popart/opserialiser.hpp>
@@ -10,6 +12,12 @@
 #include <popart/util.hpp>
 
 namespace popart {
+
+void SubsampleOp::setProposal(poprithms::memory::inplace::Proposal &proposal,
+                              const PoprithmsAliaser &aliaser,
+                              OperatorIdentifier opId) const {
+  setProposalGate0(proposal, aliaser, opId);
+}
 
 // T9392: There is code duplication across the view changing ops
 
@@ -175,6 +183,14 @@ std::vector<uint32_t> SubsampleGradOp::strides_u32() const {
 void SubsampleGradOp::appendOutlineAttributes(OpSerialiserBase &os) const {
   Op::appendOutlineAttributes(os);
   os.appendAttribute("strides", strides);
+}
+
+void SubsampleBaseOp::growAliaser(PoprithmsAliaser &m) const {
+  const auto strides_i64 = getStrides();
+  poprithms::ndarray::Strides ss(
+      std::vector<uint64_t>{strides_i64.cbegin(), strides_i64.cend()});
+  const auto vc = m.g.subSample(m.getPoprithmsTensorId(inId(0)), ss);
+  m.insertViewChange(vc, *outTensor(0), isOutplace());
 }
 
 namespace {

@@ -25,6 +25,8 @@ public:
   static InIndex getStepsInIndex() { return 4; }
   static OutIndex getOutIndex() { return 0; }
 
+  virtual void growAliaser(PoprithmsAliaser &) const override;
+
   void setup() final;
   virtual void connectInTensor(InIndex, TensorId) final;
 
@@ -47,6 +49,8 @@ public:
   void setEnds(const std::vector<int64_t> &x) { ends = x; }
   void setAxes(const std::vector<int64_t> &x) { axes = x; }
   void setSteps(const std::vector<int64_t> &x) { steps = x; }
+
+  std::array<std::vector<int64_t>, 2> getLowerUpper() const;
 
   std::vector<Slice> getSlices(std::vector<int64_t> input_shape) const;
   // assume input_shape is the shape of the input to this op:
@@ -105,6 +109,10 @@ public:
 
   std::vector<std::tuple<OperatorIdentifier, float>>
   inplacePriorityDefault() const final;
+
+  void setProposal(poprithms::memory::inplace::Proposal &,
+                   const PoprithmsAliaser &,
+                   OperatorIdentifier) const override;
 
   std::unique_ptr<Op> getInplaceVariant(const OperatorIdentifier &) const final;
 };
