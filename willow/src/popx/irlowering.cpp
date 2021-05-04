@@ -1862,21 +1862,21 @@ PriTask IrLowering::opTask(Op *op, double priority, TaskId prevOpTaskId) {
       if (std::find(deps.begin(), deps.end(), taskId) == deps.end()) {
         deps.push_back(taskId);
       }
+    }
 
-      // Graph inputs
-      for (auto &inputId : graph->getInputIds()) {
-        PriTaskDependency creatorTask = taskWhichCreates(inputId);
-        if (std::find(deps.begin(), deps.end(), creatorTask) == deps.end()) {
-          deps.push_back(creatorTask);
-        }
+    // Graph inputs
+    for (auto &inputId : graph->getInputIds()) {
+      PriTaskDependency creatorTask = taskWhichCreates(inputId);
+      if (std::find(deps.begin(), deps.end(), creatorTask) == deps.end()) {
+        deps.push_back(creatorTask);
       }
+    }
 
-      // Graph outputs
-      for (auto &outputId : graph->getOutputIds()) {
-        PriTaskDependency creatorTask = taskWhichCreates(outputId);
-        if (std::find(deps.begin(), deps.end(), creatorTask) == deps.end()) {
-          deps.push_back(creatorTask);
-        }
+    // Graph outputs
+    for (auto &outputId : graph->getOutputIds()) {
+      PriTaskDependency creatorTask = taskWhichCreates(outputId);
+      if (std::find(deps.begin(), deps.end(), creatorTask) == deps.end()) {
+        deps.push_back(creatorTask);
       }
     }
   };
