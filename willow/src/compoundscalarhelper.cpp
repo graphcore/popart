@@ -144,6 +144,22 @@ float ScaledLearningRate0Helper::val(const TensorId &weightId,
   return val(lr, ls, dp);
 }
 
+namespace {
+int64_t getRfAtomicScalar(const SGD &sgd) {
+  // When we are doing gradient accumulation with SGD1, the rf scalar must be
+  // set to the replicated graph count. When doing SGD2, no rf scaling is
+  // required, so we set rf to 1.
+  //
+  // Note if grad acc but no replication, sgd.getReplicatedGraphCount() will be
+  // 1 anyway.
+  return (sgd.gradientAccumulationEnabled() &&
+          sgd.getSGDAccumulatorAndMomentum() ==
+              SGDAccumulatorAndMomentum::Combined)
+             ? sgd.getReplicatedGraphCount()
+             : 1;
+}
+} // namespace
+
 bool ScaledLearningRate0Helper::isConst(const TensorId &weightId,
                                         const SGD &sgd) const {
   auto lr = sgd.learningRates().get(weightId);
@@ -155,9 +171,7 @@ bool ScaledLearningRate0Helper::isConst(const TensorId &weightId,
 float ScaledMomentum1Helper::val(const TensorId &weightId,
                                  const SGD &sgd) const {
   auto mm = sgd.momentums().get(weightId).val();
-  return val(mm,
-             sgd.gradientAccumulationEnabled() ? sgd.getReplicatedGraphCount()
-                                               : 1);
+  return val(mm, getRfAtomicScalar(sgd));
 }
 
 bool ScaledMomentum1Helper::isConst(const TensorId &weightId,
@@ -170,10 +184,7 @@ float ScaledLearningRate1Helper::val(const TensorId &weightId,
                                      const SGD &sgd) const {
   auto lr = sgd.learningRates().get(weightId).val();
   auto vs = sgd.velocityScalings().get(weightId).val();
-  return val(lr,
-             vs,
-             sgd.gradientAccumulationEnabled() ? sgd.getReplicatedGraphCount()
-                                               : 1);
+  return val(lr, vs, getRfAtomicScalar(sgd));
 }
 
 bool ScaledLearningRate1Helper::isConst(const TensorId &weightId,
@@ -188,12 +199,12 @@ float DampeningScaleFactor1Helper::val(const TensorId &weightId,
   auto dm = sgd.dampenings().get(weightId).val();
   auto vs = sgd.velocityScalings().get(weightId).val();
   auto ls = sgd.lossScaling().val();
-  return val(
-      dm,
-      vs,
-      ls,
-      sgd.gradientAccumulationEnabled() ? sgd.getReplicatedGraphCount() : 1,
-      sgd.meanGradientAccumulationEnabled() ? sgd.getAccumulationFactor() : 1);
+  return val(dm,
+             vs,
+             ls,
+             getRfAtomicScalar(sgd),
+             sgd.meanGradientAccumulationEnabled() ? sgd.getAccumulationFactor()
+                                                   : 1);
 }
 
 bool DampeningScaleFactor1Helper::isConst(const TensorId &weightId,

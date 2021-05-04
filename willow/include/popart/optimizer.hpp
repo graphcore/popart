@@ -107,7 +107,9 @@ public:
 
   virtual std::vector<TensorId> getInputIds(const Tensor &weight) const = 0;
 
-  // Unique non-constant optimizers.
+  // The TensorId and TensorInfo of all OptimizerValue input tensors to the
+  // VarUpdateOp this Optimizer will create for the \p weight , in any order.
+  // If an OptimizerValue is const, it is not an input so is not included.
   virtual std::vector<std::tuple<TensorId, TensorInfo>>
   getOptimizerInputs(const Tensor &weight) const = 0;
 
@@ -167,6 +169,28 @@ private:
 
   bool factorsAreSetFromOptions{false};
 };
+
+/**
+ * Strategy for implementing SGD with momentum and/or gradient accumulation.
+ */
+enum class SGDAccumulatorAndMomentum {
+  /// Implement SGD using a single tensor for the gradient accumulator (accum)
+  /// and momentum (accl) tensors.
+  Combined = 0,
+
+  /// Implement SGD using separate tensors for the gradient accumulator (accum)
+  /// and momentum (accl) tensors
+  Separate
+};
+
+/** Write a representation of an SGDAccumulatorAndMomentum to an output stream.
+ *
+ * \param os Output stream.
+ * \param sgdAccMm SGDAccumulatorAndMomentum reference.
+ * \return The same output stream for chaining.
+ */
+std::ostream &operator<<(std::ostream &os,
+                         const SGDAccumulatorAndMomentum &sgdAccMm);
 
 // Equation derivation based on the non-Nesterov PyTorch implementation
 // https://PyTorch.org/docs/stable/_modules/torch/optim/sgd.html#SGD :
@@ -444,13 +468,34 @@ public:
   /// \param lossScaling The loss scaling value to use.
   /// \param clipNormSettings A vector of ClipNormSettings (this can be used
   ///     to set maximum values for weights).
+  /// \param sgdAccMm The implementation strategy to use when gradient
+  ///     accumulation and/or momentum are used, otherwise ignored. \sa
+  ///     SGDAccumulatorAndMomentum. Defaults to
+  ///     SGDAccumulatorAndMomentum::Combined.
+  /// \param accumType The DataType of the accum tensor, when gradient
+  ///     accumulation is used and sgdAccMm =
+  ///     SGDAccumulatorAndMomentum::Separate, otherwise ignored. Only FLOAT,
+  ///     FLOAT16 and UNDEFINED are supported. Defaults to UNDEFINED. If
+  ///     UNDEFINED, the same type as the weights will be used. If accumType is
+  ///     FLOAT16 and accl1Type is FLOAT, this parameter causes accum to be
+  ///     upcasted before being passed to the op that updates accl1.
+  /// \param accl1Type The DataType of the accl1 tensor, when gradient
+  ///     accumulation is used and sgdAccMm =
+  ///     SGDAccumulatorAndMomentum::Separate, otherwise ignored. Only FLOAT,
+  ///     FLOAT16 and UNDEFINED are supported. Defaults to UNDEFINED. If
+  ///     UNDEFINED, the same type as the weights will be used. If accumType is
+  ///     FLOAT16 and accl1Type is FLOAT, this parameter causes accum to be
+  ///     upcasted before being passed to the op that updates accl1.
   SGD(OptimizerValue defaultLearningRate,
       OptimizerValue defaultWeightDecay,
       OptimizerValue defaultMomentum,
       OptimizerValue defaultDampening,
       OptimizerValue defaultVelocityScaling,
       OptimizerValue lossScaling,
-      const std::vector<ClipNormSettings> &clipNormSettings = {});
+      const std::vector<ClipNormSettings> &clipNormSettings = {},
+      SGDAccumulatorAndMomentum sgdAccMm = SGDAccumulatorAndMomentum::Combined,
+      DataType accumType                 = DataType::UNDEFINED,
+      DataType accl1Type                 = DataType::UNDEFINED);
 
   /// Constructor.
   /// \param params A parameter map where the keys are one or more of
@@ -462,6 +507,24 @@ public:
   ///     parameters are missing.
   /// \param clipNormSettings A vector of ClipNormSettings (this can be used
   ///     to set maximum values for weights).
+  /// \param sgdAccMm The implementation strategy to use when gradient
+  ///     accumulation and/or momentum are used, otherwise ignored. \sa
+  ///     SGDAccumulatorAndMomentum. Defaults to
+  ///     SGDAccumulatorAndMomentum::Combined.
+  /// \param accumType The DataType of the accum tensor, when gradient
+  ///     accumulation is used and sgdAccMm =
+  ///     SGDAccumulatorAndMomentum::Separate, otherwise ignored. Only FLOAT,
+  ///     FLOAT16 and UNDEFINED are supported. Defaults to UNDEFINED. If
+  ///     UNDEFINED, the same type as the weights will be used. If accumType is
+  ///     FLOAT16 and accl1Type is FLOAT, this parameter causes accum to be
+  ///     upcasted before being passed to the op that updates accl1.
+  /// \param accl1Type The DataType of the accl1 tensor, when gradient
+  ///     accumulation is used and sgdAccMm =
+  ///     SGDAccumulatorAndMomentum::Separate, otherwise ignored. Only FLOAT,
+  ///     FLOAT16 and UNDEFINED are supported. Defaults to UNDEFINED. If
+  ///     UNDEFINED, the same type as the weights will be used. If accumType is
+  ///     FLOAT16 and accl1Type is FLOAT, this parameter causes accum to be
+  ///     upcasted before being passed to the op that updates accl1.
   ///
   /// **EXAMPLE**:
   /// ```
@@ -472,8 +535,16 @@ public:
   /// a changeable learning rate initially of 0.02. All OptimizerValues not
   /// present in the map will take values from the `getUnset`* functions.
   SGD(const std::map<std::string, std::pair<float, bool>> &params,
-      const std::vector<ClipNormSettings> &clipNormSettings = {});
+      const std::vector<ClipNormSettings> &clipNormSettings = {},
+      SGDAccumulatorAndMomentum sgdAccMm = SGDAccumulatorAndMomentum::Combined,
+      DataType accumType                 = DataType::UNDEFINED,
+      DataType accl1Type                 = DataType::UNDEFINED);
   static SGD fromDefaultMap(const std::map<std::string, OptimizerValue> &);
+
+  /// Default constructor
+  /// Creates SGD with default scalars (equivalent to getUnset<scalar>()
+  /// methods), and other default parameters of main constructor.
+  SGD() : SGD(std::map<std::string, std::pair<float, bool>>{}) {}
 
   /// Construct an SDG instance with default values.
   SGD(const SGD &) = default;
@@ -482,16 +553,39 @@ public:
   OptimizerType type() const final { return OptimizerType::SGD; }
   std::string type_s() const final { return "SGD"; }
 
+  SGDAccumulatorAndMomentum getSGDAccumulatorAndMomentum() const {
+    return sgdAccMm;
+  }
+
   std::unique_ptr<Optimizer> clone() const final;
 
+  /// Returns the VarUpdateOp for the given \p weight . If no gradient
+  /// accumulation of momentum, this will be a SGD0VarUpdateOp. Else, if
+  /// `getSGDAccumulatorAndMomentum() == ::Combined`, this will be an
+  /// SGD1ComboOp, else if `getSGDAccumulatorAndMomentum() ==
+  /// ::Combined`SGD2ComboOp, an SGD2ComboOp.
+  ///
+  /// The OptimizerValue members of these Ops are the compound scalars they
+  /// require. \sa Optimizer for the derivations of how these are calculated.
   std::unique_ptr<Op> createOp(const Tensor &weight, Graph &) const final;
 
-  /// The names of the inputs for the VarUpdateOp for the variable tensor
-  /// \p weight. In the returned vector, an empty string ("") is used as a
-  /// placeholder for constant inputs.
+  /// Returns the TensorIds of the input tensors to the VarUpdateOp this
+  /// optimiser will create for the given \p weight .
+  ///
+  /// Specifically, The TensorId at index i will be the id of the input tensor
+  /// at InIndex i of the VarUpdateOp. If the input is an OptimizerValue, if it
+  /// is const, then "" will be returned, else the relevant reservered prefix
+  /// for that OptimizerValue will be used, followed by the weight id. The
+  /// prefixes are defined in tensornames.hpp, for example
+  /// `reservedDefaultWeightDecayScaleFactor0Prefix` or
+  /// `reservedSpecificScaledLearningRate1Prefix` (note there are different
+  /// prefixes depending on if the weight has a specific or default value for
+  /// that OptimizerValue).
   std::vector<TensorId> getInputIds(const Tensor &weight) const final;
 
-  /// The names and information for the optimizer tensors.
+  /// smm1 and wdsf0 have the same data type as the \p weight . Everything else
+  // is float32. All shapes will be {}, so scalar.
+  // \sa Optimizer::getOptimizerInputs.
   std::vector<std::tuple<TensorId, TensorInfo>>
   getOptimizerInputs(const Tensor &weight) const final;
 
@@ -526,12 +620,11 @@ public:
   /// Insert a weight-specific set of hyper parameters.
   /// \param weight The TensorId of the weight.
   /// \param params A parameter map where keys are one of
-  ///     `"defaultLearningRate"`, `"defaultWeightDecay"`, `"defaultMomentum"`,
-  ///     `"defaultDampening"`, `"defaultVelocityScaling"` or `"lossScaling"`
-  ///     and the map's values pairs of floats and booleans representing
-  ///     OptimizerValue constructor arguments. The map does not have to
-  ///     specify each hyper parameter as default values will be used where
-  ///     parameters are missing.
+  ///     `"learningRate"`, `"weightDecay"`, `"momentum"`, `"dampening"`, or
+  ///     `"velocityScaling"` and the map's values pairs of floats and booleans
+  ///     representing OptimizerValue constructor arguments. The map does not
+  ///     have to specify each hyper parameter as default values will be used
+  ///     where parameters are missing.
   void
   insertSpecific(const TensorId &weight,
                  const std::map<std::string, std::pair<float, bool>> &params);
@@ -541,11 +634,6 @@ public:
 
   // Do any weights have specific OptimizerValues, or do they all use default?
   bool hasSpecific() const final;
-
-  /// If velocity (accumulation) is required, either because of gradient
-  /// accumulation or because of momentum, then return true otherwise return
-  /// false.
-  bool requiresAccl(const Tensor &weight) const;
 
   TensorId getInverseLossScalingTensorId(const Tensor &weight) const;
 
@@ -558,6 +646,11 @@ public:
   virtual size_t hash() const;
 
 private:
+  /// If velocity (accumulation) is required, either because of gradient
+  /// accumulation or because of momentum, then return true otherwise return
+  /// false.
+  bool requiresAccl(const Tensor &weight) const;
+
   void runValueChecks(OptimizerValue lr,
                       OptimizerValue wd,
                       OptimizerValue mm,
@@ -593,9 +686,19 @@ private:
   DampeningScaleFactor1Helper dpsf1helper;
   ScaledMomentum1Helper smm1helper;
 
+  // SGD implementation strategy when accl/accum tensors needed (SGD1 or SGD2)
+  SGDAccumulatorAndMomentum sgdAccMm;
+
+  // SGD2 only: DataType of accum and accl1 tensors can be specified.
+  DataType sgd2AccumType;
+  DataType sgd2Accl1Type;
+
   // int argument only to disambiguate from the other SGD constructor
   SGD(const std::map<std::string, OptimizerValue> &,
       const std::vector<ClipNormSettings> &,
+      SGDAccumulatorAndMomentum sgdAccMm,
+      DataType accumType,
+      DataType accl1Type,
       int);
 
   static std::map<std::string, OptimizerValue>

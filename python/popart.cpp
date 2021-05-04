@@ -187,7 +187,7 @@ public:
 
   void assertNumElements(const popx::Executablex &) const final {}
 
-  ConstVoidData in(TensorId id, int64_t, bool prefetch)final {
+  ConstVoidData in(TensorId id, int64_t, bool prefetch) final {
     py::gil_scoped_acquire acquire;
     py::array a = inputCb(id, prefetch);
     if (!isContiguous(a)) {
@@ -746,14 +746,35 @@ PYBIND11_MODULE(popart_core, m) {
     }
 
     {
+      py::enum_<SGDAccumulatorAndMomentum> en(m, "SGDAccumulatorAndMomentum");
+      en.value("Combined",
+               SGDAccumulatorAndMomentum::Combined /*,
+               DOC(popart, SGDAccumulatorAndMomentum, Combined)*/);
+      en.value("Separate",
+               SGDAccumulatorAndMomentum::Separate /*,
+               DOC(popart, SGDAccumulatorAndMomentum, Separate) */);
+    }
+
+    {
       py::class_<SGD> sgd(m, "SGD", optimizer, DOC(popart, SGD));
       sgd.def(py::init([](py::dict pyd,
-                          std::vector<ClipNormSettings> clipNormSettings) {
+                          std::vector<ClipNormSettings> clipNormSettings,
+                          SGDAccumulatorAndMomentum sgdAccumulatorAndMomentum,
+                          DataType accumType,
+                          DataType accl1Type) {
                 auto cppm = getOptimizerValueDictionary(pyd);
-                return SGD(cppm, clipNormSettings);
+                return SGD(cppm,
+                           clipNormSettings,
+                           sgdAccumulatorAndMomentum,
+                           accumType,
+                           accl1Type);
               }),
               py::arg("pyd"),
-              py::arg("clip_norm_settings") = std::vector<ClipNormSettings>{});
+              py::arg("clip_norm_settings") = std::vector<ClipNormSettings>{},
+              py::arg("sgdAccumulatorAndMomentum") =
+                  SGDAccumulatorAndMomentum::Combined,
+              py::arg("accumType") = DataType::UNDEFINED,
+              py::arg("accl1Type") = DataType::UNDEFINED);
       sgd.def("insertSpecific", [](SGD &self, TensorId id, py::dict pyd) {
         self.insertSpecific(id, getOptimizerValueDictionary(pyd));
       });
