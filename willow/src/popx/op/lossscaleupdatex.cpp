@@ -13,14 +13,22 @@ namespace popx {
 
 void LossScaleUpdateOpx::grow(poplar::program::Sequence &prog) const {
   auto &op = getOp<LossScaleUpdateOp>();
+  auto &ir = op_p->getIr();
 
   // Check there is at least one 'gradient statistics' input
   if (!hasInput(op.getFirstStatisticsTensorInIndex())) {
     throw error("LossScaleUpdateOpx {} does not have any input at InIndex 1",
                 op.str());
   }
-
-  float thresholdUpperCountProportion = 0.2;
+  // Get automatic loss scaling hyperparameters.
+  float thresholdUpperCountProportion =
+      ir.getSessionOptions()
+          .automaticLossScalingSettings.thresholdUpperCountProportion;
+  if (thresholdUpperCountProportion < 0 || thresholdUpperCountProportion > 1) {
+    throw error("Out of range value for 'thresholdUpperCountProportion'. The "
+                "current value is {}, but it should be in the range [0, 1].",
+                thresholdUpperCountProportion);
+  }
   // If the upper bin counts (u), as a proportion of the total
   // (lower (l) + upper) bin counts, is greater than the threshold
   // (t), divide the loss scaling factor by 2. Else, multiply the

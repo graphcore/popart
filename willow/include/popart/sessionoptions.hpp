@@ -18,6 +18,38 @@
 namespace popart {
 
 /**
+ * A structure containing user configuration for automatic loss scaling
+ * settings.
+ */
+struct AutomaticLossScalingSettings {
+  AutomaticLossScalingSettings() = default;
+  AutomaticLossScalingSettings(bool enabled_,
+                               float binEdgeLocation_               = 0.5,
+                               float thresholdUpperCountProportion_ = 0.2);
+
+  AutomaticLossScalingSettings &
+  operator=(const AutomaticLossScalingSettings &rhs) = default;
+
+  std::size_t hash() const;
+  /// If true, keep track of the distribution of gradient tensor elements over
+  /// the floating point range. Adjust the value loss scaling tensor
+  /// accordingly, with the aim of preventing underflow or overflow.
+  bool enabled = false;
+
+  /// The location of the bin edge as a proportion of the absolute numerical
+  /// range of the tracked gradient tensor elements, in the range [0, 1]. `0`
+  /// represents the smallest representable value, and `1` the maximum. This is
+  /// the single bin edge of the histogram that is an input to the loss scale
+  /// updater algorithm.
+  float binEdgeLocation = 0.5;
+
+  /// The proportion of the elements in the upper bin above which the loss scale
+  /// is increased, and below which the loss scale is decreased. Should be in
+  /// the range [0, 1].
+  float thresholdUpperCountProportion = 0.2;
+};
+
+/**
  * Enum type used to identify at which stages of IR construction to export
  * `.dot` files.
  */
@@ -797,10 +829,9 @@ struct SessionOptions {
   /// for specific TensorId values.
   std::map<TensorId, TensorLocation> tensorLocationSettingsOverride;
 
-  /// If true, keep track of the distribution of gradient tensor elements over
-  /// the floating point range. Adjust the value loss scaling tensor
-  /// accordingly, with the aim of preventing underflow or overflow.
-  bool enableAutomaticLossScaling = false;
+  /// Settings to enable and configure the automatic loss scaling behaviour when
+  /// training.
+  AutomaticLossScalingSettings automaticLossScalingSettings;
 
   /// If enabled, casts any tensor of unsupported data types to supported data
   /// types when lowering to Poplar

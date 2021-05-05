@@ -889,6 +889,21 @@ PYBIND11_MODULE(popart_core, m) {
                       DOC(popart, TensorLocation, replicatedTensorSharding));
   }
   {
+    py::class_<AutomaticLossScalingSettings> cls(
+        m, "AutomaticLossScalingSettings");
+    cls.def(py::init<>());
+    cls.def(py::init<bool, float, float>(),
+            py::arg("enabled"),
+            py::arg("binEdgeLocation")               = 0.5,
+            py::arg("thresholdUpperCountProportion") = 0.2);
+    cls.def_readwrite("enabled", &AutomaticLossScalingSettings::enabled);
+    cls.def_readwrite("binEdgeLocation",
+                      &AutomaticLossScalingSettings::binEdgeLocation);
+    cls.def_readwrite(
+        "thresholdUpperCountProportion",
+        &AutomaticLossScalingSettings::thresholdUpperCountProportion);
+  }
+  {
     py::class_<TensorLocationSettings> cls(m, "TensorLocationSettings");
     cls.def(py::init<>());
     cls.def(py::init<TensorLocation, int, int>(),
@@ -1350,9 +1365,8 @@ PYBIND11_MODULE(popart_core, m) {
         "enableLoadAndOffloadRNGState",
         &SessionOptions::enableLoadAndOffloadRNGState,
         DOC(popart, SessionOptions, enableLoadAndOffloadRNGState));
-    cls.def_readwrite("enableAutomaticLossScaling",
-                      &SessionOptions::enableAutomaticLossScaling,
-                      DOC(popart, SessionOptions, enableAutomaticLossScaling));
+    cls.def_readwrite("automaticLossScalingSettings",
+                      &SessionOptions::automaticLossScalingSettings);
     cls.def_readwrite("useHostCopyOps", &SessionOptions::useHostCopyOps);
     cls.def_readwrite(
         "enableSupportedDataTypeCasting",

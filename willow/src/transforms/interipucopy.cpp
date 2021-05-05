@@ -350,7 +350,9 @@ bool InterIpuCopy::apply(Graph &graph) const {
         return false;
       }
 
-      else if (op->getIr().getSessionOptions().enableAutomaticLossScaling) {
+      else if (op->getIr()
+                   .getSessionOptions()
+                   .automaticLossScalingSettings.enabled) {
         bool copiesLossScaleTensor =
             copyOp->inTensor(0) ==
             AutomaticLossScale::getLossScaleTensor(graph);

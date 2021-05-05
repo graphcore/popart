@@ -37,6 +37,21 @@ std::array<std::string, NDotChecks> getDotCheckIds() {
 
 } // namespace
 
+AutomaticLossScalingSettings::AutomaticLossScalingSettings(
+    bool enabled_,
+    float binEdgeLocation_,
+    float thresholdUpperCountProportion_)
+    : enabled{enabled_}, binEdgeLocation{binEdgeLocation_},
+      thresholdUpperCountProportion{thresholdUpperCountProportion_} {}
+
+std::size_t AutomaticLossScalingSettings::hash() const {
+  std::size_t seed = 0;
+  boost::hash_combine(seed, enabled);
+  boost::hash_combine(seed, binEdgeLocation);
+  boost::hash_combine(seed, thresholdUpperCountProportion);
+  return seed;
+}
+
 TensorLocationSettings::TensorLocationSettings(
     TensorLocation location_,
     int minElementsForOffChip_,
@@ -270,7 +285,7 @@ std::size_t hash<popart::SessionOptions>::operator()(
   boost::hash_combine(seed, so.groupHostSync);
   boost::hash_combine(seed, so.enableLoadAndOffloadRNGState);
   boost::hash_combine(seed, so.kahnTieBreaker);
-  boost::hash_combine(seed, so.enableAutomaticLossScaling);
+  boost::hash_combine(seed, so.automaticLossScalingSettings.hash());
   boost::hash_combine(seed, so.enableSupportedDataTypeCasting);
 
   boost::hash_combine(

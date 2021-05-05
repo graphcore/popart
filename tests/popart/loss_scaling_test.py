@@ -1,4 +1,5 @@
-# Copyright (c) 2020 Graphcore Ltd. All rights reserved.
+# Copyright (c) 2021 Graphcore Ltd. All rights reserved.
+from contextlib import ExitStack
 import numpy as np
 import popart
 import onnx
@@ -121,7 +122,7 @@ def test_auto_loss_scaling_with_inference_session():
     out = builder.aiOnnx.matmul([t0, t0])
 
     opts = popart.SessionOptions()
-    opts.enableAutomaticLossScaling = True
+    opts.automaticLossScalingSettings.enabled = True
 
     with pytest.raises(popart.popart_exception) as e_info:
         session = popart.InferenceSession(builder.getModelProto(),
@@ -149,7 +150,7 @@ def test_auto_loss_scaling_with_const_loss_scale_tensor():
     optimizer = popart.SGD({"lossScaling": (2, makeLossScalingTensorConst)})
 
     opts = popart.SessionOptions()
-    opts.enableAutomaticLossScaling = True
+    opts.automaticLossScalingSettings.enabled = True
 
     with pytest.raises(popart.popart_exception) as e_info:
         session = popart.TrainingSession(builder.getModelProto(),
@@ -177,7 +178,7 @@ def test_auto_loss_scaling_with_no_tracked_tensors():
     optimizer = popart.SGD({"lossScaling": (2, False)})
 
     opts = popart.SessionOptions()
-    opts.enableAutomaticLossScaling = True
+    opts.automaticLossScalingSettings.enabled = True
 
     with pytest.raises(popart.popart_exception) as e_info:
         session = popart.TrainingSession(builder.getModelProto(),
@@ -247,7 +248,7 @@ def test_auto_loss_scaling_expected_loss_scale_tensor_values():
     optimizer = popart.SGD({"lossScaling": (init_loss_scale, False)})
 
     opts = popart.SessionOptions()
-    opts.enableAutomaticLossScaling = True
+    opts.automaticLossScalingSettings.enabled = True
 
     loss, proto, t0, t_shape, label, label_shape, _ = getModelProto()
     bps = 4
@@ -317,7 +318,7 @@ def test_auto_loss_scaling_and_continuous_update_pipelining():
     builder.virtualGraph(loss, 0)
 
     opts = popart.SessionOptions()
-    opts.enableAutomaticLossScaling = True
+    opts.automaticLossScalingSettings.enabled = True
     opts.enablePipelining = True
     opts.enableGradientAccumulation = False
     opts.virtualGraphMode = popart.VirtualGraphMode.Manual
@@ -332,6 +333,84 @@ def test_auto_loss_scaling_and_continuous_update_pipelining():
     assert e_info.value.args[0].endswith(
         "Automatic loss scaling is not currently supported when the 'enablePipelining' SessionOption is set to 'true', but the 'enableGradientAccumulation' SessionOption is set to 'false'"
     )
+
+
+@pytest.mark.parametrize("thresholdUpperCountProportion",
+                         [-0.1, 0.0, 0.5, 1.0, 1.1])
+def test_auto_loss_scaling_threshold_upper_count_proportion_range(
+        thresholdUpperCountProportion):
+    """Test if an error is thrown if the thresholdUpperCountProportion 
+    hyperparameter is outside [0, 1].
+    """
+    builder = popart.Builder()
+    t0 = builder.addInputTensor("FLOAT", [2, 2])
+    t1_data = np.random.rand(2, 2).astype(np.float32)
+    t1 = builder.addInitializedInputTensor(t1_data)
+    mm0 = builder.aiOnnx.matmul([t0, t1])
+    loss = builder.aiGraphcore.identityloss([mm0])
+
+    optimizer = popart.SGD({"lossScaling": (2, False)})
+
+    opts = popart.SessionOptions()
+    opts.automaticLossScalingSettings.enabled = True
+    opts.automaticLossScalingSettings.thresholdUpperCountProportion = thresholdUpperCountProportion
+
+    with ExitStack() as stack:
+        e_info = None
+        if not 0 <= thresholdUpperCountProportion <= 1:
+            e_info = stack.enter_context(pytest.raises(
+                popart.popart_exception))
+
+        session = popart.TrainingSession(builder.getModelProto(),
+                                         deviceInfo=tu.create_test_device(),
+                                         dataFlow=popart.DataFlow(1, [loss]),
+                                         loss=loss,
+                                         optimizer=optimizer,
+                                         userOptions=opts)
+        session.prepareDevice()
+
+        if e_info:
+            assert e_info.value.args[0].startswith(
+                "Out of range value for 'thresholdUpperCountProportion'.")
+
+
+@pytest.mark.parametrize("binEdgeLocation", [-0.1, 0.0, 0.5, 1.0, 1.1])
+def test_auto_loss_scaling_bin_edge_factor_range(binEdgeLocation):
+    """Test if an error is thrown if the binEdgeLocation hyperparameter is 
+    outside [0, 1].
+    """
+    builder = popart.Builder()
+    t0 = builder.addInputTensor("FLOAT", [2, 2])
+    t1_data = np.random.rand(2, 2).astype(np.float32)
+    t1 = builder.addInitializedInputTensor(t1_data)
+    mm0 = builder.aiOnnx.matmul([t0, t1])
+    loss = builder.aiGraphcore.identityloss([mm0])
+
+    optimizer = popart.SGD({"lossScaling": (2, False)})
+
+    opts = popart.SessionOptions()
+    opts.automaticLossScalingSettings.enabled = True
+    opts.automaticLossScalingSettings.binEdgeLocation = binEdgeLocation
+
+    with ExitStack() as stack:
+        e_info = None
+        if not 0 <= binEdgeLocation <= 1:
+            e_info = stack.enter_context(pytest.raises(
+                popart.popart_exception))
+
+        session = popart.TrainingSession(builder.getModelProto(),
+                                         deviceInfo=tu.create_test_device(),
+                                         dataFlow=popart.DataFlow(1, [loss]),
+                                         loss=loss,
+                                         optimizer=optimizer,
+                                         userOptions=opts)
+
+        if e_info:
+            assert e_info.value.args[0].startswith(
+                "[AutomaticLossScale transform] Out of range value for 'binEdgeLocation'."
+            )
+        else:
+            session.prepareDevice()
 
 
 def test_auto_loss_scaling_with_mixed_precision_trackable_tensors():
@@ -353,7 +432,7 @@ def test_auto_loss_scaling_with_mixed_precision_trackable_tensors():
     optimizer = popart.SGD({"lossScaling": (2, False)})
 
     opts = popart.SessionOptions()
-    opts.enableAutomaticLossScaling = True
+    opts.automaticLossScalingSettings.enabled = True
 
     session = popart.TrainingSession(builder.getModelProto(),
                                      deviceInfo=tu.create_test_device(),
@@ -448,7 +527,7 @@ def run_automatic_loss_scaling_comparison_test(tmpdir,
     ref_session.weightsFromHost()
     ref_anchors = ref_session.initAnchorArrays()
 
-    opts.enableAutomaticLossScaling = True
+    opts.automaticLossScalingSettings.enabled = True
 
     ls_id = "lossScaling_FLOAT16_updated"
     als_session = popart.TrainingSession(
@@ -608,7 +687,7 @@ def test_loss_scale_updates_with_grad_accumulation_correctness():
     accumulation_factor = 5
 
     opts = popart.SessionOptions()
-    opts.enableAutomaticLossScaling = True
+    opts.automaticLossScalingSettings.enabled = True
     opts.enableGradientAccumulation = True
     opts.accumulationFactor = accumulation_factor
 

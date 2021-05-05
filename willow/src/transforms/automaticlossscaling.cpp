@@ -74,16 +74,33 @@ std::vector<Tensor *> getToTrackTensors(Graph &graph) {
 // to look for the number of very large +ve elements.
 bool absoluteOfInput() { return true; }
 
-// Here we hard-code the levels, or histogram bin edges for the Histogram ops
-// inserted by the transform. Design decision (2): We choose a single bin edge,
-// whose value is some factor of the maximum value that can be represented by
-// the tensor's data type.
-std::vector<float> getLevels(Tensor *tensor) {
+/**
+ * Here we determine the levels, or histogram bin edges for the Histogram ops
+ * inserted by the transform. Design decision (2): We choose a single bin edge,
+ * whose value is some factor of the maximum value that can be represented by
+ * the tensor's data type.
+ *
+ * \param tensor A pointer to the tensor for which a Histogram op is created.
+ *     Its dtype is used to determine numeric_limits.max().
+ * \param binEdgeLocation A factor in [0, 1] that moves the bin edge between
+ *     [0, numeric_limits.max()].
+ * \return A vector of floats with the histogram bin edges.
+ */
+std::vector<float> getLevels(Tensor *tensor, float binEdgeLocation) {
+  if (binEdgeLocation < 0 || binEdgeLocation > 1) {
+    throw error(
+        "[AutomaticLossScale transform] Out of range value for "
+        "'binEdgeLocation'. The current value is {}, but it should be in "
+        "the range [0, 1].",
+        binEdgeLocation);
+  }
+
   auto dtype = tensor->info.dataType();
   if (dtype == DataType::FLOAT) {
-    return {std::numeric_limits<float>::max() / 2};
+    return {std::numeric_limits<float>::max() * binEdgeLocation};
   } else if (dtype == DataType::FLOAT16) {
-    return {static_cast<float>(std::numeric_limits<uint16_t>::max()) / 2};
+    return {static_cast<float>(std::numeric_limits<uint16_t>::max()) *
+            binEdgeLocation};
   } else {
     throw error("[AutomaticLossScale transform] Unsupported data type {} for "
                 "to-track tensor '{}'",
@@ -216,10 +233,14 @@ bool AutomaticLossScale::apply(Graph &graph) const {
                               "control of loss-scale value.",
                               tensor->id);
 
+    // Get automatic loss scaling hyperparameters.
+    float binEdgeLocation =
+        ir.getSessionOptions().automaticLossScalingSettings.binEdgeLocation;
+
     // Attach a newly created HistogramOp to each tensor
     auto histogramOp =
         graph.createOp<HistogramOp>(Onnx::CustomOperators::Histogram,
-                                    getLevels(tensor),
+                                    getLevels(tensor, binEdgeLocation),
                                     absoluteOfInput(),
                                     Op::Settings(graph, ""));
 

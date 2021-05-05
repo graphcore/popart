@@ -1208,7 +1208,7 @@ void Ir::prepareImpl(const IrBundle &gb, const HashesMap &cacheEntries) {
   updateAliases();
   updateVertices();
 
-  if (getSessionOptions().enableAutomaticLossScaling) {
+  if (getSessionOptions().automaticLossScalingSettings.enabled) {
     applyTransform(AutomaticLossScale::id(), getMainGraph());
   }
 
