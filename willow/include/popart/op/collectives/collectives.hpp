@@ -31,16 +31,16 @@ enum class CommGroupType {
   All = 0,
 
   /** Groups are consecutive in replica.
-   * If there are N replicas denoted {0....N-1} and group size is k then the
-   * groups are:
+   * If there are N replicas denoted {0, ... N-1} and group size is k,
+   * then there are N/k groups of size k:
    *   {0, 1, ... k-1}, {k, ... 2k-1} ... {N-k-1, ... N-1}
    */
   Consecutive,
 
   /** Groups are sliced orthogonal to the replica ordering.
-   * If there are N replicas denoted {0....N-1} and group size is k then
-   * the groups are:
-   *   {0, k, 2k, ...}, {1, k+1, 2k+1, ...} ... {k-1, 2k-1, ..., N-1}
+   * If there are N replicas denoted {0, ... N-1} and group size is k,
+   * then there are m = N/k groups of size k:
+   *   {0, m, 2m, ...}, {1, m+1, 2m+1, ...} ... {m-1, 2m-1, ... N-1}
    */
   Orthogonal,
   N
