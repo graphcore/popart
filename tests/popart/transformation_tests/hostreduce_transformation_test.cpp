@@ -46,7 +46,7 @@ void checkOpSchedule(const std::vector<Op *> &opSchedule,
       ++numCopiesToDevice;
     }
   }
-  BOOST_CHECK(numCopiesToHost == numCopiesToDevice);
+  BOOST_REQUIRE(numCopiesToHost == numCopiesToDevice);
 }
 
 // Checks that kernel boot commandline is correct for setting up OATT
@@ -200,7 +200,7 @@ BOOST_AUTO_TEST_CASE(HostReduceTransformationSessionRun) {
     B_dummy_data[i] = static_cast<float>(B_dummy_data.size() - i - 1);
   }
 
-  BOOST_CHECK(session->getHostReduceStreamIds().size() == 4);
+  BOOST_REQUIRE(session->getHostReduceStreamIds().size() == 4);
   // Careful iterating over getHostReduceStreamIds, no guarantee for order.
   for (const auto &stream_id : session->getHostReduceStreamIds()) {
     if (stream_id.compare(0,
@@ -261,25 +261,25 @@ BOOST_AUTO_TEST_CASE(HostReduceTransformationSessionRun) {
 
   session->weightsToHost();
   session->readWeights(weightsRead);
-  BOOST_CHECK_EQUAL_COLLECTIONS(v_A_grad.begin(),
-                                v_A_grad.end(),
-                                raw_A_grad_out.begin(),
-                                raw_A_grad_out.end());
+  BOOST_REQUIRE_EQUAL_COLLECTIONS(v_A_grad.begin(),
+                                  v_A_grad.end(),
+                                  raw_A_grad_out.begin(),
+                                  raw_A_grad_out.end());
 
-  BOOST_CHECK_EQUAL_COLLECTIONS(v_B_grad.begin(),
-                                v_B_grad.end(),
-                                raw_B_grad_out.begin(),
-                                raw_B_grad_out.end());
+  BOOST_REQUIRE_EQUAL_COLLECTIONS(v_B_grad.begin(),
+                                  v_B_grad.end(),
+                                  raw_B_grad_out.begin(),
+                                  raw_B_grad_out.end());
 
-  BOOST_CHECK_EQUAL_COLLECTIONS(A_dummy_data.begin(),
-                                A_dummy_data.end(),
-                                A_readback.begin(),
-                                A_readback.end());
+  BOOST_REQUIRE_EQUAL_COLLECTIONS(A_dummy_data.begin(),
+                                  A_dummy_data.end(),
+                                  A_readback.begin(),
+                                  A_readback.end());
 
-  BOOST_CHECK_EQUAL_COLLECTIONS(B_dummy_data.begin(),
-                                B_dummy_data.end(),
-                                B_readback.begin(),
-                                B_readback.end());
+  BOOST_REQUIRE_EQUAL_COLLECTIONS(B_dummy_data.begin(),
+                                  B_dummy_data.end(),
+                                  B_readback.begin(),
+                                  B_readback.end());
 }
 
 // Test: check that the execution order of the gradient and variable copies
@@ -401,17 +401,17 @@ BOOST_AUTO_TEST_CASE(HostReduceTransformationVarUpdateExecutionOrder) {
   for (int i = 0; i < 4; ++i) {
     auto asHostReduce =
         dynamic_cast<GradCopyToHostOp *>(partial_op_schedule[i]);
-    BOOST_CHECK(asHostReduce);
+    BOOST_REQUIRE(asHostReduce);
     auto tensorUpdateId = asHostReduce->inTensor(0)->id;
     const auto &inShape = partial_op_schedule[i]->inShape(0);
-    BOOST_CHECK_EQUAL_COLLECTIONS(inShape.begin(),
-                                  inShape.end(),
-                                  idToInfo.at(tensorUpdateId).shape().begin(),
-                                  idToInfo.at(tensorUpdateId).shape().end());
+    BOOST_REQUIRE_EQUAL_COLLECTIONS(inShape.begin(),
+                                    inShape.end(),
+                                    idToInfo.at(tensorUpdateId).shape().begin(),
+                                    idToInfo.at(tensorUpdateId).shape().end());
   }
 
   for (int i = 4; i < partial_op_schedule.size(); ++i) {
-    BOOST_CHECK(dynamic_cast<HostSGD0VarUpdate *>(partial_op_schedule[i]));
+    BOOST_REQUIRE(dynamic_cast<HostSGD0VarUpdate *>(partial_op_schedule[i]));
   }
 
   std::vector<std::string> callback_handles;
@@ -443,14 +443,16 @@ BOOST_AUTO_TEST_CASE(HostReduceTransformationVarUpdateExecutionOrder) {
   // Check that the callbacks are executed in the correct order (all gradients,
   // then all weights)
   for (int i = 0; i < 4; ++i) {
-    BOOST_CHECK(callback_handles[i].compare(0,
-                                            strlen(gradientStoreStreamPrefix),
-                                            gradientStoreStreamPrefix) == 0);
+    BOOST_REQUIRE(i < callback_handles.size());
+    BOOST_REQUIRE(callback_handles[i].compare(0,
+                                              strlen(gradientStoreStreamPrefix),
+                                              gradientStoreStreamPrefix) == 0);
   }
   for (int i = 4; i < 8; ++i) {
-    BOOST_CHECK(callback_handles[i].compare(0,
-                                            strlen(weightLoadStreamPrefix),
-                                            weightLoadStreamPrefix) == 0);
+    BOOST_REQUIRE(i < callback_handles.size());
+    BOOST_REQUIRE(callback_handles[i].compare(0,
+                                              strlen(weightLoadStreamPrefix),
+                                              weightLoadStreamPrefix) == 0);
   }
 }
 
@@ -603,10 +605,10 @@ BOOST_AUTO_TEST_CASE(HostReduceHierarchicalReductionWithReplicatedGraphs) {
                 // Check that the streamed gradients are the same for all
                 // replicas
                 if (found != gradients.end()) {
-                  BOOST_CHECK_EQUAL_COLLECTIONS(found->second.begin(),
-                                                found->second.end(),
-                                                gradient.begin(),
-                                                gradient.end());
+                  BOOST_REQUIRE_EQUAL_COLLECTIONS(found->second.begin(),
+                                                  found->second.end(),
+                                                  gradient.begin(),
+                                                  gradient.end());
                 } else {
                   gradients[grad_id] = gradient;
                 }
@@ -677,20 +679,20 @@ BOOST_AUTO_TEST_CASE(HostReduceHierarchicalReductionWithReplicatedGraphs) {
     const float C_grad_ground_truth_val = 67.2f;
     const float D_grad_ground_truth_val = 67.2f;
     for (auto &&x : gradients[getGradId(A_id)]) {
-      BOOST_CHECK_CLOSE(x, 89.6f, 1e-4f);
+      BOOST_REQUIRE_CLOSE(x, 89.6f, 1e-4f);
     }
     for (auto &&x : gradients[getGradId(B_id)]) {
-      BOOST_CHECK_CLOSE(x, 78.4f, 1e-4f);
+      BOOST_REQUIRE_CLOSE(x, 78.4f, 1e-4f);
     }
     for (auto &&x : gradients[getGradId(C_id)]) {
-      BOOST_CHECK_CLOSE(x, 67.2f, 1e-4f);
+      BOOST_REQUIRE_CLOSE(x, 67.2f, 1e-4f);
     }
     for (auto &&x : gradients[getGradId(D_id)]) {
-      BOOST_CHECK_CLOSE(x, 67.2f, 1e-4f);
+      BOOST_REQUIRE_CLOSE(x, 67.2f, 1e-4f);
     }
 
     for (const auto &g : gradients) {
-      BOOST_CHECK(idToInfo[g.first].nelms() == g.second.size());
+      BOOST_REQUIRE(idToInfo[g.first].nelms() == g.second.size());
     }
 
     WeightsIO weightsRead;
@@ -707,16 +709,16 @@ BOOST_AUTO_TEST_CASE(HostReduceHierarchicalReductionWithReplicatedGraphs) {
     session->readWeights(weightsRead);
 
     for (auto &&x : A_readback) {
-      BOOST_CHECK(x == 42.0f);
+      BOOST_REQUIRE(x == 42.0f);
     }
     for (auto &&x : B_readback) {
-      BOOST_CHECK(x == 42.0f);
+      BOOST_REQUIRE(x == 42.0f);
     }
     for (auto &&x : C_readback) {
-      BOOST_CHECK(x == 42.0f);
+      BOOST_REQUIRE(x == 42.0f);
     }
     for (auto &&x : D_readback) {
-      BOOST_CHECK(x == 42.0f);
+      BOOST_REQUIRE(x == 42.0f);
     }
   }
 }
@@ -863,17 +865,17 @@ BOOST_AUTO_TEST_CASE(HostReduceTransformationGradientStoreGradientLoad) {
   for (int i = 0; i < 4; ++i) {
     auto asHostReduce =
         dynamic_cast<GradCopyToHostOp *>(partial_op_schedule[i]);
-    BOOST_CHECK(asHostReduce);
+    BOOST_REQUIRE(asHostReduce);
     auto tensorUpdateId = asHostReduce->inTensor(0)->id;
     const auto &inShape = partial_op_schedule[i]->inShape(0);
-    BOOST_CHECK_EQUAL_COLLECTIONS(inShape.begin(),
-                                  inShape.end(),
-                                  idToInfo.at(tensorUpdateId).shape().begin(),
-                                  idToInfo.at(tensorUpdateId).shape().end());
+    BOOST_REQUIRE_EQUAL_COLLECTIONS(inShape.begin(),
+                                    inShape.end(),
+                                    idToInfo.at(tensorUpdateId).shape().begin(),
+                                    idToInfo.at(tensorUpdateId).shape().end());
   }
 
   for (int i = 4; i < partial_op_schedule.size(); ++i) {
-    BOOST_CHECK(dynamic_cast<GradCopyFromHostOp *>(partial_op_schedule[i]));
+    BOOST_REQUIRE(dynamic_cast<GradCopyFromHostOp *>(partial_op_schedule[i]));
   }
 
   std::vector<std::string> callback_handles;
@@ -927,14 +929,14 @@ BOOST_AUTO_TEST_CASE(HostReduceTransformationGradientStoreGradientLoad) {
   // then all weights)
   for (int i = 0; i < 4; ++i) {
     // "gr_" from gradientStoreStreamId
-    BOOST_CHECK(callback_handles[i].compare(0,
-                                            strlen(gradientStoreStreamPrefix),
-                                            gradientStoreStreamPrefix) == 0);
+    BOOST_REQUIRE(callback_handles[i].compare(0,
+                                              strlen(gradientStoreStreamPrefix),
+                                              gradientStoreStreamPrefix) == 0);
   }
   for (int i = 4; i < 8; ++i) {
-    BOOST_CHECK(callback_handles[i].compare(0,
-                                            strlen(gradientLoadStreamPrefix),
-                                            gradientLoadStreamPrefix) == 0);
+    BOOST_REQUIRE(callback_handles[i].compare(0,
+                                              strlen(gradientLoadStreamPrefix),
+                                              gradientLoadStreamPrefix) == 0);
   }
 
   WeightsIO weightsRead;
@@ -950,16 +952,16 @@ BOOST_AUTO_TEST_CASE(HostReduceTransformationGradientStoreGradientLoad) {
   session->weightsToHost();
   session->readWeights(weightsRead);
   for (auto &&x : A_readback) {
-    BOOST_CHECK_CLOSE(x, -447.0f, 1e-5f);
+    BOOST_REQUIRE_CLOSE(x, -447.0f, 1e-5f);
   }
   for (auto &&x : B_readback) {
-    BOOST_CHECK_CLOSE(x, -391.0f, 1e-5f);
+    BOOST_REQUIRE_CLOSE(x, -391.0f, 1e-5f);
   }
   for (auto &&x : C_readback) {
-    BOOST_CHECK_CLOSE(x, -335.0f, 1e-5f);
+    BOOST_REQUIRE_CLOSE(x, -335.0f, 1e-5f);
   }
   for (auto &&x : D_readback) {
-    BOOST_CHECK_CLOSE(x, -335.0f, 1e-5f);
+    BOOST_REQUIRE_CLOSE(x, -335.0f, 1e-5f);
   }
 }
 
@@ -1190,16 +1192,16 @@ BOOST_AUTO_TEST_CASE(
     session->readWeights(weightsRead);
 
     for (auto &&x : A_readback) {
-      BOOST_CHECK_CLOSE(x, -43.8f, 1e-4f);
+      BOOST_REQUIRE_CLOSE(x, -43.8f, 1e-4f);
     }
     for (auto &&x : B_readback) {
-      BOOST_CHECK_CLOSE(x, -38.2f, 1e-4f);
+      BOOST_REQUIRE_CLOSE(x, -38.2f, 1e-4f);
     }
     for (auto &&x : C_readback) {
-      BOOST_CHECK_CLOSE(x, -32.6f, 1e-4f);
+      BOOST_REQUIRE_CLOSE(x, -32.6f, 1e-4f);
     }
     for (auto &&x : D_readback) {
-      BOOST_CHECK_CLOSE(x, -32.6f, 1e-4f);
+      BOOST_REQUIRE_CLOSE(x, -32.6f, 1e-4f);
     }
   }
 }
@@ -1446,7 +1448,7 @@ BOOST_AUTO_TEST_CASE(HostReduceTransformationWithAccumulation) {
 
     BOOST_REQUIRE(lhs.size() == rhs.size());
     for (int j = 0; j < lhs.size(); j++) {
-      BOOST_CHECK(std::fabs(lhs.at(j) - rhs.at(j)) <= 1e-4f);
+      BOOST_REQUIRE(std::fabs(lhs.at(j) - rhs.at(j)) <= 1e-4f);
     }
   }
 }
@@ -1714,7 +1716,7 @@ BOOST_AUTO_TEST_CASE(HostReduceTransformationWithPipelining) {
 
     BOOST_REQUIRE(lhs.size() == rhs.size());
     for (int j = 0; j < lhs.size(); j++) {
-      BOOST_CHECK(std::fabs(lhs[j] - rhs[j]) <= 1e-4f);
+      BOOST_REQUIRE(std::fabs(lhs[j] - rhs[j]) <= 1e-4f);
     }
   }
 }
@@ -1977,7 +1979,7 @@ BOOST_AUTO_TEST_CASE(HostReduceTransformationWithPipeliningAndAccumulation) {
 
     BOOST_REQUIRE(lhs.size() == rhs.size());
     for (int j = 0; j < lhs.size(); j++) {
-      BOOST_CHECK(std::fabs(lhs[j] - rhs[j]) <= 1e-4f);
+      BOOST_REQUIRE(std::fabs(lhs[j] - rhs[j]) <= 1e-4f);
     }
   }
 }
@@ -2136,7 +2138,7 @@ BOOST_AUTO_TEST_CASE(OATTSimpleTest, *boost::unit_test::disabled()) {
   session->weightsFromHost();
   session->run(stepio);
 
-  BOOST_CHECK(callback_handles.size() == 8);
+  BOOST_REQUIRE(callback_handles.size() == 8);
 
   std::unordered_set<std::string> streamedGradients;
   for (int i = 0; i < callback_handles.size() - 1; ++i) {
@@ -2154,7 +2156,7 @@ BOOST_AUTO_TEST_CASE(OATTSimpleTest, *boost::unit_test::disabled()) {
           callback_handles[i].substr(strlen(gradientLoadStreamPrefix));
       // Ensure that the gradient had been streamed to host prior
       // to being streamed to device
-      BOOST_CHECK(streamedGradients.count(grad_id) == 1);
+      BOOST_REQUIRE(streamedGradients.count(grad_id) == 1);
     }
   }
 
@@ -2171,16 +2173,16 @@ BOOST_AUTO_TEST_CASE(OATTSimpleTest, *boost::unit_test::disabled()) {
   session->weightsToHost();
   session->readWeights(weightsRead);
   for (auto &&x : A_readback) {
-    BOOST_CHECK_CLOSE(x, -447.0f, 1e-5f);
+    BOOST_REQUIRE_CLOSE(x, -447.0f, 1e-5f);
   }
   for (auto &&x : B_readback) {
-    BOOST_CHECK_CLOSE(x, -391.0f, 1e-5f);
+    BOOST_REQUIRE_CLOSE(x, -391.0f, 1e-5f);
   }
   for (auto &&x : C_readback) {
-    BOOST_CHECK_CLOSE(x, -335.0f, 1e-5f);
+    BOOST_REQUIRE_CLOSE(x, -335.0f, 1e-5f);
   }
   for (auto &&x : D_readback) {
-    BOOST_CHECK_CLOSE(x, -335.0f, 1e-5f);
+    BOOST_REQUIRE_CLOSE(x, -335.0f, 1e-5f);
   }
 }
 
@@ -2435,7 +2437,7 @@ BOOST_AUTO_TEST_CASE(OATTWithAccumulation, *boost::unit_test::disabled()) {
 
     BOOST_REQUIRE(lhs.size() == rhs.size());
     for (int j = 0; j < lhs.size(); j++) {
-      BOOST_CHECK(std::fabs(lhs.at(j) - rhs.at(j)) <= 1e-4f);
+      BOOST_REQUIRE(std::fabs(lhs.at(j) - rhs.at(j)) <= 1e-4f);
     }
   }
 }
@@ -2685,7 +2687,7 @@ BOOST_AUTO_TEST_CASE(OATTWithPipeliningAndAccumulation,
 
     BOOST_REQUIRE(lhs.size() == rhs.size());
     for (int j = 0; j < lhs.size(); j++) {
-      BOOST_CHECK(std::fabs(lhs[j] - rhs[j]) <= 1e-4f);
+      BOOST_REQUIRE(std::fabs(lhs[j] - rhs[j]) <= 1e-4f);
     }
   }
 }
