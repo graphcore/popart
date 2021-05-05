@@ -120,4 +120,5 @@ def test_outlining_accumulation_context(pipeline, tmpdir):
         val = numpy_helper.to_array(val)
         assert np.allclose(gt, val)
 
-    assert total_memory_1 > total_memory_2
+    # This is not true anymore because of GCL changes. See T38369 and T38493.
+    #assert total_memory_1 > total_memory_2
