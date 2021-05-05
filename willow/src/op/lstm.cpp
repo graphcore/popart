@@ -1,4 +1,5 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
+#include "popart/tensorinfo.hpp"
 #include <memory>
 #include <vector>
 #include <popart/graph.hpp>
@@ -68,9 +69,6 @@ void LSTMOp::setup() {
   if (input->hasIndex(getPeepholeInIndex())) {
     throw error("Popart does not support peephole connections");
   }
-  if (input->hasIndex(getSequenceLensInIndex())) {
-    logging::op::warn("Lstm optional input `sequence_lens' will be ignored");
-  }
   int64_t hidden_size = 0;
   if (!hidden_size_attribute) {
     hidden_size = inShape(getRecurrenceInIndex())[2];
@@ -83,13 +81,27 @@ void LSTMOp::setup() {
     hidden_size = *hidden_size_attribute;
   }
 
-  auto seq_length     = getSeqLength();
+  auto max_seq_length = getMaxSeqLength();
   auto num_directions = getNumDirections();
   auto batch_size     = getBatchSize();
   auto data_type      = inInfo(getInputInIndex()).data_type();
   auto input_size     = getInputSize();
 
-  Shape y_shape{seq_length, num_directions, batch_size, hidden_size};
+  if (input->hasIndex(getSequenceLensInIndex())) {
+    if (inInfo(getSequenceLensInIndex()).rank() != 1) {
+      throw error("Invalid rank for sequence length tensor : {} != 1",
+                  inInfo(getSequenceLensInIndex()).rank());
+
+    } else if (inInfo(getSequenceLensInIndex()).shape().size() > 0) {
+      if (inInfo(getSequenceLensInIndex()).shape()[0] != batch_size) {
+        throw error("Incorect sequence len shape : {} != [{}]",
+                    inInfo(getSequenceLensInIndex()).shape(),
+                    batch_size);
+      }
+    }
+  }
+
+  Shape y_shape{max_seq_length, num_directions, batch_size, hidden_size};
 
   trySetOutInfo(getOutputOutIndex(), {data_type, y_shape});
 
@@ -107,7 +119,7 @@ void LSTMOp::setup() {
       "intermediates",
       getIntermediatesPassThroughIndex(),
       {data_type,
-       Shape{seq_length, getNumIntermediates(), batch_size, hidden_size}});
+       Shape{max_seq_length, getNumIntermediates(), batch_size, hidden_size}});
   createPassThroughOutput("inputweights",
                           getInputWeightsPassThroughIndex(),
                           {data_type, Shape{4, input_size, hidden_size}});
@@ -120,11 +132,11 @@ void LSTMOp::setup() {
   createPassThroughOutput(
       "input",
       getInputPassThroughIndex(),
-      {data_type, Shape{seq_length, batch_size, input_size}});
+      {data_type, Shape{max_seq_length, batch_size, input_size}});
   createPassThroughOutput(
       "output",
       getOutputPassThroughIndex(),
-      {data_type, Shape{seq_length, batch_size, hidden_size}});
+      {data_type, Shape{max_seq_length, batch_size, hidden_size}});
 }
 
 void LSTMOp::createPassThroughOutput(const TensorId &new_id,
@@ -145,7 +157,9 @@ void LSTMOp::createPassThroughOutput(const TensorId &new_id,
 
 unsigned LSTMOp::getNumChannels() const { return 1; }
 
-int64_t LSTMOp::getSeqLength() const { return inShape(getInputInIndex())[0]; }
+int64_t LSTMOp::getMaxSeqLength() const {
+  return inShape(getInputInIndex())[0];
+}
 
 int64_t LSTMOp::getBatchSize() const { return inShape(getInputInIndex())[1]; }
 
@@ -167,12 +181,16 @@ bool LSTMOp::hasInitialCInput() const {
   return input->hasIndex(getInitialCInIndex());
 }
 
+bool LSTMOp::hasSeqLenInput() const {
+  return input->hasIndex(getSequenceLensInIndex());
+}
+
 bool LSTMOp::hasOutput(OutIndex index) const { return output->hasIndex(index); }
 
 std::set<InIndex> LSTMOp::optionalInputs() const {
-  return {getSequenceLensInIndex(),
-          getInitialHInIndex(),
+  return {getInitialHInIndex(),
           getInitialCInIndex(),
+          getSequenceLensInIndex(),
           getPeepholeInIndex()};
 }
 
@@ -265,7 +283,9 @@ bool LSTMGradOp::hasHiddenStateGradInput() const {
 }
 
 std::set<InIndex> LSTMGradOp::optionalInputs() const {
-  return {getCellStateOutputGradInIndex(), getHiddenStateOutputGradInIndex()};
+  return {getCellStateOutputGradInIndex(),
+          getHiddenStateOutputGradInIndex(),
+          getSequenceLensInIndex()};
 }
 
 const std::vector<GradInOutMapper> &LSTMGradOp::gradInputInfo() const {
@@ -294,6 +314,9 @@ const std::vector<GradInOutMapper> &LSTMGradOp::gradInputInfo() const {
       {getOutputInIndex(),
        LSTMOp::getOutputPassThroughIndex(),
        GradOpInType::Out},
+      {getSequenceLensInIndex(),
+       LSTMOp::getSequenceLensInIndex(),
+       GradOpInType::In},
       {getCellStateOutputGradInIndex(),
        LSTMOp::getCellStateOutIndex(),
        GradOpInType::GradOut},
@@ -350,7 +373,7 @@ void PopartLSTMOp::setup() {
 
   // Verify the input shapes.
   verifyShape(getInputInIndex(),
-              {getSeqLength(), getBatchSize(), getInputSize()},
+              {getMaxSeqLength(), getBatchSize(), getInputSize()},
               "input");
   verifyShape(getWeightsInIndex(),
               {4, getInputSize() + getHiddenSize(), getHiddenSize()},
@@ -368,7 +391,7 @@ void PopartLSTMOp::setup() {
 
   Shape outputShape;
   if (outputFullSequence) {
-    outputShape = {getSeqLength(), getBatchSize(), getHiddenSize()};
+    outputShape = {getMaxSeqLength(), getBatchSize(), getHiddenSize()};
   } else {
     outputShape = {getBatchSize(), getHiddenSize()};
   }
@@ -388,7 +411,7 @@ void PopartLSTMOp::setup() {
       createAndConnectOutTensor(getIntermediatesOutIndex(), intermediates);
     }
     outInfo(getIntermediatesOutIndex()) = {dtype,
-                                           {getSeqLength(),
+                                           {getMaxSeqLength(),
                                             getNumIntermediates(),
                                             getBatchSize(),
                                             getHiddenSize()}};
@@ -400,10 +423,11 @@ bool PopartLSTMOp::hasBiasesInput() const {
 }
 
 std::set<InIndex> PopartLSTMOp::optionalInputs() const {
-  return {getBiasesInIndex(), getInitialStateInIndex()};
+  return {
+      getBiasesInIndex(), getInitialStateInIndex(), getSequenceLensInIndex()};
 }
 
-int64_t PopartLSTMOp::getSeqLength() const {
+int64_t PopartLSTMOp::getMaxSeqLength() const {
   return inShape(getInputInIndex()).at(0);
 }
 
@@ -426,6 +450,10 @@ int PopartLSTMOp::getInBatchAxis(InIndex index) const {
   return 0;
 }
 
+bool PopartLSTMOp::hasSeqLenInput() const {
+  return input->hasIndex(getSequenceLensInIndex());
+}
+
 int PopartLSTMOp::getOutBatchAxis(OutIndex index) const {
   if (index == getOutputOutIndex() && outputFullSequence) {
     return 1;
@@ -435,11 +463,11 @@ int PopartLSTMOp::getOutBatchAxis(OutIndex index) const {
   return 0;
 }
 
-PopartLSTMGradOp::PopartLSTMGradOp(const PopartLSTMOp &fwdOp)
-    : Op(Onnx::GradOperators::PopartLSTMGrad, fwdOp.getSettings()),
-      outputFullSequence(fwdOp.outputFullSequence),
+PopartLSTMGradOp::PopartLSTMGradOp(const PopartLSTMOp &fwd_op)
+    : Op(Onnx::GradOperators::PopartLSTMGrad, fwd_op.getSettings()),
+      outputFullSequence(fwd_op.outputFullSequence),
       forwardCellStateGradId(
-          getGradId(fwdOp.outId(PopartLSTMOp::getCellStateOutIndex()))) {}
+          getGradId(fwd_op.outId(PopartLSTMOp::getCellStateOutIndex()))) {}
 
 std::unique_ptr<Op> PopartLSTMGradOp::clone() const {
   return std::make_unique<PopartLSTMGradOp>(*this);
@@ -460,14 +488,15 @@ void PopartLSTMGradOp::setup() {
 std::set<InIndex> PopartLSTMGradOp::optionalInputs() const {
   return {getBiasesInIndex(),
           getInitialStateInIndex(),
-          getFwdCellStateGradInIndex()};
+          getFwdCellStateGradInIndex(),
+          getSequenceLensInIndex()};
 }
 
 int64_t PopartLSTMGradOp::getInputSize() const {
   return inShape(getInputInIndex()).at(2);
 }
 
-int64_t PopartLSTMGradOp::getSeqLength() const {
+int64_t PopartLSTMGradOp::getMaxSeqLength() const {
   return inShape(getInputInIndex()).at(0);
 }
 
@@ -491,6 +520,9 @@ const std::vector<GradInOutMapper> &PopartLSTMGradOp::gradInputInfo() const {
        PopartLSTMOp::getWeightsInIndex(),
        GradOpInType::In},
       {getBiasesInIndex(), PopartLSTMOp::getBiasesInIndex(), GradOpInType::In},
+      {getSequenceLensInIndex(),
+       PopartLSTMOp::getSequenceLensInIndex(),
+       GradOpInType::In},
       {getInputInIndex(), PopartLSTMOp::getInputInIndex(), GradOpInType::In},
       {getFwdOutputInIndex(),
        PopartLSTMOp::getOutputOutIndex(),
@@ -526,7 +558,7 @@ static OpDefinition
                    {"W", T},
                    {"R", T},
                    {"B", T},
-                   //{"sequence_lens", T1 }, // not supported
+                   {"sequence_lens", T1},
                    {"initial_h", T},
                    {"initial_c", T},
                    //{"P", T },// peep hole not supported
@@ -583,12 +615,11 @@ static OpCreator<LSTMOp> lstmOpCreator(
     true);
 
 static OpDefinition popartLstmOpDef(
-    {OpDefinition::Inputs({
-         {"X", T},
-         {"Weights", T},
-         {"Bias", T},
-         {"InitiState", T},
-     }),
+    {OpDefinition::Inputs({{"X", T},
+                           {"Weights", T},
+                           {"Bias", T},
+                           {"InitiState", T},
+                           {"SeqLengths", T1}}),
      OpDefinition::Outputs({{"Output", T}, {"CellState", T}}),
      OpDefinition::Attributes({{"output_full_sequence", {"*"}}})});
 

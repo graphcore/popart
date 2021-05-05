@@ -2,11 +2,15 @@
 #ifndef GUARD_NEURALNET_LSTMX_HPP
 #define GUARD_NEURALNET_LSTMX_HPP
 
+#include "popart/logging.hpp"
 #include <popnn/Lstm.hpp>
 #include <popops/ElementWise.hpp>
 #include <popops/Zero.hpp>
+#include <popart/popx/devicex.hpp>
 
 #include <popart/names.hpp>
+#include <popart/op/lstm.hpp>
+#include <popart/popx/irlowering.hpp>
 #include <popart/popx/opx.hpp>
 
 namespace popart {
@@ -17,24 +21,37 @@ public:
   PopartLSTMOpxBase(Op *op, Devicex *devicex) : Opx(op, devicex) {}
 
 protected:
-  popnn::lstm::LstmParams createLSTMParams() const {
-    auto &lstmOp = getOp<LSTMOP>();
-    auto inInfo  = lstmOp.inInfo(lstmOp.getInputInIndex());
+  popnn::lstm::LstmParams
+  createLSTMParams(const LSTMOP &lstm_op,
+                   const poplar::Tensor &seq_lens_t) const {
+    auto inInfo = lstm_op.inInfo(LSTMOP::getInputInIndex());
 
-    auto inputSize  = static_cast<unsigned>(lstmOp.getInputSize());
-    auto seqLength  = static_cast<unsigned>(lstmOp.getSeqLength());
-    auto batchSize  = static_cast<unsigned>(lstmOp.getBatchSize());
-    auto hiddenSize = static_cast<unsigned>(lstmOp.getHiddenSize());
+    auto inputSize    = static_cast<unsigned>(lstm_op.getInputSize());
+    auto maxSeqLength = static_cast<unsigned>(lstm_op.getMaxSeqLength());
+    auto batchSize    = static_cast<unsigned>(lstm_op.getBatchSize());
+    auto hiddenSize   = static_cast<unsigned>(lstm_op.getHiddenSize());
 
+    if (seq_lens_t.valid()) {
+
+      auto params               = popnn::lstm::LstmParams(popType(inInfo),
+                                            batchSize,
+                                            maxSeqLength,
+                                            seq_lens_t,
+                                            {inputSize, hiddenSize});
+      params.outputFullSequence = lstm_op.outputFullSequence;
+      return params;
+    }
     auto params = popnn::lstm::LstmParams(
-        popType(inInfo), batchSize, seqLength, {inputSize, hiddenSize});
-    params.outputFullSequence = lstmOp.outputFullSequence;
+        popType(inInfo), batchSize, maxSeqLength, {inputSize, hiddenSize});
+    params.outputFullSequence = lstm_op.outputFullSequence;
     return params;
   }
 
   poplar::Tensor createBiasesInput() const {
+    auto &lstmOp = getOp<LSTMOP>();
+    auto seq_len = getSeqLens();
     return popnn::lstm::createWeightsBiases(graph(),
-                                            createLSTMParams(),
+                                            createLSTMParams(lstmOp, seq_len),
                                             debugContext("createWeights"),
                                             dv_p->lowering().lstmOptions,
                                             &dv_p->matmulCache);
@@ -53,8 +70,10 @@ protected:
   }
 
   popnn::lstm::LstmState createInitialStateInput() const {
+    auto &lstmOp = getOp<LSTMOP>();
+    auto seq_len = getSeqLens();
     return createInitialState(graph(),
-                              createLSTMParams(),
+                              createLSTMParams(lstmOp, seq_len),
                               debugContext("createInitialState"),
                               dv_p->lowering().lstmOptions,
                               &dv_p->matmulCache);
@@ -73,6 +92,19 @@ protected:
       auto initialState = createInitialStateInput();
       zeroInitialState(graph(), initialState, prog, debugContext());
       return initialState;
+    }
+  }
+
+  poplar::Tensor getSeqLens() const {
+    if (hasInput(LSTMOP::getSequenceLensInIndex())) {
+      auto &lstmOp = getOp<LSTMOP>();
+      logging::opx::debug("Checking seq len for {} index {}",
+                          lstmOp.debugName(),
+                          LSTMOP::getSequenceLensInIndex());
+      return getInTensor(LSTMOP::getSequenceLensInIndex())
+          .reinterpret(poplar::UNSIGNED_INT);
+    } else {
+      return poplar::Tensor();
     }
   }
 

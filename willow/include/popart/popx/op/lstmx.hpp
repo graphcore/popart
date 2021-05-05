@@ -2,8 +2,10 @@
 #ifndef GUARD_NEURALNET_LSTMX_HPP
 #define GUARD_NEURALNET_LSTMX_HPP
 
+#include <poplar/Tensor.hpp>
 #include <popnn/Lstm.hpp>
 #include <popart/names.hpp>
+#include <popart/op/lstm.hpp>
 #include <popart/popx/opx.hpp>
 #include <popart/vendored/optional.hpp>
 
@@ -22,13 +24,13 @@ public:
                              const poplar::DebugNameAndId &dnai) const final;
   std::set<TensorId> mustExistBeforeCreate(InIndex) const;
 
-  static popnn::lstm::LstmParams createLSTMParams(const LSTMOp &);
   static poplar::Tensor reshapePoplibWeightsForOnnx(poplar::Tensor,
                                                     bool transpose);
+  static popnn::lstm::LstmParams createLSTMParams(const LSTMOp &,
+                                                  const poplar::Tensor &);
 
 private:
   void growBias(poplar::program::Sequence &) const;
-  popnn::lstm::LstmParams createLSTMParams() const;
   popnn::lstm::LstmWeights getLSTMWeights() const;
   popnn::lstm::LstmState getInitialState() const;
   poplar::Tensor createLSTMInput() const;
@@ -39,6 +41,7 @@ private:
   std::unique_ptr<poplar::Tensor> createIntermediate() const;
   void reshapeAndInsert(OutIndex index, const poplar::Tensor &) const;
   bool inputCreated(InIndex) const;
+  poplar::Tensor getSeqLens() const;
 
   mutable nonstd::optional<popnn::lstm::LstmWeights> weights;
   mutable nonstd::optional<popnn::lstm::LstmState> initial_state;
@@ -53,8 +56,7 @@ public:
 private:
   poplar::Tensor getCellStateGrad() const;
   poplar::Tensor getHiddenStateGrad() const;
-
-  popnn::lstm::LstmParams createLSTMParams() const;
+  poplar::Tensor getSeqLens() const;
 };
 
 } // namespace popx

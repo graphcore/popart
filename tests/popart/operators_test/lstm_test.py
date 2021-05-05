@@ -146,7 +146,7 @@ def test_lstm_popart(op_tester):
     d3 = np.zeros((1, 4 * hidden_size, hidden_size)).astype(np.float32)
 
     def init_builder(builder):
-        i1 = builder.addInputTensor(d1)
+        i1 = builder.addInputTensor(d1, "input_data")
         i2 = builder.addInitializedInputTensor(d2)
         i3 = builder.addInitializedInputTensor(d3)
         Y, Y_h, Y_c = builder.aiOnnx.lstm([i1, i2, i3], 3, clip=None)
@@ -425,6 +425,7 @@ def test_lstm_training_onnx_vs_popart():
     biases_id = 'biases'
     init_h_id = 'initH'
     init_c_id = 'initC'
+    seq_lens_id = 'seqLen'
 
     def run_onnx_lstm(data, input_weights, output_weights, biases, seq_lens,
                       initial_h, initial_c, sum_outputs):
@@ -435,7 +436,7 @@ def test_lstm_training_onnx_vs_popart():
             tOW = builder.addInitializedInputTensor(output_weights,
                                                     output_weights_id)
             tBiases = builder.addInitializedInputTensor(biases, biases_id)
-            tSeqLens = builder.addInputTensor(seq_lens)
+            tSeqLens = builder.addInputTensor(seq_lens, seq_lens_id)
             tInitH = builder.addInputTensor(initial_h, init_h_id)
             tInitC = builder.addInputTensor(initial_c, init_c_id)
             Y, Y_h, Y_c = builder.aiOnnx.lstm(
@@ -529,7 +530,7 @@ def test_lstm_training_onnx_vs_popart():
     onnx_output_weights = np_rand(1, 4 * hidden_size, hidden_size)
     onnx_biases = np_rand(1, 8 * hidden_size)
 
-    seq_lens = np.asarray([seq_length] * batch_size).astype(np.int32)
+    seq_lens = np.asarray([seq_length] * batch_size).astype(np.int32).squeeze()
 
     initial_h = np_rand(num_directions, batch_size, hidden_size)
     initial_c = np_rand(num_directions, batch_size, hidden_size)
@@ -738,13 +739,13 @@ def test_lstm_initial_hc(op_tester):
                                hidden_size).astype(np.float32)
 
     def init_builder(builder):
-        i1 = builder.addInputTensor(d1)
-        i2 = builder.addInputTensor(d2)
-        i3 = builder.addInputTensor(d3)
-        i4 = builder.addInputTensor(d4)
-        i5 = builder.addInputTensor(seq_lens)
-        i6 = builder.addInputTensor(initial_h)
-        i7 = builder.addInputTensor(initial_c)
+        i1 = builder.addInputTensor(d1, "input_1")
+        i2 = builder.addInputTensor(d2, "input_2")
+        i3 = builder.addInputTensor(d3, "input_3")
+        i4 = builder.addInputTensor(d4, "input_4")
+        i5 = builder.addInputTensor(seq_lens, "seq_lens")
+        i6 = builder.addInputTensor(initial_h, "initial_h")
+        i7 = builder.addInputTensor(initial_c, "initial_c")
         Y, Y_h, Y_c = builder.aiOnnx.lstm([i1, i2, i3, i4, i5, i6, i7], 3)
         builder.addOutputTensor(Y_h)
         return [Y, Y_h, Y_c]

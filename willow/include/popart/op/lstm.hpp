@@ -2,6 +2,7 @@
 #ifndef GUARD_NEURALNET_LSTM_HPP
 #define GUARD_NEURALNET_LSTM_HPP
 
+#include <popart/names.hpp>
 #include <popart/op.hpp>
 
 #include <popart/vendored/optional.hpp>
@@ -19,7 +20,7 @@ public:
 
   unsigned getNumChannels() const;
 
-  int64_t getSeqLength() const;
+  int64_t getMaxSeqLength() const;
   int64_t getBatchSize() const;
   int64_t getInputSize() const;
   int64_t getNumDirections() const;
@@ -28,6 +29,7 @@ public:
   bool hasBiasInput() const;
   bool hasInitialHInput() const;
   bool hasInitialCInput() const;
+  bool hasSeqLenInput() const;
   bool hasOutput(OutIndex) const;
 
   std::set<InIndex> optionalInputs() const final;
@@ -107,10 +109,11 @@ public:
   static InIndex getBiasesInIndex() { return 5; }
   static InIndex getInputInIndex() { return 6; }
   static InIndex getOutputInIndex() { return 7; }
+  static InIndex getSequenceLensInIndex() { return 8; }
 
-  static InIndex getCellStateOutputGradInIndex() { return 8; }
-  static InIndex getHiddenStateOutputGradInIndex() { return 9; }
-  static InIndex getOutputGradInIndex() { return 10; }
+  static InIndex getCellStateOutputGradInIndex() { return 9; }
+  static InIndex getHiddenStateOutputGradInIndex() { return 10; }
+  static InIndex getOutputGradInIndex() { return 11; }
 
   static OutIndex getInputOutIndex() { return 0; }
   static OutIndex getWeightsOutIndex() { return 1; }
@@ -163,12 +166,15 @@ public:
   static InIndex getWeightsInIndex() { return 1; }
   static InIndex getBiasesInIndex() { return 2; }
   static InIndex getInitialStateInIndex() { return 3; }
+  static InIndex getSequenceLensInIndex() { return 4; }
 
   static OutIndex getOutputOutIndex() { return 0; }
   static OutIndex getCellStateOutIndex() { return 1; }
   static OutIndex getIntermediatesOutIndex() { return 2; }
 
-  int64_t getSeqLength() const;
+  bool hasSeqLenInput() const;
+
+  int64_t getMaxSeqLength() const;
   int64_t getBatchSize() const;
   int64_t getInputSize() const;
   int64_t getHiddenSize() const;
@@ -194,11 +200,12 @@ public:
   const std::map<int, int> &gradOutToNonGradIn() const final;
 
   float getSubgraphValue() const final { return getHighSubgraphValue(); }
+  const PopartLSTMOp &getForwardOp() const;
 
   std::set<InIndex> optionalInputs() const final;
 
   int64_t getInputSize() const;
-  int64_t getSeqLength() const;
+  int64_t getMaxSeqLength() const;
   int64_t getBatchSize() const;
   int64_t getHiddenSize() const;
 
@@ -206,10 +213,12 @@ public:
   static InIndex getIntermediatesInIndex() { return 1; }
   static InIndex getWeightsInIndex() { return 2; }
   static InIndex getBiasesInIndex() { return 3; }
-  static InIndex getInputInIndex() { return 4; }
-  static InIndex getFwdOutputInIndex() { return 5; }
-  static InIndex getFwdOutputGradInIndex() { return 6; }
-  static InIndex getFwdCellStateGradInIndex() { return 7; }
+  static InIndex getSequenceLensInIndex() { return 4; }
+  static InIndex getInputInIndex() { return 5; }
+
+  static InIndex getFwdOutputInIndex() { return 6; }
+  static InIndex getFwdOutputGradInIndex() { return 7; }
+  static InIndex getFwdCellStateGradInIndex() { return 8; }
 
   static OutIndex getInputOutIndex() { return 0; }
   static OutIndex getWeightsOutIndex() { return 1; }

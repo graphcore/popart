@@ -1,4 +1,5 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
+#include "popart/names.hpp"
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/op/concat.hpp>
@@ -21,7 +22,7 @@ bool LSTMPattern::apply(Op *op) const {
   TransformBuilder builder(op->getGraph());
   auto lstmOp         = dynamic_cast<LSTMOp *>(op);
   auto hiddenSize     = lstmOp->getHiddenSize();
-  auto sequenceLength = lstmOp->getSeqLength();
+  auto sequenceLength = lstmOp->getMaxSeqLength();
   auto vgraph         = op->getOptionalVGraphId();
   auto pstage         = op->getOptionalPipelineStage();
   auto pphase         = op->getOptionalExecutionPhase();
@@ -115,7 +116,8 @@ bool LSTMPattern::apply(Op *op) const {
     initialState = concat({initH, initC}, 0);
   }
 
-  auto input       = lstmOp->inId(LSTMOp::getInputInIndex());
+  auto input = lstmOp->inId(LSTMOp::getInputInIndex());
+
   auto output      = lstmOp->outId(LSTMOp::getOutputOutIndex());
   auto hiddenState = lstmOp->outId(LSTMOp::getHiddenStateOutIndex());
   auto cellState   = lstmOp->outId(LSTMOp::getCellStateOutIndex());
@@ -133,6 +135,10 @@ bool LSTMPattern::apply(Op *op) const {
   if (initialState != TensorId()) {
     newLstm->connectInTensor(PopartLSTMOp::getInitialStateInIndex(),
                              initialState);
+  }
+  if (lstmOp->hasSeqLenInput()) {
+    auto seq_lens = lstmOp->inId(LSTMOp::getSequenceLensInIndex());
+    newLstm->connectInTensor(PopartLSTMOp::getSequenceLensInIndex(), seq_lens);
   }
   newLstm->createAndConnectOutTensor(
       PopartLSTMOp::getOutputOutIndex(),

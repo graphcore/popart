@@ -7,11 +7,14 @@
 #include <popart/popx/devicex.hpp>
 #include <popart/popx/irlowering.hpp>
 #include <popart/popx/op/lstmx.hpp>
+#include <popart/popx/opx.hpp>
 #include <popart/popx/opxmanager.hpp>
 #include <popart/tensor.hpp>
 #include <popart/tensorindex.hpp>
 #include <popart/util.hpp>
 
+#include <poplar/Tensor.hpp>
+#include <poplar/Type.hpp>
 #include <popnn/Lstm.hpp>
 #include <popops/ElementWise.hpp>
 #include <popops/Zero.hpp>
@@ -41,10 +44,12 @@ void LSTMOpx::grow(poplar::program::Sequence &prog) const {
 
   auto intermediate = createIntermediate();
   poplar::Tensor output, cell_state;
-  auto input = getInput(prog);
+  auto input    = getInput(prog);
+  auto &lstm_op = getOp<LSTMOp>();
+  auto seq_lens = getSeqLens();
   std::tie(output, cell_state) =
       popnn::lstm::lstmFwd(graph(),
-                           createLSTMParams(),
+                           createLSTMParams(lstm_op, seq_lens),
                            init_state,
                            input,
                            *weights,
@@ -60,7 +65,8 @@ void LSTMOpx::grow(poplar::program::Sequence &prog) const {
 
   reshapeAndInsert(LSTMOp::getOutputOutIndex(), output);
 
-  auto output_h_state = output[createLSTMParams().rnn.timeSteps - 1];
+  auto output_h_state =
+      output[createLSTMParams(lstm_op, seq_lens).rnn.timeSteps - 1];
 
   // cloneNcopy to ensure outputs are not aliases of each other
   // TODO T18126 remove requirement for this cloneNcopy
@@ -89,6 +95,15 @@ void LSTMOpx::reshapeAndInsert(OutIndex index,
                                const poplar::Tensor &tensor) const {
   if (getOp<LSTMOp>().hasOutput(index)) {
     setOutTensor(index, tensor.reshape(outInfo(index).shape_szt()));
+  }
+}
+
+poplar::Tensor LSTMOpx::getSeqLens() const {
+  if (hasInput(LSTMOp::getSequenceLensInIndex())) {
+    return getInTensor(LSTMOp::getSequenceLensInIndex())
+        .reinterpret(poplar::UNSIGNED_INT);
+  } else {
+    return poplar::Tensor();
   }
 }
 
@@ -179,7 +194,9 @@ LSTMOpx::reshapePoplibWeightsForOnnx(poplar::Tensor poplib_weights,
 }
 
 poplar::Tensor LSTMOpx::createLSTMInput() const {
-  auto lstm_params = createLSTMParams();
+  auto &lstm_op    = getOp<LSTMOp>();
+  auto seq_lens    = getSeqLens();
+  auto lstm_params = createLSTMParams(lstm_op, seq_lens);
   auto options     = dv_p->lowering().lstmOptions;
   auto cache       = &dv_p->matmulCache;
 
@@ -191,7 +208,9 @@ popnn::lstm::LstmState LSTMOpx::getInitialState() const {
   if (!initial_state) {
     auto options     = dv_p->lowering().lstmOptions;
     auto cache       = &dv_p->matmulCache;
-    auto lstm_params = createLSTMParams();
+    auto &lstm_op    = getOp<LSTMOp>();
+    auto seq_lens    = getSeqLens();
+    auto lstm_params = createLSTMParams(lstm_op, seq_lens);
 
     initial_state = createInitialState(graph(),
                                        lstm_params,
@@ -205,32 +224,37 @@ popnn::lstm::LstmState LSTMOpx::getInitialState() const {
 
 popnn::lstm::LstmWeights LSTMOpx::getLSTMWeights() const {
   if (!weights) {
-    auto lstm_params = createLSTMParams();
+    auto &lstm_op    = getOp<LSTMOp>();
+    auto seq_lens    = getSeqLens();
+    auto lstm_params = createLSTMParams(lstm_op, seq_lens);
     auto options     = dv_p->lowering().lstmOptions;
     auto cache       = &dv_p->matmulCache;
 
-    weights = createWeights(
+    weights = popnn::lstm::createWeights(
         graph(), lstm_params, debugContext("weights"), options, cache);
   }
 
   return *weights;
 }
 
-popnn::lstm::LstmParams LSTMOpx::createLSTMParams(const LSTMOp &lstm_op) {
+popnn::lstm::LstmParams
+LSTMOpx::createLSTMParams(const LSTMOp &lstm_op,
+                          const poplar::Tensor &seq_lens_t) {
   auto in_info         = lstm_op.inInfo(LSTMOp::getInputInIndex());
-  auto seq_length      = static_cast<unsigned>(lstm_op.getSeqLength());
+  auto max_seq_length  = static_cast<unsigned>(lstm_op.getMaxSeqLength());
   auto batch_size      = static_cast<unsigned>(lstm_op.getBatchSize());
   unsigned input_size  = static_cast<unsigned>(lstm_op.getInputSize());
   unsigned hidden_size = static_cast<unsigned>(lstm_op.getHiddenSize());
 
-  auto params = popnn::lstm::LstmParams(
-      popType(in_info), batch_size, seq_length, {input_size, hidden_size});
-  return params;
-}
-
-popnn::lstm::LstmParams LSTMOpx::createLSTMParams() const {
-  auto &lstm_op = getOp<LSTMOp>();
-  return createLSTMParams(lstm_op);
+  if (seq_lens_t.valid()) {
+    return popnn::lstm::LstmParams(popType(in_info),
+                                   batch_size,
+                                   max_seq_length,
+                                   seq_lens_t,
+                                   {input_size, hidden_size});
+  }
+  return popnn::lstm::LstmParams(
+      popType(in_info), batch_size, max_seq_length, {input_size, hidden_size});
 }
 
 std::set<TensorId> LSTMOpx::mustExistBeforeCreate(InIndex) const { return {}; }
@@ -324,12 +348,14 @@ void LSTMGradOpx::grow(poplar::program::Sequence &prog) const {
   auto &lstm_op       = lstm_grad_op.getForwardOp();
   auto batch_size     = static_cast<unsigned>(lstm_op.getBatchSize());
   auto hidden_size    = static_cast<unsigned>(lstm_op.getHiddenSize());
-  auto seq_length     = static_cast<unsigned>(lstm_op.getSeqLength());
+  auto max_seq_length = static_cast<unsigned>(lstm_op.getMaxSeqLength());
   auto num_directions = static_cast<unsigned>(lstm_op.getNumDirections());
-  auto lstm_params    = createLSTMParams();
+
+  auto seq_lens    = getSeqLens();
+  auto lstm_params = LSTMOpx::createLSTMParams(lstm_op, seq_lens);
 
   auto output_grad = getInTensor(LSTMGradOp::getOutputGradInIndex())
-                         .reshape({seq_length, batch_size, hidden_size});
+                         .reshape({max_seq_length, batch_size, hidden_size});
 
   auto output_c_grad = getCellStateGrad();
   auto output_h_grad = getHiddenStateGrad();
@@ -412,6 +438,15 @@ poplar::Tensor LSTMGradOpx::getCellStateGrad() const {
   }
 }
 
+poplar::Tensor LSTMGradOpx::getSeqLens() const {
+  if (hasInput(LSTMGradOp::getSequenceLensInIndex())) {
+    return getInTensor(LSTMGradOp::getSequenceLensInIndex())
+        .reinterpret(poplar::UNSIGNED_INT);
+  } else {
+    return poplar::Tensor();
+  }
+}
+
 poplar::Tensor LSTMGradOpx::getHiddenStateGrad() const {
   auto &lstm_grad_op = getOp<LSTMGradOp>();
   auto &lstm_op      = lstm_grad_op.getForwardOp();
@@ -434,11 +469,6 @@ poplar::Tensor LSTMGradOpx::getHiddenStateGrad() const {
     zero = zero.broadcast(hidden_size, 1);
     return zero;
   }
-}
-
-popnn::lstm::LstmParams LSTMGradOpx::createLSTMParams() const {
-  auto &lstm_grad_op = getOp<LSTMGradOp>();
-  return LSTMOpx::createLSTMParams(lstm_grad_op.getForwardOp());
 }
 
 namespace {
