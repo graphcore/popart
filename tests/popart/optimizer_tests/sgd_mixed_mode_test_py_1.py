@@ -104,7 +104,11 @@ def run_sgd_mixed_mode(steps,
 
 
 # Test SGD with different parameters constant / non-constant
-def test_sgd_mixed_mode_0(tmpdir):
+@pytest.mark.parametrize("sgdAccMm", [
+    popart.SGDAccumulatorAndMomentum.Separate,
+    popart.SGDAccumulatorAndMomentum.Combined
+])
+def test_sgd_mixed_mode_0(tmpdir, sgdAccMm):
 
     #optimizer parameters
     defaultLearningRate = 1e-4
@@ -116,14 +120,16 @@ def test_sgd_mixed_mode_0(tmpdir):
 
     optMaps = [{
         0:
-        popart.SGD({
-            "defaultLearningRate": (defaultLearningRate, True),
-            "defaultMomentum": (defaultMomentum, True),
-            "defaultVelocityScaling": (defaultVelocityScaling, True),
-            "defaultWeightDecay": (defaultWeightDecay, True),
-            "defaultDampening": (defaultDampening, True),
-            "lossScaling": (lossScaling, True),
-        })
+        popart.SGD(
+            {
+                "defaultLearningRate": (defaultLearningRate, True),
+                "defaultMomentum": (defaultMomentum, True),
+                "defaultVelocityScaling": (defaultVelocityScaling, True),
+                "defaultWeightDecay": (defaultWeightDecay, True),
+                "defaultDampening": (defaultDampening, True),
+                "lossScaling": (lossScaling, True),
+            },
+            accumulatorAndMomentum=sgdAccMm)
     }]
     outlining = [False]
 
@@ -136,7 +142,10 @@ def test_sgd_mixed_mode_0(tmpdir):
             "defaultDampening": (defaultDampening, i != 4),
             "lossScaling": (lossScaling, i != 5),
         }
-        optMaps = optMaps + [{0: popart.SGD(optMap)}]
+        optMaps = optMaps + [{
+            0:
+            popart.SGD(optMap, accumulatorAndMomentum=sgdAccMm)
+        }]
         outlining = outlining + [False]
 
     for i in range(6):
@@ -148,7 +157,10 @@ def test_sgd_mixed_mode_0(tmpdir):
             "defaultDampening": (defaultDampening, i != 4),
             "lossScaling": (lossScaling, i != 5),
         }
-        optMaps = optMaps + [{0: popart.SGD(optMap)}]
+        optMaps = optMaps + [{
+            0:
+            popart.SGD(optMap, accumulatorAndMomentum=sgdAccMm)
+        }]
         outlining = outlining + [True]
 
     run_sgd_mixed_mode(10, optMaps, outlining, tmpdir, np.float32)

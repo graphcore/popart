@@ -3,7 +3,9 @@
 
 #include "get_results.hpp"
 
-BOOST_AUTO_TEST_CASE(SgdMixedModeTestCpp1_9) {
+BOOST_AUTO_TEST_CASE_TEMPLATE(SgdMixedModeTestCpp1_9,
+                              TestConfig,
+                              SGD1And2TestConfigs) {
 
   // As in test 6, but with graph replication and gradient accumulation
 
@@ -35,7 +37,9 @@ BOOST_AUTO_TEST_CASE(SgdMixedModeTestCpp1_9) {
                     {"defaultWeightDecay", {defaultWd, true}},
                     {"defaultVelocityScaling", {defaultVs, true}},
                     {"lossScaling", {ls, true}},
-                    {"defaultMomentum", {defaultMm0, false}}});
+                    {"defaultMomentum", {defaultMm0, false}}},
+                   {},
+                   TestConfig::sgdAccMm);
 
   // all values without a key in insertSpecific will take default values above
   opt0.insertSpecific(w0name,
@@ -49,7 +53,9 @@ BOOST_AUTO_TEST_CASE(SgdMixedModeTestCpp1_9) {
                     {"defaultWeightDecay", {defaultWd, true}},
                     {"defaultVelocityScaling", {defaultVs, true}},
                     {"lossScaling", {ls, true}},
-                    {"defaultMomentum", {defaultMm1, false}}});
+                    {"defaultMomentum", {defaultMm1, false}}},
+                   {},
+                   TestConfig::sgdAccMm);
   opt1.insertSpecific(w0name,
                       {{"momentum", {weight0Mm, true}},
                        {"learningRate", {weight0Lr1, false}},
@@ -61,88 +67,63 @@ BOOST_AUTO_TEST_CASE(SgdMixedModeTestCpp1_9) {
                     {"defaultWeightDecay", {defaultWd, true}},
                     {"defaultVelocityScaling", {defaultVs, true}},
                     {"lossScaling", {ls, true}},
-                    {"defaultMomentum", {defaultMm2, false}}});
+                    {"defaultMomentum", {defaultMm2, false}}},
+                   {},
+                   TestConfig::sgdAccMm);
   opt2.insertSpecific(w0name,
                       {{"momentum", {weight0Mm, true}},
                        {"learningRate", {weight0Lr2, false}},
                        {"velocityScaling", {weight0Vs, true}}});
   opt2.insertSpecific(w1name, {{"weightDecay", {weight1Wd, true}}});
 
-  auto getInitialV = [](float dp, float wd, float W) {
-    // no need to include vs, it is constant so we can use vanilla pytorch
-    // update equations
-    return (1.0f - dp) * wd * W;
-  };
-
   float w0star = 100;
   float g0star = 0;
-  float v0star = getInitialV(dp, defaultWd, w0star);
-  laggedPytorchUpdate(w0star,
-                      g0star,
-                      v0star,
-                      defaultWd,
-                      weight0Mm,
-                      dp,
-                      weight0Lr0,
-                      replicationFactor,
-                      accumulationFactor);
+  float v0star = TestConfig::getInitialV(dp, defaultWd, w0star);
+  TestConfig::laggedPytorchUpdate(
+      w0star, g0star, v0star, defaultWd, weight0Mm, dp, weight0Lr0, true, true);
 
-  laggedPytorchUpdate(w0star,
-                      g0star,
-                      v0star,
-                      defaultWd,
-                      weight0Mm,
-                      dp,
-                      weight0Lr1,
-                      replicationFactor,
-                      accumulationFactor);
+  TestConfig::laggedPytorchUpdate(
+      w0star, g0star, v0star, defaultWd, weight0Mm, dp, weight0Lr1, true, true);
 
-  laggedPytorchUpdate(w0star,
-                      g0star,
-                      v0star,
-                      defaultWd,
-                      weight0Mm,
-                      dp,
-                      weight0Lr2,
-                      replicationFactor,
-                      accumulationFactor);
+  TestConfig::laggedPytorchUpdate(
+      w0star, g0star, v0star, defaultWd, weight0Mm, dp, weight0Lr2, true, true);
 
   float w1star = 200;
   float g1star = 0;
-  float v1star = getInitialV(dp, weight1Wd, w1star);
-  laggedPytorchUpdate(w1star,
-                      g1star,
-                      v1star,
-                      weight1Wd,
-                      defaultMm0,
-                      dp,
-                      defaultLr0,
-                      replicationFactor,
-                      accumulationFactor);
+  float v1star = TestConfig::getInitialV(dp, weight1Wd, w1star);
+  TestConfig::laggedPytorchUpdate(w1star,
+                                  g1star,
+                                  v1star,
+                                  weight1Wd,
+                                  defaultMm0,
+                                  dp,
+                                  defaultLr0,
+                                  true,
+                                  true);
 
-  laggedPytorchUpdate(w1star,
-                      g1star,
-                      v1star,
-                      weight1Wd,
-                      defaultMm1,
-                      dp,
-                      defaultLr1,
-                      replicationFactor,
-                      accumulationFactor);
+  TestConfig::laggedPytorchUpdate(w1star,
+                                  g1star,
+                                  v1star,
+                                  weight1Wd,
+                                  defaultMm1,
+                                  dp,
+                                  defaultLr1,
+                                  true,
+                                  true);
 
-  laggedPytorchUpdate(w1star,
-                      g1star,
-                      v1star,
-                      weight1Wd,
-                      defaultMm2,
-                      dp,
-                      defaultLr2,
-                      replicationFactor,
-                      accumulationFactor);
+  TestConfig::laggedPytorchUpdate(w1star,
+                                  g1star,
+                                  v1star,
+                                  weight1Wd,
+                                  defaultMm2,
+                                  dp,
+                                  defaultLr2,
+                                  true,
+                                  true);
 
   // test with float32
   auto results = getResults<popart::float16_t>(opt0, opt1, opt2, true, true);
-  if (results != acquisitionFailure) {
+  if (!acquisitionFailure(results)) {
     auto absdiff0 = getAbsDiff(w0star, std::get<0>(results));
     auto absdiff1 = getAbsDiff(w1star, std::get<1>(results));
     std::cout << "abs diffs at float16: " << absdiff0 << " and " << absdiff1
@@ -155,7 +136,7 @@ BOOST_AUTO_TEST_CASE(SgdMixedModeTestCpp1_9) {
 
   // test with float32
   results = getResults<float>(opt0, opt1, opt2, true, true);
-  if (results != acquisitionFailure) {
+  if (!acquisitionFailure(results)) {
     auto absdiff0 = getAbsDiff(w0star, std::get<0>(results));
     auto absdiff1 = getAbsDiff(w1star, std::get<1>(results));
     std::cout << "abs diffs at float32: " << absdiff0 << " and " << absdiff1

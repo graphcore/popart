@@ -17,7 +17,8 @@ import test_util as tu
 # To solve we name accumulators after their weightId, which is assumed to be unique.
 
 
-def test_accumulators_names_dont_clash():
+@pytest.mark.parametrize("optType", ["SGD1", "SGD2"])
+def test_accumulators_names_dont_clash(optType):
     np.random.seed(1984)
 
     builder = popart.Builder()
@@ -48,11 +49,15 @@ def test_accumulators_names_dont_clash():
 
     dataFlow = popart.DataFlow(1, {})
 
-    opt = popart.SGD({
-        "defaultLearningRate": (0.1, True),
-        "defaultMomentum": (0.9, True),
-        "defaultDampening": (0, True)
-    })
+    sgdAccMm = popart.SGDAccumulatorAndMomentum.Combined if optType == "SGD1" else popart.SGDAccumulatorAndMomentum.Separate
+
+    opt = popart.SGD(
+        {
+            "defaultLearningRate": (0.1, True),
+            "defaultMomentum": (0.9, True),
+            "defaultDampening": (0, True)
+        },
+        accumulatorAndMomentum=sgdAccMm)
 
     session = popart.TrainingSession(
         fnModel=proto,
@@ -72,10 +77,15 @@ def test_accumulators_names_dont_clash():
         for o in op["outputs"]:
             tensors.add(o["name"])
 
-    prefixes = [
-        popart.reservedAcclPrefix(),
-        popart.reservedAcclToUpdatePrefix(),
-        popart.reservedAcclFinalOutPrefix()
-    ]
+    if optType == "SGD1":
+        prefixes = [
+            popart.reservedAcclPrefix(),
+            popart.reservedAcclToUpdatePrefix(),
+            popart.reservedAcclFinalOutPrefix()
+        ]
+    else:
+        # For SGD2, all accl1s have the same prefix.
+        prefixes = [popart.reservedAccl1Prefix()]
+
     for prefix, weight in itertools.product(prefixes, weights):
         assert prefix + weight in tensors

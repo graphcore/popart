@@ -96,6 +96,7 @@
 #include <popart/patterns/inplace.hpp>
 #include <popart/patterns/sgd0decompose.hpp>
 #include <popart/patterns/sgd1decompose.hpp>
+#include <popart/patterns/sgd2decompose.hpp>
 #include <popart/patterns/updateinplaceprioritiesforipu.hpp>
 #include <popart/patterns/viewsimplifypattern.hpp>
 
@@ -1226,6 +1227,8 @@ void Ir::prepareImpl(const IrBundle &gb, const HashesMap &cacheEntries) {
   applyPreAliasPattern(&sgd0Decomposer, getMainGraph());
   SGD1Decompose sgd1Decomposer;
   applyPreAliasPattern(&sgd1Decomposer, getMainGraph());
+  SGD2Decompose sgd2Decomposer;
+  applyPreAliasPattern(&sgd2Decomposer, getMainGraph());
   AdamDecompose adamDecomposer;
   applyPreAliasPattern(&adamDecomposer, getMainGraph());
   AdaptiveDecompose adaptiveDecomposer;
@@ -3566,8 +3569,8 @@ std::size_t std::hash<popart::Ir>::operator()(const popart::Ir &ir) const {
   return seed;
 }
 
-std::size_t std::hash<popart::IrBundle>::
-operator()(const popart::IrBundle &bundle) const {
+std::size_t
+std::hash<popart::IrBundle>::operator()(const popart::IrBundle &bundle) const {
   size_t seed = 0;
 
   boost::hash_combine(

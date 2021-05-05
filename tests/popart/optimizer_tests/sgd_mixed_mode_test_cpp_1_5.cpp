@@ -2,8 +2,9 @@
 #define BOOST_TEST_MODULE sgd_mixed_mode_test_1_5
 
 #include "get_results.hpp"
-
-BOOST_AUTO_TEST_CASE(SgdMixedModeTestCpp1_5) {
+BOOST_AUTO_TEST_CASE_TEMPLATE(SgdMixedModeTestCpp1_5,
+                              TestConfig,
+                              SGD1And2TestConfigs) {
 
   // As in test 4, but now with velocity scaling term changing.
 
@@ -33,44 +34,46 @@ BOOST_AUTO_TEST_CASE(SgdMixedModeTestCpp1_5) {
                     {"defaultWeightDecay", {wd0, false}},
                     {"defaultVelocityScaling", {vs0, false}},
                     {"lossScaling", {ls0, false}},
-                    {"defaultMomentum", {mm0, false}}});
+                    {"defaultMomentum", {mm0, false}}},
+                   {},
+                   TestConfig::sgdAccMm);
 
   popart::SGD opt1({{"defaultDampening", {dp1, false}},
                     {"defaultLearningRate", {lr1, false}},
                     {"defaultWeightDecay", {wd1, false}},
                     {"defaultVelocityScaling", {vs1, false}},
                     {"lossScaling", {ls1, false}},
-                    {"defaultMomentum", {mm1, false}}});
+                    {"defaultMomentum", {mm1, false}}},
+                   {},
+                   TestConfig::sgdAccMm);
 
   popart::SGD opt2({{"defaultDampening", {dp2, false}},
                     {"defaultLearningRate", {lr2, false}},
                     {"defaultWeightDecay", {wd2, false}},
                     {"defaultVelocityScaling", {vs2, false}},
                     {"lossScaling", {ls2, false}},
-                    {"defaultMomentum", {mm2, false}}});
-
-  auto getInitialV = [](float dp, float wd, float vs, float W) {
-    return (1.0f - dp) * wd * vs * W;
-  };
+                    {"defaultMomentum", {mm2, false}}},
+                   {},
+                   TestConfig::sgdAccMm);
 
   float w0star = 100;
   float g0star = 0;
-  float v0star = getInitialV(dp0, wd0, vs0, w0star);
-  laggedPytorchUpdateWithScaling(
+  float v0star = TestConfig::getInitialV(dp0, wd0, vs0, w0star);
+  TestConfig::laggedPytorchUpdateWithScaling(
       w0star, g0star, v0star, wd0, mm0, dp0, lr0, vs0, ls0);
-  laggedPytorchUpdateWithScaling(
+  TestConfig::laggedPytorchUpdateWithScaling(
       w0star, g0star, v0star, wd1, mm1, dp1, lr1, vs1, ls1);
-  laggedPytorchUpdateWithScaling(
+  TestConfig::laggedPytorchUpdateWithScaling(
       w0star, g0star, v0star, wd2, mm2, dp2, lr2, vs2, ls2);
 
   float w1star = 200;
   float g1star = 0;
-  float v1star = getInitialV(dp0, wd0, vs0, w1star);
-  laggedPytorchUpdateWithScaling(
+  float v1star = TestConfig::getInitialV(dp0, wd0, vs0, w1star);
+  TestConfig::laggedPytorchUpdateWithScaling(
       w1star, g1star, v1star, wd0, mm0, dp0, lr0, vs0, ls0);
-  laggedPytorchUpdateWithScaling(
+  TestConfig::laggedPytorchUpdateWithScaling(
       w1star, g1star, v1star, wd1, mm1, dp1, lr1, vs1, ls1);
-  laggedPytorchUpdateWithScaling(
+  TestConfig::laggedPytorchUpdateWithScaling(
       w1star, g1star, v1star, wd2, mm2, dp2, lr2, vs2, ls2);
 
   auto results  = getResults<float>(opt0, opt1, opt2, false, false);

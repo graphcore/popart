@@ -57,8 +57,16 @@ def compare_against_pytorch(optType, optMaps, batchesPerStep=5):
         popartOpt = popart.Adaptive
         optkwargs["mode"] = popart.AdaptiveMode.AdaDelta
         optkwargs["weight_decay_mode"] = popart.WeightDecayMode.L2Regularization
-    else:
+    elif optType == "sgd1":
         popartOpt = popart.SGD
+        optkwargs[
+            "accumulatorAndMomentum"] = popart.SGDAccumulatorAndMomentum.Combined
+    elif optType == "sgd2":
+        popartOpt = popart.SGD
+        optkwargs[
+            "accumulatorAndMomentum"] = popart.SGDAccumulatorAndMomentum.Separate
+    else:
+        raise "Unknown optType: " + optType
 
     #L1 loss value
     lambda1 = 1.0
@@ -228,7 +236,7 @@ def compare_against_pytorch(optType, optMaps, batchesPerStep=5):
                 rho=optMaps[step]["defaultAlpha"][0],
                 eps=optMaps[step]["defaultEps"][0],
                 weight_decay=optMaps[step]["defaultWeightDecay"][0])
-        else:
+        else:  # Same for SGD1 and SGD2.
             optimizer = optim.SGD(
                 net.parameters(),
                 lr=optMaps[step]["defaultLearningRate"][0],
@@ -297,37 +305,7 @@ def compare_against_pytorch(optType, optMaps, batchesPerStep=5):
     assert (error1 < 1e-5)
 
 
-@tu.requires_ipu_model
-def test_sgd1_against_pytorch():
-    """
-    Comparison of popart and PyTorch optimizers, and the changes needed to PyTorch 
-    to match popart. Note that these differences should have no effect on overall 
-    training measures, and this discussion is just for those interested in exact 
-    reproducility between popart and pytorch 
-
-    The main differences are:
-    1)
-    pytorch optimizer, in the very first iteration with a new optimizer: 
-    initializes velocity tensor with zeros and does not do damping,
-    popart optimizer, in the first iteration with a new optimizer:
-    retains velocity tensor from previous state with previous optimizer, 
-    or sets it to zero if the first round of training
-
-    2)
-    popart and pytorch updates the optimizer at a different "phase" 
-    a)    v <- v * mm  + (1 - dp) * wd * w
-    b)    v <- v + (1 - dp) * g
-    c)    w <- w - lr * v
-
-    pytorch goes (abc)(abc)(abc)(abc) 
-    popart goes  (abca)(bca)(bca)(bca)
-
-    where changes to the optimizer can be done between periods. For this reason, 
-    updates to mm, dp, and wd have different effects. 
-
-    See also sgd_mixed_mode_test_cpp_1_3.cpp
-    """
-
+def sgd_test_against_pytorch(optType):
     #optimizer parameters
     defaultLearningRate0 = 0.005
     defaultLearningRate1 = 0.003
@@ -366,7 +344,46 @@ def test_sgd1_against_pytorch():
         "defaultWeightDecay": (defaultWeightDecay0, False)
     }
 
-    compare_against_pytorch("sgd", [optMap0, optMap1, optMap2])
+    compare_against_pytorch(optType, [optMap0, optMap1, optMap2])
+
+
+@tu.requires_ipu_model
+def test_sgd2_against_pytorch():
+    sgd_test_against_pytorch("sgd2")
+
+
+@tu.requires_ipu_model
+def test_sgd1_against_pytorch():
+    """
+    Comparison of popart and PyTorch optimizers, and the changes needed to PyTorch 
+    to match popart. Note that these differences should have no effect on overall 
+    training measures, and this discussion is just for those interested in exact 
+    reproducility between popart and pytorch 
+
+    The main differences are:
+    1)
+    pytorch optimizer, in the very first iteration with a new optimizer: 
+    initializes velocity tensor with zeros and does not do damping,
+    popart optimizer, in the first iteration with a new optimizer:
+    retains velocity tensor from previous state with previous optimizer, 
+    or sets it to zero if the first round of training
+
+    2)
+    popart and pytorch updates the optimizer at a different "phase" 
+    a)    v <- v * mm  + (1 - dp) * wd * w
+    b)    v <- v + (1 - dp) * g
+    c)    w <- w - lr * v
+
+    pytorch goes (abc)(abc)(abc)(abc) 
+    popart goes  (abca)(bca)(bca)(bca)
+
+    where changes to the optimizer can be done between periods. For this reason, 
+    updates to mm, dp, and wd have different effects. 
+
+    See also sgd_mixed_mode_test_cpp_1_3.cpp
+    """
+
+    sgd_test_against_pytorch("sgd1")
 
 
 @tu.requires_ipu_model

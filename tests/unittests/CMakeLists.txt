@@ -34,6 +34,8 @@ add_popart_cpp_unit_test(unittest_graphutils unittest_graphutils.cpp TEST_UTILS 
 add_popart_cpp_unit_test(unittest_utils unittest_utils.cpp TEST_UTILS trompeloeil)
 add_popart_cpp_unit_test(unittest_Session_createFromIr session_createFromIr.cpp)
 
+add_popart_cpp_unit_test(unittest_pattern_sgd2decompose patterns/sgd2decompose.cpp TEST_UTILS test-graphs-test-util ir-query-test-util)
+
 add_popart_cpp_unit_test(unittest_sgd_optimizer optimizer/sgd_optimizer.cpp)
 
 add_popart_cpp_unit_test(unittest_graphtestwrapper testutil/irquery/unittest_graphtestwrapper.cpp TEST_UTILS ir-query-test-util trompeloeil)

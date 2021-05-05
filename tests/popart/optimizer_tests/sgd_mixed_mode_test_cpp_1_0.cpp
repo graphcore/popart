@@ -2,14 +2,18 @@
 #define BOOST_TEST_MODULE sgd_mixed_mode_test_1_0
 
 #include "get_results.hpp"
-
-BOOST_AUTO_TEST_CASE(SgdMixedModeTestCpp1_0) {
+BOOST_AUTO_TEST_CASE_TEMPLATE(SgdMixedModeTestCpp1_0,
+                              TestConfig,
+                              SGD1And2TestConfigs) {
 
   float lrTest0 = 1.0f / 4.0f;
-  popart::SGD opt0({
-      {"defaultLearningRate", {lrTest0, true}},
-      {"defaultMomentum", {1.0f, true}},
-  });
+  popart::SGD opt0(
+      {
+          {"defaultLearningRate", {lrTest0, true}},
+          {"defaultMomentum", {1.0f, true}},
+      },
+      {},
+      TestConfig::sgdAccMm);
   auto opt1 = opt0;
   auto opt2 = opt0;
 

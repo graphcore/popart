@@ -3,16 +3,21 @@
 
 #include "get_results.hpp"
 
-BOOST_AUTO_TEST_CASE(SgdMixedModeTestCpp1_2) {
+BOOST_AUTO_TEST_CASE_TEMPLATE(SgdMixedModeTestCpp1_2,
+                              TestConfig,
+                              SGD1And2TestConfigs) {
   // as test case 1, but non-const for all
 
   float lrTest0 = 1.0f / 4.0f;
-  popart::SGD opt0({
-      {"defaultLearningRate", {lrTest0, false}},
-      {"defaultMomentum", {1.0f, false}},
-      {"defaultVelocityScaling", {14.15f, false}},
-      {"lossScaling", {0.15f, false}},
-  });
+  popart::SGD opt0(
+      {
+          {"defaultLearningRate", {lrTest0, false}},
+          {"defaultMomentum", {1.0f, false}},
+          {"defaultVelocityScaling", {14.15f, false}},
+          {"lossScaling", {0.15f, false}},
+      },
+      {},
+      TestConfig::sgdAccMm);
   auto opt1     = opt0;
   auto opt2     = opt0;
   auto results  = getResults<float>(opt0, opt1, opt2, false, false);

@@ -28,14 +28,15 @@ def test_global_batch_size_correctness_test_sgd_(
 
 
 @tu.requires_ipu
+@pytest.mark.parametrize("optim", ["SGDM1", "SGDM2"])
 @pytest.mark.parametrize("reduction_type", ["Sum", "Mean"])
 @pytest.mark.parametrize("loss_type", ["Identity", "L1", "NLL"])
 @pytest.mark.parametrize("batchserial", ["Unroll", "Loop"])
 @pytest.mark.parametrize("explicit_loops", [True, False])
 def test_global_batch_size_correctness_test_sgdm(
-        tmpdir, reduction_type, loss_type, batchserial, explicit_loops):
+        tmpdir, optim, reduction_type, loss_type, batchserial, explicit_loops):
     run_global_batch_size_correctness_test(tmpdir, reduction_type, loss_type,
-                                           "SGDM", batchserial, explicit_loops)
+                                           optim, batchserial, explicit_loops)
 
 
 @tu.requires_ipu
@@ -133,13 +134,26 @@ def run_global_batch_size_correctness_test(tmpdir, reduction_type, loss_type,
                 "defaultLearningRate": (0.1, False),
                 "lossScaling": (20, False)
             })
-        elif optim is "SGDM":
-            optimizer = popart.SGD({
-                "defaultLearningRate": (0.1, False),
-                "defaultMomentum": (0.9, False),
-                "defaultDampening": (0.1, False),  # to increase errors
-                "lossScaling": (20, False),
-            })
+        elif optim is "SGDM1":
+            optimizer = popart.SGD(
+                {
+                    "defaultLearningRate": (0.1, False),
+                    "defaultMomentum": (0.9, False),
+                    "defaultDampening": (0.1, False),  # to increase errors
+                    "lossScaling": (20, False),
+                },
+                accumulatorAndMomentum=popart.SGDAccumulatorAndMomentum.
+                Combined)
+        elif optim is "SGDM2":
+            optimizer = popart.SGD(
+                {
+                    "defaultLearningRate": (0.1, False),
+                    "defaultMomentum": (0.9, False),
+                    "defaultDampening": (0.1, False),  # to increase errors
+                    "lossScaling": (20, False),
+                },
+                accumulatorAndMomentum=popart.SGDAccumulatorAndMomentum.
+                Separate)
         elif optim is "ADAM":
             optimizer = popart.Adam(
                 {

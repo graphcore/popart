@@ -11,7 +11,7 @@ class SGD1VarUpdateOp : public VarUpdateWithUpdaterOp {
 public:
   SGD1VarUpdateOp(OptimizerValue initSlr1, const Op::Settings &);
 
-  std::unique_ptr<Op> clone() const final;
+  std::unique_ptr<Op> clone() const override;
   std::map<InIndex, TensorId> optimizerInputs() const final;
   void appendOutlineAttributes(OpSerialiserBase &) const final;
 

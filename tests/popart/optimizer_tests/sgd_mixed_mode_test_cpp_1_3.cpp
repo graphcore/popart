@@ -3,7 +3,9 @@
 
 #include "get_results.hpp"
 
-BOOST_AUTO_TEST_CASE(SgdMixedModeTestCpp1_3) {
+BOOST_AUTO_TEST_CASE_TEMPLATE(SgdMixedModeTestCpp1_3,
+                              TestConfig,
+                              SGD1And2TestConfigs) {
 
   // Caveat about updating SGD and comparing to pytorch:
   // ---------------------------------
@@ -66,17 +68,23 @@ BOOST_AUTO_TEST_CASE(SgdMixedModeTestCpp1_3) {
   popart::SGD opt0({{"defaultDampening", {dp0, true}},
                     {"defaultLearningRate", {lr0, false}},
                     {"defaultWeightDecay", {wd0, true}},
-                    {"defaultMomentum", {mm0, false}}});
+                    {"defaultMomentum", {mm0, false}}},
+                   {},
+                   TestConfig::sgdAccMm);
 
   popart::SGD opt1({{"defaultDampening", {dp1, true}},
                     {"defaultLearningRate", {lr1, false}},
                     {"defaultWeightDecay", {wd1, true}},
-                    {"defaultMomentum", {mm1, false}}});
+                    {"defaultMomentum", {mm1, false}}},
+                   {},
+                   TestConfig::sgdAccMm);
 
   popart::SGD opt2({{"defaultDampening", {dp2, true}},
                     {"defaultLearningRate", {lr2, false}},
                     {"defaultWeightDecay", {wd2, true}},
-                    {"defaultMomentum", {mm2, false}}});
+                    {"defaultMomentum", {mm2, false}}},
+                   {},
+                   TestConfig::sgdAccMm);
 
   float w0star{100};
   float g0star{0};

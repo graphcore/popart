@@ -14,9 +14,9 @@ public:
                    OptimizerValue initSwd1,
                    const Op::Settings &);
 
-  std::unique_ptr<Op> clone() const final;
-  std::map<InIndex, TensorId> optimizerInputs() const final;
-  void appendOutlineAttributes(OpSerialiserBase &) const final;
+  std::unique_ptr<Op> clone() const override;
+  std::map<InIndex, TensorId> optimizerInputs() const override;
+  void appendOutlineAttributes(OpSerialiserBase &) const override;
 
   const OptimizerValue initSmm1;
   const OptimizerValue initSwd1;
@@ -24,6 +24,12 @@ public:
   static InIndex getSwd1InIndex() { return 3; }
 
   float getSubgraphValue() const final { return getLowSubgraphValue(); }
+
+protected:
+  SGD1AcclUpdateOp(OptimizerValue initSmm1,
+                   OptimizerValue initSwd1,
+                   OperatorIdentifier opid,
+                   const Op::Settings &);
 };
 
 } // namespace popart

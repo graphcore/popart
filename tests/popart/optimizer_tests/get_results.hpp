@@ -31,21 +31,47 @@
 
 // TODO T12595 : put the implemenations below into a .cpp file
 
-namespace {
 // names of 2 weights used in model
 constexpr const char *w0name = "__w0__";
 constexpr const char *w1name = "__w1__";
-int64_t replicationFactor    = 2;
-int64_t accumulationFactor   = 5;
+
+// Used in model. Exposed because some tests directly compute the updates
+// instead of emulating them with the helpers.
+int64_t replicationFactor  = 2;
+int64_t accumulationFactor = 5;
+
+namespace _detail {
+
 // TODO T10881 : cleaner solution to acquisition of IPU failure
 std::array<float, 2> acquisitionFailure{-99.0f, -99.0f};
-} // namespace
 
-float getAbsDiff(float expected, float observed) {
-  float absv = std::abs(expected - observed);
-  std::cout << "Expected=" << expected << ", observed=" << observed
-            << " with absolute difference=" << absv << std::endl;
-  return absv;
+} // namespace _detail
+
+// Pytorch update equations with loss and velocity scaling added. Required when
+// the velocity-scaled v tensor must be modelled.
+void pytorchUpdateWithScaling(float &w,
+                              float &g,
+                              float &v,
+                              float wd,
+                              float mm,
+                              float dp,
+                              float lr,
+                              bool repl  = false,
+                              bool accum = false,
+                              float vs   = 1.0f,
+                              float ls   = 1.0f) {
+  // from the model below
+  g = +1.0f * ls;
+  if (repl) {
+    g *= static_cast<float>(replicationFactor);
+  }
+  if (accum) {
+    g *= static_cast<float>(accumulationFactor);
+  }
+
+  v = v * mm + (1.0f - dp) * vs / ls * g + (1.0f - dp) * vs * wd * w;
+
+  w -= lr / vs * v;
 }
 
 // The pytorch update equations:
@@ -54,52 +80,169 @@ float getAbsDiff(float expected, float observed) {
 // (2) v = v * mm + (1 - dp) * g
 // (3) w = w - lr * v
 //
+// Note there is no velocity or loss scaling in the Pytorch update, but the
+// final w should not affected by this anyway. v is affected however, so
+// pytorchUpdateWithScaling should be used to model v under velocity scaling.
 void pytorchUpdate(float &w,
                    float &g,
                    float &v,
                    float wd,
                    float mm,
                    float dp,
-                   float lr) {
-
-  g = +1.0f; // from the model below
-  g += wd * w;
-  v *= mm;
-  v += (1.0f - dp) * g;
-  w -= lr * v;
+                   float lr,
+                   bool repl  = false,
+                   bool accum = false) {
+  return pytorchUpdateWithScaling(w, g, v, wd, mm, dp, lr, repl, accum, 1, 1);
 }
 
-void laggedPytorchUpdate(float &w,
-                         float &g,
-                         float &v,
-                         float wd,
-                         float mm,
-                         float dp,
-                         float lr,
-                         int64_t replFactor = 1,
-                         int64_t acclFactor = 1) {
+namespace _detail {
 
-  g = +1.0f *
-      static_cast<float>(replFactor * acclFactor); // from the model below
-  v = v + (1.0f - dp) * g;
-  w = w - lr * v;
-  v = v * mm + (1.0f - dp) * wd * w;
+template <typename Derived> struct SGDTestConfig {
+  /*
+    Must implement
+
+    static constexpr popart::SGDAccumulatorAndMomentum sgdAccMm;
+  */
+
+  static float getInitialV(float dp, float wd, float vs, float W) {
+    throw popart::internal_error(
+        "Class {} that extends SGDTestConfig must implement the static "
+        "getInitialV method.",
+        typeid(Derived).name());
+  }
+
+  static float getInitialV(float dp, float wd, float W) {
+    return Derived::getInitialV(dp, wd, 1.0f, W);
+  }
+
+  static void laggedPytorchUpdate(float &w,
+                                  float &g,
+                                  float &v,
+                                  float wd,
+                                  float mm,
+                                  float dp,
+                                  float lr,
+                                  int64_t replFactor,
+                                  int64_t acclFactor) {
+    throw popart::internal_error(
+        "Class {} that extends SGDTestConfig must implement the static "
+        "laggedPytorchUpdate method.",
+        typeid(Derived).name());
+  }
+
+  static void laggedPytorchUpdateWithScaling(float &w,
+                                             float &g,
+                                             float &v,
+                                             float wd,
+                                             float mm,
+                                             float dp,
+                                             float lr,
+                                             float vs,
+                                             float ls) {
+    throw popart::internal_error(
+        "Class {} that extends SGDTestConfig must implement the static"
+        "laggedPytorchUpdateWithScaling method.",
+        typeid(Derived).name());
+  }
+};
+
+} // namespace _detail
+
+struct SGD2TestConfig : public _detail::SGDTestConfig<SGD2TestConfig> {
+  static constexpr popart::SGDAccumulatorAndMomentum sgdAccMm =
+      popart::SGDAccumulatorAndMomentum::Separate;
+
+  using _detail::SGDTestConfig<SGD2TestConfig>::getInitialV;
+
+  static float getInitialV(float, float, float vs, float) { return vs * 0.0f; };
+
+  static void laggedPytorchUpdate(float &w,
+                                  float &g,
+                                  float &v,
+                                  float wd,
+                                  float mm,
+                                  float dp,
+                                  float lr,
+                                  bool repl  = false,
+                                  bool accum = false) {
+    pytorchUpdate(w, g, v, wd, mm, dp, lr, repl, accum);
+  }
+
+  static void laggedPytorchUpdateWithScaling(float &w,
+                                             float &g,
+                                             float &v,
+                                             float wd,
+                                             float mm,
+                                             float dp,
+                                             float lr,
+                                             float vs,
+                                             float ls) {
+    pytorchUpdateWithScaling(w, g, v, wd, mm, dp, lr, false, false, vs, ls);
+  }
+};
+
+struct SGD1TestConfig : public _detail::SGDTestConfig<SGD1TestConfig> {
+  static constexpr popart::SGDAccumulatorAndMomentum sgdAccMm =
+      popart::SGDAccumulatorAndMomentum::Combined;
+
+  using _detail::SGDTestConfig<SGD1TestConfig>::getInitialV;
+
+  static float getInitialV(float dp, float wd, float vs, float W) {
+    return (1.0f - dp) * wd * vs * W;
+  };
+
+  static void laggedPytorchUpdate(float &w,
+                                  float &g,
+                                  float &v,
+                                  float wd,
+                                  float mm,
+                                  float dp,
+                                  float lr,
+                                  bool repl  = false,
+                                  bool accum = false) {
+
+    // from the model below
+    g = +1.0f;
+    if (repl) {
+      g *= static_cast<float>(replicationFactor);
+    }
+    if (accum) {
+      g *= static_cast<float>(accumulationFactor);
+    }
+
+    v = v + (1.0f - dp) * g;
+    w = w - lr * v;
+    v = v * mm + (1.0f - dp) * wd * w;
+  }
+
+  static void laggedPytorchUpdateWithScaling(float &w,
+                                             float &g,
+                                             float &v,
+                                             float wd,
+                                             float mm,
+                                             float dp,
+                                             float lr,
+                                             float vs,
+                                             float ls) {
+
+    g = +1.0f * ls;
+    v = v + vs * (1.0f - dp) * g / ls;
+    w = w - lr * v / vs;
+    v = v * mm + vs * (1.0f - dp) * wd * w;
+  }
+};
+
+using SGD1And2TestConfigs = std::tuple<SGD1TestConfig, SGD2TestConfig>;
+
+bool acquisitionFailure(std::array<float, 2> res) {
+  return res == _detail::acquisitionFailure;
 }
 
-void laggedPytorchUpdateWithScaling(float &w,
-                                    float &g,
-                                    float &v,
-                                    float wd,
-                                    float mm,
-                                    float dp,
-                                    float lr,
-                                    float vs,
-                                    float ls) {
-
-  g = +1.0f * ls;
-  v = v + vs * (1.0f - dp) * g / ls;
-  w = w - lr * v / vs;
-  v = v * mm + vs * (1.0f - dp) * wd * w;
+float getAbsDiff(float expected, float observed) {
+  float absv = std::abs(expected - observed);
+  std::cout << "Expected=" << expected << ", observed=" << observed
+            << " with absolute difference=" << absv << std::endl;
+  return absv;
 }
 
 template <typename T> std::string getFloatString() {
@@ -210,7 +353,7 @@ getResults(const popart::SGD &opt0, // initial Optimizer
       if (errorIfFailToAcquire) {
         throw error("Failed to enumerate any devices in get_results.hpp");
       } else {
-        return acquisitionFailure;
+        return _detail::acquisitionFailure;
       }
     }
 
@@ -221,7 +364,7 @@ getResults(const popart::SGD &opt0, // initial Optimizer
       if (errorIfFailToAcquire) {
         throw error("Failed to acquire device in get_results.hpp");
       } else {
-        return acquisitionFailure;
+        return _detail::acquisitionFailure;
       }
     }
   }

@@ -759,19 +759,19 @@ PYBIND11_MODULE(popart_core, m) {
       py::class_<SGD> sgd(m, "SGD", optimizer, DOC(popart, SGD));
       sgd.def(py::init([](py::dict pyd,
                           std::vector<ClipNormSettings> clipNormSettings,
-                          SGDAccumulatorAndMomentum sgdAccumulatorAndMomentum,
+                          SGDAccumulatorAndMomentum accumulatorAndMomentum,
                           DataType accumType,
                           DataType accl1Type) {
                 auto cppm = getOptimizerValueDictionary(pyd);
                 return SGD(cppm,
                            clipNormSettings,
-                           sgdAccumulatorAndMomentum,
+                           accumulatorAndMomentum,
                            accumType,
                            accl1Type);
               }),
               py::arg("pyd"),
               py::arg("clip_norm_settings") = std::vector<ClipNormSettings>{},
-              py::arg("sgdAccumulatorAndMomentum") =
+              py::arg("accumulatorAndMomentum") =
                   SGDAccumulatorAndMomentum::Combined,
               py::arg("accumType") = DataType::UNDEFINED,
               py::arg("accl1Type") = DataType::UNDEFINED);

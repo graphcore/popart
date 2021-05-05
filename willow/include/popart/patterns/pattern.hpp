@@ -85,7 +85,7 @@ public:
 protected:
   std::string getReplacementOpName(Op *op, const std::string name) const;
 
-  void transferBaseProperties(Op *from, Op *to) const;
+  void transferBaseProperties(const Op *from, Op *to) const;
 };
 
 class PreAliasPattern : public Pattern {

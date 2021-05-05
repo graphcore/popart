@@ -3,24 +3,29 @@
 
 #include "get_results.hpp"
 
-BOOST_AUTO_TEST_CASE(SgdMixedModeTestCpp1_10) {
+BOOST_AUTO_TEST_CASE_TEMPLATE(SgdMixedModeTestCpp1_10,
+                              TestConfig,
+                              SGD1And2TestConfigs) {
   // as test case 2, but with NO  :  gradient accumulation
   //                          YES :  graph replication
 
   float learningRate = 1.0f / 4.0f;
-  popart::SGD opt0({
-      {"defaultLearningRate", {learningRate, false}},
-      {"defaultMomentum", {1.0f, false}},
-      {"defaultVelocityScaling", {14.15f, false}},
-      {"lossScaling", {0.15f, false}},
-  });
+  popart::SGD opt0(
+      {
+          {"defaultLearningRate", {learningRate, false}},
+          {"defaultMomentum", {1.0f, false}},
+          {"defaultVelocityScaling", {14.15f, false}},
+          {"lossScaling", {0.15f, false}},
+      },
+      {},
+      TestConfig::sgdAccMm);
   auto opt1  = opt0;
   auto opt2  = opt0;
   bool wAccl = false;
   bool wRepl = true;
 
   auto results = getResults<float>(opt0, opt1, opt2, wAccl, wRepl);
-  if (results != acquisitionFailure) {
+  if (!acquisitionFailure(results)) {
     // int64_t correction = replicationFactor * accumulationFactor;
     int64_t correction =
         (wRepl ? replicationFactor : 1) * (wAccl ? accumulationFactor : 1);

@@ -46,6 +46,11 @@ SGD1AcclUpdateOp::SGD1AcclUpdateOp(OptimizerValue smm1,
     : VarUpdateWithUpdaterOp(Onnx::CustomOperators::SGD1AcclUpdate, opSettings),
       initSmm1(smm1), initSwd1(swd1) {}
 
-namespace {} // namespace
+SGD1AcclUpdateOp::SGD1AcclUpdateOp(OptimizerValue smm1,
+                                   OptimizerValue swd1,
+                                   OperatorIdentifier opid,
+                                   const Op::Settings &opSettings)
+    : VarUpdateWithUpdaterOp(std::move(opid), opSettings),
+      initSmm1(std::move(smm1)), initSwd1(std::move(swd1)) {}
 
 } // namespace popart
