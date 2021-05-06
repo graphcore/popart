@@ -34,6 +34,8 @@ public:
    * return the information required to use it.
    * \param fwdGraph A reference to the forward graph.
    * \param bwdGraphId A proposed identifier for the backwards graph.
+   * \param gradsProvidedForFwdId The tensors (normally outputs of
+   *     fwdGraph) for which gradient tensors are available.
    * \param gradsRequiredForFwdId  The tensors (normally inputs of the
    *     fwdGraph) for which gradient tensors are required (as outputs to the
    *     returned backwards graph).
@@ -44,6 +46,7 @@ public:
   virtual BwdGraphInfo
   createBackwardsGraph(const Graph &fwdGraph,
                        const GraphId &bwdGraphId,
+                       const TensorIds &gradsProvidedForFwdId,
                        const nonstd::optional<TensorIds> &gradsRequiredForFwdId,
                        const FwdGraphToBwdGraphInfo &calledGraphsGradInfo);
 

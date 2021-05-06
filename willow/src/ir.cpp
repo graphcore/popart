@@ -2654,8 +2654,8 @@ TensorId Ir::getFinalLossId() const { return finalLossId; }
 void Ir::append(std::stringstream &ss) const {
   ss << "\n";
 
-  int i = 0;
-  for (auto graph : getGraphSchedule()) {
+  int i           = 0;
+  auto printGraph = [&](const Graph *graph) {
     if (i > 0) {
       ss << "============================================================\n";
     }
@@ -2668,6 +2668,16 @@ void Ir::append(std::stringstream &ss) const {
 
     for (auto &op : graph->getOpSchedule({}, RequireOptimalSchedule::Yes)) {
       op->append(ss);
+    }
+  };
+
+  // Print the main graph first.
+  printGraph(&getMainGraph());
+
+  // Print all subgraphs.
+  for (auto graph : getAllGraphs()) {
+    if (graph->id != getMainGraph().id) {
+      printGraph(graph);
     }
   }
 }

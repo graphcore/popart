@@ -11,6 +11,8 @@
 #include <popart/ir.hpp>
 #include <popart/op.hpp>
 #include <popart/op/call.hpp>
+#include <popart/op/greater.hpp>
+#include <popart/op/loop.hpp>
 #include <popart/op/sum.hpp>
 #include <popart/optimizer.hpp>
 #include <popart/tensornames.hpp>
@@ -156,7 +158,7 @@ public:
 
   const std::vector<GradInOutMapper> &gradInputInfo() const override {
     static const std::vector<GradInOutMapper> inInfo = {
-        {0, 0, GradOpInType::In}, {1, 1, GradOpInType::In}};
+        {0, 0, GradOpInType::In}, {1, 0, GradOpInType::GradOut}};
     return inInfo;
   }
 
@@ -198,11 +200,184 @@ InIndex getUniqInIndex(Op *op, const TensorId &id) {
   return indices.at(0);
 };
 
+/**
+ * Add the following to an IR:
+ *
+ * .--[main graph]-----.
+ * |                   |
+ * |    ["t0"]         |
+ * |      |            |
+ * |   #0 v            |
+ * | SimpleTestOp      |
+ * |   #0 |            |
+ * |      v            |
+ * |    ["t1"]         |
+ * |                   |
+ * '-------------------'
+ **/
+void addTestIr1(Ir &ir) {
+
+  auto &mainGraph       = ir.getMainGraph();
+  Op::Settings settings = Op::Settings{mainGraph, "SimpleTestOp"};
+
+  // Add "t0" to the main graph.
+  TensorInfo t0Info{DataType::INT32, {}};
+  int32_t t0Data[] = {5};
+  mainGraph.getTensors().addVarInit("t0", t0Info, static_cast<void *>(&t0Data));
+
+  // Add SimpleTestOp.
+  auto simpleTestOp = mainGraph.createOp<SimpleTestOp>(settings);
+
+  // Connect "t0" to SimpleTestOp's input, create the "t1" output and call
+  // setup().
+  simpleTestOp->connectInTensor(0, "t0");
+  simpleTestOp->createAndConnectOutTensor(0, "t1");
+  simpleTestOp->setup();
+}
+
+/**
+ * Add the following to an IR:
+ *
+ * .--[main graph]----------.
+ * |                        |
+ * |  ["main_in"]           |
+ * |      |                 |
+ * |   #0 v                 |
+ * |  CallOp<A>             |
+ * |   #0 |                 |
+ * |      v                 |
+ * |  ["main_out"]          |
+ * '------------------------'
+ *
+ *    [A/a_in]
+ *      |
+ * .----|-[subgraph "A"]----.
+ * | #0 v                   |
+ * | SimpleTestOp           |
+ * | #0 |                   |
+ * | [A/a_tmp]              |
+ * |    |                   |
+ * | #0 v                   |
+ * | SimpleTestOp           |
+ * | #0 |                   |
+ * |    |                   |
+ * |  [A/a_tmp]             |
+ * |    |                   |
+ * | #0 v                   |
+ * | SimpleTestOp           |
+ * | #0 |                   |
+ * |    |                   |
+ * |    |                   |
+ * '----|-------------------'
+ *      v
+ *    [A/a_out]
+ **/
+void addTestIr2(Ir &ir) {
+  // Tensor info for tensors in the IR.
+  TensorInfo tInfo{DataType::INT32, {}};
+  int32_t tData[] = {5};
+
+  // Create the subgraph.
+  auto &subgraphA = ir.createGraph(GraphId("A"));
+
+  // Create subgraph A.
+  auto a_in  = subgraphA.addScope("a_in");
+  auto a_tmp = subgraphA.addScope("a_tmp");
+  auto a_out = subgraphA.addScope("a_out");
+  subgraphA.addInput(a_in, tInfo);
+
+  // Add SimpleTestOp0.
+  Op::Settings settingsSubgraphA = Op::Settings{subgraphA, "SimpleTestOp"};
+  auto simpleTestOp0 = subgraphA.createOp<SimpleTestOp>(settingsSubgraphA);
+
+  // Connect SimpleTestOp0.
+  simpleTestOp0->connectInTensor(0, a_in);
+  simpleTestOp0->createAndConnectOutTensor(0, a_tmp);
+  simpleTestOp0->setup();
+
+  // Add SimpleTestOp1.
+  auto simpleTestOp1 = subgraphA.createOp<SimpleTestOp>(settingsSubgraphA);
+
+  // Connect SimpleTestOp1.
+  simpleTestOp1->connectInTensor(0, a_tmp);
+  simpleTestOp1->createAndConnectOutTensor(0, a_out);
+  simpleTestOp1->setup();
+
+  // Mark "a_out" as a graph output.
+  subgraphA.markAsOutput(a_out);
+  // Create the subgraph.
+  auto &mainGraph = ir.getMainGraph();
+
+  // Create main graph.
+  mainGraph.getTensors().addVarInit(
+      "main_in", tInfo, static_cast<void *>(&tData));
+
+  auto callOp = mainGraph.createOp<CallOp>(
+      Onnx::AiGraphcore::OpSet1::Call,
+      std::ref(subgraphA),
+      Op::Settings{mainGraph, "", mainGraph.getScope()});
+
+  callOp->connectInTensor(0, "main_in");
+  callOp->createAndConnectOutTensor(0, "main_out");
+  callOp->setup();
+}
+
+/**
+ * Add the following to an IR:
+ *
+ *     [A/a_in0] [A/a_in1]
+ *        |        |
+ * .-["A"]|--------|---------.
+ * |      |        |         |
+ * |      | .------'         |
+ * |      | |                |
+ * |      | |                |
+ * |      | |                |
+ * |   #0 v v #1             |
+ * |   AdvTest1Op            |
+ * |   #0 |                  |
+ * |      |                  |
+ * '------|- ----------------'
+ *        |
+ *        v
+ *     [A/a_out0]
+ **/
+void addTestIr3(Ir &ir) {
+  // Tensor info for tensors in the IR.
+  TensorInfo tInfo{DataType::INT32, {}};
+  int32_t tData[] = {5};
+
+  // Create the subgraph.
+  auto &mainGraph = ir.getMainGraph();
+  auto &subgraphA = ir.createGraph(GraphId("A"));
+
+  // Create subgraph A.
+  auto a_in0  = subgraphA.addScope("a_in0");
+  auto a_in1  = subgraphA.addScope("a_in1");
+  auto a_out0 = subgraphA.addScope("a_out0");
+  subgraphA.addInput(a_in0, tInfo);
+  subgraphA.addInput(a_in1, tInfo);
+
+  // Add AdvTest1Op.
+  Op::Settings settingsSubgraphA = Op::Settings{subgraphA, "AdvTest1Op"};
+  auto advTest1Op0 = subgraphA.createOp<AdvTest1Op>(settingsSubgraphA);
+
+  // Connect AdvTest1Op.
+  advTest1Op0->connectInTensor(0, a_in0);
+  advTest1Op0->connectInTensor(1, a_in1);
+  advTest1Op0->createAndConnectOutTensor(0, a_out0);
+  advTest1Op0->setup();
+
+  // Mark "a_out" as a graph output.
+  subgraphA.markAsOutput(a_out0);
+}
+
 } // namespace
 
 BOOST_AUTO_TEST_CASE(autodiff_0) {
 
-  // Check that autodiff (`bool apply(Ir&)`) adds parts of the IR marked below.
+  // Check that when given the left hand side of the IR below (from makeTestIr1)
+  // autodiff's (`bool apply(Ir&)`) adds the parts of the IR on the right:
   //
   // This is a very basic IR that comprises of only a main graph with one simple
   // test op.
@@ -241,22 +416,7 @@ BOOST_AUTO_TEST_CASE(autodiff_0) {
   // that we avoid using the builder to do this (which is used in most tests)
   // to try and minimise the amount of production code we are instantiating in
   // this test, making it as close to a unit test as possible.
-  auto &mainGraph       = ir.getMainGraph();
-  Op::Settings settings = Op::Settings{mainGraph, "SimpleTestOp"};
-
-  // Add "t0" to the main graph.
-  TensorInfo t0Info{DataType::INT32, {}};
-  int32_t t0Data[] = {5};
-  mainGraph.getTensors().addVarInit("t0", t0Info, static_cast<void *>(&t0Data));
-
-  // Add SimpleTestOp.
-  auto simpleTestOp = mainGraph.createOp<SimpleTestOp>(settings);
-
-  // Connect "t0" to SimpleTestOp's input, create the "t1" output and call
-  // setup().
-  simpleTestOp->connectInTensor(0, "t0");
-  simpleTestOp->createAndConnectOutTensor(0, "t1");
-  simpleTestOp->setup();
+  addTestIr1(ir);
 
   // Set "t1" as the loss.
   ir.setFinalLoss("t1");
@@ -269,7 +429,7 @@ BOOST_AUTO_TEST_CASE(autodiff_0) {
   ir.updateVertices();
 
   // Now apply the transform.
-  ir.applyTransform(Autodiff::id(), mainGraph);
+  ir.applyTransform(Autodiff::id(), ir.getMainGraph());
 
   // Now check that autodiff added the right things.
 
@@ -302,10 +462,8 @@ BOOST_AUTO_TEST_CASE(autodiff_0) {
 
 BOOST_AUTO_TEST_CASE(autodiff_1) {
 
-  // Check that autodiff (`bool apply(Ir&)`) adds parts of the IR marked below.
-  //
-  // This test case comprises a subgraph with two test ops and a main graph
-  // with one callop to the subgraph.
+  // Check that autodiff (`bool apply(Ir&)`) applied to the IR generated by
+  // `testIr2` adds parts of the IR marked on the right-hand side below:
   //
   // .-----------------------------[main graph]--------------------------------.
   // |                                                                         |
@@ -369,53 +527,7 @@ BOOST_AUTO_TEST_CASE(autodiff_1) {
   // - _g0, _g1, _g2   are arbitrary edge gradient TensorIds.
 
   Ir ir;
-
-  // Tensor info for tensors in the IR.
-  TensorInfo tInfo{DataType::INT32, {}};
-  int32_t tData[] = {5};
-
-  // Create the subgraph.
-  auto &mainGraph = ir.getMainGraph();
-  auto &subgraphA = ir.createGraph(GraphId("A"));
-
-  // Create subgraph A.
-  auto a_in  = subgraphA.addScope("a_in");
-  auto a_tmp = subgraphA.addScope("a_tmp");
-  auto a_out = subgraphA.addScope("a_out");
-  subgraphA.addInput(a_in, tInfo);
-
-  // Add SimpleTestOp0.
-  Op::Settings settingsSubgraphA = Op::Settings{subgraphA, "SimpleTestOp"};
-  auto simpleTestOp0 = subgraphA.createOp<SimpleTestOp>(settingsSubgraphA);
-
-  // Connect SimpleTestOp0.
-  simpleTestOp0->connectInTensor(0, a_in);
-  simpleTestOp0->createAndConnectOutTensor(0, a_tmp);
-  simpleTestOp0->setup();
-
-  // Add SimpleTestOp1.
-  auto simpleTestOp1 = subgraphA.createOp<SimpleTestOp>(settingsSubgraphA);
-
-  // Connect SimpleTestOp1.
-  simpleTestOp1->connectInTensor(0, a_tmp);
-  simpleTestOp1->createAndConnectOutTensor(0, a_out);
-  simpleTestOp1->setup();
-
-  // Mark "a_out" as a graph output.
-  subgraphA.markAsOutput(a_out);
-
-  // Create main graph.
-  mainGraph.getTensors().addVarInit(
-      "main_in", tInfo, static_cast<void *>(&tData));
-
-  auto callOp = mainGraph.createOp<CallOp>(
-      Onnx::AiGraphcore::OpSet1::Call,
-      subgraphA,
-      Op::Settings{mainGraph, "", mainGraph.getScope()});
-
-  callOp->connectInTensor(0, "main_in");
-  callOp->createAndConnectOutTensor(0, "main_out");
-  callOp->setup();
+  addTestIr2(ir);
 
   // Set "t1" as the loss.
   ir.setFinalLoss("main_out");
@@ -428,7 +540,7 @@ BOOST_AUTO_TEST_CASE(autodiff_1) {
   ir.updateVertices();
 
   // Now apply the transform.
-  ir.applyTransform(Autodiff::id(), mainGraph);
+  ir.applyTransform(Autodiff::id(), ir.getMainGraph());
 
   // First we check the main graph. We start by getting a test wrapper for the
   // main graph.
@@ -547,9 +659,10 @@ BOOST_AUTO_TEST_CASE(autodiff_1) {
 
 BOOST_AUTO_TEST_CASE(autodiff_createBwdGraph_0) {
 
-  // Check that the autodiff prototype that operates on a single subgraph, when
-  // given `gradsProvidedForTensors` as [A/a_out] returns a graph as per the
-  // below:
+  // Check that the autodiff prototype that operates on subgraph "A" of testIr2
+  // `gradsProvidedForTensors` as [A/a_out] returns a graph as per the
+  // right-hand side below:
+  //
   //                             .........[expected autodiff result]..........
   //                             : bwdGraphId: _k                            :
   //                             : expectedInputs (any order):               :
@@ -597,43 +710,15 @@ BOOST_AUTO_TEST_CASE(autodiff_createBwdGraph_0) {
   // - _g0, _g1        are arbitrary edge gradient TensorIds.
 
   Ir ir;
+  addTestIr2(ir);
 
-  // Tensor info for tensors in the IR.
-  TensorInfo tInfo{DataType::INT32, {}};
-  int32_t tData[] = {5};
-
-  // Create the subgraph.
-  auto &mainGraph = ir.getMainGraph();
-  auto &subgraphA = ir.createGraph(GraphId("A"));
-
-  // Create subgraph A.
-  auto a_in  = subgraphA.addScope("a_in");
-  auto a_tmp = subgraphA.addScope("a_tmp");
-  auto a_out = subgraphA.addScope("a_out");
-  subgraphA.addInput(a_in, tInfo);
-
-  // Add SimpleTestOp0.
-  Op::Settings settingsSubgraphA = Op::Settings{subgraphA, "SimpleTestOp"};
-  auto simpleTestOp0 = subgraphA.createOp<SimpleTestOp>(settingsSubgraphA);
-
-  // Connect SimpleTestOp0.
-  simpleTestOp0->connectInTensor(0, a_in);
-  simpleTestOp0->createAndConnectOutTensor(0, a_tmp);
-  simpleTestOp0->setup();
-
-  // Add SimpleTestOp1.
-  auto simpleTestOp1 = subgraphA.createOp<SimpleTestOp>(settingsSubgraphA);
-
-  // Connect SimpleTestOp1.
-  simpleTestOp1->connectInTensor(0, a_tmp);
-  simpleTestOp1->createAndConnectOutTensor(0, a_out);
-  simpleTestOp1->setup();
-
-  // Mark "a_out" as a graph output.
-  subgraphA.markAsOutput(a_out);
+  // Get some tensor ids.
+  auto &subgraphA = ir.getGraph(GraphId("A"));
+  auto a_in       = subgraphA.addScope("a_in");
+  auto a_tmp      = subgraphA.addScope("a_tmp");
+  auto a_out      = subgraphA.addScope("a_out");
 
   // Now apply the createBwdGraph function.
-
   Autodiff autodiff;
   auto result = autodiff.createBwdGraph(std::ref(ir),
                                         GraphId("A"),
@@ -730,8 +815,17 @@ BOOST_AUTO_TEST_CASE(autodiff_createBwdGraph_0) {
 
 BOOST_AUTO_TEST_CASE(autodiff_createBwdGraph_1) {
 
-  // Test that if a tensor in `gradsRequiredForFwdId` cannot be produced then
-  // an error is raised. Graph is:
+  // Test that, with subgraph A in the left-hand side of the IR below (from
+  // addTestIr3):
+  //
+  // - If a gradient is provided for A/a_out0 and a gradient is required for
+  //   for both A/a_in0 and A/a_in1 then an error is raised (because
+  //   AdvTest1GradOp can't produce a gradient for that input).
+  // - If no gradient is provided and a gradient is required for A/a_in0 then
+  //   an error is raised (because AdvTest1GradOp needs the a_out0 gradient
+  //   input to produce the gradient for a_in0).
+  // - If a gradient is provided for A/a_out0 and a gradient is required for
+  //   A/a_in0 then all is well and a gradient for A/a_in0 is available.
   //
   //                             ....[generated by autodiff on success]........
   //                             :                                            :
@@ -746,9 +840,10 @@ BOOST_AUTO_TEST_CASE(autodiff_createBwdGraph_1) {
   // |   #0 v v #1             | : |   #0 |      :                          | :
   // |   AdvTest1Op            | : |   AdvTest1GradOp                       | :
   // |   #0 |                  | : |   #0 ^   #1 ^                          | :
-  // |      |                  | : |      |      |                          | :
-  // |      |                  | : |  .---'      |                          | :
-  // |      |                  | : |  |          |                          | :
+  // |      |                  | : |      |      |.. If this gradient is not| :
+  // |      |                  | : |  .---'      |   provided then the grad | :
+  // |      |                  | : |  |          |   for a_in0 can't be     | :
+  // |      |                  | : |  |          |   created.               | :
   // '------|- ----------------' : '--|----------|--------------------------' :
   //        |                    :    |          |                            :
   //        v                    :    |          |                            :
@@ -757,52 +852,223 @@ BOOST_AUTO_TEST_CASE(autodiff_createBwdGraph_1) {
   //                             :............................................:
 
   Ir ir;
+  addTestIr3(ir);
 
-  // Tensor info for tensors in the IR.
-  TensorInfo tInfo{DataType::INT32, {}};
-  int32_t tData[] = {5};
+  // Get tensorIds.
+  auto &subgraphA = ir.getGraph(GraphId("A"));
+  auto a_in0      = subgraphA.addScope("a_in0");
+  auto a_in1      = subgraphA.addScope("a_in1");
+  auto a_out0     = subgraphA.addScope("a_out0");
 
-  // Create the subgraph.
-  auto &mainGraph = ir.getMainGraph();
-  auto &subgraphA = ir.createGraph(GraphId("A"));
+  auto test = [&](Autodiff::TensorIds provided, Autodiff::TensorIds required) {
+    std::cout << "----------------------------------------" << std::endl;
+    std::cout << "Testing provided=" << provided << " required=" << required
+              << std::endl;
 
-  // Create subgraph A.
-  auto a_in0  = subgraphA.addScope("a_in0");
-  auto a_in1  = subgraphA.addScope("a_in1");
-  auto a_out0 = subgraphA.addScope("a_out0");
-  subgraphA.addInput(a_in0, tInfo);
-  subgraphA.addInput(a_in1, tInfo);
+    // Now call `createBwdGraph`.
+    Autodiff autodiff;
+    auto result = autodiff.createBwdGraph(std::ref(ir),
+                                          GraphId("A"),
+                                          provided,
+                                          required,
+                                          FwdGraphToBwdGraphInfo());
 
-  // Add AdvTest1Op.
-  Op::Settings settingsSubgraphA = Op::Settings{subgraphA, "AdvTest1Op"};
-  auto advTest1Op0 = subgraphA.createOp<AdvTest1Op>(settingsSubgraphA);
+    std::cout << "Got bwdGraphId=" << result.bwdGraphId << std::endl;
 
-  // Connect AdvTest1Op.
-  advTest1Op0->connectInTensor(0, a_in0);
-  advTest1Op0->connectInTensor(1, a_in1);
-  advTest1Op0->createAndConnectOutTensor(0, a_out0);
-  advTest1Op0->setup();
+    ir.logIr();
+  };
 
-  // Mark "a_out" as a graph output.
-  subgraphA.markAsOutput(a_out0);
+  // If a gradient is provided for A/a_out0 and a gradient is required for
+  // for both A/a_in0 and A/a_in1 then an error is raised (because
+  // AdvTest1GradOp can't produce a gradient for that input).
+  BOOST_REQUIRE_THROW(test({a_out0}, {a_in0, a_in1}), std::runtime_error);
+
+  // If no gradient is provided and a gradient is required for A/a_in0 then
+  // an error is raised (because AdvTest1GradOp needs the a_out0 gradient
+  // input to produce the gradient for a_in0).
+  BOOST_REQUIRE_THROW(test({}, {a_in0}), std::runtime_error);
+
+  // If a gradient is provided for A/a_out0 and a gradient is required for
+  // A/a_in0 then all is well and a gradient for A/a_in0 is available.
+  BOOST_REQUIRE_NO_THROW(test({a_out0}, {a_in0}));
+}
+
+BOOST_AUTO_TEST_CASE(autodiff_stitch_recompute_0) {
+
+  // Test that, with the following IR (using addTestIr2 + createBwdGraph) ...
+  //
+  // .--[main graph]----------.
+  // |                        |
+  // |  ["main_in"]           |
+  // |      |                 |
+  // |   #0 v                 |
+  // |  CallOp<A>             |
+  // |   #0 |                 |
+  // |      v                 |
+  // |  ["main_out"]          |
+  // '------------------------'
+  //
+  //    [A/a_in]                                        [_k/getGradId(a_in)]
+  //      |                                                     #0 ^
+  // .----|-[subgraph "A"]----.    .-------------[subgraph _k]-----|-------.
+  // |    |                   |    |                              Sum      |
+  // |    |                   |    |                               ^       |
+  // |    |                   |    |                               |       |
+  // |    |                   |    |                             [_g1]     |
+  // | #0 v                   |    |                            #0 |       |
+  // | SimpleTestOp           |    |                    SimpleTestGradOp   |
+  // | #0 |                   |    |                    #1 ^    #0 ^       |
+  // |    |                   |    |                       |       |       |
+  // |    |                   |    |     .-----------------'       |       |
+  // |  [A/a_tmp]             |    |     |                         |       |
+  // |    |                   |    |     |         [_k/getGradId(a_tmp)]   |
+  // |    |                   |    |     |                         ^       |
+  // |    |                   |    |     |                         |       |
+  // |    |                   |    |     |                        Sum      |
+  // |    |                   |    |     |                         ^       |
+  // |    |                   |    |     |                         |       |
+  // |    |                   |    |     |                       [_g0]     |
+  // | #0 v                   |    |     |                      #0 |       |
+  // | SimpleTestOp           |    |     |              SimpleTestGradOp   |
+  // | #0 |                   |    |     |              #1 ^    #0 ^       |
+  // |    |                   |    |     |                 |       |       |
+  // |    |                   |    |     |          .------'       |       |
+  // '----|-------------------'    '-----|----------|--------------|-------'
+  //      v                          #_x |      #_y |          #_z |
+  //    [A/a_out]                        |          |              |
+  //                               [_k/a_in] [_k/a_tmp] [_k/getGradId(a_out)]
+  //
+  // ... and then calling `Autodiff::stitch` with
+  //
+  //  - fwdGraphId: "A"
+  //  - bwdGraphInfo: ...
+  //  - stitchStrategy: Recompute,
+  //  - stitchIndices: {_y}
+  //
+  // results in the following IR and BwdGraphInfo:
+  //
+  // .--[main graph]----------.
+  // |                        |
+  // |  ["main_in"]           |
+  // |      |                 |
+  // |   #0 v                 |
+  // |  CallOp<A>             |
+  // |   #0 |                 |
+  // |      v                 |
+  // |  ["main_out"]          |
+  // '------------------------'
+  //
+  //    [A/a_in]                                       [_k/getGradId(a_in)]
+  //      |                                                     #0 ^
+  // .----|-[subgraph "A"]----.    .-------------[subgraph _k]-----|-------.
+  // |    |                   |    |                              Sum      |
+  // |    |                   |    |                               ^       |
+  // |    |                   |    |                             [_g1]     |
+  // |    |                   |    |                            #0 |       |
+  // | #0 v                   |    |                    SimpleTestGradOp   |
+  // | SimpleTestOp           |    |                    #1 ^    #0 ^       |
+  // | #0 |                   |    |                       |       |       |
+  // |    |                   |    |     .-----------------'       |       |
+  // |  [A/a_tmp]             |    |     |                         |       |
+  // |    |                   |    |     |         [_k/getGradId(a_tmp)]   |
+  // |    |                   |    |     |                         ^       |
+  // |    |                   |    |     |                         |       |
+  // |    |                   |    |     |                        Sum      |
+  // |    |                   |    |     |                         ^       |
+  // |    |                   |    |     |                         |       |
+  // |    |                   |    |     |                       [_g0]     |
+  // | #0 v                   |    |     |                      #0 |       |
+  // | SimpleTestOp           |    |     |               SimpleTestGradOp  |
+  // | #0 |                   |    |     |              #1   ^  #0 ^       |
+  // |    |                   |    |     |                   |     |       |
+  // |    |                   |    |     |                   |     |       |
+  // |    |                   |    |     |          .--------'     |       |
+  // |    |                   |    |  ...(..........(...........   |       |
+  // |    |                   |    |  :  |          |          :   |       |
+  // |    |                   |    |  :  |       #0 |          :   |       |
+  // |    |                   |    |  :  |       SimpleTestOp  :   |       |
+  // |    |                   |    |  :  |       #0 ^          :   |       |
+  // |    |                   |    |  :  |          |          :   |       |
+  // |    |                   |    |  :  |----------'          :   |       |
+  // '----|-------------------'    '--(--|---------------------(---|-------'
+  //      |                           :..(....           ......:   |
+  //      v                              |   : Recompute :         |
+  //    [A/a_out]                    #_x |   : added here:     #_z |
+  //                               [_k/a_in] :...........: [_k/getGradId(a_out)]
+
+  Ir ir;
+  addTestIr2(ir);
+
+  // Get some tensor ids.
+  auto &subgraphA = ir.getGraph(GraphId("A"));
+  auto a_in       = subgraphA.addScope("a_in");
+  auto a_tmp      = subgraphA.addScope("a_tmp");
+  auto a_out      = subgraphA.addScope("a_out");
 
   // Now apply the createBwdGraph function.
-
   Autodiff autodiff;
-
-  // Check it throws when a_in1 is a required grad.
-  BOOST_REQUIRE_THROW(
+  auto createBwdGraphResult =
       autodiff.createBwdGraph(std::ref(ir),
                               GraphId("A"),
-                              Autodiff::TensorIds({a_out0}),
-                              Autodiff::TensorIds({a_in0, a_in1}),
-                              FwdGraphToBwdGraphInfo()),
-      std::runtime_error);
+                              Autodiff::TensorIds({a_out}),
+                              Autodiff::TensorIds({}),
+                              FwdGraphToBwdGraphInfo());
 
-  // Check it doesn't throw when a_in1 is not required.
-  BOOST_REQUIRE_NO_THROW(autodiff.createBwdGraph(std::ref(ir),
-                                                 GraphId("A"),
-                                                 Autodiff::TensorIds({a_out0}),
-                                                 Autodiff::TensorIds({a_in0}),
-                                                 FwdGraphToBwdGraphInfo()));
+  // Do some introspection to get _y.
+
+  // Now it's time to find and check subgraph bwdGraph with id "_k".
+  IrTestWrapper tw_ir{ir};
+  GraphId _k       = createBwdGraphResult.bwdGraphId;
+  auto tw_bwdGraph = tw_ir.hasGraph(_k, Require::MustBeTrue);
+  auto &bwdGraph   = tw_bwdGraph->unwrap().get();
+
+  // Create some tensors IDs we need.
+  auto _k_a_in       = bwdGraph.addScope("a_in");
+  auto _k_a_tmp      = bwdGraph.addScope("a_tmp");
+  auto _k_a_out      = bwdGraph.addScope("a_out");
+  auto _k_a_in_grad  = bwdGraph.addScope(getGradId("a_in"));
+  auto _k_a_tmp_grad = bwdGraph.addScope(getGradId("a_tmp"));
+  auto _k_a_out_grad = bwdGraph.addScope(getGradId("a_out"));
+
+  // Get _y.
+  auto _y = tw_bwdGraph->inputs().hasId(_k_a_tmp, Require::MustBeTrue)->index();
+
+  // Now stitch it (the bit we're really testing).
+  auto stitchResult = autodiff.stitch(ir,
+                                      GraphId("A"),
+                                      createBwdGraphResult,
+                                      Autodiff::StitchStrategy::Recompute,
+                                      std::vector<InIndex>{_y});
+
+  // Now we do some selective checks to test that the changes are what we
+  // anticipate. For the sake of brevity we don't check that should not have
+  // changed have not changed.
+
+  // Test the bwd graph no longer has the input.
+  tw_bwdGraph->inputs().hasId(_k_a_tmp, Require::MustBeFalse);
+
+  // Test that there is a `SimpleTestOp` in the bwdGraph now that reproduces
+  // a_tmp.
+  tw_bwdGraph->ops().hasOp<SimpleTestOp>(
+      [&](auto &op) -> bool {
+        return (op.inputs().hasId(_k_a_in)) && (op.outputs().hasId(_k_a_tmp));
+      },
+      Require::MustBeTrue);
+
+  // Check stitchResult.
+  auto _x = tw_bwdGraph->inputs().hasId(_k_a_in, Require::MustBeTrue)->index();
+  auto _z =
+      tw_bwdGraph->inputs().hasId(_k_a_out_grad, Require::MustBeTrue)->index();
+
+  // Check that the result.expectedInputs matches the indices we determined.
+  BwdGraphInfo expectedBwdGraphInfo{
+      _k,
+      sortExpectedConnections({{_x, {a_in, ExpectedConnectionType::Fwd}},
+                               {_z, {a_out, ExpectedConnectionType::FwdGrad}}}),
+      sortExpectedConnections({{0, {a_in, ExpectedConnectionType::FwdGrad}}})};
+
+  BOOST_REQUIRE_MESSAGE(expectedBwdGraphInfo == stitchResult,
+                        logging::format("Expected {}, got {}",
+                                        expectedBwdGraphInfo,
+                                        stitchResult));
 }

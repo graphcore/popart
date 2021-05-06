@@ -15,6 +15,7 @@ BackwardsGraphCreator::BackwardsGraphCreator(AutodiffIrInterface &dep)
 BwdGraphInfo BackwardsGraphCreator::createBackwardsGraph(
     const Graph &fwdGraph,
     const GraphId &bwdGraphId,
+    const TensorIds &gradsProvidedForFwdId,
     const nonstd::optional<TensorIds> &gradsRequiredForFwdId,
     const FwdGraphToBwdGraphInfo &calledGraphsGradInfo) {
 
@@ -27,7 +28,8 @@ BwdGraphInfo BackwardsGraphCreator::createBackwardsGraph(
 
   Graph &bwdGraph = dep.get().createGraph(bwdGraphId);
   BackwardsGraphCreatorHelper helper(fwdGraph, bwdGraph);
-  return helper.populateBwdGraph(gradsRequiredForFwdId, calledGraphsGradInfo);
+  return helper.populateBwdGraph(
+      gradsProvidedForFwdId, gradsRequiredForFwdId, calledGraphsGradInfo);
 }
 
 GraphId

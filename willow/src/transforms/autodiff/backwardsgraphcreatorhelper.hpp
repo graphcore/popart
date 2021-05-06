@@ -48,7 +48,8 @@ public:
    * \return Return information about the backwards graph.
    */
   virtual BwdGraphInfo
-  populateBwdGraph(const nonstd::optional<TensorIds> &gradsRequiredForFwdId,
+  populateBwdGraph(const TensorIds &gradsProvidedForFwdId,
+                   const nonstd::optional<TensorIds> &gradsRequiredForFwdId,
                    const FwdGraphToBwdGraphInfo &calledGraphsGradInfo);
 
   virtual BwdGraphInfo makeGradInfo();
@@ -56,7 +57,8 @@ public:
   static void doPrune(Graph &);
 
 private:
-  void growGradGraph(const nonstd::optional<TensorIds> &gradsRequiredForFwdId,
+  void growGradGraph(const TensorIds &gradsProvidedForFwdId,
+                     const nonstd::optional<TensorIds> &gradsRequiredForFwdId,
                      const FwdGraphToBwdGraphInfo &calledGraphsGradInfo);
   std::vector<Op *> growGradOps(Op *nonGradOp);
   bool opIsReadyToCreateGradients(Op *);

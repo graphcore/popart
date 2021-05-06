@@ -21,10 +21,12 @@ BackwardsGraphCreatorHelper::BackwardsGraphCreatorHelper(const Graph &fwdGraph_,
     : fwdGraph(fwdGraph_), bwdGraph(bwdGraph_), gradOpStore() {}
 
 BwdGraphInfo BackwardsGraphCreatorHelper::populateBwdGraph(
+    const TensorIds &gradsProvidedForFwdId,
     const nonstd::optional<TensorIds> &gradsRequiredForFwdId,
     const FwdGraphToBwdGraphInfo &calledGraphsGradInfo) {
 
-  growGradGraph(gradsRequiredForFwdId, calledGraphsGradInfo);
+  growGradGraph(
+      gradsProvidedForFwdId, gradsRequiredForFwdId, calledGraphsGradInfo);
 
   // Remove fwd ops from bwdGraph that we don't need.
   doPrune(bwdGraph);
@@ -69,6 +71,7 @@ BwdGraphInfo BackwardsGraphCreatorHelper::makeGradInfo() {
 }
 
 void BackwardsGraphCreatorHelper::growGradGraph(
+    const TensorIds &gradsProvidedForFwdId,
     const nonstd::optional<TensorIds> &gradsRequiredForFwdId,
     const FwdGraphToBwdGraphInfo &calledGraphsGradInfo) {
   // clone ops from the fwdGraph into the bwdGraph
@@ -92,10 +95,14 @@ void BackwardsGraphCreatorHelper::growGradGraph(
 
   // Create a gradient input tensor for each output tensor of fwdGraph
   for (auto &scopedId : fwdGraph.getOutputIds()) {
-    auto gradId   = fwdIdToBwdGradId(scopedId);
-    auto gradInfo = fwdGraph.getTensors().get(scopedId)->info;
-    bwdGraph.addInput(gradId, gradInfo);
-    gradTensorMap.insert({scopedId, gradId});
+    if (std::find(gradsProvidedForFwdId.begin(),
+                  gradsProvidedForFwdId.end(),
+                  scopedId) != gradsProvidedForFwdId.end()) {
+      auto gradId   = fwdIdToBwdGradId(scopedId);
+      auto gradInfo = fwdGraph.getTensors().get(scopedId)->info;
+      bwdGraph.addInput(gradId, gradInfo);
+      gradTensorMap.insert({scopedId, gradId});
+    }
   }
 
   // Add all ops in the fwdGraph to pending ops

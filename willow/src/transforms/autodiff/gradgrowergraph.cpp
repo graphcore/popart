@@ -1,5 +1,3 @@
-
-
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 #include <transforms/autodiff/gradgrowergraph.hpp>
 
@@ -49,12 +47,21 @@ FwdGraphToBwdGraphInfo GradGrowerGraph::growBackwardsGraph(
       // Create the backwards graph.
       logging::trace("[Autodiff] Creating backwards graph '{}'", bwdGraphId);
 
+      // For all but top-level graph, assume we have all grads available.
+      auto providedGrads = (fwdGraph.id == fwdGraphId)
+                               ? gradsProvidedForTensors
+                               : fwdGraph.getOutputIds();
+
       // We only have required tensors for the top-level graph.
       auto requiredGrads =
           (fwdGraph.id == fwdGraphId) ? gradsRequiredForFwdId : nonstd::nullopt;
 
-      auto bwdGraphGradInfo = bwdGraphCreator.createBackwardsGraph(
-          fwdGraph, bwdGraphId, requiredGrads, calledGraphGradInfo);
+      auto bwdGraphGradInfo =
+          bwdGraphCreator.createBackwardsGraph(fwdGraph,
+                                               bwdGraphId,
+                                               providedGrads,
+                                               requiredGrads,
+                                               calledGraphGradInfo);
 
       // Stitch backwards graph inputs.
       logging::trace("[Autodiff] Stitching backwards graph '{}'", bwdGraphId);

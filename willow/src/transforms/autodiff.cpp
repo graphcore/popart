@@ -80,8 +80,11 @@ BwdGraphInfo Autodiff::createBwdGraph(
   auto &fwdGraph     = ir.getGraph(fwdGraphId);
   GraphId bwdGraphId = bwdPassCreator.genNewBwdGraphId(fwdGraphId);
 
-  return bwdPassCreator.createBackwardsGraph(
-      fwdGraph, bwdGraphId, gradsRequiredForFwdId, calledGraphsGradInfo);
+  return bwdPassCreator.createBackwardsGraph(fwdGraph,
+                                             bwdGraphId,
+                                             gradsProvidedForTensors,
+                                             gradsRequiredForFwdId,
+                                             calledGraphsGradInfo);
 }
 
 BwdGraphInfo
