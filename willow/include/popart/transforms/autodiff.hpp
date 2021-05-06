@@ -40,6 +40,7 @@ public:
   Autodiff();
   virtual ~Autodiff() override;
 
+  // Shorthand.
   using TensorIds  = std::vector<TensorId>;
   using FwdGraphId = GraphId;
 
@@ -69,7 +70,7 @@ public:
    *     gradients for (normally inputs of fwdGraph). If autodiff is unable to
    *     provide the required gradient an error will be raised. If unset,
    *     autodiff will provide as many gradients as possible.
-   * \param calledGraphResults The result information from applying autodiff
+   * \param calledGraphsGradInfo The result information from applying autodiff
    *     for the graphs that are called by subgraph ops in fwdGraph. It is a
    *     precondition of this function that the graphs provided in this map
    *     are stitched.
@@ -94,7 +95,7 @@ public:
         const GraphId &fwdGraphId,
         const TensorIds &gradsProvidedForFwdId,
         const nonstd::optional<TensorIds> &gradsRequiredForFwdId,
-        const FwdGraphToBwdGraphInfo &calledGraphResults,
+        const FwdGraphToBwdGraphInfo &calledGraphsGradInfo,
         StitchStrategy stitchStrategy);
 
   /**
@@ -103,7 +104,7 @@ public:
    * This method returns an "unstitched" result. That is, it is not guaranteed
    * that all non-gradient inputs to a backwards graph are available as inputs
    * or outputs of the forward graph. This is a precondition for BwdGraphInfo
-   * objects used as values in `calledGraphResults` so you must call `stitch`
+   * objects used as values in `calledGraphsGradInfo` so you must call `stitch`
    * to stitch the result before using the result info in another autodiff call.
    *
    * NOTE: This method may fail if some required gradient cannot be produced.
@@ -115,7 +116,7 @@ public:
    * \param gradsRequiredForFwdId The tensors (normally inputs of the
    *     fwdGraph) for which gradient tensors are required (as outputs to the
    *     returned backwards graph).
-   * \param calledGraphResults The result information from applying autodiff
+   * \param calledGraphsGradInfo The result information from applying autodiff
    *     for the graphs that are called by subgraph ops in fwdGraph. It is a
    *     precondition of this function that the graphs provided in this map
    *     are stitched.
@@ -135,7 +136,7 @@ public:
                  const GraphId &fwdGraphId,
                  const TensorIds &gradsProvidedForFwdId,
                  const nonstd::optional<TensorIds> &gradsRequiredForFwdId,
-                 const FwdGraphToBwdGraphInfo &calledGraphResults);
+                 const FwdGraphToBwdGraphInfo &calledGraphsGradInfo);
 
   /**
    * Stitch a fwd/bwd graph pair. That is, remove some non-gradient inputs from

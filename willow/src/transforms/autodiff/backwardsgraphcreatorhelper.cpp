@@ -21,9 +21,10 @@ BackwardsGraphCreatorHelper::BackwardsGraphCreatorHelper(const Graph &fwdGraph_,
     : fwdGraph(fwdGraph_), bwdGraph(bwdGraph_), gradOpStore() {}
 
 BwdGraphInfo BackwardsGraphCreatorHelper::populateBwdGraph(
+    const nonstd::optional<TensorIds> &gradsRequiredForFwdId,
     const FwdGraphToBwdGraphInfo &calledGraphsGradInfo) {
 
-  growGradGraph(calledGraphsGradInfo);
+  growGradGraph(gradsRequiredForFwdId, calledGraphsGradInfo);
 
   // Remove fwd ops from bwdGraph that we don't need.
   doPrune(bwdGraph);
@@ -68,6 +69,7 @@ BwdGraphInfo BackwardsGraphCreatorHelper::makeGradInfo() {
 }
 
 void BackwardsGraphCreatorHelper::growGradGraph(
+    const nonstd::optional<TensorIds> &gradsRequiredForFwdId,
     const FwdGraphToBwdGraphInfo &calledGraphsGradInfo) {
   // clone ops from the fwdGraph into the bwdGraph
 
@@ -155,6 +157,20 @@ void BackwardsGraphCreatorHelper::growGradGraph(
     if (gradTensorMap.find(scopedId) != gradTensorMap.end()) {
       auto gradId = fwdIdToBwdGradId(scopedId);
       bwdGraph.markAsOutput(gradId);
+    } else {
+      // We are unable to provide a gradient output for scopedId, if
+      // `gradsRequiredForFwdId` is set and the scopedId is in it then the
+      // user requires this gradient and being unable to provide it is an error.
+      if (gradsRequiredForFwdId) {
+        if (std::find(gradsRequiredForFwdId->begin(),
+                      gradsRequiredForFwdId->end(),
+                      scopedId) != gradsRequiredForFwdId->end()) {
+          throw error("[Autodiff] Unable to provide gradient output for '{}' "
+                      "in {}",
+                      scopedId,
+                      bwdGraph.getGraphString());
+        }
+      }
     }
   }
 

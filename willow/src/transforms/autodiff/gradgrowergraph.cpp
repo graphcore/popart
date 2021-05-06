@@ -3,6 +3,8 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 #include <transforms/autodiff/gradgrowergraph.hpp>
 
+#include <popart/bwdgraphinfo.hpp>
+
 #include <transforms/autodiff/backwardsgraphcreator.hpp>
 #include <transforms/autodiff/stitcherfactory.hpp>
 
@@ -15,13 +17,15 @@ GradGrowerGraph::GradGrowerGraph(AutodiffIrInterface &dep)
 FwdGraphToBwdGraphInfo GradGrowerGraph::growBackwardsGraph(
     const GraphId &fwdGraphId,
     const TensorIds &gradsProvidedForTensors,
-    const nonstd::optional<TensorIds> &gradsRequiredForTensors,
-    const FwdGraphToBwdGraphInfo &calledGraphResults_,
+    const nonstd::optional<TensorIds> &gradsRequiredForFwdId,
+    const FwdGraphToBwdGraphInfo &calledGraphsGradInfo_,
     Autodiff::StitchStrategy stitchStrategy) {
+
+  nonstd::optional<TensorIds> emptyGradsRequiredForFwdId;
 
   // We need to grow called graphs before we grow the main graph.
   BackwardsGraphCreator bwdGraphCreator{dep};
-  FwdGraphToBwdGraphInfo calledGraphGradInfo = calledGraphResults_;
+  FwdGraphToBwdGraphInfo calledGraphGradInfo = calledGraphsGradInfo_;
 
   // Get stitcher.
   auto stitcher = stitcherFactory->createStitcher(dep, stitchStrategy);
@@ -44,8 +48,13 @@ FwdGraphToBwdGraphInfo GradGrowerGraph::growBackwardsGraph(
 
       // Create the backwards graph.
       logging::trace("[Autodiff] Creating backwards graph '{}'", bwdGraphId);
+
+      // We only have required tensors for the top-level graph.
+      auto requiredGrads =
+          (fwdGraph.id == fwdGraphId) ? gradsRequiredForFwdId : nonstd::nullopt;
+
       auto bwdGraphGradInfo = bwdGraphCreator.createBackwardsGraph(
-          fwdGraph, bwdGraphId, calledGraphGradInfo);
+          fwdGraph, bwdGraphId, requiredGrads, calledGraphGradInfo);
 
       // Stitch backwards graph inputs.
       logging::trace("[Autodiff] Stitching backwards graph '{}'", bwdGraphId);

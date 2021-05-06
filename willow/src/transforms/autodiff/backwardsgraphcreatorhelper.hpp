@@ -5,9 +5,10 @@
 #include <popart/bwdgraphinfo.hpp>
 #include <popart/names.hpp>
 
-#include <transforms/autodiff/tensorgradmapregister.hpp>
 #include <popart/graph.hpp>
 #include <popart/patterns/patterns.hpp>
+
+#include <transforms/autodiff/tensorgradmapregister.hpp>
 
 #include <map>
 #include <memory>
@@ -27,6 +28,9 @@ class CopyOutputMarkings;
  **/
 class BackwardsGraphCreatorHelper {
 public:
+  // Shorthand.
+  using TensorIds = std::vector<TensorId>;
+
   /**
    * Constructor.
    **/
@@ -34,17 +38,26 @@ public:
 
   /**
    * Function that populates the bwdGraph passed in the constructor.
+   * \param gradsRequiredForFwdId  The tensors (normally inputs of the
+   *     fwdGraph) for which gradient tensors are required (as outputs to the
+   *     returned backwards graph).
+   * \param calledGraphsGradInfo The result information from applying autodiff
+   *     for the graphs that are called by subgraph ops in fwdGraph. It is a
+   *     precondition of this function that the graphs provided in this map
+   *     are stitched.
    * \return Return information about the backwards graph.
    */
   virtual BwdGraphInfo
-  populateBwdGraph(const FwdGraphToBwdGraphInfo &calledGraphsGradInfo);
+  populateBwdGraph(const nonstd::optional<TensorIds> &gradsRequiredForFwdId,
+                   const FwdGraphToBwdGraphInfo &calledGraphsGradInfo);
 
   virtual BwdGraphInfo makeGradInfo();
 
   static void doPrune(Graph &);
 
 private:
-  void growGradGraph(const FwdGraphToBwdGraphInfo &calledGraphsGradInfo);
+  void growGradGraph(const nonstd::optional<TensorIds> &gradsRequiredForFwdId,
+                     const FwdGraphToBwdGraphInfo &calledGraphsGradInfo);
   std::vector<Op *> growGradOps(Op *nonGradOp);
   bool opIsReadyToCreateGradients(Op *);
   std::string opNotReadyExplanation(Op *op);

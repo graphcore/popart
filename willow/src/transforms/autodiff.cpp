@@ -53,8 +53,8 @@ FwdGraphToBwdGraphInfo
 Autodiff::apply(Ir &ir,
                 const GraphId &fwdGraphId,
                 const TensorIds &gradsProvidedForTensors,
-                const nonstd::optional<TensorIds> &gradsRequiredForTensors,
-                const FwdGraphToBwdGraphInfo &calledGraphResults,
+                const nonstd::optional<TensorIds> &gradsRequiredForFwdId,
+                const FwdGraphToBwdGraphInfo &calledGraphsGradInfo,
                 StitchStrategy stitchStrategy) {
 
   AutodiffIrAdapter adapter{ir};
@@ -62,8 +62,8 @@ Autodiff::apply(Ir &ir,
 
   return gradGraphGrower.growBackwardsGraph(fwdGraphId,
                                             gradsProvidedForTensors,
-                                            gradsRequiredForTensors,
-                                            calledGraphResults,
+                                            gradsRequiredForFwdId,
+                                            calledGraphsGradInfo,
                                             stitchStrategy);
 }
 
@@ -71,8 +71,8 @@ BwdGraphInfo Autodiff::createBwdGraph(
     Ir &ir,
     const GraphId &fwdGraphId,
     const TensorIds &gradsProvidedForTensors,
-    const nonstd::optional<TensorIds> &gradsRequiredForTensors,
-    const FwdGraphToBwdGraphInfo &calledGraphResults) {
+    const nonstd::optional<TensorIds> &gradsRequiredForFwdId,
+    const FwdGraphToBwdGraphInfo &calledGraphsGradInfo) {
 
   AutodiffIrAdapter adapter{ir};
   BackwardsGraphCreator bwdPassCreator{adapter};
@@ -81,7 +81,7 @@ BwdGraphInfo Autodiff::createBwdGraph(
   GraphId bwdGraphId = bwdPassCreator.genNewBwdGraphId(fwdGraphId);
 
   return bwdPassCreator.createBackwardsGraph(
-      fwdGraph, bwdGraphId, calledGraphResults);
+      fwdGraph, bwdGraphId, gradsRequiredForFwdId, calledGraphsGradInfo);
 }
 
 BwdGraphInfo

@@ -2,8 +2,11 @@
 #ifndef GUARD_NEURALNET_BACKWARDS_GRAPH_CREATOR_HPP
 #define GUARD_NEURALNET_BACKWARDS_GRAPH_CREATOR_HPP
 
-#include <transforms/autodiff/autodiffhelper.hpp>
 #include <popart/bwdgraphinfo.hpp>
+
+#include <popart/vendored/optional.hpp>
+
+#include <transforms/autodiff/autodiffhelper.hpp>
 
 namespace popart {
 
@@ -18,6 +21,9 @@ class AutodiffIrInterface;
  **/
 class BackwardsGraphCreator : public AutodiffHelper {
 public:
+  // Shorthand.
+  using TensorIds = std::vector<TensorId>;
+
   /**
    * Constructor.
    **/
@@ -28,6 +34,9 @@ public:
    * return the information required to use it.
    * \param fwdGraph A reference to the forward graph.
    * \param bwdGraphId A proposed identifier for the backwards graph.
+   * \param gradsRequiredForFwdId  The tensors (normally inputs of the
+   *     fwdGraph) for which gradient tensors are required (as outputs to the
+   *     returned backwards graph).
    * \param calledGraphsGradInfo Grad information about graphs that are called
    *     by ops in fwdGraph.
    * \return Information about the backward graph.
@@ -35,6 +44,7 @@ public:
   virtual BwdGraphInfo
   createBackwardsGraph(const Graph &fwdGraph,
                        const GraphId &bwdGraphId,
+                       const nonstd::optional<TensorIds> &gradsRequiredForFwdId,
                        const FwdGraphToBwdGraphInfo &calledGraphsGradInfo);
 
   /**
