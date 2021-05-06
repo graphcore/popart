@@ -123,6 +123,9 @@ void PruneHelper::setRequired(std::set<Op *> required_) {
 bool Prune::apply(Graph &graph) const {
   auto &ir = graph.getIr();
 
+  auto anchorIds     = ir.getAnchors();
+  auto rootAnchorIds = ir.getRootAnchors();
+
   // initialise with all operations modifying weights (directly or indirectly)
   std::set<Op *> required;
 
@@ -206,7 +209,8 @@ bool Prune::apply(Graph &graph) const {
       }
       // Modifying operations are required if they are not guaranteed to be the
       // last consumer
-      if (opsWithBefores.at(op).size() < consumers.size()) {
+      // (-1 to account for the modifying Op itself)
+      if (opsWithBefores.at(op).size() < consumers.size() - 1) {
         // Not guaranteed to be the last consumer
         return true;
       }
@@ -214,17 +218,83 @@ bool Prune::apply(Graph &graph) const {
     return false;
   };
 
+  std::function<bool(Op *)> subgraphNotPruneableCheck =
+      [&subgraphNotPruneableCheck](const Op *op) {
+        for (auto calledGraph : op->getCalledGraphs()) {
+          for (auto &sop : calledGraph->getOps()) {
+            // Recursive
+            if (subgraphNotPruneableCheck(sop.second.get())) {
+              return true;
+            }
+            if (!sop.second->pruneable || sop.second->hasSideEffect()) {
+              return true;
+            }
+          }
+        }
+        return false;
+      };
+
+  std::function<bool(Op *)> subgraphHasAnchorCheck =
+      [&subgraphHasAnchorCheck, &rootAnchorIds, &anchorIds](const Op *op) {
+        for (auto calledGraph : op->getCalledGraphs()) {
+          for (auto &sop : calledGraph->getOps()) {
+            // Recursive
+            if (subgraphHasAnchorCheck(sop.second.get())) {
+              return true;
+            }
+          }
+          for (auto &tId : calledGraph->getTensors().getAllTensorIds()) {
+            if (anchorIds.find(tId) != anchorIds.end() ||
+                rootAnchorIds.find(tId) != rootAnchorIds.end()) {
+              return true;
+            }
+          }
+        }
+        return false;
+      };
+
   // Find all ops which are not marked as pruneable and add those to
   // required.
   for (auto &id_op : graph.getOps()) {
-    auto op     = id_op.second.get();
-    auto inputs = op->input->tensorIdMap();
-    if (!op->pruneable || op->hasSideEffect() ||
-        std::any_of(inputs.begin(),
+    auto op        = id_op.second.get();
+    auto inputs    = op->input->tensorIdMap();
+    bool pruneable = true;
+    if (!op->pruneable) {
+      logging::transform::trace(
+          "[Prune] Op {} is not pruneable (has pruneable flag disabled).",
+          op->debugName());
+      pruneable = false;
+    }
+    if (op->hasSideEffect()) {
+      logging::transform::trace(
+          "[Prune] Op {} is not pruneable (has side-effects).",
+          op->debugName());
+      pruneable = false;
+    }
+    if (std::any_of(inputs.begin(),
                     inputs.end(),
                     [&op, &modifiedInputRequired](const auto &idxAndTensorId) {
                       return modifiedInputRequired(op, idxAndTensorId.first);
                     })) {
+      logging::transform::trace(
+          "[Prune] Op {} is not pruneable (has required modified inputs).",
+          op->debugName());
+      pruneable = false;
+    }
+    if (subgraphNotPruneableCheck(op)) {
+      logging::transform::trace(
+          "[Prune] Op {} is not pruneable (non-pruneable subgraph Op).",
+          op->debugName());
+      pruneable = false;
+    }
+    if (subgraphHasAnchorCheck(op)) {
+      logging::transform::trace(
+          "[Prune] Op {} is not pruneable (subgraph contains mapped anchor).",
+          op->debugName());
+      pruneable = false;
+    }
+
+    if (!pruneable) {
       required.insert(op);
     }
   }
@@ -254,10 +324,10 @@ bool Prune::apply(Graph &graph) const {
     }
   };
 
-  for (auto &tensorId : ir.getAnchors()) {
+  for (auto &tensorId : anchorIds) {
     addAnchor(tensorId);
   }
-  for (auto &tensorId : ir.getRootAnchors()) {
+  for (auto &tensorId : rootAnchorIds) {
     addAnchor(tensorId);
   }
 

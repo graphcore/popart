@@ -160,7 +160,8 @@ private:
     BOOST_REQUIRE_EQUAL(g.getCallSiteOps().size(), h.getCallSiteOps().size());
 
     // Check virtual graph ids.
-    BOOST_REQUIRE_EQUAL(g.getAllVirtualGraphIds(), h.getAllVirtualGraphIds());
+    BOOST_REQUIRE_EQUAL(g.getAllVirtualGraphIds(true),
+                        h.getAllVirtualGraphIds(true));
 
     // Check Scope.
     BOOST_REQUIRE_EQUAL(g.getScope(), h.getScope());

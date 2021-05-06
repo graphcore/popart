@@ -120,25 +120,26 @@ BOOST_AUTO_TEST_CASE(Transformation_MergeConstSGD0) {
     // same learning rate, weight decay, so should all be merged into a single
     // group
     if (mvu == MergeVarUpdateType::All) {
-      BOOST_CHECK(ir.opsOfType(Onnx::CustomOperators::SGD0VarUpdate).size() ==
-                  1);
-      BOOST_CHECK(ir.opsOfType(Onnx::CustomOperators::ReshapeInplace).size() ==
-                  nConv * 2);
+      BOOST_CHECK_EQUAL(
+          ir.opsOfType(Onnx::CustomOperators::SGD0VarUpdate).size(), 1);
+      BOOST_CHECK_EQUAL(
+          ir.opsOfType(Onnx::CustomOperators::ReshapeInplace).size(),
+          nConv * 2);
 
       // 2 ConcatInplace, one for all the Vars and one for all the Grads
-      BOOST_CHECK(ir.opsOfType(Onnx::CustomOperators::ConcatInplace).size() ==
-                  2);
+      BOOST_CHECK_EQUAL(
+          ir.opsOfType(Onnx::CustomOperators::ConcatInplace).size(), 2);
 
-      BOOST_CHECK(ir.opsOfType(Onnx::CustomOperators::CopyVarUpdate).size() ==
-                  0);
+      BOOST_CHECK_EQUAL(
+          ir.opsOfType(Onnx::CustomOperators::CopyVarUpdate).size(), 0);
 
     } else if (mvu == MergeVarUpdateType::None) {
-      BOOST_CHECK(ir.opsOfType(Onnx::CustomOperators::SGD0VarUpdate).size() ==
-                  nConv);
-      BOOST_CHECK(ir.opsOfType(Onnx::CustomOperators::ReshapeInplace).size() ==
-                  0);
-      BOOST_CHECK(ir.opsOfType(Onnx::CustomOperators::ConcatInplace).size() ==
-                  0);
+      BOOST_CHECK_EQUAL(
+          ir.opsOfType(Onnx::CustomOperators::SGD0VarUpdate).size(), nConv);
+      BOOST_CHECK_EQUAL(
+          ir.opsOfType(Onnx::CustomOperators::ReshapeInplace).size(), 0);
+      BOOST_CHECK_EQUAL(
+          ir.opsOfType(Onnx::CustomOperators::ConcatInplace).size(), 0);
     }
 
     else if (mvu == MergeVarUpdateType::AutoTight) {
@@ -150,8 +151,9 @@ BOOST_AUTO_TEST_CASE(Transformation_MergeConstSGD0) {
                 << " nConstSgds : " << nConstSgds;
       auto weightsMem   = 4 * totalWeightElms;
       bool notDivisible = (weightsMem % opts.mergeVarUpdateMemThreshold) != 0;
-      BOOST_CHECK((notDivisible +
-                   weightsMem / opts.mergeVarUpdateMemThreshold) == nConstSgds);
+      BOOST_CHECK_EQUAL(
+          (notDivisible + weightsMem / opts.mergeVarUpdateMemThreshold),
+          nConstSgds);
     }
   };
 

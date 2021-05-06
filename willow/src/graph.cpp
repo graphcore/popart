@@ -70,17 +70,20 @@ void Graph::setOnnxToOnnx(
 const std::map<OpId, std::unique_ptr<Op>> &Graph::getOps() const { return ops; }
 std::map<OpId, std::unique_ptr<Op>> &Graph::getOps() { return ops; }
 
-const int64_t Graph::NoVGraph = -1;
+const int64_t Graph::NoVGraph = unusedVGraphId;
 
-const std::set<int64_t> Graph::getAllVirtualGraphIds() const {
+const std::set<int64_t>
+Graph::getAllVirtualGraphIds(bool includeInvalid) const {
 
   std::set<int64_t> vGraphIds;
 
   // Get the vgraph ids from all non-IpuCopyOps
   for (auto &id_op : getOps()) {
-    auto op = id_op.second.get();
-    if (!op->isConvertibleTo<IpuCopyOp>()) {
-      vGraphIds.insert(getVirtualGraphId(*id_op.second));
+    if (!id_op.second->isConvertibleTo<IpuCopyOp>()) {
+      int64_t vGraphId = getVirtualGraphId(*id_op.second);
+      if (includeInvalid || vGraphId != unusedVGraphId) {
+        vGraphIds.insert(vGraphId);
+      }
     }
   }
   return vGraphIds;
@@ -90,13 +93,15 @@ const std::map<int64_t, int> Graph::getVirtualGraphCounts() const {
   std::map<int64_t, int> vGraphCounts;
 
   for (auto &idOp : getOps()) {
-    int64_t vGraphId = getVirtualGraphId(*idOp.second);
-
-    if (vGraphCounts.count(vGraphId) == 0) {
-      vGraphCounts[vGraphId] = 0;
+    if (!idOp.second->isConvertibleTo<IpuCopyOp>()) {
+      int64_t vGraphId = getVirtualGraphId(*idOp.second);
+      if (vGraphId != unusedVGraphId) {
+        if (vGraphCounts.count(vGraphId) == 0) {
+          vGraphCounts[vGraphId] = 0;
+        }
+        vGraphCounts[vGraphId]++;
+      }
     }
-
-    vGraphCounts[vGraphId]++;
   }
 
   return vGraphCounts;

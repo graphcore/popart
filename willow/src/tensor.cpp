@@ -554,7 +554,12 @@ std::set<PipelineStage> Consumers::getPipelineStages() const {
 std::set<VGraphId> Consumers::getVirtualGraphIds() const {
   std::set<VGraphId> vgIDs;
   for (auto op : getOps()) {
-    if (op->hasVirtualGraphId()) {
+    if (IpuCopyOp *ipuCopyOp = dynamic_cast<IpuCopyOp *>(op)) {
+      auto &srcMap = ipuCopyOp->getSourceIpus();
+      for (auto src : srcMap) {
+        vgIDs.insert(src.second);
+      }
+    } else if (op->hasVirtualGraphId()) {
       vgIDs.insert(op->getVirtualGraphId());
     }
   }

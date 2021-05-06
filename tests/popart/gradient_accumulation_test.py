@@ -140,7 +140,7 @@ def run_graph(optimizer, input_shape, initial_onnx_model, input_tensor_name,
               output_tensor_name, label_tensor_name, label_array, accum_factor,
               enable_accum, batches_per_step, number_of_steps,
               final_proto_filename, enable_multi_ipu, full_anchorage,
-              inference_mode):
+              inference_mode, explicit_loops):
 
     art = popart.AnchorReturnType("All")
     anchorNames = {output_tensor_name: art}
@@ -160,6 +160,12 @@ def run_graph(optimizer, input_shape, initial_onnx_model, input_tensor_name,
     opts.accumulationFactor = accum_factor
     opts.enableOutlining = False
     opts.virtualGraphMode = popart.VirtualGraphMode.Manual if enable_multi_ipu else popart.VirtualGraphMode.Off
+
+    if explicit_loops:
+        opts.enableExplicitMainLoops = True
+        opts.aliasZeroCopy = True
+        opts.explicitRecomputation = True
+        opts.useHostCopyOps = True
 
     if enable_multi_ipu:
         device = tu.create_test_device(numIpus=num_ipus,
@@ -223,7 +229,7 @@ def run_graph(optimizer, input_shape, initial_onnx_model, input_tensor_name,
 
 def run_complex_graph(optimizer, label_array, accum_factor, enable_accum,
                       batches_per_step, number_of_steps, final_proto_filename,
-                      enable_multi_ipu, full_anchorage):
+                      enable_multi_ipu, full_anchorage, explicit_loops):
 
     if (enable_multi_ipu):
         raise RuntimeError("Cannot enable multi ipu in complex graph")
@@ -246,7 +252,8 @@ def run_complex_graph(optimizer, label_array, accum_factor, enable_accum,
         final_proto_filename=final_proto_filename,
         enable_multi_ipu=enable_multi_ipu,
         full_anchorage=full_anchorage,
-        inference_mode=False)
+        inference_mode=False,
+        explicit_loops=explicit_loops)
 
     return initial_onnx_model, final_proto_filename, anchor_arrays
 
@@ -260,7 +267,8 @@ def run_mm_graph(optimizer,
                  final_proto_filename,
                  enable_multi_ipu,
                  full_anchorage,
-                 inference_mode=False):
+                 inference_mode=False,
+                 explicit_loops=False):
 
     initial_onnx_model, input_tensor_name, output_tensor_name, label_tensor_name = get_mm_model(
         accum_factor, enable_multi_ipu)
@@ -280,7 +288,8 @@ def run_mm_graph(optimizer,
         final_proto_filename=final_proto_filename,
         enable_multi_ipu=enable_multi_ipu,
         full_anchorage=full_anchorage,
-        inference_mode=inference_mode)
+        inference_mode=inference_mode,
+        explicit_loops=explicit_loops)
 
     return initial_onnx_model, final_proto_filename, anchor_arrays
 
@@ -335,7 +344,8 @@ def check_models(model_init, modelA_fn, modelB_fn):
 
 
 @tu.requires_ipu_model
-def test_gradient_accumulation_base(tmpdir):
+@pytest.mark.parametrize("explicit_loops", [True, False])
+def test_gradient_accumulation_base(tmpdir, explicit_loops):
     """
     base test (as simple as possible)
     """
@@ -354,7 +364,8 @@ def test_gradient_accumulation_base(tmpdir):
             number_of_steps=1,
             final_proto_filename=os.path.join(tmpdir, "accl"),
             enable_multi_ipu=False,
-            full_anchorage=False)
+            full_anchorage=False,
+            explicit_loops=explicit_loops)
 
         no_accl_initial_proto, no_accl_proto_filename, no_accl_anchor_arrays = graph_runner(
             sgd_optimizer,
@@ -365,14 +376,16 @@ def test_gradient_accumulation_base(tmpdir):
             number_of_steps=1,
             final_proto_filename=os.path.join(tmpdir, "noAcc"),
             enable_multi_ipu=False,
-            full_anchorage=False)
+            full_anchorage=False,
+            explicit_loops=explicit_loops)
 
         check_models(accl_initial_proto, accl_proto_filename,
                      no_accl_proto_filename)
 
 
 @tu.requires_ipu_model
-def test_gradient_accumulation_multi_batch(tmpdir):
+@pytest.mark.parametrize("explicit_loops", [True, False])
+def test_gradient_accumulation_multi_batch(tmpdir, explicit_loops):
     """
     from _base: increase batches per step and number of steps
     """
@@ -390,7 +403,8 @@ def test_gradient_accumulation_multi_batch(tmpdir):
             number_of_steps=3,
             final_proto_filename=os.path.join(tmpdir, "accl5batches3steps"),
             enable_multi_ipu=False,
-            full_anchorage=False)
+            full_anchorage=False,
+            explicit_loops=explicit_loops)
 
         no_accl_initial_proto, no_accl_proto_filename, no_accl_anchor_arrays = run_mm_graph(
             sgd_optimizer,
@@ -401,14 +415,16 @@ def test_gradient_accumulation_multi_batch(tmpdir):
             number_of_steps=3,
             final_proto_filename=os.path.join(tmpdir, "noAccl5batches3steps"),
             enable_multi_ipu=False,
-            full_anchorage=False)
+            full_anchorage=False,
+            explicit_loops=explicit_loops)
 
         check_models(accl_initial_proto, accl_proto_filename,
                      no_accl_proto_filename)
 
 
 @tu.requires_ipu_model
-def test_gradient_accumulation_multi_ipu(tmpdir):
+@pytest.mark.parametrize("explicit_loops", [True, False])
+def test_gradient_accumulation_multi_ipu(tmpdir, explicit_loops):
     """
     from _multi_batch: enable multi ipus
     """
@@ -424,7 +440,8 @@ def test_gradient_accumulation_multi_ipu(tmpdir):
         number_of_steps=3,
         final_proto_filename=os.path.join(tmpdir, "accl5batches3steps"),
         enable_multi_ipu=True,
-        full_anchorage=False)
+        full_anchorage=False,
+        explicit_loops=explicit_loops)
 
     no_accl_initial_proto, no_accl_proto_filename, no_accl_anchor_arrays = run_mm_graph(
         sgd_optimizer,
@@ -436,14 +453,16 @@ def test_gradient_accumulation_multi_ipu(tmpdir):
         final_proto_filename=os.path.join(tmpdir, "noAccl5batches3steps"),
         # we do not enable multiple IPUs in the baseline
         enable_multi_ipu=False,
-        full_anchorage=False)
+        full_anchorage=False,
+        explicit_loops=explicit_loops)
 
     check_models(accl_initial_proto, accl_proto_filename,
                  no_accl_proto_filename)
 
 
 @tu.requires_ipu_model
-def test_gradient_accumulation_error_inference(tmpdir):
+@pytest.mark.parametrize("explicit_loops", [True, False])
+def test_gradient_accumulation_error_inference(tmpdir, explicit_loops):
     """
     confirm that there is an error if in inference mode
     """
@@ -461,14 +480,17 @@ def test_gradient_accumulation_error_inference(tmpdir):
                                    tmpdir, "accl5batches3steps"),
                                enable_multi_ipu=True,
                                full_anchorage=False,
-                               inference_mode=True)
+                               inference_mode=True,
+                               explicit_loops=explicit_loops)
 
     assert e_info.value.args[0].startswith(
         "Gradient Accumulation only available when training")
 
 
 @tu.requires_ipu_model
-def test_gradient_accumulation_error_accum_factor_invalid(tmpdir):
+@pytest.mark.parametrize("explicit_loops", [True, False])
+def test_gradient_accumulation_error_accum_factor_invalid(
+        tmpdir, explicit_loops):
     """
     confirm that enable_accum = False => accum_factor = 1
     """
@@ -485,14 +507,16 @@ def test_gradient_accumulation_error_accum_factor_invalid(tmpdir):
                                    tmpdir, "accl5batches3steps"),
                                enable_multi_ipu=True,
                                full_anchorage=False,
-                               inference_mode=False)
+                               inference_mode=False,
+                               explicit_loops=explicit_loops)
 
     assert e_info.value.args[0].startswith(
         "enableGradientAccumulation is false, but accumulationFactor > 1.")
 
 
 @tu.requires_ipu_model
-def test_gradient_accumulation_anchors(tmpdir):
+@pytest.mark.parametrize("explicit_loops", [True, False])
+def test_gradient_accumulation_anchors(tmpdir, explicit_loops):
     """
     Check that the accumulated gradients with gradient accumulation match
     the gradients without gradient accumulation enabled.
@@ -514,7 +538,8 @@ def test_gradient_accumulation_anchors(tmpdir):
                                           "accl5batches3stepsAnchorsTest"),
         enable_multi_ipu=False,
         full_anchorage=True,
-        inference_mode=False)
+        inference_mode=False,
+        explicit_loops=explicit_loops)
 
     no_accl_initial_proto, no_accl_proto_filename, no_accl_anchor_arrays = run_mm_graph(
         sgd_optimizer,
@@ -527,7 +552,8 @@ def test_gradient_accumulation_anchors(tmpdir):
                                           "noAccl5batches3stepsAnchorsTest"),
         enable_multi_ipu=False,
         full_anchorage=True,
-        inference_mode=False)
+        inference_mode=False,
+        explicit_loops=explicit_loops)
 
     w0_tensor = onnx.load_from_string(accl_initial_proto).graph.initializer[0]
     w0_name = w0_tensor.name
@@ -582,7 +608,8 @@ def test_gradient_accumulation_anchors(tmpdir):
 
 
 @tu.requires_ipu_model
-def test_gradient_accumulation_model_proto(tmpdir):
+@pytest.mark.parametrize("explicit_loops", [True, False])
+def test_gradient_accumulation_model_proto(tmpdir, explicit_loops):
     np.random.seed(1234)
     label_array = np.random.randint(0, hidden_size, batch_size)
     accl_initial_proto, accl_proto_filename, accl_anchor_arrays = run_mm_graph(
@@ -594,7 +621,8 @@ def test_gradient_accumulation_model_proto(tmpdir):
         number_of_steps=3,
         final_proto_filename=os.path.join(tmpdir, "accl5batches3steps"),
         enable_multi_ipu=False,
-        full_anchorage=False)
+        full_anchorage=False,
+        explicit_loops=explicit_loops)
 
     model = onnx.load(accl_proto_filename)
     names = [t.name for t in model.graph.initializer]
@@ -629,7 +657,8 @@ def test_gradient_accumulation_model_proto(tmpdir):
             assert g_a_tensor.float_data[d_i] - v * wd < 1e-8
 
 
-def test_loading_saved_gradient_accumulationt_tesors(tmpdir):
+@pytest.mark.parametrize("explicit_loops", [True, False])
+def test_loading_saved_gradient_accumulationt_tesors(tmpdir, explicit_loops):
     """
     1. Build a model with matmuls, no grad accumulation
     2. Write out onnx model, verify initializers contain no accl tensors
@@ -712,7 +741,8 @@ def test_loading_saved_gradient_accumulationt_tesors(tmpdir):
 
 
 @tu.requires_ipu_model
-def test_adam_gradient_accumulation_base(tmpdir):
+@pytest.mark.parametrize("explicit_loops", [True, False])
+def test_adam_gradient_accumulation_base(tmpdir, explicit_loops):
     """
     base test (as simple as possible)
     """
@@ -731,7 +761,8 @@ def test_adam_gradient_accumulation_base(tmpdir):
             number_of_steps=1,
             final_proto_filename=os.path.join(tmpdir, "adamAccum"),
             enable_multi_ipu=False,
-            full_anchorage=False)
+            full_anchorage=False,
+            explicit_loops=explicit_loops)
 
         no_accum_initial_proto, no_accum_proto_filename, no_accum_anchor_arrays = graph_runner(
             adam_optimizer,
@@ -742,14 +773,16 @@ def test_adam_gradient_accumulation_base(tmpdir):
             number_of_steps=1,
             final_proto_filename=os.path.join(tmpdir, "adamNoAccum"),
             enable_multi_ipu=False,
-            full_anchorage=False)
+            full_anchorage=False,
+            explicit_loops=explicit_loops)
 
         check_models(accum_initial_proto, accum_proto_filename,
                      no_accum_proto_filename)
 
 
 @tu.requires_ipu_model
-def test_adam_gradient_accumulation_multi_batch(tmpdir):
+@pytest.mark.parametrize("explicit_loops", [True, False])
+def test_adam_gradient_accumulation_multi_batch(tmpdir, explicit_loops):
     """
     from _base: increase batches per step and number of steps
     """
@@ -768,7 +801,8 @@ def test_adam_gradient_accumulation_multi_batch(tmpdir):
             final_proto_filename=os.path.join(tmpdir,
                                               "adamAccum5batches3steps"),
             enable_multi_ipu=False,
-            full_anchorage=False)
+            full_anchorage=False,
+            explicit_loops=explicit_loops)
 
         no_accum_initial_proto, no_accum_proto_filename, no_accum_anchor_arrays = run_mm_graph(
             adam_optimizer,
@@ -780,14 +814,16 @@ def test_adam_gradient_accumulation_multi_batch(tmpdir):
             final_proto_filename=os.path.join(tmpdir,
                                               "adamNoAccum5batches3steps"),
             enable_multi_ipu=False,
-            full_anchorage=False)
+            full_anchorage=False,
+            explicit_loops=explicit_loops)
 
         check_models(accum_initial_proto, accum_proto_filename,
                      no_accum_proto_filename)
 
 
 @tu.requires_ipu_model
-def test_adam_gradient_accumulation_multi_ipu(tmpdir):
+@pytest.mark.parametrize("explicit_loops", [True, False])
+def test_adam_gradient_accumulation_multi_ipu(tmpdir, explicit_loops):
     """
     from _multi_batch: enable multi ipus
     """
@@ -803,7 +839,8 @@ def test_adam_gradient_accumulation_multi_ipu(tmpdir):
         number_of_steps=3,
         final_proto_filename=os.path.join(tmpdir, "adamAccum5batches3steps"),
         enable_multi_ipu=True,
-        full_anchorage=False)
+        full_anchorage=False,
+        explicit_loops=explicit_loops)
 
     no_accum_initial_proto, no_accum_proto_filename, no_accum_anchor_arrays = run_mm_graph(
         adam_optimizer,
@@ -815,14 +852,16 @@ def test_adam_gradient_accumulation_multi_ipu(tmpdir):
         final_proto_filename=os.path.join(tmpdir, "adamNoAccum5batches3steps"),
         # we do not enable multiple IPUs in the baseline
         enable_multi_ipu=False,
-        full_anchorage=False)
+        full_anchorage=False,
+        explicit_loops=explicit_loops)
 
     check_models(accum_initial_proto, accum_proto_filename,
                  no_accum_proto_filename)
 
 
 @tu.requires_ipu_model
-def test_adam_gradient_accumulation_model_proto(tmpdir):
+@pytest.mark.parametrize("explicit_loops", [True, False])
+def test_adam_gradient_accumulation_model_proto(tmpdir, explicit_loops):
     batches_per_step = 5
     for steps in [0, 3]:
         np.random.seed(1234)
@@ -836,7 +875,8 @@ def test_adam_gradient_accumulation_model_proto(tmpdir):
             number_of_steps=steps,
             final_proto_filename=os.path.join(tmpdir, "accl5batches3steps"),
             enable_multi_ipu=False,
-            full_anchorage=False)
+            full_anchorage=False,
+            explicit_loops=explicit_loops)
 
         model = onnx.load(accl_proto_filename)
         names = [t.name for t in model.graph.initializer]
@@ -888,7 +928,9 @@ def test_adam_gradient_accumulation_model_proto(tmpdir):
                 assert tensor.float_data[0] == steps * batches_per_step
 
 
-def test_adam_loading_saved_gradient_accumulationt_tesors(tmpdir):
+@pytest.mark.parametrize("explicit_loops", [True, False])
+def test_adam_loading_saved_gradient_accumulationt_tesors(
+        tmpdir, explicit_loops):
     """
     1. Build a model with matmuls, no grad accumulation
     2. Write out onnx model, verify initializers contain no accum tensors
@@ -914,6 +956,13 @@ def test_adam_loading_saved_gradient_accumulationt_tesors(tmpdir):
         opts.enableGradientAccumulation = True
         opts.accumulationFactor = accum_factor
         opts.disableGradAccumulationTensorStreams = False
+
+        if explicit_loops:
+            opts.enableExplicitMainLoops = True
+            opts.aliasZeroCopy = True
+            opts.explicitRecomputation = True
+            opts.useHostCopyOps = True
+
         sess = popart.TrainingSession(
             fnModel=fn,
             dataFlow=popart.DataFlow(1, {}),

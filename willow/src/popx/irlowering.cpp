@@ -1613,17 +1613,21 @@ void IrLowering::addOpTasks(PriTasks &tasks) {
     auto task = opTask(op, priority, prevOpTaskId);
 
     if (HostLoadOp *hlop = dynamic_cast<HostLoadOp *>(op)) {
-      auto x =
+      auto hostStreamDepencendy =
           PriTaskDependency(streamFromHostTaskId(hlop->getHostStreamTensorId()),
                             DependencyType::Tensor);
-      task.dependsOn.push_back(x);
+      logging::devicex::trace(
+          "Op {} depends on stream {}", op->debugName(), hostStreamDepencendy);
+      task.dependsOn.push_back(hostStreamDepencendy);
     }
 
     if (HostStoreOp *hsop = dynamic_cast<HostStoreOp *>(op)) {
-      auto x = PriTaskDependency(
+      auto hostStreamDepencendy = PriTaskDependency(
           streamToHostTaskId(hsop->getHostStreamTensorId(), true),
           DependencyType::Tensor);
-      task.dependsOn.push_back(x);
+      logging::devicex::trace(
+          "Op {} depends on stream {}", op->debugName(), hostStreamDepencendy);
+      task.dependsOn.push_back(hostStreamDepencendy);
     }
 
     tasks.add(task);

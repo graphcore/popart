@@ -834,6 +834,19 @@ void Ir::verifyDistributedReplicatedGraphSettings() const {
   }
 }
 
+void Ir::verifyExecutionContexts() const {
+  if (getSessionOptions().enableExplicitMainLoops) {
+    for (Op *op : getAllOps()) {
+      if (op->settings.executionContext ==
+          ExecutionContext::AccumulateOuterFragment) {
+        throw error("With explicit main loops, no Op should have "
+                    "ExecutionContext::AccumulateOuterFragment when the IR is "
+                    "finished preparing.");
+      }
+    }
+  }
+}
+
 bool Ir::isCandidateForConstExprFolding(const Tensor &tensor) const {
   // A tensor is computable as a const expression if it is Const. This would
   // also be true for Variable tensors during inference, unless the user calls
@@ -992,11 +1005,6 @@ void Ir::prepareImpl(const IrBundle &gb, const HashesMap &cacheEntries) {
   // construct the forward pass from ONNX,
   constructForwards();
 
-  if (getSessionOptions().useHostCopyOps) {
-    // Add input HostLoad operations
-    applyTransform(HostIOSetup::id(1), getMainGraph());
-  }
-
   // Check if cached Ir hash matches the current one and skip
   // the rest of the Ir preparation if true.
   setIrBundleHash(std::hash<popart::IrBundle>()(gb));
@@ -1097,7 +1105,17 @@ void Ir::prepareImpl(const IrBundle &gb, const HashesMap &cacheEntries) {
   updateVertices();
   dotCheckpoint(DotCheck::Bwd0);
 
+  // Delaying this preserves all "compute" tensor names a user might want
+  // to anchor, so it should be called after the transforms relevant for the
+  // computational functionality of the graph are done
+  if (getSessionOptions().useHostCopyOps) {
+    // Add input HostLoad operations
+    applyTransform(HostIOSetup::id(1), getMainGraph());
+  }
+
+  updateAliases();
   applyTransform(Prune::id(), getMainGraph());
+  updateAliases();
 
   for (auto &id_graph : graphs) {
     auto &graph = getGraph(id_graph.first);
@@ -1185,7 +1203,9 @@ void Ir::prepareImpl(const IrBundle &gb, const HashesMap &cacheEntries) {
     getMainGraph().setConvFlipWeightConstraints();
   }
 
+  updateAliases();
   applyTransform(Prune::id(), getMainGraph());
+  updateAliases();
   updateVertices();
 
   if (getSessionOptions().enableAutomaticLossScaling) {
@@ -1259,6 +1279,8 @@ void Ir::prepareImpl(const IrBundle &gb, const HashesMap &cacheEntries) {
   // Remove extra RemoteLoad, RemoteStore and Replicated ops that are not used
   applyTransform(Prune::id(), getMainGraph());
   updateAliases();
+  updateVertices();
+
   if (canTrain()) {
     getMainGraph().setVarUpdateConstraints();
   }
@@ -1438,6 +1460,7 @@ void Ir::prepareImpl(const IrBundle &gb, const HashesMap &cacheEntries) {
     verifyVirtualGraphIds(true);
     verifyVertexAttributesOnlyInMain();
     verifyRecomputeAttributes();
+    verifyExecutionContexts();
   }
   // end of checks
 
@@ -1564,26 +1587,34 @@ void Ir::verifyVirtualGraphIds(bool postAutoVirtualGraphTransform) const {
 
   logging::ir::debug("Verifying virtual graph id consistency");
 
-  const std::set<int64_t> &vgraphs(getMainGraph().getAllVirtualGraphIds());
+  std::set<int64_t> vGraphs;
+  std::map<int64_t, int> vGraphCounts;
+
+  for (auto graph : getAllGraphs()) {
+    auto gvGraphs = graph->getAllVirtualGraphIds(true);
+    vGraphs.insert(gvGraphs.begin(), gvGraphs.end());
+    auto gvGraphCounts = graph->getVirtualGraphCounts();
+    for (auto gvGrapCount : gvGraphCounts) {
+      vGraphCounts[gvGrapCount.first] += gvGrapCount.second;
+    }
+  }
 
   // a mix of annotated and not annotated Ops : suggests a problem
-  if (vgraphs.count(Graph::NoVGraph) != 0 && vgraphs.size() > 1) {
+  if (vGraphs.count(Graph::NoVGraph) != 0 && vGraphs.size() > 1) {
 
     std::ostringstream errm;
-    errm << "Either all Ops in the main graph must have their virtual "
+    errm << "Either all Ops must have their virtual "
          << "graph ids set, or none must. Op count per virtual graph id\n";
 
-    std::map<int64_t, int> vgraph_op_count(
-        getMainGraph().getVirtualGraphCounts());
-
-    for (auto &id_size : vgraph_op_count) {
-      errm << "  " << id_size.first << " : " << id_size.second << "\n";
+    for (auto &vgidAndSize : vGraphCounts) {
+      errm << "  " << vgidAndSize.first << " : " << vgidAndSize.second << "\n";
     }
 
     errm << "Ops with no virtual graph id :  \n";
-    for (auto &id_op : getMainGraph().getOps()) {
-      auto op = id_op.second.get();
-      if (!op->isConvertibleTo<IpuCopyOp>() && !op->hasVirtualGraphId()) {
+    for (auto &op : getAllOps()) {
+      if (!op->isConvertibleTo<IpuCopyOp>() &&
+          (!op->hasVirtualGraphId() ||
+           op->getVirtualGraphId() == unusedVGraphId)) {
         errm << "  " << op->str() << "\n";
       }
     }
@@ -1600,7 +1631,7 @@ void Ir::verifyVirtualGraphIds(bool postAutoVirtualGraphTransform) const {
 
   // Sanity check the virtual graph ids. Only -1's, no Op has a virtual graph
   // annotation implies a problem.
-  if (vgraphs.size() == 1 && vgraphs.count(-1) != 0) {
+  if (vGraphs.size() == 1 && vGraphs.count(-1) != 0) {
     // Manual virtual graphing, the user should have annotated ops.
     if (getSessionOptions().virtualGraphMode == VirtualGraphMode::Manual) {
       throw error("SessionOptions flag virtualGraphMode is {}, but no Ops "
@@ -3535,8 +3566,8 @@ std::size_t std::hash<popart::Ir>::operator()(const popart::Ir &ir) const {
   return seed;
 }
 
-std::size_t
-std::hash<popart::IrBundle>::operator()(const popart::IrBundle &bundle) const {
+std::size_t std::hash<popart::IrBundle>::
+operator()(const popart::IrBundle &bundle) const {
   size_t seed = 0;
 
   boost::hash_combine(

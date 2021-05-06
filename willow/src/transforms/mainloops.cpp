@@ -7,6 +7,7 @@
 #include <popart/names.hpp>
 #include <popart/op.hpp>
 #include <popart/op/iotilecopy.hpp>
+#include <popart/op/ipucopy.hpp>
 #include <popart/op/loop.hpp>
 #include <popart/op/remote.hpp>
 #include <popart/tensor.hpp>
@@ -264,6 +265,19 @@ void moveIntoLoop(LoopOp *loop,
 
     cloneOp->setScope(subgraph.getScope());
 
+    auto connectInTensorFn =
+        [](Op *srcOpP, Op *dstOpP, InIndex index, TensorId tensorId) {
+          IpuCopyOp *srcOp = dynamic_cast<IpuCopyOp *>(srcOpP);
+          IpuCopyOp *dstOp = dynamic_cast<IpuCopyOp *>(dstOpP);
+          if (srcOp && dstOp) {
+            TensorId srcTensorId = srcOp->input->tensor(index)->id;
+            dstOp->connectInTensor(
+                index, tensorId, srcOp->getSourceIpu(srcTensorId));
+          } else {
+            dstOpP->connectInTensor(index, tensorId);
+          }
+        };
+
     for (auto input : op->input->tensorIdMap()) {
       TensorId subgraphTensorId;
       auto find = remap.find(input.second);
@@ -272,7 +286,7 @@ void moveIntoLoop(LoopOp *loop,
                              input.second);
       }
       subgraphTensorId = find->second;
-      cloneOp->connectInTensor(input.first, subgraphTensorId);
+      connectInTensorFn(op, cloneOp, input.first, subgraphTensorId);
     }
     for (auto output : op->output->tensorIdMap()) {
       TensorId subgraphTensorId =
@@ -349,6 +363,14 @@ void moveIntoLoop(LoopOp *loop,
     }
   }
 
+  auto sgvgraphs = subgraph.getAllVirtualGraphIds(false);
+  if (!sgvgraphs.empty()) {
+    logging::transform::trace("[moveIntoLoop] Setting {} to VGID: {}",
+                              loop->debugName(),
+                              *sgvgraphs.begin());
+    loop->setVirtualGraphId(*sgvgraphs.begin());
+  }
+
   // Remove moved tensors and ops
   Transform::applyTransform(Prune::id(), graph);
 }
@@ -371,6 +393,10 @@ bool MainLoops::apply(Graph &graph) const {
   // Optional loops
   LoopOp *stepLoop  = nullptr;
   LoopOp *accumLoop = nullptr;
+  std::map<TensorId, TensorId> stepTensorRemap;
+  std::map<TensorId, TensorId> accumTensorRemap;
+  std::map<OpId, OpId> stepOpRemap;
+  std::map<OpId, OpId> accumOpRemap;
 
   if (batchesPerStep > 1) {
     Op::Settings stepLoopSettings(graph, "stepLoop");
@@ -396,6 +422,32 @@ bool MainLoops::apply(Graph &graph) const {
                               batchesPerStep);
     stepLoop->setTripCountValue(batchesPerStep);
   }
+
+  auto schedule = graph.getOpSchedule({}, RequireOptimalSchedule::No);
+
+  // Move operations into the step loop
+  if (batchesPerStep > 1) {
+    std::vector<Op *> ops;
+    std::set<TensorId> requiredOutTensorIds;
+    for (Op *op : schedule) {
+      if ((op->settings.executionContext == ExecutionContext::Normal ||
+           op->settings.executionContext ==
+               ExecutionContext::AccumulateOuterFragment) &&
+          op->id != stepLoop->id) {
+        logging::transform::trace("[MainLoops] Moving {} into step loop",
+                                  op->debugName());
+        ops.push_back(op);
+      }
+    }
+    OpsToMove opsToMove(graph, ops);
+    opsToMove.evaluate();
+    moveIntoLoop(stepLoop, opsToMove, stepTensorRemap);
+  }
+  ir.updateAliases();
+  ir.updateVertices();
+
+  schedule =
+      ir.getGraph(stepGraphId).getOpSchedule({}, RequireOptimalSchedule::No);
 
   if (accumulationFactor > 1) {
     Graph &stepGraph = ir.getGraph(stepGraphId);
@@ -427,48 +479,6 @@ bool MainLoops::apply(Graph &graph) const {
     accumLoop->setTripCountValue(accumulationFactor);
   }
 
-  std::map<TensorId, TensorId> stepTensorRemap;
-  std::map<TensorId, TensorId> accumTensorRemap;
-
-  std::map<OpId, OpId> stepOpRemap;
-  std::map<OpId, OpId> accumOpRemap;
-
-  auto schedule = graph.getOpSchedule({}, RequireOptimalSchedule::No);
-
-  if (batchesPerStep <= 1 && accumulationFactor <= 1) {
-    for (Op *op : schedule) {
-      // Remove accumulation outer fragment contexts
-      if (op->settings.executionContext ==
-          ExecutionContext::AccumulateOuterFragment) {
-        op->settings.executionContext = ExecutionContext::Normal;
-      }
-    }
-  }
-
-  // Move operations into the step loop
-  if (batchesPerStep > 1) {
-    std::vector<Op *> ops;
-    std::set<TensorId> requiredOutTensorIds;
-    for (Op *op : schedule) {
-      if ((op->settings.executionContext == ExecutionContext::Normal ||
-           op->settings.executionContext ==
-               ExecutionContext::AccumulateOuterFragment) &&
-          op->id != stepLoop->id) {
-        logging::transform::trace("[MainLoops] Moving {} into step loop",
-                                  op->debugName());
-        ops.push_back(op);
-      }
-    }
-    OpsToMove opsToMove(graph, ops);
-    opsToMove.evaluate();
-    moveIntoLoop(stepLoop, opsToMove, stepTensorRemap);
-  }
-  ir.updateAliases();
-  ir.updateVertices();
-
-  schedule =
-      ir.getGraph(stepGraphId).getOpSchedule({}, RequireOptimalSchedule::No);
-
   // Move operations into the accumulation loop
   if (accumulationFactor > 1) {
     std::vector<Op *> ops;
@@ -497,6 +507,15 @@ bool MainLoops::apply(Graph &graph) const {
   if (accumGraphId != graph.id) {
     auto &accumGraph = ir.getGraph(accumGraphId);
     finalizeSubgraphSettings(accumGraph);
+  }
+
+  // Remove accumulation outer fragment contexts
+  schedule = graph.getOpSchedule({}, RequireOptimalSchedule::No);
+  for (Op *op : schedule) {
+    if (op->settings.executionContext ==
+        ExecutionContext::AccumulateOuterFragment) {
+      op->settings.executionContext = ExecutionContext::Normal;
+    }
   }
 
   if (stepLoop != nullptr) {

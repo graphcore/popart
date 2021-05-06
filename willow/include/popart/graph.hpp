@@ -45,7 +45,7 @@ public:
   static const int64_t NoVGraph;
 
   // Obtain a set of all vitual graphs Id used across ops
-  const std::set<int64_t> getAllVirtualGraphIds() const;
+  const std::set<int64_t> getAllVirtualGraphIds(bool includeInvalid) const;
 
   // Obtain counts for each vitual graphs Id used across ops
   const std::map<int64_t, int> getVirtualGraphCounts() const;
