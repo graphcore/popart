@@ -50,11 +50,13 @@ set_property(TARGET "verify_cxx_11_interface" PROPERTY CXX_STANDARD 11)
 
 # Python unit test function
 # Uses VARIANTS as above for add_popart_cpp_unit_test
+# Takes optional MATCHEXPR parameter, which is a string that will be passed
+# verbatim to pytest as a selector when running the test `-k <matchexpr_value>`.
 function(add_popart_py_unit_test name)
-  set(test_args_MATCHEXPR "")
-  set(oneValueArgs "VARIANTS;LABELS;MATCHEXPR;")
-  cmake_parse_arguments(test_args "" "FILES" "${oneValueArgs}" "FILES;${ARGN}")
-  set(FILES "${test_args_FILES}")
+  set(options "")
+  set(oneValueArgs MATCHEXPR)
+  set(multiValueArgs LABELS VARIANTS)
+  cmake_parse_arguments(test_args "${options}" "${oneValueArgs}" "${multiValueArgs}" "${ARGN}")
 
   sanitise_variants(test_args_VARIANTS)
   extract_targets(test_args_VARIANTS TARGETS)
@@ -69,17 +71,19 @@ function(add_popart_py_unit_test name)
       set(fork_test "--forked")
     endif()
 
-    if ("${test_args_MATCHEXPR}" STREQUAL "")
+    if (NOT DEFINED test_args_MATCHEXPR)
       set(test_name "${TEST_TARGET}_${TEST_CONFIG}_${name}")
       add_test(NAME "${test_name}"
             COMMAND ${Python3_EXECUTABLE} -m pytest -s ${CMAKE_CURRENT_SOURCE_DIR}/${name}.py ${fork_test}
             WORKING_DIRECTORY ${CMAKE_CURRENT_BUILD_DIR})
     else()
-      string(REGEX REPLACE "[^a-zA-Z0-9_]" "_" MATCHEXPR_NAME "${test_args_MATCHEXPR}")
-      string(REGEX REPLACE "[^a-zA-Z0-9_]" " " MATCHEXPR_VALUE "${test_args_MATCHEXPR}")
+      # Note, solid brackets and dash can form part of parameterised pytest names.
+      string(REGEX REPLACE " " "_" MATCHEXPR_NAME "${test_args_MATCHEXPR}")
+      set(MATCHEXPR_VALUE "${test_args_MATCHEXPR}")
       set(test_name "${TEST_TARGET}_${TEST_CONFIG}_${name}-${MATCHEXPR_NAME}")
+
       add_test(NAME "${test_name}"
-            COMMAND ${Python3_EXECUTABLE} -m pytest -s ${CMAKE_CURRENT_SOURCE_DIR}/${name}.py -k "${MATCHEXPR_VALUE}" ${fork_test}
+            COMMAND "${Python3_EXECUTABLE}" -m pytest -s "${CMAKE_CURRENT_SOURCE_DIR}/${name}.py" -k "${MATCHEXPR_VALUE}" ${fork_test}
             WORKING_DIRECTORY ${CMAKE_CURRENT_BUILD_DIR})
     endif()
     set_tests_properties(${test_name} PROPERTIES

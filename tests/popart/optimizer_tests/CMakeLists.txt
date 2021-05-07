@@ -20,6 +20,11 @@ add_popart_py_unit_test(sgd_mixed_mode_test_py_1)
 add_popart_py_unit_test(sgd1_accumulator_test)
 
 add_popart_py_unit_test(global_batch_size_test MATCHEXPR sgd_ VARIANTS Hw)
-add_popart_py_unit_test(global_batch_size_test MATCHEXPR sgdm VARIANTS Hw)
 add_popart_py_unit_test(global_batch_size_test MATCHEXPR adam VARIANTS Hw)
 add_popart_py_unit_test(global_batch_size_test MATCHEXPR lamb VARIANTS Hw)
+# Further split the SGDM tests on the first parameter of the test function to,
+# help reduce timeouts. This could break if the test functions change.
+# NOTE: CMake bug: For some reason, the keywords get set wrong if VARIANTS comes
+#       after MATCHEXPR
+add_popart_py_unit_test(global_batch_size_test VARIANTS Hw MATCHEXPR "sgdm[True")
+add_popart_py_unit_test(global_batch_size_test VARIANTS Hw MATCHEXPR "sgdm[False")
