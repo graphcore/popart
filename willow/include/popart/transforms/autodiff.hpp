@@ -29,10 +29,20 @@ public:
    * outputs.
    **/
   enum class StitchStrategy {
-    /// Recompute all fwd tensors except those that are inputs in the fwdGraph.
-    Recompute = 0,
+    /// Recompute any backward graph inputs that are associated with
+    /// non-gradient forward graph tensors which are neither inputs nor outputs
+    /// in the forward graph.
+    RecomputeMinimal = 0,
+    /// Recompute any backward graph inputs that are associated with
+    /// non-gradient forward graph tensors which are not inputs in the forward
+    /// graph.
+    RecomputeAllNonInputs = 1,
+    /// Add backward graph inputs that are associated with non-gradient forward
+    /// graph tensors which are neither inputs nor outputs to the
+    /// forward graph (not supported for IfOp).
+    AddFwdOutputs = 2,
     /// Number of StitchStrategy values.
-    N = 1
+    N = 3
   };
 
   static std::size_t id();
@@ -139,24 +149,39 @@ public:
                  const FwdGraphToBwdGraphInfo &calledGraphsGradInfo);
 
   /**
-   * Stitch a fwd/bwd graph pair. That is, remove some non-gradient inputs from
-   * the backwards graph if possible. This function can be used to make it so
-   * so that all inputs to the backwards graph are either inputs of the forward
-   * graph, outputs of the forward graph or gradients of outputs of the forward
-   * graph (this is a requirement for growing some grad ops) using a method of
-   * the caller's choosing.
+   * Stitch a forward/backward graph pair. That is, make it so that the
+   * backwards graph no longer has any non-gradient inputs of forward graph
+   * tensors that are neither inputs nor outputs of the forward graph.
+   *
+   * When autodiff'ing a graph it is PopART's assumption that all input tensors
+   * to gradient ops are either 1) an forward op input 2) a forward op output or
+   * 3) the gradient of a forward op output. For this to be true for gradients
+   * ops associated with ops that have called subgraphs (example: CallOp, IfOp)
+   * typically the backwards versions of those called subgraphs must not have
+   * inputs that are associated with non-gradient forward tensors that are
+   * neither inputs nor outputs of the forward graph. This is because inputs
+   * and outputs of forwards (resp. backwards) subgraphs typically map to inputs
+   * and outputs of the associated forward op (resp. grad op).
+   *
+   * For stitch strategies that affect the forward graph's inputs or outputs,
+   * this function should also amend all call sites of the forward graph as
+   * appropriate. Conversely, for backwards graphs, it is assumed there are no
+   * call sites as yet as it's anticipated this method is called before parents
+   * of the backward graph exist.
    *
    * NOTE: This function may modify the fwdGraph, bwdGraph or any graphs that
-   *    call these graphs, depending on the method.
+   *    call these graphs, depending on the method. It also may raise an
+   *    exception if it is unable to stitch an index.
    *
    * \param ir The IR in the context of which this transformation is applied.
    * \param fwdGraphId The ID of the subgraph to differentiate.
    * \param bwdGraphInfo The data structure describing the bwdGraph.
    * \param stitchStrategy Method by which to stitch any autodiff result for
    *     graphs that are directly or indirectly called by the graph.
-   * \param stitchIndices If provided, stitching is constrained to backward
-   *     graph input indices in this list. If not provided, all non-gradient
-   *     inputs of the backwards graph are considered for stitching.
+   * \param stitchIndices If provided, backwards graph input indices not in this
+   *      list must be ignored and backwards graph input indices in this list
+   *      must be stitched (or an exception raised). If not set, it's up to the
+   *      stitcher what indices to stitch.
    * \return An updated BwdGraphInfo data structure (with some `expectedInputs`
    *     removed).
    **/

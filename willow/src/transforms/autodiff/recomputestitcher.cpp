@@ -7,38 +7,28 @@
 #include <popart/logging.hpp>
 
 #include <transforms/autodiff/backwardsgraphcreatorhelper.hpp>
-//#include <popart/op.hpp>
-//#include <popart/tensorindex.hpp>
 
 namespace popart {
 
-RecomputeStitcher::RecomputeStitcher(AutodiffIrInterface &dep)
-    : StitcherInterface{}, AutodiffHelper{dep} {}
+RecomputeStitcher::RecomputeStitcher(AutodiffIrInterface &dep,
+                                     StitchIndexMode mode_)
+    : Stitcher{dep}, mode{mode_} {}
 
 BwdGraphInfo RecomputeStitcher::stitch(
     const GraphId &fwdGraphId,
     const BwdGraphInfo &bwdGraphInfo,
-    const nonstd::optional<std::vector<InIndex>> &stitchIndices) {
-  // Use given bwdGraphInfo as a starting point, but recalc expectedInputs.
-  BwdGraphInfo result   = bwdGraphInfo;
-  result.expectedInputs = {};
+    const nonstd::optional<std::vector<InIndex>> &optStitchIndices) {
 
-  auto &ir = dep.get();
+  std::vector<InIndex> stitchIndices =
+      getStitchIndices(fwdGraphId, bwdGraphInfo, optStitchIndices);
 
+  auto &ir       = dep.get();
   auto &fwdGraph = ir.getGraph(fwdGraphId);
   auto &bwdGraph = ir.getGraph(bwdGraphInfo.bwdGraphId);
 
   // Remove bwdGraph inputs that we're going to recompute.
   auto bwdGraphInputs = bwdGraph.getInputIds();
-  for (InIndex i = 0; i < bwdGraphInfo.expectedInputs.size(); ++i) {
-
-    if (stitchIndices) {
-      // Avoid stitching things that are not listed in a provided stitchIndices.
-      auto it = std::find(stitchIndices->begin(), stitchIndices->end(), i);
-      if (it == stitchIndices->end()) {
-        continue;
-      }
-    }
+  for (InIndex i : stitchIndices) {
 
     const auto &expInput = bwdGraphInfo.expectedInputs[i];
     const auto &fwdId    = expInput.fwdId;
@@ -51,41 +41,47 @@ BwdGraphInfo RecomputeStitcher::stitch(
 
     switch (type) {
     case ExpectedConnectionType::Fwd: {
-      if (fwdGraph.hasInputId(fwdId)) {
-        logging::transform::trace("[Autodiff] Keeping input #{} of {} ('{}') "
-                                  "which is associated with '{}', an input "
-                                  "of {}",
-                                  i,
-                                  bwdGraph.getGraphString(),
-                                  bwdId,
-                                  fwdId,
-                                  fwdGraph.getGraphString());
-        result.expectedInputs.push_back(expInput);
-      } else {
-        logging::transform::trace("[Autodiff] Removing input #{} of {} "
-                                  "('{}') because it's associated with '{}' "
-                                  "which is not an input of {}",
-                                  i,
-                                  bwdGraph.getGraphString(),
-                                  bwdId,
-                                  fwdId,
-                                  fwdGraph.getGraphString());
+
+      if (!fwdGraph.hasInputId(fwdId)) {
+        logging::transform::trace(
+            "[RecomputeStitcher] Recomputing input #{} of "
+            "{} ('{}'), which is associated with tensor "
+            "'{}' of {}",
+            i,
+            bwdGraph.getGraphString(),
+            bwdId,
+            fwdId,
+            fwdGraph.getGraphString());
         bwdGraph.removeInput(bwdId);
+      } else {
+        throw error("[RecomputeStitcher] Unable to stitch input #{} of "
+                    "{} ('{}') because it is associated with forward tensor "
+                    "'{}', which is an input of {}",
+                    i,
+                    bwdGraph.getGraphString(),
+                    bwdId,
+                    fwdId,
+                    fwdGraph.getGraphString());
       }
       break;
     }
-    case ExpectedConnectionType::FwdGrad:
-    default: {
-      logging::transform::trace("[Autodiff] Keeping input #{} of {} ('{}') "
-                                "which is associated with the gradient of "
-                                "tensor '{}' of {}",
-                                i,
-                                bwdGraph.getGraphString(),
-                                bwdId,
-                                fwdId,
-                                fwdGraph.getGraphString());
-      result.expectedInputs.push_back(expInput);
+    case ExpectedConnectionType::FwdGrad: {
+
+      throw error("[RecomputeStitcher] Unable to stitch input #{} of "
+                  "{} ('{}') because it is associated with the gradient "
+                  "tensor '{}' of {}",
+                  i,
+                  bwdGraph.getGraphString(),
+                  bwdId,
+                  fwdId,
+                  fwdGraph.getGraphString());
       break;
+    }
+    default: {
+
+      throw internal_error("[RecomputeStitcher] Unsupported connection type "
+                           "({})",
+                           static_cast<int>(type));
     }
     }
   }
@@ -97,6 +93,37 @@ BwdGraphInfo RecomputeStitcher::stitch(
 
   BackwardsGraphCreatorHelper helper{fwdGraph, bwdGraph};
   return helper.makeGradInfo();
+}
+
+bool RecomputeStitcher::isDefaultStitch(const GraphId &fwdGraphId,
+                                        const BwdGraphInfo &bwdGraphInfo,
+                                        const ExpectedConnection &expInput) {
+
+  const auto &fwdId = expInput.fwdId;
+  const auto &type  = expInput.type;
+
+  if (type != ExpectedConnectionType::Fwd) {
+    // We can only stitch non-gradient inputs.
+    return false;
+  }
+
+  auto &fwdGraph = dep.get().getGraph(fwdGraphId);
+
+  auto isFwdInput  = fwdGraph.hasInputId(fwdId);
+  auto isFwdOutput = fwdGraph.hasOutputId(fwdId);
+
+  switch (mode) {
+  case StitchIndexMode::Minimum: {
+    return !isFwdInput && !isFwdOutput;
+  }
+  case StitchIndexMode::AllNonInputs: {
+    return !isFwdInput;
+  }
+  default: {
+    throw internal_error("[RecomputeStitcher] Unsupported mode ({})",
+                         static_cast<int>(mode));
+  }
+  }
 }
 
 } // namespace popart

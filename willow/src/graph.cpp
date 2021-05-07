@@ -752,6 +752,18 @@ void Graph::copyFrom(const Graph &other,
       this->markAsOutput(newId);
     }
   }
+
+  // We may have inadvertently added an op to the graph that is producing a
+  // tensor that was already an input to the graph. This can be problematic
+  // so disconnect the tensor from it's producer if this is the case.
+  auto inputIds = getInputIds();
+  for (auto &id : inputIds) {
+    auto tensor = getTensors().get(id);
+    if (tensor->hasProducer()) {
+      auto producer = tensor->getProducer();
+      producer->disconnectOutTensor(tensor);
+    }
+  }
 }
 
 } // namespace popart
