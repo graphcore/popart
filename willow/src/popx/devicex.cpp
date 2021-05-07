@@ -153,7 +153,6 @@ bool Devicex::InputDatastream::readPrefetch(void *ptr) {
     ConstVoidData data = io->in(getTensorId(), tensor->info.nelms(), true);
 
     if (data.data == nullptr) {
-      logging::devicex::info("readPrefetch returning false");
       return false;
     } else {
 
