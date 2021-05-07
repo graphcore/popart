@@ -76,12 +76,13 @@ void BatchNormOp::setup() {
   }
 
   if (getGraph().getIr().isTraining() && output->n() != 5) {
-    throw error(
+    logging::warn(
         "The Ir is in training mode, yet this batch-normalization Op, \"{}\" "
         "has only {} output(s) which means it is in inference mode. To be in "
-        "training mode, it should have 5 outputs. Consider using "
-        "GraphTransformer::prepareNodesForTraining() to modify the ONNX Model "
-        "to have all Nodes set to training mode.",
+        "training mode, it should have 5 outputs. Is this the desired "
+        "behaviour? If yes, the op needs to be detached, if not, consider "
+        "using GraphTransformer::prepareNodesForTraining() to modify the ONNX "
+        "Model to have all Nodes set to training mode.",
         str(),
         output->n());
   }
@@ -134,7 +135,16 @@ BatchNormGradOp::BatchNormGradOp(const BatchNormOp &op_)
       epsilon(op_.getEpsilon()), spatial(op_.getSpatial()),
       fwdInInfo(op_.inInfo(BatchNormOp::getXInIndex())),
       fwdScaleInInfo(op_.inInfo(BatchNormOp::getScaleInIndex())),
-      fwdBInInfo(op_.inInfo(BatchNormOp::getBInIndex())) {}
+      fwdBInInfo(op_.inInfo(BatchNormOp::getBInIndex())) {
+  if (op_.output->n() != 5) {
+    throw error("BatchNorm Op \"{}\" has {} output(s) which means it is in "
+                "inference mode, but its gradient Op is being created. To use "
+                "the BatchNorm Op in inference mode during training, it has to "
+                "be detached first.",
+                op_.str(),
+                op_.output->n());
+  }
+}
 
 std::unique_ptr<Op> BatchNormGradOp::clone() const {
   return std::make_unique<BatchNormGradOp>(*this);
