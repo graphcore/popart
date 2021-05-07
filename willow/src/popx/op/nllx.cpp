@@ -1,4 +1,5 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
+#include "popart/logging.hpp"
 #include <memory>
 #include <popart/error.hpp>
 #include <popart/ir.hpp>
@@ -9,6 +10,7 @@
 #include <popart/popx/op/nllx.hpp>
 #include <popart/popx/opxmanager.hpp>
 
+#include <poplar/Tensor.hpp>
 #include <popops/Cast.hpp>
 #include <popops/ElementWise.hpp>
 #include <popops/Encoding.hpp>
@@ -146,6 +148,19 @@ void NllOpx::applyScalingInPlaceForMeanReductionWithIgnoreIndex(
                      {popops::Operation::ADD},
                      prog,
                      opx.debugContext("numNonIgnoredSamples"));
+
+  // If the numNonIgnoredSamples is equal to zero, we have ignored all label
+  // data, in this case return zero loss. Do this by taking
+  // min(numIgnoredSamples, 1) and letting the result be 0 / 1 (where scale = 0
+  // due to the ignored labels). See T36441
+  auto min_1 = opx.graph().addConstant(
+      numNonIgnoredSamples.elementType(), {}, 1, opx.debugContext("const_1"));
+  opx.graph().setTileMapping(min_1, 0);
+  popops::maxInPlace(opx.graph(),
+                     numNonIgnoredSamples,
+                     min_1,
+                     prog,
+                     opx.debugContext("numNonIgnoredSamples_min"));
 
   auto combined_scale = popops::div(opx.graph(),
                                     scale,

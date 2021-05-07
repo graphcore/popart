@@ -403,77 +403,76 @@ def test_nll_loss_grad_with_ignored_index():
     run_nll_loss_grad_with_ignored_index(popart.ReductionType.Sum)
 
 
-@pytest.mark.parametrize("ignore_index", (None, 1))
-def test_loss_scaling(ignore_index, op_tester):
+@pytest.mark.parametrize("ignore_index", (None, 1, -1))
+@pytest.mark.parametrize("popart_reduction_type",
+                         (popart.ReductionType.Mean, popart.ReductionType.Sum))
+def test_loss_scaling(ignore_index, popart_reduction_type, op_tester):
     nll_scale = 1.2
     l1_scale = 1.5
 
-    for popart_reduction_type in (popart.ReductionType.Mean,
-                                  popart.ReductionType.Sum):
+    ## input data
+    Batchsize = 2
+    Classes = 3
 
-        ## input data
-        Batchsize = 2
-        Classes = 3
+    dshape = [Batchsize, Classes]
+    lshape = [Batchsize]
+    flat_lshape = [Batchsize]
 
-        dshape = [Batchsize, Classes]
-        lshape = [Batchsize]
-        flat_lshape = [Batchsize]
+    ip_data = np.random.rand(*dshape).astype(np.float32)
+    lb_data = np.random.randint(Classes, size=lshape)
 
-        ip_data = np.random.rand(*dshape).astype(np.float32)
-        lb_data = np.random.randint(Classes, size=lshape)
+    def init_builder(builder):
+        ip = builder.addInitializedInputTensor(ip_data)
+        lb = builder.addInputTensor(lb_data.astype(np.int32))
 
-        def init_builder(builder):
-            ip = builder.addInitializedInputTensor(ip_data)
-            lb = builder.addInputTensor(lb_data.astype(np.int32))
+        sm = builder.aiOnnx.softmax([ip], axis=np.size(lshape))
+        nll = builder.aiGraphcore.nllloss([sm, lb],
+                                          reduction=popart_reduction_type,
+                                          ignoreIndex=ignore_index)
+        nll_scaled = builder.aiGraphcore.scale([nll], nll_scale)
 
-            sm = builder.aiOnnx.softmax([ip], axis=np.size(lshape))
-            nll = builder.aiGraphcore.nllloss([sm, lb],
-                                              reduction=popart_reduction_type,
-                                              ignoreIndex=ignore_index)
-            nll_scaled = builder.aiGraphcore.scale([nll], nll_scale)
+        l1 = builder.aiGraphcore.l1loss([ip],
+                                        1.0,
+                                        reduction=popart_reduction_type)
+        l1_scaled = builder.aiGraphcore.scale([l1], l1_scale)
 
-            l1 = builder.aiGraphcore.l1loss([ip],
-                                            1.0,
-                                            reduction=popart_reduction_type)
-            l1_scaled = builder.aiGraphcore.scale([l1], l1_scale)
+        out = builder.aiOnnx.add([nll_scaled, l1_scaled])
+        builder.addOutputTensor(out)
 
-            out = builder.aiOnnx.add([nll_scaled, l1_scaled])
-            builder.addOutputTensor(out)
+        result = [
+            out, l1_scaled, nll_scaled,
+            popart.reservedGradientPrefix() + ip,
+            popart.reservedGradientPrefix() + out
+        ]
+        return result
 
-            result = [
-                out,
-                popart.reservedGradientPrefix() + ip,
-                popart.reservedGradientPrefix() + out
-            ]
-            return result
+    def reference(ref_data):
+        input = torch.tensor(ip_data, requires_grad=True)
+        target = torch.tensor(lb_data, requires_grad=False)
 
-        def reference(ref_data):
-            input = torch.tensor(ip_data, requires_grad=True)
-            target = torch.tensor(lb_data, requires_grad=False)
+        logsm = torch.nn.LogSoftmax(dim=1)(input)
+        extra_args = {'ignore_index': ignore_index} if ignore_index else {}
+        nll = get_pytorch_equivalent_loss(torch.nn.NLLLoss,
+                                          popart_reduction_type,
+                                          [logsm, target],
+                                          extra_args=extra_args)
+        nll_scaled = nll * nll_scale
 
-            logsm = torch.nn.LogSoftmax()(input)
-            extra_args = {'ignore_index': ignore_index} if ignore_index else {}
-            nll = get_pytorch_equivalent_loss(torch.nn.NLLLoss,
-                                              popart_reduction_type,
-                                              [logsm, target],
-                                              extra_args=extra_args)
-            nll_scaled = nll * nll_scale
+        l1 = get_pytorch_equivalent_loss(
+            torch.nn.L1Loss, popart_reduction_type,
+            [input, torch.zeros_like(input)])
+        l1_scaled = l1 * l1_scale
 
-            l1 = get_pytorch_equivalent_loss(
-                torch.nn.L1Loss, popart_reduction_type,
-                [input, torch.zeros_like(input)])
-            l1_scaled = l1 * l1_scale
+        out = nll_scaled + l1_scaled
 
-            out = nll_scaled + l1_scaled
+        d__o = ref_data.getOutputTensorGrad(0)
+        out.backward(torch.tensor(d__o))
 
-            d__o = ref_data.getOutputTensorGrad(0)
-            out.backward(torch.tensor(d__o))
+        result = [out, l1_scaled, nll_scaled, input.grad, None]
+        return result
 
-            result = [out, input.grad, None]
-            return result
-
-        op_tester.setPatterns([], enableRuntimeAsserts=False)
-        op_tester.run(init_builder, reference, 'train')
+    op_tester.setPatterns([], enableRuntimeAsserts=False)
+    op_tester.run(init_builder, reference, 'train')
 
 
 def test_nllloss_reduction_equiv(op_tester):
@@ -634,6 +633,58 @@ def test_nll_input_is_log_probability_training(op_tester):
         return [nll, p.grad, None]
 
     op_tester.setPatterns([], enableRuntimeAsserts=False)
+    op_tester.run(init_builder, reference, step_type='train', seed=8)
+
+
+def test_nll_all_ingoreindex(op_tester):
+    """Testing T36441, ignoring all indicies in nll loss. Without the fix, 
+    popart returns NaNs due to a div/0 
+    """
+    np.random.seed(0)
+    data = np.random.random([10, 10]).astype(np.float32)
+    target = -np.ones([10]).astype(np.int32)
+    weight = np.random.random([10]).astype(np.float32)
+    bias = np.random.random([10]).astype(np.float32)
+
+    def init_builder(builder):
+        P = builder.addInputTensor(data)
+        T = builder.addInputTensor(target)
+        W = builder.addInitializedInputTensor(weight)
+        B = builder.addInitializedInputTensor(bias)
+        x = builder.aiOnnx.matmul([P, W])
+        out = builder.aiOnnx.add([x, B])
+        logP = builder.aiOnnx.logsoftmax([P], axis=1)
+        nll = builder.aiGraphcore.nllloss([logP, T],
+                                          ignoreIndex=-1,
+                                          reduction=popart.ReductionType.Mean)
+        builder.addOutputTensor(nll)
+        builder.addOutputTensor(out)
+        return [out, nll]
+
+    def reference(ref_data):
+        class Model(torch.nn.Module):
+            def __init__(self):
+                super().__init__()
+                self.linear = torch.nn.Linear(10, 1)
+                self.loss = torch.nn.CrossEntropyLoss(ignore_index=-1,
+                                                      reduction='mean')
+                self.linear.weight.data = torch.tensor(weight.reshape(1, 10))
+                self.linear.bias.data = torch.tensor(bias.reshape(10, 1))
+
+            def forward(self, input, labels):
+                return self.linear(input), self.loss(input, labels)
+
+        model = Model()
+        p = torch.tensor(data, requires_grad=True)
+        t = torch.tensor(target, requires_grad=False).type(torch.LongTensor)
+        out, nll = model(p, t)
+
+        return [out.reshape(10), nll]
+
+    op_tester.options.enableFloatingPointChecks = True
+    op_tester.equal_nan = False  # Make sure NaNs aren't accepted.
+    op_tester.setPatterns(["MatMulRhsGradOp", "MatMulLhsGradOp"],
+                          enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference, step_type='train', seed=8)
 
 
