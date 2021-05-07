@@ -314,6 +314,7 @@ public:
   void setExternalTensorDataInfo(TensorId, const ONNX_NAMESPACE::TensorProto &);
 
   const SessionOptions &getSessionOptions() const { return userOptions; }
+  SessionOptions &getSessionOptions() { return userOptions; }
 
   std::vector<TensorId> getTensorIds(TensorType) const;
   Tensor *getTensor(const TensorId &) const;
