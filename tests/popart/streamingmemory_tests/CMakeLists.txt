@@ -12,7 +12,7 @@ add_popart_cpp_unit_test(host_stream_op_schedule_test host_stream_op_schedule_te
 
 add_popart_py_unit_test(streamingmemory_test_0 MATCHEXPR "test_weight_update or test_onchip_memory" VARIANTS "Hw")
 add_popart_py_unit_test(streamingmemory_test_0 MATCHEXPR "test_replicated_sgd0_weight_update" VARIANTS "Hw")
-add_popart_py_unit_test(streamingmemory_test_0 MATCHEXPR "test_replicated_sgd1_weight_update" VARIANTS "Hw")
+add_popart_py_unit_test(streamingmemory_test_0 MATCHEXPR "test_replicated_sgd1and2_weight_update" VARIANTS "Hw")
 add_popart_py_unit_test(streamingmemory_test_0 MATCHEXPR "test_replicated_adam_weight_update" VARIANTS "Hw")
 add_popart_py_unit_test(streamingmemory_test_0 MATCHEXPR "test_replicated_lamb_weight_update" VARIANTS "Hw")
 

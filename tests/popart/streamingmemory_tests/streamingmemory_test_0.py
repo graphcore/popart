@@ -215,8 +215,6 @@ def test_weight_update(tmpdir):
 
 @tu.requires_ipu
 def test_onchip_memory(tmpdir):
-    onchip_settings = popart.TensorLocationSettings(
-        popart.TensorStorage.OnChip, 0)
     run_model(tmpdir, 'model_normal.onnx', execution_mode="normal")
     run_model(tmpdir,
               'model_onchip_act.onnx',
@@ -294,8 +292,9 @@ def test_replicated_sgd0_weight_update(tmpdir):
 
 # Check that 2 batches on 1 replica or 1 batch per replica on 2 replicas
 # results in the same updated weight with SGD1
+@pytest.mark.parametrize('sgdType', ['SGD1', 'SGD2'])
 @tu.requires_ipu
-def test_replicated_sgd1_weight_update(tmpdir):
+def test_replicated_sgd1and2_weight_update(tmpdir, sgdType):
 
     optimizer_dict = {
         "defaultLearningRate": (0.00001, False),
@@ -305,6 +304,12 @@ def test_replicated_sgd1_weight_update(tmpdir):
         "lossScaling": (1.0, True),
         "defaultWeightDecay": (0.2, True)
     }
+    if sgdType == 'SGD1':
+        sgdAccMm = popart.SGDAccumulatorAndMomentum.Combined
+    elif sgdType == 'SGD2':
+        sgdAccMm = popart.SGDAccumulatorAndMomentum.Separate
+    else:
+        raise 'Unknown sgdType={sgdType} in test'
 
     run_model(tmpdir,
               'phased.onnx',
@@ -312,7 +317,8 @@ def test_replicated_sgd1_weight_update(tmpdir):
               batch_size=2,
               num_replicas=1,
               num_iterations=5,
-              optimizer=popart.SGD(optimizer_dict),
+              optimizer=popart.SGD(optimizer_dict,
+                                   accumulatorAndMomentum=sgdAccMm),
               activation_tensor_location_settings=offChipLocation,
               weight_tensor_location_settings=offChipLocation,
               optimizer_state_tensor_location_settings=offChipLocation,
@@ -323,7 +329,8 @@ def test_replicated_sgd1_weight_update(tmpdir):
               batch_size=1,
               num_replicas=2,
               num_iterations=5,
-              optimizer=popart.SGD(optimizer_dict),
+              optimizer=popart.SGD(optimizer_dict,
+                                   accumulatorAndMomentum=sgdAccMm),
               activation_tensor_location_settings=offChipLocation,
               weight_tensor_location_settings=offChipLocation,
               optimizer_state_tensor_location_settings=offChipLocation,
@@ -334,11 +341,28 @@ def test_replicated_sgd1_weight_update(tmpdir):
               batch_size=1,
               num_replicas=2,
               num_iterations=5,
-              optimizer=popart.SGD(optimizer_dict),
+              optimizer=popart.SGD(optimizer_dict,
+                                   accumulatorAndMomentum=sgdAccMm),
               activation_tensor_location_settings=offChipLocation,
               weight_tensor_location_settings=offChipRtsLocation,
               optimizer_state_tensor_location_settings=offChipRtsLocation,
               accumulator_tensor_location_settings=offChipRtsLocation)
+
+    # For SGD2, where accumulator and optimizer state are separate tensors, add
+    # another test case for when only the optimizer state is RTS.
+    if sgdType == 'SGD2':
+        run_model(tmpdir,
+                  'phased_replicated_rts_os_only.onnx',
+                  execution_mode="phased",
+                  batch_size=1,
+                  num_replicas=2,
+                  num_iterations=5,
+                  optimizer=popart.SGD(optimizer_dict,
+                                       accumulatorAndMomentum=sgdAccMm),
+                  activation_tensor_location_settings=offChipLocation,
+                  weight_tensor_location_settings=offChipRtsLocation,
+                  optimizer_state_tensor_location_settings=offChipRtsLocation,
+                  accumulator_tensor_location_settings=offChipLocation)
 
     phased = onnx.load(str(tmpdir / 'phased.onnx'))
     phased_replicated = onnx.load(str(tmpdir / 'phased_replicated.onnx'))
@@ -347,6 +371,11 @@ def test_replicated_sgd1_weight_update(tmpdir):
 
     check_model(phased, phased_replicated)
     check_model(phased, phased_replicated_rws)
+
+    if sgdType == 'SGD2':
+        phased_replicated_rts_os_only = onnx.load(
+            str(tmpdir / 'phased_replicated_rts_os_only.onnx'))
+        check_model(phased, phased_replicated_rts_os_only)
 
 
 # Check that 2 batches on 1 replica or 1 batch per replica on 2 replicas

@@ -190,6 +190,7 @@ TensorId SGD2Decompose::acclUpdate(Graph &graph,
         AccumulationType::DampenedAdd,
         combo->initDpsf1,
         Op::Settings(graph, combo->name() + "_accl_update_1_grads"));
+    transferBaseProperties(combo, acclUpdate1);
 
     // (1)
     acclUpdate1->connectInTensor(VarUpdateOp::getVarToUpdateInIndex(),
