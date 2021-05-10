@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <cstring>
 #include <string>
+#include <poprithms/logging/timepartitionlogger.hpp>
 #include <popart/ces/constexpr.hpp>
 #include <popart/error.hpp>
 #include <popart/graph.hpp>
@@ -36,6 +37,11 @@ bool Tensor::consumersAllPreLoss() const {
 }
 
 bool Tensor::isAliased() const {
+
+  constexpr const char *const ctxt{"Tensor::isAliased"};
+  logging::ir::trace("{} for Tensor {},", ctxt, str());
+  auto scopedStopwatch = getIr().timePartitionLogger().scopedStopwatch(ctxt);
+
   for (Op *consumer : consumers.getOps()) {
     for (InIndex in : consumer->input->indices(graph.getTensors().get(id))) {
       for (auto outEntry : consumer->output->indicesMap()) {
@@ -54,6 +60,11 @@ bool Tensor::isAliased() const {
 }
 
 bool Tensor::isModified() const {
+
+  constexpr const char *const ctxt{"Tensor::isModified"};
+  logging::ir::trace("{} for Tensor {},", ctxt, str());
+  auto scopedStopwatch = getIr().timePartitionLogger().scopedStopwatch(ctxt);
+
   for (Op *consumer : consumers.getOps()) {
     for (InIndex in : consumer->input->indices(graph.getTensors().get(id))) {
       auto regions = consumer->modifies(in);
@@ -83,6 +94,11 @@ view::Regions Tensor::modifiedRegionsByOps(std::vector<OpId> opIds) const {
 }
 
 view::Regions Tensor::modifiedRegionsByOps(std::vector<Op *> ops) const {
+
+  constexpr const char *const ctxt{"Tensor::modifiedRegionsByOps"};
+  logging::ir::trace("{} for Tensor {},", ctxt, str());
+  auto scopedStopwatch = getIr().timePartitionLogger().scopedStopwatch(ctxt);
+
   // t0: non-const pointer to this
   Tensor *t0    = graph.getTensors().get(id);
   auto &aliases = graph.getTensors().getAliases();
@@ -214,6 +230,10 @@ VGraphId Tensor::getVirtualGraphIdUnsafe() const {
 VGraphIdAndTileSet
 Tensor::getVirtualGraphIdAndTileSetUnsafe(std::set<OpId> visited) const {
 
+  constexpr const char *const ctxt{"Tensor::getVirtualGraphIdAndTileSetUnsafe"};
+  logging::ir::trace("{} for Tensor {},", ctxt, str());
+  auto scopedStopwatch = getIr().timePartitionLogger().scopedStopwatch(ctxt);
+
   // If this Tensor has a Producer, use its VirtualGraphId if it has one
   if (hasProducer()) {
     // special case of IPUCopy producer
@@ -293,6 +313,10 @@ bool Tensor::hasVirtualGraphId() const {
 }
 
 std::vector<char> Tensor::getDataViaGraphTraversal() const {
+
+  constexpr const char *const ctxt{"Tensor::getDataViaGraphTraversal"};
+  logging::ir::trace("{} for Tensor {},", ctxt, str());
+  auto scopedStopwatch = getIr().timePartitionLogger().scopedStopwatch(ctxt);
 
   Tensor *thisTensor = graph.getTensors().get(id);
 
@@ -925,6 +949,11 @@ bool Tensor::isAnchored() const { return graph.getIr().isAnchored(id); }
 bool Tensor::isRootAnchor() const { return graph.getIr().isRootAnchor(id); }
 
 bool Tensor::anyAlias(std::function<bool(Tensor *)> predicate) const {
+
+  constexpr const char *const ctxt{"Tensor::anyAlias"};
+  logging::ir::trace("{} for Tensor {},", ctxt, str());
+  auto scopedStopwatch = getIr().timePartitionLogger().scopedStopwatch(ctxt);
+
   // Fetch non-const pointer to "this"
   Tensor *t             = graph.getTensors().get(id);
   auto aliasedTensorMap = graph.getTensors().aliasChainsFrom(t);

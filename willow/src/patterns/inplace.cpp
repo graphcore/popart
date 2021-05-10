@@ -1,4 +1,5 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
+#include <poprithms/logging/timepartitionlogger.hpp>
 #include <popart/chains.hpp>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
@@ -78,6 +79,9 @@ std::vector<const Tensor *> Inplace::touches(Op *op, OperatorIdentifier) const {
 bool Inplace::apply(Op *op,
                     OperatorIdentifier identifier,
                     const OpsBeforeKey &newConsIn) const {
+
+  auto scopedStopwatch =
+      op->getIr().timePartitionLogger().scopedStopwatch("Inplace::apply");
   auto output_tensor = op->output->tensor(0);
   auto &graph        = op->getGraph();
 
@@ -87,6 +91,7 @@ bool Inplace::apply(Op *op,
   // Op constructors don't have the required signature for that
   std::unique_ptr<Op> up_inplaceOp = op->getInplaceVariant(identifier);
   Op *inplaceOp                    = up_inplaceOp.get();
+
   transferBaseProperties(op, inplaceOp);
   inplaceOp->setName(getReplacementOpName(op, ""));
   graph.moveIntoGraph(std::move(up_inplaceOp));

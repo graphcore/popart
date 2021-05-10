@@ -502,6 +502,8 @@ void Graph::freezeSchedule(const OpsBeforeKey &gCons) {
 // Are the Ops with all the dependencies a DAG?
 bool Graph::isSchedulable(const OpsBeforeKey &gCons,
                           bool respectExecutionPhases) const {
+  auto scopedStopwatch =
+      getIr().timePartitionLogger().scopedStopwatch("Graph::isSchedulable");
   return scheduler->isSchedulable(gCons, *this, respectExecutionPhases);
 }
 

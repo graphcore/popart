@@ -1,4 +1,5 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
+#include <poprithms/logging/timepartitionlogger.hpp>
 #include <popart/chains.hpp>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
@@ -48,6 +49,9 @@ void Tensors::clearAliases() { aliases.clearAliases(); }
 // Let the Chains flow through op (called on new inplace ops)
 void Tensors::updateAliases(Op *op) {
   logging::trace("[updateAliases] Updating alias for Op {}", op->debugName());
+
+  auto scopedStopwatch = op->getIr().timePartitionLogger().scopedStopwatch(
+      "Tensors::updateAliases");
 
   // for all of the inputs of op, t1 and all output, t2:
   for (auto i1_t1 : op->input->tensorMap()) {

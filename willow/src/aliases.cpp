@@ -1,7 +1,9 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
+#include <poprithms/logging/timepartitionlogger.hpp>
 #include <popart/aliases.hpp>
 #include <popart/chains.hpp>
 #include <popart/graph.hpp>
+#include <popart/ir.hpp>
 #include <popart/names.hpp>
 #include <popart/op.hpp>
 #include <popart/tensor.hpp>
@@ -72,6 +74,9 @@ void Aliases::updateAliases(Tensor *t1,
                             view::RegMap bwdMap,
                             std::string fwdLinkName,
                             std::string bwdLinkName) {
+
+  auto scopedStopwatch = t1->getIr().timePartitionLogger().scopedStopwatch(
+      "Aliases::updateAliases");
   // Optimisation: If t1 <--> t2 are already fully aliased, then there is no
   // reason to add more aliasing
   if (getAliasRegions(t1, t2).front() ==

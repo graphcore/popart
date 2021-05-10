@@ -1419,6 +1419,8 @@ void Ir::prepareImpl(const IrBundle &gb, const HashesMap &cacheEntries) {
       applyUpdateInplacePrioritiesForIpu();
     }
     for (auto &id_graph : graphs) {
+      logging::ir::debug("Applying Inplace Pattern to Graph \"{}\"",
+                         id_graph.first);
       applyInplacePattern(*id_graph.second);
     }
     updateVertices();
@@ -2946,8 +2948,6 @@ void Ir::applyUpdateInplacePrioritiesForIpu() {
 
 void Ir::applyInplacePattern(Graph &graph) {
 
-  logging::ir::debug("Applying Inplace Pattern to Graph \"{}\"", graph.id);
-
   // The decision of where topological constraints need to be inserted is made
   // by a poprithms Graph whose Ops mirror those in \a graph.
   auto popMem = getPoprithmsAliaser(graph);
@@ -3024,6 +3024,7 @@ void Ir::applyInplacePattern(Graph &graph) {
     std::set<OpId> inplacedAlready;
 
     for (auto &ip : priorities) {
+
       OpId id                       = std::get<0>(ip);
       OperatorIdentifier identifier = std::get<1>(ip);
 
@@ -3049,7 +3050,8 @@ void Ir::applyInplacePattern(Graph &graph) {
 
       poprithms::memory::inplace::Proposal proposal(0, 0);
       op->setProposal(proposal, popMem, identifier);
-      auto result = popMem.g.tryOpeningPartial(
+
+      const auto result = popMem.g.tryOpeningPartial(
           proposal, poprithms::memory::inplace::CheckParallelWriteable::No);
 
       if (!result.isValid()) {
@@ -3137,6 +3139,7 @@ void Ir::applyInplacePattern(Graph &graph) {
       bool inplaceBlocking = false;
       for (const auto &in_index : inplaceOp->input->tensorMap()) {
         for (const auto &out_index : inplaceOp->output->tensorMap()) {
+
           auto regions = inplaceOp->aliases(in_index.first, out_index.first);
           bool opAliases =
               std::any_of(regions.begin(),
