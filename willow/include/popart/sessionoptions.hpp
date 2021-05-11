@@ -846,6 +846,12 @@ struct SessionOptions {
   // loops. This will become deprecated and enabled by default.
   bool enableExplicitMainLoops = false;
 
+  // Group norms have a fast math mode which changes the implementation to run
+  // faster on IPU but as a consequence is incompatable with other
+  // implementations (i.e running trained weights on host). We default to
+  // correct and slightly slower but a user can opt into fast but incorrect.
+  bool groupNormStridedChannelGrouping = false;
+
   // Get the buffering depth for a TensorId. Will return 1 unless
   // prefetching is enabled and the buffering depth is overwritten
   // in the \c prefetchBufferingDepthMap variable.

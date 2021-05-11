@@ -59,11 +59,6 @@ def test_groupnorm_0(op_tester):
         ]
 
     def reference(ref_data):
-
-        # Switch the rows to simulate the striding
-        d1[0][[2, 1]] = d1[0][[1, 2]]
-        d1[1][[2, 1]] = d1[1][[1, 2]]
-
         _input = torch.tensor(d1, requires_grad=True)
 
         m = torch.nn.GroupNorm(num_groups, num_channels, eps=epsilon)
@@ -71,18 +66,9 @@ def test_groupnorm_0(op_tester):
         m.train()
         _y = m(_input)
 
-        t = _y[0][2].clone()
-        _y[0][2] = _y[0][1]
-        _y[0][1] = t
-
-        t = _y[1][2].clone()
-        _y[1][2] = _y[1][1]
-        _y[1][1] = t
-
         _y = _y * torch.tensor(one_per_group, requires_grad=False)
 
         d__o = ref_data.getOutputTensorGrad(0)
-        _y.backward(torch.tensor(d__o))
 
         # Get a view of input by channel
         v = _input.view(4, -1)
@@ -338,6 +324,9 @@ def test_groupnorm_4(op_tester):
     # fp16 outputs might be slightly off.
     op_tester.atol = 1e-6
     op_tester.rtol = 1e-3
+
+    op_tester.options.groupNormStridedChannelGrouping = True
+
     op_tester.setPatterns(['PreUniRepl', 'ReciprocalGradOp'],
                           enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference, 'infer')
