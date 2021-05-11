@@ -80,6 +80,7 @@ def test_add(op_tester):
 @pytest.mark.parametrize("npSrcType,npDstType,builderDstType",
                          [(np.int32, np.float32, "FLOAT"),
                           (np.int8, np.float16, "FLOAT16"),
+                          (np.float32, np.float16, "FLOAT16"),
                           (np.float16, np.int8, "INT8"),
                           (np.uint8, np.float16, "FLOAT16"),
                           (np.float16, np.uint8, "UINT8"),
