@@ -210,7 +210,6 @@ add_subdirectory(popart)
 add_subdirectory(torch)
 add_subdirectory(onnx_backend)
 add_subdirectory(unittests)
-add_subdirectory(aapi)
 
 install(DIRECTORY .
 	DESTINATION ${INSTALL_TESTS}
