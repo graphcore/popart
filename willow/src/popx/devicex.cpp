@@ -946,16 +946,14 @@ void Devicex::loadEngineAndConnectStreams() {
       engineToInputStreamWithCallback(
           tensor, tensor->id, lowering().h2dId(tensor->id));
     }
-    if (ir().getSessionOptions().useHostCopyOps) {
-      // If using overlapped IO, there are no stream tensors, so loop through
-      // host load tensors instead.
-      logging::devicex::debug("Connected h2d host load data streams");
-      for (auto idAndTensors : ir().getHostLoadTensors()) {
-        logging::devicex::debug(" {}", idAndTensors.first);
-        engineToInputStreamWithCallback(idAndTensors.second.front(),
-                                        idAndTensors.first,
-                                        lowering().h2dId(idAndTensors.first));
-      }
+    // If using overlapped IO, there are no stream tensors, only host load
+    // tensors, so we loop through those.
+    logging::devicex::debug("Connected h2d host load data streams");
+    for (auto idAndTensors : ir().getHostLoadTensors()) {
+      logging::devicex::debug(" {}", idAndTensors.first);
+      engineToInputStreamWithCallback(idAndTensors.second.front(),
+                                      idAndTensors.first,
+                                      lowering().h2dId(idAndTensors.first));
     }
 
     logging::devicex::debug("Connected d2h anchor data streams");
