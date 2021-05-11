@@ -6,8 +6,8 @@
 #include <unordered_set>
 #include <vector>
 
+#include <builderdebuginfo.hpp>
 #include <popart/builder_impl.hpp>
-#include <popart/builderdebuginfo.hpp>
 #include <popart/ces/constexpr.hpp>
 #include <popart/error.hpp>
 #include <popart/filereader.hpp>

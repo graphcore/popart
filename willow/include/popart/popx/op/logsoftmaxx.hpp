@@ -29,18 +29,6 @@ public:
 
   poplar::Tensor reshape(const poplar::Tensor &) const final;
 
-  template <typename T>
-  static std::unique_ptr<LogSoftmaxComputex> create(Op *op) {
-    auto lsmop = dynamic_cast<T *>(op);
-    if (lsmop == nullptr) {
-      throw error("Cannot create LogSoftmaxComputex from {}", op->str());
-    }
-
-    int64_t axis         = lsmop->getAxis();
-    const auto &outShape = lsmop->outInfo(lsmop->getOutIndex()).shape_szt();
-    return std::make_unique<LogSoftmaxComputex>(axis, outShape);
-  }
-
 private:
   int64_t axis;
   std::vector<size_t> outShape;

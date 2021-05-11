@@ -71,7 +71,6 @@
 #include <popart/tensor.hpp>
 #include <popart/tensordata.hpp>
 #include <popart/tensors.hpp>
-#include <popart/tojson.hpp>
 #include <popart/topocons.hpp>
 #include <popart/transforms/randomsetup.hpp>
 
@@ -80,7 +79,7 @@
 #include <popart/popx/op/ipucopyx.hpp>
 #include <popart/tensornames.hpp>
 
-#include <popart/poparttracepoint.hpp>
+#include <poparttracepoint.hpp>
 
 #include <stepiosplitter.hpp>
 #include <popart/subgraphpartitioner.hpp>

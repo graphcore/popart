@@ -39,7 +39,6 @@
 #include <popart/opmanager.hpp>
 #include <popart/optimizer.hpp>
 #include <popart/pbwrap.hpp>
-#include <popart/poparttracepoint.hpp>
 #include <popart/scheduler.hpp>
 #include <popart/sessionoptions.hpp>
 #include <popart/tensor.hpp>
@@ -50,6 +49,7 @@
 #include <popart/tensors.hpp>
 #include <popart/topocons.hpp>
 #include <popart/util.hpp>
+#include <poparttracepoint.hpp>
 
 // The transformations
 #include <popart/recompute.hpp>

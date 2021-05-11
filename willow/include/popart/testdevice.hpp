@@ -2,7 +2,6 @@
 #ifndef GUARD_TEST_DEVICE_HPP
 #define GUARD_TEST_DEVICE_HPP
 
-#include <boost/variant.hpp>
 #include <poplar/DeviceManager.hpp>
 #include <poplar/Engine.hpp>
 #include <poplar/IPUModel.hpp>

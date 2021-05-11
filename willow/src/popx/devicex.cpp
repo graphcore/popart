@@ -41,7 +41,6 @@
 #include <popart/logging.hpp>
 #include <popart/op/getrandomseed.hpp>
 #include <popart/patterns/pattern.hpp>
-#include <popart/poparttracepoint.hpp>
 #include <popart/popx/devicex.hpp>
 #include <popart/popx/devicexmanager.hpp>
 #include <popart/popx/executablex.hpp>
@@ -58,6 +57,7 @@
 #include <popart/tensors.hpp>
 #include <popart/topocons.hpp>
 #include <popart/transforms/randomsetup.hpp>
+#include <poparttracepoint.hpp>
 
 #include <stepiosplitter.hpp>
 

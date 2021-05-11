@@ -22,7 +22,7 @@
 #include <popart/util.hpp>
 #include <popart/version.hpp>
 
-#include <popart/poparttracepoint.hpp>
+#include <poparttracepoint.hpp>
 
 namespace popart {
 

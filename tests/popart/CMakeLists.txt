@@ -43,11 +43,6 @@ add_popart_cpp_unit_test(opsetcheck_test opset_check_test.cpp)
 add_popart_cpp_unit_test(preplan_convolutions_test preplan_convolutions_test.cpp VARIANTS "IpuModel")
 add_popart_cpp_unit_test(preplan_matmuls_test preplan_matmuls_test.cpp VARIANTS "IpuModel")
 
-# Add a test that targets c++11 to check that the popart interface is c++11.
-# If the interface is not c++11, the build should fail.
-add_test_executable(verify_cxx_11_interface verify_cxx_11_interface.cpp)
-set_property(TARGET "verify_cxx_11_interface" PROPERTY CXX_STANDARD 11)
-
 # Python unit test function
 # Uses VARIANTS as above for add_popart_cpp_unit_test
 # Takes optional MATCHEXPR parameter, which is a string that will be passed
@@ -220,3 +215,4 @@ add_subdirectory(tensor_tests)
 add_subdirectory(topk_tests)
 add_subdirectory(transformation_tests)
 add_subdirectory(slice_pad_dual_tests)
+add_subdirectory(verify_cxx_11_interface)

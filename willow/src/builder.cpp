@@ -1,16 +1,16 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
 #include <algorithm>
+#include <builderdebuginfo.hpp>
 #include <onnx/checker.h>
 #include <popart/builder_impl.hpp>
-#include <popart/builderdebuginfo.hpp>
 #include <popart/filereader.hpp>
 #include <popart/logging.hpp>
 #include <popart/onnxutil.hpp>
 #include <popart/op/collectives/collectives.hpp>
 #include <popart/op/receptive.hpp>
 #include <popart/opidentifier.hpp>
-#include <popart/poparttracepoint.hpp>
 #include <popart/tensor.hpp>
+#include <poparttracepoint.hpp>
 
 namespace popart {
 

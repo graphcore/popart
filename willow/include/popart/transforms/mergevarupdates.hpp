@@ -2,7 +2,6 @@
 #ifndef GUARD_NEURALNET_MERGECONSTSGDVARUPDATES_HPP
 #define GUARD_NEURALNET_MERGECONSTSGDVARUPDATES_HPP
 
-#include <boost/optional/optional_io.hpp>
 #include <map>
 #include <string>
 #include <popart/op/varupdate.hpp>
