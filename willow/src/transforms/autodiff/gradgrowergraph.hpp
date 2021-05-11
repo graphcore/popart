@@ -31,6 +31,8 @@ public:
                      const nonstd::optional<TensorIds> &gradsRequiredForTensors,
                      const FwdGraphToBwdGraphInfo &calledGraphResults,
                      Autodiff::StitchStrategy stitchStrategy) = 0;
+
+  virtual ~GradGrowerGraphInterface() {}
 };
 
 /**
