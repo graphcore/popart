@@ -24,8 +24,9 @@ std::unique_ptr<Op> ConvTransposeOp::clone() const {
 }
 
 void ConvTransposeOp::setup() {
-  Shape inputShape  = inShape(ConvTransposeOp::getInIndex());
-  Shape kernelShape = inShape(ConvTransposeOp::getWeightsInIndex());
+  Shape inputShape            = inShape(ConvTransposeOp::getInIndex());
+  Shape kernelShape           = inShape(ConvTransposeOp::getWeightsInIndex());
+  bool output_shape_specified = false;
 
   const auto nSpatialDims = inputShape.size() - 2;
   // Set the default values.
@@ -49,6 +50,10 @@ void ConvTransposeOp::setup() {
                   pads.at(i) - pads.at(nSpatialDims + i);
       outShape.push_back(x);
     }
+  } else if (outputShape.size() == nSpatialDims) {
+    output_shape_specified = true;
+    outShape.push_back(outputShape[0]);
+    outShape.push_back(outputShape[1]);
   } else {
     outShape = outputShape;
   }
@@ -84,9 +89,40 @@ void ConvTransposeOp::setup() {
 
   for (int i = 0; i < nSpatialDims; i++) {
     int64_t x = inShape(getWeightsInIndex()).at(i + 2) - 1;
-    params.inputTransformation.lowerPadding.push_back(x - pads.at(i));
-    params.inputTransformation.upperPadding.push_back(
-        x + outputPadding.at(i) - pads.at(nSpatialDims + i));
+    if (output_shape_specified) {
+      // The ONNX doc states that the shape of the output can be explicitly set
+      // which will cause pads values to be auto generated
+      int64_t total_padding = strides.at(i) * (inputShape[i + 2] - 1) +
+                              outputPadding.at(i) + (x * dilations[i] + 1) -
+                              outShape[i + 2];
+
+      // The padding argument effectively adds:
+      // dilation * (kernel_size - 1) - padding amount of zero padding to both
+      // sizes of the input. (source: Pytorch doc)
+      if (padType == AutoPad::SAME_UPPER) {
+        // When total_padding is an odd number and pad=SAME_UPPER, the extra
+        // padding is added at the end
+        params.inputTransformation.lowerPadding.push_back(
+            x - (total_padding - ((total_padding) / 2)));
+        params.inputTransformation.upperPadding.push_back(
+            (x - (total_padding) / 2));
+      } else if (padType == AutoPad::SAME_LOWER || padType == AutoPad::NOTSET) {
+        // Defaulting to "SAME_LOWER" when no auto_pad option is set
+        params.inputTransformation.lowerPadding.push_back(
+            x - (total_padding - ((total_padding + 1) / 2)));
+        params.inputTransformation.upperPadding.push_back(
+            (x - (total_padding + 1) / 2));
+      } else {
+        throw error("`VALID` type for auto_pad cannot be used"
+                    " if the `output_shape` is also set");
+      }
+    }
+
+    else {
+      params.inputTransformation.lowerPadding.push_back(x - pads.at(i));
+      params.inputTransformation.upperPadding.push_back(
+          x + outputPadding.at(i) - pads.at(nSpatialDims + i));
+    }
   }
 
   params.kernelTransformation.lowerTruncation = zeroes;

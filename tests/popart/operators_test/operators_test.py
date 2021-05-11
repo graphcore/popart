@@ -9,6 +9,7 @@ from op_tester import op_tester
 # `import test_util` requires adding to sys.path
 import sys
 from pathlib import Path
+
 sys.path.append(Path(__file__).resolve().parent.parent)
 import test_util as tu
 
@@ -248,7 +249,6 @@ def test_convolution_2(op_tester):
     Test the convolution when the conv in the bwd pass is not the same as the conv in the
     forward pass
     '''
-
     def init_builder(builder):
         data = np.ones([1, 2, 4, 4], dtype=np.float32)
         filt = np.ones([4, 2, 1, 1], dtype=np.float32)
@@ -1844,7 +1844,11 @@ def test_pad11(op_tester):
                   })
 
 
-def _test_pad(op_tester, data, lower_padding, upper_padding, mode,
+def _test_pad(op_tester,
+              data,
+              lower_padding,
+              upper_padding,
+              mode,
               pad_value=0):
     def init_builder(builder):
         i1 = builder.addInputTensor(data)
@@ -2720,6 +2724,70 @@ def test_convtranspose(op_tester):
              [9., 21., 36., 27., 15.], [9., 20., 33., 24., 13.],
              [6., 13., 21., 15., 8.]]
         ]]).astype(np.float32)
+        return [y]
+
+    op_tester.setPatterns(['ConvTranspose'], enableRuntimeAsserts=False)
+    op_tester.run(init_builder, reference, step_type='infer')
+
+
+def test_convtranspose_auto_pad(op_tester):
+    # Test when the output shape is specifed and that the padding is automatically
+    # computed.
+    x = np.array([[[
+        [1., 2.],  # (1, 1, 2, 2)
+        [3., 4.]
+    ]]]).astype(np.float32)
+
+    W = np.array([[[
+        [1., 2.],  # (1, 1, 2, 2)
+        [2., 1.]
+    ]]]).astype(np.float32)
+
+    def init_builder(builder):
+        d = builder.addInputTensor(x)
+        f = builder.addInputTensor(W)
+        o = builder.aiOnnxOpset11.convtranspose([d, f], output_shape=[2, 2])
+        builder.addOutputTensor(o)
+        return [o]
+
+    def reference(ref_data):
+        y = np.array([[[
+            [1., 4.],  # (1, 1, 2, 2)
+            [5., 15.]
+        ]]]).astype(np.float32)
+        return [y]
+
+    op_tester.setPatterns(['ConvTranspose'], enableRuntimeAsserts=False)
+    op_tester.run(init_builder, reference, step_type='infer')
+
+
+def test_convtranspose_auto_pad_same_upper(op_tester):
+    # Test when the output shape is specifed and that the padding is automatically
+    # computed and that auto_pad is set to SAME_UPPER
+    x = np.array([[[
+        [1., 2.],  # (1, 1, 2, 2)
+        [3., 4.]
+    ]]]).astype(np.float32)
+
+    W = np.array([[[
+        [1., 2.],  # (1, 1, 2, 2)
+        [2., 1.]
+    ]]]).astype(np.float32)
+
+    def init_builder(builder):
+        d = builder.addInputTensor(x)
+        f = builder.addInputTensor(W)
+        o = builder.aiOnnxOpset11.convtranspose([d, f], output_shape=[2, 2])
+        # Work-around to set auto_pad until T38874 is done:
+        builder.addNodeAttribute("auto_pad", "SAME_UPPER", set([o]))
+        builder.addOutputTensor(o)
+        return [o]
+
+    def reference(ref_data):
+        y = np.array([[[
+            [15., 10.],  # (1, 1, 2, 2)
+            [11., 4.]
+        ]]]).astype(np.float32)
         return [y]
 
     op_tester.setPatterns(['ConvTranspose'], enableRuntimeAsserts=False)
