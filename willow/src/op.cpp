@@ -1532,14 +1532,6 @@ void Op::growAliaserMulti(PoprithmsAliaser &m) const {
                            poprInIndex, poprOutIndex)
                      : poprithms::memory::inplace::CrossLink::pureAliases(
                            poprInIndex, poprOutIndex);
-
-        // const auto mchar = ? 'Y' : 'N';
-        std::ostringstream oss;
-        oss << "\nInput at " << inIndex << in_index_tensor.second->id << '\n';
-        oss << "Output at " << outIndex << out_index_tensor.second->id << '\n';
-        oss << m;
-        logging::ir::info(oss.str());
-
         crossAliases.push_back(m);
       }
       ++poprOutIndex;
