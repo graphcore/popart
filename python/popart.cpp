@@ -187,7 +187,7 @@ public:
 
   void assertNumElements(const popx::Executablex &) const final {}
 
-  ConstVoidData in(TensorId id, int64_t, bool prefetch) final {
+  ConstVoidData in(TensorId id, int64_t, bool prefetch)final {
     py::gil_scoped_acquire acquire;
     py::array a = inputCb(id, prefetch);
     if (!isContiguous(a)) {
@@ -1333,9 +1333,14 @@ PYBIND11_MODULE(popart_core, m) {
                       &SessionOptions::decomposeGradSum,
                       DOC(popart, SessionOptions, decomposeGradSum));
     cls.def_readwrite(
+        "serializedPoprithmsShiftGraphsDir",
+        &SessionOptions::serializedPoprithmsShiftGraphsDir,
+        DOC(popart, SessionOptions, serializedPoprithmsShiftGraphsDir));
+    // To be deprecated in favor of the Shift version.
+    cls.def_readwrite(
         "serializedPoprithmsAnnealGraphsDir",
-        &SessionOptions::serializedPoprithmsAnnealGraphsDir,
-        DOC(popart, SessionOptions, serializedPoprithmsAnnealGraphsDir));
+        &SessionOptions::serializedPoprithmsShiftGraphsDir,
+        DOC(popart, SessionOptions, serializedPoprithmsShiftGraphsDir));
     cls.def_readwrite(
         "enableDistributedReplicatedGraphs",
         &SessionOptions::enableDistributedReplicatedGraphs,

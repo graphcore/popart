@@ -1,4 +1,4 @@
-// Copyright (c) 2019 Graphcore Ltd. All rights reserved.
+// Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 #include <algorithm>
 
 #include <boost/algorithm/string.hpp>
@@ -475,17 +475,16 @@ std::vector<Op *> Graph::getOpSchedule(
     const RequireOptimalSchedule requireOptimalSchedule) const {
   POPART_TRACEPOINT();
   const auto respectExecutionPhases = ir.getExecutionPhasesReady();
-  const auto swapLimit   = getIr().getSessionOptions().swapLimitScheduler;
   const std::string &ktb = getIr().getSessionOptions().kahnTieBreaker;
-  const auto timeLimit   = getIr().getSessionOptions().timeLimitScheduler;
 
-  const auto opSchedule = scheduler->getSchedule(gCons,
-                                                 *this,
-                                                 requireOptimalSchedule,
-                                                 respectExecutionPhases,
-                                                 timeLimit,
-                                                 swapLimit,
-                                                 ktb);
+  const bool optSched = requireOptimalSchedule == RequireOptimalSchedule::Yes;
+  const auto timeLimit =
+      optSched ? getIr().getSessionOptions().timeLimitScheduler : 0.0;
+  const auto swapLimit =
+      optSched ? getIr().getSessionOptions().swapLimitScheduler : 0;
+
+  const auto opSchedule = scheduler->getSchedule(
+      gCons, *this, respectExecutionPhases, timeLimit, swapLimit, ktb);
 
   logging::ir::debug("Returning schedule of size {}", opSchedule.size());
 

@@ -10797,22 +10797,22 @@ static const char *__doc_popart_SessionOptions_separateCallOpPdfs_2 =
 subgraph.)doc";
 
 static const char
-    *__doc_popart_SessionOptions_serializedPoprithmsAnnealGraphsDir =
+    *__doc_popart_SessionOptions_serializedPoprithmsShiftGraphsDir =
         R"doc(PopART uses Poprithms for scheduling PopART graphs. The Poprithms
 graphs created for scheduling can be optionally serialised (written to
 file). The string below specified the directory to serialize Poprithms
 graphs to. If it is empty, then the graphs will not be serialised. The
-names of serialization files will be `poprithms_anneal_graph_i.json`
+names of serialization files will be `poprithms_shift_graph_i.json`
 for the lowest non-existing values of `i`. The directory must already
 exist, PopART will not create it.)doc";
 
 static const char
-    *__doc_popart_SessionOptions_serializedPoprithmsAnnealGraphsDir_2 =
+    *__doc_popart_SessionOptions_serializedPoprithmsShiftGraphsDir_2 =
         R"doc(PopART uses Poprithms for scheduling PopART graphs. The Poprithms
 graphs created for scheduling can be optionally serialised (written to
 file). The string below specified the directory to serialize Poprithms
 graphs to. If it is empty, then the graphs will not be serialised. The
-names of serialization files will be `poprithms_anneal_graph_i.json`
+names of serialization files will be `poprithms_shift_graph_i.json`
 for the lowest non-existing values of `i`. The directory must already
 exist, PopART will not create it.)doc";
 

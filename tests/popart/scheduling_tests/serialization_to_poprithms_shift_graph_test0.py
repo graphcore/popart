@@ -12,7 +12,7 @@ import test_util as tu
 
 def test_add_serialization(tmpdir):
     """
-    enable serialization to poprithms anneal graphs, and assert that 
+    enable serialization to poprithms shift graphs, and assert that 
     at least 1 json file is written to a temporary directory.
     """
 
@@ -26,7 +26,7 @@ def test_add_serialization(tmpdir):
     dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("All")})
 
     opts = popart.SessionOptions()
-    opts.serializedPoprithmsAnnealGraphsDir = str(tmpdir)
+    opts.serializedPoprithmsShiftGraphsDir = str(tmpdir)
 
     session = popart.InferenceSession(fnModel=proto,
                                       dataFlow=dataFlow,

@@ -737,10 +737,10 @@ struct SessionOptions {
   /// created for scheduling can be optionally serialised (written to file). The
   /// string below specified the directory to serialize Poprithms graphs to. If
   /// it is empty, then the graphs will not be serialised. The names of
-  /// serialization files will be `poprithms_anneal_graph_i.json` for the lowest
+  /// serialization files will be `poprithms_shift_graph_i.json` for the lowest
   /// non-existing values of `i`. The directory must already exist, PopART will
   /// not create it.
-  std::string serializedPoprithmsAnnealGraphsDir{};
+  std::string serializedPoprithmsShiftGraphsDir{};
 
   /// The initial scheduling is done with Kahn's algorithm. When several Ops are
   /// free to be scheduled, this controls which method is used.
@@ -748,7 +748,7 @@ struct SessionOptions {
 
   /// The transitive closure optimization pass can significantly accelerate the
   /// scheduler. It does not in general affect the final schedule returned. It
-  /// is run between initialization with Kahn's algorithms and the annealing
+  /// is run between initialization with Kahn's algorithms and the shifting
   /// swaps. The transitive closure optimization pass is O(nOps^2) and so should
   /// not be used for extremely large Graphs. If a Graph is above the following
   /// threshold, the transitive closure optimization pass is not run.
