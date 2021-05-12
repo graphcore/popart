@@ -558,6 +558,33 @@ public:
            const DebugContext &debugContext = {});
 
   /**
+   * Add a connectionist temporal classification (CTC) beam search decoder
+   * operation to the model.
+   *
+   * Calculate the most likely \p topPaths labels and their probabilities given
+   * the input \p logProbs with lengths \p dataLengths.
+   *
+   * \param args Vector of input tensor ids. These are [logProbs, dataLengths],
+   *     where logProbs is of shape [maxTime, batchSize, numClasses], and
+   *     dataLengths is of shape [batchSize].
+   * \param blank The integer representing the blank class.
+   * \param beamWidth The number of beams to use when decoding.
+   * \param topPaths The number of most likely decoded paths to return, must be
+   *     less than or equal to \p beamWidth.
+   * \param debugContext Optional debug context.
+   * \return The names of the result tensors. These are [labelProbs,
+   *     labelLengths, decodedLabels], where labelProbs is of shape [batchSize,
+   *     topPaths], labelLengths is of shape [batchSize, topPaths], and
+   *     decodedLabels is of shape [batchSize, topPaths, maxTime].
+   */
+  std::vector<TensorId>
+  ctcbeamsearchdecoder(const std::vector<TensorId> &args,
+                       const unsigned blank             = 0,
+                       const unsigned beamWidth         = 100,
+                       const unsigned topPaths          = 1,
+                       const DebugContext &debugContext = {});
+
+  /**
    * Add a shaped dropout operation to the model.
    *
    * Applies a shaped dropout to the input tensor. This operator requires a

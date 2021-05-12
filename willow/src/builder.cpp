@@ -1091,6 +1091,28 @@ AiGraphcoreOpset1::_ctcloss(const std::vector<TensorId> &args,
   return outputs;
 }
 
+std::vector<TensorId>
+AiGraphcoreOpset1::ctcbeamsearchdecoder(const std::vector<TensorId> &args,
+                                        const unsigned blank,
+                                        const unsigned beamWidth,
+                                        const unsigned topPaths,
+                                        const DebugContext &debugContext) {
+  std::map<std::string, popart::any> attributes = {
+      {"blank", blank},
+      {"beamWidth", beamWidth},
+      {"topPaths", topPaths},
+  };
+  BuilderDebugInfo di(debugContext, __POPART_FUNCTION_NAME__, args, attributes);
+  attributes.insert({sDebugInfoId, di.getId()});
+  auto outputs = impl->op(Onnx::AiGraphcore::OpSet1::CtcBeamSearchDecoder,
+                          getOpsetVersion(),
+                          args,
+                          attributes,
+                          {di});
+  di.setOutputs(outputs);
+  return outputs;
+}
+
 TensorId AiGraphcoreOpset1::shapeddropout(const std::vector<TensorId> &args,
                                           const std::vector<int64_t> &shape,
                                           float ratio,

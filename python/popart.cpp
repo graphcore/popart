@@ -2501,6 +2501,14 @@ PYBIND11_MODULE(popart_core, m) {
             py::arg("axis")         = -1,
             py::arg("reduction")    = ScatterReduction::Sum,
             py::arg("debugContext") = std::string());
+    cls.def("ctcbeamsearchdecoder",
+            &AiGraphcoreOpset1::ctcbeamsearchdecoder,
+            py::arg("args"),
+            py::arg("blank")        = 0,
+            py::arg("beamWidth")    = 100,
+            py::arg("topPaths")     = 1,
+            py::arg("debugContext") = std::string()
+            /*, DOC(popart, AiGraphcoreOpset1, ctcbeamsearchdecoder)*/);
   }
   {
     py::class_<Builder> cls(m, "_BuilderCore");

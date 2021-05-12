@@ -255,6 +255,8 @@ const static AiGraphcoreOpIdV1 ConcatInplace("ConcatInplace");
 const static AiGraphcoreOpIdV1 ConvFlipWeights("ConvFlipWeights");
 const static AiGraphcoreOpIdV1 CopyVarUpdate("CopyVarUpdate");
 const static AiGraphcoreOpIdV1 Ctc("Ctc", 4, 2);
+const static AiGraphcoreOpIdV1
+    CtcBeamSearchDecoder("CtcBeamSearchDecoder", 2, 3);
 const static AiGraphcoreOpIdV1 DepthToSpace("DepthToSpace", 1, 1);
 const static AiGraphcoreOpIdV1 Detach_1("Detach", 1, 1);
 const static AiGraphcoreOpIdV1 DetachInplace("DetachInplace");
@@ -374,14 +376,16 @@ const static AiGraphcoreOpIdV1 BitwiseXnor("BitwiseXnor", 2, 1);
 
 namespace AiGraphcore {
 namespace OpSet1 {
-const static OperatorIdentifier Atan2        = CustomOperators::Atan2_1;
-const static OperatorIdentifier BitwiseAnd   = CustomOperators::BitwiseAnd;
-const static OperatorIdentifier BitwiseNot   = CustomOperators::BitwiseNot;
-const static OperatorIdentifier BitwiseOr    = CustomOperators::BitwiseOr;
-const static OperatorIdentifier BitwiseXor   = CustomOperators::BitwiseXor;
-const static OperatorIdentifier BitwiseXnor  = CustomOperators::BitwiseXnor;
-const static OperatorIdentifier Call         = CustomOperators::Call_1;
-const static OperatorIdentifier Ctc          = CustomOperators::Ctc;
+const static OperatorIdentifier Atan2       = CustomOperators::Atan2_1;
+const static OperatorIdentifier BitwiseAnd  = CustomOperators::BitwiseAnd;
+const static OperatorIdentifier BitwiseNot  = CustomOperators::BitwiseNot;
+const static OperatorIdentifier BitwiseOr   = CustomOperators::BitwiseOr;
+const static OperatorIdentifier BitwiseXor  = CustomOperators::BitwiseXor;
+const static OperatorIdentifier BitwiseXnor = CustomOperators::BitwiseXnor;
+const static OperatorIdentifier Call        = CustomOperators::Call_1;
+const static OperatorIdentifier Ctc         = CustomOperators::Ctc;
+const static OperatorIdentifier CtcBeamSearchDecoder =
+    CustomOperators::CtcBeamSearchDecoder;
 const static OperatorIdentifier DepthToSpace = CustomOperators::DepthToSpace;
 const static OperatorIdentifier Detach       = CustomOperators::Detach_1;
 const static OperatorIdentifier DynamicAdd   = CustomOperators::DynamicAdd_1;
