@@ -4,9 +4,11 @@
 
 // TODO T7106 : determine what the cost of including these
 // in every compilation unit is, consider moving to another header
+#include <cstdint>
 #include <functional>
 #include <map>
 #include <set>
+#include <string>
 #include <vector>
 
 // forward declaring onnx classes, done to

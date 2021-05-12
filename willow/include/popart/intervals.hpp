@@ -3,6 +3,7 @@
 #define GUARD_NEURALNET_INTERVALS_HPP
 
 #include <array>
+#include <cstdint>
 #include <vector>
 
 namespace popart {
