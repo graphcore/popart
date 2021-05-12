@@ -752,7 +752,7 @@ struct SessionOptions {
   /// swaps. The transitive closure optimization pass is O(nOps^2) and so should
   /// not be used for extremely large Graphs. If a Graph is above the following
   /// threshold, the transitive closure optimization pass is not run.
-  size_t transitiveClosureOptimizationThreshold{0};
+  size_t transitiveClosureOptimizationThreshold{100000};
 
   /// Replaces single sums of partial gradients with a tree of additions.
   /// This can reduce max liveness at the cost of extra cycles. A typical
