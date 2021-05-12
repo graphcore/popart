@@ -146,6 +146,10 @@ void ShiftGraphGrower::setBasic() {
 }
 
 void ShiftGraphGrower::annotateExecutionPhase() {
+
+  const auto sw = pg.getIr().timePartitionLogger().scopedStopwatch(
+      "[Scheduler] annotateExecutionPhase");
+
   // Insert bin constraints to ensure ops are sorted by execution phase.
   std::vector<std::vector<OpAddress>> bins;
   for (const auto &x : pg.getOps()) {
@@ -168,6 +172,9 @@ void ShiftGraphGrower::annotateExecutionPhase() {
 }
 
 void ShiftGraphGrower::annotateExecutionContext() {
+
+  const auto sw = pg.getIr().timePartitionLogger().scopedStopwatch(
+      "[Scheduler] annotateExecutionContext");
 
   std::vector<OpAddress> weightsToOps;
   std::vector<OpAddress> normalOps;
@@ -228,6 +235,10 @@ void ShiftGraphGrower::annotateExecutionContext() {
 }
 
 void ShiftGraphGrower::annotatePipelineStages() {
+
+  const auto sw = pg.getIr().timePartitionLogger().scopedStopwatch(
+      "[Scheduler] annotatePipelineStages");
+
   // Adding pipelineStage bins is not required for correctness.
   // Constraining the Ops to be within their pipelineStage improves
   // scheduling runtime as swaps with no effect are invalid.
@@ -312,6 +323,9 @@ void ShiftGraphGrower::annotateToLossFromLoss() {
 }
 
 void ShiftGraphGrower::annotateAccumulateOuterFragmentOps() {
+
+  const auto sw = pg.getIr().timePartitionLogger().scopedStopwatch(
+      "[Scheduler] annotateAccumulateOuterFragmentOps");
   // The scheduler can be slow when there are a lot of ops unconstrained in
   // the accumulate outer fragment. To battle this, we sometimes add
   // constraints here. Depending on where we are in the IR pipeline and
@@ -366,6 +380,9 @@ void ShiftGraphGrower::annotateAccumulateOuterFragmentOps() {
 }
 
 void ShiftGraphGrower::annotatePriorities() {
+
+  const auto sw = pg.getIr().timePartitionLogger().scopedStopwatch(
+      "[Scheduler] annotatePriorities");
   std::vector<std::array<OpAddress, 2>> ties;
   for (const auto &x : pg.getOps()) {
     auto op        = x.second.get();

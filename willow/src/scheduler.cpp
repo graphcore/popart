@@ -111,6 +111,10 @@ void defaultAnnotate(ShiftGraphGrower *grower,
                      const OpsBeforeKey &gCons,
                      const Graph &pg,
                      const bool respectExecutionPhases) {
+
+  const auto sw = pg.getIr().timePartitionLogger().scopedStopwatch(
+      "[Scheduler] defaultAnnotate");
+
   grower->setBasic();
   grower->appendGCons(gCons);
   if (respectExecutionPhases &&
@@ -159,6 +163,14 @@ Scheduler::getSchedule(const OpsBeforeKey &gCons,
       rotationTermination.longerThan({10.0, 100}) &&
       pg.getOps().size() <=
           pg.getIr().getSessionOptions().transitiveClosureOptimizationThreshold;
+
+  std::ostringstream oss;
+
+  oss << "RotationTermination=("
+      << "rotations=" << rotationTermination.maxRotations()
+      << ", seconds=" << rotationTermination.maxSeconds() << ")"
+      << " and nOps=" << pg.getOps().size() << ". ";
+  logging::ir::debug(oss.str());
 
   const auto transitiveClosureOptimizations =
       useTransitiveClosureOptimizations
