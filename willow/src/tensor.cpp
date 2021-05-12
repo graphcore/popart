@@ -104,53 +104,75 @@ view::Regions Tensor::modifiedRegionsByOps(std::vector<Op *> ops) const {
   auto &aliases = graph.getTensors().getAliases();
   auto chains   = aliases.aliasChainsFrom(t0);
 
-  std::map<Op *, std::set<Op *>> beforeOps;
+  std::map<Op *, view::Regions> opToT0ReadRegions;
   std::map<Op *, view::Regions> opToT0ModifiedRegions;
+
+  std::vector<Tensor *> aliasedTensors;
+  aliasedTensors.push_back(t0);
 
   // All chains from t0
   for (auto &chain : chains) {
     // All aliases t1 of t0
     Tensor *t1 = chain.first;
+    aliasedTensors.push_back(t1);
+  }
 
+  for (auto t1 : aliasedTensors) {
     // All consumers of t1
     for (Op *consumer : t1->consumers.getOps()) {
-      if (std::find(ops.begin(), ops.end(), consumer) != ops.end()) {
-        beforeOps.insert({consumer, {}});
-      }
 
-      view::AccessType accessType = view::AccessType::None;
       view::Regions subModifiedRegions1;
       view::Regions subModifiedRegions0;
+      view::Regions subReadRegions1;
+      view::Regions subReadRegions0;
 
       auto indices = consumer->input->indices(t1);
 
       for (InIndex index : indices) {
         // Any consumer modified region of t1
-        auto regions = consumer->modifies(index);
+        auto mRegions = consumer->modifies(index);
+        // Any consumer accessed region of t1
+        auto rRegions = consumer->uses(index);
+        // Any consumer accessed but not modified region of t1
+        view::Regions dRegions;
 
-        // If an Op consumes the tensor without specifying modifies we assume
-        // (conservatively) full read access to the tensor
-        if (regions.empty() ||
-            std::any_of(regions.begin(),
-                        regions.end(),
-                        [](const view::Region &r) { return r.isEmpty(); })) {
-          accessType = view::combine({accessType, view::AccessType::Read});
+        for (auto &r0 : rRegions) {
+          auto rs = r0.sub(mRegions);
+          dRegions.insert(dRegions.begin(), rs.begin(), rs.end());
         }
+        dRegions = view::mergeRegions(dRegions);
 
         // Collect modified regions of t1
         subModifiedRegions1.insert(
-            subModifiedRegions1.end(), regions.begin(), regions.end());
+            subModifiedRegions1.end(), mRegions.begin(), mRegions.end());
+
+        // Collect read regions of t1
+        subReadRegions1.insert(
+            subReadRegions1.end(), dRegions.begin(), dRegions.end());
       }
 
       // Convert regions of t1 to regions of t0
       subModifiedRegions1 = view::mergeRegions(subModifiedRegions1);
-      for (auto &subModifiedRegion1 : subModifiedRegions1) {
-        auto regions =
-            aliases.getChainsFromTo(t1, t0).apply(subModifiedRegion1);
-        subModifiedRegions0.insert(
-            subModifiedRegions0.end(), regions.begin(), regions.end());
+      subReadRegions1     = view::mergeRegions(subReadRegions1);
+
+      if (t0 == t1) {
+        subModifiedRegions0 = subModifiedRegions1;
+        subReadRegions0     = subReadRegions1;
+      } else {
+        for (auto &subModifiedRegion1 : subModifiedRegions1) {
+          auto regions =
+              aliases.getChainsFromTo(t1, t0).apply(subModifiedRegion1);
+          subModifiedRegions0.insert(
+              subModifiedRegions0.end(), regions.begin(), regions.end());
+        }
+        for (auto &subReadRegion1 : subReadRegions1) {
+          auto regions = aliases.getChainsFromTo(t1, t0).apply(subReadRegion1);
+          subReadRegions0.insert(
+              subReadRegions0.end(), regions.begin(), regions.end());
+        }
       }
       subModifiedRegions0 = view::mergeRegions(subModifiedRegions0);
+      subReadRegions0     = view::mergeRegions(subReadRegions0);
 
       // Register what part of t0 the consumer of t1 modifies (indirectly)
       if (std::any_of(subModifiedRegions0.begin(),
@@ -161,56 +183,81 @@ view::Regions Tensor::modifiedRegionsByOps(std::vector<Op *> ops) const {
                        subModifiedRegions0.begin(),
                        subModifiedRegions0.end());
       }
-    }
-
-    // Ensure Op access order
-    for (Op *consumer : t1->consumers.getOps()) {
-      for (Op *after : t1->getGraph().topoCons->getAfters(consumer)) {
-        if (beforeOps.find(after) != beforeOps.end()) {
-          beforeOps[after].insert(consumer);
-        }
+      if (std::any_of(subReadRegions0.begin(),
+                      subReadRegions0.end(),
+                      [](const view::Region &r) { return !r.isEmpty(); })) {
+        auto &regions = opToT0ReadRegions[consumer];
+        regions.insert(
+            regions.end(), subReadRegions0.begin(), subReadRegions0.end());
       }
     }
   }
 
   // Assemble all t0 modified regions
+  view::Regions regionsReadUpUntilNow;
   view::Regions modifiedRegions;
   view::AccessType accessType = view::AccessType::None;
 
   // As soon as a consumer modified the whole input, we can stop
   for (Op *op : ops) {
-    auto it = opToT0ModifiedRegions.find(op);
-    if (it == opToT0ModifiedRegions.end()) {
-      continue;
-    }
-
-    auto opModifiedRegions = view::mergeRegions(it->second);
-    modifiedRegions.insert(modifiedRegions.end(),
-                           opModifiedRegions.begin(),
-                           opModifiedRegions.end());
-    modifiedRegions = view::mergeRegions(modifiedRegions);
-
-    for (auto &r : opModifiedRegions) {
-      view::AccessType regionAccessType = r.getAccessType();
-      if (!r.isEmpty() && (regionAccessType == view::AccessType::None ||
-                           regionAccessType == view::AccessType::Read)) {
-        throw error("Unexpected modified region access type None or Read");
+    {
+      auto it = opToT0ReadRegions.find(op);
+      if (it != opToT0ReadRegions.end()) {
+        auto opReadRegions = view::mergeRegions(it->second);
+        regionsReadUpUntilNow.insert(regionsReadUpUntilNow.end(),
+                                     opReadRegions.begin(),
+                                     opReadRegions.end());
+        regionsReadUpUntilNow = view::mergeRegions(regionsReadUpUntilNow);
       }
-      accessType = view::combine({accessType, regionAccessType});
     }
-    if (modifiedRegions.size() > 0 &&
-        modifiedRegions.front() == view::Region::getFull(t0->info.shape()) &&
-        accessType == view::AccessType::Write) {
-      // The whole input tensor has been touched, conclude
-      //  If the whole tensor has been write-accessed first, we say that
-      //  the list of ops passed to this method consume the tensor write-only.
-      //  If any read access to the tensor happens before the write-only
-      //  access, the modified tensor is read-write.
-      //  Read-only does not make sense, since we ask about modified regions.
-      // Examples:
-      //  1.) VarUpdate will cause read-write access to modified input.
-      //  2.) RemoteLoad will cause write-only access to modified input.
-      break;
+    {
+      auto it = opToT0ModifiedRegions.find(op);
+      if (it != opToT0ModifiedRegions.end()) {
+        auto opModifiedRegions = view::mergeRegions(it->second);
+        modifiedRegions.insert(modifiedRegions.end(),
+                               opModifiedRegions.begin(),
+                               opModifiedRegions.end());
+        modifiedRegions = view::mergeRegions(modifiedRegions);
+
+        // If any newly modified region overlaps with a previously read region,
+        // conservatively change access type to Read/ReadWrite
+        if (std::any_of(opModifiedRegions.begin(),
+                        opModifiedRegions.end(),
+                        [&regionsReadUpUntilNow](view::Region &r0) {
+                          return std::any_of(
+                              regionsReadUpUntilNow.begin(),
+                              regionsReadUpUntilNow.end(),
+                              [&r0](view::Region &r1) {
+                                return !r0.intersect(r1).isEmpty();
+                              });
+                        })) {
+          accessType = view::combine({accessType, view::AccessType::Read});
+        }
+
+        for (auto &r : opModifiedRegions) {
+          view::AccessType regionAccessType = r.getAccessType();
+          if (!r.isEmpty() && (regionAccessType == view::AccessType::None ||
+                               regionAccessType == view::AccessType::Read)) {
+            throw error("Unexpected modified region access type None or Read");
+          }
+          accessType = view::combine({accessType, regionAccessType});
+        }
+        if (modifiedRegions.size() > 0 &&
+            modifiedRegions.front() ==
+                view::Region::getFull(t0->info.shape()) &&
+            accessType == view::AccessType::Write) {
+          // The whole input tensor has been touched, conclude
+          //  If the whole tensor has been write-accessed first, we say that
+          //  the list of ops passed to this method consume the tensor
+          //  write-only. If any read access to the tensor happens before the
+          //  write-only access, the modified tensor is read-write. Read-only
+          //  does not make sense, since we ask about modified regions.
+          // Examples:
+          //  1.) VarUpdate will cause read-write access to modified input.
+          //  2.) RemoteLoad will cause write-only access to modified input.
+          break;
+        }
+      }
     }
   }
 
