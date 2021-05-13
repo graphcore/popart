@@ -24,8 +24,8 @@ namespace popart {
 struct AutomaticLossScalingSettings {
   AutomaticLossScalingSettings() = default;
   AutomaticLossScalingSettings(bool enabled_,
-                               float binEdgeLocation_               = 0.5,
-                               float thresholdUpperCountProportion_ = 0.2);
+                               float binEdgeLocation_               = 1.0,
+                               float thresholdUpperCountProportion_ = 1e-7);
 
   AutomaticLossScalingSettings &
   operator=(const AutomaticLossScalingSettings &rhs) = default;
@@ -41,12 +41,12 @@ struct AutomaticLossScalingSettings {
   /// represents the smallest representable value, and `1` the maximum. This is
   /// the single bin edge of the histogram that is an input to the loss scale
   /// updater algorithm.
-  float binEdgeLocation = 0.5;
+  float binEdgeLocation = 1.0;
 
   /// The proportion of the elements in the upper bin above which the loss scale
   /// is increased, and below which the loss scale is decreased. Should be in
   /// the range [0, 1].
-  float thresholdUpperCountProportion = 0.2;
+  float thresholdUpperCountProportion = 1e-7;
 };
 
 /**

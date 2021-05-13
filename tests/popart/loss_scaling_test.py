@@ -123,6 +123,8 @@ def test_auto_loss_scaling_with_inference_session():
 
     opts = popart.SessionOptions()
     opts.automaticLossScalingSettings.enabled = True
+    opts.automaticLossScalingSettings.binEdgeLocation = 0.5
+    opts.automaticLossScalingSettings.thresholdUpperCountProportion = 0.2
 
     with pytest.raises(popart.popart_exception) as e_info:
         session = popart.InferenceSession(builder.getModelProto(),
@@ -151,6 +153,8 @@ def test_auto_loss_scaling_with_const_loss_scale_tensor():
 
     opts = popart.SessionOptions()
     opts.automaticLossScalingSettings.enabled = True
+    opts.automaticLossScalingSettings.binEdgeLocation = 0.5
+    opts.automaticLossScalingSettings.thresholdUpperCountProportion = 0.2
 
     with pytest.raises(popart.popart_exception) as e_info:
         session = popart.TrainingSession(builder.getModelProto(),
@@ -179,6 +183,8 @@ def test_auto_loss_scaling_with_no_tracked_tensors():
 
     opts = popart.SessionOptions()
     opts.automaticLossScalingSettings.enabled = True
+    opts.automaticLossScalingSettings.binEdgeLocation = 0.5
+    opts.automaticLossScalingSettings.thresholdUpperCountProportion = 0.2
 
     with pytest.raises(popart.popart_exception) as e_info:
         session = popart.TrainingSession(builder.getModelProto(),
@@ -249,6 +255,8 @@ def test_auto_loss_scaling_expected_loss_scale_tensor_values():
 
     opts = popart.SessionOptions()
     opts.automaticLossScalingSettings.enabled = True
+    opts.automaticLossScalingSettings.binEdgeLocation = 0.5
+    opts.automaticLossScalingSettings.thresholdUpperCountProportion = 0.2
 
     loss, proto, t0, t_shape, label, label_shape, _ = getModelProto()
     bps = 4
@@ -319,6 +327,8 @@ def test_auto_loss_scaling_and_continuous_update_pipelining():
 
     opts = popart.SessionOptions()
     opts.automaticLossScalingSettings.enabled = True
+    opts.automaticLossScalingSettings.binEdgeLocation = 0.5
+    opts.automaticLossScalingSettings.thresholdUpperCountProportion = 0.2
     opts.enablePipelining = True
     opts.enableGradientAccumulation = False
     opts.virtualGraphMode = popart.VirtualGraphMode.Manual
@@ -353,6 +363,7 @@ def test_auto_loss_scaling_threshold_upper_count_proportion_range(
 
     opts = popart.SessionOptions()
     opts.automaticLossScalingSettings.enabled = True
+    opts.automaticLossScalingSettings.binEdgeLocation = 0.5
     opts.automaticLossScalingSettings.thresholdUpperCountProportion = thresholdUpperCountProportion
 
     with ExitStack() as stack:
@@ -391,6 +402,7 @@ def test_auto_loss_scaling_bin_edge_factor_range(binEdgeLocation):
     opts = popart.SessionOptions()
     opts.automaticLossScalingSettings.enabled = True
     opts.automaticLossScalingSettings.binEdgeLocation = binEdgeLocation
+    opts.automaticLossScalingSettings.thresholdUpperCountProportion = 0.2
 
     with ExitStack() as stack:
         e_info = None
@@ -433,6 +445,8 @@ def test_auto_loss_scaling_with_mixed_precision_trackable_tensors():
 
     opts = popart.SessionOptions()
     opts.automaticLossScalingSettings.enabled = True
+    opts.automaticLossScalingSettings.binEdgeLocation = 0.5
+    opts.automaticLossScalingSettings.thresholdUpperCountProportion = 0.2
 
     session = popart.TrainingSession(builder.getModelProto(),
                                      deviceInfo=tu.create_test_device(),
@@ -528,6 +542,8 @@ def run_automatic_loss_scaling_comparison_test(tmpdir,
     ref_anchors = ref_session.initAnchorArrays()
 
     opts.automaticLossScalingSettings.enabled = True
+    opts.automaticLossScalingSettings.binEdgeLocation = 0.5
+    opts.automaticLossScalingSettings.thresholdUpperCountProportion = 0.2
 
     ls_id = "lossScaling_FLOAT16_updated"
     als_session = popart.TrainingSession(
@@ -688,6 +704,8 @@ def test_loss_scale_updates_with_grad_accumulation_correctness():
 
     opts = popart.SessionOptions()
     opts.automaticLossScalingSettings.enabled = True
+    opts.automaticLossScalingSettings.binEdgeLocation = 0.5
+    opts.automaticLossScalingSettings.thresholdUpperCountProportion = 0.2
     opts.enableGradientAccumulation = True
     opts.accumulationFactor = accumulation_factor
 
