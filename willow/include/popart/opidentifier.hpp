@@ -237,6 +237,7 @@ const static AiGraphcoreOpIdV1 AccumulatorUpdate("AccumulatorUpdate");
 const static AiGraphcoreOpIdV1 AdaDeltaUpdater("AdaDeltaUpdater");
 const static AiGraphcoreOpIdV1 AdamCombo("AdamCombo");
 const static AiGraphcoreOpIdV1 AdaptiveCombo("AdaptiveCombo");
+const static AiGraphcoreOpIdV1 RescaleAccumulate("RescaleAccumulate");
 const static AiGraphcoreOpIdV1 AdamUpdater("AdamUpdater");
 const static AiGraphcoreOpIdV1 AdamVarUpdate("AdamVarUpdate");
 const static AiGraphcoreOpIdV1 AddBias("AddBias");

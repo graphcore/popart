@@ -10,12 +10,7 @@
 
 namespace popart {
 
-std::unique_ptr<Op> AccumulateOp::clone() const {
-  return std::make_unique<AccumulateOp>(*this);
-}
-
-// T12001
-std::map<InIndex, TensorId> AccumulateOp::optimizerInputs() const {
+std::map<InIndex, TensorId> AccumulateBaseOp::optimizerInputs() const {
   std::map<InIndex, TensorId> m;
   if (!factor.isConst()) {
     auto index = getFactorInIndex();
@@ -24,7 +19,7 @@ std::map<InIndex, TensorId> AccumulateOp::optimizerInputs() const {
   return m;
 }
 
-void AccumulateOp::appendOutlineAttributes(OpSerialiserBase &os) const {
+void AccumulateBaseOp::appendOutlineAttributes(OpSerialiserBase &os) const {
 
   Op::appendOutlineAttributes(os);
 
@@ -35,10 +30,50 @@ void AccumulateOp::appendOutlineAttributes(OpSerialiserBase &os) const {
   }
 }
 
-AccumulateOp::AccumulateOp(AccumulationType type_,
-                           OptimizerValue factor_,
+AccumulateBaseOp::AccumulateBaseOp(const OperatorIdentifier &opid,
+                                   AccumulationType type_,
+                                   OptimizerValue factor_,
+                                   const Op::Settings &opSettings)
+    : VarUpdateWithUpdaterOp(opid, opSettings), type(type_), factor(factor_) {}
+
+std::unique_ptr<Op> AccumulateOp::clone() const {
+  return std::make_unique<AccumulateOp>(*this);
+}
+
+AccumulateOp::AccumulateOp(AccumulationType type,
+                           OptimizerValue factor,
                            const Op::Settings &opSettings)
-    : VarUpdateWithUpdaterOp(Onnx::CustomOperators::Accumulate, opSettings),
-      type(type_), factor(factor_) {}
+    : AccumulateBaseOp(Onnx::CustomOperators::Accumulate,
+                       type,
+                       factor,
+                       opSettings) {}
+
+std::unique_ptr<Op> RescaleAccumulateOp::clone() const {
+  return std::make_unique<RescaleAccumulateOp>(*this);
+}
+
+std::map<InIndex, TensorId> RescaleAccumulateOp::optimizerInputs() const {
+  auto m = AccumulateBaseOp::optimizerInputs();
+  m.insert({getRescaleRatioInIndex(), inId(getRescaleRatioInIndex())});
+  return m;
+}
+
+RescaleAccumulateOp::RescaleAccumulateOp(AccumulationType type,
+                                         OptimizerValue factor,
+                                         const Op::Settings &opSettings)
+    : AccumulateBaseOp(Onnx::CustomOperators::RescaleAccumulate,
+                       type,
+                       factor,
+                       opSettings) {
+  switch (type) {
+  case AccumulationType::MovingAverage:
+  case AccumulationType::MovingAverageSquare:
+  case AccumulationType::Infinity:
+    break;
+  default:
+    throw error("Unsupported AccumulationType in RescaleAccumulateOp {}",
+                static_cast<int>(type));
+  }
+}
 
 } // namespace popart

@@ -261,7 +261,10 @@ enum class AdamMode {
  * the end of the backwards pass, this scaling is reversed by multiplying the
  * gradients for each weight with the inverse of the loss scaling value prior to
  * updating the optimizer state. Using loss scaling can also improve numerical
- * stability in some cases.
+ * stability of the gradient calculations. If scaledOptimizerState is enabled
+ * then the the lossScaling will not be removed before updating the optimizer
+ * state. This can improve the numerical stability when accl1_type is set to
+ * FLOAT16.
  *
  * **NOTE**: The maximum weight norm is referred to as \f$\phi\f$ in
  *        [You et al., 2020](https://arxiv.org/abs/1904.00962).
@@ -337,6 +340,13 @@ public:
   ///     momentum optimizer state.
   /// \param clipNormSettings A vector of ClipNormSettings (this can be used
   ///     to set maximum values for weights).
+  /// \param scaledOptimizerState Experimental Option.
+  ///     Does not remove lossScaling before updating the optimizer state. This
+  ///     should have no effect on the update equation. However, it does ensure
+  ///     a more numerically stable implementation when accl1_type is set to
+  ///     DataType::FLOAT16. Note: When loading a model that includes
+  ///     initialised optimizer state, ensure that accl1 and accl2 are scaled by
+  ///     lossScaling and lossScaling^2 respectively.
   Adam(OptimizerValue defaultLearningRate,
        OptimizerValue defaultWeightDecay,
        OptimizerValue defaultBeta1,
@@ -349,7 +359,8 @@ public:
        DataType accumType,
        DataType accl1Type,
        DataType accl2Type,
-       const std::vector<ClipNormSettings> &clipNormSettings = {});
+       const std::vector<ClipNormSettings> &clipNormSettings = {},
+       bool scaledOptimizerState                             = false);
 
   // Equivalent to calling Adam(defaultLearningRate, defaultWeightDecay,
   // defaultBeta1, defaultBeta2, defaultEps, lossScaling,
@@ -366,7 +377,8 @@ public:
        DataType accumType,
        DataType accl1Type,
        DataType accl2Type,
-       const std::vector<ClipNormSettings> &clipNormSettings = {});
+       const std::vector<ClipNormSettings> &clipNormSettings = {},
+       bool scaledOptimizerState                             = false);
 
   // Equivalent to calling Adam(defaultLearningRate, defaultWeightDecay,
   // defaultBeta1, defaultBeta2, defaultEps, lossScaling,
@@ -383,7 +395,8 @@ public:
        DataType accumType,
        DataType accl1Type,
        DataType accl2Type,
-       const std::vector<ClipNormSettings> &clipNormSettings = {});
+       const std::vector<ClipNormSettings> &clipNormSettings = {},
+       bool scaledOptimizerState                             = false);
 
   // Equivalent to calling Adam(defaultLearningRate, defaultWeightDecay,
   // defaultBeta1, defaultBeta2, defaultEps, lossScaling,
@@ -399,7 +412,8 @@ public:
        DataType accumType,
        DataType accl1Type,
        DataType accl2Type,
-       const std::vector<ClipNormSettings> &clipNormSettings = {});
+       const std::vector<ClipNormSettings> &clipNormSettings = {},
+       bool scaledOptimizerState                             = false);
 
   /// Constructor.
   /// \param params A parameter map where keys are one of
@@ -437,7 +451,8 @@ public:
        DataType accumType,
        DataType accl1Type,
        DataType accl2Type,
-       const std::vector<ClipNormSettings> &clipNormSettings = {});
+       const std::vector<ClipNormSettings> &clipNormSettings = {},
+       bool scaledOptimizerState                             = false);
 
   static Adam fromDefaultMap(const std::map<std::string, OptimizerValue> &,
                              AdamMode adamMode_,
@@ -522,7 +537,12 @@ public:
   const OptimizerValueMap &epss() const { return epsvs; }
   const OptimizerValueMap &maxWeightNorms() const { return mwns; }
 
+  const WeightDecayMode &getWeightDecayMode() const { return decayMode; }
+  bool useScaledOptimizerState() const { return scaledOptimizerState; }
+
   size_t hash() const;
+
+  void setFactorsFromOptions(const SessionOptions &) override;
 
 private:
   void runValueChecks(OptimizerValue lr,
@@ -557,6 +577,7 @@ private:
   DataType accumType;
   DataType accl1Type;
   DataType accl2Type;
+  bool scaledOptimizerState;
 
   // The compound scalars
   // --------------------
@@ -569,7 +590,6 @@ private:
   AdamMaxWeightNormHelper mwnhelper;
   AdamGradientScalingHelper gshelper;
 
-  // int argument only to disambiguate from the other SGD constructor
   Adam(const std::map<std::string, OptimizerValue> &,
        AdamMode mode_,
        WeightDecayMode decayMode_,
@@ -577,7 +597,7 @@ private:
        DataType accl1Type_,
        DataType accl2Type_,
        const std::vector<ClipNormSettings> &clipNormSettings,
-       int);
+       bool scaledOptimizerState_);
 
   static std::map<std::string, OptimizerValue>
   getComplete(const std::map<std::string, OptimizerValue> &);

@@ -12,6 +12,8 @@
 #include <popart/op/cast.hpp>
 #include <popart/op/collectives/replicatedallreduce.hpp>
 #include <popart/op/concat.hpp>
+#include <popart/op/copyvarupdate.hpp>
+#include <popart/op/div.hpp>
 #include <popart/op/lamb.hpp>
 #include <popart/op/slice.hpp>
 #include <popart/patterns/adamdecompose.hpp>
@@ -21,11 +23,145 @@
 
 namespace popart {
 
+namespace {
+TensorId getLossScaleDerivativeTensorId(TensorId tid, Op *combo) {
+  // Replaces lossScaling_ with tid. This handles cases
+  // where each comboOp has a specific lossScaling tensor.
+  auto id       = tid;
+  auto lsId     = combo->inId(AdamComboOp::getLsInIndex());
+  auto lsPrefix = std::string(reservedLossScalingPrefix());
+  auto pos      = lsId.find(lsPrefix);
+  if (pos != std::string::npos) {
+    id = lsId;
+    id.replace(pos, lsPrefix.length(), tid);
+  }
+
+  // If a non-specific lossScaling tensor is used, then we want
+  // have a derivative per VirtualGraph to avoid IpuCopies
+  // in the optimizer step. Note: These are harmless if a specific lossScaling
+  // tensor is used.
+  if (combo->hasVirtualGraphId()) {
+    id += "_vgid" + std::to_string(combo->getVirtualGraphId());
+  }
+  return id;
+}
+} // namespace
+
 bool AdamDecompose::matches(Op *op) const {
   return op->isConvertibleTo<AdamComboOp>();
 }
 
 std::vector<const Tensor *> AdamDecompose::touches(Op *) const { return {}; }
+
+std::pair<Op *, TensorId>
+AdamDecompose::rescaleAccl(Graph &graph,
+                           AdamComboOp *combo,
+                           bool accl1,
+                           TensorId acclId,
+                           TensorId gradIntoAcclId,
+                           TensorId rescaleRatioId) const {
+  std::string acclName  = accl1 ? "_accl1" : "_accl2";
+  OptimizerValue value  = accl1 ? combo->initB1 : combo->initB2;
+  AccumulationType type = accl1 ? AccumulationType::MovingAverage
+                                : (combo->mode == AdamMode::AdaMax
+                                       ? AccumulationType::Infinity
+                                       : AccumulationType::MovingAverageSquare);
+  // The updated accl
+  TensorId updatedAcclId = graph.getIr().createIntermediateTensorId(acclId);
+
+  auto acclOp = graph.createConnectedOp<RescaleAccumulateOp>(
+      {{VarUpdateOp::getVarToUpdateInIndex(), acclId},
+       {VarUpdateWithUpdaterOp::getUpdaterInIndex(), gradIntoAcclId},
+       {RescaleAccumulateOp::getRescaleRatioInIndex(), rescaleRatioId}},
+      {{VarUpdateOp::getUpdatedVarOutIndex(), updatedAcclId}},
+      type,
+      value,
+      Op::Settings(graph, combo->name() + acclName));
+  transferBaseProperties(combo, acclOp);
+
+  if (!value.isConst()) {
+    TensorId valueTensorId = accl1
+                                 ? combo->inId(AdamComboOp::getBeta1InIndex())
+                                 : combo->inId(AdamComboOp::getBeta2InIndex());
+    acclOp->connectInTensor(AccumulateOp::getFactorInIndex(), valueTensorId);
+  }
+
+  if (combo->withGradAccum) {
+    acclOp->settings.executionContext =
+        ExecutionContext::AccumulateOuterFragment;
+    acclOp->setExecutionPhase({});
+    acclOp->settings.schedulePriority = 0.0;
+  }
+  graph.getIr().addAdditionalModelProtoTensor(acclId);
+  return {acclOp, updatedAcclId};
+}
+
+TensorId AdamDecompose::rescaleRatio(Graph &graph, AdamComboOp *combo) const {
+  // When using `scaledOptimizerState` and nonConst lossScaling
+  // if the loss scaling changes the optimizer state must also
+  // be rescaled to match the new value. This can be done by rescaling
+  // at the same time as accumulating.
+  // To achieve this a tensor is added to graph which equals:
+  //    ratio = lossScaling / previousLossScaling
+  // At the end of each optimizer step, previousLossScaling is assigned to
+  // lossScaling. This gives the behaviour that between steps if the user calls
+  // OptimizerFromHost with a new lossScaling value:
+  //   ratio != 1 -> state will be rescaled
+  // otherwise:
+  //   ratio = 1 -> state will keep the same scaling
+  auto &ir = graph.getIr();
+
+  TensorId lossScalingId = combo->inId(AdamComboOp::getLsInIndex());
+
+  TensorId prevLossScalingId = getLossScaleDerivativeTensorId(
+      reservedPreviousLossScalingPrefix(), combo);
+
+  if (!graph.getTensors().contains(prevLossScalingId)) {
+    if (ir.tensorExistsInInitialisers(prevLossScalingId)) {
+      auto tp = onnxutil::getTensorProto(ir.getModel(), prevLossScalingId);
+      graph.getTensors().addVarInit(prevLossScalingId, &tp);
+    } else {
+      TensorInfo lsInfo(DataType::FLOAT, {});
+      std::vector<float> lsData(lsInfo.nelms(), combo->initLs.val());
+      graph.getTensors().addVarInit(prevLossScalingId, lsInfo, lsData.data());
+      ir.addAdditionalModelProtoTensor(prevLossScalingId);
+    }
+  }
+
+  TensorId ratioId =
+      getLossScaleDerivativeTensorId(reservedLossScalingRatioPrefix(), combo);
+  if (!graph.getTensors().contains(ratioId)) {
+    auto calcRatio = graph.createConnectedOp<DivOp>(
+        {{0, lossScalingId}, {1, prevLossScalingId}},
+        {{0, ratioId}},
+        Onnx::Operators::Div_7,
+        Op::Settings(graph, combo->name() + "_lsRatio"));
+    transferBaseProperties(combo, calcRatio);
+
+    TensorId updatedPrevLossScalingId =
+        ir.createIntermediateTensorId(prevLossScalingId);
+    auto updatePrevLossScaling = graph.createConnectedOp<CopyVarUpdateOp>(
+        {{0, prevLossScalingId}, {1, lossScalingId}},
+        {{0, updatedPrevLossScalingId}},
+        Op::Settings(graph, combo->name() + "_updatePrevLossScaling"));
+    transferBaseProperties(combo, updatePrevLossScaling);
+
+    if (combo->withGradAccum) {
+      calcRatio->settings.executionContext =
+          ExecutionContext::AccumulateOuterFragment;
+      calcRatio->setExecutionPhase({});
+      calcRatio->settings.schedulePriority = 0.0;
+      updatePrevLossScaling->settings.executionContext =
+          ExecutionContext::AccumulateOuterFragment;
+      updatePrevLossScaling->setExecutionPhase({});
+      updatePrevLossScaling->settings.schedulePriority = 0.0;
+    }
+
+    graph.topoCons->insert(calcRatio, updatePrevLossScaling);
+  }
+
+  return ratioId;
+}
 
 bool AdamDecompose::apply(Op *op) const {
 
@@ -99,7 +235,7 @@ bool AdamDecompose::apply(Op *op) const {
   }
 
   // Cast if accumulator is fp16, and optimizer state is fp32.
-  if (combo->accumType == DataType::FLOAT16 &&
+  if (!combo->scaledOptimizerState && combo->accumType == DataType::FLOAT16 &&
       combo->accl1Type == DataType::FLOAT &&
       combo->accl2Type == DataType::FLOAT) {
     gradIntoAcclId =
@@ -125,36 +261,60 @@ bool AdamDecompose::apply(Op *op) const {
                                   combo->withGradAccum);
   }
 
-  // 1st momentum
-  auto accl1              = accl(graph,
-                    combo,
-                    accl1Id,
-                    gradIntoAcclId,
-                    AccumulationType::MovingAverage,
-                    combo->initB1,
-                    combo->initB1.isConst()
-                        ? ""
-                        : combo->inId(AdamComboOp::getBeta1InIndex()),
-                    "_accl1",
-                    combo->withGradAccum);
-  Op *accl1Op             = accl1.first;
-  TensorId updatedAccl1Id = accl1.second;
+  Op *accl1Op;
+  Op *accl2Op;
+  TensorId updatedAccl1Id;
+  TensorId updatedAccl2Id;
 
-  // 2nd momentum
-  auto accl2 = accl(
-      graph,
-      combo,
-      accl2Id,
-      gradIntoAcclId,
-      combo->mode == AdamMode::AdaMax ? AccumulationType::Infinity
-                                      : AccumulationType::MovingAverageSquare,
-      combo->initB2,
-      combo->initB2.isConst() ? ""
-                              : combo->inId(AdamComboOp::getBeta2InIndex()),
-      "_accl1",
-      combo->withGradAccum);
-  Op *accl2Op             = accl2.first;
-  TensorId updatedAccl2Id = accl2.second;
+  if (!combo->scaledOptimizerState || combo->initLs.isConst()) {
+    // Don't use RescaledAccumulateOp if loss scaling is constant
+
+    // 1st momentum
+    auto accl1     = accl(graph,
+                      combo,
+                      accl1Id,
+                      gradIntoAcclId,
+                      AccumulationType::MovingAverage,
+                      combo->initB1,
+                      combo->initB1.isConst()
+                          ? ""
+                          : combo->inId(AdamComboOp::getBeta1InIndex()),
+                      "_accl1",
+                      combo->withGradAccum);
+    accl1Op        = accl1.first;
+    updatedAccl1Id = accl1.second;
+
+    // 2nd momentum
+    auto accl2 = accl(
+        graph,
+        combo,
+        accl2Id,
+        gradIntoAcclId,
+        combo->mode == AdamMode::AdaMax ? AccumulationType::Infinity
+                                        : AccumulationType::MovingAverageSquare,
+        combo->initB2,
+        combo->initB2.isConst() ? ""
+                                : combo->inId(AdamComboOp::getBeta2InIndex()),
+        "_accl1",
+        combo->withGradAccum);
+    accl2Op        = accl2.first;
+    updatedAccl2Id = accl2.second;
+  } else {
+    // Use RescaleAccumulateOp to handle changes in loss scaling.
+    auto rescaleRatioId = rescaleRatio(graph, combo);
+
+    // 1st momentum
+    auto accl1 = rescaleAccl(
+        graph, combo, true, accl1Id, gradIntoAcclId, rescaleRatioId);
+    accl1Op        = accl1.first;
+    updatedAccl1Id = accl1.second;
+
+    // 2nd momentum
+    auto accl2 = rescaleAccl(
+        graph, combo, false, accl2Id, gradIntoAcclId, rescaleRatioId);
+    accl2Op        = accl2.first;
+    updatedAccl2Id = accl2.second;
+  }
 
   // The accumulator updater
   if (combo->withGradAccum) {

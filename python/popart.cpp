@@ -813,7 +813,8 @@ PYBIND11_MODULE(popart_core, m) {
                            DataType accumType,
                            DataType accl1Type,
                            DataType accl2Type,
-                           std::vector<ClipNormSettings> clipNormSettings) {
+                           std::vector<ClipNormSettings> clipNormSettings,
+                           bool scaledOptimizerState) {
                  auto cppm = getOptimizerValueDictionary(pyd);
                  return Adam(cppm,
                              mode,
@@ -821,7 +822,8 @@ PYBIND11_MODULE(popart_core, m) {
                              accumType,
                              accl1Type,
                              accl2Type,
-                             clipNormSettings);
+                             clipNormSettings,
+                             scaledOptimizerState);
                }),
                py::arg("values"),
                py::arg("mode")              = AdamMode::Adam,
@@ -831,7 +833,8 @@ PYBIND11_MODULE(popart_core, m) {
                // Momentums in FP32 by default
                py::arg("accl1_type")         = DataType::FLOAT,
                py::arg("accl2_type")         = DataType::FLOAT,
-               py::arg("clip_norm_settings") = std::vector<ClipNormSettings>{});
+               py::arg("clip_norm_settings") = std::vector<ClipNormSettings>{},
+               py::arg("scaled_optimizer_state") = false);
 
       adam.def("insertSpecific", [](Adam &self, TensorId id, py::dict pyd) {
         self.insertSpecific(id, getOptimizerValueDictionary(pyd));

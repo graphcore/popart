@@ -234,6 +234,14 @@ constexpr const char *anchorSumPrefix() { return "anchorSum___"; }
 
 constexpr const char *cycleCountPrefix() { return "cycleCount___"; }
 
+constexpr const char *reservedPreviousLossScalingPrefix() {
+  return "PreviousLossScaling_";
+}
+
+constexpr const char *reservedLossScalingRatioPrefix() {
+  return "LossScalingRatio_";
+}
+
 } // namespace popart
 
 #endif

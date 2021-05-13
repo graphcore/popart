@@ -18,15 +18,14 @@ enum class AccumulationType {
   Infinity             // accum = max(f * accum, abs(g))
 };
 
-class AccumulateOp : public VarUpdateWithUpdaterOp {
-
+class AccumulateBaseOp : public VarUpdateWithUpdaterOp {
 public:
-  AccumulateOp(AccumulationType type_,
-               OptimizerValue factor_,
-               const Op::Settings &);
+  AccumulateBaseOp(const OperatorIdentifier &opid,
+                   AccumulationType type_,
+                   OptimizerValue factor_,
+                   const Op::Settings &);
 
-  std::unique_ptr<Op> clone() const final;
-  std::map<InIndex, TensorId> optimizerInputs() const final;
+  std::map<InIndex, TensorId> optimizerInputs() const override;
   void appendOutlineAttributes(OpSerialiserBase &) const final;
   static InIndex getFactorInIndex() { return 2; }
   float getSubgraphValue() const final {
@@ -42,9 +41,37 @@ public:
   const AccumulationType &getAccumulationType() const { return type; }
   const OptimizerValue &getFactor() const { return factor; }
 
-private:
+protected:
   AccumulationType type;
   const OptimizerValue factor;
+};
+
+class AccumulateOp : public AccumulateBaseOp {
+public:
+  AccumulateOp(AccumulationType type,
+               OptimizerValue factor,
+               const Op::Settings &);
+
+  std::unique_ptr<Op> clone() const final;
+};
+
+/// The same as AccumulateOp however it also includes a rescale factor
+/// that allows for the accumulator to be rescaled at the same time.
+//
+// Only supports the following AccumulateTypes
+//   MovingAverage,       accum = rescale * f * accum + (1 - f) * g
+//   MovingAverageSquare, accum = rescale * f * accum + (1 - f) * g^2
+//   Infinity             accum = max(rescale * f * accum, abs(g))
+
+class RescaleAccumulateOp : public AccumulateBaseOp {
+public:
+  RescaleAccumulateOp(AccumulationType type_,
+                      OptimizerValue factor_,
+                      const Op::Settings &);
+
+  std::unique_ptr<Op> clone() const final;
+  std::map<InIndex, TensorId> optimizerInputs() const final;
+  static InIndex getRescaleRatioInIndex() { return 3; }
 };
 
 } // namespace popart

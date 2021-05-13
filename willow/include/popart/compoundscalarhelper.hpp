@@ -203,7 +203,7 @@ class AdamWeightDecayHelper : public CompoundScalarHelper<Adam> {
 public:
   float val(const TensorId &weightId, const Adam &) const final;
   bool isConst(const TensorId &weightId, const Adam &) const final;
-  float val(float wd) const { return wd; }
+  float val(float wd, float ls) const { return wd * ls; }
 
 private:
   std::string defaultPrefix() const final {
@@ -218,7 +218,7 @@ class AdamEpsHelper : public CompoundScalarHelper<Adam> {
 public:
   float val(const TensorId &weightId, const Adam &) const final;
   bool isConst(const TensorId &weightId, const Adam &) const final;
-  float val(float eps) const { return eps; }
+  float val(float eps, float ls) const { return eps * ls; }
 
 private:
   std::string defaultPrefix() const final {

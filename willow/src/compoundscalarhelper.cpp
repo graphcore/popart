@@ -265,21 +265,34 @@ bool AdamLearningRateHelper::isConst(const TensorId &weightId,
 float AdamWeightDecayHelper::val(const TensorId &weightId,
                                  const Adam &adam) const {
   auto wd = adam.weightDecays().get(weightId).val();
-  return val(wd);
+  auto ls =
+      adam.useScaledOptimizerState() &&
+              adam.getWeightDecayMode() == WeightDecayMode::L2Regularization
+          ? adam.lossScaling().val()
+          : 1.0f;
+  return val(wd, ls);
 }
 
 bool AdamWeightDecayHelper::isConst(const TensorId &weightId,
                                     const Adam &adam) const {
-  return adam.weightDecays().get(weightId).isConst();
+  auto constLs =
+      adam.useScaledOptimizerState() &&
+              adam.getWeightDecayMode() == WeightDecayMode::L2Regularization
+          ? adam.lossScaling().isConst()
+          : true;
+  return adam.weightDecays().get(weightId).isConst() && constLs;
 }
 
 float AdamEpsHelper::val(const TensorId &weightId, const Adam &adam) const {
   auto eps = adam.epss().get(weightId).val();
-  return val(eps);
+  auto ls  = adam.useScaledOptimizerState() ? adam.lossScaling().val() : 1.0f;
+  return val(eps, ls);
 }
 
 bool AdamEpsHelper::isConst(const TensorId &weightId, const Adam &adam) const {
-  return adam.epss().get(weightId).isConst();
+  auto constLs =
+      adam.useScaledOptimizerState() ? adam.lossScaling().isConst() : true;
+  return adam.epss().get(weightId).isConst() && constLs;
 }
 
 float AdamLossScalingHelper::val(const TensorId &weightId,
@@ -306,16 +319,18 @@ bool AdamMaxWeightNormHelper::isConst(const TensorId &weightId,
 
 float AdamGradientScalingHelper::val(const TensorId &weightId,
                                      const Adam &adam) const {
-  auto ls = adam.lossScaling().val();
-  return val(ls,
-             adam.meanGradientAccumulationEnabled()
-                 ? adam.getAccumulationFactor()
-                 : 1);
+  float af = adam.meanGradientAccumulationEnabled()
+                 ? static_cast<float>(adam.getAccumulationFactor())
+                 : 1.0f;
+  float ls = adam.useScaledOptimizerState() ? 1.0f : adam.lossScaling().val();
+  return val(ls, af);
 }
 
 bool AdamGradientScalingHelper::isConst(const TensorId &weightId,
                                         const Adam &adam) const {
-  return adam.lossScaling().isConst();
+  auto constLs =
+      adam.useScaledOptimizerState() ? true : adam.lossScaling().isConst();
+  return constLs;
 }
 
 float AdaptiveAlphaHelper::val(const TensorId &weightId,

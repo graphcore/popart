@@ -8,10 +8,9 @@
 namespace popart {
 namespace popx {
 
-class AccumulateOpx : public VarUpdateOpx {
+class AccumulateBaseOpx : public VarUpdateOpx {
 public:
-  AccumulateOpx(Op *, Devicex *);
-  void grow(poplar::program::Sequence &) const final;
+  AccumulateBaseOpx(Op *op, Devicex *devicex) : VarUpdateOpx(op, devicex){};
 
   // can create the accumulator input Tensor (@Var index)
   // from the weight gradient tensor (@Updater index)
@@ -21,6 +20,18 @@ public:
   std::set<TensorId> mustExistBeforeCreate(InIndex) const final;
   bool hasCreatorViewChangers(InIndex index) const final;
   ViewChangers getCreatorViewChangers(InIndex index) const final;
+};
+
+class AccumulateOpx : public AccumulateBaseOpx {
+public:
+  AccumulateOpx(Op *, Devicex *);
+  void grow(poplar::program::Sequence &) const final;
+};
+
+class RescaleAccumulateOpx : public AccumulateBaseOpx {
+public:
+  RescaleAccumulateOpx(Op *, Devicex *);
+  void grow(poplar::program::Sequence &) const final;
 };
 
 } // namespace popx

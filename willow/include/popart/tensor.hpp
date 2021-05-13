@@ -182,6 +182,7 @@ public:
   bool isImplicitRecomputeTensor() const;
   // Returns true if the tensor is the target of a restore inplace
   bool isRestoreInplaceTensor() const;
+  bool idIncludesPrefix(const std::vector<std::string> &) const;
   // Returns true for stream tensors that are optimizer tensors, as
   // well as their copies
   bool isOptimizerTensor() const;

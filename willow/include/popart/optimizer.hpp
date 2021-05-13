@@ -122,7 +122,7 @@ public:
   // compound scalar tensor which contains the inverse loss scale factor
   getInverseLossScalingTensorId(const Tensor &weight) const = 0;
 
-  void setFactorsFromOptions(const SessionOptions &);
+  virtual void setFactorsFromOptions(const SessionOptions &);
 
   bool gradientAccumulationEnabled() const;
   bool meanGradientAccumulationEnabled() const;

@@ -916,42 +916,30 @@ bool Tensor::isRestoreInplaceTensor() const {
   });
 }
 
-bool Tensor::isOptimizerTensor() const {
+bool Tensor::idIncludesPrefix(const std::vector<std::string> &prefixes) const {
+  return std::any_of(
+      prefixes.begin(), prefixes.end(), [this](const std::string prefix) {
+        return id.find(prefix) != std::string::npos;
+      });
+}
 
+bool Tensor::isOptimizerTensor() const {
   // TODO T11262 is to make an optimizer Tensor class, so that we don't need to
   // do these string comparisons
-  for (auto optPref : reservedOptimizerPrefixes()) {
-    std::size_t found = id.find(optPref);
-    if (found != std::string::npos) {
-      return true;
-    }
-  }
-  return false;
+  return idIncludesPrefix(reservedOptimizerPrefixes());
 }
 
 bool Tensor::isRemoteArgTensor() const {
-  std::size_t found = id.find(reservedRemoteArgPrefix());
-  if (found != std::string::npos) {
-    return true;
-  }
-  return false;
+  return idIncludesPrefix({reservedRemoteArgPrefix()});
 }
 
 bool Tensor::isRandomSeedTensor() const {
-  std::size_t found = id.find(reservedRandomSeedPrefix());
-  if (found != std::string::npos) {
-    return true;
-  }
-  return false;
+  return idIncludesPrefix({reservedRandomSeedPrefix()});
 }
 
 bool Tensor::isOptimizerStateTensor() const {
-  auto states = reservedOptimizerStatePrefixes();
-  if (std::any_of(
-          states.begin(), states.end(), [this](const std::string state) {
-            return id.find(state) != std::string::npos;
-          })) {
-    // sanity check that the Optimizer tensor is of Variable type
+  if (idIncludesPrefix(reservedOptimizerStatePrefixes())) {
+    // sanity check that the accl tensor is of Variable type
     if (tensorType() != TensorType::Variable) {
       throw error(
           "Tensor {} has been identified as an Optimizer tensor, but it is "
@@ -964,12 +952,8 @@ bool Tensor::isOptimizerStateTensor() const {
 }
 
 bool Tensor::isAccumulatorTensor() const {
-  auto states = reservedAccumulatorPrefixes();
-  if (std::any_of(
-          states.begin(), states.end(), [this](const std::string state) {
-            return id.find(state) != std::string::npos;
-          })) {
-    // sanity check that the Accumulator tensor is of Variable type
+  if (idIncludesPrefix(reservedAccumulatorPrefixes())) {
+    // sanity check that the accl tensor is of Variable type
     if (tensorType() != TensorType::Variable) {
       throw error(
           "Tensor {} has been identified as an Accumulator tensor, but it is "

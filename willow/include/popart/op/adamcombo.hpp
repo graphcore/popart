@@ -37,6 +37,7 @@ public:
               DataType accumType_,
               DataType accl1Type_,
               DataType accl2Type_,
+              bool scaledOptimizerState_,
               const Op::Settings &);
 
   std::unique_ptr<Op> clone() const final;
@@ -85,6 +86,8 @@ public:
   DataType accumType;
   DataType accl1Type;
   DataType accl2Type;
+
+  const bool scaledOptimizerState;
 
   static InIndex getLrInIndex() { return 2; }
   static InIndex getWdInIndex() { return 3; }

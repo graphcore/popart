@@ -1,4 +1,5 @@
 # Copyright (c) 2019 Graphcore Ltd. All rights reserved.
+import pytest
 import popart
 import torch
 import torchvision
@@ -16,7 +17,7 @@ import test_util as tu
 import torch_lamb
 
 
-def compare_against_pytorch(optType, optMaps, batchesPerStep=5):
+def compare_against_pytorch(optType, optMaps, batchesPerStep=5, scaled=False):
     seed = 1015
     npr.seed(seed)
     torch.manual_seed(seed)
@@ -26,21 +27,26 @@ def compare_against_pytorch(optType, optMaps, batchesPerStep=5):
     if optType == "adam":
         popartOpt = popart.Adam
         optkwargs["weight_decay_mode"] = popart.WeightDecayMode.L2Regularization
+        optkwargs["scaled_optimizer_state"] = scaled
     elif optType == "adamw":
         popartOpt = popart.Adam
         optkwargs["weight_decay_mode"] = popart.WeightDecayMode.Decay
+        optkwargs["scaled_optimizer_state"] = scaled
     elif optType == "adamax":
         popartOpt = popart.Adam
         optkwargs["mode"] = popart.AdamMode.AdaMax
         optkwargs["weight_decay_mode"] = popart.WeightDecayMode.L2Regularization
+        optkwargs["scaled_optimizer_state"] = scaled
     elif optType == "lamb":
         popartOpt = popart.Adam
         optkwargs["mode"] = popart.AdamMode.Lamb
         optkwargs["weight_decay_mode"] = popart.WeightDecayMode.Decay
+        optkwargs["scaled_optimizer_state"] = scaled
     elif optType == "lambnobias":
         popartOpt = popart.Adam
         optkwargs["mode"] = popart.AdamMode.LambNoBias
         optkwargs["weight_decay_mode"] = popart.WeightDecayMode.Decay
+        optkwargs["scaled_optimizer_state"] = scaled
     elif optType == "adagrad":
         popartOpt = popart.Adaptive
         optkwargs["mode"] = popart.AdaptiveMode.AdaGrad
@@ -387,7 +393,8 @@ def test_sgd1_against_pytorch():
 
 
 @tu.requires_ipu_model
-def test_adam_against_pytorch():
+@pytest.mark.parametrize('scaled', (True, False))
+def test_adam_against_pytorch(scaled):
     """
     Comparison of popart and PyTorch optimizers (Adam, AdamW, AdaMax, Lamb)
     """
@@ -431,14 +438,17 @@ def test_adam_against_pytorch():
     }
 
     # Test Adam/AdamW against pytorch
-    compare_against_pytorch("adam", [optMap0, optMap1, optMap2])
-    compare_against_pytorch("adamw", [optMap0, optMap1, optMap2])
+    compare_against_pytorch("adam", [optMap0, optMap1, optMap2], scaled=scaled)
+    compare_against_pytorch("adamw", [optMap0, optMap1, optMap2],
+                            scaled=scaled)
     # Test Lamb against pytorch (implemented in torch_lamb.py)
-    compare_against_pytorch("lamb", [optMap0, optMap1, optMap2])
+    compare_against_pytorch("lamb", [optMap0, optMap1, optMap2], scaled=scaled)
     # Test Lamb without bias correction (V3 paper)
-    compare_against_pytorch("lambnobias", [optMap0, optMap1, optMap2])
+    compare_against_pytorch("lambnobias", [optMap0, optMap1, optMap2],
+                            scaled=scaled)
     # Test AdaMax
-    compare_against_pytorch("adamax", [optMap0, optMap1, optMap2])
+    compare_against_pytorch("adamax", [optMap0, optMap1, optMap2],
+                            scaled=scaled)
 
 
 @tu.requires_ipu_model

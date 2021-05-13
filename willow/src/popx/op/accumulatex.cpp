@@ -16,7 +16,7 @@ namespace popart {
 namespace popx {
 
 AccumulateOpx::AccumulateOpx(Op *op, Devicex *devicex)
-    : VarUpdateOpx(op, devicex) {
+    : AccumulateBaseOpx(op, devicex) {
   verifyOp<AccumulateOp>(op, {Onnx::CustomOperators::Accumulate});
 }
 
@@ -264,13 +264,14 @@ void AccumulateOpx::grow(poplar::program::Sequence &prog) const {
 }
 
 poplar::Tensor
-AccumulateOpx::createInput(int inIndex,
-                           const poplar::DebugNameAndId &dnai) const {
+AccumulateBaseOpx::createInput(int inIndex,
+                               const poplar::DebugNameAndId &dnai) const {
 
   if (inIndex != VarUpdateOp::getVarToUpdateInIndex()) {
-    throw error("AccumulateOpx::createInput, cannot create input at {}, it can "
-                "only create the var to update input Tensor",
-                inIndex);
+    throw error(
+        "AccumulateBaseOpx::createInput, cannot create input at {}, it can "
+        "only create the var to update input Tensor",
+        inIndex);
   }
   poplar::Tensor inTensor;
   auto accumulatorInfo = inInfo(inIndex);
@@ -280,26 +281,27 @@ AccumulateOpx::createInput(int inIndex,
       dnai);
 }
 
-InputCreatorType AccumulateOpx::getInputCreatorType(int inIndex) const {
+InputCreatorType AccumulateBaseOpx::getInputCreatorType(int inIndex) const {
   return inIndex == VarUpdateOp::getVarToUpdateInIndex()
              ? InputCreatorType::CanCreate
              : PopOpx::getInputCreatorType(inIndex);
 }
 
-std::set<TensorId> AccumulateOpx::mustExistBeforeCreate(InIndex index) const {
+std::set<TensorId>
+AccumulateBaseOpx::mustExistBeforeCreate(InIndex index) const {
   if (index != VarUpdateOp::getVarToUpdateInIndex()) {
     throw internal_error(
-        "AccumulateOpx::mustExistBeforeCreate : Invalid index");
+        "AccumulateBaseOpx::mustExistBeforeCreate : Invalid index");
   }
   return {inId(VarUpdateWithUpdaterOp::getUpdaterInIndex())};
 }
 
-bool AccumulateOpx::hasCreatorViewChangers(InIndex index) const {
+bool AccumulateBaseOpx::hasCreatorViewChangers(InIndex index) const {
   return (index == VarUpdateOp::getVarToUpdateInIndex()) &&
          hasInViewChangers(VarUpdateWithUpdaterOp::getUpdaterInIndex());
 }
 
-ViewChangers AccumulateOpx::getCreatorViewChangers(InIndex index) const {
+ViewChangers AccumulateBaseOpx::getCreatorViewChangers(InIndex index) const {
   if (index == VarUpdateOp::getVarToUpdateInIndex()) {
     return getInViewChangers(VarUpdateWithUpdaterOp::getUpdaterInIndex());
   }
@@ -308,10 +310,135 @@ ViewChangers AccumulateOpx::getCreatorViewChangers(InIndex index) const {
       std::to_string(index));
 }
 
+RescaleAccumulateOpx::RescaleAccumulateOpx(Op *op, Devicex *devicex)
+    : AccumulateBaseOpx(op, devicex) {
+  verifyOp<RescaleAccumulateOp>(op, {Onnx::CustomOperators::RescaleAccumulate});
+}
+
+void RescaleAccumulateOpx::grow(poplar::program::Sequence &prog) const {
+
+  auto &accumulateOp = getOp<RescaleAccumulateOp>();
+
+  auto isConst = accumulateOp.getFactor().isConst();
+
+  auto accum = getInTensor(VarUpdateOp::getVarToUpdateInIndex());
+
+  auto grad = getInTensor(VarUpdateWithUpdaterOp::getUpdaterInIndex());
+
+  auto rescaleRatio =
+      getInTensor(RescaleAccumulateOp::getRescaleRatioInIndex());
+
+  // If the accl/accum tensor to update has a view changer,
+  // but the updater does not, update the view instead
+  // This may occur if the VarToUpdate tensor is CBR-rearranged
+  // (see GCL CollectivesBalancedReorder.cpp)
+  // (e.g. accumulator), but the Updater is not (e.g. gradient)
+  if (hasInViewChangers(VarUpdateOp::getVarToUpdateInIndex()) &&
+      !hasInViewChangers(VarUpdateWithUpdaterOp::getUpdaterInIndex())) {
+    accum = getInView(VarUpdateOp::getVarToUpdateInIndex());
+  }
+
+  switch (accumulateOp.getAccumulationType()) {
+  case AccumulationType::MovingAverage: {
+    poplar::Tensor a, b;
+    if (isConst) {
+      auto val = accumulateOp.getFactor().val();
+      a        = popops::mul(
+          graph().getPoplarGraph(), rescaleRatio, val, prog, debugContext("a"));
+      b = getConst(poplar::FLOAT, {}, 1.0f - val, "b");
+    } else {
+      auto factor = getInTensor(RescaleAccumulateOp::getFactorInIndex());
+      a           = popops::mul(graph().getPoplarGraph(),
+                      rescaleRatio,
+                      factor,
+                      prog,
+                      debugContext("a"));
+      b           = popops::sub(
+          graph().getPoplarGraph(), 1.0f, factor, prog, debugContext("b"));
+    }
+    popops::scaledAddTo(graph().getPoplarGraph(),
+                        accum,
+                        a,
+                        grad,
+                        b,
+                        prog,
+                        debugContext("movingAverage"));
+    break;
+  }
+  case AccumulationType::MovingAverageSquare: {
+    if (isConst) {
+      auto val = accumulateOp.getFactor().val();
+      popops::mapInPlace(
+          graph().getPoplarGraph(),
+          pe::Add(pe::Mul(pe::_1, pe::Mul(pe::Const(val), pe::_3)),
+                  pe::Mul(pe::Mul(pe::Const(1.0f - val),
+                                  pe::Cast(pe::_2, accum.elementType())),
+                          pe::Cast(pe::_2, accum.elementType()))),
+          {accum, grad, rescaleRatio},
+          prog,
+          debugContext("constMovingAverageSquare"));
+    } else {
+      auto factor = getInTensor(RescaleAccumulateOp::getFactorInIndex());
+      popops::mapInPlace(
+          graph().getPoplarGraph(),
+          pe::Add(
+              pe::Mul(pe::Cast(pe::Mul(pe::_3, pe::_4), accum.elementType()),
+                      pe::_1),
+              pe::Mul(pe::Mul(pe::Sub(pe::Const(1.0f), pe::_4),
+                              pe::Cast(pe::_2, accum.elementType())),
+                      pe::Cast(pe::_2, accum.elementType()))),
+          {accum, grad, rescaleRatio, factor},
+          prog,
+          debugContext("movingAverageSquare"));
+    }
+    break;
+  }
+  case AccumulationType::Infinity: {
+    if (isConst) {
+      auto val = accumulateOp.getFactor().val();
+      popops::mapInPlace(
+          graph().getPoplarGraph(),
+          pe::Max(pe::Mul(pe::Mul(pe::Const(val), pe::_3), pe::_1),
+                  pe::Cast(pe::Abs(pe::_2), accum.elementType())),
+          {accum, grad, rescaleRatio},
+          prog,
+          debugContext("constInfinity"));
+    } else {
+      auto factor = getInTensor(RescaleAccumulateOp::getFactorInIndex());
+      popops::mapInPlace(
+          graph().getPoplarGraph(),
+          pe::Max(
+              pe::Mul(pe::Cast(pe::Mul(pe::_3, pe::_4), accum.elementType()),
+                      pe::_1),
+              pe::Cast(pe::Abs(pe::_2), accum.elementType())),
+          {accum, grad, rescaleRatio, factor},
+          prog,
+          debugContext("infinity"));
+    }
+    break;
+  }
+  default:
+    throw internal_error(
+        "Unsupported AccumulationType in RescaleAccumulateOpx {}.",
+        static_cast<int>(accumulateOp.getAccumulationType()));
+  }
+
+  if (hasInViewChangers(VarUpdateWithUpdaterOp::getVarToUpdateInIndex())) {
+    setOutViewChangers(
+        VarUpdateOp::getUpdatedVarOutIndex(),
+        getInViewChangers(VarUpdateWithUpdaterOp::getVarToUpdateInIndex()));
+  }
+  // reference accum returned (as tensor, including view changers)
+  setOutTensor(VarUpdateOp::getUpdatedVarOutIndex(),
+               getInTensor(VarUpdateWithUpdaterOp::getVarToUpdateInIndex()));
+}
+
 namespace {
 OpxCreator<AccumulateOpx>
     AccumulateOpxCreator({Onnx::CustomOperators::Accumulate});
-}
+OpxCreator<RescaleAccumulateOpx>
+    RescaleAccumulateOpxCreator({Onnx::CustomOperators::RescaleAccumulate});
+} // namespace
 
 } // namespace popx
 } // namespace popart

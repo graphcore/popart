@@ -3,6 +3,7 @@
 #include <popart/op.hpp>
 #include <popart/op/remote.hpp>
 #include <popart/tensorindex.hpp>
+#include <popart/tensornames.hpp>
 #include <popart/topocons.hpp>
 #include <popart/transforms/accumulateouterfragmentparallelizer.hpp>
 
@@ -10,6 +11,7 @@
 
 using namespace std;
 
+namespace popart {
 namespace {
 // An efficient way to check for intersection in sorted ranges.
 template <class SortedContainerType>
@@ -27,9 +29,16 @@ bool efficientOverlapCheck(const SortedContainerType &set1,
   }
   return false;
 }
-} // namespace
 
-namespace popart {
+bool isOptimizerLikeTensor(Tensor *t) {
+  if (t->isOptimizerTensor()) {
+    return true;
+  }
+  // Scaled Optimizer State
+  return t->idIncludesPrefix(
+      {reservedPreviousLossScalingPrefix(), reservedLossScalingRatioPrefix()});
+}
+} // namespace
 
 AccumulateOuterFragmentParallelizer::OpCluster::OpCluster(const Graph *graph,
                                                           Op *op)
@@ -95,12 +104,12 @@ void AccumulateOuterFragmentParallelizer::OpCluster::gatherTensorIds(
     TensorIds &tensorIds) {
   tensorIds.reserve(op->input->tensors().size() + op->output->tensors().size());
   for (const auto tensor : op->input->tensors()) {
-    if (!tensor->isOptimizerTensor()) {
+    if (!isOptimizerLikeTensor(tensor)) {
       tensorIds.push_back(tensor->id);
     }
   }
   for (const auto tensor : op->output->tensors()) {
-    if (!tensor->isOptimizerTensor()) {
+    if (!isOptimizerLikeTensor(tensor)) {
       tensorIds.push_back(tensor->id);
     }
   }
@@ -337,19 +346,24 @@ vector<vector<Op *>> AccumulateOuterFragmentParallelizer::getBinConstraints(
   // Get groups of ops that update optimizer state / weights.
   populateOpClusters(graph, clusters);
 
-  if (std::any_of(clusters.begin(), clusters.end(), [&](OpCluster &cluster) {
-        return cluster.hasRemoteOp();
-      })) {
-    // Filter out groups without remote ops.
-    filterOpClusters(clusters);
-  }
-
   // Sort the groups by combined loaded bytes.
   sortOpClusters(clusters);
 
+  vector<vector<Op *>> postBinConstaints;
   for (auto cluster : clusters) {
-    binConstraints.push_back(cluster.ops);
+    if (cluster.tensorIds.empty()) {
+      // If a cluster's tensorIds is empty then it only
+      // consumes/produces optimizerLikeTensors. These should be placed at
+      // the start to avoid scheduling conflicts between data and
+      // bin constraints.
+      binConstraints.push_back(cluster.ops);
+    } else {
+      postBinConstaints.push_back(cluster.ops);
+    }
   }
+
+  binConstraints.insert(
+      binConstraints.end(), postBinConstaints.begin(), postBinConstaints.end());
 
   return binConstraints;
 }

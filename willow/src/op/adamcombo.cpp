@@ -21,6 +21,7 @@ AdamComboOp::AdamComboOp(OptimizerValue initialLr,
                          DataType accumType_,
                          DataType accl1Type_,
                          DataType accl2Type_,
+                         bool scaledOptimizerState_,
                          const Op::Settings &settings_)
     : VarUpdateWithUpdaterOp(Onnx::CustomOperators::AdamCombo, settings_),
       initLr(initialLr), initWd(initialWd), initB1(initialB1),
@@ -28,7 +29,8 @@ AdamComboOp::AdamComboOp(OptimizerValue initialLr,
       initMwn(initialMwn), initGs(initialGs), mode(mode_),
       decayMode(decayMode_), withGradAccum(withGradAccum_),
       reductionType(reductionType_), accumType(accumType_),
-      accl1Type(accl1Type_), accl2Type(accl2Type_) {}
+      accl1Type(accl1Type_), accl2Type(accl2Type_),
+      scaledOptimizerState(scaledOptimizerState_) {}
 
 void AdamComboOp::appendOutlineAttributes(OpSerialiserBase &os) const {
   if (initLr.isConst()) {
