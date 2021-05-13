@@ -382,9 +382,7 @@ struct OutOfMemoryError {
     }
   }
   std::string getSummaryReport() const { return exception->getSummaryReport(); }
-  std::string getGraphReport(bool useCbor) const {
-    return exception->getGraphReport(useCbor);
-  }
+  std::string getProfilePath() const { return exception->getProfilePath(); }
 };
 
 class NameContextManager {
@@ -1718,12 +1716,7 @@ PYBIND11_MODULE(popart_core, m) {
     cls.def("__str__", &OutOfMemoryError::what);
     cls.def("isSuccessful", &OutOfMemoryError::isSuccessful);
     cls.def("getSummaryReport", &OutOfMemoryError::getSummaryReport);
-    cls.def("getGraphReport",
-            [](const OutOfMemoryError &error, bool useCbor) {
-              auto report = error.getGraphReport(useCbor);
-              return py::bytes(report);
-            },
-            py::arg("useCbor") = false);
+    cls.def("getProfilePath", &OutOfMemoryError::getProfilePath);
   }
   {
     py::class_<InferenceSession> cls(m, "_InferenceSessionCore");

@@ -79,13 +79,13 @@ class OutOfMemoryException(popart.popart_exception):
         """
         return self.error.getSummaryReport()
 
-    def getGraphReport(self) -> str:
-        """Get the graph report
+    def getProfilePath(self) -> str:
+        """Get the absolute path of the profile file (profile.pop)
 
         Returns:
-            The graph report string.
+            The absolute path of profile.pop, or an empty string if not created.
         """
-        return self.error.getGraphReport()
+        return self.error.getProfilePath()
 
 
 def makedirsAndCheckWritable(path):

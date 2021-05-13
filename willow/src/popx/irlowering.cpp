@@ -305,11 +305,10 @@ devicex_memory_allocation_err::clone() const {
 
 std::string devicex_memory_allocation_err::getSummaryReport() const {
 
-  if (exception.graphProfile.type() == poplar::ProfileValue::Type::MAP &&
-      exception.graphProfile.size() != 0) {
+  if (exception.profilePath.size() != 0) {
 
     std::stringstream ss;
-    poplar::printProfileSummary(ss, exception.graphProfile, {}, reportOptions);
+    poplar::printProfileSummary(ss, exception.profilePath, reportOptions);
     return ss.str();
   } else {
     throw error("Need to set the 'debug.allowOutOfMemory' engine option to "
@@ -317,22 +316,8 @@ std::string devicex_memory_allocation_err::getSummaryReport() const {
   }
 }
 
-std::string devicex_memory_allocation_err::getGraphReport(bool useCbor) const {
-
-  if (exception.graphProfile.type() == poplar::ProfileValue::Type::MAP &&
-      exception.graphProfile.size() != 0) {
-
-    std::stringstream ss;
-    if (useCbor) {
-      serializeToCBOR(ss, exception.graphProfile);
-    } else {
-      serializeToJSON(ss, exception.graphProfile);
-    }
-    return ss.str();
-  } else {
-    throw error("Need to set the 'debug.allowOutOfMemory' engine option to "
-                "true to get the graph report");
-  }
+std::string devicex_memory_allocation_err::getProfilePath() const {
+  return exception.profilePath;
 }
 
 IrLowering::IrLowering(const Ir &ir,

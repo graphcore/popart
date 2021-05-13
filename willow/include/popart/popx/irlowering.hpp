@@ -60,7 +60,7 @@ public:
 
   std::string getSummaryReport() const;
 
-  std::string getGraphReport(bool useCbor) const;
+  std::string getProfilePath() const;
 };
 
 using PopStreamId = std::string;
