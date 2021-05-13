@@ -1,4 +1,5 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
+#include <poprithms/logging/timepartitionlogger.hpp>
 #include <popart/graph.hpp>
 #include <popart/op/call.hpp>
 #include <popart/popx/devicex.hpp>
@@ -13,6 +14,10 @@ SubgraphOpx::SubgraphOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {}
 
 std::vector<std::tuple<TensorId, TensorId, bool>>
 SubgraphOpx::getInputsToPrepare() const {
+
+  const auto addGraphTask = op_p->getIr().timePartitionLogger().scopedStopwatch(
+      "SubgraphOpx::getInputsToPrepare");
+
   auto &subgraphop = getOp<SubgraphOp>();
   std::vector<std::tuple<TensorId, TensorId, bool>> inputs;
   auto sgInIds = subgraphop.getCalledGraph().getInputIds();
@@ -30,6 +35,10 @@ SubgraphOpx::getInputsToPrepare() const {
 
 std::vector<std::tuple<TensorId, TensorId, bool>>
 SubgraphOpx::getOutputsToPrepare() const {
+
+  const auto addGraphTask = op_p->getIr().timePartitionLogger().scopedStopwatch(
+      "SubgraphOpx::getOutputsToPrepare");
+
   auto &subgraphop = getOp<SubgraphOp>();
   std::vector<std::tuple<TensorId, TensorId, bool>> outputs;
   for (auto &output : subgraphop.output->tensorMap()) {

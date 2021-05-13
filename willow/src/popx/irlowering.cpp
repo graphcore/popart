@@ -150,6 +150,10 @@ public:
   //   finder.getRequiredRecomputeOps(OpB) -> [C, D]
   //   finder.getRequiredRecomputeOps(OpA) -> []
   std::vector<Op *> getRequiredRecomputeOps(Op *op) {
+
+    const auto addGraphTask = op->getIr().timePartitionLogger().scopedStopwatch(
+        "FindRequiredRecomputes::getRequiredRecomputeOps");
+
     ExecutionPhase opPhase = -1;
 
     std::set<Op *> toRerun;
@@ -1418,6 +1422,9 @@ bool IrLowering::containsFragment(const Graph &graph,
 
 void IrLowering::createFragment(const Graph &graph_,
                                 SubgraphPartIndex subgraphPart) {
+
+  const auto addOpTasksTimer =
+      ir().timePartitionLogger().scopedStopwatch("IrLowering::createFragment");
   return progs.createFragment(graph_, subgraphPart);
 }
 
@@ -1491,7 +1498,7 @@ void IrLowering::addOpTasks(PriTasks &tasks) {
       "adding Op tasks (Ir Lowering)");
 
   // Ensure there is a program fragment for every Ir Graph
-  logging::devicex::trace("[addOpTasks] Graphs: {}",
+  logging::devicex::info("[addOpTasks] for {} Graphs.",
                           ir().getGraphSchedule().size());
   for (auto graph : ir().getGraphSchedule()) {
     int numParts = subgraphPartitioner->getNumSubgraphParts(*graph);
@@ -1509,7 +1516,10 @@ void IrLowering::addOpTasks(PriTasks &tasks) {
   std::vector<Op *> allOps;
   std::set<const Graph *> addedGraphs;
   std::function<void(const Graph *)> addGraph;
-  addGraph = [&allOps, &addedGraphs, &addGraph](const Graph *graph) {
+  addGraph = [this, &allOps, &addedGraphs, &addGraph](const Graph *graph) {
+    const auto addGraphTask = ir().timePartitionLogger().scopedStopwatch(
+        "addOpTasks::addGraph (Ir Lowering)");
+
     if (addedGraphs.find(graph) != addedGraphs.end()) {
       return;
     }
@@ -1550,8 +1560,15 @@ void IrLowering::addOpTasks(PriTasks &tasks) {
   // Iterate through Ops according to the Ir's schedule
   for (Op *op : allOps) {
 
+    const auto timer0 = ir().timePartitionLogger().scopedStopwatch(
+        "adding input/output tasks for " + op->opid.type);
+
     auto opInputs = getOpx(op->id)->getInputsToPrepare();
     for (int i = 0; i < opInputs.size(); i++) {
+
+      const auto addOpTasksTimer = ir().timePartitionLogger().scopedStopwatch(
+          "adding Op input Tensor tasks (Ir Lowering)");
+
       auto opInput = opInputs[i];
       if (!tasks.contains(initTensorTaskId(std::get<1>(opInput)))) {
         if (std::get<0>(opInput).empty()) {
@@ -1582,6 +1599,9 @@ void IrLowering::addOpTasks(PriTasks &tasks) {
 
     auto opOutputs = getOpx(op->id)->getOutputsToPrepare();
     for (int i = 0; i < opOutputs.size(); i++) {
+
+      const auto addOpTasksTimer = ir().timePartitionLogger().scopedStopwatch(
+          "adding Op output Tensor tasks (Ir Lowering)");
       auto opOutput = opOutputs[i];
       if (!tasks.contains(initTensorTaskId(std::get<1>(opOutput)))) {
         if (std::get<0>(opOutput).empty()) {
