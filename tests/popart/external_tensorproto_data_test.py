@@ -7,7 +7,7 @@ import tempfile
 
 
 def test_save_tensors_externally():
-    d1 = np.array([1, -1, 6]).astype(np.float32)
+    d1 = np.array([1]).astype(np.float32)
     d2 = np.array([7, 4]).astype(np.float16)
     builder = popart.Builder()
     i1 = builder.addInitializedInputTensor(d1)
@@ -19,13 +19,13 @@ def test_save_tensors_externally():
         # Check file exists
         assert os.path.exists(file)
 
-        # Check file is of expected size: (3 * 4) + (2 * 2) = 16 bytes
-        assert os.path.getsize(file) == 16
+        # Check file is of expected size: (1 * 4) + (2 * 2) = 16 bytes
+        assert os.path.getsize(file) == 8
 
         # Read the binary data back in and check the value is as expected
-        assert np.array_equal(np.fromfile(file, dtype=np.float32, count=3), d1)
+        assert np.array_equal(np.fromfile(file, dtype=np.float32, count=1), d1)
         assert np.array_equal(
-            np.fromfile(file, dtype=np.float16, count=2, offset=12), d2)
+            np.fromfile(file, dtype=np.float16, count=2, offset=4), d2)
 
     # Test GraphTransformer
     tmpfile0 = os.path.join(tmpdir, "model_tensors0.onnx")
