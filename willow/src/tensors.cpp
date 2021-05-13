@@ -127,6 +127,8 @@ std::vector<Tensor *> Tensors::getOfType(TensorType type) const {
       ofType.push_back(id_pt.second.get());
     }
   }
+  // Sort the vector by id to return a deterministic list.
+  std::sort(ofType.begin(), ofType.end(), PTensorCmp());
   return ofType;
 }
 
