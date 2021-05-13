@@ -524,8 +524,12 @@ void IrLowering::instrumentWithHardwareCycleCounter(
     poplar::program::Sequence &sq,
     int64_t tileId,
     std::string id) {
-  poplar::Tensor cycleCountTensor = poplar::cycleCount(
-      graph(), sq, static_cast<unsigned int>(tileId), cycleCountPrefix());
+  poplar::Tensor cycleCountTensor =
+      poplar::cycleCount(graph(),
+                         sq,
+                         static_cast<unsigned int>(tileId),
+                         poplar::SyncType::INTERNAL,
+                         cycleCountPrefix());
 
   // Create stream
   auto st = graph().addDeviceToHostFIFO(cycleCountStreamId(id),
@@ -1484,7 +1488,7 @@ void IrLowering::addOpTasks(PriTasks &tasks) {
 
   // Ensure there is a program fragment for every Ir Graph
   logging::devicex::info("[addOpTasks] for {} Graphs.",
-                          ir().getGraphSchedule().size());
+                         ir().getGraphSchedule().size());
   for (auto graph : ir().getGraphSchedule()) {
     int numParts = subgraphPartitioner->getNumSubgraphParts(*graph);
     for (int p = 0; p < numParts; ++p) {
