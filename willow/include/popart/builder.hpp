@@ -579,9 +579,9 @@ public:
    */
   std::vector<TensorId>
   ctcbeamsearchdecoder(const std::vector<TensorId> &args,
-                       const unsigned blank             = 0,
-                       const unsigned beamWidth         = 100,
-                       const unsigned topPaths          = 1,
+                       unsigned blank                   = 0,
+                       unsigned beamWidth               = 100,
+                       unsigned topPaths                = 1,
                        const DebugContext &debugContext = {});
 
   /**
