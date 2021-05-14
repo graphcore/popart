@@ -301,25 +301,26 @@ void ShiftGraphGrower::annotatePipelineStages() {
 // pass, so insert scheduler constraints to prevent this from happening.
 void ShiftGraphGrower::annotateToLossFromLoss() {
   // All ops that have:
-  //   op.fromLoss == PathFromLoss::Yes, and
-  //   op.toLoss == PathToLoss::No
-  // are scheduled after all ops that have:
-  //   op.toLoss == PathToLoss::Yes
+  //   op.toLoss == PathToLoss::Yes, and
+  //   op.fromLoss == PathFromLoss::No
+  // are scheduled before all ops that have:
+  //   op.fromLoss == PathFromLoss::Yes
+  // The final loss Op, where PathToLoss::Yes && PathFromLoss::Yes,
+  // can be set to SchedulePreLoss::No so must be placed in the second bin.
   std::vector<OpAddress> toLoss;
-  std::vector<OpAddress> fromLossOnly;
+  std::vector<OpAddress> fromLoss;
 
   for (const auto &x : pg.getOps()) {
     auto op        = x.second.get();
     auto opAddress = opAddresses[op];
 
-    if (op->toLoss == PathToLoss::Yes) {
+    if (op->fromLoss == PathFromLoss::No && op->toLoss == PathToLoss::Yes) {
       toLoss.push_back(opAddress);
-    } else if (op->toLoss == PathToLoss::No &&
-               op->fromLoss == PathFromLoss::Yes) {
-      fromLossOnly.push_back(opAddress);
+    } else if (op->fromLoss == PathFromLoss::Yes) {
+      fromLoss.push_back(opAddress);
     }
   }
-  g.insertBinConstraints({toLoss, fromLossOnly}, "PreOrPostLoss_");
+  g.insertBinConstraints({toLoss, fromLoss}, "PreOrPostLoss_");
 }
 
 void ShiftGraphGrower::annotateAccumulateOuterFragmentOps() {

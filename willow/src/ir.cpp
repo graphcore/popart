@@ -1405,6 +1405,13 @@ void Ir::prepareImpl(const IrBundle &gb, const HashesMap &cacheEntries) {
     }
   }
 
+  if (getSessionOptions().enablePipelining &&
+      getSessionOptions().autoRecomputation == RecomputationType::Pipeline) {
+    const auto scopedStopwatch =
+        timePartitionLogger().scopedStopwatch("setFinalFwdStageRecomputation");
+    Pipeline::setFinalFwdStageRecomputation(getMainGraph());
+  }
+
   removeIsolatedTensors(true);
   updateVertices();
 

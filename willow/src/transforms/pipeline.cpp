@@ -22,6 +22,8 @@
 #include <popart/transforms/randomsetup.hpp>
 #include <popart/vertex.hpp>
 
+#include <popart/graphutils.hpp>
+
 // Which pipelining scheme should we use? There are some considerations to
 // make:
 //  - Which order should the 5 progs (Fwd, Bwd, Stash, Restore, Sync)
@@ -299,8 +301,7 @@ std::vector<Op *> findImplicitRecomputeDependants(Op *restoreOp) {
 
 bool isProducedOnIPU(Tensor *tensor) {
   // Has a producer and it's a copy
-  if (tensor->hasProducer() &&
-      dynamic_cast<IpuCopyOp *>(tensor->getProducer())) {
+  if (tensor->hasProducer() && tensor->getProducer()->isIpuCopyOp()) {
     return false;
   }
   if (tensor->hasProducer() &&
@@ -876,6 +877,144 @@ bool containsSeedTensor(std::set<TensorId> ids) {
 
 } // namespace
 
+void Pipeline::setFinalFwdStageRecomputation(Graph &graph) {
+  // This annotation pass will try to set the Ops between
+  // the topologically final Checkpoints and the loss
+  // to NOT be recomputed. This avoid a program where
+  // operations are run twice in a row with no benefit to
+  // liveness.
+  std::map<PipelineStage, std::pair<bool, bool>> prePostLoss;
+  std::map<PipelineStage, std::vector<Tensor *>> start;
+  // Find PipelineStages with SchedulePreLoss Yes and No.
+  // This should only be where the final loss is executed.
+  for (auto &id_op : graph.getOps()) {
+    auto op = id_op.second.get();
+    if (op->settings.executionContext == ExecutionContext::Normal) {
+      auto pStage = op->getPipelineStage();
+      prePostLoss[pStage].first |=
+          op->scheduledPreLoss == ScheduledPreLoss::Yes;
+      prePostLoss[pStage].second |=
+          op->scheduledPreLoss == ScheduledPreLoss::No;
+      for (auto t : op->input->tensors()) {
+        if (!isProducedOnIPU(t)) {
+          start[pStage].push_back(t);
+        }
+      }
+    }
+  }
+
+  nonstd::optional<PipelineStage> finalFwdStage;
+  for (auto &pre_post : prePostLoss) {
+    if (pre_post.second.first && pre_post.second.second) {
+      if (finalFwdStage) {
+        throw internal_error(
+            "[Pipeline::setFinalFwdStageRecomputation] Found more than one "
+            "PipelineStage with ScheduledPreLoss::Yes and "
+            "ScheduledPreLoss::No Ops. Only the stage with the final loss "
+            "should have this property.");
+      }
+      finalFwdStage = pre_post.first;
+    }
+  }
+
+  if (finalFwdStage) {
+    // Traverse Forward from inputs to stage.
+    // Add to frontier when RecomputeType::Checkpoint && ScheduledPreLoss::Yes
+    // is reached. If an Op in the frontier is in this new Op's history,
+    // remove it from the frontier. Finally propagate
+    // RecomputeType::Checkpoint from the frontier.
+    PipelineStage pStage = (*finalFwdStage);
+    logging::trace("[Pipeline::setFinalFwdStageRecomputation] Setting "
+                   "FinalStage Recompute for {}",
+                   pStage);
+    std::vector<std::pair<Op *, std::set<OpId>>> toCheck;
+    std::set<OpId> seen;
+    std::vector<Op *> frontier;
+
+    auto sameContextAndStage = [&pStage](Op *op) {
+      return op->scheduledPreLoss == ScheduledPreLoss::Yes &&
+             op->settings.executionContext == ExecutionContext::Normal &&
+             op->getPipelineStage() == pStage;
+    };
+
+    auto pruneFromFrontier = [&frontier](std::set<OpId> &path) {
+      auto it = frontier.begin();
+      while (it != frontier.end()) {
+        if (path.find((*it)->id) != path.end()) {
+          it = frontier.erase(it);
+        } else {
+          ++it;
+        }
+      }
+    };
+
+    auto addConsumers =
+        [&sameContextAndStage, &pruneFromFrontier, &frontier, &seen, &toCheck](
+            Tensor *t, std::set<OpId> path) {
+          for (auto con : t->consumers.getOps()) {
+            if (sameContextAndStage(con)) {
+              if (con->settings.recomputeType == RecomputeType::Checkpoint) {
+                pruneFromFrontier(path);
+              }
+              if (seen.find(con->id) == seen.end()) {
+                seen.insert(con->id);
+                path.insert(con->id);
+                toCheck.push_back({con, path});
+                if (con->settings.recomputeType == RecomputeType::Checkpoint) {
+                  frontier.push_back(con);
+                }
+              }
+            }
+          }
+        };
+
+    for (auto t : start[pStage]) {
+      addConsumers(t, {});
+    }
+    while (!toCheck.empty()) {
+      auto op_path = toCheck.back();
+      toCheck.pop_back();
+      for (auto t : op_path.first->output->tensors()) {
+        addConsumers(t, op_path.second);
+      }
+    }
+
+    if (frontier.empty()) {
+      // If frontier is empty then there were no Checkpoint ops
+      // in the final stage. In this case we should set everything to
+      // Checkpoint to avoid computing, then recomputing the same ops
+      // right after.
+      logging::trace("[Pipeline::setFinalFwdStageRecomputation] frontier was "
+                     "empty, checkpointing the stage.");
+      for (auto t : start[pStage]) {
+        for (auto con : t->consumers.getOps()) {
+          if (sameContextAndStage(con)) {
+            frontier.push_back(con);
+          }
+        }
+      }
+    }
+
+    while (!frontier.empty()) {
+      auto op = frontier.back();
+      frontier.pop_back();
+      op->settings.recomputeType = RecomputeType::Checkpoint;
+      for (auto t : op->output->tensors()) {
+        for (auto con : t->consumers.getOps()) {
+          if (sameContextAndStage(con)) {
+            frontier.push_back(con);
+          }
+        }
+      }
+    }
+  } else {
+    if (graph.getIr().isTraining()) {
+      logging::warn("[Pipeline::setFinalFwdStageRecomputation] Could not find "
+                    "final forward pipelineStage.");
+    }
+  }
+}
+
 bool Pipeline::inplaceRestoreRequiredForRecompute(Op *op) {
   if (dynamic_cast<RestoreInplaceOp *>(op)) {
     return dynamic_cast<RestoreInplaceOp *>(op)->requiredForRecompute;
@@ -1095,6 +1234,8 @@ bool Pipeline::apply(Graph &graph) const {
   else {
     setRecomputation(graph, toStashCandidateTensors);
 
+    std::set<TensorId> checkpointTensors;
+
     logging::transform::debug(
         "Reducing the set of stashing candidate Tensors for recomputation");
 
@@ -1115,6 +1256,13 @@ bool Pipeline::apply(Graph &graph) const {
             logging::transform::debug("Discarding Stash candidate tensor {} as "
                                       "no restore reference found.",
                                       tid);
+            if (tensor->getPipelineStages().size() == 1) {
+              // Tensors that only have one PipelineStage should not be stashed
+              // however we should still keep track of them as Checkpoint
+              // tensors. This allows for "standard" recompute to be possible on
+              // the final forward pipelineStage.
+              checkpointTensors.insert(tid);
+            }
             continue;
           } else if (restoreRefs.size() > 1) {
             size_t nRecomputeRequiredRestores = 0;
@@ -1151,8 +1299,9 @@ bool Pipeline::apply(Graph &graph) const {
 
     // If the set of stash candidates has been reduced, recomputation needs to
     // be reset.
-    if (toStashTensors.size() != toStashCandidateTensors.size()) {
-      setRecomputation(graph, toStashTensors);
+    checkpointTensors.insert(toStashTensors.begin(), toStashTensors.end());
+    if (checkpointTensors.size() != toStashCandidateTensors.size()) {
+      setRecomputation(graph, checkpointTensors);
     }
   }
 

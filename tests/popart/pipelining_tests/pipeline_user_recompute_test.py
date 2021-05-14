@@ -247,3 +247,68 @@ def test_delayed_restore_operations(tmpdir):
 
     for key in n_anchors:
         assert np.allclose(n_anchors[key], p_anchors[key])
+
+
+@tu.requires_ipu_model
+def test_final_stage_recompute(tmpdir):
+    np.random.seed(0)
+
+    gradient_accumulation = 5
+    batch_size = 1
+    hidden_size = 16
+
+    input_shape = [batch_size, hidden_size]
+    weight_data = np.random.normal(0, 0.02, [hidden_size, hidden_size]).astype(
+        np.float32)
+    input_data = np.random.normal(
+        0, 0.02, [gradient_accumulation] + input_shape).astype(np.float32)
+
+    builder = popart.Builder()
+
+    x_in = builder.addInputTensor(popart.TensorInfo("FLOAT", input_shape),
+                                  "x_in")
+
+    with builder.virtualGraph(0), builder.pipelineStage(0):
+        weight_1 = builder.addInitializedInputTensor(weight_data, "weight_1")
+        x = builder.aiOnnx.matmul([x_in, weight_1])
+
+    with builder.virtualGraph(1), builder.pipelineStage(1):
+        weight_2 = builder.addInitializedInputTensor(weight_data, "weight_2")
+        x_recomp = builder.aiOnnx.matmul([x, weight_2])
+        # This MatMul should be recomputed
+        x = builder.checkpointOutput([x_recomp])[0]
+
+        weight_3 = builder.addInitializedInputTensor(weight_data, "weight_3")
+        # This MatMul should not be recomputed
+        x_no_recomp = builder.aiOnnx.matmul([x, weight_3])
+        l1 = builder.aiGraphcore.l1loss([x_no_recomp], 0.1)
+
+    proto = builder.getModelProto()
+
+    dataFlow = popart.DataFlow(1, [l1])
+
+    opts = popart.SessionOptions()
+    opts.enableOutlining = False
+    opts.enablePipelining = True
+    opts.enableGradientAccumulation = True
+    opts.accumulationFactor = gradient_accumulation
+    opts.optimizerStateTensorLocationSettings.location.storage = popart.TensorStorage.OffChip
+    opts.autoRecomputation = popart.RecomputationType.Pipeline
+    opts.virtualGraphMode = popart.VirtualGraphMode.Manual
+
+    session = popart.TrainingSession(fnModel=proto,
+                                     dataFlow=dataFlow,
+                                     userOptions=opts,
+                                     loss=l1,
+                                     optimizer=popart.Adam({}),
+                                     deviceInfo=tu.create_test_device(
+                                         numIpus=2,
+                                         opts={"compileIPUCode": False}))
+    ''' Verify the the matmul in the main graphs is correct'''
+    ir = json.loads(session._serializeIr(popart.IrSerializationFormat.JSON))
+
+    for op in ir["maingraph"]:
+        if x_recomp in map(lambda out: out["name"], op["outputs"]):
+            assert op["attributes"]["recompute"] == "YES"
+        elif x_no_recomp in map(lambda out: out["name"], op["outputs"]):
+            assert op["attributes"]["recompute"] == "NO"

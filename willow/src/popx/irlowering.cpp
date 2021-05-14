@@ -218,7 +218,8 @@ private:
     walkProducers(op, [&toRerun, &op, opPhase, this](Op *x) {
       if (x->settings.recomputeType == RecomputeType::Recompute &&
           alreadySeen.find({x, opPhase}) == alreadySeen.end() &&
-          x->getPipelineStage() != op->getPipelineStage()) {
+          (x->getPipelineStage() != op->getPipelineStage() ||
+           op->scheduledPreLoss == ScheduledPreLoss::No)) {
         toRerun.insert(x);
         return true;
       } else {
@@ -1632,6 +1633,8 @@ void IrLowering::addOpTasks(PriTasks &tasks) {
 
     auto rerunSchedule = recomputeFinder.getRequiredRecomputeOps(op);
     if (!rerunSchedule.empty()) {
+      logging::devicex::debug("Adding recompute rerun schedule for op {}",
+                              op->debugName());
       requiredRecomputes[opTaskId(op)] = rerunSchedule;
     }
 

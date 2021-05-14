@@ -24,6 +24,8 @@ public:
 
   static bool inplaceRecomputationConflict(Op *op, InIndex in, OutIndex out);
 
+  static void setFinalFwdStageRecomputation(Graph &graph);
+
 private:
   RestoreOp *addNewRestoreOp(Graph &graph, int64_t stashSize) const;
   RestoreInplaceOp *addNewRestoreInplaceOp(Graph &graph,
