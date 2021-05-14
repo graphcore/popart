@@ -1219,6 +1219,11 @@ void Ir::prepareImpl(const IrBundle &gb, const HashesMap &cacheEntries) {
   }
 
   if (getSessionOptions().enableGroupedMatmuls) {
+    logging::ir::warn(
+        "The SessionOption 'enableGroupedMatmuls' is set to 'true', but is now "
+        "deprecated. It will be removed in a future release. It will be left "
+        "to the user to perform the grouping manually by concatenating inputs, "
+        "and slicing the output.");
     applyTransform(GroupMatMuls::id(), getMainGraph());
   }
 
