@@ -1055,6 +1055,43 @@ PYBIND11_MODULE(popart_core, m) {
                       DOC(popart, BatchSerializationSettings, batchSchedule));
   }
   {
+    // This setting is experimental and may change.
+    py::enum_<AutodiffStitchStrategy> en(m,
+                                         "AutodiffStitchStrategy" //,
+                                         // DOC(popart, AutodiffStitchStrategy)
+    );
+    en.value("RecomputeMinimal",
+             AutodiffStitchStrategy::RecomputeMinimal //,
+             // DOC(popart, AutodiffStitchStrategy, RecomputeMinimal)
+    );
+    en.value("RecomputeAllNonInputs",
+             AutodiffStitchStrategy::RecomputeAllNonInputs //,
+             // DOC(popart, AutodiffStitchStrategy, RecomputeAllNonInputs)
+    );
+    en.value("AddFwdOutputs",
+             AutodiffStitchStrategy::AddFwdOutputs //,
+             // DOC(popart, AutodiffStitchStrategy, AddFwdOutputs)
+    );
+    en.value("SafeAddFwdOutputs",
+             AutodiffStitchStrategy::SafeAddFwdOutputs //,
+             // DOC(popart, AutodiffStitchStrategy, SafeAddFwdOutputs)
+    );
+  }
+  {
+    py::class_<AutodiffSettings> cls(m,
+                                     "AutodiffSettings" //,
+                                     // DOC(popart, AutodiffSettings)
+    );
+    cls.def(py::init<>());
+    cls.def(py::init<AutodiffStitchStrategy>(),
+            py::arg("stitchStrategy") =
+                AutodiffStitchStrategy::RecomputeAllNonInputs);
+    cls.def_readwrite("stitchStrategy",
+                      &AutodiffSettings::stitchStrategy //,
+                      // DOC(popart, AutodiffSettings, stitchStrategy)
+    );
+  }
+  {
     py::class_<ExecutionPhaseSettings> cls(m, "ExecutionPhaseSettings");
     cls.def(py::init<>());
     cls.def(py::init<int,

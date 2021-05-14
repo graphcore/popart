@@ -24,12 +24,12 @@ public:
     /// In this mode the RecomputeStitcher will by default only stitch backward
     /// graph input indices associated with non-gradient forward graph tensors
     /// that are neither inputs nor outputs in the forward graph.
-    Minimum = 0,
+    Minimal = 0,
     /// In this mode the RecomputeStitcher will stitch only backward graph input
     /// indices associated with non-gradient forward graph tensors that are not
     /// inputs of the forward graph. Note this means outputs of the forward may
     /// be recomputed. This mode exist to preserve existing behaviour.
-    AllNonInputs = 1
+    AllNonInputs
   };
 
   // Constructor.
@@ -51,6 +51,13 @@ public:
   virtual bool isDefaultStitch(const GraphId &fwdGraphId,
                                const BwdGraphInfo &bwdGraphInfo,
                                const ExpectedConnection &expInput);
+
+  /**
+   * See `Stitcher`. We can stitch any non-gradient tensor.
+   **/
+  virtual bool isStitchable(const GraphId &fwdGraphId,
+                            const BwdGraphInfo &bwdGraphInfo,
+                            const ExpectedConnection &expInput);
 
   // Stitch index mode.
   StitchIndexMode mode;

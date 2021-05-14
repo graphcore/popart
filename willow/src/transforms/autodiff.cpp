@@ -55,7 +55,7 @@ Autodiff::apply(Ir &ir,
                 const TensorIds &gradsProvidedForTensors,
                 const nonstd::optional<TensorIds> &gradsRequiredForFwdId,
                 const FwdGraphToBwdGraphInfo &calledGraphsGradInfo,
-                StitchStrategy stitchStrategy) {
+                AutodiffStitchStrategy stitchStrategy) {
 
   AutodiffIrAdapter adapter{ir};
   GradGrowerGraph gradGraphGrower{adapter};
@@ -91,7 +91,7 @@ BwdGraphInfo
 Autodiff::stitch(Ir &ir,
                  const GraphId &fwdGraphId,
                  const BwdGraphInfo &bwdGraphInfo,
-                 StitchStrategy stitchStrategy,
+                 AutodiffStitchStrategy stitchStrategy,
                  const nonstd::optional<std::vector<InIndex>> &stitchIndices) {
 
   AutodiffIrAdapter adapter{ir};

@@ -1,9 +1,11 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_TRANSFORMS_AUTODIFF_ADD_FWD_OUTPUT_STITCHER_HPP
-#define GUARD_NEURALNET_TRANSFORMS_AUTODIFF_ADD_FWD_OUTPUT_STITCHER_HPP
+#ifndef GUARD_NEURALNET_TRANSFORMS_AUTODIFF_SAFE_ADD_FWD_OUTPUT_STITCHER_HPP
+#define GUARD_NEURALNET_TRANSFORMS_AUTODIFF_SAFE_ADD_FWD_OUTPUT_STITCHER_HPP
 
 #include <vector>
 
+#include <transforms/autodiff/addfwdoutputstitcher.hpp>
+#include <transforms/autodiff/recomputestitcher.hpp>
 #include <transforms/autodiff/stitcher.hpp>
 
 namespace popart {
@@ -11,15 +13,14 @@ namespace popart {
 /**
  * Helper class for growing gradient ops.
  *
- * Make it so that all non-gradient inputs to a backwards graph are available
- * as inputs or outputs of the forward graph by adding any required fwd tensor
- * as an output of the fwd graph and amending all call sites.
+ * Use AddFwdOutputStitcher where possible, but revert to RecomputeStitcher
+ * where this is not possible.
  **/
-class AddFwdOutputStitcher : public Stitcher {
+class SafeAddFwdOutputStitcher : public Stitcher {
 public:
   // Constructor.
-  explicit AddFwdOutputStitcher(AutodiffIrInterface &dep);
-  virtual ~AddFwdOutputStitcher() = default;
+  explicit SafeAddFwdOutputStitcher(AutodiffIrInterface &dep);
+  virtual ~SafeAddFwdOutputStitcher() = default;
 
   /**
    * See `StitcherInterface`.
@@ -40,12 +41,16 @@ public:
                                const ExpectedConnection &expInput);
 
   /**
-   * See `Stitcher`. We can stitch any non-gradient input that is is not already
-   * an output.
+   * See `Stitcher`. We can stitch any non-gradient input.
    **/
   virtual bool isStitchable(const GraphId &fwdGraphId,
                             const BwdGraphInfo &bwdGraphInfo,
                             const ExpectedConnection &expInput);
+
+private:
+  // Stitchers used under the hood.
+  AddFwdOutputStitcher addFwdOutputStitcher;
+  RecomputeStitcher recomputeStitcher;
 };
 
 } // namespace popart

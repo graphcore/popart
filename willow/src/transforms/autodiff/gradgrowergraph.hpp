@@ -30,7 +30,7 @@ public:
                      const TensorIds &gradsProvidedForTensors,
                      const nonstd::optional<TensorIds> &gradsRequiredForFwdId,
                      const FwdGraphToBwdGraphInfo &calledGraphsGradInfo,
-                     Autodiff::StitchStrategy stitchStrategy) = 0;
+                     AutodiffStitchStrategy stitchStrategy) = 0;
 
   virtual ~GradGrowerGraphInterface() {}
 };
@@ -84,7 +84,7 @@ public:
                      const TensorIds &gradsProvidedForTensors,
                      const nonstd::optional<TensorIds> &gradsRequiredForFwdId,
                      const FwdGraphToBwdGraphInfo &calledGraphsGradInfo,
-                     Autodiff::StitchStrategy stitchStrategy) override;
+                     AutodiffStitchStrategy stitchStrategy) override;
 
 private:
   // Helper class to create stitchers (add a setter if it helps with testing).

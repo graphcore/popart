@@ -46,6 +46,13 @@ public:
                                const BwdGraphInfo &bwdGraphInfo,
                                const ExpectedConnection &expInput) = 0;
 
+  /**
+   * Method used to determine if this stitcher can stitch a specific input.
+   **/
+  virtual bool isStitchable(const GraphId &fwdGraphId,
+                            const BwdGraphInfo &bwdGraphInfo,
+                            const ExpectedConnection &expInput) = 0;
+
 protected:
   // Helper method that returns the set of default stitch indices.
   virtual std::vector<InIndex>

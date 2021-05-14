@@ -17,7 +17,7 @@ FwdGraphToBwdGraphInfo GradGrowerGraph::growBackwardsGraph(
     const TensorIds &gradsProvidedForTensors,
     const nonstd::optional<TensorIds> &gradsRequiredForFwdId,
     const FwdGraphToBwdGraphInfo &calledGraphsGradInfo_,
-    Autodiff::StitchStrategy stitchStrategy) {
+    AutodiffStitchStrategy stitchStrategy) {
 
   nonstd::optional<TensorIds> emptyGradsRequiredForFwdId;
 

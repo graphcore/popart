@@ -68,6 +68,10 @@ Session Options
   :members:
 .. autoclass:: popart::AccumulateOuterFragmentSchedule
 
+.. autoclass:: popart::AutodiffSettings
+  :members:
+.. autoclass:: popart::AutodiffStitchStrategy
+
 .. autoclass:: popart::BatchSerializationSettings
   :members:
 .. autoclass:: popart::BatchSerializationBatchSchedule

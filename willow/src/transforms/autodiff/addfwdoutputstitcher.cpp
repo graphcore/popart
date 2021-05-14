@@ -140,4 +140,36 @@ bool AddFwdOutputStitcher::isDefaultStitch(const GraphId &fwdGraphId,
   return true;
 }
 
+bool AddFwdOutputStitcher::isStitchable(const GraphId &fwdGraphId,
+                                        const BwdGraphInfo &bwdGraphInfo,
+                                        const ExpectedConnection &expInput) {
+
+  auto &ir       = dep.get();
+  auto &fwdGraph = ir.getGraph(fwdGraphId);
+
+  const auto &fwdId = expInput.fwdId;
+  const auto &type  = expInput.type;
+
+  if (type != ExpectedConnectionType::Fwd) {
+    // We can only stitch non-gradient inputs.
+    return false;
+  }
+
+  auto isFwdOutput = fwdGraph.hasOutputId(fwdId);
+
+  if (isFwdOutput) {
+    // We can't add tensors that are already outputs as outputs.
+    return false;
+  }
+
+  for (Op *op : fwdGraph.getCallSiteOps()) {
+    if (dynamic_cast<CallOp *>(op) == nullptr) {
+      // We can't deal with non-callop call-sites at present.
+      return false;
+    }
+  }
+
+  return true;
+}
+
 } // namespace popart

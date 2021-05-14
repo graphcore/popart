@@ -113,7 +113,7 @@ bool RecomputeStitcher::isDefaultStitch(const GraphId &fwdGraphId,
   auto isFwdOutput = fwdGraph.hasOutputId(fwdId);
 
   switch (mode) {
-  case StitchIndexMode::Minimum: {
+  case StitchIndexMode::Minimal: {
     return !isFwdInput && !isFwdOutput;
   }
   case StitchIndexMode::AllNonInputs: {
@@ -124,6 +124,19 @@ bool RecomputeStitcher::isDefaultStitch(const GraphId &fwdGraphId,
                          static_cast<int>(mode));
   }
   }
+}
+
+bool RecomputeStitcher::isStitchable(const GraphId &fwdGraphId,
+                                     const BwdGraphInfo &bwdGraphInfo,
+                                     const ExpectedConnection &expInput) {
+  const auto &type = expInput.type;
+
+  if (type != ExpectedConnectionType::Fwd) {
+    // We can only stitch non-gradient inputs.
+    return false;
+  }
+
+  return true;
 }
 
 } // namespace popart

@@ -45,7 +45,7 @@ void GradGrowerMainGraph::growGradMainGraph() {
           // Require no fwd inputs as gradients as some won't be possible.
           nonstd::optional<std::vector<TensorId>>(),
           calledGraphGradInfo,
-          Autodiff::StitchStrategy::RecomputeAllNonInputs);
+          dep.get().getSessionOptions().autodiffSettings.stitchStrategy);
     }
   }
 

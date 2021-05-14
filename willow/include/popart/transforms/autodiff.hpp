@@ -8,6 +8,7 @@
 #include <popart/bwdgraphinfo.hpp>
 #include <popart/graph.hpp>
 #include <popart/names.hpp>
+#include <popart/sessionoptions.hpp>
 #include <popart/transforms/transform.hpp>
 
 #include <popart/vendored/optional.hpp>
@@ -23,28 +24,6 @@ class StitcherFactory;
  **/
 class Autodiff : public Transform {
 public:
-  /**
-   * Type representing a method by which ensure that a bwdGraph's inputs are
-   * exclusively fwdGraph inputs, fwdGraph outputs or gradients of fwdGraph
-   * outputs.
-   **/
-  enum class StitchStrategy {
-    /// Recompute any backward graph inputs that are associated with
-    /// non-gradient forward graph tensors which are neither inputs nor outputs
-    /// in the forward graph.
-    RecomputeMinimal = 0,
-    /// Recompute any backward graph inputs that are associated with
-    /// non-gradient forward graph tensors which are not inputs in the forward
-    /// graph.
-    RecomputeAllNonInputs = 1,
-    /// Add backward graph inputs that are associated with non-gradient forward
-    /// graph tensors which are neither inputs nor outputs to the
-    /// forward graph (not supported for IfOp).
-    AddFwdOutputs = 2,
-    /// Number of StitchStrategy values.
-    N = 3
-  };
-
   static std::size_t id();
 
   Autodiff();
@@ -106,7 +85,7 @@ public:
         const TensorIds &gradsProvidedForFwdId,
         const nonstd::optional<TensorIds> &gradsRequiredForFwdId,
         const FwdGraphToBwdGraphInfo &calledGraphsGradInfo,
-        StitchStrategy stitchStrategy);
+        AutodiffStitchStrategy stitchStrategy);
 
   /**
    * Create a backwards graph plus info required for creation of backwards
@@ -189,7 +168,7 @@ public:
   stitch(Ir &ir,
          const GraphId &fwdGraphId,
          const BwdGraphInfo &bwdGraphInfo,
-         StitchStrategy stitchStrategy,
+         AutodiffStitchStrategy stitchStrategy,
          const nonstd::optional<std::vector<InIndex>> &stitchIndices);
 
   virtual std::size_t getId() const final { return id(); }

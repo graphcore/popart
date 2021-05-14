@@ -1196,6 +1196,10 @@ BOOST_AUTO_TEST_CASE(autodiff_stitch_0) {
   //                                       an output of _j, so stitching is not
   //                                       required.
   //
+  //                                       NOTE: SafeAddFwdOutputs is a hybrid
+  //                                       of RecomputeMinmal and AddFwdOutputs.
+  //
+  //
   //
   //    [_j/in]                                           [_k/getGradId(in)]
   //      |                                                      #0 ^
@@ -1288,7 +1292,7 @@ BOOST_AUTO_TEST_CASE(autodiff_stitch_0) {
   using OptStitchIndices = nonstd::optional<std::vector<InIndex>>;
 
   auto test = [&](TestType testType,
-                  Autodiff::StitchStrategy strategy,
+                  AutodiffStitchStrategy strategy,
                   // Generate stitchIndices.
                   std::function<OptStitchIndices(IrInfo)> stitchIndicesFun,
                   // Generate expected BwdGraphInfo object.
@@ -1431,7 +1435,7 @@ BOOST_AUTO_TEST_CASE(autodiff_stitch_0) {
     // Test RecomputeMinimal + default stitch indices. Expect C2 only.
     test(
         testType,
-        Autodiff::StitchStrategy::RecomputeMinimal,
+        AutodiffStitchStrategy::RecomputeMinimal,
         [](IrInfo) { return nonstd::nullopt; },
         [](IrInfo irInfo) {
           return BwdGraphInfo{
@@ -1450,7 +1454,7 @@ BOOST_AUTO_TEST_CASE(autodiff_stitch_0) {
     // Test RecomputeMinimal + no stitch indices. Expect nothing.
     test(
         testType,
-        Autodiff::StitchStrategy::RecomputeMinimal,
+        AutodiffStitchStrategy::RecomputeMinimal,
         [](IrInfo) { return OptStitchIndices{{}}; },
         [](IrInfo irInfo) {
           return BwdGraphInfo{
@@ -1471,7 +1475,7 @@ BOOST_AUTO_TEST_CASE(autodiff_stitch_0) {
     BOOST_REQUIRE_THROW(
         test(
             testType,
-            Autodiff::StitchStrategy::RecomputeMinimal,
+            AutodiffStitchStrategy::RecomputeMinimal,
             [](IrInfo irInfo) { return OptStitchIndices{{irInfo._d}}; },
             [](IrInfo irInfo) {
               return BwdGraphInfo{irInfo._k, {}, {}};
@@ -1484,7 +1488,7 @@ BOOST_AUTO_TEST_CASE(autodiff_stitch_0) {
     // Test RecomputeAllNonInputs + default stitch indices. Expect C2 & C3.
     test(
         testType,
-        Autodiff::StitchStrategy::RecomputeAllNonInputs,
+        AutodiffStitchStrategy::RecomputeAllNonInputs,
         [](IrInfo) { return nonstd::nullopt; },
         [](IrInfo irInfo) {
           return BwdGraphInfo{
@@ -1502,7 +1506,7 @@ BOOST_AUTO_TEST_CASE(autodiff_stitch_0) {
     // Test RecomputeAllNonInputs + _b. Expect C2 only.
     test(
         testType,
-        Autodiff::StitchStrategy::RecomputeAllNonInputs,
+        AutodiffStitchStrategy::RecomputeAllNonInputs,
         [](IrInfo irInfo) { return OptStitchIndices{{irInfo._x}}; },
         [](IrInfo irInfo) {
           return BwdGraphInfo{
@@ -1522,7 +1526,7 @@ BOOST_AUTO_TEST_CASE(autodiff_stitch_0) {
     BOOST_REQUIRE_THROW(
         test(
             testType,
-            Autodiff::StitchStrategy::RecomputeAllNonInputs,
+            AutodiffStitchStrategy::RecomputeAllNonInputs,
             [](IrInfo irInfo) { return OptStitchIndices{{irInfo._z}}; },
             [](IrInfo irInfo) {
               return BwdGraphInfo{irInfo._k, {}, {}};
@@ -1536,7 +1540,7 @@ BOOST_AUTO_TEST_CASE(autodiff_stitch_0) {
   // Test CallOp + AddFwdOutputs + default stitch indices. Expect C1.
   test(
       TestType::CallOpTestType,
-      Autodiff::StitchStrategy::AddFwdOutputs,
+      AutodiffStitchStrategy::AddFwdOutputs,
       [](IrInfo) { return nonstd::nullopt; },
       [](IrInfo irInfo) {
         return BwdGraphInfo{
@@ -1557,8 +1561,8 @@ BOOST_AUTO_TEST_CASE(autodiff_stitch_0) {
   BOOST_REQUIRE_THROW(
       test(
           TestType::CallOpTestType,
-          Autodiff::StitchStrategy::AddFwdOutputs,
-          [](IrInfo irInfo) { return OptStitchIndices{{irInfo._z}}; },
+          AutodiffStitchStrategy::AddFwdOutputs,
+          [](IrInfo irInfo) { return OptStitchIndices{{irInfo._y}}; },
           [](IrInfo irInfo) {
             return BwdGraphInfo{irInfo._k, {}, {}};
           },
@@ -1571,7 +1575,7 @@ BOOST_AUTO_TEST_CASE(autodiff_stitch_0) {
   // list don't get stitched.
   test(
       TestType::CallOpTestType,
-      Autodiff::StitchStrategy::AddFwdOutputs,
+      AutodiffStitchStrategy::AddFwdOutputs,
       [](IrInfo irInfo) { return OptStitchIndices{{}}; },
       [](IrInfo irInfo) {
         return BwdGraphInfo{
@@ -1592,8 +1596,85 @@ BOOST_AUTO_TEST_CASE(autodiff_stitch_0) {
   // Does nothing, because this stitch method can't deal with IfOps.
   test(
       TestType::IfOpTestType,
-      Autodiff::StitchStrategy::AddFwdOutputs,
+      AutodiffStitchStrategy::AddFwdOutputs,
       [](IrInfo) { return nonstd::nullopt; },
+      [](IrInfo irInfo) {
+        return BwdGraphInfo{
+            irInfo._k,
+            sortExpectedConnections(
+                {{irInfo._a, {irInfo.in, ExpectedConnectionType::Fwd}},
+                 {irInfo._b, {irInfo.tmp, ExpectedConnectionType::Fwd}},
+                 {irInfo._c, {irInfo.out, ExpectedConnectionType::Fwd}},
+                 {irInfo._d, {irInfo.out, ExpectedConnectionType::FwdGrad}}}),
+            sortExpectedConnections(
+                {{0, {irInfo.in, ExpectedConnectionType::FwdGrad}}})};
+      },
+      ExpectC1::No,
+      ExpectC2::No,
+      ExpectC3::No);
+
+  // -
+
+  // Test CallOp + SafeAddFwdOutputs + default stitch indices. Expect C1 only.
+  test(
+      TestType::CallOpTestType,
+      AutodiffStitchStrategy::SafeAddFwdOutputs,
+      [](IrInfo) { return nonstd::nullopt; },
+      [](IrInfo irInfo) {
+        return BwdGraphInfo{
+            irInfo._k,
+            sortExpectedConnections(
+                {{irInfo._a, {irInfo.in, ExpectedConnectionType::Fwd}},
+                 {irInfo._b, {irInfo.tmp, ExpectedConnectionType::Fwd}},
+                 {irInfo._c, {irInfo.out, ExpectedConnectionType::Fwd}},
+                 {irInfo._d, {irInfo.out, ExpectedConnectionType::FwdGrad}}}),
+            sortExpectedConnections(
+                {{0, {irInfo.in, ExpectedConnectionType::FwdGrad}}})};
+      },
+      ExpectC1::Yes,
+      ExpectC2::No,
+      ExpectC3::No);
+
+  // Test IfOp + SafeAddFwdOutputs + default stitch indices. Expect C2 because
+  // we can't do C1 for IfOps.
+  test(
+      TestType::IfOpTestType,
+      AutodiffStitchStrategy::SafeAddFwdOutputs,
+      [](IrInfo) { return nonstd::nullopt; },
+      [](IrInfo irInfo) {
+        return BwdGraphInfo{
+            irInfo._k,
+            sortExpectedConnections(
+                {{irInfo._a, {irInfo.in, ExpectedConnectionType::Fwd}},
+                 {irInfo._c, {irInfo.out, ExpectedConnectionType::Fwd}},
+                 {irInfo._d, {irInfo.out, ExpectedConnectionType::FwdGrad}}}),
+            sortExpectedConnections(
+                {{0, {irInfo.in, ExpectedConnectionType::FwdGrad}}})};
+      },
+      ExpectC1::No,
+      ExpectC2::Yes,
+      ExpectC3::No);
+
+  // Test CallOp + SafeAddFwdOutputs + unstitchable index. Expect exception.
+  BOOST_REQUIRE_THROW(
+      test(
+          TestType::CallOpTestType,
+          AutodiffStitchStrategy::SafeAddFwdOutputs,
+          [](IrInfo irInfo) { return OptStitchIndices{{irInfo._z}}; },
+          [](IrInfo irInfo) {
+            return BwdGraphInfo{irInfo._k, {}, {}};
+          },
+          ExpectC1::No,
+          ExpectC2::No,
+          ExpectC3::No),
+      std::runtime_error);
+
+  // Test with CallOp + SafeAddFwdOutputs + that indices not in the stitch index
+  // list don't get stitched.
+  test(
+      TestType::CallOpTestType,
+      AutodiffStitchStrategy::SafeAddFwdOutputs,
+      [](IrInfo irInfo) { return OptStitchIndices{{}}; },
       [](IrInfo irInfo) {
         return BwdGraphInfo{
             irInfo._k,

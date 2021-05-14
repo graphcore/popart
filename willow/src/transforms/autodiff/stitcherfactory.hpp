@@ -23,7 +23,7 @@ public:
   // Stitch a particular backwards graph.
   virtual std::unique_ptr<StitcherInterface>
   createStitcher(AutodiffIrInterface &ir,
-                 Autodiff::StitchStrategy stitchStrategy);
+                 AutodiffStitchStrategy stitchStrategy);
 };
 
 } // namespace popart

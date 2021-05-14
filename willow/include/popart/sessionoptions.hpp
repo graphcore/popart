@@ -418,8 +418,60 @@ enum class SubgraphCopyingStrategy {
   /// they are produced. With this strategy subgraphs may be lowered into
   /// multiple Poplar functions.
   JustInTime,
-  /// The number of SubgraphCopyingStrategy values.
+  /// The number of \c SubgraphCopyingStrategy values.
   N
+};
+
+/**
+ * Type representing a strategy to ensure a backwards graph's inputs are
+ * either inputs of the forward graph, outputs of the forward graph or
+ * gradients of outputs of the forward graph. Strategies may expose tensors
+ * that would otherwise have been internal to the forward graph as outputs of
+ * said forward graph.
+ **/
+enum class AutodiffStitchStrategy {
+  /// Recompute any backward graph inputs associated with non-gradient forward
+  /// graph tensors that are neither inputs nor outputs in the forward graph.
+  RecomputeMinimal = 0,
+  /// Recompute any backward graph inputs associated with non-gradient forward
+  /// graph tensors that are not inputs in the forward graph.
+  RecomputeAllNonInputs,
+  /// For backward graph inputs associated with non-gradient forward graph
+  /// tensors that are neither inputs or outputs in the forward graph, add them
+  /// as outputs to the forward graph.
+  ///
+  /// NOTE: This strategy is not guaranteed to work for all circumstances. In
+  /// particular, it is unable to deal with subgraphs of IfOp. Using this
+  /// setting may therefore result in subsequent exceptions in the autodiff
+  /// transform and it is therefore inadvisable to use this as an `Autodiff`
+  /// default.
+  AddFwdOutputs,
+  /// Like `AddFwdOutputs` except that those backward graph inputs that can't be
+  /// stitched with `AddFwdOutputs` (that is, by adding outputs to the forward
+  /// graph) are stitched using the `RecomputeMinimal` strategy instead. This
+  /// means that this is a safe strategy to use as an `Autodiff` default.
+  SafeAddFwdOutputs,
+  /// Number of \c AutodiffStitchStrategy values.
+  N
+};
+
+/**
+ * Settings for the Autodiff transform.
+ */
+struct AutodiffSettings {
+  AutodiffSettings() = default;
+  AutodiffSettings(AutodiffStitchStrategy stitchStrategy_)
+      : stitchStrategy{stitchStrategy_} {}
+
+  AutodiffSettings &operator=(const AutodiffSettings &rhs) = default;
+
+  /// The strategy PopART should use to ensure that all graph inputs of a
+  /// backwards graph are available as either inputs or outputs of the forward
+  /// graph or gradients of outputs of the forward graph.
+  ///
+  /// NOTE: This is an experimental option and may change.
+  AutodiffStitchStrategy stitchStrategy =
+      AutodiffStitchStrategy::RecomputeAllNonInputs;
 };
 
 /**
@@ -662,6 +714,9 @@ struct SessionOptions {
 
   /// Configuration setting for batch serialization.
   BatchSerializationSettings batchSerializationSettings;
+
+  /// Configuration settings for the autodiff transform.
+  AutodiffSettings autodiffSettings;
 
   /// Options to delay variable updates as much as possible.
   // TODO: Remove with T19212

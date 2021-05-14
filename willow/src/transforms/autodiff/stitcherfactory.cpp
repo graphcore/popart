@@ -4,30 +4,35 @@
 #include <transforms/autodiff/addfwdoutputstitcher.hpp>
 #include <transforms/autodiff/autodiffiradapter.hpp>
 #include <transforms/autodiff/recomputestitcher.hpp>
+#include <transforms/autodiff/safeaddfwdoutputstitcher.hpp>
 
 namespace popart {
 
 std::unique_ptr<StitcherInterface>
 StitcherFactory::createStitcher(AutodiffIrInterface &ir,
-                                Autodiff::StitchStrategy stitchStrategy) {
+                                AutodiffStitchStrategy stitchStrategy) {
 
   switch (stitchStrategy) {
-  case Autodiff::StitchStrategy::RecomputeMinimal: {
+  case AutodiffStitchStrategy::RecomputeMinimal: {
     return std::make_unique<RecomputeStitcher>(
-        ir, RecomputeStitcher::StitchIndexMode::Minimum);
+        ir, RecomputeStitcher::StitchIndexMode::Minimal);
     break;
   }
-  case Autodiff::StitchStrategy::RecomputeAllNonInputs: {
+  case AutodiffStitchStrategy::RecomputeAllNonInputs: {
     return std::make_unique<RecomputeStitcher>(
         ir, RecomputeStitcher::StitchIndexMode::AllNonInputs);
     break;
   }
-  case Autodiff::StitchStrategy::AddFwdOutputs: {
+  case AutodiffStitchStrategy::AddFwdOutputs: {
     return std::make_unique<AddFwdOutputStitcher>(ir);
     break;
   }
+  case AutodiffStitchStrategy::SafeAddFwdOutputs: {
+    return std::make_unique<SafeAddFwdOutputStitcher>(ir);
+    break;
+  }
   default: {
-    throw error("[Autodiff] Unknown value for StitchStrategy ({})",
+    throw error("[Autodiff] Unknown value for AutodiffStitchStrategy ({})",
                 static_cast<int>(stitchStrategy));
   }
   }
