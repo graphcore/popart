@@ -59,8 +59,9 @@ Regions mergeRegions(Regions inRegions) {
 
           int64_t jstart = 0;
           for (int64_t i = 0; i < regions.size(); ++i) {
-            if (regions[i].isEmpty())
+            if (regions[i].isEmpty()) {
               erase[i] = true;
+            }
             if (erase[i]) {
               continue;
             }
@@ -74,7 +75,14 @@ Regions mergeRegions(Regions inRegions) {
                 // if i and j fully overlap, any region in [i, j] does not have
                 // to check for merges with any other region in [i, j], so we
                 // can set the next j to j + 1
-                jstart = j + 1;
+                jstart    = j + 1;
+                auto subs = regions[j].sub(regions[i]);
+                if (subs.empty() ||
+                    std::all_of(subs.begin(), subs.end(), [](const Region &r) {
+                      return r.isEmpty();
+                    })) {
+                  erase[j] = true;
+                }
                 continue;
               } else if (regions[i].getUpper()[d] < regions[j].getLower()[d]) {
                 // j and any region after j are not connected to i and therefore
@@ -564,6 +572,27 @@ Region Region::reverse(const Shape shape, const Shape dims) const {
 
 std::ostream &operator<<(std::ostream &stream, const Region &r) {
   r.append(stream);
+  return stream;
+}
+
+std::ostream &operator<<(std::ostream &stream, const AccessType &at) {
+  switch (at) {
+  case AccessType::None:
+    stream << "None";
+    break;
+  case AccessType::Read:
+    stream << "Read";
+    break;
+  case AccessType::Write:
+    stream << "Write";
+    break;
+  case AccessType::ReadWrite:
+    stream << "ReadWrite";
+    break;
+  default:
+    stream << "Unsupported AccessType " << static_cast<int>(at);
+    break;
+  }
   return stream;
 }
 

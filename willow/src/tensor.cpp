@@ -107,14 +107,14 @@ view::Regions Tensor::modifiedRegionsByOps(std::vector<Op *> ops) const {
   std::map<Op *, view::Regions> opToT0ReadRegions;
   std::map<Op *, view::Regions> opToT0ModifiedRegions;
 
-  std::vector<Tensor *> aliasedTensors;
-  aliasedTensors.push_back(t0);
+  std::set<Tensor *, PTensorCmp> aliasedTensors;
+  aliasedTensors.insert(t0);
 
   // All chains from t0
   for (auto &chain : chains) {
     // All aliases t1 of t0
     Tensor *t1 = chain.first;
-    aliasedTensors.push_back(t1);
+    aliasedTensors.insert(t1);
   }
 
   for (auto t1 : aliasedTensors) {

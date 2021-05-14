@@ -93,7 +93,7 @@ view::RegMap BaseSliceOp::fwdRegMap(InIndex inIndex, OutIndex outIndex) const {
       out_lb[i] -= fullInRegion.getLower()[i];
       out_ub[i] -= fullInRegion.getLower()[i];
     }
-    return view::Regions(1, view::Region(out_lb, out_ub));
+    return view::Regions(1, view::Region(out_lb, out_ub, r.getAccessType()));
   };
 }
 
@@ -156,7 +156,7 @@ view::RegMap BaseSliceOp::bwdRegMap(InIndex inIndex, OutIndex outIndex) const {
       in_lb[i] += fullInRegion.getLower()[i];
       in_ub[i] += fullInRegion.getLower()[i];
     }
-    return view::Regions(1, view::Region(in_lb, in_ub));
+    return view::Regions(1, view::Region(in_lb, in_ub, r.getAccessType()));
   };
 }
 

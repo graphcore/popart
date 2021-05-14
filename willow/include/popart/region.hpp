@@ -13,7 +13,7 @@
 namespace popart {
 namespace view {
 
-enum class AccessType { None = 0, Read = 1, Write = 2, ReadWrite = 3 };
+enum class AccessType { None = 0, Read = 1, Write = 2, ReadWrite = 3, N = 4 };
 
 AccessType combine(std::set<AccessType> accessTypes);
 
@@ -74,6 +74,7 @@ private:
 };
 
 std::ostream &operator<<(std::ostream &stream, const Region &r);
+std::ostream &operator<<(std::ostream &stream, const AccessType &at);
 
 // Returns true if any region is non empty and marked as written to
 bool regionsModified(const view::Regions &regions);

@@ -21,4 +21,9 @@ public:
   GraphTestModel1();
 };
 
+class GraphTestModel2 : public GraphTestModel {
+public:
+  GraphTestModel2();
+};
+
 #endif

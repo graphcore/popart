@@ -74,7 +74,10 @@ Link::Link(const Region &filt, const RegMap &rm)
     : Link(filt, rm, "Nameless Link") {}
 
 Link::Link(const Region &filt, const RegMap &rm, const std::string &dbName)
-    : filter(filt), regmap(rm), debugName(dbName) {}
+    : filter(filt), regmap(rm), debugName(dbName) {
+  // Filter should not modify access type
+  filter.setAccessType(AccessType::None);
+}
 
 bool Link::contains(const Link &rhs) const {
   for (auto r0 : rhs.apply(rhs.getFilter())) {

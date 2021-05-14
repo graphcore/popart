@@ -60,7 +60,7 @@ view::RegMap ConcatOp::fwdRegMap(InIndex inIndex, OutIndex) const {
     view::UppBounds upper = r_in.getUpper();
     lower[axisIn] += offset;
     upper[axisIn] += offset;
-    return view::Regions(1, view::Region(lower, upper));
+    return view::Regions(1, view::Region(lower, upper, r_in.getAccessType()));
   };
 }
 
@@ -74,7 +74,7 @@ view::RegMap ConcatOp::bwdRegMap(InIndex inIndex, OutIndex) const {
     lower[axisIn] -= offset;
     upper[axisIn] -= offset;
     // TODO T8446 : check intersect?
-    return view::Regions(1, view::Region(lower, upper));
+    return view::Regions(1, view::Region(lower, upper, r_out.getAccessType()));
   };
 }
 

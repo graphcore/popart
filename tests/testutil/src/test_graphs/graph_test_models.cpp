@@ -8,6 +8,7 @@
 #include <popart/op/add.hpp>
 #include <popart/op/call.hpp>
 #include <popart/op/concat.hpp>
+#include <popart/op/copyvarupdate.hpp>
 #include <popart/op/identity.hpp>
 #include <popart/op/sgd0varupdate.hpp>
 #include <popart/op/slice.hpp>
@@ -33,7 +34,7 @@ GraphTestModel1::GraphTestModel1() {
 
   TensorInfo t4Info{DataType::INT32, {4, 4}};
   float t4Data[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16};
-  graph.getTensors().addVarInit("t4", t0Info, static_cast<void *>(&t4Data));
+  graph.getTensors().addVarInit("t4", t4Info, static_cast<void *>(&t4Data));
 
   Op::Settings gSettings(graph, "op", {});
   Op::Settings sg0Settings(subgraph0, "sub0/op", subgraph0.getScope());
@@ -127,5 +128,74 @@ GraphTestModel1::GraphTestModel1() {
   ir.updateVertices();
 
   df = DataFlow(1, {{"t3", art}});
+  ir.setDataFlow(df);
+}
+
+GraphTestModel2::GraphTestModel2() {
+  Graph &graph = ir.getMainGraph();
+
+  auto art = AnchorReturnType("All");
+
+  TensorInfo t0Info{DataType::INT32, {4, 4}};
+  float t0Data[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16};
+  graph.getTensors().addVarInit("t0", t0Info, static_cast<void *>(&t0Data));
+
+  TensorInfo t1Info{DataType::INT32, {2, 4}};
+  float t1Data[] = {1, 2, 3, 4, 5, 6, 7, 8};
+  graph.getTensors().addVarInit("t1", t1Info, static_cast<void *>(&t1Data));
+
+  Op::Settings gSettings(graph, "op", {});
+
+  Op *s0 = graph.createConnectedOp<SliceInplaceOp>(
+      {{SliceOp::getInIndex(), "t0"}},
+      {{SliceOp::getOutIndex(), "t2"}},
+      Onnx::CustomOperators::SliceInplace,
+      std::vector<int64_t>{0},
+      std::vector<int64_t>{2},
+      std::vector<int64_t>{0},
+      std::vector<int64_t>{1},
+      gSettings.copy("Slice0"));
+
+  Op *s1 = graph.createConnectedOp<SliceInplaceOp>(
+      {{SliceOp::getInIndex(), "t0"}},
+      {{SliceOp::getOutIndex(), "t3"}},
+      Onnx::CustomOperators::SliceInplace,
+      std::vector<int64_t>{2},
+      std::vector<int64_t>{4},
+      std::vector<int64_t>{0},
+      std::vector<int64_t>{1},
+      gSettings.copy("Slice1"));
+
+  graph.topoCons->insert(s0, s1, false);
+
+  Op *cpv = graph.createConnectedOp<CopyVarUpdateOp>(
+      {{CopyVarUpdateOp::getVarToUpdateInIndex(), "t2"},
+       {CopyVarUpdateOp::getUpdaterInIndex(), "t1"}},
+      {{CopyVarUpdateOp::getUpdatedVarOutIndex(), "t4"}},
+      gSettings.copy("CopyVarUpdate"));
+
+  Op *add0 = graph.createConnectedOp<AddOp>(
+      {{AddOp::getArg0InIndex(), "t3"}, {AddOp::getArg1InIndex(), "t1"}},
+      {{AddOp::getOutIndex(), "t5"}},
+      Onnx::Operators::Add_7,
+      gSettings.copy("AddOp"));
+
+  graph.topoCons->insert(cpv, add0, false);
+
+  Op *sgd0 = graph.createConnectedOp<SGD0VarUpdateOp>(
+      {{SGD0VarUpdateOp::getVarToUpdateInIndex(), "t3"},
+       {SGD0VarUpdateOp::getUpdaterInIndex(), "t1"}},
+      {{SGD0VarUpdateOp::getUpdatedVarOutIndex(), "t6"}},
+      OptimizerValue(0.5, true),
+      OptimizerValue(0.5, true),
+      OptimizerReductionType::None,
+      gSettings.copy("SGD0VarUpdate"));
+
+  graph.topoCons->insert(add0, sgd0, false);
+
+  ir.updateAliases();
+  ir.updateVertices();
+
+  df = DataFlow(1, {{"t5", art}});
   ir.setDataFlow(df);
 }
