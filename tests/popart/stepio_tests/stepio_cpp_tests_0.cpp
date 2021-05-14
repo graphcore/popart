@@ -42,14 +42,13 @@ BOOST_AUTO_TEST_CASE(StepIOTest_BufferInput) {
   Shape inShape = {2, 5};
   TensorInfo inInfo{"INT32", inShape};
 
-  Shape constShape = {5, 2};
   std::vector<int> rawConstInputData(5 * 2);
   std::iota(rawConstInputData.begin(), rawConstInputData.end(), 1);
 
   popart::NDArrayWrapper<int> constData(rawConstInputData.data(), {5, 2});
 
   ConstVoidData constShapeData = {rawConstInputData.data(),
-                                  {"INT32", constShape}};
+                                  {"INT32", constData.shape()}};
 
   // Build an onnx model
   auto builder = Builder::create();

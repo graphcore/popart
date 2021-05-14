@@ -29,6 +29,7 @@ public:
   std::size_t rank() const final;
   int64_t dim(size_t index) const final;
   std::size_t nelms() const final;
+  const Shape shape() const final;
 
 private:
   T *data_;
@@ -63,8 +64,8 @@ T &NDArrayWrapper<T>::operator[](const std::vector<int64_t> &indices) {
 }
 
 template <typename T>
-const T &
-    NDArrayWrapper<T>::operator[](const std::vector<int64_t> &indices) const {
+const T &NDArrayWrapper<T>::
+operator[](const std::vector<int64_t> &indices) const {
   return data_[ndindices.flatten(indices)];
 }
 
@@ -96,6 +97,10 @@ template <typename T> int64_t NDArrayWrapper<T>::dim(size_t index) const {
 
 template <typename T> std::size_t NDArrayWrapper<T>::nelms() const {
   return info.nelms();
+}
+
+template <typename T> const Shape NDArrayWrapper<T>::shape() const {
+  return info.shape();
 }
 
 template <typename T>
