@@ -55,8 +55,17 @@ bool DecomposeBinaryConstScalar::apply(Op *op_) const {
   auto scalarId = op.getIr().createIntermediateTensorId("scalar");
 
   auto v_f32 = op.value();
-  op.getGraph().getTensors().addConstInit(
-      scalarId, {input->info.dataType(), {}}, reinterpret_cast<void *>(&v_f32));
+  // Handle special case for halfs.
+  // TODO: T37480 Move this fix for halfs down in the code.
+  if (input->info.dataType() == DataType::FLOAT16) {
+    std::vector<float16_t> data{v_f32};
+    op.getGraph().getTensors().addConstInit(
+        scalarId, {input->info.dataType(), {}}, data.data());
+  } else {
+    std::vector<float> data{v_f32};
+    op.getGraph().getTensors().addConstInit(
+        scalarId, {input->info.dataType(), {}}, data.data());
+  }
 
   auto arg0 = scalarId;
   auto arg1 = input->id;

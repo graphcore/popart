@@ -211,42 +211,6 @@ def test_expm1_grad_error(op_tester):
         "This op should have been removed by pattern Expm1GradOp"))
 
 
-def test_gemm_grad_error(op_tester):
-    """
-    We test the inference session to fire the GemmDecomposition
-    pattern error. If in training mode, the IR will try to create
-    a GemmGradOp, which will not produce this opx level error.
-    """
-    d1 = np.random.rand(2, 4).astype(np.float32)
-    d2 = np.random.rand(4, 6).astype(np.float32)
-    d3 = np.random.rand(2, 6).astype(np.float32)
-
-    alpha = 1.0
-    beta = 1.0
-    transA = False
-    transB = False
-
-    # No pattern passes, op will be try to be created.
-    op_tester.setPatterns([], enableRuntimeAsserts=False)
-
-    def init_builder(builder):
-        i1 = builder.addInputTensor(d1)
-        i2 = builder.addInitializedInputTensor(d2)
-        i3 = builder.addInitializedInputTensor(d3)
-        o = builder.aiOnnx.gemm([i1, i2, i3], alpha, beta, transA, transB)
-        builder.addOutputTensor(o)
-        return [o]
-
-    def reference(ref_data):
-        return [None, None]
-
-    with pytest.raises(popart.popart_exception) as e_info:
-        op_tester.run(init_builder, reference, 'infer')
-
-    assert (e_info.value.args[0].endswith(
-        "This op should have been removed by pattern GemmDecomposition"))
-
-
 def test_cosh_grad_error(op_tester):
     d1 = np.random.rand(2, 7).astype(np.float32)
     d2 = np.random.rand(2, 7).astype(np.float32)
