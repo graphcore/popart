@@ -27,6 +27,7 @@ Adam Adam::fromDefaultMap(const std::map<std::string, OptimizerValue> &m,
               accumType_,
               accl1Type_,
               accl2Type_,
+              {},
               1011);
 }
 
@@ -43,13 +44,15 @@ Adam::Adam(const std::map<std::string, std::pair<float, bool>> &m,
            WeightDecayMode decayMode_,
            DataType accumType_,
            DataType accl1Type_,
-           DataType accl2Type_)
+           DataType accl2Type_,
+           const std::vector<ClipNormSettings> &clipNormSettings)
     : Adam(getComplete(getOptMap(m)),
            adamMode_,
            decayMode_,
            accumType_,
            accl1Type_,
            accl2Type_,
+           clipNormSettings,
            31415) {}
 
 void Adam::insertSpecific(
@@ -187,6 +190,7 @@ Adam::Adam(const std::map<std::string, OptimizerValue> &cmap,
            DataType accumType_,
            DataType accl1Type_,
            DataType accl2Type_,
+           const std::vector<ClipNormSettings> &clipNormSettings,
            int)
     : Adam(cmap.at("defaultLearningRate"),
            cmap.at("defaultWeightDecay"),
@@ -199,7 +203,8 @@ Adam::Adam(const std::map<std::string, OptimizerValue> &cmap,
            decayMode_,
            accumType_,
            accl1Type_,
-           accl2Type_) {}
+           accl2Type_,
+           clipNormSettings) {}
 
 Adam::Adam(OptimizerValue lr,
            OptimizerValue wd,
@@ -211,7 +216,8 @@ Adam::Adam(OptimizerValue lr,
            WeightDecayMode decayMode_,
            DataType accumType_,
            DataType accl1Type_,
-           DataType accl2Type_)
+           DataType accl2Type_,
+           const std::vector<ClipNormSettings> &clipNormSettings)
     : Adam(lr,
            wd,
            b1,
@@ -223,7 +229,8 @@ Adam::Adam(OptimizerValue lr,
            decayMode_,
            accumType_,
            accl1Type_,
-           accl2Type_) {}
+           accl2Type_,
+           clipNormSettings) {}
 
 Adam::Adam(OptimizerValue lr,
            OptimizerValue wd,
@@ -235,7 +242,8 @@ Adam::Adam(OptimizerValue lr,
            AdamMode mode_,
            DataType accumType_,
            DataType accl1Type_,
-           DataType accl2Type_)
+           DataType accl2Type_,
+           const std::vector<ClipNormSettings> &clipNormSettings)
     : Adam(lr,
            wd,
            b1,
@@ -247,7 +255,8 @@ Adam::Adam(OptimizerValue lr,
            WeightDecayMode::Decay,
            accumType_,
            accl1Type_,
-           accl2Type_) {}
+           accl2Type_,
+           clipNormSettings) {}
 
 Adam::Adam(OptimizerValue lr,
            OptimizerValue wd,
@@ -258,7 +267,8 @@ Adam::Adam(OptimizerValue lr,
            AdamMode mode_,
            DataType accumType_,
            DataType accl1Type_,
-           DataType accl2Type_)
+           DataType accl2Type_,
+           const std::vector<ClipNormSettings> &clipNormSettings)
     : Adam(lr,
            wd,
            b1,
@@ -270,7 +280,8 @@ Adam::Adam(OptimizerValue lr,
            WeightDecayMode::Decay,
            accumType_,
            accl1Type_,
-           accl2Type_) {}
+           accl2Type_,
+           clipNormSettings) {}
 
 Adam::Adam(OptimizerValue lr,
            OptimizerValue wd,
@@ -283,9 +294,10 @@ Adam::Adam(OptimizerValue lr,
            WeightDecayMode decayMode_,
            DataType accumType_,
            DataType accl1Type_,
-           DataType accl2Type_)
-    : Optimizer(lossScaling, {}), lrs(lr), wds(wd), b1s(b1), b2s(b2),
-      epsvs(eps), mwns(mwn_), mode(mode_), decayMode(decayMode_),
+           DataType accl2Type_,
+           const std::vector<ClipNormSettings> &clipNormSettings)
+    : Optimizer(lossScaling, clipNormSettings), lrs(lr), wds(wd), b1s(b1),
+      b2s(b2), epsvs(eps), mwns(mwn_), mode(mode_), decayMode(decayMode_),
       accumType(accumType_),
 
       accl1Type(accl1Type_), accl2Type(accl2Type_) {

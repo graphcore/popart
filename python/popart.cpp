@@ -812,10 +812,16 @@ PYBIND11_MODULE(popart_core, m) {
                            WeightDecayMode wdmode,
                            DataType accumType,
                            DataType accl1Type,
-                           DataType accl2Type) {
+                           DataType accl2Type,
+                           std::vector<ClipNormSettings> clipNormSettings) {
                  auto cppm = getOptimizerValueDictionary(pyd);
-                 return Adam(
-                     cppm, mode, wdmode, accumType, accl1Type, accl2Type);
+                 return Adam(cppm,
+                             mode,
+                             wdmode,
+                             accumType,
+                             accl1Type,
+                             accl2Type,
+                             clipNormSettings);
                }),
                py::arg("values"),
                py::arg("mode")              = AdamMode::Adam,
@@ -823,8 +829,9 @@ PYBIND11_MODULE(popart_core, m) {
                // Choose same data type as weight for the accumulator by default
                py::arg("accum_type") = DataType::UNDEFINED,
                // Momentums in FP32 by default
-               py::arg("accl1_type") = DataType::FLOAT,
-               py::arg("accl2_type") = DataType::FLOAT);
+               py::arg("accl1_type")         = DataType::FLOAT,
+               py::arg("accl2_type")         = DataType::FLOAT,
+               py::arg("clip_norm_settings") = std::vector<ClipNormSettings>{});
 
       adam.def("insertSpecific", [](Adam &self, TensorId id, py::dict pyd) {
         self.insertSpecific(id, getOptimizerValueDictionary(pyd));

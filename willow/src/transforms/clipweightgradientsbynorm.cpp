@@ -3,17 +3,22 @@
 
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
+#include <popart/op/accumulate.hpp>
+#include <popart/op/adamupdater.hpp>
+#include <popart/op/adamvarupdate.hpp>
 #include <popart/op/div.hpp>
 #include <popart/op/ipucopy.hpp>
 #include <popart/op/max.hpp>
 #include <popart/op/mul.hpp>
 #include <popart/op/reducesumsquare.hpp>
+#include <popart/op/scaledadd.hpp>
 #include <popart/op/sgd0varupdate.hpp>
 #include <popart/op/sgd1varupdate.hpp>
 #include <popart/op/sqrt.hpp>
 #include <popart/op/sum.hpp>
 #include <popart/opidentifier.hpp>
 #include <popart/transforms/clipweightgradientsbynorm.hpp>
+#include <popart/util.hpp>
 
 namespace popart {
 
@@ -54,7 +59,9 @@ ExecutionContext decideExecutionContext(Graph &graph) {
   }
 }
 
-Tensor *addReduceSumSquare(Op *varUpdate, Graph &graph) {
+Tensor *addReduceSumSquare(Tensor *grad, Graph &graph) {
+  logging::debug("addReduceSumSuareOp({}, graph)", grad->id);
+
   Op::Settings settings(graph, "", {});
   settings.executionContext = decideExecutionContext(graph);
 
@@ -62,15 +69,17 @@ Tensor *addReduceSumSquare(Op *varUpdate, Graph &graph) {
   Op *reduction = graph.createOp<ReduceSumSquareOp>(
       Onnx::AiOnnx::OpSet11::ReduceSumSquare, axes, false, settings);
 
-  transferBaseProperties(varUpdate, reduction);
-
-  auto grad = varUpdate->inTensor(VarUpdateWithUpdaterOp::getUpdaterInIndex());
+  transferBaseProperties(grad->consumers.getOps().at(0), reduction);
 
   auto &ir = graph.getIr();
 
+  auto clippedGradId =
+      logging::format("{}_{}", getBaseTensorId(grad->id), "clipping");
+
   reduction->connectInTensor(ReduceSumSquareOp::getInIndex(), grad->id);
-  reduction->createAndConnectOutTensor(ReduceSumSquareOp::getOutIndex(),
-                                       ir.createIntermediateTensorId(grad->id));
+  reduction->createAndConnectOutTensor(
+      ReduceSumSquareOp::getOutIndex(),
+      ir.createIntermediateTensorId(clippedGradId));
   reduction->setup();
   return reduction->outTensor(ReduceSumSquareOp::getOutIndex());
 }
@@ -79,9 +88,11 @@ Tensor *addReduceSumSquare(Op *varUpdate, Graph &graph) {
 std::vector<Op *> getVarUpdates(Graph &graph,
                                 const std::vector<TensorId> &weightIds) {
   auto getVarUpdate = [](Tensor *t) {
+    logging::debug("Getting var updates for {}", t->id);
     for (auto op : t->consumers.getOps()) {
       if (op->isConvertibleTo<SGD0VarUpdateOp>() ||
-          op->isConvertibleTo<SGD1VarUpdateOp>()) {
+          op->isConvertibleTo<SGD1VarUpdateOp>() ||
+          op->isConvertibleTo<AdamVarUpdateOp>()) {
         return op;
       }
     }
@@ -163,15 +174,14 @@ Tensor *createGlobalNorm(std::vector<Tensor *> gradNorms, Graph &graph) {
   return sqrt->outTensor(SqrtOp::getOutIndex());
 }
 
-void addClipByNorm(Op *varUpdate, Tensor *clipFactor, Graph &graph) {
-  auto &ir  = graph.getIr();
-  auto grad = varUpdate->inTensor(VarUpdateWithUpdaterOp::getUpdaterInIndex());
+void addClipByNorm(Tensor *grad, Tensor *clipFactor, Graph &graph) {
+  auto &ir = graph.getIr();
 
   Op::Settings settings(graph, "", {});
   settings.executionContext = decideExecutionContext(graph);
 
   Op *mulOp = graph.createOp<MulOp>(Onnx::AiOnnx::OpSet6::Mul, settings);
-  transferBaseProperties(varUpdate, mulOp);
+  transferBaseProperties(grad->consumers.getOps().at(0), mulOp);
 
   auto clipFactorId = clipFactor->id;
 
@@ -182,22 +192,38 @@ void addClipByNorm(Op *varUpdate, Tensor *clipFactor, Graph &graph) {
     clipFactorId          = copiedClipFactor->id;
   }
 
+  auto clippedGradId =
+      logging::format("{}_{}", getBaseTensorId(grad->id), "clipped");
+
   mulOp->connectInTensor(MulOp::getArg0InIndex(), grad->id);
   mulOp->connectInTensor(MulOp::getArg1InIndex(), clipFactorId);
-  mulOp->createAndConnectOutTensor(MulOp::getOutIndex(),
-                                   ir.createIntermediateTensorId(grad->id));
+  mulOp->createAndConnectOutTensor(
+      MulOp::getOutIndex(), ir.createIntermediateTensorId(clippedGradId));
   mulOp->setup();
-  varUpdate->disconnectInTensor(VarUpdateWithUpdaterOp::getUpdaterInIndex(),
-                                grad);
-  varUpdate->connectInTensor(VarUpdateWithUpdaterOp::getUpdaterInIndex(),
-                             mulOp->outId(MulOp::getOutIndex()));
+
+  std::stringstream ss;
+  ss << "Consumers of " << grad->id << " are:";
+  for (auto op : grad->consumers.getOps()) {
+    ss << "\n  " << op->str();
+  }
+  logging::debug("{}", ss.str());
+
+  for (auto op : grad->consumers.getOps()) {
+    if (op != mulOp && !op->isConvertibleTo<ReduceSumSquareOp>()) {
+      auto indices = op->input->indices(grad);
+      for (auto idx : indices) {
+        op->disconnectInTensor(idx);
+        op->connectInTensor(idx, mulOp->outId(MulOp::getOutIndex()));
+      }
+    }
+  }
 }
 
-void addClipByNorms(std::vector<Op *> varUpdates,
+void addClipByNorms(std::vector<Tensor *> grads,
                     Tensor *clipFactor,
                     Graph &graph) {
-  for (auto varUpdate : varUpdates) {
-    addClipByNorm(varUpdate, clipFactor, graph);
+  for (auto grad : grads) {
+    addClipByNorm(grad, clipFactor, graph);
   }
 }
 
@@ -239,14 +265,55 @@ Tensor *createClipNorm(float maxNorm, Graph &graph) {
   return graph.getTensors().get(clipByNormId);
 }
 
+std::vector<Tensor *> getGrads(Graph &graph,
+                               const std::vector<TensorId> &weightIds) {
+  std::vector<Tensor *> result;
+
+  auto varUpdates = getVarUpdates(graph, weightIds);
+  for (auto op : varUpdates) {
+    if (op->isConvertibleTo<SGD0VarUpdateOp>() ||
+        op->isConvertibleTo<SGD1VarUpdateOp>()) {
+      auto grad = op->inTensor(VarUpdateWithUpdaterOp::getUpdaterInIndex());
+      result.push_back(grad);
+    } else if (op->isConvertibleTo<AdamVarUpdateOp>()) {
+      auto adamUpdater =
+          op->inTensor(VarUpdateWithUpdaterOp::getUpdaterInIndex())
+              ->getProducer();
+      if (!adamUpdater->isConvertibleTo<AdamUpdaterOp>()) {
+        throw internal_error("This should be a AdamUpdaterOp.");
+      }
+      auto accl1 = adamUpdater->inTensor(AdamUpdaterOp::getAccl1InIndex())
+                       ->getProducer();
+      if (!accl1->isConvertibleTo<AccumulateOp>()) {
+        throw internal_error("These should be AccumulateOps.");
+      }
+      auto scaler =
+          accl1->inTensor(AccumulateOp::getUpdaterInIndex())->getProducer();
+      if (scaler->isConvertibleTo<ScaledAddOp>()) {
+        auto grad = scaler->inTensor(ScaledAddOp::getArg0InIndex());
+        result.push_back(grad);
+      } else if (scaler->isConvertibleTo<MulOp>()) {
+        auto grad = scaler->inTensor(MulOp::getArg0InIndex());
+        result.push_back(grad);
+      } else {
+        throw internal_error("Unexpected op type {}", scaler->str());
+      }
+    } else {
+      throw internal_error("Unable to handle op {}", op->str());
+    }
+  }
+
+  return result;
+}
+
 void clipWeightGradientsByNorm(const std::vector<TensorId> &weightIds,
                                float maxNorm,
                                Graph &graph) {
-  auto varUpdates = getVarUpdates(graph, weightIds);
+  auto grads = getGrads(graph, weightIds);
 
   std::vector<Tensor *> gradNorms;
-  for (auto varUpdate : varUpdates) {
-    auto gradNorm = addReduceSumSquare(varUpdate, graph);
+  for (auto grad : grads) {
+    auto gradNorm = addReduceSumSquare(grad, graph);
     gradNorms.push_back(gradNorm);
   }
 
@@ -259,7 +326,7 @@ void clipWeightGradientsByNorm(const std::vector<TensorId> &weightIds,
   auto globalNorm = createGlobalNorm(gradNorms, graph);
   auto clipNorm   = createClipNorm(maxNorm, graph);
   auto clipFactor = createClipFactor(globalNorm, clipNorm, graph);
-  addClipByNorms(varUpdates, clipFactor, graph);
+  addClipByNorms(grads, clipFactor, graph);
 }
 
 } // namespace

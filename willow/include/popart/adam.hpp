@@ -335,6 +335,8 @@ public:
   ///     momentum optimizer state.
   /// \param accl2Type Data type to use for tensor that stores second-order
   ///     momentum optimizer state.
+  /// \param clipNormSettings A vector of ClipNormSettings (this can be used
+  ///     to set maximum values for weights).
   Adam(OptimizerValue defaultLearningRate,
        OptimizerValue defaultWeightDecay,
        OptimizerValue defaultBeta1,
@@ -346,12 +348,13 @@ public:
        WeightDecayMode weightDecayMode,
        DataType accumType,
        DataType accl1Type,
-       DataType accl2Type);
+       DataType accl2Type,
+       const std::vector<ClipNormSettings> &clipNormSettings = {});
 
   // Equivalent to calling Adam(defaultLearningRate, defaultWeightDecay,
   // defaultBeta1, defaultBeta2, defaultEps, lossScaling,
   // Adam::getUnsetMaxWeightNorm(), adamMode, weightDecayMode, accumType,
-  // accl1Type, accl2Type).
+  // accl1Type, accl2Type, clipNormSettings).
   Adam(OptimizerValue defaultLearningRate,
        OptimizerValue defaultWeightDecay,
        OptimizerValue defaultBeta1,
@@ -362,12 +365,13 @@ public:
        WeightDecayMode weightDecayMode,
        DataType accumType,
        DataType accl1Type,
-       DataType accl2Type);
+       DataType accl2Type,
+       const std::vector<ClipNormSettings> &clipNormSettings = {});
 
   // Equivalent to calling Adam(defaultLearningRate, defaultWeightDecay,
   // defaultBeta1, defaultBeta2, defaultEps, lossScaling,
   // maxWeightNorm, adamMode, WeightDecayMode::Decay, accumType,
-  // accl1Type, accl2Type).
+  // accl1Type, accl2Type, clipNormSettings).
   Adam(OptimizerValue defaultLearningRate,
        OptimizerValue defaultWeightDecay,
        OptimizerValue defaultBeta1,
@@ -378,12 +382,13 @@ public:
        AdamMode adamMode,
        DataType accumType,
        DataType accl1Type,
-       DataType accl2Type);
+       DataType accl2Type,
+       const std::vector<ClipNormSettings> &clipNormSettings = {});
 
   // Equivalent to calling Adam(defaultLearningRate, defaultWeightDecay,
   // defaultBeta1, defaultBeta2, defaultEps, lossScaling,
   // Adam::getUnsetMaxWeightNorm(), adamMode, WeightDecayMode::Decay,
-  // accumType, accl1Type, accl2Type).
+  // accumType, accl1Type, accl2Type, clipNormSettings).
   Adam(OptimizerValue defaultLearningRate,
        OptimizerValue defaultWeightDecay,
        OptimizerValue defaultBeta1,
@@ -393,7 +398,8 @@ public:
        AdamMode adamMode,
        DataType accumType,
        DataType accl1Type,
-       DataType accl2Type);
+       DataType accl2Type,
+       const std::vector<ClipNormSettings> &clipNormSettings = {});
 
   /// Constructor.
   /// \param params A parameter map where keys are one of
@@ -411,6 +417,8 @@ public:
   ///     momentum optimizer state.
   /// \param accl2Type Data type to use for tensor that stores second-order
   ///     momentum optimizer state.
+  /// \param clipNormSettings A vector of ClipNormSettings (this can be used
+  ///     to set maximum values for weights).
   ///
   /// **EXAMPLE**:
   /// ```
@@ -428,7 +436,8 @@ public:
        WeightDecayMode weightDecayMode,
        DataType accumType,
        DataType accl1Type,
-       DataType accl2Type);
+       DataType accl2Type,
+       const std::vector<ClipNormSettings> &clipNormSettings = {});
 
   static Adam fromDefaultMap(const std::map<std::string, OptimizerValue> &,
                              AdamMode adamMode_,
@@ -567,6 +576,7 @@ private:
        DataType accumType_,
        DataType accl1Type_,
        DataType accl2Type_,
+       const std::vector<ClipNormSettings> &clipNormSettings,
        int);
 
   static std::map<std::string, OptimizerValue>

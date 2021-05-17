@@ -5,6 +5,65 @@ import torch.nn.functional as F
 import numpy as np
 import popart
 import test_util as tu
+import pytest
+
+import sys
+from pathlib import Path
+sys.path.append(str(Path(__file__).resolve().parent / 'optimizer_tests'))
+import torch_lamb
+
+allOptimizerTypes = ['sgd', 'adam', 'lamb']
+
+
+def _get_popart_optimizer(optType, clipNormSettings):
+    if optType == 'sgd':
+        return popart.SGD({"defaultLearningRate": (0.1, True)},
+                          clipNormSettings)
+    elif optType == 'adam':
+        return popart.Adam(
+            {
+                "defaultLearningRate": (0.1, False),
+                "defaultBeta1": (0.9, False),
+                "defaultBeta2": (0.999, False),
+                "lossScaling": (20, False),
+            },
+            weight_decay_mode=popart.WeightDecayMode.L2Regularization,
+            mode=popart.AdamMode.Adam,
+            clip_norm_settings=clipNormSettings)
+    elif optType == 'lamb':
+        return popart.Adam(
+            {
+                "defaultLearningRate": (0.01, False),
+                "defaultBeta1": (0.9, False),
+                "defaultBeta2": (0.999, False),
+                "defaultEps": (1e-06, False),
+                "defaultWeightDecay": (0.1, False),
+                "lossScaling": (10, False),
+            },
+            weight_decay_mode=popart.WeightDecayMode.Decay,
+            mode=popart.AdamMode.Lamb,
+            clip_norm_settings=clipNormSettings)
+    else:
+        raise Exception(f"Unrecognized optimizer type: '{optimizerType}'")
+
+
+def _get_torch_optimizer(optType, net):
+    if optType == 'sgd':
+        return torch.optim.SGD(net.parameters(), lr=0.1)
+    elif optType == 'adam':
+        return torch.optim.Adam(net.parameters(),
+                                lr=0.1,
+                                betas=(0.9, 0.999),
+                                eps=1e-6,
+                                weight_decay=0.1)
+    elif optType == 'lamb':
+        return torch_lamb.Lamb(net.parameters(),
+                               lr=0.01,
+                               betas=(0.9, 0.999),
+                               eps=1e-6,
+                               weight_decay=0.1)
+    else:
+        raise Exception(f"Unrecognized optimizer typee: '{optimizerType}'")
 
 
 # Create a model that performs a series of convs on the
@@ -17,7 +76,8 @@ def _run_popart_test_model(data,
                            weights,
                            clipInfo,
                            pipelineGroups=None,
-                           accumulationFactor=None):
+                           accumulationFactor=None,
+                           optimizerType=None):
     # make sure the weights are not accidently modified in this function
     weights = [np.copy(i) for i in weights]
     bld = popart.Builder()
@@ -55,7 +115,7 @@ def _run_popart_test_model(data,
 
     proto = bld.getModelProto()
 
-    data_flow = popart.DataFlow(1, {
+    dataFlow = popart.DataFlow(1, {
         x: popart.AnchorReturnType("All"),
         out: popart.AnchorReturnType("All")
     })
@@ -72,24 +132,25 @@ def _run_popart_test_model(data,
             popart.ClipNormSettings([weightIds[i] for i in weightIndices],
                                     maxNorm))
     opts = popart.SessionOptions()
+    opts.enableOutlining = False
     if pipelineGroups:
         opts.enableGradientAccumulation = True
         opts.accumulationFactor = accumulationFactor
         opts.enablePipelining = True
         opts.virtualGraphMode = popart.VirtualGraphMode.Manual
-        # opts.accumulateOuterFragmentSettings.schedule = popart.AccumulateOuterFragmentSchedule.Scheduler
         opts.accumulateOuterFragmentSettings.schedule = popart.AccumulateOuterFragmentSchedule.OverlapMemoryOptimized
-        # opts.accumulateOuterFragmentSettings.schedule = popart.AccumulateOuterFragmentSchedule.OverlapCycleOptimized
 
-    sess = popart.TrainingSession(
-        proto,
-        dataFlow=data_flow,
-        loss=out,
-        # optimizer=popart.ConstSGD(0.1, clip_norm_settings=clipNormSettings),
-        optimizer=popart.SGD({"defaultLearningRate": (0.1, True)},
-                             clipNormSettings),
-        deviceInfo=device,
-        userOptions=opts)
+    sess = popart.TrainingSession(proto,
+                                  dataFlow=dataFlow,
+                                  loss=out,
+                                  optimizer=_get_popart_optimizer(
+                                      optimizerType, clipNormSettings),
+                                  deviceInfo=device,
+                                  userOptions=opts)
+
+    serializedIr = sess._serializeIr(popart.IrSerializationFormat.JSON)
+    with open('ir.json', 'w') as f:
+        f.write(serializedIr)
 
     sess.prepareDevice()
 
@@ -103,19 +164,16 @@ def _run_popart_test_model(data,
 
     result = anchors[x]
 
-    # print(f'Result: {result}')
-    # print(f'Loss: {anchors[out]}')
-
     sess.weightsToHost()
 
-    result_weights = {
+    resultWeights = {
         weightIds[i]: np.empty(weights[i].shape, dtype=weights[i].dtype)
         for i in range(len(weights))
     }
 
-    weightsio = popart.PyWeightsIO(result_weights)
+    weightsio = popart.PyWeightsIO(resultWeights)
     sess.readWeights(weightsio)
-    return result, result_weights
+    return result, resultWeights
 
 
 # Create a model that performs a series of convs on the
@@ -124,7 +182,11 @@ def _run_popart_test_model(data,
 # `clipInfo` describes the gradient clipping groups.
 # The format of `clipInfo` is:
 #     List(Tuple(List(TensorId), MaxNorm)))
-def _run_torch_test_model(data, weights, clipInfo, accumulationFactor=None):
+def _run_torch_test_model(data,
+                          weights,
+                          clipInfo,
+                          accumulationFactor=None,
+                          optimizerType=None):
     data = torch.tensor(data)
     weights = [torch.tensor(np.copy(i)) for i in weights]
 
@@ -147,7 +209,7 @@ def _run_torch_test_model(data, weights, clipInfo, accumulationFactor=None):
             return x
 
     net = Net()
-    optimizer = torch.optim.SGD(net.parameters(), lr=0.1)
+    optimizer = _get_torch_optimizer(optimizerType, net)
     loss = nn.L1Loss()
 
     for i in range(len(weights)):
@@ -170,53 +232,51 @@ def _run_torch_test_model(data, weights, clipInfo, accumulationFactor=None):
 
     optimizer.step()
 
-    result_weights = [conv.weight.data.detach().numpy() for conv in net.convs]
+    resultWeights = [conv.weight.data.detach().numpy() for conv in net.convs]
     result = result.detach().numpy()
 
-    result_weights = {
+    resultWeights = {
         f'weight{index}': weight
-        for index, weight in enumerate(result_weights)
+        for index, weight in enumerate(resultWeights)
     }
 
-    # print(f'Result: {result}')
-    # print(f'Loss: {output}')
-
-    return result, result_weights
+    return result, resultWeights
 
 
-def test_basic():
-    print()
+@pytest.mark.parametrize("optimizerType", allOptimizerTypes)
+def test_basic(optimizerType):
     np.random.seed(0)
-    clip_norm = 0.2
+    clipNorm = 0.2
 
     data = np.random.rand(1, 1, 8, 8).astype(np.float32)
     weights = [np.random.rand(1, 1, 2, 2).astype(np.float32) for _ in range(2)]
-    initial_weights = {f'weight{i}': np.copy(w) for i, w in enumerate(weights)}
+    initialWeights = {f'weight{i}': np.copy(w) for i, w in enumerate(weights)}
 
-    popart_result, popart_weights = _run_popart_test_model(
-        data, weights, [([0, 1], clip_norm)])
-    torch_result, torch_weights = _run_torch_test_model(
-        data, weights, [([0, 1], clip_norm)])
+    popartResult, popartWeights = _run_popart_test_model(
+        data, weights, [([0, 1], clipNorm)], optimizerType=optimizerType)
+    torchResult, torchWeights = _run_torch_test_model(
+        data, weights, [([0, 1], clipNorm)], optimizerType=optimizerType)
 
-    assert popart_result.shape == torch_result.shape
-    assert np.allclose(popart_result, torch_result)
+    assert popartResult.shape == torchResult.shape
+    assert np.allclose(popartResult, torchResult)
 
     def print_tensor(x):
         x = str(x)
         x = x.replace('\n', '')
         print(f'  {x}')
 
-    for key in popart_weights.keys():
+    for key in popartWeights.keys():
         print(f'{key}:')
-        print_tensor(initial_weights[key])
-        print_tensor(popart_weights[key])
-        print_tensor(torch_weights[key])
+        print_tensor(initialWeights[key])
+        print_tensor(popartWeights[key])
+        print_tensor(torchWeights[key])
 
-    for key in popart_weights.keys():
-        assert np.allclose(popart_weights[key], torch_weights[key])
+    for key in popartWeights.keys():
+        assert np.allclose(popartWeights[key], torchWeights[key], atol=1e-5)
 
 
-def test_two_groups():
+@pytest.mark.parametrize("optimizerType", allOptimizerTypes)
+def test_two_groups(optimizerType):
     print()
     np.random.seed(0)
     norm1 = 0.5
@@ -224,66 +284,78 @@ def test_two_groups():
 
     data = np.random.rand(1, 1, 8, 8).astype(np.float32)
     weights = [np.random.rand(1, 1, 2, 2).astype(np.float32) for _ in range(4)]
-    initial_weights = {f'weight{i}': np.copy(w) for i, w in enumerate(weights)}
+    initialWeights = {f'weight{i}': np.copy(w) for i, w in enumerate(weights)}
 
     clipGroups = [([0, 1], norm1), ([2, 3], norm2)]
 
-    popart_result, popart_weights = _run_popart_test_model(
-        data, weights, clipGroups)
-    torch_result, torch_weights = _run_torch_test_model(
-        data, weights, clipGroups)
+    popartResult, popartWeights = _run_popart_test_model(
+        data, weights, clipGroups, optimizerType=optimizerType)
+    torchResult, torchWeights = _run_torch_test_model(
+        data, weights, clipGroups, optimizerType=optimizerType)
 
-    assert popart_result.shape == torch_result.shape
-    assert np.allclose(popart_result, torch_result)
+    assert popartResult.shape == torchResult.shape
+    assert np.allclose(popartResult, torchResult)
 
     def print_tensor(x):
         x = str(x)
         x = x.replace('\n', '')
         print(f'  {x}')
 
-    for key in popart_weights.keys():
-        print(f'{key}:')
-        print_tensor(initial_weights[key])
-        print_tensor(popart_weights[key])
-        print_tensor(torch_weights[key])
+    for key in popartWeights.keys():
+        if np.allclose(popartWeights[key], torchWeights[key]):
+            print(f'{key}:')
+        else:
+            print(f'{key}: FAIL')
+        print_tensor(initialWeights[key])
+        print_tensor(popartWeights[key])
+        print_tensor(torchWeights[key])
 
-    for key in popart_weights.keys():
-        assert np.allclose(popart_weights[key], torch_weights[key])
+    for key in popartWeights.keys():
+        assert np.allclose(popartWeights[key], torchWeights[key])
 
 
-def test_pipelined():
+# piplining is not working for adam yet
+@pytest.mark.parametrize("optimizerType", allOptimizerTypes)
+def test_pipelined(optimizerType):
     print()
     np.random.seed(0)
     norm1 = 15
 
     data = np.random.rand(1, 1, 8, 8).astype(np.float32)
     weights = [np.random.rand(1, 1, 2, 2).astype(np.float32) for _ in range(4)]
-    initial_weights = {f'weight{i}': np.copy(w) for i, w in enumerate(weights)}
+    initialWeights = {f'weight{i}': np.copy(w) for i, w in enumerate(weights)}
 
     clipGroups = [([0, 1, 2, 3], norm1)]
     pipelineGroups = ((0, 1), (2, 3))
 
-    popart_result, popart_weights = _run_popart_test_model(
-        data, weights, clipGroups, pipelineGroups, accumulationFactor=3)
-    popart_result = popart_result[1]
-    torch_result, torch_weights = _run_torch_test_model(data,
-                                                        weights,
-                                                        clipGroups,
-                                                        accumulationFactor=3)
+    popartResult, popartWeights = _run_popart_test_model(
+        data,
+        weights,
+        clipGroups,
+        pipelineGroups,
+        accumulationFactor=3,
+        optimizerType=optimizerType)
+    popartResult = popartResult[1]
+    torchResult, torchWeights = _run_torch_test_model(
+        data,
+        weights,
+        clipGroups,
+        accumulationFactor=3,
+        optimizerType=optimizerType)
 
-    assert popart_result.shape == torch_result.shape
-    assert np.allclose(popart_result, torch_result)
+    assert popartResult.shape == torchResult.shape
+    assert np.allclose(popartResult, torchResult)
 
     def print_tensor(x):
         x = str(x)
         x = x.replace('\n', '')
         print(f'  {x}')
 
-    for key in popart_weights.keys():
+    for key in popartWeights.keys():
         print(f'{key}:')
-        print_tensor(initial_weights[key])
-        print_tensor(popart_weights[key])
-        print_tensor(torch_weights[key])
+        print_tensor(initialWeights[key])
+        print_tensor(popartWeights[key])
+        print_tensor(torchWeights[key])
 
-    for key in popart_weights.keys():
-        assert np.allclose(popart_weights[key], torch_weights[key])
+    for key in popartWeights.keys():
+        assert np.allclose(popartWeights[key], torchWeights[key])

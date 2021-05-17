@@ -289,6 +289,8 @@ namespace popart {
 std::vector<uint64_t> getAxes_u64(const std::vector<int64_t> &axes,
                                   uint64_t outRank);
 
+TensorId getBaseTensorId(const TensorId &t);
+
 } // namespace popart
 
 #endif
