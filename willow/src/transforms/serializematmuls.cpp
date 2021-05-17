@@ -15,6 +15,7 @@
 #include <popart/op/slice.hpp>
 #include <popart/op/transpose.hpp>
 #include <popart/op/varupdate.hpp>
+#include <popart/vendored/optional.hpp>
 
 #include <popart/optimizer.hpp>
 #include <popart/tensor.hpp>
@@ -89,7 +90,7 @@
 //  d_X  = cast(_d_X) if type(d_X) != type(_d_X) else _d_X
 //
 
-//                    For D = REDUCING_DIM
+//   For D = REDUCING_DIM
 //      X   W            d_Y     W.T         X.T    d_Y
 //      |   |             |      |            |      |
 //      MatMulOp      MatMulLhsGradOp       MatMulRhsGradOp
@@ -142,6 +143,22 @@ findSerializedMatMuls(popart::Graph &graph) {
 
   return matmuls;
 }
+
+struct Indices {
+  // LHS = [GROUP_DIM, INPUT_CHANNELS, REDUCING_DIM]
+  // RHS = [GROUP_DIM, REDUCING_DIM, OUTPUT_CHANNELS]
+  // These are the indices (e.g. 0, 1, 2) of the relevant dimension on which the
+  // transform will slice the tensor. See diagram above getAndCheckIndices for
+  // details
+  nonstd::optional<int64_t> LHSInputChannelsIndex;
+  nonstd::optional<int64_t> LHSOutputChannelsIndex;
+  nonstd::optional<int64_t> LHSReducingIndex;
+
+  nonstd::optional<int64_t> RHSInputChannelsIndex;
+  nonstd::optional<int64_t> RHSOutputChannelsIndex;
+  nonstd::optional<int64_t> RHSReducingIndex;
+};
+
 } // namespace
 
 namespace popart {
@@ -195,9 +212,9 @@ static TensorId slice(TransformBuilder &builder,
 
 static void serializeMatMul(TransformBuilder &builder,
                             Tensor *lhs,
-                            int sliceLhsDim, // -1 indicates no slice
+                            nonstd::optional<int64_t> sliceLhsDim,
                             Tensor *rhs,
-                            int sliceRhsDim, // -1 indicates no slice
+                            nonstd::optional<int64_t> sliceRhsDim,
                             Tensor *output,
                             MatMulBaseOp *matmul,
                             std::vector<TensorId> &outputTensors,
@@ -211,9 +228,9 @@ static void serializeMatMul(TransformBuilder &builder,
     TensorId lhsMatMulInput = lhs->id;
     TensorId rhsMatMulInput = rhs->id;
 
-    if (sliceLhsDim != -1) {
+    if (sliceLhsDim.has_value()) {
 
-      int sliceDim = sliceLhsDim;
+      int sliceDim = sliceLhsDim.value();
       auto size =
           lhs->info.dim(sliceDim) / matmul->getSerialiseSettings().factor;
 
@@ -232,9 +249,9 @@ static void serializeMatMul(TransformBuilder &builder,
                              name + "_SliceLhs");
     }
 
-    if (sliceRhsDim != -1) {
+    if (sliceRhsDim.has_value()) {
 
-      int sliceDim = sliceRhsDim;
+      int sliceDim = sliceRhsDim.value();
       auto size =
           rhs->info.dim(sliceDim) / matmul->getSerialiseSettings().factor;
 
@@ -561,6 +578,7 @@ serializeFwdMatMul_InputChannels(TransformBuilder &builder,
                                  Tensor *rhs,
                                  Tensor *output,
                                  MatMulBaseOp *matmul,
+                                 Indices indices,
                                  std::vector<TensorId> &outputTensors,
                                  OptionalVGraphId virtualGraphId,
                                  OptionalPipelineStage pipelineStage,
@@ -568,9 +586,9 @@ serializeFwdMatMul_InputChannels(TransformBuilder &builder,
                                  std::string name) {
   serializeMatMul(builder,
                   lhs,
-                  1,
+                  indices.LHSInputChannelsIndex,
                   rhs,
-                  -1,
+                  indices.RHSInputChannelsIndex,
                   output,
                   matmul,
                   outputTensors,
@@ -580,7 +598,7 @@ serializeFwdMatMul_InputChannels(TransformBuilder &builder,
                   name);
 
   builder.concat(outputTensors,
-                 1,
+                 indices.LHSInputChannelsIndex.value(),
                  output->id,
                  virtualGraphId,
                  pipelineStage,
@@ -596,6 +614,7 @@ serializeBwdLhsMatMul_InputChannels(TransformBuilder &builder,
                                     Tensor *rhs,
                                     Tensor *output,
                                     MatMulBaseOp *matmul,
+                                    Indices indices,
                                     std::vector<TensorId> &outputTensors,
                                     OptionalVGraphId virtualGraphId,
                                     OptionalPipelineStage pipelineStage,
@@ -604,9 +623,9 @@ serializeBwdLhsMatMul_InputChannels(TransformBuilder &builder,
 
   serializeMatMul(builder,
                   lhs,
-                  1,
+                  indices.LHSInputChannelsIndex,
                   rhs,
-                  -1,
+                  indices.RHSInputChannelsIndex,
                   output,
                   matmul,
                   outputTensors,
@@ -616,7 +635,7 @@ serializeBwdLhsMatMul_InputChannels(TransformBuilder &builder,
                   name);
 
   builder.concat(outputTensors,
-                 1,
+                 indices.LHSInputChannelsIndex.value(),
                  output->id,
                  virtualGraphId,
                  pipelineStage,
@@ -630,6 +649,7 @@ serializeBwdRhsMatMul_InputChannels(TransformBuilder &builder,
                                     Tensor *rhs,
                                     Tensor *output,
                                     MatMulBaseOp *matmul,
+                                    Indices indices,
                                     std::vector<TensorId> &outputTensors,
                                     OptionalVGraphId virtualGraphId,
                                     OptionalPipelineStage pipelineStage,
@@ -637,9 +657,9 @@ serializeBwdRhsMatMul_InputChannels(TransformBuilder &builder,
                                     std::string name) {
   serializeMatMul(builder,
                   lhs,
-                  2,
+                  indices.LHSInputChannelsIndex,
                   rhs,
-                  1,
+                  indices.RHSInputChannelsIndex,
                   output,
                   matmul,
                   outputTensors,
@@ -664,17 +684,17 @@ serializeFwdMatMul_ReducingDim(TransformBuilder &builder,
                                Tensor *rhs,
                                Tensor *output,
                                MatMulBaseOp *matmul,
+                               Indices indices,
                                std::vector<TensorId> &outputTensors,
                                OptionalVGraphId virtualGraphId,
                                OptionalPipelineStage pipelineStage,
                                OptionalExecutionPhase executionPhase,
                                std::string name) {
-
   serializeMatMul(builder,
                   lhs,
-                  2,
+                  indices.LHSReducingIndex,
                   rhs,
-                  1,
+                  indices.RHSReducingIndex,
                   output,
                   matmul,
                   outputTensors,
@@ -701,17 +721,17 @@ serializeBwdLhsMatMul_ReducingDim(TransformBuilder &builder,
                                   Tensor *rhs,
                                   Tensor *output,
                                   MatMulBaseOp *matmul,
+                                  Indices indices,
                                   std::vector<TensorId> &outputTensors,
                                   OptionalVGraphId virtualGraphId,
                                   OptionalPipelineStage pipelineStage,
                                   OptionalExecutionPhase executionPhase,
                                   std::string name) {
-
   serializeMatMul(builder,
                   lhs,
-                  -1,
+                  indices.LHSReducingIndex,
                   rhs,
-                  2,
+                  indices.RHSReducingIndex,
                   output,
                   matmul,
                   outputTensors,
@@ -721,7 +741,7 @@ serializeBwdLhsMatMul_ReducingDim(TransformBuilder &builder,
                   name);
 
   builder.concat(outputTensors,
-                 2,
+                 indices.RHSReducingIndex.value(),
                  output->id,
                  virtualGraphId,
                  pipelineStage,
@@ -735,6 +755,7 @@ serializeBwdRhsMatMul_ReducingDim(TransformBuilder &builder,
                                   Tensor *rhs,
                                   Tensor *output,
                                   MatMulBaseOp *matmul,
+                                  Indices indices,
                                   std::vector<TensorId> &outputTensors,
                                   OptionalVGraphId virtualGraphId,
                                   OptionalPipelineStage pipelineStage,
@@ -742,9 +763,9 @@ serializeBwdRhsMatMul_ReducingDim(TransformBuilder &builder,
                                   std::string name) {
   serializeMatMul(builder,
                   lhs,
-                  1,
+                  indices.LHSReducingIndex,
                   rhs,
-                  -1,
+                  indices.RHSReducingIndex,
                   output,
                   matmul,
                   outputTensors,
@@ -753,7 +774,7 @@ serializeBwdRhsMatMul_ReducingDim(TransformBuilder &builder,
                   executionPhase,
                   name);
 
-  serializeVarUpdate(1,
+  serializeVarUpdate(indices.LHSReducingIndex.value(),
                      builder,
                      output,
                      matmul,
@@ -770,6 +791,7 @@ serializeFwdMatMul_OutputChannels(TransformBuilder &builder,
                                   Tensor *rhs,
                                   Tensor *output,
                                   MatMulBaseOp *matmul,
+                                  Indices indices,
                                   std::vector<TensorId> &outputTensors,
                                   OptionalVGraphId virtualGraphId,
                                   OptionalPipelineStage pipelineStage,
@@ -777,9 +799,9 @@ serializeFwdMatMul_OutputChannels(TransformBuilder &builder,
                                   std::string name) {
   serializeMatMul(builder,
                   lhs,
-                  -1,
+                  indices.LHSOutputChannelsIndex,
                   rhs,
-                  2,
+                  indices.RHSOutputChannelsIndex,
                   output,
                   matmul,
                   outputTensors,
@@ -805,6 +827,7 @@ serializeBwdLhsMatMul_OutputChannels(TransformBuilder &builder,
                                      Tensor *rhs,
                                      Tensor *output,
                                      MatMulBaseOp *matmul,
+                                     Indices indices,
                                      std::vector<TensorId> &outputTensors,
                                      OptionalVGraphId virtualGraphId,
                                      OptionalPipelineStage pipelineStage,
@@ -813,9 +836,9 @@ serializeBwdLhsMatMul_OutputChannels(TransformBuilder &builder,
 
   serializeMatMul(builder,
                   lhs,
-                  2,
+                  indices.LHSOutputChannelsIndex,
                   rhs,
-                  1,
+                  indices.RHSOutputChannelsIndex,
                   output,
                   matmul,
                   outputTensors,
@@ -840,6 +863,7 @@ serializeBwdRhsMatMul_OutputChannels(TransformBuilder &builder,
                                      Tensor *rhs,
                                      Tensor *output,
                                      MatMulBaseOp *matmul,
+                                     Indices indices,
                                      std::vector<TensorId> &outputTensors,
                                      OptionalVGraphId virtualGraphId,
                                      OptionalPipelineStage pipelineStage,
@@ -847,9 +871,9 @@ serializeBwdRhsMatMul_OutputChannels(TransformBuilder &builder,
                                      std::string name) {
   serializeMatMul(builder,
                   lhs,
-                  -1,
+                  indices.LHSOutputChannelsIndex,
                   rhs,
-                  2,
+                  indices.RHSOutputChannelsIndex,
                   output,
                   matmul,
                   outputTensors,
@@ -867,6 +891,206 @@ serializeBwdRhsMatMul_OutputChannels(TransformBuilder &builder,
                      pipelineStage,
                      executionPhase,
                      name);
+}
+
+std::string
+serialiseModeToString(MatMulOp::SerialiseSettings::Mode serialSetting) {
+  switch (serialSetting) {
+  case MatMulOp::SerialiseSettings::Mode::InputChannels: {
+    return "InputChannels";
+    break;
+  }
+  case MatMulOp::SerialiseSettings::Mode::OutputChannels: {
+    return "OutputChannels";
+    break;
+  }
+  case MatMulOp::SerialiseSettings::Mode::ReducingDim: {
+    return "ReducingDim";
+    break;
+  }
+  case MatMulOp::SerialiseSettings::Mode::None: {
+    return "None";
+    break;
+  }
+  }
+  throw error("Invalid SerialiseSettings {}", static_cast<int>(serialSetting));
+}
+
+std::string phaseToString(MatMulOp::Phase phase) {
+  switch (phase) {
+  case MatMulOp::Phase::Fwd: {
+    return "Fwd";
+    break;
+  }
+  case MatMulOp::Phase::BwdLHS: {
+    return "BwdLHS";
+    break;
+  }
+  case MatMulOp::Phase::BwdRHS: {
+    return "BwdRHS";
+    break;
+  }
+  }
+  throw error("Invalid phase {}", static_cast<int>(phase));
+}
+// clang-format off
+/**
+ *                                                                                                                                                                                                                                                
+                                                                    Phase                                                  
+                                                                                                                           
+                                       FWD                         BWD LHS                    BWD RHS                      
+ serialization            +------------------------------|----------------------------------------------------+            
+                          | LHSInputChannelsIdx = 1      | LHSInputChannelsIdx = 1  | LHSInputChannelsIdx = 2 |            
+                          |                              |                          |                         |            
+         InputChannels    |                              |                          | RHSInputChannelsIdx = 1 |            
+                          |                              |                          |                         |            
+                          | Concat                       | Concat                   | sumByAddInplace         |            
+                          |---------------------------------------------------------------------------------- |            
+                          | LHSReducingIdx = 2           | RHSReducingIdx = 2       | LHSReducingIdx = 1      |            
+                          |                              |                          |                         |            
+         ReducingDim      | RHSReducingIdx = 1           |                          |                         |            
+                          |                              |                          |                         |            
+                          | sumByAddInplace              | Concat                   | serializeVarUpdate      |            
+                          |-----------------------------------------------------------------------------------|            
+                          |RHSOutputChannelsIdx = 2      |LHSOutputChannelsIdx = 2  |RHSOutputChannelsIdx = 2 |            
+                          |                              |                          |                         |            
+         OutputChannels   |                              |RHSOutputChannelsIdx = 1  |                         |            
+                          |                              |                          |                         |            
+                          |Concat                        |sumByAddInplace           |serializeVarUpdate       |            
+                          +-----------------------------------------------------------------------------------+            
+**/                                                                                                               
+Indices getAndCheckIndices(MatMulBaseOp *matmul,
+                           Tensor *lhs,
+                           Tensor *rhs,
+                           MatMulOp::SerialiseSettings::Mode serialSetting,
+                           int64_t factor,
+                           MatMulOp::Phase phase) {
+
+  // X = [GROUP_DIM, INPUT_CHANNELS, REDUCING_DIM]
+  // W = [GROUP_DIM, REDUCING_DIM, OUTPUT_CHANNELS]
+
+  Indices indices;
+
+  std::stringstream ss;
+  ss << "\nFor matrix multiplication:\n" << matmul->debugName() << " \n";
+  ss << "LHS tensor " << lhs->id << ", shape " << lhs->info.shape() << " rank "
+     << lhs->info.rank() << " \n";
+  ss << "RHS tensor " << rhs->id << ", shape " << rhs->info.shape() << " rank "
+     << rhs->info.rank() << " \n";
+  ss << "serialization setting " << serialiseModeToString(serialSetting)
+     << "\n";
+  ss << "Factor = " << factor << " \n";
+
+  if (lhs->info.rank() > 3 || lhs->info.rank() < 2) {
+    ss << logging::format(
+        "LHS Input: {} must have rank 2 or 3 for matmul serialization. "
+        "\nPlease squeeze or reshape for serialization.",
+        lhs->id);
+    throw error(ss.str());
+  } else if (rhs->info.rank() > 3 || rhs->info.rank() < 2) {
+    ss << logging::format(
+        "RHS Input: {} must have rank 2 or 3 for matmul serialization. "
+        "\nPlease squeeze or reshape for serialization.",
+        rhs->id);
+
+    throw error(ss.str());
+  } else if (lhs->info.rank() != rhs->info.rank()) {
+    ss << logging::format("LHS (rank {}) and RHS (rank {}) matmuls must have "
+                          "equal rank for matmul serialization",
+                          lhs->info.rank(),
+                          rhs->info.rank());
+    throw error(ss.str());
+  }
+  switch (serialSetting) {
+  case MatMulOp::SerialiseSettings::Mode::InputChannels: {
+    switch (phase) {
+    case MatMulOp::Phase::Fwd:
+    indices.LHSInputChannelsIndex = 1;
+    break;
+    case MatMulOp::Phase::BwdLHS:
+      indices.LHSInputChannelsIndex = 1;
+      break;
+    case MatMulOp::Phase::BwdRHS:
+      indices.LHSInputChannelsIndex = 2;
+      indices.RHSInputChannelsIndex = 1;
+      break;
+    }
+    if ((indices.LHSInputChannelsIndex.has_value()) &&
+        (lhs->info.shape().at(indices.LHSInputChannelsIndex.value()) % factor !=
+         0)) {
+      ss << logging::format(
+          "LHS input {}, shape {}, index {} must be divisible by factor {}",
+          lhs->id,
+          lhs->info.shape(),
+          indices.LHSInputChannelsIndex.value(),
+          factor);
+      throw error(ss.str());
+    }
+    break;
+  }
+  case MatMulOp::SerialiseSettings::Mode::ReducingDim: {
+    switch (phase) {
+    case MatMulOp::Phase::Fwd:
+      indices.LHSReducingIndex = 2;
+      indices.RHSReducingIndex = 1;
+      break;
+    case MatMulOp::Phase::BwdLHS:
+      indices.RHSReducingIndex = 2;
+      break;
+    case MatMulOp::Phase::BwdRHS:
+      indices.LHSReducingIndex = 1;
+      break;
+    }
+    if (((indices.LHSReducingIndex.has_value()) &&
+         (indices.RHSReducingIndex.has_value())) &&
+        (lhs->info.shape().at(indices.LHSReducingIndex.value()) !=
+         rhs->info.shape().at(indices.RHSReducingIndex.value()))) {
+      ss << logging::format(
+          "LHS input {}, shape: {}, index: {} must be equal to \n"
+          "RHS input {}, shape: {}, index: {}",
+          lhs->id,
+          lhs->info.shape(),
+          indices.LHSReducingIndex.value(),
+          rhs->id,
+          rhs->info.shape(),
+          indices.RHSReducingIndex.value());
+      throw error(ss.str());
+    }
+    break;
+  }
+  case MatMulOp::SerialiseSettings::Mode::OutputChannels: {
+    switch (phase) {
+    case MatMulOp::Phase::Fwd:
+      indices.RHSOutputChannelsIndex = 2;
+      break;
+    case MatMulOp::Phase::BwdLHS:
+      indices.LHSOutputChannelsIndex = 2;
+      indices.RHSOutputChannelsIndex = 1;
+      break;
+    case MatMulOp::Phase::BwdRHS:
+      indices.RHSOutputChannelsIndex = 2;
+      break;
+    }
+    if ((indices.RHSOutputChannelsIndex.has_value()) &&
+        (rhs->info.shape().at(indices.RHSOutputChannelsIndex.value()) % factor !=
+         0)) {
+      ss << logging::format(
+          "RHS input: {}, shape: {}, index: {} must be divisible by factor {}",
+          rhs->id,
+          rhs->info.shape(),
+          indices.RHSOutputChannelsIndex.value(),
+          factor);
+      throw error(ss.str());
+    }
+    break;
+  }
+  case MatMulOp::SerialiseSettings::Mode::None: {
+    throw error("Matmul SerialiseSettings invalid: {}",
+                serialiseModeToString(serialSetting));
+    break;
+  }
+  }
+  return indices;
 }
 
 bool SerializeMatMuls::apply(Graph &graph) const {
@@ -892,14 +1116,22 @@ bool SerializeMatMuls::apply(Graph &graph) const {
       continue;
     }
 
-    logging::ir::info("matmul:{} {}x{}->{} mode: {} factor: {} phase: {}",
-                      matmul->opid,
-                      matmulLhs->info.shape(),
-                      matmulRhs->info.shape(),
-                      matmulOutput->info.shape(),
-                      static_cast<int64_t>(matmul->getSerialiseSettings().mode),
-                      factor,
-                      static_cast<int64_t>(matmul->getPhase()));
+    Indices indices = getAndCheckIndices(matmul,
+                                         matmulLhs,
+                                         matmulRhs,
+                                         matmul->getSerialiseSettings().mode,
+                                         factor,
+                                         matmul->getPhase());
+
+    logging::ir::info(
+        "matmul:{} {}x{}->{} mode: {} factor: {} phase: {}",
+        matmul->opid,
+        matmulLhs->info.shape(),
+        matmulRhs->info.shape(),
+        matmulOutput->info.shape(),
+        serialiseModeToString(matmul->getSerialiseSettings().mode),
+        factor,
+        phaseToString(matmul->getPhase()));
 
     OptionalVGraphId virtualGraphId{};
     if (matmul->hasVirtualGraphId()) {
@@ -932,6 +1164,7 @@ bool SerializeMatMuls::apply(Graph &graph) const {
                                          matmulRhs,
                                          matmulOutput,
                                          matmul,
+                                         indices,
                                          outputTensors,
                                          virtualGraphId,
                                          pipelineStage,
@@ -944,6 +1177,7 @@ bool SerializeMatMuls::apply(Graph &graph) const {
                                             matmulRhs,
                                             matmulOutput,
                                             matmul,
+                                            indices,
                                             outputTensors,
                                             virtualGraphId,
                                             pipelineStage,
@@ -956,6 +1190,7 @@ bool SerializeMatMuls::apply(Graph &graph) const {
                                             matmulRhs,
                                             matmulOutput,
                                             matmul,
+                                            indices,
                                             outputTensors,
                                             virtualGraphId,
                                             pipelineStage,
@@ -972,6 +1207,7 @@ bool SerializeMatMuls::apply(Graph &graph) const {
                                           matmulRhs,
                                           matmulOutput,
                                           matmul,
+                                          indices,
                                           outputTensors,
                                           virtualGraphId,
                                           pipelineStage,
@@ -984,6 +1220,7 @@ bool SerializeMatMuls::apply(Graph &graph) const {
                                              matmulRhs,
                                              matmulOutput,
                                              matmul,
+                                             indices,
                                              outputTensors,
                                              virtualGraphId,
                                              pipelineStage,
@@ -996,6 +1233,7 @@ bool SerializeMatMuls::apply(Graph &graph) const {
                                              matmulRhs,
                                              matmulOutput,
                                              matmul,
+                                             indices,
                                              outputTensors,
                                              virtualGraphId,
                                              pipelineStage,
@@ -1012,6 +1250,7 @@ bool SerializeMatMuls::apply(Graph &graph) const {
                                        matmulRhs,
                                        matmulOutput,
                                        matmul,
+                                       indices,
                                        outputTensors,
                                        virtualGraphId,
                                        pipelineStage,
@@ -1024,6 +1263,7 @@ bool SerializeMatMuls::apply(Graph &graph) const {
                                           matmulRhs,
                                           matmulOutput,
                                           matmul,
+                                          indices,
                                           outputTensors,
                                           virtualGraphId,
                                           pipelineStage,
@@ -1036,6 +1276,7 @@ bool SerializeMatMuls::apply(Graph &graph) const {
                                           matmulRhs,
                                           matmulOutput,
                                           matmul,
+                                          indices,
                                           outputTensors,
                                           virtualGraphId,
                                           pipelineStage,
