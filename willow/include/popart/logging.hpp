@@ -94,7 +94,11 @@ template <std::size_t N> struct ArgArray {
 };
 
 std::string format(std::string ref, std::size_t numArgs, Value args[]);
+
 } // namespace internal
+
+// Replace '{' with '{{' and '}' with '}}'.
+std::string escape(const std::string &ref);
 
 enum class Level {
   Trace    = 0,
