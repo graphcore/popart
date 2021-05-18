@@ -759,6 +759,8 @@ def test_remainder_grad(op_tester):
         o = builder.aiGraphcore.remainder([i1, i2], "test_remainder_grad")
         builder.addOutputTensor(o)
         gradPrefix = popart.reservedGradientPrefix()
+        # Check builder shape inference
+        assert (builder.getTensorShape(o) == [4])
 
         return [o, gradPrefix + i1, i2, gradPrefix + o]
 
