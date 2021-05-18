@@ -694,6 +694,8 @@ def test_fmod(op_tester):
         i1 = builder.addInputTensor(d1)
         i2 = builder.addInputTensor(d2)
         o = builder.aiGraphcore.fmod([i1, i2], "test_fmod")
+        # Check builder shape inference
+        assert (builder.getTensorShape(o) == [4])
         builder.addOutputTensor(o)
         return [o]
 
@@ -739,6 +741,8 @@ def test_fmod_mixed_sign_float16(op_tester):
         i1 = builder.addInputTensor(d1)
         i2 = builder.addInputTensor(d2)
         o = builder.aiGraphcore.fmod([i1, i2], "test_fmod")
+        # Check builder shape inference
+        assert (builder.getTensorShape(o) == [6])
         builder.addOutputTensor(o)
         return [o]
 
