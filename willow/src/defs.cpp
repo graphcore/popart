@@ -41,6 +41,7 @@ void ReverseShapeInference(InferenceContext &ctx);
 void ScatterReduceShapeInference(InferenceContext &ctx);
 void RemainderShapeInference(InferenceContext &ctx);
 void FmodShapeInference(InferenceContext &ctx);
+void BitwiseNotShapeInference(InferenceContext &ctx);
 
 void SubsampleShapeInference(InferenceContext &ctx) {
   propagateElemTypeFromInputToOutput(ctx, 0, 0);
@@ -482,6 +483,10 @@ void FmodShapeInference(InferenceContext &ctx) {
       *ctx.getOutputType(0)->mutable_tensor_type()->mutable_shape());
 }
 
+void BitwiseNotShapeInference(InferenceContext &ctx) {
+  propagateShapeAndTypeFromFirstInput(ctx);
+}
+
 extern size_t dbg_count_check_GroupNormalization_AiGraphcore_ver1;
 extern size_t dbg_count_check_Subsample_AiGraphcore_ver1;
 extern size_t dbg_count_check_PrintTensor_AiGraphcore_ver1;
@@ -509,6 +514,7 @@ extern size_t dbg_count_check_ScatterReduce_AiGraphcore_ver1;
 extern size_t dbg_count_check_Init_AiGraphcore_ver1;
 extern size_t dbg_count_check_Remainder_AiGraphcore_ver1;
 extern size_t dbg_count_check_Fmod_AiGraphcore_ver1;
+extern size_t dbg_count_check_BitwiseNot_AiGraphcore_ver1;
 
 static const char groupnormalizationDoc[] =
     "GroupNormalization applies Group Normalization over a mini-batch of "
@@ -1312,6 +1318,21 @@ ONNX_OPERATOR_SET_SCHEMA_EX(
                         "(u)int32 tensors.")
         .TypeAndShapeInferenceFunction(FmodShapeInference))
 
+ONNX_OPERATOR_SET_SCHEMA_EX(
+    BitwiseNot,
+    AiGraphcore,
+    popart::Domain::ai_graphcore,
+    1,
+    false,
+    OpSchema()
+        .SetDoc("BitwiseNot(X)")
+        .Input(0, "X", "Input tensor", "T")
+        .Output(0, "Y", "Output tensor", "T")
+        .TypeConstraint("T",
+                        {"tensor(int32)", "tensor(uint32)"},
+                        "Constrain input and output types to (u)int32 tensors.")
+        .TypeAndShapeInferenceFunction(BitwiseNotShapeInference))
+
 static bool registerOps() {
   auto &d = ONNX_NAMESPACE::OpSchemaRegistry::DomainToVersionRange::Instance();
   d.AddDomainToVersion(popart::Domain::ai_graphcore, 1, 1);
@@ -1419,6 +1440,10 @@ static bool registerOps() {
 
   ONNX_NAMESPACE::RegisterSchema(
       GetOpSchema<ONNX_OPERATOR_SET_SCHEMA_CLASS_NAME(AiGraphcore, 1, Fmod)>());
+
+  ONNX_NAMESPACE::RegisterSchema(
+      GetOpSchema<ONNX_OPERATOR_SET_SCHEMA_CLASS_NAME(
+          AiGraphcore, 1, BitwiseNot)>());
 
   return true;
 }

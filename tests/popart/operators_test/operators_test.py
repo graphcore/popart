@@ -3553,6 +3553,8 @@ def test_bitwise_not(op_tester, npType):
         i1 = builder.addInputTensor(d1)
         o = builder.aiGraphcore.bitwisenot([i1], "test_bitwisenot")
         builder.addOutputTensor(o)
+        # Check builder shape inference
+        assert (builder.getTensorShape(o) == [10])
         return [o]
 
     def reference(ref_data):
