@@ -23,6 +23,7 @@ std::array<std::string, NDotChecks> getDotCheckIds() {
   V[static_cast<int>(DotCheck::Bwd0)]     = "bwd0";
   V[static_cast<int>(DotCheck::PreAlias)] = "prealias";
   V[static_cast<int>(DotCheck::Final)]    = "final";
+  V[static_cast<int>(DotCheck::All)]      = "all";
 
   // verify that we have registered all the DotChecks
   // c++, when will we be able to make this constexpr?
@@ -93,7 +94,8 @@ DotCheck dotCheckFromString(const std::string &s) {
       {"FWD1", DotCheck::Fwd1},
       {"BWD0", DotCheck::Bwd0},
       {"PREALIAS", DotCheck::PreAlias},
-      {"FINAL", DotCheck::Final}};
+      {"FINAL", DotCheck::Final},
+      {"ALL", DotCheck::All}};
 
   auto found = dotCheckStringsMap.find(s);
   if (found != dotCheckStringsMap.end()) {

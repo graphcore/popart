@@ -64,6 +64,8 @@ enum class DotCheck {
   PreAlias,
   /// Generate graph after running aliasing patterns (the final IR).
   Final,
+  /// Generate all graphs
+  All,
   /// The number of \c DotCheck values.
   N
 };

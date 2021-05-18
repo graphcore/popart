@@ -137,7 +137,8 @@ void DotVisualizer::makeNodeIfRequired(const Tensor *tensor,
 }
 
 void DotVisualizer::write() {
-  if (getDotChecks().count(check) == 0) {
+  if (!getDotChecks().count(DotCheck::All) &&
+      getDotChecks().count(check) == 0) {
     return;
   }
 

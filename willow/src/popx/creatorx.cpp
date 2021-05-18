@@ -287,14 +287,16 @@ InputCreatorCandidate::unwind(poplar::Tensor input) {
   }
 
   if (pathToInput.size() > 0) {
-    auto expectedShape = pathToInput.back()
-                             .opx->getOp<Op>()
-                             .input->tensor(pathToInput.back().inIndex)
-                             ->info.shape();
-    auto fullRegion = view::Region::getFull(expectedShape);
+    const Op &op              = pathToInput.back().opx->getOp<Op>();
+    const Tensor *t           = op.input->tensor(pathToInput.back().inIndex);
+    const Shape expectedShape = t->info.shape();
+    auto fullRegion           = view::Region::getFull(expectedShape);
 
-    logging::devicex::trace("[creatorx] Expected final shape {}",
-                            expectedShape);
+    logging::devicex::trace(
+        "[creatorx] Expected final shape {} for tensor {} consumer {}",
+        expectedShape,
+        t->id,
+        op.debugName());
 
     auto inInfo =
         pathToInput.back().opx->getOp<Op>().inInfo(pathToInput.back().inIndex);

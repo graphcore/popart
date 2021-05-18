@@ -16,24 +16,25 @@ bool SubtractArg1GradOpPattern::matches(Op *op) const {
   return op->isConvertibleTo<SubtractArg1GradOp>();
 }
 
-std::vector<std::unique_ptr<Op>>
-SubtractArg1GradOpPattern::sequence(Op *op) const {
+TensorId
+SubtractArg1GradOpPattern::makeAllReplacementOps(Op *op,
+                                                 Ir *ir,
+                                                 const Tensor &gradIn,
+                                                 const Tensor &fwdIn0,
+                                                 const Tensor &fwdIn1,
+                                                 const Tensor &fwdOut) const {
   // we assume this dynamic_cast call has been confirmed
   // to be valid via a previous call to SubtractArg1GradOp::matches
-  auto axes     = dynamic_cast<SubtractArg1GradOp *>(op)->getReductionAxes();
-  auto grad_out = op->outTensor(ElementWiseBinaryGradOp::getOutIndex());
+  auto &graph = op->getGraph();
 
-  std::vector<std::unique_ptr<Op>> seq;
+  auto tmpOut = ir->createIntermediateTensorId(gradIn.id);
 
-  seq.push_back(makeReplacementOp(Onnx::AiOnnx::OpSet9::Neg, op));
-  seq.push_back(std::make_unique<ReduceSumOp>(
-      Onnx::AiOnnx::OpSet9::ReduceSum, axes, false, op->getSettings()));
-  seq.push_back(std::make_unique<ReshapeOp>(
-      Onnx::Operators::Reshape_5,
-      op->getGraph().getTensors().get(grad_out->id)->info.shape(),
-      op->getSettings()));
+  graph.createConnectedOp<NegateOp>({{NegateOp::getInIndex(), gradIn.id}},
+                                    {{NegateOp::getOutIndex(), tmpOut}},
+                                    Onnx::AiOnnx::OpSet9::Neg,
+                                    op->getSettings());
 
-  return seq;
+  return tmpOut;
 }
 
 namespace {

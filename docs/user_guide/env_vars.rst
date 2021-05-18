@@ -68,6 +68,7 @@ Supported values:
 - BWD0
 - PREALIAS
 - FINAL
+- ALL
 
 These values may be combined using ":" as a separator.
 The example below shows how to set ``POPART_DOT_CHECKS`` to export
