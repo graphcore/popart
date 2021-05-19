@@ -85,16 +85,16 @@ void CtcBeamSearchDecoderOp::setup() {
 void CtcBeamSearchDecoderOp::appendAttributes(OpSerialiserBase &os) const {
   Op::appendAttributes(os);
   os.appendAttribute("blank", getBlankClass());
-  os.appendAttribute("beamWidth", getBeamWidth());
-  os.appendAttribute("topPaths", getTopPaths());
+  os.appendAttribute("beam_width", getBeamWidth());
+  os.appendAttribute("top_paths", getTopPaths());
 }
 
 void CtcBeamSearchDecoderOp::appendOutlineAttributes(
     OpSerialiserBase &os) const {
   Op::appendOutlineAttributes(os);
   os.appendAttribute("blank", getBlankClass());
-  os.appendAttribute("beamWidth", getBeamWidth());
-  os.appendAttribute("topPaths", getTopPaths());
+  os.appendAttribute("beam_width", getBeamWidth());
+  os.appendAttribute("top_paths", getTopPaths());
 }
 
 std::vector<std::unique_ptr<Op>> CtcBeamSearchDecoderOp::getGradOps() {
@@ -118,18 +118,18 @@ static OpDefinition::DataTypes T2 = {DataType::UINT32};
 
 static OpDefinition ctcBeamSearchDecoderOpDef({
     OpDefinition::Inputs({
-        {"logProbs", T1},
-        {"dataLengths", T2},
+        {"log_probs", T1},
+        {"data_lengths", T2},
     }),
     OpDefinition::Outputs({
-        {"labelProbs", T1},
-        {"labelLengths", T2},
-        {"decodedLabels", T2},
+        {"label_probs", T1},
+        {"label_lengths", T2},
+        {"decoded_labels", T2},
     }),
     OpDefinition::Attributes({
-        {"blankClass", {"*"}},
-        {"beamWidth", {"*"}},
-        {"topPaths", {"*"}},
+        {"blank_class", {"*"}},
+        {"beam_width", {"*"}},
+        {"top_paths", {"*"}},
     }),
 });
 
@@ -142,9 +142,9 @@ static OpCreator<CtcBeamSearchDecoderOp> ctcBeamSearchDecoderOpCreator(
       unsigned blankClass =
           info.attributes.getAttribute<Attributes::Int>("blank", 0);
       unsigned beamWidth =
-          info.attributes.getAttribute<Attributes::Int>("beamWidth", 100);
+          info.attributes.getAttribute<Attributes::Int>("beam_width", 100);
       unsigned topPaths =
-          info.attributes.getAttribute<Attributes::Int>("topPaths", 1);
+          info.attributes.getAttribute<Attributes::Int>("top_paths", 1);
 
       return std::unique_ptr<CtcBeamSearchDecoderOp>(new CtcBeamSearchDecoderOp(
           info.opid, blankClass, beamWidth, topPaths, info.settings));

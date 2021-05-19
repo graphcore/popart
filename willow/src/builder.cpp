@@ -1099,8 +1099,8 @@ AiGraphcoreOpset1::ctcbeamsearchdecoder(const std::vector<TensorId> &args,
                                         const DebugContext &debugContext) {
   std::map<std::string, popart::any> attributes = {
       {"blank", blank},
-      {"beamWidth", beamWidth},
-      {"topPaths", topPaths},
+      {"beam_width", beamWidth},
+      {"top_paths", topPaths},
   };
   BuilderDebugInfo di(debugContext, __POPART_FUNCTION_NAME__, args, attributes);
   attributes.insert({sDebugInfoId, di.getId()});

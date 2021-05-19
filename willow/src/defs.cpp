@@ -16,6 +16,23 @@
 
 namespace ONNX_NAMESPACE {
 
+/**
+ * Helper for extracting INT attributes.
+ *
+ * \param ctx The inference context.
+ * \param attrName The name of the attribute to be extracted.
+ * \return The value of the attribute.
+ */
+auto getIntAttribute(InferenceContext &ctx, const std::string &attrName) {
+  auto proto = ctx.getAttribute(attrName);
+
+  if (proto && proto->has_i()) {
+    return proto->i();
+  }
+
+  throw popart::internal_error("{} must be supplied as an integer", attrName);
+}
+
 void SubsampleShapeInference(InferenceContext &ctx);
 void GroupNormalizationShapeInference(InferenceContext &ctx);
 void PrintTensorShapeInference(InferenceContext &ctx);
@@ -43,6 +60,7 @@ void RemainderShapeInference(InferenceContext &ctx);
 void FmodShapeInference(InferenceContext &ctx);
 void BitwiseNotShapeInference(InferenceContext &ctx);
 void RoundShapeInference(InferenceContext &ctx);
+void CtcBeamSearchDecoderShapeInference(InferenceContext &ctx);
 
 void SubsampleShapeInference(InferenceContext &ctx) {
   propagateElemTypeFromInputToOutput(ctx, 0, 0);
@@ -432,21 +450,10 @@ void InitShapeInference(InferenceContext &ctx) {
 void ScatterReduceShapeInference(InferenceContext &ctx) {
   propagateElemTypeFromInputToOutput(ctx, 0, 0);
 
-  // Helper for extracting required INT attribute
-  auto getIntAttribute = [&](const std::string &attrName) {
-    auto proto = ctx.getAttribute(attrName);
-
-    if (proto && proto->has_i()) {
-      return proto->i();
-    }
-
-    throw popart::internal_error("{} must be supplied as an integer", attrName);
-  };
-
   // The output shape is same as the data source tensor.
   // Except in the scatter axis is equal to the axis_size
-  auto axis     = getIntAttribute("axis");
-  auto axisSize = getIntAttribute("axis_size");
+  auto axis     = getIntAttribute(ctx, "axis");
+  auto axisSize = getIntAttribute(ctx, "axis_size");
 
   auto &inputShape  = getInputShape(ctx, 0);
   auto rank         = inputShape.dim_size();
@@ -492,6 +499,25 @@ void RoundShapeInference(InferenceContext &ctx) {
   propagateShapeAndTypeFromFirstInput(ctx);
 }
 
+void CtcBeamSearchDecoderShapeInference(InferenceContext &ctx) {
+  auto batchSize = getInputShape(ctx, 0).dim(1).dim_value();
+  auto topPaths  = getIntAttribute(ctx, "top_paths");
+  auto maxTime   = getInputShape(ctx, 0).dim(0).dim_value();
+
+  auto *labelProbsOutputShape = getOutputShape(ctx, 0);
+  labelProbsOutputShape->add_dim()->set_dim_value(batchSize);
+  labelProbsOutputShape->add_dim()->set_dim_value(topPaths);
+
+  auto *labelLengthsOutputShape = getOutputShape(ctx, 1);
+  labelLengthsOutputShape->add_dim()->set_dim_value(batchSize);
+  labelLengthsOutputShape->add_dim()->set_dim_value(topPaths);
+
+  auto *ldecodedLabelsOutputShape = getOutputShape(ctx, 2);
+  ldecodedLabelsOutputShape->add_dim()->set_dim_value(batchSize);
+  ldecodedLabelsOutputShape->add_dim()->set_dim_value(topPaths);
+  ldecodedLabelsOutputShape->add_dim()->set_dim_value(maxTime);
+}
+
 extern size_t dbg_count_check_GroupNormalization_AiGraphcore_ver1;
 extern size_t dbg_count_check_Subsample_AiGraphcore_ver1;
 extern size_t dbg_count_check_PrintTensor_AiGraphcore_ver1;
@@ -521,6 +547,7 @@ extern size_t dbg_count_check_Remainder_AiGraphcore_ver1;
 extern size_t dbg_count_check_Fmod_AiGraphcore_ver1;
 extern size_t dbg_count_check_BitwiseNot_AiGraphcore_ver1;
 extern size_t dbg_count_check_Round_AiGraphcore_ver1;
+extern size_t dbg_count_check_CtcBeamSearchDecoder_AiGraphcore_ver1;
 
 static const char groupnormalizationDoc[] =
     "GroupNormalization applies Group Normalization over a mini-batch of "
@@ -1355,6 +1382,45 @@ ONNX_OPERATOR_SET_SCHEMA_EX(
             "Constrain input and output types to float(32/16) tensors.")
         .TypeAndShapeInferenceFunction(RoundShapeInference))
 
+ONNX_OPERATOR_SET_SCHEMA_EX(
+    CtcBeamSearchDecoder,
+    AiGraphcore,
+    popart::Domain::ai_graphcore,
+    1,
+    false,
+    OpSchema()
+        .SetDoc("Performs beam search decoding on the log probabilities given "
+                "in input.")
+        .Input(0, "log_probs", "Input log probabilities", "T1")
+        .Input(1, "data_lengths", "Length of each input", "T2")
+        .Output(0, "label_probs", "Label probabilities", "T1")
+        .Output(1, "label_lengths", "Length of each output", "T2")
+        .Output(2, "decoded_labels", "Decoded labels", "T2")
+        .TypeConstraint("T1",
+                        {
+                            "tensor(float16)",
+                            "tensor(float)",
+                        },
+                        "Input log probabilities and output label "
+                        "probabilities can be float or half.")
+        .TypeConstraint("T2",
+                        {
+                            "tensor(uint32)",
+                        },
+                        "Input and output lengths and decoded labels can be "
+                        "unsigned 32-bit integers.")
+        .Attr("blank",
+              "The integer representing the blank class.",
+              AttributeProto::INT)
+        .Attr("beam_width",
+              "The number of beams to use when decoding.",
+              AttributeProto::INT)
+        .Attr("top_paths",
+              "The number of most likely decoded paths to return, must be less "
+              "than or equal to beamWidth.",
+              AttributeProto::INT)
+        .TypeAndShapeInferenceFunction(CtcBeamSearchDecoderShapeInference))
+
 static bool registerOps() {
   auto &d = ONNX_NAMESPACE::OpSchemaRegistry::DomainToVersionRange::Instance();
   d.AddDomainToVersion(popart::Domain::ai_graphcore, 1, 1);
@@ -1470,6 +1536,10 @@ static bool registerOps() {
   ONNX_NAMESPACE::RegisterSchema(
       GetOpSchema<ONNX_OPERATOR_SET_SCHEMA_CLASS_NAME(
           AiGraphcore, 1, Round)>());
+
+  ONNX_NAMESPACE::RegisterSchema(
+      GetOpSchema<ONNX_OPERATOR_SET_SCHEMA_CLASS_NAME(
+          AiGraphcore, 1, CtcBeamSearchDecoder)>());
 
   return true;
 }

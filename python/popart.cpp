@@ -2544,10 +2544,10 @@ PYBIND11_MODULE(popart_core, m) {
     cls.def("ctcbeamsearchdecoder",
             &AiGraphcoreOpset1::ctcbeamsearchdecoder,
             py::arg("args"),
-            py::arg("blank")        = 0,
-            py::arg("beamWidth")    = 100,
-            py::arg("topPaths")     = 1,
-            py::arg("debugContext") = std::string()
+            py::arg("blank")         = 0,
+            py::arg("beam_width")    = 100,
+            py::arg("top_paths")     = 1,
+            py::arg("debug_context") = std::string()
             /*, DOC(popart, AiGraphcoreOpset1, ctcbeamsearchdecoder)*/);
   }
   {

@@ -133,6 +133,13 @@ def test_ctc_beam_search_decoder(op_tester, reference_data):
         builder.addOutputTensor(label_lengths)  # batchSize, topPaths
         builder.addOutputTensor(decoded_labels)  # batchSize, topPaths, maxTime
 
+        # Test whether ONNX shape inference works correctly.
+        assert builder.getTensorShape(label_probs) == [batch_size, top_paths]
+        assert builder.getTensorShape(label_lengths) == [batch_size, top_paths]
+        assert builder.getTensorShape(decoded_labels) == [
+            batch_size, top_paths, max_time
+        ]
+
         return [label_probs, label_lengths, decoded_labels]
 
     def reference(ref_data):
