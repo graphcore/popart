@@ -20,7 +20,6 @@ PopART User Guide
     importing
     builder
     executing
-    examples
     distributed_training
     performance
     supported_ops

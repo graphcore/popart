@@ -171,15 +171,17 @@ The op class
 ~~~~~~~~~~~~
 
 .. literalinclude:: files/custom_op/custom_op.cpp
-  :start-after: Op begin
-  :end-before: Op end
+  :start-after: [Op begin]
+  :end-before: [Op end]
+  :language: cpp
 
 The grad op class
 ~~~~~~~~~~~~~~~~~
 
 .. literalinclude:: files/custom_op/custom_op.cpp
-  :start-after: GradOp begin
-  :end-before: GradOp end
+  :start-after: [GradOp begin]
+  :end-before: [GradOp end]
+  :language: cpp
 
 
 The opx class
@@ -193,15 +195,17 @@ Since ``OpxCreator`` uses a generic constructor, you should also check that the
 ``Op`` passed in is of the expected type and matches the ``OperatorIdentifier``.
 
 .. literalinclude:: files/custom_op/custom_op.cpp
-  :start-after: Opx begin
-  :end-before: Opx end
+  :start-after: [Opx begin]
+  :end-before: [Opx end]
+  :language: cpp
 
 The grad opx class
 ~~~~~~~~~~~~~~~~~~
 
 .. literalinclude:: files/custom_op/custom_op.cpp
-  :start-after: GradOpx begin
-  :end-before: GradOpx end
+  :start-after: [GradOpx begin]
+  :end-before: [GradOpx end]
+  :language: cpp
 
 
 Making the op available to PopART
@@ -227,8 +231,9 @@ For example, from `leaky_relu_custom_op.cpp
 <https://github.com/graphcore/examples/blob/master/code_examples/popart/custom_operators/leaky_relu_example/leaky_relu_custom_op.cpp#L13>`_:
 
 .. literalinclude:: files/custom_op/custom_op.cpp
-  :start-after: OpId begin
-  :end-before: OpId end
+  :start-after: [OpId begin]
+  :end-before: [OpId end]
+  :language: cpp
 
 Define the op creator
 ~~~~~~~~~~~~~~~~~~~~~
@@ -248,8 +253,9 @@ The ``GradOp`` class will be implicitly created when the overridden method
 ``getGradOps()`` is called during the backwards pass.
 
 .. literalinclude:: files/custom_op/custom_op.cpp
-  :start-after: OpCreator begin
-  :end-before: OpCreator end
+  :start-after: [OpCreator begin]
+  :end-before: [OpCreator end]
+  :language: cpp
 
 
 Define the opx creator
@@ -260,8 +266,10 @@ generic constructor of the Opx is always used of the form ``Opx(Op *op, Devicex
 *devicex)``. For example:
 
 .. literalinclude:: files/custom_op/custom_op.cpp
-  :start-after: OpxCreator begin
-  :end-before: OpxCreator end
+  :start-after: [OpxCreator begin]
+  :end-before: [OpxCreator end]
+  :language: cpp
+
 
 ONNX schema and shape inference
 -------------------------------
@@ -276,8 +284,9 @@ append the various functions in the class. See `schema.h
 examples.
 
 .. literalinclude:: files/custom_op/custom_op.cpp
-  :start-after: Onnx begin
-  :end-before: Onnx end
+  :start-after: [Onnx begin]
+  :end-before: [Onnx end]
+  :language: cpp
 
 
 In the same namespace you can define the shape inference for the op. This allows
