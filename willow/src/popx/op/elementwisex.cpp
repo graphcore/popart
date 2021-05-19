@@ -303,7 +303,11 @@ void ElementWiseBinaryInplaceOpx::grow(poplar::program::Sequence &prog) const {
 
   if (canComputeInplace) {
     cx->inplace(prog, g, tInOut, tIn, getDebugNameAndId(), "");
-    tInOut = tInOut.reshape(outInfo(outIdx).shape_szt());
+    if (outInfo(outIdx).nelms() == tInOut.numElements()) {
+      // Only attempt reshape if the number of elements agree between IR and
+      // Poplar (e.g. not RTS)
+      tInOut = tInOut.reshape(outInfo(outIdx).shape_szt());
+    }
   } else {
     tInOut = cx->outplace(prog, g, tInOut, tIn, getDebugNameAndId(), "");
   }
