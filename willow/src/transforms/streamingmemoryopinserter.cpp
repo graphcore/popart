@@ -1632,8 +1632,8 @@ void StreamingMemoryOpInserter::getTensorSettings(
     settings.batchSerializedPhase.reset();
   }
   settings.name.clear();
-  settings.recomputeType          = RecomputeType::Checkpoint;
-  settings.tensorLocation.storage = TensorStorage::Undefined;
+  settings.recomputeType  = RecomputeType::Checkpoint;
+  settings.tensorLocation = TensorLocation();
 }
 
 void StreamingMemoryOpInserter::getModifiersInContext(
@@ -2112,9 +2112,9 @@ void StreamingMemoryOpInserter::sanitizeOps() const {
         }
       }
       // OnChip random seed operator if not set by the user
-      if (op->settings.tensorLocation.storage == TensorStorage::Undefined) {
+      if (!op->settings.tensorLocation) {
         if (op->opid == Onnx::CustomOperators::GetRandomSeed) {
-          op->settings.tensorLocation.storage = TensorStorage::OnChip;
+          op->settings.tensorLocation = TensorLocation();
           logging::transform::trace("[StreamingMemory] {} set to OnChip",
                                     op->debugName());
         }
@@ -2152,7 +2152,7 @@ StreamingMemoryOpInserter::determineTensorLocation(Tensor *tensor) const {
       type == TensorType::Variable && !isOptimizerState && !isAccumulator;
 
   // Result variable.
-  TensorLocation result = TensorLocation();
+  OptionalTensorLocation result;
   const char *logReason = "";
 
   const auto overrideIt =
@@ -2160,8 +2160,7 @@ StreamingMemoryOpInserter::determineTensorLocation(Tensor *tensor) const {
   bool haveTensorLocationSettingOverride =
       (overrideIt != sessionOptions.tensorLocationSettingsOverride.end());
 
-  if (haveTensorLocationSettingOverride &&
-      isValidTensorLocation(overrideIt->second)) {
+  if (haveTensorLocationSettingOverride) {
 
     // If we have a valid tensorLocationSettingsOverride then the user is
     // telling us explicitly where to put this tensor, so use that.
@@ -2176,61 +2175,51 @@ StreamingMemoryOpInserter::determineTensorLocation(Tensor *tensor) const {
     // produces this tensor (if known) was created with an
     // 'outputTensorLocation' attribute. If so, use that. If not, see if the
     // tensor's type has associated tensor location settings and use that. If
-    // all else fails, offload.
+    // all else fails, use default on-chip.
 
-    if (result.storage == TensorStorage::Undefined && producerOp) {
+    if (!result && producerOp) {
 
       // If a producing operator is known and it is set to have a tensor
       // location (and is not set to recompute), use that.
 
-      if (isValidTensorLocation(producerOp->settings.tensorLocation)) {
-        if (producerOp->settings.recomputeType == RecomputeType::Recompute) {
-          logging::transform::warn(
-              "[StreamingMemory] Ignoring output tensor location "
-              "attribute on tensor {} because the "
-              "tensor is set to recompute",
-              id);
-        } else {
-          result    = producerOp->settings.tensorLocation;
-          logReason = "builder attribute";
-        }
+      if (producerOp->settings.recomputeType == RecomputeType::Recompute) {
+        logging::transform::warn(
+            "[StreamingMemory] Ignoring output tensor location "
+            "attribute on tensor {} because the "
+            "tensor is set to recompute",
+            id);
+      } else {
+        result    = producerOp->settings.tensorLocation;
+        logReason = "builder attribute";
       }
     }
 
-    if (result.storage == TensorStorage::Undefined) {
+    if (!result) {
 
-      // If we still don't have a tensor location setting and the tensor
-      // belongs to a group we have tensor location settings for, use those
-      // tensor location settings.
+      // If we still don't have a non-default tensor location setting and the
+      // tensor belongs to a group we have tensor location settings for, use
+      // those tensor location settings.
 
-      if (isActivation &&
-          isValidTensorLocation(
-              sessionOptions.activationTensorLocationSettings.location)) {
+      if (isActivation) {
         // Use activation tensor location settings.
         result = sessionOptions.activationTensorLocationSettings.location;
         logReason =
             "activationTensorLocationSettings.location in SessionOptions";
       }
 
-      if (isWeight &&
-          isValidTensorLocation(
-              sessionOptions.weightTensorLocationSettings.location)) {
+      if (isWeight) {
         // Use weight tensor location settings.
         result    = sessionOptions.weightTensorLocationSettings.location;
         logReason = "weightTensorLocationSettings.location in SessionOptions";
       }
 
-      if (isOptimizerState &&
-          isValidTensorLocation(
-              sessionOptions.optimizerStateTensorLocationSettings.location)) {
+      if (isOptimizerState) {
         // Use optimizer state tensor location settings.
         result = sessionOptions.optimizerStateTensorLocationSettings.location;
         logReason = "weightTensorLocationSettings.location in SessionOptions";
       }
 
-      if (isAccumulator &&
-          isValidTensorLocation(
-              sessionOptions.accumulatorTensorLocationSettings.location)) {
+      if (isAccumulator) {
         // Use optimizer state tensor location settings.
         result = sessionOptions.accumulatorTensorLocationSettings.location;
         logReason =
@@ -2238,7 +2227,7 @@ StreamingMemoryOpInserter::determineTensorLocation(Tensor *tensor) const {
       }
     }
 
-    if (result.storage == TensorStorage::OffChip) {
+    if (result && (*result).storage == TensorStorage::OffChip) {
 
       // If we are planning to offload the tensor to off-chip memory but the
       // tensor belongs to a group of tensors for which we have a tensor
@@ -2272,56 +2261,60 @@ StreamingMemoryOpInserter::determineTensorLocation(Tensor *tensor) const {
       }
     }
 
-    if (result.replicatedTensorSharding == ReplicatedTensorSharding::On) {
-      if (isActivation) {
-        result.replicatedTensorSharding = ReplicatedTensorSharding::Off;
+    if (result) {
+      if ((*result).replicatedTensorSharding == ReplicatedTensorSharding::On) {
+        if (isActivation) {
+          (*result).replicatedTensorSharding = ReplicatedTensorSharding::Off;
+        }
+        if (isWeight &&
+            tooSmallForReplicatedTensorSharding(
+                sessionOptions.weightTensorLocationSettings, tensor)) {
+          (*result).replicatedTensorSharding = ReplicatedTensorSharding::Off;
+        }
+        if (isOptimizerState &&
+            tooSmallForReplicatedTensorSharding(
+                sessionOptions.optimizerStateTensorLocationSettings, tensor)) {
+          (*result).replicatedTensorSharding = ReplicatedTensorSharding::Off;
+        }
       }
-      if (isWeight &&
-          tooSmallForReplicatedTensorSharding(
-              sessionOptions.weightTensorLocationSettings, tensor)) {
-        result.replicatedTensorSharding = ReplicatedTensorSharding::Off;
+
+      if ((*result).replicatedTensorSharding == ReplicatedTensorSharding::On) {
+        if ((!sessionOptions.enableReplicatedGraphs) ||
+            (sessionOptions.replicatedGraphCount <= 1)) {
+          logging::transform::warn(
+              "[StreamingMemory] Unable to shard tensor {} "
+              "due to lack of replication",
+              id);
+          (*result).replicatedTensorSharding = ReplicatedTensorSharding::Off;
+        }
       }
-      if (isOptimizerState &&
-          tooSmallForReplicatedTensorSharding(
-              sessionOptions.optimizerStateTensorLocationSettings, tensor)) {
-        result.replicatedTensorSharding = ReplicatedTensorSharding::Off;
+
+      if ((*result).storage != TensorStorage::OnChip &&
+          tensor->isOptimizerTensor()) {
+
+        // Don't offload optimizer tensors to off-chip memory.
+        (*result).storage = TensorStorage::OnChip;
+        logReason         = "it being an optimizer tensor";
       }
-    }
 
-    if (result.replicatedTensorSharding == ReplicatedTensorSharding::On) {
-      if ((!sessionOptions.enableReplicatedGraphs) ||
-          (sessionOptions.replicatedGraphCount <= 1)) {
-        logging::transform::warn("[StreamingMemory] Unable to shard tensor {} "
-                                 "due to lack of replication",
-                                 id);
-        result.replicatedTensorSharding = ReplicatedTensorSharding::Off;
+      if ((*result).storage != TensorStorage::OnChip &&
+          isConstOrCopyOfConst(tensor)) {
+
+        // Don't offload constant (or copy of constant) tensors to off-chip
+        // memory.
+        (*result).storage = TensorStorage::OnChip;
+        logReason         = "it being an constant or copy-of-constant tensor";
       }
-    }
-
-    if (result.storage != TensorStorage::OnChip &&
-        tensor->isOptimizerTensor()) {
-
-      // Don't offload optimizer tensors to off-chip memory.
-      result.storage = TensorStorage::OnChip;
-      logReason      = "it being an optimizer tensor";
-    }
-
-    if (result.storage != TensorStorage::OnChip &&
-        isConstOrCopyOfConst(tensor)) {
-
-      // Don't offload constant (or copy of constant) tensors to off-chip
-      // memory.
-      result.storage = TensorStorage::OnChip;
-      logReason      = "it being an constant or copy-of-constant tensor";
     }
   }
 
   // Finally, it's possible at this point nothing has set the result
   // yet, in which case we default to TensorStorage::OnChip.
 
-  if (result.storage == TensorStorage::Undefined) {
-    result.storage = TensorStorage::OnChip;
-    logReason      = "absence of tensor location settings";
+  if (!result) {
+    result            = TensorLocation();
+    (*result).storage = TensorStorage::OnChip;
+    logReason         = "absence of tensor location settings";
   }
 
   // Log the result.
@@ -2329,10 +2322,10 @@ StreamingMemoryOpInserter::determineTensorLocation(Tensor *tensor) const {
       "[StreamingMemory] Determined tensor {} should use tensor "
       "location {} (due to {})",
       id,
-      result,
+      *result,
       logReason);
 
-  return result;
+  return *result;
 }
 
 // Make sure the op has a valid placement annotation
@@ -2506,8 +2499,8 @@ StreamingMemoryOpInserter::TensorStreamingContext::TensorStreamingContext(
     ScheduledPreLoss preLoss_)
     : context(context_), phase(phase_), preLoss(preLoss_) {}
 
-bool StreamingMemoryOpInserter::TensorStreamingContext::operator<(
-    const TensorStreamingContext &rhs) const {
+bool StreamingMemoryOpInserter::TensorStreamingContext::
+operator<(const TensorStreamingContext &rhs) const {
   std::vector<int> lhsVec;
   lhsVec.reserve(3);
   std::vector<int> rhsVec;
@@ -2554,13 +2547,13 @@ bool StreamingMemoryOpInserter::TensorStreamingContext::operator<(
   return lhsVec < rhsVec;
 }
 
-bool StreamingMemoryOpInserter::TensorStreamingContext::operator==(
-    const TensorStreamingContext &rhs) const {
+bool StreamingMemoryOpInserter::TensorStreamingContext::
+operator==(const TensorStreamingContext &rhs) const {
   return context == rhs.context && phase == rhs.phase && preLoss == rhs.preLoss;
 }
 
-bool StreamingMemoryOpInserter::TensorStreamingContext::operator!=(
-    const TensorStreamingContext &rhs) const {
+bool StreamingMemoryOpInserter::TensorStreamingContext::
+operator!=(const TensorStreamingContext &rhs) const {
   return context != rhs.context || phase != rhs.phase || preLoss != rhs.preLoss;
 }
 
@@ -2605,8 +2598,8 @@ operator<<(std::ostream &output,
   return output;
 }
 
-bool StreamingMemoryOpInserter::ConsumerOpConfig::operator==(
-    const ConsumerOpConfig &rhs) const {
+bool StreamingMemoryOpInserter::ConsumerOpConfig::
+operator==(const ConsumerOpConfig &rhs) const {
   return tensor == rhs.tensor && op == rhs.op;
 }
 

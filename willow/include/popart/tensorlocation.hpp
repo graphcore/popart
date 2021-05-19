@@ -13,12 +13,12 @@ namespace popart {
  * Enum type that determines where a tensor is stored.
  */
 enum class TensorStorage {
-  /// Location unspecified.
-  Undefined = 0,
   /// Store the tensor in on-chip memory.
-  OnChip = 1,
+  OnChip = 0,
   /// Store the tensor in streaming memory.
-  OffChip = 2
+  OffChip = 1,
+  /// Number of values
+  N = 2
 };
 
 /**
@@ -28,7 +28,9 @@ enum class TileSet {
   /// The set of tiles designated for compute operations.
   Compute = 0,
   /// The set of tiles designated for IO operations.
-  IO = 1
+  IO = 1,
+  /// Number of values
+  N = 2
 };
 
 using VGraphIdAndTileSet = std::pair<VGraphId, TileSet>;
@@ -40,7 +42,9 @@ enum class ReplicatedTensorSharding {
   /// Don't shard tensors over replicas.
   Off = 0,
   /// Do shard tensors over replicas.
-  On = 1
+  On = 1,
+  /// Number of values
+  N = 2
 };
 
 /**
@@ -90,10 +94,10 @@ public:
   TensorLocation &operator=(const TensorLocation &rhs) = default;
   // Equality operator for TensorLocation
   // (not currently part of public API).
-  bool operator==(const TensorLocation &rhs);
+  bool operator==(const TensorLocation &rhs) const;
   // Inequality operator for TensorLocation
   // (not currently part of public API).
-  bool operator!=(const TensorLocation &rhs);
+  bool operator!=(const TensorLocation &rhs) const;
 
   // Function that serialises a TensorLocation to a list of int64_t values
   // (not currently part of public API).
@@ -113,8 +117,6 @@ public:
   /// Whether to apply replicated tensor sharding (RTS) or not.
   ReplicatedTensorSharding replicatedTensorSharding;
 };
-
-bool isValidTensorLocation(const TensorLocation tensorLocation);
 
 std::ostream &operator<<(std::ostream &, const TensorStorage &);
 std::ostream &operator<<(std::ostream &, const TileSet &);

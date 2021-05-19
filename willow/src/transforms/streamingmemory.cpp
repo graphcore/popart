@@ -185,10 +185,9 @@ bool StreamingMemory::apply(Graph &graph) const {
           "[StreamingMemory] Recomputation & Tensor Location annotation");
       for (auto &op : graph.getOps()) {
         // Mark any random seed operators as OnChip.
-        if (op.second->settings.tensorLocation.storage ==
-            TensorStorage::Undefined) {
+        if (!op.second->settings.tensorLocation) {
           if (op.second->opid == Onnx::CustomOperators::GetRandomSeed) {
-            op.second->settings.tensorLocation.storage = TensorStorage::OnChip;
+            op.second->settings.tensorLocation = TensorLocation();
             logging::transform::trace("[StreamingMemory] {} set to OnChip",
                                       op.second->debugName());
           }

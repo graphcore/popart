@@ -60,6 +60,13 @@ void runTest(AccumulateOuterFragmentSettings settings,
                                               ReplicatedTensorSharding::Off),
                                0,
                                0);
+    runner.opts.accumulatorTensorLocationSettings =
+        TensorLocationSettings(TensorLocation(TensorStorage::OffChip,
+                                              TileSet::Compute,
+                                              TileSet::Compute,
+                                              ReplicatedTensorSharding::Off),
+                               0,
+                               0);
 
     runner.patterns = Patterns(PatternsLevel::Default);
     runner.loss     = loss;

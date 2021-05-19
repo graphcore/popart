@@ -6,7 +6,7 @@
 namespace popart {
 
 TensorLocation::TensorLocation()
-    : storage(TensorStorage::Undefined), loadTileSet(TileSet::Compute),
+    : storage(TensorStorage::OnChip), loadTileSet(TileSet::Compute),
       storageTileSet(TileSet::Compute),
       replicatedTensorSharding(ReplicatedTensorSharding::Off) {}
 
@@ -38,11 +38,11 @@ TensorLocation::TensorLocation(
       storageTileSet(storageTileSet_),
       replicatedTensorSharding(replicatedTensorSharding_) {}
 
-bool TensorLocation::operator==(const TensorLocation &rhs) {
+bool TensorLocation::operator==(const TensorLocation &rhs) const {
   return serialize() == rhs.serialize();
 }
 
-bool TensorLocation::operator!=(const TensorLocation &rhs) {
+bool TensorLocation::operator!=(const TensorLocation &rhs) const {
   return serialize() != rhs.serialize();
 }
 
@@ -58,17 +58,8 @@ bool TensorLocation::isRemote() const {
           (storage == TensorStorage::OffChip));
 }
 
-bool isValidTensorLocation(const TensorLocation tensorLocation) {
-  return (tensorLocation.storage == TensorStorage::OffChip) ||
-         (tensorLocation.storage == TensorStorage::OnChip);
-}
-
 std::ostream &operator<<(std::ostream &ost, const TensorStorage &ts) {
   switch (ts) {
-  case (TensorStorage::Undefined): {
-    ost << "Undefined";
-    break;
-  }
   case (TensorStorage::OnChip): {
     ost << "OnChip";
     break;

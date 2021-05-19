@@ -20,6 +20,7 @@ def get_ir(model_file_name='model.onnx',
            activation_tensor_location_settings=None,
            weight_tensor_location_settings=None,
            optimizer_state_tensor_location_settings=None,
+           accumulator_tensor_location_settings=None,
            tensor_location_setting_override={},
            num_layers=3,
            dsize=48,
@@ -75,6 +76,8 @@ def get_ir(model_file_name='model.onnx',
         opts.weightTensorLocationSettings = weight_tensor_location_settings
     if optimizer_state_tensor_location_settings is not None:
         opts.optimizerStateTensorLocationSettings = optimizer_state_tensor_location_settings
+    if accumulator_tensor_location_settings is not None:
+        opts.accumulatorTensorLocationSettings = accumulator_tensor_location_settings
 
     opts.tensorLocationSettingsOverride = tensor_location_setting_override
 
@@ -223,7 +226,7 @@ def test_activation_tensor_location_settings_plus_override():
              check_offchip=['MatMul:0/1__t6'])
 
 
-def test_optimizer_state_tensor_location_settings():
+def test_accumulator_tensor_location_settings():
     # Check optimizer state tensor location settings work.
     optimizer_with_state = popart.SGD({
         "defaultLearningRate": (0.1, True),
@@ -231,14 +234,14 @@ def test_optimizer_state_tensor_location_settings():
         "defaultWeightDecay": (0.0, False),
         "defaultDampening": (0.0, True)
     })
-    ir = get_ir(optimizer_state_tensor_location_settings=None,
+    ir = get_ir(accumulator_tensor_location_settings=None,
                 optimizer=optimizer_with_state)
     check_ir(ir,
              check_onchip=['Accl___W1', 'Accl___W2', 'Accl___W0'],
              check_offchip=[])
 
     ir = get_ir(
-        optimizer_state_tensor_location_settings=popart.TensorLocationSettings(
+        accumulator_tensor_location_settings=popart.TensorLocationSettings(
             popart.TensorStorage.OffChip, 0),
         optimizer=optimizer_with_state)
     check_ir(ir,
@@ -246,7 +249,7 @@ def test_optimizer_state_tensor_location_settings():
              check_offchip=['Accl___W1', 'Accl___W2', 'Accl___W0'])
 
     ir = get_ir(
-        optimizer_state_tensor_location_settings=popart.TensorLocationSettings(
+        accumulator_tensor_location_settings=popart.TensorLocationSettings(
             popart.TensorStorage.OnChip, 0),
         optimizer=optimizer_with_state)
     check_ir(ir,
@@ -254,7 +257,7 @@ def test_optimizer_state_tensor_location_settings():
              check_offchip=[])
 
 
-def test_optimizer_state_tensor_location_settings_plus_override():
+def test_accumulator_tensor_location_settings_plus_override():
     # Check optimizer state tensor location settings work
     optimizer_with_state = popart.SGD({
         "defaultLearningRate": (0.1, True),
@@ -263,7 +266,7 @@ def test_optimizer_state_tensor_location_settings_plus_override():
         "defaultDampening": (0.0, True)
     })
     ir = get_ir(
-        optimizer_state_tensor_location_settings=popart.TensorLocationSettings(
+        accumulator_tensor_location_settings=popart.TensorLocationSettings(
             popart.TensorStorage.OffChip, 0),
         tensor_location_setting_override={
             'Accl___W1': popart.TensorLocation(popart.TensorStorage.OnChip)
@@ -274,7 +277,7 @@ def test_optimizer_state_tensor_location_settings_plus_override():
              check_offchip=['Accl___W2', 'Accl___W0'])
 
     ir = get_ir(
-        optimizer_state_tensor_location_settings=popart.TensorLocationSettings(
+        accumulator_tensor_location_settings=popart.TensorLocationSettings(
             popart.TensorStorage.OnChip, 0),
         tensor_location_setting_override={
             'Accl___W1': popart.TensorLocation(popart.TensorStorage.OffChip)

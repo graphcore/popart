@@ -1498,9 +1498,6 @@ PYBIND11_MODULE(popart_core, m) {
   }
   {
     py::enum_<TensorStorage> en(m, "TensorStorage", DOC(popart, TensorStorage));
-    en.value("Undefined",
-             TensorStorage::Undefined,
-             DOC(popart, TensorStorage, Undefined));
     en.value(
         "OnChip", TensorStorage::OnChip, DOC(popart, TensorStorage, OnChip));
     en.value(

@@ -4,6 +4,7 @@
 
 #include <ostream>
 #include <popart/names.hpp>
+#include <popart/tensorlocation.hpp>
 
 namespace popart {
 
@@ -114,6 +115,7 @@ using OptionalVGraphId             = BasicOptional<VGraphId, 2>;
 using OptionalPipelineStage        = BasicOptional<PipelineStage, 3>;
 using OptionalExecutionPhase       = BasicOptional<ExecutionPhase, 5>;
 using OptionalBatchSerializedPhase = BasicOptional<BatchSerializedPhase, 7>;
+using OptionalTensorLocation       = BasicOptional<TensorLocation, 9>;
 
 template <typename T, uint32_t V>
 std::ostream &operator<<(std::ostream &ost, const BasicOptional<T, V> &bo) {

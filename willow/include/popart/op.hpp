@@ -131,8 +131,8 @@ public:
     std::string name = "";
 
     Scope scope;
-    RecomputeType recomputeType   = RecomputeType::Undefined;
-    TensorLocation tensorLocation = TensorLocation();
+    RecomputeType recomputeType = RecomputeType::Undefined;
+    OptionalTensorLocation tensorLocation;
 
     // optional inplace priorities, to take precedence over the default
     // priorities. A negative priority gurarantees no inplacing
