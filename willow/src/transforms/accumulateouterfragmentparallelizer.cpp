@@ -1,3 +1,4 @@
+#include <poprithms/logging/timepartitionlogger.hpp>
 #include <popart/ir.hpp>
 #include <popart/op.hpp>
 #include <popart/op/remote.hpp>
@@ -226,6 +227,10 @@ AccumulateOuterFragmentParallelizer::AccumulateOuterFragmentParallelizer()
 AccumulateOuterFragmentParallelizer::~AccumulateOuterFragmentParallelizer() {}
 
 bool AccumulateOuterFragmentParallelizer::apply(Graph &graph) const {
+
+  const auto scopedStopwatch =
+      graph.getIr().timePartitionLogger().scopedStopwatch(
+          "AccumulateOuterFragmentParallelizer::apply");
 
   OpClustersMap clustersMap;
   // Get groups of ops that update optimizer state / weights.

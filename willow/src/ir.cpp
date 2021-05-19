@@ -3556,8 +3556,8 @@ Ir::getAccumulateOuterFragmentBinConstraints(const Graph &graph) const {
 
   if (&graph == &mainGraph) {
     // Only add bin constraints for main graph.
-    AccumulateOuterFragmentParallelizer transform;
-    return transform.getBinConstraints(graph);
+    AccumulateOuterFragmentParallelizer t;
+    return t.getBinConstraints(graph);
   } else {
     // Return unconstrained.
     return std::vector<std::vector<Op *>>();

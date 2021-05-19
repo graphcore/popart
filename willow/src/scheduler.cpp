@@ -107,10 +107,16 @@ void serializePoprithmsGraph(
   logging::ir::info("[Scheduler] written {} ", filename);
 }
 
+enum class AnnotateForFasterSwapping { No = 0, Yes };
+
 void defaultAnnotate(ShiftGraphGrower *grower,
                      const OpsBeforeKey &gCons,
                      const Graph &pg,
-                     const bool respectExecutionPhases) {
+                     const bool respectExecutionPhases,
+                     AnnotateForFasterSwapping fastSwap) {
+
+  const auto annotateForFasterSwapping =
+      (fastSwap == AnnotateForFasterSwapping::Yes);
 
   const auto sw = pg.getIr().timePartitionLogger().scopedStopwatch(
       "[Scheduler] defaultAnnotate");
@@ -121,7 +127,8 @@ void defaultAnnotate(ShiftGraphGrower *grower,
       pg.getIr().getSessionOptions().executionPhaseSettings.phases > 1) {
     grower->annotateExecutionPhase();
   }
-  if (pg.getIr().getSessionOptions().enablePipelining) {
+  if (pg.getIr().getSessionOptions().enablePipelining &&
+      annotateForFasterSwapping) {
     grower->annotatePipelineStages();
   }
   if ((pg.getIr().autoRecomputationEnabled() ||
@@ -129,7 +136,10 @@ void defaultAnnotate(ShiftGraphGrower *grower,
       !pg.getIr().getSessionOptions().explicitRecomputation) {
     grower->annotateToLossFromLoss();
   }
-  grower->annotateAccumulateOuterFragmentOps();
+
+  if (annotateForFasterSwapping) {
+    grower->annotateAccumulateOuterFragmentOps();
+  }
   grower->annotateExecutionContext();
   grower->annotatePriorities();
 }
@@ -188,7 +198,13 @@ Scheduler::getSchedule(const OpsBeforeKey &gCons,
 
   // The thing for mapping PopART to a poprithms Graph.
   auto grower = std::make_unique<ShiftGraphGrower>(pg);
-  defaultAnnotate(grower.get(), gCons, pg, respectExecutionPhases);
+  defaultAnnotate(grower.get(),
+                  gCons,
+                  pg,
+                  respectExecutionPhases,
+                  useTransitiveClosureOptimizations
+                      ? AnnotateForFasterSwapping::Yes
+                      : AnnotateForFasterSwapping::No);
 
   if (!pg.getIr()
            .getSessionOptions()
@@ -212,7 +228,11 @@ bool Scheduler::isSchedulable(const OpsBeforeKey &gCons,
                               const Graph &pg,
                               bool respectExecutionPhases) const {
   ShiftGraphGrower grower(pg);
-  defaultAnnotate(&grower, gCons, pg, respectExecutionPhases);
+  defaultAnnotate(&grower,
+                  gCons,
+                  pg,
+                  respectExecutionPhases,
+                  AnnotateForFasterSwapping::No);
   return grower.isSchedulable();
 }
 
