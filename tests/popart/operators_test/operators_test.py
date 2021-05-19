@@ -3192,6 +3192,8 @@ def test_round_graphcore(op_tester):
         i1 = builder.addInputTensor(d1)
         o = builder.aiGraphcore.round([i1], "test_round")
         builder.addOutputTensor(o)
+        # Check builder shape inference    
+        assert (builder.getTensorShape(o) == [2,7])          
         return [o]
 
     def reference(ref_data):

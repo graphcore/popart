@@ -42,6 +42,7 @@ void ScatterReduceShapeInference(InferenceContext &ctx);
 void RemainderShapeInference(InferenceContext &ctx);
 void FmodShapeInference(InferenceContext &ctx);
 void BitwiseNotShapeInference(InferenceContext &ctx);
+void RoundShapeInference(InferenceContext &ctx);
 
 void SubsampleShapeInference(InferenceContext &ctx) {
   propagateElemTypeFromInputToOutput(ctx, 0, 0);
@@ -487,6 +488,10 @@ void BitwiseNotShapeInference(InferenceContext &ctx) {
   propagateShapeAndTypeFromFirstInput(ctx);
 }
 
+void RoundShapeInference(InferenceContext &ctx) {
+  propagateShapeAndTypeFromFirstInput(ctx);
+}
+
 extern size_t dbg_count_check_GroupNormalization_AiGraphcore_ver1;
 extern size_t dbg_count_check_Subsample_AiGraphcore_ver1;
 extern size_t dbg_count_check_PrintTensor_AiGraphcore_ver1;
@@ -515,6 +520,7 @@ extern size_t dbg_count_check_Init_AiGraphcore_ver1;
 extern size_t dbg_count_check_Remainder_AiGraphcore_ver1;
 extern size_t dbg_count_check_Fmod_AiGraphcore_ver1;
 extern size_t dbg_count_check_BitwiseNot_AiGraphcore_ver1;
+extern size_t dbg_count_check_Round_AiGraphcore_ver1;
 
 static const char groupnormalizationDoc[] =
     "GroupNormalization applies Group Normalization over a mini-batch of "
@@ -1333,6 +1339,22 @@ ONNX_OPERATOR_SET_SCHEMA_EX(
                         "Constrain input and output types to (u)int32 tensors.")
         .TypeAndShapeInferenceFunction(BitwiseNotShapeInference))
 
+ONNX_OPERATOR_SET_SCHEMA_EX(
+    Round,
+    AiGraphcore,
+    popart::Domain::ai_graphcore,
+    1,
+    false,
+    OpSchema()
+        .SetDoc("Round(X)")
+        .Input(0, "X", "Input tensorr", "T")
+        .Output(0, "Y", "Output tensor", "T")
+        .TypeConstraint(
+            "T",
+            {"tensor(float)", "tensor(float16)"},
+            "Constrain input and output types to float(32/16) tensors.")
+        .TypeAndShapeInferenceFunction(RoundShapeInference))
+
 static bool registerOps() {
   auto &d = ONNX_NAMESPACE::OpSchemaRegistry::DomainToVersionRange::Instance();
   d.AddDomainToVersion(popart::Domain::ai_graphcore, 1, 1);
@@ -1444,6 +1466,10 @@ static bool registerOps() {
   ONNX_NAMESPACE::RegisterSchema(
       GetOpSchema<ONNX_OPERATOR_SET_SCHEMA_CLASS_NAME(
           AiGraphcore, 1, BitwiseNot)>());
+
+  ONNX_NAMESPACE::RegisterSchema(
+      GetOpSchema<ONNX_OPERATOR_SET_SCHEMA_CLASS_NAME(
+          AiGraphcore, 1, Round)>());
 
   return true;
 }
