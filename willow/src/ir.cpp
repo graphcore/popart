@@ -1209,13 +1209,13 @@ void Ir::prepareImpl(const IrBundle &gb, const HashesMap &cacheEntries) {
   updateAliases();
   updateVertices();
 
-  if (getSessionOptions().automaticLossScalingSettings.enabled) {
-    applyTransform(AutomaticLossScale::id(), getMainGraph());
-  }
-
   // Make sure that matmuls are serialized before gradient accumalation
   if (getSessionOptions().enableSerializedMatmuls) {
     applyTransform(SerializeMatMuls::id(), getMainGraph());
+  }
+
+  if (getSessionOptions().automaticLossScalingSettings.enabled) {
+    applyTransform(AutomaticLossScale::id(), getMainGraph());
   }
 
   if (getSessionOptions().enableGroupedMatmuls) {
