@@ -3331,10 +3331,10 @@ std::vector<TensorId> Ir::getTensorIds(TensorType tensor_type) const {
 Tensor *Ir::getTensor(const TensorId &tensor_id) const {
   TensorId id = tensor_id;
 
-  auto tensors = getAllTensors();
-  auto it      = tensors.find(id);
-  if (it != tensors.end()) {
-    return it->second;
+  for (const Graph *graph : getAllGraphs()) {
+    if (graph->getTensors().contains(id)) {
+      return graph->getTensors().get(id);
+    }
   }
 
   throw error("No Ir::Tensor with TensorId '" + tensor_id +
@@ -3344,11 +3344,12 @@ Tensor *Ir::getTensor(const TensorId &tensor_id) const {
 bool Ir::containsTensor(const TensorId &tensor_id) const {
   TensorId id = tensor_id;
 
-  auto tensors = getAllTensors();
-  auto it      = tensors.find(id);
-  if (it != tensors.end()) {
-    return true;
+  for (const Graph *graph : getAllGraphs()) {
+    if (graph->getTensors().contains(id)) {
+      return true;
+    }
   }
+
   return false;
 }
 
