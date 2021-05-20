@@ -1354,7 +1354,18 @@ void StreamingMemoryOpInserter::getTensorOptionalVGraphId(
   for (auto consumerOp : consumerOps) {
     OptionalVGraphId consumerVGID = consumerOp.op->getOptionalVGraphId();
     if (IpuCopyOp *copyOp = dynamic_cast<IpuCopyOp *>(consumerOp.op)) {
-      consumerVGID = copyOp->getSourceIpu(tensor->id);
+      // consumerOps can contain non-direct consumers of 'tensor'
+      if (copyOp->input->contains(tensor)) {
+        auto sourceIpus = copyOp->getSourceIpus();
+        if (sourceIpus.find(tensor->id) != sourceIpus.end()) {
+          consumerVGID = copyOp->getSourceIpu(tensor->id);
+        } else {
+          throw error("[StreamingMemory] Unable to get source Ipu of {} for "
+                      "IpuCopyOp {}",
+                      tensor->id,
+                      copyOp->debugName());
+        }
+      }
     }
 
     // Pick correct VGID for loading/storing the tensor,

@@ -70,47 +70,35 @@
 //                                - HistogramOp -- t1_stats   |
 //                                                      |     |
 //                                                      |     |
-//                                             LossScaleUpdateOp
-//                                                 |
-//                                          ls_update_factor
-//                                                 |
-//                                                 |  ls -.
-//                                                 |-- MulInplaceOp
-//                                                 |       '- ls_updated
-//                                            ReciprocalOp
-//                                                 |
-//                                     ls_update_factor_reciprocal
-//                                                 |
-//                                                 |  inverse_ls -.
-//                                                 '----- MulInplaceOp
-//                                                         '- inverse_ls_updated
+//               ls_update_factor -----------> LossScaleUpdateOp
+//                       |                              |
+//                       |                    ls_update_factor_updated
+//                       |  ls -.
+//                       |--> MulOp -- final_ls
+//                       |
+//                       | inverse_ls -.
+//                       '---------> DivOp -- final_inverse_ls
 
 // (Case 1, With graph replication enabled)
 //
-// .. HistogramOp -- t0_stats -.
-//                              \
-// .. HistogramOp -- t1_stats -- SumOp
-//                                |
-//                           stats_summed
-//                                |
-//                       ReplicatedAllReduceOp
-//                                |
-//                        stats_summed_reduced
-//                                |
-//                        LossScaleUpdateOp
-//                                |
-//                         ls_update_factor
-//                                |
-//                                |  ls -.
-//                                |-- MulInplaceOp
-//                                |       '- ls_updated
-//                           ReciprocalOp
-//                                |
-//                    ls_update_factor_reciprocal
-//                                |
-//                                |  inverse_ls -.
-//                                '-- MulInplaceOp
-//                                        '- inverse_ls_updated
+//                     .. HistogramOp -- t0_stats -.
+//                                                  \
+//                     .. HistogramOp -- t1_stats -- SumOp
+//                                                    |
+//                                               stats_summed
+//                                                    |
+//                                           ReplicatedAllReduceOp
+//                                                    |
+//                                            stats_summed_reduced
+//                                                    |
+//               ls_update_factor -----------> LossScaleUpdateOp
+//                       |                              |
+//                       |                    ls_update_factor_updated
+//                       |  ls -.
+//                       |--> MulOp -- final_ls
+//                       |
+//                       | inverse_ls -.
+//                       '---------> DivOp -- final_inverse_ls
 
 // (Case 2, With gradient accumulation enabled)
 //
@@ -124,20 +112,14 @@
 //                                    |                         |
 //                               stats_accld             stats_to_accl_reset
 //                                    |
-//                            LossScaleUpdateOp (a.o.f)
-//                                  |
-//                           ls_update_factor
-//                                  |
-//                                  |  ls -.
-//                                  |-- MulInplaceOp
-//                                  |       '- ls_updated
-//                             ReciprocalOp
-//                                  |
-//                      ls_update_factor_reciprocal
-//                                  |
-//                                  |  inverse_ls -.
-//                                  '----- MulInplaceOp
-//                                          '- inverse_ls_updated
+//  ls_update_factor -----------> LossScaleUpdateOp (a.o.f)
+//          |                              |
+//          |                    ls_update_factor_updated
+//          |  ls -.
+//          |--> MulOp -- final_ls
+//          |
+//          | inverse_ls -.
+//          '---------> DivOp -- final_inverse_ls
 //
 // (where a.o.f means is assigned to the
 //  ExecutionContext::AccumulateOuterFragment)
@@ -158,20 +140,14 @@
 //                                    |
 //                            stats_accld_reduced
 //                                    |
-//                            LossScaleUpdateOp (a.o.f)
-//                                  |
-//                           ls_update_factor
-//                                  |
-//                                  |  ls -.
-//                                  |-- MulInplaceOp
-//                                  |       '- ls_updated
-//                             ReciprocalOp
-//                                  |
-//                      ls_update_factor_reciprocal
-//                                  |
-//                                  |  inverse_ls -.
-//                                  '----- MulInplaceOp
-//                                          '- inverse_ls_updated
+//  ls_update_factor -----------> LossScaleUpdateOp (a.o.f)
+//          |                              |
+//          |                    ls_update_factor_updated
+//          |  ls -.
+//          |--> MulOp -- final_ls
+//          |
+//          | inverse_ls -.
+//          '---------> DivOp -- final_inverse_ls
 //
 // (where a.o.f means is assigned to the
 //  ExecutionContext::AccumulateOuterFragment)

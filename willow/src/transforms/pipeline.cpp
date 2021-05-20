@@ -150,14 +150,13 @@ void checkOpsPipelineStage(Graph &graph) {
 
   std::ostringstream oss;
   oss << "For all IpuCopyOps (other than those copying optimizer tensors):\n"
-      << " (1)  set pipeline stage\n"
+      << " (1) set pipeline stage\n"
       << " (2) insert topological constraint that it precedes "
       << "all non-IpuCopyOps in each pipeline stage";
   logging::transform::debug(oss.str());
 
   for (auto &id_op : graph.getOps()) {
     if (auto copyOp = dynamic_cast<IpuCopyOp *>(id_op.second.get())) {
-
       // Copies of optimizer Tensors do not run in the main program fragment
       if (!copyOp->copiesOptimizerTensors()) {
         // (1) set pipeline stage
@@ -967,7 +966,8 @@ bool Pipeline::apply(Graph &graph) const {
     std::vector<popart::IpuCopyOp *> ipuCopies;
     for (auto &op_pair : graph.getOps()) {
       auto ipuCopyOp = dynamic_cast<popart::IpuCopyOp *>(op_pair.second.get());
-      if (ipuCopyOp) {
+      if (ipuCopyOp &&
+          ipuCopyOp->settings.executionContext == ExecutionContext::Normal) {
         ipuCopies.push_back(ipuCopyOp);
       }
     }

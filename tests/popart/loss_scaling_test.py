@@ -261,7 +261,7 @@ def test_auto_loss_scaling_expected_loss_scale_tensor_values():
     loss, proto, t0, t_shape, label, label_shape, _ = getModelProto()
     bps = 4
 
-    loss_scale_id = "lossScaling_FLOAT16_updated"
+    loss_scale_id = "finalLossScale"
     gradient_anchor_ids = ["Gradient___init_input/1", "Gradient___init_input"]
     anchor_ids = gradient_anchor_ids + [loss_scale_id]
 
@@ -545,7 +545,7 @@ def run_automatic_loss_scaling_comparison_test(tmpdir,
     opts.automaticLossScalingSettings.binEdgeLocation = 0.5
     opts.automaticLossScalingSettings.thresholdUpperCountProportion = 0.2
 
-    ls_id = "lossScaling_FLOAT16_updated"
+    ls_id = "finalLossScale"
     als_session = popart.TrainingSession(
         fnModel=proto,
         deviceInfo=tu.create_test_device(num_ipus),
@@ -567,13 +567,13 @@ def run_automatic_loss_scaling_comparison_test(tmpdir,
     als_session.run(popart.PyStepIO(inputs, als_anchors))
 
     # Verify that the loss scale has changed from its initial value
-    for i in range(bps):
-        if grad_accumulate:
-            updated_loss_scales = [als_anchors[ls_id].flatten()[-1]]
-        else:
-            updated_loss_scales = als_anchors[ls_id].flatten()
-        for ls in updated_loss_scales:
-            assert ls != init_ls
+    print("Loss Scale:", als_anchors[ls_id].flatten())
+    if grad_accumulate:
+        updated_loss_scales = [als_anchors[ls_id].flatten()[-1]][1:-1]
+    else:
+        updated_loss_scales = als_anchors[ls_id].flatten()[1:-1]
+    for ls in updated_loss_scales:
+        assert ls != init_ls
 
     # Update the optimizer
     ref_session.updateOptimizerFromHost(new_optimizer)
@@ -713,7 +713,7 @@ def test_loss_scale_updates_with_grad_accumulation_correctness():
     bps = 4
 
     accl_stats_id = "Accum___autoLossScaleStats"
-    ls_id = "lossScaling_FLOAT16_updated"
+    ls_id = "finalLossScale"
     session = popart.TrainingSession(fnModel=proto,
                                      deviceInfo=tu.create_test_device(),
                                      dataFlow=popart.DataFlow(
@@ -756,3 +756,68 @@ def test_loss_scale_updates_with_grad_accumulation_correctness():
             num_elms_gradstats = 3 * np.prod(t_shape)
             assert np.sum(minibatch) == num_elms_gradstats * (minibatch_idx +
                                                               1)
+
+
+def test_auto_loss_scaling_update_learning_rate_without_resetting_loss_scale():
+    """
+    1. get TrainingSession with a.l.s
+    2. anchor loss scale, updated loss scale tensors
+    3. session.run, get reference loss scale, updated loss scale tensors
+    4. see that loss scale stays same, but updated loss scale changes
+    5. update optimizer without updating loss scale
+    6. session.run, get new loss scale, updated loss scale tensors
+    7. see new loss scale tensors are same as before
+    """
+    np.random.seed(2)
+    init_ls = 1000.0
+    optimizer = popart.SGD({
+        "lossScaling": (init_ls, False),
+        "defaultLearningRate": (20, False)
+    })
+    opts = popart.SessionOptions()
+    opts.automaticLossScalingSettings.enabled = True
+
+    loss, proto, t0, t_shape, label, label_shape, _ = getModelProto()
+    bps = 6
+
+    ls_id = "lossScaling_FLOAT16"
+    final_ls_id = "finalLossScale"
+
+    session = popart.TrainingSession(fnModel=proto,
+                                     deviceInfo=tu.create_test_device(),
+                                     dataFlow=popart.DataFlow(
+                                         bps, [ls_id, final_ls_id]),
+                                     loss=loss,
+                                     optimizer=optimizer,
+                                     userOptions=opts)
+    session.prepareDevice()
+    session.weightsFromHost()
+    t0_data = 10000.0 * np.random.rand(bps, *t_shape).astype(np.float16)
+    label_data = np.random.randint(0, label_shape[0],
+                                   bps * label_shape[0]).astype(np.int32)
+    inputs = {t0: t0_data, label: label_data}
+
+    anchors = session.initAnchorArrays()
+    session.run(popart.PyStepIO(inputs, anchors))
+
+    # Loss scale optimizer tensor is unchanged over step
+    for ls in anchors[ls_id]:
+        assert ls == init_ls
+
+    # Final loss scale changes over step
+    for i, final_ls in enumerate(anchors[final_ls_id]):
+        if i > 0:
+            assert final_ls != anchors[final_ls_id][i - 1]
+
+    # Update the learning rate
+    new_optimizer = popart.SGD({
+        "lossScaling": (init_ls, False),
+        "defaultLearningRate": (12, False)
+    })
+    session.updateOptimizerFromHost(new_optimizer)
+
+    session.run(popart.PyStepIO(inputs, anchors))
+
+    # Loss scale optimizer tensor is unchanged (over step, and vs. last step)
+    for ls in anchors[ls_id]:
+        assert ls == init_ls

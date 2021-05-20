@@ -21,14 +21,20 @@ template <> std::string getTypeName<float16_t>() { return "FLOAT16"; }
 template <typename T> void run_test() {
   auto builder = Builder::create();
 
+  // loss scale update factor
+  TensorInfo ls_info{getTypeName<T>(), std::vector<int64_t>{}};
+  auto ls_update_factor = builder->addInputTensor(ls_info);
+
   // gradient statistics, each with 2 bins:
   // (0) not saturated
   // (1) saturated
   int num_histograms = 3;
   std::vector<TensorId> histogram_ids;
+  std::vector<TensorId> all_ls_update_inputs = {ls_update_factor};
   TensorInfo hist_info{"UINT32", std::vector<int64_t>{2}};
   for (int i = 0; i < num_histograms; i++) {
     histogram_ids.push_back(builder->addInputTensor(hist_info));
+    all_ls_update_inputs.push_back(histogram_ids[i]);
   }
 
   // The LossScaleUpdateOp has not been exposed directly in the Builder class,
@@ -38,7 +44,7 @@ template <typename T> void run_test() {
       static_cast<int64_t>(onnxutil::getTPDataType(getDataType<T>()));
   auto out = builder->customOp(Onnx::CustomOperators::LossScaleUpdate,
                                1,
-                               histogram_ids,
+                               all_ls_update_inputs,
                                1,
                                attributes)[0];
 
@@ -63,6 +69,10 @@ template <typename T> void run_test() {
   // inputs
   std::map<popart::TensorId, popart::IArray &> inputs;
 
+  std::vector<T> ls_update_val{4.0};
+  popart::NDArrayWrapper<T> ls_update_wrapper(ls_update_val.data(), ls_info);
+  inputs.emplace(ls_update_factor, ls_update_wrapper);
+
   std::vector<uint32_t> grad_stats_vals{8, 56};
   popart::NDArrayWrapper<uint32_t> grad_stats_wrapper(grad_stats_vals.data(),
                                                       hist_info);
@@ -76,7 +86,7 @@ template <typename T> void run_test() {
   // The upper bin count is much higher than the lower bin count -
   // the loss scale will be scaled down by a factor of 2, and the inverse
   // loss scale scaled up by the same factor.
-  std::vector<T> expected_update_factor = {0.5};
+  std::vector<T> expected_update_factor = {2.0};
   for (size_t i = 0; i < anchor_data0.size(); ++i) {
     BOOST_CHECK_EQUAL(anchor_data0[i], expected_update_factor[i]);
   }

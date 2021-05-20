@@ -17,8 +17,9 @@ void LossScaleUpdateOpx::grow(poplar::program::Sequence &prog) const {
 
   // Check there is at least one 'gradient statistics' input
   if (!hasInput(op.getFirstStatisticsTensorInIndex())) {
-    throw error("LossScaleUpdateOpx {} does not have any input at InIndex 1",
-                op.str());
+    throw error("LossScaleUpdateOpx {} does not have any input at InIndex {}",
+                op.str(),
+                op.getFirstStatisticsTensorInIndex());
   }
   // Get automatic loss scaling hyperparameters.
   float thresholdUpperCountProportion =
@@ -88,19 +89,23 @@ void LossScaleUpdateOpx::grow(poplar::program::Sequence &prog) const {
                                      prog,
                                      debugContext());
 
+  auto lossScaleUpdateFactor =
+      getInTensor(op.getLossScaleUpdateFactorInIndex());
   auto updateFactorDType = popType(op.getUpdateFactorDType());
-  auto scaleUpTensor     = getConst(updateFactorDType, {}, 2.0, "scaleUp");
-  auto scaleDownTensor   = getConst(updateFactorDType, {}, 0.5, "scaledown");
-  auto updateFactor      = getScalarVariable(updateFactorDType, "updateFactor");
-  poplar::program::Copy scaleUp(
-      scaleUpTensor, updateFactor, false, debugContext("scaleDown"));
-  poplar::program::Copy scaleDown(
-      scaleDownTensor, updateFactor, false, debugContext("scaleDown"));
+  poplar::program::Sequence scaleUp, scaleDown;
+  popops::mulInPlace(
+      graph(), lossScaleUpdateFactor, 2.0, scaleUp, debugContext("scaleUp"));
+  popops::mulInPlace(graph(),
+                     lossScaleUpdateFactor,
+                     0.5,
+                     scaleDown,
+                     debugContext("scaleDown"));
 
   prog.add(poplar::program::If(
       shouldScaleDown, scaleDown, scaleUp, debugContext("lossScaleUpdate")));
 
-  setOutTensor(op.getLossScaleUpdateFactorOutIndex(), updateFactor);
+  setOutTensor(op.getUpdatedLossScaleUpdateFactorOutIndex(),
+               lossScaleUpdateFactor);
 }
 
 LossScaleUpdateOpx::LossScaleUpdateOpx(Op *op, Devicex *devicex)

@@ -26,7 +26,29 @@ void LossScaleUpdateOp::setup() {
   }
 
   Shape outShape({}); // scalar tensor
-  outInfo(getLossScaleUpdateFactorOutIndex()) = {updateFactorDType, outShape};
+  outInfo(getUpdatedLossScaleUpdateFactorOutIndex()) = {updateFactorDType,
+                                                        outShape};
+}
+
+view::Regions LossScaleUpdateOp::aliases(InIndex in, OutIndex out) const {
+  if (in == getLossScaleUpdateFactorInIndex() &&
+      out == getUpdatedLossScaleUpdateFactorOutIndex()) {
+    return {view::Region::getFull(inShape(in))};
+  } else {
+    return {view::Region::getEmpty(inRank(in))};
+  }
+}
+
+view::Regions LossScaleUpdateOp::modifies(InIndex index) const {
+  if (index == getLossScaleUpdateFactorInIndex()) {
+    return aliases(index, getUpdatedLossScaleUpdateFactorOutIndex());
+  } else {
+    return {view::Region::getEmpty(inRank(index))};
+  }
+}
+
+void LossScaleUpdateOp::growAliaser(PoprithmsAliaser &m) const {
+  m.insertUnaryModifier(*this, getLossScaleUpdateFactorInIndex());
 }
 
 namespace {

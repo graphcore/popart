@@ -14,20 +14,6 @@
 
 namespace popart {
 
-namespace {
-
-// This transform may happen when pipelining disabled, in which case it should
-// fall back to vgraph id.
-PipelineStage getPipelineStageOrVGraphId(const Op *op) {
-  if (op->hasPipelineStage()) {
-    return op->getPipelineStage();
-  } else {
-    return op->getVirtualGraphId();
-  }
-}
-
-} // namespace
-
 class CopiedTensors {
 
   // record which tensors have been copied to which ipu's
@@ -66,6 +52,97 @@ public:
     return tensorMap;
   }
 };
+
+namespace {
+
+// This transform may happen when pipelining disabled, in which case it should
+// fall back to vgraph id.
+PipelineStage getPipelineStageOrVGraphId(const Op *op) {
+  if (op->hasPipelineStage()) {
+    return op->getPipelineStage();
+  } else {
+    return op->getVirtualGraphId();
+  }
+}
+
+bool belongsInOptimizerFromHostFragment(const Graph &graph, IpuCopyOp *copyOp) {
+  if (copyOp->copiesOptimizerTensors()) {
+    if (copyOp->inTensor(0)->hasProducer() &&
+        copyOp->inTensor(0)->getProducer()->settings.executionContext !=
+            ExecutionContext::OptimizerFromHostFragment) {
+      return false;
+    }
+
+    else if (copyOp->getIr()
+                 .getSessionOptions()
+                 .automaticLossScalingSettings.enabled) {
+      bool copiesLossScaleTensor =
+          copyOp->inTensor(0) == AutomaticLossScale::getLossScaleTensor(graph);
+      auto inverseLossScaleTensors =
+          AutomaticLossScale::getInverseLossScaleTensors(graph);
+      bool copiesInverseLossScaleTensor =
+          inverseLossScaleTensors.find(copyOp->inTensor(0)) !=
+          inverseLossScaleTensors.end();
+      if (copiesLossScaleTensor || copiesInverseLossScaleTensor) {
+        // If auto loss scaling is enabled, and the copy op copies the loss
+        // scale tensor, or the inverse loss scale tensor, then it must
+        // execute in the Normal execution context.
+        return false;
+      } else {
+        return true;
+      }
+    } else {
+      return true;
+    }
+  }
+
+  // Non optimizer-tensor-copying op
+  return false;
+}
+
+bool outputsConsumedByAccumulateOuterFragmentOps(const Op *copyOp) {
+  auto consumers = copyOp->outTensor(0)->consumers.getOps();
+  bool allConsumersInAccumulateOuterFragment = true;
+  for (Op *consumer : consumers) {
+    if (consumer->settings.executionContext !=
+        ExecutionContext::AccumulateOuterFragment) {
+      allConsumersInAccumulateOuterFragment = false;
+    }
+  }
+  return allConsumersInAccumulateOuterFragment;
+}
+
+void setPlacementAttributes(CopiedTensors copiedTensors, const Graph &graph) {
+  for (auto &copied : copiedTensors.getTensorMap()) {
+    for (Op *op : graph.getTensors().get(copied.first)->consumers.getOps()) {
+      if (op->isIpuCopyOp()) {
+        auto copyOp = dynamic_cast<IpuCopyOp *>(op);
+        copyOp->inheritPlacementAttributes(false);
+      }
+    }
+  }
+}
+
+void setExecutionContext(CopiedTensors copiedTensors, const Graph &graph) {
+  for (auto &copied : copiedTensors.getTensorMap()) {
+    for (Op *op : graph.getTensors().get(copied.first)->consumers.getOps()) {
+      if (op->isIpuCopyOp()) {
+        auto copyOp = dynamic_cast<IpuCopyOp *>(op);
+
+        // Set the execution context of the copy op in special case
+        if (belongsInOptimizerFromHostFragment(graph, copyOp)) {
+          copyOp->settings.executionContext =
+              ExecutionContext::OptimizerFromHostFragment;
+        } else if (outputsConsumedByAccumulateOuterFragmentOps(copyOp)) {
+          copyOp->settings.executionContext =
+              ExecutionContext::AccumulateOuterFragment;
+        }
+      }
+    }
+  }
+}
+
+} // namespace
 
 std::size_t InterIpuCopy::id() { return typeid(InterIpuCopy).hash_code(); }
 
@@ -259,6 +336,7 @@ bool InterIpuCopy::apply(Graph &graph) const {
       }
     }
   }
+  setExecutionContext(copiedTensors, graph);
 
   // For any stream tensors that are mapped to multiple ipus we will
   // use the first ipu the list as the input from the host and then
@@ -340,58 +418,8 @@ bool InterIpuCopy::apply(Graph &graph) const {
       }
     }
   }
-
-  auto belongsInOptimizerFromHostFragment = [&graph](Op *op) {
-    auto copyOp = dynamic_cast<IpuCopyOp *>(op);
-    if (copyOp->copiesOptimizerTensors()) {
-      if (copyOp->inTensor(0)->hasProducer() &&
-          copyOp->inTensor(0)->getProducer()->settings.executionContext !=
-              ExecutionContext::OptimizerFromHostFragment) {
-        return false;
-      }
-
-      else if (op->getIr()
-                   .getSessionOptions()
-                   .automaticLossScalingSettings.enabled) {
-        bool copiesLossScaleTensor =
-            copyOp->inTensor(0) ==
-            AutomaticLossScale::getLossScaleTensor(graph);
-        auto inverseLossScaleTensors =
-            AutomaticLossScale::getInverseLossScaleTensors(graph);
-        bool copiesInverseLossScaleTensor =
-            inverseLossScaleTensors.find(copyOp->inTensor(0)) !=
-            inverseLossScaleTensors.end();
-        if (copiesLossScaleTensor || copiesInverseLossScaleTensor) {
-          // If auto loss scaling is enabled, and the copy op copies the loss
-          // scale tensor, or the inverse loss scale tensor, then it must
-          // execute in the Normal execution context.
-          return false;
-        } else {
-          return true;
-        }
-      } else {
-        return true;
-      }
-    }
-
-    // Non optimizer-tensor-copying op
-    return false;
-  };
-
-  // Inherit placement attributes to IPUCopyOps
-  for (auto &copied : copiedTensors.getTensorMap()) {
-    for (Op *op : graph.getTensors().get(copied.first)->consumers.getOps()) {
-      if (op->isIpuCopyOp()) {
-        op->inheritPlacementAttributes(false);
-
-        // Set the execution context of the copy op in special case
-        if (belongsInOptimizerFromHostFragment(op)) {
-          op->settings.executionContext =
-              ExecutionContext::OptimizerFromHostFragment;
-        }
-      }
-    }
-  }
+  setPlacementAttributes(copiedTensors, graph);
+  setExecutionContext(copiedTensors, graph);
 
   return true;
 }

@@ -2,16 +2,17 @@
 
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
+#include <popart/onnxutil.hpp>
 #include <popart/op/accumulatorupdate.hpp>
 #include <popart/op/add.hpp>
 #include <popart/op/cast.hpp>
 #include <popart/op/collectives/replicatedallreduce.hpp>
 #include <popart/op/convbase.hpp>
+#include <popart/op/div.hpp>
 #include <popart/op/histogram.hpp>
 #include <popart/op/lossscaleupdate.hpp>
 #include <popart/op/matmul.hpp>
 #include <popart/op/mul.hpp>
-#include <popart/op/reciprocal.hpp>
 #include <popart/op/sum.hpp>
 #include <popart/optimizer.hpp>
 #include <popart/tensorindex.hpp>
@@ -123,6 +124,22 @@ bool doingGradientAccumulation(const Graph &graph) {
          ir.getSessionOptions().accumulationFactor > 1;
 }
 
+OptionalPipelineStage findLowestPipelineStage(std::vector<Tensor *> tensors) {
+  std::set<PipelineStage> allStages;
+  for (Tensor *tensor : tensors) {
+    std::set<PipelineStage> stages = tensor->consumers.getPipelineStages();
+    for (auto stage : stages) {
+      allStages.insert(stage);
+    }
+  }
+
+  if (allStages.size() == 0) {
+    return {};
+  } else {
+    return *std::min_element(allStages.begin(), allStages.end());
+  }
+}
+
 } // namespace
 
 std::size_t AutomaticLossScale::id() {
@@ -163,6 +180,32 @@ Tensor *AutomaticLossScale::getLossScaleTensor(const Graph &graph) {
 
 TensorId getStatisticsAccumulatorTensorId() {
   return reservedAccumPrefix() + std::string("autoLossScaleStats");
+}
+
+TensorId getLossScaleUpdateFactorTensorId() {
+  return std::string("lossScaleUpdateFactor");
+}
+
+Tensor *
+addOnesTensor(Graph &graph, const TensorId &tensorId, const TensorInfo info) {
+  auto &ir = graph.getIr();
+  if (ir.tensorExistsInInitialisers(tensorId)) {
+    auto tp = onnxutil::getTensorProto(ir.getModel(), tensorId);
+    graph.getTensors().addVarInit(tensorId, &tp);
+  } else {
+    if (info.dataType() == DataType::FLOAT) {
+      std::vector<float> d(info.nelms(), 1.0f);
+      graph.getTensors().addVarInit(tensorId, info, d.data());
+    } else if (info.dataType() == DataType::FLOAT16) {
+      std::vector<float16_t> d(info.nelms(), static_cast<float16_t>(1.0));
+      graph.getTensors().addVarInit(tensorId, info, d.data());
+    } else {
+      throw error("[AutomaticLossScale transform] Can only create a 'ones' "
+                  "tensor of FLOAT16 and FLOAT data types.");
+    }
+  }
+
+  return graph.getTensors().get(tensorId);
 }
 
 std::set<Tensor *>
@@ -368,52 +411,64 @@ bool AutomaticLossScale::apply(Graph &graph) const {
         i + LossScaleUpdateOp::getFirstStatisticsTensorInIndex(), tensor->id);
   }
 
+  // Create variable tensor, initialised to 'ones' for input at
+  // LossScaleUpdateOp::getLossScaleUpdateFactorInIndex
+  Tensor *lsUpdateFactor = addOnesTensor(
+      graph, getLossScaleUpdateFactorTensorId(), lossScaleTensor->info);
+
+  lossScaleUpdateOp->connectInTensor(
+      LossScaleUpdateOp::getLossScaleUpdateFactorInIndex(), lsUpdateFactor->id);
   lossScaleUpdateOp->createAndConnectOutTensor(
-      LossScaleUpdateOp::getLossScaleUpdateFactorOutIndex(),
-      "loss_scale_update_factor");
-  lossScaleUpdateOp->inheritPlacementAttributes(false);
+      LossScaleUpdateOp::getUpdatedLossScaleUpdateFactorOutIndex(),
+      reservedUpdatedVarPrefix() + lsUpdateFactor->id);
   lossScaleUpdateOp->setup();
+  lossScaleUpdateOp->pruneable = false;
 
-  std::vector<Op *> lossScaleUpdateOps = {lossScaleUpdateOp};
-  // Apply the loss scale update factor in place to:
-  // - loss scale tensor
-  // - the inverse loss scale tensor(s)
-  auto lossScaleUpdateFactor = lossScaleUpdateOp->outTensor(
-      LossScaleUpdateOp::getLossScaleUpdateFactorOutIndex());
-
-  auto lsMulOp = graph.createOp<MulLhsInplaceOp>(Op::Settings(graph, ""));
-  lsMulOp->connectInTensor(MulLhsInplaceOp::getArg0InIndex(),
-                           lossScaleTensor->id);
-  lsMulOp->connectInTensor(MulLhsInplaceOp::getArg1InIndex(),
-                           lossScaleUpdateFactor->id);
-  lsMulOp->createAndConnectOutTensor(MulLhsInplaceOp::getOutIndex(),
-                                     lossScaleTensor->id + "_updated");
-  lsMulOp->inheritPlacementAttributes(false);
-  lsMulOp->setup();
-  lsMulOp->pruneable = false;
-  lossScaleUpdateOps.push_back(lsMulOp);
-
-  // Ensure that all other consumers of loss scale tensor run before the loss
-  // scale update runs. The loss is scaled at the start of the backwards pass,
-  // and then inversely right before the they are applied as a weight update.
-  // The loss scale tensor must have the same value at these two points.
-  for (Op *consumer : lossScaleTensor->consumers.getOps()) {
-    if (consumer != lsMulOp) {
-      graph.topoCons->insert(consumer, lsMulOp);
-    }
+  // Case 2 or 3, execute the loss scale update in the outer fragment
+  if (doingGradientAccumulation(graph)) {
+    OptionalPipelineStage optionalPs;
+    lossScaleUpdateOp->settings.executionContext =
+        ExecutionContext::AccumulateOuterFragment;
+    lossScaleUpdateOp->setPipelineStage(optionalPs);
+  }
+  // Case 0 or 1
+  else {
+    lossScaleUpdateOp->settings.executionContext = ExecutionContext::Normal;
   }
 
-  auto reciprocalOp = graph.createOp<ReciprocalOp>(
-      Onnx::Operators::Reciprocal_6, Op::Settings(graph, ""));
-  reciprocalOp->connectInTensor(ReciprocalOp::getInIndex(),
-                                lossScaleUpdateFactor->id);
-  reciprocalOp->createAndConnectOutTensor(
-      ReciprocalOp::getOutIndex(), lossScaleUpdateFactor->id + "_reciprocal");
-  reciprocalOp->inheritPlacementAttributes(false);
-  reciprocalOp->setup();
-  lossScaleUpdateOps.push_back(reciprocalOp);
-  auto reciprocalLossScaleUpdateFactor =
-      reciprocalOp->outTensor(ReciprocalOp::getOutIndex());
+  std::vector<Op *> preLossScaleUpdateOps;
+  // Apply the loss scale update factor to:
+  // - loss scale tensor
+  // - the inverse loss scale tensor(s)
+
+  auto lsMulOp =
+      graph.createOp<MulOp>(Onnx::AiOnnx::OpSet6::Mul, Op::Settings(graph, ""));
+  lsMulOp->connectInTensor(MulOp::getArg0InIndex(), lossScaleTensor->id);
+  lsMulOp->connectInTensor(MulOp::getArg1InIndex(), lsUpdateFactor->id);
+  // Design note:
+  // Output name cannot contain any of reservedOptimizerPrefixes(),
+  // otherwise it is treated as a tensor that is written to as part of
+  // the OptimizerFromHost fragment.
+  lsMulOp->createAndConnectOutTensor(MulOp::getOutIndex(), "finalLossScale");
+  lsMulOp->setup();
+  preLossScaleUpdateOps.push_back(lsMulOp);
+  auto lossScaleUpdated = lsMulOp->outTensor(MulOp::getOutIndex());
+
+  // Optionally set VirtualGraphId, PipelineStage
+  auto vgId   = lossScaleTensor->consumers.findLowestVirtualGraphID();
+  auto pStage = lossScaleTensor->consumers.findLowestPipelineStage();
+
+  // Disconnect the loss scale tensor from its consumers and reconnect to the
+  // updated loss scale tensor
+  for (Op *consumer : lossScaleTensor->consumers.getOps()) {
+    if (consumer != lsMulOp) {
+      auto inIndices = consumer->input->indices(lossScaleTensor);
+      for (auto inIndex : inIndices) {
+        consumer->disconnectInTensor(inIndex);
+        consumer->connectInTensor(inIndex, lossScaleUpdated->id);
+      }
+    }
+  }
 
   // Sort inverse loss scale tensors by data type
   std::map<DataType, std::vector<Tensor *>> inverseLossScaleTensorsMap;
@@ -431,59 +486,76 @@ bool AutomaticLossScale::apply(Graph &graph) const {
     DataType dtype                = dtype_tensors.first;
     std::vector<Tensor *> tensors = dtype_tensors.second;
 
-    Tensor *finalReciprocalLossScaleUpdateFactor = nullptr;
-    if (dtype != reciprocalLossScaleUpdateFactor->info.dataType()) {
+    Tensor *finalLossScaleUpdateFactor = nullptr;
+    if (dtype != lsUpdateFactor->info.dataType()) {
       auto castOp = graph.createOp<CastOp>(
           Onnx::Operators::Cast_9, dtype, Op::Settings(graph, ""));
-      castOp->connectInTensor(CastOp::getInIndex(),
-                              reciprocalLossScaleUpdateFactor->id);
-      castOp->createAndConnectOutTensor(
-          CastOp::getOutIndex(), reciprocalLossScaleUpdateFactor->id + "_cast");
-      castOp->inheritPlacementAttributes(false);
+      castOp->connectInTensor(CastOp::getInIndex(), lsUpdateFactor->id);
+      castOp->createAndConnectOutTensor(CastOp::getOutIndex(),
+                                        lsUpdateFactor->id + "_cast");
       castOp->setup();
-      lossScaleUpdateOps.push_back(castOp);
-      finalReciprocalLossScaleUpdateFactor =
-          castOp->outTensor(CastOp::getOutIndex());
+      preLossScaleUpdateOps.push_back(castOp);
+      finalLossScaleUpdateFactor = castOp->outTensor(CastOp::getOutIndex());
+
+      // Optionally set VirtualGraphId, PipelineStage
+      castOp->setVirtualGraphId(lossScaleUpdateOp->getOptionalVGraphId());
+      castOp->setPipelineStage(findLowestPipelineStage(tensors));
+
     } else {
-      finalReciprocalLossScaleUpdateFactor = reciprocalLossScaleUpdateFactor;
+      finalLossScaleUpdateFactor = lsUpdateFactor;
     }
 
-    for (Tensor *inverseLossScaleTensor : tensors) {
-      auto ilsMulOp = graph.createOp<MulLhsInplaceOp>(Op::Settings(graph, ""));
-      ilsMulOp->connectInTensor(MulLhsInplaceOp::getArg0InIndex(),
-                                inverseLossScaleTensor->id);
-      ilsMulOp->connectInTensor(MulLhsInplaceOp::getArg1InIndex(),
-                                finalReciprocalLossScaleUpdateFactor->id);
-      ilsMulOp->createAndConnectOutTensor(MulLhsInplaceOp::getOutIndex(),
-                                          inverseLossScaleTensor->id +
-                                              "_updated");
-      ilsMulOp->inheritPlacementAttributes(false);
-      ilsMulOp->setup();
-      ilsMulOp->pruneable = false;
-      lossScaleUpdateOps.push_back(ilsMulOp);
+    for (int i = 0; i < tensors.size(); i++) {
+      Tensor *inverseLossScaleTensor = tensors.at(i);
+      auto lsDivOp = graph.createOp<DivOp>(Onnx::AiOnnx::OpSet6::Div,
+                                           Op::Settings(graph, ""));
+      lsDivOp->connectInTensor(DivOp::getArg0InIndex(),
+                               inverseLossScaleTensor->id);
+      lsDivOp->connectInTensor(DivOp::getArg1InIndex(),
+                               finalLossScaleUpdateFactor->id);
+      // Design note:
+      // Output name cannot contain any of reservedOptimizerPrefixes(),
+      // otherwise it is treated as a tensor that is written to as part of
+      // the OptimizerFromHost fragment.
+      lsDivOp->createAndConnectOutTensor(
+          DivOp::getOutIndex(), "finalInverseLossScale_" + std::to_string(i));
+      lsDivOp->setup();
+      preLossScaleUpdateOps.push_back(lsDivOp);
+      auto inverseLossScaleUpdated = lsDivOp->outTensor(DivOp::getOutIndex());
 
+      // Optionally set VirtualGraphId, PipelineStage
+      lsDivOp->setVirtualGraphId(
+          inverseLossScaleTensor->consumers.findLowestVirtualGraphID());
+      lsDivOp->setPipelineStage(
+          inverseLossScaleTensor->consumers.findLowestPipelineStage());
+
+      // Disconnect the inverse loss scale tensor from its consumers and
+      // reconnect to the updated inverse loss scale tensor
       for (Op *consumer : inverseLossScaleTensor->consumers.getOps()) {
-        if (consumer != ilsMulOp) {
-          graph.topoCons->insert(consumer, ilsMulOp);
+        if (consumer != lsDivOp) {
+          auto inIndices = consumer->input->indices(inverseLossScaleTensor);
+          for (auto inIndex : inIndices) {
+            consumer->disconnectInTensor(inIndex);
+            consumer->connectInTensor(inIndex, inverseLossScaleUpdated->id);
+          }
         }
       }
     }
   }
 
-  // Case 2 or 3, execute the loss scale update in the outer fragment
-  if (doingGradientAccumulation(graph)) {
-    OptionalPipelineStage optionalPs;
-    for (Op *op : lossScaleUpdateOps) {
-      op->settings.executionContext = ExecutionContext::AccumulateOuterFragment;
-      op->setPipelineStage(optionalPs);
-    }
-  }
   // Case 0 or 1
-  else {
-    for (Op *op : lossScaleUpdateOps) {
-      op->settings.executionContext = ExecutionContext::Normal;
+  if (!doingGradientAccumulation(graph)) {
+    for (Op *op : preLossScaleUpdateOps) {
+      graph.topoCons->insert(op, lossScaleUpdateOp);
     }
   }
+
+  // Optionally set VirtualGraphId, PipelineStage
+  for (Op *op : preLossScaleUpdateOps) {
+    op->setVirtualGraphId(vgId);
+    op->setPipelineStage(pStage);
+  }
+  lossScaleUpdateOp->setVirtualGraphId(vgId);
 
   return true;
 }
