@@ -314,7 +314,7 @@ std::ostream &operator<<(std::ostream &os,
 //  - scaledLearningRate1 (slr1) =            .  .  .  x  .  x  x  .
 //      lr / ( vs * rf)
 //
-//  - scaledMomentum1 (smm1) =                x  .  .  .  .  .  .  .
+//  - scaledMomentum1 (smm1) =                x  .  .  .  .  .  x  .
 //      mm / rf
 //
 //
