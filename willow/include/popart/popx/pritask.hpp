@@ -10,6 +10,7 @@
 #include <vector>
 #include <poplar/Program.hpp>
 #include <popart/names.hpp>
+#include <popart/taskid.hpp>
 
 namespace popart {
 

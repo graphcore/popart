@@ -1448,7 +1448,7 @@ IrLowering::getFragmentFunction(const Graph &_graph,
 void IrLowering::addPipelinedCopyTasks(PriTasks &tasks) {
   auto schedule =
       ir().getMainGraph().getOpSchedule({}, RequireOptimalSchedule::Yes);
-  std::string prevTaskId = "";
+  TaskId prevTaskId;
 
   logging::devicex::debug("Adding pipelined copy tasks");
   for (auto iter = schedule.rbegin(); iter != schedule.rend(); iter++) {
@@ -1548,8 +1548,8 @@ void IrLowering::addOpTasks(PriTasks &tasks) {
     allOps.push_back(op);
   }
 
-  double priority     = 0.0;
-  TaskId prevOpTaskId = "";
+  double priority = 0.0;
+  TaskId prevOpTaskId;
 
   std::set<std::pair<Op *, ExecutionPhase>> seenRecomputeOps;
   FindRequiredRecomputes recomputeFinder(allOps);
@@ -1920,7 +1920,7 @@ PriTask IrLowering::opTask(Op *op, double priority, TaskId prevOpTaskId) {
 
   // Depends on previous op task. This preserves op ordering from ir.
   // Note: the first opTask has no previous opTask
-  if (prevOpTaskId != "") {
+  if (!prevOpTaskId.empty()) {
     PriTaskDependency prevTask = {prevOpTaskId, DependencyType::Scheduler};
     // Add dependency only if not already added
     if (std::find(deps.begin(), deps.end(), prevTask) == deps.end()) {
@@ -3293,63 +3293,71 @@ void IrLowering::loadPoplarExecutable(std::istream &in) {
 }
 
 TaskId IrLowering::streamFromHostTaskId(TensorId id) {
-  return "streamFromHostTask_" + id;
+  return TaskId(TaskId::Type::StreamFromHostTask, id);
 }
 
 TaskId IrLowering::setInitTensorValTaskId(TensorId id) {
-  return "setInitTensorValTask_" + id;
+  return TaskId(TaskId::Type::SetInitTensorValTask, id);
 }
 
 TaskId IrLowering::streamToHostTaskId(TensorId id, bool isAnchorStream) {
-  std::string anchorPrefix = isAnchorStream ? "anchor" : "weight";
-  return anchorPrefix + "StreamToHostTask_" + id;
+  if (isAnchorStream) {
+    return TaskId(TaskId::Type::AnchorStreamToHostTask, id);
+  } else {
+    return TaskId(TaskId::Type::WeightStreamToHostTask, id);
+  }
 }
 
-TaskId IrLowering::fromHostTaskId(TensorId id) { return "fromHostTask_" + id; }
+TaskId IrLowering::fromHostTaskId(TensorId id) {
+  return TaskId(TaskId::Type::FromHostTask, id);
+}
 
 TaskId IrLowering::toHostTaskId(TensorId id, bool isAnchorStream) {
   if (isAnchorStream) {
-    return "anchorToHostTask_" + id;
+    return TaskId(TaskId::Type::AnchorToHostTask, id);
+  } else {
+    return TaskId(TaskId::Type::WeightToHostTask, id);
   }
-  return "weightToHostTask_" + id;
 }
 
 TaskId IrLowering::anchorSumTaskId(const TensorId &id) {
-  return "anchorSumTask_" + id;
+  return TaskId(TaskId::Type::AnchorSumTask, id);
 }
 
 TaskId IrLowering::initBatchCounterTensorsTaskId() {
-  return "initBatchCounterTensorsTask";
+  return TaskId(TaskId::Type::InitBatchCounterTensorsTask);
 }
 
-TaskId IrLowering::updateBatchCountTaskId() { return "updateBatchCountTask"; }
+TaskId IrLowering::updateBatchCountTaskId() {
+  return TaskId(TaskId::Type::UpdateBatchCountTask);
+}
 
-TaskId IrLowering::initRandomSeedTaskId() { return "initRandomSeedTask"; }
+TaskId IrLowering::initRandomSeedTaskId() {
+  return TaskId(TaskId::Type::InitRandomSeedTask);
+}
 
-TaskId IrLowering::rngStateFromHostTaskId() { return "rngStateFromHostTask"; }
+TaskId IrLowering::rngStateFromHostTaskId() {
+  return TaskId(TaskId::Type::RngStateFromHostTask);
+}
 
-TaskId IrLowering::rngStateToHostTaskId() { return "rngStateToHostTask"; }
+TaskId IrLowering::rngStateToHostTaskId() {
+  return TaskId(TaskId::Type::RngStateToHostTask);
+}
 
 TaskId IrLowering::initRngStateTensorTaskId() {
-  return "initRngStateTensorTask";
+  return TaskId(TaskId::Type::InitRngStateTensorTask);
 }
 
 TaskId IrLowering::initTensorTaskId(TensorId id) {
-  return "initTensorTaskId_" + id;
+  return TaskId(TaskId::Type::InitTensorTask, id);
 }
 
 TaskId IrLowering::opTaskId(Op *op) {
-
-  std::stringstream ss;
-  ss << "fromOpTask_" << op->id << '_' << op->opid;
-  return ss.str();
+  return TaskId(TaskId::Type::FromOpTask, op->id, op->opid);
 }
 
 TaskId IrLowering::pipelinedCopyTaskId(Op *op) {
-
-  std::stringstream ss;
-  ss << "pipelinedCopyTask_" << op->id << "_" << op->opid;
-  return ss.str();
+  return TaskId(TaskId::Type::PipelinedCopyTask, op->id, op->opid);
 }
 
 PriTask IrLowering::fromHostTask(Tensor *tensor,
