@@ -125,8 +125,13 @@ bool LSTMPattern::apply(Op *op) const {
   lstmOp->disconnectAllInputs();
   lstmOp->disconnectAllOutputs();
 
-  auto newLstm = dynamic_cast<PopartLSTMOp *>(
-      makeReplacementOpInIr(Onnx::CustomOperators::LSTM_1, op, "PopartLSTM"));
+  Graph &graph = op->getGraph();
+  auto newLstm = graph.createOp<PopartLSTMOp>(Onnx::CustomOperators::LSTM_1,
+                                              true,
+                                              lstmOp->getActivation(),
+                                              lstmOp->getRecurrentActivation(),
+                                              op->settings.copy("PopartLSTM"));
+
   newLstm->connectInTensor(PopartLSTMOp::getInputInIndex(), input);
   newLstm->connectInTensor(PopartLSTMOp::getWeightsInIndex(), concatWeights);
   if (biases != TensorId()) {

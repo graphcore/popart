@@ -1,6 +1,6 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_LSTMX_HPP
-#define GUARD_NEURALNET_LSTMX_HPP
+#ifndef GUARD_NEURALNET_POPARTLSTMX_HPP
+#define GUARD_NEURALNET_POPARTLSTMX_HPP
 
 #include "popart/logging.hpp"
 #include <popnn/Lstm.hpp>
@@ -11,6 +11,7 @@
 #include <popart/names.hpp>
 #include <popart/op/lstm.hpp>
 #include <popart/popx/irlowering.hpp>
+#include <popart/popx/op/lstmxutil.hpp>
 #include <popart/popx/opx.hpp>
 
 namespace popart {
@@ -33,16 +34,24 @@ protected:
 
     if (seq_lens_t.valid()) {
 
-      auto params               = popnn::lstm::LstmParams(popType(inInfo),
-                                            batchSize,
-                                            maxSeqLength,
-                                            seq_lens_t,
-                                            {inputSize, hiddenSize});
+      auto params =
+          popnn::lstm::LstmParams(popType(inInfo),
+                                  batchSize,
+                                  maxSeqLength,
+                                  seq_lens_t,
+                                  {inputSize, hiddenSize},
+                                  convert(lstm_op.getActivation()),
+                                  convert(lstm_op.getRecurrentActivation()));
       params.outputFullSequence = lstm_op.outputFullSequence;
       return params;
     }
-    auto params = popnn::lstm::LstmParams(
-        popType(inInfo), batchSize, maxSeqLength, {inputSize, hiddenSize});
+    auto params =
+        popnn::lstm::LstmParams(popType(inInfo),
+                                batchSize,
+                                maxSeqLength,
+                                {inputSize, hiddenSize},
+                                convert(lstm_op.getActivation()),
+                                convert(lstm_op.getRecurrentActivation()));
     params.outputFullSequence = lstm_op.outputFullSequence;
     return params;
   }

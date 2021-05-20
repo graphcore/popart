@@ -1,4 +1,5 @@
 # Copyright (c) 2019 Graphcore Ltd. All rights reserved.
+import pytest
 import numpy as np
 import popart
 import torch
@@ -762,3 +763,35 @@ def test_lstm_initial_hc(op_tester):
         return [Y, Y_h, Y_c]
 
     op_tester.run(init_builder, reference, 'infer')
+
+
+def test_unsupported_activation(op_tester):
+    d1 = np.array([[[1., 2., 3.], [4., 5., 6.]],
+                   [[7., 8., 9.], [10., 11., 12.]]]).astype(np.float32)
+
+    input_size = d1.shape[2]
+    hidden_size = 7
+
+    d2 = np.random.rand(1, 4 * hidden_size, input_size).astype(np.float32)
+    d3 = np.zeros((1, 4 * hidden_size, hidden_size)).astype(np.float32)
+
+    def init_builder(builder):
+        i1 = builder.addInputTensor(d1)
+        i2 = builder.addInputTensor(d2)
+        i3 = builder.addInputTensor(d3)
+        Y, Y_h, Y_c = builder.aiOnnx.lstm([i1, i2, i3], 3, clip=None)
+        builder.addNodeAttribute("activations", ["Affine", "Affine", "Affine"],
+                                 {Y, Y_h, Y_c})
+        builder.addOutputTensor(Y_h)
+        return [Y, Y_h, Y_c]
+
+    def reference(ref_data):
+        # The reference should never run, popart should raise an exception before this.
+        assert False
+
+    op_tester.device = tu.create_test_device()
+    with pytest.raises(popart.popart_exception) as e_info:
+        op_tester.run(init_builder, reference, 'infer')
+
+    assert 'Affine' in e_info.value.args[0]
+    assert 'not supported' in e_info.value.args[0]

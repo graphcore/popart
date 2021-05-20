@@ -44,6 +44,14 @@ public:
     appendStrAttr(key, oss.str());
   }
 
+  // For anything where `operator <<` has been declared.
+  template <typename T>
+  void appendAttribute(const std::string &key, const T &value) {
+    std::ostringstream ss;
+    ss << value;
+    appendStrAttr(key, ss.str());
+  }
+
   virtual void appendForwardOp(const Op *) = 0;
 
 private:

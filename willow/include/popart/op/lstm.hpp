@@ -9,10 +9,28 @@
 
 namespace popart {
 
+enum class ActivationFunction {
+  Sigmoid = 0,
+  Relu,
+  Tanh,
+  Gelu,
+  Swish,
+  Softmax,
+  SoftmaxStable,
+  SoftmaxScaled,
+  N,
+  Invalid
+};
+
+ActivationFunction fromString(const std::string &s);
+std::ostream &operator<<(std::ostream &, const ActivationFunction &);
+
 class LSTMOp : public Op {
 public:
   LSTMOp(const OperatorIdentifier &_opid,
          nonstd::optional<int64_t> hidden_size,
+         ActivationFunction activation,
+         ActivationFunction recurrent_activation,
          const Op::Settings &settings_);
   std::unique_ptr<Op> clone() const final;
   std::vector<std::unique_ptr<Op>> getGradOps() final;
@@ -74,6 +92,11 @@ public:
   view::RegMap fwdRegMap(InIndex, OutIndex) const final;
   view::RegMap bwdRegMap(InIndex, OutIndex) const final;
 
+  ActivationFunction getActivation() const { return activation; }
+  ActivationFunction getRecurrentActivation() const {
+    return recurrent_activation;
+  }
+
 private:
   void createPassThroughOutput(const TensorId &new_id,
                                OutIndex pass_through_index,
@@ -84,6 +107,9 @@ private:
   void trySetOutInfo(OutIndex, const TensorInfo &);
 
   nonstd::optional<int64_t> hidden_size_attribute;
+
+  ActivationFunction activation;
+  ActivationFunction recurrent_activation;
 };
 
 class LSTMGradOp : public Op {
@@ -153,6 +179,12 @@ public:
                bool outputFullSequence_,
                const Op::Settings &);
 
+  PopartLSTMOp(const OperatorIdentifier &,
+               bool outputFullSequence_,
+               ActivationFunction activation,
+               ActivationFunction recurrent_activation,
+               const Op::Settings &);
+
   std::unique_ptr<Op> clone() const final;
   std::vector<std::unique_ptr<Op>> getGradOps() final;
   void setup() final;
@@ -186,7 +218,16 @@ public:
   int getInBatchAxis(InIndex) const override;
   int getOutBatchAxis(OutIndex) const override;
 
+  ActivationFunction getActivation() const { return activation; }
+  ActivationFunction getRecurrentActivation() const {
+    return recurrent_activation;
+  }
+
   const bool outputFullSequence;
+
+private:
+  const ActivationFunction activation;
+  const ActivationFunction recurrent_activation;
 };
 
 class PopartLSTMGradOp : public Op {
@@ -225,10 +266,17 @@ public:
   static OutIndex getBiasesOutIndex() { return 2; }
   static OutIndex getInitialStateOutIndex() { return 3; }
 
+  ActivationFunction getActivation() const { return activation; }
+  ActivationFunction getRecurrentActivation() const {
+    return recurrent_activation;
+  }
+
   const bool outputFullSequence;
 
 private:
   const TensorId forwardCellStateGradId;
+  const ActivationFunction activation;
+  const ActivationFunction recurrent_activation;
 };
 
 } // namespace popart

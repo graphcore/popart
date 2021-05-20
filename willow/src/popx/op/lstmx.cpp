@@ -7,6 +7,7 @@
 #include <popart/popx/devicex.hpp>
 #include <popart/popx/irlowering.hpp>
 #include <popart/popx/op/lstmx.hpp>
+#include <popart/popx/op/lstmxutil.hpp>
 #include <popart/popx/opx.hpp>
 #include <popart/popx/opxmanager.hpp>
 #include <popart/tensor.hpp>
@@ -251,10 +252,16 @@ LSTMOpx::createLSTMParams(const LSTMOp &lstm_op,
                                    batch_size,
                                    max_seq_length,
                                    seq_lens_t,
-                                   {input_size, hidden_size});
+                                   {input_size, hidden_size},
+                                   convert(lstm_op.getActivation()),
+                                   convert(lstm_op.getRecurrentActivation()));
   }
-  return popnn::lstm::LstmParams(
-      popType(in_info), batch_size, max_seq_length, {input_size, hidden_size});
+  return popnn::lstm::LstmParams(popType(in_info),
+                                 batch_size,
+                                 max_seq_length,
+                                 {input_size, hidden_size},
+                                 convert(lstm_op.getActivation()),
+                                 convert(lstm_op.getRecurrentActivation()));
 }
 
 std::set<TensorId> LSTMOpx::mustExistBeforeCreate(InIndex) const {

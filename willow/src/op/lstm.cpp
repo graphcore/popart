@@ -14,10 +14,69 @@
 
 namespace popart {
 
+ActivationFunction fromString(const std::string &s) {
+  if (s == "Sigmoid") {
+    return ActivationFunction::Sigmoid;
+  } else if (s == "Relu") {
+    return ActivationFunction::Relu;
+  } else if (s == "Tanh") {
+    return ActivationFunction::Tanh;
+  } else if (s == "Gelu") {
+    return ActivationFunction::Gelu;
+  } else if (s == "Swish") {
+    return ActivationFunction::Swish;
+  } else if (s == "Softmax") {
+    return ActivationFunction::Softmax;
+  } else if (s == "SoftmaxStable") {
+    return ActivationFunction::SoftmaxStable;
+  } else if (s == "SoftmaxScaled") {
+    return ActivationFunction::SoftmaxScaled;
+  } else {
+    return ActivationFunction::Invalid;
+  }
+}
+
+std::ostream &operator<<(std::ostream &os, const ActivationFunction &af) {
+  switch (af) {
+  case ActivationFunction::Sigmoid:
+    os << "Sigmoid";
+    break;
+  case ActivationFunction::Relu:
+    os << "Relu";
+    break;
+  case ActivationFunction::Tanh:
+    os << "Tanh";
+    break;
+  case ActivationFunction::Gelu:
+    os << "Gelu";
+    break;
+  case ActivationFunction::Swish:
+    os << "Swish";
+    break;
+  case ActivationFunction::Softmax:
+    os << "Softmax";
+    break;
+  case ActivationFunction::SoftmaxStable:
+    os << "SoftmaxStable";
+    break;
+  case ActivationFunction::SoftmaxScaled:
+    os << "SoftmaxScaled";
+    break;
+  case ActivationFunction::Invalid:
+  default:
+    os << "Invalid";
+    break;
+  }
+  return os;
+}
+
 LSTMOp::LSTMOp(const OperatorIdentifier &_opid,
                nonstd::optional<int64_t> hidden_size,
+               ActivationFunction activation,
+               ActivationFunction recurrent_activation,
                const Op::Settings &settings_)
-    : Op(_opid, settings_), hidden_size_attribute(hidden_size) {
+    : Op(_opid, settings_), hidden_size_attribute(hidden_size),
+      activation(activation), recurrent_activation(recurrent_activation) {
   // TODO : Use the output_sequence attribute in version 1
 }
 
@@ -197,6 +256,8 @@ std::set<InIndex> LSTMOp::optionalInputs() const {
 void LSTMOp::appendOutlineAttributes(OpSerialiserBase &os) const {
   Op::appendOutlineAttributes(os);
   os.appendAttribute("hidden_size", hidden_size_attribute);
+  os.appendAttribute("activation", activation);
+  os.appendAttribute("recurrent_activation", recurrent_activation);
 }
 
 int LSTMOp::getInBatchAxis(InIndex index) const {
@@ -348,7 +409,19 @@ const LSTMOp &LSTMGradOp::getForwardOp() const { return forward_op; }
 PopartLSTMOp::PopartLSTMOp(const OperatorIdentifier &opid_,
                            bool outputFullSequence_,
                            const Op::Settings &settings_)
-    : Op(opid_, settings_), outputFullSequence(outputFullSequence_) {}
+    : PopartLSTMOp(opid_,
+                   outputFullSequence_,
+                   ActivationFunction::Tanh,
+                   ActivationFunction::Sigmoid,
+                   settings_) {}
+
+PopartLSTMOp::PopartLSTMOp(const OperatorIdentifier &opid_,
+                           bool outputFullSequence_,
+                           ActivationFunction activation,
+                           ActivationFunction recurrent_activation,
+                           const Op::Settings &settings_)
+    : Op(opid_, settings_), outputFullSequence(outputFullSequence_),
+      activation(activation), recurrent_activation(recurrent_activation) {}
 
 std::unique_ptr<Op> PopartLSTMOp::clone() const {
   return std::make_unique<PopartLSTMOp>(*this);
@@ -469,7 +542,9 @@ PopartLSTMGradOp::PopartLSTMGradOp(const PopartLSTMOp &fwd_op)
     : Op(Onnx::GradOperators::PopartLSTMGrad, fwd_op.getSettings()),
       outputFullSequence(fwd_op.outputFullSequence),
       forwardCellStateGradId(
-          getGradId(fwd_op.outId(PopartLSTMOp::getCellStateOutIndex()))) {}
+          getGradId(fwd_op.outId(PopartLSTMOp::getCellStateOutIndex()))),
+      activation(fwd_op.getActivation()),
+      recurrent_activation(fwd_op.getRecurrentActivation()) {}
 
 std::unique_ptr<Op> PopartLSTMGradOp::clone() const {
   return std::make_unique<PopartLSTMGradOp>(*this);
@@ -578,13 +653,62 @@ static OpDefinition
                    {"input_forget", {"0"}},
                })});
 
+namespace {
+
+// returns activation and recurrent activation.
+std::pair<ActivationFunction, ActivationFunction>
+readActivations(const Attributes &attributes) {
+  ActivationFunction activation           = ActivationFunction::Tanh;
+  ActivationFunction recurrent_activation = ActivationFunction::Sigmoid;
+
+  if (attributes.hasAttribute("activations")) {
+    std::vector<std::string> afs;
+    afs = attributes.getAttribute<std::vector<std::string>>("activations");
+    logging::debug("LSTM activations are {}", afs);
+    if (afs.size() >= 1) {
+      recurrent_activation = fromString(afs.at(0));
+      if (recurrent_activation == ActivationFunction::Invalid) {
+        throw error("Activation type '{}' is not supported", afs.at(0));
+      }
+    }
+    if (afs.size() >= 2) {
+      activation = fromString(afs.at(1));
+      if (activation == ActivationFunction::Invalid) {
+        throw error("Activation type '{}' is not supported", afs.at(1));
+      }
+    }
+    if (afs.size() >= 3 && afs[1] != afs[2]) {
+      throw error(
+          "LSTM activations must be the same for output and forget gates.");
+    }
+    if (afs.size() > 3) {
+      throw error("Too many activations ({}) specified. Number of activations "
+                  "should be 1 or 3.",
+                  afs.size());
+    }
+  }
+
+  return {activation, recurrent_activation};
+}
+
+} // namespace
+
 static OpCreator<LSTMOp> lstmOpCreator(
     OpDefinitions({{Onnx::Operators::LSTM_1, lstmOpDef},
                    {Onnx::Operators::LSTM_7, lstmOpDef}}),
     [](const OpCreatorInfo &info) {
-      if (info.attributes.hasAttribute("activations")) {
-        throw error("LSTMOp attribute `activations' is not supported");
+      if (info.attributes.getAttribute<Attributes::String>(
+              "direction", "forward") != "forward") {
+        throw error("LSTMOp attribute `direction' must be unset or `forward'");
       }
+
+      const auto activations          = readActivations(info.attributes);
+      const auto activation           = std::get<0>(activations);
+      const auto recurrent_activation = std::get<1>(activations);
+
+      // Activation alpha and beta are not supported.
+      // In theory these should never be set, as they should only be present
+      // when using certain activation functions which we do not support.
       if (info.attributes.hasAttribute("activation_alpha")) {
         throw error("LSTMOp attribute `activation_alpha' is not supported");
       }
@@ -594,11 +718,6 @@ static OpCreator<LSTMOp> lstmOpCreator(
 
       if (info.attributes.hasAttribute("clip")) {
         throw error("LSTMOp attribute `clip' is not supported");
-      }
-
-      if (info.attributes.getAttribute<Attributes::String>(
-              "direction", "forward") != "forward") {
-        throw error("LSTMOp attribute `direction' must be unset or `forward'");
       }
 
       if (info.attributes.getAttribute<Attributes::Int>("input_forget", 0) !=
@@ -613,8 +732,11 @@ static OpCreator<LSTMOp> lstmOpCreator(
             info.attributes.getAttribute<Attributes::Int>("hidden_size");
       }
 
-      return std::unique_ptr<Op>(
-          new LSTMOp(info.opid, hidden_size, info.settings));
+      return std::unique_ptr<Op>(new LSTMOp(info.opid,
+                                            hidden_size,
+                                            activation,
+                                            recurrent_activation,
+                                            info.settings));
     },
     true);
 
