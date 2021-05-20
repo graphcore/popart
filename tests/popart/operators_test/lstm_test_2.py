@@ -5,6 +5,8 @@ import torch
 import onnx
 import json
 from op_tester import op_tester
+import pytest
+from lstm_test import LSTM_Helper
 
 from pathlib import Path
 from test_session import PopartTestSession
@@ -613,3 +615,232 @@ def test_lstm_export_with_constantofshape(tmpdir):
 
     assert torchOutput.shape == popartOutput.shape
     assert np.allclose(torchOutput, popartOutput, atol=1e-07)
+
+
+@tu.requires_ipu_model
+@pytest.mark.parametrize("enable_pattern", [True, False])
+def test_lstm_extra_inputs(enable_pattern):
+    def _get_popart_type(np_type):
+        return {np.float16: 'FLOAT16', np.float32: 'FLOAT'}[np_type]
+
+    def create_inputs_for_training(builder, conf):
+        """ defines the input tensors for the conformer model """
+
+        inputs = dict()
+
+        # input to LSTM layer
+        inputs["mel_spec_input"] = builder.addInputTensor(
+            popart.TensorInfo(_get_popart_type(conf["precision"]), [
+                conf["batch_size"], conf["in_feats"], conf["sequence_length"]
+            ]), "mel_spec_input")
+        # sequence length that could be utilized for LSTM layer to avoid unnecessary comps on padded inputs
+        inputs["input_length"] = builder.addInputTensor(
+            popart.TensorInfo("INT32", [conf["batch_size"]]), "input_length")
+
+        return inputs
+
+    def create_model_and_dataflow_for_training(builder, conf, inputs):
+        """ builds the conformer model, loss function and dataflow for training """
+
+        d2 = np.random.rand(1,
+                            4 * conf["hidden_size"], conf["in_feats"]).astype(
+                                conf["precision"])  #input-hidden-weights
+        d3 = np.random.rand(
+            1, 4 * conf["hidden_size"], conf["hidden_size"]).astype(
+                conf["precision"])  #hidden-hidden-weights
+        d4 = np.zeros([1, 8 * conf["hidden_size"]]).astype(
+            conf["precision"])  # all biases
+        d5 = np.zeros([1, conf["batch_size"],
+                       conf["hidden_size"]]).astype(conf["precision"])
+        d6 = np.zeros([1, conf["batch_size"],
+                       conf["hidden_size"]]).astype(conf["precision"])
+        i1 = builder.aiOnnx.transpose([inputs["mel_spec_input"]],
+                                      perm=[2, 0, 1])
+        i2 = builder.addInitializedInputTensor(d2)
+        i3 = builder.addInitializedInputTensor(d3)
+        i4 = builder.addInitializedInputTensor(d4)
+        i5 = inputs["input_length"]
+        i6 = builder.addInitializedInputTensor(d5)
+        i7 = builder.addInitializedInputTensor(d6)
+        # argument i5 is ignored by LSTM (but could be utilized to avoid unnecessary comps on padded inputs)
+        Y, Y_h, Y_c = builder.aiOnnx.lstm([i1, i2, i3, i4, i5, i6, i7],
+                                          3,
+                                          clip=None)
+
+        l1_loss = builder.aiGraphcore.l1loss(
+            [Y], 1.0, reduction=popart.ReductionType.Mean)
+
+        anchor_types_dict = {
+            l1_loss: popart.AnchorReturnType("ALL"),
+        }
+
+        proto = builder.getModelProto()
+        dataflow = popart.DataFlow(conf["batches_per_step"], anchor_types_dict)
+
+        return proto, l1_loss, dataflow
+
+    def get_session_options():
+        """ get popart session options """
+
+        # Create a session to compile and execute the graph
+        options = popart.SessionOptions()
+        options.engineOptions = {"debug.allowOutOfMemory": "true"}
+        # Enable the reporting of variables in the summary report
+        options.reportOptions = {'showVarStorage': 'true'}
+        options.constantWeights = False
+
+        return options
+
+    def create_session_anchors(proto,
+                               loss,
+                               device,
+                               dataFlow,
+                               options,
+                               training,
+                               optimizer=None):
+        """ Create the desired session and compile the graph """
+        patterns = popart.Patterns(popart.PatternsLevel.Default)
+        patterns.enablePattern("LSTMOp", enable_pattern)
+        if training:
+            session_type = "training"
+            session = popart.TrainingSession(fnModel=proto,
+                                             loss=loss,
+                                             deviceInfo=device,
+                                             optimizer=optimizer,
+                                             dataFlow=dataFlow,
+                                             userOptions=options,
+                                             patterns=patterns)
+        else:
+            session_type = "inference"
+            session = popart.InferenceSession(fnModel=proto,
+                                              deviceInfo=device,
+                                              dataFlow=dataFlow,
+                                              userOptions=options,
+                                              patterns=patterns)
+
+        try:
+            print("Preparing the {} graph".format(session_type))
+            session.prepareDevice()
+            print("{0} graph preparation complete.".format(
+                session_type.capitalize(), ))
+        except popart.OutOfMemoryException as e:
+            print("Caught OutOfMemoryException during prepareDevice")
+            raise
+
+        # Create buffers to receive results from the execution
+        anchors = session.initAnchorArrays()
+
+        return session, anchors
+
+    conf = {}
+    conf["precision"] = np.float16
+    conf["in_feats"] = 20
+    conf["hidden_size"] = 16
+    conf["batches_per_step"] = 10
+    conf["batch_size"] = 10
+    conf["sequence_length"] = 100
+    session_options = get_session_options()
+    device = tu.create_test_device()
+
+    # building model and dataflow
+    builder = popart.Builder()
+    lstm_model_inputs = create_inputs_for_training(builder, conf)
+
+    proto, l1_loss, dataflow = create_model_and_dataflow_for_training(
+        builder, conf, lstm_model_inputs)
+
+    # create optimizer
+    optimizer = popart.SGD({
+        "defaultLearningRate": (0.001, False),
+        "defaultWeightDecay": (0, True)
+    })
+
+    # create training session
+    print("Creating the training session")
+
+    training_session, anchors = create_session_anchors(proto,
+                                                       l1_loss,
+                                                       device,
+                                                       dataflow,
+                                                       session_options,
+                                                       training=True,
+                                                       optimizer=optimizer)
+    training_session.weightsFromHost()
+
+
+def test_poplar_tile_ex(op_tester):
+    timesteps = 10
+    batch_size = 1
+    hidden_size = 32
+    input_size = hidden_size
+    dType_str = "FLOAT"
+    dType = np.float32
+
+    input_shape = [timesteps, batch_size, input_size]
+    d1 = popart.TensorInfo(dType_str, input_shape)
+    d2 = np.random.normal(0, 1, [1, 4 * hidden_size, input_size]).astype(dType)
+    d3 = np.random.normal(0, 1,
+                          [1, 4 * hidden_size, hidden_size]).astype(dType)
+    input = np.random.uniform(-1, 1, input_shape).astype(dType)
+
+    def init_builder(builder):
+        i1 = builder.addInputTensor(input, "input_sequences")
+        i2 = builder.addInitializedInputTensor(d2)
+        i3 = builder.addInitializedInputTensor(d3)
+        out, Y_h, Y_c = builder.aiOnnx.lstm([i1, i2, i3], 3, clip=None)
+        builder.addOutputTensor(out)
+
+        return [out, Y_h, Y_c]
+
+    def reference(ref_data):
+        lstm = LSTM_Helper(X=input, W=d2, R=d3)
+        Y, Y_h, Y_c = lstm.step()
+
+        return [Y, Y_h, Y_c]
+
+    op_tester.atol = 1e-07
+    op_tester.device = tu.create_test_device()
+    op_tester.setPatterns(['LSTMOp', 'SplitGradOpToConcat'],
+                          enableRuntimeAsserts=False)
+    op_tester.run(init_builder, reference, 'train')
+
+
+def test_missing_seq_len(op_tester):
+    """This caused a "missing seq_lens" tensor before D44868.
+    """
+    seq_length = 5
+    batch_size = 2
+    input_size = 3
+    hidden_size = 7
+
+    dType_str = "FLOAT16"
+    dType = np.float16
+    input_ = np.random.rand(batch_size, input_size, seq_length).astype(dType)
+    input_weights = np.random.rand(1, 4 * hidden_size,
+                                   input_size).astype(dType)
+    output_weights = np.random.rand(1, 4 * hidden_size,
+                                    hidden_size).astype(dType)
+    biases = np.random.rand(1, 8 * hidden_size).astype(dType)
+    seq_lens = np.asarray([seq_length] * batch_size).astype(dType)
+
+    def init_builder(builder):
+        i1 = builder.addInputTensor(input_)
+        # This transpose caused an issue
+        i1 = builder.aiOnnx.transpose([i1], perm=[2, 0, 1])
+        i2 = builder.addInitializedInputTensor(input_weights)
+        i3 = builder.addInitializedInputTensor(output_weights)
+        i4 = builder.addInitializedInputTensor(biases)
+        i5 = builder.addInputTensor(seq_lens)
+
+        out, Y_h, Y_c = builder.aiOnnx.lstm([i1, i2, i3], 3, clip=None)
+        builder.addOutputTensor(out)
+
+        return [out]
+
+    def reference(ref_data):
+        # We are just checking it compiles.
+        return [None]
+
+    op_tester.setPatterns(['LSTMOp', 'SplitGradOpToConcat'],
+                          enableRuntimeAsserts=False)
+    op_tester.run(init_builder, reference, 'train')

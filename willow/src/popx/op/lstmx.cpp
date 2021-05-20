@@ -257,7 +257,12 @@ LSTMOpx::createLSTMParams(const LSTMOp &lstm_op,
       popType(in_info), batch_size, max_seq_length, {input_size, hidden_size});
 }
 
-std::set<TensorId> LSTMOpx::mustExistBeforeCreate(InIndex) const { return {}; }
+std::set<TensorId> LSTMOpx::mustExistBeforeCreate(InIndex) const {
+  if (getOp<LSTMOp>().hasSeqLenInput()) {
+    return {inId(LSTMOp::getSequenceLensInIndex())};
+  }
+  return {};
+}
 
 void LSTMOpx::prepareWeights(poplar::program::Sequence &prog) const {
   // check to see if the weights were created

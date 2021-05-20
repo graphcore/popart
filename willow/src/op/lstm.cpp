@@ -289,7 +289,7 @@ std::set<InIndex> LSTMGradOp::optionalInputs() const {
 }
 
 const std::vector<GradInOutMapper> &LSTMGradOp::gradInputInfo() const {
-  static const std::vector<GradInOutMapper> inInfo = {
+  static std::vector<GradInOutMapper> inInfo = {
       {getInitStateOutputInIndex(),
        LSTMOp::getInitStateOutputPassThroughIndex(),
        GradOpInType::Out},
@@ -314,9 +314,6 @@ const std::vector<GradInOutMapper> &LSTMGradOp::gradInputInfo() const {
       {getOutputInIndex(),
        LSTMOp::getOutputPassThroughIndex(),
        GradOpInType::Out},
-      {getSequenceLensInIndex(),
-       LSTMOp::getSequenceLensInIndex(),
-       GradOpInType::In},
       {getCellStateOutputGradInIndex(),
        LSTMOp::getCellStateOutIndex(),
        GradOpInType::GradOut},
@@ -326,6 +323,11 @@ const std::vector<GradInOutMapper> &LSTMGradOp::gradInputInfo() const {
       {getOutputGradInIndex(),
        LSTMOp::getOutputOutIndex(),
        GradOpInType::GradOut}};
+  if (getForwardOp().hasSeqLenInput()) {
+    inInfo.push_back({getSequenceLensInIndex(),
+                      LSTMOp::getSequenceLensInIndex(),
+                      GradOpInType::In});
+  }
   return inInfo;
 }
 
@@ -509,7 +511,7 @@ int64_t PopartLSTMGradOp::getHiddenSize() const {
 }
 
 const std::vector<GradInOutMapper> &PopartLSTMGradOp::gradInputInfo() const {
-  static const std::vector<GradInOutMapper> inInfo = {
+  static std::vector<GradInOutMapper> inInfo = {
       {getInitialStateInIndex(),
        PopartLSTMOp::getInitialStateInIndex(),
        GradOpInType::In},
@@ -520,9 +522,6 @@ const std::vector<GradInOutMapper> &PopartLSTMGradOp::gradInputInfo() const {
        PopartLSTMOp::getWeightsInIndex(),
        GradOpInType::In},
       {getBiasesInIndex(), PopartLSTMOp::getBiasesInIndex(), GradOpInType::In},
-      {getSequenceLensInIndex(),
-       PopartLSTMOp::getSequenceLensInIndex(),
-       GradOpInType::In},
       {getInputInIndex(), PopartLSTMOp::getInputInIndex(), GradOpInType::In},
       {getFwdOutputInIndex(),
        PopartLSTMOp::getOutputOutIndex(),
@@ -534,6 +533,11 @@ const std::vector<GradInOutMapper> &PopartLSTMGradOp::gradInputInfo() const {
        PopartLSTMOp::getCellStateOutIndex(),
        GradOpInType::GradOut}};
 
+  if (input->hasIndex(getSequenceLensInIndex())) {
+    inInfo.push_back({getSequenceLensInIndex(),
+                      PopartLSTMOp::getSequenceLensInIndex(),
+                      GradOpInType::In});
+  }
   return inInfo;
 }
 
