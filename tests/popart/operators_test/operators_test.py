@@ -1820,6 +1820,50 @@ def test_pad_type_reflect(op_tester):
               mode='reflect')
 
 
+def _negative_padding(data, lower_padding, upper_padding):
+    slices = []
+    for idx, dim in enumerate(data.shape):
+        # This only works for negative padding
+        assert lower_padding[idx] <= 0
+        assert upper_padding[idx] <= 0
+        start = 0 - lower_padding[idx]
+        stop = dim + upper_padding[idx]
+        slices.append(slice(start, stop))
+    return data[slices]
+
+
+# Test that the local function `_negative_padding` works as expected.
+def test_negative_padding_func():
+    data = np.random.rand(2, 2, 4, 4).astype(np.float32)
+    ref = data[:, :, 1:-1, 1:-2]
+    x = _negative_padding(data, [0, 0, -1, -1], [0, 0, -1, -2])
+    assert ref.shape == x.shape
+    assert np.allclose(x, ref)
+
+
+# Test popart `pad` supports negative padding.
+def test_pad_negative_padding(op_tester):
+    data = np.random.rand(2, 2, 4, 4).astype(np.float32)
+    lower_padding = (0, 0, -1, -1)
+    upper_padding = (0, 0, -1, -2)
+
+    def init_builder(builder):
+        i1 = builder.addInputTensor(data)
+        o = builder.aiOnnx.pad([i1],
+                               pads=(lower_padding + upper_padding),
+                               mode='constant',
+                               value=0.0)
+        builder.addOutputTensor(o)
+        return [o]
+
+    def reference(ref_data):
+        result = _negative_padding(data, lower_padding, upper_padding)
+        return [result]
+
+    op_tester.setPatterns(['PreUniRepl'], enableRuntimeAsserts=False)
+    op_tester.run(init_builder, reference, 'infer')
+
+
 def test_pad11(op_tester):
     data = np.array([[[1., 2.], [3., 4.]]]).astype(np.float32)
     pads = np.array([2, 1, 1, 1, 0, 2]).astype(np.int64)
