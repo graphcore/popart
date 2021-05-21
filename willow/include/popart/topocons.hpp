@@ -3,6 +3,8 @@
 #define GUARD_NEURALNET_TOPOCONS_HPP
 
 #include <popart/names.hpp>
+#include <popart/op.hpp>
+
 namespace popart {
 
 // Topological constraints
@@ -22,7 +24,7 @@ public:
   TopoOp() = delete;
   Op *op;
   bool tied;
-  bool operator<(const TopoOp &rhs) const { return op < rhs.op; }
+  bool operator<(const TopoOp &rhs) const { return op->id < rhs.op->id; }
 };
 
 class TopoCons {
