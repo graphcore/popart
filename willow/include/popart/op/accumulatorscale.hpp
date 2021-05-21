@@ -1,19 +1,18 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_ACCUMULATORUPDATEOP_HPP
-#define GUARD_NEURALNET_ACCUMULATORUPDATEOP_HPP
+#ifndef GUARD_NEURALNET_ACCUMULATORSCALEOP_HPP
+#define GUARD_NEURALNET_ACCUMULATORSCALEOP_HPP
 
 #include <popart/op/varupdate.hpp>
 #include <popart/optimizervalue.hpp>
 
 namespace popart {
 
-// Update accumulator by dividing it by the replication factor in case of
-// multi-replica gradient accumulation
-class AccumulatorUpdateOp : public VarUpdateOp {
+// Update accumulator by scaling by a factor
+class AccumulatorScaleOp : public VarUpdateOp {
   OptimizerValue factor;
 
 public:
-  AccumulatorUpdateOp(const OptimizerValue factor_, const Op::Settings &);
+  AccumulatorScaleOp(const OptimizerValue factor_, const Op::Settings &);
   std::unique_ptr<Op> clone() const final;
   std::map<InIndex, TensorId> optimizerInputs() const final;
   void appendOutlineAttributes(OpSerialiserBase &) const final;

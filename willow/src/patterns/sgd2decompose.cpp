@@ -90,10 +90,11 @@ bool SGD2Decompose::apply(Op *op) const {
   const TensorId updatedAcc1lId =
       acclUpdate(graph, combo, gradIntoAcclId, accl1Id, weightId);
 
-  // The accumulator updater.
+  // Zero the gradient accumulator after updating the 1st momentum term
+  // ready for next step
   if (combo->withGradAccum) {
     const auto acclOp = graph.getTensors().get(updatedAcc1lId)->getProducer();
-    accumUpdate(graph, combo, {acclOp}, accumId);
+    zeroAccumulator(graph, combo, {acclOp}, accumId);
   }
 
   varUpdateAndEraseCombo(

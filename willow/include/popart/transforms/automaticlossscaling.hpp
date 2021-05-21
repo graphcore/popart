@@ -108,7 +108,7 @@
 //                                |
 //                           stats_summed   stats_to_accl
 //                                |          /    |
-//                             AddRhsInplaceOp     - AccumulatorUpdateOp (a.o.f)
+//                             AddRhsInplaceOp     - AccumulatorZeroOp (a.o.f)
 //                                    |                         |
 //                               stats_accld             stats_to_accl_reset
 //                                    |
@@ -132,7 +132,7 @@
 //                                |
 //                           stats_summed   stats_to_accl
 //                                |          /    |
-//                             AddRhsInplaceOp     - AccumulatorUpdateOp (a.o.f)
+//                             AddRhsInplaceOp     - AccumulatorZeroOp (a.o.f)
 //                                    |                         |
 //                               stats_accld             stats_to_accl_reset
 //                                    |

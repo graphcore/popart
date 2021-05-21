@@ -40,11 +40,13 @@ protected:
                      bool accumReduce,
                      bool gradAccum) const;
 
-  // Update gradient accumulator
-  void accumUpdate(Graph &graph,
-                   Op *combo,
-                   std::vector<Op *> beforeOps,
-                   TensorId accumId) const;
+  // Reset all values of accumulutor with TensorID
+  // Transfers the name and properties from Op, combo and schedules the op to
+  // take place once beforeOps have run
+  void zeroAccumulator(Graph &graph,
+                       Op *combo,
+                       std::vector<Op *> beforeOps,
+                       TensorId accumId) const;
 
   // Gradient reduction
   TensorId gradReduce(Graph &graph, Op *combo, TensorId weightGradId) const;

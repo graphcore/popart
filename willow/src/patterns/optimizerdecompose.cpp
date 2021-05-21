@@ -3,7 +3,7 @@
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/op/accumulate.hpp>
-#include <popart/op/accumulatorupdate.hpp>
+#include <popart/op/accumulatorzero.hpp>
 #include <popart/op/cast.hpp>
 #include <popart/op/collectives/replicatedallreduce.hpp>
 #include <popart/op/mul.hpp>
@@ -183,37 +183,37 @@ TensorId OptimizerDecompose::gradAccum(Graph &graph,
   return gradIntoAcclId;
 }
 
-void OptimizerDecompose::accumUpdate(Graph &graph,
-                                     Op *combo,
-                                     std::vector<Op *> beforeOps,
-                                     TensorId accumId) const {
-  auto accumUpdateOpUp = std::make_unique<AccumulatorUpdateOp>(
-      OptimizerValue(0), Op::Settings(graph, combo->name() + "_accumupdate"));
-  auto accumUpdateOp = accumUpdateOpUp.get();
-  transferBaseProperties(combo, accumUpdateOp);
-  graph.moveIntoGraph(std::move(accumUpdateOpUp));
+void OptimizerDecompose::zeroAccumulator(Graph &graph,
+                                         Op *combo,
+                                         std::vector<Op *> beforeOps,
+                                         TensorId accumId) const {
+  auto accumZeroOpUp = std::make_unique<AccumulatorZeroOp>(
+      Op::Settings(graph, combo->name() + "_accumupdate"));
+  auto accumZeroOp = accumZeroOpUp.get();
+  transferBaseProperties(combo, accumZeroOp);
+  graph.moveIntoGraph(std::move(accumZeroOpUp));
 
   logging::pattern::trace("Connecting input {} to {} at {}",
                           accumId,
-                          accumUpdateOp->str(),
-                          AccumulatorUpdateOp::getVarToUpdateInIndex());
-  accumUpdateOp->connectInTensor(AccumulatorUpdateOp::getVarToUpdateInIndex(),
-                                 accumId);
+                          accumZeroOp->str(),
+                          AccumulatorZeroOp::getVarToUpdateInIndex());
+  accumZeroOp->connectInTensor(AccumulatorZeroOp::getVarToUpdateInIndex(),
+                               accumId);
 
   TensorId updatedAccumId = reservedUpdatedVarPrefix() + accumId;
 
-  accumUpdateOp->createAndConnectOutTensor(
-      AccumulatorUpdateOp::getUpdatedVarOutIndex(), updatedAccumId);
+  accumZeroOp->createAndConnectOutTensor(
+      AccumulatorZeroOp::getUpdatedVarOutIndex(), updatedAccumId);
 
-  accumUpdateOp->setup();
+  accumZeroOp->setup();
 
-  accumUpdateOp->settings.executionContext =
+  accumZeroOp->settings.executionContext =
       ExecutionContext::AccumulateOuterFragment;
-  accumUpdateOp->setExecutionPhase({});
-  accumUpdateOp->settings.schedulePriority = 0.0;
+  accumZeroOp->setExecutionPhase({});
+  accumZeroOp->settings.schedulePriority = 0.0;
 
   for (Op *beforeOp : beforeOps) {
-    graph.topoCons->insert(beforeOp, accumUpdateOp);
+    graph.topoCons->insert(beforeOp, accumZeroOp);
   }
 }
 

@@ -1,6 +1,6 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
 #include <popart/ir.hpp>
-#include <popart/op/accumulatorupdate.hpp>
+#include <popart/op/accumulatorscale.hpp>
 #include <popart/opmanager.hpp>
 #include <popart/opserialiser.hpp>
 #include <popart/region.hpp>
@@ -8,16 +8,16 @@
 
 namespace popart {
 
-std::unique_ptr<Op> AccumulatorUpdateOp::clone() const {
-  return std::make_unique<AccumulatorUpdateOp>(*this);
+std::unique_ptr<Op> AccumulatorScaleOp::clone() const {
+  return std::make_unique<AccumulatorScaleOp>(*this);
 }
 
-std::map<InIndex, TensorId> AccumulatorUpdateOp::optimizerInputs() const {
+std::map<InIndex, TensorId> AccumulatorScaleOp::optimizerInputs() const {
   std::map<InIndex, TensorId> m;
   return m;
 }
 
-void AccumulatorUpdateOp::appendOutlineAttributes(OpSerialiserBase &os) const {
+void AccumulatorScaleOp::appendOutlineAttributes(OpSerialiserBase &os) const {
   Op::appendOutlineAttributes(os);
 
   if (factor.isConst()) {
@@ -25,12 +25,12 @@ void AccumulatorUpdateOp::appendOutlineAttributes(OpSerialiserBase &os) const {
   }
 }
 
-AccumulatorUpdateOp::AccumulatorUpdateOp(const OptimizerValue factor_,
-                                         const Op::Settings &opSettings)
-    : VarUpdateOp(Onnx::CustomOperators::AccumulatorUpdate, opSettings),
+AccumulatorScaleOp::AccumulatorScaleOp(const OptimizerValue factor_,
+                                       const Op::Settings &opSettings)
+    : VarUpdateOp(Onnx::CustomOperators::AccumulatorScale, opSettings),
       factor(factor_) {}
 
-view::Regions AccumulatorUpdateOp::modifies(InIndex index) const {
+view::Regions AccumulatorScaleOp::modifies(InIndex index) const {
   if (factor.isConst()) {
     if (factor.val() == 0.0f) {
       return {view::Region::getFull(inShape(index), view::AccessType::Write)};

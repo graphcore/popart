@@ -4,7 +4,7 @@
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/onnxutil.hpp>
-#include <popart/op/accumulatorupdate.hpp>
+#include <popart/op/accumulatorzero.hpp>
 #include <popart/op/add.hpp>
 #include <popart/op/cast.hpp>
 #include <popart/op/collectives/replicatedallreduce.hpp>
@@ -360,13 +360,13 @@ bool AutomaticLossScale::apply(Graph &graph) const {
     statsAcclOp->setup();
     TensorId accldId = statsAcclOp->outId(AddRhsInplaceOp::getOutIndex());
 
-    // 3. add AccumulatorUpdateOp to reset the accl tensor
-    auto statsAcclResetOp = graph.createOp<AccumulatorUpdateOp>(
-        OptimizerValue(0.0f), Op::Settings(graph, ""));
+    // 3. add AccumulatorZeroOp to reset the accl tensor
+    auto statsAcclResetOp =
+        graph.createOp<AccumulatorZeroOp>(Op::Settings(graph, ""));
     statsAcclResetOp->connectInTensor(
-        AccumulatorUpdateOp::getVarToUpdateInIndex(), toAcclId);
+        AccumulatorZeroOp::getVarToUpdateInIndex(), toAcclId);
     statsAcclResetOp->createAndConnectOutTensor(
-        AccumulatorUpdateOp::getUpdatedVarOutIndex(),
+        AccumulatorZeroOp::getUpdatedVarOutIndex(),
         inTensor->id + "_accld_reset");
     statsAcclResetOp->inheritPlacementAttributes(false, aliases);
     statsAcclResetOp->setup();

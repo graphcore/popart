@@ -14,7 +14,7 @@ namespace popart {
 // (1) AccumulateOp        (if gradient accumulation is enabled)
 // (2) AccumulateOp        (1st momentum moving average)
 // (3) AccumulateOp        (2nd momentum moving average)
-// (4) AccumulatorUpdate   (if gradient accumulation is enabled)
+// (4) AccumulatorZero     (if gradient accumulation is enabled)
 // (5) AdamUpdater         (update term)
 // (6) LambSquareOp for R1 (if Lamb is used)
 // (7) LambSquareOp for R2 (if Lamb is used)

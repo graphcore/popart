@@ -233,7 +233,7 @@ const static AiGraphcoreOpIdV1 WhereYGrad("WhereYGrad");
 
 namespace CustomOperators {
 const static AiGraphcoreOpIdV1 Accumulate("Accumulate");
-const static AiGraphcoreOpIdV1 AccumulatorUpdate("AccumulatorUpdate");
+const static AiGraphcoreOpIdV1 AccumulatorScale("AccumulatorScale");
 const static AiGraphcoreOpIdV1 AdaDeltaUpdater("AdaDeltaUpdater");
 const static AiGraphcoreOpIdV1 AdamCombo("AdamCombo");
 const static AiGraphcoreOpIdV1 AdaptiveCombo("AdaptiveCombo");

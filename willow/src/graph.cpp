@@ -25,7 +25,7 @@
 
 // The layers required to construct the backwards pass
 #include <popart/op/accumulate.hpp>
-#include <popart/op/accumulatorupdate.hpp>
+#include <popart/op/accumulatorscale.hpp>
 #include <popart/op/conv.hpp>
 #include <popart/op/ipucopy.hpp>
 #include <popart/op/remote.hpp>
@@ -390,7 +390,7 @@ void Graph::setVarUpdateConstraints() {
             if (modifier->isConvertibleTo<RemoteLoadOp>() ||
                 modifier->isConvertibleTo<RemoteExchangeOp>() ||
                 modifier->isConvertibleTo<AccumulateOp>() ||
-                modifier->isConvertibleTo<AccumulatorUpdateOp>()) {
+                modifier->isConvertibleTo<AccumulatorScaleOp>()) {
               continue;
             }
 

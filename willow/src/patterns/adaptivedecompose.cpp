@@ -124,7 +124,9 @@ bool AdaptiveDecompose::apply(Op *op) const {
                                   combo->withGradAccum);
   }
 
-  std::vector<Op *> beforeAccumUpdateOps;
+  // Keep a list of ops which must complete before resetting the accumulator to
+  // zero
+  std::vector<Op *> opsDependentOnAccum;
 
   // Accl1
   auto accl1 = accl(
@@ -143,7 +145,7 @@ bool AdaptiveDecompose::apply(Op *op) const {
       combo->withGradAccum);
   Op *accl1Op             = accl1.first;
   TensorId updatedAccl1Id = accl1.second;
-  beforeAccumUpdateOps.push_back(accl1Op);
+  opsDependentOnAccum.push_back(accl1Op);
 
   TensorId updatedAccl2Id;
   if (combo->mode == AdaptiveMode::CenteredRMSProp) {
@@ -161,7 +163,7 @@ bool AdaptiveDecompose::apply(Op *op) const {
                       combo->withGradAccum);
     Op *accl2Op    = accl2.first;
     updatedAccl2Id = accl2.second;
-    beforeAccumUpdateOps.push_back(accl2Op);
+    opsDependentOnAccum.push_back(accl2Op);
   }
 
   // Adaptive updater term
@@ -246,10 +248,11 @@ bool AdaptiveDecompose::apply(Op *op) const {
     }
   }
 
-  // The accumulator updater
+  // Zero the gradient accumulator once other ops have taken place
+  // ready for next step
   if (combo->withGradAccum) {
-    beforeAccumUpdateOps.push_back(adaptiveUpdOp);
-    accumUpdate(graph, combo, beforeAccumUpdateOps, accumId);
+    opsDependentOnAccum.push_back(adaptiveUpdOp);
+    zeroAccumulator(graph, combo, opsDependentOnAccum, accumId);
   }
 
   // Updater term
