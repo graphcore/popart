@@ -61,6 +61,7 @@ void FmodShapeInference(InferenceContext &ctx);
 void BitwiseNotShapeInference(InferenceContext &ctx);
 void RoundShapeInference(InferenceContext &ctx);
 void CtcBeamSearchDecoderShapeInference(InferenceContext &ctx);
+void ReduceMedianShapeInference(InferenceContext &ctx);
 
 void SubsampleShapeInference(InferenceContext &ctx) {
   propagateElemTypeFromInputToOutput(ctx, 0, 0);
@@ -518,6 +519,53 @@ void CtcBeamSearchDecoderShapeInference(InferenceContext &ctx) {
   ldecodedLabelsOutputShape->add_dim()->set_dim_value(maxTime);
 }
 
+void ReduceMedianShapeInference(InferenceContext &ctx) {
+
+  propagateElemTypeFromInputToOutput(ctx, 0, 0);
+  if (!hasNInputShapes(ctx, 1)) {
+    fail_shape_inference(
+        "Reduce median requires one input tensor with shapes.");
+  }
+
+  const auto inputShape = getInputShape(ctx, 0);
+
+  std::vector<int64_t> axes;
+  bool has_default_axes(!getRepeatedAttribute(ctx, "axes", axes));
+
+  if (has_default_axes) {
+    // No axes, we should reduce over ALL axes.
+    axes.resize(inputShape.dim_size());
+    std::iota(axes.begin(), axes.end(), int64_t(0));
+  } else {
+    // Normalize to positive axes.
+    popart::normalizeReduceAxes(axes, inputShape.dim_size());
+    // Sort the axes for general backend compatibility.
+    std::sort(axes.begin(), axes.end());
+    // Check the axes are all in the right range.
+    popart::validateReduceAxes(axes, inputShape.dim_size(), "");
+  }
+
+  auto *outputShape   = getOutputShape(ctx, 0);
+  bool keepdims       = getAttribute(ctx, "keepdims", 1);
+  size_t n_input_dims = static_cast<size_t>(inputShape.dim_size());
+
+  auto output_type = ctx.getOutputType(1);
+  output_type->mutable_tensor_type()->set_elem_type(TensorProto::INT32);
+  auto *indicesOutputShape = getOutputShape(ctx, 1);
+
+  for (int i = 0; i < n_input_dims; ++i) {
+    if (!std::count(axes.begin(), axes.end(), i)) {
+      outputShape->add_dim()->set_dim_value(inputShape.dim(i).dim_value());
+      indicesOutputShape->add_dim()->set_dim_value(
+          inputShape.dim(i).dim_value());
+    } else if (keepdims) {
+      outputShape->add_dim()->set_dim_value(1);
+      indicesOutputShape->add_dim()->set_dim_value(1);
+    } else {
+    }
+  }
+}
+
 extern size_t dbg_count_check_GroupNormalization_AiGraphcore_ver1;
 extern size_t dbg_count_check_Subsample_AiGraphcore_ver1;
 extern size_t dbg_count_check_PrintTensor_AiGraphcore_ver1;
@@ -548,6 +596,7 @@ extern size_t dbg_count_check_Fmod_AiGraphcore_ver1;
 extern size_t dbg_count_check_BitwiseNot_AiGraphcore_ver1;
 extern size_t dbg_count_check_Round_AiGraphcore_ver1;
 extern size_t dbg_count_check_CtcBeamSearchDecoder_AiGraphcore_ver1;
+extern size_t dbg_count_check_ReduceMedian_AiGraphcore_ver1;
 
 static const char groupnormalizationDoc[] =
     "GroupNormalization applies Group Normalization over a mini-batch of "
@@ -1374,7 +1423,7 @@ ONNX_OPERATOR_SET_SCHEMA_EX(
     false,
     OpSchema()
         .SetDoc("Round(X)")
-        .Input(0, "X", "Input tensorr", "T")
+        .Input(0, "X", "Input tensor", "T")
         .Output(0, "Y", "Output tensor", "T")
         .TypeConstraint(
             "T",
@@ -1420,6 +1469,36 @@ ONNX_OPERATOR_SET_SCHEMA_EX(
               "than or equal to beamWidth.",
               AttributeProto::INT)
         .TypeAndShapeInferenceFunction(CtcBeamSearchDecoderShapeInference))
+
+ONNX_OPERATOR_SET_SCHEMA_EX(
+    ReduceMedian,
+    AiGraphcore,
+    popart::Domain::ai_graphcore,
+    1,
+    false,
+    OpSchema()
+        .SetDoc("ReduceMedian(data)")
+        .Input(0, "data", "Data tensor", "T")
+        .Output(0, "reduced", "Reduced tensor", "T")
+        .Output(1, "indices", "Indices tensor", "T2")
+        .TypeConstraint("T",
+                        {"tensor(uint32)",
+                         "tensor(uint64)",
+                         "tensor(int32)",
+                         "tensor(int64)",
+                         "tensor(float16)",
+                         "tensor(float)"},
+                        "Constrain input and output reduced tensor types to "
+                        "uint(16/32), int(16/32), float(16/32) tensors.")
+        .TypeConstraint("T2",
+                        {"tensor(int32)"},
+                        "Constrain indices tensor types to int32 tensor.")
+        .Attr("axes", "The reduction axes", AttributeProto::INTS, false)
+        .Attr("keepdims",
+              "If to keep or squeeze reduction axes",
+              AttributeProto::INT,
+              true)
+        .TypeAndShapeInferenceFunction(ReduceMedianShapeInference))
 
 static bool registerOps() {
   auto &d = ONNX_NAMESPACE::OpSchemaRegistry::DomainToVersionRange::Instance();
@@ -1540,6 +1619,10 @@ static bool registerOps() {
   ONNX_NAMESPACE::RegisterSchema(
       GetOpSchema<ONNX_OPERATOR_SET_SCHEMA_CLASS_NAME(
           AiGraphcore, 1, CtcBeamSearchDecoder)>());
+
+  ONNX_NAMESPACE::RegisterSchema(
+      GetOpSchema<ONNX_OPERATOR_SET_SCHEMA_CLASS_NAME(
+          AiGraphcore, 1, ReduceMedian)>());
 
   return true;
 }

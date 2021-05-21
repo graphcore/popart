@@ -21,8 +21,6 @@ public:
   // removed or have size 1, depending on the value of getKeepDims.
   const std::vector<int64_t> &getAxes() const;
 
-  int64_t getAxis(int64_t axis_) const;
-
   // Keep the reduced dimensions or not. A value of `true` means this op will
   // preserve the rank of the input tensor, inserting 1 at reduced axes
   bool getKeepDims() const;
@@ -53,9 +51,6 @@ protected:
   Shape backward_shape;
   std::vector<int64_t> axes;
   int64_t keepdims;
-  void normalizeAxes();
-  void validateAxis(int64_t) const;
-  void validateAxes() const;
 
 private:
   // Axes are passed in with nonstd::optional and hence may not

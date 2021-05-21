@@ -120,6 +120,58 @@ std::vector<uint64_t> getAxes_u64(const std::vector<int64_t> &axes,
   return axes_u64;
 }
 
+int64_t getReduceAxis(int64_t axis_, int64_t inShapeSize) {
+  // Onnx 11 supports negative axis indexing for reduce.
+  if (axis_ >= int64_t(0)) {
+    return axis_;
+  } else {
+    return inShapeSize + axis_;
+  }
+}
+
+void normalizeReduceAxes(std::vector<int64_t> &axes, int64_t inShapeSize) {
+  for (int64_t i = 0; i < axes.size(); i++) {
+    axes[i] = getReduceAxis(axes[i], inShapeSize);
+  }
+}
+
+void validateReduceAxis(int64_t axis_,
+                        int64_t inShapeSize,
+                        const std::string &message) {
+
+  if (inShapeSize == 0) {
+    throw error("Reduce input rank must be greater than 0, invalid "
+                "Reduce {}.",
+                message);
+  }
+
+  if (inShapeSize <= axis_) {
+    throw error("Cannot compute Reduce on axis {} when input rank is {}, "
+                "invalid Reduce {}.",
+                axis_,
+                inShapeSize,
+                message);
+  }
+
+  // From the onnx spec:
+  // Accepted range is [-r, r-1] where r = rank(data).
+  if (axis_ > static_cast<int64_t>(inShapeSize) - 1 ||
+      axis_ < -static_cast<int64_t>(inShapeSize)) {
+    throw error("Axis {} is out of acceptable range [{}, {}]",
+                axis_,
+                -static_cast<int64_t>(inShapeSize),
+                inShapeSize - 1);
+  }
+}
+
+void validateReduceAxes(const std::vector<int64_t> &axes,
+                        int64_t inShapeSize,
+                        const std::string &message) {
+  for (size_t i = 0; i < axes.size(); i++) {
+    validateReduceAxis(axes[i], inShapeSize, message);
+  }
+}
+
 namespace {
 template <typename S, typename D>
 void cast(const void *src, void *dst, size_t nelms) {

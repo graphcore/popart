@@ -291,6 +291,16 @@ std::vector<uint64_t> getAxes_u64(const std::vector<int64_t> &axes,
 
 TensorId getBaseTensorId(const TensorId &t);
 
+// Support Reduce
+int64_t getReduceAxis(int64_t axis_, int64_t inShapeSize);
+void normalizeReduceAxes(std::vector<int64_t> &axes, int64_t inShapeSize);
+void validateReduceAxis(int64_t axis_,
+                        int64_t inShapeSize,
+                        const std::string &message);
+void validateReduceAxes(const std::vector<int64_t> &axes,
+                        int64_t inShapeSize,
+                        const std::string &message);
+
 } // namespace popart
 
 #endif
