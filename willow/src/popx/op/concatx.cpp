@@ -10,7 +10,7 @@ namespace popart {
 namespace popx {
 
 BaseConcatOpx::BaseConcatOpx(Op *op_, Devicex *devicex)
-    : Opx(op_, devicex), op(static_cast<ConcatOp *>(op_)) {}
+    : PopOpx(op_, devicex), op(static_cast<ConcatOp *>(op_)) {}
 
 ConcatOpx::ConcatOpx(Op *op_, Devicex *devicex)
     : BaseConcatOpx(op_, devicex), op(static_cast<ConcatOp *>(op_)) {
@@ -82,7 +82,7 @@ void ConcatInplaceOpx::grow(poplar::program::Sequence &) const {
 }
 
 ConcatGradOpx::ConcatGradOpx(Op *op_, Devicex *devicex)
-    : Opx(op_, devicex), op(static_cast<ConcatGradOp *>(op_)) {
+    : PopOpx(op_, devicex), op(static_cast<ConcatGradOp *>(op_)) {
   verifyOp<ConcatGradOp>(op_, Onnx::GradOperators::ConcatGrad);
 }
 

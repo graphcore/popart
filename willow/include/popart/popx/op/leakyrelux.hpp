@@ -13,13 +13,13 @@ public:
   LeakyReluComputex(float _alpha) : alpha(_alpha) {}
 
   poplar::Tensor outplace(poplar::program::Sequence &,
-                          poplar::Graph &,
+                          snap::Graph &,
                           const poplar::Tensor &,
                           const poplar::DebugNameAndId &,
                           const std::string &) const final;
 
   void inplace(poplar::program::Sequence &,
-               poplar::Graph &,
+               snap::Graph &,
                const poplar::Tensor &,
                const poplar::DebugNameAndId &,
                const std::string &) const final;
@@ -47,7 +47,7 @@ public:
   LeakyReluInplaceOpx(Op *, Devicex *);
 };
 
-class LeakyReluGradOpx : public Opx {
+class LeakyReluGradOpx : public PopOpx {
 public:
   LeakyReluGradOpx(Op *, Devicex *);
   void grow(poplar::program::Sequence &) const final;

@@ -9,23 +9,29 @@ namespace popart {
 namespace popx {
 
 poplar::Tensor CeilComputex::outplace(poplar::program::Sequence &prog,
-                                      poplar::Graph &graph,
+                                      snap::Graph &graph,
                                       const poplar::Tensor &tensor,
                                       const poplar::DebugNameAndId &dnai,
                                       const std::string &s) const {
 
-  return popops::map(
-      graph, popops::expr::UnaryOpType::CEIL, tensor, prog, {dnai, s});
+  return popops::map(graph.getPoplarGraph(),
+                     popops::expr::UnaryOpType::CEIL,
+                     tensor,
+                     prog,
+                     {dnai, s});
 }
 
 void CeilComputex::inplace(poplar::program::Sequence &prog,
-                           poplar::Graph &graph,
+                           snap::Graph &graph,
                            const poplar::Tensor &tensor,
                            const poplar::DebugNameAndId &dnai,
                            const std::string &s) const {
 
-  popops::mapInPlace(
-      graph, popops::expr::UnaryOpType::CEIL, tensor, prog, {dnai, s});
+  popops::mapInPlace(graph.getPoplarGraph(),
+                     popops::expr::UnaryOpType::CEIL,
+                     tensor,
+                     prog,
+                     {dnai, s});
 }
 
 CeilOpx::CeilOpx(Op *op, Devicex *devicex)

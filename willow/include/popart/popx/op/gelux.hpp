@@ -13,13 +13,13 @@ public:
   GeluComputex() = default;
 
   poplar::Tensor outplace(poplar::program::Sequence &,
-                          poplar::Graph &,
+                          snap::Graph &,
                           const poplar::Tensor &,
                           const poplar::DebugNameAndId &,
                           const std::string &) const final;
 
   void inplace(poplar::program::Sequence &,
-               poplar::Graph &,
+               snap::Graph &,
                const poplar::Tensor &,
                const poplar::DebugNameAndId &,
                const std::string &) const final;
@@ -39,7 +39,7 @@ public:
   GeluInplaceOpx(Op *, Devicex *);
 };
 
-class GeluGradOpx : public Opx {
+class GeluGradOpx : public PopOpx {
 public:
   GeluGradOpx(Op *, Devicex *);
   void grow(poplar::program::Sequence &) const final;

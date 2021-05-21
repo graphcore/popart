@@ -4,7 +4,7 @@
 #define GUARD_NEURALNET_MODIFYRANDOMSEEDX_HPP
 
 #include <popart/names.hpp>
-#include <popart/popx/opx.hpp>
+#include <popart/popx/popopx.hpp>
 
 namespace popart {
 
@@ -12,7 +12,7 @@ class ModifyRandomSeedOp;
 
 namespace popx {
 
-class ModifyRandomSeedOpx : public Opx {
+class ModifyRandomSeedOpx : public PopOpx {
 public:
   ModifyRandomSeedOpx(Op *, Devicex *);
   void grow(poplar::program::Sequence &) const final;

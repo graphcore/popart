@@ -2,12 +2,12 @@
 #ifndef GUARD_NEURALNET_HISTOGRAMX_HPP
 #define GUARD_NEURALNET_HISTOGRAMX_HPP
 
-#include <popart/popx/opx.hpp>
+#include <popart/popx/popopx.hpp>
 
 namespace popart {
 namespace popx {
 
-class HistogramOpx : public Opx {
+class HistogramOpx : public PopOpx {
 public:
   HistogramOpx(Op *, Devicex *);
   void grow(poplar::program::Sequence &) const final;

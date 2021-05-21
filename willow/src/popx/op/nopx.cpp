@@ -7,7 +7,7 @@
 namespace popart {
 namespace popx {
 
-NopOpx::NopOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
+NopOpx::NopOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
   verifyOp<NopOp>(op, Onnx::CustomOperators::Nop_1);
 }
 

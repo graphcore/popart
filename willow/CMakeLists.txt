@@ -54,50 +54,6 @@ include(EnableCompilerWarnings)
     to provide the dependencies themselves when linking popart.
 ]]
 
-################################################################################
-##### Find dependencies
-################################################################################
-
-# Note, some of the dependencies are "found" in the parent cmake file, some are
-# found here.
-
-# Versions are not given where packages don't support them.
-
-if(NOT BUILD_SHARED_LIBS)
-  set(Boost_USE_STATIC_LIBS ON)
-endif()
-set(boost_components
-    # FindBoost bug: finding filesystem component does not transitively find and
-    # link the system component.
-    system
-
-    filesystem
-    graph
-    random
-)
-find_package(Boost 1.70 REQUIRED COMPONENTS ${boost_components})
-
-list(TRANSFORM boost_components PREPEND Boost:: OUTPUT_VARIABLE boost_targets)
-
-# The header-only component. Many of the libs are header-only, and come under
-# this target. You do not pass it as a COMPONENT; it will always be created.
-list(APPEND boost_targets Boost::boost)
-
-find_package(spdlog 1.8.0 REQUIRED)
- 
-find_package(poplar REQUIRED)
-find_package(poplibs REQUIRED)
-find_package(libpvti REQUIRED)
-find_package(gcl REQUIRED)
-
-find_package(poprithms REQUIRED)
-
-# Onnx's config file fails to find protobuf, so we have to do it ourselves.
-# We use the find module provided by CMake.
-set(Protobuf_USE_STATIC_LIBS ON)
-find_package(Protobuf 3.6 REQUIRED)
-find_package(ONNX 1.6 REQUIRED)
- 
 # Creates popart_capnp object library from generated sources.
 set(CAPNPC_OUTPUT_DIR "${CMAKE_CURRENT_BINARY_DIR}/include/popart/capnp")
 add_subdirectory(capnp)
@@ -125,6 +81,7 @@ set(POPART_ONLY_DEPS_LIBS
     poputil
     libpvti
     gcl
+    snap
 )
 
 set(POPART_DEPS_INCLUDES

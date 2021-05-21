@@ -46,7 +46,7 @@ poplar::OptionFlags MultiConvOpx::getGlobalOptions() const {
 poplar::Tensor
 MultiConvOpx::createWeightsInput(const poplar::DebugNameAndId &dnai,
                                  int convIndex) const {
-  return poplin::multiconv::createWeights(graph(),
+  return poplin::multiconv::createWeights(graph().getPoplarGraph(),
                                           getCreateTensorArgs(dnai),
                                           static_cast<unsigned>(convIndex),
                                           getGlobalOptions(),
@@ -54,7 +54,7 @@ MultiConvOpx::createWeightsInput(const poplar::DebugNameAndId &dnai,
 }
 poplar::Tensor MultiConvOpx::createDataInput(const poplar::DebugNameAndId &dnai,
                                              int convIndex) const {
-  return poplin::multiconv::createInput(graph(),
+  return poplin::multiconv::createInput(graph().getPoplarGraph(),
                                         getCreateTensorArgs(dnai),
                                         static_cast<unsigned>(convIndex),
                                         getGlobalOptions(),
@@ -76,7 +76,7 @@ MultiConvOpx::convolve(poplar::program::Sequence &prog,
 
     allConvArgs.push_back(convArgs);
   }
-  return poplin::multiconv::convolution(graph(),
+  return poplin::multiconv::convolution(graph().getPoplarGraph(),
                                         allConvArgs,
                                         false,
                                         prog,
@@ -104,7 +104,7 @@ std::vector<poplar::Tensor> MultiConvWeightsGradOpx::calculateWeightDeltas(
     const poplar::Tensor &acts   = getInTensor(op.getPreConvolvedInIndex(i));
 
     poplar::Tensor wGrad =
-        poplin::calculateWeightDeltas(graph(),
+        poplin::calculateWeightDeltas(graph().getPoplarGraph(),
                                       zDelta,
                                       acts,
                                       getPoplarConvParams(op.getParameters(i)),

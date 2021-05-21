@@ -7,7 +7,7 @@
 namespace popart {
 namespace popx {
 
-class InitOpx : public Opx {
+class InitOpx : public PopOpx {
 public:
   InitOpx(Op *, Devicex *);
   void grow(poplar::program::Sequence &) const final;

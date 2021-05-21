@@ -19,7 +19,7 @@ LessOpx::LessOpx(Op *op, Devicex *devicex) : BinaryComparisonOpx(op, devicex) {
 void LessOpx::grow(poplar::program::Sequence &prog) const {
 
   insert(outId(LessOp::getOutIndex()),
-         popops::map(graph(),
+         popops::map(graph().getPoplarGraph(),
                      popops::expr::BinaryOpType::LESS_THAN,
                      get(inId(LessOp::getArg0InIndex())),
                      get(inId(LessOp::getArg1InIndex())),

@@ -2,12 +2,12 @@
 #ifndef GUARD_NEURALNET_SYNCX_HPP
 #define GUARD_NEURALNET_SYNCX_HPP
 
-#include <popart/popx/opx.hpp>
+#include <popart/popx/popopx.hpp>
 
 namespace popart {
 
 namespace popx {
-class SyncOpx : public Opx {
+class SyncOpx : public PopOpx {
 public:
   SyncOpx(Op *, Devicex *);
   void grow(poplar::program::Sequence &) const final;

@@ -14,7 +14,7 @@ SqrtOpx::SqrtOpx(Op *op, Devicex *devicex) : ElementWiseUnaryOpx(op, devicex) {
 
 void SqrtOpx::grow(poplar::program::Sequence &prog) const {
   setOutTensor(0,
-               popops::map(graph(),
+               popops::map(graph().getPoplarGraph(),
                            popops::expr::UnaryOpType::SQRT,
                            getInTensor(0),
                            prog,

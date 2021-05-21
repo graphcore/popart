@@ -8,7 +8,7 @@
 namespace popart {
 namespace popx {
 
-TransposeOpx::TransposeOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
+TransposeOpx::TransposeOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
   verifyOp<TransposeOp>(op);
 }
 
@@ -52,7 +52,7 @@ view::RegMap TransposeOpx::unwindRegion(InIndex inIndex,
 }
 
 TransposeInplaceOpx::TransposeInplaceOpx(Op *op, Devicex *devicex)
-    : Opx(op, devicex) {
+    : PopOpx(op, devicex) {
   verifyOp<TransposeInplaceOp>(op);
 }
 

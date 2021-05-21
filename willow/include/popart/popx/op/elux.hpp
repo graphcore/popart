@@ -13,7 +13,7 @@ public:
   EluComputex(float alpha) : alpha_(alpha) {}
 
   void inplace(poplar::program::Sequence &,
-               poplar::Graph &,
+               snap::Graph &,
                const poplar::Tensor &,
                const poplar::DebugNameAndId &,
                const std::string &) const final;
@@ -39,7 +39,7 @@ public:
   EluInplaceOpx(Op *, Devicex *);
 };
 
-class EluGradOpx : public Opx {
+class EluGradOpx : public PopOpx {
 public:
   EluGradOpx(Op *, Devicex *);
   void grow(poplar::program::Sequence &) const final;

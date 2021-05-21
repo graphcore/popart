@@ -3,12 +3,12 @@
 #define GUARD_NEURALNET_SCATTERX_HPP
 
 #include <popart/names.hpp>
-#include <popart/popx/opx.hpp>
+#include <popart/popx/popopx.hpp>
 
 namespace popart {
 namespace popx {
 
-class ScatterOpx : public Opx {
+class ScatterOpx : public PopOpx {
 public:
   ScatterOpx(Op *, Devicex *);
   void grow(poplar::program::Sequence &) const final;
@@ -17,7 +17,7 @@ private:
   int64_t axis;
 };
 
-class ScatterDataGradOpx : public Opx {
+class ScatterDataGradOpx : public PopOpx {
 public:
   ScatterDataGradOpx(Op *, Devicex *);
   void grow(poplar::program::Sequence &) const final;
@@ -26,7 +26,7 @@ private:
   int64_t axis;
 };
 
-class ScatterUpdateGradOpx : public Opx {
+class ScatterUpdateGradOpx : public PopOpx {
 public:
   ScatterUpdateGradOpx(Op *, Devicex *);
   void grow(poplar::program::Sequence &) const final;

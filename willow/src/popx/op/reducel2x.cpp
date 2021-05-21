@@ -18,7 +18,7 @@ namespace pe = popops::expr;
 namespace popart {
 namespace popx {
 
-ReduceL2Opx::ReduceL2Opx(Op *op, Devicex *devicex) : Opx(op, devicex) {
+ReduceL2Opx::ReduceL2Opx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
   verifyOp<ReduceL2Op>(op);
 }
 
@@ -26,19 +26,21 @@ void ReduceL2Opx::grow(poplar::program::Sequence &prog) const {
   const auto &op   = getOp<ReduceL2Op>();
   const auto input = getInTensor(ReduceL2Op::getInIndex());
 
-  auto output_tensor = popops::reduce(graph(),
+  auto output_tensor = popops::reduce(graph().getPoplarGraph(),
                                       input,
                                       vector_cast<std::size_t>(op.getAxes()),
                                       {popops::Operation::SQUARE_ADD},
                                       prog,
                                       debugContext("squareAdd"));
-  popops::sqrtInPlace(graph(), output_tensor, prog, debugContext("sqrt"));
+  popops::sqrtInPlace(
+      graph().getPoplarGraph(), output_tensor, prog, debugContext("sqrt"));
   setOutTensor(
       ReduceL2Op::getOutIndex(),
       output_tensor.reshape(outInfo(ReduceL2Op::getOutIndex()).shape_szt()));
 }
 
-ReduceL2GradOpx::ReduceL2GradOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
+ReduceL2GradOpx::ReduceL2GradOpx(Op *op, Devicex *devicex)
+    : PopOpx(op, devicex) {
   verifyOp<ReduceL2GradOp>(op, Onnx::GradOperators::ReduceL2Grad);
 }
 
@@ -62,7 +64,7 @@ void ReduceL2GradOpx::grow(poplar::program::Sequence &prog) const {
     }
   }
 
-  output = popops::map(graph(),
+  output = popops::map(graph().getPoplarGraph(),
                        pe::Divide(pe::Mul(pe::_1, pe::_2), pe::_3),
                        {output, fwd_input, scale},
                        prog,

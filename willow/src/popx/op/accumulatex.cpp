@@ -43,8 +43,12 @@ void AccumulateOpx::grow(poplar::program::Sequence &prog) const {
   switch (accumulateOp.getAccumulationType()) {
   case AccumulationType::Add: {
     // accum += grad
-    popops::scaledAddTo(
-        graph(), accum, grad, 1.0f, prog, debugContext("constAdd"));
+    popops::scaledAddTo(graph().getPoplarGraph(),
+                        accum,
+                        grad,
+                        1.0f,
+                        prog,
+                        debugContext("constAdd"));
     break;
   }
   case AccumulationType::DampenedAdd: {
@@ -58,17 +62,29 @@ void AccumulateOpx::grow(poplar::program::Sequence &prog) const {
       }
       if (val - 1.0f == 0.0f) {
         // accum += grad
-        popops::scaledAddTo(
-            graph(), accum, grad, 1.0f, prog, debugContext("constAdd"));
+        popops::scaledAddTo(graph().getPoplarGraph(),
+                            accum,
+                            grad,
+                            1.0f,
+                            prog,
+                            debugContext("constAdd"));
       } else {
         // accum += factor * grad
-        popops::scaledAddTo(
-            graph(), accum, grad, val, prog, debugContext("constDampenedAdd"));
+        popops::scaledAddTo(graph().getPoplarGraph(),
+                            accum,
+                            grad,
+                            val,
+                            prog,
+                            debugContext("constDampenedAdd"));
       }
     } else {
       auto factor = getInTensor(AccumulateOp::getFactorInIndex());
-      popops::scaledAddTo(
-          graph(), accum, grad, factor, prog, debugContext("dampenedAdd"));
+      popops::scaledAddTo(graph().getPoplarGraph(),
+                          accum,
+                          grad,
+                          factor,
+                          prog,
+                          debugContext("dampenedAdd"));
     }
     break;
   }
@@ -84,7 +100,7 @@ void AccumulateOpx::grow(poplar::program::Sequence &prog) const {
       if (val - 1.0f == 0.0f) {
         // accum += grad^2
         popops::mapInPlace(
-            graph(),
+            graph().getPoplarGraph(),
             pe::Add(pe::_1, pe::Square(pe::Cast(pe::_2, accum.elementType()))),
             {accum, grad},
             prog,
@@ -93,7 +109,7 @@ void AccumulateOpx::grow(poplar::program::Sequence &prog) const {
         auto val = accumulateOp.getFactor().val();
         // accum += factor * grad^2
         popops::mapInPlace(
-            graph(),
+            graph().getPoplarGraph(),
             pe::Add(pe::_1,
                     pe::Mul(pe::Mul(pe::Const(val),
                                     pe::Cast(pe::_2, accum.elementType())),
@@ -105,7 +121,7 @@ void AccumulateOpx::grow(poplar::program::Sequence &prog) const {
     } else {
       auto factor = getInTensor(AccumulateOp::getFactorInIndex());
       popops::mapInPlace(
-          graph(),
+          graph().getPoplarGraph(),
           pe::Add(
               pe::_1,
               pe::Mul(pe::Mul(pe::_3, pe::Cast(pe::_2, accum.elementType())),
@@ -119,7 +135,7 @@ void AccumulateOpx::grow(poplar::program::Sequence &prog) const {
   case AccumulationType::DecayAdd: {
     if (isConst) {
       auto val = accumulateOp.getFactor().val();
-      popops::mapInPlace(graph(),
+      popops::mapInPlace(graph().getPoplarGraph(),
                          pe::Add(pe::Mul(pe::Const(val), pe::_1),
                                  pe::Cast(pe::_2, accum.elementType())),
                          {accum, grad},
@@ -128,7 +144,7 @@ void AccumulateOpx::grow(poplar::program::Sequence &prog) const {
     } else {
       auto factor = getInTensor(AccumulateOp::getFactorInIndex());
       popops::mapInPlace(
-          graph(),
+          graph().getPoplarGraph(),
           pe::Add(pe::Mul(pe::Cast(pe::_3, accum.elementType()), pe::_1),
                   pe::Cast(pe::_2, accum.elementType())),
           {accum, grad, factor},
@@ -141,7 +157,7 @@ void AccumulateOpx::grow(poplar::program::Sequence &prog) const {
     if (isConst) {
       auto val = accumulateOp.getFactor().val();
       popops::mapInPlace(
-          graph(),
+          graph().getPoplarGraph(),
           pe::Add(pe::Mul(pe::Const(val), pe::_1),
                   pe::Square(pe::Cast(pe::_2, accum.elementType()))),
           {accum, grad},
@@ -150,7 +166,7 @@ void AccumulateOpx::grow(poplar::program::Sequence &prog) const {
     } else {
       auto factor = getInTensor(AccumulateOp::getFactorInIndex());
       popops::mapInPlace(
-          graph(),
+          graph().getPoplarGraph(),
           pe::Add(pe::Mul(pe::Cast(pe::_3, accum.elementType()), pe::_1),
                   pe::Square(pe::Cast(pe::_2, accum.elementType()))),
           {accum, grad, factor},
@@ -163,7 +179,7 @@ void AccumulateOpx::grow(poplar::program::Sequence &prog) const {
     if (isConst) {
       auto val = accumulateOp.getFactor().val();
       popops::mapInPlace(
-          graph(),
+          graph().getPoplarGraph(),
           pe::Add(pe::Mul(pe::Const(val), pe::_1),
                   pe::Mul(pe::Const(1.0f - val),
                           pe::Cast(pe::_2, accum.elementType()))),
@@ -173,7 +189,7 @@ void AccumulateOpx::grow(poplar::program::Sequence &prog) const {
     } else {
       auto factor = getInTensor(AccumulateOp::getFactorInIndex());
       popops::mapInPlace(
-          graph(),
+          graph().getPoplarGraph(),
           pe::Add(pe::Mul(pe::Cast(pe::_3, accum.elementType()), pe::_1),
                   pe::Mul(pe::Cast(pe::Sub(pe::Const(1.0f), pe::_3),
                                    accum.elementType()),
@@ -188,7 +204,7 @@ void AccumulateOpx::grow(poplar::program::Sequence &prog) const {
     if (isConst) {
       auto val = accumulateOp.getFactor().val();
       popops::mapInPlace(
-          graph(),
+          graph().getPoplarGraph(),
           pe::Add(pe::Mul(pe::Const(val), pe::_1),
                   pe::Mul(pe::Mul(pe::Const(1.0f - val),
                                   pe::Cast(pe::_2, accum.elementType())),
@@ -199,7 +215,7 @@ void AccumulateOpx::grow(poplar::program::Sequence &prog) const {
     } else {
       auto factor = getInTensor(AccumulateOp::getFactorInIndex());
       popops::mapInPlace(
-          graph(),
+          graph().getPoplarGraph(),
           pe::Add(pe::Mul(pe::Cast(pe::_3, accum.elementType()), pe::_1),
                   pe::Mul(pe::Mul(pe::Sub(pe::Const(1.0f), pe::_3),
                                   pe::Cast(pe::_2, accum.elementType())),
@@ -214,7 +230,7 @@ void AccumulateOpx::grow(poplar::program::Sequence &prog) const {
     if (isConst) {
       auto val = accumulateOp.getFactor().val();
       popops::mapInPlace(
-          graph(),
+          graph().getPoplarGraph(),
           pe::Cast(pe::Max(pe::Mul(pe::Const(val), pe::_1),
                            pe::Cast(pe::Abs(pe::_2), accum.elementType())),
                    accum.elementType()),
@@ -224,7 +240,7 @@ void AccumulateOpx::grow(poplar::program::Sequence &prog) const {
     } else {
       auto factor = getInTensor(AccumulateOp::getFactorInIndex());
       popops::mapInPlace(
-          graph(),
+          graph().getPoplarGraph(),
           pe::Cast(
               pe::Max(pe::Mul(pe::Cast(pe::_3, accum.elementType()), pe::_1),
                       pe::Cast(pe::Abs(pe::_2), accum.elementType())),
@@ -258,15 +274,16 @@ AccumulateOpx::createInput(int inIndex,
   }
   poplar::Tensor inTensor;
   auto accumulatorInfo = inInfo(inIndex);
-  return graph().clone(popType(accumulatorInfo),
-                       getInTensor(VarUpdateWithUpdaterOp::getUpdaterInIndex()),
-                       dnai);
+  return graph().getPoplarGraph().clone(
+      popType(accumulatorInfo),
+      getInTensor(VarUpdateWithUpdaterOp::getUpdaterInIndex()),
+      dnai);
 }
 
 InputCreatorType AccumulateOpx::getInputCreatorType(int inIndex) const {
   return inIndex == VarUpdateOp::getVarToUpdateInIndex()
              ? InputCreatorType::CanCreate
-             : Opx::getInputCreatorType(inIndex);
+             : PopOpx::getInputCreatorType(inIndex);
 }
 
 std::set<TensorId> AccumulateOpx::mustExistBeforeCreate(InIndex index) const {

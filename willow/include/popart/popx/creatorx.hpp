@@ -4,7 +4,7 @@
 
 #include <utility>
 
-#include <popart/popx/opx.hpp>
+#include <popart/popx/popopx.hpp>
 
 namespace popart {
 namespace popx {
@@ -18,9 +18,9 @@ using UnwindEndpointPtr = std::shared_ptr<UnwindEndpoint>;
 // A bundle struct to represent the path a tensor
 // takes through an Opx
 struct OpxInAndOutIndex {
-  OpxInAndOutIndex(const Opx *opx_, InIndex inIndex_, OutIndex outIndex_)
+  OpxInAndOutIndex(const PopOpx *opx_, InIndex inIndex_, OutIndex outIndex_)
       : opx(opx_), inIndex(inIndex_), outIndex(outIndex_), isDelegate(false) {}
-  OpxInAndOutIndex(const Opx *opx_)
+  OpxInAndOutIndex(const PopOpx *opx_)
       : opx(opx_), inIndex(-1), outIndex(-1), isDelegate(true) {}
   OpxInAndOutIndex() = default;
 
@@ -28,7 +28,7 @@ struct OpxInAndOutIndex {
     return opx == rhs.opx && inIndex == rhs.inIndex && outIndex == rhs.outIndex;
   }
 
-  const Opx *opx;
+  const PopOpx *opx;
   InIndex inIndex;
   OutIndex outIndex;
   bool isDelegate;
@@ -74,7 +74,7 @@ public:
 class InputCreatorCandidate : public ICreatorCandidate {
 public:
   InputCreatorCandidate(InIndex index_,
-                        const Opx *opx_,
+                        const PopOpx *opx_,
                         std::vector<OpxInAndOutIndex> pathFromInput_,
                         int64_t scheduleIndex_);
   InputCreatorCandidate()                   = default;
@@ -89,7 +89,7 @@ public:
   int64_t getNumElems() override;
 
   InIndex getIndex() const { return index; }
-  const Opx *getOpx() const { return opx; }
+  const PopOpx *getOpx() const { return opx; }
 
   // Returns the unwind path from the tensor to the creator
   std::vector<std::vector<OpxInAndOutIndex>> getPathsFromInput() final {
@@ -113,7 +113,7 @@ protected:
 private:
   // Input index on the creating Op
   InIndex index;
-  const Opx *opx;
+  const PopOpx *opx;
   // Global schedule index to order the creators by global schedule position
   int64_t scheduleIndex;
 };

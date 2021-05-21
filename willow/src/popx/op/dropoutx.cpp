@@ -18,12 +18,12 @@ namespace popx {
 namespace {
 
 std::pair<poplar::Tensor, poplar::Tensor>
-growDropout(poplar::Graph &graph,
+growDropout(snap::Graph &graph,
             const poplar::Tensor &input,
             const poplar::Tensor &seed,
             const poplar::Tensor &refTensor,
             float ratio,
-            const Opx &opx,
+            const PopOpx &opx,
             poplar::program::Sequence &prog) {
   double dropoutProbability = 1. - static_cast<double>(ratio);
 
@@ -32,7 +32,7 @@ growDropout(poplar::Graph &graph,
   float scale = 1.f / (1.f - ratio);
 
   // Calculate the dropout mask using poplibs and a tensor of ones.
-  auto mask = poprand::bernoulli(graph,
+  auto mask = poprand::bernoulli(graph.getPoplarGraph(),
                                  &seed,
                                  0u,
                                  refTensor,
@@ -42,7 +42,7 @@ growDropout(poplar::Graph &graph,
                                  opx.debugContext("mask"));
 
   // Use the mask to multiply by the input tensor and scale up.
-  auto dropout = popops::map(graph,
+  auto dropout = popops::map(graph.getPoplarGraph(),
                              pe::Mul(pe::Mul(pe::_1, pe::_2), pe::Const(scale)),
                              {mask, input},
                              prog,
@@ -80,15 +80,17 @@ void DropoutOpx::grow(poplar::program::Sequence &prog) const {
 
       setOutTensor(op.getOutIndex(), dropout);
       if (op.output->hasIndex(DropoutOp::getMaskOutIndex())) {
-        setOutTensor(
-            DropoutOp::getMaskOutIndex(),
-            popops::cast(
-                graph(), mask, poplar::BOOL, prog, debugContext("mask")));
+        setOutTensor(DropoutOp::getMaskOutIndex(),
+                     popops::cast(graph().getPoplarGraph(),
+                                  mask,
+                                  poplar::BOOL,
+                                  prog,
+                                  debugContext("mask")));
       }
     } else {
       double dropoutProbability = 1. - static_cast<double>(op.getRatio());
       double scale = 1. / (1. - static_cast<double>(op.getRatio()));
-      auto dropout = poprand::dropout(graph(),
+      auto dropout = poprand::dropout(graph().getPoplarGraph(),
                                       &getInTensor(op.getSeedInIndex()),
                                       0u,
                                       getInTensor(DropoutOp::getInIndex()),

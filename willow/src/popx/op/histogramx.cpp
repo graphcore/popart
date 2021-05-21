@@ -13,13 +13,14 @@ void HistogramOpx::grow(poplar::program::Sequence &prog) const {
   auto &op    = getOp<HistogramOp>();
   auto levels = op.getLevels();
 
-  auto levelsT = graph().addConstant(getInTensor(op.getInIndex()).elementType(),
-                                     {levels.size()},
-                                     poplar::ArrayRef<float>(levels),
-                                     debugContext("levels"));
-  poputil::mapTensorLinearly(graph(), levelsT);
+  auto levelsT = graph().getPoplarGraph().addConstant(
+      getInTensor(op.getInIndex()).elementType(),
+      {levels.size()},
+      poplar::ArrayRef<float>(levels),
+      debugContext("levels"));
+  poputil::mapTensorLinearly(graph().getPoplarGraph(), levelsT);
 
-  auto out = popops::histogram(graph(),
+  auto out = popops::histogram(graph().getPoplarGraph(),
                                getInTensor(op.getInIndex()).flatten(),
                                levelsT,
                                op.getAbsoluteOfInput(),
@@ -29,7 +30,7 @@ void HistogramOpx::grow(poplar::program::Sequence &prog) const {
   setOutTensor(op.getOutIndex(), out);
 }
 
-HistogramOpx::HistogramOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
+HistogramOpx::HistogramOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
   verifyOp<HistogramOp>(op);
 }
 

@@ -3,12 +3,12 @@
 #define GUARD_NEURALNET_DYNAMICUPDATEX_HPP
 
 #include <popart/names.hpp>
-#include <popart/popx/opx.hpp>
+#include <popart/popx/popopx.hpp>
 
 namespace popart {
 namespace popx {
 
-class DynamicUpdateOpx : public Opx {
+class DynamicUpdateOpx : public PopOpx {
 public:
   DynamicUpdateOpx(Op *, Devicex *);
   void grow(poplar::program::Sequence &) const override;

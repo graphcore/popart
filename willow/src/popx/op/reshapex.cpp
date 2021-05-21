@@ -22,7 +22,7 @@ void ReshapeInplaceOpx::grow(poplar::program::Sequence &) const {
   setOutTensor(ReshapeOp::getOutIndex(), outTensor);
 }
 
-ReshapeBaseOpx::ReshapeBaseOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
+ReshapeBaseOpx::ReshapeBaseOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
   verifyOp<ReshapeBaseOp>(op);
 }
 

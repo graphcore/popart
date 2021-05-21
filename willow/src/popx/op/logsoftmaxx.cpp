@@ -41,7 +41,7 @@ LogSoftmaxInplaceOpx::LogSoftmaxInplaceOpx(Op *op, Devicex *devicex)
           createLogSoftmaxComputex<LogSoftmaxInplaceOp>(op)) {}
 
 poplar::Tensor LogSoftmaxComputex::outplace(poplar::program::Sequence &p,
-                                            poplar::Graph &g,
+                                            snap::Graph &g,
                                             const poplar::Tensor &t,
                                             const poplar::DebugNameAndId &dnai,
                                             const std::string &s) const {
@@ -51,11 +51,12 @@ poplar::Tensor LogSoftmaxComputex::outplace(poplar::program::Sequence &p,
 }
 
 void LogSoftmaxComputex::inplace(poplar::program::Sequence &p,
-                                 poplar::Graph &g,
+                                 snap::Graph &g,
                                  const poplar::Tensor &t,
                                  const poplar::DebugNameAndId &dnai,
                                  const std::string &s) const {
-  popnn::logSoftmaxInPlace(g, coerceTo2D(t, axis), p, {dnai, s});
+  popnn::logSoftmaxInPlace(
+      g.getPoplarGraph(), coerceTo2D(t, axis), p, {dnai, s});
 }
 
 poplar::Tensor LogSoftmaxComputex::reshape(const poplar::Tensor &t) const {
@@ -101,8 +102,11 @@ void LogSoftmaxGradOpx::grow(poplar::program::Sequence &prog) const {
   } else {
     nlType = popnn::NonLinearityType::SOFTMAX_STABLE;
   }
-  auto probs = popnn::nonLinearity(
-      graph(), nlType, pre_probs, prog, debugContext("nonLinearity"));
+  auto probs = popnn::nonLinearity(graph().getPoplarGraph(),
+                                   nlType,
+                                   pre_probs,
+                                   prog,
+                                   debugContext("nonLinearity"));
 
   // sum_j (g_j)
   // reduce along all dimensions except 0 (0 is the sample index)
@@ -111,7 +115,7 @@ void LogSoftmaxGradOpx::grow(poplar::program::Sequence &prog) const {
 
   std::vector<size_t> upRanked(probs.rank(), 1);
   upRanked[0] = probs.dim(0);
-  auto sum_g  = popops::reduce(graph(),
+  auto sum_g  = popops::reduce(graph().getPoplarGraph(),
                               d_probs,
                               redDims,
                               {popops::Operation::ADD},
@@ -120,7 +124,7 @@ void LogSoftmaxGradOpx::grow(poplar::program::Sequence &prog) const {
                    .reshape(upRanked);
 
   // g_i - softmax(x_i) * sum_j (g_j)
-  auto dv = popops::map(graph(),
+  auto dv = popops::map(graph().getPoplarGraph(),
                         pe::Sub(pe::_1, pe::Mul(pe::_2, pe::_3)),
                         {d_probs, probs, sum_g},
                         prog,

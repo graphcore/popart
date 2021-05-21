@@ -8,14 +8,14 @@
 namespace popart {
 namespace popx {
 
-TanhOpx::TanhOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
+TanhOpx::TanhOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
   verifyOp<TanhOp>(op, {Onnx::Operators::Tanh_6});
 }
 
 void TanhOpx::grow(poplar::program::Sequence &prog) const {
   auto in_tensor = getInTensor(TanhOp::getInIndex());
   // auto out_id     = outId(TanhOp::getOutIndex());
-  auto out_tensor = popnn::nonLinearity(graph(),
+  auto out_tensor = popnn::nonLinearity(graph().getPoplarGraph(),
                                         popnn::NonLinearityType::TANH,
                                         in_tensor,
                                         prog,
@@ -36,7 +36,7 @@ view::RegMap TanhOpx::unwindRegion(InIndex, OutIndex) const {
   return [](const view::Region &r) { return view::Regions(1, r); };
 }
 
-TanhGradOpx::TanhGradOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
+TanhGradOpx::TanhGradOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
   verifyOp<TanhGradOp>(op, Onnx::GradOperators::TanhGrad);
 }
 
@@ -45,7 +45,7 @@ void TanhGradOpx::grow(poplar::program::Sequence &prog) const {
   auto grad_out = getInTensor(TanhGradOp::getGradInIndex());
   // auto out_id     = outId(TanhGradOp::getOutIndex());
   auto out_tensor = popnn::nonLinearityInputGradient(
-      graph(),
+      graph().getPoplarGraph(),
       popnn::NonLinearityType::TANH,
       fwd_out,
       grad_out,

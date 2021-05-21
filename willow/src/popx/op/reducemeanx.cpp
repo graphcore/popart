@@ -19,7 +19,7 @@ namespace pe = popops::expr;
 namespace popart {
 namespace popx {
 
-ReduceMeanOpx::ReduceMeanOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
+ReduceMeanOpx::ReduceMeanOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
   verifyOp<ReduceMeanOp>(op);
 }
 
@@ -27,7 +27,7 @@ void ReduceMeanOpx::grow(poplar::program::Sequence &prog) const {
   const auto &op   = getOp<ReduceMeanOp>();
   const auto input = getInTensor(ReduceMeanOp::getInIndex());
 
-  auto output_tensor = popops::reduce(graph(),
+  auto output_tensor = popops::reduce(graph().getPoplarGraph(),
                                       input,
                                       vector_cast<std::size_t>(op.getAxes()),
                                       {popops::Operation::ADD},
@@ -35,7 +35,7 @@ void ReduceMeanOpx::grow(poplar::program::Sequence &prog) const {
                                       debugContext("add"));
 
   output_tensor = popops::map(
-      graph(),
+      graph().getPoplarGraph(),
       pe::Divide(pe::_1,
                  pe::Const(inInfo(ReduceMeanOp::getInIndex()).nelms() /
                            outInfo(ReduceMeanOp::getOutIndex()).nelms())),
@@ -49,7 +49,7 @@ void ReduceMeanOpx::grow(poplar::program::Sequence &prog) const {
 }
 
 ReduceMeanGradOpx::ReduceMeanGradOpx(Op *op, Devicex *devicex)
-    : Opx(op, devicex) {
+    : PopOpx(op, devicex) {
   verifyOp<ReduceMeanGradOp>(op, Onnx::GradOperators::ReduceMeanGrad);
 }
 
@@ -70,7 +70,7 @@ void ReduceMeanGradOpx::grow(poplar::program::Sequence &prog) const {
   }
 
   output = popops::map(
-      graph(),
+      graph().getPoplarGraph(),
       pe::Divide(pe::_1,
                  pe::Const(outInfo(ReduceMeanGradOp::getOutIndex()).nelms() /
                            inInfo(ReduceMeanGradOp::getInIndex()).nelms())),

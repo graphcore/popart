@@ -12,14 +12,14 @@
 #include <popart/op/lstm.hpp>
 #include <popart/popx/irlowering.hpp>
 #include <popart/popx/op/lstmxutil.hpp>
-#include <popart/popx/opx.hpp>
+#include <popart/popx/popopx.hpp>
 
 namespace popart {
 namespace popx {
 
-template <typename LSTMOP> class PopartLSTMOpxBase : public Opx {
+template <typename LSTMOP> class PopartLSTMOpxBase : public PopOpx {
 public:
-  PopartLSTMOpxBase(Op *op, Devicex *devicex) : Opx(op, devicex) {}
+  PopartLSTMOpxBase(Op *op, Devicex *devicex) : PopOpx(op, devicex) {}
 
 protected:
   popnn::lstm::LstmParams
@@ -59,7 +59,7 @@ protected:
   poplar::Tensor createBiasesInput() const {
     auto &lstmOp = getOp<LSTMOP>();
     auto seq_len = getSeqLens();
-    return popnn::lstm::createWeightsBiases(graph(),
+    return popnn::lstm::createWeightsBiases(graph().getPoplarGraph(),
                                             createLSTMParams(lstmOp, seq_len),
                                             debugContext("createWeights"),
                                             dv_p->lowering().lstmOptions,
@@ -73,7 +73,8 @@ protected:
       return getInTensor(lstmOp.getBiasesInIndex());
     } else {
       auto biases = createBiasesInput();
-      popops::zero(graph(), biases, prog, debugContext("zeroBiases"));
+      popops::zero(
+          graph().getPoplarGraph(), biases, prog, debugContext("zeroBiases"));
       return biases;
     }
   }
@@ -81,7 +82,7 @@ protected:
   popnn::lstm::LstmState createInitialStateInput() const {
     auto &lstmOp = getOp<LSTMOP>();
     auto seq_len = getSeqLens();
-    return createInitialState(graph(),
+    return createInitialState(graph().getPoplarGraph(),
                               createLSTMParams(lstmOp, seq_len),
                               debugContext("createInitialState"),
                               dv_p->lowering().lstmOptions,
@@ -99,7 +100,8 @@ protected:
       return {initialOutput, initialCellState};
     } else {
       auto initialState = createInitialStateInput();
-      zeroInitialState(graph(), initialState, prog, debugContext());
+      zeroInitialState(
+          graph().getPoplarGraph(), initialState, prog, debugContext());
       return initialState;
     }
   }

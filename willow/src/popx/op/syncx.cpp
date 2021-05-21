@@ -7,7 +7,7 @@
 namespace popart {
 namespace popx {
 
-SyncOpx::SyncOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
+SyncOpx::SyncOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
   verifyOp<SyncOp>(op, Onnx::CustomOperators::Sync);
 }
 

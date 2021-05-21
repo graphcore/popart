@@ -18,7 +18,7 @@ namespace popx {
 
 namespace {
 
-void growSequenceSlice(const Opx *opx,
+void growSequenceSlice(const PopOpx *opx,
                        poplar::program::Sequence &prog,
                        bool inplace) {
   auto source      = opx->getInTensor(SequenceSliceOp::getSourceInIndex());
@@ -32,7 +32,7 @@ void growSequenceSlice(const Opx *opx,
     destination = opx->cloneNcopy(prog, destination);
   }
 
-  popops::sequenceSlice(opx->graph(),
+  popops::sequenceSlice(opx->graph().getPoplarGraph(),
                         source,
                         destination,
                         N,
@@ -48,7 +48,7 @@ void growSequenceSlice(const Opx *opx,
 } // namespace
 
 SequenceSliceOpx::SequenceSliceOpx(Op *op, Devicex *devicex)
-    : Opx(op, devicex) {
+    : PopOpx(op, devicex) {
   verifyOp<SequenceSliceOp>(op);
 }
 
@@ -57,7 +57,7 @@ void SequenceSliceOpx::grow(poplar::program::Sequence &prog) const {
 }
 
 SequenceSliceInplaceOpx::SequenceSliceInplaceOpx(Op *op, Devicex *devicex)
-    : Opx(op, devicex) {
+    : PopOpx(op, devicex) {
   verifyOp<SequenceSliceInplaceOp>(op);
 }
 

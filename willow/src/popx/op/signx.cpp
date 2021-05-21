@@ -10,23 +10,29 @@ namespace popart {
 namespace popx {
 
 poplar::Tensor SignComputex::outplace(poplar::program::Sequence &prog,
-                                      poplar::Graph &graph,
+                                      snap::Graph &graph,
                                       const poplar::Tensor &tensor,
                                       const poplar::DebugNameAndId &dnai,
                                       const std::string &s) const {
 
-  return popops::map(
-      graph, popops::expr::UnaryOpType::SIGNUM, tensor, prog, {dnai, s});
+  return popops::map(graph.getPoplarGraph(),
+                     popops::expr::UnaryOpType::SIGNUM,
+                     tensor,
+                     prog,
+                     {dnai, s});
 }
 
 void SignComputex::inplace(poplar::program::Sequence &prog,
-                           poplar::Graph &graph,
+                           snap::Graph &graph,
                            const poplar::Tensor &tensor,
                            const poplar::DebugNameAndId &dnai,
                            const std::string &s) const {
 
-  popops::mapInPlace(
-      graph, popops::expr::UnaryOpType::SIGNUM, tensor, prog, {dnai, s});
+  popops::mapInPlace(graph.getPoplarGraph(),
+                     popops::expr::UnaryOpType::SIGNUM,
+                     tensor,
+                     prog,
+                     {dnai, s});
 }
 
 SignOpx::SignOpx(Op *op, Devicex *devicex)

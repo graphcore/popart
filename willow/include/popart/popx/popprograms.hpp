@@ -114,13 +114,13 @@ public:
   void createFragment(const Graph &graph, SubgraphPartIndex subgraphPart);
   // Wrap all Poplar sequences associated with a graph in to a poplar function
   // that can be called and return them all.
-  std::vector<poplar::Function> &
-  getFragmentFunctions(const Graph &graph, poplar::Graph &poplarGraph);
+  std::vector<poplar::Function> &getFragmentFunctions(const Graph &graph,
+                                                      snap::Graph &snapGraph);
   // Wrap all Poplar sequences associated with a graph in to a poplar function
   // that can be called and return a specific one.
   poplar::Function &getFragmentFunction(const Graph &graph,
                                         SubgraphPartIndex subgraphPart,
-                                        poplar::Graph &poplarGraph);
+                                        snap::Graph &snapGraph);
 
   // Get the program fragment for a recomputed op. createRecomputeFragment must
   // be called first.

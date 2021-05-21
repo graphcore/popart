@@ -22,11 +22,11 @@ IdentityOpx::IdentityOpx(Op *op, Devicex *devicex)
 }
 
 void IdentityOpx::grow(poplar::program::Sequence &prog) const {
-  setOutTensor(0, Opx::cloneNcopy(prog, getInTensor(0)));
+  setOutTensor(0, PopOpx::cloneNcopy(prog, getInTensor(0)));
 }
 
 IdentityInplaceOpx::IdentityInplaceOpx(Op *op, Devicex *devicex)
-    : Opx(op, devicex) {
+    : PopOpx(op, devicex) {
   verifyOp<IdentityInplaceOp>(op);
 }
 
@@ -40,10 +40,11 @@ IdentityGradOpx::IdentityGradOpx(Op *op, Devicex *devicex)
 }
 
 void IdentityGradOpx::grow(poplar::program::Sequence &prog) const {
-  setOutTensor(0, Opx::cloneNcopy(prog, getInTensor(0)));
+  setOutTensor(0, PopOpx::cloneNcopy(prog, getInTensor(0)));
 }
 
-IdentityLossOpx::IdentityLossOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
+IdentityLossOpx::IdentityLossOpx(Op *op, Devicex *devicex)
+    : PopOpx(op, devicex) {
   verifyOp<IdentityLossOp>(op, Onnx::CustomOperators::IdentityLoss);
 }
 
@@ -60,7 +61,7 @@ void IdentityLossGradOpx::grow(poplar::program::Sequence &prog) const {
       // Divide broadcasted tensor by total number of samples
       float scale = static_cast<float>(reference.numElements());
 
-      output = popops::map(graph(),
+      output = popops::map(graph().getPoplarGraph(),
                            pe::Divide(pe::_1, pe::Const(scale)),
                            {getInTensor(0)},
                            prog,
@@ -70,11 +71,11 @@ void IdentityLossGradOpx::grow(poplar::program::Sequence &prog) const {
       throw error("Unsupported reduction type for Loss {}",
                   debugContext().getPathName());
     }
-    popops::zero(graph(),
+    popops::zero(graph().getPoplarGraph(),
                  reference,
                  prog,
                  debugContext("zero_identity_reference_tensor"));
-    popops::addInPlace(graph(),
+    popops::addInPlace(graph().getPoplarGraph(),
                        reference,
                        output,
                        prog,
@@ -91,7 +92,7 @@ void IdentityLossOpx::grow(poplar::program::Sequence &prog) const {
   const poplar::Tensor &inTensor(getInTensor(0));
 
   if (op.getReductionType() == ReductionType::NoReduction) {
-    setOutTensor(0, Opx::cloneNcopy(prog, inTensor));
+    setOutTensor(0, PopOpx::cloneNcopy(prog, inTensor));
   } else {
 
     auto inTensor1D = inTensor.flatten();
@@ -120,7 +121,7 @@ void IdentityLossOpx::grow(poplar::program::Sequence &prog) const {
     // to the reduction
     auto t_scale = getConst(poplar::FLOAT, {}, scale, "scale");
 
-    auto reduction = popops::reduce(graph(),
+    auto reduction = popops::reduce(graph().getPoplarGraph(),
                                     inTensor1D,
                                     {0},
                                     {popops::Operation::ADD, false, t_scale},
@@ -132,7 +133,7 @@ void IdentityLossOpx::grow(poplar::program::Sequence &prog) const {
 }
 
 IdentityLossGradOpx::IdentityLossGradOpx(Op *op, Devicex *devicex)
-    : Opx(op, devicex) {
+    : PopOpx(op, devicex) {
   verifyOp<IdentityLossGradOp>(op, Onnx::GradOperators::IdentityLossGrad);
 }
 

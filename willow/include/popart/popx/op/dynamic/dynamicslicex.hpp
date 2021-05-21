@@ -3,12 +3,12 @@
 #define GUARD_NEURALNET_DYNAMICSLICEX_HPP
 
 #include <popart/names.hpp>
-#include <popart/popx/opx.hpp>
+#include <popart/popx/popopx.hpp>
 
 namespace popart {
 namespace popx {
 
-class DynamicSliceOpx : public Opx {
+class DynamicSliceOpx : public PopOpx {
 public:
   DynamicSliceOpx(Op *, Devicex *);
   void grow(poplar::program::Sequence &) const final;

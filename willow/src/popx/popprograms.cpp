@@ -12,8 +12,9 @@
 #include <popart/popx/irlowering.hpp>
 #include <popart/popx/popprograms.hpp>
 
-#include <poplar/Graph.hpp>
 #include <poplar/Program.hpp>
+
+#include <snap/Graph.hpp>
 
 namespace popart {
 namespace popx {
@@ -486,9 +487,9 @@ PopPrograms::getFullProgramFromPipelineFragments() const {
   std::map<PipelineStage, poplar::Function> mainFunctions;
 
   for (auto &stage_seq : pipelineSeqs.at(PipelineFragmentId::Main)) {
-    mainFunctions.insert(
-        {stage_seq.first,
-         ir_lowering_p->graph().addFunction(stage_seq.second)});
+    mainFunctions.insert({stage_seq.first,
+                          ir_lowering_p->graph().getPoplarGraph().addFunction(
+                              stage_seq.second)});
   }
 
   poplar::program::Sequence fill({}, {"fill"});
@@ -721,10 +722,10 @@ void PopPrograms::createFragment(const Graph &graph,
 
 std::vector<poplar::Function> &
 PopPrograms::getFragmentFunctions(const Graph &graph,
-                                  poplar::Graph &poplarGraph) {
+                                  snap::Graph &snapGraph) {
 
   auto seq2func = [&](poplar::program::Sequence &seq) {
-    return poplarGraph.addFunction(seq);
+    return snapGraph.getPoplarGraph().addFunction(seq);
   };
 
   auto funcsIt = funcs.find(graph.id.str());
@@ -746,9 +747,9 @@ PopPrograms::getFragmentFunctions(const Graph &graph,
 poplar::Function &
 PopPrograms::getFragmentFunction(const Graph &graph,
                                  SubgraphPartIndex subgraphPart,
-                                 poplar::Graph &poplarGraph) {
+                                 snap::Graph &snapGraph) {
 
-  auto &funcs = getFragmentFunctions(graph, poplarGraph);
+  auto &funcs = getFragmentFunctions(graph, snapGraph);
 
   if (subgraphPart >= funcs.size()) {
     throw error("There is no scope fragment for {}, part {}",

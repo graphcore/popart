@@ -2,7 +2,7 @@
 #ifndef GUARD_NEURALNET_CONVBASEX_HPP
 #define GUARD_NEURALNET_CONVBASEX_HPP
 
-#include <popart/popx/opx.hpp>
+#include <popart/popx/popopx.hpp>
 
 namespace popart {
 
@@ -10,14 +10,13 @@ namespace popart {
 
 namespace popx {
 
-class MultiConvBaseOpx : public Opx {
+class MultiConvBaseOpx : public PopOpx {
 public:
-  MultiConvBaseOpx(Op *op, Devicex *dv) : Opx(op, dv) {}
+  MultiConvBaseOpx(Op *op, Devicex *dv) : PopOpx(op, dv) {}
   poplar::Tensor createInput(InIndex index,
                              const poplar::DebugNameAndId &dnai) const final;
   std::set<TensorId> mustExistBeforeCreate(InIndex index0) const final;
   InputCreatorType getInputCreatorType(InIndex) const final;
-  bool createsEquiv(int, const Opx *, int) const final;
   void grow(poplar::program::Sequence &) const final;
 
   poplar::OptionFlags getConvOptions(int, std::string pass = "") const;
@@ -61,9 +60,9 @@ poplar::Tensor reshapeOnnxWeightsForPoplar(const poplar::Tensor &weights,
                                            std::size_t chansIn,
                                            const ConvParameters &params);
 
-class MultiConvWeightsGradBaseOpx : public Opx {
+class MultiConvWeightsGradBaseOpx : public PopOpx {
 public:
-  MultiConvWeightsGradBaseOpx(Op *op, Devicex *dv) : Opx(op, dv) {}
+  MultiConvWeightsGradBaseOpx(Op *op, Devicex *dv) : PopOpx(op, dv) {}
   void grow(poplar::program::Sequence &) const final;
   virtual std::vector<poplar::Tensor>
   calculateWeightDeltas(poplar::program::Sequence &) const {

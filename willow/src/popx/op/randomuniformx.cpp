@@ -7,7 +7,7 @@ namespace popart {
 namespace popx {
 
 RandomUniformOpx::RandomUniformOpx(Op *op, Devicex *devicex)
-    : Opx(op, devicex) {
+    : PopOpx(op, devicex) {
   verifyOp<RandomUniformOp>(op, Onnx::Operators::RandomUniform_1);
 }
 
@@ -17,12 +17,13 @@ void RandomUniformOpx::grow(poplar::program::Sequence &prog) const {
   auto shape      = vXtoY<int64_t, std::size_t>(outputInfo.shape());
   auto poplarType = popType(op.outInfo(op.getOutIndex()));
 
-  auto refTensor = graph().addVariable(poplarType,
-                                       shape,
-                                       poplar::VariableMappingMethod::LINEAR,
-                                       debugContext("refTensor"));
+  auto refTensor = graph().getPoplarGraph().addVariable(
+      poplarType,
+      shape,
+      poplar::VariableMappingMethod::LINEAR,
+      debugContext("refTensor"));
 
-  auto output = poprand::uniform(graph(),
+  auto output = poprand::uniform(graph().getPoplarGraph(),
                                  &getInTensor(op.getSeedInIndex()),
                                  0u,
                                  refTensor,

@@ -14,7 +14,7 @@ namespace popart {
 namespace popx {
 namespace scatterutilx {
 
-poplar::Tensor linspace(poplar::Graph &graph,
+poplar::Tensor linspace(snap::Graph &graph,
                         int left,
                         int right,
                         const poplar::DebugNameAndId &dnai,
@@ -29,10 +29,10 @@ poplar::Tensor linspace(poplar::Graph &graph,
                  values.begin(),
                  [left, increment](int v) { return left + v * increment; });
 
-  auto result = graph.addConstant(
+  auto result = graph.getPoplarGraph().addConstant(
       type, {count}, poplar::ArrayRef<int>(values), {dnai, "count"});
 
-  graph.setTileMapping(result, 0);
+  graph.getPoplarGraph().setTileMapping(result, 0);
 
   return result;
 }
@@ -57,7 +57,7 @@ poplar::Tensor broadcastShape(poplar::Tensor a, poplar::Tensor b) {
 }
 
 void growScatter(poplar::program::Sequence &prog,
-                 poplar::Graph &graph,
+                 snap::Graph &graph,
                  const poplar::Tensor &indices,
                  const poplar::Tensor &replacementValues,
                  const poplar::Tensor &dataToUpdateInPlace,
@@ -102,7 +102,7 @@ void growScatter(poplar::program::Sequence &prog,
 
   auto vectorizedIndices = poplar::concat(indices_mapped, indices.rank());
 
-  popops::scatter(graph,
+  popops::scatter(graph.getPoplarGraph(),
                   dataToUpdateInPlace,
                   vectorizedIndices,
                   replacementValues,
@@ -115,7 +115,7 @@ void growScatter(poplar::program::Sequence &prog,
 }
 
 poplar::Tensor growScatterUpdateGrad(poplar::program::Sequence &prog,
-                                     poplar::Graph &graph,
+                                     snap::Graph &graph,
                                      const poplar::Tensor &gradIn,
                                      const poplar::Tensor &indices,
                                      int64_t axis,
@@ -166,7 +166,7 @@ poplar::Tensor growScatterUpdateGrad(poplar::program::Sequence &prog,
   std::iota(startIndexMap.begin(), startIndexMap.end(), 0);
 
   // Gather the elements from the grad input
-  return popops::gather(graph,
+  return popops::gather(graph.getPoplarGraph(),
                         gradIn,
                         indicesGrid,
                         indexVectorDim,

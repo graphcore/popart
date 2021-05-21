@@ -19,7 +19,7 @@ namespace popart {
 namespace popx {
 
 GradCopyToHostOpx::GradCopyToHostOpx(Op *op, Devicex *devicex)
-    : Opx(op, devicex) {
+    : PopOpx(op, devicex) {
   verifyOp<GradCopyToHostOp>(op, Onnx::CustomOperators::GradCopyToHost);
 }
 
@@ -43,7 +43,7 @@ void GradCopyToHostOpx::grow(poplar::program::Sequence &prog) const {
       dv_p->lowering().getAccumulationFactor() == 1) {
     poplar::OptionFlags allReduceOptions = dv_p->lowering().gclOptions;
     allReduceOptions.set("useReplicatedImplementation", "true");
-    weightDeltas = gcl::allReduce(graph(),
+    weightDeltas = gcl::allReduce(graph().getPoplarGraph(),
                                   weightDeltas,
                                   popops::Operation::ADD,
                                   prog,
@@ -56,8 +56,8 @@ void GradCopyToHostOpx::grow(poplar::program::Sequence &prog) const {
     // poplar::RemoteBuffers not supporting stream callbacks. We introduce
     // dummy callbacks from which we can run the copyTo/From-RemoteBuffer
     poplar::Tensor dummyTensor =
-        graph().addVariable(poplar::CHAR, {1}, debugContext());
-    graph().setTileMapping(dummyTensor, 0);
+        graph().getPoplarGraph().addVariable(poplar::CHAR, {1}, debugContext());
+    graph().getPoplarGraph().setTileMapping(dummyTensor, 0);
 
     auto remoteBuffer = dv_p->lowering().getOrCreateHostReduceRemoteBuffer(
         grad_id, inInfo(updater_index), graph());
@@ -79,7 +79,7 @@ void GradCopyToHostOpx::grow(poplar::program::Sequence &prog) const {
 }
 
 GradCopyFromHostOpx::GradCopyFromHostOpx(Op *op, Devicex *devicex)
-    : Opx(op, devicex) {
+    : PopOpx(op, devicex) {
   verifyOp<GradCopyFromHostOp>(op, Onnx::CustomOperators::GradCopyFromHost);
 }
 
@@ -97,9 +97,9 @@ void GradCopyFromHostOpx::grow(poplar::program::Sequence &prog) const {
   if (op_p->getIr().getSessionOptions().hostAllReduceRemoteBuffer) {
     // This is currently a hack
     poplar::Tensor dummyTensor =
-        graph().addVariable(poplar::CHAR, {1}, debugContext());
+        graph().getPoplarGraph().addVariable(poplar::CHAR, {1}, debugContext());
     // TODO: use linear mapper?
-    graph().setTileMapping(dummyTensor, 0);
+    graph().getPoplarGraph().setTileMapping(dummyTensor, 0);
 
     auto remoteBuffer = dv_p->lowering().getOrCreateHostReduceRemoteBuffer(
         grad_id, inInfo(updater_index), graph());

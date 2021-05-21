@@ -2,13 +2,13 @@
 #ifndef GUARD_NEURALNET_IFX_HPP
 #define GUARD_NEURALNET_IFX_HPP
 
-#include <popart/popx/opx.hpp>
+#include <popart/popx/popopx.hpp>
 
 namespace popart {
 
 namespace popx {
 
-class IfOpx : public Opx {
+class IfOpx : public PopOpx {
 public:
   IfOpx(Op *, Devicex *);
   void grow(poplar::program::Sequence &) const final;

@@ -62,9 +62,9 @@
 #include <popart/popx/op/collectives/collectivesx.hpp>
 #include <popart/popx/op/convbasex.hpp>
 #include <popart/popx/op/matmulx.hpp>
-#include <popart/popx/opx.hpp>
 #include <popart/popx/opxmanager.hpp>
 #include <popart/popx/poplaroptionsx.hpp>
+#include <popart/popx/popopx.hpp>
 #include <popart/popx/pritask.hpp>
 #include <popart/recompute.hpp>
 #include <popart/stepio.hpp>
@@ -525,16 +525,17 @@ void IrLowering::instrumentWithHardwareCycleCounter(
     int64_t tileId,
     std::string id) {
   poplar::Tensor cycleCountTensor =
-      poplar::cycleCount(graph(),
+      poplar::cycleCount(graph().getPoplarGraph(),
                          sq,
                          static_cast<unsigned int>(tileId),
                          poplar::SyncType::INTERNAL,
                          cycleCountPrefix());
 
   // Create stream
-  auto st = graph().addDeviceToHostFIFO(cycleCountStreamId(id),
-                                        cycleCountTensor.elementType(),
-                                        cycleCountTensor.numElements());
+  auto st = graph().getPoplarGraph().addDeviceToHostFIFO(
+      cycleCountStreamId(id),
+      cycleCountTensor.elementType(),
+      cycleCountTensor.numElements());
 
   cycleCountIds.push_back(id);
 
@@ -544,34 +545,35 @@ void IrLowering::instrumentWithHardwareCycleCounter(
   progs.cycleCountTensorToHostFragment().add(cyclesToHostStream);
 }
 
-poplar::Tensor IrLowering::getConst(poplar::Graph &graph,
+poplar::Tensor IrLowering::getConst(snap::Graph &graph,
                                     const poplar::Type &type,
                                     const std::vector<size_t> &shape,
                                     double val,
                                     const poplar::DebugContext &debugContext) {
   static unsigned tileCounter = 0;
 
-  auto tensor     = graph.addConstant(type, shape, val, debugContext);
-  auto tilesTotal = graph.getTarget().getTilesPerIPU();
+  auto tensor =
+      graph.getPoplarGraph().addConstant(type, shape, val, debugContext);
+  auto tilesTotal = graph.getPoplarGraph().getTarget().getTilesPerIPU();
   auto tile       = tileCounter % tilesTotal;
   tileCounter++;
 
-  graph.setTileMapping(tensor, tile);
+  graph.getPoplarGraph().setTileMapping(tensor, tile);
   return tensor;
 }
 
 poplar::Tensor
-IrLowering::getScalarVariable(poplar::Graph &graph,
+IrLowering::getScalarVariable(snap::Graph &graph,
                               const poplar::Type &type,
                               const poplar::DebugContext &debugContext) {
   static int tileCounter = -1;
 
-  auto tensor     = graph.addVariable(type, {}, debugContext);
-  auto tilesTotal = graph.getTarget().getTilesPerIPU();
+  auto tensor     = graph.getPoplarGraph().addVariable(type, {}, debugContext);
+  auto tilesTotal = graph.getPoplarGraph().getTarget().getTilesPerIPU();
   auto tile       = (tilesTotal + (tileCounter % tilesTotal)) % tilesTotal;
   tileCounter--;
 
-  graph.setTileMapping(tensor, tile);
+  graph.getPoplarGraph().setTileMapping(tensor, tile);
   return tensor;
 }
 
@@ -612,8 +614,8 @@ bool PipelineInfo::doStage(PipelineCycle pCycle, PipelineStage pStage) const {
   return (doStageLower && doStageUpper);
 }
 
-poplar::Graph &IrLowering::getVirtualGraph(VGraphId virtualGraphIndex,
-                                           TileSet tileSet) {
+snap::Graph &IrLowering::getVirtualGraph(VGraphId virtualGraphIndex,
+                                         TileSet tileSet) {
   if (virtualGraphIndex < 0 || virtualGraphIndex >= virtualGraphs.size()) {
     throw error("Invalid virtual graph index {} ({} available)",
                 virtualGraphIndex,
@@ -636,11 +638,12 @@ poplar::Graph &IrLowering::getVirtualGraph(VGraphId virtualGraphIndex,
 
 std::string IrLowering::getSerializedGraph() const {
   std::stringstream ss;
-  pGraph->serialize(ss, progs.progs(), poplar::SerializationFormat::Binary);
+  pGraph->getPoplarGraph().serialize(
+      ss, progs.progs(), poplar::SerializationFormat::Binary);
   return ss.str();
 }
 
-std::unique_ptr<Opx> IrLowering::createOpx(Op *op) {
+std::unique_ptr<PopOpx> IrLowering::createOpx(Op *op) {
   if (dv_p == nullptr) {
     throw error("IrLowering::setDevice has not been called.");
   }
@@ -650,7 +653,7 @@ std::unique_ptr<Opx> IrLowering::createOpx(Op *op) {
   if (!opx) {
     if (op->opid == Onnx::Operators::Constant_1 ||
         op->opid == Onnx::Operators::Constant_9) {
-      throw internal_error("No Opx for {}", op->opid);
+      throw internal_error("No PopOpx for {}", op->opid);
     } else {
       auto pattern = PreAliasPatternManager::opReplacementPattern(op);
       if (pattern != "") {
@@ -670,7 +673,7 @@ std::unique_ptr<Opx> IrLowering::createOpx(Op *op) {
   return opx;
 }
 
-// The Id of the task which adds a Tensor to a poplar::Graph
+// The Id of the task which adds a Tensor to a snap::Graph
 PriTaskDependency IrLowering::taskWhichCreates(TensorId id) const {
   Tensor *tensor = ir().getTensor(id);
   if (!tensor->hasProducer()) {
@@ -746,8 +749,8 @@ IrLowering::getCreatorEndpoints(const Tensor *startTensor,
 
     // Check if any of the consumers can extend the path
     for (Op *op : tensor->consumers.getOps()) {
-      auto conOpId   = op->id;
-      const Opx *opx = getOpx(conOpId);
+      auto conOpId      = op->id;
+      const PopOpx *opx = getOpx(conOpId);
 
       for (InIndex inIndex : op->input->indices(ir().getTensor(tensor->id))) {
         auto f_create = [&]() {
@@ -1035,15 +1038,18 @@ PriTask IrLowering::initRandomSeed() {
     // Set the seed to the same value for each replica. When combined with
     // Poplar Engine Option "target.deterministicWorkers":"portable" this should
     // ensure the same stochastic rounding on each replica.
-    poprand::setSeed(
-        graph(), seed, 0, prog, logging::format("{}/set", streamedSeedId));
+    poprand::setSeed(graph().getPoplarGraph(),
+                     seed,
+                     0,
+                     prog,
+                     logging::format("{}/set", streamedSeedId));
 
     // After setting the seed, offset the tensor by replication index.
     // This seed will be used for random operations, such as Dropout, and is
     // required to provide distinct behaviour for each replia.
-    auto offset = graph().addReplicationIndexConstant();
-    graph().setTileMapping(offset, 0);
-    popops::addInPlace(graph(), seed[0], offset, prog);
+    auto offset = graph().getPoplarGraph().addReplicationIndexConstant();
+    graph().getPoplarGraph().setTileMapping(offset, 0);
+    popops::addInPlace(graph().getPoplarGraph(), seed[0], offset, prog);
     return seqs;
   };
 
@@ -1062,13 +1068,14 @@ PriTask IrLowering::initRandomSeed() {
 
 PriTask IrLowering::rngStateFromHost() {
   auto rngStateFromHostTask = [this]() {
-    int rngSize = (graph().getTarget().getNumTiles()) *
-                  graph().getTarget().getNumWorkerContexts() * 4;
-    auto streamRngFromHost =
-        graph().addHostToDeviceFIFO("h2d_rngStateTensor",
-                                    poplar::UNSIGNED_INT,
-                                    rngSize,
-                                    poplar::ReplicatedStreamMode::REPLICATE);
+    int rngSize = (graph().getPoplarGraph().getTarget().getNumTiles()) *
+                  graph().getPoplarGraph().getTarget().getNumWorkerContexts() *
+                  4;
+    auto streamRngFromHost = graph().getPoplarGraph().addHostToDeviceFIFO(
+        "h2d_rngStateTensor",
+        poplar::UNSIGNED_INT,
+        rngSize,
+        poplar::ReplicatedStreamMode::REPLICATE);
 
     logging::devicex::debug("Initializing RNG h2d.");
 
@@ -1078,7 +1085,7 @@ PriTask IrLowering::rngStateFromHost() {
                                    rngStateTensor,
                                    false,
                                    {"copyStreamRngStateTensor"}));
-    poplar::setHwSeeds(graph(),
+    poplar::setHwSeeds(graph().getPoplarGraph(),
                        rngStateTensor,
                        seqs.getSequence(&progs.rngStateFromHostFragment()),
                        "RNG set");
@@ -1095,9 +1102,10 @@ PriTask IrLowering::initRngStateTensor() {
   // Add a new tensor to the graph to store the Hw seed
   auto initRngStateTensorTask = [this]() {
     SequenceMap seqs;
-    auto workersPerIPU = graph().getTarget().getNumWorkerContexts();
-    auto numTiles      = graph().getTarget().getNumTiles();
-    rngStateTensor     = graph().addVariable(
+    auto workersPerIPU =
+        graph().getPoplarGraph().getTarget().getNumWorkerContexts();
+    auto numTiles  = graph().getPoplarGraph().getTarget().getNumTiles();
+    rngStateTensor = graph().getPoplarGraph().addVariable(
         poplar::UNSIGNED_INT, {numTiles, workersPerIPU, 4}, {"rngStateTensor"});
     linearMapper.mapTensor(graph(), rngStateTensor);
     return SequenceMap();
@@ -1107,16 +1115,19 @@ PriTask IrLowering::initRngStateTensor() {
 
 PriTask IrLowering::rngStateToHost() {
   auto rngStateToHostTask = [this]() {
-    int rngSize = graph().getTarget().getNumTiles() *
-                  graph().getTarget().getNumWorkerContexts() * 4;
-    auto streamRngToHost = graph().addDeviceToHostFIFO(
+    int rngSize = graph().getPoplarGraph().getTarget().getNumTiles() *
+                  graph().getPoplarGraph().getTarget().getNumWorkerContexts() *
+                  4;
+    auto streamRngToHost = graph().getPoplarGraph().addDeviceToHostFIFO(
         "d2h_rngStateTensor", poplar::UNSIGNED_INT, rngSize);
 
     logging::devicex::debug("Initializing RNG d2h.");
     logging::devicex::debug("RNG size {}", rngSize);
     SequenceMap seqs;
-    rngStateTensor = poplar::getHwSeeds(
-        graph(), seqs.getSequence(&progs.rngStateToHostFragment()), "RNG get");
+    rngStateTensor =
+        poplar::getHwSeeds(graph().getPoplarGraph(),
+                           seqs.getSequence(&progs.rngStateToHostFragment()),
+                           "RNG get");
     seqs.getSequence(&progs.rngStateToHostFragment())
         .add(poplar::program::Copy(
             rngStateTensor, streamRngToHost, false, {"rngStateToHost"}));
@@ -1137,7 +1148,7 @@ void IrLowering::setInitVal(Tensor *tensor, DataType dst) {
   }
 
   auto setValue = [this, tensor](const void *ptr) {
-    graph().setInitialValue<T>(
+    graph().getPoplarGraph().setInitialValue<T>(
         tensors_.get(tensor->id),
         poplar::ArrayRef<T>(static_cast<const T *>(ptr), tensor->info.nelms()));
   };
@@ -1156,7 +1167,7 @@ void IrLowering::setInitVal(Tensor *tensor, DataType dst) {
 // Using specialised poplar function for setting init val for FLOAT16
 void IrLowering::setInitValHalf(Tensor *tensor) {
 
-  graph().setInitialValueHalf(
+  graph().getPoplarGraph().setInitialValueHalf(
       tensors_.get(tensor->id),
       poplar::ArrayRef<uint16_t>(
           static_cast<const uint16_t *>(tensor->tensorData()->data()),
@@ -1294,11 +1305,11 @@ PriTask IrLowering::streamFromHostTask(TensorId streamTensorId,
 
           fromHostStreams.emplace(
               streamTensorId,
-              graph.addHostToDeviceFIFO(h2dId(streamTensorId),
-                                        popType(tensor->info),
-                                        tensor->info.nelms(),
-                                        mode,
-                                        options));
+              graph.getPoplarGraph().addHostToDeviceFIFO(h2dId(streamTensorId),
+                                                         popType(tensor->info),
+                                                         tensor->info.nelms(),
+                                                         mode,
+                                                         options));
 
           ipus.push_back(vgid);
         }
@@ -1330,11 +1341,11 @@ PriTask IrLowering::streamToHostTask(TensorId streamTensorId,
       pToHostStreams = &toHostWeightStreams;
     }
 
-    pToHostStreams->emplace(
-        streamTensorId,
-        graph().addDeviceToHostFIFO(d2hId(streamTensorId, isAnchorStream),
-                                    popType(tensors.front()->info),
-                                    tensors.front()->info.nelms()));
+    pToHostStreams->emplace(streamTensorId,
+                            graph().getPoplarGraph().addDeviceToHostFIFO(
+                                d2hId(streamTensorId, isAnchorStream),
+                                popType(tensors.front()->info),
+                                tensors.front()->info.nelms()));
     return SequenceMap();
   };
 
@@ -1373,10 +1384,10 @@ void IrLowering::createRemoteBuffer(RemoteBufferId id, poplar::Tensor tensor) {
       size,
       repeats);
 
-  remoteBuffers.insert(
-      {id,
-       {graph().addRemoteBuffer(name, type, size, repeats, true),
-        nonstd::optional<poplar::Tensor>(tensor)}});
+  remoteBuffers.insert({id,
+                        {graph().getPoplarGraph().addRemoteBuffer(
+                             name, type, size, repeats, true),
+                         nonstd::optional<poplar::Tensor>(tensor)}});
 }
 
 std::shared_ptr<gcl::CollectiveBalancedReorder>
@@ -1851,7 +1862,7 @@ PriTask IrLowering::opTask(Op *op, double priority, TaskId prevOpTaskId) {
   }
 
   // Add initTensorTask dependencies for externally created output tensors
-  Opx *opx = getOpx(op->id);
+  PopOpx *opx = getOpx(op->id);
   for (auto t_inds : op->output->indicesMap()) {
     if (opx->outputCreatedExternally(t_inds.second.front())) {
       Tensor *tensor = t_inds.first;
@@ -1938,7 +1949,7 @@ PriTask IrLowering::opTask(Op *op, double priority, TaskId prevOpTaskId) {
       seqs.addScopeFragments(progs.scopeFragments(containingGraph));
       // Get the right subgraphPart for op to lower in to.
       auto subgraphPart = subgraphPartitioner->getOpSubgraphPartBegin(op);
-      Opx *opx          = getOpx(op->id);
+      PopOpx *opx       = getOpx(op->id);
       logging::devicex::debug(
           "Creating output tensors for non-main {} in {}, part {}",
           opx->op_p->debugName(),
@@ -1957,7 +1968,8 @@ PriTask IrLowering::opTask(Op *op, double priority, TaskId prevOpTaskId) {
   return {priority, opTaskId(op), deps, f};
 }
 
-void IrLowering::growOpx(Opx *opx, SequenceMap::SequenceInterval seqInterval) {
+void IrLowering::growOpx(PopOpx *opx,
+                         SequenceMap::SequenceInterval seqInterval) {
   logging::devicex::trace("Calling growOpx for Op {} with debugName {}",
                           opx->op_p->str(),
                           opx->op_p->debugName());
@@ -1994,8 +2006,8 @@ void IrLowering::growOpx(Opx *opx, SequenceMap::SequenceInterval seqInterval) {
           // Clone the input tensor with its current values
           // to check if the original input tensor has been modified
           // during opx->grow(seq)
-          auto inTensorClone =
-              graph().clone(inTensor, opx->debugContext("orig"));
+          auto inTensorClone = graph().getPoplarGraph().clone(
+              inTensor, opx->debugContext("orig"));
           seqIt->add(poplar::program::Copy(
               inTensor, inTensorClone, false, opx->debugContext("check")));
           nonModifiedTensors[inputMap.first] =
@@ -2096,7 +2108,7 @@ void IrLowering::growOpx(Opx *opx, SequenceMap::SequenceInterval seqInterval) {
       }
 
       auto check =
-          popops::map(opx->graph(),
+          popops::map(opx->graph().getPoplarGraph(),
                       popops::expr::NotEqual(lhsExpr, rhsExpr),
                       {nonModified.second.first, nonModified.second.second},
                       *seqIt,
@@ -2105,7 +2117,7 @@ void IrLowering::growOpx(Opx *opx, SequenceMap::SequenceInterval seqInterval) {
       auto checkReduced = check.flatten();
       // Convert result to boolean scalar
       if (check.numElements() > 1) {
-        checkReduced = popops::reduce(opx->graph(),
+        checkReduced = popops::reduce(opx->graph().getPoplarGraph(),
                                       checkReduced,
                                       {0},
                                       {popops::Operation::LOGICAL_OR},
@@ -2134,7 +2146,7 @@ void IrLowering::growOpx(Opx *opx, SequenceMap::SequenceInterval seqInterval) {
 }
 
 void IrLowering::opTaskFunc(TaskId taskId, Op *op, SequenceMap &seqs) {
-  Opx *opx                 = getOpx(op->id);
+  PopOpx *opx              = getOpx(op->id);
   ExecutionContext context = op->settings.executionContext;
 
   contextOpRegistry[{context, taskId}].push_back(op);
@@ -2236,7 +2248,7 @@ void IrLowering::opTaskFunc(TaskId taskId, Op *op, SequenceMap &seqs) {
 }
 
 void IrLowering::pipelinedOpTaskFunc(TaskId taskId, Op *op, SequenceMap &seqs) {
-  Opx *opx                 = getOpx(op->id);
+  PopOpx *opx              = getOpx(op->id);
   ExecutionContext context = op->settings.executionContext;
 
   contextOpRegistry[{context, taskId}].push_back(op);
@@ -2393,7 +2405,7 @@ PipelineInfo IrLowering::pipelineInfo() const {
 }
 
 // Floating point settings are not suported on CPU
-void IrLowering::setFloatingPointBehaviour(poplar::Graph &graph) {
+void IrLowering::setFloatingPointBehaviour(snap::Graph &graph) {
 
   if (ir().getSessionOptions().enableFloatingPointChecks) {
     if (deviceInfo->getType() == DeviceType::Ipu) {
@@ -2401,7 +2413,7 @@ void IrLowering::setFloatingPointBehaviour(poplar::Graph &graph) {
       // Not enabling stochasitc rounding, that is done in a seperate call
       poplar::FloatingPointBehaviour behaviour(true, true, true, false, true);
       poplar::setFloatingPointBehaviour(
-          graph, progs.initFragment(), behaviour, "/init");
+          graph.getPoplarGraph(), progs.initFragment(), behaviour, "/init");
     } else {
       logging::devicex::warn(
           "Floating point checks cannot be enabled for non IPU devices");
@@ -2410,14 +2422,14 @@ void IrLowering::setFloatingPointBehaviour(poplar::Graph &graph) {
 }
 
 // Stocastic rounding is only supported on the IPU
-void IrLowering::setStochasticRoundingBehaviour(poplar::Graph &graph) {
+void IrLowering::setStochasticRoundingBehaviour(snap::Graph &graph) {
 
   if (ir().getSessionOptions().enableStochasticRounding) {
     if (deviceInfo->getType() == DeviceType::Ipu) {
       logging::devicex::info("Enabling stochastic rounding");
       bool behaviour = true;
       poplar::setStochasticRounding(
-          graph, progs.initFragment(), behaviour, "/init");
+          graph.getPoplarGraph(), progs.initFragment(), behaviour, "/init");
     } else {
       logging::devicex::warn(
           "Stochastic rounding cannot be enabled for non IPU devices");
@@ -2435,10 +2447,10 @@ void IrLowering::prePlanConvolutions() {
       convOps.push_back(op);
     }
   }
-  std::map<poplar::Graph *, std::vector<Op *>> convGraphsOps;
+  std::map<snap::Graph *, std::vector<Op *>> convGraphsOps;
   for (Op *convOp : convOps) {
-    poplar::Graph &graph = getOpx(convOp->id)->graph();
-    auto it              = convGraphsOps.find(&graph);
+    snap::Graph &graph = getOpx(convOp->id)->graph();
+    auto it            = convGraphsOps.find(&graph);
     if (it == convGraphsOps.end()) {
       convGraphsOps.emplace(&graph, std::vector<Op *>{convOp});
     } else {
@@ -2451,7 +2463,7 @@ void IrLowering::prePlanConvolutions() {
   }
 
   for (const auto &graph_op : convGraphsOps) {
-    poplar::Graph *graph  = graph_op.first;
+    snap::Graph *graph    = graph_op.first;
     std::vector<Op *> ops = graph_op.second;
 
     std::vector<poplin::ConvParams> allConvParams;
@@ -2478,7 +2490,7 @@ void IrLowering::prePlanConvolutions() {
         }
       }
     }
-    const poplar::Target target = graph->getTarget();
+    const poplar::Target target = graph->getPoplarGraph().getTarget();
     std::set<ConvPlanParams> allConvPlanParams;
 
     for (int i = 0; i < allConvParams.size(); i++) {
@@ -2487,7 +2499,8 @@ void IrLowering::prePlanConvolutions() {
       allConvPlanParams.insert(convPlanParams);
     }
 
-    poplin::preplanConvolutions(*graph, allConvPlanParams, dv_p->convCache);
+    poplin::preplanConvolutions(
+        graph->getPoplarGraph(), allConvPlanParams, dv_p->convCache);
   }
 }
 
@@ -2500,10 +2513,10 @@ void IrLowering::prePlanMatMuls() {
       matMulOps.push_back(op);
     }
   }
-  std::map<poplar::Graph *, std::vector<Op *>> matMulGraphsOps;
+  std::map<snap::Graph *, std::vector<Op *>> matMulGraphsOps;
   for (Op *matMulOp : matMulOps) {
-    poplar::Graph &graph = getOpx(matMulOp->id)->graph();
-    auto it              = matMulGraphsOps.find(&graph);
+    snap::Graph &graph = getOpx(matMulOp->id)->graph();
+    auto it            = matMulGraphsOps.find(&graph);
     if (it == matMulGraphsOps.end()) {
       matMulGraphsOps.emplace(&graph, std::vector<Op *>{matMulOp});
     } else {
@@ -2516,7 +2529,7 @@ void IrLowering::prePlanMatMuls() {
   }
 
   for (const auto &graph_op : matMulGraphsOps) {
-    poplar::Graph *graph  = graph_op.first;
+    snap::Graph *graph    = graph_op.first;
     std::vector<Op *> ops = graph_op.second;
 
     std::vector<poplin::MatMulParams> allMatMulParams;
@@ -2534,11 +2547,11 @@ void IrLowering::prePlanMatMuls() {
       // which to generate the MatMulParams.
       // TODO: T31134 we could avoid this by moving the reshaping of inputs into
       // the IR.
-      poplar::Graph dummyGraph(graph->getTarget());
+      snap::Graph dummyGraph(graph->getPoplarGraph().getTarget());
       auto inputType = popType(matMulOp->lhsIn()->info.dataType());
-      auto dummyLhs  = dummyGraph.addVariable(
+      auto dummyLhs  = dummyGraph.getPoplarGraph().addVariable(
           inputType, matMulOp->lhsIn()->info.shape_szt());
-      auto dummyRhs = dummyGraph.addVariable(
+      auto dummyRhs = dummyGraph.getPoplarGraph().addVariable(
           inputType, matMulOp->rhsIn()->info.shape_szt());
 
       auto inputs = MatMulOpx::groupedMatMulInputsFromOpxInputs(
@@ -2556,7 +2569,7 @@ void IrLowering::prePlanMatMuls() {
       allOptionFlags.push_back(opts);
     }
 
-    const poplar::Target *target = &(graph->getTarget());
+    const poplar::Target *target = &(graph->getPoplarGraph().getTarget());
     std::set<MatMulPlanParams> allMatMulPlanParams;
 
     for (int i = 0; i < allMatMulParams.size(); i++) {
@@ -2600,19 +2613,20 @@ void IrLowering::prepareGraph() {
     const auto addCodeletsTimer =
         ir().timePartitionLogger().scopedStopwatch("Adding codelets");
 
-    popops::addCodelets(graph());
-    poplin::addCodelets(graph());
-    popnn::addCodelets(graph());
-    poprand::addCodelets(graph());
+    popops::addCodelets(graph().getPoplarGraph());
+    poplin::addCodelets(graph().getPoplarGraph());
+    popnn::addCodelets(graph().getPoplarGraph());
+    poprand::addCodelets(graph().getPoplarGraph());
 
     // Add custom codelets as per the user provided list of paths. Allow poplar
     // to infer the file type from the extension. Also feed through the compile
     // flags.
     for (auto codelet : ir().getSessionOptions().customCodelets) {
       logging::devicex::info("Adding codelet: {}", codelet);
-      graph().addCodelets(codelet,
-                          poplar::CodeletFileType::Auto,
-                          ir().getSessionOptions().customCodeletCompileFlags);
+      graph().getPoplarGraph().addCodelets(
+          codelet,
+          poplar::CodeletFileType::Auto,
+          ir().getSessionOptions().customCodeletCompileFlags);
     }
   }
 
@@ -2691,8 +2705,8 @@ void IrLowering::prepareGraph() {
   subgraphPartitioner->apply();
 
   if (ir().virtualGraphsEnabled()) {
-    auto numIPUs     = graph().getTarget().getNumIPUs();
-    auto tilesPerIPU = graph().getTarget().getTilesPerIPU();
+    auto numIPUs     = graph().getPoplarGraph().getTarget().getNumIPUs();
+    auto tilesPerIPU = graph().getPoplarGraph().getTarget().getTilesPerIPU();
 
     int numIOTiles = ir().getSessionOptions().numIOTiles;
 
@@ -2714,8 +2728,8 @@ void IrLowering::prepareGraph() {
                     numIOTiles);
       }
 
-      const auto computeTiles =
-          gcl::perIPUTiles(graph(), numIOTiles, tilesPerIPU - numIOTiles, true);
+      const auto computeTiles = gcl::perIPUTiles(
+          graph().getPoplarGraph(), numIOTiles, tilesPerIPU - numIOTiles, true);
 
       std::vector<unsigned> ioTiles;
       ioTiles.reserve(numIOTiles);
@@ -2766,7 +2780,7 @@ void IrLowering::prepareGraph() {
       }
     }
   } else {
-    auto numIPUs = graph().getTarget().getNumIPUs();
+    auto numIPUs = graph().getPoplarGraph().getTarget().getNumIPUs();
     if (numIPUs > 1 &&
         numIPUs != ir().getSessionOptions().replicatedGraphCount) {
       throw error("If virtual graphs are disabled, the replicated graph count "
@@ -2859,7 +2873,7 @@ void IrLowering::prepareGraph() {
       // Separate procedure for subgraph output tensor initTensorTasks
       continue;
     }
-    Opx *opx = getOpx(op->id);
+    PopOpx *opx = getOpx(op->id);
     for (auto t_inds : op->output->indicesMap()) {
       if (opx->outputCreatedExternally(t_inds.second.front())) {
         logging::devicex::trace("Adding {} output initTensorTask for {}",
@@ -3184,13 +3198,13 @@ void IrLowering::prepareGraph() {
   if (ir().getSessionOptions().exportPoplarVertexGraph) {
     std::ofstream strm;
     strm.open("poplar_vertex_graph.dot", std::ios::out);
-    graph().outputVertexGraph(strm, progs.progs());
+    graph().getPoplarGraph().outputVertexGraph(strm, progs.progs());
   }
 
   if (ir().getSessionOptions().exportPoplarComputationGraph) {
     std::ofstream strm;
     strm.open("poplar_compute_graph.dot", std::ios::out);
-    graph().outputComputeGraph(strm, progs.progs());
+    graph().getPoplarGraph().outputComputeGraph(strm, progs.progs());
   }
 
   prepareGraphHasBeenCalled_ = true;
@@ -3250,8 +3264,10 @@ poplar::Executable IrLowering::getExecutable() {
     try {
       logging::devicex::info("Starting Engine compilation");
 
-      auto executable = poplar::compileGraph(
-          graph(), progs.progs(), engineOptions, std::ref(progressLogger));
+      auto executable = poplar::compileGraph(graph().getPoplarGraph(),
+                                             progs.progs(),
+                                             engineOptions,
+                                             std::ref(progressLogger));
 
       logging::devicex::info("Graph compiled");
       return executable;
@@ -3354,7 +3370,7 @@ PriTask IrLowering::fromHostTask(Tensor *tensor,
           tensors_.getView(tensor->id).numElements()) {
         // The view is not covering the whole tensor, therefore it is necessary
         // to zero-init it
-        popops::zero(graph(),
+        popops::zero(graph().getPoplarGraph(),
                      tensors_.get(tensor->id),
                      seqs.getSequence(&sq),
                      {"copyFromHost"});
@@ -3468,17 +3484,18 @@ PriTask IrLowering::anchorReturnTypeSumTask(Tensor *tensor,
 
     const auto &poplarTensor     = tensors_.get(tensor->id);
     const TensorId accumulatorId = anchorSumPrefix() + tensor->id;
-    auto accumulatorTensor       = graph().clone(poplarTensor, accumulatorId);
+    auto accumulatorTensor =
+        graph().getPoplarGraph().clone(poplarTensor, accumulatorId);
     tensors_.insertUnsafe(accumulatorId, accumulatorTensor);
 
     logging::devicex::debug("Adding AnchorSum operations to {}", tensor->id);
-    popops::addInPlace(graph(),
+    popops::addInPlace(graph().getPoplarGraph(),
                        accumulatorTensor,
                        poplarTensor,
                        seqs.getSequence(&sq),
                        "AnchorSum_" + tensor->id);
     // Zero the accumulator
-    popops::zero(graph(),
+    popops::zero(graph().getPoplarGraph(),
                  accumulatorTensor,
                  seqs.getSequence(&progs.initFragment()),
                  "AnchorSumZero_" + tensor->id);
@@ -3524,11 +3541,13 @@ PriTask IrLowering::initBatchCounterTensorsTask(poplar::program::Sequence &sq) {
 
       getConst(graph(), poplar::INT, {}, N, "batchCounter");
 
-      poputil::mapTensorLinearly(graph(), batchCountingTensors[N]);
-      poputil::mapTensorLinearly(graph(), batchCountCheckingTensors[N]);
+      poputil::mapTensorLinearly(graph().getPoplarGraph(),
+                                 batchCountingTensors[N]);
+      poputil::mapTensorLinearly(graph().getPoplarGraph(),
+                                 batchCountCheckingTensors[N]);
 
       // Set the initial values of the tensors_.
-      popops::zero(graph(),
+      popops::zero(graph().getPoplarGraph(),
                    batchCountingTensors[N],
                    sq,
                    logging::format("initBatchCountTensors[{}]", N));
@@ -3561,13 +3580,13 @@ PriTask IrLowering::updateBatchCountTask(poplar::program::Sequence &sq) {
     // copy batch
     for (ReturnPeriod N : ir().getDataFlow().rps()) {
       popops::addInPlace(
-          graph(),
+          graph().getPoplarGraph(),
           batchCountingTensors[N],
           getConst(graph(), poplar::INT, {}, 1, "batchCount/one"),
           seqs.getSequence(&sq));
 
       batchCountCheckingTensors[N] =
-          popops::eq(graph(),
+          popops::eq(graph().getPoplarGraph(),
                      batchCountingTensors[N],
                      getConst(graph(), poplar::INT, {}, N, "batchCount/n"),
                      seqs.getSequence(&sq));
@@ -3798,8 +3817,8 @@ void IrLowering::initPoplarGraph() {
                             replicationFactor);
   }
 
-  pGraph.reset(new poplar::Graph(
-      popTarget, poplar::replication_factor(replicationFactor)));
+  pGraph.reset(new snap::Graph(popTarget,
+                               poplar::replication_factor(replicationFactor)));
 }
 
 poplar::Type popType(const TensorInfo &info) {
@@ -3880,11 +3899,11 @@ std::string IrLowering::cycleCountStreamId(std::string id) {
 poplar::RemoteBuffer &
 IrLowering::getOrCreateHostReduceRemoteBuffer(TensorId tensorId,
                                               TensorInfo tensorInfo,
-                                              poplar::Graph &graph) {
+                                              snap::Graph &graph) {
   auto entry = hostReduceRemoteBuffers.find(tensorId);
 
   if (entry == hostReduceRemoteBuffers.end()) {
-    auto remoteBuffer = graph.addRemoteBuffer(
+    auto remoteBuffer = graph.getPoplarGraph().addRemoteBuffer(
         tensorId, popType(tensorInfo), tensorInfo.nelms(), 1, true);
 
     hostReduceRemoteBuffers.emplace(tensorId, remoteBuffer);
@@ -3894,25 +3913,24 @@ IrLowering::getOrCreateHostReduceRemoteBuffer(TensorId tensorId,
   return entry->second;
 }
 
-poplar::DataStream &
-IrLowering::insertGradientStoreStream(TensorId tensorId,
-                                      TensorInfo tensorInfo,
-                                      poplar::Graph &graph) {
+poplar::DataStream &IrLowering::insertGradientStoreStream(TensorId tensorId,
+                                                          TensorInfo tensorInfo,
+                                                          snap::Graph &graph) {
   auto streamMapEntry = toHostGradientStreams.find(tensorId);
 
   if (streamMapEntry == toHostGradientStreams.end()) {
     if (ir().getSessionOptions().hostAllReduceRemoteBuffer) {
       toHostGradientStreams.emplace(
           tensorId,
-          poplar::DataStream(graph.addDeviceToHostFIFO(
+          poplar::DataStream(graph.getPoplarGraph().addDeviceToHostFIFO(
               gradientStoreStreamId(tensorId), poplar::CHAR, 1)));
     } else {
       toHostGradientStreams.emplace(
           tensorId,
-          poplar::DataStream(
-              graph.addDeviceToHostFIFO(gradientStoreStreamId(tensorId),
-                                        popType(tensorInfo),
-                                        tensorInfo.nelms())));
+          poplar::DataStream(graph.getPoplarGraph().addDeviceToHostFIFO(
+              gradientStoreStreamId(tensorId),
+              popType(tensorInfo),
+              tensorInfo.nelms())));
     }
     streamMapEntry = toHostGradientStreams.find(tensorId);
   } else {
@@ -3925,19 +3943,19 @@ IrLowering::insertGradientStoreStream(TensorId tensorId,
 
 poplar::DataStream &IrLowering::insertGradientLoadStream(TensorId tensorId,
                                                          TensorInfo tensorInfo,
-                                                         poplar::Graph &graph) {
+                                                         snap::Graph &graph) {
   auto streamMapEntry = fromHostGradientStreams.find(tensorId);
 
   if (streamMapEntry == fromHostGradientStreams.end()) {
     if (ir().getSessionOptions().hostAllReduceRemoteBuffer) {
       fromHostGradientStreams.emplace(
           tensorId,
-          poplar::DataStream(graph.addHostToDeviceFIFO(
+          poplar::DataStream(graph.getPoplarGraph().addHostToDeviceFIFO(
               gradientLoadStreamId(tensorId), poplar::CHAR, 1)));
     } else {
       fromHostGradientStreams.emplace(
           tensorId,
-          poplar::DataStream(graph.addHostToDeviceFIFO(
+          poplar::DataStream(graph.getPoplarGraph().addHostToDeviceFIFO(
               gradientLoadStreamId(tensorId),
               popType(tensorInfo),
               tensorInfo.nelms(),
@@ -3954,13 +3972,13 @@ poplar::DataStream &IrLowering::insertGradientLoadStream(TensorId tensorId,
 
 poplar::DataStream &IrLowering::insertWeightLoadStream(TensorId tensorId,
                                                        TensorInfo tensorInfo,
-                                                       poplar::Graph &graph) {
+                                                       snap::Graph &graph) {
   auto streamMapEntry = fromHostWeightLoadStreams.find(tensorId);
 
   if (streamMapEntry == fromHostWeightLoadStreams.end()) {
     fromHostWeightLoadStreams.emplace(
         tensorId,
-        poplar::DataStream(graph.addHostToDeviceFIFO(
+        poplar::DataStream(graph.getPoplarGraph().addHostToDeviceFIFO(
             weightLoadStreamId(tensorId),
             popType(tensorInfo),
             tensorInfo.nelms(),

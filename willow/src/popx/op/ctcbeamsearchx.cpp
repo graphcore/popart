@@ -11,7 +11,7 @@
 namespace popart {
 namespace popx {
 CtcBeamSearchDecoderOpx::CtcBeamSearchDecoderOpx(Op *op_, Devicex *devicex)
-    : Opx(op_, devicex), plan(std::make_unique<popnn::ctc::Plan>()) {
+    : PopOpx(op_, devicex), plan(std::make_unique<popnn::ctc::Plan>()) {
   verifyOp<CtcBeamSearchDecoderOp>(op_,
                                    Onnx::CustomOperators::CtcBeamSearchDecoder);
 
@@ -20,7 +20,7 @@ CtcBeamSearchDecoderOpx::CtcBeamSearchDecoderOpx(Op *op_, Devicex *devicex)
       op.input->tensor(CtcBeamSearchDecoderOp::getLogProbsInIndex());
   auto inType = popType(logProbsTensor->info.getDataTypeInfo()->type());
 
-  *plan = popnn::ctc_infer::plan(graph(),
+  *plan = popnn::ctc_infer::plan(graph().getPoplarGraph(),
                                  inType,
                                  op.getBatchSize(),
                                  op.getMaxTime(),
@@ -36,7 +36,7 @@ void CtcBeamSearchDecoderOpx::grow(poplar::program::Sequence &prog) const {
       getInTensor(CtcBeamSearchDecoderOp::getDataLengthsInIndex());
 
   auto result = popnn::ctc_infer::beamSearchDecoderLogProbabilities(
-      graph(),
+      graph().getPoplarGraph(),
       logProbs,
       dataLengths,
       prog,

@@ -10,7 +10,7 @@
 namespace popart {
 namespace popx {
 
-SubgraphOpx::SubgraphOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {}
+SubgraphOpx::SubgraphOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {}
 
 std::vector<std::tuple<TensorId, TensorId, bool>>
 SubgraphOpx::getInputsToPrepare() const {

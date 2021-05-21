@@ -44,7 +44,7 @@ void MinOpx::grow(poplar::program::Sequence &prog) const {
   if (op_p->input->n() > 1) {
 
     for (int i = 1; i < op_p->input->n(); ++i) {
-      outTensor = popops::map(graph(),
+      outTensor = popops::map(graph().getPoplarGraph(),
                               popops::expr::BinaryOpType::MINIMUM,
                               outTensor,
                               getInTensor(i),
@@ -57,7 +57,8 @@ void MinOpx::grow(poplar::program::Sequence &prog) const {
   setOutTensor(MinOp::getOutIndex(), outTensor);
 }
 
-MinArgGradOpx::MinArgGradOpx(Op *op_, Devicex *devicex_) : Opx(op_, devicex_) {}
+MinArgGradOpx::MinArgGradOpx(Op *op_, Devicex *devicex_)
+    : PopOpx(op_, devicex_) {}
 
 void MinArgGradOpx::grow(poplar::program::Sequence &prog) const {
 
@@ -71,7 +72,7 @@ void MinArgGradOpx::grow(poplar::program::Sequence &prog) const {
   // 3. Add 1 to the result to give a mask tensor
   // 4. Multiply by the gradient tensor.
   auto result = popops::map(
-      graph(),
+      graph().getPoplarGraph(),
       pe::Mul(pe::Add(pe::Signum(pe::Sub(pe::_1, pe::_2)), pe::Const(1)),
               pe::_3),
       {getInTensor(MinArgGradOp::getFwdOutInIndex()),
@@ -89,7 +90,7 @@ void MinArgGradOpx::grow(poplar::program::Sequence &prog) const {
 
   // Remove axes from the result that were not present ( or 1) in the input to
   // the fwd op
-  auto out = popops::reduce(graph(),
+  auto out = popops::reduce(graph().getPoplarGraph(),
                             result,
                             vXtoY<int64_t, std::size_t>(axes),
                             {popops::Operation::ADD},

@@ -25,7 +25,7 @@ PadOpx::PadOpx(Op *op, Devicex *devicex) : BasePadOpx(op, devicex) {
   verifyOp<BasePadOutplaceOp>(op);
 }
 
-BasePadOpx::BasePadOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
+BasePadOpx::BasePadOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
   verifyOp<BasePadOp>(op);
 }
 
@@ -187,7 +187,7 @@ poplar::Tensor BasePadOpx::constantModePadGrow(poplar::Tensor inTensor,
       inTensor = cloneNcopy(s, inTensor);
     }
 
-    return popops::pad(Opx::graph(),
+    return popops::pad(PopOpx::graph().getPoplarGraph(),
                        inTensor,
                        lowerPadding,
                        upperPadding,
@@ -200,7 +200,7 @@ poplar::Tensor BasePadOpx::constantModePadGrow(poplar::Tensor inTensor,
   // Note a tensor has 0 elements iff it has a zero-sized dimension.
   if (inTensor.numElements() == 0) {
     poplar::Tensor outTensor = mk_padded(popops::padding::MappingMethod::NONE);
-    dv_p->lowering().getLinearMapper().mapTensor(Opx::graph(), outTensor);
+    dv_p->lowering().getLinearMapper().mapTensor(PopOpx::graph(), outTensor);
     return outTensor;
   }
 
@@ -209,7 +209,7 @@ poplar::Tensor BasePadOpx::constantModePadGrow(poplar::Tensor inTensor,
   // need to cloneNcopy it.
   const auto propitious = getPropitiousPadLayout();
   if (propitious.first) {
-    auto outTensor    = graph().clone(propitious.second);
+    auto outTensor    = graph().getPoplarGraph().clone(propitious.second);
     auto chisseledDst = getChisseled(outTensor);
     s.add(poplar::program::Copy(
         inTensor, chisseledDst.core, false, debugContext()));
@@ -220,7 +220,7 @@ poplar::Tensor BasePadOpx::constantModePadGrow(poplar::Tensor inTensor,
       x = x.flatten();
     }
     auto cat = poplar::concat(allPads, 0);
-    popops::zero(graph(), cat, s, debugContext("zero"));
+    popops::zero(graph().getPoplarGraph(), cat, s, debugContext("zero"));
     return outTensor;
   }
 
@@ -272,13 +272,13 @@ poplar::Tensor BasePadOpx::padGrow(poplar::Tensor inTensor,
 }
 
 void PadOpx::grow(poplar::program::Sequence &prog) const {
-  auto in0    = Opx::getInTensor(BasePadOp::getInIndex());
+  auto in0    = PopOpx::getInTensor(BasePadOp::getInIndex());
   auto padded = padGrow(in0, prog, false);
   setOutTensor(BasePadOp::getOutIndex(), padded);
 }
 
 void PadInplaceOpx::grow(poplar::program::Sequence &prog) const {
-  auto in0    = Opx::getInTensor(BasePadOp::getInIndex());
+  auto in0    = PopOpx::getInTensor(BasePadOp::getInIndex());
   auto padded = padGrow(in0, prog, true);
   setOutTensor(BasePadOp::getOutIndex(), padded);
 }

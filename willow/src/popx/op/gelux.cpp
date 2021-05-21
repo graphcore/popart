@@ -22,7 +22,7 @@ GeluOpx::GeluOpx(Op *op, Devicex *devicex)
 }
 
 poplar::Tensor GeluComputex::outplace(poplar::program::Sequence &prog,
-                                      poplar::Graph &graph,
+                                      snap::Graph &graph,
                                       const poplar::Tensor &tensor,
                                       const poplar::DebugNameAndId &dnai,
                                       const std::string &debug_prefix) const {
@@ -32,12 +32,15 @@ poplar::Tensor GeluComputex::outplace(poplar::program::Sequence &prog,
 }
 
 void GeluComputex::inplace(poplar::program::Sequence &prog,
-                           poplar::Graph &graph,
+                           snap::Graph &graph,
                            const poplar::Tensor &tensor,
                            const poplar::DebugNameAndId &dnai,
                            const std::string &debug_prefix) const {
-  popnn::nonLinearityInPlace(
-      graph, popnn::NonLinearityType::GELU, tensor, prog, {dnai, debug_prefix});
+  popnn::nonLinearityInPlace(graph.getPoplarGraph(),
+                             popnn::NonLinearityType::GELU,
+                             tensor,
+                             prog,
+                             {dnai, debug_prefix});
 }
 
 GeluInplaceOpx::GeluInplaceOpx(Op *op, Devicex *devicex)
@@ -45,7 +48,7 @@ GeluInplaceOpx::GeluInplaceOpx(Op *op, Devicex *devicex)
   verifyOp<GeluInplaceOp>(op, Onnx::CustomOperators::GeluInplace);
 }
 
-GeluGradOpx::GeluGradOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
+GeluGradOpx::GeluGradOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
   verifyOp<GeluGradOp>(op, Onnx::GradOperators::GeluGrad);
 }
 
@@ -54,9 +57,9 @@ void GeluGradOpx::grow(poplar::program::Sequence &prog) const {
   const auto input = getInTensor(GeluGradOp::getFwdArgInIndex());
 
   auto gradRearranged = popops::rearrange::regroupIfBeneficial(
-      graph(), grad, input, prog, debugContext("regroup"));
+      graph().getPoplarGraph(), grad, input, prog, debugContext("regroup"));
 
-  auto output = popnn::nonLinearityInputGradient(graph(),
+  auto output = popnn::nonLinearityInputGradient(graph().getPoplarGraph(),
                                                  popnn::NonLinearityType::GELU,
                                                  input,
                                                  gradRearranged,

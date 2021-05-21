@@ -18,7 +18,7 @@ namespace popart {
 namespace popx {
 
 ReduceLogSumExpOpx::ReduceLogSumExpOpx(Op *op, Devicex *devicex)
-    : Opx(op, devicex) {
+    : PopOpx(op, devicex) {
   verifyOp<ReduceLogSumExpOp>(op);
 }
 
@@ -27,7 +27,7 @@ void ReduceLogSumExpOpx::grow(poplar::program::Sequence &prog) const {
   const auto input     = getInTensor(ReduceLogSumExpOp::getInIndex());
   const auto new_shape = vector_cast<std::size_t>(op.backwardShape());
 
-  auto maxval           = popops::reduce(graph(),
+  auto maxval           = popops::reduce(graph().getPoplarGraph(),
                                input,
                                vector_cast<std::size_t>(op.getAxes()),
                                {popops::Operation::MAX},
@@ -43,19 +43,19 @@ void ReduceLogSumExpOpx::grow(poplar::program::Sequence &prog) const {
     }
   }
 
-  auto expinput = popops::map(graph(),
+  auto expinput = popops::map(graph().getPoplarGraph(),
                               pe::Exp(pe::Sub(pe::_1, pe::_2)),
                               {input, broadcast_maxval},
                               prog,
                               debugContext("expinput"));
 
-  auto output_tensor = popops::reduce(graph(),
+  auto output_tensor = popops::reduce(graph().getPoplarGraph(),
                                       expinput,
                                       vector_cast<std::size_t>(op.getAxes()),
                                       {popops::Operation::ADD},
                                       prog,
                                       debugContext("output"));
-  output_tensor      = popops::map(graph(),
+  output_tensor      = popops::map(graph().getPoplarGraph(),
                               pe::Add(pe::Log(pe::_1), pe::_2),
                               {output_tensor, maxval},
                               prog,
@@ -67,7 +67,7 @@ void ReduceLogSumExpOpx::grow(poplar::program::Sequence &prog) const {
 }
 
 ReduceLogSumExpGradOpx::ReduceLogSumExpGradOpx(Op *op, Devicex *devicex)
-    : Opx(op, devicex) {
+    : PopOpx(op, devicex) {
   verifyOp<ReduceLogSumExpGradOp>(op, Onnx::GradOperators::ReduceLogSumExpGrad);
 }
 
@@ -83,7 +83,7 @@ void ReduceLogSumExpGradOpx::grow(poplar::program::Sequence &prog) const {
   output = output.reshape(new_shape);
   scale  = scale.reshape(new_shape);
 
-  auto maxval           = popops::reduce(graph(),
+  auto maxval           = popops::reduce(graph().getPoplarGraph(),
                                fwd_input,
                                vector_cast<std::size_t>(op.getAxes()),
                                {popops::Operation::MAX},
@@ -102,7 +102,7 @@ void ReduceLogSumExpGradOpx::grow(poplar::program::Sequence &prog) const {
   }
 
   output =
-      popops::map(graph(),
+      popops::map(graph().getPoplarGraph(),
                   pe::Mul(pe::Divide(pe::_1, pe::Exp(pe::Sub(pe::_2, pe::_4))),
                           pe::Exp(pe::Sub(pe::_3, pe::_4))),
                   {output, scale, fwd_input, broadcast_maxval},

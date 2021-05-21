@@ -3,7 +3,7 @@
 #define GUARD_NEURALNET_CALLX_HPP
 
 #include <popart/popx/op/subgraphx.hpp>
-#include <popart/popx/opx.hpp>
+#include <popart/popx/popopx.hpp>
 #include <popart/vendored/optional.hpp>
 
 namespace popart {

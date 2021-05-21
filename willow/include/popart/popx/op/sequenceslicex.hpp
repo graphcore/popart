@@ -2,18 +2,18 @@
 #ifndef GUARD_NEURALNET_SEQUENCESLICEX_HPP
 #define GUARD_NEURALNET_SEQUENCESLICEX_HPP
 
-#include <popart/popx/opx.hpp>
+#include <popart/popx/popopx.hpp>
 
 namespace popart {
 namespace popx {
 
-class SequenceSliceOpx : public Opx {
+class SequenceSliceOpx : public PopOpx {
 public:
   SequenceSliceOpx(Op *, Devicex *);
   void grow(poplar::program::Sequence &) const final;
 };
 
-class SequenceSliceInplaceOpx : public Opx {
+class SequenceSliceInplaceOpx : public PopOpx {
 public:
   SequenceSliceInplaceOpx(Op *, Devicex *);
   void grow(poplar::program::Sequence &) const final;

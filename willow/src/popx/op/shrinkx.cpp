@@ -37,7 +37,7 @@ ShrinkOpx::ShrinkOpx(Op *op, Devicex *devicex)
 }
 
 poplar::Tensor ShrinkComputex::outplace(poplar::program::Sequence &prog,
-                                        poplar::Graph &graph,
+                                        snap::Graph &graph,
                                         const poplar::Tensor &tensor,
                                         const poplar::DebugNameAndId &dnai,
                                         const std::string &debug_prefix) const {
@@ -47,12 +47,12 @@ poplar::Tensor ShrinkComputex::outplace(poplar::program::Sequence &prog,
 }
 
 void ShrinkComputex::inplace(poplar::program::Sequence &prog,
-                             poplar::Graph &graph,
+                             snap::Graph &graph,
                              const poplar::Tensor &tensor,
                              const poplar::DebugNameAndId &dnai,
                              const std::string &debug_prefix) const {
   popops::mapInPlace(
-      graph,
+      graph.getPoplarGraph(),
       pe::Select(pe::Add(pe::_1, pe::Const(this->bias())),
                  pe::Select(pe::Sub(pe::_1, pe::Const(this->bias())),
                             pe::Const(0.0f),
@@ -72,7 +72,7 @@ ShrinkInplaceOpx::ShrinkInplaceOpx(Op *op, Devicex *devicex)
   verifyOp<ShrinkInplaceOp>(op, Onnx::CustomOperators::ShrinkInplace);
 }
 
-ShrinkGradOpx::ShrinkGradOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
+ShrinkGradOpx::ShrinkGradOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
   verifyOp<ShrinkGradOp>(op, Onnx::GradOperators::ShrinkGrad);
 }
 
@@ -89,7 +89,7 @@ void ShrinkGradOpx::grow(poplar::program::Sequence &prog) const {
   exprs.push_back(std::make_unique<pe::Mul>(pe::Const(0.5f), *exprs.back()));
   exprs.push_back(std::make_unique<pe::Mul>(pe::_1, *exprs.back()));
 
-  auto output = popops::map(graph(),
+  auto output = popops::map(graph().getPoplarGraph(),
                             *exprs.back(),
                             {input, fwd_input},
                             prog,

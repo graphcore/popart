@@ -18,7 +18,7 @@ namespace pe = popops::expr;
 namespace popart {
 namespace popx {
 
-ReduceMaxOpx::ReduceMaxOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
+ReduceMaxOpx::ReduceMaxOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
   verifyOp<ReduceMaxOp>(op);
 }
 
@@ -26,7 +26,7 @@ void ReduceMaxOpx::grow(poplar::program::Sequence &prog) const {
   const auto &op   = getOp<ReduceMaxOp>();
   const auto input = getInTensor(ReduceMaxOp::getInIndex());
 
-  auto output_tensor = popops::reduce(graph(),
+  auto output_tensor = popops::reduce(graph().getPoplarGraph(),
                                       input,
                                       vector_cast<std::size_t>(op.getAxes()),
                                       {popops::Operation::MAX},
@@ -39,7 +39,7 @@ void ReduceMaxOpx::grow(poplar::program::Sequence &prog) const {
 }
 
 ReduceMaxGradOpx::ReduceMaxGradOpx(Op *op, Devicex *devicex)
-    : Opx(op, devicex) {
+    : PopOpx(op, devicex) {
   verifyOp<ReduceMaxGradOp>(op, Onnx::GradOperators::ReduceMaxGrad);
 }
 
@@ -64,7 +64,7 @@ void ReduceMaxGradOpx::grow(poplar::program::Sequence &prog) const {
   }
 
   output = popops::map(
-      graph(),
+      graph().getPoplarGraph(),
       pe::Mul(pe::Add(pe::Signum(pe::Sub(pe::_2, pe::_1)), pe::Const(1)),
               pe::_3),
       {mask, getInTensor(ReduceMaxGradOp::getFwdInInIndex()), output},

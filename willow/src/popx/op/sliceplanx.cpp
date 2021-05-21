@@ -7,7 +7,7 @@
 namespace popart {
 namespace popx {
 
-popops::SlicePlan createSlicePlan(const poplar::Graph &graph,
+popops::SlicePlan createSlicePlan(const snap::Graph &graph,
                                   const popart::TensorInfo &dataInfo,
                                   const popart::TensorInfo &indicesInfo,
                                   nonstd::optional<size_t> axis) {
@@ -24,8 +24,12 @@ popops::SlicePlan createSlicePlan(const poplar::Graph &graph,
     outputSize = dataInfo.nelms() / numEntries;
   }
 
-  return popops::embedding::plan(
-      graph, popType(dataInfo), numEntries, outputSize, {numLookups}, {});
+  return popops::embedding::plan(graph.getPoplarGraph(),
+                                 popType(dataInfo),
+                                 numEntries,
+                                 outputSize,
+                                 {numLookups},
+                                 {});
 }
 
 } // namespace popx

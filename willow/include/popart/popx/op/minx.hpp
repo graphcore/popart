@@ -22,7 +22,7 @@ public:
   view::RegMap unwindRegion(InIndex, OutIndex) const override;
 };
 
-class MinArgGradOpx : public Opx {
+class MinArgGradOpx : public PopOpx {
 public:
   MinArgGradOpx(Op *, Devicex *);
   void grow(poplar::program::Sequence &) const final;

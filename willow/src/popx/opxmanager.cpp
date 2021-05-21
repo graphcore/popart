@@ -17,7 +17,7 @@ void OpxManager::registerOpx(const OperatorIdentifier &opid,
       std::pair<OperatorIdentifier, OpxFactoryFunc>(opid, func));
 }
 
-std::unique_ptr<Opx> OpxManager::createOpx(Op *op, Devicex *devicex) {
+std::unique_ptr<PopOpx> OpxManager::createOpx(Op *op, Devicex *devicex) {
 
   OpxManager &self = getInstance();
   auto it          = self.factory.find(op->opid);

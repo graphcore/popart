@@ -13,7 +13,7 @@ public:
   HardSigmoidComputex(float _alpha, float _beta) : alpha(_alpha), beta(_beta) {}
 
   void inplace(poplar::program::Sequence &,
-               poplar::Graph &,
+               snap::Graph &,
                const poplar::Tensor &,
                const poplar::DebugNameAndId &,
                const std::string &) const final;
@@ -41,7 +41,7 @@ public:
   HardSigmoidInplaceOpx(Op *, Devicex *);
 };
 
-class HardSigmoidGradOpx : public Opx {
+class HardSigmoidGradOpx : public PopOpx {
 public:
   HardSigmoidGradOpx(Op *, Devicex *);
   void grow(poplar::program::Sequence &) const final;

@@ -14,7 +14,7 @@ LogOpx::LogOpx(Op *op, Devicex *devicex) : ElementWiseUnaryOpx(op, devicex) {
 }
 
 void LogOpx::grow(poplar::program::Sequence &prog) const {
-  auto outTensor = popops::map(graph(),
+  auto outTensor = popops::map(graph().getPoplarGraph(),
                                popops::expr::UnaryOpType::LOGARITHM,
                                getInTensor(LogOp::getInIndex()),
                                prog,
@@ -25,7 +25,7 @@ void LogOpx::grow(poplar::program::Sequence &prog) const {
 
 namespace {
 OpxCreator<LogOpx> logOpxCreator(Onnx::Operators::Log_6);
-OpxCreator<Opx> logGradOpxCreator(
+OpxCreator<PopOpx> logGradOpxCreator(
     Onnx::GradOperators::LogGrad,
     "LogGradOp should be optimised out, \"LogGradOp\" pattern is required");
 } // namespace

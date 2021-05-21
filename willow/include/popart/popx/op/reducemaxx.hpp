@@ -3,18 +3,18 @@
 #define GUARD_NEURALNET_REDUCEMAXX_HPP
 
 #include <popart/names.hpp>
-#include <popart/popx/opx.hpp>
+#include <popart/popx/popopx.hpp>
 
 namespace popart {
 namespace popx {
 
-class ReduceMaxOpx : public Opx {
+class ReduceMaxOpx : public PopOpx {
 public:
   ReduceMaxOpx(Op *, Devicex *);
   void grow(poplar::program::Sequence &) const override;
 };
 
-class ReduceMaxGradOpx : public Opx {
+class ReduceMaxGradOpx : public PopOpx {
 public:
   ReduceMaxGradOpx(Op *, Devicex *);
   void grow(poplar::program::Sequence &) const override;

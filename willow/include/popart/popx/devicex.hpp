@@ -7,11 +7,12 @@
 #include <poplar/DataStream.hpp>
 #include <poplar/DeviceManager.hpp>
 #include <poplar/Engine.hpp>
-#include <poplar/Graph.hpp>
 #include <poplar/IPUModel.hpp>
 #include <poplin/Convolution.hpp>
 #include <poplin/MatMul.hpp>
 #include <poputil/TileMapping.hpp>
+
+#include <snap/Graph.hpp>
 
 #include <popart/aliaszerocopy.hpp>
 #include <popart/devicemanager.hpp>

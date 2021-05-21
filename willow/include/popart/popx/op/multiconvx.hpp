@@ -5,7 +5,7 @@
 #include <popart/names.hpp>
 #include <popart/popx/enigma.hpp>
 #include <popart/popx/op/convbasex.hpp>
-#include <popart/popx/opx.hpp>
+#include <popart/popx/popopx.hpp>
 
 #include <poplin/MultiConvolution.hpp>
 

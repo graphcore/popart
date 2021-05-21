@@ -2,15 +2,16 @@
 #ifndef NEURALNET_GUARD_POPX_OP_SCATTERUTILX_HPP
 #define NEURALNET_GUARD_POPX_OP_SCATTERUTILX_HPP
 
-#include <poplar/Graph.hpp>
 #include <poplar/Tensor.hpp>
+
+#include <snap/Graph.hpp>
 
 namespace popart {
 namespace popx {
 namespace scatterutilx {
 
 // poplin::linspace only supports float or half, this is for int
-poplar::Tensor linspace(poplar::Graph &,
+poplar::Tensor linspace(snap::Graph &,
                         int left,
                         int right,
                         const poplar::DebugNameAndId &dnai,
@@ -28,7 +29,7 @@ poplar::Tensor matchRank(poplar::Tensor, poplar::Tensor, unsigned dim);
 poplar::Tensor broadcastShape(poplar::Tensor, poplar::Tensor);
 
 void growScatter(poplar::program::Sequence &prog,
-                 poplar::Graph &,
+                 snap::Graph &,
                  const poplar::Tensor &indices,
                  const poplar::Tensor &replacementValues,
                  const poplar::Tensor &dataToUpdateInPlace,
@@ -36,7 +37,7 @@ void growScatter(poplar::program::Sequence &prog,
                  const poplar::DebugNameAndId &dnai);
 
 poplar::Tensor growScatterUpdateGrad(poplar::program::Sequence &prog,
-                                     poplar::Graph &graph,
+                                     snap::Graph &graph,
                                      const poplar::Tensor &gradIn,
                                      const poplar::Tensor &indices,
                                      int64_t axis,

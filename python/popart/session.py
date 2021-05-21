@@ -155,7 +155,7 @@ class InferenceSession(_InferenceSessionCore):
     def compileAndExport(self, filename) -> None:
         """Compiles the graph and exports it to the specified file.
 
-        This will form the poplar::Graph and compile the polar::Executable
+        This will form the snap::Graph and compile the polar::Executable
         before exporting the executable and metadata.
 
         Arguments:
@@ -183,7 +183,7 @@ class InferenceSession(_InferenceSessionCore):
     def prepareDevice(self, loadEngine: bool = True) -> None:
         """Prepare the network for execution.
 
-        This will create the ``poplar::Graph`` and ``poplar::Engine``, and set up
+        This will create the ``snap::Graph`` and ``poplar::Engine``, and set up
         ``poplar::Streams``.
 
         Arguments:
@@ -260,7 +260,7 @@ class TrainingSession(_TrainingSessionCore):
     def compileAndExport(self, filename) -> None:
         """Compiles the graph and exports it to the specified file.
 
-        This will form the poplar::Graph and compile the polar::Executable
+        This will form the snap::Graph and compile the polar::Executable
         before exporting the executable and metadata.
 
         Arguments:
@@ -288,7 +288,7 @@ class TrainingSession(_TrainingSessionCore):
     def prepareDevice(self, loadEngine: bool = True) -> None:
         """Prepare the network for execution.
 
-        This will create the ``poplar::Graph`` and ``poplar::Engine``, and set up
+        This will create the ``snap::Graph`` and ``poplar::Engine``, and set up
         ``poplar::Streams``.
 
         Arguments:

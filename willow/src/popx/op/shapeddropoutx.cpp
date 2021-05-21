@@ -12,7 +12,7 @@ namespace popart {
 namespace popx {
 
 ShapedDropoutOpx::ShapedDropoutOpx(Op *op, Devicex *devicex)
-    : Opx(op, devicex) {
+    : PopOpx(op, devicex) {
   verifyOp<ShapedDropoutOp>(op, {Onnx::CustomOperators::ShapedDropout_1});
 }
 
@@ -29,7 +29,7 @@ void ShapedDropoutOpx::grow(poplar::program::Sequence &prog) const {
   double keepProbability   = 1. - static_cast<double>(op.getRatio());
   double scale             = 1. / keepProbability;
   auto shapedDropout =
-      poprand::shapedDropout(graph(),
+      poprand::shapedDropout(graph().getPoplarGraph(),
                              &getInTensor(op.getSeedInIndex()),
                              0u,
                              getInTensor(ShapedDropoutOp::getInIndex()),
@@ -51,10 +51,11 @@ poplar::Tensor ShapedDropoutOpx::getReferenceTensor() const {
   auto poplarType   = popType(inInfo(dbo.getInIndex()));
   auto dropoutShape = vXtoY<int64_t, std::size_t>(dbo.getShape());
 
-  return graph().addVariable(poplarType,
-                             dropoutShape,
-                             poplar::VariableMappingMethod::LINEAR,
-                             debugContext("dropoutShape"));
+  return graph().getPoplarGraph().addVariable(
+      poplarType,
+      dropoutShape,
+      poplar::VariableMappingMethod::LINEAR,
+      debugContext("dropoutShape"));
 }
 
 namespace {

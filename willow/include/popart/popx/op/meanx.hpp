@@ -15,7 +15,7 @@ public:
   void grow(poplar::program::Sequence &) const final;
 };
 
-class MeanArgGradOpx : public Opx {
+class MeanArgGradOpx : public PopOpx {
 public:
   MeanArgGradOpx(Op *, Devicex *);
   void grow(poplar::program::Sequence &) const final;

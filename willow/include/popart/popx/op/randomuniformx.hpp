@@ -4,8 +4,8 @@
 
 #include <popart/names.hpp>
 #include <popart/popx/devicex.hpp>
-#include <popart/popx/opx.hpp>
 #include <popart/popx/opxmanager.hpp>
+#include <popart/popx/popopx.hpp>
 
 #include <poplar/Tensor.hpp>
 
@@ -13,7 +13,7 @@ namespace popart {
 
 namespace popx {
 
-class RandomUniformOpx : public Opx {
+class RandomUniformOpx : public PopOpx {
 public:
   RandomUniformOpx(Op *, Devicex *);
 

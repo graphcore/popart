@@ -6,7 +6,7 @@
 #include <popart/op/conv.hpp>
 #include <popart/popx/enigma.hpp>
 #include <popart/popx/op/convbasex.hpp>
-#include <popart/popx/opx.hpp>
+#include <popart/popx/popopx.hpp>
 
 #include <poplin/Convolution.hpp>
 
@@ -32,7 +32,7 @@ public:
   calculateWeightDeltas(poplar::program::Sequence &) const final;
 };
 
-class ConvFlipWeightsGradOpx : public Opx {
+class ConvFlipWeightsGradOpx : public PopOpx {
 public:
   ConvFlipWeightsGradOpx(Op *, Devicex *);
   void grow(poplar::program::Sequence &) const final;

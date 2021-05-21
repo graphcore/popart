@@ -19,7 +19,7 @@ namespace popart {
 namespace popx {
 
 ReduceSumSquareOpx::ReduceSumSquareOpx(Op *op, Devicex *devicex)
-    : Opx(op, devicex) {
+    : PopOpx(op, devicex) {
   verifyOp<ReduceSumSquareOp>(op);
 }
 
@@ -27,7 +27,7 @@ void ReduceSumSquareOpx::grow(poplar::program::Sequence &prog) const {
   const auto &op   = getOp<ReduceSumSquareOp>();
   const auto input = getInTensor(ReduceSumSquareOp::getInIndex());
 
-  auto output_tensor = popops::reduce(graph(),
+  auto output_tensor = popops::reduce(graph().getPoplarGraph(),
                                       input,
                                       vector_cast<std::size_t>(op.getAxes()),
                                       {popops::Operation::SQUARE_ADD},
@@ -40,7 +40,7 @@ void ReduceSumSquareOpx::grow(poplar::program::Sequence &prog) const {
 }
 
 ReduceSumSquareGradOpx::ReduceSumSquareGradOpx(Op *op, Devicex *devicex)
-    : Opx(op, devicex) {
+    : PopOpx(op, devicex) {
   verifyOp<ReduceSumSquareGradOp>(op, Onnx::GradOperators::ReduceSumSquareGrad);
 }
 
@@ -62,7 +62,7 @@ void ReduceSumSquareGradOpx::grow(poplar::program::Sequence &prog) const {
   }
 
   output = popops::map(
-      graph(),
+      graph().getPoplarGraph(),
       pe::Mul(pe::Mul(pe::_1, pe::_2), pe::Const(2)),
       {output, getInTensor(ReduceSumSquareGradOp::getFwdInInIndex())},
       prog,

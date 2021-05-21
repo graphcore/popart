@@ -6,7 +6,8 @@
 namespace popart {
 namespace popx {
 
-RandomNormalOpx::RandomNormalOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
+RandomNormalOpx::RandomNormalOpx(Op *op, Devicex *devicex)
+    : PopOpx(op, devicex) {
   verifyOp<RandomNormalOp>(op, Onnx::Operators::RandomNormal_1);
 }
 
@@ -16,12 +17,13 @@ void RandomNormalOpx::grow(poplar::program::Sequence &prog) const {
   auto shape      = vXtoY<int64_t, std::size_t>(outputInfo.shape());
   auto poplarType = popType(op.outInfo(op.getOutIndex()));
 
-  auto refTensor = graph().addVariable(poplarType,
-                                       shape,
-                                       poplar::VariableMappingMethod::LINEAR,
-                                       debugContext("refTensor"));
+  auto refTensor = graph().getPoplarGraph().addVariable(
+      poplarType,
+      shape,
+      poplar::VariableMappingMethod::LINEAR,
+      debugContext("refTensor"));
 
-  auto output = poprand::normal(graph(),
+  auto output = poprand::normal(graph().getPoplarGraph(),
                                 &getInTensor(op.getSeedInIndex()),
                                 0u,
                                 refTensor,

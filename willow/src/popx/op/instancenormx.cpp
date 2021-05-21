@@ -45,7 +45,7 @@ void InstanceNormOpx::grow(poplar::program::Sequence &prog) const {
   poplar::Tensor mean;
   poplar::Tensor invStdDev;
   std::tie(mean, invStdDev) =
-      popnn::in::instanceNormStatistics(graph(),
+      popnn::in::instanceNormStatistics(graph().getPoplarGraph(),
                                         input,
                                         epsilon,
                                         prog,
@@ -55,7 +55,7 @@ void InstanceNormOpx::grow(poplar::program::Sequence &prog) const {
                                         debugContext("instanceNormStatistics"));
 
   // Calculate the normalization
-  auto result = popnn::in::instanceNormalise(graph(),
+  auto result = popnn::in::instanceNormalise(graph().getPoplarGraph(),
                                              input,
                                              scale,
                                              b,
@@ -84,7 +84,7 @@ void InstanceNormGradOpx::grow(poplar::program::Sequence &prog) const {
   auto inv_std_dev = getInTensor(InstanceNormGradOp::getInvStdDevInIndex());
 
   auto input_whitened =
-      popnn::in::instanceNormWhiten(graph(),
+      popnn::in::instanceNormWhiten(graph().getPoplarGraph(),
                                     input,
                                     mean,
                                     inv_std_dev,
@@ -92,7 +92,7 @@ void InstanceNormGradOpx::grow(poplar::program::Sequence &prog) const {
                                     debugContext("instanceNormWhiten"));
 
   auto input_grad = popnn::in::instanceNormGradients(
-      graph(),
+      graph().getPoplarGraph(),
       input_whitened,
       out_grad,
       inv_std_dev,
@@ -103,7 +103,7 @@ void InstanceNormGradOpx::grow(poplar::program::Sequence &prog) const {
 
   poplar::Tensor scale_grad, b_grad;
   std::tie(scale_grad, b_grad) = popnn::in::instanceNormParamGradients(
-      graph(),
+      graph().getPoplarGraph(),
       input_whitened,
       out_grad,
       prog,

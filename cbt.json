@@ -3,6 +3,7 @@
     "poprithms",
     "poplar",
     "poplibs",
+    "popir",
     "onnx",
     "pybind11",
     "gcdoc",

@@ -19,7 +19,7 @@ AbsOpx::AbsOpx(Op *op, Devicex *devicex) : ElementWiseUnaryOpx(op, devicex) {
 void AbsOpx::grow(poplar::program::Sequence &prog) const {
 
   setOutTensor(AbsOp::getOutIndex(),
-               popops::map(graph(),
+               popops::map(graph().getPoplarGraph(),
                            popops::expr::UnaryOpType::ABSOLUTE,
                            getInTensor(AbsOp::getInIndex()),
                            prog,

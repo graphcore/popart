@@ -18,7 +18,7 @@ namespace popart {
 namespace popx {
 
 ScatterReduceOpx::ScatterReduceOpx(Op *op, Devicex *devicex)
-    : Opx(op, devicex), plan(), axis() {
+    : PopOpx(op, devicex), plan(), axis() {
   verifyOp<ScatterReduceOp>(op, {Onnx::CustomOperators::ScatterReduce});
 
   auto &srop = getOp<ScatterReduceOp>();
@@ -41,7 +41,7 @@ void ScatterReduceOpx::grow(poplar::program::Sequence &prog) const {
   std::vector<size_t> dims  = {axis};
   std::vector<size_t> sizes = {1};
 
-  auto out = popops::createSliceableTensor(graph(),
+  auto out = popops::createSliceableTensor(graph().getPoplarGraph(),
                                            poplarType,
                                            shape,
                                            dims,
@@ -50,7 +50,8 @@ void ScatterReduceOpx::grow(poplar::program::Sequence &prog) const {
                                            poplar::OptionFlags(),
                                            debugContext("scatterreduceOutput"));
 
-  popops::fill(graph(), out, prog, 0.0f, debugContext("scatterFill"));
+  popops::fill(
+      graph().getPoplarGraph(), out, prog, 0.0f, debugContext("scatterFill"));
 
   // popops::multiUpdateAdd is roughly:
   //   for i indices:
@@ -82,16 +83,16 @@ void ScatterReduceOpx::grow(poplar::program::Sequence &prog) const {
 
     // numCols * indices + colIndices
     indices           = cloneNcopy(prog, indices, "copyIndices");
-    auto numColsConst = graph().addConstant(
+    auto numColsConst = graph().getPoplarGraph().addConstant(
         indices.elementType(), {}, numCols, getDebugNameAndId("numCols"));
-    graph().setTileMapping(numColsConst, 0);
+    graph().getPoplarGraph().setTileMapping(numColsConst, 0);
 
-    popops::mulInPlace(graph(),
+    popops::mulInPlace(graph().getPoplarGraph(),
                        indices,
                        numColsConst,
                        prog,
                        getDebugNameAndId("numColsMulIndices"));
-    popops::addInPlace(graph(),
+    popops::addInPlace(graph().getPoplarGraph(),
                        indices,
                        colIndices,
                        prog,
@@ -108,11 +109,11 @@ void ScatterReduceOpx::grow(poplar::program::Sequence &prog) const {
   indices = indices.expand({1});
   indices = indices.reinterpret(poplar::UNSIGNED_INT);
 
-  auto scale = graph().addConstant(
+  auto scale = graph().getPoplarGraph().addConstant(
       data.elementType(), {}, 1.0f, debugContext("constOne"));
-  graph().setTileMapping(scale, 0);
+  graph().getPoplarGraph().setTileMapping(scale, 0);
 
-  popops::multiUpdateAdd(graph(),
+  popops::multiUpdateAdd(graph().getPoplarGraph(),
                          target,
                          data,
                          indices,
@@ -143,7 +144,7 @@ ScatterReduceOpx::createInput(InIndex index,
     auto dataInfo        = inInfo(ScatterReduceOp::dataInIndex());
     const auto dataShape = dataInfo.shape_szt();
 
-    return popops::createSliceableTensor(graph(),
+    return popops::createSliceableTensor(graph().getPoplarGraph(),
                                          popType(dataInfo),
                                          dataShape,
                                          dims,
@@ -154,9 +155,13 @@ ScatterReduceOpx::createInput(InIndex index,
   }
 
   auto indicesInfo = inInfo(ScatterReduceOp::indicesInIndex());
-  auto indices     = popops::createIndicesTensor(
-      graph(), dims, indicesInfo.nelms(), plan, poplar::OptionFlags(), dnai);
-  indices = indices.reinterpret(popType(indicesInfo));
+  auto indices     = popops::createIndicesTensor(graph().getPoplarGraph(),
+                                             dims,
+                                             indicesInfo.nelms(),
+                                             plan,
+                                             poplar::OptionFlags(),
+                                             dnai);
+  indices          = indices.reinterpret(popType(indicesInfo));
   return indices.reshape(indicesInfo.shape_szt());
 }
 
@@ -166,11 +171,11 @@ InputCreatorType ScatterReduceOpx::getInputCreatorType(InIndex index) const {
     return InputCreatorType::CanCreate;
   }
 
-  return Opx::getInputCreatorType(index);
+  return PopOpx::getInputCreatorType(index);
 }
 
 ScatterReduceGradOpx::ScatterReduceGradOpx(Op *op, Devicex *devicex)
-    : Opx(op, devicex) {
+    : PopOpx(op, devicex) {
   verifyOp<ScatterReduceGradOp>(
       op, {Onnx::CustomGradOperators::ScatterReduceGradOp});
 

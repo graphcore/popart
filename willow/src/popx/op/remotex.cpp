@@ -10,7 +10,7 @@
 namespace popart {
 namespace popx {
 
-RemoteBaseOpx::RemoteBaseOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {}
+RemoteBaseOpx::RemoteBaseOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {}
 
 void RemoteBaseOpx::postLoad(poplar::program::Sequence &prog,
                              RemoteBufferId rbid,
@@ -21,16 +21,16 @@ void RemoteBaseOpx::postLoad(poplar::program::Sequence &prog,
   prog.add(tmp_copy_prog);
 }
 
-void RemoteBaseOpx::preStore(poplar::Graph &sgraph,
+void RemoteBaseOpx::preStore(snap::Graph &sgraph,
                              poplar::program::Sequence &prog,
                              RemoteBufferId rbid,
                              const poplar::Tensor t) const {
   poplar::Tensor rbTensor;
   if (!dv_p->lowering().hasRemoteBuffer(rbid)) {
-    rbTensor =
-        sgraph.clone(t,
-                     debugContext(dv_p->lowering().getRemoteBufferName(rbid)),
-                     poplar::TensorCloneMethod::PRESERVE_ORDER_UNLESS_ALIASES);
+    rbTensor = sgraph.getPoplarGraph().clone(
+        t,
+        debugContext(dv_p->lowering().getRemoteBufferName(rbid)),
+        poplar::TensorCloneMethod::PRESERVE_ORDER_UNLESS_ALIASES);
     dv_p->lowering().createRemoteBuffer(rbid, rbTensor);
   }
   auto buffer = dv_p->lowering().getRemoteBuffer(rbid);
@@ -39,16 +39,16 @@ void RemoteBaseOpx::preStore(poplar::Graph &sgraph,
   prog.add(tmp_copy_prog);
 }
 
-poplar::Tensor RemoteBaseOpx::makeWritable(poplar::Graph &sgraph,
+poplar::Tensor RemoteBaseOpx::makeWritable(snap::Graph &sgraph,
                                            poplar::Tensor t,
                                            RemoteBufferId rbid,
                                            TensorId id) const {
   poplar::Tensor rbTensor;
   if (!dv_p->lowering().hasRemoteBuffer(rbid)) {
-    rbTensor =
-        sgraph.clone(t,
-                     debugContext(dv_p->lowering().getRemoteBufferName(rbid)),
-                     poplar::TensorCloneMethod::PRESERVE_ORDER_UNLESS_ALIASES);
+    rbTensor = sgraph.getPoplarGraph().clone(
+        t,
+        debugContext(dv_p->lowering().getRemoteBufferName(rbid)),
+        poplar::TensorCloneMethod::PRESERVE_ORDER_UNLESS_ALIASES);
     dv_p->lowering().createRemoteBuffer(rbid, rbTensor);
   }
   auto buffer = dv_p->lowering().getRemoteBuffer(rbid);
@@ -58,16 +58,16 @@ poplar::Tensor RemoteBaseOpx::makeWritable(poplar::Graph &sgraph,
                        "copy target, cloning. "
                        "The aliasing properties have changed implicitly.",
                        id);
-    poplar::Tensor tw =
-        sgraph.clone(rbTensor,
-                     debugContext(id + "_Writable"),
-                     poplar::TensorCloneMethod::PRESERVE_ORDER_AND_ALIASES);
+    poplar::Tensor tw = sgraph.getPoplarGraph().clone(
+        rbTensor,
+        debugContext(id + "_Writable"),
+        poplar::TensorCloneMethod::PRESERVE_ORDER_AND_ALIASES);
     return tw;
   }
   return t;
 }
 
-void RemoteBaseOpx::load(poplar::Graph &sgraph,
+void RemoteBaseOpx::load(snap::Graph &sgraph,
                          poplar::program::Sequence &prog,
                          RemoteBufferId rbid,
                          poplar::Tensor t,
@@ -75,10 +75,10 @@ void RemoteBaseOpx::load(poplar::Graph &sgraph,
   poplar::Tensor rbTensor;
 
   if (!dv_p->lowering().hasRemoteBuffer(rbid)) {
-    rbTensor =
-        sgraph.clone(t,
-                     debugContext(dv_p->lowering().getRemoteBufferName(rbid)),
-                     poplar::TensorCloneMethod::PRESERVE_ORDER_UNLESS_ALIASES);
+    rbTensor = sgraph.getPoplarGraph().clone(
+        t,
+        debugContext(dv_p->lowering().getRemoteBufferName(rbid)),
+        poplar::TensorCloneMethod::PRESERVE_ORDER_UNLESS_ALIASES);
     dv_p->lowering().createRemoteBuffer(rbid, rbTensor);
   }
 
@@ -183,7 +183,7 @@ void RemoteLoadOpx::grow(poplar::program::Sequence &prog) const {
 InputCreatorType RemoteLoadOpx::getInputCreatorType(InIndex index) const {
   return index == RemoteLoadOp::getLocalTensorInIndex()
              ? InputCreatorType::CanUnwind
-             : Opx::getInputCreatorType(index);
+             : PopOpx::getInputCreatorType(index);
 }
 
 poplar::Tensor RemoteLoadOpx::unwindTensorLayout(poplar::Tensor tensor,
@@ -203,8 +203,9 @@ RemoteExchangeOpx::RemoteExchangeOpx(Op *op, Devicex *devicex)
 
 InputCreatorType RemoteExchangeOpx::getInputCreatorType(InIndex index) const {
   auto &remoteExchangeOp = getOp<RemoteExchangeOp>();
-  return index < remoteExchangeOp.numLoads() ? InputCreatorType::CanUnwind
-                                             : Opx::getInputCreatorType(index);
+  return index < remoteExchangeOp.numLoads()
+             ? InputCreatorType::CanUnwind
+             : PopOpx::getInputCreatorType(index);
 }
 
 bool RemoteExchangeOpx::canUnwind(InIndex in, OutIndex out) const {
@@ -329,7 +330,7 @@ void RemoteExchangeOpx::grow(poplar::program::Sequence &prog) const {
   }
 }
 
-poplar::Graph &RemoteExchangeOpx::inGraph(InIndex in) const {
+snap::Graph &RemoteExchangeOpx::inGraph(InIndex in) const {
   if (op_p->getIr().virtualGraphsEnabled()) {
     auto &remoteExchangeOp = getOp<RemoteExchangeOp>();
     auto vgid = remoteExchangeOp.getIntrospectionInVirtualGraphId(in);
@@ -339,7 +340,7 @@ poplar::Graph &RemoteExchangeOpx::inGraph(InIndex in) const {
   }
 }
 
-poplar::Graph &RemoteExchangeOpx::outGraph(OutIndex out) const {
+snap::Graph &RemoteExchangeOpx::outGraph(OutIndex out) const {
   if (op_p->getIr().virtualGraphsEnabled()) {
     auto &remoteExchangeOp = getOp<RemoteExchangeOp>();
     auto vgid = remoteExchangeOp.getIntrospectionInVirtualGraphId(out);

@@ -9,11 +9,12 @@
 #include <poplar/DataStream.hpp>
 #include <poplar/DeviceManager.hpp>
 #include <poplar/Engine.hpp>
-#include <poplar/Graph.hpp>
 #include <poplar/IPUModel.hpp>
 #include <poplin/Convolution.hpp>
 #include <poplin/MatMul.hpp>
 #include <poputil/TileMapping.hpp>
+
+#include <snap/Graph.hpp>
 
 #include <popart/aliaszerocopy.hpp>
 #include <popart/devicemanager.hpp>
@@ -65,9 +66,9 @@ public:
 
 using PopStreamId = std::string;
 
-class Opx;
 class CollectiveBalancedHostRearrangement;
 class Devicex;
+class PopOpx;
 
 enum class ToHostStreamType { NonAnchor, NonSumAnchor, SumAnchor };
 
@@ -135,7 +136,7 @@ private:
 class IrLowering {
 private:
   const Ir &_ir;
-  std::unique_ptr<poplar::Graph> pGraph{nullptr};
+  std::unique_ptr<snap::Graph> pGraph{nullptr};
 
   std::vector<VirtualGraph> virtualGraphs;
 
@@ -304,7 +305,7 @@ private:
   PriTask opTask(Op *, double priority, TaskId prevOpTaskId);
   void opTaskFunc(TaskId taskId, Op *, SequenceMap &seqs);
   void pipelinedOpTaskFunc(TaskId taskId, Op *, SequenceMap &seqs);
-  void growOpx(Opx *, SequenceMap::SequenceInterval seqInterval);
+  void growOpx(PopOpx *, SequenceMap::SequenceInterval seqInterval);
 
   static TaskId opTaskId(Op *);
 
@@ -328,8 +329,8 @@ private:
   void setInitVal(Tensor *tensor, DataType dstType = DataType::UNDEFINED);
   void setInitValHalf(Tensor *tensor);
 
-  void setFloatingPointBehaviour(poplar::Graph &graph);
-  void setStochasticRoundingBehaviour(poplar::Graph &graph);
+  void setFloatingPointBehaviour(snap::Graph &graph);
+  void setStochasticRoundingBehaviour(snap::Graph &graph);
 
   using ConvPlanParams   = std::tuple<const poplar::Target *,
                                     const poplin::ConvParams,
@@ -397,17 +398,17 @@ public:
                                           int64_t tileId = 0,
                                           std::string id = "");
 
-  poplar::Graph &graph() {
+  snap::Graph &graph() {
     if (pGraph == nullptr) {
       throw error(
-          "poplar::Graph is null when the lowering state is deserialized");
+          "snap::Graph is null when the lowering state is deserialized");
     }
     return *pGraph;
   }
-  const poplar::Graph &graph() const {
+  const snap::Graph &graph() const {
     if (pGraph == nullptr) {
       throw error(
-          "poplar::Graph is null when the lowering state is deserialized");
+          "snap::Graph is null when the lowering state is deserialized");
     }
     return *pGraph;
   }
@@ -429,11 +430,11 @@ public:
 
   // Return virtual graph mapping to IPU virtualGraphIndex,
   // ioTileGraph selects between compute and IO tile graph.
-  poplar::Graph &getVirtualGraph(VGraphId virtualGraphIndex,
-                                 TileSet tileSet = TileSet::Compute);
+  snap::Graph &getVirtualGraph(VGraphId virtualGraphIndex,
+                               TileSet tileSet = TileSet::Compute);
 
   // Return the name of the task which initializes/creates a poplar::Tensor in a
-  // poplar::Graph. This is NOT about creating a poplar::Program.
+  // snap::Graph. This is NOT about creating a poplar::Program.
   PriTaskDependency taskWhichCreates(TensorId) const;
 
   // Return the name of the task which adds code which sets the initial
@@ -476,15 +477,15 @@ public:
 
   // A forward search of graph:
   //   - from inputs of the graph
-  //   - to Opxs with optimised poplar calls to create the tensor,
-  //     or to Opxs that destroy layout information of the input
+  //   - to PopOpxs with optimised poplar calls to create the tensor,
+  //     or to PopOpxs that destroy layout information of the input
   //     tensor on the output
-  //   - traversing through Opxs that cannot create the tensor
+  //   - traversing through PopOpxs that cannot create the tensor
   //     themselves, but preserve layout information from input
   //     to output tensor
   //   - tracking the route taken through the graph to the endpoints
   // Using the default arguments will return only creator candidates,
-  // with each candidate's path containing only Opxs that need to be
+  // with each candidate's path containing only PopOpxs that need to be
   // 'unwound' to correctly lay out the input tensor
   std::vector<ICreatorCandidatePtr>
   getCreatorEndpoints(const Tensor *tensor,
@@ -495,7 +496,7 @@ public:
   // Will throw an error if multiple candidates that do not agree are found
   std::vector<ICreatorCandidatePtr> getTensorCreators(Tensor *tensor) const;
 
-  poplar::Tensor getConst(poplar::Graph &graph,
+  poplar::Tensor getConst(snap::Graph &graph,
                           const poplar::Type &type,
                           const std::vector<size_t> &shape,
                           double val,
@@ -515,7 +516,7 @@ public:
     return collectiveReorders;
   }
 
-  poplar::Tensor getScalarVariable(poplar::Graph &graph,
+  poplar::Tensor getScalarVariable(snap::Graph &graph,
                                    const poplar::Type &type,
                                    const poplar::DebugContext &dc = {});
 
@@ -535,14 +536,14 @@ public:
 
   const DeviceInfo *getDeviceInfo() { return deviceInfo.get(); }
 
-  std::unique_ptr<Opx> createOpx(Op *);
+  std::unique_ptr<PopOpx> createOpx(Op *);
 
   // 1-to-1 mapping between Ops and Opxs
-  std::map<OpId, std::unique_ptr<Opx>> opxs;
+  std::map<OpId, std::unique_ptr<PopOpx>> opxs;
 
-  Opx *getOpx(OpId id) { return opxs.at(id).get(); }
+  PopOpx *getOpx(OpId id) { return opxs.at(id).get(); }
 
-  const Opx *getOpx(OpId id) const { return opxs.at(id).get(); }
+  const PopOpx *getOpx(OpId id) const { return opxs.at(id).get(); }
 
   // Some functions useful for logging the order in which Ops are used to
   // generate poplar code / recomputed.
@@ -587,13 +588,13 @@ public:
   void createRemoteBuffer(RemoteBufferId, poplar::Tensor);
 
   poplar::RemoteBuffer &
-  getOrCreateHostReduceRemoteBuffer(TensorId, TensorInfo, poplar::Graph &);
+  getOrCreateHostReduceRemoteBuffer(TensorId, TensorInfo, snap::Graph &);
   poplar::DataStream &
-  insertGradientStoreStream(TensorId, TensorInfo, poplar::Graph &);
+  insertGradientStoreStream(TensorId, TensorInfo, snap::Graph &);
   poplar::DataStream &
-  insertGradientLoadStream(TensorId, TensorInfo, poplar::Graph &);
+  insertGradientLoadStream(TensorId, TensorInfo, snap::Graph &);
   poplar::DataStream &
-  insertWeightLoadStream(TensorId, TensorInfo, poplar::Graph &);
+  insertWeightLoadStream(TensorId, TensorInfo, snap::Graph &);
 
   const std::vector<TensorId> &getHostReduceStreamIds() const;
   std::vector<TensorId> &getHostReduceStreamIds();

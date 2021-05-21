@@ -17,8 +17,9 @@ BOOST_AUTO_TEST_CASE(SyncPatternTest_0) {
 
   if (deviceInfo0) {
     DevicexInfo &di0 = dynamic_cast<DevicexInfo &>(*deviceInfo0);
-    poplar::Graph graph(di0.getDevice().getTarget());
-    auto exe = poplar::compileGraph(graph, {poplar::program::Sequence()});
+    snap::Graph graph(di0.getDevice().getTarget());
+    auto exe = poplar::compileGraph(graph.getPoplarGraph(),
+                                    {poplar::program::Sequence()});
     poplar::Engine engine(std::move(exe));
     engine.load(di0.getDevice());
     engine.run();
@@ -35,8 +36,9 @@ BOOST_AUTO_TEST_CASE(SyncPatternTest_1) {
   if (deviceInfo0 && deviceInfo1) {
     DevicexInfo &di0 = dynamic_cast<DevicexInfo &>(*deviceInfo0);
     DevicexInfo &di1 = dynamic_cast<DevicexInfo &>(*deviceInfo1);
-    poplar::Graph graph(di0.getDevice().getTarget());
-    auto exe = poplar::compileGraph(graph, {poplar::program::Sequence()});
+    snap::Graph graph(di0.getDevice().getTarget());
+    auto exe = poplar::compileGraph(graph.getPoplarGraph(),
+                                    {poplar::program::Sequence()});
     poplar::Engine engine(std::move(exe));
     // Will throw a  'Attempt to load graph compiled with target options
     // {{IpuLinkConfiguration: 0}, {SyncConfiguration: 1}} onto a device with
@@ -57,8 +59,9 @@ BOOST_AUTO_TEST_CASE(SyncPatternTest_2) {
 
   if (deviceInfo0) {
     DevicexInfo &di0 = dynamic_cast<DevicexInfo &>(*deviceInfo0);
-    poplar::Graph graph(di0.getDevice().getTarget());
-    auto exe = poplar::compileGraph(graph, {poplar::program::Sequence()});
+    snap::Graph graph(di0.getDevice().getTarget());
+    auto exe = poplar::compileGraph(graph.getPoplarGraph(),
+                                    {poplar::program::Sequence()});
     poplar::Engine engine(std::move(exe));
     engine.load(di0.getDevice());
     engine.run();
@@ -74,8 +77,9 @@ BOOST_AUTO_TEST_CASE(SyncPatternTest_3) {
   if (deviceInfo0 && deviceInfo1) {
     DevicexInfo &di0 = dynamic_cast<DevicexInfo &>(*deviceInfo0);
     DevicexInfo &di1 = dynamic_cast<DevicexInfo &>(*deviceInfo1);
-    poplar::Graph graph(di0.getDevice().getTarget());
-    auto exe = poplar::compileGraph(graph, {poplar::program::Sequence()});
+    snap::Graph graph(di0.getDevice().getTarget());
+    auto exe = poplar::compileGraph(graph.getPoplarGraph(),
+                                    {poplar::program::Sequence()});
     poplar::Engine engine(std::move(exe));
     BOOST_CHECK_THROW(engine.load(di1.getDevice()), poplar::poplar_error);
     di1.detach(); // avoid ipu attachment conflicts
@@ -95,8 +99,9 @@ BOOST_AUTO_TEST_CASE(SyncPatternTest_4) {
   if (deviceInfo0 && deviceInfo1) {
     DevicexInfo &di0 = dynamic_cast<DevicexInfo &>(*deviceInfo0);
     DevicexInfo &di1 = dynamic_cast<DevicexInfo &>(*deviceInfo1);
-    poplar::Graph graph(di0.getDevice().getTarget());
-    auto exe = poplar::compileGraph(graph, {poplar::program::Sequence()});
+    snap::Graph graph(di0.getDevice().getTarget());
+    auto exe = poplar::compileGraph(graph.getPoplarGraph(),
+                                    {poplar::program::Sequence()});
     poplar::Engine engine(std::move(exe));
     BOOST_CHECK_THROW(engine.load(di1.getDevice()), poplar::poplar_error);
     di1.detach(); // avoid ipu attachment conflicts

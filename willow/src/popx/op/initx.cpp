@@ -11,7 +11,7 @@
 namespace popart {
 namespace popx {
 
-InitOpx::InitOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
+InitOpx::InitOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
   verifyOp<InitOp>(op, Onnx::CustomOperators::Init_1);
 }
 
@@ -21,7 +21,8 @@ void InitOpx::grow(poplar::program::Sequence &prog) const {
 
   switch (initOp.getInitType()) {
   case InitType::Zero: {
-    popops::zero(graph(), outTensor, prog, debugContext("init_zero"));
+    popops::zero(
+        graph().getPoplarGraph(), outTensor, prog, debugContext("init_zero"));
     break;
   }
   case InitType::NoInit: {

@@ -10918,7 +10918,7 @@ static const char *__doc_popart_Session_cacheEntries_2 =
 static const char *__doc_popart_Session_compileAndExport =
     R"doc(Compiles the graph and exports it to the specified path.
 
-This will create a ``poplar::Graph`` and compile the
+This will create a ``snap::Graph`` and compile the
 ``poplar::Executable`` before exporting the executable and metadata.
 
 Parameter ``filename``:
@@ -10928,7 +10928,7 @@ Parameter ``filename``:
 static const char *__doc_popart_Session_compileAndExport_2 =
     R"doc(Compiles the graph and exports it to the specified stream.
 
-This will create a ``poplar::Graph`` and compile the
+This will create a ``snap::Graph`` and compile the
 ``poplar::Executable`` before exporting the executable and metadata.
 
 Parameter ``out``:
@@ -10938,7 +10938,7 @@ Parameter ``out``:
 static const char *__doc_popart_Session_compileAndExport_3 =
     R"doc(Compiles the graph and exports it to the specified path.
 
-This will create a ``poplar::Graph`` and compile the
+This will create a ``snap::Graph`` and compile the
 ``poplar::Executable`` before exporting the executable and metadata.
 
 Parameter ``filename``:
@@ -10948,7 +10948,7 @@ Parameter ``filename``:
 static const char *__doc_popart_Session_compileAndExport_4 =
     R"doc(Compiles the graph and exports it to the specified stream.
 
-This will create a ``poplar::Graph`` and compile the
+This will create a ``snap::Graph`` and compile the
 ``poplar::Executable`` before exporting the executable and metadata.
 
 Parameter ``out``:
@@ -11218,7 +11218,7 @@ Parameter ``fn``:
 static const char *__doc_popart_Session_prepareDevice =
     R"doc(Prepare the network for execution.
 
-This will create the ``poplar::Graph`` and ``poplar::Engine``.
+This will create the ``snap::Graph`` and ``poplar::Engine``.
 
 Parameter ``loadEngine``:
     Load the engine and connect the streams once the device is ready.)doc";
@@ -11226,7 +11226,7 @@ Parameter ``loadEngine``:
 static const char *__doc_popart_Session_prepareDevice_2 =
     R"doc(Prepare the network for execution.
 
-This will create the ``poplar::Graph`` and ``poplar::Engine``.
+This will create the ``snap::Graph`` and ``poplar::Engine``.
 
 Parameter ``loadEngine``:
     Load the engine and connect the streams once the device is ready.)doc";
@@ -11343,11 +11343,11 @@ Parameter ``The``:
 
 static const char *__doc_popart_Session_tryLoadExecutable =
     R"doc(Attempts to load a serialized executable. If successful then IR
-preparation and ``poplar::Graph`` compilation are skipped.)doc";
+preparation and ``snap::Graph`` compilation are skipped.)doc";
 
 static const char *__doc_popart_Session_tryLoadExecutable_2 =
     R"doc(Attempts to load a serialized executable. If successful then IR
-preparation and ``poplar::Graph`` compilation are skipped.)doc";
+preparation and ``snap::Graph`` compilation are skipped.)doc";
 
 static const char *__doc_popart_Session_updateExternallySavedTensorLocations =
     R"doc(Update the tensor locations of the tensors in the Session's ONNX

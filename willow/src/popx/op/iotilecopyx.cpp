@@ -12,7 +12,7 @@
 namespace popart {
 namespace popx {
 
-IoTileCopyOpx::IoTileCopyOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
+IoTileCopyOpx::IoTileCopyOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
   verifyOp<IoTileCopyOp>(op, Onnx::CustomOperators::IoTileCopy);
 }
 
@@ -38,7 +38,7 @@ InputCreatorType IoTileCopyOpx::getInputCreatorType(InIndex index) const {
   return index == IoTileCopyOp::getInIndex() &&
                  op_p->settings.tileSet == TileSet::Compute
              ? InputCreatorType::CanUnwind
-             : Opx::getInputCreatorType(index);
+             : PopOpx::getInputCreatorType(index);
 }
 
 poplar::Tensor IoTileCopyOpx::unwindTensorLayout(poplar::Tensor tensor,
@@ -57,10 +57,10 @@ poplar::Tensor IoTileCopyOpx::unwindTensorLayout(poplar::Tensor tensor,
       op_p->settings.tileSet == TileSet::Compute ? TileSet::IO
                                                  : TileSet::Compute);
 
-  auto dstTensor = dstGraph.clone(tensor, "");
+  auto dstTensor = dstGraph.getPoplarGraph().clone(tensor, "");
 
-  auto numSrcTiles = srcGraph.getTarget().getNumTiles();
-  auto numDstTiles = dstGraph.getTarget().getNumTiles();
+  auto numSrcTiles = srcGraph.getPoplarGraph().getTarget().getNumTiles();
+  auto numDstTiles = dstGraph.getPoplarGraph().getTarget().getNumTiles();
 
   auto tilesPerTile = (numSrcTiles - 1) / numDstTiles + 1;
 
@@ -68,9 +68,10 @@ poplar::Tensor IoTileCopyOpx::unwindTensorLayout(poplar::Tensor tensor,
   auto dstTensorFlat = dstTensor.flatten();
 
   // Reorder both tensors on the main graph
-  dv_p->lowering().graph().reorderToSimplify(&srcTensorFlat, {&dstTensorFlat});
+  dv_p->lowering().graph().getPoplarGraph().reorderToSimplify(&srcTensorFlat,
+                                                              {&dstTensorFlat});
 
-  auto srcMapping = srcGraph.getTileMapping(srcTensorFlat);
+  auto srcMapping = srcGraph.getPoplarGraph().getTileMapping(srcTensorFlat);
   poplar::Graph::TileToTensorMapping dstMapping(numDstTiles);
 
   for (size_t i = 0; i < srcMapping.size(); ++i) {
@@ -79,7 +80,7 @@ poplar::Tensor IoTileCopyOpx::unwindTensorLayout(poplar::Tensor tensor,
         dstMapping[j].end(), srcMapping.at(i).begin(), srcMapping.at(i).end());
   }
 
-  dstGraph.setTileMapping(dstTensorFlat, dstMapping);
+  dstGraph.getPoplarGraph().setTileMapping(dstTensorFlat, dstMapping);
 
   return dstTensor;
 }

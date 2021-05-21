@@ -26,7 +26,7 @@ void MaxOpx::grow(poplar::program::Sequence &prog) const {
   if (op_p->input->n() > 1) {
 
     for (int i = 1; i < op_p->input->n(); ++i) {
-      outTensor = popops::map(graph(),
+      outTensor = popops::map(graph().getPoplarGraph(),
                               popops::expr::BinaryOpType::MAXIMUM,
                               outTensor,
                               getInTensor(i),
@@ -39,7 +39,8 @@ void MaxOpx::grow(poplar::program::Sequence &prog) const {
   setOutTensor(MaxOp::getOutIndex(), outTensor);
 }
 
-MaxArgGradOpx::MaxArgGradOpx(Op *op_, Devicex *devicex_) : Opx(op_, devicex_) {}
+MaxArgGradOpx::MaxArgGradOpx(Op *op_, Devicex *devicex_)
+    : PopOpx(op_, devicex_) {}
 
 void MaxArgGradOpx::grow(poplar::program::Sequence &prog) const {
   // Create a mask of the max input tensor. Set a element to 1 if it is
@@ -52,7 +53,7 @@ void MaxArgGradOpx::grow(poplar::program::Sequence &prog) const {
   // 3. Add 1 from the result to give a mask tensor
   // 4. Multiply by the gradient tensor.
   auto result = popops::map(
-      graph(),
+      graph().getPoplarGraph(),
       pe::Mul(pe::Add(pe::Signum(pe::Sub(pe::_1, pe::_2)), pe::Const(1)),
               pe::_3),
       {getInTensor(MaxArgGradOp::getFwdInIndex()),
@@ -70,7 +71,7 @@ void MaxArgGradOpx::grow(poplar::program::Sequence &prog) const {
 
   // Remove axes from the result that were not present ( or 1) in the input to
   // the fwd op
-  auto out = popops::reduce(graph(),
+  auto out = popops::reduce(graph().getPoplarGraph(),
                             result,
                             vXtoY<int64_t, std::size_t>(axes),
                             {popops::Operation::ADD},

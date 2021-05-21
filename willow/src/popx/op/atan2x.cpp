@@ -13,21 +13,22 @@ namespace popx {
 Atan2Computex::Atan2Computex(EwbComputex::InplacePolicy ip) : EwbComputex(ip) {}
 
 poplar::Tensor Atan2Computex::outplace(poplar::program::Sequence &prog,
-                                       poplar::Graph &graph,
+                                       snap::Graph &graph,
                                        const poplar::Tensor &a,
                                        const poplar::Tensor &b,
                                        const poplar::DebugNameAndId &dnai,
                                        const std::string &debugStr) const {
-  return popops::atan2(graph, a, b, prog, {dnai, debugStr});
+  return popops::atan2(graph.getPoplarGraph(), a, b, prog, {dnai, debugStr});
 }
 
 void Atan2Computex::inplace(poplar::program::Sequence &prog,
-                            poplar::Graph &graph,
+                            snap::Graph &graph,
                             const poplar::Tensor &tInOut,
                             const poplar::Tensor &tIn,
                             const poplar::DebugNameAndId &dnai,
                             const std::string &debugStr) const {
-  popops::atan2InPlace(graph, tInOut, tIn, prog, {dnai, debugStr});
+  popops::atan2InPlace(
+      graph.getPoplarGraph(), tInOut, tIn, prog, {dnai, debugStr});
 }
 
 Atan2Opx::Atan2Opx(Op *op, Devicex *devicex)

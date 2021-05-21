@@ -2,13 +2,13 @@
 #ifndef GUARD_NEURALNET_CASTX_HPP
 #define GUARD_NEURALNET_CASTX_HPP
 
-#include <popart/popx/opx.hpp>
+#include <popart/popx/popopx.hpp>
 
 namespace popart {
 
 namespace popx {
 
-class CastOpx : public Opx {
+class CastOpx : public PopOpx {
 public:
   CastOpx(Op *, Devicex *);
   void grow(poplar::program::Sequence &) const final;

@@ -54,7 +54,7 @@ void MeanOpx::grow(poplar::program::Sequence &prog) const {
     }
     // Add in a divide in the end.
     outTensor =
-        popops::map(graph(),
+        popops::map(graph().getPoplarGraph(),
                     pe::Divide(*expr.front(), pe::Const(op_p->input->n())),
                     inputs,
                     prog,
@@ -65,7 +65,7 @@ void MeanOpx::grow(poplar::program::Sequence &prog) const {
 }
 
 MeanArgGradOpx::MeanArgGradOpx(Op *op_, Devicex *devicex_)
-    : Opx(op_, devicex_) {}
+    : PopOpx(op_, devicex_) {}
 
 void MeanArgGradOpx::grow(poplar::program::Sequence &prog) const {
   auto &gradOp = getOp<MeanArgGradOp>();
@@ -79,7 +79,7 @@ void MeanArgGradOpx::grow(poplar::program::Sequence &prog) const {
 
   // Remove axes from the result that were not present ( or 1) in the input to
   // the fwd op
-  auto out = popops::reduce(graph(),
+  auto out = popops::reduce(graph().getPoplarGraph(),
                             getInTensor(MeanArgGradOp::getGradInIndex()),
                             vXtoY<int64_t, std::size_t>(axes),
                             {popops::Operation::ADD},
@@ -87,7 +87,7 @@ void MeanArgGradOpx::grow(poplar::program::Sequence &prog) const {
                             debugContext("reduce"));
 
   // scale the grad input (reduced)
-  popops::mapInPlace(graph(),
+  popops::mapInPlace(graph().getPoplarGraph(),
                      pe::Mul(pe::_1, pe::Const(gradOp.getScale())),
                      {out},
                      prog,

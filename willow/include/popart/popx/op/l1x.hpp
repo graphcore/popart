@@ -3,19 +3,19 @@
 #define GUARD_NEURALNET_L1X_HPP
 
 #include <popart/names.hpp>
-#include <popart/popx/opx.hpp>
+#include <popart/popx/popopx.hpp>
 
 namespace popart {
 namespace popx {
 
-class L1Opx : public Opx {
+class L1Opx : public PopOpx {
 public:
   L1Opx(Op *, Devicex *);
   void grow(poplar::program::Sequence &) const final;
   InputCreatorType getInputCreatorType(InIndex) const final;
 };
 
-class L1GradOpx : public Opx {
+class L1GradOpx : public PopOpx {
 public:
   L1GradOpx(Op *, Devicex *);
   void grow(poplar::program::Sequence &) const final;

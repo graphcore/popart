@@ -19,23 +19,29 @@ Log1pOpx::Log1pOpx(Op *op, Devicex *devicex)
 }
 
 poplar::Tensor Log1pComputex::outplace(poplar::program::Sequence &p,
-                                       poplar::Graph &g,
+                                       snap::Graph &g,
                                        const poplar::Tensor &t,
                                        const poplar::DebugNameAndId &dnai,
                                        const std::string &dbs) const {
 
-  return popops::map(
-      g, popops::expr::UnaryOpType::LOGARITHM_ONE_PLUS, t, p, {dnai, dbs});
+  return popops::map(g.getPoplarGraph(),
+                     popops::expr::UnaryOpType::LOGARITHM_ONE_PLUS,
+                     t,
+                     p,
+                     {dnai, dbs});
 }
 
 void Log1pComputex::inplace(poplar::program::Sequence &p,
-                            poplar::Graph &g,
+                            snap::Graph &g,
                             const poplar::Tensor &t,
                             const poplar::DebugNameAndId &dnai,
                             const std::string &dbs) const {
 
-  popops::mapInPlace(
-      g, popops::expr::UnaryOpType::LOGARITHM_ONE_PLUS, t, p, {dnai, dbs});
+  popops::mapInPlace(g.getPoplarGraph(),
+                     popops::expr::UnaryOpType::LOGARITHM_ONE_PLUS,
+                     t,
+                     p,
+                     {dnai, dbs});
 }
 
 namespace {

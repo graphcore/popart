@@ -26,7 +26,7 @@ AsinOpx::AsinOpx(Op *op, Devicex *devicex)
 }
 
 poplar::Tensor AsinComputex::outplace(poplar::program::Sequence &p,
-                                      poplar::Graph &g,
+                                      snap::Graph &g,
                                       const poplar::Tensor &t,
                                       const poplar::DebugNameAndId &dnai,
                                       const std::string &s) const {
@@ -36,15 +36,16 @@ poplar::Tensor AsinComputex::outplace(poplar::program::Sequence &p,
 }
 
 void AsinComputex::inplace(poplar::program::Sequence &p,
-                           poplar::Graph &g,
+                           snap::Graph &g,
                            const poplar::Tensor &t,
                            const poplar::DebugNameAndId &dnai,
                            const std::string &s) const {
 
-  popops::mapInPlace(g, popops::expr::UnaryOpType::ASIN, t, p, {dnai, s});
+  popops::mapInPlace(
+      g.getPoplarGraph(), popops::expr::UnaryOpType::ASIN, t, p, {dnai, s});
 }
 
-AsinGradOpx::AsinGradOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
+AsinGradOpx::AsinGradOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
   verifyOp<AsinGradOp>(op, Onnx::GradOperators::AsinGrad);
 }
 
@@ -61,7 +62,7 @@ void AsinGradOpx::grow(poplar::program::Sequence &prog) const {
   exprs.push_back(std::make_unique<pe::Divide>(pe::Const(1.0f), *exprs.back()));
   exprs.push_back(std::make_unique<pe::Mul>(pe::_1, *exprs.back()));
 
-  auto output = popops::map(graph(),
+  auto output = popops::map(graph().getPoplarGraph(),
                             *exprs.back(),
                             {input, fwd_input},
                             prog,

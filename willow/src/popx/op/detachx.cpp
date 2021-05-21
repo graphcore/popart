@@ -2,7 +2,6 @@
 #include <popart/names.hpp>
 #include <popart/op/detach.hpp>
 #include <popart/popx/op/detachx.hpp>
-#include <popart/popx/opx.hpp>
 #include <popart/popx/opxmanager.hpp>
 
 namespace popart {
@@ -22,7 +21,7 @@ void DetachOpx::grow(poplar::program::Sequence &prog) const {
 }
 
 DetachInplaceOpx::DetachInplaceOpx(Op *op, Devicex *devicex)
-    : Opx(op, devicex) {
+    : PopOpx(op, devicex) {
   verifyOp<DetachInplaceOp>(op);
 }
 

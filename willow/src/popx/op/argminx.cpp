@@ -11,7 +11,8 @@ namespace popx {
 
 poplar::Tensor ArgMinOpx::extremaOp(poplar::program::Sequence &prog,
                                     const poplar::Tensor &input) const {
-  return popnn::argMin(graph(), input, prog, debugContext("argmin"));
+  return popnn::argMin(
+      graph().getPoplarGraph(), input, prog, debugContext("argmin"));
 }
 
 namespace {

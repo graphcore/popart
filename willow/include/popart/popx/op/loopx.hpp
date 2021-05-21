@@ -3,7 +3,7 @@
 #define GUARD_NEURALNET_LOOPX_HPP
 
 #include <popart/popx/op/subgraphx.hpp>
-#include <popart/popx/opx.hpp>
+#include <popart/popx/popopx.hpp>
 
 namespace popart {
 namespace popx {

@@ -24,7 +24,7 @@ void PReluOpx::grow(poplar::program::Sequence &prog) const {
   auto expression = pe::Select(
       pe::Mul(inputPH, slopePH), inputPH, pe::Lt(inputPH, pe::Const(0.0f)));
 
-  auto result = popops::map(graph(),
+  auto result = popops::map(graph().getPoplarGraph(),
                             expression,
                             {getInTensor(PReluOp::getArg0InIndex()),
                              getInTensor(PReluOp::getArg1InIndex())},

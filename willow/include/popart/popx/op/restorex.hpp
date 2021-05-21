@@ -2,7 +2,7 @@
 #ifndef GUARD_NEURALNET_RESTOREX_HPP
 #define GUARD_NEURALNET_RESTOREX_HPP
 
-#include <popart/popx/opx.hpp>
+#include <popart/popx/popopx.hpp>
 
 namespace popart {
 
@@ -17,7 +17,7 @@ namespace popx {
  * \tparam Opx is subclass of RestoreBaseOpx. Must have type alias `OpType`
  * defined as the Op that it corresponds to.
  */
-template <typename Derived> class RestoreBaseOpx : public Opx {
+template <typename Derived> class RestoreBaseOpx : public PopOpx {
 public:
   RestoreBaseOpx(Op *op, Devicex *devicex);
 

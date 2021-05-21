@@ -10,7 +10,7 @@
 namespace popart {
 namespace popx {
 
-AbortOpx::AbortOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
+AbortOpx::AbortOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
   verifyOp<AbortOp>(op, Onnx::CustomOperators::Abort);
 }
 

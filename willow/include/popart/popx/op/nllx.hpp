@@ -4,19 +4,19 @@
 
 #include <popart/names.hpp>
 #include <popart/op/identity.hpp>
-#include <popart/popx/opx.hpp>
+#include <popart/popx/popopx.hpp>
 
 namespace popart {
 namespace popx {
 
-class NllOpx : public Opx {
+class NllOpx : public PopOpx {
 public:
   NllOpx(Op *, Devicex *);
   void grow(poplar::program::Sequence &) const final;
   // Mask the loss, or loss-grad of rows (i.e. samples) of tensor t
   // whose corresponding target label is equal to ignoreIndex
 
-  static void flattenAndEncodeOneHot(const Opx &opx,
+  static void flattenAndEncodeOneHot(const PopOpx &opx,
                                      poplar::program::Sequence &prog,
                                      const poplar::Tensor &probs,
                                      const poplar::Tensor &label,
@@ -25,7 +25,7 @@ public:
                                      poplar::Tensor &oneHot);
 
   static poplar::Tensor
-  applyMaskInPlaceForIgnoredIndex(const Opx &opx,
+  applyMaskInPlaceForIgnoredIndex(const PopOpx &opx,
                                   poplar::Tensor t,
                                   poplar::Tensor labels,
                                   int ignoreIndex,
@@ -37,7 +37,7 @@ public:
   // This is a static function that is used to scale the every Nll
   // loss and loss grad at the output of the respective ops/grad ops
   static void
-  applyScalingInPlaceForMeanReduction(const Opx &opx,
+  applyScalingInPlaceForMeanReduction(const PopOpx &opx,
                                       poplar::Tensor t,
                                       poplar::Tensor scale,
                                       poplar::program::Sequence &prog);
@@ -50,13 +50,13 @@ public:
   // The mask tensor generated in applyMaskInPlaceForIgnoredIndex
   // is used to dynamically determine the aprropriate scale factor
   static void applyScalingInPlaceForMeanReductionWithIgnoreIndex(
-      const Opx &opx,
+      const PopOpx &opx,
       poplar::Tensor t,
       poplar::Tensor scale,
       poplar::Tensor mask,
       poplar::program::Sequence &prog);
 
-  static void handleLossGradScaling(const Opx &opx,
+  static void handleLossGradScaling(const PopOpx &opx,
                                     bool hasIgnoreIndex,
                                     int64_t ignoreIndex,
                                     bool meanReduce,
@@ -65,7 +65,7 @@ public:
                                     poplar::Tensor &label1D,
                                     poplar::program::Sequence &prog);
 
-  static void handleLossOutReducedToScalar(const Opx &opx,
+  static void handleLossOutReducedToScalar(const PopOpx &opx,
                                            bool hasIgnoreIndex,
                                            int64_t ignoreIndex,
                                            bool meanReduce,
@@ -74,14 +74,14 @@ public:
                                            poplar::program::Sequence &prog,
                                            const OutIndex outIdx);
 
-  static void handleLossOutNotReducedToScalar(const Opx &opx,
+  static void handleLossOutNotReducedToScalar(const PopOpx &opx,
                                               poplar::Tensor &reduction,
                                               const poplar::Tensor &label,
                                               poplar::Tensor &label1D,
                                               poplar::program::Sequence &prog);
 };
 
-class NllGradOpx : public Opx {
+class NllGradOpx : public PopOpx {
 public:
   NllGradOpx(Op *, Devicex *);
   void grow(poplar::program::Sequence &) const final;

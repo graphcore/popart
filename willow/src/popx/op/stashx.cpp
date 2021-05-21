@@ -45,7 +45,7 @@ void StashOpx::growDynamicStashUpdate(poplar::program::Sequence &prog,
                                       const poplar::Tensor &inTensor,
                                       const poplar::Tensor &outTensor) const {
   // Update the stash.
-  popops::dynamicUpdate(graph(),
+  popops::dynamicUpdate(graph().getPoplarGraph(),
                         outTensor,
                         inTensor.expand({0}),
                         stashIndex,
@@ -61,17 +61,18 @@ void StashOpx::grow(poplar::program::Sequence &prog) const {
       getConst(poplar::UNSIGNED_INT, {}, hStashSize, "stash_size");
 
   // Create the stash index tensor.
-  const poplar::Tensor stashIndex = graph().addVariable(
+  const poplar::Tensor stashIndex = graph().getPoplarGraph().addVariable(
       poplar::UNSIGNED_INT, {1}, debugContext("stash_index"));
-  graph().setTileMapping(stashIndex, 0);
-  graph().setInitialValue(stashIndex, poplar::ArrayRef<uint32_t>({0}));
+  graph().getPoplarGraph().setTileMapping(stashIndex, 0);
+  graph().getPoplarGraph().setInitialValue(stashIndex,
+                                           poplar::ArrayRef<uint32_t>({0}));
 
   // Retrieve the input tensor.
   const auto &inTensor = getInTensor(StashOp::getInIndex());
 
   // Create the output tensor.
   const auto outTensor = popops::createSliceableTensorFromSlice(
-      graph(),
+      graph().getPoplarGraph(),
       inTensor.expand({0}),
       {0},
       {hStashSize},
@@ -87,11 +88,11 @@ void StashOpx::grow(poplar::program::Sequence &prog) const {
 
   // Create a "1" tensor and grow program to increment stash index by 1.
   const auto one = getConst(poplar::UNSIGNED_INT, {}, 1.0, "one");
-  popops::addInPlace(graph(), stashIndex, one, prog);
-  popops::remInPlace(graph(), stashIndex, stashSize, prog);
+  popops::addInPlace(graph().getPoplarGraph(), stashIndex, one, prog);
+  popops::remInPlace(graph().getPoplarGraph(), stashIndex, stashSize, prog);
 }
 
-StashOpx::StashOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
+StashOpx::StashOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
   verifyOp<StashOp>(op);
   hStashSize = static_cast<size_t>(getOp<StashOp>().getStashSize());
   canDynamicUpdateStash =

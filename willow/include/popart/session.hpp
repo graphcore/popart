@@ -60,7 +60,7 @@ public:
   /**
    * Compiles the graph and exports it to the specified path.
    *
-   * This will create a \c poplar::Graph and compile the \c poplar::Executable
+   * This will create a \c snap::Graph and compile the \c poplar::Executable
    * before exporting the executable and metadata.
 
    * \param filename Name of the file where the compiled executable and
@@ -71,7 +71,7 @@ public:
   /**
    * Compiles the graph and exports it to the specified stream.
    *
-   * This will create a \c poplar::Graph and compile the \c poplar::Executable
+   * This will create a \c snap::Graph and compile the \c poplar::Executable
    * before exporting the executable and metadata.
 
    * \param out Stream where the compiled executable and
@@ -98,7 +98,7 @@ public:
   /**
    * Prepare the network for execution.
    *
-   * This will create the \c poplar::Graph and \c poplar::Engine.
+   * This will create the \c snap::Graph and \c poplar::Engine.
    *
    * \param loadEngine Load the engine and connect the streams once
    *                   the device is ready.
@@ -296,7 +296,7 @@ protected:
 
   /**
    * Attempts to load a serialized executable. If successful then IR
-   * preparation and \c poplar::Graph compilation are skipped.
+   * preparation and \c snap::Graph compilation are skipped.
    */
   bool tryLoadExecutable();
 

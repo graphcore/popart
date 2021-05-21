@@ -4,7 +4,7 @@
 
 #include <popart/names.hpp>
 #include <popart/popx/op/elementwisex.hpp>
-#include <popart/popx/opx.hpp>
+#include <popart/popx/popopx.hpp>
 
 namespace popart {
 namespace popx {
@@ -15,7 +15,7 @@ public:
   void grow(poplar::program::Sequence &) const final;
 };
 
-class IdentityInplaceOpx : public Opx {
+class IdentityInplaceOpx : public PopOpx {
 public:
   IdentityInplaceOpx(Op *, Devicex *);
   void grow(poplar::program::Sequence &) const final;
@@ -27,14 +27,14 @@ public:
   void grow(poplar::program::Sequence &) const final;
 };
 
-class IdentityLossOpx : public Opx {
+class IdentityLossOpx : public PopOpx {
 public:
   IdentityLossOpx(Op *, Devicex *);
   void grow(poplar::program::Sequence &) const final;
   InputCreatorType getInputCreatorType(InIndex) const final;
 };
 
-class IdentityLossGradOpx : public Opx {
+class IdentityLossGradOpx : public PopOpx {
 public:
   IdentityLossGradOpx(Op *, Devicex *);
   void grow(poplar::program::Sequence &) const final;

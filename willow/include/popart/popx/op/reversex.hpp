@@ -2,12 +2,12 @@
 #ifndef GUARD_NEURALNET_REVERSEX_HPP
 #define GUARD_NEURALNET_REVERSEX_HPP
 
-#include <popart/popx/opx.hpp>
+#include <popart/popx/popopx.hpp>
 
 namespace popart {
 namespace popx {
 
-class ReverseBaseOpx : public Opx {
+class ReverseBaseOpx : public PopOpx {
 public:
   ReverseBaseOpx(Op *, Devicex *);
   InputCreatorType getInputCreatorType(InIndex) const final {

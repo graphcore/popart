@@ -10,7 +10,7 @@
 namespace popart {
 namespace popx {
 
-HostBaseOpx::HostBaseOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {}
+HostBaseOpx::HostBaseOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {}
 
 poplar::Tensor HostBaseOpx::load(poplar::program::Sequence &prog,
                                  const TensorId &outTensorId,
@@ -30,7 +30,7 @@ poplar::Tensor HostBaseOpx::load(poplar::program::Sequence &prog,
                           " target, cloning. "
                           "The aliasing properties have changed implicitly.",
                           outTensorId);
-      poplar::Tensor tw = graph().clone(
+      poplar::Tensor tw = graph().getPoplarGraph().clone(
           t,
           debugContext(outTensorId + "_Writable"),
           poplar::TensorCloneMethod::PRESERVE_ORDER_UNLESS_ALIASES);
@@ -159,7 +159,7 @@ void HostLoadOpx::grow(poplar::program::Sequence &prog) const {
 InputCreatorType HostLoadOpx::getInputCreatorType(InIndex index) const {
   return index == HostLoadOp::getLocalTensorInIndex()
              ? InputCreatorType::CanUnwind
-             : Opx::getInputCreatorType(index);
+             : PopOpx::getInputCreatorType(index);
 }
 
 poplar::Tensor HostLoadOpx::unwindTensorLayout(poplar::Tensor tensor,
@@ -194,7 +194,7 @@ void HostStoreOpx::grow(poplar::program::Sequence &prog) const {
 InputCreatorType HostStoreOpx::getInputCreatorType(InIndex index) const {
   return index == HostStoreOp::getLocalTensorInIndex()
              ? InputCreatorType::CanUnwind
-             : Opx::getInputCreatorType(index);
+             : PopOpx::getInputCreatorType(index);
 }
 
 poplar::Tensor HostStoreOpx::unwindTensorLayout(poplar::Tensor tensor,

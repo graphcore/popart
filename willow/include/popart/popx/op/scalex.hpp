@@ -15,13 +15,13 @@ public:
   ScaleComputex(double x) : scale_factor(x) {}
 
   poplar::Tensor outplace(poplar::program::Sequence &,
-                          poplar::Graph &,
+                          snap::Graph &,
                           const poplar::Tensor &tensor,
                           const poplar::DebugNameAndId &,
                           const std::string &) const final;
 
   void inplace(poplar::program::Sequence &,
-               poplar::Graph &,
+               snap::Graph &,
                const poplar::Tensor &,
                const poplar::DebugNameAndId &,
                const std::string &) const final;
@@ -32,7 +32,7 @@ public:
   }
 
   poplar::Tensor getScaleTensor(const poplar::Type &type,
-                                poplar::Graph &graph) const;
+                                snap::Graph &graph) const;
 
   static float getFromScaleOp(Op *op);
   static float getFromScaleInplaceOp(Op *op);

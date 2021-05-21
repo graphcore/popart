@@ -11,7 +11,7 @@
 namespace popart {
 namespace popx {
 
-ResizeOpx::ResizeOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
+ResizeOpx::ResizeOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
   verifyOp<ResizeOp>(op);
 }
 
@@ -81,7 +81,7 @@ poplar::Tensor ResizeOpx::resizeNearestNeighbour(poplar::Tensor &input,
   return poplar::concat(toConcat, dim);
 }
 
-ResizeGradOpx::ResizeGradOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
+ResizeGradOpx::ResizeGradOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
   verifyOp<ResizeGradOp>(op);
 }
 
@@ -123,7 +123,7 @@ poplar::Tensor ResizeGradOpx::reduceDimension(poplar::program::Sequence &prog,
     if (resultMap.find(idx) == resultMap.end()) {
       resultMap[idx] = slices[i];
     } else {
-      resultMap[idx] = popops::map(graph(),
+      resultMap[idx] = popops::map(graph().getPoplarGraph(),
                                    popops::expr::BinaryOpType::ADD,
                                    resultMap[idx],
                                    slices[i],
@@ -143,10 +143,13 @@ poplar::Tensor ResizeGradOpx::padDimension(poplar::program::Sequence &prog,
                                            int dimension,
                                            int64_t newSize,
                                            float scale) const {
-  auto slices = split(input, dimension);
-  auto paddingTensor =
-      graph().addVariable(input.elementType(), slices.at(0).shape());
-  popops::zero(graph(), paddingTensor, prog, debugContext("zeroPadding"));
+  auto slices        = split(input, dimension);
+  auto paddingTensor = graph().getPoplarGraph().addVariable(
+      input.elementType(), slices.at(0).shape());
+  popops::zero(graph().getPoplarGraph(),
+               paddingTensor,
+               prog,
+               debugContext("zeroPadding"));
 
   std::vector<poplar::Tensor> toConcat(newSize, paddingTensor);
   for (int i = 0; i < slices.size(); i++) {

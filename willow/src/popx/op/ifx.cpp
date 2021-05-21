@@ -78,7 +78,8 @@ void IfOpx::copyOutputs(poplar::program::Sequence &thenProg,
   auto zeroOutput = [&](poplar::program::Sequence &prog, OutIndex opIndex) {
     auto opId     = outId(opIndex);
     auto opOutput = outputs.at(opIndex);
-    popops::zero(graph(), opOutput, prog, debugContext("zero"));
+    popops::zero(
+        graph().getPoplarGraph(), opOutput, prog, debugContext("zero"));
   };
 
   auto copyOrZeroBranchOutput =
@@ -105,7 +106,7 @@ std::vector<poplar::Tensor> IfOpx::prepareOutputs() const {
   auto cloneOutput = [&](const Graph &branch, OutIndex branchIndex) {
     auto branchId     = branch.getOutputId(branchIndex);
     auto branchOutput = get(branchId);
-    outputs.push_back(graph().clone(branchOutput));
+    outputs.push_back(graph().getPoplarGraph().clone(branchOutput));
   };
 
   auto tryCloneOutputFromBranch = [&](const Graph &graph, int outIndex) {
@@ -130,7 +131,7 @@ std::vector<poplar::Tensor> IfOpx::prepareOutputs() const {
   return outputs;
 }
 
-IfOpx::IfOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
+IfOpx::IfOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
   verifyOp<IfOp>(op);
 }
 

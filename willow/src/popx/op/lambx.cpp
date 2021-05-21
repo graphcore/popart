@@ -12,12 +12,12 @@
 namespace popart {
 namespace popx {
 
-LambSquareOpx::LambSquareOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
+LambSquareOpx::LambSquareOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
   verifyOp<LambSquareOp>(op, Onnx::CustomOperators::LambSquare);
 }
 
 void LambSquareOpx::grow(poplar::program::Sequence &prog) const {
-  auto rsq = popops::reduce(graph(),
+  auto rsq = popops::reduce(graph().getPoplarGraph(),
                             getInTensor(LambSquareOp::getInIndex()).flatten(),
                             poplar::FLOAT,
                             {0},

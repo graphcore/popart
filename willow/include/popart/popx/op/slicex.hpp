@@ -2,7 +2,7 @@
 #ifndef GUARD_NEURALNET_SLICEX_HPP
 #define GUARD_NEURALNET_SLICEX_HPP
 
-#include <popart/popx/opx.hpp>
+#include <popart/popx/popopx.hpp>
 
 namespace popart {
 
@@ -11,7 +11,7 @@ class SliceInplaceOp;
 
 namespace popx {
 
-class BaseSliceOpx : public Opx {
+class BaseSliceOpx : public PopOpx {
 public:
   BaseSliceOpx(Op *, Devicex *);
 

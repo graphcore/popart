@@ -26,7 +26,7 @@ void GetRandomSeedOpx::grow(poplar::program::Sequence &prog) const {
                       {1},
                       dv_p->lowering().getGlobalReplicationFactor(),
                       "globalReplicationFactor");
-  popops::addInPlace(graph(),
+  popops::addInPlace(graph().getPoplarGraph(),
                      seed,
                      poplar::concat({grf, one}),
                      prog,
@@ -36,7 +36,7 @@ void GetRandomSeedOpx::grow(poplar::program::Sequence &prog) const {
 }
 
 GetRandomSeedOpx::GetRandomSeedOpx(Op *op, Devicex *devicex)
-    : Opx(op, devicex) {
+    : PopOpx(op, devicex) {
   verifyOp<GetRandomSeedOp>(op);
 }
 

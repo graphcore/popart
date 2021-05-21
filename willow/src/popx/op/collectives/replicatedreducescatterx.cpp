@@ -46,7 +46,7 @@ void ReplicatedReduceScatterOpx::grow(poplar::program::Sequence &prog) const {
       auto c   = cbr->createCollectivesTensor(
           toReduceScatter.elementType(),
           inId(ReplicatedReduceScatterOp::getInIndex()));
-      popops::zero(graph(), c, prog, debugContext());
+      popops::zero(graph().getPoplarGraph(), c, prog, debugContext());
       auto ref = cbr->undoRearrangeForCollective(c);
       if (hasInViewChangers(ReplicatedReduceScatterOp::getInIndex())) {
         prog.add(poplar::program::Copy(
@@ -68,7 +68,7 @@ void ReplicatedReduceScatterOpx::grow(poplar::program::Sequence &prog) const {
   reduceScatterOptions.set("useReplicatedImplementation", "true");
 
   poplar::Tensor reducedScattered =
-      gcl::reduceScatter(graph(),
+      gcl::reduceScatter(graph().getPoplarGraph(),
                          toReduceScatter.flatten(),
                          getPoplarCollectiveOperator(rrsOp.getCollectiveOp()),
                          prog,
@@ -110,7 +110,7 @@ ReplicatedReduceScatterOpx::getInputCreatorType(InIndex index) const {
 
   return index == ReplicatedReduceScatterOp::getInIndex() && canCreate
              ? InputCreatorType::CanCreate
-             : Opx::getInputCreatorType(index);
+             : PopOpx::getInputCreatorType(index);
 }
 
 poplar::Tensor ReplicatedReduceScatterOpx::createInput(

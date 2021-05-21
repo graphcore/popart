@@ -16,7 +16,7 @@
 namespace popart {
 namespace popx {
 
-ScatterOpx::ScatterOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
+ScatterOpx::ScatterOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
   verifyOp<ScatterOp>(
       op, {Onnx::Operators::Scatter_9, Onnx::Operators::Scatter_11});
 
@@ -33,7 +33,7 @@ void ScatterOpx::grow(poplar::program::Sequence &prog) const {
 }
 
 ScatterDataGradOpx::ScatterDataGradOpx(Op *op, Devicex *devicex)
-    : Opx(op, devicex) {
+    : PopOpx(op, devicex) {
   verifyOp<ScatterDataGradOp>(op, Onnx::GradOperators::ScatterDataGrad);
 
   axis = dynamic_cast<ScatterDataGradOp *>(op)->getAxis();
@@ -42,9 +42,9 @@ ScatterDataGradOpx::ScatterDataGradOpx(Op *op, Devicex *devicex)
 void ScatterDataGradOpx::grow(poplar::program::Sequence &prog) const {
   auto data = cloneNcopy(prog, getInTensor(ScatterDataGradOp::gradInIndex()));
   auto indices = getInTensor(ScatterDataGradOp::indicesInIndex());
-  auto update  = graph().addConstant(
+  auto update  = graph().getPoplarGraph().addConstant(
       data.elementType(), indices.shape(), 0, debugContext("zeros"));
-  poputil::mapTensorLinearly(graph(), update);
+  poputil::mapTensorLinearly(graph().getPoplarGraph(), update);
 
   // Build the implicit index coordinates
   //
@@ -85,7 +85,7 @@ void ScatterDataGradOpx::grow(poplar::program::Sequence &prog) const {
   indices = poplar::concat(indices_mapped, indices.rank());
 
   // Scatter the zeros into data
-  popops::scatter(graph(),
+  popops::scatter(graph().getPoplarGraph(),
                   data,
                   indices,
                   update,
@@ -100,7 +100,7 @@ void ScatterDataGradOpx::grow(poplar::program::Sequence &prog) const {
 }
 
 ScatterUpdateGradOpx::ScatterUpdateGradOpx(Op *op, Devicex *devicex)
-    : Opx(op, devicex) {
+    : PopOpx(op, devicex) {
   verifyOp<ScatterUpdateGradOp>(op, Onnx::GradOperators::ScatterUpdateGrad);
 
   axis = dynamic_cast<ScatterUpdateGradOp *>(op)->getAxis();

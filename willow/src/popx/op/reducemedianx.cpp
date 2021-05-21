@@ -12,7 +12,8 @@
 namespace popart {
 namespace popx {
 
-ReduceMedianOpx::ReduceMedianOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
+ReduceMedianOpx::ReduceMedianOpx(Op *op, Devicex *devicex)
+    : PopOpx(op, devicex) {
   verifyOp<ReduceMedianOp>(op);
 }
 
@@ -43,7 +44,7 @@ void ReduceMedianOpx::grow(poplar::program::Sequence &prog) const {
                                           pp.axes_complement.size(),
                                           prog,
                                           getDebugNameAndId("iotaTensor"));
-  popops::sortKeyValueInPlace(graph(),
+  popops::sortKeyValueInPlace(graph().getPoplarGraph(),
                               output,
                               indices,
                               pp.axes_complement.size(),
@@ -80,7 +81,7 @@ void ReduceMedianOpx::grow(poplar::program::Sequence &prog) const {
 }
 
 ReduceMedianGradOpx::ReduceMedianGradOpx(Op *op, Devicex *devicex)
-    : Opx(op, devicex) {
+    : PopOpx(op, devicex) {
   verifyOp<ReduceMedianGradOp>(op, Onnx::GradOperators::ReduceMedianGrad);
 }
 
@@ -91,12 +92,12 @@ void ReduceMedianGradOpx::grow(poplar::program::Sequence &prog) const {
       vector_cast<std::size_t>(grad_op.backwardShape());
   const auto &output_shape = outShape(ReduceMedianGradOp::getOutIndex());
 
-  auto grad = graph().addVariable(
+  auto grad = graph().getPoplarGraph().addVariable(
       popType(grad_op.outInfo(ReduceMedianGradOp::getOutIndex())),
       vector_cast<std::size_t>(output_shape),
       poplar::VariableMappingMethod::LINEAR,
       debugContext("initGrad"));
-  popops::zero(graph(), grad, prog, debugContext("zeroGrad"));
+  popops::zero(graph().getPoplarGraph(), grad, prog, debugContext("zeroGrad"));
 
   auto grad_top =
       cloneNcopy(prog, getInTensor(ReduceMedianGradOp::getInIndex()));

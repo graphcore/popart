@@ -7,7 +7,7 @@
 namespace popart {
 namespace popx {
 
-PrintTensorOpx::PrintTensorOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
+PrintTensorOpx::PrintTensorOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
   verifyOp<PrintTensorOp>(op, Onnx::CustomOperators::PrintTensor_1);
 }
 

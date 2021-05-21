@@ -42,7 +42,7 @@ popops::CollectiveOperator getPoplarCollectiveOperator(CollectiveOperator op) {
 }
 
 CollectivesBaseOpx::CollectivesBaseOpx(Op *op, Devicex *devicex)
-    : Opx(op, devicex) {}
+    : PopOpx(op, devicex) {}
 
 std::pair<std::set<TensorId>, std::vector<Op *>>
 CollectivesBaseOpx::getCollectiveLinkedGroup() const {
@@ -214,7 +214,10 @@ CollectivesBaseOpx::createCollectiveBalancedReorder(
       dv_p->lowering().getCollectiveBalancedReorder(*group.first.begin());
   if (!cbr.get()) {
     cbr = std::make_shared<gcl::CollectiveBalancedReorder>(
-        graph(), tensor, replicationFactor, getDebugNameAndId());
+        graph().getPoplarGraph(),
+        tensor,
+        replicationFactor,
+        getDebugNameAndId());
     for (auto tensor_id : group.first) {
       logging::opx::trace("[CollectivesBaseOpx] CBR created for {}", tensor_id);
       dv_p->lowering().setCollectiveBalancedReorder(tensor_id, cbr);

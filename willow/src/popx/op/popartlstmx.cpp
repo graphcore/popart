@@ -45,7 +45,7 @@ void PopartLSTMOpx::grow(poplar::program::Sequence &prog) const {
   poplar::Tensor output;
   poplar::Tensor cellState;
   std::tie(output, cellState) =
-      popnn::lstm::lstmFwd(graph(),
+      popnn::lstm::lstmFwd(graph().getPoplarGraph(),
                            params,
                            initState,
                            input,
@@ -103,7 +103,7 @@ PopartLSTMOpx::createInput(InIndex index,
 poplar::Tensor PopartLSTMOpx::createLSTMInput() const {
   auto &lstm_op = getOp<PopartLSTMOp>();
   auto seq_lens = getSeqLens();
-  return popnn::lstm::createInput(graph(),
+  return popnn::lstm::createInput(graph().getPoplarGraph(),
                                   createLSTMParams(lstm_op, seq_lens),
                                   getDebugNameAndId("createLSTMInput"),
                                   dv_p->lowering().lstmOptions,
@@ -115,7 +115,7 @@ poplar::Tensor PopartLSTMOpx::createWeightsInput() const {
   auto &lstm_op = getOp<PopartLSTMOp>();
   auto seq_lens = getSeqLens();
   std::tie(inputWeights, outputWeights) =
-      popnn::lstm::createWeightsKernel(graph(),
+      popnn::lstm::createWeightsKernel(graph().getPoplarGraph(),
                                        createLSTMParams(lstm_op, seq_lens),
                                        debugContext("weights"),
                                        dv_p->lowering().lstmOptions,
@@ -153,7 +153,7 @@ void PopartLSTMGradOpx::grow(poplar::program::Sequence &prog) const {
   auto &grad_lstm_op = getOp<PopartLSTMGradOp>();
   auto seq_lens      = getSeqLens();
   auto params        = createLSTMParams(grad_lstm_op, seq_lens);
-  auto initStateGrad = lstmBwdWithWU(graph(),
+  auto initStateGrad = lstmBwdWithWU(graph().getPoplarGraph(),
                                      params,
                                      prog,
                                      initState,

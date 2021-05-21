@@ -106,7 +106,7 @@ bool InitTensorCloning::initTensor(IrLowering &irLowering) const {
 
   if (t->hasProducer()) {
     Op *producer = t->getProducer();
-    dst          = dstGraph.clone(
+    dst          = dstGraph.getPoplarGraph().clone(
         src,
         {poplar::DebugNameAndId(
             logging::format(
@@ -114,7 +114,7 @@ bool InitTensorCloning::initTensor(IrLowering &irLowering) const {
             producer->getDebugInfo().getId(),
             producer->getDebugInfo().getPathName())});
   } else {
-    dst = dstGraph.clone(src);
+    dst = dstGraph.getPoplarGraph().clone(src);
   }
 
   if (irLowering.tensors().hasViewChangers(getSrcId())) {
@@ -172,7 +172,7 @@ bool InitTensorCreator::initTensor(IrLowering &irLowering) const {
   // The clone makes sure to only keep the necessary parts of the unwound
   // tensor alive, and contiguate it,
   // reducing IPU memory liveness and fragmentation (see T18661)
-  poplar::Tensor input = irLowering.graph().clone(
+  poplar::Tensor input = irLowering.graph().getPoplarGraph().clone(
       inputAndView.first,
       {poplar::DebugNameAndId(getDstId(),
                               tensor->getDebugInfo().getId(),
@@ -218,7 +218,7 @@ bool InitTensorLinear::initTensor(IrLowering &irLowering) const {
     dataType = getCompatibleDataType(dataType);
   }
 
-  auto newTensor = dstGraph.addVariable(
+  auto newTensor = dstGraph.getPoplarGraph().addVariable(
       popType(dataType),
       tensor->info.shape_szt(),
       {poplar::DebugNameAndId(tensor->str(),

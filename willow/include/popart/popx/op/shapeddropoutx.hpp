@@ -2,12 +2,12 @@
 #ifndef GUARD_NEURALNET_SHAPEDDROPOUTX_HPP
 #define GUARD_NEURALNET_SHAPEDDROPOUTX_HPP
 
-#include <popart/popx/opx.hpp>
+#include <popart/popx/popopx.hpp>
 
 namespace popart {
 namespace popx {
 
-class ShapedDropoutOpx : public Opx {
+class ShapedDropoutOpx : public PopOpx {
 public:
   ShapedDropoutOpx(Op *, Devicex *);
   void grow(poplar::program::Sequence &) const override;

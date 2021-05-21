@@ -5,7 +5,7 @@
 #include <popart/debugcontext.hpp>
 #include <popart/names.hpp>
 #include <popart/op/collectives/collectives.hpp>
-#include <popart/popx/opx.hpp>
+#include <popart/popx/popopx.hpp>
 #include <popart/popx/viewchangers.hpp>
 
 #include <popops/CollectiveTypes.hpp>
@@ -87,7 +87,7 @@ private:
   std::set<TensorId> group;
 };
 
-class CollectivesBaseOpx : public Opx {
+class CollectivesBaseOpx : public PopOpx {
 public:
   CollectivesBaseOpx(Op *, Devicex *);
   // Return all linked tensors and their connected ops to coordinate tensor

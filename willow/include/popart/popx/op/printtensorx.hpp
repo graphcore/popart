@@ -3,13 +3,13 @@
 #define GUARD_NEURALNET_PRINTTENSORX_HPP
 
 #include <popart/names.hpp>
-#include <popart/popx/opx.hpp>
+#include <popart/popx/popopx.hpp>
 
 namespace popart {
 
 namespace popx {
 
-class PrintTensorOpx : public Opx {
+class PrintTensorOpx : public PopOpx {
 public:
   PrintTensorOpx(Op *, Devicex *);
   void grow(poplar::program::Sequence &) const final;

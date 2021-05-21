@@ -17,7 +17,7 @@ namespace popart {
 namespace popx {
 
 GatherOpx::GatherOpx(Op *op, Devicex *devicex)
-    : Opx(op, devicex), plan(), axis() {
+    : PopOpx(op, devicex), plan(), axis() {
   verifyOp<GatherOp>(op,
                      {Onnx::Operators::Gather_1, Onnx::Operators::Gather_11});
   auto &gop = getOp<GatherOp>();
@@ -39,7 +39,7 @@ void GatherOpx::grow(poplar::program::Sequence &prog) const {
   // If there are no indices, return an empty tensor of the appropriate
   // shape
   if (indices.numElements() == 0) {
-    auto result = graph().addVariable(
+    auto result = graph().getPoplarGraph().addVariable(
         data.elementType(), outputShape, debugContext("result"));
 
     setOutTensor(GatherOp::outIndex(), result);
@@ -60,7 +60,7 @@ void GatherOpx::grow(poplar::program::Sequence &prog) const {
   // Flatten the other dimensions.
   data = data.flatten(1, data.rank());
 
-  auto result = popops::multiSlice(graph(),
+  auto result = popops::multiSlice(graph().getPoplarGraph(),
                                    data,
                                    offsets,
                                    {0},
@@ -94,7 +94,7 @@ GatherOpx::createInput(int index, const poplar::DebugNameAndId &dnai) const {
     auto dataInfo        = inInfo(index);
     const auto dataShape = dataInfo.shape_szt();
 
-    return popops::createSliceableTensor(graph(),
+    return popops::createSliceableTensor(graph().getPoplarGraph(),
                                          popType(dataInfo),
                                          dataShape,
                                          dims,
@@ -105,9 +105,13 @@ GatherOpx::createInput(int index, const poplar::DebugNameAndId &dnai) const {
   }
 
   auto indicesInfo = inInfo(index);
-  auto indices     = popops::createIndicesTensor(
-      graph(), dims, indicesInfo.nelms(), plan, poplar::OptionFlags(), dnai);
-  indices = indices.reinterpret(popType(indicesInfo));
+  auto indices     = popops::createIndicesTensor(graph().getPoplarGraph(),
+                                             dims,
+                                             indicesInfo.nelms(),
+                                             plan,
+                                             poplar::OptionFlags(),
+                                             dnai);
+  indices          = indices.reinterpret(popType(indicesInfo));
   return indices.reshape(indicesInfo.shape_szt());
 }
 
@@ -116,14 +120,12 @@ InputCreatorType GatherOpx::getInputCreatorType(int index) const {
     return InputCreatorType::CanCreate;
   }
 
-  return Opx::getInputCreatorType(index);
+  return PopOpx::getInputCreatorType(index);
 }
-
-bool GatherOpx::createsEquiv(int, const Opx *, int) const { return false; }
 
 std::set<TensorId> GatherOpx::mustExistBeforeCreate(int) const { return {}; }
 
-GatherGradOpx::GatherGradOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
+GatherGradOpx::GatherGradOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
   verifyOp<GatherGradOp>(op, Onnx::GradOperators::GatherGrad);
 
   axis = dynamic_cast<GatherGradOp *>(op)->getAxis();
@@ -136,7 +138,7 @@ void GatherGradOpx::grow(poplar::program::Sequence &prog) const {
   auto update  = getInTensor(GatherGradOp::gradInIndex());
   auto indices = getInTensor(GatherGradOp::indicesInIndex());
 
-  auto result = popops::createGatherInput(graph(),
+  auto result = popops::createGatherInput(graph().getPoplarGraph(),
                                           update.elementType(),
                                           outputShape,
                                           static_cast<unsigned>(axis),
@@ -144,7 +146,7 @@ void GatherGradOpx::grow(poplar::program::Sequence &prog) const {
                                           debugContext("result"));
 
   // Zero the result tensor
-  popops::zero(graph(), result, prog, debugContext("zero"));
+  popops::zero(graph().getPoplarGraph(), result, prog, debugContext("zero"));
 
   if (result.numElements() == 0 || update.numElements() == 0 ||
       indices.numElements() == 0) {
@@ -152,9 +154,9 @@ void GatherGradOpx::grow(poplar::program::Sequence &prog) const {
     return;
   }
 
-  auto scale = graph().addConstant(
+  auto scale = graph().getPoplarGraph().addConstant(
       update.elementType(), {}, 1.0f, debugContext("const_1"));
-  graph().setTileMapping(scale, 0);
+  graph().getPoplarGraph().setTileMapping(scale, 0);
 
   // Flatten the index shaped region of the update
   update = update.flatten(static_cast<unsigned>(axis),
@@ -181,7 +183,7 @@ void GatherGradOpx::grow(poplar::program::Sequence &prog) const {
   indices = indices.reinterpret(poplar::UNSIGNED_INT);
 
   // Accumulate the updates into the target
-  popops::multiUpdateAdd(graph(),
+  popops::multiUpdateAdd(graph().getPoplarGraph(),
                          target,
                          update,
                          indices,

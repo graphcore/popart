@@ -2,12 +2,12 @@
 #define GUARD_NEURALNET_CONCATX_HPP
 
 #include <popart/names.hpp>
-#include <popart/popx/opx.hpp>
+#include <popart/popx/popopx.hpp>
 
 namespace popart {
 namespace popx {
 
-class BaseExpandOpx : public Opx {
+class BaseExpandOpx : public PopOpx {
 protected:
   void expand_broadcast(const Shape output_shape, poplar::Tensor &expand) const;
 
@@ -36,7 +36,7 @@ public:
   void grow(poplar::program::Sequence &) const final;
 };
 
-class ExpandGradOpx : public Opx {
+class ExpandGradOpx : public PopOpx {
 public:
   ExpandGradOpx(Op *, Devicex *);
   void grow(poplar::program::Sequence &) const final;

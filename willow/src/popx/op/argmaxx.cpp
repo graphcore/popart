@@ -12,7 +12,8 @@ namespace popx {
 
 poplar::Tensor ArgMaxOpx::extremaOp(poplar::program::Sequence &prog,
                                     const poplar::Tensor &input) const {
-  return popnn::argMax(graph(), input, prog, debugContext("argmax"));
+  return popnn::argMax(
+      graph().getPoplarGraph(), input, prog, debugContext("argmax"));
 }
 
 namespace {

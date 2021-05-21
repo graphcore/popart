@@ -176,8 +176,9 @@ void LoopOpx::copyBodyOutputsToExplicitBodyInputs(
         auto bodyOutputTensor = get(outId);
 
         // Clone to avoid issues with implicit aliases
-        auto tmp =
-            dstGraph(op.subgraphOutToOpOutIndex(i)).clone(bodyOutputTensor);
+        auto tmp = dstVirtualGraph(op.subgraphOutToOpOutIndex(i))
+                       .getPoplarGraph()
+                       .clone(bodyOutputTensor);
         tmpCopiesProg.add(poplar::program::Copy(
             bodyOutputTensor, tmp, false, debugContext("tmpCopies")));
         finalCopiesProg.add(poplar::program::Copy(
@@ -337,14 +338,18 @@ void LoopOpx::grow(poplar::program::Sequence &prog) const {
 
   // 3: Create a poplar only iterator variable i, set it to 0
   poplar::Tensor iteratorTensor;
-  iteratorTensor =
-      graph().addVariable(poplar::INT, {}, debugContext("iterator"));
-  poputil::mapTensorLinearly(graph(), iteratorTensor);
-  popops::zero(graph(), iteratorTensor, prog, debugContext("iterator_0"));
+  iteratorTensor = graph().getPoplarGraph().addVariable(
+      poplar::INT, {}, debugContext("iterator"));
+  poputil::mapTensorLinearly(graph().getPoplarGraph(), iteratorTensor);
+  popops::zero(graph().getPoplarGraph(),
+               iteratorTensor,
+               prog,
+               debugContext("iterator_0"));
 
   // 4: Create a poplar only boolean variable exit, set it to false
-  auto exitTensor = graph().addVariable(poplar::BOOL, {}, debugContext("exit"));
-  poputil::mapTensorLinearly(graph(), exitTensor);
+  auto exitTensor = graph().getPoplarGraph().addVariable(
+      poplar::BOOL, {}, debugContext("exit"));
+  poputil::mapTensorLinearly(graph().getPoplarGraph(), exitTensor);
   prog.add(poplar::program::Copy(
       fconst, exitTensor, {}, debugContext("exit_false")));
 
@@ -361,7 +366,7 @@ void LoopOpx::grow(poplar::program::Sequence &prog) const {
     poplar::Tensor maxTripCountTensor =
         getInTensor(LoopOp::getMaximumTripCountInIndex());
     popops::mapInPlace(
-        graph(),
+        graph().getPoplarGraph(),
         popops::expr::Or(popops::expr::Or(popops::expr::_1,
                                           popops::expr::Not(popops::expr::_2)),
                          popops::expr::Gte(popops::expr::_3, popops::expr::_4)),
@@ -370,7 +375,7 @@ void LoopOpx::grow(poplar::program::Sequence &prog) const {
         debugContext("exit_update"));
   } else {
     popops::mapInPlace(
-        graph(),
+        graph().getPoplarGraph(),
         popops::expr::Or(popops::expr::_1, popops::expr::Not(popops::expr::_2)),
         {exitTensor, condOutTensor},
         loopProg,
@@ -399,7 +404,7 @@ void LoopOpx::grow(poplar::program::Sequence &prog) const {
 
   // 11: Increment the loop iterator
   popops::mapInPlace(
-      graph(),
+      graph().getPoplarGraph(),
       popops::expr::Add(popops::expr::_1, popops::expr::Const(1)),
       {iteratorTensor},
       loopContinueProg,

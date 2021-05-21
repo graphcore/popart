@@ -37,7 +37,7 @@ HardSigmoidOpx::HardSigmoidOpx(Op *op, Devicex *devicex)
 }
 
 void HardSigmoidComputex::inplace(poplar::program::Sequence &prog,
-                                  poplar::Graph &graph,
+                                  snap::Graph &graph,
                                   const poplar::Tensor &tensor,
                                   const poplar::DebugNameAndId &dnai,
                                   const std::string &debug_prefix) const {
@@ -53,8 +53,11 @@ void HardSigmoidComputex::inplace(poplar::program::Sequence &prog,
   exprs.push_back(std::make_unique<pe::Min>(pe::Const(1.0f), *exprs.back()));
   exprs.push_back(std::make_unique<pe::Max>(pe::Const(0.0f), *exprs.back()));
 
-  popops::mapInPlace(
-      graph, *exprs.back(), {tensor}, prog, {dnai, debug_prefix});
+  popops::mapInPlace(graph.getPoplarGraph(),
+                     *exprs.back(),
+                     {tensor},
+                     prog,
+                     {dnai, debug_prefix});
 }
 
 HardSigmoidInplaceOpx::HardSigmoidInplaceOpx(Op *op, Devicex *devicex)
@@ -68,7 +71,7 @@ HardSigmoidInplaceOpx::HardSigmoidInplaceOpx(Op *op, Devicex *devicex)
 }
 
 HardSigmoidGradOpx::HardSigmoidGradOpx(Op *op, Devicex *devicex)
-    : Opx(op, devicex) {
+    : PopOpx(op, devicex) {
   verifyOp<HardSigmoidGradOp>(op, Onnx::GradOperators::HardSigmoidGrad);
 }
 
@@ -109,7 +112,7 @@ void HardSigmoidGradOpx::grow(poplar::program::Sequence &prog) const {
       pe::Mul(*theta_plus.back(), *theta_minus.back())));
   exprs.push_back(std::make_unique<pe::Mul>(pe::_1, *exprs.back()));
 
-  auto output = popops::map(graph(),
+  auto output = popops::map(graph().getPoplarGraph(),
                             *exprs.back(),
                             {input, fwd_input},
                             prog,

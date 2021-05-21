@@ -21,7 +21,7 @@ namespace popart {
 namespace popx {
 
 ModifyRandomSeedOpx::ModifyRandomSeedOpx(Op *op, Devicex *devicex)
-    : Opx(op, devicex) {
+    : PopOpx(op, devicex) {
   verifyOp<ModifyRandomSeedOp>(op);
 }
 
@@ -41,11 +41,12 @@ void ModifyRandomSeedOpx::grow(poplar::program::Sequence &prog) const {
   auto inSeedR = inSeed.slice(1, 2);
 
   // Calculate R + modifier.
-  auto rPlusMod = popops::add(graph(), inSeedR, modifier, prog);
+  auto rPlusMod =
+      popops::add(graph().getPoplarGraph(), inSeedR, modifier, prog);
   auto metaSeed = poplar::concat({inSeedL, rPlusMod});
   // Calculate randint(R + modifier).
   auto outSeedRAsInt = poprand::uniform(
-      graph(),
+      graph().getPoplarGraph(),
       &metaSeed,
       0u,
       inSeedR,
@@ -55,7 +56,7 @@ void ModifyRandomSeedOpx::grow(poplar::program::Sequence &prog) const {
       prog,
       debugContext("pickSeed"));
   // Map randint(R + modifier) to UNSIGNED INT.
-  auto outSeedR = popops::map(graph(),
+  auto outSeedR = popops::map(graph().getPoplarGraph(),
                               pe::Cast(pe::_1, poplar::UNSIGNED_INT),
                               {outSeedRAsInt},
                               prog,

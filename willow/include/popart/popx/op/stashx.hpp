@@ -3,12 +3,12 @@
 #define GUARD_NEURALNET_STASHX_HPP
 
 #include <popart/names.hpp>
-#include <popart/popx/opx.hpp>
+#include <popart/popx/popopx.hpp>
 
 namespace popart {
 namespace popx {
 
-class StashOpx : public Opx {
+class StashOpx : public PopOpx {
 public:
   StashOpx(Op *, Devicex *);
   void grow(poplar::program::Sequence &) const final;

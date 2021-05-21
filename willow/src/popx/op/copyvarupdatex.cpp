@@ -43,13 +43,14 @@ CopyVarUpdateOpx::createInput(int inIndex,
         "only create the updater input Tensor",
         inIndex);
   }
-  return graph().clone(getInTensor(VarUpdateOp::getVarToUpdateInIndex()), dnai);
+  return graph().getPoplarGraph().clone(
+      getInTensor(VarUpdateOp::getVarToUpdateInIndex()), dnai);
 }
 
 InputCreatorType CopyVarUpdateOpx::getInputCreatorType(int inIndex) const {
   return inIndex == VarUpdateWithUpdaterOp::getUpdaterInIndex()
              ? InputCreatorType::CanCreate
-             : Opx::getInputCreatorType(inIndex);
+             : PopOpx::getInputCreatorType(inIndex);
 }
 
 std::set<TensorId> CopyVarUpdateOpx::mustExistBeforeCreate(int index1) const {

@@ -45,9 +45,9 @@
 #include <popart/popx/devicexmanager.hpp>
 #include <popart/popx/executablex.hpp>
 #include <popart/popx/irlowering.hpp>
-#include <popart/popx/opx.hpp>
 #include <popart/popx/opxmanager.hpp>
 #include <popart/popx/poplaroptionsx.hpp>
+#include <popart/popx/popopx.hpp>
 #include <popart/popx/pritask.hpp>
 #include <popart/recompute.hpp>
 #include <popart/stepio.hpp>

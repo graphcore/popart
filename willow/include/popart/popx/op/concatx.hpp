@@ -3,7 +3,7 @@
 #define GUARD_NEURALNET_CONCATX_HPP
 
 #include <popart/names.hpp>
-#include <popart/popx/opx.hpp>
+#include <popart/popx/popopx.hpp>
 
 namespace popart {
 
@@ -12,7 +12,7 @@ class ConcatGradOp;
 
 namespace popx {
 
-class BaseConcatOpx : public Opx {
+class BaseConcatOpx : public PopOpx {
 public:
   BaseConcatOpx(Op *, Devicex *);
   InputCreatorType getInputCreatorType(InIndex) const final;
@@ -44,7 +44,7 @@ private:
   const ConcatOp *const op;
 };
 
-class ConcatGradOpx : public Opx {
+class ConcatGradOpx : public PopOpx {
 public:
   ConcatGradOpx(Op *, Devicex *);
   void grow(poplar::program::Sequence &) const final;

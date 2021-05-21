@@ -17,7 +17,7 @@ namespace pe = popops::expr;
 namespace popart {
 namespace popx {
 
-ReduceProdOpx::ReduceProdOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
+ReduceProdOpx::ReduceProdOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
   verifyOp<ReduceProdOp>(op);
 }
 
@@ -25,7 +25,7 @@ void ReduceProdOpx::grow(poplar::program::Sequence &prog) const {
   const auto &op   = getOp<ReduceProdOp>();
   const auto input = getInTensor(ReduceProdOp::getInIndex());
 
-  auto output_tensor = popops::reduce(graph(),
+  auto output_tensor = popops::reduce(graph().getPoplarGraph(),
                                       input,
                                       vector_cast<std::size_t>(op.getAxes()),
                                       {popops::Operation::MUL},
@@ -38,7 +38,7 @@ void ReduceProdOpx::grow(poplar::program::Sequence &prog) const {
 }
 
 ReduceProdGradOpx::ReduceProdGradOpx(Op *op, Devicex *devicex)
-    : Opx(op, devicex) {
+    : PopOpx(op, devicex) {
   verifyOp<ReduceProdGradOp>(op, Onnx::GradOperators::ReduceProdGrad);
 }
 
@@ -103,13 +103,13 @@ void ReduceProdGradOpx::grow(poplar::program::Sequence &prog) const {
   for (int64_t i = 1; i < lrcumprod.dim(0); ++i) {
     auto left  = lrcumprod.slice(i, lrcumprod.dim(0), 0);
     auto right = lrcumprod.slice(0, lrcumprod.dim(0) - i, 0);
-    popops::mapInPlace(graph(),
+    popops::mapInPlace(graph().getPoplarGraph(),
                        pe::Mul(pe::_1, pe::_2),
                        {left, fwd_input.slice(i - 1, i, 0)},
                        prog,
                        debugContext("mul"));
     popops::mapInPlace(
-        graph(),
+        graph().getPoplarGraph(),
         pe::Mul(pe::_1, pe::_2),
         {right,
          fwd_input.slice(lrcumprod.dim(0) - i, lrcumprod.dim(0) - i + 1, 0)},

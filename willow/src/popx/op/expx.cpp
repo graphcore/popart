@@ -19,21 +19,29 @@ ExpOpx::ExpOpx(Op *op, Devicex *devicex)
 }
 
 poplar::Tensor ExpComputex::outplace(poplar::program::Sequence &p,
-                                     poplar::Graph &g,
+                                     snap::Graph &g,
                                      const poplar::Tensor &t,
                                      const poplar::DebugNameAndId &dnai,
                                      const std::string &dbs) const {
 
-  return popops::map(g, popops::expr::UnaryOpType::EXPONENT, t, p, {dnai, dbs});
+  return popops::map(g.getPoplarGraph(),
+                     popops::expr::UnaryOpType::EXPONENT,
+                     t,
+                     p,
+                     {dnai, dbs});
 }
 
 void ExpComputex::inplace(poplar::program::Sequence &p,
-                          poplar::Graph &g,
+                          snap::Graph &g,
                           const poplar::Tensor &t,
                           const poplar::DebugNameAndId &dnai,
                           const std::string &dbs) const {
 
-  popops::mapInPlace(g, popops::expr::UnaryOpType::EXPONENT, t, p, {dnai, dbs});
+  popops::mapInPlace(g.getPoplarGraph(),
+                     popops::expr::UnaryOpType::EXPONENT,
+                     t,
+                     p,
+                     {dnai, dbs});
 }
 
 namespace {

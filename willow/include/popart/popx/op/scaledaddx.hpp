@@ -2,13 +2,13 @@
 #ifndef GUARD_NEURALNET_SCALEDADDX_HPP
 #define GUARD_NEURALNET_SCALEDADDX_HPP
 
-#include <popart/popx/opx.hpp>
+#include <popart/popx/popopx.hpp>
 
 namespace popart {
 
 namespace popx {
 
-class ScaledAddOpx : public Opx {
+class ScaledAddOpx : public PopOpx {
 public:
   ScaledAddOpx(Op *, Devicex *);
   void grow(poplar::program::Sequence &) const override;

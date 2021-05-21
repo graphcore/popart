@@ -15,7 +15,7 @@ ElementWiseUnaryOutplaceOpx::ElementWiseUnaryOutplaceOpx(
     : ElementWiseUnaryOpx(op, devx), cx(std::move(cx_)) {}
 
 ElementWiseUnaryOpx::ElementWiseUnaryOpx(Op *op, Devicex *devicex)
-    : Opx(op, devicex) {}
+    : PopOpx(op, devicex) {}
 
 InputCreatorType ElementWiseUnaryOpx::getInputCreatorType(InIndex) const {
   return InputCreatorType::CanUnwind;
@@ -32,7 +32,7 @@ view::RegMap ElementWiseUnaryOpx::unwindRegion(InIndex, OutIndex) const {
 }
 
 ElementWiseBinaryOpx::ElementWiseBinaryOpx(Op *op, Devicex *devicex)
-    : Opx(op, devicex) {}
+    : PopOpx(op, devicex) {}
 
 InputCreatorType
 ElementWiseBinaryOpx::getInputCreatorType(InIndex index) const {
@@ -109,13 +109,13 @@ ElementWiseBinaryOpx::createInput(InIndex index,
 
   if (index == arg0Idx) {
     if (dv_p->lowering().tensors().contains(op_p->input->id(arg1Idx))) {
-      return graph().clone(getInTensor(arg1Idx), dnai);
+      return graph().getPoplarGraph().clone(getInTensor(arg1Idx), dnai);
     }
   }
 
   if (index == arg1Idx) {
     if (dv_p->lowering().tensors().contains(op_p->input->id(arg0Idx))) {
-      return graph().clone(getInTensor(arg0Idx), dnai);
+      return graph().getPoplarGraph().clone(getInTensor(arg0Idx), dnai);
     }
   }
 
@@ -175,17 +175,17 @@ view::RegMap ElementWiseBinaryOpx::unwindRegion(InIndex, OutIndex) const {
 
 poplar::Tensor
 EwuComputex::cloneNcopy(poplar::program::Sequence &prog,
-                        poplar::Graph &graph,
+                        snap::Graph &graph,
                         const poplar::Tensor &tensor,
                         const poplar::DebugNameAndId &dnai) const {
-  auto outTensor = graph.clone(tensor, {dnai});
+  auto outTensor = graph.getPoplarGraph().clone(tensor, {dnai});
   poplar::program::Copy copyProg(tensor, outTensor, false, {dnai});
   prog.add(copyProg);
   return outTensor;
 }
 
 poplar::Tensor EwuComputex::outplace(poplar::program::Sequence &prog,
-                                     poplar::Graph &graph,
+                                     snap::Graph &graph,
                                      const poplar::Tensor &tensor,
                                      const poplar::DebugNameAndId &dnai,
                                      const std::string &debug_prefix) const {
@@ -291,11 +291,12 @@ void ElementWiseBinaryInplaceOpx::grow(poplar::program::Sequence &prog) const {
         "Unable to inplace operation {}, tensor is not parallel writeable",
         debugContext().getPathName());
     canComputeInplace = false;
-  } else if (poputil::getTileImbalance(g, tInOut) > maxTileImbalance) {
+  } else if (poputil::getTileImbalance(g.getPoplarGraph(), tInOut) >
+             maxTileImbalance) {
     logging::debug("Unable to inplace operation {}, tensor tile imbalance ({}) "
                    "is too high",
                    debugContext().getPathName(),
-                   poputil::getTileImbalance(g, tInOut));
+                   poputil::getTileImbalance(g.getPoplarGraph(), tInOut));
     canComputeInplace = false;
   }
 
@@ -321,7 +322,7 @@ void ElementWiseBinaryInplaceOpx::grow(poplar::program::Sequence &prog) const {
 }
 
 BinaryComparisonOpx::BinaryComparisonOpx(Op *op, Devicex *devicex)
-    : Opx(op, devicex) {}
+    : PopOpx(op, devicex) {}
 
 } // namespace popx
 } // namespace popart

@@ -15,7 +15,7 @@ FmodOpx::FmodOpx(Op *op, Devicex *devicex) : ElementWiseBinaryOpx(op, devicex) {
 
 void FmodOpx::grow(poplar::program::Sequence &prog) const {
   setOutTensor(FmodOp::getOutIndex(),
-               popops::map(graph(),
+               popops::map(graph().getPoplarGraph(),
                            popops::expr::BinaryOpType::REMAINDER,
                            getInTensor(FmodOp::getArg0InIndex()),
                            getInTensor(FmodOp::getArg1InIndex()),
@@ -25,9 +25,9 @@ void FmodOpx::grow(poplar::program::Sequence &prog) const {
 
 namespace {
 OpxCreator<FmodOpx> fmodOpxCreator({Onnx::AiGraphcore::OpSet1::Fmod});
-OpxCreator<Opx> fmodArg0OpxCreator(Onnx::GradOperators::FmodArg0Grad,
-                                   "FmodArg0Grad should be optimised out, "
-                                   "\"FmodArg0Grad\" pattern is required");
+OpxCreator<PopOpx> fmodArg0OpxCreator(Onnx::GradOperators::FmodArg0Grad,
+                                      "FmodArg0Grad should be optimised out, "
+                                      "\"FmodArg0Grad\" pattern is required");
 } // namespace
 
 } // namespace popx

@@ -24,11 +24,11 @@ static poplar::Tensor subsample(poplar::Tensor &t,
 }
 
 SubsampleInplaceOpx::SubsampleInplaceOpx(Op *op, Devicex *devicex)
-    : Opx(op, devicex) {
+    : PopOpx(op, devicex) {
   verifyOp<SubsampleInplaceOp>(op);
 }
 
-SubsampleOpx::SubsampleOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
+SubsampleOpx::SubsampleOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
   verifyOp<SubsampleOp>(op, {Onnx::CustomOperators::Subsample_1});
 }
 
@@ -49,7 +49,7 @@ void SubsampleInplaceOpx::grow(poplar::program::Sequence &) const {
 }
 
 SubsampleGradOpx::SubsampleGradOpx(Op *op, Devicex *devicex)
-    : Opx(op, devicex) {
+    : PopOpx(op, devicex) {
   verifyOp<SubsampleGradOp>(op, Onnx::CustomGradOperators::SubsampleGrad);
 }
 
@@ -65,7 +65,7 @@ void SubsampleGradOpx::grow(poplar::program::Sequence &prog) const {
   // Design decision: make a scalar zero variable that we expand to create
   // a tensor of the same size as the output
   auto zero = getScalarVariable(in.elementType(), "zero");
-  graph().setInitialValue(zero, 0);
+  graph().getPoplarGraph().setInitialValue(zero, 0);
 
   // Create an 0'ed tensor to be a tensor of the right size
   auto output = zero;
@@ -79,7 +79,7 @@ void SubsampleGradOpx::grow(poplar::program::Sequence &prog) const {
 
   // Copy the zero-view tensor into a new tensor and remap
   auto outTensor = cloneNcopy(prog, output);
-  poputil::mapTensorLinearly(graph(), outTensor);
+  poputil::mapTensorLinearly(graph().getPoplarGraph(), outTensor);
 
   // Create a subsample view of the output
   auto ss_output = subsample(outTensor, gradOp.strides_u32());

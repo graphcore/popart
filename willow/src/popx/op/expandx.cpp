@@ -9,7 +9,7 @@ namespace popart {
 namespace popx {
 
 BaseExpandOpx::BaseExpandOpx(Op *op_, Devicex *devicex)
-    : Opx(op_, devicex), op(static_cast<ExpandOp *>(op_)) {}
+    : PopOpx(op_, devicex), op(static_cast<ExpandOp *>(op_)) {}
 
 ExpandOpx::ExpandOpx(Op *op_, Devicex *devicex) : BaseExpandOpx(op_, devicex) {
   verifyOp<ExpandOp>(op_, {Onnx::Operators::Expand_8});
@@ -88,7 +88,7 @@ void ExpandInplaceOpx::grow(poplar::program::Sequence &) const {
   setOutTensor(ExpandOp::getOutIndex(), expand);
 }
 
-ExpandGradOpx::ExpandGradOpx(Op *op_, Devicex *devicex) : Opx(op_, devicex) {
+ExpandGradOpx::ExpandGradOpx(Op *op_, Devicex *devicex) : PopOpx(op_, devicex) {
   verifyOp<ExpandGradOp>(op_, Onnx::GradOperators::ExpandGrad);
   auto expand_grad_op = dynamic_cast<ExpandGradOp *>(op_);
   if (expand_grad_op) {
@@ -109,9 +109,13 @@ void ExpandGradOpx::grow(poplar::program::Sequence &prog) const {
     }
   }
 
-  auto dX = popops::reduce(
-      graph(), dY, axes, {popops::Operation::ADD}, prog, debugContext("add"));
-  dX = dX.reshape(xShape);
+  auto dX = popops::reduce(graph().getPoplarGraph(),
+                           dY,
+                           axes,
+                           {popops::Operation::ADD},
+                           prog,
+                           debugContext("add"));
+  dX      = dX.reshape(xShape);
   setOutTensor(ExpandGradOp::getOutIndex(), cloneNcopy(prog, dX));
 }
 

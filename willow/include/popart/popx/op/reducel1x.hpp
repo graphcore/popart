@@ -3,18 +3,18 @@
 #define GUARD_NEURALNET_REDUCEL1X_HPP
 
 #include <popart/names.hpp>
-#include <popart/popx/opx.hpp>
+#include <popart/popx/popopx.hpp>
 
 namespace popart {
 namespace popx {
 
-class ReduceL1Opx : public Opx {
+class ReduceL1Opx : public PopOpx {
 public:
   ReduceL1Opx(Op *, Devicex *);
   void grow(poplar::program::Sequence &) const override;
 };
 
-class ReduceL1GradOpx : public Opx {
+class ReduceL1GradOpx : public PopOpx {
 public:
   ReduceL1GradOpx(Op *, Devicex *);
   void grow(poplar::program::Sequence &) const override;

@@ -27,15 +27,24 @@ void AccumulatorUpdateOpx::grow(poplar::program::Sequence &prog) const {
   if (factor.isConst()) {
     auto val = factor.val();
     if (val == 0.0f) {
-      popops::zero(graph(), accum, prog, debugContext("accumulatorUpdate"));
+      popops::zero(graph().getPoplarGraph(),
+                   accum,
+                   prog,
+                   debugContext("accumulatorUpdate"));
     } else {
-      popops::mulInPlace(
-          graph(), accum, val, prog, debugContext("accumulatorUpdate"));
+      popops::mulInPlace(graph().getPoplarGraph(),
+                         accum,
+                         val,
+                         prog,
+                         debugContext("accumulatorUpdate"));
     }
   } else {
     auto factor = getInTensor(AccumulatorUpdateOp::getFactorInIndex());
-    popops::mulInPlace(
-        graph(), accum, factor, prog, debugContext("accumulatorUpdate"));
+    popops::mulInPlace(graph().getPoplarGraph(),
+                       accum,
+                       factor,
+                       prog,
+                       debugContext("accumulatorUpdate"));
   }
 
   if (hasInViewChangers(AccumulatorUpdateOp::getVarToUpdateInIndex())) {

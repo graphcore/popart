@@ -3,13 +3,13 @@
 #define GUARD_NEURALNET_ARGEXTREMAX_HPP
 
 #include <popart/names.hpp>
-#include <popart/popx/opx.hpp>
+#include <popart/popx/popopx.hpp>
 
 namespace popart {
 
 namespace popx {
 
-class ArgExtremaOpx : public Opx {
+class ArgExtremaOpx : public PopOpx {
 public:
   ArgExtremaOpx(Op *, Devicex *);
   void grow(poplar::program::Sequence &) const override;

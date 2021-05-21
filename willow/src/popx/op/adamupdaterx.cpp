@@ -18,7 +18,7 @@ namespace pe = popops::expr;
 namespace popart {
 namespace popx {
 
-AdamUpdaterOpx::AdamUpdaterOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
+AdamUpdaterOpx::AdamUpdaterOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
   verifyOp<AdamUpdaterOp>(op, Onnx::CustomOperators::AdamUpdater);
 }
 
@@ -51,7 +51,8 @@ void AdamUpdaterOpx::grow(poplar::program::Sequence &prog) const {
     poplar::Tensor step = getInTensor(AdamUpdaterOp::getStepInIndex());
 
     // Update step
-    popops::mapInPlace(graph(), pe::Add(pe::_1, pe::Const(1)), {step}, prog);
+    popops::mapInPlace(
+        graph().getPoplarGraph(), pe::Add(pe::_1, pe::Const(1)), {step}, prog);
 
     tensors.push_back(step);
     stepIndex = tensors.size();
@@ -149,8 +150,11 @@ void AdamUpdaterOpx::grow(poplar::program::Sequence &prog) const {
                            pe::PlaceHolder(varIndex)));
   }
 
-  poplar::Tensor updater = popops::map(
-      graph(), pe::Cast(expr, elemType), tensors, prog, debugContext(""));
+  poplar::Tensor updater = popops::map(graph().getPoplarGraph(),
+                                       pe::Cast(expr, elemType),
+                                       tensors,
+                                       prog,
+                                       debugContext(""));
 
   if (hasInput(AdamUpdaterOp::getVarInIndex())) {
     if (hasInViewChangers(AdamUpdaterOp::getVarInIndex())) {

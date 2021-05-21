@@ -17,7 +17,8 @@
 namespace popart {
 namespace popx {
 
-DynamicSliceOpx::DynamicSliceOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
+DynamicSliceOpx::DynamicSliceOpx(Op *op, Devicex *devicex)
+    : PopOpx(op, devicex) {
   verifyOp<DynamicSliceBaseOp>(op);
   inputCreatorPriority = -1.0;
 }
@@ -31,9 +32,9 @@ void DynamicSliceOpx::grow(poplar::program::Sequence &prog) const {
   std::vector<size_t> psizes(op.getSizes().begin(), op.getSizes().end());
 
   auto s = popops::dynamicSlice(
-      graph(),
+      graph().getPoplarGraph(),
       tensor,
-      popops::cast(graph(),
+      popops::cast(graph().getPoplarGraph(),
                    index.reshape({op.getAxes().size()}),
                    poplar::UNSIGNED_INT,
                    prog,
@@ -50,7 +51,7 @@ void DynamicSliceOpx::grow(poplar::program::Sequence &prog) const {
 InputCreatorType DynamicSliceOpx::getInputCreatorType(InIndex index) const {
   return index == DynamicSliceBaseOp::getInIndex()
              ? InputCreatorType::CanCreateOrUnwind
-             : Opx::getInputCreatorType(index);
+             : PopOpx::getInputCreatorType(index);
 }
 
 poplar::Tensor
@@ -60,7 +61,7 @@ DynamicSliceOpx::createInput(InIndex index,
 
   if (index == DynamicSliceBaseOp::getInIndex()) {
     auto outInfo     = op.outInfo(DynamicSliceBaseOp::getOutIndex());
-    auto sliceTensor = graph().addVariable(
+    auto sliceTensor = graph().getPoplarGraph().addVariable(
         popType(outInfo),
         outInfo.shape_szt(),
         debugContext(op.inId(DynamicSliceBaseOp::getInIndex()) + "_slice"));
@@ -76,7 +77,7 @@ DynamicSliceOpx::createInput(InIndex index,
     }
 
     return popops::createSliceableTensorFromSlice(
-        graph(), sliceTensor, paxes, numSlices, dnai);
+        graph().getPoplarGraph(), sliceTensor, paxes, numSlices, dnai);
   }
 
   throw error("DynamicSliceOpx::createInput : Invalid index = " +
@@ -98,7 +99,7 @@ poplar::Tensor DynamicSliceOpx::unwindTensorLayout(poplar::Tensor tensor,
     numSlices[i] = inShape[paxes[i]] / psizes[i];
   }
   return popops::createSliceableTensorFromSlice(
-      graph(), tensor, paxes, numSlices);
+      graph().getPoplarGraph(), tensor, paxes, numSlices);
 }
 
 view::RegMap DynamicSliceOpx::unwindRegion(InIndex index, OutIndex) const {

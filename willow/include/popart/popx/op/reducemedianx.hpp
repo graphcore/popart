@@ -4,18 +4,18 @@
 
 #include <poplar/Tensor.hpp>
 #include <popart/op/reducemedian.hpp>
-#include <popart/popx/opx.hpp>
+#include <popart/popx/popopx.hpp>
 
 namespace popart {
 namespace popx {
 
-class ReduceMedianOpx : public Opx {
+class ReduceMedianOpx : public PopOpx {
 public:
   ReduceMedianOpx(Op *, Devicex *);
   void grow(poplar::program::Sequence &) const override;
 };
 
-class ReduceMedianGradOpx : public Opx {
+class ReduceMedianGradOpx : public PopOpx {
 public:
   ReduceMedianGradOpx(Op *, Devicex *);
   void grow(poplar::program::Sequence &) const override;

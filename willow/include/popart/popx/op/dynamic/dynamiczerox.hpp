@@ -4,7 +4,7 @@
 
 #include <popart/names.hpp>
 #include <popart/popx/op/dynamic/dynamicupdatex.hpp>
-#include <popart/popx/opx.hpp>
+#include <popart/popx/popopx.hpp>
 
 namespace popart {
 namespace popx {

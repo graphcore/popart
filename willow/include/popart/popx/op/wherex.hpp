@@ -2,24 +2,24 @@
 #ifndef GUARD_NEURALNET_WHEREX_HPP
 #define GUARD_NEURALNET_WHEREX_HPP
 
-#include <popart/popx/opx.hpp>
+#include <popart/popx/popopx.hpp>
 
 namespace popart {
 namespace popx {
 
-class WhereOpx : public Opx {
+class WhereOpx : public PopOpx {
 public:
   WhereOpx(Op *, Devicex *);
   void grow(poplar::program::Sequence &) const final;
 };
 
-class WhereXGradOpx : public Opx {
+class WhereXGradOpx : public PopOpx {
 public:
   WhereXGradOpx(Op *, Devicex *);
   void grow(poplar::program::Sequence &) const final;
 };
 
-class WhereYGradOpx : public Opx {
+class WhereYGradOpx : public PopOpx {
 public:
   WhereYGradOpx(Op *, Devicex *);
   void grow(poplar::program::Sequence &) const final;

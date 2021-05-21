@@ -6,7 +6,7 @@ namespace popart {
 namespace popx {
 namespace sortutilx {
 
-poplar::Tensor getIotaTensor(poplar::Graph &graph,
+poplar::Tensor getIotaTensor(snap::Graph &graph,
                              const poplar::Tensor &input,
                              unsigned axis,
                              poplar::program::Sequence &prog,
@@ -20,14 +20,16 @@ poplar::Tensor getIotaTensor(poplar::Graph &graph,
   std::vector<int> iotaVals(sortSize);
   std::iota(iotaVals.begin(), iotaVals.end(), 0);
 
-  auto singleRowIota = graph.addConstant(poplar::INT,
+  auto singleRowIota =
+      graph.getPoplarGraph().addConstant(poplar::INT,
                                          {sortSize},
                                          poplar::ArrayRef<int>(iotaVals),
                                          {dnai, "constant"});
-  poputil::mapTensorLinearly(graph, singleRowIota);
+  poputil::mapTensorLinearly(graph.getPoplarGraph(), singleRowIota);
 
   // Fill a tensor with [0, 1, 2, ... nToSort-1] along "axis"
-  auto indices = graph.clone(poplar::INT, input, {dnai, "clone"});
+  auto indices =
+      graph.getPoplarGraph().clone(poplar::INT, input, {dnai, "clone"});
   prog.add(poplar::program::WriteUndef(indices, {dnai, "writeUndef"}));
 
   // new view of indices, dim-shuffling the given axis

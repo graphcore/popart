@@ -2,18 +2,18 @@
 #ifndef GUARD_NEURALNET_CUMSUMX_HPP
 #define GUARD_NEURALNET_CUMSUMX_HPP
 
-#include <popart/popx/opx.hpp>
+#include <popart/popx/popopx.hpp>
 
 namespace popart {
 namespace popx {
 
-class CumSumOpx : public Opx {
+class CumSumOpx : public PopOpx {
 public:
   CumSumOpx(Op *, Devicex *);
   void grow(poplar::program::Sequence &) const final;
 };
 
-class CumSumGradOpx : public Opx {
+class CumSumGradOpx : public PopOpx {
 public:
   CumSumGradOpx(Op *, Devicex *);
   void grow(poplar::program::Sequence &) const final;

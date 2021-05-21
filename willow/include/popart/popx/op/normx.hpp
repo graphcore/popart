@@ -5,8 +5,8 @@
 #include <popart/names.hpp>
 #include <popart/popx/devicex.hpp>
 #include <popart/popx/op/normx.hpp>
-#include <popart/popx/opx.hpp>
 #include <popart/popx/opxmanager.hpp>
+#include <popart/popx/popopx.hpp>
 
 #include <poplar/Tensor.hpp>
 
@@ -19,7 +19,7 @@ using Shape = std::vector<std::size_t>;
 namespace popart {
 namespace popx {
 
-class NormOpx : public Opx {
+class NormOpx : public PopOpx {
 public:
   NormOpx(Op *, Devicex *);
 

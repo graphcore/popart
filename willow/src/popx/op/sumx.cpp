@@ -17,7 +17,7 @@ namespace pe = popops::expr;
 namespace popart {
 namespace popx {
 
-SumOpx::SumOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
+SumOpx::SumOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
   verifyOp<SumOp>(op, {Onnx::Operators::Sum_6, Onnx::Operators::Sum_8});
 }
 
@@ -53,8 +53,11 @@ void SumOpx::grow(poplar::program::Sequence &prog) const {
   }
 
   // Compute the sum
-  auto sum =
-      popops::map(graph(), *expr.front(), inputs, prog, debugContext("sum"));
+  auto sum = popops::map(graph().getPoplarGraph(),
+                         *expr.front(),
+                         inputs,
+                         prog,
+                         debugContext("sum"));
   setOutTensor(SumOp::getOutIndex(), sum);
 }
 
@@ -84,7 +87,8 @@ view::RegMap SumOpx::unwindRegion(InIndex, OutIndex) const {
   return [](const view::Region &r) { return view::Regions(1, r); };
 }
 
-SumArgGradOpx::SumArgGradOpx(Op *op_, Devicex *devicex_) : Opx(op_, devicex_) {}
+SumArgGradOpx::SumArgGradOpx(Op *op_, Devicex *devicex_)
+    : PopOpx(op_, devicex_) {}
 
 void SumArgGradOpx::grow(poplar::program::Sequence &prog) const {
   auto gradOp = getOp<SumArgGradOp>();
@@ -98,7 +102,7 @@ void SumArgGradOpx::grow(poplar::program::Sequence &prog) const {
 
   // Remove axes from the result that were not present ( or 1) in the input to
   // the fwd op
-  auto out = popops::reduce(graph(),
+  auto out = popops::reduce(graph().getPoplarGraph(),
                             getInTensor(SumArgGradOp::getGradInIndex()),
                             vXtoY<int64_t, std::size_t>(axes),
                             {popops::Operation::ADD},

@@ -3,12 +3,12 @@
 #define GUARD_NEURALNET_RESHAPEX_HPP
 
 #include <popart/names.hpp>
-#include <popart/popx/opx.hpp>
+#include <popart/popx/popopx.hpp>
 
 namespace popart {
 namespace popx {
 
-class ReshapeBaseOpx : public Opx {
+class ReshapeBaseOpx : public PopOpx {
 public:
   ReshapeBaseOpx(Op *, Devicex *);
   InputCreatorType getInputCreatorType(InIndex) const final;

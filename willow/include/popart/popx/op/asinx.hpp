@@ -14,13 +14,13 @@ public:
   AsinComputex() = default;
 
   poplar::Tensor outplace(poplar::program::Sequence &,
-                          poplar::Graph &,
+                          snap::Graph &,
                           const poplar::Tensor &,
                           const poplar::DebugNameAndId &,
                           const std::string &) const final;
 
   void inplace(poplar::program::Sequence &,
-               poplar::Graph &,
+               snap::Graph &,
                const poplar::Tensor &,
                const poplar::DebugNameAndId &,
                const std::string &) const final;
@@ -40,7 +40,7 @@ public:
   AsinInplaceOpx(Op *, Devicex *);
 };
 
-class AsinGradOpx : public Opx {
+class AsinGradOpx : public PopOpx {
 public:
   AsinGradOpx(Op *, Devicex *);
   void grow(poplar::program::Sequence &) const final;

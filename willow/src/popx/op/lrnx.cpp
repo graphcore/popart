@@ -20,12 +20,12 @@ namespace pe = popops::expr;
 namespace popart {
 namespace popx {
 
-LRNOpx::LRNOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
+LRNOpx::LRNOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
   verifyOp<LRNOp>(op, {Onnx::Operators::LRN_1});
 }
 
 namespace {
-poplar::Tensor getScale(poplar::Graph &graph,
+poplar::Tensor getScale(snap::Graph &graph,
                         const poplar::Tensor &input,
                         poplar::program::Sequence &prog,
                         const float alpha,
@@ -33,8 +33,8 @@ poplar::Tensor getScale(poplar::Graph &graph,
                         const int64_t size,
                         const poplar::DebugContext &debugContext) {
   const poplar::DebugInfo di(debugContext, "");
-  auto square     = popops::square(graph, input, prog, {di});
-  auto square_sum = graph.clone(square, {di});
+  auto square     = popops::square(graph.getPoplarGraph(), input, prog, {di});
+  auto square_sum = graph.getPoplarGraph().clone(square, {di});
   prog.add(poplar::program::Copy(square, square_sum, false, {di}));
   auto channels = input.dim(1);
 
@@ -45,7 +45,7 @@ poplar::Tensor getScale(poplar::Graph &graph,
     // i == 0 added by default,
     if ((i != 0L) &&
         (channels - std::max<int64_t>(0L, i)) - std::max<int64_t>(0L, -i) > 0)
-      popops::addInPlace(graph,
+      popops::addInPlace(graph.getPoplarGraph(),
                          square_sum.slice(std::max<int64_t>(0L, -i),
                                           channels - std::max<int64_t>(0L, i),
                                           1),
@@ -57,7 +57,7 @@ poplar::Tensor getScale(poplar::Graph &graph,
   }
 
   auto scale = popops::map(
-      graph,
+      graph.getPoplarGraph(),
       pe::Add(pe::Const(bias), pe::Mul(pe::Const(alpha / size), pe::_1)),
       {square_sum},
       prog,
@@ -80,7 +80,7 @@ void LRNOpx::grow(poplar::program::Sequence &prog) const {
                         debugContext("scale"));
 
   auto output =
-      popops::map(graph(),
+      popops::map(graph().getPoplarGraph(),
                   pe::Mul(pe::_1, pe::Pow(pe::_2, pe::Const(-op.getBeta()))),
                   {input, scale},
                   prog,
@@ -89,7 +89,7 @@ void LRNOpx::grow(poplar::program::Sequence &prog) const {
   setOutTensor(LRNOp::getOutIndex(), output);
 }
 
-LRNGradOpx::LRNGradOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
+LRNGradOpx::LRNGradOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
   verifyOp<LRNGradOp>(op, Onnx::GradOperators::LRNGrad);
 }
 
@@ -107,7 +107,7 @@ void LRNGradOpx::grow(poplar::program::Sequence &prog) const {
                         debugContext("scale"));
 
   auto output = popops::map(
-      graph(),
+      graph().getPoplarGraph(),
       pe::Mul(
           pe::_1,
           pe::Sub(

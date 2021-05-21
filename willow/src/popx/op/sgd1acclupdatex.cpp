@@ -33,10 +33,13 @@ void SGD1AcclUpdateOpx::grow(poplar::program::Sequence &prog) const {
   if (smm1Const) {
     auto smm1Val = vu_op.initSmm1.val();
     if (smm1Val == 0.0f) {
-      popops::zero(graph(), toUpdate, prog, debugContext("resetZeroMm"));
+      popops::zero(graph().getPoplarGraph(),
+                   toUpdate,
+                   prog,
+                   debugContext("resetZeroMm"));
     } else {
       popops::mapInPlace(
-          graph(),
+          graph().getPoplarGraph(),
           pe::Mul(pe::_1, pe::Const(smm1Val)),
           {toUpdate},
           prog,
@@ -44,7 +47,7 @@ void SGD1AcclUpdateOpx::grow(poplar::program::Sequence &prog) const {
     }
   } else {
     popops::mapInPlace(
-        graph(),
+        graph().getPoplarGraph(),
         pe::Mul(pe::_1, pe::_2),
         {toUpdate, getInTensor(SGD1AcclUpdateOp::getSmm1InIndex())},
         prog,
@@ -55,7 +58,7 @@ void SGD1AcclUpdateOpx::grow(poplar::program::Sequence &prog) const {
     auto swd1Val = vu_op.initSwd1.val();
     if (swd1Val != 0.0f) {
       popops::scaledAddTo(
-          graph(),
+          graph().getPoplarGraph(),
           toUpdate,
           getInTensor(VarUpdateWithUpdaterOp::getUpdaterInIndex()),
           swd1Val,
@@ -64,7 +67,7 @@ void SGD1AcclUpdateOpx::grow(poplar::program::Sequence &prog) const {
     }
   } else {
     popops::scaledAddTo(
-        graph(),
+        graph().getPoplarGraph(),
         toUpdate,
         getInTensor(VarUpdateWithUpdaterOp::getUpdaterInIndex()),
         getInTensor(SGD1AcclUpdateOp::getSwd1InIndex()),

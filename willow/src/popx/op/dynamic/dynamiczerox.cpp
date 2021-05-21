@@ -25,17 +25,19 @@ void DynamicZeroOpx::grow(poplar::program::Sequence &prog) const {
 
   auto updateShape = op.inShape(DynamicBinaryBaseOp::getUpdateInIndex());
 
-  auto slice =
-      popops::createSliceTensor(graph(), tensor, paxes, psizes, 1).squeeze({0});
-  popops::zero(graph(), slice, prog, debugContext("dynamic_zero_zero"));
+  auto slice = popops::createSliceTensor(
+                   graph().getPoplarGraph(), tensor, paxes, psizes, 1)
+                   .squeeze({0});
+  popops::zero(
+      graph().getPoplarGraph(), slice, prog, debugContext("dynamic_zero_zero"));
 
   auto outTensor = cloneNcopyOpt(prog, tensor);
 
   popops::dynamicUpdate(
-      graph(),
+      graph().getPoplarGraph(),
       outTensor,
       slice,
-      popops::cast(graph(),
+      popops::cast(graph().getPoplarGraph(),
                    index.reshape({op.getAxes().size()}),
                    poplar::UNSIGNED_INT,
                    prog,
@@ -52,7 +54,7 @@ void DynamicZeroOpx::grow(poplar::program::Sequence &prog) const {
 InputCreatorType DynamicZeroOpx::getInputCreatorType(InIndex index) const {
   return index == DynamicBinaryBaseOp::getUpdateInIndex()
              ? InputCreatorType::CanUnwind
-             : Opx::getInputCreatorType(index);
+             : PopOpx::getInputCreatorType(index);
 }
 
 poplar::Tensor

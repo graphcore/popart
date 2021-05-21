@@ -108,7 +108,7 @@ BOOST_AUTO_TEST_CASE(SliceTrain1) {
   const auto &graph = session->getDevice().lowering().graph();
   for (auto id : session->getDevice().lowering().tensors().tensors_) {
     auto shape    = id.second->shape();
-    const auto tm = graph.getTileMapping(*id.second);
+    const auto tm = graph.getPoplarGraph().getTileMapping(*id.second);
     mappings[shape].push_back(tm);
     std::cout << tm << std::endl;
   }

@@ -3,14 +3,14 @@
 #define GUARD_NEURALNET_SCATTERREDUCEX_HPP
 
 #include <popart/names.hpp>
-#include <popart/popx/opx.hpp>
+#include <popart/popx/popopx.hpp>
 
 #include <popops/DynamicSlice.hpp>
 
 namespace popart {
 namespace popx {
 
-class ScatterReduceOpx : public Opx {
+class ScatterReduceOpx : public PopOpx {
 public:
   ScatterReduceOpx(Op *, Devicex *);
   void grow(poplar::program::Sequence &) const final;
@@ -19,10 +19,6 @@ public:
 
   InputCreatorType getInputCreatorType(InIndex index) const final;
 
-  bool createsEquiv(int index0, const Opx *opx1, int index1) const final {
-    return false;
-  }
-
   std::set<TensorId> mustExistBeforeCreate(InIndex) const final { return {}; }
 
 private:
@@ -30,7 +26,7 @@ private:
   size_t axis;
 };
 
-class ScatterReduceGradOpx : public Opx {
+class ScatterReduceGradOpx : public PopOpx {
 public:
   ScatterReduceGradOpx(Op *, Devicex *);
   void grow(poplar::program::Sequence &) const final;

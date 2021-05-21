@@ -14,7 +14,7 @@ IsNaNx::IsNaNx(Op *op, Devicex *devicex) : ElementWiseUnaryOpx(op, devicex) {
 
 void IsNaNx::grow(poplar::program::Sequence &prog) const {
   setOutTensor(IsNaN::getOutIndex(),
-               popops::map(graph(),
+               popops::map(graph().getPoplarGraph(),
                            popops::expr::BinaryOpType::NOT_EQUAL,
                            getInTensor(IsNaN::getInIndex()),
                            getInTensor(IsNaN::getInIndex()),

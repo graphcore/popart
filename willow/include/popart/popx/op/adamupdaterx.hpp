@@ -2,12 +2,12 @@
 #ifndef GUARD_NEURALNET_ADAMUPDATERX_HPP
 #define GUARD_NEURALNET_ADAMUPDATERX_HPP
 
-#include <popart/popx/opx.hpp>
+#include <popart/popx/popopx.hpp>
 
 namespace popart {
 namespace popx {
 
-class AdamUpdaterOpx : public Opx {
+class AdamUpdaterOpx : public PopOpx {
 public:
   AdamUpdaterOpx(Op *, Devicex *);
   void grow(poplar::program::Sequence &) const final;

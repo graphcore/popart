@@ -2,7 +2,7 @@
 #ifndef GUARD_NEURALNET_PADX_HPP
 #define GUARD_NEURALNET_PADX_HPP
 
-#include <popart/popx/opx.hpp>
+#include <popart/popx/popopx.hpp>
 
 namespace popart {
 
@@ -49,7 +49,7 @@ class BasePadOp;
 //
 namespace popx {
 
-class BasePadOpx : public Opx {
+class BasePadOpx : public PopOpx {
 public:
   BasePadOpx(Op *, Devicex *);
   const BasePadOp &getBasePadOp() const;

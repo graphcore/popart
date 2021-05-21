@@ -9,12 +9,12 @@
 namespace popart {
 namespace popx {
 
-CastOpx::CastOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
+CastOpx::CastOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
   verifyOp<CastOp>(op);
 }
 
 void CastOpx::grow(poplar::program::Sequence &prog) const {
-  auto out = popops::cast(graph(),
+  auto out = popops::cast(graph().getPoplarGraph(),
                           getInTensor(CastOp::getInIndex()),
                           popType(op_p->outInfo(CastOp::getOutIndex())),
                           prog,

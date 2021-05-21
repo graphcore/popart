@@ -160,7 +160,7 @@ bool ICreatorCandidate::greaterThan(ICreatorCandidatePtr icc1,
 
 InputCreatorCandidate::InputCreatorCandidate(
     InIndex index_,
-    const Opx *opx_,
+    const PopOpx *opx_,
     std::vector<OpxInAndOutIndex> pathFromInput_,
     int64_t scheduleIndex_)
     : index(index_), opx(opx_), scheduleIndex(scheduleIndex_) {
@@ -243,12 +243,14 @@ InputCreatorCandidate::unwind(poplar::Tensor input) {
     auto outInfo = opxOnPath.opx->getOp<Op>().outInfo(opxOnPath.outIndex);
 
     auto fullTensor =
-        opxOnPath.opx->dstGraph(opxOnPath.outIndex)
+        opxOnPath.opx->dstVirtualGraph(opxOnPath.outIndex)
+            .getPoplarGraph()
             .addVariable(popType(outInfo), outInfo.shape_szt(), "");
 
     // Map it linearly
-    poputil::mapTensorLinearly(opxOnPath.opx->dstGraph(opxOnPath.outIndex),
-                               fullTensor);
+    poputil::mapTensorLinearly(
+        opxOnPath.opx->dstVirtualGraph(opxOnPath.outIndex).getPoplarGraph(),
+        fullTensor);
 
     logging::devicex::trace("[creatorx] Tensor shape before compose: {}",
                             input.shape());
@@ -302,12 +304,15 @@ InputCreatorCandidate::unwind(poplar::Tensor input) {
         pathToInput.back().opx->getOp<Op>().inInfo(pathToInput.back().inIndex);
 
     auto fullTensor = pathToInput.back()
-                          .opx->srcGraph(pathToInput.back().inIndex)
+                          .opx->srcVirtualGraph(pathToInput.back().inIndex)
+                          .getPoplarGraph()
                           .addVariable(popType(inInfo), inInfo.shape_szt(), "");
 
     // Map it linearly
     poputil::mapTensorLinearly(
-        pathToInput.back().opx->srcGraph(pathToInput.back().inIndex),
+        pathToInput.back()
+            .opx->srcVirtualGraph(pathToInput.back().inIndex)
+            .getPoplarGraph(),
         fullTensor);
 
     logging::devicex::trace("[creatorx] Tensor shape before final compose: {}",

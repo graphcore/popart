@@ -18,7 +18,7 @@ ConvOpx::ConvOpx(Op *op, Devicex *devicex) : MultiConvBaseOpx(op, devicex) {
 poplar::Tensor ConvOpx::createWeightsInput(const poplar::DebugNameAndId &dnai,
                                            int convIndex) const {
   return poplin::createWeights(
-      graph(),
+      graph().getPoplarGraph(),
       getPoplarConvParams(getOp<ConvOp>().getParameters()),
       dnai,
       getConvOptions(convIndex, getFwdPassFlagString()),
@@ -27,7 +27,7 @@ poplar::Tensor ConvOpx::createWeightsInput(const poplar::DebugNameAndId &dnai,
 poplar::Tensor ConvOpx::createDataInput(const poplar::DebugNameAndId &dnai,
                                         int convIndex) const {
   return poplin::createInput(
-      graph(),
+      graph().getPoplarGraph(),
       getPoplarConvParams(getOp<ConvOp>().getParameters()),
       dnai,
       getConvOptions(convIndex, getFwdPassFlagString()),
@@ -38,7 +38,7 @@ std::vector<poplar::Tensor>
 ConvOpx::convolve(poplar::program::Sequence &prog,
                   const std::vector<poplar::Tensor> &weights) const {
   ConvOp &op     = getOp<ConvOp>();
-  auto outTensor = poplin::convolution(graph(),
+  auto outTensor = poplin::convolution(graph().getPoplarGraph(),
                                        getInTensor(ConvOp::getDataInIndex()),
                                        weights[0],
                                        getPoplarConvParams(op.getParameters()),
@@ -63,7 +63,7 @@ std::vector<poplar::Tensor> ConvWeightsGradOpx::calculateWeightDeltas(
   const poplar::Tensor &acts   = getInTensor(gradOp.getPreConvolvedInIndex());
 
   poplar::Tensor wGrad =
-      poplin::calculateWeightDeltas(graph(),
+      poplin::calculateWeightDeltas(graph().getPoplarGraph(),
                                     zDelta,
                                     acts,
                                     getPoplarConvParams(gradOp.getParameters()),
@@ -75,7 +75,7 @@ std::vector<poplar::Tensor> ConvWeightsGradOpx::calculateWeightDeltas(
 }
 
 ConvFlipWeightsGradOpx::ConvFlipWeightsGradOpx(Op *op_, Devicex *devicex_)
-    : Opx(op_, devicex_) {
+    : PopOpx(op_, devicex_) {
   verifyOp<ConvFlipWeightsOp>(op_, Onnx::CustomOperators::ConvFlipWeights);
 }
 
@@ -98,7 +98,7 @@ void ConvFlipWeightsGradOpx::grow(poplar::program::Sequence &seq) const {
   optionFlags.set("pass", "TRAINING_FWD");
 
   auto convWeights = poplin::createWeights(
-      graph(),
+      graph().getPoplarGraph(),
       getPoplarConvParams(params),
       debugContext(inTensor(ConvFlipWeightsOp::getInIndex())->str() +
                    sNameDelimiter + "flipped"),
@@ -114,7 +114,7 @@ void ConvFlipWeightsGradOpx::grow(poplar::program::Sequence &seq) const {
 
     // call weightsTransposeChansFlipXY on group i of weights5D and convWeights.
     poplin::weightsTransposeChansFlipXY(
-        graph(),
+        graph().getPoplarGraph(),
         w,
         c,
         seq,

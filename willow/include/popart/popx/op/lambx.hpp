@@ -2,13 +2,13 @@
 #ifndef GUARD_NEURALNET_LAMBX_HPP
 #define GUARD_NEURALNET_LAMBX_HPP
 
-#include <popart/popx/opx.hpp>
+#include <popart/popx/popopx.hpp>
 
 namespace popart {
 
 namespace popx {
 
-class LambSquareOpx : public Opx {
+class LambSquareOpx : public PopOpx {
 public:
   LambSquareOpx(Op *, Devicex *);
   void grow(poplar::program::Sequence &) const final;

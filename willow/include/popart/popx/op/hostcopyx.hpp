@@ -2,13 +2,13 @@
 #ifndef GUARD_NEURALNET_HOSTX_HPP
 #define GUARD_NEURALNET_HOSTX_HPP
 
-#include <popart/popx/opx.hpp>
+#include <popart/popx/popopx.hpp>
 
 namespace popart {
 
 namespace popx {
 
-class HostBaseOpx : public Opx {
+class HostBaseOpx : public PopOpx {
 public:
   HostBaseOpx(Op *, Devicex *);
 

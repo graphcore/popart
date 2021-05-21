@@ -15,7 +15,7 @@ NegateOpx::NegateOpx(Op *op, Devicex *devicex)
 
 void NegateOpx::grow(poplar::program::Sequence &prog) const {
   setOutTensor(0,
-               popops::map(graph(),
+               popops::map(graph().getPoplarGraph(),
                            popops::expr::UnaryOpType::NEGATE,
                            getInTensor(0),
                            prog,
@@ -29,7 +29,7 @@ NegateGradOpx::NegateGradOpx(Op *op, Devicex *devicex)
 
 void NegateGradOpx::grow(poplar::program::Sequence &prog) const {
   setOutTensor(0,
-               popops::map(graph(),
+               popops::map(graph().getPoplarGraph(),
                            popops::expr::UnaryOpType::NEGATE,
                            getInTensor(0),
                            prog,

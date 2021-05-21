@@ -26,7 +26,7 @@ void ReplicatedAllGatherOpx::grow(poplar::program::Sequence &prog) const {
   allGatherOptions.set("useReplicatedImplementation", "true");
 
   poplar::Tensor gathered =
-      gcl::allGather(graph(),
+      gcl::allGather(graph().getPoplarGraph(),
                      getInTensor(ReplicatedAllGatherOp::getInIndex()),
                      prog,
                      debugContext("replicatedAllGather"),
@@ -53,7 +53,7 @@ ReplicatedAllGatherOpx::getInputCreatorType(InIndex index) const {
   return index == ReplicatedAllGatherOp::getInIndex() &&
                  hasInput(ReplicatedAllGatherOp::getCollectiveLinkedIndex())
              ? InputCreatorType::CanCreateOrUnwind
-             : Opx::getInputCreatorType(index);
+             : PopOpx::getInputCreatorType(index);
 }
 
 poplar::Tensor ReplicatedAllGatherOpx::unwindTensorLayout(poplar::Tensor tensor,
@@ -81,9 +81,9 @@ ReplicatedAllGatherOpx::createInput(InIndex index,
   auto &op = getOp<ReplicatedAllGatherOp>();
 
   if (index == ReplicatedAllGatherOp::getInIndex()) {
-    auto outInfo = op.outInfo(ReplicatedAllGatherOp::getOutIndex());
-    auto outTensor =
-        graph().addVariable(popType(outInfo), outInfo.shape_szt(), dnai);
+    auto outInfo   = op.outInfo(ReplicatedAllGatherOp::getOutIndex());
+    auto outTensor = graph().getPoplarGraph().addVariable(
+        popType(outInfo), outInfo.shape_szt(), dnai);
     dv_p->lowering().getLinearMapper().mapTensor(graph(), outTensor);
     auto cbr = createCollectiveBalancedReorder(outTensor);
     return cbr->createReplicaSlice(popType(outInfo));

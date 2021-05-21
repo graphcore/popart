@@ -14,14 +14,14 @@ public:
   explicit MulComputex(EwbComputex::InplacePolicy ip);
 
   poplar::Tensor outplace(poplar::program::Sequence &,
-                          poplar::Graph &,
+                          snap::Graph &,
                           const poplar::Tensor &,
                           const poplar::Tensor &,
                           const poplar::DebugNameAndId &,
                           const std::string &) const final;
 
   void inplace(poplar::program::Sequence &,
-               poplar::Graph &,
+               snap::Graph &,
                const poplar::Tensor &,
                const poplar::Tensor &,
                const poplar::DebugNameAndId &,

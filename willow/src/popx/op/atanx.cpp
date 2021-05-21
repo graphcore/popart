@@ -26,7 +26,7 @@ AtanOpx::AtanOpx(Op *op, Devicex *devicex)
 }
 
 poplar::Tensor AtanComputex::outplace(poplar::program::Sequence &p,
-                                      poplar::Graph &g,
+                                      snap::Graph &g,
                                       const poplar::Tensor &t,
                                       const poplar::DebugNameAndId &dnai,
                                       const std::string &s) const {
@@ -36,7 +36,7 @@ poplar::Tensor AtanComputex::outplace(poplar::program::Sequence &p,
 }
 
 void AtanComputex::inplace(poplar::program::Sequence &p,
-                           poplar::Graph &g,
+                           snap::Graph &g,
                            const poplar::Tensor &t,
                            const poplar::DebugNameAndId &dnai,
                            const std::string &s) const {
@@ -51,10 +51,10 @@ void AtanComputex::inplace(poplar::program::Sequence &p,
   exprs.push_back(std::make_unique<pe::Divide>(pe::_1, *exprs.back()));
   exprs.push_back(std::make_unique<pe::Asin>(*exprs.back()));
 
-  popops::mapInPlace(g, *exprs.back(), {t}, p, {dnai, s});
+  popops::mapInPlace(g.getPoplarGraph(), *exprs.back(), {t}, p, {dnai, s});
 }
 
-AtanGradOpx::AtanGradOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
+AtanGradOpx::AtanGradOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
   verifyOp<AtanGradOp>(op, Onnx::GradOperators::AtanGrad);
 }
 
@@ -70,7 +70,7 @@ void AtanGradOpx::grow(poplar::program::Sequence &prog) const {
   exprs.push_back(std::make_unique<pe::Divide>(pe::Const(1.0f), *exprs.back()));
   exprs.push_back(std::make_unique<pe::Mul>(pe::_1, *exprs.back()));
 
-  auto output = popops::map(graph(),
+  auto output = popops::map(graph().getPoplarGraph(),
                             *exprs.back(),
                             {input, fwd_input},
                             prog,

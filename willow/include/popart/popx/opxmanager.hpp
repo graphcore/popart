@@ -4,7 +4,7 @@
 
 #include <popart/error.hpp>
 #include <popart/names.hpp>
-#include <popart/popx/opx.hpp>
+#include <popart/popx/popopx.hpp>
 
 namespace popart {
 
@@ -19,11 +19,11 @@ class OpxManager {
 
 public:
   using OpxFactoryFunc =
-      std::function<std::unique_ptr<Opx>(Op *op, Devicex *devicex)>;
+      std::function<std::unique_ptr<PopOpx>(Op *op, Devicex *devicex)>;
 
   static void registerOpx(const OperatorIdentifier &opid, OpxFactoryFunc func);
 
-  static std::unique_ptr<Opx> createOpx(Op *op, Devicex *devicex);
+  static std::unique_ptr<PopOpx> createOpx(Op *op, Devicex *devicex);
 
 private:
   std::map<OperatorIdentifier, OpxFactoryFunc, OperatorIdentifierLess> factory;
@@ -33,7 +33,7 @@ template <class OPX> class OpxCreator {
 public:
   OpxCreator(const OperatorIdentifier &opid) {
     OpxManager::registerOpx(
-        opid, [](Op *op, Devicex *devicex) -> std::unique_ptr<Opx> {
+        opid, [](Op *op, Devicex *devicex) -> std::unique_ptr<PopOpx> {
           return std::unique_ptr<OPX>(new OPX(op, devicex));
         });
   }
@@ -41,23 +41,23 @@ public:
   OpxCreator(const std::vector<OperatorIdentifier> &opids) {
     for (const auto &opid : opids) {
       OpxManager::registerOpx(
-          opid, [](Op *op, Devicex *devicex) -> std::unique_ptr<Opx> {
+          opid, [](Op *op, Devicex *devicex) -> std::unique_ptr<PopOpx> {
             return std::unique_ptr<OPX>(new OPX(op, devicex));
           });
     }
   }
 
   OpxCreator(const OperatorIdentifier &opid, std::string errMsg) {
-    OpxManager::registerOpx(opid,
-                            [errMsg](Op *, Devicex *) -> std::unique_ptr<Opx> {
-                              throw error(errMsg);
-                            });
+    OpxManager::registerOpx(
+        opid, [errMsg](Op *, Devicex *) -> std::unique_ptr<PopOpx> {
+          throw error(errMsg);
+        });
   }
 
   OpxCreator(const std::vector<OperatorIdentifier> &opids, std::string errMsg) {
     for (const auto &opid : opids) {
       OpxManager::registerOpx(
-          opid, [errMsg](Op *, Devicex *) -> std::unique_ptr<Opx> {
+          opid, [errMsg](Op *, Devicex *) -> std::unique_ptr<PopOpx> {
             throw error(errMsg);
           });
     }

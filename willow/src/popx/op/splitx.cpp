@@ -8,7 +8,7 @@ namespace popart {
 
 namespace popx {
 
-SplitOpx::SplitOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
+SplitOpx::SplitOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
   verifyOp<SplitOp>(op, {Onnx::Operators::Split_2, Onnx::Operators::Split_11});
 }
 

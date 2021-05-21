@@ -6,7 +6,7 @@
 
 #include <popart/names.hpp>
 #include <popart/op/identity.hpp>
-#include <popart/popx/opx.hpp>
+#include <popart/popx/popopx.hpp>
 
 namespace popnn {
 namespace ctc {
@@ -17,19 +17,19 @@ class Plan;
 namespace popart {
 namespace popx {
 
-class CtcOpx : public Opx {
+class CtcOpx : public PopOpx {
 public:
   CtcOpx(Op *, Devicex *);
   void grow(poplar::program::Sequence &) const final;
 
-  // See Opx::createInput.
+  // See PopOpx::createInput.
   virtual poplar::Tensor
   createInput(InIndex index, const poplar::DebugNameAndId &dnai) const override;
 
-  // See Opx::getInputCreatorType.
+  // See PopOpx::getInputCreatorType.
   virtual InputCreatorType getInputCreatorType(InIndex index) const override;
 
-  // See Opx::mustExistBeforeCreate.
+  // See PopOpx::mustExistBeforeCreate.
   std::set<TensorId> mustExistBeforeCreate(InIndex index) const override;
 
 private:
@@ -43,7 +43,7 @@ private:
   std::unique_ptr<popnn::ctc::Plan> plan;
 };
 
-class CtcGradOpx : public Opx {
+class CtcGradOpx : public PopOpx {
 public:
   CtcGradOpx(Op *, Devicex *);
   void grow(poplar::program::Sequence &) const final;

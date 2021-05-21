@@ -21,7 +21,7 @@ ReluOpx::ReluOpx(Op *op, Devicex *devicex)
 }
 
 poplar::Tensor ReluComputex::outplace(poplar::program::Sequence &p,
-                                      poplar::Graph &g,
+                                      snap::Graph &g,
                                       const poplar::Tensor &t,
                                       const poplar::DebugNameAndId &dnai,
                                       const std::string &s) const {
@@ -31,16 +31,17 @@ poplar::Tensor ReluComputex::outplace(poplar::program::Sequence &p,
 }
 
 void ReluComputex::inplace(poplar::program::Sequence &p,
-                           poplar::Graph &g,
+                           snap::Graph &g,
                            const poplar::Tensor &t,
                            const poplar::DebugNameAndId &dnai,
                            const std::string &s) const {
 
   // apply the inplace RELU
-  popnn::nonLinearityInPlace(g, popnn::NonLinearityType::RELU, t, p, {dnai, s});
+  popnn::nonLinearityInPlace(
+      g.getPoplarGraph(), popnn::NonLinearityType::RELU, t, p, {dnai, s});
 }
 
-ReluGradOpx::ReluGradOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
+ReluGradOpx::ReluGradOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
   verifyOp<ReluGradOp>(op, Onnx::GradOperators::ReluGrad);
 }
 
@@ -49,7 +50,7 @@ void ReluGradOpx::grow(poplar::program::Sequence &prog) const {
   ReluGradOp &rgop = getOp<ReluGradOp>();
 
   auto outTensor = popnn::nonLinearityInputGradient(
-      graph(),                                 // graph,
+      graph().getPoplarGraph(),                // graph,
       popnn::NonLinearityType::RELU,           // nonLinearityType,
       getInTensor(rgop.getReludInIndex()),     // out,
       getInTensor(rgop.getGradReludInIndex()), // outGradient,

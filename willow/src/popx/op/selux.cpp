@@ -36,7 +36,7 @@ SeluOpx::SeluOpx(Op *op, Devicex *devicex)
 }
 
 void SeluComputex::inplace(poplar::program::Sequence &prog,
-                           poplar::Graph &graph,
+                           snap::Graph &graph,
                            const poplar::Tensor &tensor,
                            const poplar::DebugNameAndId &dnai,
                            const std::string &debug_prefix) const {
@@ -53,8 +53,11 @@ void SeluComputex::inplace(poplar::program::Sequence &prog,
   exprs.push_back(
       std::make_unique<pe::Mul>(pe::Const(this->getGamma()), *exprs.back()));
 
-  popops::mapInPlace(
-      graph, *exprs.back(), {tensor}, prog, {dnai, debug_prefix});
+  popops::mapInPlace(graph.getPoplarGraph(),
+                     *exprs.back(),
+                     {tensor},
+                     prog,
+                     {dnai, debug_prefix});
 }
 
 SeluInplaceOpx::SeluInplaceOpx(Op *op, Devicex *devicex)
@@ -66,7 +69,7 @@ SeluInplaceOpx::SeluInplaceOpx(Op *op, Devicex *devicex)
   verifyOp<SeluInplaceOp>(op, Onnx::CustomOperators::SeluInplace);
 }
 
-SeluGradOpx::SeluGradOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
+SeluGradOpx::SeluGradOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
   verifyOp<SeluGradOp>(op, Onnx::GradOperators::SeluGrad);
 }
 
@@ -100,7 +103,7 @@ void SeluGradOpx::grow(poplar::program::Sequence &prog) const {
       std::make_unique<pe::Mul>(pe::Const(op.getGamma()), *exprs.back()));
   exprs.push_back(std::make_unique<pe::Mul>(pe::_1, *exprs.back()));
 
-  auto output = popops::map(graph(),
+  auto output = popops::map(graph().getPoplarGraph(),
                             *exprs.back(),
                             {input, fwd_input},
                             prog,

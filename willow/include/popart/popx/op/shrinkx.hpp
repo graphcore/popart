@@ -13,13 +13,13 @@ public:
   ShrinkComputex(float lambd, float bias) : lambd_(lambd), bias_(bias) {}
 
   poplar::Tensor outplace(poplar::program::Sequence &,
-                          poplar::Graph &,
+                          snap::Graph &,
                           const poplar::Tensor &,
                           const poplar::DebugNameAndId &,
                           const std::string &) const final;
 
   void inplace(poplar::program::Sequence &,
-               poplar::Graph &,
+               snap::Graph &,
                const poplar::Tensor &,
                const poplar::DebugNameAndId &,
                const std::string &) const final;
@@ -47,7 +47,7 @@ public:
   ShrinkInplaceOpx(Op *, Devicex *);
 };
 
-class ShrinkGradOpx : public Opx {
+class ShrinkGradOpx : public PopOpx {
 public:
   ShrinkGradOpx(Op *, Devicex *);
   void grow(poplar::program::Sequence &) const final;

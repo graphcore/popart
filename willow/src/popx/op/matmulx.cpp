@@ -61,7 +61,7 @@ void MatMulOpx::addPartialsType(const MatMulPartialsType &partialsType,
   }
 }
 
-MatMulOpx::MatMulOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
+MatMulOpx::MatMulOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
   verifyOp<MatMulOp>(op,
                      {Onnx::Operators::MatMul_1, Onnx::Operators::MatMul_9});
 }
@@ -452,7 +452,7 @@ void MatMulOpx::grow(poplar::program::Sequence &prog) const {
 
   auto cacheSize = dv_p->matmulCache.size();
   auto outTensor =
-      poplin::matMulGrouped(graph(),                    // graph
+      poplin::matMulGrouped(graph().getPoplarGraph(),   // graph
                             combinedBroadcastTs.first,  // A
                             combinedBroadcastTs.second, // B
                             prog,                       // prog
@@ -466,7 +466,7 @@ void MatMulOpx::grow(poplar::program::Sequence &prog) const {
   // Log the report plan
   std::stringstream ss;
   poplin::matMulGroupedReportPlan(ss,
-                                  graph(),
+                                  graph().getPoplarGraph(),
                                   combinedBroadcastTs.first.elementType(),
                                   outTensor.elementType(),
                                   combinedBroadcastTs.first.shape(),
@@ -598,7 +598,7 @@ MatMulOpx::createInput(InIndex index,
 
   if (index == MatMulOp::getLhsInIndex()) {
     auto result = poplin::createMatMulGroupedInputLHS(
-        graph(),
+        graph().getPoplarGraph(),
         popType(getMatMulOp()->lhsIn()->info.dataType()),
         popType(getMatMulOp()->lhsIn()->info.dataType()),
         lhsShape,
@@ -613,7 +613,7 @@ MatMulOpx::createInput(InIndex index,
     return result.reshape(matmul.lhsIn()->info.shape_szt());
   } else if (index == MatMulOp::getRhsInIndex()) {
     auto result = poplin::createMatMulGroupedInputRHS(
-        graph(),
+        graph().getPoplarGraph(),
         popType(getMatMulOp()->lhsIn()->info.dataType()),
         popType(getMatMulOp()->lhsIn()->info.dataType()),
         lhsShape,
@@ -638,27 +638,6 @@ InputCreatorType MatMulOpx::getInputCreatorType(InIndex) const {
   } else {
     return InputCreatorType::Deadend;
   }
-}
-
-bool MatMulOpx::createsEquiv(int ind0, const Opx *opx1, int ind1) const {
-  if (opx1->op_p->opid != Onnx::Operators::MatMul_1 &&
-      opx1->op_p->opid != Onnx::Operators::MatMul_9)
-    return false;
-
-  if (ind0 != ind1)
-    return false;
-
-  // Test that the shapes and types of inputs and outputs of the two ops are the
-  // same
-  // TODO : Could optimize this to not use the either lhs or rhs
-  const MatMulOpx *rhs = dynamic_cast<const MatMulOpx *>(opx1);
-  if (getMatMulOp()->lhsIn()->info != rhs->getMatMulOp()->lhsIn()->info ||
-      getMatMulOp()->rhsIn()->info != rhs->getMatMulOp()->rhsIn()->info ||
-      getMatMulOp()->out()->info != rhs->getMatMulOp()->out()->info) {
-    return false;
-  }
-
-  return true;
 }
 
 std::set<TensorId> MatMulOpx::mustExistBeforeCreate(InIndex) const {

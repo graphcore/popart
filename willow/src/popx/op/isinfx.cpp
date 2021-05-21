@@ -17,7 +17,7 @@ void IsInfx::grow(poplar::program::Sequence &prog) const {
   setOutTensor(
       IsInf::getOutIndex(),
       popops::map(
-          graph(),
+          graph().getPoplarGraph(),
           popops::expr::And(
               popops::expr::Equal(popops::expr::_1, popops::expr::_1),
               popops::expr::Not(popops::expr::IsFinite(popops::expr::_1))),

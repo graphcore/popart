@@ -56,7 +56,7 @@ void GroupNormOpx::grow(poplar::program::Sequence &prog) const {
                              fastMathGroupNorm ? "true" : "false"}};
 
   std::tie(mean, invStdDev) =
-      popnn::gn::groupNormStatistics(graph(),
+      popnn::gn::groupNormStatistics(graph().getPoplarGraph(),
                                      input,
                                      epsilon,
                                      prog,
@@ -68,7 +68,7 @@ void GroupNormOpx::grow(poplar::program::Sequence &prog) const {
                                      flags);
 
   // Calculate the normalization
-  auto result = popnn::gn::groupNormalise(graph(),
+  auto result = popnn::gn::groupNormalise(graph().getPoplarGraph(),
                                           input,
                                           scale,
                                           b,
@@ -108,12 +108,18 @@ void GroupNormGradOpx::grow(poplar::program::Sequence &prog) const {
   poplar::OptionFlags flags{{"groupNormStridedChannelGrouping",
                              fastMathGroupNorm ? "true" : "false"}};
 
-  poplar::Tensor xWhitened = popnn::gn::groupNormWhiten(
-      graph(), x, mean, invStdDev, prog, debugContext("whitenedActs"), flags);
+  poplar::Tensor xWhitened =
+      popnn::gn::groupNormWhiten(graph().getPoplarGraph(),
+                                 x,
+                                 mean,
+                                 invStdDev,
+                                 prog,
+                                 debugContext("whitenedActs"),
+                                 flags);
 
   // Compute the delta for the operand
   poplar::Tensor xGrad =
-      popnn::gn::groupNormGradients(graph(),
+      popnn::gn::groupNormGradients(graph().getPoplarGraph(),
                                     xWhitened,
                                     yGrad,
                                     invStdDev,
@@ -127,7 +133,7 @@ void GroupNormGradOpx::grow(poplar::program::Sequence &prog) const {
   poplar::Tensor scaleGrad;
   poplar::Tensor bGrad;
   std::tie(scaleGrad, bGrad) =
-      popnn::gn::groupNormParamGradients(graph(),
+      popnn::gn::groupNormParamGradients(graph().getPoplarGraph(),
                                          xWhitened,
                                          yGrad,
                                          prog,

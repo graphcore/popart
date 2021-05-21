@@ -3,13 +3,13 @@
 #define GUARD_NEURALNET_IPUCOPYX_HPP
 
 #include <popart/names.hpp>
-#include <popart/popx/opx.hpp>
+#include <popart/popx/popopx.hpp>
 
 namespace popart {
 
 namespace popx {
 
-class IpuCopyOpx : public Opx {
+class IpuCopyOpx : public PopOpx {
 public:
   IpuCopyOpx(Op *, Devicex *);
   void grow(poplar::program::Sequence &) const final;
@@ -30,8 +30,8 @@ public:
       unwindTensorLayout(poplar::Tensor, InIndex, OutIndex) const final;
   view::RegMap unwindRegion(InIndex, OutIndex) const final;
 
-  poplar::Graph &srcGraph(InIndex) const final;
-  poplar::Graph &dstGraph(OutIndex) const final;
+  snap::Graph &srcVirtualGraph(InIndex) const final;
+  snap::Graph &dstVirtualGraph(OutIndex) const final;
 };
 
 } // namespace popx

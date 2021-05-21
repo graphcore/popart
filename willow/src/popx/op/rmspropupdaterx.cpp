@@ -16,7 +16,7 @@ namespace popart {
 namespace popx {
 
 RMSPropUpdaterOpx::RMSPropUpdaterOpx(Op *op, Devicex *devicex)
-    : Opx(op, devicex) {
+    : PopOpx(op, devicex) {
   verifyOp<RMSPropUpdaterOp>(op, Onnx::CustomOperators::RMSPropUpdater);
 }
 
@@ -54,7 +54,7 @@ void RMSPropUpdaterOpx::grow(poplar::program::Sequence &prog) const {
 
   // grad / sqrt(Accl1 - Accl2^2 + eps)
   poplar::Tensor updater =
-      popops::map(graph(),
+      popops::map(graph().getPoplarGraph(),
                   pe::Cast(pe::Divide(pe::Cast(pe::_1, accl1.elementType()),
                                       pe::Add(pe::Sqrt(rmsexpr), epsexpr)),
                            grad.elementType()),

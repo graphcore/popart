@@ -15,7 +15,7 @@ SquareOpx::SquareOpx(Op *op, Devicex *devicex)
 
 void SquareOpx::grow(poplar::program::Sequence &prog) const {
   setOutTensor(0,
-               popops::map(graph(),
+               popops::map(graph().getPoplarGraph(),
                            popops::expr::UnaryOpType::SQUARE,
                            getInTensor(0),
                            prog,
@@ -24,7 +24,7 @@ void SquareOpx::grow(poplar::program::Sequence &prog) const {
 
 namespace {
 OpxCreator<SquareOpx> squareOpxCreator(Onnx::CustomOperators::Square);
-// OpxCreator<Opx> squareGradOpxCreator("SquareGrad", "SquareGradOp should be
+// OpxCreator<PopOpx> squareGradOpxCreator("SquareGrad", "SquareGradOp should be
 // removed by pattern 'SqrtGradOp'");
 
 } // namespace

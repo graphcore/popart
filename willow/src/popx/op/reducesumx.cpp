@@ -15,7 +15,7 @@
 namespace popart {
 namespace popx {
 
-ReduceSumOpx::ReduceSumOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
+ReduceSumOpx::ReduceSumOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
   verifyOp<ReduceSumOp>(op);
 }
 
@@ -23,7 +23,7 @@ void ReduceSumOpx::grow(poplar::program::Sequence &prog) const {
   const auto &op   = getOp<ReduceSumOp>();
   const auto input = getInTensor(ReduceSumOp::getInIndex());
 
-  auto output_tensor = popops::reduce(graph(),
+  auto output_tensor = popops::reduce(graph().getPoplarGraph(),
                                       input,
                                       vector_cast<std::size_t>(op.getAxes()),
                                       {popops::Operation::ADD},
@@ -36,7 +36,7 @@ void ReduceSumOpx::grow(poplar::program::Sequence &prog) const {
 }
 
 ReduceSumGradOpx::ReduceSumGradOpx(Op *op, Devicex *devicex)
-    : Opx(op, devicex) {
+    : PopOpx(op, devicex) {
   verifyOp<ReduceSumGradOp>(op, Onnx::GradOperators::ReduceSumGrad);
 }
 

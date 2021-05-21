@@ -2,12 +2,12 @@
 #ifndef GUARD_NEURALNET_LOSSSCALEUPDATEX_HPP
 #define GUARD_NEURALNET_LOSSSCALEUPDATEX_HPP
 
-#include <popart/popx/opx.hpp>
+#include <popart/popx/popopx.hpp>
 
 namespace popart {
 namespace popx {
 
-class LossScaleUpdateOpx : public Opx {
+class LossScaleUpdateOpx : public PopOpx {
 public:
   LossScaleUpdateOpx(Op *, Devicex *);
   void grow(poplar::program::Sequence &) const final;

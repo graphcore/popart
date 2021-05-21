@@ -19,7 +19,7 @@
 namespace popart {
 namespace popx {
 
-GRUOpx::GRUOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
+GRUOpx::GRUOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
   verifyOp<GRUOp>(op, {Onnx::Operators::GRU_3, Onnx::Operators::GRU_7});
 }
 
@@ -35,7 +35,7 @@ std::unique_ptr<poplar::Tensor> GRUOpx::createIntermediate() const {
 poplar::Tensor GRUOpx::getInitialState() const {
   if (!initial_state_h) {
     initial_state_h =
-        popnn::gru::createInitialState(graph(),
+        popnn::gru::createInitialState(graph().getPoplarGraph(),
                                        createGRUParams(),
                                        debugContext("initialState"),
                                        dv_p->lowering().lstmOptions,
@@ -50,7 +50,7 @@ void GRUOpx::prepareInitialState(poplar::Tensor &init_state_h,
   auto hasInitH = gru_op.hasInitialHInput();
 
   if (!hasInitH) {
-    popops::zero(graph(), init_state_h, prog, debugContext());
+    popops::zero(graph().getPoplarGraph(), init_state_h, prog, debugContext());
   }
 
   // Check the inputs have been created
@@ -77,7 +77,7 @@ void GRUOpx::grow(poplar::program::Sequence &prog) const {
   poplar::Tensor output;
 
   if (gru_op.getDirectionAttribute() == "forward") {
-    output = popnn::gru::gruFwd(graph(),
+    output = popnn::gru::gruFwd(graph().getPoplarGraph(),
                                 createGRUParams(),
                                 init_state_h,
                                 input,
@@ -88,7 +88,7 @@ void GRUOpx::grow(poplar::program::Sequence &prog) const {
                                 dv_p->lowering().lstmOptions,
                                 &dv_p->matmulCache);
   } else if (gru_op.getDirectionAttribute() == "backward") {
-    output = popnn::gru::gruFwd(graph(),
+    output = popnn::gru::gruFwd(graph().getPoplarGraph(),
                                 createGRUParams(),
                                 init_state_h,
                                 input.reverse(0),
@@ -148,7 +148,7 @@ void GRUOpx::growBias(poplar::program::Sequence &prog) const {
   auto biases          = getGRUWeights().biases;
 
   if (!gru_op.hasBiasInput()) {
-    popops::zero(graph(), biases, prog, debugContext("zero"));
+    popops::zero(graph().getPoplarGraph(), biases, prog, debugContext("zero"));
     return;
   }
 
@@ -194,7 +194,7 @@ void GRUOpx::growBias(poplar::program::Sequence &prog) const {
   poplar::program::Copy copyProg(input_bias, biases, false, debugContext());
   prog.add(copyProg);
 
-  popops::mapInPlace(graph(),
+  popops::mapInPlace(graph().getPoplarGraph(),
                      popops::expr::BinaryOpType::ADD,
                      biases,
                      hidden_bias,
@@ -308,8 +308,11 @@ poplar::Tensor GRUOpx::createGRUInput() const {
   auto options    = dv_p->lowering().lstmOptions;
   auto cache      = &dv_p->matmulCache;
 
-  return popnn::gru::createInput(
-      graph(), gru_params, getDebugNameAndId("input"), options, cache);
+  return popnn::gru::createInput(graph().getPoplarGraph(),
+                                 gru_params,
+                                 getDebugNameAndId("input"),
+                                 options,
+                                 cache);
 }
 
 popnn::gru::GruWeights GRUOpx::getGRUWeights() const {
@@ -318,8 +321,11 @@ popnn::gru::GruWeights GRUOpx::getGRUWeights() const {
     auto options    = dv_p->lowering().lstmOptions;
     auto cache      = &dv_p->matmulCache;
 
-    weights = createWeights(
-        graph(), gru_params, debugContext("weights"), options, cache);
+    weights = createWeights(graph().getPoplarGraph(),
+                            gru_params,
+                            debugContext("weights"),
+                            options,
+                            cache);
   }
 
   return *weights;
@@ -371,7 +377,7 @@ poplar::Tensor GRUOpx::getInput(poplar::program::Sequence &prog) const {
   }
 }
 
-GRUGradOpx::GRUGradOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
+GRUGradOpx::GRUGradOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
   verifyOp<GRUGradOp>(op, Onnx::GradOperators::GRUGrad);
 }
 
@@ -409,7 +415,7 @@ void GRUGradOpx::grow(poplar::program::Sequence &prog) const {
     weights.biases = weights.biases.reshape({3, 2, hidden_size});
   }
 
-  popops::addInPlace(graph(),
+  popops::addInPlace(graph().getPoplarGraph(),
                      output_grad[output_grad.dim(0) - 1],
                      output_h_grad,
                      prog,
@@ -418,7 +424,7 @@ void GRUGradOpx::grow(poplar::program::Sequence &prog) const {
   poplar::Tensor input_grad;
   popnn::gru::GruWeights weights_grad;
 
-  auto init_state_grad = gruBwdWithWU(graph(),
+  auto init_state_grad = gruBwdWithWU(graph().getPoplarGraph(),
                                       gru_params,
                                       prog,
                                       init_state_h,
@@ -473,8 +479,8 @@ poplar::Tensor GRUGradOpx::getHiddenStateGrad() const {
         .reshape({batch_size, hidden_size});
   } else {
     auto zero = getScalarVariable(elem_type, "gru/zero_hidden_state");
-    graph().setTileMapping(zero, 0);
-    graph().setInitialValue(zero, 0);
+    graph().getPoplarGraph().setTileMapping(zero, 0);
+    graph().getPoplarGraph().setInitialValue(zero, 0);
     zero = zero.expand({0, 0});
     zero = zero.broadcast(batch_size, 0);
     zero = zero.broadcast(hidden_size, 1);

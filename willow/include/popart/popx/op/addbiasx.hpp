@@ -5,12 +5,12 @@
 #include <popart/names.hpp>
 #include <popart/popx/op/identityx.hpp>
 #include <popart/popx/op/reducesumx.hpp>
-#include <popart/popx/opx.hpp>
+#include <popart/popx/popopx.hpp>
 
 namespace popart {
 namespace popx {
 
-class AddBiasOpx : public Opx {
+class AddBiasOpx : public PopOpx {
 public:
   AddBiasOpx(Op *, Devicex *);
   void grow(poplar::program::Sequence &) const override;
@@ -19,7 +19,6 @@ public:
   InputCreatorType getInputCreatorType(InIndex) const final;
   poplar::Tensor createInput(InIndex index,
                              const poplar::DebugNameAndId &dnai) const final;
-  bool createsEquiv(int index0, const Opx *opx1, int index1) const final;
 };
 
 class AddBiasInplaceOpx : public AddBiasOpx {
@@ -28,7 +27,7 @@ public:
   void grow(poplar::program::Sequence &) const final;
 };
 
-class AddBiasDataGradOpx : public Opx {
+class AddBiasDataGradOpx : public PopOpx {
 public:
   AddBiasDataGradOpx(Op *, Devicex *);
   void grow(poplar::program::Sequence &) const final;

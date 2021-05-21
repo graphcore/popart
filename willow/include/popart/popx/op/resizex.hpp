@@ -3,13 +3,13 @@
 #define GUARD_NEURALNET_RESIZEX_HPP
 
 #include <popart/names.hpp>
-#include <popart/popx/opx.hpp>
+#include <popart/popx/popopx.hpp>
 
 namespace popart {
 
 namespace popx {
 
-class ResizeOpx : public Opx {
+class ResizeOpx : public PopOpx {
 public:
   ResizeOpx(Op *, Devicex *);
   void grow(poplar::program::Sequence &) const final;
@@ -24,7 +24,7 @@ private:
                                         float scale) const;
 };
 
-class ResizeGradOpx : public Opx {
+class ResizeGradOpx : public PopOpx {
 public:
   ResizeGradOpx(Op *, Devicex *);
   void grow(poplar::program::Sequence &) const final;

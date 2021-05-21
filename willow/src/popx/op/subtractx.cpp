@@ -16,7 +16,7 @@ SubtractOpx::SubtractOpx(Op *op, Devicex *devicex)
 
 void SubtractOpx::grow(poplar::program::Sequence &prog) const {
   setOutTensor(SubtractOp::getOutIndex(),
-               popops::map(graph(),
+               popops::map(graph().getPoplarGraph(),
                            popops::expr::BinaryOpType::SUBTRACT,
                            getInTensor(SubtractOp::getArg0InIndex()),
                            getInTensor(SubtractOp::getArg1InIndex()),

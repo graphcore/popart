@@ -26,7 +26,7 @@ void ReplicatedAllReduceOpx::grow(poplar::program::Sequence &prog) const {
   poplar::OptionFlags allReduceOptions = dv_p->lowering().gclOptions;
   allReduceOptions.set("useReplicatedImplementation", "true");
   poplar::Tensor output =
-      gcl::allReduce(graph(),
+      gcl::allReduce(graph().getPoplarGraph(),
                      toReduce,
                      getPoplarCollectiveOperator(rarOp.getCollectiveOp()),
                      prog,
@@ -65,7 +65,7 @@ void ReplicatedAllReduceInplaceOpx::grow(
   poplar::Tensor toReduce = getInTensor(inIndex);
   poplar::OptionFlags allReduceOptions = dv_p->lowering().gclOptions;
   allReduceOptions.set("useReplicatedImplementation", "true");
-  gcl::allReduceInPlace(graph(),
+  gcl::allReduceInPlace(graph().getPoplarGraph(),
                         toReduce,
                         getPoplarCollectiveOperator(rarOp.getCollectiveOp()),
                         prog,

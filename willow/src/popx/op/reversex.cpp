@@ -6,7 +6,7 @@
 namespace popart {
 namespace popx {
 
-ReverseBaseOpx::ReverseBaseOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
+ReverseBaseOpx::ReverseBaseOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
   verifyOp<ReverseBaseOp>(op);
 }
 

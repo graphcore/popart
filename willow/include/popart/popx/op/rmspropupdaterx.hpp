@@ -2,12 +2,12 @@
 #ifndef GUARD_NEURALNET_RMSPROPUPDATERX_HPP
 #define GUARD_NEURALNET_RMSPROPUPDATERX_HPP
 
-#include <popart/popx/opx.hpp>
+#include <popart/popx/popopx.hpp>
 
 namespace popart {
 namespace popx {
 
-class RMSPropUpdaterOpx : public Opx {
+class RMSPropUpdaterOpx : public PopOpx {
 public:
   RMSPropUpdaterOpx(Op *, Devicex *);
   void grow(poplar::program::Sequence &) const final;

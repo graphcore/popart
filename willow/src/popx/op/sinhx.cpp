@@ -26,7 +26,7 @@ SinhOpx::SinhOpx(Op *op, Devicex *devicex)
 }
 
 poplar::Tensor SinhComputex::outplace(poplar::program::Sequence &p,
-                                      poplar::Graph &g,
+                                      snap::Graph &g,
                                       const poplar::Tensor &t,
                                       const poplar::DebugNameAndId &dnai,
                                       const std::string &s) const {
@@ -36,7 +36,7 @@ poplar::Tensor SinhComputex::outplace(poplar::program::Sequence &p,
 }
 
 void SinhComputex::inplace(poplar::program::Sequence &p,
-                           poplar::Graph &g,
+                           snap::Graph &g,
                            const poplar::Tensor &t,
                            const poplar::DebugNameAndId &dnai,
                            const std::string &s) const {
@@ -48,10 +48,10 @@ void SinhComputex::inplace(poplar::program::Sequence &p,
   exprs.push_back(std::make_unique<pe::Mul>(pe::Const(0.5f), *exprs.back()));
 
   // apply the inplace SINH
-  popops::mapInPlace(g, *exprs.back(), {t}, p, {dnai, s});
+  popops::mapInPlace(g.getPoplarGraph(), *exprs.back(), {t}, p, {dnai, s});
 }
 
-SinhGradOpx::SinhGradOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
+SinhGradOpx::SinhGradOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
   verifyOp<SinhGradOp>(op, Onnx::GradOperators::SinhGrad);
 }
 
@@ -66,7 +66,7 @@ void SinhGradOpx::grow(poplar::program::Sequence &prog) const {
   exprs.push_back(std::make_unique<pe::Mul>(pe::Const(0.5f), *exprs.back()));
   exprs.push_back(std::make_unique<pe::Mul>(pe::_1, *exprs.back()));
 
-  auto output = popops::map(graph(),
+  auto output = popops::map(graph().getPoplarGraph(),
                             *exprs.back(),
                             {input, fwd_input},
                             prog,

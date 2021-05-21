@@ -50,39 +50,49 @@ void LossScaleUpdateOpx::grow(poplar::program::Sequence &prog) const {
   auto sumUpperBinCounts = getScalarVariable(
       popType(op.inInfo(op.getFirstStatisticsTensorInIndex()).dataType()),
       "sumUpperBinCounts");
-  popops::zero(
-      graph(), sumLowerBinCounts, prog, debugContext("zeroLowerBinCounts"));
-  popops::zero(
-      graph(), sumUpperBinCounts, prog, debugContext("zeroUpperBinCounts"));
+  popops::zero(graph().getPoplarGraph(),
+               sumLowerBinCounts,
+               prog,
+               debugContext("zeroLowerBinCounts"));
+  popops::zero(graph().getPoplarGraph(),
+               sumUpperBinCounts,
+               prog,
+               debugContext("zeroUpperBinCounts"));
 
   for (int i = op.getFirstStatisticsTensorInIndex(); i < op.input->n(); i++) {
     auto gradStats     = getInTensor(i);
     auto lowerBinCount = gradStats.slice(0, 1, 0);
     auto upperBinCount = gradStats.slice(1, 2, 0);
 
-    popops::addInPlace(graph(),
+    popops::addInPlace(graph().getPoplarGraph(),
                        sumLowerBinCounts,
                        lowerBinCount,
                        prog,
                        debugContext("sumLowerBinCounts"));
-    popops::addInPlace(graph(),
+    popops::addInPlace(graph().getPoplarGraph(),
                        sumUpperBinCounts,
                        upperBinCount,
                        prog,
                        debugContext("sumUpperBinCounts"));
   }
 
-  sumLowerBinCounts = popops::cast(
-      graph(), sumLowerBinCounts, poplar::FLOAT, prog, debugContext());
-  sumUpperBinCounts = popops::cast(
-      graph(), sumUpperBinCounts, poplar::FLOAT, prog, debugContext());
-  popops::mulInPlace(graph(),
+  sumLowerBinCounts = popops::cast(graph().getPoplarGraph(),
+                                   sumLowerBinCounts,
+                                   poplar::FLOAT,
+                                   prog,
+                                   debugContext());
+  sumUpperBinCounts = popops::cast(graph().getPoplarGraph(),
+                                   sumUpperBinCounts,
+                                   poplar::FLOAT,
+                                   prog,
+                                   debugContext());
+  popops::mulInPlace(graph().getPoplarGraph(),
                      sumLowerBinCounts,
                      f,
                      prog,
                      debugContext("scaleSumLowerBinCounts"));
 
-  auto shouldScaleDown = popops::map(graph(),
+  auto shouldScaleDown = popops::map(graph().getPoplarGraph(),
                                      popops::expr::BinaryOpType::GREATER_THAN,
                                      sumUpperBinCounts,
                                      sumLowerBinCounts,
@@ -93,9 +103,12 @@ void LossScaleUpdateOpx::grow(poplar::program::Sequence &prog) const {
       getInTensor(op.getLossScaleUpdateFactorInIndex());
   auto updateFactorDType = popType(op.getUpdateFactorDType());
   poplar::program::Sequence scaleUp, scaleDown;
-  popops::mulInPlace(
-      graph(), lossScaleUpdateFactor, 2.0, scaleUp, debugContext("scaleUp"));
-  popops::mulInPlace(graph(),
+  popops::mulInPlace(graph().getPoplarGraph(),
+                     lossScaleUpdateFactor,
+                     2.0,
+                     scaleUp,
+                     debugContext("scaleUp"));
+  popops::mulInPlace(graph().getPoplarGraph(),
                      lossScaleUpdateFactor,
                      0.5,
                      scaleDown,
@@ -109,7 +122,7 @@ void LossScaleUpdateOpx::grow(poplar::program::Sequence &prog) const {
 }
 
 LossScaleUpdateOpx::LossScaleUpdateOpx(Op *op, Devicex *devicex)
-    : Opx(op, devicex) {
+    : PopOpx(op, devicex) {
   verifyOp<LossScaleUpdateOp>(op);
 }
 

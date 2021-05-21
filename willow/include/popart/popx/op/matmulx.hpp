@@ -3,13 +3,13 @@
 #define GUARD_NEURALNET_MATMULX_HPP
 
 #include <popart/names.hpp>
-#include <popart/popx/opx.hpp>
 #include <popart/popx/poplaroptionsx.hpp>
+#include <popart/popx/popopx.hpp>
 
 namespace popart {
 namespace popx {
 
-class MatMulOpx : public Opx {
+class MatMulOpx : public PopOpx {
 public:
   MatMulOpx(Op *, Devicex *);
   ~MatMulOpx() override = default;
@@ -17,7 +17,6 @@ public:
   poplar::Tensor createInput(InIndex index,
                              const poplar::DebugNameAndId &dnai) const final;
   InputCreatorType getInputCreatorType(InIndex index) const final;
-  bool createsEquiv(int, const Opx *, int) const final;
   std::set<TensorId> mustExistBeforeCreate(InIndex index0) const final;
 
   MatMulOp *getMatMulOp() const;

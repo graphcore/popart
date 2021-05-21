@@ -17,7 +17,7 @@ namespace popart {
 namespace popx {
 
 DynamicUpdateOpx::DynamicUpdateOpx(Op *op, Devicex *devicex)
-    : Opx(op, devicex) {
+    : PopOpx(op, devicex) {
   verifyOp<DynamicBinaryBaseOp>(op);
   inputCreatorPriority = std::numeric_limits<double>::max();
 }
@@ -34,10 +34,10 @@ void DynamicUpdateOpx::grow(poplar::program::Sequence &prog) const {
   auto outTensor = cloneNcopyOpt(prog, tensor);
 
   popops::dynamicUpdate(
-      graph(),
+      graph().getPoplarGraph(),
       outTensor,
       slice,
-      popops::cast(graph(),
+      popops::cast(graph().getPoplarGraph(),
                    index.reshape({op.getAxes().size()}),
                    poplar::UNSIGNED_INT,
                    prog,
@@ -85,7 +85,7 @@ InputCreatorType DynamicUpdateOpx::getInputCreatorType(InIndex index) const {
     }
   }
 
-  return Opx::getInputCreatorType(index);
+  return PopOpx::getInputCreatorType(index);
 }
 
 poplar::Tensor
@@ -103,7 +103,7 @@ DynamicUpdateOpx::createInput(InIndex index,
       std::vector<size_t> psizes(op.getSizes().begin(), op.getSizes().end());
 
       return popops::createSliceTensor(
-                 graph(), updateTensor, paxes, psizes, 1, dnai)
+                 graph().getPoplarGraph(), updateTensor, paxes, psizes, 1, dnai)
           .squeeze({0});
     }
   }
@@ -122,7 +122,7 @@ DynamicUpdateOpx::createInput(InIndex index,
         numSlices[i] = updateShape[paxes[i]] / psizes[i];
       }
       return popops::createSliceableTensorFromSlice(
-          graph(), inTensor, paxes, numSlices, dnai);
+          graph().getPoplarGraph(), inTensor, paxes, numSlices, dnai);
     }
   }
 
@@ -138,12 +138,13 @@ poplar::Tensor DynamicUpdateOpx::unwindTensorLayout(poplar::Tensor tensor,
     std::vector<size_t> paxes(op.getAxes().begin(), op.getAxes().end());
     std::vector<size_t> psizes(op.getSizes().begin(), op.getSizes().end());
 
-    return popops::createSliceTensor(graph(), tensor, paxes, psizes, 1)
+    return popops::createSliceTensor(
+               graph().getPoplarGraph(), tensor, paxes, psizes, 1)
         .squeeze({0});
   } else if (in == DynamicUpdateOp::getUpdateInIndex()) {
     return tensor;
   } else {
-    return Opx::unwindTensorLayout(tensor, in, 0);
+    return PopOpx::unwindTensorLayout(tensor, in, 0);
   }
 }
 

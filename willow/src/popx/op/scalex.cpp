@@ -10,19 +10,20 @@ namespace popart {
 namespace popx {
 
 poplar::Tensor ScaleComputex::getScaleTensor(const poplar::Type &type,
-                                             poplar::Graph &graph) const {
-  auto tensor = graph.addConstant(type, {1}, scale_factor, "scale_factor");
-  graph.setTileMapping(tensor, 0);
+                                             snap::Graph &graph) const {
+  auto tensor = graph.getPoplarGraph().addConstant(
+      type, {1}, scale_factor, "scale_factor");
+  graph.getPoplarGraph().setTileMapping(tensor, 0);
   return tensor;
 }
 
 poplar::Tensor ScaleComputex::outplace(poplar::program::Sequence &prog,
-                                       poplar::Graph &graph,
+                                       snap::Graph &graph,
                                        const poplar::Tensor &tensor,
                                        const poplar::DebugNameAndId &dnai,
                                        const std::string &s) const {
 
-  return popops::map(graph,
+  return popops::map(graph.getPoplarGraph(),
                      popops::expr::BinaryOpType::MULTIPLY,
                      tensor,
                      getScaleTensor(tensor.elementType(), graph),
@@ -47,12 +48,12 @@ float ScaleComputex::getFromScaleInplaceOp(Op *op) {
 }
 
 void ScaleComputex::inplace(poplar::program::Sequence &prog,
-                            poplar::Graph &graph,
+                            snap::Graph &graph,
                             const poplar::Tensor &tensor,
                             const poplar::DebugNameAndId &dnai,
                             const std::string &s) const {
 
-  popops::mapInPlace(graph,
+  popops::mapInPlace(graph.getPoplarGraph(),
                      popops::expr::BinaryOpType::MULTIPLY,
                      tensor,
                      getScaleTensor(tensor.elementType(), graph),

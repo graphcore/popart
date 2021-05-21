@@ -3,7 +3,7 @@
 #define GUARD_NEURALNET_ELEMENTWISEUNARYX_HPP
 
 #include <popart/popx/debugcontextx.hpp>
-#include <popart/popx/opx.hpp>
+#include <popart/popx/popopx.hpp>
 
 namespace popart {
 namespace popx {
@@ -16,19 +16,19 @@ public:
   virtual ~EwuComputex() = default;
 
   virtual poplar::Tensor outplace(poplar::program::Sequence &,
-                                  poplar::Graph &,
+                                  snap::Graph &,
                                   const poplar::Tensor &,
                                   const poplar::DebugNameAndId &,
                                   const std::string &) const;
 
   virtual void inplace(poplar::program::Sequence &,
-                       poplar::Graph &,
+                       snap::Graph &,
                        const poplar::Tensor &t,
                        const poplar::DebugNameAndId &,
                        const std::string &) const = 0;
 
   poplar::Tensor cloneNcopy(poplar::program::Sequence &,
-                            poplar::Graph &,
+                            snap::Graph &,
                             const poplar::Tensor &,
                             const poplar::DebugNameAndId &) const;
 
@@ -39,7 +39,7 @@ public:
 };
 
 // Base class for elementwise unary operations
-class ElementWiseUnaryOpx : public Opx {
+class ElementWiseUnaryOpx : public PopOpx {
 public:
   ElementWiseUnaryOpx(Op *, Devicex *);
   InputCreatorType getInputCreatorType(InIndex) const override;
@@ -118,7 +118,7 @@ public:
 
   // Evaluate the operation out-of-place
   virtual poplar::Tensor outplace(poplar::program::Sequence &,
-                                  poplar::Graph &,
+                                  snap::Graph &,
                                   const poplar::Tensor &,
                                   const poplar::Tensor &,
                                   const poplar::DebugNameAndId &,
@@ -127,7 +127,7 @@ public:
   // Evaluate the operation in-place
   // Assigns the result to the first tensor input
   virtual void inplace(poplar::program::Sequence &,
-                       poplar::Graph &,
+                       snap::Graph &,
                        const poplar::Tensor &,
                        const poplar::Tensor &,
                        const poplar::DebugNameAndId &,
@@ -138,7 +138,7 @@ private:
 };
 
 // Base class for elementwise binary operations
-class ElementWiseBinaryOpx : public Opx {
+class ElementWiseBinaryOpx : public PopOpx {
 public:
   ElementWiseBinaryOpx(Op *, Devicex *);
   InputCreatorType getInputCreatorType(InIndex) const override;
@@ -179,7 +179,7 @@ private:
 };
 
 // Base class for binary comparison operations
-class BinaryComparisonOpx : public Opx {
+class BinaryComparisonOpx : public PopOpx {
 public:
   BinaryComparisonOpx(Op *, Devicex *);
 };

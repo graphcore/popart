@@ -28,9 +28,9 @@ void DynamicAddOpx::grow(poplar::program::Sequence &prog) const {
 
   // Get the slice that is to be added to: s = t[index:index+psizes]
   auto s = popops::dynamicSlice(
-      graph(),
+      graph().getPoplarGraph(),
       tensor,
-      popops::cast(graph(),
+      popops::cast(graph().getPoplarGraph(),
                    index.reshape({op.getAxes().size()}),
                    poplar::UNSIGNED_INT,
                    prog,
@@ -43,7 +43,7 @@ void DynamicAddOpx::grow(poplar::program::Sequence &prog) const {
 
   // Add inplace: s += slice
   popops::mapInPlace(
-      graph(),
+      graph().getPoplarGraph(),
       popops::expr::BinaryOpType::ADD,
       s,
       slice,
@@ -53,10 +53,10 @@ void DynamicAddOpx::grow(poplar::program::Sequence &prog) const {
 
   // Update: t[index:index+psizes] = s
   popops::dynamicUpdate(
-      graph(),
+      graph().getPoplarGraph(),
       outTensor,
       s,
-      popops::cast(graph(),
+      popops::cast(graph().getPoplarGraph(),
                    index.reshape({op.getAxes().size()}),
                    poplar::UNSIGNED_INT,
                    prog,

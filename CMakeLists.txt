@@ -78,8 +78,46 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 #------ end of build configuration
 
 #------ find dependencies
+# Versions are not given where packages don't support them.
 
 find_package(Python3 3.6 REQUIRED COMPONENTS Interpreter Development)
+
+if(NOT BUILD_SHARED_LIBS)
+  set(Boost_USE_STATIC_LIBS ON)
+endif()
+set(boost_components
+    # FindBoost bug: finding filesystem component does not transitively find and
+    # link the system component.
+    system
+
+    filesystem
+    graph
+    random
+)
+find_package(Boost 1.70 REQUIRED COMPONENTS ${boost_components})
+find_package(CapnProto REQUIRED)
+
+list(TRANSFORM boost_components PREPEND Boost:: OUTPUT_VARIABLE boost_targets)
+
+# The header-only component. Many of the libs are header-only, and come under
+# this target. You do not pass it as a COMPONENT; it will always be created.
+list(APPEND boost_targets Boost::boost)
+
+find_package(spdlog 1.8.0 REQUIRED)
+ 
+find_package(poplar REQUIRED)
+find_package(popir REQUIRED)
+find_package(poplibs REQUIRED)
+find_package(libpvti REQUIRED)
+find_package(gcl REQUIRED)
+
+find_package(poprithms REQUIRED)
+
+# Onnx's config file fails to find protobuf, so we have to do it ourselves.
+# We use the find module provided by CMake.
+set(Protobuf_USE_STATIC_LIBS ON)
+find_package(Protobuf 3.6 REQUIRED)
+find_package(ONNX 1.6 REQUIRED)
 
 #------ end of find dependencies
 

@@ -9,6 +9,7 @@
 #include <memory>
 #include <popart/opmanager.hpp>
 #include <popart/opserialiser.hpp>
+#include <popart/popx/opx.hpp>
 #include <popart/popx/opxmanager.hpp>
 
 #include <popops/ElementWise.hpp>

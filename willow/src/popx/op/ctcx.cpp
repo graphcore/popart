@@ -20,7 +20,7 @@ namespace popart {
 namespace popx {
 
 CtcOpx::CtcOpx(Op *op_, Devicex *devicex)
-    : Opx(op_, devicex), plan(std::make_unique<popnn::ctc::Plan>()) {
+    : PopOpx(op_, devicex), plan(std::make_unique<popnn::ctc::Plan>()) {
   verifyOp<CtcOp>(op_, Onnx::CustomOperators::Ctc);
 
   const auto &op            = getOp<CtcOp>();
@@ -30,7 +30,7 @@ CtcOpx::CtcOpx(Op *op_, Devicex *devicex)
   auto outDtype = popType(ctcLossPopartTensor->info.getDataTypeInfo()->type());
 
   // Create plan once and re-use for growing and createInput.
-  *plan = popnn::ctc::plan(graph(),
+  *plan = popnn::ctc::plan(graph().getPoplarGraph(),
                            inDtype,
                            outDtype,
                            op.getBatchSize(),
@@ -60,7 +60,7 @@ void CtcOpx::grow(poplar::program::Sequence &prog) const {
     const auto &targetLengths = getInTensor(CtcOp::getTargetLengthsInIndex());
 
     auto result = popnn::ctc::calcLossAndGradientLogProbabilities(
-        graph(),
+        graph().getPoplarGraph(),
         outDtype,
         logProbs,
         targets,
@@ -94,7 +94,7 @@ poplar::Tensor CtcOpx::createInput(InIndex index,
 
   if (index == CtcOp::getLogProbsInIndex()) {
 
-    return popnn::ctc::createDataInput(graph(),
+    return popnn::ctc::createDataInput(graph().getPoplarGraph(),
                                        logProbsDtype,
                                        batchSize,
                                        maxInputLen,
@@ -104,8 +104,12 @@ poplar::Tensor CtcOpx::createInput(InIndex index,
 
   } else if (index == CtcOp::getTargetsInIndex()) {
 
-    return popnn::ctc::createLabelsInput(
-        graph(), targetsDtype, batchSize, maxTargetLen, *plan, dnai);
+    return popnn::ctc::createLabelsInput(graph().getPoplarGraph(),
+                                         targetsDtype,
+                                         batchSize,
+                                         maxTargetLen,
+                                         *plan,
+                                         dnai);
 
   } else {
     throw error("CtcOpx::createInput : Invalid index = " +
@@ -157,7 +161,7 @@ poplar::Tensor CtcOpx::applyReduction(poplar::program::Sequence &prog,
     }
     case ReductionType::Mean: {
       // Divide by target max(length, 1).
-      ctcLoss = popops::map(graph(),
+      ctcLoss = popops::map(graph().getPoplarGraph(),
                             pe::Divide(pe::_1,
                                        pe::Cast(pe::Max(pe::_2, pe::Const(1)),
                                                 ctcLoss.elementType())),
@@ -181,7 +185,7 @@ poplar::Tensor CtcOpx::applyReduction(poplar::program::Sequence &prog,
     auto t_scale = getConst(poplar::FLOAT, {}, scale, "scale");
 
     // Do the reduction.
-    ctcLoss = popops::reduce(graph(),
+    ctcLoss = popops::reduce(graph().getPoplarGraph(),
                              ctcLoss,
                              {0},
                              {popops::Operation::ADD, false, t_scale},
@@ -192,7 +196,7 @@ poplar::Tensor CtcOpx::applyReduction(poplar::program::Sequence &prog,
   return ctcLoss;
 }
 
-CtcGradOpx::CtcGradOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
+CtcGradOpx::CtcGradOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
   verifyOp<CtcGradOp>(op, Onnx::CustomGradOperators::CtcGrad);
 }
 
@@ -237,7 +241,7 @@ void CtcGradOpx::grow(poplar::program::Sequence &prog) const {
                                             pe::Cast(pe::_2, outType));
 
   auto logProbsGradient =
-      popops::map(graph(),
+      popops::map(graph().getPoplarGraph(),
                   expr,
                   {logProbsGradientWrtCtcLoss, adjustedCtcLossGrad},
                   prog,
@@ -282,7 +286,7 @@ CtcGradOpx::applyReductionGrad(poplar::program::Sequence &prog,
 
     // Take into account gradient for mean reduction.
     auto newCtcLossGrad =
-        popops::map(graph(),
+        popops::map(graph().getPoplarGraph(),
                     pe::Mul(pe::_1, pe::Const(1.0f / totalSamples)),
                     {ctcLossGrad},
                     prog,
@@ -293,7 +297,7 @@ CtcGradOpx::applyReductionGrad(poplar::program::Sequence &prog,
 
     // Take into account gradient for division by length.
     newCtcLossGrad =
-        popops::map(graph(),
+        popops::map(graph().getPoplarGraph(),
                     pe::Divide(pe::_1,
                                pe::Cast(pe::Max(pe::_2, pe::Const(1)),
                                         newCtcLossGrad.elementType())),

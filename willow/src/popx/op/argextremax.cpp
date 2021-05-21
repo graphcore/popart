@@ -10,7 +10,7 @@
 namespace popart {
 namespace popx {
 
-ArgExtremaOpx::ArgExtremaOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
+ArgExtremaOpx::ArgExtremaOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
   verifyOp<ArgExtremaOp>(op);
 }
 
@@ -47,8 +47,11 @@ void ArgExtremaOpx::grow(poplar::program::Sequence &prog) const {
 
   result = result.reshape(new_shape);
 
-  result =
-      popops::cast(graph(), result, poplar::INT, prog, debugContext("cast"));
+  result = popops::cast(graph().getPoplarGraph(),
+                        result,
+                        poplar::INT,
+                        prog,
+                        debugContext("cast"));
   setOutTensor(0, result);
 }
 

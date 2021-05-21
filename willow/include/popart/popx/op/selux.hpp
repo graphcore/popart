@@ -13,7 +13,7 @@ public:
   SeluComputex(float _alpha, float _gamma) : alpha(_alpha), gamma(_gamma) {}
 
   void inplace(poplar::program::Sequence &,
-               poplar::Graph &,
+               snap::Graph &,
                const poplar::Tensor &,
                const poplar::DebugNameAndId &,
                const std::string &) const final;
@@ -41,7 +41,7 @@ public:
   SeluInplaceOpx(Op *, Devicex *);
 };
 
-class SeluGradOpx : public Opx {
+class SeluGradOpx : public PopOpx {
 public:
   SeluGradOpx(Op *, Devicex *);
   void grow(poplar::program::Sequence &) const final;

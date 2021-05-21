@@ -18,7 +18,7 @@ BitwiseNotOpx::BitwiseNotOpx(Op *op, Devicex *devicex)
 
 void BitwiseNotOpx::grow(poplar::program::Sequence &prog) const {
   insert(outId(BitwiseNotOp::getOutIndex()),
-         popops::map(graph(),
+         popops::map(graph().getPoplarGraph(),
                      popops::expr::UnaryOpType::BITWISE_NOT,
                      get(inId(BitwiseNotOp::getInIndex())),
                      prog,
@@ -36,7 +36,7 @@ BitwiseBinaryOpx::BitwiseBinaryOpx(Op *op, Devicex *devicex)
 
 void BitwiseBinaryOpx::grow(poplar::program::Sequence &prog) const {
   insert(outId(BitwiseBinaryOp::getOutIndex()),
-         popops::map(graph(),
+         popops::map(graph().getPoplarGraph(),
                      determineOpType(),
                      getInTensor(BitwiseBinaryOp::getArg0InIndex()),
                      getInTensor(BitwiseBinaryOp::getArg1InIndex()),

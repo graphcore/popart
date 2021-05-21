@@ -25,35 +25,6 @@ InputCreatorType MultiConvBaseOpx::getInputCreatorType(InIndex) const {
   return InputCreatorType::CanCreate;
 }
 
-bool MultiConvBaseOpx::createsEquiv(int ind0, const Opx *opx1, int ind1) const {
-  // if opx1 is not a MultiConvBaseOpx, it does not create the same
-  // poplar::Tensor
-  if (opx1->op_p->opid != op_p->opid) {
-    return false;
-  }
-
-  // if opx1 (which we now know is MultiConvBaseOpx) would create the tensor at
-  // a different input index, creation is not equivalent
-  if (ind0 != ind1) {
-    return false;
-  }
-
-  // finally, check that the convolution parameters are the same
-  auto &lhsOp                 = getOp<MultiConvBaseOp>();
-  const MultiConvBaseOpx *rhs = dynamic_cast<const MultiConvBaseOpx *>(opx1);
-  auto &rhsOp                 = rhs->getOp<MultiConvBaseOp>();
-
-  // get conv indices from input indices
-  int lhsConvIndex = MultiConvBaseOp::getConvIndexFromInIndex(ind0);
-  int rhsConvIndex = MultiConvBaseOp::getConvIndexFromInIndex(ind1);
-
-  if (lhsOp.getParameters(lhsConvIndex) != rhsOp.getParameters(rhsConvIndex)) {
-    return false;
-  }
-
-  return true;
-}
-
 bool MultiConvBaseOpx::isWeightsInIndex(InIndex index) const {
   auto &op = getOp<MultiConvBaseOp>();
   for (int i = 0; i < op.numConvs(); i++) {
@@ -172,7 +143,7 @@ void MultiConvBaseOpx::grow(poplar::program::Sequence &prog) const {
     // Log the report plan
     std::stringstream ss;
     poplin::reportPlanInfo(ss,
-                           graph(),
+                           graph().getPoplarGraph(),
                            getPoplarConvParams(params),
                            getConvOptions(i),
                            &(dv_p->convCache));

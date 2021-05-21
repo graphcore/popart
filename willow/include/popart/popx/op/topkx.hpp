@@ -18,7 +18,7 @@ private:
   unsigned K;
 };
 
-class TopKGradOpx : public Opx {
+class TopKGradOpx : public PopOpx {
 public:
   TopKGradOpx(Op *, Devicex *);
   void grow(poplar::program::Sequence &) const final;

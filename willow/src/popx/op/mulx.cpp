@@ -12,21 +12,22 @@ namespace popx {
 MulComputex::MulComputex(EwbComputex::InplacePolicy ip) : EwbComputex(ip) {}
 
 poplar::Tensor MulComputex::outplace(poplar::program::Sequence &prog,
-                                     poplar::Graph &graph,
+                                     snap::Graph &graph,
                                      const poplar::Tensor &a,
                                      const poplar::Tensor &b,
                                      const poplar::DebugNameAndId &dnai,
                                      const std::string &debugStr) const {
-  return popops::mul(graph, a, b, prog, {dnai, debugStr});
+  return popops::mul(graph.getPoplarGraph(), a, b, prog, {dnai, debugStr});
 }
 
 void MulComputex::inplace(poplar::program::Sequence &prog,
-                          poplar::Graph &graph,
+                          snap::Graph &graph,
                           const poplar::Tensor &tInOut,
                           const poplar::Tensor &tIn,
                           const poplar::DebugNameAndId &dnai,
                           const std::string &debugStr) const {
-  popops::mulInPlace(graph, tInOut, tIn, prog, {dnai, debugStr});
+  popops::mulInPlace(
+      graph.getPoplarGraph(), tInOut, tIn, prog, {dnai, debugStr});
 }
 
 MulOpx::MulOpx(Op *op, Devicex *devicex)
@@ -61,11 +62,11 @@ OpxCreator<MulLhsInplaceOpx>
 OpxCreator<MulRhsInplaceOpx>
     mulRhsInplaceOpxCreator(Onnx::CustomOperators::MulRhsInplace);
 
-static OpxCreator<Opx>
+static OpxCreator<PopOpx>
     mulArg0GradOpxCreator(Onnx::GradOperators::MulArg0Grad,
                           "MulArg0GradOp should be optimised out, "
                           "\"MulArgGradOp\" pattern is required");
-static OpxCreator<Opx>
+static OpxCreator<PopOpx>
     mulArg1GradOpxCreator(Onnx::GradOperators::MulArg1Grad,
                           "MulArg1GradOp should be optimised out, "
                           "\"MulArgGradOp\" pattern is required");

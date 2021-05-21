@@ -18,7 +18,7 @@ namespace pe = popops::expr;
 namespace popart {
 namespace popx {
 
-L1Opx::L1Opx(Op *op, Devicex *devicex) : Opx(op, devicex) {
+L1Opx::L1Opx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
   verifyOp<L1Op>(op, Onnx::CustomOperators::L1);
 }
 
@@ -29,7 +29,7 @@ void L1GradOpx::grow(poplar::program::Sequence &prog) const {
 
   // Signum : +1 of positive, -1 if negative, 0 if zero.
   poplar::Tensor signumTensor =
-      popops::map(graph(),
+      popops::map(graph().getPoplarGraph(),
                   popops::expr::UnaryOpType::SIGNUM,
                   getInTensor(L1GradOp::getFwdActInIndex()),
                   prog,
@@ -58,14 +58,14 @@ void L1GradOpx::grow(poplar::program::Sequence &prog) const {
   // - by loss scaling factor
   // - then by input gradient
 
-  auto gradTensor = popops::map(graph(),
+  auto gradTensor = popops::map(graph().getPoplarGraph(),
                                 pe::Mul(pe::_1, pe::_2),
                                 {signumTensor, t_scale},
                                 prog,
                                 debugContext("multiply"));
 
   auto gradIn = getInTensor(L1GradOp::getGradInIndex());
-  popops::mapInPlace(graph(),
+  popops::mapInPlace(graph().getPoplarGraph(),
                      pe::Mul(pe::_1, pe::_2),
                      {gradTensor, gradIn},
                      prog,
@@ -81,7 +81,7 @@ InputCreatorType L1Opx::getInputCreatorType(InIndex) const {
 // lambda * sum_{0,..rank-1} |v|
 void L1Opx::grow(poplar::program::Sequence &prog) const {
   const L1Op &l1op         = getOp<L1Op>();
-  poplar::Tensor absTensor = popops::map(graph(),
+  poplar::Tensor absTensor = popops::map(graph().getPoplarGraph(),
                                          popops::expr::UnaryOpType::ABSOLUTE,
                                          getInTensor(0),
                                          prog,
@@ -96,7 +96,7 @@ void L1Opx::grow(poplar::program::Sequence &prog) const {
   if (l1op.getReductionType() == ReductionType::NoReduction) {
     auto t_scale = getConst(absTensor.elementType(), {}, lambda, "scale");
 
-    auto scaled = popops::map(graph(),
+    auto scaled = popops::map(graph().getPoplarGraph(),
                               popops::expr::BinaryOpType::MULTIPLY,
                               absTensor,
                               t_scale,
@@ -128,7 +128,7 @@ void L1Opx::grow(poplar::program::Sequence &prog) const {
     // t_scale is always expected to be FLOAT, regardless of the input type
     // to the reduction
     auto t_scale   = getConst(poplar::FLOAT, {}, scale, "scale");
-    auto reduction = popops::reduce(graph(),
+    auto reduction = popops::reduce(graph().getPoplarGraph(),
                                     absTensor1D,
                                     {0},
                                     {popops::Operation::ADD, false, t_scale},
@@ -138,7 +138,7 @@ void L1Opx::grow(poplar::program::Sequence &prog) const {
   }
 }
 
-L1GradOpx::L1GradOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
+L1GradOpx::L1GradOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
   verifyOp<L1GradOp>(op, Onnx::CustomGradOperators::L1Grad);
 }
 

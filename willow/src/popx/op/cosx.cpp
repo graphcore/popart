@@ -14,7 +14,7 @@ CosOpx::CosOpx(Op *op, Devicex *devicex) : ElementWiseUnaryOpx(op, devicex) {
 
 void CosOpx::grow(poplar::program::Sequence &prog) const {
   setOutTensor(CosOp::getOutIndex(),
-               popops::map(graph(),
+               popops::map(graph().getPoplarGraph(),
                            popops::expr::UnaryOpType::COS,
                            getInTensor(CosOp::getInIndex()),
                            prog,

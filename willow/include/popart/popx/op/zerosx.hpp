@@ -2,13 +2,13 @@
 #ifndef GUARD_NEURALNET_ZEROSX_HPP
 #define GUARD_NEURALNET_ZEROSX_HPP
 
-#include <popart/popx/opx.hpp>
+#include <popart/popx/popopx.hpp>
 
 namespace popart {
 
 namespace popx {
 
-class ZerosOpx : public Opx {
+class ZerosOpx : public PopOpx {
 public:
   ZerosOpx(Op *, Devicex *);
   void grow(poplar::program::Sequence &) const final;

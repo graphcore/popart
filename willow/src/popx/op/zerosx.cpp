@@ -7,7 +7,7 @@
 namespace popart {
 namespace popx {
 
-ZerosOpx::ZerosOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
+ZerosOpx::ZerosOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
   verifyOp<ZerosOp>(op, Onnx::CustomOperators::Zeros_1);
 }
 
@@ -19,8 +19,9 @@ void ZerosOpx::grow(poplar::program::Sequence &) const {
   auto poplarType = popType(op.outInfo(op.getOutIndex()));
   auto shape      = vXtoY<int64_t, std::size_t>(outputInfo.shape());
 
-  auto zeros = graph().addConstant(poplarType, shape, 0, debugContext("zeros"));
-  graph().setTileMapping(zeros, 0);
+  auto zeros = graph().getPoplarGraph().addConstant(
+      poplarType, shape, 0, debugContext("zeros"));
+  graph().getPoplarGraph().setTileMapping(zeros, 0);
 
   setOutTensor(ZerosOp::getOutIndex(), zeros);
 }

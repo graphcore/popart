@@ -3,7 +3,7 @@
 #define GUARD_NEURALNET_BASESORTX_HPP
 
 #include <popart/names.hpp>
-#include <popart/popx/opx.hpp>
+#include <popart/popx/popopx.hpp>
 
 namespace popart {
 
@@ -19,7 +19,7 @@ struct FullSortResult {
   int axis;
 };
 
-class BaseSortOpx : public Opx {
+class BaseSortOpx : public PopOpx {
 public:
   BaseSortOpx(Op *, Devicex *);
 

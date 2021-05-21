@@ -15,7 +15,7 @@ namespace popx {
 
 template <typename Derived>
 RestoreBaseOpx<Derived>::RestoreBaseOpx(Op *op, Devicex *devicex)
-    : Opx(op, devicex) {
+    : PopOpx(op, devicex) {
   verifyOp<typename Derived::OpType>(op);
 
   // Note RestoreInplaceOp derives RestoreOp.
@@ -32,10 +32,11 @@ RestoreBaseOpx<Derived>::growRestore(poplar::program::Sequence &prog,
   const auto stashSize = op.getStashSize();
 
   // Create the stash index tensor.
-  const auto stashIndex =
-      graph().addVariable(poplar::UNSIGNED_INT, {1}, debugContext());
-  graph().setTileMapping(stashIndex, 0);
-  graph().setInitialValue(stashIndex, poplar::ArrayRef<uint32_t>({0}));
+  const auto stashIndex = graph().getPoplarGraph().addVariable(
+      poplar::UNSIGNED_INT, {1}, debugContext());
+  graph().getPoplarGraph().setTileMapping(stashIndex, 0);
+  graph().getPoplarGraph().setInitialValue(stashIndex,
+                                           poplar::ArrayRef<uint32_t>({0}));
 
   // Create the stash size tensor.
   const auto stashSizeTensor =
@@ -52,9 +53,13 @@ RestoreBaseOpx<Derived>::growRestore(poplar::program::Sequence &prog,
 
   // Create a "1" tensor and grow program to increment stash index by 1.
   auto one = getConst(poplar::UNSIGNED_INT, {}, 1.0, "one");
-  popops::addInPlace(graph(), stashIndex, one, prog, debugContext());
-  popops::remInPlace(
-      graph(), stashIndex, stashSizeTensor, prog, debugContext());
+  popops::addInPlace(
+      graph().getPoplarGraph(), stashIndex, one, prog, debugContext());
+  popops::remInPlace(graph().getPoplarGraph(),
+                     stashIndex,
+                     stashSizeTensor,
+                     prog,
+                     debugContext());
 
   return actFromStash;
 }
@@ -69,8 +74,13 @@ poplar::Tensor RestoreBaseOpx<Derived>::growStaticSliceRestore(
   // stash is (N, a, b, c). Output is (a, b, c) at index stashIndex.
 
   // Creates (1, a, b, c) tensor.
-  poplar::Tensor actFromStash = popops::createSliceTensor(
-      graph(), stash, {0}, {1}, 1, debugContext("static-restore/out-slice"));
+  poplar::Tensor actFromStash =
+      popops::createSliceTensor(graph().getPoplarGraph(),
+                                stash,
+                                {0},
+                                {1},
+                                1,
+                                debugContext("static-restore/out-slice"));
 
   poplar::program::Switch switchCase(stashIndex.reshape({}));
 
@@ -97,7 +107,7 @@ poplar::Tensor RestoreBaseOpx<Derived>::growDynamicSliceRestore(
     const poplar::Tensor &stash) const {
 
   auto actFromStash =
-      popops::dynamicSlice(graph(),
+      popops::dynamicSlice(graph().getPoplarGraph(),
                            stash,
                            stashIndex,
                            {0},

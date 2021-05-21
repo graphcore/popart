@@ -11,7 +11,7 @@
 namespace popart {
 namespace popx {
 
-WhereOpx::WhereOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
+WhereOpx::WhereOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
   verifyOp<WhereOp>(op, {Onnx::Operators::Where_9});
 }
 
@@ -21,13 +21,18 @@ void WhereOpx::grow(poplar::program::Sequence &prog) const {
   const auto x         = getInTensor(WhereOp::xInIndex());
   const auto y         = getInTensor(WhereOp::yInIndex());
 
-  const auto result = popops::select(
-      graph(), x, y, condition, prog, debugContext(), poplar::OptionFlags());
+  const auto result = popops::select(graph().getPoplarGraph(),
+                                     x,
+                                     y,
+                                     condition,
+                                     prog,
+                                     debugContext(),
+                                     poplar::OptionFlags());
 
   setOutTensor(WhereOp::outIndex(), result);
 }
 
-WhereXGradOpx::WhereXGradOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
+WhereXGradOpx::WhereXGradOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
   verifyOp<WhereXGradOp>(op, Onnx::GradOperators::WhereXGrad);
 }
 
@@ -52,17 +57,20 @@ void WhereXGradOpx::grow(poplar::program::Sequence &prog) const {
     }
   }
 
-  auto condition2 = popops::cast(graph(),
+  auto condition2 = popops::cast(graph().getPoplarGraph(),
                                  condition,
                                  whereOutGrad.elementType(),
                                  prog,
                                  debugContext("cast_x"));
 
-  auto gradX = popops::mul(
-      graph(), whereOutGrad, condition2, prog, debugContext("grad_x"));
+  auto gradX = popops::mul(graph().getPoplarGraph(),
+                           whereOutGrad,
+                           condition2,
+                           prog,
+                           debugContext("grad_x"));
 
   // Reduces the output.
-  auto gradX2 = popops::reduce(graph(),
+  auto gradX2 = popops::reduce(graph().getPoplarGraph(),
                                gradX,
                                reduction_dims,
                                {popops::Operation::ADD},
@@ -75,7 +83,7 @@ void WhereXGradOpx::grow(poplar::program::Sequence &prog) const {
   setOutTensor(WhereXGradOp::outIndex(), gradX2);
 }
 
-WhereYGradOpx::WhereYGradOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
+WhereYGradOpx::WhereYGradOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
   verifyOp<WhereYGradOp>(op, Onnx::GradOperators::WhereYGrad);
 }
 
@@ -99,19 +107,22 @@ void WhereYGradOpx::grow(poplar::program::Sequence &prog) const {
     }
   }
 
-  poplar::Tensor condition2 =
-      popops::logicalNot(graph(), condition, prog, debugContext("logical_not"));
+  poplar::Tensor condition2 = popops::logicalNot(
+      graph().getPoplarGraph(), condition, prog, debugContext("logical_not"));
 
-  auto condition3 = popops::cast(graph(),
+  auto condition3 = popops::cast(graph().getPoplarGraph(),
                                  condition2,
                                  whereOutGrad.elementType(),
                                  prog,
                                  debugContext("cast_y"));
 
-  auto gradY = popops::mul(
-      graph(), whereOutGrad, condition3, prog, debugContext("grad_y"));
+  auto gradY = popops::mul(graph().getPoplarGraph(),
+                           whereOutGrad,
+                           condition3,
+                           prog,
+                           debugContext("grad_y"));
 
-  auto gradY2 = popops::reduce(graph(),
+  auto gradY2 = popops::reduce(graph().getPoplarGraph(),
                                gradY,
                                reduction_dims,
                                {popops::Operation::ADD},

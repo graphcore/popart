@@ -13,8 +13,8 @@
 #include <popart/ndarraywrapper.hpp>
 #include <popart/op.hpp>
 #include <popart/opmanager.hpp>
-#include <popart/popx/opx.hpp>
 #include <popart/popx/opxmanager.hpp>
+#include <popart/popx/popopx.hpp>
 #include <popart/session.hpp>
 #include <popart/tensordata.hpp>
 #include <popart/tensorinfo.hpp>
@@ -53,18 +53,21 @@ public:
   }
 };
 
-class OpxTensorAliasingTestOpx : public popx::Opx {
+class OpxTensorAliasingTestOpx : public popx::PopOpx {
 public:
   OpxTensorAliasingTestOpx(popart::Op *op, popart::popx::Devicex *devicex)
-      : popart::popx::Opx(op, devicex) {
+      : popart::popx::PopOpx(op, devicex) {
     verifyOp<OpxTensorAliasingTestOp>(op,
                                       CustomOperators::OpxTensorAliasingTest);
   }
 
   void grow(poplar::program::Sequence &prog) const final {
     auto inTensor = getInTensor(OpxTensorAliasingTestOp::inIndex());
-    popops::mulInPlace(
-        graph(), inTensor, inTensor, prog, debugContext("mulInPlace"));
+    popops::mulInPlace(graph().getPoplarGraph(),
+                       inTensor,
+                       inTensor,
+                       prog,
+                       debugContext("mulInPlace"));
     setOutTensor(OpxTensorAliasingTestOp::outIndex(), inTensor);
   }
 };

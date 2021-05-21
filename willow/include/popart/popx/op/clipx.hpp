@@ -14,13 +14,13 @@ public:
   ClipComputex(float min_, float max_) : min(min_), max(max_) {}
 
   poplar::Tensor outplace(poplar::program::Sequence &,
-                          poplar::Graph &,
+                          snap::Graph &,
                           const poplar::Tensor &tensor,
                           const poplar::DebugNameAndId &,
                           const std::string &) const final;
 
   void inplace(poplar::program::Sequence &,
-               poplar::Graph &,
+               snap::Graph &,
                const poplar::Tensor &,
                const poplar::DebugNameAndId &,
                const std::string &) const final;
@@ -31,7 +31,7 @@ public:
 
   static poplar::Tensor getClipTensor(float val,
                                       const poplar::Type &type,
-                                      poplar::Graph &graph,
+                                      snap::Graph &graph,
                                       const poplar::DebugNameAndId &);
   poplar::Tensor broadcastClipTensor(poplar::Tensor clipT,
                                      const poplar::Tensor &refT) const;
@@ -58,7 +58,7 @@ public:
   ClipInplaceOpx(Op *, Devicex *);
 };
 
-class ClipGradOpx : public Opx {
+class ClipGradOpx : public PopOpx {
 public:
   ClipGradOpx(Op *, Devicex *);
   void grow(poplar::program::Sequence &) const final;

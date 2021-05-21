@@ -16,7 +16,7 @@ namespace popart {
 namespace popx {
 
 AdaDeltaUpdaterOpx::AdaDeltaUpdaterOpx(Op *op, Devicex *devicex)
-    : Opx(op, devicex) {
+    : PopOpx(op, devicex) {
   verifyOp<AdaDeltaUpdaterOp>(op, Onnx::CustomOperators::AdaDeltaUpdater);
   inputCreatorPriority = std::numeric_limits<double>::max();
 }
@@ -43,7 +43,7 @@ void AdaDeltaUpdaterOpx::grow(poplar::program::Sequence &prog) const {
 
   // sqrt(Accl2 + eps) / sqrt(Accl1 + eps) * grad
   poplar::Tensor updater = popops::map(
-      graph(),
+      graph().getPoplarGraph(),
       pe::Cast(pe::Mul(pe::Divide(
                            pe::Sqrt(pe::Add(
                                pe::Cast(pe::_3, accl1.elementType()), epsexpr)),
@@ -73,15 +73,16 @@ AdaDeltaUpdaterOpx::createInput(int inIndex,
   }
   poplar::Tensor inTensor;
   auto accumulatorInfo = inInfo(inIndex);
-  return graph().clone(popType(accumulatorInfo),
-                       getInTensor(VarUpdateWithUpdaterOp::getUpdaterInIndex()),
-                       dnai);
+  return graph().getPoplarGraph().clone(
+      popType(accumulatorInfo),
+      getInTensor(VarUpdateWithUpdaterOp::getUpdaterInIndex()),
+      dnai);
 }
 
 InputCreatorType AdaDeltaUpdaterOpx::getInputCreatorType(int inIndex) const {
   return inIndex == AdaDeltaUpdaterOp::getAccl2InIndex()
              ? InputCreatorType::CanCreate
-             : Opx::getInputCreatorType(inIndex);
+             : PopOpx::getInputCreatorType(inIndex);
 }
 
 std::set<TensorId>

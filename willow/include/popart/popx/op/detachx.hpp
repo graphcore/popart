@@ -4,8 +4,8 @@
 #include <popart/names.hpp>
 #include <popart/op/detach.hpp>
 #include <popart/popx/op/elementwisex.hpp>
-#include <popart/popx/opx.hpp>
 #include <popart/popx/opxmanager.hpp>
+#include <popart/popx/popopx.hpp>
 
 namespace popart {
 
@@ -18,7 +18,7 @@ public:
   void grow(poplar::program::Sequence &) const;
 };
 
-class DetachInplaceOpx : public Opx {
+class DetachInplaceOpx : public PopOpx {
 public:
   DetachInplaceOpx(Op *, Devicex *);
   void grow(poplar::program::Sequence &) const final;

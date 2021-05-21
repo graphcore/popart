@@ -16,7 +16,7 @@ namespace {
 // exclusive/reverse:  1) F/F 2) T/F 3) F/T 4) T/T
 //   triangular type:     11     01     10     00
 //                        01     00     11     10
-poplar::Tensor triangularMatrix(const Opx &opx,
+poplar::Tensor triangularMatrix(const PopOpx &opx,
                                 std::size_t triangularSize_,
                                 bool exclusive_,
                                 bool reverse_,
@@ -92,7 +92,7 @@ void checkAxisValue(int64_t axis_, unsigned xRank_) {
 
 } // namespace
 
-CumSumOpx::CumSumOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
+CumSumOpx::CumSumOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
   verifyOp<CumSumOp>(op, {Onnx::Operators::CumSum_11});
 }
 
@@ -127,14 +127,18 @@ void CumSumOpx::grow(poplar::program::Sequence &prog) const {
   poplar::Tensor triangularM =
       triangularMatrix(*this, xMulDim0, exclusive, reverse);
 
-  x = poplin::matMul(graph(), x, triangularM, prog, debugContext("cumsum_mul"));
+  x = poplin::matMul(graph().getPoplarGraph(),
+                     x,
+                     triangularM,
+                     prog,
+                     debugContext("cumsum_mul"));
   x = x.reshape(xMiddleShape);
   x = x.dimShuffle(perm);
 
   setOutTensor(CumSumOp::outIndex(), x);
 }
 
-CumSumGradOpx::CumSumGradOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
+CumSumGradOpx::CumSumGradOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
   verifyOp<CumSumGradOp>(op, Onnx::GradOperators::CumSumGrad);
 }
 
@@ -165,8 +169,11 @@ void CumSumGradOpx::grow(poplar::program::Sequence &prog) const {
   poplar::Tensor triangularM =
       triangularMatrix(*this, xMulDim0, exclusive, reverse, true);
 
-  dx = poplin::matMul(
-      graph(), dx, triangularM, prog, debugContext("cumsum_mul"));
+  dx = poplin::matMul(graph().getPoplarGraph(),
+                      dx,
+                      triangularM,
+                      prog,
+                      debugContext("cumsum_mul"));
   dx = dx.reshape(xMiddleShape);
   dx = dx.dimShuffle(perm);
 

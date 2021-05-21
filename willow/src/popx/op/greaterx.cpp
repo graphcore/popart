@@ -21,7 +21,7 @@ GreaterOpx::GreaterOpx(Op *op, Devicex *devicex)
 void GreaterOpx::grow(poplar::program::Sequence &prog) const {
 
   insert(outId(GreaterOp::getOutIndex()),
-         popops::map(graph(),
+         popops::map(graph().getPoplarGraph(),
                      popops::expr::BinaryOpType::GREATER_THAN,
                      get(inId(GreaterOp::getArg0InIndex())),
                      get(inId(GreaterOp::getArg1InIndex())),

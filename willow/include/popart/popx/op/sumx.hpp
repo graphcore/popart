@@ -3,12 +3,12 @@
 #define GUARD_NEURALNET_SUMX_HPP
 
 #include <popart/names.hpp>
-#include <popart/popx/opx.hpp>
+#include <popart/popx/popopx.hpp>
 
 namespace popart {
 namespace popx {
 
-class SumOpx : public Opx {
+class SumOpx : public PopOpx {
 public:
   SumOpx(Op *, Devicex *);
   void grow(poplar::program::Sequence &) const final;
@@ -19,7 +19,7 @@ public:
   view::RegMap unwindRegion(InIndex, OutIndex) const final;
 };
 
-class SumArgGradOpx : public Opx {
+class SumArgGradOpx : public PopOpx {
 public:
   SumArgGradOpx(Op *, Devicex *);
   void grow(poplar::program::Sequence &) const final;

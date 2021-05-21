@@ -13,7 +13,7 @@ public:
   ThresholdedReluComputex(float _alpha) : alpha(_alpha) {}
 
   void inplace(poplar::program::Sequence &,
-               poplar::Graph &,
+               snap::Graph &,
                const poplar::Tensor &,
                const poplar::DebugNameAndId &,
                const std::string &) const final;
@@ -39,7 +39,7 @@ public:
   ThresholdedReluInplaceOpx(Op *, Devicex *);
 };
 
-class ThresholdedReluGradOpx : public Opx {
+class ThresholdedReluGradOpx : public PopOpx {
 public:
   ThresholdedReluGradOpx(Op *, Devicex *);
   void grow(poplar::program::Sequence &) const final;

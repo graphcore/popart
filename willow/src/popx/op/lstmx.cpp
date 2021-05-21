@@ -8,7 +8,6 @@
 #include <popart/popx/irlowering.hpp>
 #include <popart/popx/op/lstmx.hpp>
 #include <popart/popx/op/lstmxutil.hpp>
-#include <popart/popx/opx.hpp>
 #include <popart/popx/opxmanager.hpp>
 #include <popart/tensor.hpp>
 #include <popart/tensorindex.hpp>
@@ -23,7 +22,7 @@
 namespace popart {
 namespace popx {
 
-LSTMOpx::LSTMOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
+LSTMOpx::LSTMOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
   verifyOp<LSTMOp>(op, {Onnx::Operators::LSTM_1, Onnx::Operators::LSTM_7});
 }
 
@@ -49,7 +48,7 @@ void LSTMOpx::grow(poplar::program::Sequence &prog) const {
   auto &lstm_op = getOp<LSTMOp>();
   auto seq_lens = getSeqLens();
   std::tie(output, cell_state) =
-      popnn::lstm::lstmFwd(graph(),
+      popnn::lstm::lstmFwd(graph().getPoplarGraph(),
                            createLSTMParams(lstm_op, seq_lens),
                            init_state,
                            input,
@@ -123,14 +122,14 @@ void LSTMOpx::growBias(poplar::program::Sequence &prog) const {
         bias_input.slice(0, 4 * hidden_size, 1), biases, false, debugContext());
     prog.add(copyProg);
 
-    popops::mapInPlace(graph(),
+    popops::mapInPlace(graph().getPoplarGraph(),
                        popops::expr::BinaryOpType::ADD,
                        biases,
                        bias_input.slice(4 * hidden_size, 8 * hidden_size, 1),
                        prog,
                        debugContext("add"));
   } else {
-    popops::zero(graph(), biases, prog, debugContext("zero"));
+    popops::zero(graph().getPoplarGraph(), biases, prog, debugContext("zero"));
   }
 }
 
@@ -201,8 +200,11 @@ poplar::Tensor LSTMOpx::createLSTMInput() const {
   auto options     = dv_p->lowering().lstmOptions;
   auto cache       = &dv_p->matmulCache;
 
-  return popnn::lstm::createInput(
-      graph(), lstm_params, getDebugNameAndId("input"), options, cache);
+  return popnn::lstm::createInput(graph().getPoplarGraph(),
+                                  lstm_params,
+                                  getDebugNameAndId("input"),
+                                  options,
+                                  cache);
 }
 
 popnn::lstm::LstmState LSTMOpx::getInitialState() const {
@@ -213,7 +215,7 @@ popnn::lstm::LstmState LSTMOpx::getInitialState() const {
     auto seq_lens    = getSeqLens();
     auto lstm_params = createLSTMParams(lstm_op, seq_lens);
 
-    initial_state = createInitialState(graph(),
+    initial_state = createInitialState(graph().getPoplarGraph(),
                                        lstm_params,
                                        getDebugNameAndId("initialState"),
                                        options,
@@ -231,8 +233,11 @@ popnn::lstm::LstmWeights LSTMOpx::getLSTMWeights() const {
     auto options     = dv_p->lowering().lstmOptions;
     auto cache       = &dv_p->matmulCache;
 
-    weights = popnn::lstm::createWeights(
-        graph(), lstm_params, debugContext("weights"), options, cache);
+    weights = popnn::lstm::createWeights(graph().getPoplarGraph(),
+                                         lstm_params,
+                                         debugContext("weights"),
+                                         options,
+                                         cache);
   }
 
   return *weights;
@@ -308,11 +313,14 @@ void LSTMOpx::prepareInitialState(popnn::lstm::LstmState &init_state,
 
   // If initC and initH are not present, one or both will need zeroing.
   if (!hasInitC && !hasInitH) {
-    zeroInitialState(graph(), init_state, prog, debugContext());
+    zeroInitialState(
+        graph().getPoplarGraph(), init_state, prog, debugContext());
   } else if (!hasInitC) {
-    popops::zero(graph(), init_state.cellState, prog, debugContext());
+    popops::zero(
+        graph().getPoplarGraph(), init_state.cellState, prog, debugContext());
   } else if (!hasInitH) {
-    popops::zero(graph(), init_state.output, prog, debugContext());
+    popops::zero(
+        graph().getPoplarGraph(), init_state.output, prog, debugContext());
   }
 
   // Copy initC input to initialState.cellState is initC is provided.
@@ -337,7 +345,7 @@ void LSTMOpx::prepareInitialState(popnn::lstm::LstmState &init_state,
   }
 }
 
-LSTMGradOpx::LSTMGradOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
+LSTMGradOpx::LSTMGradOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
   verifyOp<LSTMGradOp>(op, Onnx::GradOperators::LSTMGrad);
 }
 
@@ -375,7 +383,7 @@ void LSTMGradOpx::grow(poplar::program::Sequence &prog) const {
   // TODO find out what this is for
   // it's done in tensorflow and enigma
   auto output_grad_copy = cloneNcopy(prog, output_grad);
-  popops::addInPlace(graph(),
+  popops::addInPlace(graph().getPoplarGraph(),
                      output_grad_copy[output_grad_copy.dim(0) - 1],
                      output_h_grad,
                      prog,
@@ -384,7 +392,7 @@ void LSTMGradOpx::grow(poplar::program::Sequence &prog) const {
   poplar::Tensor input_grad;
   popnn::lstm::LstmWeights weights_grad;
 
-  auto init_state_grad = lstmBwdWithWU(graph(),
+  auto init_state_grad = lstmBwdWithWU(graph().getPoplarGraph(),
                                        lstm_params,
                                        prog,
                                        init_state,
@@ -441,8 +449,8 @@ poplar::Tensor LSTMGradOpx::getCellStateGrad() const {
         .reshape({batch_size, hidden_size});
   } else {
     auto zero = getScalarVariable(elem_type, "lstm/zero_cell_state");
-    graph().setTileMapping(zero, 0);
-    graph().setInitialValue(zero, 0);
+    graph().getPoplarGraph().setTileMapping(zero, 0);
+    graph().getPoplarGraph().setInitialValue(zero, 0);
     zero = zero.expand({0, 0});
     zero = zero.broadcast(batch_size, 0);
     zero = zero.broadcast(hidden_size, 1);
@@ -474,8 +482,8 @@ poplar::Tensor LSTMGradOpx::getHiddenStateGrad() const {
         .reshape({batch_size, hidden_size});
   } else {
     auto zero = getScalarVariable(elem_type, "lstm/zero_hidden_state");
-    graph().setTileMapping(zero, 0);
-    graph().setInitialValue(zero, 0);
+    graph().getPoplarGraph().setTileMapping(zero, 0);
+    graph().getPoplarGraph().setInitialValue(zero, 0);
     zero = zero.expand({0, 0});
     zero = zero.broadcast(batch_size, 0);
     zero = zero.broadcast(hidden_size, 1);

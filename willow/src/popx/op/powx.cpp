@@ -13,21 +13,22 @@ namespace popx {
 PowComputex::PowComputex(EwbComputex::InplacePolicy ip) : EwbComputex(ip) {}
 
 poplar::Tensor PowComputex::outplace(poplar::program::Sequence &prog,
-                                     poplar::Graph &graph,
+                                     snap::Graph &graph,
                                      const poplar::Tensor &a,
                                      const poplar::Tensor &b,
                                      const poplar::DebugNameAndId &dnai,
                                      const std::string &debugStr) const {
-  return popops::pow(graph, a, b, prog, {dnai, debugStr});
+  return popops::pow(graph.getPoplarGraph(), a, b, prog, {dnai, debugStr});
 }
 
 void PowComputex::inplace(poplar::program::Sequence &prog,
-                          poplar::Graph &graph,
+                          snap::Graph &graph,
                           const poplar::Tensor &tInOut,
                           const poplar::Tensor &tIn,
                           const poplar::DebugNameAndId &dnai,
                           const std::string &debugStr) const {
-  popops::powInPlace(graph, tInOut, tIn, prog, {dnai, debugStr});
+  popops::powInPlace(
+      graph.getPoplarGraph(), tInOut, tIn, prog, {dnai, debugStr});
 }
 
 PowOpx::PowOpx(Op *op, Devicex *devicex)
@@ -51,12 +52,12 @@ OpxCreator<PowOpx> powOpxCreator({Onnx::Operators::Pow_1,
                                   Onnx::Operators::Pow_7});
 OpxCreator<PowLhsInplaceOpx>
     powLhsInplaceOpxCreator(Onnx::CustomOperators::PowLhsInplace);
-OpxCreator<Opx> powArg0OpxCreator(Onnx::GradOperators::PowArg0Grad,
-                                  "PowArg0Grad should be optimised out, "
-                                  "\"PowArg0GradOp\" pattern is required");
-OpxCreator<Opx> powArg1OpxCreator(Onnx::GradOperators::PowArg1Grad,
-                                  "PowArg1Grad should be optimised out, "
-                                  "\"PowArg1GradOp\" pattern is required");
+OpxCreator<PopOpx> powArg0OpxCreator(Onnx::GradOperators::PowArg0Grad,
+                                     "PowArg0Grad should be optimised out, "
+                                     "\"PowArg0GradOp\" pattern is required");
+OpxCreator<PopOpx> powArg1OpxCreator(Onnx::GradOperators::PowArg1Grad,
+                                     "PowArg1Grad should be optimised out, "
+                                     "\"PowArg1GradOp\" pattern is required");
 } // namespace
 
 } // namespace popx

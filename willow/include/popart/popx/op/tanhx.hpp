@@ -3,13 +3,13 @@
 #define GUARD_NEURALNET_TANHX_HPP
 
 #include <popart/names.hpp>
-#include <popart/popx/opx.hpp>
+#include <popart/popx/popopx.hpp>
 
 namespace popart {
 
 namespace popx {
 
-class TanhOpx : public Opx {
+class TanhOpx : public PopOpx {
 public:
   TanhOpx(Op *, Devicex *);
   void grow(poplar::program::Sequence &) const final;
@@ -20,7 +20,7 @@ public:
   view::RegMap unwindRegion(InIndex, OutIndex) const final;
 };
 
-class TanhGradOpx : public Opx {
+class TanhGradOpx : public PopOpx {
 public:
   TanhGradOpx(Op *, Devicex *);
   void grow(poplar::program::Sequence &) const final;

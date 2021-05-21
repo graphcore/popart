@@ -16,7 +16,7 @@ public:
   void grow(poplar::program::Sequence &) const final;
 };
 
-class MaxArgGradOpx : public Opx {
+class MaxArgGradOpx : public PopOpx {
 public:
   MaxArgGradOpx(Op *, Devicex *);
   void grow(poplar::program::Sequence &) const final;

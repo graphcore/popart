@@ -4,7 +4,7 @@
 
 #include <popnn/Gru.hpp>
 #include <popart/names.hpp>
-#include <popart/popx/opx.hpp>
+#include <popart/popx/popopx.hpp>
 
 namespace popart {
 
@@ -12,7 +12,7 @@ class GRUOp;
 
 namespace popx {
 
-class GRUOpx : public Opx {
+class GRUOpx : public PopOpx {
 public:
   GRUOpx(Op *, Devicex *);
   void grow(poplar::program::Sequence &) const final;
@@ -45,7 +45,7 @@ private:
   mutable std::set<InIndex> createdInputs;
 };
 
-class GRUGradOpx : public Opx {
+class GRUGradOpx : public PopOpx {
 public:
   GRUGradOpx(Op *, Devicex *);
   void grow(poplar::program::Sequence &) const final;

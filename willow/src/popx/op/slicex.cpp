@@ -20,7 +20,7 @@
 namespace popart {
 namespace popx {
 
-BaseSliceOpx::BaseSliceOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {}
+BaseSliceOpx::BaseSliceOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {}
 
 InputCreatorType BaseSliceOpx::getInputCreatorType(InIndex inIndex) const {
   if (inIndex != 0) {

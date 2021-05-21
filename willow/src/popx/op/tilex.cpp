@@ -22,11 +22,11 @@ void TileOpx::grow(poplar::program::Sequence &prog) const {
   setOutTensor(TileOp::getOutIndex(), outTensor);
 }
 
-TileOpx::TileOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
+TileOpx::TileOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
   verifyOp<TileOp>(op);
 }
 
-TileGradOpx::TileGradOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
+TileGradOpx::TileGradOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
   verifyOp<TileGradOp>(op, Onnx::GradOperators::TileGrad);
 }
 
@@ -55,7 +55,7 @@ void TileGradOpx::grow(poplar::program::Sequence &prog) const {
       if (start == 0) {
         outTensor = cloneNcopy(prog, t);
       } else {
-        popops::mapInPlace(graph(),
+        popops::mapInPlace(graph().getPoplarGraph(),
                            popops::expr::BinaryOpType::ADD,
                            outTensor,
                            t,

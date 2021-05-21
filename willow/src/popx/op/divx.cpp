@@ -15,7 +15,7 @@ DivOpx::DivOpx(Op *op, Devicex *devicex) : ElementWiseBinaryOpx(op, devicex) {
 
 void DivOpx::grow(poplar::program::Sequence &prog) const {
   setOutTensor(0,
-               popops::map(graph(),
+               popops::map(graph().getPoplarGraph(),
                            popops::expr::BinaryOpType::DIVIDE,
                            getInTensor(DivOp::getArg0InIndex()),
                            getInTensor(DivOp::getArg1InIndex()),
@@ -26,12 +26,12 @@ void DivOpx::grow(poplar::program::Sequence &prog) const {
 namespace {
 OpxCreator<DivOpx> divOpxCreator({Onnx::Operators::Div_6,
                                   Onnx::Operators::Div_7});
-OpxCreator<Opx> divArg0OpxCreator(
+OpxCreator<PopOpx> divArg0OpxCreator(
     Onnx::GradOperators::DivArg0Grad,
     "DivArg0Grad should be optimised out, \"DivArg0Grad\" pattern is required");
-OpxCreator<Opx> divArg1OpxCreator(Onnx::GradOperators::DivArg1Grad,
-                                  "DivArg1Grad should be optimised out, "
-                                  "\"DivArg1GradOp\" pattern is required");
+OpxCreator<PopOpx> divArg1OpxCreator(Onnx::GradOperators::DivArg1Grad,
+                                     "DivArg1Grad should be optimised out, "
+                                     "\"DivArg1GradOp\" pattern is required");
 } // namespace
 
 } // namespace popx

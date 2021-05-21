@@ -4,18 +4,18 @@
 
 #include <popart/names.hpp>
 #include <popart/popx/op/varupdatex.hpp>
-#include <popart/popx/opx.hpp>
+#include <popart/popx/popopx.hpp>
 
 namespace popart {
 
 namespace popx {
-class GradCopyToHostOpx : public Opx {
+class GradCopyToHostOpx : public PopOpx {
 public:
   GradCopyToHostOpx(Op *, Devicex *);
   void grow(poplar::program::Sequence &) const final;
 };
 
-class GradCopyFromHostOpx : public Opx {
+class GradCopyFromHostOpx : public PopOpx {
 public:
   GradCopyFromHostOpx(Op *, Devicex *);
   void grow(poplar::program::Sequence &) const final;

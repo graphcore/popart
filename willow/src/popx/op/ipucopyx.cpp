@@ -13,7 +13,7 @@
 namespace popart {
 namespace popx {
 
-IpuCopyOpx::IpuCopyOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
+IpuCopyOpx::IpuCopyOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
   verifyOp<IpuCopyOp>(op, Onnx::CustomOperators::IpuCopy);
 }
 
@@ -26,8 +26,8 @@ void IpuCopyOpx::grow(poplar::program::Sequence &prog) const {
 
   for (auto &idx_tensor : op.input->tensorMap()) {
     auto idx = idx_tensor.first;
-    // Need to get the non virtual graph, so cannot use Opx::graph()
-    auto t = poputil::copyToIpu(dv_p->lowering().graph(),
+    // Need to get the non virtual graph, so cannot use PopOpx::graph()
+    auto t = poputil::copyToIpu(dv_p->lowering().graph().getPoplarGraph(),
                                 getInTensor(idx),
                                 prog,
                                 static_cast<int>(op.getDestIpu()),
@@ -53,7 +53,7 @@ void IpuCopyOpx::createPipelinedOutput() const {
     // When pipelining, create the copy destination, but dont add the copy
     // program.
     poplar::Tensor tLocalForCopy, tForCopy;
-    auto t = poputil::createIpuCopy(dv_p->lowering().graph(),
+    auto t = poputil::createIpuCopy(dv_p->lowering().graph().getPoplarGraph(),
                                     getInTensor(idx),
                                     static_cast<int>(op.getDestIpu()),
                                     tForCopy,
@@ -86,7 +86,7 @@ poplar::Tensor IpuCopyOpx::unwindTensorLayout(poplar::Tensor tensor,
   auto srcIpu   = op.getSourceIpu(op.input->tensor(in)->id);
 
   poplar::Tensor tLocalForCopy, tForCopy;
-  auto t = poputil::createIpuCopy(dv_p->lowering().graph(),
+  auto t = poputil::createIpuCopy(dv_p->lowering().graph().getPoplarGraph(),
                                   tensor,
                                   static_cast<int>(srcIpu),
                                   tForCopy,
@@ -99,7 +99,7 @@ view::RegMap IpuCopyOpx::unwindRegion(InIndex, OutIndex) const {
   return [](const view::Region &r) { return view::Regions(1, r); };
 }
 
-poplar::Graph &IpuCopyOpx::srcGraph(InIndex in) const {
+snap::Graph &IpuCopyOpx::srcVirtualGraph(InIndex in) const {
   if (op_p->getIr().virtualGraphsEnabled()) {
     IpuCopyOp &op = getOp<IpuCopyOp>();
     auto srcIpu   = op.getSourceIpu(op.input->tensor(in)->id);
@@ -109,7 +109,7 @@ poplar::Graph &IpuCopyOpx::srcGraph(InIndex in) const {
   }
 }
 
-poplar::Graph &IpuCopyOpx::dstGraph(OutIndex out) const {
+snap::Graph &IpuCopyOpx::dstVirtualGraph(OutIndex out) const {
   if (op_p->getIr().virtualGraphsEnabled()) {
     IpuCopyOp &op = getOp<IpuCopyOp>();
     auto dstIpu   = op.getDestIpu();

@@ -3,12 +3,12 @@
 #define GUARD_NEURALNET_TILEX_HPP
 
 #include <popart/names.hpp>
-#include <popart/popx/opx.hpp>
+#include <popart/popx/popopx.hpp>
 
 namespace popart {
 namespace popx {
 
-class TileOpx : public Opx {
+class TileOpx : public PopOpx {
 public:
   TileOpx(Op *, Devicex *);
   void grow(poplar::program::Sequence &) const final;
@@ -19,7 +19,7 @@ public:
   // a much larger tensor than required by the input's shape
 };
 
-class TileGradOpx : public Opx {
+class TileGradOpx : public PopOpx {
 public:
   TileGradOpx(Op *, Devicex *);
   void grow(poplar::program::Sequence &) const final;

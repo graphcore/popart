@@ -6,7 +6,7 @@
 #include <popnn/Lstm.hpp>
 #include <popart/names.hpp>
 #include <popart/op/lstm.hpp>
-#include <popart/popx/opx.hpp>
+#include <popart/popx/popopx.hpp>
 #include <popart/vendored/optional.hpp>
 
 namespace popart {
@@ -15,7 +15,7 @@ class LSTMOp;
 
 namespace popx {
 
-class LSTMOpx : public Opx {
+class LSTMOpx : public PopOpx {
 public:
   LSTMOpx(Op *, Devicex *);
   void grow(poplar::program::Sequence &) const final;
@@ -48,7 +48,7 @@ private:
   mutable std::set<InIndex> createdInputs;
 };
 
-class LSTMGradOpx : public Opx {
+class LSTMGradOpx : public PopOpx {
 public:
   LSTMGradOpx(Op *, Devicex *);
   void grow(poplar::program::Sequence &) const final;

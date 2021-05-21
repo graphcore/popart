@@ -2,13 +2,13 @@
 #ifndef GUARD_NEURALNET_SUBGRAPHX_HPP
 #define GUARD_NEURALNET_SUBGRAPHX_HPP
 
-#include <popart/popx/opx.hpp>
+#include <popart/popx/popopx.hpp>
 #include <popart/vendored/optional.hpp>
 
 namespace popart {
 namespace popx {
 
-class SubgraphOpx : public Opx {
+class SubgraphOpx : public PopOpx {
 public:
   SubgraphOpx(Op *, Devicex *);
   bool outputCreatedExternally(OutIndex) const final { return true; }

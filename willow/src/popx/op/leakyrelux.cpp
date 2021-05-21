@@ -18,7 +18,7 @@ namespace pe = popops::expr;
 
 poplar::Tensor
 LeakyReluComputex::outplace(poplar::program::Sequence &prog,
-                            poplar::Graph &graph,
+                            snap::Graph &graph,
                             const poplar::Tensor &tensor,
                             const poplar::DebugNameAndId &dnai,
                             const std::string &debug_prefix) const {
@@ -28,7 +28,7 @@ LeakyReluComputex::outplace(poplar::program::Sequence &prog,
 }
 
 void LeakyReluComputex::inplace(poplar::program::Sequence &prog,
-                                poplar::Graph &graph,
+                                snap::Graph &graph,
                                 const poplar::Tensor &tensor,
                                 const poplar::DebugNameAndId &dnai,
                                 const std::string &debug_prefix) const {
@@ -37,7 +37,8 @@ void LeakyReluComputex::inplace(poplar::program::Sequence &prog,
                                pe::_1,
                                pe::Lt(pe::_1, pe::Const(0.0f)));
 
-  popops::mapInPlace(graph, expression, {tensor}, prog, {dnai, debug_prefix});
+  popops::mapInPlace(
+      graph.getPoplarGraph(), expression, {tensor}, prog, {dnai, debug_prefix});
 }
 
 float LeakyReluComputex::getAlphaFromLReluOp(Op *op) {
@@ -75,7 +76,7 @@ LeakyReluInplaceOpx::LeakyReluInplaceOpx(Op *op, Devicex *devicex)
 }
 
 LeakyReluGradOpx::LeakyReluGradOpx(Op *op, Devicex *devicex)
-    : Opx(op, devicex) {
+    : PopOpx(op, devicex) {
   verifyOp<LeakyReluGradOp>(op, Onnx::GradOperators::LeakyReluGrad);
 }
 
@@ -93,8 +94,11 @@ void LeakyReluGradOpx::grow(poplar::program::Sequence &prog) const {
                                           pe::Lt(pe::_2, pe::Const(0.0f))),
                                pe::_1);
 
-  auto output = popops::map(
-      graph(), expression, {grad, input}, prog, debugContext("leakyrelu_grad"));
+  auto output = popops::map(graph().getPoplarGraph(),
+                            expression,
+                            {grad, input},
+                            prog,
+                            debugContext("leakyrelu_grad"));
 
   setOutTensor(0, output);
 }

@@ -18,7 +18,7 @@ TopKOpx::TopKOpx(Op *op, Devicex *devicex) : BaseSortOpx(op, devicex) {
   K = static_cast<unsigned>(dynamic_cast<TopKOp *>(op)->getK());
 }
 
-TopKGradOpx::TopKGradOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
+TopKGradOpx::TopKGradOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
   verifyOp<TopKGradOp>(op, Onnx::GradOperators::TopKGrad);
   axis        = dynamic_cast<TopKGradOp *>(op)->getAxis();
   gradOutInfo = dynamic_cast<TopKGradOp *>(op)->getGradOutInfo();
@@ -37,12 +37,12 @@ void TopKGradOpx::grow(poplar::program::Sequence &prog) const {
 
   auto gradIn = getInTensor(TopKGradOp::gradInIndex());
 
-  poplar::Tensor dataGrad = graph().addVariable(
+  poplar::Tensor dataGrad = graph().getPoplarGraph().addVariable(
       gradIn.elementType(), getGradOutShape(), debugContext("dataGrad"));
 
-  poputil::mapTensorLinearly(graph(), dataGrad);
+  poputil::mapTensorLinearly(graph().getPoplarGraph(), dataGrad);
 
-  popops::zero(graph(), dataGrad, prog, debugContext("zero"));
+  popops::zero(graph().getPoplarGraph(), dataGrad, prog, debugContext("zero"));
 
   scatterutilx::growScatter(prog,
                             graph(),
@@ -57,7 +57,7 @@ void TopKGradOpx::grow(poplar::program::Sequence &prog) const {
 
 void TopKOpx::grow(poplar::program::Sequence &prog) const {
   auto negateTensor = [&](auto &x) {
-    return popops::map(graph(),
+    return popops::map(graph().getPoplarGraph(),
                        popops::expr::UnaryOpType::NEGATE,
                        x,
                        prog,
@@ -90,11 +90,11 @@ void TopKOpx::grow(poplar::program::Sequence &prog) const {
   // Add variable to store indices
   auto indsShape = input.shape();
   indsShape[1]   = K;
-  auto topKInds  = graph().addVariable(
+  auto topKInds  = graph().getPoplarGraph().addVariable(
       poplar::UNSIGNED_INT, indsShape, debugContext("topKInds"));
-  poputil::mapTensorLinearly(graph(), topKInds);
+  poputil::mapTensorLinearly(graph().getPoplarGraph(), topKInds);
 
-  auto topKVals = popnn::topK(graph(),
+  auto topKVals = popnn::topK(graph().getPoplarGraph(),
                               input,
                               topKInds,
                               K,

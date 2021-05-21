@@ -27,8 +27,12 @@ poplar::Tensor NormOpx::convertInvSdToVar(poplar::program::Sequence &prog,
                                           float epsilon,
                                           const poplar::Type dstType) const {
 
-  return popops::invStdDevToVariance(
-      graph(), invSd, epsilon, prog, dstType, debugContext("invSdToVar"));
+  return popops::invStdDevToVariance(graph().getPoplarGraph(),
+                                     invSd,
+                                     epsilon,
+                                     prog,
+                                     dstType,
+                                     debugContext("invSdToVar"));
 }
 
 // convert variant to inverse standard deviation
@@ -37,11 +41,15 @@ poplar::Tensor NormOpx::convertVarToInvSd(poplar::program::Sequence &prog,
                                           float epsilon,
                                           const poplar::Type dstType) const {
 
-  return popops::varianceToInvStdDev(
-      graph(), var, epsilon, prog, dstType, debugContext("varToInvSd"));
+  return popops::varianceToInvStdDev(graph().getPoplarGraph(),
+                                     var,
+                                     epsilon,
+                                     prog,
+                                     dstType,
+                                     debugContext("varToInvSd"));
 }
 
-NormOpx::NormOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {}
+NormOpx::NormOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {}
 
 } // namespace popx
 } // namespace popart

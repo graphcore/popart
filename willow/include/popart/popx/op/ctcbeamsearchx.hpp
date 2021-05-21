@@ -14,7 +14,7 @@ class Plan;
 
 namespace popart {
 namespace popx {
-class CtcBeamSearchDecoderOpx : public Opx {
+class CtcBeamSearchDecoderOpx : public PopOpx {
 public:
   CtcBeamSearchDecoderOpx(Op *op, Devicex *device);
 

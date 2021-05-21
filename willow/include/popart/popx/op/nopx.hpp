@@ -3,13 +3,13 @@
 #define GUARD_NEURALNET_NOPX_HPP
 
 #include <popart/names.hpp>
-#include <popart/popx/opx.hpp>
+#include <popart/popx/popopx.hpp>
 
 namespace popart {
 
 namespace popx {
 
-class NopOpx : public Opx {
+class NopOpx : public PopOpx {
 public:
   NopOpx(Op *, Devicex *);
   void grow(poplar::program::Sequence &) const final;
