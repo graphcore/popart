@@ -4,6 +4,7 @@
 
 #include <utility>
 
+#include <popart/popx/opx.hpp>
 #include <popart/popx/popopx.hpp>
 
 namespace popart {

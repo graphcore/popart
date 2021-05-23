@@ -22,6 +22,7 @@
 #   poplibs
 #   libpvti
 #   gcl
+#   popir
 #
 # If the popart component is requested, we require these additional
 # dependencies:
@@ -110,6 +111,8 @@ _safe_find_dependency(poplar)
 _safe_find_dependency(poplibs)
 _safe_find_dependency(libpvti)
 _safe_find_dependency(gcl)
+_safe_find_dependency(popir)
+
 include("${CMAKE_CURRENT_LIST_DIR}/popart--popart-only-targets.cmake"
     RESULT_VARIABLE popart_popart-only_FOUND
 )
