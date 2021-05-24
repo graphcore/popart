@@ -40,7 +40,7 @@ enum class RecomputeType { Undefined = 0, Checkpoint, Recompute, Recomputed };
 
 enum class ExecutionContext {
   Normal = 0,
-  AccumulateOuterFragment,
+  AccumulateOuterFragment, // Run after gradient accmulation completes
   WeightsFromHostFragment,
   WeightsToHostFragment,
   OptimizerFromHostFragment,

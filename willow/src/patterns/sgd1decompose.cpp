@@ -210,6 +210,8 @@ bool SGD1Decompose::apply(Op *op) const {
   graph.topoCons->transfer(combo, acclOp);
   acclOp->setup();
 
+  // Remaining ops run after the gradient accumulation loop (if enabled)
+
   // Accl reduction (mutually exclusive with gradient reduction)
   if (combo->reductionType == OptimizerReductionType::AcclReduce) {
     // AcclReduceOp

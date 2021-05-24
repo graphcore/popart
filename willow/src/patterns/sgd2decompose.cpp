@@ -76,9 +76,10 @@ bool SGD2Decompose::apply(Op *op) const {
                   combo,
                   accumId,
                   gradIntoAccumId,
-                  combo->reductionType == OptimizerReductionType::AccumReduce,
-                  combo->withGradAccum);
+                  combo->reductionType == OptimizerReductionType::AccumReduce);
   }
+
+  // Remaining ops run after the gradient accumulation loop (if enabled)
 
   // Cast if accumulator is fp16, and optimizer state is fp32.
   if (combo->accumType == DataType::FLOAT16 &&

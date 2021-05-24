@@ -230,8 +230,7 @@ bool AdamDecompose::apply(Op *op) const {
                   combo,
                   accumId,
                   gradIntoAccumId,
-                  combo->reductionType == OptimizerReductionType::AccumReduce,
-                  combo->withGradAccum);
+                  combo->reductionType == OptimizerReductionType::AccumReduce);
   }
 
   // Cast if accumulator is fp16, and optimizer state is fp32.
@@ -241,6 +240,8 @@ bool AdamDecompose::apply(Op *op) const {
     gradIntoAcclId =
         gradCast(graph, combo, gradIntoAcclId, combo->withGradAccum);
   }
+
+  // Remaining ops run after the gradient accumulation loop (if enabled)
 
   // Gradient unscaling
   TensorId gsId =

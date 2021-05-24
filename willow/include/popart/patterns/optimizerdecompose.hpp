@@ -21,7 +21,8 @@ protected:
                       const TensorId &tensorId,
                       const TensorInfo info) const;
 
-  // ADd accl Op and updated tensor
+  // Add accl Op and updated tensor
+  // Runs after gradient accumulation (if enabled) has completed
   std::pair<Op *, TensorId> accl(Graph &graph,
                                  Op *combo,
                                  TensorId acclId,
@@ -37,12 +38,12 @@ protected:
                      Op *combo,
                      TensorId accumId,
                      TensorId gradIntoAccumId,
-                     bool accumReduce,
-                     bool gradAccum) const;
+                     bool accumReduce) const;
 
   // Reset all values of accumulutor with TensorID
   // Transfers the name and properties from Op, combo and schedules the op to
-  // take place once beforeOps have run
+  // take place once beforeOps have run (and after gradient accumulation has
+  // taken place.)
   void zeroAccumulator(Graph &graph,
                        Op *combo,
                        std::vector<Op *> beforeOps,
@@ -52,11 +53,14 @@ protected:
   TensorId gradReduce(Graph &graph, Op *combo, TensorId weightGradId) const;
 
   // Gradient casting
+  // Runs after gradient accumulation (if enabled) has completed
   TensorId gradCast(Graph &graph,
                     Op *combo,
                     TensorId gradIntoAcclId,
                     bool gradAccum) const;
+
   // Gradient unscaling
+  // Runs after gradient accumulation (if enabled) has completed
   TensorId gradUnscale(Graph &graph,
                        Op *combo,
                        const OptimizerValue &gs,
@@ -65,6 +69,7 @@ protected:
                        bool gradAccum) const;
 
   // L2 regularization
+  // Runs after gradient accumulation (if enabled) has completed
   TensorId regularizeL2(Graph &graph,
                         Op *combo,
                         const OptimizerValue &wd,

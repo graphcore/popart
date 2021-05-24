@@ -113,8 +113,7 @@ TensorId OptimizerDecompose::gradAccum(Graph &graph,
                                        Op *combo,
                                        TensorId accumId,
                                        TensorId gradIntoAccumId,
-                                       bool accumReduce,
-                                       bool gradAccum) const {
+                                       bool accumReduce) const {
   TensorId gradIntoAcclId;
   auto accumOpUp = std::make_unique<AccumulateOp>(
       AccumulationType::Add,
@@ -170,12 +169,10 @@ TensorId OptimizerDecompose::gradAccum(Graph &graph,
         ReplicatedAllReduceInplaceOp::getOutIndex(), gradIntoAcclId);
 
     reduceOp->setup();
-    if (gradAccum) {
-      reduceOp->settings.executionContext =
-          ExecutionContext::AccumulateOuterFragment;
-      reduceOp->setExecutionPhase({});
-      reduceOp->settings.schedulePriority = 0.0;
-    }
+    reduceOp->settings.executionContext =
+        ExecutionContext::AccumulateOuterFragment;
+    reduceOp->setExecutionPhase({});
+    reduceOp->settings.schedulePriority = 0.0;
   } else {
     // No replicated accumulator reduction
     gradIntoAcclId = updatedAccumId;
