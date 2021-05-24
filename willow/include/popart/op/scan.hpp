@@ -61,8 +61,7 @@ public:
   OutIndex opOutToSubgraphOutIndex(OutIndex index) const override;
 
   // Returns the number of iterations required to process the inputs
-  int getTripCountValue() const { return tripCountValue; }
-  void setTripCountValue(int value) { tripCountValue = value; }
+  int getTripCountValue() const;
 
   // Returns the number of scan inputs (M)
   int getNumScanInputs() const { return numScanInputs; }
@@ -79,26 +78,29 @@ public:
   int getNumScanOutputs() const { return output->n() - getNumVariables(); }
 
   // Returns the scan input axis of scan input i
-  int64_t getScanInputAxis(int i) const { return scanInputAxes.at(i); }
+  int64_t getScanInputAxis(int i) const;
 
   // Returns the scan input axis of scan input i
-  bool isScanInputReversed(int i) const { return scanInputDirections.at(i); }
+  bool isScanInputReversed(int i) const { return getScanInputDirection(i); }
 
   // Returns the scan input axis of scan output i
-  int64_t getScanOutputAxis(int i) const { return scanOutputAxes.at(i); }
+  int64_t getScanOutputAxis(int i) const;
 
   // Returns the scan input axis of scan output i
-  bool isScanOutputReversed(int i) const { return scanOutputDirections.at(i); }
+  bool isScanOutputReversed(int i) const { return getScanOutputDirection(i); }
+
+  int64_t getScanInputDirection(int i) const;
+
+  int64_t getScanOutputDirection(int i) const;
 
 private:
   std::reference_wrapper<Graph> callee;
-  int tripCountValue;
-  int numImplicitInputs;
-  int numScanInputs;
-  std::vector<int64_t> scanInputAxes;
-  std::vector<int64_t> scanInputDirections;
-  std::vector<int64_t> scanOutputAxes;
-  std::vector<int64_t> scanOutputDirections;
+  const int numImplicitInputs;
+  const int numScanInputs;
+  const std::vector<int64_t> baseScanInputAxes;
+  const std::vector<int64_t> baseScanInputDirections;
+  const std::vector<int64_t> baseScanOutputAxes;
+  const std::vector<int64_t> baseScanOutputDirections;
 };
 
 } // namespace popart

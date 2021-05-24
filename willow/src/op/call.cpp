@@ -48,8 +48,6 @@ void CallOp::setup() {
                     "used for testing purposes.",
                     inIndex);
     }
-    auto region = view::Region::getFull(input->tensor(inIndex)->info.shape());
-    addModified(inIndex, {region});
   }
 }
 
@@ -69,6 +67,21 @@ std::vector<const Graph *> CallOp::getCalledGraphs() const {
 }
 
 void CallOp::setCalledGraph(Graph &graph) { callee = graph; }
+
+void CallOp::connectInTensor(InIndex inIndex, TensorId tenId) {
+  defaultConnectInTensor(inIndex, tenId);
+
+  // For testing purposes, allow setting modified regions via "modifiedInputs"
+  // attribute to full regions. This allows constructing a graph which will
+  // use CopyModified via the graph builder alone. This should not normally
+  // be used.
+  auto found = std::find(
+      modifiedInputsViaAttrs.begin(), modifiedInputsViaAttrs.end(), inIndex);
+  if (found != modifiedInputsViaAttrs.end()) {
+    auto region = view::Region::getFull(input->tensor(inIndex)->info.shape());
+    addModified(inIndex, {region});
+  }
+}
 
 std::vector<std::unique_ptr<Op>> CallOp::getGradOps() {
 

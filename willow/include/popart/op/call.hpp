@@ -50,12 +50,14 @@ public:
     growAliaserMulti(m);
   }
 
+  void connectInTensor(InIndex inIndex, TensorId tenId) override;
+
 private:
   std::reference_wrapper<Graph> callee;
   // Facility to auto-mark inputs as 'modified' on construction by setting the
   // 'modifiedInputs' attribute. This is currently only used for testing
   // purposes.
-  std::vector<int> modifiedInputsViaAttrs;
+  const std::vector<int> modifiedInputsViaAttrs;
 
   std::vector<GradInOutMapper>
   getGradInInfo(const std::vector<TensorId> &gradOpInputIds) const;

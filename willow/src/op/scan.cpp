@@ -23,11 +23,12 @@ ScanOp::ScanOp(const OperatorIdentifier &_opid,
                std::vector<int64_t> scanInputDirections_,
                std::vector<int64_t> scanOutputAxes_,
                std::vector<int64_t> scanOutputDirections_)
-    : SubgraphOp(_opid, settings_), callee(callee_), tripCountValue(-1),
+    : SubgraphOp(_opid, settings_), callee(callee_),
       numImplicitInputs(numImplicitInputs_), numScanInputs(numScanInputs_),
-      scanInputAxes(scanInputAxes_), scanInputDirections(scanInputDirections_),
-      scanOutputAxes(scanOutputAxes_),
-      scanOutputDirections(scanOutputDirections_) {}
+      baseScanInputAxes(scanInputAxes_),
+      baseScanInputDirections(scanInputDirections_),
+      baseScanOutputAxes(scanOutputAxes_),
+      baseScanOutputDirections(scanOutputDirections_) {}
 
 std::unique_ptr<Op> ScanOp::clone() const {
   return std::make_unique<ScanOp>(*this);
@@ -45,12 +46,6 @@ OutIndex ScanOp::subgraphOutToOpOutIndex(OutIndex index) const { return index; }
 OutIndex ScanOp::opOutToSubgraphOutIndex(OutIndex index) const { return index; }
 
 void ScanOp::setup() {
-  // Reset trip count, because with ScanOp, the trip count will depend
-  // on the length of the scan input tensors at the scan input axes.
-  // The new trip count value will be determined when the inputs to the ScanOp
-  // are inspected
-  tripCountValue = -1;
-
   auto M = getNumScanInputs();
   auto N = getNumVariables();
   auto K = getNumScanOutputs();
@@ -63,26 +58,13 @@ void ScanOp::setup() {
                      L,
                      K);
 
-  // Scan inputs
-  scanInputAxes.resize(M, 0);
-  scanInputDirections.resize(M, 0);
-
-  // Scan outputs
-  scanOutputAxes.resize(K, 0);
-  scanOutputDirections.resize(K, 0);
-
   // Check inputs, calculate the number of iterations
   for (int i = 0; i < M; ++i) {
-    auto rank = inInfo(N + i).rank();
-    // Adjust input axis
-    scanInputAxes[i] = (scanInputAxes[i] + rank) % rank;
-    auto iterations  = inInfo(N + i).shape().at(scanInputAxes[i]);
-    if (tripCountValue == -1) {
-      tripCountValue = iterations;
-    } else if (tripCountValue != iterations) {
+    auto iterations = inInfo(N + i).shape().at(getScanInputAxis(i));
+    if (getTripCountValue() != iterations) {
       throw error("[ScanOp] Number of iterations required by the inputs do not "
                   "match: {} {}",
-                  tripCountValue,
+                  getTripCountValue(),
                   iterations);
     }
   }
@@ -97,28 +79,71 @@ void ScanOp::setup() {
   for (int k = 0; k < K; ++k) {
     auto tensorId = getCalledGraph().getOutputId(N + k);
     auto tensor   = getCalledGraph().getTensors().get(tensorId);
-    auto rank     = tensor->info.rank();
-    // Adjust output axis
-    scanOutputAxes[k] = (scanOutputAxes[k] + rank) % rank;
-    auto info         = tensor->info;
-    auto shape        = info.shape();
-    shape[scanOutputAxes[k]] *= tripCountValue;
+    auto info     = tensor->info;
+    auto shape    = info.shape();
+    shape[getScanOutputAxis(k)] *= getTripCountValue();
     info.set(info.dataType(), shape, info.metaShape());
     outInfo(N + k) = info;
     logging::op::trace("[ScanOp] Output {} info {}", N + k, outInfo(N + k));
   }
 }
 
+int ScanOp::getTripCountValue() const {
+  auto N = getNumVariables();
+  return inInfo(N).shape().at(getScanInputAxis(0));
+}
+
+int64_t ScanOp::getScanOutputAxis(int i) const {
+  int64_t v = 0;
+  if (i < baseScanOutputAxes.size()) {
+    v = baseScanOutputAxes[i];
+  }
+
+  auto N = getNumVariables();
+
+  auto tensorId = getCalledGraph().getOutputId(N + i);
+  auto tensor   = getCalledGraph().getTensors().get(tensorId);
+  auto rank     = tensor->info.rank();
+  // Adjust output axis
+  return (v + rank) % rank;
+}
+
+int64_t ScanOp::getScanInputAxis(int i) const {
+  if (baseScanInputAxes.size() > i) {
+    auto N    = getNumVariables();
+    auto rank = inInfo(N + i).rank();
+    return (baseScanInputAxes.at(i) + rank) % rank;
+  } else {
+    return 0;
+  }
+}
+
+int64_t ScanOp::getScanInputDirection(int i) const {
+  if (i < baseScanInputDirections.size()) {
+    return baseScanInputDirections.at(i);
+  } else {
+    return 0;
+  }
+}
+
+int64_t ScanOp::getScanOutputDirection(int i) const {
+  if (i < baseScanOutputDirections.size()) {
+    return baseScanOutputDirections.at(i);
+  } else {
+    return 0;
+  }
+}
+
 void ScanOp::appendOutlineAttributes(OpSerialiserBase &os) const {
   Op::appendOutlineAttributes(os);
   os.appendAttribute("callee", callee.get().id.str());
-  os.appendAttribute("tripCountValue", tripCountValue);
+  os.appendAttribute("getTripCountValue", getTripCountValue());
   os.appendAttribute("numImplicitInputs", numImplicitInputs);
   os.appendAttribute("numScanInputs", numScanInputs);
-  os.appendAttribute("scanInputAxes", scanInputAxes);
-  os.appendAttribute("scanInputDirections", scanInputDirections);
-  os.appendAttribute("scanOutputAxes", scanOutputAxes);
-  os.appendAttribute("scanOutputDirections", scanOutputDirections);
+  os.appendAttribute("baseScanInputAxes", baseScanInputAxes);
+  os.appendAttribute("baseScanInputDirections", baseScanInputDirections);
+  os.appendAttribute("baseScanOutputAxes", baseScanOutputAxes);
+  os.appendAttribute("baseScanOutputDirections", baseScanOutputDirections);
 }
 
 namespace {
