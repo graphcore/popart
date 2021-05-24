@@ -901,7 +901,6 @@ def test_adam_gradient_accumulation_model_proto(tmpdir, explicit_loops):
 
         # Model should have 6 weight tensors
         assert len(weight_names) == 6
-        assert len(accum_names) == len(weight_names)
         assert len(accl1_names) == len(weight_names)
         assert len(accl2_names) == len(weight_names)
         assert len(step_names) == len(weight_names)
@@ -911,7 +910,6 @@ def test_adam_gradient_accumulation_model_proto(tmpdir, explicit_loops):
             tensor_mapping[tensor.name] = tensor
 
         for w_name in weight_names:
-            assert popart.reservedAccumPrefix() + w_name in accum_names
             assert popart.reservedAccl1Prefix() + w_name in accl1_names
             assert popart.reservedAccl2Prefix() + w_name in accl2_names
             assert popart.reservedStepPrefix() + w_name in step_names

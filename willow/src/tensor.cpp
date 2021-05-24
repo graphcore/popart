@@ -949,11 +949,12 @@ bool Tensor::isOptimizerStateTensor() const {
           states.begin(), states.end(), [this](const std::string state) {
             return id.find(state) != std::string::npos;
           })) {
-    // sanity check that the accl tensor is of Variable type
+    // sanity check that the Optimizer tensor is of Variable type
     if (tensorType() != TensorType::Variable) {
-      throw error("Tensor {} has been identified as an Accl tensor, but it is "
-                  "not a Variable tensor.",
-                  id);
+      throw error(
+          "Tensor {} has been identified as an Optimizer tensor, but it is "
+          "not a Variable tensor.",
+          id);
     }
     return true;
   }
@@ -966,11 +967,12 @@ bool Tensor::isAccumulatorTensor() const {
           states.begin(), states.end(), [this](const std::string state) {
             return id.find(state) != std::string::npos;
           })) {
-    // sanity check that the accl tensor is of Variable type
+    // sanity check that the Accumulator tensor is of Variable type
     if (tensorType() != TensorType::Variable) {
-      throw error("Tensor {} has been identified as an Accl tensor, but it is "
-                  "not a Variable tensor.",
-                  id);
+      throw error(
+          "Tensor {} has been identified as an Accumulator tensor, but it is "
+          "not a Variable tensor.",
+          id);
     }
     return true;
   }

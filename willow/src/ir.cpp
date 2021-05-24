@@ -2195,6 +2195,13 @@ bool Ir::storingIsDisabledForTensor(const Tensor *tensor) const {
     return true;
   }
 
+  // 4. The tensor is an Accum__ tensor - these will be zero in the current
+  // implementation
+  if ((tensor->isAccumulatorTensor() &&
+       tensor->id.find(reservedAccumPrefix()) != std::string::npos)) {
+    return true;
+  }
+
   return false;
 }
 

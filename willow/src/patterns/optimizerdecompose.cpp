@@ -145,7 +145,8 @@ TensorId OptimizerDecompose::gradAccum(Graph &graph,
 
   accumOp->setup();
   graph.topoCons->transfer(combo, accumOp);
-  graph.getIr().addAdditionalModelProtoTensor(accumId);
+  // Note we do not add Accum__ to AdditionalModelProtoTensors,  in the current
+  // implementation where it is guaranteed that this is zero after one run.
 
   if (accumReduce) {
     auto reduceOpUp = std::make_unique<ReplicatedAllReduceInplaceOp>(
