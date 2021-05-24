@@ -7,6 +7,8 @@ import pprint
 import json
 import onnx
 from onnx import numpy_helper
+import tempfile
+import pva
 
 
 @tu.requires_ipu
@@ -63,6 +65,10 @@ def test_outlining_accumulation_context(pipeline, tmpdir):
             options.enablePipelining = True
             options.autoRecomputation = popart.RecomputationType.Pipeline
 
+        tempDir = tempfile.TemporaryDirectory()
+        options.engineOptions["autoReport.directory"] = tempDir.name
+        options.engineOptions["autoReport.outputGraphProfile"] = "true"
+
         device = tu.create_test_device(4)
 
         dataFlow = popart.DataFlow(1, {x: popart.AnchorReturnType("ALL")})
@@ -91,9 +97,16 @@ def test_outlining_accumulation_context(pipeline, tmpdir):
 
         device.detach()
 
-        graph_report = json.loads(session.getGraphReport())
-        max_tile_memory = max(graph_report["memory"]["byTile"]["total"])
-        total_memory = np.sum(graph_report["memory"]["byTile"]["total"])
+        report = session.getReport()
+        max_tile_memory = max([
+            tile.memory.total.excludingGaps
+            for tile in report.compilation.tiles
+        ])
+        total_memory = np.sum([
+            tile.memory.total.excludingGaps
+            for tile in report.compilation.tiles
+        ])
+
         return session, anchors[x], post_proto, total_memory
 
     _, outputs_1, proto_1, total_memory_1 = run_test(False)

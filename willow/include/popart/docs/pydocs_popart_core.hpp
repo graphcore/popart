@@ -11071,6 +11071,17 @@ Parameter ``useCbor``:
 Returns:
     A string containing the graph (compilation) report.)doc";
 
+static const char *__doc_popart_Session_getReport =
+    R"doc(Retrieve the graph report from the ``poplar::Engine``.
+
+The options which were given to the constructor will influence the
+information in the report.
+
+This may only be called after the prepareDevice() call has been made.
+
+Returns:
+    A the libpva report containing the graph report.)doc";
+
 static const char *__doc_popart_Session_getInfo =
     R"doc(Get the TensorInfo on a Tensor.)doc";
 
