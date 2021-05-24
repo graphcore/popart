@@ -1,4 +1,5 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
+#include <poprithmstransitiveclosure.hpp>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/names.hpp>
@@ -6,7 +7,6 @@
 #include <popart/op/init.hpp>
 #include <popart/op/sum.hpp>
 #include <popart/opmanager.hpp>
-#include <popart/poprithmstransitiveclosure.hpp>
 
 #include <transforms/autodiff/gradgrowersumop.hpp>
 #include <popart/transforms/decomposegradsum.hpp>

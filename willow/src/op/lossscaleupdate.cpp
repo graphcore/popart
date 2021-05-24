@@ -1,4 +1,5 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
+#include <poprithmsinplace.hpp>
 #include <popart/onnxutil.hpp>
 #include <popart/op/lossscaleupdate.hpp>
 #include <popart/opmanager.hpp>

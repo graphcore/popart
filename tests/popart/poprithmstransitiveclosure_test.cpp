@@ -2,7 +2,7 @@
 #define BOOST_TEST_MODULE PoprithmsTransitiveClosureTest
 #include <boost/test/unit_test.hpp>
 
-#include <popart/poprithmstransitiveclosure.hpp>
+#include <poprithmstransitiveclosure.hpp>
 
 #include <popart/filereader.hpp>
 #include <popart/graph.hpp>

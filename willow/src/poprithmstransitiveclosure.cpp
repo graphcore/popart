@@ -3,8 +3,8 @@
 #include <unordered_set>
 #include <vector>
 
+#include <poprithmstransitiveclosure.hpp>
 #include <popart/graph.hpp>
-#include <popart/poprithmstransitiveclosure.hpp>
 
 #include <poprithms/schedule/transitiveclosure/transitiveclosure.hpp>
 

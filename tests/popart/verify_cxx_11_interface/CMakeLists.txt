@@ -6,7 +6,7 @@ function(add_popart_cxx_11_unit_test name source)
 
   target_include_directories(${name} PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
-  target_link_libraries(${name} PRIVATE popart-internal)
+  target_link_libraries(${name} PRIVATE popart)
 
   set_target_properties(
     ${name}

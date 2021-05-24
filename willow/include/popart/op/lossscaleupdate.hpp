@@ -2,7 +2,6 @@
 #ifndef GUARD_NEURALNET_LOSSSCALEUPDATE_HPP
 #define GUARD_NEURALNET_LOSSSCALEUPDATE_HPP
 
-#include <poprithmsinplace.hpp>
 #include <popart/op.hpp>
 
 namespace popart {
