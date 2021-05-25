@@ -177,7 +177,47 @@ private:
   std::map<poprithms::memory::inplace::OpId, OpId> fromOp_;
 };
 
-PoprithmsAliaser getPoprithmsAliaser(const Graph &);
+/**
+ * An enum type that determines whether topological constraints are added to
+ * an alias model.
+ **/
+enum class DataDependenciesOnly {
+  // Only add data constraints.
+  Yes,
+  // Add data constraints and additional topological constraints.
+  No
+};
+
+/**
+ * Construct a mapping from a PopART Graph to a Poprithms alias Graph. This
+ * mapping will include every PopART op and Tensor in the Graph.
+ * \param graph The PopART Graph object to construct a mapping for.
+ * \param dataDepsOnly Flag to indicate whether to add only data dependencies
+ *     or whether to also add topocological constraints.
+ * \return A PoprithmsAliaser object containing the mapping.
+ **/
+PoprithmsAliaser getPoprithmsAliaser(const Graph &graph,
+                                     DataDependenciesOnly dataDepsOnly);
+
+/**
+ * Construct a mapping from a PopART Graph to a Poprithms alias Graph that is
+ * guaranteed to contain a mapping for any tensors that alias the `tensorId`
+ * parameter (and ops that separate them) but may also contain other tensors
+ * that do not alias it.
+ *
+ * The purpose of this function is to provide an alternative to
+ * `getPoprithmsAliaser` for when you do not require a whole mapping.
+ *
+ * \param graph The PopART Graph object to construct a mapping for.
+ * \param tensorId The PopART Tensor used to determine which part of the PopART
+ *      graph to create a mapping for.
+ * \param dataDepsOnly Flag to indicate whether to add only data dependencies
+ *     or whether to also add topocological constraints.
+ * \return A PoprithmsAliaser object containing the mapping.
+ **/
+PoprithmsAliaser getPartialPoprithmsAliaser(const Graph &graph,
+                                            const TensorId &tensorId,
+                                            DataDependenciesOnly dataDepsOnly);
 
 } // namespace popart
 

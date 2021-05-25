@@ -2982,7 +2982,7 @@ void Ir::applyInplacePattern(Graph &graph) {
 
   // The decision of where topological constraints need to be inserted is made
   // by a poprithms Graph whose Ops mirror those in \a graph.
-  auto popMem = getPoprithmsAliaser(graph);
+  auto popMem = getPoprithmsAliaser(graph, DataDependenciesOnly::No);
 
   Inplace inplace;
 
@@ -3612,8 +3612,8 @@ std::size_t std::hash<popart::Ir>::operator()(const popart::Ir &ir) const {
   return seed;
 }
 
-std::size_t std::hash<popart::IrBundle>::
-operator()(const popart::IrBundle &bundle) const {
+std::size_t
+std::hash<popart::IrBundle>::operator()(const popart::IrBundle &bundle) const {
   size_t seed = 0;
 
   boost::hash_combine(

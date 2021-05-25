@@ -22,6 +22,8 @@
 #include <popart/topocons.hpp>
 #include <popart/util.hpp>
 
+#include <poprithmsinplace.hpp>
+
 namespace popart {
 
 Ir &Tensor::getIr() { return getGraph().getIr(); }
@@ -1001,31 +1003,40 @@ bool Tensor::anyAlias(std::function<bool(Tensor *)> predicate) const {
 
   constexpr const char *const ctxt{"Tensor::anyAlias"};
   logging::ir::trace("{} for Tensor {},", ctxt, str());
+
   auto scopedStopwatch = getIr().timePartitionLogger().scopedStopwatch(ctxt);
 
-  // Fetch non-const pointer to "this"
-  Tensor *t             = graph.getTensors().get(id);
-  auto aliasedTensorMap = graph.getTensors().aliasChainsFrom(t);
-  auto fullRegion       = view::Region::getFull(t->info.shape());
+  // First check if this tensor itself satisfies the predicate. If so, we need
+  // not bother constructing a poprithms graph to check for alias tensors.
+  Tensor *t = graph.getTensors().get(id);
+  if (predicate(t)) {
+    return true;
+  }
 
-  bool tChecked = false;
-  bool any      = false;
+  // Build a poprithms::memory::inplace::Graph from the popart::Graph.
+  auto popMem =
+      getPartialPoprithmsAliaser(graph, id, DataDependenciesOnly::Yes);
 
-  for (auto &chain : aliasedTensorMap) {
-    auto regions = chain.second.apply(fullRegion);
-    if (nonEmptyRegion(regions)) {
-      // We check if t itself is in the chain, if not we need to check it later.
-      if (chain.first == t) {
-        tChecked = true;
+  // Get the identifier used to represent this tensor in poprithms.
+  auto poprithmsTensorId = popMem.getPoprithmsTensorId(id);
+
+  // Iterate over all aliases as found by poprithms.
+  for (const auto &poprithmsAliasId : popMem.g.allAliases(poprithmsTensorId)) {
+    // All PopART tensors map to a Poprithms tensor, but not all Poprithms
+    // tensors map to a PopART one. It is safe to only look at those Poprithms
+    // aliases that have a corresponding PopART tensor.
+    if (popMem.contains(poprithmsAliasId)) {
+      // Translate back to PopART IDs.
+      auto popartAliasId = popMem.getTensorId(poprithmsAliasId);
+      auto popartAlias   = graph.getTensors().get(popartAliasId);
+      if (predicate(popartAlias)) {
+        // May as well return now.
+        return true;
       }
-      any |= predicate(chain.first);
     }
   }
 
-  if (!tChecked) {
-    any |= predicate(t);
-  }
-  return any;
+  return false;
 }
 
 void Consumers::increment(Op *op) {
