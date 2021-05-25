@@ -21,6 +21,7 @@ def test_summary_report_with_cpu_device(tmpdir):
     session = popart.InferenceSession(fnModel=proto,
                                       dataFlow=dataFlow,
                                       deviceInfo=tu.create_test_device())
+
     session.initAnchorArrays()
 
     session.prepareDevice()

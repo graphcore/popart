@@ -5,7 +5,6 @@
 #include <memory>
 #include <vector>
 
-#include <pva/pva.hpp>
 #include <poplar/DataStream.hpp>
 #include <popart/ir.hpp>
 #include <popart/names.hpp>
@@ -243,18 +242,6 @@ public:
    * \return A string containing the serialized graph.
    */
   std::string getSerializedGraph() const;
-
-  /**
-   * Retrieve the graph report from the \c poplar::Engine.
-   *
-   * The options which were given to the constructor will influence the
-   * information in the report.
-   *
-   * This may only be called after the prepareDevice() call has been made.
-   *
-   * \return The pva report object
-   */
-  pva::Report getReport() const;
 
   /**
    * Reset the weights with the weights in an ONNX model that differs from the

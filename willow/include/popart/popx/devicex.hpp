@@ -100,8 +100,6 @@ public:
                                  bool resetProfile = true) const;
   std::string getSerializedGraph() const;
 
-  pva::Report getReport() const;
-
   bool isEngineLoaded() const;
   void setEngineIsLoaded(bool isLoaded);
 

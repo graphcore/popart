@@ -313,6 +313,16 @@ def test_get_reports(tmp_path):
     expected_error = 'Unable to get reports when using a cached executable.'
 
     with pytest.raises(popart.popart_exception) as e_info:
+        cached_session.getGraphReport()
+    error = e_info.value.args[0].splitlines()[0]
+    assert error == expected_error
+
+    with pytest.raises(popart.popart_exception) as e_info:
         cached_session.getSummaryReport()
+    error = e_info.value.args[0].splitlines()[0]
+    assert error == expected_error
+
+    with pytest.raises(popart.popart_exception) as e_info:
+        cached_session.getExecutionReport()
     error = e_info.value.args[0].splitlines()[0]
     assert error == expected_error

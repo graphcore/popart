@@ -80,7 +80,6 @@ set(POPART_ONLY_DEPS_LIBS
     poprand
     poputil
     libpvti
-    pva
     gcl
     snap
 )

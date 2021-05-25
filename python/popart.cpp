@@ -1869,9 +1869,6 @@ PYBIND11_MODULE(popart_core, m) {
       auto report = session.getSerializedGraph();
       return py::bytes(report);
     });
-    cls.def("getReport",
-            &InferenceSession::getReport,
-            DOC(popart, Session, getReport));
     cls.def("resetHostWeights",
             &InferenceSession::resetHostWeights,
             py::arg("modelProtoOrFilename"),
@@ -2004,9 +2001,6 @@ PYBIND11_MODULE(popart_core, m) {
         py::arg("useCbor")      = false,
         py::arg("resetProfile") = true,
         DOC(popart, Session, getExecutionReport));
-    cls.def("getReport",
-            &TrainingSession::getReport,
-            DOC(popart, Session, getReport));
     cls.def(
         "getSerializedGraph",
         [](const TrainingSession &session) {
