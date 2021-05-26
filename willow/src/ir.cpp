@@ -1209,9 +1209,12 @@ void Ir::prepareImpl(const IrBundle &gb, const HashesMap &cacheEntries) {
   updateAliases();
   updateVertices();
 
-  // Make sure that matmuls are serialized before gradient accumalation
+  // Make sure that matmuls are serialized before gradient accumulation
   if (getSessionOptions().enableSerializedMatmuls) {
     applyTransform(SerializeMatMuls::id(), getMainGraph());
+    // SerializeMatMuls could have changed aspects of aliasing
+    updateAliases();
+    updateVertices();
   }
 
   if (getSessionOptions().automaticLossScalingSettings.enabled) {
@@ -3609,8 +3612,8 @@ std::size_t std::hash<popart::Ir>::operator()(const popart::Ir &ir) const {
   return seed;
 }
 
-std::size_t
-std::hash<popart::IrBundle>::operator()(const popart::IrBundle &bundle) const {
+std::size_t std::hash<popart::IrBundle>::
+operator()(const popart::IrBundle &bundle) const {
   size_t seed = 0;
 
   boost::hash_combine(

@@ -84,7 +84,7 @@ We refer to these conditions in our list of assumptions, guarantees and preserve
 | ------------------------- | ------------------------------------- | ------------------------------------- | ------------------------------------- |
 | AccumulateOuter-<br/>FragmentParallizer|                          |                                       |                                       |
 | AutoVirtualGraph          |                                       | `VGRAPH`                            |                                       |
-| Autodiff                  | `NO_INPLACE`,<br/>`NO_IPU_COPY`       | `NO_INPLACE`,<br/>`NO_IPU_COPY`       |                                       |
+| Autodiff                  | `NO_INPLACE`,<br/>`NO_IPU_COPY`    | `NO_INPLACE`,<br/>`NO_IPU_COPY`       |                                       |
 | AutomaticLossScaling      |                                       |                                       |                                       |
 | BatchSerialize            |                                       |                                       |                                       |
 | ClipWeightGradientsByNorm |                                       |                                       |                                       |
@@ -95,17 +95,17 @@ We refer to these conditions in our list of assumptions, guarantees and preserve
 | GroupMatMuls              |                                       |                                       |                                       |
 | HostIoSetup               |                                       |                                       |                                       |
 | HostReduce                |                                       |                                       |                                       |
-| InferPipelineStages       | `VGRAPH`                            | `PSTAGE`                              |                                       |
+| InferPipelineStages       | `VGRAPH`                             | `PSTAGE`                              |                                       |
 | InplaceAccumulateGrad-<br/>PartialsIntoOptimizer-<br/>AccumTensor |                                       |                                       |
 | InterIpuCopy              |                                       | `NO_IMPLICIT_COPY`                    |                                       |
-| IoComputeTileCopy         |                                       |                                       |                                       |c
+| IoComputeTileCopy         |                                       |                                       |                                       |
 | MainLoops                 |                                       |                                       |                                       |
 | MergeCopies               |                                       |                                       |                                       |
 | MergeDuplicateOps         |                                       |                                       |                                       |
 | MergeLoops                |                                       |                                       |                                       |
 | MergeRemote               |                                       |                                       |                                       |
 | MergeVarUpdates           |                                       |                                       |                                       |
-| Pipeline                  | `PSTAGE`                              |                                       |                                       |
+| Pipeline                  | `PSTAGE`                             |                                       |                                       |
 | Prune                     |                                       |                                       |                                       |
 | RandomSetup               |                                       |                                       |                                       |
 | RemoteSetup               |                                       |                                       |                                       |
@@ -174,7 +174,21 @@ We refer to these conditions in our list of assumptions, guarantees and preserve
   op->inheritPlacementAttributes(true);
   op->setup();
   ```
-
+  
   **NOTE**: In other words, make sure the transform preserves the `VGRAPH`,
   `PSTAGE`, `EPHASE` and `BPHASE` as defined above. If these conditions hold
   before the transform is applied, then they should hold afterwards, also.
+  
+* **Aliases** If a transform modifies, adds or removes any tensor or `Op` that
+  is aliasing, the aliases must be updated after the transform has finished. If the
+  transform itself relies on aliasing information, it can also update the aliases
+  during the transform:
+  
+  ```c++
+  if (getSessionOptions().enableSerializedMatmuls) {
+    applyTransform(SerializeMatMuls::id(), getMainGraph());
+    // SerializeMatMuls could have changed aspects of aliasing
+    updateAliases();
+    updateVertices();
+  }
+  ```
