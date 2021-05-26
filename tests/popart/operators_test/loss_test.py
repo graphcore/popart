@@ -737,6 +737,13 @@ def test_ctc_loss(op_tester, blank, reduction):
             reductionTypeMap[reduction], blank)
         builder.addOutputTensor(ctc)
 
+        # Check shape inference.
+        shape = builder.getTensorShape(ctc)
+        if reduction == "none":
+            assert shape == [N]
+        else:
+            assert shape == []
+
         # NOTE: There are versions of pytorch that include an unnecessary
         # logsoftmax inside the CTC loss. If this is the case the gradient of
         # log_probs would nott match (but the gradient of logits should still

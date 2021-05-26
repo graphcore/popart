@@ -61,6 +61,7 @@ void FmodShapeInference(InferenceContext &ctx);
 void BitwiseNotShapeInference(InferenceContext &ctx);
 void RoundShapeInference(InferenceContext &ctx);
 void CtcBeamSearchDecoderShapeInference(InferenceContext &ctx);
+void CtcLossShapeInference(InferenceContext &ctx);
 void ReduceMedianShapeInference(InferenceContext &ctx);
 
 void SubsampleShapeInference(InferenceContext &ctx) {
@@ -519,6 +520,38 @@ void CtcBeamSearchDecoderShapeInference(InferenceContext &ctx) {
   ldecodedLabelsOutputShape->add_dim()->set_dim_value(maxTime);
 }
 
+void CtcLossShapeInference(InferenceContext &ctx) {
+
+  std::string reduction = getAttribute(ctx, "reduction", "Mean");
+
+  // Default output type to input type (but allow override with dtype attr).
+  int64_t inType = ctx.getInputType(0)->tensor_type().elem_type();
+  auto dtype     = getAttribute(ctx, "dtype", inType);
+
+  // Propagate types.
+  propagateElemTypeFromDtypeToOutput(ctx, dtype, 0);
+  propagateElemTypeFromDtypeToOutput(ctx, dtype, 1);
+
+  // Propagate shapes.
+  if (reduction == "None") {
+    if (hasInputShape(ctx, 0)) {
+      auto &input_shape = getInputShape(ctx, 0);
+      if (input_shape.dim_size() == 3) {
+        updateOutputShape(ctx, 0, {input_shape.dim(1)});
+      } else {
+        fail_shape_inference("Input tensor must be 3-dimensional");
+      }
+    }
+  } else if (reduction == "Mean" || reduction == "Sum") {
+    updateOutputShape(ctx, 0, TensorShapeProto());
+  } else {
+    throw popart::internal_error("No loss reduction type for {}", reduction);
+  }
+
+  // Second output shape matches first input shape irrespective of reduction.
+  propagateShapeFromInputToOutput(ctx, 0, 1);
+}
+
 void ReduceMedianShapeInference(InferenceContext &ctx) {
 
   propagateElemTypeFromInputToOutput(ctx, 0, 0);
@@ -596,6 +629,7 @@ extern size_t dbg_count_check_Fmod_AiGraphcore_ver1;
 extern size_t dbg_count_check_BitwiseNot_AiGraphcore_ver1;
 extern size_t dbg_count_check_Round_AiGraphcore_ver1;
 extern size_t dbg_count_check_CtcBeamSearchDecoder_AiGraphcore_ver1;
+extern size_t dbg_count_check_CtcLoss_AiGraphcore_ver1;
 extern size_t dbg_count_check_ReduceMedian_AiGraphcore_ver1;
 
 static const char groupnormalizationDoc[] =
@@ -1471,6 +1505,51 @@ ONNX_OPERATOR_SET_SCHEMA_EX(
         .TypeAndShapeInferenceFunction(CtcBeamSearchDecoderShapeInference))
 
 ONNX_OPERATOR_SET_SCHEMA_EX(
+    Ctc,
+    AiGraphcore,
+    popart::Domain::ai_graphcore,
+    1,
+    false,
+    OpSchema()
+        .SetDoc("Outputs the connectionist temporal classification (CTC) loss, "
+                "optionally reduced by either sum or mean")
+        .Input(0,
+               "log_probs",
+               "Logarithmized probabilities input sequences",
+               "T1")
+        .Input(1, "targets", "Target sequences tensor", "T2")
+        .Input(2, "input_lengths", "Input sequences lengths", "T2")
+        .Input(3, "target_lengths", "Target sequences lengths", "T2")
+        .Output(0,
+                "ctc_loss",
+                "The CTC losses tensor (optionally reduced)",
+                "T1")
+        .Output(1,
+                "log_probs_gradient_wrt_ctc_loss",
+                "The gradient of the input tensor",
+                "T1")
+        .TypeConstraint("T1",
+                        {"tensor(float16)", "tensor(float)"},
+                        "Operand must be either a FLOAT or FLOAT16 tensor")
+        .TypeConstraint("T2",
+                        {"tensor(uint32)"},
+                        "Operand must be a UINT32 tensor")
+        .Attr("reduction",
+              "Reduction type: None, Mean or Sum",
+              AttributeProto::STRING,
+              true)
+        .Attr("blank",
+              "The integer value to use to represent 'no class'",
+              AttributeProto::INT,
+              true)
+        .Attr("dtype",
+              "If set, the ctc_loss output tensor assumes this data type. "
+              "If unset, ctc_loss' data type is inferred from log_probs.",
+              AttributeProto::INT,
+              false)
+        .TypeAndShapeInferenceFunction(CtcLossShapeInference))
+
+ONNX_OPERATOR_SET_SCHEMA_EX(
     ReduceMedian,
     AiGraphcore,
     popart::Domain::ai_graphcore,
@@ -1619,6 +1698,9 @@ static bool registerOps() {
   ONNX_NAMESPACE::RegisterSchema(
       GetOpSchema<ONNX_OPERATOR_SET_SCHEMA_CLASS_NAME(
           AiGraphcore, 1, CtcBeamSearchDecoder)>());
+
+  ONNX_NAMESPACE::RegisterSchema(
+      GetOpSchema<ONNX_OPERATOR_SET_SCHEMA_CLASS_NAME(AiGraphcore, 1, Ctc)>());
 
   ONNX_NAMESPACE::RegisterSchema(
       GetOpSchema<ONNX_OPERATOR_SET_SCHEMA_CLASS_NAME(
