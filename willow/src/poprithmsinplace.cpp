@@ -176,6 +176,18 @@ void addAliaserOp(const Graph &graph,
   logging::ir::trace("Growing PoprithmsAliaser for op\"{}\"", op->str());
   op->growAliaser(m);
 
+  // Check every output has been mapped.
+  for (const auto &x : op->output->tensorMap()) {
+    const auto t1 = x.second;
+    if (!m.contains(t1->id)) {
+      logging::ir::trace("Op {} failed to add mapping for output #{} ('') "
+                         "in PoprithmsAliaser",
+                         op->str(),
+                         x.first,
+                         t1->id);
+    }
+  }
+
   for (auto x : m.getAll(op->id)) {
     logging::ir::trace(
         "Setting name for op \"{}\", poprithms OpId={}", op->str(), x);

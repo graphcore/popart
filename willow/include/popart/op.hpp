@@ -366,6 +366,12 @@ public:
    * poprithms::memory::inplace::Op equivalents into the poprithms Graph, which
    * is the container \a popAliaser.
    *
+   *
+   * \pre All input tensors of this `Op` have mappings in `popAliaser`
+   *     before the call to `growAliaser`.
+   * \post All output tensors of this `Op` have mappings in `popAliaser`
+   *     after to the call to `growAliaser`.
+   *
    * \sa PoprithmsAliaser
    * */
   virtual void growAliaser(PoprithmsAliaser &popAliaser) const;
