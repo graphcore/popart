@@ -31,13 +31,13 @@ public:
   bool canShard() const override { return true; }
 
   void setProposal(poprithms::memory::inplace::Proposal &,
-                   const PoprithmsAliaser &,
+                   const AliasModel &,
                    OperatorIdentifier) const override;
 
   ReplicatedTensorShardingIndices
   getReplicatedTensorShardingIndices() const override;
 
-  virtual void growAliaser(PoprithmsAliaser &) const override;
+  virtual void growAliasModel(AliasModel &) const override;
 
   /**
    * \return true, if and only if (iff) this Op is mathematically equivalent to
@@ -120,7 +120,7 @@ public:
 
   bool canShard() const override { return true; }
 
-  virtual void growAliaser(PoprithmsAliaser &) const override;
+  virtual void growAliasModel(AliasModel &) const override;
 
   ReplicatedTensorShardingIndices
   getReplicatedTensorShardingIndices() const override;
@@ -150,7 +150,7 @@ public:
   float getInplacePriority(const OperatorIdentifier &) const;
 
   void setProposal(poprithms::memory::inplace::Proposal &,
-                   const PoprithmsAliaser &,
+                   const AliasModel &,
                    OperatorIdentifier) const override;
 
 private:

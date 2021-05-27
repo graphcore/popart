@@ -25,7 +25,7 @@ public:
   static InIndex getStepsInIndex() { return 4; }
   static OutIndex getOutIndex() { return 0; }
 
-  virtual void growAliaser(PoprithmsAliaser &) const override;
+  virtual void growAliasModel(AliasModel &) const override;
 
   void setup() final;
   virtual void connectInTensor(InIndex, TensorId) final;
@@ -111,7 +111,7 @@ public:
   inplacePriorityDefault() const final;
 
   void setProposal(poprithms::memory::inplace::Proposal &,
-                   const PoprithmsAliaser &,
+                   const AliasModel &,
                    OperatorIdentifier) const override;
 
   std::unique_ptr<Op> getInplaceVariant(const OperatorIdentifier &) const final;

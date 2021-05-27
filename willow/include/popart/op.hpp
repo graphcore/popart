@@ -33,8 +33,7 @@ class Proposal;
 namespace popart {
 
 class Aliases;
-
-struct PoprithmsAliaser;
+class AliasModel;
 
 enum class RecomputeType { Undefined = 0, Checkpoint, Recompute, Recomputed };
 
@@ -371,14 +370,14 @@ public:
    * is the container \a popAliaser.
    *
    *
-   * \pre All input tensors of this `Op` have mappings in `popAliaser`
+   * \pre All input tensors of this `Op` have mappings in `aliasModel`
    *     before the call to `growAliaser`.
-   * \post All output tensors of this `Op` have mappings in `popAliaser`
+   * \post All output tensors of this `Op` have mappings in `aliasModel`
    *     after to the call to `growAliaser`.
    *
-   * \sa PoprithmsAliaser
+   * \sa AliasModel
    * */
-  virtual void growAliaser(PoprithmsAliaser &popAliaser) const;
+  virtual void growAliasModel(AliasModel &aliasModel) const;
 
   /**
    * Translate an inplacing proposal, which replaces this non-inplace Op with an
@@ -386,7 +385,7 @@ public:
    *
    * \param proposal The poprithms Proposal to set
    *
-   * \param aliaser Contains the mapping between this Op's (PopART) Graph and
+   * \param aliasModel Contains the mapping between this Op's (PopART) Graph and
    *                the poprithms Graph.
    *
    * \param inplaceId The OperatorIdentifier to translate to the poprithms
@@ -398,17 +397,17 @@ public:
    * to be included in this file.
    * */
   virtual void setProposal(poprithms::memory::inplace::Proposal &proposal,
-                           const PoprithmsAliaser &aliaser,
+                           const AliasModel &aliasModel,
                            OperatorIdentifier) const;
 
 protected:
   /**
    * This method is a possible implementation of the virtual method
-   * growAliaser, which can be used by Ops which do not have more than 1
+   * growAliasModel, which can be used by Ops which do not have more than 1
    * variant (that is, they have no "inplace" variants), and do no non-trivial
    * view-changing. Examples: LSTM, Conv, Matmul, SumReduce, etc.
    * */
-  void growAliaserMulti(PoprithmsAliaser &) const;
+  void growAliasModelMulti(AliasModel &) const;
 
   /**
    * Set the Proposal to open the poprithms::AliasGate which corresponds to this
@@ -416,7 +415,7 @@ protected:
    * proposals, see the poprithms memory::inplace project.
    * */
   virtual void setProposalGate0(poprithms::memory::inplace::Proposal &proposal,
-                                const PoprithmsAliaser &aliaser,
+                                const AliasModel &aliaser,
                                 OperatorIdentifier opId) const;
 
 public:

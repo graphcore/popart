@@ -1,6 +1,5 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#include <poprithmsinplace.hpp>
-
+#include <aliasmodel.hpp>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/op/elementwise.hpp>
@@ -21,8 +20,7 @@ namespace popart {
 using PoprithmsTensorId = poprithms::memory::inplace::TensorId;
 using PoprithmsOpId     = poprithms::memory::inplace::OpId;
 
-void PoprithmsAliaser::insertTensor(const PoprithmsTensorId &id,
-                                    const Tensor &t) {
+void AliasModel::insertTensor(const PoprithmsTensorId &id, const Tensor &t) {
   toTensor_[t.id] = id;
   fromTensor_[id] = t.id;
   if (t.hasProducer()) {
@@ -30,7 +28,7 @@ void PoprithmsAliaser::insertTensor(const PoprithmsTensorId &id,
   }
 }
 
-void PoprithmsAliaser::update(OpId oldId, OpId newId) {
+void AliasModel::update(OpId oldId, OpId newId) {
   auto found = toOp_.find(oldId);
   if (found != toOp_.cend()) {
     auto oldTargets = found->second;
@@ -42,7 +40,7 @@ void PoprithmsAliaser::update(OpId oldId, OpId newId) {
   }
 }
 
-void PoprithmsAliaser::insertOp(PoprithmsOpId poprithmsId, OpId id) {
+void AliasModel::insertOp(PoprithmsOpId poprithmsId, OpId id) {
 
   {
     auto iter = fromOp_.find(poprithmsId);
@@ -65,59 +63,58 @@ void PoprithmsAliaser::insertOp(PoprithmsOpId poprithmsId, OpId id) {
   }
 }
 
-bool PoprithmsAliaser::contains(const PoprithmsTensorId &id) const {
+bool AliasModel::contains(const PoprithmsTensorId &id) const {
   return fromTensor_.find(id) != fromTensor_.cend();
 }
 
-TensorId PoprithmsAliaser::getTensorId(const PoprithmsTensorId &id) const {
+TensorId AliasModel::getTensorId(const PoprithmsTensorId &id) const {
   const auto found = fromTensor_.find(id);
   if (found == fromTensor_.cend()) {
     std::ostringstream oss;
-    oss << "Error in PoprithmsAliaser::getTensorId(PoprithmsTensorId = " << id
+    oss << "Error in AliasModel::getTensorId(PoprithmsTensorId = " << id
         << "). There is no key " << id << " in fromTensor_. ";
     throw error(oss.str());
   }
   return found->second;
 }
 
-bool PoprithmsAliaser::contains(const TensorId &id) const {
+bool AliasModel::contains(const TensorId &id) const {
   return toTensor_.find(id) != toTensor_.cend();
 }
-PoprithmsTensorId
-PoprithmsAliaser::getPoprithmsTensorId(const TensorId &id) const {
+PoprithmsTensorId AliasModel::getPoprithmsTensorId(const TensorId &id) const {
   const auto found = toTensor_.find(id);
   if (found == toTensor_.cend()) {
     std::ostringstream oss;
-    oss << "Error in PoprithmsAliaser::getPoprithmsTensorId(TensorId = " << id
+    oss << "Error in AliasModel::getPoprithmsTensorId(TensorId = " << id
         << "). There is no key " << id << " in toTensor_. ";
     throw error(oss.str());
   }
   return found->second;
 }
 
-bool PoprithmsAliaser::contains(PoprithmsOpId id) const {
+bool AliasModel::contains(PoprithmsOpId id) const {
   return fromOp_.find(id) != fromOp_.cend();
 }
-OpId PoprithmsAliaser::getOpId(PoprithmsOpId id) const {
+OpId AliasModel::getOpId(PoprithmsOpId id) const {
   const auto found = fromOp_.find(id);
   if (found == fromOp_.cend()) {
     std::ostringstream oss;
-    oss << "Error in PoprithmsAliaser::getOpId(PoprithmsOpId = " << id
+    oss << "Error in AliasModel::getOpId(PoprithmsOpId = " << id
         << "). There is no key " << id << " in fromOp_. ";
     throw error(oss.str());
   }
   return found->second;
 }
 
-bool PoprithmsAliaser::contains(OpId id) const {
+bool AliasModel::contains(OpId id) const {
   return toOp_.find(id) != toOp_.cend();
 }
-std::vector<PoprithmsOpId> PoprithmsAliaser::getAll(OpId id) const {
+std::vector<PoprithmsOpId> AliasModel::getAll(OpId id) const {
   const auto found = toOp_.find(id);
   if (found == toOp_.cend()) {
     std::ostringstream oss;
-    oss << "Error in PoprithmsAliaser::getAll(OpId = " << id
-        << "). There is no key " << id << " in toOp_. ";
+    oss << "Error in AliasModel::getAll(OpId = " << id << "). There is no key "
+        << id << " in toOp_. ";
     throw error(oss.str());
   }
   return found->second;
@@ -139,14 +136,14 @@ enum class AllowInsertingProducedTensors {
 };
 
 void addTensor(const Graph &graph,
-               PoprithmsAliaser &m,
+               AliasModel &m,
                Tensor *t,
                AllowInsertingProducedTensors allow) {
   if (!m.contains(t->id)) { // to_.find(t0->id) == m.to.cend()) {
 
     if (allow == AllowInsertingProducedTensors::No && t->hasProducer()) {
       // The tensor should have been added by growing it's producer.
-      throw error("[PoprithmsAliaser] Tensor '{}' was not added to the alias "
+      throw error("[AliasModel] Tensor '{}' was not added to the alias "
                   "model by it's producer, {}",
                   t->id,
                   t->getProducer()->str());
@@ -160,12 +157,12 @@ void addTensor(const Graph &graph,
 }
 
 void addAliaserOp(const Graph &graph,
-                  PoprithmsAliaser &m,
+                  AliasModel &m,
                   Op *op,
                   AllowInsertingProducedTensors allow) {
 
-  logging::ir::trace(
-      "Inserting input Tensors for PoprithmsAliaser, Graph \"{}\"", graph.id);
+  logging::ir::trace("Inserting input Tensors for AliasModel, Graph \"{}\"",
+                     graph.id);
   for (const auto &x : op->input->tensorMap()) {
 
     // If it's a new input tensor, register it:
@@ -173,15 +170,15 @@ void addAliaserOp(const Graph &graph,
     addTensor(graph, m, t0, allow);
   }
 
-  logging::ir::trace("Growing PoprithmsAliaser for op\"{}\"", op->str());
-  op->growAliaser(m);
+  logging::ir::trace("Growing AliasModel for op\"{}\"", op->str());
+  op->growAliasModel(m);
 
   // Check every output has been mapped.
   for (const auto &x : op->output->tensorMap()) {
     const auto t1 = x.second;
     if (!m.contains(t1->id)) {
       logging::ir::trace("Op {} failed to add mapping for output #{} ('') "
-                         "in PoprithmsAliaser",
+                         "in AliasModel",
                          op->str(),
                          x.first,
                          t1->id);
@@ -196,10 +193,10 @@ void addAliaserOp(const Graph &graph,
 }
 
 void addAliaserConstraints(const Graph &graph,
-                           PoprithmsAliaser &m,
+                           AliasModel &m,
                            const std::vector<Op *> &opSubset) {
 
-  logging::ir::trace("Inserting constraints for PoprithmsAliaser, Graph \"{}\"",
+  logging::ir::trace("Inserting constraints for AliasModel, Graph \"{}\"",
                      graph.id);
 
   // Insert constraints:
@@ -225,14 +222,14 @@ void addAliaserConstraints(const Graph &graph,
 
 } // namespace
 
-PoprithmsAliaser getPoprithmsAliaser(const Graph &graph,
-                                     DataDependenciesOnly dataDepsOnly) {
+AliasModel getFullAliasModel(const Graph &graph,
+                             DataDependenciesOnly dataDepsOnly) {
 
-  logging::ir::debug("\nGrowing PoprithmsAliaser");
-  PoprithmsAliaser m;
+  logging::ir::debug("\nGrowing AliasModel");
+  AliasModel m;
 
   auto scopedStopwatch = graph.getIr().timePartitionLogger().scopedStopwatch(
-      "Growing PoprithmsAliaser");
+      "Growing full AliasModel");
 
   // NOTE: This loop does not need a schedule that complies with topocons. It
   // may be possible to make this more efficient by getting an Op-order that is
@@ -258,20 +255,20 @@ PoprithmsAliaser getPoprithmsAliaser(const Graph &graph,
   return m;
 }
 
-PoprithmsAliaser getPartialPoprithmsAliaser(const Graph &graph,
-                                            const TensorId &tensorId,
-                                            DataDependenciesOnly dataDepsOnly) {
+AliasModel getPartialAliasModel(const Graph &graph,
+                                const TensorId &tensorId,
+                                DataDependenciesOnly dataDepsOnly) {
 
-  logging::ir::debug("\nGrowing partial PoprithmsAliaser ({})", tensorId);
-  PoprithmsAliaser m;
+  logging::ir::debug("\nGrowing partial AliasModel ({})", tensorId);
+  AliasModel m;
 
   auto scopedStopwatch = graph.getIr().timePartitionLogger().scopedStopwatch(
-      "Growing partial PoprithmsAliaser");
+      "Growing partial AliasModel");
 
-  // When growing a PoprithmsAliaser, by the nature of the Poprithms' API we
+  // When growing a AliasModel, by the nature of the Poprithms' API we
   // must grow ops in schedule order. However, we don't know which tensors
-  // precede `tensorId` in the schedule order may be aliasing `tensorId`
-  // without growing the PoprithmsAliaser first.
+  // that precede `tensorId` in the schedule order may be aliasing `tensorId`
+  // without growing the AliasModel first.
   //
   // In this function we overapproximate the Ops that need to be included in the
   // mapping by using the `Op::doesAlias` function, recursively looking at any
@@ -466,7 +463,7 @@ PoprithmsAliaser getPartialPoprithmsAliaser(const Graph &graph,
               auto &producerFwdEdges = vanillaEdges.at(producerIt->second);
               producerFwdEdges.push_back(vanillaNum);
             } else {
-              throw internal_error("[PoprithmsAliaser] Unexpectedly unable to "
+              throw internal_error("[AliasModel] Unexpectedly unable to "
                                    "find {} in 'opToVanillaNum'",
                                    producer->str());
             }
@@ -501,11 +498,11 @@ PoprithmsAliaser getPartialPoprithmsAliaser(const Graph &graph,
   return m;
 }
 
-void PoprithmsAliaser::insertUnaryModifier0(const Op &op) {
+void AliasModel::insertUnaryModifier0(const Op &op) {
   insertUnaryModifier(op, 0);
 }
 
-void PoprithmsAliaser::insertUnaryModifier(const Op &op, InIndex inIndex) {
+void AliasModel::insertUnaryModifier(const Op &op, InIndex inIndex) {
 
   auto id0      = getPoprithmsTensorId(op.inId(inIndex));
   auto outPlace = op.isOutplace();
@@ -519,7 +516,7 @@ void PoprithmsAliaser::insertUnaryModifier(const Op &op, InIndex inIndex) {
   insertOp(modOut.opId(), op.id);
 }
 
-void PoprithmsAliaser::insertBinaryModifier(const Op &op) {
+void AliasModel::insertBinaryModifier(const Op &op) {
 
   auto outPlace = op.isOutplace();
 
@@ -555,9 +552,9 @@ void PoprithmsAliaser::insertBinaryModifier(const Op &op) {
   insertOp(modOut.opId(), op.id);
 }
 
-void PoprithmsAliaser::insertViewChange(PoprithmsTensorId vc,
-                                        const Tensor &t,
-                                        bool isOutplace) {
+void AliasModel::insertViewChange(PoprithmsTensorId vc,
+                                  const Tensor &t,
+                                  bool isOutplace) {
 
   auto gate = isOutplace ? g.aliasGate({vc}) : g.aliasGate({vc}, 0);
   insertTensor(gate, t);
@@ -565,7 +562,7 @@ void PoprithmsAliaser::insertViewChange(PoprithmsTensorId vc,
   insertOp(vc.opId(), t.getProducer()->id);
 }
 
-PoprithmsOpId PoprithmsAliaser::getGate(OpId id) const {
+PoprithmsOpId AliasModel::getGate(OpId id) const {
 
   auto pims = getAll(id);
   for (auto pid : pims) {

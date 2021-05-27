@@ -35,7 +35,7 @@ public:
   view::RegMap fwdRegMap(InIndex, OutIndex) const final;
   view::RegMap bwdRegMap(InIndex, OutIndex) const final;
 
-  void growAliaser(PoprithmsAliaser &m) const override { growAliaserMulti(m); }
+  void growAliasModel(AliasModel &m) const override { growAliasModelMulti(m); }
 
   float getSubgraphValue() const final { return getHighSubgraphValue(); }
   bool isOutlineable() const final { return true; }

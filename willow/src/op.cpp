@@ -24,10 +24,10 @@
 #include <popart/op/restore.hpp>
 #include <popart/op/varupdate.hpp>
 
+#include <aliasmodel.hpp>
 #include <sstream>
 #include <poprithms/memory/inplace/crosslink.hpp>
 #include <poprithms/memory/inplace/graph.hpp>
-#include <poprithmsinplace.hpp>
 
 namespace {
 using namespace popart;
@@ -1484,7 +1484,7 @@ void Op::configureForReplicatedTensorSharding(
   setup();
 }
 
-void Op::growAliaserMulti(PoprithmsAliaser &m) const {
+void Op::growAliasModelMulti(AliasModel &m) const {
 
   // poprithms::memory::inplace::Ops have contiguous input indices. PopART Ops
   // do not.
@@ -1569,7 +1569,7 @@ bool Op::doesAlias() const {
 }
 
 void Op::setProposal(poprithms::memory::inplace::Proposal &proposal,
-                     const PoprithmsAliaser &aliaser,
+                     const AliasModel &aliaser,
                      OperatorIdentifier opId) const {
   if (!isOutplace()) {
     throw error("Invalid call to setProposal for {}, as it is not outplace.",
@@ -1579,22 +1579,22 @@ void Op::setProposal(poprithms::memory::inplace::Proposal &proposal,
   throw error("setProposal not implemented for {}", str());
 }
 
-void Op::growAliaser(PoprithmsAliaser &m) const {
+void Op::growAliasModel(AliasModel &m) const {
   if (doesAlias()) {
-    throw error("Ops which alias must implement growAliaser, this for {} ",
+    throw error("Ops which alias must implement growAliasModel, this for {} ",
                 this->str());
   }
 
   if (!inplacePriorityDefault().empty()) {
     throw error(
-        "Ops with inplace variants must implement growAliaser, this for {} ",
+        "Ops with inplace variants must implement growAliasModel, this for {} ",
         this->str());
   }
-  growAliaserMulti(m);
+  growAliasModelMulti(m);
 }
 
 void Op::setProposalGate0(poprithms::memory::inplace::Proposal &proposal,
-                          const PoprithmsAliaser &aliaser,
+                          const AliasModel &aliaser,
                           OperatorIdentifier opId) const {
 
   if (!isOutplace()) {

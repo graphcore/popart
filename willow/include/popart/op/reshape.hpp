@@ -44,7 +44,7 @@ public:
   void configureShardedOp(Op *const shardedOp,
                           const Settings *const settings_) const override;
 
-  virtual void growAliaser(PoprithmsAliaser &) const override;
+  virtual void growAliasModel(AliasModel &) const override;
 
 protected:
   // The shape of the data output tensor
@@ -84,7 +84,7 @@ public:
   }
 
   void setProposal(poprithms::memory::inplace::Proposal &,
-                   const PoprithmsAliaser &,
+                   const AliasModel &,
                    OperatorIdentifier) const override;
 
   bool isOutplaceViewChange() const override { return true; }

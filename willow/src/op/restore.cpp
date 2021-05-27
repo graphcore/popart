@@ -1,5 +1,5 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#include <poprithmsinplace.hpp>
+#include <aliasmodel.hpp>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/op/restore.hpp>

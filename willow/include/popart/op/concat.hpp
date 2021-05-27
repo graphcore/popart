@@ -45,10 +45,10 @@ public:
   float getSubgraphValue() const final { return getLowSubgraphValue(); }
   bool canShard() const override { return true; }
 
-  void growAliaser(PoprithmsAliaser &) const override;
+  void growAliasModel(AliasModel &) const override;
 
   void setProposal(poprithms::memory::inplace::Proposal &,
-                   const PoprithmsAliaser &,
+                   const AliasModel &,
                    OperatorIdentifier) const override;
 
 private:

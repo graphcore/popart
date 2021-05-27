@@ -1,4 +1,4 @@
-#include <poprithmsinplace.hpp>
+#include <aliasmodel.hpp>
 #include <popart/broadcastutil.hpp>
 #include <popart/op/expand.hpp>
 #include <popart/opmanager.hpp>
@@ -28,7 +28,7 @@ void ExpandOp::regMapPreChecks(InIndex inIndex) const {
   }
 }
 
-void ExpandOp::growAliaser(PoprithmsAliaser &m) const {
+void ExpandOp::growAliasModel(AliasModel &m) const {
   const auto vc = m.g.expand(m.getPoprithmsTensorId(inId(0)), getOutShape());
   m.insertViewChange(vc, *outTensor(0), isOutplace());
 }
@@ -154,7 +154,7 @@ void ExpandOp::finaliseShape() {
 }
 
 void ExpandOp::setProposal(poprithms::memory::inplace::Proposal &proposal,
-                           const PoprithmsAliaser &aliaser,
+                           const AliasModel &aliaser,
                            OperatorIdentifier id) const {
   setProposalGate0(proposal, aliaser, id);
 }

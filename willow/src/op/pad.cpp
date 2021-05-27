@@ -1,7 +1,7 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
 #include <algorithm>
+#include <aliasmodel.hpp>
 #include <memory>
-#include <poprithmsinplace.hpp>
 #include <popart/graph.hpp>
 #include <popart/op/pad.hpp>
 #include <popart/op/padgrad.hpp>
@@ -91,7 +91,7 @@ std::vector<std::unique_ptr<Op>> PadOp::getGradOps() {
   return upops;
 }
 
-void BasePadOp::growAliaser(PoprithmsAliaser &m) const {
+void BasePadOp::growAliasModel(AliasModel &m) const {
 
   runtimeConfirmShapes();
 
@@ -120,7 +120,7 @@ void BasePadOp::growAliaser(PoprithmsAliaser &m) const {
 
 void BasePadOutplaceOp::setProposal(
     poprithms::memory::inplace::Proposal &proposal,
-    const PoprithmsAliaser &aliaser,
+    const AliasModel &aliaser,
     OperatorIdentifier opId) const {
   proposal = {aliaser.getGate(id), 0};
 }

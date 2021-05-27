@@ -1,6 +1,6 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_POPRITHMSINPLACE_HPP
-#define GUARD_NEURALNET_POPRITHMSINPLACE_HPP
+#ifndef GUARD_NEURALNET_ALIASMODEL_HPP
+#define GUARD_NEURALNET_ALIASMODEL_HPP
 #include <map>
 #include <poprithms/memory/inplace/crosslink.hpp>
 #include <poprithms/memory/inplace/graph.hpp>
@@ -17,8 +17,8 @@ namespace popart {
  * PopART Graph. It contains the poprithms Graph, and mappings between PopART
  * Tensors and Ops, and their poprithms equivalents.
  * */
-struct PoprithmsAliaser {
-
+class AliasModel {
+public:
   using PoprithmsTensorId = poprithms::memory::inplace::TensorId;
   using PoprithmsOpId     = poprithms::memory::inplace::OpId;
 
@@ -194,10 +194,10 @@ enum class DataDependenciesOnly {
  * \param graph The PopART Graph object to construct a mapping for.
  * \param dataDepsOnly Flag to indicate whether to add only data dependencies
  *     or whether to also add topocological constraints.
- * \return A PoprithmsAliaser object containing the mapping.
+ * \return A AliasModel object containing the mapping.
  **/
-PoprithmsAliaser getPoprithmsAliaser(const Graph &graph,
-                                     DataDependenciesOnly dataDepsOnly);
+AliasModel getFullAliasModel(const Graph &graph,
+                             DataDependenciesOnly dataDepsOnly);
 
 /**
  * Construct a mapping from a PopART Graph to a Poprithms alias Graph that is
@@ -206,18 +206,18 @@ PoprithmsAliaser getPoprithmsAliaser(const Graph &graph,
  * that do not alias it.
  *
  * The purpose of this function is to provide an alternative to
- * `getPoprithmsAliaser` for when you do not require a whole mapping.
+ * `getFullAliasModel` for when you do not require a whole mapping.
  *
  * \param graph The PopART Graph object to construct a mapping for.
  * \param tensorId The PopART Tensor used to determine which part of the PopART
  *      graph to create a mapping for.
  * \param dataDepsOnly Flag to indicate whether to add only data dependencies
  *     or whether to also add topocological constraints.
- * \return A PoprithmsAliaser object containing the mapping.
+ * \return A AliasModel object containing the mapping.
  **/
-PoprithmsAliaser getPartialPoprithmsAliaser(const Graph &graph,
-                                            const TensorId &tensorId,
-                                            DataDependenciesOnly dataDepsOnly);
+AliasModel getPartialAliasModel(const Graph &graph,
+                                const TensorId &tensorId,
+                                DataDependenciesOnly dataDepsOnly);
 
 } // namespace popart
 

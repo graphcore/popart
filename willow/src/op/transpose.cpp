@@ -1,8 +1,8 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
 #include <algorithm>
+#include <aliasmodel.hpp>
 #include <functional>
 #include <memory>
-#include <poprithmsinplace.hpp>
 #include <popart/op/transpose.hpp>
 #include <popart/opmanager.hpp>
 #include <popart/opserialiser.hpp>
@@ -11,7 +11,7 @@
 namespace popart {
 
 void TransposeOp::setProposal(poprithms::memory::inplace::Proposal &proposal,
-                              const PoprithmsAliaser &aliaser,
+                              const AliasModel &aliaser,
                               OperatorIdentifier opId) const {
   setProposalGate0(proposal, aliaser, opId);
 }
@@ -39,7 +39,7 @@ view::RegMap TransposeBaseOp::fwdRegMap(InIndex inIndex, OutIndex) const {
   };
 }
 
-void TransposeBaseOp::growAliaser(PoprithmsAliaser &m) const {
+void TransposeBaseOp::growAliasModel(AliasModel &m) const {
   const auto vc = m.g.dimShuffle(m.getPoprithmsTensorId(inId(0)),
                                  poprithms::util::Permutation(getPerm_u64()));
   m.insertViewChange(vc, *outTensor(0), isOutplace());

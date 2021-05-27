@@ -1,6 +1,6 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
+#include <aliasmodel.hpp>
 #include <memory>
-#include <poprithmsinplace.hpp>
 #include <popart/ir.hpp>
 #include <popart/op/collectives/collectives.hpp>
 #include <popart/op/collectives/replicatedallreduce.hpp>
@@ -89,7 +89,7 @@ view::Regions ReplicatedAllReduceInplaceOp::aliases(InIndex in,
   }
 }
 
-void ReplicatedAllReduceOp::growAliaser(PoprithmsAliaser &m) const {
+void ReplicatedAllReduceOp::growAliasModel(AliasModel &m) const {
   m.insertUnaryModifier0(*this);
 }
 

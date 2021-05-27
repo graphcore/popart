@@ -106,7 +106,7 @@
 // used for float to half conversion
 #include <poplar/Target.hpp>
 
-#include <poprithmsinplace.hpp>
+#include <aliasmodel.hpp>
 
 namespace popart {
 
@@ -3015,7 +3015,7 @@ void Ir::applyInplacePattern(Graph &graph) {
 
   // The decision of where topological constraints need to be inserted is made
   // by a poprithms Graph whose Ops mirror those in \a graph.
-  auto popMem = getPoprithmsAliaser(graph, DataDependenciesOnly::No);
+  auto popMem = getFullAliasModel(graph, DataDependenciesOnly::No);
 
   Inplace inplace;
 

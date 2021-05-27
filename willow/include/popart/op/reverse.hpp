@@ -30,7 +30,7 @@ public:
 
   std::vector<int64_t> getDimensions() const { return dimensions; }
 
-  virtual void growAliaser(PoprithmsAliaser &) const override;
+  virtual void growAliasModel(AliasModel &) const override;
 
 private:
   std::vector<int64_t> dimensions;
@@ -48,7 +48,7 @@ public:
   std::vector<std::unique_ptr<Op>> getGradOps() final;
 
   void setProposal(poprithms::memory::inplace::Proposal &,
-                   const PoprithmsAliaser &,
+                   const AliasModel &,
                    OperatorIdentifier) const override;
 
   void appendOutlineAttributes(OpSerialiserBase &) const override;

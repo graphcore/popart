@@ -1,6 +1,6 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
+#include <aliasmodel.hpp>
 #include <memory>
-#include <poprithmsinplace.hpp>
 #include <popart/op/pad.hpp>
 #include <popart/op/slice.hpp>
 #include <popart/opmanager.hpp>
@@ -21,7 +21,7 @@ std::vector<int64_t> BaseSliceOp::getPads() const {
   return pads;
 }
 
-void BaseSliceOp::growAliaser(PoprithmsAliaser &m) const {
+void BaseSliceOp::growAliasModel(AliasModel &m) const {
   const auto lu = getLowerUpper();
   const auto vc = m.g.slice(
       m.getPoprithmsTensorId(inId(0)), std::get<0>(lu), std::get<1>(lu));
@@ -121,7 +121,7 @@ SliceOp::getInplaceVariant(const OperatorIdentifier &operator_id) const {
 }
 
 void SliceOp::setProposal(poprithms::memory::inplace::Proposal &proposal,
-                          const PoprithmsAliaser &aliaser,
+                          const AliasModel &aliaser,
                           OperatorIdentifier opId) const {
   setProposalGate0(proposal, aliaser, opId);
 }

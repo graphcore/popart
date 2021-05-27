@@ -38,7 +38,7 @@ public:
 
   int getOutBatchAxis(OutIndex) const override;
 
-  virtual void growAliaser(PoprithmsAliaser &) const override;
+  virtual void growAliasModel(AliasModel &) const override;
 
 private:
   // the new permutation of the tensor axes
@@ -65,7 +65,7 @@ public:
   inplacePriorityDefault() const final;
 
   void setProposal(poprithms::memory::inplace::Proposal &,
-                   const PoprithmsAliaser &,
+                   const AliasModel &,
                    OperatorIdentifier) const override;
 
   bool isOutplaceViewChange() const override { return true; }

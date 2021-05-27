@@ -1,7 +1,7 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
+#include <aliasmodel.hpp>
 #include <limits>
 #include <memory>
-#include <poprithmsinplace.hpp>
 #include <popart/ir.hpp>
 #include <popart/logging.hpp>
 #include <popart/op/varupdate.hpp>
@@ -37,7 +37,7 @@ view::Regions VarUpdateOp::aliases(InIndex in, OutIndex) const {
     return {view::Region::getEmpty(inRank(in))};
   }
 }
-void VarUpdateOp::growAliaser(PoprithmsAliaser &m) const {
+void VarUpdateOp::growAliasModel(AliasModel &m) const {
   m.insertUnaryModifier(*this, getVarToUpdateInIndex());
 }
 

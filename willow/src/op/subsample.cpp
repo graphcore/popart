@@ -1,9 +1,9 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
 #include <algorithm>
+#include <aliasmodel.hpp>
 #include <memory>
 #include <onnx/defs/schema.h>
 #include <poprithms/ndarray/accessors.hpp>
-#include <poprithmsinplace.hpp>
 #include <popart/op/subsample.hpp>
 #include <popart/opmanager.hpp>
 #include <popart/opserialiser.hpp>
@@ -14,7 +14,7 @@
 namespace popart {
 
 void SubsampleOp::setProposal(poprithms::memory::inplace::Proposal &proposal,
-                              const PoprithmsAliaser &aliaser,
+                              const AliasModel &aliaser,
                               OperatorIdentifier opId) const {
   setProposalGate0(proposal, aliaser, opId);
 }
@@ -185,7 +185,7 @@ void SubsampleGradOp::appendOutlineAttributes(OpSerialiserBase &os) const {
   os.appendAttribute("strides", strides);
 }
 
-void SubsampleBaseOp::growAliaser(PoprithmsAliaser &m) const {
+void SubsampleBaseOp::growAliasModel(AliasModel &m) const {
   const auto strides_i64 = getStrides();
   poprithms::ndarray::Strides ss(
       std::vector<uint64_t>{strides_i64.cbegin(), strides_i64.cend()});

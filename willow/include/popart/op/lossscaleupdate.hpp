@@ -44,7 +44,7 @@ public:
   // getLossScaleUpdateFactorInIndex()
   view::Regions aliases(InIndex in, OutIndex) const override;
   view::Regions modifies(InIndex) const override;
-  void growAliaser(PoprithmsAliaser &m) const override;
+  void growAliasModel(AliasModel &m) const override;
 
 private:
   DataType updateFactorDType;

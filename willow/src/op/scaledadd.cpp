@@ -1,6 +1,6 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
+#include <aliasmodel.hpp>
 #include <memory>
-#include <poprithmsinplace.hpp>
 #include <popart/op/scaledadd.hpp>
 #include <popart/opmanager.hpp>
 #include <popart/opserialiser.hpp>
@@ -10,7 +10,7 @@
 namespace popart {
 
 void ScaledAddOp::setProposal(poprithms::memory::inplace::Proposal &proposal,
-                              const PoprithmsAliaser &aliaser,
+                              const AliasModel &aliaser,
                               OperatorIdentifier opId) const {
   const std::string inplaceName = opId.type;
   auto index                    = (inplaceName.find("Rhs") != std::string::npos)
@@ -39,7 +39,7 @@ ScaledAddOp::inplacePriorityDefault() const {
   return {};
 }
 
-void ScaledAddOp::growAliaser(PoprithmsAliaser &m) const {
+void ScaledAddOp::growAliasModel(AliasModel &m) const {
   m.insertBinaryModifier(*this);
 }
 

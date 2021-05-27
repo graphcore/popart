@@ -1,5 +1,5 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#include <poprithmsinplace.hpp>
+#include <aliasmodel.hpp>
 #include <popart/onnxutil.hpp>
 #include <popart/op/lossscaleupdate.hpp>
 #include <popart/opmanager.hpp>
@@ -48,7 +48,7 @@ view::Regions LossScaleUpdateOp::modifies(InIndex index) const {
   }
 }
 
-void LossScaleUpdateOp::growAliaser(PoprithmsAliaser &m) const {
+void LossScaleUpdateOp::growAliasModel(AliasModel &m) const {
   m.insertUnaryModifier(*this, getLossScaleUpdateFactorInIndex());
 }
 

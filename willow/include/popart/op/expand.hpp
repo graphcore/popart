@@ -42,10 +42,10 @@ public:
     return input->getIndexShapeMap()[ExpandOp::getInTensorIndex()] == outShape;
   }
 
-  virtual void growAliaser(PoprithmsAliaser &) const override;
+  virtual void growAliasModel(AliasModel &) const override;
 
   void setProposal(poprithms::memory::inplace::Proposal &,
-                   const PoprithmsAliaser &,
+                   const AliasModel &,
                    OperatorIdentifier) const override;
 
   float getSubgraphValue() const final { return getLowSubgraphValue(); }

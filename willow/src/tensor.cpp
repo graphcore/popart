@@ -26,7 +26,7 @@
 #include <popart/topocons.hpp>
 #include <popart/util.hpp>
 
-#include <poprithmsinplace.hpp>
+#include <aliasmodel.hpp>
 
 namespace popart {
 
@@ -1004,8 +1004,7 @@ bool Tensor::anyAlias(std::function<bool(Tensor *)> predicate) const {
   }
 
   // Build a poprithms::memory::inplace::Graph from the popart::Graph.
-  auto popMem =
-      getPartialPoprithmsAliaser(graph, id, DataDependenciesOnly::Yes);
+  auto popMem = getPartialAliasModel(graph, id, DataDependenciesOnly::Yes);
 
   // Get the identifier used to represent this tensor in poprithms.
   auto poprithmsTensorId = popMem.getPoprithmsTensorId(id);

@@ -34,7 +34,7 @@ public:
   view::RegMap fwdRegMap(InIndex, OutIndex) const final;
   view::RegMap bwdRegMap(InIndex, OutIndex) const final;
 
-  virtual void growAliaser(PoprithmsAliaser &) const override;
+  virtual void growAliasModel(AliasModel &) const override;
 
   float getSubgraphValue() const final { return getLowSubgraphValue(); }
 
@@ -57,7 +57,7 @@ public:
   }
 
   void setProposal(poprithms::memory::inplace::Proposal &,
-                   const PoprithmsAliaser &,
+                   const AliasModel &,
                    OperatorIdentifier) const override;
 };
 

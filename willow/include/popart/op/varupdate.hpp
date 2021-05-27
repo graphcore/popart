@@ -38,7 +38,7 @@ public:
   ReplicatedTensorShardingIndices
   getReplicatedTensorShardingIndices() const override;
 
-  virtual void growAliaser(PoprithmsAliaser &) const override;
+  virtual void growAliasModel(AliasModel &) const override;
 };
 
 class VarUpdateWithUpdaterOp : public VarUpdateOp {

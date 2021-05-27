@@ -1,8 +1,8 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #include <algorithm>
 
+#include <aliasmodel.hpp>
 #include <memory>
-#include <poprithmsinplace.hpp>
 #include <popart/graph.hpp>
 #include <popart/op/concat.hpp>
 #include <popart/opmanager.hpp>
@@ -28,7 +28,7 @@ std::unique_ptr<Op> ConcatOp::clone() const {
   return std::make_unique<ConcatOp>(*this);
 }
 
-void ConcatOp::growAliaser(PoprithmsAliaser &m) const {
+void ConcatOp::growAliasModel(AliasModel &m) const {
 
   std::vector<poprithms::memory::inplace::TensorId> inIds;
   inIds.reserve(input->n());
@@ -40,7 +40,7 @@ void ConcatOp::growAliaser(PoprithmsAliaser &m) const {
 }
 
 void ConcatOp::setProposal(poprithms::memory::inplace::Proposal &proposal,
-                           const PoprithmsAliaser &aliaser,
+                           const AliasModel &aliaser,
                            OperatorIdentifier opId) const {
   setProposalGate0(proposal, aliaser, opId);
 }

@@ -1,5 +1,4 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
-#include <poprithmsinplace.hpp>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/op/identity.hpp>
@@ -8,6 +7,8 @@
 #include <popart/opserialiser.hpp>
 #include <popart/tensor.hpp>
 #include <popart/tensornames.hpp>
+
+#include <aliasmodel.hpp>
 
 namespace popart {
 
@@ -40,15 +41,15 @@ std::unique_ptr<Op> SequenceSliceOp::getInplaceVariant(
   return Op::getInplaceVariant(operator_id);
 }
 
-void SequenceSliceOp::growAliaser(PoprithmsAliaser &m) const {
+void SequenceSliceOp::growAliasModel(AliasModel &m) const {
   m.insertUnaryModifier(*this, getDestinationInIndex());
 }
 
 void SequenceSliceOp::setProposal(
     poprithms::memory::inplace::Proposal &proposal,
-    const PoprithmsAliaser &aliaser,
+    const AliasModel &aliasModel,
     OperatorIdentifier opId) const {
-  setProposalGate0(proposal, aliaser, opId);
+  setProposalGate0(proposal, aliasModel, opId);
 }
 
 std::vector<std::tuple<OperatorIdentifier, float>>

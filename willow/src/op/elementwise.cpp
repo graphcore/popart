@@ -1,5 +1,5 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
-#include <poprithmsinplace.hpp>
+#include <aliasmodel.hpp>
 #include <popart/broadcastutil.hpp>
 #include <popart/op/elementwise.hpp>
 #include <popart/op/identity.hpp>
@@ -250,13 +250,13 @@ void BinaryComparisonOp::setup() {
                                         inInfo(getArg1InIndex()).shape())};
 }
 
-void ElementWiseBinaryBaseOp::growAliaser(PoprithmsAliaser &m) const {
+void ElementWiseBinaryBaseOp::growAliasModel(AliasModel &m) const {
   m.insertBinaryModifier(*this);
 }
 
 void ElementWiseBinaryOp::setProposal(
     poprithms::memory::inplace::Proposal &proposal,
-    const PoprithmsAliaser &aliaser,
+    const AliasModel &aliaser,
     OperatorIdentifier opId) const {
 
   const std::string inplaceName = opId.type;
@@ -266,12 +266,12 @@ void ElementWiseBinaryOp::setProposal(
 
 void ElementWiseUnaryOp::setProposal(
     poprithms::memory::inplace::Proposal &proposal,
-    const PoprithmsAliaser &aliaser,
+    const AliasModel &aliaser,
     OperatorIdentifier opId) const {
   setProposalGate0(proposal, aliaser, opId);
 }
 
-void ElementWiseUnaryOp::growAliaser(PoprithmsAliaser &m) const {
+void ElementWiseUnaryOp::growAliasModel(AliasModel &m) const {
   if (!isIdentity()) {
     m.insertUnaryModifier0(*this);
   } else {

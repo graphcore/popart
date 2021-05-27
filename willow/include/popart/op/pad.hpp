@@ -67,7 +67,7 @@ public:
   const std::vector<int64_t> &getPads() const { return pads; }
   const std::vector<unsigned> &getFlips() const { return flips; }
 
-  virtual void growAliaser(PoprithmsAliaser &) const override;
+  virtual void growAliasModel(AliasModel &) const override;
 
 private:
   // all lower and upper padding values. The first inRank values are the lower
@@ -96,7 +96,7 @@ public:
   bool canBeReplacedByIdentity() const override { return padSizeZero(); }
 
   void setProposal(poprithms::memory::inplace::Proposal &,
-                   const PoprithmsAliaser &,
+                   const AliasModel &,
                    OperatorIdentifier) const override;
 
   std::vector<std::tuple<OperatorIdentifier, float>>

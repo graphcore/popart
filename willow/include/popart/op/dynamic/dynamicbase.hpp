@@ -91,10 +91,10 @@ public:
   static InIndex getIndexInIndex() { return 1; }
   static OutIndex getOutIndex() { return 0; }
 
-  virtual void growAliaser(PoprithmsAliaser &m) const final;
+  virtual void growAliasModel(AliasModel &m) const final;
 
   void setProposal(poprithms::memory::inplace::Proposal &,
-                   const PoprithmsAliaser &,
+                   const AliasModel &,
                    OperatorIdentifier) const final;
 
 protected:

@@ -1,5 +1,5 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
-#include <poprithmsinplace.hpp>
+#include <aliasmodel.hpp>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/op/dynamic/dynamicbase.hpp>
@@ -120,13 +120,13 @@ view::Regions DynamicBinaryBaseInplaceOp::aliases(InIndex in, OutIndex) const {
   }
 }
 
-void DynamicBinaryBaseOp::growAliaser(PoprithmsAliaser &m) const {
+void DynamicBinaryBaseOp::growAliasModel(AliasModel &m) const {
   m.insertUnaryModifier(*this, getUpdateInIndex());
 }
 
 void DynamicBinaryBaseOp::setProposal(
     poprithms::memory::inplace::Proposal &proposal,
-    const PoprithmsAliaser &aliaser,
+    const AliasModel &aliaser,
     OperatorIdentifier opId) const {
   setProposalGate0(proposal, aliaser, opId);
 }

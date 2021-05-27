@@ -34,8 +34,8 @@ public:
   view::Regions aliases(InIndex, OutIndex) const final;
   view::Regions modifies(InIndex) const final;
 
-  virtual void growAliaser(PoprithmsAliaser &m) const override {
-    growAliaserMulti(m);
+  virtual void growAliasModel(AliasModel &m) const override {
+    growAliasModelMulti(m);
   }
 };
 } // namespace popart

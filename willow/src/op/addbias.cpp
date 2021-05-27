@@ -1,8 +1,8 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
 #include <algorithm>
+#include <aliasmodel.hpp>
 #include <memory>
 #include <numeric>
-#include <poprithmsinplace.hpp>
 #include <popart/op/addbias.hpp>
 #include <popart/op/conv.hpp>
 #include <popart/opmanager.hpp>
@@ -144,12 +144,12 @@ view::Regions AddBiasInplaceOp::aliases(InIndex in, OutIndex) const {
   }
 }
 
-void AddBiasOp::growAliaser(PoprithmsAliaser &m) const {
+void AddBiasOp::growAliasModel(AliasModel &m) const {
   m.insertUnaryModifier0(*this);
 }
 
 void AddBiasOp::setProposal(poprithms::memory::inplace::Proposal &proposal,
-                            const PoprithmsAliaser &aliaser,
+                            const AliasModel &aliaser,
                             OperatorIdentifier id) const {
   setProposalGate0(proposal, aliaser, id);
 }

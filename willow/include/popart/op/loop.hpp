@@ -115,8 +115,8 @@ public:
   void removeLoopInput(InIndex index);
   void removeLoopOutput(OutIndex index);
 
-  virtual void growAliaser(PoprithmsAliaser &m) const override {
-    growAliaserMulti(m);
+  virtual void growAliasModel(AliasModel &m) const override {
+    growAliasModelMulti(m);
   }
 
 private:

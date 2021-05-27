@@ -71,8 +71,8 @@ public:
 
   ReplicatedTensorShardingIndices
   getReplicatedTensorShardingIndices() const override;
-  virtual void growAliaser(PoprithmsAliaser &m) const override {
-    growAliaserMulti(m);
+  virtual void growAliasModel(AliasModel &m) const override {
+    growAliasModelMulti(m);
   }
 
 private:
@@ -120,8 +120,8 @@ public:
   VGraphIdAndTileSet
   getIntrospectionOutVirtualGraphId(OutIndex,
                                     std::set<OpId> visited = {}) const final;
-  virtual void growAliaser(PoprithmsAliaser &m) const override {
-    growAliaserMulti(m);
+  virtual void growAliasModel(AliasModel &m) const override {
+    growAliasModelMulti(m);
   }
 
   bool canShard() const final { return false; }
