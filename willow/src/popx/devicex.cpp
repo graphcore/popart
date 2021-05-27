@@ -18,6 +18,7 @@
 #include <boost/range/algorithm_ext.hpp>
 
 #include <gcl/TileAllocation.hpp>
+#include <pva/pva.hpp>
 #include <poplar/CSRFunctions.hpp>
 #include <poplar/CycleCount.hpp>
 #include <poplar/RandomSeed.hpp>
@@ -1119,6 +1120,12 @@ std::string Devicex::getSummaryReport(bool resetProfile) const {
     pEngine->resetExecutionProfile();
   }
   return ss.str();
+}
+
+pva::Report Devicex::getReport() const {
+  POPART_TRACEPOINT();
+  doProfileChecks();
+  return pEngine->getReport();
 }
 
 std::string Devicex::getGraphReport(bool useCbor) const {

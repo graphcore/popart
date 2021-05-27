@@ -555,6 +555,12 @@ std::string Session::getSerializedGraph() const {
   return device_->getSerializedGraph();
 }
 
+pva::Report Session::getReport() const {
+  POPART_TRACEPOINT();
+  logging::session::trace("Session::getReport");
+  return device_->getReport();
+}
+
 void Session::resetHostWeights(
     const std::string &modelProtoOrFilename,
     const bool ignoreWeightsInModelWithoutCorrespondingHostWeight) {

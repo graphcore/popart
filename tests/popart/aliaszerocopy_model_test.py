@@ -7,6 +7,8 @@ import pprint
 import json
 import onnx
 from onnx import numpy_helper
+import pva
+import tempfile
 
 
 def test_streamingmemory_momentum(tmpdir):
@@ -87,6 +89,11 @@ def test_streamingmemory_momentum(tmpdir):
         options.optimizerStateTensorLocationSettings.location = varLocation
         options.accumulatorTensorLocationSettings.location = varLocation
         options.activationTensorLocationSettings.location = varLocation
+
+        tempDir = tempfile.TemporaryDirectory()
+        options.engineOptions["autoReport.directory"] = tempDir.name
+        options.engineOptions["autoReport.all"] = "true"
+
         request_ipus = 2
 
         device = tu.create_test_device(2, pattern=popart.SyncPattern.Full)
@@ -117,16 +124,23 @@ def test_streamingmemory_momentum(tmpdir):
 
         device.detach()
 
-        graph_report = json.loads(session.getGraphReport())
-        max_tile_memory = max(graph_report["memory"]["byTile"]["total"])
-        total_memory = np.sum(graph_report["memory"]["byTile"]["total"])
+        report = session.getReport()
+        max_tile_memory = max([
+            tile.memory.total.excludingGaps
+            for tile in report.compilation.tiles
+        ])
+        total_memory = np.sum([
+            tile.memory.total.excludingGaps
+            for tile in report.compilation.tiles
+        ])
+
         return anchors[x], post_proto, total_memory
 
     outputs_1, proto_1, total_memory_1 = run_test(False)
     outputs_2, proto_2, total_memory_2 = run_test(True)
 
-    # Reference value: on 37570548
-    # Reference value: off 37570942
+    # Reference value: on 37581824
+    # Reference value: off 37779678
     diff = total_memory_1 - total_memory_2
     print(f"aliasZeroCopy = on  : {total_memory_2}")
     print(f"aliasZeroCopy = off : {total_memory_1}")

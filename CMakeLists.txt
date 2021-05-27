@@ -109,6 +109,7 @@ find_package(poplar REQUIRED)
 find_package(popir REQUIRED)
 find_package(poplibs REQUIRED)
 find_package(libpvti REQUIRED)
+find_package(pva REQUIRED)
 find_package(gcl REQUIRED)
 
 find_package(poprithms REQUIRED)

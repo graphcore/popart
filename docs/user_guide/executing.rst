@@ -236,7 +236,7 @@ Poplar engine. For example:
 .. code-block:: python
 
   opts = popart.SessionOptions()
-  opts.engineOptions = {"debug.instrument": "true"}
+  opts.engineOptions = {"autoReport.all": "true"}
 
 You can also control what information is included in the profiling report:
 
@@ -244,21 +244,22 @@ You can also control what information is included in the profiling report:
 
   opts.reportOptions = {"showExecutionSteps": "true"}
 
-There are three method functions of the session object to access the profiling
+There are two method functions of the session object to access the profiling
 information:
 
 * ``getSummaryReport`` retrieves a text summary of the compilation and execution of
   the graph.
-* ``getGraphReport`` returns a JSON format report on the compilation of
+* ``getReport`` returns a libpva `Report` object containing details of the
+  compliation and execution of the graph.
   the graph
-* ``getExecutionReport`` returns a JSON format report on all executions
-  of the graph since the last report was fetched.
 
 If profiling is not enabled, then the summary report will say 'Execution profiling not enabled'
-and the execution report will contain '{"profilerMode":"NONE"}'.
+and the report will contain no information in the execution.
 
-Both ``getGraphReport`` and ``getExecutionReport`` can optionally return
-a Concise Binary Object Representation (CBOR) formatted report.
+For more information on the libpva Report, see the pva user guide and api document:
+* `Libpva User Guide <https://docs.graphcore.ai/projects/poplar-user-guide/en/latest/index.html>`_
+* `Libpva C++ API Reference <https://docs.graphcore.ai/projects/poplar-api/en/latest/pva.html>`_
+* `Libpva Python API Reference <https://docs.graphcore.ai/projects/poplar-api/en/latest/pva-python.html>`_.
 
 For more information on profiling control and the information returned by these functions, see the
 Profiling chapter of the
