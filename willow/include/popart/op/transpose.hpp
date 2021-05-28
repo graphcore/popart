@@ -67,6 +67,8 @@ public:
   void setProposal(poprithms::memory::inplace::Proposal &,
                    const PoprithmsAliaser &,
                    OperatorIdentifier) const override;
+
+  bool isOutplaceViewChange() const override { return true; }
 };
 
 class TransposeInplaceOp : public TransposeBaseOp {
@@ -78,6 +80,8 @@ public:
   std::unique_ptr<Op> clone() const final;
 
   view::Regions aliases(InIndex in, OutIndex) const final { return uses(in); }
+
+  bool isInplaceViewChange() const override { return true; }
 };
 
 // TransposeGrad is a reverse transposition

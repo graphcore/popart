@@ -24,6 +24,8 @@ public:
   // by identity because it's behaviour is different (no backwards pass Op for
   // Detach)
   bool isIdentity() const final { return true; }
+
+  bool isOutplaceViewChange() const override { return true; }
 };
 
 class DetachInplaceOp : public DetachOp {

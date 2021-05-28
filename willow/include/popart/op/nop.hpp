@@ -16,6 +16,7 @@ public:
 
   std::unique_ptr<Op> clone() const override;
   std::vector<std::unique_ptr<Op>> getGradOps() final;
+  bool isOutplaceViewChange() const override { return true; }
 };
 
 } // namespace popart

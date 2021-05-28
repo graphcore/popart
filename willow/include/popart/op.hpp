@@ -457,6 +457,24 @@ public:
    */
   bool overwritesTensor(Tensor *t) const;
 
+  /**
+   * Is this op a view changing op? E.g. does it not modify it's input, and is
+   * it an inplace op? Set at each op level. Examples: ReshapeInplaceOp,
+   * IdentityInplace, TransposeInplaceOp
+   *
+   * \returns true If this is a view changing inplace op
+   * \returns false Otherwise
+   */
+  virtual bool isInplaceViewChange() const { return false; };
+  /**
+   * Same as above for outplace (non-inplace) ops.
+   * Examples: ReshapeOp, IdentityOp, TransposeOp
+   *
+   * \returns true If this is a view changing outplace op
+   * \returns false Otherwise
+   */
+  virtual bool isOutplaceViewChange() const { return false; };
+
   // A grad-op outputs an edge-gradient tensor dT at gradOpOutIndex.
   // dT is the edge-gradient of a tensor T which was the input
   // to grad-op's non-grad partner. At what index was T the input

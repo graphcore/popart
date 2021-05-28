@@ -86,6 +86,8 @@ public:
   void setProposal(poprithms::memory::inplace::Proposal &,
                    const PoprithmsAliaser &,
                    OperatorIdentifier) const override;
+
+  bool isOutplaceViewChange() const override { return true; }
 };
 
 class ReshapeInplaceOp : public ReshapeBaseOp {
@@ -105,6 +107,8 @@ public:
   // modifies and uses are still the defaults, but aliases changes
   // to be the same as uses (the full out region)
   view::Regions aliases(InIndex in, OutIndex) const final { return uses(in); }
+
+  bool isInplaceViewChange() const override { return true; }
 };
 
 // The gradient of reshape is the reverse of the

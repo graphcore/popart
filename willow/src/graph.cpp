@@ -766,6 +766,59 @@ void Graph::copyFrom(const Graph &other,
   }
 }
 
+/**
+ * Traverse the graph depth first in reverse order from tensor "from",
+ * continuing along any view changing ops, until you get to tensor "to". Keep a
+ * record of ops, and clear it if you get to a non-view changer or dead end.
+ */
+std::pair<bool, std::vector<Op *>> Graph::getDirectViewChain(Tensor *from,
+                                                             Tensor *to) {
+  std::vector<Op *> opChain;
+
+  // Currently do not support going across graph boundaries. Should we?
+  if (!getTensors().contains(from->id)) {
+    throw error(
+        "From tensor {} is not in graph {}, {} can only be used for tensors "
+        "contained in this graph.",
+        from->id,
+        this->id,
+        __func__);
+  } else if (!getTensors().contains(to->id)) {
+    throw error(
+        "To tensor {} is not in graph {}, {} can only be used for tensors "
+        "contained in this graph.",
+        to->id,
+        this->id,
+        __func__);
+  }
+  if (from->getGraph().id != to->getGraph().id) {
+    throw error(
+        "From tensor {} and to tensor {} are not in the same graph ({} vs {}). "
+        "Please ensure both tensors are contained in the same graph when using "
+        "{}.",
+        from->id,
+        to->id,
+        from->getGraph().id,
+        to->getGraph().id,
+        __func__);
+  }
+  Tensor *current = to;
+  while (current != from) {
+    if (current->hasProducer() &&
+        current->getProducer()->isInplaceViewChange()) {
+      // view changing ops only have 1 input
+      opChain.push_back(current->getProducer());
+      current = current->getProducer()->input->tensors().at(0);
+    } else {
+      // We hit a dead end, clear and return.
+      return {false, {}};
+    }
+  }
+
+  std::reverse(opChain.begin(), opChain.end());
+  return {true, opChain};
+}
+
 } // namespace popart
 
 namespace {

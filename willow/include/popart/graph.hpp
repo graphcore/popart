@@ -255,6 +255,21 @@ public:
   copyFrom(const Graph &other,
            CopyInputMarkings copyInputMarkings   = CopyInputMarkings::Yes,
            CopyOutputMarkings copyOutputMarkings = CopyOutputMarkings::Yes);
+  /**
+   * Find a chain of view changing ops in the graph from "from" to "to" (if one
+   * exists) and return a vector of ops such that op1(op2(...opN(in))) = out for
+   * {op1, op1, ..., opN}.
+   * If no such chain exists, returns {false, {}};
+   *
+   * \param from The tensor to start at
+   * \param to The tensor to finish at
+   * \returns std::pair<bool, std::vector<Op *>> The ops along the chain, in
+   * order. where the first of the pair is a bool indicating whether the path
+   * exists. The second is the vector of ops in order from 'from' to 'to'.
+   * Givent the ops are 1-in-1-out, this will also be in schedule order.
+   */
+  std::pair<bool, std::vector<Op *>> getDirectViewChain(Tensor *from,
+                                                        Tensor *to);
 
 private:
   std::vector<Op *>

@@ -23,6 +23,8 @@ public:
   inplacePriorityDefault() const final;
 
   bool isIdentity() const final { return true; }
+
+  bool isOutplaceViewChange() const override { return true; }
 };
 
 class IdentityInplaceOp : public IdentityOp {
@@ -34,6 +36,8 @@ public:
   std::unique_ptr<Op> clone() const override;
 
   view::Regions aliases(InIndex in, OutIndex) const final { return uses(in); }
+
+  bool isInplaceViewChange() const override { return true; }
 };
 
 class IdentityGradOp : public IdentityOp {
