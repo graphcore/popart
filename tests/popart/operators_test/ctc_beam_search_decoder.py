@@ -25,6 +25,8 @@ def test_ctc_beam_search_decoder(op_tester, max_time, batch_size, num_classes,
     Rigorous tests for correctness are done lower in the stack, here only the 
     interface to the decoder is tested. 
     """
+    torch.manual_seed(42)
+
     # Input data.
     logits_data = torch.rand(max_time, batch_size, num_classes)
     log_probs_data = F.log_softmax(logits_data, 2, dtype=torch.float32).numpy()
