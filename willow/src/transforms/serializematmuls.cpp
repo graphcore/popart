@@ -7,6 +7,7 @@
 #include <popart/logging.hpp>
 #include <popart/names.hpp>
 #include <popart/op.hpp>
+#include <popart/op/cast.hpp>
 #include <popart/op/concat.hpp>
 #include <popart/op/identity.hpp>
 #include <popart/op/ipucopy.hpp>
@@ -401,7 +402,8 @@ static void serializeVarUpdate(int sliceDim,
           consumerOps[0]->opid == Onnx::Operators::Reshape_1 ||
           consumerOps[0]->opid == Onnx::Operators::Reshape_5 ||
           consumerOps[0]->opid == Onnx::GradOperators::ReshapeGrad ||
-          consumerOps[0]->opid == Onnx::Operators::ReduceSum_1) {
+          consumerOps[0]->opid == Onnx::Operators::ReduceSum_1 ||
+          consumerOps[0]->opid == Onnx::GradOperators::CastGrad) {
 
         // Add to the path
         path.push_back(consumerOps[0]);
@@ -499,9 +501,9 @@ static void serializeVarUpdate(int sliceDim,
           starts = {(i)*size};
           ends   = {(i + 1) * size};
 
-        } else if (op->isConvertibleTo<IdentityOp>()) {
-          // Don't do anything
-        } else if (op->isConvertibleTo<VarUpdateOp>()) {
+        } else if (op->isConvertibleTo<IdentityOp>() ||
+                   op->isConvertibleTo<VarUpdateOp>() ||
+                   op->isConvertibleTo<CastGradOp>()) {
           // Don't do anything
         } else {
           throw error("Do not support {} when serializing", op->opid);

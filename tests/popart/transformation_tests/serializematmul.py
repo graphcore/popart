@@ -1656,3 +1656,267 @@ def test_matmul_serialization_training_with_gradient_accumlation(tmpdir):
     assert (np.allclose(w1, w2))
     assert (np.allclose(w1, w3))
     assert (np.allclose(w1, w4))
+
+
+def test_matmul_serialization_training_with_castop(tmpdir):
+
+    input_channels = 6
+    reducing_dim = 2
+    output_channels = 4
+
+    lhs_shape = [input_channels, reducing_dim]
+    rhs_shape = [reducing_dim, output_channels]
+    lhs_data = np.ones((*lhs_shape, ), dtype=np.float16)
+    rhs_data = np.ones((*rhs_shape, ), dtype=np.float32)
+
+    def run_test(matmul_serialization_mode, matmul_serialization_factor,
+                 verify):
+        builder = popart.Builder()
+
+        lhs = builder.addInputTensor(popart.TensorInfo("FLOAT16", lhs_shape),
+                                     "lhs")
+        rhs = builder.addInitializedInputTensor(rhs_data, "rhs")
+        rhs_f16 = builder.aiOnnx.cast([rhs], "FLOAT16")
+
+        o = builder.aiOnnx.matmul([lhs, rhs_f16])
+
+        builder.setSerializeMatMul({o}, matmul_serialization_mode,
+                                   matmul_serialization_factor)
+
+        loss = builder.aiGraphcore.l1loss([o], 0.1)
+
+        proto = builder.getModelProto()
+
+        dataFlow = popart.DataFlow(
+            1, {
+                o:
+                popart.AnchorReturnType("All"),
+                rhs:
+                popart.AnchorReturnType("Final"),
+                popart.reservedGradientPrefix() + lhs:
+                popart.AnchorReturnType("All"),
+            })
+
+        opts = getBaseOptions()
+
+        pat = popart.Patterns(
+            ['MatMulOp', 'MatMulRhsGradOp', 'MatMulLhsGradOp', 'OpToIdentity'])
+        pat.enableRuntimeAsserts(False)
+
+        session = popart.TrainingSession(
+            fnModel=proto,
+            dataFlow=dataFlow,
+            userOptions=opts,
+            loss=loss,
+            optimizer=popart.ConstSGD(0.01),
+            patterns=pat,
+            deviceInfo=tu.create_test_device(opts={"compileIPUCode": False}))
+
+        session.prepareDevice()
+
+        session.weightsFromHost()
+
+        anchors = session.initAnchorArrays()
+
+        inputs = {lhs: lhs_data}
+        stepio = popart.PyStepIO(inputs, anchors)
+
+        session.run(stepio)
+        session.weightsToHost()
+
+        verify(session, matmul_serialization_factor)
+
+        return anchors[rhs]
+
+    def verify_no_serialisation(session, matmul_serialization_factor):
+        ''' Verify the the matmul in the main graphs is correct'''
+        ir = json.loads(session._serializeIr(
+            popart.IrSerializationFormat.JSON))
+        matmuls = [op for op in ir['maingraph'] if op['type'] == 'MatMul']
+
+        assert (len(matmuls) == 3)
+
+        # forward
+        lhs = matmuls[0]['inputs'][0]
+        rhs = matmuls[0]['inputs'][1]
+        assert (lhs['shape'] == gen_shape([1, input_channels, reducing_dim])
+                and rhs['shape'] == gen_shape(
+                    [1, reducing_dim, output_channels]))
+
+        # bwd lhs
+        bwd_lhs = _get_bwd_lhs_matmul(matmuls)
+        lhs = bwd_lhs['inputs'][0]
+        rhs = bwd_lhs['inputs'][1]
+        assert (lhs['shape'] == gen_shape([1, input_channels, output_channels])
+                and rhs['shape'] == gen_shape(
+                    [1, output_channels, reducing_dim]))
+
+        # bwd rhs
+        bwd_rhs = _get_bwd_rhs_matmul(matmuls)
+        lhs = bwd_rhs['inputs'][0]
+        rhs = bwd_rhs['inputs'][1]
+        assert (lhs['shape'] == gen_shape([1, reducing_dim, input_channels])
+                and rhs['shape'] == gen_shape(
+                    [1, input_channels, output_channels]))
+
+    def verify_serialisation_input_channels(session,
+                                            matmul_serialization_factor):
+        ''' Verify the the matmul has the input sliced and is in a subgraph'''
+        ir = json.loads(session._serializeIr(
+            popart.IrSerializationFormat.JSON))
+
+        matmuls = [op for op in ir['maingraph'] if op['type'] == 'MatMul']
+        assert (len(matmuls) == 0)
+
+        # FWD
+        matmuls = [
+            op for op in ir['call_subgraph(0)'] if op['type'] == 'MatMul'
+        ]
+        assert (len(matmuls) == 1)
+
+        lhs = matmuls[0]['inputs'][0]
+        rhs = matmuls[0]['inputs'][1]
+
+        assert (lhs['shape'] == gen_shape([
+            1, input_channels // matmul_serialization_factor, reducing_dim
+        ]) and rhs['shape'] == gen_shape([1, reducing_dim, output_channels]))
+
+        # BWD_LHS
+        matmuls = [
+            op for op in ir['call_subgraph(2)'] if op['type'] == 'MatMul'
+        ]
+        assert (len(matmuls) == 1)
+
+        lhs = matmuls[0]['inputs'][0]
+        rhs = matmuls[0]['inputs'][1]
+
+        assert (lhs['shape'] == gen_shape([
+            1, input_channels // matmul_serialization_factor, output_channels
+        ]) and rhs['shape'] == gen_shape([1, output_channels, reducing_dim]))
+
+        # BWD_RHS
+        matmuls = [
+            op for op in ir['call_subgraph(1)'] if op['type'] == 'MatMul'
+        ]
+        assert (len(matmuls) == 1)
+
+        lhs = matmuls[0]['inputs'][0]
+        rhs = matmuls[0]['inputs'][1]
+
+        assert (lhs['shape'] == gen_shape([
+            1, reducing_dim, input_channels // matmul_serialization_factor
+        ]) and rhs['shape'] == gen_shape([
+            1, input_channels // matmul_serialization_factor, output_channels
+        ]))
+
+    def verify_serialisation_reducing_dim(session,
+                                          matmul_serialization_factor):
+        ''' Verify the the matmul has the input sliced and is in a subgraph'''
+        ir = json.loads(session._serializeIr(
+            popart.IrSerializationFormat.JSON))
+
+        matmuls = [op for op in ir['maingraph'] if op['type'] == 'MatMul']
+        assert (len(matmuls) == 0)
+
+        # FWD
+        matmuls = [
+            op for op in ir['call_subgraph(0)'] if op['type'] == 'MatMul'
+        ]
+        assert (len(matmuls) == 1)
+
+        lhs = matmuls[0]['inputs'][0]
+        rhs = matmuls[0]['inputs'][1]
+
+        assert (lhs['shape'] == gen_shape([
+            1, input_channels, reducing_dim // matmul_serialization_factor
+        ]) and rhs['shape'] == gen_shape(
+            [1, reducing_dim // matmul_serialization_factor, output_channels]))
+
+        # BWD_LHS
+        matmuls = [
+            op for op in ir['call_subgraph(1)'] if op['type'] == 'MatMul'
+        ]
+        assert (len(matmuls) == 1)
+
+        lhs = matmuls[0]['inputs'][0]
+        rhs = matmuls[0]['inputs'][1]
+
+        assert (lhs['shape'] == gen_shape([1, input_channels, output_channels])
+                and rhs['shape'] == gen_shape([
+                    1, output_channels,
+                    reducing_dim // matmul_serialization_factor
+                ]))
+
+        # BWD_RHS
+        matmuls = [
+            op for op in ir['call_subgraph(2)'] if op['type'] == 'MatMul'
+        ]
+        assert (len(matmuls) == 1)
+
+        lhs = matmuls[0]['inputs'][0]
+        rhs = matmuls[0]['inputs'][1]
+
+        assert (lhs['shape'] == gen_shape([
+            1, reducing_dim // matmul_serialization_factor, input_channels
+        ]) and rhs['shape'] == gen_shape([1, input_channels, output_channels]))
+
+    def verify_serialisation_output_channels(session,
+                                             matmul_serialization_factor):
+        ''' Verify the the matmul has the input sliced and is in a subgraph'''
+        ir = json.loads(session._serializeIr(
+            popart.IrSerializationFormat.JSON))
+
+        matmuls = [op for op in ir['maingraph'] if op['type'] == 'MatMul']
+        assert (len(matmuls) == 0)
+
+        # FWD
+        matmuls = [
+            op for op in ir['call_subgraph(0)'] if op['type'] == 'MatMul'
+        ]
+        assert (len(matmuls) == 1)
+
+        lhs = matmuls[0]['inputs'][0]
+        rhs = matmuls[0]['inputs'][1]
+
+        assert (lhs['shape'] == gen_shape(
+            [1, input_channels, reducing_dim]) and rhs['shape'] == gen_shape([
+                1, reducing_dim, output_channels // matmul_serialization_factor
+            ]))
+
+        # BWD_LHS
+        matmuls = [
+            op for op in ir['call_subgraph(1)'] if op['type'] == 'MatMul'
+        ]
+        assert (len(matmuls) == 1)
+
+        lhs = matmuls[0]['inputs'][0]
+        rhs = matmuls[0]['inputs'][1]
+
+        assert (lhs['shape'] == gen_shape([
+            1, input_channels, output_channels // matmul_serialization_factor
+        ]) and rhs['shape'] == gen_shape(
+            [1, output_channels // matmul_serialization_factor, reducing_dim]))
+
+        # BWD_RHS
+        matmuls = [
+            op for op in ir['call_subgraph(2)'] if op['type'] == 'MatMul'
+        ]
+        assert (len(matmuls) == 1)
+
+        lhs = matmuls[0]['inputs'][0]
+        rhs = matmuls[0]['inputs'][1]
+
+        assert (lhs['shape'] == gen_shape([1, reducing_dim, input_channels])
+                and rhs['shape'] == gen_shape([
+                    1, input_channels,
+                    output_channels // matmul_serialization_factor
+                ]))
+
+    w1 = run_test("none", 0, verify_no_serialisation)
+    w2 = run_test("input_channels", 2, verify_serialisation_input_channels)
+    w3 = run_test("reducing_dim", 2, verify_serialisation_reducing_dim)
+    w4 = run_test("output_channels", 4, verify_serialisation_output_channels)
+
+    assert (np.allclose(w1, w2))
+    assert (np.allclose(w1, w3))
+    assert (np.allclose(w1, w4))
