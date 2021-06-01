@@ -385,6 +385,24 @@ bool MainLoops::apply(Graph &graph) const {
   auto accumulationFactor = sessionOptions.getAccumulationFactor();
   auto batchesPerStep     = ir.getDataFlow().batchesPerStep();
 
+  // Check whether the anchor return types are supported.
+  for (auto &anchorArt : ir.getDataFlow().getAnchorMap()) {
+    // TODO(T39577): Uncomment the AnchorReturnTypeId::Sum line in the if
+    // statement below once this is resolved, and fix the last sentence in the
+    // error message to "Supported anchor return types are
+    // AnchorReturnTypeId::All and AnchorReturnTypeId::Sum."
+    if (!(anchorArt.second.id() == AnchorReturnTypeId::All
+          // || anchorArt.second.id() == AnchorReturnTypeId::Sum
+          )) {
+      throw error(
+          "AnchorReturnType::{} for TensorId \"{}\" is unsupported when "
+          "explicit main loops are enabled. Supported anchor return type "
+          "is AnchorReturnTypeId::All.", // and AnchorReturnTypeId::Sum.",
+          anchorArt.second.str(),
+          anchorArt.first);
+    }
+  }
+
   // Initially: Point all IDs to the existing main graph
   GraphId mainGraphId  = graph.id;
   GraphId stepGraphId  = graph.id;
