@@ -559,8 +559,10 @@ deserializeExecutable(std::istream &in,
 
   capnp::ReaderOptions opts;
   // Increase default size from 64 MB to handle larger models.
-  uint64_t gb_limit          = 16;
-  opts.traversalLimitInWords = gb_limit * 1024 * 1024 * 1024;
+  // Note: traversalLimitsInWords is a security check for when Capnp is used as
+  // a network communication protocol. It doesn't affect the memory consumption
+  // or performance of the library.
+  opts.traversalLimitInWords = kj::maxValue;
   capnp::InputStreamMessageReader message(sis, opts);
 
   auto executablexReader = message.getRoot<popart::popx::cap::Executablex>();
