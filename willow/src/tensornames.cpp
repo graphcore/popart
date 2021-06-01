@@ -33,65 +33,68 @@ TensorId getEdgeGradId(TensorId tenId, OpId opId, int index) {
   return edgeGradId;
 }
 
-std::vector<std::string> reservedOptimizerPrefixes() {
-  return {// Optimizer
-          reservedLossScalingPrefix(),
-          // SGD0 / SGD1
-          reservedDefaultScaledLearningRate0Prefix(),
-          reservedSpecificScaledLearningRate0Prefix(),
-          reservedDefaultWeightDecayScaleFactor0Prefix(),
-          reservedSpecificWeightDecayScaleFactor0Prefix(),
-          reservedDefaultScaledLearningRate1Prefix(),
-          reservedSpecificScaledLearningRate1Prefix(),
-          reservedDefaultScaledWeightDecay1Prefix(),
-          reservedSpecificScaledWeightDecay1Prefix(),
-          reservedDefaultDampeningScaleFactor1Prefix(),
-          reservedSpecificDampeningScaleFactor1Prefix(),
-          reservedDefaultScaledMomentum1Prefix(),
-          reservedSpecificScaledMomentum1Prefix(),
-          // Adam / Lamb
-          reservedDefaultAdamBeta1Prefix(),
-          reservedSpecificAdamBeta1Prefix(),
-          reservedDefaultAdamBeta2Prefix(),
-          reservedSpecificAdamBeta2Prefix(),
-          reservedDefaultLearningRatePrefix(),
-          reservedSpecificLearningRatePrefix(),
-          reservedDefaultAdamEpsPrefix(),
-          reservedSpecificAdamEpsPrefix(),
-          reservedDefaultWeightDecayPrefix(),
-          reservedSpecificWeightDecayPrefix(),
-          reservedDefaultAdamGradientScalingPrefix(),
-          reservedSpecificAdamGradientScalingPrefix(),
-          reservedDefaultMaxWeightNormPrefix(),
-          reservedSpecificMaxWeightNormPrefix(),
-          // Adaptive
-          reservedDefaultAdaptiveAlphaPrefix(),
-          reservedSpecificAdaptiveAlphaPrefix(),
-          reservedDefaultAdaptiveEpsPrefix(),
-          reservedSpecificAdaptiveEpsPrefix(),
-          reservedDefaultAdaptiveGradientScalingPrefix(),
-          reservedSpecificAdaptiveGradientScalingPrefix(),
-          reservedDefaultAdaptiveMomentumPrefix(),
-          reservedSpecificAdaptiveMomentumPrefix()};
+const std::vector<std::string> &reservedOptimizerPrefixes() {
+  const static std::vector<std::string> result = {
+      // Optimizer
+      reservedLossScalingPrefix(),
+      // SGD0 / SGD1
+      reservedDefaultScaledLearningRate0Prefix(),
+      reservedSpecificScaledLearningRate0Prefix(),
+      reservedDefaultWeightDecayScaleFactor0Prefix(),
+      reservedSpecificWeightDecayScaleFactor0Prefix(),
+      reservedDefaultScaledLearningRate1Prefix(),
+      reservedSpecificScaledLearningRate1Prefix(),
+      reservedDefaultScaledWeightDecay1Prefix(),
+      reservedSpecificScaledWeightDecay1Prefix(),
+      reservedDefaultDampeningScaleFactor1Prefix(),
+      reservedSpecificDampeningScaleFactor1Prefix(),
+      reservedDefaultScaledMomentum1Prefix(),
+      reservedSpecificScaledMomentum1Prefix(),
+      // Adam / Lamb
+      reservedDefaultAdamBeta1Prefix(),
+      reservedSpecificAdamBeta1Prefix(),
+      reservedDefaultAdamBeta2Prefix(),
+      reservedSpecificAdamBeta2Prefix(),
+      reservedDefaultLearningRatePrefix(),
+      reservedSpecificLearningRatePrefix(),
+      reservedDefaultAdamEpsPrefix(),
+      reservedSpecificAdamEpsPrefix(),
+      reservedDefaultWeightDecayPrefix(),
+      reservedSpecificWeightDecayPrefix(),
+      reservedDefaultAdamGradientScalingPrefix(),
+      reservedSpecificAdamGradientScalingPrefix(),
+      reservedDefaultMaxWeightNormPrefix(),
+      reservedSpecificMaxWeightNormPrefix(),
+      // Adaptive
+      reservedDefaultAdaptiveAlphaPrefix(),
+      reservedSpecificAdaptiveAlphaPrefix(),
+      reservedDefaultAdaptiveEpsPrefix(),
+      reservedSpecificAdaptiveEpsPrefix(),
+      reservedDefaultAdaptiveGradientScalingPrefix(),
+      reservedSpecificAdaptiveGradientScalingPrefix(),
+      reservedDefaultAdaptiveMomentumPrefix(),
+      reservedSpecificAdaptiveMomentumPrefix()};
+  return result;
 }
 
-std::vector<std::string> reservedPrefixes() {
-  std::vector<std::string> prefs = {reservedGradientPrefix(),
-                                    reservedUpdatedVarPrefix(),
-                                    reservedStashedPrefix(),
-                                    reservedRestoredPrefix(),
-                                    reservedRandomSeedPrefix(),
-                                    anchorSumPrefix(),
-                                    cycleCountPrefix(),
-                                    reservedRemoteArgPrefix()};
+const std::vector<std::string> &reservedPrefixes() {
+  const static std::vector<std::string> prefs = []() {
+    std::vector<std::string> prefs = {reservedGradientPrefix(),
+                                      reservedUpdatedVarPrefix(),
+                                      reservedStashedPrefix(),
+                                      reservedRestoredPrefix(),
+                                      reservedRandomSeedPrefix(),
+                                      anchorSumPrefix(),
+                                      cycleCountPrefix(),
+                                      reservedRemoteArgPrefix()};
 
-  std::vector<std::string> optPrefs;
+    const auto &optPrefs = reservedOptimizerPrefixes();
+    prefs.insert(prefs.end(), optPrefs.begin(), optPrefs.end());
 
-  optPrefs = reservedOptimizerPrefixes();
-  prefs.insert(prefs.end(), optPrefs.begin(), optPrefs.end());
-
-  optPrefs = reservedOptimizerStatePrefixes();
-  prefs.insert(prefs.end(), optPrefs.begin(), optPrefs.end());
+    const auto &optStatePrefs = reservedOptimizerStatePrefixes();
+    prefs.insert(prefs.end(), optStatePrefs.begin(), optStatePrefs.end());
+    return prefs;
+  }();
 
   return prefs;
 }
@@ -110,26 +113,27 @@ TensorId stripAllReservedPrefixes(TensorId id) {
   return currentId;
 }
 
-std::vector<std::string> reservedOptimizerStatePrefixes() {
-  std::vector<std::string> prefs = {reservedAcclPrefix(),
-                                    reservedAccl1Prefix(),
-                                    reservedAccl2Prefix(),
-                                    reservedAccl3Prefix(),
-                                    reservedStepPrefix(),
-                                    reservedAcclToReducePrefix(),
-                                    reservedAcclToUpdatePrefix(),
-                                    reservedAcclFinalOutPrefix()};
+const std::vector<std::string> &reservedOptimizerStatePrefixes() {
+  const static std::vector<std::string> prefs = {reservedAcclPrefix(),
+                                                 reservedAccl1Prefix(),
+                                                 reservedAccl2Prefix(),
+                                                 reservedAccl3Prefix(),
+                                                 reservedStepPrefix(),
+                                                 reservedAcclToReducePrefix(),
+                                                 reservedAcclToUpdatePrefix(),
+                                                 reservedAcclFinalOutPrefix()};
   return prefs;
 }
 
-std::vector<std::string> reservedAccumulatorPrefixes() {
-  std::vector<std::string> prefs = {reservedAccumPrefix(),
-                                    // Accumulator/momentum combination tensors,
-                                    // specifically used for the SGD1 optimizer
-                                    reservedAcclPrefix(),
-                                    reservedAcclToReducePrefix(),
-                                    reservedAcclToUpdatePrefix(),
-                                    reservedAcclFinalOutPrefix()};
+const std::vector<std::string> &reservedAccumulatorPrefixes() {
+  const static std::vector<std::string> prefs = {
+      reservedAccumPrefix(),
+      // Accumulator/momentum combination tensors,
+      // specifically used for the SGD1 optimizer
+      reservedAcclPrefix(),
+      reservedAcclToReducePrefix(),
+      reservedAcclToUpdatePrefix(),
+      reservedAcclFinalOutPrefix()};
   return prefs;
 }
 

@@ -2,6 +2,10 @@
 #include <algorithm>
 #include <cstring>
 #include <string>
+
+#include <boost/algorithm/string.hpp>
+#include <boost/range/algorithm.hpp>
+
 #include <poprithms/logging/timepartitionlogger.hpp>
 #include <popart/ces/constexpr.hpp>
 #include <popart/error.hpp>
@@ -917,9 +921,10 @@ bool Tensor::isRestoreInplaceTensor() const {
 }
 
 bool Tensor::idIncludesPrefix(const std::vector<std::string> &prefixes) const {
+  using boost::algorithm::starts_with;
   return std::any_of(
       prefixes.begin(), prefixes.end(), [this](const std::string prefix) {
-        return id.find(prefix) != std::string::npos;
+        return starts_with(id, prefix);
       });
 }
 

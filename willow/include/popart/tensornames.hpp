@@ -76,10 +76,10 @@ constexpr const char *reservedConcatInitPrefix() { return "ConcatInit___"; }
 
 constexpr const char *reservedConstValuePrefix() { return "ConstValue___"; }
 
-std::vector<std::string> reservedOptimizerPrefixes();
-std::vector<std::string> reservedOptimizerStatePrefixes();
-std::vector<std::string> reservedAccumulatorPrefixes();
-std::vector<std::string> reservedPrefixes();
+const std::vector<std::string> &reservedOptimizerPrefixes();
+const std::vector<std::string> &reservedOptimizerStatePrefixes();
+const std::vector<std::string> &reservedAccumulatorPrefixes();
+const std::vector<std::string> &reservedPrefixes();
 
 TensorId stripAllReservedPrefixes(TensorId id);
 
