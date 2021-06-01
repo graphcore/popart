@@ -2,6 +2,7 @@
 import numpy as np
 import popart
 import pytest
+import tempfile
 
 # `import test_util` requires adding to sys.path
 import sys
@@ -38,7 +39,12 @@ def test_out_of_memory_exception():
 
     options = popart.SessionOptions()
     options.defaultPrefetchBufferingDepth = 1
-    options.engineOptions = {"debug.allowOutOfMemory": "true"}
+    tempDir = tempfile.TemporaryDirectory()
+    options.engineOptions = {
+        "debug.allowOutOfMemory": "true",
+        "autoReport.outputGraphProfile": "true",
+        "autoReport.directory": tempDir.name
+    }
     patterns = popart.Patterns(popart.PatternsLevel.NoPatterns)
     patterns.enableRuntimeAsserts(False)
 
