@@ -18,7 +18,12 @@ namespace popart {
 
 class SGD1ComboOp final : public SGDComboBaseOp {
 public:
-  using SGDComboBaseOp::SGDComboBaseOp;
+  SGD1ComboOp(OptimizerValue initialSmm1,
+              OptimizerValue initialDpsf1,
+              OptimizerValue initialSwd1,
+              OptimizerValue initialSlr1,
+              OptimizerReductionType reductionType_,
+              const Op::Settings &);
 
   std::unique_ptr<Op> clone() const final;
 };

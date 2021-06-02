@@ -5,6 +5,7 @@
 #include <popart/names.hpp>
 #include <popart/op.hpp>
 #include <popart/op/varupdate.hpp>
+#include <popart/opidentifier.hpp>
 #include <popart/optimizer.hpp>
 #include <popart/optimizervaluemap.hpp>
 
@@ -12,7 +13,8 @@ namespace popart {
 
 class SGDComboBaseOp : public VarUpdateWithUpdaterOp {
 public:
-  SGDComboBaseOp(OptimizerValue initialSmm1,
+  SGDComboBaseOp(const OperatorIdentifier &opid,
+                 OptimizerValue initialSmm1,
                  OptimizerValue initialDpsf1,
                  OptimizerValue initialSwd1,
                  OptimizerValue initialSlr1,

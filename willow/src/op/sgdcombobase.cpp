@@ -6,15 +6,16 @@
 
 namespace popart {
 
-SGDComboBaseOp::SGDComboBaseOp(OptimizerValue initialSmm1,
+SGDComboBaseOp::SGDComboBaseOp(const OperatorIdentifier &opid,
+                               OptimizerValue initialSmm1,
                                OptimizerValue initialDpsf1,
                                OptimizerValue initialSwd1,
                                OptimizerValue initialSlr1,
                                OptimizerReductionType reductionType_,
                                const Op::Settings &settings_)
-    : VarUpdateWithUpdaterOp(Onnx::CustomOperators::SGD1Combo, settings_),
-      initSmm1(initialSmm1), initDpsf1(initialDpsf1), initSwd1(initialSwd1),
-      initSlr1(initialSlr1), reductionType(reductionType_) {}
+    : VarUpdateWithUpdaterOp(opid, settings_), initSmm1(std::move(initialSmm1)),
+      initDpsf1(std::move(initialDpsf1)), initSwd1(std::move(initialSwd1)),
+      initSlr1(std::move(initialSlr1)), reductionType(reductionType_) {}
 
 void SGDComboBaseOp::appendOutlineAttributes(OpSerialiserBase &os) const {
   if (initSmm1.isConst()) {

@@ -350,6 +350,7 @@ const static AiGraphcoreOpIdV1 SGD0VarUpdate("SGD0VarUpdate");
 const static AiGraphcoreOpIdV1 SGD1AcclUpdate("SGD1AcclUpdate");
 const static AiGraphcoreOpIdV1 SGD1Combo("SGD1Combo");
 const static AiGraphcoreOpIdV1 SGD1VarUpdate("SGD1VarUpdate");
+const static AiGraphcoreOpIdV1 SGD2Combo("SGD2Combo");
 const static AiGraphcoreOpIdV1 ShapedDropout_1("ShapedDropout", 1, 1);
 const static AiGraphcoreOpIdV1 ShrinkInplace("ShrinkInplace");
 const static AiGraphcoreOpIdV1 SigmoidInplace("SigmoidInplace");

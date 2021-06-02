@@ -14,13 +14,14 @@ SGD2ComboOp::SGD2ComboOp(OptimizerValue initialSmm1,
                          OptimizerReductionType reductionType_,
                          DataType accumType_,
                          DataType accl1Type_,
-                         const Op::Settings &settings)
-    : SGDComboBaseOp(initialSmm1,
-                     initialDpsf1,
-                     initialSwd1,
-                     initialSlr1,
+                         const Op::Settings &settings_)
+    : SGDComboBaseOp(Onnx::CustomOperators::SGD2Combo,
+                     std::move(initialSmm1),
+                     std::move(initialDpsf1),
+                     std::move(initialSwd1),
+                     std::move(initialSlr1),
                      reductionType_,
-                     settings),
+                     settings_),
       withGradAccum(withGradAccum_), accumType(accumType_),
       accl1Type(accl1Type_) {
   if (reductionType == OptimizerReductionType::AcclReduce) {
