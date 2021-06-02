@@ -112,6 +112,7 @@ enum class AnnotateForFasterSwapping { No = 0, Yes };
 void defaultAnnotate(ShiftGraphGrower *grower,
                      const OpsBeforeKey &gCons,
                      const Graph &pg,
+                     const RequireOptimalSchedule requireOptimalSchedule,
                      const bool respectExecutionPhases,
                      AnnotateForFasterSwapping fastSwap) {
 
@@ -141,12 +142,17 @@ void defaultAnnotate(ShiftGraphGrower *grower,
     grower->annotateAccumulateOuterFragmentOps();
   }
   grower->annotateExecutionContext();
-  grower->annotatePriorities();
+
+  if (requireOptimalSchedule == RequireOptimalSchedule::Yes) {
+    // No need for priorities if we're happy with any schedule.
+    grower->annotatePriorities();
+  }
 }
 
 std::vector<Op *>
 Scheduler::getSchedule(const OpsBeforeKey &gCons,
                        const Graph &pg,
+                       const RequireOptimalSchedule requireOptimalSchedule,
                        const bool respectExecutionPhases,
                        const double timeLimitScheduler,
                        const int64_t swapLimitScheduler,
@@ -201,6 +207,7 @@ Scheduler::getSchedule(const OpsBeforeKey &gCons,
   defaultAnnotate(grower.get(),
                   gCons,
                   pg,
+                  requireOptimalSchedule,
                   respectExecutionPhases,
                   useTransitiveClosureOptimizations
                       ? AnnotateForFasterSwapping::Yes
@@ -231,6 +238,7 @@ bool Scheduler::isSchedulable(const OpsBeforeKey &gCons,
   defaultAnnotate(&grower,
                   gCons,
                   pg,
+                  RequireOptimalSchedule::No,
                   respectExecutionPhases,
                   AnnotateForFasterSwapping::No);
   return grower.isSchedulable();

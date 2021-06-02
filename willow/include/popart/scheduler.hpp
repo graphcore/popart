@@ -52,12 +52,14 @@ public:
    *
    **/
 
-  std::vector<Op *> getSchedule(const OpsBeforeKey &opsBeforeKey,
-                                const Graph &graph,
-                                bool respectExecutionPhase,
-                                double timeLimitSeconds,
-                                int64_t swapLimitCount,
-                                const std::string &kahnTieBreaker);
+  std::vector<Op *>
+  getSchedule(const OpsBeforeKey &opsBeforeKey,
+              const Graph &graph,
+              const RequireOptimalSchedule requireOptimalSchedule,
+              bool respectExecutionPhase,
+              double timeLimitSeconds,
+              int64_t swapLimitCount,
+              const std::string &kahnTieBreaker);
   /**
    *  to determine if a Graph is schedulable - that is, it contains no cycles -
    *  is a simpler problem than finding the schedule in the first place. This

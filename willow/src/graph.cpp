@@ -483,8 +483,13 @@ std::vector<Op *> Graph::getOpSchedule(
   const auto swapLimit =
       optSched ? getIr().getSessionOptions().swapLimitScheduler : 0;
 
-  const auto opSchedule = scheduler->getSchedule(
-      gCons, *this, respectExecutionPhases, timeLimit, swapLimit, ktb);
+  const auto opSchedule = scheduler->getSchedule(gCons,
+                                                 *this,
+                                                 requireOptimalSchedule,
+                                                 respectExecutionPhases,
+                                                 timeLimit,
+                                                 swapLimit,
+                                                 ktb);
 
   logging::ir::debug("Returning schedule of size {}", opSchedule.size());
 
