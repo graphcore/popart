@@ -1,3 +1,4 @@
+# Copyright (c) 2020 Graphcore Ltd. All rights reserved.
 import math
 import torch
 from torch.optim import Optimizer

@@ -29,6 +29,7 @@ public:
                   DataType accl1Type_,
                   DataType accl2Type_,
                   DataType accl3Type_,
+                  bool rmspropTFVariant_,
                   const Op::Settings &);
 
   std::unique_ptr<Op> clone() const final;
@@ -75,6 +76,9 @@ public:
   DataType accl1Type;
   DataType accl2Type;
   DataType accl3Type;
+
+  // Tensorflow variant of RMSProp optimizers
+  const bool rmspropTFVariant;
 
   static InIndex getLrInIndex() { return 2; }
   static InIndex getWdInIndex() { return 3; }

@@ -36,13 +36,15 @@ void ScaledVarUpdateOp::appendOutlineAttributes(OpSerialiserBase &os) const {
   if (initWd.isConst()) {
     os.appendAttribute("const weight decay", initWd.val());
   }
+  os.appendAttribute("learning rate in updater", static_cast<int>(lrInUpdater));
 }
 
 ScaledVarUpdateOp::ScaledVarUpdateOp(OptimizerValue lr,
                                      OptimizerValue wd,
+                                     bool lrInUpdater,
                                      const Op::Settings &opSettings)
     : VarUpdateWithUpdaterOp(Onnx::CustomOperators::ScaledVarUpdate,
                              opSettings),
-      initLr(lr), initWd(wd) {}
+      initLr(lr), initWd(wd), lrInUpdater(lrInUpdater) {}
 
 } // namespace popart

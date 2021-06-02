@@ -10,7 +10,7 @@ namespace popart {
 class RMSPropUpdaterOp : public Op {
 
 public:
-  RMSPropUpdaterOp(OptimizerValue eps, const Op::Settings &);
+  RMSPropUpdaterOp(OptimizerValue eps, bool TFVariant, const Op::Settings &);
 
   std::unique_ptr<Op> clone() const final;
   void setup() final;
@@ -31,6 +31,8 @@ public:
 
   ReplicatedTensorShardingIndices
   getReplicatedTensorShardingIndices() const final;
+
+  const bool TFVariant;
 };
 
 } // namespace popart

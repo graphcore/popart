@@ -21,13 +21,15 @@ AdaptiveComboOp::AdaptiveComboOp(OptimizerValue initialLr,
                                  DataType accl1Type_,
                                  DataType accl2Type_,
                                  DataType accl3Type_,
+                                 bool rmspropTFVariant_,
                                  const Op::Settings &settings_)
     : VarUpdateWithUpdaterOp(Onnx::CustomOperators::AdaptiveCombo, settings_),
       initLr(initialLr), initWd(initialWd), initA(initialA), initM(initialM),
       initEps(initialEps), initLs(initialLs), initGs(initialGs), mode(mode_),
       decayMode(decayMode_), withGradAccum(withGradAccum_),
       reductionType(reductionType_), accumType(accumType_),
-      accl1Type(accl1Type_), accl2Type(accl2Type_), accl3Type(accl3Type_) {}
+      accl1Type(accl1Type_), accl2Type(accl2Type_), accl3Type(accl3Type_),
+      rmspropTFVariant(rmspropTFVariant_) {}
 
 void AdaptiveComboOp::appendOutlineAttributes(OpSerialiserBase &os) const {
   if (initLr.isConst()) {
@@ -53,6 +55,7 @@ void AdaptiveComboOp::appendOutlineAttributes(OpSerialiserBase &os) const {
   os.appendAttribute("reduction type", static_cast<int>(reductionType));
   os.appendAttribute("adaptive mode", static_cast<int>(mode));
   os.appendAttribute("decay mode", static_cast<int>(decayMode));
+  os.appendAttribute("rmsprop tf variant", static_cast<int>(rmspropTFVariant));
 }
 
 std::unique_ptr<Op> AdaptiveComboOp::clone() const {

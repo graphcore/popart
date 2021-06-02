@@ -52,11 +52,18 @@ void RMSPropUpdaterOpx::grow(poplar::program::Sequence &prog) const {
     epsexpr = pe::PlaceHolder(tensors.size());
   }
 
-  // grad / sqrt(Accl1 - Accl2^2 + eps)
+  pe::Any denominatorexpr(pe::Const(0.0f));
+  if (rmspropUpdaterOp.TFVariant) {
+    // In TF variant of RMSProp, epsilon is added inside the square root.
+    denominatorexpr = pe::Sqrt(pe::Add(rmsexpr, epsexpr));
+  } else {
+    denominatorexpr = pe::Add(pe::Sqrt(rmsexpr), epsexpr);
+  }
+
   poplar::Tensor updater =
       popops::map(graph().getPoplarGraph(),
                   pe::Cast(pe::Divide(pe::Cast(pe::_1, accl1.elementType()),
-                                      pe::Add(pe::Sqrt(rmsexpr), epsexpr)),
+                                      denominatorexpr),
                            grad.elementType()),
                   tensors,
                   prog,

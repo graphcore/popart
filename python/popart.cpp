@@ -863,10 +863,17 @@ PYBIND11_MODULE(popart_core, m) {
                       DataType accumType,
                       DataType accl1Type,
                       DataType accl2Type,
-                      DataType accl3Type) {
+                      DataType accl3Type,
+                      bool rmspropTFVariant) {
             auto cppm = getOptimizerValueDictionary(pyd);
-            return Adaptive(
-                cppm, mode, wdmode, accumType, accl1Type, accl2Type, accl3Type);
+            return Adaptive(cppm,
+                            mode,
+                            wdmode,
+                            accumType,
+                            accl1Type,
+                            accl2Type,
+                            accl3Type,
+                            rmspropTFVariant);
           }),
           py::arg("values"),
           py::arg("mode")              = AdaptiveMode::RMSProp,
@@ -877,7 +884,8 @@ PYBIND11_MODULE(popart_core, m) {
           py::arg("accl1_type") = DataType::FLOAT,
           py::arg("accl2_type") = DataType::FLOAT,
           // Choose same data type as weight for the Accl3 by default
-          py::arg("accl3_type") = DataType::UNDEFINED);
+          py::arg("accl3_type")         = DataType::UNDEFINED,
+          py::arg("rmsprop_tf_variant") = false);
 
       adaptive.def("insertSpecific",
                    [](Adaptive &self, TensorId id, py::dict pyd) {

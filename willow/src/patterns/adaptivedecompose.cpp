@@ -10,7 +10,9 @@
 #include <popart/op/adaptivecombo.hpp>
 #include <popart/op/collectives/replicatedallreduce.hpp>
 #include <popart/op/concat.hpp>
+#include <popart/op/mul.hpp>
 #include <popart/op/rmspropupdater.hpp>
+#include <popart/op/scale.hpp>
 #include <popart/op/scaledvarupdate.hpp>
 #include <popart/op/slice.hpp>
 #include <popart/patterns/adaptivedecompose.hpp>
@@ -64,14 +66,21 @@ bool AdaptiveDecompose::apply(Op *op) const {
     addStateTensor(graph, accumId, weightShape, combo->accumType);
   }
 
-  addStateTensor(graph, accl1Id, weightShape, combo->accl1Type);
+  if (combo->rmspropTFVariant) {
+    // In TF variant of RMSProp, the accumulator buffer is initialized to ones
+    // rather than zeros.
+    addStateTensor(graph, accl1Id, weightShape, combo->accl1Type, 1.0);
+  } else {
+    addStateTensor(graph, accl1Id, weightShape, combo->accl1Type);
+  }
 
   if (combo->mode == AdaptiveMode::CenteredRMSProp ||
       combo->mode == AdaptiveMode::AdaDelta) {
     addStateTensor(graph, accl2Id, weightShape, combo->accl2Type);
   }
 
-  if (!combo->initM.isConst() || combo->initM.val() > 0.0f) {
+  bool useMomentum = !combo->initM.isConst() || combo->initM.val() > 0.0f;
+  if (useMomentum) {
     addStateTensor(graph, accl3Id, weightShape, combo->accl3Type);
   }
 
@@ -208,7 +217,9 @@ bool AdaptiveDecompose::apply(Op *op) const {
     }
   } else {
     auto adaptiveUpdOpUp = std::make_unique<RMSPropUpdaterOp>(
-        combo->initEps, Op::Settings(graph, combo->name() + "_rmspropupdater"));
+        combo->initEps,
+        combo->rmspropTFVariant,
+        Op::Settings(graph, combo->name() + "_rmspropupdater"));
     adaptiveUpdOp = adaptiveUpdOpUp.get();
     transferBaseProperties(combo, adaptiveUpdOp);
     graph.moveIntoGraph(std::move(adaptiveUpdOpUp));
@@ -279,8 +290,71 @@ bool AdaptiveDecompose::apply(Op *op) const {
     updatedAccl2Id = accl2.second;
   }
 
-  if (!combo->initM.isConst() || combo->initM.val() > 0.0f) {
+  if (useMomentum) {
     // Accl3
+    if (combo->rmspropTFVariant) {
+      // TF variant of RMSProp accumulates learning rate in the momentum buffer
+      // so we scale the updater term by learning rate before creating the
+      // actual momentum accumulator.
+      Op *updaterScaleOp;
+
+      if (combo->initLr.isConst()) {
+        auto updaterScaleOpUp = std::make_unique<ScaleOp>(
+            Onnx::AiGraphcore::OpSet1::Scale,
+            combo->initLr.val(),
+            Op::Settings(graph, combo->name() + "_tfrmspropupdatescaler"));
+        updaterScaleOp = updaterScaleOpUp.get();
+        transferBaseProperties(combo, updaterScaleOp);
+        graph.moveIntoGraph(std::move(updaterScaleOpUp));
+
+        logging::pattern::trace("Connecting input {} to {} at {}",
+                                adaptiveUpdaterId,
+                                updaterScaleOp->str(),
+                                ScaleOp::getInIndex());
+        updaterScaleOp->connectInTensor(ScaleOp::getInIndex(),
+                                        adaptiveUpdaterId);
+
+        adaptiveUpdaterId =
+            graph.getIr().createIntermediateTensorId(adaptiveUpdaterId);
+        updaterScaleOp->createAndConnectOutTensor(ScaleOp::getOutIndex(),
+                                                  adaptiveUpdaterId);
+      } else {
+        auto updaterScaleOpUp = std::make_unique<MulOp>(
+            Onnx::AiOnnx::OpSet11::Mul,
+            Op::Settings(graph, combo->name() + "_tfrmspropupdatescaler"));
+        updaterScaleOp = updaterScaleOpUp.get();
+        transferBaseProperties(combo, updaterScaleOp);
+        graph.moveIntoGraph(std::move(updaterScaleOpUp));
+
+        auto lrTensorId = combo->inId(AdaptiveComboOp::getLrInIndex());
+        logging::pattern::trace("Connecting input {} to {} at {}",
+                                lrTensorId,
+                                updaterScaleOp->str(),
+                                MulOp::getArg0InIndex());
+        updaterScaleOp->connectInTensor(MulOp::getArg0InIndex(), lrTensorId);
+
+        logging::pattern::trace("Connecting input {} to {} at {}",
+                                adaptiveUpdaterId,
+                                updaterScaleOp->str(),
+                                MulOp::getArg1InIndex());
+        updaterScaleOp->connectInTensor(MulOp::getArg1InIndex(),
+                                        adaptiveUpdaterId);
+
+        adaptiveUpdaterId =
+            graph.getIr().createIntermediateTensorId(adaptiveUpdaterId);
+        updaterScaleOp->createAndConnectOutTensor(MulOp::getOutIndex(),
+                                                  adaptiveUpdaterId);
+      }
+
+      updaterScaleOp->setup();
+      if (combo->withGradAccum) {
+        updaterScaleOp->settings.executionContext =
+            ExecutionContext::AccumulateOuterFragment;
+        updaterScaleOp->setExecutionPhase({});
+        updaterScaleOp->settings.schedulePriority = 0.0;
+      }
+    }
+
     auto accl3              = accl(graph,
                       combo,
                       accl3Id,
@@ -293,7 +367,6 @@ bool AdaptiveDecompose::apply(Op *op) const {
                       "_accl3",
                       combo->withGradAccum);
     TensorId updatedAccl3Id = accl3.second;
-
     // Var update uses momentum updater instead
     adaptiveUpdaterId = updatedAccl3Id;
   }
@@ -303,6 +376,7 @@ bool AdaptiveDecompose::apply(Op *op) const {
       combo->initLr,
       combo->decayMode == WeightDecayMode::Decay ? combo->initWd
                                                  : OptimizerValue(0.0f, true),
+      combo->rmspropTFVariant && useMomentum,
       Op::Settings(graph, combo->name() + "_var_update"));
   auto scaledVarUpdOp = scaledVarUpdOpUp.get();
   transferBaseProperties(combo, scaledVarUpdOp);
@@ -325,7 +399,7 @@ bool AdaptiveDecompose::apply(Op *op) const {
                                   adaptiveUpdaterId);
 
   // Optimizer parameters
-  if (!combo->initLr.isConst()) {
+  if (!combo->initLr.isConst() && !(combo->rmspropTFVariant && useMomentum)) {
     scaledVarUpdOp->connectInTensor(
         ScaledVarUpdateOp::getLrInIndex(),
         combo->inId(AdaptiveComboOp::getLrInIndex()));
