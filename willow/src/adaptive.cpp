@@ -47,7 +47,8 @@ Adaptive::Adaptive(const std::map<std::string, std::pair<float, bool>> &m,
                    DataType accumType_,
                    DataType accl1Type_,
                    DataType accl2Type_,
-                   DataType accl3Type_)
+                   DataType accl3Type_,
+                   bool rmspropTFVariant)
     : Adaptive(getComplete(getOptMap(m)),
                adaptiveMode_,
                decayMode_,
@@ -55,7 +56,8 @@ Adaptive::Adaptive(const std::map<std::string, std::pair<float, bool>> &m,
                accl1Type_,
                accl2Type_,
                accl3Type_,
-               31415) {}
+               31415,
+               rmspropTFVariant) {}
 
 void Adaptive::insertSpecific(
     const TensorId &id,
@@ -197,7 +199,8 @@ Adaptive::Adaptive(const std::map<std::string, OptimizerValue> &cmap,
                    DataType accl1Type_,
                    DataType accl2Type_,
                    DataType accl3Type_,
-                   int)
+                   int,
+                   bool rmspropTFVariant)
     : Adaptive(cmap.at("defaultLearningRate"),
                cmap.at("defaultWeightDecay"),
                cmap.at("defaultAlpha"),
@@ -209,7 +212,8 @@ Adaptive::Adaptive(const std::map<std::string, OptimizerValue> &cmap,
                accumType_,
                accl1Type_,
                accl2Type_,
-               accl3Type_) {}
+               accl3Type_,
+               rmspropTFVariant) {}
 
 Adaptive::Adaptive(OptimizerValue lr,
                    OptimizerValue wd,
@@ -222,10 +226,17 @@ Adaptive::Adaptive(OptimizerValue lr,
                    DataType accumType_,
                    DataType accl1Type_,
                    DataType accl2Type_,
-                   DataType accl3Type_)
+                   DataType accl3Type_,
+                   bool rmspropTFVariant_)
     : Optimizer(lossScaling, {}), lrs(lr), wds(wd), as(a), ms(m), epsvs(eps),
       mode(mode_), decayMode(decayMode_), accumType(accumType_),
-      accl1Type(accl1Type_), accl2Type(accl1Type_), accl3Type(accl3Type_) {
+      accl1Type(accl1Type_), accl2Type(accl1Type_), accl3Type(accl3Type_),
+      rmspropTFVariant(rmspropTFVariant_) {
+  if (rmspropTFVariant_ && mode != AdaptiveMode::RMSProp &&
+      mode != AdaptiveMode::CenteredRMSProp) {
+    throw error("The rmspropTFVariant parameter is only valid with the RMSProp "
+                "and CenteredRMSProp optimizers.");
+  }
   runValueChecks(lr, wd, a, m, eps);
 }
 
@@ -308,6 +319,7 @@ std::unique_ptr<Op> Adaptive::createOp(const Tensor &w, Graph &graph) const {
                                        : accl2Type,
       accl3Type == DataType::UNDEFINED ? w.info.getDataTypeInfo()->type()
                                        : accl3Type,
+      rmspropTFVariant,
       opSettings);
 }
 

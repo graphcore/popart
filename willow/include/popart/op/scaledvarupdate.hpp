@@ -11,6 +11,7 @@ class ScaledVarUpdateOp : public VarUpdateWithUpdaterOp {
 public:
   ScaledVarUpdateOp(OptimizerValue initLr,
                     OptimizerValue initWd,
+                    bool lrInUpdater,
                     const Op::Settings &);
 
   std::unique_ptr<Op> clone() const final;
@@ -19,6 +20,7 @@ public:
 
   const OptimizerValue initLr;
   const OptimizerValue initWd;
+  const bool lrInUpdater;
 
   static InIndex getLrInIndex() { return 2; }
   static InIndex getWdInIndex() { return 3; }

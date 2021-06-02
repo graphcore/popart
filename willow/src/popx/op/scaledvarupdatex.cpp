@@ -72,22 +72,41 @@ void ScaledVarUpdateOpx::grow(poplar::program::Sequence &prog) const {
   poplar::Tensor updater =
       getInTensor(VarUpdateWithUpdaterOp::getUpdaterInIndex());
 
-  if (adaptiveVarUpdateOp.initLr.isConst() &&
-      adaptiveVarUpdateOp.initWd.isConst()) {
-    if (adaptiveVarUpdateOp.initWd.val() == 0.0f) {
+  if (adaptiveVarUpdateOp.lrInUpdater) {
+    growWithLrInUpdater(prog, adaptiveVarUpdateOp, var, updater);
+  } else {
+    growWithLrAsInput(prog, adaptiveVarUpdateOp, var, updater);
+  }
+
+  if (hasInViewChangers(ScaledVarUpdateOp::getVarToUpdateInIndex())) {
+    setOutViewChangers(
+        ScaledVarUpdateOp::getUpdatedVarOutIndex(),
+        getInViewChangers(ScaledVarUpdateOp::getVarToUpdateInIndex()));
+  }
+  // output is a reference to the updated input
+  setOutTensor(ScaledVarUpdateOp::getUpdatedVarOutIndex(),
+               getInTensor(ScaledVarUpdateOp::getVarToUpdateInIndex()));
+}
+
+void ScaledVarUpdateOpx::growWithLrAsInput(
+    poplar::program::Sequence &prog,
+    const ScaledVarUpdateOp &op,
+    const poplar::Tensor &var,
+    const poplar::Tensor &updater) const {
+  if (op.initLr.isConst() && op.initWd.isConst()) {
+    if (op.initWd.val() == 0.0f) {
       popops::scaledAddTo(graph().getPoplarGraph(),
                           var,
                           updater,
-                          -adaptiveVarUpdateOp.initLr.val(),
+                          -op.initLr.val(),
                           prog,
                           debugContext("_c_0"));
     } else {
       popops::scaledAddTo(graph().getPoplarGraph(),
                           var,
-                          1.0f - adaptiveVarUpdateOp.initLr.val() *
-                                     adaptiveVarUpdateOp.initWd.val(),
+                          1.0f - op.initLr.val() * op.initWd.val(),
                           updater,
-                          -adaptiveVarUpdateOp.initLr.val(),
+                          -op.initLr.val(),
                           prog,
                           debugContext("_c_c"));
     }
@@ -97,8 +116,7 @@ void ScaledVarUpdateOpx::grow(poplar::program::Sequence &prog) const {
     // (-lr)                    (negate lr)
     lrt = popops::map(graph().getPoplarGraph(), pe::Neg(pe::_1), {lrt}, prog);
 
-    if (adaptiveVarUpdateOp.initWd.isConst() &&
-        adaptiveVarUpdateOp.initWd.val() == 0.0f) {
+    if (op.initWd.isConst() && op.initWd.val() == 0.0f) {
       popops::scaledAddTo(graph().getPoplarGraph(),
                           var,
                           updater,
@@ -124,15 +142,42 @@ void ScaledVarUpdateOpx::grow(poplar::program::Sequence &prog) const {
                           debugContext("_t_t"));
     }
   }
+}
 
-  if (hasInViewChangers(ScaledVarUpdateOp::getVarToUpdateInIndex())) {
-    setOutViewChangers(
-        ScaledVarUpdateOp::getUpdatedVarOutIndex(),
-        getInViewChangers(ScaledVarUpdateOp::getVarToUpdateInIndex()));
+void ScaledVarUpdateOpx::growWithLrInUpdater(
+    poplar::program::Sequence &prog,
+    const ScaledVarUpdateOp &op,
+    const poplar::Tensor &var,
+    const poplar::Tensor &updater) const {
+  if (op.initWd.isConst()) {
+    if (op.initWd.val() == 0.0f) {
+      // var = var - updater
+      popops::mapInPlace(graph().getPoplarGraph(),
+                         pe::Sub(pe::_1, pe::_2),
+                         {var, updater},
+                         prog,
+                         debugContext("__0"));
+    } else {
+      // var = var - (wd * var + updater)
+      //     = var * (1.0 - wd) - updater
+      popops::scaledAddTo(graph().getPoplarGraph(),
+                          var,
+                          1.0f - op.initWd.val(),
+                          updater,
+                          -1.0f,
+                          prog,
+                          debugContext("__c"));
+    }
+  } else {
+    poplar::Tensor wdt = getOrCreateWdTensor();
+    // var = var * (1.0 - wd) - updater
+    wdt = popops::map(
+        graph().getPoplarGraph(),
+        pe::Sub(pe::Mul(pe::_1, pe::Sub(pe::Const(1.0f), pe::_3)), pe::_2),
+        {var, updater, wdt},
+        prog,
+        debugContext("__t"));
   }
-  // output is a reference to the updated input
-  setOutTensor(ScaledVarUpdateOp::getUpdatedVarOutIndex(),
-               getInTensor(ScaledVarUpdateOp::getVarToUpdateInIndex()));
 }
 
 namespace {

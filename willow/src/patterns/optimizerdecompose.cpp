@@ -19,13 +19,14 @@ namespace popart {
 template <typename T>
 void OptimizerDecompose::addStateTensor(Graph &graph,
                                         const TensorId &tensorId,
-                                        const TensorInfo info) const {
+                                        const TensorInfo info,
+                                        float initValue) const {
   auto &ir = graph.getIr();
   if (ir.tensorExistsInInitialisers(tensorId)) {
     auto tp = onnxutil::getTensorProto(ir.getModel(), tensorId);
     graph.getTensors().addVarInit(tensorId, &tp);
   } else {
-    std::vector<T> d(info.nelms(), static_cast<T>(0));
+    std::vector<T> d(info.nelms(), static_cast<T>(initValue));
     graph.getTensors().addVarInit(tensorId, info, d.data());
   }
 }
@@ -33,24 +34,27 @@ void OptimizerDecompose::addStateTensor(Graph &graph,
 template void
 OptimizerDecompose::addStateTensor<float>(Graph &graph,
                                           const TensorId &tensorId,
-                                          const TensorInfo info) const;
+                                          const TensorInfo info,
+                                          float initValue) const;
 
 template void
 OptimizerDecompose::addStateTensor<float16_t>(Graph &graph,
                                               const TensorId &tensorId,
-                                              const TensorInfo info) const;
+                                              const TensorInfo info,
+                                              float initValue) const;
 
 TensorInfo OptimizerDecompose::addStateTensor(Graph &graph,
                                               const TensorId &tensorId,
                                               const Shape &shape,
-                                              const DataType &type) const {
+                                              const DataType &type,
+                                              float initValue) const {
   auto info = TensorInfo(type, shape);
   switch (type) {
   case DataType::FLOAT:
-    addStateTensor<float>(graph, tensorId, info);
+    addStateTensor<float>(graph, tensorId, info, initValue);
     break;
   case DataType::FLOAT16:
-    addStateTensor<float16_t>(graph, tensorId, info);
+    addStateTensor<float16_t>(graph, tensorId, info, initValue);
     break;
   default:
     throw error("Unsupported data type for tensor {}, "

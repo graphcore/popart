@@ -59,7 +59,7 @@ enum class AdaptiveMode {
 // s = s + wd * w
 //
 // Accl1 (FP16/FP32, RMSProp/AdaDelta/CenteredRMSProp):
-// v1 = a * m + (1 - a) * s^2
+// v1 = a * v1 + (1 - a) * s^2
 //
 // Accl1 (FP16/FP32, AdaGrad):
 // v1 = v1 + s^2
@@ -70,8 +70,14 @@ enum class AdaptiveMode {
 // Updater term (AdaGrad/RMSProp):
 // x = s / (sqrt(v1) + eps)
 //
+// Updater term (RMSProp TF variant):
+// x = s / (sqrt(v1 + eps))
+//
 // Updater term (CenteredRMSProp):
 // x = s / (sqrt(v1 - v2^2) + eps)
+//
+// Updater term (CenteredRMSProp TF variant):
+// x = s / (sqrt(v1 - v2^2 + eps))
 //
 // Updater term (AdaDelta):
 // x = (s * sqrt(v2 + eps)) / (sqrt(v1 + eps))
@@ -82,11 +88,22 @@ enum class AdaptiveMode {
 // Accl3 (momentum):
 // v3 = m * v3 + x                       (if m = 0.0: v3 = x)
 //
+// Accl3 (momentum, RMSProp/CenteredRMSProp TF variant):
+// v3 = m * v3 + lr * x                  (if m = 0.0: v3 = x)
+//
 // Var update (with weight decay mode: decay and wd > 0.0)
 // w -= lr * (wd * w + v3)
 //
+// Var update (with weight decay mode: decay and wd > 0.0,
+//             RMSProp/CenteredRMSProp TF variant)
+// w -= wd * w + v3
+//
 // Var update (without weight decay mode: decay)
 // w -= lr * v3
+//
+// Var update (without weight decay mode: decay,
+//             RMSProp/CenteredRMSProp TF variant)
+// w -= v3
 //
 // accumulator update:
 //   (if gradient accumulation is enabled)
@@ -123,6 +140,10 @@ enum class AdaptiveMode {
 //    |             [v1']  [eps]  [v2']
 //    |               \      |     /
 //    +--------------(RMSPropUpdater)
+//    |                      |
+//    |                     [x] [lr]
+//    |                      |   |
+//    |                     (Scale)     (TF variant of RMSProp and m > 0.0 only)
 //    |                      |
 // (AccumulatorUpd)    [v3] [x]  [m]
 //    |                  |   |    |
@@ -354,7 +375,8 @@ public:
            DataType accumType,
            DataType accl1Type,
            DataType accl2Type,
-           DataType accl3Type);
+           DataType accl3Type,
+           bool rmspropTFVariant = false);
 
   // Example:
   //
@@ -404,7 +426,8 @@ public:
            DataType accumType,
            DataType accl1Type,
            DataType accl2Type,
-           DataType accl3Type);
+           DataType accl3Type,
+           bool rmspropTFVariant = false);
   static Adaptive fromDefaultMap(const std::map<std::string, OptimizerValue> &,
                                  AdaptiveMode adaptiveMode_,
                                  WeightDecayMode decayMode_,
@@ -516,6 +539,7 @@ private:
   DataType accl1Type;
   DataType accl2Type;
   DataType accl3Type;
+  const bool rmspropTFVariant;
 
   // The compound scalars
   // --------------------
@@ -535,7 +559,8 @@ private:
            DataType accl1Type_,
            DataType accl2Type_,
            DataType accl3Type_,
-           int);
+           int,
+           bool rmspropTFVariant_ = false);
 
   static std::map<std::string, OptimizerValue>
   getComplete(const std::map<std::string, OptimizerValue> &);

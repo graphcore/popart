@@ -14,12 +14,14 @@ protected:
   TensorInfo addStateTensor(Graph &graph,
                             const TensorId &tensorId,
                             const Shape &shape,
-                            const DataType &type) const;
+                            const DataType &type,
+                            float initValue = 0.0) const;
 
   template <typename T>
   void addStateTensor(Graph &graph,
                       const TensorId &tensorId,
-                      const TensorInfo info) const;
+                      const TensorInfo info,
+                      float initValue = 0.0) const;
 
   // Add accl Op and updated tensor
   // Runs after gradient accumulation (if enabled) has completed

@@ -11,8 +11,10 @@
 namespace popart {
 
 RMSPropUpdaterOp::RMSPropUpdaterOp(OptimizerValue eps,
+                                   bool TFVariant,
                                    const Op::Settings &opSettings)
-    : Op(Onnx::CustomOperators::RMSPropUpdater, opSettings), initEps(eps) {}
+    : Op(Onnx::CustomOperators::RMSPropUpdater, opSettings), initEps(eps),
+      TFVariant(TFVariant) {}
 
 void RMSPropUpdaterOp::setup() {
   outInfo(getUpdaterOutIndex()) = inInfo(getGradInIndex());
@@ -29,6 +31,7 @@ void RMSPropUpdaterOp::appendOutlineAttributes(OpSerialiserBase &os) const {
   if (initEps.isConst()) {
     os.appendAttribute("const eps", initEps.val());
   }
+  os.appendAttribute("tf variant", static_cast<int>(TFVariant));
 }
 
 ReplicatedTensorShardingIndices
