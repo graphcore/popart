@@ -95,7 +95,6 @@ set(boost_components
     random
 )
 find_package(Boost 1.70 REQUIRED COMPONENTS ${boost_components})
-find_package(CapnProto REQUIRED)
 
 list(TRANSFORM boost_components PREPEND Boost:: OUTPUT_VARIABLE boost_targets)
 
