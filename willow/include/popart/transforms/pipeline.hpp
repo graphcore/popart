@@ -7,6 +7,34 @@
 
 namespace popart {
 
+// A helper class for constructing the pipeline on a per-cycle basis
+class PipelineInfo {
+public:
+  PipelineInfo() = default;
+  PipelineInfo(int64_t _batchesPerStep,
+               int64_t _gradAcclFactor,
+               int64_t _maxPipelineStage,
+               bool _doTraining,
+               bool _doGradAccl);
+
+  bool doTraining;
+  bool doGradAccl;
+
+  struct PipelinePhase {
+    // [start, end]
+    PipelineCycle start, end;
+  };
+
+  PipelinePhase fillPhase;
+
+  // The phase between the pipeline being filled and flushed
+  PipelinePhase mainPhase;
+
+  PipelinePhase flushPhase;
+
+  bool doStage(PipelineCycle, PipelineStage) const;
+};
+
 class Pipeline : public Transform {
 public:
   static std::size_t id();

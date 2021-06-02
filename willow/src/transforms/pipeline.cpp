@@ -1595,6 +1595,43 @@ RestoreInplaceOp *Pipeline::addNewRestoreInplaceOp(Graph &graph,
   return restoreOp;
 }
 
+PipelineInfo::PipelineInfo(int64_t _batchesPerStep,
+                           int64_t _gradAcclFactor,
+                           int64_t _numPipelineStages,
+                           bool _doTraining,
+                           bool _doGradAccl)
+    : doTraining(_doTraining), doGradAccl(_doGradAccl) {
+
+  auto fillFlushPhaseCycles = _numPipelineStages - 1;
+  fillPhase.start           = 0;
+  fillPhase.end             = fillFlushPhaseCycles - 1;
+
+  int64_t mainCycles;
+  if (doGradAccl) {
+    mainCycles = _gradAcclFactor - fillFlushPhaseCycles;
+  } else {
+    mainCycles = _batchesPerStep - fillFlushPhaseCycles;
+  }
+  if (mainCycles < 1) {
+    throw internal_error(
+        "Pipeline mainCycles should not be less than 1. Current value is {}.",
+        mainCycles);
+  }
+
+  mainPhase.start = fillPhase.end + 1;
+  mainPhase.end   = mainPhase.start + mainCycles - 1;
+
+  flushPhase.start = mainPhase.end + 1;
+  flushPhase.end   = flushPhase.start + fillFlushPhaseCycles - 1;
+}
+
+bool PipelineInfo::doStage(PipelineCycle pCycle, PipelineStage pStage) const {
+  bool doStageLower = (pCycle >= pStage);
+  bool doStageUpper = (pCycle < pStage + flushPhase.start);
+
+  return (doStageLower && doStageUpper);
+}
+
 namespace {
 bool init = Transform::registerTransform(new Pipeline);
 }

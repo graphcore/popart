@@ -259,7 +259,7 @@ void PopPrograms::addPipelineCycle(
   // Then always do:
   // 5. Inter-IPU copies for all pipeline stages
 
-  PipelineInfo pInfo = ir_lowering_p->pipelineInfo();
+  PipelineInfo pInfo = ir_lowering_p->ir().pipelineInfo();
 
   // 1.
   sq.add(preForwardFragment());
@@ -482,7 +482,7 @@ PopPrograms::getFullProgramFromPipelineFragments() const {
 
   ss << "\n\n";
 
-  PipelineInfo pInfo = ir_lowering_p->pipelineInfo();
+  PipelineInfo pInfo = ir_lowering_p->ir().pipelineInfo();
 
   std::map<PipelineStage, poplar::Function> mainFunctions;
 
@@ -721,8 +721,7 @@ void PopPrograms::createFragment(const Graph &graph,
 }
 
 std::vector<poplar::Function> &
-PopPrograms::getFragmentFunctions(const Graph &graph,
-                                  snap::Graph &snapGraph) {
+PopPrograms::getFragmentFunctions(const Graph &graph, snap::Graph &snapGraph) {
 
   auto seq2func = [&](poplar::program::Sequence &seq) {
     return snapGraph.getPoplarGraph().addFunction(seq);

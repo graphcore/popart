@@ -16,7 +16,7 @@
 #include <popart/scheduler_requireoptimal.hpp>
 #include <popart/sessionoptions.hpp>
 #include <popart/tensorindex.hpp>
-#include <popart/transforms/transform.hpp>
+#include <popart/transforms/pipeline.hpp>
 
 namespace poprithms {
 namespace logging {
@@ -468,6 +468,7 @@ public:
   bool getExecutionPhasesReady() { return executionPhasesReady; }
 
   PipelineStage getNumPipelineStages() const;
+  PipelineInfo pipelineInfo() const;
 
   void setMainGraphPathFromLoss();
 

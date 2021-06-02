@@ -2321,6 +2321,18 @@ int64_t Ir::getNumPipelineStages() const {
   return numStages;
 }
 
+PipelineInfo Ir::pipelineInfo() const {
+  PipelineInfo pInfo;
+  if (getSessionOptions().enablePipelining) {
+    pInfo = PipelineInfo(static_cast<int64_t>(getDataFlow().batchesPerStep()),
+                         getSessionOptions().accumulationFactor,
+                         getNumPipelineStages(),
+                         canTrain(),
+                         getSessionOptions().enableGradientAccumulation);
+  }
+  return pInfo;
+}
+
 // design choice: we could have an "irHasChanged"
 // flag which is set to true whenever the Ir changes,
 // and then if irHasChanged is false, calls

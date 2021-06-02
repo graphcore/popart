@@ -72,35 +72,6 @@ class PopOpx;
 
 enum class ToHostStreamType { NonAnchor, NonSumAnchor, SumAnchor };
 
-// A class containing the tensors needed to track the
-// state of the pipeline
-class PipelineInfo {
-public:
-  PipelineInfo() = default;
-  PipelineInfo(int64_t _batchesPerStep,
-               int64_t _gradAcclFactor,
-               int64_t _maxPipelineStage,
-               bool _doTraining,
-               bool _doGradAccl);
-
-  bool doTraining;
-  bool doGradAccl;
-
-  struct PipelinePhase {
-    // [start, end]
-    PipelineCycle start, end;
-  };
-
-  PipelinePhase fillPhase;
-
-  // The phase between the pipeline being filled and flushed
-  PipelinePhase mainPhase;
-
-  PipelinePhase flushPhase;
-
-  bool doStage(PipelineCycle, PipelineStage) const;
-};
-
 poplar::Type popType(const TensorInfo &);
 poplar::Type popType(DataType);
 
@@ -453,8 +424,6 @@ public:
   unsigned getGlobalReplicationFactor() const;
 
   bool isReplicatedGraph() const;
-
-  PipelineInfo pipelineInfo() const;
 
   // The number of Poplar sequences associated with a graph.
   int getNumFragments(const Graph &graph) const;
