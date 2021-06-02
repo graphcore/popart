@@ -10,7 +10,7 @@ namespace popx {
 
 class AccumulateBaseOpx : public VarUpdateOpx {
 public:
-  AccumulateBaseOpx(Op *op, Devicex *devicex) : VarUpdateOpx(op, devicex){};
+  AccumulateBaseOpx(Op *op, Devicex *devicex) : VarUpdateOpx(op, devicex) {}
 
   // can create the accumulator input Tensor (@Var index)
   // from the weight gradient tensor (@Updater index)

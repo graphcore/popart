@@ -309,12 +309,12 @@ public:
 
 public:
   // Does "w" have specific OptimizerValues, or will it use default?
-  bool hasSpecific(const Tensor &w) const;
+  bool hasSpecific(const Tensor &w) const final;
 
   // Do any weights have specific OptimizerValues, or do they all use default?
-  bool hasSpecific() const;
+  bool hasSpecific() const final;
 
-  TensorId getInverseLossScalingTensorId(const Tensor &weight) const;
+  TensorId getInverseLossScalingTensorId(const Tensor &weight) const final;
 
   /// Constructor.
   /// \param defaultLearningRate The learning rate value to use for weights
@@ -540,9 +540,9 @@ public:
   const WeightDecayMode &getWeightDecayMode() const { return decayMode; }
   bool useScaledOptimizerState() const { return scaledOptimizerState; }
 
-  size_t hash() const;
+  size_t hash() const final;
 
-  void setFactorsFromOptions(const SessionOptions &) override;
+  void setFactorsFromOptions(const SessionOptions &) final;
 
 private:
   void runValueChecks(OptimizerValue lr,
