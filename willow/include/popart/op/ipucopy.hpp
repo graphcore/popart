@@ -27,6 +27,9 @@ public:
   uint64_t getMinSourceIpu() const;
   uint64_t getMaxSourceIpu() const;
 
+  void setSourceIpus(const SourceIpuMap sourceIpus);
+  void setSourceTensors(const SourceTensorMap sourceTensors);
+
   void appendOutlineAttributes(OpSerialiserBase &) const override;
 
   float getSubgraphValue() const final { return getLowSubgraphValue(); }

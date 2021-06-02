@@ -31,7 +31,11 @@ IpuCopyOp::IpuCopyOp(const OperatorIdentifier &_opid,
 }
 
 std::unique_ptr<Op> IpuCopyOp::clone() const {
-  return std::make_unique<IpuCopyOp>(*this);
+  auto clone = new IpuCopyOp(*this);
+  // Reset source info
+  clone->setSourceIpus({});
+  clone->setSourceTensors({});
+  return std::unique_ptr<Op>(clone);
 }
 
 void IpuCopyOp::setup() {
@@ -48,8 +52,16 @@ bool IpuCopyOp::isOutlineable() const {
 
 const SourceIpuMap &IpuCopyOp::getSourceIpus() const { return sourceIpus; }
 
+void IpuCopyOp::setSourceIpus(const SourceIpuMap sourceIpus_) {
+  sourceIpus = sourceIpus_;
+}
+
 const SourceTensorMap &IpuCopyOp::getSourceTensors() const {
   return sourceTensors;
+}
+
+void IpuCopyOp::setSourceTensors(const SourceTensorMap sourceTensors_) {
+  sourceTensors = sourceTensors_;
 }
 
 uint64_t IpuCopyOp::getSourceIpu(const TensorId &tenId) const {
