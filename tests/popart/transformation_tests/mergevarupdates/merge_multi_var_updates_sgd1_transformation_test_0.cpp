@@ -44,7 +44,7 @@ bnconv(Builder *b, TensorId act, ConstVoidData cwdata, ConstVoidData bwdata) {
 
 BOOST_AUTO_TEST_CASE(Transformation_MergeMultiSGD1) {
 
-  auto test = [](MergeVarUpdateType mvu, std::string dtype) {
+  auto test = [](MergeVarUpdateType mvu, std::string dtype, bool sgd1) {
     // we will generate random input data
     int seed = 1013;
     DefaultRandomEngine eng(seed);
@@ -140,7 +140,10 @@ BOOST_AUTO_TEST_CASE(Transformation_MergeMultiSGD1) {
                           {"defaultWeightDecay", {0.02f, false}},
                           {"defaultVelocityScaling", {0.25f, true}},
                           {"lossScaling", {0.2f, true}},
-                          {"defaultMomentum", {0.9f, false}}});
+                          {"defaultMomentum", {0.9f, false}}},
+                         {},
+                         sgd1 ? SGDAccumulatorAndMomentum::Combined
+                              : SGDAccumulatorAndMomentum::Separate);
 
     Ir ir;
     ir.prepare({modelProto,
@@ -169,6 +172,15 @@ BOOST_AUTO_TEST_CASE(Transformation_MergeMultiSGD1) {
                 << " Expected: " << expected << std::endl;
       BOOST_CHECK(count == expected);
     };
+
+    // For both SGD1 and 2 in the above model, we happen to expect the same
+    // ops after decomposition.
+    // Note SGD2VarUpdate and SGD2AcclUpdate ops have same opids as their sgd1
+    // counterparts.
+
+    const auto comboOpId = sgd1 ? Onnx::CustomOperators::SGD1Combo
+                                : Onnx::CustomOperators::SGD2Combo;
+
     if (mvu == MergeVarUpdateType::All) {
 
       // 10 reshapes per layer are:
@@ -186,7 +198,7 @@ BOOST_AUTO_TEST_CASE(Transformation_MergeMultiSGD1) {
 
       checkOps(Onnx::CustomOperators::Accumulate, 1);
       checkOps(Onnx::CustomOperators::SGD1AcclUpdate, 1);
-      checkOps(Onnx::CustomOperators::SGD1Combo, 0);
+      checkOps(comboOpId, 0);
 
       checkOps(Onnx::CustomOperators::CopyVarUpdate, 1);
 
@@ -197,7 +209,7 @@ BOOST_AUTO_TEST_CASE(Transformation_MergeMultiSGD1) {
 
       checkOps(Onnx::CustomOperators::Accumulate, 3 * nConv);
       checkOps(Onnx::CustomOperators::SGD1AcclUpdate, 3 * nConv);
-      checkOps(Onnx::CustomOperators::SGD1Combo, 0);
+      checkOps(comboOpId, 0);
 
       checkOps(Onnx::CustomOperators::ReshapeInplace, 0);
       checkOps(Onnx::CustomOperators::ConcatInplace, 0);
@@ -213,7 +225,7 @@ BOOST_AUTO_TEST_CASE(Transformation_MergeMultiSGD1) {
       checkOps(Onnx::CustomOperators::Accumulate, expectednsgd);
       checkOps(Onnx::CustomOperators::SGD1AcclUpdate, expectednsgd);
 
-      checkOps(Onnx::CustomOperators::SGD1Combo, 0);
+      checkOps(comboOpId, 0);
 
       auto expectedncopy = (copyElms * 4) / thr + ((copyElms * 4) % thr != 0);
       checkOps(Onnx::CustomOperators::CopyVarUpdate, expectedncopy);
@@ -225,18 +237,20 @@ BOOST_AUTO_TEST_CASE(Transformation_MergeMultiSGD1) {
 
       checkOps(Onnx::CustomOperators::Accumulate, 1);
       checkOps(Onnx::CustomOperators::SGD1AcclUpdate, 1);
-      checkOps(Onnx::CustomOperators::SGD1Combo, 0);
+      checkOps(comboOpId, 0);
 
       checkOps(Onnx::CustomOperators::CopyVarUpdate, 1);
     }
   };
-  test(MergeVarUpdateType::All, "FLOAT");
-  test(MergeVarUpdateType::None, "FLOAT");
-  test(MergeVarUpdateType::AutoTight, "FLOAT");
-  test(MergeVarUpdateType::AutoLoose, "FLOAT");
 
-  test(MergeVarUpdateType::All, "FLOAT16");
-  test(MergeVarUpdateType::None, "FLOAT16");
-  test(MergeVarUpdateType::AutoTight, "FLOAT16");
-  test(MergeVarUpdateType::AutoLoose, "FLOAT16");
+  for (const auto sgd1 : {true, false}) {
+    for (const auto mvu : {MergeVarUpdateType::All,
+                           MergeVarUpdateType::None,
+                           MergeVarUpdateType::AutoTight,
+                           MergeVarUpdateType::AutoLoose}) {
+      for (const auto dtype : {"FLOAT", "FLOAT16"}) {
+        test(mvu, dtype, sgd1);
+      }
+    }
+  }
 }

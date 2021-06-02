@@ -8,6 +8,7 @@
 #include <popart/op/reshape.hpp>
 #include <popart/op/sgd0varupdate.hpp>
 #include <popart/op/sgd1combo.hpp>
+#include <popart/op/sgd2combo.hpp>
 #include <popart/op/slice.hpp>
 #include <popart/op/varupdate.hpp>
 #include <popart/opidentifier.hpp>
@@ -41,6 +42,38 @@ std::size_t MergeLooseThreshold::id() {
   return typeid(MergeLooseThreshold).hash_code();
 }
 
+namespace {
+
+void appendPartitionIdForSGDComboBaseOp(const SGDComboBaseOp *svu,
+                                        std::stringstream &ss) {
+  // momentum
+  if (svu->initSmm1.isConst()) {
+    ss << "_constLr_" << svu->initSmm1.val();
+  } else {
+    ss << "_nonConstLr_" << svu->inId(svu->getSmm1InIndex());
+  }
+  // dampening scale factor
+  if (svu->initDpsf1.isConst()) {
+    ss << "_constWd_" << svu->initDpsf1.val();
+  } else {
+    ss << "_nonConstWd_" << svu->inId(svu->getDpsf1InIndex());
+  }
+  // weight decay scale factor
+  if (svu->initSwd1.isConst()) {
+    ss << "_constWd_" << svu->initSwd1.val();
+  } else {
+    ss << "_nonConstWd_" << svu->inId(svu->getSwd1InIndex());
+  }
+  // scaled learning rate
+  if (svu->initSlr1.isConst()) {
+    ss << "_constWd_" << svu->initSlr1.val();
+  } else {
+    ss << "_nonConstWd_" << svu->inId(svu->getSlr1InIndex());
+  }
+}
+
+} // namespace
+
 MergeVarUpdates::PartitionId MergeVarUpdates::getPartitionId(Op *op) const {
   std::stringstream ss;
 
@@ -68,31 +101,21 @@ MergeVarUpdates::PartitionId MergeVarUpdates::getPartitionId(Op *op) const {
   else if (op->isConvertibleTo<SGD1ComboOp>()) {
     auto svu = dynamic_cast<SGD1ComboOp *>(op);
     ss << "_SGD1C_";
+    appendPartitionIdForSGDComboBaseOp(svu, ss);
+  }
 
-    // momentum
-    if (svu->initSmm1.isConst()) {
-      ss << "_constLr_" << svu->initSmm1.val();
-    } else {
-      ss << "_nonConstLr_" << svu->inId(svu->getSmm1InIndex());
-    }
-    // dampening scale factor
-    if (svu->initDpsf1.isConst()) {
-      ss << "_constWd_" << svu->initDpsf1.val();
-    } else {
-      ss << "_nonConstWd_" << svu->inId(svu->getDpsf1InIndex());
-    }
-    // weight decay scale factor
-    if (svu->initSwd1.isConst()) {
-      ss << "_constWd_" << svu->initSwd1.val();
-    } else {
-      ss << "_nonConstWd_" << svu->inId(svu->getSwd1InIndex());
-    }
-    // scaled learning rate
-    if (svu->initSlr1.isConst()) {
-      ss << "_constWd_" << svu->initSlr1.val();
-    } else {
-      ss << "_nonConstWd_" << svu->inId(svu->getSlr1InIndex());
-    }
+  else if (op->isConvertibleTo<SGD2ComboOp>()) {
+    auto svu = dynamic_cast<SGD2ComboOp *>(op);
+
+    ss << "_SGD2C_";
+
+    appendPartitionIdForSGDComboBaseOp(svu, ss);
+
+    ss << "_withGradAccum_" << std::boolalpha << svu->withGradAccum
+       << std::noboolalpha;
+
+    ss << "_accumType_" << svu->accumType;
+    ss << "_accl1Type_" << svu->accl1Type;
   }
 
   // 2) CopyVarUpdate settings
