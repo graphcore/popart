@@ -22,21 +22,56 @@ InputCreatorType BaseExpandOpx::getInputCreatorType(InIndex) const {
 poplar::Tensor BaseExpandOpx::unwindTensorLayout(poplar::Tensor tensor,
                                                  InIndex inIndex,
                                                  OutIndex) const {
+
+  // Numpy broadcasting, some valid examples:
+  //
+  // input    output
+  // -----    ------
+  // (4)      (3,4)
+  // (1)      (5)
+  // (6)      (6)
+  // (4,1)    (4,5)
+  // (4,1)    (5,4,3)
+  //
+  // See
+  // https://numpy.org/doc/stable/user/basics.broadcasting.html
+  // for details.
+  //
+  // We here take a poplar tensor 'output' and slice out a part of it to get
+  // an 'input' tensor of a reduced size. We arbitrarily choose the slice in
+  // each dimension to start at index 0.
+
   if (inIndex == ExpandOp::getInTensorIndex()) {
     auto output_shape = op->getOutShape();
     auto input_shape  = inShape(inIndex);
-    auto dim_diff     = output_shape.size() - input_shape.size();
-    for (int64_t dim = 0; dim < output_shape.size(); ++dim) {
-      auto input_shape_of_current_dim =
-          (dim < dim_diff) ? 1 : input_shape[dim - dim_diff];
-      if (output_shape[dim] != input_shape[dim - dim_diff]) {
-        tensor =
-            tensor.slice(static_cast<std::size_t>(0),
-                         static_cast<std::size_t>(input_shape_of_current_dim),
-                         static_cast<unsigned int>(dim));
+
+    // The number of excess dimensions which the output has:
+    auto dim_diff = output_shape.size() - input_shape.size();
+
+    // Make tensor have the correct rank by removing the first 'dim_diff'
+    // dimensions. Example: If input shape is (5,1) and output shape is
+    // (3,4,5,6) then we take output[0][0] which is of shape (5,6).
+    for (uint64_t i = 0; i < dim_diff; ++i) {
+      tensor = tensor[0];
+    }
+
+    for (uint32_t dim = 0; dim < input_shape.size(); ++dim) {
+      if (output_shape[dim + dim_diff] != input_shape[dim]) {
+        tensor = tensor.slice(0ull, 1ull, dim);
       }
     }
+
+    // confirm that the shape of the computed tensor is as expected
+    if (tensor.shape() !=
+        std::vector<uint64_t>{input_shape.cbegin(), input_shape.cend()}) {
+      std::ostringstream oss;
+      oss << "Incorrect shape of compute poplar Tensor in unwinding expand. "
+          << "Expected it to have the shape of the intput, " << input_shape
+          << ", but it has shape " << tensor.shape() << ". ";
+      throw error(oss.str());
+    }
   }
+
   return tensor;
 }
 
