@@ -379,6 +379,37 @@ void moveIntoLoop(LoopOp *loop,
 
 std::size_t MainLoops::id() { return typeid(MainLoops).hash_code(); }
 
+Graph &MainLoops::getInnerLoopSubgraph(const Ir &ir) {
+  if (ir.getSessionOptions().getAccumulationFactor() > 1) {
+    return ir.getGraph(GraphId(getAccumulationGraphName()));
+  } else {
+    return ir.getGraph(GraphId(getStepGraphName()));
+  }
+}
+
+LoopOp *MainLoops::getInnerLoopOp(const Ir &ir) {
+  auto getLoopCallsiteOpsOfSubgraph = [](const Ir &ir, const Graph &graph) {
+    std::vector<LoopOp *> callSites;
+    for (auto op : ir.getAllOps()) {
+      auto loopOp = dynamic_cast<LoopOp *>(op);
+      if (loopOp) {
+        callSites.push_back(loopOp);
+      }
+    }
+    return callSites;
+  };
+
+  auto loopOps = getLoopCallsiteOpsOfSubgraph(ir, getInnerLoopSubgraph(ir));
+
+  if (loopOps.size() > 1 || loopOps.size() == 0) {
+    throw error(
+        "[MainLoops] Unable to find inner loop op. {} candidates found.",
+        loopOps.size());
+  } else {
+    return loopOps.at(0);
+  }
+}
+
 bool MainLoops::apply(Graph &graph) const {
   auto &ir                = graph.getIr();
   auto &sessionOptions    = ir.getSessionOptions();
@@ -477,7 +508,7 @@ bool MainLoops::apply(Graph &graph) const {
       accumLoopSettings.executionContext = ExecutionContext::Normal;
     }
 
-    Graph &accumGraph = ir.createGraph({"accumulationGraph"});
+    Graph &accumGraph = ir.createGraph({getAccumulationGraphName()});
 
     // Add mandatory loop iterator tensor to subgraph (is not an output)
     TensorId loopItScopedId = accumGraph.addScope(reservedLoopIteratorPrefix());

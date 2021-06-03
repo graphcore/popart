@@ -20,6 +20,14 @@ public:
   virtual std::size_t getId() const final { return id(); }
 
   virtual std::string getName() const final { return "MainLoops"; }
+
+  static std::string getStepGraphName() { return "stepGraph"; }
+  static std::string getAccumulationGraphName() { return "accumulationGraph"; }
+
+  // Helper functions for accessing the inner loop, and its called subgraph.
+  // Note: should only be used after the transform has been applied.
+  static Graph &getInnerLoopSubgraph(const Ir &ir);
+  static LoopOp *getInnerLoopOp(const Ir &ir);
 };
 
 } // namespace popart
