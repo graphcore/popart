@@ -39,11 +39,6 @@ bool OptimizerValue::operator==(const OptimizerValue &rhs) const {
          (!isConst() || (val() - rhs.val() == 0.0f));
 }
 
-OptimizerValue &OptimizerValue::operator=(const OptimizerValue &rhs) {
-  val_     = rhs.val_;
-  isConst_ = rhs.isConst_;
-  return *this;
-}
 } // namespace popart
 
 namespace std {
