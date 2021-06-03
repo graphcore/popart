@@ -1,6 +1,7 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
 
 #include <poprithms/logging/timepartitionlogger.hpp>
+#include <popart/aliasesmap.hpp>
 #include <popart/aliaszerocopy.hpp>
 #include <popart/chains.hpp>
 #include <popart/error.hpp>
@@ -109,9 +110,11 @@ void AliasZeroCopy::apply() {
 
   logging::devicex::debug("[AliasZeroCopy] Started.");
 
+  AliasesMap aliasesMap{ir};
+
   // Record all tensors that are fully aliased in the IR
   for (const Graph *g : ir->getGraphSchedule()) {
-    irAliases.addAllAliases(g->getTensors().getAliases());
+    irAliases.addAllAliases(aliasesMap.getAliases(g->id));
   }
   proposedAliases = irAliases;
   activeAliases   = irAliases;

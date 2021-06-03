@@ -4,6 +4,8 @@
 #include <boost/range/algorithm/find.hpp>
 #include <cmath>
 #include <memory>
+
+#include <popart/aliasesmap.hpp>
 #include <popart/error.hpp>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
@@ -117,8 +119,8 @@ std::vector<int64_t> getBoundariesCrossed(const SessionOptions &opts,
     exec_cont   = op->settings.executionContext;
     batchserial = op->getOptionalBatchSerializedPhase();
     recompute   = op->settings.recomputeType == RecomputeType::Recompute
-                      ? RecomputeType::Recompute
-                      : RecomputeType::Checkpoint;
+                    ? RecomputeType::Recompute
+                    : RecomputeType::Checkpoint;
 
     check_vgid &= check_vgid_in_aof ||
                   exec_cont != ExecutionContext::AccumulateOuterFragment;
@@ -432,11 +434,12 @@ static std::vector<Replacement> applyMatch(const Match &match, Ir &ir) {
   handleRandomReferences(match, ir);
 
   std::vector<Replacement> replacements;
+  AliasesMap aliasesMap{&ir};
 
   // Replace the matches with call ops
   for (auto &instance : match.instances) {
-    auto call_op =
-        SubgraphOutline::replaceWithCallOp(instance, subgraph, index_map);
+    auto call_op = SubgraphOutline::replaceWithCallOp(
+        instance, subgraph, index_map, aliasesMap);
     replacements.push_back({instance.ops, call_op});
   }
 
@@ -762,7 +765,8 @@ Graph &SubgraphOutline::createSubgraph(
 
 Op *SubgraphOutline::replaceWithCallOp(const SubgraphableOpCluster &instance,
                                        Graph &subgraph,
-                                       const std::map<Op *, int> &index_map) {
+                                       const std::map<Op *, int> &index_map,
+                                       AliasesMap &aliasesMap) {
 
   // Copy some attributes with heuristics from the instance ops
   nonstd::optional<Scope> scope;
@@ -850,11 +854,14 @@ Op *SubgraphOutline::replaceWithCallOp(const SubgraphableOpCluster &instance,
     }
   }
 
+  auto &aliases = aliasesMap.getAliases(instance.getGraph());
+
   // Check aliasing and modifying before disconnecting the old ops
   for (int i = 0; i < instance.external_inputs.size(); i++) {
     Tensor *inTensor = instance.external_inputs[i];
 
-    auto modifiedRegions = inTensor->modifiedRegionsByOps(instance.ops);
+    auto modifiedRegions =
+        inTensor->modifiedRegionsByOps(instance.ops, aliases);
     callOp->addModified(i, modifiedRegions);
 
     for (int j = 0; j < instance.external_outputs.size(); j++) {
@@ -867,10 +874,8 @@ Op *SubgraphOutline::replaceWithCallOp(const SubgraphableOpCluster &instance,
       }
 
       // alias Regions in input Tensor:
-      auto fwdAliasRegions =
-          instance.getGraph().getTensors().getChainsFromTo(inTensor, outTensor);
-      auto bwdAliasRegions =
-          instance.getGraph().getTensors().getChainsFromTo(outTensor, inTensor);
+      auto fwdAliasRegions = aliases.getChainsFromTo(inTensor, outTensor);
+      auto bwdAliasRegions = aliases.getChainsFromTo(outTensor, inTensor);
 
       callOp->addAlias(i, j, fwdAliasRegions, bwdAliasRegions);
       if (logging::shouldLog(logging::Module::transform,

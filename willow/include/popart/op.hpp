@@ -32,6 +32,8 @@ class Proposal;
 
 namespace popart {
 
+class Aliases;
+
 struct PoprithmsAliaser;
 
 enum class RecomputeType { Undefined = 0, Checkpoint, Recompute, Recomputed };
@@ -243,7 +245,9 @@ public:
   // - Execution phase
   // - Virtual graph ID
   // - Batch serial phase
-  void inheritPlacementAttributes(bool inheritSerializations);
+  //
+  // TODO T40059: Replace use of chain-based aliasing.
+  void inheritPlacementAttributes(bool inheritSerializations, Aliases &aliases);
 
   Ir &getIr();
   const Ir &getIr() const;

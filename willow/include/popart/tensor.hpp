@@ -258,8 +258,12 @@ public:
   // All regions modified by any of the Ops specified.
   // The Ops are tested in order, and the evaluation stops once the whole
   // tensor has been modified, or if all Ops have been tested
-  view::Regions modifiedRegionsByOps(std::vector<Op *> ops) const;
-  view::Regions modifiedRegionsByOps(std::vector<OpId> opIds) const;
+  //
+  // TODO T40061: Replace use of chain-based aliasing.
+  view::Regions modifiedRegionsByOps(std::vector<Op *> ops,
+                                     Aliases &aliases) const;
+  view::Regions modifiedRegionsByOps(std::vector<OpId> opIds,
+                                     Aliases &aliases) const;
 
   // Backtrack through input and parent graph tensors in order to get data from
   // initializer tensors (if they exist).

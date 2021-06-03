@@ -1,3 +1,4 @@
+#include <popart/aliases.hpp>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/logging.hpp>
@@ -199,10 +200,11 @@ void StreamingMemoryOpInserter::setPriority(Op *op,
 }
 
 StreamingMemoryOpInserter::StreamingMemoryOpInserter(Graph &graph_,
+                                                     Aliases &aliases_,
                                                      int64_t replicationFactor_,
                                                      int num_stages_,
                                                      int num_phases_)
-    : graph{graph_}, replicationFactor{replicationFactor_},
+    : graph{graph_}, aliases{aliases_}, replicationFactor{replicationFactor_},
       num_stages{num_stages_}, num_phases{num_phases_}, remoteArgIds{} {}
 
 bool StreamingMemoryOpInserter::isPhasedExecution() const {
@@ -1286,7 +1288,7 @@ void StreamingMemoryOpInserter::getTensorConfig(Tensor *tensor) {
 
 void StreamingMemoryOpInserter::getRootVarTensor(Tensor *tensor,
                                                  Tensor *&rootTensor) const {
-  auto chains = graph.getTensors().getAliases().aliasChainsFrom(tensor);
+  auto chains = aliases.aliasChainsFrom(tensor);
   auto shape  = tensor->info.shape();
 
   // Check if the alias is an identity chain
@@ -1686,7 +1688,7 @@ void StreamingMemoryOpInserter::getAliasedModifiersInContext(
     TensorStreamingContext context,
     Ops &modifyingConsumerOps) const {
   getModifiersInContext(tensor, context, modifyingConsumerOps);
-  auto aliasedTensorMap = graph.getTensors().aliasChainsFrom(tensor);
+  auto aliasedTensorMap = aliases.aliasChainsFrom(tensor);
   auto fullRegion       = view::Region::getFull(tensor->info.shape());
   for (auto &chain : aliasedTensorMap) {
     auto regions = chain.second.apply(fullRegion);
@@ -2510,8 +2512,8 @@ StreamingMemoryOpInserter::TensorStreamingContext::TensorStreamingContext(
     ScheduledPreLoss preLoss_)
     : context(context_), phase(phase_), preLoss(preLoss_) {}
 
-bool StreamingMemoryOpInserter::TensorStreamingContext::
-operator<(const TensorStreamingContext &rhs) const {
+bool StreamingMemoryOpInserter::TensorStreamingContext::operator<(
+    const TensorStreamingContext &rhs) const {
   std::vector<int> lhsVec;
   lhsVec.reserve(3);
   std::vector<int> rhsVec;
@@ -2558,13 +2560,13 @@ operator<(const TensorStreamingContext &rhs) const {
   return lhsVec < rhsVec;
 }
 
-bool StreamingMemoryOpInserter::TensorStreamingContext::
-operator==(const TensorStreamingContext &rhs) const {
+bool StreamingMemoryOpInserter::TensorStreamingContext::operator==(
+    const TensorStreamingContext &rhs) const {
   return context == rhs.context && phase == rhs.phase && preLoss == rhs.preLoss;
 }
 
-bool StreamingMemoryOpInserter::TensorStreamingContext::
-operator!=(const TensorStreamingContext &rhs) const {
+bool StreamingMemoryOpInserter::TensorStreamingContext::operator!=(
+    const TensorStreamingContext &rhs) const {
   return context != rhs.context || phase != rhs.phase || preLoss != rhs.preLoss;
 }
 
@@ -2609,8 +2611,8 @@ operator<<(std::ostream &output,
   return output;
 }
 
-bool StreamingMemoryOpInserter::ConsumerOpConfig::
-operator==(const ConsumerOpConfig &rhs) const {
+bool StreamingMemoryOpInserter::ConsumerOpConfig::operator==(
+    const ConsumerOpConfig &rhs) const {
   return tensor == rhs.tensor && op == rhs.op;
 }
 

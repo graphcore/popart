@@ -1,4 +1,5 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
+#include <popart/aliasesmap.hpp>
 #include <popart/error.hpp>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
@@ -115,8 +116,12 @@ bool StreamingMemory::apply(Graph &graph) const {
           ? sessionOptions.executionPhaseSettings.phases
           : 0;
 
+  // TODO T40063: Replace use of chain-based aliasing.
+  AliasesMap aliasesMap{graph};
+  auto &aliases = aliasesMap.getAliases(graph);
+
   StreamingMemoryOpInserter opInserter{
-      graph, replicationFactor, num_stages, num_phases};
+      graph, aliases, replicationFactor, num_stages, num_phases};
 
   if (pass == 1 || pass == 2) {
     for (Tensor *tensor : graph.getTensors().getOfType(TensorType::Variable)) {
@@ -218,7 +223,7 @@ bool StreamingMemory::apply(Graph &graph) const {
         if (op->settings.executionContext == ExecutionContext::Normal &&
             !op->hasExecutionPhase()) {
           // Check which phase the consumers of the output are in
-          op->inheritPlacementAttributes(true);
+          op->inheritPlacementAttributes(true, aliases);
 
           if (op->hasExecutionPhase()) {
             // Make sure phase adheres to producer/consumer and topological

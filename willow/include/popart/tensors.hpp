@@ -66,26 +66,6 @@ public:
   // remove all Tensors which have no producer and no consumers
   void removeIsolated(bool retainRemote);
 
-  const Aliases &getAliases() const { return aliases; }
-  void clearAliases();
-  void updateAliases(Op *op);
-  view::Regions getAliasRegions(Tensor *from, Tensor *to) const;
-
-  // all non-empty alias Chains to "to"
-  // returned map M will always have M[to] = "the identity chain"
-  //......"from"...."chains"............................"to"
-  //       ^         ^                                   ^
-  std::unordered_map<Tensor *, view::Chains> aliasChainsTo(Tensor *to) const;
-
-  // all non-empty alias Chains from "from"
-  // returned map M will always have M[from] = "the identity chain"
-  //......"to"......"chains".............................."from"
-  //       ^         ^                                     ^
-  std::unordered_map<Tensor *, view::Chains>
-  aliasChainsFrom(Tensor *from) const;
-
-  view::Chains getChainsFromTo(Tensor *from, Tensor *to) const;
-
   TensorId moveIntoTensors(std::unique_ptr<Tensor> tensor);
 
 private:
@@ -102,8 +82,6 @@ private:
                const DebugInfo &di);
 
   Graph &graph;
-
-  Aliases aliases;
 };
 
 } // namespace popart

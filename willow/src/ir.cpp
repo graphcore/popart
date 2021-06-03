@@ -15,6 +15,7 @@
 #include <boost/random/normal_distribution.hpp>
 #include <poprithms/logging/timepartitionlogger.hpp>
 
+#include <popart/aliasesmap.hpp>
 #include <popart/builder.hpp>
 #include <popart/builder_impl.hpp>
 #include <popart/ces/constexpr.hpp>
@@ -1114,9 +1115,7 @@ void Ir::prepareImpl(const IrBundle &gb, const HashesMap &cacheEntries) {
     applyTransform(HostIOSetup::id(1), getMainGraph());
   }
 
-  updateAliases();
   applyTransform(Prune::id(), getMainGraph());
-  updateAliases();
 
   for (auto &id_graph : graphs) {
     auto &graph = getGraph(id_graph.first);
@@ -1204,16 +1203,13 @@ void Ir::prepareImpl(const IrBundle &gb, const HashesMap &cacheEntries) {
     getMainGraph().setConvFlipWeightConstraints();
   }
 
-  updateAliases();
   applyTransform(Prune::id(), getMainGraph());
-  updateAliases();
   updateVertices();
 
   // Make sure that matmuls are serialized before gradient accumulation
   if (getSessionOptions().enableSerializedMatmuls) {
     applyTransform(SerializeMatMuls::id(), getMainGraph());
     // SerializeMatMuls could have changed aspects of aliasing
-    updateAliases();
     updateVertices();
   }
 
@@ -1242,7 +1238,6 @@ void Ir::prepareImpl(const IrBundle &gb, const HashesMap &cacheEntries) {
   AdaptiveDecompose adaptiveDecomposer;
   applyPreAliasPattern(&adaptiveDecomposer, getMainGraph());
   if (canTrain()) {
-    updateAliases();
     getMainGraph().setVarUpdateConstraints();
   }
   decomposedOptimizers = true;
@@ -1284,12 +1279,9 @@ void Ir::prepareImpl(const IrBundle &gb, const HashesMap &cacheEntries) {
 
   // Second streaming memory transformation pass (cut)
   // Streaming memory transformation 2 needs up-to-date aliasing information
-  updateAliases();
   applyTransform(StreamingMemory::id(2), getMainGraph());
-  updateAliases();
   // Remove extra RemoteLoad, RemoteStore and Replicated ops that are not used
   applyTransform(Prune::id(), getMainGraph());
-  updateAliases();
   updateVertices();
 
   if (canTrain()) {
@@ -1390,7 +1382,6 @@ void Ir::prepareImpl(const IrBundle &gb, const HashesMap &cacheEntries) {
       applyPreAliasPattern(&viewSimplifier, getMainGraph());
     }
 
-    updateAliases();
     applyTransform(SubgraphOutline::id(), getMainGraph());
     updateVertices();
 
@@ -1402,7 +1393,6 @@ void Ir::prepareImpl(const IrBundle &gb, const HashesMap &cacheEntries) {
       // Because batch serialization phases are not copied from the ops to their
       // parent subgraph, the second pass will ignore batch serialization phases
       // and outline the repeated per-batch-element subgraphs/ops.
-      updateAliases();
       applyTransform(SubgraphOutline::id(), getMainGraph());
       updateVertices();
     }
@@ -1428,7 +1418,6 @@ void Ir::prepareImpl(const IrBundle &gb, const HashesMap &cacheEntries) {
     const auto scopedStopwatch =
         timePartitionLogger().scopedStopwatch("Inplacing (Ir)");
 
-    updateAliases();
     // Update the inplace priorities of ops before inplacing
     if (patterns.isUpdateInplacePrioritiesForIpuEnabled()) {
       applyUpdateInplacePrioritiesForIpu();
@@ -1440,9 +1429,6 @@ void Ir::prepareImpl(const IrBundle &gb, const HashesMap &cacheEntries) {
     }
     updateVertices();
   }
-
-  // Update aliases a final time
-  updateAliases();
 
   applyTransform(RemoteSetup::id(), getMainGraph());
 
@@ -2512,17 +2498,6 @@ void Ir::updateVertices() {
   }
 }
 
-void Ir::updateAliases() {
-  auto scopedStopwatch =
-      timePartitionLogger().scopedStopwatch("Updating aliases (Ir)");
-  for (auto &graph : graphs) {
-    graph.second->getTensors().clearAliases();
-    for (auto &op : graph.second->getOps()) {
-      graph.second->getTensors().updateAliases(op.second.get());
-    }
-  }
-}
-
 void Ir::unsetAllVirtualGraphIds() {
   bool hadToUnsetAny = false;
 
@@ -2551,6 +2526,9 @@ void Ir::constructBackwards() {
 
   applyTransform(Autodiff::id(), getMainGraph());
 
+  AliasesMap aliasesMap{getMainGraph()};
+  auto &mainGraphAliases = aliasesMap.getAliases(getMainGraph());
+
   logging::ir::info("Creating Variable Tensor update Ops");
   // add weight update ops (we are ignoring momentums for now)
   for (auto &varId : getTensors().getIds(TensorType::Variable)) {
@@ -2560,11 +2538,11 @@ void Ir::constructBackwards() {
     switch (tensor->getVariableUpdateType()) {
     case VariableUpdateType::Copy:
       // Updates the var by copying it from another tensor
-      growCopyVarUpdateOp(varId, tensor->getCopyFromTensor());
+      growCopyVarUpdateOp(varId, tensor->getCopyFromTensor(), mainGraphAliases);
       break;
     case VariableUpdateType::Gradient:
       // Updates the var by looking for the matching gradient
-      growGradientVarUpdateOp(varId);
+      growGradientVarUpdateOp(varId, mainGraphAliases);
       break;
     case VariableUpdateType::None:
     default:
@@ -2578,7 +2556,9 @@ void Ir::constructBackwards() {
   constructedBackwards = true;
 }
 
-void Ir::growCopyVarUpdateOp(const TensorId &varId, const TensorId &from) {
+void Ir::growCopyVarUpdateOp(const TensorId &varId,
+                             const TensorId &from,
+                             Aliases &mainGraphAliases) {
   OpId opId = getMainGraph().moveIntoGraph(
       std::unique_ptr<Op>(new CopyVarUpdateOp({getMainGraph(), ""})));
 
@@ -2586,10 +2566,11 @@ void Ir::growCopyVarUpdateOp(const TensorId &varId, const TensorId &from) {
   std::vector<TensorId> inputs{varId, from};
   getMainGraph().connectInputs(InputVecWrapper(inputs), opId);
 
-  growVarUpdateOpInternal(opId);
+  growVarUpdateOpInternal(opId, mainGraphAliases);
 }
 
-void Ir::growGradientVarUpdateOp(const TensorId &varId) {
+void Ir::growGradientVarUpdateOp(const TensorId &varId,
+                                 Aliases &mainGraphAliases) {
 
   logging::ir::info("Growing gradient var update op for {}", varId);
 
@@ -2621,7 +2602,7 @@ void Ir::growGradientVarUpdateOp(const TensorId &varId) {
         getMainGraph().moveIntoGraph(optimizer->createOp(var, getMainGraph()));
 
     getMainGraph().connectInputs(InputVecWrapper(inputIds), opId);
-    growVarUpdateOpInternal(opId);
+    growVarUpdateOpInternal(opId, mainGraphAliases);
   }
 }
 
@@ -2638,7 +2619,7 @@ void Ir::ensureOptimizerTensorCreated(const TensorId &optId,
   }
 }
 
-void Ir::growVarUpdateOpInternal(OpId opId) {
+void Ir::growVarUpdateOpInternal(OpId opId, Aliases &mainGraphAliases) {
   Op *op           = getMainGraph().getOps()[opId].get();
   auto varUpdateOp = dynamic_cast<VarUpdateOp *>(op);
   if (varUpdateOp == nullptr) {
@@ -2649,7 +2630,7 @@ void Ir::growVarUpdateOpInternal(OpId opId) {
   std::vector<TensorId> outputs{updatedVarId};
   getMainGraph().connectOutputs(OutputVecWrapper(outputs), opId);
   op->setup();
-  op->inheritPlacementAttributes(false);
+  op->inheritPlacementAttributes(false, mainGraphAliases);
 }
 
 void Ir::setFinalLoss(const TensorId &loss) {

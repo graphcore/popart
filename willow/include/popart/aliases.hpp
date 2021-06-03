@@ -15,6 +15,8 @@ class Aliases {
 public:
   Aliases() {}
   virtual ~Aliases() = default;
+
+  Aliases(const Aliases &) = delete;
   Aliases &operator=(const Aliases &rhs) = default;
 
   void clearAliases();

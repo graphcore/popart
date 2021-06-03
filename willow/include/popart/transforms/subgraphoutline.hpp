@@ -6,6 +6,9 @@
 
 namespace popart {
 
+// Forward declaration.
+class AliasesMap;
+
 /**
  * Class describing a group cluster of Ops belonging to the same Graph
  * that can be replaced be replaced by a call to a single subgraph.
@@ -84,7 +87,8 @@ public:
    **/
   static Op *replaceWithCallOp(const SubgraphableOpCluster &instance,
                                Graph &subgraph,
-                               const std::map<Op *, int> &index_map);
+                               const std::map<Op *, int> &index_map,
+                               AliasesMap &aliasesMap);
 };
 
 } // namespace popart

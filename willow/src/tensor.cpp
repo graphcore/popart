@@ -90,25 +90,26 @@ bool Tensor::isModified() const {
   return false;
 }
 
-view::Regions Tensor::modifiedRegionsByOps(std::vector<OpId> opIds) const {
+view::Regions Tensor::modifiedRegionsByOps(std::vector<OpId> opIds,
+                                           Aliases &aliases) const {
   std::vector<Op *> ops;
   ops.reserve(opIds.size());
   for (auto &opId : opIds) {
     ops.push_back(graph.getOp(opId));
   }
-  return modifiedRegionsByOps(ops);
+  return modifiedRegionsByOps(ops, aliases);
 }
 
-view::Regions Tensor::modifiedRegionsByOps(std::vector<Op *> ops) const {
+view::Regions Tensor::modifiedRegionsByOps(std::vector<Op *> ops,
+                                           Aliases &aliases) const {
 
   constexpr const char *const ctxt{"Tensor::modifiedRegionsByOps"};
   logging::ir::trace("{} for Tensor {},", ctxt, str());
   auto scopedStopwatch = getIr().timePartitionLogger().scopedStopwatch(ctxt);
 
   // t0: non-const pointer to this
-  Tensor *t0    = graph.getTensors().get(id);
-  auto &aliases = graph.getTensors().getAliases();
-  auto chains   = aliases.aliasChainsFrom(t0);
+  Tensor *t0  = graph.getTensors().get(id);
+  auto chains = aliases.aliasChainsFrom(t0);
 
   std::map<Op *, view::Regions> opToT0ReadRegions;
   std::map<Op *, view::Regions> opToT0ModifiedRegions;

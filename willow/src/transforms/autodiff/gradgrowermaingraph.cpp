@@ -1,6 +1,7 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 #include <transforms/autodiff/gradgrowermaingraph.hpp>
 
+#include <popart/aliasesmap.hpp>
 #include <popart/bwdgraphinfo.hpp>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
@@ -31,6 +32,9 @@ GradGrowerMainGraph::GradGrowerMainGraph(
 void GradGrowerMainGraph::growGradMainGraph() {
 
   auto &mainGraph = dep.get().getMainGraph();
+
+  AliasesMap aliasesMap{dep.get().getMainGraph()};
+  auto &mainGraphAliases = aliasesMap.getAliases(dep.get().getMainGraph().id);
 
   // We need to grow called graphs before we grow the main graph.
   FwdGraphToBwdGraphInfo calledGraphGradInfo;
@@ -157,7 +161,8 @@ void GradGrowerMainGraph::growGradMainGraph() {
     // nongrad required below, as the name of the output of the
     // created op (sumOp) will be based off of it. Also, we
     // register the link between sumOp's output and nongrad
-    Op *sumOp       = gradSumOpGrower->growGradSumOp(nonGrad, egrads);
+    Op *sumOp =
+        gradSumOpGrower->growGradSumOp(nonGrad, egrads, mainGraphAliases);
     sumOp->fromLoss = PathFromLoss::Yes;
 
     logging::transform::trace("[Autodiff] Created gradient sum for '{}'",
@@ -300,7 +305,7 @@ void GradGrowerMainGraph::growGradMainGraph() {
     // on the op having input or output tensors linked to it to inherit the
     // attributes from, but at the time growLossGradients is called this op's
     // outputs have yet to be grown.
-    nonConstLossScaleOp->inheritPlacementAttributes(true);
+    nonConstLossScaleOp->inheritPlacementAttributes(true, mainGraphAliases);
   }
 
   dep.get().setMainGraphPathFromLoss();

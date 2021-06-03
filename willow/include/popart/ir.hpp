@@ -401,7 +401,6 @@ public:
   // For all vertices set the phase, and whether or not
   // there is a path to vertex in whose phase is BWD.
   void updateVertices();
-  void updateAliases();
 
   // Ensure that all virtual graph IDs are not set.
   // This can occur if the user has specified them but virtual graphs are turned
@@ -500,12 +499,15 @@ private:
   // we check that a reserved pattern is not present.
   void confirmNonReservedId(const TensorId &tenId) const;
 
-  void growGradientVarUpdateOp(const TensorId &varId);
+  void growGradientVarUpdateOp(const TensorId &varId,
+                               Aliases &mainGraphAliases);
 
-  void growCopyVarUpdateOp(const TensorId &varId, const TensorId &from);
+  void growCopyVarUpdateOp(const TensorId &varId,
+                           const TensorId &from,
+                           Aliases &mainGraphAliases);
 
   // Common code for the growGradient... and growCopy...
-  void growVarUpdateOpInternal(OpId opId);
+  void growVarUpdateOpInternal(OpId opId, Aliases &mainGraphAliases);
 
   // Get the best virtual graph Id based on the graph Ids of producers of ts
   // to minimise graph<->graph communication

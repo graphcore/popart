@@ -123,7 +123,6 @@ bool Inplace::apply(Op *op,
   inplaceOp->output->insert(0, output_tensor);
   inplaceOp->setup();
 
-  graph.getTensors().updateAliases(inplaceOp);
   graph.topoCons->insert(newCons);
 
   logging::pattern::debug("InplaceAll::apply : replaced {}({}) with {}({})",

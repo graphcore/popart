@@ -1,5 +1,6 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
 #include <memory>
+#include <popart/aliasesmap.hpp>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/onnxutil.hpp>
@@ -63,7 +64,10 @@ bool SGD0Decompose::apply(Op *op) const {
     // behaviour as if the reduction was still integrated into SGD0VarUpdate
     graph.topoCons->insert(reduceOp, sgd0, true);
 
-    reduceOp->inheritPlacementAttributes(false);
+    AliasesMap aliasesMap{graph};
+    auto &aliases = aliasesMap.getAliases(graph);
+
+    reduceOp->inheritPlacementAttributes(false, aliases);
   }
 
   return true;

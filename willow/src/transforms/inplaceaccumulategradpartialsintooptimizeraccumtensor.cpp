@@ -1,5 +1,6 @@
 #include <popart/transforms/inplaceaccumulategradpartialsintooptimizeraccumtensor.hpp>
 
+#include <popart/aliasesmap.hpp>
 #include <popart/graph.hpp>
 #include <popart/op/accumulate.hpp>
 #include <popart/op/add.hpp>
@@ -31,9 +32,12 @@ findInplaceAddTreesIntoOptimiserAccums(const Graph &graph);
 
 void rewriteAsAccumulateTreeOnOptimiserAccum(
     Graph &graph,
-    const InplaceAddTreeIntoOptimiserAccum &tree);
+    const InplaceAddTreeIntoOptimiserAccum &tree,
+    Aliases &aliases);
 
-void transferSettingsAndInheritPlacementProperties(const Op *from, Op *to);
+void transferSettingsAndInheritPlacementProperties(const Op *from,
+                                                   Op *to,
+                                                   Aliases &aliases);
 
 bool isDistributiveOverAddition(const AccumulateOp *);
 
@@ -48,8 +52,11 @@ bool InplaceAccumulateGradPartialsIntoOptimizerAccumTensor::apply(
     Graph &graph) const {
   bool modified = false;
 
+  AliasesMap aliasesMap{graph};
+  Aliases &aliases = aliasesMap.getAliases(graph);
+
   for (const auto &tree : findInplaceAddTreesIntoOptimiserAccums(graph)) {
-    rewriteAsAccumulateTreeOnOptimiserAccum(graph, tree);
+    rewriteAsAccumulateTreeOnOptimiserAccum(graph, tree, aliases);
     modified = true;
   }
 
@@ -204,7 +211,8 @@ findInplaceAddTreesIntoOptimiserAccums(const Graph &graph) {
 
 void rewriteAsAccumulateTreeOnOptimiserAccum(
     Graph &graph,
-    const InplaceAddTreeIntoOptimiserAccum &tree) {
+    const InplaceAddTreeIntoOptimiserAccum &tree,
+    Aliases &aliases) {
   logging::transform::debug(
       "[InplaceAccumulateGradPartialsIntoOptimizerAccumTensor] "
       "Rewriting tree: {} {}",
@@ -424,7 +432,7 @@ void rewriteAsAccumulateTreeOnOptimiserAccum(
       // Note this looks both forward and backwards to infer the attributes,
       // but the attributes of the Add Op ahead will be transferred to the
       // AccumulateOp it eventually gets replaced with, so this is valid.
-      transferSettingsAndInheritPlacementProperties(addOp, accumOp);
+      transferSettingsAndInheritPlacementProperties(addOp, accumOp, aliases);
       graph.topoCons->transfer(addOp, accumOp);
 
       graph.eraseOp(addOp->id);
@@ -488,7 +496,9 @@ void rewriteAsAccumulateTreeOnOptimiserAccum(
 }
 
 // Copied and amended from Pattern::transferBaseProperties
-void transferSettingsAndInheritPlacementProperties(const Op *from, Op *to) {
+void transferSettingsAndInheritPlacementProperties(const Op *from,
+                                                   Op *to,
+                                                   Aliases &aliases) {
   // Directly transfer base properties from `from`.
   to->settings.scope            = from->settings.scope;
   to->settings.recomputeType    = from->settings.recomputeType;
@@ -499,7 +509,7 @@ void transferSettingsAndInheritPlacementProperties(const Op *from, Op *to) {
   to->settings.debugInfoId      = from->settings.debugInfoId;
 
   // Inherit placement attributes from surrounding topology.
-  to->inheritPlacementAttributes(true);
+  to->inheritPlacementAttributes(true, aliases);
 }
 
 /**

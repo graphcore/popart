@@ -81,7 +81,7 @@ void OnEnterAndExitSubgraphCopyingStrategy::addMatching(
 }
 
 JustInTimeSubgraphCopyingStrategy::JustInTimeSubgraphCopyingStrategy()
-    : SubgraphCopyingStrategy(), isPartitionableCache() {}
+    : SubgraphCopyingStrategy(), aliasesMap{}, isPartitionableCache() {}
 
 JustInTimeSubgraphCopyingStrategy::~JustInTimeSubgraphCopyingStrategy() {}
 
@@ -96,6 +96,9 @@ void JustInTimeSubgraphCopyingStrategy::apply() {
     bool partitionable = SubgraphPartitioner::isPartitionable(*graph);
     isPartitionableCache[graph->id.str()] = partitionable;
   }
+
+  aliasesMap.setIr(ir);
+  aliasesMap.update();
 }
 
 std::vector<size_t>
@@ -596,21 +599,22 @@ std::set<TensorId>
 JustInTimeSubgraphCopyingStrategy::getAliases(const Graph &graph,
                                               const TensorId &id) const {
 
-  std::set<TensorId> aliases;
-  aliases.insert(id);
+  std::set<TensorId> aliasedTensors;
+  aliasedTensors.insert(id);
 
   Tensor *t             = graph.getTensors().get(id);
-  auto aliasedTensorMap = graph.getTensors().aliasChainsFrom(t);
+  auto &aliases         = aliasesMap.getAliases(graph.id);
+  auto aliasedTensorMap = aliases.aliasChainsFrom(t);
   auto fullRegion       = view::Region::getFull(t->info.shape());
   for (auto &chain : aliasedTensorMap) {
     auto regions = chain.second.apply(fullRegion);
     if (nonEmptyRegion(regions)) {
       auto aliasedTensor = chain.first;
-      aliases.insert(aliasedTensor->id);
+      aliasedTensors.insert(aliasedTensor->id);
     }
   }
 
-  return aliases;
+  return aliasedTensors;
 }
 
 bool JustInTimeSubgraphCopyingStrategy::isProducedInOpRange(

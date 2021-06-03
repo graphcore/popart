@@ -3,6 +3,7 @@
 #define BOOST_TEST_MODULE StreamingMemoryOpInserterTest
 
 #include <boost/test/unit_test.hpp>
+#include <popart/aliasesmap.hpp>
 #include <popart/builder.hpp>
 #include <popart/filereader.hpp>
 #include <popart/graph.hpp>
@@ -23,10 +24,15 @@ namespace {
 class StreamingMemoryOpInserterTestWrapper : public StreamingMemoryOpInserter {
 public:
   StreamingMemoryOpInserterTestWrapper(Graph &graph,
+                                       Aliases &aliases,
                                        int64_t replFactor,
                                        int numStages,
                                        int numPhases)
-      : StreamingMemoryOpInserter{graph, replFactor, numStages, numPhases} {}
+      : StreamingMemoryOpInserter{graph,
+                                  aliases,
+                                  replFactor,
+                                  numStages,
+                                  numPhases} {}
 
   void getTensorStreamingConfig(Tensor *tensor) {
     return StreamingMemoryOpInserter::getTensorStreamingConfig(tensor);
@@ -67,8 +73,10 @@ BOOST_AUTO_TEST_CASE(StreamingMemoryOpInserter_determineTensorLocation) {
   addOp0->setup();
   graph.moveIntoGraph(std::move(addOp0));
 
+  AliasesMap aliasesMap{graph};
+  auto &aliases = aliasesMap.getAliases(graph);
   StreamingMemoryOpInserterTestWrapper inserter(
-      graph, replFactor, numStages, numPhases);
+      graph, aliases, replFactor, numStages, numPhases);
 
   // With default settings everything is on chip.
   {

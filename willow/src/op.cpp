@@ -813,7 +813,8 @@ PipelineStage Op::getPipelineStage() const {
   return *(settings.pipelineStage);
 }
 
-void Op::inheritPlacementAttributes(bool inheritSerializations) {
+void Op::inheritPlacementAttributes(bool inheritSerializations,
+                                    Aliases &aliases_) {
   const Ir &ir = getGraph().getIr();
 
   enum ConnectedOpRelation {
@@ -869,8 +870,7 @@ void Op::inheritPlacementAttributes(bool inheritSerializations) {
       associatedVariableTensors.insert(inIndexAndTensor.second);
     }
 
-    auto aliasedTensorMap =
-        getGraph().getTensors().aliasChainsFrom(inIndexAndTensor.second);
+    auto aliasedTensorMap = aliases_.aliasChainsFrom(inIndexAndTensor.second);
     auto fullRegion =
         view::Region::getFull(inIndexAndTensor.second->info.shape());
     for (const auto &chain : aliasedTensorMap) {

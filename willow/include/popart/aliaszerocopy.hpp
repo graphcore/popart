@@ -194,6 +194,8 @@ private:
       candidateLivenessIntervalsMap;
 
   // Aliases as inferred from all IR graphs
+  //
+  // TODO T40065: Replace use of chain-based aliasing.
   Aliases irAliases;
   Aliases proposedAliases;
   Aliases activeAliases;

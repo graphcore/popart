@@ -1,6 +1,7 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 #include <memory>
 #include <queue>
+#include <popart/aliasesmap.hpp>
 #include <popart/error.hpp>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
@@ -22,7 +23,8 @@ namespace {
 
 class OpsToMove {
 public:
-  OpsToMove(Graph &graph_, std::vector<Op *> ops_) : graph(graph_), ops(ops_) {
+  OpsToMove(Graph &graph_, std::vector<Op *> ops_, Aliases &aliases_)
+      : graph(graph_), ops(ops_), aliases(aliases_) {
     std::set<OpId> opIdSet;
     // Inputs
     for (Op *op : ops) {
@@ -86,7 +88,7 @@ public:
       TensorId outTensorId = out.second;
       Tensor *outTensor    = graph.getTensors().get(outTensorId);
 
-      auto aliasedTensorMap = graph.getTensors().aliasChainsFrom(outTensor);
+      auto aliasedTensorMap = aliases.aliasChainsFrom(outTensor);
       auto fullRegion       = view::Region::getFull(outTensor->info.shape());
 
       bool handled = false;
@@ -106,10 +108,8 @@ public:
           auto inTensor       = aliasedTensor;
           TensorId inTensorId = inTensor->id;
           explicitTensorIds.push_back({inTensor->id, outTensor->id});
-          auto fwdAliasRegions =
-              graph.getTensors().getChainsFromTo(inTensor, outTensor);
-          auto bwdAliasRegions =
-              graph.getTensors().getChainsFromTo(outTensor, inTensor);
+          auto fwdAliasRegions = aliases.getChainsFromTo(inTensor, outTensor);
+          auto bwdAliasRegions = aliases.getChainsFromTo(outTensor, inTensor);
 
           aliasMap.insert(
               {{inTensorId, outTensorId}, {fwdAliasRegions, bwdAliasRegions}});
@@ -135,7 +135,7 @@ public:
 
     for (auto &in : inIdxTensorMap) {
       auto modifiedRegions =
-          graph.getTensors().get(in.second)->modifiedRegionsByOps(ops);
+          graph.getTensors().get(in.second)->modifiedRegionsByOps(ops, aliases);
       modifiesMap[in.second] = modifiedRegions;
     }
 
@@ -177,6 +177,9 @@ private:
   const Graph &graph;
   std::vector<Op *> ops;
   std::set<OpId> opIds;
+
+  // TODO T40062: Replace use of chain-based aliasing.
+  Aliases &aliases;
 
   // Flag to check if the
   bool evaluated;
@@ -488,11 +491,12 @@ bool MainLoops::apply(Graph &graph) const {
         ops.push_back(op);
       }
     }
-    OpsToMove opsToMove(graph, ops);
+    AliasesMap aliasesMap{graph};
+    Aliases &aliases = aliasesMap.getAliases(graph.id);
+    OpsToMove opsToMove(graph, ops, aliases);
     opsToMove.evaluate();
     moveIntoLoop(stepLoop, opsToMove, stepTensorRemap);
   }
-  ir.updateAliases();
   ir.updateVertices();
 
   schedule =
@@ -540,11 +544,13 @@ bool MainLoops::apply(Graph &graph) const {
         ops.push_back(op);
       }
     }
-    OpsToMove opsToMove(ir.getGraph(stepGraphId), ops);
+    auto &stepGraph = ir.getGraph(stepGraphId);
+    AliasesMap aliasesMap{stepGraph};
+    auto &stepGraphAliases = aliasesMap.getAliases(stepGraphId);
+    OpsToMove opsToMove(stepGraph, ops, stepGraphAliases);
     opsToMove.evaluate();
     moveIntoLoop(accumLoop, opsToMove, accumTensorRemap);
   }
-  ir.updateAliases();
   ir.updateVertices();
 
   // Set relevant Op settings

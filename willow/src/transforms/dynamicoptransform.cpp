@@ -1,4 +1,5 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
+#include <popart/aliasesmap.hpp>
 #include <popart/error.hpp>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
@@ -71,6 +72,9 @@ void transfer(Op *from, Op *to) {
 
 bool DynamicOpTransform::apply(Graph &graph) const {
   logging::transform::debug("[DynamicOpTransform] Started.");
+
+  AliasesMap aliasesMap{graph};
+  auto &aliases = aliasesMap.getAliases(graph);
 
   auto &ir      = graph.getIr();
   auto schedule = graph.getOpSchedule({}, RequireOptimalSchedule::Yes);
@@ -191,7 +195,7 @@ bool DynamicOpTransform::apply(Graph &graph) const {
     }
   }
 
-  gradSumToGradChain(ir, opsToChainMap);
+  gradSumToGradChain(ir, opsToChainMap, aliases);
 
   logging::transform::debug("[DynamicOpTransform] Done.");
   return true;
@@ -199,7 +203,8 @@ bool DynamicOpTransform::apply(Graph &graph) const {
 
 void DynamicOpTransform::gradSumToGradChain(
     Ir &ir,
-    std::map<Op *, std::vector<Op *>, POpCmp> opsToChainMap) const {
+    std::map<Op *, std::vector<Op *>, POpCmp> opsToChainMap,
+    Aliases &aliases) const {
 
   TensorId lastId;
   for (auto kv : opsToChainMap) {
@@ -243,7 +248,7 @@ void DynamicOpTransform::gradSumToGradChain(
     }
 
     if (sumRequired) {
-      sumOp->inheritPlacementAttributes(true);
+      sumOp->inheritPlacementAttributes(true, aliases);
       sumOp->setup();
     } else {
       ir.getMainGraph().eraseOp(sumOp->id);

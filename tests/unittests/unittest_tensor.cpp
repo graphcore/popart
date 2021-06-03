@@ -4,6 +4,7 @@
 #include <testutil/test_graphs/graph_test_models.hpp>
 
 #include <boost/test/unit_test.hpp>
+#include <popart/aliasesmap.hpp>
 #include <popart/dataflow.hpp>
 #include <popart/graph.hpp>
 #include <popart/graphutils.hpp>
@@ -23,9 +24,12 @@ BOOST_AUTO_TEST_CASE(ModifiedRegionsByOpsTest0) {
   auto schedule = model.getIr().getMainGraph().getOpSchedule(
       {}, RequireOptimalSchedule::No);
 
+  AliasesMap aliasesMap{model.getIr().getMainGraph()};
+  auto &aliases = aliasesMap.getAliases(model.getIr().getMainGraph());
+
   {
     // Check the full schedule
-    auto regions = t0->modifiedRegionsByOps(schedule);
+    auto regions = t0->modifiedRegionsByOps(schedule, aliases);
 
     logging::debug("Regions: {}", regions);
 
@@ -49,7 +53,7 @@ BOOST_AUTO_TEST_CASE(ModifiedRegionsByOpsTest0) {
     BOOST_REQUIRE_EQUAL(opsToTest.size(), 2);
 
     {
-      auto regions = t0->modifiedRegionsByOps(opsToTest);
+      auto regions = t0->modifiedRegionsByOps(opsToTest, aliases);
 
       logging::debug("Regions: {}", regions);
 
@@ -74,7 +78,7 @@ BOOST_AUTO_TEST_CASE(ModifiedRegionsByOpsTest0) {
     BOOST_REQUIRE_EQUAL(opsToTest.size(), 1);
 
     {
-      auto regions = t0->modifiedRegionsByOps(opsToTest);
+      auto regions = t0->modifiedRegionsByOps(opsToTest, aliases);
 
       logging::debug("Regions: {}", regions);
 

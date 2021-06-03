@@ -100,6 +100,7 @@ TestObjects setup(std::function<void(Builder *)> modelBuilder,
   case SubgraphCopyingStrategy::JustInTime:
     copyingStrat =
         std::make_unique<liveness::JustInTimeSubgraphCopyingStrategy>();
+    copyingStrat->setIr(ir.get());
     break;
   default:
     assert(false);

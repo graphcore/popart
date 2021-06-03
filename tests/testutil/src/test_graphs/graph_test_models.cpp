@@ -124,7 +124,6 @@ GraphTestModel1::GraphTestModel1() {
       Onnx::CustomOperators::AddLhsInplace,
       gSettings.copy("AddLhsInplace"));
 
-  ir.updateAliases();
   ir.updateVertices();
 
   df = DataFlow(1, {{"t3", art}});
@@ -193,7 +192,6 @@ GraphTestModel2::GraphTestModel2() {
 
   graph.topoCons->insert(add0, sgd0, false);
 
-  ir.updateAliases();
   ir.updateVertices();
 
   df = DataFlow(1, {{"t5", art}});

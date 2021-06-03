@@ -1,5 +1,6 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 
+#include <popart/aliasesmap.hpp>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/onnxutil.hpp>
@@ -246,6 +247,9 @@ bool AutomaticLossScale::apply(Graph &graph) const {
   // 2. The optimizer's loss scaling is non-const
   // 3. Not compatible with continuous pipelining
 
+  AliasesMap aliasesMap{graph};
+  auto &aliases = aliasesMap.getAliases(graph);
+
   // 1.
   auto &ir = graph.getIr();
   if (!ir.canTrain()) {
@@ -290,7 +294,7 @@ bool AutomaticLossScale::apply(Graph &graph) const {
     histogramOp->connectInTensor(HistogramOp::getInIndex(), tensor->id);
     histogramOp->createAndConnectOutTensor(HistogramOp::getOutIndex(),
                                            tensor->id + "_statistics");
-    histogramOp->inheritPlacementAttributes(false);
+    histogramOp->inheritPlacementAttributes(false, aliases);
     histogramOp->setup();
     histogramOutputs.push_back(
         histogramOp->outTensor(HistogramOp::getOutIndex()));
@@ -329,7 +333,7 @@ bool AutomaticLossScale::apply(Graph &graph) const {
 
     statsSumOp->createAndConnectOutTensor(SumOp::getOutIndex(),
                                           "summedHistograms");
-    statsSumOp->inheritPlacementAttributes(false);
+    statsSumOp->inheritPlacementAttributes(false, aliases);
     statsSumOp->setup();
 
     finalStatisticsTensors = {statsSumOp->outTensor(SumOp::getOutIndex())};
@@ -352,7 +356,7 @@ bool AutomaticLossScale::apply(Graph &graph) const {
     statsAcclOp->connectInTensor(AddRhsInplaceOp::getArg1InIndex(), toAcclId);
     statsAcclOp->createAndConnectOutTensor(AddRhsInplaceOp::getOutIndex(),
                                            inTensor->id + "_accld");
-    statsAcclOp->inheritPlacementAttributes(false);
+    statsAcclOp->inheritPlacementAttributes(false, aliases);
     statsAcclOp->setup();
     TensorId accldId = statsAcclOp->outId(AddRhsInplaceOp::getOutIndex());
 
@@ -364,7 +368,7 @@ bool AutomaticLossScale::apply(Graph &graph) const {
     statsAcclResetOp->createAndConnectOutTensor(
         AccumulatorUpdateOp::getUpdatedVarOutIndex(),
         inTensor->id + "_accld_reset");
-    statsAcclResetOp->inheritPlacementAttributes(false);
+    statsAcclResetOp->inheritPlacementAttributes(false, aliases);
     statsAcclResetOp->setup();
 
     // Reset the accumulator, and update the loss in the outer fragment
@@ -388,7 +392,7 @@ bool AutomaticLossScale::apply(Graph &graph) const {
     reduceOp->connectInTensor(ReplicatedAllReduceOp::getInIndex(), inId);
     reduceOp->createAndConnectOutTensor(ReplicatedAllReduceOp::getOutIndex(),
                                         "summedHistograms_reduced");
-    reduceOp->inheritPlacementAttributes(false);
+    reduceOp->inheritPlacementAttributes(false, aliases);
     reduceOp->setup();
 
     // Case 3

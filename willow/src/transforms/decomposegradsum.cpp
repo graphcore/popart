@@ -1,5 +1,6 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
 #include <poprithmstransitiveclosure.hpp>
+#include <popart/aliasesmap.hpp>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/names.hpp>
@@ -182,6 +183,9 @@ bool DecomposeGradSum::apply(Graph &graph) const {
   */
   const auto tc = PoprithmsTransitiveClosure::fromGraph(graph);
 
+  AliasesMap aliasesMap{graph};
+  auto &aliases = aliasesMap.getAliases(graph);
+
   for (Op *gradSumOp : getDecomposableGradSumOps(graph)) {
     logging::debug("Decomposing gradient sum op '{}' into a tree off additions "
                    "of its inputs",
@@ -293,14 +297,14 @@ bool DecomposeGradSum::apply(Graph &graph) const {
       op->settings.inferTensorMappingToFrom.insert(
           {AddOp::getArg0InIndex(), AddOp::getArg1InIndex()});
 
-      op->inheritPlacementAttributes(true);
+      op->inheritPlacementAttributes(true, aliases);
       op->setup();
       op->toLoss   = PathToLoss::No;
       op->fromLoss = PathFromLoss::Yes;
       batchSerialized |= op->hasBatchSerializedPhase();
     }
 
-    initOp->inheritPlacementAttributes(true);
+    initOp->inheritPlacementAttributes(true, aliases);
     if (batchSerialized) {
       initOp->setBatchSerializedPhase(-1);
     }

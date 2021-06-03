@@ -13,85 +13,10 @@
 
 namespace popart {
 
-view::Chains Tensors::getChainsFromTo(Tensor *from, Tensor *to) const {
-  return aliases.getChainsFromTo(from, to);
-}
-
 TensorId Tensors::moveIntoTensors(std::unique_ptr<Tensor> tensor) {
   auto id = tensor->id;
   insert(id, std::move(tensor));
   return id;
-}
-
-std::unordered_map<Tensor *, view::Chains>
-Tensors::aliasChainsTo(Tensor *to) const {
-  return aliases.aliasChainsTo(to);
-}
-
-std::unordered_map<Tensor *, view::Chains>
-Tensors::aliasChainsFrom(Tensor *from) const {
-  return aliases.aliasChainsFrom(from);
-}
-
-// Regions in "from" aliased "to"
-view::Regions Tensors::getAliasRegions(Tensor *from, Tensor *to) const {
-  auto aliasedTensorMap = graph.getTensors().aliasChainsFrom(from);
-  auto it               = aliasedTensorMap.find(to);
-  if (it == aliasedTensorMap.end()) {
-    return view::Regions({view::Region::getEmpty(to->info.rank())});
-  } else {
-    return it->second.apply(view::Region::getFull(from->info.shape()));
-  }
-}
-
-void Tensors::clearAliases() { aliases.clearAliases(); }
-
-// Let the Chains flow through op (called on new inplace ops)
-void Tensors::updateAliases(Op *op) {
-  logging::trace("[updateAliases] Updating alias for Op {}", op->debugName());
-
-  auto scopedStopwatch = op->getIr().timePartitionLogger().scopedStopwatch(
-      "Tensors::updateAliases");
-
-  // for all of the inputs of op, t1 and all output, t2:
-  for (auto i1_t1 : op->input->tensorMap()) {
-    for (auto o1_t2 : op->output->tensorMap()) {
-      InIndex i1 = i1_t1.first;
-      Tensor *t1 = i1_t1.second;
-
-      InIndex o1 = o1_t2.first;
-      Tensor *t2 = o1_t2.second;
-
-      logging::trace("[updateAliases] In: {}-{} {}, Out: {}-{} {}",
-                     i1,
-                     t1->id,
-                     t1->info.shape(),
-                     o1,
-                     t2->id,
-                     t2->info.shape());
-
-      view::Regions inRegions = op->aliases(i1, o1);
-
-      if (std::all_of(inRegions.begin(), inRegions.end(), [](view::Region &r) {
-            return r.isEmpty();
-          })) {
-        continue;
-      }
-
-      auto fwdMap = op->fwdRegMap(i1, o1);
-      auto bwdMap = op->bwdRegMap(i1, o1);
-
-      aliases.updateAliases(t1,
-                            t2,
-                            inRegions,
-                            fwdMap,
-                            bwdMap,
-                            "Fwd Link of " + op->debugName() + " " +
-                                std::to_string(i1) + "->" + std::to_string(o1),
-                            "Bwd Link of " + op->debugName() + " " +
-                                std::to_string(i1) + "->" + std::to_string(o1));
-    }
-  }
 }
 
 std::vector<TensorId> Tensors::getAllTensorIds() const {
