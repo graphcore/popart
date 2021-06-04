@@ -60,8 +60,9 @@ static OpDefinition::DataTypes T1 = {DataType::UINT32};
 // Register the op so that we can add it to an Onnx model via the Builder
 // for the purposes of testing
 static OpDefinition lossScaleUpdateOpDef(
-    {OpDefinition::Inputs({{"grad_statistics", T1}}),
-     OpDefinition::Outputs({{"loss_scale_update_factor", T0}}),
+    {OpDefinition::Inputs({{"loss_scale_update_factor", T0},
+                           {"grad_statistics", T1}}),
+     OpDefinition::Outputs({{"loss_scale_update_factor_updated", T0}}),
      OpDefinition::Attributes({{"to", {"FLOAT|FLOAT16"}}})});
 
 static OpCreator<LossScaleUpdateOp> lossScaleUpdateOpCreator(
