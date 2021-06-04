@@ -596,8 +596,8 @@ void mergeConsecutivePipelineStages(Graph &graph) {
 
 bool isFullRecompute(Graph &graph) {
   auto &ir = graph.getIr();
-  return ir.getSessionOptions().autoRecomputation ==
-         RecomputationType::Pipeline;
+  return ir.canTrain() && (ir.getSessionOptions().autoRecomputation ==
+                           RecomputationType::Pipeline);
 }
 
 bool hasCheckpointProducer(Tensor *tensor) {
