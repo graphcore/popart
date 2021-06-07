@@ -1117,7 +1117,7 @@ ShardingPlan Op::loopShard(const ShardingPlan adjustedInputPlan,
   loopOp->fromLoss = fromLoss;
   if (toLoss == PathToLoss::Yes && fromLoss == PathFromLoss::Yes) {
     loopOp->fromLoss   = PathFromLoss::No;
-    clonedOp->fromLoss = PathFromLoss::No;
+    clonedOp->fromLoss = PathFromLoss::Undefined;
     requiresIdLoss     = true;
   }
 
