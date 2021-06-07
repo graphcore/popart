@@ -49,7 +49,9 @@ bool UpsampleToResizePattern::apply(Op *op) const {
       Onnx::CustomOperators::Resize,
       Op::Settings(graph, upsample->name() + "_" + "Resize"),
       upsampleToResizeMode(upsample->getMode()),
-      upsample->getScales());
+      upsample->getScales(),
+      // This resize mode preserves the previous behaviour.
+      ResizeNearestMode::Pytorch);
 
   auto resize = resize2.get();
   transferBaseProperties(upsample, resize);

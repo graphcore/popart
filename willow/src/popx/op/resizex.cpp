@@ -22,8 +22,18 @@ void ResizeOpx::grow(poplar::program::Sequence &prog) const {
   auto input  = getInTensor(ResizeOp::getInIndex()).getPoplarTensor();
   auto result = cloneNcopy(prog, input);
   for (int i = 0; i < input.rank(); i++) {
-    if (result.shape().at(i) != outShape.at(i)) {
-      result = resizeDim(result, i, outShape.at(i), resizeOp.getScales().at(i));
+    if (resizeOp.getNearestMode() == ResizeNearestMode::Pytorch) {
+      if (result.shape().at(i) != outShape.at(i)) {
+        result =
+            resizeDim(result, i, outShape.at(i), resizeOp.getScales().at(i));
+      }
+    } else {
+      // Even if the output shape is the same, resize can still have an affect
+      // on the values. Instead scale is checked.
+      auto scale = resizeOp.getScales().at(i);
+      if (scale != 1.0f) {
+        result = resizeDim(result, i, outShape.at(i), scale);
+      }
     }
   }
 
@@ -40,12 +50,6 @@ std::vector<poplar::Tensor> split(const poplar::Tensor &input, int dim) {
   return result;
 }
 
-poplar::Tensor nativeNonNegIntegerResize(poplar::Tensor &input,
-                                         const int dim,
-                                         const float scale) {
-  return input.upsample(scale, dim, poplar::UpsampleMethod::REPEAT);
-}
-
 } // namespace
 
 poplar::Tensor ResizeOpx::resizeDim(poplar::Tensor &input,
@@ -59,22 +63,82 @@ poplar::Tensor ResizeOpx::resizeDim(poplar::Tensor &input,
   const bool scaleIsNonNegInt =
       std::fabs(roundedScale - scale) <= eps && roundedScale >= 0.f;
 
-  // Use the native resize method where possible, as our generalised method for
-  // float scales is extremely expensive on tensor expressions.
+  auto nearestModeIsNot = [&](const std::vector<ResizeNearestMode> &xs) {
+    auto nearestMode = getOp<ResizeOp>().getNearestMode();
+    for (auto x : xs) {
+      if (nearestMode == x) {
+        return false;
+      }
+    }
+    return true;
+  };
 
-  return scaleIsNonNegInt ? nativeNonNegIntegerResize(input, dim, scale)
-                          : resizeNearestNeighbour(input, dim, size, scale);
+  // Use poplar::Tensor::upsample if possible, as our generalised method for
+  // float scales is extremely expensive on tensor expressions. If the scale is
+  // a positive integer, and the resize mode is not floor or ceil, it is ok to
+  // use poplars upsample. Poplars upsample works equally well for both resize
+  // modes, round_prefer_floor, and round_prefer_ceil. If we look at the
+  // equation used to transform the index:
+  //   `rounding_mode((i + 0.5) / scale - 0.5)`
+  // This will only return a difference result if the answer to
+  //   `(i + 0.5) / scale - 0.5`
+  // is `x.5`. If we then take the equation:
+  //   `(i + 0.5) / scale - 0.5 = 0.5`
+  // and rearrange it for s, we get:
+  //   `s = i + 0.5`
+  // but we know both s and i have to be integers and this can not be satisfied.
+  if (scaleIsNonNegInt &&
+      nearestModeIsNot({ResizeNearestMode::Floor, ResizeNearestMode::Ceil})) {
+    return input.upsample(scale, dim, poplar::UpsampleMethod::REPEAT);
+  } else {
+    return resizeNearestNeighbour(input, dim, size, scale);
+  }
 }
+
+namespace {
+
+float round_prefer_floor(float x) {
+  if (x - std::floor(x) <= 0.5f) {
+    return std::floor(x);
+  } else {
+    return std::ceil(x);
+  }
+}
+
+} // namespace
 
 poplar::Tensor ResizeOpx::resizeNearestNeighbour(poplar::Tensor &input,
                                                  int dim,
                                                  int64_t size,
                                                  float scale) const {
+  auto nearestMode    = getOp<ResizeOp>().getNearestMode();
+  auto transformIndex = [nearestMode, scale](int i, int maxIndex) {
+    auto onnxTransform = [scale](int i) {
+      return (static_cast<float>(i) + 0.5f) / scale - 0.5f;
+    };
+
+    switch (nearestMode) {
+    case ResizeNearestMode::RoundPreferCeil:
+      return static_cast<int>(std::round(onnxTransform(i)));
+    case ResizeNearestMode::RoundPreferFloor:
+      return static_cast<int>(round_prefer_floor(onnxTransform(i)));
+    case ResizeNearestMode::Floor:
+      return std::max(static_cast<int>(std::floor(onnxTransform(i))), 0);
+    case ResizeNearestMode::Ceil:
+      return std::min(static_cast<int>(std::ceil(onnxTransform(i))), maxIndex);
+    case ResizeNearestMode::Pytorch:
+      return static_cast<int>(std::floor(static_cast<float>(i) / scale));
+    default:
+      throw error("Unrecognized ResizeNearestMode {}",
+                  static_cast<int>(nearestMode));
+    }
+  };
+
   auto slices = split(input, dim);
 
   std::vector<poplar::Tensor> toConcat;
   for (int i = 0; i < size; i++) {
-    int idx = static_cast<int>(std::floor(static_cast<float>(i) / scale));
+    int idx = transformIndex(i, slices.size() - 1);
     toConcat.push_back(slices.at(idx));
   }
 

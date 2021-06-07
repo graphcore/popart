@@ -29,7 +29,19 @@ ResizeOp::ResizeOp(const OperatorIdentifier &opid_,
                    const Op::Settings &settings_,
                    ResizeMode mode_,
                    const std::vector<float> &scales_)
-    : Op(opid_, settings_), scales(scales_), mode(mode_) {}
+    : ResizeOp(opid_,
+               settings_,
+               mode_,
+               scales_,
+               ResizeNearestMode::RoundPreferFloor) {}
+
+ResizeOp::ResizeOp(const OperatorIdentifier &opid_,
+                   const Op::Settings &settings_,
+                   ResizeMode mode_,
+                   const std::vector<float> &scales_,
+                   ResizeNearestMode nearestMode_)
+    : Op(opid_, settings_), scales(scales_), mode(mode_),
+      nearestMode(nearestMode_) {}
 
 std::unique_ptr<Op> ResizeOp::clone() const {
   return std::make_unique<ResizeOp>(*this);
@@ -103,18 +115,45 @@ const std::map<int, int> &ResizeGradOp::gradOutToNonGradIn() const {
 
 namespace {
 
-ResizeMode getResizeModeFromString(const std::string &mode) {
-  static std::map<std::string, ResizeMode> modeMap = {
-      {"nearest", ResizeMode::Nearest}, {"linear", ResizeMode::Linear}};
+// This will be required soon, so I am commenting out for now.
+// ResizeMode getResizeModeFromString(const std::string &mode) {
+//   static std::map<std::string, ResizeMode> modeMap = {
+//       {"nearest", ResizeMode::Nearest}, {"linear", ResizeMode::Linear}};
+//   auto found = modeMap.find(mode);
+//   if (found != modeMap.end()) {
+//     return found->second;
+//   } else {
+//     throw error("Unrecognised resize mode {}", mode);
+//   }
+// }
+
+ResizeNearestMode getResizeNearestModeFromString(const std::string &mode) {
+  static std::map<std::string, ResizeNearestMode> modeMap = {
+      {"round_prefer_floor", ResizeNearestMode::RoundPreferFloor},
+      {"round_prefer_ceil", ResizeNearestMode::RoundPreferCeil},
+      {"floor", ResizeNearestMode::Floor},
+      {"ceil", ResizeNearestMode::Ceil},
+      {"pytorch", ResizeNearestMode::Pytorch}};
   auto found = modeMap.find(mode);
   if (found != modeMap.end()) {
     return found->second;
   } else {
-    throw error("Unrecognised resize mode {}", mode);
+    throw error("Unrecognised resize nearest mode {}", mode);
   }
 }
 
-std::vector<float> readScales(const OpCreatorInfo &info, int scalesInputIndex) {
+std::vector<float> readScales(const OpCreatorInfo &info,
+                              const OperatorIdentifier &opid) {
+  int scalesInputIndex;
+  if (info.opid == Onnx::Operators::Resize_10) {
+    scalesInputIndex = 1;
+  } else if (info.opid == Onnx::Operators::Resize_11) {
+    scalesInputIndex = 2;
+  } else {
+    throw internal_error("Don't know how to set `scalesInputIndex` for {}",
+                         info.opid);
+  }
+
   auto scalesInfo = info.getInputTensorInfo(scalesInputIndex);
   if (scalesInfo.dataType() == DataType::FLOAT) {
     return info.getInputData<float>(scalesInputIndex);
@@ -161,34 +200,13 @@ static OpDefinition
                         {"sizes", TensorFloat},
                     }),
                     OpDefinition::Outputs({{"Y", T1}}),
-                    OpDefinition::Attributes(
-                        {{"coordinate_transformation_mode", {"half_pixel"}},
-                         {"cubic_coeff", {"*"}},
-                         {"exclude_outside", {"0"}},
-                         {"extrapalation_value", {"*"}},
-                         {"mode", {"nearest"}},
-                         {"nearest_mode", {"round_prefer_floor"}}})});
-
-static OpCreator<ResizeOp> resize10_OpCreator(
-    OpDefinitions({{Onnx::Operators::Resize_10, resize10_OpDef}}),
-    [](const OpCreatorInfo &info, Graph &graph) -> Op * {
-      int scalesInputIndex      = 1;
-      std::vector<float> scales = readScales(info, scalesInputIndex);
-
-      std::string modeString =
-          info.attributes.getAttribute<Attributes::String>("mode", "nearest");
-      ResizeMode mode = getResizeModeFromString(modeString);
-
-      Op *op = graph.createOp<ResizeOp>(
-          Onnx::CustomOperators::Resize, info.settings, mode, scales);
-
-      op->connectInTensor(ResizeOp::getInIndex(), info.getInputIds().at(0));
-      op->createAndConnectOutTensor(ResizeOp::getOutIndex(),
-                                    info.getOutputIds().at(0));
-
-      return op;
-    },
-    true);
+                    OpDefinition::Attributes({{"coordinate_transformation_mode",
+                                               {"half_pixel"}},
+                                              {"cubic_coeff", {"*"}},
+                                              {"exclude_outside", {"0"}},
+                                              {"extrapalation_value", {"*"}},
+                                              {"mode", {"nearest"}},
+                                              {"nearest_mode", {"*"}}})});
 
 template <typename T>
 void checkAttribute(const OperatorIdentifier &opid,
@@ -211,12 +229,24 @@ void checkAttribute(const OperatorIdentifier &opid,
   }
 }
 
-static OpCreator<ResizeOp> resize11_OpCreator(
-    OpDefinitions({{Onnx::Operators::Resize_11, resize11_OpDef}}),
+ResizeNearestMode getNearestMode(const OpCreatorInfo &info) {
+  // Setting the default nearest mode to "pytorch" for Resize10 will
+  // preserve existing resize behaviour for poptorch.
+  std::string defaultNearestMode = "round_prefer_floor";
+  if (info.opid == Onnx::Operators::Resize_10) {
+    defaultNearestMode = "pytorch";
+  }
+  std::string nearestModeString =
+      info.attributes.getAttribute<Attributes::String>("nearest_mode",
+                                                       defaultNearestMode);
+  return getResizeNearestModeFromString(nearestModeString);
+}
+
+static OpCreator<ResizeOp> resize_OpCreator(
+    OpDefinitions({{Onnx::Operators::Resize_10, resize10_OpDef},
+                   {Onnx::Operators::Resize_11, resize11_OpDef}}),
     [](const OpCreatorInfo &info, Graph &graph) -> Op * {
-      logging::debug("Resize11 factory enter");
-      int scalesInputIndex      = 2;
-      std::vector<float> scales = readScales(info, scalesInputIndex);
+      std::vector<float> scales = readScales(info, info.opid);
 
       const Attributes &attr = info.attributes;
 
@@ -226,15 +256,16 @@ static OpCreator<ResizeOp> resize11_OpCreator(
       checkAttribute<Attributes::String>(
           info.opid, attr, "coordinate_transformation_mode", {"half_pixel"});
       checkAttribute<Attributes::String>(info.opid, attr, "mode", {"nearest"});
-      checkAttribute<Attributes::String>(
-          info.opid, attr, "nearest_mode", {"round_prefer_floor"});
       checkAttribute<Attributes::Int>(info.opid, attr, "exclude_outside", {0});
+
+      ResizeNearestMode nearestMode = getNearestMode(info);
 
       // Create the op in the graph.
       Op *op = graph.createOp<ResizeOp>(Onnx::CustomOperators::Resize,
                                         info.settings,
                                         ResizeMode::Nearest,
-                                        scales);
+                                        scales,
+                                        nearestMode);
 
       // Connect only the first input.
       op->connectInTensor(ResizeOp::getInIndex(), info.getInputIds().at(0));

@@ -10,12 +10,29 @@ enum class ResizeMode { Nearest, Linear, N };
 std::string toString(const ResizeMode &);
 std::ostream &operator<<(std::ostream &, const ResizeMode &);
 
+enum class ResizeNearestMode {
+  RoundPreferFloor,
+  RoundPreferCeil,
+  Floor,
+  Ceil,
+  // Pytorch is not one of the onnx resize modes, but has been added to provide
+  // a mode that more closely matches pytorch.interpolate.
+  Pytorch,
+  N
+};
+
 class ResizeOp : public Op {
 public:
   ResizeOp(const OperatorIdentifier &,
            const Op::Settings &,
            ResizeMode,
            const std::vector<float> &scales);
+
+  ResizeOp(const OperatorIdentifier &,
+           const Op::Settings &,
+           ResizeMode,
+           const std::vector<float> &scales,
+           ResizeNearestMode nearestMode);
 
   std::unique_ptr<Op> clone() const override;
   std::vector<std::unique_ptr<Op>> getGradOps() final;
@@ -29,9 +46,12 @@ public:
   ResizeMode getMode() const { return mode; }
   const std::vector<float> &getScales() const { return scales; }
 
+  ResizeNearestMode getNearestMode() const { return nearestMode; }
+
 private:
   const std::vector<float> scales;
   const ResizeMode mode;
+  const ResizeNearestMode nearestMode;
 };
 
 class ResizeGradOp : public ResizeOp {

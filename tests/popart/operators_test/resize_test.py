@@ -10,6 +10,8 @@ import os
 from packaging import version
 import numbers
 
+import onnx.backend.test.case.node.resize as onnx_resize
+
 # Uncomment for debugging:
 # os.environ['POPART_LOG_LEVEL'] = 'TRACE'
 
@@ -50,13 +52,15 @@ def interpolate(data, scale_factor):
         return result
 
 
-@pytest.mark.parametrize("data_shape, scales", [
-    ([2, 2], [2.0, 3.0]),
-    ([2, 2], [2.5, 2.5]),
-    ([3, 2], [2.5, 2.5]),
-    ([5, 3], [2.3, 2.5]),
-])
-def test_upsample_nearest(op_tester, data_shape, scales):
+@pytest.mark.parametrize(
+    "data_shape, scales",
+    [
+        # upsample
+        ([2, 2], [2.0, 3.0]),
+        # downsample
+        ([2, 4], [0.5, 0.5]),
+    ])
+def test_resize_10(op_tester, data_shape, scales):
 
     data = np.random.rand(1, 1, *data_shape).astype(np.float32)
 
@@ -70,38 +74,10 @@ def test_upsample_nearest(op_tester, data_shape, scales):
         return [o]
 
     def reference(ref_data):
-        x = torch.tensor(data)
-        s = [i for i in scales[2:]]
-        o = interpolate(x, s)
-        return [o]
-
-    op_tester.run(init_builder, reference, 'infer')
-
-
-@pytest.mark.parametrize("data_shape, scales", [
-    ([2, 4], [0.5, 0.5]),
-    ([2, 8], [1.0, 3 / 8]),
-    ([5, 4], [0.5, 0.5]),
-    ([5, 3], [0.3, 0.5]),
-])
-def test_downsample_nearest(op_tester, data_shape, scales):
-
-    data = np.random.rand(1, 1, *data_shape).astype(np.float32)
-
-    scales = np.array([1.0, 1.0] + scales, dtype=np.float32)
-
-    def init_builder(builder):
-        d = builder.addInputTensor(data)
-        s = builder.aiOnnx.constant(scales)
-        o = builder.aiOnnx.resize([d, s])
-        builder.addOutputTensor(o)
-        return [o]
-
-    def reference(ref_data):
-        x = torch.tensor(data)
-        s = [i for i in scales[2:]]
-        o = interpolate(x, s)
-        return [o]
+        o = onnx_resize.interpolate_nd(data,
+                                       onnx_resize.nearest_coeffs,
+                                       scale_factors=scales)
+        return [o.astype(data.dtype)]
 
     op_tester.run(init_builder, reference, 'infer')
 
@@ -209,13 +185,21 @@ def test_resize_nearest_grad_2d(op_tester, factor1, factor2):
     op_tester.run(init_builder, reference, 'train')
 
 
-@pytest.mark.parametrize("data_shape, scales", [
-    ([2, 2], [2.0, 3.0]),
-    ([2, 2], [2.5, 2.5]),
-    ([3, 2], [2.5, 2.5]),
-    ([5, 3], [2.3, 2.5]),
-])
-def test_upsample_nearest_grad(op_tester, data_shape, scales):
+@pytest.mark.parametrize(
+    "data_shape, scales",
+    [
+        # upsample
+        ([2, 2], [2.0, 3.0]),
+        ([2, 2], [2.5, 2.5]),
+        ([3, 2], [2.5, 2.5]),
+        ([5, 3], [2.3, 2.5]),
+        # downsample
+        ([2, 4], [0.5, 0.5]),
+        ([2, 8], [1.0, 3 / 8]),
+        ([5, 4], [0.5, 0.5]),
+        ([5, 3], [0.3, 0.5]),
+    ])
+def test_nearest_grad(op_tester, data_shape, scales):
     data = np.random.rand(1, 1, *data_shape).astype(np.float32)
 
     scales = np.array([1.0, 1.0] + scales, dtype=np.float32)
@@ -251,66 +235,56 @@ def test_upsample_nearest_grad(op_tester, data_shape, scales):
     op_tester.run(init_builder, reference, 'train')
 
 
-@pytest.mark.parametrize("data_shape, scales", [
-    ([2, 4], [0.5, 0.5]),
-    ([2, 8], [1.0, 3 / 8]),
-    ([5, 4], [0.5, 0.5]),
-    ([5, 3], [0.3, 0.5]),
-])
-def test_downsample_nearest_grad(op_tester, data_shape, scales):
-    data = np.random.rand(1, 1, *data_shape).astype(np.float32)
+@pytest.mark.parametrize(
+    "data_shape, scales",
+    [
+        # This changes the values without changing the size of the dimension.
+        ([8], [1.12]),
+        # upsample
+        ([2], [8.0]),
+        ([2, 2], [2.0, 3.0]),
+        ([2, 2], [2.5, 2.5]),
+        ([3, 2], [2.5, 2.5]),
+        ([5, 3], [2.3, 2.5]),
+        # downsample
+        ([2, 4], [0.5, 0.5]),
+        ([2, 8], [1.0, 3 / 8]),
+        ([5, 4], [0.5, 0.5]),
+        ([5, 3], [0.3, 0.5]),
+    ])
+@pytest.mark.parametrize(
+    "nearest_mode",
+    ['round_prefer_floor', 'round_prefer_ceil', 'floor', 'ceil', 'pytorch'])
+def test_resize_11(op_tester, data_shape, scales, nearest_mode):
+    if nearest_mode == 'pytorch':
+        data_shape = [1, 1] + data_shape
+        scales = [1.0, 1.0] + scales
 
-    scales = np.array([1.0, 1.0] + scales, dtype=np.float32)
-
-    x_data_shape = [int(i * j) for i, j in zip(data.shape, scales)]
-    x_data = np.random.rand(*x_data_shape).astype(np.float32)
-
-    def init_builder(builder):
-        d = builder.addInputTensor(data)
-        x = builder.addInputTensor(x_data)
-        s = builder.aiOnnx.constant(scales)
-        o = builder.aiOnnx.resize([d, s])
-        o = builder.aiOnnx.mul([o, x])
-        builder.addOutputTensor(o)
-        return [
-            o,
-            popart.reservedGradientPrefix() + d,
-            popart.reservedGradientPrefix() + o,
-        ]
-
-    def reference(ref_data):
-        a = torch.tensor(data, requires_grad=True)
-        s = [i for i in scales[2:]]
-        b = interpolate(a, s)
-        b.retain_grad()
-        o = b * torch.tensor(x_data)
-
-        d__o = ref_data.getOutputTensorGrad(0)
-        o.backward(torch.tensor(d__o))
-        return [o, a.grad, None]
-
-    op_tester.setPatterns(['MulArgGradOp'], enableRuntimeAsserts=False)
-    op_tester.run(init_builder, reference, 'train')
-
-
-def test_resize_11(op_tester):
-    data = np.random.rand(1, 1, 2, 2).astype(np.float32)
+    data = np.random.rand(*data_shape).astype(np.float32)
     roi = np.array([], dtype=np.float32)
-    scales = np.array([1.0, 1.0, 2.0, 3.0], dtype=np.float32)
+    scales = np.array(scales, dtype=np.float32)
 
     def init_builder(builder):
         d = builder.addInputTensor(data)
         s = builder.aiOnnxOpset11.constant(scales, False)
         r = builder.aiOnnxOpset11.constant(roi, False)
-        o = builder.aiOnnxOpset11.resize([d, r, s])
+        o = builder.aiOnnxOpset11.resize([d, r, s], nearest_mode=nearest_mode)
         builder.addOutputTensor(o)
         return [o]
 
     def reference(ref_data):
-        x = torch.tensor(data)
-        s = [i for i in scales[2:]]
-        o = interpolate(x, s)
-        return [o]
+        if nearest_mode == 'pytorch':
+            x = torch.tensor(data)
+            s = [i for i in scales[2:]]
+            o = interpolate(x, s)
+            return [o]
+        else:
+
+            def coeffs(ratio):
+                return onnx_resize.nearest_coeffs(ratio, mode=nearest_mode)
+
+            o = onnx_resize.interpolate_nd(data, coeffs, scale_factors=scales)
+            return [o.astype(data.dtype)]
 
     op_tester.run(init_builder, reference, 'infer')
 
@@ -395,90 +369,40 @@ def test_resize11_float16_scales(op_tester):
     op_tester.run(init_builder, reference, 'infer')
 
 
-def test_odd_scale_factor_upsample(op_tester):
-    scale_factor = 3.0001
-    data = np.random.rand(1, 1, 2).astype(np.float32)
+@pytest.mark.parametrize("scale_factor, data_shape", [(3.0001, 2), (0.51, 6)])
+@pytest.mark.parametrize("nearest_mode", ["round_prefer_floor", "pytorch"])
+def test_odd_scale_factors(op_tester, nearest_mode, scale_factor, data_shape):
+    data = np.random.rand(1, 1, data_shape).astype(np.float32)
     scales = np.array([1.0, 1.0, scale_factor], dtype=np.float32)
 
     def init_builder(builder):
         d = builder.addInputTensor(data)
         s = builder.aiOnnx.constant(scales)
         o = builder.aiOnnx.resize([d, s])
+        builder.addNodeAttribute("nearest_mode", nearest_mode, {o})
         builder.addOutputTensor(o)
         return [o]
 
     def reference(ref_data):
-        x = torch.tensor(data)
-        s = [i for i in scales[2:]]
-        o = interpolate(x, s)
-
-        return [o]
+        if nearest_mode == "pytorch":
+            x = torch.tensor(data)
+            s = [i for i in scales[2:]]
+            o = interpolate(x, s)
+            return [o]
+        else:
+            o = onnx_resize.interpolate_nd(data,
+                                           onnx_resize.nearest_coeffs,
+                                           scale_factors=scales)
+            return [o.astype(data.dtype)]
 
     op_tester.run(init_builder, reference, 'infer')
 
 
-def test_odd_scale_factor_upsample_grad(op_tester):
-    data = np.random.rand(1, 1, 2).astype(np.float32)
+@pytest.mark.parametrize("scale_factor, data_shape", [(3.0001, 2), (0.51, 6)])
+def test_odd_scale_factors_grad(op_tester, scale_factor, data_shape):
+    data = np.random.rand(1, 1, data_shape).astype(np.float32)
 
-    scales = np.array([1.0, 1.0, 3.0001], dtype=np.float32)
-
-    x_data_shape = [int(i * j) for i, j in zip(data.shape, scales)]
-    x_data = np.random.rand(*x_data_shape).astype(np.float32)
-
-    def init_builder(builder):
-        d = builder.addInputTensor(data)
-        x = builder.addInputTensor(x_data)
-        s = builder.aiOnnx.constant(scales)
-        o = builder.aiOnnx.resize([d, s])
-        o = builder.aiOnnx.mul([o, x])
-        builder.addOutputTensor(o)
-        return [
-            o,
-            popart.reservedGradientPrefix() + d,
-            popart.reservedGradientPrefix() + o,
-        ]
-
-    def reference(ref_data):
-        a = torch.tensor(data, requires_grad=True)
-        s = [i for i in scales[2:]]
-        b = interpolate(a, s)
-        b.retain_grad()
-        o = b * torch.tensor(x_data)
-
-        d__o = ref_data.getOutputTensorGrad(0)
-        o.backward(torch.tensor(d__o))
-        return [o, a.grad, None]
-
-    op_tester.setPatterns(['MulArgGradOp'], enableRuntimeAsserts=False)
-    op_tester.run(init_builder, reference, 'train')
-
-
-def test_odd_scale_factor_downsample(op_tester):
-    scale_factor = 0.51
-    data = np.random.rand(1, 1, 6).astype(np.float32)
     scales = np.array([1.0, 1.0, scale_factor], dtype=np.float32)
-
-    def init_builder(builder):
-        d = builder.addInputTensor(data)
-        s = builder.aiOnnx.constant(scales)
-        o = builder.aiOnnx.resize([d, s])
-        builder.addOutputTensor(o)
-        return [o]
-
-    def reference(ref_data):
-        x = torch.tensor(data)
-        s = [i for i in scales[2:]]
-        o = interpolate(x, s)
-
-        return [o]
-
-    op_tester.run(init_builder, reference, 'infer')
-
-
-def test_odd_scale_factor_downsample_grad(op_tester):
-    data = np.random.rand(1, 1, 6).astype(np.float32)
-
-    scales = np.array([1.0, 1.0, 0.51], dtype=np.float32)
 
     x_data_shape = [int(i * j) for i, j in zip(data.shape, scales)]
     x_data = np.random.rand(*x_data_shape).astype(np.float32)
