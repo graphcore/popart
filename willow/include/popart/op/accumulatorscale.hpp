@@ -7,7 +7,14 @@
 
 namespace popart {
 
-// Update accumulator by scaling by a factor
+/**
+ * @brief Inplace multiplies a tensor by an OptimizerValue factor.
+ *
+ * As with other Ops that consume OptimizerValues, will only have an input
+ * tensor for the value if the OptimizerValue is not const.
+ *
+ * Will directly zero the input tensor if the factor is const and 0.
+ */
 class AccumulatorScaleOp : public VarUpdateOp {
   OptimizerValue factor;
 

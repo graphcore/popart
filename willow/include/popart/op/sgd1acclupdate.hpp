@@ -7,6 +7,19 @@
 
 namespace popart {
 
+/**
+ * @brief Performs the part of the SGD1 velocity update equation that is
+ * pre-computed for the next time step after the weight update of the current
+ * time step.
+ *
+ * Let:
+ *   `v` be the input at `getVarToUpdateInIndex()`
+ *   `g` be the input at `getUpdaterInIndex()`
+ * then this op performs:
+ *   v <- v * smm1 + swd1 * g
+ *
+ * \sa SGD for how this is derived and the definitions of smm1 and swd1.
+ */
 class SGD1AcclUpdateOp : public VarUpdateWithUpdaterOp {
 
 public:

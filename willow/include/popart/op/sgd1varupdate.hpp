@@ -6,6 +6,17 @@
 
 namespace popart {
 
+/**
+ * @brief Performs the SGD1 weight update equation.
+ *
+ * Let:
+ *   `w` be the input at `getVarToUpdateInIndex()`
+ *   `g` be the input at `getUpdaterInIndex()`
+ * then this op performs:
+ *   w <- w - slr1 * g
+ *
+ * \sa SGD for how this is derived and the definition of slr1.
+ */
 class SGD1VarUpdateOp : public VarUpdateWithUpdaterOp {
 
 public:

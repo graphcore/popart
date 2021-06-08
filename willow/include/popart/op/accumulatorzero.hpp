@@ -7,7 +7,10 @@
 
 namespace popart {
 
-// Reset all values of the accumulator to zero
+/**
+ * @brief An AccumulatorScaleOp with a factor of 0, so zeroes the input tensor.
+ *
+ */
 class AccumulatorZeroOp : public AccumulatorScaleOp {
 public:
   AccumulatorZeroOp(const Op::Settings &settings)

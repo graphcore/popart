@@ -8,14 +8,18 @@
 
 namespace popart {
 
-// The "1" in the name signifies that there is 1 persistant Tensor required and
-// assocatiated to the Variable Tensor being updated. This is the Op generated
-// if gradient accumulation is used, or if there is non-zero momentum term for
-// the Variable Tensor being updated.
-
-// The "Combo" in the name signfies that this Op will be decomposed into 3
-// smaller Ops : (1) SGD1AccumlateOp (2) SGD1VarUpdateOp (3) SGD1AcclUpdateOp
-
+/**
+ * \brief A single Op that encapsulates all the information needed to describe
+ * an SGD1 optimiser step.
+ *
+ * The "1" in the name signifies that only one extra optimiser tensor (the accl
+ * tensor) is required. \sa SGD for the definition of what SGD1 is.
+ *
+ * The "Combo" in the name signifies that this Op will later be decomposed into
+ * many Ops and Tensors that actually implement the optimiser step. In this
+ * case, by the SGD1Decompose pattern. \sa SGD1Decompose for the definition of
+ * this decomposition.
+ */
 class SGD1ComboOp final : public SGDComboBaseOp {
 public:
   SGD1ComboOp(OptimizerValue initialSmm1,
