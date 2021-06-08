@@ -199,3 +199,149 @@ BOOST_AUTO_TEST_CASE(TestGetOpSetVersionFromModelReturnsDefaultOpsetVersion) {
   BOOST_REQUIRE_EQUAL(ir.getOpSetVersionFromModel(Domain::ai_graphcore),
                       ir.getDefaultOpsetVersion(Domain::ai_graphcore));
 }
+
+#include <onnxutil.hpp>
+#include <popart/builder.hpp>
+#include <popart/op/call.hpp>
+#include <popart/op/identity.hpp>
+
+#include <sstream>
+
+BOOST_AUTO_TEST_CASE(TestSerialise) {
+  /*
+    For the model:
+      t -> CallOp -> u
+             |
+             \
+              subgraph: [t -> Identity -> u]
+
+    Assert:
+      - If the main graph in the ONNX model has a custom name, the main graph's
+        key in the json is that name, otherwise it is "maingraph".
+      - Any other graph's key is graph->id.
+   */
+
+  const auto test = [](const auto initIrFn, const std::string subgraphName) {
+    Ir ir;
+    initIrFn(ir);
+
+    std::stringstream ss;
+    ir.serialise(Ir::SerialiseFormat::JSON, ss);
+    const auto modelStr = ss.str();
+
+    // (rudimentarily) Check that there is one graph with the appropriate name
+    // for the main graph, and one other graph with name `subgraphName`.
+
+    // Note assuming the prefix "BuilderGraph_" is some pretty tight coupling,
+    // but this is what the Ir code itself already did and we want to assert
+    // this behaviour remains in place whilst refactoring the Ir.
+    //
+    // To future maintainers: If you want to change this behaviour of the Ir and
+    // this test is failing, don't let it stop you - just change or delete this
+    // test.
+
+    const bool mainGraphHasCustomNameFromBuilder =
+        ir.hasOnnxModel() && (ir.getModel().graph().name().find(
+                                  "BuilderGraph_") == std::string::npos);
+
+    const auto maingraphName = mainGraphHasCustomNameFromBuilder
+                                   ? ir.getModel().graph().name()
+                                   : "maingraph";
+
+    BOOST_REQUIRE(modelStr.find("\"" + maingraphName + "\" :[") !=
+                  std::string::npos);
+    BOOST_REQUIRE(modelStr.find("\"" + subgraphName + "\" :[") !=
+                  std::string::npos);
+  };
+
+  const auto irBuilderSubgraphId = "subgraph";
+  const auto initIrBuilder       = [irBuilderSubgraphId](Ir &ir) {
+    // 1. Build the Onnx model
+    auto builder = Builder::create();
+
+    TensorInfo tInfo(DataType::FLOAT, {2});
+    const auto t = builder->addInputTensor(tInfo);
+
+    auto &subBuilder = builder->createSubgraphBuilder();
+    subBuilder.setGraphName(irBuilderSubgraphId);
+
+    // Note t is inherited from parent scope.
+    const auto subU = subBuilder.aiOnnxOpset7().identity({t});
+    subBuilder.addOutputTensor(subU);
+
+    constexpr int numSubgraphOutputs = 1;
+    const auto outs =
+        builder->aiGraphcoreOpset1().call({}, numSubgraphOutputs, subBuilder);
+    const auto u = std::move(outs[0]);
+
+    builder->addOutputTensor(u);
+
+    // 2. Initialise Ir from Onnx model
+    ir.setOnnxModel(onnxutil::getModelProto(builder->getModelProto()));
+    ir.registerInputTensors();
+    ir.constructForwards();
+  };
+  test(initIrBuilder, irBuilderSubgraphId);
+
+  // Same as above except we set a custom maingraph name in the builder.
+  const auto initIrBuilderWithCustomMainGraphName = [irBuilderSubgraphId](
+                                                        Ir &ir) {
+    // 1. Build the Onnx model
+    auto builder = Builder::create();
+
+    // ===== Set a custom name in the ONNX model =====
+    builder->setGraphName("some_crazy_name");
+
+    TensorInfo tInfo(DataType::FLOAT, {2});
+    const auto t = builder->addInputTensor(tInfo);
+
+    auto &subBuilder = builder->createSubgraphBuilder();
+    subBuilder.setGraphName(irBuilderSubgraphId);
+
+    // Note t is inherited from parent scope.
+    const auto subU = subBuilder.aiOnnxOpset7().identity({t});
+    subBuilder.addOutputTensor(subU);
+
+    constexpr int numSubgraphOutputs = 1;
+    const auto outs =
+        builder->aiGraphcoreOpset1().call({}, numSubgraphOutputs, subBuilder);
+    const auto u = std::move(outs[0]);
+
+    builder->addOutputTensor(u);
+
+    // 2. Initialise Ir from Onnx model
+    ir.setOnnxModel(onnxutil::getModelProto(builder->getModelProto()));
+    ir.registerInputTensors();
+    ir.constructForwards();
+  };
+  test(initIrBuilderWithCustomMainGraphName, irBuilderSubgraphId);
+
+  const auto irDirectSubgraphId = "another_subgraph_id";
+  const auto initIrDirect       = [irDirectSubgraphId](Ir &ir) {
+    auto &mainGraph = ir.getMainGraph();
+
+    TensorInfo tInfo(DataType::FLOAT, {2});
+    const auto t = mainGraph.addInput(tInfo);
+    const auto u = "u";
+
+    auto &subGraph  = ir.createGraph(GraphId{irDirectSubgraphId});
+    const auto subT = subGraph.addInput(tInfo);
+    const auto subU = subGraph.addScope("u");
+
+    auto idOp = subGraph.createConnectedOp<IdentityOp>(
+        {{IdentityOp::getInIndex(), subT}},
+        {{IdentityOp::getOutIndex(), subU}},
+        Onnx::Operators::Identity_1,
+        Op::Settings{subGraph, "id"});
+    subGraph.markAsOutput(subU);
+
+    auto callOp =
+        mainGraph.createConnectedOp<CallOp>({{0, t}},
+                                            {{0, u}},
+                                            Onnx::CustomOperators::Call_1,
+                                            subGraph,
+                                            Op::Settings{mainGraph, "call"});
+    mainGraph.markAsOutput(u);
+  };
+  test(initIrDirect, irDirectSubgraphId);
+}

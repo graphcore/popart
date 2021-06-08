@@ -2872,18 +2872,6 @@ void Ir::finalizeOpDebugInfo() {
   }
 }
 
-namespace {
-
-void setGraphIrName(const std::string &name, std::stringstream &ss) {
-  if (name.find("BuilderGraph_") != std::string::npos) {
-    ss << "\"maingraph\" :[";
-  } else {
-    ss << "\"" << name << "\" :[";
-  }
-}
-
-} // namespace
-
 void Ir::serialise(SerialiseFormat format,
                    std::stringstream &ss,
                    bool useScheduler) const {
@@ -2914,6 +2902,33 @@ void Ir::serialise(SerialiseFormat format,
     }
   };
 
+  auto appendGraphName = [this](const GraphId &id, std::stringstream &ss) {
+    GraphId nameToUse{""};
+
+    // If it's the main graph AND the user did
+    // not override the name in the builder, display "maingraph", otherwise the
+    // graph's id.
+    if (id == getMainGraph().id) {
+      // NOTE: The maingraph id MUST be GraphId::root(). It is not valid to set
+      // the id, as the maingraph is immediately created in the Ir constructor
+      // and entered into the `graphs` map with id = GraphId::root().
+
+      const bool mainGraphHasCustomNameFromBuilder =
+          hasOnnxModel() && (getModel().graph().name().find("BuilderGraph_") ==
+                             std::string::npos);
+
+      if (mainGraphHasCustomNameFromBuilder) {
+        nameToUse = getModel().graph().name();
+      } else {
+        nameToUse = GraphId{"maingraph"};
+      }
+    } else {
+      nameToUse = id;
+    }
+
+    ss << "\"" << nameToUse << "\" :[";
+  };
+
   // TODO use the format to seralize the ir
   (void)format;
 
@@ -2925,10 +2940,7 @@ void Ir::serialise(SerialiseFormat format,
     if (!firstGraph)
       ss << ",";
 
-    if (firstGraph)
-      setGraphIrName(graph->getIr().getModel().graph().name(), ss);
-    else
-      ss << "\"" << graph->id.str() << "\" :[";
+    appendGraphName(graph->id, ss);
 
     bool firstOp = true;
     for (auto &op : getOps(graph)) {
