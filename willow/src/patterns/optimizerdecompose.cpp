@@ -295,6 +295,27 @@ TensorId OptimizerDecompose::gradUnscale(Graph &graph,
     gradUnscaleOp->connectInTensor(ScaleOp::getInIndex(), gradIntoAcclId);
     gradUnscaleOutIdx = ScaleOp::getOutIndex();
   } else {
+    auto gradType = graph.getTensors().get(gradIntoAcclId)->info.dataType();
+    auto gsType   = graph.getTensors().get(gsId)->info.dataType();
+    if (gradType != gsType) {
+      auto gsCastId = graph.getIr().createIntermediateTensorId("gsCast");
+      auto gsCast   = graph.createConnectedOp<CastOp>(
+          {{CastOp::getInIndex(), gsId}},
+          {{CastOp::getOutIndex(), gsCastId}},
+          Onnx::Operators::Cast_9,
+          gradType,
+          Op::Settings(graph, combo->name() + "_gsCast"));
+      transferBaseProperties(combo, gsCast);
+      gsId = gsCastId;
+
+      if (gradAccum) {
+        gsCast->settings.executionContext =
+            ExecutionContext::AccumulateOuterFragment;
+        gsCast->setExecutionPhase({});
+        gsCast->settings.schedulePriority = 0.0;
+      }
+    }
+
     auto gradUnscaleUp = std::make_unique<MulOp>(
         Onnx::Operators::Mul_7,
         Op::Settings(graph, combo->name() + "_gradUnscale"));
