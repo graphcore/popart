@@ -191,11 +191,21 @@ public:
   // take training steps
   ONNX_NAMESPACE::ModelProto step(int n);
 
-  // Extra tensors to be saved alongside the ONNX model (such as additional
-  // optimizer state) are added to the model's initializers here
+  // Registers an extra tensor to be added to the  model when calling
+  // addAdditionalModelProtoTensors (such as additional optimizer state).
+  // Will register the tensor regardless of whether the Ir has an Onnx model set
+  // or not, but addAdditionalModelProtoTensors, which actually adds them to the
+  // model proto, will throw if not.
   void addAdditionalModelProtoTensor(const TensorId &);
   void addAdditionalModelProtoTensor(Tensor *);
+
+  // Adds an initializer to the Onnx model for all registered "additional model
+  // proto tensors".
+  //
+  // \throws error if there are tensors to add, but the Ir has no Onnx model to
+  // add them in.
   void addAdditionalModelProtoTensors();
+
   const std::set<Tensor *, PTensorCmp> &getAdditionalModelProtoTensors() const {
     return additionalModelProtoTensors;
   }
@@ -310,8 +320,23 @@ public:
   // in userOptions.logDir
   void dotCheckpoint(DotCheck check) const;
 
+  /**
+   * \returns const reference to the Onnx model.
+   * \throws error if there is no Onnx model.
+   */
   const ONNX_NAMESPACE::ModelProto &getModel() const;
+
+  /**
+   * \returns the id of every input tensor of the Onnx model. If there is no
+   * Onnx model, returns empty.
+   */
   std::vector<TensorId> getModelInputIds() const;
+
+  /**
+   * Set the Onnx TensorProto of the given tensor in the Onnx ModelProto.
+   *
+   * \throws error if this Ir has no Onnx model.
+   */
   void setExternalTensorDataInfo(TensorId, const ONNX_NAMESPACE::TensorProto &);
 
   const SessionOptions &getSessionOptions() const { return userOptions; }
@@ -376,10 +401,12 @@ public:
   bool containsInitialisers() const;
 
   // returns true if tensor Id matches the name of any tensor the onnx
-  // model's initialisers
+  // model's initialisers, otherwise false (including if the Ir has no onnx
+  // model).
   bool tensorExistsInInitialisers(TensorId) const;
 
   // Convert the ONNX graph into the forwards pass of the IR
+  // \throws error if the Ir has no ONNX model.
   void constructForwards();
 
   // Convert an ONNX graph into IR
@@ -396,6 +423,7 @@ public:
   // Register the input tensors of the ONNX graph.
   // For the ONNX input tensors, determines which are
   // Stream and which are Variable.
+  // \throws error if the Ir has no Onnx model.
   void registerInputTensors();
 
   // For all vertices set the phase, and whether or not
@@ -440,7 +468,8 @@ public:
   // to number of IPUs.
   unsigned getMaxVirtualGraphId() const;
 
-  // Return the opset version in use for a domain
+  // Return the opset version in use for a domain. Empty domain implies AiOnnx.
+  // If the Ir has no Onnx model, returns `getDefaultOpsetVersion(domain)`.
   int getOpSetVersionFromModel(const std::string &domain) const;
 
   bool autoRecomputationEnabled() const {
@@ -479,6 +508,8 @@ public:
 
 private:
   void prepareImpl(const IrBundle &, const HashesMap &cacheEntries);
+
+  bool hasOnnxModel() const;
 
   // Accessors for the tensors in the top-level graph
   const Tensors &getTensors() const;

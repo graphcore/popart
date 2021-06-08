@@ -144,11 +144,20 @@ void Ir::confirmNonReservedId(const TensorId &tenId) const {
   }
 }
 
-const ONNX_NAMESPACE::ModelProto &Ir::getModel() const { return *onnxModel; }
+const ONNX_NAMESPACE::ModelProto &Ir::getModel() const {
+  if (!hasOnnxModel()) {
+    throw error("Ir::getModel: Ir has no Onnx model");
+  }
+  return *onnxModel;
+}
 
 void Ir::setExternalTensorDataInfo(
     TensorId tId,
     const ONNX_NAMESPACE::TensorProto &tpReference) {
+  if (!onnxModel) {
+    throw error("Ir::setExternalTensorDataInfo: Ir has no Onnx model");
+  }
+
   // Check tpReference has external info
   if (!tpReference.has_data_location() ||
       tpReference.data_location() != ONNX_NAMESPACE::TensorProto::EXTERNAL) {
@@ -233,14 +242,16 @@ void Ir::dotCheckpoint(DotCheck check) const {
 
 void Ir::confirmNoReservedIds() const {
 
-  auto &onnxGraph = onnxModel->graph();
+  if (hasOnnxModel()) {
+    auto &onnxGraph = onnxModel->graph();
 
-  for (const auto &in_ : onnxGraph.input()) {
-    confirmNonReservedId(in_.name());
-  }
+    for (const auto &in_ : onnxGraph.input()) {
+      confirmNonReservedId(in_.name());
+    }
 
-  for (const auto &out_ : onnxGraph.output()) {
-    confirmNonReservedId(out_.name());
+    for (const auto &out_ : onnxGraph.output()) {
+      confirmNonReservedId(out_.name());
+    }
   }
 
   for (const auto &tenId : inputShapeInfo.getAllTensorIds()) {
@@ -1481,7 +1492,15 @@ void Ir::prepareImpl(const IrBundle &gb, const HashesMap &cacheEntries) {
 void Ir::setIsPrepared() { isPrepared_ = true; }
 
 void Ir::addAdditionalModelProtoTensors() {
-  ONNX_NAMESPACE::GraphProto *onnxGraph = onnxModel->mutable_graph();
+  if (!additionalModelProtoTensors.empty() && !hasOnnxModel()) {
+    throw error(
+        "Ir::addAdditionalModelProtoTensors: There are additional model proto "
+        "tensors, but the Ir has no Onnx model to add them to.");
+  }
+
+  ONNX_NAMESPACE::GraphProto *onnxGraph =
+      hasOnnxModel() ? onnxModel->mutable_graph() : nullptr;
+
   for (const Tensor *tensor : additionalModelProtoTensors) {
     const std::string &tId = tensor->id;
     // For additional tensors we want to save in the onnx modelproto, we copy
@@ -1679,6 +1698,10 @@ void Ir::verifyVirualGraphIdsNotInitialized() const {
 }
 
 std::vector<TensorId> Ir::getModelInputIds() const {
+  if (!hasOnnxModel()) {
+    return {};
+  }
+
   const auto &onnxGraph = onnxModel->graph();
   std::vector<TensorId> modelProtoInputIds;
   modelProtoInputIds.reserve(onnxGraph.input_size());
@@ -1726,6 +1749,10 @@ void checkForDimParams(const TensorId &id, const ONNX_NAMESPACE::TypeProto &t) {
 } // namespace
 
 void Ir::registerInputTensors() {
+
+  if (!hasOnnxModel()) {
+    throw error("Ir::registerInputTensors: Ir has no Onnx model.");
+  }
 
   auto &onnxGraph = onnxModel->graph();
 
@@ -2202,6 +2229,9 @@ bool Ir::storingIsDisabledForTensor(const Tensor *tensor) const {
 }
 
 void Ir::constructForwards() {
+  if (!hasOnnxModel()) {
+    throw error("Ir::constructForwards: Ir has no Onnx model");
+  }
 
   const auto scopedStopwatch =
       timePartitionLogger().scopedStopwatch("Constructing forwards (Ir)");
@@ -2791,11 +2821,16 @@ int Ir::getDefaultOpsetVersion(const std::string &domain) const {
 }
 
 int Ir::getOpSetVersionFromModel(const std::string &node_domain) const {
-
   // If the node.domain is blank it means the default ai.onnx
   auto domain = node_domain;
   if (domain == "") {
     domain = Domain::ai_onnx;
+  }
+
+  // Ideally, this method would throw on no Onnx model, and the callsites would
+  // be decoupled from Onnx. For now, we just return the default.
+  if (!hasOnnxModel()) {
+    return getDefaultOpsetVersion(domain);
   }
 
   // Get the version of the opset from the model based on the domain
@@ -2944,10 +2979,15 @@ bool Ir::hasConstructedBackwards() const { return constructedBackwards; }
 bool Ir::hasDecomposedOptimizers() const { return decomposedOptimizers; }
 
 bool Ir::containsInitialisers() const {
-  return !(onnxModel->graph().initializer().empty());
+  return hasOnnxModel() && !onnxModel->graph().initializer().empty();
 }
 
 bool Ir::tensorExistsInInitialisers(TensorId tId) const {
+  // If there is no Onnx model, then there are not any initialisers anyway.
+  if (!hasOnnxModel()) {
+    return false;
+  }
+
   for (int init_index = 0; init_index < onnxModel->graph().initializer_size();
        ++init_index) {
     if (onnxModel->graph().initializer(init_index).name() == tId) {
@@ -3586,6 +3626,8 @@ size_t Ir::getHash() const {
 size_t Ir::getIrBundleHash() const { return irBundleHash; }
 
 void Ir::setIrBundleHash(size_t v) { irBundleHash = v; }
+
+bool Ir::hasOnnxModel() const { return onnxModel.get() != nullptr; }
 
 } // namespace popart
 

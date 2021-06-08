@@ -137,10 +137,6 @@ BOOST_AUTO_TEST_CASE(TestLoopAccumulation) {
   // forward or backward fragment.
   ir->updateVertices();
 
-  // Whole bunch of Ir methods, called in various places, assume an ONNX model
-  // has been set. Luckily, we can just default-construct one.
-  ir->setOnnxModel({});
-
   // As the final step before lowering, must mark the Ir as "prepared", or the
   // lowering will immediately throw.
   ir->setIsPrepared();
