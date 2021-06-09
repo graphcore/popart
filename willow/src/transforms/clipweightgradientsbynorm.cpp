@@ -11,6 +11,7 @@
 #include <popart/op/max.hpp>
 #include <popart/op/mul.hpp>
 #include <popart/op/reducesumsquare.hpp>
+#include <popart/op/scale.hpp>
 #include <popart/op/scaledadd.hpp>
 #include <popart/op/sgd0varupdate.hpp>
 #include <popart/op/sgd1varupdate.hpp>
@@ -294,6 +295,9 @@ std::vector<Tensor *> getGrads(Graph &graph,
         result.push_back(grad);
       } else if (scaler->isConvertibleTo<MulOp>()) {
         auto grad = scaler->inTensor(MulOp::getArg0InIndex());
+        result.push_back(grad);
+      } else if (scaler->isConvertibleTo<ScaleOp>()) {
+        auto grad = scaler->inTensor(ScaleOp::getInIndex());
         result.push_back(grad);
       } else {
         throw internal_error("Unexpected op type {}", scaler->str());

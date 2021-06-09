@@ -12,7 +12,7 @@ from pathlib import Path
 sys.path.append(str(Path(__file__).resolve().parent / 'optimizer_tests'))
 import torch_lamb
 
-allOptimizerTypes = ['sgd', 'adam', 'lamb']
+allOptimizerTypes = ['sgd', 'adam', 'lamb', 'lambnobias']
 
 
 def _get_popart_optimizer(optType, clipNormSettings):
@@ -43,8 +43,22 @@ def _get_popart_optimizer(optType, clipNormSettings):
             weight_decay_mode=popart.WeightDecayMode.Decay,
             mode=popart.AdamMode.Lamb,
             clip_norm_settings=clipNormSettings)
+    elif optType == 'lambnobias':
+        return popart.Adam(
+            {
+                "defaultLearningRate": (0.01, False),
+                "defaultBeta1": (0.9, False),
+                "defaultBeta2": (0.999, False),
+                "defaultEps": (1e-06, False),
+                "defaultWeightDecay": (0.1, False),
+                "lossScaling": (10, True),
+            },
+            scaled_optimizer_state=False,
+            weight_decay_mode=popart.WeightDecayMode.Decay,
+            mode=popart.AdamMode.LambNoBias,
+            clip_norm_settings=clipNormSettings)
     else:
-        raise Exception(f"Unrecognized optimizer type: '{optimizerType}'")
+        raise Exception(f"Unrecognized optimizer type: '{optType}'")
 
 
 def _get_torch_optimizer(optType, net):
@@ -62,8 +76,15 @@ def _get_torch_optimizer(optType, net):
                                betas=(0.9, 0.999),
                                eps=1e-6,
                                weight_decay=0.1)
+    elif optType == 'lambnobias':
+        return torch_lamb.Lamb(net.parameters(),
+                               lr=0.01,
+                               betas=(0.9, 0.999),
+                               eps=1e-6,
+                               weight_decay=0.1,
+                               biasCorrection=False)
     else:
-        raise Exception(f"Unrecognized optimizer typee: '{optimizerType}'")
+        raise Exception(f"Unrecognized optimizer type: '{optType}'")
 
 
 # Create a model that performs a series of convs on the
@@ -311,7 +332,7 @@ def test_two_groups(optimizerType):
         print_tensor(torchWeights[key])
 
     for key in popartWeights.keys():
-        assert np.allclose(popartWeights[key], torchWeights[key])
+        assert np.allclose(popartWeights[key], torchWeights[key], atol=1e-06)
 
 
 # piplining is not working for adam yet
