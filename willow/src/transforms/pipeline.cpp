@@ -937,7 +937,7 @@ void Pipeline::setFinalFwdStageRecomputation(Graph &graph) {
              op->getPipelineStage() == pStage;
     };
 
-    auto pruneFromFrontier = [&frontier](std::set<OpId> &path) {
+    auto pruneFromFrontier = [&frontier](const std::set<OpId> &path) {
       auto it = frontier.begin();
       while (it != frontier.end()) {
         if (path.find((*it)->id) != path.end()) {
@@ -948,25 +948,45 @@ void Pipeline::setFinalFwdStageRecomputation(Graph &graph) {
       }
     };
 
-    auto addConsumers =
-        [&sameContextAndStage, &pruneFromFrontier, &frontier, &seen, &toCheck](
-            Tensor *t, std::set<OpId> path) {
-          for (auto con : t->consumers.getOps()) {
-            if (sameContextAndStage(con)) {
-              if (con->settings.recomputeType == RecomputeType::Checkpoint) {
-                pruneFromFrontier(path);
-              }
-              if (seen.find(con->id) == seen.end()) {
-                seen.insert(con->id);
-                path.insert(con->id);
-                toCheck.push_back({con, path});
-                if (con->settings.recomputeType == RecomputeType::Checkpoint) {
-                  frontier.push_back(con);
-                }
-              }
+    auto addToCheck = [&toCheck](Op *op, std::set<OpId> pathUpToOp) {
+      pathUpToOp.insert(op->id);
+      toCheck.push_back({op, pathUpToOp});
+    };
+
+    auto addConsumers = [&sameContextAndStage,
+                         &pruneFromFrontier,
+                         &frontier,
+                         &seen,
+                         &addToCheck](Tensor *t, const std::set<OpId> &path) {
+      for (auto con : t->consumers.getOps()) {
+        if (sameContextAndStage(con)) {
+          if (con->settings.recomputeType == RecomputeType::Checkpoint) {
+            pruneFromFrontier(path);
+          }
+
+          bool visited = seen.find(con->id) != seen.end();
+          if (!visited) {
+            seen.insert(con->id);
+            addToCheck(con, path);
+            if (con->settings.recomputeType == RecomputeType::Checkpoint) {
+              frontier.push_back(con);
             }
           }
-        };
+          if (visited &&
+              con->settings.recomputeType != RecomputeType::Checkpoint) {
+            // Design Note: Adding already visited operations into toCheck
+            // increases the complexity of the algorithm. This could be
+            // improved by iterating through the operations in topological
+            // order. However, that would require scheduling the whole graph
+            // which is likely more expensive.
+            //
+            // Only need to re-add non-checkpoint operations so that all paths
+            // to a checkpoint operation will be prunedFromFrontier.
+            addToCheck(con, path);
+          }
+        }
+      }
+    };
 
     for (auto t : start[pStage]) {
       addConsumers(t, {});
@@ -992,6 +1012,16 @@ void Pipeline::setFinalFwdStageRecomputation(Graph &graph) {
             frontier.push_back(con);
           }
         }
+      }
+    }
+
+    if (logging::shouldLog(logging::Module::popart, logging::Level::Trace)) {
+      logging::trace("[Pipeline::setFinalFwdStageRecomputation] Frontier:");
+      for (auto op : frontier) {
+        logging::trace("[Pipeline::setFinalFwdStageRecomputation]   {} {} {}",
+                       op->id,
+                       op->opid,
+                       op->name());
       }
     }
 
