@@ -163,3 +163,39 @@ BOOST_AUTO_TEST_CASE(setfinalstagerecompute_nofrontier) {
   BOOST_REQUIRE(op1->settings.recomputeType == RecomputeType::Checkpoint);
   BOOST_REQUIRE(op2->settings.recomputeType == RecomputeType::Checkpoint);
 }
+
+BOOST_AUTO_TEST_CASE(setfinalstagerecompute_nontopoorder) {
+  Ir ir;
+
+  auto &g                = ir.getMainGraph();
+  Op::Settings settings  = Op::Settings{g, "testOp"};
+  settings.pipelineStage = 0;
+
+  auto t0 = addStartTensor(g, settings);
+
+  // PreLoss
+  auto op1 =
+      g.createConnectedOp<TestOp>({{0, t0}}, {{0, "t1"}}, true, true, settings);
+  auto op2 = g.createConnectedOp<TestOp>(
+      {{0, "t1"}}, {{0, "out"}}, true, true, settings);
+  auto op3 = g.createConnectedOp<TestOp>(
+      {{0, "t1"}}, {{0, "t3"}}, true, false, settings);
+  op2->connectInTensor(1, "t3");
+  auto op4 = g.createConnectedOp<TestOp>(
+      {{0, "t1"}}, {{0, "t4"}}, true, true, settings);
+  op3->connectInTensor(1, "t4");
+  auto op5 = g.createConnectedOp<TestOp>(
+      {{0, "t1"}}, {{0, "t5"}}, true, false, settings);
+  op4->connectInTensor(1, "t5");
+  // PostLoss
+  g.createConnectedOp<TestOp>(
+      {{0, "out"}}, {{0, "postLoss"}}, false, false, settings);
+
+  Pipeline::setFinalFwdStageRecomputation(g);
+
+  BOOST_REQUIRE(op1->settings.recomputeType == RecomputeType::Recompute);
+  BOOST_REQUIRE(op2->settings.recomputeType == RecomputeType::Checkpoint);
+  BOOST_REQUIRE(op4->settings.recomputeType == RecomputeType::Recompute);
+  BOOST_REQUIRE(op3->settings.recomputeType == RecomputeType::Checkpoint);
+  BOOST_REQUIRE(op5->settings.recomputeType == RecomputeType::Checkpoint);
+}
