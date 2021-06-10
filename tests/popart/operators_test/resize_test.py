@@ -16,6 +16,16 @@ import onnx.backend.test.case.node.resize as onnx_resize
 # os.environ['POPART_LOG_LEVEL'] = 'TRACE'
 
 
+# For debugging failing tests, it can be useful to use known data, rather than random.
+# This is just a utility for easily swapping a call like
+#     data = np.random.rand(1, 1, *data_shape).astype(np.float32)
+# with
+#     data = arange([1, 1] + data_shape)
+def arange(shape):
+    x = np.arange(np.prod(shape)).astype(np.float32)
+    return np.reshape(x, shape)
+
+
 # if the version of torch is greater or equal to 1.5.0, use
 # F.interpolate, otherwise use a matching interpolate
 # function. This is required as torch versions below 1.5.0
@@ -255,7 +265,11 @@ def test_nearest_grad(op_tester, data_shape, scales):
 @pytest.mark.parametrize(
     "nearest_mode",
     ['round_prefer_floor', 'round_prefer_ceil', 'floor', 'ceil', 'pytorch'])
-def test_resize_11(op_tester, data_shape, scales, nearest_mode):
+@pytest.mark.parametrize(
+    "coordinate_transformation_mode",
+    ["half_pixel", "pytorch_half_pixel", "asymmetric", "align_corners"])
+def test_resize_11(op_tester, data_shape, scales, nearest_mode,
+                   coordinate_transformation_mode):
     if nearest_mode == 'pytorch':
         data_shape = [1, 1] + data_shape
         scales = [1.0, 1.0] + scales
@@ -268,7 +282,10 @@ def test_resize_11(op_tester, data_shape, scales, nearest_mode):
         d = builder.addInputTensor(data)
         s = builder.aiOnnxOpset11.constant(scales, False)
         r = builder.aiOnnxOpset11.constant(roi, False)
-        o = builder.aiOnnxOpset11.resize([d, r, s], nearest_mode=nearest_mode)
+        o = builder.aiOnnxOpset11.resize(
+            [d, r, s],
+            nearest_mode=nearest_mode,
+            coordinate_transformation_mode=coordinate_transformation_mode)
         builder.addOutputTensor(o)
         return [o]
 
@@ -283,7 +300,11 @@ def test_resize_11(op_tester, data_shape, scales, nearest_mode):
             def coeffs(ratio):
                 return onnx_resize.nearest_coeffs(ratio, mode=nearest_mode)
 
-            o = onnx_resize.interpolate_nd(data, coeffs, scale_factors=scales)
+            o = onnx_resize.interpolate_nd(
+                data,
+                coeffs,
+                scale_factors=scales,
+                coordinate_transformation_mode=coordinate_transformation_mode)
             return [o.astype(data.dtype)]
 
     op_tester.run(init_builder, reference, 'infer')

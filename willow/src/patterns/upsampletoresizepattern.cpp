@@ -51,7 +51,8 @@ bool UpsampleToResizePattern::apply(Op *op) const {
       upsampleToResizeMode(upsample->getMode()),
       upsample->getScales(),
       // This resize mode preserves the previous behaviour.
-      ResizeNearestMode::Pytorch);
+      ResizeNearestMode::Pytorch,
+      ResizeCoordinateTransformationMode::HalfPixel);
 
   auto resize = resize2.get();
   transferBaseProperties(upsample, resize);

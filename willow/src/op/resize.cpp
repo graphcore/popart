@@ -33,15 +33,19 @@ ResizeOp::ResizeOp(const OperatorIdentifier &opid_,
                settings_,
                mode_,
                scales_,
-               ResizeNearestMode::RoundPreferFloor) {}
+               ResizeNearestMode::RoundPreferFloor,
+               ResizeCoordinateTransformationMode::HalfPixel) {}
 
-ResizeOp::ResizeOp(const OperatorIdentifier &opid_,
-                   const Op::Settings &settings_,
-                   ResizeMode mode_,
-                   const std::vector<float> &scales_,
-                   ResizeNearestMode nearestMode_)
+ResizeOp::ResizeOp(
+    const OperatorIdentifier &opid_,
+    const Op::Settings &settings_,
+    ResizeMode mode_,
+    const std::vector<float> &scales_,
+    ResizeNearestMode nearestMode_,
+    ResizeCoordinateTransformationMode coordinateTransformationMode_)
     : Op(opid_, settings_), scales(scales_), mode(mode_),
-      nearestMode(nearestMode_) {}
+      nearestMode(nearestMode_),
+      coordinateTransformationMode(coordinateTransformationMode_) {}
 
 std::unique_ptr<Op> ResizeOp::clone() const {
   return std::make_unique<ResizeOp>(*this);
@@ -242,6 +246,24 @@ ResizeNearestMode getNearestMode(const OpCreatorInfo &info) {
   return getResizeNearestModeFromString(nearestModeString);
 }
 
+ResizeCoordinateTransformationMode
+getResizeCoordinateTransformationModeFromString(const std::string &mode) {
+  static std::map<std::string, ResizeCoordinateTransformationMode> modeMap = {
+      {"half_pixel", ResizeCoordinateTransformationMode::HalfPixel},
+      {"pytorch_half_pixel",
+       ResizeCoordinateTransformationMode::PytorchHalfPixel},
+      {"align_corners", ResizeCoordinateTransformationMode::AlignCorners},
+      {"asymmetric", ResizeCoordinateTransformationMode::Asymmetric},
+      {"tf_crop_and_resize",
+       ResizeCoordinateTransformationMode::TfCropAndResize}};
+  auto found = modeMap.find(mode);
+  if (found != modeMap.end()) {
+    return found->second;
+  } else {
+    throw error("Unrecognised resize coordinate transformation mode {}", mode);
+  }
+}
+
 static OpCreator<ResizeOp> resize_OpCreator(
     OpDefinitions({{Onnx::Operators::Resize_10, resize10_OpDef},
                    {Onnx::Operators::Resize_11, resize11_OpDef}}),
@@ -253,19 +275,23 @@ static OpCreator<ResizeOp> resize_OpCreator(
       // Check attributes.
       // The attributes 'cubic_coeff_a' and 'extrapolation_value' dont need to
       // be checked, as we do not support the modes they are used in.
-      checkAttribute<Attributes::String>(
-          info.opid, attr, "coordinate_transformation_mode", {"half_pixel"});
+      // checkAttribute<Attributes::String>(
+      //     info.opid, attr, "coordinate_transformation_mode", {"half_pixel"});
       checkAttribute<Attributes::String>(info.opid, attr, "mode", {"nearest"});
       checkAttribute<Attributes::Int>(info.opid, attr, "exclude_outside", {0});
 
       ResizeNearestMode nearestMode = getNearestMode(info);
+      std::string ctmString         = attr.getAttribute<Attributes::String>(
+          "coordinate_transformation_mode", "half_pixel");
+      auto ctm = getResizeCoordinateTransformationModeFromString(ctmString);
 
       // Create the op in the graph.
       Op *op = graph.createOp<ResizeOp>(Onnx::CustomOperators::Resize,
                                         info.settings,
                                         ResizeMode::Nearest,
                                         scales,
-                                        nearestMode);
+                                        nearestMode,
+                                        ctm);
 
       // Connect only the first input.
       op->connectInTensor(ResizeOp::getInIndex(), info.getInputIds().at(0));

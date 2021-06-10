@@ -22,6 +22,9 @@ private:
                                         int dim,
                                         int64_t size,
                                         float scale) const;
+
+  float coordinateTransformation(float idx, int dim) const;
+  int64_t applyNearestMode(float idx) const;
 };
 
 class ResizeGradOpx : public PopOpx {

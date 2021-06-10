@@ -21,6 +21,15 @@ enum class ResizeNearestMode {
   N
 };
 
+enum class ResizeCoordinateTransformationMode {
+  HalfPixel,
+  PytorchHalfPixel,
+  AlignCorners,
+  Asymmetric,
+  TfCropAndResize,
+  N
+};
+
 class ResizeOp : public Op {
 public:
   ResizeOp(const OperatorIdentifier &,
@@ -32,7 +41,8 @@ public:
            const Op::Settings &,
            ResizeMode,
            const std::vector<float> &scales,
-           ResizeNearestMode nearestMode);
+           ResizeNearestMode nearestMode,
+           ResizeCoordinateTransformationMode);
 
   std::unique_ptr<Op> clone() const override;
   std::vector<std::unique_ptr<Op>> getGradOps() final;
@@ -47,11 +57,15 @@ public:
   const std::vector<float> &getScales() const { return scales; }
 
   ResizeNearestMode getNearestMode() const { return nearestMode; }
+  ResizeCoordinateTransformationMode getCoordinateTransformationMode() const {
+    return coordinateTransformationMode;
+  }
 
 private:
   const std::vector<float> scales;
   const ResizeMode mode;
   const ResizeNearestMode nearestMode;
+  const ResizeCoordinateTransformationMode coordinateTransformationMode;
 };
 
 class ResizeGradOp : public ResizeOp {

@@ -73,12 +73,17 @@ poplar::Tensor ResizeOpx::resizeDim(poplar::Tensor &input,
     return true;
   };
 
+  bool coordinateTransformationModeIsHalfPixel =
+      getOp<ResizeOp>().getCoordinateTransformationMode() ==
+      ResizeCoordinateTransformationMode::HalfPixel;
+
   // Use poplar::Tensor::upsample if possible, as our generalised method for
   // float scales is extremely expensive on tensor expressions. If the scale is
-  // a positive integer, and the resize mode is not floor or ceil, it is ok to
-  // use poplars upsample. Poplars upsample works equally well for both resize
-  // modes, round_prefer_floor, and round_prefer_ceil. If we look at the
-  // equation used to transform the index:
+  // a positive integer, and the resize mode is not floor or ceil, and the
+  // coordinate transformation mode is half_pixel, it is ok to use poplars
+  // upsample. Poplars upsample works equally well for both resize modes,
+  // round_prefer_floor, and round_prefer_ceil. If we look at the equation used
+  // to transform the index:
   //   `rounding_mode((i + 0.5) / scale - 0.5)`
   // This will only return a difference result if the answer to
   //   `(i + 0.5) / scale - 0.5`
@@ -88,7 +93,8 @@ poplar::Tensor ResizeOpx::resizeDim(poplar::Tensor &input,
   //   `s = i + 0.5`
   // but we know both s and i have to be integers and this can not be satisfied.
   if (scaleIsNonNegInt &&
-      nearestModeIsNot({ResizeNearestMode::Floor, ResizeNearestMode::Ceil})) {
+      nearestModeIsNot({ResizeNearestMode::Floor, ResizeNearestMode::Ceil}) &&
+      coordinateTransformationModeIsHalfPixel) {
     return input.upsample(scale, dim, poplar::UpsampleMethod::REPEAT);
   } else {
     return resizeNearestNeighbour(input, dim, size, scale);
@@ -105,40 +111,73 @@ float round_prefer_floor(float x) {
   }
 }
 
+int clamp(int v, int lo, int hi) { return std::min(std::max(v, lo), hi); }
+
 } // namespace
+
+float ResizeOpx::coordinateTransformation(float idx, int dim) const {
+  auto &resizeOp = getOp<ResizeOp>();
+  auto mode      = resizeOp.getCoordinateTransformationMode();
+  float scale    = resizeOp.getScales().at(dim);
+
+  if (getOp<ResizeOp>().getNearestMode() == ResizeNearestMode::Pytorch) {
+    return idx / scale;
+  } else {
+
+    switch (mode) {
+    case ResizeCoordinateTransformationMode::HalfPixel:
+      return (idx + 0.5f) / scale - 0.5f;
+    case ResizeCoordinateTransformationMode::PytorchHalfPixel: {
+      int inputSize = resizeOp.inShape(ResizeOp::getInIndex()).at(dim);
+      float size    = static_cast<float>(inputSize) * scale;
+      if (size > 1.0f) {
+        return (idx + 0.5f) / scale - 0.5f;
+      } else {
+        return 0.0f;
+      }
+    }
+    case ResizeCoordinateTransformationMode::Asymmetric:
+      return idx / scale;
+    case ResizeCoordinateTransformationMode::AlignCorners: {
+      int inputSize = resizeOp.inShape(ResizeOp::getInIndex()).at(dim);
+      float size    = static_cast<float>(inputSize) * scale;
+      return idx * (inputSize - 1) / (size - 1);
+    }
+    default:
+      throw error("Unsupported coordinate transformation mode");
+    }
+  }
+}
+
+int64_t ResizeOpx::applyNearestMode(float idx) const {
+  auto nearestMode = getOp<ResizeOp>().getNearestMode();
+  switch (nearestMode) {
+  case ResizeNearestMode::RoundPreferCeil:
+    return std::round(idx);
+  case ResizeNearestMode::RoundPreferFloor:
+    return round_prefer_floor(idx);
+  case ResizeNearestMode::Floor:
+    return std::floor(idx);
+  case ResizeNearestMode::Ceil:
+    return std::ceil(idx);
+  case ResizeNearestMode::Pytorch:
+    return std::floor(idx);
+  default:
+    throw error("Unrecognized ResizeNearestMode {}",
+                static_cast<int>(nearestMode));
+  }
+}
 
 poplar::Tensor ResizeOpx::resizeNearestNeighbour(poplar::Tensor &input,
                                                  int dim,
                                                  int64_t size,
                                                  float scale) const {
-  auto nearestMode    = getOp<ResizeOp>().getNearestMode();
-  auto transformIndex = [nearestMode, scale](int i, int maxIndex) {
-    auto onnxTransform = [scale](int i) {
-      return (static_cast<float>(i) + 0.5f) / scale - 0.5f;
-    };
-
-    switch (nearestMode) {
-    case ResizeNearestMode::RoundPreferCeil:
-      return static_cast<int>(std::round(onnxTransform(i)));
-    case ResizeNearestMode::RoundPreferFloor:
-      return static_cast<int>(round_prefer_floor(onnxTransform(i)));
-    case ResizeNearestMode::Floor:
-      return std::max(static_cast<int>(std::floor(onnxTransform(i))), 0);
-    case ResizeNearestMode::Ceil:
-      return std::min(static_cast<int>(std::ceil(onnxTransform(i))), maxIndex);
-    case ResizeNearestMode::Pytorch:
-      return static_cast<int>(std::floor(static_cast<float>(i) / scale));
-    default:
-      throw error("Unrecognized ResizeNearestMode {}",
-                  static_cast<int>(nearestMode));
-    }
-  };
-
   auto slices = split(input, dim);
 
   std::vector<poplar::Tensor> toConcat;
   for (int i = 0; i < size; i++) {
-    int idx = transformIndex(i, slices.size() - 1);
+    int idx = applyNearestMode(coordinateTransformation(i, dim));
+    idx     = clamp(idx, 0, slices.size() - 1);
     toConcat.push_back(slices.at(idx));
   }
 
