@@ -40,16 +40,21 @@ std::array<std::string, NDotChecks> getDotCheckIds() {
 
 AutomaticLossScalingSettings::AutomaticLossScalingSettings(
     bool enabled_,
+    const nonstd::optional<std::vector<TensorId>> &toTrackTensors_,
     float binEdgeLocation_,
     float thresholdUpperCountProportion_)
     : enabled{enabled_}, binEdgeLocation{binEdgeLocation_},
-      thresholdUpperCountProportion{thresholdUpperCountProportion_} {}
+      thresholdUpperCountProportion{thresholdUpperCountProportion_},
+      toTrackTensors{toTrackTensors_} {}
 
 std::size_t AutomaticLossScalingSettings::hash() const {
   std::size_t seed = 0;
   boost::hash_combine(seed, enabled);
   boost::hash_combine(seed, binEdgeLocation);
   boost::hash_combine(seed, thresholdUpperCountProportion);
+  if (toTrackTensors) {
+    boost::hash_combine(seed, toTrackTensors.value());
+  }
   return seed;
 }
 

@@ -37,6 +37,7 @@
 #include <popart/tensorlocation.hpp>
 #include <popart/tensornames.hpp>
 #include <popart/tensors.hpp>
+#include <popart/vendored/optional.hpp>
 #include <popart/version.hpp>
 
 #include <stdexcept>
@@ -921,8 +922,13 @@ PYBIND11_MODULE(popart_core, m) {
     py::class_<AutomaticLossScalingSettings> cls(
         m, "AutomaticLossScalingSettings");
     cls.def(py::init<>());
-    cls.def(py::init<bool, float, float>(),
+    cls.def(py::init<bool,
+                     const nonstd::optional<std::vector<TensorId>> &,
+                     float,
+                     float>(),
             py::arg("enabled"),
+            py::arg("toTrackTensors") =
+                nonstd::optional<std::vector<TensorId>>(),
             py::arg("binEdgeLocation")               = 1.0,
             py::arg("thresholdUpperCountProportion") = 1e-7);
     cls.def_readwrite("enabled", &AutomaticLossScalingSettings::enabled);
@@ -931,6 +937,8 @@ PYBIND11_MODULE(popart_core, m) {
     cls.def_readwrite(
         "thresholdUpperCountProportion",
         &AutomaticLossScalingSettings::thresholdUpperCountProportion);
+    cls.def_readwrite("toTrackTensors",
+                      &AutomaticLossScalingSettings::toTrackTensors);
   }
   {
     py::class_<TensorLocationSettings> cls(m, "TensorLocationSettings");

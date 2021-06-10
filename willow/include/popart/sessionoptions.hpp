@@ -11,6 +11,7 @@
 #include <popart/op.hpp>
 #include <popart/op/loss.hpp>
 #include <popart/tensorlocation.hpp>
+#include <popart/vendored/optional.hpp>
 
 // Note that comments in this file have to adhere to doxygen formatting. See
 // https://www.doxygen.nl/manual/.
@@ -23,9 +24,11 @@ namespace popart {
  */
 struct AutomaticLossScalingSettings {
   AutomaticLossScalingSettings() = default;
-  AutomaticLossScalingSettings(bool enabled_,
-                               float binEdgeLocation_               = 1.0,
-                               float thresholdUpperCountProportion_ = 1e-7);
+  AutomaticLossScalingSettings(
+      bool enabled_,
+      const nonstd::optional<std::vector<TensorId>> &toTrackTensors_,
+      float binEdgeLocation_               = 1.0,
+      float thresholdUpperCountProportion_ = 1e-7);
 
   AutomaticLossScalingSettings &
   operator=(const AutomaticLossScalingSettings &rhs) = default;
@@ -47,6 +50,11 @@ struct AutomaticLossScalingSettings {
   /// is increased, and below which the loss scale is decreased. Should be in
   /// the range [0, 1].
   float thresholdUpperCountProportion = 1e-7;
+
+  /// An optional list of model tensor names, for which gradient statistics
+  /// will be collected. If unset, the gradients of all tensors produced
+  /// by a default operations (matmul, conv) will be used.
+  nonstd::optional<std::vector<TensorId>> toTrackTensors;
 };
 
 /**
