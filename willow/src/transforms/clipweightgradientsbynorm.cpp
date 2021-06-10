@@ -53,7 +53,7 @@ ExecutionContext decideExecutionContext(Graph &graph) {
   auto &ir   = graph.getIr();
   auto &opts = ir.getSessionOptions();
 
-  if (opts.enablePipelining && opts.enableGradientAccumulation) {
+  if (opts.enableGradientAccumulation) {
     return ExecutionContext::AccumulateOuterFragment;
   } else {
     return ExecutionContext::Normal;
