@@ -63,6 +63,10 @@ void RoundShapeInference(InferenceContext &ctx);
 void CtcBeamSearchDecoderShapeInference(InferenceContext &ctx);
 void CtcLossShapeInference(InferenceContext &ctx);
 void ReduceMedianShapeInference(InferenceContext &ctx);
+void BitwiseAndShapeInference(InferenceContext &ctx);
+void BitwiseOrShapeInference(InferenceContext &ctx);
+void BitwiseXorShapeInference(InferenceContext &ctx);
+void BitwiseXnorShapeInference(InferenceContext &ctx);
 
 void SubsampleShapeInference(InferenceContext &ctx) {
   propagateElemTypeFromInputToOutput(ctx, 0, 0);
@@ -599,6 +603,19 @@ void ReduceMedianShapeInference(InferenceContext &ctx) {
   }
 }
 
+void BidirectionalBroadcastShapeInference(InferenceContext &ctx) {
+  propagateElemTypeFromInputToOutput(ctx, 0, 0);
+
+  if (!hasNInputShapes(ctx, 2)) {
+    fail_shape_inference("Bitwise requires two input tensors with shapes.");
+  }
+
+  bidirectionalBroadcastShapeInference(
+      ctx.getInputType(0)->tensor_type().shape(),
+      ctx.getInputType(1)->tensor_type().shape(),
+      *ctx.getOutputType(0)->mutable_tensor_type()->mutable_shape());
+}
+
 extern size_t dbg_count_check_GroupNormalization_AiGraphcore_ver1;
 extern size_t dbg_count_check_Subsample_AiGraphcore_ver1;
 extern size_t dbg_count_check_PrintTensor_AiGraphcore_ver1;
@@ -631,6 +648,10 @@ extern size_t dbg_count_check_Round_AiGraphcore_ver1;
 extern size_t dbg_count_check_CtcBeamSearchDecoder_AiGraphcore_ver1;
 extern size_t dbg_count_check_CtcLoss_AiGraphcore_ver1;
 extern size_t dbg_count_check_ReduceMedian_AiGraphcore_ver1;
+extern size_t dbg_count_check_BitwiseAnd_AiGraphcore_ver1;
+extern size_t dbg_count_check_BitwiseOr_AiGraphcore_ver1;
+extern size_t dbg_count_check_BitwiseXor_AiGraphcore_ver1;
+extern size_t dbg_count_check_BitwiseXnor_AiGraphcore_ver1;
 
 static const char groupnormalizationDoc[] =
     "GroupNormalization applies Group Normalization over a mini-batch of "
@@ -1579,6 +1600,70 @@ ONNX_OPERATOR_SET_SCHEMA_EX(
               true)
         .TypeAndShapeInferenceFunction(ReduceMedianShapeInference))
 
+ONNX_OPERATOR_SET_SCHEMA_EX(
+    BitwiseAnd,
+    AiGraphcore,
+    popart::Domain::ai_graphcore,
+    1,
+    false,
+    OpSchema()
+        .SetDoc("BitwiseAnd(X, Y)")
+        .Input(0, "X", "First input tensor", "T")
+        .Input(1, "Y", "Second input tensor", "T")
+        .Output(0, "Z", "Output tensor", "T")
+        .TypeConstraint("T",
+                        {"tensor(int32)", "tensor(uint32)"},
+                        "Constrain input and output types to (u)int32 tensors.")
+        .TypeAndShapeInferenceFunction(BidirectionalBroadcastShapeInference))
+
+ONNX_OPERATOR_SET_SCHEMA_EX(
+    BitwiseOr,
+    AiGraphcore,
+    popart::Domain::ai_graphcore,
+    1,
+    false,
+    OpSchema()
+        .SetDoc("BitwiseOr(X, Y)")
+        .Input(0, "X", "First input tensor", "T")
+        .Input(1, "Y", "Second input tensor", "T")
+        .Output(0, "Z", "Output tensor", "T")
+        .TypeConstraint("T",
+                        {"tensor(int32)", "tensor(uint32)"},
+                        "Constrain input and output types to (u)int32 tensors.")
+        .TypeAndShapeInferenceFunction(BidirectionalBroadcastShapeInference))
+
+ONNX_OPERATOR_SET_SCHEMA_EX(
+    BitwiseXor,
+    AiGraphcore,
+    popart::Domain::ai_graphcore,
+    1,
+    false,
+    OpSchema()
+        .SetDoc("BitwiseXor(X, Y)")
+        .Input(0, "X", "First input tensor", "T")
+        .Input(1, "Y", "Second input tensor", "T")
+        .Output(0, "Z", "Output tensor", "T")
+        .TypeConstraint("T",
+                        {"tensor(int32)", "tensor(uint32)"},
+                        "Constrain input and output types to (u)int32 tensors.")
+        .TypeAndShapeInferenceFunction(BidirectionalBroadcastShapeInference))
+
+ONNX_OPERATOR_SET_SCHEMA_EX(
+    BitwiseXnor,
+    AiGraphcore,
+    popart::Domain::ai_graphcore,
+    1,
+    false,
+    OpSchema()
+        .SetDoc("BitwiseXnor(X, Y)")
+        .Input(0, "X", "First input tensor", "T")
+        .Input(1, "Y", "Second input tensor", "T")
+        .Output(0, "Z", "Output tensor", "T")
+        .TypeConstraint("T",
+                        {"tensor(int32)", "tensor(uint32)"},
+                        "Constrain input and output types to (u)int32 tensors.")
+        .TypeAndShapeInferenceFunction(BidirectionalBroadcastShapeInference))
+
 static bool registerOps() {
   auto &d = ONNX_NAMESPACE::OpSchemaRegistry::DomainToVersionRange::Instance();
   d.AddDomainToVersion(popart::Domain::ai_graphcore, 1, 1);
@@ -1705,6 +1790,22 @@ static bool registerOps() {
   ONNX_NAMESPACE::RegisterSchema(
       GetOpSchema<ONNX_OPERATOR_SET_SCHEMA_CLASS_NAME(
           AiGraphcore, 1, ReduceMedian)>());
+
+  ONNX_NAMESPACE::RegisterSchema(
+      GetOpSchema<ONNX_OPERATOR_SET_SCHEMA_CLASS_NAME(
+          AiGraphcore, 1, BitwiseAnd)>());
+
+  ONNX_NAMESPACE::RegisterSchema(
+      GetOpSchema<ONNX_OPERATOR_SET_SCHEMA_CLASS_NAME(
+          AiGraphcore, 1, BitwiseOr)>());
+
+  ONNX_NAMESPACE::RegisterSchema(
+      GetOpSchema<ONNX_OPERATOR_SET_SCHEMA_CLASS_NAME(
+          AiGraphcore, 1, BitwiseXor)>());
+
+  ONNX_NAMESPACE::RegisterSchema(
+      GetOpSchema<ONNX_OPERATOR_SET_SCHEMA_CLASS_NAME(
+          AiGraphcore, 1, BitwiseXnor)>());
 
   return true;
 }

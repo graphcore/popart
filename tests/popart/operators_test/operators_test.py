@@ -250,6 +250,7 @@ def test_convolution_2(op_tester):
     Test the convolution when the conv in the bwd pass is not the same as the conv in the
     forward pass
     '''
+
     def init_builder(builder):
         data = np.ones([1, 2, 4, 4], dtype=np.float32)
         filt = np.ones([4, 2, 1, 1], dtype=np.float32)
@@ -1895,11 +1896,7 @@ def test_pad11(op_tester):
                   })
 
 
-def _test_pad(op_tester,
-              data,
-              lower_padding,
-              upper_padding,
-              mode,
+def _test_pad(op_tester, data, lower_padding, upper_padding, mode,
               pad_value=0):
     def init_builder(builder):
         i1 = builder.addInputTensor(data)
@@ -3236,8 +3233,8 @@ def test_round_graphcore(op_tester):
         i1 = builder.addInputTensor(d1)
         o = builder.aiGraphcore.round([i1], "test_round")
         builder.addOutputTensor(o)
-        # Check builder shape inference    
-        assert (builder.getTensorShape(o) == [2,7])          
+        # Check builder shape inference
+        assert (builder.getTensorShape(o) == [2, 7])
         return [o]
 
     def reference(ref_data):
@@ -3624,6 +3621,8 @@ def test_bitwise_binary_op(op_tester, npType, npOp):
         i2 = builder.addInputTensor(d2)
         o = gcOp([i1, i2], "test_bitwise_binary_op")
         builder.addOutputTensor(o)
+        # Check builder shape inference
+        assert (builder.getTensorShape(o) == [10])
         return [o]
 
     def reference(ref_data):
