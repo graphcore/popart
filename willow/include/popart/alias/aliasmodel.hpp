@@ -168,8 +168,12 @@ public:
   std::vector<PoprithmsOpId> getAll(OpId) const;
   bool contains(OpId) const;
 
-  poprithms::memory::inplace::Proposal getProposal(const Op &,
-                                                   OperatorIdentifier) const;
+  /**
+   * Get all aliases for a tensor for this given model.
+   *
+   * Returned tensors include the argument #t, if it is non-empty.
+   **/
+  std::vector<Tensor *> allAliases(const Tensor &t) const;
 
   /**
    * The poprithms Graph

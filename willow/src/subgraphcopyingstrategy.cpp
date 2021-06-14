@@ -1,4 +1,5 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
+#include <popart/alias/aliasmodelgrower.hpp>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/subgraphcopyingstrategy.hpp>
@@ -81,7 +82,7 @@ void OnEnterAndExitSubgraphCopyingStrategy::addMatching(
 }
 
 JustInTimeSubgraphCopyingStrategy::JustInTimeSubgraphCopyingStrategy()
-    : SubgraphCopyingStrategy(), aliasesMap{}, isPartitionableCache() {}
+    : SubgraphCopyingStrategy(), aliasModels{}, isPartitionableCache() {}
 
 JustInTimeSubgraphCopyingStrategy::~JustInTimeSubgraphCopyingStrategy() {}
 
@@ -95,10 +96,12 @@ void JustInTimeSubgraphCopyingStrategy::apply() {
     // not be quick, and we use this info a lot.
     bool partitionable = SubgraphPartitioner::isPartitionable(*graph);
     isPartitionableCache[graph->id.str()] = partitionable;
-  }
 
-  aliasesMap.setIr(ir);
-  aliasesMap.update();
+    // Add an AliasModel for every graph.
+    auto &aliasModel = aliasModels[graph->id];
+    AliasModelGrower grower{aliasModel};
+    grower.growFullGraph(*graph, DataDependenciesOnly::Yes);
+  }
 }
 
 std::vector<size_t>
@@ -602,17 +605,12 @@ JustInTimeSubgraphCopyingStrategy::getAliases(const Graph &graph,
   std::set<TensorId> aliasedTensors;
   aliasedTensors.insert(id);
 
-  Tensor *t             = graph.getTensors().get(id);
-  auto &aliases         = aliasesMap.getAliases(graph.id);
-  auto aliasedTensorMap = aliases.aliasChainsFrom(t);
-  auto fullRegion       = view::Region::getFull(t->info.shape());
-  for (auto &chain : aliasedTensorMap) {
-    auto regions = chain.second.apply(fullRegion);
-    if (nonEmptyRegion(regions)) {
-      auto aliasedTensor = chain.first;
-      aliasedTensors.insert(aliasedTensor->id);
-    }
-  }
+  Tensor *t    = graph.getTensors().get(id);
+  auto aliases = aliasModels.at(graph.id).allAliases(*t);
+  std::transform(aliases.begin(),
+                 aliases.end(),
+                 std::inserter(aliasedTensors, aliasedTensors.end()),
+                 [](Tensor *t) -> TensorId { return t->id; });
 
   return aliasedTensors;
 }

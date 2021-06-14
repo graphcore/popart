@@ -7,7 +7,7 @@
 #include <map>
 #include <vector>
 
-#include <popart/aliasesmap.hpp>
+#include <popart/alias/aliasmodel.hpp>
 #include <popart/liveness.hpp>
 #include <popart/names.hpp>
 
@@ -219,8 +219,8 @@ private:
   // Helper function to determine if graph is partitionable.
   bool isPartitionable(const Graph &graph) const;
 
-  // TODO T40060: Replace use of chain-based aliasing.
-  AliasesMap aliasesMap;
+  // Alias information for graphs.
+  std::map<GraphId, AliasModel> aliasModels;
 
   // Cache from SubgraphPartitioner::isPartitionable.
   std::map<std::string, bool> isPartitionableCache;

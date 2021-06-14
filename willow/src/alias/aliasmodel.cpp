@@ -196,4 +196,34 @@ PoprithmsOpId AliasModel::getGate(OpId id) const {
   throw error("Failed to find gate for this Op, {}", id);
 }
 
+std::vector<Tensor *> AliasModel::allAliases(const Tensor &t) const {
+
+  auto tensorIt = toTensor_.find(t.id);
+  if (tensorIt == toTensor_.end()) {
+    throw error("[AliasModel::allAliases] Expected tensor '{}' to "
+                "be in the AliasModel",
+                t.id);
+  }
+
+  auto gTensor = getPoprithmsTensorId(t.id);
+
+  std::vector<Tensor *> result;
+
+  // Iterate over all aliases as found by poprithms.
+  for (const auto &gAliasId : g.allAliases(gTensor)) {
+    // All PopART tensors map to a Poprithms tensor, but not all Poprithms
+    // tensors map to a PopART one. It is safe to only look at those Poprithms
+    // aliases that have a corresponding PopART tensor.
+    if (contains(gAliasId)) {
+      // Translate back to PopART IDs.
+      auto popartAliasId = getTensorId(gAliasId);
+      auto popartAlias   = t.getIr().getTensor(popartAliasId);
+
+      result.push_back(popartAlias);
+    }
+  }
+
+  return result;
+}
+
 } // namespace popart
