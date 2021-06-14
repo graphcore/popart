@@ -3112,6 +3112,13 @@ void Ir::applyInplacePattern(Graph &graph) {
         logging::pattern::debug(oss.str());
         continue;
       }
+      if (!op->isOutplace()) {
+        std::ostringstream oss;
+        oss << "[Inplacing] The Op being considered for inplacing, "
+            << op->str() << ", is already inplace.";
+        logging::pattern::debug(oss.str());
+        continue;
+      }
 
       poprithms::memory::inplace::Proposal proposal(0, 0);
       op->setProposal(proposal, popMem, identifier);
