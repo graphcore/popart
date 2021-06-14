@@ -34,6 +34,12 @@ public:
 
   static OutIndex getOutIndex() { return 0; }
 
+  virtual void growAliaser(PoprithmsAliaser &) const override;
+
+  void setProposal(poprithms::memory::inplace::Proposal &,
+                   const PoprithmsAliaser &,
+                   OperatorIdentifier) const override;
+
   const bool zeroUnused;
 };
 

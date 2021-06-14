@@ -1,4 +1,5 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
+#include <poprithmsinplace.hpp>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/op/identity.hpp>
@@ -37,6 +38,17 @@ std::unique_ptr<Op> SequenceSliceOp::getInplaceVariant(
 
   // catch remaining cases and throw an error
   return Op::getInplaceVariant(operator_id);
+}
+
+void SequenceSliceOp::growAliaser(PoprithmsAliaser &m) const {
+  m.insertUnaryModifier(*this, getDestinationInIndex());
+}
+
+void SequenceSliceOp::setProposal(
+    poprithms::memory::inplace::Proposal &proposal,
+    const PoprithmsAliaser &aliaser,
+    OperatorIdentifier opId) const {
+  setProposalGate0(proposal, aliaser, opId);
 }
 
 std::vector<std::tuple<OperatorIdentifier, float>>
