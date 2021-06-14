@@ -85,6 +85,7 @@ void BuilderImpl::finalizeOp(ONNX_NAMESPACE::NodeProto *node,
   runShapeInference(node, opid);
 
   // Sanity check: verify the output dimensions of each output are valid
+  //               and the element type is defined
   for (int i = 0; i < node->output_size(); ++i) {
     const TensorId &output = node->output(i);
     // TODO T17932 : We do not have a mechanism for inferring the output shape
@@ -102,6 +103,37 @@ void BuilderImpl::finalizeOp(ONNX_NAMESPACE::NodeProto *node,
             fullname.str(),
             shape);
       }
+      if (getTensorDataType(output) == DataType::UNDEFINED) {
+        logging::builder::info(
+            "Warning: element type undefined for output {} of op {}. This will "
+            "likely "
+            "cause shape inference of subsequent ops to fail and prevent shape "
+            "information being available from the builder.",
+            output,
+            opid);
+      }
+
+      std::stringstream shapeStr;
+      shapeStr << "(";
+      std::copy(shape.begin(),
+                shape.end(),
+                std::ostream_iterator<int>(shapeStr, ","));
+      shapeStr << ")";
+
+      logging::builder::trace(
+          "Shape inferred from output {} of op {}: elem type {}, shape {}",
+          output,
+          opid,
+          getTensorDtypeString(output),
+          shapeStr.str());
+    } else {
+      logging::builder::info(
+          "Warning: no inferred shape for output {} of {}. This will likely "
+          "cause shape "
+          "inference of subsequent ops to fail and prevent shape information "
+          "being available from the builder.",
+          output,
+          opid);
     }
   }
 }
@@ -1212,7 +1244,9 @@ BuilderImpl::getValueInfoProto(TensorId id) const {
     return t;
   } else {
     throw error("{} is not an known tensor. Must be one of (inputs:{}) "
-                "(outputs:{}) (values:{})",
+                "(outputs:{}) (values:{}). Please check the info log level to "
+                "confirm whether the shape has been inferred successfully for "
+                "the requested tensor.",
                 id,
                 getStrFromTensorIdVec(getInputTensorIds()),
                 getStrFromTensorIdVec(getOutputTensorIds()),
