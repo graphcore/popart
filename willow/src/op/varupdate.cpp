@@ -1,7 +1,7 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
-#include <aliasmodel.hpp>
 #include <limits>
 #include <memory>
+#include <popart/alias/aliasmodel.hpp>
 #include <popart/ir.hpp>
 #include <popart/logging.hpp>
 #include <popart/op/varupdate.hpp>

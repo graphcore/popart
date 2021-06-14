@@ -93,9 +93,8 @@ public:
 
   virtual void growAliasModel(AliasModel &m) const final;
 
-  void setProposal(poprithms::memory::inplace::Proposal &,
-                   const AliasModel &,
-                   OperatorIdentifier) const final;
+  poprithms::memory::inplace::Proposal
+  mapInplaceProposal(const AliasModel &, OperatorIdentifier) const override;
 
 protected:
   TensorInfo updateInInfo;

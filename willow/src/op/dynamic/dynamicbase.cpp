@@ -1,5 +1,5 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
-#include <aliasmodel.hpp>
+#include <popart/alias/aliasmodel.hpp>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/op/dynamic/dynamicbase.hpp>
@@ -124,11 +124,10 @@ void DynamicBinaryBaseOp::growAliasModel(AliasModel &m) const {
   m.insertUnaryModifier(*this, getUpdateInIndex());
 }
 
-void DynamicBinaryBaseOp::setProposal(
-    poprithms::memory::inplace::Proposal &proposal,
-    const AliasModel &aliaser,
-    OperatorIdentifier opId) const {
-  setProposalGate0(proposal, aliaser, opId);
+poprithms::memory::inplace::Proposal
+DynamicBinaryBaseOp::mapInplaceProposal(const AliasModel &aliasModel,
+                                        OperatorIdentifier id) const {
+  return mapInplaceProposalGate0(aliasModel, id);
 }
 
 // Modifies is the same as aliases

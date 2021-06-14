@@ -107,7 +107,8 @@
 // used for float to half conversion
 #include <poplar/Target.hpp>
 
-#include <aliasmodel.hpp>
+#include <popart/alias/aliasmodel.hpp>
+#include <popart/alias/aliasmodelgrower.hpp>
 
 namespace popart {
 
@@ -3016,7 +3017,9 @@ void Ir::applyInplacePattern(Graph &graph) {
 
   // The decision of where topological constraints need to be inserted is made
   // by a poprithms Graph whose Ops mirror those in \a graph.
-  auto popMem = getFullAliasModel(graph, DataDependenciesOnly::No);
+  AliasModel popMem;
+  AliasModelGrower aliasModelGrower{popMem};
+  aliasModelGrower.growFullGraph(graph, DataDependenciesOnly::No);
 
   Inplace inplace;
 
@@ -3121,8 +3124,7 @@ void Ir::applyInplacePattern(Graph &graph) {
         continue;
       }
 
-      poprithms::memory::inplace::Proposal proposal(0, 0);
-      op->setProposal(proposal, popMem, identifier);
+      auto proposal = op->mapInplaceProposal(popMem, identifier);
 
       const auto result = popMem.g.tryOpeningPartial(
           proposal, poprithms::memory::inplace::CheckParallelWriteable::No);

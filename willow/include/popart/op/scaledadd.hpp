@@ -50,9 +50,8 @@ public:
 
   virtual void growAliasModel(AliasModel &) const override;
 
-  void setProposal(poprithms::memory::inplace::Proposal &,
-                   const AliasModel &,
-                   OperatorIdentifier) const override;
+  poprithms::memory::inplace::Proposal
+  mapInplaceProposal(const AliasModel &, OperatorIdentifier) const override;
 
 protected:
   float scale_0;

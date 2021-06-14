@@ -1,16 +1,22 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 #ifndef GUARD_NEURALNET_ALIASMODEL_HPP
 #define GUARD_NEURALNET_ALIASMODEL_HPP
+
 #include <map>
+
 #include <poprithms/memory/inplace/crosslink.hpp>
 #include <poprithms/memory/inplace/graph.hpp>
 #include <poprithms/memory/inplace/proposal.hpp>
 #include <poprithms/memory/inplace/result.hpp>
 #include <poprithms/memory/inplace/tensor.hpp>
 #include <poprithms/memory/inplace/tensormap.hpp>
-#include <popart/op.hpp>
+
+#include <popart/opidentifier.hpp>
 
 namespace popart {
+
+// Forward declaration.
+class Op;
 
 /**
  * A container for the poprithms::memory::inplace::Graph which corresponds to a
@@ -176,48 +182,6 @@ private:
   std::map<OpId, std::vector<poprithms::memory::inplace::OpId>> toOp_;
   std::map<poprithms::memory::inplace::OpId, OpId> fromOp_;
 };
-
-/**
- * An enum type that determines whether topological constraints are added to
- * an alias model.
- **/
-enum class DataDependenciesOnly {
-  // Only add data constraints.
-  Yes,
-  // Add data constraints and additional topological constraints.
-  No
-};
-
-/**
- * Construct a mapping from a PopART Graph to a Poprithms alias Graph. This
- * mapping will include every PopART op and Tensor in the Graph.
- * \param graph The PopART Graph object to construct a mapping for.
- * \param dataDepsOnly Flag to indicate whether to add only data dependencies
- *     or whether to also add topocological constraints.
- * \return A AliasModel object containing the mapping.
- **/
-AliasModel getFullAliasModel(const Graph &graph,
-                             DataDependenciesOnly dataDepsOnly);
-
-/**
- * Construct a mapping from a PopART Graph to a Poprithms alias Graph that is
- * guaranteed to contain a mapping for any tensors that alias the `tensorId`
- * parameter (and ops that separate them) but may also contain other tensors
- * that do not alias it.
- *
- * The purpose of this function is to provide an alternative to
- * `getFullAliasModel` for when you do not require a whole mapping.
- *
- * \param graph The PopART Graph object to construct a mapping for.
- * \param tensorId The PopART Tensor used to determine which part of the PopART
- *      graph to create a mapping for.
- * \param dataDepsOnly Flag to indicate whether to add only data dependencies
- *     or whether to also add topocological constraints.
- * \return A AliasModel object containing the mapping.
- **/
-AliasModel getPartialAliasModel(const Graph &graph,
-                                const TensorId &tensorId,
-                                DataDependenciesOnly dataDepsOnly);
 
 } // namespace popart
 

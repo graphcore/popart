@@ -1,5 +1,5 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
-#include <aliasmodel.hpp>
+#include <popart/alias/aliasmodel.hpp>
 #include <popart/broadcastutil.hpp>
 #include <popart/op/elementwise.hpp>
 #include <popart/op/identity.hpp>
@@ -254,21 +254,19 @@ void ElementWiseBinaryBaseOp::growAliasModel(AliasModel &m) const {
   m.insertBinaryModifier(*this);
 }
 
-void ElementWiseBinaryOp::setProposal(
-    poprithms::memory::inplace::Proposal &proposal,
-    const AliasModel &aliaser,
-    OperatorIdentifier opId) const {
+poprithms::memory::inplace::Proposal
+ElementWiseBinaryOp::mapInplaceProposal(const AliasModel &aliasModel,
+                                        OperatorIdentifier opId) const {
 
   const std::string inplaceName = opId.type;
   auto index = (inplaceName.find("Rhs") != std::string::npos) ? 1 : 0;
-  proposal   = {aliaser.getGate(id), index};
+  return {aliasModel.getGate(id), index};
 }
 
-void ElementWiseUnaryOp::setProposal(
-    poprithms::memory::inplace::Proposal &proposal,
-    const AliasModel &aliaser,
-    OperatorIdentifier opId) const {
-  setProposalGate0(proposal, aliaser, opId);
+poprithms::memory::inplace::Proposal
+ElementWiseUnaryOp::mapInplaceProposal(const AliasModel &aliasModel,
+                                       OperatorIdentifier id) const {
+  return mapInplaceProposalGate0(aliasModel, id);
 }
 
 void ElementWiseUnaryOp::growAliasModel(AliasModel &m) const {

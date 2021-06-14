@@ -1,10 +1,10 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
-#include <aliasmodel.hpp>
 #include <memory>
 #include <numeric>
 #include <onnx/onnx_pb.h>
 #include <poprithms/ndarray/shape.hpp>
 #include <poprithms/util/printiter.hpp>
+#include <popart/alias/aliasmodel.hpp>
 #include <popart/error.hpp>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
@@ -23,10 +23,10 @@ void ReshapeBaseOp::growAliasModel(AliasModel &m) const {
   m.insertViewChange(vc, *outTensor(0), isOutplace());
 }
 
-void ReshapeOp::setProposal(poprithms::memory::inplace::Proposal &proposal,
-                            const AliasModel &aliaser,
-                            OperatorIdentifier opId) const {
-  setProposalGate0(proposal, aliaser, opId);
+poprithms::memory::inplace::Proposal
+ReshapeOp::mapInplaceProposal(const AliasModel &aliasModel,
+                              OperatorIdentifier id) const {
+  return mapInplaceProposalGate0(aliasModel, id);
 }
 
 std::unique_ptr<Op>

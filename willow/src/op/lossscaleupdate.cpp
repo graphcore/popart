@@ -1,9 +1,10 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#include <aliasmodel.hpp>
-#include <onnxutil.hpp>
+#include <popart/alias/aliasmodel.hpp>
 #include <popart/op/lossscaleupdate.hpp>
 #include <popart/opmanager.hpp>
 #include <popart/tensorindex.hpp>
+
+#include <onnxutil.hpp>
 
 namespace popart {
 

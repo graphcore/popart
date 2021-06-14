@@ -1,6 +1,6 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
-#include <aliasmodel.hpp>
 #include <memory>
+#include <popart/alias/aliasmodel.hpp>
 #include <popart/ir.hpp>
 #include <popart/op/collectives/collectives.hpp>
 #include <popart/op/collectives/replicatedallreduce.hpp>

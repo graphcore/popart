@@ -1,6 +1,6 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
-#include <aliasmodel.hpp>
 #include <memory>
+#include <popart/alias/aliasmodel.hpp>
 #include <popart/op/scaledadd.hpp>
 #include <popart/opmanager.hpp>
 #include <popart/opserialiser.hpp>
@@ -9,14 +9,14 @@
 
 namespace popart {
 
-void ScaledAddOp::setProposal(poprithms::memory::inplace::Proposal &proposal,
-                              const AliasModel &aliaser,
-                              OperatorIdentifier opId) const {
+poprithms::memory::inplace::Proposal
+ScaledAddOp::mapInplaceProposal(const AliasModel &aliasModel,
+                                OperatorIdentifier opId) const {
   const std::string inplaceName = opId.type;
   auto index                    = (inplaceName.find("Rhs") != std::string::npos)
                    ? getArg1InIndex()
                    : getArg0InIndex();
-  proposal = {aliaser.getGate(id), index};
+  return {aliasModel.getGate(id), index};
 }
 
 std::vector<std::tuple<OperatorIdentifier, float>>

@@ -1,6 +1,6 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#include <aliasmodel.hpp>
 #include <memory>
+#include <popart/alias/aliasmodel.hpp>
 #include <popart/op/pad.hpp>
 #include <popart/op/slice.hpp>
 #include <popart/opmanager.hpp>
@@ -120,10 +120,10 @@ SliceOp::getInplaceVariant(const OperatorIdentifier &operator_id) const {
   return Op::getInplaceVariant(operator_id);
 }
 
-void SliceOp::setProposal(poprithms::memory::inplace::Proposal &proposal,
-                          const AliasModel &aliaser,
-                          OperatorIdentifier opId) const {
-  setProposalGate0(proposal, aliaser, opId);
+poprithms::memory::inplace::Proposal
+SliceOp::mapInplaceProposal(const AliasModel &aliasModel,
+                            OperatorIdentifier id) const {
+  return mapInplaceProposalGate0(aliasModel, id);
 }
 
 view::Region BaseSliceOp::getFullOutRegion() const {

@@ -1,8 +1,8 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #include <algorithm>
 
-#include <aliasmodel.hpp>
 #include <memory>
+#include <popart/alias/aliasmodel.hpp>
 #include <popart/graph.hpp>
 #include <popart/op/concat.hpp>
 #include <popart/opmanager.hpp>
@@ -39,10 +39,10 @@ void ConcatOp::growAliasModel(AliasModel &m) const {
   m.insertViewChange(cat, *outTensor(0), isOutplace());
 }
 
-void ConcatOp::setProposal(poprithms::memory::inplace::Proposal &proposal,
-                           const AliasModel &aliaser,
-                           OperatorIdentifier opId) const {
-  setProposalGate0(proposal, aliaser, opId);
+poprithms::memory::inplace::Proposal
+ConcatOp::mapInplaceProposal(const AliasModel &aliasModel,
+                             OperatorIdentifier id) const {
+  return mapInplaceProposalGate0(aliasModel, id);
 }
 
 void ConcatOp::regMapPreChecks(InIndex inIndex) const {

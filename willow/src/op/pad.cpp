@@ -1,7 +1,7 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
 #include <algorithm>
-#include <aliasmodel.hpp>
 #include <memory>
+#include <popart/alias/aliasmodel.hpp>
 #include <popart/graph.hpp>
 #include <popart/op/pad.hpp>
 #include <popart/op/padgrad.hpp>
@@ -118,11 +118,10 @@ void BasePadOp::growAliasModel(AliasModel &m) const {
   m.insertTensor(out0, *outTensor(0));
 }
 
-void BasePadOutplaceOp::setProposal(
-    poprithms::memory::inplace::Proposal &proposal,
-    const AliasModel &aliaser,
-    OperatorIdentifier opId) const {
-  proposal = {aliaser.getGate(id), 0};
+poprithms::memory::inplace::Proposal
+BasePadOutplaceOp::mapInplaceProposal(const AliasModel &aliasModel,
+                                      OperatorIdentifier opId) const {
+  return {aliasModel.getGate(id), 0};
 }
 
 std::unique_ptr<Op> BasePadOutplaceOp::getInplaceVariant(

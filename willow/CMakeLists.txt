@@ -104,6 +104,7 @@ set(POPART_INTERNAL_DEPS_LIBS
  
 # core popart source files:
 file(GLOB core_sources src/*cpp)
+file(GLOB alias_sources src/alias/*cpp)
 file(GLOB op_sources src/op/*cpp)
 file(GLOB op_dyn_sources src/op/dynamic/*cpp)
 file(GLOB op_collectives_sources src/op/collectives/*cpp)
@@ -123,6 +124,7 @@ file(GLOB opx_collectives_sources src/popx/op/collectives/*cpp)
 
 set(sources
   ${core_sources}
+  ${alias_sources}
   ${op_sources}
   ${op_dyn_sources}
   ${op_collectives_sources}

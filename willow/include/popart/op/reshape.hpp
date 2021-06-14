@@ -83,9 +83,8 @@ public:
     return {{Onnx::CustomOperators::ReshapeInplace, 10}};
   }
 
-  void setProposal(poprithms::memory::inplace::Proposal &,
-                   const AliasModel &,
-                   OperatorIdentifier) const override;
+  poprithms::memory::inplace::Proposal
+  mapInplaceProposal(const AliasModel &, OperatorIdentifier) const override;
 
   bool isOutplaceViewChange() const override { return true; }
 };

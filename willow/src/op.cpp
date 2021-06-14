@@ -24,10 +24,10 @@
 #include <popart/op/restore.hpp>
 #include <popart/op/varupdate.hpp>
 
-#include <aliasmodel.hpp>
 #include <sstream>
 #include <poprithms/memory/inplace/crosslink.hpp>
 #include <poprithms/memory/inplace/graph.hpp>
+#include <popart/alias/aliasmodel.hpp>
 
 namespace {
 using namespace popart;
@@ -1568,15 +1568,16 @@ bool Op::doesAlias() const {
   return false;
 }
 
-void Op::setProposal(poprithms::memory::inplace::Proposal &proposal,
-                     const AliasModel &aliaser,
-                     OperatorIdentifier opId) const {
+poprithms::memory::inplace::Proposal
+Op::mapInplaceProposal(const AliasModel &aliasModel,
+                       OperatorIdentifier opId) const {
   if (!isOutplace()) {
-    throw error("Invalid call to setProposal for {}, as it is not outplace.",
-                str());
+    throw error(
+        "Invalid call to mapInplaceProposal for {}, as it is not outplace.",
+        str());
   }
 
-  throw error("setProposal not implemented for {}", str());
+  throw error("mapInplaceProposal not implemented for {}", str());
 }
 
 void Op::growAliasModel(AliasModel &m) const {
@@ -1593,9 +1594,9 @@ void Op::growAliasModel(AliasModel &m) const {
   growAliasModelMulti(m);
 }
 
-void Op::setProposalGate0(poprithms::memory::inplace::Proposal &proposal,
-                          const AliasModel &aliaser,
-                          OperatorIdentifier opId) const {
+poprithms::memory::inplace::Proposal
+Op::mapInplaceProposalGate0(const AliasModel &aliasModel,
+                            OperatorIdentifier opId) const {
 
   if (!isOutplace()) {
     std::ostringstream oss;
@@ -1605,7 +1606,7 @@ void Op::setProposalGate0(poprithms::memory::inplace::Proposal &proposal,
     throw error(oss.str());
   }
 
-  proposal = {aliaser.getGate(id), 0};
+  return {aliasModel.getGate(id), 0};
 }
 
 } // namespace popart

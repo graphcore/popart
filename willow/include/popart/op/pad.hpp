@@ -95,9 +95,8 @@ public:
 
   bool canBeReplacedByIdentity() const override { return padSizeZero(); }
 
-  void setProposal(poprithms::memory::inplace::Proposal &,
-                   const AliasModel &,
-                   OperatorIdentifier) const override;
+  poprithms::memory::inplace::Proposal
+  mapInplaceProposal(const AliasModel &, OperatorIdentifier) const override;
 
   std::vector<std::tuple<OperatorIdentifier, float>>
   inplacePriorityDefault() const override;

@@ -8,7 +8,7 @@
 #include <popart/tensor.hpp>
 #include <popart/tensornames.hpp>
 
-#include <aliasmodel.hpp>
+#include <popart/alias/aliasmodel.hpp>
 
 namespace popart {
 
@@ -45,11 +45,10 @@ void SequenceSliceOp::growAliasModel(AliasModel &m) const {
   m.insertUnaryModifier(*this, getDestinationInIndex());
 }
 
-void SequenceSliceOp::setProposal(
-    poprithms::memory::inplace::Proposal &proposal,
-    const AliasModel &aliasModel,
-    OperatorIdentifier opId) const {
-  setProposalGate0(proposal, aliasModel, opId);
+poprithms::memory::inplace::Proposal
+SequenceSliceOp::mapInplaceProposal(const AliasModel &aliasModel,
+                                    OperatorIdentifier opId) const {
+  return mapInplaceProposalGate0(aliasModel, opId);
 }
 
 std::vector<std::tuple<OperatorIdentifier, float>>

@@ -1,8 +1,8 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
 #include <algorithm>
-#include <aliasmodel.hpp>
 #include <functional>
 #include <memory>
+#include <popart/alias/aliasmodel.hpp>
 #include <popart/op/transpose.hpp>
 #include <popart/opmanager.hpp>
 #include <popart/opserialiser.hpp>
@@ -10,10 +10,10 @@
 
 namespace popart {
 
-void TransposeOp::setProposal(poprithms::memory::inplace::Proposal &proposal,
-                              const AliasModel &aliaser,
-                              OperatorIdentifier opId) const {
-  setProposalGate0(proposal, aliaser, opId);
+poprithms::memory::inplace::Proposal
+TransposeOp::mapInplaceProposal(const AliasModel &aliasModel,
+                                OperatorIdentifier id) const {
+  return mapInplaceProposalGate0(aliasModel, id);
 }
 
 TransposeBaseOp::TransposeBaseOp(const OperatorIdentifier &_opid,

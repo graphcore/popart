@@ -1,241 +1,36 @@
-// Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#include <aliasmodel.hpp>
-#include <popart/graph.hpp>
-#include <popart/ir.hpp>
-#include <popart/op/elementwise.hpp>
-#include <popart/op/pad.hpp>
-#include <popart/op/scaledadd.hpp>
-#include <popart/opidentifier.hpp>
-#include <popart/tensorindex.hpp>
-#include <popart/topocons.hpp>
+#include <popart/alias/aliasmodelgrower.hpp>
+
+#include <list>
 
 #include <poprithms/logging/timepartitionlogger.hpp>
 #include <poprithms/schedule/vanilla/vanilla.hpp>
 
-#include <list>
-#include <unordered_set>
+#include <popart/graph.hpp>
+#include <popart/ir.hpp>
+#include <popart/topocons.hpp>
+
+#include <popart/alias/aliasmodel.hpp>
 
 namespace popart {
 
-using PoprithmsTensorId = poprithms::memory::inplace::TensorId;
-using PoprithmsOpId     = poprithms::memory::inplace::OpId;
+AliasModelGrower::AliasModelGrower(AliasModel &aliasModel_)
+    : aliasModel{aliasModel_} {}
 
-void AliasModel::insertTensor(const PoprithmsTensorId &id, const Tensor &t) {
-  toTensor_[t.id] = id;
-  fromTensor_[id] = t.id;
-  if (t.hasProducer()) {
-    insertOp(id.opId(), t.getProducer()->id);
-  }
-}
+AliasModel &AliasModelGrower::getAliasModelRef() { return aliasModel.get(); }
 
-void AliasModel::update(OpId oldId, OpId newId) {
-  auto found = toOp_.find(oldId);
-  if (found != toOp_.cend()) {
-    auto oldTargets = found->second;
-    toOp_.erase(found);
-    toOp_[newId] = oldTargets;
-    for (auto t : oldTargets) {
-      fromOp_[t] = newId;
-    }
-  }
-}
-
-void AliasModel::insertOp(PoprithmsOpId poprithmsId, OpId id) {
-
-  {
-    auto iter = fromOp_.find(poprithmsId);
-    if (iter != fromOp_.cend() && iter->second != id) {
-      throw error("reinserting, with different value");
-    }
-  }
-
-  fromOp_[poprithmsId] = id;
-  auto found           = toOp_.find(id);
-  if (found == toOp_.cend()) {
-    toOp_[id] = {poprithmsId};
-  }
-
-  else {
-    if (std::find(found->second.cbegin(), found->second.cend(), poprithmsId) ==
-        found->second.cend()) {
-      found->second.push_back(poprithmsId);
-    }
-  }
-}
-
-bool AliasModel::contains(const PoprithmsTensorId &id) const {
-  return fromTensor_.find(id) != fromTensor_.cend();
-}
-
-TensorId AliasModel::getTensorId(const PoprithmsTensorId &id) const {
-  const auto found = fromTensor_.find(id);
-  if (found == fromTensor_.cend()) {
-    std::ostringstream oss;
-    oss << "Error in AliasModel::getTensorId(PoprithmsTensorId = " << id
-        << "). There is no key " << id << " in fromTensor_. ";
-    throw error(oss.str());
-  }
-  return found->second;
-}
-
-bool AliasModel::contains(const TensorId &id) const {
-  return toTensor_.find(id) != toTensor_.cend();
-}
-PoprithmsTensorId AliasModel::getPoprithmsTensorId(const TensorId &id) const {
-  const auto found = toTensor_.find(id);
-  if (found == toTensor_.cend()) {
-    std::ostringstream oss;
-    oss << "Error in AliasModel::getPoprithmsTensorId(TensorId = " << id
-        << "). There is no key " << id << " in toTensor_. ";
-    throw error(oss.str());
-  }
-  return found->second;
-}
-
-bool AliasModel::contains(PoprithmsOpId id) const {
-  return fromOp_.find(id) != fromOp_.cend();
-}
-OpId AliasModel::getOpId(PoprithmsOpId id) const {
-  const auto found = fromOp_.find(id);
-  if (found == fromOp_.cend()) {
-    std::ostringstream oss;
-    oss << "Error in AliasModel::getOpId(PoprithmsOpId = " << id
-        << "). There is no key " << id << " in fromOp_. ";
-    throw error(oss.str());
-  }
-  return found->second;
-}
-
-bool AliasModel::contains(OpId id) const {
-  return toOp_.find(id) != toOp_.cend();
-}
-std::vector<PoprithmsOpId> AliasModel::getAll(OpId id) const {
-  const auto found = toOp_.find(id);
-  if (found == toOp_.cend()) {
-    std::ostringstream oss;
-    oss << "Error in AliasModel::getAll(OpId = " << id << "). There is no key "
-        << id << " in toOp_. ";
-    throw error(oss.str());
-  }
-  return found->second;
-}
-
-namespace {
-
-/**
- * Data type that dictates whether we check at runtime whether a tensor that is
- * produced by an op may be added via `insertTensor`. When growing the alias
- * model for a full graph you would expect these tensors to be added by growing
- * their producer.
- **/
-enum class AllowInsertingProducedTensors {
-  // Produced tensors may be added via `insertTensor`.
-  Yes = 0,
-  // Producer tensors must be added by their producer.
-  No
-};
-
-void addTensor(const Graph &graph,
-               AliasModel &m,
-               Tensor *t,
-               AllowInsertingProducedTensors allow) {
-  if (!m.contains(t->id)) { // to_.find(t0->id) == m.to.cend()) {
-
-    if (allow == AllowInsertingProducedTensors::No && t->hasProducer()) {
-      // The tensor should have been added by growing it's producer.
-      throw error("[AliasModel] Tensor '{}' was not added to the alias "
-                  "model by it's producer, {}",
-                  t->id,
-                  t->getProducer()->str());
-    }
-
-    const PoprithmsTensorId inId = (t->tensorType() == TensorType::Const)
-                                       ? m.g.constant(t->info.shape())
-                                       : m.g.variable(t->info.shape());
-    m.insertTensor(inId, *t);
-  }
-}
-
-void addAliaserOp(const Graph &graph,
-                  AliasModel &m,
-                  Op *op,
-                  AllowInsertingProducedTensors allow) {
-
-  logging::ir::trace("Inserting input Tensors for AliasModel, Graph \"{}\"",
-                     graph.id);
-  for (const auto &x : op->input->tensorMap()) {
-
-    // If it's a new input tensor, register it:
-    const auto t0 = x.second;
-    addTensor(graph, m, t0, allow);
-  }
-
-  logging::ir::trace("Growing AliasModel for op\"{}\"", op->str());
-  op->growAliasModel(m);
-
-  // Check every output has been mapped.
-  for (const auto &x : op->output->tensorMap()) {
-    const auto t1 = x.second;
-    if (!m.contains(t1->id)) {
-      logging::ir::trace("Op {} failed to add mapping for output #{} ('') "
-                         "in AliasModel",
-                         op->str(),
-                         x.first,
-                         t1->id);
-    }
-  }
-
-  for (auto x : m.getAll(op->id)) {
-    logging::ir::trace(
-        "Setting name for op \"{}\", poprithms OpId={}", op->str(), x);
-    m.g.setName(x, op->str());
-  }
-}
-
-void addAliaserConstraints(const Graph &graph,
-                           AliasModel &m,
-                           const std::vector<Op *> &opSubset) {
-
-  logging::ir::trace("Inserting constraints for AliasModel, Graph \"{}\"",
-                     graph.id);
-
-  // Insert constraints:
-  for (auto from : opSubset) {
-    const auto tos        = graph.topoCons->getAfters(from);
-    OpId fromOp           = from->id;
-    const auto memoryFrom = m.getAll(fromOp);
-    for (auto to : tos) {
-      if (from != to) {
-        OpId toOp = to->id;
-        if (m.contains(toOp)) {
-          const auto memoryTo = m.getAll(toOp);
-          for (auto f : memoryFrom) {
-            for (auto t : memoryTo) {
-              m.g.constraint(f, t);
-            }
-          }
-        }
-      }
-    }
-  }
-}
-
-} // namespace
-
-AliasModel getFullAliasModel(const Graph &graph,
-                             DataDependenciesOnly dataDepsOnly) {
-
+void AliasModelGrower::growFullGraph(const Graph &graph,
+                                     DataDependenciesOnly dataDepsOnly) {
   logging::ir::debug("\nGrowing AliasModel");
-  AliasModel m;
 
-  auto scopedStopwatch = graph.getIr().timePartitionLogger().scopedStopwatch(
-      "Growing full AliasModel");
+  auto scopedStopwatch =
+      graph.getIr().timePartitionLogger().scopedStopwatch(logging::format(
+          "Growing full AliasModel for {}", graph.getGraphString()));
 
   // NOTE: This loop does not need a schedule that complies with topocons. It
   // may be possible to make this more efficient by getting an Op-order that is
   // only constrained by data order.
   for (auto op : graph.getOpSchedule({}, RequireOptimalSchedule::No)) {
-    addAliaserOp(graph, m, op, AllowInsertingProducedTensors::No);
+    addAliaserOp(graph, op, AllowInsertingProducedTensors::No);
   }
 
   if (dataDepsOnly == DataDependenciesOnly::No) {
@@ -249,18 +44,15 @@ AliasModel getFullAliasModel(const Graph &graph,
         ops.begin(),
         [](const auto &entry) -> Op * { return entry.second.get(); });
 
-    addAliaserConstraints(graph, m, ops);
+    addAliaserConstraints(graph, ops);
   }
-
-  return m;
 }
 
-AliasModel getPartialAliasModel(const Graph &graph,
-                                const TensorId &tensorId,
-                                DataDependenciesOnly dataDepsOnly) {
+void AliasModelGrower::growPartialGraph(const Graph &graph,
+                                        const TensorId &tensorId,
+                                        DataDependenciesOnly dataDepsOnly) {
 
   logging::ir::debug("\nGrowing partial AliasModel ({})", tensorId);
-  AliasModel m;
 
   auto scopedStopwatch = graph.getIr().timePartitionLogger().scopedStopwatch(
       "Growing partial AliasModel");
@@ -483,95 +275,101 @@ AliasModel getPartialAliasModel(const Graph &graph,
       // Map poprithms number back to Op.
       Op *op = vanillaNumToOp.at(vanillaNum);
       // Add Op to the alias model.
-      addAliaserOp(graph, m, op, AllowInsertingProducedTensors::Yes);
+      addAliaserOp(graph, op, AllowInsertingProducedTensors::Yes);
     }
   }
 
   // Make sure our tensor is represented.
-  addTensor(graph, m, tensor, AllowInsertingProducedTensors::Yes);
+  addTensor(graph, tensor, AllowInsertingProducedTensors::Yes);
 
   if (dataDepsOnly == DataDependenciesOnly::No) {
     // Add topocons to poprithms graph.
-    addAliaserConstraints(graph, m, vanillaNumToOp);
+    addAliaserConstraints(graph, vanillaNumToOp);
   }
-
-  return m;
 }
 
-void AliasModel::insertUnaryModifier0(const Op &op) {
-  insertUnaryModifier(op, 0);
-}
+void AliasModelGrower::addTensor(const Graph &graph,
+                                 Tensor *t,
+                                 AllowInsertingProducedTensors allow) {
+  if (!aliasModel.get().contains(t->id)) { // to_.find(t0->id) == m.to.cend()) {
 
-void AliasModel::insertUnaryModifier(const Op &op, InIndex inIndex) {
-
-  auto id0      = getPoprithmsTensorId(op.inId(inIndex));
-  auto outPlace = op.isOutplace();
-
-  const auto gate = outPlace ? g.aliasGate({id0}) : g.aliasGate({id0}, 0);
-
-  auto modOut = g.modify(gate);
-
-  insertTensor(modOut, *op.outTensor(0));
-  insertOp(gate.opId(), op.id);
-  insertOp(modOut.opId(), op.id);
-}
-
-void AliasModel::insertBinaryModifier(const Op &op) {
-
-  auto outPlace = op.isOutplace();
-
-  auto getReshapeIn = [this, &op](InIndex inIndex) {
-    auto id_ = getPoprithmsTensorId(op.inId(inIndex));
-    if (op.inInfo(inIndex).nelms() == op.outInfo(0).nelms() &&
-        op.inShape(inIndex) != op.outShape(0)) {
-      id_ = g.reshape({id_}, op.outShape(0));
-      insertOp(id_.opId(), op.id);
+    if (allow == AllowInsertingProducedTensors::No && t->hasProducer()) {
+      // The tensor should have been added by growing it's producer.
+      throw error("[AliasModel] Tensor '{}' was not added to the alias "
+                  "model by it's producer, {}",
+                  t->id,
+                  t->getProducer()->str());
     }
 
-    return id_;
-  };
+    const auto inId = (t->tensorType() == TensorType::Const)
+                          ? aliasModel.get().g.constant(t->info.shape())
+                          : aliasModel.get().g.variable(t->info.shape());
 
-  const auto id0 = getReshapeIn(0);
-  const auto id1 = getReshapeIn(1);
-
-  const auto gate = outPlace ? g.aliasGate({id0, id1}) :
-
-                             (op.doesAlias(0, 0) ? g.aliasGate({id0, id1}, 0)
-                                                 : g.aliasGate({id0, id1}, 1));
-
-  const auto rGate = (g.shape(gate) == op.outShape(0))
-                         ? gate
-                         : g.reshape(gate, op.outShape(0));
-
-  auto modOut = g.modify(gate);
-
-  insertTensor(modOut, *op.outTensor(0));
-
-  insertOp(gate.opId(), op.id);
-  insertOp(rGate.opId(), op.id);
-  insertOp(modOut.opId(), op.id);
+    aliasModel.get().insertTensor(inId, *t);
+  }
 }
 
-void AliasModel::insertViewChange(PoprithmsTensorId vc,
-                                  const Tensor &t,
-                                  bool isOutplace) {
+void AliasModelGrower::addAliaserOp(const Graph &graph,
+                                    Op *op,
+                                    AllowInsertingProducedTensors allow) {
 
-  auto gate = isOutplace ? g.aliasGate({vc}) : g.aliasGate({vc}, 0);
-  insertTensor(gate, t);
-  insertOp(gate.opId(), t.getProducer()->id);
-  insertOp(vc.opId(), t.getProducer()->id);
-}
+  logging::ir::trace("Inserting input Tensors for AliasModel, Graph \"{}\"",
+                     graph.id);
+  for (const auto &x : op->input->tensorMap()) {
 
-PoprithmsOpId AliasModel::getGate(OpId id) const {
+    // If it's a new input tensor, register it:
+    const auto t0 = x.second;
+    addTensor(graph, t0, allow);
+  }
 
-  auto pims = getAll(id);
-  for (auto pid : pims) {
-    if (g.isAliasGate(pid)) {
-      return pid;
+  logging::ir::trace("Growing AliasModel for op\"{}\"", op->str());
+  op->growAliasModel(aliasModel.get());
+
+  // Check every output has been mapped.
+  for (const auto &x : op->output->tensorMap()) {
+    const auto t1 = x.second;
+    if (!aliasModel.get().contains(t1->id)) {
+      logging::ir::trace("Op {} failed to add mapping for output #{} ('') "
+                         "in AliasModel",
+                         op->str(),
+                         x.first,
+                         t1->id);
     }
   }
 
-  throw error("Failed to find gate for this Op, {}", id);
+  for (auto x : aliasModel.get().getAll(op->id)) {
+    logging::ir::trace(
+        "Setting name for op \"{}\", poprithms OpId={}", op->str(), x);
+    aliasModel.get().g.setName(x, op->str());
+  }
+}
+
+void AliasModelGrower::addAliaserConstraints(
+    const Graph &graph,
+    const std::vector<Op *> &opSubset) {
+
+  logging::ir::trace("Inserting constraints for AliasModel, Graph \"{}\"",
+                     graph.id);
+
+  // Insert constraints:
+  for (auto from : opSubset) {
+    const auto tos        = graph.topoCons->getAfters(from);
+    OpId fromOp           = from->id;
+    const auto memoryFrom = aliasModel.get().getAll(fromOp);
+    for (auto to : tos) {
+      if (from != to) {
+        OpId toOp = to->id;
+        if (aliasModel.get().contains(toOp)) {
+          const auto memoryTo = aliasModel.get().getAll(toOp);
+          for (auto f : memoryFrom) {
+            for (auto t : memoryTo) {
+              aliasModel.get().g.constraint(f, t);
+            }
+          }
+        }
+      }
+    }
+  }
 }
 
 } // namespace popart

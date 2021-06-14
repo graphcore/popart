@@ -1,9 +1,9 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
 #include <algorithm>
-#include <aliasmodel.hpp>
 #include <memory>
 #include <onnx/defs/schema.h>
 #include <poprithms/ndarray/accessors.hpp>
+#include <popart/alias/aliasmodel.hpp>
 #include <popart/op/subsample.hpp>
 #include <popart/opmanager.hpp>
 #include <popart/opserialiser.hpp>
@@ -13,10 +13,10 @@
 
 namespace popart {
 
-void SubsampleOp::setProposal(poprithms::memory::inplace::Proposal &proposal,
-                              const AliasModel &aliaser,
-                              OperatorIdentifier opId) const {
-  setProposalGate0(proposal, aliaser, opId);
+poprithms::memory::inplace::Proposal
+SubsampleOp::mapInplaceProposal(const AliasModel &aliasModel,
+                                OperatorIdentifier id) const {
+  return mapInplaceProposalGate0(aliasModel, id);
 }
 
 // T9392: There is code duplication across the view changing ops

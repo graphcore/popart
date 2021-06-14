@@ -6,6 +6,8 @@
 #include <set>
 #include <unordered_set>
 #include <vector>
+
+#include <popart/alias/aliasmodel.hpp>
 #include <popart/attributes.hpp>
 #include <popart/basicoptionals.hpp>
 #include <popart/bwdgraphinfo.hpp>
@@ -15,25 +17,17 @@
 #include <popart/opidentifier.hpp>
 #include <popart/region.hpp>
 #include <popart/scope.hpp>
+#include <popart/subgraph/subgraphnames.hpp>
 #include <popart/tensorinfo.hpp>
 #include <popart/tensorlocation.hpp>
 #include <popart/util.hpp>
 #include <popart/vertex.hpp>
 
-#include <popart/subgraph/subgraphnames.hpp>
-
-namespace poprithms {
-namespace memory {
-namespace inplace {
-class Proposal;
-} // namespace inplace
-} // namespace memory
-} // namespace poprithms
+#include <poprithms/memory/inplace/proposal.hpp>
 
 namespace popart {
 
 class Aliases;
-class AliasModel;
 
 enum class RecomputeType { Undefined = 0, Checkpoint, Recompute, Recomputed };
 
@@ -371,34 +365,32 @@ public:
    *
    *
    * \pre All input tensors of this `Op` have mappings in `aliasModel`
-   *     before the call to `growAliaser`.
+   *     before the call to `aliasModel`.
    * \post All output tensors of this `Op` have mappings in `aliasModel`
-   *     after to the call to `growAliaser`.
+   *     after to the call to `aliasModel`.
    *
    * \sa AliasModel
    * */
   virtual void growAliasModel(AliasModel &aliasModel) const;
 
   /**
-   * Translate an inplacing proposal, which replaces this non-inplace Op with an
-   * inplace Op of type #inplaceId, into a poprithms equivalent.
-   *
-   * \param proposal The poprithms Proposal to set
+   * Translate a PopART inplacing proposal, which replaces this non-inplace Op
+   * with an inplace Op of type #inplaceId, into an AliasModel equivalent.
    *
    * \param aliasModel Contains the mapping between this Op's (PopART) Graph and
-   *                the poprithms Graph.
-   *
-   * \param inplaceId The OperatorIdentifier to translate to the poprithms
+   *                   the poprithms Graph.
+   * \param inplaceId The OperatorIdentifier to translate to the AliasModel
    *                  equivalent.
    *
+   * \return A tuple where the first element corresponds to an alias gate in the
+   * AliasModel and the second element is a input index.
    *
    * This method is defined as a void method which sets a value passed by
    * reference, as opposed to a getter method, so that no poprithms headers need
    * to be included in this file.
    * */
-  virtual void setProposal(poprithms::memory::inplace::Proposal &proposal,
-                           const AliasModel &aliasModel,
-                           OperatorIdentifier) const;
+  virtual poprithms::memory::inplace::Proposal
+  mapInplaceProposal(const AliasModel &aliasModel, OperatorIdentifier) const;
 
 protected:
   /**
@@ -414,9 +406,9 @@ protected:
    * Op, at input index 0. For information on AliasGates and inplacing
    * proposals, see the poprithms memory::inplace project.
    * */
-  virtual void setProposalGate0(poprithms::memory::inplace::Proposal &proposal,
-                                const AliasModel &aliaser,
-                                OperatorIdentifier opId) const;
+  virtual poprithms::memory::inplace::Proposal
+  mapInplaceProposalGate0(const AliasModel &aliaser,
+                          OperatorIdentifier opId) const;
 
 public:
   // The input Region which this Op modifies (for inplace ops)

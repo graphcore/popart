@@ -1,5 +1,5 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#include <aliasmodel.hpp>
+#include <popart/alias/aliasmodel.hpp>
 #include <popart/op/reverse.hpp>
 #include <popart/opmanager.hpp>
 #include <popart/opserialiser.hpp>
@@ -113,10 +113,10 @@ ReverseOp::getInplaceVariant(const OperatorIdentifier &operator_id) const {
   return Op::getInplaceVariant(operator_id);
 }
 
-void ReverseOp::setProposal(poprithms::memory::inplace::Proposal &proposal,
-                            const AliasModel &aliaser,
-                            OperatorIdentifier opId) const {
-  setProposalGate0(proposal, aliaser, opId);
+poprithms::memory::inplace::Proposal
+ReverseOp::mapInplaceProposal(const AliasModel &aliasModel,
+                              OperatorIdentifier id) const {
+  return mapInplaceProposalGate0(aliasModel, id);
 }
 
 void ReverseBaseOp::growAliasModel(AliasModel &m) const {

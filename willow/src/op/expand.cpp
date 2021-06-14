@@ -1,4 +1,4 @@
-#include <aliasmodel.hpp>
+#include <popart/alias/aliasmodel.hpp>
 #include <popart/broadcastutil.hpp>
 #include <popart/op/expand.hpp>
 #include <popart/opmanager.hpp>
@@ -153,10 +153,10 @@ void ExpandOp::finaliseShape() {
   }
 }
 
-void ExpandOp::setProposal(poprithms::memory::inplace::Proposal &proposal,
-                           const AliasModel &aliaser,
-                           OperatorIdentifier id) const {
-  setProposalGate0(proposal, aliaser, id);
+poprithms::memory::inplace::Proposal
+ExpandOp::mapInplaceProposal(const AliasModel &aliasModel,
+                             OperatorIdentifier id) const {
+  return mapInplaceProposalGate0(aliasModel, id);
 }
 
 ExpandGradOp::ExpandGradOp(const ExpandOp &fwd)
