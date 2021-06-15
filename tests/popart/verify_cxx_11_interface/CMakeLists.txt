@@ -20,17 +20,15 @@ function(add_popart_cxx_11_unit_test name source)
     WORKING_DIRECTORY ${CMAKE_CURRENT_BUILD_DIR})
 endfunction()
 
-# This test will include all headers in popart. Generate a file to include all
-# headers for the test to use:
-execute_process(
+# Bash script that generates a header that includes all popart public headers.
+# Target depends on popart so is re-generated if popart changes.
+add_custom_target(generate-all-headers ALL
   COMMAND
-    bash -c
-    "echo \"$(for header in $(find ${PROJECT_SOURCE_DIR}/willow/include -name '*hpp' | sort);
-                              do printf \"#include <$header>\n\";
-                            done)\""
-  OUTPUT_VARIABLE allHeaders)
-
-# Write to build dir so as not to pollute the popart repo during build
-file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/all_headers.hpp" "${allHeaders}")
+    bash "${CMAKE_CURRENT_SOURCE_DIR}/generate_all_headers_hpp.sh" ${PROJECT_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR}
+  BYPRODUCTS
+    "${CMAKE_CURRENT_BINARY_DIR}/all_headers.hpp"
+)
+add_dependencies(generate-all-headers popart)
 
 add_popart_cxx_11_unit_test(verify_cxx_11_interface verify_cxx_11_interface.cpp)
+add_dependencies(verify_cxx_11_interface generate-all-headers)
