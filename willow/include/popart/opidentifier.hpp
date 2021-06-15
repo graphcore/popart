@@ -137,6 +137,7 @@ const static AiGraphcoreOpIdV1 AsinGrad("AsinGrad");
 const static AiGraphcoreOpIdV1 Atan2Arg0Grad("Atan2Arg0Grad");
 const static AiGraphcoreOpIdV1 Atan2Arg1Grad("Atan2Arg1Grad");
 const static AiGraphcoreOpIdV1 AtanGrad("AtanGrad");
+const static AiGraphcoreOpIdV1 AutoLossScaleProxyGrad("AutoLossScaleProxyGrad");
 const static AiGraphcoreOpIdV1 AveragePoolGrad("AveragePoolGrad");
 const static AiGraphcoreOpIdV1 BatchNormalizationGrad("BatchNormalizationGrad");
 const static AiGraphcoreOpIdV1 CastGrad("CastGrad");
@@ -248,6 +249,7 @@ const static AiGraphcoreOpIdV1 AsinInplace("AsinInplace");
 const static AiGraphcoreOpIdV1 Atan2_1("Atan2", 2, 1);
 const static AiGraphcoreOpIdV1 Atan2Inplace("Atan2Inplace");
 const static AiGraphcoreOpIdV1 AtanInplace("AtanInplace");
+const static AiGraphcoreOpIdV1 AutoLossScaleProxy("AutoLossScaleProxy", 1, 1);
 const static AiGraphcoreOpIdV1 Call_1("Call");
 const static AiGraphcoreOpIdV1 CeilInplace("CeilInplace");
 const static AiGraphcoreOpIdV1 ClipInplace("ClipInplace");
@@ -378,7 +380,9 @@ const static AiGraphcoreOpIdV1 BitwiseXnor("BitwiseXnor", 2, 1);
 
 namespace AiGraphcore {
 namespace OpSet1 {
-const static OperatorIdentifier Atan2       = CustomOperators::Atan2_1;
+const static OperatorIdentifier Atan2 = CustomOperators::Atan2_1;
+const static OperatorIdentifier AutoLossScaleProxy =
+    CustomOperators::AutoLossScaleProxy;
 const static OperatorIdentifier BitwiseAnd  = CustomOperators::BitwiseAnd;
 const static OperatorIdentifier BitwiseNot  = CustomOperators::BitwiseNot;
 const static OperatorIdentifier BitwiseOr   = CustomOperators::BitwiseOr;
