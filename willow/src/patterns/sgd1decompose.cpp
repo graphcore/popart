@@ -1,11 +1,11 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #include <memory>
+#include <onnxutil.hpp>
 #include <popart/ces/concatce.hpp>
 #include <popart/ces/flattence.hpp>
 #include <popart/ces/slicece.hpp>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
-#include <popart/onnxutil.hpp>
 #include <popart/op/accumulate.hpp>
 #include <popart/op/collectives/replicatedallreduce.hpp>
 #include <popart/op/concat.hpp>

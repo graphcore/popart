@@ -1,5 +1,6 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
 #include <memory>
+#include <onnxutil.hpp>
 #include <popart/ces/concatce.hpp>
 #include <popart/ces/flattence.hpp>
 #include <popart/ces/slicece.hpp>

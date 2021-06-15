@@ -1,6 +1,7 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
 #include <memory>
 #include <onnx/onnx_pb.h>
+#include <onnxutil.hpp>
 #include <popart/attributes.hpp>
 #include <popart/ces/castce.hpp>
 #include <popart/ces/concatce.hpp>
@@ -18,7 +19,6 @@
 #include <popart/error.hpp>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
-#include <popart/onnxutil.hpp>
 #include <popart/opmanager.hpp>
 #include <popart/tensor.hpp>
 #include <popart/tensors.hpp>

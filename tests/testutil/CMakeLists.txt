@@ -38,7 +38,7 @@ target_include_directories(test-graphs-test-util
       ${test_util_include_dir_for_libs}
 )
 target_link_libraries(test-graphs-test-util
-    PUBLIC popart
+    PUBLIC popart-internal
 )
 set_target_properties(test-graphs-test-util
     PROPERTIES
@@ -101,7 +101,7 @@ target_include_directories(ir-query-test-util
       ${test_util_include_dir_for_libs}
 )
 target_link_libraries(ir-query-test-util
-    PUBLIC popart
+    PUBLIC popart-internal
 )
 link_boost(ir-query-test-util)
 

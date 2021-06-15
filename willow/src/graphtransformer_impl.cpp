@@ -1,14 +1,14 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#include <popart/graphtransformer_impl.hpp>
-#include <popart/onnxutil.hpp>
+#include <graphtransformer_impl.hpp>
+
+#include <onnxutil.hpp>
+#include <popart/logging.hpp>
 #include <popart/opidentifier.hpp>
 
 // used for float to half conversion
 #include <poplar/Target.hpp>
 
 #include <onnx/checker.h>
-
-#include <popart/logging.hpp>
 
 namespace popart {
 

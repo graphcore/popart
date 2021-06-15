@@ -1,7 +1,7 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 #include <cmath>
 #include <onnxpasses/nodepatterns/constfoldops.hpp>
-#include <popart/onnxutil.hpp>
+#include <onnxutil.hpp>
 
 namespace popart {
 namespace onnxpasses {

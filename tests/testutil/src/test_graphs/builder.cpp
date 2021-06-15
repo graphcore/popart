@@ -1,7 +1,7 @@
 #include <testutil/test_graphs/builder.hpp>
 
+#include <filereader.hpp>
 #include <popart/error.hpp>
-#include <popart/filereader.hpp>
 #include <popart/graph.hpp>
 #include <popart/graphid.hpp>
 #include <popart/ir.hpp>

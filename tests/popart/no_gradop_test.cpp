@@ -7,11 +7,11 @@
 
 #include <test_runner.hpp>
 
+#include <onnxutil.hpp>
 #include <popart/builder.hpp>
 #include <popart/devicemanager.hpp>
 #include <popart/logging.hpp>
 #include <popart/ndarraywrapper.hpp>
-#include <popart/onnxutil.hpp>
 #include <popart/op.hpp>
 #include <popart/op/identity.hpp>
 #include <popart/op/l1.hpp>

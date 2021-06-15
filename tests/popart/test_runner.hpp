@@ -2,12 +2,12 @@
 #ifndef GUARD_TEST_RUNNER_HPP
 #define GUARD_TEST_RUNNER_HPP
 
+#include <filereader.hpp>
 #include <memory>
 #include <vector>
 #include <popart/builder.hpp>
 #include <popart/dataflow.hpp>
 #include <popart/devicemanager.hpp>
-#include <popart/filereader.hpp>
 #include <popart/names.hpp>
 #include <popart/ndarraywrapper.hpp>
 #include <popart/optimizer.hpp>

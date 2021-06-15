@@ -3,10 +3,10 @@
 
 #include <boost/test/unit_test.hpp>
 
+#include <filereader.hpp>
+#include <onnxutil.hpp>
 #include <popart/builder.hpp>
-#include <popart/filereader.hpp>
 #include <popart/ndarraywrapper.hpp>
-#include <popart/onnxutil.hpp>
 #include <popart/op/lossscaleupdate.hpp>
 #include <popart/opidentifier.hpp>
 #include <popart/session.hpp>

@@ -1,10 +1,10 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #include <onnx/onnx_pb.h>
 
+#include <onnxutil.hpp>
 #include <popart/ces/onnxconstexpr.hpp>
 #include <popart/error.hpp>
 #include <popart/graph.hpp>
-#include <popart/onnxutil.hpp>
 #include <popart/opmanager.hpp>
 #include <popart/tensor.hpp>
 #include <popart/tensors.hpp>

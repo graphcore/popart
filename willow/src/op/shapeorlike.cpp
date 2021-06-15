@@ -1,6 +1,6 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
 
-#include <popart/onnxutil.hpp>
+#include <onnxutil.hpp>
 #include <popart/op/shapeorlike.hpp>
 
 namespace popart {

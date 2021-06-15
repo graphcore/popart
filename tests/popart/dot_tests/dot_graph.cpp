@@ -4,14 +4,14 @@
 // This tool supports training and as well as inference.
 
 #include <boost/program_options.hpp>
+#include <filereader.hpp>
 #include <iostream>
 #include <memory>
+#include <onnxutil.hpp>
 #include <vector>
 #include <popart/builder.hpp>
-#include <popart/filereader.hpp>
 #include <popart/graphtransformer.hpp>
 #include <popart/ir.hpp>
-#include <popart/onnxutil.hpp>
 #include <popart/op/identity.hpp>
 #include <popart/op/nll.hpp>
 #include <popart/optimizer.hpp>

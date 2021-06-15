@@ -1,8 +1,8 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
+#include <filereader.hpp>
+#include <onnxutil.hpp>
 #include <popart/error.hpp>
-#include <popart/filereader.hpp>
 #include <popart/numerics.hpp>
-#include <popart/onnxutil.hpp>
 
 #include <cmath>
 

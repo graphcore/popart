@@ -2,13 +2,13 @@
 #define BOOST_TEST_MODULE ExecutableSerializationTest
 
 #include <boost/test/unit_test.hpp>
+#include <filereader.hpp>
 #include <random_util.hpp>
 #include <popart/adam.hpp>
 #include <popart/adaptive.hpp>
 #include <popart/builder.hpp>
 #include <popart/dataflow.hpp>
 #include <popart/devicemanager.hpp>
-#include <popart/filereader.hpp>
 #include <popart/inputshapeinfo.hpp>
 #include <popart/ir.hpp>
 #include <popart/names.hpp>

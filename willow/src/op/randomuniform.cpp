@@ -1,8 +1,8 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
 #include <algorithm>
 #include <memory>
+#include <onnxutil.hpp>
 #include <popart/ir.hpp>
-#include <popart/onnxutil.hpp>
 #include <popart/op/randomuniform.hpp>
 #include <popart/opmanager.hpp>
 #include <popart/opserialiser.hpp>

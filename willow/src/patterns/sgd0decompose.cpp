@@ -1,9 +1,9 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
 #include <memory>
+#include <onnxutil.hpp>
 #include <popart/aliasesmap.hpp>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
-#include <popart/onnxutil.hpp>
 #include <popart/op/collectives/replicatedallreduce.hpp>
 #include <popart/op/concat.hpp>
 #include <popart/op/sgd0varupdate.hpp>

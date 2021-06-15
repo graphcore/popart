@@ -3,12 +3,12 @@
 
 #include <boost/filesystem.hpp>
 
+#include <filereader.hpp>
+#include <onnxutil.hpp>
 #include <popart/error.hpp>
-#include <popart/filereader.hpp>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/logging.hpp>
-#include <popart/onnxutil.hpp>
 #include <popart/optimizer.hpp>
 #include <popart/popx/devicex.hpp>
 #include <popart/popx/executablex.hpp>

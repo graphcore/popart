@@ -2,10 +2,10 @@
 #define BOOST_TEST_MODULE SgdMixedModeCompatTest0
 
 #include <boost/test/unit_test.hpp>
+#include <filereader.hpp>
 #include <iostream>
 #include <popart/builder.hpp>
 #include <popart/dataflow.hpp>
-#include <popart/filereader.hpp>
 #include <popart/half.hpp>
 #include <popart/inputshapeinfo.hpp>
 #include <popart/ir.hpp>

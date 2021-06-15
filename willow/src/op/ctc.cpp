@@ -1,10 +1,10 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 #include <memory>
+#include <onnxutil.hpp>
 #include <sstream>
 #include <popart/error.hpp>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
-#include <popart/onnxutil.hpp>
 #include <popart/op/ctc.hpp>
 #include <popart/op/mean.hpp>
 #include <popart/op/sum.hpp>

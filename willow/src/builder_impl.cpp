@@ -6,12 +6,13 @@
 #include <unordered_set>
 #include <vector>
 
+#include <builder_impl.hpp>
+
 #include <builderdebuginfo.hpp>
-#include <popart/builder_impl.hpp>
+#include <filereader.hpp>
+#include <onnxutil.hpp>
 #include <popart/ces/constexpr.hpp>
 #include <popart/error.hpp>
-#include <popart/filereader.hpp>
-#include <popart/onnxutil.hpp>
 #include <popart/opidentifier.hpp>
 #include <popart/shapeinference.hpp>
 #include <popart/tensordata.hpp>

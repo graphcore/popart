@@ -9,11 +9,11 @@
 #include <vector>
 
 #define protected public
+#include <filereader.hpp>
 #include <popart/builder.hpp>
 #include <popart/dataflow.hpp>
 #include <popart/devicemanager.hpp>
 #include <popart/error.hpp>
-#include <popart/filereader.hpp>
 #include <popart/half.hpp>
 #include <popart/inputshapeinfo.hpp>
 #include <popart/ndarraywrapper.hpp>

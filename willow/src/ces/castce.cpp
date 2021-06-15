@@ -1,7 +1,7 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
+#include <onnxutil.hpp>
 #include <poprithmshosttensor.hpp>
 #include <popart/ces/castce.hpp>
-#include <popart/onnxutil.hpp>
 #include <popart/op/cast.hpp>
 #include <popart/tensor.hpp>
 

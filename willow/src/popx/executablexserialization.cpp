@@ -1,9 +1,9 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
 
+#include <onnxutil.hpp>
 #include <popart/graph.hpp>
 #include <popart/intervals.hpp>
 #include <popart/ir.hpp>
-#include <popart/onnxutil.hpp>
 #include <popart/op/getrandomseed.hpp>
 #include <popart/optimizer.hpp>
 #include <popart/scheduler.hpp>

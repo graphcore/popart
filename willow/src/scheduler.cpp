@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <array>
 #include <boost/filesystem.hpp>
+#include <filereader.hpp>
 #include <memory>
 #include <numeric>
 #include <queue>
@@ -13,7 +14,6 @@
 #include <poprithms/logging/timepartitionlogger.hpp>
 #include <poprithms/schedule/shift/scheduledgraph.hpp>
 #include <popart/error.hpp>
-#include <popart/filereader.hpp>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/scheduler.hpp>

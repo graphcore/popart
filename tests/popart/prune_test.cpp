@@ -6,10 +6,10 @@
 
 #include <boost/test/unit_test.hpp>
 
+#include <filereader.hpp>
 #include <testutil/test_graphs/graph_test_models.hpp>
 #include <popart/builder.hpp>
 #include <popart/dataflow.hpp>
-#include <popart/filereader.hpp>
 #include <popart/graph.hpp>
 #include <popart/inputshapeinfo.hpp>
 #include <popart/ir.hpp>

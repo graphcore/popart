@@ -5,10 +5,10 @@
 
 #include <boost/filesystem.hpp>
 
+#include <filereader.hpp>
+#include <onnxutil.hpp>
 #include <popart/attributes.hpp>
 #include <popart/error.hpp>
-#include <popart/filereader.hpp>
-#include <popart/onnxutil.hpp>
 #include <popart/tensorinfo.hpp>
 
 namespace popart {

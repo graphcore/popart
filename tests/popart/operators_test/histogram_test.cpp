@@ -3,8 +3,8 @@
 
 #include <boost/test/unit_test.hpp>
 
+#include <filereader.hpp>
 #include <popart/builder.hpp>
-#include <popart/filereader.hpp>
 #include <popart/ndarraywrapper.hpp>
 #include <popart/op/histogram.hpp>
 #include <popart/opidentifier.hpp>

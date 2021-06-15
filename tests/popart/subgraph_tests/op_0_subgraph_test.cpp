@@ -5,10 +5,10 @@
 
 #include <algorithm>
 #include <boost/test/unit_test.hpp>
+#include <filereader.hpp>
 #include <memory>
 #include <vector>
 #include <popart/builder.hpp>
-#include <popart/filereader.hpp>
 #include <popart/ir.hpp>
 #include <popart/logging.hpp>
 #include <popart/op.hpp>

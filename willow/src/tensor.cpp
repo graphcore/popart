@@ -6,13 +6,13 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/range/algorithm.hpp>
 
+#include <onnxutil.hpp>
 #include <poprithms/logging/timepartitionlogger.hpp>
 #include <popart/ces/constexpr.hpp>
 #include <popart/error.hpp>
 #include <popart/graph.hpp>
 #include <popart/graphutils.hpp>
 #include <popart/ir.hpp>
-#include <popart/onnxutil.hpp>
 #include <popart/op.hpp>
 #include <popart/op/hostcopy.hpp>
 #include <popart/op/init.hpp>

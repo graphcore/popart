@@ -1,10 +1,10 @@
 #define BOOST_TEST_MODULE PrePlanMatMulsTest
 
 #include <boost/test/unit_test.hpp>
+#include <filereader.hpp>
 #include <popart/builder.hpp>
 #include <popart/dataflow.hpp>
 #include <popart/error.hpp>
-#include <popart/filereader.hpp>
 #include <popart/ir.hpp>
 #include <popart/optimizer.hpp>
 #include <popart/tensor.hpp>

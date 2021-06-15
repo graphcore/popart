@@ -2,7 +2,6 @@
 #ifndef GUARD_NEURALNET_OPTIMIZERDECOMPOSE_PATTERN_HPP
 #define GUARD_NEURALNET_OPTIMIZERDECOMPOSE_PATTERN_HPP
 
-#include <popart/onnxutil.hpp>
 #include <popart/op/accumulate.hpp>
 #include <popart/optimizervalue.hpp>
 #include <popart/patterns/patterns.hpp>

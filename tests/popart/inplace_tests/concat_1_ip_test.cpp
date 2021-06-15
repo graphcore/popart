@@ -5,9 +5,9 @@
 #include <vector>
 
 #include <boost/test/unit_test.hpp>
+#include <filereader.hpp>
 #include <popart/builder.hpp>
 #include <popart/dataflow.hpp>
-#include <popart/filereader.hpp>
 #include <popart/inputshapeinfo.hpp>
 #include <popart/ir.hpp>
 #include <popart/op/identity.hpp>

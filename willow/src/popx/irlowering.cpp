@@ -18,6 +18,7 @@
 #include <boost/range/algorithm/find.hpp>
 #include <boost/range/algorithm_ext.hpp>
 
+#include <filereader.hpp>
 #include <gcl/TileAllocation.hpp>
 #include <poplar/CSRFunctions.hpp>
 #include <poplar/CycleCount.hpp>
@@ -36,7 +37,6 @@
 #include <popart/boollogic.hpp>
 #include <popart/devicemanager.hpp>
 #include <popart/error.hpp>
-#include <popart/filereader.hpp>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/liveness.hpp>

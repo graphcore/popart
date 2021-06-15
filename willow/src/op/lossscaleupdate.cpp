@@ -1,6 +1,6 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 #include <aliasmodel.hpp>
-#include <popart/onnxutil.hpp>
+#include <onnxutil.hpp>
 #include <popart/op/lossscaleupdate.hpp>
 #include <popart/opmanager.hpp>
 #include <popart/tensorindex.hpp>

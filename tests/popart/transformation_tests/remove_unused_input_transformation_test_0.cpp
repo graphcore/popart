@@ -2,9 +2,9 @@
 #define BOOST_TEST_MODULE RemoveUnusedInputTest0
 
 #include <boost/test/unit_test.hpp>
+#include <filereader.hpp>
 #include <onnx/onnx_pb.h>
 #include <popart/builder.hpp>
-#include <popart/filereader.hpp>
 #include <popart/graphtransformer.hpp>
 #include <popart/tensordata.hpp>
 #include <popart/voiddata.hpp>

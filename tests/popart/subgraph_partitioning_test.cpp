@@ -7,8 +7,8 @@
 
 #include <boost/test/unit_test.hpp>
 
+#include <filereader.hpp>
 #include <popart/builder.hpp>
-#include <popart/filereader.hpp>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/liveness.hpp>

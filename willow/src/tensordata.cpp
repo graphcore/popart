@@ -1,9 +1,9 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
 #include <cstring>
+#include <onnxutil.hpp>
 #include <popart/error.hpp>
 #include <popart/half.hpp>
 #include <popart/ir.hpp>
-#include <popart/onnxutil.hpp>
 #include <popart/stepio.hpp>
 #include <popart/stepio_size_assertion.hpp>
 #include <popart/tensordata.hpp>

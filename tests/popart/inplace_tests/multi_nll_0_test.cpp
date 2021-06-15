@@ -6,11 +6,11 @@
 #include <boost/test/unit_test.hpp>
 #include <chrono>
 #include <complex>
+#include <filereader.hpp>
 #include <iostream>
 #include <popart/builder.hpp>
 #include <popart/dataflow.hpp>
 #include <popart/devicemanager.hpp>
-#include <popart/filereader.hpp>
 #include <popart/inputshapeinfo.hpp>
 #include <popart/ir.hpp>
 #include <popart/names.hpp>

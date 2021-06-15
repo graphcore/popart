@@ -1,9 +1,9 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 
+#include <onnxutil.hpp>
 #include <popart/aliasesmap.hpp>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
-#include <popart/onnxutil.hpp>
 #include <popart/op/accumulatorzero.hpp>
 #include <popart/op/add.hpp>
 #include <popart/op/cast.hpp>

@@ -1,9 +1,9 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #include <boost/algorithm/string.hpp>
+#include <filereader.hpp>
 #include <fstream>
 #include <sstream>
 #include <popart/dotvisualizer.hpp>
-#include <popart/filereader.hpp>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/op/call.hpp>

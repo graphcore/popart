@@ -1,9 +1,9 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #include <memory>
 #include <onnx/onnx_pb.h>
+#include <onnxutil.hpp>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
-#include <popart/onnxutil.hpp>
 #include <popart/op/call.hpp>
 #include <popart/op/ipucopy.hpp>
 #include <popart/opmanager.hpp>

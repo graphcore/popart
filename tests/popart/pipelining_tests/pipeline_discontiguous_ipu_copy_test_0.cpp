@@ -4,6 +4,7 @@
 #include <../random_util.hpp>
 #include <algorithm>
 #include <boost/test/unit_test.hpp>
+#include <filereader.hpp>
 #include <map>
 #include <memory>
 #include <tuple>
@@ -11,7 +12,6 @@
 #include <popart/builder.hpp>
 #include <popart/dataflow.hpp>
 #include <popart/devicemanager.hpp>
-#include <popart/filereader.hpp>
 #include <popart/inputshapeinfo.hpp>
 #include <popart/ndarraywrapper.hpp>
 #include <popart/op/identity.hpp>

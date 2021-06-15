@@ -2,10 +2,10 @@
 #define BOOST_TEST_MODULE PipelineTrainingTest0
 
 #include <boost/test/unit_test.hpp>
+#include <filereader.hpp>
 #include <popart/builder.hpp>
 #include <popart/dataflow.hpp>
 #include <popart/devicemanager.hpp>
-#include <popart/filereader.hpp>
 #include <popart/inputshapeinfo.hpp>
 #include <popart/ndarraywrapper.hpp>
 #include <popart/op/identity.hpp>

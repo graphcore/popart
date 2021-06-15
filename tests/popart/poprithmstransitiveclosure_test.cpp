@@ -4,7 +4,7 @@
 
 #include <poprithmstransitiveclosure.hpp>
 
-#include <popart/filereader.hpp>
+#include <filereader.hpp>
 #include <popart/graph.hpp>
 #include <popart/graphid.hpp>
 #include <popart/ir.hpp>

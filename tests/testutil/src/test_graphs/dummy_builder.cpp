@@ -2,8 +2,8 @@
 
 #include <testutil/test_graphs/op/dummy.hpp>
 
+#include <filereader.hpp>
 #include <popart/error.hpp>
-#include <popart/filereader.hpp>
 #include <popart/graph.hpp>
 #include <popart/graphid.hpp>
 #include <popart/ir.hpp>

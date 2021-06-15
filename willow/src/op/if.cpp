@@ -3,10 +3,10 @@
 
 #include <memory>
 #include <onnx/onnx_pb.h>
+#include <onnxutil.hpp>
 #include <popart/bwdgraphinfo.hpp>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
-#include <popart/onnxutil.hpp>
 #include <popart/op/if.hpp>
 #include <popart/opmanager.hpp>
 #include <popart/tensor.hpp>

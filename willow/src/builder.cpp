@@ -1,11 +1,12 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
+
 #include <algorithm>
+#include <builder_impl.hpp>
 #include <builderdebuginfo.hpp>
+#include <filereader.hpp>
 #include <onnx/checker.h>
-#include <popart/builder_impl.hpp>
-#include <popart/filereader.hpp>
+#include <onnxutil.hpp>
 #include <popart/logging.hpp>
-#include <popart/onnxutil.hpp>
 #include <popart/op/collectives/collectives.hpp>
 #include <popart/op/receptive.hpp>
 #include <popart/opidentifier.hpp>

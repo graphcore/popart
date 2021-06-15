@@ -7,15 +7,15 @@
 #include <boost/filesystem.hpp>
 
 #include <boost/test/unit_test.hpp>
+#include <filereader.hpp>
 #include <iostream>
+#include <onnxutil.hpp>
 #include <vector>
 #include <popart/builder.hpp>
 #include <popart/devicemanager.hpp>
-#include <popart/filereader.hpp>
 #include <popart/ir.hpp>
 #include <popart/logging.hpp>
 #include <popart/ndarraywrapper.hpp>
-#include <popart/onnxutil.hpp>
 #include <popart/op.hpp>
 #include <popart/op/l1.hpp>
 #include <popart/opmanager.hpp>

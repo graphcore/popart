@@ -3,8 +3,8 @@
 
 #include <../test_runner.hpp>
 #include <boost/test/unit_test.hpp>
+#include <filereader.hpp>
 #include <popart/builder.hpp>
-#include <popart/filereader.hpp>
 #include <popart/inputshapeinfo.hpp>
 #include <popart/op/add.hpp>
 #include <popart/op/identity.hpp>

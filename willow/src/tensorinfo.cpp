@@ -1,8 +1,8 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
 #include <algorithm>
 #include <onnx/onnx_pb.h>
+#include <onnxutil.hpp>
 #include <popart/error.hpp>
-#include <popart/onnxutil.hpp>
 #include <popart/tensor.hpp>
 #include <popart/tensorinfo.hpp>
 #include <popart/util.hpp>

@@ -3,9 +3,9 @@
 #define BOOST_TEST_MODULE StreamingMemoryOpInserterTest
 
 #include <boost/test/unit_test.hpp>
+#include <filereader.hpp>
 #include <popart/aliasesmap.hpp>
 #include <popart/builder.hpp>
-#include <popart/filereader.hpp>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/op/add.hpp>

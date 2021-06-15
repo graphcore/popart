@@ -15,15 +15,16 @@
 #include <boost/random/normal_distribution.hpp>
 #include <poprithms/logging/timepartitionlogger.hpp>
 
+#include <builder_impl.hpp>
+#include <filereader.hpp>
+#include <onnxutil.hpp>
 #include <popart/aliasesmap.hpp>
 #include <popart/builder.hpp>
-#include <popart/builder_impl.hpp>
 #include <popart/ces/constexpr.hpp>
 #include <popart/ces/onnxconstexpr.hpp>
 #include <popart/chains.hpp>
 #include <popart/devicemanager.hpp>
 #include <popart/error.hpp>
-#include <popart/filereader.hpp>
 #include <popart/graph.hpp>
 #include <popart/intervals.hpp>
 #include <popart/ir.hpp>

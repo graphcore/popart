@@ -5,6 +5,11 @@
 #ifdef BOOST_ERROR_CODE_HEADER_ONLY
 #endif
 
+#include <filereader.hpp>
+
+#include <popart/error.hpp>
+#include <popart/names.hpp>
+
 #include <boost/filesystem.hpp>
 
 #include <cstdio>
@@ -17,10 +22,6 @@
 
 #include <google/protobuf/io/coded_stream.h>
 #include <google/protobuf/io/zero_copy_stream_impl.h>
-
-#include <popart/error.hpp>
-#include <popart/filereader.hpp>
-#include <popart/names.hpp>
 
 namespace popart {
 namespace io {

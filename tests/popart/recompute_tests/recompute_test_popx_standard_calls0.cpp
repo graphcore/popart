@@ -6,8 +6,8 @@
 #include <vector>
 #include <popart/testdevice.hpp>
 
+#include <filereader.hpp>
 #include <popart/builder.hpp>
-#include <popart/filereader.hpp>
 #include <popart/op.hpp>
 #include <popart/op/identity.hpp>
 #include <popart/op/l1.hpp>

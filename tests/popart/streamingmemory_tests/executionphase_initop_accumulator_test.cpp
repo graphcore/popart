@@ -2,10 +2,10 @@
 #define BOOST_TEST_MODULE ExecutionPhaseInitOpAccumulatorTest
 
 #include <boost/test/unit_test.hpp>
+#include <filereader.hpp>
 #include <iostream>
 #include <popart/builder.hpp>
 #include <popart/dataflow.hpp>
-#include <popart/filereader.hpp>
 #include <popart/ir.hpp>
 #include <popart/op/init.hpp>
 #include <popart/op/l1.hpp>
