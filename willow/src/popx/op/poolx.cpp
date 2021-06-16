@@ -15,20 +15,6 @@
 namespace popart {
 namespace popx {
 
-static poplar::Type getReductionType(const popnn::PoolingType &pooling_type,
-                                     const poplar::Type &input_type) {
-  switch (pooling_type) {
-  case popnn::PoolingType::AVG:
-  case popnn::PoolingType::SUM:
-    return poplar::FLOAT;
-  case popnn::PoolingType::MAX:
-    return input_type;
-  }
-
-  // TODO : Add stream operator for pooling_type
-  throw error("Unknown pooling type");
-}
-
 class PoolOpx : public PopOpx {
 public:
   PoolOpx(Op *op_, Devicex *device_) : PopOpx(op_, device_) {}
@@ -62,8 +48,6 @@ public:
       padding_upper.push_back(static_cast<int>(upperPads[d]));
     }
 
-    auto data_type = getReductionType(pooling_type, popType(input_tensor));
-
     return {pooling_type,
             field_shape,
             kernel_shape,
@@ -72,7 +56,7 @@ public:
             padding_upper,
             num_channels,
             batch_size,
-            data_type};
+            popType(input_tensor)};
   }
 };
 

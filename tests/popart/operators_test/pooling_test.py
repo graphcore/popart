@@ -102,6 +102,32 @@ def test_average_pool_4(op_tester):
     op_tester.run(init_builder, reference)
 
 
+def test_average_pool_fp16(op_tester):
+    d1 = np.random.rand(1, 1, 14, 14).astype(np.float16)
+
+    def init_builder(builder):
+        i1 = builder.addInputTensor(d1)
+        o = builder.aiOnnx.averagepool([i1],
+                                       kernel_shape=[3, 3],
+                                       count_include_pad=0,
+                                       pads=[0, 0, 0, 0],
+                                       strides=[2, 2])
+        builder.addOutputTensor(o)
+        return [o]
+
+    def reference(ref_data):
+        avgpool = torch.nn.AvgPool2d(kernel_size=3,
+                                     stride=2,
+                                     padding=0,
+                                     count_include_pad=False)
+        out = avgpool(torch.from_numpy(d1.astype(np.float32)))
+        return [out.numpy().astype(np.float16)]
+
+    op_tester.atol = 1e-3
+    op_tester.rtol = 1e-3
+    op_tester.run(init_builder, reference)
+
+
 def test_average_pool_with_count_include_pad(op_tester):
 
     popart.getLogger().setLevel("TRACE")
