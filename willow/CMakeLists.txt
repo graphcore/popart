@@ -79,6 +79,7 @@ set(POPART_ONLY_DEPS_LIBS
     popops
     poprand
     poputil
+    poprithms
     libpvti
     pva
     gcl
@@ -93,7 +94,6 @@ set(POPART_DEPS_LIBS
 set(POPART_INTERNAL_DEPS_INCLUDES
 )
 set(POPART_INTERNAL_DEPS_LIBS
-  poprithms
   onnx
   onnx_proto
 )

@@ -20,6 +20,7 @@
 #
 #   poplar
 #   poplibs
+#   poprithms
 #   libpvti
 #   pva
 #   gcl
@@ -110,6 +111,7 @@ set(_components_to_find ${popart_FIND_COMPONENTS})
 # Find popart-only and its dependencies.
 _safe_find_dependency(poplar)
 _safe_find_dependency(poplibs)
+_safe_find_dependency(poprithms)
 _safe_find_dependency(libpvti)
 _safe_find_dependency(pva)
 _safe_find_dependency(gcl)
