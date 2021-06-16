@@ -1,8 +1,27 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-// Suffix Tree implemenation based on:
+// =============================================================================
+// Suffix Tree implementation based on:
 // http://llvm.org/doxygen/MachineOutliner_8cpp_source.html
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+//
+// NOTE: copyright for the code in the project may be held by contributors whose
+// names are not known.
+// =============================================================================
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//    http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
+// This file has been modified by Graphcore Ltd.
+// =============================================================================
 
 #include <limits>
 #include <map>
