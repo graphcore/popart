@@ -88,14 +88,14 @@ set(POPART_ONLY_DEPS_LIBS
 set(POPART_DEPS_INCLUDES
 )
 set(POPART_DEPS_LIBS
-    onnx
-    onnx_proto
 )
 
 set(POPART_INTERNAL_DEPS_INCLUDES
 )
 set(POPART_INTERNAL_DEPS_LIBS
   poprithms
+  onnx
+  onnx_proto
 )
 
 ################################################################################

@@ -865,8 +865,6 @@ def genPythonBuilderBinds(schema: Schema) -> None:
                 #include <popart/tensors.hpp>
                 #include <popart/version.hpp>
 
-                #include <onnx/onnx_pb.h>
-
                 namespace py = pybind11;
                 using namespace popart;
                 

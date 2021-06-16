@@ -44,8 +44,6 @@
 #include <poplar/exceptions.hpp>
 #include <poputil/exceptions.hpp>
 
-#include <onnx/onnx_pb.h>
-
 namespace py = pybind11;
 using namespace popart;
 
