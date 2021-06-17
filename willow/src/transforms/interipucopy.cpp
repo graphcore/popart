@@ -1,6 +1,7 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #include <memory>
-#include <popart/aliasesmap.hpp>
+#include <popart/alias/aliasmodel.hpp>
+#include <popart/alias/aliasmodelgrower.hpp>
 #include <popart/error.hpp>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
@@ -115,12 +116,12 @@ bool outputsConsumedByAccumulateOuterFragmentOps(const Op *copyOp) {
 
 void setPlacementAttributes(CopiedTensors copiedTensors,
                             const Graph &graph,
-                            Aliases &aliases) {
+                            AliasModel &aliasModel) {
   for (auto &copied : copiedTensors.getTensorMap()) {
     for (Op *op : graph.getTensors().get(copied.first)->consumers.getOps()) {
       if (op->isIpuCopyOp()) {
         auto copyOp = dynamic_cast<IpuCopyOp *>(op);
-        copyOp->inheritPlacementAttributes(false, aliases);
+        copyOp->inheritPlacementAttributes(false, aliasModel);
       }
     }
   }
@@ -259,8 +260,9 @@ bool InterIpuCopy::apply(Graph &graph) const {
     return false;
   }
 
-  AliasesMap aliasesMap{graph};
-  auto &aliases = aliasesMap.getAliases(graph);
+  AliasModel aliasModel;
+  AliasModelGrower aliasModelGrower{aliasModel};
+  aliasModelGrower.growFullGraph(graph, DataDependenciesOnly::Yes);
 
   // Keep a record of which tensors have been copied to which ipu's so we don't
   // duplicate a copy of a tensor between ipus
@@ -424,7 +426,7 @@ bool InterIpuCopy::apply(Graph &graph) const {
       }
     }
   }
-  setPlacementAttributes(copiedTensors, graph, aliases);
+  setPlacementAttributes(copiedTensors, graph, aliasModel);
   setExecutionContext(copiedTensors, graph);
 
   return true;

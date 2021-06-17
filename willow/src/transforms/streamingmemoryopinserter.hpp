@@ -14,7 +14,6 @@
 
 namespace popart {
 
-class Aliases;
 class RemoteLoadOp;
 class RemoteStoreOp;
 class ReplicatedAllGatherOp;
@@ -33,7 +32,7 @@ public:
 
   // Constructor.
   StreamingMemoryOpInserter(Graph &graph,
-                            Aliases &aliases,
+                            AliasModel &aliasModel,
                             int64_t replicationFactor,
                             int num_stages,
                             int num_phases);
@@ -428,7 +427,7 @@ protected:
   Graph &graph;
 
   // Aliases object containing aliases for graph.
-  Aliases &aliases;
+  AliasModel &aliasModel;
 
   // The Op schedule before this transform inserts new ops and tensors
   OpScheduleMap opScheduleMap;

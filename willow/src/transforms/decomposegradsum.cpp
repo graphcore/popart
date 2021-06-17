@@ -1,6 +1,7 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
 #include <poprithmstransitiveclosure.hpp>
-#include <popart/aliasesmap.hpp>
+#include <popart/alias/aliasmodel.hpp>
+#include <popart/alias/aliasmodelgrower.hpp>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/names.hpp>
@@ -183,8 +184,9 @@ bool DecomposeGradSum::apply(Graph &graph) const {
   */
   const auto tc = PoprithmsTransitiveClosure::fromGraph(graph);
 
-  AliasesMap aliasesMap{graph};
-  auto &aliases = aliasesMap.getAliases(graph);
+  AliasModel aliasModel;
+  AliasModelGrower aliasModelGrower{aliasModel};
+  aliasModelGrower.growFullGraph(graph, DataDependenciesOnly::Yes);
 
   for (Op *gradSumOp : getDecomposableGradSumOps(graph)) {
     logging::debug("Decomposing gradient sum op '{}' into a tree off additions "
@@ -297,14 +299,14 @@ bool DecomposeGradSum::apply(Graph &graph) const {
       op->settings.inferTensorMappingToFrom.insert(
           {AddOp::getArg0InIndex(), AddOp::getArg1InIndex()});
 
-      op->inheritPlacementAttributes(true, aliases);
+      op->inheritPlacementAttributes(true, aliasModel);
       op->setup();
       op->toLoss   = PathToLoss::No;
       op->fromLoss = PathFromLoss::Yes;
       batchSerialized |= op->hasBatchSerializedPhase();
     }
 
-    initOp->inheritPlacementAttributes(true, aliases);
+    initOp->inheritPlacementAttributes(true, aliasModel);
     if (batchSerialized) {
       initOp->setBatchSerializedPhase(-1);
     }

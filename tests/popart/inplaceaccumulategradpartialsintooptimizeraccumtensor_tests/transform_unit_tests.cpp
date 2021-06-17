@@ -223,10 +223,10 @@ mkInitOp(Graph &graph, const TensorInfo &tInfo, const std::string &name);
 
 BOOST_AUTO_TEST_CASE(TestCanHandleEmptyGraph) {
   Ir irExpected;
-  Graph expected{irExpected, GraphId::root()};
+  Graph &expected = irExpected.getMainGraph();
 
   Ir ir;
-  Graph graph{ir, GraphId::root()};
+  Graph &graph = ir.getMainGraph();
 
   InplaceAccumulateGradPartialsIntoOptimizerAccumTensor transform;
   bool modified = transform.apply(graph);
@@ -308,9 +308,9 @@ BOOST_AUTO_TEST_CASE(TestReplacesAddsWithAccumulateOpsOnOptimizerAccum) {
   */
 
   Ir actualIr;
-  Graph actual{actualIr, GraphId::root()};
+  Graph &actual = actualIr.getMainGraph();
   Ir expectedIr;
-  Graph expected{expectedIr, GraphId::root()};
+  Graph &expected = expectedIr.getMainGraph();
 
   const TensorInfo tInfo{DataType::FLOAT, Shape{4, 4, 4, 4}};
 
@@ -526,7 +526,7 @@ BOOST_AUTO_TEST_CASE(TestCanHandleWhenOptimizerAccumIsInputAndOutputTensor) {
   const TensorId accum = "accum";
 
   Ir irActual;
-  Graph actual{irActual, GraphId::root()};
+  Graph &actual = irActual.getMainGraph();
   {
     actual.addInput(pW0, tInfo);
     actual.addInput(accum, tInfo);
@@ -560,7 +560,7 @@ BOOST_AUTO_TEST_CASE(TestCanHandleWhenOptimizerAccumIsInputAndOutputTensor) {
   }
 
   Ir expectedIr;
-  Graph expected{expectedIr, GraphId::root()};
+  Graph &expected = expectedIr.getMainGraph();
   {
     expected.addInput(pW0, tInfo);
     expected.addInput(accum, tInfo);
@@ -622,10 +622,10 @@ BOOST_AUTO_TEST_CASE(TestDoesNotModifyGraphWhenTreeAccumIsNotProducedByInitOp) {
     Unmodified.
   */
   Ir irExpected;
-  Graph expected{irExpected, GraphId::root()};
+  Graph &expected = irExpected.getMainGraph();
 
   Ir irActual;
-  Graph actual{irActual, GraphId::root()};
+  Graph &actual = irActual.getMainGraph();
 
   const TensorId pW0   = "pW0";
   const TensorId accum = "accum";
@@ -706,10 +706,10 @@ BOOST_AUTO_TEST_CASE(TestDoesNotModifyGraphWhenInitOpHasNonZeroInitType) {
     Unmodified.
   */
   Ir irExpected;
-  Graph expected{irExpected, GraphId::root()};
+  Graph &expected = irExpected.getMainGraph();
 
   Ir irActual;
-  Graph actual{irActual, GraphId::root()};
+  Graph &actual = irActual.getMainGraph();
 
   const TensorId pW0   = "pW0";
   const TensorId accum = "accum";
@@ -812,10 +812,10 @@ BOOST_AUTO_TEST_CASE(
     Unmodified.
   */
   Ir irExpected;
-  Graph expected{irExpected, GraphId::root()};
+  Graph &expected = irExpected.getMainGraph();
 
   Ir irActual;
-  Graph actual{irActual, GraphId::root()};
+  Graph &actual = irActual.getMainGraph();
 
   const TensorId pW0   = "pW0";
   const TensorId accum = "accum";
@@ -927,7 +927,7 @@ BOOST_AUTO_TEST_CASE(TestCanHandleAccumulateOpNonConstFactor) {
   const TensorId accum = "accum";
 
   Ir irActual;
-  Graph actual{irActual, GraphId::root()};
+  Graph &actual = irActual.getMainGraph();
   {
     actual.addInput(pW0, tInfo);
     actual.addInput(accum, tInfo);
@@ -959,7 +959,7 @@ BOOST_AUTO_TEST_CASE(TestCanHandleAccumulateOpNonConstFactor) {
   }
 
   Ir expectedIr;
-  Graph expected{expectedIr, GraphId::root()};
+  Graph &expected = expectedIr.getMainGraph();
   {
     expected.addInput(pW0, tInfo);
     expected.addInput(accum, tInfo);
@@ -1020,10 +1020,10 @@ BOOST_AUTO_TEST_CASE(
     Accumulate ops.
   */
   Ir expectedIr;
-  Graph expected{expectedIr, GraphId::root()};
+  Graph &expected = expectedIr.getMainGraph();
 
   Ir irActual;
-  Graph actual{irActual, GraphId::root()};
+  Graph &actual = irActual.getMainGraph();
 
   // Save the name of this input so the graphs' ops can be recovered later when
   // we test graph equality.
@@ -1127,9 +1127,9 @@ BOOST_AUTO_TEST_CASE(
   */
 
   Ir irExpected;
-  Graph expected{irExpected, GraphId::root()};
+  Graph &expected = irExpected.getMainGraph();
   Ir irActual;
-  Graph actual{irActual, GraphId::root()};
+  Graph &actual = irActual.getMainGraph();
 
   const TensorId accum = "accum";
   const TensorId dOut  = "dOut";

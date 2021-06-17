@@ -6,6 +6,7 @@
 #include <memory>
 #include <set>
 
+#include <popart/alias/aliasmodel.hpp>
 #include <popart/bimap.hpp>
 #include <popart/dataflow.hpp>
 #include <popart/devicemanager.hpp>
@@ -537,14 +538,14 @@ private:
   void confirmNonReservedId(const TensorId &tenId) const;
 
   void growGradientVarUpdateOp(const TensorId &varId,
-                               Aliases &mainGraphAliases);
+                               AliasModel &mainGraphAliasModel);
 
   void growCopyVarUpdateOp(const TensorId &varId,
                            const TensorId &from,
-                           Aliases &mainGraphAliases);
+                           AliasModel &mainGraphAliasModel);
 
   // Common code for the growGradient... and growCopy...
-  void growVarUpdateOpInternal(OpId opId, Aliases &mainGraphAliases);
+  void growVarUpdateOpInternal(OpId opId, AliasModel &mainGraphAliasModel);
 
   // Get the best virtual graph Id based on the graph Ids of producers of ts
   // to minimise graph<->graph communication

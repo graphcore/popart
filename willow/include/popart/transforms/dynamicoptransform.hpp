@@ -2,7 +2,7 @@
 #ifndef GUARD_NEURALNET_DynamicOpTransform_HPP
 #define GUARD_NEURALNET_DynamicOpTransform_HPP
 
-#include <popart/aliases.hpp>
+#include <popart/alias/aliasmodel.hpp>
 #include <popart/op.hpp>
 #include <popart/transforms/transform.hpp>
 
@@ -24,7 +24,7 @@ public:
   void
   gradSumToGradChain(Ir &ir,
                      std::map<Op *, std::vector<Op *>, POpCmp> opsToChainMap,
-                     Aliases &aliases) const;
+                     AliasModel &aliasModel) const;
 
   virtual std::string getName() const override final {
     return "DynamicOpTransform";

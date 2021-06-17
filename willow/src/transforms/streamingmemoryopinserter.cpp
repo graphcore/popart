@@ -1,4 +1,4 @@
-#include <popart/aliases.hpp>
+#include <popart/alias/aliasmodel.hpp>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/logging.hpp>
@@ -200,12 +200,13 @@ void StreamingMemoryOpInserter::setPriority(Op *op,
 }
 
 StreamingMemoryOpInserter::StreamingMemoryOpInserter(Graph &graph_,
-                                                     Aliases &aliases_,
+                                                     AliasModel &aliasModel_,
                                                      int64_t replicationFactor_,
                                                      int num_stages_,
                                                      int num_phases_)
-    : graph{graph_}, aliases{aliases_}, replicationFactor{replicationFactor_},
-      num_stages{num_stages_}, num_phases{num_phases_}, remoteArgIds{} {}
+    : graph{graph_}, aliasModel{aliasModel_},
+      replicationFactor{replicationFactor_}, num_stages{num_stages_},
+      num_phases{num_phases_}, remoteArgIds{} {}
 
 bool StreamingMemoryOpInserter::isPhasedExecution() const {
   return num_phases > 1;
@@ -1288,15 +1289,10 @@ void StreamingMemoryOpInserter::getTensorConfig(Tensor *tensor) {
 
 void StreamingMemoryOpInserter::getRootVarTensor(Tensor *tensor,
                                                  Tensor *&rootTensor) const {
-  auto chains = aliases.aliasChainsFrom(tensor);
-  auto shape  = tensor->info.shape();
-
   // Check if the alias is an identity chain
-  for (auto tensorAndChain : chains) {
-    if (tensorAndChain.first->getTensorTypeInfo()->type() ==
-            TensorType::Variable &&
-        !tensorAndChain.second.isEmpty()) {
-      rootTensor = tensorAndChain.first;
+  for (auto alias : aliasModel.allAliases(*tensor)) {
+    if (alias->getTensorTypeInfo()->type() == TensorType::Variable) {
+      rootTensor = alias;
     }
   }
 }
@@ -1688,17 +1684,8 @@ void StreamingMemoryOpInserter::getAliasedModifiersInContext(
     TensorStreamingContext context,
     Ops &modifyingConsumerOps) const {
   getModifiersInContext(tensor, context, modifyingConsumerOps);
-  auto aliasedTensorMap = aliases.aliasChainsFrom(tensor);
-  auto fullRegion       = view::Region::getFull(tensor->info.shape());
-  for (auto &chain : aliasedTensorMap) {
-    auto regions = chain.second.apply(fullRegion);
-    bool nonEmptyAlias =
-        std::any_of(regions.begin(), regions.end(), [](view::Region &r) {
-          return !r.isEmpty();
-        });
-    if (nonEmptyAlias) {
-      getModifiersInContext(chain.first, context, modifyingConsumerOps);
-    }
+  for (auto alias : aliasModel.allAliases(*tensor)) {
+    getModifiersInContext(alias, context, modifyingConsumerOps);
   }
 }
 

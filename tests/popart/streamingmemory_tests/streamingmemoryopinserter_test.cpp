@@ -4,7 +4,8 @@
 
 #include <boost/test/unit_test.hpp>
 #include <filereader.hpp>
-#include <popart/aliasesmap.hpp>
+#include <popart/alias/aliasmodel.hpp>
+#include <popart/alias/aliasmodelgrower.hpp>
 #include <popart/builder.hpp>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
@@ -24,12 +25,12 @@ namespace {
 class StreamingMemoryOpInserterTestWrapper : public StreamingMemoryOpInserter {
 public:
   StreamingMemoryOpInserterTestWrapper(Graph &graph,
-                                       Aliases &aliases,
+                                       AliasModel &aliasModel,
                                        int64_t replFactor,
                                        int numStages,
                                        int numPhases)
       : StreamingMemoryOpInserter{graph,
-                                  aliases,
+                                  aliasModel,
                                   replFactor,
                                   numStages,
                                   numPhases} {}
@@ -73,10 +74,11 @@ BOOST_AUTO_TEST_CASE(StreamingMemoryOpInserter_determineTensorLocation) {
   addOp0->setup();
   graph.moveIntoGraph(std::move(addOp0));
 
-  AliasesMap aliasesMap{graph};
-  auto &aliases = aliasesMap.getAliases(graph);
+  AliasModel aliasModel;
+  AliasModelGrower aliasModelGrower{aliasModel};
+  aliasModelGrower.growFullGraph(graph, DataDependenciesOnly::Yes);
   StreamingMemoryOpInserterTestWrapper inserter(
-      graph, aliases, replFactor, numStages, numPhases);
+      graph, aliasModel, replFactor, numStages, numPhases);
 
   // With default settings everything is on chip.
   {

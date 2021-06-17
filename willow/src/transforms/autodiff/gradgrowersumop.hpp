@@ -16,7 +16,7 @@ namespace popart {
 class Ir;
 class Op;
 class Tensor;
-class Aliases;
+class AliasModel;
 
 /**
  * Interface for GradGrowerSumOp.
@@ -27,7 +27,7 @@ public:
   // Grow a grad sum op, combining a number of gradients into one.
   virtual Op *growGradSumOp(Tensor *target,
                             const std::vector<Tensor *> &toSum,
-                            Aliases &mainGraphAliases) = 0;
+                            AliasModel &mainGraphAliasModel) = 0;
 };
 
 /**
@@ -48,7 +48,7 @@ public:
   // Grow a grad sum op, combining a number of gradients into one.
   virtual Op *growGradSumOp(Tensor *target,
                             const std::vector<Tensor *> &toSum,
-                            Aliases &mainGraphAliases);
+                            AliasModel &mainGraphAliasModel);
 
   // Prefix for grad sum operations.
   static std::string getGradSumOpNamePrefix();

@@ -1,5 +1,5 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
-#include <popart/aliasesmap.hpp>
+#include <popart/alias/aliasmodelgrower.hpp>
 #include <popart/error.hpp>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
@@ -73,8 +73,9 @@ void transfer(Op *from, Op *to) {
 bool DynamicOpTransform::apply(Graph &graph) const {
   logging::transform::debug("[DynamicOpTransform] Started.");
 
-  AliasesMap aliasesMap{graph};
-  auto &aliases = aliasesMap.getAliases(graph);
+  AliasModel aliasModel;
+  AliasModelGrower aliasModelGrower{aliasModel};
+  aliasModelGrower.growFullGraph(graph, DataDependenciesOnly::Yes);
 
   auto &ir      = graph.getIr();
   auto schedule = graph.getOpSchedule({}, RequireOptimalSchedule::Yes);
@@ -195,7 +196,7 @@ bool DynamicOpTransform::apply(Graph &graph) const {
     }
   }
 
-  gradSumToGradChain(ir, opsToChainMap, aliases);
+  gradSumToGradChain(ir, opsToChainMap, aliasModel);
 
   logging::transform::debug("[DynamicOpTransform] Done.");
   return true;
@@ -204,7 +205,7 @@ bool DynamicOpTransform::apply(Graph &graph) const {
 void DynamicOpTransform::gradSumToGradChain(
     Ir &ir,
     std::map<Op *, std::vector<Op *>, POpCmp> opsToChainMap,
-    Aliases &aliases) const {
+    AliasModel &aliasModel) const {
 
   TensorId lastId;
   for (auto kv : opsToChainMap) {
@@ -248,7 +249,7 @@ void DynamicOpTransform::gradSumToGradChain(
     }
 
     if (sumRequired) {
-      sumOp->inheritPlacementAttributes(true, aliases);
+      sumOp->inheritPlacementAttributes(true, aliasModel);
       sumOp->setup();
     } else {
       ir.getMainGraph().eraseOp(sumOp->id);

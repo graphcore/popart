@@ -18,7 +18,7 @@
 #include <builder_impl.hpp>
 #include <filereader.hpp>
 #include <onnxutil.hpp>
-#include <popart/aliasesmap.hpp>
+#include <popart/alias/aliasmodelgrower.hpp>
 #include <popart/builder.hpp>
 #include <popart/ces/constexpr.hpp>
 #include <popart/ces/onnxconstexpr.hpp>
@@ -2558,8 +2558,9 @@ void Ir::constructBackwards() {
 
   applyTransform(Autodiff::id(), getMainGraph());
 
-  AliasesMap aliasesMap{getMainGraph()};
-  auto &mainGraphAliases = aliasesMap.getAliases(getMainGraph());
+  AliasModel mainGraphAliasModel;
+  AliasModelGrower aliasModelGrower{mainGraphAliasModel};
+  aliasModelGrower.growFullGraph(getMainGraph(), DataDependenciesOnly::Yes);
 
   logging::ir::info("Creating Variable Tensor update Ops");
   // add weight update ops (we are ignoring momentums for now)
@@ -2570,11 +2571,12 @@ void Ir::constructBackwards() {
     switch (tensor->getVariableUpdateType()) {
     case VariableUpdateType::Copy:
       // Updates the var by copying it from another tensor
-      growCopyVarUpdateOp(varId, tensor->getCopyFromTensor(), mainGraphAliases);
+      growCopyVarUpdateOp(
+          varId, tensor->getCopyFromTensor(), mainGraphAliasModel);
       break;
     case VariableUpdateType::Gradient:
       // Updates the var by looking for the matching gradient
-      growGradientVarUpdateOp(varId, mainGraphAliases);
+      growGradientVarUpdateOp(varId, mainGraphAliasModel);
       break;
     case VariableUpdateType::None:
     default:
@@ -2590,7 +2592,7 @@ void Ir::constructBackwards() {
 
 void Ir::growCopyVarUpdateOp(const TensorId &varId,
                              const TensorId &from,
-                             Aliases &mainGraphAliases) {
+                             AliasModel &mainGraphAliasModel) {
   OpId opId = getMainGraph().moveIntoGraph(
       std::unique_ptr<Op>(new CopyVarUpdateOp({getMainGraph(), ""})));
 
@@ -2598,11 +2600,11 @@ void Ir::growCopyVarUpdateOp(const TensorId &varId,
   std::vector<TensorId> inputs{varId, from};
   getMainGraph().connectInputs(InputVecWrapper(inputs), opId);
 
-  growVarUpdateOpInternal(opId, mainGraphAliases);
+  growVarUpdateOpInternal(opId, mainGraphAliasModel);
 }
 
 void Ir::growGradientVarUpdateOp(const TensorId &varId,
-                                 Aliases &mainGraphAliases) {
+                                 AliasModel &mainGraphAliasModel) {
 
   logging::ir::info("Growing gradient var update op for {}", varId);
 
@@ -2634,7 +2636,7 @@ void Ir::growGradientVarUpdateOp(const TensorId &varId,
         getMainGraph().moveIntoGraph(optimizer->createOp(var, getMainGraph()));
 
     getMainGraph().connectInputs(InputVecWrapper(inputIds), opId);
-    growVarUpdateOpInternal(opId, mainGraphAliases);
+    growVarUpdateOpInternal(opId, mainGraphAliasModel);
   }
 }
 
@@ -2651,7 +2653,7 @@ void Ir::ensureOptimizerTensorCreated(const TensorId &optId,
   }
 }
 
-void Ir::growVarUpdateOpInternal(OpId opId, Aliases &mainGraphAliases) {
+void Ir::growVarUpdateOpInternal(OpId opId, AliasModel &mainGraphAliasModel) {
   Op *op           = getMainGraph().getOps()[opId].get();
   auto varUpdateOp = dynamic_cast<VarUpdateOp *>(op);
   if (varUpdateOp == nullptr) {
@@ -2662,7 +2664,7 @@ void Ir::growVarUpdateOpInternal(OpId opId, Aliases &mainGraphAliases) {
   std::vector<TensorId> outputs{updatedVarId};
   getMainGraph().connectOutputs(OutputVecWrapper(outputs), opId);
   op->setup();
-  op->inheritPlacementAttributes(false, mainGraphAliases);
+  op->inheritPlacementAttributes(false, mainGraphAliasModel);
 }
 
 void Ir::setFinalLoss(const TensorId &loss) {

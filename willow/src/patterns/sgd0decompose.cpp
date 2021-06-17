@@ -1,7 +1,8 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
 #include <memory>
 #include <onnxutil.hpp>
-#include <popart/aliasesmap.hpp>
+#include <popart/alias/aliasmodel.hpp>
+#include <popart/alias/aliasmodelgrower.hpp>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/op/collectives/replicatedallreduce.hpp>
@@ -64,10 +65,11 @@ bool SGD0Decompose::apply(Op *op) const {
     // behaviour as if the reduction was still integrated into SGD0VarUpdate
     graph.topoCons->insert(reduceOp, sgd0, true);
 
-    AliasesMap aliasesMap{graph};
-    auto &aliases = aliasesMap.getAliases(graph);
+    AliasModel aliasModel;
+    AliasModelGrower aliasModelGrower{aliasModel};
+    aliasModelGrower.growFullGraph(graph, DataDependenciesOnly::Yes);
 
-    reduceOp->inheritPlacementAttributes(false, aliases);
+    reduceOp->inheritPlacementAttributes(false, aliasModel);
   }
 
   return true;

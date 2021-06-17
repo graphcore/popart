@@ -4,7 +4,7 @@
 
 #include <memory>
 
-#include <popart/aliases.hpp>
+#include <popart/alias/aliasmodel.hpp>
 #include <popart/graph.hpp>
 #include <popart/op.hpp>
 #include <popart/op/sum.hpp>
@@ -19,7 +19,7 @@ GradGrowerSumOp::GradGrowerSumOp(AutodiffIrInterface &dep)
 
 Op *GradGrowerSumOp::growGradSumOp(Tensor *target,
                                    const std::vector<Tensor *> &toSum,
-                                   Aliases &mainGraphAliases) {
+                                   AliasModel &mainGraphAliases) {
   TensorId gradientId = getGradId(target->id);
   auto &mainGraph     = dep.get().getMainGraph();
 

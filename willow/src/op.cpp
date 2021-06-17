@@ -814,7 +814,7 @@ PipelineStage Op::getPipelineStage() const {
 }
 
 void Op::inheritPlacementAttributes(bool inheritSerializations,
-                                    Aliases &aliases_) {
+                                    AliasModel &aliasModel) {
   const Ir &ir = getGraph().getIr();
 
   enum ConnectedOpRelation {
@@ -870,20 +870,24 @@ void Op::inheritPlacementAttributes(bool inheritSerializations,
       associatedVariableTensors.insert(inIndexAndTensor.second);
     }
 
-    auto aliasedTensorMap = aliases_.aliasChainsFrom(inIndexAndTensor.second);
-    auto fullRegion =
-        view::Region::getFull(inIndexAndTensor.second->info.shape());
-    for (const auto &chain : aliasedTensorMap) {
-      auto regions = chain.second.apply(fullRegion);
-      bool nonEmptyAlias =
-          std::any_of(regions.begin(), regions.end(), [](view::Region &r) {
-            return !r.isEmpty();
-          });
-      if (nonEmptyAlias &&
-          chain.first->getTensorTypeInfo()->type() == TensorType::Variable) {
-        associatedVariableTensors.insert(chain.first);
-        associatedVariableTensors.insert(inIndexAndTensor.second);
+    // Work out aliases of input the input that are variables.
+    Tensor *inputTensor = inIndexAndTensor.second;
+    if (aliasModel.contains(inputTensor->id)) {
+      for (auto &alias : aliasModel.allAliases(*inputTensor)) {
+        if (alias->getTensorTypeInfo()->type() == TensorType::Variable) {
+          associatedVariableTensors.insert(alias);
+          associatedVariableTensors.insert(inIndexAndTensor.second);
+        }
       }
+    } else {
+      logging::debug(
+          "[Op::inheritPlacementAttributes] Tensor '{}' not modelled "
+          "in provided AliasModel",
+          inputTensor->id);
+      // There are historic code paths that call this function with an alias
+      // model that does not model all tensor inputs of the op (for example: the
+      // gradient inputs in GradGrowerSumOp::growGradSumOp). We therefore don't
+      // currently error when this is the case.
     }
 
     for (Tensor *varTensor : associatedVariableTensors) {

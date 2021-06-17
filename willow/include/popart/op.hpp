@@ -233,14 +233,19 @@ public:
   virtual int getInBatchAxis(InIndex) const { return 0; }
   virtual int getOutBatchAxis(OutIndex) const { return 0; }
 
-  // Inherit placement attributes:
-  // - Pipeline stage
-  // - Execution phase
-  // - Virtual graph ID
-  // - Batch serial phase
-  //
-  // TODO T40059: Replace use of chain-based aliasing.
-  void inheritPlacementAttributes(bool inheritSerializations, Aliases &aliases);
+  /**
+   * Helper function to set Op's placement attributes by inheriting them from
+   * other ops in the graph. Attributes that are set include:
+   * - Pipeline stage
+   * - Execution phase
+   * - Virtual graph ID
+   * - Batch serial phase (optional)
+   *
+   * \param inheritSerializations Set batch serialial phase or not.
+   * \param aliasModel An AliasModel containing alias info for this op's graph.
+   **/
+  void inheritPlacementAttributes(bool inheritSerializations,
+                                  AliasModel &aliasModel);
 
   Ir &getIr();
   const Ir &getIr() const;
