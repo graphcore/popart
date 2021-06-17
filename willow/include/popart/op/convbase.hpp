@@ -217,6 +217,10 @@ public:
   // Used for ConvTranspose
   ConvDilations getInDilations(int64_t convIndex) const;
 
+  // Usually all zero but can be set by restoreAttributesFromParams
+  Shape lowerInTruncs(int64_t convIndex) const;
+  Shape upperInTruncs(int64_t convIndex) const;
+
 private:
   void checkParameters() const;
 
@@ -226,6 +230,11 @@ private:
   ConvPads flatOutPads;
   ConvDilations flatDilations;
   ConvDilations flatInDilations;
+
+  // Allows the input dims to be directly truncated
+  // Needed for some cases of restoreAttributesFromParams such as to calculate
+  // the gradient of a convolution with (zeros) padding > kernel_size
+  ConvTruncs flatInTruncs;
 
   // Encapsulates per-conv and global options
   MultiConvOptions convOpts;

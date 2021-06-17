@@ -90,6 +90,7 @@ using ConvDilations = std::vector<int64_t>;
 using ConvGroup     = int64_t;
 using ConvPads      = std::vector<int64_t>;
 using ConvStrides   = std::vector<int64_t>;
+using ConvTruncs    = std::vector<int64_t>;
 
 using MultiConvInputs    = std::vector<ConvInputs>;
 using MultiConvDilations = std::vector<ConvDilations>;

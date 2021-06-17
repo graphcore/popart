@@ -35,19 +35,27 @@ bool ConvDataGradPattern::apply(Op *op) const {
 
   conv->setConvOptions(gradOp->getConvOptions());
 
+  std::vector<Shape> origOutShapes;
+
   auto numConvs = gradOp->numConvs();
   for (int i = 0; i < numConvs; i++) {
+
+    // Get and disconnect tensors
     auto weights_in =
         gradOp->inTensor(MultiConvDataGradBaseOp::getWeightsInIndex(i));
     auto gradConvIn_out =
         gradOp->inTensor(MultiConvDataGradBaseOp::getGradConvolvedInIndex(i));
     auto grad_out = gradOp->outTensor(MultiConvDataGradBaseOp::getOutIndex(i));
+
+    origOutShapes.push_back(grad_out->info.shape());
+
     gradOp->disconnectInTensor(MultiConvDataGradBaseOp::getWeightsInIndex(i),
                                weights_in);
     gradOp->disconnectInTensor(
         MultiConvDataGradBaseOp::getGradConvolvedInIndex(i), gradConvIn_out);
     gradOp->disconnectOutTensor(grad_out);
 
+    // Make the flip op
     auto flip = dynamic_cast<ConvFlipWeightsOp *>(
         makeReplacementOpInIr(Onnx::CustomOperators::ConvFlipWeights, op));
 
@@ -64,7 +72,7 @@ bool ConvDataGradPattern::apply(Op *op) const {
     flip->setGroupReshape(true);
     flip->setup();
 
-    // Configure the conv op for the bwd pass
+    // Connect thew new conv op replacing grad op
     conv->connectInTensor(
         MultiConvBaseOp::getWeightsInIndex(i),
         flip->outTensor(ConvFlipWeightsOp::getOutIndex())->id);
@@ -73,8 +81,18 @@ bool ConvDataGradPattern::apply(Op *op) const {
     conv->connectOutTensor(MultiConvBaseOp::getOutIndex(i), grad_out->id);
   }
 
+  // Convert from the ConvParameter format of the grad op to the flat format of
+  // the conv op
   conv->setParamsFromDataGradOp(gradOp);
   conv->setup();
+
+  // Check the out shapes matched
+  for (int i = 0; i < numConvs; i++) {
+    auto new_shape = conv->outShape(MultiConvBaseOp::getOutIndex(i));
+    if (new_shape != origOutShapes[i]) {
+      throw new error("ConvDataGradPattern produced wrong output shape.");
+    }
+  }
 
   // Remove the MultiConvGradOp
   op->getGraph().eraseOp(op->id);

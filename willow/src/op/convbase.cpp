@@ -136,12 +136,24 @@ MultiConvBaseOp::MultiConvBaseOp(const OperatorIdentifier &_opid,
       flatDilations(flatDilations_), convOpts(convOpts_), padType(padType_) {}
 
 Shape MultiConvBaseOp::getOutShape(int convIndex, const ConvPads &pads) const {
-  Shape outShape(2 + getNSpatialDims(convIndex), 0);
+  const auto nSpatialDims = getNSpatialDims(convIndex);
+  Shape outShape(2 + nSpatialDims, 0);
   outShape[0] = inInfo(getDataInIndex(convIndex)).dim(0); // batch size
   outShape[1] = getNOutChans(convIndex);
 
+  Shape inSpatialD = getSpatialD(convIndex);
+
+  // Take into account any input trunction. An example of this is calculating
+  // the data gradient of a convolution whose padding exceeds its kernel size.
+  Shape lowerTruncs = lowerInTruncs(convIndex);
+  Shape upperTruncs = upperInTruncs(convIndex);
+  for (size_t dim = 0; dim < nSpatialDims; dim++) {
+    inSpatialD[dim] -= lowerTruncs[dim];
+    inSpatialD[dim] -= upperTruncs[dim];
+  }
+
   Shape spatialOutShape =
-      HasReceptiveFieldOp::getSpatialOutShape(getSpatialD(convIndex),
+      HasReceptiveFieldOp::getSpatialOutShape(inSpatialD,
                                               getSpatialK(convIndex),
                                               pads,
                                               getOutPads(convIndex),
@@ -150,7 +162,7 @@ Shape MultiConvBaseOp::getOutShape(int convIndex, const ConvPads &pads) const {
                                               getInDilations(convIndex),
                                               padType);
 
-  for (int spDim = 0; spDim < getNSpatialDims(convIndex); ++spDim) {
+  for (int spDim = 0; spDim < nSpatialDims; ++spDim) {
     outShape[spDim + 2] = spatialOutShape[spDim];
   }
   return outShape;
@@ -173,14 +185,10 @@ void MultiConvBaseOp::restoreAttributesFromParams(
   flatDilations.clear();
   flatPads.clear();
   flatOutPads.clear();
+  flatInTruncs.clear();
 
   for (auto param : ps) {
-    flatStrides.insert(flatStrides.end(),
-                       param.outputTransformation.stride.begin(),
-                       param.outputTransformation.stride.end());
-    flatDilations.insert(flatDilations.end(),
-                         param.kernelTransformation.dilation.begin(),
-                         param.kernelTransformation.dilation.end());
+    // inputTransformation
     flatPads.insert(flatPads.end(),
                     param.inputTransformation.lowerPadding.begin(),
                     param.inputTransformation.lowerPadding.end());
@@ -190,14 +198,44 @@ void MultiConvBaseOp::restoreAttributesFromParams(
     flatInDilations.insert(flatInDilations.begin(),
                            param.inputTransformation.dilation.begin(),
                            param.inputTransformation.dilation.end());
+    flatInTruncs.insert(flatInTruncs.begin(),
+                        param.inputTransformation.lowerTruncation.begin(),
+                        param.inputTransformation.lowerTruncation.end());
+    flatInTruncs.insert(flatInTruncs.begin(),
+                        param.inputTransformation.upperTruncation.begin(),
+                        param.inputTransformation.upperTruncation.end());
+
+    // kernelTransformation
+    flatDilations.insert(flatDilations.end(),
+                         param.kernelTransformation.dilation.begin(),
+                         param.kernelTransformation.dilation.end());
+
+    // outputTransformation
+    flatStrides.insert(flatStrides.end(),
+                       param.outputTransformation.stride.begin(),
+                       param.outputTransformation.stride.end());
+
     flatOutPads.insert(flatOutPads.begin(),
                        param.outputTransformation.lowerPadding.begin(),
                        param.outputTransformation.lowerPadding.end());
     flatOutPads.insert(flatOutPads.begin(),
                        param.outputTransformation.upperPadding.begin(),
                        param.outputTransformation.upperPadding.end());
-  }
 
+    for (auto trunc : param.outputTransformation.lowerTruncation) {
+      if (trunc != 0) {
+        throw error("non-zero param.outputTransformation.lowerTruncation is not"
+                    "supported in MultiConvBaseOp.");
+      }
+    }
+
+    for (auto trunc : param.outputTransformation.upperTruncation) {
+      if (trunc != 0) {
+        throw error("non-zero param.outputTransformation.upperTruncation is not"
+                    "supported in MultiConvBaseOp.");
+      }
+    }
+  }
   // The padding has been adjusted, so we can unset the AutoPad type
   padType = AutoPad::NOTSET;
 }
@@ -369,6 +407,36 @@ ConvDilations MultiConvBaseOp::getInDilations(int64_t convIndex) const {
   return result;
 }
 
+Shape MultiConvBaseOp::lowerInTruncs(int64_t convIndex) const {
+  const auto nSpatialDims = getNSpatialDims(convIndex);
+
+  Shape result;
+  if (flatInTruncs.empty()) {
+    result.resize(nSpatialDims, 0);
+  } else {
+    const auto cumulativeSpatialDims = getCumulativeSpatialDims(convIndex);
+    const auto cumulativeTruncs      = cumulativeSpatialDims * 2;
+    result                           = {flatInTruncs.begin() + cumulativeTruncs,
+              flatInTruncs.begin() + cumulativeTruncs + nSpatialDims};
+  }
+  return result;
+}
+
+Shape MultiConvBaseOp::upperInTruncs(int64_t convIndex) const {
+  const auto nSpatialDims = getNSpatialDims(convIndex);
+
+  Shape result;
+  if (flatInTruncs.empty()) {
+    result.resize(nSpatialDims, 0);
+  } else {
+    const auto cumulativeSpatialDims = getCumulativeSpatialDims(convIndex);
+    const auto cumulativeTruncs      = cumulativeSpatialDims * 2;
+    result = {flatInTruncs.begin() + cumulativeTruncs + nSpatialDims,
+              flatInTruncs.begin() + cumulativeTruncs + nSpatialDims * 2};
+  }
+  return result;
+}
+
 void MultiConvBaseOp::setup() {
   checkParameters();
 
@@ -439,8 +507,8 @@ ConvParameters MultiConvBaseOp::getParameters(int convIndex) const {
       getNOutChans(convIndex) / getGroups(convIndex);
   result.numGroups = getGroups(convIndex);
 
-  result.inputTransformation.lowerTruncation = zeros;
-  result.inputTransformation.upperTruncation = zeros;
+  result.inputTransformation.lowerTruncation = lowerInTruncs(convIndex);
+  result.inputTransformation.upperTruncation = upperInTruncs(convIndex);
   result.inputTransformation.dilation        = getInDilations(convIndex);
   result.inputTransformation.lowerPadding    = lowerPads(convIndex);
   result.inputTransformation.upperPadding    = upperPads(convIndex);

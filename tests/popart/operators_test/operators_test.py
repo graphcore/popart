@@ -188,7 +188,6 @@ def test_convolution_2(op_tester):
     Test the convolution when the conv in the bwd pass is not the same as the conv in the
     forward pass
     '''
-
     def init_builder(builder):
         data = np.ones([1, 2, 4, 4], dtype=np.float32)
         filt = np.ones([4, 2, 1, 1], dtype=np.float32)
@@ -351,6 +350,51 @@ def test_convolution_5(op_tester):
     op_tester.setPatterns(['ConvDataGrad'], enableRuntimeAsserts=False)
     op_tester.run(init_builder0, reference, step_type='train')
     op_tester.run(init_builder1, reference, step_type='train')
+
+
+def test_convolution_6(op_tester):
+    batch_size = 1
+    chans_in = 2
+    chans_out = 3
+    size = 4
+    kernel_size = 3
+    padding = 5  # Deliberately excessive
+
+    data = np.ones([batch_size, chans_in, size, size], dtype=np.float32)
+    filt = np.ones([chans_out, chans_in, kernel_size, kernel_size],
+                   dtype=np.float32)
+
+    def init_builder(builder):
+        d = builder.addInputTensor(data)
+        f = builder.addInputTensor(filt)
+        o = builder.aiOnnx.conv([d, f],
+                                dilations=[1, 1],
+                                pads=[padding] * 4,
+                                strides=[1, 1])
+        builder.addOutputTensor(o)
+        return [
+            o,
+            popart.reservedGradientPrefix() + d,
+            popart.reservedGradientPrefix() + o
+        ]
+
+    def reference(ref_data):
+        d = torch.tensor(data)
+        conv = torch.nn.Conv2d(chans_in,
+                               chans_out,
+                               kernel_size,
+                               padding=[padding] * 2)
+        conv.weight.data = torch.tensor(filt)
+        conv.bias.data = torch.tensor([0.0 for i in range(chans_out)])
+        o = conv(d)
+        d__o = ref_data.getOutputTensorGrad(0)
+        o.backward(torch.tensor(d__o))
+        dg = d.grad
+
+        return [o, dg, None]
+
+    op_tester.setPatterns(['ConvDataGrad'], enableRuntimeAsserts=False)
+    op_tester.run(init_builder, reference, step_type='train')
 
 
 def test_convolution_3d(op_tester):
@@ -1834,7 +1878,11 @@ def test_pad11(op_tester):
                   })
 
 
-def _test_pad(op_tester, data, lower_padding, upper_padding, mode,
+def _test_pad(op_tester,
+              data,
+              lower_padding,
+              upper_padding,
+              mode,
               pad_value=0):
     def init_builder(builder):
         i1 = builder.addInputTensor(data)
