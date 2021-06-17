@@ -433,6 +433,13 @@ public:
   ///     momentum optimizer state.
   /// \param clipNormSettings A vector of ClipNormSettings (this can be used
   ///     to set maximum values for weights).
+  /// \param scaledOptimizerState Experimental Option.
+  ///     Does not remove lossScaling before updating the optimizer state. This
+  ///     should have no effect on the update equation. However, it does ensure
+  ///     a more numerically stable implementation when accl1_type is set to
+  ///     DataType::FLOAT16. Note: When loading a model that includes
+  ///     initialised optimizer state, ensure that accl1 and accl2 are scaled by
+  ///     lossScaling and lossScaling^2 respectively.
   ///
   /// **EXAMPLE**:
   /// ```

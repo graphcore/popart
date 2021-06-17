@@ -1001,6 +1001,7 @@ void Devicex::loadEngineAndConnectStreams() {
   setRandomSeedFromHost(); // Stream random seed value by default (prog empty if
                            // no randomness)
   if (ir().canTrain()) {
+    executable_.updateOptimizerTensors();
     optimizerFromHost();
   }
 }

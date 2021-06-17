@@ -59,14 +59,14 @@ void OptimizerValueMap::validReplacement(const OptimizerValueMap &ovm) const {
 } // namespace popart
 
 namespace std {
-std::size_t std::hash<popart::OptimizerValueMap>::operator()(
-    const popart::OptimizerValueMap &vmap) const {
+std::size_t std::hash<popart::OptimizerValueMap>::
+operator()(const popart::OptimizerValueMap &vmap) const {
   std::size_t seed = 0;
-  boost::hash_combine(seed, vmap.getDefault().isConst());
+  boost::hash_combine(seed, vmap.getDefault());
 
   for (const auto &kv : vmap.getSpecifics()) {
     boost::hash_combine(seed, kv.first);
-    boost::hash_combine(seed, kv.second.isConst());
+    boost::hash_combine(seed, kv.second);
   }
   return seed;
 }

@@ -581,6 +581,7 @@ size_t Adam::hash() const {
   boost::hash_combine(seed, static_cast<int>(accumType));
   boost::hash_combine(seed, static_cast<int>(accl1Type));
   boost::hash_combine(seed, static_cast<int>(accl2Type));
+  boost::hash_combine(seed, static_cast<int>(scaledOptimizerState));
 
   return seed;
 }

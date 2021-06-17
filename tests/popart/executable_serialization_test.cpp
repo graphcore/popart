@@ -2046,15 +2046,15 @@ BOOST_AUTO_TEST_CASE(optimizer_hash_tests) {
                    {"defaultMomentum", {0.9, false}}});
 
   auto sgd2 = SGD({{"defaultLearningRate", {0.02, false}},
-                   {"defaultDampening", {0.2, true}},
+                   {"defaultDampening", {0.1, true}},
                    {"defaultWeightDecay", {0.2, false}},
                    {"defaultMomentum", {0.8, false}}});
 
-  // Changing parameter values should result in the same hash
+  // Changing parameter values should result in the same hash if nonConst.
   BOOST_CHECK(sgd1.hash() == sgd2.hash());
 
   auto sgd3 = SGD({{"defaultLearningRate", {0.02, false}},
-                   {"defaultDampening", {0.2, true}},
+                   {"defaultDampening", {0.1, true}},
                    {"defaultWeightDecay", {0.2, false}},
                    {"defaultMomentum", {0.0, false}}});
 
@@ -2063,7 +2063,7 @@ BOOST_AUTO_TEST_CASE(optimizer_hash_tests) {
   BOOST_CHECK(sgd3.hash() == sgd1.hash());
 
   auto sgd4 = SGD({{"defaultLearningRate", {0.02, false}},
-                   {"defaultDampening", {0.2, true}},
+                   {"defaultDampening", {0.1, true}},
                    {"defaultWeightDecay", {0.2, false}},
                    {"defaultMomentum", {0.0, true}}});
 
@@ -2071,7 +2071,7 @@ BOOST_AUTO_TEST_CASE(optimizer_hash_tests) {
   BOOST_CHECK(sgd4.hash() != sgd1.hash());
 
   auto sgd5 = SGD({{"defaultLearningRate", {0.02, false}},
-                   {"defaultDampening", {0.2, true}},
+                   {"defaultDampening", {0.1, true}},
                    {"defaultWeightDecay", {0.2, false}},
                    {"defaultMomentum", {0.0, true}}});
   sgd5.insertSpecific("foo", {{"momentum", {0.1, true}}});
@@ -2081,7 +2081,7 @@ BOOST_AUTO_TEST_CASE(optimizer_hash_tests) {
   BOOST_CHECK(sgd5.hash() != sgd1.hash());
 
   auto sgd6 = SGD({{"defaultLearningRate", {0.02, false}},
-                   {"defaultDampening", {0.2, true}},
+                   {"defaultDampening", {0.1, true}},
                    {"defaultWeightDecay", {0.2, false}},
                    {"defaultMomentum", {0.6, true}}});
   sgd6.insertSpecific("foo", {{"momentum", {0.1, true}}});
@@ -2090,7 +2090,7 @@ BOOST_AUTO_TEST_CASE(optimizer_hash_tests) {
   BOOST_CHECK(sgd6.hash() != sgd1.hash());
 
   auto sgd7 = SGD({{"defaultLearningRate", {0.02, false}},
-                   {"defaultDampening", {0.2, true}},
+                   {"defaultDampening", {0.1, true}},
                    {"defaultWeightDecay", {0.2, false}},
                    {"defaultMomentum", {0.6, true}}});
 
@@ -2098,13 +2098,20 @@ BOOST_AUTO_TEST_CASE(optimizer_hash_tests) {
   BOOST_CHECK(sgd7.hash() != sgd1.hash());
 
   auto sgd8 = SGD({{"defaultLearningRate", {0.02, false}},
-                   {"defaultDampening", {0.2, true}},
+                   {"defaultDampening", {0.1, true}},
                    {"defaultWeightDecay", {0.2, false}},
                    {"defaultMomentum", {0.6, false}}});
 
   sgd8.insertSpecific("foo", {{"learningRate", {0.1, true}}});
   // Added a specific learning rate
   BOOST_CHECK(sgd8.hash() != sgd1.hash());
+
+  auto sgd9 = SGD({{"defaultLearningRate", {0.01, false}},
+                   {"defaultDampening", {0.2, true}},
+                   {"defaultWeightDecay", {0.1, false}},
+                   {"defaultMomentum", {0.9, false}}});
+  // Changed a const parameter.
+  BOOST_CHECK(sgd9.hash() != sgd1.hash());
 
   auto adam1 = Adam(
       {
@@ -2210,6 +2217,25 @@ BOOST_AUTO_TEST_CASE(optimizer_hash_tests) {
 
   // changed adamMode
   BOOST_CHECK(adam6.hash() != adam1.hash());
+
+  auto adam7 = Adam(
+      std::map<std::string, std::pair<float, bool>>{
+          {"defaultLearningRate", {0.01, false}},
+          {"defaultWeightDecay", {0.1, false}},
+          {"defaultBeta1", {0.1, false}},
+          {"defaultBeta2", {0.1, false}},
+          {"defaultEps", {0.1, false}},
+          {"lossScaling", {0.1, false}},
+      },
+      AdamMode::Lamb,
+      WeightDecayMode::Decay,
+      DataType::FLOAT,
+      DataType::FLOAT,
+      DataType::FLOAT,
+      {},
+      true);
+  // changed scaledOptimizerState
+  BOOST_CHECK(adam7.hash() != adam1.hash());
 
   auto adaptive1 = Adaptive({{"defaultLearningRate", {0.02, false}},
                              {"defaultWeightDecay", {0.2, false}},
