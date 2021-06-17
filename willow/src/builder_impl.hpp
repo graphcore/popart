@@ -5,6 +5,7 @@
 #include <map>
 #include <string>
 #include <popart/builder.hpp>
+#include <popart/dataflow.hpp>
 #include <popart/names.hpp>
 #include <popart/opidentifier.hpp>
 
@@ -30,6 +31,10 @@ public:
   void configure();
 
   TensorId addInputTensor(const TensorInfo &tensorInfo,
+                          const popart::DebugContext &debugContext = {});
+
+  TensorId addInputTensor(const TensorInfo &tensorInfo,
+                          const InputSettings &settings,
                           const popart::DebugContext &debugContext = {});
 
   TensorId addUntypedInputTensor(const popart::DebugContext &debugContext = {});

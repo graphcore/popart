@@ -6,11 +6,11 @@
 #include <popart/op/collectives/replicatedallgather.hpp>
 #include <popart/op/collectives/replicatedallreduce.hpp>
 #include <popart/op/collectives/replicatedreducescatter.hpp>
+#include <popart/op/exchange/remote.hpp>
 #include <popart/op/init.hpp>
 #include <popart/op/iotilecopy.hpp>
 #include <popart/op/ipucopy.hpp>
 #include <popart/op/lamb.hpp>
-#include <popart/op/remote.hpp>
 #include <popart/op/varupdate.hpp>
 #include <popart/tensornames.hpp>
 #include <popart/topocons.hpp>
@@ -2512,8 +2512,8 @@ StreamingMemoryOpInserter::TensorStreamingContext::TensorStreamingContext(
     ScheduledPreLoss preLoss_)
     : context(context_), phase(phase_), preLoss(preLoss_) {}
 
-bool StreamingMemoryOpInserter::TensorStreamingContext::operator<(
-    const TensorStreamingContext &rhs) const {
+bool StreamingMemoryOpInserter::TensorStreamingContext::
+operator<(const TensorStreamingContext &rhs) const {
   std::vector<int> lhsVec;
   lhsVec.reserve(3);
   std::vector<int> rhsVec;
@@ -2560,13 +2560,13 @@ bool StreamingMemoryOpInserter::TensorStreamingContext::operator<(
   return lhsVec < rhsVec;
 }
 
-bool StreamingMemoryOpInserter::TensorStreamingContext::operator==(
-    const TensorStreamingContext &rhs) const {
+bool StreamingMemoryOpInserter::TensorStreamingContext::
+operator==(const TensorStreamingContext &rhs) const {
   return context == rhs.context && phase == rhs.phase && preLoss == rhs.preLoss;
 }
 
-bool StreamingMemoryOpInserter::TensorStreamingContext::operator!=(
-    const TensorStreamingContext &rhs) const {
+bool StreamingMemoryOpInserter::TensorStreamingContext::
+operator!=(const TensorStreamingContext &rhs) const {
   return context != rhs.context || phase != rhs.phase || preLoss != rhs.preLoss;
 }
 
@@ -2611,8 +2611,8 @@ operator<<(std::ostream &output,
   return output;
 }
 
-bool StreamingMemoryOpInserter::ConsumerOpConfig::operator==(
-    const ConsumerOpConfig &rhs) const {
+bool StreamingMemoryOpInserter::ConsumerOpConfig::
+operator==(const ConsumerOpConfig &rhs) const {
   return tensor == rhs.tensor && op == rhs.op;
 }
 

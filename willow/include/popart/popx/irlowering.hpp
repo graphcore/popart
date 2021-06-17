@@ -190,6 +190,12 @@ private:
            std::pair<poplar::RemoteBuffer, nonstd::optional<poplar::Tensor>>>
       remoteBuffers;
 
+  // Stream tensors are temporary landing pad tensors for host exchanges
+  // that are implementation specific, and used to facilitate overlapped
+  // IO by avoiding internal exchanges following a host exchange.
+  // They are not exposed to the IR.
+  std::map<TensorId, poplar::Tensor> streamTensors;
+
   // Streams for doing allreduce on host side
   std::map<TensorId, poplar::RemoteBuffer> hostReduceRemoteBuffers;
   std::map<TensorId, poplar::DataStream> toHostGradientStreams;
@@ -555,6 +561,27 @@ public:
   static const std::string getRemoteBufferName(RemoteBufferId);
 
   void createRemoteBuffer(RemoteBufferId, poplar::Tensor);
+
+  /**
+   * Check if a stream landing pad tensor exists for \p TensorId id
+   * \param id \p TensorId to probe
+   * \return true if the tensor exists, false if not.
+   */
+  bool hasStreamTensor(TensorId tid) const;
+
+  /**
+   * Get the stream landing pad tensor for \p TensorId id
+   * \param tid \p TensorId to fetch
+   * \return Returns the \p poplar::Tensor
+   */
+  poplar::Tensor getStreamTensor(TensorId tid) const;
+
+  /**
+   * Set a new stream landing pad tensor for \p TensorId id
+   * \param tid \p TensorId to set
+   * \param t \p poplar::Tensor to set
+   */
+  void setStreamTensor(TensorId tid, poplar::Tensor t);
 
   poplar::RemoteBuffer &
   getOrCreateHostReduceRemoteBuffer(TensorId, TensorInfo, snap::Graph &);

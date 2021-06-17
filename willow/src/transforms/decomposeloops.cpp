@@ -6,9 +6,9 @@
 #include <popart/ir.hpp>
 #include <popart/names.hpp>
 #include <popart/op.hpp>
+#include <popart/op/exchange/remote.hpp>
 #include <popart/op/iotilecopy.hpp>
 #include <popart/op/loop.hpp>
-#include <popart/op/remote.hpp>
 #include <popart/tensor.hpp>
 #include <popart/tensors.hpp>
 #include <popart/topocons.hpp>

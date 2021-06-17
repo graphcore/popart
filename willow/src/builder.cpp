@@ -390,6 +390,20 @@ TensorId Builder::addInputTensor(const std::string &dataType,
   return impl_->addInputTensor(TensorInfo(dataType, shape), debugContext);
 }
 
+TensorId Builder::addInputTensor(const TensorInfo &tensorInfo,
+                                 const InputSettings &settings,
+                                 const popart::DebugContext &debugContext) {
+  return impl_->addInputTensor(tensorInfo, settings, debugContext);
+}
+
+TensorId Builder::addInputTensor(const std::string &dataType,
+                                 const Shape &shape,
+                                 const InputSettings &settings,
+                                 const popart::DebugContext &debugContext) {
+  return impl_->addInputTensor(
+      TensorInfo(dataType, shape), settings, debugContext);
+}
+
 TensorId
 Builder::addUntypedInputTensor(const popart::DebugContext &debugContext) {
   return impl_->addUntypedInputTensor(debugContext);

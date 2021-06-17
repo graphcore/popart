@@ -2,21 +2,16 @@
 #ifndef GUARD_NEURALNET_HOSTX_HPP
 #define GUARD_NEURALNET_HOSTX_HPP
 
+#include <popart/popx/op/exchange/exchangex.hpp>
 #include <popart/popx/popopx.hpp>
 
 namespace popart {
 
 namespace popx {
 
-class HostBaseOpx : public PopOpx {
+class HostBaseOpx : public ExchangeBaseOpx {
 public:
   HostBaseOpx(Op *, Devicex *);
-
-protected:
-  poplar::Tensor
-  load(poplar::program::Sequence &, const TensorId &, const TensorId &) const;
-  void
-  store(poplar::program::Sequence &, const TensorId &, const TensorId &) const;
 };
 
 class HostLoadOpx : public HostBaseOpx {

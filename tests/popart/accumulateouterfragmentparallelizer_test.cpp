@@ -6,7 +6,8 @@
 #include <test_runner.hpp>
 
 #include <popart/names.hpp>
-#include <popart/op/remote.hpp>
+#include <popart/op/exchange/multiexchange.hpp>
+#include <popart/op/exchange/remote.hpp>
 #include <popart/transforms/accumulateouterfragmentparallelizer.hpp>
 #include <popart/transforms/transform.hpp>
 
@@ -157,9 +158,9 @@ void checkTensor(Op *op,
   BOOST_CHECK_MESSAGE(tid.find(weightName) != std::string::npos, msg);
 };
 
-void checkRemoteExchangeOp(Op *op,
-                           std::vector<std::string> loads,
-                           std::vector<std::string> stores) {
+void checkMultiExchangeOp(Op *op,
+                          std::vector<std::string> loads,
+                          std::vector<std::string> stores) {
   // Both loads and stores have two inputs each, the tensor to write to and
   // the RemoteArg___ tensor that contains an offset.
   BOOST_CHECK((loads.size() + stores.size()) * 2 ==
@@ -169,14 +170,10 @@ void checkRemoteExchangeOp(Op *op,
   // Check each input has names in the tensor IDs we expect.
   for (auto load : loads) {
     checkTensor(op, inputIndex++, load, true);
-  }
-  for (auto store : stores) {
-    checkTensor(op, inputIndex++, store, true);
-  }
-  for (auto load : loads) {
     checkTensor(op, inputIndex++, load, true);
   }
   for (auto store : stores) {
+    checkTensor(op, inputIndex++, store, true);
     checkTensor(op, inputIndex++, store, true);
   }
 
@@ -198,7 +195,7 @@ BOOST_AUTO_TEST_CASE(
   // Test what happens if we're running OverlapCycleOptimized (weight sizes
   // don't match between VGIDs). To get the best time performance it should
   // combine similarly-matched weights in different virtual graphs into
-  // pairwise RemoteExchangeOps. Note this should be done in ascending order
+  // pairwise MultiExchangeOps. Note this should be done in ascending order
   // of weight tensor size to be as gentle on live memory as we can.
 
   auto config = AccumulateOuterFragmentSettings(
@@ -229,24 +226,24 @@ BOOST_AUTO_TEST_CASE(
 
   auto checker = [&](const std::vector<Op *> &ops) {
     auto remoteExOps = filterOps(
-        ops, [](Op *op) { return op->isConvertibleTo<RemoteExchangeOp>(); });
+        ops, [](Op *op) { return op->isConvertibleTo<MultiExchangeOp>(); });
 
-    // We expect 5 RemoteExchangeOps.
+    // We expect 5 MultiExchangeOps.
     BOOST_CHECK(5 == remoteExOps.size());
 
     // First op loads 2 x weight3 and stores nothing.
-    checkRemoteExchangeOp(remoteExOps[0], {"weight3", "weight3"}, {});
+    checkMultiExchangeOp(remoteExOps[0], {"weight3", "weight3"}, {});
     // First op loads 2 x weight0 and stores 2 x weight3.
-    checkRemoteExchangeOp(
+    checkMultiExchangeOp(
         remoteExOps[1], {"weight0", "weight0"}, {"weight3", "weight3"});
     // First op loads 2 x weight2 and stores 2 x weight0.
-    checkRemoteExchangeOp(
+    checkMultiExchangeOp(
         remoteExOps[2], {"weight2", "weight2"}, {"weight0", "weight0"});
     // First op loads 2 x weight1 and stores 2 x weight2.
-    checkRemoteExchangeOp(
+    checkMultiExchangeOp(
         remoteExOps[3], {"weight1", "weight1"}, {"weight2", "weight2"});
     // First op loads nothing and stores 2 x weight1.
-    checkRemoteExchangeOp(remoteExOps[4], {}, {"weight1", "weight1"});
+    checkMultiExchangeOp(remoteExOps[4], {}, {"weight1", "weight1"});
   };
 
   runTest(config, build, checker);
@@ -255,7 +252,7 @@ BOOST_AUTO_TEST_CASE(
 BOOST_AUTO_TEST_CASE(
     AccumulateOuterFragmentParallelizer_OverlapMemoryOptimized_MatchingWeights) {
   // Test what happens if we're running OverlapMemoryOptimized (weight sizes
-  // do match between VGIDs). Note that RemoteExchangeOps will not combine
+  // do match between VGIDs). Note that MultiExchangeOps will not combine
   // RemoteLoadOp and RemoteStoreOps in this mode to give the outliner more
   // opportunity to save memory.
 
@@ -275,22 +272,22 @@ BOOST_AUTO_TEST_CASE(
 
   auto checker = [&](const std::vector<Op *> &ops) {
     auto remoteExOps = filterOps(
-        ops, [](Op *op) { return op->isConvertibleTo<RemoteExchangeOp>(); });
-    // We expect 5 RemoteExchangeOps.
+        ops, [](Op *op) { return op->isConvertibleTo<MultiExchangeOp>(); });
+    // We expect 5 MultiExchangeOps.
     BOOST_CHECK(8 == remoteExOps.size());
     // First op loads 2 x weight3 and stores nothing.
-    checkRemoteExchangeOp(remoteExOps[0], {"weight3", "weight3"}, {});
+    checkMultiExchangeOp(remoteExOps[0], {"weight3", "weight3"}, {});
     // First op loads 2 x weight0 and, separately, stores 2 x weight3.
-    checkRemoteExchangeOp(remoteExOps[1], {}, {"weight3", "weight3"});
-    checkRemoteExchangeOp(remoteExOps[2], {"weight0", "weight0"}, {});
+    checkMultiExchangeOp(remoteExOps[1], {}, {"weight3", "weight3"});
+    checkMultiExchangeOp(remoteExOps[2], {"weight0", "weight0"}, {});
     // First op loads 2 x weight2 and, separately, stores 2 x weight0.
-    checkRemoteExchangeOp(remoteExOps[3], {}, {"weight0", "weight0"});
-    checkRemoteExchangeOp(remoteExOps[4], {"weight2", "weight2"}, {});
+    checkMultiExchangeOp(remoteExOps[3], {}, {"weight0", "weight0"});
+    checkMultiExchangeOp(remoteExOps[4], {"weight2", "weight2"}, {});
     // First op loads 2 x weight1 and, separately, stores 2 x weight2.
-    checkRemoteExchangeOp(remoteExOps[5], {}, {"weight2", "weight2"});
-    checkRemoteExchangeOp(remoteExOps[6], {"weight1", "weight1"}, {});
+    checkMultiExchangeOp(remoteExOps[5], {}, {"weight2", "weight2"});
+    checkMultiExchangeOp(remoteExOps[6], {"weight1", "weight1"}, {});
     // First op loads nothing and stores 2 x weight1.
-    checkRemoteExchangeOp(remoteExOps[7], {}, {"weight1", "weight1"});
+    checkMultiExchangeOp(remoteExOps[7], {}, {"weight1", "weight1"});
   };
 
   runTest(config, build, checker);
@@ -299,7 +296,7 @@ BOOST_AUTO_TEST_CASE(
 BOOST_AUTO_TEST_CASE(
     AccumulateOuterFragmentParallelizer_OverlapMemoryOptimized_NonMatchingWeights) {
   // Test what happens if we're running OverlapMemoryOptimized (weight sizes
-  // do match between VGIDs). Note that RemoteExchangeOps will not combine
+  // do match between VGIDs). Note that MultiExchangeOps will not combine
   // RemoteLoadOp and RemoteStoreOps in this mode. Also, where weight sizes
   // don't match they will not be combined.
 
@@ -330,20 +327,20 @@ BOOST_AUTO_TEST_CASE(
   };
 
   auto checker = [&](const std::vector<Op *> &ops) {
-    auto remoteExchangeOps = filterOps(
-        ops, [](Op *op) { return op->isConvertibleTo<RemoteExchangeOp>(); });
+    auto MultiExchangeOps = filterOps(
+        ops, [](Op *op) { return op->isConvertibleTo<MultiExchangeOp>(); });
 
-    // We expect 4 RemoteExchangeOps.
-    BOOST_CHECK(4 == remoteExchangeOps.size());
+    // We expect 4 MultiExchangeOps.
+    BOOST_CHECK(4 == MultiExchangeOps.size());
 
     // First op loads 2 x weight3.
-    checkRemoteExchangeOp(remoteExchangeOps[0], {"weight3", "weight3"}, {});
+    checkMultiExchangeOp(MultiExchangeOps[0], {"weight3", "weight3"}, {});
     // Store 2 x weight3.
-    checkRemoteExchangeOp(remoteExchangeOps[1], {}, {"weight3", "weight3"});
+    checkMultiExchangeOp(MultiExchangeOps[1], {}, {"weight3", "weight3"});
     // Load 2 x weight0.
-    checkRemoteExchangeOp(remoteExchangeOps[2], {"weight0", "weight0"}, {});
+    checkMultiExchangeOp(MultiExchangeOps[2], {"weight0", "weight0"}, {});
     // Store 2 x weight0.
-    checkRemoteExchangeOp(remoteExchangeOps[3], {}, {"weight0", "weight0"});
+    checkMultiExchangeOp(MultiExchangeOps[3], {}, {"weight0", "weight0"});
   };
 
   runTest(config, build, checker);
@@ -368,9 +365,9 @@ BOOST_AUTO_TEST_CASE(AccumulateOuterFragmentParallelizer_ExcludedVirtualGraph) {
 
   auto checker = [&](const std::vector<Op *> &ops) {
     auto remoteExOps = filterOps(
-        ops, [](Op *op) { return op->isConvertibleTo<RemoteExchangeOp>(); });
+        ops, [](Op *op) { return op->isConvertibleTo<MultiExchangeOp>(); });
 
-    // We expect no RemoteExchangeOps.
+    // We expect no MultiExchangeOps.
     BOOST_CHECK(0 == remoteExOps.size());
   };
 
@@ -403,9 +400,9 @@ BOOST_AUTO_TEST_CASE(
 
   auto checker = [&](const std::vector<Op *> &ops) {
     auto remoteExOps = filterOps(
-        ops, [](Op *op) { return op->isConvertibleTo<RemoteExchangeOp>(); });
+        ops, [](Op *op) { return op->isConvertibleTo<MultiExchangeOp>(); });
 
-    // We expect no RemoteExchangeOps.
+    // We expect no MultiExchangeOps.
     BOOST_CHECK(0 == remoteExOps.size());
   };
 

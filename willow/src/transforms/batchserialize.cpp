@@ -9,11 +9,11 @@
 #include <popart/op/concat.hpp>
 #include <popart/op/dynamic/dynamicslice.hpp>
 #include <popart/op/dynamic/dynamicupdate.hpp>
+#include <popart/op/exchange/remote.hpp>
 #include <popart/op/identity.hpp>
 #include <popart/op/init.hpp>
 #include <popart/op/iotilecopy.hpp>
 #include <popart/op/ipucopy.hpp>
-#include <popart/op/remote.hpp>
 #include <popart/op/reshape.hpp>
 #include <popart/op/slice.hpp>
 #include <popart/opsharding.hpp>

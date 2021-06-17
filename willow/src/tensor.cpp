@@ -14,7 +14,7 @@
 #include <popart/graphutils.hpp>
 #include <popart/ir.hpp>
 #include <popart/op.hpp>
-#include <popart/op/hostcopy.hpp>
+#include <popart/op/exchange/hostcopy.hpp>
 #include <popart/op/init.hpp>
 #include <popart/op/ipucopy.hpp>
 #include <popart/op/loop.hpp>

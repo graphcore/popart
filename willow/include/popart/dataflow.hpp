@@ -7,6 +7,7 @@
 #include <string>
 #include <vector>
 #include <popart/names.hpp>
+#include <popart/op/exchange/exchange.hpp>
 
 namespace popart {
 
@@ -89,7 +90,10 @@ public:
   /// \c AnchorReturnTypeId::EVERYN
   /// using this constructor will result in an error. Use the constructor that
   /// also specifies the return period.
-  AnchorReturnType(std::string artString);
+  AnchorReturnType(
+      std::string artString,
+      TileSet tileSet                   = TileSet::Compute,
+      ExchangeStrategy exchangeStrategy = ExchangeStrategy::JustInTime);
   /// Constructor.
   /// \param artString The string to convert to an #AnchorReturnTypeId value.
   /// The following values are acceptable (case insensitive):
@@ -99,7 +103,11 @@ public:
   ///  * "sum" = \c AnchorReturnTypeId::SUM
   /// \param returnPeriod The value of *N* in the case of
   /// \c AnchorReturnTypeId::EVERYN.
-  AnchorReturnType(std::string artString, int returnPeriod);
+  AnchorReturnType(
+      std::string artString,
+      int returnPeriod,
+      TileSet tileSet                   = TileSet::Compute,
+      ExchangeStrategy exchangeStrategy = ExchangeStrategy::JustInTime);
 
   /// Return the associated #AnchorReturnTypeId, not currently part of public
   /// API.
@@ -114,6 +122,10 @@ public:
 
   const std::string &str() const { return artStr_; }
 
+  const TileSet &tileSet() const { return tileSet_; }
+
+  const ExchangeStrategy &exchangeStrategy() const { return exchangeStrategy_; }
+
 private:
   AnchorReturnTypeId getIdFromStr(std::string artString);
 
@@ -121,6 +133,36 @@ private:
   AnchorReturnTypeId artId_;
 
   int returnPeriod_;
+
+  TileSet tileSet_;
+  ExchangeStrategy exchangeStrategy_;
+};
+
+using AnchorReturnTypeMap = std::map<TensorId, AnchorReturnType>;
+
+/**
+ * A class that describes the #TileSet and #ExchangeStrategy used for an input
+ * tensor.
+ *
+ */
+class InputSettings {
+public:
+  InputSettings();
+
+  InputSettings(TileSet tileSet, ExchangeStrategy exchangeStrategy);
+
+  const TileSet &tileSet() const { return tileSet_; }
+  const ExchangeStrategy &exchangeStrategy() const { return exchangeStrategy_; }
+
+  void setTileSet(TileSet tileSet) { tileSet_ = tileSet; }
+
+  void setExchangeStrategy(ExchangeStrategy exchangeStrategy) {
+    exchangeStrategy_ = exchangeStrategy;
+  }
+
+private:
+  TileSet tileSet_;
+  ExchangeStrategy exchangeStrategy_;
 };
 
 /**
@@ -147,8 +189,7 @@ public:
   /// \param anchorMap A mapping from output tensor TensorId to AnchorReturnType
   ///     indicating the strategy with which to write the anchor tensor values
   ///     to the IStepIO object provided to Session::run.
-  DataFlow(int batchesPerStep,
-           const std::map<TensorId, AnchorReturnType> &anchorMap);
+  DataFlow(int batchesPerStep, const AnchorReturnTypeMap &anchorMap);
   /// Constructor DataFlow instance with anchor tensors.
   /// \param batchesPerStep The number of global batches to run the inference or
   ///     training session for per call to Session::run before returning control
@@ -187,7 +228,7 @@ public:
   // Get a hash for this object, not currently part of public API.
   std::size_t hash() const;
 
-  const std::map<TensorId, AnchorReturnType> &getAnchorMap() const {
+  const AnchorReturnTypeMap &getAnchorReturnTypeMap() const {
     return m_anchors;
   }
 
@@ -198,7 +239,7 @@ private:
 
   // The set of tensors to return to the user after execution, and how
   // frequently they are returned during multi-batch training or inference
-  std::map<TensorId, AnchorReturnType> m_anchors;
+  AnchorReturnTypeMap m_anchors;
 
   // The set of anchor tensors (as std::vector).
   std::vector<TensorId> v_anchors;

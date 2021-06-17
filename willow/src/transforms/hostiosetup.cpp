@@ -5,7 +5,7 @@
 #include <popart/ir.hpp>
 #include <popart/names.hpp>
 #include <popart/op.hpp>
-#include <popart/op/hostcopy.hpp>
+#include <popart/op/exchange/hostcopy.hpp>
 #include <popart/op/init.hpp>
 #include <popart/tensor.hpp>
 #include <popart/tensors.hpp>
@@ -105,6 +105,8 @@ void HostIOSetup::setupHostLoadOps(Tensor *inTensor) const {
   initOp->setVirtualGraphId(vgID);
   hostLoadOp->setVirtualGraphId(vgID);
 
+  hostLoadOp->settings.tileSet = inTensor->inputSettings.tileSet();
+
   if (ir.getSessionOptions().enablePipelining) {
     auto plStage = inTensor->consumers.findLowestPipelineStage();
     initOp->setPipelineStage(plStage);
@@ -173,6 +175,9 @@ void HostIOSetup::setupHostStoreOps(Tensor *anchorTensor) const {
       hostStoreOp->setPipelineStage(producer->getPipelineStage());
     }
   }
+
+  hostStoreOp->settings.tileSet =
+      ir.getDataFlow().art(streamTensorId).tileSet();
 
   hostStoreOp->setup();
 }
