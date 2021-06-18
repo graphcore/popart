@@ -100,7 +100,10 @@ def run_sgd_mixed_mode(steps,
             val = val_onnx.graph.initializer[j]
             val = to_array(val)
             # print(gt, val)
-            assert np.allclose(gt, val)
+            assert np.allclose(gt, val, rtol=1.e-2, atol=1.e-3)
+
+
+TENSOR_TYPES = [popart.DataType.FLOAT, popart.DataType.FLOAT16]
 
 
 # Test SGD with different parameters constant / non-constant
@@ -108,7 +111,15 @@ def run_sgd_mixed_mode(steps,
     popart.SGDAccumulatorAndMomentum.Separate,
     popart.SGDAccumulatorAndMomentum.Combined
 ])
-def test_sgd_mixed_mode_0(tmpdir, sgdAccMm):
+@pytest.mark.parametrize("accumType", TENSOR_TYPES)
+@pytest.mark.parametrize("accl1Type", TENSOR_TYPES)
+def test_sgd_mixed_mode_0(tmpdir, sgdAccMm, accumType, accl1Type):
+
+    if sgdAccMm == popart.SGDAccumulatorAndMomentum.Combined:
+        # types are ignored so skip if not Float, Float
+        if (accumType != popart.DataType.FLOAT
+                or accl1Type != popart.DataType.FLOAT):
+            return
 
     #optimizer parameters
     defaultLearningRate = 1e-4
@@ -129,7 +140,9 @@ def test_sgd_mixed_mode_0(tmpdir, sgdAccMm):
                 "defaultDampening": (defaultDampening, True),
                 "lossScaling": (lossScaling, True),
             },
-            accumulatorAndMomentum=sgdAccMm)
+            accumulatorAndMomentum=sgdAccMm,
+            accumType=accumType,
+            accl1Type=accl1Type)
     }]
     outlining = [False]
 
@@ -144,7 +157,10 @@ def test_sgd_mixed_mode_0(tmpdir, sgdAccMm):
         }
         optMaps = optMaps + [{
             0:
-            popart.SGD(optMap, accumulatorAndMomentum=sgdAccMm)
+            popart.SGD(optMap,
+                       accumulatorAndMomentum=sgdAccMm,
+                       accumType=accumType,
+                       accl1Type=accl1Type)
         }]
         outlining = outlining + [False]
 
@@ -159,7 +175,10 @@ def test_sgd_mixed_mode_0(tmpdir, sgdAccMm):
         }
         optMaps = optMaps + [{
             0:
-            popart.SGD(optMap, accumulatorAndMomentum=sgdAccMm)
+            popart.SGD(optMap,
+                       accumulatorAndMomentum=sgdAccMm,
+                       accumType=accumType,
+                       accl1Type=accl1Type)
         }]
         outlining = outlining + [True]
 
