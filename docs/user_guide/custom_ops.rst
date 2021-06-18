@@ -3,7 +3,7 @@ Custom operators
 
 This section explains how to implement a custom operator (op) in PopART. Code
 from the `Leaky ReLU custom op example
-<https://github.com/graphcore/examples/tree/master/code_examples/popart/custom_operators/leaky_relu_example>`_
+<https://github.com/graphcore/tutorials/tree/sdk-release-2.1/feature_examples/popart/custom_operators/leaky_relu_example>`_
 in the Graphcore GitHub repository will be used to illustrate the concepts.
 
 Overview
@@ -90,7 +90,7 @@ dynamically linked into the Python program at runtime, as shown below:
   ctypes.cdll.LoadLibrary(so_path)
 
 You can see how this is done in the `LeakyReLU example
-<https://github.com/graphcore/examples/blob/master/code_examples/popart/custom_operators/leaky_relu_example/run_leaky_relu.py#L55>`_.
+<https://github.com/graphcore/tutorials/tree/sdk-release-2.1/feature_examples/popart/custom_operators/leaky_relu_example/run_leaky_relu.py#L55>`_.
 
 
 Implementing a custom op
@@ -167,22 +167,102 @@ The main methods that you need to override or implement are:
   variant of the Op with a specified ``OperatorIdentifier`` from the vector
   returned by ``inplacePriorityDefault()``.
 
-The op class
-~~~~~~~~~~~~
+LeakyReluOp example
+...................
 
-.. literalinclude:: files/custom_op/custom_op.cpp
-  :start-after: [Op begin]
-  :end-before: [Op end]
-  :language: cpp
+.. code-block:: cpp
+
+  class LeakyReluOp : public popart::Op {
+  public:
+    LeakyReluOp(const popart::OperatorIdentifier &_opid, float _alpha,
+                const popart::Op::Settings &settings_)
+        : popart::Op(_opid, settings_), alpha(_alpha) {}
+
+    std::unique_ptr<Op> clone() const final {
+      return std::make_unique<LeakyReluOp>(*this);
+    }
+
+    void setup() final { outInfo(0) = inInfo(0); }
+
+    void appendAttributes(popart::OpSerialiserBase &os) const override {
+      Op::appendAttributes(os);
+      os.appendAttribute("alpha", getAlpha());
+    }
+
+    void appendOutlineAttributes(popart::OpSerialiserBase &os) const override {
+      Op::appendOutlineAttributes(os);
+      os.appendAttribute("alpha", getAlpha());
+    }
+
+    std::vector<std::unique_ptr<popart::Op>> getGradOps() {
+      std::vector<std::unique_ptr<Op>> upops;
+      upops.emplace_back(new LeakyReluGradOp(*this));
+      return upops;
+    }
+
+    float getSubgraphValue() const final { return getHighSubgraphValue(); }
+
+    bool requiresRandomSeed() const override { return false; }
+
+    // Attributes
+    float getAlpha() const { return alpha; }
+
+  private:
+    float alpha;
+  };
+
 
 The grad op class
 ~~~~~~~~~~~~~~~~~
 
-.. literalinclude:: files/custom_op/custom_op.cpp
-  :start-after: [GradOp begin]
-  :end-before: [GradOp end]
-  :language: cpp
+.. code-block:: cpp
 
+  class LeakyReluGradOp : public popart::Op {
+  public:
+    LeakyReluGradOp::LeakyReluGradOp(const LeakyReluOp &fwdOp)
+        : popart::Op(CustomGradOperators::LeakyReluGrad_6, fwdOp.settings),
+          alpha(fwdOp.getAlpha()) {}
+
+    std::unique_ptr<popart::Op> clone() const final {
+      return std::make_unique<LeakyReluGradOp>(*this);
+    }
+    void setup() final { outInfo(0) = inInfo(0); };
+
+    const std::vector<popart::GradInOutMapper> &gradInputInfo() const {
+      static const std::vector<popart::GradInOutMapper> inInfo = {
+          {0, 0, popart::GradOpInType::GradOut},
+          {1, 0, popart::GradOpInType::In}};
+      return inInfo;
+    }
+
+    // The Grad Op has 1 output, which is the gradient of the only input
+    const std::map<int, int> &gradOutToNonGradIn() const {
+      static const std::map<int, int> outInfo = {{0, 0}};
+      return outInfo;
+    }
+
+    bool requiresRandomSeed() const override { return false; }
+
+    // an estimate of how valuable sub-graph matching will be
+    float getSubgraphValue() const final { return getHighSubgraphValue(); }
+
+    float getAlpha() const { return alpha; }
+
+    // Implementation defined below
+    void appendAttributes(popart::OpSerialiserBase &os) const override {
+      Op::appendAttributes(os);
+      os.appendAttribute("alpha", getAlpha());
+    }
+
+    // Implementation defined below
+    void appendOutlineAttributes(popart::OpSerialiserBase &os) const override {
+      Op::appendOutlineAttributes(os);
+      os.appendAttribute("alpha", getAlpha());
+    }
+
+  private:
+    float alpha;
+  };
 
 The opx class
 ~~~~~~~~~~~~~
@@ -194,18 +274,70 @@ definition as Poplar or PopLibs calls using the provided ``program::Sequence``.
 Since ``OpxCreator`` uses a generic constructor, you should also check that the
 ``Op`` passed in is of the expected type and matches the ``OperatorIdentifier``.
 
-.. literalinclude:: files/custom_op/custom_op.cpp
-  :start-after: [Opx begin]
-  :end-before: [Opx end]
-  :language: cpp
+
+.. code-block:: cpp
+
+    class LeakyReluOpx : public popart::popx::Opx {
+    public:
+      LeakyReluOpx(popart::Op *op, popart::popx::Devicex *devicex)
+          : popart::popx::Opx(op, devicex) {
+        verifyOp<LeakyReluOp>(
+            op, {CustomOperators::LeakyRelu_1, CustomOperators::LeakyRelu_6});
+      }
+
+      void grow(poplar::program::Sequence &prog) const final {
+
+        auto op = getOp<LeakyReluOp>();
+
+        poplar::Tensor input = getInTensor(0);
+
+        float alpha = op.getAlpha();
+
+        // x < 0.0f ? alpha * x : x
+        auto expression = pe::Select(pe::Mul(pe::Const(alpha), pe::_1), pe::_1,
+                                     pe::Lt(pe::_1, pe::Const(0.0f)));
+
+        popops::mapInPlace(graph(), expression, {input}, prog,
+                           debugContext("LeakyRelu"), poplar::OptionFlags());
+
+        setOutTensor(0, input);
+      }
+    };
 
 The grad opx class
 ~~~~~~~~~~~~~~~~~~
 
-.. literalinclude:: files/custom_op/custom_op.cpp
-  :start-after: [GradOpx begin]
-  :end-before: [GradOpx end]
-  :language: cpp
+.. code-block:: cpp
+
+  class LeakyReluGradOpx : public popart::popx::Opx {
+  public:
+    LeakyReluGradOpx(popart::Op *op, popart::popx::Devicex *devicex)
+        : popart::popx::Opx(op, devicex) {
+      verifyOp<LeakyReluGradOp>(op, {CustomGradOperators::LeakyReluGrad_1,
+                                      CustomGradOperators::LeakyReluGrad_6});
+    }
+
+    void grow(poplar::program::Sequence &prog) const final {
+
+      auto op = getOp<LeakyReluGradOp>();
+
+      poplar::Tensor grad = getInTensor(0);
+      poplar::Tensor input = getInTensor(1);
+
+      float alpha = op.getAlpha();
+
+      // (grad * (x < 0.0f ? alpha : 1))
+      pe::Mul expression = pe::Mul(pe::Select(pe::Const(alpha), pe::Const(1.0f),
+                                              pe::Lt(pe::_2, pe::Const(0.0f))),
+                                    pe::_1);
+
+      auto output =
+          popops::map(graph(), expression, {grad, input}, prog,
+                      debugContext("LeakyReluGrad"), poplar::OptionFlags());
+
+      setOutTensor(0, output);
+    }
+  };
 
 
 Making the op available to PopART
@@ -228,12 +360,20 @@ The ``OperatorIdentifier`` is a structure with the components ``domain``,
 ``opName`` and ``opVersion``.
 
 For example, from `leaky_relu_custom_op.cpp
-<https://github.com/graphcore/examples/blob/master/code_examples/popart/custom_operators/leaky_relu_example/leaky_relu_custom_op.cpp#L13>`_:
+<https://github.com/graphcore/tutorials/tree/sdk-release-2.1/feature_examples/popart/custom_operators/leaky_relu_example/leaky_relu_custom_op.cpp#L13>`_:
 
-.. literalinclude:: files/custom_op/custom_op.cpp
-  :start-after: [OpId begin]
-  :end-before: [OpId end]
-  :language: cpp
+.. code-block:: cpp
+
+  namespace CustomOperators {
+    const popart::OperatorIdentifier LeakyRelu_1 = {"ai.onnx", "LeakyRelu", 1};
+    const popart::OperatorIdentifier LeakyRelu_6 = {"ai.onnx", "LeakyRelu", 6};
+  } // namespace CustomOperators
+
+  namespace CustomGradOperators {
+    const popart::OperatorIdentifier LeakyReluGrad_1 = {"ai.onnx", "LeakyReluGrad", 1};
+    const popart::OperatorIdentifier LeakyReluGrad_6 = {"ai.onnx", "LeakyReluGrad", 6};
+  } // namespace CustomGradOperators
+
 
 Define the op creator
 ~~~~~~~~~~~~~~~~~~~~~
@@ -252,11 +392,27 @@ implementation.
 The ``GradOp`` class will be implicitly created when the overridden method
 ``getGradOps()`` is called during the backwards pass.
 
-.. literalinclude:: files/custom_op/custom_op.cpp
-  :start-after: [OpCreator begin]
-  :end-before: [OpCreator end]
-  :language: cpp
+.. code-block:: cpp
 
+  namespace {
+  static OpDefinition::DataTypes T = {DataType::FLOAT16, DataType::FLOAT};
+
+  static OpDefinition
+      leakyReluOpDef({OpDefinition::Inputs({{"input", T}}),
+                      OpDefinition::Outputs({{"output", T}}),
+                      OpDefinition::Attributes({{"alpha", {"*"}}})});
+
+  static OpCreator<LeakyReluOp> leakyReluOpCreator(
+      popart::OpDefinitions({{Onnx::Operators::LeakyRelu_1, leakyReluOpDef},
+                            {Onnx::Operators::LeakyRelu_6, leakyReluOpDef}}),
+      [](const OpCreatorInfo &info) {
+        float alpha = info.attributes.getAttribute<popart::Attributes::Float>(
+            "alpha, 1e-2f);
+        // default epsilon is 10**(-2)
+        return std::make_unique<LeakyReluOp>(info.opid, alpha, info.settings);
+      },
+      true);
+  } // namespace
 
 Define the opx creator
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -265,11 +421,13 @@ You add the ``Opx`` definitions in a similar to the ``Op``. In this case, a
 generic constructor of the Opx is always used of the form ``Opx(Op *op, Devicex
 *devicex)``. For example:
 
-.. literalinclude:: files/custom_op/custom_op.cpp
-  :start-after: [OpxCreator begin]
-  :end-before: [OpxCreator end]
-  :language: cpp
+.. code-block:: cpp
 
+    static popart::popx::OpxCreator<LeakyReluOpx> LeakyReluOpxCreator(
+        {CustomOperators::LeakyRelu_1, CustomOperators::LeakyRelu_6});
+    static popart::popx::OpxCreator<LeakyReluGradOpx>
+        LeakyReluGradOpxCreator({CustomGradOperators::LeakyReluGrad_1,
+                                 CustomGradOperators::LeakyReluGrad_6});
 
 ONNX schema and shape inference
 -------------------------------
@@ -283,11 +441,43 @@ append the various functions in the class. See `schema.h
 <https://github.com/onnx/onnx/blob/master/onnx/defs/schema.h>`_ for more
 examples.
 
-.. literalinclude:: files/custom_op/custom_op.cpp
-  :start-after: [Onnx begin]
-  :end-before: [Onnx end]
-  :language: cpp
+.. code-block:: cpp
 
+    namespace ONNX {
+
+    void LeakyReluShapeInference(InferenceContext &ctx) {
+      propagateShapeAndTypeFromFirstInput(ctx);
+    }
+
+    static const char LeakyReluDoc[] = "Performs a leaky ReLU operation on the input.";
+
+    ONNX_OPERATOR_SET_SCHEMA_EX(
+        LeakyRelu,
+        comAcme,
+        "com.acme",
+        1,
+        false,
+        OpSchema()
+            .SetDoc(LeakyReluDoc)
+            .Input(0, "X", "Input tensor", "T")
+            .Output(0, "Y", "Output tensor", "T")
+            .TypeConstraint(
+                "T",
+                {"tensor(float)", "tensor(int32)", "tensor(float16)"},
+                "Constrain input and output types to signed numeric tensors.")
+            .TypeAndShapeInferenceFunction(LeakyReluShapeInference));
+
+    static bool registerOps() {
+      auto &d = ONNX_NAMESPACE::OpSchemaRegistry::DomainToVersionRange::Instance();
+      d.AddDomainToVersion("com.acme", 1, 1);
+
+      ONNX_NAMESPACE::RegisterSchema(
+          GetOpSchema<ONNX_OPERATOR_SET_SCHEMA_CLASS_NAME(comAcme, 1, LeakyRelu)>());
+
+      return true;
+    }
+
+    } // namespace ONNX
 
 In the same namespace you can define the shape inference for the op. This allows
 ONNX to infer from the shape of the inputs the shape of the outputs. With simple
@@ -308,7 +498,7 @@ Using the op in a program
 
 The op can be referenced, using the values in the op identifer, in a Python
 program using the ``builder``. For example, from `run_leaky_relu.py
-<https://github.com/graphcore/examples/blob/master/code_examples/popart/custom_operators/leaky_relu_example/run_leaky_relu.py>`_:
+<https://github.com/graphcore/tutorials/tree/sdk-release-2.1/feature_examples/popart/custom_operators/leaky_relu_example/run_leaky_relu.py>`_:
 
 .. code-block:: python
 
