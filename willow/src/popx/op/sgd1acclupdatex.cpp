@@ -38,6 +38,8 @@ void SGD1AcclUpdateOpx::grow(poplar::program::Sequence &prog) const {
                    prog,
                    debugContext("resetZeroMm"));
     } else {
+      // This may be a mix of half and float but the Mul can handle because
+      // it is a "pe::Const"
       popops::mapInPlace(
           graph().getPoplarGraph(),
           pe::Mul(pe::_1, pe::Const(smm1Val)),
@@ -46,13 +48,18 @@ void SGD1AcclUpdateOpx::grow(poplar::program::Sequence &prog) const {
           debugContext("constMomentumScaling_" + std::to_string(smm1Val)));
     }
   } else {
+    // In the case of SGD2, we may need to cast Smm
+    // TODO: T40976 can we make it the right type (e.g. half) to begin with
     popops::mapInPlace(
         graph().getPoplarGraph(),
-        pe::Mul(pe::_1, pe::_2),
+        pe::Mul(pe::_1, pe::Cast(pe::_2, toUpdate.elementType())),
         {toUpdate, getInTensor(SGD1AcclUpdateOp::getSmm1InIndex())},
         prog,
         debugContext("nonConstMomentumScaling"));
   }
+
+  poplar::Tensor weights =
+      getInTensor(VarUpdateWithUpdaterOp::getUpdaterInIndex());
 
   if (swdf1Const) {
     auto swd1Val = vu_op.initSwd1.val();
@@ -60,19 +67,18 @@ void SGD1AcclUpdateOpx::grow(poplar::program::Sequence &prog) const {
       popops::scaledAddTo(
           graph().getPoplarGraph(),
           toUpdate,
-          getInTensor(VarUpdateWithUpdaterOp::getUpdaterInIndex()),
+          weights,
           swd1Val,
           prog,
           debugContext("constScaledAddSwd1_" + std::to_string(swd1Val)));
     }
   } else {
-    popops::scaledAddTo(
-        graph().getPoplarGraph(),
-        toUpdate,
-        getInTensor(VarUpdateWithUpdaterOp::getUpdaterInIndex()),
-        getInTensor(SGD1AcclUpdateOp::getSwd1InIndex()),
-        prog,
-        debugContext("nonConstScaledAddSwd1"));
+    popops::scaledAddTo(graph().getPoplarGraph(),
+                        toUpdate,
+                        weights,
+                        getInTensor(SGD1AcclUpdateOp::getSwd1InIndex()),
+                        prog,
+                        debugContext("nonConstScaledAddSwd1"));
   }
 
   if (hasInViewChangers(VarUpdateOp::getVarToUpdateInIndex())) {
