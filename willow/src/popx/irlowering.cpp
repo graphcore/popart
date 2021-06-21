@@ -1003,7 +1003,7 @@ PriTask IrLowering::initRandomSeed() {
     // Poplar Engine Option "target.deterministicWorkers":"portable" this should
     // ensure the same stochastic rounding on each replica.
     poprand::setSeed(graph().getPoplarGraph(),
-                     seed,
+                     seed.getPoplarTensor(),
                      0,
                      prog,
                      logging::format("{}/set", streamedSeedId));
@@ -1013,7 +1013,8 @@ PriTask IrLowering::initRandomSeed() {
     // required to provide distinct behaviour for each replia.
     auto offset = graph().getPoplarGraph().addReplicationIndexConstant();
     graph().getPoplarGraph().setTileMapping(offset, 0);
-    popops::addInPlace(graph().getPoplarGraph(), seed[0], offset, prog);
+    popops::addInPlace(
+        graph().getPoplarGraph(), seed.getPoplarTensor()[0], offset, prog);
     return seqs;
   };
 
@@ -1046,11 +1047,11 @@ PriTask IrLowering::rngStateFromHost() {
     SequenceMap seqs;
     seqs.getSequence(&progs.rngStateFromHostFragment())
         .add(poplar::program::Copy(streamRngFromHost,
-                                   rngStateTensor,
+                                   rngStateTensor.getPoplarTensor(),
                                    false,
                                    {"copyStreamRngStateTensor"}));
     poplar::setHwSeeds(graph().getPoplarGraph(),
-                       rngStateTensor,
+                       rngStateTensor.getPoplarTensor(),
                        seqs.getSequence(&progs.rngStateFromHostFragment()),
                        "RNG set");
     logging::devicex::debug("RNG size {}", rngSize);
@@ -1069,8 +1070,11 @@ PriTask IrLowering::initRngStateTensor() {
     auto workersPerIPU =
         graph().getPoplarGraph().getTarget().getNumWorkerContexts();
     auto numTiles  = graph().getPoplarGraph().getTarget().getNumTiles();
-    rngStateTensor = graph().getPoplarGraph().addVariable(
-        poplar::UNSIGNED_INT, {numTiles, workersPerIPU, 4}, {"rngStateTensor"});
+    rngStateTensor = snap::Tensor{
+        graph().getPoplarGraph().addVariable(poplar::UNSIGNED_INT,
+                                             {numTiles, workersPerIPU, 4},
+                                             {"rngStateTensor"}),
+        graph()};
     linearMapper.mapTensor(graph(), rngStateTensor);
     return SequenceMap();
   };
@@ -1088,13 +1092,16 @@ PriTask IrLowering::rngStateToHost() {
     logging::devicex::debug("Initializing RNG d2h.");
     logging::devicex::debug("RNG size {}", rngSize);
     SequenceMap seqs;
-    rngStateTensor =
+    rngStateTensor = snap::Tensor{
         poplar::getHwSeeds(graph().getPoplarGraph(),
                            seqs.getSequence(&progs.rngStateToHostFragment()),
-                           "RNG get");
+                           "RNG get"),
+        graph()};
     seqs.getSequence(&progs.rngStateToHostFragment())
-        .add(poplar::program::Copy(
-            rngStateTensor, streamRngToHost, false, {"rngStateToHost"}));
+        .add(poplar::program::Copy(rngStateTensor.getPoplarTensor(),
+                                   streamRngToHost,
+                                   false,
+                                   {"rngStateToHost"}));
     return seqs;
   };
 
@@ -1113,7 +1120,7 @@ void IrLowering::setInitVal(Tensor *tensor, DataType dst) {
 
   auto setValue = [this, tensor](const void *ptr) {
     graph().getPoplarGraph().setInitialValue<T>(
-        tensors_.get(tensor->id),
+        tensors_.get(tensor->id).getPoplarTensor(),
         poplar::ArrayRef<T>(static_cast<const T *>(ptr), tensor->info.nelms()));
   };
 
@@ -1132,7 +1139,7 @@ void IrLowering::setInitVal(Tensor *tensor, DataType dst) {
 void IrLowering::setInitValHalf(Tensor *tensor) {
 
   graph().getPoplarGraph().setInitialValueHalf(
-      tensors_.get(tensor->id),
+      tensors_.get(tensor->id).getPoplarTensor(),
       poplar::ArrayRef<uint16_t>(
           static_cast<const uint16_t *>(tensor->tensorData()->data()),
           tensor->info.nelms()));
@@ -3327,12 +3334,12 @@ PriTask IrLowering::fromHostTask(Tensor *tensor,
                             tensor->id);
 
     if (tensors_.hasViewChangers(tensor->id)) {
-      if (tensors_.get(tensor->id).numElements() >
-          tensors_.getView(tensor->id).numElements()) {
+      if (tensors_.get(tensor->id).getPoplarTensor().numElements() >
+          tensors_.getView(tensor->id).getPoplarTensor().numElements()) {
         // The view is not covering the whole tensor, therefore it is necessary
         // to zero-init it
         popops::zero(graph().getPoplarGraph(),
-                     tensors_.get(tensor->id),
+                     tensors_.get(tensor->id).getPoplarTensor(),
                      seqs.getSequence(&sq),
                      {"copyFromHost"});
       }
@@ -3342,7 +3349,7 @@ PriTask IrLowering::fromHostTask(Tensor *tensor,
         // Tensors with views: Use the view instead, so that e.g.
         // replicated tensor sharding padding is ignored
         poplar::program::Copy(fromHostStreams.at(tensor->id),
-                              tensors_.getView(tensor->id),
+                              tensors_.getView(tensor->id).getPoplarTensor(),
                               doRearrangeOnHost(tensor),
                               {"copyFromHost"}));
     return seqs;
@@ -3383,7 +3390,7 @@ PriTask IrLowering::toHostTask(Tensor *tensor,
     // verify that number of elements of poplar Tensor and poplar Stream are the
     // same
     auto nElmsStream = poplarStream.numElements();
-    auto nElmsTensor = anchorTensor.numElements();
+    auto nElmsTensor = anchorTensor.getPoplarTensor().numElements();
     if (nElmsStream != nElmsTensor) {
       throw internal_error("[Devicex::toHostTask] "
                            "The poplar::Tensor {} has {}, whereas the "
@@ -3393,8 +3400,11 @@ PriTask IrLowering::toHostTask(Tensor *tensor,
                            nElmsStream);
     }
 
-    seqs.getSequence(&sq).add(poplar::program::Copy(
-        anchorTensor, poplarStream, doRearrangeOnHost(tensor), {"copyToHost"}));
+    seqs.getSequence(&sq).add(
+        poplar::program::Copy(anchorTensor.getPoplarTensor(),
+                              poplarStream,
+                              doRearrangeOnHost(tensor),
+                              {"copyToHost"}));
     return seqs;
   };
 
@@ -3446,18 +3456,20 @@ PriTask IrLowering::anchorReturnTypeSumTask(Tensor *tensor,
     const auto &poplarTensor     = tensors_.get(tensor->id);
     const TensorId accumulatorId = anchorSumPrefix() + tensor->id;
     auto accumulatorTensor =
-        graph().getPoplarGraph().clone(poplarTensor, accumulatorId);
+        snap::Tensor{graph().getPoplarGraph().clone(
+                         poplarTensor.getPoplarTensor(), accumulatorId),
+                     graph()};
     tensors_.insertUnsafe(accumulatorId, accumulatorTensor);
 
     logging::devicex::debug("Adding AnchorSum operations to {}", tensor->id);
     popops::addInPlace(graph().getPoplarGraph(),
-                       accumulatorTensor,
-                       poplarTensor,
+                       accumulatorTensor.getPoplarTensor(),
+                       poplarTensor.getPoplarTensor(),
                        seqs.getSequence(&sq),
                        "AnchorSum_" + tensor->id);
     // Zero the accumulator
     popops::zero(graph().getPoplarGraph(),
-                 accumulatorTensor,
+                 accumulatorTensor.getPoplarTensor(),
                  seqs.getSequence(&progs.initFragment()),
                  "AnchorSumZero_" + tensor->id);
 
@@ -3614,10 +3626,11 @@ PriTask IrLowering::toHostEveryNBatchesTask(Tensor *tensor,
     poplar::Tensor isNthBatch = batchCountCheckingTensors.at(N);
 
     poplar::program::Sequence copyseq({}, {"copy"});
-    copyseq.add(poplar::program::Copy(tensors_.get(tensor->id),
-                                      toHostAnchorStreams.at(tensor->id),
-                                      doRearrangeOnHost(tensor),
-                                      {"copyToHostEveryNBatches"}));
+    copyseq.add(
+        poplar::program::Copy(tensors_.get(tensor->id).getPoplarTensor(),
+                              toHostAnchorStreams.at(tensor->id),
+                              doRearrangeOnHost(tensor),
+                              {"copyToHostEveryNBatches"}));
 
     // Placeholder 'do nothing' branch if not running copy program
     poplar::program::Sequence emptyseq({}, {"empty"});

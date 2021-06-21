@@ -263,22 +263,22 @@ void AccumulateOpx::grow(poplar::program::Sequence &prog) const {
                getInTensor(VarUpdateWithUpdaterOp::getVarToUpdateInIndex()));
 }
 
-poplar::Tensor
-AccumulateBaseOpx::createInput(int inIndex,
-                               const poplar::DebugNameAndId &dnai) const {
-
+snap::Tensor
+AccumulateBaseOpx::createInputTensor(InIndex inIndex,
+                                     const poplar::DebugNameAndId &dnai) const {
   if (inIndex != VarUpdateOp::getVarToUpdateInIndex()) {
     throw error(
         "AccumulateBaseOpx::createInput, cannot create input at {}, it can "
         "only create the var to update input Tensor",
         inIndex);
   }
-  poplar::Tensor inTensor;
   auto accumulatorInfo = inInfo(inIndex);
-  return graph().getPoplarGraph().clone(
-      popType(accumulatorInfo),
-      getInTensor(VarUpdateWithUpdaterOp::getUpdaterInIndex()),
-      dnai);
+  return snap::Tensor{
+      graph().getPoplarGraph().clone(
+          popType(accumulatorInfo),
+          getInTensor(VarUpdateWithUpdaterOp::getUpdaterInIndex()),
+          dnai),
+      graph()};
 }
 
 InputCreatorType AccumulateBaseOpx::getInputCreatorType(int inIndex) const {

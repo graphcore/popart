@@ -55,11 +55,13 @@ void GRUOpx::prepareInitialState(poplar::Tensor &init_state_h,
 
   // Check the inputs have been created
   if (hasInitH) {
-    prog.add(poplar::program::Copy(
-        getInTensor(GRUOp::getInitialHInIndex()),
-        createInput(GRUOp::getInitialHInIndex(), getDebugNameAndId("initH")),
-        false,
-        debugContext()));
+    prog.add(
+        poplar::program::Copy(getInTensor(GRUOp::getInitialHInIndex()),
+                              createInputTensor(GRUOp::getInitialHInIndex(),
+                                                getDebugNameAndId("initH"))
+                                  .getPoplarTensor(),
+                              false,
+                              debugContext()));
   }
 }
 
@@ -213,18 +215,18 @@ InputCreatorType GRUOpx::getInputCreatorType(InIndex index) const {
   }
 }
 
-poplar::Tensor GRUOpx::createInput(InIndex index,
-                                   const poplar::DebugNameAndId &) const {
+snap::Tensor GRUOpx::createInputTensor(InIndex index,
+                                       const poplar::DebugNameAndId &) const {
   createdInputs.insert(index);
 
   if (index == GRUOp::getInputInIndex()) {
-    return createGRUInput();
+    return snap::Tensor{createGRUInput(), graph()};
   } else if (index == GRUOp::getWeightsInIndex()) {
     auto inputWeights = getGRUWeights().inputWeights;
-    return reshapePoplibWeightsForOnnx(inputWeights);
+    return snap::Tensor{reshapePoplibWeightsForOnnx(inputWeights), graph()};
   } else if (index == GRUOp::getRecurrenceInIndex()) {
     auto outputWeights = getGRUWeights().outputWeights;
-    return reshapePoplibWeightsForOnnx(outputWeights);
+    return snap::Tensor{reshapePoplibWeightsForOnnx(outputWeights), graph()};
   } else if (index == GRUOp::getInitialHInIndex()) {
     auto &gru_op = getOp<GRUOp>();
 
@@ -233,7 +235,8 @@ poplar::Tensor GRUOpx::createInput(InIndex index,
     unsigned num_directions = static_cast<unsigned>(gru_op.getNumDirections());
 
     auto init_h = getInitialState();
-    return init_h.reshape({num_directions, batch_size, hidden_size});
+    return snap::Tensor{
+        init_h.reshape({num_directions, batch_size, hidden_size}), graph()};
   } else {
     throw error("GRUOpx::createInput is not supported for index {}", index);
   }
@@ -368,7 +371,8 @@ void GRUOpx::prepareWeights(poplar::program::Sequence &prog) const {
 poplar::Tensor GRUOpx::getInput(poplar::program::Sequence &prog) const {
   if (!inputCreated(GRUOp::getInputInIndex())) {
     auto input =
-        createInput(GRUOp::getInputInIndex(), getDebugNameAndId("input"));
+        createInputTensor(GRUOp::getInputInIndex(), getDebugNameAndId("input"))
+            .getPoplarTensor();
     auto raw_input = getInTensor(GRUOp::getInputInIndex());
     prog.add(poplar::program::Copy(raw_input, input, false, debugContext()));
     return input;

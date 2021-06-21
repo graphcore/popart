@@ -14,9 +14,9 @@ public:
   TransposeOpx(Op *, Devicex *);
   void grow(poplar::program::Sequence &) const final;
   InputCreatorType getInputCreatorType(InIndex) const final;
-  poplar::Tensor unwindTensorLayout(poplar::Tensor tensor,
-                                    InIndex inIndex,
-                                    OutIndex outIndex) const final;
+  snap::Tensor unwindTensorLayout(snap::Tensor tensor,
+                                  InIndex inIndex,
+                                  OutIndex outIndex) const final;
   view::RegMap unwindRegion(InIndex, OutIndex) const final;
 };
 
@@ -26,9 +26,9 @@ public:
   InputCreatorType getInputCreatorType(InIndex) const final;
   void grow(poplar::program::Sequence &) const final;
 
-  poplar::Tensor unwindTensorLayout(poplar::Tensor tensor,
-                                    InIndex inIndex,
-                                    OutIndex outIndex) const final;
+  snap::Tensor unwindTensorLayout(snap::Tensor tensor,
+                                  InIndex inIndex,
+                                  OutIndex outIndex) const final;
   view::RegMap unwindRegion(InIndex, OutIndex) const final;
 };
 

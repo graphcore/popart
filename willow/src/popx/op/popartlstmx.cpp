@@ -83,17 +83,17 @@ InputCreatorType PopartLSTMOpx::getInputCreatorType(InIndex index) const {
   }
 }
 
-poplar::Tensor
-PopartLSTMOpx::createInput(InIndex index,
-                           const poplar::DebugNameAndId &) const {
+snap::Tensor
+PopartLSTMOpx::createInputTensor(InIndex index,
+                                 const poplar::DebugNameAndId &) const {
   if (index == PopartLSTMOp::getInputInIndex()) {
-    return createLSTMInput();
+    return snap::Tensor{createLSTMInput(), graph()};
   } else if (index == PopartLSTMOp::getWeightsInIndex()) {
-    return createWeightsInput();
+    return snap::Tensor{createWeightsInput(), graph()};
   } else if (index == PopartLSTMOp::getBiasesInIndex()) {
-    return createBiasesInput();
+    return snap::Tensor{createBiasesInput(), graph()};
   } else if (index == PopartLSTMOp::getInitialStateInIndex()) {
-    return createInitialStateInput().getAsTensor();
+    return snap::Tensor{createInitialStateInput().getAsTensor(), graph()};
   } else {
     throw error("PopartLSTMOpx::createInput is not supported for index {}",
                 index);

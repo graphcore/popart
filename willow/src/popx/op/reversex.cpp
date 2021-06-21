@@ -23,14 +23,15 @@ void ReverseOpx::grow(poplar::program::Sequence &prog) const {
   setOutTensor(ReverseOp::getOutIndex(), cloneNcopy(prog, t));
 }
 
-poplar::Tensor ReverseBaseOpx::unwindTensorLayout(poplar::Tensor tensor,
-                                                  InIndex,
-                                                  OutIndex) const {
+snap::Tensor ReverseBaseOpx::unwindTensorLayout(snap::Tensor tensor,
+                                                InIndex,
+                                                OutIndex) const {
+  poplar::Tensor t = tensor.getPoplarTensor();
   for (auto dim : dynamic_cast<ReverseOp *>(op_p)->getDimensions()) {
-    tensor = tensor.reverse(static_cast<unsigned>(dim));
+    t = t.reverse(static_cast<unsigned>(dim));
   }
 
-  return tensor;
+  return snap::Tensor{t, graph()};
 }
 
 view::RegMap ReverseBaseOpx::unwindRegion(InIndex inIndex,

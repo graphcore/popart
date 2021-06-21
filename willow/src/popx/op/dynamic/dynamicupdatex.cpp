@@ -88,9 +88,9 @@ InputCreatorType DynamicUpdateOpx::getInputCreatorType(InIndex index) const {
   return PopOpx::getInputCreatorType(index);
 }
 
-poplar::Tensor
-DynamicUpdateOpx::createInput(InIndex index,
-                              const poplar::DebugNameAndId &dnai) const {
+snap::Tensor
+DynamicUpdateOpx::createInputTensor(InIndex index,
+                                    const poplar::DebugNameAndId &dnai) const {
   auto &op = getOp<DynamicTernaryBaseOp>();
 
   if (index == DynamicTernaryBaseOp::getInIndex()) {
@@ -102,9 +102,11 @@ DynamicUpdateOpx::createInput(InIndex index,
       std::vector<size_t> paxes(op.getAxes().begin(), op.getAxes().end());
       std::vector<size_t> psizes(op.getSizes().begin(), op.getSizes().end());
 
-      return popops::createSliceTensor(
-                 graph().getPoplarGraph(), updateTensor, paxes, psizes, 1, dnai)
-          .squeeze({0});
+      return snap::Tensor{
+          popops::createSliceTensor(
+              graph().getPoplarGraph(), updateTensor, paxes, psizes, 1, dnai)
+              .squeeze({0}),
+          graph()};
     }
   }
 
@@ -121,8 +123,10 @@ DynamicUpdateOpx::createInput(InIndex index,
       for (size_t i = 0; i < paxes.size(); ++i) {
         numSlices[i] = updateShape[paxes[i]] / psizes[i];
       }
-      return popops::createSliceableTensorFromSlice(
-          graph().getPoplarGraph(), inTensor, paxes, numSlices, dnai);
+      return snap::Tensor{
+          popops::createSliceableTensorFromSlice(
+              graph().getPoplarGraph(), inTensor, paxes, numSlices, dnai),
+          graph()};
     }
   }
 
@@ -130,17 +134,21 @@ DynamicUpdateOpx::createInput(InIndex index,
               std::to_string(index));
 }
 
-poplar::Tensor DynamicUpdateOpx::unwindTensorLayout(poplar::Tensor tensor,
-                                                    InIndex in,
-                                                    OutIndex) const {
+snap::Tensor DynamicUpdateOpx::unwindTensorLayout(snap::Tensor tensor,
+                                                  InIndex in,
+                                                  OutIndex) const {
   if (in == DynamicUpdateOp::getInIndex()) {
     auto &op = getOp<DynamicUpdateOp>();
     std::vector<size_t> paxes(op.getAxes().begin(), op.getAxes().end());
     std::vector<size_t> psizes(op.getSizes().begin(), op.getSizes().end());
 
-    return popops::createSliceTensor(
-               graph().getPoplarGraph(), tensor, paxes, psizes, 1)
-        .squeeze({0});
+    return snap::Tensor{popops::createSliceTensor(graph().getPoplarGraph(),
+                                                  tensor.getPoplarTensor(),
+                                                  paxes,
+                                                  psizes,
+                                                  1)
+                            .squeeze({0}),
+                        graph()};
   } else if (in == DynamicUpdateOp::getUpdateInIndex()) {
     return tensor;
   } else {

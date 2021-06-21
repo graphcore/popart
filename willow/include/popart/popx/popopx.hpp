@@ -7,6 +7,7 @@
 #include <poplar/IPUModel.hpp>
 
 #include <snap/Graph.hpp>
+#include <snap/Tensor.hpp>
 
 #include <popart/error.hpp>
 #include <popart/names.hpp>
@@ -57,10 +58,10 @@ public:
   PopOpx(Op *, Devicex *);
   virtual ~PopOpx();
 
-  // create the input poplar::Tensor for input at index with name
+  // create the input snap::Tensor for input at index with name
   // default : throw error (not all PopOpxs can createInput)
-  virtual poplar::Tensor createInput(InIndex index,
-                                     const poplar::DebugNameAndId &dnai) const;
+  virtual snap::Tensor
+  createInputTensor(InIndex index, const poplar::DebugNameAndId &dnai) const;
   // default return DEADEND, i.e. unable to create input tensor, and
   // cannot use downstream opxs as candidates to create input
   // tensor
@@ -73,8 +74,8 @@ public:
 
   // Reverses the layout change to an input tensor for an op that returned
   // CANUNWIND
-  virtual poplar::Tensor
-  unwindTensorLayout(poplar::Tensor tensor, InIndex, OutIndex) const;
+  virtual snap::Tensor
+  unwindTensorLayout(snap::Tensor tensor, InIndex, OutIndex) const;
   virtual view::RegMap unwindRegion(InIndex, OutIndex) const;
 
   // If the created or unwound tensor does not conform with the IR specs,
@@ -90,17 +91,17 @@ public:
   // creator
   virtual bool outputCreatedExternally(OutIndex index) const;
 
-  // To create a poplar::Tensor for input index index0, which
-  // poplar::Tensors must already exist?
+  // To create a snap::Tensor for input index index0, which
+  // snap::Tensors must already exist?
   virtual std::set<TensorId> mustExistBeforeCreate(int index0) const;
 
-  // To create a poplar::Tensor for input index index0, which
-  // poplar::Tensors must already exist?
+  // To create a snap::Tensor for input index index0, which
+  // snap::Tensors must already exist?
   // Allows disjunctive normal form of must exist tensors, i.e.
   // at least one full set of TensorIds in the vector must exist
   virtual DnfTensorIds mustExistBeforeCreateDNF(int index0) const;
 
-  // adds poplar::Tensors to devicex_->popTensors,
+  // adds snap::Tensors to devicex_->popTensors,
   // one for each output of op_.
   virtual void grow(poplar::program::Sequence &) const;
   // Akin to the grow function above except it allows for growing over multiple
@@ -108,10 +109,10 @@ public:
   // is to call the single sequence grow function.
   virtual void grow(std::vector<poplar::program::Sequence> &) const;
 
-  // clone the poplar::Tensor identified by its TensorId, and copy the contents
+  // clone the snap::Tensor identified by its TensorId, and copy the contents
   // of it.
   poplar::Tensor cloneNcopy(poplar::program::Sequence &, TensorId) const;
-  // clone the poplar::Tensor and copy the contents of it.
+  // clone the snap::Tensor and copy the contents of it.
   poplar::Tensor cloneNcopy(poplar::program::Sequence &,
                             const poplar::Tensor &,
                             const std::string name = "") const;

@@ -29,9 +29,8 @@ InputCreatorType TransposeOpx::getInputCreatorType(InIndex) const {
   return InputCreatorType::CanUnwind;
 }
 
-poplar::Tensor TransposeOpx::unwindTensorLayout(poplar::Tensor tensor,
-                                                InIndex,
-                                                OutIndex) const {
+snap::Tensor
+TransposeOpx::unwindTensorLayout(snap::Tensor tensor, InIndex, OutIndex) const {
   auto perm = getOp<TransposeOp>().getPerm();
   std::vector<unsigned> reverse_perm;
 
@@ -42,7 +41,8 @@ poplar::Tensor TransposeOpx::unwindTensorLayout(poplar::Tensor tensor,
     reverse_perm.push_back(static_cast<unsigned>(position));
   }
 
-  return tensor.dimShuffle(reverse_perm);
+  return snap::Tensor{tensor.getPoplarTensor().dimShuffle(reverse_perm),
+                      graph()};
 }
 
 view::RegMap TransposeOpx::unwindRegion(InIndex inIndex,
@@ -60,9 +60,9 @@ InputCreatorType TransposeInplaceOpx::getInputCreatorType(InIndex) const {
   return InputCreatorType::CanUnwind;
 }
 
-poplar::Tensor TransposeInplaceOpx::unwindTensorLayout(poplar::Tensor tensor,
-                                                       InIndex,
-                                                       OutIndex) const {
+snap::Tensor TransposeInplaceOpx::unwindTensorLayout(snap::Tensor tensor,
+                                                     InIndex,
+                                                     OutIndex) const {
   auto perm = getOp<TransposeInplaceOp>().getPerm();
   std::vector<unsigned> reverse_perm;
 
@@ -73,7 +73,8 @@ poplar::Tensor TransposeInplaceOpx::unwindTensorLayout(poplar::Tensor tensor,
     reverse_perm.push_back(static_cast<unsigned>(position));
   }
 
-  return tensor.dimShuffle(reverse_perm);
+  return snap::Tensor{tensor.getPoplarTensor().dimShuffle(reverse_perm),
+                      graph()};
 }
 
 view::RegMap TransposeInplaceOpx::unwindRegion(InIndex inIndex,

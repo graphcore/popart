@@ -41,9 +41,9 @@ InputCreatorType IoTileCopyOpx::getInputCreatorType(InIndex index) const {
              : PopOpx::getInputCreatorType(index);
 }
 
-poplar::Tensor IoTileCopyOpx::unwindTensorLayout(poplar::Tensor tensor,
-                                                 InIndex,
-                                                 OutIndex) const {
+snap::Tensor IoTileCopyOpx::unwindTensorLayout(snap::Tensor tensor,
+                                               InIndex,
+                                               OutIndex) const {
   IoTileCopyOp &op = getOp<IoTileCopyOp>();
   auto info        = op.inInfo(IoTileCopyOp::getInIndex());
 
@@ -57,14 +57,15 @@ poplar::Tensor IoTileCopyOpx::unwindTensorLayout(poplar::Tensor tensor,
       op_p->settings.tileSet == TileSet::Compute ? TileSet::IO
                                                  : TileSet::Compute);
 
-  auto dstTensor = dstGraph.getPoplarGraph().clone(tensor, "");
+  auto dstTensor =
+      dstGraph.getPoplarGraph().clone(tensor.getPoplarTensor(), "");
 
   auto numSrcTiles = srcGraph.getPoplarGraph().getTarget().getNumTiles();
   auto numDstTiles = dstGraph.getPoplarGraph().getTarget().getNumTiles();
 
   auto tilesPerTile = (numSrcTiles - 1) / numDstTiles + 1;
 
-  auto srcTensorFlat = tensor.flatten();
+  auto srcTensorFlat = tensor.getPoplarTensor().flatten();
   auto dstTensorFlat = dstTensor.flatten();
 
   // Reorder both tensors on the main graph
@@ -82,7 +83,7 @@ poplar::Tensor IoTileCopyOpx::unwindTensorLayout(poplar::Tensor tensor,
 
   dstGraph.getPoplarGraph().setTileMapping(dstTensorFlat, dstMapping);
 
-  return dstTensor;
+  return snap::Tensor{dstTensor, graph()};
 }
 
 view::RegMap IoTileCopyOpx::unwindRegion(InIndex, OutIndex) const {

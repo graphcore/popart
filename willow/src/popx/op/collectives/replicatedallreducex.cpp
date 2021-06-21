@@ -40,9 +40,9 @@ InputCreatorType ReplicatedAllReduceOpx::getInputCreatorType(InIndex) const {
   return InputCreatorType::CanUnwind;
 }
 
-poplar::Tensor ReplicatedAllReduceOpx::unwindTensorLayout(poplar::Tensor tensor,
-                                                          InIndex,
-                                                          OutIndex) const {
+snap::Tensor ReplicatedAllReduceOpx::unwindTensorLayout(snap::Tensor tensor,
+                                                        InIndex,
+                                                        OutIndex) const {
   return tensor;
 }
 

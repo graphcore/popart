@@ -17,8 +17,8 @@ public:
 
   InputCreatorType getInputCreatorType(InIndex) const override;
 
-  poplar::Tensor
-      unwindTensorLayout(poplar::Tensor, InIndex, OutIndex) const override;
+  snap::Tensor
+      unwindTensorLayout(snap::Tensor, InIndex, OutIndex) const override;
   view::RegMap unwindRegion(InIndex, OutIndex) const override;
 };
 

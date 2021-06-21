@@ -24,9 +24,9 @@ InputCreatorType BaseConcatOpx::getInputCreatorType(InIndex) const {
   return InputCreatorType::CanUnwind;
 }
 
-poplar::Tensor BaseConcatOpx::unwindTensorLayout(poplar::Tensor tensor,
-                                                 InIndex inIndex,
-                                                 OutIndex) const {
+snap::Tensor BaseConcatOpx::unwindTensorLayout(snap::Tensor tensor,
+                                               InIndex inIndex,
+                                               OutIndex) const {
   int64_t start = 0L;
   for (int i = 0; i < inIndex; ++i) {
     auto shape = op->inShape(ConcatOp::getInIndex(i));
@@ -37,9 +37,11 @@ poplar::Tensor BaseConcatOpx::unwindTensorLayout(poplar::Tensor tensor,
     auto shape = op->inShape(ConcatOp::getInIndex(i));
     end += shape[op->getAxis()];
   }
-  return tensor.slice(static_cast<std::size_t>(start),
-                      static_cast<std::size_t>(end),
-                      static_cast<unsigned>(op->getAxis()));
+  return snap::Tensor{
+      tensor.getPoplarTensor().slice(static_cast<std::size_t>(start),
+                                     static_cast<std::size_t>(end),
+                                     static_cast<unsigned>(op->getAxis())),
+      graph()};
 }
 
 view::RegMap BaseConcatOpx::unwindRegion(InIndex inIndex,

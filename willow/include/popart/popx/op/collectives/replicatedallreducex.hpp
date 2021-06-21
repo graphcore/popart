@@ -12,8 +12,7 @@ public:
   ReplicatedAllReduceOpx(Op *, Devicex *);
   void grow(poplar::program::Sequence &) const override;
   InputCreatorType getInputCreatorType(InIndex index) const final;
-  poplar::Tensor
-      unwindTensorLayout(poplar::Tensor, InIndex, OutIndex) const final;
+  snap::Tensor unwindTensorLayout(snap::Tensor, InIndex, OutIndex) const final;
   view::RegMap unwindRegion(InIndex, OutIndex) const final;
 };
 

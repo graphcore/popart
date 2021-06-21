@@ -26,8 +26,7 @@ public:
     return InputCreatorType::CanUnwind;
   }
   bool canUnwind(InIndex in, OutIndex out) const final { return in == out; }
-  poplar::Tensor
-      unwindTensorLayout(poplar::Tensor, InIndex, OutIndex) const final;
+  snap::Tensor unwindTensorLayout(snap::Tensor, InIndex, OutIndex) const final;
   view::RegMap unwindRegion(InIndex, OutIndex) const final;
 
   snap::Graph &srcVirtualGraph(InIndex) const final;

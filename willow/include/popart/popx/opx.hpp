@@ -16,6 +16,16 @@ public:
   Opx(Op *, Devicex *);
   ~Opx();
 
+  // create the input poplar::Tensor for input at index with name
+  // default : throw error (not all PopOpxs can createInput)
+  virtual poplar::Tensor createInput(InIndex index,
+                                     const poplar::DebugNameAndId &dnai) const;
+
+  // Reverses the layout change to an input tensor for an op that returned
+  // CANUNWIND
+  virtual poplar::Tensor
+  unwindTensorLayout(poplar::Tensor tensor, InIndex, OutIndex) const;
+
   // If this Opx creates a poplar::Tensor at index0 (via createInput),
   // does it create the same poplar::Tensor as if opx1 creates one at
   // index1?. default behaviour : throws error

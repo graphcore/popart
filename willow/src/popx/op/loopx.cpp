@@ -32,9 +32,9 @@ bool LoopOpx::canUnwind(InIndex in, OutIndex out) const {
   return false;
 }
 
-poplar::Tensor LoopOpx::unwindTensorLayout(poplar::Tensor tensor,
-                                           InIndex in,
-                                           OutIndex out) const {
+snap::Tensor LoopOpx::unwindTensorLayout(snap::Tensor tensor,
+                                         InIndex in,
+                                         OutIndex out) const {
   if (canUnwind(in, out)) {
     return tensor;
   } else {

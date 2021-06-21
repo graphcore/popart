@@ -2,8 +2,8 @@
 #ifndef GUARD_NEURALNET_VIEWCHANGERS_HPP
 #define GUARD_NEURALNET_VIEWCHANGERS_HPP
 
+#include <snap/Tensor.hpp>
 #include <vector>
-#include <poplar/Tensor.hpp>
 
 namespace popart {
 namespace popx {
@@ -12,7 +12,7 @@ namespace popx {
 class ViewChanger {
 public:
   virtual ~ViewChanger() {}
-  virtual poplar::Tensor apply(poplar::Tensor tensor) const { return tensor; }
+  virtual snap::Tensor apply(snap::Tensor tensor) const { return tensor; }
   virtual bool containsAllDataRegions() const { return true; }
   virtual bool operator==(const ViewChanger &rhs) const {
     return typeid(&rhs) == typeid(ViewChanger);
@@ -27,7 +27,7 @@ class ViewChangers {
 public:
   ViewChangers();
   ViewChangers(std::vector<std::shared_ptr<ViewChanger>> viewChangers_);
-  poplar::Tensor apply(poplar::Tensor tensor) const;
+  snap::Tensor apply(snap::Tensor tensor) const;
   bool empty() const { return viewChangers.empty(); }
 
   bool operator==(const ViewChangers &rhs) const;

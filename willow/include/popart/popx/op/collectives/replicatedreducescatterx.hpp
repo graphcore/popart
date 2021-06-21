@@ -12,8 +12,8 @@ public:
   ReplicatedReduceScatterOpx(Op *, Devicex *);
   void grow(poplar::program::Sequence &) const final;
 
-  poplar::Tensor createInput(InIndex,
-                             const poplar::DebugNameAndId &dnai) const final;
+  snap::Tensor
+  createInputTensor(InIndex, const poplar::DebugNameAndId &dnai) const final;
   InputCreatorType getInputCreatorType(InIndex) const final;
   DnfTensorIds mustExistBeforeCreateDNF(InIndex index0) const final;
   bool hasCreatorViewChangers(InIndex index) const final;

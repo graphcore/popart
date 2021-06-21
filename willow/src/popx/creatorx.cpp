@@ -270,8 +270,14 @@ InputCreatorCandidate::unwind(poplar::Tensor input) {
         "[creatorx] Tensor shape after compose / before unwind: {}",
         input.shape());
 
-    input = opxOnPath.opx->unwindTensorLayout(
-        input, opxOnPath.inIndex, opxOnPath.outIndex);
+    input =
+        opxOnPath.opx
+            ->unwindTensorLayout(
+                snap::Tensor{
+                    input, opxOnPath.opx->dstVirtualGraph(opxOnPath.outIndex)},
+                opxOnPath.inIndex,
+                opxOnPath.outIndex)
+            .getPoplarTensor();
 
     if (opxOnPath.opx->hasCreatorViewChangers(opxOnPath.inIndex)) {
       // Early stop unwinding; tensor has view change
@@ -338,7 +344,8 @@ InputCreatorCandidate::unwind(poplar::Tensor input) {
 
 std::pair<poplar::Tensor, ViewChangers>
 InputCreatorCandidate::createInput(const poplar::DebugNameAndId &dnai) {
-  poplar::Tensor t = getOpx()->createInput(getIndex(), dnai);
+  poplar::Tensor t =
+      getOpx()->createInputTensor(getIndex(), dnai).getPoplarTensor();
   if (getOpx()->hasCreatorViewChangers(getIndex())) {
     return {t, getOpx()->getCreatorViewChangers(getIndex())};
   }

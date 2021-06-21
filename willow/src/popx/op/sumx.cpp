@@ -78,8 +78,8 @@ InputCreatorType SumOpx::getInputCreatorType(InIndex index) const {
   }
 }
 
-poplar::Tensor
-SumOpx::unwindTensorLayout(poplar::Tensor tensor, InIndex, OutIndex) const {
+snap::Tensor
+SumOpx::unwindTensorLayout(snap::Tensor tensor, InIndex, OutIndex) const {
   return tensor;
 }
 

@@ -555,9 +555,9 @@ MatMulOp *MatMulOpx::getMatMulOp() const {
   return dynamic_cast<MatMulOp *>(op_p);
 }
 
-poplar::Tensor
-MatMulOpx::createInput(InIndex index,
-                       const poplar::DebugNameAndId &dnai) const {
+snap::Tensor
+MatMulOpx::createInputTensor(InIndex index,
+                             const poplar::DebugNameAndId &dnai) const {
   auto &matmul = getOp<MatMulOp>();
 
   std::vector<std::size_t> lhsShape =
@@ -610,7 +610,8 @@ MatMulOpx::createInput(InIndex index,
     result = result.reshape(lhsShapeP);
     result = result.dimShuffle(invertPermutation(permutation));
 
-    return result.reshape(matmul.lhsIn()->info.shape_szt());
+    return snap::Tensor{result.reshape(matmul.lhsIn()->info.shape_szt()),
+                        graph()};
   } else if (index == MatMulOp::getRhsInIndex()) {
     auto result = poplin::createMatMulGroupedInputRHS(
         graph().getPoplarGraph(),
@@ -625,7 +626,8 @@ MatMulOpx::createInput(InIndex index,
     result = result.reshape(rhsShapeP);
     result = result.dimShuffle(invertPermutation(permutation));
 
-    return result.reshape(matmul.rhsIn()->info.shape_szt());
+    return snap::Tensor{result.reshape(matmul.rhsIn()->info.shape_szt()),
+                        graph()};
   } else {
     throw error("MatMulOpx::createInput invalid input index {}", index);
   }

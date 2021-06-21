@@ -143,18 +143,21 @@ InputCreatorType LSTMOpx::getInputCreatorType(InIndex index) const {
   }
 }
 
-poplar::Tensor LSTMOpx::createInput(InIndex index,
-                                    const poplar::DebugNameAndId &dnai) const {
+snap::Tensor
+LSTMOpx::createInputTensor(InIndex index,
+                           const poplar::DebugNameAndId &dnai) const {
   createdInputs.insert(index);
 
   if (index == LSTMOp::getInputInIndex()) {
-    return createLSTMInput();
+    return snap::Tensor{createLSTMInput(), graph()};
   } else if (index == LSTMOp::getWeightsInIndex()) {
     auto inputWeights = getLSTMWeights().inputWeights;
-    return reshapePoplibWeightsForOnnx(inputWeights, true);
+    return snap::Tensor{reshapePoplibWeightsForOnnx(inputWeights, true),
+                        graph()};
   } else if (index == LSTMOp::getRecurrenceInIndex()) {
     auto outputWeights = getLSTMWeights().outputWeights;
-    return reshapePoplibWeightsForOnnx(outputWeights, true);
+    return snap::Tensor{reshapePoplibWeightsForOnnx(outputWeights, true),
+                        graph()};
   } else {
     throw error("LSTMOpx::createInput is not supported for index {}", index);
   }
@@ -293,7 +296,8 @@ void LSTMOpx::prepareWeights(poplar::program::Sequence &prog) const {
 poplar::Tensor LSTMOpx::getInput(poplar::program::Sequence &prog) const {
   if (!inputCreated(LSTMOp::getInputInIndex())) {
     auto input =
-        createInput(LSTMOp::getInputInIndex(), getDebugNameAndId("input"));
+        createInputTensor(LSTMOp::getInputInIndex(), getDebugNameAndId("input"))
+            .getPoplarTensor();
     auto raw_input = getInTensor(LSTMOp::getInputInIndex());
     prog.add(poplar::program::Copy(raw_input, input, false, debugContext()));
     return input;

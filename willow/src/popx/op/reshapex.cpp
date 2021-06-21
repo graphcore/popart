@@ -39,10 +39,12 @@ InputCreatorType ReshapeBaseOpx::getInputCreatorType(InIndex) const {
   return InputCreatorType::CanUnwind;
 }
 
-poplar::Tensor ReshapeBaseOpx::unwindTensorLayout(poplar::Tensor tensor,
-                                                  InIndex,
-                                                  OutIndex) const {
-  return tensor.reshape(inInfo(ReshapeOp::getInIndex()).shape_szt());
+snap::Tensor ReshapeBaseOpx::unwindTensorLayout(snap::Tensor tensor,
+                                                InIndex,
+                                                OutIndex) const {
+  return snap::Tensor{tensor.getPoplarTensor().reshape(
+                          inInfo(ReshapeOp::getInIndex()).shape_szt()),
+                      graph()};
 }
 
 view::RegMap ReshapeBaseOpx::unwindRegion(InIndex inIndex,

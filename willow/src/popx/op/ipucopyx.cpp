@@ -75,24 +75,25 @@ void IpuCopyOpx::growPipelined(poplar::program::Sequence &prog) const {
 
     // Using dontOutline=false will ensure the copies (buffers & code) are
     // reused.
-    prog.add(poplar::program::Copy(source, destination, false, debugContext()));
+    prog.add(poplar::program::Copy(
+        source, destination.getPoplarTensor(), false, debugContext()));
   }
 }
 
-poplar::Tensor IpuCopyOpx::unwindTensorLayout(poplar::Tensor tensor,
-                                              InIndex in,
-                                              OutIndex out) const {
+snap::Tensor IpuCopyOpx::unwindTensorLayout(snap::Tensor tensor,
+                                            InIndex in,
+                                            OutIndex out) const {
   IpuCopyOp &op = getOp<IpuCopyOp>();
   auto srcIpu   = op.getSourceIpu(op.input->tensor(in)->id);
 
   poplar::Tensor tLocalForCopy, tForCopy;
   auto t = poputil::createIpuCopy(dv_p->lowering().graph().getPoplarGraph(),
-                                  tensor,
+                                  tensor.getPoplarTensor(),
                                   static_cast<int>(srcIpu),
                                   tForCopy,
                                   tLocalForCopy,
                                   debugContext("unwoundInput"));
-  return t;
+  return snap::Tensor{t, dv_p->lowering().graph()};
 }
 
 view::RegMap IpuCopyOpx::unwindRegion(InIndex, OutIndex) const {

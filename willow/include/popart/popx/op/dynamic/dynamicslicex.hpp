@@ -13,11 +13,11 @@ public:
   DynamicSliceOpx(Op *, Devicex *);
   void grow(poplar::program::Sequence &) const final;
   InputCreatorType getInputCreatorType(InIndex index) const final;
-  poplar::Tensor
-      unwindTensorLayout(poplar::Tensor, InIndex, OutIndex) const final;
+  snap::Tensor unwindTensorLayout(snap::Tensor, InIndex, OutIndex) const final;
   view::RegMap unwindRegion(InIndex, OutIndex) const final;
-  poplar::Tensor createInput(InIndex index,
-                             const poplar::DebugNameAndId &dnai) const final;
+  snap::Tensor
+  createInputTensor(InIndex index,
+                    const poplar::DebugNameAndId &dnai) const final;
   std::set<TensorId> mustExistBeforeCreate(InIndex) const final { return {}; }
 
 protected:

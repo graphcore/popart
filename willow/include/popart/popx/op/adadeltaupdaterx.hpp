@@ -14,8 +14,8 @@ public:
 
   // can create the accumulator2 input Tensor (@Accl2 index)
   // from the weight gradient tensor (@Accl1 index)
-  poplar::Tensor createInput(InIndex,
-                             const poplar::DebugNameAndId &dnai) const final;
+  snap::Tensor
+  createInputTensor(InIndex, const poplar::DebugNameAndId &dnai) const final;
   InputCreatorType getInputCreatorType(InIndex) const final;
   std::set<TensorId> mustExistBeforeCreate(InIndex) const final;
   bool hasCreatorViewChangers(InIndex index) const final;

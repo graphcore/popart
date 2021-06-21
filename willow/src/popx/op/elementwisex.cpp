@@ -21,9 +21,9 @@ InputCreatorType ElementWiseUnaryOpx::getInputCreatorType(InIndex) const {
   return InputCreatorType::CanUnwind;
 }
 
-poplar::Tensor ElementWiseUnaryOpx::unwindTensorLayout(poplar::Tensor tensor,
-                                                       InIndex,
-                                                       OutIndex) const {
+snap::Tensor ElementWiseUnaryOpx::unwindTensorLayout(snap::Tensor tensor,
+                                                     InIndex,
+                                                     OutIndex) const {
   return tensor;
 }
 
@@ -100,22 +100,24 @@ ElementWiseBinaryOpx::mustExistBeforeCreate(InIndex index) const {
   return mustExist;
 }
 
-poplar::Tensor
-ElementWiseBinaryOpx::createInput(InIndex index,
-                                  const poplar::DebugNameAndId &dnai) const {
+snap::Tensor ElementWiseBinaryOpx::createInputTensor(
+    InIndex index,
+    const poplar::DebugNameAndId &dnai) const {
 
   const auto arg0Idx = ElementWiseBinaryBaseOp::getArg0InIndex();
   const auto arg1Idx = ElementWiseBinaryBaseOp::getArg1InIndex();
 
   if (index == arg0Idx) {
     if (dv_p->lowering().tensors().contains(op_p->input->id(arg1Idx))) {
-      return graph().getPoplarGraph().clone(getInTensor(arg1Idx), dnai);
+      return snap::Tensor{
+          graph().getPoplarGraph().clone(getInTensor(arg1Idx), dnai), graph()};
     }
   }
 
   if (index == arg1Idx) {
     if (dv_p->lowering().tensors().contains(op_p->input->id(arg0Idx))) {
-      return graph().getPoplarGraph().clone(getInTensor(arg0Idx), dnai);
+      return snap::Tensor{
+          graph().getPoplarGraph().clone(getInTensor(arg0Idx), dnai), graph()};
     }
   }
 
@@ -163,9 +165,9 @@ void ElementWiseUnaryOutplaceOpx::grow(poplar::program::Sequence &prog) const {
   setOutTensor(ElementWiseUnaryOp::getOutIndex(), outTensor);
 }
 
-poplar::Tensor ElementWiseBinaryOpx::unwindTensorLayout(poplar::Tensor tensor,
-                                                        InIndex,
-                                                        OutIndex) const {
+snap::Tensor ElementWiseBinaryOpx::unwindTensorLayout(snap::Tensor tensor,
+                                                      InIndex,
+                                                      OutIndex) const {
   return tensor;
 }
 

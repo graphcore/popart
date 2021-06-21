@@ -12,9 +12,9 @@ class ReshapeBaseOpx : public PopOpx {
 public:
   ReshapeBaseOpx(Op *, Devicex *);
   InputCreatorType getInputCreatorType(InIndex) const final;
-  poplar::Tensor unwindTensorLayout(poplar::Tensor tensor,
-                                    InIndex inIndex,
-                                    OutIndex outIndex) const final;
+  snap::Tensor unwindTensorLayout(snap::Tensor tensor,
+                                  InIndex inIndex,
+                                  OutIndex outIndex) const final;
   view::RegMap unwindRegion(InIndex inIndex, OutIndex outIndex) const final;
 };
 

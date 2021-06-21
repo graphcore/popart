@@ -20,8 +20,9 @@ PopOpx::PopOpx(Op *op_p_, Devicex *dv_p_) : op_p(op_p_), dv_p(dv_p_) {}
 
 PopOpx::~PopOpx() = default;
 
-poplar::Tensor PopOpx::createInput(InIndex index,
-                                   const poplar::DebugNameAndId &dnai) const {
+snap::Tensor
+PopOpx::createInputTensor(InIndex index,
+                          const poplar::DebugNameAndId &dnai) const {
   throw error("PopOpx for {} cannot create Input index:{} name:{}",
               op_p->opid,
               index,
@@ -70,8 +71,7 @@ bool PopOpx::canUnwind(InIndex in, OutIndex) const {
          type == InputCreatorType::CanCreateOrUnwind;
 }
 
-poplar::Tensor
-PopOpx::unwindTensorLayout(poplar::Tensor, InIndex, OutIndex) const {
+snap::Tensor PopOpx::unwindTensorLayout(snap::Tensor, InIndex, OutIndex) const {
   throw error(
       "PopOpx for {} cannot unwind the tensor layout change between input "
       "and output for {}",
@@ -135,15 +135,16 @@ snap::Graph &PopOpx::dstVirtualGraph(OutIndex index) const {
 }
 
 const poplar::Tensor &PopOpx::get(TensorId id) const {
-  return dv_p->lowering().tensors().get(id);
+  return dv_p->lowering().tensors().get(id).getPoplarTensor();
 }
 
 const poplar::Tensor &PopOpx::getView(TensorId id) const {
-  return dv_p->lowering().tensors().getView(id);
+  return dv_p->lowering().tensors().getView(id).getPoplarTensor();
 }
 
 void PopOpx::insert(TensorId id, const poplar::Tensor &tensor) const {
-  dv_p->lowering().tensors().insert(id, tensor);
+  dv_p->lowering().tensors().insert(
+      id, snap::Tensor{tensor, dv_p->lowering().graph()});
 }
 
 TensorId PopOpx::inId(InIndex index) const { return op_p->input->id(index); }

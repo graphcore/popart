@@ -13,8 +13,9 @@ namespace popx {
 class MultiConvBaseOpx : public PopOpx {
 public:
   MultiConvBaseOpx(Op *op, Devicex *dv) : PopOpx(op, dv) {}
-  poplar::Tensor createInput(InIndex index,
-                             const poplar::DebugNameAndId &dnai) const final;
+  snap::Tensor
+  createInputTensor(InIndex index,
+                    const poplar::DebugNameAndId &dnai) const final;
   std::set<TensorId> mustExistBeforeCreate(InIndex index0) const final;
   InputCreatorType getInputCreatorType(InIndex) const final;
   void grow(poplar::program::Sequence &) const final;

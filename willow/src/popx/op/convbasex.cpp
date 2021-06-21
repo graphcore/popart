@@ -54,9 +54,9 @@ void MultiConvBaseOpx::verifyCacheSizeUnchanged(size_t beforeCacheSize) const {
   }
 }
 
-poplar::Tensor
-MultiConvBaseOpx::createInput(InIndex index,
-                              const poplar::DebugNameAndId &dnai) const {
+snap::Tensor
+MultiConvBaseOpx::createInputTensor(InIndex index,
+                                    const poplar::DebugNameAndId &dnai) const {
   auto &op       = getOp<MultiConvBaseOp>();
   auto convIndex = MultiConvBaseOp::getConvIndexFromInIndex(index);
 
@@ -87,9 +87,9 @@ MultiConvBaseOpx::createInput(InIndex index,
         input = input.reshape(irshape);
       }
     }
-    return input;
+    return snap::Tensor{input, graph()};
   } else if (isDataInIndex(index)) {
-    return createDataInput(dnai, convIndex);
+    return snap::Tensor{createDataInput(dnai, convIndex), graph()};
   } else {
     throw error("conv opx cannot create tensor at this index yet");
   }

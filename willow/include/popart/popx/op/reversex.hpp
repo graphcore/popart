@@ -13,9 +13,9 @@ public:
   InputCreatorType getInputCreatorType(InIndex) const final {
     return InputCreatorType::CanUnwind;
   }
-  poplar::Tensor unwindTensorLayout(poplar::Tensor tensor,
-                                    InIndex inIndex,
-                                    OutIndex outIndex) const final;
+  snap::Tensor unwindTensorLayout(snap::Tensor tensor,
+                                  InIndex inIndex,
+                                  OutIndex outIndex) const final;
   view::RegMap unwindRegion(InIndex inIndex, OutIndex outIndex) const final;
 };
 

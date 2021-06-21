@@ -199,9 +199,10 @@ poplar::Tensor BasePadOpx::constantModePadGrow(poplar::Tensor inTensor,
   // elements, so "edge" mapping is not possible and we must do it ourselves.
   // Note a tensor has 0 elements iff it has a zero-sized dimension.
   if (inTensor.numElements() == 0) {
-    poplar::Tensor outTensor = mk_padded(popops::padding::MappingMethod::NONE);
+    auto outTensor = snap::Tensor{
+        mk_padded(popops::padding::MappingMethod::NONE), PopOpx::graph()};
     dv_p->lowering().getLinearMapper().mapTensor(PopOpx::graph(), outTensor);
-    return outTensor;
+    return outTensor.getPoplarTensor();
   }
 
   // Can we find a good layout for the constant padding?

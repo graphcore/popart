@@ -56,11 +56,12 @@ ReplicatedAllGatherOpx::getInputCreatorType(InIndex index) const {
              : PopOpx::getInputCreatorType(index);
 }
 
-poplar::Tensor ReplicatedAllGatherOpx::unwindTensorLayout(poplar::Tensor tensor,
-                                                          InIndex,
-                                                          OutIndex) const {
-  auto cbr = createCollectiveBalancedReorder(tensor);
-  return cbr->createReplicaSlice(tensor.elementType());
+snap::Tensor ReplicatedAllGatherOpx::unwindTensorLayout(snap::Tensor tensor,
+                                                        InIndex,
+                                                        OutIndex) const {
+  auto cbr = createCollectiveBalancedReorder(tensor.getPoplarTensor());
+  return snap::Tensor{
+      cbr->createReplicaSlice(tensor.getPoplarTensor().elementType()), graph()};
 }
 
 view::RegMap ReplicatedAllGatherOpx::unwindRegion(InIndex, OutIndex) const {
@@ -75,18 +76,20 @@ ReplicatedAllGatherOpx::mustExistBeforeCreate(InIndex) const {
   return {};
 }
 
-poplar::Tensor
-ReplicatedAllGatherOpx::createInput(InIndex index,
-                                    const poplar::DebugNameAndId &dnai) const {
+snap::Tensor ReplicatedAllGatherOpx::createInputTensor(
+    InIndex index,
+    const poplar::DebugNameAndId &dnai) const {
   auto &op = getOp<ReplicatedAllGatherOp>();
 
   if (index == ReplicatedAllGatherOp::getInIndex()) {
-    auto outInfo   = op.outInfo(ReplicatedAllGatherOp::getOutIndex());
-    auto outTensor = graph().getPoplarGraph().addVariable(
-        popType(outInfo), outInfo.shape_szt(), dnai);
+    auto outInfo = op.outInfo(ReplicatedAllGatherOp::getOutIndex());
+    auto outTensor =
+        snap::Tensor{graph().getPoplarGraph().addVariable(
+                         popType(outInfo), outInfo.shape_szt(), dnai),
+                     graph()};
     dv_p->lowering().getLinearMapper().mapTensor(graph(), outTensor);
-    auto cbr = createCollectiveBalancedReorder(outTensor);
-    return cbr->createReplicaSlice(popType(outInfo));
+    auto cbr = createCollectiveBalancedReorder(outTensor.getPoplarTensor());
+    return snap::Tensor{cbr->createReplicaSlice(popType(outInfo)), graph()};
   }
 
   throw error("ReplicatedAllGatherOpx::createInput: Invalid index = " +

@@ -128,9 +128,9 @@ void ScatterReduceOpx::grow(poplar::program::Sequence &prog) const {
   setOutTensor(ScatterReduceOp::outIndex(), out);
 }
 
-poplar::Tensor
-ScatterReduceOpx::createInput(InIndex index,
-                              const poplar::DebugNameAndId &dnai) const {
+snap::Tensor
+ScatterReduceOpx::createInputTensor(InIndex index,
+                                    const poplar::DebugNameAndId &dnai) const {
 
   if (index != ScatterReduceOp::dataInIndex() &&
       index != ScatterReduceOp::indicesInIndex()) {
@@ -144,14 +144,15 @@ ScatterReduceOpx::createInput(InIndex index,
     auto dataInfo        = inInfo(ScatterReduceOp::dataInIndex());
     const auto dataShape = dataInfo.shape_szt();
 
-    return popops::createSliceableTensor(graph().getPoplarGraph(),
-                                         popType(dataInfo),
-                                         dataShape,
-                                         dims,
-                                         sizes,
-                                         plan,
-                                         poplar::OptionFlags(),
-                                         dnai);
+    return snap::Tensor{popops::createSliceableTensor(graph().getPoplarGraph(),
+                                                      popType(dataInfo),
+                                                      dataShape,
+                                                      dims,
+                                                      sizes,
+                                                      plan,
+                                                      poplar::OptionFlags(),
+                                                      dnai),
+                        graph()};
   }
 
   auto indicesInfo = inInfo(ScatterReduceOp::indicesInIndex());
@@ -162,7 +163,7 @@ ScatterReduceOpx::createInput(InIndex index,
                                              poplar::OptionFlags(),
                                              dnai);
   indices          = indices.reinterpret(popType(indicesInfo));
-  return indices.reshape(indicesInfo.shape_szt());
+  return snap::Tensor{indices.reshape(indicesInfo.shape_szt()), graph()};
 }
 
 InputCreatorType ScatterReduceOpx::getInputCreatorType(InIndex index) const {

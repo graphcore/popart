@@ -54,17 +54,19 @@ InputCreatorType DynamicSliceOpx::getInputCreatorType(InIndex index) const {
              : PopOpx::getInputCreatorType(index);
 }
 
-poplar::Tensor
-DynamicSliceOpx::createInput(InIndex index,
-                             const poplar::DebugNameAndId &dnai) const {
+snap::Tensor
+DynamicSliceOpx::createInputTensor(InIndex index,
+                                   const poplar::DebugNameAndId &dnai) const {
   auto &op = getOp<DynamicSliceBaseOp>();
 
   if (index == DynamicSliceBaseOp::getInIndex()) {
     auto outInfo     = op.outInfo(DynamicSliceBaseOp::getOutIndex());
-    auto sliceTensor = graph().getPoplarGraph().addVariable(
-        popType(outInfo),
-        outInfo.shape_szt(),
-        debugContext(op.inId(DynamicSliceBaseOp::getInIndex()) + "_slice"));
+    auto sliceTensor = snap::Tensor{
+        graph().getPoplarGraph().addVariable(
+            popType(outInfo),
+            outInfo.shape_szt(),
+            debugContext(op.inId(DynamicSliceBaseOp::getInIndex()) + "_slice")),
+        graph()};
     dv_p->lowering().getLinearMapper().mapTensor(graph(), sliceTensor);
     auto inShape = op.inShape(DynamicSliceBaseOp::getInIndex());
 
@@ -76,19 +78,24 @@ DynamicSliceOpx::createInput(InIndex index,
       numSlices[i] = inShape[paxes[i]] / psizes[i];
     }
 
-    return popops::createSliceableTensorFromSlice(
-        graph().getPoplarGraph(), sliceTensor, paxes, numSlices, dnai);
+    return snap::Tensor{
+        popops::createSliceableTensorFromSlice(graph().getPoplarGraph(),
+                                               sliceTensor.getPoplarTensor(),
+                                               paxes,
+                                               numSlices,
+                                               dnai),
+        graph()};
   }
 
   throw error("DynamicSliceOpx::createInput : Invalid index = " +
               std::to_string(index));
 }
 
-poplar::Tensor DynamicSliceOpx::unwindTensorLayout(poplar::Tensor tensor,
-                                                   InIndex,
-                                                   OutIndex) const {
+snap::Tensor DynamicSliceOpx::unwindTensorLayout(snap::Tensor tensor,
+                                                 InIndex,
+                                                 OutIndex) const {
   auto &op      = getOp<DynamicSliceBaseOp>();
-  auto outShape = tensor.shape();
+  auto outShape = tensor.getPoplarTensor().shape();
   auto inShape  = op.inShape(DynamicSliceBaseOp::getInIndex());
 
   std::vector<size_t> paxes(op.getAxes().begin(), op.getAxes().end());
@@ -98,8 +105,10 @@ poplar::Tensor DynamicSliceOpx::unwindTensorLayout(poplar::Tensor tensor,
   for (size_t i = 0; i < paxes.size(); ++i) {
     numSlices[i] = inShape[paxes[i]] / psizes[i];
   }
-  return popops::createSliceableTensorFromSlice(
-      graph().getPoplarGraph(), tensor, paxes, numSlices);
+  return snap::Tensor{
+      popops::createSliceableTensorFromSlice(
+          graph().getPoplarGraph(), tensor.getPoplarTensor(), paxes, numSlices),
+      graph()};
 }
 
 view::RegMap DynamicSliceOpx::unwindRegion(InIndex index, OutIndex) const {

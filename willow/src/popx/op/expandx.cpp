@@ -19,9 +19,9 @@ InputCreatorType BaseExpandOpx::getInputCreatorType(InIndex) const {
   return InputCreatorType::CanUnwind;
 }
 
-poplar::Tensor BaseExpandOpx::unwindTensorLayout(poplar::Tensor tensor,
-                                                 InIndex inIndex,
-                                                 OutIndex) const {
+snap::Tensor BaseExpandOpx::unwindTensorLayout(snap::Tensor t,
+                                               InIndex inIndex,
+                                               OutIndex) const {
 
   // Numpy broadcasting, some valid examples:
   //
@@ -41,6 +41,7 @@ poplar::Tensor BaseExpandOpx::unwindTensorLayout(poplar::Tensor tensor,
   // an 'input' tensor of a reduced size. We arbitrarily choose the slice in
   // each dimension to start at index 0.
 
+  poplar::Tensor tensor = t.getPoplarTensor();
   if (inIndex == ExpandOp::getInTensorIndex()) {
     auto output_shape = op->getOutShape();
     auto input_shape  = inShape(inIndex);
@@ -72,7 +73,7 @@ poplar::Tensor BaseExpandOpx::unwindTensorLayout(poplar::Tensor tensor,
     }
   }
 
-  return tensor;
+  return snap::Tensor{tensor, graph()};
 }
 
 view::RegMap BaseExpandOpx::unwindRegion(InIndex inIndex,

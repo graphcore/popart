@@ -186,9 +186,9 @@ InputCreatorType RemoteLoadOpx::getInputCreatorType(InIndex index) const {
              : PopOpx::getInputCreatorType(index);
 }
 
-poplar::Tensor RemoteLoadOpx::unwindTensorLayout(poplar::Tensor tensor,
-                                                 InIndex,
-                                                 OutIndex) const {
+snap::Tensor RemoteLoadOpx::unwindTensorLayout(snap::Tensor tensor,
+                                               InIndex,
+                                               OutIndex) const {
   return tensor;
 }
 
@@ -212,9 +212,9 @@ bool RemoteExchangeOpx::canUnwind(InIndex in, OutIndex out) const {
   return in == out;
 }
 
-poplar::Tensor RemoteExchangeOpx::unwindTensorLayout(poplar::Tensor tensor,
-                                                     InIndex,
-                                                     OutIndex) const {
+snap::Tensor RemoteExchangeOpx::unwindTensorLayout(snap::Tensor tensor,
+                                                   InIndex,
+                                                   OutIndex) const {
   return tensor;
 }
 

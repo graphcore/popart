@@ -14,8 +14,7 @@ public:
   IoTileCopyOpx(Op *, Devicex *);
   void grow(poplar::program::Sequence &) const final;
   InputCreatorType getInputCreatorType(InIndex index) const final;
-  poplar::Tensor
-      unwindTensorLayout(poplar::Tensor, InIndex, OutIndex) const final;
+  snap::Tensor unwindTensorLayout(snap::Tensor, InIndex, OutIndex) const final;
   view::RegMap unwindRegion(InIndex, OutIndex) const final;
   bool outputCreatedExternally(OutIndex) const final { return true; }
 };

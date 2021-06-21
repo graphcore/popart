@@ -40,8 +40,8 @@ public:
   ReplicatedGatherInScatterOutViewChanger(int64_t nelms_,
                                           const std::set<TensorId> group_)
       : nelms(nelms_), group(group_) {}
-  poplar::Tensor apply(poplar::Tensor tensor) const final {
-    return tensor.slice(0, nelms, 0);
+  snap::Tensor apply(snap::Tensor tensor) const final {
+    return snap::Tensor{tensor.getPoplarTensor().slice(0, nelms, 0), tensor};
   }
   bool containsAllDataRegions() const final { return false; }
   bool operator==(const ViewChanger &rhs) const final {
@@ -69,9 +69,11 @@ public:
       const gcl::CollectiveBalancedReorder *cbr_,
       const std::set<TensorId> group_)
       : cbr(cbr_), group(group_) {}
-  poplar::Tensor apply(poplar::Tensor tensor) const final {
-    return cbr->undoRearrangeForCollective(tensor).reshape(
-        cbr->getReferenceShape());
+  snap::Tensor apply(snap::Tensor tensor) const final {
+    return snap::Tensor{
+        cbr->undoRearrangeForCollective(tensor.getPoplarTensor())
+            .reshape(cbr->getReferenceShape()),
+        tensor};
   }
   bool operator==(const ViewChanger &rhs) const final {
     if (const ReplicatedGatherOutScatterInViewChanger *other =

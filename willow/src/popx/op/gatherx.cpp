@@ -82,8 +82,9 @@ void GatherOpx::grow(poplar::program::Sequence &prog) const {
   setOutTensor(GatherOp::outIndex(), result);
 }
 
-poplar::Tensor
-GatherOpx::createInput(int index, const poplar::DebugNameAndId &dnai) const {
+snap::Tensor
+GatherOpx::createInputTensor(InIndex index,
+                             const poplar::DebugNameAndId &dnai) const {
   if (index != GatherOp::dataInIndex() && index != GatherOp::indicesInIndex()) {
     throw error("GatherOpx::createInput Cannot create input {}", index);
   }
@@ -94,14 +95,15 @@ GatherOpx::createInput(int index, const poplar::DebugNameAndId &dnai) const {
     auto dataInfo        = inInfo(index);
     const auto dataShape = dataInfo.shape_szt();
 
-    return popops::createSliceableTensor(graph().getPoplarGraph(),
-                                         popType(dataInfo),
-                                         dataShape,
-                                         dims,
-                                         sizes,
-                                         plan,
-                                         poplar::OptionFlags(),
-                                         dnai);
+    return snap::Tensor{popops::createSliceableTensor(graph().getPoplarGraph(),
+                                                      popType(dataInfo),
+                                                      dataShape,
+                                                      dims,
+                                                      sizes,
+                                                      plan,
+                                                      poplar::OptionFlags(),
+                                                      dnai),
+                        graph()};
   }
 
   auto indicesInfo = inInfo(index);
@@ -112,7 +114,7 @@ GatherOpx::createInput(int index, const poplar::DebugNameAndId &dnai) const {
                                              poplar::OptionFlags(),
                                              dnai);
   indices          = indices.reinterpret(popType(indicesInfo));
-  return indices.reshape(indicesInfo.shape_szt());
+  return snap::Tensor{indices.reshape(indicesInfo.shape_szt()), graph()};
 }
 
 InputCreatorType GatherOpx::getInputCreatorType(int index) const {

@@ -108,7 +108,7 @@ void HostBaseOpx::store(poplar::program::Sequence &prog,
             : dv_p->lowering().tensors().getView(tensor->id);
 
     auto nElmsStream = stream.numElements();
-    auto nElmsTensor = anchorTensor.numElements();
+    auto nElmsTensor = anchorTensor.getPoplarTensor().numElements();
     if (nElmsStream != nElmsTensor) {
       throw internal_error("[Devicex::toHostTask] "
                            "The poplar::Tensor {} has {}, whereas the "
@@ -119,7 +119,7 @@ void HostBaseOpx::store(poplar::program::Sequence &prog,
     }
 
     poplar::program::Copy copy_prog(
-        anchorTensor, stream, false, {inTensorId + "_copy"});
+        anchorTensor.getPoplarTensor(), stream, false, {inTensorId + "_copy"});
     prog.add(copy_prog);
 
   } else {
@@ -162,9 +162,8 @@ InputCreatorType HostLoadOpx::getInputCreatorType(InIndex index) const {
              : PopOpx::getInputCreatorType(index);
 }
 
-poplar::Tensor HostLoadOpx::unwindTensorLayout(poplar::Tensor tensor,
-                                               InIndex,
-                                               OutIndex) const {
+snap::Tensor
+HostLoadOpx::unwindTensorLayout(snap::Tensor tensor, InIndex, OutIndex) const {
   return tensor;
 }
 
@@ -197,9 +196,8 @@ InputCreatorType HostStoreOpx::getInputCreatorType(InIndex index) const {
              : PopOpx::getInputCreatorType(index);
 }
 
-poplar::Tensor HostStoreOpx::unwindTensorLayout(poplar::Tensor tensor,
-                                                InIndex,
-                                                OutIndex) const {
+snap::Tensor
+HostStoreOpx::unwindTensorLayout(snap::Tensor tensor, InIndex, OutIndex) const {
   return tensor;
 }
 

@@ -15,8 +15,7 @@ public:
   BaseExpandOpx(Op *, Devicex *);
   InputCreatorType getInputCreatorType(InIndex) const final;
 
-  poplar::Tensor
-      unwindTensorLayout(poplar::Tensor, InIndex, OutIndex) const final;
+  snap::Tensor unwindTensorLayout(snap::Tensor, InIndex, OutIndex) const final;
 
   view::RegMap unwindRegion(InIndex, OutIndex) const final;
 

@@ -17,8 +17,9 @@ public:
 
   // create the input poplar::Tensor for input at index
   // default : throw error (not all Opxs can createInput)
-  poplar::Tensor createInput(int index,
-                             const poplar::DebugNameAndId &dnai) const override;
+  snap::Tensor
+  createInputTensor(InIndex index,
+                    const poplar::DebugNameAndId &dnai) const override;
   // default return DEADEND, i.e. unable to create input tensor, and
   // cannot use downstream opxs as candidates to create input
   // tensor

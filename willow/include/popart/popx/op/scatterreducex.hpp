@@ -14,8 +14,9 @@ class ScatterReduceOpx : public PopOpx {
 public:
   ScatterReduceOpx(Op *, Devicex *);
   void grow(poplar::program::Sequence &) const final;
-  poplar::Tensor createInput(InIndex index,
-                             const poplar::DebugNameAndId &dnai) const final;
+  snap::Tensor
+  createInputTensor(InIndex index,
+                    const poplar::DebugNameAndId &dnai) const final;
 
   InputCreatorType getInputCreatorType(InIndex index) const final;
 

@@ -23,8 +23,9 @@ class BaseSortOpx : public PopOpx {
 public:
   BaseSortOpx(Op *, Devicex *);
 
-  poplar::Tensor createInput(InIndex index,
-                             const poplar::DebugNameAndId &dnai) const final;
+  snap::Tensor
+  createInputTensor(InIndex index,
+                    const poplar::DebugNameAndId &dnai) const final;
   InputCreatorType getInputCreatorType(InIndex index) const final;
   std::set<TensorId> mustExistBeforeCreate(InIndex index0) const final;
 

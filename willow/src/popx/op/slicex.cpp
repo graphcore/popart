@@ -29,9 +29,8 @@ InputCreatorType BaseSliceOpx::getInputCreatorType(InIndex inIndex) const {
   return InputCreatorType::CanUnwind;
 }
 
-poplar::Tensor BaseSliceOpx::unwindTensorLayout(poplar::Tensor tensor,
-                                                InIndex,
-                                                OutIndex) const {
+snap::Tensor
+BaseSliceOpx::unwindTensorLayout(snap::Tensor tensor, InIndex, OutIndex) const {
   return tensor;
 }
 

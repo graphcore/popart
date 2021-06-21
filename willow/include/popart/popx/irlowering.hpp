@@ -15,6 +15,7 @@
 #include <poputil/TileMapping.hpp>
 
 #include <snap/Graph.hpp>
+#include <snap/Tensor.hpp>
 
 #include <popart/aliaszerocopy.hpp>
 #include <popart/devicemanager.hpp>
@@ -162,7 +163,7 @@ private:
   // Helper class to interpret results of liveness analyzer.
   std::unique_ptr<liveness::SubgraphPartitioner> subgraphPartitioner;
 
-  poplar::Tensor rngStateTensor;
+  snap::Tensor rngStateTensor;
 
   // Non-const tensors used to keep track of batch count, modulo the return
   // period

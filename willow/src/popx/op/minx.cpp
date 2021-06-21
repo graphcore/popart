@@ -29,8 +29,8 @@ InputCreatorType MinOpx::getInputCreatorType(InIndex index) const {
   return InputCreatorType::CanUnwind;
 }
 
-poplar::Tensor
-MinOpx::unwindTensorLayout(poplar::Tensor tensor, InIndex, OutIndex) const {
+snap::Tensor
+MinOpx::unwindTensorLayout(snap::Tensor tensor, InIndex, OutIndex) const {
   return tensor;
 }
 

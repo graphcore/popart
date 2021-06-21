@@ -80,8 +80,9 @@ void CtcOpx::grow(poplar::program::Sequence &prog) const {
   }
 }
 
-poplar::Tensor CtcOpx::createInput(InIndex index,
-                                   const poplar::DebugNameAndId &dnai) const {
+snap::Tensor
+CtcOpx::createInputTensor(InIndex index,
+                          const poplar::DebugNameAndId &dnai) const {
   const auto &op       = getOp<CtcOp>();
   auto logProbsTensor  = op.input->tensor(CtcOp::getLogProbsInIndex());
   auto targetsInTensor = op.input->tensor(CtcOp::getTargetsInIndex());
@@ -94,22 +95,24 @@ poplar::Tensor CtcOpx::createInput(InIndex index,
 
   if (index == CtcOp::getLogProbsInIndex()) {
 
-    return popnn::ctc::createDataInput(graph().getPoplarGraph(),
-                                       logProbsDtype,
-                                       batchSize,
-                                       maxInputLen,
-                                       numClasses,
-                                       *plan,
-                                       dnai);
+    return snap::Tensor{popnn::ctc::createDataInput(graph().getPoplarGraph(),
+                                                    logProbsDtype,
+                                                    batchSize,
+                                                    maxInputLen,
+                                                    numClasses,
+                                                    *plan,
+                                                    dnai),
+                        graph()};
 
   } else if (index == CtcOp::getTargetsInIndex()) {
 
-    return popnn::ctc::createLabelsInput(graph().getPoplarGraph(),
-                                         targetsDtype,
-                                         batchSize,
-                                         maxTargetLen,
-                                         *plan,
-                                         dnai);
+    return snap::Tensor{popnn::ctc::createLabelsInput(graph().getPoplarGraph(),
+                                                      targetsDtype,
+                                                      batchSize,
+                                                      maxTargetLen,
+                                                      *plan,
+                                                      dnai),
+                        graph()};
 
   } else {
     throw error("CtcOpx::createInput : Invalid index = " +

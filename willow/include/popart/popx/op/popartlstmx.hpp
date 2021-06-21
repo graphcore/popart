@@ -141,8 +141,9 @@ public:
   void grow(poplar::program::Sequence &) const final;
 
   InputCreatorType getInputCreatorType(InIndex) const final;
-  poplar::Tensor createInput(InIndex index,
-                             const poplar::DebugNameAndId &dnai) const final;
+  snap::Tensor
+  createInputTensor(InIndex index,
+                    const poplar::DebugNameAndId &dnai) const final;
   std::set<TensorId> mustExistBeforeCreate(InIndex) const;
 
 private:

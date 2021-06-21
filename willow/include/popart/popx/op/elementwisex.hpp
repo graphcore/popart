@@ -43,8 +43,8 @@ class ElementWiseUnaryOpx : public PopOpx {
 public:
   ElementWiseUnaryOpx(Op *, Devicex *);
   InputCreatorType getInputCreatorType(InIndex) const override;
-  poplar::Tensor
-      unwindTensorLayout(poplar::Tensor, InIndex, OutIndex) const override;
+  snap::Tensor
+      unwindTensorLayout(snap::Tensor, InIndex, OutIndex) const override;
   view::RegMap unwindRegion(InIndex, OutIndex) const override;
 };
 
@@ -143,10 +143,11 @@ public:
   ElementWiseBinaryOpx(Op *, Devicex *);
   InputCreatorType getInputCreatorType(InIndex) const override;
   std::set<TensorId> mustExistBeforeCreate(InIndex) const override;
-  poplar::Tensor createInput(InIndex index,
-                             const poplar::DebugNameAndId &dnai) const override;
-  poplar::Tensor
-  unwindTensorLayout(poplar::Tensor tensor, InIndex, OutIndex) const override;
+  snap::Tensor
+  createInputTensor(InIndex index,
+                    const poplar::DebugNameAndId &dnai) const override;
+  snap::Tensor
+  unwindTensorLayout(snap::Tensor tensor, InIndex, OutIndex) const override;
   view::RegMap unwindRegion(InIndex, OutIndex) const override;
 };
 

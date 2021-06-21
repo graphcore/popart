@@ -48,9 +48,9 @@ BaseSortOpx::growIndicesSort(poplar::program::Sequence &prog) const {
                               debugContext("sort"));
 }
 
-poplar::Tensor
-BaseSortOpx::createInput(InIndex inIndex,
-                         const poplar::DebugNameAndId &dnai) const {
+snap::Tensor
+BaseSortOpx::createInputTensor(InIndex inIndex,
+                               const poplar::DebugNameAndId &dnai) const {
 
   if (inIndex == BaseSortOp::getInIndex()) {
     // Create an input that will minimise the amount of exchange in sort. This
@@ -72,9 +72,9 @@ BaseSortOpx::createInput(InIndex inIndex,
     std::vector<unsigned> permutation(t.rank());
     std::iota(permutation.begin(), permutation.end(), 0);
     std::swap(permutation[axis], permutation.back());
-    return t.dimShuffle(permutation);
+    return snap::Tensor{t.dimShuffle(permutation), graph()};
   } else {
-    return PopOpx::createInput(inIndex, dnai);
+    return PopOpx::createInputTensor(inIndex, dnai);
   }
 }
 

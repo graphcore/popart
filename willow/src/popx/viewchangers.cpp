@@ -5,7 +5,7 @@
 namespace popart {
 namespace popx {
 
-poplar::Tensor ViewChangers::apply(poplar::Tensor tensor) const {
+snap::Tensor ViewChangers::apply(snap::Tensor tensor) const {
   for (auto viewChanger : viewChangers) {
     tensor = viewChanger->apply(tensor);
   }

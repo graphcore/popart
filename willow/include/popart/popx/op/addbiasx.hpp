@@ -17,8 +17,9 @@ public:
 
   std::set<TensorId> mustExistBeforeCreate(int index0) const override;
   InputCreatorType getInputCreatorType(InIndex) const final;
-  poplar::Tensor createInput(InIndex index,
-                             const poplar::DebugNameAndId &dnai) const final;
+  snap::Tensor
+  createInputTensor(InIndex index,
+                    const poplar::DebugNameAndId &dnai) const final;
 };
 
 class AddBiasInplaceOpx : public AddBiasOpx {

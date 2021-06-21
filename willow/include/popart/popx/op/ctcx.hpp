@@ -22,9 +22,10 @@ public:
   CtcOpx(Op *, Devicex *);
   void grow(poplar::program::Sequence &) const final;
 
-  // See PopOpx::createInput.
-  virtual poplar::Tensor
-  createInput(InIndex index, const poplar::DebugNameAndId &dnai) const override;
+  // See PopOpx::createInputTensor.
+  virtual snap::Tensor
+  createInputTensor(InIndex index,
+                    const poplar::DebugNameAndId &dnai) const override;
 
   // See PopOpx::getInputCreatorType.
   virtual InputCreatorType getInputCreatorType(InIndex index) const override;
