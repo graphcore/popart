@@ -32,8 +32,8 @@
 #include <popart/onnxdebuginfo.hpp>
 #include <popart/op/call.hpp>
 #include <popart/op/dropout.hpp>
-#include <popart/op/exchange/hostcopy.hpp>
 #include <popart/op/getrandomseed.hpp>
+#include <popart/op/hostcopy.hpp>
 #include <popart/op/init.hpp>
 #include <popart/op/loss.hpp>
 #include <popart/op/pad.hpp>
@@ -74,7 +74,7 @@
 #include <popart/transforms/mainloops.hpp>
 #include <popart/transforms/mergecopies.hpp>
 #include <popart/transforms/mergeduplicateops.hpp>
-#include <popart/transforms/mergeexchange.hpp>
+#include <popart/transforms/mergeremote.hpp>
 #include <popart/transforms/mergevarupdates.hpp>
 #include <popart/transforms/pipeline.hpp>
 #include <popart/transforms/prune.hpp>
@@ -1353,15 +1353,11 @@ void Ir::prepareImpl(const IrBundle &gb, const HashesMap &cacheEntries) {
   if (getSessionOptions().useHostCopyOps) {
     // Add anchor HostStore operations
     applyTransform(HostIOSetup::id(2), getMainGraph());
-    // Repeat IoComputeTileCopy to also insert IO tile copies before HostStore
-    // ops
-    applyTransform(IoComputeTileCopy::id(), getMainGraph());
-    updateVertices();
   }
 
   // Merge remote loads/stores into exchanges
   for (auto &id_graph : graphs) {
-    applyTransform(MergeExchange::id(), *id_graph.second);
+    applyTransform(MergeRemote::id(), *id_graph.second);
   }
 
   if (autoRecomputationEnabled() && !getSessionOptions().enablePipelining &&
@@ -1909,40 +1905,10 @@ void Ir::registerInputTensors() {
       logCreationInfo("Stream", id);
 
       uint32_t debugid = 0;
-      {
-        auto key = std::string(onnxDebugIdInputMetaDataKey) + id;
-        for (auto m : onnxModel->metadata_props()) {
-          if (m.key() == key) {
-            debugid = std::stoi(m.value());
-          }
-        }
-      }
-
-      // Construct InputSettings from ONNX metadata
-      InputSettings settings;
-      {
-        {
-          TileSet tileSet = TileSet::Compute;
-          auto key =
-              std::string(sTileSetAttribute) + std::string(sNameDelimiter) + id;
-          for (auto m : onnxModel->metadata_props()) {
-            if (m.key() == key) {
-              tileSet = static_cast<TileSet>(std::stoi(m.value()));
-            }
-          }
-          settings.setTileSet(tileSet);
-        }
-
-        {
-          ExchangeStrategy strategy = ExchangeStrategy::JustInTime;
-          auto key                  = std::string(sExchangeStrategyAttribute) +
-                     std::string(sNameDelimiter) + id;
-          for (auto m : onnxModel->metadata_props()) {
-            if (m.key() == key) {
-              strategy = static_cast<ExchangeStrategy>(std::stoi(m.value()));
-            }
-          }
-          settings.setExchangeStrategy(strategy);
+      auto key         = std::string(onnxDebugIdInputMetaDataKey) + id;
+      for (auto m : onnxModel->metadata_props()) {
+        if (m.key() == key) {
+          debugid = std::stoi(m.value());
         }
       }
 
@@ -1952,13 +1918,12 @@ void Ir::registerInputTensors() {
       if (inputShapeInfo.has(id)) {
         popart::OnnxVariableDebugInfo onnxDi(
             onnxDc, valueInfo, inputShapeInfo.get(id));
-        getTensors().addStream(id, inputShapeInfo.get(id), settings, {onnxDi});
+        getTensors().addStream(id, inputShapeInfo.get(id), {onnxDi});
       } else if (valueInfo.has_type() &&
                  valueInfo.type().tensor_type().has_shape()) {
         checkForDimParams(id, valueInfo.type());
         popart::OnnxVariableDebugInfo onnxDi(onnxDc, valueInfo);
-        getTensors().addStream(
-            id, TensorInfo(valueInfo.type()), settings, {onnxDi});
+        getTensors().addStream(id, TensorInfo(valueInfo.type()), {onnxDi});
       } else {
         throw error("Could not find tensor {} in InputShapeInfo, but no shape "
                     "is specified in the onnx model",
@@ -3690,8 +3655,8 @@ std::size_t std::hash<popart::Ir>::operator()(const popart::Ir &ir) const {
   return seed;
 }
 
-std::size_t std::hash<popart::IrBundle>::
-operator()(const popart::IrBundle &bundle) const {
+std::size_t
+std::hash<popart::IrBundle>::operator()(const popart::IrBundle &bundle) const {
   size_t seed = 0;
 
   boost::hash_combine(

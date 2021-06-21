@@ -8,11 +8,10 @@
 #include <popart/op/concat.hpp>
 #include <popart/op/dynamic/dynamicslice.hpp>
 #include <popart/op/dynamic/dynamicupdate.hpp>
-#include <popart/op/exchange/multiexchange.hpp>
-#include <popart/op/exchange/remote.hpp>
 #include <popart/op/identity.hpp>
 #include <popart/op/ipucopy.hpp>
 #include <popart/op/loop.hpp>
+#include <popart/op/remote.hpp>
 #include <popart/op/reshape.hpp>
 #include <popart/op/slice.hpp>
 #include <popart/tensor.hpp>
@@ -57,23 +56,22 @@ bool RemoteSetup::apply(Graph &graph) const {
         remoteBufferId = std::max(remoteBufferId, id + 1);
       }
     }
-    if (MultiExchangeOp *exchangeOp = dynamic_cast<MultiExchangeOp *>(op)) {
+    if (RemoteExchangeOp *exchangeOp = dynamic_cast<RemoteExchangeOp *>(op)) {
       auto allRemoteBufferIds = ir.getAllRemoteBufferInfos();
-
-      for (int index = 0; index < exchangeOp->getNumExchanges(); ++index) {
-        if (exchangeOp->isRemote(index)) {
-          RemoteBufferId id = exchangeOp->getRemoteBufferId(index);
-          if (id > -1 &&
-              allRemoteBufferIds.find(id) == allRemoteBufferIds.end()) {
-            auto info = RemoteBufferInfo(
-                exchangeOp->input
-                    ->tensor(
-                        exchangeOp->descriptorIndexToInIndices(index).at(0))
-                    ->info,
-                1);
-            ir.setRemoteBufferInfo(id, info);
-            remoteBufferId = std::max(remoteBufferId, id + 1);
-          }
+      for (InIndex inIndex = 0;
+           inIndex < exchangeOp->numLoads() + exchangeOp->numStores();
+           ++inIndex) {
+        RemoteBufferId id = exchangeOp->getRemoteBufferId(inIndex);
+        if (id > -1 &&
+            allRemoteBufferIds.find(id) == allRemoteBufferIds.end()) {
+          auto info =
+              RemoteBufferInfo(exchangeOp->input
+                                   ->tensor(exchangeOp->numLoads() +
+                                            exchangeOp->numStores() + inIndex)
+                                   ->info,
+                               1);
+          ir.setRemoteBufferInfo(id, info);
+          remoteBufferId = std::max(remoteBufferId, id + 1);
         }
       }
     }
@@ -128,7 +126,7 @@ bool RemoteSetup::apply(Graph &graph) const {
           // RemoteLoad/Store.
           if (consumer->opid == Onnx::CustomOperators::RemoteLoad ||
               consumer->opid == Onnx::CustomOperators::RemoteStore ||
-              consumer->opid == Onnx::CustomOperators::MultiExchange) {
+              consumer->opid == Onnx::CustomOperators::RemoteExchange) {
             for (InIndex inIndex : consumer->input->indices(tfront)) {
               argOpMap[tensor_id].insert({consumer, inIndex});
               opArgMap[{consumer, inIndex}].insert(tensor_id);
@@ -264,23 +262,18 @@ bool RemoteSetup::apply(Graph &graph) const {
                 remoteBufferId,
                 rl->outInfo(RemoteLoadOp::getLocalTensorOutIndex()));
           }
-          if (MultiExchangeOp *exchangeOp =
-                  dynamic_cast<MultiExchangeOp *>(op)) {
-            auto indices = exchangeOp->inIndexToDescriptorIndex(inIndex);
-            if (exchangeOp->isRemote(indices.first)) {
-              exchangeOp->setRemoteBufferId(indices.first, remoteBufferId);
-            }
-            InIndex localInIndex = inIndex - 1;
+          if (RemoteExchangeOp *re = dynamic_cast<RemoteExchangeOp *>(op)) {
+            auto localInIndex = inIndex % (re->numLoads() + re->numStores());
+            re->setRemoteBufferId(localInIndex, remoteBufferId);
             remoteBufferVGIDs[remoteBufferId].insert(
-                exchangeOp->getIntrospectionInVirtualGraphId(localInIndex)
-                    .first);
+                re->getIntrospectionInVirtualGraphId(inIndex).first);
             logging::transform::trace(
                 "[RemoteSetup] Op {} index {} connected to remote buffer {}. "
                 "Tensor info {}.",
-                exchangeOp->debugName(),
+                re->debugName(),
                 localInIndex,
                 remoteBufferId,
-                exchangeOp->inInfo(localInIndex));
+                re->inInfo(localInIndex));
           }
         }
         // Remote arg is a single index: [index]
@@ -376,7 +369,7 @@ bool RemoteSetup::apply(Graph &graph) const {
         throw error("Op {} has no valid remote buffer set.", op->debugName());
       }
     }
-    if (MultiExchangeOp *exchangeOp = dynamic_cast<MultiExchangeOp *>(op)) {
+    if (RemoteExchangeOp *exchangeOp = dynamic_cast<RemoteExchangeOp *>(op)) {
       for (InIndex inIndex = 0;
            inIndex < exchangeOp->numLoads() + exchangeOp->numStores();
            ++inIndex) {

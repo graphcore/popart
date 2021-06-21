@@ -7,13 +7,13 @@
 #include <popart/builder.hpp>
 #include <popart/ir.hpp>
 #include <popart/op/add.hpp>
-#include <popart/op/exchange/remote.hpp>
 #include <popart/op/identity.hpp>
 #include <popart/op/init.hpp>
 #include <popart/op/iotilecopy.hpp>
 #include <popart/op/ipucopy.hpp>
 #include <popart/op/l1.hpp>
 #include <popart/op/matmul.hpp>
+#include <popart/op/remote.hpp>
 #include <popart/op/reshape.hpp>
 #include <popart/tensorinfo.hpp>
 #include <popart/tensornames.hpp>

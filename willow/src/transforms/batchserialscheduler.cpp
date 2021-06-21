@@ -9,10 +9,10 @@
 #include <popart/op/concat.hpp>
 #include <popart/op/dynamic/dynamicslice.hpp>
 #include <popart/op/dynamic/dynamicupdate.hpp>
-#include <popart/op/exchange/remote.hpp>
 #include <popart/op/init.hpp>
 #include <popart/op/iotilecopy.hpp>
 #include <popart/op/ipucopy.hpp>
+#include <popart/op/remote.hpp>
 #include <popart/op/reshape.hpp>
 #include <popart/op/slice.hpp>
 #include <popart/tensor.hpp>
@@ -21,8 +21,8 @@
 
 namespace popart {
 
-bool BatchSerialTensorContext::
-operator<(BatchSerialTensorContext const &rhs) const {
+bool BatchSerialTensorContext::operator<(
+    BatchSerialTensorContext const &rhs) const {
   return std::make_tuple(vgraphId ? *vgraphId : unusedVGraphId,
                          executionPhase ? *executionPhase
                                         : unusedExecutionPhase,
@@ -33,14 +33,14 @@ operator<(BatchSerialTensorContext const &rhs) const {
              rhs.pipelineStage ? *rhs.pipelineStage : unusedPipelineStage);
 }
 
-bool BatchSerialTensorContext::
-operator==(BatchSerialTensorContext const &rhs) const {
+bool BatchSerialTensorContext::operator==(
+    BatchSerialTensorContext const &rhs) const {
   return std::make_tuple(vgraphId, executionPhase, pipelineStage) ==
          std::make_tuple(rhs.vgraphId, rhs.executionPhase, rhs.pipelineStage);
 }
 
-bool BatchSerialTensorContext::
-operator!=(BatchSerialTensorContext const &rhs) const {
+bool BatchSerialTensorContext::operator!=(
+    BatchSerialTensorContext const &rhs) const {
   return !(*this == rhs);
 }
 

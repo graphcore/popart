@@ -8,9 +8,9 @@
 #include <popart/devicemanager.hpp>
 #include <popart/inputshapeinfo.hpp>
 #include <popart/ndarraywrapper.hpp>
-#include <popart/op/exchange/remote.hpp>
 #include <popart/op/init.hpp>
 #include <popart/op/l1.hpp>
+#include <popart/op/remote.hpp>
 #include <popart/opmanager.hpp>
 #include <popart/optimizer.hpp>
 #include <popart/popx/devicex.hpp>

@@ -3,8 +3,7 @@
 #include <aliasmodel.hpp>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
-#include <popart/op/exchange/exchange.hpp>
-#include <popart/op/exchange/remote.hpp>
+#include <popart/op/remote.hpp>
 #include <popart/opmanager.hpp>
 #include <popart/opserialiser.hpp>
 #include <popart/tensor.hpp>
@@ -14,7 +13,7 @@ namespace popart {
 RemoteStoreOp::RemoteStoreOp(const OperatorIdentifier &_opid,
                              const Op::Settings &settings_,
                              RemoteBufferId rbid_)
-    : ExchangeBaseOp(_opid, settings_), remoteBufferId(rbid_) {}
+    : Op(_opid, settings_), remotebuffer_id(rbid_) {}
 
 std::unique_ptr<Op> RemoteStoreOp::clone() const {
   return std::make_unique<RemoteStoreOp>(*this);
@@ -22,7 +21,7 @@ std::unique_ptr<Op> RemoteStoreOp::clone() const {
 
 void RemoteStoreOp::appendOutlineAttributes(OpSerialiserBase &os) const {
   Op::appendOutlineAttributes(os);
-  os.appendAttribute("bufferid", remoteBufferId);
+  os.appendAttribute("bufferid", remotebuffer_id);
 }
 
 ReplicatedTensorShardingIndices
@@ -30,19 +29,10 @@ RemoteStoreOp::getReplicatedTensorShardingIndices() const {
   return {{{RemoteStoreOp::getLocalTensorInIndex()}, {}}};
 }
 
-ExchangeDescriptor RemoteStoreOp::getExchangeDescriptor(int index) const {
-  return ExchangeDescriptor(ExchangeDirection::Store,
-                            remoteBufferId,
-                            settings.vgraphId,
-                            settings.tileSet,
-                            input->n(),
-                            output->n());
-}
-
 RemoteLoadOp::RemoteLoadOp(const OperatorIdentifier &_opid,
                            const Op::Settings &settings_,
                            RemoteBufferId rbid_)
-    : ExchangeBaseOp(_opid, settings_), remoteBufferId(rbid_) {}
+    : Op(_opid, settings_), remotebuffer_id(rbid_) {}
 
 std::unique_ptr<Op> RemoteLoadOp::clone() const {
   return std::make_unique<RemoteLoadOp>(*this);
@@ -50,7 +40,7 @@ std::unique_ptr<Op> RemoteLoadOp::clone() const {
 
 void RemoteLoadOp::appendOutlineAttributes(OpSerialiserBase &os) const {
   Op::appendOutlineAttributes(os);
-  os.appendAttribute("bufferid", remoteBufferId);
+  os.appendAttribute("bufferid", remotebuffer_id);
 }
 
 void RemoteLoadOp::setup() {
@@ -101,13 +91,118 @@ RemoteLoadOp::getReplicatedTensorShardingIndices() const {
            {RemoteLoadOp::getLocalTensorOutIndex()}}};
 }
 
-ExchangeDescriptor RemoteLoadOp::getExchangeDescriptor(int index) const {
-  return ExchangeDescriptor(ExchangeDirection::Load,
-                            remoteBufferId,
-                            settings.vgraphId,
-                            settings.tileSet,
-                            input->n(),
-                            output->n());
+RemoteExchangeOp::RemoteExchangeOp(
+    const OperatorIdentifier &_opid,
+    const Op::Settings &settings_,
+    const std::vector<RemoteBufferId> remotebuffer_ids_,
+    const std::vector<std::pair<OptionalVGraphId, TileSet>> vgidAndTiles_)
+    : Op(_opid, settings_), remotebufferIds(remotebuffer_ids_),
+      vgidAndTiles(vgidAndTiles_) {}
+
+std::unique_ptr<Op> RemoteExchangeOp::clone() const {
+  return std::make_unique<RemoteExchangeOp>(*this);
+}
+
+void RemoteExchangeOp::appendOutlineAttributes(OpSerialiserBase &os) const {
+  Op::appendOutlineAttributes(os);
+  os.appendAttribute("bufferids", remotebufferIds);
+
+  std::vector<VGraphId> vgids;
+  vgids.reserve(vgidAndTiles.size());
+  std::vector<int64_t> tileSets;
+  tileSets.reserve(vgidAndTiles.size());
+
+  for (auto &vgid : vgidAndTiles) {
+    vgids.push_back(vgid.first ? *vgid.first : unusedVGraphId);
+    tileSets.push_back(static_cast<int64_t>(vgid.second));
+  }
+
+  os.appendAttribute("vgids", vgids);
+  os.appendAttribute("tileSets", tileSets);
+}
+
+void RemoteExchangeOp::setup() {
+  for (auto &out : output->tensorMap()) {
+    outInfo(out.first) = inInfo(out.first);
+  }
+}
+
+view::Regions RemoteExchangeOp::modifies(InIndex in) const {
+  if (in < numLoads()) {
+    return {view::Region::getFull(inShape(in), view::AccessType::Write)};
+  } else {
+    return {view::Region::getEmpty(inRank(in))};
+  }
+}
+
+view::Regions RemoteExchangeOp::aliases(InIndex in, OutIndex out) const {
+  if (in == out) {
+    return {view::Region::getFull(inShape(in), view::AccessType::Write)};
+  } else {
+    return {view::Region::getEmpty(inRank(in))};
+  }
+}
+
+view::RegMap RemoteExchangeOp::fwdRegMap(InIndex inIndex,
+                                         OutIndex outIndex) const {
+  if (inIndex != outIndex) {
+    auto emptyRegion = view::Region::getEmpty(outRank(outIndex));
+    return [emptyRegion](const view::Region &) {
+      return view::Regions(1, emptyRegion);
+    };
+  }
+  return Op::fwdRegMap(inIndex, outIndex);
+}
+
+view::RegMap RemoteExchangeOp::bwdRegMap(InIndex inIndex,
+                                         OutIndex outIndex) const {
+  if (inIndex != outIndex) {
+    auto emptyRegion = view::Region::getEmpty(inRank(inIndex));
+    return [emptyRegion](const view::Region &) {
+      return view::Regions(1, emptyRegion);
+    };
+  }
+  return Op::bwdRegMap(inIndex, outIndex);
+}
+
+int RemoteExchangeOp::numLoads() const {
+  // Each load produces one Op output
+  return output->tensorMap().size();
+}
+
+int RemoteExchangeOp::numStores() const {
+  // Each store and load has 2 inputs
+  return (input->tensorMap().size() / 2) - numLoads();
+}
+
+VGraphIdAndTileSet RemoteExchangeOp::getIntrospectionInVirtualGraphId(
+    InIndex in,
+    std::set<OpId> visited) const {
+  auto vgid = vgidAndTiles.at(in % (numLoads() + numStores()));
+  return {vgid.first ? *vgid.first : unusedVGraphId, vgid.second};
+}
+
+VGraphIdAndTileSet RemoteExchangeOp::getIntrospectionOutVirtualGraphId(
+    OutIndex out,
+    std::set<OpId> visited) const {
+  auto vgid = vgidAndTiles.at(out % (numLoads() + numStores()));
+  return {vgid.first ? *vgid.first : unusedVGraphId, vgid.second};
+}
+
+ReplicatedTensorShardingIndices
+RemoteExchangeOp::getReplicatedTensorShardingIndices() const {
+  ReplicatedTensorShardingIndices indices;
+
+  for (auto &out : output->tensorMap()) {
+    indices.insert({{out.first}, {out.first}});
+  }
+
+  for (InIndex inIndex = numLoads(); inIndex < numLoads() + numStores();
+       ++inIndex) {
+    indices.insert({{inIndex}, {}});
+  }
+
+  return indices;
 }
 
 static OpDefinition::DataTypes T = {DataType::FLOAT,

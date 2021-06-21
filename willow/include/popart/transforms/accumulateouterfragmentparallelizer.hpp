@@ -78,8 +78,8 @@ protected:
     Ops remoteLoadOps;
     // The ops of type RemoteStoreOp.
     Ops remoteStoreOps;
-    // The ops of type MultiExchangeOp.
-    Ops multiExchangeOps;
+    // The ops of type RemoteExchangeOp.
+    Ops remoteExchangeOps;
     // The sum of the number of elements of tensors being loaded.
     int64_t numLoadBytes;
     std::set<Shape> loadShapes;

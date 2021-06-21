@@ -144,7 +144,7 @@ BOOST_AUTO_TEST_CASE(AliasZeroCopyTest0) {
 
     // one batch per step
     int batchesPerStep = 1;
-    AnchorReturnTypeMap anchorIds;
+    std::map<TensorId, AnchorReturnType> anchorIds;
     auto dataFlow = DataFlow(batchesPerStep, anchorIds);
 
     auto device = popart::createTestDevice(TEST_TARGET);

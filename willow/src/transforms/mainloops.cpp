@@ -7,10 +7,10 @@
 #include <popart/ir.hpp>
 #include <popart/names.hpp>
 #include <popart/op.hpp>
-#include <popart/op/exchange/remote.hpp>
 #include <popart/op/iotilecopy.hpp>
 #include <popart/op/ipucopy.hpp>
 #include <popart/op/loop.hpp>
+#include <popart/op/remote.hpp>
 #include <popart/tensor.hpp>
 #include <popart/tensors.hpp>
 #include <popart/topocons.hpp>
@@ -420,7 +420,7 @@ bool MainLoops::apply(Graph &graph) const {
   auto batchesPerStep     = ir.getDataFlow().batchesPerStep();
 
   // Check whether the anchor return types are supported.
-  for (auto &anchorArt : ir.getDataFlow().getAnchorReturnTypeMap()) {
+  for (auto &anchorArt : ir.getDataFlow().getAnchorMap()) {
     // TODO(T39577): Uncomment the AnchorReturnTypeId::Sum line in the if
     // statement below once this is resolved, and fix the last sentence in the
     // error message to "Supported anchor return types are

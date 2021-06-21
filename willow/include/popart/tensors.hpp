@@ -51,12 +51,6 @@ public:
 
   // create a Tensor of type Stream
   void addStream(TensorId, const TensorInfo &, const DebugContext &dc = {});
-
-  // create a Tensor of type Stream
-  void addStream(TensorId,
-                 const TensorInfo &,
-                 const InputSettings &,
-                 const DebugContext &dc = {});
   // create a Tensor of type ActGrad (basically any tensor which is
   // the output of an Opm)
   void addActGrad(TensorId, const DebugContext &dc = {});

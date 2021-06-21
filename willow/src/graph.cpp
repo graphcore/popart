@@ -27,9 +27,8 @@
 #include <popart/op/accumulate.hpp>
 #include <popart/op/accumulatorscale.hpp>
 #include <popart/op/conv.hpp>
-#include <popart/op/exchange/multiexchange.hpp>
-#include <popart/op/exchange/remote.hpp>
 #include <popart/op/ipucopy.hpp>
+#include <popart/op/remote.hpp>
 #include <popart/op/sgd0varupdate.hpp>
 #include <popart/op/sgd1acclupdate.hpp>
 #include <popart/op/sgd1varupdate.hpp>
@@ -389,7 +388,7 @@ void Graph::setVarUpdateConstraints() {
 
             // Modifiers that don't force all consumers to occur before
             if (modifier->isConvertibleTo<RemoteLoadOp>() ||
-                modifier->isConvertibleTo<MultiExchangeOp>() ||
+                modifier->isConvertibleTo<RemoteExchangeOp>() ||
                 modifier->isConvertibleTo<AccumulateOp>() ||
                 modifier->isConvertibleTo<AccumulatorScaleOp>()) {
               continue;
@@ -397,7 +396,7 @@ void Graph::setVarUpdateConstraints() {
 
             // Consumers that don't need to run before modifiers
             if (consumer->isConvertibleTo<RemoteLoadOp>() ||
-                consumer->isConvertibleTo<MultiExchangeOp>() ||
+                consumer->isConvertibleTo<RemoteExchangeOp>() ||
                 consumer->isConvertibleTo<RemoteStoreOp>() ||
                 consumer->isConvertibleTo<SliceInplaceOp>()) {
               continue;

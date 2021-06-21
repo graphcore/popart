@@ -5,7 +5,7 @@
 #include <popart/logging.hpp>
 #include <popart/names.hpp>
 #include <popart/op.hpp>
-#include <popart/op/exchange/hostcopy.hpp>
+#include <popart/op/hostcopy.hpp>
 #include <popart/op/init.hpp>
 #include <popart/tensor.hpp>
 #include <popart/tensorindex.hpp>

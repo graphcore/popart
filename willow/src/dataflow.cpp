@@ -8,23 +8,16 @@
 
 namespace popart {
 
-AnchorReturnType::AnchorReturnType(std::string artString,
-                                   TileSet tileSet,
-                                   ExchangeStrategy exchangeStrategy)
-    : artStr_(artString), artId_(getIdFromStr(artString)), returnPeriod_(0),
-      tileSet_(tileSet), exchangeStrategy_(exchangeStrategy) {
+AnchorReturnType::AnchorReturnType(std::string artString)
+    : artStr_(artString), artId_(getIdFromStr(artString)), returnPeriod_(0) {
   if (id() == AnchorReturnTypeId::EveryN) {
     throw error("Must specify return period with option 'EVERYN'");
   }
 }
 
-AnchorReturnType::AnchorReturnType(std::string artString,
-                                   int returnPeriod,
-                                   TileSet tileSet,
-                                   ExchangeStrategy exchangeStrategy)
+AnchorReturnType::AnchorReturnType(std::string artString, int returnPeriod)
     : artStr_(artString), artId_(getIdFromStr(artString)),
-      returnPeriod_(returnPeriod), tileSet_(tileSet),
-      exchangeStrategy_(exchangeStrategy) {
+      returnPeriod_(returnPeriod) {
   if (id() == AnchorReturnTypeId::EveryN) {
     if (returnPeriod_ <= 0) {
       throw error("Anchor return period must be greater than zero");
@@ -83,23 +76,14 @@ std::ostream &operator<<(std::ostream &oss, AnchorReturnTypeId art) {
 }
 
 std::size_t AnchorReturnType::hash() const {
-  return std::hash<std::string>()(artStr_) ^ std::hash<int>()(returnPeriod_) ^
-         std::hash<int>()(static_cast<int>(tileSet_)) ^
-         std::hash<int>()(static_cast<int>(exchangeStrategy_));
+  return std::hash<std::string>()(artStr_) ^ std::hash<int>()(returnPeriod_);
 }
-
-InputSettings::InputSettings()
-    : tileSet_(TileSet::Compute),
-      exchangeStrategy_(ExchangeStrategy::JustInTime) {}
-
-InputSettings::InputSettings(TileSet tileSet, ExchangeStrategy exchangeStrategy)
-    : tileSet_(tileSet), exchangeStrategy_(exchangeStrategy) {}
 
 DataFlow::DataFlow() : batchesPerStep_(0) {}
 
 DataFlow::DataFlow(int bps) : batchesPerStep_(bps) {}
 
-DataFlow::DataFlow(int bps, const AnchorReturnTypeMap &m)
+DataFlow::DataFlow(int bps, const std::map<TensorId, AnchorReturnType> &m)
     : batchesPerStep_(bps), m_anchors(m) {
 
   if (batchesPerStep_ <= 0) {
@@ -124,9 +108,10 @@ DataFlow::DataFlow(int bps, const AnchorReturnTypeMap &m)
   }
 }
 
-static AnchorReturnTypeMap anchorMapFromVector(const std::vector<TensorId> tIds,
-                                               const AnchorReturnType &art) {
-  AnchorReturnTypeMap anchor_map;
+static std::map<TensorId, AnchorReturnType>
+anchorMapFromVector(const std::vector<TensorId> tIds,
+                    const AnchorReturnType &art) {
+  std::map<TensorId, AnchorReturnType> anchor_map;
   for (const auto &id : tIds) {
     anchor_map.emplace(id, art);
   }

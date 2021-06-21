@@ -14,9 +14,9 @@
 #include <popart/op/boundary.hpp>
 #include <popart/op/call.hpp>
 #include <popart/op/dropout.hpp>
-#include <popart/op/exchange/exchange.hpp>
 #include <popart/op/init.hpp>
 #include <popart/op/ipucopy.hpp>
+#include <popart/op/remote.hpp>
 #include <popart/subgraph/iosubgraphcostmodel.hpp>
 #include <popart/subgraph/match.hpp>
 #include <popart/subgraph/outliner.hpp>
@@ -224,7 +224,11 @@ public:
     return intersect.size();
   }
 
-  bool isExchangeOp(Op *op) { return op->isConvertibleTo<ExchangeBaseOp>(); }
+  bool isRemoteOp(Op *op) {
+    return op->isConvertibleTo<RemoteLoadOp>() ||
+           op->isConvertibleTo<RemoteStoreOp>() ||
+           op->isConvertibleTo<RemoteExchangeOp>();
+  }
 
   bool canSoftParallelize(size_t p0, size_t p1) {
     Op *op0 = schedule.at(p0);
@@ -244,8 +248,8 @@ public:
       // Can't overlap in software if the tile sets on the same IPU overlap
       return false;
     } else if (op0->isConvertibleTo<BoundaryOp>() ||
-               op1->isConvertibleTo<BoundaryOp>() || !isExchangeOp(op0) ||
-               (isExchangeOp(op0) && p1 < p0)) {
+               op1->isConvertibleTo<BoundaryOp>() || !isRemoteOp(op0) ||
+               (isRemoteOp(op0) && p1 < p0)) {
       return false;
     } else {
       // Can only overlap if op0 is a Remote Op and the other ops follows after

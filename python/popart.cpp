@@ -580,24 +580,6 @@ PYBIND11_MODULE(popart_core, m) {
     en.value("Zero", InitType::Zero, DOC(popart, InitType, Zero));
   }
   {
-    py::enum_<TileSet> en(m, "TileSet", DOC(popart, TileSet));
-    en.value("Compute", TileSet::Compute, DOC(popart, TileSet, Compute));
-    en.value("IO", TileSet::IO, DOC(popart, TileSet, IO));
-  }
-  {
-    py::enum_<ExchangeStrategy> en(
-        m, "ExchangeStrategy", DOC(popart, ExchangeStrategy));
-    en.value("JustInTime",
-             ExchangeStrategy::JustInTime,
-             DOC(popart, ExchangeStrategy, JustInTime));
-    en.value("OverlapLoop",
-             ExchangeStrategy::OverlapLoop,
-             DOC(popart, ExchangeStrategy, OverlapLoop));
-    en.value("OverlapStep",
-             ExchangeStrategy::OverlapStep,
-             DOC(popart, ExchangeStrategy, OverlapStep));
-  }
-  {
     py::class_<OpDefinition::Input> cls(m, "OpDefinition::Input");
     cls.def_readonly("name", &OpDefinition::Input::name);
     cls.def_readonly("supportedTensors",
@@ -668,26 +650,16 @@ PYBIND11_MODULE(popart_core, m) {
   }
   {
     py::class_<AnchorReturnType> cls(m, "AnchorReturnType");
-    cls.def(py::init<std::string, TileSet, ExchangeStrategy>(),
+    cls.def(py::init<std::string>(), py::arg("anchorReturnTypeString"));
+    cls.def(py::init<std::string, int>(),
             py::arg("anchorReturnTypeString"),
-            py::arg("tileSet")          = TileSet::Compute,
-            py::arg("exchangeStrategy") = ExchangeStrategy::JustInTime);
-    cls.def(py::init<std::string, int, TileSet, ExchangeStrategy>(),
-            py::arg("anchorReturnTypeString"),
-            py::arg("returnPeriod"),
-            py::arg("tileSet")          = TileSet::Compute,
-            py::arg("exchangeStrategy") = ExchangeStrategy::JustInTime);
+            py::arg("returnPeriod"));
     cls.def("id", &AnchorReturnType::id);
     cls.def("rp", &AnchorReturnType::rp);
-    cls.def("tileSet", &AnchorReturnType::tileSet);
-    cls.def("exchangeStrategy", &AnchorReturnType::exchangeStrategy);
   }
   {
     py::class_<DataFlow> cls(m, "DataFlow");
-    cls.def(py::init<int, const AnchorReturnTypeMap &>(),
-            py::arg("batchesPerStep"),
-            py::arg("anchorTensors"));
-    cls.def(py::init<int, const AnchorReturnTypeMap &>(),
+    cls.def(py::init<int, const std::map<TensorId, AnchorReturnType> &>(),
             py::arg("batchesPerStep"),
             py::arg("anchorTensors"));
     cls.def(py::init<int,
@@ -704,14 +676,6 @@ PYBIND11_MODULE(popart_core, m) {
             pybind11::return_value_policy::copy,
             DOC(popart, DataFlow, anchors));
     cls.def("art", &DataFlow::art);
-  }
-  {
-    py::class_<InputSettings> cls(m, "InputSettings");
-    cls.def(py::init<TileSet, ExchangeStrategy>(),
-            py::arg("tileSet")          = TileSet::Compute,
-            py::arg("exchangeStrategy") = ExchangeStrategy::JustInTime);
-    cls.def("tileSet", &InputSettings::tileSet);
-    cls.def("exchangeStrategy", &InputSettings::exchangeStrategy);
   }
   {
     py::class_<TensorInfo> cls(m, "_TensorInfoCore");
@@ -1555,6 +1519,11 @@ PYBIND11_MODULE(popart_core, m) {
         "OnChip", TensorStorage::OnChip, DOC(popart, TensorStorage, OnChip));
     en.value(
         "OffChip", TensorStorage::OffChip, DOC(popart, TensorStorage, OffChip));
+  }
+  {
+    py::enum_<TileSet> en(m, "TileSet", DOC(popart, TileSet));
+    en.value("Compute", TileSet::Compute, DOC(popart, TileSet, Compute));
+    en.value("IO", TileSet::IO, DOC(popart, TileSet, IO));
   }
   {
     py::enum_<ReplicatedTensorSharding> en(
@@ -2646,46 +2615,6 @@ PYBIND11_MODULE(popart_core, m) {
         },
         py::arg("dataType"),
         py::arg("shape"),
-        py::arg("debugContext") = "");
-    cls.def(
-        "addInputTensor",
-        [](Builder &b, const TensorInfo &ti, const popart::DebugContext &dc)
-            -> TensorId { return b.addInputTensor(ti, dc); },
-        py::arg("tensorInfo"),
-        py::arg("debugPrefix") = std::string());
-    cls.def("addInputTensor",
-            py::overload_cast<const TensorInfo &,
-                              const InputSettings &,
-                              const popart::DebugContext &>(
-                &Builder::addInputTensor),
-            py::arg("tensorInfo"),
-            py::arg("settings")     = InputSettings(),
-            py::arg("debugContext") = std::string());
-    cls.def(
-        "addInputTensor",
-        [](Builder &b,
-           const std::string &dataType,
-           const Shape &shape,
-           const InputSettings &settings,
-           const popart::DebugContext &dc) -> TensorId {
-          return b.addInputTensor(dataType, shape, dc);
-        },
-        py::arg("dataType"),
-        py::arg("shape"),
-        py::arg("settings")    = InputSettings(),
-        py::arg("debugPrefix") = std::string());
-    cls.def(
-        "addInputTensor",
-        [](Builder &b,
-           const std::string &dataType,
-           const Shape &shape,
-           const InputSettings &settings,
-           const popart::DebugContext &dc) -> TensorId {
-          return b.addInputTensor(dataType, shape, dc);
-        },
-        py::arg("dataType"),
-        py::arg("shape"),
-        py::arg("settings")     = InputSettings(),
         py::arg("debugContext") = "");
     cls.def("addUntypedInputTensor",
             &Builder::addUntypedInputTensor,

@@ -1,8 +1,7 @@
 #include <poprithms/logging/timepartitionlogger.hpp>
 #include <popart/ir.hpp>
 #include <popart/op.hpp>
-#include <popart/op/exchange/multiexchange.hpp>
-#include <popart/op/exchange/remote.hpp>
+#include <popart/op/remote.hpp>
 #include <popart/tensorindex.hpp>
 #include <popart/tensornames.hpp>
 #include <popart/topocons.hpp>
@@ -74,11 +73,11 @@ AccumulateOuterFragmentParallelizer::OpCluster::OpCluster(const Graph *graph,
                [](Op *op) { return op->isConvertibleTo<RemoteStoreOp>(); });
 
   // Populate remoteStoreOps
-  multiExchangeOps.clear();
+  remoteExchangeOps.clear();
   std::copy_if(ops.begin(),
                ops.end(),
-               std::back_inserter(multiExchangeOps),
-               [](Op *op) { return op->isConvertibleTo<MultiExchangeOp>(); });
+               std::back_inserter(remoteExchangeOps),
+               [](Op *op) { return op->isConvertibleTo<RemoteExchangeOp>(); });
 
   // Calculate numLoadBytes.
   numLoadBytes = calcNumLoadBytes();
@@ -90,12 +89,12 @@ AccumulateOuterFragmentParallelizer::OpCluster::OpCluster(const Graph *graph,
     loadShapes.insert(
         remoteLoadOp->outInfo(RemoteLoadOp::getLocalTensorOutIndex()).shape());
   }
-  for (auto MultiExchangeOp : multiExchangeOps) {
+  for (auto remoteExchangeOp : remoteExchangeOps) {
     // Exchange can multiple loads as well as stores. Work out number of loads
     // by number of output tensors.
-    auto numLoads = MultiExchangeOp->output->tensors().size();
+    auto numLoads = remoteExchangeOp->output->tensors().size();
     for (size_t load = 0; load < numLoads; ++load) {
-      loadShapes.insert(MultiExchangeOp->outInfo(load).shape());
+      loadShapes.insert(remoteExchangeOp->outInfo(load).shape());
     }
   }
 }
@@ -146,7 +145,7 @@ bool AccumulateOuterFragmentParallelizer::OpCluster::hasRemoteOp() const {
   return std::any_of(ops.begin(), ops.end(), [](Op *op) {
     return op->isConvertibleTo<RemoteLoadOp>() ||
            op->isConvertibleTo<RemoteStoreOp>() ||
-           op->isConvertibleTo<MultiExchangeOp>();
+           op->isConvertibleTo<RemoteExchangeOp>();
   });
 }
 
@@ -164,9 +163,9 @@ void AccumulateOuterFragmentParallelizer::OpCluster::absorb(
   remoteStoreOps.insert(remoteStoreOps.end(),
                         rhs.remoteStoreOps.begin(),
                         rhs.remoteStoreOps.end());
-  multiExchangeOps.insert(multiExchangeOps.end(),
-                          rhs.multiExchangeOps.begin(),
-                          rhs.multiExchangeOps.end());
+  remoteExchangeOps.insert(remoteExchangeOps.end(),
+                           rhs.remoteExchangeOps.begin(),
+                           rhs.remoteExchangeOps.end());
   numLoadBytes = calcNumLoadBytes();
   loadShapes.insert(rhs.loadShapes.begin(), rhs.loadShapes.end());
 }
@@ -205,15 +204,15 @@ AccumulateOuterFragmentParallelizer::OpCluster::calcNumLoadBytes() const {
                          : unusedVGraphId] +=
         remoteLoadOp->outInfo(RemoteLoadOp::getLocalTensorOutIndex()).nbytes();
   }
-  for (auto MultiExchangeOp : multiExchangeOps) {
+  for (auto remoteExchangeOp : remoteExchangeOps) {
     // Exchange can multiple loads as well as stores. Work out number of loads
     // by number of output tensors.
-    auto numLoads = MultiExchangeOp->output->tensors().size();
+    auto numLoads = remoteExchangeOp->output->tensors().size();
     for (size_t load = 0; load < numLoads; ++load) {
-      loadBytesPerVgid[MultiExchangeOp->hasVirtualGraphId()
-                           ? MultiExchangeOp->getVirtualGraphId()
+      loadBytesPerVgid[remoteExchangeOp->hasVirtualGraphId()
+                           ? remoteExchangeOp->getVirtualGraphId()
                            : unusedVGraphId] +=
-          MultiExchangeOp->outInfo(load).nbytes();
+          remoteExchangeOp->outInfo(load).nbytes();
     }
   }
 
@@ -293,7 +292,7 @@ bool AccumulateOuterFragmentParallelizer::apply(Graph &graph) const {
       // If we are trying to be gentle on memory usage we should only
       // parallelise those weight updates that are over identically-shaped
       // tensors, so that the resulting combined remote operations (see
-      // MergeExchange) are better suited to outlinining.
+      // MergeRemote) are better suited to outlinining.
 
       // Find smallest.
       auto hasSmallest          = false;

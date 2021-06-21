@@ -143,7 +143,7 @@ BOOST_AUTO_TEST_CASE(AutoVirtualGraphReluOnWeightTest0) {
     auto proto = builder->getModelProto();
 
     // -------------- Losses, anchors, etc ----------------------
-    AnchorReturnTypeMap anchorMap;
+    std::map<TensorId, AnchorReturnType> anchorMap;
     for (auto &maskId : maskIds) {
       anchorMap.insert({maskId, AnchorReturnType("All")});
     }

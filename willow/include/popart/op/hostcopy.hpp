@@ -4,7 +4,6 @@
 
 #include <popart/op.hpp>
 #include <popart/op/elementwise.hpp>
-#include <popart/op/exchange/exchange.hpp>
 
 namespace popart {
 
@@ -20,7 +19,7 @@ namespace popart {
  *                                                              /
  * Host   ::                                          data -> stream
  */
-class HostLoadOp : public ExchangeBaseOp {
+class HostLoadOp : public Op {
 public:
   HostLoadOp(const OperatorIdentifier &, const Op::Settings &, TensorId sid_);
 
@@ -38,6 +37,8 @@ public:
 
   void growAliasModel(AliasModel &m) const override { growAliasModelMulti(m); }
 
+  float getSubgraphValue() const final { return getHighSubgraphValue(); }
+  bool isOutlineable() const final { return true; }
   void appendOutlineAttributes(OpSerialiserBase &) const override;
 
   void setHostStreamTensorId(TensorId stream_id_) {
@@ -47,13 +48,11 @@ public:
 
   bool canShard() const final { return false; }
 
-  ExchangeDescriptor getExchangeDescriptor(int index) const final;
-
 private:
   TensorId hostStreamTensorId;
 };
 
-class HostStoreOp : public ExchangeBaseOp {
+class HostStoreOp : public Op {
 public:
   HostStoreOp(const OperatorIdentifier &, const Op::Settings &, TensorId sid_);
 
@@ -68,6 +67,8 @@ public:
   view::RegMap fwdRegMap(InIndex, OutIndex) const final;
   view::RegMap bwdRegMap(InIndex, OutIndex) const final;
 
+  float getSubgraphValue() const final { return getHighSubgraphValue(); }
+  bool isOutlineable() const final { return true; }
   void appendOutlineAttributes(OpSerialiserBase &) const override;
 
   void setHostStreamTensorId(TensorId stream_id_) {
@@ -78,8 +79,6 @@ public:
   bool canShard() const final { return false; }
 
   bool hasSideEffect() const override { return true; }
-
-  ExchangeDescriptor getExchangeDescriptor(int index) const final;
 
 private:
   TensorId hostStreamTensorId;

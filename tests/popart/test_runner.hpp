@@ -145,7 +145,7 @@ public:
   Patterns patterns;
   bool isTraining = false;
   TensorId loss   = "";
-  AnchorReturnTypeMap anchors;
+  std::map<TensorId, AnchorReturnType> anchors;
   std::shared_ptr<DeviceInfo> deviceInfo;
 
 private:

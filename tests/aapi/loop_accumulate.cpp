@@ -8,7 +8,7 @@
 #include <popart/names.hpp>
 #include <popart/ndarraywrapper.hpp>
 #include <popart/op/accumulate.hpp>
-#include <popart/op/exchange/hostcopy.hpp>
+#include <popart/op/hostcopy.hpp>
 #include <popart/op/loop.hpp>
 #include <popart/optimizervalue.hpp>
 #include <popart/session.hpp>

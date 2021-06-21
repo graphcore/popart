@@ -9,11 +9,11 @@
 #include <popart/op/collectives/replicatedallgather.hpp>
 #include <popart/op/collectives/replicatedallreduce.hpp>
 #include <popart/op/collectives/replicatedreducescatter.hpp>
-#include <popart/op/exchange/remote.hpp>
 #include <popart/op/getrandomseed.hpp>
 #include <popart/op/init.hpp>
 #include <popart/op/ipucopy.hpp>
 #include <popart/op/lamb.hpp>
+#include <popart/op/remote.hpp>
 #include <popart/op/sgd0varupdate.hpp>
 #include <popart/op/varupdate.hpp>
 #include <popart/tensor.hpp>

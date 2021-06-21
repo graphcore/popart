@@ -10,7 +10,7 @@
 #include <popart/ndarraywrapper.hpp>
 #include <popart/op/accumulate.hpp>
 #include <popart/op/add.hpp>
-#include <popart/op/exchange/hostcopy.hpp>
+#include <popart/op/hostcopy.hpp>
 #include <popart/op/init.hpp>
 #include <popart/session.hpp>
 #include <popart/stepio.hpp>

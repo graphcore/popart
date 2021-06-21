@@ -317,7 +317,7 @@ const static AiGraphcoreOpIdV1 PrintTensor_1("PrintTensor", 1, 1);
 const static AiGraphcoreOpIdV1 ReduceMedian("ReduceMedian", 1, 2);
 const static AiGraphcoreOpIdV1 ReluInplace("ReluInplace");
 const static AiGraphcoreOpIdV1 Remainder("Remainder", 2, 1);
-const static AiGraphcoreOpIdV1 MultiExchange("MultiExchange");
+const static AiGraphcoreOpIdV1 RemoteExchange("RemoteExchange");
 const static AiGraphcoreOpIdV1 RemoteLoad("RemoteLoad", {1, 2}, 1);
 const static AiGraphcoreOpIdV1 RemoteStore("RemoteStore", {1, 2}, 0);
 const static AiGraphcoreOpIdV1 HostLoad("HostLoad", {1, 1}, 0);

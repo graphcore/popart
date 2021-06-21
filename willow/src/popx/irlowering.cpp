@@ -44,13 +44,13 @@
 #include <popart/op.hpp>
 #include <popart/op/call.hpp>
 #include <popart/op/convbase.hpp>
-#include <popart/op/exchange/hostcopy.hpp>
-#include <popart/op/exchange/remote.hpp>
 #include <popart/op/getrandomseed.hpp>
+#include <popart/op/hostcopy.hpp>
 #include <popart/op/if.hpp>
 #include <popart/op/init.hpp>
 #include <popart/op/ipucopy.hpp>
 #include <popart/op/matmul.hpp>
+#include <popart/op/remote.hpp>
 #include <popart/op/subgraph.hpp>
 #include <popart/op/varupdate.hpp>
 #include <popart/patterns/pattern.hpp>
@@ -1352,16 +1352,6 @@ void IrLowering::createRemoteBuffer(RemoteBufferId id, poplar::Tensor tensor) {
                         {graph().getPoplarGraph().addRemoteBuffer(
                              name, type, size, repeats, true),
                          nonstd::optional<poplar::Tensor>(tensor)}});
-}
-
-bool IrLowering::hasStreamTensor(TensorId tid) const {
-  return streamTensors.find(tid) != streamTensors.end();
-}
-poplar::Tensor IrLowering::getStreamTensor(TensorId tid) const {
-  return streamTensors.at(tid);
-}
-void IrLowering::setStreamTensor(TensorId tid, poplar::Tensor t) {
-  streamTensors[tid] = t;
 }
 
 std::shared_ptr<gcl::CollectiveBalancedReorder>

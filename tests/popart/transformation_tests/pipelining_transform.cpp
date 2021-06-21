@@ -58,9 +58,9 @@ BOOST_AUTO_TEST_CASE(test) {
 
   auto optimizer = ConstSGD(0.01);
 
-  auto art                      = AnchorReturnType("All");
-  AnchorReturnTypeMap anchorMap = {{out, art},
-                                   {reservedGradientPrefix() + d0, art}};
+  auto art                                       = AnchorReturnType("All");
+  std::map<TensorId, AnchorReturnType> anchorMap = {
+      {out, art}, {reservedGradientPrefix() + d0, art}};
 
   auto opts             = SessionOptions();
   opts.virtualGraphMode = VirtualGraphMode::Manual;

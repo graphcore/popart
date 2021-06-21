@@ -156,13 +156,12 @@ static constexpr const char *sAvailMemAttribute      = "__available_memory";
 static constexpr const char *sPipelineStageAttribute = "__pipeline_stage";
 static constexpr const char *sOutputTensorLocationAttribute =
     "__output_tensor_location";
-static constexpr const char *sOutputTypeAttribute       = "__output_type";
-static constexpr const char *sExcludePatternsAttribute  = "__exclude_patterns";
-static constexpr const char *sSchedulePriority          = "__schedule_priority";
-static constexpr const char *sTileSetAttribute          = "__tile_set";
-static constexpr const char *sOutlineAttribute          = "__outline";
-static constexpr const char *sDebugInfoId               = "__debug_info_id";
-static constexpr const char *sExchangeStrategyAttribute = "__exchange_strategy";
+static constexpr const char *sOutputTypeAttribute      = "__output_type";
+static constexpr const char *sExcludePatternsAttribute = "__exclude_patterns";
+static constexpr const char *sSchedulePriority         = "__schedule_priority";
+static constexpr const char *sTileSetAttribute         = "__tile_set";
+static constexpr const char *sOutlineAttribute         = "__outline";
+static constexpr const char *sDebugInfoId              = "__debug_info_id";
 
 static constexpr const char *sSerializeMatMulModeAttribute =
     "__serialize_matmul_mode";

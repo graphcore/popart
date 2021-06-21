@@ -6,7 +6,6 @@
 #include <memory>
 #include <set>
 
-#include <popart/dataflow.hpp>
 #include <popart/error.hpp>
 #include <popart/istepio.hpp>
 #include <popart/names.hpp>
@@ -159,9 +158,6 @@ public:
 
   // information about tensor cached status
   TensorLocationInfo tensorLocationInfo;
-
-  // information about a (stream) tensor's input settings
-  InputSettings inputSettings;
 
   // Similar to getProducer, but the user must handle the nullptr
   Op *getProducerUnsafe() const;

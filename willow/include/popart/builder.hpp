@@ -7,7 +7,6 @@
 #include <string>
 #include <vector>
 
-#include <popart/dataflow.hpp>
 #include <popart/debugcontext.hpp>
 #include <popart/names.hpp>
 #include <popart/op.hpp>
@@ -842,7 +841,7 @@ public:
   ~Builder();
 
   /**
-   * Add a new input tensor to the model (with \p TensorInfo).
+   * Add a new input tensor to the model.
    *
    * \param tensorInfo The shape and type of the input tensor.
    * \param debugContext Optional debug information.
@@ -852,7 +851,7 @@ public:
                           const popart::DebugContext &debugContext = {});
 
   /**
-   * Add a new input tensor to the model (with data type and shape).
+   * Add a new input tensor to the model.
    *
    * \param dataType The type of the input tensor.
    * \param shape The shape of the input tensor.
@@ -861,35 +860,6 @@ public:
    */
   TensorId addInputTensor(const std::string &dataType,
                           const Shape &shape,
-                          const popart::DebugContext &debugContext = {});
-
-  /**
-   * Add a new input tensor to the model (with \p TensorInfo and additional
-   * settings for \p TileSet and \p ExchangeStrategy).
-   *
-   * \param tensorInfo The shape and type of the input tensor.
-   * \param InputSettings Settings for \p TileSet and \p ExchangeStrategy
-   * \param debugContext Optional debug information.
-   * \return The unique name of the input tensor.
-   */
-  TensorId addInputTensor(const TensorInfo &tensorInfo,
-                          const InputSettings &settings,
-                          const popart::DebugContext &debugContext = {});
-
-  /**
-   * Add a new input tensor to the model (with data type and shape,
-   * with \p TensorInfo and additional settings for \p TileSet and
-   * \p ExchangeStrategy).
-   *
-   * \param dataType The type of the input tensor.
-   * \param shape The shape of the input tensor.
-   * \param InputSettings Settings for \p TileSet and \p ExchangeStrategy
-   * \param debugContext Optional debug information.
-   * \return The unique name of the input tensor.
-   */
-  TensorId addInputTensor(const std::string &dataType,
-                          const Shape &shape,
-                          const InputSettings &settings,
                           const popart::DebugContext &debugContext = {});
 
   /**

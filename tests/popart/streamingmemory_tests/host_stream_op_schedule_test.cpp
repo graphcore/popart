@@ -11,10 +11,10 @@
 #include <popart/ndarraywrapper.hpp>
 #include <popart/op/call.hpp>
 #include <popart/op/dynamic/dynamicslice.hpp>
-#include <popart/op/exchange/remote.hpp>
 #include <popart/op/identity.hpp>
 #include <popart/op/init.hpp>
 #include <popart/op/l1.hpp>
+#include <popart/op/remote.hpp>
 #include <popart/opmanager.hpp>
 #include <popart/optimizer.hpp>
 #include <popart/popx/devicex.hpp>

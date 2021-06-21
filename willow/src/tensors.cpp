@@ -245,20 +245,11 @@ void Tensors::addInit(const TensorId &name,
 void Tensors::addStream(TensorId tenId,
                         const TensorInfo &info,
                         const DebugContext &debugContext) {
-  addStream(tenId, info, {}, debugContext);
-}
-
-void Tensors::addStream(TensorId tenId,
-                        const TensorInfo &info,
-                        const InputSettings &settings,
-                        const DebugContext &debugContext) {
   popart::TensorDebugInfo di(debugContext, tenId, info, TensorType::Stream);
   insert(tenId,
          std::unique_ptr<Tensor>(
              new Tensor(tenId, TensorType::Stream, graph, di)));
-  Tensor *t        = get(tenId);
-  t->info          = info;
-  t->inputSettings = settings;
+  get(tenId)->info = info;
 }
 
 void Tensors::addActGrad(TensorId tenId, const DebugContext &debugContext) {

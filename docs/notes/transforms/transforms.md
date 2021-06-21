@@ -36,13 +36,13 @@ Please find below a brief description of existing transforms:
 | HostReduce                              | <mark>TBD</mark>                                                                                 |
 | InferPipelineStages                     | If no nodes in the Onnx model have the 'PipelineStage' attribute set, assign pipeline stages to `Ops` based on their associated virtual graphs. |
 | InplaceAccumulateGrad-<br/>PartialsIntoOptimizer-<br/>AccumTensor | Reduce tensor liveness by directly accumulating grad partials into the optimizer accumulator instead of a separate gradsum accumulator first. |
-| InterIpuCopy                            | Make explicit any copying of tensor data between IPUs (by adding `IpuCopyOps`).                  |
+| InterIpuCopy                            | Make explicit any copying of tensor data between IPUs (by adding `IpuCopyOps`).                  |
 | IoComputeTileCopy                       | Make explicit any copying of tensor data between IO and compute tiles on one IPU (by adding `IoTileCopyOp`). |
 | MainLoops                               | Make the main graph training loop an explicit `LoopOp`.                                          |
 | MergeCopies                             | Combine groups of `IpuCopyOps` that are consumed by the same `Op`.                               |
 | MergeDuplicateOps                       | Combine `Ops` that perform the exact same computation.                                           |
 | MergeLoops                              | Combine compatible `LoopOps` into one.                                                           |
-| MergeExchange                             | Combine adjacent `RemoteLoadOps`/`RemoteStoreOps`/`HostLoadOps`/`HostStoreOps` into MultiExchange operations for efficiency. |
+| MergeRemote                             | Combine adjacent `RemoteLoadOps`/`RemoteStoreOps`/`RemoteExchangeOps` into RemoteExchange operations for efficiency. |
 | MergeVarUpdates                         | Combine compatible `VarUpdateOp` ops.                                                            |
 | Pipeline                                | Remove dependencies between `Ops` assigned to different pipeline stages on the same IPU by adding `StashOps` and `RestoreOps` to the graph. |
 | Prune                                   | Remove unused tensors and `Ops` from a specific graph.                                           |
