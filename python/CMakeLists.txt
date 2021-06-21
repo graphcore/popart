@@ -1,6 +1,7 @@
 # for more useful warnings
 include(EnableCompilerWarnings)
 
+cmake_policy(SET CMP0079 NEW)
 
 # expansion of pybind macro, impossible to declare name 
 # of certain classes in headers
@@ -17,12 +18,14 @@ message(STATUS "Found pybind11 v${pybind11_VERSION}: ${pybind11_INCLUDE_DIRS}")
 # consumers of the API can link just one target instead of all of them.
 add_library(popart-py INTERFACE)
 
-function(add_popart_python_module module_name source_file)
+function(add_popart_python_module module_name)
   # Newer versions of Pybind11 use CMake targets and CMake considers imported
   # targets as SYSTEM by default so they removed the SYSTEM option.
   if(pybind11_VERSION VERSION_LESS "2.6.0")
     set(OLD_PYBIND11_SYSTEM_FLAG SYSTEM)
   endif()
+
+  message("ARGN=${ARGN}")
 
   # Creates a module library.
   pybind11_add_module(${module_name}
@@ -31,9 +34,7 @@ function(add_popart_python_module module_name source_file)
       # Use ThinLTO if available
       THIN_LTO
       # Sources
-    ${source_file}
-    np_utils.cpp)
-
+    ${ARGN})
 
   target_compile_features(${module_name} PUBLIC cxx_std_14)
 
@@ -60,32 +61,4 @@ function(add_popart_python_module module_name source_file)
   )
 endfunction()
 
-add_popart_python_module(popart_core popart.cpp)
-add_popart_python_module(popart_opset6 popart_opset6.gen.cpp)
-add_popart_python_module(popart_opset7 popart_opset7.gen.cpp)
-add_popart_python_module(popart_opset8 popart_opset8.gen.cpp)
-add_popart_python_module(popart_opset9 popart_opset9.gen.cpp)
-add_popart_python_module(popart_opset10 popart_opset10.gen.cpp)
-add_popart_python_module(popart_opset11 popart_opset11.gen.cpp)
-
-# Copy the files in popart/popart/python/popart.
-add_custom_command(
-    TARGET popart_core
-    PRE_BUILD
-    COMMAND cmake -E copy_directory 
-      ${CMAKE_CURRENT_SOURCE_DIR}/popart
-      ${CMAKE_CURRENT_BINARY_DIR}/popart
-  COMMENT "Copying python module")
-
-install(DIRECTORY popart
-    DESTINATION ${INSTALL_PYDIR}
-)
-
-configure_file(__init__.py.in
-    ${CMAKE_CURRENT_BINARY_DIR}/popart/__init__.py
-    @ONLY
-)
-
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/popart/__init__.py
-    DESTINATION ${INSTALL_PYDIR}/popart
-)
+add_subdirectory(popart)

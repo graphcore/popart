@@ -1,6 +1,7 @@
 # Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 import onnx.defs
 import io
+import os
 import numpy as np  # type: ignore
 import textwrap
 
@@ -848,8 +849,13 @@ def genPythonBuilderBinds(schema: Schema) -> None:
 
         for opset_version, opset in sorted(v.opsets.items(),
                                            key=lambda x: int(x[0])):
-            with io.open(f"python/popart_opset{opset_version}.gen.cpp",
-                         'w') as f:
+            opset_dir = os.path.join("python", "popart",
+                                     f"popart_opset{opset_version}")
+            os.makedirs(opset_dir, exist_ok=True)
+            with io.open(
+                    os.path.join(opset_dir,
+                                 f"popart_opset{opset_version}.gen.cpp"),
+                    'w') as f:
                 addHeader(f, opset_version)
                 # Add the include file.
                 f.write(f"""#include <pybind11/functional.h>
@@ -858,8 +864,8 @@ def genPythonBuilderBinds(schema: Schema) -> None:
                 #include <pybind11/pybind11.h>
                 #include <pybind11/stl.h>
 
-                #include "np_utils.hpp"
-                #include "pyarray_accessor.hpp"
+                #include "../shared_cpp/np_utils.hpp"
+                #include "../shared_cpp/pyarray_accessor.hpp"
 
                 #include <popart/builder.hpp>
                 #include <popart/tensors.hpp>

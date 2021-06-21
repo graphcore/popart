@@ -11,8 +11,8 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
-#include "np_utils.hpp"
-#include "pyarray_accessor.hpp"
+#include "../shared_cpp/np_utils.hpp"
+#include "../shared_cpp/pyarray_accessor.hpp"
 
 #include <popart/builder.hpp>
 #include <popart/tensors.hpp>

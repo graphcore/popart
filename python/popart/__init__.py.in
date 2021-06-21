@@ -1,4 +1,5 @@
 import os, sys
+import pathlib
 
 if 'onnx' in sys.modules.keys():
     raise ImportError('It looks like onnx has already been imported. Due to '
@@ -6,10 +7,18 @@ if 'onnx' in sys.modules.keys():
 
 __version__ = "@VERSION@"
 
-# Add the DSO library path
-lp = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../../@CMAKE_INSTALL_LIBDIR@")
-lp = os.path.abspath(lp)
-sys.path.insert(0, lp)
+# Add the DSO library path. Look for the LIBDIR in a parent directory. Note that
+# we iterate over parent directories because `gen_supported_ops.py` imports
+# popart from the build directory, which has a slightly different directory
+# structure to the install directory.
+parent_path = pathlib.Path(os.path.dirname(os.path.abspath(__file__)))
+for parent_dir in parent_path.parents:
+    candidate_libdir = os.path.join(parent_dir, "@CMAKE_INSTALL_LIBDIR@")
+    if os.path.exists(candidate_libdir):
+        lp = os.path.join(candidate_libdir)
+        lp = os.path.abspath(lp)
+        sys.path.insert(0, lp)
+        break
 
 # Popart currently distributes binaries for a specific Python version. If the
 # user imports the popart module with a different Python version the import

@@ -124,8 +124,6 @@ find_package(ONNX 1.6 REQUIRED)
 
 #------ configure sources
 
-set(POPART_PYTHON_DIR ${CMAKE_CURRENT_SOURCE_DIR}/python)
-
 execute_process(
   COMMAND git rev-parse HEAD
   WORKING_DIRECTORY "${POPART_CBT_VIEW_DIR}"
