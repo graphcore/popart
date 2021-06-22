@@ -1,3 +1,5 @@
+# Copyright (c) 2021 Graphcore Ltd. All rights reserved.
+#
 # Unit tests in this folder should be quick to run (<<0.1s) and should test one
 # class in isolation. If the class has other classes it depends you should
 # consider mocking those dependencies so you are only testing one class. By
@@ -29,6 +31,7 @@
 # Please prefix all test names in this folder with 'unittest_' so that
 # developers can run `./test.sh popart -R unittest_` to run only these tests.
 
+# C++ unittests for main codebase:
 add_popart_cpp_unit_test(unittest_example unittest_example.cpp TEST_UTILS trompeloeil)
 add_popart_cpp_unit_test(unittest_graphutils unittest_graphutils.cpp TEST_UTILS test-graphs-test-util)
 add_popart_cpp_unit_test(unittest_tensor unittest_tensor.cpp TEST_UTILS test-graphs-test-util)
@@ -62,3 +65,6 @@ add_popart_cpp_unit_test(unittest_backwardsgraphcreatorhelper transforms/autodif
 add_popart_cpp_unit_test(unittest_calledgraphgradophelper transforms/autodiff/unittest_calledgraphgradophelper.cpp)
 
 add_popart_cpp_unit_test(unittest_pipeline transforms/unittest_pipeline.cpp)
+
+add_subdirectory("python")
+

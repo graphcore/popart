@@ -1,0 +1,31 @@
+# Copyright (c) 2021 Graphcore Ltd. All rights reserved.
+import os, sys
+import pathlib
+
+__version__ = "@VERSION@"
+
+# Add the DSO library path. Look for the LIBDIR in a parent directory. Note that
+# we iterate over parent directories because `gen_supported_ops.py` imports
+# popart from the build directory, which has a slightly different directory
+# structure to the install directory.
+parent_path = pathlib.Path(os.path.dirname(os.path.abspath(__file__)))
+for parent_dir in parent_path.parents:
+    candidate_libdir = os.path.join(parent_dir, "@CMAKE_INSTALL_LIBDIR@")
+    if os.path.exists(candidate_libdir):
+        lp = os.path.join(candidate_libdir)
+        lp = os.path.abspath(lp)
+        sys.path.insert(0, lp)
+        break
+
+# Popart currently distributes binaries for a specific Python version. If the
+# user imports the popart module with a different Python version the import
+# statements below would fail with an unfriendly error. Hence, we check the
+# python version here and throw a friendlier error when this happens.
+actualVersion = sys.version_info[:2]
+requiredVersion = (@Python3_VERSION_MAJOR@, @Python3_VERSION_MINOR@)
+if (actualVersion != requiredVersion):
+    raise RuntimeError("This version of popart._internal.ir is not compatible with Python %d.%d (it was built against Python %d.%d)" % \
+        (actualVersion + requiredVersion))
+
+# Import all symbols into our namespace
+from popart_internal_ir import *

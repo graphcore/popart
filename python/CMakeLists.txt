@@ -1,6 +1,8 @@
 # for more useful warnings
 include(EnableCompilerWarnings)
 
+# This is needed to stop warnings about adding dependencies to popart-py in
+# other directories when add_popart_python_module is called.
 cmake_policy(SET CMP0079 NEW)
 
 # expansion of pybind macro, impossible to declare name 
@@ -61,4 +63,7 @@ function(add_popart_python_module module_name)
   )
 endfunction()
 
-add_subdirectory(popart)
+# Add various python package directories.
+add_subdirectory("popart")
+add_subdirectory("popart._internal.ir")
+add_subdirectory("popart.ir")

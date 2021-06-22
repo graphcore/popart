@@ -1,6 +1,6 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 # Copy the files in python/popart/python_files
-add_custom_target(python_files ALL
+add_custom_target(popart_python_files ALL
     DEPENDS
       "${CMAKE_CURRENT_SOURCE_DIR}/python_files"
     BYPRODUCTS

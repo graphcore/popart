@@ -1,0 +1,17 @@
+# Copyright (c) 2021 Graphcore Ltd. All rights reserved.
+import sys
+
+__version__ = "@VERSION@"
+
+# Popart currently distributes binaries for a specific Python version. If the
+# user imports the popart module with a different Python version the import
+# statements below would fail with an unfriendly error. Hence, we check the
+# python version here and throw a friendlier error when this happens.
+actualVersion = sys.version_info[:2]
+requiredVersion = (@Python3_VERSION_MAJOR@, @Python3_VERSION_MINOR@)
+if (actualVersion != requiredVersion):
+    raise RuntimeError("This version of popart.ir is not compatible with Python %d.%d (it was built against Python %d.%d)" % \
+        (actualVersion + requiredVersion))
+
+# Expose symbols from the module in popart.ir.
+from ir import *
