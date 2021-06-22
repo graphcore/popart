@@ -21,6 +21,11 @@ public:
   virtual poplar::Tensor createInput(InIndex index,
                                      const poplar::DebugNameAndId &dnai) const;
 
+  // Hide Clang -Woverloaded-virtual on unwindTensorLayout by explicitly telling
+  // compiler we want both PopOpx::unwindTensorLayout and the one defined below
+  // (it thinks we may have made a typo and warns).
+  using PopOpx::unwindTensorLayout;
+
   // Reverses the layout change to an input tensor for an op that returned
   // CANUNWIND
   virtual poplar::Tensor
