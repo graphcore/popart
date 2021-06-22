@@ -25,18 +25,21 @@ AddBiasInplaceOpx::AddBiasInplaceOpx(Op *op, Devicex *devicex)
 
 void AddBiasOpx::grow(poplar::program::Sequence &prog) const {
   // Clone & copy the input tensor because poplin::addBias is in-place.
-  const auto result =
-      PopOpx::cloneNcopy(prog, getInTensor(AddBiasOp::getDataInIndex()));
+  const auto result = PopOpx::cloneNcopy(
+      prog, getInTensor(AddBiasOp::getDataInIndex()).getPoplarTensor());
   poplin::addBias(graph().getPoplarGraph(),
                   result,
-                  getInTensor(AddBiasOp::getBiasInIndex()),
+                  getInTensor(AddBiasOp::getBiasInIndex()).getPoplarTensor(),
                   prog,
                   debugContext());
-  setOutTensor(AddBiasOp::getOutIndex(), result);
+  setOutTensor(AddBiasOp::getOutIndex(), snap::Tensor{result, graph()});
 }
 
 void AddBiasDataGradOpx::grow(poplar::program::Sequence &prog) const {
-  setOutTensor(0, PopOpx::cloneNcopy(prog, getInTensor(0)));
+  setOutTensor(
+      0,
+      snap::Tensor{PopOpx::cloneNcopy(prog, getInTensor(0).getPoplarTensor()),
+                   graph()});
 }
 
 std::set<TensorId> AddBiasOpx::mustExistBeforeCreate(InIndex index) const {
@@ -62,9 +65,10 @@ AddBiasOpx::createInputTensor(InIndex index,
   }
 
   return snap::Tensor{
-      poplin::createBiases(graph().getPoplarGraph(),
-                           getInTensor(AddBiasOp::getDataInIndex()),
-                           dnai),
+      poplin::createBiases(
+          graph().getPoplarGraph(),
+          getInTensor(AddBiasOp::getDataInIndex()).getPoplarTensor(),
+          dnai),
       graph()};
 }
 
@@ -74,11 +78,11 @@ AddBiasBiasGradOpx::AddBiasBiasGradOpx(Op *op, Devicex *devicex)
 }
 
 void AddBiasInplaceOpx::grow(poplar::program::Sequence &prog) const {
-  auto dataIn = getInTensor(AddBiasOp::getDataInIndex());
-  auto biasIn = getInTensor(AddBiasOp::getBiasInIndex());
+  auto dataIn = getInTensor(AddBiasOp::getDataInIndex()).getPoplarTensor();
+  auto biasIn = getInTensor(AddBiasOp::getBiasInIndex()).getPoplarTensor();
   poplin::addBias(
       graph().getPoplarGraph(), dataIn, biasIn, prog, debugContext());
-  setOutTensor(AddBiasOp::getOutIndex(), dataIn);
+  setOutTensor(AddBiasOp::getOutIndex(), snap::Tensor{dataIn, graph()});
 }
 
 namespace {

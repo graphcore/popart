@@ -65,9 +65,11 @@ ThresholdedReluGradOpx::ThresholdedReluGradOpx(Op *op, Devicex *devicex)
 }
 
 void ThresholdedReluGradOpx::grow(poplar::program::Sequence &prog) const {
-  const auto &op       = getOp<ThresholdedReluGradOp>();
-  const auto input     = getInTensor(ThresholdedReluGradOp::getGradInIndex());
-  const auto fwd_input = getInTensor(ThresholdedReluGradOp::getFwdArgInIndex());
+  const auto &op = getOp<ThresholdedReluGradOp>();
+  const auto input =
+      getInTensor(ThresholdedReluGradOp::getGradInIndex()).getPoplarTensor();
+  const auto fwd_input =
+      getInTensor(ThresholdedReluGradOp::getFwdArgInIndex()).getPoplarTensor();
 
   // x <= alpha ? 0 : 1
   auto expression =
@@ -82,7 +84,8 @@ void ThresholdedReluGradOpx::grow(poplar::program::Sequence &prog) const {
                             prog,
                             debugContext("thresholdedrelu_grad"));
 
-  setOutTensor(ThresholdedReluGradOp::getOutIndex(), output);
+  setOutTensor(ThresholdedReluGradOp::getOutIndex(),
+               snap::Tensor{output, graph()});
 }
 
 namespace {

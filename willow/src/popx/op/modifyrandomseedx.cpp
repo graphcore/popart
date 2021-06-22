@@ -26,8 +26,9 @@ ModifyRandomSeedOpx::ModifyRandomSeedOpx(Op *op, Devicex *devicex)
 }
 
 void ModifyRandomSeedOpx::grow(poplar::program::Sequence &prog) const {
-  auto inSeed   = getInTensor(op_p->getSeedInIndex());
-  auto modifier = getInTensor(ModifyRandomSeedOp::getSeedModifierInIndex());
+  auto inSeed   = getInTensor(op_p->getSeedInIndex()).getPoplarTensor();
+  auto modifier = getInTensor(ModifyRandomSeedOp::getSeedModifierInIndex())
+                      .getPoplarTensor();
 
   // The seed supplied to poprand is defined as a pair of uint32 values,
   //   inSeed = [L, R].
@@ -66,7 +67,8 @@ void ModifyRandomSeedOpx::grow(poplar::program::Sequence &prog) const {
   // Copy.
   auto outSeed = cloneNcopy(prog, outSeedUncopied);
 
-  setOutTensor(ModifyRandomSeedOp::getModifiedSeedOutIndex(), outSeed);
+  setOutTensor(ModifyRandomSeedOp::getModifiedSeedOutIndex(),
+               snap::Tensor{outSeed, graph()});
 }
 
 namespace {

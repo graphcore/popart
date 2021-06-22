@@ -31,7 +31,7 @@ void L1GradOpx::grow(poplar::program::Sequence &prog) const {
   poplar::Tensor signumTensor =
       popops::map(graph().getPoplarGraph(),
                   popops::expr::UnaryOpType::SIGNUM,
-                  getInTensor(L1GradOp::getFwdActInIndex()),
+                  getInTensor(L1GradOp::getFwdActInIndex()).getPoplarTensor(),
                   prog,
                   debugContext("Signum"));
 
@@ -42,8 +42,9 @@ void L1GradOpx::grow(poplar::program::Sequence &prog) const {
   case ReductionType::Sum:
     break;
   case ReductionType::Mean: {
-    double totalSamples = static_cast<double>(getInTensor(0).numElements());
-    scale               = lambda / totalSamples;
+    double totalSamples =
+        static_cast<double>(getInTensor(0).getPoplarTensor().numElements());
+    scale = lambda / totalSamples;
     break;
   }
   default:
@@ -51,7 +52,8 @@ void L1GradOpx::grow(poplar::program::Sequence &prog) const {
                 debugContext().getPathName());
   }
 
-  auto t_scale = getConst(getInTensor(0).elementType(), {}, scale, "scale");
+  auto t_scale = getConst(
+      getInTensor(0).getPoplarTensor().elementType(), {}, scale, "scale");
 
   // scale the signum tensor:
   // - first by 'scale',  so +scale if positive, -scale if negative, 0 if zero
@@ -64,14 +66,14 @@ void L1GradOpx::grow(poplar::program::Sequence &prog) const {
                                 prog,
                                 debugContext("multiply"));
 
-  auto gradIn = getInTensor(L1GradOp::getGradInIndex());
+  auto gradIn = getInTensor(L1GradOp::getGradInIndex()).getPoplarTensor();
   popops::mapInPlace(graph().getPoplarGraph(),
                      pe::Mul(pe::_1, pe::_2),
                      {gradTensor, gradIn},
                      prog,
                      debugContext("scaledGradIn"));
 
-  setOutTensor(0, gradTensor);
+  setOutTensor(0, snap::Tensor{gradTensor, graph()});
 }
 
 InputCreatorType L1Opx::getInputCreatorType(InIndex) const {
@@ -83,7 +85,7 @@ void L1Opx::grow(poplar::program::Sequence &prog) const {
   const L1Op &l1op         = getOp<L1Op>();
   poplar::Tensor absTensor = popops::map(graph().getPoplarGraph(),
                                          popops::expr::UnaryOpType::ABSOLUTE,
-                                         getInTensor(0),
+                                         getInTensor(0).getPoplarTensor(),
                                          prog,
                                          debugContext("abs"));
 
@@ -102,7 +104,7 @@ void L1Opx::grow(poplar::program::Sequence &prog) const {
                               t_scale,
                               prog,
                               debugContext("add"));
-    setOutTensor(0, scaled);
+    setOutTensor(0, snap::Tensor{scaled, graph()});
   } else {
     auto absTensor1D = absTensor.flatten();
     double scale     = lambda;
@@ -134,7 +136,7 @@ void L1Opx::grow(poplar::program::Sequence &prog) const {
                                     {popops::Operation::ADD, false, t_scale},
                                     prog,
                                     debugContext("add"));
-    setOutTensor(0, reduction);
+    setOutTensor(0, snap::Tensor{reduction, graph()});
   }
 }
 

@@ -29,8 +29,10 @@ NllOpx::NllOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
 void NllOpx::grow(poplar::program::Sequence &prog) const {
   const NllOp &op = getOp<NllOp>();
 
-  const poplar::Tensor &probs = getInTensor(NllOp::getProbsInIndex());
-  const poplar::Tensor &label = getInTensor(NllOp::getLabelInIndex());
+  const poplar::Tensor &probs =
+      getInTensor(NllOp::getProbsInIndex()).getPoplarTensor();
+  const poplar::Tensor &label =
+      getInTensor(NllOp::getLabelInIndex()).getPoplarTensor();
   poplar::Tensor probs2D;
   poplar::Tensor label1D;
   poplar::Tensor oneHot;
@@ -237,7 +239,7 @@ void NllOpx::handleLossOutNotReducedToScalar(const PopOpx &opx,
   // One loss per sample, so the output is reshaped to match label input shape
   reduction = reduction.reshape(label.shape());
 
-  opx.setOutTensor(0, reduction);
+  opx.setOutTensor(0, snap::Tensor{reduction, opx.graph()});
 }
 
 void NllOpx::handleLossOutReducedToScalar(const PopOpx &opx,
@@ -275,7 +277,7 @@ void NllOpx::handleLossOutReducedToScalar(const PopOpx &opx,
                                {popops::Operation::ADD, false, t_scale},
                                prog,
                                opx.debugContext("toScalar"));
-  opx.setOutTensor(outIdx, scalar);
+  opx.setOutTensor(outIdx, snap::Tensor{scalar, opx.graph()});
 }
 
 void NllOpx::handleLossGradScaling(const PopOpx &opx,
@@ -338,10 +340,13 @@ NllGradOpx::NllGradOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
 //    d_loss / d_p = -p_i if i == l
 
 void NllGradOpx::grow(poplar::program::Sequence &prog) const {
-  const NllGradOp &gradOp     = getOp<NllGradOp>();
-  const poplar::Tensor &probs = getInTensor(NllGradOp::getProbsInIndex());
-  const poplar::Tensor &label = getInTensor(NllGradOp::getLabelInIndex());
-  poplar::Tensor gradIn       = getInTensor(NllGradOp::getGradInIndex());
+  const NllGradOp &gradOp = getOp<NllGradOp>();
+  const poplar::Tensor &probs =
+      getInTensor(NllGradOp::getProbsInIndex()).getPoplarTensor();
+  const poplar::Tensor &label =
+      getInTensor(NllGradOp::getLabelInIndex()).getPoplarTensor();
+  poplar::Tensor gradIn =
+      getInTensor(NllGradOp::getGradInIndex()).getPoplarTensor();
 
   // As for NllOpx, flatten outer dimenstions if rank(probs) > 2
   auto probs2D = probs.flatten(0, probs.rank() - 1);
@@ -403,7 +408,7 @@ void NllGradOpx::grow(poplar::program::Sequence &prog) const {
       label1D,
       prog);
 
-  setOutTensor(0, oneHot);
+  setOutTensor(0, snap::Tensor{oneHot, graph()});
 }
 
 namespace {

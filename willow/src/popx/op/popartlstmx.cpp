@@ -26,6 +26,15 @@ poplar::Tensor concatWeights(const poplar::Tensor &inputWeights,
   return poplar::concat(inputWeights, outputWeights, 1);
 }
 
+template <typename T> auto getPoplarTensor(T *tensor) {
+  using P = decltype(&tensor->getPoplarTensor());
+  if (tensor) {
+    return &tensor->getPoplarTensor();
+  } else {
+    return P{};
+  }
+}
+
 } // namespace
 
 PopartLSTMOpx::PopartLSTMOpx(Op *op, Devicex *devicex)
@@ -48,26 +57,28 @@ void PopartLSTMOpx::grow(poplar::program::Sequence &prog) const {
       popnn::lstm::lstmFwd(graph().getPoplarGraph(),
                            params,
                            initState,
-                           input,
+                           input.getPoplarTensor(),
                            lstmWeights,
-                           intermediates.get(),
+                           getPoplarTensor(intermediates.get()),
                            prog,
                            debugContext("lstmFwd"),
                            dv_p->lowering().lstmOptions,
                            &dv_p->matmulCache);
 
-  setOutTensor(PopartLSTMOp::getOutputOutIndex(), output);
-  setOutTensor(PopartLSTMOp::getCellStateOutIndex(), cellState);
+  setOutTensor(PopartLSTMOp::getOutputOutIndex(),
+               snap::Tensor{output, graph()});
+  setOutTensor(PopartLSTMOp::getCellStateOutIndex(),
+               snap::Tensor{cellState, graph()});
 
   if (hasOutput(PopartLSTMOp::getIntermediatesOutIndex())) {
     setOutTensor(PopartLSTMOp::getIntermediatesOutIndex(), *intermediates);
   }
 }
 
-std::unique_ptr<poplar::Tensor> PopartLSTMOpx::getIntermediates() const {
-  std::unique_ptr<poplar::Tensor> intermediates = nullptr;
+std::unique_ptr<snap::Tensor> PopartLSTMOpx::getIntermediates() const {
+  std::unique_ptr<snap::Tensor> intermediates = nullptr;
   if (hasOutput(PopartLSTMOp::getIntermediatesOutIndex())) {
-    intermediates = std::make_unique<poplar::Tensor>();
+    intermediates = std::make_unique<snap::Tensor>(poplar::Tensor{}, graph());
   }
   return intermediates;
 }
@@ -87,11 +98,11 @@ snap::Tensor
 PopartLSTMOpx::createInputTensor(InIndex index,
                                  const poplar::DebugNameAndId &) const {
   if (index == PopartLSTMOp::getInputInIndex()) {
-    return snap::Tensor{createLSTMInput(), graph()};
+    return createLSTMInput();
   } else if (index == PopartLSTMOp::getWeightsInIndex()) {
-    return snap::Tensor{createWeightsInput(), graph()};
+    return createWeightsInput();
   } else if (index == PopartLSTMOp::getBiasesInIndex()) {
-    return snap::Tensor{createBiasesInput(), graph()};
+    return createBiasesInput();
   } else if (index == PopartLSTMOp::getInitialStateInIndex()) {
     return snap::Tensor{createInitialStateInput().getAsTensor(), graph()};
   } else {
@@ -100,17 +111,19 @@ PopartLSTMOpx::createInputTensor(InIndex index,
   }
 }
 
-poplar::Tensor PopartLSTMOpx::createLSTMInput() const {
+snap::Tensor PopartLSTMOpx::createLSTMInput() const {
   auto &lstm_op = getOp<PopartLSTMOp>();
   auto seq_lens = getSeqLens();
-  return popnn::lstm::createInput(graph().getPoplarGraph(),
-                                  createLSTMParams(lstm_op, seq_lens),
-                                  getDebugNameAndId("createLSTMInput"),
-                                  dv_p->lowering().lstmOptions,
-                                  &dv_p->matmulCache);
+  return snap::Tensor{
+      popnn::lstm::createInput(graph().getPoplarGraph(),
+                               createLSTMParams(lstm_op, seq_lens),
+                               getDebugNameAndId("createLSTMInput"),
+                               dv_p->lowering().lstmOptions,
+                               &dv_p->matmulCache),
+      graph()};
 }
 
-poplar::Tensor PopartLSTMOpx::createWeightsInput() const {
+snap::Tensor PopartLSTMOpx::createWeightsInput() const {
   poplar::Tensor inputWeights, outputWeights;
   auto &lstm_op = getOp<PopartLSTMOp>();
   auto seq_lens = getSeqLens();
@@ -120,7 +133,7 @@ poplar::Tensor PopartLSTMOpx::createWeightsInput() const {
                                        debugContext("weights"),
                                        dv_p->lowering().lstmOptions,
                                        &dv_p->matmulCache);
-  return concatWeights(inputWeights, outputWeights);
+  return snap::Tensor{concatWeights(inputWeights, outputWeights), graph()};
 }
 
 std::set<TensorId> PopartLSTMOpx::mustExistBeforeCreate(InIndex) const {
@@ -139,7 +152,7 @@ void PopartLSTMGradOpx::grow(poplar::program::Sequence &prog) const {
   auto forwardOutputGrad =
       getInTensor(PopartLSTMGradOp::getFwdOutputGradInIndex());
 
-  const poplar::Tensor *forwardCellStateGrad = nullptr;
+  const snap::Tensor *forwardCellStateGrad = nullptr;
   if (hasInput(PopartLSTMGradOp::getFwdCellStateGradInIndex())) {
     forwardCellStateGrad =
         &getInTensor(PopartLSTMGradOp::getFwdCellStateGradInIndex());
@@ -157,12 +170,12 @@ void PopartLSTMGradOpx::grow(poplar::program::Sequence &prog) const {
                                      params,
                                      prog,
                                      initState,
-                                     intermediates,
+                                     intermediates.getPoplarTensor(),
                                      lstmWeights,
-                                     forwardInput,
-                                     forwardOutput,
-                                     forwardOutputGrad,
-                                     forwardCellStateGrad,
+                                     forwardInput.getPoplarTensor(),
+                                     forwardOutput.getPoplarTensor(),
+                                     forwardOutputGrad.getPoplarTensor(),
+                                     getPoplarTensor(forwardCellStateGrad),
                                      &inputGrad,
                                      weightsGrad,
                                      debugContext("lstmBwdWithWU"),
@@ -172,14 +185,17 @@ void PopartLSTMGradOpx::grow(poplar::program::Sequence &prog) const {
   auto weightsOut =
       concatWeights(weightsGrad.inputWeights, weightsGrad.outputWeights);
 
-  setOutTensor(PopartLSTMGradOp::getInputOutIndex(), inputGrad);
-  setOutTensor(PopartLSTMGradOp::getWeightsOutIndex(), weightsOut);
+  setOutTensor(PopartLSTMGradOp::getInputOutIndex(),
+               snap::Tensor{inputGrad, graph()});
+  setOutTensor(PopartLSTMGradOp::getWeightsOutIndex(),
+               snap::Tensor{weightsOut, graph()});
   if (hasOutput(PopartLSTMGradOp::getBiasesOutIndex())) {
-    setOutTensor(PopartLSTMGradOp::getBiasesOutIndex(), weightsGrad.biases);
+    setOutTensor(PopartLSTMGradOp::getBiasesOutIndex(),
+                 snap::Tensor{weightsGrad.biases, graph()});
   }
   if (hasOutput(PopartLSTMGradOp::getInitialStateOutIndex())) {
     setOutTensor(PopartLSTMGradOp::getInitialStateOutIndex(),
-                 initStateGrad.getAsTensor());
+                 snap::Tensor{initStateGrad.getAsTensor(), graph()});
   }
 }
 

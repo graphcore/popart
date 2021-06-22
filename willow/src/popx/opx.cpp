@@ -1,4 +1,6 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
+#include <popart/popx/devicex.hpp>
+#include <popart/popx/irlowering.hpp>
 #include <popart/popx/opx.hpp>
 
 namespace popart {
@@ -32,6 +34,38 @@ poplar::Graph &Opx::srcGraph(InIndex index) const {
 
 poplar::Graph &Opx::dstGraph(OutIndex index) const {
   return dstVirtualGraph(index).getPoplarGraph();
+}
+
+const poplar::Tensor &Opx::get(TensorId id) const {
+  return PopOpx::get(id).getPoplarTensor();
+}
+
+const poplar::Tensor &Opx::getView(TensorId id) const {
+  return PopOpx::getView(id).getPoplarTensor();
+}
+
+void Opx::insert(TensorId id, const poplar::Tensor &tensor) const {
+  PopOpx::insert(id, snap::Tensor{tensor, dv_p->lowering().graph()});
+}
+
+const poplar::Tensor &Opx::getInTensor(InIndex index) const {
+  return PopOpx::getInTensor(index).getPoplarTensor();
+}
+
+const poplar::Tensor &Opx::getOutTensor(OutIndex index) const {
+  return PopOpx::getOutTensor(index).getPoplarTensor();
+}
+
+const poplar::Tensor &Opx::getInView(InIndex index) const {
+  return PopOpx::getInView(index).getPoplarTensor();
+}
+
+const poplar::Tensor &Opx::getOutView(OutIndex index) const {
+  return PopOpx::getOutView(index).getPoplarTensor();
+}
+
+void Opx::setOutTensor(OutIndex index, const poplar::Tensor &t) const {
+  PopOpx::setOutTensor(index, snap::Tensor{t, dv_p->lowering().graph()});
 }
 
 } // namespace popx

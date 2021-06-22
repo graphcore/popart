@@ -132,8 +132,9 @@ void MultiConvBaseOpx::grow(poplar::program::Sequence &prog) const {
   auto cacheSize = dv_p->convCache.size();
 
   for (int i = 0; i < op.numConvs(); i++) {
-    auto params    = op.getParameters(i);
-    auto weights   = getInTensor(MultiConvBaseOp::getWeightsInIndex(i));
+    auto params = op.getParameters(i);
+    auto weights =
+        getInTensor(MultiConvBaseOp::getWeightsInIndex(i)).getPoplarTensor();
     auto weights5D = reshapeOnnxWeightsForPoplar(weights,
                                                  params.numOutChannelsPerGroup,
                                                  params.numInChannelsPerGroup,
@@ -156,7 +157,8 @@ void MultiConvBaseOpx::grow(poplar::program::Sequence &prog) const {
   verifyCacheSizeUnchanged(cacheSize);
 
   for (int i = 0; i < op.numConvs(); i++) {
-    setOutTensor(MultiConvBaseOp::getOutIndex(i), outTensors[i]);
+    setOutTensor(MultiConvBaseOp::getOutIndex(i),
+                 snap::Tensor{outTensors[i], graph()});
   }
 }
 
@@ -204,7 +206,8 @@ void MultiConvWeightsGradBaseOpx::grow(poplar::program::Sequence &prog) const {
         outTensors[i] = outTensors[i].reshape(fwdShape);
       }
     }
-    setOutTensor(MultiConvWeightsGradBaseOp::getOutIndex(i), outTensors[i]);
+    setOutTensor(MultiConvWeightsGradBaseOp::getOutIndex(i),
+                 snap::Tensor{outTensors[i], graph()});
   }
 }
 

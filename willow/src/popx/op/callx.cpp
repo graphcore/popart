@@ -36,8 +36,8 @@ void CallOpx::copyModified(poplar::program::Sequence &prog,
                   modifiedRegions.end(),
                   [](const view::Region &r) { return !r.isEmpty(); })) {
     TensorId call_input_id = callop.inId(i);
-    auto call_input        = get(call_input_id);
-    auto graph_input       = get(graph_input_id);
+    auto call_input        = get(call_input_id).getPoplarTensor();
+    auto graph_input       = get(graph_input_id).getPoplarTensor();
 
     auto aliases = dv_p->lowering().getAliasZeroCopy()->getActiveAliasedTensors(
         {callop.input->tensor(i)}, true);
@@ -71,9 +71,9 @@ void CallOpx::copyInput(poplar::program::Sequence &prog,
   auto &i      = inputIndex;
 
   TensorId call_input_id  = callop.inId(i);
-  auto call_input         = get(call_input_id);
+  auto call_input         = get(call_input_id).getPoplarTensor();
   TensorId graph_input_id = callop.getCalledGraph().getInputId(i);
-  auto graph_input        = get(graph_input_id);
+  auto graph_input        = get(graph_input_id).getPoplarTensor();
 
   auto aliases = dv_p->lowering().getAliasZeroCopy()->getActiveAliasedTensors(
       {callop.input->tensor(i)}, true);
@@ -118,9 +118,9 @@ void CallOpx::copyOutput(poplar::program::Sequence &prog,
   auto &i      = outputIndex;
 
   TensorId call_output_id = callop.outId(i);
-  auto call_output        = getOutTensor(i);
+  auto call_output        = getOutTensor(i).getPoplarTensor();
   auto graph_output_id    = callop.getCalledGraph().getOutputId(i);
-  auto graph_output       = get(graph_output_id);
+  auto graph_output       = get(graph_output_id).getPoplarTensor();
 
   auto aliases = dv_p->lowering().getAliasZeroCopy()->getActiveAliasedTensors(
       {callop.getIr().getTensor(graph_output_id)}, true);
@@ -130,7 +130,7 @@ void CallOpx::copyOutput(poplar::program::Sequence &prog,
       (aliases.find(callop.getIr().getTensor(call_output_id)) != aliases.end());
 
   for (int j = 0; j < callop.input->n(); j++) {
-    auto input = get(callop.inId(j));
+    auto input = get(callop.inId(j)).getPoplarTensor();
     // Fully aliased from CallOp input to CallOp output & shape did not
     // change
     auto aliasRegions = callop.aliases(j, i);

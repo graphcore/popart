@@ -25,12 +25,12 @@ void ReplicatedAllGatherOpx::grow(poplar::program::Sequence &prog) const {
   poplar::OptionFlags allGatherOptions = dv_p->lowering().gclOptions;
   allGatherOptions.set("useReplicatedImplementation", "true");
 
-  poplar::Tensor gathered =
-      gcl::allGather(graph().getPoplarGraph(),
-                     getInTensor(ReplicatedAllGatherOp::getInIndex()),
-                     prog,
-                     debugContext("replicatedAllGather"),
-                     allGatherOptions);
+  poplar::Tensor gathered = gcl::allGather(
+      graph().getPoplarGraph(),
+      getInTensor(ReplicatedAllGatherOp::getInIndex()).getPoplarTensor(),
+      prog,
+      debugContext("replicatedAllGather"),
+      allGatherOptions);
   if (hasInput(ReplicatedAllGatherOp::getCollectiveLinkedIndex())) {
     auto cbr = getCollectiveBalancedReorder();
     if (cbr) {
@@ -44,8 +44,10 @@ void ReplicatedAllGatherOpx::grow(poplar::program::Sequence &prog) const {
 
   setOutTensor(
       ReplicatedAllGatherOp::getOutIndex(),
-      gathered.reshape(
-          op.outInfo(ReplicatedAllGatherOp::getOutIndex()).shape_szt()));
+      snap::Tensor{
+          gathered.reshape(
+              op.outInfo(ReplicatedAllGatherOp::getOutIndex()).shape_szt()),
+          graph()});
 }
 
 InputCreatorType

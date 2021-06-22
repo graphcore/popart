@@ -1971,7 +1971,8 @@ void IrLowering::growOpx(PopOpx *opx,
       if (std::all_of(regions.begin(),
                       regions.end(),
                       [](const view::Region &r) { return r.isEmpty(); })) {
-        poplar::Tensor inTensor = opx->get(inputMap.second->id);
+        poplar::Tensor inTensor =
+            opx->get(inputMap.second->id).getPoplarTensor();
         // Check that this isn't a phony tensor or a tensor with post-IR aliases
         if (inTensor.numElements() > 0 &&
             aliasZeroCopy->getActiveAliasedTensors({inputMap.second}, false)
@@ -2038,7 +2039,7 @@ void IrLowering::growOpx(PopOpx *opx,
     }
   } else {
     for (auto out : opx->op_p->output->tensorMap()) {
-      poplar::Tensor outTensor = opx->getOutTensor(out.first);
+      poplar::Tensor outTensor = opx->getOutTensor(out.first).getPoplarTensor();
       seqIt->add(poplar::program::WriteUndef(outTensor, opx->debugContext()));
     }
     logging::devicex::trace(
@@ -2052,7 +2053,7 @@ void IrLowering::growOpx(PopOpx *opx,
     auto idx = out.first;
     auto id  = out.second;
     if (printTensorIds.find(id) != printTensorIds.end()) {
-      auto tensor = opx->getOutTensor(idx);
+      auto tensor = opx->getOutTensor(idx).getPoplarTensor();
       auto printProg =
           poplar::program::PrintTensor(id, tensor, opx->debugContext());
       seqIt->add(printProg);

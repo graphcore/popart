@@ -24,9 +24,11 @@ void SGD1VarUpdateOpx::grow(poplar::program::Sequence &prog) const {
   auto sgd1varUpdateOp = getOp<SGD1VarUpdateOp>();
 
   poplar::Tensor velocity =
-      getInTensor(VarUpdateWithUpdaterOp::getUpdaterInIndex());
+      getInTensor(VarUpdateWithUpdaterOp::getUpdaterInIndex())
+          .getPoplarTensor();
 
-  poplar::Tensor weights = getInTensor(VarUpdateOp::getVarToUpdateInIndex());
+  poplar::Tensor weights =
+      getInTensor(VarUpdateOp::getVarToUpdateInIndex()).getPoplarTensor();
 
   // non-const scaled learning rate case
   if (!sgd1varUpdateOp.initSlr1.isConst()) {
@@ -34,10 +36,11 @@ void SGD1VarUpdateOpx::grow(poplar::program::Sequence &prog) const {
         graph().getPoplarGraph(),
         weights,
         velocity,
-        popops::neg(graph().getPoplarGraph(),
-                    getInTensor(SGD1VarUpdateOp::getSlr1InIndex()),
-                    prog,
-                    debugContext("neg")),
+        popops::neg(
+            graph().getPoplarGraph(),
+            getInTensor(SGD1VarUpdateOp::getSlr1InIndex()).getPoplarTensor(),
+            prog,
+            debugContext("neg")),
         prog,
         debugContext("nonConstScaledSubtractSGD1"));
   }

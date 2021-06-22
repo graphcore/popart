@@ -20,13 +20,16 @@ GreaterOpx::GreaterOpx(Op *op, Devicex *devicex)
 
 void GreaterOpx::grow(poplar::program::Sequence &prog) const {
 
-  insert(outId(GreaterOp::getOutIndex()),
-         popops::map(graph().getPoplarGraph(),
-                     popops::expr::BinaryOpType::GREATER_THAN,
-                     get(inId(GreaterOp::getArg0InIndex())),
-                     get(inId(GreaterOp::getArg1InIndex())),
-                     prog,
-                     debugContext()));
+  insert(
+      outId(GreaterOp::getOutIndex()),
+      snap::Tensor{
+          popops::map(graph().getPoplarGraph(),
+                      popops::expr::BinaryOpType::GREATER_THAN,
+                      get(inId(GreaterOp::getArg0InIndex())).getPoplarTensor(),
+                      get(inId(GreaterOp::getArg1InIndex())).getPoplarTensor(),
+                      prog,
+                      debugContext()),
+          graph()});
 }
 
 namespace {

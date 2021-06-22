@@ -19,10 +19,10 @@ void TransposeOpx::grow(poplar::program::Sequence &prog) const {
     unsigned_perm.push_back(static_cast<unsigned>(i));
   }
 
-  auto input      = getInTensor(TransposeOp::getInIndex());
+  auto input      = getInTensor(TransposeOp::getInIndex()).getPoplarTensor();
   auto input_copy = cloneNcopy(prog, input);
   auto output     = input_copy.dimShuffle(unsigned_perm);
-  setOutTensor(TransposeOp::getOutIndex(), output);
+  setOutTensor(TransposeOp::getOutIndex(), snap::Tensor{output, graph()});
 }
 
 InputCreatorType TransposeOpx::getInputCreatorType(InIndex) const {
@@ -90,9 +90,11 @@ void TransposeInplaceOpx::grow(poplar::program::Sequence &) const {
     unsigned_perm.push_back(static_cast<unsigned>(i));
   }
 
-  setOutTensor(
-      TransposeOp::getOutIndex(),
-      getInTensor(TransposeOp::getInIndex()).dimShuffle(unsigned_perm));
+  setOutTensor(TransposeOp::getOutIndex(),
+               snap::Tensor{getInTensor(TransposeOp::getInIndex())
+                                .getPoplarTensor()
+                                .dimShuffle(unsigned_perm),
+                            graph()});
 }
 
 TransposeGradOpx::TransposeGradOpx(Op *op, Devicex *devicex)

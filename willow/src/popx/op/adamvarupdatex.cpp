@@ -27,9 +27,11 @@ void AdamVarUpdateOpx::grow(poplar::program::Sequence &prog) const {
   auto &adamVarUpdateOp = getOp<AdamVarUpdateOp>();
 
   poplar::Tensor updater =
-      getInTensor(VarUpdateWithUpdaterOp::getUpdaterInIndex());
+      getInTensor(VarUpdateWithUpdaterOp::getUpdaterInIndex())
+          .getPoplarTensor();
 
-  poplar::Tensor var = getInTensor(VarUpdateOp::getVarToUpdateInIndex());
+  poplar::Tensor var =
+      getInTensor(VarUpdateOp::getVarToUpdateInIndex()).getPoplarTensor();
 
   std::vector<poplar::Tensor> tensors;
 
@@ -39,22 +41,26 @@ void AdamVarUpdateOpx::grow(poplar::program::Sequence &prog) const {
   if (adamVarUpdateOp.initLr.isConst()) {
     lr = pe::Const(adamVarUpdateOp.initLr.val());
   } else {
-    tensors.push_back(getInTensor(AdamVarUpdateOp::getLrInIndex()));
+    tensors.push_back(
+        getInTensor(AdamVarUpdateOp::getLrInIndex()).getPoplarTensor());
     lr = pe::PlaceHolder(tensors.size());
   }
 
   // Lamb scaled learning rate: lr = lr * sqrt(r1)/sqrt(r2)
   if (hasInput(AdamVarUpdateOp::getLambR1SqInIndex()) &&
       hasInput(AdamVarUpdateOp::getLambR2SqInIndex())) {
-    tensors.push_back(getInTensor(AdamVarUpdateOp::getLambR1SqInIndex()));
+    tensors.push_back(
+        getInTensor(AdamVarUpdateOp::getLambR1SqInIndex()).getPoplarTensor());
     auto r1sqindex = tensors.size();
-    tensors.push_back(getInTensor(AdamVarUpdateOp::getLambR2SqInIndex()));
+    tensors.push_back(
+        getInTensor(AdamVarUpdateOp::getLambR2SqInIndex()).getPoplarTensor());
     auto r2sqindex = tensors.size();
 
     if (adamVarUpdateOp.initMwn.isConst()) {
       mwn = pe::Const(adamVarUpdateOp.initMwn.val());
     } else {
-      tensors.push_back(getInTensor(AdamVarUpdateOp::getMwnInIndex()));
+      tensors.push_back(
+          getInTensor(AdamVarUpdateOp::getMwnInIndex()).getPoplarTensor());
       mwn = pe::PlaceHolder(tensors.size());
     }
 

@@ -14,11 +14,12 @@ SqrtOpx::SqrtOpx(Op *op, Devicex *devicex) : ElementWiseUnaryOpx(op, devicex) {
 
 void SqrtOpx::grow(poplar::program::Sequence &prog) const {
   setOutTensor(0,
-               popops::map(graph().getPoplarGraph(),
-                           popops::expr::UnaryOpType::SQRT,
-                           getInTensor(0),
-                           prog,
-                           debugContext()));
+               snap::Tensor{popops::map(graph().getPoplarGraph(),
+                                        popops::expr::UnaryOpType::SQRT,
+                                        getInTensor(0).getPoplarTensor(),
+                                        prog,
+                                        debugContext()),
+                            graph()});
 }
 
 namespace {

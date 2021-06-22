@@ -22,8 +22,9 @@ CopyVarUpdateOpx::CopyVarUpdateOpx(Op *op, Devicex *devicex)
 void CopyVarUpdateOpx::grow(poplar::program::Sequence &prog) const {
   auto vu_op = getOp<CopyVarUpdateOp>();
   poplar::program::Copy copy(
-      getInTensor(VarUpdateWithUpdaterOp::getUpdaterInIndex()),
-      getInTensor(VarUpdateOp::getVarToUpdateInIndex()),
+      getInTensor(VarUpdateWithUpdaterOp::getUpdaterInIndex())
+          .getPoplarTensor(),
+      getInTensor(VarUpdateOp::getVarToUpdateInIndex()).getPoplarTensor(),
       false,
       debugContext());
   prog.add(copy);
@@ -45,7 +46,8 @@ CopyVarUpdateOpx::createInputTensor(int inIndex,
   }
   return snap::Tensor{
       graph().getPoplarGraph().clone(
-          getInTensor(VarUpdateOp::getVarToUpdateInIndex()), dnai),
+          getInTensor(VarUpdateOp::getVarToUpdateInIndex()).getPoplarTensor(),
+          dnai),
       graph()};
 }
 

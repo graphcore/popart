@@ -110,7 +110,7 @@ void CumSumOpx::grow(poplar::program::Sequence &prog) const {
   const bool exclusive = op.getExclusive();
   const bool reverse   = op.getReverse();
 
-  auto x = getInTensor(CumSumOp::xInIndex());
+  auto x = getInTensor(CumSumOp::xInIndex()).getPoplarTensor();
   checkAxisValue(axis, x.rank());
   const std::vector<std::size_t> xShape = x.shape();
   int64_t axisNN                        = toNonNegativeAxis(axis, x.rank());
@@ -135,7 +135,7 @@ void CumSumOpx::grow(poplar::program::Sequence &prog) const {
   x = x.reshape(xMiddleShape);
   x = x.dimShuffle(perm);
 
-  setOutTensor(CumSumOp::outIndex(), x);
+  setOutTensor(CumSumOp::outIndex(), snap::Tensor{x, graph()});
 }
 
 CumSumGradOpx::CumSumGradOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
@@ -153,7 +153,7 @@ void CumSumGradOpx::grow(poplar::program::Sequence &prog) const {
   const bool exclusive = op.getExclusive();
   const bool reverse   = op.getReverse();
 
-  auto dx = getInTensor(CumSumGradOp::outGradXInIndex());
+  auto dx = getInTensor(CumSumGradOp::outGradXInIndex()).getPoplarTensor();
   const std::vector<std::size_t> dxShape = dx.shape();
   int64_t axisNN                         = toNonNegativeAxis(axis, dx.rank());
   std::size_t xMulDim0                   = dx.dim(axisNN);
@@ -177,7 +177,7 @@ void CumSumGradOpx::grow(poplar::program::Sequence &prog) const {
   dx = dx.reshape(xMiddleShape);
   dx = dx.dimShuffle(perm);
 
-  setOutTensor(CumSumGradOp::outIndex(), dx);
+  setOutTensor(CumSumGradOp::outIndex(), snap::Tensor{dx, graph()});
 }
 
 namespace {

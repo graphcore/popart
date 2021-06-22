@@ -134,17 +134,16 @@ snap::Graph &PopOpx::dstVirtualGraph(OutIndex index) const {
   }
 }
 
-const poplar::Tensor &PopOpx::get(TensorId id) const {
-  return dv_p->lowering().tensors().get(id).getPoplarTensor();
+const snap::Tensor &PopOpx::get(TensorId id) const {
+  return dv_p->lowering().tensors().get(id);
 }
 
-const poplar::Tensor &PopOpx::getView(TensorId id) const {
-  return dv_p->lowering().tensors().getView(id).getPoplarTensor();
+const snap::Tensor &PopOpx::getView(TensorId id) const {
+  return dv_p->lowering().tensors().getView(id);
 }
 
-void PopOpx::insert(TensorId id, const poplar::Tensor &tensor) const {
-  dv_p->lowering().tensors().insert(
-      id, snap::Tensor{tensor, dv_p->lowering().graph()});
+void PopOpx::insert(TensorId id, const snap::Tensor &tensor) const {
+  dv_p->lowering().tensors().insert(id, tensor);
 }
 
 TensorId PopOpx::inId(InIndex index) const { return op_p->input->id(index); }
@@ -158,7 +157,7 @@ bool PopOpx::hasOutput(OutIndex index) const {
   return op_p->output->hasIndex(index);
 }
 
-const poplar::Tensor &PopOpx::getInTensor(InIndex index) const {
+const snap::Tensor &PopOpx::getInTensor(InIndex index) const {
   if (!cachedInputs.empty()) {
     return cachedInputs[index];
   } else {
@@ -166,7 +165,7 @@ const poplar::Tensor &PopOpx::getInTensor(InIndex index) const {
   }
 }
 
-const poplar::Tensor &PopOpx::getOutTensor(OutIndex index) const {
+const snap::Tensor &PopOpx::getOutTensor(OutIndex index) const {
   if (cachedOutputs && !cachedOutputs->empty()) {
     return (*cachedOutputs)[index];
   } else {
@@ -174,11 +173,11 @@ const poplar::Tensor &PopOpx::getOutTensor(OutIndex index) const {
   }
 }
 
-const poplar::Tensor &PopOpx::getInView(InIndex index) const {
+const snap::Tensor &PopOpx::getInView(InIndex index) const {
   return getView(op_p->input->id(index));
 }
 
-const poplar::Tensor &PopOpx::getOutView(OutIndex index) const {
+const snap::Tensor &PopOpx::getOutView(OutIndex index) const {
   return getView(op_p->output->id(index));
 }
 
@@ -196,14 +195,14 @@ void PopOpx::setOutViewChangers(OutIndex index,
                                                     changers);
 }
 
-void PopOpx::setOutTensor(OutIndex index, const poplar::Tensor &tensor) const {
-
+void PopOpx::setOutTensor(OutIndex index, const snap::Tensor &t) const {
+  auto tensor = t.getPoplarTensor();
   if (dv_p->lowering().ir().getSessionOptions().opxAliasChecking) {
     // Verify no unsolicited aliasing takes place
     Op &op = getOp<Op>();
     for (auto inputs : op.input->indicesMap()) {
       InIndex inIndex   = inputs.second.front();
-      auto &inputTensor = getInTensor(inIndex);
+      auto &inputTensor = getInTensor(inIndex).getPoplarTensor();
       if (tensor.elementType() == inputTensor.elementType()) {
         if (!tensor.containsAliases() && !inputTensor.containsAliases()) {
           // Can only safely test for aliases between the input and output
@@ -236,12 +235,12 @@ void PopOpx::setOutTensor(OutIndex index, const poplar::Tensor &tensor) const {
 
   // Assume that if we have cached inputs then we will use cached outputs
   if (cachedOutputs) {
-    cachedOutputs->insert(cachedOutputs->begin() + index, tensor);
+    cachedOutputs->insert(cachedOutputs->begin() + index, t);
   } else {
     logging::trace("Op {} inserting poplar::Tensor {}",
                    getOp<Op>().debugName(),
                    op_p->output->id(index));
-    insert(op_p->output->id(index), tensor);
+    insert(op_p->output->id(index), t);
   }
 }
 
@@ -296,8 +295,8 @@ poplar::DebugContext PopOpx::debugContext(const std::string name,
 
 poplar::Tensor PopOpx::cloneNcopy(poplar::program::Sequence &prog,
                                   TensorId id) const {
-  const poplar::Tensor &tensor = get(id);
-  return cloneNcopy(prog, tensor, id + "[cloned]");
+  const snap::Tensor &tensor = get(id);
+  return cloneNcopy(prog, tensor.getPoplarTensor(), id + "[cloned]");
 }
 
 poplar::Tensor PopOpx::cloneNcopy(poplar::program::Sequence &prog,
@@ -316,7 +315,7 @@ poplar::Tensor PopOpx::cloneNcopy(poplar::program::Sequence &prog,
 
 poplar::Tensor PopOpx::broadcast(const std::vector<int64_t> &desired_shape,
                                  TensorId id) const {
-  return broadcast(desired_shape, get(id));
+  return broadcast(desired_shape, get(id).getPoplarTensor());
 }
 
 const Devicex *PopOpx::getDevicex() const { return dv_p; }

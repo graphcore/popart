@@ -26,15 +26,18 @@ void RMSPropUpdaterOpx::grow(poplar::program::Sequence &prog) const {
 
   auto &rmspropUpdaterOp = getOp<RMSPropUpdaterOp>();
 
-  poplar::Tensor grad  = getInTensor(RMSPropUpdaterOp::getGradInIndex());
-  poplar::Tensor accl1 = getInTensor(RMSPropUpdaterOp::getAccl1InIndex());
+  poplar::Tensor grad =
+      getInTensor(RMSPropUpdaterOp::getGradInIndex()).getPoplarTensor();
+  poplar::Tensor accl1 =
+      getInTensor(RMSPropUpdaterOp::getAccl1InIndex()).getPoplarTensor();
 
   std::vector<poplar::Tensor> tensors = {grad, accl1};
 
   pe::Any rmsexpr(pe::Const(0.0f));
   if (hasInput(RMSPropUpdaterOp::getAccl2InIndex())) {
     // Centered version
-    poplar::Tensor accl2 = getInTensor(RMSPropUpdaterOp::getAccl2InIndex());
+    poplar::Tensor accl2 =
+        getInTensor(RMSPropUpdaterOp::getAccl2InIndex()).getPoplarTensor();
     tensors.push_back(accl2);
     // Centered: Accl1 - Accl2^2
     rmsexpr =
@@ -48,7 +51,8 @@ void RMSPropUpdaterOpx::grow(poplar::program::Sequence &prog) const {
   if (rmspropUpdaterOp.initEps.isConst()) {
     epsexpr = pe::Const(rmspropUpdaterOp.initEps.val());
   } else {
-    tensors.push_back(getInTensor(RMSPropUpdaterOp::getEpsInIndex()));
+    tensors.push_back(
+        getInTensor(RMSPropUpdaterOp::getEpsInIndex()).getPoplarTensor());
     epsexpr = pe::PlaceHolder(tensors.size());
   }
 
@@ -74,7 +78,8 @@ void RMSPropUpdaterOpx::grow(poplar::program::Sequence &prog) const {
                        getInViewChangers(RMSPropUpdaterOp::getGradInIndex()));
   }
 
-  setOutTensor(RMSPropUpdaterOp::getUpdaterOutIndex(), updater);
+  setOutTensor(RMSPropUpdaterOp::getUpdaterOutIndex(),
+               snap::Tensor{updater, graph()});
 }
 
 namespace {

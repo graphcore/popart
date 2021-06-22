@@ -19,7 +19,7 @@ void ResizeOpx::grow(poplar::program::Sequence &prog) const {
   auto &resizeOp = getOp<ResizeOp>();
   auto outShape  = resizeOp.outShape(ResizeOp::getOutIndex());
 
-  auto input  = getInTensor(ResizeOp::getInIndex());
+  auto input  = getInTensor(ResizeOp::getInIndex()).getPoplarTensor();
   auto result = cloneNcopy(prog, input);
   for (int i = 0; i < input.rank(); i++) {
     if (result.shape().at(i) != outShape.at(i)) {
@@ -27,7 +27,7 @@ void ResizeOpx::grow(poplar::program::Sequence &prog) const {
     }
   }
 
-  setOutTensor(ResizeOp::getOutIndex(), result);
+  setOutTensor(ResizeOp::getOutIndex(), snap::Tensor{result, graph()});
 }
 
 namespace {
@@ -87,7 +87,7 @@ ResizeGradOpx::ResizeGradOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
 
 void ResizeGradOpx::grow(poplar::program::Sequence &prog) const {
   auto &op   = getOp<ResizeGradOp>();
-  auto input = getInTensor(ResizeGradOp::getInIndex());
+  auto input = getInTensor(ResizeGradOp::getInIndex()).getPoplarTensor();
 
   auto inShape  = op.inShape(ResizeGradOp::getInIndex());
   auto outShape = op.outShape(ResizeGradOp::getOutIndex());
@@ -108,7 +108,7 @@ void ResizeGradOpx::grow(poplar::program::Sequence &prog) const {
     }
   }
 
-  setOutTensor(ResizeGradOp::getOutIndex(), result);
+  setOutTensor(ResizeGradOp::getOutIndex(), snap::Tensor{result, graph()});
 }
 
 poplar::Tensor ResizeGradOpx::reduceDimension(poplar::program::Sequence &prog,

@@ -31,9 +31,11 @@ CtcBeamSearchDecoderOpx::CtcBeamSearchDecoderOpx(Op *op_, Devicex *devicex)
 void CtcBeamSearchDecoderOpx::grow(poplar::program::Sequence &prog) const {
   const auto &op = getOp<CtcBeamSearchDecoderOp>();
   const auto &logProbs =
-      getInTensor(CtcBeamSearchDecoderOp::getLogProbsInIndex());
+      getInTensor(CtcBeamSearchDecoderOp::getLogProbsInIndex())
+          .getPoplarTensor();
   const auto &dataLengths =
-      getInTensor(CtcBeamSearchDecoderOp::getDataLengthsInIndex());
+      getInTensor(CtcBeamSearchDecoderOp::getDataLengthsInIndex())
+          .getPoplarTensor();
 
   auto result = popnn::ctc_infer::beamSearchDecoderLogProbabilities(
       graph().getPoplarGraph(),
@@ -47,11 +49,11 @@ void CtcBeamSearchDecoderOpx::grow(poplar::program::Sequence &prog) const {
       debugContext("ctcBeamSearchDecoder"));
 
   setOutTensor(CtcBeamSearchDecoderOp::getLabelProbsOutIndex(),
-               std::get<0>(result));
+               snap::Tensor{std::get<0>(result), graph()});
   setOutTensor(CtcBeamSearchDecoderOp::getLabelLengthsOutIndex(),
-               std::get<1>(result));
+               snap::Tensor{std::get<1>(result), graph()});
   setOutTensor(CtcBeamSearchDecoderOp::getDecodedLabelsOutIndex(),
-               std::get<2>(result));
+               snap::Tensor{std::get<2>(result), graph()});
 }
 
 // Opx creator.

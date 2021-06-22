@@ -36,7 +36,7 @@ void SumOpx::grow(poplar::program::Sequence &prog) const {
 
   // Add the input tensors as placeholders to the expression
   for (int i = 0; i < sumOp.input->n(); ++i) {
-    inputs.push_back(getInTensor(i));
+    inputs.push_back(getInTensor(i).getPoplarTensor());
     exprs.push_back(std::make_unique<popops::expr::PlaceHolder>(i + 1));
     expr.push(exprs.back().get());
   }
@@ -58,7 +58,7 @@ void SumOpx::grow(poplar::program::Sequence &prog) const {
                          inputs,
                          prog,
                          debugContext("sum"));
-  setOutTensor(SumOp::getOutIndex(), sum);
+  setOutTensor(SumOp::getOutIndex(), snap::Tensor{sum, graph()});
 }
 
 InputCreatorType SumOpx::getInputCreatorType(InIndex index) const {
@@ -102,12 +102,13 @@ void SumArgGradOpx::grow(poplar::program::Sequence &prog) const {
 
   // Remove axes from the result that were not present ( or 1) in the input to
   // the fwd op
-  auto out = popops::reduce(graph().getPoplarGraph(),
-                            getInTensor(SumArgGradOp::getGradInIndex()),
-                            vXtoY<int64_t, std::size_t>(axes),
-                            {popops::Operation::ADD},
-                            prog,
-                            debugContext("add"));
+  auto out = popops::reduce(
+      graph().getPoplarGraph(),
+      getInTensor(SumArgGradOp::getGradInIndex()).getPoplarTensor(),
+      vXtoY<int64_t, std::size_t>(axes),
+      {popops::Operation::ADD},
+      prog,
+      debugContext("add"));
 
   logging::info("{} Shape of SumArgGradOpx output {} {}",
                 out,
@@ -115,8 +116,11 @@ void SumArgGradOpx::grow(poplar::program::Sequence &prog) const {
                 outInfo(SumArgGradOp::getOutIndex()).shape_szt());
 
   // Reshape the output, to add 1's if needed
-  setOutTensor(SumArgGradOp::getOutIndex(),
-               out.reshape(outInfo(SumArgGradOp::getOutIndex()).shape_szt()));
+  setOutTensor(
+      SumArgGradOp::getOutIndex(),
+      snap::Tensor{
+          out.reshape(outInfo(SumArgGradOp::getOutIndex()).shape_szt()),
+          graph()});
 }
 
 namespace {

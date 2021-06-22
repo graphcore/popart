@@ -15,7 +15,7 @@ CastOpx::CastOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
 
 void CastOpx::grow(poplar::program::Sequence &prog) const {
   auto out = popops::cast(graph().getPoplarGraph(),
-                          getInTensor(CastOp::getInIndex()),
+                          getInTensor(CastOp::getInIndex()).getPoplarTensor(),
                           popType(op_p->outInfo(CastOp::getOutIndex())),
                           prog,
                           debugContext());
@@ -25,7 +25,7 @@ void CastOpx::grow(poplar::program::Sequence &prog) const {
                        getInViewChangers(CastOp::getInIndex()));
   }
 
-  setOutTensor(CastOp::getOutIndex(), out);
+  setOutTensor(CastOp::getOutIndex(), snap::Tensor{out, graph()});
 }
 
 CastGradOpx::CastGradOpx(Op *op, Devicex *devicex) : CastOpx(op, devicex) {

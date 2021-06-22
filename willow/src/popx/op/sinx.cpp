@@ -13,12 +13,15 @@ SinOpx::SinOpx(Op *op, Devicex *devicex) : ElementWiseUnaryOpx(op, devicex) {
 }
 
 void SinOpx::grow(poplar::program::Sequence &prog) const {
-  setOutTensor(SinOp::getOutIndex(),
-               popops::map(graph().getPoplarGraph(),
-                           popops::expr::UnaryOpType::SIN,
-                           getInTensor(SinOp::getInIndex()),
-                           prog,
-                           debugContext()));
+  setOutTensor(
+      SinOp::getOutIndex(),
+      snap::Tensor{
+          popops::map(graph().getPoplarGraph(),
+                      popops::expr::UnaryOpType::SIN,
+                      getInTensor(SinOp::getInIndex()).getPoplarTensor(),
+                      prog,
+                      debugContext()),
+          graph()});
 }
 
 namespace {

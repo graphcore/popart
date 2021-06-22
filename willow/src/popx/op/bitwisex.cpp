@@ -17,12 +17,15 @@ BitwiseNotOpx::BitwiseNotOpx(Op *op, Devicex *devicex)
 }
 
 void BitwiseNotOpx::grow(poplar::program::Sequence &prog) const {
-  insert(outId(BitwiseNotOp::getOutIndex()),
-         popops::map(graph().getPoplarGraph(),
-                     popops::expr::UnaryOpType::BITWISE_NOT,
-                     get(inId(BitwiseNotOp::getInIndex())),
-                     prog,
-                     debugContext()));
+  insert(
+      outId(BitwiseNotOp::getOutIndex()),
+      snap::Tensor{
+          popops::map(graph().getPoplarGraph(),
+                      popops::expr::UnaryOpType::BITWISE_NOT,
+                      get(inId(BitwiseNotOp::getInIndex())).getPoplarTensor(),
+                      prog,
+                      debugContext()),
+          graph()});
 }
 
 BitwiseBinaryOpx::BitwiseBinaryOpx(Op *op, Devicex *devicex)
@@ -35,13 +38,17 @@ BitwiseBinaryOpx::BitwiseBinaryOpx(Op *op, Devicex *devicex)
 }
 
 void BitwiseBinaryOpx::grow(poplar::program::Sequence &prog) const {
-  insert(outId(BitwiseBinaryOp::getOutIndex()),
-         popops::map(graph().getPoplarGraph(),
-                     determineOpType(),
-                     getInTensor(BitwiseBinaryOp::getArg0InIndex()),
-                     getInTensor(BitwiseBinaryOp::getArg1InIndex()),
-                     prog,
-                     debugContext()));
+  insert(
+      outId(BitwiseBinaryOp::getOutIndex()),
+      snap::Tensor{
+          popops::map(
+              graph().getPoplarGraph(),
+              determineOpType(),
+              getInTensor(BitwiseBinaryOp::getArg0InIndex()).getPoplarTensor(),
+              getInTensor(BitwiseBinaryOp::getArg1InIndex()).getPoplarTensor(),
+              prog,
+              debugContext()),
+          graph()});
 }
 
 popops::expr::BinaryOpType BitwiseBinaryOpx::determineOpType() const {

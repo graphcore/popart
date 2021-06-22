@@ -28,7 +28,8 @@ void SGD1AcclUpdateOpx::grow(poplar::program::Sequence &prog) const {
   auto smm1Const  = vu_op.initSmm1.isConst();
   auto swdf1Const = vu_op.initSwd1.isConst();
 
-  const auto &toUpdate = getInTensor(VarUpdateOp::getVarToUpdateInIndex());
+  const auto &toUpdate =
+      getInTensor(VarUpdateOp::getVarToUpdateInIndex()).getPoplarTensor();
 
   if (smm1Const) {
     auto smm1Val = vu_op.initSmm1.val();
@@ -53,13 +54,15 @@ void SGD1AcclUpdateOpx::grow(poplar::program::Sequence &prog) const {
     popops::mapInPlace(
         graph().getPoplarGraph(),
         pe::Mul(pe::_1, pe::Cast(pe::_2, toUpdate.elementType())),
-        {toUpdate, getInTensor(SGD1AcclUpdateOp::getSmm1InIndex())},
+        {toUpdate,
+         getInTensor(SGD1AcclUpdateOp::getSmm1InIndex()).getPoplarTensor()},
         prog,
         debugContext("nonConstMomentumScaling"));
   }
 
   poplar::Tensor weights =
-      getInTensor(VarUpdateWithUpdaterOp::getUpdaterInIndex());
+      getInTensor(VarUpdateWithUpdaterOp::getUpdaterInIndex())
+          .getPoplarTensor();
 
   if (swdf1Const) {
     auto swd1Val = vu_op.initSwd1.val();
@@ -73,12 +76,13 @@ void SGD1AcclUpdateOpx::grow(poplar::program::Sequence &prog) const {
           debugContext("constScaledAddSwd1_" + std::to_string(swd1Val)));
     }
   } else {
-    popops::scaledAddTo(graph().getPoplarGraph(),
-                        toUpdate,
-                        weights,
-                        getInTensor(SGD1AcclUpdateOp::getSwd1InIndex()),
-                        prog,
-                        debugContext("nonConstScaledAddSwd1"));
+    popops::scaledAddTo(
+        graph().getPoplarGraph(),
+        toUpdate,
+        weights,
+        getInTensor(SGD1AcclUpdateOp::getSwd1InIndex()).getPoplarTensor(),
+        prog,
+        debugContext("nonConstScaledAddSwd1"));
   }
 
   if (hasInViewChangers(VarUpdateOp::getVarToUpdateInIndex())) {
@@ -86,7 +90,8 @@ void SGD1AcclUpdateOpx::grow(poplar::program::Sequence &prog) const {
                        getInViewChangers(VarUpdateOp::getVarToUpdateInIndex()));
   }
   // return a reference to the input
-  setOutTensor(VarUpdateOp::getUpdatedVarOutIndex(), toUpdate);
+  setOutTensor(VarUpdateOp::getUpdatedVarOutIndex(),
+               snap::Tensor{toUpdate, graph()});
 }
 
 namespace {

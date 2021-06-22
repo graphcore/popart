@@ -27,9 +27,12 @@ void AdaDeltaUpdaterOpx::grow(poplar::program::Sequence &prog) const {
 
   auto &rmspropUpdaterOp = getOp<AdaDeltaUpdaterOp>();
 
-  poplar::Tensor grad  = getInTensor(AdaDeltaUpdaterOp::getGradInIndex());
-  poplar::Tensor accl1 = getInTensor(AdaDeltaUpdaterOp::getAccl1InIndex());
-  poplar::Tensor accl2 = getInTensor(AdaDeltaUpdaterOp::getAccl2InIndex());
+  poplar::Tensor grad =
+      getInTensor(AdaDeltaUpdaterOp::getGradInIndex()).getPoplarTensor();
+  poplar::Tensor accl1 =
+      getInTensor(AdaDeltaUpdaterOp::getAccl1InIndex()).getPoplarTensor();
+  poplar::Tensor accl2 =
+      getInTensor(AdaDeltaUpdaterOp::getAccl2InIndex()).getPoplarTensor();
 
   std::vector<poplar::Tensor> tensors = {grad, accl1, accl2};
 
@@ -37,7 +40,8 @@ void AdaDeltaUpdaterOpx::grow(poplar::program::Sequence &prog) const {
   if (rmspropUpdaterOp.initEps.isConst()) {
     epsexpr = pe::Const(rmspropUpdaterOp.initEps.val());
   } else {
-    tensors.push_back(getInTensor(AdaDeltaUpdaterOp::getEpsInIndex()));
+    tensors.push_back(
+        getInTensor(AdaDeltaUpdaterOp::getEpsInIndex()).getPoplarTensor());
     epsexpr = pe::PlaceHolder(tensors.size());
   }
 
@@ -59,7 +63,8 @@ void AdaDeltaUpdaterOpx::grow(poplar::program::Sequence &prog) const {
                        getInViewChangers(AdaDeltaUpdaterOp::getGradInIndex()));
   }
 
-  setOutTensor(AdaDeltaUpdaterOp::getUpdaterOutIndex(), updater);
+  setOutTensor(AdaDeltaUpdaterOp::getUpdaterOutIndex(),
+               snap::Tensor{updater, graph()});
 }
 
 snap::Tensor AdaDeltaUpdaterOpx::createInputTensor(
@@ -75,7 +80,8 @@ snap::Tensor AdaDeltaUpdaterOpx::createInputTensor(
   return snap::Tensor{
       graph().getPoplarGraph().clone(
           popType(accumulatorInfo),
-          getInTensor(VarUpdateWithUpdaterOp::getUpdaterInIndex()),
+          getInTensor(VarUpdateWithUpdaterOp::getUpdaterInIndex())
+              .getPoplarTensor(),
           dnai),
       graph()};
 }

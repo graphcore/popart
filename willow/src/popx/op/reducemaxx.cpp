@@ -24,7 +24,7 @@ ReduceMaxOpx::ReduceMaxOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
 
 void ReduceMaxOpx::grow(poplar::program::Sequence &prog) const {
   const auto &op   = getOp<ReduceMaxOp>();
-  const auto input = getInTensor(ReduceMaxOp::getInIndex());
+  const auto input = getInTensor(ReduceMaxOp::getInIndex()).getPoplarTensor();
 
   auto output_tensor = popops::reduce(graph().getPoplarGraph(),
                                       input,
@@ -35,7 +35,9 @@ void ReduceMaxOpx::grow(poplar::program::Sequence &prog) const {
 
   setOutTensor(
       ReduceMaxOp::getOutIndex(),
-      output_tensor.reshape(outInfo(ReduceMaxOp::getOutIndex()).shape_szt()));
+      snap::Tensor{output_tensor.reshape(
+                       outInfo(ReduceMaxOp::getOutIndex()).shape_szt()),
+                   graph()});
 }
 
 ReduceMaxGradOpx::ReduceMaxGradOpx(Op *op, Devicex *devicex)
@@ -45,9 +47,10 @@ ReduceMaxGradOpx::ReduceMaxGradOpx(Op *op, Devicex *devicex)
 
 void ReduceMaxGradOpx::grow(poplar::program::Sequence &prog) const {
   const auto &op = getOp<ReduceMaxGradOp>();
-  auto output    = cloneNcopy(prog, getInTensor(ReduceMaxGradOp::getInIndex()));
-  auto mask =
-      cloneNcopy(prog, getInTensor(ReduceMaxGradOp::getFwdOutInIndex()));
+  auto output    = cloneNcopy(
+      prog, getInTensor(ReduceMaxGradOp::getInIndex()).getPoplarTensor());
+  auto mask = cloneNcopy(
+      prog, getInTensor(ReduceMaxGradOp::getFwdOutInIndex()).getPoplarTensor());
   auto input_shape     = inShape(ReduceMaxGradOp::getInIndex());
   auto output_shape    = outShape(ReduceMaxGradOp::getOutIndex());
   const auto new_shape = vector_cast<std::size_t>(op.backwardShape());
@@ -67,12 +70,14 @@ void ReduceMaxGradOpx::grow(poplar::program::Sequence &prog) const {
       graph().getPoplarGraph(),
       pe::Mul(pe::Add(pe::Signum(pe::Sub(pe::_2, pe::_1)), pe::Const(1)),
               pe::_3),
-      {mask, getInTensor(ReduceMaxGradOp::getFwdInInIndex()), output},
+      {mask,
+       getInTensor(ReduceMaxGradOp::getFwdInInIndex()).getPoplarTensor(),
+       output},
       prog,
       debugContext("maskmul"));
 
   // output now matches the shape of output_shape
-  setOutTensor(ReduceMaxGradOp::getOutIndex(), output);
+  setOutTensor(ReduceMaxGradOp::getOutIndex(), snap::Tensor{output, graph()});
 }
 
 namespace {

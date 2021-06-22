@@ -12,14 +12,15 @@ namespace popx {
 
 void TileOpx::grow(poplar::program::Sequence &prog) const {
   // not in-place, so cloning input
-  auto outTensor = cloneNcopy(prog, getInTensor(TileOp::getInIndex()));
+  auto outTensor =
+      cloneNcopy(prog, getInTensor(TileOp::getInIndex()).getPoplarTensor());
 
   auto repeats = getOp<TileOp>().getRepeats();
   for (unsigned i = 0; i < repeats.size(); i++) {
     outTensor = outTensor.broadcast(static_cast<unsigned>(repeats[i]), i);
   }
 
-  setOutTensor(TileOp::getOutIndex(), outTensor);
+  setOutTensor(TileOp::getOutIndex(), snap::Tensor{outTensor, graph()});
 }
 
 TileOpx::TileOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
@@ -38,7 +39,7 @@ TileGradOpx::TileGradOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
 // Repeats [2]
 // GradOut = Sum([2, 4], [6, 7]) = [8, 11]
 void TileGradOpx::grow(poplar::program::Sequence &prog) const {
-  auto inTensor                     = getInTensor(TileGradOp::getInIndex());
+  auto inTensor = getInTensor(TileGradOp::getInIndex()).getPoplarTensor();
   poplar::Tensor intermediateTensor = inTensor;
   poplar::Tensor outTensor;
 
@@ -68,7 +69,7 @@ void TileGradOpx::grow(poplar::program::Sequence &prog) const {
     intermediateTensor = outTensor;
   }
 
-  setOutTensor(TileOp::getOutIndex(), outTensor);
+  setOutTensor(TileOp::getOutIndex(), snap::Tensor{outTensor, graph()});
 }
 
 namespace {

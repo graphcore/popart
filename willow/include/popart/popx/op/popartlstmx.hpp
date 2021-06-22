@@ -24,7 +24,7 @@ public:
 protected:
   popnn::lstm::LstmParams
   createLSTMParams(const LSTMOP &lstm_op,
-                   const poplar::Tensor &seq_lens_t) const {
+                   const snap::Tensor &seq_lens_t) const {
     auto inInfo = lstm_op.inInfo(LSTMOP::getInputInIndex());
 
     auto inputSize    = static_cast<unsigned>(lstm_op.getInputSize());
@@ -38,7 +38,7 @@ protected:
           popnn::lstm::LstmParams(popType(inInfo),
                                   batchSize,
                                   maxSeqLength,
-                                  seq_lens_t,
+                                  seq_lens_t.getPoplarTensor(),
                                   {inputSize, hiddenSize},
                                   convert(lstm_op.getActivation()),
                                   convert(lstm_op.getRecurrentActivation()));
@@ -56,25 +56,29 @@ protected:
     return params;
   }
 
-  poplar::Tensor createBiasesInput() const {
+  snap::Tensor createBiasesInput() const {
     auto &lstmOp = getOp<LSTMOP>();
     auto seq_len = getSeqLens();
-    return popnn::lstm::createWeightsBiases(graph().getPoplarGraph(),
-                                            createLSTMParams(lstmOp, seq_len),
-                                            debugContext("createWeights"),
-                                            dv_p->lowering().lstmOptions,
-                                            &dv_p->matmulCache);
+    return snap::Tensor{
+        popnn::lstm::createWeightsBiases(graph().getPoplarGraph(),
+                                         createLSTMParams(lstmOp, seq_len),
+                                         debugContext("createWeights"),
+                                         dv_p->lowering().lstmOptions,
+                                         &dv_p->matmulCache),
+        graph()};
   }
 
-  poplar::Tensor getBiases(poplar::program::Sequence &prog) const {
+  snap::Tensor getBiases(poplar::program::Sequence &prog) const {
     auto &lstmOp = getOp<LSTMOP>();
 
     if (hasInput(lstmOp.getBiasesInIndex())) {
       return getInTensor(lstmOp.getBiasesInIndex());
     } else {
       auto biases = createBiasesInput();
-      popops::zero(
-          graph().getPoplarGraph(), biases, prog, debugContext("zeroBiases"));
+      popops::zero(graph().getPoplarGraph(),
+                   biases.getPoplarTensor(),
+                   prog,
+                   debugContext("zeroBiases"));
       return biases;
     }
   }
@@ -94,7 +98,8 @@ protected:
     auto &lstmOp = getOp<LSTMOP>();
 
     if (hasInput(lstmOp.getInitialStateInIndex())) {
-      auto initialState     = getInTensor(lstmOp.getInitialStateInIndex());
+      auto initialState =
+          getInTensor(lstmOp.getInitialStateInIndex()).getPoplarTensor();
       auto initialOutput    = initialState.slice(0, 1).squeeze({0});
       auto initialCellState = initialState.slice(1, 2).squeeze({0});
       return {initialOutput, initialCellState};
@@ -106,16 +111,18 @@ protected:
     }
   }
 
-  poplar::Tensor getSeqLens() const {
+  snap::Tensor getSeqLens() const {
     if (hasInput(LSTMOP::getSequenceLensInIndex())) {
       auto &lstmOp = getOp<LSTMOP>();
       logging::opx::debug("Checking seq len for {} index {}",
                           lstmOp.debugName(),
                           LSTMOP::getSequenceLensInIndex());
-      return getInTensor(LSTMOP::getSequenceLensInIndex())
-          .reinterpret(poplar::UNSIGNED_INT);
+      return snap::Tensor{getInTensor(LSTMOP::getSequenceLensInIndex())
+                              .getPoplarTensor()
+                              .reinterpret(poplar::UNSIGNED_INT),
+                          graph()};
     } else {
-      return poplar::Tensor();
+      return snap::Tensor{poplar::Tensor(), graph()};
     }
   }
 
@@ -124,8 +131,8 @@ protected:
     auto inputSize  = lstmOp.getInputSize();
     auto hiddenSize = lstmOp.getHiddenSize();
 
-    auto weights = getInTensor(lstmOp.getWeightsInIndex());
-    auto biases  = getBiases(prog);
+    auto weights = getInTensor(lstmOp.getWeightsInIndex()).getPoplarTensor();
+    auto biases  = getBiases(prog).getPoplarTensor();
 
     auto inputWeights  = weights.slice(0, inputSize, 1);
     auto outputWeights = weights.slice(inputSize, inputSize + hiddenSize, 1);
@@ -147,9 +154,9 @@ public:
   std::set<TensorId> mustExistBeforeCreate(InIndex) const;
 
 private:
-  poplar::Tensor createLSTMInput() const;
-  poplar::Tensor createWeightsInput() const;
-  std::unique_ptr<poplar::Tensor> getIntermediates() const;
+  snap::Tensor createLSTMInput() const;
+  snap::Tensor createWeightsInput() const;
+  std::unique_ptr<snap::Tensor> getIntermediates() const;
 };
 
 class PopartLSTMGradOpx : public PopartLSTMOpxBase<PopartLSTMGradOp> {

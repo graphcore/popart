@@ -69,7 +69,7 @@ poplar::Tensor getScale(snap::Graph &graph,
 
 void LRNOpx::grow(poplar::program::Sequence &prog) const {
   const auto &op   = getOp<LRNOp>();
-  const auto input = getInTensor(LRNOp::getInIndex());
+  const auto input = getInTensor(LRNOp::getInIndex()).getPoplarTensor();
 
   auto scale = getScale(graph(),
                         input,
@@ -86,7 +86,7 @@ void LRNOpx::grow(poplar::program::Sequence &prog) const {
                   prog,
                   debugContext("output"));
 
-  setOutTensor(LRNOp::getOutIndex(), output);
+  setOutTensor(LRNOp::getOutIndex(), snap::Tensor{output, graph()});
 }
 
 LRNGradOpx::LRNGradOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
@@ -94,9 +94,10 @@ LRNGradOpx::LRNGradOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
 }
 
 void LRNGradOpx::grow(poplar::program::Sequence &prog) const {
-  const auto &op       = getOp<LRNGradOp>();
-  const auto input     = getInTensor(LRNGradOp::getInIndex());
-  const auto fwd_input = getInTensor(LRNGradOp::getFwdInInIndex());
+  const auto &op   = getOp<LRNGradOp>();
+  const auto input = getInTensor(LRNGradOp::getInIndex()).getPoplarTensor();
+  const auto fwd_input =
+      getInTensor(LRNGradOp::getFwdInInIndex()).getPoplarTensor();
 
   auto scale = getScale(graph(),
                         fwd_input,
@@ -119,7 +120,7 @@ void LRNGradOpx::grow(poplar::program::Sequence &prog) const {
       prog,
       debugContext("grad"));
 
-  setOutTensor(LRNGradOp::getOutIndex(), output);
+  setOutTensor(LRNGradOp::getOutIndex(), snap::Tensor{output, graph()});
 }
 
 namespace {

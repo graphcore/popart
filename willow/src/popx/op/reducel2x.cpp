@@ -24,7 +24,7 @@ ReduceL2Opx::ReduceL2Opx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
 
 void ReduceL2Opx::grow(poplar::program::Sequence &prog) const {
   const auto &op   = getOp<ReduceL2Op>();
-  const auto input = getInTensor(ReduceL2Op::getInIndex());
+  const auto input = getInTensor(ReduceL2Op::getInIndex()).getPoplarTensor();
 
   auto output_tensor = popops::reduce(graph().getPoplarGraph(),
                                       input,
@@ -34,9 +34,10 @@ void ReduceL2Opx::grow(poplar::program::Sequence &prog) const {
                                       debugContext("squareAdd"));
   popops::sqrtInPlace(
       graph().getPoplarGraph(), output_tensor, prog, debugContext("sqrt"));
-  setOutTensor(
-      ReduceL2Op::getOutIndex(),
-      output_tensor.reshape(outInfo(ReduceL2Op::getOutIndex()).shape_szt()));
+  setOutTensor(ReduceL2Op::getOutIndex(),
+               snap::Tensor{output_tensor.reshape(
+                                outInfo(ReduceL2Op::getOutIndex()).shape_szt()),
+                            graph()});
 }
 
 ReduceL2GradOpx::ReduceL2GradOpx(Op *op, Devicex *devicex)
@@ -45,10 +46,12 @@ ReduceL2GradOpx::ReduceL2GradOpx(Op *op, Devicex *devicex)
 }
 
 void ReduceL2GradOpx::grow(poplar::program::Sequence &prog) const {
-  const auto &op       = getOp<ReduceL2GradOp>();
-  auto output          = getInTensor(ReduceL2GradOp::getOutIndex());
-  auto scale           = getInTensor(ReduceL2GradOp::getFwdOutInIndex());
-  auto fwd_input       = getInTensor(ReduceL2GradOp::getFwdInInIndex());
+  const auto &op = getOp<ReduceL2GradOp>();
+  auto output    = getInTensor(ReduceL2GradOp::getOutIndex()).getPoplarTensor();
+  auto scale =
+      getInTensor(ReduceL2GradOp::getFwdOutInIndex()).getPoplarTensor();
+  auto fwd_input =
+      getInTensor(ReduceL2GradOp::getFwdInInIndex()).getPoplarTensor();
   auto input_shape     = inShape(ReduceL2GradOp::getInIndex());
   auto output_shape    = outShape(ReduceL2GradOp::getOutIndex());
   const auto new_shape = vector_cast<std::size_t>(op.backwardShape());
@@ -71,7 +74,7 @@ void ReduceL2GradOpx::grow(poplar::program::Sequence &prog) const {
                        debugContext("output"));
 
   // output now matches the shape of output_shape
-  setOutTensor(ReduceL2GradOp::getOutIndex(), output);
+  setOutTensor(ReduceL2GradOp::getOutIndex(), snap::Tensor{output, graph()});
 }
 
 namespace {

@@ -16,7 +16,8 @@ AbortOpx::AbortOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
 
 void AbortOpx::grow(poplar::program::Sequence &prog) const {
   if (hasInput(AbortOp::getInIndex())) {
-    poplar::Tensor condition = getInTensor(AbortOp::getInIndex());
+    poplar::Tensor condition =
+        getInTensor(AbortOp::getInIndex()).getPoplarTensor();
     prog.add(poplar::program::AbortOnCondition(condition));
   } else {
     prog.add(poplar::program::Abort());

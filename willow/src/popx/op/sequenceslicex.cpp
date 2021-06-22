@@ -21,12 +21,16 @@ namespace {
 void growSequenceSlice(const PopOpx *opx,
                        poplar::program::Sequence &prog,
                        bool inplace) {
-  auto source      = opx->getInTensor(SequenceSliceOp::getSourceInIndex());
-  auto destination = opx->getInTensor(SequenceSliceOp::getDestinationInIndex());
-  auto N           = opx->getInTensor(SequenceSliceOp::getNInIndex());
+  auto source =
+      opx->getInTensor(SequenceSliceOp::getSourceInIndex()).getPoplarTensor();
+  auto destination = opx->getInTensor(SequenceSliceOp::getDestinationInIndex())
+                         .getPoplarTensor();
+  auto N = opx->getInTensor(SequenceSliceOp::getNInIndex()).getPoplarTensor();
   auto sourceOffset =
-      opx->getInTensor(SequenceSliceOp::getSourceOffsetInIndex());
-  auto destOffset = opx->getInTensor(SequenceSliceOp::getDestOffsetInIndex());
+      opx->getInTensor(SequenceSliceOp::getSourceOffsetInIndex())
+          .getPoplarTensor();
+  auto destOffset = opx->getInTensor(SequenceSliceOp::getDestOffsetInIndex())
+                        .getPoplarTensor();
 
   if (!inplace) {
     destination = opx->cloneNcopy(prog, destination);
@@ -42,7 +46,8 @@ void growSequenceSlice(const PopOpx *opx,
                         prog,
                         opx->debugContext());
 
-  opx->setOutTensor(SequenceSliceOp::getOutIndex(), destination);
+  opx->setOutTensor(SequenceSliceOp::getOutIndex(),
+                    snap::Tensor{destination, opx->graph()});
 }
 
 } // namespace

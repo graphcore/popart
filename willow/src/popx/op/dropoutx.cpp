@@ -65,53 +65,59 @@ void DropoutOpx::grow(poplar::program::Sequence &prog) const {
   auto &op = getOp<DropoutOp>();
 
   if (op_p->getIr().canTrain()) {
-    const poplar::Tensor &refTensor = get(op.getReferenceTensorId());
+    const poplar::Tensor &refTensor =
+        get(op.getReferenceTensorId()).getPoplarTensor();
 
     if (op.getOutputMask()) {
-      auto dropout_mask = growDropout(graph(),
-                                      getInTensor(DropoutOp::getInIndex()),
-                                      getInTensor(op.getSeedInIndex()),
-                                      refTensor,
-                                      op.getRatio(),
-                                      *this,
-                                      prog);
-      auto dropout      = dropout_mask.first;
-      auto mask         = dropout_mask.second;
+      auto dropout_mask =
+          growDropout(graph(),
+                      getInTensor(DropoutOp::getInIndex()).getPoplarTensor(),
+                      getInTensor(op.getSeedInIndex()).getPoplarTensor(),
+                      refTensor,
+                      op.getRatio(),
+                      *this,
+                      prog);
+      auto dropout = dropout_mask.first;
+      auto mask    = dropout_mask.second;
 
-      setOutTensor(op.getOutIndex(), dropout);
+      setOutTensor(op.getOutIndex(), snap::Tensor{dropout, graph()});
       if (op.output->hasIndex(DropoutOp::getMaskOutIndex())) {
         setOutTensor(DropoutOp::getMaskOutIndex(),
-                     popops::cast(graph().getPoplarGraph(),
-                                  mask,
-                                  poplar::BOOL,
-                                  prog,
-                                  debugContext("mask")));
+                     snap::Tensor{popops::cast(graph().getPoplarGraph(),
+                                               mask,
+                                               poplar::BOOL,
+                                               prog,
+                                               debugContext("mask")),
+                                  graph()});
       }
     } else {
       double dropoutProbability = 1. - static_cast<double>(op.getRatio());
       double scale = 1. / (1. - static_cast<double>(op.getRatio()));
-      auto dropout = poprand::dropout(graph().getPoplarGraph(),
-                                      &getInTensor(op.getSeedInIndex()),
-                                      0u,
-                                      getInTensor(DropoutOp::getInIndex()),
-                                      refTensor,
-                                      dropoutProbability,
-                                      scale,
-                                      prog,
-                                      debugContext("dropout"));
-      setOutTensor(op.getOutIndex(), dropout);
+      auto dropout = poprand::dropout(
+          graph().getPoplarGraph(),
+          &getInTensor(op.getSeedInIndex()).getPoplarTensor(),
+          0u,
+          getInTensor(DropoutOp::getInIndex()).getPoplarTensor(),
+          refTensor,
+          dropoutProbability,
+          scale,
+          prog,
+          debugContext("dropout"));
+      setOutTensor(op.getOutIndex(), snap::Tensor{dropout, graph()});
     }
   } else {
     // In inference mode, dropout is an identity function
-    auto output = cloneNcopy(prog, getInTensor(DropoutOp::getInIndex()));
-    setOutTensor(DropoutOp::getOutIndex(), output);
+    auto output = cloneNcopy(
+        prog, getInTensor(DropoutOp::getInIndex()).getPoplarTensor());
+    setOutTensor(DropoutOp::getOutIndex(), snap::Tensor{output, graph()});
     // In inference mask is just a tensor of true values.
     if (op.getOutputMask()) {
-      auto mask = getConst(poplar::BOOL,
-                           getInTensor(DropoutOp::getInIndex()).shape(),
-                           true,
-                           "mask");
-      setOutTensor(DropoutOp::getMaskOutIndex(), mask);
+      auto mask = getConst(
+          poplar::BOOL,
+          getInTensor(DropoutOp::getInIndex()).getPoplarTensor().shape(),
+          true,
+          "mask");
+      setOutTensor(DropoutOp::getMaskOutIndex(), snap::Tensor{mask, graph()});
     }
   }
 }

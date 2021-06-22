@@ -23,10 +23,13 @@ DynamicUpdateOpx::DynamicUpdateOpx(Op *op, Devicex *devicex)
 }
 
 void DynamicUpdateOpx::grow(poplar::program::Sequence &prog) const {
-  auto &op    = getOp<DynamicTernaryBaseOp>();
-  auto tensor = getInTensor(DynamicTernaryBaseOp::getUpdateInIndex());
-  auto index  = getInTensor(DynamicTernaryBaseOp::getIndexInIndex());
-  auto slice  = getInTensor(DynamicTernaryBaseOp::getInIndex());
+  auto &op = getOp<DynamicTernaryBaseOp>();
+  auto tensor =
+      getInTensor(DynamicTernaryBaseOp::getUpdateInIndex()).getPoplarTensor();
+  auto index =
+      getInTensor(DynamicTernaryBaseOp::getIndexInIndex()).getPoplarTensor();
+  auto slice =
+      getInTensor(DynamicTernaryBaseOp::getInIndex()).getPoplarTensor();
 
   std::vector<size_t> paxes(op.getAxes().begin(), op.getAxes().end());
   std::vector<size_t> psizes(op.getSizes().begin(), op.getSizes().end());
@@ -48,7 +51,8 @@ void DynamicUpdateOpx::grow(poplar::program::Sequence &prog) const {
       debugContext("dynamic_update_" +
                    op.inId(DynamicTernaryBaseOp::getUpdateInIndex())));
 
-  setOutTensor(DynamicTernaryBaseOp::getOutIndex(), outTensor);
+  setOutTensor(DynamicTernaryBaseOp::getOutIndex(),
+               snap::Tensor{outTensor, graph()});
 }
 
 InputCreatorType DynamicUpdateOpx::getInputCreatorType(InIndex index) const {
@@ -96,8 +100,9 @@ DynamicUpdateOpx::createInputTensor(InIndex index,
   if (index == DynamicTernaryBaseOp::getInIndex()) {
     if (dv_p->lowering().tensors().contains(
             op_p->input->id(DynamicTernaryBaseOp::getUpdateInIndex()))) {
-      auto updateTensor = getInTensor(DynamicTernaryBaseOp::getUpdateInIndex());
-      auto updateShape  = op.inShape(DynamicTernaryBaseOp::getUpdateInIndex());
+      auto updateTensor = getInTensor(DynamicTernaryBaseOp::getUpdateInIndex())
+                              .getPoplarTensor();
+      auto updateShape = op.inShape(DynamicTernaryBaseOp::getUpdateInIndex());
 
       std::vector<size_t> paxes(op.getAxes().begin(), op.getAxes().end());
       std::vector<size_t> psizes(op.getSizes().begin(), op.getSizes().end());
@@ -113,7 +118,8 @@ DynamicUpdateOpx::createInputTensor(InIndex index,
   if (index == DynamicTernaryBaseOp::getUpdateInIndex()) {
     if (dv_p->lowering().tensors().contains(
             op_p->input->id(DynamicTernaryBaseOp::getInIndex()))) {
-      auto inTensor    = getInTensor(DynamicTernaryBaseOp::getInIndex());
+      auto inTensor =
+          getInTensor(DynamicTernaryBaseOp::getInIndex()).getPoplarTensor();
       auto updateShape = op.inShape(DynamicTernaryBaseOp::getUpdateInIndex());
 
       std::vector<size_t> paxes(op.getAxes().begin(), op.getAxes().end());

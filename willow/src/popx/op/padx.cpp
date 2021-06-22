@@ -84,7 +84,7 @@ std::pair<bool, poplar::Tensor> BasePadOpx::getPropitiousPadLayout() const {
   for (auto d : expectedShape) {
     expectedShape_u64.push_back(static_cast<size_t>(d));
   }
-  const auto propitiousLayoutTensor = get(act_in);
+  const auto propitiousLayoutTensor = get(act_in).getPoplarTensor();
   if (expectedShape_u64 != propitiousLayoutTensor.shape()) {
     return {false, dummy};
   }
@@ -97,7 +97,7 @@ std::pair<bool, poplar::Tensor> BasePadOpx::getPropitiousPadLayout() const {
   // Found a good layout!
 
   // return {false, dummy};
-  return {true, get(act_in)};
+  return {true, get(act_in).getPoplarTensor()};
 }
 
 BasePadOpx::Chisseled BasePadOpx::getChisseled(const poplar::Tensor &t0) const {
@@ -273,15 +273,15 @@ poplar::Tensor BasePadOpx::padGrow(poplar::Tensor inTensor,
 }
 
 void PadOpx::grow(poplar::program::Sequence &prog) const {
-  auto in0    = PopOpx::getInTensor(BasePadOp::getInIndex());
+  auto in0    = PopOpx::getInTensor(BasePadOp::getInIndex()).getPoplarTensor();
   auto padded = padGrow(in0, prog, false);
-  setOutTensor(BasePadOp::getOutIndex(), padded);
+  setOutTensor(BasePadOp::getOutIndex(), snap::Tensor{padded, graph()});
 }
 
 void PadInplaceOpx::grow(poplar::program::Sequence &prog) const {
-  auto in0    = PopOpx::getInTensor(BasePadOp::getInIndex());
+  auto in0    = PopOpx::getInTensor(BasePadOp::getInIndex()).getPoplarTensor();
   auto padded = padGrow(in0, prog, true);
-  setOutTensor(BasePadOp::getOutIndex(), padded);
+  setOutTensor(BasePadOp::getOutIndex(), snap::Tensor{padded, graph()});
 }
 
 PadGradOpx::PadGradOpx(Op *op, Devicex *devicex) : SliceOpx(op, devicex) {

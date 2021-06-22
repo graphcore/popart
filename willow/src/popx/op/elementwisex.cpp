@@ -109,15 +109,17 @@ snap::Tensor ElementWiseBinaryOpx::createInputTensor(
 
   if (index == arg0Idx) {
     if (dv_p->lowering().tensors().contains(op_p->input->id(arg1Idx))) {
-      return snap::Tensor{
-          graph().getPoplarGraph().clone(getInTensor(arg1Idx), dnai), graph()};
+      return snap::Tensor{graph().getPoplarGraph().clone(
+                              getInTensor(arg1Idx).getPoplarTensor(), dnai),
+                          graph()};
     }
   }
 
   if (index == arg1Idx) {
     if (dv_p->lowering().tensors().contains(op_p->input->id(arg0Idx))) {
-      return snap::Tensor{
-          graph().getPoplarGraph().clone(getInTensor(arg0Idx), dnai), graph()};
+      return snap::Tensor{graph().getPoplarGraph().clone(
+                              getInTensor(arg0Idx).getPoplarTensor(), dnai),
+                          graph()};
     }
   }
 
@@ -131,7 +133,8 @@ void ElementWiseUnaryInplaceOpx::grow(poplar::program::Sequence &prog) const {
       op_p->getIr().timePartitionLogger().scopedStopwatch(
           "Lowering ElementwiseUnaryInplace to Poplar (\"grow\")");
 
-  auto outTensor = getInTensor(ElementWiseUnaryOp::getInIndex());
+  auto outTensor =
+      getInTensor(ElementWiseUnaryOp::getInIndex()).getPoplarTensor();
 
   // if all of the elements in the tensor are distinct in memory,
   // them we can use the poplar inplace version. Otherwise, we must
@@ -151,18 +154,21 @@ void ElementWiseUnaryInplaceOpx::grow(poplar::program::Sequence &prog) const {
     setOutViewChangers(ElementWiseUnaryOp::getOutIndex(),
                        getInViewChangers(ElementWiseUnaryOp::getInIndex()));
   }
-  setOutTensor(ElementWiseUnaryOp::getOutIndex(), outTensor);
+  setOutTensor(ElementWiseUnaryOp::getOutIndex(),
+               snap::Tensor{outTensor, graph()});
 }
 
 void ElementWiseUnaryOutplaceOpx::grow(poplar::program::Sequence &prog) const {
-  auto outTensor = cx->outplace(prog,
-                                graph(),
-                                getInTensor(ElementWiseUnaryOp::getInIndex()),
-                                getDebugNameAndId(),
-                                "nonLinearityOutplace");
+  auto outTensor = cx->outplace(
+      prog,
+      graph(),
+      getInTensor(ElementWiseUnaryOp::getInIndex()).getPoplarTensor(),
+      getDebugNameAndId(),
+      "nonLinearityOutplace");
 
   outTensor = cx->reshape(outTensor);
-  setOutTensor(ElementWiseUnaryOp::getOutIndex(), outTensor);
+  setOutTensor(ElementWiseUnaryOp::getOutIndex(),
+               snap::Tensor{outTensor, graph()});
 }
 
 snap::Tensor ElementWiseBinaryOpx::unwindTensorLayout(snap::Tensor tensor,
@@ -246,8 +252,8 @@ void ElementWiseBinaryOutplaceOpx::grow(poplar::program::Sequence &prog) const {
 
   auto outTensor = cx->outplace(prog,
                                 graph(),
-                                getInTensor(arg0Idx),
-                                getInTensor(arg1Idx),
+                                getInTensor(arg0Idx).getPoplarTensor(),
+                                getInTensor(arg1Idx).getPoplarTensor(),
                                 getDebugNameAndId(),
                                 "");
 
@@ -271,7 +277,7 @@ void ElementWiseBinaryOutplaceOpx::grow(poplar::program::Sequence &prog) const {
         ElementWiseBinaryOp::getOutIndex(),
         getInViewChangers(ElementWiseBinaryOp::getArg1InIndex()));
   }
-  setOutTensor(outIdx, outTensor);
+  setOutTensor(outIdx, snap::Tensor{outTensor, graph()});
 }
 
 void ElementWiseBinaryInplaceOpx::grow(poplar::program::Sequence &prog) const {
@@ -284,8 +290,8 @@ void ElementWiseBinaryInplaceOpx::grow(poplar::program::Sequence &prog) const {
   constexpr unsigned maxTileImbalance = 150000;
   bool canComputeInplace              = true;
 
-  auto tInOut    = getInTensor(cx->getInplaceArgInIndex());
-  const auto tIn = getInTensor(cx->getOutplaceArgInIndex());
+  auto tInOut    = getInTensor(cx->getInplaceArgInIndex()).getPoplarTensor();
+  const auto tIn = getInTensor(cx->getOutplaceArgInIndex()).getPoplarTensor();
   auto &g        = graph();
 
   if (!tInOut.isParallelWriteable()) {
@@ -320,7 +326,7 @@ void ElementWiseBinaryInplaceOpx::grow(poplar::program::Sequence &prog) const {
         ElementWiseBinaryOp::getOutIndex(),
         getInViewChangers(ElementWiseBinaryOp::getArg0InIndex()));
   }
-  setOutTensor(outIdx, tInOut);
+  setOutTensor(outIdx, snap::Tensor{tInOut, graph()});
 }
 
 BinaryComparisonOpx::BinaryComparisonOpx(Op *op, Devicex *devicex)

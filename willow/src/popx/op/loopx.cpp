@@ -69,8 +69,8 @@ void LoopOpx::copyExplicitOpInputsToBodyOutputs(
       TensorId inId  = op.inId(i + 1);
       TensorId outId = subgraph.getOutputId(i);
 
-      auto opInputTensor    = getInTensor(i + 1);
-      auto bodyOutputTensor = get(outId);
+      auto opInputTensor    = getInTensor(i + 1).getPoplarTensor();
+      auto bodyOutputTensor = get(outId).getPoplarTensor();
 
       auto aliases =
           dv_p->lowering().getAliasZeroCopy()->getActiveAliasedTensors(
@@ -118,8 +118,8 @@ void LoopOpx::copyImplicitOpInputsToImplicitBodyInputs(
     TensorId opInId   = op.inId(i);
     TensorId bodyInId = subgraph.getInputId(i);
 
-    auto opInputTensor   = getInTensor(i);
-    auto bodyInputTensor = get(bodyInId);
+    auto opInputTensor   = getInTensor(i).getPoplarTensor();
+    auto bodyInputTensor = get(bodyInId).getPoplarTensor();
 
     if (aliases.find(op.getIr().getTensor(subgraph.getInputId(i))) ==
         aliases.end()) {
@@ -172,8 +172,8 @@ void LoopOpx::copyBodyOutputsToExplicitBodyInputs(
                                                                        i)) {
         // Only copy if the input is not directly wired through to the output,
         // and if there are no aliases
-        auto bodyInputTensor  = get(inId);
-        auto bodyOutputTensor = get(outId);
+        auto bodyInputTensor  = get(inId).getPoplarTensor();
+        auto bodyOutputTensor = get(outId).getPoplarTensor();
 
         // Clone to avoid issues with implicit aliases
         auto tmp = dstVirtualGraph(op.subgraphOutToOpOutIndex(i))
@@ -218,8 +218,8 @@ void LoopOpx::copyBodyOutputsToOpOutputs(
 
     if (aliases.find(op.getIr().getTensor(opOutputTensorId)) == aliases.end()) {
       if (dv_p->lowering().getAliasZeroCopy()->copyOutputRequired(&op, i - 1)) {
-        auto bodyOutputTensor = get(bodyOutputTensorId);
-        auto opOutputTensor   = get(opOutputTensorId);
+        auto bodyOutputTensor = get(bodyOutputTensorId).getPoplarTensor();
+        auto opOutputTensor   = get(opOutputTensorId).getPoplarTensor();
         poplar::program::Copy copyProg(
             bodyOutputTensor, opOutputTensor, false, debugContext("outputs"));
         prog.add(copyProg);
@@ -259,8 +259,8 @@ void LoopOpx::copyModifiedBodyInputsToOpInputs(
       auto opTensor = graph.getTensors().get(opTensorId);
       auto sgTensor = calledGraph.getTensors().get(sgTensorId);
 
-      auto opPopTensor = get(opTensorId);
-      auto sgPopTensor = get(sgTensorId);
+      auto opPopTensor = get(opTensorId).getPoplarTensor();
+      auto sgPopTensor = get(sgTensorId).getPoplarTensor();
 
       auto aliases =
           dv_p->lowering().getAliasZeroCopy()->getActiveAliasedTensors(
@@ -322,7 +322,8 @@ void LoopOpx::grow(poplar::program::Sequence &prog) const {
 
   auto fconst = getConst(poplar::BOOL, {}, false, "fconst");
 
-  auto condOutTensor = get(op.getCalledGraph().getOutputId(0));
+  auto condOutTensor =
+      get(op.getCalledGraph().getOutputId(0)).getPoplarTensor();
 
   // 0: Set condOut to true if the cond is not shipped as op input
   if (!hasInput(LoopOp::getTerminationConditionInIndex())) {
@@ -364,7 +365,7 @@ void LoopOpx::grow(poplar::program::Sequence &prog) const {
   // 7: Update the exit condition
   if (hasInput(LoopOp::getMaximumTripCountInIndex())) {
     poplar::Tensor maxTripCountTensor =
-        getInTensor(LoopOp::getMaximumTripCountInIndex());
+        getInTensor(LoopOp::getMaximumTripCountInIndex()).getPoplarTensor();
     popops::mapInPlace(
         graph().getPoplarGraph(),
         popops::expr::Or(popops::expr::Or(popops::expr::_1,
@@ -386,8 +387,10 @@ void LoopOpx::grow(poplar::program::Sequence &prog) const {
   copyBodyOutputsToExplicitBodyInputs(loopContinueProg);
 
   // 9: Copy iterator to body input
-  auto bodyInputTensor = get(op.getCalledGraph().getInputId(
-      op.opInToSubgraphInIndex(LoopOp::getMaximumTripCountInIndex())));
+  auto bodyInputTensor =
+      get(op.getCalledGraph().getInputId(
+              op.opInToSubgraphInIndex(LoopOp::getMaximumTripCountInIndex())))
+          .getPoplarTensor();
   poplar::program::Copy copyProg(
       iteratorTensor, bodyInputTensor, false, debugContext());
   loopContinueProg.add(copyProg);

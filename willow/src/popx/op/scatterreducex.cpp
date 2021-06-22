@@ -32,8 +32,9 @@ ScatterReduceOpx::ScatterReduceOpx(Op *op, Devicex *devicex)
 }
 
 void ScatterReduceOpx::grow(poplar::program::Sequence &prog) const {
-  auto data                 = getInTensor(ScatterReduceOp::dataInIndex());
-  auto indices              = getInTensor(ScatterReduceOp::indicesInIndex());
+  auto data = getInTensor(ScatterReduceOp::dataInIndex()).getPoplarTensor();
+  auto indices =
+      getInTensor(ScatterReduceOp::indicesInIndex()).getPoplarTensor();
   auto &op                  = getOp<ScatterReduceOp>();
   auto outInfo              = op.outInfo(ScatterReduceOp::outIndex());
   auto shape                = outInfo.shape_szt();
@@ -125,7 +126,7 @@ void ScatterReduceOpx::grow(poplar::program::Sequence &prog) const {
                          poplar::OptionFlags(),
                          debugContext("scatterAdd"));
 
-  setOutTensor(ScatterReduceOp::outIndex(), out);
+  setOutTensor(ScatterReduceOp::outIndex(), snap::Tensor{out, graph()});
 }
 
 snap::Tensor
@@ -185,8 +186,10 @@ ScatterReduceGradOpx::ScatterReduceGradOpx(Op *op, Devicex *devicex)
 }
 
 void ScatterReduceGradOpx::grow(poplar::program::Sequence &prog) const {
-  auto gradIn  = getInTensor(ScatterReduceGradOp::gradInIndex());
-  auto indices = getInTensor(ScatterReduceGradOp::indicesInIndex());
+  auto gradIn =
+      getInTensor(ScatterReduceGradOp::gradInIndex()).getPoplarTensor();
+  auto indices =
+      getInTensor(ScatterReduceGradOp::indicesInIndex()).getPoplarTensor();
 
   auto gradOut = scatterutilx::growScatterUpdateGrad(
       prog,
@@ -196,7 +199,8 @@ void ScatterReduceGradOpx::grow(poplar::program::Sequence &prog) const {
       axis,
       getDebugNameAndId("scatterreduceGrad"));
 
-  setOutTensor(ScatterReduceGradOp::gradOutIndex(), gradOut);
+  setOutTensor(ScatterReduceGradOp::gradOutIndex(),
+               snap::Tensor{gradOut, graph()});
 }
 
 namespace {

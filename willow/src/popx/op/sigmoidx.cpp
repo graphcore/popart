@@ -46,15 +46,16 @@ SigmoidGradOpx::SigmoidGradOpx(Op *op, Devicex *devicex)
 
 void SigmoidGradOpx::grow(poplar::program::Sequence &prog) const {
   auto outTensor = popnn::nonLinearityInputGradient(
-      graph().getPoplarGraph(),                       // graph,
-      popnn::NonLinearityType::SIGMOID,               // nonLinearityType,
-      getInTensor(SigmoidGradOp::getFwdOutInIndex()), // out,
-      getInTensor(SigmoidGradOp::getGradInIndex()),   // outGradient,
-      prog,                                           // prog,
-      debugContext()                                  // debugContext
+      graph().getPoplarGraph(),         // graph,
+      popnn::NonLinearityType::SIGMOID, // nonLinearityType,
+      getInTensor(SigmoidGradOp::getFwdOutInIndex()).getPoplarTensor(), // out,
+      getInTensor(SigmoidGradOp::getGradInIndex())
+          .getPoplarTensor(), // outGradient,
+      prog,                   // prog,
+      debugContext()          // debugContext
   );
 
-  setOutTensor(SigmoidOp::getOutIndex(), outTensor);
+  setOutTensor(SigmoidOp::getOutIndex(), snap::Tensor{outTensor, graph()});
 }
 
 namespace {

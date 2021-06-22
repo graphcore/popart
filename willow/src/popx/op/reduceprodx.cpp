@@ -23,7 +23,7 @@ ReduceProdOpx::ReduceProdOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
 
 void ReduceProdOpx::grow(poplar::program::Sequence &prog) const {
   const auto &op   = getOp<ReduceProdOp>();
-  const auto input = getInTensor(ReduceProdOp::getInIndex());
+  const auto input = getInTensor(ReduceProdOp::getInIndex()).getPoplarTensor();
 
   auto output_tensor = popops::reduce(graph().getPoplarGraph(),
                                       input,
@@ -34,7 +34,9 @@ void ReduceProdOpx::grow(poplar::program::Sequence &prog) const {
 
   setOutTensor(
       ReduceProdOp::getOutIndex(),
-      output_tensor.reshape(outInfo(ReduceProdOp::getOutIndex()).shape_szt()));
+      snap::Tensor{output_tensor.reshape(
+                       outInfo(ReduceProdOp::getOutIndex()).shape_szt()),
+                   graph()});
 }
 
 ReduceProdGradOpx::ReduceProdGradOpx(Op *op, Devicex *devicex)
@@ -44,9 +46,10 @@ ReduceProdGradOpx::ReduceProdGradOpx(Op *op, Devicex *devicex)
 
 void ReduceProdGradOpx::grow(poplar::program::Sequence &prog) const {
   const auto &op = getOp<ReduceProdGradOp>();
-  auto output = cloneNcopy(prog, getInTensor(ReduceProdGradOp::getInIndex()));
-  auto fwd_input =
-      cloneNcopy(prog, getInTensor(ReduceProdGradOp::getFwdInInIndex()));
+  auto output    = cloneNcopy(
+      prog, getInTensor(ReduceProdGradOp::getInIndex()).getPoplarTensor());
+  auto fwd_input = cloneNcopy(
+      prog, getInTensor(ReduceProdGradOp::getFwdInInIndex()).getPoplarTensor());
   auto input_shape     = inShape(ReduceProdGradOp::getInIndex());
   auto output_shape    = outShape(ReduceProdGradOp::getOutIndex());
   const auto new_shape = vector_cast<std::size_t>(op.backwardShape());
@@ -124,7 +127,7 @@ void ReduceProdGradOpx::grow(poplar::program::Sequence &prog) const {
   output = output.dimShuffle(reverse_perm);
 
   // output now matches the shape of output_shape
-  setOutTensor(ReduceProdGradOp::getOutIndex(), output);
+  setOutTensor(ReduceProdGradOp::getOutIndex(), snap::Tensor{output, graph()});
 }
 
 namespace {

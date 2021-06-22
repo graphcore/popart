@@ -21,7 +21,7 @@ MaxOpx::MaxOpx(Op *op, Devicex *devicex) : ElementWiseUnaryOpx(op, devicex) {
 
 void MaxOpx::grow(poplar::program::Sequence &prog) const {
 
-  auto outTensor = cloneNcopy(prog, getInTensor(0));
+  auto outTensor = cloneNcopy(prog, getInTensor(0).getPoplarTensor());
 
   if (op_p->input->n() > 1) {
 
@@ -29,14 +29,14 @@ void MaxOpx::grow(poplar::program::Sequence &prog) const {
       outTensor = popops::map(graph().getPoplarGraph(),
                               popops::expr::BinaryOpType::MAXIMUM,
                               outTensor,
-                              getInTensor(i),
+                              getInTensor(i).getPoplarTensor(),
                               prog,
                               debugContext(std::string("max") + sNameDelimiter +
                                            std::to_string(i)));
     }
   }
 
-  setOutTensor(MaxOp::getOutIndex(), outTensor);
+  setOutTensor(MaxOp::getOutIndex(), snap::Tensor{outTensor, graph()});
 }
 
 MaxArgGradOpx::MaxArgGradOpx(Op *op_, Devicex *devicex_)
@@ -56,9 +56,9 @@ void MaxArgGradOpx::grow(poplar::program::Sequence &prog) const {
       graph().getPoplarGraph(),
       pe::Mul(pe::Add(pe::Signum(pe::Sub(pe::_1, pe::_2)), pe::Const(1)),
               pe::_3),
-      {getInTensor(MaxArgGradOp::getFwdInIndex()),
-       getInTensor(MaxArgGradOp::getFwdOutInIndex()),
-       getInTensor(MaxArgGradOp::getGradInIndex())},
+      {getInTensor(MaxArgGradOp::getFwdInIndex()).getPoplarTensor(),
+       getInTensor(MaxArgGradOp::getFwdOutInIndex()).getPoplarTensor(),
+       getInTensor(MaxArgGradOp::getGradInIndex()).getPoplarTensor()},
       prog,
       debugContext("result"));
 
@@ -79,8 +79,11 @@ void MaxArgGradOpx::grow(poplar::program::Sequence &prog) const {
                             debugContext("reduce"));
 
   // Reshape the output, to add 1's if needed
-  setOutTensor(MaxArgGradOp::getOutIndex(),
-               out.reshape(outInfo(MaxArgGradOp::getOutIndex()).shape_szt()));
+  setOutTensor(
+      MaxArgGradOp::getOutIndex(),
+      snap::Tensor{
+          out.reshape(outInfo(MaxArgGradOp::getOutIndex()).shape_szt()),
+          graph()});
 }
 
 namespace {

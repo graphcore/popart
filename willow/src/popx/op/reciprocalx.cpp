@@ -19,12 +19,13 @@ void ReciprocalOpx::grow(poplar::program::Sequence &prog) const {
   auto ones = getConst(popType(op_p->inInfo(0)), {1}, 1.0, "ones");
 
   setOutTensor(0,
-               popops::map(graph().getPoplarGraph(),
-                           popops::expr::BinaryOpType::DIVIDE,
-                           ones,
-                           getInTensor(0),
-                           prog,
-                           debugContext("divide")));
+               snap::Tensor{popops::map(graph().getPoplarGraph(),
+                                        popops::expr::BinaryOpType::DIVIDE,
+                                        ones,
+                                        getInTensor(0).getPoplarTensor(),
+                                        prog,
+                                        debugContext("divide")),
+                            graph()});
 }
 
 namespace {

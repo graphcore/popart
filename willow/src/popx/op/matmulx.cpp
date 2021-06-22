@@ -385,8 +385,8 @@ void MatMulOpx::grow(poplar::program::Sequence &prog) const {
 
   auto &matmul = getOp<MatMulOp>();
 
-  auto a = getInTensor(MatMulOp::getLhsInIndex());
-  auto b = getInTensor(MatMulOp::getRhsInIndex());
+  auto a = getInTensor(MatMulOp::getLhsInIndex()).getPoplarTensor();
+  auto b = getInTensor(MatMulOp::getRhsInIndex()).getPoplarTensor();
 
   // Makes both input tensors at least rank 3
   //
@@ -548,7 +548,9 @@ void MatMulOpx::grow(poplar::program::Sequence &prog) const {
   outTensor =
       matShuffleGroupDims(outTensor, matchedRankTs.first, matchedRankTs.second);
 
-  setOutTensor(0, outTensor.reshape(matmul.outInfo(0).shape_szt()));
+  setOutTensor(
+      0,
+      snap::Tensor{outTensor.reshape(matmul.outInfo(0).shape_szt()), graph()});
 }
 
 MatMulOp *MatMulOpx::getMatMulOp() const {

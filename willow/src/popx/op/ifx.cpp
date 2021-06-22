@@ -25,8 +25,8 @@ void IfOpx::copyInputs(poplar::program::Sequence &thenProg,
     auto ifInputId     = inId(ifopInputIndex);
     auto branchInputId = graph.getInputId(branchInputIndex);
 
-    auto ifInput     = get(ifInputId);
-    auto branchInput = get(branchInputId);
+    auto ifInput     = get(ifInputId).getPoplarTensor();
+    auto branchInput = get(branchInputId).getPoplarTensor();
 
     poplar::program::Copy copyProg(ifInput, branchInput, false, debugContext());
     prog.add(copyProg);
@@ -69,7 +69,7 @@ void IfOpx::copyOutputs(poplar::program::Sequence &thenProg,
     auto branchId = graph.getOutputId(branchIndex);
 
     auto opOutput     = outputs.at(opIndex);
-    auto branchOutput = get(branchId);
+    auto branchOutput = get(branchId).getPoplarTensor();
     poplar::program::Copy copyProg(
         branchOutput, opOutput, false, debugContext());
     prog.add(copyProg);
@@ -105,7 +105,7 @@ std::vector<poplar::Tensor> IfOpx::prepareOutputs() const {
 
   auto cloneOutput = [&](const Graph &branch, OutIndex branchIndex) {
     auto branchId     = branch.getOutputId(branchIndex);
-    auto branchOutput = get(branchId);
+    auto branchOutput = get(branchId).getPoplarTensor();
     outputs.push_back(graph().getPoplarGraph().clone(branchOutput));
   };
 
@@ -152,7 +152,8 @@ void IfOpx::grow(poplar::program::Sequence &prog) const {
 
   copyOutputs(then_prog, else_prog, outputs);
 
-  poplar::Tensor condition = getInTensor(IfGradOp::getConditionInIndex());
+  poplar::Tensor condition =
+      getInTensor(IfGradOp::getConditionInIndex()).getPoplarTensor();
 
   // Reshape to scalar in case the user passed in tensor of shape [1]
   condition = condition.reshape({});
@@ -160,7 +161,7 @@ void IfOpx::grow(poplar::program::Sequence &prog) const {
       condition, then_prog, else_prog, debugContext("condition")));
 
   for (int i = 0; i < outputs.size(); i++) {
-    setOutTensor(i, outputs.at(i));
+    setOutTensor(i, snap::Tensor{outputs.at(i), graph()});
   }
 }
 

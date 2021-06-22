@@ -33,8 +33,8 @@ GatherOpx::GatherOpx(Op *op, Devicex *devicex)
 
 void GatherOpx::grow(poplar::program::Sequence &prog) const {
   const auto outputShape = outInfo(GatherOp::outIndex()).shape_szt();
-  auto indices           = getInTensor(GatherOp::indicesInIndex());
-  auto data              = getInTensor(GatherOp::dataInIndex());
+  auto indices = getInTensor(GatherOp::indicesInIndex()).getPoplarTensor();
+  auto data    = getInTensor(GatherOp::dataInIndex()).getPoplarTensor();
 
   // If there are no indices, return an empty tensor of the appropriate
   // shape
@@ -42,7 +42,7 @@ void GatherOpx::grow(poplar::program::Sequence &prog) const {
     auto result = graph().getPoplarGraph().addVariable(
         data.elementType(), outputShape, debugContext("result"));
 
-    setOutTensor(GatherOp::outIndex(), result);
+    setOutTensor(GatherOp::outIndex(), snap::Tensor{result, graph()});
     return;
   }
 
@@ -79,7 +79,7 @@ void GatherOpx::grow(poplar::program::Sequence &prog) const {
   // Reshape into the expected ONNX shape.
   result = result.reshape(outputShape);
 
-  setOutTensor(GatherOp::outIndex(), result);
+  setOutTensor(GatherOp::outIndex(), snap::Tensor{result, graph()});
 }
 
 snap::Tensor
@@ -137,8 +137,8 @@ void GatherGradOpx::grow(poplar::program::Sequence &prog) const {
   const auto outputShape =
       vXtoY<int64_t, std::size_t>(outShape(GatherGradOp::gradOutIndex()));
 
-  auto update  = getInTensor(GatherGradOp::gradInIndex());
-  auto indices = getInTensor(GatherGradOp::indicesInIndex());
+  auto update  = getInTensor(GatherGradOp::gradInIndex()).getPoplarTensor();
+  auto indices = getInTensor(GatherGradOp::indicesInIndex()).getPoplarTensor();
 
   auto result = popops::createGatherInput(graph().getPoplarGraph(),
                                           update.elementType(),
@@ -152,7 +152,7 @@ void GatherGradOpx::grow(poplar::program::Sequence &prog) const {
 
   if (result.numElements() == 0 || update.numElements() == 0 ||
       indices.numElements() == 0) {
-    setOutTensor(GatherGradOp::gradOutIndex(), result);
+    setOutTensor(GatherGradOp::gradOutIndex(), snap::Tensor{result, graph()});
     return;
   }
 
@@ -197,7 +197,7 @@ void GatherGradOpx::grow(poplar::program::Sequence &prog) const {
                          poplar::OptionFlags(),
                          debugContext());
 
-  setOutTensor(GatherGradOp::gradOutIndex(), result);
+  setOutTensor(GatherGradOp::gradOutIndex(), snap::Tensor{result, graph()});
 }
 
 namespace {

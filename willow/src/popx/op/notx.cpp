@@ -17,12 +17,14 @@ NotOpx::NotOpx(Op *op, Devicex *devicex) : ElementWiseUnaryOpx(op, devicex) {
 
 void NotOpx::grow(poplar::program::Sequence &prog) const {
 
-  insert(outId(NotOp::getOutIndex()),
-         popops::map(graph().getPoplarGraph(),
-                     popops::expr::UnaryOpType::LOGICAL_NOT,
-                     get(inId(NotOp::getInIndex())),
-                     prog,
-                     debugContext()));
+  insert(
+      outId(NotOp::getOutIndex()),
+      snap::Tensor{popops::map(graph().getPoplarGraph(),
+                               popops::expr::UnaryOpType::LOGICAL_NOT,
+                               get(inId(NotOp::getInIndex())).getPoplarTensor(),
+                               prog,
+                               debugContext()),
+                   graph()});
 }
 
 namespace {

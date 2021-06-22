@@ -107,9 +107,10 @@ void BaseExpandOpx::expand_broadcast(const Shape output_shape,
 void ExpandOpx::grow(poplar::program::Sequence &prog) const {
 
   auto output_shape = outShape(ExpandOp::getOutIndex());
-  auto expand = cloneNcopy(prog, getInTensor(ExpandOp::getInTensorIndex()));
+  auto expand       = cloneNcopy(
+      prog, getInTensor(ExpandOp::getInTensorIndex()).getPoplarTensor());
   expand_broadcast(output_shape, expand);
-  setOutTensor(ExpandOp::getOutIndex(), expand);
+  setOutTensor(ExpandOp::getOutIndex(), snap::Tensor{expand, graph()});
 }
 
 ExpandInplaceOpx::ExpandInplaceOpx(Op *op_, Devicex *devicex)
@@ -119,9 +120,9 @@ ExpandInplaceOpx::ExpandInplaceOpx(Op *op_, Devicex *devicex)
 
 void ExpandInplaceOpx::grow(poplar::program::Sequence &) const {
   auto output_shape = outShape(ExpandOp::getOutIndex());
-  auto expand       = getInTensor(ExpandOp::getInTensorIndex());
+  auto expand = getInTensor(ExpandOp::getInTensorIndex()).getPoplarTensor();
   expand_broadcast(output_shape, expand);
-  setOutTensor(ExpandOp::getOutIndex(), expand);
+  setOutTensor(ExpandOp::getOutIndex(), snap::Tensor{expand, graph()});
 }
 
 ExpandGradOpx::ExpandGradOpx(Op *op_, Devicex *devicex) : PopOpx(op_, devicex) {
@@ -135,7 +136,7 @@ ExpandGradOpx::ExpandGradOpx(Op *op_, Devicex *devicex) : PopOpx(op_, devicex) {
 }
 
 void ExpandGradOpx::grow(poplar::program::Sequence &prog) const {
-  const auto dY = getInTensor(ExpandGradOp::getDYIndex());
+  const auto dY = getInTensor(ExpandGradOp::getDYIndex()).getPoplarTensor();
 
   std::vector<size_t> axes;
   const int64_t offset = dY.rank() - xShape.size();
@@ -152,7 +153,8 @@ void ExpandGradOpx::grow(poplar::program::Sequence &prog) const {
                            prog,
                            debugContext("add"));
   dX      = dX.reshape(xShape);
-  setOutTensor(ExpandGradOp::getOutIndex(), cloneNcopy(prog, dX));
+  setOutTensor(ExpandGradOp::getOutIndex(),
+               snap::Tensor{cloneNcopy(prog, dX), graph()});
 }
 
 namespace {

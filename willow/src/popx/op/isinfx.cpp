@@ -16,14 +16,16 @@ void IsInfx::grow(poplar::program::Sequence &prog) const {
   // (x == x) && x !isFinite
   setOutTensor(
       IsInf::getOutIndex(),
-      popops::map(
-          graph().getPoplarGraph(),
-          popops::expr::And(
-              popops::expr::Equal(popops::expr::_1, popops::expr::_1),
-              popops::expr::Not(popops::expr::IsFinite(popops::expr::_1))),
-          {get(inId(0))},
-          prog,
-          debugContext()));
+      snap::Tensor{
+          popops::map(
+              graph().getPoplarGraph(),
+              popops::expr::And(
+                  popops::expr::Equal(popops::expr::_1, popops::expr::_1),
+                  popops::expr::Not(popops::expr::IsFinite(popops::expr::_1))),
+              {get(inId(0)).getPoplarTensor()},
+              prog,
+              debugContext()),
+          graph()});
 }
 
 namespace {

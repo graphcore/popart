@@ -22,7 +22,10 @@ IdentityOpx::IdentityOpx(Op *op, Devicex *devicex)
 }
 
 void IdentityOpx::grow(poplar::program::Sequence &prog) const {
-  setOutTensor(0, PopOpx::cloneNcopy(prog, getInTensor(0)));
+  setOutTensor(
+      0,
+      snap::Tensor{PopOpx::cloneNcopy(prog, getInTensor(0).getPoplarTensor()),
+                   graph()});
 }
 
 IdentityInplaceOpx::IdentityInplaceOpx(Op *op, Devicex *devicex)
@@ -40,7 +43,10 @@ IdentityGradOpx::IdentityGradOpx(Op *op, Devicex *devicex)
 }
 
 void IdentityGradOpx::grow(poplar::program::Sequence &prog) const {
-  setOutTensor(0, PopOpx::cloneNcopy(prog, getInTensor(0)));
+  setOutTensor(
+      0,
+      snap::Tensor{PopOpx::cloneNcopy(prog, getInTensor(0).getPoplarTensor()),
+                   graph()});
 }
 
 IdentityLossOpx::IdentityLossOpx(Op *op, Devicex *devicex)
@@ -50,8 +56,8 @@ IdentityLossOpx::IdentityLossOpx(Op *op, Devicex *devicex)
 
 void IdentityLossGradOpx::grow(poplar::program::Sequence &prog) const {
   IdentityLossGradOp &identitylossop = getOp<IdentityLossGradOp>();
-  auto output                        = getInTensor(0);
-  poplar::Tensor reference           = getOutTensor(0);
+  auto output                        = getInTensor(0).getPoplarTensor();
+  poplar::Tensor reference           = getOutTensor(0).getPoplarTensor();
   if (identitylossop.getReductionType() == ReductionType::NoReduction) {
     // Same as IdentityGradOpx
     prog.add(poplar::program::Copy(
@@ -63,7 +69,7 @@ void IdentityLossGradOpx::grow(poplar::program::Sequence &prog) const {
 
       output = popops::map(graph().getPoplarGraph(),
                            pe::Divide(pe::_1, pe::Const(scale)),
-                           {getInTensor(0)},
+                           {getInTensor(0).getPoplarTensor()},
                            prog,
                            debugContext("div"));
     } else if (identitylossop.getReductionType() != ReductionType::Sum) {
@@ -89,10 +95,10 @@ InputCreatorType IdentityLossOpx::getInputCreatorType(InIndex) const {
 
 void IdentityLossOpx::grow(poplar::program::Sequence &prog) const {
   const IdentityLossOp &op = getOp<IdentityLossOp>();
-  const poplar::Tensor &inTensor(getInTensor(0));
+  const poplar::Tensor &inTensor(getInTensor(0).getPoplarTensor());
 
   if (op.getReductionType() == ReductionType::NoReduction) {
-    setOutTensor(0, PopOpx::cloneNcopy(prog, inTensor));
+    setOutTensor(0, snap::Tensor{PopOpx::cloneNcopy(prog, inTensor), graph()});
   } else {
 
     auto inTensor1D = inTensor.flatten();
@@ -128,7 +134,7 @@ void IdentityLossOpx::grow(poplar::program::Sequence &prog) const {
                                     prog,
                                     debugContext("add"));
 
-    setOutTensor(0, reduction);
+    setOutTensor(0, snap::Tensor{reduction, graph()});
   }
 }
 

@@ -23,7 +23,7 @@ void ZerosOpx::grow(poplar::program::Sequence &) const {
       poplarType, shape, 0, debugContext("zeros"));
   graph().getPoplarGraph().setTileMapping(zeros, 0);
 
-  setOutTensor(ZerosOp::getOutIndex(), zeros);
+  setOutTensor(ZerosOp::getOutIndex(), snap::Tensor{zeros, graph()});
 }
 
 namespace {

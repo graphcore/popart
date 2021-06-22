@@ -26,8 +26,10 @@ void AdamUpdaterOpx::grow(poplar::program::Sequence &prog) const {
   auto &adamUpdaterOp = getOp<AdamUpdaterOp>();
 
   poplar::Tensor var;
-  poplar::Tensor accl1  = getInTensor(AdamUpdaterOp::getAccl1InIndex());
-  poplar::Tensor accl2  = getInTensor(AdamUpdaterOp::getAccl2InIndex());
+  poplar::Tensor accl1 =
+      getInTensor(AdamUpdaterOp::getAccl1InIndex()).getPoplarTensor();
+  poplar::Tensor accl2 =
+      getInTensor(AdamUpdaterOp::getAccl2InIndex()).getPoplarTensor();
   poplar::Type elemType = accl1.elementType();
   std::vector<poplar::Tensor> tensors{accl1, accl2};
 
@@ -35,7 +37,7 @@ void AdamUpdaterOpx::grow(poplar::program::Sequence &prog) const {
   int stepIndex = -1;
 
   if (hasInput(AdamUpdaterOp::getVarInIndex())) {
-    var      = getInTensor(AdamUpdaterOp::getVarInIndex());
+    var      = getInTensor(AdamUpdaterOp::getVarInIndex()).getPoplarTensor();
     elemType = var.elementType();
     tensors.push_back(var);
     varIndex = tensors.size();
@@ -48,7 +50,8 @@ void AdamUpdaterOpx::grow(poplar::program::Sequence &prog) const {
 
   // Calculate updater term for both const & tensor optimizer parameters
   if (hasInput(AdamUpdaterOp::getStepInIndex())) {
-    poplar::Tensor step = getInTensor(AdamUpdaterOp::getStepInIndex());
+    poplar::Tensor step =
+        getInTensor(AdamUpdaterOp::getStepInIndex()).getPoplarTensor();
 
     // Update step
     popops::mapInPlace(
@@ -76,7 +79,8 @@ void AdamUpdaterOpx::grow(poplar::program::Sequence &prog) const {
                   pe::Pow(pe::Const(adamUpdaterOp.initB1.val()),
                           pe::Cast(pe::PlaceHolder(stepIndex), poplar::FLOAT)));
     } else {
-      tensors.push_back(getInTensor(AdamUpdaterOp::getBeta1InIndex()));
+      tensors.push_back(
+          getInTensor(AdamUpdaterOp::getBeta1InIndex()).getPoplarTensor());
       b1correction =
           pe::Sub(pe::Const(1.0f),
                   pe::Pow(pe::PlaceHolder(tensors.size()),
@@ -95,7 +99,8 @@ void AdamUpdaterOpx::grow(poplar::program::Sequence &prog) const {
             pe::Pow(pe::Const(adamUpdaterOp.initB2.val()),
                     pe::Cast(pe::PlaceHolder(stepIndex), poplar::FLOAT)));
       } else {
-        tensors.push_back(getInTensor(AdamUpdaterOp::getBeta2InIndex()));
+        tensors.push_back(
+            getInTensor(AdamUpdaterOp::getBeta2InIndex()).getPoplarTensor());
         b2correction = pe::Sub(
             pe::Const(1.0f),
             pe::Pow(pe::PlaceHolder(tensors.size()),
@@ -125,7 +130,8 @@ void AdamUpdaterOpx::grow(poplar::program::Sequence &prog) const {
     expr = pe::Divide(pe::Cast(mhat, accl2.elementType()),
                       pe::Add(vhat, pe::Const(adamUpdaterOp.initEps.val())));
   } else {
-    tensors.push_back(getInTensor(AdamUpdaterOp::getEpsInIndex()));
+    tensors.push_back(
+        getInTensor(AdamUpdaterOp::getEpsInIndex()).getPoplarTensor());
     expr = pe::Divide(pe::Cast(mhat, accl2.elementType()),
                       pe::Add(vhat,
                               pe::Cast(pe::PlaceHolder(tensors.size()),
@@ -144,7 +150,8 @@ void AdamUpdaterOpx::grow(poplar::program::Sequence &prog) const {
     }
   } else {
     // Non-const weight decay
-    tensors.push_back(getInTensor(AdamUpdaterOp::getWdInIndex()));
+    tensors.push_back(
+        getInTensor(AdamUpdaterOp::getWdInIndex()).getPoplarTensor());
     expr = pe::Add(pe::Cast(expr, elemType),
                    pe::Mul(pe::Cast(pe::PlaceHolder(tensors.size()), elemType),
                            pe::PlaceHolder(varIndex)));
@@ -168,7 +175,8 @@ void AdamUpdaterOpx::grow(poplar::program::Sequence &prog) const {
     }
   }
 
-  setOutTensor(AdamUpdaterOp::getUpdaterOutIndex(), updater);
+  setOutTensor(AdamUpdaterOp::getUpdaterOutIndex(),
+               snap::Tensor{updater, graph()});
 }
 
 namespace {

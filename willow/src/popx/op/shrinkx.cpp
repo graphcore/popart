@@ -77,9 +77,11 @@ ShrinkGradOpx::ShrinkGradOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
 }
 
 void ShrinkGradOpx::grow(poplar::program::Sequence &prog) const {
-  const auto &op       = getOp<ShrinkGradOp>();
-  const auto input     = getInTensor(ShrinkGradOp::getGradInIndex());
-  const auto fwd_input = getInTensor(ShrinkGradOp::getFwdArgInIndex());
+  const auto &op = getOp<ShrinkGradOp>();
+  const auto input =
+      getInTensor(ShrinkGradOp::getGradInIndex()).getPoplarTensor();
+  const auto fwd_input =
+      getInTensor(ShrinkGradOp::getFwdArgInIndex()).getPoplarTensor();
 
   std::vector<std::unique_ptr<popops::expr::Expr>> exprs;
   exprs.push_back(
@@ -95,7 +97,7 @@ void ShrinkGradOpx::grow(poplar::program::Sequence &prog) const {
                             prog,
                             debugContext("output_grad"));
 
-  setOutTensor(ShrinkGradOp::getOutIndex(), output);
+  setOutTensor(ShrinkGradOp::getOutIndex(), snap::Tensor{output, graph()});
 }
 
 namespace {

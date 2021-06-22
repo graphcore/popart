@@ -17,7 +17,7 @@ InitOpx::InitOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
 
 void InitOpx::grow(poplar::program::Sequence &prog) const {
   auto &initOp          = getOp<InitOp>();
-  const auto &outTensor = getOutTensor(InitOp::getOutIndex());
+  const auto &outTensor = getOutTensor(InitOp::getOutIndex()).getPoplarTensor();
 
   switch (initOp.getInitType()) {
   case InitType::Zero: {

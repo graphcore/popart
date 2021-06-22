@@ -56,8 +56,10 @@ SinhGradOpx::SinhGradOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
 }
 
 void SinhGradOpx::grow(poplar::program::Sequence &prog) const {
-  const auto input     = getInTensor(SinhGradOp::getGradInIndex());
-  const auto fwd_input = getInTensor(SinhGradOp::getFwdArgInIndex());
+  const auto input =
+      getInTensor(SinhGradOp::getGradInIndex()).getPoplarTensor();
+  const auto fwd_input =
+      getInTensor(SinhGradOp::getFwdArgInIndex()).getPoplarTensor();
 
   std::vector<std::unique_ptr<popops::expr::Expr>> exprs;
   exprs.push_back(
@@ -72,7 +74,7 @@ void SinhGradOpx::grow(poplar::program::Sequence &prog) const {
                             prog,
                             debugContext("output_grad"));
 
-  setOutTensor(SinhGradOp::getOutIndex(), output);
+  setOutTensor(SinhGradOp::getOutIndex(), snap::Tensor{output, graph()});
 }
 
 namespace {

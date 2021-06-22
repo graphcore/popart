@@ -24,7 +24,7 @@ ReduceL1Opx::ReduceL1Opx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
 
 void ReduceL1Opx::grow(poplar::program::Sequence &prog) const {
   const auto &op   = getOp<ReduceL1Op>();
-  const auto input = getInTensor(ReduceL1Op::getInIndex());
+  const auto input = getInTensor(ReduceL1Op::getInIndex()).getPoplarTensor();
 
   auto abs_input =
       popops::abs(graph().getPoplarGraph(), input, prog, debugContext("abs"));
@@ -36,9 +36,10 @@ void ReduceL1Opx::grow(poplar::program::Sequence &prog) const {
                                       prog,
                                       debugContext("reduce"));
 
-  setOutTensor(
-      ReduceL1Op::getOutIndex(),
-      output_tensor.reshape(outInfo(ReduceL1Op::getOutIndex()).shape_szt()));
+  setOutTensor(ReduceL1Op::getOutIndex(),
+               snap::Tensor{output_tensor.reshape(
+                                outInfo(ReduceL1Op::getOutIndex()).shape_szt()),
+                            graph()});
 }
 
 ReduceL1GradOpx::ReduceL1GradOpx(Op *op, Devicex *devicex)
@@ -47,9 +48,10 @@ ReduceL1GradOpx::ReduceL1GradOpx(Op *op, Devicex *devicex)
 }
 
 void ReduceL1GradOpx::grow(poplar::program::Sequence &prog) const {
-  const auto &op       = getOp<ReduceL1GradOp>();
-  auto output          = getInTensor(ReduceL1GradOp::getOutIndex());
-  auto fwd_input       = getInTensor(ReduceL1GradOp::getFwdInInIndex());
+  const auto &op = getOp<ReduceL1GradOp>();
+  auto output    = getInTensor(ReduceL1GradOp::getOutIndex()).getPoplarTensor();
+  auto fwd_input =
+      getInTensor(ReduceL1GradOp::getFwdInInIndex()).getPoplarTensor();
   auto input_shape     = inShape(ReduceL1GradOp::getInIndex());
   auto output_shape    = outShape(ReduceL1GradOp::getOutIndex());
   const auto new_shape = vector_cast<std::size_t>(op.backwardShape());
@@ -70,7 +72,7 @@ void ReduceL1GradOpx::grow(poplar::program::Sequence &prog) const {
                        debugContext("output"));
 
   // output now matches the shape of output_shape
-  setOutTensor(ReduceL1GradOp::getOutIndex(), output);
+  setOutTensor(ReduceL1GradOp::getOutIndex(), snap::Tensor{output, graph()});
 }
 
 namespace {

@@ -12,9 +12,9 @@ NopOpx::NopOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
 }
 
 void NopOpx::grow(poplar::program::Sequence &prog) const {
-  auto input  = getInTensor(NopOp::getInIndex());
+  auto input  = getInTensor(NopOp::getInIndex()).getPoplarTensor();
   auto output = cloneNcopy(prog, input);
-  setOutTensor(NopOp::getOutIndex(), output);
+  setOutTensor(NopOp::getOutIndex(), snap::Tensor{output, graph()});
 }
 
 namespace {

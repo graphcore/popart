@@ -28,11 +28,11 @@ void IpuCopyOpx::grow(poplar::program::Sequence &prog) const {
     auto idx = idx_tensor.first;
     // Need to get the non virtual graph, so cannot use PopOpx::graph()
     auto t = poputil::copyToIpu(dv_p->lowering().graph().getPoplarGraph(),
-                                getInTensor(idx),
+                                getInTensor(idx).getPoplarTensor(),
                                 prog,
                                 static_cast<int>(op.getDestIpu()),
                                 debugContext("ipuCopy"));
-    setOutTensor(idx, t);
+    setOutTensor(idx, snap::Tensor{t, dv_p->lowering().graph()});
   }
 }
 
@@ -54,12 +54,12 @@ void IpuCopyOpx::createPipelinedOutput() const {
     // program.
     poplar::Tensor tLocalForCopy, tForCopy;
     auto t = poputil::createIpuCopy(dv_p->lowering().graph().getPoplarGraph(),
-                                    getInTensor(idx),
+                                    getInTensor(idx).getPoplarTensor(),
                                     static_cast<int>(op.getDestIpu()),
                                     tForCopy,
                                     tLocalForCopy,
                                     debugContext("createOutput"));
-    setOutTensor(idx, t);
+    setOutTensor(idx, snap::Tensor{t, dv_p->lowering().graph()});
   }
 }
 
@@ -70,7 +70,7 @@ void IpuCopyOpx::growPipelined(poplar::program::Sequence &prog) const {
     auto idx   = idx_tensor.first;
     auto outId = op_p->outId(idx);
 
-    auto &source      = getInTensor(idx);
+    auto &source      = getInTensor(idx).getPoplarTensor();
     auto &destination = dv_p->lowering().tensors().get(outId);
 
     // Using dontOutline=false will ensure the copies (buffers & code) are

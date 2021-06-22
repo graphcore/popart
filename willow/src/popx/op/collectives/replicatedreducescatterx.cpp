@@ -26,7 +26,7 @@ void ReplicatedReduceScatterOpx::grow(poplar::program::Sequence &prog) const {
   const auto &rrsOp = getOp<ReplicatedReduceScatterOp>();
 
   const auto inIndex   = ReplicatedReduceScatterOp::getInIndex();
-  auto toReduceScatter = snap::Tensor{getInTensor(inIndex), graph()};
+  auto toReduceScatter = getInTensor(inIndex);
 
   if (hasInput(ReplicatedAllGatherOp::getCollectiveLinkedIndex())) {
     ViewChangers viewChangers(
@@ -83,7 +83,8 @@ void ReplicatedReduceScatterOpx::grow(poplar::program::Sequence &prog) const {
                          debugContext("replicatedReduceScatter"),
                          reduceScatterOptions);
 
-  setOutTensor(ReplicatedReduceScatterOp::getOutIndex(), reducedScattered);
+  setOutTensor(ReplicatedReduceScatterOp::getOutIndex(),
+               snap::Tensor{reducedScattered, graph()});
 }
 
 InputCreatorType

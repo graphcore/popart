@@ -25,7 +25,7 @@ GradCopyToHostOpx::GradCopyToHostOpx(Op *op, Devicex *devicex)
 
 void GradCopyToHostOpx::grow(poplar::program::Sequence &prog) const {
   const auto updater_index    = GradCopyToHostOp::getInIndex();
-  poplar::Tensor weightDeltas = getInTensor(updater_index);
+  poplar::Tensor weightDeltas = getInTensor(updater_index).getPoplarTensor();
 
   const auto grad_id      = inId(updater_index);
   auto deviceToHostStream = dv_p->lowering().insertGradientStoreStream(
@@ -85,7 +85,7 @@ GradCopyFromHostOpx::GradCopyFromHostOpx(Op *op, Devicex *devicex)
 
 void GradCopyFromHostOpx::grow(poplar::program::Sequence &prog) const {
   const auto updater_index    = GradCopyFromHostOp::getInIndex();
-  poplar::Tensor weightDeltas = getInTensor(updater_index);
+  poplar::Tensor weightDeltas = getInTensor(updater_index).getPoplarTensor();
 
   const auto grad_id      = inId(updater_index);
   auto hostToDeviceStream = dv_p->lowering().insertGradientLoadStream(
@@ -117,7 +117,8 @@ void GradCopyFromHostOpx::grow(poplar::program::Sequence &prog) const {
   }
 
   // output is a reference to the updated input
-  setOutTensor(GradCopyFromHostOp::getOutIndex(), weightDeltas);
+  setOutTensor(GradCopyFromHostOp::getOutIndex(),
+               snap::Tensor{weightDeltas, graph()});
 }
 
 HostReduceVarCopyOpx::HostReduceVarCopyOpx(Op *op, Devicex *devicex)
@@ -129,7 +130,7 @@ void HostReduceVarCopyOpx::grow(poplar::program::Sequence &prog) const {
   const auto var_update_index = HostSGD0VarUpdate::getVarToUpdateInIndex();
   const auto updater_index    = HostSGD0VarUpdate::getUpdaterInIndex();
   const auto grad_id          = inId(updater_index);
-  poplar::Tensor weights      = getInTensor(var_update_index);
+  poplar::Tensor weights      = getInTensor(var_update_index).getPoplarTensor();
 
   const auto weight_id    = inId(var_update_index);
   auto hostToDeviceStream = dv_p->lowering().insertWeightLoadStream(

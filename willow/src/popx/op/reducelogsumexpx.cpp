@@ -23,8 +23,9 @@ ReduceLogSumExpOpx::ReduceLogSumExpOpx(Op *op, Devicex *devicex)
 }
 
 void ReduceLogSumExpOpx::grow(poplar::program::Sequence &prog) const {
-  const auto &op       = getOp<ReduceLogSumExpOp>();
-  const auto input     = getInTensor(ReduceLogSumExpOp::getInIndex());
+  const auto &op = getOp<ReduceLogSumExpOp>();
+  const auto input =
+      getInTensor(ReduceLogSumExpOp::getInIndex()).getPoplarTensor();
   const auto new_shape = vector_cast<std::size_t>(op.backwardShape());
 
   auto maxval           = popops::reduce(graph().getPoplarGraph(),
@@ -61,9 +62,11 @@ void ReduceLogSumExpOpx::grow(poplar::program::Sequence &prog) const {
                               prog,
                               debugContext("logAdd"));
 
-  setOutTensor(ReduceLogSumExpOp::getOutIndex(),
-               output_tensor.reshape(
-                   outInfo(ReduceLogSumExpOp::getOutIndex()).shape_szt()));
+  setOutTensor(
+      ReduceLogSumExpOp::getOutIndex(),
+      snap::Tensor{output_tensor.reshape(
+                       outInfo(ReduceLogSumExpOp::getOutIndex()).shape_szt()),
+                   graph()});
 }
 
 ReduceLogSumExpGradOpx::ReduceLogSumExpGradOpx(Op *op, Devicex *devicex)
@@ -72,10 +75,13 @@ ReduceLogSumExpGradOpx::ReduceLogSumExpGradOpx(Op *op, Devicex *devicex)
 }
 
 void ReduceLogSumExpGradOpx::grow(poplar::program::Sequence &prog) const {
-  const auto &op       = getOp<ReduceLogSumExpGradOp>();
-  auto output          = getInTensor(ReduceLogSumExpGradOp::getInIndex());
-  auto scale           = getInTensor(ReduceLogSumExpGradOp::getFwdOutInIndex());
-  auto fwd_input       = getInTensor(ReduceLogSumExpGradOp::getFwdInInIndex());
+  const auto &op = getOp<ReduceLogSumExpGradOp>();
+  auto output =
+      getInTensor(ReduceLogSumExpGradOp::getInIndex()).getPoplarTensor();
+  auto scale =
+      getInTensor(ReduceLogSumExpGradOp::getFwdOutInIndex()).getPoplarTensor();
+  auto fwd_input =
+      getInTensor(ReduceLogSumExpGradOp::getFwdInInIndex()).getPoplarTensor();
   auto input_shape     = inShape(ReduceLogSumExpGradOp::getInIndex());
   auto output_shape    = outShape(ReduceLogSumExpGradOp::getOutIndex());
   const auto new_shape = vector_cast<std::size_t>(op.backwardShape());
@@ -110,7 +116,8 @@ void ReduceLogSumExpGradOpx::grow(poplar::program::Sequence &prog) const {
                   debugContext("output"));
 
   // output now matches the shape of output_shape
-  setOutTensor(ReduceLogSumExpGradOp::getOutIndex(), output);
+  setOutTensor(ReduceLogSumExpGradOp::getOutIndex(),
+               snap::Tensor{output, graph()});
 }
 
 namespace {

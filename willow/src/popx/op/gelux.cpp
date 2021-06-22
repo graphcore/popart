@@ -53,8 +53,9 @@ GeluGradOpx::GeluGradOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
 }
 
 void GeluGradOpx::grow(poplar::program::Sequence &prog) const {
-  const auto grad  = getInTensor(GeluGradOp::getGradInIndex());
-  const auto input = getInTensor(GeluGradOp::getFwdArgInIndex());
+  const auto grad = getInTensor(GeluGradOp::getGradInIndex()).getPoplarTensor();
+  const auto input =
+      getInTensor(GeluGradOp::getFwdArgInIndex()).getPoplarTensor();
 
   auto gradRearranged = popops::rearrange::regroupIfBeneficial(
       graph().getPoplarGraph(), grad, input, prog, debugContext("regroup"));
@@ -66,7 +67,7 @@ void GeluGradOpx::grow(poplar::program::Sequence &prog) const {
                                                  prog,
                                                  debugContext("gelu_grad"));
 
-  setOutTensor(GeluGradOp::getOutIndex(), output);
+  setOutTensor(GeluGradOp::getOutIndex(), snap::Tensor{output, graph()});
 }
 
 namespace {

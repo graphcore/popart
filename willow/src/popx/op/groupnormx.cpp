@@ -38,9 +38,9 @@ void GroupNormOpx::grow(poplar::program::Sequence &prog) const {
   // int64_t num_channels = op.getNumChannels();
 
   // Get the inputs
-  auto input = getInTensor(GroupNormOp::getXInIndex());
-  auto scale = getInTensor(GroupNormOp::getScaleInIndex());
-  auto b     = getInTensor(GroupNormOp::getBInIndex());
+  auto input = getInTensor(GroupNormOp::getXInIndex()).getPoplarTensor();
+  auto scale = getInTensor(GroupNormOp::getScaleInIndex()).getPoplarTensor();
+  auto b     = getInTensor(GroupNormOp::getBInIndex()).getPoplarTensor();
 
   // Calculate the mean and the inverse standard deviation
   poplar::Tensor mean;
@@ -79,9 +79,11 @@ void GroupNormOpx::grow(poplar::program::Sequence &prog) const {
                                           flags);
 
   // Return the result
-  setOutTensor(GroupNormOp::getYOutIndex(), result.first);
-  setOutTensor(GroupNormOp::getMeanOutIndex(), mean);
-  setOutTensor(GroupNormOp::getInvStdDevOutIndex(), invStdDev);
+  setOutTensor(GroupNormOp::getYOutIndex(),
+               snap::Tensor{result.first, graph()});
+  setOutTensor(GroupNormOp::getMeanOutIndex(), snap::Tensor{mean, graph()});
+  setOutTensor(GroupNormOp::getInvStdDevOutIndex(),
+               snap::Tensor{invStdDev, graph()});
 }
 
 GroupNormGradOpx::GroupNormGradOpx(Op *op, Devicex *devicex)
@@ -91,11 +93,14 @@ GroupNormGradOpx::GroupNormGradOpx(Op *op, Devicex *devicex)
 
 void GroupNormGradOpx::grow(poplar::program::Sequence &prog) const {
 
-  auto x         = getInTensor(GroupNormGradOp::getXInIndex());
-  auto yGrad     = getInTensor(GroupNormGradOp::getYGradInIndex());
-  auto scale     = getInTensor(GroupNormGradOp::getScaleInIndex());
-  auto mean      = getInTensor(GroupNormGradOp::getMeanInIndex());
-  auto invStdDev = getInTensor(GroupNormGradOp::getInvStdDevInIndex());
+  auto x = getInTensor(GroupNormGradOp::getXInIndex()).getPoplarTensor();
+  auto yGrad =
+      getInTensor(GroupNormGradOp::getYGradInIndex()).getPoplarTensor();
+  auto scale =
+      getInTensor(GroupNormGradOp::getScaleInIndex()).getPoplarTensor();
+  auto mean = getInTensor(GroupNormGradOp::getMeanInIndex()).getPoplarTensor();
+  auto invStdDev =
+      getInTensor(GroupNormGradOp::getInvStdDevInIndex()).getPoplarTensor();
 
   auto &op = getOp<GroupNormGradOp>();
 
@@ -142,9 +147,11 @@ void GroupNormGradOpx::grow(poplar::program::Sequence &prog) const {
                                          flags);
 
   // Return the result
-  setOutTensor(GroupNormGradOp::getXGradOutIndex(), xGrad);
-  setOutTensor(GroupNormGradOp::getScaleOutIndex(), scaleGrad);
-  setOutTensor(GroupNormGradOp::getBOutIndex(), bGrad);
+  setOutTensor(GroupNormGradOp::getXGradOutIndex(),
+               snap::Tensor{xGrad, graph()});
+  setOutTensor(GroupNormGradOp::getScaleOutIndex(),
+               snap::Tensor{scaleGrad, graph()});
+  setOutTensor(GroupNormGradOp::getBOutIndex(), snap::Tensor{bGrad, graph()});
 }
 
 namespace {

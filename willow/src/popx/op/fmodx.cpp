@@ -14,13 +14,16 @@ FmodOpx::FmodOpx(Op *op, Devicex *devicex) : ElementWiseBinaryOpx(op, devicex) {
 }
 
 void FmodOpx::grow(poplar::program::Sequence &prog) const {
-  setOutTensor(FmodOp::getOutIndex(),
-               popops::map(graph().getPoplarGraph(),
-                           popops::expr::BinaryOpType::REMAINDER,
-                           getInTensor(FmodOp::getArg0InIndex()),
-                           getInTensor(FmodOp::getArg1InIndex()),
-                           prog,
-                           debugContext()));
+  setOutTensor(
+      FmodOp::getOutIndex(),
+      snap::Tensor{
+          popops::map(graph().getPoplarGraph(),
+                      popops::expr::BinaryOpType::REMAINDER,
+                      getInTensor(FmodOp::getArg0InIndex()).getPoplarTensor(),
+                      getInTensor(FmodOp::getArg1InIndex()).getPoplarTensor(),
+                      prog,
+                      debugContext()),
+          graph()});
 }
 
 namespace {

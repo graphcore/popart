@@ -88,12 +88,14 @@ void LogSoftmaxGradOpx::grow(poplar::program::Sequence &prog) const {
   const auto axis = getOp<LogSoftmaxGradOp>().getAxis();
 
   // The gradient of the loss w.r.t. the probabilities (g in above description)
-  auto d_probs = getInTensor(LogSoftmaxGradOp::getGradProbsInIndex());
-  d_probs      = EwuComputex::coerceTo2D(d_probs, axis);
+  auto d_probs =
+      getInTensor(LogSoftmaxGradOp::getGradProbsInIndex()).getPoplarTensor();
+  d_probs = EwuComputex::coerceTo2D(d_probs, axis);
 
   // The input to the logsoftmax (which we are computing the gradient of here)
-  auto pre_probs = getInTensor(LogSoftmaxGradOp::getActsInIndex());
-  pre_probs      = EwuComputex::coerceTo2D(pre_probs, axis);
+  auto pre_probs =
+      getInTensor(LogSoftmaxGradOp::getActsInIndex()).getPoplarTensor();
+  pre_probs = EwuComputex::coerceTo2D(pre_probs, axis);
 
   // compute the probabilities from softmax
   popnn::NonLinearityType nlType;
@@ -131,7 +133,7 @@ void LogSoftmaxGradOpx::grow(poplar::program::Sequence &prog) const {
                         debugContext("SubMul"));
 
   dv = dv.reshape(inInfo(LogSoftmaxGradOp::getActsInIndex()).shape_szt());
-  setOutTensor(0, dv);
+  setOutTensor(0, snap::Tensor{dv, graph()});
 }
 
 namespace {

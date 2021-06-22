@@ -38,15 +38,16 @@ std::vector<poplar::Tensor>
 ConvOpx::convolve(poplar::program::Sequence &prog,
                   const std::vector<poplar::Tensor> &weights) const {
   ConvOp &op     = getOp<ConvOp>();
-  auto outTensor = poplin::convolution(graph().getPoplarGraph(),
-                                       getInTensor(ConvOp::getDataInIndex()),
-                                       weights[0],
-                                       getPoplarConvParams(op.getParameters()),
-                                       false,
-                                       prog,
-                                       debugContext("convolution"),
-                                       getConvOptions(0),
-                                       &(dv_p->convCache));
+  auto outTensor = poplin::convolution(
+      graph().getPoplarGraph(),
+      getInTensor(ConvOp::getDataInIndex()).getPoplarTensor(),
+      weights[0],
+      getPoplarConvParams(op.getParameters()),
+      false,
+      prog,
+      debugContext("convolution"),
+      getConvOptions(0),
+      &(dv_p->convCache));
   return {outTensor};
 }
 
@@ -59,8 +60,10 @@ std::vector<poplar::Tensor> ConvWeightsGradOpx::calculateWeightDeltas(
     poplar::program::Sequence &prog) const {
   ConvWeightsGradOp &gradOp = getOp<ConvWeightsGradOp>();
 
-  const poplar::Tensor &zDelta = getInTensor(gradOp.getGradConvolvedInIndex());
-  const poplar::Tensor &acts   = getInTensor(gradOp.getPreConvolvedInIndex());
+  const poplar::Tensor &zDelta =
+      getInTensor(gradOp.getGradConvolvedInIndex()).getPoplarTensor();
+  const poplar::Tensor &acts =
+      getInTensor(gradOp.getPreConvolvedInIndex()).getPoplarTensor();
 
   poplar::Tensor wGrad =
       poplin::calculateWeightDeltas(graph().getPoplarGraph(),
@@ -84,7 +87,8 @@ void ConvFlipWeightsGradOpx::grow(poplar::program::Sequence &seq) const {
   auto &op    = getOp<ConvFlipWeightsOp>();
   auto params = op.getParameters();
 
-  poplar::Tensor weights = getInTensor(ConvFlipWeightsOp::getInIndex());
+  poplar::Tensor weights =
+      getInTensor(ConvFlipWeightsOp::getInIndex()).getPoplarTensor();
   // swap In Out channels
   auto weights5D = reshapeOnnxWeightsForPoplar(weights,
                                                params.numInChannelsPerGroup,
@@ -133,8 +137,10 @@ void ConvFlipWeightsGradOpx::grow(poplar::program::Sequence &seq) const {
 
   setOutTensor(
       ConvFlipWeightsOp::getOutIndex(),
-      convWeights.reshape(
-          outTensor(ConvFlipWeightsOp::getOutIndex())->info.shape_szt()));
+      snap::Tensor{
+          convWeights.reshape(
+              outTensor(ConvFlipWeightsOp::getOutIndex())->info.shape_szt()),
+          graph()});
 }
 
 namespace {

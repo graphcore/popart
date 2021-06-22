@@ -20,7 +20,7 @@ BaseSortOpx::BaseSortOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
 FullSortResult
 BaseSortOpx::growFullSortResult(poplar::program::Sequence &prog) const {
 
-  auto input   = getInTensor(BaseSortOp::getInIndex());
+  auto input   = getInTensor(BaseSortOp::getInIndex()).getPoplarTensor();
   auto values  = cloneNcopy(prog, input);
   auto indices = sortutilx::getIotaTensor(
       graph(), input, axis, prog, getDebugNameAndId("iotaTensor"));
@@ -37,7 +37,7 @@ BaseSortOpx::growFullSortResult(poplar::program::Sequence &prog) const {
 
 poplar::Tensor
 BaseSortOpx::growIndicesSort(poplar::program::Sequence &prog) const {
-  auto input   = getInTensor(BaseSortOp::getInIndex());
+  auto input   = getInTensor(BaseSortOp::getInIndex()).getPoplarTensor();
   auto indices = sortutilx::getIotaTensor(
       graph(), input, axis, prog, getDebugNameAndId("iotaTensor"));
   return popops::sortKeyValue(graph().getPoplarGraph(),

@@ -138,13 +138,14 @@ void ClipGradOpx::grow(poplar::program::Sequence &prog) const {
   // edge at 'min' and falling edge at 'max'
 
   auto clipGradOp = dynamic_cast<ClipGradOp *>(op_p);
-  auto gradIn     = getInTensor(clipGradOp->getGradClippedInIndex());
-  auto fwdOut     = getInTensor(clipGradOp->getClippedInIndex());
-  auto clipmax    = ClipComputex::getClipTensor(clipGradOp->getClipMax(),
+  auto gradIn =
+      getInTensor(clipGradOp->getGradClippedInIndex()).getPoplarTensor();
+  auto fwdOut  = getInTensor(clipGradOp->getClippedInIndex()).getPoplarTensor();
+  auto clipmax = ClipComputex::getClipTensor(clipGradOp->getClipMax(),
                                              gradIn.elementType(),
                                              graph(),
                                              getDebugNameAndId());
-  auto clipmin    = ClipComputex::getClipTensor(clipGradOp->getClipMin(),
+  auto clipmin = ClipComputex::getClipTensor(clipGradOp->getClipMin(),
                                              gradIn.elementType(),
                                              graph(),
                                              getDebugNameAndId());
@@ -164,7 +165,7 @@ void ClipGradOpx::grow(poplar::program::Sequence &prog) const {
       prog,
       debugContext("ApplyMinMaxMask"));
 
-  setOutTensor(clipGradOp->getOutIndex(), outTensor);
+  setOutTensor(clipGradOp->getOutIndex(), snap::Tensor{outTensor, graph()});
 }
 
 namespace {

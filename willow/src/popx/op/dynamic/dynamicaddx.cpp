@@ -16,10 +16,13 @@ namespace popart {
 namespace popx {
 
 void DynamicAddOpx::grow(poplar::program::Sequence &prog) const {
-  auto &op    = getOp<DynamicTernaryBaseOp>();
-  auto tensor = getInTensor(DynamicTernaryBaseOp::getUpdateInIndex());
-  auto index  = getInTensor(DynamicTernaryBaseOp::getIndexInIndex());
-  auto slice  = getInTensor(DynamicTernaryBaseOp::getInIndex());
+  auto &op = getOp<DynamicTernaryBaseOp>();
+  auto tensor =
+      getInTensor(DynamicTernaryBaseOp::getUpdateInIndex()).getPoplarTensor();
+  auto index =
+      getInTensor(DynamicTernaryBaseOp::getIndexInIndex()).getPoplarTensor();
+  auto slice =
+      getInTensor(DynamicTernaryBaseOp::getInIndex()).getPoplarTensor();
 
   std::vector<size_t> paxes(op.getAxes().begin(), op.getAxes().end());
   std::vector<size_t> psizes(op.getSizes().begin(), op.getSizes().end());
@@ -67,7 +70,8 @@ void DynamicAddOpx::grow(poplar::program::Sequence &prog) const {
       debugContext("dynamic_add_" +
                    op.inId(DynamicTernaryBaseOp::getUpdateInIndex())));
 
-  setOutTensor(DynamicTernaryBaseOp::getOutIndex(), outTensor);
+  setOutTensor(DynamicTernaryBaseOp::getOutIndex(),
+               snap::Tensor{outTensor, graph()});
 }
 
 poplar::Tensor

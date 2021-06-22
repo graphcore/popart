@@ -25,8 +25,9 @@ DynamicSliceOpx::DynamicSliceOpx(Op *op, Devicex *devicex)
 
 void DynamicSliceOpx::grow(poplar::program::Sequence &prog) const {
   auto &op    = getOp<DynamicSliceBaseOp>();
-  auto tensor = getInTensor(DynamicSliceBaseOp::getInIndex());
-  auto index  = getInTensor(DynamicSliceBaseOp::getIndexInIndex());
+  auto tensor = getInTensor(DynamicSliceBaseOp::getInIndex()).getPoplarTensor();
+  auto index =
+      getInTensor(DynamicSliceBaseOp::getIndexInIndex()).getPoplarTensor();
 
   std::vector<size_t> paxes(op.getAxes().begin(), op.getAxes().end());
   std::vector<size_t> psizes(op.getSizes().begin(), op.getSizes().end());
@@ -45,7 +46,7 @@ void DynamicSliceOpx::grow(poplar::program::Sequence &prog) const {
       debugContext("dynamic_slice_" +
                    op.inId(DynamicSliceBaseOp::getInIndex())));
 
-  setOutTensor(DynamicSliceBaseOp::getOutIndex(), s);
+  setOutTensor(DynamicSliceBaseOp::getOutIndex(), snap::Tensor{s, graph()});
 }
 
 InputCreatorType DynamicSliceOpx::getInputCreatorType(InIndex index) const {

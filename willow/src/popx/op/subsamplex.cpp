@@ -35,17 +35,18 @@ SubsampleOpx::SubsampleOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
 void SubsampleOpx::grow(poplar::program::Sequence &prog) const {
 
   SubsampleOp &op = getOp<SubsampleOp>();
-  auto outTensor  = getInTensor(SubsampleOp::getInIndex());
+  auto outTensor  = getInTensor(SubsampleOp::getInIndex()).getPoplarTensor();
   outTensor       = subsample(outTensor, op.strides_u32());
   // Need to clone/copy a new output tensor so is not in place
-  setOutTensor(SubsampleOp::getOutIndex(), cloneNcopy(prog, outTensor));
+  setOutTensor(SubsampleOp::getOutIndex(),
+               snap::Tensor{cloneNcopy(prog, outTensor), graph()});
 }
 
 void SubsampleInplaceOpx::grow(poplar::program::Sequence &) const {
   SubsampleInplaceOp &op = getOp<SubsampleInplaceOp>();
-  auto outTensor         = getInTensor(SubsampleOp::getInIndex());
-  outTensor              = subsample(outTensor, op.strides_u32());
-  setOutTensor(SubsampleOp::getOutIndex(), outTensor);
+  auto outTensor = getInTensor(SubsampleOp::getInIndex()).getPoplarTensor();
+  outTensor      = subsample(outTensor, op.strides_u32());
+  setOutTensor(SubsampleOp::getOutIndex(), snap::Tensor{outTensor, graph()});
 }
 
 SubsampleGradOpx::SubsampleGradOpx(Op *op, Devicex *devicex)
@@ -60,7 +61,7 @@ SubsampleGradOpx::SubsampleGradOpx(Op *op, Devicex *devicex)
 void SubsampleGradOpx::grow(poplar::program::Sequence &prog) const {
 
   SubsampleGradOp &gradOp = getOp<SubsampleGradOp>();
-  auto &in                = getInTensor(SubsampleGradOp::getInIndex());
+  auto &in = getInTensor(SubsampleGradOp::getInIndex()).getPoplarTensor();
 
   // Design decision: make a scalar zero variable that we expand to create
   // a tensor of the same size as the output
@@ -88,7 +89,8 @@ void SubsampleGradOpx::grow(poplar::program::Sequence &prog) const {
   prog.add(poplar::program::Copy(in, ss_output, false, debugContext()));
 
   // Return the output
-  setOutTensor(SubsampleGradOp::getOutIndex(), outTensor);
+  setOutTensor(SubsampleGradOp::getOutIndex(),
+               snap::Tensor{outTensor, graph()});
 }
 
 namespace {

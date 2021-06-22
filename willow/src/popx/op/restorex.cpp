@@ -25,9 +25,9 @@ RestoreBaseOpx<Derived>::RestoreBaseOpx(Op *op, Devicex *devicex)
 }
 
 template <typename Derived>
-poplar::Tensor
+snap::Tensor
 RestoreBaseOpx<Derived>::growRestore(poplar::program::Sequence &prog,
-                                     const poplar::Tensor &stash) const {
+                                     const snap::Tensor &stash) const {
   const auto &op       = getOp<typename Derived::OpType>();
   const auto stashSize = op.getStashSize();
 
@@ -43,12 +43,14 @@ RestoreBaseOpx<Derived>::growRestore(poplar::program::Sequence &prog,
       getConst(poplar::UNSIGNED_INT, {}, stashSize, "stash_size");
 
   // Grow program to take slice of stash at the stash index.
-  poplar::Tensor actFromStash;
+  snap::Tensor actFromStash;
 
   if (canDynamicSliceRestore) {
-    actFromStash = growDynamicSliceRestore(prog, stashIndex, stash);
+    actFromStash =
+        growDynamicSliceRestore(prog, snap::Tensor{stashIndex, graph()}, stash);
   } else {
-    actFromStash = growStaticSliceRestore(prog, stashSize, stashIndex, stash);
+    actFromStash = growStaticSliceRestore(
+        prog, stashSize, snap::Tensor{stashIndex, graph()}, stash);
   }
 
   // Create a "1" tensor and grow program to increment stash index by 1.
@@ -65,27 +67,27 @@ RestoreBaseOpx<Derived>::growRestore(poplar::program::Sequence &prog,
 }
 
 template <typename Derived>
-poplar::Tensor RestoreBaseOpx<Derived>::growStaticSliceRestore(
+snap::Tensor RestoreBaseOpx<Derived>::growStaticSliceRestore(
     poplar::program::Sequence &prog,
     const int64_t stashSize,
-    const poplar::Tensor &stashIndex,
-    const poplar::Tensor &stash) const {
+    const snap::Tensor &stashIndex,
+    const snap::Tensor &stash) const {
 
   // stash is (N, a, b, c). Output is (a, b, c) at index stashIndex.
 
   // Creates (1, a, b, c) tensor.
   poplar::Tensor actFromStash =
       popops::createSliceTensor(graph().getPoplarGraph(),
-                                stash,
+                                stash.getPoplarTensor(),
                                 {0},
                                 {1},
                                 1,
                                 debugContext("static-restore/out-slice"));
 
-  poplar::program::Switch switchCase(stashIndex.reshape({}));
+  poplar::program::Switch switchCase(stashIndex.getPoplarTensor().reshape({}));
 
   for (int64_t i = 0; i < stashSize; i++) {
-    const auto inSliceAtIdx = stash.slice(i, i + 1, 0);
+    const auto inSliceAtIdx = stash.getPoplarTensor().slice(i, i + 1, 0);
     switchCase.add(
         i,
         poplar::program::Copy(
@@ -97,25 +99,25 @@ poplar::Tensor RestoreBaseOpx<Derived>::growStaticSliceRestore(
 
   prog.add(switchCase);
 
-  return actFromStash.squeeze({0});
+  return snap::Tensor{actFromStash.squeeze({0}), graph()};
 }
 
 template <typename Derived>
-poplar::Tensor RestoreBaseOpx<Derived>::growDynamicSliceRestore(
+snap::Tensor RestoreBaseOpx<Derived>::growDynamicSliceRestore(
     poplar::program::Sequence &prog,
-    const poplar::Tensor &stashIndex,
-    const poplar::Tensor &stash) const {
+    const snap::Tensor &stashIndex,
+    const snap::Tensor &stash) const {
 
   auto actFromStash =
       popops::dynamicSlice(graph().getPoplarGraph(),
-                           stash,
-                           stashIndex,
+                           stash.getPoplarTensor(),
+                           stashIndex.getPoplarTensor(),
                            {0},
                            {1},
                            prog,
                            debugContext("grow_restore_dynamic_slice"));
 
-  return actFromStash.squeeze({0});
+  return snap::Tensor{actFromStash.squeeze({0}), graph()};
 }
 
 void RestoreInplaceOpx::grow(poplar::program::Sequence &prog) const {
@@ -124,8 +126,10 @@ void RestoreInplaceOpx::grow(poplar::program::Sequence &prog) const {
 
   const auto actFromStash = growRestore(prog, stash);
 
-  prog.add(
-      poplar::program::Copy(actFromStash, actToRestore, false, debugContext()));
+  prog.add(poplar::program::Copy(actFromStash.getPoplarTensor(),
+                                 actToRestore.getPoplarTensor(),
+                                 false,
+                                 debugContext()));
   setOutTensor(RestoreInplaceOp::getRestoredActOutIndex(), actToRestore);
 }
 

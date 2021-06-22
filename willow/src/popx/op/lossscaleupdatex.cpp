@@ -60,7 +60,7 @@ void LossScaleUpdateOpx::grow(poplar::program::Sequence &prog) const {
                debugContext("zeroUpperBinCounts"));
 
   for (int i = op.getFirstStatisticsTensorInIndex(); i < op.input->n(); i++) {
-    auto gradStats     = getInTensor(i);
+    auto gradStats     = getInTensor(i).getPoplarTensor();
     auto lowerBinCount = gradStats.slice(0, 1, 0);
     auto upperBinCount = gradStats.slice(1, 2, 0);
 
@@ -100,7 +100,7 @@ void LossScaleUpdateOpx::grow(poplar::program::Sequence &prog) const {
                                      debugContext());
 
   auto lossScaleUpdateFactor =
-      getInTensor(op.getLossScaleUpdateFactorInIndex());
+      getInTensor(op.getLossScaleUpdateFactorInIndex()).getPoplarTensor();
   auto updateFactorDType = popType(op.getUpdateFactorDType());
   poplar::program::Sequence scaleUp, scaleDown;
   popops::mulInPlace(graph().getPoplarGraph(),
@@ -118,7 +118,7 @@ void LossScaleUpdateOpx::grow(poplar::program::Sequence &prog) const {
       shouldScaleDown, scaleDown, scaleUp, debugContext("lossScaleUpdate")));
 
   setOutTensor(op.getUpdatedLossScaleUpdateFactorOutIndex(),
-               lossScaleUpdateFactor);
+               snap::Tensor{lossScaleUpdateFactor, graph()});
 }
 
 LossScaleUpdateOpx::LossScaleUpdateOpx(Op *op, Devicex *devicex)

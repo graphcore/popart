@@ -80,11 +80,11 @@ void BatchNormOpx::grow(poplar::program::Sequence &prog) const {
   auto &op = getOp<BatchNormOp>();
 
   // Using the input names as per the onnx spec.
-  auto x     = getInTensor(BatchNormOp::getXInIndex());
-  auto scale = getInTensor(BatchNormOp::getScaleInIndex());
-  auto b     = getInTensor(BatchNormOp::getBInIndex());
-  auto mean  = getInTensor(BatchNormOp::getMeanInIndex());
-  auto var   = getInTensor(BatchNormOp::getVarInIndex());
+  auto x     = getInTensor(BatchNormOp::getXInIndex()).getPoplarTensor();
+  auto scale = getInTensor(BatchNormOp::getScaleInIndex()).getPoplarTensor();
+  auto b     = getInTensor(BatchNormOp::getBInIndex()).getPoplarTensor();
+  auto mean  = getInTensor(BatchNormOp::getMeanInIndex()).getPoplarTensor();
+  auto var   = getInTensor(BatchNormOp::getVarInIndex()).getPoplarTensor();
 
   // Variables to store the desired output shapes in case of spatial=False.
   std::vector<size_t> yShape            = x.shape();
@@ -134,16 +134,20 @@ void BatchNormOpx::grow(poplar::program::Sequence &prog) const {
   }
 
   // Now we need to set the output tensors, where available.
-  setOutTensor(BatchNormOp::getYOutIndex(), outputs.y);
+  setOutTensor(BatchNormOp::getYOutIndex(), snap::Tensor{outputs.y, graph()});
 
   if (outputs.mean)
-    setOutTensor(BatchNormOp::getMeanOutIndex(), *outputs.mean);
+    setOutTensor(BatchNormOp::getMeanOutIndex(),
+                 snap::Tensor{*outputs.mean, graph()});
   if (outputs.var)
-    setOutTensor(BatchNormOp::getVarOutIndex(), *outputs.var);
+    setOutTensor(BatchNormOp::getVarOutIndex(),
+                 snap::Tensor{*outputs.var, graph()});
   if (outputs.savedMean)
-    setOutTensor(BatchNormOp::getSavedMeanOutIndex(), *outputs.savedMean);
+    setOutTensor(BatchNormOp::getSavedMeanOutIndex(),
+                 snap::Tensor{*outputs.savedMean, graph()});
   if (outputs.savedVar)
-    setOutTensor(BatchNormOp::getSavedVarOutIndex(), *outputs.savedVar);
+    setOutTensor(BatchNormOp::getSavedVarOutIndex(),
+                 snap::Tensor{*outputs.savedVar, graph()});
 }
 
 BatchNormOpx::GrowSpatialOutput
@@ -346,11 +350,13 @@ void BatchNormGradOpx::grow(poplar::program::Sequence &prog) const {
   auto &op = getOp<BatchNormGradOp>();
 
   // Inputs
-  auto x     = getInTensor(BatchNormGradOp::getXInIndex());
-  auto scale = getInTensor(BatchNormGradOp::getScaleInIndex());
-  auto mean  = getInTensor(BatchNormGradOp::getMeanInIndex());
-  auto var   = getInTensor(BatchNormGradOp::getVarInIndex());
-  auto yGrad = getInTensor(BatchNormGradOp::getYGradInIndex());
+  auto x = getInTensor(BatchNormGradOp::getXInIndex()).getPoplarTensor();
+  auto scale =
+      getInTensor(BatchNormGradOp::getScaleInIndex()).getPoplarTensor();
+  auto mean = getInTensor(BatchNormGradOp::getMeanInIndex()).getPoplarTensor();
+  auto var  = getInTensor(BatchNormGradOp::getVarInIndex()).getPoplarTensor();
+  auto yGrad =
+      getInTensor(BatchNormGradOp::getYGradInIndex()).getPoplarTensor();
 
   // Variables to store the desired output shapes in case of spatial=False.
   std::vector<size_t> xShape            = yGrad.shape();
@@ -377,9 +383,12 @@ void BatchNormGradOpx::grow(poplar::program::Sequence &prog) const {
     outputs.bGrad     = outputs.bGrad.reshape(otherOutputsShape);
   }
 
-  setOutTensor(BatchNormGradOp::getXOutIndex(), outputs.xGrad);
-  setOutTensor(BatchNormGradOp::getScaleOutIndex(), outputs.scaleGrad);
-  setOutTensor(BatchNormGradOp::getBOutIndex(), outputs.bGrad);
+  setOutTensor(BatchNormGradOp::getXOutIndex(),
+               snap::Tensor{outputs.xGrad, graph()});
+  setOutTensor(BatchNormGradOp::getScaleOutIndex(),
+               snap::Tensor{outputs.scaleGrad, graph()});
+  setOutTensor(BatchNormGradOp::getBOutIndex(),
+               snap::Tensor{outputs.bGrad, graph()});
 }
 
 BatchNormGradOpx::GrowSpatialOutput

@@ -50,15 +50,15 @@ void ReluGradOpx::grow(poplar::program::Sequence &prog) const {
   ReluGradOp &rgop = getOp<ReluGradOp>();
 
   auto outTensor = popnn::nonLinearityInputGradient(
-      graph().getPoplarGraph(),                // graph,
-      popnn::NonLinearityType::RELU,           // nonLinearityType,
-      getInTensor(rgop.getReludInIndex()),     // out,
-      getInTensor(rgop.getGradReludInIndex()), // outGradient,
-      prog,                                    // prog,
-      debugContext()                           // debugContext
+      graph().getPoplarGraph(),      // graph,
+      popnn::NonLinearityType::RELU, // nonLinearityType,
+      getInTensor(rgop.getReludInIndex()).getPoplarTensor(),     // out,
+      getInTensor(rgop.getGradReludInIndex()).getPoplarTensor(), // outGradient,
+      prog,                                                      // prog,
+      debugContext()                                             // debugContext
   );
 
-  setOutTensor(0, outTensor);
+  setOutTensor(0, snap::Tensor{outTensor, graph()});
 }
 
 namespace {

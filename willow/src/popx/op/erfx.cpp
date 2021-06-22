@@ -18,7 +18,7 @@ ErfxOpx::ErfxOpx(Op *op, Devicex *devicex) : ElementWiseUnaryOpx(op, devicex) {
 // https://en.wikipedia.org/wiki/Error_function, Numerical approximations.
 void ErfxOpx::grow(poplar::program::Sequence &prog) const {
 
-  const poplar::Tensor &x = getInTensor(ErfOp::getInIndex());
+  const poplar::Tensor &x = getInTensor(ErfOp::getInIndex()).getPoplarTensor();
 
   poplar::Tensor sign = popops::signum(graph().getPoplarGraph(), x, prog);
   poplar::Tensor y    = popops::abs(graph().getPoplarGraph(), x, prog);
@@ -43,7 +43,7 @@ void ErfxOpx::grow(poplar::program::Sequence &prog) const {
   popops::addInPlace(graph().getPoplarGraph(), y, 1.0f, prog);
   popops::mulInPlace(graph().getPoplarGraph(), y, sign, prog);
 
-  setOutTensor(ErfOp::getOutIndex(), y);
+  setOutTensor(ErfOp::getOutIndex(), snap::Tensor{y, graph()});
 }
 
 ErfxGradOpx::ErfxGradOpx(Op *op, Devicex *devicex)
@@ -53,17 +53,19 @@ ErfxGradOpx::ErfxGradOpx(Op *op, Devicex *devicex)
 
 // dx erf(x) = 2/Sqrt(Pi) exp(-x^2)
 void ErfxGradOpx::grow(poplar::program::Sequence &prog) const {
-  const poplar::Tensor &x = getInTensor(ErfGradOp::getFwdArgInIndex());
-  auto x2                 = popops::square(graph().getPoplarGraph(), x, prog);
+  const poplar::Tensor &x =
+      getInTensor(ErfGradOp::getFwdArgInIndex()).getPoplarTensor();
+  auto x2 = popops::square(graph().getPoplarGraph(), x, prog);
   popops::negInPlace(graph().getPoplarGraph(), x2, prog);
   popops::expInPlace(graph().getPoplarGraph(), x2, prog);
   popops::mulInPlace(graph().getPoplarGraph(), x2, 1.1283791671f, prog);
 
-  const poplar::Tensor &gradX = getInTensor(ErfGradOp::getGradInIndex());
-  const poplar::Tensor dx     = popops::mul(
+  const poplar::Tensor &gradX =
+      getInTensor(ErfGradOp::getGradInIndex()).getPoplarTensor();
+  const poplar::Tensor dx = popops::mul(
       graph().getPoplarGraph(), x2, gradX, prog, debugContext("grad_x"));
 
-  setOutTensor(ErfGradOp::getOutIndex(), dx);
+  setOutTensor(ErfGradOp::getOutIndex(), snap::Tensor{dx, graph()});
 }
 
 namespace {

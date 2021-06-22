@@ -15,12 +15,13 @@ ReverseOpx::ReverseOpx(Op *op, Devicex *devicex) : ReverseBaseOpx(op, devicex) {
 }
 
 void ReverseOpx::grow(poplar::program::Sequence &prog) const {
-  auto t = getInTensor(ReverseOp::getInIndex());
+  auto t = getInTensor(ReverseOp::getInIndex()).getPoplarTensor();
   for (auto dim : dynamic_cast<ReverseOp *>(op_p)->getDimensions()) {
     t = t.reverse(static_cast<unsigned>(dim));
   }
 
-  setOutTensor(ReverseOp::getOutIndex(), cloneNcopy(prog, t));
+  setOutTensor(ReverseOp::getOutIndex(),
+               snap::Tensor{cloneNcopy(prog, t), graph()});
 }
 
 snap::Tensor ReverseBaseOpx::unwindTensorLayout(snap::Tensor tensor,
@@ -46,12 +47,12 @@ ReverseInplaceOpx::ReverseInplaceOpx(Op *op, Devicex *devicex)
 }
 
 void ReverseInplaceOpx::grow(poplar::program::Sequence &) const {
-  auto t = getInTensor(ReverseOp::getInIndex());
+  auto t = getInTensor(ReverseOp::getInIndex()).getPoplarTensor();
   for (auto dim : dynamic_cast<ReverseInplaceOp *>(op_p)->getDimensions()) {
     t = t.reverse(static_cast<unsigned>(dim));
   }
 
-  setOutTensor(ReverseOp::getOutIndex(), t);
+  setOutTensor(ReverseOp::getOutIndex(), snap::Tensor{t, graph()});
 }
 
 ReverseGradOpx::ReverseGradOpx(Op *op, Devicex *devicex)

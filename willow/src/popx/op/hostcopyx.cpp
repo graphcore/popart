@@ -23,7 +23,7 @@ poplar::Tensor HostBaseOpx::load(poplar::program::Sequence &prog,
     logging::opx::debug("Found host stream in getFromHostStreams {}",
                         streamTensorId);
     auto stream      = streams.at(streamTensorId);
-    poplar::Tensor t = get(outTensorId);
+    poplar::Tensor t = get(outTensorId).getPoplarTensor();
 
     if (!t.isParallelWriteable()) {
       logging::opx::debug("Tensor {} is not a writable host load tensor "
@@ -98,8 +98,6 @@ void HostBaseOpx::store(poplar::program::Sequence &prog,
     logging::opx::debug("Found host stream in getFromHostStreams {}",
                         streamTensorId);
     auto stream = streams.at(streamTensorId);
-    poplar::Tensor t =
-        getInTensor(dynamic_cast<HostStoreOp *>(op_p)->getLocalTensorInIndex());
 
     auto tensor = op_p->input->tensor(HostStoreOp::getLocalTensorInIndex());
     const auto &anchorTensor =
@@ -148,7 +146,7 @@ void HostLoadOpx::grow(poplar::program::Sequence &prog) const {
 
   auto t = load(prog, inTensorId, hostLoadOp.getHostStreamTensorId());
 
-  setOutTensor(HostLoadOp::getLocalTensorOutIndex(), t);
+  setOutTensor(HostLoadOp::getLocalTensorOutIndex(), snap::Tensor{t, graph()});
 
   if (hasInViewChangers(HostLoadOp::getLocalTensorInIndex())) {
     setOutViewChangers(HostLoadOp::getLocalTensorOutIndex(),

@@ -14,13 +14,14 @@ LogOpx::LogOpx(Op *op, Devicex *devicex) : ElementWiseUnaryOpx(op, devicex) {
 }
 
 void LogOpx::grow(poplar::program::Sequence &prog) const {
-  auto outTensor = popops::map(graph().getPoplarGraph(),
-                               popops::expr::UnaryOpType::LOGARITHM,
-                               getInTensor(LogOp::getInIndex()),
-                               prog,
-                               debugContext());
+  auto outTensor =
+      popops::map(graph().getPoplarGraph(),
+                  popops::expr::UnaryOpType::LOGARITHM,
+                  getInTensor(LogOp::getInIndex()).getPoplarTensor(),
+                  prog,
+                  debugContext());
 
-  setOutTensor(LogOp::getOutIndex(), outTensor);
+  setOutTensor(LogOp::getOutIndex(), snap::Tensor{outTensor, graph()});
 }
 
 namespace {

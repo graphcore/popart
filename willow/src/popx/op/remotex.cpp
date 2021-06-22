@@ -128,12 +128,14 @@ void RemoteStoreOpx::grow(poplar::program::Sequence &prog) const {
       remoteStoreOp.input->tensor(RemoteStoreOp::getLocalTensorInIndex())->id,
       remoteStoreOp.getRemoteBufferId());
 
-  poplar::Tensor inTensor = getInTensor(RemoteStoreOp::getLocalTensorInIndex());
+  poplar::Tensor inTensor =
+      getInTensor(RemoteStoreOp::getLocalTensorInIndex()).getPoplarTensor();
   poplar::Tensor offset;
 
   if (remoteStoreOp.input->hasIndex(
           RemoteStoreOp::getRemoteBufferOffsetInIndex())) {
-    offset = getInTensor(RemoteStoreOp::getRemoteBufferOffsetInIndex());
+    offset = getInTensor(RemoteStoreOp::getRemoteBufferOffsetInIndex())
+                 .getPoplarTensor();
   }
 
   preStore(graph(), prog, remoteStoreOp.getRemoteBufferId(), inTensor);
@@ -159,12 +161,14 @@ void RemoteLoadOpx::grow(poplar::program::Sequence &prog) const {
       remoteLoadOp.output->tensor(RemoteLoadOp::getLocalTensorOutIndex())->id,
       remoteLoadOp.getRemoteBufferId());
 
-  poplar::Tensor outTensor = getInTensor(RemoteLoadOp::getLocalTensorInIndex());
+  poplar::Tensor outTensor =
+      getInTensor(RemoteLoadOp::getLocalTensorInIndex()).getPoplarTensor();
   poplar::Tensor offset;
 
   if (remoteLoadOp.input->hasIndex(
           RemoteLoadOp::getRemoteBufferOffsetInIndex())) {
-    offset = getInTensor(RemoteLoadOp::getRemoteBufferOffsetInIndex());
+    offset = getInTensor(RemoteLoadOp::getRemoteBufferOffsetInIndex())
+                 .getPoplarTensor();
   }
 
   outTensor = makeWritable(
@@ -177,7 +181,8 @@ void RemoteLoadOpx::grow(poplar::program::Sequence &prog) const {
         RemoteLoadOp::getLocalTensorOutIndex(),
         getInViewChangers(RemoteLoadOp::getLocalTensorInIndex()));
   }
-  setOutTensor(RemoteLoadOp::getLocalTensorOutIndex(), outTensor);
+  setOutTensor(RemoteLoadOp::getLocalTensorOutIndex(),
+               snap::Tensor{outTensor, graph()});
 }
 
 InputCreatorType RemoteLoadOpx::getInputCreatorType(InIndex index) const {
@@ -236,9 +241,11 @@ void RemoteExchangeOpx::grow(poplar::program::Sequence &prog) const {
             remoteExchangeOp.numLoads() + lastStoredIndex);
         store(prog,
               rbid,
-              getInTensor(remoteExchangeOp.numLoads() + lastStoredIndex),
+              getInTensor(remoteExchangeOp.numLoads() + lastStoredIndex)
+                  .getPoplarTensor(),
               getInTensor(2 * remoteExchangeOp.numLoads() +
-                          remoteExchangeOp.numStores() + lastStoredIndex));
+                          remoteExchangeOp.numStores() + lastStoredIndex)
+                  .getPoplarTensor());
       }
     };
 
@@ -268,7 +275,8 @@ void RemoteExchangeOpx::grow(poplar::program::Sequence &prog) const {
       preStore(inGraph(remoteExchangeOp.numLoads() + storeIndex),
                prog,
                rbid,
-               getInTensor(remoteExchangeOp.numLoads() + storeIndex));
+               getInTensor(remoteExchangeOp.numLoads() + storeIndex)
+                   .getPoplarTensor());
     }
     storeUntil(storeIndex);
   }
@@ -279,7 +287,7 @@ void RemoteExchangeOpx::grow(poplar::program::Sequence &prog) const {
     for (int loadIndex = 0; loadIndex < remoteExchangeOp.numLoads();
          ++loadIndex) {
       TensorId outTensorId     = remoteExchangeOp.output->tensor(loadIndex)->id;
-      poplar::Tensor outTensor = getInTensor(loadIndex);
+      poplar::Tensor outTensor = getInTensor(loadIndex).getPoplarTensor();
       outTensor                = makeWritable(outGraph(loadIndex),
                                outTensor,
                                remoteExchangeOp.getRemoteBufferId(loadIndex),
@@ -287,7 +295,7 @@ void RemoteExchangeOpx::grow(poplar::program::Sequence &prog) const {
       if (hasInViewChangers(loadIndex)) {
         setOutViewChangers(loadIndex, getInViewChangers(loadIndex));
       }
-      setOutTensor(loadIndex, outTensor);
+      setOutTensor(loadIndex, snap::Tensor{outTensor, graph()});
     }
 
     std::set<RemoteBufferId> usedRemoteBufferIds;
@@ -297,7 +305,8 @@ void RemoteExchangeOpx::grow(poplar::program::Sequence &prog) const {
       for (; lastPostLoadIndex < postLoadUntilIndex; ++lastPostLoadIndex) {
         RemoteBufferId rbid =
             remoteExchangeOp.getRemoteBufferId(lastPostLoadIndex);
-        poplar::Tensor outTensor = getOutTensor(lastPostLoadIndex);
+        poplar::Tensor outTensor =
+            getOutTensor(lastPostLoadIndex).getPoplarTensor();
         postLoad(prog, rbid, outTensor);
       }
     };
@@ -306,7 +315,7 @@ void RemoteExchangeOpx::grow(poplar::program::Sequence &prog) const {
     for (; loadIndex < remoteExchangeOp.numLoads(); ++loadIndex) {
       InIndex offsetIndex = remoteExchangeOp.numLoads() +
                             remoteExchangeOp.numStores() + loadIndex;
-      poplar::Tensor outTensor = getOutTensor(loadIndex);
+      poplar::Tensor outTensor = getOutTensor(loadIndex).getPoplarTensor();
       RemoteBufferId rbid      = remoteExchangeOp.getRemoteBufferId(loadIndex);
       logging::opx::debug(
           "[RemoteExchangeOpx] Growing RemoteLoad for tensor {} -> {}, "
@@ -323,8 +332,11 @@ void RemoteExchangeOpx::grow(poplar::program::Sequence &prog) const {
                       remoteExchangeOp.debugName());
       }
       usedRemoteBufferIds.insert(rbid);
-      load(
-          outGraph(loadIndex), prog, rbid, outTensor, getInTensor(offsetIndex));
+      load(outGraph(loadIndex),
+           prog,
+           rbid,
+           outTensor,
+           getInTensor(offsetIndex).getPoplarTensor());
     }
     postLoadUntil(loadIndex);
   }

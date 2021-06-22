@@ -70,9 +70,10 @@ EluGradOpx::EluGradOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
 }
 
 void EluGradOpx::grow(poplar::program::Sequence &prog) const {
-  const auto &op       = getOp<EluGradOp>();
-  const auto input     = getInTensor(EluGradOp::getGradInIndex());
-  const auto fwd_input = getInTensor(EluGradOp::getFwdArgInIndex());
+  const auto &op   = getOp<EluGradOp>();
+  const auto input = getInTensor(EluGradOp::getGradInIndex()).getPoplarTensor();
+  const auto fwd_input =
+      getInTensor(EluGradOp::getFwdArgInIndex()).getPoplarTensor();
 
   // We can write down the gradient of the Elu as two pieces:
   // theta(fwd_input < 0)*alpha*exp(fwd_input) + theta(fwd_input > 0)
@@ -98,7 +99,7 @@ void EluGradOpx::grow(poplar::program::Sequence &prog) const {
                             prog,
                             debugContext("elu_grad"));
 
-  setOutTensor(EluGradOp::getOutIndex(), output);
+  setOutTensor(EluGradOp::getOutIndex(), snap::Tensor{output, graph()});
 }
 
 namespace {

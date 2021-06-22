@@ -33,9 +33,9 @@ const std::vector<size_t> &TopKGradOpx::getGradOutShape() const {
 }
 
 void TopKGradOpx::grow(poplar::program::Sequence &prog) const {
-  auto indices = getInTensor(TopKGradOp::indicesInIndex());
+  auto indices = getInTensor(TopKGradOp::indicesInIndex()).getPoplarTensor();
 
-  auto gradIn = getInTensor(TopKGradOp::gradInIndex());
+  auto gradIn = getInTensor(TopKGradOp::gradInIndex()).getPoplarTensor();
 
   poplar::Tensor dataGrad = graph().getPoplarGraph().addVariable(
       gradIn.elementType(), getGradOutShape(), debugContext("dataGrad"));
@@ -52,7 +52,7 @@ void TopKGradOpx::grow(poplar::program::Sequence &prog) const {
                             axis,
                             getDebugNameAndId("scatter"));
 
-  setOutTensor(TopKGradOp::gradOutIndex(), dataGrad);
+  setOutTensor(TopKGradOp::gradOutIndex(), snap::Tensor{dataGrad, graph()});
 }
 
 void TopKOpx::grow(poplar::program::Sequence &prog) const {
@@ -68,7 +68,7 @@ void TopKOpx::grow(poplar::program::Sequence &prog) const {
   //   [a0, a1, a2, a3]
   // Output shape:
   //   [a0, a1, K,  a3]
-  auto input = getInTensor(TopKOp::getInIndex());
+  auto input = getInTensor(TopKOp::getInIndex()).getPoplarTensor();
 
   auto &topk = getOp<TopKOp>();
   if (!topk.getLargest()) {
@@ -122,8 +122,8 @@ void TopKOpx::grow(poplar::program::Sequence &prog) const {
     topKInds = topKInds.dimShufflePartial({axis, lastDim}, {lastDim, axis});
   }
 
-  setOutTensor(TopKOp::getValuesOutIndex(), topKVals);
-  setOutTensor(TopKOp::getIndicesOutIndex(), topKInds);
+  setOutTensor(TopKOp::getValuesOutIndex(), snap::Tensor{topKVals, graph()});
+  setOutTensor(TopKOp::getIndicesOutIndex(), snap::Tensor{topKInds, graph()});
 }
 
 namespace {

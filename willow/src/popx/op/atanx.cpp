@@ -59,8 +59,10 @@ AtanGradOpx::AtanGradOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
 }
 
 void AtanGradOpx::grow(poplar::program::Sequence &prog) const {
-  const auto input     = getInTensor(AtanGradOp::getGradInIndex());
-  const auto fwd_input = getInTensor(AtanGradOp::getFwdArgInIndex());
+  const auto input =
+      getInTensor(AtanGradOp::getGradInIndex()).getPoplarTensor();
+  const auto fwd_input =
+      getInTensor(AtanGradOp::getFwdArgInIndex()).getPoplarTensor();
 
   // The derivative of the atan function can be constructed from normal
   // functions d/dx atan(x) = 1/(1+x^2)
@@ -76,7 +78,7 @@ void AtanGradOpx::grow(poplar::program::Sequence &prog) const {
                             prog,
                             debugContext("inverse_tangent_grad"));
 
-  setOutTensor(AtanGradOp::getOutIndex(), output);
+  setOutTensor(AtanGradOp::getOutIndex(), snap::Tensor{output, graph()});
 }
 
 namespace {

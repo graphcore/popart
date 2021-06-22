@@ -24,12 +24,13 @@ ScatterOpx::ScatterOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
 }
 
 void ScatterOpx::grow(poplar::program::Sequence &prog) const {
-  auto indices = getInTensor(ScatterOp::indicesInIndex());
-  auto data    = cloneNcopy(prog, getInTensor(ScatterOp::dataInIndex()));
-  auto values  = getInTensor(ScatterOp::updatesInIndex());
+  auto indices = getInTensor(ScatterOp::indicesInIndex()).getPoplarTensor();
+  auto data =
+      cloneNcopy(prog, getInTensor(ScatterOp::dataInIndex()).getPoplarTensor());
+  auto values = getInTensor(ScatterOp::updatesInIndex()).getPoplarTensor();
   scatterutilx::growScatter(
       prog, graph(), indices, values, data, axis, getDebugNameAndId("scatter"));
-  setOutTensor(ScatterOp::outIndex(), data);
+  setOutTensor(ScatterOp::outIndex(), snap::Tensor{data, graph()});
 }
 
 ScatterDataGradOpx::ScatterDataGradOpx(Op *op, Devicex *devicex)
@@ -40,9 +41,11 @@ ScatterDataGradOpx::ScatterDataGradOpx(Op *op, Devicex *devicex)
 }
 
 void ScatterDataGradOpx::grow(poplar::program::Sequence &prog) const {
-  auto data = cloneNcopy(prog, getInTensor(ScatterDataGradOp::gradInIndex()));
-  auto indices = getInTensor(ScatterDataGradOp::indicesInIndex());
-  auto update  = graph().getPoplarGraph().addConstant(
+  auto data = cloneNcopy(
+      prog, getInTensor(ScatterDataGradOp::gradInIndex()).getPoplarTensor());
+  auto indices =
+      getInTensor(ScatterDataGradOp::indicesInIndex()).getPoplarTensor();
+  auto update = graph().getPoplarGraph().addConstant(
       data.elementType(), indices.shape(), 0, debugContext("zeros"));
   poputil::mapTensorLinearly(graph().getPoplarGraph(), update);
 
@@ -96,7 +99,7 @@ void ScatterDataGradOpx::grow(poplar::program::Sequence &prog) const {
                   prog,
                   debugContext("scatter"));
 
-  setOutTensor(ScatterDataGradOp::gradOutIndex(), data);
+  setOutTensor(ScatterDataGradOp::gradOutIndex(), snap::Tensor{data, graph()});
 }
 
 ScatterUpdateGradOpx::ScatterUpdateGradOpx(Op *op, Devicex *devicex)
@@ -107,8 +110,10 @@ ScatterUpdateGradOpx::ScatterUpdateGradOpx(Op *op, Devicex *devicex)
 }
 
 void ScatterUpdateGradOpx::grow(poplar::program::Sequence &prog) const {
-  auto gradIn  = getInTensor(ScatterUpdateGradOp::gradInIndex());
-  auto indices = getInTensor(ScatterDataGradOp::indicesInIndex());
+  auto gradIn =
+      getInTensor(ScatterUpdateGradOp::gradInIndex()).getPoplarTensor();
+  auto indices =
+      getInTensor(ScatterDataGradOp::indicesInIndex()).getPoplarTensor();
 
   auto gradOut = scatterutilx::growScatterUpdateGrad(
       prog,
@@ -118,7 +123,8 @@ void ScatterUpdateGradOpx::grow(poplar::program::Sequence &prog) const {
       axis,
       getDebugNameAndId("scatter_update_grad"));
 
-  setOutTensor(ScatterUpdateGradOp::gradOutIndex(), gradOut);
+  setOutTensor(ScatterUpdateGradOp::gradOutIndex(),
+               snap::Tensor{gradOut, graph()});
 }
 
 namespace {

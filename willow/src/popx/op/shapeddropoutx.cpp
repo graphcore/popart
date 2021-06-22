@@ -19,8 +19,9 @@ ShapedDropoutOpx::ShapedDropoutOpx(Op *op, Devicex *devicex)
 void ShapedDropoutOpx::grow(poplar::program::Sequence &prog) const {
   if (!op_p->getIr().canTrain()) {
     // In inference mode, shaped dropout is an identity function
-    auto output = cloneNcopy(prog, getInTensor(ShapedDropoutOp::getInIndex()));
-    setOutTensor(ShapedDropoutOp::getOutIndex(), output);
+    auto output = cloneNcopy(
+        prog, getInTensor(ShapedDropoutOp::getInIndex()).getPoplarTensor());
+    setOutTensor(ShapedDropoutOp::getOutIndex(), snap::Tensor{output, graph()});
     return;
   }
 
@@ -28,18 +29,18 @@ void ShapedDropoutOpx::grow(poplar::program::Sequence &prog) const {
   poplar::Tensor refTensor = getReferenceTensor();
   double keepProbability   = 1. - static_cast<double>(op.getRatio());
   double scale             = 1. / keepProbability;
-  auto shapedDropout =
-      poprand::shapedDropout(graph().getPoplarGraph(),
-                             &getInTensor(op.getSeedInIndex()),
-                             0u,
-                             getInTensor(ShapedDropoutOp::getInIndex()),
-                             refTensor,
-                             keepProbability,
-                             scale,
-                             prog,
-                             debugContext("shapedDropout"));
+  auto shapedDropout       = poprand::shapedDropout(
+      graph().getPoplarGraph(),
+      &getInTensor(op.getSeedInIndex()).getPoplarTensor(),
+      0u,
+      getInTensor(ShapedDropoutOp::getInIndex()).getPoplarTensor(),
+      refTensor,
+      keepProbability,
+      scale,
+      prog,
+      debugContext("shapedDropout"));
 
-  setOutTensor(op.getOutIndex(), shapedDropout);
+  setOutTensor(op.getOutIndex(), snap::Tensor{shapedDropout, graph()});
 }
 
 // Get the reference Tensor used for poplibs call for mask generation.

@@ -17,9 +17,10 @@ WhereOpx::WhereOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
 
 void WhereOpx::grow(poplar::program::Sequence &prog) const {
 
-  const auto condition = getInTensor(WhereOp::conditionInIndex());
-  const auto x         = getInTensor(WhereOp::xInIndex());
-  const auto y         = getInTensor(WhereOp::yInIndex());
+  const auto condition =
+      getInTensor(WhereOp::conditionInIndex()).getPoplarTensor();
+  const auto x = getInTensor(WhereOp::xInIndex()).getPoplarTensor();
+  const auto y = getInTensor(WhereOp::yInIndex()).getPoplarTensor();
 
   const auto result = popops::select(graph().getPoplarGraph(),
                                      x,
@@ -29,7 +30,7 @@ void WhereOpx::grow(poplar::program::Sequence &prog) const {
                                      debugContext(),
                                      poplar::OptionFlags());
 
-  setOutTensor(WhereOp::outIndex(), result);
+  setOutTensor(WhereOp::outIndex(), snap::Tensor{result, graph()});
 }
 
 WhereXGradOpx::WhereXGradOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
@@ -38,9 +39,11 @@ WhereXGradOpx::WhereXGradOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
 
 void WhereXGradOpx::grow(poplar::program::Sequence &prog) const {
 
-  const auto &op          = getOp<WhereXGradOp>();
-  const auto whereOutGrad = getInTensor(WhereXGradOp::outGradInIndex());
-  const auto condition    = getInTensor(WhereXGradOp::fwdConditionInIndex());
+  const auto &op = getOp<WhereXGradOp>();
+  const auto whereOutGrad =
+      getInTensor(WhereXGradOp::outGradInIndex()).getPoplarTensor();
+  const auto condition =
+      getInTensor(WhereXGradOp::fwdConditionInIndex()).getPoplarTensor();
 
   // Copy x shape and pad to the same length as whereOutGrad
   const std::vector<size_t> xShape = op.getFwdInShape();
@@ -80,7 +83,7 @@ void WhereXGradOpx::grow(poplar::program::Sequence &prog) const {
   // Some dims of size 1 may need to be added back in, we reshape.
   gradX2 = gradX2.reshape(xShape);
 
-  setOutTensor(WhereXGradOp::outIndex(), gradX2);
+  setOutTensor(WhereXGradOp::outIndex(), snap::Tensor{gradX2, graph()});
 }
 
 WhereYGradOpx::WhereYGradOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
@@ -89,9 +92,11 @@ WhereYGradOpx::WhereYGradOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
 
 void WhereYGradOpx::grow(poplar::program::Sequence &prog) const {
 
-  const auto &op          = getOp<WhereYGradOp>();
-  const auto whereOutGrad = getInTensor(WhereYGradOp::outGradInIndex());
-  const auto condition    = getInTensor(WhereYGradOp::fwdConditionInIndex());
+  const auto &op = getOp<WhereYGradOp>();
+  const auto whereOutGrad =
+      getInTensor(WhereYGradOp::outGradInIndex()).getPoplarTensor();
+  const auto condition =
+      getInTensor(WhereYGradOp::fwdConditionInIndex()).getPoplarTensor();
 
   const std::vector<size_t> yShape = op.getFwdInShape();
 
@@ -130,7 +135,7 @@ void WhereYGradOpx::grow(poplar::program::Sequence &prog) const {
                                debugContext("add"));
   gradY2      = gradY2.reshape(yShape);
 
-  setOutTensor(WhereYGradOp::outIndex(), gradY2);
+  setOutTensor(WhereYGradOp::outIndex(), snap::Tensor{gradY2, graph()});
 }
 
 namespace {

@@ -13,14 +13,14 @@ TanhOpx::TanhOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
 }
 
 void TanhOpx::grow(poplar::program::Sequence &prog) const {
-  auto in_tensor = getInTensor(TanhOp::getInIndex());
+  auto in_tensor = getInTensor(TanhOp::getInIndex()).getPoplarTensor();
   // auto out_id     = outId(TanhOp::getOutIndex());
   auto out_tensor = popnn::nonLinearity(graph().getPoplarGraph(),
                                         popnn::NonLinearityType::TANH,
                                         in_tensor,
                                         prog,
                                         debugContext("nonLinearity"));
-  setOutTensor(TanhOp::getOutIndex(), out_tensor);
+  setOutTensor(TanhOp::getOutIndex(), snap::Tensor{out_tensor, graph()});
 }
 
 InputCreatorType TanhOpx::getInputCreatorType(InIndex) const {
@@ -41,8 +41,8 @@ TanhGradOpx::TanhGradOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
 }
 
 void TanhGradOpx::grow(poplar::program::Sequence &prog) const {
-  auto fwd_out  = getInTensor(TanhGradOp::getFwdOutInIndex());
-  auto grad_out = getInTensor(TanhGradOp::getGradInIndex());
+  auto fwd_out  = getInTensor(TanhGradOp::getFwdOutInIndex()).getPoplarTensor();
+  auto grad_out = getInTensor(TanhGradOp::getGradInIndex()).getPoplarTensor();
   // auto out_id     = outId(TanhGradOp::getOutIndex());
   auto out_tensor = popnn::nonLinearityInputGradient(
       graph().getPoplarGraph(),
@@ -51,7 +51,7 @@ void TanhGradOpx::grow(poplar::program::Sequence &prog) const {
       grad_out,
       prog,
       debugContext("nonLinearityInputGradient"));
-  setOutTensor(TanhGradOp::getOutIndex(), out_tensor);
+  setOutTensor(TanhGradOp::getOutIndex(), snap::Tensor{out_tensor, graph()});
 }
 
 namespace {

@@ -23,17 +23,18 @@ void RandomUniformOpx::grow(poplar::program::Sequence &prog) const {
       poplar::VariableMappingMethod::LINEAR,
       debugContext("refTensor"));
 
-  auto output = poprand::uniform(graph().getPoplarGraph(),
-                                 &getInTensor(op.getSeedInIndex()),
-                                 0u,
-                                 refTensor,
-                                 poplarType,
-                                 op.getLow(),
-                                 op.getHigh(),
-                                 prog,
-                                 debugContext());
+  auto output =
+      poprand::uniform(graph().getPoplarGraph(),
+                       &getInTensor(op.getSeedInIndex()).getPoplarTensor(),
+                       0u,
+                       refTensor,
+                       poplarType,
+                       op.getLow(),
+                       op.getHigh(),
+                       prog,
+                       debugContext());
 
-  setOutTensor(op.getOutIndex(), output);
+  setOutTensor(op.getOutIndex(), snap::Tensor{output, graph()});
 }
 
 namespace {

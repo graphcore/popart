@@ -26,17 +26,17 @@ public:
 protected:
   bool canDynamicSliceRestore;
 
-  poplar::Tensor growRestore(poplar::program::Sequence &prog,
-                             const poplar::Tensor &stash) const;
+  snap::Tensor growRestore(poplar::program::Sequence &prog,
+                           const snap::Tensor &stash) const;
 
 private:
-  poplar::Tensor growStaticSliceRestore(poplar::program::Sequence &prog,
-                                        int64_t stashSize,
-                                        const poplar::Tensor &stashIndex,
-                                        const poplar::Tensor &stash) const;
-  poplar::Tensor growDynamicSliceRestore(poplar::program::Sequence &prog,
-                                         const poplar::Tensor &stashIndex,
-                                         const poplar::Tensor &stash) const;
+  snap::Tensor growStaticSliceRestore(poplar::program::Sequence &prog,
+                                      int64_t stashSize,
+                                      const snap::Tensor &stashIndex,
+                                      const snap::Tensor &stash) const;
+  snap::Tensor growDynamicSliceRestore(poplar::program::Sequence &prog,
+                                       const snap::Tensor &stashIndex,
+                                       const snap::Tensor &stash) const;
 };
 
 class RestoreOpx final : public RestoreBaseOpx<RestoreOpx> {

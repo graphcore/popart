@@ -120,11 +120,11 @@ NlllWithSoftmaxGradDirectOpx::NlllWithSoftmaxGradDirectOpx(Op *op,
 void SoftmaxGradDirectOpx::grow(poplar::program::Sequence &prog) const {
   SoftmaxGradDirectOp &op = getOp<SoftmaxGradDirectOp>();
   const poplar::Tensor &probs =
-      getInTensor(SoftmaxGradDirectOp::getProbsInIndex());
+      getInTensor(SoftmaxGradDirectOp::getProbsInIndex()).getPoplarTensor();
   const poplar::Tensor &label =
-      getInTensor(SoftmaxGradDirectOp::getLabelInIndex());
+      getInTensor(SoftmaxGradDirectOp::getLabelInIndex()).getPoplarTensor();
   poplar::Tensor gradIn =
-      getInTensor(SoftmaxGradDirectOp::getGradProbsInIndex());
+      getInTensor(SoftmaxGradDirectOp::getGradProbsInIndex()).getPoplarTensor();
 
   poplar::Tensor probs2D;
   poplar::Tensor label1D;
@@ -153,7 +153,7 @@ void SoftmaxGradDirectOpx::grow(poplar::program::Sequence &prog) const {
                                 label1D,
                                 prog);
 
-  setOutTensor(0, oneHot);
+  setOutTensor(0, snap::Tensor{oneHot, graph()});
 }
 
 void SoftmaxGradOpx::grow(poplar::program::Sequence &prog) const {
@@ -162,9 +162,11 @@ void SoftmaxGradOpx::grow(poplar::program::Sequence &prog) const {
   // Note: Implementation for SOFTMAX and SOFTMAX_STABLE gradient
   //       are the same.
 
-  auto outActs   = getInTensor(SoftmaxGradOp::getProbsInIndex());
+  auto outActs =
+      getInTensor(SoftmaxGradOp::getProbsInIndex()).getPoplarTensor();
   auto outActs2D = EwuComputex::coerceTo2D(outActs, axis);
   auto outGrad   = getInTensor(SoftmaxGradOp::getGradProbsInIndex())
+                     .getPoplarTensor()
                      .reshape(outActs2D.shape());
   auto outTensor = popnn::nonLinearityInputGradient(
       graph().getPoplarGraph(),                // graph,
@@ -175,18 +177,21 @@ void SoftmaxGradOpx::grow(poplar::program::Sequence &prog) const {
       debugContext("SoftmaxGrad")              // debugContext
   );
 
-  setOutTensor(0, outTensor.reshape(outActs.shape()));
+  setOutTensor(0, snap::Tensor{outTensor.reshape(outActs.shape()), graph()});
 }
 
 void NlllWithSoftmaxGradDirectOpx::grow(poplar::program::Sequence &prog) const {
   NlllWithSoftmaxGradDirectOp &op = getOp<NlllWithSoftmaxGradDirectOp>();
 
   const poplar::Tensor &probs =
-      getInTensor(NlllWithSoftmaxGradDirectOp::getProbsInIndex());
+      getInTensor(NlllWithSoftmaxGradDirectOp::getProbsInIndex())
+          .getPoplarTensor();
   const poplar::Tensor &label =
-      getInTensor(NlllWithSoftmaxGradDirectOp::getLabelInIndex());
+      getInTensor(NlllWithSoftmaxGradDirectOp::getLabelInIndex())
+          .getPoplarTensor();
   poplar::Tensor gradIn =
-      getInTensor(NlllWithSoftmaxGradDirectOp::getGradProbsInIndex());
+      getInTensor(NlllWithSoftmaxGradDirectOp::getGradProbsInIndex())
+          .getPoplarTensor();
   poplar::Tensor probs2D;
   poplar::Tensor label1D;
   poplar::Tensor oneHot;
@@ -226,7 +231,7 @@ void NlllWithSoftmaxGradDirectOpx::grow(poplar::program::Sequence &prog) const {
                                 label1D,
                                 prog);
 
-  setOutTensor(op.getGradOutIndex(), oneHot);
+  setOutTensor(op.getGradOutIndex(), snap::Tensor{oneHot, graph()});
 
   // Now compute the rest of the nll loss from the same one-hot encoded tensor:
 

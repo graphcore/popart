@@ -90,13 +90,15 @@ public:
         pool_params.numChannels,
         pool_params.batchSize);
 
-    setOutTensor(0,
-                 popnn::pooling::pool(graph().getPoplarGraph(),
-                                      pool_params,
-                                      getInTensor(0),
-                                      prog,
-                                      debugContext("pool"),
-                                      dv_p->lowering().pooling_options));
+    setOutTensor(
+        0,
+        snap::Tensor{popnn::pooling::pool(graph().getPoplarGraph(),
+                                          pool_params,
+                                          getInTensor(0).getPoplarTensor(),
+                                          prog,
+                                          debugContext("pool"),
+                                          dv_p->lowering().pooling_options),
+                     graph()});
   }
 
   popnn::PoolingType pooling_type;
@@ -129,17 +131,20 @@ public:
                         pool_params.numChannels,
                         pool_params.batchSize);
 
-    setOutTensor(0,
-                 popnn::pooling::poolInputGradient(
-                     graph().getPoplarGraph(),
-                     pool_params,
-                     getInTensor(GRADOP::getPrePooledInIndex()),
-                     getInTensor(GRADOP::getPooledInIndex()),
-                     getInTensor(GRADOP::getGradPooledInIndex()),
-                     false, // useScaledVariant TODO T7295
-                     prog,
-                     debugContext("poolInputGradient"),
-                     dv_p->lowering().pooling_options));
+    setOutTensor(
+        0,
+        snap::Tensor{
+            popnn::pooling::poolInputGradient(
+                graph().getPoplarGraph(),
+                pool_params,
+                getInTensor(GRADOP::getPrePooledInIndex()).getPoplarTensor(),
+                getInTensor(GRADOP::getPooledInIndex()).getPoplarTensor(),
+                getInTensor(GRADOP::getGradPooledInIndex()).getPoplarTensor(),
+                false, // useScaledVariant TODO T7295
+                prog,
+                debugContext("poolInputGradient"),
+                dv_p->lowering().pooling_options),
+            graph()});
   }
 
   popnn::PoolingType pooling_type;

@@ -18,12 +18,14 @@ AndOpx::AndOpx(Op *op, Devicex *devicex) : BinaryComparisonOpx(op, devicex) {
 void AndOpx::grow(poplar::program::Sequence &prog) const {
 
   insert(outId(AndOp::getOutIndex()),
-         popops::map(graph().getPoplarGraph(),
-                     popops::expr::BinaryOpType::LOGICAL_AND,
-                     get(inId(AndOp::getArg0InIndex())),
-                     get(inId(AndOp::getArg1InIndex())),
-                     prog,
-                     debugContext()));
+         snap::Tensor{
+             popops::map(graph().getPoplarGraph(),
+                         popops::expr::BinaryOpType::LOGICAL_AND,
+                         get(inId(AndOp::getArg0InIndex())).getPoplarTensor(),
+                         get(inId(AndOp::getArg1InIndex())).getPoplarTensor(),
+                         prog,
+                         debugContext()),
+             graph()});
 }
 
 namespace {

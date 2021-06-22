@@ -18,12 +18,14 @@ OrOpx::OrOpx(Op *op, Devicex *devicex) : BinaryComparisonOpx(op, devicex) {
 void OrOpx::grow(poplar::program::Sequence &prog) const {
 
   insert(outId(OrOp::getOutIndex()),
-         popops::map(graph().getPoplarGraph(),
-                     popops::expr::BinaryOpType::LOGICAL_OR,
-                     get(inId(OrOp::getArg0InIndex())),
-                     get(inId(OrOp::getArg1InIndex())),
-                     prog,
-                     debugContext()));
+         snap::Tensor{
+             popops::map(graph().getPoplarGraph(),
+                         popops::expr::BinaryOpType::LOGICAL_OR,
+                         get(inId(OrOp::getArg0InIndex())).getPoplarTensor(),
+                         get(inId(OrOp::getArg1InIndex())).getPoplarTensor(),
+                         prog,
+                         debugContext()),
+             graph()});
 }
 
 namespace {

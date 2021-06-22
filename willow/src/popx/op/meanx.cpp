@@ -22,7 +22,7 @@ MeanOpx::MeanOpx(Op *op, Devicex *devicex) : ElementWiseUnaryOpx(op, devicex) {
 }
 
 void MeanOpx::grow(poplar::program::Sequence &prog) const {
-  auto outTensor = cloneNcopy(prog, getInTensor(0));
+  auto outTensor = cloneNcopy(prog, getInTensor(0).getPoplarTensor());
 
   if (op_p->input->n() > 1) {
     // Follow the logic in the sumx op to build the sum operation over
@@ -37,7 +37,7 @@ void MeanOpx::grow(poplar::program::Sequence &prog) const {
     std::queue<popops::expr::Expr *> expr;
 
     for (int i = 0; i < op_p->input->n(); ++i) {
-      inputs.push_back(getInTensor(i));
+      inputs.push_back(getInTensor(i).getPoplarTensor());
       exprs.push_back(std::make_unique<pe::PlaceHolder>(i + 1));
       expr.push(exprs.back().get());
     }
@@ -61,7 +61,7 @@ void MeanOpx::grow(poplar::program::Sequence &prog) const {
                     debugContext("mean"));
   }
 
-  setOutTensor(MeanOp::getOutIndex(), outTensor);
+  setOutTensor(MeanOp::getOutIndex(), snap::Tensor{outTensor, graph()});
 }
 
 MeanArgGradOpx::MeanArgGradOpx(Op *op_, Devicex *devicex_)
@@ -79,12 +79,13 @@ void MeanArgGradOpx::grow(poplar::program::Sequence &prog) const {
 
   // Remove axes from the result that were not present ( or 1) in the input to
   // the fwd op
-  auto out = popops::reduce(graph().getPoplarGraph(),
-                            getInTensor(MeanArgGradOp::getGradInIndex()),
-                            vXtoY<int64_t, std::size_t>(axes),
-                            {popops::Operation::ADD},
-                            prog,
-                            debugContext("reduce"));
+  auto out = popops::reduce(
+      graph().getPoplarGraph(),
+      getInTensor(MeanArgGradOp::getGradInIndex()).getPoplarTensor(),
+      vXtoY<int64_t, std::size_t>(axes),
+      {popops::Operation::ADD},
+      prog,
+      debugContext("reduce"));
 
   // scale the grad input (reduced)
   popops::mapInPlace(graph().getPoplarGraph(),
@@ -94,8 +95,11 @@ void MeanArgGradOpx::grow(poplar::program::Sequence &prog) const {
                      debugContext("mull"));
 
   // Reshape the output, to add 1's if needed
-  setOutTensor(MeanArgGradOp::getOutIndex(),
-               out.reshape(outInfo(MeanArgGradOp::getOutIndex()).shape_szt()));
+  setOutTensor(
+      MeanArgGradOp::getOutIndex(),
+      snap::Tensor{
+          out.reshape(outInfo(MeanArgGradOp::getOutIndex()).shape_szt()),
+          graph()});
 }
 
 namespace {

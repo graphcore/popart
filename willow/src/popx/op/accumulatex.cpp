@@ -26,9 +26,11 @@ void AccumulateOpx::grow(poplar::program::Sequence &prog) const {
 
   auto isConst = accumulateOp.getFactor().isConst();
 
-  auto accum = getInTensor(VarUpdateOp::getVarToUpdateInIndex());
+  auto accum =
+      getInTensor(VarUpdateOp::getVarToUpdateInIndex()).getPoplarTensor();
 
-  auto grad = getInTensor(VarUpdateWithUpdaterOp::getUpdaterInIndex());
+  auto grad = getInTensor(VarUpdateWithUpdaterOp::getUpdaterInIndex())
+                  .getPoplarTensor();
 
   // If the accl/accum tensor to update has a view changer,
   // but the updater does not, update the view instead
@@ -37,7 +39,7 @@ void AccumulateOpx::grow(poplar::program::Sequence &prog) const {
   // (e.g. accumulator), but the Updater is not (e.g. gradient)
   if (hasInViewChangers(VarUpdateOp::getVarToUpdateInIndex()) &&
       !hasInViewChangers(VarUpdateWithUpdaterOp::getUpdaterInIndex())) {
-    accum = getInView(VarUpdateOp::getVarToUpdateInIndex());
+    accum = getInView(VarUpdateOp::getVarToUpdateInIndex()).getPoplarTensor();
   }
 
   switch (accumulateOp.getAccumulationType()) {
@@ -78,7 +80,8 @@ void AccumulateOpx::grow(poplar::program::Sequence &prog) const {
                             debugContext("constDampenedAdd"));
       }
     } else {
-      auto factor = getInTensor(AccumulateOp::getFactorInIndex());
+      auto factor =
+          getInTensor(AccumulateOp::getFactorInIndex()).getPoplarTensor();
       popops::scaledAddTo(graph().getPoplarGraph(),
                           accum,
                           grad,
@@ -119,7 +122,8 @@ void AccumulateOpx::grow(poplar::program::Sequence &prog) const {
             debugContext("constDampenedAddSquare"));
       }
     } else {
-      auto factor = getInTensor(AccumulateOp::getFactorInIndex());
+      auto factor =
+          getInTensor(AccumulateOp::getFactorInIndex()).getPoplarTensor();
       popops::mapInPlace(
           graph().getPoplarGraph(),
           pe::Add(
@@ -142,7 +146,8 @@ void AccumulateOpx::grow(poplar::program::Sequence &prog) const {
                          prog,
                          debugContext("constDecayAdd"));
     } else {
-      auto factor = getInTensor(AccumulateOp::getFactorInIndex());
+      auto factor =
+          getInTensor(AccumulateOp::getFactorInIndex()).getPoplarTensor();
       popops::mapInPlace(
           graph().getPoplarGraph(),
           pe::Add(pe::Mul(pe::Cast(pe::_3, accum.elementType()), pe::_1),
@@ -164,7 +169,8 @@ void AccumulateOpx::grow(poplar::program::Sequence &prog) const {
           prog,
           debugContext("constDecayAddSquare"));
     } else {
-      auto factor = getInTensor(AccumulateOp::getFactorInIndex());
+      auto factor =
+          getInTensor(AccumulateOp::getFactorInIndex()).getPoplarTensor();
       popops::mapInPlace(
           graph().getPoplarGraph(),
           pe::Add(pe::Mul(pe::Cast(pe::_3, accum.elementType()), pe::_1),
@@ -187,7 +193,8 @@ void AccumulateOpx::grow(poplar::program::Sequence &prog) const {
           prog,
           debugContext("constMovingAverage"));
     } else {
-      auto factor = getInTensor(AccumulateOp::getFactorInIndex());
+      auto factor =
+          getInTensor(AccumulateOp::getFactorInIndex()).getPoplarTensor();
       popops::mapInPlace(
           graph().getPoplarGraph(),
           pe::Add(pe::Mul(pe::Cast(pe::_3, accum.elementType()), pe::_1),
@@ -213,7 +220,8 @@ void AccumulateOpx::grow(poplar::program::Sequence &prog) const {
           prog,
           debugContext("constMovingAverageSquare"));
     } else {
-      auto factor = getInTensor(AccumulateOp::getFactorInIndex());
+      auto factor =
+          getInTensor(AccumulateOp::getFactorInIndex()).getPoplarTensor();
       popops::mapInPlace(
           graph().getPoplarGraph(),
           pe::Add(pe::Mul(pe::Cast(pe::_3, accum.elementType()), pe::_1),
@@ -238,7 +246,8 @@ void AccumulateOpx::grow(poplar::program::Sequence &prog) const {
           prog,
           debugContext("constInfinity"));
     } else {
-      auto factor = getInTensor(AccumulateOp::getFactorInIndex());
+      auto factor =
+          getInTensor(AccumulateOp::getFactorInIndex()).getPoplarTensor();
       popops::mapInPlace(
           graph().getPoplarGraph(),
           pe::Cast(
@@ -276,7 +285,8 @@ AccumulateBaseOpx::createInputTensor(InIndex inIndex,
   return snap::Tensor{
       graph().getPoplarGraph().clone(
           popType(accumulatorInfo),
-          getInTensor(VarUpdateWithUpdaterOp::getUpdaterInIndex()),
+          getInTensor(VarUpdateWithUpdaterOp::getUpdaterInIndex())
+              .getPoplarTensor(),
           dnai),
       graph()};
 }
@@ -321,12 +331,14 @@ void RescaleAccumulateOpx::grow(poplar::program::Sequence &prog) const {
 
   auto isConst = accumulateOp.getFactor().isConst();
 
-  auto accum = getInTensor(VarUpdateOp::getVarToUpdateInIndex());
+  auto accum =
+      getInTensor(VarUpdateOp::getVarToUpdateInIndex()).getPoplarTensor();
 
-  auto grad = getInTensor(VarUpdateWithUpdaterOp::getUpdaterInIndex());
+  auto grad = getInTensor(VarUpdateWithUpdaterOp::getUpdaterInIndex())
+                  .getPoplarTensor();
 
-  auto rescaleRatio =
-      getInTensor(RescaleAccumulateOp::getRescaleRatioInIndex());
+  auto rescaleRatio = getInTensor(RescaleAccumulateOp::getRescaleRatioInIndex())
+                          .getPoplarTensor();
 
   // If the accl/accum tensor to update has a view changer,
   // but the updater does not, update the view instead
@@ -335,7 +347,7 @@ void RescaleAccumulateOpx::grow(poplar::program::Sequence &prog) const {
   // (e.g. accumulator), but the Updater is not (e.g. gradient)
   if (hasInViewChangers(VarUpdateOp::getVarToUpdateInIndex()) &&
       !hasInViewChangers(VarUpdateWithUpdaterOp::getUpdaterInIndex())) {
-    accum = getInView(VarUpdateOp::getVarToUpdateInIndex());
+    accum = getInView(VarUpdateOp::getVarToUpdateInIndex()).getPoplarTensor();
   }
 
   switch (accumulateOp.getAccumulationType()) {
@@ -347,13 +359,14 @@ void RescaleAccumulateOpx::grow(poplar::program::Sequence &prog) const {
           graph().getPoplarGraph(), rescaleRatio, val, prog, debugContext("a"));
       b = getConst(poplar::FLOAT, {}, 1.0f - val, "b");
     } else {
-      auto factor = getInTensor(RescaleAccumulateOp::getFactorInIndex());
-      a           = popops::mul(graph().getPoplarGraph(),
+      auto factor = getInTensor(RescaleAccumulateOp::getFactorInIndex())
+                        .getPoplarTensor();
+      a = popops::mul(graph().getPoplarGraph(),
                       rescaleRatio,
                       factor,
                       prog,
                       debugContext("a"));
-      b           = popops::sub(
+      b = popops::sub(
           graph().getPoplarGraph(), 1.0f, factor, prog, debugContext("b"));
     }
     popops::scaledAddTo(graph().getPoplarGraph(),
@@ -378,7 +391,8 @@ void RescaleAccumulateOpx::grow(poplar::program::Sequence &prog) const {
           prog,
           debugContext("constMovingAverageSquare"));
     } else {
-      auto factor = getInTensor(RescaleAccumulateOp::getFactorInIndex());
+      auto factor = getInTensor(RescaleAccumulateOp::getFactorInIndex())
+                        .getPoplarTensor();
       popops::mapInPlace(
           graph().getPoplarGraph(),
           pe::Add(
@@ -404,7 +418,8 @@ void RescaleAccumulateOpx::grow(poplar::program::Sequence &prog) const {
           prog,
           debugContext("constInfinity"));
     } else {
-      auto factor = getInTensor(RescaleAccumulateOp::getFactorInIndex());
+      auto factor = getInTensor(RescaleAccumulateOp::getFactorInIndex())
+                        .getPoplarTensor();
       popops::mapInPlace(
           graph().getPoplarGraph(),
           pe::Max(

@@ -14,7 +14,7 @@ SplitOpx::SplitOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
 
 void SplitOpx::grow(poplar::program::Sequence &prog) const {
   auto &splitOp     = getOp<SplitOp>();
-  auto input        = getInTensor(SplitOp::getInIndex());
+  auto input        = getInTensor(SplitOp::getInIndex()).getPoplarTensor();
   unsigned int axis = static_cast<unsigned int>(splitOp.getAxis());
 
   unsigned int start = 0;
@@ -23,7 +23,7 @@ void SplitOpx::grow(poplar::program::Sequence &prog) const {
     unsigned int end = start + static_cast<unsigned int>(splitSizes.at(i));
     auto t           = input.slice(start, end, axis);
 
-    setOutTensor(i, cloneNcopy(prog, t));
+    setOutTensor(i, snap::Tensor{cloneNcopy(prog, t), graph()});
 
     start = end;
   }

@@ -68,7 +68,7 @@ void StashOpx::grow(poplar::program::Sequence &prog) const {
                                            poplar::ArrayRef<uint32_t>({0}));
 
   // Retrieve the input tensor.
-  const auto &inTensor = getInTensor(StashOp::getInIndex());
+  const auto &inTensor = getInTensor(StashOp::getInIndex()).getPoplarTensor();
 
   // Create the output tensor.
   const auto outTensor = popops::createSliceableTensorFromSlice(
@@ -84,7 +84,7 @@ void StashOpx::grow(poplar::program::Sequence &prog) const {
   } else {
     growStaticStashUpdate(prog, stashIndex, inTensor, outTensor);
   }
-  setOutTensor(StashOp::getOutIndex(), outTensor);
+  setOutTensor(StashOp::getOutIndex(), snap::Tensor{outTensor, graph()});
 
   // Create a "1" tensor and grow program to increment stash index by 1.
   const auto one = getConst(poplar::UNSIGNED_INT, {}, 1.0, "one");

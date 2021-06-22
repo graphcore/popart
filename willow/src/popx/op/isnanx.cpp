@@ -13,13 +13,16 @@ IsNaNx::IsNaNx(Op *op, Devicex *devicex) : ElementWiseUnaryOpx(op, devicex) {
 }
 
 void IsNaNx::grow(poplar::program::Sequence &prog) const {
-  setOutTensor(IsNaN::getOutIndex(),
-               popops::map(graph().getPoplarGraph(),
-                           popops::expr::BinaryOpType::NOT_EQUAL,
-                           getInTensor(IsNaN::getInIndex()),
-                           getInTensor(IsNaN::getInIndex()),
-                           prog,
-                           debugContext()));
+  setOutTensor(
+      IsNaN::getOutIndex(),
+      snap::Tensor{
+          popops::map(graph().getPoplarGraph(),
+                      popops::expr::BinaryOpType::NOT_EQUAL,
+                      getInTensor(IsNaN::getInIndex()).getPoplarTensor(),
+                      getInTensor(IsNaN::getInIndex()).getPoplarTensor(),
+                      prog,
+                      debugContext()),
+          graph()});
 }
 
 namespace {

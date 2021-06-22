@@ -50,8 +50,10 @@ AsinGradOpx::AsinGradOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
 }
 
 void AsinGradOpx::grow(poplar::program::Sequence &prog) const {
-  const auto input     = getInTensor(AsinGradOp::getGradInIndex());
-  const auto fwd_input = getInTensor(AsinGradOp::getFwdArgInIndex());
+  const auto input =
+      getInTensor(AsinGradOp::getGradInIndex()).getPoplarTensor();
+  const auto fwd_input =
+      getInTensor(AsinGradOp::getFwdArgInIndex()).getPoplarTensor();
 
   // The derivative of the asin function can be constructed from normal
   // functions d/dx asin(x) = 1/sqrt(1-x^2)
@@ -68,7 +70,7 @@ void AsinGradOpx::grow(poplar::program::Sequence &prog) const {
                             prog,
                             debugContext("inverse_sine_grad"));
 
-  setOutTensor(AsinGradOp::getOutIndex(), output);
+  setOutTensor(AsinGradOp::getOutIndex(), snap::Tensor{output, graph()});
 }
 
 namespace {

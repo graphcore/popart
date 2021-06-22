@@ -17,9 +17,12 @@ IoTileCopyOpx::IoTileCopyOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
 }
 
 void IoTileCopyOpx::grow(poplar::program::Sequence &prog) const {
-  poplar::Tensor outTensor = getOutTensor(IoTileCopyOp::getOutIndex());
-  poplar::Tensor inView    = getInView(IoTileCopyOp::getInIndex());
-  poplar::Tensor outView   = getOutView(IoTileCopyOp::getOutIndex());
+  poplar::Tensor outTensor =
+      getOutTensor(IoTileCopyOp::getOutIndex()).getPoplarTensor();
+  poplar::Tensor inView =
+      getInView(IoTileCopyOp::getInIndex()).getPoplarTensor();
+  poplar::Tensor outView =
+      getOutView(IoTileCopyOp::getOutIndex()).getPoplarTensor();
 
   // Write undef the whole output tensor, which can be larger
   // than the getOutView tensor.

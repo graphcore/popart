@@ -24,9 +24,10 @@ poplar::Tensor ScaledVarUpdateOpx::getOrCreateLrTensor() const {
   auto adaptiveVarUpdateOp = getOp<ScaledVarUpdateOp>();
 
   if (hasInput(ScaledVarUpdateOp::getLrInIndex())) {
-    return getInTensor(ScaledVarUpdateOp::getLrInIndex());
+    return getInTensor(ScaledVarUpdateOp::getLrInIndex()).getPoplarTensor();
   } else if (hasInput(ScaledVarUpdateOp::getWdInIndex())) {
-    poplar::Tensor wd = getInTensor(ScaledVarUpdateOp::getWdInIndex());
+    poplar::Tensor wd =
+        getInTensor(ScaledVarUpdateOp::getWdInIndex()).getPoplarTensor();
     poplar::Tensor lr =
         graph().getPoplarGraph().addConstant(wd.elementType(),
                                              wd.shape(),
@@ -45,9 +46,10 @@ poplar::Tensor ScaledVarUpdateOpx::getOrCreateWdTensor() const {
   auto adaptiveVarUpdateOp = getOp<ScaledVarUpdateOp>();
 
   if (hasInput(ScaledVarUpdateOp::getWdInIndex())) {
-    return getInTensor(ScaledVarUpdateOp::getWdInIndex());
+    return getInTensor(ScaledVarUpdateOp::getWdInIndex()).getPoplarTensor();
   } else if (hasInput(ScaledVarUpdateOp::getLrInIndex())) {
-    poplar::Tensor lr = getInTensor(ScaledVarUpdateOp::getLrInIndex());
+    poplar::Tensor lr =
+        getInTensor(ScaledVarUpdateOp::getLrInIndex()).getPoplarTensor();
     poplar::Tensor wd =
         graph().getPoplarGraph().addConstant(lr.elementType(),
                                              lr.shape(),
@@ -68,9 +70,11 @@ void ScaledVarUpdateOpx::grow(poplar::program::Sequence &prog) const {
 
   auto adaptiveVarUpdateOp = getOp<ScaledVarUpdateOp>();
 
-  poplar::Tensor var = getInTensor(VarUpdateOp::getVarToUpdateInIndex());
+  poplar::Tensor var =
+      getInTensor(VarUpdateOp::getVarToUpdateInIndex()).getPoplarTensor();
   poplar::Tensor updater =
-      getInTensor(VarUpdateWithUpdaterOp::getUpdaterInIndex());
+      getInTensor(VarUpdateWithUpdaterOp::getUpdaterInIndex())
+          .getPoplarTensor();
 
   if (adaptiveVarUpdateOp.lrInUpdater) {
     growWithLrInUpdater(prog, adaptiveVarUpdateOp, var, updater);

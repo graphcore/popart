@@ -12,7 +12,7 @@ PrintTensorOpx::PrintTensorOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
 }
 
 void PrintTensorOpx::grow(poplar::program::Sequence &prog) const {
-  auto input = getInTensor(PrintTensorOp::getInIndex());
+  auto input = getInTensor(PrintTensorOp::getInIndex()).getPoplarTensor();
 
   if (getOp<PrintTensorOp>().shouldPrint()) {
     auto printProg = poplar::program::PrintTensor(getTitle(), input);
@@ -20,7 +20,7 @@ void PrintTensorOpx::grow(poplar::program::Sequence &prog) const {
   }
 
   auto output = cloneNcopy(prog, input);
-  setOutTensor(PrintTensorOp::getOutIndex(), output);
+  setOutTensor(PrintTensorOp::getOutIndex(), snap::Tensor{output, graph()});
 }
 
 std::string PrintTensorOpx::getTitle() const {

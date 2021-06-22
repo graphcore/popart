@@ -45,6 +45,28 @@ public:
   virtual poplar::Graph &srcGraph(InIndex) const;
   // Returns the virtual graph for the tensor at OutIndex, defaults to graph()
   virtual poplar::Graph &dstGraph(OutIndex) const;
+  // shortcut for dv_p->tensors.get
+  const poplar::Tensor &get(TensorId) const;
+  // shortcut for dv_p->tensors.getView
+  const poplar::Tensor &getView(TensorId) const;
+  // shortcut for dv_p->tensors.insert
+  void insert(TensorId, const poplar::Tensor &) const;
+
+  // Return underlying Poplar input tensor
+  const poplar::Tensor &getInTensor(InIndex index) const;
+
+  // Return underlying Poplar output tensor
+  const poplar::Tensor &getOutTensor(OutIndex index) const;
+
+  // Return input tensor with shape matching IR specifications
+  // (aliases getInTensor, but has any respective ViewChangers applied)
+  const poplar::Tensor &getInView(InIndex index) const;
+
+  // Return output tensor with shape matching IR specifications
+  // (aliases getOutTensor, but has any respective ViewChangers applied)
+  const poplar::Tensor &getOutView(OutIndex index) const;
+
+  void setOutTensor(OutIndex index, const poplar::Tensor &tensor) const;
 };
 
 } // namespace popx

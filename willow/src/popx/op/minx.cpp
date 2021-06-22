@@ -39,7 +39,7 @@ view::RegMap MinOpx::unwindRegion(InIndex, OutIndex) const {
 }
 
 void MinOpx::grow(poplar::program::Sequence &prog) const {
-  auto outTensor = cloneNcopy(prog, getInTensor(0));
+  auto outTensor = cloneNcopy(prog, getInTensor(0).getPoplarTensor());
 
   if (op_p->input->n() > 1) {
 
@@ -47,14 +47,14 @@ void MinOpx::grow(poplar::program::Sequence &prog) const {
       outTensor = popops::map(graph().getPoplarGraph(),
                               popops::expr::BinaryOpType::MINIMUM,
                               outTensor,
-                              getInTensor(i),
+                              getInTensor(i).getPoplarTensor(),
                               prog,
                               debugContext(std::string("min") + sNameDelimiter +
                                            std::to_string(i)));
     }
   }
 
-  setOutTensor(MinOp::getOutIndex(), outTensor);
+  setOutTensor(MinOp::getOutIndex(), snap::Tensor{outTensor, graph()});
 }
 
 MinArgGradOpx::MinArgGradOpx(Op *op_, Devicex *devicex_)
@@ -75,9 +75,9 @@ void MinArgGradOpx::grow(poplar::program::Sequence &prog) const {
       graph().getPoplarGraph(),
       pe::Mul(pe::Add(pe::Signum(pe::Sub(pe::_1, pe::_2)), pe::Const(1)),
               pe::_3),
-      {getInTensor(MinArgGradOp::getFwdOutInIndex()),
-       getInTensor(MinArgGradOp::getFwdInIndex()),
-       getInTensor(MinArgGradOp::getGradInIndex())},
+      {getInTensor(MinArgGradOp::getFwdOutInIndex()).getPoplarTensor(),
+       getInTensor(MinArgGradOp::getFwdInIndex()).getPoplarTensor(),
+       getInTensor(MinArgGradOp::getGradInIndex()).getPoplarTensor()},
       prog,
       debugContext("result"));
 
@@ -98,8 +98,11 @@ void MinArgGradOpx::grow(poplar::program::Sequence &prog) const {
                             debugContext("out"));
 
   // Reshape the output, to add 1's if needed
-  setOutTensor(MinArgGradOp::getOutIndex(),
-               out.reshape(outInfo(MinArgGradOp::getOutIndex()).shape_szt()));
+  setOutTensor(
+      MinArgGradOp::getOutIndex(),
+      snap::Tensor{
+          out.reshape(outInfo(MinArgGradOp::getOutIndex()).shape_szt()),
+          graph()});
 }
 
 namespace {

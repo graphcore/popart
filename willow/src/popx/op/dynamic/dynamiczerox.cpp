@@ -16,9 +16,11 @@ namespace popart {
 namespace popx {
 
 void DynamicZeroOpx::grow(poplar::program::Sequence &prog) const {
-  auto &op    = getOp<DynamicBinaryBaseOp>();
-  auto tensor = getInTensor(DynamicBinaryBaseOp::getUpdateInIndex());
-  auto index  = getInTensor(DynamicBinaryBaseOp::getIndexInIndex());
+  auto &op = getOp<DynamicBinaryBaseOp>();
+  auto tensor =
+      getInTensor(DynamicBinaryBaseOp::getUpdateInIndex()).getPoplarTensor();
+  auto index =
+      getInTensor(DynamicBinaryBaseOp::getIndexInIndex()).getPoplarTensor();
 
   std::vector<size_t> paxes(op.getAxes().begin(), op.getAxes().end());
   std::vector<size_t> psizes(op.getSizes().begin(), op.getSizes().end());
@@ -48,7 +50,8 @@ void DynamicZeroOpx::grow(poplar::program::Sequence &prog) const {
       debugContext("dynamic_zero_" +
                    op.inId(DynamicBinaryBaseOp::getUpdateInIndex())));
 
-  setOutTensor(DynamicBinaryBaseOp::getOutIndex(), outTensor);
+  setOutTensor(DynamicBinaryBaseOp::getOutIndex(),
+               snap::Tensor{outTensor, graph()});
 }
 
 InputCreatorType DynamicZeroOpx::getInputCreatorType(InIndex index) const {

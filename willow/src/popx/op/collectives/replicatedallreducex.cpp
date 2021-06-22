@@ -22,7 +22,7 @@ void ReplicatedAllReduceOpx::grow(poplar::program::Sequence &prog) const {
   const auto &rarOp = getOp<ReplicatedAllReduceOp>();
 
   const auto inIndex                   = ReplicatedAllReduceOp::getInIndex();
-  poplar::Tensor toReduce              = getInTensor(inIndex);
+  poplar::Tensor toReduce              = getInTensor(inIndex).getPoplarTensor();
   poplar::OptionFlags allReduceOptions = dv_p->lowering().gclOptions;
   allReduceOptions.set("useReplicatedImplementation", "true");
   poplar::Tensor output =
@@ -33,7 +33,8 @@ void ReplicatedAllReduceOpx::grow(poplar::program::Sequence &prog) const {
                      toGCLCommGroup(rarOp.getGCLCommGroup()),
                      debugContext("replicatedAllReduce"),
                      allReduceOptions);
-  setOutTensor(ReplicatedAllReduceOp::getOutIndex(), output);
+  setOutTensor(ReplicatedAllReduceOp::getOutIndex(),
+               snap::Tensor{output, graph()});
 }
 
 InputCreatorType ReplicatedAllReduceOpx::getInputCreatorType(InIndex) const {
@@ -62,7 +63,7 @@ void ReplicatedAllReduceInplaceOpx::grow(
   const auto &rarOp = getOp<ReplicatedAllReduceOp>();
 
   const auto inIndex      = ReplicatedAllReduceInplaceOp::getInIndex();
-  poplar::Tensor toReduce = getInTensor(inIndex);
+  poplar::Tensor toReduce = getInTensor(inIndex).getPoplarTensor();
   poplar::OptionFlags allReduceOptions = dv_p->lowering().gclOptions;
   allReduceOptions.set("useReplicatedImplementation", "true");
   gcl::allReduceInPlace(graph().getPoplarGraph(),
@@ -71,7 +72,8 @@ void ReplicatedAllReduceInplaceOpx::grow(
                         prog,
                         debugContext("replicatedAllReduce"),
                         allReduceOptions);
-  setOutTensor(ReplicatedAllReduceInplaceOp::getOutIndex(), toReduce);
+  setOutTensor(ReplicatedAllReduceInplaceOp::getOutIndex(),
+               snap::Tensor{toReduce, graph()});
 }
 
 namespace {

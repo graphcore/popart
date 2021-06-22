@@ -41,53 +41,59 @@ void SGD0VarUpdateOpx::grow(poplar::program::Sequence &prog) const {
   // non-const weight decay scale factor
   if (!vu_op.initWdsf0.isConst()) {
 
-    popops::mapInPlace(graph().getPoplarGraph(),
-                       pe::Mul(pe::_1, pe::_2),
-                       {getInTensor(SGD0VarUpdateOp::getVarToUpdateInIndex()),
-                        getInTensor(SGD0VarUpdateOp::getWdsf0InIndex())},
-                       prog,
-                       debugContext("nonConstWeightDecay"));
+    popops::mapInPlace(
+        graph().getPoplarGraph(),
+        pe::Mul(pe::_1, pe::_2),
+        {getInTensor(SGD0VarUpdateOp::getVarToUpdateInIndex())
+             .getPoplarTensor(),
+         getInTensor(SGD0VarUpdateOp::getWdsf0InIndex()).getPoplarTensor()},
+        prog,
+        debugContext("nonConstWeightDecay"));
   }
 
   // const weight decay scale factor
   else {
     float scaleFactor = vu_op.initWdsf0.val();
     if (scaleFactor != 1.0f) {
-      popops::mapInPlace(
-          graph().getPoplarGraph(),
-          pe::Mul(pe::_1, pe::Const(scaleFactor)),
-          {getInTensor(SGD0VarUpdateOp::getVarToUpdateInIndex())},
-          prog,
-          debugContext("constWeightDecay"));
+      popops::mapInPlace(graph().getPoplarGraph(),
+                         pe::Mul(pe::_1, pe::Const(scaleFactor)),
+                         {getInTensor(SGD0VarUpdateOp::getVarToUpdateInIndex())
+                              .getPoplarTensor()},
+                         prog,
+                         debugContext("constWeightDecay"));
     }
   }
 
   // (2) subtract scaled gradients
   poplar::Tensor weightDeltas =
-      getInTensor(VarUpdateWithUpdaterOp::getUpdaterInIndex());
+      getInTensor(VarUpdateWithUpdaterOp::getUpdaterInIndex())
+          .getPoplarTensor();
 
   // non-const scaled learning rate case
   if (!vu_op.initSlr0.isConst()) {
     popops::scaledAddTo(
         graph().getPoplarGraph(),
-        getInTensor(SGD0VarUpdateOp::getVarToUpdateInIndex()), // weights
-        weightDeltas,                                          // weightDeltas
-        popops::neg(graph().getPoplarGraph(),
-                    getInTensor(SGD0VarUpdateOp::getSlr0InIndex()),
-                    prog,
-                    debugContext("neg")),
+        getInTensor(SGD0VarUpdateOp::getVarToUpdateInIndex())
+            .getPoplarTensor(), // weights
+        weightDeltas,           // weightDeltas
+        popops::neg(
+            graph().getPoplarGraph(),
+            getInTensor(SGD0VarUpdateOp::getSlr0InIndex()).getPoplarTensor(),
+            prog,
+            debugContext("neg")),
         prog,
         debugContext("nonConstScaledSubtract"));
   }
 
   // const scaled learning rate case
   else {
-    popops::scaledAddTo(graph().getPoplarGraph(),
-                        getInTensor(vu_op.getVarToUpdateInIndex()), // weights
-                        weightDeltas, // weightDeltas
-                        -vu_op.initSlr0.val(),
-                        prog,
-                        debugContext("scaledSubtract"));
+    popops::scaledAddTo(
+        graph().getPoplarGraph(),
+        getInTensor(vu_op.getVarToUpdateInIndex()).getPoplarTensor(), // weights
+        weightDeltas, // weightDeltas
+        -vu_op.initSlr0.val(),
+        prog,
+        debugContext("scaledSubtract"));
   }
 
   if (hasInViewChangers(SGD0VarUpdateOp::getVarToUpdateInIndex())) {

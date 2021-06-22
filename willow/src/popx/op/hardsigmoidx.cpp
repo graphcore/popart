@@ -76,9 +76,11 @@ HardSigmoidGradOpx::HardSigmoidGradOpx(Op *op, Devicex *devicex)
 }
 
 void HardSigmoidGradOpx::grow(poplar::program::Sequence &prog) const {
-  const auto &op       = getOp<HardSigmoidGradOp>();
-  const auto input     = getInTensor(HardSigmoidGradOp::getGradInIndex());
-  const auto fwd_input = getInTensor(HardSigmoidGradOp::getFwdArgInIndex());
+  const auto &op = getOp<HardSigmoidGradOp>();
+  const auto input =
+      getInTensor(HardSigmoidGradOp::getGradInIndex()).getPoplarTensor();
+  const auto fwd_input =
+      getInTensor(HardSigmoidGradOp::getFwdArgInIndex()).getPoplarTensor();
 
   // The derivative of the Hardsigmoid activation function is:
   // 0 if x > 1-beta/alpha
@@ -118,7 +120,7 @@ void HardSigmoidGradOpx::grow(poplar::program::Sequence &prog) const {
                             prog,
                             debugContext("hardsigmoid_grad"));
 
-  setOutTensor(HardSigmoidGradOp::getOutIndex(), output);
+  setOutTensor(HardSigmoidGradOp::getOutIndex(), snap::Tensor{output, graph()});
 }
 
 namespace {

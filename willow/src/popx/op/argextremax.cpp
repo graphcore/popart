@@ -15,7 +15,7 @@ ArgExtremaOpx::ArgExtremaOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
 }
 
 void ArgExtremaOpx::grow(poplar::program::Sequence &prog) const {
-  auto input         = getInTensor(0);
+  auto input         = getInTensor(0).getPoplarTensor();
   auto dims          = input.shape().size();
   auto &argExtremaOp = getOp<ArgExtremaOp>();
   auto axis          = argExtremaOp.getAxis();
@@ -52,7 +52,7 @@ void ArgExtremaOpx::grow(poplar::program::Sequence &prog) const {
                         poplar::INT,
                         prog,
                         debugContext("cast"));
-  setOutTensor(0, result);
+  setOutTensor(0, snap::Tensor{result, graph()});
 }
 
 } // namespace popx

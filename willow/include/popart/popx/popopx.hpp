@@ -140,11 +140,11 @@ public:
   // Returns the virtual graph for the tensor at OutIndex, defaults to graph()
   virtual snap::Graph &dstVirtualGraph(OutIndex) const;
   // shortcut for dv_p->tensors.get
-  const poplar::Tensor &get(TensorId) const;
+  const snap::Tensor &get(TensorId) const;
   // shortcut for dv_p->tensors.getView
-  const poplar::Tensor &getView(TensorId) const;
+  const snap::Tensor &getView(TensorId) const;
   // shortcut for dv_p->tensors.insert
-  void insert(TensorId, const poplar::Tensor &) const;
+  void insert(TensorId, const snap::Tensor &) const;
 
   // shortcut for op_p->input.id(int)
   Tensor *inTensor(InIndex) const;
@@ -228,28 +228,28 @@ public:
   bool hasOutput(OutIndex) const;
 
   // Return underlying Poplar input tensor
-  const poplar::Tensor &getInTensor(InIndex index) const;
+  const snap::Tensor &getInTensor(InIndex index) const;
 
   // Return underlying Poplar output tensor
-  const poplar::Tensor &getOutTensor(OutIndex index) const;
+  const snap::Tensor &getOutTensor(OutIndex index) const;
 
   // Return input tensor with shape matching IR specifications
   // (aliases getInTensor, but has any respective ViewChangers applied)
-  const poplar::Tensor &getInView(InIndex index) const;
+  const snap::Tensor &getInView(InIndex index) const;
 
   // Return output tensor with shape matching IR specifications
   // (aliases getOutTensor, but has any respective ViewChangers applied)
-  const poplar::Tensor &getOutView(OutIndex index) const;
+  const snap::Tensor &getOutView(OutIndex index) const;
 
   bool hasInViewChangers(InIndex index) const;
   const ViewChangers &getInViewChangers(InIndex index) const;
   void setOutViewChangers(OutIndex index, const ViewChangers &changers) const;
 
-  void setOutTensor(OutIndex index, const poplar::Tensor &tensor) const;
+  void setOutTensor(OutIndex index, const snap::Tensor &tensor) const;
 
   // Input & output tensors used by the opx when it is cached
-  std::vector<poplar::Tensor> cachedInputs;
-  std::vector<poplar::Tensor> *cachedOutputs = nullptr;
+  std::vector<snap::Tensor> cachedInputs;
+  std::vector<snap::Tensor> *cachedOutputs = nullptr;
 
   TensorId inId(InIndex index) const;
   TensorId outId(OutIndex index) const;

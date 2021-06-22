@@ -69,7 +69,8 @@ MultiConvOpx::convolve(poplar::program::Sequence &prog,
 
   for (int i = 0; i < op.numConvs(); i++) {
     poplin::multiconv::ConvolutionArgs convArgs;
-    convArgs.inputs  = getInTensor(MultiConvBaseOp::getDataInIndex(i));
+    convArgs.inputs =
+        getInTensor(MultiConvBaseOp::getDataInIndex(i)).getPoplarTensor();
     convArgs.weights = weights[i];
     convArgs.params  = getPoplarConvParams(op.getParameters(i));
     convArgs.options = getConvOptions(i);
@@ -100,8 +101,10 @@ std::vector<poplar::Tensor> MultiConvWeightsGradOpx::calculateWeightDeltas(
   std::vector<poplar::Tensor> outTensors;
 
   for (int i = 0; i < op.numConvs(); i++) {
-    const poplar::Tensor &zDelta = getInTensor(op.getGradConvolvedInIndex(i));
-    const poplar::Tensor &acts   = getInTensor(op.getPreConvolvedInIndex(i));
+    const poplar::Tensor &zDelta =
+        getInTensor(op.getGradConvolvedInIndex(i)).getPoplarTensor();
+    const poplar::Tensor &acts =
+        getInTensor(op.getPreConvolvedInIndex(i)).getPoplarTensor();
 
     poplar::Tensor wGrad =
         poplin::calculateWeightDeltas(graph().getPoplarGraph(),

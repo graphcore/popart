@@ -22,12 +22,14 @@ EqualOpx::EqualOpx(Op *op, Devicex *devicex)
 void EqualOpx::grow(poplar::program::Sequence &prog) const {
 
   insert(outId(EqualOp::getOutIndex()),
-         popops::map(graph().getPoplarGraph(),
-                     popops::expr::BinaryOpType::EQUAL,
-                     get(inId(EqualOp::getArg0InIndex())),
-                     get(inId(EqualOp::getArg1InIndex())),
-                     prog,
-                     debugContext()));
+         snap::Tensor{
+             popops::map(graph().getPoplarGraph(),
+                         popops::expr::BinaryOpType::EQUAL,
+                         get(inId(EqualOp::getArg0InIndex())).getPoplarTensor(),
+                         get(inId(EqualOp::getArg1InIndex())).getPoplarTensor(),
+                         prog,
+                         debugContext()),
+             graph()});
 }
 
 namespace {
