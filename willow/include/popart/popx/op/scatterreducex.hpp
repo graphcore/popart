@@ -32,8 +32,17 @@ public:
   ScatterReduceGradOpx(Op *, Devicex *);
   void grow(poplar::program::Sequence &) const final;
 
+  snap::Tensor
+  createInputTensor(InIndex index,
+                    const poplar::DebugNameAndId &dnai) const final;
+
+  InputCreatorType getInputCreatorType(InIndex index) const final;
+
+  std::set<TensorId> mustExistBeforeCreate(InIndex) const final { return {}; }
+
 private:
-  int64_t axis;
+  popops::SlicePlan plan;
+  size_t axis;
 };
 
 } // namespace popx

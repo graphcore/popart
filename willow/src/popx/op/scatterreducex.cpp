@@ -17,6 +17,43 @@
 namespace popart {
 namespace popx {
 
+namespace {
+poplar::Tensor linearizeIndices(const PopOpx &opx,
+                                poplar::program::Sequence &prog,
+                                poplar::Tensor indices) {
+  // Linearize the indices: map from 2-d indices to 1-d
+  auto result     = indices.flatten(1, indices.rank());
+  int numCols     = static_cast<int>(result.dim(1));
+  auto colIndices = scatterutilx::linspace(opx.graph(),
+                                           0,
+                                           numCols,
+                                           opx.getDebugNameAndId("colIds"),
+                                           1,
+                                           result.elementType());
+
+  // numCols * indices + colIndices
+  result            = opx.cloneNcopy(prog, result, "copyIndices");
+  auto numColsConst = opx.graph().getPoplarGraph().addConstant(
+      result.elementType(), {}, numCols, opx.getDebugNameAndId("numCols"));
+  opx.graph().getPoplarGraph().setTileMapping(numColsConst, 0);
+
+  popops::mulInPlace(opx.graph().getPoplarGraph(),
+                     result,
+                     numColsConst,
+                     prog,
+                     opx.getDebugNameAndId("numColsMulIndices"));
+  popops::addInPlace(opx.graph().getPoplarGraph(),
+                     result,
+                     colIndices,
+                     prog,
+                     opx.getDebugNameAndId("indicesAddColIds"));
+
+  result = result.flatten();
+  result = result.expand({1});
+  return result;
+}
+} // namespace
+
 ScatterReduceOpx::ScatterReduceOpx(Op *op, Devicex *devicex)
     : PopOpx(op, devicex), plan(), axis() {
   verifyOp<ScatterReduceOp>(op, {Onnx::CustomOperators::ScatterReduce});
@@ -58,56 +95,28 @@ void ScatterReduceOpx::grow(poplar::program::Sequence &prog) const {
   //   for i indices:
   //    out[indices[i]] += data[i]
   // but the output must be 2d.  To support inputs with rank > 2:
-  //   * permute dims of both data and output so that slice axis == 0
+  //   * permute dims of data and indices and output so that slice axis == 0
+  //   * indices are linearized into a 1-d coordinate system
   //   * flatten the remaining dims
   auto target = out;
   target      = target.dimRoll(static_cast<unsigned>(axis));
-  target      = target.flatten(1, target.rank());
+  data        = data.dimRoll(static_cast<unsigned>(axis));
+  indices     = indices.dimRoll(static_cast<unsigned>(axis));
 
-  // Same for the data updates, but also need a singleton dim
-  data = data.dimRoll(static_cast<unsigned>(axis));
-  data = data.flatten(1, data.rank());
-  data = data.expand({1});
-
-  if (indices.rank() > 1) {
-    indices = indices.dimRoll(static_cast<unsigned>(axis));
-    indices = indices.flatten(1, indices.rank());
-
-    // Linearize the indices: map from 2-d indices to 1-d
-    int numCols     = static_cast<int>(indices.dim(1));
-    auto colIndices = scatterutilx::linspace(graph(),
-                                             0,
-                                             numCols,
-                                             getDebugNameAndId("colIds"),
-                                             1,
-                                             indices.elementType());
-
-    // numCols * indices + colIndices
-    indices           = cloneNcopy(prog, indices, "copyIndices");
-    auto numColsConst = graph().getPoplarGraph().addConstant(
-        indices.elementType(), {}, numCols, getDebugNameAndId("numCols"));
-    graph().getPoplarGraph().setTileMapping(numColsConst, 0);
-
-    popops::mulInPlace(graph().getPoplarGraph(),
-                       indices,
-                       numColsConst,
-                       prog,
-                       getDebugNameAndId("numColsMulIndices"));
-    popops::addInPlace(graph().getPoplarGraph(),
-                       indices,
-                       colIndices,
-                       prog,
-                       getDebugNameAndId("indicesAddColIds"));
-
-    indices = indices.flatten();
+  if (indices.rank() < 2) {
+    // popops::multiUpdateAdd requires 2-d inputs
+    indices = indices.expand({1});
+    target  = target.expand({1});
+    data    = data.expand({1, 1});
+  } else {
+    indices = linearizeIndices(*this, prog, indices);
     target  = target.flatten();
     target  = target.expand({1});
     data    = data.flatten();
     data    = data.expand({1, 1});
   }
 
-  // Add singleton dim to indices and assume non-negative
-  indices = indices.expand({1});
+  // Assume indices are non-negative
   indices = indices.reinterpret(poplar::UNSIGNED_INT);
 
   auto scale = graph().getPoplarGraph().addConstant(
@@ -183,6 +192,12 @@ ScatterReduceGradOpx::ScatterReduceGradOpx(Op *op, Devicex *devicex)
 
   auto &srop = getOp<ScatterReduceGradOp>();
   axis       = static_cast<size_t>(srop.getAxis());
+  plan       = createSlicePlan(graph(),
+                         srop.inInfo(srop.gradInIndex()),
+                         srop.inInfo(srop.indicesInIndex()));
+
+  // We always want the ScatterReduceGrad to layout its inputs
+  inputCreatorPriority = std::numeric_limits<double>::max();
 }
 
 void ScatterReduceGradOpx::grow(poplar::program::Sequence &prog) const {
@@ -191,16 +206,94 @@ void ScatterReduceGradOpx::grow(poplar::program::Sequence &prog) const {
   auto indices =
       getInTensor(ScatterReduceGradOp::indicesInIndex()).getPoplarTensor();
 
-  auto gradOut = scatterutilx::growScatterUpdateGrad(
-      prog,
-      graph(),
-      gradIn,
-      indices,
-      axis,
-      getDebugNameAndId("scatterreduceGrad"));
+  // Place the gather axis at the front.
+  gradIn  = gradIn.dimRoll(static_cast<unsigned>(axis));
+  indices = indices.dimRoll(static_cast<unsigned>(axis));
+
+  // Store the shape for later.
+  auto tmp_shape = indices.shape();
+
+  if (indices.rank() < 2) {
+    indices = indices.expand({1});
+    gradIn  = gradIn.expand({1});
+  } else {
+    indices = linearizeIndices(*this, prog, indices);
+    gradIn  = gradIn.flatten();
+    gradIn  = gradIn.expand({1});
+  }
+
+  // Assume indices are non-negative
+  indices = indices.reinterpret(poplar::UNSIGNED_INT);
+
+  auto result = popops::multiSlice(graph().getPoplarGraph(),
+                                   gradIn,
+                                   indices,
+                                   {0},
+                                   {1},
+                                   prog,
+                                   plan,
+                                   poplar::OptionFlags(),
+                                   debugContext("scatterAddGrad"));
+
+  // Reshape the result to "unflatten" the other dimensions.
+  result = result.reshape(tmp_shape);
+  // Put the gather axis dimension back in the right place.
+  result = result.dimRoll(0, static_cast<unsigned>(axis));
+
+  // Reshape into the expected output shape.
+  const auto outputShape =
+      outInfo(ScatterReduceGradOp::gradOutIndex()).shape_szt();
+  result = result.reshape(outputShape);
 
   setOutTensor(ScatterReduceGradOp::gradOutIndex(),
-               snap::Tensor{gradOut, graph()});
+               snap::Tensor{result, graph()});
+}
+
+snap::Tensor ScatterReduceGradOpx::createInputTensor(
+    InIndex index,
+    const poplar::DebugNameAndId &dnai) const {
+
+  if (index != ScatterReduceGradOp::gradInIndex() &&
+      index != ScatterReduceGradOp::indicesInIndex()) {
+    throw error("ScatterReduceOpx::createInput : Invalid index = {}", index);
+  }
+
+  std::vector<size_t> dims  = {axis};
+  std::vector<size_t> sizes = {1};
+
+  if (index == ScatterReduceGradOp::gradInIndex()) {
+    auto dataInfo        = inInfo(ScatterReduceGradOp::gradInIndex());
+    const auto dataShape = dataInfo.shape_szt();
+
+    return snap::Tensor{popops::createSliceableTensor(graph().getPoplarGraph(),
+                                                      popType(dataInfo),
+                                                      dataShape,
+                                                      dims,
+                                                      sizes,
+                                                      plan,
+                                                      poplar::OptionFlags(),
+                                                      dnai),
+                        graph()};
+  }
+
+  auto indicesInfo = inInfo(ScatterReduceGradOp::indicesInIndex());
+  auto indices     = popops::createIndicesTensor(graph().getPoplarGraph(),
+                                             dims,
+                                             indicesInfo.nelms(),
+                                             plan,
+                                             poplar::OptionFlags(),
+                                             dnai);
+  indices          = indices.reinterpret(popType(indicesInfo));
+  return snap::Tensor{indices.reshape(indicesInfo.shape_szt()), graph()};
+}
+
+InputCreatorType
+ScatterReduceGradOpx::getInputCreatorType(InIndex index) const {
+  if (index == ScatterReduceGradOp::gradInIndex() ||
+      index == ScatterReduceGradOp::indicesInIndex()) {
+    return InputCreatorType::CanCreate;
+  }
+  return PopOpx::getInputCreatorType(index);
 }
 
 namespace {
