@@ -20,6 +20,9 @@ public:
   // default : throw error (not all PopOpxs can createInput)
   virtual poplar::Tensor createInput(InIndex index,
                                      const poplar::DebugNameAndId &dnai) const;
+  snap::Tensor
+  createInputTensor(popart::InIndex index,
+                    const poplar::DebugNameAndId &dnai) const final;
 
   // Hide Clang -Woverloaded-virtual on unwindTensorLayout by explicitly telling
   // compiler we want both PopOpx::unwindTensorLayout and the one defined below
@@ -30,6 +33,8 @@ public:
   // CANUNWIND
   virtual poplar::Tensor
   unwindTensorLayout(poplar::Tensor tensor, InIndex, OutIndex) const;
+  snap::Tensor
+  unwindTensorLayout(snap::Tensor tensor, InIndex, OutIndex) const final;
 
   // If this Opx creates a poplar::Tensor at index0 (via createInput),
   // does it create the same poplar::Tensor as if opx1 creates one at
@@ -38,13 +43,6 @@ public:
 
   // Returns the virtual graph if enabled, else returns the dv_p->graph
   virtual poplar::Graph &graph() const;
-  // The default assumes all Opx input and output tensors are laid out on the
-  // same virtual graph. These methods should be overridden when this is not
-  // the case, such as for IpuCopyOpx.
-  // Returns the virtual graph for the tensor at InIndex, defaults to graph()
-  virtual poplar::Graph &srcGraph(InIndex) const;
-  // Returns the virtual graph for the tensor at OutIndex, defaults to graph()
-  virtual poplar::Graph &dstGraph(OutIndex) const;
   // shortcut for dv_p->tensors.get
   const poplar::Tensor &get(TensorId) const;
   // shortcut for dv_p->tensors.getView

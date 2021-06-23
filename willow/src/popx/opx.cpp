@@ -12,7 +12,12 @@ Opx::~Opx() = default;
 
 poplar::Tensor Opx::createInput(InIndex index,
                                 const poplar::DebugNameAndId &dnai) const {
-  return createInputTensor(index, dnai).getPoplarTensor();
+  return PopOpx::createInputTensor(index, dnai).getPoplarTensor();
+}
+
+snap::Tensor Opx::createInputTensor(InIndex index,
+                                    const poplar::DebugNameAndId &dnai) const {
+  return snap::Tensor{createInput(index, dnai), PopOpx::graph()};
 }
 
 poplar::Tensor
@@ -22,19 +27,17 @@ Opx::unwindTensorLayout(poplar::Tensor tensor, InIndex in, OutIndex out) const {
       .getPoplarTensor();
 }
 
+snap::Tensor
+Opx::unwindTensorLayout(snap::Tensor tensor, InIndex in, OutIndex out) const {
+  return snap::Tensor{unwindTensorLayout(tensor.getPoplarTensor(), in, out),
+                      PopOpx::graph()};
+}
+
 bool Opx::createsEquiv(int, const Opx *, int) const {
   throw error("No check for equivalent tensor create for type {}", op_p->opid);
 }
 
 poplar::Graph &Opx::graph() const { return PopOpx::graph().getPoplarGraph(); }
-
-poplar::Graph &Opx::srcGraph(InIndex index) const {
-  return srcVirtualGraph(index).getPoplarGraph();
-}
-
-poplar::Graph &Opx::dstGraph(OutIndex index) const {
-  return dstVirtualGraph(index).getPoplarGraph();
-}
 
 const poplar::Tensor &Opx::get(TensorId id) const {
   return PopOpx::get(id).getPoplarTensor();
