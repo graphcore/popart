@@ -454,3 +454,54 @@ def test_odd_scale_factors_grad(op_tester, scale_factor, data_shape):
 
     op_tester.setPatterns(['MulArgGradOp'], enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference, 'train')
+
+
+@pytest.mark.parametrize(
+    "data_shape, scales",
+    [
+        # This changes the values without changing the size of the dimension.
+        ([8], [1.12]),
+        # upsample
+        ([2], [8.0]),
+        ([2, 2], [2.0, 3.0]),
+        ([2, 2], [2.5, 2.5]),
+        ([3, 2], [2.5, 2.5]),
+        ([5, 3], [2.3, 2.5]),
+        # downsample
+        ([2, 4], [0.5, 0.5]),
+        ([2, 8], [1.0, 3 / 8]),
+        ([5, 4], [0.5, 0.5]),
+        ([5, 3], [0.3, 0.5]),
+        # 3D
+        ([5, 3, 4], [2.3, 2.5, 3.0]),
+        ([5, 3, 4], [2.3, 2.5, 0.5]),
+    ])
+@pytest.mark.parametrize(
+    "coordinate_transformation_mode",
+    ["half_pixel", "pytorch_half_pixel", "asymmetric", "align_corners"])
+def test_resize_linear(op_tester, data_shape, scales,
+                       coordinate_transformation_mode):
+    data = np.random.rand(*data_shape).astype(np.float32)
+    roi = np.array([], dtype=np.float32)
+    scales = np.array(scales, dtype=np.float32)
+
+    def init_builder(builder):
+        d = builder.addInputTensor(data)
+        s = builder.aiOnnxOpset11.constant(scales, False)
+        r = builder.aiOnnxOpset11.constant(roi, False)
+        o = builder.aiOnnxOpset11.resize(
+            [d, r, s],
+            mode="linear",
+            coordinate_transformation_mode=coordinate_transformation_mode)
+        builder.addOutputTensor(o)
+        return [o]
+
+    def reference(ref_data):
+        o = onnx_resize.interpolate_nd(
+            data,
+            onnx_resize.linear_coeffs,
+            scale_factors=scales,
+            coordinate_transformation_mode=coordinate_transformation_mode)
+        return [o.astype(data.dtype)]
+
+    op_tester.run(init_builder, reference, 'infer')

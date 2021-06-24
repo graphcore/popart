@@ -13,6 +13,19 @@
 
 namespace popart {
 
+template <typename T> bool isOneOf(const T &x, const std::vector<T> &ys) {
+  for (const auto &y : ys) {
+    if (x == y) {
+      return true;
+    }
+  }
+  return false;
+}
+
+template <typename T> bool isNotOneOf(const T &x, const std::vector<T> &ys) {
+  return !isOneOf(x, ys);
+}
+
 /**
  * Get the loss scale tensor of a graph.
  *

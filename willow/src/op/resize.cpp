@@ -59,8 +59,9 @@ void ResizeOp::setup() {
   auto inputShape = inShape(getInIndex());
 
   // Check the mode
-  if (mode != ResizeMode::Nearest) {
-    throw error("Resize op only supports the mode 'nearest' at this time.");
+  if (isNotOneOf(mode, {ResizeMode::Nearest, ResizeMode::Linear})) {
+    throw error("Resize op only supports the modes 'nearest' and 'linear' at "
+                "this time.");
   }
 
   // Sanity check scales
@@ -119,17 +120,16 @@ const std::map<int, int> &ResizeGradOp::gradOutToNonGradIn() const {
 
 namespace {
 
-// This will be required soon, so I am commenting out for now.
-// ResizeMode getResizeModeFromString(const std::string &mode) {
-//   static std::map<std::string, ResizeMode> modeMap = {
-//       {"nearest", ResizeMode::Nearest}, {"linear", ResizeMode::Linear}};
-//   auto found = modeMap.find(mode);
-//   if (found != modeMap.end()) {
-//     return found->second;
-//   } else {
-//     throw error("Unrecognised resize mode {}", mode);
-//   }
-// }
+ResizeMode getResizeModeFromString(const std::string &mode) {
+  static std::map<std::string, ResizeMode> modeMap = {
+      {"nearest", ResizeMode::Nearest}, {"linear", ResizeMode::Linear}};
+  auto found = modeMap.find(mode);
+  if (found != modeMap.end()) {
+    return found->second;
+  } else {
+    throw error("Unrecognised resize mode {}", mode);
+  }
+}
 
 ResizeNearestMode getResizeNearestModeFromString(const std::string &mode) {
   static std::map<std::string, ResizeNearestMode> modeMap = {
@@ -277,8 +277,11 @@ static OpCreator<ResizeOp> resize_OpCreator(
       // be checked, as we do not support the modes they are used in.
       // checkAttribute<Attributes::String>(
       //     info.opid, attr, "coordinate_transformation_mode", {"half_pixel"});
-      checkAttribute<Attributes::String>(info.opid, attr, "mode", {"nearest"});
       checkAttribute<Attributes::Int>(info.opid, attr, "exclude_outside", {0});
+
+      std::string modeString =
+          attr.getAttribute<Attributes::String>("mode", "nearest");
+      ResizeMode mode = getResizeModeFromString(modeString);
 
       ResizeNearestMode nearestMode = getNearestMode(info);
       std::string ctmString         = attr.getAttribute<Attributes::String>(
@@ -288,7 +291,7 @@ static OpCreator<ResizeOp> resize_OpCreator(
       // Create the op in the graph.
       Op *op = graph.createOp<ResizeOp>(Onnx::CustomOperators::Resize,
                                         info.settings,
-                                        ResizeMode::Nearest,
+                                        mode,
                                         scales,
                                         nearestMode,
                                         ctm);

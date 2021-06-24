@@ -13,18 +13,6 @@ class ResizeOpx : public PopOpx {
 public:
   ResizeOpx(Op *, Devicex *);
   void grow(poplar::program::Sequence &) const final;
-
-private:
-  poplar::Tensor
-  resizeDim(poplar::Tensor &input, int dim, int64_t size, float scale) const;
-
-  poplar::Tensor resizeNearestNeighbour(poplar::Tensor &input,
-                                        int dim,
-                                        int64_t size,
-                                        float scale) const;
-
-  float coordinateTransformation(float idx, int dim) const;
-  int64_t applyNearestMode(float idx) const;
 };
 
 class ResizeGradOpx : public PopOpx {
