@@ -16,9 +16,8 @@ namespace popart {
 namespace popx {
 
 void DynamicAddOpx::grow(poplar::program::Sequence &prog) const {
-  auto &op = getOp<DynamicTernaryBaseOp>();
-  auto tensor =
-      getInTensor(DynamicTernaryBaseOp::getUpdateInIndex()).getPoplarTensor();
+  auto &op    = getOp<DynamicTernaryBaseOp>();
+  auto tensor = getInTensor(DynamicTernaryBaseOp::getUpdateInIndex());
   auto index =
       getInTensor(DynamicTernaryBaseOp::getIndexInIndex()).getPoplarTensor();
   auto slice =
@@ -32,7 +31,7 @@ void DynamicAddOpx::grow(poplar::program::Sequence &prog) const {
   // Get the slice that is to be added to: s = t[index:index+psizes]
   auto s = popops::dynamicSlice(
       graph().getPoplarGraph(),
-      tensor,
+      tensor.getPoplarTensor(),
       popops::cast(graph().getPoplarGraph(),
                    index.reshape({op.getAxes().size()}),
                    poplar::UNSIGNED_INT,
@@ -57,7 +56,7 @@ void DynamicAddOpx::grow(poplar::program::Sequence &prog) const {
   // Update: t[index:index+psizes] = s
   popops::dynamicUpdate(
       graph().getPoplarGraph(),
-      outTensor,
+      outTensor.getPoplarTensor(),
       s,
       popops::cast(graph().getPoplarGraph(),
                    index.reshape({op.getAxes().size()}),
@@ -70,14 +69,12 @@ void DynamicAddOpx::grow(poplar::program::Sequence &prog) const {
       debugContext("dynamic_add_" +
                    op.inId(DynamicTernaryBaseOp::getUpdateInIndex())));
 
-  setOutTensor(DynamicTernaryBaseOp::getOutIndex(),
-               snap::Tensor{outTensor, graph()});
+  setOutTensor(DynamicTernaryBaseOp::getOutIndex(), outTensor);
 }
 
-poplar::Tensor
-DynamicAddInplaceOpx::cloneNcopyOpt(poplar::program::Sequence &s,
-                                    const poplar::Tensor &t) const {
-  if (t.isParallelWriteable()) {
+snap::Tensor DynamicAddInplaceOpx::cloneNcopyOpt(poplar::program::Sequence &s,
+                                                 const snap::Tensor &t) const {
+  if (t.getPoplarTensor().isParallelWriteable()) {
     return t;
   } else {
     // Outplace because t has internal aliases

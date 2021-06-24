@@ -23,7 +23,7 @@ void SplitOpx::grow(poplar::program::Sequence &prog) const {
     unsigned int end = start + static_cast<unsigned int>(splitSizes.at(i));
     auto t           = input.slice(start, end, axis);
 
-    setOutTensor(i, snap::Tensor{cloneNcopy(prog, t), graph()});
+    setOutTensor(i, cloneNcopy(prog, snap::Tensor{t, graph()}));
 
     start = end;
   }

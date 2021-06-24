@@ -181,15 +181,16 @@ view::RegMap ElementWiseBinaryOpx::unwindRegion(InIndex, OutIndex) const {
   return [](const view::Region &r) { return view::Regions(1, r); };
 }
 
-poplar::Tensor
-EwuComputex::cloneNcopy(poplar::program::Sequence &prog,
-                        snap::Graph &graph,
-                        const poplar::Tensor &tensor,
-                        const poplar::DebugNameAndId &dnai) const {
-  auto outTensor = graph.getPoplarGraph().clone(tensor, {dnai});
-  poplar::program::Copy copyProg(tensor, outTensor, false, {dnai});
+snap::Tensor EwuComputex::cloneNcopy(poplar::program::Sequence &prog,
+                                     snap::Graph &graph,
+                                     const snap::Tensor &tensor,
+                                     const poplar::DebugNameAndId &dnai) const {
+  auto outTensor =
+      graph.getPoplarGraph().clone(tensor.getPoplarTensor(), {dnai});
+  poplar::program::Copy copyProg(
+      tensor.getPoplarTensor(), outTensor, false, {dnai});
   prog.add(copyProg);
-  return outTensor;
+  return snap::Tensor{outTensor, graph};
 }
 
 poplar::Tensor EwuComputex::outplace(poplar::program::Sequence &prog,
@@ -197,7 +198,8 @@ poplar::Tensor EwuComputex::outplace(poplar::program::Sequence &prog,
                                      const poplar::Tensor &tensor,
                                      const poplar::DebugNameAndId &dnai,
                                      const std::string &debug_prefix) const {
-  auto out_tensor = cloneNcopy(prog, graph, tensor, dnai);
+  auto out_tensor = cloneNcopy(prog, graph, snap::Tensor{tensor, graph}, dnai)
+                        .getPoplarTensor();
   inplace(prog, graph, out_tensor, dnai, debug_prefix);
   return out_tensor;
 }

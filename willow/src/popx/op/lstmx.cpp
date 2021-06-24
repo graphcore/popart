@@ -72,7 +72,8 @@ void LSTMOpx::grow(poplar::program::Sequence &prog) const {
   // cloneNcopy to ensure outputs are not aliases of each other
   // TODO T18126 remove requirement for this cloneNcopy
   reshapeAndInsert(LSTMOp::getHiddenStateOutIndex(),
-                   cloneNcopy(prog, output_h_state));
+                   cloneNcopy(prog, snap::Tensor{output_h_state, graph()})
+                       .getPoplarTensor());
   reshapeAndInsert(LSTMOp::getCellStateOutIndex(), cell_state);
 
   setOutTensor(LSTMOp::getInitStateOutputPassThroughIndex(),
@@ -93,7 +94,7 @@ void LSTMOpx::grow(poplar::program::Sequence &prog) const {
   // cloneNcopy to ensure outputs are not aliases of each other
   // TODO T18126 remove requirement for this cloneNcopy
   setOutTensor(LSTMOp::getOutputPassThroughIndex(),
-               snap::Tensor{cloneNcopy(prog, output), graph()});
+               cloneNcopy(prog, snap::Tensor{output, graph()}));
 }
 
 void LSTMOpx::reshapeAndInsert(OutIndex index,
@@ -404,7 +405,8 @@ void LSTMGradOpx::grow(poplar::program::Sequence &prog) const {
 
   // TODO find out what this is for
   // it's done in tensorflow and enigma
-  auto output_grad_copy = cloneNcopy(prog, output_grad);
+  auto output_grad_copy =
+      cloneNcopy(prog, snap::Tensor{output_grad, graph()}).getPoplarTensor();
   popops::addInPlace(graph().getPoplarGraph(),
                      output_grad_copy[output_grad_copy.dim(0) - 1],
                      output_h_grad,
@@ -479,7 +481,8 @@ poplar::Tensor LSTMGradOpx::getCellStateGrad() const {
         .getPoplarTensor()
         .reshape({batch_size, hidden_size});
   } else {
-    auto zero = getScalarVariable(elem_type, "lstm/zero_cell_state");
+    auto zero =
+        getScalarVariable(elem_type, "lstm/zero_cell_state").getPoplarTensor();
     graph().getPoplarGraph().setTileMapping(zero, 0);
     graph().getPoplarGraph().setInitialValue(zero, 0);
     zero = zero.expand({0, 0});
@@ -515,7 +518,8 @@ poplar::Tensor LSTMGradOpx::getHiddenStateGrad() const {
         .getPoplarTensor()
         .reshape({batch_size, hidden_size});
   } else {
-    auto zero = getScalarVariable(elem_type, "lstm/zero_hidden_state");
+    auto zero = getScalarVariable(elem_type, "lstm/zero_hidden_state")
+                    .getPoplarTensor();
     graph().getPoplarGraph().setTileMapping(zero, 0);
     graph().getPoplarGraph().setInitialValue(zero, 0);
     zero = zero.expand({0, 0});

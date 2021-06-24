@@ -19,9 +19,9 @@ void ResizeOpx::grow(poplar::program::Sequence &prog) const {
   auto &resizeOp = getOp<ResizeOp>();
   auto outShape  = resizeOp.outShape(ResizeOp::getOutIndex());
 
-  auto input  = getInTensor(ResizeOp::getInIndex()).getPoplarTensor();
-  auto result = cloneNcopy(prog, input);
-  for (int i = 0; i < input.rank(); i++) {
+  auto input  = getInTensor(ResizeOp::getInIndex());
+  auto result = cloneNcopy(prog, input).getPoplarTensor();
+  for (int i = 0; i < input.getPoplarTensor().rank(); i++) {
     if (resizeOp.getNearestMode() == ResizeNearestMode::Pytorch) {
       if (result.shape().at(i) != outShape.at(i)) {
         result =
@@ -151,12 +151,12 @@ ResizeGradOpx::ResizeGradOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
 
 void ResizeGradOpx::grow(poplar::program::Sequence &prog) const {
   auto &op   = getOp<ResizeGradOp>();
-  auto input = getInTensor(ResizeGradOp::getInIndex()).getPoplarTensor();
+  auto input = getInTensor(ResizeGradOp::getInIndex());
 
   auto inShape  = op.inShape(ResizeGradOp::getInIndex());
   auto outShape = op.outShape(ResizeGradOp::getOutIndex());
 
-  auto result = cloneNcopy(prog, input);
+  auto result = cloneNcopy(prog, input).getPoplarTensor();
   for (int dimension = 0; dimension < inShape.size(); dimension++) {
     auto inDim  = inShape.at(dimension);
     auto outDim = outShape.at(dimension);

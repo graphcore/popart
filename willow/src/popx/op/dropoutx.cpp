@@ -107,9 +107,8 @@ void DropoutOpx::grow(poplar::program::Sequence &prog) const {
     }
   } else {
     // In inference mode, dropout is an identity function
-    auto output = cloneNcopy(
-        prog, getInTensor(DropoutOp::getInIndex()).getPoplarTensor());
-    setOutTensor(DropoutOp::getOutIndex(), snap::Tensor{output, graph()});
+    auto output = cloneNcopy(prog, getInTensor(DropoutOp::getInIndex()));
+    setOutTensor(DropoutOp::getOutIndex(), output);
     // In inference mask is just a tensor of true values.
     if (op.getOutputMask()) {
       auto mask = getConst(
@@ -117,7 +116,7 @@ void DropoutOpx::grow(poplar::program::Sequence &prog) const {
           getInTensor(DropoutOp::getInIndex()).getPoplarTensor().shape(),
           true,
           "mask");
-      setOutTensor(DropoutOp::getMaskOutIndex(), snap::Tensor{mask, graph()});
+      setOutTensor(DropoutOp::getMaskOutIndex(), mask);
     }
   }
 }

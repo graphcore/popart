@@ -21,7 +21,7 @@ void ReverseOpx::grow(poplar::program::Sequence &prog) const {
   }
 
   setOutTensor(ReverseOp::getOutIndex(),
-               snap::Tensor{cloneNcopy(prog, t), graph()});
+               cloneNcopy(prog, snap::Tensor{t, graph()}));
 }
 
 snap::Tensor ReverseBaseOpx::unwindTensorLayout(snap::Tensor tensor,

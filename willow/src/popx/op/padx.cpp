@@ -100,38 +100,37 @@ std::pair<bool, poplar::Tensor> BasePadOpx::getPropitiousPadLayout() const {
   return {true, get(act_in).getPoplarTensor()};
 }
 
-BasePadOpx::Chisseled BasePadOpx::getChisseled(const poplar::Tensor &t0) const {
+BasePadOpx::Chisseled BasePadOpx::getChisseled(const snap::Tensor &t0) const {
 
-  auto t             = t0;
+  auto t             = t0.getPoplarTensor();
   const size_t tRank = t.rank();
   auto &&op          = getBasePadOp();
 
   const auto lowerPadding = op.getLowerPadding();
   const auto upperPadding = op.getUpperPadding();
 
-  std::vector<poplar::Tensor> lowPads(tRank);
-  std::vector<poplar::Tensor> uppPads(tRank);
+  std::vector<snap::Tensor> lowPads(tRank);
+  std::vector<snap::Tensor> uppPads(tRank);
 
   for (size_t d = 0; d < tRank; ++d) {
     const auto d_u32   = static_cast<uint32_t>(d);
     const auto dimSize = t.dim(d_u32);
     const auto low     = lowerPadding[d];
     const auto upp     = dimSize - upperPadding[d];
-    lowPads[d]         = t.slice(0, low, d_u32);
-    uppPads[d]         = t.slice(upp, dimSize, d_u32);
+    lowPads[d]         = snap::Tensor{t.slice(0, low, d_u32), graph()};
+    uppPads[d]         = snap::Tensor{t.slice(upp, dimSize, d_u32), graph()};
     t                  = t.slice(low, upp, d_u32);
   }
-  return {t, lowPads, uppPads};
+  return {snap::Tensor{t, graph()}, lowPads, uppPads};
 }
 
-poplar::Tensor
-BasePadOpx::cloneNcopyEdges(poplar::Tensor t,
-                            poplar::program::Sequence &se) const {
+snap::Tensor BasePadOpx::cloneNcopyEdges(snap::Tensor t,
+                                         poplar::program::Sequence &se) const {
 
   logging::devicex::debug("Cloning and copying the constant padding for op {}",
                           getBasePadOp().str());
 
-  const auto tRank = t.rank();
+  const auto tRank = t.getPoplarTensor().rank();
 
   // partition the input into the "core" and the padding edges.
   auto chisseled = getChisseled(t);
@@ -144,31 +143,32 @@ BasePadOpx::cloneNcopyEdges(poplar::Tensor t,
   // concatenate all the lowering().Tensors and create one single large copy
   // program.
   for (auto &p : leftPads) {
-    if (p.numElements() > 0) {
+    if (p.getPoplarTensor().numElements() > 0) {
       p = cloneNcopy(se, p);
     }
   }
   for (auto &p : rightPads) {
-    if (p.numElements() > 0) {
+    if (p.getPoplarTensor().numElements() > 0) {
       p = cloneNcopy(se, p);
     }
   }
 
   // wrap the core in the copied edges. Thus the core remains an alias od the
   // input.
+  auto pt = t.getPoplarTensor();
   for (int d = static_cast<int>(tRank) - 1; d >= 0; --d) {
     const auto d_u64 = static_cast<size_t>(d);
     const auto d_u32 = static_cast<uint32_t>(d);
 
-    if (leftPads[d_u64].numElements() > 0) {
-      t = poplar::concat({leftPads[d_u64], t}, d_u32);
+    if (leftPads[d_u64].getPoplarTensor().numElements() > 0) {
+      pt = poplar::concat({leftPads[d_u64].getPoplarTensor(), pt}, d_u32);
     }
-    if (rightPads[d_u64].numElements() > 0) {
-      t = poplar::concat({t, rightPads[d_u64]}, d_u32);
+    if (rightPads[d_u64].getPoplarTensor().numElements() > 0) {
+      pt = poplar::concat({pt, rightPads[d_u64].getPoplarTensor()}, d_u32);
     }
   }
 
-  return t;
+  return snap::Tensor{pt, graph()};
 }
 
 poplar::Tensor BasePadOpx::constantModePadGrow(poplar::Tensor inTensor,
@@ -184,7 +184,8 @@ poplar::Tensor BasePadOpx::constantModePadGrow(poplar::Tensor inTensor,
     const auto padValue     = padBaseOp.getPadValue();
 
     if (!inPlaceAllowed) {
-      inTensor = cloneNcopy(s, inTensor);
+      inTensor =
+          cloneNcopy(s, snap::Tensor{inTensor, graph()}).getPoplarTensor();
     }
 
     return popops::pad(PopOpx::graph().getPoplarGraph(),
@@ -211,14 +212,16 @@ poplar::Tensor BasePadOpx::constantModePadGrow(poplar::Tensor inTensor,
   const auto propitious = getPropitiousPadLayout();
   if (propitious.first) {
     auto outTensor    = graph().getPoplarGraph().clone(propitious.second);
-    auto chisseledDst = getChisseled(outTensor);
+    auto chisseledDst = getChisseled(snap::Tensor{outTensor, graph()});
     s.add(poplar::program::Copy(
-        inTensor, chisseledDst.core, false, debugContext()));
-    auto allPads = chisseledDst.lows;
-    allPads.insert(
-        allPads.end(), chisseledDst.upps.cbegin(), chisseledDst.upps.cend());
-    for (auto &x : allPads) {
-      x = x.flatten();
+        inTensor, chisseledDst.core.getPoplarTensor(), false, debugContext()));
+    std::vector<poplar::Tensor> allPads;
+    allPads.reserve(chisseledDst.lows.size() + chisseledDst.upps.size());
+    for (const auto &x : chisseledDst.lows) {
+      allPads.push_back(x.getPoplarTensor().flatten());
+    }
+    for (const auto &x : chisseledDst.upps) {
+      allPads.push_back(x.getPoplarTensor().flatten());
     }
     auto cat = poplar::concat(allPads, 0);
     popops::zero(graph().getPoplarGraph(), cat, s, debugContext("zero"));
@@ -228,7 +231,8 @@ poplar::Tensor BasePadOpx::constantModePadGrow(poplar::Tensor inTensor,
   else {
     auto outTensor = mk_padded(popops::padding::MappingMethod::EDGE);
     if (outTensor.containsAliases()) {
-      outTensor = cloneNcopyEdges(outTensor, s);
+      outTensor = cloneNcopyEdges(snap::Tensor{outTensor, graph()}, s)
+                      .getPoplarTensor();
     }
     return outTensor;
   }
@@ -246,7 +250,8 @@ poplar::Tensor BasePadOpx::unflippedPadGrow(poplar::Tensor inTensor,
   }
 
   if (!inPlaceAllowed) {
-    inTensor = cloneNcopy(prog, inTensor);
+    inTensor =
+        cloneNcopy(prog, snap::Tensor{inTensor, graph()}).getPoplarTensor();
   }
 
   const auto lp = padBaseOp.getLowerPadding();

@@ -190,7 +190,8 @@ poplar::Tensor CtcOpx::applyReduction(poplar::program::Sequence &prog,
     }
 
     // Always expected to be FLOAT, regardless of the input type.
-    auto t_scale = getConst(poplar::FLOAT, {}, scale, "scale");
+    auto t_scale =
+        getConst(poplar::FLOAT, {}, scale, "scale").getPoplarTensor();
 
     // Do the reduction.
     ctcLoss = popops::reduce(graph().getPoplarGraph(),

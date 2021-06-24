@@ -45,7 +45,7 @@ poplar::Tensor LogSoftmaxComputex::outplace(poplar::program::Sequence &p,
                                             const poplar::Tensor &t,
                                             const poplar::DebugNameAndId &dnai,
                                             const std::string &s) const {
-  auto outTensor = cloneNcopy(p, g, t, dnai);
+  auto outTensor = cloneNcopy(p, g, snap::Tensor{t, g}, dnai).getPoplarTensor();
   inplace(p, g, outTensor, dnai, s);
   return outTensor;
 }

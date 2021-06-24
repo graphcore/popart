@@ -70,20 +70,20 @@ private:
 
   // Return a Tensor of the same shape as inTensor, which is an alias of
   // inTensor at the core, and a copy of inTensor on the padding edges.
-  poplar::Tensor cloneNcopyEdges(poplar::Tensor inTensor,
-                                 poplar::program::Sequence &) const;
+  snap::Tensor cloneNcopyEdges(snap::Tensor inTensor,
+                               poplar::program::Sequence &) const;
 
   struct Chisseled {
-    Chisseled(poplar::Tensor c,
-              const std::vector<poplar::Tensor> &l,
-              const std::vector<poplar::Tensor> &u)
+    Chisseled(snap::Tensor c,
+              const std::vector<snap::Tensor> &l,
+              const std::vector<snap::Tensor> &u)
         : core(c), lows(l), upps(u) {}
-    poplar::Tensor core;
-    std::vector<poplar::Tensor> lows;
-    std::vector<poplar::Tensor> upps;
+    snap::Tensor core;
+    std::vector<snap::Tensor> lows;
+    std::vector<snap::Tensor> upps;
   };
 
-  Chisseled getChisseled(const poplar::Tensor &) const;
+  Chisseled getChisseled(const snap::Tensor &) const;
 
   poplar::Tensor flip(const poplar::Tensor &) const;
 

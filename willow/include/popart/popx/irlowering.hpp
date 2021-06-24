@@ -466,11 +466,11 @@ public:
   // Will throw an error if multiple candidates that do not agree are found
   std::vector<ICreatorCandidatePtr> getTensorCreators(Tensor *tensor) const;
 
-  poplar::Tensor getConst(snap::Graph &graph,
-                          const poplar::Type &type,
-                          const std::vector<size_t> &shape,
-                          double val,
-                          const poplar::DebugContext &dc = {});
+  snap::Tensor getConst(snap::Graph &graph,
+                        const poplar::Type &type,
+                        const std::vector<size_t> &shape,
+                        double val,
+                        const poplar::DebugContext &dc = {});
 
   std::shared_ptr<gcl::CollectiveBalancedReorder>
   getCollectiveBalancedReorder(TensorId tensor_id);
@@ -486,9 +486,9 @@ public:
     return collectiveReorders;
   }
 
-  poplar::Tensor getScalarVariable(snap::Graph &graph,
-                                   const poplar::Type &type,
-                                   const poplar::DebugContext &dc = {});
+  snap::Tensor getScalarVariable(snap::Graph &graph,
+                                 const poplar::Type &type,
+                                 const poplar::DebugContext &dc = {});
 
   LinearMapper &getLinearMapper() { return linearMapper; }
 

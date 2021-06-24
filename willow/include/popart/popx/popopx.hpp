@@ -111,19 +111,11 @@ public:
 
   // clone the snap::Tensor identified by its TensorId, and copy the contents
   // of it.
-  poplar::Tensor cloneNcopy(poplar::program::Sequence &, TensorId) const;
+  snap::Tensor cloneNcopy(poplar::program::Sequence &, TensorId) const;
   // clone the snap::Tensor and copy the contents of it.
-  poplar::Tensor cloneNcopy(poplar::program::Sequence &,
-                            const poplar::Tensor &,
-                            const std::string name = "") const;
-  // Return the poplar Tensor identified by its TensorId, numpy broadcasting it
-  // up to the given shape. Throws an exception if the identified Tensor doesn't
-  // have a compatible shape.
-  poplar::Tensor broadcast(const std::vector<int64_t> &, TensorId) const;
-  // Return the given poplar Tensor, numpy broadcasting it up to the given
-  // shape. Throws an exception if the given Tensor doesn't have a compatible
-  // shape.
-  poplar::Tensor broadcast(const std::vector<int64_t> &, poplar::Tensor) const;
+  snap::Tensor cloneNcopy(poplar::program::Sequence &,
+                          const snap::Tensor &,
+                          const std::string name = "") const;
 
   // Returns the Devicex to which this PopOpx belongs
   const Devicex *getDevicex() const;
@@ -255,13 +247,13 @@ public:
   TensorId outId(OutIndex index) const;
 
   // shortcut for dv_p->getConst
-  poplar::Tensor getConst(const poplar::Type &type,
-                          const std::vector<size_t> &shape,
-                          double val,
-                          const std::string &name) const;
+  snap::Tensor getConst(const poplar::Type &type,
+                        const std::vector<size_t> &shape,
+                        double val,
+                        const std::string &name) const;
 
-  poplar::Tensor getScalarVariable(const poplar::Type &type,
-                                   const std::string &name) const;
+  snap::Tensor getScalarVariable(const poplar::Type &type,
+                                 const std::string &name) const;
 
   // The PopOpx outputs that come from any subgraph and need to be prepared
   // This allows growing the data flows through subgraphs independently, and

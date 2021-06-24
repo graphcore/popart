@@ -39,7 +39,7 @@ poplar::Tensor ScaledAddOpx::compute(poplar::program::Sequence &prog,
                                      float s1f,
                                      bool inplace) const {
   if (!inplace) {
-    in0 = cloneNcopy(prog, in0);
+    in0 = cloneNcopy(prog, snap::Tensor{in0, graph()}).getPoplarTensor();
   }
 
   if (s0.valid() && s1.valid()) {

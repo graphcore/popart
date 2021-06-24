@@ -52,8 +52,10 @@ void L1GradOpx::grow(poplar::program::Sequence &prog) const {
                 debugContext().getPathName());
   }
 
-  auto t_scale = getConst(
-      getInTensor(0).getPoplarTensor().elementType(), {}, scale, "scale");
+  auto t_scale =
+      getConst(
+          getInTensor(0).getPoplarTensor().elementType(), {}, scale, "scale")
+          .getPoplarTensor();
 
   // scale the signum tensor:
   // - first by 'scale',  so +scale if positive, -scale if negative, 0 if zero
@@ -96,7 +98,8 @@ void L1Opx::grow(poplar::program::Sequence &prog) const {
   double lambda = static_cast<double>(l1op.getLambda());
 
   if (l1op.getReductionType() == ReductionType::NoReduction) {
-    auto t_scale = getConst(absTensor.elementType(), {}, lambda, "scale");
+    auto t_scale = getConst(absTensor.elementType(), {}, lambda, "scale")
+                       .getPoplarTensor();
 
     auto scaled = popops::map(graph().getPoplarGraph(),
                               popops::expr::BinaryOpType::MULTIPLY,
@@ -129,7 +132,8 @@ void L1Opx::grow(poplar::program::Sequence &prog) const {
 
     // t_scale is always expected to be FLOAT, regardless of the input type
     // to the reduction
-    auto t_scale   = getConst(poplar::FLOAT, {}, scale, "scale");
+    auto t_scale =
+        getConst(poplar::FLOAT, {}, scale, "scale").getPoplarTensor();
     auto reduction = popops::reduce(graph().getPoplarGraph(),
                                     absTensor1D,
                                     {0},

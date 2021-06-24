@@ -19,8 +19,8 @@ void TransposeOpx::grow(poplar::program::Sequence &prog) const {
     unsigned_perm.push_back(static_cast<unsigned>(i));
   }
 
-  auto input      = getInTensor(TransposeOp::getInIndex()).getPoplarTensor();
-  auto input_copy = cloneNcopy(prog, input);
+  auto input      = getInTensor(TransposeOp::getInIndex());
+  auto input_copy = cloneNcopy(prog, input).getPoplarTensor();
   auto output     = input_copy.dimShuffle(unsigned_perm);
   setOutTensor(TransposeOp::getOutIndex(), snap::Tensor{output, graph()});
 }

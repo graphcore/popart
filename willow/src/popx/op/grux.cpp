@@ -118,7 +118,8 @@ void GRUOpx::grow(poplar::program::Sequence &prog) const {
   // cloneNcopy to ensure outputs are not aliases of each other
   // TODO T18126 remove requirement for this cloneNcopy
   reshapeAndInsert(GRUOp::getHiddenStateOutIndex(),
-                   cloneNcopy(prog, output_h_state));
+                   cloneNcopy(prog, snap::Tensor{output_h_state, graph()})
+                       .getPoplarTensor());
 
   setOutTensor(GRUOp::getInitStateOutputPassThroughIndex(),
                snap::Tensor{init_state_h, graph()});
@@ -423,7 +424,8 @@ void GRUGradOpx::grow(poplar::program::Sequence &prog) const {
                          .getPoplarTensor()
                          .reshape({seq_length, batch_size, hidden_size});
 
-  output_grad = cloneNcopy(prog, output_grad);
+  output_grad =
+      cloneNcopy(prog, snap::Tensor{output_grad, graph()}).getPoplarTensor();
 
   auto output_h_grad = getHiddenStateGrad();
 
@@ -505,7 +507,8 @@ poplar::Tensor GRUGradOpx::getHiddenStateGrad() const {
         .getPoplarTensor()
         .reshape({batch_size, hidden_size});
   } else {
-    auto zero = getScalarVariable(elem_type, "gru/zero_hidden_state");
+    auto zero =
+        getScalarVariable(elem_type, "gru/zero_hidden_state").getPoplarTensor();
     graph().getPoplarGraph().setTileMapping(zero, 0);
     graph().getPoplarGraph().setInitialValue(zero, 0);
     zero = zero.expand({0, 0});

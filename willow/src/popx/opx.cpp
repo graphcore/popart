@@ -37,6 +37,54 @@ bool Opx::createsEquiv(int, const Opx *, int) const {
   throw error("No check for equivalent tensor create for type {}", op_p->opid);
 }
 
+poplar::Tensor Opx::cloneNcopy(poplar::program::Sequence &prog,
+                               TensorId id) const {
+  return PopOpx::cloneNcopy(prog, id).getPoplarTensor();
+}
+
+poplar::Tensor Opx::cloneNcopy(poplar::program::Sequence &prog,
+                               const poplar::Tensor &tensor,
+                               std::string name) const {
+  return PopOpx::cloneNcopy(prog,
+                            snap::Tensor{tensor, dv_p->lowering().graph()},
+                            std::move(name))
+      .getPoplarTensor();
+}
+
+poplar::Tensor Opx::broadcast(const std::vector<int64_t> &desired_shape,
+                              TensorId id) const {
+  return broadcast(desired_shape, get(id));
+}
+
+poplar::Tensor Opx::broadcast(const std::vector<int64_t> &desired_shape,
+                              poplar::Tensor t) const {
+  const auto &t_shape = t.shape();
+
+  // `new_shape` is `t_shape` prepended with ones to have matching rank as
+  // `desired_shape`
+  std::vector<std::size_t> new_shape(desired_shape.size(), 1);
+  std::copy(t_shape.rbegin(), t_shape.rend(), new_shape.rbegin());
+
+  // `t` now has matching rank as `desired_shape`
+  t = t.reshape(new_shape);
+
+  // Iteratively broadcast each mismatched dimension of `t`. This will
+  // result in the shape of `t` matching `desired_shape`.
+  for (int dim = 0; dim < desired_shape.size(); ++dim) {
+    if (new_shape[dim] != desired_shape[dim] && new_shape[dim] != 1) {
+      // Incompatible dimension found. Throw an exception, borrowing the same
+      // terminology as numpy.
+      throw error("np broadcasting failed, frames are not aligned");
+    }
+
+    if (new_shape[dim] != desired_shape[dim]) {
+      t = t.broadcast(static_cast<unsigned>(desired_shape[dim]), dim);
+    }
+  }
+
+  return t;
+}
+
 poplar::Graph &Opx::graph() const { return PopOpx::graph().getPoplarGraph(); }
 
 const poplar::Tensor &Opx::get(TensorId id) const {
@@ -69,6 +117,18 @@ const poplar::Tensor &Opx::getOutView(OutIndex index) const {
 
 void Opx::setOutTensor(OutIndex index, const poplar::Tensor &t) const {
   PopOpx::setOutTensor(index, snap::Tensor{t, dv_p->lowering().graph()});
+}
+
+poplar::Tensor Opx::getConst(const poplar::Type &type,
+                             const std::vector<size_t> &shape,
+                             double val,
+                             const std::string &name) const {
+  return PopOpx::getConst(type, shape, val, name).getPoplarTensor();
+}
+
+poplar::Tensor Opx::getScalarVariable(const poplar::Type &type,
+                                      const std::string &name) const {
+  return PopOpx::getScalarVariable(type, name).getPoplarTensor();
 }
 
 } // namespace popx

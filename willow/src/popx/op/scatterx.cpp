@@ -25,12 +25,16 @@ ScatterOpx::ScatterOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
 
 void ScatterOpx::grow(poplar::program::Sequence &prog) const {
   auto indices = getInTensor(ScatterOp::indicesInIndex()).getPoplarTensor();
-  auto data =
-      cloneNcopy(prog, getInTensor(ScatterOp::dataInIndex()).getPoplarTensor());
-  auto values = getInTensor(ScatterOp::updatesInIndex()).getPoplarTensor();
-  scatterutilx::growScatter(
-      prog, graph(), indices, values, data, axis, getDebugNameAndId("scatter"));
-  setOutTensor(ScatterOp::outIndex(), snap::Tensor{data, graph()});
+  auto data    = cloneNcopy(prog, getInTensor(ScatterOp::dataInIndex()));
+  auto values  = getInTensor(ScatterOp::updatesInIndex()).getPoplarTensor();
+  scatterutilx::growScatter(prog,
+                            graph(),
+                            indices,
+                            values,
+                            data.getPoplarTensor(),
+                            axis,
+                            getDebugNameAndId("scatter"));
+  setOutTensor(ScatterOp::outIndex(), data);
 }
 
 ScatterDataGradOpx::ScatterDataGradOpx(Op *op, Devicex *devicex)
@@ -41,8 +45,8 @@ ScatterDataGradOpx::ScatterDataGradOpx(Op *op, Devicex *devicex)
 }
 
 void ScatterDataGradOpx::grow(poplar::program::Sequence &prog) const {
-  auto data = cloneNcopy(
-      prog, getInTensor(ScatterDataGradOp::gradInIndex()).getPoplarTensor());
+  auto data = cloneNcopy(prog, getInTensor(ScatterDataGradOp::gradInIndex()))
+                  .getPoplarTensor();
   auto indices =
       getInTensor(ScatterDataGradOp::indicesInIndex()).getPoplarTensor();
   auto update = graph().getPoplarGraph().addConstant(

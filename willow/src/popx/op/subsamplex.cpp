@@ -39,7 +39,7 @@ void SubsampleOpx::grow(poplar::program::Sequence &prog) const {
   outTensor       = subsample(outTensor, op.strides_u32());
   // Need to clone/copy a new output tensor so is not in place
   setOutTensor(SubsampleOp::getOutIndex(),
-               snap::Tensor{cloneNcopy(prog, outTensor), graph()});
+               cloneNcopy(prog, snap::Tensor{outTensor, graph()}));
 }
 
 void SubsampleInplaceOpx::grow(poplar::program::Sequence &) const {
@@ -65,7 +65,7 @@ void SubsampleGradOpx::grow(poplar::program::Sequence &prog) const {
 
   // Design decision: make a scalar zero variable that we expand to create
   // a tensor of the same size as the output
-  auto zero = getScalarVariable(in.elementType(), "zero");
+  auto zero = getScalarVariable(in.elementType(), "zero").getPoplarTensor();
   graph().getPoplarGraph().setInitialValue(zero, 0);
 
   // Create an 0'ed tensor to be a tensor of the right size
@@ -79,18 +79,18 @@ void SubsampleGradOpx::grow(poplar::program::Sequence &prog) const {
   }
 
   // Copy the zero-view tensor into a new tensor and remap
-  auto outTensor = cloneNcopy(prog, output);
-  poputil::mapTensorLinearly(graph().getPoplarGraph(), outTensor);
+  auto outTensor = cloneNcopy(prog, snap::Tensor{output, graph()});
+  poputil::mapTensorLinearly(graph().getPoplarGraph(),
+                             outTensor.getPoplarTensor());
 
   // Create a subsample view of the output
-  auto ss_output = subsample(outTensor, gradOp.strides_u32());
+  auto ss_output = subsample(outTensor.getPoplarTensor(), gradOp.strides_u32());
 
   // Copy the input tensor into the subsampled view of the output
   prog.add(poplar::program::Copy(in, ss_output, false, debugContext()));
 
   // Return the output
-  setOutTensor(SubsampleGradOp::getOutIndex(),
-               snap::Tensor{outTensor, graph()});
+  setOutTensor(SubsampleGradOp::getOutIndex(), outTensor);
 }
 
 namespace {

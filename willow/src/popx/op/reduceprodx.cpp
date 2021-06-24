@@ -46,10 +46,11 @@ ReduceProdGradOpx::ReduceProdGradOpx(Op *op, Devicex *devicex)
 
 void ReduceProdGradOpx::grow(poplar::program::Sequence &prog) const {
   const auto &op = getOp<ReduceProdGradOp>();
-  auto output    = cloneNcopy(
-      prog, getInTensor(ReduceProdGradOp::getInIndex()).getPoplarTensor());
-  auto fwd_input = cloneNcopy(
-      prog, getInTensor(ReduceProdGradOp::getFwdInInIndex()).getPoplarTensor());
+  auto output    = cloneNcopy(prog, getInTensor(ReduceProdGradOp::getInIndex()))
+                    .getPoplarTensor();
+  auto fwd_input =
+      cloneNcopy(prog, getInTensor(ReduceProdGradOp::getFwdInInIndex()))
+          .getPoplarTensor();
   auto input_shape     = inShape(ReduceProdGradOp::getInIndex());
   auto output_shape    = outShape(ReduceProdGradOp::getOutIndex());
   const auto new_shape = vector_cast<std::size_t>(op.backwardShape());
@@ -98,7 +99,8 @@ void ReduceProdGradOpx::grow(poplar::program::Sequence &prog) const {
   output    = output.flatten(0, static_cast<unsigned>(axis.size()));
   fwd_input = fwd_input.flatten(0, static_cast<unsigned>(axis.size()));
 
-  auto lrcumprod = cloneNcopy(prog, output);
+  auto lrcumprod =
+      cloneNcopy(prog, snap::Tensor{output, graph()}).getPoplarTensor();
 
   // In-place left-right cumprod
   // Left-right multiplication, leaving one out,

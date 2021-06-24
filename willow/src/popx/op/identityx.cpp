@@ -22,10 +22,7 @@ IdentityOpx::IdentityOpx(Op *op, Devicex *devicex)
 }
 
 void IdentityOpx::grow(poplar::program::Sequence &prog) const {
-  setOutTensor(
-      0,
-      snap::Tensor{PopOpx::cloneNcopy(prog, getInTensor(0).getPoplarTensor()),
-                   graph()});
+  setOutTensor(0, PopOpx::cloneNcopy(prog, getInTensor(0)));
 }
 
 IdentityInplaceOpx::IdentityInplaceOpx(Op *op, Devicex *devicex)
@@ -43,10 +40,7 @@ IdentityGradOpx::IdentityGradOpx(Op *op, Devicex *devicex)
 }
 
 void IdentityGradOpx::grow(poplar::program::Sequence &prog) const {
-  setOutTensor(
-      0,
-      snap::Tensor{PopOpx::cloneNcopy(prog, getInTensor(0).getPoplarTensor()),
-                   graph()});
+  setOutTensor(0, PopOpx::cloneNcopy(prog, getInTensor(0)));
 }
 
 IdentityLossOpx::IdentityLossOpx(Op *op, Devicex *devicex)
@@ -95,13 +89,13 @@ InputCreatorType IdentityLossOpx::getInputCreatorType(InIndex) const {
 
 void IdentityLossOpx::grow(poplar::program::Sequence &prog) const {
   const IdentityLossOp &op = getOp<IdentityLossOp>();
-  const poplar::Tensor &inTensor(getInTensor(0).getPoplarTensor());
+  const auto &inTensor(getInTensor(0));
 
   if (op.getReductionType() == ReductionType::NoReduction) {
-    setOutTensor(0, snap::Tensor{PopOpx::cloneNcopy(prog, inTensor), graph()});
+    setOutTensor(0, PopOpx::cloneNcopy(prog, inTensor));
   } else {
 
-    auto inTensor1D = inTensor.flatten();
+    auto inTensor1D = inTensor.getPoplarTensor().flatten();
 
     double scale;
     switch (op.getReductionType()) {
@@ -125,7 +119,8 @@ void IdentityLossOpx::grow(poplar::program::Sequence &prog) const {
 
     // t_scale is always expected to be FLOAT, regardless of the input type
     // to the reduction
-    auto t_scale = getConst(poplar::FLOAT, {}, scale, "scale");
+    auto t_scale =
+        getConst(poplar::FLOAT, {}, scale, "scale").getPoplarTensor();
 
     auto reduction = popops::reduce(graph().getPoplarGraph(),
                                     inTensor1D,

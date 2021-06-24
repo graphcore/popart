@@ -9,7 +9,8 @@ namespace popx {
 
 class BaseExpandOpx : public PopOpx {
 protected:
-  void expand_broadcast(const Shape output_shape, poplar::Tensor &expand) const;
+  snap::Tensor expand_broadcast(const Shape output_shape,
+                                const snap::Tensor &expand) const;
 
 public:
   BaseExpandOpx(Op *, Devicex *);

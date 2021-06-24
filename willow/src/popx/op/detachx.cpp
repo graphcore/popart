@@ -14,10 +14,10 @@ DetachOpx::DetachOpx(popart::Op *op, popart::popx::Devicex *devicex)
 }
 
 void DetachOpx::grow(poplar::program::Sequence &prog) const {
-  auto input = getInTensor(DetachOp::getInIndex()).getPoplarTensor();
+  auto input = getInTensor(DetachOp::getInIndex());
 
   auto output = cloneNcopy(prog, input);
-  setOutTensor(DetachOp::getOutIndex(), snap::Tensor{output, graph()});
+  setOutTensor(DetachOp::getOutIndex(), output);
 }
 
 DetachInplaceOpx::DetachInplaceOpx(Op *op, Devicex *devicex)

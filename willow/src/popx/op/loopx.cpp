@@ -318,9 +318,9 @@ void LoopOpx::grow(poplar::program::Sequence &prog) const {
                 "LoopScanOutPattern.");
   }
 
-  auto tconst = getConst(poplar::BOOL, {}, true, "tconst");
+  auto tconst = getConst(poplar::BOOL, {}, true, "tconst").getPoplarTensor();
 
-  auto fconst = getConst(poplar::BOOL, {}, false, "fconst");
+  auto fconst = getConst(poplar::BOOL, {}, false, "fconst").getPoplarTensor();
 
   auto condOutTensor =
       get(op.getCalledGraph().getOutputId(0)).getPoplarTensor();

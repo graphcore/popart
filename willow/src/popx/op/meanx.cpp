@@ -22,7 +22,7 @@ MeanOpx::MeanOpx(Op *op, Devicex *devicex) : ElementWiseUnaryOpx(op, devicex) {
 }
 
 void MeanOpx::grow(poplar::program::Sequence &prog) const {
-  auto outTensor = cloneNcopy(prog, getInTensor(0).getPoplarTensor());
+  auto outTensor = cloneNcopy(prog, getInTensor(0));
 
   if (op_p->input->n() > 1) {
     // Follow the logic in the sumx op to build the sum operation over
@@ -53,15 +53,16 @@ void MeanOpx::grow(poplar::program::Sequence &prog) const {
       expr.push(exprs.back().get());
     }
     // Add in a divide in the end.
-    outTensor =
+    outTensor = snap::Tensor{
         popops::map(graph().getPoplarGraph(),
                     pe::Divide(*expr.front(), pe::Const(op_p->input->n())),
                     inputs,
                     prog,
-                    debugContext("mean"));
+                    debugContext("mean")),
+        graph()};
   }
 
-  setOutTensor(MeanOp::getOutIndex(), snap::Tensor{outTensor, graph()});
+  setOutTensor(MeanOp::getOutIndex(), outTensor);
 }
 
 MeanArgGradOpx::MeanArgGradOpx(Op *op_, Devicex *devicex_)

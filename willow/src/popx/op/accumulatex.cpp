@@ -357,7 +357,7 @@ void RescaleAccumulateOpx::grow(poplar::program::Sequence &prog) const {
       auto val = accumulateOp.getFactor().val();
       a        = popops::mul(
           graph().getPoplarGraph(), rescaleRatio, val, prog, debugContext("a"));
-      b = getConst(poplar::FLOAT, {}, 1.0f - val, "b");
+      b = getConst(poplar::FLOAT, {}, 1.0f - val, "b").getPoplarTensor();
     } else {
       auto factor = getInTensor(RescaleAccumulateOp::getFactorInIndex())
                         .getPoplarTensor();

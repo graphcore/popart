@@ -44,12 +44,16 @@ void LossScaleUpdateOpx::grow(poplar::program::Sequence &prog) const {
   // where f = t/(1-t)
   float f = thresholdUpperCountProportion / (1 - thresholdUpperCountProportion);
 
-  auto sumLowerBinCounts = getScalarVariable(
-      popType(op.inInfo(op.getFirstStatisticsTensorInIndex()).dataType()),
-      "sumLowerBinCounts");
-  auto sumUpperBinCounts = getScalarVariable(
-      popType(op.inInfo(op.getFirstStatisticsTensorInIndex()).dataType()),
-      "sumUpperBinCounts");
+  auto sumLowerBinCounts =
+      getScalarVariable(
+          popType(op.inInfo(op.getFirstStatisticsTensorInIndex()).dataType()),
+          "sumLowerBinCounts")
+          .getPoplarTensor();
+  auto sumUpperBinCounts =
+      getScalarVariable(
+          popType(op.inInfo(op.getFirstStatisticsTensorInIndex()).dataType()),
+          "sumUpperBinCounts")
+          .getPoplarTensor();
   popops::zero(graph().getPoplarGraph(),
                sumLowerBinCounts,
                prog,

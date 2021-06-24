@@ -65,10 +65,9 @@ void ModifyRandomSeedOpx::grow(poplar::program::Sequence &prog) const {
   // Concatenate outSeed.
   auto outSeedUncopied = poplar::concat({inSeedL, outSeedR});
   // Copy.
-  auto outSeed = cloneNcopy(prog, outSeedUncopied);
+  auto outSeed = cloneNcopy(prog, snap::Tensor{outSeedUncopied, graph()});
 
-  setOutTensor(ModifyRandomSeedOp::getModifiedSeedOutIndex(),
-               snap::Tensor{outSeed, graph()});
+  setOutTensor(ModifyRandomSeedOp::getModifiedSeedOutIndex(), outSeed);
 }
 
 namespace {

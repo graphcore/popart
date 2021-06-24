@@ -21,22 +21,24 @@ MaxOpx::MaxOpx(Op *op, Devicex *devicex) : ElementWiseUnaryOpx(op, devicex) {
 
 void MaxOpx::grow(poplar::program::Sequence &prog) const {
 
-  auto outTensor = cloneNcopy(prog, getInTensor(0).getPoplarTensor());
+  auto outTensor = cloneNcopy(prog, getInTensor(0));
 
   if (op_p->input->n() > 1) {
 
     for (int i = 1; i < op_p->input->n(); ++i) {
-      outTensor = popops::map(graph().getPoplarGraph(),
-                              popops::expr::BinaryOpType::MAXIMUM,
-                              outTensor,
-                              getInTensor(i).getPoplarTensor(),
-                              prog,
-                              debugContext(std::string("max") + sNameDelimiter +
-                                           std::to_string(i)));
+      outTensor = snap::Tensor{
+          popops::map(graph().getPoplarGraph(),
+                      popops::expr::BinaryOpType::MAXIMUM,
+                      outTensor.getPoplarTensor(),
+                      getInTensor(i).getPoplarTensor(),
+                      prog,
+                      debugContext(std::string("max") + sNameDelimiter +
+                                   std::to_string(i))),
+          graph()};
     }
   }
 
-  setOutTensor(MaxOp::getOutIndex(), snap::Tensor{outTensor, graph()});
+  setOutTensor(MaxOp::getOutIndex(), outTensor);
 }
 
 MaxArgGradOpx::MaxArgGradOpx(Op *op_, Devicex *devicex_)

@@ -19,15 +19,15 @@ public:
   createInputTensor(InIndex index,
                     const poplar::DebugNameAndId &dnai) const final;
   std::set<TensorId> mustExistBeforeCreate(InIndex) const final;
-  virtual poplar::Tensor cloneNcopyOpt(poplar::program::Sequence &,
-                                       const poplar::Tensor &) const;
+  virtual snap::Tensor cloneNcopyOpt(poplar::program::Sequence &,
+                                     const snap::Tensor &) const;
 };
 
 class DynamicUpdateInplaceOpx : public DynamicUpdateOpx {
 public:
   DynamicUpdateInplaceOpx(Op *, Devicex *);
-  poplar::Tensor cloneNcopyOpt(poplar::program::Sequence &,
-                               const poplar::Tensor &) const override;
+  snap::Tensor cloneNcopyOpt(poplar::program::Sequence &,
+                             const snap::Tensor &) const override;
 };
 
 } // namespace popx

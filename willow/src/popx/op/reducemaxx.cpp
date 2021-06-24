@@ -47,10 +47,10 @@ ReduceMaxGradOpx::ReduceMaxGradOpx(Op *op, Devicex *devicex)
 
 void ReduceMaxGradOpx::grow(poplar::program::Sequence &prog) const {
   const auto &op = getOp<ReduceMaxGradOp>();
-  auto output    = cloneNcopy(
-      prog, getInTensor(ReduceMaxGradOp::getInIndex()).getPoplarTensor());
-  auto mask = cloneNcopy(
-      prog, getInTensor(ReduceMaxGradOp::getFwdOutInIndex()).getPoplarTensor());
+  auto output    = cloneNcopy(prog, getInTensor(ReduceMaxGradOp::getInIndex()))
+                    .getPoplarTensor();
+  auto mask = cloneNcopy(prog, getInTensor(ReduceMaxGradOp::getFwdOutInIndex()))
+                  .getPoplarTensor();
   auto input_shape     = inShape(ReduceMaxGradOp::getInIndex());
   auto output_shape    = outShape(ReduceMaxGradOp::getOutIndex());
   const auto new_shape = vector_cast<std::size_t>(op.backwardShape());

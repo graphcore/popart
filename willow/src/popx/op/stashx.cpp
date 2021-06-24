@@ -58,7 +58,8 @@ void StashOpx::growDynamicStashUpdate(poplar::program::Sequence &prog,
 void StashOpx::grow(poplar::program::Sequence &prog) const {
   // Create the stash size tensor.
   const auto stashSize =
-      getConst(poplar::UNSIGNED_INT, {}, hStashSize, "stash_size");
+      getConst(poplar::UNSIGNED_INT, {}, hStashSize, "stash_size")
+          .getPoplarTensor();
 
   // Create the stash index tensor.
   const poplar::Tensor stashIndex = graph().getPoplarGraph().addVariable(
@@ -87,7 +88,8 @@ void StashOpx::grow(poplar::program::Sequence &prog) const {
   setOutTensor(StashOp::getOutIndex(), snap::Tensor{outTensor, graph()});
 
   // Create a "1" tensor and grow program to increment stash index by 1.
-  const auto one = getConst(poplar::UNSIGNED_INT, {}, 1.0, "one");
+  const auto one =
+      getConst(poplar::UNSIGNED_INT, {}, 1.0, "one").getPoplarTensor();
   popops::addInPlace(graph().getPoplarGraph(), stashIndex, one, prog);
   popops::remInPlace(graph().getPoplarGraph(), stashIndex, stashSize, prog);
 }

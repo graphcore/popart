@@ -19,9 +19,8 @@ ShapedDropoutOpx::ShapedDropoutOpx(Op *op, Devicex *devicex)
 void ShapedDropoutOpx::grow(poplar::program::Sequence &prog) const {
   if (!op_p->getIr().canTrain()) {
     // In inference mode, shaped dropout is an identity function
-    auto output = cloneNcopy(
-        prog, getInTensor(ShapedDropoutOp::getInIndex()).getPoplarTensor());
-    setOutTensor(ShapedDropoutOp::getOutIndex(), snap::Tensor{output, graph()});
+    auto output = cloneNcopy(prog, getInTensor(ShapedDropoutOp::getInIndex()));
+    setOutTensor(ShapedDropoutOp::getOutIndex(), output);
     return;
   }
 

@@ -27,10 +27,10 @@ public:
                        const poplar::DebugNameAndId &,
                        const std::string &) const = 0;
 
-  poplar::Tensor cloneNcopy(poplar::program::Sequence &,
-                            snap::Graph &,
-                            const poplar::Tensor &,
-                            const poplar::DebugNameAndId &) const;
+  snap::Tensor cloneNcopy(poplar::program::Sequence &,
+                          snap::Graph &,
+                          const snap::Tensor &,
+                          const poplar::DebugNameAndId &) const;
 
   // certain ops reshape the input tensor (eg Softmax and LogSoftmax)
   virtual poplar::Tensor reshape(const poplar::Tensor &t) const { return t; }

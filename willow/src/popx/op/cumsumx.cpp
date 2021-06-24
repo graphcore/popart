@@ -21,8 +21,10 @@ poplar::Tensor triangularMatrix(const PopOpx &opx,
                                 bool exclusive_,
                                 bool reverse_,
                                 bool transpose_ = false) {
-  const poplar::Tensor one  = opx.getConst(poplar::FLOAT, {1}, 1.f, "one");
-  const poplar::Tensor zero = opx.getConst(poplar::FLOAT, {1}, 0.f, "zero");
+  const poplar::Tensor one =
+      opx.getConst(poplar::FLOAT, {1}, 1.f, "one").getPoplarTensor();
+  const poplar::Tensor zero =
+      opx.getConst(poplar::FLOAT, {1}, 0.f, "zero").getPoplarTensor();
 
   std::vector<poplar::Tensor> pieces;
   for (int k = 0; k < triangularSize_; k++) {

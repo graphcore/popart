@@ -16,20 +16,19 @@ namespace popart {
 namespace popx {
 
 void DynamicZeroOpx::grow(poplar::program::Sequence &prog) const {
-  auto &op = getOp<DynamicBinaryBaseOp>();
-  auto tensor =
-      getInTensor(DynamicBinaryBaseOp::getUpdateInIndex()).getPoplarTensor();
-  auto index =
-      getInTensor(DynamicBinaryBaseOp::getIndexInIndex()).getPoplarTensor();
+  auto &op    = getOp<DynamicBinaryBaseOp>();
+  auto tensor = getInTensor(DynamicBinaryBaseOp::getUpdateInIndex());
+  auto index  = getInTensor(DynamicBinaryBaseOp::getIndexInIndex());
 
   std::vector<size_t> paxes(op.getAxes().begin(), op.getAxes().end());
   std::vector<size_t> psizes(op.getSizes().begin(), op.getSizes().end());
 
   auto updateShape = op.inShape(DynamicBinaryBaseOp::getUpdateInIndex());
 
-  auto slice = popops::createSliceTensor(
-                   graph().getPoplarGraph(), tensor, paxes, psizes, 1)
-                   .squeeze({0});
+  auto slice =
+      popops::createSliceTensor(
+          graph().getPoplarGraph(), tensor.getPoplarTensor(), paxes, psizes, 1)
+          .squeeze({0});
   popops::zero(
       graph().getPoplarGraph(), slice, prog, debugContext("dynamic_zero_zero"));
 
@@ -37,10 +36,10 @@ void DynamicZeroOpx::grow(poplar::program::Sequence &prog) const {
 
   popops::dynamicUpdate(
       graph().getPoplarGraph(),
-      outTensor,
+      outTensor.getPoplarTensor(),
       slice,
       popops::cast(graph().getPoplarGraph(),
-                   index.reshape({op.getAxes().size()}),
+                   index.getPoplarTensor().reshape({op.getAxes().size()}),
                    poplar::UNSIGNED_INT,
                    prog,
                    debugContext()),
@@ -50,8 +49,7 @@ void DynamicZeroOpx::grow(poplar::program::Sequence &prog) const {
       debugContext("dynamic_zero_" +
                    op.inId(DynamicBinaryBaseOp::getUpdateInIndex())));
 
-  setOutTensor(DynamicBinaryBaseOp::getOutIndex(),
-               snap::Tensor{outTensor, graph()});
+  setOutTensor(DynamicBinaryBaseOp::getOutIndex(), outTensor);
 }
 
 InputCreatorType DynamicZeroOpx::getInputCreatorType(InIndex index) const {
@@ -60,10 +58,9 @@ InputCreatorType DynamicZeroOpx::getInputCreatorType(InIndex index) const {
              : PopOpx::getInputCreatorType(index);
 }
 
-poplar::Tensor
-DynamicZeroInplaceOpx::cloneNcopyOpt(poplar::program::Sequence &s,
-                                     const poplar::Tensor &t) const {
-  if (t.isParallelWriteable()) {
+snap::Tensor DynamicZeroInplaceOpx::cloneNcopyOpt(poplar::program::Sequence &s,
+                                                  const snap::Tensor &t) const {
+  if (t.getPoplarTensor().isParallelWriteable()) {
     return t;
   } else {
     // Outplace because t has internal aliases

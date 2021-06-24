@@ -12,7 +12,7 @@ namespace popx {
 void ReshapeOpx::grow(poplar::program::Sequence &prog) const {
   // not in-place, so cloning input
   auto outTensor =
-      cloneNcopy(prog, getInTensor(ReshapeOp::getInIndex()).getPoplarTensor());
+      cloneNcopy(prog, getInTensor(ReshapeOp::getInIndex())).getPoplarTensor();
   outTensor = outTensor.reshape(outInfo(ReshapeOp::getOutIndex()).shape_szt());
   setOutTensor(ReshapeOp::getOutIndex(), snap::Tensor{outTensor, graph()});
 }

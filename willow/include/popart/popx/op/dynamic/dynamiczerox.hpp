@@ -20,8 +20,8 @@ class DynamicZeroInplaceOpx : public DynamicZeroOpx {
 public:
   DynamicZeroInplaceOpx(Op *op, Devicex *devicex)
       : DynamicZeroOpx(op, devicex) {}
-  poplar::Tensor cloneNcopyOpt(poplar::program::Sequence &,
-                               const poplar::Tensor &) const override;
+  snap::Tensor cloneNcopyOpt(poplar::program::Sequence &,
+                             const snap::Tensor &) const override;
 };
 
 } // namespace popx

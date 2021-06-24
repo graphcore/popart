@@ -293,72 +293,40 @@ poplar::DebugContext PopOpx::debugContext(const std::string name,
   return {getDebugNameAndId(), name, loc};
 }
 
-poplar::Tensor PopOpx::cloneNcopy(poplar::program::Sequence &prog,
-                                  TensorId id) const {
+snap::Tensor PopOpx::cloneNcopy(poplar::program::Sequence &prog,
+                                TensorId id) const {
   const snap::Tensor &tensor = get(id);
-  return cloneNcopy(prog, tensor.getPoplarTensor(), id + "[cloned]");
+  return cloneNcopy(prog, tensor, id + "[cloned]");
 }
 
-poplar::Tensor PopOpx::cloneNcopy(poplar::program::Sequence &prog,
-                                  const poplar::Tensor &tensor,
-                                  const std::string name) const {
+snap::Tensor PopOpx::cloneNcopy(poplar::program::Sequence &prog,
+                                const snap::Tensor &tensor,
+                                const std::string name) const {
 
   const auto scopedTimer =
       getDevicex()->ir().timePartitionLogger().scopedStopwatch(
           "Clone (and copy)");
 
   // TODO Would be good to get the name of the tensor
-  auto outTensor = graph().getPoplarGraph().clone(tensor, debugContext(name));
-  prog.add(poplar::program::Copy(tensor, outTensor, false, debugContext()));
-  return outTensor;
-}
-
-poplar::Tensor PopOpx::broadcast(const std::vector<int64_t> &desired_shape,
-                                 TensorId id) const {
-  return broadcast(desired_shape, get(id).getPoplarTensor());
+  auto outTensor = graph().getPoplarGraph().clone(tensor.getPoplarTensor(),
+                                                  debugContext(name));
+  prog.add(poplar::program::Copy(
+      tensor.getPoplarTensor(), outTensor, false, debugContext()));
+  return snap::Tensor{outTensor, graph()};
 }
 
 const Devicex *PopOpx::getDevicex() const { return dv_p; }
 
-poplar::Tensor PopOpx::broadcast(const std::vector<int64_t> &desired_shape,
-                                 poplar::Tensor t) const {
-  const auto &t_shape = t.shape();
-
-  // `new_shape` is `t_shape` prepended with ones to have matching rank as
-  // `desired_shape`
-  std::vector<std::size_t> new_shape(desired_shape.size(), 1);
-  std::copy(t_shape.rbegin(), t_shape.rend(), new_shape.rbegin());
-
-  // `t` now has matching rank as `desired_shape`
-  t = t.reshape(new_shape);
-
-  // Iteratively broadcast each mismatched dimension of `t`. This will
-  // result in the shape of `t` matching `desired_shape`.
-  for (int dim = 0; dim < desired_shape.size(); ++dim) {
-    if (new_shape[dim] != desired_shape[dim] && new_shape[dim] != 1) {
-      // Incompatible dimension found. Throw an exception, borrowing the same
-      // terminology as numpy.
-      throw error("np broadcasting failed, frames are not aligned");
-    }
-
-    if (new_shape[dim] != desired_shape[dim]) {
-      t = t.broadcast(static_cast<unsigned>(desired_shape[dim]), dim);
-    }
-  }
-
-  return t;
-}
-
-poplar::Tensor PopOpx::getConst(const poplar::Type &type,
-                                const std::vector<size_t> &shape,
-                                double val,
-                                const std::string &name) const {
+snap::Tensor PopOpx::getConst(const poplar::Type &type,
+                              const std::vector<size_t> &shape,
+                              double val,
+                              const std::string &name) const {
   return dv_p->lowering().getConst(
       graph(), type, shape, val, debugContext(name));
 }
 
-poplar::Tensor PopOpx::getScalarVariable(const poplar::Type &type,
-                                         const std::string &name) const {
+snap::Tensor PopOpx::getScalarVariable(const poplar::Type &type,
+                                       const std::string &name) const {
   return dv_p->lowering().getScalarVariable(graph(), type, debugContext(name));
 }
 

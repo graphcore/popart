@@ -41,7 +41,8 @@ poplar::Tensor ShrinkComputex::outplace(poplar::program::Sequence &prog,
                                         const poplar::Tensor &tensor,
                                         const poplar::DebugNameAndId &dnai,
                                         const std::string &debug_prefix) const {
-  auto out_tensor = cloneNcopy(prog, graph, tensor, dnai);
+  auto out_tensor = cloneNcopy(prog, graph, snap::Tensor{tensor, graph}, dnai)
+                        .getPoplarTensor();
   inplace(prog, graph, out_tensor, dnai, debug_prefix);
   return out_tensor;
 }

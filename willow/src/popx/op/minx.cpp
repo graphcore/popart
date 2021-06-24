@@ -39,22 +39,24 @@ view::RegMap MinOpx::unwindRegion(InIndex, OutIndex) const {
 }
 
 void MinOpx::grow(poplar::program::Sequence &prog) const {
-  auto outTensor = cloneNcopy(prog, getInTensor(0).getPoplarTensor());
+  auto outTensor = cloneNcopy(prog, getInTensor(0));
 
   if (op_p->input->n() > 1) {
 
     for (int i = 1; i < op_p->input->n(); ++i) {
-      outTensor = popops::map(graph().getPoplarGraph(),
-                              popops::expr::BinaryOpType::MINIMUM,
-                              outTensor,
-                              getInTensor(i).getPoplarTensor(),
-                              prog,
-                              debugContext(std::string("min") + sNameDelimiter +
-                                           std::to_string(i)));
+      outTensor = snap::Tensor{
+          popops::map(graph().getPoplarGraph(),
+                      popops::expr::BinaryOpType::MINIMUM,
+                      outTensor.getPoplarTensor(),
+                      getInTensor(i).getPoplarTensor(),
+                      prog,
+                      debugContext(std::string("min") + sNameDelimiter +
+                                   std::to_string(i))),
+          graph()};
     }
   }
 
-  setOutTensor(MinOp::getOutIndex(), snap::Tensor{outTensor, graph()});
+  setOutTensor(MinOp::getOutIndex(), outTensor);
 }
 
 MinArgGradOpx::MinArgGradOpx(Op *op_, Devicex *devicex_)

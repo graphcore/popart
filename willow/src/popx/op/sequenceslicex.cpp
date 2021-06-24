@@ -23,8 +23,7 @@ void growSequenceSlice(const PopOpx *opx,
                        bool inplace) {
   auto source =
       opx->getInTensor(SequenceSliceOp::getSourceInIndex()).getPoplarTensor();
-  auto destination = opx->getInTensor(SequenceSliceOp::getDestinationInIndex())
-                         .getPoplarTensor();
+  auto destination = opx->getInTensor(SequenceSliceOp::getDestinationInIndex());
   auto N = opx->getInTensor(SequenceSliceOp::getNInIndex()).getPoplarTensor();
   auto sourceOffset =
       opx->getInTensor(SequenceSliceOp::getSourceOffsetInIndex())
@@ -38,7 +37,7 @@ void growSequenceSlice(const PopOpx *opx,
 
   popops::sequenceSlice(opx->graph().getPoplarGraph(),
                         source,
-                        destination,
+                        destination.getPoplarTensor(),
                         N,
                         sourceOffset,
                         destOffset,
@@ -46,8 +45,7 @@ void growSequenceSlice(const PopOpx *opx,
                         prog,
                         opx->debugContext());
 
-  opx->setOutTensor(SequenceSliceOp::getOutIndex(),
-                    snap::Tensor{destination, opx->graph()});
+  opx->setOutTensor(SequenceSliceOp::getOutIndex(), destination);
 }
 
 } // namespace

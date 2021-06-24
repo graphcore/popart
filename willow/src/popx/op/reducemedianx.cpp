@@ -18,11 +18,10 @@ ReduceMedianOpx::ReduceMedianOpx(Op *op, Devicex *devicex)
 }
 
 void ReduceMedianOpx::grow(poplar::program::Sequence &prog) const {
-  const auto &op   = getOp<ReduceMedianOp>();
-  const auto &axes = op.getAxes();
-  const auto &input =
-      getInTensor(ReduceMedianOp::getInIndex()).getPoplarTensor();
-  auto output = cloneNcopy(prog, input);
+  const auto &op    = getOp<ReduceMedianOp>();
+  const auto &axes  = op.getAxes();
+  const auto &input = getInTensor(ReduceMedianOp::getInIndex());
+  auto output       = cloneNcopy(prog, input).getPoplarTensor();
 
   const auto &pp = reducemedianinternal::computePreprocessingParams(
       op.inShape(ReduceMedianOp::getInIndex()), axes);
@@ -105,12 +104,13 @@ void ReduceMedianGradOpx::grow(poplar::program::Sequence &prog) const {
       debugContext("initGrad"));
   popops::zero(graph().getPoplarGraph(), grad, prog, debugContext("zeroGrad"));
 
-  auto grad_top = cloneNcopy(
-      prog, getInTensor(ReduceMedianGradOp::getInIndex()).getPoplarTensor());
-  grad_top     = grad_top.reshape(backward_shape);
-  auto indices = cloneNcopy(
-      prog,
-      getInTensor(ReduceMedianGradOp::getIndicesInIndex()).getPoplarTensor());
+  auto grad_top =
+      cloneNcopy(prog, getInTensor(ReduceMedianGradOp::getInIndex()))
+          .getPoplarTensor();
+  grad_top = grad_top.reshape(backward_shape);
+  auto indices =
+      cloneNcopy(prog, getInTensor(ReduceMedianGradOp::getIndicesInIndex()))
+          .getPoplarTensor();
   indices = indices.reshape(backward_shape);
 
   const auto &pp =

@@ -41,6 +41,22 @@ public:
   // index1?. default behaviour : throws error
   virtual bool createsEquiv(int index0, const Opx *opx1, int index1) const;
 
+  // clone the snap::Tensor identified by its TensorId, and copy the contents
+  // of it.
+  poplar::Tensor cloneNcopy(poplar::program::Sequence &, TensorId) const;
+  // clone the snap::Tensor and copy the contents of it.
+  poplar::Tensor cloneNcopy(poplar::program::Sequence &,
+                            const poplar::Tensor &,
+                            const std::string name = "") const;
+  // Return the poplar Tensor identified by its TensorId, numpy broadcasting it
+  // up to the given shape. Throws an exception if the identified Tensor doesn't
+  // have a compatible shape.
+  poplar::Tensor broadcast(const std::vector<int64_t> &, TensorId) const;
+  // Return the given poplar Tensor, numpy broadcasting it up to the given
+  // shape. Throws an exception if the given Tensor doesn't have a compatible
+  // shape.
+  poplar::Tensor broadcast(const std::vector<int64_t> &, poplar::Tensor) const;
+
   // Returns the virtual graph if enabled, else returns the dv_p->graph
   virtual poplar::Graph &graph() const;
   // shortcut for dv_p->tensors.get
@@ -65,6 +81,15 @@ public:
   const poplar::Tensor &getOutView(OutIndex index) const;
 
   void setOutTensor(OutIndex index, const poplar::Tensor &tensor) const;
+
+  // shortcut for dv_p->getConst
+  poplar::Tensor getConst(const poplar::Type &type,
+                          const std::vector<size_t> &shape,
+                          double val,
+                          const std::string &name) const;
+
+  poplar::Tensor getScalarVariable(const poplar::Type &type,
+                                   const std::string &name) const;
 };
 
 } // namespace popx

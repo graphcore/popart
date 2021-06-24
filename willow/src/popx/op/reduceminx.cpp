@@ -47,10 +47,10 @@ ReduceMinGradOpx::ReduceMinGradOpx(Op *op, Devicex *devicex)
 
 void ReduceMinGradOpx::grow(poplar::program::Sequence &prog) const {
   const auto &op = getOp<ReduceMinGradOp>();
-  auto output    = cloneNcopy(
-      prog, getInTensor(ReduceMinGradOp::getInIndex()).getPoplarTensor());
-  auto mask = cloneNcopy(
-      prog, getInTensor(ReduceMinGradOp::getFwdOutInIndex()).getPoplarTensor());
+  auto output    = cloneNcopy(prog, getInTensor(ReduceMinGradOp::getInIndex()))
+                    .getPoplarTensor();
+  auto mask = cloneNcopy(prog, getInTensor(ReduceMinGradOp::getFwdOutInIndex()))
+                  .getPoplarTensor();
   auto input_shape     = inShape(ReduceMinGradOp::getInIndex());
   auto output_shape    = outShape(ReduceMinGradOp::getOutIndex());
   const auto new_shape = vector_cast<std::size_t>(op.backwardShape());

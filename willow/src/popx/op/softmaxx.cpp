@@ -55,7 +55,7 @@ poplar::Tensor SoftmaxComputex::outplace(poplar::program::Sequence &p,
                                          const poplar::Tensor &t,
                                          const poplar::DebugNameAndId &dnai,
                                          const std::string &s) const {
-  auto outTensor = cloneNcopy(p, g, t, dnai);
+  auto outTensor = cloneNcopy(p, g, snap::Tensor{t, g}, dnai).getPoplarTensor();
   inplace(p, g, outTensor, dnai, s);
   return outTensor;
 }
@@ -244,7 +244,8 @@ void NlllWithSoftmaxGradDirectOpx::grow(poplar::program::Sequence &prog) const {
                                             debugContext("add"));
 
   // Create an epsilon value
-  poplar::Tensor eps = getConst(probs.elementType(), {1}, 1.0e-7, "epsilon");
+  poplar::Tensor eps =
+      getConst(probs.elementType(), {1}, 1.0e-7, "epsilon").getPoplarTensor();
   // Add eps to reduction to make sure it does not have any 0's and log it,
   popops::mapInPlace(graph().getPoplarGraph(),
                      pe::Log(pe::Add(pe::_1, pe::_2)),

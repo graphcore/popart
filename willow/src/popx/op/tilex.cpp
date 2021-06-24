@@ -13,7 +13,7 @@ namespace popx {
 void TileOpx::grow(poplar::program::Sequence &prog) const {
   // not in-place, so cloning input
   auto outTensor =
-      cloneNcopy(prog, getInTensor(TileOp::getInIndex()).getPoplarTensor());
+      cloneNcopy(prog, getInTensor(TileOp::getInIndex())).getPoplarTensor();
 
   auto repeats = getOp<TileOp>().getRepeats();
   for (unsigned i = 0; i < repeats.size(); i++) {
@@ -54,7 +54,8 @@ void TileGradOpx::grow(poplar::program::Sequence &prog) const {
     for (size_t start = 0; start < inTensor.dim(i); start += outDimSize) {
       auto t = intermediateTensor.slice({start, start + outDimSize}, i);
       if (start == 0) {
-        outTensor = cloneNcopy(prog, t);
+        outTensor =
+            cloneNcopy(prog, snap::Tensor{t, graph()}).getPoplarTensor();
       } else {
         popops::mapInPlace(graph().getPoplarGraph(),
                            popops::expr::BinaryOpType::ADD,

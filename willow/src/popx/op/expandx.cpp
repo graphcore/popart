@@ -82,13 +82,14 @@ view::RegMap BaseExpandOpx::unwindRegion(InIndex inIndex,
   return cop->bwdRegMap(inIndex, outIndex);
 }
 
-void BaseExpandOpx::expand_broadcast(const Shape output_shape,
-                                     poplar::Tensor &expand) const {
+snap::Tensor BaseExpandOpx::expand_broadcast(const Shape output_shape,
+                                             const snap::Tensor &t) const {
   /* Make the rank of the tensor to be expanded and the output the same by
      adding 1 as the higher dimensions example: where a Tensor of shape (3,1) is
      expanded to shape (3,2,6), the tensor to be expanded is reshaped from (3,1)
      to (3,1,1)
   */
+  auto expand = t.getPoplarTensor();
   for (int64_t rank_diff = output_shape.size() - expand.shape().size();
        rank_diff > 0;
        --rank_diff) {
@@ -102,15 +103,17 @@ void BaseExpandOpx::expand_broadcast(const Shape output_shape,
       expand = expand.broadcast(static_cast<uint32_t>(output_shape[dim]), dim);
     }
   }
+
+  auto tx = t;
+  return snap::Tensor{expand, tx};
 }
 
 void ExpandOpx::grow(poplar::program::Sequence &prog) const {
 
   auto output_shape = outShape(ExpandOp::getOutIndex());
-  auto expand       = cloneNcopy(
-      prog, getInTensor(ExpandOp::getInTensorIndex()).getPoplarTensor());
-  expand_broadcast(output_shape, expand);
-  setOutTensor(ExpandOp::getOutIndex(), snap::Tensor{expand, graph()});
+  auto expand = cloneNcopy(prog, getInTensor(ExpandOp::getInTensorIndex()));
+  expand      = expand_broadcast(output_shape, expand);
+  setOutTensor(ExpandOp::getOutIndex(), expand);
 }
 
 ExpandInplaceOpx::ExpandInplaceOpx(Op *op_, Devicex *devicex)
@@ -120,9 +123,9 @@ ExpandInplaceOpx::ExpandInplaceOpx(Op *op_, Devicex *devicex)
 
 void ExpandInplaceOpx::grow(poplar::program::Sequence &) const {
   auto output_shape = outShape(ExpandOp::getOutIndex());
-  auto expand = getInTensor(ExpandOp::getInTensorIndex()).getPoplarTensor();
-  expand_broadcast(output_shape, expand);
-  setOutTensor(ExpandOp::getOutIndex(), snap::Tensor{expand, graph()});
+  auto expand       = getInTensor(ExpandOp::getInTensorIndex());
+  expand            = expand_broadcast(output_shape, expand);
+  setOutTensor(ExpandOp::getOutIndex(), expand);
 }
 
 ExpandGradOpx::ExpandGradOpx(Op *op_, Devicex *devicex) : PopOpx(op_, devicex) {
@@ -154,7 +157,7 @@ void ExpandGradOpx::grow(poplar::program::Sequence &prog) const {
                            debugContext("add"));
   dX      = dX.reshape(xShape);
   setOutTensor(ExpandGradOp::getOutIndex(),
-               snap::Tensor{cloneNcopy(prog, dX), graph()});
+               cloneNcopy(prog, snap::Tensor{dX, graph()}));
 }
 
 namespace {

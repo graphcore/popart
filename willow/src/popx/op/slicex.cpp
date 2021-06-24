@@ -54,7 +54,7 @@ void SliceOpx::grow(poplar::program::Sequence &prog) const {
   }
   // we clone and copy t, as this in not an inplace op
   setOutTensor(SliceOp::getOutIndex(),
-               snap::Tensor{cloneNcopy(prog, t), graph()});
+               cloneNcopy(prog, snap::Tensor{t, graph()}));
 }
 
 SliceOp *SliceOpx::getSliceOp() const { return dynamic_cast<SliceOp *>(op_p); }

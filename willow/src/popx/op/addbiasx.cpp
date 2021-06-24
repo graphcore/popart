@@ -25,21 +25,18 @@ AddBiasInplaceOpx::AddBiasInplaceOpx(Op *op, Devicex *devicex)
 
 void AddBiasOpx::grow(poplar::program::Sequence &prog) const {
   // Clone & copy the input tensor because poplin::addBias is in-place.
-  const auto result = PopOpx::cloneNcopy(
-      prog, getInTensor(AddBiasOp::getDataInIndex()).getPoplarTensor());
+  const auto result =
+      PopOpx::cloneNcopy(prog, getInTensor(AddBiasOp::getDataInIndex()));
   poplin::addBias(graph().getPoplarGraph(),
-                  result,
+                  result.getPoplarTensor(),
                   getInTensor(AddBiasOp::getBiasInIndex()).getPoplarTensor(),
                   prog,
                   debugContext());
-  setOutTensor(AddBiasOp::getOutIndex(), snap::Tensor{result, graph()});
+  setOutTensor(AddBiasOp::getOutIndex(), result);
 }
 
 void AddBiasDataGradOpx::grow(poplar::program::Sequence &prog) const {
-  setOutTensor(
-      0,
-      snap::Tensor{PopOpx::cloneNcopy(prog, getInTensor(0).getPoplarTensor()),
-                   graph()});
+  setOutTensor(0, PopOpx::cloneNcopy(prog, getInTensor(0)));
 }
 
 std::set<TensorId> AddBiasOpx::mustExistBeforeCreate(InIndex index) const {

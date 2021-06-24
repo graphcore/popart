@@ -546,11 +546,11 @@ void IrLowering::instrumentWithHardwareCycleCounter(
   progs.cycleCountTensorToHostFragment().add(cyclesToHostStream);
 }
 
-poplar::Tensor IrLowering::getConst(snap::Graph &graph,
-                                    const poplar::Type &type,
-                                    const std::vector<size_t> &shape,
-                                    double val,
-                                    const poplar::DebugContext &debugContext) {
+snap::Tensor IrLowering::getConst(snap::Graph &graph,
+                                  const poplar::Type &type,
+                                  const std::vector<size_t> &shape,
+                                  double val,
+                                  const poplar::DebugContext &debugContext) {
   static unsigned tileCounter = 0;
 
   auto tensor =
@@ -560,10 +560,10 @@ poplar::Tensor IrLowering::getConst(snap::Graph &graph,
   tileCounter++;
 
   graph.getPoplarGraph().setTileMapping(tensor, tile);
-  return tensor;
+  return snap::Tensor{tensor, graph};
 }
 
-poplar::Tensor
+snap::Tensor
 IrLowering::getScalarVariable(snap::Graph &graph,
                               const poplar::Type &type,
                               const poplar::DebugContext &debugContext) {
@@ -575,7 +575,7 @@ IrLowering::getScalarVariable(snap::Graph &graph,
   tileCounter--;
 
   graph.getPoplarGraph().setTileMapping(tensor, tile);
-  return tensor;
+  return snap::Tensor{tensor, graph};
 }
 
 snap::Graph &IrLowering::getVirtualGraph(VGraphId virtualGraphIndex,
@@ -2753,7 +2753,8 @@ void IrLowering::prepareGraph() {
 
   // Create a constant tensor which will be used if opxTrace is enabled
   if (opxTrace) {
-    opxTraceTensor = getConst(graph(), poplar::HALF, {1}, 0, "traceTensor");
+    opxTraceTensor = getConst(graph(), poplar::HALF, {1}, 0, "traceTensor")
+                         .getPoplarTensor();
   }
 
   // create an Opx for every Op
@@ -3503,17 +3504,19 @@ PriTask IrLowering::initBatchCounterTensorsTask(poplar::program::Sequence &sq) {
   auto f = [&sq, this]() {
     logging::devicex::debug("Adding batch counter tensors");
 
-    poplar::Tensor falseConst = getConst(graph(), poplar::BOOL, {}, 0, "false");
+    poplar::Tensor falseConst =
+        getConst(graph(), poplar::BOOL, {}, 0, "false").getPoplarTensor();
 
     // Add scalar tensors outside of the ir to track the batch
     // Id and decide when to execute the copy to the host
     for (ReturnPeriod N : ir().getDataFlow().rps()) {
       // Add to map so copy task can access
-      batchCountingTensors[N] = getScalarVariable(graph(), poplar::INT, "");
+      batchCountingTensors[N] =
+          getScalarVariable(graph(), poplar::INT, "").getPoplarTensor();
       batchCountCheckingTensors[N] =
-          getScalarVariable(graph(), poplar::BOOL, "");
+          getScalarVariable(graph(), poplar::BOOL, "").getPoplarTensor();
 
-      getConst(graph(), poplar::INT, {}, N, "batchCounter");
+      getConst(graph(), poplar::INT, {}, N, "batchCounter").getPoplarTensor();
 
       poputil::mapTensorLinearly(graph().getPoplarGraph(),
                                  batchCountingTensors[N]);
@@ -3530,7 +3533,7 @@ PriTask IrLowering::initBatchCounterTensorsTask(poplar::program::Sequence &sq) {
     }
 
     // Make sure const 1 tensor exists
-    getConst(graph(), poplar::INT, {}, 1, "one");
+    getConst(graph(), poplar::INT, {}, 1, "one").getPoplarTensor();
     return SequenceMap();
   };
 
@@ -3553,20 +3556,22 @@ PriTask IrLowering::updateBatchCountTask(poplar::program::Sequence &sq) {
     // the anchor tensor is required, and check if it is a
     // copy batch
     for (ReturnPeriod N : ir().getDataFlow().rps()) {
-      popops::addInPlace(
-          graph().getPoplarGraph(),
-          batchCountingTensors[N],
-          getConst(graph(), poplar::INT, {}, 1, "batchCount/one"),
-          seqs.getSequence(&sq));
+      popops::addInPlace(graph().getPoplarGraph(),
+                         batchCountingTensors[N],
+                         getConst(graph(), poplar::INT, {}, 1, "batchCount/one")
+                             .getPoplarTensor(),
+                         seqs.getSequence(&sq));
 
       batchCountCheckingTensors[N] =
           popops::eq(graph().getPoplarGraph(),
                      batchCountingTensors[N],
-                     getConst(graph(), poplar::INT, {}, N, "batchCount/n"),
+                     getConst(graph(), poplar::INT, {}, N, "batchCount/n")
+                         .getPoplarTensor(),
                      seqs.getSequence(&sq));
 
       // Reset batch count once it has reached N
-      auto zero = getConst(graph(), poplar::INT, {}, 0, "batchCount/zero");
+      auto zero = getConst(graph(), poplar::INT, {}, 0, "batchCount/zero")
+                      .getPoplarTensor();
       seqs.getSequence(&sq).add(poplar::program::If(
           batchCountCheckingTensors[N],
           poplar::program::Copy(

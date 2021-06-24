@@ -44,8 +44,8 @@ ReduceSumGradOpx::ReduceSumGradOpx(Op *op, Devicex *devicex)
 
 void ReduceSumGradOpx::grow(poplar::program::Sequence &prog) const {
   const auto &op = getOp<ReduceSumGradOp>();
-  auto output    = cloneNcopy(
-      prog, getInTensor(ReduceSumGradOp::getInIndex()).getPoplarTensor());
+  auto output    = cloneNcopy(prog, getInTensor(ReduceSumGradOp::getInIndex()))
+                    .getPoplarTensor();
   auto input_shape     = inShape(ReduceSumGradOp::getInIndex());
   auto output_shape    = outShape(ReduceSumGradOp::getOutIndex());
   const auto new_shape = vector_cast<std::size_t>(op.backwardShape());

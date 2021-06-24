@@ -62,7 +62,7 @@ void ConcatOpx::grow(poplar::program::Sequence &prog) const {
       poplar::concat(tensors, static_cast<unsigned>(op->getAxis()));
 
   setOutTensor(ConcatOp::getOutIndex(),
-               snap::Tensor{cloneNcopy(prog, concat), graph()});
+               cloneNcopy(prog, snap::Tensor{concat, graph()}));
 }
 
 ConcatInplaceOpx::ConcatInplaceOpx(Op *op_, Devicex *devicex)
@@ -96,7 +96,7 @@ void ConcatGradOpx::grow(poplar::program::Sequence &prog) const {
                          static_cast<unsigned>(op->getAxis()));
 
   setOutTensor(ConcatGradOp::getOutIndex(),
-               snap::Tensor{cloneNcopy(prog, out), graph()});
+               cloneNcopy(prog, snap::Tensor{out, graph()}));
 }
 
 namespace {

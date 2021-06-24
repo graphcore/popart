@@ -23,9 +23,8 @@ DynamicUpdateOpx::DynamicUpdateOpx(Op *op, Devicex *devicex)
 }
 
 void DynamicUpdateOpx::grow(poplar::program::Sequence &prog) const {
-  auto &op = getOp<DynamicTernaryBaseOp>();
-  auto tensor =
-      getInTensor(DynamicTernaryBaseOp::getUpdateInIndex()).getPoplarTensor();
+  auto &op    = getOp<DynamicTernaryBaseOp>();
+  auto tensor = getInTensor(DynamicTernaryBaseOp::getUpdateInIndex());
   auto index =
       getInTensor(DynamicTernaryBaseOp::getIndexInIndex()).getPoplarTensor();
   auto slice =
@@ -38,7 +37,7 @@ void DynamicUpdateOpx::grow(poplar::program::Sequence &prog) const {
 
   popops::dynamicUpdate(
       graph().getPoplarGraph(),
-      outTensor,
+      outTensor.getPoplarTensor(),
       slice,
       popops::cast(graph().getPoplarGraph(),
                    index.reshape({op.getAxes().size()}),
@@ -51,8 +50,7 @@ void DynamicUpdateOpx::grow(poplar::program::Sequence &prog) const {
       debugContext("dynamic_update_" +
                    op.inId(DynamicTernaryBaseOp::getUpdateInIndex())));
 
-  setOutTensor(DynamicTernaryBaseOp::getOutIndex(),
-               snap::Tensor{outTensor, graph()});
+  setOutTensor(DynamicTernaryBaseOp::getOutIndex(), outTensor);
 }
 
 InputCreatorType DynamicUpdateOpx::getInputCreatorType(InIndex index) const {
@@ -189,8 +187,8 @@ DynamicUpdateOpx::mustExistBeforeCreate(InIndex index) const {
   return mustExist;
 }
 
-poplar::Tensor DynamicUpdateOpx::cloneNcopyOpt(poplar::program::Sequence &s,
-                                               const poplar::Tensor &t) const {
+snap::Tensor DynamicUpdateOpx::cloneNcopyOpt(poplar::program::Sequence &s,
+                                             const snap::Tensor &t) const {
   return cloneNcopy(s, t);
 }
 
@@ -199,10 +197,10 @@ DynamicUpdateInplaceOpx::DynamicUpdateInplaceOpx(Op *op, Devicex *devicex)
   verifyOp<DynamicUpdateInplaceOp>(op);
 }
 
-poplar::Tensor
+snap::Tensor
 DynamicUpdateInplaceOpx::cloneNcopyOpt(poplar::program::Sequence &s,
-                                       const poplar::Tensor &t) const {
-  if (t.isParallelWriteable()) {
+                                       const snap::Tensor &t) const {
+  if (t.getPoplarTensor().isParallelWriteable()) {
     return t;
   } else {
     // Outplace because t has internal aliases

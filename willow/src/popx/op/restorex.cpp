@@ -40,7 +40,8 @@ RestoreBaseOpx<Derived>::growRestore(poplar::program::Sequence &prog,
 
   // Create the stash size tensor.
   const auto stashSizeTensor =
-      getConst(poplar::UNSIGNED_INT, {}, stashSize, "stash_size");
+      getConst(poplar::UNSIGNED_INT, {}, stashSize, "stash_size")
+          .getPoplarTensor();
 
   // Grow program to take slice of stash at the stash index.
   snap::Tensor actFromStash;
@@ -54,7 +55,7 @@ RestoreBaseOpx<Derived>::growRestore(poplar::program::Sequence &prog,
   }
 
   // Create a "1" tensor and grow program to increment stash index by 1.
-  auto one = getConst(poplar::UNSIGNED_INT, {}, 1.0, "one");
+  auto one = getConst(poplar::UNSIGNED_INT, {}, 1.0, "one").getPoplarTensor();
   popops::addInPlace(
       graph().getPoplarGraph(), stashIndex, one, prog, debugContext());
   popops::remInPlace(graph().getPoplarGraph(),
