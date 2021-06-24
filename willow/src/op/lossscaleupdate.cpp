@@ -64,7 +64,8 @@ static OpDefinition lossScaleUpdateOpDef(
     {OpDefinition::Inputs({{"loss_scale_update_factor", T0},
                            {"grad_statistics", T1}}),
      OpDefinition::Outputs({{"loss_scale_update_factor_updated", T0}}),
-     OpDefinition::Attributes({{"to", {"FLOAT|FLOAT16"}}})});
+     OpDefinition::Attributes({{"to", {"FLOAT|FLOAT16"}},
+                               {"clip_output", {"INT64"}}})});
 
 static OpCreator<LossScaleUpdateOp> lossScaleUpdateOpCreator(
     OpDefinitions({{Onnx::CustomOperators::LossScaleUpdate,
@@ -76,8 +77,11 @@ static OpCreator<LossScaleUpdateOp> lossScaleUpdateOpCreator(
           static_cast<ONNX_NAMESPACE::TensorProto_DataType>(
               i64_updateFactorDType));
 
+      bool clipOutput = checkedIntToBool(
+          info.attributes.getAttribute<Attributes::Int>("clip_output", 0));
+
       return std::make_unique<LossScaleUpdateOp>(
-          info.opid, updateFactorDType, info.settings);
+          info.opid, updateFactorDType, clipOutput, info.settings);
     },
     true);
 

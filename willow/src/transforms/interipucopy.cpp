@@ -9,6 +9,7 @@
 #include <popart/op/ipucopy.hpp>
 #include <popart/tensor.hpp>
 #include <popart/tensors.hpp>
+#include <popart/util.hpp>
 
 #include <popart/transforms/automaticlossscaling.hpp>
 #include <popart/transforms/interipucopy.hpp>
@@ -78,9 +79,8 @@ bool belongsInOptimizerFromHostFragment(const Graph &graph, IpuCopyOp *copyOp) {
                  .getSessionOptions()
                  .automaticLossScalingSettings.enabled) {
       bool copiesLossScaleTensor =
-          copyOp->inTensor(0) == AutomaticLossScale::getLossScaleTensor(graph);
-      auto inverseLossScaleTensors =
-          AutomaticLossScale::getInverseLossScaleTensors(graph);
+          copyOp->inTensor(0) == getLossScaleTensor(graph);
+      auto inverseLossScaleTensors = getInverseLossScaleTensors(graph);
       bool copiesInverseLossScaleTensor =
           inverseLossScaleTensors.find(copyOp->inTensor(0)) !=
           inverseLossScaleTensors.end();

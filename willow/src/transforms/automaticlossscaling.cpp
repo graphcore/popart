@@ -1,5 +1,4 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-
 #include <onnxutil.hpp>
 #include <popart/aliasesmap.hpp>
 #include <popart/graph.hpp>
@@ -17,8 +16,10 @@
 #include <popart/op/sum.hpp>
 #include <popart/optimizer.hpp>
 #include <popart/tensorindex.hpp>
+#include <popart/tensorinfo.hpp>
 #include <popart/topocons.hpp>
 #include <popart/transforms/automaticlossscaling.hpp>
+#include <popart/util.hpp>
 
 namespace popart {
 
@@ -147,38 +148,6 @@ std::size_t AutomaticLossScale::id() {
   return typeid(AutomaticLossScale).hash_code();
 }
 
-Tensor *AutomaticLossScale::getLossScaleTensor(const Graph &graph) {
-  const Ir &ir               = graph.getIr();
-  const Optimizer &optimizer = ir.getOptimizer();
-
-  TensorId lsFP16 = optimizer.getLossScalingTensorId(DataType::FLOAT16);
-  TensorId lsFP32 = optimizer.getLossScalingTensorId(DataType::FLOAT);
-  bool existsLossScaleFP16 = graph.getTensors().contains(lsFP16);
-  bool existsLossScaleFP32 = graph.getTensors().contains(lsFP32);
-
-  Tensor *lossScaleTensor;
-  if (existsLossScaleFP16 && existsLossScaleFP32) {
-    throw error("[AutomaticLossScale transform] Unable to determine the data "
-                "type of the loss scale tensor, as both tensors '{}' and '{}' "
-                "exist in graph {}",
-                lsFP16,
-                lsFP32,
-                graph.id);
-  } else {
-    if (existsLossScaleFP16) {
-      lossScaleTensor = graph.getTensors().get(lsFP16);
-    } else if (existsLossScaleFP32) {
-      lossScaleTensor = graph.getTensors().get(lsFP32);
-    } else {
-      throw error("[AutomaticLossScale transform] Unable to find any loss "
-                  "scale tensor in graph '{}'",
-                  graph.id);
-    }
-  }
-
-  return lossScaleTensor;
-}
-
 TensorId getStatisticsAccumulatorTensorId() {
   return reservedAccumPrefix() + std::string("autoLossScaleStats");
 }
@@ -207,38 +176,6 @@ addOnesTensor(Graph &graph, const TensorId &tensorId, const TensorInfo info) {
   }
 
   return graph.getTensors().get(tensorId);
-}
-
-std::set<Tensor *>
-AutomaticLossScale::getInverseLossScaleTensors(const Graph &graph) {
-  const Ir &ir               = graph.getIr();
-  const Optimizer &optimizer = ir.getOptimizer();
-
-  // To ensure that the tensor we return from this method is the compound
-  // scalar this is used to apply the inverse loss scale in all VarUpdateOps
-  // in this graph, we check that all Variable tensors have the same type.
-  // Otherwise the graph will contain more than one of these tensors; one
-  // per type.
-  auto variables = graph.getTensors().getOfType(TensorType::Variable);
-
-  std::set<Tensor *> inverseLossScaleTensors;
-  for (Tensor *variable : variables) {
-    if (ir.tensorExistsInInitialisers(variable->id)) {
-      TensorId inverseLossScaleId =
-          optimizer.getInverseLossScalingTensorId(*variable);
-      if (graph.getTensors().contains(inverseLossScaleId)) {
-        inverseLossScaleTensors.insert(
-            graph.getTensors().get(inverseLossScaleId));
-      } else {
-        throw error("[AutomaticLossScale transform] Unable to find inverse "
-                    "loss scale tensor, '{}', in graph '{}'",
-                    inverseLossScaleId,
-                    graph.id);
-      }
-    }
-  }
-
-  return inverseLossScaleTensors;
 }
 
 bool AutomaticLossScale::apply(Graph &graph) const {
@@ -306,10 +243,20 @@ bool AutomaticLossScale::apply(Graph &graph) const {
   std::set<Tensor *> inverseLossScaleTensors =
       getInverseLossScaleTensors(graph);
 
+  // Check if the loss scale should be clipped. Either should be true:
+  // 1. Any of toTrackTensors is FLOAT16.
+  // 2. lossScaleTensor is FLOAT16.
+  bool clipOutput = std::any_of(
+      toTrackTensors.begin(), toTrackTensors.end(), [](const Tensor *tensor) {
+        return (tensor->info.dataType() == DataType::FLOAT16);
+      });
+  clipOutput |= lossScaleTensor->info.dataType() == DataType::FLOAT16;
+
   // Pass loss scale tensor and HistogramOp outputs into the LossScaleUpdateOp
   auto lossScaleUpdateOp =
       graph.createOp<LossScaleUpdateOp>(Onnx::CustomOperators::LossScaleUpdate,
                                         lossScaleTensor->info.dataType(),
+                                        clipOutput,
                                         Op::Settings(graph, ""));
 
   // The grad statistics tensors to connect to the LossScaleUpdateOp

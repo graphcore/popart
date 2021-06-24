@@ -1,8 +1,13 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
+#include <limits>
+
+#include <poplar/Tensor.hpp>
+
 #include <popart/op/lossscaleupdate.hpp>
 #include <popart/popx/devicex.hpp>
 #include <popart/popx/op/lossscaleupdatex.hpp>
 #include <popart/popx/opxmanager.hpp>
+#include <popart/util.hpp>
 
 #include <popops/Cast.hpp>
 #include <popops/ElementWise.hpp>
@@ -120,6 +125,31 @@ void LossScaleUpdateOpx::grow(poplar::program::Sequence &prog) const {
 
   prog.add(poplar::program::If(
       shouldScaleDown, scaleDown, scaleUp, debugContext("lossScaleUpdate")));
+  if (op.getClipOutput()) {
+    // Whenever the finalLossScale is in fp16 or the weights are in fp16, the
+    // finalLossScale should be clipped so that its value fits in the fp16
+    // range. We chose to clip it at the largest power of 2 that fits in fp16 -
+    // (2^15 = 32768). The finalLossScale is calculated as:
+    //     finalLossScale = lossScaleUpdateFactor * lossScaling
+    // As a result, the lossScaleUpdateFactor should be clipped at
+    // 2^15 / lossScaling to satisfy the requirement above.
+    auto lossScaling =
+        get(getLossScaleTensor(op.getGraph())->id).getPoplarTensor();
+    auto clipAt_ = graph().getPoplarGraph().addConstant<float>(
+        lossScaling.elementType(), {1}, std::numeric_limits<short>::max() + 1);
+    graph().getPoplarGraph().setTileMapping(clipAt_, 0);
+
+    auto clipAt = popops::div(graph().getPoplarGraph(),
+                              clipAt_,
+                              lossScaling,
+                              prog,
+                              debugContext("clipAtValue"));
+    popops::minInPlace(graph().getPoplarGraph(),
+                       lossScaleUpdateFactor,
+                       clipAt,
+                       prog,
+                       debugContext("clipOutput"));
+  }
 
   setOutTensor(op.getUpdatedLossScaleUpdateFactorOutIndex(),
                snap::Tensor{lossScaleUpdateFactor, graph()});

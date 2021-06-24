@@ -13,6 +13,25 @@
 
 namespace popart {
 
+/**
+ * Get the loss scale tensor of a graph.
+ *
+ * \param graph The graph, in which the loss scale belongs.
+ * \return Tensor* The loss scale tensor.
+ */
+Tensor *getLossScaleTensor(const Graph &graph);
+
+/**
+ * Get the inverse loss scale tensors of a graph.
+ *
+ * Either the scalar tensors representing the inverse loss scale factor, or a
+ * compound scalar tensor which contains the inverse loss scale factor.
+ *
+ * \param graph The graph, in which the loss scale belongs.
+ * \return std::set<Tensor *> The inverse loss scale tensors.
+ */
+std::set<Tensor *> getInverseLossScaleTensors(const Graph &graph);
+
 std::vector<char>
 cast(DataType src, DataType dst, const void *data, size_t nbytes);
 std::vector<char>

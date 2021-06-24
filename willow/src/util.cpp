@@ -3,9 +3,12 @@
 #include <iostream>
 #include <poprithms/ndarray/shape.hpp>
 #include <poprithms/util/printiter.hpp>
+#include <popart/graph.hpp>
+#include <popart/ir.hpp>
 #include <popart/logging.hpp>
 #include <popart/names.hpp>
 #include <popart/op.hpp>
+#include <popart/optimizer.hpp>
 #include <popart/tensor.hpp>
 #include <popart/tensorindex.hpp>
 #include <popart/util.hpp>
@@ -13,6 +16,69 @@
 #include <boost/lexical_cast.hpp>
 
 namespace popart {
+
+Tensor *getLossScaleTensor(const Graph &graph) {
+  const Ir &ir               = graph.getIr();
+  const Optimizer &optimizer = ir.getOptimizer();
+
+  TensorId lsFP16 = optimizer.getLossScalingTensorId(DataType::FLOAT16);
+  TensorId lsFP32 = optimizer.getLossScalingTensorId(DataType::FLOAT);
+  bool existsLossScaleFP16 = graph.getTensors().contains(lsFP16);
+  bool existsLossScaleFP32 = graph.getTensors().contains(lsFP32);
+
+  Tensor *lossScaleTensor;
+  if (existsLossScaleFP16 && existsLossScaleFP32) {
+    throw error("[AutomaticLossScale transform] Unable to determine the data "
+                "type of the loss scale tensor, as both tensors '{}' and '{}' "
+                "exist in graph {}",
+                lsFP16,
+                lsFP32,
+                graph.id);
+  } else {
+    if (existsLossScaleFP16) {
+      lossScaleTensor = graph.getTensors().get(lsFP16);
+    } else if (existsLossScaleFP32) {
+      lossScaleTensor = graph.getTensors().get(lsFP32);
+    } else {
+      throw error("[AutomaticLossScale transform] Unable to find any loss "
+                  "scale tensor in graph '{}'",
+                  graph.id);
+    }
+  }
+
+  return lossScaleTensor;
+}
+
+std::set<Tensor *> getInverseLossScaleTensors(const Graph &graph) {
+  const Ir &ir               = graph.getIr();
+  const Optimizer &optimizer = ir.getOptimizer();
+
+  // To ensure that the tensor we return from this method is the compound
+  // scalar this is used to apply the inverse loss scale in all VarUpdateOps
+  // in this graph, we check that all Variable tensors have the same type.
+  // Otherwise the graph will contain more than one of these tensors; one
+  // per type.
+  auto variables = graph.getTensors().getOfType(TensorType::Variable);
+
+  std::set<Tensor *> inverseLossScaleTensors;
+  for (Tensor *variable : variables) {
+    if (ir.tensorExistsInInitialisers(variable->id)) {
+      TensorId inverseLossScaleId =
+          optimizer.getInverseLossScalingTensorId(*variable);
+      if (graph.getTensors().contains(inverseLossScaleId)) {
+        inverseLossScaleTensors.insert(
+            graph.getTensors().get(inverseLossScaleId));
+      } else {
+        throw error("[AutomaticLossScale transform] Unable to find inverse "
+                    "loss scale tensor, '{}', in graph '{}'",
+                    inverseLossScaleId,
+                    graph.id);
+      }
+    }
+  }
+
+  return inverseLossScaleTensors;
+}
 
 char *getPopartEnvVar(std::string env_var) {
   return std::getenv(logging::format("POPART_{}", env_var).c_str());

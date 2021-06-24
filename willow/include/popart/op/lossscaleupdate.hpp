@@ -15,13 +15,17 @@ namespace popart {
 // and outputs:
 // - The loss scale update factor - a scalar tensor. This can be used to
 //   inplace-modify the loss scale and inverse loss scale optimizer tensors
-//   in the automatic loss scaling Transform
+//   in the automatic loss scaling Transform. This can be optionally clipped to
+//   the largest power of 2 that fits in fp16 (32768) by setting clipOutput to
+//   true.
 class LossScaleUpdateOp : public Op {
 public:
   LossScaleUpdateOp(const OperatorIdentifier &_opid,
                     const DataType &updateFactorDType_,
+                    bool clipOutput_,
                     const Op::Settings &settings_)
-      : Op(_opid, settings_), updateFactorDType(updateFactorDType_) {}
+      : Op(_opid, settings_), updateFactorDType(updateFactorDType_),
+        clipOutput(clipOutput_) {}
 
   void setup() final;
 
@@ -39,6 +43,7 @@ public:
   std::unique_ptr<Op> clone() const override;
 
   DataType getUpdateFactorDType() const { return updateFactorDType; }
+  bool getClipOutput() const { return clipOutput; }
 
   // This Op aliases and modifies the input at index
   // getLossScaleUpdateFactorInIndex()
@@ -48,6 +53,7 @@ public:
 
 private:
   DataType updateFactorDType;
+  bool clipOutput;
 };
 
 } // namespace popart
