@@ -33,7 +33,8 @@ add_popart_cpp_unit_test(unittest_example unittest_example.cpp TEST_UTILS trompe
 add_popart_cpp_unit_test(unittest_graphutils unittest_graphutils.cpp TEST_UTILS test-graphs-test-util)
 add_popart_cpp_unit_test(unittest_tensor unittest_tensor.cpp TEST_UTILS test-graphs-test-util)
 add_popart_cpp_unit_test(unittest_tensorid unittest_tensorid.cpp TEST_UTILS test-graphs-test-util)
-add_popart_cpp_unit_test(unittest_utils unittest_utils.cpp TEST_UTILS trompeloeil)
+# TODO: Re-enable when T41277 is fixed
+#add_popart_cpp_unit_test(unittest_utils unittest_utils.cpp TEST_UTILS trompeloeil)
 add_popart_cpp_unit_test(unittest_Session_createFromIr session_createFromIr.cpp)
 
 add_popart_cpp_unit_test(unittest_pattern_sgd2decompose patterns/sgd2decompose.cpp TEST_UTILS test-graphs-test-util ir-query-test-util)
