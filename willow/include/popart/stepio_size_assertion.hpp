@@ -31,6 +31,7 @@ public:
   // M is a map type from TensorId to T
   // G is a class with operator(const T &) and returns number of elements
   template <class M, class G> void checkIn(const M &m, const G &g) const {
+    const bool hasOnnxModel = ir.hasOnnxModel();
     for (auto x = m.cbegin(); x != m.cend(); ++x) {
       const auto id = x->first;
       if (exe.containsTensor(id)) {
@@ -39,15 +40,16 @@ public:
         std::ostringstream oss;
         if (nElms != expected) {
           throwBadInputSize(id, expected, nElms);
-        } else if (std::find(onnxIns.cbegin(), onnxIns.cend(), id) ==
-                   onnxIns.cend()) {
+        } else if (hasOnnxModel &&
+                   (std::find(onnxIns.cbegin(), onnxIns.cend(), id) ==
+                    onnxIns.cend())) {
           throwIncorrectInput(id);
         }
       } else if (std::find(onnxIns.cbegin(), onnxIns.cend(), id) !=
                  onnxIns.cend()) {
-        warnOfUnunsedInput(id);
+        warnOfUnunsedInput(id, hasOnnxModel);
       } else {
-        throwMissingInput(id);
+        throwMissingInput(id, hasOnnxModel);
       }
     }
   }
@@ -91,11 +93,12 @@ private:
                                        int64_t nElms,
                                        AnchorReturnType art) const;
 
-  [[noreturn]] void throwMissingInput(const TensorId &) const;
+  [[noreturn]] void throwMissingInput(const TensorId &,
+                                      bool isFromOnnx = true) const;
   [[noreturn]] void throwIncorrectInput(const TensorId &) const;
   [[noreturn]] void throwMissingOutput(const TensorId &) const;
 
-  void warnOfUnunsedInput(const TensorId &) const;
+  void warnOfUnunsedInput(const TensorId &, bool isFromOnnx = true) const;
 
   const popx::Executablex &exe;
   const Ir &ir;

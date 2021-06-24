@@ -12,21 +12,24 @@ void CorrectnessAsserter::throwBadInputSize(const TensorId &id,
   throw error(getBaseError("input", id, expected, nElms));
 }
 
-void CorrectnessAsserter::warnOfUnunsedInput(const TensorId &id) const {
+void CorrectnessAsserter::warnOfUnunsedInput(const TensorId &id,
+                                             bool isFromOnnx) const {
   std::ostringstream oss;
-  oss << "The input Tensor " << id
-      << " to the ONNX Model does not appear in the optimized "
+  oss << "The input Tensor " << id << " to the" << (isFromOnnx ? " ONNX " : " ")
+      << "Model does not appear in the optimized "
       << "PopART Ir, possibly due to constant folding. "
       << "Therefore, the input buffer provided will not be used. ";
   logging::devicex::warn(oss.str());
 }
 
-void CorrectnessAsserter::throwMissingInput(const TensorId &id) const {
+void CorrectnessAsserter::throwMissingInput(const TensorId &id,
+                                            bool isFromOnnx) const {
   std::ostringstream oss;
   oss << "Testing that the buffer provided by user for input Tensor " << id
-      << " has the correct number of elements, "
-      << " But there is no Tensor named " << id << " in the Ir's main Graph, "
-      << " and it does not exist in the original ONNX Model.";
+      << " has the correct number of elements,"
+      << " But there is no Tensor named " << id << " in the Ir's main Graph"
+      << (isFromOnnx ? ", and it does not exist in the original ONNX Model."
+                     : ".");
   throw error(oss.str());
 }
 
@@ -64,7 +67,7 @@ std::string CorrectnessAsserter::getBaseError(const std::string &io,
                                               int64_t expected,
                                               int64_t nElms) const {
 
-  const auto onnxTensorElms = getNElms(id);
+  const auto tensorElms = getNElms(id);
 
   std::ostringstream oss;
   oss << "Unexpected number of " << io << " elements for Tensor " << id
@@ -75,7 +78,7 @@ std::string CorrectnessAsserter::getBaseError(const std::string &io,
   oss << "\n   replication  factor = " << rFact;
   oss << "\n   accumulation factor = " << aFact;
   oss << "\n   batches per step    = " << bps;
-  oss << "\n   ONNX Tensor nelms   = " << onnxTensorElms;
+  oss << "\n   Tensor nelms        = " << tensorElms;
   return oss.str();
 }
 

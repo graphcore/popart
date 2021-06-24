@@ -178,10 +178,6 @@ BOOST_AUTO_TEST_CASE(TestBasicGraph) {
 
   StepIO stepio(inputs, anchors);
 
-  // Must be disabled, as these assume the Ir came from an Onnx model, and so
-  // check the Ir against its Onnx model member.
-  stepio.enableRuntimeAsserts(false);
-
   // Before running, must write the weights to device.
   session->weightsFromHost();
 

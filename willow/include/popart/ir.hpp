@@ -125,6 +125,14 @@ public:
   // initializer list, and in the ONNX input list.
   void setOnnxModel(const ONNX_NAMESPACE::ModelProto &model);
 
+  /**
+   * Check if there's an ONNX model in the IR. This is true if the IR has been
+   * created from an ONNX model or using the Builder.
+   *
+   * \return true If there is an onnx model, false otherwise.
+   */
+  bool hasOnnxModel() const { return onnxModel.get() != nullptr; }
+
   // Set the dataflow
   void setDataFlow(const DataFlow &df);
 
@@ -508,8 +516,6 @@ public:
 
 private:
   void prepareImpl(const IrBundle &, const HashesMap &cacheEntries);
-
-  bool hasOnnxModel() const;
 
   // Accessors for the tensors in the top-level graph
   const Tensors &getTensors() const;

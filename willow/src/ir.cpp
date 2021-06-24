@@ -3637,8 +3637,6 @@ size_t Ir::getIrBundleHash() const { return irBundleHash; }
 
 void Ir::setIrBundleHash(size_t v) { irBundleHash = v; }
 
-bool Ir::hasOnnxModel() const { return onnxModel.get() != nullptr; }
-
 } // namespace popart
 
 namespace std {

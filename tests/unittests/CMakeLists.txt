@@ -54,6 +54,8 @@ add_popart_cpp_unit_test(unittest_op_sgd2combo op/sgd2combo.cpp)
 
 add_popart_cpp_unit_test(unittest_ir_deonnxing_regression_tests ir/deonnxing_regression_tests.cpp)
 
+add_popart_cpp_unit_test(unittest_stepio_deonnxing_regression_tests stepio/deonnxing_regression_tests.cpp)
+
 add_popart_cpp_unit_test(unittest_autodiff transforms/unittest_autodiff.cpp TEST_UTILS ir-query-test-util)
 add_popart_cpp_unit_test(unittest_backwardsgraphcreator transforms/autodiff/unittest_backwardsgraphcreator.cpp)
 add_popart_cpp_unit_test(unittest_backwardsgraphcreatorhelper transforms/autodiff/unittest_backwardsgraphcreatorhelper.cpp)
