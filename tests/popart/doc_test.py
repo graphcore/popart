@@ -1,12 +1,13 @@
 # Copyright (c) 2020 Graphcore Ltd. All rights reserved.
+from pathlib import Path
 import os
 import sys
 
-PYTHON_EXAMPLE_PATH = os.path.abspath(
-    os.path.join(os.path.dirname(__file__), "..", "..", "docs", "user_guide",
-                 "python_examples"))
+PYTHON_EXAMPLE_PATH = (Path(__file__).parent.parent.parent /
+                       'docs/user_guide/files').resolve()
+assert PYTHON_EXAMPLE_PATH.exists()
 
-sys.path.insert(0, PYTHON_EXAMPLE_PATH)
+sys.path.insert(0, str(PYTHON_EXAMPLE_PATH))
 
 
 def test_importing_graphs():
