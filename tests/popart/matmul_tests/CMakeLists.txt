@@ -10,4 +10,4 @@ add_popart_cpp_unit_test(dataless0_train_matmul_test
 # add_popart_cpp_unit_test(matmulgradpattern_test
 #                          matmulgradpattern_test.cpp)
 
-add_popart_py_unit_test(matmul_partials_tests VARIANTS IpuModel)
+add_popart_py_unit_test(matmul_partials_tests matmul_partials_tests.py VARIANTS IpuModel)

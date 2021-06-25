@@ -7,6 +7,7 @@ import popart._internal.ir as _ir
 # If this class is not required it can be removed.
 class Ir:
     """ Class that represents an IR to the popart.ir user. """
+
     def __init__(self):
         # Member of type popart._internal.ir.Ir that binds to popart::Ir.
         self._ir = _ir.Ir()

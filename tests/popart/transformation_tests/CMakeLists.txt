@@ -19,8 +19,8 @@ add_popart_cpp_unit_test(batchserialize_ir batchserialize_ir_test.cpp)
 
 add_subdirectory(mergevarupdates)
 
-add_popart_py_unit_test(serializematmul)
-add_popart_py_unit_test(groupedmatmul)
-add_popart_py_unit_test(explicitrecomputation)
-add_popart_py_unit_test(batchserialize)
-add_popart_py_unit_test(batchserialize_dropout_test VARIANTS Hw)
+add_popart_py_unit_test(serializematmul serializematmul.py)
+add_popart_py_unit_test(groupedmatmul groupedmatmul.py)
+add_popart_py_unit_test(explicitrecomputation explicitrecomputation.py)
+add_popart_py_unit_test(batchserialize batchserialize.py)
+add_popart_py_unit_test(batchserialize_dropout_test batchserialize_dropout_test.py VARIANTS Hw)

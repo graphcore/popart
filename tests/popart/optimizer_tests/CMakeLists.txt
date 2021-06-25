@@ -12,20 +12,20 @@ add_popart_cpp_unit_test(sgd_mixed_mode_test_cpp_1_1 sgd_mixed_mode_test_cpp_1_1
 add_popart_cpp_unit_test(sgd_mixed_mode_test_cpp_1_0 sgd_mixed_mode_test_cpp_1_0.cpp)
 add_popart_cpp_unit_test(sgd_mixed_mode_compatibility_test_0 sgd_mixed_mode_compatibility_test_0.cpp)
 
-add_popart_py_unit_test(adam_mixed_mode_test_py_0)
-add_popart_py_unit_test(adaptive_mixed_mode_test_py_0)
-add_popart_py_unit_test(pytorch_comparisons VARIANTS IpuModel)
-add_popart_py_unit_test(rmsprop_tf_mode_test)
-add_popart_py_unit_test(sgd_mixed_mode_test_py_0)
-add_popart_py_unit_test(sgd_mixed_mode_test_py_1)
-add_popart_py_unit_test(sgd1_accumulator_test)
+add_popart_py_unit_test(adam_mixed_mode_test_py_0 adam_mixed_mode_test_py_0.py)
+add_popart_py_unit_test(adaptive_mixed_mode_test_py_0 adaptive_mixed_mode_test_py_0.py)
+add_popart_py_unit_test(pytorch_comparisons pytorch_comparisons.py VARIANTS IpuModel)
+add_popart_py_unit_test(rmsprop_tf_mode_test rmsprop_tf_mode_test.py)
+add_popart_py_unit_test(sgd_mixed_mode_test_py_0 sgd_mixed_mode_test_py_0.py)
+add_popart_py_unit_test(sgd_mixed_mode_test_py_1 sgd_mixed_mode_test_py_1.py)
+add_popart_py_unit_test(sgd1_accumulator_test sgd1_accumulator_test.py)
 
-add_popart_py_unit_test(global_batch_size_test MATCHEXPR sgd_ VARIANTS Hw)
-add_popart_py_unit_test(global_batch_size_test MATCHEXPR adam VARIANTS Hw)
-add_popart_py_unit_test(global_batch_size_test MATCHEXPR lamb VARIANTS Hw)
+add_popart_py_unit_test(global_batch_size_test global_batch_size_test.py MATCHEXPR sgd_ VARIANTS Hw)
+add_popart_py_unit_test(global_batch_size_test global_batch_size_test.py MATCHEXPR adam VARIANTS Hw)
+add_popart_py_unit_test(global_batch_size_test global_batch_size_test.py MATCHEXPR lamb VARIANTS Hw)
 # Further split the SGDM tests on the first parameter of the test function to,
 # help reduce timeouts. This could break if the test functions change.
 # NOTE: CMake bug: For some reason, the keywords get set wrong if VARIANTS comes
 #       after MATCHEXPR
-add_popart_py_unit_test(global_batch_size_test VARIANTS Hw MATCHEXPR "sgdm[True")
-add_popart_py_unit_test(global_batch_size_test VARIANTS Hw MATCHEXPR "sgdm[False")
+add_popart_py_unit_test(global_batch_size_test global_batch_size_test.py VARIANTS Hw MATCHEXPR "sgdm[True")
+add_popart_py_unit_test(global_batch_size_test global_batch_size_test.py VARIANTS Hw MATCHEXPR "sgdm[False")

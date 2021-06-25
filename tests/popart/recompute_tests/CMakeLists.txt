@@ -1,4 +1,4 @@
-add_popart_py_unit_test(implicit_recompute_regression_test)
+add_popart_py_unit_test(implicit_recompute_regression_test implicit_recompute_regression_test.py)
 
 #test(s) of Ir annotation (no device tests)
 add_popart_cpp_unit_test(recompute_test_ir_none_annotation0 

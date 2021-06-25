@@ -1,9 +1,15 @@
+// Copyright (c) 2021 Graphcore Ltd. All rights reserved.
+#include "bindings/graph.hpp"
+#include "bindings/graphid.hpp"
+#include "bindings/ir.hpp"
+
 #include <pybind11/pybind11.h>
 
 #include <popart/ir.hpp>
 
-// Shorthand for namespace.
-namespace py = pybind11;
+namespace popart {
+namespace _internal {
+namespace ir {
 
 PYBIND11_MODULE(popart_internal_ir, m) {
   m.doc() = "This module is an internal PopART API (`popart._internal.ir`) "
@@ -12,6 +18,11 @@ PYBIND11_MODULE(popart_internal_ir, m) {
             "between releases with no guarantee of backwards compatibility "
             "or deprecation periods.";
 
-  py::class_<popart::Ir> cls(m, "Ir");
-  cls.def(py::init<>());
+  bindGraph(m);
+  bindGraphId(m);
+  bindIr(m);
 }
+
+} // namespace ir
+} // namespace _internal
+} // namespace popart

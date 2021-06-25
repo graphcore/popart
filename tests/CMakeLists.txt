@@ -1,3 +1,4 @@
+# Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 find_package(Boost 1.70 REQUIRED COMPONENTS unit_test_framework filesystem random system)
 
 set(boost_targets
@@ -202,6 +203,49 @@ function(add_popart_cpp_unit_test name)
       set_tests_properties(${test_name}
         PROPERTIES FIXTURES_REQUIRED SingleIpuIsAvailable)
     endif()
+  endforeach()
+endfunction()
+
+# Python unit test function
+# Uses VARIANTS as above for add_popart_cpp_unit_test
+# Takes optional MATCHEXPR parameter, which is a string that will be passed
+# verbatim to pytest as a selector when running the test `-k <matchexpr_value>`.
+function(add_popart_py_unit_test name filename)
+  set(options "")
+  set(oneValueArgs MATCHEXPR)
+  set(multiValueArgs LABELS VARIANTS)
+  cmake_parse_arguments(test_args "${options}" "${oneValueArgs}" "${multiValueArgs}" "${ARGN}")
+
+  sanitise_variants(test_args_VARIANTS)
+  extract_targets(test_args_VARIANTS TARGETS)
+
+  foreach(VARIANT ${test_args_VARIANTS})
+    extract_target(VARIANT TEST_TARGET)
+    extract_runconfig(VARIANT TEST_CONFIG)
+
+    set(fork_test "")
+    if ("${VARIANT}" STREQUAL "Hw")
+      # Make sure IPUs have detached between each pytest
+      set(fork_test "--forked")
+    endif()
+
+    if (NOT DEFINED test_args_MATCHEXPR)
+      set(test_name "${TEST_TARGET}_${TEST_CONFIG}_${name}")
+      add_test(NAME "${test_name}"
+            COMMAND ${Python3_EXECUTABLE} -m pytest -s ${CMAKE_CURRENT_SOURCE_DIR}/${filename} ${fork_test}
+            WORKING_DIRECTORY ${CMAKE_CURRENT_BUILD_DIR})
+    else()
+      # Note, solid brackets and dash can form part of parameterised pytest names.
+      string(REGEX REPLACE " " "_" MATCHEXPR_NAME "${test_args_MATCHEXPR}")
+      set(MATCHEXPR_VALUE "${test_args_MATCHEXPR}")
+      set(test_name "${TEST_TARGET}_${TEST_CONFIG}_${name}-${MATCHEXPR_NAME}")
+
+      add_test(NAME "${test_name}"
+            COMMAND "${Python3_EXECUTABLE}" -m pytest -s "${CMAKE_CURRENT_SOURCE_DIR}/${filename}" -k "${MATCHEXPR_VALUE}" ${fork_test}
+            WORKING_DIRECTORY ${CMAKE_CURRENT_BUILD_DIR})
+    endif()
+    set_tests_properties(${test_name} PROPERTIES
+                         ENVIRONMENT TEST_TARGET=${TEST_TARGET})
   endforeach()
 endfunction()
 

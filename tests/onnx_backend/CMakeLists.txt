@@ -1,10 +1,2 @@
-function(add_popart_py_unit_test name)
-  message(STATUS
-    "Adding Python test '${name}'")
-  add_test(NAME "${name}"
-           COMMAND ${Python3_EXECUTABLE} -m pytest -s ${CMAKE_CURRENT_SOURCE_DIR}/${name}.py
-           WORKING_DIRECTORY ${CMAKE_CURRENT_BUILD_DIR})
-endfunction()
-
-add_popart_py_unit_test(test_backend_test)
-
+# Copyright (c) 2021 Graphcore Ltd. All rights reserved.
+add_popart_py_unit_test(test_backend_test test_backend_test.py)
