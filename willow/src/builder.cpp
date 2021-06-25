@@ -1260,6 +1260,36 @@ TensorId AiGraphcoreOpset1::reverse(const std::vector<TensorId> &args,
   return outputs.at(0);
 }
 
+TensorId AiGraphcoreOpset1::packedDataBlock(
+    const std::vector<TensorId> &args,
+    const std::vector<int64_t> &maxSequenceLengths,
+    int64_t resultSize,
+    int64_t callbackBatchSize,
+    const Builder &callback,
+    const DebugContext &debugContext) {
+
+  ONNX_NAMESPACE::ModelProto modelProto =
+      io::getModelFromString(callback.getModelProto());
+  ONNX_NAMESPACE::GraphProto callbackProto = modelProto.graph();
+
+  std::map<std::string, popart::any> attributes = {
+      {"resultSize", resultSize},
+      {"callbackBatchSize", callbackBatchSize},
+      {"maxSequenceLengths", maxSequenceLengths},
+      {"callback", callbackProto}};
+
+  BuilderDebugInfo di(debugContext, __POPART_FUNCTION_NAME__, args, attributes);
+  attributes.insert({sDebugInfoId, di.getId()});
+
+  auto outputs = impl->op(Onnx::AiGraphcore::OpSet1::PackedDataBlock,
+                          getOpsetVersion(),
+                          args,
+                          attributes,
+                          debugContext);
+  di.setOutputs(outputs);
+  return outputs.at(0);
+}
+
 void AiGraphcoreOpset1::abort(const std::vector<TensorId> &args,
                               const DebugContext &debugContext) {
   std::map<std::string, popart::any> attributes;

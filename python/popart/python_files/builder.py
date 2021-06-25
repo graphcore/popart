@@ -433,6 +433,17 @@ class AiGraphcore(Opset):
         return self.aiGraphcore.call(args, num_outputs, callee._impl,
                                      debugName)
 
+    def packedDataBlock(self,
+                        args: List[str],
+                        maxSequenceLengths: List[int],
+                        resultSize: int,
+                        callbackBatchSize: int,
+                        callback: Builder,
+                        debugName: str = "") -> str:
+        return self.aiGraphcore.packedDataBlock(args, maxSequenceLengths,
+                                                resultSize, callbackBatchSize,
+                                                callback._impl, debugName)
+
     def __getattr__(self, name: str) -> Any:
         """Reroute all attribute requests to the underlying ``_BuilderCore`` object
 

@@ -316,6 +316,7 @@ const static AiGraphcoreOpIdV1 PadInplace("PadInplace");
 const static AiGraphcoreOpIdV1 PowLhsInplace("PowLhsInplace");
 const static AiGraphcoreOpIdV1 PrintTensor_1("PrintTensor", 1, 1);
 const static AiGraphcoreOpIdV1 ReduceMedian("ReduceMedian", 1, 2);
+const static AiGraphcoreOpIdV1 PackedDataBlock("PackedDataBlock", {}, 1);
 const static AiGraphcoreOpIdV1 ReluInplace("ReluInplace");
 const static AiGraphcoreOpIdV1 Remainder("Remainder", 2, 1);
 const static AiGraphcoreOpIdV1 MultiExchange("MultiExchange");
@@ -418,6 +419,8 @@ const static OperatorIdentifier Nll          = CustomOperators::Nll;
 const static OperatorIdentifier Nop          = CustomOperators::Nop_1;
 const static OperatorIdentifier PrintTensor  = CustomOperators::PrintTensor_1;
 const static OperatorIdentifier ReduceMedian = CustomOperators::ReduceMedian;
+const static OperatorIdentifier PackedDataBlock =
+    CustomOperators::PackedDataBlock;
 const static OperatorIdentifier ReplicatedAllReduce =
     CustomOperators::ReplicatedAllReduce;
 const static OperatorIdentifier Remainder = CustomOperators::Remainder;

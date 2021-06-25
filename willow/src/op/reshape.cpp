@@ -169,6 +169,8 @@ void ReshapeBaseOp::setup() {
   if (nOut != nIn) {
     std::stringstream ss;
     ss << "Failure in ReshapeOp::setup() for " << debugName() << ". "
+       << "Trying to reshape from " << inShape(getInIndex()) << " to "
+       << outShape << ". "
        << "The number of elements of the input is " << nIn
        << ", while the number of elements of the output is " << nOut
        << ". The number of elements cannot change for a ReshapeOp";

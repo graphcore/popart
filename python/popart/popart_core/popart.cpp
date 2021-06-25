@@ -2359,6 +2359,15 @@ PYBIND11_MODULE(popart_core, m) {
             py::arg("zeroUnused")   = 0,
             py::arg("debugContext") = std::string(),
             DOC(popart, AiGraphcoreOpset1, sequenceslice));
+    cls.def("packedDataBlock",
+            &AiGraphcoreOpset1::packedDataBlock,
+            py::arg("args"),
+            py::arg("maxSequenceLengths"),
+            py::arg("resultSize"),
+            py::arg("callbackBatchSize"),
+            py::arg("callback"),
+            py::arg("debugPrefix") = std::string(),
+            DOC(popart, AiGraphcoreOpset1, call));
     cls.def("call",
             &AiGraphcoreOpset1::call,
             py::arg("args"),

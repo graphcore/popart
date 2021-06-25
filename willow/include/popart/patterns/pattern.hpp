@@ -57,6 +57,7 @@ enum class PreAliasPatternType {
   FmodArg0GradOp,
   ScanToLoop,
   LoopScanOut,
+  PackedDataBlock,
 };
 
 // Definition: A tensor is "touched" by a Pattern if

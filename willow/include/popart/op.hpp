@@ -693,6 +693,10 @@ public:
   virtual void
   configureForReplicatedTensorSharding(ReplicatedTensorShardingIndices indices);
 
+  // T41400 is to remove all other versions of `transferBaseProperties` and
+  // replace with this.
+  void transferBaseProperties(Op *to);
+
 protected:
   // Attempt to get the data of an input tensor. This method will throw an
   // exception if it could not access the data.

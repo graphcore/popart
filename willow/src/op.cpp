@@ -1613,4 +1613,27 @@ Op::mapInplaceProposalGate0(const AliasModel &aliasModel,
   return {aliasModel.getGate(id), 0};
 }
 
+void Op::transferBaseProperties(Op *to) {
+  if (hasVirtualGraphId()) {
+    to->setVirtualGraphId(getVirtualGraphId());
+  }
+  if (hasExecutionPhase()) {
+    to->setExecutionPhase(getExecutionPhase());
+  }
+  if (hasPipelineStage()) {
+    to->setPipelineStage(getPipelineStage());
+  }
+  if (hasBatchSerializedPhase()) {
+    to->setBatchSerializedPhase(getBatchSerializedPhase());
+  }
+
+  to->settings.scope            = settings.scope;
+  to->settings.recomputeType    = settings.recomputeType;
+  to->settings.tensorLocation   = settings.tensorLocation;
+  to->fromLoss                  = fromLoss;
+  to->toLoss                    = toLoss;
+  to->settings.schedulePriority = settings.schedulePriority;
+  to->settings.debugInfoId      = settings.debugInfoId;
+}
+
 } // namespace popart

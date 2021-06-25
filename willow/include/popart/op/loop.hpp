@@ -93,6 +93,9 @@ public:
   // The input specifying the maximum number of loop iterations
   static InIndex getMaximumTripCountInIndex() { return 0; }
 
+  // The loop body graph input specifying the current loop iteration
+  static InIndex getLoopIterationInIndex() { return 0; }
+
   // Termination condition: if true, loop keeps going, if false, loop stops
   static InIndex getTerminationConditionInIndex() { return 1; }
 

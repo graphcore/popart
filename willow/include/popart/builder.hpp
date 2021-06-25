@@ -704,6 +704,30 @@ public:
                    const DebugContext &debugContext = {});
 
   /**
+   * Add a packedDataBlock operator to the model.
+   *
+   * Unpack packed sequences of data according to lengths and offsets tensors,
+   * and call the callback on the unpacked sequences.
+   *
+   * \param args Input tensors.
+   * \param maxSequenceLengths The maximum length of a sequence in each of the
+   *        data inputs.
+   * \param resultSize The size of the first dimension of the
+   *        result tensor.
+   * \param callbackBatchSize The number of batches to pass
+   *        to the callback.
+   * \param callback The callback function.
+   * \param debugContext Optional debug information.
+   * \return The name of the result tensor.
+   */
+  TensorId packedDataBlock(const std::vector<TensorId> &args,
+                           const std::vector<int64_t> &maxSequenceLengths,
+                           int64_t resultSize,
+                           int64_t callbackBatchSize,
+                           const Builder &callback,
+                           const DebugContext &debugContext = {});
+
+  /**
    * Add abort operation to the model.
    *
    * The operation can be conditional or unconditional.
