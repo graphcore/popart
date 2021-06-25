@@ -90,6 +90,7 @@ endfunction()
 # add_popart_py_unit_test("test_session") Utility
 
 # Python tests. Please try to sort alphabetically.
+add_popart_py_unit_test(abort_test VARIANTS Hw)
 add_popart_py_unit_test(addbias)
 add_popart_py_unit_test(aliaszerocopy_model_test VARIANTS IpuModel)
 add_popart_py_unit_test(all_constexpr)
