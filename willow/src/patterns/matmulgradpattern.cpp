@@ -203,9 +203,7 @@ bool MatMulGradPattern::apply(Op *op) const {
   auto lhsShape = getLhsShape(op);
   auto rhsShape = getRhsShape(op);
 
-  logging::pattern::info(
-      "Applying {} pattern to replace marmulXXXgradop with matmulop",
-      getPatternName());
+  logging::pattern::info("Applying {} pattern", getPatternName());
 
   auto reshapeOpInExpand = dynamic_cast<ReshapeOp *>(
       makeReplacementOpInIr(Onnx::Operators::Reshape_5, op, "ReshapeIn"));
