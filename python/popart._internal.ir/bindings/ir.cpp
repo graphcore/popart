@@ -2,6 +2,9 @@
 #include "bindings/ir.hpp"
 
 #include <pybind11/pybind11.h>
+#include <pybind11/stl.h>
+
+#include <popart/graph.hpp>
 #include <popart/ir.hpp>
 
 namespace py = pybind11;
@@ -10,7 +13,24 @@ namespace popart {
 namespace _internal {
 namespace ir {
 
-void bindIr(py::module &m) { py::class_<Ir>(m, "Ir").def(py::init<>()); }
+void bindIr(py::module &m) {
+
+  py::class_<Ir>(m, "Ir")
+      .def(py::init<>())
+      .def("getMainGraph",
+           py::overload_cast<>(&Ir::getMainGraph),
+           py::return_value_policy::reference)
+      .def("getAllGraphs",
+           &popart::Ir::getAllGraphs,
+           py::return_value_policy::reference)
+      .def(
+          "getGraph", &popart::Ir::getGraph, py::return_value_policy::reference)
+      .def("hasGraph", &popart::Ir::hasGraph)
+      .def("createGraph",
+           &popart::Ir::createGraph,
+           py::return_value_policy::reference)
+      .def("removeGraph", &popart::Ir::removeGraph);
+}
 
 } // namespace ir
 } // namespace _internal

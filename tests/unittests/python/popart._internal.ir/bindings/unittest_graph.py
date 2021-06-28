@@ -6,4 +6,4 @@ def test_graph_construction():
     """ Test that we can construct a popart._internal.ir.Graph object. """
     ir = _ir.Ir()
     gId = _ir.GraphId("g")
-    _ir.Graph(ir, gId)
+    _ = _ir.Graph(ir, gId)

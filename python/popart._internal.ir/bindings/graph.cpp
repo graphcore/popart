@@ -13,7 +13,9 @@ namespace _internal {
 namespace ir {
 
 void bindGraph(py::module &m) {
-  py::class_<Graph>(m, "Graph").def(py::init<Ir &, const GraphId &>());
+  py::class_<Graph>(m, "Graph")
+      .def(py::init<Ir &, const GraphId &>())
+      .def_readonly("id", &Graph::id);
 }
 
 } // namespace ir

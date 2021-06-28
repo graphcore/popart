@@ -16,7 +16,10 @@ namespace ir {
 void bindGraphId(py::module &m) {
   py::class_<GraphId>(m, "GraphId")
       .def(py::init<const std::string>())
-      .def(py::self < py::self);
+      .def(py::self < py::self)
+      .def(py::self == py::self)
+      .def(py::self != py::self)
+      .def("str", &GraphId::str, py::return_value_policy::reference);
 }
 
 } // namespace ir
