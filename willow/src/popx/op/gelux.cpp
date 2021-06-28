@@ -21,25 +21,24 @@ GeluOpx::GeluOpx(Op *op, Devicex *devicex)
   verifyOp<GeluOp>(op, {Onnx::CustomOperators::Gelu_1});
 }
 
-poplar::Tensor GeluComputex::outplace(poplar::program::Sequence &prog,
-                                      snap::Graph &graph,
-                                      const poplar::Tensor &tensor,
-                                      const poplar::DebugNameAndId &dnai,
-                                      const std::string &debug_prefix) const {
-  auto out_tensor = cloneNcopy(prog, graph, snap::Tensor{tensor, graph}, dnai)
-                        .getPoplarTensor();
+snap::Tensor GeluComputex::outplace(poplar::program::Sequence &prog,
+                                    snap::Graph &graph,
+                                    const snap::Tensor &tensor,
+                                    const poplar::DebugNameAndId &dnai,
+                                    const std::string &debug_prefix) const {
+  auto out_tensor = cloneNcopy(prog, graph, tensor, dnai);
   inplace(prog, graph, out_tensor, dnai, debug_prefix);
   return out_tensor;
 }
 
 void GeluComputex::inplace(poplar::program::Sequence &prog,
                            snap::Graph &graph,
-                           const poplar::Tensor &tensor,
+                           const snap::Tensor &tensor,
                            const poplar::DebugNameAndId &dnai,
                            const std::string &debug_prefix) const {
   popnn::nonLinearityInPlace(graph.getPoplarGraph(),
                              popnn::NonLinearityType::GELU,
-                             tensor,
+                             tensor.getPoplarTensor(),
                              prog,
                              {dnai, debug_prefix});
 }

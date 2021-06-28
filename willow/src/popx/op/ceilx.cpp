@@ -8,28 +8,29 @@
 namespace popart {
 namespace popx {
 
-poplar::Tensor CeilComputex::outplace(poplar::program::Sequence &prog,
-                                      snap::Graph &graph,
-                                      const poplar::Tensor &tensor,
-                                      const poplar::DebugNameAndId &dnai,
-                                      const std::string &s) const {
+snap::Tensor CeilComputex::outplace(poplar::program::Sequence &prog,
+                                    snap::Graph &graph,
+                                    const snap::Tensor &tensor,
+                                    const poplar::DebugNameAndId &dnai,
+                                    const std::string &s) const {
 
-  return popops::map(graph.getPoplarGraph(),
-                     popops::expr::UnaryOpType::CEIL,
-                     tensor,
-                     prog,
-                     {dnai, s});
+  return snap::Tensor{popops::map(graph.getPoplarGraph(),
+                                  popops::expr::UnaryOpType::CEIL,
+                                  tensor.getPoplarTensor(),
+                                  prog,
+                                  {dnai, s}),
+                      graph};
 }
 
 void CeilComputex::inplace(poplar::program::Sequence &prog,
                            snap::Graph &graph,
-                           const poplar::Tensor &tensor,
+                           const snap::Tensor &tensor,
                            const poplar::DebugNameAndId &dnai,
                            const std::string &s) const {
 
   popops::mapInPlace(graph.getPoplarGraph(),
                      popops::expr::UnaryOpType::CEIL,
-                     tensor,
+                     tensor.getPoplarTensor(),
                      prog,
                      {dnai, s});
 }

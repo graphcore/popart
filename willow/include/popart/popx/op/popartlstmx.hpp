@@ -32,7 +32,7 @@ protected:
     auto batchSize    = static_cast<unsigned>(lstm_op.getBatchSize());
     auto hiddenSize   = static_cast<unsigned>(lstm_op.getHiddenSize());
 
-    if (seq_lens_t.valid()) {
+    if (seq_lens_t.getPoplarTensor().valid()) {
 
       auto params =
           popnn::lstm::LstmParams(popType(inInfo),

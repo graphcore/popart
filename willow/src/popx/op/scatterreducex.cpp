@@ -32,7 +32,9 @@ poplar::Tensor linearizeIndices(const PopOpx &opx,
                                            result.elementType());
 
   // numCols * indices + colIndices
-  result            = opx.cloneNcopy(prog, snap::Tensor{result, opx.graph()}, "copyIndices").getPoplarTensor();
+  result =
+      opx.cloneNcopy(prog, snap::Tensor{result, opx.graph()}, "copyIndices")
+          .getPoplarTensor();
   auto numColsConst = opx.graph().getPoplarGraph().addConstant(
       result.elementType(), {}, numCols, opx.getDebugNameAndId("numCols"));
   opx.graph().getPoplarGraph().setTileMapping(numColsConst, 0);

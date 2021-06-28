@@ -20,25 +20,28 @@ ReluOpx::ReluOpx(Op *op, Devicex *devicex)
   verifyOp<ReluOp>(op, Onnx::Operators::Relu_6);
 }
 
-poplar::Tensor ReluComputex::outplace(poplar::program::Sequence &p,
-                                      snap::Graph &g,
-                                      const poplar::Tensor &t,
-                                      const poplar::DebugNameAndId &dnai,
-                                      const std::string &s) const {
-  auto outTensor = cloneNcopy(p, g, snap::Tensor{t, g}, dnai).getPoplarTensor();
+snap::Tensor ReluComputex::outplace(poplar::program::Sequence &p,
+                                    snap::Graph &g,
+                                    const snap::Tensor &t,
+                                    const poplar::DebugNameAndId &dnai,
+                                    const std::string &s) const {
+  auto outTensor = cloneNcopy(p, g, t, dnai);
   inplace(p, g, outTensor, dnai, s);
   return outTensor;
 }
 
 void ReluComputex::inplace(poplar::program::Sequence &p,
                            snap::Graph &g,
-                           const poplar::Tensor &t,
+                           const snap::Tensor &t,
                            const poplar::DebugNameAndId &dnai,
                            const std::string &s) const {
 
   // apply the inplace RELU
-  popnn::nonLinearityInPlace(
-      g.getPoplarGraph(), popnn::NonLinearityType::RELU, t, p, {dnai, s});
+  popnn::nonLinearityInPlace(g.getPoplarGraph(),
+                             popnn::NonLinearityType::RELU,
+                             t.getPoplarTensor(),
+                             p,
+                             {dnai, s});
 }
 
 ReluGradOpx::ReluGradOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {

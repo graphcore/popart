@@ -13,15 +13,15 @@ class ClipComputex : public EwuComputex {
 public:
   ClipComputex(float min_, float max_) : min(min_), max(max_) {}
 
-  poplar::Tensor outplace(poplar::program::Sequence &,
-                          snap::Graph &,
-                          const poplar::Tensor &tensor,
-                          const poplar::DebugNameAndId &,
-                          const std::string &) const final;
+  snap::Tensor outplace(poplar::program::Sequence &,
+                        snap::Graph &,
+                        const snap::Tensor &tensor,
+                        const poplar::DebugNameAndId &,
+                        const std::string &) const final;
 
   void inplace(poplar::program::Sequence &,
                snap::Graph &,
-               const poplar::Tensor &,
+               const snap::Tensor &,
                const poplar::DebugNameAndId &,
                const std::string &) const final;
 
@@ -29,12 +29,12 @@ public:
     return std::unique_ptr<EwuComputex>(new ClipComputex(min, max));
   }
 
-  static poplar::Tensor getClipTensor(float val,
-                                      const poplar::Type &type,
-                                      snap::Graph &graph,
-                                      const poplar::DebugNameAndId &);
-  poplar::Tensor broadcastClipTensor(poplar::Tensor clipT,
-                                     const poplar::Tensor &refT) const;
+  static snap::Tensor getClipTensor(float val,
+                                    const poplar::Type &type,
+                                    snap::Graph &graph,
+                                    const poplar::DebugNameAndId &);
+  snap::Tensor broadcastClipTensor(snap::Tensor clipT,
+                                   const snap::Tensor &refT) const;
 
   static float getMinFromClipOp(Op *op);
   static float getMaxFromClipOp(Op *op);

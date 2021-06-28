@@ -40,27 +40,28 @@ LogSoftmaxInplaceOpx::LogSoftmaxInplaceOpx(Op *op, Devicex *devicex)
           devicex,
           createLogSoftmaxComputex<LogSoftmaxInplaceOp>(op)) {}
 
-poplar::Tensor LogSoftmaxComputex::outplace(poplar::program::Sequence &p,
-                                            snap::Graph &g,
-                                            const poplar::Tensor &t,
-                                            const poplar::DebugNameAndId &dnai,
-                                            const std::string &s) const {
-  auto outTensor = cloneNcopy(p, g, snap::Tensor{t, g}, dnai).getPoplarTensor();
+snap::Tensor LogSoftmaxComputex::outplace(poplar::program::Sequence &p,
+                                          snap::Graph &g,
+                                          const snap::Tensor &t,
+                                          const poplar::DebugNameAndId &dnai,
+                                          const std::string &s) const {
+  auto outTensor = cloneNcopy(p, g, t, dnai);
   inplace(p, g, outTensor, dnai, s);
   return outTensor;
 }
 
 void LogSoftmaxComputex::inplace(poplar::program::Sequence &p,
                                  snap::Graph &g,
-                                 const poplar::Tensor &t,
+                                 const snap::Tensor &t,
                                  const poplar::DebugNameAndId &dnai,
                                  const std::string &s) const {
   popnn::logSoftmaxInPlace(
-      g.getPoplarGraph(), coerceTo2D(t, axis), p, {dnai, s});
+      g.getPoplarGraph(), coerceTo2D(t, axis).getPoplarTensor(), p, {dnai, s});
 }
 
-poplar::Tensor LogSoftmaxComputex::reshape(const poplar::Tensor &t) const {
-  return t.reshape(outShape);
+snap::Tensor LogSoftmaxComputex::reshape(const snap::Tensor &t) const {
+  auto tx = t;
+  return snap::Tensor{t.getPoplarTensor().reshape(outShape), tx};
 }
 
 LogSoftmaxGradOpx::LogSoftmaxGradOpx(Op *op, Devicex *devicex)
@@ -88,14 +89,12 @@ void LogSoftmaxGradOpx::grow(poplar::program::Sequence &prog) const {
   const auto axis = getOp<LogSoftmaxGradOp>().getAxis();
 
   // The gradient of the loss w.r.t. the probabilities (g in above description)
-  auto d_probs =
-      getInTensor(LogSoftmaxGradOp::getGradProbsInIndex()).getPoplarTensor();
-  d_probs = EwuComputex::coerceTo2D(d_probs, axis);
+  auto d_probs = getInTensor(LogSoftmaxGradOp::getGradProbsInIndex());
+  d_probs      = EwuComputex::coerceTo2D(d_probs, axis);
 
   // The input to the logsoftmax (which we are computing the gradient of here)
-  auto pre_probs =
-      getInTensor(LogSoftmaxGradOp::getActsInIndex()).getPoplarTensor();
-  pre_probs = EwuComputex::coerceTo2D(pre_probs, axis);
+  auto pre_probs = getInTensor(LogSoftmaxGradOp::getActsInIndex());
+  pre_probs      = EwuComputex::coerceTo2D(pre_probs, axis);
 
   // compute the probabilities from softmax
   popnn::NonLinearityType nlType;
@@ -106,7 +105,7 @@ void LogSoftmaxGradOpx::grow(poplar::program::Sequence &prog) const {
   }
   auto probs = popnn::nonLinearity(graph().getPoplarGraph(),
                                    nlType,
-                                   pre_probs,
+                                   pre_probs.getPoplarTensor(),
                                    prog,
                                    debugContext("nonLinearity"));
 
@@ -118,7 +117,7 @@ void LogSoftmaxGradOpx::grow(poplar::program::Sequence &prog) const {
   std::vector<size_t> upRanked(probs.rank(), 1);
   upRanked[0] = probs.dim(0);
   auto sum_g  = popops::reduce(graph().getPoplarGraph(),
-                              d_probs,
+                              d_probs.getPoplarTensor(),
                               redDims,
                               {popops::Operation::ADD},
                               prog,
@@ -128,7 +127,7 @@ void LogSoftmaxGradOpx::grow(poplar::program::Sequence &prog) const {
   // g_i - softmax(x_i) * sum_j (g_j)
   auto dv = popops::map(graph().getPoplarGraph(),
                         pe::Sub(pe::_1, pe::Mul(pe::_2, pe::_3)),
-                        {d_probs, probs, sum_g},
+                        {d_probs.getPoplarTensor(), probs, sum_g},
                         prog,
                         debugContext("SubMul"));
 

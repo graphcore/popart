@@ -36,20 +36,19 @@ ShrinkOpx::ShrinkOpx(Op *op, Devicex *devicex)
   verifyOp<ShrinkOp>(op, {Onnx::Operators::Shrink_9});
 }
 
-poplar::Tensor ShrinkComputex::outplace(poplar::program::Sequence &prog,
-                                        snap::Graph &graph,
-                                        const poplar::Tensor &tensor,
-                                        const poplar::DebugNameAndId &dnai,
-                                        const std::string &debug_prefix) const {
-  auto out_tensor = cloneNcopy(prog, graph, snap::Tensor{tensor, graph}, dnai)
-                        .getPoplarTensor();
+snap::Tensor ShrinkComputex::outplace(poplar::program::Sequence &prog,
+                                      snap::Graph &graph,
+                                      const snap::Tensor &tensor,
+                                      const poplar::DebugNameAndId &dnai,
+                                      const std::string &debug_prefix) const {
+  auto out_tensor = cloneNcopy(prog, graph, tensor, dnai);
   inplace(prog, graph, out_tensor, dnai, debug_prefix);
   return out_tensor;
 }
 
 void ShrinkComputex::inplace(poplar::program::Sequence &prog,
                              snap::Graph &graph,
-                             const poplar::Tensor &tensor,
+                             const snap::Tensor &tensor,
                              const poplar::DebugNameAndId &dnai,
                              const std::string &debug_prefix) const {
   popops::mapInPlace(
@@ -59,7 +58,7 @@ void ShrinkComputex::inplace(poplar::program::Sequence &prog,
                             pe::Const(0.0f),
                             pe::Gt(pe::_1, pe::Const(this->lambd()))),
                  pe::Lt(pe::_1, pe::Const(-this->lambd()))),
-      {tensor},
+      {tensor.getPoplarTensor()},
       prog,
       {dnai, debug_prefix});
 }

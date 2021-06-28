@@ -11,23 +11,31 @@ namespace popx {
 
 MulComputex::MulComputex(EwbComputex::InplacePolicy ip) : EwbComputex(ip) {}
 
-poplar::Tensor MulComputex::outplace(poplar::program::Sequence &prog,
-                                     snap::Graph &graph,
-                                     const poplar::Tensor &a,
-                                     const poplar::Tensor &b,
-                                     const poplar::DebugNameAndId &dnai,
-                                     const std::string &debugStr) const {
-  return popops::mul(graph.getPoplarGraph(), a, b, prog, {dnai, debugStr});
+snap::Tensor MulComputex::outplace(poplar::program::Sequence &prog,
+                                   snap::Graph &graph,
+                                   const snap::Tensor &a,
+                                   const snap::Tensor &b,
+                                   const poplar::DebugNameAndId &dnai,
+                                   const std::string &debugStr) const {
+  return snap::Tensor{popops::mul(graph.getPoplarGraph(),
+                                  a.getPoplarTensor(),
+                                  b.getPoplarTensor(),
+                                  prog,
+                                  {dnai, debugStr}),
+                      graph};
 }
 
 void MulComputex::inplace(poplar::program::Sequence &prog,
                           snap::Graph &graph,
-                          const poplar::Tensor &tInOut,
-                          const poplar::Tensor &tIn,
+                          const snap::Tensor &tInOut,
+                          const snap::Tensor &tIn,
                           const poplar::DebugNameAndId &dnai,
                           const std::string &debugStr) const {
-  popops::mulInPlace(
-      graph.getPoplarGraph(), tInOut, tIn, prog, {dnai, debugStr});
+  popops::mulInPlace(graph.getPoplarGraph(),
+                     tInOut.getPoplarTensor(),
+                     tIn.getPoplarTensor(),
+                     prog,
+                     {dnai, debugStr});
 }
 
 MulOpx::MulOpx(Op *op, Devicex *devicex)

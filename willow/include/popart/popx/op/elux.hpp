@@ -14,7 +14,7 @@ public:
 
   void inplace(poplar::program::Sequence &,
                snap::Graph &,
-               const poplar::Tensor &,
+               const snap::Tensor &,
                const poplar::DebugNameAndId &,
                const std::string &) const final;
 

@@ -25,19 +25,19 @@ AtanOpx::AtanOpx(Op *op, Devicex *devicex)
   verifyOp<AtanOp>(op, Onnx::Operators::Atan_7);
 }
 
-poplar::Tensor AtanComputex::outplace(poplar::program::Sequence &p,
-                                      snap::Graph &g,
-                                      const poplar::Tensor &t,
-                                      const poplar::DebugNameAndId &dnai,
-                                      const std::string &s) const {
-  auto outTensor = cloneNcopy(p, g, snap::Tensor{t, g}, dnai).getPoplarTensor();
+snap::Tensor AtanComputex::outplace(poplar::program::Sequence &p,
+                                    snap::Graph &g,
+                                    const snap::Tensor &t,
+                                    const poplar::DebugNameAndId &dnai,
+                                    const std::string &s) const {
+  auto outTensor = cloneNcopy(p, g, t, dnai);
   inplace(p, g, outTensor, dnai, s);
   return outTensor;
 }
 
 void AtanComputex::inplace(poplar::program::Sequence &p,
                            snap::Graph &g,
-                           const poplar::Tensor &t,
+                           const snap::Tensor &t,
                            const poplar::DebugNameAndId &dnai,
                            const std::string &s) const {
 
@@ -51,7 +51,8 @@ void AtanComputex::inplace(poplar::program::Sequence &p,
   exprs.push_back(std::make_unique<pe::Divide>(pe::_1, *exprs.back()));
   exprs.push_back(std::make_unique<pe::Asin>(*exprs.back()));
 
-  popops::mapInPlace(g.getPoplarGraph(), *exprs.back(), {t}, p, {dnai, s});
+  popops::mapInPlace(
+      g.getPoplarGraph(), *exprs.back(), {t.getPoplarTensor()}, p, {dnai, s});
 }
 
 AtanGradOpx::AtanGradOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {

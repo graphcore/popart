@@ -15,15 +15,15 @@ public:
   EwuComputex()          = default;
   virtual ~EwuComputex() = default;
 
-  virtual poplar::Tensor outplace(poplar::program::Sequence &,
-                                  snap::Graph &,
-                                  const poplar::Tensor &,
-                                  const poplar::DebugNameAndId &,
-                                  const std::string &) const;
+  virtual snap::Tensor outplace(poplar::program::Sequence &,
+                                snap::Graph &,
+                                const snap::Tensor &,
+                                const poplar::DebugNameAndId &,
+                                const std::string &) const;
 
   virtual void inplace(poplar::program::Sequence &,
                        snap::Graph &,
-                       const poplar::Tensor &t,
+                       const snap::Tensor &t,
                        const poplar::DebugNameAndId &,
                        const std::string &) const = 0;
 
@@ -33,9 +33,9 @@ public:
                           const poplar::DebugNameAndId &) const;
 
   // certain ops reshape the input tensor (eg Softmax and LogSoftmax)
-  virtual poplar::Tensor reshape(const poplar::Tensor &t) const { return t; }
+  virtual snap::Tensor reshape(const snap::Tensor &t) const { return t; }
 
-  static poplar::Tensor coerceTo2D(const poplar::Tensor &t, int64_t axis);
+  static snap::Tensor coerceTo2D(const snap::Tensor &t, int64_t axis);
 };
 
 // Base class for elementwise unary operations
@@ -117,19 +117,19 @@ public:
   InIndex getOutplaceArgInIndex() const;
 
   // Evaluate the operation out-of-place
-  virtual poplar::Tensor outplace(poplar::program::Sequence &,
-                                  snap::Graph &,
-                                  const poplar::Tensor &,
-                                  const poplar::Tensor &,
-                                  const poplar::DebugNameAndId &,
-                                  const std::string &) const = 0;
+  virtual snap::Tensor outplace(poplar::program::Sequence &,
+                                snap::Graph &,
+                                const snap::Tensor &,
+                                const snap::Tensor &,
+                                const poplar::DebugNameAndId &,
+                                const std::string &) const = 0;
 
   // Evaluate the operation in-place
   // Assigns the result to the first tensor input
   virtual void inplace(poplar::program::Sequence &,
                        snap::Graph &,
-                       const poplar::Tensor &,
-                       const poplar::Tensor &,
+                       const snap::Tensor &,
+                       const snap::Tensor &,
                        const poplar::DebugNameAndId &,
                        const std::string &) const = 0;
 

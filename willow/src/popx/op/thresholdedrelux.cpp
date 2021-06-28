@@ -37,7 +37,7 @@ ThresholdedReluOpx::ThresholdedReluOpx(Op *op, Devicex *devicex)
 
 void ThresholdedReluComputex::inplace(poplar::program::Sequence &prog,
                                       snap::Graph &graph,
-                                      const poplar::Tensor &tensor,
+                                      const snap::Tensor &tensor,
                                       const poplar::DebugNameAndId &dnai,
                                       const std::string &debug_prefix) const {
 
@@ -45,8 +45,11 @@ void ThresholdedReluComputex::inplace(poplar::program::Sequence &prog,
   auto expression = pe::Select(
       pe::Const(0.0f), pe::_1, pe::Lte(pe::_1, pe::Const(getAlpha())));
 
-  popops::mapInPlace(
-      graph.getPoplarGraph(), expression, {tensor}, prog, {dnai, debug_prefix});
+  popops::mapInPlace(graph.getPoplarGraph(),
+                     expression,
+                     {tensor.getPoplarTensor()},
+                     prog,
+                     {dnai, debug_prefix});
 }
 
 ThresholdedReluInplaceOpx::ThresholdedReluInplaceOpx(Op *op, Devicex *devicex)

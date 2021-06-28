@@ -14,15 +14,15 @@ class CeilComputex : public EwuComputex {
 public:
   CeilComputex() {}
 
-  poplar::Tensor outplace(poplar::program::Sequence &,
-                          snap::Graph &,
-                          const poplar::Tensor &tensor,
-                          const poplar::DebugNameAndId &,
-                          const std::string &) const final;
+  snap::Tensor outplace(poplar::program::Sequence &,
+                        snap::Graph &,
+                        const snap::Tensor &tensor,
+                        const poplar::DebugNameAndId &,
+                        const std::string &) const final;
 
   void inplace(poplar::program::Sequence &,
                snap::Graph &,
-               const poplar::Tensor &,
+               const snap::Tensor &,
                const poplar::DebugNameAndId &,
                const std::string &) const final;
 

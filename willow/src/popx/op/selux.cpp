@@ -37,7 +37,7 @@ SeluOpx::SeluOpx(Op *op, Devicex *devicex)
 
 void SeluComputex::inplace(poplar::program::Sequence &prog,
                            snap::Graph &graph,
-                           const poplar::Tensor &tensor,
+                           const snap::Tensor &tensor,
                            const poplar::DebugNameAndId &dnai,
                            const std::string &debug_prefix) const {
   //   The Selu definition is:
@@ -55,7 +55,7 @@ void SeluComputex::inplace(poplar::program::Sequence &prog,
 
   popops::mapInPlace(graph.getPoplarGraph(),
                      *exprs.back(),
-                     {tensor},
+                     {tensor.getPoplarTensor()},
                      prog,
                      {dnai, debug_prefix});
 }

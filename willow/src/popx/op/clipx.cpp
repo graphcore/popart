@@ -13,46 +13,49 @@ namespace pe = popops::expr;
 namespace popart {
 namespace popx {
 
-poplar::Tensor ClipComputex::getClipTensor(float val,
-                                           const poplar::Type &type,
-                                           snap::Graph &graph,
-                                           const poplar::DebugNameAndId &dnai) {
+snap::Tensor ClipComputex::getClipTensor(float val,
+                                         const poplar::Type &type,
+                                         snap::Graph &graph,
+                                         const poplar::DebugNameAndId &dnai) {
   auto tensor =
       graph.getPoplarGraph().addConstant(type, {}, val, {dnai, "clip"});
   graph.getPoplarGraph().setTileMapping(tensor, 0);
-  return tensor;
+  return snap::Tensor{tensor, graph};
 }
 
-poplar::Tensor
-ClipComputex::broadcastClipTensor(poplar::Tensor clipT,
-                                  const poplar::Tensor &refT) const {
+snap::Tensor ClipComputex::broadcastClipTensor(snap::Tensor clipT,
+                                               const snap::Tensor &refT) const {
   // Broadcasting clip tensor across each dimension of reference tensor
-  auto refShape = refT.shape();
+  auto refShape = refT.getPoplarTensor().shape();
 
+  auto t = clipT.getPoplarTensor();
   for (unsigned dim = 0; dim < refShape.size(); ++dim) {
-    clipT = clipT.expand({dim});
-    clipT = clipT.broadcast(static_cast<uint32_t>(refShape[dim]), dim);
+    t = t.expand({dim});
+    t = t.broadcast(static_cast<uint32_t>(refShape[dim]), dim);
   }
-  return clipT;
+  return snap::Tensor{t, clipT};
 }
 
-poplar::Tensor ClipComputex::outplace(poplar::program::Sequence &prog,
-                                      snap::Graph &graph,
-                                      const poplar::Tensor &tensor,
-                                      const poplar::DebugNameAndId &dnai,
-                                      const std::string &s) const {
+snap::Tensor ClipComputex::outplace(poplar::program::Sequence &prog,
+                                    snap::Graph &graph,
+                                    const snap::Tensor &tensor,
+                                    const poplar::DebugNameAndId &dnai,
+                                    const std::string &s) const {
 
   auto minT = broadcastClipTensor(
-      getClipTensor(min, tensor.elementType(), graph, dnai), tensor);
+      getClipTensor(min, tensor.getPoplarTensor().elementType(), graph, dnai),
+      tensor);
   auto maxT = broadcastClipTensor(
-      getClipTensor(max, tensor.elementType(), graph, dnai), tensor);
-  return popops::map(graph.getPoplarGraph(),
-                     popops::expr::TernaryOpType::CLAMP,
-                     tensor,
-                     minT,
-                     maxT,
-                     prog,
-                     {dnai, s});
+      getClipTensor(max, tensor.getPoplarTensor().elementType(), graph, dnai),
+      tensor);
+  return snap::Tensor{popops::map(graph.getPoplarGraph(),
+                                  popops::expr::TernaryOpType::CLAMP,
+                                  tensor.getPoplarTensor(),
+                                  minT.getPoplarTensor(),
+                                  maxT.getPoplarTensor(),
+                                  prog,
+                                  {dnai, s}),
+                      graph};
 }
 
 ClipOp *ClipComputex::getClipOpFromOp(Op *op) {
@@ -93,20 +96,22 @@ float ClipComputex::getMaxFromClipInplaceOp(Op *op) {
 
 void ClipComputex::inplace(poplar::program::Sequence &prog,
                            snap::Graph &graph,
-                           const poplar::Tensor &tensor,
+                           const snap::Tensor &tensor,
                            const poplar::DebugNameAndId &dnai,
                            const std::string &s) const {
 
   auto minT = broadcastClipTensor(
-      getClipTensor(min, tensor.elementType(), graph, dnai), tensor);
+      getClipTensor(min, tensor.getPoplarTensor().elementType(), graph, dnai),
+      tensor);
   auto maxT = broadcastClipTensor(
-      getClipTensor(max, tensor.elementType(), graph, dnai), tensor);
+      getClipTensor(max, tensor.getPoplarTensor().elementType(), graph, dnai),
+      tensor);
 
   popops::mapInPlace(graph.getPoplarGraph(),
                      popops::expr::TernaryOpType::CLAMP,
-                     tensor,
-                     minT,
-                     maxT,
+                     tensor.getPoplarTensor(),
+                     minT.getPoplarTensor(),
+                     maxT.getPoplarTensor(),
                      prog,
                      {dnai, s});
 }
@@ -138,34 +143,34 @@ void ClipGradOpx::grow(poplar::program::Sequence &prog) const {
   // edge at 'min' and falling edge at 'max'
 
   auto clipGradOp = dynamic_cast<ClipGradOp *>(op_p);
-  auto gradIn =
-      getInTensor(clipGradOp->getGradClippedInIndex()).getPoplarTensor();
-  auto fwdOut  = getInTensor(clipGradOp->getClippedInIndex()).getPoplarTensor();
-  auto clipmax = ClipComputex::getClipTensor(clipGradOp->getClipMax(),
-                                             gradIn.elementType(),
-                                             graph(),
-                                             getDebugNameAndId());
-  auto clipmin = ClipComputex::getClipTensor(clipGradOp->getClipMin(),
-                                             gradIn.elementType(),
-                                             graph(),
-                                             getDebugNameAndId());
+  auto gradIn     = getInTensor(clipGradOp->getGradClippedInIndex());
+  auto fwdOut     = getInTensor(clipGradOp->getClippedInIndex());
+  auto elType     = gradIn.getPoplarTensor().elementType();
+  auto clipmax    = ClipComputex::getClipTensor(
+      clipGradOp->getClipMax(), elType, graph(), getDebugNameAndId());
+  auto clipmin = ClipComputex::getClipTensor(
+      clipGradOp->getClipMin(), elType, graph(), getDebugNameAndId());
 
   // 1. Check where clipmin and clipmax are not equal to fwOut
   // 2. Cast as gradin type from bool
   // 3. Multiply 1. and 2.
   // 4. Multiply by gradIn
   // gradin * cast(clipmax != fwdOut) * cast(clipmin != fwdOut)
-  auto outTensor = popops::map(
-      graph().getPoplarGraph(),
-      pe::Mul(
-          pe::Mul(pe::_1,
-                  pe::Cast(pe::NotEqual(pe::_2, pe::_3), gradIn.elementType())),
-          pe::Cast(pe::NotEqual(pe::_2, pe::_4), gradIn.elementType())),
-      {gradIn, fwdOut, clipmin, clipmax},
-      prog,
-      debugContext("ApplyMinMaxMask"));
+  auto outTensor = snap::Tensor{
+      popops::map(
+          graph().getPoplarGraph(),
+          pe::Mul(
+              pe::Mul(pe::_1, pe::Cast(pe::NotEqual(pe::_2, pe::_3), elType)),
+              pe::Cast(pe::NotEqual(pe::_2, pe::_4), elType)),
+          {gradIn.getPoplarTensor(),
+           fwdOut.getPoplarTensor(),
+           clipmin.getPoplarTensor(),
+           clipmax.getPoplarTensor()},
+          prog,
+          debugContext("ApplyMinMaxMask")),
+      graph()};
 
-  setOutTensor(clipGradOp->getOutIndex(), snap::Tensor{outTensor, graph()});
+  setOutTensor(clipGradOp->getOutIndex(), outTensor);
 }
 
 namespace {

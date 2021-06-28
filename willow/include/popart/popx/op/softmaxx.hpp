@@ -14,15 +14,15 @@ public:
   SoftmaxComputex(int64_t ax, bool ens, const std::vector<size_t> &os)
       : axis(ax), enableNonStable(ens), outShape(os) {}
 
-  poplar::Tensor outplace(poplar::program::Sequence &,
-                          snap::Graph &,
-                          const poplar::Tensor &,
-                          const poplar::DebugNameAndId &,
-                          const std::string &) const final;
+  snap::Tensor outplace(poplar::program::Sequence &,
+                        snap::Graph &,
+                        const snap::Tensor &,
+                        const poplar::DebugNameAndId &,
+                        const std::string &) const final;
 
   void inplace(poplar::program::Sequence &,
                snap::Graph &,
-               const poplar::Tensor &,
+               const snap::Tensor &,
                const poplar::DebugNameAndId &,
                const std::string &) const final;
 
@@ -31,7 +31,7 @@ public:
     return std::unique_ptr<EwuComputex>(new SoftmaxComputex(axis, ens, os));
   }
 
-  poplar::Tensor reshape(const poplar::Tensor &) const final;
+  snap::Tensor reshape(const snap::Tensor &) const final;
 
   void setAxis(int64_t a) { axis = a; }
 
@@ -72,9 +72,9 @@ public:
   void grow(poplar::program::Sequence &) const final;
 
 private:
-  void handleLossOutNotReducedToScalar(poplar::Tensor &reduction,
-                                       const poplar::Tensor &label,
-                                       poplar::Tensor &label1D,
+  void handleLossOutNotReducedToScalar(snap::Tensor &reduction,
+                                       const snap::Tensor &label,
+                                       snap::Tensor &label1D,
                                        poplar::program::Sequence &prog) const;
 };
 

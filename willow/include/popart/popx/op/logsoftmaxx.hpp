@@ -15,19 +15,19 @@ public:
   LogSoftmaxComputex(int64_t ax, const std::vector<size_t> &os)
       : axis(ax), outShape(os) {}
 
-  poplar::Tensor outplace(poplar::program::Sequence &,
-                          snap::Graph &,
-                          const poplar::Tensor &,
-                          const poplar::DebugNameAndId &,
-                          const std::string &) const final;
+  snap::Tensor outplace(poplar::program::Sequence &,
+                        snap::Graph &,
+                        const snap::Tensor &,
+                        const poplar::DebugNameAndId &,
+                        const std::string &) const final;
 
   void inplace(poplar::program::Sequence &,
                snap::Graph &,
-               const poplar::Tensor &,
+               const snap::Tensor &,
                const poplar::DebugNameAndId &,
                const std::string &) const final;
 
-  poplar::Tensor reshape(const poplar::Tensor &) const final;
+  snap::Tensor reshape(const snap::Tensor &) const final;
 
 private:
   int64_t axis;

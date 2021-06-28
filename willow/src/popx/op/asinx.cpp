@@ -25,24 +25,27 @@ AsinOpx::AsinOpx(Op *op, Devicex *devicex)
   verifyOp<AsinOp>(op, Onnx::Operators::Asin_7);
 }
 
-poplar::Tensor AsinComputex::outplace(poplar::program::Sequence &p,
-                                      snap::Graph &g,
-                                      const poplar::Tensor &t,
-                                      const poplar::DebugNameAndId &dnai,
-                                      const std::string &s) const {
-  auto outTensor = cloneNcopy(p, g, snap::Tensor{t, g}, dnai).getPoplarTensor();
+snap::Tensor AsinComputex::outplace(poplar::program::Sequence &p,
+                                    snap::Graph &g,
+                                    const snap::Tensor &t,
+                                    const poplar::DebugNameAndId &dnai,
+                                    const std::string &s) const {
+  auto outTensor = cloneNcopy(p, g, t, dnai);
   inplace(p, g, outTensor, dnai, s);
   return outTensor;
 }
 
 void AsinComputex::inplace(poplar::program::Sequence &p,
                            snap::Graph &g,
-                           const poplar::Tensor &t,
+                           const snap::Tensor &t,
                            const poplar::DebugNameAndId &dnai,
                            const std::string &s) const {
 
-  popops::mapInPlace(
-      g.getPoplarGraph(), popops::expr::UnaryOpType::ASIN, t, p, {dnai, s});
+  popops::mapInPlace(g.getPoplarGraph(),
+                     popops::expr::UnaryOpType::ASIN,
+                     t.getPoplarTensor(),
+                     p,
+                     {dnai, s});
 }
 
 AsinGradOpx::AsinGradOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {

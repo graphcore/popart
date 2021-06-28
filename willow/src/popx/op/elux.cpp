@@ -35,7 +35,7 @@ EluOpx::EluOpx(Op *op, Devicex *devicex)
 
 void EluComputex::inplace(poplar::program::Sequence &prog,
                           snap::Graph &graph,
-                          const poplar::Tensor &tensor,
+                          const snap::Tensor &tensor,
                           const poplar::DebugNameAndId &dnai,
                           const std::string &debug_prefix) const {
 
@@ -52,7 +52,7 @@ void EluComputex::inplace(poplar::program::Sequence &prog,
 
   popops::mapInPlace(graph.getPoplarGraph(),
                      *exprs.back(),
-                     {tensor},
+                     {tensor.getPoplarTensor()},
                      prog,
                      {dnai, debug_prefix});
 }

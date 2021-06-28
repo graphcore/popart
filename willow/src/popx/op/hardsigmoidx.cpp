@@ -38,7 +38,7 @@ HardSigmoidOpx::HardSigmoidOpx(Op *op, Devicex *devicex)
 
 void HardSigmoidComputex::inplace(poplar::program::Sequence &prog,
                                   snap::Graph &graph,
-                                  const poplar::Tensor &tensor,
+                                  const snap::Tensor &tensor,
                                   const poplar::DebugNameAndId &dnai,
                                   const std::string &debug_prefix) const {
   //   Hardsigmoid definition: max(0, min(1, alpha*x+beta))
@@ -55,7 +55,7 @@ void HardSigmoidComputex::inplace(poplar::program::Sequence &prog,
 
   popops::mapInPlace(graph.getPoplarGraph(),
                      *exprs.back(),
-                     {tensor},
+                     {tensor.getPoplarTensor()},
                      prog,
                      {dnai, debug_prefix});
 }

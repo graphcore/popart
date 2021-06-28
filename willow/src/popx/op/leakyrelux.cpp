@@ -16,21 +16,20 @@ namespace popx {
 
 namespace pe = popops::expr;
 
-poplar::Tensor
+snap::Tensor
 LeakyReluComputex::outplace(poplar::program::Sequence &prog,
                             snap::Graph &graph,
-                            const poplar::Tensor &tensor,
+                            const snap::Tensor &tensor,
                             const poplar::DebugNameAndId &dnai,
                             const std::string &debug_prefix) const {
-  auto out_tensor = cloneNcopy(prog, graph, snap::Tensor{tensor, graph}, dnai)
-                        .getPoplarTensor();
+  auto out_tensor = cloneNcopy(prog, graph, tensor, dnai);
   inplace(prog, graph, out_tensor, dnai, debug_prefix);
   return out_tensor;
 }
 
 void LeakyReluComputex::inplace(poplar::program::Sequence &prog,
                                 snap::Graph &graph,
-                                const poplar::Tensor &tensor,
+                                const snap::Tensor &tensor,
                                 const poplar::DebugNameAndId &dnai,
                                 const std::string &debug_prefix) const {
   // x < 0.0f ? alpha * x : x
@@ -38,8 +37,11 @@ void LeakyReluComputex::inplace(poplar::program::Sequence &prog,
                                pe::_1,
                                pe::Lt(pe::_1, pe::Const(0.0f)));
 
-  popops::mapInPlace(
-      graph.getPoplarGraph(), expression, {tensor}, prog, {dnai, debug_prefix});
+  popops::mapInPlace(graph.getPoplarGraph(),
+                     expression,
+                     {tensor.getPoplarTensor()},
+                     prog,
+                     {dnai, debug_prefix});
 }
 
 float LeakyReluComputex::getAlphaFromLReluOp(Op *op) {

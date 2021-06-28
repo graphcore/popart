@@ -14,15 +14,15 @@ class ScaleComputex : public EwuComputex {
 public:
   ScaleComputex(double x) : scale_factor(x) {}
 
-  poplar::Tensor outplace(poplar::program::Sequence &,
-                          snap::Graph &,
-                          const poplar::Tensor &tensor,
-                          const poplar::DebugNameAndId &,
-                          const std::string &) const final;
+  snap::Tensor outplace(poplar::program::Sequence &,
+                        snap::Graph &,
+                        const snap::Tensor &tensor,
+                        const poplar::DebugNameAndId &,
+                        const std::string &) const final;
 
   void inplace(poplar::program::Sequence &,
                snap::Graph &,
-               const poplar::Tensor &,
+               const snap::Tensor &,
                const poplar::DebugNameAndId &,
                const std::string &) const final;
 
@@ -31,8 +31,8 @@ public:
         new ScaleComputex(static_cast<double>(x)));
   }
 
-  poplar::Tensor getScaleTensor(const poplar::Type &type,
-                                snap::Graph &graph) const;
+  snap::Tensor getScaleTensor(const poplar::Type &type,
+                              snap::Graph &graph) const;
 
   static float getFromScaleOp(Op *op);
   static float getFromScaleInplaceOp(Op *op);

@@ -50,19 +50,19 @@ SoftmaxOpx::SoftmaxOpx(Op *op, Devicex *devicex)
               devicex->ir().getSessionOptions().enableNonStableSoftmax,
               op->inInfo(SoftmaxOp::getInIndex()).shape_szt())) {}
 
-poplar::Tensor SoftmaxComputex::outplace(poplar::program::Sequence &p,
-                                         snap::Graph &g,
-                                         const poplar::Tensor &t,
-                                         const poplar::DebugNameAndId &dnai,
-                                         const std::string &s) const {
-  auto outTensor = cloneNcopy(p, g, snap::Tensor{t, g}, dnai).getPoplarTensor();
+snap::Tensor SoftmaxComputex::outplace(poplar::program::Sequence &p,
+                                       snap::Graph &g,
+                                       const snap::Tensor &t,
+                                       const poplar::DebugNameAndId &dnai,
+                                       const std::string &s) const {
+  auto outTensor = cloneNcopy(p, g, t, dnai);
   inplace(p, g, outTensor, dnai, s);
   return outTensor;
 }
 
 void SoftmaxComputex::inplace(poplar::program::Sequence &p,
                               snap::Graph &g,
-                              const poplar::Tensor &tIn,
+                              const snap::Tensor &tIn,
                               const poplar::DebugNameAndId &dnai,
                               const std::string &dbs) const {
 
@@ -78,11 +78,13 @@ void SoftmaxComputex::inplace(poplar::program::Sequence &p,
     nlType = popnn::NonLinearityType::SOFTMAX_STABLE;
   }
 
-  popnn::nonLinearityInPlace(g.getPoplarGraph(), nlType, input, p, {dnai, dbs});
+  popnn::nonLinearityInPlace(
+      g.getPoplarGraph(), nlType, input.getPoplarTensor(), p, {dnai, dbs});
 }
 
-poplar::Tensor SoftmaxComputex::reshape(const poplar::Tensor &t) const {
-  return t.reshape(outShape);
+snap::Tensor SoftmaxComputex::reshape(const snap::Tensor &t) const {
+  auto tx = t;
+  return snap::Tensor{t.getPoplarTensor().reshape(outShape), tx};
 }
 
 SoftmaxGradOpx::SoftmaxGradOpx(Op *op, Devicex *devicex)
@@ -162,22 +164,24 @@ void SoftmaxGradOpx::grow(poplar::program::Sequence &prog) const {
   // Note: Implementation for SOFTMAX and SOFTMAX_STABLE gradient
   //       are the same.
 
-  auto outActs =
-      getInTensor(SoftmaxGradOp::getProbsInIndex()).getPoplarTensor();
+  auto outActs   = getInTensor(SoftmaxGradOp::getProbsInIndex());
   auto outActs2D = EwuComputex::coerceTo2D(outActs, axis);
   auto outGrad   = getInTensor(SoftmaxGradOp::getGradProbsInIndex())
                      .getPoplarTensor()
-                     .reshape(outActs2D.shape());
+                     .reshape(outActs2D.getPoplarTensor().shape());
   auto outTensor = popnn::nonLinearityInputGradient(
       graph().getPoplarGraph(),                // graph,
       popnn::NonLinearityType::SOFTMAX_STABLE, // nonLinearityType
-      outActs2D,                               // out,
+      outActs2D.getPoplarTensor(),             // out,
       outGrad,                                 // outGradient,
       prog,                                    // prog,
       debugContext("SoftmaxGrad")              // debugContext
   );
 
-  setOutTensor(0, snap::Tensor{outTensor.reshape(outActs.shape()), graph()});
+  setOutTensor(
+      0,
+      snap::Tensor{outTensor.reshape(outActs.getPoplarTensor().shape()),
+                   graph()});
 }
 
 void NlllWithSoftmaxGradDirectOpx::grow(poplar::program::Sequence &prog) const {
@@ -244,12 +248,11 @@ void NlllWithSoftmaxGradDirectOpx::grow(poplar::program::Sequence &prog) const {
                                             debugContext("add"));
 
   // Create an epsilon value
-  poplar::Tensor eps =
-      getConst(probs.elementType(), {1}, 1.0e-7, "epsilon").getPoplarTensor();
+  snap::Tensor eps = getConst(probs.elementType(), {1}, 1.0e-7, "epsilon");
   // Add eps to reduction to make sure it does not have any 0's and log it,
   popops::mapInPlace(graph().getPoplarGraph(),
                      pe::Log(pe::Add(pe::_1, pe::_2)),
-                     {reduction, eps},
+                     {reduction, eps.getPoplarTensor()},
                      prog,
                      debugContext("LogEpsMul"));
 

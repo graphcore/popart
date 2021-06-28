@@ -12,23 +12,31 @@ namespace popx {
 
 PowComputex::PowComputex(EwbComputex::InplacePolicy ip) : EwbComputex(ip) {}
 
-poplar::Tensor PowComputex::outplace(poplar::program::Sequence &prog,
-                                     snap::Graph &graph,
-                                     const poplar::Tensor &a,
-                                     const poplar::Tensor &b,
-                                     const poplar::DebugNameAndId &dnai,
-                                     const std::string &debugStr) const {
-  return popops::pow(graph.getPoplarGraph(), a, b, prog, {dnai, debugStr});
+snap::Tensor PowComputex::outplace(poplar::program::Sequence &prog,
+                                   snap::Graph &graph,
+                                   const snap::Tensor &a,
+                                   const snap::Tensor &b,
+                                   const poplar::DebugNameAndId &dnai,
+                                   const std::string &debugStr) const {
+  return snap::Tensor{popops::pow(graph.getPoplarGraph(),
+                                  a.getPoplarTensor(),
+                                  b.getPoplarTensor(),
+                                  prog,
+                                  {dnai, debugStr}),
+                      graph};
 }
 
 void PowComputex::inplace(poplar::program::Sequence &prog,
                           snap::Graph &graph,
-                          const poplar::Tensor &tInOut,
-                          const poplar::Tensor &tIn,
+                          const snap::Tensor &tInOut,
+                          const snap::Tensor &tIn,
                           const poplar::DebugNameAndId &dnai,
                           const std::string &debugStr) const {
-  popops::powInPlace(
-      graph.getPoplarGraph(), tInOut, tIn, prog, {dnai, debugStr});
+  popops::powInPlace(graph.getPoplarGraph(),
+                     tInOut.getPoplarTensor(),
+                     tIn.getPoplarTensor(),
+                     prog,
+                     {dnai, debugStr});
 }
 
 PowOpx::PowOpx(Op *op, Devicex *devicex)

@@ -18,25 +18,28 @@ SigmoidOpx::SigmoidOpx(Op *op, Devicex *devicex)
   verifyOp<SigmoidOp>(op, Onnx::Operators::Sigmoid_6);
 }
 
-poplar::Tensor SigmoidComputex::outplace(poplar::program::Sequence &p,
-                                         snap::Graph &g,
-                                         const poplar::Tensor &t,
-                                         const poplar::DebugNameAndId &dnai,
-                                         const std::string &s) const {
-  auto outTensor = cloneNcopy(p, g, snap::Tensor{t, g}, dnai).getPoplarTensor();
+snap::Tensor SigmoidComputex::outplace(poplar::program::Sequence &p,
+                                       snap::Graph &g,
+                                       const snap::Tensor &t,
+                                       const poplar::DebugNameAndId &dnai,
+                                       const std::string &s) const {
+  auto outTensor = cloneNcopy(p, g, t, dnai);
   inplace(p, g, outTensor, dnai, s);
   return outTensor;
 }
 
 void SigmoidComputex::inplace(poplar::program::Sequence &p,
                               snap::Graph &g,
-                              const poplar::Tensor &t,
+                              const snap::Tensor &t,
                               const poplar::DebugNameAndId &dnai,
                               const std::string &s) const {
 
   // apply the inplace SIGMOID
-  popnn::nonLinearityInPlace(
-      g.getPoplarGraph(), popnn::NonLinearityType::SIGMOID, t, p, {dnai, s});
+  popnn::nonLinearityInPlace(g.getPoplarGraph(),
+                             popnn::NonLinearityType::SIGMOID,
+                             t.getPoplarTensor(),
+                             p,
+                             {dnai, s});
 }
 
 SigmoidGradOpx::SigmoidGradOpx(Op *op, Devicex *devicex)

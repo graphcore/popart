@@ -18,28 +18,29 @@ ExpOpx::ExpOpx(Op *op, Devicex *devicex)
   verifyOp<ExpOp>(op, Onnx::Operators::Exp_6);
 }
 
-poplar::Tensor ExpComputex::outplace(poplar::program::Sequence &p,
-                                     snap::Graph &g,
-                                     const poplar::Tensor &t,
-                                     const poplar::DebugNameAndId &dnai,
-                                     const std::string &dbs) const {
+snap::Tensor ExpComputex::outplace(poplar::program::Sequence &p,
+                                   snap::Graph &g,
+                                   const snap::Tensor &t,
+                                   const poplar::DebugNameAndId &dnai,
+                                   const std::string &dbs) const {
 
-  return popops::map(g.getPoplarGraph(),
-                     popops::expr::UnaryOpType::EXPONENT,
-                     t,
-                     p,
-                     {dnai, dbs});
+  return snap::Tensor{popops::map(g.getPoplarGraph(),
+                                  popops::expr::UnaryOpType::EXPONENT,
+                                  t.getPoplarTensor(),
+                                  p,
+                                  {dnai, dbs}),
+                      g};
 }
 
 void ExpComputex::inplace(poplar::program::Sequence &p,
                           snap::Graph &g,
-                          const poplar::Tensor &t,
+                          const snap::Tensor &t,
                           const poplar::DebugNameAndId &dnai,
                           const std::string &dbs) const {
 
   popops::mapInPlace(g.getPoplarGraph(),
                      popops::expr::UnaryOpType::EXPONENT,
-                     t,
+                     t.getPoplarTensor(),
                      p,
                      {dnai, dbs});
 }

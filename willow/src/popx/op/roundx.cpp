@@ -8,28 +8,29 @@
 namespace popart {
 namespace popx {
 
-poplar::Tensor RoundComputex::outplace(poplar::program::Sequence &prog,
-                                       snap::Graph &graph,
-                                       const poplar::Tensor &tensor,
-                                       const poplar::DebugNameAndId &dnai,
-                                       const std::string &s) const {
+snap::Tensor RoundComputex::outplace(poplar::program::Sequence &prog,
+                                     snap::Graph &graph,
+                                     const snap::Tensor &tensor,
+                                     const poplar::DebugNameAndId &dnai,
+                                     const std::string &s) const {
 
-  return popops::map(graph.getPoplarGraph(),
-                     popops::expr::UnaryOpType::ROUND,
-                     tensor,
-                     prog,
-                     {dnai, s});
+  return snap::Tensor{popops::map(graph.getPoplarGraph(),
+                                  popops::expr::UnaryOpType::ROUND,
+                                  tensor.getPoplarTensor(),
+                                  prog,
+                                  {dnai, s}),
+                      graph};
 }
 
 void RoundComputex::inplace(poplar::program::Sequence &prog,
                             snap::Graph &graph,
-                            const poplar::Tensor &tensor,
+                            const snap::Tensor &tensor,
                             const poplar::DebugNameAndId &dnai,
                             const std::string &s) const {
 
   popops::mapInPlace(graph.getPoplarGraph(),
                      popops::expr::UnaryOpType::ROUND,
-                     tensor,
+                     tensor.getPoplarTensor(),
                      prog,
                      {dnai, s});
 }
