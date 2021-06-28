@@ -3,6 +3,7 @@
 #include "bindings/graph.hpp"
 #include "bindings/graphid.hpp"
 #include "bindings/ir.hpp"
+#include "bindings/scope.hpp"
 #include "bindings/tensor.hpp"
 #include "bindings/tensordata.hpp"
 #include "bindings/tensorinfo.hpp"
@@ -26,6 +27,7 @@ PYBIND11_MODULE(popart_internal_ir, m) {
   bindGraph(m);
   bindGraphId(m);
   bindIr(m);
+  bindScope(m);
   bindTensor(m);
   bindTensorData(m);
   bindTensorInfo(m);

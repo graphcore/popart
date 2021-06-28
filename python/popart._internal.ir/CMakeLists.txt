@@ -6,6 +6,7 @@ add_popart_python_module(popart_internal_ir
     bindings/graph.cpp
     bindings/graphid.cpp
     bindings/ir.cpp
+    bindings/scope.cpp
     bindings/tensor.cpp
     bindings/tensordata.cpp
     bindings/tensorinfo.cpp
