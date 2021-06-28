@@ -505,3 +505,49 @@ def test_resize_linear(op_tester, data_shape, scales,
         return [o.astype(data.dtype)]
 
     op_tester.run(init_builder, reference, 'infer')
+
+
+@pytest.mark.parametrize(
+    "data_shape, sizes",
+    [
+        # What happens if the shape is unchanged?
+        ([4], [4]),
+        # Some 1D cases
+        ([4], [8]),
+        ([8], [4]),
+        ([8], [3]),
+        # 2D cases
+        ([4, 4], [1, 2]),
+        ([4, 4], [9, 9]),
+        ([4, 4], [5, 3]),
+    ])
+@pytest.mark.parametrize("sizes_dtype", [np.int64, np.int32])
+def test_resize_sizes_input(op_tester, data_shape, sizes, sizes_dtype):
+    data = np.random.rand(*data_shape).astype(np.float32)
+    roi = np.array([], dtype=np.float32)
+    sizes = np.array(sizes, dtype=sizes_dtype)
+
+    def init_builder(builder):
+        d = builder.addInputTensor(data)
+        s = builder.aiOnnxOpset11.constant(sizes, False)
+        r = builder.aiOnnxOpset11.constant(roi, False)
+        o = builder.aiOnnxOpset11.resize([d, r, '', s])
+        builder.addOutputTensor(o)
+        return [o]
+
+    def reference(ref_data):
+        # Convert sizes to scales.
+        scales = []
+        assert len(data.shape) == len(sizes)
+        for di, do in zip(data.shape, sizes):
+            scales.append(do / di)
+
+        o = onnx_resize.interpolate_nd(data,
+                                       onnx_resize.nearest_coeffs,
+                                       scale_factors=scales)
+        # Check the output shape is correct.
+        assert tuple(sizes) == o.shape
+
+        return [o.astype(data.dtype)]
+
+    op_tester.run(init_builder, reference, 'infer')

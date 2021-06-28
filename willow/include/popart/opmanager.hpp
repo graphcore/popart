@@ -83,6 +83,40 @@ public:
   Tensor *getInputTensor(int index) const;
   TensorData *getInputTensorData(int index) const;
   TensorInfo &getInputTensorInfo(int index) const;
+  bool hasInputTensor(int index) const;
+
+  template <typename T>
+  std::vector<T> getInputData(int index,
+                              const std::set<DataType> &acceptedTypes) const {
+    auto &tensorInfo = getInputTensorInfo(index);
+    if (acceptedTypes.find(tensorInfo.dataType()) == acceptedTypes.end()) {
+      throw error("Trying to get data from tensor of type {}, but the "
+                  "acceptable types are {}",
+                  tensorInfo.dataType(),
+                  acceptedTypes);
+    }
+
+    switch (tensorInfo.dataType()) {
+    case DataType::INT32: {
+      auto x = getInputData<int32_t>(index);
+      return std::vector<T>(x.begin(), x.end());
+    }
+    case DataType::INT64: {
+      auto x = getInputData<int64_t>(index);
+      return std::vector<T>(x.begin(), x.end());
+    }
+    case DataType::FLOAT: {
+      auto x = getInputData<float>(index);
+      return std::vector<T>(x.begin(), x.end());
+    }
+    case DataType::FLOAT16: {
+      auto x = getInputData<float16_t>(index);
+      return std::vector<T>(x.begin(), x.end());
+    }
+    default:
+      throw internal_error("Unhandled type {}.", tensorInfo.dataType());
+    }
+  }
 
   template <typename T> std::vector<T> getInputData(int index) const {
     auto tensorData  = getInputTensorData(index);

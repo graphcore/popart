@@ -120,6 +120,10 @@ const std::map<int, int> &ResizeGradOp::gradOutToNonGradIn() const {
 
 namespace {
 
+const int resize10ScalesInIndex = 1;
+const int resize11ScalesInIndex = 2;
+const int resize11SizesInIndex  = 3;
+
 ResizeMode getResizeModeFromString(const std::string &mode) {
   static std::map<std::string, ResizeMode> modeMap = {
       {"nearest", ResizeMode::Nearest}, {"linear", ResizeMode::Linear}};
@@ -146,33 +150,56 @@ ResizeNearestMode getResizeNearestModeFromString(const std::string &mode) {
   }
 }
 
-std::vector<float> readScales(const OpCreatorInfo &info,
-                              const OperatorIdentifier &opid) {
-  int scalesInputIndex;
+std::vector<float> inferScalesFromSizes(const OpCreatorInfo &info) {
+  auto inShape   = info.getInputTensorInfo(ResizeOp::getInIndex()).shape();
+  auto sizesInfo = info.getInputTensorInfo(resize11SizesInIndex);
+
+  auto outShape = info.getInputData<int64_t>(
+      resize11SizesInIndex, {DataType::INT64, DataType::INT32});
+
+  if (inShape.size() != outShape.size()) {
+    throw error("ResizeOp, length of sizes ({}) does not match the rank of "
+                "input shape ({})",
+                outShape.size(),
+                inShape.size());
+  }
+
+  std::vector<float> scales;
+  for (int i = 0; i < inShape.size(); i++) {
+    float s = static_cast<float>(outShape.at(i)) / inShape.at(i);
+    scales.push_back(s);
+  }
+  return scales;
+}
+
+std::vector<float> getScales(const OpCreatorInfo &info) {
+  auto readScalesInput = [&info](int scalesInputIndex) -> std::vector<float> {
+    return info.getInputData<float>(scalesInputIndex,
+                                    {DataType::FLOAT, DataType::FLOAT16});
+  };
+
   if (info.opid == Onnx::Operators::Resize_10) {
-    scalesInputIndex = 1;
+    return readScalesInput(resize10ScalesInIndex);
   } else if (info.opid == Onnx::Operators::Resize_11) {
-    scalesInputIndex = 2;
+    if (info.hasInputTensor(resize11ScalesInIndex) &&
+        info.hasInputTensor(resize11SizesInIndex)) {
+      throw error("Resize op has inputs for `sizes` and `scales`. Only one of "
+                  "these tensors should be present. If `size` is needed, "
+                  "please pass an empty string as the name of `scales` in the "
+                  "input list ( resize([X, roi, '', sizes]) ).");
+    }
+
+    if (info.hasInputTensor(resize11ScalesInIndex)) {
+      return readScalesInput(resize11ScalesInIndex);
+    } else if (info.hasInputTensor(resize11SizesInIndex)) {
+      return inferScalesFromSizes(info);
+    } else {
+      throw error("Resize op has no input for `size` or `scales`. One of these "
+                  "tensors needs to be present.");
+    }
   } else {
     throw internal_error("Don't know how to set `scalesInputIndex` for {}",
                          info.opid);
-  }
-
-  auto scalesInfo = info.getInputTensorInfo(scalesInputIndex);
-  if (scalesInfo.dataType() == DataType::FLOAT) {
-    return info.getInputData<float>(scalesInputIndex);
-  } else if (scalesInfo.dataType() == DataType::FLOAT16) {
-    std::vector<float> result;
-    std::vector<float16_t> temp =
-        info.getInputData<float16_t>(scalesInputIndex);
-    for (auto &v : temp) {
-      result.push_back(v);
-    }
-    return result;
-  } else {
-    throw error("Unsupported data type for resize input scales. Type is {}. "
-                "Supported types are float and float16",
-                scalesInfo.dataType());
   }
 }
 
@@ -268,7 +295,7 @@ static OpCreator<ResizeOp> resize_OpCreator(
     OpDefinitions({{Onnx::Operators::Resize_10, resize10_OpDef},
                    {Onnx::Operators::Resize_11, resize11_OpDef}}),
     [](const OpCreatorInfo &info, Graph &graph) -> Op * {
-      std::vector<float> scales = readScales(info, info.opid);
+      std::vector<float> scales = getScales(info);
 
       const Attributes &attr = info.attributes;
 
@@ -301,7 +328,6 @@ static OpCreator<ResizeOp> resize_OpCreator(
       op->createAndConnectOutTensor(ResizeOp::getOutIndex(),
                                     info.getOutputIds().at(0));
 
-      logging::debug("Resize11 factory exit");
       return op;
     },
     true);

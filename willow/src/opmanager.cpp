@@ -94,6 +94,15 @@ TensorInfo &OpCreatorInfo::getInputTensorInfo(int index) const {
   return getInputTensor(index)->info;
 }
 
+bool OpCreatorInfo::hasInputTensor(int index) const {
+  if (index >= inputIds.size()) {
+    return false;
+  } else {
+    auto id = inputIds.at(index);
+    return settings.graph.get().getTensors().contains(id);
+  }
+}
+
 OpManager &OpManager::getInstance() {
   static OpManager instance;
   return instance;

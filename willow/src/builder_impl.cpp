@@ -549,6 +549,17 @@ void BuilderImpl::op(
   for (size_t i = 0; i < inputs.size(); ++i) {
     auto &input     = inputs[i];
     auto isOptional = (i >= opid.numInputs.min);
+    // Special case for Resize_11. One of the last two inputs must be specified,
+    // but not both. This means the minimum number of inputs is 3, but the third
+    // input (index 2) is an optional input. It is also not marked as
+    // `(optional)` in the onnx documentation, but in the description, it
+    // states:
+    // > Only one of 'scales' and 'sizes' can be specified. If 'size' is
+    // > needed, the user can use an empty string as the name of 'scales' in
+    // > this operator's input list.
+    if (opid == Onnx::Operators::Resize_11 && i == 2) {
+      isOptional = true;
+    }
 
     if (isOptional && input == "") {
       // Assume "" is used to indicate tensor is not set.
