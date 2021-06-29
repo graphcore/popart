@@ -12,7 +12,7 @@ namespace ir {
 /**
  * Add bindings for `popart::Ir` class to pybind module.
  **/
-void bindIr(py::module_ &m);
+void bindIr(py::module &m);
 
 } // namespace ir
 } // namespace _internal

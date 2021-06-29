@@ -13,7 +13,7 @@ namespace popart {
 namespace _internal {
 namespace ir {
 
-void bindGraphId(py::module_ &m) {
+void bindGraphId(py::module &m) {
   py::class_<GraphId>(m, "GraphId")
       .def(py::init<const std::string>())
       .def(py::self < py::self);

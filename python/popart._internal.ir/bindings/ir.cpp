@@ -10,7 +10,7 @@ namespace popart {
 namespace _internal {
 namespace ir {
 
-void bindIr(py::module_ &m) { py::class_<Ir>(m, "Ir").def(py::init<>()); }
+void bindIr(py::module &m) { py::class_<Ir>(m, "Ir").def(py::init<>()); }
 
 } // namespace ir
 } // namespace _internal

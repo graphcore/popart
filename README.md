@@ -114,16 +114,16 @@ cmake .. -GNinja -DCMAKE_INSTALL_PREFIX=$SPDLOG_INSTALL_DIR && cmake --build . -
 
 **NOTE**: You will need the value of `SPDLOG_INSTALL_DIR` later.
 
-##### Pybind11 (version 2.5.0 or compatible)
+##### Pybind11 (version 2.6.2 or compatible)
 
-The version of the pybind11 library in Ubuntu 18.04 (`pybind11-dev`) is 2.0.1, which is not compatible with PopART. Instead, you need to build version 2.5.0 from source. To do this, in a directory of your choice, download the source from [here](https://github.com/pybind/pybind11/releases) and build and install as follows:
+The version of the pybind11 library in Ubuntu 18.04 (`pybind11-dev`) is 2.0.1, which is not compatible with PopART. Instead, you need to build version 2.6.2 from source. To do this, in a directory of your choice, download the source from [here](https://github.com/pybind/pybind11/releases) and build and install as follows:
 
 ```
-export PYBIND11_INSTALL_DIR=$(pwd)/pybind11-2.5.0/install_dir/
-wget https://github.com/pybind/pybind11/archive/v2.5.0.tar.gz
-tar xvfz v2.5.0.tar.gz
-rm v2.5.0.tar.gz
-pushd pybind11-2.5.0
+export PYBIND11_INSTALL_DIR=$(pwd)/pybind11-2.6.2/install_dir/
+wget https://github.com/pybind/pybind11/archive/v2.6.2.tar.gz
+tar xvfz v2.6.2.tar.gz
+rm v2.6.2.tar.gz
+pushd pybind11-2.6.2
 mkdir build
 mkdir install_dir
 cd build

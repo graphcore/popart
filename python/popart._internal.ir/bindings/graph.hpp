@@ -13,7 +13,7 @@ namespace ir {
 /**
  * Add bindings for `popart::Graph` class to pybind module.
  **/
-void bindGraph(py::module_ &m);
+void bindGraph(py::module &m);
 
 } // namespace ir
 } // namespace _internal
