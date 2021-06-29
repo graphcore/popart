@@ -11,7 +11,6 @@
 #include <popart/op/loop.hpp>
 #include <popart/op/modifyrandomseed.hpp>
 #include <popart/op/randombase.hpp>
-#include <popart/op/remote.hpp>
 #include <popart/opidentifier.hpp>
 #include <popart/tensor.hpp>
 #include <popart/tensors.hpp>

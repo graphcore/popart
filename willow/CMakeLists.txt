@@ -107,6 +107,7 @@ file(GLOB core_sources src/*cpp)
 file(GLOB alias_sources src/alias/*cpp)
 file(GLOB op_sources src/op/*cpp)
 file(GLOB op_dyn_sources src/op/dynamic/*cpp)
+file(GLOB op_exc_sources src/op/exchange/*cpp)
 file(GLOB op_collectives_sources src/op/collectives/*cpp)
 file(GLOB ces_sources src/ces/*cpp)
 file(GLOB patterns_sources src/patterns/*cpp)
@@ -120,6 +121,7 @@ file(GLOB nodepatterns_sources src/onnxpasses/nodepatterns/*cpp)
 file(GLOB x_sources src/popx/*cpp)
 file(GLOB opx_sources src/popx/op/*cpp)
 file(GLOB opx_dyn_sources src/popx/op/dynamic/*cpp)
+file(GLOB opx_exc_sources src/popx/op/exchange/*cpp)
 file(GLOB opx_collectives_sources src/popx/op/collectives/*cpp)
 
 set(sources
@@ -127,6 +129,7 @@ set(sources
   ${alias_sources}
   ${op_sources}
   ${op_dyn_sources}
+  ${op_exc_sources}
   ${op_collectives_sources}
   ${ces_sources}
   ${patterns_sources}
@@ -142,6 +145,7 @@ set(sources
   ${x_sources}
   ${opx_sources}
   ${opx_dyn_sources}
+  ${opx_exc_sources}
   ${opx_collectives_sources})
 
 # Fed to version header.

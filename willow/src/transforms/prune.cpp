@@ -11,8 +11,8 @@
 
 #include <popart/graphutils.hpp>
 #include <popart/op/boundary.hpp>
+#include <popart/op/exchange/remote.hpp>
 #include <popart/op/init.hpp>
-#include <popart/op/remote.hpp>
 #include <popart/transforms/prune.hpp>
 
 namespace popart {

@@ -2,7 +2,7 @@
 #include <algorithm>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
-#include <popart/op/hostcopy.hpp>
+#include <popart/op/exchange/hostcopy.hpp>
 #include <popart/opmanager.hpp>
 #include <popart/opserialiser.hpp>
 #include <popart/tensor.hpp>
@@ -12,7 +12,7 @@ namespace popart {
 HostLoadOp::HostLoadOp(const OperatorIdentifier &_opid,
                        const Op::Settings &settings_,
                        TensorId sid_)
-    : Op(_opid, settings_), hostStreamTensorId(sid_) {}
+    : ExchangeBaseOp(_opid, settings_), hostStreamTensorId(sid_) {}
 
 std::unique_ptr<Op> HostLoadOp::clone() const {
   return std::make_unique<HostLoadOp>(*this);
@@ -52,10 +52,19 @@ view::RegMap HostLoadOp::bwdRegMap(InIndex inIndex, OutIndex outIndex) const {
   return Op::bwdRegMap(inIndex, outIndex);
 }
 
+ExchangeDescriptor HostLoadOp::getExchangeDescriptor(int index) const {
+  return ExchangeDescriptor(ExchangeDirection::Load,
+                            hostStreamTensorId,
+                            settings.vgraphId,
+                            settings.tileSet,
+                            input->n(),
+                            output->n());
+}
+
 HostStoreOp::HostStoreOp(const OperatorIdentifier &_opid,
                          const Op::Settings &settings_,
                          TensorId sid_)
-    : Op(_opid, settings_), hostStreamTensorId(sid_) {}
+    : ExchangeBaseOp(_opid, settings_), hostStreamTensorId(sid_) {}
 
 std::unique_ptr<Op> HostStoreOp::clone() const {
   return std::make_unique<HostStoreOp>(*this);
@@ -68,28 +77,13 @@ void HostStoreOp::appendOutlineAttributes(OpSerialiserBase &os) const {
 
 void HostStoreOp::setup() { logging::op::debug("HostStoreOp setup started"); }
 
-view::Regions HostStoreOp::modifies(InIndex index) const {
-  if (index == getLocalTensorInIndex()) {
-    return {view::Region::getFull(inShape(index), view::AccessType::Read)};
-  } else {
-    throw error("Invalid index passed to HostStoreOp::modifies");
-  }
-}
-
-view::Regions HostStoreOp::aliases(InIndex in, OutIndex) const {
-  if (in == getLocalTensorInIndex()) {
-    return {view::Region::getFull(inShape(in), view::AccessType::Read)};
-  } else {
-    throw error("Invalid index passed to HostStoreOp::aliases");
-  }
-}
-
-view::RegMap HostStoreOp::fwdRegMap(InIndex inIndex, OutIndex outIndex) const {
-  return Op::fwdRegMap(inIndex, outIndex);
-}
-
-view::RegMap HostStoreOp::bwdRegMap(InIndex inIndex, OutIndex outIndex) const {
-  return Op::bwdRegMap(inIndex, outIndex);
+ExchangeDescriptor HostStoreOp::getExchangeDescriptor(int index) const {
+  return ExchangeDescriptor(ExchangeDirection::Store,
+                            hostStreamTensorId,
+                            settings.vgraphId,
+                            settings.tileSet,
+                            input->n(),
+                            output->n());
 }
 
 namespace {

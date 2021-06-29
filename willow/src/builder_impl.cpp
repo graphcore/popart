@@ -313,6 +313,12 @@ void BuilderImpl::setGraphName(const std::string &name) {
 
 TensorId BuilderImpl::addInputTensor(const TensorInfo &tensorInfo,
                                      const popart::DebugContext &debugContext) {
+  return addInputTensor(tensorInfo, InputSettings(), debugContext);
+}
+
+TensorId BuilderImpl::addInputTensor(const TensorInfo &tensorInfo,
+                                     const InputSettings &inputSettings,
+                                     const popart::DebugContext &debugContext) {
   const auto debugPrefix = debugContext.getPathName();
   auto id                = getNextInputId(debugPrefix);
 
@@ -331,9 +337,29 @@ TensorId BuilderImpl::addInputTensor(const TensorInfo &tensorInfo,
       debugContext, "addInputTensor", id, tensorInfo);
 
   auto meta_data = model_.mutable_metadata_props();
-  auto a         = meta_data->Add();
-  a->set_key(std::string(onnxDebugIdInputMetaDataKey) + id);
-  a->set_value(std::to_string(di.getId()));
+
+  {
+    auto a = meta_data->Add();
+    a->set_key(std::string(onnxDebugIdInputMetaDataKey) + id);
+    a->set_value(std::to_string(di.getId()));
+  }
+
+  // Add metadata to annotate an input tensor's tile set
+  {
+    auto a = meta_data->Add();
+    a->set_key(std::string(sTileSetAttribute) + std::string(sNameDelimiter) +
+               id);
+    a->set_value(std::to_string(static_cast<int>(inputSettings.tileSet())));
+  }
+
+  // Add metadata to annotate an input tensor's exchange strategy
+  {
+    auto a = meta_data->Add();
+    a->set_key(std::string(sExecutionContextAttribute) +
+               std::string(sNameDelimiter) + id);
+    a->set_value(
+        std::to_string(static_cast<int>(inputSettings.exchangeStrategy())));
+  }
 
   return id;
 }

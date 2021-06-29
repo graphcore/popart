@@ -5288,6 +5288,11 @@ static const char *__doc_popart_DotCheck_PreAlias_2 =
     R"doc(Generate graph after all transformations, patterns, except the
 aliasing.)doc";
 
+static const char *__doc_popart_ExchangeStrategy             = R"doc()doc";
+static const char *__doc_popart_ExchangeStrategy_JustInTime  = R"doc()doc";
+static const char *__doc_popart_ExchangeStrategy_OverlapLoop = R"doc()doc";
+static const char *__doc_popart_ExchangeStrategy_OverlapStep = R"doc()doc";
+
 static const char *__doc_popart_ErrorSource = R"doc()doc";
 
 static const char *__doc_popart_ErrorSource_2 = R"doc()doc";
