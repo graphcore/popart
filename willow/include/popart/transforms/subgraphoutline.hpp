@@ -82,6 +82,7 @@ public:
    * \param index_map Used to map from ops in the new subgraph to their
    *                  corresponding indices in the first SubgraphableOpCluster
    *                  instance.
+   * \param aliasesMap AliasesMap with alias information for instance's graph.
    * \param subgraphId The returned subgraph's id.
    * \return The replacement CallOp's pointer.
    **/
