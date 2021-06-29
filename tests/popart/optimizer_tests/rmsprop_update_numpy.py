@@ -20,19 +20,21 @@ import numpy as np
 
 # Function taken from the original TensorFlow repository and modified to include
 # weight decay in the calculation.
-def rmsprop_update_numpy(var,
-                         g,
-                         mg,
-                         rms,
-                         mom,
-                         lr,
-                         decay=0.9,
-                         momentum=0.0,
-                         weight_decay=0.0,
-                         epsilon=1e-10,
-                         centered=False):
-    if weight_decay > 0.0:
-        # L2 regularization
+def rmsprop_update_numpy(
+    var,
+    g,
+    mg,
+    rms,
+    mom,
+    lr,
+    decay=0.9,
+    momentum=0.0,
+    weight_decay=0.0,
+    # 'L2' or 'decay'
+    weight_decay_mode='L2',
+    epsilon=1e-10,
+    centered=False):
+    if weight_decay > 0.0 and weight_decay_mode == 'L2':
         g = g + weight_decay * var
     rms_t = rms * decay + (1 - decay) * g * g
     denom_t = rms_t + epsilon
@@ -42,5 +44,11 @@ def rmsprop_update_numpy(var,
     else:
         mg_t = mg
     mom_t = momentum * mom + lr * g / np.sqrt(denom_t, dtype=denom_t.dtype)
-    var_t = var - mom_t
+    if weight_decay > 0.0 and weight_decay_mode == 'decay':
+        if momentum > 0.0:
+            var_t = var - (weight_decay * var + mom_t)
+        else:
+            var_t = var - (lr * weight_decay * var + mom_t)
+    else:
+        var_t = var - mom_t
     return var_t, mg_t, rms_t, mom_t

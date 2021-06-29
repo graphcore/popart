@@ -94,15 +94,15 @@ enum class AdaptiveMode {
 // Var update (with weight decay mode: decay and wd > 0.0)
 // w -= lr * (wd * w + v3)
 //
-// Var update (with weight decay mode: decay and wd > 0.0,
-//             RMSProp/CenteredRMSProp TF variant)
+// Var update (with weight decay mode: decay and wd > 0.0 and m > 0.0
+//             and RMSProp/CenteredRMSProp TF variant)
 // w -= wd * w + v3
 //
 // Var update (without weight decay mode: decay)
 // w -= lr * v3
 //
-// Var update (without weight decay mode: decay,
-//             RMSProp/CenteredRMSProp TF variant)
+// Var update (without weight decay mode: decay and m > 0.0
+//             and RMSProp/CenteredRMSProp TF variant)
 // w -= v3
 //
 // accumulator update:
@@ -151,7 +151,7 @@ enum class AdaptiveMode {
 //                           |
 //                    [w]  [v3'] [wd] [lr]
 //                     |     |    |    |
-//                     (ScaledVarUpdate)
+//                     (ScaledVarUpdate)    (wd only if WeightDecayMode::Decay)
 //                           |
 //                          [w']
 //
@@ -187,7 +187,7 @@ enum class AdaptiveMode {
 //                           |
 //                    [w]  [v3'] [wd] [lr]
 //                     |     |    |    |
-//                     (ScaledVarUpdate)
+//                     (ScaledVarUpdate)    (wd only if WeightDecayMode::Decay)
 //                           |
 //                          [w']
 

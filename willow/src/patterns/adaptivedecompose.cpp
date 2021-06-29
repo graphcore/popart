@@ -408,7 +408,7 @@ bool AdaptiveDecompose::apply(Op *op) const {
         ScaledVarUpdateOp::getLrInIndex(),
         combo->inId(AdaptiveComboOp::getLrInIndex()));
   }
-  if (!combo->initWd.isConst()) {
+  if (!combo->initWd.isConst() && combo->decayMode == WeightDecayMode::Decay) {
     scaledVarUpdOp->connectInTensor(
         ScaledVarUpdateOp::getWdInIndex(),
         combo->inId(AdaptiveComboOp::getWdInIndex()));

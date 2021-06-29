@@ -13,15 +13,21 @@ adaptive_modes = [
     popart.AdaptiveMode.CenteredRMSProp,
 ]
 
+weight_decay_modes = [
+    popart.WeightDecayMode.L2Regularization,
+    popart.WeightDecayMode.Decay,
+]
+
 
 @pytest.mark.parametrize("use_tf_variant", [True, False])
 @pytest.mark.parametrize("const_lr", [True, False])
 @pytest.mark.parametrize("adaptive_mode", adaptive_modes)
 @pytest.mark.parametrize("momentum", [0.0, 0.9])
-@pytest.mark.parametrize("weight_decay", [0.0, 1e-5])
+@pytest.mark.parametrize("weight_decay", [0.0, 1e-2])
 @pytest.mark.parametrize("const_weight_decay", [True, False])
+@pytest.mark.parametrize("weight_decay_mode", weight_decay_modes)
 def test_rmsprop_tf_mode(use_tf_variant, const_lr, adaptive_mode, momentum,
-                         weight_decay, const_weight_decay):
+                         weight_decay, weight_decay_mode, const_weight_decay):
     np.random.seed(0)
     input_dim = 3
     num_steps = 15
@@ -70,6 +76,7 @@ def test_rmsprop_tf_mode(use_tf_variant, const_lr, adaptive_mode, momentum,
             alpha,
             momentum,
             weight_decay,
+            weight_decay_mode,
             const_weight_decay,
             eps,
             adaptive_mode,
@@ -104,6 +111,7 @@ def test_rmsprop_tf_mode(use_tf_variant, const_lr, adaptive_mode, momentum,
                         alpha,
                         momentum,
                         wd,
+                        weight_decay_mode,
                         const_weight_decay,
                         eps,
                         adaptive_mode,
@@ -118,6 +126,10 @@ def test_rmsprop_tf_mode(use_tf_variant, const_lr, adaptive_mode, momentum,
 
     # Run numpy training.
     centered = adaptive_mode == popart.AdaptiveMode.CenteredRMSProp
+    if weight_decay_mode == popart.WeightDecayMode.L2Regularization:
+        wd_mode = 'L2'
+    else:
+        wd_mode = 'decay'
     w0_np = w0_data.copy()
     w1_np = w1_data.copy()
     mg0 = np.zeros(w0_np.shape, dtype=w0_np.dtype)
@@ -150,8 +162,9 @@ def test_rmsprop_tf_mode(use_tf_variant, const_lr, adaptive_mode, momentum,
                 alpha,
                 momentum,
                 wd,
+                wd_mode,
                 eps,
-                centered=centered,
+                centered,
             )
             w1_np, mg1, rms1, mom1 = rpnp.rmsprop_update_numpy(
                 w1_np,
@@ -163,8 +176,9 @@ def test_rmsprop_tf_mode(use_tf_variant, const_lr, adaptive_mode, momentum,
                 alpha,
                 momentum,
                 wd,
+                wd_mode,
                 eps,
-                centered=centered,
+                centered,
             )
 
     # Compare the resulting paramaters.
@@ -176,7 +190,7 @@ def test_rmsprop_tf_mode(use_tf_variant, const_lr, adaptive_mode, momentum,
         assert not np.allclose(w1_popart, w1_np, rtol=1e-02, atol=1e-05)
 
 
-def get_rmsprop(lr, const_lr, alpha, momentum, weight_decay,
+def get_rmsprop(lr, const_lr, alpha, momentum, weight_decay, weight_decay_mode,
                 const_weight_decay, eps, mode, tf_variant):
     return popart.Adaptive(
         {
@@ -187,7 +201,7 @@ def get_rmsprop(lr, const_lr, alpha, momentum, weight_decay,
             'defaultWeightDecay': (weight_decay, const_weight_decay),
         },
         mode=mode,
-        weight_decay_mode=popart.WeightDecayMode.L2Regularization,
+        weight_decay_mode=weight_decay_mode,
         rmsprop_tf_variant=tf_variant,
     )
 

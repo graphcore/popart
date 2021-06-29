@@ -175,7 +175,7 @@ void ScaledVarUpdateOpx::growWithLrInUpdater(
   } else {
     poplar::Tensor wdt = getOrCreateWdTensor();
     // var = var * (1.0 - wd) - updater
-    wdt = popops::map(
+    popops::mapInPlace(
         graph().getPoplarGraph(),
         pe::Sub(pe::Mul(pe::_1, pe::Sub(pe::Const(1.0f), pe::_3)), pe::_2),
         {var, updater, wdt},
