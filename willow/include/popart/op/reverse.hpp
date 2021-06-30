@@ -6,7 +6,7 @@
 
 namespace popart {
 
-// This Op matches the poplar::Tensor::reverse function, except it allows
+// This Op matches the snap::Tensor::reverse function, except it allows
 // you to reverse along multiple dimensions in one go
 
 class ReverseBaseOp : public Op {

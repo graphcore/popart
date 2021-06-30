@@ -29,13 +29,11 @@ NllOpx::NllOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
 void NllOpx::grow(poplar::program::Sequence &prog) const {
   const NllOp &op = getOp<NllOp>();
 
-  const poplar::Tensor &probs =
-      getInTensor(NllOp::getProbsInIndex()).getPoplarTensor();
-  const poplar::Tensor &label =
-      getInTensor(NllOp::getLabelInIndex()).getPoplarTensor();
-  poplar::Tensor probs2D;
-  poplar::Tensor label1D;
-  poplar::Tensor oneHot;
+  const snap::Tensor &probs = getInTensor(NllOp::getProbsInIndex());
+  const snap::Tensor &label = getInTensor(NllOp::getLabelInIndex());
+  snap::Tensor probs2D;
+  snap::Tensor label1D;
+  snap::Tensor oneHot;
 
   flattenAndEncodeOneHot(*this, prog, probs, label, probs2D, label1D, oneHot);
 
@@ -43,35 +41,36 @@ void NllOpx::grow(poplar::program::Sequence &prog) const {
   //           to a tensor which is sparse with a single p per row.
   popops::mapInPlace(graph().getPoplarGraph(),
                      popops::expr::BinaryOpType::MULTIPLY,
-                     oneHot,
-                     probs2D,
+                     oneHot.getPoplarTensor(),
+                     probs2D.getPoplarTensor(),
                      prog,
                      debugContext("mul"));
 
   // sum rows, so that just the p corresponding to the label remains
-  poplar::Tensor reduction = popops::reduce(graph().getPoplarGraph(),
-                                            oneHot,
-                                            {1},
-                                            {popops::Operation::ADD},
-                                            prog,
-                                            debugContext("reduce"));
+  snap::Tensor reduction = snap::Tensor{popops::reduce(graph().getPoplarGraph(),
+                                                       oneHot.getPoplarTensor(),
+                                                       {1},
+                                                       {popops::Operation::ADD},
+                                                       prog,
+                                                       debugContext("reduce")),
+                                        graph()};
 
   // Create an epsilon value
   double eps_f = 1.0e-7;
 
   // if using fp16, increase the eps to avoid underfloat
-  if (probs.elementType() == poplar::HALF)
+  if (probs.getPoplarTensor().elementType() == poplar::HALF)
     eps_f = 6.104e-05;
 
-  poplar::Tensor eps =
-      getConst(probs.elementType(), {1}, eps_f, "epsilon").getPoplarTensor();
+  snap::Tensor eps =
+      getConst(probs.getPoplarTensor().elementType(), {1}, eps_f, "epsilon");
 
   if (!op.inputIsLogProbability()) {
     // Take max of prob and eps to reduction make sure it does not have any
     // 0's and log it,
     popops::mapInPlace(graph().getPoplarGraph(),
                        pe::Log(pe::Max(pe::_1, pe::_2)),
-                       {reduction, eps},
+                       {reduction.getPoplarTensor(), eps.getPoplarTensor()},
                        prog,
                        debugContext("LogMax"));
   }
@@ -97,44 +96,49 @@ void NllOpx::grow(poplar::program::Sequence &prog) const {
 
 void NllOpx::flattenAndEncodeOneHot(const PopOpx &opx,
                                     poplar::program::Sequence &prog,
-                                    const poplar::Tensor &probs,
-                                    const poplar::Tensor &label,
-                                    poplar::Tensor &probs2D,
-                                    poplar::Tensor &label1D,
-                                    poplar::Tensor &oneHot) {
+                                    const snap::Tensor &probs,
+                                    const snap::Tensor &label,
+                                    snap::Tensor &probs2D,
+                                    snap::Tensor &label1D,
+                                    snap::Tensor &oneHot) {
   // Expect an N-d Probs tensor and (N-1)-d Label tensor.
   // Probs - a tensor of shape [D1, ..., DN, NumClasses]
   // Label - a tensor of shape [D1, ..., DN], where each element is a
   //         class index
   // If N > 2, then the inputs are flattened across all dimenions
   // (except the outer Classes dim in the case of Probs)
-  probs2D = probs.flatten(0, probs.rank() - 1);
-  label1D = label.flatten();
+  probs2D = snap::Tensor{
+      probs.getPoplarTensor().flatten(0, probs.getPoplarTensor().rank() - 1),
+      opx.graph()};
+  label1D = snap::Tensor{label.getPoplarTensor().flatten(), opx.graph()};
   // Tensor taking one-hot encoded output must be 2 dimensional
-  oneHot = opx.graph().getPoplarGraph().clone(
-      probs2D.elementType(), probs2D, opx.debugContext("oneHot"));
+  oneHot = snap::Tensor{opx.graph().getPoplarGraph().clone(
+                            probs2D.getPoplarTensor().elementType(),
+                            probs2D.getPoplarTensor(),
+                            opx.debugContext("oneHot")),
+                        opx.graph()};
   popops::encodeOneHot(opx.graph().getPoplarGraph(),
-                       label1D,
-                       oneHot,
+                       label1D.getPoplarTensor(),
+                       oneHot.getPoplarTensor(),
                        prog,
                        opx.debugContext("nll"));
 }
 
 void NllOpx::applyScalingInPlaceForMeanReduction(
     const PopOpx &opx,
-    poplar::Tensor t,
-    poplar::Tensor scale,
+    snap::Tensor t,
+    snap::Tensor scale,
     poplar::program::Sequence &prog) {
-  double totalSamples = static_cast<double>(t.dim(0));
+  double totalSamples = static_cast<double>(t.getPoplarTensor().dim(0));
 
   auto combined_scale = popops::div(opx.graph().getPoplarGraph(),
-                                    scale,
+                                    scale.getPoplarTensor(),
                                     totalSamples,
                                     prog,
                                     opx.debugContext("combinedLossScale"));
 
   popops::mulInPlace(opx.graph().getPoplarGraph(),
-                     t,
+                     t.getPoplarTensor(),
                      combined_scale,
                      prog,
                      opx.debugContext("mean"));
@@ -142,9 +146,9 @@ void NllOpx::applyScalingInPlaceForMeanReduction(
 
 void NllOpx::applyScalingInPlaceForMeanReductionWithIgnoreIndex(
     const PopOpx &opx,
-    poplar::Tensor t,
-    poplar::Tensor scale,
-    poplar::Tensor mask,
+    snap::Tensor t,
+    snap::Tensor scale,
+    snap::Tensor mask,
     poplar::program::Sequence &prog) {
   // Determine the scale-factor for mean reduction dynamically from the
   // mask.
@@ -152,7 +156,7 @@ void NllOpx::applyScalingInPlaceForMeanReductionWithIgnoreIndex(
   // counted when scaling the loss/loss grad
   auto numNonIgnoredSamples =
       popops::reduce(opx.graph().getPoplarGraph(),
-                     mask.flatten(),
+                     mask.getPoplarTensor().flatten(),
                      {0},
                      {popops::Operation::ADD},
                      prog,
@@ -172,83 +176,88 @@ void NllOpx::applyScalingInPlaceForMeanReductionWithIgnoreIndex(
                      opx.debugContext("numNonIgnoredSamples_min"));
 
   auto combined_scale = popops::div(opx.graph().getPoplarGraph(),
-                                    scale,
+                                    scale.getPoplarTensor(),
                                     numNonIgnoredSamples,
                                     prog,
                                     opx.debugContext("combinedLossScale"));
 
   popops::mulInPlace(opx.graph().getPoplarGraph(),
-                     t,
+                     t.getPoplarTensor(),
                      combined_scale,
                      prog,
                      opx.debugContext("mean"));
 }
 
-poplar::Tensor
+snap::Tensor
 NllOpx::applyMaskInPlaceForIgnoredIndex(const PopOpx &opx,
-                                        poplar::Tensor t,
-                                        poplar::Tensor labels,
+                                        snap::Tensor t,
+                                        snap::Tensor labels,
                                         int ignoreIndex,
                                         poplar::program::Sequence &prog) {
   // Get the scalar ignoreIndex tensor. If it doens't already
   // exist, create it
   auto ignoreIndexTensor = opx.graph().getPoplarGraph().addConstant(
-      labels.elementType(), {}, ignoreIndex, opx.debugContext("ignoreIndex"));
+      labels.getPoplarTensor().elementType(),
+      {},
+      ignoreIndex,
+      opx.debugContext("ignoreIndex"));
   opx.graph().getPoplarGraph().setTileMapping(ignoreIndexTensor, 0);
 
   // Create the mask
   auto lossMaskBool = popops::map(opx.graph().getPoplarGraph(),
                                   popops::expr::BinaryOpType::NOT_EQUAL,
-                                  labels,
+                                  labels.getPoplarTensor(),
                                   ignoreIndexTensor,
                                   prog,
                                   opx.debugContext("notEqual"));
   auto lossMask     = popops::cast(opx.graph().getPoplarGraph(),
                                lossMaskBool,
-                               t.elementType(),
+                               t.getPoplarTensor().elementType(),
                                prog,
                                opx.debugContext("cast"));
 
-  if (t.rank() != lossMask.rank()) {
+  if (t.getPoplarTensor().rank() != lossMask.rank()) {
     // If required, broadcast lossMask on the final dimension.
-    auto t_shape          = t.shape();
-    t_shape[t.rank() - 1] = 1;
-    lossMask              = lossMask.reshape(t_shape);
+    auto t_shape                            = t.getPoplarTensor().shape();
+    t_shape[t.getPoplarTensor().rank() - 1] = 1;
+    lossMask                                = lossMask.reshape(t_shape);
   }
 
   // Apply the mask
   popops::mapInPlace(opx.graph().getPoplarGraph(),
                      popops::expr::BinaryOpType::MULTIPLY,
-                     t,
+                     t.getPoplarTensor(),
                      lossMask,
                      prog,
                      opx.debugContext("masked"));
 
-  return lossMask;
+  return snap::Tensor{lossMask, opx.graph()};
 }
 
 void NllOpx::handleLossOutNotReducedToScalar(const PopOpx &opx,
-                                             poplar::Tensor &reduction,
-                                             const poplar::Tensor &label,
-                                             poplar::Tensor &label1D,
+                                             snap::Tensor &reduction,
+                                             const snap::Tensor &label,
+                                             snap::Tensor &label1D,
                                              poplar::program::Sequence &prog) {
   popops::mapInPlace(opx.graph().getPoplarGraph(),
                      popops::expr::UnaryOpType::NEGATE,
-                     reduction,
+                     reduction.getPoplarTensor(),
                      prog,
                      opx.debugContext("neg"));
   // One loss per sample, so the output is reshaped to match label input shape
-  reduction = reduction.reshape(label.shape());
+  reduction = snap::Tensor{
+      reduction.getPoplarTensor().reshape(label.getPoplarTensor().shape()),
+      opx.graph()};
 
-  opx.setOutTensor(0, snap::Tensor{reduction, opx.graph()});
+  opx.setOutTensor(0, reduction);
 }
 
 void NllOpx::handleLossOutReducedToScalar(const PopOpx &opx,
                                           bool hasIgnoreIndex,
                                           int64_t ignoreIndex,
                                           bool meanReduce,
-                                          poplar::Tensor &reduction,
-                                          poplar::Tensor &label1D,
+                                          snap::Tensor &reduction,
+                                          snap::Tensor &label1D,
                                           poplar::program::Sequence &prog,
                                           const OutIndex outIdx) {
   double scale = 1.0;
@@ -258,15 +267,16 @@ void NllOpx::handleLossOutReducedToScalar(const PopOpx &opx,
       auto lossMask = applyMaskInPlaceForIgnoredIndex(
           opx, reduction, label1D, static_cast<int>(ignoreIndex), prog);
 
-      auto scaleT = opx.getConst(reduction.elementType(), {}, 1.0, "One")
-                        .getPoplarTensor();
+      auto scaleT = opx.getConst(
+          reduction.getPoplarTensor().elementType(), {}, 1.0, "One");
 
       applyScalingInPlaceForMeanReductionWithIgnoreIndex(
           opx, reduction, scaleT, lossMask, prog);
       // Leave scale as 1.0 as already scaled
     } else {
-      double totalSamples = static_cast<double>(reduction.dim(0));
-      scale               = 1.0 / totalSamples;
+      double totalSamples =
+          static_cast<double>(reduction.getPoplarTensor().dim(0));
+      scale = 1.0 / totalSamples;
     }
   }
 
@@ -275,7 +285,7 @@ void NllOpx::handleLossOutReducedToScalar(const PopOpx &opx,
       opx.getConst(poplar::FLOAT, {}, -scale, "scale").getPoplarTensor();
 
   auto scalar = popops::reduce(opx.graph().getPoplarGraph(),
-                               reduction,
+                               reduction.getPoplarTensor(),
                                {0},
                                {popops::Operation::ADD, false, t_scale},
                                prog,
@@ -287,15 +297,16 @@ void NllOpx::handleLossGradScaling(const PopOpx &opx,
                                    bool hasIgnoreIndex,
                                    int64_t ignoreIndex,
                                    bool meanReduce,
-                                   poplar::Tensor &oneHot,
-                                   poplar::Tensor &gradIn,
-                                   poplar::Tensor &label1D,
+                                   snap::Tensor &oneHot,
+                                   snap::Tensor &gradIn,
+                                   snap::Tensor &label1D,
                                    poplar::program::Sequence &prog) {
   // To ensure gradIn has a broadcastable shape, add extra singleton
   // dimensions
-  for (unsigned dim = 0; dim < oneHot.rank(); dim++) {
-    if (dim > gradIn.rank() - 1) {
-      gradIn = gradIn.expand({dim});
+  for (unsigned dim = 0; dim < oneHot.getPoplarTensor().rank(); dim++) {
+    if (dim > gradIn.getPoplarTensor().rank() - 1) {
+      gradIn =
+          snap::Tensor{gradIn.getPoplarTensor().expand({dim}), opx.graph()};
     }
   }
 
@@ -317,8 +328,8 @@ void NllOpx::handleLossGradScaling(const PopOpx &opx,
 
   if (!meanReduce) {
     popops::mulInPlace(opx.graph().getPoplarGraph(),
-                       oneHot,
-                       gradIn,
+                       oneHot.getPoplarTensor(),
+                       gradIn.getPoplarTensor(),
                        prog,
                        opx.debugContext("scaledGradIn"));
   }
@@ -343,17 +354,16 @@ NllGradOpx::NllGradOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
 //    d_loss / d_p = -p_i if i == l
 
 void NllGradOpx::grow(poplar::program::Sequence &prog) const {
-  const NllGradOp &gradOp = getOp<NllGradOp>();
-  const poplar::Tensor &probs =
-      getInTensor(NllGradOp::getProbsInIndex()).getPoplarTensor();
-  const poplar::Tensor &label =
-      getInTensor(NllGradOp::getLabelInIndex()).getPoplarTensor();
-  poplar::Tensor gradIn =
-      getInTensor(NllGradOp::getGradInIndex()).getPoplarTensor();
+  const NllGradOp &gradOp   = getOp<NllGradOp>();
+  const snap::Tensor &probs = getInTensor(NllGradOp::getProbsInIndex());
+  const snap::Tensor &label = getInTensor(NllGradOp::getLabelInIndex());
+  snap::Tensor gradIn       = getInTensor(NllGradOp::getGradInIndex());
 
   // As for NllOpx, flatten outer dimenstions if rank(probs) > 2
-  auto probs2D = probs.flatten(0, probs.rank() - 1);
-  auto label1D = label.flatten();
+  auto probs2D = snap::Tensor{
+      probs.getPoplarTensor().flatten(0, probs.getPoplarTensor().rank() - 1),
+      graph()};
+  auto label1D = snap::Tensor{label.getPoplarTensor().flatten(), graph()};
 
   // inverse probabilities, we take max(eps, p) to make division safe
   float eps = 1e-10f;
@@ -361,45 +371,53 @@ void NllGradOpx::grow(poplar::program::Sequence &prog) const {
   // If working with float16 increase the eps to avoid underfloat
   // Note that because of the division we would ideally use 1/65500
   // but this will underflow.
-  if (probs.elementType() == poplar::HALF) {
+  if (probs.getPoplarTensor().elementType() == poplar::HALF) {
     eps = 6.104e-05f;
   }
 
   auto smallConst = graph().getPoplarGraph().addConstant(
-      probs.elementType(), {1}, eps, debugContext("eps"));
+      probs.getPoplarTensor().elementType(), {1}, eps, debugContext("eps"));
   graph().getPoplarGraph().setTileMapping(smallConst, 0);
   auto safeProbs = popops::map(graph().getPoplarGraph(),
                                popops::expr::BinaryOpType::MAXIMUM,
                                smallConst,
-                               probs2D,
+                               probs2D.getPoplarTensor(),
                                prog,
                                debugContext("max"));
 
   // oneHot: initialised to be 1 at position "label", 0 elsewhere.
-  auto oneHot = graph().getPoplarGraph().clone(
-      probs2D.elementType(), probs2D, debugContext("oneHot"));
+  auto oneHot = snap::Tensor{
+      graph().getPoplarGraph().clone(probs2D.getPoplarTensor().elementType(),
+                                     probs2D.getPoplarTensor(),
+                                     debugContext("oneHot")),
+      graph()};
 
-  popops::encodeOneHot(
-      graph().getPoplarGraph(), label1D, oneHot, prog, debugContext("nll"));
+  popops::encodeOneHot(graph().getPoplarGraph(),
+                       label1D.getPoplarTensor(),
+                       oneHot.getPoplarTensor(),
+                       prog,
+                       debugContext("nll"));
 
   if (gradOp.inputIsLogProbability()) {
     // oneHot: becomes -1 at position "label", 0 elsewhere.
     popops::mapInPlace(graph().getPoplarGraph(),
                        pe::UnaryOpType::NEGATE,
-                       oneHot,
+                       oneHot.getPoplarTensor(),
                        prog,
                        debugContext("negOneHot"));
   } else {
     // oneHot: set to -1/p at position "label", 0 elsewhere.
     popops::mapInPlace(graph().getPoplarGraph(),
                        pe::Divide(pe::Neg(pe::_1), pe::_2),
-                       {oneHot, safeProbs},
+                       {oneHot.getPoplarTensor(), safeProbs},
                        prog,
                        debugContext("NegDiv"));
   }
 
   // Output is reshaped to match probs input shape
-  oneHot = oneHot.reshape(probs.shape());
+  oneHot = snap::Tensor{
+      oneHot.getPoplarTensor().reshape(probs.getPoplarTensor().shape()),
+      graph()};
 
   NllOpx::handleLossGradScaling(
       *this,
@@ -411,7 +429,7 @@ void NllGradOpx::grow(poplar::program::Sequence &prog) const {
       label1D,
       prog);
 
-  setOutTensor(0, snap::Tensor{oneHot, graph()});
+  setOutTensor(0, oneHot);
 }
 
 namespace {

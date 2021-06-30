@@ -21,9 +21,9 @@ private:
 
   void copyOutputs(poplar::program::Sequence &thenProg,
                    poplar::program::Sequence &elseProg,
-                   const std::vector<poplar::Tensor> &outputs) const;
+                   const std::vector<snap::Tensor> &outputs) const;
 
-  std::vector<poplar::Tensor> prepareOutputs() const;
+  std::vector<snap::Tensor> prepareOutputs() const;
 
   std::vector<std::tuple<TensorId, TensorId, bool>>
   getInputsToPrepare() const override;

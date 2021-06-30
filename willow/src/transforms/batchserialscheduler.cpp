@@ -21,8 +21,8 @@
 
 namespace popart {
 
-bool BatchSerialTensorContext::
-operator<(BatchSerialTensorContext const &rhs) const {
+bool BatchSerialTensorContext::operator<(
+    BatchSerialTensorContext const &rhs) const {
   return std::make_tuple(vgraphId ? *vgraphId : unusedVGraphId,
                          executionPhase ? *executionPhase
                                         : unusedExecutionPhase,
@@ -33,14 +33,14 @@ operator<(BatchSerialTensorContext const &rhs) const {
              rhs.pipelineStage ? *rhs.pipelineStage : unusedPipelineStage);
 }
 
-bool BatchSerialTensorContext::
-operator==(BatchSerialTensorContext const &rhs) const {
+bool BatchSerialTensorContext::operator==(
+    BatchSerialTensorContext const &rhs) const {
   return std::make_tuple(vgraphId, executionPhase, pipelineStage) ==
          std::make_tuple(rhs.vgraphId, rhs.executionPhase, rhs.pipelineStage);
 }
 
-bool BatchSerialTensorContext::
-operator!=(BatchSerialTensorContext const &rhs) const {
+bool BatchSerialTensorContext::operator!=(
+    BatchSerialTensorContext const &rhs) const {
   return !(*this == rhs);
 }
 

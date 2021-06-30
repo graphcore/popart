@@ -33,16 +33,24 @@ const std::vector<size_t> &TopKGradOpx::getGradOutShape() const {
 }
 
 void TopKGradOpx::grow(poplar::program::Sequence &prog) const {
-  auto indices = getInTensor(TopKGradOp::indicesInIndex()).getPoplarTensor();
+  auto indices = getInTensor(TopKGradOp::indicesInIndex());
 
-  auto gradIn = getInTensor(TopKGradOp::gradInIndex()).getPoplarTensor();
+  auto gradIn = getInTensor(TopKGradOp::gradInIndex());
 
-  poplar::Tensor dataGrad = graph().getPoplarGraph().addVariable(
-      gradIn.elementType(), getGradOutShape(), debugContext("dataGrad"));
+  snap::Tensor dataGrad =
+      snap::Tensor{graph().getPoplarGraph().addVariable(
+                       gradIn.getPoplarTensor().elementType(),
+                       getGradOutShape(),
+                       debugContext("dataGrad")),
+                   graph()};
 
-  poputil::mapTensorLinearly(graph().getPoplarGraph(), dataGrad);
+  poputil::mapTensorLinearly(graph().getPoplarGraph(),
+                             dataGrad.getPoplarTensor());
 
-  popops::zero(graph().getPoplarGraph(), dataGrad, prog, debugContext("zero"));
+  popops::zero(graph().getPoplarGraph(),
+               dataGrad.getPoplarTensor(),
+               prog,
+               debugContext("zero"));
 
   scatterutilx::growScatter(prog,
                             graph(),
@@ -52,7 +60,7 @@ void TopKGradOpx::grow(poplar::program::Sequence &prog) const {
                             axis,
                             getDebugNameAndId("scatter"));
 
-  setOutTensor(TopKGradOp::gradOutIndex(), snap::Tensor{dataGrad, graph()});
+  setOutTensor(TopKGradOp::gradOutIndex(), dataGrad);
 }
 
 void TopKOpx::grow(poplar::program::Sequence &prog) const {

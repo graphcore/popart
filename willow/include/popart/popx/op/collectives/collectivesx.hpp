@@ -98,7 +98,7 @@ public:
   getCollectiveLinkedGroup() const;
   gcl::CollectiveBalancedReorder *getCollectiveBalancedReorder() const;
   gcl::CollectiveBalancedReorder *
-  createCollectiveBalancedReorder(poplar::Tensor tensor) const;
+  createCollectiveBalancedReorder(snap::Tensor tensor) const;
 };
 
 } // namespace popx

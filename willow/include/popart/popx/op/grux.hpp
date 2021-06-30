@@ -23,26 +23,26 @@ public:
   std::set<TensorId> mustExistBeforeCreate(InIndex) const;
 
   static popnn::gru::GruParams createGRUParams(const GRUOp &);
-  static poplar::Tensor reshapePoplibWeightsForOnnx(poplar::Tensor);
-  static poplar::Tensor reshapePoplibBiasesForOnnx(poplar::Tensor);
+  static snap::Tensor reshapePoplibWeightsForOnnx(snap::Tensor);
+  static snap::Tensor reshapePoplibBiasesForOnnx(snap::Tensor);
 
 private:
   void growBias(poplar::program::Sequence &) const;
   popnn::gru::GruParams createGRUParams() const;
   popnn::gru::GruWeights getGRUWeights() const;
-  poplar::Tensor getInitialState() const;
-  poplar::Tensor createGRUInput() const;
+  snap::Tensor getInitialState() const;
+  snap::Tensor createGRUInput() const;
   void prepareWeights(poplar::program::Sequence &) const;
-  void prepareInitialState(poplar::Tensor &init_state_h,
+  void prepareInitialState(snap::Tensor &init_state_h,
                            poplar::program::Sequence &prog) const;
-  poplar::Tensor getInput(poplar::program::Sequence &) const;
-  std::unique_ptr<poplar::Tensor> createIntermediate() const;
-  void reshapeAndInsert(OutIndex index, const poplar::Tensor &) const;
+  snap::Tensor getInput(poplar::program::Sequence &) const;
+  std::unique_ptr<snap::Tensor> createIntermediate() const;
+  void reshapeAndInsert(OutIndex index, const snap::Tensor &) const;
   bool inputCreated(InIndex) const;
 
   // These are mutable due to the way that popnn creates the input weights
   mutable nonstd::optional<popnn::gru::GruWeights> weights;
-  mutable nonstd::optional<poplar::Tensor> initial_state_h;
+  mutable nonstd::optional<snap::Tensor> initial_state_h;
   mutable std::set<InIndex> createdInputs;
 };
 
@@ -52,7 +52,7 @@ public:
   void grow(poplar::program::Sequence &) const final;
 
 private:
-  poplar::Tensor getHiddenStateGrad() const;
+  snap::Tensor getHiddenStateGrad() const;
 
   popnn::gru::GruParams createGRUParams() const;
 };

@@ -58,14 +58,14 @@ void MultiExchangeOpx::grow(poplar::program::Sequence &prog) const {
     descriptorxs.push_back(getExchangeDescriptorx(dv_p, descriptor));
   }
 
-  std::vector<std::vector<std::pair<TensorId, poplar::Tensor>>> tensors(
+  std::vector<std::vector<std::pair<TensorId, snap::Tensor>>> tensors(
       descriptorxs.size());
 
   // Get tensors
   for (auto input : multiExchangeOp.input->tensorIdMap()) {
     auto indices = multiExchangeOp.inIndexToDescriptorIndex(input.first);
     tensors.at(indices.first)
-        .push_back({input.second, getInTensor(input.first).getPoplarTensor()});
+        .push_back({input.second, getInTensor(input.first)});
   }
 
   // Set tensors
@@ -158,9 +158,7 @@ void MultiExchangeOpx::grow(poplar::program::Sequence &prog) const {
     auto indices = multiExchangeOp.outIndexToDescriptorIndex(output.first);
     setOutTensor(
         output.first,
-        snap::Tensor{
-            descriptorxs.at(indices.first)->getOutTensors().at(indices.second),
-            dstVirtualGraph(indices.second)});
+        descriptorxs.at(indices.first)->getOutTensors().at(indices.second));
   }
 }
 

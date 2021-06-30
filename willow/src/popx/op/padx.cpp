@@ -29,7 +29,7 @@ BasePadOpx::BasePadOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
   verifyOp<BasePadOp>(op);
 }
 
-std::pair<bool, poplar::Tensor> BasePadOpx::getPropitiousPadLayout() const {
+std::pair<bool, snap::Tensor> BasePadOpx::getPropitiousPadLayout() const {
 
   auto &&bop = getBasePadOp();
 
@@ -46,7 +46,7 @@ std::pair<bool, poplar::Tensor> BasePadOpx::getPropitiousPadLayout() const {
   // 1. From 'act_out_grad', find 'act_out'
   // 2. From 'act_out', find its producer
   // 3. From its producer, find 'act_in'
-  poplar::Tensor dummy;
+  snap::Tensor dummy;
 
   auto inId = bop.inId(BasePadOp::getInIndex());
   if (!isGradId(inId)) {
@@ -97,7 +97,7 @@ std::pair<bool, poplar::Tensor> BasePadOpx::getPropitiousPadLayout() const {
   // Found a good layout!
 
   // return {false, dummy};
-  return {true, get(act_in).getPoplarTensor()};
+  return {true, get(act_in)};
 }
 
 BasePadOpx::Chisseled BasePadOpx::getChisseled(const snap::Tensor &t0) const {
@@ -171,39 +171,38 @@ snap::Tensor BasePadOpx::cloneNcopyEdges(snap::Tensor t,
   return snap::Tensor{pt, graph()};
 }
 
-poplar::Tensor BasePadOpx::constantModePadGrow(poplar::Tensor inTensor,
-                                               poplar::program::Sequence &s,
-                                               bool inPlaceAllowed) const {
+snap::Tensor BasePadOpx::constantModePadGrow(snap::Tensor inTensor,
+                                             poplar::program::Sequence &s,
+                                             bool inPlaceAllowed) const {
 
-  auto mk_padded = [this, &s, &inTensor, inPlaceAllowed](
-                       const popops::padding::MappingMethod mappingMethod)
-      -> poplar::Tensor {
+  auto mk_padded =
+      [this, &s, &inTensor, inPlaceAllowed](
+          const popops::padding::MappingMethod mappingMethod) -> snap::Tensor {
     auto &&padBaseOp        = getBasePadOp();
     const auto lowerPadding = padBaseOp.getLowerPadding();
     const auto upperPadding = padBaseOp.getUpperPadding();
     const auto padValue     = padBaseOp.getPadValue();
 
     if (!inPlaceAllowed) {
-      inTensor =
-          cloneNcopy(s, snap::Tensor{inTensor, graph()}).getPoplarTensor();
+      inTensor = cloneNcopy(s, inTensor);
     }
 
-    return popops::pad(PopOpx::graph().getPoplarGraph(),
-                       inTensor,
-                       lowerPadding,
-                       upperPadding,
-                       padValue,
-                       mappingMethod);
+    return snap::Tensor{popops::pad(PopOpx::graph().getPoplarGraph(),
+                                    inTensor.getPoplarTensor(),
+                                    lowerPadding,
+                                    upperPadding,
+                                    padValue,
+                                    mappingMethod),
+                        PopOpx::graph()};
   };
 
   // If padding a tensor with a dim of size 0, the original tensor must have no
   // elements, so "edge" mapping is not possible and we must do it ourselves.
   // Note a tensor has 0 elements iff it has a zero-sized dimension.
-  if (inTensor.numElements() == 0) {
-    auto outTensor = snap::Tensor{
-        mk_padded(popops::padding::MappingMethod::NONE), PopOpx::graph()};
+  if (inTensor.getPoplarTensor().numElements() == 0) {
+    auto outTensor = mk_padded(popops::padding::MappingMethod::NONE);
     dv_p->lowering().getLinearMapper().mapTensor(PopOpx::graph(), outTensor);
-    return outTensor.getPoplarTensor();
+    return outTensor;
   }
 
   // Can we find a good layout for the constant padding?
@@ -211,10 +210,14 @@ poplar::Tensor BasePadOpx::constantModePadGrow(poplar::Tensor inTensor,
   // need to cloneNcopy it.
   const auto propitious = getPropitiousPadLayout();
   if (propitious.first) {
-    auto outTensor    = graph().getPoplarGraph().clone(propitious.second);
-    auto chisseledDst = getChisseled(snap::Tensor{outTensor, graph()});
-    s.add(poplar::program::Copy(
-        inTensor, chisseledDst.core.getPoplarTensor(), false, debugContext()));
+    auto outTensor = snap::Tensor{
+        graph().getPoplarGraph().clone(propitious.second.getPoplarTensor()),
+        graph()};
+    auto chisseledDst = getChisseled(outTensor);
+    s.add(poplar::program::Copy(inTensor.getPoplarTensor(),
+                                chisseledDst.core.getPoplarTensor(),
+                                false,
+                                debugContext()));
     std::vector<poplar::Tensor> allPads;
     allPads.reserve(chisseledDst.lows.size() + chisseledDst.upps.size());
     for (const auto &x : chisseledDst.lows) {
@@ -230,17 +233,16 @@ poplar::Tensor BasePadOpx::constantModePadGrow(poplar::Tensor inTensor,
 
   else {
     auto outTensor = mk_padded(popops::padding::MappingMethod::EDGE);
-    if (outTensor.containsAliases()) {
-      outTensor = cloneNcopyEdges(snap::Tensor{outTensor, graph()}, s)
-                      .getPoplarTensor();
+    if (outTensor.getPoplarTensor().containsAliases()) {
+      outTensor = cloneNcopyEdges(outTensor, s);
     }
     return outTensor;
   }
 }
 
-poplar::Tensor BasePadOpx::unflippedPadGrow(poplar::Tensor inTensor,
-                                            poplar::program::Sequence &prog,
-                                            bool inPlaceAllowed) const {
+snap::Tensor BasePadOpx::unflippedPadGrow(snap::Tensor inTensor,
+                                          poplar::program::Sequence &prog,
+                                          bool inPlaceAllowed) const {
 
   auto &&padBaseOp = getBasePadOp();
   const auto mode  = padBaseOp.getMode();
@@ -250,19 +252,24 @@ poplar::Tensor BasePadOpx::unflippedPadGrow(poplar::Tensor inTensor,
   }
 
   if (!inPlaceAllowed) {
-    inTensor =
-        cloneNcopy(prog, snap::Tensor{inTensor, graph()}).getPoplarTensor();
+    inTensor = cloneNcopy(prog, inTensor);
   }
 
   const auto lp = padBaseOp.getLowerPadding();
   const auto up = padBaseOp.getUpperPadding();
 
   if (mode == "edge") {
-    return popops::pad(inTensor, lp, up, popops::padding::Type::EDGE);
+    return snap::Tensor{
+        popops::pad(
+            inTensor.getPoplarTensor(), lp, up, popops::padding::Type::EDGE),
+        graph()};
   }
 
   if (mode == "reflect") {
-    return popops::pad(inTensor, lp, up, popops::padding::Type::REFLECT);
+    return snap::Tensor{
+        popops::pad(
+            inTensor.getPoplarTensor(), lp, up, popops::padding::Type::REFLECT),
+        graph()};
   }
 
   std::ostringstream oss;
@@ -271,35 +278,35 @@ poplar::Tensor BasePadOpx::unflippedPadGrow(poplar::Tensor inTensor,
   throw error(oss.str());
 }
 
-poplar::Tensor BasePadOpx::padGrow(poplar::Tensor inTensor,
-                                   poplar::program::Sequence &prog,
-                                   bool inPlaceAllowed) const {
+snap::Tensor BasePadOpx::padGrow(snap::Tensor inTensor,
+                                 poplar::program::Sequence &prog,
+                                 bool inPlaceAllowed) const {
   return unflippedPadGrow(flip(inTensor), prog, inPlaceAllowed);
 }
 
 void PadOpx::grow(poplar::program::Sequence &prog) const {
-  auto in0    = PopOpx::getInTensor(BasePadOp::getInIndex()).getPoplarTensor();
+  auto in0    = PopOpx::getInTensor(BasePadOp::getInIndex());
   auto padded = padGrow(in0, prog, false);
-  setOutTensor(BasePadOp::getOutIndex(), snap::Tensor{padded, graph()});
+  setOutTensor(BasePadOp::getOutIndex(), padded);
 }
 
 void PadInplaceOpx::grow(poplar::program::Sequence &prog) const {
-  auto in0    = PopOpx::getInTensor(BasePadOp::getInIndex()).getPoplarTensor();
+  auto in0    = PopOpx::getInTensor(BasePadOp::getInIndex());
   auto padded = padGrow(in0, prog, true);
-  setOutTensor(BasePadOp::getOutIndex(), snap::Tensor{padded, graph()});
+  setOutTensor(BasePadOp::getOutIndex(), padded);
 }
 
 PadGradOpx::PadGradOpx(Op *op, Devicex *devicex) : SliceOpx(op, devicex) {
   verifyOp<PadGradOpx>(op, Onnx::GradOperators::PadGrad);
 }
 
-poplar::Tensor BasePadOpx::flip(const poplar::Tensor &inTensor) const {
-  auto oTensor     = inTensor;
+snap::Tensor BasePadOpx::flip(const snap::Tensor &inTensor) const {
+  auto oTensor     = inTensor.getPoplarTensor();
   auto &&padBaseOp = getBasePadOp();
   for (auto f : padBaseOp.getFlips()) {
     oTensor = oTensor.reverse(f);
   }
-  return oTensor;
+  return snap::Tensor{oTensor, graph()};
 }
 
 PadInplaceOpx::PadInplaceOpx(Op *op, Devicex *devicex)

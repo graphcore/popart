@@ -2,7 +2,7 @@
 #ifndef GUARD_NEURALNET_LSTMX_HPP
 #define GUARD_NEURALNET_LSTMX_HPP
 
-#include <poplar/Tensor.hpp>
+#include <snap/Tensor.hpp>
 #include <popnn/Lstm.hpp>
 #include <popart/names.hpp>
 #include <popart/op/lstm.hpp>
@@ -25,24 +25,23 @@ public:
                     const poplar::DebugNameAndId &dnai) const final;
   std::set<TensorId> mustExistBeforeCreate(InIndex) const;
 
-  static poplar::Tensor reshapePoplibWeightsForOnnx(poplar::Tensor,
-                                                    bool transpose);
+  static snap::Tensor reshapePoplibWeightsForOnnx(snap::Tensor, bool transpose);
   static popnn::lstm::LstmParams createLSTMParams(const LSTMOp &,
-                                                  const poplar::Tensor &);
+                                                  const snap::Tensor &);
 
 private:
   void growBias(poplar::program::Sequence &) const;
   popnn::lstm::LstmWeights getLSTMWeights() const;
   popnn::lstm::LstmState getInitialState() const;
-  poplar::Tensor createLSTMInput() const;
+  snap::Tensor createLSTMInput() const;
   void prepareInitialState(popnn::lstm::LstmState &,
                            poplar::program::Sequence &) const;
   void prepareWeights(poplar::program::Sequence &) const;
-  poplar::Tensor getInput(poplar::program::Sequence &) const;
-  std::unique_ptr<poplar::Tensor> createIntermediate() const;
-  void reshapeAndInsert(OutIndex index, const poplar::Tensor &) const;
+  snap::Tensor getInput(poplar::program::Sequence &) const;
+  std::unique_ptr<snap::Tensor> createIntermediate() const;
+  void reshapeAndInsert(OutIndex index, const snap::Tensor &) const;
   bool inputCreated(InIndex) const;
-  poplar::Tensor getSeqLens() const;
+  snap::Tensor getSeqLens() const;
 
   mutable nonstd::optional<popnn::lstm::LstmWeights> weights;
   mutable nonstd::optional<popnn::lstm::LstmState> initial_state;
@@ -55,9 +54,9 @@ public:
   void grow(poplar::program::Sequence &) const final;
 
 private:
-  poplar::Tensor getCellStateGrad() const;
-  poplar::Tensor getHiddenStateGrad() const;
-  poplar::Tensor getSeqLens() const;
+  snap::Tensor getCellStateGrad() const;
+  snap::Tensor getHiddenStateGrad() const;
+  snap::Tensor getSeqLens() const;
 };
 
 } // namespace popx

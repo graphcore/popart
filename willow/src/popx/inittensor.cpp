@@ -174,7 +174,7 @@ bool InitTensorCreator::initTensor(IrLowering &irLowering) const {
   // reducing IPU memory liveness and fragmentation (see T18661)
   auto input = snap::Tensor{
       irLowering.graph().getPoplarGraph().clone(
-          inputAndView.first,
+          inputAndView.first.getPoplarTensor(),
           {poplar::DebugNameAndId(getDstId(),
                                   tensor->getDebugInfo().getId(),
                                   tensor->getDebugInfo().getPathName())}),

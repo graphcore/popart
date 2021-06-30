@@ -92,11 +92,11 @@ void MatMulOpx::setMatMulOptions(const MatMulBaseOp &op,
   }
 }
 
-static std::pair<poplar::Tensor, poplar::Tensor>
-matInitReshape(MatMulBaseOp &matmul, poplar::Tensor lhs, poplar::Tensor rhs) {
+static std::pair<snap::Tensor, snap::Tensor>
+matInitReshape(MatMulBaseOp &matmul, snap::Tensor lhs, snap::Tensor rhs) {
 
-  auto a = lhs;
-  auto b = rhs;
+  auto a = lhs.getPoplarTensor();
+  auto b = rhs.getPoplarTensor();
 
   if (a.rank() < matmul.getExpandedLhsShape().size()) {
     a = a.reshape(vXtoY<int64_t, std::size_t>(matmul.getExpandedLhsShape()));
@@ -106,7 +106,7 @@ matInitReshape(MatMulBaseOp &matmul, poplar::Tensor lhs, poplar::Tensor rhs) {
     b = b.reshape(vXtoY<int64_t, std::size_t>(matmul.getExpandedRhsShape()));
   }
 
-  return {a, b};
+  return {snap::Tensor{a, lhs}, snap::Tensor{b, rhs}};
 }
 
 static std::vector<std::size_t> matchRank(std::vector<std::size_t> shape,
@@ -118,11 +118,16 @@ static std::vector<std::size_t> matchRank(std::vector<std::size_t> shape,
   return newShape;
 }
 
-static std::pair<poplar::Tensor, poplar::Tensor>
-matMatchRank(poplar::Tensor lhs, poplar::Tensor rhs) {
-  return {
-      lhs.reshape(matchRank(lhs.shape(), std::max(lhs.rank(), rhs.rank()))),
-      rhs.reshape(matchRank(rhs.shape(), std::max(lhs.rank(), rhs.rank())))};
+static std::pair<snap::Tensor, snap::Tensor> matMatchRank(snap::Tensor lhs,
+                                                          snap::Tensor rhs) {
+  auto rank =
+      std::max(lhs.getPoplarTensor().rank(), rhs.getPoplarTensor().rank());
+  return {snap::Tensor{lhs.getPoplarTensor().reshape(
+                           matchRank(lhs.getPoplarTensor().shape(), rank)),
+                       lhs},
+          snap::Tensor{rhs.getPoplarTensor().reshape(
+                           matchRank(rhs.getPoplarTensor().shape(), rank)),
+                       rhs}};
 }
 
 static std::vector<unsigned> matDimshuffle(std::vector<std::size_t> lhsShape,
@@ -142,13 +147,17 @@ static std::vector<unsigned> matDimshuffle(std::vector<std::size_t> lhsShape,
   return permutation;
 }
 
-static std::pair<poplar::Tensor, poplar::Tensor>
-matDimshuffle(poplar::Tensor lhs, poplar::Tensor rhs) {
-  const auto lhsShape = lhs.shape();
-  const auto rhsShape = rhs.shape();
+static std::pair<snap::Tensor, snap::Tensor> matDimshuffle(snap::Tensor lhs,
+                                                           snap::Tensor rhs) {
+  const auto lhsShape = lhs.getPoplarTensor().shape();
+  const auto rhsShape = rhs.getPoplarTensor().shape();
 
-  return {lhs.dimShuffle(matDimshuffle(lhsShape, rhsShape)),
-          rhs.dimShuffle(matDimshuffle(lhsShape, rhsShape))};
+  return {snap::Tensor{lhs.getPoplarTensor().dimShuffle(
+                           matDimshuffle(lhsShape, rhsShape)),
+                       lhs},
+          snap::Tensor{rhs.getPoplarTensor().dimShuffle(
+                           matDimshuffle(lhsShape, rhsShape)),
+                       rhs}};
 }
 
 static std::vector<std::size_t>
@@ -178,13 +187,17 @@ rhsReshapeGroups(std::vector<std::size_t> lhsShape,
   return lhsReshapeGroups(rhsShape, lhsShape);
 }
 
-static std::pair<poplar::Tensor, poplar::Tensor>
-matReshapeGroups(poplar::Tensor lhs, poplar::Tensor rhs) {
-  const auto lhsShape = lhs.shape();
-  const auto rhsShape = rhs.shape();
+static std::pair<snap::Tensor, snap::Tensor>
+matReshapeGroups(snap::Tensor lhs, snap::Tensor rhs) {
+  const auto lhsShape = lhs.getPoplarTensor().shape();
+  const auto rhsShape = rhs.getPoplarTensor().shape();
 
-  return {lhs.reshape(lhsReshapeGroups(lhsShape, rhsShape)),
-          rhs.reshape(rhsReshapeGroups(lhsShape, rhsShape))};
+  return {snap::Tensor{lhs.getPoplarTensor().reshape(
+                           lhsReshapeGroups(lhsShape, rhsShape)),
+                       lhs},
+          snap::Tensor{rhs.getPoplarTensor().reshape(
+                           rhsReshapeGroups(lhsShape, rhsShape)),
+                       rhs}};
 }
 
 static std::vector<std::size_t>
@@ -192,59 +205,66 @@ matCombineBroadcastDims(std::vector<std::size_t> shape) {
   return {shape[0], shape[1] * shape[2], shape[3]};
 }
 
-static std::pair<poplar::Tensor, poplar::Tensor>
-matCombineBroadcastDims(poplar::Tensor lhs, poplar::Tensor rhs) {
-  rhs = rhs.dimShuffle({0, 1, 3, 2});
+static std::pair<snap::Tensor, snap::Tensor>
+matCombineBroadcastDims(snap::Tensor lhs_, snap::Tensor rhs_) {
+  auto lhs = lhs_.getPoplarTensor();
+  auto rhs = rhs_.getPoplarTensor().dimShuffle({0, 1, 3, 2});
 
   lhs = lhs.reshape(matCombineBroadcastDims(lhs.shape()));
   rhs = rhs.reshape(matCombineBroadcastDims(rhs.shape()));
 
-  return {lhs, rhs.dimShuffle({0, 2, 1})};
+  return {snap::Tensor{lhs, lhs_},
+          snap::Tensor{rhs.dimShuffle({0, 2, 1}), rhs_}};
 }
 
-static poplar::Tensor matSplitBroadcastDims(poplar::Tensor result,
-                                            poplar::Tensor lhs,
-                                            poplar::Tensor rhs) {
-  return result.reshape(
-      {result.dim(0), lhs.dim(1), lhs.dim(2), rhs.dim(1), rhs.dim(3)});
+static snap::Tensor
+matSplitBroadcastDims(snap::Tensor result, snap::Tensor lhs, snap::Tensor rhs) {
+  return snap::Tensor{
+      result.getPoplarTensor().reshape({result.getPoplarTensor().dim(0),
+                                        lhs.getPoplarTensor().dim(1),
+                                        lhs.getPoplarTensor().dim(2),
+                                        rhs.getPoplarTensor().dim(1),
+                                        rhs.getPoplarTensor().dim(3)}),
+      result};
 }
 
-static poplar::Tensor matUnDimShuffle(poplar::Tensor result) {
-  return result.dimShuffle({0, 1, 3, 2, 4});
+static snap::Tensor matUnDimShuffle(snap::Tensor result) {
+  return snap::Tensor{result.getPoplarTensor().dimShuffle({0, 1, 3, 2, 4}),
+                      result};
 }
 
-static poplar::Tensor matExpandBroadcastDims(poplar::Tensor result,
-                                             poplar::Tensor lhs,
-                                             poplar::Tensor rhs) {
-  const auto lhsShape = lhs.shape();
-  const auto rhsShape = rhs.shape();
-  const auto outShape = result.shape();
+static snap::Tensor matExpandBroadcastDims(snap::Tensor result,
+                                           snap::Tensor lhs,
+                                           snap::Tensor rhs) {
+  const auto lhsShape = lhs.getPoplarTensor().shape();
+  const auto rhsShape = rhs.getPoplarTensor().shape();
+  const auto outShape = result.getPoplarTensor().shape();
 
   const auto itrs =
       std::mismatch(lhsShape.begin(), lhsShape.end() - 2, rhsShape.begin());
 
   std::vector<std::size_t> newShape;
-  newShape.reserve(lhs.rank() + rhs.rank());
+  newShape.reserve(lhs.getPoplarTensor().rank() + rhs.getPoplarTensor().rank());
 
   std::copy(lhsShape.begin(), lhsShape.end() - 2, std::back_inserter(newShape));
   std::copy(itrs.second, rhsShape.end() - 2, std::back_inserter(newShape));
   std::copy(outShape.end() - 2, outShape.end(), std::back_inserter(newShape));
 
-  return result.reshape(newShape);
+  return snap::Tensor{result.getPoplarTensor().reshape(newShape), result};
 }
 
-static poplar::Tensor matExpandGroupDims(poplar::Tensor result,
-                                         poplar::Tensor lhs,
-                                         poplar::Tensor rhs) {
-  const auto lhsShape = lhs.shape();
-  const auto rhsShape = rhs.shape();
-  const auto outShape = result.shape();
+static snap::Tensor
+matExpandGroupDims(snap::Tensor result, snap::Tensor lhs, snap::Tensor rhs) {
+  const auto lhsShape = lhs.getPoplarTensor().shape();
+  const auto rhsShape = rhs.getPoplarTensor().shape();
+  const auto outShape = result.getPoplarTensor().shape();
 
   const auto offset = std::distance(
-      lhsShape.begin(), boost::mismatch(lhsShape, rhs.shape()).first);
+      lhsShape.begin(),
+      boost::mismatch(lhsShape, rhs.getPoplarTensor().shape()).first);
 
   std::vector<std::size_t> newShape;
-  newShape.reserve(lhs.rank());
+  newShape.reserve(lhs.getPoplarTensor().rank());
 
   std::copy(lhsShape.begin(),
             lhsShape.begin() + offset,
@@ -252,20 +272,21 @@ static poplar::Tensor matExpandGroupDims(poplar::Tensor result,
   std::copy(
       outShape.begin() + offset, outShape.end(), std::back_inserter(newShape));
 
-  return result.reshape(newShape);
+  return snap::Tensor{result.getPoplarTensor().reshape(newShape), result};
 }
 
-static poplar::Tensor matInterleaveBroadcastDims(poplar::Tensor result,
-                                                 poplar::Tensor lhs,
-                                                 poplar::Tensor rhs) {
-  const auto lhsShape = lhs.shape();
+static snap::Tensor matInterleaveBroadcastDims(snap::Tensor result,
+                                               snap::Tensor lhs,
+                                               snap::Tensor rhs) {
+  const auto lhsShape = lhs.getPoplarTensor().shape();
 
   const auto offset = std::distance(
-      lhsShape.begin(), boost::mismatch(lhsShape, rhs.shape()).first);
+      lhsShape.begin(),
+      boost::mismatch(lhsShape, rhs.getPoplarTensor().shape()).first);
 
-  const auto length = lhs.rank() - offset - 2;
+  const auto length = lhs.getPoplarTensor().rank() - offset - 2;
 
-  std::vector<unsigned> permutation(result.rank());
+  std::vector<unsigned> permutation(result.getPoplarTensor().rank());
   boost::iota(permutation, 0);
 
   for (int i = 0; i < length; ++i) {
@@ -275,24 +296,25 @@ static poplar::Tensor matInterleaveBroadcastDims(poplar::Tensor result,
     }
   }
 
-  return result.dimShuffle(permutation);
+  return snap::Tensor{result.getPoplarTensor().dimShuffle(permutation), result};
 }
 
-static poplar::Tensor matSqueezeBroadcastDims(poplar::Tensor result,
-                                              poplar::Tensor lhs,
-                                              poplar::Tensor rhs) {
-  const auto lhsShape = lhs.shape();
+static snap::Tensor matSqueezeBroadcastDims(snap::Tensor result,
+                                            snap::Tensor lhs,
+                                            snap::Tensor rhs) {
+  const auto lhsShape = lhs.getPoplarTensor().shape();
   const auto offset   = std::distance(
-      lhsShape.begin(), boost::mismatch(lhsShape, rhs.shape()).first);
+      lhsShape.begin(),
+      boost::mismatch(lhsShape, rhs.getPoplarTensor().shape()).first);
 
   std::vector<std::size_t> squeezeDims;
-  for (auto i = offset; i < result.rank() - 2; ++i) {
-    if (result.dim(static_cast<unsigned>(i)) == 1) {
+  for (auto i = offset; i < result.getPoplarTensor().rank() - 2; ++i) {
+    if (result.getPoplarTensor().dim(static_cast<unsigned>(i)) == 1) {
       squeezeDims.push_back(i);
     }
   }
 
-  return result.squeeze(squeezeDims);
+  return snap::Tensor{result.getPoplarTensor().squeeze(squeezeDims), result};
 }
 
 template <typename T1, typename T2>
@@ -340,17 +362,17 @@ matShuffleGroupDims(std::vector<std::size_t> rShape,
   return invertPermutation(mapping);
 }
 
-static poplar::Tensor matShuffleGroupDims(poplar::Tensor result,
-                                          poplar::Tensor lhs,
-                                          poplar::Tensor rhs) {
-  const auto permutation =
-      matShuffleGroupDims(result.shape(), lhs.shape(), rhs.shape());
+static snap::Tensor
+matShuffleGroupDims(snap::Tensor result, snap::Tensor lhs, snap::Tensor rhs) {
+  const auto permutation = matShuffleGroupDims(result.getPoplarTensor().shape(),
+                                               lhs.getPoplarTensor().shape(),
+                                               rhs.getPoplarTensor().shape());
 
-  return result.dimShuffle(permutation);
+  return snap::Tensor{result.getPoplarTensor().dimShuffle(permutation), result};
 }
 
-poplar::Type MatMulOpx::getOutputType(const poplar::Tensor &output) const {
-  auto outputType = output.elementType();
+poplar::Type MatMulOpx::getOutputType(const snap::Tensor &output) const {
+  auto outputType = output.getPoplarTensor().elementType();
   if (auto _outputType = getOp<MatMulOp>().getOutputType()) {
     outputType = popType(*_outputType);
   }
@@ -385,8 +407,8 @@ void MatMulOpx::grow(poplar::program::Sequence &prog) const {
 
   auto &matmul = getOp<MatMulOp>();
 
-  auto a = getInTensor(MatMulOp::getLhsInIndex()).getPoplarTensor();
-  auto b = getInTensor(MatMulOp::getRhsInIndex()).getPoplarTensor();
+  auto a = getInTensor(MatMulOp::getLhsInIndex());
+  auto b = getInTensor(MatMulOp::getRhsInIndex());
 
   // Makes both input tensors at least rank 3
   //
@@ -451,28 +473,30 @@ void MatMulOpx::grow(poplar::program::Sequence &prog) const {
   auto outputType = getOutputType(combinedBroadcastTs.first);
 
   auto cacheSize = dv_p->matmulCache.size();
-  auto outTensor =
-      poplin::matMulGrouped(graph().getPoplarGraph(),   // graph
-                            combinedBroadcastTs.first,  // A
-                            combinedBroadcastTs.second, // B
-                            prog,                       // prog
+  auto outTensor = snap::Tensor{
+      poplin::matMulGrouped(graph().getPoplarGraph(), // graph
+                            combinedBroadcastTs.first.getPoplarTensor(),  // A
+                            combinedBroadcastTs.second.getPoplarTensor(), // B
+                            prog, // prog
                             outputType,
                             debugContext("matmulGrouped"), // debugContext
                             opts,                          // options
-                            &dv_p->matmulCache);           // cache
+                            &dv_p->matmulCache),
+      graph()}; // cache
 
   verifyCacheSizeUnchanged(cacheSize);
 
   // Log the report plan
   std::stringstream ss;
-  poplin::matMulGroupedReportPlan(ss,
-                                  graph().getPoplarGraph(),
-                                  combinedBroadcastTs.first.elementType(),
-                                  outTensor.elementType(),
-                                  combinedBroadcastTs.first.shape(),
-                                  combinedBroadcastTs.second.shape(),
-                                  opts,
-                                  &dv_p->matmulCache);
+  poplin::matMulGroupedReportPlan(
+      ss,
+      graph().getPoplarGraph(),
+      combinedBroadcastTs.first.getPoplarTensor().elementType(),
+      outTensor.getPoplarTensor().elementType(),
+      combinedBroadcastTs.first.getPoplarTensor().shape(),
+      combinedBroadcastTs.second.getPoplarTensor().shape(),
+      opts,
+      &dv_p->matmulCache);
   logging::opx::debug("Grouped Matmul {} plan", op_p->str());
   logging::log(logging::Module::opx, logging::Level::Debug, ss.str());
 
@@ -548,9 +572,10 @@ void MatMulOpx::grow(poplar::program::Sequence &prog) const {
   outTensor =
       matShuffleGroupDims(outTensor, matchedRankTs.first, matchedRankTs.second);
 
-  setOutTensor(
-      0,
-      snap::Tensor{outTensor.reshape(matmul.outInfo(0).shape_szt()), graph()});
+  setOutTensor(0,
+               snap::Tensor{outTensor.getPoplarTensor().reshape(
+                                matmul.outInfo(0).shape_szt()),
+                            graph()});
 }
 
 MatMulOp *MatMulOpx::getMatMulOp() const {
@@ -648,10 +673,10 @@ std::set<TensorId> MatMulOpx::mustExistBeforeCreate(InIndex) const {
   return {};
 }
 
-std::pair<poplar::Tensor, poplar::Tensor>
+std::pair<snap::Tensor, snap::Tensor>
 MatMulOpx::groupedMatMulInputsFromOpxInputs(MatMulBaseOp &matmul,
-                                            poplar::Tensor lhs,
-                                            poplar::Tensor rhs) {
+                                            snap::Tensor lhs,
+                                            snap::Tensor rhs) {
   auto initReshapedTs = matInitReshape(matmul, lhs, rhs);
 
   auto matchedRankTs =

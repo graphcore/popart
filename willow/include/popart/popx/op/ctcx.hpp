@@ -35,9 +35,9 @@ public:
 
 private:
   // Helper function to apply reduction.
-  poplar::Tensor applyReduction(poplar::program::Sequence &prog,
-                                poplar::Tensor loss,
-                                poplar::Tensor targetLengths) const;
+  snap::Tensor applyReduction(poplar::program::Sequence &prog,
+                              snap::Tensor loss,
+                              snap::Tensor targetLengths) const;
 
   // Unique pointer (so we can forward-declare and avoid including poplar
   // headers).
@@ -51,9 +51,9 @@ public:
 
 private:
   // Helper function to apply partial derivative of reduction.
-  poplar::Tensor applyReductionGrad(poplar::program::Sequence &prog,
-                                    const poplar::Tensor &ctcLossGrad,
-                                    const poplar::Tensor &targetLengths) const;
+  snap::Tensor applyReductionGrad(poplar::program::Sequence &prog,
+                                  const snap::Tensor &ctcLossGrad,
+                                  const snap::Tensor &targetLengths) const;
 };
 
 } // namespace popx

@@ -21,15 +21,15 @@ public:
   void grow(poplar::program::Sequence &) const final;
 
 private:
-  poplar::Tensor reduceDimension(poplar::program::Sequence &,
-                                 const poplar::Tensor &input,
-                                 int dimension,
-                                 float scale) const;
-  poplar::Tensor padDimension(poplar::program::Sequence &,
-                              const poplar::Tensor &input,
-                              int dimension,
-                              int64_t newSize,
-                              float scale) const;
+  snap::Tensor reduceDimension(poplar::program::Sequence &,
+                               const snap::Tensor &input,
+                               int dimension,
+                               float scale) const;
+  snap::Tensor padDimension(poplar::program::Sequence &,
+                            const snap::Tensor &input,
+                            int dimension,
+                            int64_t newSize,
+                            float scale) const;
 };
 
 } // namespace popx

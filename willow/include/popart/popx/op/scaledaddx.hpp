@@ -14,14 +14,14 @@ public:
   void grow(poplar::program::Sequence &) const override;
 
 protected:
-  poplar::Tensor compute(poplar::program::Sequence &prog,
-                         poplar::Tensor in0,
-                         poplar::Tensor in1,
-                         poplar::Tensor s0,
-                         poplar::Tensor s1,
-                         float s0f,
-                         float s1f,
-                         bool inplace) const;
+  snap::Tensor compute(poplar::program::Sequence &prog,
+                       snap::Tensor in0,
+                       snap::Tensor in1,
+                       snap::Tensor s0,
+                       snap::Tensor s1,
+                       float s0f,
+                       float s1f,
+                       bool inplace) const;
 };
 
 class ScaledAddLhsInplaceOpx : public ScaledAddOpx {

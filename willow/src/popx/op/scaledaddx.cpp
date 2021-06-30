@@ -30,24 +30,24 @@ ScaledAddRhsInplaceOpx::ScaledAddRhsInplaceOpx(Op *op, Devicex *devicex)
                                   {Onnx::CustomOperators::ScaledAddRhsInplace});
 }
 
-poplar::Tensor ScaledAddOpx::compute(poplar::program::Sequence &prog,
-                                     poplar::Tensor in0,
-                                     poplar::Tensor in1,
-                                     poplar::Tensor s0,
-                                     poplar::Tensor s1,
-                                     float s0f,
-                                     float s1f,
-                                     bool inplace) const {
+snap::Tensor ScaledAddOpx::compute(poplar::program::Sequence &prog,
+                                   snap::Tensor in0,
+                                   snap::Tensor in1,
+                                   snap::Tensor s0,
+                                   snap::Tensor s1,
+                                   float s0f,
+                                   float s1f,
+                                   bool inplace) const {
   if (!inplace) {
-    in0 = cloneNcopy(prog, snap::Tensor{in0, graph()}).getPoplarTensor();
+    in0 = cloneNcopy(prog, in0);
   }
 
   if (s0.valid() && s1.valid()) {
     popops::scaledAddTo(graph().getPoplarGraph(),
-                        in0,
-                        s0,
-                        in1,
-                        s1,
+                        in0.getPoplarTensor(),
+                        s0.getPoplarTensor(),
+                        in1.getPoplarTensor(),
+                        s1.getPoplarTensor(),
                         prog,
                         debugContext("t_t_t_t"));
   } else if (s0.valid() && !s1.valid()) {
@@ -56,13 +56,17 @@ poplar::Tensor ScaledAddOpx::compute(poplar::program::Sequence &prog,
     if (s0f != 1.0) {
       throw error("Unsupported scale0 {} with tensor scale1.", s0f);
     }
-    popops::scaledAddTo(
-        graph().getPoplarGraph(), in0, in1, s1, prog, debugContext("t_1_t_t"));
+    popops::scaledAddTo(graph().getPoplarGraph(),
+                        in0.getPoplarTensor(),
+                        in1.getPoplarTensor(),
+                        s1.getPoplarTensor(),
+                        prog,
+                        debugContext("t_1_t_t"));
   } else {
     popops::scaledAddTo(graph().getPoplarGraph(),
-                        in0,
+                        in0.getPoplarTensor(),
                         s0f,
-                        in1,
+                        in1.getPoplarTensor(),
                         s1f,
                         prog,
                         debugContext("t_c_t_c"));
@@ -73,18 +77,18 @@ poplar::Tensor ScaledAddOpx::compute(poplar::program::Sequence &prog,
 void ScaledAddOpx::grow(poplar::program::Sequence &prog) const {
   auto &scaledAddOp = getOp<ScaledAddOp>();
 
-  poplar::Tensor out;
+  snap::Tensor out;
 
-  auto in0 = getInTensor(ScaledAddOp::getArg0InIndex()).getPoplarTensor();
-  auto in1 = getInTensor(ScaledAddOp::getArg1InIndex()).getPoplarTensor();
+  auto in0 = getInTensor(ScaledAddOp::getArg0InIndex());
+  auto in1 = getInTensor(ScaledAddOp::getArg1InIndex());
 
-  poplar::Tensor s0, s1;
+  snap::Tensor s0, s1;
 
   if (hasInput(ScaledAddOp::getScale0InIndex())) {
-    s0 = getInTensor(ScaledAddOp::getScale0InIndex()).getPoplarTensor();
+    s0 = getInTensor(ScaledAddOp::getScale0InIndex());
   }
   if (hasInput(ScaledAddOp::getScale1InIndex())) {
-    s1 = getInTensor(ScaledAddOp::getScale1InIndex()).getPoplarTensor();
+    s1 = getInTensor(ScaledAddOp::getScale1InIndex());
   }
 
   float s0f = scaledAddOp.getScale0();
@@ -96,24 +100,24 @@ void ScaledAddOpx::grow(poplar::program::Sequence &prog) const {
     setOutViewChangers(ScaledAddOp::getOutIndex(),
                        getInViewChangers(ScaledAddOp::getArg0InIndex()));
   }
-  setOutTensor(ScaledAddOp::getOutIndex(), snap::Tensor{out, graph()});
+  setOutTensor(ScaledAddOp::getOutIndex(), out);
 }
 
 void ScaledAddLhsInplaceOpx::grow(poplar::program::Sequence &prog) const {
   auto &scaledAddOp = getOp<ScaledAddLhsInplaceOp>();
 
-  poplar::Tensor out;
+  snap::Tensor out;
 
-  auto in0 = getInTensor(ScaledAddOp::getArg0InIndex()).getPoplarTensor();
-  auto in1 = getInTensor(ScaledAddOp::getArg1InIndex()).getPoplarTensor();
+  auto in0 = getInTensor(ScaledAddOp::getArg0InIndex());
+  auto in1 = getInTensor(ScaledAddOp::getArg1InIndex());
 
-  poplar::Tensor s0, s1;
+  snap::Tensor s0, s1;
 
   if (hasInput(ScaledAddOp::getScale0InIndex())) {
-    s0 = getInTensor(ScaledAddOp::getScale0InIndex()).getPoplarTensor();
+    s0 = getInTensor(ScaledAddOp::getScale0InIndex());
   }
   if (hasInput(ScaledAddOp::getScale1InIndex())) {
-    s1 = getInTensor(ScaledAddOp::getScale1InIndex()).getPoplarTensor();
+    s1 = getInTensor(ScaledAddOp::getScale1InIndex());
   }
 
   float s0f = scaledAddOp.getScale0();
@@ -125,24 +129,24 @@ void ScaledAddLhsInplaceOpx::grow(poplar::program::Sequence &prog) const {
     setOutViewChangers(ScaledAddOp::getOutIndex(),
                        getInViewChangers(ScaledAddOp::getArg0InIndex()));
   }
-  setOutTensor(ScaledAddOp::getOutIndex(), snap::Tensor{out, graph()});
+  setOutTensor(ScaledAddOp::getOutIndex(), out);
 }
 
 void ScaledAddRhsInplaceOpx::grow(poplar::program::Sequence &prog) const {
   auto &scaledAddOp = getOp<ScaledAddRhsInplaceOp>();
 
-  poplar::Tensor out;
+  snap::Tensor out;
 
-  auto in0 = getInTensor(ScaledAddOp::getArg0InIndex()).getPoplarTensor();
-  auto in1 = getInTensor(ScaledAddOp::getArg1InIndex()).getPoplarTensor();
+  auto in0 = getInTensor(ScaledAddOp::getArg0InIndex());
+  auto in1 = getInTensor(ScaledAddOp::getArg1InIndex());
 
-  poplar::Tensor s0, s1;
+  snap::Tensor s0, s1;
 
   if (hasInput(ScaledAddOp::getScale0InIndex())) {
-    s0 = getInTensor(ScaledAddOp::getScale0InIndex()).getPoplarTensor();
+    s0 = getInTensor(ScaledAddOp::getScale0InIndex());
   }
   if (hasInput(ScaledAddOp::getScale1InIndex())) {
-    s1 = getInTensor(ScaledAddOp::getScale1InIndex()).getPoplarTensor();
+    s1 = getInTensor(ScaledAddOp::getScale1InIndex());
   }
 
   float s0f = scaledAddOp.getScale0();
@@ -154,7 +158,7 @@ void ScaledAddRhsInplaceOpx::grow(poplar::program::Sequence &prog) const {
     setOutViewChangers(ScaledAddOp::getOutIndex(),
                        getInViewChangers(ScaledAddOp::getArg0InIndex()));
   }
-  setOutTensor(ScaledAddOp::getOutIndex(), snap::Tensor{out, graph()});
+  setOutTensor(ScaledAddOp::getOutIndex(), out);
 }
 
 namespace {

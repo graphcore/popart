@@ -42,9 +42,8 @@ void ReplicatedReduceScatterOpx::grow(poplar::program::Sequence &prog) const {
                           inId(ReplicatedReduceScatterOp::getInIndex()));
 
       // Tensor not rearranged for reduceScatter yet, do it now
-      auto cbr =
-          createCollectiveBalancedReorder(toReduceScatter.getPoplarTensor());
-      auto c = snap::Tensor{cbr->createCollectivesTensor(
+      auto cbr = createCollectiveBalancedReorder(toReduceScatter);
+      auto c   = snap::Tensor{cbr->createCollectivesTensor(
                                 toReduceScatter.getPoplarTensor().elementType(),
                                 inId(ReplicatedReduceScatterOp::getInIndex())),
                             graph()};

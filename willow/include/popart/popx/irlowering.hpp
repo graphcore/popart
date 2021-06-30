@@ -139,7 +139,7 @@ private:
   // determining where an exception has occurred. It is enabled by setting
   // POPART_OPX_TRACE environment variable to "1"
   bool opxTrace = false;
-  poplar::Tensor opxTraceTensor;
+  snap::Tensor opxTraceTensor;
 
   // A set of tensor ids to print during graph execution.
   // This is an alternative to the PrintTensor op.
@@ -167,18 +167,18 @@ private:
 
   // Non-const tensors used to keep track of batch count, modulo the return
   // period
-  std::map<ReturnPeriod, poplar::Tensor> batchCountingTensors;
-  std::map<ReturnPeriod, poplar::Tensor> batchCountCheckingTensors;
+  std::map<ReturnPeriod, snap::Tensor> batchCountingTensors;
+  std::map<ReturnPeriod, snap::Tensor> batchCountCheckingTensors;
 
   // Map tensors evenly across all tiles
   LinearMapper linearMapper;
 
-  poplar::Tensor randomSeedTensor;
+  snap::Tensor randomSeedTensor;
 
   // T11630: Combine the inputStreams/outputStreams with the
   // fromHostStreams/toHostAnchorStreams streams?
 
-  //  poplar::Streams for poplar::Tensors,
+  //  poplar::Streams for snap::Tensors,
   //  1) from host to device;
   std::map<TensorId, poplar::DataStream> fromHostStreams;
 
@@ -188,14 +188,14 @@ private:
 
   // Remote buffers
   std::map<RemoteBufferId,
-           std::pair<poplar::RemoteBuffer, nonstd::optional<poplar::Tensor>>>
+           std::pair<poplar::RemoteBuffer, nonstd::optional<snap::Tensor>>>
       remoteBuffers;
 
   // Stream tensors are temporary landing pad tensors for host exchanges
   // that are implementation specific, and used to facilitate overlapped
   // IO by avoiding internal exchanges following a host exchange.
   // They are not exposed to the IR.
-  std::map<TensorId, poplar::Tensor> streamTensors;
+  std::map<TensorId, snap::Tensor> streamTensors;
 
   // Streams for doing allreduce on host side
   std::map<TensorId, poplar::RemoteBuffer> hostReduceRemoteBuffers;
@@ -211,11 +211,11 @@ private:
 
   void verifyTaskOrder(const std::vector<TaskId> &taskOrder) const;
 
-  // Task to create a poplar::Tensor from nothing, choosing
+  // Task to create a snap::Tensor from nothing, choosing
   // the correct create call (createWeights, addLinearly, etc)
   InitTensorPtrs getInitTensorCreators(Tensor *);
 
-  // Task to create a poplar::Tensor with methods defined by InitTensorPtrs
+  // Task to create a snap::Tensor with methods defined by InitTensorPtrs
   PriTask initTensorTask(InitTensorPtrs inits);
 
   static TaskId initTensorTaskId(TensorId);
@@ -233,19 +233,19 @@ private:
   PriTask setInitTensorValTask(Tensor *);
   static TaskId setInitTensorValTaskId(TensorId);
 
-  // Task to create a poplar::Stream to write to poplar::Tensor
+  // Task to create a poplar::Stream to write to snap::Tensor
   // C++ Note: if a lambda function which modifies `this' is created
   // it must be const w.r.t this, even if it not run
   PriTask streamFromHostTask(TensorId streamTensorId,
                              std::vector<Tensor *> tensors);
   static TaskId streamFromHostTaskId(TensorId);
 
-  // Task to append a Copy from poplar::Stream to poplar::Tensor
+  // Task to append a Copy from poplar::Stream to snap::Tensor
   PriTask fromHostTask(Tensor *tensor, poplar::program::Sequence &streamSq);
 
   static TaskId fromHostTaskId(TensorId);
 
-  // Task to create a poplar::Stream to write from poplar::Tensor to host
+  // Task to create a poplar::Stream to write from snap::Tensor to host
   PriTask streamToHostTask(TensorId streamTensorId,
                            std::vector<Tensor *> tensors,
                            bool isAnchorStream);
@@ -253,19 +253,19 @@ private:
 
   poplar::program::Sequence &getAnchorReturnFragment(Tensor *tensor);
 
-  // Task to append a Copy to poplar::Stream from poplar::Tensor
+  // Task to append a Copy to poplar::Stream from snap::Tensor
   PriTask toHostTask(Tensor *tensor,
                      poplar::program::Sequence &,
                      ToHostStreamType) const;
   static TaskId toHostTaskId(TensorId, bool isAnchorStream);
 
-  // Task to create an accumulator and scaleAddto to a poplar::Tensor to be
+  // Task to create an accumulator and scaleAddto to a snap::Tensor to be
   // Copied on the final batch per step
   PriTask anchorReturnTypeSumTask(Tensor *tensor,
                                   poplar::program::Sequence &sq);
   static TaskId anchorSumTaskId(const TensorId &);
 
-  // Task to create poplar::Tensors from nothing, specifically for
+  // Task to create snap::Tensors from nothing, specifically for
   // use in keeping track of the batch count
   PriTask initBatchCounterTensorsTask(poplar::program::Sequence &sq);
   static TaskId initBatchCounterTensorsTaskId();
@@ -274,7 +274,7 @@ private:
   PriTask updateBatchCountTask(poplar::program::Sequence &sq);
   static TaskId updateBatchCountTaskId();
 
-  // Task to append a Copy to poplar::Stream from poplar::Tensor every
+  // Task to append a Copy to poplar::Stream from snap::Tensor every
   // N batches
   PriTask toHostEveryNBatchesTask(Tensor *tensor,
                                   ReturnPeriod N,
@@ -411,12 +411,12 @@ public:
   snap::Graph &getVirtualGraph(VGraphId virtualGraphIndex,
                                TileSet tileSet = TileSet::Compute);
 
-  // Return the name of the task which initializes/creates a poplar::Tensor in a
+  // Return the name of the task which initializes/creates a snap::Tensor in a
   // snap::Graph. This is NOT about creating a poplar::Program.
   PriTaskDependency taskWhichCreates(TensorId) const;
 
   // Return the name of the task which adds code which sets the initial
-  // values of poplar::Tensor to a fragment. This IS about creating a
+  // values of snap::Tensor to a fragment. This IS about creating a
   // poplar::Program. For Variable Tensors, this is the Copy from Stream program
   TaskId taskWhichPopulates(TensorId) const;
 
@@ -544,7 +544,7 @@ public:
 
   bool usingCachedExecutable() const { return usingCachedExecutable_; }
 
-  // The ID of the poplar::Stream host->device for poplar::Tensor
+  // The ID of the poplar::Stream host->device for snap::Tensor
   static PopStreamId h2dId(TensorId);
 
   // and for device->host
@@ -556,12 +556,12 @@ public:
 
   bool hasRemoteBuffer(RemoteBufferId) const;
 
-  const std::pair<poplar::RemoteBuffer, nonstd::optional<poplar::Tensor>> &
+  const std::pair<poplar::RemoteBuffer, nonstd::optional<snap::Tensor>> &
       getRemoteBuffer(RemoteBufferId) const;
 
   static const std::string getRemoteBufferName(RemoteBufferId);
 
-  void createRemoteBuffer(RemoteBufferId, poplar::Tensor);
+  void createRemoteBuffer(RemoteBufferId, snap::Tensor);
 
   /**
    * Check if a stream landing pad tensor exists for \p TensorId id
@@ -573,16 +573,16 @@ public:
   /**
    * Get the stream landing pad tensor for \p TensorId id
    * \param tid \p TensorId to fetch
-   * \return Returns the \p poplar::Tensor
+   * \return Returns the \p snap::Tensor
    */
-  poplar::Tensor getStreamTensor(TensorId tid) const;
+  snap::Tensor getStreamTensor(TensorId tid) const;
 
   /**
    * Set a new stream landing pad tensor for \p TensorId id
    * \param tid \p TensorId to set
-   * \param t \p poplar::Tensor to set
+   * \param t \p snap::Tensor to set
    */
-  void setStreamTensor(TensorId tid, poplar::Tensor t);
+  void setStreamTensor(TensorId tid, snap::Tensor t);
 
   poplar::RemoteBuffer &
   getOrCreateHostReduceRemoteBuffer(TensorId, TensorInfo, snap::Graph &);

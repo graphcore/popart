@@ -22,33 +22,31 @@ BaseSortOpx::growFullSortResult(poplar::program::Sequence &prog) const {
 
   auto input   = getInTensor(BaseSortOp::getInIndex());
   auto values  = cloneNcopy(prog, input);
-  auto indices = sortutilx::getIotaTensor(graph(),
-                                          input.getPoplarTensor(),
-                                          axis,
-                                          prog,
-                                          getDebugNameAndId("iotaTensor"));
+  auto indices = sortutilx::getIotaTensor(
+      graph(), input, axis, prog, getDebugNameAndId("iotaTensor"));
 
   // sort indices and values, using values as the "keys" to sort on
   popops::sortKeyValueInPlace(graph().getPoplarGraph(),
                               values.getPoplarTensor(),
-                              indices,
+                              indices.getPoplarTensor(),
                               axis,
                               prog,
                               debugContext("sort"));
-  return FullSortResult(indices, values.getPoplarTensor(), axis);
+  return FullSortResult(indices, values, axis);
 }
 
-poplar::Tensor
+snap::Tensor
 BaseSortOpx::growIndicesSort(poplar::program::Sequence &prog) const {
-  auto input   = getInTensor(BaseSortOp::getInIndex()).getPoplarTensor();
+  auto input   = getInTensor(BaseSortOp::getInIndex());
   auto indices = sortutilx::getIotaTensor(
       graph(), input, axis, prog, getDebugNameAndId("iotaTensor"));
-  return popops::sortKeyValue(graph().getPoplarGraph(),
-                              input,
-                              indices,
-                              axis,
-                              prog,
-                              debugContext("sort"));
+  return snap::Tensor{popops::sortKeyValue(graph().getPoplarGraph(),
+                                           input.getPoplarTensor(),
+                                           indices.getPoplarTensor(),
+                                           axis,
+                                           prog,
+                                           debugContext("sort")),
+                      graph()};
 }
 
 snap::Tensor

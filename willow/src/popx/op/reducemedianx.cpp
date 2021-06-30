@@ -40,10 +40,11 @@ void ReduceMedianOpx::grow(poplar::program::Sequence &prog) const {
   // Sort the flattened dimension along with indices and select the median
   // values.
   auto indices = sortutilx::getIotaTensor(graph(),
-                                          output,
+                                          snap::Tensor{output, graph()},
                                           pp.axes_complement.size(),
                                           prog,
-                                          getDebugNameAndId("iotaTensor"));
+                                          getDebugNameAndId("iotaTensor"))
+                     .getPoplarTensor();
   popops::sortKeyValueInPlace(graph().getPoplarGraph(),
                               output,
                               indices,
@@ -138,9 +139,9 @@ void ReduceMedianGradOpx::grow(poplar::program::Sequence &prog) const {
   // in the op's input tensor.
   scatterutilx::growScatter(prog,
                             graph(),
-                            indices,
-                            grad_top,
-                            grad,
+                            snap::Tensor{indices, graph()},
+                            snap::Tensor{grad_top, graph()},
+                            snap::Tensor{grad, graph()},
                             pp.axes_complement.size(),
                             getDebugNameAndId("scatter"));
 

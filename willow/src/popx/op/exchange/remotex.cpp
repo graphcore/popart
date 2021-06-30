@@ -30,19 +30,17 @@ void RemoteStoreOpx::grow(poplar::program::Sequence &prog) const {
                       inTensorId,
                       remoteStoreOp.getRemoteBufferId());
 
-  poplar::Tensor inTensor =
-      getInTensor(RemoteStoreOp::getLocalTensorInIndex()).getPoplarTensor();
+  snap::Tensor inTensor = getInTensor(RemoteStoreOp::getLocalTensorInIndex());
 
   TensorId offsetId;
-  poplar::Tensor offset;
+  snap::Tensor offset;
 
   if (remoteStoreOp.input->hasIndex(
           RemoteStoreOp::getRemoteBufferOffsetInIndex())) {
     offsetId = remoteStoreOp.input
                    ->tensor(RemoteStoreOp::getRemoteBufferOffsetInIndex())
                    ->id;
-    offset = getInTensor(RemoteStoreOp::getRemoteBufferOffsetInIndex())
-                 .getPoplarTensor();
+    offset = getInTensor(RemoteStoreOp::getRemoteBufferOffsetInIndex());
   }
 
   std::shared_ptr<ExchangeDescriptorx> descriptorx =
@@ -74,18 +72,16 @@ void RemoteLoadOpx::grow(poplar::program::Sequence &prog) const {
                       outTensorId,
                       remoteLoadOp.getRemoteBufferId());
 
-  poplar::Tensor inTensor =
-      getInTensor(RemoteLoadOp::getLocalTensorInIndex()).getPoplarTensor();
+  snap::Tensor inTensor = getInTensor(RemoteLoadOp::getLocalTensorInIndex());
   TensorId offsetId;
-  poplar::Tensor offset;
+  snap::Tensor offset;
 
   if (remoteLoadOp.input->hasIndex(
           RemoteLoadOp::getRemoteBufferOffsetInIndex())) {
     offsetId =
         remoteLoadOp.input->tensor(RemoteLoadOp::getRemoteBufferOffsetInIndex())
             ->id;
-    offset = getInTensor(RemoteLoadOp::getRemoteBufferOffsetInIndex())
-                 .getPoplarTensor();
+    offset = getInTensor(RemoteLoadOp::getRemoteBufferOffsetInIndex());
   }
 
   std::shared_ptr<ExchangeDescriptorx> descriptorx =
@@ -103,7 +99,7 @@ void RemoteLoadOpx::grow(poplar::program::Sequence &prog) const {
   }
 
   setOutTensor(RemoteLoadOp::getLocalTensorOutIndex(),
-               snap::Tensor{descriptorx->getOutTensors().at(0), graph()});
+               descriptorx->getOutTensors().at(0));
 }
 
 InputCreatorType RemoteLoadOpx::getInputCreatorType(InIndex index) const {

@@ -46,7 +46,7 @@ poplar::Tensor linearizeIndices(const PopOpx &opx,
                      opx.getDebugNameAndId("numColsMulIndices"));
   popops::addInPlace(opx.graph().getPoplarGraph(),
                      result,
-                     colIndices,
+                     colIndices.getPoplarTensor(),
                      prog,
                      opx.getDebugNameAndId("indicesAddColIds"));
 

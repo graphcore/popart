@@ -7,8 +7,6 @@
 #include <popart/popx/opxmanager.hpp>
 #include <popart/popx/popopx.hpp>
 
-#include <poplar/Tensor.hpp>
-
 namespace popart {
 
 namespace popx {

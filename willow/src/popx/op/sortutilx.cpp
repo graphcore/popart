@@ -6,16 +6,16 @@ namespace popart {
 namespace popx {
 namespace sortutilx {
 
-poplar::Tensor getIotaTensor(snap::Graph &graph,
-                             const poplar::Tensor &input,
-                             unsigned axis,
-                             poplar::program::Sequence &prog,
-                             const poplar::DebugNameAndId &dnai) {
+snap::Tensor getIotaTensor(snap::Graph &graph,
+                           const snap::Tensor &input,
+                           unsigned axis,
+                           poplar::program::Sequence &prog,
+                           const poplar::DebugNameAndId &dnai) {
   // The number of elements to be sorted per 1-D vector
-  const auto sortSize = input.dim(axis);
+  const auto sortSize = input.getPoplarTensor().dim(axis);
 
   // The number of 1-D vectors to be sorted
-  const auto nToSort = input.numElements() / sortSize;
+  const auto nToSort = input.getPoplarTensor().numElements() / sortSize;
 
   std::vector<int> iotaVals(sortSize);
   std::iota(iotaVals.begin(), iotaVals.end(), 0);
@@ -28,8 +28,8 @@ poplar::Tensor getIotaTensor(snap::Graph &graph,
   poputil::mapTensorLinearly(graph.getPoplarGraph(), singleRowIota);
 
   // Fill a tensor with [0, 1, 2, ... nToSort-1] along "axis"
-  auto indices =
-      graph.getPoplarGraph().clone(poplar::INT, input, {dnai, "clone"});
+  auto indices = graph.getPoplarGraph().clone(
+      poplar::INT, input.getPoplarTensor(), {dnai, "clone"});
   prog.add(poplar::program::WriteUndef(indices, {dnai, "writeUndef"}));
 
   // new view of indices, dim-shuffling the given axis
@@ -46,7 +46,7 @@ poplar::Tensor getIotaTensor(snap::Graph &graph,
         singleRowIota, shuffledView[i], false, {dnai, "copy"}));
   }
 
-  return indices;
+  return snap::Tensor{indices, graph};
 }
 
 } // namespace sortutilx

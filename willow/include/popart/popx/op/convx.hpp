@@ -16,19 +16,19 @@ namespace popx {
 class ConvOpx : public MultiConvBaseOpx {
 public:
   ConvOpx(Op *, Devicex *);
-  poplar::Tensor createWeightsInput(const poplar::DebugNameAndId &dnai,
-                                    int convIndex) const final;
-  poplar::Tensor createDataInput(const poplar::DebugNameAndId &dnai,
-                                 int convIndex) const final;
-  std::vector<poplar::Tensor>
+  snap::Tensor createWeightsInput(const poplar::DebugNameAndId &dnai,
+                                  int convIndex) const final;
+  snap::Tensor createDataInput(const poplar::DebugNameAndId &dnai,
+                               int convIndex) const final;
+  std::vector<snap::Tensor>
   convolve(poplar::program::Sequence &,
-           const std::vector<poplar::Tensor> &weights) const final;
+           const std::vector<snap::Tensor> &weights) const final;
 };
 
 class ConvWeightsGradOpx : public MultiConvWeightsGradBaseOpx {
 public:
   ConvWeightsGradOpx(Op *, Devicex *);
-  std::vector<poplar::Tensor>
+  std::vector<snap::Tensor>
   calculateWeightDeltas(poplar::program::Sequence &) const final;
 };
 

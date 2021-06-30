@@ -24,16 +24,16 @@ void ShapedDropoutOpx::grow(poplar::program::Sequence &prog) const {
     return;
   }
 
-  auto &op                 = getOp<ShapedDropoutOp>();
-  poplar::Tensor refTensor = getReferenceTensor();
-  double keepProbability   = 1. - static_cast<double>(op.getRatio());
-  double scale             = 1. / keepProbability;
-  auto shapedDropout       = poprand::shapedDropout(
+  auto &op               = getOp<ShapedDropoutOp>();
+  snap::Tensor refTensor = getReferenceTensor();
+  double keepProbability = 1. - static_cast<double>(op.getRatio());
+  double scale           = 1. / keepProbability;
+  auto shapedDropout     = poprand::shapedDropout(
       graph().getPoplarGraph(),
       &getInTensor(op.getSeedInIndex()).getPoplarTensor(),
       0u,
       getInTensor(ShapedDropoutOp::getInIndex()).getPoplarTensor(),
-      refTensor,
+      refTensor.getPoplarTensor(),
       keepProbability,
       scale,
       prog,
@@ -46,16 +46,17 @@ void ShapedDropoutOpx::grow(poplar::program::Sequence &prog) const {
 // Note that poprand uses a combination of tile-id, thread-id, seed and seed
 // modifier to determine the PRNG stream. A linear mapping is always used for
 // the reference tensor to support repeatable shaped dropout masks.
-poplar::Tensor ShapedDropoutOpx::getReferenceTensor() const {
+snap::Tensor ShapedDropoutOpx::getReferenceTensor() const {
   const auto &dbo   = getOp<ShapedDropoutOp>();
   auto poplarType   = popType(inInfo(dbo.getInIndex()));
   auto dropoutShape = vXtoY<int64_t, std::size_t>(dbo.getShape());
 
-  return graph().getPoplarGraph().addVariable(
-      poplarType,
-      dropoutShape,
-      poplar::VariableMappingMethod::LINEAR,
-      debugContext("dropoutShape"));
+  return snap::Tensor{graph().getPoplarGraph().addVariable(
+                          poplarType,
+                          dropoutShape,
+                          poplar::VariableMappingMethod::LINEAR,
+                          debugContext("dropoutShape")),
+                      graph()};
 }
 
 namespace {

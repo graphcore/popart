@@ -36,7 +36,7 @@ void ArgExtremaOpx::grow(poplar::program::Sequence &prog) const {
   input             = input.reshape({dim_0, dim_1});
 
   // Do the extrema operation
-  auto result = extremaOp(prog, input);
+  auto result = extremaOp(prog, snap::Tensor{input, graph()}).getPoplarTensor();
 
   std::vector<std::size_t> new_shape;
   std::copy(shape.begin(), shape.end() - 1, std::back_inserter(new_shape));

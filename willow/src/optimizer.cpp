@@ -688,8 +688,8 @@ size_t SGD::hash() const {
 } // namespace popart
 
 namespace std {
-std::size_t std::hash<popart::ClipNormSettings>::
-operator()(const popart::ClipNormSettings &settings) const {
+std::size_t std::hash<popart::ClipNormSettings>::operator()(
+    const popart::ClipNormSettings &settings) const {
   std::size_t seed = 0;
   boost::hash_combine(seed, settings.maxNorm);
   boost::hash_range(seed, settings.weightIds.begin(), settings.weightIds.end());

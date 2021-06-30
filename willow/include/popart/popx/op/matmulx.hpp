@@ -23,7 +23,7 @@ public:
   MatMulOp *getMatMulOp() const;
   void grow(poplar::program::Sequence &) const final;
 
-  poplar::Type getOutputType(const poplar::Tensor &output) const;
+  poplar::Type getOutputType(const snap::Tensor &output) const;
   static std::vector<std::size_t> onnxShapeToPoplar(const Shape &shape);
   static PoplarOptions getPoplarOptionsForMatMul(const MatMulBaseOp &op);
   static void addPartialsType(const MatMulPartialsType &partialsType,
@@ -31,10 +31,10 @@ public:
   static void setMatMulOptions(const MatMulBaseOp &op,
                                poplar::OptionFlags &opts);
 
-  static std::pair<poplar::Tensor, poplar::Tensor>
+  static std::pair<snap::Tensor, snap::Tensor>
   groupedMatMulInputsFromOpxInputs(MatMulBaseOp &matmul,
-                                   poplar::Tensor lhs,
-                                   poplar::Tensor rhs);
+                                   snap::Tensor lhs,
+                                   snap::Tensor rhs);
 
   // Check that mamtul pre-planning has worked, and that growing the matmul
   // operation has not added unexpected entries to the planning cache. Note:

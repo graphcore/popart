@@ -61,7 +61,8 @@ MultiConvBaseOpx::createInputTensor(InIndex index,
   auto convIndex = MultiConvBaseOp::getConvIndexFromInIndex(index);
 
   if (isWeightsInIndex(index)) {
-    poplar::Tensor input = createWeightsInput(dnai, convIndex);
+    poplar::Tensor input =
+        createWeightsInput(dnai, convIndex).getPoplarTensor();
 
     // If the user supplies a 4D weights tensor as input to conv,
     // createWeights returns 5D tensor, with outer 'group' dim = 1
@@ -89,7 +90,7 @@ MultiConvBaseOpx::createInputTensor(InIndex index,
     }
     return snap::Tensor{input, graph()};
   } else if (isDataInIndex(index)) {
-    return snap::Tensor{createDataInput(dnai, convIndex), graph()};
+    return createDataInput(dnai, convIndex);
   } else {
     throw error("conv opx cannot create tensor at this index yet");
   }
@@ -127,14 +128,13 @@ poplar::OptionFlags MultiConvBaseOpx::getConvOptions(int convIndex,
 
 void MultiConvBaseOpx::grow(poplar::program::Sequence &prog) const {
   MultiConvBaseOp &op = getOp<MultiConvBaseOp>();
-  std::vector<poplar::Tensor> allWeights;
+  std::vector<snap::Tensor> allWeights;
 
   auto cacheSize = dv_p->convCache.size();
 
   for (int i = 0; i < op.numConvs(); i++) {
-    auto params = op.getParameters(i);
-    auto weights =
-        getInTensor(MultiConvBaseOp::getWeightsInIndex(i)).getPoplarTensor();
+    auto params    = op.getParameters(i);
+    auto weights   = getInTensor(MultiConvBaseOp::getWeightsInIndex(i));
     auto weights5D = reshapeOnnxWeightsForPoplar(weights,
                                                  params.numOutChannelsPerGroup,
                                                  params.numInChannelsPerGroup,
@@ -152,13 +152,12 @@ void MultiConvBaseOpx::grow(poplar::program::Sequence &prog) const {
     logging::log(logging::Module::opx, logging::Level::Debug, ss.str());
   }
 
-  std::vector<poplar::Tensor> outTensors = convolve(prog, allWeights);
+  std::vector<snap::Tensor> outTensors = convolve(prog, allWeights);
 
   verifyCacheSizeUnchanged(cacheSize);
 
   for (int i = 0; i < op.numConvs(); i++) {
-    setOutTensor(MultiConvBaseOp::getOutIndex(i),
-                 snap::Tensor{outTensors[i], graph()});
+    setOutTensor(MultiConvBaseOp::getOutIndex(i), outTensors[i]);
   }
 }
 
@@ -186,8 +185,8 @@ void MultiConvWeightsGradBaseOpx::verifyCacheSizeUnchanged(
 void MultiConvWeightsGradBaseOpx::grow(poplar::program::Sequence &prog) const {
   MultiConvWeightsGradBaseOp &op = getOp<MultiConvWeightsGradBaseOp>();
 
-  auto cacheSize                         = dv_p->convCache.size();
-  std::vector<poplar::Tensor> outTensors = calculateWeightDeltas(prog);
+  auto cacheSize                       = dv_p->convCache.size();
+  std::vector<snap::Tensor> outTensors = calculateWeightDeltas(prog);
   verifyCacheSizeUnchanged(cacheSize);
 
   for (int i = 0; i < op.numConvs(); i++) {
@@ -198,16 +197,16 @@ void MultiConvWeightsGradBaseOpx::grow(poplar::program::Sequence &prog) const {
     // match the Ir tensor shape
     auto fwdShape =
         op.outInfo(MultiConvWeightsGradBaseOp::getOutIndex(i)).shape_szt();
-    if (outTensors[i].rank() == fwdShape.size() + 1) {
-      auto wGradShape = outTensors[i].shape();
+    if (outTensors[i].getPoplarTensor().rank() == fwdShape.size() + 1) {
+      auto wGradShape = outTensors[i].getPoplarTensor().shape();
       if (std::equal(
               wGradShape.begin() + 2, wGradShape.end(), fwdShape.begin() + 1) &&
           wGradShape[0] * wGradShape[1] == fwdShape[0]) {
-        outTensors[i] = outTensors[i].reshape(fwdShape);
+        outTensors[i] = snap::Tensor{
+            outTensors[i].getPoplarTensor().reshape(fwdShape), graph()};
       }
     }
-    setOutTensor(MultiConvWeightsGradBaseOp::getOutIndex(i),
-                 snap::Tensor{outTensors[i], graph()});
+    setOutTensor(MultiConvWeightsGradBaseOp::getOutIndex(i), outTensors[i]);
   }
 }
 
@@ -241,10 +240,10 @@ ConvParameters canonicalizeConvParams(const ConvParameters &param) {
   return result;
 }
 
-poplar::Tensor reshapeOnnxWeightsForPoplar(const poplar::Tensor &weights,
-                                           std::size_t chansOut,
-                                           std::size_t chansIn,
-                                           const ConvParameters &params) {
+snap::Tensor reshapeOnnxWeightsForPoplar(const snap::Tensor &weights,
+                                         std::size_t chansOut,
+                                         std::size_t chansIn,
+                                         const ConvParameters &params) {
   std::size_t groups               = params.numGroups;
   std::vector<int64_t> kernelShape = params.kernelShape;
 
@@ -252,7 +251,9 @@ poplar::Tensor reshapeOnnxWeightsForPoplar(const poplar::Tensor &weights,
   for (auto i : kernelShape) {
     weightsShape.push_back(i);
   }
-  return weights.reshape(weightsShape);
+
+  auto x = weights;
+  return snap::Tensor{weights.getPoplarTensor().reshape(weightsShape), x};
 }
 
 poplin::ConvParams getPoplarConvParams(const ConvParameters &param) {

@@ -42,8 +42,8 @@ bool OptimizerValue::operator==(const OptimizerValue &rhs) const {
 } // namespace popart
 
 namespace std {
-std::size_t std::hash<popart::OptimizerValue>::
-operator()(const popart::OptimizerValue &value) const {
+std::size_t std::hash<popart::OptimizerValue>::operator()(
+    const popart::OptimizerValue &value) const {
   std::size_t seed = 0;
   if (value.isConst()) {
     boost::hash_combine(seed, value.val());

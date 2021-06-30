@@ -13,8 +13,7 @@ public:
   ExchangeDescriptorx(Devicex *dv_p_, ExchangeDescriptor descriptor_);
   virtual ~ExchangeDescriptorx() {}
 
-  void
-  setInTensors(std::vector<std::pair<TensorId, poplar::Tensor>> inTensors_) {
+  void setInTensors(std::vector<std::pair<TensorId, snap::Tensor>> inTensors_) {
     inTensors = inTensors_;
   }
 
@@ -28,15 +27,13 @@ public:
                     poplar::program::Sequence &prog,
                     poplar::DebugContext context)     = 0;
 
-  virtual std::vector<poplar::Tensor> getOutTensors() const {
-    return outTensors;
-  }
+  virtual std::vector<snap::Tensor> getOutTensors() const { return outTensors; }
 
 protected:
   Devicex *dv_p;
 
-  std::vector<std::pair<TensorId, poplar::Tensor>> inTensors;
-  std::vector<poplar::Tensor> outTensors;
+  std::vector<std::pair<TensorId, snap::Tensor>> inTensors;
+  std::vector<snap::Tensor> outTensors;
 
   ExchangeDescriptor descriptor;
 };

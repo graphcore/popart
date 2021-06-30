@@ -18,13 +18,13 @@ private:
   bool canDynamicUpdateStash;
 
   void growDynamicStashUpdate(poplar::program::Sequence &prog,
-                              const poplar::Tensor &stashIndex,
-                              const poplar::Tensor &inTensor,
-                              const poplar::Tensor &outTensor) const;
+                              const snap::Tensor &stashIndex,
+                              const snap::Tensor &inTensor,
+                              const snap::Tensor &outTensor) const;
   void growStaticStashUpdate(poplar::program::Sequence &prog,
-                             const poplar::Tensor &stashIndex,
-                             const poplar::Tensor &inTensor,
-                             const poplar::Tensor &outTensor) const;
+                             const snap::Tensor &stashIndex,
+                             const snap::Tensor &inTensor,
+                             const snap::Tensor &outTensor) const;
 };
 
 } // namespace popx

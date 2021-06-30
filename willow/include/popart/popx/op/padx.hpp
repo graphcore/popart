@@ -53,20 +53,20 @@ class BasePadOpx : public PopOpx {
 public:
   BasePadOpx(Op *, Devicex *);
   const BasePadOp &getBasePadOp() const;
-  poplar::Tensor padGrow(poplar::Tensor inTensor,
-                         poplar::program::Sequence &,
-                         bool inPlaceAllowed) const;
+  snap::Tensor padGrow(snap::Tensor inTensor,
+                       poplar::program::Sequence &,
+                       bool inPlaceAllowed) const;
 
 private:
-  poplar::Tensor constantModePadGrow(poplar::Tensor inTensor,
-                                     poplar::program::Sequence &,
-                                     bool inPlaceAllowed) const;
+  snap::Tensor constantModePadGrow(snap::Tensor inTensor,
+                                   poplar::program::Sequence &,
+                                   bool inPlaceAllowed) const;
 
   // Padding with a constant needs to layout the constant. Sometimes there is an
   // obvious good choice for this: an example is if this Pad is a SliceGrad,
   // then the padding should have the layout of the original Tensor sliced.
   // TODO T22334 : generalize the search for propitious layout
-  std::pair<bool, poplar::Tensor> getPropitiousPadLayout() const;
+  std::pair<bool, snap::Tensor> getPropitiousPadLayout() const;
 
   // Return a Tensor of the same shape as inTensor, which is an alias of
   // inTensor at the core, and a copy of inTensor on the padding edges.
@@ -85,11 +85,11 @@ private:
 
   Chisseled getChisseled(const snap::Tensor &) const;
 
-  poplar::Tensor flip(const poplar::Tensor &) const;
+  snap::Tensor flip(const snap::Tensor &) const;
 
-  poplar::Tensor unflippedPadGrow(poplar::Tensor inTensor,
-                                  poplar::program::Sequence &,
-                                  bool inPlaceAllowed) const;
+  snap::Tensor unflippedPadGrow(snap::Tensor inTensor,
+                                poplar::program::Sequence &,
+                                bool inPlaceAllowed) const;
 };
 
 class PadOpx : public BasePadOpx {

@@ -22,27 +22,27 @@ public:
 private:
   // Output type for growSpatial.
   struct GrowSpatialOutput {
-    poplar::Tensor y;
-    nonstd::optional<poplar::Tensor> mean;
-    nonstd::optional<poplar::Tensor> var;
-    nonstd::optional<poplar::Tensor> savedMean;
-    nonstd::optional<poplar::Tensor> savedVar;
+    snap::Tensor y;
+    nonstd::optional<snap::Tensor> mean;
+    nonstd::optional<snap::Tensor> var;
+    nonstd::optional<snap::Tensor> savedMean;
+    nonstd::optional<snap::Tensor> savedVar;
   };
 
-  poplar::Tensor batchNormalise(poplar::program::Sequence &prog,
-                                const poplar::Tensor &x,
-                                const poplar::Tensor &scale,
-                                const poplar::Tensor &b,
-                                const poplar::Tensor &mean,
-                                const poplar::Tensor &invSd) const;
+  snap::Tensor batchNormalise(poplar::program::Sequence &prog,
+                              const snap::Tensor &x,
+                              const snap::Tensor &scale,
+                              const snap::Tensor &b,
+                              const snap::Tensor &mean,
+                              const snap::Tensor &invSd) const;
 
   GrowSpatialOutput growSpatial(poplar::program::Sequence &prog,
                                 BatchNormOp &op,
-                                poplar::Tensor &x,
-                                poplar::Tensor &scale,
-                                poplar::Tensor &b,
-                                poplar::Tensor &mean,
-                                poplar::Tensor &var) const;
+                                snap::Tensor &x,
+                                snap::Tensor &scale,
+                                snap::Tensor &b,
+                                snap::Tensor &mean,
+                                snap::Tensor &var) const;
 };
 
 class BatchNormGradOpx : public NormOpx {
@@ -53,26 +53,26 @@ public:
 private:
   // Output type for growSpatial.
   struct GrowSpatialOutput {
-    poplar::Tensor xGrad;
-    poplar::Tensor scaleGrad;
-    poplar::Tensor bGrad;
+    snap::Tensor xGrad;
+    snap::Tensor scaleGrad;
+    snap::Tensor bGrad;
   };
 
-  std::tuple<poplar::Tensor, poplar::Tensor, poplar::Tensor>
+  std::tuple<snap::Tensor, snap::Tensor, snap::Tensor>
   batchNormaliseGrad(poplar::program::Sequence &prog,
-                     const poplar::Tensor &x,
-                     const poplar::Tensor &scale,
-                     const poplar::Tensor &mean,
-                     const poplar::Tensor &invSd,
-                     const poplar::Tensor &yGrad) const;
+                     const snap::Tensor &x,
+                     const snap::Tensor &scale,
+                     const snap::Tensor &mean,
+                     const snap::Tensor &invSd,
+                     const snap::Tensor &yGrad) const;
 
   GrowSpatialOutput growSpatial(poplar::program::Sequence &prog,
                                 BatchNormGradOp &op,
-                                poplar::Tensor &x,
-                                poplar::Tensor &scale,
-                                poplar::Tensor &mean,
-                                poplar::Tensor &var,
-                                poplar::Tensor &yGrad) const;
+                                snap::Tensor &x,
+                                snap::Tensor &scale,
+                                snap::Tensor &mean,
+                                snap::Tensor &var,
+                                snap::Tensor &yGrad) const;
 };
 
 } // namespace popx

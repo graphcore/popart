@@ -13,7 +13,7 @@ public:
   void grow(poplar::program::Sequence &) const override;
 
 private:
-  poplar::Tensor getReferenceTensor() const;
+  snap::Tensor getReferenceTensor() const;
 };
 
 } // namespace popx

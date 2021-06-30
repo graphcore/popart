@@ -11,11 +11,11 @@ namespace popx {
 
 struct FullSortResult {
 
-  FullSortResult(poplar::Tensor indices_, poplar::Tensor values_, int axis_)
+  FullSortResult(snap::Tensor indices_, snap::Tensor values_, int axis_)
       : indices(indices_), values(values_), axis(axis_) {}
 
-  poplar::Tensor indices;
-  poplar::Tensor values;
+  snap::Tensor indices;
+  snap::Tensor values;
   int axis;
 };
 
@@ -34,7 +34,7 @@ protected:
   FullSortResult growFullSortResult(poplar::program::Sequence &prog) const;
 
   // indices of sorted values
-  poplar::Tensor growIndicesSort(poplar::program::Sequence &prog) const;
+  snap::Tensor growIndicesSort(poplar::program::Sequence &prog) const;
 
   // axis to sort on
   unsigned axis;

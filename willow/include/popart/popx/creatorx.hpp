@@ -42,7 +42,7 @@ public:
   virtual ~ICreatorCandidate() = default;
 
   // Creates an input tensor
-  virtual std::pair<poplar::Tensor, ViewChangers>
+  virtual std::pair<snap::Tensor, ViewChangers>
   createInput(const poplar::DebugNameAndId &dnai) = 0;
 
   // Returns the list of tensors (DNF) that must be created before this one
@@ -62,7 +62,7 @@ public:
   // unwound tensor if the tensor does not match IR specifications.
   // Unwinding will currently stop and return when an unwinding Opx that
   // supplies a ViewChanger is reached
-  virtual std::pair<poplar::Tensor, ViewChangers> unwind(poplar::Tensor) = 0;
+  virtual std::pair<snap::Tensor, ViewChangers> unwind(snap::Tensor) = 0;
 
   virtual std::vector<popart::view::Region> unwind(popart::view::Region) = 0;
   virtual std::vector<popart::view::Region> unwind()                     = 0;
@@ -81,7 +81,7 @@ public:
   InputCreatorCandidate()                   = default;
   virtual ~InputCreatorCandidate() override = default;
 
-  std::pair<poplar::Tensor, ViewChangers>
+  std::pair<snap::Tensor, ViewChangers>
   createInput(const poplar::DebugNameAndId &dnai) override;
 
   DnfTensorIds mustExistBeforeCreate() override;
@@ -100,7 +100,7 @@ public:
     pathFromInput = value;
   }
 
-  std::pair<poplar::Tensor, ViewChangers> unwind(poplar::Tensor) override;
+  std::pair<snap::Tensor, ViewChangers> unwind(snap::Tensor) override;
   std::vector<popart::view::Region> unwind(popart::view::Region) override;
   std::vector<popart::view::Region> unwind() override;
 
@@ -135,7 +135,7 @@ public:
   InputMultiCreatorCandidate();
   virtual ~InputMultiCreatorCandidate() override = default;
 
-  std::pair<poplar::Tensor, ViewChangers>
+  std::pair<snap::Tensor, ViewChangers>
   createInput(const poplar::DebugNameAndId &dnai) override;
   DnfTensorIds mustExistBeforeCreate() override;
 
@@ -149,7 +149,7 @@ public:
   // Returns the unwind path from the tensor to the creator
   std::vector<std::vector<OpxInAndOutIndex>> getPathsFromInput() final;
 
-  std::pair<poplar::Tensor, ViewChangers> unwind(poplar::Tensor) override;
+  std::pair<snap::Tensor, ViewChangers> unwind(snap::Tensor) override;
   std::vector<popart::view::Region> unwind(popart::view::Region) override;
   std::vector<popart::view::Region> unwind() override;
 

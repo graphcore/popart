@@ -22,31 +22,33 @@ namespace popart {
 namespace popx {
 
 // convert inverse standard deviation to variance
-poplar::Tensor NormOpx::convertInvSdToVar(poplar::program::Sequence &prog,
-                                          const poplar::Tensor &invSd,
-                                          float epsilon,
-                                          const poplar::Type dstType) const {
+snap::Tensor NormOpx::convertInvSdToVar(poplar::program::Sequence &prog,
+                                        const snap::Tensor &invSd,
+                                        float epsilon,
+                                        const poplar::Type dstType) const {
 
-  return popops::invStdDevToVariance(graph().getPoplarGraph(),
-                                     invSd,
-                                     epsilon,
-                                     prog,
-                                     dstType,
-                                     debugContext("invSdToVar"));
+  return snap::Tensor{popops::invStdDevToVariance(graph().getPoplarGraph(),
+                                                  invSd.getPoplarTensor(),
+                                                  epsilon,
+                                                  prog,
+                                                  dstType,
+                                                  debugContext("invSdToVar")),
+                      graph()};
 }
 
 // convert variant to inverse standard deviation
-poplar::Tensor NormOpx::convertVarToInvSd(poplar::program::Sequence &prog,
-                                          const poplar::Tensor &var,
-                                          float epsilon,
-                                          const poplar::Type dstType) const {
+snap::Tensor NormOpx::convertVarToInvSd(poplar::program::Sequence &prog,
+                                        const snap::Tensor &var,
+                                        float epsilon,
+                                        const poplar::Type dstType) const {
 
-  return popops::varianceToInvStdDev(graph().getPoplarGraph(),
-                                     var,
-                                     epsilon,
-                                     prog,
-                                     dstType,
-                                     debugContext("varToInvSd"));
+  return snap::Tensor{popops::varianceToInvStdDev(graph().getPoplarGraph(),
+                                                  var.getPoplarTensor(),
+                                                  epsilon,
+                                                  prog,
+                                                  dstType,
+                                                  debugContext("varToInvSd")),
+                      graph()};
 }
 
 NormOpx::NormOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {}

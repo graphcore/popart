@@ -18,16 +18,16 @@ public:
 
   static void flattenAndEncodeOneHot(const PopOpx &opx,
                                      poplar::program::Sequence &prog,
-                                     const poplar::Tensor &probs,
-                                     const poplar::Tensor &label,
-                                     poplar::Tensor &probs2D,
-                                     poplar::Tensor &label1D,
-                                     poplar::Tensor &oneHot);
+                                     const snap::Tensor &probs,
+                                     const snap::Tensor &label,
+                                     snap::Tensor &probs2D,
+                                     snap::Tensor &label1D,
+                                     snap::Tensor &oneHot);
 
-  static poplar::Tensor
+  static snap::Tensor
   applyMaskInPlaceForIgnoredIndex(const PopOpx &opx,
-                                  poplar::Tensor t,
-                                  poplar::Tensor labels,
+                                  snap::Tensor t,
+                                  snap::Tensor labels,
                                   int ignoreIndex,
                                   poplar::program::Sequence &prog);
   // If the loss that created this op was constructed with a
@@ -38,8 +38,8 @@ public:
   // loss and loss grad at the output of the respective ops/grad ops
   static void
   applyScalingInPlaceForMeanReduction(const PopOpx &opx,
-                                      poplar::Tensor t,
-                                      poplar::Tensor scale,
+                                      snap::Tensor t,
+                                      snap::Tensor scale,
                                       poplar::program::Sequence &prog);
 
   // Same as above, except the divisor for the scaling of the loss/
@@ -51,33 +51,33 @@ public:
   // is used to dynamically determine the aprropriate scale factor
   static void applyScalingInPlaceForMeanReductionWithIgnoreIndex(
       const PopOpx &opx,
-      poplar::Tensor t,
-      poplar::Tensor scale,
-      poplar::Tensor mask,
+      snap::Tensor t,
+      snap::Tensor scale,
+      snap::Tensor mask,
       poplar::program::Sequence &prog);
 
   static void handleLossGradScaling(const PopOpx &opx,
                                     bool hasIgnoreIndex,
                                     int64_t ignoreIndex,
                                     bool meanReduce,
-                                    poplar::Tensor &oneHot,
-                                    poplar::Tensor &gradIn,
-                                    poplar::Tensor &label1D,
+                                    snap::Tensor &oneHot,
+                                    snap::Tensor &gradIn,
+                                    snap::Tensor &label1D,
                                     poplar::program::Sequence &prog);
 
   static void handleLossOutReducedToScalar(const PopOpx &opx,
                                            bool hasIgnoreIndex,
                                            int64_t ignoreIndex,
                                            bool meanReduce,
-                                           poplar::Tensor &reduction,
-                                           poplar::Tensor &label1D,
+                                           snap::Tensor &reduction,
+                                           snap::Tensor &label1D,
                                            poplar::program::Sequence &prog,
                                            const OutIndex outIdx);
 
   static void handleLossOutNotReducedToScalar(const PopOpx &opx,
-                                              poplar::Tensor &reduction,
-                                              const poplar::Tensor &label,
-                                              poplar::Tensor &label1D,
+                                              snap::Tensor &reduction,
+                                              const snap::Tensor &label,
+                                              snap::Tensor &label1D,
                                               poplar::program::Sequence &prog);
 };
 

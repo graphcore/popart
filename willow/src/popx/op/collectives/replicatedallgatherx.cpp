@@ -61,7 +61,7 @@ ReplicatedAllGatherOpx::getInputCreatorType(InIndex index) const {
 snap::Tensor ReplicatedAllGatherOpx::unwindTensorLayout(snap::Tensor tensor,
                                                         InIndex,
                                                         OutIndex) const {
-  auto cbr = createCollectiveBalancedReorder(tensor.getPoplarTensor());
+  auto cbr = createCollectiveBalancedReorder(tensor);
   return snap::Tensor{
       cbr->createReplicaSlice(tensor.getPoplarTensor().elementType()), graph()};
 }
@@ -90,7 +90,7 @@ snap::Tensor ReplicatedAllGatherOpx::createInputTensor(
                          popType(outInfo), outInfo.shape_szt(), dnai),
                      graph()};
     dv_p->lowering().getLinearMapper().mapTensor(graph(), outTensor);
-    auto cbr = createCollectiveBalancedReorder(outTensor.getPoplarTensor());
+    auto cbr = createCollectiveBalancedReorder(outTensor);
     return snap::Tensor{cbr->createReplicaSlice(popType(outInfo)), graph()};
   }
 

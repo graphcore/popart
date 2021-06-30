@@ -14,8 +14,8 @@ public:
   using ArgExtremaOpx::ArgExtremaOpx;
 
 private:
-  poplar::Tensor extremaOp(poplar::program::Sequence &,
-                           const poplar::Tensor &) const final;
+  snap::Tensor extremaOp(poplar::program::Sequence &,
+                         const snap::Tensor &) const final;
 };
 
 } // namespace popx

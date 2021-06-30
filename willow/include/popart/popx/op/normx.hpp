@@ -8,7 +8,7 @@
 #include <popart/popx/opxmanager.hpp>
 #include <popart/popx/popopx.hpp>
 
-#include <poplar/Tensor.hpp>
+#include <snap/Tensor.hpp>
 
 // Base class for the norm options such as group, instance, batch
 
@@ -24,15 +24,15 @@ public:
   NormOpx(Op *, Devicex *);
 
 protected:
-  poplar::Tensor convertInvSdToVar(poplar::program::Sequence &prog,
-                                   const poplar::Tensor &invSd,
-                                   float epsilon,
-                                   const poplar::Type dstType) const;
+  snap::Tensor convertInvSdToVar(poplar::program::Sequence &prog,
+                                 const snap::Tensor &invSd,
+                                 float epsilon,
+                                 const poplar::Type dstType) const;
 
-  poplar::Tensor convertVarToInvSd(poplar::program::Sequence &prog,
-                                   const poplar::Tensor &var,
-                                   float epsilon,
-                                   const poplar::Type dstType) const;
+  snap::Tensor convertVarToInvSd(poplar::program::Sequence &prog,
+                                 const snap::Tensor &var,
+                                 float epsilon,
+                                 const poplar::Type dstType) const;
 
 private:
 };

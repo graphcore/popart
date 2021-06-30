@@ -121,16 +121,15 @@ NlllWithSoftmaxGradDirectOpx::NlllWithSoftmaxGradDirectOpx(Op *op,
 
 void SoftmaxGradDirectOpx::grow(poplar::program::Sequence &prog) const {
   SoftmaxGradDirectOp &op = getOp<SoftmaxGradDirectOp>();
-  const poplar::Tensor &probs =
-      getInTensor(SoftmaxGradDirectOp::getProbsInIndex()).getPoplarTensor();
-  const poplar::Tensor &label =
-      getInTensor(SoftmaxGradDirectOp::getLabelInIndex()).getPoplarTensor();
-  poplar::Tensor gradIn =
-      getInTensor(SoftmaxGradDirectOp::getGradProbsInIndex()).getPoplarTensor();
+  const snap::Tensor &probs =
+      getInTensor(SoftmaxGradDirectOp::getProbsInIndex());
+  const snap::Tensor &label =
+      getInTensor(SoftmaxGradDirectOp::getLabelInIndex());
+  snap::Tensor gradIn = getInTensor(SoftmaxGradDirectOp::getGradProbsInIndex());
 
-  poplar::Tensor probs2D;
-  poplar::Tensor label1D;
-  poplar::Tensor oneHot;
+  snap::Tensor probs2D;
+  snap::Tensor label1D;
+  snap::Tensor oneHot;
 
   NllOpx::flattenAndEncodeOneHot(
       *this, prog, probs, label, probs2D, label1D, oneHot);
@@ -139,12 +138,14 @@ void SoftmaxGradDirectOpx::grow(poplar::program::Sequence &prog) const {
   // p - 1 at position "label" label, p elsewhere.
   popops::mapInPlace(graph().getPoplarGraph(),
                      pe::Add(pe::Neg(pe::_1), pe::_2),
-                     {oneHot, probs2D},
+                     {oneHot.getPoplarTensor(), probs2D.getPoplarTensor()},
                      prog,
                      debugContext("negsub"));
 
   // Output is reshaped to match probs input shape
-  oneHot = oneHot.reshape(probs.shape());
+  oneHot = snap::Tensor{
+      oneHot.getPoplarTensor().reshape(probs.getPoplarTensor().shape()),
+      graph()};
 
   NllOpx::handleLossGradScaling(*this,
                                 op.hasIgnoreIndex(),
@@ -155,7 +156,7 @@ void SoftmaxGradDirectOpx::grow(poplar::program::Sequence &prog) const {
                                 label1D,
                                 prog);
 
-  setOutTensor(0, snap::Tensor{oneHot, graph()});
+  setOutTensor(0, oneHot);
 }
 
 void SoftmaxGradOpx::grow(poplar::program::Sequence &prog) const {
@@ -187,18 +188,15 @@ void SoftmaxGradOpx::grow(poplar::program::Sequence &prog) const {
 void NlllWithSoftmaxGradDirectOpx::grow(poplar::program::Sequence &prog) const {
   NlllWithSoftmaxGradDirectOp &op = getOp<NlllWithSoftmaxGradDirectOp>();
 
-  const poplar::Tensor &probs =
-      getInTensor(NlllWithSoftmaxGradDirectOp::getProbsInIndex())
-          .getPoplarTensor();
-  const poplar::Tensor &label =
-      getInTensor(NlllWithSoftmaxGradDirectOp::getLabelInIndex())
-          .getPoplarTensor();
-  poplar::Tensor gradIn =
-      getInTensor(NlllWithSoftmaxGradDirectOp::getGradProbsInIndex())
-          .getPoplarTensor();
-  poplar::Tensor probs2D;
-  poplar::Tensor label1D;
-  poplar::Tensor oneHot;
+  const snap::Tensor &probs =
+      getInTensor(NlllWithSoftmaxGradDirectOp::getProbsInIndex());
+  const snap::Tensor &label =
+      getInTensor(NlllWithSoftmaxGradDirectOp::getLabelInIndex());
+  snap::Tensor gradIn =
+      getInTensor(NlllWithSoftmaxGradDirectOp::getGradProbsInIndex());
+  snap::Tensor probs2D;
+  snap::Tensor label1D;
+  snap::Tensor oneHot;
 
   NllOpx::flattenAndEncodeOneHot(
       *this, prog, probs, label, probs2D, label1D, oneHot);
@@ -207,8 +205,8 @@ void NlllWithSoftmaxGradDirectOpx::grow(poplar::program::Sequence &prog) const {
   //              to a tensor which is sparse with a single p per row.
   auto oneHotProbs = popops::map(graph().getPoplarGraph(),
                                  popops::expr::BinaryOpType::MULTIPLY,
-                                 oneHot,
-                                 probs2D,
+                                 oneHot.getPoplarTensor(),
+                                 probs2D.getPoplarTensor(),
                                  prog,
                                  debugContext("mul"));
 
@@ -219,12 +217,14 @@ void NlllWithSoftmaxGradDirectOpx::grow(poplar::program::Sequence &prog) const {
   // p - 1 at position "label" label, p elsewhere.
   popops::mapInPlace(graph().getPoplarGraph(),
                      pe::Add(pe::Neg(pe::_1), pe::_2),
-                     {oneHot, probs2D},
+                     {oneHot.getPoplarTensor(), probs2D.getPoplarTensor()},
                      prog,
                      debugContext("NegSub"));
 
   // Output is reshaped to match probs input shape
-  oneHot = oneHot.reshape(probs.shape());
+  oneHot = snap::Tensor{
+      oneHot.getPoplarTensor().reshape(probs.getPoplarTensor().shape()),
+      graph()};
 
   NllOpx::handleLossGradScaling(*this,
                                 op.hasIgnoreIndex(),
@@ -235,24 +235,26 @@ void NlllWithSoftmaxGradDirectOpx::grow(poplar::program::Sequence &prog) const {
                                 label1D,
                                 prog);
 
-  setOutTensor(op.getGradOutIndex(), snap::Tensor{oneHot, graph()});
+  setOutTensor(op.getGradOutIndex(), oneHot);
 
   // Now compute the rest of the nll loss from the same one-hot encoded tensor:
 
   // sum rows, so that just the p corresponding to the label remains
-  poplar::Tensor reduction = popops::reduce(graph().getPoplarGraph(),
-                                            oneHotProbs,
-                                            {1},
-                                            {popops::Operation::ADD},
-                                            prog,
-                                            debugContext("add"));
+  snap::Tensor reduction = snap::Tensor{popops::reduce(graph().getPoplarGraph(),
+                                                       oneHotProbs,
+                                                       {1},
+                                                       {popops::Operation::ADD},
+                                                       prog,
+                                                       debugContext("add")),
+                                        graph()};
 
   // Create an epsilon value
-  snap::Tensor eps = getConst(probs.elementType(), {1}, 1.0e-7, "epsilon");
+  snap::Tensor eps =
+      getConst(probs.getPoplarTensor().elementType(), {1}, 1.0e-7, "epsilon");
   // Add eps to reduction to make sure it does not have any 0's and log it,
   popops::mapInPlace(graph().getPoplarGraph(),
                      pe::Log(pe::Add(pe::_1, pe::_2)),
-                     {reduction, eps.getPoplarTensor()},
+                     {reduction.getPoplarTensor(), eps.getPoplarTensor()},
                      prog,
                      debugContext("LogEpsMul"));
 

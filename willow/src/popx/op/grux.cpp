@@ -19,38 +19,54 @@
 namespace popart {
 namespace popx {
 
+namespace {
+
+poplar::Tensor *getPoplarTensor(snap::Tensor *t) {
+  if (t) {
+    return &t->getPoplarTensor();
+  } else {
+    return nullptr;
+  }
+}
+
+} // unnamed namespace
+
 GRUOpx::GRUOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
   verifyOp<GRUOp>(op, {Onnx::Operators::GRU_3, Onnx::Operators::GRU_7});
 }
 
 // Only create an intermediate tensor if it is consumed or used as a anchor
-std::unique_ptr<poplar::Tensor> GRUOpx::createIntermediate() const {
+std::unique_ptr<snap::Tensor> GRUOpx::createIntermediate() const {
   if (getOp<GRUOp>().isTraining()) {
-    return std::make_unique<poplar::Tensor>();
+    return std::make_unique<snap::Tensor>(poplar::Tensor{}, graph());
   } else {
-    return std::unique_ptr<poplar::Tensor>(nullptr);
+    return std::unique_ptr<snap::Tensor>(nullptr);
   }
 }
 
-poplar::Tensor GRUOpx::getInitialState() const {
+snap::Tensor GRUOpx::getInitialState() const {
   if (!initial_state_h) {
-    initial_state_h =
+    initial_state_h = snap::Tensor{
         popnn::gru::createInitialState(graph().getPoplarGraph(),
                                        createGRUParams(),
                                        debugContext("initialState"),
                                        dv_p->lowering().lstmOptions,
-                                       &dv_p->matmulCache);
+                                       &dv_p->matmulCache),
+        graph()};
   }
   return *initial_state_h;
 }
 
-void GRUOpx::prepareInitialState(poplar::Tensor &init_state_h,
+void GRUOpx::prepareInitialState(snap::Tensor &init_state_h,
                                  poplar::program::Sequence &prog) const {
   auto &gru_op  = getOp<GRUOp>();
   auto hasInitH = gru_op.hasInitialHInput();
 
   if (!hasInitH) {
-    popops::zero(graph().getPoplarGraph(), init_state_h, prog, debugContext());
+    popops::zero(graph().getPoplarGraph(),
+                 init_state_h.getPoplarTensor(),
+                 prog,
+                 debugContext());
   }
 
   // Check the inputs have been created
@@ -76,30 +92,34 @@ void GRUOpx::grow(poplar::program::Sequence &prog) const {
   prepareInitialState(init_state_h, prog);
 
   auto intermediate = createIntermediate();
-  poplar::Tensor output;
+  snap::Tensor output;
 
   if (gru_op.getDirectionAttribute() == "forward") {
-    output = popnn::gru::gruFwd(graph().getPoplarGraph(),
-                                createGRUParams(),
-                                init_state_h,
-                                input,
-                                *weights,
-                                intermediate.get(),
-                                prog,
-                                debugContext("gruFwd"),
-                                dv_p->lowering().lstmOptions,
-                                &dv_p->matmulCache);
+    output =
+        snap::Tensor{popnn::gru::gruFwd(graph().getPoplarGraph(),
+                                        createGRUParams(),
+                                        init_state_h.getPoplarTensor(),
+                                        input.getPoplarTensor(),
+                                        *weights,
+                                        getPoplarTensor(intermediate.get()),
+                                        prog,
+                                        debugContext("gruFwd"),
+                                        dv_p->lowering().lstmOptions,
+                                        &dv_p->matmulCache),
+                     graph()};
   } else if (gru_op.getDirectionAttribute() == "backward") {
-    output = popnn::gru::gruFwd(graph().getPoplarGraph(),
-                                createGRUParams(),
-                                init_state_h,
-                                input.reverse(0),
-                                *weights,
-                                intermediate.get(),
-                                prog,
-                                debugContext("gruFwd"),
-                                dv_p->lowering().lstmOptions,
-                                &dv_p->matmulCache);
+    output =
+        snap::Tensor{popnn::gru::gruFwd(graph().getPoplarGraph(),
+                                        createGRUParams(),
+                                        init_state_h.getPoplarTensor(),
+                                        input.getPoplarTensor().reverse(0),
+                                        *weights,
+                                        getPoplarTensor(intermediate.get()),
+                                        prog,
+                                        debugContext("gruFwd"),
+                                        dv_p->lowering().lstmOptions,
+                                        &dv_p->matmulCache),
+                     graph()};
   } else if (gru_op.getDirectionAttribute() == "bidirectional") {
     // TODO: Add support for bidirectional GRU op.
     throw error(
@@ -107,22 +127,20 @@ void GRUOpx::grow(poplar::program::Sequence &prog) const {
         gru_op.debugName());
   }
   if (intermediate) {
-    setOutTensor(GRUOp::getIntermediatesPassThroughIndex(),
-                 snap::Tensor{*intermediate, graph()});
+    setOutTensor(GRUOp::getIntermediatesPassThroughIndex(), *intermediate);
   }
 
   reshapeAndInsert(GRUOp::getOutputOutIndex(), output);
 
-  auto output_h_state = output[createGRUParams().rnn.timeSteps - 1];
+  auto output_h_state = snap::Tensor{
+      output.getPoplarTensor()[createGRUParams().rnn.timeSteps - 1], graph()};
 
   // cloneNcopy to ensure outputs are not aliases of each other
   // TODO T18126 remove requirement for this cloneNcopy
   reshapeAndInsert(GRUOp::getHiddenStateOutIndex(),
-                   cloneNcopy(prog, snap::Tensor{output_h_state, graph()})
-                       .getPoplarTensor());
+                   cloneNcopy(prog, output_h_state));
 
-  setOutTensor(GRUOp::getInitStateOutputPassThroughIndex(),
-               snap::Tensor{init_state_h, graph()});
+  setOutTensor(GRUOp::getInitStateOutputPassThroughIndex(), init_state_h);
 
   setOutTensor(GRUOp::getInputWeightsPassThroughIndex(),
                snap::Tensor{weights->inputWeights, graph()});
@@ -137,18 +155,18 @@ void GRUOpx::grow(poplar::program::Sequence &prog) const {
   setOutTensor(GRUOp::getBiasesPassThroughIndex(),
                snap::Tensor{biases, graph()});
 
-  setOutTensor(GRUOp::getInputPassThroughIndex(), snap::Tensor{input, graph()});
+  setOutTensor(GRUOp::getInputPassThroughIndex(), input);
 
-  setOutTensor(GRUOp::getOutputPassThroughIndex(),
-               snap::Tensor{output, graph()});
+  setOutTensor(GRUOp::getOutputPassThroughIndex(), output);
 }
 
 void GRUOpx::reshapeAndInsert(OutIndex index,
-                              const poplar::Tensor &tensor) const {
+                              const snap::Tensor &tensor) const {
   if (getOp<GRUOp>().hasOutput(index)) {
-    setOutTensor(
-        index,
-        snap::Tensor{tensor.reshape(outInfo(index).shape_szt()), graph()});
+    setOutTensor(index,
+                 snap::Tensor{tensor.getPoplarTensor().reshape(
+                                  outInfo(index).shape_szt()),
+                              graph()});
   }
 }
 
@@ -229,13 +247,13 @@ snap::Tensor GRUOpx::createInputTensor(InIndex index,
   createdInputs.insert(index);
 
   if (index == GRUOp::getInputInIndex()) {
-    return snap::Tensor{createGRUInput(), graph()};
+    return createGRUInput();
   } else if (index == GRUOp::getWeightsInIndex()) {
     auto inputWeights = getGRUWeights().inputWeights;
-    return snap::Tensor{reshapePoplibWeightsForOnnx(inputWeights), graph()};
+    return reshapePoplibWeightsForOnnx(snap::Tensor{inputWeights, graph()});
   } else if (index == GRUOp::getRecurrenceInIndex()) {
     auto outputWeights = getGRUWeights().outputWeights;
-    return snap::Tensor{reshapePoplibWeightsForOnnx(outputWeights), graph()};
+    return reshapePoplibWeightsForOnnx(snap::Tensor{outputWeights, graph()});
   } else if (index == GRUOp::getInitialHInIndex()) {
     auto &gru_op = getOp<GRUOp>();
 
@@ -244,8 +262,9 @@ snap::Tensor GRUOpx::createInputTensor(InIndex index,
     unsigned num_directions = static_cast<unsigned>(gru_op.getNumDirections());
 
     auto init_h = getInitialState();
-    return snap::Tensor{
-        init_h.reshape({num_directions, batch_size, hidden_size}), graph()};
+    return snap::Tensor{init_h.getPoplarTensor().reshape(
+                            {num_directions, batch_size, hidden_size}),
+                        graph()};
   } else {
     throw error("GRUOpx::createInput is not supported for index {}", index);
   }
@@ -255,8 +274,7 @@ bool GRUOpx::inputCreated(InIndex index) const {
   return createdInputs.count(index) > 0;
 }
 
-poplar::Tensor
-GRUOpx::reshapePoplibWeightsForOnnx(poplar::Tensor poplib_weights) {
+snap::Tensor GRUOpx::reshapePoplibWeightsForOnnx(snap::Tensor poplib_weights) {
   // ONNX expects input weights in shape [num_directions, 3*hidden_size, K]
   // where
   //   num_directions is always 1 for popart
@@ -267,7 +285,7 @@ GRUOpx::reshapePoplibWeightsForOnnx(poplar::Tensor poplib_weights) {
   // poplibs expects weights in shape [3, K, hidden_size]
   // and order is W[rzh]
   std::vector<poplar::Interval> intervals{{0, 1}, {1, 2}, {2, 3}};
-  auto slices = poplib_weights.slices(intervals, 0);
+  auto slices = poplib_weights.getPoplarTensor().slices(intervals, 0);
 
   for (int i = 0; i < slices.size(); i++) {
     slices[i] = slices[i].dimShuffle({0, 2, 1});
@@ -277,11 +295,11 @@ GRUOpx::reshapePoplibWeightsForOnnx(poplar::Tensor poplib_weights) {
   auto wr = slices[1];
   auto wh = slices[2];
 
-  return poplar::concat({wr, wz, wh}, 1);
+  return snap::Tensor{poplar::concat({wr, wz, wh}, 1), poplib_weights};
 }
 
-poplar::Tensor
-GRUOpx::reshapePoplibBiasesForOnnx(poplar::Tensor poplib_biases) {
+snap::Tensor GRUOpx::reshapePoplibBiasesForOnnx(snap::Tensor poplib_biases_) {
+  auto poplib_biases = poplib_biases_.getPoplarTensor();
   bool hidden_biases = poplib_biases.rank() > 2;
 
   // Poplib uses two different bias formats depending on how the
@@ -295,7 +313,7 @@ GRUOpx::reshapePoplibBiasesForOnnx(poplar::Tensor poplib_biases) {
     auto br = slices[1];
     auto bh = slices[2];
 
-    return poplar::concat({br, bz, bh}, 1);
+    return snap::Tensor{poplar::concat({br, bz, bh}, 1), poplib_biases_};
   }
   size_t hidden_size = poplib_biases.dim(2);
   poplib_biases      = poplib_biases.reshape({6, hidden_size});
@@ -312,19 +330,21 @@ GRUOpx::reshapePoplibBiasesForOnnx(poplar::Tensor poplib_biases) {
   auto bhr = slices[3];
   auto bhh = slices[5];
 
-  return poplar::concat({br, bz, bh, bhr, bhz, bhh}, 1);
+  return snap::Tensor{poplar::concat({br, bz, bh, bhr, bhz, bhh}, 1),
+                      poplib_biases_};
 }
 
-poplar::Tensor GRUOpx::createGRUInput() const {
+snap::Tensor GRUOpx::createGRUInput() const {
   auto gru_params = createGRUParams();
   auto options    = dv_p->lowering().lstmOptions;
   auto cache      = &dv_p->matmulCache;
 
-  return popnn::gru::createInput(graph().getPoplarGraph(),
-                                 gru_params,
-                                 getDebugNameAndId("input"),
-                                 options,
-                                 cache);
+  return snap::Tensor{popnn::gru::createInput(graph().getPoplarGraph(),
+                                              gru_params,
+                                              getDebugNameAndId("input"),
+                                              options,
+                                              cache),
+                      graph()};
 }
 
 popnn::gru::GruWeights GRUOpx::getGRUWeights() const {
@@ -367,26 +387,32 @@ void GRUOpx::prepareWeights(poplar::program::Sequence &prog) const {
   // check to see if the weights were created
   prog.add(poplar::program::Copy(
       getInTensor(GRUOp::getWeightsInIndex()).getPoplarTensor(),
-      reshapePoplibWeightsForOnnx(getGRUWeights().inputWeights),
+      reshapePoplibWeightsForOnnx(
+          snap::Tensor{getGRUWeights().inputWeights, graph()})
+          .getPoplarTensor(),
       false,
       debugContext()));
   prog.add(poplar::program::Copy(
       getInTensor(GRUOp::getRecurrenceInIndex()).getPoplarTensor(),
-      reshapePoplibWeightsForOnnx(getGRUWeights().outputWeights),
+      reshapePoplibWeightsForOnnx(
+          snap::Tensor{getGRUWeights().outputWeights, graph()})
+          .getPoplarTensor(),
       false,
       debugContext()));
 }
 
-poplar::Tensor GRUOpx::getInput(poplar::program::Sequence &prog) const {
+snap::Tensor GRUOpx::getInput(poplar::program::Sequence &prog) const {
   if (!inputCreated(GRUOp::getInputInIndex())) {
     auto input =
-        createInputTensor(GRUOp::getInputInIndex(), getDebugNameAndId("input"))
-            .getPoplarTensor();
-    auto raw_input = getInTensor(GRUOp::getInputInIndex()).getPoplarTensor();
-    prog.add(poplar::program::Copy(raw_input, input, false, debugContext()));
+        createInputTensor(GRUOp::getInputInIndex(), getDebugNameAndId("input"));
+    auto raw_input = getInTensor(GRUOp::getInputInIndex());
+    prog.add(poplar::program::Copy(raw_input.getPoplarTensor(),
+                                   input.getPoplarTensor(),
+                                   false,
+                                   debugContext()));
     return input;
   } else {
-    return getInTensor(GRUOp::getInputInIndex()).getPoplarTensor();
+    return getInTensor(GRUOp::getInputInIndex());
   }
 }
 
@@ -395,8 +421,8 @@ GRUGradOpx::GRUGradOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
 }
 
 void GRUGradOpx::grow(poplar::program::Sequence &prog) const {
-  poplar::Tensor init_state_h =
-      getInTensor(GRUGradOp::getInitStateOutputInIndex()).getPoplarTensor();
+  snap::Tensor init_state_h =
+      getInTensor(GRUGradOp::getInitStateOutputInIndex());
 
   popnn::gru::GruWeights weights;
   weights.inputWeights =
@@ -405,12 +431,9 @@ void GRUGradOpx::grow(poplar::program::Sequence &prog) const {
       getInTensor(GRUGradOp::getOutputWeightsInIndex()).getPoplarTensor();
   weights.biases = getInTensor(GRUGradOp::getBiasesInIndex()).getPoplarTensor();
 
-  auto intermediates =
-      getInTensor(GRUGradOp::getIntermediatesInIndex()).getPoplarTensor();
-  auto forward_input =
-      getInTensor(GRUGradOp::getInputInIndex()).getPoplarTensor();
-  auto forward_output =
-      getInTensor(GRUGradOp::getOutputInIndex()).getPoplarTensor();
+  auto intermediates  = getInTensor(GRUGradOp::getIntermediatesInIndex());
+  auto forward_input  = getInTensor(GRUGradOp::getInputInIndex());
+  auto forward_output = getInTensor(GRUGradOp::getOutputInIndex());
 
   auto &gru_grad_op   = getOp<GRUGradOp>();
   auto &gru_op        = gru_grad_op.getForwardOp();
@@ -420,12 +443,13 @@ void GRUGradOpx::grow(poplar::program::Sequence &prog) const {
   auto num_directions = static_cast<unsigned>(gru_op.getNumDirections());
   auto gru_params     = createGRUParams();
 
-  auto output_grad = getInTensor(GRUGradOp::getOutputGradInIndex())
-                         .getPoplarTensor()
-                         .reshape({seq_length, batch_size, hidden_size});
+  auto output_grad =
+      snap::Tensor{getInTensor(GRUGradOp::getOutputGradInIndex())
+                       .getPoplarTensor()
+                       .reshape({seq_length, batch_size, hidden_size}),
+                   graph()};
 
-  output_grad =
-      cloneNcopy(prog, snap::Tensor{output_grad, graph()}).getPoplarTensor();
+  output_grad = cloneNcopy(prog, output_grad);
 
   auto output_h_grad = getHiddenStateGrad();
 
@@ -435,11 +459,12 @@ void GRUGradOpx::grow(poplar::program::Sequence &prog) const {
     weights.biases = weights.biases.reshape({3, 2, hidden_size});
   }
 
-  popops::addInPlace(graph().getPoplarGraph(),
-                     output_grad[output_grad.dim(0) - 1],
-                     output_h_grad,
-                     prog,
-                     debugContext());
+  popops::addInPlace(
+      graph().getPoplarGraph(),
+      output_grad.getPoplarTensor()[output_grad.getPoplarTensor().dim(0) - 1],
+      output_h_grad.getPoplarTensor(),
+      prog,
+      debugContext());
 
   poplar::Tensor input_grad;
   popnn::gru::GruWeights weights_grad;
@@ -447,12 +472,12 @@ void GRUGradOpx::grow(poplar::program::Sequence &prog) const {
   auto init_state_grad = gruBwdWithWU(graph().getPoplarGraph(),
                                       gru_params,
                                       prog,
-                                      init_state_h,
-                                      intermediates,
+                                      init_state_h.getPoplarTensor(),
+                                      intermediates.getPoplarTensor(),
                                       weights,
-                                      forward_input,
-                                      forward_output,
-                                      output_grad,
+                                      forward_input.getPoplarTensor(),
+                                      forward_output.getPoplarTensor(),
+                                      output_grad.getPoplarTensor(),
                                       &input_grad,
                                       weights_grad,
                                       debugContext("gruBwdWithWU"),
@@ -462,25 +487,28 @@ void GRUGradOpx::grow(poplar::program::Sequence &prog) const {
   setOutTensor(GRUGradOp::getInputOutIndex(),
                snap::Tensor{input_grad, graph()});
   setOutTensor(GRUGradOp::getWeightsOutIndex(),
-               snap::Tensor{GRUOpx::reshapePoplibWeightsForOnnx(
-                                weights_grad.inputWeights),
-                            graph()});
+               GRUOpx::reshapePoplibWeightsForOnnx(
+                   snap::Tensor{weights_grad.inputWeights, graph()}));
   setOutTensor(GRUGradOp::getRecurrenceOutIndex(),
-               snap::Tensor{GRUOpx::reshapePoplibWeightsForOnnx(
-                                weights_grad.outputWeights),
-                            graph()});
+               GRUOpx::reshapePoplibWeightsForOnnx(
+                   snap::Tensor{weights_grad.outputWeights, graph()}));
 
   if (gru_op.hasBiasInput()) {
-    auto b_grad = GRUOpx::reshapePoplibBiasesForOnnx(weights_grad.biases);
+    auto b_grad = GRUOpx::reshapePoplibBiasesForOnnx(
+        snap::Tensor{weights_grad.biases, graph()});
 
     if (gru_op.getLinearBeforeResetAttribute()) {
       // separate gradients for input and hidden bias
-      b_grad = b_grad.reshape({1, 6 * hidden_size});
-      setOutTensor(GRUGradOp::getBiasOutIndex(), snap::Tensor{b_grad, graph()});
+      auto b_grad_ = b_grad.getPoplarTensor().reshape({1, 6 * hidden_size});
+      setOutTensor(GRUGradOp::getBiasOutIndex(),
+                   snap::Tensor{b_grad_, graph()});
     } else {
       // propagate same gradient to both input and hidden bias
       setOutTensor(GRUGradOp::getBiasOutIndex(),
-                   snap::Tensor{poplar::concat({b_grad, b_grad}, 1), graph()});
+                   snap::Tensor{poplar::concat({b_grad.getPoplarTensor(),
+                                                b_grad.getPoplarTensor()},
+                                               1),
+                                graph()});
     }
   }
   if (gru_op.hasInitialHInput()) {
@@ -491,7 +519,7 @@ void GRUGradOpx::grow(poplar::program::Sequence &prog) const {
   }
 }
 
-poplar::Tensor GRUGradOpx::getHiddenStateGrad() const {
+snap::Tensor GRUGradOpx::getHiddenStateGrad() const {
   auto &gru_grad_op = getOp<GRUGradOp>();
   auto &gru_op      = gru_grad_op.getForwardOp();
 
@@ -503,9 +531,11 @@ poplar::Tensor GRUGradOpx::getHiddenStateGrad() const {
                        .elementType();
 
   if (gru_grad_op.hasHiddenStateGradInput()) {
-    return getInTensor(GRUGradOp::getHiddenStateOutputGradInIndex())
-        .getPoplarTensor()
-        .reshape({batch_size, hidden_size});
+    return snap::Tensor{
+        getInTensor(GRUGradOp::getHiddenStateOutputGradInIndex())
+            .getPoplarTensor()
+            .reshape({batch_size, hidden_size}),
+        graph()};
   } else {
     auto zero =
         getScalarVariable(elem_type, "gru/zero_hidden_state").getPoplarTensor();
@@ -514,7 +544,7 @@ poplar::Tensor GRUGradOpx::getHiddenStateGrad() const {
     zero = zero.expand({0, 0});
     zero = zero.broadcast(batch_size, 0);
     zero = zero.broadcast(hidden_size, 1);
-    return zero;
+    return snap::Tensor{zero, graph()};
   }
 }
 

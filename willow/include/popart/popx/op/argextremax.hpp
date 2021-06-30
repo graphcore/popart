@@ -15,8 +15,8 @@ public:
   void grow(poplar::program::Sequence &) const override;
 
 private:
-  virtual poplar::Tensor extremaOp(poplar::program::Sequence &,
-                                   const poplar::Tensor &) const = 0;
+  virtual snap::Tensor extremaOp(poplar::program::Sequence &,
+                                 const snap::Tensor &) const = 0;
 };
 
 } // namespace popx

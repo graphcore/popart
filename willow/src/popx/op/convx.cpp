@@ -15,39 +15,43 @@ ConvOpx::ConvOpx(Op *op, Devicex *devicex) : MultiConvBaseOpx(op, devicex) {
   verifyOp<ConvOp>(op, {Onnx::Operators::Conv_1, Onnx::Operators::Conv_11});
 }
 
-poplar::Tensor ConvOpx::createWeightsInput(const poplar::DebugNameAndId &dnai,
-                                           int convIndex) const {
-  return poplin::createWeights(
-      graph().getPoplarGraph(),
-      getPoplarConvParams(getOp<ConvOp>().getParameters()),
-      dnai,
-      getConvOptions(convIndex, getFwdPassFlagString()),
-      &dv_p->convCache);
+snap::Tensor ConvOpx::createWeightsInput(const poplar::DebugNameAndId &dnai,
+                                         int convIndex) const {
+  return snap::Tensor{poplin::createWeights(
+                          graph().getPoplarGraph(),
+                          getPoplarConvParams(getOp<ConvOp>().getParameters()),
+                          dnai,
+                          getConvOptions(convIndex, getFwdPassFlagString()),
+                          &dv_p->convCache),
+                      graph()};
 }
-poplar::Tensor ConvOpx::createDataInput(const poplar::DebugNameAndId &dnai,
-                                        int convIndex) const {
-  return poplin::createInput(
-      graph().getPoplarGraph(),
-      getPoplarConvParams(getOp<ConvOp>().getParameters()),
-      dnai,
-      getConvOptions(convIndex, getFwdPassFlagString()),
-      &dv_p->convCache);
+snap::Tensor ConvOpx::createDataInput(const poplar::DebugNameAndId &dnai,
+                                      int convIndex) const {
+  return snap::Tensor{
+      poplin::createInput(graph().getPoplarGraph(),
+                          getPoplarConvParams(getOp<ConvOp>().getParameters()),
+                          dnai,
+                          getConvOptions(convIndex, getFwdPassFlagString()),
+                          &dv_p->convCache),
+      graph()};
 }
 
-std::vector<poplar::Tensor>
+std::vector<snap::Tensor>
 ConvOpx::convolve(poplar::program::Sequence &prog,
-                  const std::vector<poplar::Tensor> &weights) const {
-  ConvOp &op     = getOp<ConvOp>();
-  auto outTensor = poplin::convolution(
-      graph().getPoplarGraph(),
-      getInTensor(ConvOp::getDataInIndex()).getPoplarTensor(),
-      weights[0],
-      getPoplarConvParams(op.getParameters()),
-      false,
-      prog,
-      debugContext("convolution"),
-      getConvOptions(0),
-      &(dv_p->convCache));
+                  const std::vector<snap::Tensor> &weights) const {
+  ConvOp &op = getOp<ConvOp>();
+  auto outTensor =
+      snap::Tensor{poplin::convolution(
+                       graph().getPoplarGraph(),
+                       getInTensor(ConvOp::getDataInIndex()).getPoplarTensor(),
+                       weights[0].getPoplarTensor(),
+                       getPoplarConvParams(op.getParameters()),
+                       false,
+                       prog,
+                       debugContext("convolution"),
+                       getConvOptions(0),
+                       &(dv_p->convCache)),
+                   graph()};
   return {outTensor};
 }
 
@@ -56,24 +60,23 @@ ConvWeightsGradOpx::ConvWeightsGradOpx(Op *op, Devicex *devicex)
   verifyOp<ConvWeightsGradOp>(op, Onnx::GradOperators::ConvWeightsGrad);
 }
 
-std::vector<poplar::Tensor> ConvWeightsGradOpx::calculateWeightDeltas(
+std::vector<snap::Tensor> ConvWeightsGradOpx::calculateWeightDeltas(
     poplar::program::Sequence &prog) const {
   ConvWeightsGradOp &gradOp = getOp<ConvWeightsGradOp>();
 
-  const poplar::Tensor &zDelta =
-      getInTensor(gradOp.getGradConvolvedInIndex()).getPoplarTensor();
-  const poplar::Tensor &acts =
-      getInTensor(gradOp.getPreConvolvedInIndex()).getPoplarTensor();
+  const snap::Tensor &zDelta = getInTensor(gradOp.getGradConvolvedInIndex());
+  const snap::Tensor &acts   = getInTensor(gradOp.getPreConvolvedInIndex());
 
-  poplar::Tensor wGrad =
+  snap::Tensor wGrad = snap::Tensor{
       poplin::calculateWeightDeltas(graph().getPoplarGraph(),
-                                    zDelta,
-                                    acts,
+                                    zDelta.getPoplarTensor(),
+                                    acts.getPoplarTensor(),
                                     getPoplarConvParams(gradOp.getParameters()),
                                     prog,
                                     debugContext("weightDeltas"),
                                     getConvOptions(),
-                                    &dv_p->convCache);
+                                    &dv_p->convCache),
+      graph()};
   return {wGrad};
 }
 
@@ -87,8 +90,7 @@ void ConvFlipWeightsGradOpx::grow(poplar::program::Sequence &seq) const {
   auto &op    = getOp<ConvFlipWeightsOp>();
   auto params = op.getParameters();
 
-  poplar::Tensor weights =
-      getInTensor(ConvFlipWeightsOp::getInIndex()).getPoplarTensor();
+  snap::Tensor weights = getInTensor(ConvFlipWeightsOp::getInIndex());
   // swap In Out channels
   auto weights5D = reshapeOnnxWeightsForPoplar(weights,
                                                params.numInChannelsPerGroup,
@@ -113,7 +115,7 @@ void ConvFlipWeightsGradOpx::grow(poplar::program::Sequence &seq) const {
   for (int i = 0; i < params.numGroups; i++) {
     // dim 0 of weights5D and convWeights are the groups.
     // slice off group i from weights5D and convWeights.
-    auto w = weights5D.slice(i, i + 1, 0);
+    auto w = weights5D.getPoplarTensor().slice(i, i + 1, 0);
     auto c = convWeights.slice(i, i + 1, 0);
 
     // call weightsTransposeChansFlipXY on group i of weights5D and convWeights.
@@ -131,7 +133,7 @@ void ConvFlipWeightsGradOpx::grow(poplar::program::Sequence &seq) const {
   convWeights   = convWeights.reshape(newShape);
 
   // Taken the 1 off the front convWeights if it was added.
-  if (weights.rank() != weights5D.rank()) {
+  if (weights.getPoplarTensor().rank() != weights5D.getPoplarTensor().rank()) {
     convWeights = convWeights.squeeze({0});
   }
 

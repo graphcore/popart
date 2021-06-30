@@ -206,8 +206,7 @@ CollectivesBaseOpx::getCollectiveBalancedReorder() const {
 }
 
 gcl::CollectiveBalancedReorder *
-CollectivesBaseOpx::createCollectiveBalancedReorder(
-    poplar::Tensor tensor) const {
+CollectivesBaseOpx::createCollectiveBalancedReorder(snap::Tensor tensor) const {
   auto replicationFactor = dv_p->lowering().getReplicationFactor();
   auto group             = getCollectiveLinkedGroup();
   auto cbr =
@@ -215,7 +214,7 @@ CollectivesBaseOpx::createCollectiveBalancedReorder(
   if (!cbr.get()) {
     cbr = std::make_shared<gcl::CollectiveBalancedReorder>(
         graph().getPoplarGraph(),
-        tensor,
+        tensor.getPoplarTensor(),
         replicationFactor,
         getDebugNameAndId());
     for (auto tensor_id : group.first) {

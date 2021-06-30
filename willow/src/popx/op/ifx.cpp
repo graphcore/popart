@@ -56,7 +56,7 @@ void IfOpx::callBranch(poplar::program::Sequence &prog,
 
 void IfOpx::copyOutputs(poplar::program::Sequence &thenProg,
                         poplar::program::Sequence &elseProg,
-                        const std::vector<poplar::Tensor> &outputs) const {
+                        const std::vector<snap::Tensor> &outputs) const {
   auto &ifop      = getOp<IfOp>();
   auto &thenGraph = ifop.getThenGraph();
   auto &elseGraph = ifop.getElseGraph();
@@ -71,15 +71,17 @@ void IfOpx::copyOutputs(poplar::program::Sequence &thenProg,
     auto opOutput     = outputs.at(opIndex);
     auto branchOutput = get(branchId).getPoplarTensor();
     poplar::program::Copy copyProg(
-        branchOutput, opOutput, false, debugContext());
+        branchOutput, opOutput.getPoplarTensor(), false, debugContext());
     prog.add(copyProg);
   };
 
   auto zeroOutput = [&](poplar::program::Sequence &prog, OutIndex opIndex) {
     auto opId     = outId(opIndex);
     auto opOutput = outputs.at(opIndex);
-    popops::zero(
-        graph().getPoplarGraph(), opOutput, prog, debugContext("zero"));
+    popops::zero(graph().getPoplarGraph(),
+                 opOutput.getPoplarTensor(),
+                 prog,
+                 debugContext("zero"));
   };
 
   auto copyOrZeroBranchOutput =
@@ -99,14 +101,15 @@ void IfOpx::copyOutputs(poplar::program::Sequence &thenProg,
   }
 }
 
-std::vector<poplar::Tensor> IfOpx::prepareOutputs() const {
-  std::vector<poplar::Tensor> outputs;
+std::vector<snap::Tensor> IfOpx::prepareOutputs() const {
+  std::vector<snap::Tensor> outputs;
   auto &ifop = getOp<IfOp>();
 
   auto cloneOutput = [&](const Graph &branch, OutIndex branchIndex) {
     auto branchId     = branch.getOutputId(branchIndex);
     auto branchOutput = get(branchId).getPoplarTensor();
-    outputs.push_back(graph().getPoplarGraph().clone(branchOutput));
+    outputs.push_back(
+        snap::Tensor{graph().getPoplarGraph().clone(branchOutput), graph()});
   };
 
   auto tryCloneOutputFromBranch = [&](const Graph &graph, int outIndex) {
@@ -161,7 +164,7 @@ void IfOpx::grow(poplar::program::Sequence &prog) const {
       condition, then_prog, else_prog, debugContext("condition")));
 
   for (int i = 0; i < outputs.size(); i++) {
-    setOutTensor(i, snap::Tensor{outputs.at(i), graph()});
+    setOutTensor(i, outputs.at(i));
   }
 }
 

@@ -22,8 +22,7 @@ void HostLoadOpx::grow(poplar::program::Sequence &prog) const {
 
   TensorId inTensorId =
       hostLoadOp.input->tensor(HostLoadOp::getLocalTensorInIndex())->id;
-  poplar::Tensor inTensor =
-      getInTensor(HostLoadOp::getLocalTensorInIndex()).getPoplarTensor();
+  snap::Tensor inTensor = getInTensor(HostLoadOp::getLocalTensorInIndex());
 
   logging::opx::debug(
       "[HostLoadOpx] Growing HostLoad for tensor {} -> {}, "
@@ -46,7 +45,7 @@ void HostLoadOpx::grow(poplar::program::Sequence &prog) const {
   }
 
   setOutTensor(HostLoadOp::getLocalTensorOutIndex(),
-               snap::Tensor{descriptorx->getOutTensors().at(0), graph()});
+               descriptorx->getOutTensors().at(0));
 }
 
 InputCreatorType HostLoadOpx::getInputCreatorType(InIndex index) const {
@@ -74,8 +73,7 @@ void HostStoreOpx::grow(poplar::program::Sequence &prog) const {
 
   TensorId inTensorId =
       hostStoreOp.input->tensor(HostStoreOp::getLocalTensorInIndex())->id;
-  poplar::Tensor inTensor =
-      getInTensor(HostStoreOp::getLocalTensorInIndex()).getPoplarTensor();
+  snap::Tensor inTensor = getInTensor(HostStoreOp::getLocalTensorInIndex());
 
   logging::opx::debug(
       "[HostStoreOpx] Growing HostStore for tensor {} using Stream {}",

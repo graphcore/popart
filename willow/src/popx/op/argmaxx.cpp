@@ -10,10 +10,13 @@
 namespace popart {
 namespace popx {
 
-poplar::Tensor ArgMaxOpx::extremaOp(poplar::program::Sequence &prog,
-                                    const poplar::Tensor &input) const {
-  return popnn::argMax(
-      graph().getPoplarGraph(), input, prog, debugContext("argmax"));
+snap::Tensor ArgMaxOpx::extremaOp(poplar::program::Sequence &prog,
+                                  const snap::Tensor &input) const {
+  return snap::Tensor{popnn::argMax(graph().getPoplarGraph(),
+                                    input.getPoplarTensor(),
+                                    prog,
+                                    debugContext("argmax")),
+                      graph()};
 }
 
 namespace {

@@ -32,7 +32,7 @@ protected:
     auto batchSize    = static_cast<unsigned>(lstm_op.getBatchSize());
     auto hiddenSize   = static_cast<unsigned>(lstm_op.getHiddenSize());
 
-    if (seq_lens_t.getPoplarTensor().valid()) {
+    if (seq_lens_t.valid()) {
 
       auto params =
           popnn::lstm::LstmParams(popType(inInfo),
@@ -122,7 +122,7 @@ protected:
                               .reinterpret(poplar::UNSIGNED_INT),
                           graph()};
     } else {
-      return snap::Tensor{poplar::Tensor(), graph()};
+      return snap::Tensor{};
     }
   }
 

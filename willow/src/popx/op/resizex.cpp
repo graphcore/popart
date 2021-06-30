@@ -280,7 +280,7 @@ void ResizeGradOpx::grow(poplar::program::Sequence &prog) const {
   auto inShape  = op.inShape(ResizeGradOp::getInIndex());
   auto outShape = op.outShape(ResizeGradOp::getOutIndex());
 
-  auto result = cloneNcopy(prog, input).getPoplarTensor();
+  auto result = cloneNcopy(prog, input);
   for (int dimension = 0; dimension < inShape.size(); dimension++) {
     auto inDim  = inShape.at(dimension);
     auto outDim = outShape.at(dimension);
@@ -296,14 +296,14 @@ void ResizeGradOpx::grow(poplar::program::Sequence &prog) const {
     }
   }
 
-  setOutTensor(ResizeGradOp::getOutIndex(), snap::Tensor{result, graph()});
+  setOutTensor(ResizeGradOp::getOutIndex(), result);
 }
 
-poplar::Tensor ResizeGradOpx::reduceDimension(poplar::program::Sequence &prog,
-                                              const poplar::Tensor &input,
-                                              int dimension,
-                                              float scale) const {
-  auto slices = split(input, dimension);
+snap::Tensor ResizeGradOpx::reduceDimension(poplar::program::Sequence &prog,
+                                            const snap::Tensor &input,
+                                            int dimension,
+                                            float scale) const {
+  auto slices = split(input.getPoplarTensor(), dimension);
 
   std::map<int, poplar::Tensor> resultMap;
   for (int i = 0; i < slices.size(); i++) {
@@ -323,17 +323,17 @@ poplar::Tensor ResizeGradOpx::reduceDimension(poplar::program::Sequence &prog,
   for (int i = 0; i < resultMap.size(); i++) {
     toConcat.push_back(resultMap.at(i));
   }
-  return poplar::concat(toConcat, dimension);
+  return snap::Tensor{poplar::concat(toConcat, dimension), graph()};
 }
 
-poplar::Tensor ResizeGradOpx::padDimension(poplar::program::Sequence &prog,
-                                           const poplar::Tensor &input,
-                                           int dimension,
-                                           int64_t newSize,
-                                           float scale) const {
-  auto slices        = split(input, dimension);
+snap::Tensor ResizeGradOpx::padDimension(poplar::program::Sequence &prog,
+                                         const snap::Tensor &input,
+                                         int dimension,
+                                         int64_t newSize,
+                                         float scale) const {
+  auto slices        = split(input.getPoplarTensor(), dimension);
   auto paddingTensor = graph().getPoplarGraph().addVariable(
-      input.elementType(), slices.at(0).shape());
+      input.getPoplarTensor().elementType(), slices.at(0).shape());
   popops::zero(graph().getPoplarGraph(),
                paddingTensor,
                prog,
@@ -345,7 +345,7 @@ poplar::Tensor ResizeGradOpx::padDimension(poplar::program::Sequence &prog,
     toConcat.at(idx) = slices.at(i);
   }
 
-  return poplar::concat(toConcat, dimension);
+  return snap::Tensor{poplar::concat(toConcat, dimension), graph()};
 }
 
 namespace {

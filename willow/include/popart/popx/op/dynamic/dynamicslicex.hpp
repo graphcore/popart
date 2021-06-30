@@ -19,9 +19,6 @@ public:
   createInputTensor(InIndex index,
                     const poplar::DebugNameAndId &dnai) const final;
   std::set<TensorId> mustExistBeforeCreate(InIndex) const final { return {}; }
-
-protected:
-  poplar::Tensor getTiledTensor(poplar::Tensor tensor) const;
 };
 
 } // namespace popx

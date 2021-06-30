@@ -15,7 +15,7 @@ public:
   GatherOpx(Op *, Devicex *);
   void grow(poplar::program::Sequence &) const final;
 
-  // create the input poplar::Tensor for input at index
+  // create the input snap::Tensor for input at index
   // default : throw error (not all Opxs can createInput)
   snap::Tensor
   createInputTensor(InIndex index,
@@ -24,8 +24,8 @@ public:
   // cannot use downstream opxs as candidates to create input
   // tensor
   InputCreatorType getInputCreatorType(int index0) const override;
-  // To create a poplar::Tensor for input index index0, which
-  // poplar::Tensors must already exist?
+  // To create a snap::Tensor for input index index0, which
+  // snap::Tensors must already exist?
   std::set<TensorId> mustExistBeforeCreate(int index0) const override;
 
 private:

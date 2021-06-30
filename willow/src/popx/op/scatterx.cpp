@@ -16,6 +16,21 @@
 namespace popart {
 namespace popx {
 
+namespace {
+
+snap::Tensor
+concat(const std::vector<snap::Tensor> &ts, unsigned d, snap::Graph &graph) {
+  std::vector<poplar::Tensor> tsP;
+  tsP.reserve(ts.size());
+  for (auto t : ts) {
+    tsP.push_back(t.getPoplarTensor());
+  }
+
+  return snap::Tensor{poplar::concat(tsP, d), graph};
+}
+
+} // unnamed namespace
+
 ScatterOpx::ScatterOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
   verifyOp<ScatterOp>(
       op, {Onnx::Operators::Scatter_9, Onnx::Operators::Scatter_11});
@@ -24,16 +39,11 @@ ScatterOpx::ScatterOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
 }
 
 void ScatterOpx::grow(poplar::program::Sequence &prog) const {
-  auto indices = getInTensor(ScatterOp::indicesInIndex()).getPoplarTensor();
+  auto indices = getInTensor(ScatterOp::indicesInIndex());
   auto data    = cloneNcopy(prog, getInTensor(ScatterOp::dataInIndex()));
-  auto values  = getInTensor(ScatterOp::updatesInIndex()).getPoplarTensor();
-  scatterutilx::growScatter(prog,
-                            graph(),
-                            indices,
-                            values,
-                            data.getPoplarTensor(),
-                            axis,
-                            getDebugNameAndId("scatter"));
+  auto values  = getInTensor(ScatterOp::updatesInIndex());
+  scatterutilx::growScatter(
+      prog, graph(), indices, values, data, axis, getDebugNameAndId("scatter"));
   setOutTensor(ScatterOp::outIndex(), data);
 }
 
@@ -45,24 +55,28 @@ ScatterDataGradOpx::ScatterDataGradOpx(Op *op, Devicex *devicex)
 }
 
 void ScatterDataGradOpx::grow(poplar::program::Sequence &prog) const {
-  auto data = cloneNcopy(prog, getInTensor(ScatterDataGradOp::gradInIndex()))
-                  .getPoplarTensor();
-  auto indices =
-      getInTensor(ScatterDataGradOp::indicesInIndex()).getPoplarTensor();
-  auto update = graph().getPoplarGraph().addConstant(
-      data.elementType(), indices.shape(), 0, debugContext("zeros"));
-  poputil::mapTensorLinearly(graph().getPoplarGraph(), update);
+  auto data = cloneNcopy(prog, getInTensor(ScatterDataGradOp::gradInIndex()));
+  auto indices = getInTensor(ScatterDataGradOp::indicesInIndex());
+  auto update  = snap::Tensor{
+      graph().getPoplarGraph().addConstant(data.getPoplarTensor().elementType(),
+                                           indices.getPoplarTensor().shape(),
+                                           0,
+                                           debugContext("zeros")),
+      graph()};
+  poputil::mapTensorLinearly(graph().getPoplarGraph(),
+                             update.getPoplarTensor());
 
   // Build the implicit index coordinates
   //
   // popops::scatter requires the indices to be complete coordinates into the
   // data tensor, but ONNX scatter only provides an axis and a scalar index.
-  std::vector<poplar::Tensor> indices_mapped(indices.rank());
-  for (int i = 0; i < indices.rank(); ++i) {
-    auto t = scatterutilx::linspace(graph(),
-                                    0,
-                                    static_cast<int>(indices.dim(i)),
-                                    getDebugNameAndId("linspace"));
+  std::vector<snap::Tensor> indices_mapped(indices.getPoplarTensor().rank());
+  for (int i = 0; i < indices_mapped.size(); ++i) {
+    auto t = scatterutilx::linspace(
+        graph(),
+        0,
+        static_cast<int>(indices.getPoplarTensor().dim(i)),
+        getDebugNameAndId("linspace"));
 
     // Match the rank of indices
     t = scatterutilx::matchRank(indices, t, i);
@@ -76,34 +90,36 @@ void ScatterDataGradOpx::grow(poplar::program::Sequence &prog) const {
 
   // Add a degenerate dimension for concatenation
   for (auto &index : indices_mapped) {
-    index = index.expand({index.rank()});
+    index = snap::Tensor{
+        index.getPoplarTensor().expand({index.getPoplarTensor().rank()}),
+        graph()};
   }
 
-  std::vector<unsigned> update_window_dims(indices.rank());
+  std::vector<unsigned> update_window_dims(indices_mapped.size());
   std::iota(update_window_dims.begin(), update_window_dims.end(), 0);
 
-  std::vector<std::size_t> inserted_window_dims(indices.rank());
+  std::vector<std::size_t> inserted_window_dims(indices_mapped.size());
   std::iota(inserted_window_dims.begin(), inserted_window_dims.end(), 0);
 
-  std::vector<unsigned> scatter_dims_to_op(indices.rank());
+  std::vector<unsigned> scatter_dims_to_op(indices_mapped.size());
   std::iota(scatter_dims_to_op.begin(), scatter_dims_to_op.end(), 0);
 
   // Concat the indices on the degenerate dimension
-  indices = poplar::concat(indices_mapped, indices.rank());
+  indices = concat(indices_mapped, indices_mapped.size(), graph());
 
   // Scatter the zeros into data
   popops::scatter(graph().getPoplarGraph(),
-                  data,
-                  indices,
-                  update,
-                  indices.rank() - 1,
+                  data.getPoplarTensor(),
+                  indices.getPoplarTensor(),
+                  update.getPoplarTensor(),
+                  indices.getPoplarTensor().rank() - 1,
                   update_window_dims,
                   inserted_window_dims,
                   scatter_dims_to_op,
                   prog,
                   debugContext("scatter"));
 
-  setOutTensor(ScatterDataGradOp::gradOutIndex(), snap::Tensor{data, graph()});
+  setOutTensor(ScatterDataGradOp::gradOutIndex(), data);
 }
 
 ScatterUpdateGradOpx::ScatterUpdateGradOpx(Op *op, Devicex *devicex)
@@ -114,10 +130,8 @@ ScatterUpdateGradOpx::ScatterUpdateGradOpx(Op *op, Devicex *devicex)
 }
 
 void ScatterUpdateGradOpx::grow(poplar::program::Sequence &prog) const {
-  auto gradIn =
-      getInTensor(ScatterUpdateGradOp::gradInIndex()).getPoplarTensor();
-  auto indices =
-      getInTensor(ScatterDataGradOp::indicesInIndex()).getPoplarTensor();
+  auto gradIn  = getInTensor(ScatterUpdateGradOp::gradInIndex());
+  auto indices = getInTensor(ScatterDataGradOp::indicesInIndex());
 
   auto gradOut = scatterutilx::growScatterUpdateGrad(
       prog,
@@ -127,8 +141,7 @@ void ScatterUpdateGradOpx::grow(poplar::program::Sequence &prog) const {
       axis,
       getDebugNameAndId("scatter_update_grad"));
 
-  setOutTensor(ScatterUpdateGradOp::gradOutIndex(),
-               snap::Tensor{gradOut, graph()});
+  setOutTensor(ScatterUpdateGradOp::gradOutIndex(), gradOut);
 }
 
 namespace {

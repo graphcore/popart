@@ -2,7 +2,7 @@
 #ifndef GUARD_NEURALNET_REDUCEMEDIANX_HPP
 #define GUARD_NEURALNET_REDUCEMEDIANX_HPP
 
-#include <poplar/Tensor.hpp>
+#include <snap/Tensor.hpp>
 #include <popart/op/reducemedian.hpp>
 #include <popart/popx/popopx.hpp>
 

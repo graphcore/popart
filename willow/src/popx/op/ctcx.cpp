@@ -54,32 +54,28 @@ void CtcOpx::grow(poplar::program::Sequence &prog) const {
     auto outDtype =
         popType(ctcLossPopartTensor->info.getDataTypeInfo()->type());
 
-    const auto &logProbs =
-        getInTensor(CtcOp::getLogProbsInIndex()).getPoplarTensor();
-    const auto &targets =
-        getInTensor(CtcOp::getTargetsInIndex()).getPoplarTensor();
-    const auto &inputLengths =
-        getInTensor(CtcOp::getInputLengthsInIndex()).getPoplarTensor();
-    const auto &targetLengths =
-        getInTensor(CtcOp::getTargetLengthsInIndex()).getPoplarTensor();
+    const auto &logProbs      = getInTensor(CtcOp::getLogProbsInIndex());
+    const auto &targets       = getInTensor(CtcOp::getTargetsInIndex());
+    const auto &inputLengths  = getInTensor(CtcOp::getInputLengthsInIndex());
+    const auto &targetLengths = getInTensor(CtcOp::getTargetLengthsInIndex());
 
     auto result = popnn::ctc::calcLossAndGradientLogProbabilities(
         graph().getPoplarGraph(),
         outDtype,
-        logProbs,
-        targets,
-        inputLengths,
-        targetLengths,
+        logProbs.getPoplarTensor(),
+        targets.getPoplarTensor(),
+        inputLengths.getPoplarTensor(),
+        targetLengths.getPoplarTensor(),
         prog,
         op.getBlank(),
         *plan,
         debugContext("lossAndGrad"));
 
-    auto &ctcLoss = result.first;
+    snap::Tensor ctcLoss = snap::Tensor{result.first, graph()};
 
     ctcLoss = applyReduction(prog, ctcLoss, targetLengths);
 
-    setOutTensor(CtcOp::getCtcLossOutIndex(), snap::Tensor{ctcLoss, graph()});
+    setOutTensor(CtcOp::getCtcLossOutIndex(), ctcLoss);
     setOutTensor(CtcOp::getLogProbsGradientWrtCtcLossOutIndex(),
                  snap::Tensor{result.second, graph()});
   }
@@ -146,9 +142,9 @@ std::set<TensorId> CtcOpx::mustExistBeforeCreate(InIndex index) const {
   }
 }
 
-poplar::Tensor CtcOpx::applyReduction(poplar::program::Sequence &prog,
-                                      poplar::Tensor ctcLoss,
-                                      poplar::Tensor targetLengths) const {
+snap::Tensor CtcOpx::applyReduction(poplar::program::Sequence &prog,
+                                    snap::Tensor ctcLoss,
+                                    snap::Tensor targetLengths) const {
 
   const auto &op = getOp<CtcOp>();
 
@@ -158,7 +154,7 @@ poplar::Tensor CtcOpx::applyReduction(poplar::program::Sequence &prog,
 
   } else {
     // Reduction is required.
-    auto inTensor1D = ctcLoss.flatten();
+    auto inTensor1D = ctcLoss.getPoplarTensor().flatten();
 
     double scale = 0.;
     switch (op.getReductionType()) {
@@ -169,17 +165,21 @@ poplar::Tensor CtcOpx::applyReduction(poplar::program::Sequence &prog,
     }
     case ReductionType::Mean: {
       // Divide by target max(length, 1).
-      ctcLoss = popops::map(graph().getPoplarGraph(),
-                            pe::Divide(pe::_1,
-                                       pe::Cast(pe::Max(pe::_2, pe::Const(1)),
-                                                ctcLoss.elementType())),
-                            {ctcLoss, targetLengths},
-                            prog,
-                            debugContext("divByTargetLen"));
+      ctcLoss = snap::Tensor{
+          popops::map(
+              graph().getPoplarGraph(),
+              pe::Divide(pe::_1,
+                         pe::Cast(pe::Max(pe::_2, pe::Const(1)),
+                                  ctcLoss.getPoplarTensor().elementType())),
+              {ctcLoss.getPoplarTensor(), targetLengths.getPoplarTensor()},
+              prog,
+              debugContext("divByTargetLen")),
+          graph()};
 
       // Take the average.
-      double totalSamples = static_cast<double>(ctcLoss.dim(0));
-      scale               = 1.0 / totalSamples;
+      double totalSamples =
+          static_cast<double>(ctcLoss.getPoplarTensor().dim(0));
+      scale = 1.0 / totalSamples;
       break;
     }
     case ReductionType::NoReduction:
@@ -190,16 +190,18 @@ poplar::Tensor CtcOpx::applyReduction(poplar::program::Sequence &prog,
     }
 
     // Always expected to be FLOAT, regardless of the input type.
-    auto t_scale =
-        getConst(poplar::FLOAT, {}, scale, "scale").getPoplarTensor();
+    auto t_scale = getConst(poplar::FLOAT, {}, scale, "scale");
 
     // Do the reduction.
-    ctcLoss = popops::reduce(graph().getPoplarGraph(),
-                             ctcLoss,
-                             {0},
-                             {popops::Operation::ADD, false, t_scale},
-                             prog,
-                             debugContext("reduce"));
+    ctcLoss = snap::Tensor{
+        popops::reduce(
+            graph().getPoplarGraph(),
+            ctcLoss.getPoplarTensor(),
+            {0},
+            {popops::Operation::ADD, false, t_scale.getPoplarTensor()},
+            prog,
+            debugContext("reduce")),
+        graph()};
   }
 
   return ctcLoss;
@@ -221,21 +223,20 @@ void CtcGradOpx::grow(poplar::program::Sequence &prog) const {
   const unsigned C     = outShape[2];
 
   // Should be shape [N].
-  const poplar::Tensor &targetLengths =
-      getInTensor(CtcGradOp::getTargetLengthsInIndex()).getPoplarTensor();
+  const snap::Tensor &targetLengths =
+      getInTensor(CtcGradOp::getTargetLengthsInIndex());
 
   // Should be shape [T, N, C].
-  const poplar::Tensor &logProbsGradientWrtCtcLoss =
-      getInTensor(CtcGradOp::getLogProbsGradientWrtCtcLossInIndex())
-          .getPoplarTensor();
+  const snap::Tensor &logProbsGradientWrtCtcLoss =
+      getInTensor(CtcGradOp::getLogProbsGradientWrtCtcLossInIndex());
 
   // Shape [] if reduction else shape [N].
-  const poplar::Tensor &ctcLossGrad =
-      getInTensor(CtcGradOp::getCtcLossGradientInIndex()).getPoplarTensor();
+  const snap::Tensor &ctcLossGrad =
+      getInTensor(CtcGradOp::getCtcLossGradientInIndex());
 
   // Apply chain rule for reduction. The result gradient tensor is shape [N].
   auto adjustedCtcLossGrad =
-      applyReductionGrad(prog, ctcLossGrad, targetLengths);
+      applyReductionGrad(prog, ctcLossGrad, targetLengths).getPoplarTensor();
 
   // Expand and broadcast the gradient tensor to [T,N,C].
   adjustedCtcLossGrad =
@@ -250,21 +251,21 @@ void CtcGradOpx::grow(poplar::program::Sequence &prog) const {
                                   : pe::Mul(pe::Cast(pe::_1, outType),
                                             pe::Cast(pe::_2, outType));
 
-  auto logProbsGradient =
-      popops::map(graph().getPoplarGraph(),
-                  expr,
-                  {logProbsGradientWrtCtcLoss, adjustedCtcLossGrad},
-                  prog,
-                  debugContext("chainRule"));
+  auto logProbsGradient = popops::map(
+      graph().getPoplarGraph(),
+      expr,
+      {logProbsGradientWrtCtcLoss.getPoplarTensor(), adjustedCtcLossGrad},
+      prog,
+      debugContext("chainRule"));
 
   setOutTensor(CtcGradOp::getLogProbsGradientOutIndex(),
                snap::Tensor{logProbsGradient, graph()});
 }
 
-poplar::Tensor
+snap::Tensor
 CtcGradOpx::applyReductionGrad(poplar::program::Sequence &prog,
-                               const poplar::Tensor &ctcLossGrad,
-                               const poplar::Tensor &targetLengths) const {
+                               const snap::Tensor &ctcLossGrad,
+                               const snap::Tensor &targetLengths) const {
 
   // In the forward pass we the loss output of the CTC loss function outputs
   // loss tensor of size [N]. Depending on reduction settings, we applied either
@@ -299,7 +300,7 @@ CtcGradOpx::applyReductionGrad(poplar::program::Sequence &prog,
     auto newCtcLossGrad =
         popops::map(graph().getPoplarGraph(),
                     pe::Mul(pe::_1, pe::Const(1.0f / totalSamples)),
-                    {ctcLossGrad},
+                    {ctcLossGrad.getPoplarTensor()},
                     prog,
                     debugContext("divBySamples"));
 
@@ -312,10 +313,10 @@ CtcGradOpx::applyReductionGrad(poplar::program::Sequence &prog,
                     pe::Divide(pe::_1,
                                pe::Cast(pe::Max(pe::_2, pe::Const(1)),
                                         newCtcLossGrad.elementType())),
-                    {newCtcLossGrad, targetLengths},
+                    {newCtcLossGrad, targetLengths.getPoplarTensor()},
                     prog,
                     debugContext("divByTargetLen"));
-    return newCtcLossGrad;
+    return snap::Tensor{newCtcLossGrad, graph()};
 
   } else if (op.getReductionType() == ReductionType::Sum) {
 
@@ -324,7 +325,8 @@ CtcGradOpx::applyReductionGrad(poplar::program::Sequence &prog,
     // to the incoming gradient has no effect. We just need to broadcast the
     // scalar into a tensor of shape [N] to get the result we need.
 
-    return ctcLossGrad.expand({0}).broadcast(N, 0);
+    return snap::Tensor{
+        ctcLossGrad.getPoplarTensor().expand({0}).broadcast(N, 0), graph()};
 
   } else {
 

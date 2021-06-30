@@ -16,13 +16,13 @@ class MultiConvOpx : public MultiConvBaseOpx {
 public:
   MultiConvOpx(Op *, Devicex *);
 
-  poplar::Tensor createWeightsInput(const poplar::DebugNameAndId &dnai,
-                                    int convIndex) const final;
-  poplar::Tensor createDataInput(const poplar::DebugNameAndId &dnai,
-                                 int convIndex) const final;
-  std::vector<poplar::Tensor>
+  snap::Tensor createWeightsInput(const poplar::DebugNameAndId &dnai,
+                                  int convIndex) const final;
+  snap::Tensor createDataInput(const poplar::DebugNameAndId &dnai,
+                               int convIndex) const final;
+  std::vector<snap::Tensor>
   convolve(poplar::program::Sequence &,
-           const std::vector<poplar::Tensor> &) const final;
+           const std::vector<snap::Tensor> &) const final;
 
 private:
   std::vector<poplin::multiconv::CreateTensorArgs>
@@ -33,7 +33,7 @@ private:
 class MultiConvWeightsGradOpx : public MultiConvWeightsGradBaseOpx {
 public:
   MultiConvWeightsGradOpx(Op *, Devicex *);
-  std::vector<poplar::Tensor>
+  std::vector<snap::Tensor>
   calculateWeightDeltas(poplar::program::Sequence &) const final;
 
 private:

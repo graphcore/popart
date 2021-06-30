@@ -20,21 +20,22 @@ ScaledVarUpdateOpx::ScaledVarUpdateOpx(Op *op, Devicex *devicex)
   verifyOp<ScaledVarUpdateOp>(op, Onnx::CustomOperators::ScaledVarUpdate);
 }
 
-poplar::Tensor ScaledVarUpdateOpx::getOrCreateLrTensor() const {
+snap::Tensor ScaledVarUpdateOpx::getOrCreateLrTensor() const {
   auto adaptiveVarUpdateOp = getOp<ScaledVarUpdateOp>();
 
   if (hasInput(ScaledVarUpdateOp::getLrInIndex())) {
-    return getInTensor(ScaledVarUpdateOp::getLrInIndex()).getPoplarTensor();
+    return getInTensor(ScaledVarUpdateOp::getLrInIndex());
   } else if (hasInput(ScaledVarUpdateOp::getWdInIndex())) {
-    poplar::Tensor wd =
-        getInTensor(ScaledVarUpdateOp::getWdInIndex()).getPoplarTensor();
-    poplar::Tensor lr =
-        graph().getPoplarGraph().addConstant(wd.elementType(),
-                                             wd.shape(),
+    snap::Tensor wd = getInTensor(ScaledVarUpdateOp::getWdInIndex());
+    snap::Tensor lr = snap::Tensor{
+        graph().getPoplarGraph().addConstant(wd.getPoplarTensor().elementType(),
+                                             wd.getPoplarTensor().shape(),
                                              adaptiveVarUpdateOp.initLr.val(),
-                                             debugContext("Lr"));
+                                             debugContext("Lr")),
+        graph()};
     graph().getPoplarGraph().setTileMapping(
-        lr, graph().getPoplarGraph().getTileMapping(wd));
+        lr.getPoplarTensor(),
+        graph().getPoplarGraph().getTileMapping(wd.getPoplarTensor()));
     return lr;
   } else {
     throw internal_error(
@@ -42,21 +43,22 @@ poplar::Tensor ScaledVarUpdateOpx::getOrCreateLrTensor() const {
   }
 }
 
-poplar::Tensor ScaledVarUpdateOpx::getOrCreateWdTensor() const {
+snap::Tensor ScaledVarUpdateOpx::getOrCreateWdTensor() const {
   auto adaptiveVarUpdateOp = getOp<ScaledVarUpdateOp>();
 
   if (hasInput(ScaledVarUpdateOp::getWdInIndex())) {
-    return getInTensor(ScaledVarUpdateOp::getWdInIndex()).getPoplarTensor();
+    return getInTensor(ScaledVarUpdateOp::getWdInIndex());
   } else if (hasInput(ScaledVarUpdateOp::getLrInIndex())) {
-    poplar::Tensor lr =
-        getInTensor(ScaledVarUpdateOp::getLrInIndex()).getPoplarTensor();
-    poplar::Tensor wd =
-        graph().getPoplarGraph().addConstant(lr.elementType(),
-                                             lr.shape(),
+    snap::Tensor lr = getInTensor(ScaledVarUpdateOp::getLrInIndex());
+    snap::Tensor wd = snap::Tensor{
+        graph().getPoplarGraph().addConstant(lr.getPoplarTensor().elementType(),
+                                             lr.getPoplarTensor().shape(),
                                              adaptiveVarUpdateOp.initWd.val(),
-                                             debugContext());
+                                             debugContext()),
+        graph()};
     graph().getPoplarGraph().setTileMapping(
-        wd, graph().getPoplarGraph().getTileMapping(lr));
+        wd.getPoplarTensor(),
+        graph().getPoplarGraph().getTileMapping(lr.getPoplarTensor()));
     return wd;
   } else {
     throw internal_error(
@@ -70,11 +72,9 @@ void ScaledVarUpdateOpx::grow(poplar::program::Sequence &prog) const {
 
   auto adaptiveVarUpdateOp = getOp<ScaledVarUpdateOp>();
 
-  poplar::Tensor var =
-      getInTensor(VarUpdateOp::getVarToUpdateInIndex()).getPoplarTensor();
-  poplar::Tensor updater =
-      getInTensor(VarUpdateWithUpdaterOp::getUpdaterInIndex())
-          .getPoplarTensor();
+  snap::Tensor var = getInTensor(VarUpdateOp::getVarToUpdateInIndex());
+  snap::Tensor updater =
+      getInTensor(VarUpdateWithUpdaterOp::getUpdaterInIndex());
 
   if (adaptiveVarUpdateOp.lrInUpdater) {
     growWithLrInUpdater(prog, adaptiveVarUpdateOp, var, updater);
@@ -92,43 +92,42 @@ void ScaledVarUpdateOpx::grow(poplar::program::Sequence &prog) const {
                getInTensor(ScaledVarUpdateOp::getVarToUpdateInIndex()));
 }
 
-void ScaledVarUpdateOpx::growWithLrAsInput(
-    poplar::program::Sequence &prog,
-    const ScaledVarUpdateOp &op,
-    const poplar::Tensor &var,
-    const poplar::Tensor &updater) const {
+void ScaledVarUpdateOpx::growWithLrAsInput(poplar::program::Sequence &prog,
+                                           const ScaledVarUpdateOp &op,
+                                           const snap::Tensor &var,
+                                           const snap::Tensor &updater) const {
   if (op.initLr.isConst() && op.initWd.isConst()) {
     if (op.initWd.val() == 0.0f) {
       popops::scaledAddTo(graph().getPoplarGraph(),
-                          var,
-                          updater,
+                          var.getPoplarTensor(),
+                          updater.getPoplarTensor(),
                           -op.initLr.val(),
                           prog,
                           debugContext("_c_0"));
     } else {
       popops::scaledAddTo(graph().getPoplarGraph(),
-                          var,
+                          var.getPoplarTensor(),
                           1.0f - op.initLr.val() * op.initWd.val(),
-                          updater,
+                          updater.getPoplarTensor(),
                           -op.initLr.val(),
                           prog,
                           debugContext("_c_c"));
     }
   } else {
-    poplar::Tensor lrt = getOrCreateLrTensor();
+    poplar::Tensor lrt = getOrCreateLrTensor().getPoplarTensor();
 
     // (-lr)                    (negate lr)
     lrt = popops::map(graph().getPoplarGraph(), pe::Neg(pe::_1), {lrt}, prog);
 
     if (op.initWd.isConst() && op.initWd.val() == 0.0f) {
       popops::scaledAddTo(graph().getPoplarGraph(),
-                          var,
-                          updater,
+                          var.getPoplarTensor(),
+                          updater.getPoplarTensor(),
                           lrt,
                           prog,
                           debugContext("_t_0"));
     } else {
-      poplar::Tensor wdt = getOrCreateWdTensor();
+      poplar::Tensor wdt = getOrCreateWdTensor().getPoplarTensor();
 
       // 1.0 + (-lr) * wd       (lr already negated)
       wdt = popops::map(graph().getPoplarGraph(),
@@ -138,9 +137,9 @@ void ScaledVarUpdateOpx::growWithLrAsInput(
 
       // var = (1.0 + (-lr) * wd) * var + (-lr) * updater
       popops::scaledAddTo(graph().getPoplarGraph(),
-                          var,
+                          var.getPoplarTensor(),
                           wdt,
-                          updater,
+                          updater.getPoplarTensor(),
                           lrt,
                           prog,
                           debugContext("_t_t"));
@@ -151,34 +150,34 @@ void ScaledVarUpdateOpx::growWithLrAsInput(
 void ScaledVarUpdateOpx::growWithLrInUpdater(
     poplar::program::Sequence &prog,
     const ScaledVarUpdateOp &op,
-    const poplar::Tensor &var,
-    const poplar::Tensor &updater) const {
+    const snap::Tensor &var,
+    const snap::Tensor &updater) const {
   if (op.initWd.isConst()) {
     if (op.initWd.val() == 0.0f) {
       // var = var - updater
       popops::mapInPlace(graph().getPoplarGraph(),
                          pe::Sub(pe::_1, pe::_2),
-                         {var, updater},
+                         {var.getPoplarTensor(), updater.getPoplarTensor()},
                          prog,
                          debugContext("__0"));
     } else {
       // var = var - (wd * var + updater)
       //     = var * (1.0 - wd) - updater
       popops::scaledAddTo(graph().getPoplarGraph(),
-                          var,
+                          var.getPoplarTensor(),
                           1.0f - op.initWd.val(),
-                          updater,
+                          updater.getPoplarTensor(),
                           -1.0f,
                           prog,
                           debugContext("__c"));
     }
   } else {
-    poplar::Tensor wdt = getOrCreateWdTensor();
+    poplar::Tensor wdt = getOrCreateWdTensor().getPoplarTensor();
     // var = var * (1.0 - wd) - updater
     popops::mapInPlace(
         graph().getPoplarGraph(),
         pe::Sub(pe::Mul(pe::_1, pe::Sub(pe::Const(1.0f), pe::_3)), pe::_2),
-        {var, updater, wdt},
+        {var.getPoplarTensor(), updater.getPoplarTensor(), wdt},
         prog,
         debugContext("__t"));
   }
