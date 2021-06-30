@@ -1,8 +1,10 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 #include "bindings/tensorinfo.hpp"
 
+#include <pybind11/operators.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
+#include <popart/names.hpp>
 #include <popart/tensorinfo.hpp>
 
 namespace py = pybind11;
@@ -46,8 +48,30 @@ void bindTensorInfo(py::module &m) {
       .def(py::init<std::string, const Shape &>(),
            py::arg("dataType"),
            py::arg("shape"))
+      .def("set",
+           py::overload_cast<DataType>(&TensorInfo::set),
+           py::arg("dataType"))
+      .def("set",
+           py::overload_cast<DataType, const Shape &>(&TensorInfo::set),
+           py::arg("dataType"),
+           py::arg("shape"))
+      .def("set",
+           py::overload_cast<DataType, const Shape &, const Shape &>(
+               &TensorInfo::set),
+           py::arg("dataType"),
+           py::arg("shape"),
+           py::arg("metaShape"))
+      .def("shape", &TensorInfo::shape)
+      .def("metaShape", &TensorInfo::metaShape)
+      .def("rank", &TensorInfo::rank)
+      .def("nelms", &TensorInfo::nelms)
+      .def("nbytes", &TensorInfo::nbytes)
+      .def("dim", &TensorInfo::dim, py::arg("i"))
+      .def("dataType", &TensorInfo::dataType)
+      .def("data_type", &TensorInfo::data_type)
       .def("data_type_lcase", &TensorInfo::data_type_lcase)
-      .def("shape", &TensorInfo::shape);
+      .def(py::self == py::self)
+      .def(py::self != py::self);
 }
 
 } // namespace ir
