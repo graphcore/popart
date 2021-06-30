@@ -2,6 +2,7 @@
 #include "bindings/graph.hpp"
 #include "bindings/graphid.hpp"
 #include "bindings/ir.hpp"
+#include "bindings/tensorinfo.hpp"
 
 #include <pybind11/pybind11.h>
 
@@ -21,6 +22,7 @@ PYBIND11_MODULE(popart_internal_ir, m) {
   bindGraph(m);
   bindGraphId(m);
   bindIr(m);
+  bindTensorInfo(m);
 }
 
 } // namespace ir

@@ -441,6 +441,9 @@ public:
 };
 
 PYBIND11_MODULE(popart_core, m) {
+  // Import the popart._internal.ir module to reuse some bindings.
+  py::module popart_internal_ir = py::module::import("popart._internal.ir");
+
   m.doc() = "binding for C++ popart library";
 
   m.attr("defaultAiOnnxOpset")      = defaultAiOnnxOpset;
@@ -556,24 +559,8 @@ PYBIND11_MODULE(popart_core, m) {
         &OpManager::getUnsupportedOperations,
         py::arg("opsetVersion"));
   {
-    py::enum_<DataType> en(m, "DataType");
-    en.value("UINT8", DataType::UINT8);
-    en.value("INT8", DataType::INT8);
-    en.value("UINT16", DataType::UINT16);
-    en.value("INT16", DataType::INT16);
-    en.value("INT32", DataType::INT32);
-    en.value("INT64", DataType::INT64);
-    en.value("UINT32", DataType::UINT32);
-    en.value("UINT64", DataType::UINT64);
-    en.value("BOOL", DataType::BOOL);
-    en.value("FLOAT", DataType::FLOAT);
-    en.value("FLOAT16", DataType::FLOAT16);
-    en.value("BFLOAT16", DataType::BFLOAT16);
-    en.value("DOUBLE", DataType::DOUBLE);
-    en.value("COMPLEX64", DataType::COMPLEX64);
-    en.value("COMPLEX128", DataType::COMPLEX128);
-    en.value("STRING", DataType::STRING);
-    en.value("UNDEFINED", DataType::UNDEFINED);
+    // Reuse DataType from the popart._internal.ir module.
+    m.attr("DataType") = popart_internal_ir.attr("DataType");
   }
   {
     py::enum_<InitType> en(m, "InitType", DOC(popart, InitType));
@@ -715,12 +702,8 @@ PYBIND11_MODULE(popart_core, m) {
     cls.def("exchangeStrategy", &InputSettings::exchangeStrategy);
   }
   {
-    py::class_<TensorInfo> cls(m, "_TensorInfoCore");
-    cls.def(py::init<std::string, const std::vector<int64_t> &>(),
-            py::arg("dataType"),
-            py::arg("shape"));
-    cls.def("data_type_lcase", &TensorInfo::data_type_lcase);
-    cls.def("shape", &TensorInfo::shape);
+    // Reuse TensorInfo from the popart._internal.ir module.
+    m.attr("_TensorInfoCore") = popart_internal_ir.attr("TensorInfo");
   }
   {
     py::class_<numerics::NumericsReport> cls(m, "NumericsReport");

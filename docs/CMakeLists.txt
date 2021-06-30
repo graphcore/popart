@@ -42,7 +42,7 @@ if (BUILD_DOCS)
 
   add_custom_command(
     OUTPUT ${SUPPORTED_OPS_GEN}
-    COMMAND python3 gen_supported_ops.py "${PROJECT_BINARY_DIR}/python/popart:${PROJECT_BINARY_DIR}/python/popart/popart_core" ${SUPPORTED_OPS_GEN}
+    COMMAND python3 gen_supported_ops.py "${PROJECT_BINARY_DIR}/python/popart:${PROJECT_BINARY_DIR}/python/popart/popart_core/:${PROJECT_BINARY_DIR}/python/popart._internal.ir/" ${SUPPORTED_OPS_GEN}
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     COMMENT "Creating supported ops"
     DEPENDS popart-py

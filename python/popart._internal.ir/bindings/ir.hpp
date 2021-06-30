@@ -1,3 +1,4 @@
+// Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 #ifndef POPART__INTERNAL_IR_BINDINGS_IR_HPP
 #define POPART__INTERNAL_IR_BINDINGS_IR_HPP
 
