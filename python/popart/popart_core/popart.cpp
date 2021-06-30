@@ -475,72 +475,18 @@ PYBIND11_MODULE(popart_core, m) {
   }
 
   {
-    py::class_<SourceLocation> cls(m, "SourceLocation");
-    cls.def(py::init<std::string, std::string, unsigned>(),
-            py::arg("functionName"),
-            py::arg("fileName"),
-            py::arg("lineNumber"));
+    // Reuse SourceLocation from the popart._internal.ir module.
+    m.attr("SourceLocation") = popart_internal_ir.attr("SourceLocation");
   }
 
   {
-    py::class_<popart::DebugContext> cls(m, "DebugContext");
-    cls.def(py::init<std::string, SourceLocation>(),
-            py::arg("name"),
-            py::arg("loc"));
-
-    cls.def(py::init([]() -> DebugContext {
-      // This binding does the magic of getting the callee
-      // file & line number.
-      auto inspect = pybind11::module::import("inspect");
-      py::list s   = inspect.attr("stack")();
-
-      auto callee         = s[0];
-      py::str funcName    = callee.attr("function");
-      py::str fileName    = callee.attr("filename");
-      py::int_ lineNumber = callee.attr("lineno");
-
-      return DebugContext(
-          popart::SourceLocation(funcName, fileName, lineNumber));
-    }));
-
-    cls.def(py::init([](const std::string &name) -> DebugContext {
-      auto inspect = pybind11::module::import("inspect");
-      py::list s   = inspect.attr("stack")();
-
-      auto callee         = s[0];
-      py::str funcName    = callee.attr("function");
-      py::str fileName    = callee.attr("filename");
-      py::int_ lineNumber = callee.attr("lineno");
-
-      return DebugContext(
-          name, popart::SourceLocation(funcName, fileName, lineNumber));
-    }));
-
-    cls.def(py::init(
-        [](const DebugInfo &di, const std::string &name) -> DebugContext {
-          auto inspect        = pybind11::module::import("inspect");
-          py::list s          = inspect.attr("stack")();
-          auto callee         = s[0];
-          py::str funcName    = callee.attr("function");
-          py::str fileName    = callee.attr("filename");
-          py::int_ lineNumber = callee.attr("lineno");
-
-          return DebugContext(
-              di, name, popart::SourceLocation(funcName, fileName, lineNumber));
-        }));
-
-    // Allow for string to be implicitly convert to a debug context.
-    py::implicitly_convertible<std::string, popart::DebugContext>();
+    // Reuse DebugContext from the popart._internal.ir module.
+    m.attr("DebugContext") = popart_internal_ir.attr("DebugContext");
   }
 
   {
-    py::class_<DebugInfo> cls(m, "DebugInfo");
-    cls.def(py::init<const DebugContext &, std::string>(),
-            py::arg("debugContext"),
-            py::arg("layer"));
-    cls.def("setValue", [](DebugInfo &di, std::string k, std::string v) {
-      di.setValue(k, v);
-    });
+    // Reuse DebugInfo from the popart._internal.ir module.
+    m.attr("DebugInfo") = popart_internal_ir.attr("DebugInfo");
   }
 
   {

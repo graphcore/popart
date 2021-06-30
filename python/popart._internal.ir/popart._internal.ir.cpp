@@ -1,7 +1,10 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
+#include "bindings/debugcontext.hpp"
 #include "bindings/graph.hpp"
 #include "bindings/graphid.hpp"
 #include "bindings/ir.hpp"
+#include "bindings/tensor.hpp"
+#include "bindings/tensordata.hpp"
 #include "bindings/tensorinfo.hpp"
 
 #include <pybind11/pybind11.h>
@@ -19,9 +22,12 @@ PYBIND11_MODULE(popart_internal_ir, m) {
             "between releases with no guarantee of backwards compatibility "
             "or deprecation periods.";
 
+  bindDebugContext(m);
   bindGraph(m);
   bindGraphId(m);
   bindIr(m);
+  bindTensor(m);
+  bindTensorData(m);
   bindTensorInfo(m);
 }
 

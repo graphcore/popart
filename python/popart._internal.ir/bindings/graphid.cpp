@@ -20,6 +20,8 @@ void bindGraphId(py::module &m) {
       .def(py::self == py::self)
       .def(py::self != py::self)
       .def("str", &GraphId::str, py::return_value_policy::reference);
+  // Allow for string to be implicitly converted to a GraphId.
+  py::implicitly_convertible<std::string, GraphId>();
 }
 
 } // namespace ir

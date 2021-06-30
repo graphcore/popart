@@ -1,11 +1,15 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 
 add_popart_python_module(popart_internal_ir
-    popart._internal.ir.cpp
+    ../popart/shared_cpp/np_utils.cpp
+    bindings/debugcontext.cpp
     bindings/graph.cpp
     bindings/graphid.cpp
     bindings/ir.cpp
+    bindings/tensor.cpp
+    bindings/tensordata.cpp
     bindings/tensorinfo.cpp
+    popart._internal.ir.cpp
 )
 
 target_include_directories(popart_internal_ir PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
