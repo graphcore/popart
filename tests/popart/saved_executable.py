@@ -80,7 +80,7 @@ def test_simple_save_load(tmp_path, capfd):
         startedEngineCompilation = False
         loadedPoplarExecutable = False
         for line in stderr.splitlines():
-            if 'Starting Engine compilation' in line:
+            if 'Starting compilation' in line:
                 startedEngineCompilation = True
             elif 'Loading serialized PopART executable' in line:
                 loadedPoplarExecutable = True
@@ -161,7 +161,7 @@ def test_simple_cache_hit(tmp_path, capfd):
         startedEngineCompilation = False
         loadedPoplarExecutable = False
         for line in stderr.splitlines():
-            if 'Starting Engine compilation' in line:
+            if 'Starting compilation' in line:
                 startedEngineCompilation = True
             elif 'Loading serialized PopART executable' in line:
                 loadedPoplarExecutable = True

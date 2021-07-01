@@ -93,7 +93,7 @@ void defaultLogPrinter(int progress, int total) {
   if (total != 0) {
     float percentage = std::floor(100.0f * static_cast<float>(progress) /
                                   static_cast<float>(total));
-    logging::devicex::info("Engine compilation {}% complete", percentage);
+    logging::devicex::info("Compilation {}% complete", percentage);
   }
 }
 
@@ -3244,7 +3244,7 @@ poplar::Executable IrLowering::getExecutable() {
     return std::move(result.value());
   } else {
     try {
-      logging::devicex::info("Starting Engine compilation");
+      logging::devicex::info("Starting compilation");
 
       auto executable = poplar::compileGraph(graph().getPoplarGraph(),
                                              progs.progs(),
