@@ -16,7 +16,7 @@
 #include <popart/ndarraywrapper.hpp>
 #include <popart/op/add.hpp>
 #include <popart/op/call.hpp>
-#include <popart/op/hostcopy.hpp>
+#include <popart/op/exchange/hostcopy.hpp>
 #include <popart/op/init.hpp>
 #include <popart/op/matmul.hpp>
 #include <popart/session.hpp>
@@ -176,7 +176,9 @@ BOOST_AUTO_TEST_CASE(TestBasicInference) {
 
   // Set IR state required for lowering.
   auto &opts                   = ir->getSessionOptions();
+  opts.aliasZeroCopy           = true;
   opts.enableExplicitMainLoops = true;
+  opts.explicitRecomputation   = true;
   opts.useHostCopyOps          = true;
   ir->updateVertices();
   ir->setIsPrepared();
