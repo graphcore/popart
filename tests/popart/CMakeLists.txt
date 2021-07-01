@@ -47,7 +47,7 @@ add_popart_cpp_unit_test(preplan_matmuls_test preplan_matmuls_test.cpp VARIANTS 
 # add_popart_py_unit_test(test_session test_session.py) Utility
 
 # Python tests. Please try to sort alphabetically.
-add_popart_py_unit_test(abort_test addbias.py VARIANTS Hw)
+add_popart_py_unit_test(abort_test abort_test.py VARIANTS Hw)
 add_popart_py_unit_test(addbias addbias.py)
 add_popart_py_unit_test(aliaszerocopy_model_test aliaszerocopy_model_test.py VARIANTS IpuModel)
 add_popart_py_unit_test(all_constexpr all_constexpr.py)
