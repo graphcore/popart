@@ -67,7 +67,7 @@ add_popart_py_unit_test(decompose_gradient_summation_test decompose_gradient_sum
 add_popart_py_unit_test(device_test device_test.py VARIANTS Hw)
 add_popart_py_unit_test(dim_param_test dim_param_test.py)
 add_popart_py_unit_test(doc_test doc_test.py)
-add_popart_py_unit_test(dont_inplace_output_consumers dont_inplace_output_consumers.py)
+add_popart_py_unit_test(dont_inplace_test dont_inplace_test.py)
 add_popart_py_unit_test(dropout_replicated_pipeline dropout_replicated_pipeline.py VARIANTS Hw)
 add_popart_py_unit_test(enhanced_debug enhanced_debug.py)
 add_popart_py_unit_test(exception_test exception_test.py VARIANTS Hw)

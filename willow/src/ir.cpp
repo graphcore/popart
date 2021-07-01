@@ -3345,6 +3345,14 @@ void Ir::applyInplacePattern(Graph &graph) {
           if (getSessionOptions().enablePipelining &&
               Pipeline::inplaceRecomputationConflict(
                   op, in_index.first, out_index.first)) {
+            logging::pattern::trace(
+                "[Inplacing] Not inplacing {} with {} due to "
+                "an inplace recomputation conflict between "
+                "{} and {} ",
+                op->debugName(),
+                inplaceOp->opid,
+                in_index.second->id,
+                out_index.second->id);
             inplaceBlocking = true;
           }
 
@@ -3360,6 +3368,127 @@ void Ir::applyInplacePattern(Graph &graph) {
           }
         }
       }
+
+      if (inplaceBlocking) {
+        popMem.g.backoutOpening(proposal);
+        continue;
+      }
+
+      // Next we prevent inplacing where aliased inputs that would be written to
+      // result in a potential race condition. Due to inplacing priority order,
+      // we need to cover two cases:
+      //
+      // 1) Downstream op mustn't be inplaced due to would-be-written-to, alised
+      // inputs as a result of previous inplacing of some upstream op.
+      //
+      // 2) Upstream op mustn't be inplaced because its inplacing would result
+      // in a potential race condition in an already inplaced downstream op.
+
+      // Case 1): conservatively prevent inplacing if any changed input tensor
+      // is aliased by any other input tensor.
+      for (const auto &in_tensor0 : op->input->tensorMap()) {
+        if (inplaceBlocking) {
+          break;
+        }
+        if (!inplaceOp->modifiesIndex(in_tensor0.first)) {
+          continue;
+        }
+        auto aliases = popMem.allAliases(*in_tensor0.second);
+        for (const auto &in_tensor1 : op->input->tensorMap()) {
+          if (in_tensor0.first == in_tensor1.first) {
+            continue;
+          }
+          if (std::find(aliases.begin(), aliases.end(), in_tensor1.second) !=
+              aliases.end()) {
+            logging::pattern::trace(
+                "[Inplacing] Not inplacing {} with {} due to input "
+                "{} being an alias of {} which would be changed inplace.",
+                op->debugName(),
+                inplaceOp->opid,
+                in_tensor1.second->id,
+                in_tensor0.second->id);
+            inplaceBlocking = true;
+            break;
+          }
+        }
+      }
+
+      if (inplaceBlocking) {
+        popMem.g.backoutOpening(proposal);
+        continue;
+      }
+
+      // Case 2): if, after inplacing, any of input tensor aliases end up as
+      // inputs (more than one of them) to an op that modifies at least one of
+      // those aliased inputs, we introduce a potential race condition.
+
+      // We first identify disjoint sets of input/output tensors
+      // (insOutsToBeAliased) that would be aliased if we did inplacing. We
+      // do this in order to predict the effect of inplacing in the current
+      // graph where inplacing has actually not been done yet.
+      std::set<std::vector<Tensor *>> insOutsToBeAliased;
+      for (const auto &in_tensor : op->input->tensorMap()) {
+        std::vector<Tensor *> currentInsOuts{in_tensor.second};
+        auto aliases = popMem.allAliases(*in_tensor.second);
+        for (const auto &out_tensor : op->output->tensorMap()) {
+          if (std::find(aliases.begin(), aliases.end(), out_tensor.second) !=
+              aliases.end()) {
+            currentInsOuts.push_back(out_tensor.second);
+          }
+        }
+        if (currentInsOuts.size() > 1) {
+          insOutsToBeAliased.insert(currentInsOuts);
+        }
+      }
+
+      // Look at all aliases of all disjoint input/output sets and detect cases
+      // where more than one of them end up as inputs to the same op and at
+      // least one of them is changed by that op.
+      for (const auto &currentInsOuts : insOutsToBeAliased) {
+        if (inplaceBlocking) {
+          break;
+        }
+        std::map<Op *, std::set<InIndex>> consumersInIndices;
+
+        auto populateConsumersInIndices = [&consumersInIndices, op](Tensor *t) {
+          for (auto consumer : t->consumers.getOps()) {
+            if (consumer == op) {
+              continue;
+            }
+            consumersInIndices.insert({consumer, {}});
+            const auto &in_indices = consumer->input->indices(t);
+            consumersInIndices.at(consumer).insert(in_indices.begin(),
+                                                   in_indices.end());
+          }
+          return false;
+        };
+
+        for (auto tensor : currentInsOuts) {
+          tensor->anyAlias(populateConsumersInIndices);
+        }
+
+        for (const auto &consumerInIndices : consumersInIndices) {
+          if (consumerInIndices.second.size() <= 1) {
+            continue;
+          }
+          if (std::any_of(consumerInIndices.second.begin(),
+                          consumerInIndices.second.end(),
+                          [&consumerInIndices](InIndex i) {
+                            return consumerInIndices.first->modifiesIndex(i);
+                          })) {
+            logging::pattern::trace(
+                "[Inplacing] Not inplacing {} with {} as doing so would "
+                "introduce a potential race condition in a downstream op {} "
+                "which is already inplace.",
+                op->debugName(),
+                inplaceOp->opid,
+                consumerInIndices.first->debugName());
+            inplaceBlocking = true;
+            break;
+          }
+        }
+      }
+
       if (inplaceBlocking) {
         popMem.g.backoutOpening(proposal);
         continue;

@@ -1,11 +1,9 @@
 # Copyright (c) 2020 Graphcore Ltd. All rights reserved.
 import numpy as np
-import popart
-import pytest
 from operators_test.op_tester import op_tester
 
 
-def test_careful_inplacing(op_tester):
+def test_dont_inplace_output_consumers(op_tester):
     """
 
     Check that an Op, in a sugbraph, with an input which is a graph output,
@@ -56,3 +54,26 @@ def test_careful_inplacing(op_tester):
 
     op_tester.setPatterns(['InPlace'], enableRuntimeAsserts=False)
     op_tester.run(get_init_builder(), reference, 'infer')
+
+
+def test_dont_inplace_when_aliased_inputs(op_tester):
+    data = np.random.randn(5, 3, 16, 16).astype(np.float32)
+
+    def init_builder(builder):
+        x = builder.addInputTensor(data)
+        # Inplacing of Concat results in a race condition in an already
+        # inplace Add (AddLhsInPlace).
+        concatenated = builder.aiOnnx.concat([x, x], 0)
+        starts = builder.aiOnnx.constant(np.array([4]).astype(np.int32))
+        ends = builder.aiOnnx.constant(np.array([9]).astype(np.int32))
+        axes = builder.aiOnnx.constant(np.array([0]).astype(np.int32))
+        sliced = builder.aiOnnx.slice([concatenated, starts, ends, axes])
+        result = builder.aiOnnx.add([x, sliced])
+        return [result]
+
+    def reference(ref_data):
+        sliced = np.concatenate([data, data], axis=0)[4:9]
+        return [data + sliced]
+
+    op_tester.setPatterns(['InPlace'], enableRuntimeAsserts=False)
+    op_tester.run(init_builder, reference, 'infer')
