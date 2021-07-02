@@ -37,6 +37,7 @@ const std::vector<std::string> &reservedOptimizerPrefixes() {
   const static std::vector<std::string> result = {
       // Optimizer
       reservedLossScalingPrefix(),
+      reservedAutomaticLossScalePrefix(),
       // SGD0 / SGD1
       reservedDefaultScaledLearningRate0Prefix(),
       reservedSpecificScaledLearningRate0Prefix(),

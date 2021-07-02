@@ -248,6 +248,10 @@ constexpr const char *reservedLossScalingRatioPrefix() {
 // The global norm used by the transform ClipWeightGradientsByNorm.
 constexpr const char *reservedGlobalNormPrefix() { return "GlobalNorm___"; }
 
+constexpr const char *reservedAutomaticLossScalePrefix() {
+  return "AutomaticLossScaleProxy___";
+}
+
 } // namespace popart
 
 #endif

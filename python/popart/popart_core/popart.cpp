@@ -3219,6 +3219,7 @@ PYBIND11_MODULE(popart_core, m) {
         &reservedDefaultMaxWeightNormPrefix);
   m.def("reservedSpecificMaxWeightNormPrefix",
         &reservedSpecificMaxWeightNormPrefix);
+  m.def("reservedAutomaticLossScalePrefix", &reservedAutomaticLossScalePrefix);
   m.def("reservedDefaultAdamBeta1Prefix", &reservedDefaultAdamBeta1Prefix);
   m.def("reservedSpecificAdamBeta1Prefix", &reservedSpecificAdamBeta1Prefix);
   m.def("reservedDefaultAdamBeta2Prefix", &reservedDefaultAdamBeta2Prefix);

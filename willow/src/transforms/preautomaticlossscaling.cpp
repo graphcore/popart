@@ -10,6 +10,7 @@
 #include <popart/ir.hpp>
 #include <popart/logging.hpp>
 #include <popart/op/autolossscaleproxy.hpp>
+#include <popart/tensornames.hpp>
 #include <popart/transforms/preautomaticlossscaling.hpp>
 
 namespace popart {
@@ -67,7 +68,7 @@ bool PreAutomaticLossScale::apply(Graph &graph) const {
       } else {
         alreadyTracked.insert(id);
 
-        auto proxyId = id + "_AlsProxy";
+        auto proxyId = reservedAutomaticLossScalePrefix() + id;
         auto tensor  = ir.getTensor(id);
 
         auto proxyOp = graph.createOp<AutoLossScaleProxyOp>(
