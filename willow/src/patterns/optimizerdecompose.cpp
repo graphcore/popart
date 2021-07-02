@@ -118,7 +118,8 @@ TensorId OptimizerDecompose::gradAccum(Graph &graph,
                                        Op *combo,
                                        TensorId accumId,
                                        TensorId gradIntoAccumId,
-                                       bool accumReduce) const {
+                                       bool accumReduce,
+                                       TensorId outputId) const {
   TensorId gradIntoAcclId;
   auto accumOpUp = std::make_unique<AccumulateOp>(
       AccumulationType::Add,
@@ -142,7 +143,10 @@ TensorId OptimizerDecompose::gradAccum(Graph &graph,
                            gradIntoAccumId);
 
   // The updated accumulator
-  TensorId updatedAccumId = graph.getIr().createIntermediateTensorId(accumId);
+  TensorId updatedAccumId =
+      !outputId.empty() && !accumReduce
+          ? outputId
+          : graph.getIr().createIntermediateTensorId(accumId);
 
   accumOp->createAndConnectOutTensor(VarUpdateOp::getUpdatedVarOutIndex(),
                                      updatedAccumId);
@@ -168,7 +172,9 @@ TensorId OptimizerDecompose::gradAccum(Graph &graph,
                               updatedAccumId);
 
     // The updated, reduced accumulator
-    gradIntoAcclId = graph.getIr().createIntermediateTensorId(accumId);
+    gradIntoAcclId = !outputId.empty()
+                         ? outputId
+                         : graph.getIr().createIntermediateTensorId(accumId);
 
     reduceOp->createAndConnectOutTensor(
         ReplicatedAllReduceInplaceOp::getOutIndex(), gradIntoAcclId);
@@ -185,10 +191,10 @@ TensorId OptimizerDecompose::gradAccum(Graph &graph,
   return gradIntoAcclId;
 }
 
-void OptimizerDecompose::zeroAccumulator(Graph &graph,
-                                         Op *combo,
-                                         std::vector<Op *> beforeOps,
-                                         TensorId accumId) const {
+Op *OptimizerDecompose::zeroAccumulator(Graph &graph,
+                                        Op *combo,
+                                        std::vector<Op *> beforeOps,
+                                        TensorId accumId) const {
   auto accumZeroOpUp = std::make_unique<AccumulatorZeroOp>(
       Op::Settings(graph, combo->name() + "_accumupdate"));
   auto accumZeroOp = accumZeroOpUp.get();
@@ -217,11 +223,13 @@ void OptimizerDecompose::zeroAccumulator(Graph &graph,
   for (Op *beforeOp : beforeOps) {
     graph.topoCons->insert(beforeOp, accumZeroOp);
   }
+  return accumZeroOp;
 }
 
 TensorId OptimizerDecompose::gradReduce(Graph &graph,
                                         Op *combo,
-                                        TensorId weightGradId) const {
+                                        TensorId weightGradId,
+                                        TensorId outputId) const {
   auto reduceOpUp = std::make_unique<ReplicatedAllReduceOp>(
       Onnx::CustomOperators::ReplicatedAllReduce,
       Op::Settings(graph, combo->name() + "_reduce"));
@@ -237,7 +245,9 @@ TensorId OptimizerDecompose::gradReduce(Graph &graph,
 
   // The reduced gradient
   TensorId reducedGradId =
-      graph.getIr().createIntermediateTensorId(weightGradId);
+      !outputId.empty()
+          ? outputId
+          : graph.getIr().createIntermediateTensorId(weightGradId);
 
   reduceOp->createAndConnectOutTensor(ReplicatedAllReduceOp::getOutIndex(),
                                       reducedGradId);

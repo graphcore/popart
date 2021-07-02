@@ -256,7 +256,7 @@ def test_replicated_sgd0_weight_update(tmpdir):
     run_model(tmpdir,
               'phased.onnx',
               execution_mode="phased",
-              batch_size=2,
+              batch_size=4,
               num_replicas=1,
               activation_tensor_location_settings=offChipLocation,
               weight_tensor_location_settings=offChipLocation,
@@ -265,7 +265,7 @@ def test_replicated_sgd0_weight_update(tmpdir):
     run_model(tmpdir,
               'phased_replicated.onnx',
               execution_mode="phased",
-              batch_size=1,
+              batch_size=2,
               num_replicas=2,
               activation_tensor_location_settings=offChipLocation,
               weight_tensor_location_settings=offChipLocation,
@@ -274,20 +274,34 @@ def test_replicated_sgd0_weight_update(tmpdir):
     run_model(tmpdir,
               'phased_replicated_rws.onnx',
               execution_mode="phased",
-              batch_size=1,
+              batch_size=2,
               num_replicas=2,
               activation_tensor_location_settings=offChipLocation,
               weight_tensor_location_settings=offChipRtsLocation,
               optimizer_state_tensor_location_settings=offChipRtsLocation,
               accumulator_tensor_location_settings=offChipRtsLocation)
+    run_model(tmpdir,
+              'phased_replicated_rws_acc.onnx',
+              execution_mode="phased",
+              batch_size=1,
+              num_replicas=2,
+              enable_accum=True,
+              accum_factor=2,
+              activation_tensor_location_settings=offChipLocation,
+              weight_tensor_location_settings=offChipRtsLocation,
+              optimizer_state_tensor_location_settings=offChipRtsLocation,
+              accumulator_tensor_location_settings=onChipLocation)
 
     phased = onnx.load(str(tmpdir / 'phased.onnx'))
     phased_replicated = onnx.load(str(tmpdir / 'phased_replicated.onnx'))
     phased_replicated_rws = onnx.load(
         str(tmpdir / 'phased_replicated_rws.onnx'))
+    phased_replicated_rws_acc = onnx.load(
+        str(tmpdir / 'phased_replicated_rws_acc.onnx'))
 
     check_model(phased, phased_replicated)
     check_model(phased, phased_replicated_rws)
+    check_model(phased, phased_replicated_rws_acc)
 
 
 # Check that 2 batches on 1 replica or 1 batch per replica on 2 replicas

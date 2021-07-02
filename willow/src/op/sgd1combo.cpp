@@ -12,13 +12,13 @@ SGD1ComboOp::SGD1ComboOp(OptimizerValue initialSmm1,
                          OptimizerValue initialSlr1,
                          OptimizerReductionType reductionType_,
                          const Op::Settings &settings_)
-    : SGDComboBaseOp(Onnx::CustomOperators::SGD1Combo,
-                     std::move(initialSmm1),
-                     std::move(initialDpsf1),
-                     std::move(initialSwd1),
-                     std::move(initialSlr1),
-                     reductionType_,
-                     settings_) {}
+    : SGDMComboBaseOp(Onnx::CustomOperators::SGD1Combo,
+                      std::move(initialSmm1),
+                      std::move(initialDpsf1),
+                      std::move(initialSwd1),
+                      std::move(initialSlr1),
+                      reductionType_,
+                      settings_) {}
 
 std::unique_ptr<Op> SGD1ComboOp::clone() const {
   return std::make_unique<SGD1ComboOp>(*this);

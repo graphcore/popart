@@ -42,7 +42,6 @@ HostSGD0VarUpdate::HostSGD0VarUpdate(OptimizerValue slr0,
     : SGD0VarUpdateOpBase(Onnx::CustomOperators::HostSGD0VarUpdate,
                           slr0,
                           wdsf0,
-                          OptimizerReductionType::None,
                           settings_) {}
 
 std::unique_ptr<Op> HostSGD0VarUpdate::clone() const {

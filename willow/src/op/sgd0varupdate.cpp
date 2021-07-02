@@ -36,10 +36,9 @@ float SGD0VarUpdateOp::getSubgraphValue() const {
 SGD0VarUpdateOpBase::SGD0VarUpdateOpBase(const OperatorIdentifier &_opid,
                                          OptimizerValue initialSlr0,
                                          OptimizerValue initialWdsf0,
-                                         OptimizerReductionType reductionType_,
                                          const Op::Settings &settings_)
     : VarUpdateWithUpdaterOp(_opid, settings_), initSlr0(initialSlr0),
-      initWdsf0(initialWdsf0), reductionType(reductionType_) {}
+      initWdsf0(initialWdsf0) {}
 
 std::map<InIndex, TensorId> SGD0VarUpdateOpBase::optimizerInputs() const {
   std::map<InIndex, TensorId> m;
@@ -64,12 +63,10 @@ std::unique_ptr<Op> SGD0VarUpdateOp::clone() const {
 
 SGD0VarUpdateOp::SGD0VarUpdateOp(OptimizerValue slr0,
                                  OptimizerValue wdsf0,
-                                 OptimizerReductionType reductionType_,
                                  const Op::Settings &settings_)
     : SGD0VarUpdateOpBase(Onnx::CustomOperators::SGD0VarUpdate,
                           slr0,
                           wdsf0,
-                          reductionType_,
                           settings_) {}
 
 } // namespace popart

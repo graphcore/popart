@@ -86,7 +86,7 @@ def test_anchor_output():
     nll = builder.aiGraphcore.nllloss([o, lb])
 
     GRAD = popart.reservedGradientPrefix() + w
-    ACCL = popart.reservedAcclPrefix() + w
+    ACCL = popart.reservedAccumPrefix() + w
     art = popart.AnchorReturnType("All")
     data_flow = popart.DataFlow(BATCHES_PER_STEP, {
         o: art,
@@ -142,9 +142,6 @@ def test_anchor_output():
 
     # Check that the accumulated gradient plus the weights for the current batch
     # equals the weights for the next batch.
-    # We will need to multiply by this adjustment factor as with most
-    # implementations of replication.
-    adj = 1 / anchorDict["ReplicationFactor"]
     # Batch loop
     for batch in range(anchors[w].shape[0] - 1):
         calc_weight = {}
@@ -154,7 +151,7 @@ def test_anchor_output():
             #  last weight tensor in the accumulation loop minus
             # the sum of the accumulated gradients across replicas
             calc_weight[replica] = anchors[w][batch, -1, replica, :, :, :, :] - \
-                 adj * np.sum(anchors[ACCL][batch, -1, :, :, :, :, :], axis=0)
+                np.sum(anchors[ACCL][batch, -1, :, :, :, :, :], axis=0)
             # Then compare against the last weight tensor of the next batch,
             # for the relevant replica. These should match.
             assert np.allclose(calc_weight[replica],

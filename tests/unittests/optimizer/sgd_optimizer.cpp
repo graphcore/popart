@@ -8,7 +8,7 @@
 #include <popart/compoundscalarhelper.hpp>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
-#include <popart/op/sgd0varupdate.hpp>
+#include <popart/op/sgd0combo.hpp>
 #include <popart/op/sgd1combo.hpp>
 #include <popart/op/sgd2combo.hpp>
 #include <popart/sessionoptions.hpp>
@@ -144,9 +144,9 @@ BOOST_AUTO_TEST_CASE(TestGetInputIds_SGD0) {
   BOOST_REQUIRE_EQUAL(inputIds[VarUpdateWithUpdaterOp::getUpdaterInIndex()],
                       getGradId(tc.wId));
   // Specific and const.
-  BOOST_REQUIRE_EQUAL(inputIds[SGD0VarUpdateOp::getSlr0InIndex()], "");
+  BOOST_REQUIRE_EQUAL(inputIds[SGD0ComboOp::getSlr0InIndex()], "");
   // Specific and non-const.
-  BOOST_REQUIRE_EQUAL(inputIds[SGD0VarUpdateOp::getWdsf0InIndex()],
+  BOOST_REQUIRE_EQUAL(inputIds[SGD0ComboOp::getWdsf0InIndex()],
                       reservedSpecificWeightDecayScaleFactor0Prefix() + tc.wId);
 }
 
@@ -164,10 +164,10 @@ BOOST_AUTO_TEST_CASE(TestGetInputIds_SGD1_2) {
     BOOST_REQUIRE_EQUAL(inputIds[VarUpdateOp::getVarToUpdateInIndex()], tc.wId);
     BOOST_REQUIRE_EQUAL(inputIds[VarUpdateWithUpdaterOp::getUpdaterInIndex()],
                         getGradId(tc.wId));
-    BOOST_REQUIRE_EQUAL(inputIds[SGDComboBaseOp::getSmm1InIndex()], "");
-    BOOST_REQUIRE_EQUAL(inputIds[SGDComboBaseOp::getDpsf1InIndex()], "");
-    BOOST_REQUIRE_EQUAL(inputIds[SGDComboBaseOp::getSwd1InIndex()], "");
-    BOOST_REQUIRE_EQUAL(inputIds[SGDComboBaseOp::getSlr1InIndex()], "");
+    BOOST_REQUIRE_EQUAL(inputIds[SGDMComboBaseOp::getSmm1InIndex()], "");
+    BOOST_REQUIRE_EQUAL(inputIds[SGDMComboBaseOp::getDpsf1InIndex()], "");
+    BOOST_REQUIRE_EQUAL(inputIds[SGDMComboBaseOp::getSwd1InIndex()], "");
+    BOOST_REQUIRE_EQUAL(inputIds[SGDMComboBaseOp::getSlr1InIndex()], "");
   };
 
   {
@@ -306,7 +306,26 @@ BOOST_AUTO_TEST_CASE(TestCreateOpIntegrationWithCompoundScalarHelper_SGD0) {
 
   const auto op = tc.sgd.createOp(*tc.w, tc.graph());
 
-  const auto sgd0 = dynamic_cast<const SGD0VarUpdateOp *>(op.get());
+  const auto sgd0 = dynamic_cast<const SGD0ComboOp *>(op.get());
+  BOOST_REQUIRE(sgd0);
+  BOOST_REQUIRE(sgd0->initSlr0 ==
+                ScaledLearningRate0Helper{}.getFromWeightId(tc.wId, tc.sgd));
+  BOOST_REQUIRE(
+      sgd0->initWdsf0 ==
+      WeightDecayScaleFactor0Helper{}.getFromWeightId(tc.wId, tc.sgd));
+}
+
+BOOST_AUTO_TEST_CASE(TestCreateOpIntegrationWithCompoundScalarHelper_SGD0_GA) {
+  SGD0TestCase tc;
+  SessionOptions opts;
+  opts.enableGradientAccumulation = true;
+  opts.accumulationFactor         = 2;
+  tc.ir.setUserOptions(opts);
+  tc.setFactorsFromOptions();
+
+  const auto op = tc.sgd.createOp(*tc.w, tc.graph());
+
+  const auto sgd0 = dynamic_cast<const SGD0ComboOp *>(op.get());
   BOOST_REQUIRE(sgd0);
   BOOST_REQUIRE(sgd0->initSlr0 ==
                 ScaledLearningRate0Helper{}.getFromWeightId(tc.wId, tc.sgd));
@@ -355,6 +374,7 @@ BOOST_AUTO_TEST_CASE(TestCreateOpIntegrationWithCompoundScalarHelper_SGD2) {
 
 BOOST_AUTO_TEST_CASE(TestCreateOpAllOtherFields_SGD0) {
   {
+    // No GradAccum, Replica or HostReduce
     SGD0TestCase tc;
 
     SessionOptions opts;
@@ -366,12 +386,13 @@ BOOST_AUTO_TEST_CASE(TestCreateOpAllOtherFields_SGD0) {
 
     const auto op = tc.sgd.createOp(*tc.w, tc.graph());
 
-    const auto sgd0 = dynamic_cast<const SGD0VarUpdateOp *>(op.get());
+    const auto sgd0 = dynamic_cast<const SGD0ComboOp *>(op.get());
     BOOST_REQUIRE(sgd0);
 
     BOOST_REQUIRE(sgd0->reductionType == OptimizerReductionType::None);
   }
   {
+    // Replica Only
     SGD0TestCase tc;
 
     SessionOptions opts;
@@ -384,12 +405,33 @@ BOOST_AUTO_TEST_CASE(TestCreateOpAllOtherFields_SGD0) {
 
     const auto op = tc.sgd.createOp(*tc.w, tc.graph());
 
-    const auto sgd0 = dynamic_cast<const SGD0VarUpdateOp *>(op.get());
+    const auto sgd0 = dynamic_cast<const SGD0ComboOp *>(op.get());
     BOOST_REQUIRE(sgd0);
 
     BOOST_REQUIRE(sgd0->reductionType == OptimizerReductionType::GradReduce);
   }
   {
+    // GradAccum and Replica
+    SGD0TestCase tc;
+
+    SessionOptions opts;
+    opts.enableGradientAccumulation = true;
+    opts.accumulationFactor         = 2;
+    opts.enableReplicatedGraphs     = true;
+    opts.replicatedGraphCount       = 2;
+    opts.hostAllReduce              = false;
+    tc.ir.setUserOptions(opts);
+    tc.setFactorsFromOptions();
+
+    const auto op = tc.sgd.createOp(*tc.w, tc.graph());
+
+    const auto sgd0 = dynamic_cast<const SGD0ComboOp *>(op.get());
+    BOOST_REQUIRE(sgd0);
+
+    BOOST_REQUIRE(sgd0->reductionType == OptimizerReductionType::AccumReduce);
+  }
+  {
+    // HostReduce
     SGD0TestCase tc;
 
     SessionOptions opts;
@@ -402,7 +444,7 @@ BOOST_AUTO_TEST_CASE(TestCreateOpAllOtherFields_SGD0) {
 
     const auto op = tc.sgd.createOp(*tc.w, tc.graph());
 
-    const auto sgd0 = dynamic_cast<const SGD0VarUpdateOp *>(op.get());
+    const auto sgd0 = dynamic_cast<const SGD0ComboOp *>(op.get());
     BOOST_REQUIRE(sgd0);
 
     BOOST_REQUIRE(sgd0->reductionType == OptimizerReductionType::None);

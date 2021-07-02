@@ -108,7 +108,6 @@ def run_global_batch_size_correctness_test(tmpdir, reduction_type, optim,
 
     def run_test(compute_batch, batch_serialization_factor,
                  accumulation_factor, replication_factor, explicit_loops):
-
         if explicit_loops and replication_factor > 1:
             print("T39060 : numerical difference vs. baseline, fix required")
             return None

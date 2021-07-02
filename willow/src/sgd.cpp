@@ -3,7 +3,7 @@
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/op/loss.hpp>
-#include <popart/op/sgd0varupdate.hpp>
+#include <popart/op/sgd0combo.hpp>
 #include <popart/op/sgd1combo.hpp>
 #include <popart/op/sgd2combo.hpp>
 #include <popart/sessionoptions.hpp>
@@ -121,9 +121,9 @@ bool SGD::hasSpecific() const {
       specifics.begin(), specifics.end(), [](bool s) { return s; });
 }
 
-bool SGD::requiresAccl(const Tensor &weight) const {
+bool SGD::hasMomentum(const Tensor &weight) const {
   OptimizerValue mm = mms.get(weight.id);
-  return gradientAccumulationEnabled() || !mm.isConst() || mm.val() != 0.0f;
+  return !mm.isConst() || mm.val() != 0.0f;
 }
 
 void SGD::insertSpecific(const TensorId &id,
@@ -208,7 +208,7 @@ SGD::SGD(OptimizerValue lr,
          DataType accumType_,
          DataType accl1Type_)
     : Optimizer(lossScaling, clipNormSettings), lrs(lr), wds(wd), mms(mm),
-      dps(dp), vss(vs), sgdAccMm(sgdAccMm_), sgd2AccumType(accumType_),
+      dps(dp), vss(vs), sgdAccMm(sgdAccMm_), sgdAccumType(accumType_),
       sgd2Accl1Type(accl1Type_) {
   runValueChecks(lr, wd, mm, dp, vs);
 }
@@ -255,7 +255,7 @@ std::unique_ptr<Op> SGD::createOp(const Tensor &w, Graph &graph) const {
 
   OptimizerReductionType reductionType{OptimizerReductionType::None};
 
-  bool withAccl = requiresAccl(w);
+  bool withMomentum = hasMomentum(w);
 
   auto opSettings = Op::Settings(graph, "");
 
@@ -265,39 +265,40 @@ std::unique_ptr<Op> SGD::createOp(const Tensor &w, Graph &graph) const {
     }
   }
 
-  if (!withAccl) {
-    if (getReplicatedGraphCount() > 1 &&
-        !graph.getIr().getSessionOptions().hostAllReduce) {
-      reductionType = OptimizerReductionType::GradReduce;
-    }
-
-    return std::make_unique<SGD0VarUpdateOp>(
-        slr0helper.getFromWeightId(w.id, *this),
-        wdsf0helper.getFromWeightId(w.id, *this),
-        reductionType,
-        opSettings);
-  }
-
-  // velocity required
-
   if (getReplicatedGraphCount() > 1) {
     if (gradientAccumulationEnabled()) {
-      if (sgdAccMm == SGDAccumulatorAndMomentum::Combined) {
-        reductionType = OptimizerReductionType::AcclReduce;
-      } else if (sgdAccMm == SGDAccumulatorAndMomentum::Separate) {
+      if (!withMomentum || sgdAccMm == SGDAccumulatorAndMomentum::Separate) {
         reductionType = OptimizerReductionType::AccumReduce;
+      } else if (sgdAccMm == SGDAccumulatorAndMomentum::Combined) {
+        reductionType = OptimizerReductionType::AcclReduce;
       } else {
         throw internal_error("SGD::createOp: Unknown SGDAccumulatorAndMomentum "
                              "with int value {}",
                              static_cast<int>(sgdAccMm));
       }
     } else {
-      // Disable [accl|accum]Reduce in favor of gradReduce when not using
-      // gradient accumulation.
-      reductionType = OptimizerReductionType::GradReduce;
+      if (graph.getIr().getSessionOptions().hostAllReduce) {
+        reductionType = OptimizerReductionType::None;
+      } else {
+        // Disable [accl|accum]Reduce in favor of gradReduce when not using
+        // gradient accumulation.
+        reductionType = OptimizerReductionType::GradReduce;
+      }
     }
   }
 
+  if (!withMomentum) {
+    return std::make_unique<SGD0ComboOp>(
+        slr0helper.getFromWeightId(w.id, *this),
+        wdsf0helper.getFromWeightId(w.id, *this),
+        gradientAccumulationEnabled(),
+        reductionType,
+        sgdAccumType == DataType::UNDEFINED ? w.info.getDataTypeInfo()->type()
+                                            : sgdAccumType,
+        opSettings);
+  }
+
+  // velocity required
   const auto smm1  = smm1helper.getFromWeightId(w.id, *this);
   const auto dpsf1 = dpsf1helper.getFromWeightId(w.id, *this);
   const auto swd1  = swd1helper.getFromWeightId(w.id, *this);
@@ -315,8 +316,8 @@ std::unique_ptr<Op> SGD::createOp(const Tensor &w, Graph &graph) const {
         slr1,
         gradientAccumulationEnabled(),
         reductionType,
-        sgd2AccumType == DataType::UNDEFINED ? w.info.getDataTypeInfo()->type()
-                                             : sgd2AccumType,
+        sgdAccumType == DataType::UNDEFINED ? w.info.getDataTypeInfo()->type()
+                                            : sgdAccumType,
         sgd2Accl1Type == DataType::UNDEFINED ? w.info.getDataTypeInfo()->type()
                                              : sgd2Accl1Type,
         opSettings);
@@ -329,11 +330,11 @@ std::unique_ptr<Op> SGD::createOp(const Tensor &w, Graph &graph) const {
 
 std::vector<TensorId> SGD::getInputIds(const Tensor &w) const {
 
-  bool withAccl = requiresAccl(w);
+  bool withMomentum = hasMomentum(w);
 
   const TensorId &varId = w.id;
   std::vector<TensorId> inputs;
-  if (!withAccl) {
+  if (!withMomentum) {
     inputs.resize(4, "");
   } else {
     inputs.resize(6, "");
@@ -345,33 +346,32 @@ std::vector<TensorId> SGD::getInputIds(const Tensor &w) const {
   // gradient
   inputs[VarUpdateWithUpdaterOp::getUpdaterInIndex()] = getGradId(varId);
 
-  if (!withAccl) {
+  if (!withMomentum) {
     // scaled learning rate (optional)
-    inputs[SGD0VarUpdateOp::getSlr0InIndex()] =
+    inputs[SGD0ComboOp::getSlr0InIndex()] =
         slr0helper.getScalarIdIfNonConst(w, *this);
 
     // weight decay scale factor (optional)
-    inputs[SGD0VarUpdateOp::getWdsf0InIndex()] =
+    inputs[SGD0ComboOp::getWdsf0InIndex()] =
         wdsf0helper.getScalarIdIfNonConst(w, *this);
   }
 
-  // with accumulation:
+  // with momentum:
   else {
-
     // momentum (optional)
-    inputs[SGDComboBaseOp::getSmm1InIndex()] =
+    inputs[SGDMComboBaseOp::getSmm1InIndex()] =
         smm1helper.getScalarIdIfNonConst(w, *this);
 
     // dampening scale factor (optional)
-    inputs[SGDComboBaseOp::getDpsf1InIndex()] =
+    inputs[SGDMComboBaseOp::getDpsf1InIndex()] =
         dpsf1helper.getScalarIdIfNonConst(w, *this);
 
     // weight decay scale factor (optional)
-    inputs[SGDComboBaseOp::getSwd1InIndex()] =
+    inputs[SGDMComboBaseOp::getSwd1InIndex()] =
         swd1helper.getScalarIdIfNonConst(w, *this);
 
     // scaled learning rate (optional)
-    inputs[SGDComboBaseOp::getSlr1InIndex()] =
+    inputs[SGDMComboBaseOp::getSlr1InIndex()] =
         slr1helper.getScalarIdIfNonConst(w, *this);
   }
 
@@ -381,10 +381,10 @@ std::vector<TensorId> SGD::getInputIds(const Tensor &w) const {
 std::vector<std::tuple<TensorId, TensorInfo>>
 SGD::getOptimizerInputs(const Tensor &weight) const {
 
-  bool withAccl = requiresAccl(weight);
+  bool withMomentum = hasMomentum(weight);
 
   std::vector<TensorId> ids;
-  if (!withAccl) {
+  if (!withMomentum) {
     ids.push_back(slr0helper.getScalarIdIfNonConst(weight, *this));
     ids.push_back(wdsf0helper.getScalarIdIfNonConst(weight, *this));
   } else {
@@ -397,7 +397,7 @@ SGD::getOptimizerInputs(const Tensor &weight) const {
   std::vector<std::tuple<TensorId, TensorInfo>> optInputs;
   for (const auto &id : ids) {
     // empty denotes const, not an input
-    if ((withAccl && smm1helper.idMatch(id)) || wdsf0helper.idMatch(id)) {
+    if ((withMomentum && smm1helper.idMatch(id)) || wdsf0helper.idMatch(id)) {
       // Use weight dtype for momentum and weight decay, Float32 for everything
       // else.
       auto tuppy = std::make_tuple(id, TensorInfo(weight.info.dataType(), {}));
@@ -503,12 +503,12 @@ void SGD::validReplacement(const Optimizer &other) const {
     }
 
     if (sgdAccMm == SGDAccumulatorAndMomentum::Separate) {
-      if (sgd2AccumType != asSgd->sgd2AccumType) {
+      if (sgdAccumType != asSgd->sgdAccumType) {
         throw optimizer_replacement_error(
-            "this has SGDAccumulatorAndMomentum::Separate and sgd2AccumType "
+            "this has SGDAccumulatorAndMomentum::Separate and sgdAccumType "
             "{}, but other has {}",
-            sgd2AccumType,
-            asSgd->sgd2AccumType);
+            sgdAccumType,
+            asSgd->sgdAccumType);
       }
 
       if (sgd2Accl1Type != asSgd->sgd2Accl1Type) {
@@ -527,10 +527,10 @@ std::unique_ptr<Optimizer> SGD::clone() const {
 }
 
 TensorId SGD::getInverseLossScalingTensorId(const Tensor &weight) const {
-  if (requiresAccl(weight)) {
-    return getInputIds(weight).at(SGDComboBaseOp::getDpsf1InIndex());
+  if (hasMomentum(weight)) {
+    return getInputIds(weight).at(SGDMComboBaseOp::getDpsf1InIndex());
   } else {
-    return getInputIds(weight).at(SGD0VarUpdateOp::getSlr0InIndex());
+    return getInputIds(weight).at(SGD0ComboOp::getSlr0InIndex());
   }
 }
 
@@ -566,7 +566,7 @@ size_t SGD::hash() const {
     boost::hash_combine(seed, sgdAccMm);
 
     if (sgdAccMm == SGDAccumulatorAndMomentum::Separate) {
-      boost::hash_combine(seed, sgd2AccumType);
+      boost::hash_combine(seed, sgdAccumType);
       boost::hash_combine(seed, sgd2Accl1Type);
     }
   }

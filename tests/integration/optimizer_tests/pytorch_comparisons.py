@@ -63,6 +63,8 @@ def compare_against_pytorch(optType, optMaps, batchesPerStep=5, scaled=False):
         popartOpt = popart.Adaptive
         optkwargs["mode"] = popart.AdaptiveMode.AdaDelta
         optkwargs["weight_decay_mode"] = popart.WeightDecayMode.L2Regularization
+    elif optType == "sgd0":
+        popartOpt = popart.SGD
     elif optType == "sgd1":
         popartOpt = popart.SGD
         optkwargs[
@@ -313,19 +315,22 @@ def compare_against_pytorch(optType, optMaps, batchesPerStep=5, scaled=False):
 
 def sgd_test_against_pytorch(optType):
     #optimizer parameters
-    defaultLearningRate0 = 0.005
-    defaultLearningRate1 = 0.003
-    defaultLearningRate2 = 0.001
+    defaultLearningRate0 = 0.5
+    defaultLearningRate1 = 0.3
+    defaultLearningRate2 = 0.1
 
-    defaultMomentum0 = 0.1
-    defaultDampening0 = 0.3
+    defaultMomentum0 = 0
+    defaultDampening0 = 0
+    if optType != "sgd0":
+        defaultMomentum0 = 0.1
+        defaultDampening0 = 0.3
     lossScaling0 = 10.0
     defaultVelocityScaling0 = 0.5
     defaultWeightDecay0 = 0.01
 
     optMap0 = {
         "defaultLearningRate": (defaultLearningRate0, False),
-        "defaultMomentum": (defaultMomentum0, False),
+        "defaultMomentum": (defaultMomentum0, defaultMomentum0 == 0),
         "defaultDampening": (defaultDampening0, False),
         "defaultVelocityScaling": (defaultVelocityScaling0, False),
         "lossScaling": (lossScaling0, False),
@@ -334,7 +339,7 @@ def sgd_test_against_pytorch(optType):
 
     optMap1 = {
         "defaultLearningRate": (defaultLearningRate1, False),
-        "defaultMomentum": (defaultMomentum0, False),
+        "defaultMomentum": (defaultMomentum0, defaultMomentum0 == 0),
         "defaultDampening": (defaultDampening0, False),
         "defaultVelocityScaling": (defaultVelocityScaling0, False),
         "lossScaling": (lossScaling0, False),
@@ -343,7 +348,7 @@ def sgd_test_against_pytorch(optType):
 
     optMap2 = {
         "defaultLearningRate": (defaultLearningRate2, False),
-        "defaultMomentum": (defaultMomentum0, False),
+        "defaultMomentum": (defaultMomentum0, defaultMomentum0 == 0),
         "defaultDampening": (defaultDampening0, False),
         "defaultVelocityScaling": (defaultVelocityScaling0, False),
         "lossScaling": (lossScaling0, False),
@@ -351,6 +356,11 @@ def sgd_test_against_pytorch(optType):
     }
 
     compare_against_pytorch(optType, [optMap0, optMap1, optMap2])
+
+
+@tu.requires_ipu_model
+def test_sgd0_against_pytorch():
+    sgd_test_against_pytorch("sgd0")
 
 
 @tu.requires_ipu_model

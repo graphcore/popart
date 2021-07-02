@@ -57,8 +57,9 @@ struct SGD0TestCase : public _detail::SGDTestCase {
  */
 struct SGD1TestCase : public _detail::SGDTestCase {
   SGD1TestCase()
-      : SGDTestCase(
-            popart::SGD({}, {}, popart::SGDAccumulatorAndMomentum::Combined)) {
+      : SGDTestCase(popart::SGD{{{"defaultMomentum", {0.20f, true}}},
+                                {},
+                                popart::SGDAccumulatorAndMomentum::Combined}) {
     using namespace popart;
 
     SessionOptions opts;

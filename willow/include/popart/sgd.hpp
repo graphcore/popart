@@ -428,7 +428,8 @@ std::ostream &operator<<(std::ostream &os,
 // Recall from \sa Optimizer::createOp that the Optimizer implementation will
 // create the VarUpdateOp used for updating each weight.
 //
-// For SGD0, this is an SGD0VarUpdateOp.
+// For SGD0, this is an SGD0ComboOp. This will later be decomposed into a series
+// of ops by the SGD0Decompose pattern. \sa SGD0Decompose.
 //
 // For SGD1, this is an SGD1ComboOp. This will later be decomposed into a series
 // of ops by the SGD1Decompose pattern. \sa SGD1Decompose.
@@ -745,10 +746,7 @@ public:
   virtual size_t hash() const;
 
 private:
-  /// If velocity (accumulation) is required, either because of gradient
-  /// accumulation or because of momentum, then return true otherwise return
-  /// false.
-  bool requiresAccl(const Tensor &weight) const;
+  bool hasMomentum(const Tensor &weight) const;
 
   void runValueChecks(OptimizerValue lr,
                       OptimizerValue wd,
@@ -788,8 +786,9 @@ private:
   // SGD implementation strategy when accl/accum tensors needed (SGD1 or SGD2)
   SGDAccumulatorAndMomentum sgdAccMm;
 
-  // SGD2 only: DataType of accum and accl1 tensors can be specified.
-  DataType sgd2AccumType;
+  // SGD0 and SGD2 only: DataType of accum can be specified.
+  DataType sgdAccumType;
+  // SGD2 only: accl1 tensors can be specified.
   DataType sgd2Accl1Type;
 
   // int argument only to disambiguate from the other SGD constructor

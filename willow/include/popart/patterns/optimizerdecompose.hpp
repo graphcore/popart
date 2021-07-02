@@ -39,19 +39,23 @@ protected:
                      Op *combo,
                      TensorId accumId,
                      TensorId gradIntoAccumId,
-                     bool accumReduce) const;
+                     bool accumReduce,
+                     TensorId outputId = "") const;
 
   // Reset all values of accumulutor with TensorID
   // Transfers the name and properties from Op, combo and schedules the op to
   // take place once beforeOps have run (and after gradient accumulation has
   // taken place.)
-  void zeroAccumulator(Graph &graph,
-                       Op *combo,
-                       std::vector<Op *> beforeOps,
-                       TensorId accumId) const;
+  Op *zeroAccumulator(Graph &graph,
+                      Op *combo,
+                      std::vector<Op *> beforeOps,
+                      TensorId accumId) const;
 
   // Gradient reduction
-  TensorId gradReduce(Graph &graph, Op *combo, TensorId weightGradId) const;
+  TensorId gradReduce(Graph &graph,
+                      Op *combo,
+                      TensorId weightGradId,
+                      TensorId outputId = "") const;
 
   // Gradient casting
   // Runs after gradient accumulation (if enabled) has completed

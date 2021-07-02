@@ -142,7 +142,11 @@ float ScaledLearningRate0Helper::val(const TensorId &weightId,
   auto lr = sgd.learningRates().get(weightId).val();
   auto ls = sgd.lossScaling().val();
   auto dp = sgd.dampenings().get(weightId).val();
-  return val(lr, ls, dp);
+  return val(lr,
+             ls,
+             dp,
+             sgd.meanGradientAccumulationEnabled() ? sgd.getAccumulationFactor()
+                                                   : 1);
 }
 
 namespace {

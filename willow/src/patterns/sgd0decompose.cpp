@@ -7,6 +7,7 @@
 #include <popart/ir.hpp>
 #include <popart/op/collectives/replicatedallreduce.hpp>
 #include <popart/op/concat.hpp>
+#include <popart/op/sgd0combo.hpp>
 #include <popart/op/sgd0varupdate.hpp>
 #include <popart/op/slice.hpp>
 #include <popart/optimizer.hpp>
@@ -18,7 +19,7 @@
 namespace popart {
 
 bool SGD0Decompose::matches(Op *op) const {
-  return op->isConvertibleTo<SGD0VarUpdateOp>();
+  return op->isConvertibleTo<SGD0ComboOp>();
 }
 
 std::vector<const Tensor *> SGD0Decompose::touches(Op *) const { return {}; }
@@ -28,51 +29,110 @@ bool SGD0Decompose::apply(Op *op) const {
   auto &graph = op->getGraph();
 
   // matches must have verified the correctness before this call
-  auto sgd0 = static_cast<SGD0VarUpdateOp *>(op);
+  auto combo = static_cast<SGD0ComboOp *>(op);
 
-  if (sgd0->getReductionType() == OptimizerReductionType::GradReduce) {
+  Tensor *weightGrad =
+      combo->inTensor(VarUpdateWithUpdaterOp::getUpdaterInIndex());
+  Tensor *weight    = combo->inTensor(VarUpdateOp::getVarToUpdateInIndex());
+  Tensor *newWeight = combo->outTensor(VarUpdateOp::getUpdatedVarOutIndex());
 
-    InIndex inIndex = SGD0VarUpdateOp::getUpdaterInIndex();
-    Tensor *grad    = sgd0->input->tensor(inIndex);
+  TensorId weightGradId    = weightGrad->id;
+  TensorId weightId        = weight->id;
+  TensorId updatedWeightId = newWeight->id;
 
-    auto reduceOpUp = std::make_unique<ReplicatedAllReduceOp>(
-        Onnx::CustomOperators::ReplicatedAllReduce,
-        Op::Settings(graph, sgd0->name() + "_reduce"));
-    auto reduceOp = reduceOpUp.get();
-    transferBaseProperties(sgd0, reduceOp);
-    graph.moveIntoGraph(std::move(reduceOpUp));
+  auto weightInfo  = weight->info;
+  auto weightShape = weightInfo.shape();
 
-    logging::pattern::trace("Connecting input {} to {} at {}",
-                            grad->id,
-                            reduceOp->str(),
-                            ReplicatedAllReduceOp::getInIndex());
-    reduceOp->connectInTensor(ReplicatedAllReduceOp::getInIndex(), grad->id);
+  // Accumulator
+  TensorId accumId = reservedAccumPrefix() + weightId;
+  if (combo->withGradAccum) {
+    addStateTensor(graph, accumId, weightShape, combo->accumType);
+  }
 
-    TensorId reducedTensorId = grad->id + "_reduced";
+  TensorId gradIntoAccumId  = weightGradId;
+  TensorId gradIntoUpdateId = weightGradId;
+  TensorId finalGradId      = reservedFinalReducedGradPrefix() + weightId;
 
-    reduceOp->createAndConnectOutTensor(ReplicatedAllReduceOp::getOutIndex(),
-                                        reducedTensorId);
+  if (combo->reductionType == OptimizerReductionType::GradReduce) {
+    TensorId reducedId = gradReduce(
+        graph, combo, weightGradId, !combo->withGradAccum ? finalGradId : "");
+    gradIntoAccumId  = reducedId;
+    gradIntoUpdateId = reducedId;
+  }
 
-    reduceOp->setup();
+  Op *zeroAccum;
+  if (combo->withGradAccum) {
+    gradIntoUpdateId =
+        gradAccum(graph,
+                  combo,
+                  accumId,
+                  gradIntoAccumId,
+                  combo->reductionType == OptimizerReductionType::AccumReduce,
+                  finalGradId);
+    zeroAccum = zeroAccumulator(graph, combo, {}, accumId);
+  }
 
-    sgd0->disconnectInTensor(grad);
-    sgd0->connectInTensor(inIndex, reducedTensorId);
+  Op *varUpdate = varUpdateAndEraseCombo(
+      graph, combo, weightId, gradIntoUpdateId, updatedWeightId);
 
-    logging::transform::trace(
-        "[SGD0Decompose] {} -> {}", reduceOp->debugName(), op->debugName());
-
-    // Tie the reduction operation to the SGD0VarUpdate to get the same schedule
-    // behaviour as if the reduction was still integrated into SGD0VarUpdate
-    graph.topoCons->insert(reduceOp, sgd0, true);
-
-    AliasModel aliasModel;
-    AliasModelGrower aliasModelGrower{aliasModel};
-    aliasModelGrower.growFullGraph(graph, DataDependenciesOnly::Yes);
-
-    reduceOp->inheritPlacementAttributes(false, aliasModel);
+  // Zero the gradient accumulator after updating the 1st momentum term
+  // ready for next step
+  if (combo->withGradAccum) {
+    graph.topoCons->insert(varUpdate, zeroAccum);
   }
 
   return true;
+}
+
+Op *SGD0Decompose::varUpdateAndEraseCombo(
+    Graph &graph,
+    SGD0ComboOp *combo,
+    const TensorId &weightId,
+    const TensorId &gradIntoUpdateId,
+    const TensorId &updatedWeightId) const {
+
+  auto sgd0VarUpdate = graph.createOp<SGD0VarUpdateOp>(
+      combo->initSlr0,
+      combo->initWdsf0,
+      Op::Settings(graph, combo->name() + "_var_update"));
+  transferBaseProperties(combo, sgd0VarUpdate);
+
+  sgd0VarUpdate->connectInTensor(VarUpdateOp::getVarToUpdateInIndex(),
+                                 weightId);
+
+  sgd0VarUpdate->connectInTensor(VarUpdateWithUpdaterOp::getUpdaterInIndex(),
+                                 gradIntoUpdateId);
+
+  if (!combo->initSlr0.isConst()) {
+    sgd0VarUpdate->connectInTensor(SGD0VarUpdateOp::getSlr0InIndex(),
+                                   combo->inId(SGD0ComboOp::getSlr0InIndex()));
+  }
+
+  if (!combo->initWdsf0.isConst()) {
+    sgd0VarUpdate->connectInTensor(SGD0VarUpdateOp::getWdsf0InIndex(),
+                                   combo->inId(SGD0ComboOp::getWdsf0InIndex()));
+  }
+
+  if (combo->withGradAccum) {
+    sgd0VarUpdate->settings.executionContext =
+        ExecutionContext::AccumulateOuterFragment;
+    sgd0VarUpdate->setExecutionPhase({});
+    sgd0VarUpdate->settings.schedulePriority = 0.0;
+  } else {
+    graph.topoCons->transfer(combo, sgd0VarUpdate);
+  }
+
+  // Deleting combo op now, so that its output can be re-connected.
+  combo->disconnectAllInputs();
+  combo->disconnectAllOutputs();
+  graph.eraseOp(combo->id);
+
+  // (4)
+  sgd0VarUpdate->connectOutTensor(SGD0VarUpdateOp::getUpdatedVarOutIndex(),
+                                  updatedWeightId);
+  sgd0VarUpdate->setup();
+
+  return sgd0VarUpdate;
 }
 
 namespace {

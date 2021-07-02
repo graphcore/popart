@@ -83,7 +83,6 @@ GraphTestModel1::GraphTestModel1() {
       {{SGD0VarUpdateOp::getUpdatedVarOutIndex(), subgraph0.addScope("t7")}},
       OptimizerValue(0.5, true),
       OptimizerValue(0.5, true),
-      OptimizerReductionType::None,
       sg0Settings.copy("SGD0VarUpdate"));
   subgraph0.markAsOutput(subgraph0.addScope("t7"));
 
@@ -188,7 +187,6 @@ GraphTestModel2::GraphTestModel2() {
       {{SGD0VarUpdateOp::getUpdatedVarOutIndex(), "t6"}},
       OptimizerValue(0.5, true),
       OptimizerValue(0.5, true),
-      OptimizerReductionType::None,
       gSettings.copy("SGD0VarUpdate"));
 
   graph.topoCons->insert(add0, sgd0, false);

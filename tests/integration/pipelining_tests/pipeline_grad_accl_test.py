@@ -149,8 +149,6 @@ def get_model_anchors_model1(doSharding,
         if doPipelining is True and anchorRestoredTensors is True:
             anchor_map[popart.reservedRestoredPrefix() + x] = art
             anchor_map[popart.reservedRestoredPrefix() + w0] = art
-        if doGradAccl is True:
-            anchor_map[popart.reservedAcclToUpdatePrefix() + w0] = art
 
     opts = popart.SessionOptions()
     opts.reportOptions = {"showExecutionSteps": "true"}
@@ -210,10 +208,6 @@ def get_model_anchors_model1(doSharding,
 
     session.run(stepio)
 
-    if doProfiling is True:
-        from gcprofile import save_popart_report
-        save_popart_report(session)
-
     return anchors
 
 
@@ -263,8 +257,6 @@ def get_model_anchors_model2(doSharding,
             anchor_map[popart.reservedRestoredPrefix() + e0] = art
             anchor_map[d0] = art
             anchor_map[popart.reservedRestoredPrefix() + d0] = art
-        if doGradAccl is True:
-            anchor_map[popart.reservedAcclToUpdatePrefix() + w0] = art
 
     opts = popart.SessionOptions()
     opts.reportOptions = {"showExecutionSteps": "true"}
@@ -332,10 +324,6 @@ def get_model_anchors_model2(doSharding,
 
     for i in range(6):
         session.run(stepio)
-
-    if doProfiling is True:
-        from gcprofile import save_popart_report
-        save_popart_report(session)
 
     if returnRawInput is True:
         anchors["input_raw"] = data

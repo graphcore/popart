@@ -20,7 +20,7 @@ namespace popart {
  * case, by the SGD1Decompose pattern. \sa SGD1Decompose for the definition of
  * this decomposition.
  */
-class SGD1ComboOp final : public SGDComboBaseOp {
+class SGD1ComboOp final : public SGDMComboBaseOp {
 public:
   SGD1ComboOp(OptimizerValue initialSmm1,
               OptimizerValue initialDpsf1,

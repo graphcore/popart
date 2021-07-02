@@ -1333,20 +1333,20 @@ BOOST_AUTO_TEST_CASE(HostReduceTransformationWithAccumulation) {
     userOptions.accumulationFactor         = accumulationFactor;
 
     std::map<TensorId, TensorInfo> idToInfo{
-        {reservedAcclToUpdatePrefix() + getGradId(w0), sampleInfo},
-        {reservedAcclToUpdatePrefix() + getGradId(w1), sampleInfo},
-        {reservedAcclToUpdatePrefix() + getGradId(w2), sampleInfo},
-        {reservedAcclToUpdatePrefix() + getGradId(w3), sampleInfo},
-        {reservedAcclToUpdatePrefix() + getGradId(w4), sampleInfo},
-        {reservedAcclToUpdatePrefix() + getGradId(w5), sampleInfo}};
+        {reservedFinalReducedGradPrefix() + getGradId(w0), sampleInfo},
+        {reservedFinalReducedGradPrefix() + getGradId(w1), sampleInfo},
+        {reservedFinalReducedGradPrefix() + getGradId(w2), sampleInfo},
+        {reservedFinalReducedGradPrefix() + getGradId(w3), sampleInfo},
+        {reservedFinalReducedGradPrefix() + getGradId(w4), sampleInfo},
+        {reservedFinalReducedGradPrefix() + getGradId(w5), sampleInfo}};
 
     std::map<TensorId, std::vector<float>> idToGrad{
-        {reservedAcclToUpdatePrefix() + w0, std::vector<float>(sampleElms)},
-        {reservedAcclToUpdatePrefix() + w1, std::vector<float>(sampleElms)},
-        {reservedAcclToUpdatePrefix() + w2, std::vector<float>(sampleElms)},
-        {reservedAcclToUpdatePrefix() + w3, std::vector<float>(sampleElms)},
-        {reservedAcclToUpdatePrefix() + w4, std::vector<float>(sampleElms)},
-        {reservedAcclToUpdatePrefix() + w5, std::vector<float>(sampleElms)},
+        {reservedFinalReducedGradPrefix() + w0, std::vector<float>(sampleElms)},
+        {reservedFinalReducedGradPrefix() + w1, std::vector<float>(sampleElms)},
+        {reservedFinalReducedGradPrefix() + w2, std::vector<float>(sampleElms)},
+        {reservedFinalReducedGradPrefix() + w3, std::vector<float>(sampleElms)},
+        {reservedFinalReducedGradPrefix() + w4, std::vector<float>(sampleElms)},
+        {reservedFinalReducedGradPrefix() + w5, std::vector<float>(sampleElms)},
     };
     float learnRate = 1.0;
     auto optimizer  = ConstSGD(learnRate);
@@ -1612,7 +1612,7 @@ BOOST_AUTO_TEST_CASE(HostReduceTransformationWithPipelining) {
 
     std::string prefix = "";
     if (userOptions.enableGradientAccumulation) {
-      prefix = reservedAcclToUpdatePrefix();
+      prefix = reservedFinalReducedGradPrefix();
     }
 
     std::map<TensorId, TensorInfo> idToInfo{
@@ -1889,7 +1889,7 @@ BOOST_AUTO_TEST_CASE(HostReduceTransformationWithPipeliningAndAccumulation) {
 
     std::string prefix = "";
     if (userOptions.enableGradientAccumulation) {
-      prefix = reservedAcclToUpdatePrefix();
+      prefix = reservedFinalReducedGradPrefix();
     }
 
     std::map<TensorId, std::vector<float>> idToGrad{
@@ -2341,25 +2341,25 @@ BOOST_AUTO_TEST_CASE(OATTWithAccumulation, *boost::unit_test::disabled()) {
     userOptions.accumulationFactor         = accumulationFactor;
 
     std::map<TensorId, TensorInfo> idToInfo{
-        {reservedAcclToUpdatePrefix() + getGradId(w0), sampleInfo},
-        {reservedAcclToUpdatePrefix() + getGradId(w1), sampleInfo},
-        {reservedAcclToUpdatePrefix() + getGradId(w2), sampleInfo},
-        {reservedAcclToUpdatePrefix() + getGradId(w3), sampleInfo},
-        {reservedAcclToUpdatePrefix() + getGradId(w4), sampleInfo},
-        {reservedAcclToUpdatePrefix() + getGradId(w5), sampleInfo}};
+        {reservedFinalReducedGradPrefix() + getGradId(w0), sampleInfo},
+        {reservedFinalReducedGradPrefix() + getGradId(w1), sampleInfo},
+        {reservedFinalReducedGradPrefix() + getGradId(w2), sampleInfo},
+        {reservedFinalReducedGradPrefix() + getGradId(w3), sampleInfo},
+        {reservedFinalReducedGradPrefix() + getGradId(w4), sampleInfo},
+        {reservedFinalReducedGradPrefix() + getGradId(w5), sampleInfo}};
 
     std::map<TensorId, std::vector<float>> idToGrad{
-        {reservedAcclToUpdatePrefix() + getGradId(w0),
+        {reservedFinalReducedGradPrefix() + getGradId(w0),
          std::vector<float>(sampleElms)},
-        {reservedAcclToUpdatePrefix() + getGradId(w1),
+        {reservedFinalReducedGradPrefix() + getGradId(w1),
          std::vector<float>(sampleElms)},
-        {reservedAcclToUpdatePrefix() + getGradId(w2),
+        {reservedFinalReducedGradPrefix() + getGradId(w2),
          std::vector<float>(sampleElms)},
-        {reservedAcclToUpdatePrefix() + getGradId(w3),
+        {reservedFinalReducedGradPrefix() + getGradId(w3),
          std::vector<float>(sampleElms)},
-        {reservedAcclToUpdatePrefix() + getGradId(w4),
+        {reservedFinalReducedGradPrefix() + getGradId(w4),
          std::vector<float>(sampleElms)},
-        {reservedAcclToUpdatePrefix() + getGradId(w5),
+        {reservedFinalReducedGradPrefix() + getGradId(w5),
          std::vector<float>(sampleElms)},
     };
 
@@ -2609,7 +2609,7 @@ BOOST_AUTO_TEST_CASE(OATTWithPipeliningAndAccumulation,
 
     std::string prefix = "";
     if (userOptions.enableGradientAccumulation) {
-      prefix = reservedAcclToUpdatePrefix();
+      prefix = reservedFinalReducedGradPrefix();
     }
 
     std::map<TensorId, std::vector<float>> idToGrad{

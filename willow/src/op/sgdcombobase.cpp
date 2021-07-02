@@ -6,18 +6,18 @@
 
 namespace popart {
 
-SGDComboBaseOp::SGDComboBaseOp(const OperatorIdentifier &opid,
-                               OptimizerValue initialSmm1,
-                               OptimizerValue initialDpsf1,
-                               OptimizerValue initialSwd1,
-                               OptimizerValue initialSlr1,
-                               OptimizerReductionType reductionType_,
-                               const Op::Settings &settings_)
+SGDMComboBaseOp::SGDMComboBaseOp(const OperatorIdentifier &opid,
+                                 OptimizerValue initialSmm1,
+                                 OptimizerValue initialDpsf1,
+                                 OptimizerValue initialSwd1,
+                                 OptimizerValue initialSlr1,
+                                 OptimizerReductionType reductionType_,
+                                 const Op::Settings &settings_)
     : VarUpdateWithUpdaterOp(opid, settings_), initSmm1(std::move(initialSmm1)),
       initDpsf1(std::move(initialDpsf1)), initSwd1(std::move(initialSwd1)),
       initSlr1(std::move(initialSlr1)), reductionType(reductionType_) {}
 
-void SGDComboBaseOp::appendOutlineAttributes(OpSerialiserBase &os) const {
+void SGDMComboBaseOp::appendOutlineAttributes(OpSerialiserBase &os) const {
   if (initSmm1.isConst()) {
     os.appendAttribute("const scaled momentum", initSmm1.val());
   }
@@ -37,7 +37,7 @@ void SGDComboBaseOp::appendOutlineAttributes(OpSerialiserBase &os) const {
   os.appendAttribute("reduction type", static_cast<int>(reductionType));
 }
 
-std::map<InIndex, TensorId> SGDComboBaseOp::optimizerInputs() const {
+std::map<InIndex, TensorId> SGDMComboBaseOp::optimizerInputs() const {
 
   std::map<InIndex, TensorId> m;
 
@@ -64,7 +64,7 @@ std::map<InIndex, TensorId> SGDComboBaseOp::optimizerInputs() const {
   return m;
 }
 
-std::set<InIndex> SGDComboBaseOp::optionalInputs() const {
+std::set<InIndex> SGDMComboBaseOp::optionalInputs() const {
   return {
       getSmm1InIndex(), getDpsf1InIndex(), getSwd1InIndex(), getSlr1InIndex()};
 }

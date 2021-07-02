@@ -351,6 +351,7 @@ const static AiGraphcoreOpIdV1 ScaledVarUpdate("ScaledVarUpdate");
 const static AiGraphcoreOpIdV1 ScaleInplace("ScaleInplace");
 const static AiGraphcoreOpIdV1 ScatterReduce("ScatterReduce", 2, 1);
 const static AiGraphcoreOpIdV1 SeluInplace("SeluInplace");
+const static AiGraphcoreOpIdV1 SGD0Combo("SGD0Combo");
 const static AiGraphcoreOpIdV1 SGD0VarUpdate("SGD0VarUpdate");
 const static AiGraphcoreOpIdV1 SGD1AcclUpdate("SGD1AcclUpdate");
 const static AiGraphcoreOpIdV1 SGD1Combo("SGD1Combo");

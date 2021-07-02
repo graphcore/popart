@@ -6,7 +6,7 @@
 #include <popart/op/concat.hpp>
 #include <popart/op/copyvarupdate.hpp>
 #include <popart/op/reshape.hpp>
-#include <popart/op/sgd0varupdate.hpp>
+#include <popart/op/sgd0combo.hpp>
 #include <popart/op/sgd1combo.hpp>
 #include <popart/op/sgd2combo.hpp>
 #include <popart/op/slice.hpp>
@@ -44,8 +44,8 @@ std::size_t MergeLooseThreshold::id() {
 
 namespace {
 
-void appendPartitionIdForSGDComboBaseOp(const SGDComboBaseOp *svu,
-                                        std::stringstream &ss) {
+void appendPartitionIdForSGDMComboBaseOp(const SGDMComboBaseOp *svu,
+                                         std::stringstream &ss) {
   // momentum
   if (svu->initSmm1.isConst()) {
     ss << "_constLr_" << svu->initSmm1.val();
@@ -81,9 +81,9 @@ MergeVarUpdates::PartitionId MergeVarUpdates::getPartitionId(Op *op) const {
   ss << "vg_" << op->settings.vgraphId;
 
   // 1) SGD settings
-  if (op->isConvertibleTo<SGD0VarUpdateOp>()) {
-    auto svu = dynamic_cast<SGD0VarUpdateOp *>(op);
-    ss << "_SGD0_";
+  if (op->isConvertibleTo<SGD0ComboOp>()) {
+    auto svu = dynamic_cast<SGD0ComboOp *>(op);
+    ss << "_SGD0C_";
 
     if (svu->initSlr0.isConst()) {
       ss << "_constLr_" << svu->initSlr0.val();
@@ -101,7 +101,7 @@ MergeVarUpdates::PartitionId MergeVarUpdates::getPartitionId(Op *op) const {
   else if (op->isConvertibleTo<SGD1ComboOp>()) {
     auto svu = dynamic_cast<SGD1ComboOp *>(op);
     ss << "_SGD1C_";
-    appendPartitionIdForSGDComboBaseOp(svu, ss);
+    appendPartitionIdForSGDMComboBaseOp(svu, ss);
   }
 
   else if (op->isConvertibleTo<SGD2ComboOp>()) {
@@ -109,7 +109,7 @@ MergeVarUpdates::PartitionId MergeVarUpdates::getPartitionId(Op *op) const {
 
     ss << "_SGD2C_";
 
-    appendPartitionIdForSGDComboBaseOp(svu, ss);
+    appendPartitionIdForSGDMComboBaseOp(svu, ss);
 
     ss << "_withGradAccum_" << std::boolalpha << svu->withGradAccum
        << std::noboolalpha;

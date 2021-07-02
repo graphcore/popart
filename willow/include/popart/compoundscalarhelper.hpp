@@ -72,8 +72,8 @@ class ScaledLearningRate0Helper : public CompoundScalarHelper<SGD> {
 public:
   float val(const TensorId &weightId, const SGD &) const final;
   bool isConst(const TensorId &weightId, const SGD &) const final;
-  float val(float lr, float ls, float dp) const {
-    return lr * (1.0f - dp) / ls;
+  float val(float lr, float ls, float dp, float af) const {
+    return (lr * (1.0f - dp)) / (ls * af);
   }
 
 private:

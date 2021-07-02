@@ -29,7 +29,7 @@ INPUT = "input"
 WEIGHTS = "init_input"
 ACTIVATION = "Reshape:0"
 GRADIENT = popart.reservedGradientPrefix() + WEIGHTS
-ACCL = popart.reservedAcclPrefix() + WEIGHTS
+ACCUM = popart.reservedAccumPrefix() + WEIGHTS
 
 
 def dict_product(d):
@@ -102,7 +102,7 @@ def return_anchors(anchorDict, label_array):
     anchors[WEIGHTS] = popart.AnchorReturnType(anchorDict["ReturnType"])
 
     if anchorDict["AccumulationFactor"] > 1:
-        anchors[ACCL] = popart.AnchorReturnType(anchorDict["ReturnType"])
+        anchors[ACCUM] = popart.AnchorReturnType(anchorDict["ReturnType"])
 
     data_flow = popart.DataFlow(BATCHES_PER_STEP, anchors)
 
@@ -179,7 +179,7 @@ def test_all_anchor_returns():
             # Gradient.
             GRADIENT: [DATA_LEN, DATA_LEN],
             # Accl.
-            ACCL: [DATA_LEN, DATA_LEN]
+            ACCUM: [DATA_LEN, DATA_LEN]
         }
 
         # Add in BPS if all batches are requested. (AnchorReturnType("All"))

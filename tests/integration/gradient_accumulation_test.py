@@ -152,8 +152,7 @@ def run_graph(optimizer, input_shape, initial_onnx_model, input_tensor_name,
         anchorNames[popart.reservedGradientPrefix() + w0] = art
 
         if enable_accum:
-            anchorNames[popart.reservedAcclPrefix() + w0] = art
-            anchorNames[popart.reservedAcclToUpdatePrefix() + w0] = art
+            anchorNames[popart.reservedAccumPrefix() + w0] = art
 
     opts = popart.SessionOptions()
     opts.enableGradientAccumulation = enable_accum
@@ -516,104 +515,15 @@ def test_gradient_accumulation_error_accum_factor_invalid(
 
 @tu.requires_ipu_model
 @pytest.mark.parametrize("explicit_loops", [True, False])
-def test_gradient_accumulation_anchors(tmpdir, explicit_loops):
-    """
-    Check that the accumulated gradients with gradient accumulation match
-    the gradients without gradient accumulation enabled.
-    """
-
-    label_array = np.random.randint(0, hidden_size, batch_size)
-
-    #TODO T11866 larger batches-per-step, first without weight decay, then with weight decay
-    batches_per_step = 1
-
-    accl_initial_proto, accl_proto_filename, accl_anchor_arrays = run_mm_graph(
-        sgd_optimizer,
-        label_array=label_array,
-        accum_factor=4,
-        enable_accum=True,
-        batches_per_step=batches_per_step,
-        number_of_steps=1,
-        final_proto_filename=os.path.join(tmpdir,
-                                          "accl5batches3stepsAnchorsTest"),
-        enable_multi_ipu=False,
-        full_anchorage=True,
-        inference_mode=False,
-        explicit_loops=explicit_loops)
-
-    no_accl_initial_proto, no_accl_proto_filename, no_accl_anchor_arrays = run_mm_graph(
-        sgd_optimizer,
-        label_array=label_array,
-        accum_factor=1,
-        enable_accum=False,
-        batches_per_step=batches_per_step,
-        number_of_steps=1,
-        final_proto_filename=os.path.join(tmpdir,
-                                          "noAccl5batches3stepsAnchorsTest"),
-        enable_multi_ipu=False,
-        full_anchorage=True,
-        inference_mode=False,
-        explicit_loops=explicit_loops)
-
-    w0_tensor = onnx.load_from_string(accl_initial_proto).graph.initializer[0]
-    w0_name = w0_tensor.name
-
-    full_batch_grad = no_accl_anchor_arrays[popart.reservedGradientPrefix() +
-                                            w0_name]
-    accl_grad = accl_anchor_arrays[popart.reservedAcclToUpdatePrefix() +
-                                   w0_name]
-
-    print("full batch grad shape is ")
-    print(full_batch_grad.shape)
-
-    print("accl grad shape is ")
-    print(accl_grad.shape)
-
-    if (batches_per_step > 1):
-        #TODO T11866
-        raise RuntimeError("batches per step > 1 needs investigation")
-
-        for i in range(batches_per_step):
-            print("\nbatch %d" % (i, ))
-            print("Absolute accl grad  %.3f" % (np.sum(np.abs(accl_grad[i]))))
-            print("Absolute no accl g  %.3f" %
-                  (np.sum(np.abs(full_batch_grad[i]))))
-            print("Absolute difference %.3f" %
-                  (np.sum(np.abs(full_batch_grad[i] - accl_grad[i]))))
-
-            print("Absolute difference %.3f" %
-                  (np.sum(np.abs(full_batch_grad[i] - adjusted_accl_grad[i]))))
-
-    else:
-        accl_grad_abs_sum = np.sum(np.abs(accl_grad))
-        print("Absolute accl grad  %.3f" % (accl_grad_abs_sum))
-
-        # initialising as per equations. When velocity scaling != 1 this may need changing T12001
-        adjusted_accl_grad = accl_grad[-1].flatten().copy()
-        for i, v in enumerate(w0_tensor.float_data):
-            adjusted_accl_grad[i] -= wd * v
-
-        adjusted_accl_grad_abs_sum = np.sum(np.abs(adjusted_accl_grad))
-        print("Absolute accl grad, adjusted for weight decay %.3f" %
-              (adjusted_accl_grad_abs_sum))
-
-        full_batch_abs_sum = np.sum(np.abs(full_batch_grad))
-        print("Absolute no accl g  %.3f" % (full_batch_abs_sum))
-
-        abs_diff = np.sum(
-            np.abs(full_batch_grad.flatten() - adjusted_accl_grad))
-        print("Absolute difference %.3f" % (abs_diff))
-
-        assert (abs_diff / (full_batch_abs_sum + accl_grad_abs_sum) < 1e-5)
-
-
-@tu.requires_ipu_model
-@pytest.mark.parametrize("explicit_loops", [True, False])
 def test_gradient_accumulation_model_proto(tmpdir, explicit_loops):
     np.random.seed(1234)
     label_array = np.random.randint(0, hidden_size, batch_size)
     accl_initial_proto, accl_proto_filename, accl_anchor_arrays = run_mm_graph(
-        sgd_optimizer,
+        # Using Momentum to create accl tensors.
+        popart.SGD({
+            "defaultLearningRate": (0.1, False),
+            "defaultMomentum": (0.9, True)
+        }),
         label_array=label_array,
         accum_factor=4,
         enable_accum=True,
@@ -658,7 +568,7 @@ def test_gradient_accumulation_model_proto(tmpdir, explicit_loops):
 
 
 @pytest.mark.parametrize("explicit_loops", [True, False])
-def test_loading_saved_gradient_accumulationt_tesors(tmpdir, explicit_loops):
+def test_loading_saved_gradient_accumulationt_tensors(tmpdir, explicit_loops):
     """
     1. Build a model with matmuls, no grad accumulation
     2. Write out onnx model, verify initializers contain no accl tensors
@@ -689,7 +599,11 @@ def test_loading_saved_gradient_accumulationt_tesors(tmpdir, explicit_loops):
             dataFlow=popart.DataFlow(1, {}),
             deviceInfo=tu.create_test_device(tilesPerIPU=testTilesPerIPU),
             loss=output_name,
-            optimizer=sgd_optimizer,
+            # Using momentum to create accl tensors
+            optimizer=popart.SGD({
+                "defaultLearningRate": (0.1, False),
+                "defaultMomentum": (0.9, True)
+            }),
             userOptions=opts)
         sess.prepareDevice()
 
@@ -927,7 +841,7 @@ def test_adam_gradient_accumulation_model_proto(tmpdir, explicit_loops):
 
 
 @pytest.mark.parametrize("explicit_loops", [True, False])
-def test_adam_loading_saved_gradient_accumulationt_tesors(
+def test_adam_loading_saved_gradient_accumulationt_tensors(
         tmpdir, explicit_loops):
     """
     1. Build a model with matmuls, no grad accumulation

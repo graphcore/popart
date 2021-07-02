@@ -29,8 +29,7 @@ class SGD2ComboOp;
  * SGD2ComboOp.
  *
  * Recall the SGD2 optimiser step, possibly with gradient accumulation,
- * replication, and an upcast on the accumulator tensor before passing to the
- * accl updater ops:
+ * replication:
  *
  *   (_)    for each micro batch
  *   (1)      g = allReduce(g)       [if OptimizerReductionType=GradReduce]

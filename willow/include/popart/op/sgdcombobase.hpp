@@ -11,15 +11,15 @@
 
 namespace popart {
 
-class SGDComboBaseOp : public VarUpdateWithUpdaterOp {
+class SGDMComboBaseOp : public VarUpdateWithUpdaterOp {
 public:
-  SGDComboBaseOp(const OperatorIdentifier &opid,
-                 OptimizerValue initialSmm1,
-                 OptimizerValue initialDpsf1,
-                 OptimizerValue initialSwd1,
-                 OptimizerValue initialSlr1,
-                 OptimizerReductionType reductionType_,
-                 const Op::Settings &);
+  SGDMComboBaseOp(const OperatorIdentifier &opid,
+                  OptimizerValue initialSmm1,
+                  OptimizerValue initialDpsf1,
+                  OptimizerValue initialSwd1,
+                  OptimizerValue initialSlr1,
+                  OptimizerReductionType reductionType_,
+                  const Op::Settings &);
 
   std::unique_ptr<Op> clone() const override = 0;
 

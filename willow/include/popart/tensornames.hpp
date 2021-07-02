@@ -45,6 +45,9 @@ constexpr const char *reservedAcclToUpdatePrefix() {
 constexpr const char *reservedAcclFinalOutPrefix() {
   return "AcclOutOfAcclUpdate___";
 }
+constexpr const char *reservedFinalReducedGradPrefix() {
+  return "FinalReducedGradient___";
+}
 constexpr const char *reservedAdamUpdaterPrefix() { return "AdamUpdater___"; }
 constexpr const char *reservedLambR1SqPrefix() { return "LambR1Sq___"; }
 constexpr const char *reservedLambR2SqPrefix() { return "LambR2Sq___"; }
