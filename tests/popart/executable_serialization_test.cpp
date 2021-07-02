@@ -19,6 +19,7 @@
 #include <popart/popx/executablexserialization.hpp>
 #include <popart/popx/irlowering.hpp>
 #include <popart/session.hpp>
+#include <popart/sgd.hpp>
 #include <popart/tensordata.hpp>
 
 #include <boost/algorithm/string.hpp>

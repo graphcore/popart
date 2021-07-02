@@ -13,6 +13,7 @@
 #include <popart/op/l1.hpp>
 #include <popart/optimizer.hpp>
 #include <popart/session.hpp>
+#include <popart/sgd.hpp>
 #include <popart/tensordata.hpp>
 #include <popart/testdevice.hpp>
 

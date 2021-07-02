@@ -19,6 +19,7 @@
 #include <popart/popx/devicex.hpp>
 #include <popart/popx/irlowering.hpp>
 #include <popart/session.hpp>
+#include <popart/sgd.hpp>
 #include <popart/tensorinfo.hpp>
 #include <popart/tensornames.hpp>
 #include <popart/testdevice.hpp>

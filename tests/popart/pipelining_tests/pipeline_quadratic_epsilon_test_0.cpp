@@ -22,6 +22,7 @@
 #include <popart/op/restore.hpp>
 #include <popart/op/stash.hpp>
 #include <popart/optimizer.hpp>
+#include <popart/sgd.hpp>
 #include <popart/tensorinfo.hpp>
 #include <popart/tensornames.hpp>
 #include <popart/testdevice.hpp>

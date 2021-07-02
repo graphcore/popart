@@ -11,6 +11,7 @@
 #include <popart/ndarraywrapper.hpp>
 #include <popart/optimizer.hpp>
 #include <popart/session.hpp>
+#include <popart/sgd.hpp>
 #include <popart/testdevice.hpp>
 
 BOOST_AUTO_TEST_CASE(SliceTrain0) {

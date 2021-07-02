@@ -14,6 +14,7 @@
 #include <popart/op/l1.hpp>
 #include <popart/optimizer.hpp>
 #include <popart/session.hpp>
+#include <popart/sgd.hpp>
 #include <popart/tensorinfo.hpp>
 #include <popart/tensornames.hpp>
 #include <popart/testdevice.hpp>

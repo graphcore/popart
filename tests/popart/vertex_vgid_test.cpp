@@ -11,6 +11,7 @@
 #include <popart/op/ipucopy.hpp>
 #include <popart/op/l1.hpp>
 #include <popart/optimizer.hpp>
+#include <popart/sgd.hpp>
 #include <popart/tensor.hpp>
 #include <popart/tensordata.hpp>
 #include <popart/testdevice.hpp>

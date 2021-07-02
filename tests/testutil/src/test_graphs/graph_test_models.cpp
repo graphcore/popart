@@ -14,6 +14,7 @@
 #include <popart/op/slice.hpp>
 #include <popart/optimizer.hpp>
 #include <popart/optimizervalue.hpp>
+#include <popart/sgd.hpp>
 #include <popart/tensor.hpp>
 #include <popart/topocons.hpp>
 

@@ -32,6 +32,7 @@
 #include <popart/popx/devicex.hpp>
 #include <popart/session.hpp>
 #include <popart/sessionoptions.hpp>
+#include <popart/sgd.hpp>
 #include <popart/stepio_generic.hpp>
 #include <popart/stepio_size_assertion.hpp>
 #include <popart/tensordata.hpp>

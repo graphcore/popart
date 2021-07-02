@@ -25,6 +25,7 @@
 #include <popart/op/stash.hpp>
 #include <popart/optimizer.hpp>
 #include <popart/session.hpp>
+#include <popart/sgd.hpp>
 #include <popart/tensorinfo.hpp>
 #include <popart/tensornames.hpp>
 #undef protected

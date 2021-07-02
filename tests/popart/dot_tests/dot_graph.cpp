@@ -16,6 +16,7 @@
 #include <popart/op/nll.hpp>
 #include <popart/optimizer.hpp>
 #include <popart/sessionoptions.hpp>
+#include <popart/sgd.hpp>
 
 using namespace popart;
 namespace po = boost::program_options;

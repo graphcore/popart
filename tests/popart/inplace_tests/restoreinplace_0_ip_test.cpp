@@ -10,6 +10,7 @@
 #include <popart/ir.hpp>
 #include <popart/op/identity.hpp>
 #include <popart/optimizer.hpp>
+#include <popart/sgd.hpp>
 #include <popart/tensor.hpp>
 #include <popart/tensorinfo.hpp>
 #include <popart/tensornames.hpp>

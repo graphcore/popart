@@ -17,6 +17,7 @@
 #include <popart/op/pad.hpp>
 #include <popart/op/slice.hpp>
 #include <popart/optimizer.hpp>
+#include <popart/sgd.hpp>
 #include <popart/testdevice.hpp>
 
 using namespace popart;

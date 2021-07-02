@@ -18,6 +18,7 @@
 #include <popart/op/relu.hpp>
 #include <popart/op/varupdate.hpp>
 #include <popart/optimizer.hpp>
+#include <popart/sgd.hpp>
 #include <popart/subgraph/outliner.hpp>
 #include <popart/tensordata.hpp>
 #include <popart/tensornames.hpp>

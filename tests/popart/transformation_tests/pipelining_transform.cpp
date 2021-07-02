@@ -15,6 +15,7 @@
 #include <popart/optimizer.hpp>
 #include <popart/popx/devicex.hpp>
 #include <popart/session.hpp>
+#include <popart/sgd.hpp>
 #include <popart/tensordata.hpp>
 #include <popart/tensornames.hpp>
 #include <popart/testdevice.hpp>

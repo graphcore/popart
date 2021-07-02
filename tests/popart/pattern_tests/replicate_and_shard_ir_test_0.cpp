@@ -12,6 +12,7 @@
 #include <popart/op/identity.hpp>
 #include <popart/op/l1.hpp>
 #include <popart/optimizer.hpp>
+#include <popart/sgd.hpp>
 #include <popart/testdevice.hpp>
 
 // In this test: with 8 IPUs, replication over 4 IPUs, we test that the

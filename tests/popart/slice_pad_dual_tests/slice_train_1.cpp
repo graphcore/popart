@@ -16,6 +16,7 @@
 #include <popart/popx/devicex.hpp>
 #include <popart/popx/irlowering.hpp>
 #include <popart/session.hpp>
+#include <popart/sgd.hpp>
 #include <popart/testdevice.hpp>
 
 #undef private

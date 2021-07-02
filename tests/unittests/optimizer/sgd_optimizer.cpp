@@ -3,6 +3,7 @@
 #include <boost/test/unit_test.hpp>
 
 #include <popart/optimizer.hpp>
+#include <popart/sgd.hpp>
 
 #include <popart/compoundscalarhelper.hpp>
 #include <popart/graph.hpp>
