@@ -138,6 +138,17 @@ message(STATUS "View hash is " ${VIEW_SHORT_HASH})
 
 set(SNAPSHOT ${VIEW_SHORT_HASH})
 
+# Store a list of the available ONNX opset versions. This is used in the docs/
+# and python/ subdirs.
+execute_process(
+  COMMAND bash -c "find . -regex \"^./popart_opset[0-9]+$\" -type d"
+  WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/python/popart/
+  OUTPUT_VARIABLE POPART_OPSETS
+)
+string(REPLACE "./" "" POPART_OPSETS ${POPART_OPSETS})
+string(REPLACE "\n" ";" POPART_OPSETS ${POPART_OPSETS})
+list(REMOVE_ITEM POPART_OPSETS "")
+
 add_subdirectory(willow)
 
 # light-weight wrapper using pybind11, plus python support libraries

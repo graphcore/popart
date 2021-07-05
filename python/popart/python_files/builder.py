@@ -97,7 +97,11 @@ class Builder():
             raise ValueError(
                 f"Unsupported or unrecognized ai.Onnx version: {self.version}")
 
-    def __getattr__(self, name: str) -> Any:
+    def __getattr__(
+            self, name: str
+    ) -> Union[popart.AiGraphcoreOpset1, popart.AiOnnxOpset6, popart.
+               AiOnnxOpset7, popart.AiOnnxOpset8, popart.AiOnnxOpset9, popart.
+               AiOnnxOpset10, popart.AiOnnxOpset11]:
         """Reroute all attribute requests to the underlying ``_BuilderCore`` object
 
         Arguments:

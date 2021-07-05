@@ -119,6 +119,7 @@ add_popart_py_unit_test(saved_executable_cpu saved_executable_cpu.py)
 #Temporarily disabled, see T22702.
 #add_popart_py_unit_test(serialise_matmul_manually serialise_matmul_manually.py)
 add_popart_py_unit_test(stream_test stream_test.py)
+add_popart_py_unit_test(stubs_test stubs_test.py)
 add_popart_py_unit_test(synthetic_data_test synthetic_data_test.py VARIANTS Hw)
 add_popart_py_unit_test(test_groupHostSync test_groupHostSync.py VARIANTS IpuModel)
 add_popart_py_unit_test(train_then_infer_test train_then_infer_test.py VARIANTS IpuModel)

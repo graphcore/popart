@@ -40,9 +40,16 @@ if (BUILD_DOCS)
 
   set(SUPPORTED_OPS_GEN ${CMAKE_CURRENT_BINARY_DIR}/supported_ops_gen.rst)
 
+  list(APPEND SUPPORTED_OPS_PYTHONPATH ${PROJECT_BINARY_DIR}/python/popart)
+  list(APPEND SUPPORTED_OPS_PYTHONPATH ${PROJECT_BINARY_DIR}/python/popart/popart_core/)
+  list(APPEND SUPPORTED_OPS_PYTHONPATH ${PROJECT_BINARY_DIR}/python/popart._internal.ir/)
+  foreach(opset IN LISTS POPART_OPSETS)
+    list(APPEND SUPPORTED_OPS_PYTHONPATH ${PROJECT_BINARY_DIR}/python/popart/${opset}/)
+  endforeach()
+  string(REPLACE ";" ":" SUPPORTED_OPS_PYTHONPATH "${SUPPORTED_OPS_PYTHONPATH}")
   add_custom_command(
     OUTPUT ${SUPPORTED_OPS_GEN}
-    COMMAND python3 gen_supported_ops.py "${PROJECT_BINARY_DIR}/python/popart:${PROJECT_BINARY_DIR}/python/popart/popart_core/:${PROJECT_BINARY_DIR}/python/popart._internal.ir/" ${SUPPORTED_OPS_GEN}
+    COMMAND python3 gen_supported_ops.py ${SUPPORTED_OPS_PYTHONPATH} ${SUPPORTED_OPS_GEN}
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     COMMENT "Creating supported ops"
     DEPENDS popart-py

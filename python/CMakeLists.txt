@@ -61,6 +61,14 @@ function(add_popart_python_module module_name)
   install(TARGETS ${module_name}
       DESTINATION ${CMAKE_INSTALL_LIBDIR}
   )
+
+  # Generate Python stub files using the automatic stub generation (stubgen)
+  # tool of Mypy (see https://mypy.readthedocs.io/en/stable/stubgen.html).
+  add_custom_command(TARGET ${module_name} POST_BUILD
+      COMMAND stubgen -m ${module_name} -o .
+      COMMENT "Generating Python stub file for ${module_name}."
+      BYPRODUCTS "${CMAKE_CURRENT_BINARY_DIR}/${module_name}.pyi"
+  )
 endfunction()
 
 # Add various python package directories.

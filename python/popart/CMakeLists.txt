@@ -23,10 +23,15 @@ install(FILES "${CMAKE_CURRENT_BINARY_DIR}/popart/__init__.py"
     DESTINATION "${INSTALL_PYDIR}/popart"
 )
 
+
+foreach(opset IN LISTS POPART_OPSETS)
+  # Install stub files for `popart_core` and `popart_opset##`.
+  install(DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/${opset}/"
+      DESTINATION "${INSTALL_PYDIR}/popart/"
+      FILES_MATCHING PATTERN "*.pyi"
+  )
+
+  add_subdirectory(${opset})
+endforeach()
+
 add_subdirectory(popart_core)
-add_subdirectory(popart_opset6)
-add_subdirectory(popart_opset7)
-add_subdirectory(popart_opset8)
-add_subdirectory(popart_opset9)
-add_subdirectory(popart_opset10)
-add_subdirectory(popart_opset11)

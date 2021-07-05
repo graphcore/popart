@@ -19,3 +19,8 @@ configure_file(__init__.py.in
     "${CMAKE_CURRENT_BINARY_DIR}/../popart/popart/_internal/ir/__init__.py"
     @ONLY
 )
+
+install(DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/"
+    DESTINATION "${INSTALL_PYDIR}/popart/_internal/ir/"
+    FILES_MATCHING PATTERN "*.pyi"
+)

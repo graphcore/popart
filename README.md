@@ -97,6 +97,12 @@ sudo pip3 install numpy==1.19.2
 sudo pip3 install torch==1.7.1+cpu torchvision==0.8.2+cpu -f https://download.pytorch.org/whl/torch_stable.html
 ```
 
+##### **mypy** (version 0.812 or compatible)
+
+```
+sudo pip3 install mypy==0.812
+```
+
 ### Installing Third-Party Library Dependencies
 
 PopART compiles against a number of libraries that you will need to have available on your system:
