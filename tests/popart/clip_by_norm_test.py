@@ -169,10 +169,6 @@ def _run_popart_test_model(data,
                                   deviceInfo=device,
                                   userOptions=opts)
 
-    serializedIr = sess._serializeIr(popart.IrSerializationFormat.JSON)
-    with open('ir.json', 'w') as f:
-        f.write(serializedIr)
-
     sess.prepareDevice()
 
     sess.weightsFromHost()
