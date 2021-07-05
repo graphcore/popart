@@ -1,0 +1,78 @@
+// Copyright (c) 2021 Graphcore Ltd. All rights reserved.
+#include <popnn/NonLinearity.hpp>
+#include <popops/ElementWise.hpp>
+#include <popart/op/softsign.hpp>
+#include <popart/popx/devicex.hpp>
+#include <popart/popx/op/softsignx.hpp>
+#include <popart/popx/opxmanager.hpp>
+
+namespace pe = popops::expr;
+
+namespace popart {
+namespace popx {
+
+SoftSignOpx::SoftSignOpx(Op *op, Devicex *devicex)
+    : ElementWiseUnaryOutplaceOpx(
+          op,
+          devicex,
+          std::unique_ptr<EwuComputex>(new SoftSignComputex())) {
+  verifyOp<SoftSignOp>(op, {Onnx::Operators::Softsign_1});
+}
+
+void SoftSignComputex::inplace(poplar::program::Sequence &prog,
+                               snap::Graph &graph,
+                               const snap::Tensor &tensor,
+                               const poplar::DebugNameAndId &dnai,
+                               const std::string &debug_prefix) const {
+  // Softsign definition: x/(1+abs(x))
+  auto expr = pe::Divide(pe::_1, pe::Add(pe::Const(1.0f), pe::Abs(pe::_1)));
+
+  popops::mapInPlace(graph.getPoplarGraph(),
+                     expr,
+                     {tensor.getPoplarTensor()},
+                     prog,
+                     {dnai, debug_prefix});
+}
+
+SoftSignInplaceOpx::SoftSignInplaceOpx(Op *op, Devicex *devicex)
+    : ElementWiseUnaryInplaceOpx(
+          op,
+          devicex,
+          std::unique_ptr<EwuComputex>(new SoftSignComputex())) {
+  verifyOp<SoftSignInplaceOp>(op, Onnx::CustomOperators::SoftSignInplace);
+}
+
+SoftSignGradOpx::SoftSignGradOpx(Op *op, Devicex *devicex)
+    : PopOpx(op, devicex) {
+  verifyOp<SoftSignGradOp>(op, Onnx::GradOperators::SoftSignGrad);
+}
+
+void SoftSignGradOpx::grow(poplar::program::Sequence &prog) const {
+  const auto fwd_input =
+      getInTensor(SoftSignGradOp::getFwdArgInIndex()).getPoplarTensor();
+
+  // The derivative of the softsign activation function is:
+  // 1/((1 + abs(x))^2)
+  auto expr = pe::Divide(
+      pe::_1,
+      pe::Pow(pe::Add(pe::Const(1.0f), pe::Abs(pe::_1)), pe::Const(2.0f)));
+
+  auto output = popops::map(graph().getPoplarGraph(),
+                            expr,
+                            {fwd_input},
+                            prog,
+                            debugContext("softsign_grad"));
+
+  setOutTensor(SoftSignGradOp::getOutIndex(), snap::Tensor{output, graph()});
+}
+
+namespace {
+OpxCreator<SoftSignOpx> softsignOpxCreator({Onnx::Operators::Softsign_1});
+OpxCreator<SoftSignInplaceOpx>
+    softsignInplaceOpxCreator(Onnx::CustomOperators::SoftSignInplace);
+OpxCreator<SoftSignGradOpx>
+    softsignGradOpxCreator(Onnx::GradOperators::SoftSignGrad);
+} // namespace
+
+} // namespace popx
+} // namespace popart

@@ -322,8 +322,6 @@ backend_test.exclude('test_reshape_one_dim')
 backend_test.exclude('test_reshape_reduced_dim')
 backend_test.exclude('test_reshape_reordered_dims')
 
-backend_test.exclude('test_softsign')
-
 backend_test.exclude('test_operator_add_broadcast')
 backend_test.exclude('test_operator_add_size1_broadcast')
 backend_test.exclude('test_operator_add_size1_right_broadcast')
