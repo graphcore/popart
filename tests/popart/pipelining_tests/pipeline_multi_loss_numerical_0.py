@@ -17,12 +17,12 @@ import test_util as tu
 
 
 @tu.requires_ipu_model
-def test_multi_loss_pipeline_same(tmpdir):
+def test_multi_loss_pipeline_same():
     run_test_multi_loss_pipeline(same_vgraph=True)
 
 
 @tu.requires_ipu_model
-def test_multi_loss_pipeline_different(tmpdir):
+def test_multi_loss_pipeline_different():
     run_test_multi_loss_pipeline(same_vgraph=False)
 
 

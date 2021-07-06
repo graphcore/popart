@@ -60,7 +60,7 @@ def gen_shape(shape):
     return '[{0} {1} {2}]'.format(str(shape[0]), str(shape[1]), str(shape[2]))
 
 
-def test_matmul_serialization_invalid_mode(tmpdir):
+def test_matmul_serialization_invalid_mode():
 
     if platform.system() == "Darwin":
         # MacOS is throwing a RuntimeError not popart_exception
@@ -96,7 +96,7 @@ def test_matmul_serialization_invalid_mode(tmpdir):
         ))
 
 
-def test_matmul_serialization_invalid_factor(tmpdir):
+def test_matmul_serialization_invalid_factor():
     lhs_shape = [2, 2]
     rhs_shape = [2, 4]
     lhs_data = np.random.rand(*lhs_shape).astype(np.float32)
@@ -134,7 +134,7 @@ def test_matmul_serialization_invalid_factor(tmpdir):
     ))
 
 
-def test_matmul_serialization_inference(tmpdir):
+def test_matmul_serialization_inference():
 
     input_channels = 2
     reducing_dim = 2
@@ -267,7 +267,7 @@ def test_matmul_serialization_inference(tmpdir):
     assert (np.allclose(o1, o4))
 
 
-def test_matmul_serialization_training_1(tmpdir):
+def test_matmul_serialization_training_1():
 
     input_channels = 6
     reducing_dim = 2
@@ -531,7 +531,7 @@ def test_matmul_serialization_training_1(tmpdir):
     assert (np.allclose(w1, w4))
 
 
-def test_matmul_serialization_training_2(tmpdir):
+def test_matmul_serialization_training_2():
 
     input_channels = 6
     reducing_dim = 16
@@ -814,7 +814,7 @@ def test_matmul_serialization_training_2(tmpdir):
     assert (np.allclose(w1, w4))
 
 
-def test_matmul_serialization_training_3(tmpdir):
+def test_matmul_serialization_training_3():
 
     input_channels = 6
     reducing_dim = 2
@@ -1080,7 +1080,7 @@ def test_matmul_serialization_training_3(tmpdir):
     assert (np.allclose(w1, w4))
 
 
-def test_matmul_serialization_precision(tmpdir):
+def test_matmul_serialization_precision():
     np.random.seed(1984)
 
     input_channels = 20
@@ -1359,7 +1359,7 @@ def test_matmul_serialization_precision(tmpdir):
     assert (np.allclose(w1, w4))
 
 
-def test_matmul_serialization_training_with_gradient_accumlation(tmpdir):
+def test_matmul_serialization_training_with_gradient_accumlation():
 
     input_channels = 6
     reducing_dim = 2
@@ -1658,7 +1658,7 @@ def test_matmul_serialization_training_with_gradient_accumlation(tmpdir):
     assert (np.allclose(w1, w4))
 
 
-def test_matmul_serialization_training_with_castop(tmpdir):
+def test_matmul_serialization_training_with_castop():
 
     input_channels = 6
     reducing_dim = 2

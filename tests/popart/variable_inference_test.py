@@ -6,7 +6,7 @@ import torch
 import test_util as tu
 
 
-def inference_add_to_variable(tmpdir, np_type):
+def inference_add_to_variable(np_type):
     builder = popart.Builder()
 
     shape = popart.TensorInfo(np_type, [2])
@@ -36,9 +36,9 @@ def inference_add_to_variable(tmpdir, np_type):
     assert (np.allclose(anchors[o], np.array([3., 7.], dtype=np_type)))
 
 
-def test_add_variable_fp32(tmpdir):
-    inference_add_to_variable(tmpdir, np.float32)
+def test_add_variable_fp32():
+    inference_add_to_variable(np.float32)
 
 
-def test_add_variable_fp16(tmpdir):
-    inference_add_to_variable(tmpdir, np.float16)
+def test_add_variable_fp16():
+    inference_add_to_variable(np.float16)

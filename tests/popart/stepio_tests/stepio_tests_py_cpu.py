@@ -13,7 +13,7 @@ from test_session import PopartTestSession
 import test_util as tu
 
 
-def test_stepio_bufferinput(tmpdir):
+def test_stepio_bufferinput():
 
     builder = popart.Builder()
     shape = popart.TensorInfo("FLOAT", [2])
@@ -69,7 +69,7 @@ def test_stepio_bufferinput(tmpdir):
     assert (np.allclose(anchors[o], expected_result))
 
 
-def test_stepio_callbackinput(tmpdir):
+def test_stepio_callbackinput():
 
     builder = popart.Builder()
     shape = popart.TensorInfo("FLOAT", [2])

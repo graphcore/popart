@@ -6,7 +6,7 @@ import torch
 import test_util as tu
 
 
-def test_add_fp16(tmpdir):
+def test_add_fp16():
 
     builder = popart.Builder()
 
@@ -40,7 +40,7 @@ def test_add_fp16(tmpdir):
     assert (np.allclose(anchors[o], np.array([8., 11.], dtype=np.float16)))
 
 
-def test_add_variable_fp16(tmpdir):
+def test_add_variable_fp16():
 
     builder = popart.Builder()
 
@@ -73,7 +73,7 @@ def test_add_variable_fp16(tmpdir):
     assert (np.allclose(anchors[o], np.array([3., 7.], dtype=np.float16)))
 
 
-def test_fp16transpose(tmpdir):
+def test_fp16transpose():
     """
      The compute graph :
 

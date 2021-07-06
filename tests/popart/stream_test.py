@@ -6,7 +6,7 @@ import torch
 import test_util as tu
 
 
-def test_stream_on_off(tmpdir):
+def test_stream_on_off():
 
     builder = popart.Builder()
     shape = popart.TensorInfo("FLOAT16", [2])

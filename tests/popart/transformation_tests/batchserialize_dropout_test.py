@@ -22,7 +22,7 @@ import test_util as tu
 
 # TODO: Fix with T29800
 @pytest.mark.skip(reason="T29800 required for batch serialized dropouts")
-def test_batchserialisation_dropout(tmpdir):
+def test_batchserialisation_dropout():
     def model():
         np.random.seed(1984)
         input_data = np.random.rand(4, 100).astype(np.float32)

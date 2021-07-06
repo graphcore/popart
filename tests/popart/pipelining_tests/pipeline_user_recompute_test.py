@@ -15,7 +15,7 @@ import test_util as tu
 
 
 @tu.requires_ipu_model
-def test_full_recompute_pipelining(tmpdir):
+def test_full_recompute_pipelining():
     np.random.seed(0)
 
     gradient_accumulation = 5
@@ -132,7 +132,7 @@ def test_full_recompute_pipelining(tmpdir):
 
 
 @tu.requires_ipu_model
-def test_delayed_restore_operations(tmpdir):
+def test_delayed_restore_operations():
     np.random.seed(0)
 
     gradient_accumulation = 5
@@ -250,7 +250,7 @@ def test_delayed_restore_operations(tmpdir):
 
 
 @tu.requires_ipu_model
-def test_final_stage_recompute(tmpdir):
+def test_final_stage_recompute():
     np.random.seed(0)
 
     gradient_accumulation = 5

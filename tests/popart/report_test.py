@@ -9,7 +9,7 @@ import pva
 
 
 @tu.requires_ipu_model
-def test_summary_report_before_execution(tmpdir):
+def test_summary_report_before_execution():
 
     builder = popart.Builder()
 
@@ -35,7 +35,7 @@ def test_summary_report_before_execution(tmpdir):
         "Session must have been prepared before a report can be fetched"))
 
 
-def test_graph_report_before_execution(tmpdir):
+def test_graph_report_before_execution():
 
     builder = popart.Builder()
 
@@ -62,7 +62,7 @@ def test_graph_report_before_execution(tmpdir):
 
 
 @tu.requires_ipu_model
-def test_execution_report_before_execution(tmpdir):
+def test_execution_report_before_execution():
 
     builder = popart.Builder()
 
@@ -89,7 +89,7 @@ def test_execution_report_before_execution(tmpdir):
 
 
 @tu.requires_ipu_model
-def test_report_before_execution(tmpdir):
+def test_report_before_execution():
 
     builder = popart.Builder()
 
@@ -116,7 +116,7 @@ def test_report_before_execution(tmpdir):
 
 
 @tu.requires_ipu_model
-def test_compilation_report(tmpdir):
+def test_compilation_report():
 
     builder = popart.Builder()
 
@@ -153,7 +153,7 @@ def test_compilation_report(tmpdir):
 
 
 @tu.requires_ipu_model
-def test_compilation_report_deprecated(tmpdir):
+def test_compilation_report_deprecated():
 
     builder = popart.Builder()
 
@@ -187,7 +187,7 @@ def test_compilation_report_deprecated(tmpdir):
 
 
 @tu.requires_ipu_model
-def test_compilation_report_cbor(tmpdir):
+def test_compilation_report_cbor():
 
     builder = popart.Builder()
 
@@ -215,7 +215,7 @@ def test_compilation_report_cbor(tmpdir):
 
 
 @tu.requires_ipu_model
-def test_execution_report(tmpdir):
+def test_execution_report():
 
     builder = popart.Builder()
 
@@ -260,7 +260,7 @@ def test_execution_report(tmpdir):
 
 
 @tu.requires_ipu_model
-def test_execution_report_new(tmpdir):
+def test_execution_report_new():
 
     builder = popart.Builder()
 
@@ -301,7 +301,7 @@ def test_execution_report_new(tmpdir):
 
 
 @tu.requires_ipu_model
-def test_execution_report_reset(tmpdir):
+def test_execution_report_reset():
 
     builder = popart.Builder()
 
@@ -340,7 +340,7 @@ def test_execution_report_reset(tmpdir):
 
 
 @tu.requires_ipu_model
-def test_execution_report_cbor(tmpdir):
+def test_execution_report_cbor():
 
     builder = popart.Builder()
 
@@ -374,7 +374,7 @@ def test_execution_report_cbor(tmpdir):
 
 
 @tu.requires_ipu_model
-def test_no_compile(tmpdir):
+def test_no_compile():
 
     builder = popart.Builder()
 
@@ -408,7 +408,7 @@ def test_no_compile(tmpdir):
 
 
 @tu.requires_ipu_model
-def test_serialized_graph_report(tmpdir):
+def test_serialized_graph_report():
 
     builder = popart.Builder()
 

@@ -14,7 +14,7 @@ import test_util as tu
 
 
 @tu.requires_ipu
-def test_stepio_bufferinput_ipu(tmpdir):
+def test_stepio_bufferinput_ipu():
 
     builder = popart.Builder()
     shape = popart.TensorInfo("FLOAT", [2])
@@ -71,7 +71,7 @@ def test_stepio_bufferinput_ipu(tmpdir):
 
 
 @tu.requires_ipu
-def test_stepio_callbackinput_ipu(tmpdir):
+def test_stepio_callbackinput_ipu():
 
     builder = popart.Builder()
     shape = popart.TensorInfo("FLOAT", [2])

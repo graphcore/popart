@@ -91,7 +91,7 @@ def _compare_irs(ir1, ir2):
 
 # Check that the execution phase attribute doesn't affect
 # the generated ir if phased execution is disabled.
-def test_ping_pong(tmpdir):
+def test_ping_pong():
     ir1 = _get_ir(False, False, False)
     ir2 = _get_ir(True, False, False)
     _compare_irs(ir1, ir2)
@@ -99,7 +99,7 @@ def test_ping_pong(tmpdir):
 
 # Check that the pipeline stage attribute doesn't affect the
 # generated ir if pipelining is disabled.
-def test_pipelining(tmpdir):
+def test_pipelining():
     ir1 = _get_ir(False, False, False)
     ir2 = _get_ir(False, False, True)
     _compare_irs(ir1, ir2)
@@ -107,7 +107,7 @@ def test_pipelining(tmpdir):
 
 # Check that the virtual graph attribute doesn't affect the
 # generated ir if virtual graphs are disabled.
-def test_virtualgraphs(tmpdir):
+def test_virtualgraphs():
     ir1 = _get_ir(False, False, False)
     ir2 = _get_ir(False, True, False)
     _compare_irs(ir1, ir2)

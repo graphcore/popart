@@ -10,7 +10,7 @@ sys.path.append(str(Path(__file__).resolve().parent.parent))
 import test_util as tu
 
 
-def test_basic(tmpdir):
+def test_basic():
     def run_test(expected_dot_file_count):
         builder = popart.Builder()
 

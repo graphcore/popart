@@ -16,7 +16,7 @@ import onnx
 from onnx import numpy_helper
 
 
-def test_replica_bitwise_identical_update(tmpdir):
+def test_replica_bitwise_identical_update():
     def model():
         np.random.seed(1984)
         input_data = np.random.rand(2, 4).astype(np.float16)

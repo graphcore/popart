@@ -7,7 +7,7 @@ import sys
 import re
 
 
-def test_basic(tmpdir, capfd):
+def test_basic(capfd):
     builder = popart.Builder()
 
     shape = popart.TensorInfo("FLOAT", [3])
@@ -67,7 +67,7 @@ def test_basic(tmpdir, capfd):
     assert matches[1] == 'Add:0/1: {6,9,12}'
 
 
-def test_train(tmpdir, capfd):
+def test_train(capfd):
     filt_data = np.array([1., 2., 1., 2.], dtype=np.float32)
     filt_data = np.reshape(filt_data, [1, 1, 2, 2])
     input_data = np.array([1., 2., 3., 4.], dtype=np.float32)
@@ -151,7 +151,7 @@ def test_train(tmpdir, capfd):
     assert matches[2] == d__i2 + ":{{{{0.4,0.3},{0.2,0.1}}}}"
 
 
-def test_custom_title(tmpdir, capfd):
+def test_custom_title(capfd):
     filt_data = np.array([1., 2., 1., 2.], dtype=np.float32)
     filt_data = np.reshape(filt_data, [1, 1, 2, 2])
     input_data = np.array([1., 2., 3., 4.], dtype=np.float32)

@@ -12,7 +12,7 @@ sys.path.append(str(Path(__file__).resolve().parent.parent))
 import test_util as tu
 
 
-def test_sgd_mixed_mode(tmpdir):
+def test_sgd_mixed_mode():
 
     w0name = "__w0__"
     w1name = "__w1__"

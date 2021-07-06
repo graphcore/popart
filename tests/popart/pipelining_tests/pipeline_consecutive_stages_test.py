@@ -15,7 +15,7 @@ import test_util as tu
 
 
 @tu.requires_ipu_model
-def test_pipeline_stage_merging(tmpdir):
+def test_pipeline_stage_merging():
     np.random.seed(0)
 
     # With 3 stages the minimum pipeline cycles is 5

@@ -59,7 +59,7 @@ def attention_onnx(builder, qkv, mask, batch_size, sequence_length,
 
 
 @tu.requires_ipu_model
-def test_full_recompute_pipelining(tmpdir):
+def test_full_recompute_pipelining():
     batches_per_step = 5
     batch_size = 1
     hidden_size = 16

@@ -1252,7 +1252,7 @@ def test_get_attribute_wrong_type_string_vector():
     assert (e_info.value.args[0].find("Node test is not a string vector."))
 
 
-def test_load_onnx_model_from_other_builder(tmpdir):
+def test_load_onnx_model_from_other_builder():
 
     # Run the first builder
     builder = popart.Builder()
@@ -1353,7 +1353,7 @@ def test_load_onnx_model_from_file(tmpdir):
     assert (np.array_equal(anchors[o], [4, 6]))
 
 
-def test_convert_initializers_to_constants(tmpdir):
+def test_convert_initializers_to_constants():
     builder = popart.Builder()
 
     i1 = builder.addInputTensor(popart.TensorInfo("FLOAT", [2, 3]))
@@ -1378,7 +1378,7 @@ def test_convert_initializers_to_constants(tmpdir):
     assert (i2 not in ids)
 
 
-def test_convert_all_fixed_point_initializers_to_constants(tmpdir):
+def test_convert_all_fixed_point_initializers_to_constants():
     builder = popart.Builder()
 
     i1 = builder.addInputTensor(popart.TensorInfo("FLOAT", [2, 3]))
@@ -1405,7 +1405,7 @@ def test_convert_all_fixed_point_initializers_to_constants(tmpdir):
     assert (i4 not in ids)
 
 
-def test_builder_opsetDefaultVersions(tmpdir):
+def test_builder_opsetDefaultVersions():
 
     # This will create a build with the default opsets
     # This test may fail when we upgrade ops....
@@ -1425,7 +1425,7 @@ def test_builder_opsetDefaultVersions(tmpdir):
         in e_info.value.args[0])
 
 
-def test_builder_aiOnnxOpsetBuilderInterface(tmpdir):
+def test_builder_aiOnnxOpsetBuilderInterface():
     # The purpose of this test is to detect any potential disconnects
     # between the Builder Python interface (builder.py) and the
     # corresponding C++ Builder backend (builder.cpp, builder.cpp.gen, etc.)
@@ -1459,7 +1459,7 @@ def test_builder_aiOnnxOpsetBuilderInterface(tmpdir):
     assert (aiOnnxVersionPow == "AiOnnx7")
 
 
-def test_builder_opsetDefinesVersions(tmpdir):
+def test_builder_opsetDefinesVersions():
 
     # This will create a build with the default opsets
     # This test may fail when we upgrade ops....
@@ -1479,7 +1479,7 @@ def test_builder_opsetDefinesVersions(tmpdir):
         in e_info.value.args[0])
 
 
-def test_builder_opsetVersioning(tmpdir):
+def test_builder_opsetVersioning():
 
     builder = popart.Builder(opsets={"ai.onnx": 9, "ai.graphcore": 1})
 
@@ -1498,7 +1498,7 @@ def test_builder_opsetVersioning(tmpdir):
         in e_info.value.args[0])
 
 
-def test_name_scope(tmpdir):
+def test_name_scope():
     builder = popart.Builder(opsets={"ai.onnx": 9, "ai.graphcore": 1})
 
     i1 = builder.addInitializedInputTensor(np.array([1, 6], dtype=np.int64))
@@ -1518,7 +1518,7 @@ def test_name_scope(tmpdir):
     assert (o3.startswith('scope2/embedded_scope'))
 
 
-def test_tensor_names(tmpdir):
+def test_tensor_names():
     builder = popart.Builder(opsets={"ai.onnx": 9, "ai.graphcore": 1})
 
     i1 = builder.addInitializedInputTensor(np.array([1, 6], dtype=np.int64))

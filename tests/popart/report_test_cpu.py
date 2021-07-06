@@ -5,7 +5,7 @@ import pytest
 import test_util as tu
 
 
-def test_summary_report_with_cpu_device(tmpdir):
+def test_summary_report_with_cpu_device():
 
     builder = popart.Builder()
 
@@ -32,7 +32,7 @@ def test_summary_report_with_cpu_device(tmpdir):
         "Profiling is disabled for current device type."))
 
 
-def test_graph_report_with_cpu_device(tmpdir):
+def test_graph_report_with_cpu_device():
 
     builder = popart.Builder()
 
@@ -60,7 +60,7 @@ def test_graph_report_with_cpu_device(tmpdir):
         "Profiling is disabled for current device type."))
 
 
-def test_execution_report_with_cpu_device(tmpdir):
+def test_execution_report_with_cpu_device():
 
     builder = popart.Builder()
 

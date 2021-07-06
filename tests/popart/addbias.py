@@ -6,7 +6,7 @@ import test_util as tu
 import pprint
 
 
-def test_basic(tmpdir):
+def test_basic():
     bias_data = [np.random.rand(2).astype(np.float32) for _ in range(2)]
     filt_data = np.random.rand(2, 2, 3, 3).astype(np.float32)
     input_data = np.random.rand(1, 2, 4, 4).astype(np.float32)

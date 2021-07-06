@@ -12,7 +12,7 @@ sys.path.append(str(Path(__file__).resolve().parent.parent))
 import test_util as tu
 
 
-def test_matmul_1d(tmpdir):
+def test_matmul_1d():
     lhs_shape = [4]
     rhs_shape = [4]
     lhs_data = np.random.rand(4).astype(np.float32)
@@ -97,7 +97,7 @@ causes the two MATMULs to be grouped
 '''
 
 
-def test_matmul_grouping_test_1(tmpdir):
+def test_matmul_grouping_test_1():
     lhs_shape = [6, 32, 32]
     rhs_shape = [6, 32, 64]
     lhs_2_shape = [6, 32, 32]
@@ -213,7 +213,7 @@ causes the two MATMULs to be grouped
 '''
 
 
-def test_matmul_grouping_test_2(tmpdir):
+def test_matmul_grouping_test_2():
     A = [1, 32, 64]
     B = [1, 32, 64]
     C = [1, 32, 32]
@@ -311,7 +311,7 @@ def test_matmul_grouping_test_2(tmpdir):
 
 
 # Verify 2d inputs are expanded to 3d first
-def test_matmul_grouping_test_3(tmpdir):
+def test_matmul_grouping_test_3():
     A = [32, 64]
     B = [32, 64]
     C = [32, 32]
@@ -409,7 +409,7 @@ def test_matmul_grouping_test_3(tmpdir):
 
 
 # verify that we can group matmuls with different group dimensions
-def test_matmul_grouping_test_4(tmpdir):
+def test_matmul_grouping_test_4():
     A = [2, 3]
     B = [2, 3, 4]
     C = [2, 3]

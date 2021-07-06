@@ -14,7 +14,7 @@ sys.path.append(str(Path(__file__).resolve().parent.parent))
 import test_util as tu
 
 
-def test_dropout_outlinable(tmpdir):
+def test_dropout_outlinable():
     N = 20
     K = 40
     layers = 6

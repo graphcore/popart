@@ -5,7 +5,7 @@ import popart
 import test_util as tu
 
 
-def test_net_from_string(tmpdir):
+def test_net_from_string():
 
     builder = popart.Builder()
 
@@ -23,7 +23,7 @@ def test_net_from_string(tmpdir):
                             deviceInfo=tu.create_test_device())
 
 
-def test_net_from_file(tmpdir):
+def test_net_from_file():
 
     builder = popart.Builder()
 
@@ -44,7 +44,7 @@ def test_net_from_file(tmpdir):
                             deviceInfo=tu.create_test_device())
 
 
-def test_net_failure1(tmpdir):
+def test_net_failure1():
     # Anchor tensor required in inference mode
 
     builder = popart.Builder()
@@ -68,7 +68,7 @@ def test_net_failure1(tmpdir):
             "User must specify an anchor tensor when doing inference.")
 
 
-def test_net_failure2(tmpdir):
+def test_net_failure2():
 
     dataFlow = popart.DataFlow(1, {})
 

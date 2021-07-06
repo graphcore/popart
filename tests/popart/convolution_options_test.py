@@ -11,7 +11,7 @@ import test_util as tu
 
 
 # Standard conv and relu with setAvailableMemoryProportion setting
-def conv_avail_memory(tmpdir, capfd, apply_to_conv=True, avail_mem_prop=0.9):
+def conv_avail_memory(capfd, apply_to_conv=True, avail_mem_prop=0.9):
     os.environ["POPLIBS_LOG_LEVEL"] = "DEBUG"
 
     builder = popart.Builder()
@@ -87,7 +87,7 @@ def conv_avail_memory(tmpdir, capfd, apply_to_conv=True, avail_mem_prop=0.9):
 
 
 # Standard matmul and relu with setAvailableMemoryProportion setting
-def matmul_avail_memory(tmpdir, capfd, apply_to_conv=True, avail_mem_prop=0.9):
+def matmul_avail_memory(capfd, apply_to_conv=True, avail_mem_prop=0.9):
     os.environ["POPLIBS_LOG_LEVEL"] = "DEBUG"
 
     builder = popart.Builder()
@@ -162,10 +162,10 @@ def matmul_avail_memory(tmpdir, capfd, apply_to_conv=True, avail_mem_prop=0.9):
 # Test that poplar gets our instruction to set the available memory proportion.
 # Do this by matching the poplibs logs.
 @tu.requires_ipu_model
-def test_conv_avail_memory_log(tmpdir, capfd):
+def test_conv_avail_memory_log(capfd):
 
     avail_mem_prop = 0.6
-    output = conv_avail_memory(tmpdir, capfd, True, avail_mem_prop)
+    output = conv_avail_memory(capfd, True, avail_mem_prop)
 
     # This is the available tile memory for the conv.
     # TODO: Update this if future chips have more memory per tile.
@@ -181,12 +181,12 @@ def test_conv_avail_memory_log(tmpdir, capfd):
 
 # Test outside [0,1) error
 @tu.requires_ipu_model
-def test_conv_avail_memory_error(tmpdir, capfd):
+def test_conv_avail_memory_error(capfd):
 
     avail_mem_prop = 1.1  # Wrong value
 
     with pytest.raises(popart.popart_exception) as e_info:
-        conv_avail_memory(tmpdir, capfd, True, avail_mem_prop)
+        conv_avail_memory(capfd, True, avail_mem_prop)
 
     assert (e_info.value.args[0].startswith(
         "availableMemoryProportion must be in (0,1]"))
@@ -195,10 +195,10 @@ def test_conv_avail_memory_error(tmpdir, capfd):
 # Test that poplar gets our instruction to set the available memory proportion.
 # Do this by matching the poplibs logs.
 @tu.requires_ipu_model
-def test_matmul_avail_memory_log(tmpdir, capfd):
+def test_matmul_avail_memory_log(capfd):
 
     avail_mem_prop = 0.6
-    output = matmul_avail_memory(tmpdir, capfd, True, avail_mem_prop)
+    output = matmul_avail_memory(capfd, True, avail_mem_prop)
 
     # This is the available tile memory for the matmul.
     # TODO: Update this if future chips have more memory per tile.

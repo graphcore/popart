@@ -69,7 +69,7 @@ def test_set_reportOptions():
     assert (opts.reportOptions['option'] == 'value')
 
 
-def test_engine_options_passed_to_engine(tmpdir):
+def test_engine_options_passed_to_engine():
 
     popart.getLogger().setLevel("DEBUG")
 
