@@ -27,7 +27,7 @@ public:
   // register that the output of nonGrad Op at OutIndex index
   // has had its gradient tensor computed
   void insert(Op *nonGrad, int index);
-  void fail(Op *nonGrad);
+  void fail(Op *nonGrad, int index);
 
   // Pop one op from the completed pile, if available.
   nonstd::optional<Op *> popComplete();
@@ -53,6 +53,9 @@ private:
   // When a required gradient input failed,
   // move the key of partial from partial to failed
   std::list<Op *> failed;
+  // Keep track of Ops that have already been processed so that we don't
+  // inadvertently process them twice.
+  std::set<OpId> completeOrFailed;
 
   // Mapping from Op* to the number of outputs it has that lead to the loss.
   std::map<Op *, int> edgesToLoss;

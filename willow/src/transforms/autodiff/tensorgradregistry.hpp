@@ -66,7 +66,7 @@ private:
   // the number of edges expected to register gradients for a non-grad tensor.
   std::map<TensorId, int> expectedNumEdges;
 
-  void tryMakeComplete(Tensor *nonGrad);
+  void tryMakeComplete(Tensor *nonGrad, bool isIncrease);
 
   // Mapping from Tensor* to the number of times it appears on a path to loss.
   std::map<Tensor *, int> edgesToLoss;

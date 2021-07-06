@@ -17,7 +17,7 @@ std::vector<Op *>
 GradGrowerOp::growGradOps(Op *nonGradOp,
                           const FwdGraphToBwdGraphInfo &calledGraphsGradInfo) {
 
-  logging::ir::debug("Growing grad ops for {}", nonGradOp->debugName());
+  logging::ir::debug("Growing grad ops for {}", nonGradOp->str());
 
   PipelineStage maxPipelineStage = 0;
   if (dep.get().getSessionOptions().enablePipelining) {
@@ -33,7 +33,7 @@ GradGrowerOp::growGradOps(Op *nonGradOp,
   }
   auto backOps = nonGradOp->getGradOps();
   if (backOps.size() < 1) {
-    logging::ir::debug("Cannot get gradients for {}", nonGradOp->debugName());
+    logging::ir::debug("Cannot get gradients for {}", nonGradOp->str());
   }
   std::vector<Op *> gradOps;
   for (auto &upop : backOps) {

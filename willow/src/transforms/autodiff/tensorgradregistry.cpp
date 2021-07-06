@@ -24,7 +24,7 @@ void TensorGradRegistry::insert(Tensor *nonGrad, Tensor *grad) {
     partial[nonGrad->id].push_back(grad);
   }
 
-  tryMakeComplete(nonGrad);
+  tryMakeComplete(nonGrad, true);
 }
 
 void TensorGradRegistry::decrementNumberExpectedEdges(Tensor *nonGrad) {
@@ -36,7 +36,7 @@ void TensorGradRegistry::decrementNumberExpectedEdges(Tensor *nonGrad) {
   }
 
   // Make complete even when it's 0.
-  tryMakeComplete(nonGrad);
+  tryMakeComplete(nonGrad, false);
 }
 
 int TensorGradRegistry::getNumberExpectedEdges(Tensor *nonGrad) const {
@@ -48,7 +48,7 @@ int TensorGradRegistry::getNumberExpectedEdges(Tensor *nonGrad) const {
   }
 }
 
-void TensorGradRegistry::tryMakeComplete(Tensor *nonGrad) {
+void TensorGradRegistry::tryMakeComplete(Tensor *nonGrad, bool isIncrease) {
 
   const auto actualEdges   = partial[nonGrad->id].size();
   const auto expectedEdges = expectedNumEdges.at(nonGrad->id);
@@ -56,12 +56,14 @@ void TensorGradRegistry::tryMakeComplete(Tensor *nonGrad) {
   const bool isComplete = (actualEdges >= expectedEdges);
 
   if (expectedEdges > 0) {
-    logging::transform::trace("[Autodiff] Recorded edge gradient {}/{} is "
-                              "available for '{}' ({})",
-                              actualEdges,
-                              expectedEdges,
-                              nonGrad->id,
-                              isComplete ? "complete" : "incomplete");
+    if (isIncrease) {
+      logging::transform::trace("[Autodiff] Recorded edge gradient {}/{} is "
+                                "available for '{}' ({})",
+                                actualEdges,
+                                expectedEdges,
+                                nonGrad->id,
+                                isComplete ? "complete" : "incomplete");
+    }
 
     if (isComplete) {
       // All edge gradients are available.

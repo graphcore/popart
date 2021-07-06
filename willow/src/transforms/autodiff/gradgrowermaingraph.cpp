@@ -219,13 +219,15 @@ void GradGrowerMainGraph::growGradMainGraph() {
     auto nonGrad = dep.get().getMainGraph().getTensors().get(nonGradId);
     if (nonGrad->hasProducer()) {
       Op *producer = nonGrad->getProducer();
-      op_grad_registry.fail(producer);
 
       logging::transform::trace("[Autodiff] Unable to create gradient sum "
-                                "for '{}' (won't be able to grow grad ops for "
-                                "producer '{}')",
+                                "for '{}' (we may not be able to grow grad ops "
+                                "for producer '{}')",
                                 nonGradId,
                                 producer->str());
+
+      op_grad_registry.fail(producer, producer->outIndex(nonGrad));
+
     } else {
       logging::transform::trace("[Autodiff] Unable to create gradient sum "
                                 "for '{}'",

@@ -9,39 +9,80 @@
 namespace popart {
 
 OpGradRegistry::OpGradRegistry(AutodiffIrInterface &ir_)
-    : ir{ir_}, partial{}, complete{}, failed{}, edgesToLoss{} {}
+    : ir{ir_}, partial{}, complete{}, failed{}, completeOrFailed{},
+      edgesToLoss{} {}
 
 void OpGradRegistry::insert(Op *nonGrad, int index) {
 
-  auto found = partial.find(nonGrad->id);
-  // so far NO gradients for nonGrad are in:
-  if (found == partial.end()) {
-    partial.insert({nonGrad->id, {}});
-  }
-  // this should be removed when we're happy the IL (internal logic)
-  // is correct:
-  if (partial[nonGrad->id].count(index) != 0) {
-    throw internal_error("index already present in OpGradRegistry::insert");
-  }
+  if (nonGrad->outTensor(index)->toLoss == PathToLoss::Yes) {
 
-  partial[nonGrad->id].insert(index);
+    auto completeOrFailedIt = completeOrFailed.find(nonGrad->id);
+    if (completeOrFailedIt == completeOrFailed.end()) {
 
-  // Check whether an Op is ready to grow gradients based on the set of output
-  // indices of `op' for which a gradient is available. Currently, this will
-  // just compare the size of the set passed in with number of paths to final
-  // loss.
-  if (edgesToLoss.at(nonGrad) == partial[nonGrad->id].size()) {
-    complete.push_back(nonGrad);
-    partial.erase(nonGrad->id);
+      auto partialIt = partial.find(nonGrad->id);
+      // so far NO gradients for nonGrad are in:
+      if (partialIt == partial.end()) {
+        partial.insert({nonGrad->id, {}});
+      }
+      // this should be removed when we're happy the IL (internal logic)
+      // is correct:
+      if (partial[nonGrad->id].count(index) != 0) {
+        throw internal_error("index already present in OpGradRegistry::insert");
+      }
+
+      partial[nonGrad->id].insert(index);
+
+      // Check whether an Op is ready to grow gradients based on the set of
+      // output indices of `op' for which a gradient is available. Currently,
+      // this will just compare the number of tensors for which we have a
+      // gradient that are on the path to loss with expected number of paths to
+      // final loss.
+      if (edgesToLoss.at(nonGrad) == partial[nonGrad->id].size()) {
+        complete.push_back(nonGrad);
+        completeOrFailed.insert(nonGrad->id);
+        partial.erase(nonGrad->id);
+      }
+    } else {
+      throw internal_error("[Autodiff] Unable to process gradient for {} "
+                           "because it has already failed or completed",
+                           nonGrad->str());
+    }
+  } else {
+    logging::transform::trace("[Autodiff] Ignoring availability of gradient "
+                              "of output '{}' of {} because it is not "
+                              "on the path to loss",
+                              nonGrad->outId(index),
+                              nonGrad->str());
   }
 }
 
-void OpGradRegistry::fail(Op *nonGrad) {
-  auto found = partial.find(nonGrad->id);
-  if (found == partial.end()) {
-    partial.erase(nonGrad->id);
+void OpGradRegistry::fail(Op *nonGrad, int index) {
+
+  if (nonGrad->outTensor(index)->toLoss == PathToLoss::Yes) {
+
+    auto completeOrFailedIt = completeOrFailed.find(nonGrad->id);
+    if (completeOrFailedIt == completeOrFailed.end()) {
+      auto found = partial.find(nonGrad->id);
+      if (found == partial.end()) {
+        partial.erase(nonGrad->id);
+      }
+      failed.push_back(nonGrad);
+      completeOrFailed.insert(nonGrad->id);
+    } else {
+      logging::transform::trace("[Autodiff] Unable to fail {} due to the "
+                                "failure to grow gradient of output '{}' "
+                                "because it has already failed or completed",
+                                nonGrad->str(),
+                                nonGrad->outId(index));
+    }
+
+  } else {
+    logging::transform::trace("[Autodiff] Ignoring failure to grow gradient "
+                              "of output '{}' of {} because it is not "
+                              "on the path to loss",
+                              nonGrad->outId(index),
+                              nonGrad->str());
   }
-  failed.push_back(nonGrad);
 }
 
 nonstd::optional<Op *> OpGradRegistry::popComplete() {
