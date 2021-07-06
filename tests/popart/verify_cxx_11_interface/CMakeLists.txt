@@ -17,7 +17,7 @@ function(add_popart_cxx_11_unit_test name source)
   add_test(
     NAME ${name}
     COMMAND ${name}
-    WORKING_DIRECTORY ${CMAKE_CURRENT_BUILD_DIR})
+    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 endfunction()
 
 # Bash script that generates a header that includes all popart public headers.

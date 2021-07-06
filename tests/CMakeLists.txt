@@ -186,7 +186,7 @@ function(add_popart_cpp_unit_test name)
     set(executable_name "${TEST_TARGET}_${name}")
     add_test(NAME "${test_name}"
       COMMAND ${executable_name}
-      WORKING_DIRECTORY ${CMAKE_CURRENT_BUILD_DIR})
+      WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 
     set(test_env ${TEST_ENVIRONMENT})
     if (${TEST_CONFIG} STREQUAL "cpp")
@@ -233,7 +233,7 @@ function(add_popart_py_unit_test name filename)
       set(test_name "${TEST_TARGET}_${TEST_CONFIG}_${name}")
       add_test(NAME "${test_name}"
             COMMAND ${Python3_EXECUTABLE} -m pytest -s ${CMAKE_CURRENT_SOURCE_DIR}/${filename} ${fork_test}
-            WORKING_DIRECTORY ${CMAKE_CURRENT_BUILD_DIR})
+            WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
     else()
       # Note, solid brackets and dash can form part of parameterised pytest names.
       string(REGEX REPLACE " " "_" MATCHEXPR_NAME "${test_args_MATCHEXPR}")
@@ -242,7 +242,7 @@ function(add_popart_py_unit_test name filename)
 
       add_test(NAME "${test_name}"
             COMMAND "${Python3_EXECUTABLE}" -m pytest -s "${CMAKE_CURRENT_SOURCE_DIR}/${filename}" -k "${MATCHEXPR_VALUE}" ${fork_test}
-            WORKING_DIRECTORY ${CMAKE_CURRENT_BUILD_DIR})
+            WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
     endif()
     set_tests_properties(${test_name} PROPERTIES
                          ENVIRONMENT TEST_TARGET=${TEST_TARGET})
