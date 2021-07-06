@@ -1,6 +1,6 @@
 # Copyright (c) 2018 Graphcore Ltd. All rights reserved.
 import os
-import tempfile
+from tempfile import TemporaryDirectory
 
 import popart
 import test_util as tu
@@ -1576,16 +1576,16 @@ def test_save_model_to_file():
     i = builder.addInputTensor(popart.TensorInfo("FLOAT", [2]))
     o = builder.aiOnnx.sqrt([i])
 
-    tmpdir = tempfile.mkdtemp()
-    tmpfile = os.path.join(tmpdir, "model.onnx")
-    builder.saveModelProto(tmpfile)
+    with TemporaryDirectory() as tmpdir:
+        tmpfile = os.path.join(tmpdir, "model.onnx")
+        builder.saveModelProto(tmpfile)
 
-    # Check file has saved
-    assert os.path.exists(tmpfile) == True
+        # Check file has saved
+        assert os.path.exists(tmpfile) == True
 
-    # Check that, when re-loaded, its contents are the same as when saved
-    new_builder = popart.Builder(tmpfile)
-    assert new_builder.getModelProto() == builder.getModelProto()
+        # Check that, when re-loaded, its contents are the same as when saved
+        new_builder = popart.Builder(tmpfile)
+        assert new_builder.getModelProto() == builder.getModelProto()
 
 
 def test_get_tensor_type():
