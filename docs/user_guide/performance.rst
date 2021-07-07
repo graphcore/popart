@@ -172,7 +172,7 @@ For example, the following code shows how to set the sync configuration to
         pattern=sync_pattern)
 
 Sync patterns
-.............
+~~~~~~~~~~~~~
 
 There are three sync patterns available. These control how the IPUs are
 allocated to the two sync groups, GS1 and GS2.
