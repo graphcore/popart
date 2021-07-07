@@ -45,7 +45,7 @@ void GradCopyToHostOpx::grow(poplar::program::Sequence &prog) const {
     allReduceOptions.set("useReplicatedImplementation", "true");
     weightDeltas = gcl::allReduce(graph().getPoplarGraph(),
                                   weightDeltas,
-                                  popops::Operation::ADD,
+                                  popops::CollectiveOperator::ADD,
                                   prog,
                                   debugContext("allReduce_Add"),
                                   allReduceOptions);
