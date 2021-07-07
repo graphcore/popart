@@ -47,7 +47,7 @@ std::string create_model() {
   // Add output tensor
   builder->addOutputTensor(o);
 
-  std::string modelPath = "/tmp/model.onnx";
+  std::string modelPath = "./model" + randomString(14) + ".onnx";
   builder->saveModelProto(modelPath);
 
   return modelPath;
