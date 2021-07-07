@@ -27,6 +27,12 @@ set(DEFAULT_TEST_VARIANTS "Cpu" CACHE STRING
 # Will enable all tests - note that you need to use '$<SEMICOLON>' not ';'
 set(ENABLED_TEST_VARIANTS "Cpu;IpuModel" CACHE STRING "Default (non-hw) test variants")
 
+# Use of the pytest tmpdir fixture leaves files in /tmp after running the tests. 
+# By setting --basetemp when running pytest, we can set the temp directory to be
+# a subdirectory of the build directory, which will be cleared up with the build. 
+set(PYTEST_BASETEMP ${CMAKE_CURRENT_BINARY_DIR}/pytest_tmp)
+file(MAKE_DIRECTORY ${PYTEST_BASETEMP})
+
 # Remove any requested variants not present in ${ENABLED_TEST_VARIANTS}
 # If no variants were requested filtered ${DEFAULT_TEST_VARIANTS} are returned.
 function(sanitise_variants variant_name)
@@ -231,8 +237,12 @@ function(add_popart_py_unit_test name filename)
 
     if (NOT DEFINED test_args_MATCHEXPR)
       set(test_name "${TEST_TARGET}_${TEST_CONFIG}_${name}")
+      # Adding ${test_name} after PYTEST_BASETEMP because when running tests in
+      # parallel, pytest removes the directories of running tests.
+      # This is because by default, pytest removes entries in basetemp older 
+      # than the newest 3 entries.
       add_test(NAME "${test_name}"
-            COMMAND ${Python3_EXECUTABLE} -m pytest -s ${CMAKE_CURRENT_SOURCE_DIR}/${filename} ${fork_test}
+            COMMAND ${Python3_EXECUTABLE} -m pytest -s ${CMAKE_CURRENT_SOURCE_DIR}/${filename} ${fork_test} --basetemp=${PYTEST_BASETEMP}/${test_name}
             WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
     else()
       # Note, solid brackets and dash can form part of parameterised pytest names.
@@ -240,8 +250,12 @@ function(add_popart_py_unit_test name filename)
       set(MATCHEXPR_VALUE "${test_args_MATCHEXPR}")
       set(test_name "${TEST_TARGET}_${TEST_CONFIG}_${name}-${MATCHEXPR_NAME}")
 
+      # Adding ${test_name} after PYTEST_BASETEMP because when running tests in
+      # parallel, pytest removes the directories of running tests.
+      # This is because by default, pytest removes entries in basetemp older 
+      # than the newest 3 entries.
       add_test(NAME "${test_name}"
-            COMMAND "${Python3_EXECUTABLE}" -m pytest -s "${CMAKE_CURRENT_SOURCE_DIR}/${filename}" -k "${MATCHEXPR_VALUE}" ${fork_test}
+            COMMAND "${Python3_EXECUTABLE}" -m pytest -s "${CMAKE_CURRENT_SOURCE_DIR}/${filename}" -k "${MATCHEXPR_VALUE}" ${fork_test} --basetemp=${PYTEST_BASETEMP}/${test_name}
             WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
     endif()
     set_tests_properties(${test_name} PROPERTIES

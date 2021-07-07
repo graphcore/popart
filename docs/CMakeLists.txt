@@ -168,4 +168,7 @@ endif()
 install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/user_guide/files
         DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/user_guide)
 
-add_test(NAME popart_examples_test COMMAND ${Python3_EXECUTABLE} -m pytest ${CMAKE_CURRENT_BINARY_DIR}/user_guide/files/tests/test_examples.py)
+set(PYTEST_BASETEMP ${CMAKE_CURRENT_BINARY_DIR}/pytest_tmp)
+file(MAKE_DIRECTORY ${PYTEST_BASETEMP})
+
+add_test(NAME popart_examples_test COMMAND ${Python3_EXECUTABLE} -m pytest ${CMAKE_CURRENT_BINARY_DIR}/user_guide/files/tests/test_examples.py --basetemp=${PYTEST_BASETEMP}/popart_examples_test)
