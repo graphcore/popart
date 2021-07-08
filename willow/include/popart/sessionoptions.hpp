@@ -776,6 +776,8 @@ struct SessionOptions {
   /// Poplar LSTM options.
   std::map<std::string, std::string> lstmOptions;
 
+  std::map<std::string, std::string> matmulOptions;
+
   /// Poplar reporting options.
   std::map<std::string, std::string> reportOptions;
 

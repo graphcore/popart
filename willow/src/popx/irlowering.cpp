@@ -344,6 +344,12 @@ IrLowering::IrLowering(const Ir &ir,
     lstmOptions.set(it.first, it.second);
   }
 
+  for (auto it : ir.getSessionOptions().matmulOptions) {
+    logging::devicex::info(
+        "Setting MatMul option {} = {}", it.first, it.second);
+    matmulOptions.set(it.first, it.second);
+  }
+
   const auto &userGclOptions = ir.getSessionOptions().gclOptions;
   validateGclOptions(userGclOptions);
 
@@ -2545,9 +2551,8 @@ void IrLowering::prePlanMatMuls() {
       matMulParams.bShape     = inputs.second.getPoplarTensor().shape();
       allMatMulParams.push_back(matMulParams);
 
-      auto opts =
-          MatMulOpx::getPoplarOptionsForMatMul(*matMulOp).toOptionFlags();
-      MatMulOpx::setMatMulOptions(*matMulOp, opts);
+      auto opts = matmulOptions;
+      MatMulOpx::appendPoplarOptionsForOp(*matMulOp, opts);
       allOptionFlags.push_back(opts);
     }
 

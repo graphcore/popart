@@ -332,6 +332,7 @@ public:
 
   poplar::OptionFlags pooling_options;
   poplar::OptionFlags lstmOptions;
+  poplar::OptionFlags matmulOptions;
   poplar::OptionFlags gclOptions;
   poplar::OptionFlags engineOptions;
   poplar::OptionFlags reportOptions;

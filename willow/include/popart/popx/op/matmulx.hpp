@@ -25,11 +25,10 @@ public:
 
   poplar::Type getOutputType(const snap::Tensor &output) const;
   static std::vector<std::size_t> onnxShapeToPoplar(const Shape &shape);
-  static PoplarOptions getPoplarOptionsForMatMul(const MatMulBaseOp &op);
+  static void appendPoplarOptionsForOp(const MatMulBaseOp &op,
+                                       poplar::OptionFlags &opts);
   static void addPartialsType(const MatMulPartialsType &partialsType,
                               poplar::OptionFlags &opts);
-  static void setMatMulOptions(const MatMulBaseOp &op,
-                               poplar::OptionFlags &opts);
 
   static std::pair<snap::Tensor, snap::Tensor>
   groupedMatMulInputsFromOpxInputs(MatMulBaseOp &matmul,

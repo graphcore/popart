@@ -20,26 +20,33 @@
 namespace popart {
 namespace popx {
 
-PoplarOptions MatMulOpx::getPoplarOptionsForMatMul(const MatMulBaseOp &op) {
-  PoplarOptions opts;
+void MatMulOpx::appendPoplarOptionsForOp(const MatMulBaseOp &op,
+                                         poplar::OptionFlags &opts) {
   auto &ir = op.getIr();
 
   if (op.useFullyConnectedPass()) {
     if (ir.isTraining()) {
       auto phase = op.getPhase();
       if (phase == MatMulBaseOp::Phase::Fwd) {
-        opts.options["fullyConnectedPass"] = "TRAINING_FWD";
+        opts.set("fullyConnectedPass", "TRAINING_FWD");
       } else if (phase == MatMulBaseOp::Phase::BwdLHS) {
-        opts.options["fullyConnectedPass"] = "TRAINING_BWD";
+        opts.set("fullyConnectedPass", "TRAINING_BWD");
       } else if (phase == MatMulBaseOp::Phase::BwdRHS) {
-        opts.options["fullyConnectedPass"] = "TRAINING_WU";
+        opts.set("fullyConnectedPass", "TRAINING_WU");
       }
     } else {
-      opts.options["fullyConnectedPass"] = "INFERENCE_FWD";
+      opts.set("fullyConnectedPass", "INFERENCE_FWD");
     }
   }
 
-  return opts;
+  if (auto prop = op.getAvailableMemoryProportion()) {
+    opts.set("availableMemoryProportion", std::to_string(*prop));
+  }
+
+  {
+    const auto partialsType = op.getPartialsType();
+    addPartialsType(partialsType, opts);
+  }
 }
 
 // Add the partials type to the poplar::OptionFlags that were computed from the
@@ -78,18 +85,6 @@ std::vector<std::size_t> MatMulOpx::onnxShapeToPoplar(const Shape &shape) {
 std::vector<std::size_t> MatMulOpx::getOutputShape() const {
   auto matmul = getMatMulOp();
   return MatMulOpx::onnxShapeToPoplar(matmul->outInfo(0).shape());
-}
-
-void MatMulOpx::setMatMulOptions(const MatMulBaseOp &op,
-                                 poplar::OptionFlags &opts) {
-  if (auto prop = op.getAvailableMemoryProportion()) {
-    opts.set("availableMemoryProportion", std::to_string(*prop));
-  }
-
-  {
-    const auto partialsType = op.getPartialsType();
-    addPartialsType(partialsType, opts);
-  }
 }
 
 static std::pair<snap::Tensor, snap::Tensor>
@@ -382,9 +377,19 @@ poplar::Type MatMulOpx::getOutputType(const snap::Tensor &output) const {
 void MatMulOpx::verifyCacheSizeUnchanged(size_t beforeCacheSize) const {
   bool expectedCacheSize;
 
-  auto opts = getPoplarOptionsForMatMul(getOp<MatMulOp>()).options;
-  if (opts.count("fullyConnectedPass") &&
-      opts["fullyConnectedPass"] != "INFERENCE_FWD") {
+  auto opts = dv_p->lowering().matmulOptions;
+  appendPoplarOptionsForOp(getOp<MatMulOp>(), opts);
+  auto hasFlag = [](auto &opts, auto flag) {
+    for (auto &x : opts) {
+      if (x.first == "fullyConnectedPass") {
+        return true;
+      }
+    }
+    return false;
+  };
+
+  if (hasFlag(opts, "fullyConnectedPass") &&
+      opts.at("fullyConnectedPass") != "INFERENCE_FWD") {
     expectedCacheSize = dv_p->matmulCache.size() <= beforeCacheSize + 2;
   } else {
     expectedCacheSize = beforeCacheSize == dv_p->matmulCache.size();
@@ -468,8 +473,8 @@ void MatMulOpx::grow(poplar::program::Sequence &prog) const {
   //                        G |  M   N
   // o' := matmul(a, b) = [10 | 28, 162]
 
-  auto opts = getPoplarOptionsForMatMul(matmul).toOptionFlags();
-  setMatMulOptions(matmul, opts);
+  auto opts = dv_p->lowering().matmulOptions;
+  appendPoplarOptionsForOp(matmul, opts);
   auto outputType = getOutputType(combinedBroadcastTs.first);
 
   auto cacheSize = dv_p->matmulCache.size();
@@ -620,8 +625,8 @@ MatMulOpx::createInputTensor(InIndex index,
   rhsShape = matCombineBroadcastDims(rhsShape);
   std::swap(rhsShape[2], rhsShape[1]);
 
-  auto opts = getPoplarOptionsForMatMul(matmul).toOptionFlags();
-  setMatMulOptions(matmul, opts);
+  auto opts = dv_p->lowering().matmulOptions;
+  appendPoplarOptionsForOp(matmul, opts);
 
   if (index == MatMulOp::getLhsInIndex()) {
     auto result = poplin::createMatMulGroupedInputLHS(

@@ -377,6 +377,10 @@ std::size_t hash<popart::SessionOptions>::operator()(
     boost::hash_combine(seed, key_val.first);
     boost::hash_combine(seed, key_val.second);
   }
+  for (auto key_val : so.matmulOptions) {
+    boost::hash_combine(seed, key_val.first);
+    boost::hash_combine(seed, key_val.second);
+  }
   for (auto key_val : so.gclOptions) {
     boost::hash_combine(seed, key_val.first);
     boost::hash_combine(seed, key_val.second);

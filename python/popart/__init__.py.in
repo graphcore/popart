@@ -108,6 +108,8 @@ SessionOptions.convolutionOptions = property(
     _set_options_dict('_convolutionOptions'))
 SessionOptions.lstmOptions = property(_get_options_dict('_lstmOptions'),
                                       _set_options_dict('_lstmOptions'))
+SessionOptions.matmulOptions = property(_get_options_dict('_matmulOptions'),
+                                        _set_options_dict('_matmulOptions'))
 SessionOptions.reportOptions = property(_get_options_dict('_reportOptions'),
                                         _set_options_dict('_reportOptions'))
 SessionOptions.gclOptions = property(_get_options_dict('_gclOptions'),
