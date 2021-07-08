@@ -288,20 +288,8 @@ std::vector<Tensor *> getGrads(Graph &graph,
       if (!accl1->isConvertibleTo<AccumulateOp>()) {
         throw internal_error("These should be AccumulateOps.");
       }
-      auto scaler =
-          accl1->inTensor(AccumulateOp::getUpdaterInIndex())->getProducer();
-      if (scaler->isConvertibleTo<ScaledAddOp>()) {
-        auto grad = scaler->inTensor(ScaledAddOp::getArg0InIndex());
-        result.push_back(grad);
-      } else if (scaler->isConvertibleTo<MulOp>()) {
-        auto grad = scaler->inTensor(MulOp::getArg0InIndex());
-        result.push_back(grad);
-      } else if (scaler->isConvertibleTo<ScaleOp>()) {
-        auto grad = scaler->inTensor(ScaleOp::getInIndex());
-        result.push_back(grad);
-      } else {
-        throw internal_error("Unexpected op type {}", scaler->str());
-      }
+      auto grad = accl1->inTensor(AccumulateOp::getUpdaterInIndex());
+      result.push_back(grad);
     } else {
       throw internal_error("Unable to handle op {}", op->str());
     }
