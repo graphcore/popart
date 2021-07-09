@@ -691,6 +691,23 @@ public:
   size_t getIrBundleHash() const;
   void setIrBundleHash(size_t);
 
+  /**
+   * Clone a graph.
+   *
+   * .. warning::
+   *
+   *    Does not support cloning of the main graph.
+   *
+   * The OpIds and TensorIds will differ between the original and the cloned
+   * graph. Hence a map between the old OpId and cloned OpId will be returned.
+   * The new graph can be obtained by ir.getGraph(newGraphId);
+   *
+   * \param originalGraphId The id of the graph to clone
+   * \param newGraphId      The id of the cloned graph
+   * \return A map between the OpIds in the original and new graphs
+   * */
+  std::map<OpId, OpId> cloneGraph(GraphId originalGraphId, GraphId newGraphId);
+
 private:
   uint64_t intermediate_tensor_counter{0};
   uint64_t subgraph_id_counter{0};
