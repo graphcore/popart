@@ -1120,38 +1120,6 @@ pva::Report Devicex::getReport() const {
   return pEngine->getReport();
 }
 
-std::string Devicex::getGraphReport(bool useCbor) const {
-  POPART_TRACEPOINT();
-  doProfileChecks();
-  std::stringstream ss;
-  auto report = pEngine->getGraphProfile();
-  if (useCbor) {
-    serializeToCBOR(ss, report);
-  } else {
-    serializeToJSON(ss, report);
-  }
-
-  return ss.str();
-}
-
-std::string Devicex::getExecutionReport(bool useCbor, bool resetProfile) const {
-  POPART_TRACEPOINT();
-  doProfileChecks();
-  std::stringstream ss;
-  auto report = pEngine->getExecutionProfile();
-
-  if (useCbor) {
-    serializeToCBOR(ss, report);
-  } else {
-    serializeToJSON(ss, report);
-  }
-
-  if (resetProfile) {
-    pEngine->resetExecutionProfile();
-  }
-  return ss.str();
-}
-
 std::string Devicex::getSerializedGraph() const {
   POPART_TRACEPOINT();
   doProfileChecks();

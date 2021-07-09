@@ -95,9 +95,6 @@ public:
   void writeWeights(const IWeightsIO &src);
 
   std::string getSummaryReport(bool resetProfile = true) const;
-  std::string getGraphReport(bool useCbor = false) const;
-  std::string getExecutionReport(bool useCbor      = false,
-                                 bool resetProfile = true) const;
   std::string getSerializedGraph() const;
 
   pva::Report getReport() const;

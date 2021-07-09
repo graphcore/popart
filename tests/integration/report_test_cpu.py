@@ -26,7 +26,7 @@ def test_summary_report_with_cpu_device():
     session.prepareDevice()
 
     with pytest.raises(popart.poplar_exception) as e_info:
-        session.getExecutionReport()
+        session.getSummaryReport()
 
     assert (e_info.value.args[0].endswith(
         "Profiling is disabled for current device type."))
@@ -54,7 +54,7 @@ def test_graph_report_with_cpu_device():
     session.prepareDevice()
 
     with pytest.raises(popart.poplar_exception) as e_info:
-        session.getExecutionReport()
+        session.getSummaryReport()
 
     assert (e_info.value.args[0].endswith(
         "Profiling is disabled for current device type."))
@@ -84,7 +84,7 @@ def test_execution_report_with_cpu_device():
     session.prepareDevice()
 
     with pytest.raises(popart.poplar_exception) as e_info:
-        session.getExecutionReport()
+        session.getSummaryReport()
 
     assert (e_info.value.args[0].endswith(
         "Profiling is disabled for current device type."))

@@ -211,34 +211,6 @@ public:
   std::string getSummaryReport(bool resetProfile = true) const;
 
   /**
-   * Retrieve the graph report from the \c poplar::Engine.
-   *
-   * The options which were given to the constructor will influence the
-   * information in the report.  By default a JSON format report is produced.
-   *
-   * This may only be called after the prepareDevice() call has been made.
-   *
-   * \param useCbor Produce a CBOR formatted report.
-   * \return A string containing the graph (compilation) report.
-   */
-  std::string getGraphReport(bool useCbor = false) const;
-
-  /**
-   * Retrieve the execution report from the \c poplar::Engine.
-   *
-   * The options which were given to the constructor will influence the
-   * information in the report.  By default a JSON format report is produced.
-   *
-   * This may only be called after the prepareDevice() call has been made.
-   *
-   * \param useCbor Produce a CBOR formatted report.
-   * \param resetProfile Resets the execution profile.
-   * \return A string containing the execution report.
-   */
-  std::string getExecutionReport(bool useCbor      = false,
-                                 bool resetProfile = true) const;
-
-  /**
    * Retrieve the serialized graph from the \c poplar::Engine.
    *
    * A JSON format report is produced.

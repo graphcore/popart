@@ -11013,72 +11013,6 @@ static const char *__doc_popart_Session_getExecutable = R"doc()doc";
 
 static const char *__doc_popart_Session_getExecutable_2 = R"doc()doc";
 
-static const char *__doc_popart_Session_getExecutionReport =
-    R"doc(Retrieve the execution report from the ``poplar::Engine``.
-
-The options which were given to the constructor will influence the
-information in the report. By default a JSON format report is
-produced.
-
-This may only be called after the prepareDevice() call has been made.
-
-Parameter ``useCbor``:
-    Produce a CBOR formatted report.
-
-Parameter ``resetProfile``:
-    Resets the execution profile.
-
-Returns:
-    A string containing the execution report.)doc";
-
-static const char *__doc_popart_Session_getExecutionReport_2 =
-    R"doc(Retrieve the execution report from the ``poplar::Engine``.
-
-The options which were given to the constructor will influence the
-information in the report. By default a JSON format report is
-produced.
-
-This may only be called after the prepareDevice() call has been made.
-
-Parameter ``useCbor``:
-    Produce a CBOR formatted report.
-
-Parameter ``resetProfile``:
-    Resets the execution profile.
-
-Returns:
-    A string containing the execution report.)doc";
-
-static const char *__doc_popart_Session_getGraphReport =
-    R"doc(Retrieve the graph report from the ``poplar::Engine``.
-
-The options which were given to the constructor will influence the
-information in the report. By default a JSON format report is
-produced.
-
-This may only be called after the prepareDevice() call has been made.
-
-Parameter ``useCbor``:
-    Produce a CBOR formatted report.
-
-Returns:
-    A string containing the graph (compilation) report.)doc";
-
-static const char *__doc_popart_Session_getGraphReport_2 =
-    R"doc(Retrieve the graph report from the ``poplar::Engine``.
-
-The options which were given to the constructor will influence the
-information in the report. By default a JSON format report is
-produced.
-
-This may only be called after the prepareDevice() call has been made.
-
-Parameter ``useCbor``:
-    Produce a CBOR formatted report.
-
-Returns:
-    A string containing the graph (compilation) report.)doc";
-
 static const char *__doc_popart_Session_getReport =
     R"doc(Retrieve the graph report from the ``poplar::Engine``.
 
@@ -12641,12 +12575,6 @@ static const char *__doc_popart_memory_allocation_err_clone = R"doc()doc";
 
 static const char *__doc_popart_memory_allocation_err_clone_2 = R"doc()doc";
 
-static const char *__doc_popart_memory_allocation_err_getGraphReport =
-    R"doc()doc";
-
-static const char *__doc_popart_memory_allocation_err_getGraphReport_2 =
-    R"doc()doc";
-
 static const char *__doc_popart_memory_allocation_err_getSummaryReport =
     R"doc()doc";
 
@@ -13115,10 +13043,6 @@ static const char *__doc_popart_popx_Devicex_getEfficientlyCreatedInputTensors =
 static const char *
     __doc_popart_popx_Devicex_getEfficientlyCreatedInputTensors_2 = R"doc()doc";
 
-static const char *__doc_popart_popx_Devicex_getExecutionReport = R"doc()doc";
-
-static const char *__doc_popart_popx_Devicex_getExecutionReport_2 = R"doc()doc";
-
 static const char *__doc_popart_popx_Devicex_getGlobalReplicaOffset =
     R"doc()doc";
 
@@ -13130,10 +13054,6 @@ static const char *__doc_popart_popx_Devicex_getGlobalReplicationFactor =
 
 static const char *__doc_popart_popx_Devicex_getGlobalReplicationFactor_2 =
     R"doc()doc";
-
-static const char *__doc_popart_popx_Devicex_getGraphReport = R"doc()doc";
-
-static const char *__doc_popart_popx_Devicex_getGraphReport_2 = R"doc()doc";
 
 static const char *__doc_popart_popx_Devicex_getHostReduceRemoteBuffers =
     R"doc()doc";

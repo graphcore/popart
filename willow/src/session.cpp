@@ -540,18 +540,6 @@ std::string Session::getSummaryReport(bool resetProfile) const {
   return device_->getSummaryReport(resetProfile);
 }
 
-std::string Session::getGraphReport(bool useCbor) const {
-  POPART_TRACEPOINT();
-  logging::session::trace("Session::getGraphReport");
-  return device_->getGraphReport(useCbor);
-}
-
-std::string Session::getExecutionReport(bool useCbor, bool resetProfile) const {
-  POPART_TRACEPOINT();
-  logging::session::trace("Session::getExecutionReport");
-  return device_->getExecutionReport(useCbor, resetProfile);
-}
-
 std::string Session::getSerializedGraph() const {
   POPART_TRACEPOINT();
   logging::session::trace("Session::getSerializedGraph");

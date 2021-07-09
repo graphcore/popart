@@ -1835,23 +1835,6 @@ PYBIND11_MODULE(popart_core, m) {
             &InferenceSession::getSummaryReport,
             py::arg("resetProfile") = true,
             DOC(popart, Session, getSummaryReport));
-    cls.def(
-        "getGraphReport",
-        [](const InferenceSession &session, bool useCbor) {
-          auto report = session.getGraphReport(useCbor);
-          return py::bytes(report);
-        },
-        py::arg("useCbor") = false,
-        DOC(popart, Session, getGraphReport));
-    cls.def(
-        "getExecutionReport",
-        [](const InferenceSession &session, bool useCbor, bool resetProfile) {
-          auto report = session.getExecutionReport(useCbor, resetProfile);
-          return py::bytes(report);
-        },
-        py::arg("useCbor")      = false,
-        py::arg("resetProfile") = true,
-        DOC(popart, Session, getExecutionReport));
     cls.def("getSerializedGraph", [](const InferenceSession &session) {
       auto report = session.getSerializedGraph();
       return py::bytes(report);
@@ -1975,23 +1958,6 @@ PYBIND11_MODULE(popart_core, m) {
             &TrainingSession::getSummaryReport,
             py::arg("resetProfile") = true,
             DOC(popart, Session, getSummaryReport));
-    cls.def(
-        "getGraphReport",
-        [](const TrainingSession &session, bool useCbor) {
-          auto report = session.getGraphReport(useCbor);
-          return py::bytes(report);
-        },
-        py::arg("useCbor") = false,
-        DOC(popart, Session, getGraphReport));
-    cls.def(
-        "getExecutionReport",
-        [](const TrainingSession &session, bool useCbor, bool resetProfile) {
-          auto report = session.getExecutionReport(useCbor, resetProfile);
-          return py::bytes(report);
-        },
-        py::arg("useCbor")      = false,
-        py::arg("resetProfile") = true,
-        DOC(popart, Session, getExecutionReport));
     cls.def("getReport",
             &TrainingSession::getReport,
             DOC(popart, Session, getReport));

@@ -55,7 +55,7 @@ def test_graph_report_before_execution():
     session.initAnchorArrays()
 
     with pytest.raises(popart.popart_exception) as e_info:
-        session.getGraphReport()
+        session.getSummaryReport()
 
     assert (e_info.value.args[0].endswith(
         "Session must have been prepared before a report can be fetched"))
@@ -82,7 +82,7 @@ def test_execution_report_before_execution():
     session.initAnchorArrays()
 
     with pytest.raises(popart.popart_exception) as e_info:
-        session.getExecutionReport()
+        session.getSummaryReport()
 
     assert (e_info.value.args[0].endswith(
         "Session must have been prepared before a report can be fetched"))
@@ -183,7 +183,7 @@ def test_compilation_report_deprecated():
 
     session.prepareDevice()
 
-    assert (len(session.getGraphReport()) > 0)
+    assert (len(session.getSummaryReport()) > 0)
 
 
 @tu.requires_ipu_model
@@ -211,7 +211,7 @@ def test_compilation_report_cbor():
 
     session.prepareDevice()
 
-    assert (len(session.getGraphReport(True)) > 0)
+    assert (len(session.getSummaryReport(True)) > 0)
 
 
 @tu.requires_ipu_model
@@ -251,12 +251,8 @@ def test_execution_report():
 
     session.run(stepio, "Test message")
 
-    rep = session.getExecutionReport()
-
-    # Need to convert bytes to string
-    details = json.loads(rep.decode("utf-8"))
-
-    assert (details['runs'][0]['name'] == "Test message")
+    report = session.getReport()
+    assert (report.execution.runs[0].name == "Test message")
 
 
 @tu.requires_ipu_model
@@ -334,8 +330,8 @@ def test_execution_report_reset():
 
     session.run(stepio)
 
-    rep1 = session.getExecutionReport(resetProfile=False)
-    rep2 = session.getExecutionReport(resetProfile=False)
+    rep1 = session.getSummaryReport(resetProfile=False)
+    rep2 = session.getSummaryReport(resetProfile=False)
     assert len(rep1) == len(rep2)
 
 
@@ -370,7 +366,7 @@ def test_execution_report_cbor():
 
     session.run(stepio)
 
-    rep = session.getExecutionReport(True)
+    rep = session.getSummaryReport(True)
 
 
 @tu.requires_ipu_model
@@ -401,7 +397,7 @@ def test_no_compile():
     session.prepareDevice()
 
     with pytest.raises(popart.popart_exception) as e_info:
-        session.getGraphReport()
+        session.getSummaryReport()
 
     assert (e_info.value.args[0].endswith(
         "Session must have been prepared before a report can be fetched"))
