@@ -3331,7 +3331,8 @@ poplar::program::Sequence &IrLowering::getAnchorReturnFragment(Tensor *tensor) {
       return progs.pipelineToHostStreamFragment(ps, tensor->str());
     }
   } else {
-    return tensor->tensorType() == TensorType::Variable
+    return (tensor->tensorType() == TensorType::Variable ||
+            !tensor->hasProducer())
                ? progs.backwardFragment()
                : progs.forwardOrBackwardFragment(tensor->scheduledPreLoss);
   }
