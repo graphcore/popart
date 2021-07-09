@@ -37,13 +37,12 @@ class SGD2ComboOp;
  *   (2)      a += g                 [if grad acc]
  *   (_)    [let a := g if not grad acc]
  *   (3)    a = allReduce(a)         [if OptimizerReductionType=AccumReduce]
- *   (4)    a = cast<FLOAT>(a)       [if accumType=FLOAT16 and accl1Type=FLOAT]
  *   (_)    // Note we break the single v
  *             update equation into two steps:
- *   (5)    v += dpsf1 * a
- *   (6)    v = v * smm1 + swd1 * w
- *   (7)    w = w - slr1 * v
- *   (8)    a = 0                    [if grad acc]
+ *   (4)    v += dpsf1 * a
+ *   (5)    v = v * smm1 + swd1 * w
+ *   (6)    w = w - slr1 * v
+ *   (7)    a = 0                    [if grad acc]
  *
  * See the SGD docs in optimizer.hpp for derivation of the above.
  *
@@ -53,17 +52,15 @@ class SGD2ComboOp;
  *
  * (3) is implemented by a ReplicatedAllReduceInplaceOp.
  *
- * (4) is implemented by a CastOp.
+ * (4) is implemented by an AccumulateOp.
  *
- * (5) is implemented by an AccumulateOp.
- *
- * (6) is implemented by an SGD2AcclUpdateOp. Note this is equivalent to an
+ * (5) is implemented by an SGD2AcclUpdateOp. Note this is equivalent to an
  * SGD1AcclUpdateOp.
  *
- * (7) is implemented by an SGD2VarUpdateOp. Note this is equivalent to an
+ * (6) is implemented by an SGD2VarUpdateOp. Note this is equivalent to an
  * SGD1VarUpdateOp.
  *
- * (8) is implemented by an AccumulatorUpdateOp.
+ * (7) is implemented by an AccumulatorUpdateOp.
  *
  * For all the above ops, if they consume a non-const OptimizerValue, then the
  * SGD2ComboOp will have an additional input for that scalar, which will be
@@ -78,11 +75,6 @@ class SGD2ComboOp;
  * because VarUpdateOps default to minimum possible schedule priority so they
  * are scheduled last, but this is not desirable for gradient accumulation, so
  * we reset to a neutral priority.
- *
- * (4) (the CastOp) will need
- *   op->settings.optimizerOp = true
- * as, unlike the others, it will have it as false by default. This is needed so
- * the StreamingMemoryOpInserter transform works correctly.
  *
  * The SGD2ComboOp will be disconnected and erased.
  *

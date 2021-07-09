@@ -81,13 +81,6 @@ bool SGD2Decompose::apply(Op *op) const {
 
   // Remaining ops run after the gradient accumulation loop (if enabled)
 
-  // Cast if accumulator is fp16, and optimizer state is fp32.
-  if (combo->accumType == DataType::FLOAT16 &&
-      combo->accl1Type == DataType::FLOAT) {
-    gradIntoAcclId =
-        gradCast(graph, combo, gradIntoAcclId, combo->withGradAccum);
-  }
-
   const TensorId updatedAcc1lId =
       acclUpdate(graph, combo, gradIntoAcclId, accl1Id, weightId);
 
