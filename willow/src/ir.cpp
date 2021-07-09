@@ -106,6 +106,7 @@
 
 // used for float to half conversion
 #include <poplar/Target.hpp>
+#include <poprithms/memory/inplace/allowmultigatealias.hpp>
 
 #include <popart/alias/aliasmodel.hpp>
 #include <popart/alias/aliasmodelgrower.hpp>
@@ -3164,7 +3165,9 @@ void Ir::applyInplacePattern(Graph &graph) {
       auto proposal = op->mapInplaceProposal(popMem, identifier);
 
       const auto result = popMem.g.tryOpeningPartial(
-          proposal, poprithms::memory::inplace::CheckParallelWriteable::No);
+          proposal,
+          poprithms::memory::inplace::CheckParallelWriteable::No,
+          poprithms::memory::inplace::AllowMultiGateAlias::No);
 
       if (!result.isValid()) {
         std::ostringstream oss;
@@ -3946,8 +3949,8 @@ std::size_t std::hash<popart::Ir>::operator()(const popart::Ir &ir) const {
   return seed;
 }
 
-std::size_t std::hash<popart::IrBundle>::
-operator()(const popart::IrBundle &bundle) const {
+std::size_t
+std::hash<popart::IrBundle>::operator()(const popart::IrBundle &bundle) const {
   size_t seed = 0;
 
   boost::hash_combine(
