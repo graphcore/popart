@@ -2,6 +2,7 @@
 import numpy as np
 import popart
 import torch
+import pytest
 from op_tester import op_tester
 
 
@@ -22,22 +23,24 @@ def test_erf_0(op_tester):
     op_tester.run(init_builder, reference, 'infer')
 
 
-def test_erf_0b(op_tester):
-    tesTypes = [np.float16, np.float32]
-    for tesType in tesTypes:
-        x = np.array([0., -1., 10.]).astype(tesType)
-        expected = np.array([0., -0.84270079, 1.]).astype(tesType)
+@pytest.mark.parametrize("dtype", [np.float32, np.float16])
+def test_erf_0b(op_tester, dtype):
+    x = np.array([0., -1., 10.]).astype(dtype)
+    expected = np.array([0., -0.84270079, 1.]).astype(dtype)
 
-        def init_builder(builder):
-            i0 = builder.addInputTensor(x)
-            o = builder.aiOnnx.erf([i0])
-            builder.addOutputTensor(o)
-            return [o]
+    def init_builder(builder):
+        i0 = builder.addInputTensor(x)
+        o = builder.aiOnnx.erf([i0])
+        builder.addOutputTensor(o)
+        return [o]
 
-        def reference(ref_data):
-            return [expected]
+    def reference(ref_data):
+        return [expected]
 
-        op_tester.run(init_builder, reference, 'infer')
+    # Lower precision for float16
+    if dtype == np.float16:
+        op_tester.atol = 1e-03
+    op_tester.run(init_builder, reference, 'infer')
 
 
 def test_erf_1(op_tester):
