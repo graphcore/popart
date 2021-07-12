@@ -25,7 +25,7 @@ public:
   void appendOutlineAttributes(OpSerialiserBase &) const override;
 
   std::vector<std::tuple<OperatorIdentifier, float>>
-  inplacePriorityDefault() const final;
+  inplacePriorityDefault() const;
   std::unique_ptr<Op> getInplaceVariant(const OperatorIdentifier &) const final;
   bool canBeReplacedByIdentity() const override;
 
@@ -58,6 +58,9 @@ public:
 
   const std::vector<GradInOutMapper> &gradInputInfo() const final;
   const std::map<int, int> &gradOutToNonGradIn() const final;
+
+  std::vector<std::tuple<OperatorIdentifier, float>>
+  inplacePriorityDefault() const final;
 
   // The index at which the output of the Clip (the "clipped" tensor)
   // is an input to this ClipGradOp

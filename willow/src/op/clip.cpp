@@ -82,6 +82,11 @@ ClipGradOp::ClipGradOp(const ClipOp &fwdOp)
              fwdOp.getClipMax(),
              fwdOp.getSettings()) {}
 
+std::vector<std::tuple<OperatorIdentifier, float>>
+ClipGradOp::inplacePriorityDefault() const {
+  return {};
+}
+
 std::unique_ptr<Op> ClipGradOp::clone() const {
   return std::make_unique<ClipGradOp>(*this);
 }
