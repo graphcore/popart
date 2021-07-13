@@ -679,6 +679,13 @@ PYBIND11_MODULE(popart_core, m) {
     en.value("Sum", ReductionType::Sum, DOC(popart, ReductionType, Sum));
   }
   {
+    // T42271
+    py::enum_<MeanReductionStrategy> en(m, "MeanReductionStrategy");
+    en.value("Running", MeanReductionStrategy::Running);
+    en.value("Post", MeanReductionStrategy::Post);
+    en.value("PostAndLoss", MeanReductionStrategy::PostAndLoss);
+  }
+  {
     py::enum_<ScatterReduction> en(m, "ScatterReduction");
     en.value("Sum", ScatterReduction::Sum);
   }
@@ -1210,6 +1217,10 @@ PYBIND11_MODULE(popart_core, m) {
         "accumulationAndReplicationReductionType",
         &SessionOptions::accumulationAndReplicationReductionType,
         DOC(popart, SessionOptions, accumulationAndReplicationReductionType));
+    cls.def_readwrite(
+        "meanAccumulationAndReplicationReductionStrategy",
+        &SessionOptions::meanAccumulationAndReplicationReductionStrategy
+        /* T42271 DOC(popart, SessionOptions, meanAccumulationAndReplicationReductionStrategy)*/);
     cls.def_readwrite("enableNonStableSoftmax",
                       &SessionOptions::enableNonStableSoftmax,
                       DOC(popart, SessionOptions, enableNonStableSoftmax));

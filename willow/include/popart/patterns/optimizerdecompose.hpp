@@ -82,6 +82,23 @@ protected:
                         TensorId weightId,
                         TensorId gradIntoAcclId,
                         bool gradAccum) const;
+
+  bool runningMeanReduction(Graph &graph) const;
+
+private:
+  // Returns the counter id based off attributes of combo.
+  // Currently will have 1 counter per ipu, per pipelineStage.
+  TensorId getCounterId(Op *combo) const;
+
+  std::pair<Op *, TensorId>
+  counterIncrement(Graph &graph, Op *combo, TensorId counterId) const;
+  std::pair<Op *, TensorId>
+  counterReset(Graph &graph, Op *combo, TensorId counterId) const;
+
+  // Add counter increment and zero if they don't exist.
+  // return increment operation and counter tensor.
+  std::pair<Op *, TensorId> findOrCreateRunningMeanCounter(Graph &graph,
+                                                           Op *combo) const;
 };
 
 } // namespace popart

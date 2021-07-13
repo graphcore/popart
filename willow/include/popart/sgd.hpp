@@ -773,15 +773,20 @@ private:
 
   // The compound scalars
   // --------------------
-  // No Accumulation Tensor needed (SGD0)
+  // No Momentum needed (SGD0)
   ScaledLearningRate0Helper slr0helper;
   WeightDecayScaleFactor0Helper wdsf0helper;
 
-  // Accumulation Tensor needed (SGD1)
+  // SGDAccumulatorAndMomentum::Combined (SGD1)
   ScaledLearningRate1Helper slr1helper;
   ScaledWeightDecay1Helper swd1helper;
   DampeningScaleFactor1Helper dpsf1helper;
   ScaledMomentum1Helper smm1helper;
+
+  // SGDAccumulatorAndMomentum::Seperate (SGD2)
+  ScaledLearningRate2Helper slr2helper;
+  DampeningScaleFactor2Helper dpsf2helper;
+  ScaledMomentum2Helper smm2helper;
 
   // SGD implementation strategy when accl/accum tensors needed (SGD1 or SGD2)
   SGDAccumulatorAndMomentum sgdAccMm;

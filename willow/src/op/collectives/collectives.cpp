@@ -30,6 +30,9 @@ std::ostream &operator<<(std::ostream &os, const CollectiveOperator &op) {
   case CollectiveOperator::Add:
     os << "Add";
     break;
+  case CollectiveOperator::Mean:
+    os << "Mean";
+    break;
   case CollectiveOperator::Mul:
     os << "Mul";
     break;

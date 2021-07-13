@@ -299,21 +299,26 @@ std::unique_ptr<Op> SGD::createOp(const Tensor &w, Graph &graph) const {
   }
 
   // velocity required
-  const auto smm1  = smm1helper.getFromWeightId(w.id, *this);
-  const auto dpsf1 = dpsf1helper.getFromWeightId(w.id, *this);
-  const auto swd1  = swd1helper.getFromWeightId(w.id, *this);
-  const auto slr1  = slr1helper.getFromWeightId(w.id, *this);
+  const auto swd = swd1helper.getFromWeightId(w.id, *this);
 
   switch (this->sgdAccMm) {
-  case SGDAccumulatorAndMomentum::Combined:
+  case SGDAccumulatorAndMomentum::Combined: {
+    const auto smm1  = smm1helper.getFromWeightId(w.id, *this);
+    const auto dpsf1 = dpsf1helper.getFromWeightId(w.id, *this);
+    const auto slr1  = slr1helper.getFromWeightId(w.id, *this);
+
     return std::make_unique<SGD1ComboOp>(
-        smm1, dpsf1, swd1, slr1, reductionType, opSettings);
-  case SGDAccumulatorAndMomentum::Separate:
+        smm1, dpsf1, swd, slr1, reductionType, opSettings);
+  }
+  case SGDAccumulatorAndMomentum::Separate: {
+    const auto smm2  = smm2helper.getFromWeightId(w.id, *this);
+    const auto dpsf2 = dpsf2helper.getFromWeightId(w.id, *this);
+    const auto slr2  = slr2helper.getFromWeightId(w.id, *this);
     return std::make_unique<SGD2ComboOp>(
-        smm1,
-        dpsf1,
-        swd1,
-        slr1,
+        smm2,
+        dpsf2,
+        swd,
+        slr2,
         gradientAccumulationEnabled(),
         reductionType,
         sgdAccumType == DataType::UNDEFINED ? w.info.getDataTypeInfo()->type()
@@ -321,6 +326,7 @@ std::unique_ptr<Op> SGD::createOp(const Tensor &w, Graph &graph) const {
         sgd2Accl1Type == DataType::UNDEFINED ? w.info.getDataTypeInfo()->type()
                                              : sgd2Accl1Type,
         opSettings);
+  }
   default:
     throw internal_error(
         "SGD::createOp: Unknown SGDAccumulatorAndMomentum with int value {}",
@@ -358,21 +364,35 @@ std::vector<TensorId> SGD::getInputIds(const Tensor &w) const {
 
   // with momentum:
   else {
-    // momentum (optional)
-    inputs[SGDMComboBaseOp::getSmm1InIndex()] =
-        smm1helper.getScalarIdIfNonConst(w, *this);
-
-    // dampening scale factor (optional)
-    inputs[SGDMComboBaseOp::getDpsf1InIndex()] =
-        dpsf1helper.getScalarIdIfNonConst(w, *this);
-
     // weight decay scale factor (optional)
     inputs[SGDMComboBaseOp::getSwd1InIndex()] =
         swd1helper.getScalarIdIfNonConst(w, *this);
 
-    // scaled learning rate (optional)
-    inputs[SGDMComboBaseOp::getSlr1InIndex()] =
-        slr1helper.getScalarIdIfNonConst(w, *this);
+    if (sgdAccMm == SGDAccumulatorAndMomentum::Combined) {
+      // scaled learning rate (optional)
+      inputs[SGDMComboBaseOp::getSlr1InIndex()] =
+          slr1helper.getScalarIdIfNonConst(w, *this);
+
+      // momentum (optional)
+      inputs[SGDMComboBaseOp::getSmm1InIndex()] =
+          smm1helper.getScalarIdIfNonConst(w, *this);
+
+      // dampening scale factor (optional)
+      inputs[SGDMComboBaseOp::getDpsf1InIndex()] =
+          dpsf1helper.getScalarIdIfNonConst(w, *this);
+    } else {
+      // scaled learning rate (optional)
+      inputs[SGDMComboBaseOp::getSlr1InIndex()] =
+          slr2helper.getScalarIdIfNonConst(w, *this);
+
+      // momentum (optional)
+      inputs[SGDMComboBaseOp::getSmm1InIndex()] =
+          smm2helper.getScalarIdIfNonConst(w, *this);
+
+      // dampening scale factor (optional)
+      inputs[SGDMComboBaseOp::getDpsf1InIndex()] =
+          dpsf2helper.getScalarIdIfNonConst(w, *this);
+    }
   }
 
   return inputs;
@@ -388,16 +408,23 @@ SGD::getOptimizerInputs(const Tensor &weight) const {
     ids.push_back(slr0helper.getScalarIdIfNonConst(weight, *this));
     ids.push_back(wdsf0helper.getScalarIdIfNonConst(weight, *this));
   } else {
-    ids.push_back(slr1helper.getScalarIdIfNonConst(weight, *this));
     ids.push_back(swd1helper.getScalarIdIfNonConst(weight, *this));
-    ids.push_back(smm1helper.getScalarIdIfNonConst(weight, *this));
-    ids.push_back(dpsf1helper.getScalarIdIfNonConst(weight, *this));
+    if (sgdAccMm == SGDAccumulatorAndMomentum::Combined) {
+      ids.push_back(slr1helper.getScalarIdIfNonConst(weight, *this));
+      ids.push_back(smm1helper.getScalarIdIfNonConst(weight, *this));
+      ids.push_back(dpsf1helper.getScalarIdIfNonConst(weight, *this));
+    } else {
+      ids.push_back(slr2helper.getScalarIdIfNonConst(weight, *this));
+      ids.push_back(smm2helper.getScalarIdIfNonConst(weight, *this));
+      ids.push_back(dpsf2helper.getScalarIdIfNonConst(weight, *this));
+    }
   }
 
   std::vector<std::tuple<TensorId, TensorInfo>> optInputs;
   for (const auto &id : ids) {
     // empty denotes const, not an input
-    if ((withMomentum && smm1helper.idMatch(id)) || wdsf0helper.idMatch(id)) {
+    if ((withMomentum && (smm1helper.idMatch(id) || smm2helper.idMatch(id))) ||
+        wdsf0helper.idMatch(id)) {
       // Use weight dtype for momentum and weight decay, Float32 for everything
       // else.
       auto tuppy = std::make_tuple(id, TensorInfo(weight.info.dataType(), {}));
@@ -458,6 +485,18 @@ float SGD::getStoredValue(const TensorId &optId) const {
 
   if (smm1helper.idMatch(optId)) {
     return smm1helper.getFromScalarId(optId, *this).val();
+  }
+
+  if (slr2helper.idMatch(optId)) {
+    return slr2helper.getFromScalarId(optId, *this).val();
+  }
+
+  if (dpsf2helper.idMatch(optId)) {
+    return dpsf2helper.getFromScalarId(optId, *this).val();
+  }
+
+  if (smm2helper.idMatch(optId)) {
+    return smm2helper.getFromScalarId(optId, *this).val();
   }
 
   throw error("In getStoredValue for {}, it doesn't match any existing "

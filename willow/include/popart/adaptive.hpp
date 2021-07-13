@@ -48,12 +48,25 @@ enum class AdaptiveMode {
 // If accumulationAndReplicationReductionType is set to ReductionType::Sum 'af'
 // is set to 1
 //
-// accumulator (only used if gradient accumulation is enabled):
-// s = s + g                             (otherwise: s = g)
+// accumulator (only if gradient accumulation is enabled. otherwise: s = g):
+// If accumulationAndReplicationReductionType is set to ReductionType::Mean
+// And meanAccumulationAndReplicationReductionStrategy is set to
+// MeanReductionStrategy::Running
+//   for f in range(af):
+//     s = (f/(f+1)) * s + (1/(f+1)) * g
+// else
+//   for f in range(af):
+//     s = s + g
 //
 // remove loss scaling factor:
 // s = cast(s, FP16/FP32)
-// s = s / (ls * af)
+//
+// If accumulationAndReplicationReductionType is set to ReductionType::Mean
+// And meanAccumulationAndReplicationReductionStrategy is set to *not*
+// MeanReductionStrategy::Running
+//   s = s / (ls * af)
+// else
+//   s = s / ls
 //
 // L2 regularization (if wd > 0.0 and weight decay mode: L2 regularization)
 // s = s + wd * w

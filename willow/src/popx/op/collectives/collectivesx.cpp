@@ -22,6 +22,8 @@ popops::CollectiveOperator getPoplarCollectiveOperator(CollectiveOperator op) {
   switch (op) {
   case CollectiveOperator::Add:
     return popops::CollectiveOperator::ADD;
+  case CollectiveOperator::Mean:
+    return popops::CollectiveOperator::MEAN;
   case CollectiveOperator::Mul:
     return popops::CollectiveOperator::MUL;
   case CollectiveOperator::Min:

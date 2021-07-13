@@ -83,4 +83,6 @@ add_popart_cpp_unit_test(unittest_preautomaticlossscaling transforms/unittest_pr
 
 add_popart_cpp_unit_test(unittest_willow_error willow/test_error.cpp)
 
+add_subdirectory("compoundscalarhelper")
+
 add_subdirectory("python")

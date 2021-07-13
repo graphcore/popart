@@ -72,8 +72,8 @@ class ScaledLearningRate0Helper : public CompoundScalarHelper<SGD> {
 public:
   float val(const TensorId &weightId, const SGD &) const final;
   bool isConst(const TensorId &weightId, const SGD &) const final;
-  float val(float lr, float ls, float dp, float af) const {
-    return (lr * (1.0f - dp)) / (ls * af);
+  float val(float lr, float dp, float ls, float af, float rf) const {
+    return (lr * (1.0f - dp)) / (ls * af * rf);
   }
 
 private:
@@ -106,9 +106,7 @@ class ScaledLearningRate1Helper : public CompoundScalarHelper<SGD> {
 public:
   float val(const TensorId &weightId, const SGD &) const final;
   bool isConst(const TensorId &weightId, const SGD &) const final;
-  float val(float lr, float vs, int64_t rf) const {
-    return lr / (vs * static_cast<float>(rf));
-  }
+  float val(float lr, float vs, float rf) const { return lr / (vs * rf); }
 
 private:
   std::string defaultPrefix() const final {
@@ -123,9 +121,8 @@ class DampeningScaleFactor1Helper : public CompoundScalarHelper<SGD> {
 public:
   float val(const TensorId &weightId, const SGD &) const final;
   bool isConst(const TensorId &weightId, const SGD &) const final;
-  float val(float dm, float vs, float ls, int64_t rf, int64_t af) const {
-    return (1.0f - dm) * vs * static_cast<float>(rf) /
-           (ls * static_cast<float>(af));
+  float val(float dm, float vs, float ls, float af, float rf) const {
+    return (1.0f - dm) * vs * rf / (ls * af);
   }
 
 private:
@@ -141,9 +138,7 @@ class ScaledMomentum1Helper : public CompoundScalarHelper<SGD> {
 public:
   float val(const TensorId &weightId, const SGD &) const final;
   bool isConst(const TensorId &weightId, const SGD &) const final;
-  float val(float mm, int64_t rf) const {
-    return mm / (static_cast<float>(rf));
-  }
+  float val(float mm, float rf) const { return mm / rf; }
 
 private:
   std::string defaultPrefix() const final {
@@ -151,6 +146,53 @@ private:
   }
   std::string specificPrefix() const final {
     return reservedSpecificScaledMomentum1Prefix();
+  }
+};
+
+class ScaledLearningRate2Helper : public CompoundScalarHelper<SGD> {
+public:
+  float val(const TensorId &weightId, const SGD &) const final;
+  bool isConst(const TensorId &weightId, const SGD &) const final;
+  float val(float lr, float vs) const { return lr / vs; }
+
+private:
+  std::string defaultPrefix() const final {
+    return reservedDefaultScaledLearningRate2Prefix();
+  }
+  std::string specificPrefix() const final {
+    return reservedSpecificScaledLearningRate2Prefix();
+  }
+};
+
+class DampeningScaleFactor2Helper : public CompoundScalarHelper<SGD> {
+public:
+  float val(const TensorId &weightId, const SGD &) const final;
+  bool isConst(const TensorId &weightId, const SGD &) const final;
+  float val(float dm, float vs, float ls, float af, float rf) const {
+    return (1.0f - dm) * vs / (ls * af * rf);
+  }
+
+private:
+  std::string defaultPrefix() const final {
+    return reservedDefaultDampeningScaleFactor2Prefix();
+  }
+  std::string specificPrefix() const final {
+    return reservedSpecificDampeningScaleFactor2Prefix();
+  }
+};
+
+class ScaledMomentum2Helper : public CompoundScalarHelper<SGD> {
+public:
+  float val(const TensorId &weightId, const SGD &) const final;
+  bool isConst(const TensorId &weightId, const SGD &) const final;
+  float val(float mm) const { return mm; }
+
+private:
+  std::string defaultPrefix() const final {
+    return reservedDefaultScaledMomentum2Prefix();
+  }
+  std::string specificPrefix() const final {
+    return reservedSpecificScaledMomentum2Prefix();
   }
 };
 
@@ -263,7 +305,7 @@ class AdamGradientScalingHelper : public CompoundScalarHelper<Adam> {
 public:
   float val(const TensorId &weightId, const Adam &) const final;
   bool isConst(const TensorId &weightId, const Adam &) const final;
-  float val(float ls, float af) const { return 1 / (ls * af); }
+  float val(float ls, float af, float rf) const { return 1 / (ls * af * rf); }
 
 private:
   std::string defaultPrefix() const final {
@@ -383,7 +425,7 @@ class AdaptiveGradientScalingHelper : public CompoundScalarHelper<Adaptive> {
 public:
   float val(const TensorId &weightId, const Adaptive &) const final;
   bool isConst(const TensorId &weightId, const Adaptive &) const final;
-  float val(float ls, float af) const { return 1 / (ls * af); }
+  float val(float ls, float af, float rf) const { return 1 / (ls * af * rf); }
 
 private:
   std::string defaultPrefix() const final {

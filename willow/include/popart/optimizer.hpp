@@ -191,9 +191,15 @@ public:
   virtual void setFactorsFromOptions(const SessionOptions &);
 
   bool gradientAccumulationEnabled() const;
-  bool meanGradientAccumulationEnabled() const;
+  bool meanReductionEnabled() const;
+  bool postMeanAccumulationEnabled() const;
+  bool postMeanReplicationEnabled() const;
+  bool lossMeanReplicationEnabled() const;
   int64_t getReplicatedGraphCount() const;
   int64_t getAccumulationFactor() const;
+
+  // Deprecated
+  bool meanGradientAccumulationEnabled() const;
 
   const std::vector<ClipNormSettings> &getClipNormSettings() const {
     return clipNormSettings;
@@ -229,7 +235,10 @@ private:
   std::vector<ClipNormSettings> clipNormSettings;
 
   bool enableGradientAccumulation;
-  bool meanGradientAccumulation;
+  bool meanReduction;
+  bool postMeanAccumulation;
+  bool postMeanReplication;
+  bool lossMeanReplication;
   int64_t accumulationFactor;
   int64_t replicatedGraphCount;
 

@@ -20,12 +20,47 @@ add_popart_py_unit_test(sgd_mixed_mode_test_py_0 sgd_mixed_mode_test_py_0.py)
 add_popart_py_unit_test(sgd_mixed_mode_test_py_1 sgd_mixed_mode_test_py_1.py)
 add_popart_py_unit_test(sgd1_accumulator_test sgd1_accumulator_test.py)
 
-add_popart_py_unit_test(global_batch_size_test global_batch_size_test.py MATCHEXPR sgd_ VARIANTS Hw)
-add_popart_py_unit_test(global_batch_size_test global_batch_size_test.py MATCHEXPR adam VARIANTS Hw)
-add_popart_py_unit_test(global_batch_size_test global_batch_size_test.py MATCHEXPR lamb VARIANTS Hw)
-# Further split the SGDM tests on the first parameter of the test function to,
-# help reduce timeouts. This could break if the test functions change.
 # NOTE: CMake bug: For some reason, the keywords get set wrong if VARIANTS comes
 #       after MATCHEXPR
-add_popart_py_unit_test(global_batch_size_test global_batch_size_test.py VARIANTS Hw MATCHEXPR "sgdm[True")
-add_popart_py_unit_test(global_batch_size_test global_batch_size_test.py VARIANTS Hw MATCHEXPR "sgdm[False")
+add_popart_py_unit_test(global_batch_size_test global_batch_size_test.py VARIANTS Hw MATCHEXPR "sgd_[Sum")
+add_popart_py_unit_test(global_batch_size_test global_batch_size_test.py VARIANTS Hw MATCHEXPR "sgd_[Mean")
+add_popart_py_unit_test(global_batch_size_test global_batch_size_test.py VARIANTS Hw MATCHEXPR "sgd_[MeanPost")
+add_popart_py_unit_test(global_batch_size_test global_batch_size_test.py VARIANTS Hw MATCHEXPR "sgd_[MeanRunning")
+
+add_popart_py_unit_test(global_batch_size_test global_batch_size_test.py VARIANTS Hw MATCHEXPR "sgdm1[Sum")
+add_popart_py_unit_test(global_batch_size_test global_batch_size_test.py VARIANTS Hw MATCHEXPR "sgdm1[Mean")
+add_popart_py_unit_test(global_batch_size_test global_batch_size_test.py VARIANTS Hw MATCHEXPR "sgdm1[MeanPost")
+add_popart_py_unit_test(global_batch_size_test global_batch_size_test.py VARIANTS Hw MATCHEXPR "sgdm1[MeanRunning")
+
+add_popart_py_unit_test(global_batch_size_test global_batch_size_test.py VARIANTS Hw MATCHEXPR "sgdm2[Sum")
+add_popart_py_unit_test(global_batch_size_test global_batch_size_test.py VARIANTS Hw MATCHEXPR "sgdm2[Mean")
+add_popart_py_unit_test(global_batch_size_test global_batch_size_test.py VARIANTS Hw MATCHEXPR "sgdm2[MeanPost")
+add_popart_py_unit_test(global_batch_size_test global_batch_size_test.py VARIANTS Hw MATCHEXPR "sgdm2[MeanRunning")
+
+add_popart_py_unit_test(global_batch_size_test global_batch_size_test.py VARIANTS Hw MATCHEXPR "adam[Sum")
+add_popart_py_unit_test(global_batch_size_test global_batch_size_test.py VARIANTS Hw MATCHEXPR "adam[Mean")
+add_popart_py_unit_test(global_batch_size_test global_batch_size_test.py VARIANTS Hw MATCHEXPR "adam[MeanPost")
+add_popart_py_unit_test(global_batch_size_test global_batch_size_test.py VARIANTS Hw MATCHEXPR "adam[MeanRunning")
+
+# Running the above in parallel causes timeouts
+if("Hw" IN_LIST ENABLED_TEST_VARIANTS)
+  set_tests_properties("Hw_default_global_batch_size_test-sgd_[Sum" PROPERTIES RUN_SERIAL TRUE)
+  set_tests_properties("Hw_default_global_batch_size_test-sgd_[Mean" PROPERTIES RUN_SERIAL TRUE)
+  set_tests_properties("Hw_default_global_batch_size_test-sgd_[MeanPost" PROPERTIES RUN_SERIAL TRUE)
+  set_tests_properties("Hw_default_global_batch_size_test-sgd_[MeanRunning" PROPERTIES RUN_SERIAL TRUE)
+
+  set_tests_properties("Hw_default_global_batch_size_test-sgdm1[Sum" PROPERTIES RUN_SERIAL TRUE)
+  set_tests_properties("Hw_default_global_batch_size_test-sgdm1[Mean" PROPERTIES RUN_SERIAL TRUE)
+  set_tests_properties("Hw_default_global_batch_size_test-sgdm1[MeanPost" PROPERTIES RUN_SERIAL TRUE)
+  set_tests_properties("Hw_default_global_batch_size_test-sgdm1[MeanRunning" PROPERTIES RUN_SERIAL TRUE)
+
+  set_tests_properties("Hw_default_global_batch_size_test-sgdm2[Sum" PROPERTIES RUN_SERIAL TRUE)
+  set_tests_properties("Hw_default_global_batch_size_test-sgdm2[Mean" PROPERTIES RUN_SERIAL TRUE)
+  set_tests_properties("Hw_default_global_batch_size_test-sgdm2[MeanPost" PROPERTIES RUN_SERIAL TRUE)
+  set_tests_properties("Hw_default_global_batch_size_test-sgdm2[MeanRunning" PROPERTIES RUN_SERIAL TRUE)
+
+  set_tests_properties("Hw_default_global_batch_size_test-adam[Sum" PROPERTIES RUN_SERIAL TRUE)
+  set_tests_properties("Hw_default_global_batch_size_test-adam[Mean" PROPERTIES RUN_SERIAL TRUE)
+  set_tests_properties("Hw_default_global_batch_size_test-adam[MeanPost" PROPERTIES RUN_SERIAL TRUE)
+  set_tests_properties("Hw_default_global_batch_size_test-adam[MeanRunning" PROPERTIES RUN_SERIAL TRUE)
+endif()

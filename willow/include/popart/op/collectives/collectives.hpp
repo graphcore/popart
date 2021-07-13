@@ -12,6 +12,7 @@ namespace popart {
 
 enum class CollectiveOperator {
   Add = 0,
+  Mean,
   Mul,
   Min,
   Max,

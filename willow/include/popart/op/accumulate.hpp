@@ -9,6 +9,12 @@
 
 namespace popart {
 
+// accum = getVarToUpdateInIndex
+// g     = getUpdaterInIndex
+// f     = getFactor if isConst else getFactorInIndex
+//
+// With AccumulationType::Mean, f is a counter which should have the value
+// equal to the number of previously accumulated values in accum.
 enum class AccumulationType {
   Add = 0,             // accum += g
   DampenedAdd,         // accum += f * g
@@ -17,7 +23,8 @@ enum class AccumulationType {
   DecayAddSquare,      // accum = f * accum + g^2
   MovingAverage,       // accum = f * accum + (1 - f) * g
   MovingAverageSquare, // accum = f * accum + (1 - f) * g^2
-  Infinity             // accum = max(f * accum, abs(g))
+  Infinity,            // accum = max(f * accum, abs(g))
+  Mean                 // accum = (f/(f+1)) * accum + (1/(f+1)) * g
 };
 
 std::ostream &operator<<(std::ostream &os, const AccumulationType &at);

@@ -261,6 +261,9 @@ std::size_t hash<popart::SessionOptions>::operator()(
   boost::hash_combine(seed, so.accumulationFactor);
   boost::hash_combine(
       seed, static_cast<int>(so.accumulationAndReplicationReductionType));
+  boost::hash_combine(
+      seed,
+      static_cast<int>(so.meanAccumulationAndReplicationReductionStrategy));
   boost::hash_combine(seed, so.enableFloatingPointChecks);
   boost::hash_combine(seed, so.enableStochasticRounding);
   boost::hash_combine(seed, so.enableFullyConnectedPass);

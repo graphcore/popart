@@ -433,6 +433,30 @@ enum class SubgraphCopyingStrategy {
 };
 
 /**
+ * Enum type to specify when to divide by a mean reduction factor
+ */
+enum class MeanReductionStrategy {
+  /// This keeps the reduction buffer as the current mean. See \c
+  /// AccumulationType::Mean and \c CollectiveOperator::Mean.
+  /// This is preferred for numerical stability as the buffer is guarenteed
+  /// not to overflow and is strictly better than dividing before the
+  /// accumulation.
+  Running = 0,
+  /// This divides by the accumulationFactor and replicatedGraphCount
+  /// after all of the gradients have been reduced.
+  /// In some cases this can be faster then using Running, however is prone
+  /// to overflow.
+  Post,
+  /// This divides by the accumulationFactor after all the gradient have been
+  /// reduce
+  /// and the replicatedGraphCount at the input to the loss gradient
+  /// before the start of the backwards pass.
+  /// This is to support legacy behaviour and is deprecated.
+  PostAndLoss,
+  N
+};
+
+/**
  * Type representing a strategy to ensure a backwards graph's inputs are
  * either inputs of the forward graph, outputs of the forward graph or
  * gradients of outputs of the forward graph. Strategies may expose tensors
@@ -620,6 +644,11 @@ struct SessionOptions {
   /// Specify how gradients are reduced when using gradient accumulation
   /// and graph replication.
   ReductionType accumulationAndReplicationReductionType = ReductionType::Sum;
+
+  /// Specify when to divide by a mean reduction factor when
+  /// accumulationAndReplicationReductionType is set to ReductionType::Mean.
+  MeanReductionStrategy meanAccumulationAndReplicationReductionStrategy =
+      MeanReductionStrategy::PostAndLoss;
 
   /// If enableReplicatedGraphs is true, \c replicatedGraphCount will set the
   /// number of model replications. For example, if your model uses 1 IPU, a

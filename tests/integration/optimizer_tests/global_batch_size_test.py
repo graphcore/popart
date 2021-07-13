@@ -15,11 +15,14 @@ import json
 import onnx
 from onnx import numpy_helper
 
+# TODO(T42812): Remove Mean when PostAndLoss is removed.
+
 
 @tu.requires_ipu
-@pytest.mark.parametrize("reduction_type", ["Sum", "Mean"])
 @pytest.mark.parametrize("batchserial", ["Unroll", "Loop"])
 @pytest.mark.parametrize("explicit_loops", [True, False])
+@pytest.mark.parametrize("reduction_type",
+                         ["Sum", "Mean", "MeanRunning", "MeanPost"])
 def test_global_batch_size_correctness_test_sgd_(tmpdir, reduction_type,
                                                  batchserial, explicit_loops):
     run_global_batch_size_correctness_test(tmpdir, reduction_type, "SGD",
@@ -27,33 +30,35 @@ def test_global_batch_size_correctness_test_sgd_(tmpdir, reduction_type,
 
 
 @tu.requires_ipu
-@pytest.mark.parametrize("optim", ["SGDM1", "SGDM2"])
-@pytest.mark.parametrize("reduction_type", ["Sum", "Mean"])
 @pytest.mark.parametrize("batchserial", ["Unroll", "Loop"])
 @pytest.mark.parametrize("explicit_loops", [True, False])
-def test_global_batch_size_correctness_test_sgdm(tmpdir, optim, reduction_type,
-                                                 batchserial, explicit_loops):
-    run_global_batch_size_correctness_test(tmpdir, reduction_type, optim,
+@pytest.mark.parametrize("reduction_type",
+                         ["Sum", "Mean", "MeanRunning", "MeanPost"])
+def test_global_batch_size_correctness_test_sgdm1(tmpdir, reduction_type,
+                                                  batchserial, explicit_loops):
+    run_global_batch_size_correctness_test(tmpdir, reduction_type, "SGDM1",
                                            batchserial, explicit_loops)
 
 
 @tu.requires_ipu
-@pytest.mark.parametrize("reduction_type", ["Sum", "Mean"])
 @pytest.mark.parametrize("batchserial", ["Unroll", "Loop"])
 @pytest.mark.parametrize("explicit_loops", [True, False])
+@pytest.mark.parametrize("reduction_type",
+                         ["Sum", "Mean", "MeanRunning", "MeanPost"])
+def test_global_batch_size_correctness_test_sgdm2(tmpdir, reduction_type,
+                                                  batchserial, explicit_loops):
+    run_global_batch_size_correctness_test(tmpdir, reduction_type, "SGDM2",
+                                           batchserial, explicit_loops)
+
+
+@tu.requires_ipu
+@pytest.mark.parametrize("batchserial", ["Unroll", "Loop"])
+@pytest.mark.parametrize("explicit_loops", [True, False])
+@pytest.mark.parametrize("reduction_type",
+                         ["Sum", "Mean", "MeanRunning", "MeanPost"])
 def test_global_batch_size_correctness_test_adam(tmpdir, reduction_type,
                                                  batchserial, explicit_loops):
     run_global_batch_size_correctness_test(tmpdir, reduction_type, "ADAM",
-                                           batchserial, explicit_loops)
-
-
-@tu.requires_ipu
-@pytest.mark.parametrize("reduction_type", ["Sum", "Mean"])
-@pytest.mark.parametrize("batchserial", ["Unroll", "Loop"])
-@pytest.mark.parametrize("explicit_loops", [True, False])
-def test_global_batch_size_correctness_test_lamb(tmpdir, reduction_type,
-                                                 batchserial, explicit_loops):
-    run_global_batch_size_correctness_test(tmpdir, reduction_type, "LAMB",
                                            batchserial, explicit_loops)
 
 
@@ -180,6 +185,12 @@ def run_global_batch_size_correctness_test(tmpdir, reduction_type, optim,
         if accumulation_factor > 1:
             options.enableGradientAccumulation = True
             options.accumulationFactor = accumulation_factor
+            if reduction_type == "Mean":
+                options.meanAccumulationAndReplicationReductionStrategy = popart.MeanReductionStrategy.PostAndLoss
+            if reduction_type == "MeanRunning":
+                options.meanAccumulationAndReplicationReductionStrategy = popart.MeanReductionStrategy.Running
+            if reduction_type == "MeanPost":
+                options.meanAccumulationAndReplicationReductionStrategy = popart.MeanReductionStrategy.Post
         if replication_factor > 1:
             options.enableReplicatedGraphs = True
             options.replicatedGraphCount = replication_factor
@@ -219,7 +230,7 @@ def run_global_batch_size_correctness_test(tmpdir, reduction_type, optim,
 
     baseline_outputs, baseline_proto = run_test(16, 1, 1, 1, False)
 
-    loss_fn = np.mean if reduction_type == "Mean" else np.sum
+    loss_fn = np.sum if reduction_type == "Sum" else np.mean
     baseline_loss = loss_fn(baseline_outputs[-1])
 
     tests = [

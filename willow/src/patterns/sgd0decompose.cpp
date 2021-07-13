@@ -60,7 +60,7 @@ bool SGD0Decompose::apply(Op *op) const {
     gradIntoUpdateId = reducedId;
   }
 
-  Op *zeroAccum;
+  Op *zeroAccum = nullptr;
   if (combo->withGradAccum) {
     gradIntoUpdateId =
         gradAccum(graph,
@@ -69,7 +69,9 @@ bool SGD0Decompose::apply(Op *op) const {
                   gradIntoAccumId,
                   combo->reductionType == OptimizerReductionType::AccumReduce,
                   finalGradId);
-    zeroAccum = zeroAccumulator(graph, combo, {}, accumId);
+    if (!runningMeanReduction(graph)) {
+      zeroAccum = zeroAccumulator(graph, combo, {}, accumId);
+    }
   }
 
   Op *varUpdate = varUpdateAndEraseCombo(
@@ -77,7 +79,7 @@ bool SGD0Decompose::apply(Op *op) const {
 
   // Zero the gradient accumulator after updating the 1st momentum term
   // ready for next step
-  if (combo->withGradAccum) {
+  if (zeroAccum != nullptr) {
     graph.topoCons->insert(varUpdate, zeroAccum);
   }
 

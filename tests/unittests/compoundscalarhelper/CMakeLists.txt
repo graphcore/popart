@@ -1,0 +1,6 @@
+# Copyright (c) 2021 Graphcore Ltd. All rights reserved.
+add_popart_cpp_unit_test(unittest_compoundscalarhelper_sgd0 unittest_sgd0.cpp)
+add_popart_cpp_unit_test(unittest_compoundscalarhelper_sgd1 unittest_sgd1.cpp)
+add_popart_cpp_unit_test(unittest_compoundscalarhelper_sgd2 unittest_sgd2.cpp)
+add_popart_cpp_unit_test(unittest_compoundscalarhelper_adam unittest_adam.cpp)
+add_popart_cpp_unit_test(unittest_compoundscalarhelper_adaptive unittest_adaptive.cpp)

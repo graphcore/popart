@@ -28,6 +28,8 @@ std::ostream &operator<<(std::ostream &os, const AccumulationType &at) {
     return os << "AccumulationType::MovingAverageSquare";
   case AccumulationType::Infinity:
     return os << "AccumulationType::Infinity";
+  case AccumulationType::Mean:
+    return os << "AccumulationType::Mean";
   default:
     throw internal_error(
         "Unhandled AccumulationType with int value {} in operator<<.",

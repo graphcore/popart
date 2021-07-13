@@ -252,12 +252,8 @@ BOOST_AUTO_TEST_CASE(TestGetOptimizerInputs_SGD0) {
   testOptimizerInputs(tc, inputs, testSlr0);
 }
 
-// Both should have exact same semantics.
-using SGD1And2TestCaseTypes = std::tuple<SGD1TestCase, SGD2TestCase>;
-BOOST_AUTO_TEST_CASE_TEMPLATE(TestGetOptimizerInputs_SGD1_2,
-                              SGDTestCaseTy,
-                              SGD1And2TestCaseTypes) {
-  SGDTestCaseTy tc;
+BOOST_AUTO_TEST_CASE(TestGetOptimizerInputs_SGD1) {
+  SGD1TestCase tc;
   tc.setFactorsFromOptions();
   // Give specific non-const values so getOptimizerInputs returns a value for
   // them.
@@ -282,6 +278,44 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(TestGetOptimizerInputs_SGD1_2,
       [](const auto &tc, const TensorId &tId, const TensorInfo &tInfo) {
         bool matched = false;
         if (tId == reservedSpecificScaledLearningRate1Prefix() + tc.wId) {
+          matched = true;
+
+          TensorInfo expected{DataType::FLOAT, {}};
+          BOOST_REQUIRE_EQUAL(tInfo, expected);
+        }
+        return matched;
+      };
+
+  testOptimizerInputs(tc, inputs, testSmm1);
+  testOptimizerInputs(tc, inputs, testSlr1);
+}
+
+BOOST_AUTO_TEST_CASE(TestGetOptimizerInputs_SGD2) {
+  SGD2TestCase tc;
+  tc.setFactorsFromOptions();
+  // Give specific non-const values so getOptimizerInputs returns a value for
+  // them.
+  tc.sgd.insertSpecific(
+      tc.wId,
+      std::map<std::string, std::pair<float, bool>>(
+          {{"momentum", {0.38f, false}}, {"learningRate", {0.01f, false}}}));
+
+  auto inputs = tc.sgd.getOptimizerInputs(*tc.w);
+  BOOST_REQUIRE_EQUAL(inputs.size(), 2u);
+
+  const auto testSmm1 =
+      [](const auto &tc, const TensorId &tId, const TensorInfo &tInfo) {
+        bool matched = false;
+        if (tId == reservedSpecificScaledMomentum2Prefix() + tc.wId) {
+          matched = true;
+          BOOST_REQUIRE_EQUAL(tInfo, TensorInfo(tc.w->info.dataType(), {}));
+        }
+        return matched;
+      };
+  const auto testSlr1 =
+      [](const auto &tc, const TensorId &tId, const TensorInfo &tInfo) {
+        bool matched = false;
+        if (tId == reservedSpecificScaledLearningRate2Prefix() + tc.wId) {
           matched = true;
 
           TensorInfo expected{DataType::FLOAT, {}};

@@ -52,10 +52,24 @@ void Optimizer::validReplacement(const Optimizer &other) const {
 void Optimizer::setFactorsFromOptions(const SessionOptions &opts) {
   replicatedGraphCount       = opts.getGlobalReplicationFactor();
   enableGradientAccumulation = opts.enableGradientAccumulation;
-  accumulationFactor         = opts.accumulationFactor;
-  meanGradientAccumulation =
-      enableGradientAccumulation &&
+  accumulationFactor = enableGradientAccumulation ? opts.accumulationFactor : 1;
+  meanReduction =
       opts.accumulationAndReplicationReductionType == ReductionType::Mean;
+
+  postMeanAccumulation =
+      enableGradientAccumulation && meanReduction &&
+      (opts.meanAccumulationAndReplicationReductionStrategy ==
+           MeanReductionStrategy::Post ||
+       opts.meanAccumulationAndReplicationReductionStrategy ==
+           MeanReductionStrategy::PostAndLoss);
+
+  postMeanReplication = replicatedGraphCount > 1 && meanReduction &&
+                        opts.meanAccumulationAndReplicationReductionStrategy ==
+                            MeanReductionStrategy::Post;
+  // TODO(T42812): Remove after deprecation period
+  lossMeanReplication = replicatedGraphCount > 1 && meanReduction &&
+                        opts.meanAccumulationAndReplicationReductionStrategy ==
+                            MeanReductionStrategy::PostAndLoss;
   factorsAreSetFromOptions = true;
 }
 
@@ -67,12 +81,42 @@ bool Optimizer::gradientAccumulationEnabled() const {
   return enableGradientAccumulation;
 }
 
-bool Optimizer::meanGradientAccumulationEnabled() const {
+bool Optimizer::meanReductionEnabled() const {
   if (!factorsAreSetFromOptions) {
-    throw error("Cannot call Optimizer::meanGradientAccumulationEnabled until "
+    throw error("Cannot call Optimizer::meanReductionEnabled until "
                 "Optimizer::setFactorsFromOptions has been called");
   }
-  return meanGradientAccumulation;
+  return meanReduction;
+}
+
+bool Optimizer::meanGradientAccumulationEnabled() const {
+  logging::warn("Optimizer::meanGradientAccumulationEnabled is deprecated. "
+                "Please use Optimizer::meanReductionEnabled instead.");
+  return meanReductionEnabled();
+}
+
+bool Optimizer::postMeanAccumulationEnabled() const {
+  if (!factorsAreSetFromOptions) {
+    throw error("Cannot call Optimizer::postMeanAccumulationEnabled until "
+                "Optimizer::setFactorsFromOptions has been called");
+  }
+  return postMeanAccumulation;
+}
+
+bool Optimizer::postMeanReplicationEnabled() const {
+  if (!factorsAreSetFromOptions) {
+    throw error("Cannot call Optimizer::postMeanReplicationEnabled until "
+                "Optimizer::setFactorsFromOptions has been called");
+  }
+  return postMeanReplication;
+}
+
+bool Optimizer::lossMeanReplicationEnabled() const {
+  if (!factorsAreSetFromOptions) {
+    throw error("Cannot call Optimizer::lossMeanReplicationEnabled until "
+                "Optimizer::setFactorsFromOptions has been called");
+  }
+  return lossMeanReplication;
 }
 
 int64_t Optimizer::getReplicatedGraphCount() const {

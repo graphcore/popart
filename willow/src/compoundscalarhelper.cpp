@@ -139,31 +139,15 @@ bool WeightDecayScaleFactor0Helper::isConst(const TensorId &weightId,
 
 float ScaledLearningRate0Helper::val(const TensorId &weightId,
                                      const SGD &sgd) const {
-  auto lr = sgd.learningRates().get(weightId).val();
-  auto ls = sgd.lossScaling().val();
-  auto dp = sgd.dampenings().get(weightId).val();
-  return val(lr,
-             ls,
-             dp,
-             sgd.meanGradientAccumulationEnabled() ? sgd.getAccumulationFactor()
-                                                   : 1);
+  float lr = sgd.learningRates().get(weightId).val();
+  float dp = sgd.dampenings().get(weightId).val();
+  float ls = sgd.lossScaling().val();
+  float af =
+      sgd.postMeanAccumulationEnabled() ? sgd.getAccumulationFactor() : 1;
+  float rf =
+      sgd.postMeanReplicationEnabled() ? sgd.getReplicatedGraphCount() : 1;
+  return val(lr, dp, ls, af, rf);
 }
-
-namespace {
-int64_t getRfAtomicScalar(const SGD &sgd) {
-  // When we are doing gradient accumulation with SGD1, the rf scalar must be
-  // set to the replicated graph count. When doing SGD2, no rf scaling is
-  // required, so we set rf to 1.
-  //
-  // Note if grad acc but no replication, sgd.getReplicatedGraphCount() will be
-  // 1 anyway.
-  return (sgd.gradientAccumulationEnabled() &&
-          sgd.getSGDAccumulatorAndMomentum() ==
-              SGDAccumulatorAndMomentum::Combined)
-             ? sgd.getReplicatedGraphCount()
-             : 1;
-}
-} // namespace
 
 bool ScaledLearningRate0Helper::isConst(const TensorId &weightId,
                                         const SGD &sgd) const {
@@ -175,8 +159,10 @@ bool ScaledLearningRate0Helper::isConst(const TensorId &weightId,
 
 float ScaledMomentum1Helper::val(const TensorId &weightId,
                                  const SGD &sgd) const {
-  auto mm = sgd.momentums().get(weightId).val();
-  return val(mm, getRfAtomicScalar(sgd));
+  float mm = sgd.momentums().get(weightId).val();
+  float rf =
+      sgd.gradientAccumulationEnabled() ? sgd.getReplicatedGraphCount() : 1.0f;
+  return val(mm, rf);
 }
 
 bool ScaledMomentum1Helper::isConst(const TensorId &weightId,
@@ -189,7 +175,9 @@ float ScaledLearningRate1Helper::val(const TensorId &weightId,
                                      const SGD &sgd) const {
   auto lr = sgd.learningRates().get(weightId).val();
   auto vs = sgd.velocityScalings().get(weightId).val();
-  return val(lr, vs, getRfAtomicScalar(sgd));
+  float rf =
+      sgd.gradientAccumulationEnabled() ? sgd.getReplicatedGraphCount() : 1.0f;
+  return val(lr, vs, rf);
 }
 
 bool ScaledLearningRate1Helper::isConst(const TensorId &weightId,
@@ -201,15 +189,16 @@ bool ScaledLearningRate1Helper::isConst(const TensorId &weightId,
 
 float DampeningScaleFactor1Helper::val(const TensorId &weightId,
                                        const SGD &sgd) const {
-  auto dm = sgd.dampenings().get(weightId).val();
-  auto vs = sgd.velocityScalings().get(weightId).val();
-  auto ls = sgd.lossScaling().val();
-  return val(dm,
-             vs,
-             ls,
-             getRfAtomicScalar(sgd),
-             sgd.meanGradientAccumulationEnabled() ? sgd.getAccumulationFactor()
-                                                   : 1);
+  float dm = sgd.dampenings().get(weightId).val();
+  float vs = sgd.velocityScalings().get(weightId).val();
+  float ls = sgd.lossScaling().val();
+  float af = sgd.meanReductionEnabled() ? sgd.getAccumulationFactor() : 1.0f;
+  float rf =
+      sgd.gradientAccumulationEnabled() &&
+              (!sgd.meanReductionEnabled() || sgd.lossMeanReplicationEnabled())
+          ? sgd.getReplicatedGraphCount()
+          : 1.0f;
+  return val(dm, vs, ls, af, rf);
 }
 
 bool DampeningScaleFactor1Helper::isConst(const TensorId &weightId,
@@ -234,6 +223,52 @@ bool ScaledWeightDecay1Helper::isConst(const TensorId &weightId,
   auto wd = sgd.weightDecays().get(weightId);
   auto vs = sgd.velocityScalings().get(weightId);
   return dm.isConst() && wd.isConst() && vs.isConst();
+}
+
+float ScaledLearningRate2Helper::val(const TensorId &weightId,
+                                     const SGD &sgd) const {
+  auto lr = sgd.learningRates().get(weightId).val();
+  auto vs = sgd.velocityScalings().get(weightId).val();
+  return val(lr, vs);
+}
+
+bool ScaledLearningRate2Helper::isConst(const TensorId &weightId,
+                                        const SGD &sgd) const {
+  auto lr = sgd.learningRates().get(weightId);
+  auto vs = sgd.velocityScalings().get(weightId);
+  return lr.isConst() && vs.isConst();
+}
+
+float ScaledMomentum2Helper::val(const TensorId &weightId,
+                                 const SGD &sgd) const {
+  float mm = sgd.momentums().get(weightId).val();
+  return val(mm);
+}
+
+bool ScaledMomentum2Helper::isConst(const TensorId &weightId,
+                                    const SGD &sgd) const {
+  auto mm = sgd.momentums().get(weightId);
+  return mm.isConst();
+}
+
+float DampeningScaleFactor2Helper::val(const TensorId &weightId,
+                                       const SGD &sgd) const {
+  float dm = sgd.dampenings().get(weightId).val();
+  float vs = sgd.velocityScalings().get(weightId).val();
+  float ls = sgd.lossScaling().val();
+  float af =
+      sgd.postMeanAccumulationEnabled() ? sgd.getAccumulationFactor() : 1;
+  float rf =
+      sgd.postMeanReplicationEnabled() ? sgd.getReplicatedGraphCount() : 1;
+  return val(dm, vs, ls, af, rf);
+}
+
+bool DampeningScaleFactor2Helper::isConst(const TensorId &weightId,
+                                          const SGD &sgd) const {
+  auto dm = sgd.dampenings().get(weightId);
+  auto vs = sgd.velocityScalings().get(weightId);
+  auto ls = sgd.lossScaling();
+  return dm.isConst() && vs.isConst() && ls.isConst();
 }
 
 float AdamBeta1Helper::val(const TensorId &weightId, const Adam &adam) const {
@@ -324,11 +359,12 @@ bool AdamMaxWeightNormHelper::isConst(const TensorId &weightId,
 
 float AdamGradientScalingHelper::val(const TensorId &weightId,
                                      const Adam &adam) const {
-  float af = adam.meanGradientAccumulationEnabled()
-                 ? static_cast<float>(adam.getAccumulationFactor())
-                 : 1.0f;
   float ls = adam.useScaledOptimizerState() ? 1.0f : adam.lossScaling().val();
-  return val(ls, af);
+  float af =
+      adam.postMeanAccumulationEnabled() ? adam.getAccumulationFactor() : 1;
+  float rf =
+      adam.postMeanReplicationEnabled() ? adam.getReplicatedGraphCount() : 1;
+  return val(ls, af, rf);
 }
 
 bool AdamGradientScalingHelper::isConst(const TensorId &weightId,
@@ -406,11 +442,14 @@ bool AdaptiveLossScalingHelper::isConst(const TensorId &weightId,
 
 float AdaptiveGradientScalingHelper::val(const TensorId &weightId,
                                          const Adaptive &adaptive) const {
-  auto ls = adaptive.lossScaling().val();
-  return val(ls,
-             adaptive.meanGradientAccumulationEnabled()
+  auto ls  = adaptive.lossScaling().val();
+  float af = adaptive.postMeanAccumulationEnabled()
                  ? adaptive.getAccumulationFactor()
-                 : 1);
+                 : 1;
+  float rf = adaptive.postMeanReplicationEnabled()
+                 ? adaptive.getReplicatedGraphCount()
+                 : 1;
+  return val(ls, af, rf);
 }
 
 bool AdaptiveGradientScalingHelper::isConst(const TensorId &weightId,

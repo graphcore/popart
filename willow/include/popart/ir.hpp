@@ -586,6 +586,9 @@ private:
   void verifyExecutionContexts() const;
   void verifyPipelineStageAttributes() const;
 
+  // Logs a warning if using a depreacted option.
+  void verifyMeanReductionStrategy() const;
+
   // Verify ConstExpr folding has removed input tensors
   // as expected
   void verifyConstExprFolding();

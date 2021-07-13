@@ -36,6 +36,7 @@ constexpr const char *reservedAccl1Prefix() { return "Accl1___"; }
 constexpr const char *reservedAccl2Prefix() { return "Accl2___"; }
 constexpr const char *reservedAccl3Prefix() { return "Accl3___"; }
 constexpr const char *reservedStepPrefix() { return "Step___"; }
+constexpr const char *reservedCounterPrefix() { return "Counter___"; }
 constexpr const char *reservedAcclToReducePrefix() {
   return "AcclIntoReduce___";
 }
@@ -133,6 +134,27 @@ constexpr const char *reservedDefaultScaledMomentum1Prefix() {
 }
 constexpr const char *reservedSpecificScaledMomentum1Prefix() {
   return "scaledMomentum1___specific___";
+}
+
+constexpr const char *reservedDefaultScaledLearningRate2Prefix() {
+  return "scaledLearningRate2___default___";
+}
+constexpr const char *reservedSpecificScaledLearningRate2Prefix() {
+  return "scaledLearningRate2___specific___";
+}
+
+constexpr const char *reservedDefaultDampeningScaleFactor2Prefix() {
+  return "dampeningScaleFactor2___default___";
+}
+constexpr const char *reservedSpecificDampeningScaleFactor2Prefix() {
+  return "dampeningScaleFactor2___specific___";
+}
+
+constexpr const char *reservedDefaultScaledMomentum2Prefix() {
+  return "scaledMomentum2___default___";
+}
+constexpr const char *reservedSpecificScaledMomentum2Prefix() {
+  return "scaledMomentum2___specific___";
 }
 
 constexpr const char *reservedDefaultLearningRatePrefix() {

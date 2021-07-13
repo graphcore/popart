@@ -32,12 +32,19 @@ Op *GradGrowerLoss::growLossGradients() {
   // avoid doing an additional operation.
   const auto &optimizer = dep.get().getOptimizer();
 
+  bool meanReduce =
+      dep.get()
+              .getSessionOptions()
+              .meanAccumulationAndReplicationReductionStrategy ==
+          MeanReductionStrategy::PostAndLoss &&
+      dep.get().getSessionOptions().accumulationAndReplicationReductionType ==
+          ReductionType::Mean;
+
   if (optimizer.lossScaling().isConst()) {
     // By default this will be 1.0f.
     float lossScale = optimizer.lossScaling().val();
 
-    if (dep.get().getSessionOptions().accumulationAndReplicationReductionType ==
-        ReductionType::Mean) {
+    if (meanReduce) {
       lossScale /= dep.get().getSessionOptions().getGlobalReplicationFactor();
     }
 
@@ -145,8 +152,7 @@ Op *GradGrowerLoss::growLossGradients() {
     dep.get().getMainGraph().connectOutputs(OutputVecWrapper(outputs),
                                             lossScalingInputOpId);
     Op *op = dep.get().getMainGraph().getOp(lossScalingInputOpId);
-    if (dep.get().getSessionOptions().accumulationAndReplicationReductionType ==
-        ReductionType::Mean) {
+    if (meanReduce) {
       dynamic_cast<ScaleOp *>(op)->setScaleFactor(
           1.0f / dep.get().getSessionOptions().getGlobalReplicationFactor());
     } else {

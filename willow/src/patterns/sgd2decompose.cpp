@@ -86,7 +86,7 @@ bool SGD2Decompose::apply(Op *op) const {
 
   // Zero the gradient accumulator after updating the 1st momentum term
   // ready for next step
-  if (combo->withGradAccum) {
+  if (combo->withGradAccum && !runningMeanReduction(graph)) {
     const auto acclOp = graph.getTensors().get(updatedAcc1lId)->getProducer();
     zeroAccumulator(graph, combo, {acclOp}, accumId);
   }

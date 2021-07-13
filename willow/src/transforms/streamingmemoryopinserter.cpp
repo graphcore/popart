@@ -918,7 +918,7 @@ void StreamingMemoryOpInserter::RTSAllReduceToScatter(
                                         inId,
                                         outId,
                                         stripAllReservedPrefixes(refId),
-                                        CollectiveOperator::Add);
+                                        replicatedAllReduce->getCollectiveOp());
 
     graph.topoCons->transfer(replicatedAllReduce, replicatedReduceScatter);
 

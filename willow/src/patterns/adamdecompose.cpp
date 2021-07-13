@@ -318,8 +318,10 @@ bool AdamDecompose::apply(Op *op) const {
     updatedAccl2Id = accl2.second;
   }
 
-  // Zero the gradient accumulator after calculating 1st and 2nd order momentum
-  if (combo->withGradAccum) {
+  // The accumulator updater
+  if (combo->withGradAccum && !runningMeanReduction(graph)) {
+    // runningMeanReduction will zero the accumulator
+    // in the first instance of calling accumulateOp so no need to zero here.
     zeroAccumulator(graph, combo, {accl1Op, accl2Op}, accumId);
   }
 

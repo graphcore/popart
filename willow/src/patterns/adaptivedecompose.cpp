@@ -262,7 +262,7 @@ bool AdaptiveDecompose::apply(Op *op) const {
 
   // Zero the gradient accumulator once other ops have taken place
   // ready for next step
-  if (combo->withGradAccum) {
+  if (combo->withGradAccum && !runningMeanReduction(graph)) {
     opsDependentOnAccum.push_back(adaptiveUpdOp);
     zeroAccumulator(graph, combo, opsDependentOnAccum, accumId);
   }

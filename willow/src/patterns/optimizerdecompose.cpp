@@ -114,16 +114,119 @@ std::pair<Op *, TensorId> OptimizerDecompose::accl(Graph &graph,
   return {acclOp, updatedAcclId};
 }
 
+TensorId OptimizerDecompose::getCounterId(Op *combo) const {
+  // Returns a TensorId such that there will only be 1 counter per VGraph per
+  // PipelineStage. OptimizerDecompose::findOrCreateRunningMeanCounter
+  // checks to see if the tensor already exists before creating it.
+  std::stringstream id;
+  id << reservedCounterPrefix();
+  if (combo->hasVirtualGraphId()) {
+    id << "_VGraph" << combo->getVirtualGraphId();
+  }
+  if (combo->hasPipelineStage()) {
+    id << "_PStage" << combo->getPipelineStage();
+  }
+  return id.str();
+}
+
+std::pair<Op *, TensorId>
+OptimizerDecompose::counterIncrement(Graph &graph,
+                                     Op *combo,
+                                     TensorId counterId) const {
+  TensorInfo gradInfo(DataType::FLOAT, {});
+  std::vector<float> gradData(gradInfo.nelms(), 1);
+  const auto &increment = graph.getIr().createIntermediateTensorId("one");
+  graph.getTensors().addConstInit(increment, gradInfo, gradData.data());
+
+  TensorId updatedCounterId =
+      graph.getIr().createIntermediateTensorId(counterId);
+
+  auto counterIncrementOp = graph.createConnectedOp<AccumulateOp>(
+      {{VarUpdateOp::getVarToUpdateInIndex(), counterId},
+       {VarUpdateWithUpdaterOp::getUpdaterInIndex(), increment}},
+      {{VarUpdateOp::getUpdatedVarOutIndex(), updatedCounterId}},
+      AccumulationType::Add,
+      OptimizerValue(1.0f),
+      Op::Settings(graph, combo->name() + "_counterIncrement"));
+
+  transferBaseProperties(combo, counterIncrementOp);
+
+  return {counterIncrementOp, updatedCounterId};
+}
+
+std::pair<Op *, TensorId>
+OptimizerDecompose::counterReset(Graph &graph,
+                                 Op *combo,
+                                 TensorId counterId) const {
+  TensorId resetCounterId = graph.getIr().createIntermediateTensorId(counterId);
+
+  auto counterResetOp = graph.createConnectedOp<AccumulatorZeroOp>(
+      {{AccumulatorZeroOp::getVarToUpdateInIndex(), counterId}},
+      {{AccumulatorZeroOp::getUpdatedVarOutIndex(), resetCounterId}},
+      Op::Settings(graph, combo->name() + "_counterReset"));
+
+  transferBaseProperties(combo, counterResetOp);
+  counterResetOp->settings.executionContext =
+      ExecutionContext::AccumulateOuterFragment;
+  counterResetOp->setExecutionPhase({});
+  counterResetOp->settings.schedulePriority = 0.0;
+
+  return {counterResetOp, resetCounterId};
+}
+
+std::pair<Op *, TensorId>
+OptimizerDecompose::findOrCreateRunningMeanCounter(Graph &graph,
+                                                   Op *combo) const {
+  TensorId counterId     = getCounterId(combo);
+  Op *counterIncrementOp = nullptr;
+  if (graph.getTensors().contains(counterId)) {
+    for (auto cons : graph.getTensors().get(counterId)->consumers.getOps()) {
+      if (cons->isConvertibleTo<AccumulateOp>() &&
+          cons->inId(AccumulateOp::getVarToUpdateInIndex()) == counterId) {
+        counterIncrementOp = cons;
+        break;
+      }
+    }
+    if (!counterIncrementOp) {
+      throw internal_error("OptimiserDecompose could not find the AccumulateOp "
+                           "that increments running mean counter {}",
+                           counterId);
+    }
+  } else {
+    addStateTensor<float>(graph, counterId, TensorInfo(DataType::FLOAT, {}));
+    graph.getIr().addAdditionalModelProtoTensor(counterId);
+
+    auto op_tid        = counterIncrement(graph, combo, counterId);
+    counterIncrementOp = op_tid.first;
+
+    counterReset(graph, combo, op_tid.second);
+  }
+  return {counterIncrementOp, counterId};
+}
+
+bool OptimizerDecompose::runningMeanReduction(Graph &graph) const {
+  return graph.getIr()
+                 .getSessionOptions()
+                 .accumulationAndReplicationReductionType ==
+             ReductionType::Mean &&
+         graph.getIr()
+                 .getSessionOptions()
+                 .meanAccumulationAndReplicationReductionStrategy ==
+             MeanReductionStrategy::Running;
+}
+
 TensorId OptimizerDecompose::gradAccum(Graph &graph,
                                        Op *combo,
                                        TensorId accumId,
                                        TensorId gradIntoAccumId,
                                        bool accumReduce,
                                        TensorId outputId) const {
+  bool runningAccum = runningMeanReduction(graph);
+
   TensorId gradIntoAcclId;
   auto accumOpUp = std::make_unique<AccumulateOp>(
-      AccumulationType::Add,
-      OptimizerValue(1.0f),
+      runningAccum ? AccumulationType::Mean : AccumulationType::Add,
+      OptimizerValue(1.0f, !runningAccum),
       Op::Settings(graph, combo->name() + "_accumulate"));
   auto accumOp = accumOpUp.get();
   transferBaseProperties(combo, accumOp);
@@ -142,6 +245,12 @@ TensorId OptimizerDecompose::gradAccum(Graph &graph,
   accumOp->connectInTensor(VarUpdateWithUpdaterOp::getUpdaterInIndex(),
                            gradIntoAccumId);
 
+  if (runningAccum) {
+    auto op_id = findOrCreateRunningMeanCounter(graph, combo);
+    accumOp->connectInTensor(AccumulateOp::getFactorInIndex(), op_id.second);
+    graph.topoCons->insert(accumOp, op_id.first);
+  }
+
   // The updated accumulator
   TensorId updatedAccumId =
       !outputId.empty() && !accumReduce
@@ -157,8 +266,11 @@ TensorId OptimizerDecompose::gradAccum(Graph &graph,
   // implementation where it is guaranteed that this is zero after one run.
 
   if (accumReduce) {
-    auto reduceOpUp = std::make_unique<ReplicatedAllReduceInplaceOp>(
+    bool runningReplica = runningMeanReduction(graph);
+    auto reduceOpUp     = std::make_unique<ReplicatedAllReduceInplaceOp>(
         Onnx::CustomOperators::ReplicatedAllReduceInplace,
+        runningReplica ? CollectiveOperator::Mean : CollectiveOperator::Add,
+        CommGroup{},
         Op::Settings(graph, combo->name() + "_reduce"));
     auto reduceOp = reduceOpUp.get();
     transferBaseProperties(combo, reduceOp);
@@ -230,8 +342,12 @@ TensorId OptimizerDecompose::gradReduce(Graph &graph,
                                         Op *combo,
                                         TensorId weightGradId,
                                         TensorId outputId) const {
+  bool runningMean = runningMeanReduction(graph);
+
   auto reduceOpUp = std::make_unique<ReplicatedAllReduceOp>(
       Onnx::CustomOperators::ReplicatedAllReduce,
+      runningMean ? CollectiveOperator::Mean : CollectiveOperator::Add,
+      CommGroup{},
       Op::Settings(graph, combo->name() + "_reduce"));
   auto reduceOp = reduceOpUp.get();
   transferBaseProperties(combo, reduceOp);

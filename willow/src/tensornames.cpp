@@ -38,7 +38,7 @@ const std::vector<std::string> &reservedOptimizerPrefixes() {
       // Optimizer
       reservedLossScalingPrefix(),
       reservedAutomaticLossScalePrefix(),
-      // SGD0 / SGD1
+      // SGD0 / SGD1 / SGD2
       reservedDefaultScaledLearningRate0Prefix(),
       reservedSpecificScaledLearningRate0Prefix(),
       reservedDefaultWeightDecayScaleFactor0Prefix(),
@@ -51,6 +51,12 @@ const std::vector<std::string> &reservedOptimizerPrefixes() {
       reservedSpecificDampeningScaleFactor1Prefix(),
       reservedDefaultScaledMomentum1Prefix(),
       reservedSpecificScaledMomentum1Prefix(),
+      reservedDefaultScaledLearningRate2Prefix(),
+      reservedSpecificScaledLearningRate2Prefix(),
+      reservedDefaultDampeningScaleFactor2Prefix(),
+      reservedSpecificDampeningScaleFactor2Prefix(),
+      reservedDefaultScaledMomentum2Prefix(),
+      reservedSpecificScaledMomentum2Prefix(),
       // Adam / Lamb
       reservedDefaultAdamBeta1Prefix(),
       reservedSpecificAdamBeta1Prefix(),
@@ -134,7 +140,8 @@ const std::vector<std::string> &reservedAccumulatorPrefixes() {
       reservedAcclPrefix(),
       reservedAcclToReducePrefix(),
       reservedAcclToUpdatePrefix(),
-      reservedAcclFinalOutPrefix()};
+      reservedAcclFinalOutPrefix(),
+      reservedCounterPrefix()};
   return prefs;
 }
 
