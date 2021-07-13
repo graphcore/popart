@@ -33,8 +33,8 @@ public:
                                     const poplar::Type &type,
                                     snap::Graph &graph,
                                     const poplar::DebugNameAndId &);
-  snap::Tensor broadcastClipTensor(snap::Tensor clipT,
-                                   const snap::Tensor &refT) const;
+  static snap::Tensor broadcastClipTensor(snap::Tensor clipT,
+                                          const snap::Tensor &refT);
 
   static float getMinFromClipOp(Op *op);
   static float getMaxFromClipOp(Op *op);

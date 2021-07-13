@@ -24,7 +24,7 @@ snap::Tensor ClipComputex::getClipTensor(float val,
 }
 
 snap::Tensor ClipComputex::broadcastClipTensor(snap::Tensor clipT,
-                                               const snap::Tensor &refT) const {
+                                               const snap::Tensor &refT) {
   // Broadcasting clip tensor across each dimension of reference tensor
   auto refShape = refT.getPoplarTensor().shape();
 
@@ -146,10 +146,14 @@ void ClipGradOpx::grow(poplar::program::Sequence &prog) const {
   auto gradIn     = getInTensor(clipGradOp->getGradClippedInIndex());
   auto fwdOut     = getInTensor(clipGradOp->getClippedInIndex());
   auto elType     = gradIn.getPoplarTensor().elementType();
-  auto clipmax    = ClipComputex::getClipTensor(
-      clipGradOp->getClipMax(), elType, graph(), getDebugNameAndId());
-  auto clipmin = ClipComputex::getClipTensor(
-      clipGradOp->getClipMin(), elType, graph(), getDebugNameAndId());
+  auto clipmax    = ClipComputex::broadcastClipTensor(
+      ClipComputex::getClipTensor(
+          clipGradOp->getClipMax(), elType, graph(), getDebugNameAndId()),
+      fwdOut);
+  auto clipmin = ClipComputex::broadcastClipTensor(
+      ClipComputex::getClipTensor(
+          clipGradOp->getClipMin(), elType, graph(), getDebugNameAndId()),
+      fwdOut);
 
   // 1. Check where clipmin and clipmax are not equal to fwOut
   // 2. Cast as gradin type from bool
