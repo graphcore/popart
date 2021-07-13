@@ -377,13 +377,13 @@ bool RemoteSetup::apply(Graph &graph) const {
       }
     }
     if (MultiExchangeOp *exchangeOp = dynamic_cast<MultiExchangeOp *>(op)) {
-      for (InIndex inIndex = 0;
-           inIndex < exchangeOp->numLoads() + exchangeOp->numStores();
-           ++inIndex) {
-        if (exchangeOp->getRemoteBufferId(inIndex) < 0) {
-          throw error("Op {} index {} has no valid remote buffer set.",
-                      op->debugName(),
-                      inIndex);
+      for (int index = 0; index < exchangeOp->getNumExchanges(); ++index) {
+        if (exchangeOp->getExchangeDescriptor(index).isRemoteExchange() &&
+            exchangeOp->getRemoteBufferId(index) < 0) {
+          throw error(
+              "Op {} descriptor index {} has no valid remote buffer set.",
+              op->debugName(),
+              index);
         }
       }
     }

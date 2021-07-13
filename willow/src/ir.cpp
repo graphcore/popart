@@ -33,6 +33,7 @@
 #include <popart/op/call.hpp>
 #include <popart/op/dropout.hpp>
 #include <popart/op/exchange/hostcopy.hpp>
+#include <popart/op/exchange/multiexchange.hpp>
 #include <popart/op/getrandomseed.hpp>
 #include <popart/op/init.hpp>
 #include <popart/op/loss.hpp>
@@ -204,6 +205,17 @@ std::map<TensorId, std::vector<Tensor *>> Ir::getHostLoadTensors() const {
       hlTensors[hlop->getHostStreamTensorId()].push_back(
           hlop->output->tensor(HostLoadOp::getLocalTensorOutIndex()));
     }
+    if (MultiExchangeOp *exchangeOp = dynamic_cast<MultiExchangeOp *>(op)) {
+      for (int index = 0; index < exchangeOp->getNumExchanges(); ++index) {
+        auto descriptor = exchangeOp->getExchangeDescriptor(index);
+        if (descriptor.isHostExchange() &&
+            descriptor.getDirection() == ExchangeDirection::Load) {
+          hlTensors[descriptor.getHostStreamTensorId()].push_back(
+              op->input->tensor(
+                  exchangeOp->descriptorIndexToInIndices(index).front()));
+        }
+      }
+    }
   }
   return hlTensors;
 }
@@ -211,9 +223,20 @@ std::map<TensorId, std::vector<Tensor *>> Ir::getHostLoadTensors() const {
 std::map<TensorId, std::vector<Tensor *>> Ir::getHostStoreTensors() const {
   std::map<TensorId, std::vector<Tensor *>> hsTensors;
   for (auto op : getAllOps()) {
-    if (HostStoreOp *hsop = dynamic_cast<HostStoreOp *>(op)) {
-      hsTensors[hsop->getHostStreamTensorId()].push_back(
+    if (HostStoreOp *hsOp = dynamic_cast<HostStoreOp *>(op)) {
+      hsTensors[hsOp->getHostStreamTensorId()].push_back(
           op->input->tensor(HostStoreOp::getLocalTensorInIndex()));
+    }
+    if (MultiExchangeOp *exchangeOp = dynamic_cast<MultiExchangeOp *>(op)) {
+      for (int index = 0; index < exchangeOp->getNumExchanges(); ++index) {
+        auto descriptor = exchangeOp->getExchangeDescriptor(index);
+        if (descriptor.isHostExchange() &&
+            descriptor.getDirection() == ExchangeDirection::Store) {
+          hsTensors[descriptor.getHostStreamTensorId()].push_back(
+              op->input->tensor(
+                  exchangeOp->descriptorIndexToInIndices(index).front()));
+        }
+      }
     }
   }
   return hsTensors;
@@ -1362,8 +1385,10 @@ void Ir::prepareImpl(const IrBundle &gb, const HashesMap &cacheEntries) {
   }
 
   // Merge remote loads/stores into exchanges
-  for (auto &id_graph : graphs) {
-    applyTransform(MergeExchange::id(), *id_graph.second);
+  if (getSessionOptions().enableMergeExchange) {
+    for (auto &id_graph : graphs) {
+      applyTransform(MergeExchange::id(), *id_graph.second);
+    }
   }
 
   if (autoRecomputationEnabled() && !getSessionOptions().enablePipelining &&

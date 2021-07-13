@@ -1433,6 +1433,9 @@ PYBIND11_MODULE(popart_core, m) {
     cls.def_readwrite("enableExplicitMainLoops",
                       &SessionOptions::enableExplicitMainLoops,
                       DOC(popart, SessionOptions, enableExplicitMainLoops));
+    cls.def_readwrite("enableMergeExchange",
+                      &SessionOptions::enableMergeExchange,
+                      DOC(popart, SessionOptions, enableMergeExchange));
   }
   {
     py::enum_<PatternsLevel> en(m, "PatternsLevel", DOC(popart, PatternsLevel));

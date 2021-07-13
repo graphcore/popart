@@ -69,9 +69,14 @@ public:
   TaskId(Type, const TensorId &tensorId);
   TaskId(Type type, const OpId &opId, const OperatorIdentifier &opIdentifier);
   TaskId(Type type,
+         const OpId &opId,
+         const OperatorIdentifier &opIdentifier,
+         const OpxGrowPartId &opxGrowPartId);
+  TaskId(Type type,
          nonstd::optional<TensorId> tensorId,
          nonstd::optional<OpId> opId,
-         nonstd::optional<OperatorIdentifier> opIdentifier);
+         nonstd::optional<OperatorIdentifier> opIdentifier,
+         nonstd::optional<OpxGrowPartId> opxGrowPartId);
 
   // True if type == Undefined (default constructed).
   bool empty() const;
@@ -90,6 +95,8 @@ private:
   nonstd::optional<OpId> opId;
   // Optional OperatorIdentifier.
   nonstd::optional<OperatorIdentifier> opIdentifier;
+  // Optional OpxGrowPartId
+  nonstd::optional<OpxGrowPartId> opxGrowPartId;
 
   // Ensure the hash function / stream operator can access members.
   friend std::size_t std::hash<TaskId>::operator()(const TaskId &) const;

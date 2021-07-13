@@ -45,6 +45,7 @@
 #include <popart/op/call.hpp>
 #include <popart/op/convbase.hpp>
 #include <popart/op/exchange/hostcopy.hpp>
+#include <popart/op/exchange/multiexchange.hpp>
 #include <popart/op/exchange/remote.hpp>
 #include <popart/op/getrandomseed.hpp>
 #include <popart/op/if.hpp>
@@ -658,7 +659,8 @@ PriTaskDependency IrLowering::taskWhichCreates(TensorId id) const {
     } else {
       // Tensors with producer Ops are created (added to a Graph) by their
       // producer's OpTask
-      return {opTaskId(tensor->getProducer()), DependencyType::Tensor};
+      return {opTensorTaskId(tensor->getProducer(), tensor),
+              DependencyType::Tensor};
     }
   }
 }
@@ -668,6 +670,9 @@ TaskId IrLowering::taskWhichPopulates(TensorId id) const {
 
   // OpTasks both initialize a Tensor, and generate the code to set its value
   if (tensor->hasProducer()) {
+    // For partial grown Ops:
+    // The tensor is created with opTensorTaskId, but the code is only
+    // inserted with opTaskId
     return opTaskId(tensor->getProducer());
   }
 
@@ -1229,7 +1234,9 @@ PriTask IrLowering::setInitTensorValTask(Tensor *tensor) {
 PriTask IrLowering::streamFromHostTask(TensorId streamTensorId,
                                        std::vector<Tensor *> tensors) {
   auto f = [this, streamTensorId, tensors]() {
-    std::vector<VGraphId> ipus;
+    std::set<std::pair<VGraphIdAndTileSet, Tensor *>,
+             VgidAndTileSetAndPTensorCmp>
+        vgidsTileSetsAndTensors;
 
     std::vector<std::pair<Tensor *, Op *>> consumerOps;
 
@@ -1246,51 +1253,58 @@ PriTask IrLowering::streamFromHostTask(TensorId streamTensorId,
 
       // Assume another op will copy the tensor for an ipucopy
       if (op->opid != Onnx::CustomOperators::IpuCopy) {
-        auto &graph = getOpx(op->id)->graph();
-
-        VGraphId vgid = -1;
-        if (op->hasVirtualGraphId()) {
-          // VirtualGraphId with subgraph call introspection
-          // for the current tensor
-          auto index = op->input->indicesMap().at(tensor)[0];
-          vgid       = op->getIntrospectionInVirtualGraphId(index).first;
-        }
-
-        // Only stream the tensor once for all op's that consume it on an ipu
-        if (std::find(ipus.begin(), ipus.end(), vgid) == ipus.end()) {
-
-          poplar::OptionFlags options{};
-
-          // Determine stream configuration.
-          auto mode           = getReplicatedStreamMode(tensor);
-          auto bufferingDepth = getBufferingDepth(tensor);
-
-          if (bufferingDepth > 1) {
-            // Configure the buffering depth of the stream.
-            options.set("bufferingDepth", std::to_string(bufferingDepth));
-          }
-
-          logging::devicex::debug(
-              "Creating host-to-device FIFO {} copied to "
-              "ipu:{} (mode: {}, memory: {}, buffering depth: {})",
-              streamTensorId,
-              vgid,
-              (mode == poplar::ReplicatedStreamMode::REPLICATE) ? "replicate"
-                                                                : "broadcast",
-              "hexopt",
-              bufferingDepth);
-
-          fromHostStreams.emplace(
-              streamTensorId,
-              graph.getPoplarGraph().addHostToDeviceFIFO(h2dId(streamTensorId),
-                                                         popType(tensor->info),
-                                                         tensor->info.nelms(),
-                                                         mode,
-                                                         options));
-
-          ipus.push_back(vgid);
-        }
+        // VirtualGraphId with subgraph call introspection
+        // for the current tensor
+        auto index          = op->input->indicesMap().at(tensor)[0];
+        auto vgidAndTileSet = op->getIntrospectionInVirtualGraphId(index);
+        vgidsTileSetsAndTensors.insert({vgidAndTileSet, tensor});
       }
+    }
+
+    for (auto tensor : tensors) {
+      vgidsTileSetsAndTensors.insert(
+          {tensor->getVirtualGraphIdAndTileSetUnsafe({}), tensor});
+    }
+
+    // Only stream the tensor once for all op's that consume it on an ipu
+    for (auto &vgidTileSetAndTensor : vgidsTileSetsAndTensors) {
+      auto vgidAndTileSet = vgidTileSetAndTensor.first;
+      auto tensor         = vgidTileSetAndTensor.second;
+      poplar::OptionFlags options{};
+
+      // Determine stream configuration.
+      auto mode           = getReplicatedStreamMode(tensor);
+      auto bufferingDepth = getBufferingDepth(tensor);
+
+      if (bufferingDepth > 1) {
+        // Configure the buffering depth of the stream.
+        options.set("bufferingDepth", std::to_string(bufferingDepth));
+      }
+
+      logging::devicex::debug(
+          "Creating host-to-device FIFO {} copied to "
+          "ipu:{} (mode: {}, memory: {}, buffering depth: {})",
+          streamTensorId,
+          vgidAndTileSet,
+          (mode == poplar::ReplicatedStreamMode::REPLICATE) ? "replicate"
+                                                            : "broadcast",
+          "hexopt",
+          bufferingDepth);
+
+      snap::Graph *graph;
+
+      if (vgidAndTileSet.first != unusedVGraphId) {
+        graph = &getVirtualGraph(vgidAndTileSet.first, vgidAndTileSet.second);
+      } else {
+        graph = pGraph.get();
+      }
+      fromHostStreams.emplace(
+          streamTensorId,
+          graph->getPoplarGraph().addHostToDeviceFIFO(h2dId(streamTensorId),
+                                                      popType(tensor->info),
+                                                      tensor->info.nelms(),
+                                                      mode,
+                                                      options));
     }
     return SequenceMap();
   };
@@ -1626,28 +1640,12 @@ void IrLowering::addOpTasks(PriTasks &tasks) {
 
     logging::devicex::debug(
         "Created task for {}, adding dependencies and enqueueing", op->str());
-    auto task = opTask(op, priority, prevOpTaskId);
+    auto opTaskVec = opTasks(op, priority, prevOpTaskId);
 
-    if (HostLoadOp *hlop = dynamic_cast<HostLoadOp *>(op)) {
-      auto hostStreamDepencendy =
-          PriTaskDependency(streamFromHostTaskId(hlop->getHostStreamTensorId()),
-                            DependencyType::Tensor);
-      logging::devicex::trace(
-          "Op {} depends on stream {}", op->debugName(), hostStreamDepencendy);
-      task.dependsOn.push_back(hostStreamDepencendy);
+    for (auto &task : opTaskVec) {
+      tasks.add(task);
     }
-
-    if (HostStoreOp *hsop = dynamic_cast<HostStoreOp *>(op)) {
-      auto hostStreamDepencendy = PriTaskDependency(
-          streamToHostTaskId(hsop->getHostStreamTensorId(), true),
-          DependencyType::Tensor);
-      logging::devicex::trace(
-          "Op {} depends on stream {}", op->debugName(), hostStreamDepencendy);
-      task.dependsOn.push_back(hostStreamDepencendy);
-    }
-
-    tasks.add(task);
-    prevOpTaskId = task.name;
+    prevOpTaskId = opTaskVec.back().name;
     priority -= 1.;
   }
 
@@ -1826,29 +1824,16 @@ PriTask IrLowering::initTensorTask(InitTensorPtrs inits) {
   return {-1e6 + priMod, initTensorTaskId(dstId), deps, f};
 }
 
-PriTask IrLowering::opTask(Op *op, double priority, TaskId prevOpTaskId) {
+std::vector<PriTask>
+IrLowering::opTasks(Op *op, double priority, TaskId prevOpTaskId) {
+  std::vector<PriTask> priTasks;
+
   // although priority should guarantee that this
   // task is only run after inputs are all created,
   // we add a dependency to the input tensors, just
   // in case someone plays with the priorities.
   // Moreover, we must state the copy-from-host deps
   std::vector<PriTaskDependency> deps;
-  for (auto t_inds : op->input->indicesMap()) {
-    Tensor *tensor = t_inds.first;
-
-    PriTaskDependency creatorTask = taskWhichCreates(tensor->id);
-
-    PriTaskDependency populatorTask = {taskWhichPopulates(tensor->id),
-                                       DependencyType::Scheduler};
-
-    // Make sure we only add the creatorTask once in the dependency list
-    if (std::find(deps.begin(), deps.end(), creatorTask) == deps.end()) {
-      deps.push_back(creatorTask);
-    }
-    if (std::find(deps.begin(), deps.end(), populatorTask) == deps.end()) {
-      deps.push_back(populatorTask);
-    }
-  }
 
   // Add initTensorTask dependencies for externally created output tensors
   PopOpx *opx = getOpx(op->id);
@@ -1928,7 +1913,7 @@ PriTask IrLowering::opTask(Op *op, double priority, TaskId prevOpTaskId) {
     }
   }
 
-  auto f = [op, this]() {
+  auto opTaskGrowFunc = [op, this]() {
     SequenceMap seqs;
     const auto &containingGraph = op->getGraph();
     // if this Op is not in the main scope
@@ -1954,7 +1939,127 @@ PriTask IrLowering::opTask(Op *op, double priority, TaskId prevOpTaskId) {
     return seqs;
   };
 
-  return {priority, opTaskId(op), deps, f};
+  if (HostLoadOp *hlop = dynamic_cast<HostLoadOp *>(op)) {
+    auto hostStreamDepencendy =
+        PriTaskDependency(streamFromHostTaskId(hlop->getHostStreamTensorId()),
+                          DependencyType::Tensor);
+    logging::devicex::trace(
+        "Op {} depends on stream {}", op->debugName(), hostStreamDepencendy);
+    deps.push_back(hostStreamDepencendy);
+  }
+
+  if (HostStoreOp *hsop = dynamic_cast<HostStoreOp *>(op)) {
+    auto hostStreamDepencendy = PriTaskDependency(
+        streamToHostTaskId(hsop->getHostStreamTensorId(), true),
+        DependencyType::Tensor);
+    logging::devicex::trace(
+        "Op {} depends on stream {}", op->debugName(), hostStreamDepencendy);
+    deps.push_back(hostStreamDepencendy);
+  }
+
+  if (MultiExchangeOp *exchangeOp = dynamic_cast<MultiExchangeOp *>(op)) {
+    for (int index = 0; index < exchangeOp->getNumExchanges(); ++index) {
+      auto descriptor = exchangeOp->getExchangeDescriptor(index);
+      if (descriptor.isHostExchange()) {
+        auto hostStreamDepencendy =
+            ((descriptor.getDirection() == ExchangeDirection::Store)
+                 ? PriTaskDependency(
+                       streamToHostTaskId(descriptor.getHostStreamTensorId(),
+                                          true),
+                       DependencyType::Tensor)
+                 : PriTaskDependency(
+                       streamFromHostTaskId(descriptor.getHostStreamTensorId()),
+                       DependencyType::Tensor));
+        logging::devicex::trace(
+            "Op {} descriptor index {} ({}) depends on stream {}",
+            op->debugName(),
+            index,
+            descriptor.getDirection(),
+            hostStreamDepencendy);
+        deps.push_back(hostStreamDepencendy);
+      }
+    }
+  }
+
+  // Part growing has the same basic dependencies as full growing, except
+  // that parts can depend on a subset of input tensors rather than all of them.
+  auto basePartDeps = deps;
+
+  std::map<OpxGrowPartId, std::vector<PriTaskDependency>> opGrowPartIds;
+
+  for (auto t_inds : op->input->indicesMap()) {
+    Tensor *tensor                = t_inds.first;
+    auto partIds                  = opx->getInGrowPartIds(tensor);
+    PriTaskDependency creatorTask = taskWhichCreates(tensor->id);
+
+    PriTaskDependency populatorTask = {taskWhichPopulates(tensor->id),
+                                       DependencyType::Scheduler};
+    for (auto partId : partIds) {
+      auto it = opGrowPartIds.find(partId);
+      if (it == opGrowPartIds.end()) {
+        opGrowPartIds[partId] = basePartDeps;
+      }
+      auto &partDeps = opGrowPartIds[partId];
+      // Make sure we only add the creatorTask once in the dependency list
+      if (std::find(partDeps.begin(), partDeps.end(), creatorTask) ==
+          partDeps.end()) {
+        logging::devicex::trace(
+            "Adding Op {} part {} dependency {}", op->id, partId, creatorTask);
+        partDeps.push_back(creatorTask);
+      }
+      if (std::find(partDeps.begin(), partDeps.end(), populatorTask) ==
+          partDeps.end()) {
+        logging::devicex::trace("Adding Op {} part {} dependency {}",
+                                op->id,
+                                partId,
+                                populatorTask);
+        partDeps.push_back(populatorTask);
+      }
+    }
+    // Make sure we only add the creatorTask once in the dependency list
+    if (std::find(deps.begin(), deps.end(), creatorTask) == deps.end()) {
+      deps.push_back(creatorTask);
+    }
+    if (std::find(deps.begin(), deps.end(), populatorTask) == deps.end()) {
+      deps.push_back(populatorTask);
+    }
+  }
+  for (auto t_inds : op->output->indicesMap()) {
+    Tensor *tensor = t_inds.first;
+    auto partId    = opx->getOutGrowPartId(tensor);
+    auto it        = opGrowPartIds.find(partId);
+    if (it == opGrowPartIds.end()) {
+      opGrowPartIds[partId] = basePartDeps;
+    }
+  }
+
+  for (auto &partIdAndDependencies : opGrowPartIds) {
+    if (partIdAndDependencies.first != unusedGrowPartId) {
+      auto opTaskPartGrowFunc = [partIdAndDependencies, op, opx, this]() {
+        SequenceMap seqs;
+
+        // Grow a part of the Opx
+        opx->growPart(partIdAndDependencies.first);
+
+        return seqs;
+      };
+
+      priTasks.push_back({priority,
+                          opPartTaskId(op, partIdAndDependencies.first),
+                          partIdAndDependencies.second,
+                          opTaskPartGrowFunc});
+      deps.push_back(
+          PriTaskDependency(opPartTaskId(op, partIdAndDependencies.first),
+                            DependencyType::Scheduler));
+      deps.push_back(
+          PriTaskDependency(opPartTaskId(op, partIdAndDependencies.first),
+                            DependencyType::Output));
+    }
+  }
+
+  priTasks.push_back({priority, opTaskId(op), deps, opTaskGrowFunc});
+
+  return priTasks;
 }
 
 void IrLowering::growOpx(PopOpx *opx,
@@ -3339,8 +3444,26 @@ TaskId IrLowering::initTensorTaskId(TensorId id) {
   return TaskId(TaskId::Type::InitTensorTask, id);
 }
 
-TaskId IrLowering::opTaskId(Op *op) {
+TaskId IrLowering::opTaskId(Op *op) const {
   return TaskId(TaskId::Type::FromOpTask, op->id, op->opid);
+}
+
+TaskId IrLowering::opTensorTaskId(Op *op, Tensor *tensor) const {
+  auto opx        = getOpx(op->id);
+  auto growPartId = opx->getOutGrowPartId(tensor);
+  if (growPartId != unusedGrowPartId) {
+    return TaskId(TaskId::Type::FromOpTask, op->id, op->opid, growPartId);
+  } else {
+    return opTaskId(op);
+  }
+}
+
+TaskId IrLowering::opPartTaskId(Op *op, OpxGrowPartId growPartId) const {
+  if (growPartId != unusedGrowPartId) {
+    return TaskId(TaskId::Type::FromOpTask, op->id, op->opid, growPartId);
+  } else {
+    return opTaskId(op);
+  }
 }
 
 TaskId IrLowering::pipelinedCopyTaskId(Op *op) {

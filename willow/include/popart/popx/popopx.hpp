@@ -109,6 +109,14 @@ public:
   // is to call the single sequence grow function.
   virtual void grow(std::vector<poplar::program::Sequence> &) const;
 
+  // Get the part id of the Opx grow function that creates the output tensor
+  virtual std::set<OpxGrowPartId> getInGrowPartIds(Tensor *inTensor) const;
+  virtual OpxGrowPartId getOutGrowPartId(Tensor *outTensor) const;
+
+  // Grows only a part of the Opx and caches the generated sequences
+  // to be assembled in Opx::grow
+  virtual void growPart(OpxGrowPartId id) const;
+
   // clone the snap::Tensor identified by its TensorId, and copy the contents
   // of it.
   snap::Tensor cloneNcopy(poplar::program::Sequence &, TensorId) const;

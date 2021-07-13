@@ -168,13 +168,13 @@ void checkMultiExchangeOp(Op *op,
 
   size_t inputIndex = 0;
   // Check each input has names in the tensor IDs we expect.
-  for (auto load : loads) {
-    checkTensor(op, inputIndex++, load, true);
-    checkTensor(op, inputIndex++, load, true);
-  }
   for (auto store : stores) {
     checkTensor(op, inputIndex++, store, true);
     checkTensor(op, inputIndex++, store, true);
+  }
+  for (auto load : loads) {
+    checkTensor(op, inputIndex++, load, true);
+    checkTensor(op, inputIndex++, load, true);
   }
 
   // Outputs only for loads.

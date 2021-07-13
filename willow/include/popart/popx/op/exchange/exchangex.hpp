@@ -94,7 +94,7 @@ public:
             poplar::DebugContext context) override;
 };
 
-std::shared_ptr<ExchangeDescriptorx>
+std::unique_ptr<ExchangeDescriptorx>
 getExchangeDescriptorx(Devicex *dv_p, ExchangeDescriptor descriptor);
 
 class ExchangeBaseOpx : public PopOpx {

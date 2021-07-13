@@ -324,6 +324,14 @@ struct PTensorCmp {
   }
 };
 
+struct VgidAndTileSetAndPTensorCmp {
+  bool operator()(std::pair<VGraphIdAndTileSet, Tensor *> const &a,
+                  std::pair<VGraphIdAndTileSet, Tensor *> const &b) const {
+    return std::pair<VGraphIdAndTileSet, TensorId>{a.first, a.second->id} <
+           std::pair<VGraphIdAndTileSet, TensorId>{b.first, b.second->id};
+  }
+};
+
 } // namespace popart
 
 #endif

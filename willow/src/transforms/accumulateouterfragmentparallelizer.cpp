@@ -293,7 +293,7 @@ bool AccumulateOuterFragmentParallelizer::apply(Graph &graph) const {
       // If we are trying to be gentle on memory usage we should only
       // parallelise those weight updates that are over identically-shaped
       // tensors, so that the resulting combined remote operations (see
-      // MergeExchange) are better suited to outlinining.
+      // MergeExchange) are better suited to outlining.
 
       // Find smallest.
       auto hasSmallest          = false;

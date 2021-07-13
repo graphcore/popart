@@ -9,25 +9,41 @@ TaskId::TaskId()
     : TaskId{TaskId::Type::Undefined,
              nonstd::nullopt,
              nonstd::nullopt,
+             nonstd::nullopt,
              nonstd::nullopt} {}
 
 TaskId::TaskId(Type type)
-    : TaskId{type, nonstd::nullopt, nonstd::nullopt, nonstd::nullopt} {}
+    : TaskId{type,
+             nonstd::nullopt,
+             nonstd::nullopt,
+             nonstd::nullopt,
+             nonstd::nullopt} {}
 
 TaskId::TaskId(Type type, const TensorId &tensorId)
-    : TaskId{type, tensorId, nonstd::nullopt, nonstd::nullopt} {}
+    : TaskId{type,
+             tensorId,
+             nonstd::nullopt,
+             nonstd::nullopt,
+             nonstd::nullopt} {}
 
 TaskId::TaskId(Type type,
                const OpId &opId,
                const OperatorIdentifier &opIdentifier)
-    : TaskId{type, nonstd::nullopt, opId, opIdentifier} {}
+    : TaskId{type, nonstd::nullopt, opId, opIdentifier, nonstd::nullopt} {}
+
+TaskId::TaskId(Type type,
+               const OpId &opId,
+               const OperatorIdentifier &opIdentifier,
+               const OpxGrowPartId &opxGrowPartId)
+    : TaskId{type, nonstd::nullopt, opId, opIdentifier, opxGrowPartId} {}
 
 TaskId::TaskId(Type type_,
                nonstd::optional<TensorId> tensorId_,
                nonstd::optional<OpId> opId_,
-               nonstd::optional<OperatorIdentifier> opIdentifier_)
-    : type{type_}, tensorId{tensorId_}, opId{opId_}, opIdentifier{
-                                                         opIdentifier_} {}
+               nonstd::optional<OperatorIdentifier> opIdentifier_,
+               nonstd::optional<OpxGrowPartId> opxGrowPartId_)
+    : type{type_}, tensorId{tensorId_}, opId{opId_},
+      opIdentifier{opIdentifier_}, opxGrowPartId(opxGrowPartId_) {}
 
 bool TaskId::empty() const { return type == TaskId::Type::Undefined; }
 
@@ -49,12 +65,17 @@ bool TaskId::operator<(const TaskId &rhs) const {
     return (opIdentifier < rhs.opIdentifier);
   }
 
+  if (opxGrowPartId != rhs.opxGrowPartId) {
+    return (opxGrowPartId < rhs.opxGrowPartId);
+  }
+
   return false;
 }
 
 bool TaskId::operator==(const TaskId &rhs) const {
   return (type == rhs.type) && (tensorId == rhs.tensorId) &&
-         (opId == rhs.opId) && (opIdentifier == rhs.opIdentifier);
+         (opId == rhs.opId) && (opIdentifier == rhs.opIdentifier) &&
+         (opxGrowPartId == rhs.opxGrowPartId);
 }
 
 std::ostream &operator<<(std::ostream &out, const TaskId &taskId) {
@@ -67,6 +88,9 @@ std::ostream &operator<<(std::ostream &out, const TaskId &taskId) {
   }
   if (taskId.opIdentifier) {
     out << "_" << *taskId.opIdentifier;
+  }
+  if (taskId.opxGrowPartId) {
+    out << "_" << *taskId.opxGrowPartId;
   }
   return out;
 }
@@ -160,8 +184,8 @@ namespace std {
 
 using namespace popart;
 
-std::size_t
-hash<popart::TaskId>::operator()(const popart::TaskId &taskId) const {
+std::size_t hash<popart::TaskId>::
+operator()(const popart::TaskId &taskId) const {
   std::size_t seed = 0;
 
   boost::hash_combine(seed, taskId.type);
@@ -179,7 +203,9 @@ hash<popart::TaskId>::operator()(const popart::TaskId &taskId) const {
     boost::hash_combine<int>(seed, taskId.opIdentifier->numInputs.max);
     boost::hash_combine<int>(seed, taskId.opIdentifier->numOutputs);
   }
-
+  if (taskId.opxGrowPartId) {
+    boost::hash_combine<OpxGrowPartId>(seed, *taskId.opxGrowPartId);
+  }
   return seed;
 }
 

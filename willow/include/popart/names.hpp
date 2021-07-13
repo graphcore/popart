@@ -48,6 +48,8 @@ using ReturnPeriod = int;
 using SubgraphIndex = int;
 // The index of the subgraph part.
 using SubgraphPartIndex = int;
+// Identifies a part of an Opx grow function
+using OpxGrowPartId = int;
 // The position at which a Tensor is consumed by an Op
 using InIndex = int;
 // The position at which a Tensor is output by an Op
@@ -69,6 +71,9 @@ static constexpr const ExecutionPhase unusedExecutionPhase = -2;
 using BatchSerializedPhase                                 = int64_t;
 // Phase -1 is used to initialize accumulators, phase -2 is unused
 static constexpr const BatchSerializedPhase unusedBatchSerializedPhase = -2;
+
+static constexpr const OpxGrowPartId unusedGrowPartId = -1;
+
 using StashIndex = int64_t;
 
 // The identifier for a remote buffer

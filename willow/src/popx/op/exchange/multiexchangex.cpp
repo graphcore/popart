@@ -47,31 +47,37 @@ view::RegMap MultiExchangeOpx::unwindRegion(InIndex, OutIndex) const {
   return [](const view::Region &r) { return view::Regions(1, r); };
 }
 
-void MultiExchangeOpx::grow(poplar::program::Sequence &prog) const {
+std::set<OpxGrowPartId>
+MultiExchangeOpx::getInGrowPartIds(Tensor *inTensor) const {
+  std::set<OpxGrowPartId> partIds;
+
   auto &multiExchangeOp = getOp<MultiExchangeOp>();
 
-  std::vector<std::shared_ptr<ExchangeDescriptorx>> descriptorxs;
+  auto indices = multiExchangeOp.input->indices(inTensor);
 
-  // Prepare descriptorx
-  for (int i = 0; i < multiExchangeOp.getNumExchanges(); ++i) {
-    auto descriptor = multiExchangeOp.getExchangeDescriptor(i);
-    descriptorxs.push_back(getExchangeDescriptorx(dv_p, descriptor));
+  for (auto index : indices) {
+    partIds.insert(multiExchangeOp.inIndexToDescriptorIndex(index).first);
   }
+  return partIds;
+}
 
-  std::vector<std::vector<std::pair<TensorId, snap::Tensor>>> tensors(
-      descriptorxs.size());
+OpxGrowPartId MultiExchangeOpx::getOutGrowPartId(Tensor *outTensor) const {
+  auto &multiExchangeOp = getOp<MultiExchangeOp>();
 
-  // Get tensors
-  for (auto input : multiExchangeOp.input->tensorIdMap()) {
-    auto indices = multiExchangeOp.inIndexToDescriptorIndex(input.first);
-    tensors.at(indices.first)
-        .push_back({input.second, getInTensor(input.first)});
+  if (outTensor->hasProducer() &&
+      outTensor->getProducer()->id == multiExchangeOp.id) {
+    return multiExchangeOp
+        .outIndexToDescriptorIndex(
+            multiExchangeOp.output->indices(outTensor).front())
+        .first;
   }
+  throw error("[MultiExchangeOp] Tensor {} is not consumed by {}",
+              outTensor->id,
+              multiExchangeOp.debugName());
+}
 
-  // Set tensors
-  for (int i = 0; i < multiExchangeOp.getNumExchanges(); ++i) {
-    descriptorxs.at(i)->setInTensors(tensors.at(i));
-  }
+std::vector<std::pair<int, int>> MultiExchangeOpx::getSegments() const {
+  auto &multiExchangeOp = getOp<MultiExchangeOp>();
 
   std::vector<std::pair<int, int>> segments;
 
@@ -102,49 +108,65 @@ void MultiExchangeOpx::grow(poplar::program::Sequence &prog) const {
     segments.push_back({last, i});
   }
 
-  logging::opx::debug("[MultiExchangeOpx] Exchange segmented: {}", segments);
+  return segments;
+}
 
-  for (int j = 0; j < segments.size(); ++j) {
-    // Prepare for the exchange
-    for (int i = segments.at(j).first; i < segments.at(j).second; ++i) {
-      logging::opx::debug("[MultiExchangeOpx] Growing pre-exchange for {}",
-                          descriptorxs.at(i));
-      descriptorxs.at(i)->pre(
-          srcVirtualGraph(
-              multiExchangeOp.descriptorIndexToInIndices(i).front()),
-          prog,
-          debugContext());
-    }
+void MultiExchangeOpx::growPart(OpxGrowPartId id) const {
+  auto &multiExchangeOp = getOp<MultiExchangeOp>();
 
-    // Exchange
-    for (int i = segments.at(j).first; i < segments.at(j).second; ++i) {
-      logging::opx::debug("[MultiExchangeOpx] Growing exchange for {}",
-                          descriptorxs.at(i));
-      descriptorxs.at(i)->exchange(
-          srcVirtualGraph(
-              multiExchangeOp.descriptorIndexToInIndices(i).front()),
-          prog,
-          debugContext());
-    }
+  MultiExchangeOpxState *state =
+      dv_p->lowering().getOpxState<MultiExchangeOpxState>(multiExchangeOp.id);
 
-    // Post process the exchange
-    for (int i = segments.at(j).first; i < segments.at(j).second; ++i) {
-      logging::opx::debug("[MultiExchangeOpx] Growing post-exchange for {}",
-                          descriptorxs.at(i));
-      descriptorxs.at(i)->post(
-          srcVirtualGraph(
-              multiExchangeOp.descriptorIndexToInIndices(i).front()),
-          prog,
-          debugContext());
+  // Prepare descriptorx
+  auto descriptor  = multiExchangeOp.getExchangeDescriptor(id);
+  auto descriptorx = getExchangeDescriptorx(dv_p, descriptor);
+
+  std::vector<std::pair<TensorId, snap::Tensor>> inTensors;
+
+  // Get tensors
+  for (auto input : multiExchangeOp.input->tensorIdMap()) {
+    auto indices = multiExchangeOp.inIndexToDescriptorIndex(input.first);
+    if (indices.first == id) {
+      logging::opx::trace(
+          "[MultiExchangeOpx] Adding tensor {} for descriptor {}",
+          input.second,
+          descriptor);
+      inTensors.push_back({input.second, getInTensor(input.first)});
     }
   }
+
+  // Set tensors
+  descriptorx->setInTensors(inTensors);
+
+  // Pre process the exchange
+  logging::opx::debug("[MultiExchangeOpx] Growing pre-exchange for {}",
+                      descriptor);
+  descriptorx->pre(
+      srcVirtualGraph(multiExchangeOp.descriptorIndexToInIndices(id).front()),
+      state->preSeqs[id],
+      debugContext());
+
+  // Exchange
+  logging::opx::debug("[MultiExchangeOpx] Growing exchange for {}", descriptor);
+  descriptorx->exchange(
+      srcVirtualGraph(multiExchangeOp.descriptorIndexToInIndices(id).front()),
+      state->exchangeSeqs[id],
+      debugContext());
+
+  // Post process the exchange
+  logging::opx::debug("[MultiExchangeOpx] Growing post-exchange for {}",
+                      descriptor);
+  descriptorx->post(
+      srcVirtualGraph(multiExchangeOp.descriptorIndexToInIndices(id).front()),
+      state->postSeqs[id],
+      debugContext());
 
   // Set output view changers
   InIndex inIdx   = 0;
   OutIndex outIdx = 0;
   for (int i = 0; i < multiExchangeOp.getNumExchanges(); ++i) {
     auto descriptor = multiExchangeOp.getExchangeDescriptor(i);
-    if (descriptor.getNumOutputs() >= 1) {
+    if (i == id && descriptor.getNumOutputs() >= 1) {
       if (hasInViewChangers(inIdx)) {
         setOutViewChangers(outIdx, getInViewChangers(inIdx));
       }
@@ -156,9 +178,38 @@ void MultiExchangeOpx::grow(poplar::program::Sequence &prog) const {
   // Set output tensors
   for (auto output : multiExchangeOp.output->tensorIdMap()) {
     auto indices = multiExchangeOp.outIndexToDescriptorIndex(output.first);
-    setOutTensor(
-        output.first,
-        descriptorxs.at(indices.first)->getOutTensors().at(indices.second));
+    if (indices.first == id) {
+      setOutTensor(output.first,
+                   descriptorx->getOutTensors().at(indices.second));
+    }
+  }
+}
+
+void MultiExchangeOpx::grow(poplar::program::Sequence &prog) const {
+  auto &multiExchangeOp = getOp<MultiExchangeOp>();
+
+  MultiExchangeOpxState *state =
+      dv_p->lowering().getOpxState<MultiExchangeOpxState>(multiExchangeOp.id);
+
+  auto segments = getSegments();
+
+  logging::opx::debug("[MultiExchangeOpx] Exchange segmented: {}", segments);
+
+  for (int j = 0; j < segments.size(); ++j) {
+    // Prepare for the exchange
+    for (int i = segments.at(j).first; i < segments.at(j).second; ++i) {
+      prog.add(state->preSeqs[i]);
+    }
+
+    // Exchange
+    for (int i = segments.at(j).first; i < segments.at(j).second; ++i) {
+      prog.add(state->exchangeSeqs[i]);
+    }
+
+    // Post process the exchange
+    for (int i = segments.at(j).first; i < segments.at(j).second; ++i) {
+      prog.add(state->postSeqs[i]);
+    }
   }
 }
 

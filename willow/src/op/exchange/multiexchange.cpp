@@ -31,8 +31,18 @@ void MultiExchangeOp::setup() {
     for (auto &in : input->tensorMap()) {
       auto outIndices = outIndexToDescriptorIndex(out.first);
       auto inIndices  = inIndexToDescriptorIndex(in.first);
-      if (inIndices.first == outIndices.first && inIndices.second == 0) {
+      if (outIndices.first == inIndices.first && inIndices.second == 0) {
         outInfo(out.first) = inInfo(in.first);
+        logging::op::trace("[MultiExchangeOp] Propagating descriptor {}:{} "
+                           "TensorInfo {}:{} ({}) -> {}:{} ({})",
+                           inIndices.first,
+                           getExchangeDescriptor(inIndices.first),
+                           in.first,
+                           in.second->id,
+                           inInfo(in.first),
+                           out.first,
+                           out.second->id,
+                           outInfo(out.first));
       }
     }
   }

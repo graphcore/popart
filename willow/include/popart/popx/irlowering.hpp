@@ -23,6 +23,7 @@
 #include <popart/popx/enigma.hpp>
 #include <popart/popx/inittensor.hpp>
 #include <popart/popx/linearmapper.hpp>
+#include <popart/popx/opxstate.hpp>
 #include <popart/popx/poplaroptionsx.hpp>
 #include <popart/popx/popprograms.hpp>
 #include <popart/popx/poptensors.hpp>
@@ -207,6 +208,9 @@ private:
   // The maximum number of inputs on any Op
   int maxOpInputs;
 
+  // Container for temporary Opx states during lowering
+  std::map<OpId, std::unique_ptr<OpxState>> opxState;
+
   void setMetadataFromIr();
 
   void verifyTaskOrder(const std::vector<TaskId> &taskOrder) const;
@@ -280,12 +284,21 @@ private:
                                   ReturnPeriod N,
                                   poplar::program::Sequence &);
 
-  PriTask opTask(Op *, double priority, TaskId prevOpTaskId);
+  // The tasks associated with lowering an operation
+  std::vector<PriTask> opTasks(Op *, double priority, TaskId prevOpTaskId);
+
   void opTaskFunc(TaskId taskId, Op *, SequenceMap &seqs);
   void pipelinedOpTaskFunc(TaskId taskId, Op *, SequenceMap &seqs);
   void growOpx(PopOpx *, SequenceMap::SequenceInterval seqInterval);
 
-  static TaskId opTaskId(Op *);
+  // The name of the task associated with growing an operation
+  TaskId opTaskId(Op *) const;
+
+  // The name of the task associated with an operation creating an output tensor
+  TaskId opTensorTaskId(Op *, Tensor *) const;
+
+  // The name of the task associated with a part of an operation
+  TaskId opPartTaskId(Op *, OpxGrowPartId) const;
 
   void addOpTasks(PriTasks &);
 
@@ -610,6 +623,17 @@ public:
 
   const std::map<TensorId, poplar::DataStream> &getToHostWeightStreams() const {
     return toHostWeightStreams;
+  }
+
+  // Construct and get a temporary, modifiable Opx state container,
+  // for growing Opxs in parts
+  template <class T> T *getOpxState(OpId opid) {
+    auto it = opxState.find(opid);
+    if (it == opxState.end()) {
+      // Public header, pre C++14 construction of unique ptr
+      opxState[opid] = std::unique_ptr<T>(new T());
+    }
+    return static_cast<T *>(opxState.at(opid).get());
   }
 };
 

@@ -946,6 +946,9 @@ struct SessionOptions {
 
   // Returns true if auto-recomputation is enabled.
   bool autoRecomputationEnabled() const;
+
+  /// Enables merging remote and host IO operations to facilitate IO overlap
+  bool enableMergeExchange = true;
 };
 
 } // namespace popart

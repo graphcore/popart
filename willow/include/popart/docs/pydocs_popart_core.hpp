@@ -10316,6 +10316,9 @@ static const char *__doc_popart_SessionOptions_enableAutomaticLossScaling_2 =
 static const char *__doc_popart_SessionOptions_enableExplicitMainLoops =
     R"doc()doc";
 
+static const char *__doc_popart_SessionOptions_enableMergeExchange =
+    R"doc()doc";
+
 static const char *__doc_popart_SessionOptions_enableDistributedReplicatedGraphs =
     R"doc(Enable training with Poplar replicated graphs across multiple PopART
 instances.)doc";

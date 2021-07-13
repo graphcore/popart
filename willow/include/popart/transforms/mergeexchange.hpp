@@ -28,13 +28,13 @@ public:
   virtual std::string getName() const final { return "MergeExchange"; }
 
 private:
-  void insertMultiExchange(Graph &graph,
-                           std::vector<ExchangeBaseOp *> exchangeOps) const;
-  void
-  conditionallyInsertMultiExchange(Graph &graph,
-                                   std::vector<ExchangeBaseOp *> exchangeOps,
-                                   bool phaseMerge,
-                                   bool bspMerge) const;
+  void insertMultiExchange(
+      Graph &graph,
+      std::vector<std::pair<int, ExchangeBaseOp *>> exchangeOps) const;
+  void conditionallyInsertMultiExchange(
+      Graph &graph,
+      std::vector<std::pair<int, ExchangeBaseOp *>> exchangeOps,
+      const OpsBeforeKey &keys) const;
 };
 
 } // namespace popart

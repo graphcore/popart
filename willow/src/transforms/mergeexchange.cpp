@@ -2,6 +2,7 @@
 #include <memory>
 #include <popart/error.hpp>
 #include <popart/graph.hpp>
+#include <popart/graphutils.hpp>
 #include <popart/ir.hpp>
 #include <popart/names.hpp>
 #include <popart/op.hpp>
@@ -21,43 +22,30 @@ std::size_t MergeExchange::id() { return typeid(MergeExchange).hash_code(); }
 
 void MergeExchange::insertMultiExchange(
     Graph &graph,
-    std::vector<ExchangeBaseOp *> exchangeOps) const {
+    std::vector<std::pair<int, ExchangeBaseOp *>> exchangeOps) const {
   // Strip topocons that would be blocking
-  for (Op *op0 : exchangeOps) {
-    for (Op *op1 : exchangeOps) {
-      if (graph.topoCons->contains(op0, op1)) {
+  for (auto &op0 : exchangeOps) {
+    for (auto &op1 : exchangeOps) {
+      if (graph.topoCons->contains(op0.second, op1.second)) {
         logging::transform::info(
             "[MergeExchange] Removed topological constraint {} -> {}",
-            op0->debugName(),
-            op1->debugName());
-        graph.topoCons->remove(op0, op1);
+            op0.second->debugName(),
+            op1.second->debugName());
+        graph.topoCons->remove(op0.second, op1.second);
       }
     }
   }
 
-  Op::Settings settings = exchangeOps.back()->settings;
+  Op::Settings settings = exchangeOps.back().second->settings;
   settings.name.clear();
 
   std::vector<ExchangeDescriptor> descriptors;
   descriptors.reserve(exchangeOps.size());
 
-  // Add all loads first
-  for (ExchangeBaseOp *op : exchangeOps) {
-    for (int index = 0; index < op->getNumExchanges(); ++index) {
-      auto descriptor = op->getExchangeDescriptor(index);
-      if (descriptor.getDirection() == ExchangeDirection::Load) {
-        descriptors.push_back(descriptor);
-      }
-    }
-  }
-
-  // Add all stores second
-  for (ExchangeBaseOp *op : exchangeOps) {
-    for (int index = 0; index < op->getNumExchanges(); ++index) {
-      auto descriptor = op->getExchangeDescriptor(index);
-      if (descriptor.getDirection() == ExchangeDirection::Store) {
-        descriptors.push_back(descriptor);
-      }
+  for (auto &op : exchangeOps) {
+    for (int index = 0; index < op.second->getNumExchanges(); ++index) {
+      auto descriptor = op.second->getExchangeDescriptor(index);
+      descriptors.push_back(descriptor);
     }
   }
 
@@ -66,6 +54,11 @@ void MergeExchange::insertMultiExchange(
       Onnx::CustomOperators::MultiExchange, settings, descriptors);
   MultiExchangeOp *multiExchangeOp = multiExchangeOpUp.get();
   graph.moveIntoGraph(std::move(multiExchangeOpUp));
+
+  multiExchangeOp->scheduledPreLoss =
+      exchangeOps.back().second->scheduledPreLoss;
+  multiExchangeOp->toLoss   = exchangeOps.back().second->toLoss;
+  multiExchangeOp->fromLoss = exchangeOps.back().second->fromLoss;
 
   InIndex multiInIdx   = 0;
   OutIndex multiOutIdx = 0;
@@ -97,32 +90,19 @@ void MergeExchange::insertMultiExchange(
       };
 
   // Connect inputs and outputs
-  // Add all load inputs / outputs first
-  for (ExchangeBaseOp *op : exchangeOps) {
-    for (int index = 0; index < op->getNumExchanges(); ++index) {
-      auto descriptor = op->getExchangeDescriptor(index);
-      if (descriptor.getDirection() == ExchangeDirection::Load) {
-        connectInputsAndOutputs(op);
-      }
+  for (auto &op : exchangeOps) {
+    for (int index = 0; index < op.second->getNumExchanges(); ++index) {
+      auto descriptor = op.second->getExchangeDescriptor(index);
+      connectInputsAndOutputs(op.second);
     }
   }
 
-  // Add all store inputs / outputs second
-  for (ExchangeBaseOp *op : exchangeOps) {
-    for (int index = 0; index < op->getNumExchanges(); ++index) {
-      auto descriptor = op->getExchangeDescriptor(index);
-      if (descriptor.getDirection() == ExchangeDirection::Store) {
-        connectInputsAndOutputs(op);
-      }
-    }
-  }
-
-  for (Op *op : exchangeOps) {
+  for (auto &op : exchangeOps) {
     logging::transform::trace("[MergeExchange] Op {} merged into {}.",
-                              op->debugName(),
+                              op.second->debugName(),
                               multiExchangeOp->debugName());
-    graph.topoCons->transfer(op, multiExchangeOp);
-    graph.eraseOp(op->id);
+    graph.topoCons->transfer(op.second, multiExchangeOp);
+    graph.eraseOp(op.second->id);
   }
   multiExchangeOp->setup();
 
@@ -132,16 +112,11 @@ void MergeExchange::insertMultiExchange(
 
 void MergeExchange::conditionallyInsertMultiExchange(
     Graph &graph,
-    std::vector<ExchangeBaseOp *> exchangeOps,
-    bool phaseMerge,
-    bool bspMerge) const {
-  if (exchangeOps.size() > 1) {
-    if (exchangeOps.back()->settings.executionContext ==
-            ExecutionContext::AccumulateOuterFragment ||
-        phaseMerge ||
-        (bspMerge && exchangeOps.back()->hasBatchSerializedPhase())) {
-      insertMultiExchange(graph, exchangeOps);
-    }
+    std::vector<std::pair<int, ExchangeBaseOp *>> exchangeOps,
+    const OpsBeforeKey &keys) const {
+
+  if (exchangeOps.size() > 1 && graph.isSchedulable(keys, true)) {
+    insertMultiExchange(graph, exchangeOps);
   }
 }
 
@@ -150,24 +125,18 @@ bool MergeExchange::apply(Graph &graph) const {
   std::set<TensorId> copiedTensors;
   std::set<TensorId> processedTensors;
 
-  auto &opts    = graph.getIr().getSessionOptions();
   auto schedule = graph.getOpSchedule({}, RequireOptimalSchedule::Yes);
 
-  // Merge batch serialized RemoteLoad/RemoteStore together
-  bool bspMerge = opts.batchSerializationSettings.factor > 1 &&
-                  (opts.batchSerializationSettings.batchSchedule ==
-                       BatchSerializationBatchSchedule::OverlapOnCompute ||
-                   opts.batchSerializationSettings.batchSchedule ==
-                       BatchSerializationBatchSchedule::OverlapOnIo);
+  OpsBeforeKey beforeKeys;
 
-  // Merge execution phase RemoteLoad/RemoteStore together
-  bool phaseMerge =
-      opts.virtualGraphMode == VirtualGraphMode::ExecutionPhases &&
-      opts.executionPhaseSettings.phases > 1 &&
-      opts.executionPhaseSettings.schedule ==
-          ExecutionPhaseSchedule::BatchClusteredIO;
+  // Create opid -> schedule position map
+  std::map<OpId, int> opToPosition;
+  int i = 0;
+  for (Op *op : schedule) {
+    opToPosition[op->id] = i++;
+  }
 
-  std::vector<ExchangeBaseOp *> exchangeOps;
+  std::vector<std::pair<int, ExchangeBaseOp *>> exchangeOps;
 
   bool seenRemoteLoads  = false;
   bool seenRemoteStores = false;
@@ -202,11 +171,81 @@ bool MergeExchange::apply(Graph &graph) const {
     bool isAof = (op->settings.executionContext ==
                   ExecutionContext::AccumulateOuterFragment);
 
-    if (contextChanged || !(isInit || isRemote || isHost || isMulti) ||
-        (bspChanged && bspMerge) || (inhibitMerging && isAof && isMerge)) {
-      conditionallyInsertMultiExchange(
-          graph, exchangeOps, phaseMerge, bspMerge);
+    bool dataDependency = false;
+    if ((isInit || isRemote || isHost || isMulti) && !exchangeOps.empty()) {
+
+      // Ensure the scheduler allows InitOps to be scheduled before
+      // RemoteLoad/HostLoad/RemoteStore/HostStore/MultiExchange
+      //
+      //  InitOp0                   valid if both InitOp0 and InitOp1 can be
+      //     |         InitOp1      scheduled before RemoteLoad0 and RemoteLoad1
+      //     |            |
+      //  RemoteLoad0     |         } mergeable to MultiExchangeOp
+      //               RemoteLoad1  }
+
+      beforeKeys.insert({op, {}});
+      for (auto &beforeKey : beforeKeys) {
+        if (beforeKey.first->isConvertibleTo<InitOp>()) {
+          beforeKeys.at(op).push_back(beforeKey.first);
+        }
+      }
+
+      std::set<OpId> exchangeOpIds;
+      for (auto &exchangeOp : exchangeOps) {
+        exchangeOpIds.insert(exchangeOp.second->id);
+      }
+
+      std::vector<graphutils::TensorAndCallStack> inputs;
+
+      for (auto input : op->input->tensorMap()) {
+        inputs.push_back({input.second, {}});
+      }
+
+      // Walk back from the current exchange Op and ensure we do not encounter
+      // any other exchange Op currently scheduled for merging.
+      //
+      //  InitOp
+      //     |
+      //  RemoteLoad                        } even if scheduled adjacently,
+      //     |         <- data dependency   } cannot be merged to
+      //  RemoteStore                       } MultiExchangeOp
+
+      graphutils::traverse(
+          inputs,
+          [&op, &exchangeOpIds, &dataDependency](Tensor *t) {
+            if (t->hasProducer()) {
+              if (exchangeOpIds.find(t->getProducer()->id) !=
+                  exchangeOpIds.end()) {
+                // The current exchange Op depends on data/tensors
+                // from a previous exchange Op, and so cannot be merged
+                dataDependency = true;
+                return false;
+              }
+            }
+            return true;
+          },
+          [&exchangeOps, &opToPosition, &op](Op *top, Tensor *t0, Tensor *t1) {
+            if (op->getGraph().id != top->getGraph().id) {
+              return true;
+            } else {
+              auto it = opToPosition.find(top->id);
+              if (it != opToPosition.end()) {
+                return exchangeOps.front().first < it->second;
+              }
+            }
+            return false;
+          },
+          graphutils::TraversalType::DepthFirst,
+          graphutils::VisitType::Pre,
+          graphutils::TraversalDirection::Backward);
+    }
+
+    if (contextChanged || dataDependency ||
+        !(isInit || isRemote || isHost || isMulti) || bspChanged ||
+        (inhibitMerging && isAof && isMerge)) {
+      conditionallyInsertMultiExchange(graph, exchangeOps, beforeKeys);
       exchangeOps.clear();
+      beforeKeys.clear();
       seenRemoteLoads  = false;
       seenRemoteStores = false;
     }
@@ -216,11 +255,11 @@ bool MergeExchange::apply(Graph &graph) const {
 
     if (isRemote || isHost || isMulti) {
       if (ExchangeBaseOp *exchOp = dynamic_cast<ExchangeBaseOp *>(op)) {
-        exchangeOps.push_back(exchOp);
+        exchangeOps.push_back({i, exchOp});
       }
     }
   }
-  conditionallyInsertMultiExchange(graph, exchangeOps, phaseMerge, bspMerge);
+  conditionallyInsertMultiExchange(graph, exchangeOps, beforeKeys);
 
   return true;
 }

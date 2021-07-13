@@ -16,6 +16,7 @@ add_popart_cpp_unit_test(explicit_recomputation explicit_recomputation_test.cpp)
 
 add_popart_cpp_unit_test(batchserialize_ir batchserialize_ir_test.cpp)
 
+add_popart_cpp_unit_test(mergeexchange mergeexchange_test.cpp VARIANTS "Hw")
 
 add_subdirectory(mergevarupdates)
 

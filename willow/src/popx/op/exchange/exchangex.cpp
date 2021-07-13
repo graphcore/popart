@@ -114,7 +114,7 @@ ExchangeDescriptorx::ExchangeDescriptorx(Devicex *dv_p_,
                                          ExchangeDescriptor descriptor_)
     : dv_p(dv_p_), descriptor(descriptor_) {}
 
-std::shared_ptr<ExchangeDescriptorx>
+std::unique_ptr<ExchangeDescriptorx>
 getExchangeDescriptorx(Devicex *dv_p, ExchangeDescriptor descriptor) {
   if (descriptor.isHostExchange()) {
     switch (descriptor.getDirection()) {

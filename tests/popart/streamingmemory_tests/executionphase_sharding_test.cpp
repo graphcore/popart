@@ -136,6 +136,7 @@ BOOST_AUTO_TEST_CASE(Test2x2S1ExecutionPhase) {
 
     // To make introspecting the IR easy
     runner.opts.enableOutlining               = false;
+    runner.opts.enableMergeExchange           = false;
     runner.opts.executionPhaseSettings.phases = N * 2;
     runner.opts.executionPhaseSettings.stages = 2;
     runner.opts.virtualGraphMode = VirtualGraphMode::ExecutionPhases;
@@ -273,6 +274,7 @@ BOOST_AUTO_TEST_CASE(Test1x0S1ExecutionPhase) {
 
     // To make introspecting the IR easy
     runner.opts.enableOutlining                   = false;
+    runner.opts.enableMergeExchange               = false;
     runner.opts.autoRecomputation                 = RecomputationType::Standard;
     runner.opts.explicitRecomputation             = true;
     runner.opts.batchSerializationSettings.factor = batchSerialize;
@@ -435,6 +437,7 @@ BOOST_AUTO_TEST_CASE(Test1x0S2ExecutionPhase) {
 
     // To make introspecting the IR easy
     runner.opts.enableOutlining                   = false;
+    runner.opts.enableMergeExchange               = false;
     runner.opts.batchSerializationSettings.factor = batchSerialize;
     runner.opts.batchSerializationSettings.concatOnVirtualGraphChange   = false;
     runner.opts.batchSerializationSettings.concatOnExecutionPhaseChange = false;
@@ -567,6 +570,7 @@ BOOST_AUTO_TEST_CASE(Test1x0S4ExecutionPhase) {
 
       // To make introspecting the IR easy
       runner.opts.enableOutlining                   = false;
+      runner.opts.enableMergeExchange               = false;
       runner.opts.batchSerializationSettings.factor = batchSerialize;
       runner.opts.batchSerializationSettings.concatOnVirtualGraphChange = false;
       runner.opts.batchSerializationSettings.concatOnExecutionPhaseChange =
@@ -757,6 +761,7 @@ BOOST_AUTO_TEST_CASE(Test2x0S2ExecutionPhase) {
 
     // To make introspecting the IR easy
     runner.opts.enableOutlining                   = false;
+    runner.opts.enableMergeExchange               = false;
     runner.opts.batchSerializationSettings.factor = batchSerialize;
     runner.opts.batchSerializationSettings.concatOnVirtualGraphChange   = false;
     runner.opts.batchSerializationSettings.concatOnExecutionPhaseChange = false;

@@ -1445,15 +1445,17 @@ bool Op::overwritesTensor(Tensor *t) const {
     return false;
   }
 
-  bool overwrite = false;
+  auto indices = input->indices(t);
 
-  for (auto index : input->indices(t)) {
+  bool overwrite = !indices.empty();
+
+  for (auto index : indices) {
     auto regions = modifies(index);
 
     if (regions.size() > 0 &&
         regions.front() ==
             view::Region::getFull(t->info.shape(), view::AccessType::Write)) {
-      overwrite = true;
+      overwrite &= true;
     }
 
     if ((regions.size() == 0) ||
@@ -1464,7 +1466,7 @@ bool Op::overwritesTensor(Tensor *t) const {
         }))) {
       // Consumer without modification, or modifications after reading,
       // we assume the tensor is read and therefore not purely overwritten
-      overwrite = false;
+      overwrite &= false;
     }
   }
   return overwrite;

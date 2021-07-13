@@ -61,6 +61,21 @@ void PopOpx::grow(std::vector<poplar::program::Sequence> &sequences) const {
   grow(*sequences.begin());
 }
 
+std::set<OpxGrowPartId> PopOpx::getInGrowPartIds(Tensor *inTensor) const {
+  // By default, growing in parts is disabled
+  return {};
+}
+
+OpxGrowPartId PopOpx::getOutGrowPartId(Tensor *outTensor) const {
+  // By default, growing in parts is disabled
+  return unusedGrowPartId;
+}
+
+void PopOpx::growPart(OpxGrowPartId id) const {
+  // By default, growing in parts is disabled
+  throw error("part growing not implemented for {}", op_p->opid);
+}
+
 InputCreatorType PopOpx::getInputCreatorType(InIndex) const {
   return InputCreatorType::Deadend;
 }
