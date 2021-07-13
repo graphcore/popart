@@ -27,8 +27,6 @@ function(add_popart_python_module module_name)
     set(OLD_PYBIND11_SYSTEM_FLAG SYSTEM)
   endif()
 
-  message("ARGN=${ARGN}")
-
   # Creates a module library.
   pybind11_add_module(${module_name}
       # Use -isystem for pybind includes
