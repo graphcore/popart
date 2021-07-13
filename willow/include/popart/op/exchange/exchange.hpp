@@ -121,7 +121,7 @@ private:
 class ExchangeBaseOp : public Op {
 public:
   ExchangeBaseOp(const OperatorIdentifier &_opid, const Op::Settings &settings)
-      : Op(_opid, settings){};
+      : Op(_opid, settings) {}
 
   virtual int getNumExchanges() const { return 1; }
 

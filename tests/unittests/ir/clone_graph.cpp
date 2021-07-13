@@ -25,8 +25,8 @@ void compareConstants(const Graph &originalSubGraph,
   auto clonedConsts = clonedSubGraph.getTensors().getOfType(TensorType::Const);
   for (auto orignalGraphTensorIt = originalConsts.begin(),
             clonedGraphTensorIt  = clonedConsts.begin();
-       orignalGraphTensorIt != originalConsts.end(),
-            clonedGraphTensorIt != clonedConsts.end();
+       orignalGraphTensorIt != originalConsts.end() ||
+       clonedGraphTensorIt != clonedConsts.end();
        ++orignalGraphTensorIt, ++clonedGraphTensorIt) {
     originalTensorInfo.push_back((*orignalGraphTensorIt)->info);
     originalTensorData.push_back((*orignalGraphTensorIt)->tensorData()->data());
@@ -52,8 +52,8 @@ void compareOpSchedules(const Graph &originalSubGraph,
 
   for (auto originalOpIt = originalScheduledOps.begin(),
             clonedOpIt   = clonedScheduledOps.begin();
-       originalOpIt != originalScheduledOps.end(),
-            clonedOpIt != clonedScheduledOps.end();
+       originalOpIt != originalScheduledOps.end() ||
+       clonedOpIt != clonedScheduledOps.end();
        ++originalOpIt, ++clonedOpIt) {
     originalOpNames.push_back((*originalOpIt)->name());
     clonedOpNames.push_back((*clonedOpIt)->name());

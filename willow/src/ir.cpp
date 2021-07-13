@@ -3908,7 +3908,7 @@ std::map<OpId, OpId> Ir::cloneGraph(GraphId originalGraphId,
 
   // Add input to the graph
   auto graphInputTensorId = originalGraph.getInputIds();
-  for (const auto tensorId : graphInputTensorId) {
+  for (const auto &tensorId : graphInputTensorId) {
     auto tensorInfo = originalGraph.getTensors().get(tensorId)->info;
     auto clonedTensorId =
         clonedGraph.addScope(originalGraph.removeScope(tensorId));
@@ -3930,7 +3930,7 @@ std::map<OpId, OpId> Ir::cloneGraph(GraphId originalGraphId,
 
   // Add output to the graph
   auto graphOutputTensorId = originalGraph.getOutputIds();
-  for (const auto tensorId : graphOutputTensorId) {
+  for (const auto &tensorId : graphOutputTensorId) {
     auto tensorInfo = originalGraph.getTensors().get(tensorId)->info;
     auto clonedTensorId =
         clonedGraph.addScope(originalGraph.removeScope(tensorId));

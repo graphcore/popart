@@ -25,7 +25,7 @@ public:
   void appendOutlineAttributes(OpSerialiserBase &) const override;
 
   std::vector<std::tuple<OperatorIdentifier, float>>
-  inplacePriorityDefault() const;
+  inplacePriorityDefault() const override;
   std::unique_ptr<Op> getInplaceVariant(const OperatorIdentifier &) const final;
   bool canBeReplacedByIdentity() const override;
 
