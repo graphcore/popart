@@ -212,7 +212,7 @@ bool MergeExchange::apply(Graph &graph) const {
 
       graphutils::traverse(
           inputs,
-          [&op, &exchangeOpIds, &dataDependency](Tensor *t) {
+          [&exchangeOpIds, &dataDependency](Tensor *t) {
             if (t->hasProducer()) {
               if (exchangeOpIds.find(t->getProducer()->id) !=
                   exchangeOpIds.end()) {

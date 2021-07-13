@@ -2035,7 +2035,7 @@ IrLowering::opTasks(Op *op, double priority, TaskId prevOpTaskId) {
 
   for (auto &partIdAndDependencies : opGrowPartIds) {
     if (partIdAndDependencies.first != unusedGrowPartId) {
-      auto opTaskPartGrowFunc = [partIdAndDependencies, op, opx, this]() {
+      auto opTaskPartGrowFunc = [partIdAndDependencies, opx]() {
         SequenceMap seqs;
 
         // Grow a part of the Opx
