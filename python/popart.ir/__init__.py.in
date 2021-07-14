@@ -13,5 +13,9 @@ if (actualVersion != requiredVersion):
     raise RuntimeError("This version of popart.ir is not compatible with Python %d.%d (it was built against Python %d.%d)" % \
         (actualVersion + requiredVersion))
 
-# Expose symbols from the module in popart.ir.
-from ir import *
+# pylint: disable=unused-import
+from popart.ir.dtype import *
+from popart.ir.ir import *
+from popart.ir.ops import *
+from popart.ir.tensor import *
+from popart.ir.graph import *
