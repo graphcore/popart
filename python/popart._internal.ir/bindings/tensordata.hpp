@@ -13,7 +13,7 @@ namespace ir {
 /**
  * Add bindings for `popart::TensorData` class to pybind module.
  **/
-void bindTensorData(py::module_ &m);
+void bindTensorData(py::module &m);
 
 } // namespace ir
 } // namespace _internal

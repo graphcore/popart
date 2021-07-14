@@ -17,7 +17,7 @@ namespace popart {
 namespace _internal {
 namespace ir {
 
-void bindTensorData(py::module_ &m) {
+void bindTensorData(py::module &m) {
   py::class_<TensorData>(m, "TensorData")
       .def(py::init([](const TensorInfo &info, py::array data) {
              data = makeContiguous(data);
