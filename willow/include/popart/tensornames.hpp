@@ -242,6 +242,9 @@ constexpr const char *reservedLossScalingRatioPrefix() {
   return "LossScalingRatio_";
 }
 
+// The global norm used by the transform ClipWeightGradientsByNorm.
+constexpr const char *reservedGlobalNormPrefix() { return "GlobalNorm___"; }
+
 } // namespace popart
 
 #endif

@@ -1638,4 +1638,27 @@ void Op::transferBaseProperties(Op *to) {
   to->settings.debugInfoId      = settings.debugInfoId;
 }
 
+Op *Op::getPrecedingOp(InIndex inIndex) {
+  return inTensor(inIndex)->getProducer();
+}
+
+Op *Op::getFollowingOp(OutIndex outIndex) {
+  auto t = outTensor(outIndex);
+  if (t->consumers.getTotal() == 1) {
+    return t->consumers.getOps().at(0);
+  } else if (t->consumers.getTotal() == 0) {
+    throw internal_error(
+        "There are no ops following {} out index {}", debugName(), outIndex);
+  } else {
+    throw internal_error("There are multiple ops following {} out index {}.",
+                         debugName(),
+                         outIndex);
+  }
+}
+
+std::vector<Op *> Op::getFollowingOps(OutIndex outIndex) {
+  auto t = outTensor(outIndex);
+  return t->consumers.getOps();
+}
+
 } // namespace popart

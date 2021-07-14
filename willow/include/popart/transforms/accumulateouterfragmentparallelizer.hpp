@@ -109,6 +109,10 @@ protected:
   void tryToParallelizeOpClusters(Graph &graph, OpClusters &opClusters) const;
   // Helper function to add constraints for group of ops.
   void addOpConstraints(Graph &graph, const Ops &ops) const;
+
+  // Get an OpCluster consisting of the gradient clipping ops for each gradient
+  // clipping group.
+  OpClusters getGradientClippingClusters(const Graph &graph) const;
 };
 
 } // namespace popart

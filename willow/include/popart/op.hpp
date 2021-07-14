@@ -697,6 +697,61 @@ public:
   // replace with this.
   void transferBaseProperties(Op *to);
 
+  // Get the producing op of the input tensor at index `inIndex`.
+  Op *getPrecedingOp(InIndex inIndex);
+
+  // Get the op that consumes the output tensor at `outIndex`.
+  // This will throw an error if there is more than one consumer of the output.
+  Op *getFollowingOp(OutIndex outIndex = 0);
+  // Get all ops that consume the output tensor at `outIndex`.
+  std::vector<Op *> getFollowingOps(OutIndex outIndex = 0);
+
+  // Get the producing op of the input tensor at index `inIndex`, and
+  // return it as type `T`. This will error if the producing op is not
+  // convertible to type `T`.
+  template <typename T> T *getPrecedingOp(InIndex inIndex) {
+    auto x = getPrecedingOp(inIndex);
+    if (T *result = dynamic_cast<T *>(x)) {
+      return result;
+    } else {
+      throw internal_error(
+          "Preceding op {} is not convertible to requested type.", debugName());
+    }
+  }
+
+  // Get the op that consumes the output tensor at `outIndex`.
+  // This will throw an error if there is more than one consumer of the output,
+  // or if the consumer if not convertible to type `T`.
+  template <typename T> T *getFollowingOp(OutIndex outIndex = 0) {
+    Op *x = getFollowingOp(outIndex);
+    if (T *result = dynamic_cast<T *>(x)) {
+      return result;
+    } else {
+      throw internal_error(
+          "Following op {} is not convertible to requested type.", debugName());
+    }
+  }
+
+  // Get all ops that consume the output tensor at `outIndex`.
+  // This will throw an error if not all of the output consumers are convertible
+  // to type `T`.
+  template <typename T>
+  std::vector<T *> getFollowingOps(OutIndex outIndex = 0) {
+    auto xs = getFollowingOps(outIndex);
+    std::vector<T *> result;
+    for (auto x : xs) {
+      if (T *t = dynamic_cast<T *>(x)) {
+        result.push_back(t);
+      } else {
+        throw internal_error("Not all ops following {} at out index {} are "
+                             "convertible to requested type.",
+                             debugName(),
+                             outIndex);
+      }
+    }
+    return result;
+  }
+
 protected:
   // Attempt to get the data of an input tensor. This method will throw an
   // exception if it could not access the data.

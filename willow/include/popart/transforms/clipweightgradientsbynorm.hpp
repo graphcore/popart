@@ -17,6 +17,12 @@ public:
   virtual std::string getName() const final {
     return "ClipWeightGradientsByNorm";
   }
+
+  // Find and return all of the ops added by this transform when applying
+  // gradient clipping. Each set of ops associated with clipping group will be
+  // returned in a separate vector.
+  static std::vector<std::vector<Op *>>
+  findGradientClippingGroups(const Graph &graph);
 };
 
 } // namespace popart

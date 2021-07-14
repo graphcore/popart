@@ -1,6 +1,8 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
 #include <vector>
 
+#include <boost/algorithm/string.hpp>
+
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/op/accumulate.hpp>
@@ -147,7 +149,9 @@ std::vector<Tensor *> copyToSameVGraph(const std::vector<Tensor *> ts,
 }
 
 // globalNorm = sqrt(sum(gradNorms))
-Tensor *createGlobalNorm(std::vector<Tensor *> gradNorms, Graph &graph) {
+Tensor *createGlobalNorm(int clipGroupIndex,
+                         std::vector<Tensor *> gradNorms,
+                         Graph &graph) {
   Op::Settings settings(graph, "", {});
   settings.executionContext = decideExecutionContext(graph);
 
@@ -168,8 +172,9 @@ Tensor *createGlobalNorm(std::vector<Tensor *> gradNorms, Graph &graph) {
   transferBaseProperties(gradNorms.at(0)->getProducer(), sqrt);
 
   sqrt->connectInTensor(SqrtOp::getInIndex(), sum->outId(SumOp::getOutIndex()));
-  sqrt->createAndConnectOutTensor(SqrtOp::getOutIndex(),
-                                  ir.createIntermediateTensorId("globalNorm"));
+  sqrt->createAndConnectOutTensor(
+      SqrtOp::getOutIndex(),
+      logging::format("{}{}", reservedGlobalNormPrefix(), clipGroupIndex));
   sqrt->setup();
 
   return sqrt->outTensor(SqrtOp::getOutIndex());
@@ -298,7 +303,8 @@ std::vector<Tensor *> getGrads(Graph &graph,
   return result;
 }
 
-void clipWeightGradientsByNorm(const std::vector<TensorId> &weightIds,
+void clipWeightGradientsByNorm(int clipGroupIndex,
+                               const std::vector<TensorId> &weightIds,
                                float maxNorm,
                                Graph &graph) {
   auto grads = getGrads(graph, weightIds);
@@ -315,10 +321,61 @@ void clipWeightGradientsByNorm(const std::vector<TensorId> &weightIds,
     gradNorms = copyToSameVGraph(gradNorms, 0, graph);
   }
 
-  auto globalNorm = createGlobalNorm(gradNorms, graph);
+  auto globalNorm = createGlobalNorm(clipGroupIndex, gradNorms, graph);
   auto clipNorm   = createClipNorm(maxNorm, graph);
   auto clipFactor = createClipFactor(globalNorm, clipNorm, graph);
   addClipByNorms(grads, clipFactor, graph);
+}
+
+// Find all the gradient clipping ops linked to the `globalNormProducer`.
+std::vector<Op *> findGradientClippingOps(Op *globalNormProducer) {
+  if (!globalNormProducer->isConvertibleTo<SqrtOp>()) {
+    throw internal_error("Global norm op should be a SqrtOp.");
+  }
+  auto sum = globalNormProducer->getPrecedingOp<SumOp>(SqrtOp::getInIndex());
+
+  std::vector<Op *> result{globalNormProducer, sum};
+
+  // The sums inputs are the ReduceSumSquareOps.
+  // These might go through an IpuCopyOp
+  for (auto &index_tensor : sum->input->tensorMap()) {
+    auto index = index_tensor.first;
+    auto x     = sum->getPrecedingOp(index);
+    if (x->isConvertibleTo<IpuCopyOp>()) {
+      result.push_back(x);
+      x = x->getPrecedingOp(0);
+    }
+
+    if (!x->isConvertibleTo<ReduceSumSquareOp>()) {
+      throw error("Unexpected op {}. Expected ReduceSumSquareOp here.",
+                  x->debugName());
+    }
+    result.push_back(x);
+  }
+
+  // Add the clip factor ops
+  auto maxOp = globalNormProducer->getFollowingOp<MaxOp>();
+  result.push_back(maxOp);
+  auto divOp = maxOp->getFollowingOp<DivOp>();
+  result.push_back(divOp);
+
+  // Finally add the MulOp that does the scaling
+  for (auto x : divOp->getFollowingOps()) {
+    if (x->isConvertibleTo<IpuCopyOp>()) {
+      result.push_back(x);
+      x = x->getFollowingOp();
+    }
+
+    if (x->isConvertibleTo<MulOp>() || x->isConvertibleTo<MulLhsInplaceOp>() ||
+        x->isConvertibleTo<MulRhsInplaceOp>()) {
+      result.push_back(x);
+    } else {
+      throw error("Expected a MulOp following the clip factor, found op {}",
+                  x->debugName());
+    }
+  }
+
+  return result;
 }
 
 } // namespace
@@ -340,11 +397,41 @@ bool ClipWeightGradientsByNorm::apply(Graph &graph) const {
         "can not be set to AccumulateOuterFragmentSchedule::Serial");
   }
 
-  for (auto &clipGroup : optimizer.getClipNormSettings()) {
-    clipWeightGradientsByNorm(clipGroup.weightIds, clipGroup.maxNorm, graph);
+  auto &clipNormSettings = optimizer.getClipNormSettings();
+  for (int clipNormIndex = 0; clipNormIndex < clipNormSettings.size();
+       clipNormIndex++) {
+    auto &clipGroup = clipNormSettings.at(clipNormIndex);
+    clipWeightGradientsByNorm(
+        clipNormIndex, clipGroup.weightIds, clipGroup.maxNorm, graph);
   }
 
   return true;
+}
+
+std::vector<std::vector<Op *>>
+ClipWeightGradientsByNorm::findGradientClippingGroups(const Graph &graph) {
+  using boost::algorithm::starts_with;
+
+  // Find all the global norm tensors and get their producers.
+  std::vector<Op *> globalNorms;
+  for (auto tid : graph.getTensors().getIds(TensorType::ActGrad)) {
+    if (starts_with(tid, reservedGlobalNormPrefix())) {
+      auto t = graph.getTensors().get(tid);
+      globalNorms.push_back(t->getProducer());
+    }
+  }
+
+  // If no global norms were found, there are no gradient clipping ops in the
+  // graph.
+  if (globalNorms.size() == 0) {
+    return {};
+  }
+
+  std::vector<std::vector<Op *>> result;
+  for (auto x : globalNorms) {
+    result.push_back(findGradientClippingOps(x));
+  }
+  return result;
 }
 
 namespace {

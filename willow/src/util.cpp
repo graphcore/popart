@@ -101,6 +101,14 @@ void OpSearchHelper::pushOutputConsumers(Op *op) {
   }
 }
 
+void OpSearchHelper::pushInputProducers(Op *op) {
+  for (auto input : op->input->tensors()) {
+    if (input->hasProducer()) {
+      push(input->getProducer());
+    }
+  }
+}
+
 int roundToInt(float d) { return static_cast<int>(std::roundf(d)); }
 
 unsigned roundToUnsigned(float d) {

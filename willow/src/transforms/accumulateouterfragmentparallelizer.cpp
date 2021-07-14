@@ -3,10 +3,12 @@
 #include <popart/op.hpp>
 #include <popart/op/exchange/multiexchange.hpp>
 #include <popart/op/exchange/remote.hpp>
+#include <popart/op/reducesumsquare.hpp>
 #include <popart/tensorindex.hpp>
 #include <popart/tensornames.hpp>
 #include <popart/topocons.hpp>
 #include <popart/transforms/accumulateouterfragmentparallelizer.hpp>
+#include <popart/transforms/clipweightgradientsbynorm.hpp>
 
 #include <algorithm>
 
@@ -39,6 +41,7 @@ bool isOptimizerLikeTensor(Tensor *t) {
   return t->idIncludesPrefix(
       {reservedPreviousLossScalingPrefix(), reservedLossScalingRatioPrefix()});
 }
+
 } // namespace
 
 AccumulateOuterFragmentParallelizer::OpCluster::OpCluster(const Graph *graph,
@@ -369,24 +372,81 @@ vector<vector<Op *>> AccumulateOuterFragmentParallelizer::getBinConstraints(
   return binConstraints;
 }
 
+AccumulateOuterFragmentParallelizer::OpClusters
+AccumulateOuterFragmentParallelizer::getGradientClippingClusters(
+    const Graph &graph) const {
+  // Gradient clipping ops create a link between all the ops in a gradient
+  // clipping group, which was resulting in this function creating only a single
+  // cluster per gradient clipping group. Here we gather all the gradient
+  // clipping ops, and create a OpCluster for each gradient clipping group. Then
+  // when we create the rest of the clusters we can exclude the gradient
+  // clipping ops.
+  auto gradClipGroups =
+      ClipWeightGradientsByNorm::findGradientClippingGroups(graph);
+  // Create a cluster for each gradient clipping group
+  OpClusters gradClipClusters;
+  for (auto group : gradClipGroups) {
+    // Use the first op of the group to create the initial op cluster.
+    OpCluster groupCluster({&graph, *group.begin()});
+    group.erase(group.begin());
+    // Add all the other ops in the group into the initial op cluster.
+    for (auto op : group) {
+      groupCluster.absorb({&graph, op});
+
+      // There may be a one or two ops before the ReduceSumSquareOps which are
+      // also AccumulateOuterFragment ops. It makes sense to absorb these into
+      // the gradient clipping op clusters.
+      if (op->isConvertibleTo<ReduceSumSquareOp>()) {
+        OpSearchHelper toCheck;
+        toCheck.pushInputProducers(op);
+        while (!toCheck.empty()) {
+          auto x = toCheck.pop();
+          if (x->settings.executionContext ==
+              ExecutionContext::AccumulateOuterFragment) {
+            groupCluster.absorb({&graph, x});
+            toCheck.pushInputProducers(x);
+          }
+        }
+      }
+    }
+    gradClipClusters.push_back(groupCluster);
+  }
+
+  return gradClipClusters;
+}
+
 void AccumulateOuterFragmentParallelizer::populateOpClusters(
     const Graph &graph,
     OpClusters &clusters) const {
-
   // Start from scratch.
   OpClusters clustersToGroup;
+
+  auto gradClipClusters = getGradientClippingClusters(graph);
+  // Gather all of the gradient clipping cluster ops into a set to make it
+  // easier to exclude them.
+  std::set<Op *> gradClipOps;
+  for (auto &x : gradClipClusters) {
+    gradClipOps.insert(x.ops.begin(), x.ops.end());
+  }
 
   // Gather all relevant ops in single-op clusters first.
   for (const auto &x : graph.getOps()) {
     auto op = x.second.get();
-    if (op->settings.executionContext ==
-        ExecutionContext::AccumulateOuterFragment) {
-      clustersToGroup.push_back(OpCluster(&graph, op));
+    if (gradClipOps.count(op) == 0) {
+      if (op->settings.executionContext ==
+          ExecutionContext::AccumulateOuterFragment) {
+        clustersToGroup.push_back(OpCluster(&graph, op));
+      }
     }
   }
 
   // Start with nothing.
   clusters.clear();
+
+  // Add the gradient clipping clusters at the start of the clusters as gradient
+  // clipping ops need to be scheduled first.
+  clusters.insert(
+      clusters.begin(), gradClipClusters.begin(), gradClipClusters.end());
 
   while (!clustersToGroup.empty()) {
     // Pick a cluster and find all overlapping ones.

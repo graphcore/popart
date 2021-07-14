@@ -194,6 +194,8 @@ public:
   void pushConsumers(Tensor *);
   // Push all consumers of all the outputs to the stack.
   void pushOutputConsumers(Op *);
+  // Push the producers of all the inputs to the stack.
+  void pushInputProducers(Op *);
 };
 
 namespace util {
