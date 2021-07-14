@@ -44,8 +44,6 @@ from popart.session import InferenceSession, TrainingSession, OutOfMemoryExcepti
 from popart.tensorinfo import TensorInfo
 
 
-
-
 # pybind11 has some odd behaviour when binding
 # a member type `std::map<K, V>`.
 # Given the following binding where bar is of

@@ -15,7 +15,7 @@ namespace ir {
  * `popart::VariableUpdateType`, `popart::TensorTypeInfo` classes to pybind
  * module.
  **/
-void bindTensor(py::module &m);
+void bindTensor(py::module_ &m);
 
 } // namespace ir
 } // namespace _internal
