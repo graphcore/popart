@@ -56,11 +56,14 @@ void Session::ctorCommonLogic() {
                          popart::core::packageHash());
 }
 
-Session::Session() : ir(std::make_unique<Ir>()) { ctorCommonLogic(); }
+Session::Session(std::string _name) : ir(std::make_unique<Ir>()), name(_name) {
+  ctorCommonLogic();
+}
 
 Session::Session(std::unique_ptr<Ir> ir_,
-                 std::shared_ptr<DeviceInfo> deviceInfo)
-    : ir(std::move(ir_)) {
+                 std::shared_ptr<DeviceInfo> deviceInfo,
+                 std::string _name)
+    : ir(std::move(ir_)), name(_name) {
   ctorCommonLogic();
   setDevice(std::move(deviceInfo));
   initProgressLogger(ir->getSessionOptions());
@@ -629,7 +632,8 @@ void Session::configureFromOnnx(const std::string &modelProtoOrFilename,
                optimizerIn,
                *deviceInfo,
                userOptions,
-               patterns},
+               patterns,
+               name},
               cacheEntries);
   setDevice(deviceInfo);
 }
@@ -638,7 +642,8 @@ InferenceSession::~InferenceSession() = default;
 
 std::unique_ptr<InferenceSession>
 InferenceSession::createFromIr(std::unique_ptr<Ir> ir,
-                               std::shared_ptr<DeviceInfo> deviceInfo) {
+                               std::shared_ptr<DeviceInfo> deviceInfo,
+                               const std::string name) {
   POPART_TRACEPOINT();
   logging::session::trace("InferenceSession::createFromIr");
 
@@ -651,7 +656,7 @@ InferenceSession::createFromIr(std::unique_ptr<Ir> ir,
   }
 
   auto session = std::unique_ptr<InferenceSession>(
-      new InferenceSession(std::move(ir), std::move(deviceInfo)));
+      new InferenceSession(std::move(ir), std::move(deviceInfo), name));
 
   return session;
 }
@@ -662,7 +667,8 @@ InferenceSession::createFromOnnxModel(const std::string &model,
                                       std::shared_ptr<DeviceInfo> deviceInfo,
                                       const InputShapeInfo &inputShapeInfo,
                                       const SessionOptions &userOptions,
-                                      const Patterns &patterns) {
+                                      const Patterns &patterns,
+                                      const std::string name) {
   POPART_TRACEPOINT();
   logging::session::trace("InferenceSession::createFromOnnx");
 
@@ -674,7 +680,7 @@ InferenceSession::createFromOnnxModel(const std::string &model,
   const TensorId nullLoss        = {};
   const Optimizer *nullOptimizer = nullptr;
 
-  auto session = std::unique_ptr<InferenceSession>(new InferenceSession());
+  auto session = std::unique_ptr<InferenceSession>(new InferenceSession(name));
   session->configureFromOnnx(model,
                              dataFlow,
                              nullLoss,
@@ -691,7 +697,8 @@ TrainingSession::~TrainingSession() = default;
 
 std::unique_ptr<TrainingSession>
 TrainingSession::createFromIr(std::unique_ptr<Ir> ir,
-                              std::shared_ptr<DeviceInfo> deviceInfo) {
+                              std::shared_ptr<DeviceInfo> deviceInfo,
+                              const std::string name) {
   POPART_TRACEPOINT();
   logging::session::trace("TrainingSession::createFromIr");
 
@@ -704,7 +711,7 @@ TrainingSession::createFromIr(std::unique_ptr<Ir> ir,
   }
 
   auto session = std::unique_ptr<TrainingSession>(
-      new TrainingSession(std::move(ir), std::move(deviceInfo)));
+      new TrainingSession(std::move(ir), std::move(deviceInfo), name));
 
   return session;
 }
@@ -717,7 +724,8 @@ TrainingSession::createFromOnnxModel(const std::string &model,
                                      std::shared_ptr<DeviceInfo> deviceInfo,
                                      const InputShapeInfo &inputShapeInfo,
                                      const SessionOptions &userOptions,
-                                     const Patterns &patterns) {
+                                     const Patterns &patterns,
+                                     const std::string name) {
   POPART_TRACEPOINT();
   logging::session::trace("TrainingSession::createFromOnnx");
 
@@ -726,7 +734,7 @@ TrainingSession::createFromOnnxModel(const std::string &model,
         "Must pass a valid deviceInfo to TrainingSession::createFromOnnxModel");
   }
 
-  auto session = std::unique_ptr<TrainingSession>(new TrainingSession());
+  auto session = std::unique_ptr<TrainingSession>(new TrainingSession(name));
   session->configureFromOnnx(model,
                              dataFlow,
                              loss,

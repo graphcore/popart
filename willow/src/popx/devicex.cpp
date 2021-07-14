@@ -439,15 +439,6 @@ Devicex::Devicex(Executablex &exe, std::shared_ptr<DeviceInfo> deviceInfo_)
                                  "0");
   }
 
-  if (ir().getSessionOptions().engineOptions.find("autoReport.directory") ==
-      ir().getSessionOptions().engineOptions.end()) {
-    const std::string directory{
-        (ir().getExecutionMode() == Ir::ExecutionMode::Training) ? "training"
-                                                                 : "inference"};
-    logging::devicex::info(
-        "Setting engine option {} = {}", "autoReport.directory", directory);
-    lowering().engineOptions.set("autoReport.directory", directory);
-  }
 
   for (auto it : ir().getSessionOptions().reportOptions) {
     logging::devicex::info(

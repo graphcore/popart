@@ -310,6 +310,9 @@ private:
 
   bool doRearrangeOnHost(Tensor *tensor) const;
 
+  // Return the name that will be passed when compiling the executable
+  std::string getPoplarGraphDebugName();
+
   // Determine stream properties.
   poplar::ReplicatedStreamMode getReplicatedStreamMode(Tensor *tensor) const;
   unsigned getBufferingDepth(Tensor *tensor) const;

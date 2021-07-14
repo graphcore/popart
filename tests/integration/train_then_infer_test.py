@@ -3,6 +3,8 @@ import popart
 import pytest
 import numpy as np
 import test_util as tu
+import tempfile
+import os
 
 
 # Test that you can train a model and then use the weight in a inference run
@@ -39,6 +41,9 @@ def test_train_then_infer_via_file():
 
     opts = popart.SessionOptions()
     opts.constantWeights = False  # Allow the weights to be updated
+    tempDir = tempfile.TemporaryDirectory()
+    opts.engineOptions["autoReport.directory"] = tempDir.name
+    opts.engineOptions["autoReport.all"] = "true"
 
     # ----------------------------------------------
 
@@ -74,7 +79,8 @@ def test_train_then_infer_via_file():
                                               loss=l1,
                                               optimizer=popart.ConstSGD(0.01),
                                               userOptions=opts,
-                                              deviceInfo=device)
+                                              deviceInfo=device,
+                                              name="ivor")
 
     # Compile the training graph
     training_session.prepareDevice()
@@ -105,6 +111,10 @@ def test_train_then_infer_via_file():
     inference_inputs = {input: input_data}
 
     inference_session.run(popart.PyStepIO(inference_inputs, inference_anchors))
+
+    # check that the profile.pop as been created in the subdirectories
+    assert (os.path.isfile(tempDir.name + "/inference/profile.pop"), True)
+    assert (os.path.isfile(tempDir.name + "/ivor/profile.pop"), True)
 
 
 @tu.requires_ipu_model

@@ -3336,6 +3336,11 @@ poplar::program::Sequence &IrLowering::getAnchorReturnFragment(Tensor *tensor) {
   }
 }
 
+std::string IrLowering::getPoplarGraphDebugName() {
+  // Will return the user provided session name.
+  return ir().getSessionName();
+}
+
 poplar::Executable IrLowering::getExecutable() {
   if (!prepareGraphHasBeenCalled_) {
     throw internal_error("IrLowering::prepareGraph() must be called before"
@@ -3358,7 +3363,8 @@ poplar::Executable IrLowering::getExecutable() {
       auto executable = poplar::compileGraph(graph().getPoplarGraph(),
                                              progs.progs(),
                                              engineOptions,
-                                             std::ref(progressLogger));
+                                             std::ref(progressLogger),
+                                             getPoplarGraphDebugName());
 
       logging::devicex::info("Graph compiled");
       return executable;

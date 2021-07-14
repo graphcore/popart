@@ -42,7 +42,8 @@ public:
            const Optimizer *optimizer,
            DeviceInfo &deviceInfo,
            const SessionOptions &userOptions,
-           const Patterns &patterns);
+           const Patterns &patterns,
+           const std::string sessionName = "");
 
   const ONNX_NAMESPACE::ModelProto &modelProto;
   const InputShapeInfo &inputShapeInfo;
@@ -52,6 +53,7 @@ public:
   DeviceInfo &deviceInfo;
   const SessionOptions &userOptions;
   const Patterns &patterns;
+  const std::string sessionName;
 };
 
 class RemoteBufferInfo {
@@ -351,6 +353,9 @@ public:
   const SessionOptions &getSessionOptions() const { return userOptions; }
   SessionOptions &getSessionOptions() { return userOptions; }
 
+  void setSessionName(const std::string name) { sessionName = name; }
+  const std::string getSessionName() const { return sessionName; }
+
   std::vector<TensorId> getTensorIds(TensorType) const;
   Tensor *getTensor(const TensorId &) const;
   bool containsTensor(const TensorId &) const;
@@ -605,6 +610,7 @@ private:
   std::unique_ptr<Optimizer> optimizer;
   DeviceInfo *deviceInfo = nullptr;
   SessionOptions userOptions;
+  std::string sessionName;
   InputShapeInfo inputShapeInfo;
 
   // The set of patterns to apply after constructing

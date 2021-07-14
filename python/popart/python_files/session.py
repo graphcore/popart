@@ -119,6 +119,8 @@ class InferenceSession(_InferenceSessionCore):
             not include the custom pattern. Default ``None``.
         userOptions: Session options to apply.
             Default: ``popart.SessionOptions()``.
+        name: Session name used in debug to identify this session
+            Default: ``inference``
     """
 
     def __init__(
@@ -128,15 +130,15 @@ class InferenceSession(_InferenceSessionCore):
             deviceInfo: popart.DeviceInfo,
             inputShapeInfo: popart.InputShapeInfo = popart.InputShapeInfo(),
             patterns: popart.Patterns = None,
-            userOptions: popart.SessionOptions = popart.SessionOptions()
-    ) -> None:
+            userOptions: popart.SessionOptions = popart.SessionOptions(),
+            name: str = "inference") -> None:
 
         if patterns == None:
             patterns = popart.Patterns()
 
         super(InferenceSession,
               self).__init__(fnModel, dataFlow, deviceInfo, inputShapeInfo,
-                             userOptions, patterns)
+                             userOptions, patterns, name)
 
         self.dataFlow = dataFlow
         self.replicationFactor = userOptions.replicatedGraphCount if \
@@ -222,6 +224,8 @@ class TrainingSession(_TrainingSessionCore):
             patterns: Optimization patterns to apply. Default: ``None``.
             userOptions: Session options to apply.
                 Default: ``popart.SessionOptions()``.
+            name: Session name used in debug to identify this session
+                Default: ``training``
     """
 
     def __init__(
@@ -233,15 +237,15 @@ class TrainingSession(_TrainingSessionCore):
             deviceInfo: popart.DeviceInfo,
             inputShapeInfo: popart.InputShapeInfo = popart.InputShapeInfo(),
             patterns: popart.Patterns = None,
-            userOptions: popart.SessionOptions = popart.SessionOptions()
-    ) -> None:
+            userOptions: popart.SessionOptions = popart.SessionOptions(),
+            name: str = "training") -> None:
 
         if patterns is None:
             patterns = popart.Patterns()
 
         super(TrainingSession,
               self).__init__(fnModel, dataFlow, loss, optimizer, deviceInfo,
-                             inputShapeInfo, userOptions, patterns)
+                             inputShapeInfo, userOptions, patterns, name)
 
         self.dataFlow = dataFlow
         self.replicationFactor = userOptions.replicatedGraphCount if \

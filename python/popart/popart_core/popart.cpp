@@ -1751,6 +1751,7 @@ PYBIND11_MODULE(popart_core, m) {
             py::arg("inputShapeInfo"),
             py::arg("userOptions"),
             py::arg("patterns"),
+            py::arg("name") = "inference",
             DOC(popart, InferenceSession, createFromOnnxModel));
     cls.def(
         "compileAndExport",
@@ -1881,6 +1882,7 @@ PYBIND11_MODULE(popart_core, m) {
             py::arg("inputShapeInfo"),
             py::arg("userOptions"),
             py::arg("patterns"),
+            py::arg("name") = "training",
             DOC(popart, TrainingSession, createFromOnnxModel));
     cls.def(
         "compileAndExport",

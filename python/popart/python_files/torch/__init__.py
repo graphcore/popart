@@ -38,7 +38,8 @@ class InferenceSession(_InferenceSessionCore):
                  batches_per_step=1,
                  inputShapeInfo=popart.InputShapeInfo(),
                  patterns=popart.Patterns(),
-                 userOptions=popart.SessionOptions()):
+                 userOptions=popart.SessionOptions(),
+                 name="inference"):
 
         self.torchModel = torchModel
         self.batch_size = batch_size
@@ -47,6 +48,7 @@ class InferenceSession(_InferenceSessionCore):
         self.batches_per_step = batches_per_step
         self.inputShapeInfo = inputShapeInfo
         self.anchor_returns = {}
+        self.name = name
 
         self.inputs = tuple()
         self.targets = tuple()
@@ -101,9 +103,9 @@ class InferenceSession(_InferenceSessionCore):
 
         self.dataFlow = self.createdataFlow()
 
-        super(InferenceSession,
-              self).__init__(proto, self.dataFlow, self.deviceInfo, losses,
-                             self.inputShapeInfo, userOptions, patterns)
+        super(InferenceSession, self).__init__(
+            proto, self.dataFlow, self.deviceInfo, losses, self.inputShapeInfo,
+            userOptions, patterns, self.name)
 
         self.replicationFactor = userOptions.replicatedGraphCount if \
             userOptions.enableReplicatedGraphs else 1
@@ -174,7 +176,8 @@ class TrainingSession(_TrainingSessionCore):
                  batches_per_step=1,
                  inputShapeInfo=popart.InputShapeInfo(),
                  patterns=popart.Patterns(),
-                 userOptions=popart.SessionOptions()):
+                 userOptions=popart.SessionOptions(),
+                 name="training"):
 
         self.torchModel = torchModel
         self.batch_size = batch_size
@@ -184,6 +187,7 @@ class TrainingSession(_TrainingSessionCore):
         self.batches_per_step = batches_per_step
         self.inputShapeInfo = inputShapeInfo
         self.anchor_returns = {}
+        self.name = name
 
         self.inputs = tuple()
         self.targets = tuple()
@@ -241,7 +245,8 @@ class TrainingSession(_TrainingSessionCore):
         super(TrainingSession,
               self).__init__(proto, self.dataFlow, losses,
                              self.createOptimizer(), self.deviceInfo,
-                             self.inputShapeInfo, userOptions, patterns)
+                             self.inputShapeInfo, userOptions, patterns,
+                             self.name)
 
         self.replicationFactor = userOptions.replicatedGraphCount if \
             userOptions.enableReplicatedGraphs else 1

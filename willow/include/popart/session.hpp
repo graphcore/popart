@@ -23,6 +23,9 @@ class IrLowering;
 class Executablex;
 } // namespace popx
 
+const std::string DefaultInferenceSessionName = "inference";
+const std::string DefaultTrainingSessionName  = "training";
+
 /**
  * Session is a runtime instance that provides an interface for executing ONNX
  * graphs on IPU hardware.
@@ -32,8 +35,10 @@ private:
   void ctorCommonLogic();
 
 protected:
-  Session();
-  Session(std::unique_ptr<Ir> ir, std::shared_ptr<DeviceInfo> deviceInfo);
+  Session(std::string name = "");
+  Session(std::unique_ptr<Ir> ir,
+          std::shared_ptr<DeviceInfo> deviceInfo,
+          std::string name = "");
 
   void configureFromOnnx(const std::string &modelProtoOrFilename,
                          const DataFlow &df,
@@ -368,6 +373,11 @@ protected:
    * Map of hashes / filenames of cached executables.
    */
   HashesMap cacheEntries;
+
+  /**
+   *  The name of the session
+   */
+  std::string name;
 };
 
 class InferenceSession : public Session {
@@ -378,7 +388,9 @@ public:
   ~InferenceSession() override;
 
   static std::unique_ptr<InferenceSession>
-  createFromIr(std::unique_ptr<Ir> ir, std::shared_ptr<DeviceInfo> deviceInfo);
+  createFromIr(std::unique_ptr<Ir> ir,
+               std::shared_ptr<DeviceInfo> deviceInfo,
+               const std::string name = DefaultInferenceSessionName);
 
   /** Create a runtime class for executing an ONNX graph on a set of IPU
    *  hardware for inference.
@@ -398,7 +410,8 @@ public:
                       std::shared_ptr<DeviceInfo> deviceInfo,
                       const InputShapeInfo &inputShapeInfo = InputShapeInfo(),
                       const SessionOptions &userOptions    = SessionOptions(),
-                      const Patterns &patterns             = Patterns());
+                      const Patterns &patterns             = Patterns(),
+                      const std::string name = DefaultInferenceSessionName);
 };
 
 class TrainingSession : public Session {
@@ -409,7 +422,9 @@ public:
   ~TrainingSession() override;
 
   static std::unique_ptr<TrainingSession>
-  createFromIr(std::unique_ptr<Ir> ir, std::shared_ptr<DeviceInfo> deviceInfo);
+  createFromIr(std::unique_ptr<Ir> ir,
+               std::shared_ptr<DeviceInfo> deviceInfo,
+               const std::string name = DefaultTrainingSessionName);
 
   /** Create a runtime class for executing an ONNX graph on a set of IPU
    *  hardware for training.
@@ -433,7 +448,8 @@ public:
                       std::shared_ptr<DeviceInfo> deviceInfo,
                       const InputShapeInfo &inputShapeInfo = InputShapeInfo(),
                       const SessionOptions &userOptions    = SessionOptions(),
-                      const Patterns &patterns             = Patterns());
+                      const Patterns &patterns             = Patterns(),
+                      const std::string name = DefaultTrainingSessionName);
 
   /**
    * Update the optimizer and the associated hyperparameters but not the

@@ -292,10 +292,12 @@ IrBundle::IrBundle(const ONNX_NAMESPACE::ModelProto &modelProto_,
                    const Optimizer *optimizer_,
                    DeviceInfo &deviceInfo_,
                    const SessionOptions &userOptions_,
-                   const Patterns &patterns_)
+                   const Patterns &patterns_,
+                   const std::string sessionName_)
     : modelProto(modelProto_), inputShapeInfo(inputShapeInfo_),
       dataFlow(dataFlow_), loss(loss_), optimizer(optimizer_),
-      deviceInfo(deviceInfo_), userOptions(userOptions_), patterns(patterns_) {}
+      deviceInfo(deviceInfo_), userOptions(userOptions_), patterns(patterns_),
+      sessionName(sessionName_) {}
 
 namespace {
 
@@ -1018,6 +1020,7 @@ void Ir::prepareImpl(const IrBundle &gb, const HashesMap &cacheEntries) {
   setUserOptions(gb.userOptions);
   setPatterns(gb.patterns);
   setOnnxModel(gb.modelProto);
+  setSessionName(gb.sessionName);
 
   if (graphs.size() == 1) {
     if (isPrepared()) {
