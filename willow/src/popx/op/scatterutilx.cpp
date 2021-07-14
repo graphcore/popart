@@ -176,8 +176,7 @@ snap::Tensor growScatterUpdateGrad(poplar::program::Sequence &prog,
   // Concat the indices on the degenerate dimension
   auto indicesGrid =
       concat(indicesMapped, indices.getPoplarTensor().rank(), graph);
-  indicesGrid = snap::Tensor{
-      indicesGrid.getPoplarTensor().reinterpret(poplar::UNSIGNED_INT), graph};
+  indicesGrid = indicesGrid.reinterpret(poplar::UNSIGNED_INT);
 
   const auto indexVectorDim = indicesGrid.getPoplarTensor().rank() - 1;
   std::vector<std::size_t> sliceSizes(indicesMapped.size(), 1);

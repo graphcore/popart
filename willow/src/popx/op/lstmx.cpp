@@ -122,10 +122,8 @@ void LSTMOpx::reshapeAndInsert(OutIndex index,
 
 snap::Tensor LSTMOpx::getSeqLens() const {
   if (hasInput(LSTMOp::getSequenceLensInIndex())) {
-    return snap::Tensor{getInTensor(LSTMOp::getSequenceLensInIndex())
-                            .getPoplarTensor()
-                            .reinterpret(poplar::UNSIGNED_INT),
-                        graph()};
+    return getInTensor(LSTMOp::getSequenceLensInIndex())
+        .reinterpret(poplar::UNSIGNED_INT);
   } else {
     return snap::Tensor(poplar::Tensor{}, graph());
   }
@@ -521,10 +519,8 @@ snap::Tensor LSTMGradOpx::getCellStateGrad() const {
 
 snap::Tensor LSTMGradOpx::getSeqLens() const {
   if (hasInput(LSTMGradOp::getSequenceLensInIndex())) {
-    return snap::Tensor{getInTensor(LSTMGradOp::getSequenceLensInIndex())
-                            .getPoplarTensor()
-                            .reinterpret(poplar::UNSIGNED_INT),
-                        graph()};
+    return getInTensor(LSTMGradOp::getSequenceLensInIndex())
+        .reinterpret(poplar::UNSIGNED_INT);
   } else {
     return snap::Tensor();
   }

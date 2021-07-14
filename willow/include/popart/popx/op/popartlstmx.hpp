@@ -117,10 +117,8 @@ protected:
       logging::opx::debug("Checking seq len for {} index {}",
                           lstmOp.debugName(),
                           LSTMOP::getSequenceLensInIndex());
-      return snap::Tensor{getInTensor(LSTMOP::getSequenceLensInIndex())
-                              .getPoplarTensor()
-                              .reinterpret(poplar::UNSIGNED_INT),
-                          graph()};
+      return getInTensor(LSTMOP::getSequenceLensInIndex())
+          .reinterpret(poplar::UNSIGNED_INT);
     } else {
       return snap::Tensor{};
     }
