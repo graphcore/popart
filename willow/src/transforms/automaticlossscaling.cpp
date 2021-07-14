@@ -291,7 +291,19 @@ bool AutomaticLossScale::apply(Graph &graph) const {
     statsSumOp->inheritPlacementAttributes(false, aliasModel);
     statsSumOp->setup();
 
-    finalStatisticsTensors = {statsSumOp->outTensor(SumOp::getOutIndex())};
+    // Cast the summed gradients to prevent uint32 overflow after gradient
+    // accumulation and replicated all reduce.
+    auto statsCastOp =
+        graph.createOp<CastOp>(Onnx::Operators::Cast_9,
+                               DataType::FLOAT,
+                               Op::Settings(graph, "HistogramCast"));
+    statsCastOp->connectInTensor(CastOp::getInIndex(), "summedHistograms");
+    statsCastOp->createAndConnectOutTensor(CastOp::getOutIndex(),
+                                           "summedCastedHistograms");
+    statsCastOp->inheritPlacementAttributes(false, aliasModel);
+    statsCastOp->setup();
+
+    finalStatisticsTensors = {statsCastOp->outTensor(CastOp::getOutIndex())};
   }
 
   // Case 2 or 3, Accumulate the summed gradient statistics in the inner loop,

@@ -87,6 +87,10 @@
 //                                                    |
 //                                               stats_summed
 //                                                    |
+//                                                  CastOp
+//                                                    |
+//                                             stats_summed_fp32
+//                                                    |
 //                                           ReplicatedAllReduceOp
 //                                                    |
 //                                            stats_summed_reduced
@@ -106,8 +110,12 @@
 //                              \
 // .. HistogramOp -- t1_stats -- SumOp
 //                                |
-//                           stats_summed   stats_to_accl
-//                                |          /    |
+//                           stats_summed
+//                                |
+//                              CastOp
+//                                |
+//                         stats_summed_fp32   stats_to_accl
+//                                |           /    |
 //                             AddRhsInplaceOp     - AccumulatorZeroOp (a.o.f)
 //                                    |                         |
 //                               stats_accld             stats_to_accl_reset
@@ -130,8 +138,12 @@
 //                              \
 // .. HistogramOp -- t1_stats -- SumOp
 //                                |
-//                           stats_summed   stats_to_accl
-//                                |          /    |
+//                           stats_summed
+//                                |
+//                              CastOp
+//                                |
+//                         stats_summed_fp32   stats_to_accl
+//                                |           /    |
 //                             AddRhsInplaceOp     - AccumulatorZeroOp (a.o.f)
 //                                    |                         |
 //                               stats_accld             stats_to_accl_reset
