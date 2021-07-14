@@ -1,5 +1,6 @@
 #include <popart/alias/aliasmodel.hpp>
 #include <popart/graph.hpp>
+#include <popart/graphutils.hpp>
 #include <popart/ir.hpp>
 #include <popart/logging.hpp>
 #include <popart/op.hpp>
@@ -14,6 +15,7 @@
 #include <popart/op/varupdate.hpp>
 #include <popart/tensornames.hpp>
 #include <popart/topocons.hpp>
+#include <popart/transforms/remotesetup.hpp>
 
 #include <transforms/streamingmemoryopinserter.hpp>
 
@@ -605,6 +607,52 @@ StreamingMemoryOpInserter::getReplicatedTensorShardingProposal(
     }
   };
 
+  // Mapping from each RemoteArg to it's final consumers
+  RemoteArgOpMap argOpMap;
+  RemoteOpArgMap opArgMap;
+  RemoteArgBufferMap argBufferMap;
+
+  RemoteSetup::getRemoteArgMapping(graph, argOpMap, opArgMap, argBufferMap);
+
+  // Checks if the root tensor, created by InitOp, is RTS
+  auto checkRemoteBufferRTS = [&rtsTensors, &proposedRTS, &argOpMap, &opArgMap](
+                                  Op *op) {
+    if (op->isConvertibleTo<RemoteLoadOp>() ||
+        op->isConvertibleTo<RemoteStoreOp>()) {
+      auto &args =
+          opArgMap.at({op, RemoteLoadOp::getRemoteBufferOffsetInIndex()});
+      for (auto arg : args) {
+        auto &ops = argOpMap.at(arg);
+        for (auto opAndIdx : ops) {
+          auto inputs  = opAndIdx.first->input->tensors();
+          auto outputs = opAndIdx.first->output->tensors();
+          if (std::any_of(inputs.begin(),
+                          inputs.end(),
+                          [&rtsTensors, &proposedRTS, &opAndIdx](Tensor *t) {
+                            return rtsTensors.hasShard(t->id) ||
+                                   (proposedRTS.isProposed(t->id) &&
+                                    proposedRTS.isProposed(opAndIdx.first->id));
+                          }) ||
+              std::any_of(outputs.begin(),
+                          outputs.end(),
+                          [&rtsTensors, &proposedRTS, &opAndIdx](Tensor *t) {
+                            return rtsTensors.hasShard(t->id) ||
+                                   (proposedRTS.isProposed(t->id) &&
+                                    proposedRTS.isProposed(opAndIdx.first->id));
+                          })) {
+            logging::transform::trace(
+                "[StreamingMemory] Op {} implies {} should also be RTS",
+                opAndIdx.first->debugName(),
+                op->debugName());
+            return true;
+          }
+        }
+      }
+      return false;
+    }
+    return true;
+  };
+
   for (TensorId shardId : rtsTensors.getShardTensorIds()) {
 
     TensorId tensorId = rtsTensors.getTensor(shardId);
@@ -632,6 +680,15 @@ StreamingMemoryOpInserter::getReplicatedTensorShardingProposal(
           "[StreamingMemory] Analyzing {} for replicated tensor sharding",
           op->debugName());
       TensorId refId = proposedRTS.getRefTensorId(op->id);
+
+      if (!checkRemoteBufferRTS(op)) {
+        // Encountered RemoteLoad/RemoteStore that can't be RTS because the
+        // remote buffer itself won't be RTS
+        logging::transform::trace("[StreamingMemory] {} cannot be RTS because "
+                                  "the associated remote buffer is not RTS",
+                                  op->debugName());
+        continue;
+      }
 
       auto rtsIndices = op->getReplicatedTensorShardingIndices();
 
@@ -2499,8 +2556,8 @@ StreamingMemoryOpInserter::TensorStreamingContext::TensorStreamingContext(
     ScheduledPreLoss preLoss_)
     : context(context_), phase(phase_), preLoss(preLoss_) {}
 
-bool StreamingMemoryOpInserter::TensorStreamingContext::operator<(
-    const TensorStreamingContext &rhs) const {
+bool StreamingMemoryOpInserter::TensorStreamingContext::
+operator<(const TensorStreamingContext &rhs) const {
   std::vector<int> lhsVec;
   lhsVec.reserve(3);
   std::vector<int> rhsVec;
@@ -2547,13 +2604,13 @@ bool StreamingMemoryOpInserter::TensorStreamingContext::operator<(
   return lhsVec < rhsVec;
 }
 
-bool StreamingMemoryOpInserter::TensorStreamingContext::operator==(
-    const TensorStreamingContext &rhs) const {
+bool StreamingMemoryOpInserter::TensorStreamingContext::
+operator==(const TensorStreamingContext &rhs) const {
   return context == rhs.context && phase == rhs.phase && preLoss == rhs.preLoss;
 }
 
-bool StreamingMemoryOpInserter::TensorStreamingContext::operator!=(
-    const TensorStreamingContext &rhs) const {
+bool StreamingMemoryOpInserter::TensorStreamingContext::
+operator!=(const TensorStreamingContext &rhs) const {
   return context != rhs.context || phase != rhs.phase || preLoss != rhs.preLoss;
 }
 
@@ -2598,8 +2655,8 @@ operator<<(std::ostream &output,
   return output;
 }
 
-bool StreamingMemoryOpInserter::ConsumerOpConfig::operator==(
-    const ConsumerOpConfig &rhs) const {
+bool StreamingMemoryOpInserter::ConsumerOpConfig::
+operator==(const ConsumerOpConfig &rhs) const {
   return tensor == rhs.tensor && op == rhs.op;
 }
 

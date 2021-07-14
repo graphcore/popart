@@ -22,68 +22,10 @@
 
 namespace popart {
 
-std::size_t RemoteSetup::id() { return typeid(RemoteSetup).hash_code(); }
-
-bool RemoteSetup::apply(Graph &graph) const {
-  logging::debug("[RemoteSetup] Started.");
-
-  Ir &ir                 = graph.getIr();
-  int64_t remoteBufferId = 0;
-
-  // Create remote buffer info for RemoteLoad/RemoteStore/RemoteExchange ops
-  // with set buffer ID
-  for (Op *op : ir.getAllOps()) {
-    if (RemoteLoadOp *loadOp = dynamic_cast<RemoteLoadOp *>(op)) {
-      auto allRemoteBufferIds = ir.getAllRemoteBufferInfos();
-      RemoteBufferId id       = loadOp->getRemoteBufferId();
-      if (id > -1 && allRemoteBufferIds.find(id) == allRemoteBufferIds.end()) {
-        auto info = RemoteBufferInfo(
-            loadOp->output->tensor(RemoteLoadOp::getLocalTensorOutIndex())
-                ->info,
-            1);
-        ir.setRemoteBufferInfo(id, info);
-        remoteBufferId = std::max(remoteBufferId, id + 1);
-      }
-    }
-    if (RemoteStoreOp *storeOp = dynamic_cast<RemoteStoreOp *>(op)) {
-      auto allRemoteBufferIds = ir.getAllRemoteBufferInfos();
-      RemoteBufferId id       = storeOp->getRemoteBufferId();
-      if (id > -1 && allRemoteBufferIds.find(id) == allRemoteBufferIds.end()) {
-        auto info = RemoteBufferInfo(
-            storeOp->input->tensor(RemoteStoreOp::getLocalTensorInIndex())
-                ->info,
-            1);
-        ir.setRemoteBufferInfo(id, info);
-        remoteBufferId = std::max(remoteBufferId, id + 1);
-      }
-    }
-    if (MultiExchangeOp *exchangeOp = dynamic_cast<MultiExchangeOp *>(op)) {
-      auto allRemoteBufferIds = ir.getAllRemoteBufferInfos();
-
-      for (int index = 0; index < exchangeOp->getNumExchanges(); ++index) {
-        if (exchangeOp->isRemote(index)) {
-          RemoteBufferId id = exchangeOp->getRemoteBufferId(index);
-          if (id > -1 &&
-              allRemoteBufferIds.find(id) == allRemoteBufferIds.end()) {
-            auto info = RemoteBufferInfo(
-                exchangeOp->input
-                    ->tensor(
-                        exchangeOp->descriptorIndexToInIndices(index).at(0))
-                    ->info,
-                1);
-            ir.setRemoteBufferInfo(id, info);
-            remoteBufferId = std::max(remoteBufferId, id + 1);
-          }
-        }
-      }
-    }
-  }
-
-  // Mapping from each RemoteArg to it's final consumers
-  std::map<TensorId, std::set<std::pair<Op *, InIndex>, POpIntCmp>> argOpMap;
-  std::map<std::pair<Op *, InIndex>, std::set<TensorId>, POpIntCmp> opArgMap;
-  std::map<TensorId, std::pair<RemoteBufferId, RemoteBufferIndex>> argBufferMap;
-
+void RemoteSetup::getRemoteArgMapping(Graph &graph,
+                                      RemoteArgOpMap &argOpMap,
+                                      RemoteOpArgMap &opArgMap,
+                                      RemoteArgBufferMap &argBufferMap) {
   for (TensorId &tensor_id : graph.getTensors().getAllTensorIds()) {
     Tensor *tensor = graph.getTensors().get(tensor_id);
     if (tensor->isRemoteArgTensor() &&
@@ -199,6 +141,71 @@ bool RemoteSetup::apply(Graph &graph) const {
       }
     }
   }
+}
+
+std::size_t RemoteSetup::id() { return typeid(RemoteSetup).hash_code(); }
+
+bool RemoteSetup::apply(Graph &graph) const {
+  logging::debug("[RemoteSetup] Started.");
+
+  Ir &ir                 = graph.getIr();
+  int64_t remoteBufferId = 0;
+
+  // Create remote buffer info for RemoteLoad/RemoteStore/RemoteExchange ops
+  // with set buffer ID
+  for (Op *op : ir.getAllOps()) {
+    if (RemoteLoadOp *loadOp = dynamic_cast<RemoteLoadOp *>(op)) {
+      auto allRemoteBufferIds = ir.getAllRemoteBufferInfos();
+      RemoteBufferId id       = loadOp->getRemoteBufferId();
+      if (id > -1 && allRemoteBufferIds.find(id) == allRemoteBufferIds.end()) {
+        auto info = RemoteBufferInfo(
+            loadOp->output->tensor(RemoteLoadOp::getLocalTensorOutIndex())
+                ->info,
+            1);
+        ir.setRemoteBufferInfo(id, info);
+        remoteBufferId = std::max(remoteBufferId, id + 1);
+      }
+    }
+    if (RemoteStoreOp *storeOp = dynamic_cast<RemoteStoreOp *>(op)) {
+      auto allRemoteBufferIds = ir.getAllRemoteBufferInfos();
+      RemoteBufferId id       = storeOp->getRemoteBufferId();
+      if (id > -1 && allRemoteBufferIds.find(id) == allRemoteBufferIds.end()) {
+        auto info = RemoteBufferInfo(
+            storeOp->input->tensor(RemoteStoreOp::getLocalTensorInIndex())
+                ->info,
+            1);
+        ir.setRemoteBufferInfo(id, info);
+        remoteBufferId = std::max(remoteBufferId, id + 1);
+      }
+    }
+    if (MultiExchangeOp *exchangeOp = dynamic_cast<MultiExchangeOp *>(op)) {
+      auto allRemoteBufferIds = ir.getAllRemoteBufferInfos();
+
+      for (int index = 0; index < exchangeOp->getNumExchanges(); ++index) {
+        if (exchangeOp->isRemote(index)) {
+          RemoteBufferId id = exchangeOp->getRemoteBufferId(index);
+          if (id > -1 &&
+              allRemoteBufferIds.find(id) == allRemoteBufferIds.end()) {
+            auto info = RemoteBufferInfo(
+                exchangeOp->input
+                    ->tensor(
+                        exchangeOp->descriptorIndexToInIndices(index).at(0))
+                    ->info,
+                1);
+            ir.setRemoteBufferInfo(id, info);
+            remoteBufferId = std::max(remoteBufferId, id + 1);
+          }
+        }
+      }
+    }
+  }
+
+  // Mapping from each RemoteArg to it's final consumers
+  RemoteArgOpMap argOpMap;
+  RemoteOpArgMap opArgMap;
+  RemoteArgBufferMap argBufferMap;
+
+  getRemoteArgMapping(graph, argOpMap, opArgMap, argBufferMap);
 
   std::map<int64_t, std::set<VGraphId>> remoteBufferVGIDs;
 

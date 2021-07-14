@@ -277,7 +277,7 @@ protected:
     }
 
     bool hasGathered(TensorId tensorId) const {
-      return gatheredToTensors.find(tensorId) != shardToTensors.end();
+      return gatheredToTensors.find(tensorId) != gatheredToTensors.end();
     }
 
     // Returns the sharded tensor id

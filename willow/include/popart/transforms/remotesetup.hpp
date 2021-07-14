@@ -7,9 +7,21 @@
 
 namespace popart {
 
+using RemoteArgOpMap =
+    std::map<TensorId, std::set<std::pair<Op *, InIndex>, POpIntCmp>>;
+using RemoteOpArgMap =
+    std::map<std::pair<Op *, InIndex>, std::set<TensorId>, POpIntCmp>;
+using RemoteArgBufferMap =
+    std::map<TensorId, std::pair<RemoteBufferId, RemoteBufferIndex>>;
+
 class RemoteSetup : public Transform {
 public:
   static std::size_t id();
+
+  static void getRemoteArgMapping(Graph &graph,
+                                  RemoteArgOpMap &,
+                                  RemoteOpArgMap &,
+                                  RemoteArgBufferMap &);
 
   RemoteSetup() : Transform() {}
   virtual ~RemoteSetup() override {}
