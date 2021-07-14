@@ -28,8 +28,21 @@
 # classes are still valuable, but they are not unit tests, they are
 # integration tests. Integration tests belong in popart/tests/popart.
 #
-# Please prefix all test names in this folder with 'unittest_' so that
-# developers can run `./test.sh popart -R unittest_` to run only these tests.
+# For consistency, please follow the directory structure and naming of the
+# source code.
+#
+# * Please put the c++ unittests for a file
+#   'willow/src/somedir1/somedir2/file.cpp' in a file called
+#   'tests/unittests/willow/somedir1/somedir2/test_file.cpp' and give it a ctest
+#   name of 'unittest_willow_somedir1_somedir2_file'. 
+# * Please put the python unittests for a file
+#   'python/somedir1/somedir2/file.py' in a file called
+#   'tests/unittests/python/somedir1/somedir2/test_file.py' and give it a ctest
+#   name of 'unittest_python_somedir1_somedir2_file'.
+#
+# By doing this consistently it will be easy to match up tests with source
+# code and it becomes easy for developers to run all unittests by running, e.g.,
+# `./test.sh popart -R unittest_`.
 
 # C++ unittests for main codebase:
 add_popart_cpp_unit_test(unittest_example unittest_example.cpp TEST_UTILS trompeloeil)
