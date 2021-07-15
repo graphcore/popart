@@ -17,6 +17,7 @@
 #include <popart/op/scaledadd.hpp>
 #include <popart/op/sgd0varupdate.hpp>
 #include <popart/op/sgd1varupdate.hpp>
+#include <popart/op/slice.hpp>
 #include <popart/op/sqrt.hpp>
 #include <popart/op/sum.hpp>
 #include <popart/opidentifier.hpp>
@@ -90,23 +91,39 @@ Tensor *addReduceSumSquare(Tensor *grad, Graph &graph) {
 // Return a consuming var update op for each tensor in weightIds.
 std::vector<Op *> getVarUpdates(Graph &graph,
                                 const std::vector<TensorId> &weightIds) {
-  auto getVarUpdate = [](Tensor *t) {
+  auto getVarUpdate = [](Tensor *t) -> std::vector<Op *> {
     logging::debug("Getting var updates for {}", t->id);
+    std::vector<Op *> result;
     for (auto op : t->consumers.getOps()) {
       if (op->isConvertibleTo<SGD0VarUpdateOp>() ||
           op->isConvertibleTo<SGD1VarUpdateOp>() ||
           op->isConvertibleTo<AdamVarUpdateOp>()) {
-        return op;
+        result.push_back(op);
+      } else if (op->isConvertibleTo<SliceInplaceOp>()) {
+        // SerializeMatMuls transform can insert an inplace slice between the
+        // weight and the var update.
+        for (auto x : op->getFollowingOps(SliceInplaceOp::getOutIndex())) {
+          if (x->isConvertibleTo<SGD0VarUpdateOp>() ||
+              x->isConvertibleTo<SGD1VarUpdateOp>() ||
+              x->isConvertibleTo<AdamVarUpdateOp>()) {
+            result.push_back(x);
+          }
+        }
       }
     }
-    throw error("Could not find a varupdate op for tensor {}", t->id);
+    if (result.empty()) {
+      throw error("Could not find a varupdate op for tensor {}", t->id);
+    }
+    return result;
   };
 
   std::vector<Op *> varUpdates;
   for (auto &tid : weightIds) {
-    auto tensor    = graph.getTensors().get(tid);
-    auto varUpdate = getVarUpdate(tensor);
-    varUpdates.push_back(varUpdate);
+    auto tensor           = graph.getTensors().get(tid);
+    auto tensorVarUpdates = getVarUpdate(tensor);
+    for (auto vu : tensorVarUpdates) {
+      varUpdates.push_back(vu);
+    }
   }
 
   return varUpdates;

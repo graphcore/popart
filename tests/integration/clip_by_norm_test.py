@@ -376,3 +376,92 @@ def test_pipelined(optimizerType):
 
     for key in popartWeights.keys():
         assert np.allclose(popartWeights[key], torchWeights[key])
+
+
+@pytest.mark.parametrize("optimizerType", allOptimizerTypes)
+def test_serialized_matmul(optimizerType):
+    def run_test(serialization_mode, serialization_factor):
+        input_channels = 6
+        reducing_dim = 2
+        output_channels = 4
+
+        lhs_shape = [input_channels, reducing_dim]
+        rhs_shape = [reducing_dim, output_channels]
+        lhs_data = np.ones((*lhs_shape, ), dtype=np.float32)
+        rhs_data = np.ones((*rhs_shape, ), dtype=np.float32)
+
+        builder = popart.Builder()
+
+        lhs = builder.addInitializedInputTensor(lhs_data, "lhs")
+        rhs = builder.addInitializedInputTensor(rhs_data, "rhs")
+
+        o = builder.aiOnnx.matmul([lhs, rhs])
+
+        builder.setSerializeMatMul({o}, serialization_mode,
+                                   serialization_factor)
+
+        loss = builder.aiGraphcore.l1loss([o], 0.1)
+
+        proto = builder.getModelProto()
+
+        dataFlow = popart.DataFlow(
+            1, {
+                o:
+                popart.AnchorReturnType("All"),
+                rhs:
+                popart.AnchorReturnType("Final"),
+                popart.reservedGradientPrefix() + lhs:
+                popart.AnchorReturnType("All"),
+            })
+
+        opts = popart.SessionOptions()
+        opts.reportOptions = {"showExecutionSteps": "true"}
+        opts.enableGroupedMatmuls = True
+        # TODO(T14786) investigate why swapping causes some tests to fail
+        opts.swapLimitScheduler = -1
+        # TODO(T14786) investigate why GREEDY causes some tests to fail
+        opts.kahnTieBreaker = "FIFO"
+        # TODO(T14786) investigate why tighter initialization causes some tests to fail
+        opts.transitiveClosureOptimizationThreshold = 0
+        # Gradient clipping isn't working for serialized matmuls without gradient accumulation
+        opts.enableGradientAccumulation = True
+
+        pat = popart.Patterns(
+            ['MatMulOp', 'MatMulRhsGradOp', 'MatMulLhsGradOp', 'OpToIdentity'])
+        pat.enableRuntimeAsserts(False)
+
+        optimizer = _get_popart_optimizer(
+            optimizerType, [popart.ClipNormSettings([lhs, rhs], 0.01)])
+
+        session = popart.TrainingSession(
+            fnModel=proto,
+            dataFlow=dataFlow,
+            userOptions=opts,
+            loss=loss,
+            optimizer=optimizer,
+            patterns=pat,
+            deviceInfo=tu.create_test_device(opts={"compileIPUCode": False}))
+
+        session.prepareDevice()
+
+        session.weightsFromHost()
+
+        anchors = session.initAnchorArrays()
+
+        inputs = {lhs: lhs_data}
+        stepio = popart.PyStepIO(inputs, anchors)
+
+        session.run(stepio)
+        session.weightsToHost()
+        print(f'weights should be called {lhs} and {rhs}')
+
+        return anchors
+
+    r1 = run_test('none', 0)
+    r2 = run_test('output_channels', 2)
+
+    print(r1)
+    print(r2)
+    assert len(r1.keys()) > 0
+    for key in r1.keys():
+        assert np.allclose(r1[key], r2[key])
