@@ -26,7 +26,7 @@
 #
 # Tests that do not meet the criteria above and, e.g., test multiple PopART
 # classes are still valuable, but they are not unit tests, they are
-# integration tests. Integration tests belong in popart/tests/popart.
+# integration tests. Integration tests belong in tests/integration.
 #
 # For consistency, please follow the directory structure and naming of the
 # source code.

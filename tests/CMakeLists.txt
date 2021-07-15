@@ -264,7 +264,7 @@ function(add_popart_py_unit_test name filename)
 endfunction()
 
 add_subdirectory(testutil)
-add_subdirectory(popart)
+add_subdirectory(integration)
 add_subdirectory(torch)
 add_subdirectory(onnx_backend)
 add_subdirectory(unittests)
