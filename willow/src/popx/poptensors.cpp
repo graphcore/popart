@@ -56,10 +56,10 @@ void PopTensors::verify(TensorId id, const snap::Tensor &pt) {
   // confirm types agree
   auto expectedType = popType(dtype);
 
-  if (pt.getPoplarTensor().elementType() != expectedType) {
+  if (pt.elementType() != expectedType) {
     std::stringstream ss;
     ss << "snap::Tensor " << id << " of unexpected Type. "
-       << "Poplar tensor type : " << pt.getPoplarTensor().elementType();
+       << "Poplar tensor type : " << pt.elementType();
     ss << ". Expected (Ir) tensor type : " << expectedType;
     ss << ". This for tensor " << irTensor->str();
     throw error(ss.str());

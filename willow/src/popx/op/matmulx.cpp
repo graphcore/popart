@@ -367,7 +367,7 @@ matShuffleGroupDims(snap::Tensor result, snap::Tensor lhs, snap::Tensor rhs) {
 }
 
 poplar::Type MatMulOpx::getOutputType(const snap::Tensor &output) const {
-  auto outputType = output.getPoplarTensor().elementType();
+  auto outputType = output.elementType();
   if (auto _outputType = getOp<MatMulOp>().getOutputType()) {
     outputType = popType(*_outputType);
   }
@@ -496,8 +496,8 @@ void MatMulOpx::grow(poplar::program::Sequence &prog) const {
   poplin::matMulGroupedReportPlan(
       ss,
       graph().getPoplarGraph(),
-      combinedBroadcastTs.first.getPoplarTensor().elementType(),
-      outTensor.getPoplarTensor().elementType(),
+      combinedBroadcastTs.first.elementType(),
+      outTensor.elementType(),
       combinedBroadcastTs.first.getPoplarTensor().shape(),
       combinedBroadcastTs.second.getPoplarTensor().shape(),
       opts,

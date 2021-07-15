@@ -27,8 +27,7 @@ snap::Tensor ScaleComputex::outplace(poplar::program::Sequence &prog,
       popops::map(graph.getPoplarGraph(),
                   popops::expr::BinaryOpType::MULTIPLY,
                   tensor.getPoplarTensor(),
-                  getScaleTensor(tensor.getPoplarTensor().elementType(), graph)
-                      .getPoplarTensor(),
+                  getScaleTensor(tensor.elementType(), graph).getPoplarTensor(),
                   prog,
                   {dnai, s}),
       graph};
@@ -60,8 +59,7 @@ void ScaleComputex::inplace(poplar::program::Sequence &prog,
       graph.getPoplarGraph(),
       popops::expr::BinaryOpType::MULTIPLY,
       tensor.getPoplarTensor(),
-      getScaleTensor(tensor.getPoplarTensor().elementType(), graph)
-          .getPoplarTensor(),
+      getScaleTensor(tensor.elementType(), graph).getPoplarTensor(),
       prog,
       {dnai, s});
 }

@@ -59,11 +59,10 @@ void NllOpx::grow(poplar::program::Sequence &prog) const {
   double eps_f = 1.0e-7;
 
   // if using fp16, increase the eps to avoid underfloat
-  if (probs.getPoplarTensor().elementType() == poplar::HALF)
+  if (probs.elementType() == poplar::HALF)
     eps_f = 6.104e-05;
 
-  snap::Tensor eps =
-      getConst(probs.getPoplarTensor().elementType(), {1}, eps_f, "epsilon");
+  snap::Tensor eps = getConst(probs.elementType(), {1}, eps_f, "epsilon");
 
   if (!op.inputIsLogProbability()) {
     // Take max of prob and eps to reduction make sure it does not have any
@@ -112,11 +111,11 @@ void NllOpx::flattenAndEncodeOneHot(const PopOpx &opx,
       opx.graph()};
   label1D = snap::Tensor{label.getPoplarTensor().flatten(), opx.graph()};
   // Tensor taking one-hot encoded output must be 2 dimensional
-  oneHot = snap::Tensor{opx.graph().getPoplarGraph().clone(
-                            probs2D.getPoplarTensor().elementType(),
-                            probs2D.getPoplarTensor(),
-                            opx.debugContext("oneHot")),
-                        opx.graph()};
+  oneHot = snap::Tensor{
+      opx.graph().getPoplarGraph().clone(probs2D.elementType(),
+                                         probs2D.getPoplarTensor(),
+                                         opx.debugContext("oneHot")),
+      opx.graph()};
   popops::encodeOneHot(opx.graph().getPoplarGraph(),
                        label1D.getPoplarTensor(),
                        oneHot.getPoplarTensor(),
@@ -197,10 +196,7 @@ NllOpx::applyMaskInPlaceForIgnoredIndex(const PopOpx &opx,
   // Get the scalar ignoreIndex tensor. If it doens't already
   // exist, create it
   auto ignoreIndexTensor = opx.graph().getPoplarGraph().addConstant(
-      labels.getPoplarTensor().elementType(),
-      {},
-      ignoreIndex,
-      opx.debugContext("ignoreIndex"));
+      labels.elementType(), {}, ignoreIndex, opx.debugContext("ignoreIndex"));
   opx.graph().getPoplarGraph().setTileMapping(ignoreIndexTensor, 0);
 
   // Create the mask
@@ -212,7 +208,7 @@ NllOpx::applyMaskInPlaceForIgnoredIndex(const PopOpx &opx,
                                   opx.debugContext("notEqual"));
   auto lossMask     = popops::cast(opx.graph().getPoplarGraph(),
                                lossMaskBool,
-                               t.getPoplarTensor().elementType(),
+                               t.elementType(),
                                prog,
                                opx.debugContext("cast"));
 
@@ -267,8 +263,7 @@ void NllOpx::handleLossOutReducedToScalar(const PopOpx &opx,
       auto lossMask = applyMaskInPlaceForIgnoredIndex(
           opx, reduction, label1D, static_cast<int>(ignoreIndex), prog);
 
-      auto scaleT = opx.getConst(
-          reduction.getPoplarTensor().elementType(), {}, 1.0, "One");
+      auto scaleT = opx.getConst(reduction.elementType(), {}, 1.0, "One");
 
       applyScalingInPlaceForMeanReductionWithIgnoreIndex(
           opx, reduction, scaleT, lossMask, prog);
@@ -371,12 +366,12 @@ void NllGradOpx::grow(poplar::program::Sequence &prog) const {
   // If working with float16 increase the eps to avoid underfloat
   // Note that because of the division we would ideally use 1/65500
   // but this will underflow.
-  if (probs.getPoplarTensor().elementType() == poplar::HALF) {
+  if (probs.elementType() == poplar::HALF) {
     eps = 6.104e-05f;
   }
 
   auto smallConst = graph().getPoplarGraph().addConstant(
-      probs.getPoplarTensor().elementType(), {1}, eps, debugContext("eps"));
+      probs.elementType(), {1}, eps, debugContext("eps"));
   graph().getPoplarGraph().setTileMapping(smallConst, 0);
   auto safeProbs = popops::map(graph().getPoplarGraph(),
                                popops::expr::BinaryOpType::MAXIMUM,
@@ -386,11 +381,11 @@ void NllGradOpx::grow(poplar::program::Sequence &prog) const {
                                debugContext("max"));
 
   // oneHot: initialised to be 1 at position "label", 0 elsewhere.
-  auto oneHot = snap::Tensor{
-      graph().getPoplarGraph().clone(probs2D.getPoplarTensor().elementType(),
-                                     probs2D.getPoplarTensor(),
-                                     debugContext("oneHot")),
-      graph()};
+  auto oneHot =
+      snap::Tensor{graph().getPoplarGraph().clone(probs2D.elementType(),
+                                                  probs2D.getPoplarTensor(),
+                                                  debugContext("oneHot")),
+                   graph()};
 
   popops::encodeOneHot(graph().getPoplarGraph(),
                        label1D.getPoplarTensor(),

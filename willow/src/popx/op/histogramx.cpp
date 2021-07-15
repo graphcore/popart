@@ -14,7 +14,7 @@ void HistogramOpx::grow(poplar::program::Sequence &prog) const {
   auto levels = op.getLevels();
 
   auto levelsT = graph().getPoplarGraph().addConstant(
-      getInTensor(op.getInIndex()).getPoplarTensor().elementType(),
+      getInTensor(op.getInIndex()).elementType(),
       {levels.size()},
       poplar::ArrayRef<float>(levels),
       debugContext("levels"));

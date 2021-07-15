@@ -249,8 +249,7 @@ void NlllWithSoftmaxGradDirectOpx::grow(poplar::program::Sequence &prog) const {
                                         graph()};
 
   // Create an epsilon value
-  snap::Tensor eps =
-      getConst(probs.getPoplarTensor().elementType(), {1}, 1.0e-7, "epsilon");
+  snap::Tensor eps = getConst(probs.elementType(), {1}, 1.0e-7, "epsilon");
   // Add eps to reduction to make sure it does not have any 0's and log it,
   popops::mapInPlace(graph().getPoplarGraph(),
                      pe::Log(pe::Add(pe::_1, pe::_2)),

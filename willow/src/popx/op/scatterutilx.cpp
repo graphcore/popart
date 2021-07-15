@@ -90,7 +90,7 @@ void growScatter(poplar::program::Sequence &prog,
                       static_cast<int>(indices.getPoplarTensor().dim(i)),
                       {dnai, "linspace"},
                       1,
-                      indices.getPoplarTensor().elementType());
+                      indices.elementType());
 
     // Match the rank of indices
     t = matchRank(indices, t, i);
@@ -150,7 +150,7 @@ snap::Tensor growScatterUpdateGrad(poplar::program::Sequence &prog,
                  static_cast<int>(indices.getPoplarTensor().dim(i)),
                  {dnai, "linspace"},
                  1,
-                 indices.getPoplarTensor().elementType());
+                 indices.elementType());
   }
 
   // Match the rank of the indices to the update tensor

@@ -186,24 +186,20 @@ BatchNormOpx::growSpatial(poplar::program::Sequence &prog,
 
     // Special case - zero sized array
     if (isZeroElementArray(x.getPoplarTensor().shape())) {
-      auto y         = snap::Tensor{graph().getPoplarGraph().addConstant(
-                                x.getPoplarTensor().elementType(),
-                                x.getPoplarTensor().shape(),
-                                0,
-                                debugContext("y")),
-                            graph()};
-      auto batchMean = snap::Tensor{graph().getPoplarGraph().addConstant(
-                                        mean.getPoplarTensor().elementType(),
-                                        {1},
-                                        NAN,
-                                        debugContext("mean")),
-                                    graph()};
-      auto batchVar  = snap::Tensor{graph().getPoplarGraph().addConstant(
-                                       var.getPoplarTensor().elementType(),
-                                       {1},
-                                       NAN,
-                                       debugContext("var")),
-                                   graph()};
+      auto y = snap::Tensor{
+          graph().getPoplarGraph().addConstant(x.elementType(),
+                                               x.getPoplarTensor().shape(),
+                                               0,
+                                               debugContext("y")),
+          graph()};
+      auto batchMean =
+          snap::Tensor{graph().getPoplarGraph().addConstant(
+                           mean.elementType(), {1}, NAN, debugContext("mean")),
+                       graph()};
+      auto batchVar =
+          snap::Tensor{graph().getPoplarGraph().addConstant(
+                           var.elementType(), {1}, NAN, debugContext("var")),
+                       graph()};
       graph().getPoplarGraph().setTileMapping(y.getPoplarTensor(), 0);
       graph().getPoplarGraph().setTileMapping(batchMean.getPoplarTensor(), 0);
       graph().getPoplarGraph().setTileMapping(batchVar.getPoplarTensor(), 0);
@@ -248,20 +244,18 @@ BatchNormOpx::growSpatial(poplar::program::Sequence &prog,
 
       // Ensure batch mean is the same type as mean so that running mean can
       // be calculated
-      if (batchMean.getPoplarTensor().elementType() !=
-          mean.getPoplarTensor().elementType()) {
-        batchMean =
-            snap::Tensor{popops::cast(graph().getPoplarGraph(),
-                                      batchMean.getPoplarTensor(),
-                                      mean.getPoplarTensor().elementType(),
-                                      prog,
-                                      debugContext("cast_batchMean")),
-                         graph()};
+      if (batchMean.elementType() != mean.elementType()) {
+        batchMean = snap::Tensor{popops::cast(graph().getPoplarGraph(),
+                                              batchMean.getPoplarTensor(),
+                                              mean.elementType(),
+                                              prog,
+                                              debugContext("cast_batchMean")),
+                                 graph()};
       }
 
       // Then convert the invSd to the variance
-      auto batchVar = convertInvSdToVar(
-          prog, invSd, epsilon, var.getPoplarTensor().elementType());
+      auto batchVar =
+          convertInvSdToVar(prog, invSd, epsilon, var.elementType());
 
       // Calculate the running mean
       auto runningMean = snap::Tensor{
@@ -296,12 +290,12 @@ BatchNormOpx::growSpatial(poplar::program::Sequence &prog,
 
     // Special case - zero sized array
     if (isZeroElementArray(x.getPoplarTensor().shape())) {
-      auto y = snap::Tensor{graph().getPoplarGraph().addConstant(
-                                x.getPoplarTensor().elementType(),
-                                x.getPoplarTensor().shape(),
-                                0,
-                                debugContext("y")),
-                            graph()};
+      auto y = snap::Tensor{
+          graph().getPoplarGraph().addConstant(x.elementType(),
+                                               x.getPoplarTensor().shape(),
+                                               0,
+                                               debugContext("y")),
+          graph()};
       graph().getPoplarGraph().setTileMapping(y.getPoplarTensor(), 0);
 
       result = GrowSpatialOutput({y,
@@ -311,16 +305,14 @@ BatchNormOpx::growSpatial(poplar::program::Sequence &prog,
                                   nonstd::optional<snap::Tensor>()});
     } else {
       // convert variant to inverse standard deviation
-      auto invSd = convertVarToInvSd(
-          prog, var, epsilon, x.getPoplarTensor().elementType());
+      auto invSd = convertVarToInvSd(prog, var, epsilon, x.elementType());
 
       // mean might have a different type so cast is required before
       // batchNormalise calculation
-      if (mean.getPoplarTensor().elementType() !=
-          x.getPoplarTensor().elementType()) {
+      if (mean.elementType() != x.elementType()) {
         mean = snap::Tensor{popops::cast(graph().getPoplarGraph(),
                                          mean.getPoplarTensor(),
-                                         x.getPoplarTensor().elementType(),
+                                         x.elementType(),
                                          prog,
                                          debugContext("cast_mean")),
                             graph()};
@@ -460,21 +452,19 @@ BatchNormGradOpx::growSpatial(poplar::program::Sequence &prog,
   // Special case - zero sized array
   if (isZeroElementArray(x.getPoplarTensor().shape())) {
     auto xGrad = snap::Tensor{
-        graph().getPoplarGraph().addConstant(x.getPoplarTensor().elementType(),
+        graph().getPoplarGraph().addConstant(x.elementType(),
                                              x.getPoplarTensor().shape(),
                                              0,
                                              debugContext("xGrad")),
         graph()};
-    auto scaleGrad = snap::Tensor{
-        graph().getPoplarGraph().addConstant(x.getPoplarTensor().elementType(),
-                                             {1},
-                                             0,
-                                             debugContext("scaleGrad")),
-        graph()};
-    auto bGrad = snap::Tensor{
-        graph().getPoplarGraph().addConstant(
-            x.getPoplarTensor().elementType(), {1}, 0, debugContext("bGrad")),
-        graph()};
+    auto scaleGrad =
+        snap::Tensor{graph().getPoplarGraph().addConstant(
+                         x.elementType(), {1}, 0, debugContext("scaleGrad")),
+                     graph()};
+    auto bGrad =
+        snap::Tensor{graph().getPoplarGraph().addConstant(
+                         x.elementType(), {1}, 0, debugContext("bGrad")),
+                     graph()};
     graph().getPoplarGraph().setTileMapping(xGrad.getPoplarTensor(), 0);
     graph().getPoplarGraph().setTileMapping(scaleGrad.getPoplarTensor(), 0);
     graph().getPoplarGraph().setTileMapping(bGrad.getPoplarTensor(), 0);
@@ -482,16 +472,14 @@ BatchNormGradOpx::growSpatial(poplar::program::Sequence &prog,
     result.scaleGrad = scaleGrad;
     result.bGrad     = bGrad;
   } else {
-    auto invSd = convertVarToInvSd(
-        prog, var, epsilon, x.getPoplarTensor().elementType());
+    auto invSd = convertVarToInvSd(prog, var, epsilon, x.elementType());
 
     // mean might have a different type so cast is required before
     // batchNormaliseGrad calculation
-    if (mean.getPoplarTensor().elementType() !=
-        x.getPoplarTensor().elementType()) {
+    if (mean.elementType() != x.elementType()) {
       mean = snap::Tensor{popops::cast(graph().getPoplarGraph(),
                                        mean.getPoplarTensor(),
-                                       x.getPoplarTensor().elementType(),
+                                       x.elementType(),
                                        prog,
                                        debugContext("cast_mean")),
                           graph()};

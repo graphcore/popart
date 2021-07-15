@@ -62,8 +62,7 @@ snap::Tensor ReplicatedAllGatherOpx::unwindTensorLayout(snap::Tensor tensor,
                                                         InIndex,
                                                         OutIndex) const {
   auto cbr = createCollectiveBalancedReorder(tensor);
-  return snap::Tensor{
-      cbr->createReplicaSlice(tensor.getPoplarTensor().elementType()), graph()};
+  return snap::Tensor{cbr->createReplicaSlice(tensor.elementType()), graph()};
 }
 
 view::RegMap ReplicatedAllGatherOpx::unwindRegion(InIndex, OutIndex) const {

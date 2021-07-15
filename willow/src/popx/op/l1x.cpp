@@ -52,10 +52,8 @@ void L1GradOpx::grow(poplar::program::Sequence &prog) const {
                 debugContext().getPathName());
   }
 
-  auto t_scale =
-      getConst(
-          getInTensor(0).getPoplarTensor().elementType(), {}, scale, "scale")
-          .getPoplarTensor();
+  auto t_scale = getConst(getInTensor(0).elementType(), {}, scale, "scale")
+                     .getPoplarTensor();
 
   // scale the signum tensor:
   // - first by 'scale',  so +scale if positive, -scale if negative, 0 if zero

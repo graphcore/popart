@@ -43,11 +43,9 @@ snap::Tensor ClipComputex::outplace(poplar::program::Sequence &prog,
                                     const std::string &s) const {
 
   auto minT = broadcastClipTensor(
-      getClipTensor(min, tensor.getPoplarTensor().elementType(), graph, dnai),
-      tensor);
+      getClipTensor(min, tensor.elementType(), graph, dnai), tensor);
   auto maxT = broadcastClipTensor(
-      getClipTensor(max, tensor.getPoplarTensor().elementType(), graph, dnai),
-      tensor);
+      getClipTensor(max, tensor.elementType(), graph, dnai), tensor);
   return snap::Tensor{popops::map(graph.getPoplarGraph(),
                                   popops::expr::TernaryOpType::CLAMP,
                                   tensor.getPoplarTensor(),
@@ -101,11 +99,9 @@ void ClipComputex::inplace(poplar::program::Sequence &prog,
                            const std::string &s) const {
 
   auto minT = broadcastClipTensor(
-      getClipTensor(min, tensor.getPoplarTensor().elementType(), graph, dnai),
-      tensor);
+      getClipTensor(min, tensor.elementType(), graph, dnai), tensor);
   auto maxT = broadcastClipTensor(
-      getClipTensor(max, tensor.getPoplarTensor().elementType(), graph, dnai),
-      tensor);
+      getClipTensor(max, tensor.elementType(), graph, dnai), tensor);
 
   popops::mapInPlace(graph.getPoplarGraph(),
                      popops::expr::TernaryOpType::CLAMP,
@@ -145,7 +141,7 @@ void ClipGradOpx::grow(poplar::program::Sequence &prog) const {
   auto clipGradOp = dynamic_cast<ClipGradOp *>(op_p);
   auto gradIn     = getInTensor(clipGradOp->getGradClippedInIndex());
   auto fwdOut     = getInTensor(clipGradOp->getClippedInIndex());
-  auto elType     = gradIn.getPoplarTensor().elementType();
+  auto elType     = gradIn.elementType();
   auto clipmax    = ClipComputex::broadcastClipTensor(
       ClipComputex::getClipTensor(
           clipGradOp->getClipMax(), elType, graph(), getDebugNameAndId()),

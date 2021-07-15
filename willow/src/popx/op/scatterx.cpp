@@ -58,7 +58,7 @@ void ScatterDataGradOpx::grow(poplar::program::Sequence &prog) const {
   auto data = cloneNcopy(prog, getInTensor(ScatterDataGradOp::gradInIndex()));
   auto indices = getInTensor(ScatterDataGradOp::indicesInIndex());
   auto update  = snap::Tensor{
-      graph().getPoplarGraph().addConstant(data.getPoplarTensor().elementType(),
+      graph().getPoplarGraph().addConstant(data.elementType(),
                                            indices.getPoplarTensor().shape(),
                                            0,
                                            debugContext("zeros")),

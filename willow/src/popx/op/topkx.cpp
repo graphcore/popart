@@ -37,12 +37,10 @@ void TopKGradOpx::grow(poplar::program::Sequence &prog) const {
 
   auto gradIn = getInTensor(TopKGradOp::gradInIndex());
 
-  snap::Tensor dataGrad =
-      snap::Tensor{graph().getPoplarGraph().addVariable(
-                       gradIn.getPoplarTensor().elementType(),
-                       getGradOutShape(),
-                       debugContext("dataGrad")),
-                   graph()};
+  snap::Tensor dataGrad = snap::Tensor{
+      graph().getPoplarGraph().addVariable(
+          gradIn.elementType(), getGradOutShape(), debugContext("dataGrad")),
+      graph()};
 
   poputil::mapTensorLinearly(graph().getPoplarGraph(),
                              dataGrad.getPoplarTensor());

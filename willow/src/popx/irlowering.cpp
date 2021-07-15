@@ -1364,7 +1364,7 @@ IrLowering::getRemoteBuffer(RemoteBufferId id) const {
 void IrLowering::createRemoteBuffer(RemoteBufferId id, snap::Tensor tensor) {
   auto info    = ir().getRemoteBufferInfo(id);
   auto name    = getRemoteBufferName(id);
-  auto type    = tensor.getPoplarTensor().elementType();
+  auto type    = tensor.elementType();
   auto size    = tensor.getPoplarTensor().numElements();
   auto repeats = info.repeats;
 
@@ -2194,10 +2194,8 @@ void IrLowering::growOpx(PopOpx *opx,
       popops::expr::Any lhsExpr = popops::expr::_1;
       popops::expr::Any rhsExpr = popops::expr::_2;
 
-      if (nonModified.second.first.getPoplarTensor().elementType() ==
-              poplar::FLOAT ||
-          nonModified.second.first.getPoplarTensor().elementType() ==
-              poplar::HALF) {
+      if (nonModified.second.first.elementType() == poplar::FLOAT ||
+          nonModified.second.first.elementType() == poplar::HALF) {
         lhsExpr =
             popops::expr::Select(popops::expr::_1,
                                  popops::expr::Const(0),
