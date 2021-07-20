@@ -10,7 +10,7 @@ namespace popart {
 
 ShapedDropoutOp::ShapedDropoutOp(const OperatorIdentifier &_opid,
                                  float ratio_,
-                                 const std::vector<int64_t> &shape_,
+                                 const Shape &shape_,
                                  const Op::Settings &settings_)
     : DropoutBaseOp(_opid, ratio_, settings_), shape(shape_) {}
 

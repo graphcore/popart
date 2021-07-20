@@ -10,7 +10,7 @@ class ShapedDropoutOp : public DropoutBaseOp {
 public:
   ShapedDropoutOp(const OperatorIdentifier &_opid,
                   float ratio_,
-                  const std::vector<int64_t> &shape_,
+                  const Shape &shape_,
                   const Op::Settings &settings_);
 
   const std::vector<int64_t> &getShape() const { return shape; }

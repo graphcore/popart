@@ -25,7 +25,7 @@ public:
 class ZerosOp : public ZerosBaseOp {
 public:
   ZerosOp(const OperatorIdentifier &opid_,
-          const std::vector<int64_t> &shape_,
+          const Shape &shape_,
           const OptionalDataType &dataType_,
           const Op::Settings &settings_);
 
