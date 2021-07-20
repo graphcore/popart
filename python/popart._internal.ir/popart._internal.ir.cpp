@@ -7,6 +7,7 @@
 #include "bindings/tensor.hpp"
 #include "bindings/tensordata.hpp"
 #include "bindings/tensorinfo.hpp"
+#include "bindings/tensors.hpp"
 
 #include <pybind11/pybind11.h>
 
@@ -31,6 +32,7 @@ PYBIND11_MODULE(popart_internal_ir, m) {
   bindTensor(m);
   bindTensorData(m);
   bindTensorInfo(m);
+  bindTensors(m);
 }
 
 } // namespace ir

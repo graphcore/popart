@@ -144,7 +144,7 @@ void bindTensor(py::module &m) {
            &Tensor::getDebugInfo,
            py::return_value_policy::reference)
       .def_readonly("consumers", &Tensor::consumers)
-      .def_readonly("info", &Tensor::info)
+      .def_readwrite("info", &Tensor::info)
       .def_readonly("tensorLocationInfo", &Tensor::tensorLocationInfo)
       .def_readonly("inputSettings", &Tensor::inputSettings)
       .def_readonly("id", &Tensor::id);
