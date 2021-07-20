@@ -21,6 +21,11 @@
                 "7": "warning",
                 "8": "autofix"
             }
+        },
+        "popart-test-linter": {
+            "type": "popart-test-linter",
+            "include": "(\\.py$)",
+            "exclude": "(docs/user_guide/files/tests/test_examples.py)"
         }
     }
 }
