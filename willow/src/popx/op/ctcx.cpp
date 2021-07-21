@@ -326,7 +326,7 @@ CtcGradOpx::applyReductionGrad(poplar::program::Sequence &prog,
     // scalar into a tensor of shape [N] to get the result we need.
 
     return snap::Tensor{
-        ctcLossGrad.getPoplarTensor().expand({0}).broadcast(N, 0), graph()};
+        ctcLossGrad.expand({0}).getPoplarTensor().broadcast(N, 0), graph()};
 
   } else {
 

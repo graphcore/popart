@@ -111,15 +111,12 @@ void BatchNormOpx::grow(poplar::program::Sequence &prog) const {
         x.getPoplarTensor().numElements() / x.getPoplarTensor().dim(0);
 
     // Reshape the inputs.
-    x = snap::Tensor{x.getPoplarTensor().reshape(
-                         {x.getPoplarTensor().dim(0), NUM_FEATURES, 1}),
-                     graph()};
-    scale =
-        snap::Tensor{scale.getPoplarTensor().reshape({NUM_FEATURES}), graph()};
-    b = snap::Tensor{b.getPoplarTensor().reshape({NUM_FEATURES}), graph()};
-    mean =
-        snap::Tensor{mean.getPoplarTensor().reshape({NUM_FEATURES}), graph()};
-    var = snap::Tensor{var.getPoplarTensor().reshape({NUM_FEATURES}), graph()};
+    x = x.reshape({x.getPoplarTensor().dim(0), NUM_FEATURES, 1});
+
+    scale = scale.reshape({NUM_FEATURES});
+    b     = b.reshape({NUM_FEATURES});
+    mean  = mean.reshape({NUM_FEATURES});
+    var   = var.reshape({NUM_FEATURES});
   }
 
   // Lower the batch normalization operator for spatial=True.
@@ -129,23 +126,16 @@ void BatchNormOpx::grow(poplar::program::Sequence &prog) const {
     // As spatial=False we must transform the outputs back to their expected
     // form (see above). Note that some outputs are optional and depend on the
     // use case.
-    outputs.y =
-        snap::Tensor{outputs.y.getPoplarTensor().reshape(yShape), graph()};
+    outputs.y = outputs.y.reshape(yShape);
 
     if (outputs.mean)
-      outputs.mean = snap::Tensor{
-          outputs.mean->getPoplarTensor().reshape(otherOutputsShape), graph()};
+      outputs.mean = outputs.mean->reshape(otherOutputsShape);
     if (outputs.var)
-      outputs.var = snap::Tensor{
-          outputs.var->getPoplarTensor().reshape(otherOutputsShape), graph()};
+      outputs.var = outputs.var->reshape(otherOutputsShape);
     if (outputs.savedMean)
-      outputs.savedMean = snap::Tensor{
-          outputs.savedMean->getPoplarTensor().reshape(otherOutputsShape),
-          graph()};
+      outputs.savedMean = outputs.savedMean->reshape(otherOutputsShape);
     if (outputs.savedVar)
-      outputs.savedVar = snap::Tensor{
-          outputs.savedVar->getPoplarTensor().reshape(otherOutputsShape),
-          graph()};
+      outputs.savedVar = outputs.savedVar->reshape(otherOutputsShape);
   }
 
   // Now we need to set the output tensors, where available.
@@ -405,30 +395,20 @@ void BatchNormGradOpx::grow(poplar::program::Sequence &prog) const {
         x.getPoplarTensor().numElements() / x.getPoplarTensor().dim(0);
 
     // Reshape the inputs.
-    x = snap::Tensor{x.getPoplarTensor().reshape(
-                         {x.getPoplarTensor().dim(0), NUM_FEATURES, 1}),
-                     graph()};
-    scale =
-        snap::Tensor{scale.getPoplarTensor().reshape({NUM_FEATURES}), graph()};
-    mean =
-        snap::Tensor{mean.getPoplarTensor().reshape({NUM_FEATURES}), graph()};
-    var = snap::Tensor{var.getPoplarTensor().reshape({NUM_FEATURES}), graph()};
-    yGrad = snap::Tensor{yGrad.getPoplarTensor().reshape(
-                             {x.getPoplarTensor().dim(0), NUM_FEATURES, 1}),
-                         graph()};
+    x     = x.reshape({x.getPoplarTensor().dim(0), NUM_FEATURES, 1});
+    scale = scale.reshape({NUM_FEATURES});
+    mean  = mean.reshape({NUM_FEATURES});
+    var   = var.reshape({NUM_FEATURES});
+    yGrad = yGrad.reshape({x.getPoplarTensor().dim(0), NUM_FEATURES, 1});
   }
 
   auto outputs = growSpatial(prog, op, x, scale, mean, var, yGrad);
 
   if (!op.getSpatial()) {
     // As spatial=False we must undo the reshaping here (aking to BatchNormOpx).
-    outputs.xGrad =
-        snap::Tensor{outputs.xGrad.getPoplarTensor().reshape(xShape), graph()};
-    outputs.scaleGrad = snap::Tensor{
-        outputs.scaleGrad.getPoplarTensor().reshape(otherOutputsShape),
-        graph()};
-    outputs.bGrad = snap::Tensor{
-        outputs.bGrad.getPoplarTensor().reshape(otherOutputsShape), graph()};
+    outputs.xGrad     = outputs.xGrad.reshape(xShape);
+    outputs.scaleGrad = outputs.scaleGrad.reshape(otherOutputsShape);
+    outputs.bGrad     = outputs.bGrad.reshape(otherOutputsShape);
   }
 
   setOutTensor(BatchNormGradOp::getXOutIndex(), outputs.xGrad);

@@ -112,7 +112,7 @@ void GRUOpx::grow(poplar::program::Sequence &prog) const {
         snap::Tensor{popnn::gru::gruFwd(graph().getPoplarGraph(),
                                         createGRUParams(),
                                         init_state_h.getPoplarTensor(),
-                                        input.getPoplarTensor().reverse(0),
+                                        input.reverse(0).getPoplarTensor(),
                                         *weights,
                                         getPoplarTensor(intermediate.get()),
                                         prog,
@@ -163,10 +163,7 @@ void GRUOpx::grow(poplar::program::Sequence &prog) const {
 void GRUOpx::reshapeAndInsert(OutIndex index,
                               const snap::Tensor &tensor) const {
   if (getOp<GRUOp>().hasOutput(index)) {
-    setOutTensor(index,
-                 snap::Tensor{tensor.getPoplarTensor().reshape(
-                                  outInfo(index).shape_szt()),
-                              graph()});
+    setOutTensor(index, tensor.reshape(outInfo(index).shape_szt()));
   }
 }
 
@@ -262,9 +259,7 @@ snap::Tensor GRUOpx::createInputTensor(InIndex index,
     unsigned num_directions = static_cast<unsigned>(gru_op.getNumDirections());
 
     auto init_h = getInitialState();
-    return snap::Tensor{init_h.getPoplarTensor().reshape(
-                            {num_directions, batch_size, hidden_size}),
-                        graph()};
+    return init_h.reshape({num_directions, batch_size, hidden_size});
   } else {
     throw error("GRUOpx::createInput is not supported for index {}", index);
   }
@@ -499,9 +494,8 @@ void GRUGradOpx::grow(poplar::program::Sequence &prog) const {
 
     if (gru_op.getLinearBeforeResetAttribute()) {
       // separate gradients for input and hidden bias
-      auto b_grad_ = b_grad.getPoplarTensor().reshape({1, 6 * hidden_size});
-      setOutTensor(GRUGradOp::getBiasOutIndex(),
-                   snap::Tensor{b_grad_, graph()});
+      auto b_grad_ = b_grad.reshape({1, 6 * hidden_size});
+      setOutTensor(GRUGradOp::getBiasOutIndex(), b_grad_);
     } else {
       // propagate same gradient to both input and hidden bias
       setOutTensor(GRUGradOp::getBiasOutIndex(),

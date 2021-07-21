@@ -41,8 +41,7 @@ TransposeOpx::unwindTensorLayout(snap::Tensor tensor, InIndex, OutIndex) const {
     reverse_perm.push_back(static_cast<unsigned>(position));
   }
 
-  return snap::Tensor{tensor.getPoplarTensor().dimShuffle(reverse_perm),
-                      graph()};
+  return tensor.dimShuffle(reverse_perm);
 }
 
 view::RegMap TransposeOpx::unwindRegion(InIndex inIndex,
@@ -73,8 +72,7 @@ snap::Tensor TransposeInplaceOpx::unwindTensorLayout(snap::Tensor tensor,
     reverse_perm.push_back(static_cast<unsigned>(position));
   }
 
-  return snap::Tensor{tensor.getPoplarTensor().dimShuffle(reverse_perm),
-                      graph()};
+  return tensor.dimShuffle(reverse_perm);
 }
 
 view::RegMap TransposeInplaceOpx::unwindRegion(InIndex inIndex,

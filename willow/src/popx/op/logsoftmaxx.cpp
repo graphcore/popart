@@ -60,8 +60,7 @@ void LogSoftmaxComputex::inplace(poplar::program::Sequence &p,
 }
 
 snap::Tensor LogSoftmaxComputex::reshape(const snap::Tensor &t) const {
-  auto tx = t;
-  return snap::Tensor{t.getPoplarTensor().reshape(outShape), tx};
+  return t.reshape(outShape);
 }
 
 LogSoftmaxGradOpx::LogSoftmaxGradOpx(Op *op, Devicex *devicex)

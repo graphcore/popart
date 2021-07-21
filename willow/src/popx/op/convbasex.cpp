@@ -202,8 +202,7 @@ void MultiConvWeightsGradBaseOpx::grow(poplar::program::Sequence &prog) const {
       if (std::equal(
               wGradShape.begin() + 2, wGradShape.end(), fwdShape.begin() + 1) &&
           wGradShape[0] * wGradShape[1] == fwdShape[0]) {
-        outTensors[i] = snap::Tensor{
-            outTensors[i].getPoplarTensor().reshape(fwdShape), graph()};
+        outTensors[i] = outTensors[i].reshape(fwdShape);
       }
     }
     setOutTensor(MultiConvWeightsGradBaseOp::getOutIndex(i), outTensors[i]);
@@ -253,7 +252,7 @@ snap::Tensor reshapeOnnxWeightsForPoplar(const snap::Tensor &weights,
   }
 
   auto x = weights;
-  return snap::Tensor{weights.getPoplarTensor().reshape(weightsShape), x};
+  return weights.reshape(weightsShape);
 }
 
 poplin::ConvParams getPoplarConvParams(const ConvParameters &param) {

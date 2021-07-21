@@ -90,9 +90,7 @@ void ScatterDataGradOpx::grow(poplar::program::Sequence &prog) const {
 
   // Add a degenerate dimension for concatenation
   for (auto &index : indices_mapped) {
-    index = snap::Tensor{
-        index.getPoplarTensor().expand({index.getPoplarTensor().rank()}),
-        graph()};
+    index = index.expand({index.getPoplarTensor().rank()});
   }
 
   std::vector<unsigned> update_window_dims(indices_mapped.size());

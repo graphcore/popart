@@ -58,7 +58,7 @@ snap::Tensor matchRank(snap::Tensor a, snap::Tensor b, unsigned dim) {
 
   std::copy(b_shape.begin(), b_shape.end(), shape.begin() + dim);
 
-  return snap::Tensor{b.getPoplarTensor().reshape(shape), b};
+  return b.reshape(shape);
 }
 
 snap::Tensor broadcastShape(snap::Tensor a, snap::Tensor b_) {
@@ -104,9 +104,7 @@ void growScatter(poplar::program::Sequence &prog,
 
   // Add a degenerate dimension for concatenation
   for (auto &index : indices_mapped) {
-    index = snap::Tensor{
-        index.getPoplarTensor().expand({index.getPoplarTensor().rank()}),
-        graph};
+    index = index.expand({index.getPoplarTensor().rank()});
   }
 
   std::vector<unsigned> update_window_dims(indices_mapped.size());
@@ -168,9 +166,7 @@ snap::Tensor growScatterUpdateGrad(poplar::program::Sequence &prog,
 
   for (auto &index : indicesMapped) {
     // Add a degenerate dimension for concatenation
-    index = snap::Tensor{
-        index.getPoplarTensor().expand({index.getPoplarTensor().rank()}),
-        graph};
+    index = index.expand({index.getPoplarTensor().rank()});
   }
 
   // Concat the indices on the degenerate dimension

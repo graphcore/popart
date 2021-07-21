@@ -85,7 +85,9 @@ snap::Tensor RestoreBaseOpx<Derived>::growStaticSliceRestore(
                                 1,
                                 debugContext("static-restore/out-slice"));
 
-  poplar::program::Switch switchCase(stashIndex.getPoplarTensor().reshape({}));
+  poplar::program::Switch switchCase(
+      stashIndex.reshape({}).getPoplarTensor(),
+      debugContext("static-restore/switch-on-stash-index"));
 
   for (int64_t i = 0; i < stashSize; i++) {
     const auto inSliceAtIdx = stash.getPoplarTensor().slice(i, i + 1, 0);

@@ -24,7 +24,7 @@ void StashOpx::growStaticStashUpdate(poplar::program::Sequence &prog,
     We have thus "unrolled" the dynamic update in a way.
   */
 
-  poplar::program::Switch switchCase(stashIndex.getPoplarTensor().reshape({}),
+  poplar::program::Switch switchCase(stashIndex.reshape({}).getPoplarTensor(),
                                      debugContext("static-stash/switch"));
 
   for (unsigned i = 0; i != hStashSize; ++i) {
@@ -47,7 +47,7 @@ void StashOpx::growDynamicStashUpdate(poplar::program::Sequence &prog,
   // Update the stash.
   popops::dynamicUpdate(graph().getPoplarGraph(),
                         outTensor.getPoplarTensor(),
-                        inTensor.getPoplarTensor().expand({0}),
+                        inTensor.expand({0}).getPoplarTensor(),
                         stashIndex.getPoplarTensor(),
                         {0},
                         {1},
@@ -76,7 +76,7 @@ void StashOpx::grow(poplar::program::Sequence &prog) const {
   const auto outTensor =
       snap::Tensor{popops::createSliceableTensorFromSlice(
                        graph().getPoplarGraph(),
-                       inTensor.getPoplarTensor().expand({0}),
+                       inTensor.expand({0}).getPoplarTensor(),
                        {0},
                        {hStashSize},
                        "Stash__" + inId(StashOp::getInIndex())),

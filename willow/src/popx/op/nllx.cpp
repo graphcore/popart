@@ -241,9 +241,7 @@ void NllOpx::handleLossOutNotReducedToScalar(const PopOpx &opx,
                      prog,
                      opx.debugContext("neg"));
   // One loss per sample, so the output is reshaped to match label input shape
-  reduction = snap::Tensor{
-      reduction.getPoplarTensor().reshape(label.getPoplarTensor().shape()),
-      opx.graph()};
+  reduction = reduction.reshape(label.getPoplarTensor().shape());
 
   opx.setOutTensor(0, reduction);
 }
@@ -300,8 +298,7 @@ void NllOpx::handleLossGradScaling(const PopOpx &opx,
   // dimensions
   for (unsigned dim = 0; dim < oneHot.getPoplarTensor().rank(); dim++) {
     if (dim > gradIn.getPoplarTensor().rank() - 1) {
-      gradIn =
-          snap::Tensor{gradIn.getPoplarTensor().expand({dim}), opx.graph()};
+      gradIn = gradIn.expand({dim});
     }
   }
 
@@ -410,9 +407,7 @@ void NllGradOpx::grow(poplar::program::Sequence &prog) const {
   }
 
   // Output is reshaped to match probs input shape
-  oneHot = snap::Tensor{
-      oneHot.getPoplarTensor().reshape(probs.getPoplarTensor().shape()),
-      graph()};
+  oneHot = oneHot.reshape(probs.getPoplarTensor().shape());
 
   NllOpx::handleLossGradScaling(
       *this,

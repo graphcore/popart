@@ -83,8 +83,7 @@ void SoftmaxComputex::inplace(poplar::program::Sequence &p,
 }
 
 snap::Tensor SoftmaxComputex::reshape(const snap::Tensor &t) const {
-  auto tx = t;
-  return snap::Tensor{t.getPoplarTensor().reshape(outShape), tx};
+  return t.reshape(outShape);
 }
 
 SoftmaxGradOpx::SoftmaxGradOpx(Op *op, Devicex *devicex)
@@ -143,9 +142,7 @@ void SoftmaxGradDirectOpx::grow(poplar::program::Sequence &prog) const {
                      debugContext("negsub"));
 
   // Output is reshaped to match probs input shape
-  oneHot = snap::Tensor{
-      oneHot.getPoplarTensor().reshape(probs.getPoplarTensor().shape()),
-      graph()};
+  oneHot = oneHot.reshape(probs.getPoplarTensor().shape());
 
   NllOpx::handleLossGradScaling(*this,
                                 op.hasIgnoreIndex(),
@@ -222,9 +219,7 @@ void NlllWithSoftmaxGradDirectOpx::grow(poplar::program::Sequence &prog) const {
                      debugContext("NegSub"));
 
   // Output is reshaped to match probs input shape
-  oneHot = snap::Tensor{
-      oneHot.getPoplarTensor().reshape(probs.getPoplarTensor().shape()),
-      graph()};
+  oneHot = oneHot.reshape(probs.getPoplarTensor().shape());
 
   NllOpx::handleLossGradScaling(*this,
                                 op.hasIgnoreIndex(),

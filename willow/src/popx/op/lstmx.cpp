@@ -113,10 +113,7 @@ void LSTMOpx::grow(poplar::program::Sequence &prog) const {
 void LSTMOpx::reshapeAndInsert(OutIndex index,
                                const snap::Tensor &tensor) const {
   if (getOp<LSTMOp>().hasOutput(index)) {
-    setOutTensor(index,
-                 snap::Tensor{tensor.getPoplarTensor().reshape(
-                                  outInfo(index).shape_szt()),
-                              graph()});
+    setOutTensor(index, tensor.reshape(outInfo(index).shape_szt()));
   }
 }
 

@@ -39,7 +39,7 @@ void DynamicZeroOpx::grow(poplar::program::Sequence &prog) const {
       outTensor.getPoplarTensor(),
       slice,
       popops::cast(graph().getPoplarGraph(),
-                   index.getPoplarTensor().reshape({op.getAxes().size()}),
+                   index.reshape({op.getAxes().size()}).getPoplarTensor(),
                    poplar::UNSIGNED_INT,
                    prog,
                    debugContext()),
