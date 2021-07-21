@@ -4,8 +4,10 @@
 # First, install the mkdoc python module:
 # `python3 -m pip install git+git://github.com/pybind/pybind11_mkdoc.git@master`
 # Also install python-clang if you don't have it already:
-# `pip install clang`
-# Then run this file with a poplar include directory :
+# `python3 -m pip install clang`
+#
+# Then run this file with either a poplar SDK include directory or the
+# poplar_view build directory:
 # bash gen_python_docs.sh path/to/poplar-install/include
 # This will generate willow/include/popart/pydocs_popart_core.hpp which contains the docstrings
 # for the python bindings. See the githib repo above for details on how to access them, or
@@ -28,12 +30,30 @@ then
     exit 0
 fi
 
-# Check poplar include dir was supplied.
+# Check a poplar include or build dir was supplied.
 if [ -z "$1" ]
 then
-    echo "Please supply a poplar include directory:"
-    echo $0 "<poplar include directory>"
+    echo "Please supply a poplar include directory or poplar_view build dir:"
+    echo $0 "<poplar include directory or build dir>"
     exit 0
+else
+    # Check for poplar_view
+    cwd=$(pwd)
+    cd "$(readlink -f $1)"
+    if [[  $(git config --get remote.origin.url) == *"POPLARVIEW"* ]]
+    then
+        echo "In poplar_view, assuming a build dir"
+        EXTRA_INCLUDES_STR="-I "$1"/install/gcl/include \
+        -I "$1"/install/libpva/include \
+        -I "$1"/install/popir/include \
+        -I "$1"/install/poplar/include \
+        -I "$1"/install/poplibs/include \
+        -I "$1"/install/poprithms/include"
+    else
+        echo "Not in poplar_view, assuming a poplar SDK include dir"
+        EXTRA_INCLUDES_STR="-I "$1""
+    fi
+    cd "$cwd"
 fi
 
 # Run the generation command.
@@ -45,7 +65,7 @@ fi
 echo "Generating python docs from .hpp files:"
 CMD="python3 -m pybind11_mkdoc \
 -I /usr/include \
--I "$1" \
+$EXTRA_INCLUDES_STR \
 -I willow/include \
 -ferror-limit=100000 \
 -DONNX_NAMESPACE=onnx \
@@ -59,6 +79,7 @@ willow/include/popart/graphtransformer.hpp \
 willow/include/popart/ir.hpp \
 willow/include/popart/numerics.hpp \
 willow/include/popart/op/collectives/collectives.hpp \
+willow/include/popart/op/exchange/exchange.hpp \
 willow/include/popart/op/identity.hpp \
 willow/include/popart/op/init.hpp \
 willow/include/popart/op/l1.hpp \
@@ -70,6 +91,7 @@ willow/include/popart/patterns/patterns.hpp \
 willow/include/popart/popx/devicex.hpp \
 willow/include/popart/session.hpp \
 willow/include/popart/sessionoptions.hpp \
+willow/include/popart/sgd.hpp \
 willow/include/popart/stepio_generic.hpp \
 willow/include/popart/stepio_size_assertion.hpp \
 willow/include/popart/tensordata.hpp \

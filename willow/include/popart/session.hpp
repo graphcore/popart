@@ -352,6 +352,11 @@ protected:
   std::string name;
 };
 
+/**
+ * InferenceSession is a runtime instance that provides an interface for
+ * executing ONNX graphs on IPU hardware, without any automatic differentiation
+ * (backpropagation) or optimization.
+ */
 class InferenceSession : public Session {
 
   using Session::Session;
@@ -386,6 +391,12 @@ public:
                       const std::string name = DefaultInferenceSessionName);
 };
 
+/**
+ * TrainingSession is a runtime instance that provides an interface for
+ * executing ONNX graphs on IPU hardware with training provided by optimizing
+ * the specified loss tensor using the specified optimizer and automatic
+ * differentiation (backpropagation)
+ */
 class TrainingSession : public Session {
 
   using Session::Session;

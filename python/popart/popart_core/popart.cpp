@@ -1204,9 +1204,10 @@ PYBIND11_MODULE(popart_core, m) {
     cls.def_readwrite("enableGradientAccumulation",
                       &SessionOptions::enableGradientAccumulation,
                       DOC(popart, SessionOptions, enableGradientAccumulation));
-    cls.def_readwrite("accumulationAndReplicationReductionType",
-                      &SessionOptions::accumulationAndReplicationReductionType,
-                      DOC(popart, SessionOptions, accumulationReductionType));
+    cls.def_readwrite(
+        "accumulationAndReplicationReductionType",
+        &SessionOptions::accumulationAndReplicationReductionType,
+        DOC(popart, SessionOptions, accumulationAndReplicationReductionType));
     cls.def_readwrite("enableNonStableSoftmax",
                       &SessionOptions::enableNonStableSoftmax,
                       DOC(popart, SessionOptions, enableNonStableSoftmax));
@@ -1985,7 +1986,7 @@ PYBIND11_MODULE(popart_core, m) {
             DOC(popart, TrainingSession, getHostReduceStreamIds));
     cls.def("connectStreamToCallback",
             &TrainingSession::connectStreamToCallback,
-            DOC(popart, TrainingSession, connectStreamToCallback));
+            DOC(popart, Session, connectStreamToCallback));
   }
   {
     py::class_<GraphTransformer> cls(m, "GraphTransformer");
