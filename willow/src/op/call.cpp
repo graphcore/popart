@@ -21,7 +21,7 @@ CallOp::CallOp(const OperatorIdentifier &opid_,
 
 CallOp::CallOp(const OperatorIdentifier &opid_,
                Graph &callee_,
-               std::vector<int> modifiedInputsViaAttrs_,
+               const std::vector<int> &modifiedInputsViaAttrs_,
                const Op::Settings &settings_)
     : SubgraphOp(opid_, settings_), callee(callee_),
       modifiedInputsViaAttrs(modifiedInputsViaAttrs_) {}

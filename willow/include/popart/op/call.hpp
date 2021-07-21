@@ -19,7 +19,7 @@ public:
   // NOTE: modifiedInputsViaAttrs is currently only used for testing purposes.
   CallOp(const OperatorIdentifier &,
          Graph &callee,
-         std::vector<int> modifiedInputsViaAttrs,
+         const std::vector<int> &modifiedInputsViaAttrs,
          const Op::Settings &settings);
 
   void setup() final;
