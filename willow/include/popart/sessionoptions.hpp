@@ -691,6 +691,17 @@ struct SessionOptions {
   /// Enable explicit recomputation.
   bool explicitRecomputation = false;
 
+  /// Enable explicit pipelining.
+  bool explicitPipelining = false;
+
+  bool explicitPipeliningEnabled() const {
+    return enablePipelining && explicitPipelining;
+  }
+
+  bool implicitPipeliningEnabled() const {
+    return enablePipelining && !explicitPipelining;
+  }
+
   /**
    * A wrapper class for the #numIOTiles option that permits any int value and
    * has an 'unassigned' state.

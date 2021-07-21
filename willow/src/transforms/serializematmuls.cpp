@@ -538,10 +538,12 @@ static void serializeVarUpdate(int sliceDim,
           VarUpdateWithUpdaterOp::getUpdaterInIndex(), output);
       slicedVarUpdateOp->createAndConnectOutTensor(
           VarUpdateOp::getUpdatedVarOutIndex(), "updated__" + slicedWeight);
-      if (virtualGraphId)
+      if (virtualGraphId) {
         slicedVarUpdateOp->setVirtualGraphId(*virtualGraphId);
-      if (pipelineStage)
+      }
+      if (pipelineStage) {
         slicedVarUpdateOp->setPipelineStage(*pipelineStage);
+      }
       slicedVarUpdateOp->setup();
 
       auto slicedVarUpdatePtr = slicedVarUpdateOp.get();

@@ -1239,18 +1239,15 @@ PriTask IrLowering::streamFromHostTask(TensorId streamTensorId,
         vgidsTileSetsAndTensors;
 
     std::vector<std::pair<Tensor *, Op *>> consumerOps;
-
     for (Tensor *t : tensors) {
       auto consumers = t->consumers.getOps();
       for (auto c : consumers) {
         consumerOps.push_back({t, c});
       }
     }
-
     for (auto &tensorAndOp : consumerOps) {
       Tensor *tensor = tensorAndOp.first;
       Op *op         = tensorAndOp.second;
-
       // Assume another op will copy the tensor for an ipucopy
       if (op->opid != Onnx::CustomOperators::IpuCopy) {
         // VirtualGraphId with subgraph call introspection
@@ -1308,7 +1305,6 @@ PriTask IrLowering::streamFromHostTask(TensorId streamTensorId,
     }
     return SequenceMap();
   };
-
   return {
       0,                                    // priority unimportant
       streamFromHostTaskId(streamTensorId), // name of this task
@@ -1916,6 +1912,7 @@ IrLowering::opTasks(Op *op, double priority, TaskId prevOpTaskId) {
   auto opTaskGrowFunc = [op, this]() {
     SequenceMap seqs;
     const auto &containingGraph = op->getGraph();
+    const auto &opts            = ir().getSessionOptions();
     // if this Op is not in the main scope
     if (!containingGraph.id.str().empty()) {
       // We need to create a mapping to avoid the index operator creating just
@@ -1931,7 +1928,7 @@ IrLowering::opTasks(Op *op, double priority, TaskId prevOpTaskId) {
           subgraphPart);
       // Record each scope task fragment separately first.
       growOpx(opx, seqs[&progs.scopeFragment(containingGraph, subgraphPart)]);
-    } else if (ir().getSessionOptions().enablePipelining) {
+    } else if (opts.implicitPipeliningEnabled()) {
       pipelinedOpTaskFunc(opTaskId(op), op, seqs);
     } else {
       opTaskFunc(opTaskId(op), op, seqs);
@@ -3080,7 +3077,7 @@ void IrLowering::prepareGraph() {
     }
 
     for (Tensor *tensor : ir().dataStreamTensors()) {
-      if (ir().getSessionOptions().enablePipelining) {
+      if (ir().getSessionOptions().implicitPipeliningEnabled()) {
         PipelineStage ps = *tensor->consumers.findLowestPipelineStage();
         auto &sq = progs.pipelineToDeviceStreamFragment(ps, tensor->str());
         tasks.add(fromHostTask(tensor, sq));
@@ -3108,7 +3105,7 @@ void IrLowering::prepareGraph() {
 
   addOpTasks(tasks);
 
-  if (ir().getSessionOptions().enablePipelining) {
+  if (ir().getSessionOptions().implicitPipeliningEnabled()) {
     addPipelinedCopyTasks(tasks);
   }
 
@@ -3301,7 +3298,7 @@ void IrLowering::prepareGraph() {
 }
 
 poplar::program::Sequence &IrLowering::getAnchorReturnFragment(Tensor *tensor) {
-  if (ir().getSessionOptions().enablePipelining) {
+  if (ir().getSessionOptions().implicitPipeliningEnabled()) {
     auto isOptimizerTensorCopy = [&](Op *x) {
       return x->isConvertibleTo<IpuCopyOp>() &&
              dynamic_cast<IpuCopyOp *>(x)->copiesOptimizerTensors();

@@ -461,7 +461,7 @@ void Ir::verifyPipelineSettings() const {
     if (x->hasPipelineStage()) {
       return x->getPipelineStage();
     } else {
-      return -1;
+      return unusedPipelineStage;
     }
   };
 
@@ -469,7 +469,7 @@ void Ir::verifyPipelineSettings() const {
     if (x->hasVirtualGraphId()) {
       return x->getVirtualGraphId();
     } else {
-      return -1;
+      return unusedVGraphId;
     }
   };
 
@@ -883,6 +883,21 @@ void Ir::verifyExecutionContexts() const {
         throw error("With explicit main loops, no Op should have "
                     "ExecutionContext::AccumulateOuterFragment when the IR is "
                     "finished preparing.");
+      }
+    }
+  }
+}
+
+void Ir::verifyPipelineStageAttributes() const {
+  if (getSessionOptions().enableExplicitMainLoops) {
+    for (Op *op : getAllOps()) {
+      if (op->settings.pipelineStage) {
+        throw error("With explicit main loops, no Op should have "
+                    "pipelineStage attributes when the IR is "
+                    "finished preparing (offending Op: {}: {} stage: {}).",
+                    op->id,
+                    op->debugName(),
+                    *(op->settings.pipelineStage));
       }
     }
   }
@@ -1373,11 +1388,6 @@ void Ir::prepareImpl(const IrBundle &gb, const HashesMap &cacheEntries) {
 
   dotCheckpoint(DotCheck::PreAlias);
 
-  if (getSessionOptions().enableExplicitMainLoops) {
-    // Add explicit training loops
-    applyTransform(MainLoops::id(), getMainGraph());
-  }
-
   if (getSessionOptions().useHostCopyOps) {
     // Add anchor HostStore operations
     applyTransform(HostIOSetup::id(2), getMainGraph());
@@ -1385,6 +1395,12 @@ void Ir::prepareImpl(const IrBundle &gb, const HashesMap &cacheEntries) {
     // ops
     applyTransform(IoComputeTileCopy::id(), getMainGraph());
     updateVertices();
+  }
+
+  if (getSessionOptions().enableExplicitMainLoops) {
+    // Add explicit training loops
+    applyTransform(MainLoops::id(), getMainGraph());
+    removeIsolatedTensors(true);
   }
 
   // Merge remote loads/stores into exchanges
@@ -1513,6 +1529,7 @@ void Ir::prepareImpl(const IrBundle &gb, const HashesMap &cacheEntries) {
     verifyVertexAttributesOnlyInMain();
     verifyRecomputeAttributes();
     verifyExecutionContexts();
+    verifyPipelineStageAttributes();
   }
   // end of checks
 
@@ -2383,8 +2400,7 @@ PipelineStage Ir::getFinalLossPipelineStage() const {
 int64_t Ir::getNumPipelineStages() const {
   std::set<PipelineStage> pStages;
 
-  for (auto &id_op : getMainGraph().getOps()) {
-    auto op = id_op.second.get();
+  for (auto op : getAllOps()) {
     if (op->hasPipelineStage()) {
       pStages.insert(op->getPipelineStage());
     }
@@ -3889,7 +3905,7 @@ std::map<OpId, OpId> cloneOpsAndAddTensors(Graph &originalGraph,
     for (const auto indexAndTensor : tensorOuputMap) {
       auto index  = indexAndTensor.first;
       auto tensor = indexAndTensor.second;
-      // We reomve the inner loop scope from the tensor
+      // We remove the inner loop scope from the tensor
       auto clonedOutputTensorId =
           clonedGraph.addScope(originalGraph.removeScope(tensor->id));
       // Create the tensor with the tensorId made above
@@ -3977,8 +3993,8 @@ std::size_t std::hash<popart::Ir>::operator()(const popart::Ir &ir) const {
   return seed;
 }
 
-std::size_t
-std::hash<popart::IrBundle>::operator()(const popart::IrBundle &bundle) const {
+std::size_t std::hash<popart::IrBundle>::
+operator()(const popart::IrBundle &bundle) const {
   size_t seed = 0;
 
   boost::hash_combine(

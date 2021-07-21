@@ -380,6 +380,7 @@ void Session::connectStream(const std::string &streamHandle, void *buffer) {
 void Session::run(IStepIO &stepio, std::string debugName) {
   POPART_TRACEPOINT();
   logging::session::trace("Session::run {}", debugName);
+
   if (device_->getDeviceInfo()->getConnectionType() ==
       DeviceConnectionType::Never) {
     throw error("Offline IPU device is not configured for execution");

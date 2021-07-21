@@ -503,7 +503,7 @@ PopPrograms::getFullProgramFromPipelineFragments() const {
   // All pipeline cycles in the main phase are identical. So we create the
   // program for a single cycle and repeat for mainCycles
   poplar::program::Sequence main({}, {"main"});
-  int64_t mainCycles = pInfo.mainPhase.end - pInfo.mainPhase.start + 1;
+  int64_t mainCycles = pInfo.getMainCycles();
   ss << "\nPipeline Cycle 'Main', " + std::to_string(mainCycles) + " cycles";
   addPipelineCycle(pInfo.mainPhase.start, main, ss, mainFunctions);
 
@@ -550,19 +550,19 @@ PopPrograms::getFullProgramFromPipelineFragments() const {
 }
 
 poplar::program::Sequence PopPrograms::program() const {
-  auto instrumentations =
-      ir_lowering_p->ir().getSessionOptions().hardwareInstrumentations;
+  const auto &opts      = ir_lowering_p->ir().getSessionOptions();
+  auto instrumentations = opts.hardwareInstrumentations;
 
   poplar::program::Sequence outer({}, {"outer"});
 
-  if (ir_lowering_p->ir().getSessionOptions().enableExplicitMainLoops) {
+  if (opts.enableExplicitMainLoops) {
     outer.add(initFragment());
     outer.add(preForwardFragment());
     outer.add(forwardFragment());
     outer.add(backwardFragment());
     outer.add(toHostFinalCopyFragment());
   } else {
-    if (ir_lowering_p->ir().getSessionOptions().enablePipelining) {
+    if (opts.implicitPipeliningEnabled()) {
       outer.add(getFullProgramFromPipelineFragments());
     } else {
       poplar::program::Sequence prog({}, {"program"});
@@ -582,9 +582,7 @@ poplar::program::Sequence PopPrograms::program() const {
         prog.add(accumulateOuterFragment());
       }
 
-      if (ir_lowering_p->ir()
-              .getSessionOptions()
-              .instrumentWithHardwareCycleCounter &&
+      if (opts.instrumentWithHardwareCycleCounter &&
           instrumentations.find(Instrumentation::Inner) !=
               instrumentations.end()) {
         // Instrument first tile of every IPU for inner program
@@ -612,9 +610,7 @@ poplar::program::Sequence PopPrograms::program() const {
     }
   }
 
-  if (ir_lowering_p->ir()
-          .getSessionOptions()
-          .instrumentWithHardwareCycleCounter &&
+  if (opts.instrumentWithHardwareCycleCounter &&
       instrumentations.find(Instrumentation::Outer) != instrumentations.end()) {
     ir_lowering_p->instrumentWithHardwareCycleCounter(outer);
   }

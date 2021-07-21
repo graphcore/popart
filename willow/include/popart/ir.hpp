@@ -584,6 +584,7 @@ private:
   void verifyDistributedReplicatedGraphSettings() const;
 
   void verifyExecutionContexts() const;
+  void verifyPipelineStageAttributes() const;
 
   // Verify ConstExpr folding has removed input tensors
   // as expected

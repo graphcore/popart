@@ -684,8 +684,8 @@ Graph &SubgraphOutline::createSubgraph(
     clone->settings.recomputeType = RecomputeType::Checkpoint;
     // There are some attributes that have little meaning in subgraphs. Unset
     // them here.
-    clone->settings.executionPhase   = ExecutionPhase();
-    clone->settings.pipelineStage    = PipelineStage();
+    clone->settings.executionPhase   = OptionalExecutionPhase();
+    clone->settings.pipelineStage    = OptionalPipelineStage();
     clone->settings.executionContext = ExecutionContext::Subgraph;
     auto cloneid                     = subgraph.moveIntoGraph(std::move(clone));
     Op *clone_op                     = subgraph.getOp(cloneid);

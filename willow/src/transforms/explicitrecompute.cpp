@@ -33,11 +33,11 @@ bool ExplicitRecompute::apply(Graph &graph) const {
         (ir.getSessionOptions().executionPhaseSettings.phases > 1 &&
          op->hasExecutionPhase())
             ? op->getExecutionPhase()
-            : -1;
+            : unusedExecutionPhase;
     PipelineStage pipelineStage =
         (ir.getSessionOptions().enablePipelining && op->hasPipelineStage())
             ? op->getPipelineStage()
-            : -1;
+            : unusedPipelineStage;
     return TensorContext(vgid, executionPhase, pipelineStage);
   };
 

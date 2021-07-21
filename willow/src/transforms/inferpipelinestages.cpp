@@ -71,7 +71,7 @@ bool InferPipelineStages::apply(Graph &graph) const {
   verifyPipelineStagesAreUnset(graph);
 
   std::stringstream ss;
-  ss << "Infering op pipeline stages through virtual graph ids:";
+  ss << "Inferring Op pipeline stages through virtual graph ids:";
   for (auto &id_op : graph.getOps()) {
     auto op = id_op.second.get();
     ss << logging::format(
