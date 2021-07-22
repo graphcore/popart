@@ -2383,10 +2383,10 @@ Parameter ``value``:
 
 static const char *__doc_popart_ClipNormSettings =
     R"doc(A data structure used to represent a maximum value constraint on one
-or more weights.)doc";
+or more weights. This is passed to the optimizer on construction.)doc";
 
 static const char *__doc_popart_ClipNormSettings_ClipNormSettings =
-    R"doc(Constructor.
+    R"doc(DEPRECATED This will be removed from a future release. Constructor.
 
 Parameter ``weightIds_``:
     The weight tensor IDs that this constraint applies to.
@@ -2394,7 +2394,33 @@ Parameter ``weightIds_``:
 Parameter ``maxNorm_``:
     The maximum permissible value.)doc";
 
+static const char *__doc_popart_ClipNormSettings_ClipNormSettings_2 =
+    R"doc()doc";
+
+static const char *__doc_popart_ClipNormSettings_ClipNormSettings_3 =
+    R"doc()doc";
+
+static const char *__doc_popart_ClipNormSettings_Mode = R"doc()doc";
+
+static const char *__doc_popart_ClipNormSettings_Mode_ClipAllWeights =
+    R"doc()doc";
+
+static const char *__doc_popart_ClipNormSettings_Mode_ClipSpecifiedWeights =
+    R"doc()doc";
+
+static const char *__doc_popart_ClipNormSettings_clipAllWeights = R"doc()doc";
+
+static const char *__doc_popart_ClipNormSettings_clipWeights = R"doc()doc";
+
+static const char *__doc_popart_ClipNormSettings_getMaxNorm = R"doc()doc";
+
+static const char *__doc_popart_ClipNormSettings_getMode = R"doc()doc";
+
+static const char *__doc_popart_ClipNormSettings_getWeightIds = R"doc()doc";
+
 static const char *__doc_popart_ClipNormSettings_maxNorm = R"doc()doc";
+
+static const char *__doc_popart_ClipNormSettings_mode = R"doc()doc";
 
 static const char *__doc_popart_ClipNormSettings_operator_eq = R"doc()doc";
 

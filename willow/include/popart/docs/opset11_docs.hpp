@@ -5,22 +5,25 @@
   Do not edit! They were automatically extracted by gen_operators.py.
 */
 
-#define __EXPAND(x) x
-#define __COUNT(_1, _2, _3, _4, _5, _6, _7, COUNT, ...) COUNT
-#define __VA_SIZE(...) __EXPAND(__COUNT(__VA_ARGS__, 7, 6, 5, 4, 3, 2, 1))
-#define __CAT1(a, b) a##b
-#define __CAT2(a, b) __CAT1(a, b)
-#define __DOC1(n1) __doc_##n1
-#define __DOC2(n1, n2) __doc_##n1##_##n2
-#define __DOC3(n1, n2, n3) __doc_##n1##_##n2##_##n3
-#define __DOC4(n1, n2, n3, n4) __doc_##n1##_##n2##_##n3##_##n4
-#define __DOC5(n1, n2, n3, n4, n5) __doc_##n1##_##n2##_##n3##_##n4##_##n5
-#define __DOC6(n1, n2, n3, n4, n5, n6)                                         \
+#define __OPSET11_EXPAND(x) x
+#define __OPSET11_COUNT(_1, _2, _3, _4, _5, _6, _7, COUNT, ...) COUNT
+#define __OPSET11_VA_SIZE(...)                                                 \
+  __OPSET11_EXPAND(__OPSET11_COUNT(__VA_ARGS__, 7, 6, 5, 4, 3, 2, 1))
+#define __OPSET11_CAT1(a, b) a##b
+#define __OPSET11_CAT2(a, b) __OPSET11_CAT1(a, b)
+#define __OPSET11_DOC1(n1) __doc_##n1
+#define __OPSET11_DOC2(n1, n2) __doc_##n1##_##n2
+#define __OPSET11_DOC3(n1, n2, n3) __doc_##n1##_##n2##_##n3
+#define __OPSET11_DOC4(n1, n2, n3, n4) __doc_##n1##_##n2##_##n3##_##n4
+#define __OPSET11_DOC5(n1, n2, n3, n4, n5)                                     \
+  __doc_##n1##_##n2##_##n3##_##n4##_##n5
+#define __OPSET11_DOC6(n1, n2, n3, n4, n5, n6)                                 \
   __doc_##n1##_##n2##_##n3##_##n4##_##n5##_##n6
-#define __DOC7(n1, n2, n3, n4, n5, n6, n7)                                     \
+#define __OPSET11_DOC7(n1, n2, n3, n4, n5, n6, n7)                             \
   __doc_##n1##_##n2##_##n3##_##n4##_##n5##_##n6##_##n7
-#define DOC(...)                                                               \
-  __EXPAND(__EXPAND(__CAT2(__DOC, __VA_SIZE(__VA_ARGS__)))(__VA_ARGS__))
+#define OPSET11_DOC(...)                                                       \
+  __OPSET11_EXPAND(__OPSET11_EXPAND(__OPSET11_CAT2(                            \
+      __OPSET11_DOC, __OPSET11_VA_SIZE(__VA_ARGS__)))(__VA_ARGS__))
 
 #if defined(__GNUG__)
 #pragma GCC diagnostic push
@@ -61,15 +64,15 @@ This operator supports **multidirectional (i.e., Numpy-style) broadcasting**; fo
 static const char *__doc_popart_argmax_opset11 =
     R"doc(
 Computes the indices of the max elements of the input tensor's element along the 
-provided axis. The resulted tensor has the same rank as the input if keepdims equal 1.
-If keepdims equal 0, then the resulted tensor have the reduced dimension pruned. 
+provided axis. The resulting tensor has the same rank as the input if keepdims equal 1. 
+If keepdims equal 0, then the resulting tensor have the reduced dimension pruned. 
 The type of the output tensor is integer.)doc";
 
 static const char *__doc_popart_argmin_opset11 =
     R"doc(
 Computes the indices of the min elements of the input tensor's element along the 
-provided axis. The resulted tensor has the same rank as the input if keepdims equal 1.
-If keepdims equal 0, then the resulted tensor have the reduced dimension pruned. 
+provided axis. The resulting tensor has the same rank as the input if keepdims equal 1. 
+If keepdims equal 0, then the resulting tensor have the reduced dimension pruned. 
 The type of the output tensor is integer.)doc";
 
 static const char *__doc_popart_asin_opset11 =
@@ -356,7 +359,7 @@ Scale is calculated as:
 ```
 Zero point is calculated as:
 ```
-intermediate_zero_point = (qmin - min(x))/(qmax - qmin)
+intermediate_zero_point = qmin - min(x)/y_scale
 y_zero_point = cast(round(saturate(itermediate_zero_point)))
 * where qmax and qmin are max and min values for quantization range .i.e [0, 255] in case of uint8
 * for saturation, it saturates to [0, 255] if it's uint8, or [-127, 127] if it's int8. Right now only uint8 is supported.
@@ -1370,6 +1373,8 @@ a quantized filter, its scale and zero point, and output's scale and zero point,
 and computes the quantized output. Each scale and zero-point pair must have same shape.
 It means they must be either scalars (per tensor) or 1-D tensors (per output channel).
 Each input or output and its related zero point must have same type.
+When bias is present it must be quantized using scale = input scale * weight scale and 
+zero point as 0.
 )doc";
 
 static const char *__doc_popart_qlinearmatmul_opset11 =
@@ -1501,7 +1506,7 @@ TensorProto message and be valid as an output type.
 
 static const char *__doc_popart_range_opset11 =
     R"doc(
-Generate a tensor containing a sequence of numbers that begin at `start` and extends by increments of `delta` 
+Generate a tensor containing a sequence of numbers that begin at `start` and extends by increments of `delta`
 up to `limit` (exclusive).
 
 The number of elements in the output of range is computed as below-
@@ -1513,10 +1518,10 @@ The pseudocode determining the contents of the output is shown below-
 `for(int i=0; i<number_of_elements; ++i)`
 
 `{`
-   
-`    output[i] =  start + (i * delta);  ` 
 
-`}`	
+`    output[i] =  start + (i * delta);  `
+
+`}`
 
 `Example 1`
 Inputs: start = 3, limit = 9, delta = 3
@@ -2110,11 +2115,13 @@ https://docs.scipy.org/doc/numpy/reference/arrays.indexing.html
 Slices uses `starts`, `ends`, `axes` and `steps` inputs to specify the start and end
 dimension and step for each axis in the list of axes, it uses this information to
 slice the input `data` tensor. If a negative value is passed for any of the
-start or end indices, it represent number of elements before the end of that
+start or end indices, it represents number of elements before the end of that
 dimension. If the value passed to start or end is larger than the `n` (the
 number of elements in this dimension), it represents `n`. For slicing to the
-end of a dimension with unknown size, it is recommended to pass in `INT_MAX`.
-If a negative value is passed for step, it represents slicing backward.
+end of a dimension with unknown size, it is recommended to pass in `INT_MAX` 
+when sclicing forward and 'INT_MIN' when slicing backward.
+If a negative value is passed for step, it represents slicing backward. 
+However step value cannot be 0.
 If `axes` are omitted, they are set to `[0, ..., ndim-1]`.
 If `steps` are omitted, they are set to `[1, ..., 1]` of length `len(starts)`
 Example 1:

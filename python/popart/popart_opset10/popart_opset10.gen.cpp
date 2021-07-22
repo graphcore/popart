@@ -32,7 +32,7 @@ PYBIND11_MODULE(popart_opset10, m) {
           },
           py::arg("args"),
           py::arg("debugContext") = std::string(),
-          DOC(popart, abs, opset10))
+          OPSET10_DOC(popart, abs, opset10))
       .def(
           "acos",
           [](AiOnnxOpset10 &opset,
@@ -42,7 +42,7 @@ PYBIND11_MODULE(popart_opset10, m) {
           },
           py::arg("args"),
           py::arg("debugContext") = std::string(),
-          DOC(popart, acos, opset10))
+          OPSET10_DOC(popart, acos, opset10))
       .def(
           "acosh",
           [](AiOnnxOpset10 &opset,
@@ -52,7 +52,7 @@ PYBIND11_MODULE(popart_opset10, m) {
           },
           py::arg("args"),
           py::arg("debugContext") = std::string(),
-          DOC(popart, acosh, opset10))
+          OPSET10_DOC(popart, acosh, opset10))
       .def(
           "add",
           [](AiOnnxOpset10 &opset,
@@ -62,7 +62,7 @@ PYBIND11_MODULE(popart_opset10, m) {
           },
           py::arg("args"),
           py::arg("debugContext") = std::string(),
-          DOC(popart, add, opset10))
+          OPSET10_DOC(popart, add, opset10))
       .def(
           "logical_and",
           [](AiOnnxOpset10 &opset,
@@ -72,7 +72,7 @@ PYBIND11_MODULE(popart_opset10, m) {
           },
           py::arg("args"),
           py::arg("debugContext") = std::string(),
-          DOC(popart, logical_and, opset10))
+          OPSET10_DOC(popart, logical_and, opset10))
       .def(
           "argmax",
           [](AiOnnxOpset10 &opset,
@@ -86,7 +86,7 @@ PYBIND11_MODULE(popart_opset10, m) {
           py::arg("axis")         = 0,
           py::arg("keepdims")     = 1,
           py::arg("debugContext") = std::string(),
-          DOC(popart, argmax, opset10))
+          OPSET10_DOC(popart, argmax, opset10))
       .def(
           "argmin",
           [](AiOnnxOpset10 &opset,
@@ -100,7 +100,7 @@ PYBIND11_MODULE(popart_opset10, m) {
           py::arg("axis")         = 0,
           py::arg("keepdims")     = 1,
           py::arg("debugContext") = std::string(),
-          DOC(popart, argmin, opset10))
+          OPSET10_DOC(popart, argmin, opset10))
       .def(
           "asin",
           [](AiOnnxOpset10 &opset,
@@ -110,7 +110,7 @@ PYBIND11_MODULE(popart_opset10, m) {
           },
           py::arg("args"),
           py::arg("debugContext") = std::string(),
-          DOC(popart, asin, opset10))
+          OPSET10_DOC(popart, asin, opset10))
       .def(
           "asinh",
           [](AiOnnxOpset10 &opset,
@@ -120,7 +120,7 @@ PYBIND11_MODULE(popart_opset10, m) {
           },
           py::arg("args"),
           py::arg("debugContext") = std::string(),
-          DOC(popart, asinh, opset10))
+          OPSET10_DOC(popart, asinh, opset10))
       .def(
           "atan",
           [](AiOnnxOpset10 &opset,
@@ -130,7 +130,7 @@ PYBIND11_MODULE(popart_opset10, m) {
           },
           py::arg("args"),
           py::arg("debugContext") = std::string(),
-          DOC(popart, atan, opset10))
+          OPSET10_DOC(popart, atan, opset10))
       .def(
           "atanh",
           [](AiOnnxOpset10 &opset,
@@ -140,7 +140,7 @@ PYBIND11_MODULE(popart_opset10, m) {
           },
           py::arg("args"),
           py::arg("debugContext") = std::string(),
-          DOC(popart, atanh, opset10))
+          OPSET10_DOC(popart, atanh, opset10))
       .def(
           "averagepool",
           [](AiOnnxOpset10 &opset,
@@ -166,7 +166,7 @@ PYBIND11_MODULE(popart_opset10, m) {
           py::arg("pads")              = std::vector<int64_t>(),
           py::arg("strides")           = std::vector<int64_t>(),
           py::arg("debugContext")      = std::string(),
-          DOC(popart, averagepool, opset10))
+          OPSET10_DOC(popart, averagepool, opset10))
       .def(
           "batchnormalization",
           [](AiOnnxOpset10 &opset,
@@ -183,7 +183,7 @@ PYBIND11_MODULE(popart_opset10, m) {
           py::arg("epsilon")      = 1e-05f,
           py::arg("momentum")     = 0.9f,
           py::arg("debugContext") = std::string(),
-          DOC(popart, batchnormalization, opset10))
+          OPSET10_DOC(popart, batchnormalization, opset10))
       .def(
           "cast",
           [](AiOnnxOpset10 &opset,
@@ -195,7 +195,7 @@ PYBIND11_MODULE(popart_opset10, m) {
           py::arg("args"),
           py::arg("to"),
           py::arg("debugContext") = std::string(),
-          DOC(popart, cast, opset10))
+          OPSET10_DOC(popart, cast, opset10))
       .def(
           "ceil",
           [](AiOnnxOpset10 &opset,
@@ -205,7 +205,7 @@ PYBIND11_MODULE(popart_opset10, m) {
           },
           py::arg("args"),
           py::arg("debugContext") = std::string(),
-          DOC(popart, ceil, opset10))
+          OPSET10_DOC(popart, ceil, opset10))
       .def(
           "clip",
           [](AiOnnxOpset10 &opset,
@@ -219,7 +219,7 @@ PYBIND11_MODULE(popart_opset10, m) {
           py::arg("max")          = 3.4028234663852886e+38f,
           py::arg("min")          = -3.4028234663852886e+38f,
           py::arg("debugContext") = std::string(),
-          DOC(popart, clip, opset10))
+          OPSET10_DOC(popart, clip, opset10))
       .def(
           "compress",
           [](AiOnnxOpset10 &opset,
@@ -231,7 +231,7 @@ PYBIND11_MODULE(popart_opset10, m) {
           py::arg("args"),
           py::arg("axis")         = nonstd::optional<int64_t>(),
           py::arg("debugContext") = std::string(),
-          DOC(popart, compress, opset10))
+          OPSET10_DOC(popart, compress, opset10))
       .def(
           "concat",
           [](AiOnnxOpset10 &opset,
@@ -243,7 +243,7 @@ PYBIND11_MODULE(popart_opset10, m) {
           py::arg("args"),
           py::arg("axis"),
           py::arg("debugContext") = std::string(),
-          DOC(popart, concat, opset10))
+          OPSET10_DOC(popart, concat, opset10))
       .def(
           "constant",
           [](AiOnnxOpset10 &opset,
@@ -257,7 +257,7 @@ PYBIND11_MODULE(popart_opset10, m) {
           },
           py::arg("value"),
           py::arg("debugContext") = std::string(),
-          DOC(popart, constant, opset10))
+          OPSET10_DOC(popart, constant, opset10))
       .def(
           "constantofshape",
           [](AiOnnxOpset10 &opset,
@@ -272,7 +272,7 @@ PYBIND11_MODULE(popart_opset10, m) {
           py::arg("args"),
           py::arg("value"),
           py::arg("debugContext") = std::string(),
-          DOC(popart, constantofshape, opset10))
+          OPSET10_DOC(popart, constantofshape, opset10))
       .def(
           "conv",
           [](AiOnnxOpset10 &opset,
@@ -298,7 +298,7 @@ PYBIND11_MODULE(popart_opset10, m) {
           py::arg("pads")         = std::vector<int64_t>(),
           py::arg("strides")      = std::vector<int64_t>(),
           py::arg("debugContext") = std::string(),
-          DOC(popart, conv, opset10))
+          OPSET10_DOC(popart, conv, opset10))
       .def(
           "convinteger",
           [](AiOnnxOpset10 &opset,
@@ -324,7 +324,7 @@ PYBIND11_MODULE(popart_opset10, m) {
           py::arg("pads")         = std::vector<int64_t>(),
           py::arg("strides")      = std::vector<int64_t>(),
           py::arg("debugContext") = std::string(),
-          DOC(popart, convinteger, opset10))
+          OPSET10_DOC(popart, convinteger, opset10))
       .def(
           "convtranspose",
           [](AiOnnxOpset10 &opset,
@@ -356,7 +356,7 @@ PYBIND11_MODULE(popart_opset10, m) {
           py::arg("pads")           = std::vector<int64_t>(),
           py::arg("strides")        = std::vector<int64_t>(),
           py::arg("debugContext")   = std::string(),
-          DOC(popart, convtranspose, opset10))
+          OPSET10_DOC(popart, convtranspose, opset10))
       .def(
           "cos",
           [](AiOnnxOpset10 &opset,
@@ -366,7 +366,7 @@ PYBIND11_MODULE(popart_opset10, m) {
           },
           py::arg("args"),
           py::arg("debugContext") = std::string(),
-          DOC(popart, cos, opset10))
+          OPSET10_DOC(popart, cos, opset10))
       .def(
           "cosh",
           [](AiOnnxOpset10 &opset,
@@ -376,7 +376,7 @@ PYBIND11_MODULE(popart_opset10, m) {
           },
           py::arg("args"),
           py::arg("debugContext") = std::string(),
-          DOC(popart, cosh, opset10))
+          OPSET10_DOC(popart, cosh, opset10))
       .def(
           "depthtospace",
           [](AiOnnxOpset10 &opset,
@@ -388,7 +388,7 @@ PYBIND11_MODULE(popart_opset10, m) {
           py::arg("args"),
           py::arg("blocksize"),
           py::arg("debugContext") = std::string(),
-          DOC(popart, depthtospace, opset10))
+          OPSET10_DOC(popart, depthtospace, opset10))
       .def(
           "dequantizelinear",
           [](AiOnnxOpset10 &opset,
@@ -398,7 +398,7 @@ PYBIND11_MODULE(popart_opset10, m) {
           },
           py::arg("args"),
           py::arg("debugContext") = std::string(),
-          DOC(popart, dequantizelinear, opset10))
+          OPSET10_DOC(popart, dequantizelinear, opset10))
       .def(
           "div",
           [](AiOnnxOpset10 &opset,
@@ -408,7 +408,7 @@ PYBIND11_MODULE(popart_opset10, m) {
           },
           py::arg("args"),
           py::arg("debugContext") = std::string(),
-          DOC(popart, div, opset10))
+          OPSET10_DOC(popart, div, opset10))
       .def(
           "dropout",
           [](AiOnnxOpset10 &opset,
@@ -422,7 +422,7 @@ PYBIND11_MODULE(popart_opset10, m) {
           py::arg("num_outputs"),
           py::arg("ratio")        = 0.5f,
           py::arg("debugContext") = std::string(),
-          DOC(popart, dropout, opset10))
+          OPSET10_DOC(popart, dropout, opset10))
       .def(
           "elu",
           [](AiOnnxOpset10 &opset,
@@ -434,7 +434,7 @@ PYBIND11_MODULE(popart_opset10, m) {
           py::arg("args"),
           py::arg("alpha")        = 1.0f,
           py::arg("debugContext") = std::string(),
-          DOC(popart, elu, opset10))
+          OPSET10_DOC(popart, elu, opset10))
       .def(
           "equal",
           [](AiOnnxOpset10 &opset,
@@ -444,7 +444,7 @@ PYBIND11_MODULE(popart_opset10, m) {
           },
           py::arg("args"),
           py::arg("debugContext") = std::string(),
-          DOC(popart, equal, opset10))
+          OPSET10_DOC(popart, equal, opset10))
       .def(
           "erf",
           [](AiOnnxOpset10 &opset,
@@ -454,7 +454,7 @@ PYBIND11_MODULE(popart_opset10, m) {
           },
           py::arg("args"),
           py::arg("debugContext") = std::string(),
-          DOC(popart, erf, opset10))
+          OPSET10_DOC(popart, erf, opset10))
       .def(
           "exp",
           [](AiOnnxOpset10 &opset,
@@ -464,7 +464,7 @@ PYBIND11_MODULE(popart_opset10, m) {
           },
           py::arg("args"),
           py::arg("debugContext") = std::string(),
-          DOC(popart, exp, opset10))
+          OPSET10_DOC(popart, exp, opset10))
       .def(
           "expand",
           [](AiOnnxOpset10 &opset,
@@ -474,7 +474,7 @@ PYBIND11_MODULE(popart_opset10, m) {
           },
           py::arg("args"),
           py::arg("debugContext") = std::string(),
-          DOC(popart, expand, opset10))
+          OPSET10_DOC(popart, expand, opset10))
       .def(
           "eyelike",
           [](AiOnnxOpset10 &opset,
@@ -488,7 +488,7 @@ PYBIND11_MODULE(popart_opset10, m) {
           py::arg("dtype")        = nonstd::optional<int64_t>(),
           py::arg("k")            = 0,
           py::arg("debugContext") = std::string(),
-          DOC(popart, eyelike, opset10))
+          OPSET10_DOC(popart, eyelike, opset10))
       .def(
           "flatten",
           [](AiOnnxOpset10 &opset,
@@ -500,7 +500,7 @@ PYBIND11_MODULE(popart_opset10, m) {
           py::arg("args"),
           py::arg("axis")         = 1,
           py::arg("debugContext") = std::string(),
-          DOC(popart, flatten, opset10))
+          OPSET10_DOC(popart, flatten, opset10))
       .def(
           "floor",
           [](AiOnnxOpset10 &opset,
@@ -510,7 +510,7 @@ PYBIND11_MODULE(popart_opset10, m) {
           },
           py::arg("args"),
           py::arg("debugContext") = std::string(),
-          DOC(popart, floor, opset10))
+          OPSET10_DOC(popart, floor, opset10))
       .def(
           "gru",
           [](AiOnnxOpset10 &opset,
@@ -545,7 +545,7 @@ PYBIND11_MODULE(popart_opset10, m) {
           py::arg("hidden_size")         = nonstd::optional<int64_t>(),
           py::arg("linear_before_reset") = 0,
           py::arg("debugContext")        = std::string(),
-          DOC(popart, gru, opset10))
+          OPSET10_DOC(popart, gru, opset10))
       .def(
           "gather",
           [](AiOnnxOpset10 &opset,
@@ -557,7 +557,7 @@ PYBIND11_MODULE(popart_opset10, m) {
           py::arg("args"),
           py::arg("axis")         = 0,
           py::arg("debugContext") = std::string(),
-          DOC(popart, gather, opset10))
+          OPSET10_DOC(popart, gather, opset10))
       .def(
           "gemm",
           [](AiOnnxOpset10 &opset,
@@ -575,7 +575,7 @@ PYBIND11_MODULE(popart_opset10, m) {
           py::arg("transA")       = 0,
           py::arg("transB")       = 0,
           py::arg("debugContext") = std::string(),
-          DOC(popart, gemm, opset10))
+          OPSET10_DOC(popart, gemm, opset10))
       .def(
           "globalaveragepool",
           [](AiOnnxOpset10 &opset,
@@ -585,7 +585,7 @@ PYBIND11_MODULE(popart_opset10, m) {
           },
           py::arg("args"),
           py::arg("debugContext") = std::string(),
-          DOC(popart, globalaveragepool, opset10))
+          OPSET10_DOC(popart, globalaveragepool, opset10))
       .def(
           "globallppool",
           [](AiOnnxOpset10 &opset,
@@ -597,7 +597,7 @@ PYBIND11_MODULE(popart_opset10, m) {
           py::arg("args"),
           py::arg("p")            = 2,
           py::arg("debugContext") = std::string(),
-          DOC(popart, globallppool, opset10))
+          OPSET10_DOC(popart, globallppool, opset10))
       .def(
           "globalmaxpool",
           [](AiOnnxOpset10 &opset,
@@ -607,7 +607,7 @@ PYBIND11_MODULE(popart_opset10, m) {
           },
           py::arg("args"),
           py::arg("debugContext") = std::string(),
-          DOC(popart, globalmaxpool, opset10))
+          OPSET10_DOC(popart, globalmaxpool, opset10))
       .def(
           "greater",
           [](AiOnnxOpset10 &opset,
@@ -617,7 +617,7 @@ PYBIND11_MODULE(popart_opset10, m) {
           },
           py::arg("args"),
           py::arg("debugContext") = std::string(),
-          DOC(popart, greater, opset10))
+          OPSET10_DOC(popart, greater, opset10))
       .def(
           "hardsigmoid",
           [](AiOnnxOpset10 &opset,
@@ -631,7 +631,7 @@ PYBIND11_MODULE(popart_opset10, m) {
           py::arg("alpha")        = 0.2f,
           py::arg("beta")         = 0.5f,
           py::arg("debugContext") = std::string(),
-          DOC(popart, hardsigmoid, opset10))
+          OPSET10_DOC(popart, hardsigmoid, opset10))
       .def(
           "hardmax",
           [](AiOnnxOpset10 &opset,
@@ -643,7 +643,7 @@ PYBIND11_MODULE(popart_opset10, m) {
           py::arg("args"),
           py::arg("axis")         = 1,
           py::arg("debugContext") = std::string(),
-          DOC(popart, hardmax, opset10))
+          OPSET10_DOC(popart, hardmax, opset10))
       .def(
           "identity",
           [](AiOnnxOpset10 &opset,
@@ -653,7 +653,7 @@ PYBIND11_MODULE(popart_opset10, m) {
           },
           py::arg("args"),
           py::arg("debugContext") = std::string(),
-          DOC(popart, identity, opset10))
+          OPSET10_DOC(popart, identity, opset10))
       .def(
           "logical_if",
           [](AiOnnxOpset10 &opset,
@@ -670,7 +670,7 @@ PYBIND11_MODULE(popart_opset10, m) {
           py::arg("else_branch"),
           py::arg("then_branch"),
           py::arg("debugContext") = std::string(),
-          DOC(popart, logical_if, opset10))
+          OPSET10_DOC(popart, logical_if, opset10))
       .def(
           "instancenormalization",
           [](AiOnnxOpset10 &opset,
@@ -682,7 +682,7 @@ PYBIND11_MODULE(popart_opset10, m) {
           py::arg("args"),
           py::arg("epsilon")      = 1e-05f,
           py::arg("debugContext") = std::string(),
-          DOC(popart, instancenormalization, opset10))
+          OPSET10_DOC(popart, instancenormalization, opset10))
       .def(
           "isinf",
           [](AiOnnxOpset10 &opset,
@@ -697,7 +697,7 @@ PYBIND11_MODULE(popart_opset10, m) {
           py::arg("detect_negative") = 1,
           py::arg("detect_positive") = 1,
           py::arg("debugContext")    = std::string(),
-          DOC(popart, isinf, opset10))
+          OPSET10_DOC(popart, isinf, opset10))
       .def(
           "isnan",
           [](AiOnnxOpset10 &opset,
@@ -707,7 +707,7 @@ PYBIND11_MODULE(popart_opset10, m) {
           },
           py::arg("args"),
           py::arg("debugContext") = std::string(),
-          DOC(popart, isnan, opset10))
+          OPSET10_DOC(popart, isnan, opset10))
       .def(
           "lrn",
           [](AiOnnxOpset10 &opset,
@@ -725,7 +725,7 @@ PYBIND11_MODULE(popart_opset10, m) {
           py::arg("beta")         = 0.75f,
           py::arg("bias")         = 1.0f,
           py::arg("debugContext") = std::string(),
-          DOC(popart, lrn, opset10))
+          OPSET10_DOC(popart, lrn, opset10))
       .def(
           "lstm",
           [](AiOnnxOpset10 &opset,
@@ -760,7 +760,7 @@ PYBIND11_MODULE(popart_opset10, m) {
           py::arg("hidden_size")      = nonstd::optional<int64_t>(),
           py::arg("input_forget")     = 0,
           py::arg("debugContext")     = std::string(),
-          DOC(popart, lstm, opset10))
+          OPSET10_DOC(popart, lstm, opset10))
       .def(
           "leakyrelu",
           [](AiOnnxOpset10 &opset,
@@ -772,7 +772,7 @@ PYBIND11_MODULE(popart_opset10, m) {
           py::arg("args"),
           py::arg("alpha")        = 0.01f,
           py::arg("debugContext") = std::string(),
-          DOC(popart, leakyrelu, opset10))
+          OPSET10_DOC(popart, leakyrelu, opset10))
       .def(
           "less",
           [](AiOnnxOpset10 &opset,
@@ -782,7 +782,7 @@ PYBIND11_MODULE(popart_opset10, m) {
           },
           py::arg("args"),
           py::arg("debugContext") = std::string(),
-          DOC(popart, less, opset10))
+          OPSET10_DOC(popart, less, opset10))
       .def(
           "log",
           [](AiOnnxOpset10 &opset,
@@ -792,7 +792,7 @@ PYBIND11_MODULE(popart_opset10, m) {
           },
           py::arg("args"),
           py::arg("debugContext") = std::string(),
-          DOC(popart, log, opset10))
+          OPSET10_DOC(popart, log, opset10))
       .def(
           "logsoftmax",
           [](AiOnnxOpset10 &opset,
@@ -804,7 +804,7 @@ PYBIND11_MODULE(popart_opset10, m) {
           py::arg("args"),
           py::arg("axis")         = 1,
           py::arg("debugContext") = std::string(),
-          DOC(popart, logsoftmax, opset10))
+          OPSET10_DOC(popart, logsoftmax, opset10))
       .def(
           "loop",
           [](AiOnnxOpset10 &opset,
@@ -818,7 +818,7 @@ PYBIND11_MODULE(popart_opset10, m) {
           py::arg("num_outputs"),
           py::arg("body"),
           py::arg("debugContext") = std::string(),
-          DOC(popart, loop, opset10))
+          OPSET10_DOC(popart, loop, opset10))
       .def(
           "lpnormalization",
           [](AiOnnxOpset10 &opset,
@@ -832,7 +832,7 @@ PYBIND11_MODULE(popart_opset10, m) {
           py::arg("axis")         = -1,
           py::arg("p")            = 2,
           py::arg("debugContext") = std::string(),
-          DOC(popart, lpnormalization, opset10))
+          OPSET10_DOC(popart, lpnormalization, opset10))
       .def(
           "lppool",
           [](AiOnnxOpset10 &opset,
@@ -851,7 +851,7 @@ PYBIND11_MODULE(popart_opset10, m) {
           py::arg("pads")         = std::vector<int64_t>(),
           py::arg("strides")      = std::vector<int64_t>(),
           py::arg("debugContext") = std::string(),
-          DOC(popart, lppool, opset10))
+          OPSET10_DOC(popart, lppool, opset10))
       .def(
           "matmul",
           [](AiOnnxOpset10 &opset,
@@ -861,7 +861,7 @@ PYBIND11_MODULE(popart_opset10, m) {
           },
           py::arg("args"),
           py::arg("debugContext") = std::string(),
-          DOC(popart, matmul, opset10))
+          OPSET10_DOC(popart, matmul, opset10))
       .def(
           "matmulinteger",
           [](AiOnnxOpset10 &opset,
@@ -871,7 +871,7 @@ PYBIND11_MODULE(popart_opset10, m) {
           },
           py::arg("args"),
           py::arg("debugContext") = std::string(),
-          DOC(popart, matmulinteger, opset10))
+          OPSET10_DOC(popart, matmulinteger, opset10))
       .def(
           "max",
           [](AiOnnxOpset10 &opset,
@@ -881,7 +881,7 @@ PYBIND11_MODULE(popart_opset10, m) {
           },
           py::arg("args"),
           py::arg("debugContext") = std::string(),
-          DOC(popart, max, opset10))
+          OPSET10_DOC(popart, max, opset10))
       .def(
           "maxpool",
           [](AiOnnxOpset10 &opset,
@@ -913,7 +913,7 @@ PYBIND11_MODULE(popart_opset10, m) {
           py::arg("storage_order") = 0,
           py::arg("strides")       = std::vector<int64_t>(),
           py::arg("debugContext")  = std::string(),
-          DOC(popart, maxpool, opset10))
+          OPSET10_DOC(popart, maxpool, opset10))
       .def(
           "maxroipool",
           [](AiOnnxOpset10 &opset,
@@ -928,7 +928,7 @@ PYBIND11_MODULE(popart_opset10, m) {
           py::arg("pooled_shape"),
           py::arg("spatial_scale") = 1.0f,
           py::arg("debugContext")  = std::string(),
-          DOC(popart, maxroipool, opset10))
+          OPSET10_DOC(popart, maxroipool, opset10))
       .def(
           "maxunpool",
           [](AiOnnxOpset10 &opset,
@@ -945,7 +945,7 @@ PYBIND11_MODULE(popart_opset10, m) {
           py::arg("pads")         = std::vector<int64_t>(),
           py::arg("strides")      = std::vector<int64_t>(),
           py::arg("debugContext") = std::string(),
-          DOC(popart, maxunpool, opset10))
+          OPSET10_DOC(popart, maxunpool, opset10))
       .def(
           "mean",
           [](AiOnnxOpset10 &opset,
@@ -955,7 +955,7 @@ PYBIND11_MODULE(popart_opset10, m) {
           },
           py::arg("args"),
           py::arg("debugContext") = std::string(),
-          DOC(popart, mean, opset10))
+          OPSET10_DOC(popart, mean, opset10))
       .def(
           "meanvariancenormalization",
           [](AiOnnxOpset10 &opset,
@@ -967,7 +967,7 @@ PYBIND11_MODULE(popart_opset10, m) {
           py::arg("args"),
           py::arg("axes")         = std::vector<int64_t>(),
           py::arg("debugContext") = std::string(),
-          DOC(popart, meanvariancenormalization, opset10))
+          OPSET10_DOC(popart, meanvariancenormalization, opset10))
       .def(
           "min",
           [](AiOnnxOpset10 &opset,
@@ -977,7 +977,7 @@ PYBIND11_MODULE(popart_opset10, m) {
           },
           py::arg("args"),
           py::arg("debugContext") = std::string(),
-          DOC(popart, min, opset10))
+          OPSET10_DOC(popart, min, opset10))
       .def(
           "mod",
           [](AiOnnxOpset10 &opset,
@@ -989,7 +989,7 @@ PYBIND11_MODULE(popart_opset10, m) {
           py::arg("args"),
           py::arg("fmod")         = 0,
           py::arg("debugContext") = std::string(),
-          DOC(popart, mod, opset10))
+          OPSET10_DOC(popart, mod, opset10))
       .def(
           "mul",
           [](AiOnnxOpset10 &opset,
@@ -999,7 +999,7 @@ PYBIND11_MODULE(popart_opset10, m) {
           },
           py::arg("args"),
           py::arg("debugContext") = std::string(),
-          DOC(popart, mul, opset10))
+          OPSET10_DOC(popart, mul, opset10))
       .def(
           "multinomial",
           [](AiOnnxOpset10 &opset,
@@ -1016,7 +1016,7 @@ PYBIND11_MODULE(popart_opset10, m) {
           py::arg("sample_size")  = 1,
           py::arg("seed")         = nonstd::optional<float>(),
           py::arg("debugContext") = std::string(),
-          DOC(popart, multinomial, opset10))
+          OPSET10_DOC(popart, multinomial, opset10))
       .def(
           "neg",
           [](AiOnnxOpset10 &opset,
@@ -1026,7 +1026,7 @@ PYBIND11_MODULE(popart_opset10, m) {
           },
           py::arg("args"),
           py::arg("debugContext") = std::string(),
-          DOC(popart, neg, opset10))
+          OPSET10_DOC(popart, neg, opset10))
       .def(
           "nonmaxsuppression",
           [](AiOnnxOpset10 &opset,
@@ -1039,7 +1039,7 @@ PYBIND11_MODULE(popart_opset10, m) {
           py::arg("args"),
           py::arg("center_point_box") = 0,
           py::arg("debugContext")     = std::string(),
-          DOC(popart, nonmaxsuppression, opset10))
+          OPSET10_DOC(popart, nonmaxsuppression, opset10))
       .def(
           "nonzero",
           [](AiOnnxOpset10 &opset,
@@ -1049,7 +1049,7 @@ PYBIND11_MODULE(popart_opset10, m) {
           },
           py::arg("args"),
           py::arg("debugContext") = std::string(),
-          DOC(popart, nonzero, opset10))
+          OPSET10_DOC(popart, nonzero, opset10))
       .def(
           "logical_not",
           [](AiOnnxOpset10 &opset,
@@ -1059,7 +1059,7 @@ PYBIND11_MODULE(popart_opset10, m) {
           },
           py::arg("args"),
           py::arg("debugContext") = std::string(),
-          DOC(popart, logical_not, opset10))
+          OPSET10_DOC(popart, logical_not, opset10))
       .def(
           "onehot",
           [](AiOnnxOpset10 &opset,
@@ -1071,7 +1071,7 @@ PYBIND11_MODULE(popart_opset10, m) {
           py::arg("args"),
           py::arg("axis")         = -1,
           py::arg("debugContext") = std::string(),
-          DOC(popart, onehot, opset10))
+          OPSET10_DOC(popart, onehot, opset10))
       .def(
           "logical_or",
           [](AiOnnxOpset10 &opset,
@@ -1081,7 +1081,7 @@ PYBIND11_MODULE(popart_opset10, m) {
           },
           py::arg("args"),
           py::arg("debugContext") = std::string(),
-          DOC(popart, logical_or, opset10))
+          OPSET10_DOC(popart, logical_or, opset10))
       .def(
           "prelu",
           [](AiOnnxOpset10 &opset,
@@ -1091,7 +1091,7 @@ PYBIND11_MODULE(popart_opset10, m) {
           },
           py::arg("args"),
           py::arg("debugContext") = std::string(),
-          DOC(popart, prelu, opset10))
+          OPSET10_DOC(popart, prelu, opset10))
       .def(
           "pad",
           [](AiOnnxOpset10 &opset,
@@ -1107,7 +1107,7 @@ PYBIND11_MODULE(popart_opset10, m) {
           py::arg("mode")         = "constant",
           py::arg("value")        = 0.0f,
           py::arg("debugContext") = std::string(),
-          DOC(popart, pad, opset10))
+          OPSET10_DOC(popart, pad, opset10))
       .def(
           "pow",
           [](AiOnnxOpset10 &opset,
@@ -1117,7 +1117,7 @@ PYBIND11_MODULE(popart_opset10, m) {
           },
           py::arg("args"),
           py::arg("debugContext") = std::string(),
-          DOC(popart, pow, opset10))
+          OPSET10_DOC(popart, pow, opset10))
       .def(
           "qlinearconv",
           [](AiOnnxOpset10 &opset,
@@ -1143,7 +1143,7 @@ PYBIND11_MODULE(popart_opset10, m) {
           py::arg("pads")         = std::vector<int64_t>(),
           py::arg("strides")      = std::vector<int64_t>(),
           py::arg("debugContext") = std::string(),
-          DOC(popart, qlinearconv, opset10))
+          OPSET10_DOC(popart, qlinearconv, opset10))
       .def(
           "qlinearmatmul",
           [](AiOnnxOpset10 &opset,
@@ -1153,7 +1153,7 @@ PYBIND11_MODULE(popart_opset10, m) {
           },
           py::arg("args"),
           py::arg("debugContext") = std::string(),
-          DOC(popart, qlinearmatmul, opset10))
+          OPSET10_DOC(popart, qlinearmatmul, opset10))
       .def(
           "quantizelinear",
           [](AiOnnxOpset10 &opset,
@@ -1163,7 +1163,7 @@ PYBIND11_MODULE(popart_opset10, m) {
           },
           py::arg("args"),
           py::arg("debugContext") = std::string(),
-          DOC(popart, quantizelinear, opset10))
+          OPSET10_DOC(popart, quantizelinear, opset10))
       .def(
           "rnn",
           [](AiOnnxOpset10 &opset,
@@ -1195,7 +1195,7 @@ PYBIND11_MODULE(popart_opset10, m) {
           py::arg("direction")        = "forward",
           py::arg("hidden_size")      = nonstd::optional<int64_t>(),
           py::arg("debugContext")     = std::string(),
-          DOC(popart, rnn, opset10))
+          OPSET10_DOC(popart, rnn, opset10))
       .def(
           "randomnormal",
           [](AiOnnxOpset10 &opset,
@@ -1214,7 +1214,7 @@ PYBIND11_MODULE(popart_opset10, m) {
           py::arg("scale")        = 1.0f,
           py::arg("seed")         = nonstd::optional<float>(),
           py::arg("debugContext") = std::string(),
-          DOC(popart, randomnormal, opset10))
+          OPSET10_DOC(popart, randomnormal, opset10))
       .def(
           "randomnormallike",
           [](AiOnnxOpset10 &opset,
@@ -1233,7 +1233,7 @@ PYBIND11_MODULE(popart_opset10, m) {
           py::arg("scale")        = 1.0f,
           py::arg("seed")         = nonstd::optional<float>(),
           py::arg("debugContext") = std::string(),
-          DOC(popart, randomnormallike, opset10))
+          OPSET10_DOC(popart, randomnormallike, opset10))
       .def(
           "randomuniform",
           [](AiOnnxOpset10 &opset,
@@ -1252,7 +1252,7 @@ PYBIND11_MODULE(popart_opset10, m) {
           py::arg("low")          = 0.0f,
           py::arg("seed")         = nonstd::optional<float>(),
           py::arg("debugContext") = std::string(),
-          DOC(popart, randomuniform, opset10))
+          OPSET10_DOC(popart, randomuniform, opset10))
       .def(
           "randomuniformlike",
           [](AiOnnxOpset10 &opset,
@@ -1271,7 +1271,7 @@ PYBIND11_MODULE(popart_opset10, m) {
           py::arg("low")          = 0.0f,
           py::arg("seed")         = nonstd::optional<float>(),
           py::arg("debugContext") = std::string(),
-          DOC(popart, randomuniformlike, opset10))
+          OPSET10_DOC(popart, randomuniformlike, opset10))
       .def(
           "reciprocal",
           [](AiOnnxOpset10 &opset,
@@ -1281,7 +1281,7 @@ PYBIND11_MODULE(popart_opset10, m) {
           },
           py::arg("args"),
           py::arg("debugContext") = std::string(),
-          DOC(popart, reciprocal, opset10))
+          OPSET10_DOC(popart, reciprocal, opset10))
       .def(
           "reducel1",
           [](AiOnnxOpset10 &opset,
@@ -1295,7 +1295,7 @@ PYBIND11_MODULE(popart_opset10, m) {
           py::arg("axes")         = nonstd::optional<std::vector<int64_t>>(),
           py::arg("keepdims")     = 1,
           py::arg("debugContext") = std::string(),
-          DOC(popart, reducel1, opset10))
+          OPSET10_DOC(popart, reducel1, opset10))
       .def(
           "reducel2",
           [](AiOnnxOpset10 &opset,
@@ -1309,7 +1309,7 @@ PYBIND11_MODULE(popart_opset10, m) {
           py::arg("axes")         = nonstd::optional<std::vector<int64_t>>(),
           py::arg("keepdims")     = 1,
           py::arg("debugContext") = std::string(),
-          DOC(popart, reducel2, opset10))
+          OPSET10_DOC(popart, reducel2, opset10))
       .def(
           "reducelogsum",
           [](AiOnnxOpset10 &opset,
@@ -1323,7 +1323,7 @@ PYBIND11_MODULE(popart_opset10, m) {
           py::arg("axes")         = nonstd::optional<std::vector<int64_t>>(),
           py::arg("keepdims")     = 1,
           py::arg("debugContext") = std::string(),
-          DOC(popart, reducelogsum, opset10))
+          OPSET10_DOC(popart, reducelogsum, opset10))
       .def(
           "reducelogsumexp",
           [](AiOnnxOpset10 &opset,
@@ -1337,7 +1337,7 @@ PYBIND11_MODULE(popart_opset10, m) {
           py::arg("axes")         = nonstd::optional<std::vector<int64_t>>(),
           py::arg("keepdims")     = 1,
           py::arg("debugContext") = std::string(),
-          DOC(popart, reducelogsumexp, opset10))
+          OPSET10_DOC(popart, reducelogsumexp, opset10))
       .def(
           "reducemax",
           [](AiOnnxOpset10 &opset,
@@ -1351,7 +1351,7 @@ PYBIND11_MODULE(popart_opset10, m) {
           py::arg("axes")         = nonstd::optional<std::vector<int64_t>>(),
           py::arg("keepdims")     = 1,
           py::arg("debugContext") = std::string(),
-          DOC(popart, reducemax, opset10))
+          OPSET10_DOC(popart, reducemax, opset10))
       .def(
           "reducemean",
           [](AiOnnxOpset10 &opset,
@@ -1365,7 +1365,7 @@ PYBIND11_MODULE(popart_opset10, m) {
           py::arg("axes")         = nonstd::optional<std::vector<int64_t>>(),
           py::arg("keepdims")     = 1,
           py::arg("debugContext") = std::string(),
-          DOC(popart, reducemean, opset10))
+          OPSET10_DOC(popart, reducemean, opset10))
       .def(
           "reducemin",
           [](AiOnnxOpset10 &opset,
@@ -1379,7 +1379,7 @@ PYBIND11_MODULE(popart_opset10, m) {
           py::arg("axes")         = nonstd::optional<std::vector<int64_t>>(),
           py::arg("keepdims")     = 1,
           py::arg("debugContext") = std::string(),
-          DOC(popart, reducemin, opset10))
+          OPSET10_DOC(popart, reducemin, opset10))
       .def(
           "reduceprod",
           [](AiOnnxOpset10 &opset,
@@ -1393,7 +1393,7 @@ PYBIND11_MODULE(popart_opset10, m) {
           py::arg("axes")         = nonstd::optional<std::vector<int64_t>>(),
           py::arg("keepdims")     = 1,
           py::arg("debugContext") = std::string(),
-          DOC(popart, reduceprod, opset10))
+          OPSET10_DOC(popart, reduceprod, opset10))
       .def(
           "reducesum",
           [](AiOnnxOpset10 &opset,
@@ -1407,7 +1407,7 @@ PYBIND11_MODULE(popart_opset10, m) {
           py::arg("axes")         = nonstd::optional<std::vector<int64_t>>(),
           py::arg("keepdims")     = 1,
           py::arg("debugContext") = std::string(),
-          DOC(popart, reducesum, opset10))
+          OPSET10_DOC(popart, reducesum, opset10))
       .def(
           "reducesumsquare",
           [](AiOnnxOpset10 &opset,
@@ -1421,7 +1421,7 @@ PYBIND11_MODULE(popart_opset10, m) {
           py::arg("axes")         = nonstd::optional<std::vector<int64_t>>(),
           py::arg("keepdims")     = 1,
           py::arg("debugContext") = std::string(),
-          DOC(popart, reducesumsquare, opset10))
+          OPSET10_DOC(popart, reducesumsquare, opset10))
       .def(
           "relu",
           [](AiOnnxOpset10 &opset,
@@ -1431,7 +1431,7 @@ PYBIND11_MODULE(popart_opset10, m) {
           },
           py::arg("args"),
           py::arg("debugContext") = std::string(),
-          DOC(popart, relu, opset10))
+          OPSET10_DOC(popart, relu, opset10))
       .def(
           "reshape",
           [](AiOnnxOpset10 &opset,
@@ -1441,7 +1441,7 @@ PYBIND11_MODULE(popart_opset10, m) {
           },
           py::arg("args"),
           py::arg("debugContext") = std::string(),
-          DOC(popart, reshape, opset10))
+          OPSET10_DOC(popart, reshape, opset10))
       .def(
           "resize",
           [](AiOnnxOpset10 &opset,
@@ -1453,7 +1453,7 @@ PYBIND11_MODULE(popart_opset10, m) {
           py::arg("args"),
           py::arg("mode")         = "nearest",
           py::arg("debugContext") = std::string(),
-          DOC(popart, resize, opset10))
+          OPSET10_DOC(popart, resize, opset10))
       .def(
           "reversesequence",
           [](AiOnnxOpset10 &opset,
@@ -1468,7 +1468,7 @@ PYBIND11_MODULE(popart_opset10, m) {
           py::arg("batch_axis")   = 1,
           py::arg("time_axis")    = 0,
           py::arg("debugContext") = std::string(),
-          DOC(popart, reversesequence, opset10))
+          OPSET10_DOC(popart, reversesequence, opset10))
       .def(
           "roialign",
           [](AiOnnxOpset10 &opset,
@@ -1494,7 +1494,7 @@ PYBIND11_MODULE(popart_opset10, m) {
           py::arg("sampling_ratio") = 0,
           py::arg("spatial_scale")  = 1.0f,
           py::arg("debugContext")   = std::string(),
-          DOC(popart, roialign, opset10))
+          OPSET10_DOC(popart, roialign, opset10))
       .def(
           "scan",
           [](AiOnnxOpset10 &opset,
@@ -1526,7 +1526,7 @@ PYBIND11_MODULE(popart_opset10, m) {
           py::arg("scan_output_axes")       = std::vector<int64_t>(),
           py::arg("scan_output_directions") = std::vector<int64_t>(),
           py::arg("debugContext")           = std::string(),
-          DOC(popart, scan, opset10))
+          OPSET10_DOC(popart, scan, opset10))
       .def(
           "scatter",
           [](AiOnnxOpset10 &opset,
@@ -1538,7 +1538,7 @@ PYBIND11_MODULE(popart_opset10, m) {
           py::arg("args"),
           py::arg("axis")         = 0,
           py::arg("debugContext") = std::string(),
-          DOC(popart, scatter, opset10))
+          OPSET10_DOC(popart, scatter, opset10))
       .def(
           "selu",
           [](AiOnnxOpset10 &opset,
@@ -1552,7 +1552,7 @@ PYBIND11_MODULE(popart_opset10, m) {
           py::arg("alpha")        = 1.67326f,
           py::arg("gamma")        = 1.0507f,
           py::arg("debugContext") = std::string(),
-          DOC(popart, selu, opset10))
+          OPSET10_DOC(popart, selu, opset10))
       .def(
           "shape",
           [](AiOnnxOpset10 &opset,
@@ -1562,7 +1562,7 @@ PYBIND11_MODULE(popart_opset10, m) {
           },
           py::arg("args"),
           py::arg("debugContext") = std::string(),
-          DOC(popart, shape, opset10))
+          OPSET10_DOC(popart, shape, opset10))
       .def(
           "shrink",
           [](AiOnnxOpset10 &opset,
@@ -1576,7 +1576,7 @@ PYBIND11_MODULE(popart_opset10, m) {
           py::arg("bias")         = 0.0f,
           py::arg("lambd")        = 0.5f,
           py::arg("debugContext") = std::string(),
-          DOC(popart, shrink, opset10))
+          OPSET10_DOC(popart, shrink, opset10))
       .def(
           "sigmoid",
           [](AiOnnxOpset10 &opset,
@@ -1586,7 +1586,7 @@ PYBIND11_MODULE(popart_opset10, m) {
           },
           py::arg("args"),
           py::arg("debugContext") = std::string(),
-          DOC(popart, sigmoid, opset10))
+          OPSET10_DOC(popart, sigmoid, opset10))
       .def(
           "sign",
           [](AiOnnxOpset10 &opset,
@@ -1596,7 +1596,7 @@ PYBIND11_MODULE(popart_opset10, m) {
           },
           py::arg("args"),
           py::arg("debugContext") = std::string(),
-          DOC(popart, sign, opset10))
+          OPSET10_DOC(popart, sign, opset10))
       .def(
           "sin",
           [](AiOnnxOpset10 &opset,
@@ -1606,7 +1606,7 @@ PYBIND11_MODULE(popart_opset10, m) {
           },
           py::arg("args"),
           py::arg("debugContext") = std::string(),
-          DOC(popart, sin, opset10))
+          OPSET10_DOC(popart, sin, opset10))
       .def(
           "sinh",
           [](AiOnnxOpset10 &opset,
@@ -1616,7 +1616,7 @@ PYBIND11_MODULE(popart_opset10, m) {
           },
           py::arg("args"),
           py::arg("debugContext") = std::string(),
-          DOC(popart, sinh, opset10))
+          OPSET10_DOC(popart, sinh, opset10))
       .def(
           "size",
           [](AiOnnxOpset10 &opset,
@@ -1626,7 +1626,7 @@ PYBIND11_MODULE(popart_opset10, m) {
           },
           py::arg("args"),
           py::arg("debugContext") = std::string(),
-          DOC(popart, size, opset10))
+          OPSET10_DOC(popart, size, opset10))
       .def(
           "slice",
           [](AiOnnxOpset10 &opset,
@@ -1636,7 +1636,7 @@ PYBIND11_MODULE(popart_opset10, m) {
           },
           py::arg("args"),
           py::arg("debugContext") = std::string(),
-          DOC(popart, slice, opset10))
+          OPSET10_DOC(popart, slice, opset10))
       .def(
           "softmax",
           [](AiOnnxOpset10 &opset,
@@ -1648,7 +1648,7 @@ PYBIND11_MODULE(popart_opset10, m) {
           py::arg("args"),
           py::arg("axis")         = 1,
           py::arg("debugContext") = std::string(),
-          DOC(popart, softmax, opset10))
+          OPSET10_DOC(popart, softmax, opset10))
       .def(
           "softplus",
           [](AiOnnxOpset10 &opset,
@@ -1658,7 +1658,7 @@ PYBIND11_MODULE(popart_opset10, m) {
           },
           py::arg("args"),
           py::arg("debugContext") = std::string(),
-          DOC(popart, softplus, opset10))
+          OPSET10_DOC(popart, softplus, opset10))
       .def(
           "softsign",
           [](AiOnnxOpset10 &opset,
@@ -1668,7 +1668,7 @@ PYBIND11_MODULE(popart_opset10, m) {
           },
           py::arg("args"),
           py::arg("debugContext") = std::string(),
-          DOC(popart, softsign, opset10))
+          OPSET10_DOC(popart, softsign, opset10))
       .def(
           "spacetodepth",
           [](AiOnnxOpset10 &opset,
@@ -1680,7 +1680,7 @@ PYBIND11_MODULE(popart_opset10, m) {
           py::arg("args"),
           py::arg("blocksize"),
           py::arg("debugContext") = std::string(),
-          DOC(popart, spacetodepth, opset10))
+          OPSET10_DOC(popart, spacetodepth, opset10))
       .def(
           "split",
           [](AiOnnxOpset10 &opset,
@@ -1696,7 +1696,7 @@ PYBIND11_MODULE(popart_opset10, m) {
           py::arg("axis")         = 0,
           py::arg("split")        = std::vector<int64_t>(),
           py::arg("debugContext") = std::string(),
-          DOC(popart, split, opset10))
+          OPSET10_DOC(popart, split, opset10))
       .def(
           "sqrt",
           [](AiOnnxOpset10 &opset,
@@ -1706,7 +1706,7 @@ PYBIND11_MODULE(popart_opset10, m) {
           },
           py::arg("args"),
           py::arg("debugContext") = std::string(),
-          DOC(popart, sqrt, opset10))
+          OPSET10_DOC(popart, sqrt, opset10))
       .def(
           "squeeze",
           [](AiOnnxOpset10 &opset,
@@ -1718,7 +1718,7 @@ PYBIND11_MODULE(popart_opset10, m) {
           py::arg("args"),
           py::arg("axes")         = std::vector<int64_t>(),
           py::arg("debugContext") = std::string(),
-          DOC(popart, squeeze, opset10))
+          OPSET10_DOC(popart, squeeze, opset10))
       .def(
           "stringnormalizer",
           [](AiOnnxOpset10 &opset,
@@ -1741,7 +1741,7 @@ PYBIND11_MODULE(popart_opset10, m) {
           py::arg("locale")             = std::string(),
           py::arg("stopwords")          = std::vector<std::string>(),
           py::arg("debugContext")       = std::string(),
-          DOC(popart, stringnormalizer, opset10))
+          OPSET10_DOC(popart, stringnormalizer, opset10))
       .def(
           "sub",
           [](AiOnnxOpset10 &opset,
@@ -1751,7 +1751,7 @@ PYBIND11_MODULE(popart_opset10, m) {
           },
           py::arg("args"),
           py::arg("debugContext") = std::string(),
-          DOC(popart, sub, opset10))
+          OPSET10_DOC(popart, sub, opset10))
       .def(
           "sum",
           [](AiOnnxOpset10 &opset,
@@ -1761,7 +1761,7 @@ PYBIND11_MODULE(popart_opset10, m) {
           },
           py::arg("args"),
           py::arg("debugContext") = std::string(),
-          DOC(popart, sum, opset10))
+          OPSET10_DOC(popart, sum, opset10))
       .def(
           "tan",
           [](AiOnnxOpset10 &opset,
@@ -1771,7 +1771,7 @@ PYBIND11_MODULE(popart_opset10, m) {
           },
           py::arg("args"),
           py::arg("debugContext") = std::string(),
-          DOC(popart, tan, opset10))
+          OPSET10_DOC(popart, tan, opset10))
       .def(
           "tanh",
           [](AiOnnxOpset10 &opset,
@@ -1781,7 +1781,7 @@ PYBIND11_MODULE(popart_opset10, m) {
           },
           py::arg("args"),
           py::arg("debugContext") = std::string(),
-          DOC(popart, tanh, opset10))
+          OPSET10_DOC(popart, tanh, opset10))
       .def(
           "tfidfvectorizer",
           [](AiOnnxOpset10 &opset,
@@ -1819,7 +1819,7 @@ PYBIND11_MODULE(popart_opset10, m) {
           py::arg("pool_strings") = std::vector<std::string>(),
           py::arg("weights")      = std::vector<float>(),
           py::arg("debugContext") = std::string(),
-          DOC(popart, tfidfvectorizer, opset10))
+          OPSET10_DOC(popart, tfidfvectorizer, opset10))
       .def(
           "thresholdedrelu",
           [](AiOnnxOpset10 &opset,
@@ -1831,7 +1831,7 @@ PYBIND11_MODULE(popart_opset10, m) {
           py::arg("args"),
           py::arg("alpha")        = 1.0f,
           py::arg("debugContext") = std::string(),
-          DOC(popart, thresholdedrelu, opset10))
+          OPSET10_DOC(popart, thresholdedrelu, opset10))
       .def(
           "tile",
           [](AiOnnxOpset10 &opset,
@@ -1841,7 +1841,7 @@ PYBIND11_MODULE(popart_opset10, m) {
           },
           py::arg("args"),
           py::arg("debugContext") = std::string(),
-          DOC(popart, tile, opset10))
+          OPSET10_DOC(popart, tile, opset10))
       .def(
           "topk",
           [](AiOnnxOpset10 &opset,
@@ -1853,7 +1853,7 @@ PYBIND11_MODULE(popart_opset10, m) {
           py::arg("args"),
           py::arg("axis")         = -1,
           py::arg("debugContext") = std::string(),
-          DOC(popart, topk, opset10))
+          OPSET10_DOC(popart, topk, opset10))
       .def(
           "transpose",
           [](AiOnnxOpset10 &opset,
@@ -1865,7 +1865,7 @@ PYBIND11_MODULE(popart_opset10, m) {
           py::arg("args"),
           py::arg("perm")         = std::vector<int64_t>(),
           py::arg("debugContext") = std::string(),
-          DOC(popart, transpose, opset10))
+          OPSET10_DOC(popart, transpose, opset10))
       .def(
           "unsqueeze",
           [](AiOnnxOpset10 &opset,
@@ -1877,7 +1877,7 @@ PYBIND11_MODULE(popart_opset10, m) {
           py::arg("args"),
           py::arg("axes"),
           py::arg("debugContext") = std::string(),
-          DOC(popart, unsqueeze, opset10))
+          OPSET10_DOC(popart, unsqueeze, opset10))
       .def(
           "upsample",
           [](AiOnnxOpset10 &opset,
@@ -1889,7 +1889,7 @@ PYBIND11_MODULE(popart_opset10, m) {
           py::arg("args"),
           py::arg("mode")         = "nearest",
           py::arg("debugContext") = std::string(),
-          DOC(popart, upsample, opset10))
+          OPSET10_DOC(popart, upsample, opset10))
       .def(
           "where",
           [](AiOnnxOpset10 &opset,
@@ -1899,7 +1899,7 @@ PYBIND11_MODULE(popart_opset10, m) {
           },
           py::arg("args"),
           py::arg("debugContext") = std::string(),
-          DOC(popart, where, opset10))
+          OPSET10_DOC(popart, where, opset10))
       .def(
           "logical_xor",
           [](AiOnnxOpset10 &opset,
@@ -1909,5 +1909,5 @@ PYBIND11_MODULE(popart_opset10, m) {
           },
           py::arg("args"),
           py::arg("debugContext") = std::string(),
-          DOC(popart, logical_xor, opset10));
+          OPSET10_DOC(popart, logical_xor, opset10));
 }

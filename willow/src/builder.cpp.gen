@@ -5340,3 +5340,409 @@ AiOnnxOpset11::unsqueeze(const std::vector<TensorId>& args,
   return outputs[0];
 }
 
+TensorId
+AiOnnxOpset12::argmax(const std::vector<TensorId>& args,
+                      int64_t axis,
+                      int64_t keepdims,
+                      int64_t select_last_index,
+                      const popart::DebugContext& debugContext) {
+  std::map<std::string, popart::any> attributes;
+  // Workaround Onnx not applying default values during type/shape inference
+  {
+    attributes["axis"] = axis;
+  }
+  // Workaround Onnx not applying default values during type/shape inference
+  {
+    attributes["keepdims"] = keepdims;
+  }
+  // Workaround Onnx not applying default values during type/shape inference
+  {
+    attributes["select_last_index"] = select_last_index;
+  }
+  BuilderDebugInfo di(debugContext, __POPART_FUNCTION_NAME__, args, attributes);
+  attributes.insert({sDebugInfoId, di.getId()});
+  auto outputs = impl->op(Onnx::Operators::ArgMax_12,
+                  getOpsetVersion(),
+                  args,
+                  attributes,
+                  {di});
+  di.setOutputs(outputs);
+  return outputs[0];
+}
+
+TensorId
+AiOnnxOpset12::argmin(const std::vector<TensorId>& args,
+                      int64_t axis,
+                      int64_t keepdims,
+                      int64_t select_last_index,
+                      const popart::DebugContext& debugContext) {
+  std::map<std::string, popart::any> attributes;
+  // Workaround Onnx not applying default values during type/shape inference
+  {
+    attributes["axis"] = axis;
+  }
+  // Workaround Onnx not applying default values during type/shape inference
+  {
+    attributes["keepdims"] = keepdims;
+  }
+  // Workaround Onnx not applying default values during type/shape inference
+  {
+    attributes["select_last_index"] = select_last_index;
+  }
+  BuilderDebugInfo di(debugContext, __POPART_FUNCTION_NAME__, args, attributes);
+  attributes.insert({sDebugInfoId, di.getId()});
+  auto outputs = impl->op(Onnx::Operators::ArgMin_12,
+                  getOpsetVersion(),
+                  args,
+                  attributes,
+                  {di});
+  di.setOutputs(outputs);
+  return outputs[0];
+}
+
+TensorId
+AiOnnxOpset12::celu(const std::vector<TensorId>& args,
+                    float alpha,
+                    const popart::DebugContext& debugContext) {
+  std::map<std::string, popart::any> attributes;
+  if (std::abs(alpha - 1.0f) >  std::numeric_limits<float>::epsilon()) {
+    attributes["alpha"] = alpha;
+  }
+  BuilderDebugInfo di(debugContext, __POPART_FUNCTION_NAME__, args, attributes);
+  attributes.insert({sDebugInfoId, di.getId()});
+  auto outputs = impl->op(Onnx::Operators::Celu_12,
+                  getOpsetVersion(),
+                  args,
+                  attributes,
+                  {di});
+  di.setOutputs(outputs);
+  return outputs[0];
+}
+
+TensorId
+AiOnnxOpset12::clip(const std::vector<TensorId>& args,
+                    const popart::DebugContext& debugContext) {
+  std::map<std::string, popart::any> attributes;
+  BuilderDebugInfo di(debugContext, __POPART_FUNCTION_NAME__, args, attributes);
+  attributes.insert({sDebugInfoId, di.getId()});
+  auto outputs = impl->op(Onnx::Operators::Clip_12,
+                  getOpsetVersion(),
+                  args,
+                  attributes,
+                  {di});
+  di.setOutputs(outputs);
+  return outputs[0];
+}
+
+TensorId
+AiOnnxOpset12::constant(                        const ConstVoidData&  sparse_value,
+                        const ConstVoidData&  value,
+                        nonstd::optional<float> value_float,
+                        const std::vector<float>& value_floats,
+                        nonstd::optional<int64_t> value_int,
+                        const std::vector<int64_t>& value_ints,
+                        nonstd::optional<std::string> value_string,
+                        const std::vector<std::string>& value_strings,
+                        const popart::DebugContext& debugContext) {
+  std::map<std::string, popart::any> attributes;
+  attributes["sparse_value"] = sparse_value;
+  attributes["value"] = value;
+  if (value_float != nonstd::optional<float>()) {
+    attributes["value_float"] = *value_float;
+  }
+  if (!value_floats.empty()) {
+    attributes["value_floats"] = value_floats;
+  }
+  if (value_int != nonstd::optional<int64_t>()) {
+    attributes["value_int"] = *value_int;
+  }
+  if (!value_ints.empty()) {
+    attributes["value_ints"] = value_ints;
+  }
+  if (value_string != std::string()) {
+    attributes["value_string"] = *value_string;
+  }
+  if (!value_strings.empty()) {
+    attributes["value_strings"] = value_strings;
+  }
+  BuilderDebugInfo di(debugContext, __POPART_FUNCTION_NAME__, {}, attributes);
+  attributes.insert({sDebugInfoId, di.getId()});
+  auto outputs = impl->op(Onnx::Operators::Constant_12,
+                  getOpsetVersion(),
+                  {},
+                  attributes,
+                  {di});
+  di.setOutputs(outputs);
+  return outputs[0];
+}
+
+std::vector<TensorId>
+AiOnnxOpset12::dropout(const std::vector<TensorId>& args,
+                       unsigned num_outputs,
+                       nonstd::optional<int64_t> seed,
+                       const popart::DebugContext& debugContext) {
+  std::map<std::string, popart::any> attributes;
+  if (seed != nonstd::optional<int64_t>()) {
+    attributes["seed"] = *seed;
+  }
+  BuilderDebugInfo di(debugContext, __POPART_FUNCTION_NAME__, args, attributes);
+  attributes.insert({sDebugInfoId, di.getId()});
+  auto outputs = impl->op(Onnx::Operators::Dropout_12,
+                  getOpsetVersion(),
+                  args,
+                  num_outputs,
+                  attributes,
+                  {di});
+  di.setOutputs(outputs);
+  return outputs;
+}
+
+TensorId
+AiOnnxOpset12::einsum(const std::vector<TensorId>& args,
+                      const std::string& equation,
+                      const popart::DebugContext& debugContext) {
+  std::map<std::string, popart::any> attributes;
+  attributes["equation"] = equation;
+  BuilderDebugInfo di(debugContext, __POPART_FUNCTION_NAME__, args, attributes);
+  attributes.insert({sDebugInfoId, di.getId()});
+  auto outputs = impl->op(Onnx::Operators::Einsum_12,
+                  getOpsetVersion(),
+                  args,
+                  attributes,
+                  {di});
+  di.setOutputs(outputs);
+  return outputs[0];
+}
+
+TensorId
+AiOnnxOpset12::gathernd(const std::vector<TensorId>& args,
+                        int64_t batch_dims,
+                        const popart::DebugContext& debugContext) {
+  std::map<std::string, popart::any> attributes;
+  // Workaround Onnx not applying default values during type/shape inference
+  {
+    attributes["batch_dims"] = batch_dims;
+  }
+  BuilderDebugInfo di(debugContext, __POPART_FUNCTION_NAME__, args, attributes);
+  attributes.insert({sDebugInfoId, di.getId()});
+  auto outputs = impl->op(Onnx::Operators::GatherND_12,
+                  getOpsetVersion(),
+                  args,
+                  attributes,
+                  {di});
+  di.setOutputs(outputs);
+  return outputs[0];
+}
+
+TensorId
+AiOnnxOpset12::greaterorequal(const std::vector<TensorId>& args,
+                              const popart::DebugContext& debugContext) {
+  std::map<std::string, popart::any> attributes;
+  BuilderDebugInfo di(debugContext, __POPART_FUNCTION_NAME__, args, attributes);
+  attributes.insert({sDebugInfoId, di.getId()});
+  auto outputs = impl->op(Onnx::Operators::GreaterOrEqual_12,
+                  getOpsetVersion(),
+                  args,
+                  attributes,
+                  {di});
+  di.setOutputs(outputs);
+  return outputs[0];
+}
+
+TensorId
+AiOnnxOpset12::lessorequal(const std::vector<TensorId>& args,
+                           const popart::DebugContext& debugContext) {
+  std::map<std::string, popart::any> attributes;
+  BuilderDebugInfo di(debugContext, __POPART_FUNCTION_NAME__, args, attributes);
+  attributes.insert({sDebugInfoId, di.getId()});
+  auto outputs = impl->op(Onnx::Operators::LessOrEqual_12,
+                  getOpsetVersion(),
+                  args,
+                  attributes,
+                  {di});
+  di.setOutputs(outputs);
+  return outputs[0];
+}
+
+TensorId
+AiOnnxOpset12::max(const std::vector<TensorId>& args,
+                   const popart::DebugContext& debugContext) {
+  std::map<std::string, popart::any> attributes;
+  BuilderDebugInfo di(debugContext, __POPART_FUNCTION_NAME__, args, attributes);
+  attributes.insert({sDebugInfoId, di.getId()});
+  auto outputs = impl->op(Onnx::Operators::Max_12,
+                  getOpsetVersion(),
+                  args,
+                  attributes,
+                  {di});
+  di.setOutputs(outputs);
+  return outputs[0];
+}
+
+std::vector<TensorId>
+AiOnnxOpset12::maxpool(const std::vector<TensorId>& args,
+                       unsigned num_outputs,
+                       const std::vector<int64_t>& kernel_shape,
+                       int64_t ceil_mode,
+                       const std::vector<int64_t>& dilations,
+                       const std::vector<int64_t>& pads,
+                       int64_t storage_order,
+                       const std::vector<int64_t>& strides,
+                       const popart::DebugContext& debugContext) {
+  std::map<std::string, popart::any> attributes;
+  // Workaround Onnx not applying default values during type/shape inference
+  {
+    attributes["ceil_mode"] = ceil_mode;
+  }
+  if (!dilations.empty()) {
+    attributes["dilations"] = dilations;
+  }
+  attributes["kernel_shape"] = kernel_shape;
+  if (!pads.empty()) {
+    attributes["pads"] = pads;
+  }
+  // Workaround Onnx not applying default values during type/shape inference
+  {
+    attributes["storage_order"] = storage_order;
+  }
+  if (!strides.empty()) {
+    attributes["strides"] = strides;
+  }
+  BuilderDebugInfo di(debugContext, __POPART_FUNCTION_NAME__, args, attributes);
+  attributes.insert({sDebugInfoId, di.getId()});
+  auto outputs = impl->op(Onnx::Operators::MaxPool_12,
+                  getOpsetVersion(),
+                  args,
+                  num_outputs,
+                  attributes,
+                  {di});
+  di.setOutputs(outputs);
+  return outputs;
+}
+
+TensorId
+AiOnnxOpset12::min(const std::vector<TensorId>& args,
+                   const popart::DebugContext& debugContext) {
+  std::map<std::string, popart::any> attributes;
+  BuilderDebugInfo di(debugContext, __POPART_FUNCTION_NAME__, args, attributes);
+  attributes.insert({sDebugInfoId, di.getId()});
+  auto outputs = impl->op(Onnx::Operators::Min_12,
+                  getOpsetVersion(),
+                  args,
+                  attributes,
+                  {di});
+  di.setOutputs(outputs);
+  return outputs[0];
+}
+
+TensorId
+AiOnnxOpset12::negativeloglikelihoodloss(const std::vector<TensorId>& args,
+                                         nonstd::optional<int64_t> ignore_index,
+                                         const std::string& reduction,
+                                         const popart::DebugContext& debugContext) {
+  std::map<std::string, popart::any> attributes;
+  if (ignore_index != nonstd::optional<int64_t>()) {
+    attributes["ignore_index"] = *ignore_index;
+  }
+  if (reduction != "mean") {
+    attributes["reduction"] = reduction;
+  }
+  BuilderDebugInfo di(debugContext, __POPART_FUNCTION_NAME__, args, attributes);
+  attributes.insert({sDebugInfoId, di.getId()});
+  auto outputs = impl->op(Onnx::Operators::NegativeLogLikelihoodLoss_12,
+                  getOpsetVersion(),
+                  args,
+                  attributes,
+                  {di});
+  di.setOutputs(outputs);
+  return outputs[0];
+}
+
+TensorId
+AiOnnxOpset12::pow(const std::vector<TensorId>& args,
+                   const popart::DebugContext& debugContext) {
+  std::map<std::string, popart::any> attributes;
+  BuilderDebugInfo di(debugContext, __POPART_FUNCTION_NAME__, args, attributes);
+  attributes.insert({sDebugInfoId, di.getId()});
+  auto outputs = impl->op(Onnx::Operators::Pow_12,
+                  getOpsetVersion(),
+                  args,
+                  attributes,
+                  {di});
+  di.setOutputs(outputs);
+  return outputs[0];
+}
+
+TensorId
+AiOnnxOpset12::reducemax(const std::vector<TensorId>& args,
+                         nonstd::optional<std::vector<int64_t>> axes,
+                         int64_t keepdims,
+                         const popart::DebugContext& debugContext) {
+  std::map<std::string, popart::any> attributes;
+  if (axes != nonstd::optional<std::vector<int64_t>>()) {
+    attributes["axes"] = *axes;
+  }
+  // Workaround Onnx not applying default values during type/shape inference
+  {
+    attributes["keepdims"] = keepdims;
+  }
+  BuilderDebugInfo di(debugContext, __POPART_FUNCTION_NAME__, args, attributes);
+  attributes.insert({sDebugInfoId, di.getId()});
+  auto outputs = impl->op(Onnx::Operators::ReduceMax_12,
+                  getOpsetVersion(),
+                  args,
+                  attributes,
+                  {di});
+  di.setOutputs(outputs);
+  return outputs[0];
+}
+
+TensorId
+AiOnnxOpset12::reducemin(const std::vector<TensorId>& args,
+                         nonstd::optional<std::vector<int64_t>> axes,
+                         int64_t keepdims,
+                         const popart::DebugContext& debugContext) {
+  std::map<std::string, popart::any> attributes;
+  if (axes != nonstd::optional<std::vector<int64_t>>()) {
+    attributes["axes"] = *axes;
+  }
+  // Workaround Onnx not applying default values during type/shape inference
+  {
+    attributes["keepdims"] = keepdims;
+  }
+  BuilderDebugInfo di(debugContext, __POPART_FUNCTION_NAME__, args, attributes);
+  attributes.insert({sDebugInfoId, di.getId()});
+  auto outputs = impl->op(Onnx::Operators::ReduceMin_12,
+                  getOpsetVersion(),
+                  args,
+                  attributes,
+                  {di});
+  di.setOutputs(outputs);
+  return outputs[0];
+}
+
+std::vector<TensorId>
+AiOnnxOpset12::softmaxcrossentropyloss(const std::vector<TensorId>& args,
+                                       unsigned num_outputs,
+                                       nonstd::optional<int64_t> ignore_index,
+                                       const std::string& reduction,
+                                       const popart::DebugContext& debugContext) {
+  std::map<std::string, popart::any> attributes;
+  if (ignore_index != nonstd::optional<int64_t>()) {
+    attributes["ignore_index"] = *ignore_index;
+  }
+  if (reduction != "mean") {
+    attributes["reduction"] = reduction;
+  }
+  BuilderDebugInfo di(debugContext, __POPART_FUNCTION_NAME__, args, attributes);
+  attributes.insert({sDebugInfoId, di.getId()});
+  auto outputs = impl->op(Onnx::Operators::SoftmaxCrossEntropyLoss_12,
+                  getOpsetVersion(),
+                  args,
+                  num_outputs,
+                  attributes,
+                  {di});
+  di.setOutputs(outputs);
+  return outputs;
+}
+

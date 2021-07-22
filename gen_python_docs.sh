@@ -74,6 +74,7 @@ $EXTRA_INCLUDES_STR \
 -DONNX_NAMESPACE=onnx \
 willow/include/popart/adam.hpp \
 willow/include/popart/builder.hpp \
+willow/include/popart/clipnormsettings.hpp \
 willow/include/popart/devicemanager.hpp \
 willow/include/popart/dataflow.hpp \
 willow/include/popart/op.hpp \
