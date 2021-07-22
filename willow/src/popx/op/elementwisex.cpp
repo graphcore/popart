@@ -200,7 +200,7 @@ snap::Tensor EwuComputex::outplace(poplar::program::Sequence &prog,
 }
 
 snap::Tensor EwuComputex::coerceTo2D(const snap::Tensor &t, int64_t axis) {
-  const auto in_shape = t.getPoplarTensor().shape();
+  const auto in_shape = t.shape();
   auto k              = in_shape.begin();
   std::advance(k, axis);
 
@@ -312,7 +312,7 @@ void ElementWiseBinaryInplaceOpx::grow(poplar::program::Sequence &prog) const {
 
   if (canComputeInplace) {
     cx->inplace(prog, g, tInOut, tIn, getDebugNameAndId(), "");
-    if (outInfo(outIdx).nelms() == tInOut.getPoplarTensor().numElements()) {
+    if (outInfo(outIdx).nelms() == tInOut.numElements()) {
       // Only attempt reshape if the number of elements agree between IR and
       // Poplar (e.g. not RTS)
       tInOut = tInOut.reshape(outInfo(outIdx).shape_szt());

@@ -96,7 +96,7 @@ snap::Tensor DynamicSliceOpx::unwindTensorLayout(snap::Tensor tensor,
                                                  InIndex,
                                                  OutIndex) const {
   auto &op      = getOp<DynamicSliceBaseOp>();
-  auto outShape = tensor.getPoplarTensor().shape();
+  auto outShape = tensor.shape();
   auto inShape  = op.inShape(DynamicSliceBaseOp::getInIndex());
 
   std::vector<size_t> paxes(op.getAxes().begin(), op.getAxes().end());

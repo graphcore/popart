@@ -1361,7 +1361,7 @@ void IrLowering::createRemoteBuffer(RemoteBufferId id, snap::Tensor tensor) {
   auto info    = ir().getRemoteBufferInfo(id);
   auto name    = getRemoteBufferName(id);
   auto type    = tensor.elementType();
-  auto size    = tensor.getPoplarTensor().numElements();
+  auto size    = tensor.numElements();
   auto repeats = info.repeats;
 
   logging::devicex::info(
@@ -2091,7 +2091,7 @@ void IrLowering::growOpx(PopOpx *opx,
                       [](const view::Region &r) { return r.isEmpty(); })) {
         snap::Tensor inTensor = opx->get(inputMap.second->id);
         // Check that this isn't a phony tensor or a tensor with post-IR aliases
-        if (inTensor.getPoplarTensor().numElements() > 0 &&
+        if (inTensor.numElements() > 0 &&
             aliasZeroCopy->getActiveAliasedTensors({inputMap.second}, false)
                 .empty()) {
           // Clone the input tensor with its current values
@@ -2647,8 +2647,8 @@ void IrLowering::prePlanMatMuls() {
 
       matMulParams.inputType  = inputType;
       matMulParams.outputType = matMulOpx->getOutputType(inputs.first);
-      matMulParams.aShape     = inputs.first.getPoplarTensor().shape();
-      matMulParams.bShape     = inputs.second.getPoplarTensor().shape();
+      matMulParams.aShape     = inputs.first.shape();
+      matMulParams.bShape     = inputs.second.shape();
       allMatMulParams.push_back(matMulParams);
 
       auto opts = matmulOptions;
@@ -3486,8 +3486,8 @@ PriTask IrLowering::fromHostTask(Tensor *tensor,
                             tensor->id);
 
     if (tensors_.hasViewChangers(tensor->id)) {
-      if (tensors_.get(tensor->id).getPoplarTensor().numElements() >
-          tensors_.getView(tensor->id).getPoplarTensor().numElements()) {
+      if (tensors_.get(tensor->id).numElements() >
+          tensors_.getView(tensor->id).numElements()) {
         // The view is not covering the whole tensor, therefore it is necessary
         // to zero-init it
         popops::zero(graph().getPoplarGraph(),
@@ -3542,7 +3542,7 @@ PriTask IrLowering::toHostTask(Tensor *tensor,
     // verify that number of elements of poplar Tensor and poplar Stream are the
     // same
     auto nElmsStream = poplarStream.numElements();
-    auto nElmsTensor = anchorTensor.getPoplarTensor().numElements();
+    auto nElmsTensor = anchorTensor.numElements();
     if (nElmsStream != nElmsTensor) {
       throw internal_error("[Devicex::toHostTask] "
                            "The snap::Tensor {} has {}, whereas the "

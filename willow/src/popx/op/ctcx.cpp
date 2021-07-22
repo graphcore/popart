@@ -177,9 +177,8 @@ snap::Tensor CtcOpx::applyReduction(poplar::program::Sequence &prog,
           graph()};
 
       // Take the average.
-      double totalSamples =
-          static_cast<double>(ctcLoss.getPoplarTensor().dim(0));
-      scale = 1.0 / totalSamples;
+      double totalSamples = static_cast<double>(ctcLoss.dim(0));
+      scale               = 1.0 / totalSamples;
       break;
     }
     case ReductionType::NoReduction:

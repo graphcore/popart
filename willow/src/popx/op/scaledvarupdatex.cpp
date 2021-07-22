@@ -29,7 +29,7 @@ snap::Tensor ScaledVarUpdateOpx::getOrCreateLrTensor() const {
     snap::Tensor wd = getInTensor(ScaledVarUpdateOp::getWdInIndex());
     snap::Tensor lr = snap::Tensor{
         graph().getPoplarGraph().addConstant(wd.elementType(),
-                                             wd.getPoplarTensor().shape(),
+                                             wd.shape(),
                                              adaptiveVarUpdateOp.initLr.val(),
                                              debugContext("Lr")),
         graph()};
@@ -52,7 +52,7 @@ snap::Tensor ScaledVarUpdateOpx::getOrCreateWdTensor() const {
     snap::Tensor lr = getInTensor(ScaledVarUpdateOp::getLrInIndex());
     snap::Tensor wd = snap::Tensor{
         graph().getPoplarGraph().addConstant(lr.elementType(),
-                                             lr.getPoplarTensor().shape(),
+                                             lr.shape(),
                                              adaptiveVarUpdateOp.initWd.val(),
                                              debugContext()),
         graph()};

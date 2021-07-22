@@ -81,7 +81,7 @@ compose(const std::vector<std::pair<view::Region, snap::Tensor>> tensorRegions,
     auto tensor = currentTensorRegions[i].second;
     // Tensor can either have the same shape as the region, or the full size
     // if it is the full size, cut down to relevant region size
-    if (tensor.getPoplarTensor().numElements() > region.nelms()) {
+    if (tensor.numElements() > region.nelms()) {
       std::vector<size_t> l(region.rank());
       std::vector<size_t> u(region.rank());
       l.assign(region.getLower().begin(), region.getLower().end());
@@ -93,7 +93,7 @@ compose(const std::vector<std::pair<view::Region, snap::Tensor>> tensorRegions,
     }
 
     logging::trace("[creatorx] Tensor shape {} region {} {}",
-                   tensor.getPoplarTensor().shape(),
+                   tensor.shape(),
                    region.getLower(),
                    region.getUpper());
 
@@ -258,7 +258,7 @@ InputCreatorCandidate::unwind(snap::Tensor input) {
         fullTensor.getPoplarTensor());
 
     logging::devicex::trace("[creatorx] Tensor shape before compose: {}",
-                            input.getPoplarTensor().shape());
+                            input.shape());
 
     std::vector<std::pair<view::Region, snap::Tensor>> tensorRegions;
     tensorRegions.reserve(outRegions.size());
@@ -273,7 +273,7 @@ InputCreatorCandidate::unwind(snap::Tensor input) {
 
     logging::devicex::trace(
         "[creatorx] Tensor shape after compose / before unwind: {}",
-        input.getPoplarTensor().shape());
+        input.shape());
 
     input = opxOnPath.opx->unwindTensorLayout(
         input, opxOnPath.inIndex, opxOnPath.outIndex);
@@ -287,7 +287,7 @@ InputCreatorCandidate::unwind(snap::Tensor input) {
     }
 
     logging::devicex::trace("[creatorx] Tensor shape after unwind: {}",
-                            input.getPoplarTensor().shape());
+                            input.shape());
 
     outRegions = inRegions;
     inRegions.clear();
@@ -322,7 +322,7 @@ InputCreatorCandidate::unwind(snap::Tensor input) {
         fullTensor.getPoplarTensor());
 
     logging::devicex::trace("[creatorx] Tensor shape before final compose: {}",
-                            input.getPoplarTensor().shape());
+                            input.shape());
 
     std::vector<std::pair<view::Region, snap::Tensor>> tensorRegions;
     tensorRegions.reserve(outRegions.size());
@@ -336,7 +336,7 @@ InputCreatorCandidate::unwind(snap::Tensor input) {
     input = compose(tensorRegions, fullRegion, fullTensor);
 
     logging::devicex::trace("[creatorx] Tensor shape after final compose: {}",
-                            input.getPoplarTensor().shape());
+                            input.shape());
   }
 
   return {input, ViewChangers()};
@@ -453,14 +453,14 @@ InputMultiCreatorCandidate::createInput(const poplar::DebugNameAndId &dnai) {
     auto tensor = tensorAndView.first;
     logging::devicex::trace("Accepted candidate regions: {}, tensor shape: {}",
                             candidate.second,
-                            tensor.getPoplarTensor().shape());
+                            tensor.shape());
     for (auto acceptedRegion : candidate.second)
       currentTensorRegions.push_back({acceptedRegion, tensor});
     ++candidateIdx;
   }
 
   // Fallback linearly mapped tensor, inferred from first candidate
-  auto popShape = currentTensorRegions.front().second.getPoplarTensor().shape();
+  auto popShape = currentTensorRegions.front().second.shape();
   std::vector<int64_t> shape(popShape.size());
   shape.assign(popShape.begin(), popShape.end());
   auto fullRegion = view::Region::getFull(shape);

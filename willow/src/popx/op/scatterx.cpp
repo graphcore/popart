@@ -58,10 +58,8 @@ void ScatterDataGradOpx::grow(poplar::program::Sequence &prog) const {
   auto data = cloneNcopy(prog, getInTensor(ScatterDataGradOp::gradInIndex()));
   auto indices = getInTensor(ScatterDataGradOp::indicesInIndex());
   auto update  = snap::Tensor{
-      graph().getPoplarGraph().addConstant(data.elementType(),
-                                           indices.getPoplarTensor().shape(),
-                                           0,
-                                           debugContext("zeros")),
+      graph().getPoplarGraph().addConstant(
+          data.elementType(), indices.shape(), 0, debugContext("zeros")),
       graph()};
   poputil::mapTensorLinearly(graph().getPoplarGraph(),
                              update.getPoplarTensor());
@@ -72,11 +70,10 @@ void ScatterDataGradOpx::grow(poplar::program::Sequence &prog) const {
   // data tensor, but ONNX scatter only provides an axis and a scalar index.
   std::vector<snap::Tensor> indices_mapped(indices.getPoplarTensor().rank());
   for (int i = 0; i < indices_mapped.size(); ++i) {
-    auto t = scatterutilx::linspace(
-        graph(),
-        0,
-        static_cast<int>(indices.getPoplarTensor().dim(i)),
-        getDebugNameAndId("linspace"));
+    auto t = scatterutilx::linspace(graph(),
+                                    0,
+                                    static_cast<int>(indices.dim(i)),
+                                    getDebugNameAndId("linspace"));
 
     // Match the rank of indices
     t = scatterutilx::matchRank(indices, t, i);

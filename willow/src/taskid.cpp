@@ -184,8 +184,8 @@ namespace std {
 
 using namespace popart;
 
-std::size_t hash<popart::TaskId>::
-operator()(const popart::TaskId &taskId) const {
+std::size_t
+hash<popart::TaskId>::operator()(const popart::TaskId &taskId) const {
   std::size_t seed = 0;
 
   boost::hash_combine(seed, taskId.type);

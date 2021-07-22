@@ -91,8 +91,6 @@ int64_t Optimizer::getAccumulationFactor() const {
   return accumulationFactor;
 }
 
-
-
 TensorId Optimizer::getLossScalingTensorId(DataType t) {
   return reservedLossScalingPrefix() + getDataTypeInfoMap().at(t).name();
 }

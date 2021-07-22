@@ -143,12 +143,12 @@ snap::Tensor BasePadOpx::cloneNcopyEdges(snap::Tensor t,
   // concatenate all the lowering().Tensors and create one single large copy
   // program.
   for (auto &p : leftPads) {
-    if (p.getPoplarTensor().numElements() > 0) {
+    if (p.numElements() > 0) {
       p = cloneNcopy(se, p);
     }
   }
   for (auto &p : rightPads) {
-    if (p.getPoplarTensor().numElements() > 0) {
+    if (p.numElements() > 0) {
       p = cloneNcopy(se, p);
     }
   }
@@ -160,10 +160,10 @@ snap::Tensor BasePadOpx::cloneNcopyEdges(snap::Tensor t,
     const auto d_u64 = static_cast<size_t>(d);
     const auto d_u32 = static_cast<uint32_t>(d);
 
-    if (leftPads[d_u64].getPoplarTensor().numElements() > 0) {
+    if (leftPads[d_u64].numElements() > 0) {
       pt = poplar::concat({leftPads[d_u64].getPoplarTensor(), pt}, d_u32);
     }
-    if (rightPads[d_u64].getPoplarTensor().numElements() > 0) {
+    if (rightPads[d_u64].numElements() > 0) {
       pt = poplar::concat({pt, rightPads[d_u64].getPoplarTensor()}, d_u32);
     }
   }
@@ -199,7 +199,7 @@ snap::Tensor BasePadOpx::constantModePadGrow(snap::Tensor inTensor,
   // If padding a tensor with a dim of size 0, the original tensor must have no
   // elements, so "edge" mapping is not possible and we must do it ourselves.
   // Note a tensor has 0 elements iff it has a zero-sized dimension.
-  if (inTensor.getPoplarTensor().numElements() == 0) {
+  if (inTensor.numElements() == 0) {
     auto outTensor = mk_padded(popops::padding::MappingMethod::NONE);
     dv_p->lowering().getLinearMapper().mapTensor(PopOpx::graph(), outTensor);
     return outTensor;

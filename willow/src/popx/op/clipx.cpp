@@ -26,7 +26,7 @@ snap::Tensor ClipComputex::getClipTensor(float val,
 snap::Tensor ClipComputex::broadcastClipTensor(snap::Tensor clipT,
                                                const snap::Tensor &refT) {
   // Broadcasting clip tensor across each dimension of reference tensor
-  auto refShape = refT.getPoplarTensor().shape();
+  auto refShape = refT.shape();
 
   auto t = clipT.getPoplarTensor();
   for (unsigned dim = 0; dim < refShape.size(); ++dim) {

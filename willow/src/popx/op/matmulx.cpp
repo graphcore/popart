@@ -117,8 +117,8 @@ static std::pair<snap::Tensor, snap::Tensor> matMatchRank(snap::Tensor lhs,
                                                           snap::Tensor rhs) {
   auto rank =
       std::max(lhs.getPoplarTensor().rank(), rhs.getPoplarTensor().rank());
-  return {lhs.reshape(matchRank(lhs.getPoplarTensor().shape(), rank)),
-          rhs.reshape(matchRank(rhs.getPoplarTensor().shape(), rank))};
+  return {lhs.reshape(matchRank(lhs.shape(), rank)),
+          rhs.reshape(matchRank(rhs.shape(), rank))};
 }
 
 static std::vector<unsigned> matDimshuffle(std::vector<std::size_t> lhsShape,
@@ -140,8 +140,8 @@ static std::vector<unsigned> matDimshuffle(std::vector<std::size_t> lhsShape,
 
 static std::pair<snap::Tensor, snap::Tensor> matDimshuffle(snap::Tensor lhs,
                                                            snap::Tensor rhs) {
-  const auto lhsShape = lhs.getPoplarTensor().shape();
-  const auto rhsShape = rhs.getPoplarTensor().shape();
+  const auto lhsShape = lhs.shape();
+  const auto rhsShape = rhs.shape();
 
   return {lhs.dimShuffle(matDimshuffle(lhsShape, rhsShape)),
           rhs.dimShuffle(matDimshuffle(lhsShape, rhsShape))};
@@ -176,8 +176,8 @@ rhsReshapeGroups(std::vector<std::size_t> lhsShape,
 
 static std::pair<snap::Tensor, snap::Tensor>
 matReshapeGroups(snap::Tensor lhs, snap::Tensor rhs) {
-  const auto lhsShape = lhs.getPoplarTensor().shape();
-  const auto rhsShape = rhs.getPoplarTensor().shape();
+  const auto lhsShape = lhs.shape();
+  const auto rhsShape = rhs.shape();
 
   return {lhs.reshape(lhsReshapeGroups(lhsShape, rhsShape)),
           rhs.reshape(rhsReshapeGroups(lhsShape, rhsShape))};
@@ -191,18 +191,15 @@ matCombineBroadcastDims(std::vector<std::size_t> shape) {
 static std::pair<snap::Tensor, snap::Tensor>
 matCombineBroadcastDims(snap::Tensor lhs, snap::Tensor rhs) {
   rhs = rhs.dimShuffle({0, 1, 3, 2});
-  lhs = lhs.reshape(matCombineBroadcastDims(lhs.getPoplarTensor().shape()));
-  rhs = rhs.reshape(matCombineBroadcastDims(rhs.getPoplarTensor().shape()));
+  lhs = lhs.reshape(matCombineBroadcastDims(lhs.shape()));
+  rhs = rhs.reshape(matCombineBroadcastDims(rhs.shape()));
   return {lhs, rhs.dimShuffle({0, 2, 1})};
 }
 
 static snap::Tensor
 matSplitBroadcastDims(snap::Tensor result, snap::Tensor lhs, snap::Tensor rhs) {
-  return result.reshape({result.getPoplarTensor().dim(0),
-                         lhs.getPoplarTensor().dim(1),
-                         lhs.getPoplarTensor().dim(2),
-                         rhs.getPoplarTensor().dim(1),
-                         rhs.getPoplarTensor().dim(3)});
+  return result.reshape(
+      {result.dim(0), lhs.dim(1), lhs.dim(2), rhs.dim(1), rhs.dim(3)});
 }
 
 static snap::Tensor matUnDimShuffle(snap::Tensor result) {
@@ -212,9 +209,9 @@ static snap::Tensor matUnDimShuffle(snap::Tensor result) {
 static snap::Tensor matExpandBroadcastDims(snap::Tensor result,
                                            snap::Tensor lhs,
                                            snap::Tensor rhs) {
-  const auto lhsShape = lhs.getPoplarTensor().shape();
-  const auto rhsShape = rhs.getPoplarTensor().shape();
-  const auto outShape = result.getPoplarTensor().shape();
+  const auto lhsShape = lhs.shape();
+  const auto rhsShape = rhs.shape();
+  const auto outShape = result.shape();
 
   const auto itrs =
       std::mismatch(lhsShape.begin(), lhsShape.end() - 2, rhsShape.begin());
@@ -231,13 +228,12 @@ static snap::Tensor matExpandBroadcastDims(snap::Tensor result,
 
 static snap::Tensor
 matExpandGroupDims(snap::Tensor result, snap::Tensor lhs, snap::Tensor rhs) {
-  const auto lhsShape = lhs.getPoplarTensor().shape();
-  const auto rhsShape = rhs.getPoplarTensor().shape();
-  const auto outShape = result.getPoplarTensor().shape();
+  const auto lhsShape = lhs.shape();
+  const auto rhsShape = rhs.shape();
+  const auto outShape = result.shape();
 
   const auto offset = std::distance(
-      lhsShape.begin(),
-      boost::mismatch(lhsShape, rhs.getPoplarTensor().shape()).first);
+      lhsShape.begin(), boost::mismatch(lhsShape, rhs.shape()).first);
 
   std::vector<std::size_t> newShape;
   newShape.reserve(lhs.getPoplarTensor().rank());
@@ -254,11 +250,10 @@ matExpandGroupDims(snap::Tensor result, snap::Tensor lhs, snap::Tensor rhs) {
 static snap::Tensor matInterleaveBroadcastDims(snap::Tensor result,
                                                snap::Tensor lhs,
                                                snap::Tensor rhs) {
-  const auto lhsShape = lhs.getPoplarTensor().shape();
+  const auto lhsShape = lhs.shape();
 
   const auto offset = std::distance(
-      lhsShape.begin(),
-      boost::mismatch(lhsShape, rhs.getPoplarTensor().shape()).first);
+      lhsShape.begin(), boost::mismatch(lhsShape, rhs.shape()).first);
 
   const auto length = lhs.getPoplarTensor().rank() - offset - 2;
 
@@ -278,14 +273,13 @@ static snap::Tensor matInterleaveBroadcastDims(snap::Tensor result,
 static snap::Tensor matSqueezeBroadcastDims(snap::Tensor result,
                                             snap::Tensor lhs,
                                             snap::Tensor rhs) {
-  const auto lhsShape = lhs.getPoplarTensor().shape();
+  const auto lhsShape = lhs.shape();
   const auto offset   = std::distance(
-      lhsShape.begin(),
-      boost::mismatch(lhsShape, rhs.getPoplarTensor().shape()).first);
+      lhsShape.begin(), boost::mismatch(lhsShape, rhs.shape()).first);
 
   std::vector<std::size_t> squeezeDims;
   for (auto i = offset; i < result.getPoplarTensor().rank() - 2; ++i) {
-    if (result.getPoplarTensor().dim(static_cast<unsigned>(i)) == 1) {
+    if (result.dim(static_cast<unsigned>(i)) == 1) {
       squeezeDims.push_back(i);
     }
   }
@@ -340,9 +334,8 @@ matShuffleGroupDims(std::vector<std::size_t> rShape,
 
 static snap::Tensor
 matShuffleGroupDims(snap::Tensor result, snap::Tensor lhs, snap::Tensor rhs) {
-  const auto permutation = matShuffleGroupDims(result.getPoplarTensor().shape(),
-                                               lhs.getPoplarTensor().shape(),
-                                               rhs.getPoplarTensor().shape());
+  const auto permutation =
+      matShuffleGroupDims(result.shape(), lhs.shape(), rhs.shape());
 
   return result.dimShuffle(permutation);
 }
@@ -474,15 +467,14 @@ void MatMulOpx::grow(poplar::program::Sequence &prog) const {
 
   // Log the report plan
   std::stringstream ss;
-  poplin::matMulGroupedReportPlan(
-      ss,
-      graph().getPoplarGraph(),
-      combinedBroadcastTs.first.elementType(),
-      outTensor.elementType(),
-      combinedBroadcastTs.first.getPoplarTensor().shape(),
-      combinedBroadcastTs.second.getPoplarTensor().shape(),
-      opts,
-      &dv_p->matmulCache);
+  poplin::matMulGroupedReportPlan(ss,
+                                  graph().getPoplarGraph(),
+                                  combinedBroadcastTs.first.elementType(),
+                                  outTensor.elementType(),
+                                  combinedBroadcastTs.first.shape(),
+                                  combinedBroadcastTs.second.shape(),
+                                  opts,
+                                  &dv_p->matmulCache);
   logging::opx::debug("Grouped Matmul {} plan", op_p->str());
   logging::log(logging::Module::opx, logging::Level::Debug, ss.str());
 

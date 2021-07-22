@@ -54,7 +54,7 @@ snap::Tensor linspace(snap::Graph &graph,
 
 snap::Tensor matchRank(snap::Tensor a, snap::Tensor b, unsigned dim) {
   std::vector<std::size_t> shape(a.getPoplarTensor().rank(), 1);
-  const auto b_shape = b.getPoplarTensor().shape();
+  const auto b_shape = b.shape();
 
   std::copy(b_shape.begin(), b_shape.end(), shape.begin() + dim);
 
@@ -64,8 +64,8 @@ snap::Tensor matchRank(snap::Tensor a, snap::Tensor b, unsigned dim) {
 snap::Tensor broadcastShape(snap::Tensor a, snap::Tensor b_) {
   auto b = b_.getPoplarTensor();
   for (int k = 0; k < a.getPoplarTensor().rank(); ++k) {
-    if (b.dim(k) == 1 && a.getPoplarTensor().dim(k) != b.dim(k)) {
-      b = b.broadcast(static_cast<unsigned>(a.getPoplarTensor().dim(k)), k);
+    if (b.dim(k) == 1 && a.dim(k) != b.dim(k)) {
+      b = b.broadcast(static_cast<unsigned>(a.dim(k)), k);
     }
   }
 
@@ -87,7 +87,7 @@ void growScatter(poplar::program::Sequence &prog,
   for (int i = 0; i < indices_mapped.size(); ++i) {
     auto t = linspace(graph,
                       0,
-                      static_cast<int>(indices.getPoplarTensor().dim(i)),
+                      static_cast<int>(indices.dim(i)),
                       {dnai, "linspace"},
                       1,
                       indices.elementType());
@@ -142,13 +142,12 @@ snap::Tensor growScatterUpdateGrad(poplar::program::Sequence &prog,
   // Start by creating 1D linspaced constant tensors
   std::vector<snap::Tensor> indicesMapped(gradIn.getPoplarTensor().rank());
   for (int i = 0; i < indicesMapped.size(); ++i) {
-    indicesMapped[i] =
-        linspace(graph,
-                 0,
-                 static_cast<int>(indices.getPoplarTensor().dim(i)),
-                 {dnai, "linspace"},
-                 1,
-                 indices.elementType());
+    indicesMapped[i] = linspace(graph,
+                                0,
+                                static_cast<int>(indices.dim(i)),
+                                {dnai, "linspace"},
+                                1,
+                                indices.elementType());
   }
 
   // Match the rank of the indices to the update tensor

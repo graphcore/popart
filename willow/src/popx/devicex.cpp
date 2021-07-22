@@ -439,7 +439,6 @@ Devicex::Devicex(Executablex &exe, std::shared_ptr<DeviceInfo> deviceInfo_)
                                  "0");
   }
 
-
   for (auto it : ir().getSessionOptions().reportOptions) {
     logging::devicex::info(
         "Setting report option {} = {}", it.first, it.second);

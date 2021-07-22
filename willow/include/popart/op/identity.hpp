@@ -48,7 +48,6 @@ public:
 
   const std::vector<GradInOutMapper> &gradInputInfo() const final;
   const std::map<int, int> &gradOutToNonGradIn() const final;
-
 };
 
 class IdentityLossOp : public LossOp {

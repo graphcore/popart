@@ -25,10 +25,9 @@ void PopTensors::verify(TensorId id, const snap::Tensor &pt) {
   // confirm shapes agree (up to squeezing out the extra 1s)
   auto irTensor = ir.getTensor(id);
 
-  auto shape =
-      foundViewChangers == viewChangers_.end()
-          ? pt.getPoplarTensor().shape()
-          : foundViewChangers->second->apply(pt).getPoplarTensor().shape();
+  auto shape = foundViewChangers == viewChangers_.end()
+                   ? pt.shape()
+                   : foundViewChangers->second->apply(pt).shape();
 
   if (shape != irTensor->info.shape_szt()) {
 

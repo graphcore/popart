@@ -90,8 +90,8 @@ void BatchNormOpx::grow(poplar::program::Sequence &prog) const {
   auto var   = getInTensor(BatchNormOp::getVarInIndex());
 
   // Variables to store the desired output shapes in case of spatial=False.
-  std::vector<size_t> yShape            = x.getPoplarTensor().shape();
-  std::vector<size_t> otherOutputsShape = scale.getPoplarTensor().shape();
+  std::vector<size_t> yShape            = x.shape();
+  std::vector<size_t> otherOutputsShape = scale.shape();
 
   if (!op.getSpatial()) {
     // If spatial=False we must normalise every feature separately. We achieve
@@ -107,11 +107,10 @@ void BatchNormOpx::grow(poplar::program::Sequence &prog) const {
     // - Transforming outputs runningMean, runningVar, batchMean, batchVar from
     // [CxD1x...xDn] to [C, D1, ..., Dn] (if available)
 
-    const size_t NUM_FEATURES =
-        x.getPoplarTensor().numElements() / x.getPoplarTensor().dim(0);
+    const size_t NUM_FEATURES = x.numElements() / x.dim(0);
 
     // Reshape the inputs.
-    x = x.reshape({x.getPoplarTensor().dim(0), NUM_FEATURES, 1});
+    x = x.reshape({x.dim(0), NUM_FEATURES, 1});
 
     scale = scale.reshape({NUM_FEATURES});
     b     = b.reshape({NUM_FEATURES});
@@ -175,13 +174,11 @@ BatchNormOpx::growSpatial(poplar::program::Sequence &prog,
   if (op.isTraining()) {
 
     // Special case - zero sized array
-    if (isZeroElementArray(x.getPoplarTensor().shape())) {
-      auto y = snap::Tensor{
-          graph().getPoplarGraph().addConstant(x.elementType(),
-                                               x.getPoplarTensor().shape(),
-                                               0,
-                                               debugContext("y")),
-          graph()};
+    if (isZeroElementArray(x.shape())) {
+      auto y =
+          snap::Tensor{graph().getPoplarGraph().addConstant(
+                           x.elementType(), x.shape(), 0, debugContext("y")),
+                       graph()};
       auto batchMean =
           snap::Tensor{graph().getPoplarGraph().addConstant(
                            mean.elementType(), {1}, NAN, debugContext("mean")),
@@ -279,13 +276,11 @@ BatchNormOpx::growSpatial(poplar::program::Sequence &prog,
     // When testing
 
     // Special case - zero sized array
-    if (isZeroElementArray(x.getPoplarTensor().shape())) {
-      auto y = snap::Tensor{
-          graph().getPoplarGraph().addConstant(x.elementType(),
-                                               x.getPoplarTensor().shape(),
-                                               0,
-                                               debugContext("y")),
-          graph()};
+    if (isZeroElementArray(x.shape())) {
+      auto y =
+          snap::Tensor{graph().getPoplarGraph().addConstant(
+                           x.elementType(), x.shape(), 0, debugContext("y")),
+                       graph()};
       graph().getPoplarGraph().setTileMapping(y.getPoplarTensor(), 0);
 
       result = GrowSpatialOutput({y,
@@ -386,20 +381,19 @@ void BatchNormGradOpx::grow(poplar::program::Sequence &prog) const {
   auto yGrad = getInTensor(BatchNormGradOp::getYGradInIndex());
 
   // Variables to store the desired output shapes in case of spatial=False.
-  std::vector<size_t> xShape            = yGrad.getPoplarTensor().shape();
-  std::vector<size_t> otherOutputsShape = scale.getPoplarTensor().shape();
+  std::vector<size_t> xShape            = yGrad.shape();
+  std::vector<size_t> otherOutputsShape = scale.shape();
 
   if (!op.getSpatial()) {
     // If spatial=False we must do some reshaping here (akin to BatchNormOpx).
-    const size_t NUM_FEATURES =
-        x.getPoplarTensor().numElements() / x.getPoplarTensor().dim(0);
+    const size_t NUM_FEATURES = x.numElements() / x.dim(0);
 
     // Reshape the inputs.
-    x     = x.reshape({x.getPoplarTensor().dim(0), NUM_FEATURES, 1});
+    x     = x.reshape({x.dim(0), NUM_FEATURES, 1});
     scale = scale.reshape({NUM_FEATURES});
     mean  = mean.reshape({NUM_FEATURES});
     var   = var.reshape({NUM_FEATURES});
-    yGrad = yGrad.reshape({x.getPoplarTensor().dim(0), NUM_FEATURES, 1});
+    yGrad = yGrad.reshape({x.dim(0), NUM_FEATURES, 1});
   }
 
   auto outputs = growSpatial(prog, op, x, scale, mean, var, yGrad);
@@ -430,13 +424,11 @@ BatchNormGradOpx::growSpatial(poplar::program::Sequence &prog,
   float epsilon = op.getEpsilon();
 
   // Special case - zero sized array
-  if (isZeroElementArray(x.getPoplarTensor().shape())) {
-    auto xGrad = snap::Tensor{
-        graph().getPoplarGraph().addConstant(x.elementType(),
-                                             x.getPoplarTensor().shape(),
-                                             0,
-                                             debugContext("xGrad")),
-        graph()};
+  if (isZeroElementArray(x.shape())) {
+    auto xGrad =
+        snap::Tensor{graph().getPoplarGraph().addConstant(
+                         x.elementType(), x.shape(), 0, debugContext("xGrad")),
+                     graph()};
     auto scaleGrad =
         snap::Tensor{graph().getPoplarGraph().addConstant(
                          x.elementType(), {1}, 0, debugContext("scaleGrad")),

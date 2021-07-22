@@ -12,10 +12,10 @@ snap::Tensor getIotaTensor(snap::Graph &graph,
                            poplar::program::Sequence &prog,
                            const poplar::DebugNameAndId &dnai) {
   // The number of elements to be sorted per 1-D vector
-  const auto sortSize = input.getPoplarTensor().dim(axis);
+  const auto sortSize = input.dim(axis);
 
   // The number of 1-D vectors to be sorted
-  const auto nToSort = input.getPoplarTensor().numElements() / sortSize;
+  const auto nToSort = input.numElements() / sortSize;
 
   std::vector<int> iotaVals(sortSize);
   std::iota(iotaVals.begin(), iotaVals.end(), 0);

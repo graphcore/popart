@@ -142,7 +142,7 @@ void SoftmaxGradDirectOpx::grow(poplar::program::Sequence &prog) const {
                      debugContext("negsub"));
 
   // Output is reshaped to match probs input shape
-  oneHot = oneHot.reshape(probs.getPoplarTensor().shape());
+  oneHot = oneHot.reshape(probs.shape());
 
   NllOpx::handleLossGradScaling(*this,
                                 op.hasIgnoreIndex(),
@@ -166,7 +166,7 @@ void SoftmaxGradOpx::grow(poplar::program::Sequence &prog) const {
   auto outActs2D = EwuComputex::coerceTo2D(outActs, axis);
   auto outGrad   = getInTensor(SoftmaxGradOp::getGradProbsInIndex())
                      .getPoplarTensor()
-                     .reshape(outActs2D.getPoplarTensor().shape());
+                     .reshape(outActs2D.shape());
   auto outTensor = popnn::nonLinearityInputGradient(
       graph().getPoplarGraph(),                // graph,
       popnn::NonLinearityType::SOFTMAX_STABLE, // nonLinearityType
@@ -176,10 +176,7 @@ void SoftmaxGradOpx::grow(poplar::program::Sequence &prog) const {
       debugContext("SoftmaxGrad")              // debugContext
   );
 
-  setOutTensor(
-      0,
-      snap::Tensor{outTensor.reshape(outActs.getPoplarTensor().shape()),
-                   graph()});
+  setOutTensor(0, snap::Tensor{outTensor.reshape(outActs.shape()), graph()});
 }
 
 void NlllWithSoftmaxGradDirectOpx::grow(poplar::program::Sequence &prog) const {
@@ -219,7 +216,7 @@ void NlllWithSoftmaxGradDirectOpx::grow(poplar::program::Sequence &prog) const {
                      debugContext("NegSub"));
 
   // Output is reshaped to match probs input shape
-  oneHot = oneHot.reshape(probs.getPoplarTensor().shape());
+  oneHot = oneHot.reshape(probs.shape());
 
   NllOpx::handleLossGradScaling(*this,
                                 op.hasIgnoreIndex(),

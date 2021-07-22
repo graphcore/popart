@@ -188,8 +188,8 @@ SessionOptions::NumIOTiles::operator int() const {
 }
 
 // Assign value using int.
-SessionOptions::NumIOTiles &SessionOptions::NumIOTiles::
-operator=(const int &x) {
+SessionOptions::NumIOTiles &
+SessionOptions::NumIOTiles::operator=(const int &x) {
   value             = x;
   userAssignedValue = true;
   return *this;
@@ -247,8 +247,8 @@ bool SessionOptions::autoRecomputationEnabled() const {
 } // namespace popart
 
 namespace std {
-std::size_t hash<popart::SessionOptions>::
-operator()(const popart::SessionOptions &so) const {
+std::size_t hash<popart::SessionOptions>::operator()(
+    const popart::SessionOptions &so) const {
   // Hash based on all the SessionOptions attributes that
   // can affect compiled program
   std::size_t seed = 0;

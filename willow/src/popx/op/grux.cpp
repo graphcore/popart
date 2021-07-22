@@ -454,12 +454,11 @@ void GRUGradOpx::grow(poplar::program::Sequence &prog) const {
     weights.biases = weights.biases.reshape({3, 2, hidden_size});
   }
 
-  popops::addInPlace(
-      graph().getPoplarGraph(),
-      output_grad.getPoplarTensor()[output_grad.getPoplarTensor().dim(0) - 1],
-      output_h_grad.getPoplarTensor(),
-      prog,
-      debugContext());
+  popops::addInPlace(graph().getPoplarGraph(),
+                     output_grad.getPoplarTensor()[output_grad.dim(0) - 1],
+                     output_h_grad.getPoplarTensor(),
+                     prog,
+                     debugContext());
 
   poplar::Tensor input_grad;
   popnn::gru::GruWeights weights_grad;

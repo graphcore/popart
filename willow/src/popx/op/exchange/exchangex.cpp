@@ -258,7 +258,7 @@ void HostStoreDescriptorx::exchange(snap::Graph &graph,
                         descriptor.getHostStreamTensorId());
     auto stream      = streams.at(descriptor.getHostStreamTensorId());
     auto nElmsStream = stream.numElements();
-    auto nElmsTensor = streamTensor.getPoplarTensor().numElements();
+    auto nElmsTensor = streamTensor.numElements();
     if (nElmsStream != nElmsTensor) {
       throw internal_error("[Devicex::toHostTask] "
                            "The poplar::Tensor {} has {}, whereas the "
@@ -313,7 +313,7 @@ void RemoteLoadDescriptorx::exchange(snap::Graph &graph,
       dv_p->lowering().getRemoteBuffer(descriptor.getRemoteBufferId());
   rbTensor = buffer.second.value();
 
-  if (offset.valid() && offset.getPoplarTensor().numElements() > 0) {
+  if (offset.valid() && offset.numElements() > 0) {
     poplar::program::Copy copy_prog(buffer.first,
                                     rbTensor.getPoplarTensor(),
                                     offset.getPoplarTensor(),
@@ -384,7 +384,7 @@ void RemoteStoreDescriptorx::exchange(snap::Graph &graph,
   auto buffer =
       dv_p->lowering().getRemoteBuffer(descriptor.getRemoteBufferId());
   snap::Tensor rbTensor = buffer.second.value();
-  if (offset.valid() && offset.getPoplarTensor().numElements() > 0) {
+  if (offset.valid() && offset.numElements() > 0) {
     poplar::program::Copy copy_prog(rbTensor.getPoplarTensor(),
                                     buffer.first,
                                     offset.getPoplarTensor(),

@@ -128,7 +128,7 @@ void NllOpx::applyScalingInPlaceForMeanReduction(
     snap::Tensor t,
     snap::Tensor scale,
     poplar::program::Sequence &prog) {
-  double totalSamples = static_cast<double>(t.getPoplarTensor().dim(0));
+  double totalSamples = static_cast<double>(t.dim(0));
 
   auto combined_scale = popops::div(opx.graph().getPoplarGraph(),
                                     scale.getPoplarTensor(),
@@ -214,7 +214,7 @@ NllOpx::applyMaskInPlaceForIgnoredIndex(const PopOpx &opx,
 
   if (t.getPoplarTensor().rank() != lossMask.rank()) {
     // If required, broadcast lossMask on the final dimension.
-    auto t_shape                            = t.getPoplarTensor().shape();
+    auto t_shape                            = t.shape();
     t_shape[t.getPoplarTensor().rank() - 1] = 1;
     lossMask                                = lossMask.reshape(t_shape);
   }
@@ -241,7 +241,7 @@ void NllOpx::handleLossOutNotReducedToScalar(const PopOpx &opx,
                      prog,
                      opx.debugContext("neg"));
   // One loss per sample, so the output is reshaped to match label input shape
-  reduction = reduction.reshape(label.getPoplarTensor().shape());
+  reduction = reduction.reshape(label.shape());
 
   opx.setOutTensor(0, reduction);
 }
@@ -267,9 +267,8 @@ void NllOpx::handleLossOutReducedToScalar(const PopOpx &opx,
           opx, reduction, scaleT, lossMask, prog);
       // Leave scale as 1.0 as already scaled
     } else {
-      double totalSamples =
-          static_cast<double>(reduction.getPoplarTensor().dim(0));
-      scale = 1.0 / totalSamples;
+      double totalSamples = static_cast<double>(reduction.dim(0));
+      scale               = 1.0 / totalSamples;
     }
   }
 
@@ -407,7 +406,7 @@ void NllGradOpx::grow(poplar::program::Sequence &prog) const {
   }
 
   // Output is reshaped to match probs input shape
-  oneHot = oneHot.reshape(probs.getPoplarTensor().shape());
+  oneHot = oneHot.reshape(probs.shape());
 
   NllOpx::handleLossGradScaling(
       *this,
