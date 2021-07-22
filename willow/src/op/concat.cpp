@@ -68,13 +68,16 @@ view::RegMap ConcatOp::bwdRegMap(InIndex inIndex, OutIndex) const {
   regMapPreChecks(inIndex);
   int64_t offset = getOutOffset(inIndex);
   int64_t axisIn = getAxis();
-  return [axisIn, offset](const view::Region &r_out) {
+  auto inShape   = inTensor(inIndex)->info.shape();
+  return [axisIn, offset, inShape](const view::Region &r_out) {
     view::LowBounds lower = r_out.getLower();
     view::UppBounds upper = r_out.getUpper();
     lower[axisIn] -= offset;
     upper[axisIn] -= offset;
-    // TODO T8446 : check intersect?
-    return view::Regions(1, view::Region(lower, upper, r_out.getAccessType()));
+    return view::Regions(
+        1,
+        view::Region(lower, upper, r_out.getAccessType())
+            .intersect(view::Region::getFull(inShape, r_out.getAccessType())));
   };
 }
 
