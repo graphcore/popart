@@ -94,3 +94,5 @@ foreach(dep ${popart_deps_with_var_needed_for_bwd_compat})
     set(${dep_root} ${${dep_old_var}})
   endif()
 endforeach()
+
+option(POPART_ENABLE_COVERAGE "Enable compiler flags which generate code coverage files." OFF)

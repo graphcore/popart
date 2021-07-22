@@ -11,3 +11,4 @@ data
 *.onnx
 experimental
 .vscode/*
+.coverage
