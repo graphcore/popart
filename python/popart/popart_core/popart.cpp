@@ -1147,6 +1147,8 @@ PYBIND11_MODULE(popart_core, m) {
     cls.def(py::init<std::vector<TensorId>, float>(),
             py::arg("weightIds"),
             py::arg("maxNorm"));
+    cls.def_static("clipWeights", &ClipNormSettings::clipWeights);
+    cls.def_static("clipAllWeights", &ClipNormSettings::clipAllWeights);
     cls.def_readwrite("weightIds",
                       &ClipNormSettings::weightIds,
                       DOC(popart, ClipNormSettings, weightIds));

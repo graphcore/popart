@@ -6,6 +6,7 @@ import numpy as np
 import popart
 import test_util as tu
 import pytest
+import json
 
 import sys
 from pathlib import Path
@@ -150,8 +151,8 @@ def _run_popart_test_model(data,
     clipNormSettings = []
     for weightIndices, maxNorm in clipInfo:
         clipNormSettings.append(
-            popart.ClipNormSettings([weightIds[i] for i in weightIndices],
-                                    maxNorm))
+            popart.ClipNormSettings.clipWeights(
+                [weightIds[i] for i in weightIndices], maxNorm))
     opts = popart.SessionOptions()
     opts.enableOutlining = False
     if pipelineGroups:
@@ -465,3 +466,56 @@ def test_serialized_matmul(optimizerType):
     assert len(r1.keys()) > 0
     for key in r1.keys():
         assert np.allclose(r1[key], r2[key])
+
+
+def test_clipping_all_weights():
+    input_channels = 6
+    reducing_dim = 2
+    output_channels = 4
+
+    lhs_shape = [input_channels, reducing_dim]
+    rhs_shape = [reducing_dim, output_channels]
+    lhs_data = np.ones((*lhs_shape, ), dtype=np.float32)
+    rhs_data = np.ones((*rhs_shape, ), dtype=np.float32)
+
+    builder = popart.Builder()
+
+    lhs = builder.addInitializedInputTensor(lhs_data, "lhs")
+    rhs = builder.addInitializedInputTensor(rhs_data, "rhs")
+
+    o = builder.aiOnnx.matmul([lhs, rhs])
+
+    loss = builder.aiGraphcore.l1loss([o], 0.1)
+
+    proto = builder.getModelProto()
+
+    dataFlow = popart.DataFlow(
+        1, {
+            o: popart.AnchorReturnType("All"),
+            rhs: popart.AnchorReturnType("Final"),
+            popart.reservedGradientPrefix() + lhs:
+            popart.AnchorReturnType("All"),
+        })
+
+    opts = popart.SessionOptions()
+    opts.reportOptions = {"showExecutionSteps": "true"}
+
+    optimizer = popart.SGD({"defaultLearningRate": (0.1, True)},
+                           [popart.ClipNormSettings.clipAllWeights(0.1)])
+
+    session = popart.TrainingSession(
+        fnModel=proto,
+        dataFlow=dataFlow,
+        userOptions=opts,
+        loss=loss,
+        optimizer=optimizer,
+        deviceInfo=tu.create_test_device(opts={"compileIPUCode": False}))
+
+    ir = json.loads(session._serializeIr(popart.IrSerializationFormat.JSON))
+
+    # There should be two ReduceSumSquare ops in the graph if gradient clipping
+    # was applied to all the weights.
+    reduceSumSquareOps = [
+        op for op in ir['maingraph'] if op['type'] == 'ReduceSumSquare'
+    ]
+    assert (len(reduceSumSquareOps) == 2)

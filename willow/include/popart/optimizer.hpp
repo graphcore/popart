@@ -3,6 +3,7 @@
 #define GUARD_NEURALNET_OPTIMIZER_HPP
 
 #include <memory>
+#include <popart/clipnormsettings.hpp>
 #include <popart/compoundscalarhelper.hpp>
 #include <popart/names.hpp>
 #include <popart/optimizervalue.hpp>
@@ -49,27 +50,6 @@ enum class WeightDecayMode {
 
 std::map<std::string, OptimizerValue>
 getOptMap(const std::map<std::string, std::pair<float, bool>> &m);
-
-/**
- * A data structure used to represent a maximum value constraint on
- * one or more weights.
- */
-struct ClipNormSettings {
-  /// Constructor.
-  /// \param weightIds_ The weight tensor IDs that this constraint
-  ///     applies to.
-  /// \param maxNorm_ The maximum permissible value.
-  ClipNormSettings(const std::vector<TensorId> &weightIds_, float maxNorm_)
-      : weightIds(weightIds_), maxNorm(maxNorm_) {}
-
-  std::vector<TensorId> weightIds;
-  float maxNorm;
-
-  bool operator==(const ClipNormSettings &) const;
-  bool operator!=(const ClipNormSettings &other) const {
-    return !(*this == other);
-  }
-};
 
 class optimizer_replacement_error : public error {
 public:

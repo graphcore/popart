@@ -2,6 +2,7 @@
 #ifndef GUARD_NEURALNET_UTIL_HPP
 #define GUARD_NEURALNET_UTIL_HPP
 
+#include <cmath>
 #include <memory>
 #include <set>
 #include <sstream>
@@ -12,6 +13,11 @@
 #include <popart/tensorinfo.hpp>
 
 namespace popart {
+
+// For comparing equality of floating point types.
+template <typename T> bool isAlmostEqual(T lhs, T rhs) {
+  return std::fabs(lhs - rhs) <= std::numeric_limits<T>::epsilon();
+}
 
 template <typename T> bool isOneOf(const T &x, const std::vector<T> &ys) {
   for (const auto &y : ys) {

@@ -88,24 +88,26 @@ Tensor *addReduceSumSquare(Tensor *grad, Graph &graph) {
   return reduction->outTensor(ReduceSumSquareOp::getOutIndex());
 }
 
+bool isSupportedVarUpdate(const Op *op) {
+  return op->isConvertibleTo<SGD0VarUpdateOp>() ||
+         op->isConvertibleTo<SGD1VarUpdateOp>() ||
+         op->isConvertibleTo<AdamVarUpdateOp>();
+}
+
 // Return a consuming var update op for each tensor in weightIds.
-std::vector<Op *> getVarUpdates(Graph &graph,
-                                const std::vector<TensorId> &weightIds) {
+std::vector<Op *>
+getVarUpdatesForWeights(Graph &graph, const std::vector<TensorId> &weightIds) {
   auto getVarUpdate = [](Tensor *t) -> std::vector<Op *> {
     logging::debug("Getting var updates for {}", t->id);
     std::vector<Op *> result;
     for (auto op : t->consumers.getOps()) {
-      if (op->isConvertibleTo<SGD0VarUpdateOp>() ||
-          op->isConvertibleTo<SGD1VarUpdateOp>() ||
-          op->isConvertibleTo<AdamVarUpdateOp>()) {
+      if (isSupportedVarUpdate(op)) {
         result.push_back(op);
       } else if (op->isConvertibleTo<SliceInplaceOp>()) {
         // SerializeMatMuls transform can insert an inplace slice between the
         // weight and the var update.
         for (auto x : op->getFollowingOps(SliceInplaceOp::getOutIndex())) {
-          if (x->isConvertibleTo<SGD0VarUpdateOp>() ||
-              x->isConvertibleTo<SGD1VarUpdateOp>() ||
-              x->isConvertibleTo<AdamVarUpdateOp>()) {
+          if (isSupportedVarUpdate(x)) {
             result.push_back(x);
           }
         }
@@ -127,6 +129,30 @@ std::vector<Op *> getVarUpdates(Graph &graph,
   }
 
   return varUpdates;
+}
+
+std::vector<Op *> getAllVarUpdates(Graph &graph) {
+  std::vector<Op *> varUpdates;
+  for (auto &id_op : graph.getOps()) {
+    auto op = id_op.second.get();
+    if (isSupportedVarUpdate(op)) {
+      varUpdates.push_back(op);
+    }
+  }
+  return varUpdates;
+}
+
+std::vector<Op *> getVarUpdates(Graph &graph,
+                                const ClipNormSettings &clippingGroup) {
+  switch (clippingGroup.getMode()) {
+  case ClipNormSettings::Mode::ClipSpecifiedWeights:
+    return getVarUpdatesForWeights(graph, clippingGroup.getWeightIds());
+  case ClipNormSettings::Mode::ClipAllWeights:
+    return getAllVarUpdates(graph);
+  default:
+    throw error("Bad value for ClipNormSettings::Mode {}",
+                static_cast<int>(clippingGroup.getMode()));
+  }
 }
 
 Tensor *createCopyOnVGraph(Tensor *t, VGraphId destination, Graph &graph) {
@@ -289,10 +315,10 @@ Tensor *createClipNorm(float maxNorm, Graph &graph) {
 }
 
 std::vector<Tensor *> getGrads(Graph &graph,
-                               const std::vector<TensorId> &weightIds) {
+                               const ClipNormSettings &clippingGroup) {
   std::vector<Tensor *> result;
 
-  auto varUpdates = getVarUpdates(graph, weightIds);
+  auto varUpdates = getVarUpdates(graph, clippingGroup);
   for (auto op : varUpdates) {
     if (op->isConvertibleTo<SGD0VarUpdateOp>() ||
         op->isConvertibleTo<SGD1VarUpdateOp>()) {
@@ -321,10 +347,9 @@ std::vector<Tensor *> getGrads(Graph &graph,
 }
 
 void clipWeightGradientsByNorm(int clipGroupIndex,
-                               const std::vector<TensorId> &weightIds,
-                               float maxNorm,
+                               const ClipNormSettings &clippingGroup,
                                Graph &graph) {
-  auto grads = getGrads(graph, weightIds);
+  auto grads = getGrads(graph, clippingGroup);
 
   std::vector<Tensor *> gradNorms;
   for (auto grad : grads) {
@@ -339,7 +364,7 @@ void clipWeightGradientsByNorm(int clipGroupIndex,
   }
 
   auto globalNorm = createGlobalNorm(clipGroupIndex, gradNorms, graph);
-  auto clipNorm   = createClipNorm(maxNorm, graph);
+  auto clipNorm   = createClipNorm(clippingGroup.maxNorm, graph);
   auto clipFactor = createClipFactor(globalNorm, clipNorm, graph);
   addClipByNorms(grads, clipFactor, graph);
 }
@@ -395,6 +420,18 @@ std::vector<Op *> findGradientClippingOps(Op *globalNormProducer) {
   return result;
 }
 
+void verifyClipNormSettings(const std::vector<ClipNormSettings> &settings) {
+  for (auto clipGroup : settings) {
+    if (settings.size() > 1 &&
+        clipGroup.getMode() == ClipNormSettings::Mode::ClipAllWeights) {
+      throw error(
+          "Multiple clip groups specified, but one has the mode "
+          "'ClipAllWeights'. When using ClipNormSettings.clipAllWeights(...), "
+          "only one group should be specified.");
+    }
+  }
+}
+
 } // namespace
 
 std::size_t ClipWeightGradientsByNorm::id() {
@@ -415,11 +452,12 @@ bool ClipWeightGradientsByNorm::apply(Graph &graph) const {
   }
 
   auto &clipNormSettings = optimizer.getClipNormSettings();
+  verifyClipNormSettings(clipNormSettings);
+
   for (int clipNormIndex = 0; clipNormIndex < clipNormSettings.size();
        clipNormIndex++) {
     auto &clipGroup = clipNormSettings.at(clipNormIndex);
-    clipWeightGradientsByNorm(
-        clipNormIndex, clipGroup.weightIds, clipGroup.maxNorm, graph);
+    clipWeightGradientsByNorm(clipNormIndex, clipGroup, graph);
   }
 
   return true;

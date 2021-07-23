@@ -27,24 +27,6 @@ getOptMap(const std::map<std::string, std::pair<float, bool>> &m) {
   return mOptVals;
 }
 
-bool ClipNormSettings::operator==(const ClipNormSettings &other) const {
-  if (weightIds.size() != other.weightIds.size()) {
-    return false;
-  }
-
-  for (int i = 0; i < weightIds.size(); i++) {
-    if (weightIds[i] != other.weightIds[i]) {
-      return false;
-    }
-  }
-
-  if (maxNorm != other.maxNorm) {
-    return false;
-  }
-
-  return true;
-}
-
 void Optimizer::validReplacement(const Optimizer &other) const {
   logging::ir::debug("Checking clip norm settings.");
   if (clipNormSettings.size() != other.clipNormSettings.size()) {
