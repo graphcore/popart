@@ -47,6 +47,8 @@ public:
     logMessage();
   }
 
+  const std::string &stackreport() const;
+
 private:
   /// As the fmt::format function can throw an exception itself we catch
   /// the FormatError exception here and convert it to a popart exception.
@@ -65,6 +67,7 @@ private:
   /// Log the exception message
   //  Optionally appends a stacktrace depending on the build configuration.
   void logMessage();
+  std::string _stack;
 };
 
 /**
