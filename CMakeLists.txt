@@ -336,6 +336,6 @@ if("${stdout}" MATCHES "Version: 11.0")
     COMMENT "Creating ${OP_METADATA} for op constructor definitions"
     POST_BUILD) 
 else()
-  message(STATUS "python-clang not found, skipping op JSON creation. Please install \
-    python-clang (pip install clang) to generate this file.") 
+  message(STATUS "python-clang not found, skipping op JSON creation. Please \
+install python-clang (pip install clang) to generate this file.") 
 endif()
