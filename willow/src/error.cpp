@@ -11,6 +11,8 @@
 
 namespace popart {
 
+const std::string &error::stackreport() const { return _stack; }
+
 void error::logMessage() {
   std::ostringstream oss;
   oss << what();
@@ -30,7 +32,8 @@ void error::logMessage() {
   }
 
   if (stackreport.tellp() > 0) {
-    oss << "\n\n" << stackreport.str() << "\n\n";
+    _stack = stackreport.str();
+    oss << "\n\n" << _stack << "\n\n";
   }
 #endif
 
