@@ -259,7 +259,7 @@ const static AiGraphcoreOpIdV1 ClipInplace("ClipInplace");
 const static AiGraphcoreOpIdV1 ConcatGradInplace("ConcatGradInplace");
 const static AiGraphcoreOpIdV1 ConcatInplace("ConcatInplace");
 const static AiGraphcoreOpIdV1 ConvFlipWeights("ConvFlipWeights");
-const static AiGraphcoreOpIdV1 CopyVarUpdate("CopyVarUpdate");
+const static AiGraphcoreOpIdV1 CopyVarUpdate("CopyVarUpdate", 2, 1);
 const static AiGraphcoreOpIdV1 Ctc("Ctc", 4, 2);
 const static AiGraphcoreOpIdV1
     CtcBeamSearchDecoder("CtcBeamSearchDecoder", 2, 3);
@@ -392,13 +392,14 @@ namespace OpSet1 {
 const static OperatorIdentifier Atan2 = CustomOperators::Atan2_1;
 const static OperatorIdentifier AutoLossScaleProxy =
     CustomOperators::AutoLossScaleProxy;
-const static OperatorIdentifier BitwiseAnd  = CustomOperators::BitwiseAnd;
-const static OperatorIdentifier BitwiseNot  = CustomOperators::BitwiseNot;
-const static OperatorIdentifier BitwiseOr   = CustomOperators::BitwiseOr;
-const static OperatorIdentifier BitwiseXor  = CustomOperators::BitwiseXor;
-const static OperatorIdentifier BitwiseXnor = CustomOperators::BitwiseXnor;
-const static OperatorIdentifier Call        = CustomOperators::Call_1;
-const static OperatorIdentifier Ctc         = CustomOperators::Ctc;
+const static OperatorIdentifier BitwiseAnd    = CustomOperators::BitwiseAnd;
+const static OperatorIdentifier BitwiseNot    = CustomOperators::BitwiseNot;
+const static OperatorIdentifier BitwiseOr     = CustomOperators::BitwiseOr;
+const static OperatorIdentifier BitwiseXor    = CustomOperators::BitwiseXor;
+const static OperatorIdentifier BitwiseXnor   = CustomOperators::BitwiseXnor;
+const static OperatorIdentifier Call          = CustomOperators::Call_1;
+const static OperatorIdentifier CopyVarUpdate = CustomOperators::CopyVarUpdate;
+const static OperatorIdentifier Ctc           = CustomOperators::Ctc;
 const static OperatorIdentifier CtcBeamSearchDecoder =
     CustomOperators::CtcBeamSearchDecoder;
 const static OperatorIdentifier DepthToSpace = CustomOperators::DepthToSpace;

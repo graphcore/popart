@@ -63,10 +63,7 @@ void RoundShapeInference(InferenceContext &ctx);
 void CtcBeamSearchDecoderShapeInference(InferenceContext &ctx);
 void CtcLossShapeInference(InferenceContext &ctx);
 void ReduceMedianShapeInference(InferenceContext &ctx);
-void BitwiseAndShapeInference(InferenceContext &ctx);
-void BitwiseOrShapeInference(InferenceContext &ctx);
-void BitwiseXorShapeInference(InferenceContext &ctx);
-void BitwiseXnorShapeInference(InferenceContext &ctx);
+void CopyVarUpdateShapeInference(InferenceContext &ctx);
 
 void SubsampleShapeInference(InferenceContext &ctx) {
   propagateElemTypeFromInputToOutput(ctx, 0, 0);
@@ -616,6 +613,10 @@ void BidirectionalBroadcastShapeInference(InferenceContext &ctx) {
       *ctx.getOutputType(0)->mutable_tensor_type()->mutable_shape());
 }
 
+void CopyVarUpdateShapeInference(InferenceContext &ctx) {
+  propagateShapeAndTypeFromFirstInput(ctx);
+}
+
 extern size_t dbg_count_check_GroupNormalization_AiGraphcore_ver1;
 extern size_t dbg_count_check_Subsample_AiGraphcore_ver1;
 extern size_t dbg_count_check_PrintTensor_AiGraphcore_ver1;
@@ -652,6 +653,7 @@ extern size_t dbg_count_check_BitwiseAnd_AiGraphcore_ver1;
 extern size_t dbg_count_check_BitwiseOr_AiGraphcore_ver1;
 extern size_t dbg_count_check_BitwiseXor_AiGraphcore_ver1;
 extern size_t dbg_count_check_BitwiseXnor_AiGraphcore_ver1;
+extern size_t dbg_count_check_CopyVarUpdate_AiGraphcore_ver1;
 
 static const char groupnormalizationDoc[] =
     "GroupNormalization applies Group Normalization over a mini-batch of "
@@ -1664,6 +1666,25 @@ ONNX_OPERATOR_SET_SCHEMA_EX(
                         "Constrain input and output types to (u)int32 tensors.")
         .TypeAndShapeInferenceFunction(BidirectionalBroadcastShapeInference))
 
+ONNX_OPERATOR_SET_SCHEMA_EX(
+    CopyVarUpdate,
+    AiGraphcore,
+    popart::Domain::ai_graphcore,
+    1,
+    false,
+    OpSchema()
+        .SetDoc("CopyVarUpdate(X, Y)")
+        .Input(0, "X", "Var to update", "T")
+        .Input(1, "Y", "Tensor to copy", "T")
+        .Output(0, "Z", "Reference to updated tensor", "T")
+        .TypeConstraint("T",
+                        {"tensor(float)",
+                         "tensor(int32)",
+                         "tensor(float16)",
+                         "tensor(bool)"},
+                        "Do not constrain tensors")
+        .TypeAndShapeInferenceFunction(CopyVarUpdateShapeInference))
+
 static bool registerOps() {
   auto &d = ONNX_NAMESPACE::OpSchemaRegistry::DomainToVersionRange::Instance();
   d.AddDomainToVersion(popart::Domain::ai_graphcore, 1, 1);
@@ -1806,6 +1827,10 @@ static bool registerOps() {
   ONNX_NAMESPACE::RegisterSchema(
       GetOpSchema<ONNX_OPERATOR_SET_SCHEMA_CLASS_NAME(
           AiGraphcore, 1, BitwiseXnor)>());
+
+  ONNX_NAMESPACE::RegisterSchema(
+      GetOpSchema<ONNX_OPERATOR_SET_SCHEMA_CLASS_NAME(
+          AiGraphcore, 1, CopyVarUpdate)>());
 
   return true;
 }

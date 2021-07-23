@@ -2048,6 +2048,16 @@ PYBIND11_MODULE(popart_core, m) {
   }
   {
     py::class_<AiGraphcoreOpset1> cls(m, "AiGraphcoreOpset1");
+    cls.def("copyvarupdate",
+            &AiGraphcoreOpset1::copyvarupdate,
+            py::arg("args"),
+            py::arg("debugPrefix") = std::string(),
+            DOC(popart, AiGraphcoreOpset1, copyvarupdate));
+    cls.def("copyvarupdate",
+            &AiGraphcoreOpset1::copyvarupdate,
+            py::arg("args"),
+            py::arg("debugContext") = std::string(),
+            DOC(popart, AiGraphcoreOpset1, copyvarupdate));
     cls.def("groupnormalization",
             &AiGraphcoreOpset1::groupnormalization,
             py::arg("args"),

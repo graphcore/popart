@@ -9,6 +9,9 @@ namespace popart {
 class CopyVarUpdateOp : public VarUpdateWithUpdaterOp {
 public:
   CopyVarUpdateOp(const Op::Settings &);
+
+  CopyVarUpdateOp(const OperatorIdentifier &, const Op::Settings &);
+
   std::unique_ptr<Op> clone() const final;
 
   std::map<InIndex, TensorId> optimizerInputs() const final { return {}; }

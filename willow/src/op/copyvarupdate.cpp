@@ -8,6 +8,10 @@ namespace popart {
 CopyVarUpdateOp::CopyVarUpdateOp(const Op::Settings &settings_)
     : VarUpdateWithUpdaterOp(Onnx::CustomOperators::CopyVarUpdate, settings_) {}
 
+CopyVarUpdateOp::CopyVarUpdateOp(const OperatorIdentifier &opid_,
+                                 const Op::Settings &settings_)
+    : VarUpdateWithUpdaterOp(opid_, settings_) {}
+
 std::unique_ptr<Op> CopyVarUpdateOp::clone() const {
   return std::make_unique<CopyVarUpdateOp>(*this);
 }
@@ -22,6 +26,20 @@ view::Regions CopyVarUpdateOp::modifies(InIndex index) const {
   }
 }
 
-namespace {} // namespace
+namespace {
+static OpDefinition::DataTypes T = {DataType::UINT32,
+                                    DataType::INT32,
+                                    DataType::FLOAT16,
+                                    DataType::FLOAT};
+
+static OpDefinition
+    copyVarUpdateOpDef({OpDefinition::Inputs({{"variable", T}, {"updater", T}}),
+                        OpDefinition::Outputs({{"alias", T}}),
+                        OpDefinition::Attributes({})});
+
+static OpCreator<CopyVarUpdateOp> copyVarUpdateOpCreator(OpDefinitions(
+    {{Onnx::CustomOperators::CopyVarUpdate, copyVarUpdateOpDef}}));
+
+} // namespace
 
 } // namespace popart

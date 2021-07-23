@@ -586,6 +586,26 @@ Parameter ``debugContext``:
 Returns:
     A vector of tensors; the subgraph outputs.)doc";
 
+static const char *__doc_popart_AiGraphcoreOpset1_copyvarupdate =
+    R"doc(Copies a tensor to an initalised tensor (variable)
+
+This is used to update an initalised tensor (a variable created using
+addInitializedInputTensor) which retains its value between iterations,
+by setting the value to the value of another tensor (the updater). The
+purpose is to manually update the tensor in use cases for variables
+other than trained parameters (weights) or tensors used by other ops.
+
+Parameter ``args``:
+    A vector of the input tensors [tensor to update, updater]
+
+Parameter ``debugContext``:
+    Optional debug context.
+
+Returns:
+    An alias to the updated variable: to ensure correct ordering of
+    the updated variable, you should use this variable for any op
+    which should operate on the updated variable.)doc";
+
 static const char *__doc_popart_AiGraphcoreOpset1_ctcbeamsearchdecoder =
     R"doc(Add a connectionist temporal classification (CTC) beam search decoder
 operation to the model.

@@ -428,6 +428,36 @@ Builder::checkpointOutput(const std::vector<TensorId> &nodeOutputNames) {
   return impl_->checkpointOutput(nodeOutputNames);
 }
 
+TensorId AiGraphcoreOpset1::copyvarupdate(const std::vector<TensorId> &args,
+                                          const DebugContext &debugContext) {
+  if (args.size() != 2) {
+    throw error("copyvarupdate should have two args.");
+  }
+
+  // Copy var update itself does not need to have a variable input and is used
+  // internally for non-variables. But for the sake of the builder API, we
+  // can assume that a non-variable input is an error until a use-case is
+  // found.
+  if (!impl->isInitializer(args[0])) {
+    throw error("The first arg of copyvarupdate should be an initalised "
+                "tensor.");
+  }
+
+  std::map<std::string, popart::any> attributes;
+
+  BuilderDebugInfo di(debugContext, __POPART_FUNCTION_NAME__, args, attributes);
+  attributes.insert({sDebugInfoId, di.getId()});
+
+  auto outputs = impl->op(Onnx::AiGraphcore::OpSet1::CopyVarUpdate,
+                          getOpsetVersion(),
+                          args,
+                          attributes,
+                          {di});
+
+  di.setOutputs(outputs);
+  return outputs.at(0);
+}
+
 std::vector<TensorId>
 AiGraphcoreOpset1::groupnormalization(const std::vector<TensorId> &args,
                                       int64_t num_groups,

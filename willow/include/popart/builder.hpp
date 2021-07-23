@@ -82,6 +82,24 @@ public:
   AiGraphcoreOpset1(std::unique_ptr<BuilderImpl> &impl_) : DomainOpSet(impl_) {}
 
   /**
+   * Copies a tensor to an initalised tensor (variable)
+   *
+   * This is used to update an initalised tensor (a variable created using
+   * addInitializedInputTensor) which retains its value between iterations, by
+   * setting the value to the value of another tensor (the updater). The purpose
+   * is to manually update the tensor in use cases for variables other than
+   * trained parameters (weights) or tensors used by other ops.
+   *
+   * \param args A vector of the input tensors [tensor to update, updater]
+   * \param debugContext Optional debug context.
+   * \return An alias to the updated variable: to ensure correct ordering of
+   *   the updated variable, you should use this variable for any op which
+   *   should operate on the updated variable.
+   */
+  TensorId copyvarupdate(const std::vector<TensorId> &args,
+                         const DebugContext &debugContext = {});
+
+  /**
    * Add a group normalization operation to the model.
    *
    * This is a Poplar extension.
