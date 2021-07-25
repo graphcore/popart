@@ -5,6 +5,8 @@
 #include <popart/op/varupdate.hpp>
 #include <popart/optimizervalue.hpp>
 
+#include <ostream>
+
 namespace popart {
 
 enum class AccumulationType {
@@ -17,6 +19,8 @@ enum class AccumulationType {
   MovingAverageSquare, // accum = f * accum + (1 - f) * g^2
   Infinity             // accum = max(f * accum, abs(g))
 };
+
+std::ostream &operator<<(std::ostream &os, const AccumulationType &at);
 
 class AccumulateBaseOp : public VarUpdateWithUpdaterOp {
 public:
