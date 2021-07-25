@@ -10,6 +10,31 @@
 
 namespace popart {
 
+std::ostream &operator<<(std::ostream &os, const AccumulationType &at) {
+  switch (at) {
+  case AccumulationType::Add:
+    return os << "AccumulationType::Add";
+  case AccumulationType::DampenedAdd:
+    return os << "AccumulationType::DampenedAdd";
+  case AccumulationType::DampenedAddSquare:
+    return os << "AccumulationType::DampenedAddSquare";
+  case AccumulationType::DecayAdd:
+    return os << "AccumulationType::DecayAdd";
+  case AccumulationType::DecayAddSquare:
+    return os << "AccumulationType::DecayAddSquare";
+  case AccumulationType::MovingAverage:
+    return os << "AccumulationType::MovingAverage";
+  case AccumulationType::MovingAverageSquare:
+    return os << "AccumulationType::MovingAverageSquare";
+  case AccumulationType::Infinity:
+    return os << "AccumulationType::Infinity";
+  default:
+    throw internal_error(
+        "Unhandled AccumulationType with int value {} in operator<<.",
+        static_cast<int>(at));
+  }
+}
+
 /**************** AccumulateBaseOp ****************/
 
 AccumulateBaseOp::AccumulateBaseOp(const OperatorIdentifier &opid,
