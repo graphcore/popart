@@ -1335,6 +1335,9 @@ void Ir::prepareImpl(const IrBundle &gb, const HashesMap &cacheEntries) {
   }
 
   if (getSessionOptions().hostAllReduce) {
+    logging::warn("Enabling SessionOptions.hostAllReduce to reduce gradients "
+                  "between instances is deprecated. This feature will be "
+                  "removed in a future release.");
     if (canTrain()) {
       if (getSessionOptions().hostWeightUpdate &&
           !getSessionOptions().hostAllReduce) {
