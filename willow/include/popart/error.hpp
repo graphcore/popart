@@ -80,6 +80,18 @@ public:
   using error::error;
 };
 
+/**
+ * Exception class specific to errors that occur when running a model. For
+ * example, this error could be thrown when a user-implemented IStepIO callback
+ * doesn't return any data.
+ *
+ * NOTE: This is different from a C++ runtime error.
+ */
+class runtime_error : public error {
+public:
+  using error::error;
+};
+
 enum class ErrorSource {
   popart = 0,
   popart_internal,
