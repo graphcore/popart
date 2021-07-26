@@ -116,21 +116,15 @@ Constants ConstantOfShapeCFold::fold(const NodeProto &node,
 
   Constants res;
   if (value == nullptr) {
-    // if no value provided, use DataType::FLOAT and value 0.0f
-    const auto outTensor =
-        host::Tensor::scalar(poprithms::compute::host::DType::Float32, 0.0)
-            .expand(outShape);
+    // if no value provided, use DataType::FLOAT and value 0, as per spec.
+    const auto outTensor = host::Tensor::float32(0.0f).expand(outShape);
     res.insert({node.output(0), outTensor});
   } else {
     // TensorData from attribute value
     ConstVoidData valueCVData = onnxutil::getConstData(*value);
-
-    const double *valueData =
-        reinterpret_cast<const double *>(valueCVData.data);
-    const double numValue = *valueData;
-    const auto type       = onnxToPoprithms(value->data_type());
+    const auto type           = onnxToPoprithms(value->data_type());
     const auto outTensor =
-        host::Tensor::scalar(type, numValue).expand(outShape);
+        host::Tensor::copy(type, {}, valueCVData.data).expand(outShape);
     res.insert({node.output(0), outTensor});
   }
   return res;
