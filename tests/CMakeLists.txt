@@ -258,8 +258,11 @@ function(add_popart_py_unit_test name filename)
             COMMAND "${Python3_EXECUTABLE}" -m pytest -s "${CMAKE_CURRENT_SOURCE_DIR}/${filename}" -k "${MATCHEXPR_VALUE}" ${fork_test} --basetemp=${PYTEST_BASETEMP}/${test_name}
             WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
     endif()
+    # Setting TMPDIR=${PYTEST_BASETEMP} as `pytest --forked` is somehow 
+    # preventing poplar from cleaning up its temporary files if the test raises 
+    # an exception.
     set_tests_properties(${test_name} PROPERTIES
-                         ENVIRONMENT TEST_TARGET=${TEST_TARGET})
+                         ENVIRONMENT "TEST_TARGET=${TEST_TARGET};TMPDIR=${PYTEST_BASETEMP}")
   endforeach()
 endfunction()
 
