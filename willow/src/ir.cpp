@@ -1304,6 +1304,9 @@ void Ir::prepareImpl(const IrBundle &gb, const HashesMap &cacheEntries) {
   }
 
   if (getSessionOptions().hostAllReduce) {
+    logging::warn("Enabling SessionOptions.hostAllReduce to reduce gradients "
+                  "between instances is deprecated. This feature will be "
+                  "removed in a future release.");
     if (canTrain()) {
       if (getSessionOptions().hostWeightUpdate &&
           !getSessionOptions().hostAllReduce) {
@@ -3993,8 +3996,8 @@ std::size_t std::hash<popart::Ir>::operator()(const popart::Ir &ir) const {
   return seed;
 }
 
-std::size_t
-std::hash<popart::IrBundle>::operator()(const popart::IrBundle &bundle) const {
+std::size_t std::hash<popart::IrBundle>::
+operator()(const popart::IrBundle &bundle) const {
   size_t seed = 0;
 
   boost::hash_combine(
