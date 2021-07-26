@@ -348,7 +348,7 @@ OP *Graph::createConnectedOp(const std::map<InIndex, TensorId> &in,
       if (t->hasProducer()) {
         t->getProducer()->disconnectOutTensor(t);
       }
-      op->connectInTensor(output.first, output.second);
+      op->connectOutTensor(output.first, output.second);
     } else {
       op->createAndConnectOutTensor(output.first, output.second);
     }
