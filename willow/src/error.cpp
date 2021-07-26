@@ -13,6 +13,10 @@ namespace popart {
 
 const std::string &error::stackreport() const { return _stack; }
 
+std::string error::prependUid(ErrorUid uid, const std::string &s) {
+  return "POPART" + std::to_string(static_cast<int>(uid)) + ": " + s;
+}
+
 void error::logMessage() {
   std::ostringstream oss;
   oss << what();

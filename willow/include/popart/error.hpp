@@ -7,6 +7,7 @@
 #include <sstream>
 #include <stdexcept>
 #include <string>
+#include <popart/erroruid.hpp>
 #include <popart/logging.hpp>
 #include <popart/names.hpp>
 
@@ -37,17 +38,36 @@ public:
   /// throw error("This is an error reason {}", 42);
   template <typename... Args>
   explicit error(const char *s, const Args &... args)
-      : std ::runtime_error(formatMessage(s, args...)) {
+      : std ::runtime_error(formatMessage(s, args...)), uid_(ErrorUid::E0) {
     logMessage();
   }
 
   template <typename... Args>
   explicit error(const std::string &s, const Args &... args)
-      : std ::runtime_error(formatMessage(s, args...)) {
+      : std ::runtime_error(formatMessage(s, args...)), uid_(ErrorUid::E0) {
+    logMessage();
+  }
+
+  // Constructor that accepts a unique error ID as the first argument. For
+  // example:
+  //     throw error(ErrorUid::Foo, "This is an error reason {}", 42);
+  template <typename... Args>
+  explicit error(ErrorUid uid, const char *s, const Args &... args)
+      : std::runtime_error(formatMessage(prependUid(uid, s), args...)),
+        uid_(uid) {
+    logMessage();
+  }
+
+  template <typename... Args>
+  explicit error(ErrorUid uid, const std::string &s, const Args &... args)
+      : std::runtime_error(formatMessage(prependUid(uid, s), args...)),
+        uid_(uid) {
     logMessage();
   }
 
   const std::string &stackreport() const;
+
+  ErrorUid uid() const { return uid_; }
 
 private:
   /// As the fmt::format function can throw an exception itself we catch
@@ -64,10 +84,14 @@ private:
     }
   }
 
+  static std::string prependUid(ErrorUid, const std::string &);
+
   /// Log the exception message
   //  Optionally appends a stacktrace depending on the build configuration.
   void logMessage();
+
   std::string _stack;
+  ErrorUid uid_;
 };
 
 /**
