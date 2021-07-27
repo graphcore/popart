@@ -116,6 +116,11 @@ file(GLOB subgraph_sources src/subgraph/*cpp)
 file(GLOB onnxpasses_sources src/onnxpasses/*cpp)
 file(GLOB nodepatterns_sources src/onnxpasses/nodepatterns/*cpp)
 
+set(patterns_tgutil_sources
+  src/patterns/tiedgatherutils/tgutils.cpp
+  src/patterns/tiedgatherutils/tgutils.hpp
+  src/patterns/tiedgatherutils/tgutils_impl.hpp
+)
 
 # poplar backend op specifc:
 file(GLOB x_sources src/popx/*cpp)
@@ -133,11 +138,12 @@ set(sources
   ${op_collectives_sources}
   ${ces_sources}
   ${patterns_sources}
+  ${patterns_tgutil_sources}
   ${transforms_sources}
   ${subgraph_sources}
   ${onnxpasses_sources}
   ${nodepatterns_sources}
-  )
+)
 
 # concatenate poplar backend sources to the list of files to compile
 set(sources
