@@ -6,10 +6,11 @@ add_popart_python_module(popart_internal_ir
     bindings/graph.cpp
     bindings/graphid.cpp
     bindings/ir.cpp
+    bindings/op.cpp
+    bindings/tensorinfo.cpp
     bindings/scope.cpp
     bindings/tensor.cpp
     bindings/tensordata.cpp
-    bindings/tensorinfo.cpp
     popart._internal.ir.cpp
     bindings/tensors.cpp
     ../popart/shared_cpp/np_utils.cpp

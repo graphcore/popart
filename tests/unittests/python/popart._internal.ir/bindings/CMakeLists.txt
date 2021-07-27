@@ -7,3 +7,4 @@ add_popart_py_unit_test(unittest_python_popart._internal.ir_bindings_scope test_
 add_popart_py_unit_test(unittest_python_popart._internal.ir_bindings_tensor test_tensor.py)
 add_popart_py_unit_test(unittest_python_popart._internal.ir_bindings_tensordata test_tensordata.py)
 add_popart_py_unit_test(unittest_python_popart._internal.ir_bindings_tensorinfo test_tensorinfo.py)
+add_popart_py_unit_test(unittest_python_popart._internal.ir_bindings_op test_op.py)
