@@ -243,6 +243,7 @@ public:
   bool isDecomposeBinaryConstScalarEnabled();
   bool isSparseAccumulateEnabled();
   bool isFmodArg0GradOpEnabled();
+  bool isLambSerialisedWeightEnabled();
 
   // The following methods are fluent allow you to
   // Pattens().enableInPlace0(false).
@@ -288,6 +289,7 @@ public:
   Patterns &enableZerosLikeOpPattern(bool v);
   Patterns &enableSparseAccumulate(bool v);
   Patterns &enableDecomposeBinaryConstScalar(bool v);
+  Patterns &enableLambSerialisedWeight(bool v);
 
   Patterns &enableRuntimeAsserts(bool b) {
     runtimeAssertsOn = b;

@@ -27,6 +27,7 @@
 #include <popart/patterns/fmodarg0gradoppattern.hpp>
 #include <popart/patterns/initaccumulatepattern.hpp>
 #include <popart/patterns/inplace.hpp>
+#include <popart/patterns/lambserialisedweight.hpp>
 #include <popart/patterns/likeopspattern.hpp>
 #include <popart/patterns/log1pgradoppattern.hpp>
 #include <popart/patterns/loggradoppattern.hpp>
@@ -342,6 +343,10 @@ bool Patterns::isFmodArg0GradOpEnabled() {
   return isPatternEnabled<FmodArg0GradOpPattern>();
 }
 
+bool Patterns::isLambSerialisedWeightEnabled() {
+  return isPatternEnabled<LambSerialisedWeightPattern>();
+}
+
 Patterns &Patterns::enableInitAccumulate(bool v) {
   return enablePattern<InitAccumulatePattern>(v);
 }
@@ -472,6 +477,10 @@ Patterns &Patterns::enableSparseAccumulate(bool v) {
 
 Patterns &Patterns::enableDecomposeBinaryConstScalar(bool v) {
   return enablePattern<DecomposeBinaryConstScalar>(v);
+}
+
+Patterns &Patterns::enableLambSerialisedWeight(bool v) {
+  return enablePattern<LambSerialisedWeightPattern>(v);
 }
 
 Patterns &Patterns::enablePattern(const std::type_index &t, bool v) {
