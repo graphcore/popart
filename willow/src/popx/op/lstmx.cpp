@@ -79,11 +79,8 @@ void LSTMOpx::grow(poplar::program::Sequence &prog) const {
 
   reshapeAndInsert(LSTMOp::getOutputOutIndex(), output);
 
-  auto output_h_state = snap::Tensor{
-      output
-          .getPoplarTensor()[createLSTMParams(lstm_op, seq_lens).rnn.timeSteps -
-                             1],
-      graph()};
+  auto output_h_state =
+      output[createLSTMParams(lstm_op, seq_lens).rnn.timeSteps - 1];
 
   // cloneNcopy to ensure outputs are not aliases of each other
   // TODO T18126 remove requirement for this cloneNcopy
@@ -202,7 +199,7 @@ snap::Tensor LSTMOpx::reshapePoplibWeightsForOnnx(snap::Tensor poplib_weights,
   // poplibs expects weights in shape [4, K, hidden_size]
   // and order is W[fico]
   std::vector<poplar::Interval> intervals{{0, 1}, {1, 2}, {2, 3}, {3, 4}};
-  auto slices = poplib_weights.getPoplarTensor().slices(intervals, 0);
+  auto slices = poplib_weights.slices(intervals, 0);
 
   if (transpose) {
     for (int i = 0; i < slices.size(); i++) {
@@ -210,10 +207,10 @@ snap::Tensor LSTMOpx::reshapePoplibWeightsForOnnx(snap::Tensor poplib_weights,
     }
   }
 
-  auto wf = slices[0];
-  auto wi = slices[1];
-  auto wc = slices[2];
-  auto wo = slices[3];
+  auto wf = slices[0].getPoplarTensor();
+  auto wi = slices[1].getPoplarTensor();
+  auto wc = slices[2].getPoplarTensor();
+  auto wo = slices[3].getPoplarTensor();
 
   return snap::Tensor{poplar::concat({wi, wo, wf, wc}, 1), poplib_weights};
 }

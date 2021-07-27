@@ -90,11 +90,11 @@ snap::Tensor RestoreBaseOpx<Derived>::growStaticSliceRestore(
       debugContext("static-restore/switch-on-stash-index"));
 
   for (int64_t i = 0; i < stashSize; i++) {
-    const auto inSliceAtIdx = stash.getPoplarTensor().slice(i, i + 1, 0);
+    const auto inSliceAtIdx = stash.slice(i, i + 1, 0);
     switchCase.add(
         i,
         poplar::program::Copy(
-            inSliceAtIdx,
+            inSliceAtIdx.getPoplarTensor(),
             actFromStash,
             false,
             debugContext("static-restore/switch-copy-" + std::to_string(i))));

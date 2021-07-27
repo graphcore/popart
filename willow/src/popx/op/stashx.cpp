@@ -28,10 +28,10 @@ void StashOpx::growStaticStashUpdate(poplar::program::Sequence &prog,
                                      debugContext("static-stash/switch"));
 
   for (unsigned i = 0; i != hStashSize; ++i) {
-    const auto outSliceAtIdx = outTensor.getPoplarTensor().slice(i, i + 1, 0);
+    const auto outSliceAtIdx = outTensor.slice(i, i + 1, 0);
     switchCase.add(i,
                    poplar::program::Copy(inTensor.getPoplarTensor(),
-                                         outSliceAtIdx,
+                                         outSliceAtIdx.getPoplarTensor(),
                                          false,
                                          debugContext("static-stash/switch-" +
                                                       std::to_string(i))));

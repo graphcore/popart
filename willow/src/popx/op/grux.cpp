@@ -132,8 +132,7 @@ void GRUOpx::grow(poplar::program::Sequence &prog) const {
 
   reshapeAndInsert(GRUOp::getOutputOutIndex(), output);
 
-  auto output_h_state = snap::Tensor{
-      output.getPoplarTensor()[createGRUParams().rnn.timeSteps - 1], graph()};
+  auto output_h_state = output[createGRUParams().rnn.timeSteps - 1];
 
   // cloneNcopy to ensure outputs are not aliases of each other
   // TODO T18126 remove requirement for this cloneNcopy
@@ -280,15 +279,15 @@ snap::Tensor GRUOpx::reshapePoplibWeightsForOnnx(snap::Tensor poplib_weights) {
   // poplibs expects weights in shape [3, K, hidden_size]
   // and order is W[rzh]
   std::vector<poplar::Interval> intervals{{0, 1}, {1, 2}, {2, 3}};
-  auto slices = poplib_weights.getPoplarTensor().slices(intervals, 0);
+  auto slices = poplib_weights.slices(intervals, 0);
 
   for (int i = 0; i < slices.size(); i++) {
     slices[i] = slices[i].dimShuffle({0, 2, 1});
   }
 
-  auto wz = slices[0];
-  auto wr = slices[1];
-  auto wh = slices[2];
+  auto wz = slices[0].getPoplarTensor();
+  auto wr = slices[1].getPoplarTensor();
+  auto wh = slices[2].getPoplarTensor();
 
   return snap::Tensor{poplar::concat({wr, wz, wh}, 1), poplib_weights};
 }
@@ -455,7 +454,7 @@ void GRUGradOpx::grow(poplar::program::Sequence &prog) const {
   }
 
   popops::addInPlace(graph().getPoplarGraph(),
-                     output_grad.getPoplarTensor()[output_grad.dim(0) - 1],
+                     output_grad[output_grad.dim(0) - 1].getPoplarTensor(),
                      output_h_grad.getPoplarTensor(),
                      prog,
                      debugContext());

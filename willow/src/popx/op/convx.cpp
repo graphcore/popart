@@ -115,13 +115,13 @@ void ConvFlipWeightsGradOpx::grow(poplar::program::Sequence &seq) const {
   for (int i = 0; i < params.numGroups; i++) {
     // dim 0 of weights5D and convWeights are the groups.
     // slice off group i from weights5D and convWeights.
-    auto w = weights5D.getPoplarTensor().slice(i, i + 1, 0);
+    auto w = weights5D.slice(i, i + 1, 0);
     auto c = convWeights.slice(i, i + 1, 0);
 
     // call weightsTransposeChansFlipXY on group i of weights5D and convWeights.
     poplin::weightsTransposeChansFlipXY(
         graph().getPoplarGraph(),
-        w,
+        w.getPoplarTensor(),
         c,
         seq,
         debugContext(logging::format("group{}_transposeXY", i)));

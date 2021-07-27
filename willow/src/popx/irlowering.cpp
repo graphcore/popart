@@ -1009,7 +1009,7 @@ PriTask IrLowering::initRandomSeed() {
     auto offset = graph().getPoplarGraph().addReplicationIndexConstant();
     graph().getPoplarGraph().setTileMapping(offset, 0);
     popops::addInPlace(
-        graph().getPoplarGraph(), seed.getPoplarTensor()[0], offset, prog);
+        graph().getPoplarGraph(), seed[0].getPoplarTensor(), offset, prog);
     return seqs;
   };
 

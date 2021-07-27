@@ -86,10 +86,8 @@ compose(const std::vector<std::pair<view::Region, snap::Tensor>> tensorRegions,
       std::vector<size_t> u(region.rank());
       l.assign(region.getLower().begin(), region.getLower().end());
       u.assign(region.getUpper().begin(), region.getUpper().end());
-      tensor = snap::Tensor{
-          tensor.getPoplarTensor().slice(poplar::ArrayRef<size_t>(l),
-                                         poplar::ArrayRef<size_t>(u)),
-          tensor};
+      tensor = tensor.slice(poplar::ArrayRef<size_t>(l),
+                            poplar::ArrayRef<size_t>(u));
     }
 
     logging::trace("[creatorx] Tensor shape {} region {} {}",

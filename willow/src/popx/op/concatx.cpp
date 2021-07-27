@@ -37,11 +37,9 @@ snap::Tensor BaseConcatOpx::unwindTensorLayout(snap::Tensor tensor,
     auto shape = op->inShape(ConcatOp::getInIndex(i));
     end += shape[op->getAxis()];
   }
-  return snap::Tensor{
-      tensor.getPoplarTensor().slice(static_cast<std::size_t>(start),
-                                     static_cast<std::size_t>(end),
-                                     static_cast<unsigned>(op->getAxis())),
-      graph()};
+  return tensor.slice(static_cast<std::size_t>(start),
+                      static_cast<std::size_t>(end),
+                      static_cast<unsigned>(op->getAxis()));
 }
 
 view::RegMap BaseConcatOpx::unwindRegion(InIndex inIndex,
