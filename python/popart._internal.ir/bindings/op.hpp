@@ -23,7 +23,7 @@ namespace ir {
 template <class T = Op> class PyOp : public T {
 public:
   PyOp(const OperatorIdentifier &_opid, const Op::Settings &settings_)
-      : Op(_opid, settings_){};
+      : Op(_opid, settings_) {}
 
   // See discussion in https://github.com/pybind/pybind11/issues/673 for why
   // this is required
