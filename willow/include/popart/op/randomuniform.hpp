@@ -11,7 +11,7 @@ namespace popart {
 class RandomUniformOp : public RandomUniformBaseOp {
 public:
   RandomUniformOp(const OperatorIdentifier &opid_,
-                  const std::vector<int64_t> &shape_,
+                  const Shape &shape_,
                   const OptionalDataType &dataType_,
                   float high_,
                   float low_,

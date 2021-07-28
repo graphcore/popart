@@ -16,7 +16,7 @@ public:
                   int64_t group,
                   const AutoPad &padType,
                   std::vector<int64_t> outputPadding,
-                  std::vector<int64_t> outputShape,
+                  Shape outputShape,
                   const MultiConvOptions &convOpts);
 
   std::unique_ptr<Op> clone() const override;

@@ -11,7 +11,7 @@ namespace popart {
 class RandomNormalOp : public RandomNormalBaseOp {
 public:
   RandomNormalOp(const OperatorIdentifier &opid_,
-                 const std::vector<int64_t> &shape_,
+                 const Shape &shape_,
                  const OptionalDataType &dataType_,
                  float mean_,
                  float scale_,

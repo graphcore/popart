@@ -3,6 +3,7 @@
 #define GUARD_NEURALNET_GRU_HPP
 
 #include <popart/op.hpp>
+#include <popart/vendored/optional.hpp>
 
 namespace popart {
 

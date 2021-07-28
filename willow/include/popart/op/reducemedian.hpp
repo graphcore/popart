@@ -4,6 +4,7 @@
 
 #include <popart/op/reduce.hpp>
 #include <popart/opserialiser.hpp>
+#include <popart/vendored/optional.hpp>
 
 namespace popart {
 

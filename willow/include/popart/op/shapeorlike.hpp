@@ -35,7 +35,7 @@ public:
 protected:
   void setupLike(const popart::TensorInfo &info);
 
-  void setupWithShape(const std::vector<int64_t> &shape);
+  void setupWithShape(const Shape &shape);
 
   OptionalDataType dataType;
 };

@@ -4,6 +4,7 @@
 
 #include <popart/op/elementwise.hpp>
 #include <popart/op/nll.hpp>
+#include <popart/vendored/optional.hpp>
 
 namespace popart {
 
