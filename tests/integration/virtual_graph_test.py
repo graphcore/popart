@@ -39,7 +39,42 @@ def test_virtual_graph():
 
     s.prepareDevice()
 
-    pass
+
+@tu.requires_ipu_model
+@pytest.mark.parametrize("container", [set, list])
+def test_virtual_graph_multi_output(container):
+    popart.getLogger().setLevel("TRACE")
+
+    builder = popart.Builder()
+
+    i1 = builder.addInputTensor(popart.TensorInfo("FLOAT", [4, 1]))
+    o1, o2, o3, o4 = builder.aiOnnx.split([i1], 4)
+    o5 = builder.aiOnnx.add([o1, o2])
+    o6 = builder.aiOnnx.add([o3, o4])
+    o = builder.aiOnnx.add([o5, o6])
+    builder.addOutputTensor(o)
+
+    builder.virtualGraph(container([o1, o2, o3, o4]), 1)
+    builder.virtualGraph(o5, 0)
+    builder.virtualGraph(o6, 0)
+    builder.virtualGraph(o, 0)
+
+    # Check the virtual graph was set correctly
+    assert builder.getVirtualGraph(container([o1, o2, o3, o4])) == 1
+
+    proto = builder.getModelProto()
+
+    dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("All")})
+
+    opts = popart.SessionOptions()
+    opts.virtualGraphMode = popart.VirtualGraphMode.Manual
+
+    s = popart.InferenceSession(fnModel=proto,
+                                dataFlow=dataFlow,
+                                userOptions=opts,
+                                deviceInfo=tu.create_test_device(numIpus=2))
+
+    s.prepareDevice()
 
 
 @tu.requires_ipu_model

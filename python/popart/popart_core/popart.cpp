@@ -2874,6 +2874,23 @@ PYBIND11_MODULE(popart_core, m) {
             py::arg("value") = 0);
     cls.def(
         "virtualGraph",
+        static_cast<void (Builder::*)(const std::set<TensorId> &,
+                                      int64_t value)>(&Builder::virtualGraph),
+        py::arg("nodeOutputNames"),
+        py::arg("value") = 0);
+    // Allow calling `virtualGraph` with a list.
+    cls.def(
+        "virtualGraph",
+        [](Builder &self,
+           const std::vector<TensorId> &nodeOutputNames,
+           int64_t value) {
+          std::set<TensorId> x(nodeOutputNames.begin(), nodeOutputNames.end());
+          return self.virtualGraph(x, value);
+        },
+        py::arg("nodeOutputNames"),
+        py::arg("value") = 0);
+    cls.def(
+        "virtualGraph",
         [](Builder &self, int64_t index) -> AttributeContextManager {
           AttributeContextManager acm(self, sVirtualGraphAttribute, index);
           return acm;
@@ -3033,6 +3050,18 @@ PYBIND11_MODULE(popart_core, m) {
             static_cast<int64_t (Builder::*)(const TensorId &)>(
                 &Builder::getVirtualGraph),
             py::arg("nodeOutputNames"));
+    cls.def("getVirtualGraph",
+            static_cast<int64_t (Builder::*)(const std::set<TensorId> &)>(
+                &Builder::getVirtualGraph),
+            py::arg("nodeOutputNames"));
+    // Allow calling `getVirtualGraph` with a list.
+    cls.def(
+        "getVirtualGraph",
+        [](Builder &self, const std::vector<TensorId> &nodeOutputNames) {
+          std::set<TensorId> x(nodeOutputNames.begin(), nodeOutputNames.end());
+          return self.getVirtualGraph(x);
+        },
+        py::arg("nodeOutputNames"));
 
     cls.def(
         "recomputeOutputInBackwardPass",
