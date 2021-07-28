@@ -274,6 +274,12 @@ def test_resize_11(op_tester, data_shape, scales, nearest_mode,
         data_shape = [1, 1] + data_shape
         scales = [1.0, 1.0] + scales
 
+        # Known PyTorch issue
+        # https://github.com/pytorch/pytorch/issues/62237
+        if torch.__version__.startswith("1.9.0"):
+            if scales[-1] == 1.12:
+                pytest.skip()
+
     data = np.random.rand(*data_shape).astype(np.float32)
     roi = np.array([], dtype=np.float32)
     scales = np.array(scales, dtype=np.float32)
