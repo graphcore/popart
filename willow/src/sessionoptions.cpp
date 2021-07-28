@@ -242,6 +242,19 @@ bool SessionOptions::autoRecomputationEnabled() const {
   return autoRecomputation != RecomputationType::None;
 }
 
+bool SessionOptions::shouldDelayVarUpdates() const {
+  /*
+    Delaying var updates only needed due to implicit recomputation hiding the
+    liveness of the recomputed segments from the scheduler. If we have explicit
+    recomputation and explicit main loops, the scheduler should have enough
+    information to make the correct decisions without us changing the schedule
+    priorities.
+   */
+  return delayVarUpdates && executionPhaseSettings.phases < 2 &&
+         batchSerializationSettings.factor < 2 && !explicitRecomputation &&
+         !enableExplicitMainLoops;
+}
+
 // No implementation required
 
 } // namespace popart

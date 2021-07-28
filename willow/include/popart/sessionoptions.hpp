@@ -743,6 +743,8 @@ struct SessionOptions {
   // TODO: Remove with T19212
   bool delayVarUpdates = true;
 
+  bool shouldDelayVarUpdates() const;
+
   /// Enable the global #fullyConnectedPass option for matmuls.
   bool enableFullyConnectedPass = true;
 
