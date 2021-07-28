@@ -8,6 +8,7 @@
 #include <popart/popx/executablexserialization.hpp>
 #include <popart/popx/irlowering.hpp>
 
+#include <popart/error.hpp>
 #include <popart/ir.hpp>
 #include <popart/op/getrandomseed.hpp>
 #include <popart/optimizer.hpp>
@@ -200,14 +201,15 @@ void Executablex::resetWeights(
       if (ignoreWeightsInModelWithoutCorrespondingIrWeight) {
         continue;
       } else {
-        throw error("resetWeights, no tensor '" + tenId + "' in tensors");
+        throw runtime_error("resetWeights, no tensor '" + tenId +
+                            "' in tensors");
       }
     }
     auto tensor = getTensor(tenId);
     if (tensor->info != TensorInfo(initializer)) {
-      throw error("trying to reset weights using tensor with non matching "
-                  "tensor info. Tensor ID: {}",
-                  tensor->id);
+      throw runtime_error("trying to reset weights using tensor with non "
+                          "matching tensor info. Tensor ID: {}",
+                          tensor->id);
     }
     tensor->tensorData()->resetData(initializer);
   }

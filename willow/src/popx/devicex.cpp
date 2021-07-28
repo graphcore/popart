@@ -138,7 +138,7 @@ void Devicex::InputDatastream::read(void *ptr) {
          << ". User provided : " << srcInfo.data_type()
          << " and expected : " << dstInfo.data_type()
          << ". Consider a custom copy here (as memcpy cannot be used)";
-      throw error(ss.str());
+      throw runtime_error(ss.str());
     }
 
   } else {
@@ -193,7 +193,7 @@ bool Devicex::InputDatastream::readPrefetch(void *ptr) {
            << ". User provided : " << srcInfo.data_type()
            << " and expected : " << dstInfo.data_type()
            << ". Consider a custom copy here (as memcpy cannot be used)";
-        throw error(ss.str());
+        throw runtime_error(ss.str());
       }
 
       return true;
@@ -332,7 +332,7 @@ void Devicex::weightsToHost(
   POPART_TRACEPOINT();
 
   if (!prepareHasBeenCalled()) {
-    throw error(
+    throw runtime_error(
         "Devicex::prepare() must be called before Devicex::weightsToHost(const "
         "std::map<TensorId, MutableVoidData> &) is called.");
   }
@@ -362,7 +362,7 @@ void Devicex::weightsToHost(
             oss << x.first << ' ';
           }
           oss << ']';
-          throw error(oss.str());
+          throw runtime_error(oss.str());
         }
         MutableVoidData mv_data = found->second;
         hostStreamToHost(mv_data, id);
@@ -382,8 +382,8 @@ std::map<std::string, std::vector<uint64_t>> Devicex::cycleCountTensorToHost() {
 
     return cycleCount;
   } else {
-    throw error("SessionOption 'instrumentWithHardwareCycleCounter' must be "
-                "set to true in order to measure cycle count");
+    throw runtime_error("SessionOption 'instrumentWithHardwareCycleCounter' "
+                        "must be set to true in order to measure cycle count");
   }
 }
 
@@ -560,7 +560,7 @@ void Devicex::hostStreamToHost(const MutableVoidData &mv_data, TensorId id) {
     std::stringstream errms;
     errms << "sizes (in bytes) of src (" << nbytes_src << ") and dst ("
           << nbytes_dst << ") differ in hostStreamToHost for " << id;
-    throw error(errms.str());
+    throw runtime_error(errms.str());
   }
 
   std::memcpy(dst, src, nbytes_src);
@@ -578,7 +578,7 @@ void Devicex::anchorsHostToHostStreams(IStepIO &stepio) {
     if (stepIoSplitter) {
       stepIoSplitter->setUpstreamIo(&stepio);
     } else {
-      throw error("StepIO splitter has not been initialised");
+      throw runtime_error("StepIO splitter has not been initialised");
     }
   }
 }
@@ -595,7 +595,7 @@ void Devicex::anchorsHostFromHostStreams(IStepIO &stepio) {
     if (stepIoSplitter) {
       stepIoSplitter->setUpstreamIo(&stepio);
     } else {
-      throw error("StepIO splitter has not been initialised");
+      throw runtime_error("StepIO splitter has not been initialised");
     }
   }
 }
@@ -604,8 +604,8 @@ void Devicex::run(IStepIO &stepio, std::string debugName) {
   POPART_TRACEPOINT();
 
   if (!prepareHasBeenCalled()) {
-    throw error("Devicex::prepare() must be called before"
-                " Devicex::run(const IStepIO &) is called.");
+    throw runtime_error("Devicex::prepare() must be called before"
+                        " Devicex::run(const IStepIO &) is called.");
   }
 
   // Check that the input and output buffers have the correct number of
@@ -771,11 +771,11 @@ void Devicex::setEngineIsLoaded(bool isLoaded) { engineIsLoaded = isLoaded; }
 void Devicex::loadEngineAndConnectStreams() {
   POPART_TRACEPOINT();
   if (deviceInfo->getConnectionType() == DeviceConnectionType::Never) {
-    throw error("Trying to load an engine on an offline device");
+    throw runtime_error("Trying to load an engine on an offline device");
   }
   if (!pEngine) {
-    throw error("Trying to load an engine but no compiled engine. Did you "
-                "forget to call prepareDevice()?");
+    throw runtime_error("Trying to load an engine but no compiled engine. Did "
+                        "you forget to call prepareDevice()?");
   }
   DevicexInfo &di = dynamic_cast<DevicexInfo &>(*deviceInfo);
 
@@ -796,7 +796,7 @@ void Devicex::loadEngineAndConnectStreams() {
       }
       // If still not attached, error
       if (!di.attach()) {
-        throw error("Failed to attach to device");
+        throw runtime_error("Failed to attach to device");
       }
     }
   }
@@ -1089,14 +1089,15 @@ void Devicex::prepare() {
 
 void Devicex::doProfileChecks() const {
   if (pEngine == nullptr) {
-    throw error(
-        "Session must have been prepared before a report can be fetched");
+    throw runtime_error("Session must have been prepared before a report can "
+                        "be fetched");
   }
   if (executable_.isDeserialized()) {
-    throw error("Unable to get reports when using a cached executable.\n"
-                "Either remove the cache file ({}), or \ndisable engine "
-                "caching (userOptions.enableEngineCaching = false)",
-                ir().getSessionOptions().cachePath);
+    throw runtime_error(
+        "Unable to get reports when using a cached executable.\n"
+        "Either remove the cache file ({}), or \ndisable engine "
+        "caching (userOptions.enableEngineCaching = false)",
+        ir().getSessionOptions().cachePath);
   }
 }
 

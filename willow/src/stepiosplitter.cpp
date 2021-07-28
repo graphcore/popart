@@ -1,5 +1,6 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
 #include <stepiosplitter.hpp>
+#include <popart/error.hpp>
 
 namespace popart {
 namespace popx {
@@ -40,10 +41,10 @@ ConstVoidData
 StepIOSplitterAdapter::in(TensorId id, int64_t numElements, bool prefetch) {
 
   if (id != adapterId) {
-    throw error("StepIOSplitterAdapter was created for tensor {} but used for "
-                "tensor {}",
-                adapterId,
-                id);
+    throw runtime_error("StepIOSplitterAdapter was created for tensor {} but "
+                        "used for tensor {}",
+                        adapterId,
+                        id);
   }
 
   // If we have no data, ask for data.
@@ -69,7 +70,7 @@ StepIOSplitterAdapter::in(TensorId id, int64_t numElements, bool prefetch) {
     if (prefetch) {
       return emptyVoidData;
     } else {
-      throw error("Unable to fetch input data from IStepIO");
+      throw runtime_error("Unable to fetch input data from IStepIO");
     }
   }
 }
@@ -77,10 +78,10 @@ StepIOSplitterAdapter::in(TensorId id, int64_t numElements, bool prefetch) {
 void StepIOSplitterAdapter::inComplete(TensorId id, int64_t numElements) {
 
   if (id != adapterId) {
-    throw error("StepIOSplitterAdapter was created for tensor {} but used for "
-                "tensor {}",
-                adapterId,
-                id);
+    throw runtime_error("StepIOSplitterAdapter was created for tensor {} but "
+                        "used for tensor {}",
+                        adapterId,
+                        id);
   }
 
   Lock lock(tensorInfo->inMutex, splitter->threadSafetyEnabled());
@@ -90,17 +91,19 @@ void StepIOSplitterAdapter::inComplete(TensorId id, int64_t numElements) {
     inLog("Received Poplar callback to 'inComplete'");
     splitter->inCompletionCallback(id, numElements, replicationIndex);
   } else {
-    throw error("StepIOSplitterAdapter no data to complete for tensor {}", id);
+    throw runtime_error("StepIOSplitterAdapter no data to complete for tensor "
+                        "{}",
+                        id);
   }
 }
 
 MutableVoidData StepIOSplitterAdapter::out(TensorId id, int64_t numElements) {
 
   if (id != adapterId) {
-    throw error("StepIOSplitterAdapter was created for tensor {} but used for "
-                "tensor {}",
-                adapterId,
-                id);
+    throw runtime_error("StepIOSplitterAdapter was created for tensor {} but "
+                        "used for tensor {}",
+                        adapterId,
+                        id);
   }
 
   Lock lock(tensorInfo->outMutex, splitter->threadSafetyEnabled());
@@ -123,17 +126,17 @@ MutableVoidData StepIOSplitterAdapter::out(TensorId id, int64_t numElements) {
     outLog("Returning output buffer to Poplar from adapter's cache");
     return result;
   } else {
-    throw error("Unable to fetch output data from IStepIO");
+    throw runtime_error("Unable to fetch output data from IStepIO");
   }
 }
 
 void StepIOSplitterAdapter::outComplete(TensorId id) {
 
   if (id != adapterId) {
-    throw error("StepIOSplitterAdapter was created for tensor {} but used for "
-                "tensor {}",
-                adapterId,
-                id);
+    throw runtime_error("StepIOSplitterAdapter was created for tensor {} but "
+                        "used for tensor {}",
+                        adapterId,
+                        id);
   }
 
   Lock lock(tensorInfo->outMutex, splitter->threadSafetyEnabled());
@@ -143,7 +146,9 @@ void StepIOSplitterAdapter::outComplete(TensorId id) {
     outLog("Received Poplar callback to 'outComplete'");
     splitter->outCompletionCallback(id, replicationIndex);
   } else {
-    throw error("StepIOSplitterAdapter no data to complete for tensor {}", id);
+    throw runtime_error("StepIOSplitterAdapter no data to complete for tensor "
+                        "{}",
+                        id);
   }
 }
 
@@ -317,13 +322,13 @@ void StepIOSplitter::getInData(TensorId id,
 
   // Check we have an upstream step io.
   if (!upstreamIo) {
-    throw error("Upstream StepIO not set.");
+    throw runtime_error("Upstream StepIO not set.");
   }
 
   // Check if we've got adapters for this tensor.
   auto it = downstreamIoMap.find(id);
   if (it == downstreamIoMap.end()) {
-    throw error("No downstream StepIOs set");
+    throw runtime_error("No downstream StepIOs set");
   }
 
   unsigned lastInIndex    = 0;
@@ -373,9 +378,9 @@ void StepIOSplitter::getInData(TensorId id,
         } else {
           // If we didn't get data it's an error unless we are prefetching.
           if (!isPrefetch) {
-            throw error("[StepIOSplitter] IStepIO unexpectedly did "
-                        "not provide input data for tensor {}",
-                        id);
+            throw runtime_error("[StepIOSplitter] IStepIO unexpectedly did "
+                                "not provide input data for tensor {}",
+                                id);
           }
         }
       } else {
@@ -385,10 +390,10 @@ void StepIOSplitter::getInData(TensorId id,
       }
     } else {
       // We can't do much without a downstream adapter.
-      throw error("[StepIOSplitter] No downstream adapter found for input "
-                  "tensor {}@{}",
-                  id,
-                  splitIoTensorInfo.inIndex);
+      throw runtime_error("[StepIOSplitter] No downstream adapter found for "
+                          "input tensor {}@{}",
+                          id,
+                          splitIoTensorInfo.inIndex);
     }
   } while (lastInIndex != replicationIndex);
 }
@@ -399,13 +404,13 @@ void StepIOSplitter::getOutData(TensorId id,
 
   // Check we have an upstream step io.
   if (!upstreamIo) {
-    throw error("Upstream StepIO not set.");
+    throw runtime_error("Upstream StepIO not set.");
   }
 
   // Check if we've got adapters for this tensor.
   auto it = downstreamIoMap.find(id);
   if (it == downstreamIoMap.end()) {
-    throw error("No downstream StepIOs set");
+    throw runtime_error("No downstream StepIOs set");
   }
 
   unsigned lastOutIndex   = 0;
@@ -441,9 +446,9 @@ void StepIOSplitter::getOutData(TensorId id,
               (splitIoTensorInfo.outIndex + 1) % replicationFactor;
         } else {
           // This is always an error.
-          throw error("[StepIOSplitter] IStepIO unexpectedly did not "
-                      "provide output data for tensor {}",
-                      id);
+          throw runtime_error("[StepIOSplitter] IStepIO unexpectedly did not "
+                              "provide output data for tensor {}",
+                              id);
         }
       } else {
         adapter->outLog("Unable to fetch output buffer; reached maximum number "
@@ -453,10 +458,10 @@ void StepIOSplitter::getOutData(TensorId id,
 
     } else {
       // We can't do much without a downstream adapter.
-      throw error("[StepIOSplitter] No downstream adapter found for output "
-                  "tensor {}@{}",
-                  id,
-                  splitIoTensorInfo.outIndex);
+      throw runtime_error("[StepIOSplitter] No downstream adapter found for "
+                          "output tensor {}@{}",
+                          id,
+                          splitIoTensorInfo.outIndex);
     }
   } while (lastOutIndex != replicationIndex);
 }
@@ -465,7 +470,7 @@ void StepIOSplitter::assertNumElements(const popx::Executablex &exe) const {
   if (upstreamIo) {
     upstreamIo->assertNumElements(exe);
   } else {
-    throw error("Upstream StepIO not set.");
+    throw runtime_error("Upstream StepIO not set.");
   }
 }
 
@@ -517,12 +522,12 @@ void StepIOSplitter::inCompletionCallback(TensorId id,
                                           unsigned replicationIndex) {
   // Check we have an upstream step io.
   if (!upstreamIo) {
-    throw error("Upstream StepIO not set.");
+    throw runtime_error("Upstream StepIO not set.");
   }
 
   auto it1 = downstreamIoMap.find(id);
   if (it1 == downstreamIoMap.end()) {
-    throw error("No downstream StepIOs set");
+    throw runtime_error("No downstream StepIOs set");
   }
 
   auto &splitIoTensorInfo = it1->second;
@@ -547,10 +552,10 @@ void StepIOSplitter::inCompletionCallback(TensorId id,
       }
     } else {
       // We can't do much without a downstream adapter.
-      throw error("[StepIOSplitter] No downstream adapter found for input "
-                  "tensor {}@{}",
-                  id,
-                  splitIoTensorInfo.outIndex);
+      throw runtime_error("[StepIOSplitter] No downstream adapter found for "
+                          "input tensor {}@{}",
+                          id,
+                          splitIoTensorInfo.outIndex);
     }
 
     // Try the next index.
@@ -562,12 +567,12 @@ void StepIOSplitter::outCompletionCallback(TensorId id,
                                            unsigned replicationIndex) {
   // Check we have an upstream step io.
   if (!upstreamIo) {
-    throw error("Upstream StepIO not set.");
+    throw runtime_error("Upstream StepIO not set.");
   }
 
   auto it1 = downstreamIoMap.find(id);
   if (it1 == downstreamIoMap.end()) {
-    throw error("No downstream StepIOs set");
+    throw runtime_error("No downstream StepIOs set");
   }
 
   auto &splitIoTensorInfo = it1->second;
@@ -588,10 +593,10 @@ void StepIOSplitter::outCompletionCallback(TensorId id,
       }
     } else {
       // We can't do much without a downstream adapter.
-      throw error("[StepIOSplitter] No downstream adapter found for output "
-                  "tensor {}@{}",
-                  id,
-                  splitIoTensorInfo.outIndex);
+      throw runtime_error("[StepIOSplitter] No downstream adapter found for "
+                          "output tensor {}@{}",
+                          id,
+                          splitIoTensorInfo.outIndex);
     }
 
     // Try the next index.

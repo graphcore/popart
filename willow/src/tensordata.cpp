@@ -47,7 +47,7 @@ bool WeightsIO::contains(TensorId id) const {
 MutableVoidData WeightsIO::weight(TensorId id) const {
   auto iter = weights.find(id);
   if (iter == weights.end()) {
-    throw error("No TensorId {} in WeightsIO object", id);
+    throw runtime_error("No TensorId {} in WeightsIO object", id);
   }
   return iter->second;
 }
@@ -56,7 +56,8 @@ void WeightsIO::insert(TensorId id, MutableVoidData mvd) {
 
   auto iter = weights.find(id);
   if (iter != weights.end()) {
-    throw error("TensorId {} already present in WeightsIO, cannot insert");
+    throw runtime_error("TensorId {} already present in WeightsIO, cannot "
+                        "insert");
   }
   weights.insert({id, mvd});
 }

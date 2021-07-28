@@ -3,6 +3,7 @@
 #define GUARD_NEURALNET_STEPIO_GENERIC_HPP
 
 #include <map>
+#include <popart/error.hpp>
 #include <popart/istepio.hpp>
 #include <popart/stepio_size_assertion.hpp>
 
@@ -46,7 +47,8 @@ public:
 
     auto found = M.find(id);
     if (found == M.end()) {
-      throw error("No tensor {} provided in PyStepIO's {}", id, mapName);
+      throw runtime_error(
+          "No tensor {} provided in PyStepIO's {}", id, mapName);
     }
 
     ArrayInfo &arrayInfo = found->second;
@@ -87,7 +89,8 @@ public:
 
     auto found = M.find(id);
     if (found == M.end()) {
-      throw error("No tensor {} provided in PyStepIO's {}", id, mapName);
+      throw runtime_error(
+          "No tensor {} provided in PyStepIO's {}", id, mapName);
     }
 
     ArrayInfo &arrayInfo = found->second;

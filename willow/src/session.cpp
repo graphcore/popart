@@ -86,12 +86,12 @@ void Session::setDevice(std::shared_ptr<DeviceInfo> deviceInfo) {
 
 std::vector<uint32_t> Session::getRNGState() {
   if (!ir->getSessionOptions().enableLoadAndOffloadRNGState) {
-    throw error("Trying to get the RNG state, but the session option "
-                "enableLoadAndOffloadRNGState must be set to True.");
+    throw runtime_error("Trying to get the RNG state, but the session option "
+                        "enableLoadAndOffloadRNGState must be set to True.");
   }
   if (!device_->prepareHasBeenCalled()) {
-    throw error("Devicex::prepare() must be called before "
-                "Devicex::getRngStateToHost is called.");
+    throw runtime_error("Devicex::prepare() must be called before "
+                        "Devicex::getRngStateToHost is called.");
   }
   std::vector<uint32_t> seedValue;
   seedValue = device_->getRngStateToHost();
@@ -165,23 +165,23 @@ void Session::loadExecutableFromStream(std::istream &in) {
 
 void Session::assertExecutableLoaded() const {
   if (executable_ == nullptr) {
-    throw error("There is no executatable. Try calling Session::prepareDevice "
-                "first.");
+    throw runtime_error("There is no executatable. Try calling "
+                        "Session::prepareDevice first.");
   }
 }
 
 void Session::setRNGState(const std::vector<uint32_t> stateValue) {
   if (!ir->getSessionOptions().enableLoadAndOffloadRNGState) {
-    throw error("Trying to set the RNG state, but the session option "
-                "enableLoadAndOffloadRNGState must be set to True.");
+    throw runtime_error("Trying to set the RNG state, but the session option "
+                        "enableLoadAndOffloadRNGState must be set to True.");
   }
   // Set seed value on host
   device_->setRngStateValue(stateValue);
 
   // ... Then stream to device
   if (!device_->prepareHasBeenCalled()) {
-    throw error("Devicex::prepare() must be called before "
-                "Devicex::setRngStateFromHost is called.");
+    throw runtime_error("Devicex::prepare() must be called before "
+                        "Devicex::setRngStateFromHost is called.");
   }
   device_->setRngStateFromHost();
 }
@@ -202,8 +202,8 @@ void Session::setRandomSeed(uint64_t seedValue) {
 
   // ... Then stream to device
   if (!device_->prepareHasBeenCalled()) {
-    throw error("Devicex::prepare() must be called before "
-                "Devicex::setRandomSeedFromHost(uint64_t) is called.");
+    throw runtime_error("Devicex::prepare() must be called before "
+                        "Devicex::setRandomSeedFromHost(uint64_t) is called.");
   }
   device_->setRandomSeedFromHost();
 }
@@ -212,16 +212,17 @@ uint64_t Session::getCycleCount(std::string id) {
   POPART_TRACEPOINT();
   logging::session::trace("Session::getCycleCount()");
   if (!runCalled) {
-    throw error("Must call run before getCycleCount.");
+    throw runtime_error("Must call run before getCycleCount.");
   }
   auto cycleCounts = device_->cycleCountTensorToHost();
   if (cycleCounts.find(id) != cycleCounts.end()) {
     // Always get cycle count from first replica
     return cycleCounts.at(id)[0];
   } else {
-    throw error("Invalid id for cycle counter, '{}'. Make sure you have set "
-                "SessionOption::hardwareInstrumentations correctly.",
-                id);
+    throw runtime_error("Invalid id for cycle counter, '{}'. Make sure you "
+                        "have set SessionOption::hardwareInstrumentations "
+                        "correctly.",
+                        id);
   }
 }
 
@@ -231,7 +232,7 @@ TensorInfo Session::getInfo(TensorId id) const {
   assertExecutableLoaded();
   TensorInfo info = executable_->getTensor(id)->info;
   if (!info.isSet()) {
-    throw error("TensorInfo for `" + id + "' not set");
+    throw runtime_error("TensorInfo for `" + id + "' not set");
   }
   return info;
 }
@@ -305,7 +306,7 @@ void Session::prepareDevice(bool loadEngine) {
 
   logging::session::trace("Session::prepareDevice()");
   if (!device_) {
-    throw error("Must call setDevice before {}", __func__);
+    throw runtime_error("Must call setDevice before {}", __func__);
   }
   device_->prepare();
 
@@ -319,7 +320,7 @@ void Session::loadEngineAndConnectStreams() {
 
   logging::session::trace("Session::loadEngineAndConnectStreams()");
   if (!device_) {
-    throw error("Must call setDevice before {}", __func__);
+    throw runtime_error("Must call setDevice before {}", __func__);
   }
   device_->loadEngineAndConnectStreams();
 }
@@ -337,7 +338,7 @@ void Session::weightsToHost() {
   logging::session::trace("Session::weightsToHost");
 
   if (!device_) {
-    throw error("Must call setDevice before {}", __func__);
+    throw runtime_error("Must call setDevice before {}", __func__);
   }
 
   device_->weightsToHost();
@@ -348,7 +349,7 @@ void Session::readWeights(const IWeightsIO &weightsIo) {
   logging::session::trace("Session::readWeights");
 
   if (!device_) {
-    throw error("Must call setDevice before {}", __func__);
+    throw runtime_error("Must call setDevice before {}", __func__);
   }
 
   device_->readWeights(weightsIo);
@@ -359,7 +360,7 @@ void Session::writeWeights(const IWeightsIO &weightsIo) {
   logging::session::trace("Session::writeWeights");
 
   if (!device_) {
-    throw error("Must call setDevice before {}", __func__);
+    throw runtime_error("Must call setDevice before {}", __func__);
   }
 
   device_->writeWeights(weightsIo);
@@ -383,15 +384,15 @@ void Session::run(IStepIO &stepio, std::string debugName) {
 
   if (device_->getDeviceInfo()->getConnectionType() ==
       DeviceConnectionType::Never) {
-    throw error("Offline IPU device is not configured for execution");
+    throw runtime_error("Offline IPU device is not configured for execution");
   }
   if (!ir->canInfer()) {
-    throw error("Trying to infer when not in inference mode");
+    throw runtime_error("Trying to infer when not in inference mode");
   }
 
   if (weightsFromHostCalled == false && ir->containsInitialisers() &&
       ir->isTraining()) {
-    throw error(
+    throw runtime_error(
         "Must call weightsFromHost before run as the model has initializers "
         "and the session has been created in training mode");
   }
@@ -405,20 +406,20 @@ void Session::updateExternallySavedTensorLocations(
     const std::string &toLocation) {
   // Check that toLocation does not exist
   if (boost::filesystem::exists(toLocation)) {
-    throw error("Updating externally saved tensor location from file '{}' to "
-                "file '{}', but file '{}' already exists",
-                fromLocation,
-                toLocation,
-                toLocation);
+    throw runtime_error("Updating externally saved tensor location from file "
+                        "'{}' to file '{}', but file '{}' already exists",
+                        fromLocation,
+                        toLocation,
+                        toLocation);
   }
 
   // Check that fromLocation exists
   if (!boost::filesystem::exists(fromLocation)) {
-    throw error("Updating externally saved tensor location from file '{}' to "
-                "file '{}', but file '{}' does not exist",
-                fromLocation,
-                toLocation,
-                fromLocation);
+    throw runtime_error("Updating externally saved tensor location from file "
+                        "'{}' to file '{}', but file '{}' does not exist",
+                        fromLocation,
+                        toLocation,
+                        fromLocation);
   }
 
   ONNX_NAMESPACE::ModelProto model = ir->getModel();
@@ -441,8 +442,9 @@ void Session::updateExternallySavedTensorLocations(
   }
 
   if (tIds.empty()) {
-    throw error("No ONNX model initializers have external location set to '{}'",
-                fromLocation);
+    throw runtime_error("No ONNX model initializers have external location set "
+                        "to '{}'",
+                        fromLocation);
   }
 
   // Save the external data of tensors from the Ir's ONNX model to their
@@ -510,10 +512,10 @@ void Session::modelToHost(const std::string &fn) {
                        std::ofstream::binary | std::ios_base::out |
                            std::ios_base::in);
       if (!ofs.is_open()) {
-        throw error("Trying to update initializer {}, stored in file {}, when "
-                    "writing modelToHost. Failed to open file",
-                    tenId,
-                    fn);
+        throw runtime_error("Trying to update initializer {}, stored in file "
+                            "{}, when writing modelToHost. Failed to open file",
+                            tenId,
+                            fn);
       }
 
       if (externalInfo.offset > 0) {
@@ -563,7 +565,8 @@ void Session::resetHostWeights(
   logging::session::trace("Session::resetHostWeights");
   if (ir->getSessionOptions().constantWeights &&
       ir->getExecutionMode() == Ir::ExecutionMode::Inference) {
-    throw error("Cannot call resetHostWeights when constantWeights is set");
+    throw runtime_error("Cannot call resetHostWeights when constantWeights is "
+                        "set");
   }
   auto modelProto = onnxutil::getModelProto(modelProtoOrFilename);
   executable_->resetWeights(modelProto,
