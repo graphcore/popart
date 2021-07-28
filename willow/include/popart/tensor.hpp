@@ -219,10 +219,11 @@ public:
     // the stream reading from the wrong address.
     // Rather use TensorData::resetData.
     if (data_) {
-      throw error("Can't call Tensor::setTensorData() on tensor `{}` because "
-                  "data has already been assigned to it. Consider using "
-                  "`Tensor::tensorData()::resetData()`.",
-                  id);
+      throw internal_error(
+          "Can't call Tensor::setTensorData() on tensor `{}` because data has "
+          "already been assigned to it. Consider using "
+          "`Tensor::tensorData()::resetData()`.",
+          id);
     }
     data_.reset(new TensorData(std::forward<Args>(args)...));
   }
