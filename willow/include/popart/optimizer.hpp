@@ -5,6 +5,7 @@
 #include <memory>
 #include <popart/clipnormsettings.hpp>
 #include <popart/compoundscalarhelper.hpp>
+#include <popart/error.hpp>
 #include <popart/names.hpp>
 #include <popart/optimizervalue.hpp>
 #include <popart/optimizervaluemap.hpp>
@@ -51,18 +52,12 @@ enum class WeightDecayMode {
 std::map<std::string, OptimizerValue>
 getOptMap(const std::map<std::string, std::pair<float, bool>> &m);
 
-class optimizer_replacement_error : public error {
-public:
-  template <typename... Args>
-  explicit optimizer_replacement_error(const char *s, const Args &... args)
-      : error(std::string("New optimizer is not a valid replacement. ") + s,
-              args...) {}
-
-  template <typename... Args>
-  explicit optimizer_replacement_error(const std::string &s,
-                                       const Args &... args)
-      : error("New optimizer is not a valid replacement. " + s, args...) {}
-};
+template <typename... Args>
+runtime_error optimizer_replacement_error(const std::string &s,
+                                          const Args &... args) {
+  return runtime_error("New optimizer is not a valid replacement. " + s,
+                       args...);
+}
 
 /// Interface for describing an Optimizer and, internally, how to grow the
 /// optimiser step for each weight.

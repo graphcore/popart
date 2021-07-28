@@ -9,7 +9,7 @@ namespace iosizecheck {
 void CorrectnessAsserter::throwBadInputSize(const TensorId &id,
                                             int64_t expected,
                                             int64_t nElms) const {
-  throw error(getBaseError("input", id, expected, nElms));
+  throw runtime_error(getBaseError("input", id, expected, nElms));
 }
 
 void CorrectnessAsserter::warnOfUnunsedInput(const TensorId &id,
@@ -30,7 +30,7 @@ void CorrectnessAsserter::throwMissingInput(const TensorId &id,
       << " But there is no Tensor named " << id << " in the Ir's main Graph"
       << (isFromOnnx ? ", and it does not exist in the original ONNX Model."
                      : ".");
-  throw error(oss.str());
+  throw runtime_error(oss.str());
 }
 
 void CorrectnessAsserter::throwIncorrectInput(const TensorId &id) const {
@@ -39,7 +39,7 @@ void CorrectnessAsserter::throwIncorrectInput(const TensorId &id) const {
       << "' has been provided as one of the inputs to the stepIO, but it is "
          "not registered as one of the inputs to the model. Please check this "
          "tensor and your stepIO.";
-  throw error(oss.str());
+  throw runtime_error(oss.str());
 }
 
 void CorrectnessAsserter::throwBadOutputSize(const TensorId &id,
@@ -52,14 +52,14 @@ void CorrectnessAsserter::throwBadOutputSize(const TensorId &id,
   if (art.id() == AnchorReturnTypeId::EveryN) {
     oss << "\nThe return period is " << art.rp();
   }
-  throw error(oss.str());
+  throw runtime_error(oss.str());
 }
 void CorrectnessAsserter::throwMissingOutput(const TensorId &id) const {
   std::ostringstream oss;
   oss << "Testing that the buffer provided by user for output Tensor " << id
       << " has the correct number of elements, "
       << " But there is no Tensor named " << id << " in the Ir's tensors. ";
-  throw error(oss.str());
+  throw runtime_error(oss.str());
 }
 
 std::string CorrectnessAsserter::getBaseError(const std::string &io,
@@ -99,7 +99,7 @@ int64_t CorrectnessAsserter::getArtDivisor(AnchorReturnType art) const {
   case (AnchorReturnTypeId::EveryN):
     return art.rp();
   default:
-    throw error("Unknown anchor return type");
+    throw runtime_error("Unknown anchor return type");
   }
 }
 

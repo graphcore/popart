@@ -6,6 +6,7 @@
 #include <popart/sgd.hpp>
 
 #include <popart/compoundscalarhelper.hpp>
+#include <popart/error.hpp>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/op/sgd0combo.hpp>
@@ -103,7 +104,7 @@ BOOST_AUTO_TEST_CASE(TestHashAndEq) {
            SGDAccumulatorAndMomentum::Separate,
            DataType::FLOAT,
            DataType::FLOAT};
-  BOOST_CHECK_THROW(sgd1.validReplacement(sgd2), optimizer_replacement_error);
+  BOOST_CHECK_THROW(sgd1.validReplacement(sgd2), runtime_error);
   BOOST_CHECK(sgd1.hash() != sgd2.hash());
 
   // Test accum and accl1 DataTypes are accounted for too, if
@@ -114,7 +115,7 @@ BOOST_AUTO_TEST_CASE(TestHashAndEq) {
            SGDAccumulatorAndMomentum::Separate,
            DataType::FLOAT,
            DataType::UNDEFINED};
-  BOOST_CHECK_THROW(sgd2.validReplacement(sgd3), optimizer_replacement_error);
+  BOOST_CHECK_THROW(sgd2.validReplacement(sgd3), runtime_error);
   BOOST_CHECK(sgd2.hash() != sgd3.hash());
 
   SGD sgd4{{{"defaultMomentum", {0.38f, true}}},

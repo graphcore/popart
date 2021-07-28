@@ -532,9 +532,9 @@ float Adam::getStoredValue(const TensorId &optId) const {
     return gshelper.getFromScalarId(optId, *this).val();
   }
 
-  throw error("In getStoredValue for {}, it doesn't match any existing "
-              "optimizer prefix",
-              optId);
+  throw runtime_error("In getStoredValue for {}, it doesn't match any existing "
+                      "optimizer prefix",
+                      optId);
 }
 
 void Adam::validReplacement(const Optimizer &other) const {
