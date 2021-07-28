@@ -15,9 +15,7 @@ VarUpdateOp::VarUpdateOp(const OperatorIdentifier &_opid,
                          const Op::Settings &settings_)
     : Op(_opid, settings_) {
   // TODO: Remove with T19212
-  if (getIr().getSessionOptions().executionPhaseSettings.phases < 2 &&
-      getIr().getSessionOptions().batchSerializationSettings.factor < 2 &&
-      getIr().getSessionOptions().delayVarUpdates) {
+  if (getIr().getSessionOptions().shouldDelayVarUpdates()) {
     settings.schedulePriority = std::numeric_limits<double>::lowest();
   }
 }
