@@ -36,7 +36,7 @@ private:
 
 protected:
   Session(std::string name = "");
-  Session(std::unique_ptr<Ir> ir,
+  Session(std::shared_ptr<Ir> ir,
           std::shared_ptr<DeviceInfo> deviceInfo,
           std::string name = "");
 
@@ -305,7 +305,7 @@ protected:
    * all the compute graph optimisations, backwards pass construction,
    * re-computation growing etc. happens.
    */
-  std::unique_ptr<Ir> ir;
+  std::shared_ptr<Ir> ir;
 
   /**
    * Implementation of the computation. For the IPU back-end this is
@@ -365,7 +365,7 @@ public:
   ~InferenceSession() override;
 
   static std::unique_ptr<InferenceSession>
-  createFromIr(std::unique_ptr<Ir> ir,
+  createFromIr(std::shared_ptr<Ir> ir,
                std::shared_ptr<DeviceInfo> deviceInfo,
                const std::string name = DefaultInferenceSessionName);
 

@@ -1762,6 +1762,10 @@ PYBIND11_MODULE(popart_core, m) {
             py::arg("patterns"),
             py::arg("name") = "inference",
             DOC(popart, InferenceSession, createFromOnnxModel));
+    cls.def(py::init(&InferenceSession::createFromIr),
+            py::arg("ir"),
+            py::arg("deviceInfo"),
+            py::arg("name") = "inference");
     cls.def(
         "compileAndExport",
         [](InferenceSession &session,

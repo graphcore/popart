@@ -60,7 +60,7 @@ Session::Session(std::string _name) : ir(std::make_unique<Ir>()), name(_name) {
   ctorCommonLogic();
 }
 
-Session::Session(std::unique_ptr<Ir> ir_,
+Session::Session(std::shared_ptr<Ir> ir_,
                  std::shared_ptr<DeviceInfo> deviceInfo,
                  std::string _name)
     : ir(std::move(ir_)), name(_name) {
@@ -633,7 +633,7 @@ void Session::configureFromOnnx(const std::string &modelProtoOrFilename,
 InferenceSession::~InferenceSession() = default;
 
 std::unique_ptr<InferenceSession>
-InferenceSession::createFromIr(std::unique_ptr<Ir> ir,
+InferenceSession::createFromIr(std::shared_ptr<Ir> ir,
                                std::shared_ptr<DeviceInfo> deviceInfo,
                                const std::string name) {
   POPART_TRACEPOINT();
