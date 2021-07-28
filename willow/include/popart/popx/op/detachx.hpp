@@ -18,7 +18,7 @@ public:
   void grow(poplar::program::Sequence &) const;
 };
 
-class DetachInplaceOpx : public PopOpx {
+class DetachInplaceOpx : public ElementWiseUnaryOpx {
 public:
   DetachInplaceOpx(Op *, Devicex *);
   void grow(poplar::program::Sequence &) const final;
