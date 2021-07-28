@@ -21,7 +21,7 @@ void DetachOpx::grow(poplar::program::Sequence &prog) const {
 }
 
 DetachInplaceOpx::DetachInplaceOpx(Op *op, Devicex *devicex)
-    : PopOpx(op, devicex) {
+    : popart::popx::ElementWiseUnaryOpx(op, devicex) {
   verifyOp<DetachInplaceOp>(op);
 }
 

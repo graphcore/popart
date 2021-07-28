@@ -844,6 +844,9 @@ IrLowering::getCreatorEndpoints(const Tensor *startTensor,
         }
         // Consuming op can't create tensor
         case InputCreatorType::Deadend: {
+          logging::devicex::trace("{} is a deadend, path depth {}",
+                                  op->debugName(),
+                                  pathFromInput.size());
           f_deadend();
           break;
         }
