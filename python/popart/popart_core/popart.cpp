@@ -49,13 +49,6 @@
 namespace py = pybind11;
 using namespace popart;
 
-void init_ex6(py::module &);
-void init_ex7(py::module &);
-void init_ex8(py::module &);
-void init_ex9(py::module &);
-void init_ex10(py::module &);
-void init_ex11(py::module &);
-
 namespace popart {
 namespace popx {
 class Executablex;
