@@ -1,6 +1,6 @@
 # Writing PopART unit tests
 
-The test devices are determined by the CMake variable `TEST_TARGET`, this is `Cpu` by default. By changing `DEFAULT_TEST_VARIANTS` to `Cpu;IpuModel;Hw` in [tests/popart/CMakeLists.txt]() you can compile a variant of every test to run on every device type.
+The test devices are determined by the CMake variable `TEST_TARGET`, this is `Cpu` by default. By changing `DEFAULT_TEST_VARIANTS` to `Cpu;IpuModel;Hw` in [tests/CMakeLists.txt]() you can compile a variant of every test to run on every device type.
 
 Alternatively, to compile tests for different devices, run cmake with the following arguments:
 * `-DPOPART_CMAKE_ARGS="-DENABLED_TEST_VARIANTS=Cpu$<SEMICOLON>IpuModel$<SEMICOLON>Hw"` Will enable all tests.
@@ -10,7 +10,7 @@ Alternatively, to compile tests for different devices, run cmake with the follow
 Also, you can run `./test.sh -R Hw_` to only run hardware tests, similarly for `IpuModel_` or `Cpu_`
 ## C++ tests
 
-Make sure to include `popart/testdevice.hpp` in all cpp unit tests. When acquiring a device use `createTestDevice(TEST_TARGET)` to acquire your device. `TEST_TARGET` is defined at compile time and is determined by what you specify in the arguments for `add_popart_cpp_unit_test` in `CMakeLists.txt`, defaulting to `Cpu`. See [tests/popart/CMakeLists.txt]() for details. [tests/popart/ipu_hash_tests.cpp]() is an example of a test on IPUModel only.
+Make sure to include `popart/testdevice.hpp` in all cpp unit tests. When acquiring a device use `createTestDevice(TEST_TARGET)` to acquire your device. `TEST_TARGET` is defined at compile time and is determined by what you specify in the arguments for `add_popart_cpp_unit_test` in `CMakeLists.txt`, defaulting to `Cpu`. See [tests/CMakeLists.txt]() for details. [tests/integration/ir_hash_test.cpp]() is an example of a test on IPUModel only.
 
 For example, if creating `example_test.cpp` for an `IpuModel` device:
 1) Include `popart/testdevice.hpp` and use `createTestDevice(TEST_TARGET)` in your test when acquiring a device.
@@ -32,7 +32,7 @@ Try to separate out tests that require parts on different devices. For example `
 
 Python unit tests are run using `pytest`; they can be ran directly with `pytest` via 
 ```
-pytest --forked test/popart/.../<test_name>.py
+pytest --forked test/.../<test_name>.py
 ```
 or via `ctest` and `test.sh` with
 ```
@@ -74,6 +74,6 @@ or whatever.
 
 To run `pytest` and specify a device type, use:
 ```
-TEST_TARGET=<variant> pytest --forked tests/popart/../<test_name>.py
+TEST_TARGET=<variant> pytest --forked tests/../<test_name>.py
 ```
 See existing tests for more info on how to use the `test_util` functions.
