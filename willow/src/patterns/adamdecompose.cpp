@@ -400,14 +400,7 @@ bool AdamDecompose::apply(Op *op) const {
   }
 
   // Lamb R1 & R2
-  //
-  // If max weight norm is set to a constant 0, then the condition
-  // in AdamVarUpdate that uses the outputs of LambSquare
-  // will never be satisfied. So we can optimize away these operations.
-  bool use_lamb =
-      (combo->mode == AdamMode::Lamb || combo->mode == AdamMode::LambNoBias) &&
-      !(combo->initMwn.isConst() && combo->initMwn.val() == 0);
-  if (use_lamb) {
+  if (combo->mode == AdamMode::Lamb || combo->mode == AdamMode::LambNoBias) {
     auto lambR1OpUp = std::make_unique<LambSquareOp>(
         Op::Settings(graph, combo->name() + "_lamb1"));
     auto lambR1Op = lambR1OpUp.get();
@@ -475,7 +468,7 @@ bool AdamDecompose::apply(Op *op) const {
   adamVarUpdOp->connectInTensor(AdamVarUpdateOp::getUpdaterInIndex(),
                                 adamUpdaterId);
 
-  if (use_lamb) {
+  if (combo->mode == AdamMode::Lamb || combo->mode == AdamMode::LambNoBias) {
     adamVarUpdOp->connectInTensor(AdamVarUpdateOp::getLambR1SqInIndex(),
                                   lambR1SqId);
     adamVarUpdOp->connectInTensor(AdamVarUpdateOp::getLambR2SqInIndex(),

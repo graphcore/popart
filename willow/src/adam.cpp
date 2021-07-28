@@ -34,7 +34,7 @@ Adam Adam::fromDefaultMap(const std::map<std::string, OptimizerValue> &m,
 namespace {
 const std::vector<std::string> &getSpecificNames() {
   const static std::vector<std::string> names{
-      "learningRate", "weightDecay", "beta1", "beta2", "eps", "maxWeightNorm"};
+      "learningRate", "weightDecay", "beta1", "beta2", "eps"};
   return names;
 }
 } // namespace
@@ -72,7 +72,6 @@ void Adam::insertSpecific(
   complete.insert({"beta1", b1s.getDefault()});
   complete.insert({"beta2", b2s.getDefault()});
   complete.insert({"eps", epsvs.getDefault()});
-  complete.insert({"maxWeightNorm", mwns.getDefault()});
   for (auto key_val : m0) {
     if (std::find(names.cbegin(), names.cend(), key_val.first) ==
         names.cend()) {
@@ -93,8 +92,7 @@ void Adam::insertSpecific(
                  complete.at("weightDecay"),
                  complete.at("beta1"),
                  complete.at("beta2"),
-                 complete.at("eps"),
-                 complete.at("maxWeightNorm"));
+                 complete.at("eps"));
 }
 
 bool Adam::hasSpecific(const Tensor &w) const {
@@ -107,11 +105,10 @@ bool Adam::hasSpecific(const Tensor &w) const {
   counter += b1s.hasSpecific(id);
   counter += b2s.hasSpecific(id);
   counter += epsvs.hasSpecific(id);
-  counter += mwns.hasSpecific(id);
 
   if (counter != 0 && counter != getSpecificNames().size()) {
     throw error("Inconsistency in Adam::hasSpecific : there should either be a "
-                "specific value for ALL (6) or NO (0) atomic scalar values, "
+                "specific value for ALL (5) or NO (0) atomic scalar values, "
                 "not {} of them. ",
                 counter);
   }
@@ -120,14 +117,11 @@ bool Adam::hasSpecific(const Tensor &w) const {
 }
 
 bool Adam::hasSpecific() const {
-  auto specifics = {
-      lrs.hasSpecific(),
-      wds.hasSpecific(),
-      b1s.hasSpecific(),
-      b2s.hasSpecific(),
-      epsvs.hasSpecific(),
-      mwns.hasSpecific(),
-  };
+  auto specifics = {lrs.hasSpecific(),
+                    wds.hasSpecific(),
+                    b1s.hasSpecific(),
+                    b2s.hasSpecific(),
+                    epsvs.hasSpecific()};
   return std::any_of(
       specifics.begin(), specifics.end(), [](bool s) { return s; });
 }
@@ -137,15 +131,13 @@ void Adam::insertSpecific(const TensorId &id,
                           OptimizerValue wd,
                           OptimizerValue b1,
                           OptimizerValue b2,
-                          OptimizerValue eps,
-                          OptimizerValue mwn) {
+                          OptimizerValue eps) {
 
   lrs.insertSpecific(id, lr);
   wds.insertSpecific(id, wd);
   b1s.insertSpecific(id, b1);
   b2s.insertSpecific(id, b2);
   epsvs.insertSpecific(id, eps);
-  mwns.insertSpecific(id, mwn);
 
   runValueChecks(lr, wd, b1, b2, eps);
 }
@@ -207,7 +199,7 @@ Adam::Adam(const std::map<std::string, OptimizerValue> &cmap,
            cmap.at("defaultBeta2"),
            cmap.at("defaultEps"),
            cmap.at("lossScaling"),
-           cmap.at("defaultMaxWeightNorm"),
+           cmap.at("maxWeightNorm"),
            mode_,
            decayMode_,
            accumType_,
@@ -337,7 +329,6 @@ Adam::getComplete(const std::map<std::string, OptimizerValue> &m) {
                                     "defaultBeta2",
                                     "defaultEps",
                                     "lossScaling",
-                                    "defaultMaxWeightNorm",
                                     "maxWeightNorm"};
 
   std::map<std::string, OptimizerValue> complete{};
@@ -348,7 +339,7 @@ Adam::getComplete(const std::map<std::string, OptimizerValue> &m) {
   complete.insert({"defaultBeta2", getUnsetBeta2()});
   complete.insert({"defaultEps", getUnsetEps()});
   complete.insert({"lossScaling", getUnsetLossScaling()});
-  complete.insert({"defaultMaxWeightNorm", getUnsetMaxWeightNorm()});
+  complete.insert({"maxWeightNorm", getUnsetMaxWeightNorm()});
 
   for (auto key_val : m) {
     auto key = key_val.first;
@@ -361,12 +352,6 @@ Adam::getComplete(const std::map<std::string, OptimizerValue> &m) {
       }
       oss << ')';
       throw error(oss.str());
-    }
-    if (key == "maxWeightNorm") {
-      logging::warn("Using 'maxWeightNorm' as a key in the "
-                    "Adam constructor is deprecated. Please use "
-                    "'defaultMaxWeightNorm' instead.");
-      key = "defaultMaxWeightNorm";
     }
     complete[key] = val;
   }
