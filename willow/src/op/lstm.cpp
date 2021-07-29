@@ -153,7 +153,7 @@ void LSTMOp::setup() {
 
     } else if (inInfo(getSequenceLensInIndex()).shape().size() > 0) {
       if (inInfo(getSequenceLensInIndex()).shape()[0] != batch_size) {
-        throw error("Incorect sequence len shape : {} != [{}]",
+        throw error("Incorrect sequence len shape : {} != [{}]",
                     inInfo(getSequenceLensInIndex()).shape(),
                     batch_size);
       }
@@ -309,7 +309,7 @@ view::RegMap LSTMOp::bwdRegMap(InIndex in, OutIndex out) const {
 
 LSTMGradOp::LSTMGradOp(const LSTMOp &fwd_op)
     : Op(Onnx::GradOperators::LSTMGrad, fwd_op.getSettings()),
-      forward_op(fwd_op) {}
+      forward_op(fwd_op), inInfo(gradInputInfo(fwd_op)) {}
 
 std::unique_ptr<Op> LSTMGradOp::clone() const {
   return std::make_unique<LSTMGradOp>(*this);
@@ -349,8 +349,9 @@ std::set<InIndex> LSTMGradOp::optionalInputs() const {
           getSequenceLensInIndex()};
 }
 
-const std::vector<GradInOutMapper> &LSTMGradOp::gradInputInfo() const {
-  static std::vector<GradInOutMapper> inInfo = {
+std::vector<GradInOutMapper>
+LSTMGradOp::gradInputInfo(const LSTMOp &forwardOp) {
+  std::vector<GradInOutMapper> result = {
       {getInitStateOutputInIndex(),
        LSTMOp::getInitStateOutputPassThroughIndex(),
        GradOpInType::Out},
@@ -384,11 +385,15 @@ const std::vector<GradInOutMapper> &LSTMGradOp::gradInputInfo() const {
       {getOutputGradInIndex(),
        LSTMOp::getOutputOutIndex(),
        GradOpInType::GradOut}};
-  if (getForwardOp().hasSeqLenInput()) {
-    inInfo.push_back({getSequenceLensInIndex(),
+  if (forwardOp.hasSeqLenInput()) {
+    result.push_back({getSequenceLensInIndex(),
                       LSTMOp::getSequenceLensInIndex(),
                       GradOpInType::In});
   }
+  return result;
+}
+
+const std::vector<GradInOutMapper> &LSTMGradOp::gradInputInfo() const {
   return inInfo;
 }
 

@@ -152,6 +152,14 @@ public:
 
 private:
   const LSTMOp &forward_op;
+
+  // This is usually a static variable in the method `gradInputInfo`, but for
+  // this op `inInfo` can change depending on the result of
+  // `getForwardOp()->hasSeqLenInput()`.
+  const std::vector<GradInOutMapper> inInfo;
+  // This static method allows us to calculate `inInfo` during member
+  // initialization, and then `inInfo` may be marked `const`.
+  static std::vector<GradInOutMapper> gradInputInfo(const LSTMOp &forwardOp);
 };
 
 // LSTM op that more closely resembles the poplar lstm.
