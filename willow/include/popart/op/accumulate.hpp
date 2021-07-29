@@ -25,9 +25,14 @@ public:
                    OptimizerValue factor_,
                    const Op::Settings &);
 
+  std::unique_ptr<Op> clone() const override = 0;
+
   std::map<InIndex, TensorId> optimizerInputs() const override;
-  void appendOutlineAttributes(OpSerialiserBase &) const final;
-  static InIndex getFactorInIndex() { return 2; }
+
+  void appendOutlineAttributes(OpSerialiserBase &) const override;
+
+  static constexpr InIndex getFactorInIndex() { return 2; }
+
   float getSubgraphValue() const final {
     if (type == AccumulationType::MovingAverage ||
         type == AccumulationType::MovingAverageSquare ||
@@ -38,7 +43,7 @@ public:
     }
   }
 
-  const AccumulationType &getAccumulationType() const { return type; }
+  AccumulationType getAccumulationType() const { return type; }
   const OptimizerValue &getFactor() const { return factor; }
 
 protected:
@@ -63,15 +68,82 @@ public:
 //   MovingAverageSquare, accum = rescale * f * accum + (1 - f) * g^2
 //   Infinity             accum = max(rescale * f * accum, abs(g))
 
-class RescaleAccumulateOp : public AccumulateBaseOp {
+class RescaleAccumulateOp final : public AccumulateBaseOp {
 public:
   RescaleAccumulateOp(AccumulationType type_,
                       OptimizerValue factor_,
                       const Op::Settings &);
 
   std::unique_ptr<Op> clone() const final;
+
   std::map<InIndex, TensorId> optimizerInputs() const final;
+
   static InIndex getRescaleRatioInIndex() { return 3; }
+};
+
+/**
+ *
+ * Say you have:
+ * w -> Gather -> x
+ *
+ * In backward pass you have:
+ * dW <- GatherGrad <- x
+ *
+ * and when the optimiser step is grown:
+ * dW <- GatherGrad <- x
+ *  \
+ *   Accumulate -> accum'
+ *  /
+ * accum
+ *
+ * GatherGrad is essentially a scatter. Then we Accumulate the resultant dW on
+ * accum. This involves creating an extra dW tensor, so instead we can do:
+ *
+ *               x
+ *               |
+ *               V
+ * accum -> SparseAccumulate -> accum'
+ *
+ * Where SparseAccumulate can in one operation, without extra space, accumulate
+ * the slices of x into accum as required.
+ *
+ * ---------
+ *
+ * The input tensor at getOriginalVarToUpdateInIndex() is an optional input.
+ * This is can be used when two different views of the weight are consumed in
+ * the forward pass (by ops that will be autodiffed), and one of those ops is a
+ * Gather, thus requiring a SparseAccumulate in the weight update step.
+ *
+ * We connect getOriginalVarToUpdateInIndex() to the other view of the weight
+ * than the one this SparseAccumulate is for. Then, SparseAccumulateOpx will
+ * clone that tensor (and its layout) when creating accum.
+ * \sa SparseAccumulateOpx::createInputTensor for further motivation of why it
+ * does this.
+ *
+ * You probably do not need this outside of the TiedGatherPattern.
+ */
+class SparseAccumulateOp final : public AccumulateBaseOp {
+public:
+  SparseAccumulateOp(AccumulationType type,
+                     const OptimizerValue &factor,
+                     unsigned axis,
+                     const Op::Settings &);
+
+  std::unique_ptr<Op> clone() const final;
+
+  void appendOutlineAttributes(OpSerialiserBase &) const final;
+
+  static constexpr InIndex getIndicesInIndex() { return 3; }
+  static constexpr InIndex getOriginalVarToUpdateInIndex() { return 4; }
+
+  std::set<InIndex> optionalInputs() const override {
+    return {getOriginalVarToUpdateInIndex()};
+  }
+
+  unsigned getAxis() const;
+
+private:
+  unsigned axis;
 };
 
 } // namespace popart

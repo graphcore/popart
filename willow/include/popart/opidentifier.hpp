@@ -366,6 +366,7 @@ const static AiGraphcoreOpIdV1 SliceInplace("SliceInplace");
 const static AiGraphcoreOpIdV1 SoftmaxInplace("SoftmaxInplace");
 const static AiGraphcoreOpIdV1 SoftPlusInplace("SoftPlusInplace");
 const static AiGraphcoreOpIdV1 SoftSignInplace("SoftSignInplace");
+const static AiGraphcoreOpIdV1 SparseAccumulate("PopartSparseAccumulate");
 const static AiGraphcoreOpIdV1 Square("Square");
 const static AiGraphcoreOpIdV1 SqueezeInplace("SqueezeInplace");
 const static AiGraphcoreOpIdV1 Stash("Stash");

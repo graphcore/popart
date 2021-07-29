@@ -38,6 +38,12 @@ public:
   GatherGradOpx(Op *, Devicex *);
   void grow(poplar::program::Sequence &) const final;
 
+  static std::tuple<poplar::Tensor, poplar::Tensor, poplar::Tensor>
+  handleNDMultiUpdate(poplar::Tensor target,
+                      poplar::Tensor update,
+                      poplar::Tensor indices,
+                      int64_t axis);
+
 private:
   int64_t axis;
 };
