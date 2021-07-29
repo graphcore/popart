@@ -37,6 +37,14 @@ std::ostream &operator<<(std::ostream &os, const AccumulationType &at) {
   }
 }
 
+/**************** AccumulateBaseOp ****************/
+
+AccumulateBaseOp::AccumulateBaseOp(const OperatorIdentifier &opid,
+                                   AccumulationType type_,
+                                   OptimizerValue factor_,
+                                   const Op::Settings &opSettings)
+    : VarUpdateWithUpdaterOp(opid, opSettings), type(type_), factor(factor_) {}
+
 std::map<InIndex, TensorId> AccumulateBaseOp::optimizerInputs() const {
   std::map<InIndex, TensorId> m;
   if (!factor.isConst()) {
@@ -47,7 +55,6 @@ std::map<InIndex, TensorId> AccumulateBaseOp::optimizerInputs() const {
 }
 
 void AccumulateBaseOp::appendOutlineAttributes(OpSerialiserBase &os) const {
-
   Op::appendOutlineAttributes(os);
 
   os.appendAttribute("type", static_cast<int>(getAccumulationType()));
@@ -57,33 +64,7 @@ void AccumulateBaseOp::appendOutlineAttributes(OpSerialiserBase &os) const {
   }
 }
 
-AccumulateBaseOp::AccumulateBaseOp(const OperatorIdentifier &opid,
-                                   AccumulationType type_,
-                                   OptimizerValue factor_,
-                                   const Op::Settings &opSettings)
-    : VarUpdateWithUpdaterOp(opid, opSettings), type(type_), factor(factor_) {}
-
-std::unique_ptr<Op> AccumulateOp::clone() const {
-  return std::make_unique<AccumulateOp>(*this);
-}
-
-AccumulateOp::AccumulateOp(AccumulationType type,
-                           OptimizerValue factor,
-                           const Op::Settings &opSettings)
-    : AccumulateBaseOp(Onnx::CustomOperators::Accumulate,
-                       type,
-                       factor,
-                       opSettings) {}
-
-std::unique_ptr<Op> RescaleAccumulateOp::clone() const {
-  return std::make_unique<RescaleAccumulateOp>(*this);
-}
-
-std::map<InIndex, TensorId> RescaleAccumulateOp::optimizerInputs() const {
-  auto m = AccumulateBaseOp::optimizerInputs();
-  m.insert({getRescaleRatioInIndex(), inId(getRescaleRatioInIndex())});
-  return m;
-}
+/**************** RescaleAccumulateOp ****************/
 
 RescaleAccumulateOp::RescaleAccumulateOp(AccumulationType type,
                                          OptimizerValue factor,
@@ -101,6 +82,61 @@ RescaleAccumulateOp::RescaleAccumulateOp(AccumulationType type,
     throw error("Unsupported AccumulationType in RescaleAccumulateOp {}",
                 static_cast<int>(type));
   }
+}
+
+std::map<InIndex, TensorId> RescaleAccumulateOp::optimizerInputs() const {
+  auto m = AccumulateBaseOp::optimizerInputs();
+  m.insert({getRescaleRatioInIndex(), inId(getRescaleRatioInIndex())});
+  return m;
+}
+
+std::unique_ptr<Op> RescaleAccumulateOp::clone() const {
+  return std::make_unique<RescaleAccumulateOp>(*this);
+}
+
+/**************** AccumulateOp ****************/
+
+AccumulateOp::AccumulateOp(AccumulationType type,
+                           OptimizerValue factor,
+                           const Op::Settings &opSettings)
+    : AccumulateBaseOp(Onnx::CustomOperators::Accumulate,
+                       type,
+                       factor,
+                       opSettings) {}
+
+std::unique_ptr<Op> AccumulateOp::clone() const {
+  return std::make_unique<AccumulateOp>(*this);
+}
+
+/**************** SparseAccumulateOp ****************/
+
+SparseAccumulateOp::SparseAccumulateOp(const AccumulationType type_,
+                                       const OptimizerValue &factor_,
+                                       const unsigned axis_,
+                                       const Op::Settings &settings_)
+    : AccumulateBaseOp(Onnx::CustomOperators::SparseAccumulate,
+                       type_,
+                       factor_,
+                       settings_),
+      axis(axis_) {
+  if (type != AccumulationType::Add && type != AccumulationType::DampenedAdd &&
+      type != AccumulationType::DampenedAddSquare) {
+    throw error(
+        "SparseAccumulateOp only supports AccumulationTypes: Add, DampenedAdd, "
+        "and DampenedAddSquare. You passed AccumulationType with int value: {}",
+        static_cast<int>(type));
+  }
+}
+
+std::unique_ptr<Op> SparseAccumulateOp::clone() const {
+  return std::make_unique<SparseAccumulateOp>(*this);
+}
+
+unsigned SparseAccumulateOp::getAxis() const { return axis; }
+
+void SparseAccumulateOp::appendOutlineAttributes(OpSerialiserBase &os) const {
+  AccumulateBaseOp::appendOutlineAttributes(os);
+  os.appendAttribute("axis", axis);
 }
 
 } // namespace popart

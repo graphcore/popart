@@ -9,12 +9,75 @@
 #include <popart/popx/devicex.hpp>
 #include <popart/popx/irlowering.hpp>
 #include <popart/popx/op/accumulatex.hpp>
+#include <popart/popx/op/gatherx.hpp>
 #include <popart/popx/opxmanager.hpp>
+
+#include <popops/DynamicSlice.hpp>
+#include <popops/Gather.hpp>
+
+#include <set>
 
 namespace pe = popops::expr;
 
 namespace popart {
 namespace popx {
+
+/********** AccumulateBaseOpx **********/
+
+AccumulateBaseOpx::AccumulateBaseOpx(Op *op, Devicex *devicex)
+    : VarUpdateOpx(op, devicex) {}
+
+InputCreatorType AccumulateBaseOpx::getInputCreatorType(int inIndex) const {
+  return inIndex == VarUpdateOp::getVarToUpdateInIndex()
+             ? InputCreatorType::CanCreate
+             : PopOpx::getInputCreatorType(inIndex);
+}
+
+snap::Tensor
+AccumulateBaseOpx::createInputTensor(int inIndex,
+                                     const poplar::DebugNameAndId &dnai) const {
+
+  if (inIndex != VarUpdateOp::getVarToUpdateInIndex()) {
+    throw error(
+        "AccumulateBaseOpx::createInput, cannot create input at {}, it can "
+        "only create the var to update input Tensor",
+        inIndex);
+  }
+  poplar::Tensor inTensor;
+  auto accumulatorInfo = inInfo(inIndex);
+  return snap::Tensor{
+      graph().getPoplarGraph().clone(
+          popType(accumulatorInfo),
+          getInTensor(VarUpdateWithUpdaterOp::getUpdaterInIndex())
+              .getPoplarTensor(),
+          dnai),
+      graph()};
+}
+
+std::set<TensorId>
+AccumulateBaseOpx::mustExistBeforeCreate(InIndex index) const {
+  if (index != VarUpdateOp::getVarToUpdateInIndex()) {
+    throw internal_error(
+        "AccumulateBaseOpx::mustExistBeforeCreate: Invalid index {}", index);
+  }
+  return {inId(VarUpdateWithUpdaterOp::getUpdaterInIndex())};
+}
+
+bool AccumulateBaseOpx::hasCreatorViewChangers(InIndex index) const {
+  return (index == VarUpdateOp::getVarToUpdateInIndex()) &&
+         hasInViewChangers(VarUpdateWithUpdaterOp::getUpdaterInIndex());
+}
+
+ViewChangers AccumulateBaseOpx::getCreatorViewChangers(InIndex index) const {
+  if (index != AccumulateBaseOp::getVarToUpdateInIndex()) {
+    throw error("AccumulateBaseOpx::getCreatorViewChangers: Invalid index = " +
+                std::to_string(index));
+  }
+
+  return getInViewChangers(AccumulateBaseOp::getUpdaterInIndex());
+}
+
+/********** AccumulateOpx **********/
 
 AccumulateOpx::AccumulateOpx(Op *op, Devicex *devicex)
     : AccumulateBaseOpx(op, devicex) {
@@ -296,53 +359,178 @@ void AccumulateOpx::grow(poplar::program::Sequence &prog) const {
                getInTensor(VarUpdateWithUpdaterOp::getVarToUpdateInIndex()));
 }
 
-snap::Tensor
-AccumulateBaseOpx::createInputTensor(InIndex inIndex,
-                                     const poplar::DebugNameAndId &dnai) const {
-  if (inIndex != VarUpdateOp::getVarToUpdateInIndex()) {
-    throw error(
-        "AccumulateBaseOpx::createInput, cannot create input at {}, it can "
-        "only create the var to update input Tensor",
-        inIndex);
-  }
-  auto accumulatorInfo = inInfo(inIndex);
-  return snap::Tensor{
-      graph().getPoplarGraph().clone(
-          popType(accumulatorInfo),
-          getInTensor(VarUpdateWithUpdaterOp::getUpdaterInIndex())
-              .getPoplarTensor(),
-          dnai),
-      graph()};
+namespace {
+OpxCreator<AccumulateOpx>
+    AccumulateOpxCreator({Onnx::CustomOperators::Accumulate});
 }
 
-InputCreatorType AccumulateBaseOpx::getInputCreatorType(int inIndex) const {
-  return inIndex == VarUpdateOp::getVarToUpdateInIndex()
-             ? InputCreatorType::CanCreate
-             : PopOpx::getInputCreatorType(inIndex);
+/********** SparseAccumulateOpx **********/
+
+SparseAccumulateOpx::SparseAccumulateOpx(Op *op, Devicex *devicex)
+    : AccumulateBaseOpx(op, devicex) {
+  verifyOp<SparseAccumulateOp>(op, {Onnx::CustomOperators::SparseAccumulate});
+
+  inputCreatorPriority = std::numeric_limits<double>::max();
+}
+
+snap::Tensor SparseAccumulateOpx::createInputTensor(
+    InIndex inIndex,
+    const poplar::DebugNameAndId &dnai) const {
+  if (inIndex != SparseAccumulateOp::getVarToUpdateInIndex()) {
+    throw error(
+        "SparseAccumulateOpx::createInputTensor: Invalid input index {}",
+        inIndex);
+  }
+
+  /*
+    When choosing the tile layout of the input `accum` tensor, we generally have
+    two options:
+      1. Match the incoming gradient (the updater tensor), to avoid exchange
+         inside this accumulate Op.
+      2. Match the weight, to avoid exchange in the subsequent VarUpdate op.
+    Typically, we always choose the former, as the accumulation happens inside
+    the gradient accumulation loop (so it happens `af = accumulation factor`
+    times, instead of once like the var update).
+
+    However, for a SparseAccumulateOp, we cannot do 1 because the shape of the
+    gradient is different from the shape of accum. Thus we use
+    popops::createGatherInput to create a tensor with a layout that can be
+    efficiently popops::multiUpdateAdd-ed into.
+
+    --------
+
+    Recall a "tied gather" operation, where in the forward pass two different
+    views of the weight are used, once by the Gather this SparseAccumulate is
+    for, and once by another Op. For example:
+
+      x ---\
+            \
+      w ----> MatMul -----> y
+        \
+         ---> Transpose --> w^T --> Gather --> z
+
+    In the backward pass: (Recall the GatherGrad -> Transpose -> Accumulate
+    created in the backward pass are optimised into a single
+    SparseAccumulate):
+
+      y' ----> MatMul ----> dW_mm
+             /                    \  accum
+      x ----/                      \  |
+                                  Accumulate
+                                      |
+                                    accum'
+                                      |
+      z' ---------------------> SparseAccumulate          w
+                                      |                   |
+                                    accum''  -------> VarUpdate
+                                                          |
+                                                          w'
+
+    How do we lay out accum? We could:
+      1. Match the updater from the first accumulate, dW_mm.
+      2. Match the updater from the second accumulate, z'.
+      3. Match the weight. Note this is the root weight not the transposed one.
+
+    We choose to do 3. This is for historical reasons, when BERT was being run
+    with continuous weight update pipelining.
+
+    This behaviour is enabled by connecting the weight at
+    SparseAccumulateOp::getOriginalVarToUpdateInIndex(). \sa SparseAccumulateOp.
+    Otherwise, the usual popops::createGatherInput behaviour occurs.
+   */
+
+  if (hasInput(SparseAccumulateOp::getOriginalVarToUpdateInIndex())) {
+    auto w = getInTensor(SparseAccumulateOp::getOriginalVarToUpdateInIndex())
+                 .getPoplarTensor();
+    return snap::Tensor{graph().getPoplarGraph().clone(w, dnai), graph()};
+  }
+
+  auto info        = inInfo(SparseAccumulateOp::getVarToUpdateInIndex());
+  const auto shape = info.shape_szt();
+
+  const auto &op = getOp<SparseAccumulateOp>();
+
+  return snap::Tensor{popops::createGatherInput(graph().getPoplarGraph(),
+                                                popx::popType(info),
+                                                shape,
+                                                op.getAxis(),
+                                                popops::GatherParams{},
+                                                dnai),
+                      graph()};
+}
+
+void SparseAccumulateOpx::grow(poplar::program::Sequence &prog) const {
+  const auto op = getOp<SparseAccumulateOp>();
+
+  const auto &initFactor = op.getFactor();
+  const auto isConst     = initFactor.isConst();
+
+  const auto axis = op.getAxis();
+
+  auto accl = getInTensor(SparseAccumulateOp::getVarToUpdateInIndex())
+                  .getPoplarTensor();
+  auto grad =
+      getInTensor(SparseAccumulateOp::getUpdaterInIndex()).getPoplarTensor();
+  auto indices =
+      getInTensor(SparseAccumulateOp::getIndicesInIndex()).getPoplarTensor();
+  auto factor =
+      isConst
+          ? getConst(
+                accl.elementType(), {}, initFactor.val(), "ConstSparseFactor")
+                .getPoplarTensor()
+          : getInTensor(SparseAccumulateOp::getFactorInIndex())
+                .getPoplarTensor();
+
+  if (factor.elementType() != accl.elementType()) {
+    factor = popops::cast(graph().getPoplarGraph(),
+                          factor,
+                          accl.elementType(),
+                          prog,
+                          debugContext("factor_cast"));
+  }
+
+  // Rolls axis to front.
+  const auto inputs =
+      GatherGradOpx::handleNDMultiUpdate(accl, grad, indices, axis);
+  auto &targetND  = std::get<0>(inputs);
+  auto &updateND  = std::get<1>(inputs);
+  auto &indicesND = std::get<2>(inputs);
+
+  // Accumulate the updates into the target
+  popops::multiUpdateAdd(graph().getPoplarGraph(),
+                         targetND,
+                         updateND,
+                         indicesND,
+                         factor,
+                         {0},
+                         {1},
+                         prog,
+                         popops::SlicePlan(),
+                         poplar::OptionFlags(),
+                         debugContext("nonConstSparseSGD1Accl"));
+
+  // reference accl returned
+  setOutTensor(SparseAccumulateOp::getUpdatedVarOutIndex(),
+               snap::Tensor{accl, graph()});
 }
 
 std::set<TensorId>
-AccumulateBaseOpx::mustExistBeforeCreate(InIndex index) const {
-  if (index != VarUpdateOp::getVarToUpdateInIndex()) {
-    throw internal_error(
-        "AccumulateBaseOpx::mustExistBeforeCreate : Invalid index");
+SparseAccumulateOpx::mustExistBeforeCreate(InIndex inIndex) const {
+  if (inIndex == SparseAccumulateOp::getVarToUpdateInIndex() &&
+      hasInput(SparseAccumulateOp::getOriginalVarToUpdateInIndex())) {
+    return {inId(SparseAccumulateOp::getOriginalVarToUpdateInIndex())};
   }
-  return {inId(VarUpdateWithUpdaterOp::getUpdaterInIndex())};
+
+  throw internal_error(
+      "SparseAccumulateOpx::mustExistBeforeCreate: Invalid index {}", inIndex);
 }
 
-bool AccumulateBaseOpx::hasCreatorViewChangers(InIndex index) const {
-  return (index == VarUpdateOp::getVarToUpdateInIndex()) &&
-         hasInViewChangers(VarUpdateWithUpdaterOp::getUpdaterInIndex());
-}
+namespace {
+OpxCreator<SparseAccumulateOpx>
+    SparseAccumulateOpxCreator(Onnx::CustomOperators::SparseAccumulate);
+} // namespace
 
-ViewChangers AccumulateBaseOpx::getCreatorViewChangers(InIndex index) const {
-  if (index == VarUpdateOp::getVarToUpdateInIndex()) {
-    return getInViewChangers(VarUpdateWithUpdaterOp::getUpdaterInIndex());
-  }
-  throw error(
-      "ReplicatedAllGatherOpx::getCreatorViewChangers: Invalid index = " +
-      std::to_string(index));
-}
+/********** RescaleAccumulateOpx **********/
 
 RescaleAccumulateOpx::RescaleAccumulateOpx(Op *op, Devicex *devicex)
     : AccumulateBaseOpx(op, devicex) {
@@ -473,8 +661,6 @@ void RescaleAccumulateOpx::grow(poplar::program::Sequence &prog) const {
 }
 
 namespace {
-OpxCreator<AccumulateOpx>
-    AccumulateOpxCreator({Onnx::CustomOperators::Accumulate});
 OpxCreator<RescaleAccumulateOpx>
     RescaleAccumulateOpxCreator({Onnx::CustomOperators::RescaleAccumulate});
 } // namespace

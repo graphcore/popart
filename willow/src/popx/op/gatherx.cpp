@@ -133,6 +133,37 @@ GatherGradOpx::GatherGradOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
   axis = dynamic_cast<GatherGradOp *>(op)->getAxis();
 }
 
+std::tuple<poplar::Tensor, poplar::Tensor, poplar::Tensor>
+GatherGradOpx::handleNDMultiUpdate(poplar::Tensor target,
+                                   poplar::Tensor update,
+                                   poplar::Tensor indices,
+                                   int64_t axis) {
+  // Flatten the index shaped region of the update
+  update = update.flatten(static_cast<unsigned>(axis),
+                          static_cast<unsigned>(axis) + indices.rank());
+  // Put the slice dimension at the front
+  update = update.dimRoll(static_cast<unsigned>(axis));
+  // Flatten the rest of the dimensions
+  update = update.flatten(1, update.rank());
+  // Add a degenerate dimension
+  update = update.expand({1});
+
+  // Put the slice dimension at the front
+  target = target.dimRoll(static_cast<unsigned>(axis));
+  // Flatten the rest of the dimensions
+  target = target.flatten(1, target.rank());
+
+  // Flatten the indices to a vector
+  indices = indices.flatten();
+  // Add a degenerate dimension
+  indices = indices.expand({1});
+  // Reinterpret the indices as unsigned int, assuming negative indices don't
+  // exist.
+  indices = indices.reinterpret(poplar::UNSIGNED_INT);
+
+  return {target, update, indices};
+}
+
 void GatherGradOpx::grow(poplar::program::Sequence &prog) const {
   const auto outputShape =
       vXtoY<int64_t, std::size_t>(outShape(GatherGradOp::gradOutIndex()));
@@ -160,35 +191,17 @@ void GatherGradOpx::grow(poplar::program::Sequence &prog) const {
       update.elementType(), {}, 1.0f, debugContext("const_1"));
   graph().getPoplarGraph().setTileMapping(scale, 0);
 
-  // Flatten the index shaped region of the update
-  update = update.flatten(static_cast<unsigned>(axis),
-                          static_cast<unsigned>(axis) + indices.rank());
-  // Put the slice dimension at the front
-  update = update.dimRoll(static_cast<unsigned>(axis));
-  // Flatten the rest of the dimensions
-  update = update.flatten(1, update.rank());
-  // Add a degenerate dimension
-  update = update.expand({1});
-
-  auto target = result;
-  // Put the slice dimension at the front
-  target = target.dimRoll(static_cast<unsigned>(axis));
-  // Flatten the rest of the dimensions
-  target = target.flatten(1, target.rank());
-
-  // Flatten the indices to a vector
-  indices = indices.flatten();
-  // Add a degenerate dimension
-  indices = indices.expand({1});
-  // Reinterpret the indices as unsigned int, assuming negative indices don't
-  // exist.
-  indices = indices.reinterpret(poplar::UNSIGNED_INT);
+  // Rolls axis to front.
+  const auto inputs = handleNDMultiUpdate(result, update, indices, axis);
+  auto &targetND    = std::get<0>(inputs);
+  auto &updateND    = std::get<1>(inputs);
+  auto &indicesND   = std::get<2>(inputs);
 
   // Accumulate the updates into the target
   popops::multiUpdateAdd(graph().getPoplarGraph(),
-                         target,
-                         update,
-                         indices,
+                         targetND,
+                         updateND,
+                         indicesND,
                          scale,
                          {0},
                          {1},
