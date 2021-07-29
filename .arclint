@@ -28,6 +28,12 @@
             "type": "popart-test-linter",
             "include": "(\\.py$)",
             "exclude": "(docs/user_guide/files/tests/test_examples.py)"
+        },
+        "gc-copyright": {
+            "type": "gc-copyright",
+            "exclude": [
+                "(CMakeLists.txt$)"
+            ]
         }
     }
 }
