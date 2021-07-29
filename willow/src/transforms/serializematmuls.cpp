@@ -454,7 +454,7 @@ static void serializeVarUpdate(int sliceDim,
             op->opid == Onnx::Operators::Reshape_5 ||
             op->opid == Onnx::GradOperators::ReshapeGrad) {
 
-          // detemine the new reshape 'shape' after serilization
+          // determine the new reshape 'shape' after serilization
           auto outputshape = op->output->tensorMap()
                                  .at(ReshapeBaseOp::getOutIndex())
                                  ->info.shape();

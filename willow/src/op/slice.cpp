@@ -361,7 +361,7 @@ void BaseSliceOp::connectInTensor(InIndex inIndex, TensorId tenId) {
       try {
         getInTensorData(tenId, starts, {DataType::INT32, DataType::INT64});
       } catch (popart::error &err) {
-        throw error("Need the value of the {} input 'starts' to detemine the "
+        throw error("Need the value of the {} input 'starts' to determine the "
                     "output shape, but was unable because {}",
                     opid,
                     err.what());
@@ -372,7 +372,7 @@ void BaseSliceOp::connectInTensor(InIndex inIndex, TensorId tenId) {
       try {
         getInTensorData(tenId, ends, {DataType::INT32, DataType::INT64});
       } catch (popart::error &err) {
-        throw error("Need the value of the {} input 'ends' to detemine the "
+        throw error("Need the value of the {} input 'ends' to determine the "
                     "output shape, but was unable because {}",
                     opid,
                     err.what());
@@ -383,7 +383,7 @@ void BaseSliceOp::connectInTensor(InIndex inIndex, TensorId tenId) {
         getInTensorData(tenId, _axes, {DataType::INT32, DataType::INT64});
         axes = sanitizeAxes(starts, _axes);
       } catch (popart::error &err) {
-        throw error("Need the value of the {} input 'axes' to detemine the "
+        throw error("Need the value of the {} input 'axes' to determine the "
                     "output shape, but was unable because {}",
                     opid,
                     err.what());
@@ -394,7 +394,7 @@ void BaseSliceOp::connectInTensor(InIndex inIndex, TensorId tenId) {
         getInTensorData(tenId, _steps, {DataType::INT32, DataType::INT64});
         steps = sanitizeSteps(starts, _steps);
       } catch (popart::error &err) {
-        throw error("Need the value of the {} input 'steps' to detemine the "
+        throw error("Need the value of the {} input 'steps' to determine the "
                     "slicing direction, but was unable because {}",
                     opid,
                     err.what());

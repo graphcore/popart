@@ -159,7 +159,7 @@ def test_slice_error_start_input(op_tester):
 
     assert (
         e_info.value.args[0] ==
-        "Need the value of the ai.onnx.Slice:10 input 'starts' to detemine the "
+        "Need the value of the ai.onnx.Slice:10 input 'starts' to determine the "
         "output shape, but was unable because "
         "[Tensor::getDataViaGraphTraversal] Could not work out tensor data for "
         "input/1.")

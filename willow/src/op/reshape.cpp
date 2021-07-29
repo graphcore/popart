@@ -191,7 +191,7 @@ void ReshapeBaseOp::connectInTensor(InIndex inIndex, TensorId tenId) {
       getInTensorData(tenId, outShape);
       finaliseShape();
     } catch (popart::error &err) {
-      throw error("Need the value of the {} input 'shape' to detemine the "
+      throw error("Need the value of the {} input 'shape' to determine the "
                   "output shape, but was unable because {}",
                   opid,
                   err.what());

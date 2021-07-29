@@ -126,7 +126,7 @@ void ExpandOp::connectInTensor(InIndex inIndex, TensorId tenId) {
       getInTensorData(tenId, outShape, {DataType::INT32, DataType::INT64});
       finaliseShape();
     } catch (popart::error &err) {
-      throw error("Need the value of the {} input 'shape' to detemine the "
+      throw error("Need the value of the {} input 'shape' to determine the "
                   "output shape, but was unable because {}",
                   opid,
                   err.what());
