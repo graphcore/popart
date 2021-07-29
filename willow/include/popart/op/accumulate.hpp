@@ -153,6 +153,8 @@ public:
 
   unsigned getAxis() const;
 
+  static bool supportsAccumulationType(AccumulationType type);
+
 private:
   unsigned axis;
 };

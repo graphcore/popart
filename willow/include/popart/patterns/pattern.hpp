@@ -57,6 +57,7 @@ enum class PreAliasPatternType {
   FmodArg0GradOp,
   ScanToLoop,
   LoopScanOut,
+  SparseAccumulate,
   PackedDataBlock,
 };
 
