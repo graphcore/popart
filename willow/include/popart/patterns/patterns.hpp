@@ -241,6 +241,7 @@ public:
   bool isRandomUniformLikeOpPatternEnabled();
   bool isZerosLikeOpPatternEnabled();
   bool isDecomposeBinaryConstScalarEnabled();
+  bool isSparseAccumulateEnabled();
   bool isFmodArg0GradOpEnabled();
 
   // The following methods are fluent allow you to
@@ -285,6 +286,7 @@ public:
   Patterns &enableRandomNormalLikeOpPattern(bool v);
   Patterns &enableRandomUniformLikeOpPattern(bool v);
   Patterns &enableZerosLikeOpPattern(bool v);
+  Patterns &enableSparseAccumulate(bool v);
   Patterns &enableDecomposeBinaryConstScalar(bool v);
 
   Patterns &enableRuntimeAsserts(bool b) {

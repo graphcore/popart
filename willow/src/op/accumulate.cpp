@@ -83,6 +83,12 @@ std::unique_ptr<Op> AccumulateOp::clone() const {
 
 /**************** SparseAccumulateOp ****************/
 
+bool SparseAccumulateOp::supportsAccumulationType(const AccumulationType type) {
+  return type == AccumulationType::Add ||
+         type == AccumulationType::DampenedAdd ||
+         type == AccumulationType::DampenedAddSquare;
+}
+
 SparseAccumulateOp::SparseAccumulateOp(const AccumulationType type_,
                                        const OptimizerValue &factor_,
                                        const unsigned axis_,
@@ -92,8 +98,7 @@ SparseAccumulateOp::SparseAccumulateOp(const AccumulationType type_,
                        factor_,
                        settings_),
       axis(axis_) {
-  if (type != AccumulationType::Add && type != AccumulationType::DampenedAdd &&
-      type != AccumulationType::DampenedAddSquare) {
+  if (!supportsAccumulationType(type)) {
     throw error(
         "SparseAccumulateOp only supports AccumulationTypes: Add, DampenedAdd, "
         "and DampenedAddSquare. You passed AccumulationType with int value: {}",
