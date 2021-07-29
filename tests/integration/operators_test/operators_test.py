@@ -2765,7 +2765,7 @@ def test_convtranspose(op_tester):
 
 
 def test_convtranspose_auto_pad(op_tester):
-    # Test when the output shape is specifed and that the padding is automatically
+    # Test when the output shape is specified and that the padding is automatically
     # computed.
     x = np.array([[[
         [1., 2.],  # (1, 1, 2, 2)
@@ -2796,7 +2796,7 @@ def test_convtranspose_auto_pad(op_tester):
 
 
 def test_convtranspose_auto_pad_same_upper(op_tester):
-    # Test when the output shape is specifed and that the padding is automatically
+    # Test when the output shape is specified and that the padding is automatically
     # computed and that auto_pad is set to SAME_UPPER
     x = np.array([[[
         [1., 2.],  # (1, 1, 2, 2)
@@ -3227,6 +3227,7 @@ def test_round_graphcore(op_tester):
         result = np.round(d1)
         return [result.astype(np.float32)]
 
+    op_tester.inplacing = False
     op_tester.run(init_builder, reference, 'infer')
 
 

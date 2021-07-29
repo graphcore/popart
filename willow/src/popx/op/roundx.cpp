@@ -47,7 +47,8 @@ RoundInplaceOpx::RoundInplaceOpx(Op *op, Devicex *devicex)
 }
 
 namespace {
-OpxCreator<RoundOpx> RoundOpxCreator({Onnx::Operators::Round_11});
+OpxCreator<RoundOpx> RoundOpxCreator({Onnx::Operators::Round_11,
+                                      Onnx::CustomOperators::Round_1});
 OpxCreator<RoundInplaceOpx>
     RoundxInplaceOpxCreator(Onnx::CustomOperators::RoundInplace);
 } // namespace
