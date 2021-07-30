@@ -350,7 +350,7 @@ There are a number of advanced PopART applications available in Graphcore's [exa
 ##### Coding Style
 
 Please run the `./format.sh` script in the base `popart` directory before making a pull request. This uses `clang-format`
-on C++ code and `yapf` on python code. Please use `clang-format ` version 9.0.0  and `yapf` version 0.24. 
+on C++ code and `yapf` on python code. Please use `clang-format ` version 9.0.0  and `yapf` version 0.27.0. 
 
 **NOTE**: `yapf` can be installed with `pip3`.
 
