@@ -1,6 +1,7 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 import pytest
 import popart._internal.ir as _ir
+import popart
 
 
 def check_has_graph(ir, graphId):
@@ -104,3 +105,31 @@ def test_ir_graph_management4():
 
     mainGraph = ir.getMainGraph()
     assert ir.hasGraph(mainGraph.id)
+
+
+def test_dataflow():
+    """Test we can set/get the dataflow for the Ir"""
+    ir = _ir.Ir()
+    # Check default dataflow
+    dataFlow = ir.getDataFlow()
+    assert not ir.getDataFlow().isAnchored("out")
+    # Can't get art for anchor we haven't anchored.
+    with pytest.raises(popart.popart_exception) as e_info:
+        assert ir.getDataFlow().art("out").id()
+        assert e_info.value.args[0].endswith("is not an anchor")
+
+    dataFlow = popart.DataFlow(1, {"out": popart.AnchorReturnType("All")})
+    ir.setDataFlow(dataFlow)
+    assert ir.getDataFlow().isAnchored("out")
+    assert ir.getDataFlow().art("out").id() == popart.AnchorReturnType(
+        "All").id()
+    # No equality operator for dataflow, so just check we can get it.
+    assert ir.getDataFlow()
+
+
+def test_set_prepared():
+    """Test we can set/get the prepared flag"""
+    ir = _ir.Ir()
+    assert not ir.isPrepared()
+    ir.setIsPrepared()
+    assert ir.isPrepared()

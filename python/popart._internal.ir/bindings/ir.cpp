@@ -15,7 +15,7 @@ namespace ir {
 
 void bindIr(py::module &m) {
 
-  py::class_<Ir>(m, "Ir")
+  py::class_<Ir, std::shared_ptr<Ir>>(m, "Ir")
       .def(py::init<>())
       .def("getMainGraph",
            py::overload_cast<>(&Ir::getMainGraph),
@@ -29,7 +29,11 @@ void bindIr(py::module &m) {
       .def("createGraph",
            &popart::Ir::createGraph,
            py::return_value_policy::reference)
-      .def("removeGraph", &popart::Ir::removeGraph);
+      .def("removeGraph", &popart::Ir::removeGraph)
+      .def("setIsPrepared", &Ir::setIsPrepared)
+      .def("isPrepared", &Ir::isPrepared)
+      .def("setDataFlow", &Ir::setDataFlow)
+      .def("getDataFlow", &Ir::getDataFlow);
 }
 
 } // namespace ir
