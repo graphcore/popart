@@ -1,4 +1,5 @@
 #!/bin/bash -e
+# Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 
 # How to use:
 # First, install the mkdoc python module:
@@ -63,6 +64,8 @@ fi
 # TODO: T29154 generate this list of files automatically.
 
 echo "Generating python docs from .hpp files:"
+
+OUT_FILE="willow/include/popart/docs/pydocs_popart_core.hpp"
 CMD="python3 -m pybind11_mkdoc \
 -I /usr/include \
 $EXTRA_INCLUDES_STR \
@@ -99,6 +102,9 @@ willow/include/popart/tensorlocation.hpp \
 willow/include/popart/tensornames.hpp \
 willow/include/popart/tensors.hpp \
 willow/include/popart/tensor.hpp \
--o willow/include/popart/docs/pydocs_popart_core.hpp"
+-o $OUT_FILE"
 
 eval $CMD
+
+YEAR=$(date +"%Y")
+sed -i "1s;^;// Copyright (c) $YEAR Graphcore Ltd. All rights reserved.\n;" $OUT_FILE
