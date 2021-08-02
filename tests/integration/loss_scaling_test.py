@@ -7,6 +7,7 @@ from onnx import TensorProto, mapping
 import pytest
 import test_util as tu
 import torch
+import json
 
 
 def loss_scaling_test(constLossScaling):
@@ -241,6 +242,72 @@ def getModelProto(shard=False, pipeline=False):
 
     return loss, builder.getModelProto(
     ), t0, t_shape, labels, label_shape, specifics
+
+
+def test_auto_loss_scaling_histogram_schedule_priority():
+    """
+    Compile a minimal possible model with ALS, and check the schedule priority
+    of the HistorgramOps have the correct schedule priority according to the
+    schedule options.
+
+    If delayVarUpdates and not using explicit Ir and
+    scheduleNonWeightUpdateGradientConsumersEarly, then the schedule priority
+    should be max.
+
+    If delayVarUpdates and not using explicit Ir and not
+    scheduleNonWeightUpdateGradientConsumersEarly, then we make no assertions
+    about the schedule priority (it should be whatever it naturally is).
+
+    If not delayVarUpdates or using explicit Ir, then the VarUpdateOps will not
+    have min schedule priority anyway, so again we make no assertions.
+    """
+
+    optimizer = popart.SGD({"lossScaling": (1.0, False)})
+
+    opts = popart.SessionOptions()
+    opts.automaticLossScalingSettings.enabled = True
+    # Following options are to test that Histogram ops will have correct
+    # schedule priority.
+    opts.delayVarUpdates = True
+    opts.scheduleNonWeightUpdateGradientConsumersEarly = True
+    opts.explicitRecomputation = False
+    opts.enableExplicitMainLoops = False
+    opts.useHostCopyOps = False
+    # For easier inspection of the Ir
+    opts.enableOutlining = False
+
+    loss, proto, _, _, _, _, _ = getModelProto()
+    bps = 4
+
+    loss_scale_id = "finalLossScale"
+    gradient_anchor_ids = ["Gradient___init_input/1", "Gradient___init_input"]
+    anchor_ids = gradient_anchor_ids + [loss_scale_id]
+
+    session = popart.TrainingSession(fnModel=proto,
+                                     deviceInfo=tu.create_test_device(),
+                                     dataFlow=popart.DataFlow(bps, anchor_ids),
+                                     loss=loss,
+                                     optimizer=optimizer,
+                                     userOptions=opts)
+
+    bigNumber = 10000000000000000
+    checkExpected = lambda p: p > bigNumber
+
+    ir = json.loads(session._serializeIr(popart.IrSerializationFormat.JSON))
+    ops = ir["maingraph"]
+
+    # Check that ALS transform actually ran by seeing if the HistogramOps exist
+    # at all.
+    assert len(list(filter(lambda op: op["type"] == "Histogram", ops))) > 0
+
+    # Histogram ops should have max schedule priority. Here we just test against
+    # a very high number, as we do not know exactly what the C++ double max
+    # value is.
+    assert all(
+        map(
+            lambda op: checkExpected(
+                np.double(op["attributes"]["schedulePriority"])),
+            filter(lambda op: op["type"] == "Histogram", ops)))
 
 
 def test_auto_loss_scaling_expected_loss_scale_tensor_values():

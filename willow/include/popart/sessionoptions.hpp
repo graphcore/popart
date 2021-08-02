@@ -743,6 +743,20 @@ struct SessionOptions {
   // TODO: Remove with T19212
   bool delayVarUpdates = true;
 
+  // When #shouldDelayVarUpdates is true, the other ops in the proximity of the
+  // delayed var updates may inherit the -inf schedule priority used to delay
+  // the var updates. This is undesirable for some ops that consume gradients,
+  // as we would like to consume (and thus be able to recycle the memory of)
+  // those gradients as soon as possible. Two examples are HistogramOps when
+  // doing automatic loss scaling, and the AccumulateOps that accumulate
+  // the gradients when doing gradient accumulation.
+  //
+  // If true, if #shouldDelayVarUpdates is true, this option will cause the
+  // schedule priority of the above described ops to be re-overriden to +inf.
+  // TODO: Remove with T19212.
+  bool scheduleNonWeightUpdateGradientConsumersEarly = false;
+
+  // TODO: Remove with T19212
   bool shouldDelayVarUpdates() const;
 
   /// Enable the global #fullyConnectedPass option for matmuls.

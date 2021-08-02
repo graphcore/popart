@@ -181,7 +181,7 @@ public:
 
   void assertNumElements(const popx::Executablex &) const final {}
 
-  ConstVoidData in(TensorId id, int64_t, bool prefetch)final {
+  ConstVoidData in(TensorId id, int64_t, bool prefetch) final {
     py::gil_scoped_acquire acquire;
     py::array a = inputCb(id, prefetch);
     if (!isContiguous(a)) {
@@ -1434,6 +1434,16 @@ PYBIND11_MODULE(popart_core, m) {
     cls.def_readwrite("enableMergeExchange",
                       &SessionOptions::enableMergeExchange,
                       DOC(popart, SessionOptions, enableMergeExchange));
+    cls.def_readwrite("delayVarUpdates",
+                      &SessionOptions::delayVarUpdates,
+                      DOC(popart, SessionOptions, delayVarUpdates));
+    cls.def_readwrite(
+        "scheduleNonWeightUpdateGradientConsumersEarly",
+        &SessionOptions::scheduleNonWeightUpdateGradientConsumersEarly
+        /*, TODO(T43312):
+        DOC(popart,
+        SessionOptions,
+        scheduleNonWeightUpdateGradientConsumersEarly) */);
   }
   {
     py::enum_<PatternsLevel> en(m, "PatternsLevel", DOC(popart, PatternsLevel));

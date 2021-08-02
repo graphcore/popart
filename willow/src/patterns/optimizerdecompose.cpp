@@ -129,6 +129,22 @@ TensorId OptimizerDecompose::gradAccum(Graph &graph,
   transferBaseProperties(combo, accumOp);
   graph.moveIntoGraph(std::move(accumOpUp));
 
+  // The combo op is a VarUpdateOp. delayVarUpdates makes it so all VarUpdateOps
+  // have negative infinity schedule priority. The transferBaseProperties call
+  // above subsequently causes the gradient accumulation AccumulateOps to have
+  // this schedule priority too. The earlyGradientAccumulation option tells
+  // Popart to manually override this back to the default.
+  //
+  // If we do not have explicit main loops, the existence of the
+  // AccumulateOuterFragment causes the scheduler to "pull" the AccumulateOps to
+  // the end of the schedule, so we must go further and set the priority to max.
+  if (graph.getIr().getSessionOptions().shouldDelayVarUpdates() &&
+      graph.getIr()
+          .getSessionOptions()
+          .scheduleNonWeightUpdateGradientConsumersEarly) {
+    accumOp->settings.schedulePriority = std::numeric_limits<double>::max();
+  }
+
   logging::pattern::trace("Connecting input {} to {} at {}",
                           accumId,
                           accumOp->str(),
