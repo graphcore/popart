@@ -566,6 +566,8 @@ public:
   // supposed to be functionally equivalent.
   virtual void appendOutlineAttributes(OpSerialiserBase &) const;
 
+  virtual void appendMore(OpSerialiserBase &) const;
+
   // Calculate numpy broadcast shape for two shapes or generate an error if
   // the broadcast is not aligned. The error will have operator context.
   Shape prettyNpOut(const Shape &s0, const Shape &s1) const;
@@ -598,9 +600,6 @@ public:
   // -1 to indicate there isn't one).
   virtual OutIndex subgraphOutToOpOutIndex(SubgraphIndex subgraphIndex,
                                            OutIndex outIndex);
-
-protected:
-  virtual void appendMore(OpSerialiserBase &) const;
 
 public:
   // The functionality required for sub-graph matching
