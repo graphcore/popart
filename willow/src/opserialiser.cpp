@@ -164,6 +164,7 @@ OpJsonSerialiser::OpJsonSerialiser(const Op *op, std::stringstream &ss_)
       [&]() {
         attributesAppended = false;
         op->appendAttributes(*this);
+        op->appendMore(*this);
 
         if (attributesAppended)
           ss.seekp(-1, std::ios_base::end); // remove last ','
