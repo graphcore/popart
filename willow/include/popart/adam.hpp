@@ -108,20 +108,23 @@ enum class AdamMode {
 //
 //
 // Lamb r1 (FP32):
-// r1 = ||w||_2                          (without Lamb or r1 == 0: r1/r2 = 1)
+// r1 = ||w||_2                    (without Lamb or φ(r1) == 0: r1/r2 = 1)
 //   special case: replicated weight sharding; every replica only stores a
 //   shard of w, therefore the sum-of-squares is computed replicated, and
 //   thereafter all-reduced before every replica takes the square root of r1sq
 //
 // Lamb r2 (FP32):
-// r2 = ||x||_2                          (without Lamb or r2 == 0: r1/r2 = 1)
+// r2 = ||x||_2                    (without Lamb or r2 == 0: r1/r2 = 1)
 //   special case: replicated weight sharding; every replica only stores a
 //   shard of x, therefore the sum-of-squares is computed replicated, and
 //   thereafter all-reduced before every replica takes the square root of r2sq
 //
+// scale factor:
+// φ(r1) = min(r1, mwn)
+//
 // variable update:
-// w -= min(r1, mwn) / r2 * lr * x
-//      ^^^^^^^^^^^^^^
+// w -= φ(r1) / r2 * lr * x
+//      ^^^^^^^^^^
 //      Lamb trust ratio
 //
 // accumulator update:
@@ -519,12 +522,15 @@ public:
   ///     weight.
   /// \param eps The epsilon value to use for this
   ///     specific weight.
+  /// \param mwn The max weight norm value to use for this
+  ///     specific weight.
   void insertSpecific(const TensorId &weight,
                       OptimizerValue learningRate,
                       OptimizerValue weightDecay,
                       OptimizerValue beta1,
                       OptimizerValue beta2,
-                      OptimizerValue eps);
+                      OptimizerValue eps,
+                      OptimizerValue mwn);
 
   void setStep(int64_t step);
   void setStep(const TensorId &, int64_t step);

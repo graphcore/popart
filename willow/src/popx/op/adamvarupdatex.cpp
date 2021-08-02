@@ -1,6 +1,7 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
 
 #include <popops/ElementWise.hpp>
+#include <popops/Expr.hpp>
 #include <popops/ScaledAdd.hpp>
 #include <popart/error.hpp>
 #include <popart/ir.hpp>
@@ -64,16 +65,39 @@ void AdamVarUpdateOpx::grow(poplar::program::Sequence &prog) const {
       mwn = pe::PlaceHolder(tensors.size());
     }
 
-    lr = pe::Mul(
-        lr,
-        pe::Select(
-            pe::Const(1.0f),
-            pe::Select(
-                pe::Const(1.0f),
-                pe::Divide(pe::Min(pe::Sqrt(pe::PlaceHolder(r1sqindex)), mwn),
-                           pe::Sqrt(pe::PlaceHolder(r2sqindex))),
-                pe::Equal(pe::PlaceHolder(r2sqindex), pe::Const(0.0f))),
-            pe::Equal(pe::PlaceHolder(r1sqindex), pe::Const(0.0f))));
+    // Following condition should always be satisfied as it is checked in
+    // AdamDecompose::Apply
+    if (!adamVarUpdateOp.initMwn.isConst() ||
+        adamVarUpdateOp.initMwn.val() != 0) {
+
+      // if (mwn == 0 || r1 == 0 || r2 == 0)
+      //   ratio = 1
+      // else
+      //   ratio = min(mwn, r1) / r2
+      pe::Any ratio =
+          pe::Divide(pe::Min(pe::Sqrt(pe::PlaceHolder(r1sqindex)), mwn),
+                     pe::Sqrt(pe::PlaceHolder(r2sqindex)));
+      ratio =
+          pe::Select(pe::Const(1.0f),
+                     ratio,
+                     pe::Equal(pe::PlaceHolder(r2sqindex), pe::Const(0.0f)));
+      ratio =
+          pe::Select(pe::Const(1.0f),
+                     ratio,
+                     pe::Equal(pe::PlaceHolder(r1sqindex), pe::Const(0.0f)));
+
+      if (!adamVarUpdateOp.initMwn.isConst()) {
+        ratio =
+            pe::Select(pe::Const(1.0f), ratio, pe::Equal(mwn, pe::Const(0.0f)));
+      }
+
+      lr = pe::Mul(lr, ratio);
+    } else {
+      throw internal_error(
+          "[AdamVarUpdatex] Constant zero max weight norm should not be "
+          "lowered to AdamVarUpdatex with LambSquare inputs. This should have "
+          "been prevented in AdamDecompose::Apply");
+    }
   }
 
   if (tensors.size() == 0) {
