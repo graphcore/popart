@@ -16,7 +16,6 @@
 #include <popart/op/l1.hpp>
 #include <popart/op/nll.hpp>
 #include <popart/opmanager.hpp>
-#include <popart/optimizer.hpp>
 #include <popart/popx/opxmanager.hpp>
 #include <popart/sgd.hpp>
 #include <popart/tensor.hpp>

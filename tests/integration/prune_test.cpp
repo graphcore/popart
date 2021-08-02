@@ -16,7 +16,6 @@
 #include <popart/logging.hpp>
 #include <popart/op/hostreducevarupdate.hpp>
 #include <popart/opmanager.hpp>
-#include <popart/optimizer.hpp>
 #include <popart/tensorinfo.hpp>
 #include <popart/transforms/prune.hpp>
 

@@ -12,7 +12,6 @@
 #include <popart/op/add.hpp>
 #include <popart/op/l1.hpp>
 #include <popart/op/scale.hpp>
-#include <popart/optimizer.hpp>
 #include <popart/sessionoptions.hpp>
 #include <popart/tensordata.hpp>
 #include <popart/testdevice.hpp>

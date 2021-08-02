@@ -4,7 +4,6 @@
 #include <popart/ir.hpp>
 #include <popart/op/identity.hpp>
 #include <popart/opmanager.hpp>
-#include <popart/optimizer.hpp>
 #include <popart/tensor.hpp>
 
 namespace popart {

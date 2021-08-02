@@ -9,7 +9,6 @@
 #include <popart/builder.hpp>
 #include <popart/error.hpp>
 #include <popart/ndarraywrapper.hpp>
-#include <popart/optimizer.hpp>
 #include <popart/session.hpp>
 #include <popart/sgd.hpp>
 #include <popart/testdevice.hpp>

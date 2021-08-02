@@ -3,11 +3,11 @@
 #define GUARD_NEURALNET_SCALEDVARUPDATE_HPP
 
 #include <popart/op/varupdate.hpp>
+#include <popart/optimizervalue.hpp>
 
 namespace popart {
 
 class ScaledVarUpdateOp : public VarUpdateWithUpdaterOp {
-
 public:
   ScaledVarUpdateOp(OptimizerValue initLr,
                     OptimizerValue initWd,

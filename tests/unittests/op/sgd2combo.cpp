@@ -6,6 +6,7 @@
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/op/sgd2combo.hpp>
+#include <popart/optimizer.hpp>
 
 using namespace popart;
 

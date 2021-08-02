@@ -4,7 +4,6 @@
 #include <popart/adaptive.hpp>
 #include <popart/compoundscalarhelper.hpp>
 #include <popart/op.hpp>
-#include <popart/optimizer.hpp>
 #include <popart/sgd.hpp>
 
 namespace popart {

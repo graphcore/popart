@@ -3,6 +3,7 @@
 #define GUARD_NEURALNET_SGD1VARUPDATE_HPP
 
 #include <popart/op/varupdate.hpp>
+#include <popart/optimizervalue.hpp>
 
 namespace popart {
 
@@ -18,7 +19,6 @@ namespace popart {
  * \sa SGD for how this is derived and the definition of slr1.
  */
 class SGD1VarUpdateOp : public VarUpdateWithUpdaterOp {
-
 public:
   SGD1VarUpdateOp(OptimizerValue initSlr1, const Op::Settings &);
 

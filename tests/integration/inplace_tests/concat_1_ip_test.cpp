@@ -13,7 +13,6 @@
 #include <popart/op/identity.hpp>
 #include <popart/op/l1.hpp>
 #include <popart/op/nll.hpp>
-#include <popart/optimizer.hpp>
 #include <popart/sgd.hpp>
 #include <popart/tensor.hpp>
 #include <popart/tensorinfo.hpp>

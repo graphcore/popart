@@ -9,7 +9,6 @@
 #include <popart/op/sum.hpp>
 #include <popart/opmanager.hpp>
 #include <popart/opserialiser.hpp>
-#include <popart/optimizer.hpp>
 #include <popart/tensor.hpp>
 #include <popart/tensors.hpp>
 #include <popart/topocons.hpp>

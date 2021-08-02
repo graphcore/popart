@@ -4,7 +4,6 @@
 #include <popart/error.hpp>
 #include <popart/op/hardsigmoid.hpp>
 #include <popart/op/nll.hpp>
-#include <popart/optimizer.hpp>
 #include <popart/popx/devicex.hpp>
 #include <popart/popx/op/hardsigmoidx.hpp>
 #include <popart/popx/opxmanager.hpp>

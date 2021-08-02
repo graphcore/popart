@@ -16,7 +16,6 @@
 #include <popart/op/reshape.hpp>
 #include <popart/op/transpose.hpp>
 #include <popart/opmanager.hpp>
-#include <popart/optimizer.hpp>
 #include <popart/popx/devicex.hpp>
 #include <popart/session.hpp>
 #include <popart/sgd.hpp>

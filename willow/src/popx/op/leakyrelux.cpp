@@ -4,7 +4,6 @@
 
 #include <popart/error.hpp>
 #include <popart/op/leakyrelu.hpp>
-#include <popart/optimizer.hpp>
 #include <popart/popx/devicex.hpp>
 #include <popart/popx/op/leakyrelux.hpp>
 #include <popart/popx/opxmanager.hpp>

@@ -13,6 +13,7 @@
 #include <popart/op/sgd1combo.hpp>
 #include <popart/op/sgd1varupdate.hpp>
 #include <popart/op/slice.hpp>
+#include <popart/optimizer.hpp>
 #include <popart/patterns/sgd1decompose.hpp>
 #include <popart/tensor.hpp>
 #include <popart/tensorinfo.hpp>

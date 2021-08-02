@@ -5,7 +5,6 @@
 #include <popart/error.hpp>
 #include <popart/op/nll.hpp>
 #include <popart/op/shrink.hpp>
-#include <popart/optimizer.hpp>
 #include <popart/popx/devicex.hpp>
 #include <popart/popx/op/shrinkx.hpp>
 #include <popart/popx/opxmanager.hpp>

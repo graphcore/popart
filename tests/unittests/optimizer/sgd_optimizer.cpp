@@ -2,7 +2,6 @@
 #define BOOST_TEST_MODULE Test_SGD_Optimizer
 #include <boost/test/unit_test.hpp>
 
-#include <popart/optimizer.hpp>
 #include <popart/sgd.hpp>
 
 #include <popart/compoundscalarhelper.hpp>

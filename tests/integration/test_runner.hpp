@@ -10,7 +10,6 @@
 #include <popart/devicemanager.hpp>
 #include <popart/names.hpp>
 #include <popart/ndarraywrapper.hpp>
-#include <popart/optimizer.hpp>
 #include <popart/sgd.hpp>
 
 // Hack to see the internals of Session

@@ -15,7 +15,6 @@
 #include <popart/op/init.hpp>
 #include <popart/op/l1.hpp>
 #include <popart/opmanager.hpp>
-#include <popart/optimizer.hpp>
 #include <popart/popx/devicex.hpp>
 #include <popart/session.hpp>
 #include <popart/tensor.hpp>

@@ -5,7 +5,6 @@
 #include <popart/intervals.hpp>
 #include <popart/ir.hpp>
 #include <popart/op/getrandomseed.hpp>
-#include <popart/optimizer.hpp>
 #include <popart/scheduler.hpp>
 #include <popart/sessionoptions.hpp>
 #include <popart/tensor.hpp>

@@ -18,7 +18,6 @@
 #include <popart/op/add.hpp>
 #include <popart/op/identity.hpp>
 #include <popart/op/nll.hpp>
-#include <popart/optimizer.hpp>
 #include <popart/popx/devicex.hpp>
 #include <popart/session.hpp>
 #include <popart/sgd.hpp>

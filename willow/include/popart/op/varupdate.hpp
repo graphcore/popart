@@ -7,7 +7,6 @@
 
 #include <popart/names.hpp>
 #include <popart/op.hpp>
-#include <popart/optimizervalue.hpp>
 
 namespace popart {
 

@@ -18,7 +18,6 @@
 #include <popart/op/varupdate.hpp>
 #include <popart/vendored/optional.hpp>
 
-#include <popart/optimizer.hpp>
 #include <popart/tensor.hpp>
 #include <popart/tensors.hpp>
 #include <popart/topocons.hpp>

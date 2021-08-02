@@ -17,7 +17,6 @@
 #include <popart/op/l1.hpp>
 #include <popart/op/varupdate.hpp>
 #include <popart/opmanager.hpp>
-#include <popart/optimizer.hpp>
 #include <popart/patterns/pattern.hpp>
 #include <popart/popx/devicex.hpp>
 #include <popart/popx/opx.hpp>

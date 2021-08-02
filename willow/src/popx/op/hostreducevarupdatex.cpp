@@ -2,7 +2,6 @@
 #include <popart/error.hpp>
 #include <popart/ir.hpp>
 #include <popart/op/hostreducevarupdate.hpp>
-#include <popart/optimizer.hpp>
 #include <popart/popx/devicex.hpp>
 #include <popart/popx/irlowering.hpp>
 #include <popart/popx/op/hostreducevarupdatex.hpp>

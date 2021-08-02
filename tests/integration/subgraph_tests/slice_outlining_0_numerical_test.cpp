@@ -16,7 +16,6 @@
 #include <popart/names.hpp>
 #include <popart/ndarraywrapper.hpp>
 #include <popart/op/l1.hpp>
-#include <popart/optimizer.hpp>
 #include <popart/session.hpp>
 #include <popart/tensordata.hpp>
 #include <popart/testdevice.hpp>

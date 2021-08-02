@@ -5,7 +5,6 @@
 #include <onnx/onnx_pb.h>
 #include <popart/ir.hpp>
 #include <popart/op/matmul.hpp>
-#include <popart/optimizer.hpp>
 #include <popart/popx/op/matmulx.hpp>
 #include <popart/tensor.hpp>
 

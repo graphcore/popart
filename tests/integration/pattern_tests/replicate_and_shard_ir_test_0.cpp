@@ -11,7 +11,6 @@
 #include <popart/ir.hpp>
 #include <popart/op/identity.hpp>
 #include <popart/op/l1.hpp>
-#include <popart/optimizer.hpp>
 #include <popart/sgd.hpp>
 #include <popart/testdevice.hpp>
 

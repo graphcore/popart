@@ -5,6 +5,7 @@
 #include <popart/ir.hpp>
 #include <popart/op/sgd1varupdate.hpp>
 #include <popart/op/varupdate.hpp>
+#include <popart/optimizervalue.hpp>
 #include <popart/popx/devicex.hpp>
 #include <popart/popx/op/sgd1varupdatex.hpp>
 #include <popart/popx/opxmanager.hpp>

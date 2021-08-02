@@ -16,7 +16,6 @@
 #include <popart/op/nll.hpp>
 #include <popart/op/restore.hpp>
 #include <popart/op/stash.hpp>
-#include <popart/optimizer.hpp>
 #include <popart/sgd.hpp>
 #include <popart/tensor.hpp>
 #include <popart/tensordata.hpp>

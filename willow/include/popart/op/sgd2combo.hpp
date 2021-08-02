@@ -3,10 +3,11 @@
 #define GUARD_NEURALNET_SGD2VARUPDATECOMBOOP_HPP
 
 #include <popart/op/sgdcombobase.hpp>
-#include <popart/optimizer.hpp>
 #include <popart/optimizervaluemap.hpp>
 
 namespace popart {
+
+enum class OptimizerReductionType;
 
 /**
  * \brief A single Op that encapsulates all the information needed to describe

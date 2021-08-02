@@ -12,7 +12,6 @@
 
 #include <popart/builder.hpp>
 #include <popart/error.hpp>
-#include <popart/optimizer.hpp>
 #include <popart/popx/devicex.hpp>
 #include <popart/popx/irlowering.hpp>
 #include <popart/session.hpp>

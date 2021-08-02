@@ -6,10 +6,11 @@
 #include <popart/op.hpp>
 #include <popart/op/varupdate.hpp>
 #include <popart/opidentifier.hpp>
-#include <popart/optimizer.hpp>
-#include <popart/optimizervaluemap.hpp>
+#include <popart/optimizervalue.hpp>
 
 namespace popart {
+
+enum class OptimizerReductionType;
 
 class SGDMComboBaseOp : public VarUpdateWithUpdaterOp {
 public:

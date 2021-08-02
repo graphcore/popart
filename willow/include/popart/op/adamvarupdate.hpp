@@ -3,11 +3,11 @@
 #define GUARD_NEURALNET_ADAMVARUPDATE_HPP
 
 #include <popart/op/varupdate.hpp>
+#include <popart/optimizervalue.hpp>
 
 namespace popart {
 
 class AdamVarUpdateOp : public VarUpdateWithUpdaterOp {
-
 public:
   AdamVarUpdateOp(OptimizerValue initLr,
                   OptimizerValue mwn,

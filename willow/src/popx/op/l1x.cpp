@@ -3,7 +3,6 @@
 #include <popart/error.hpp>
 #include <popart/ir.hpp>
 #include <popart/op/l1.hpp>
-#include <popart/optimizer.hpp>
 #include <popart/popx/devicex.hpp>
 #include <popart/popx/op/l1x.hpp>
 #include <popart/popx/opxmanager.hpp>

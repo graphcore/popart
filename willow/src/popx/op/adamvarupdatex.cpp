@@ -7,6 +7,7 @@
 #include <popart/ir.hpp>
 #include <popart/op/adamvarupdate.hpp>
 #include <popart/op/varupdate.hpp>
+#include <popart/optimizervalue.hpp>
 #include <popart/popx/devicex.hpp>
 #include <popart/popx/op/adamvarupdatex.hpp>
 #include <popart/popx/opxmanager.hpp>

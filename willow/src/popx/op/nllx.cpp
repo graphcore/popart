@@ -5,7 +5,6 @@
 #include <popart/ir.hpp>
 #include <popart/names.hpp>
 #include <popart/op/nll.hpp>
-#include <popart/optimizer.hpp>
 #include <popart/popx/devicex.hpp>
 #include <popart/popx/op/nllx.hpp>
 #include <popart/popx/opxmanager.hpp>

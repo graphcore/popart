@@ -6,10 +6,11 @@
 #include <popart/op.hpp>
 #include <popart/op/varupdate.hpp>
 #include <popart/opidentifier.hpp>
-#include <popart/optimizer.hpp>
 #include <popart/optimizervaluemap.hpp>
 
 namespace popart {
+
+enum class OptimizerReductionType;
 
 /**
  * \brief A single Op that encapsulates all the information needed to describe

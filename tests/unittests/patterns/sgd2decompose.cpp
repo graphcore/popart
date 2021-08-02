@@ -8,6 +8,7 @@
 #include <popart/ir.hpp>
 #include <popart/op/sgd1combo.hpp>
 #include <popart/op/sgd2combo.hpp>
+#include <popart/optimizer.hpp>
 #include <popart/optimizervalue.hpp>
 #include <popart/patterns/patterns.hpp>
 

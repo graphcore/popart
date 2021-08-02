@@ -15,7 +15,6 @@
 #include <popart/op/if.hpp>
 #include <popart/op/loop.hpp>
 #include <popart/op/sum.hpp>
-#include <popart/optimizer.hpp>
 #include <popart/sgd.hpp>
 #include <popart/tensornames.hpp>
 

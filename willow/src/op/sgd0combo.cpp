@@ -3,6 +3,7 @@
 #include <popart/ir.hpp>
 #include <popart/op/sgd0combo.hpp>
 #include <popart/opserialiser.hpp>
+#include <popart/optimizer.hpp>
 
 namespace popart {
 

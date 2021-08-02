@@ -9,7 +9,6 @@
 #include <popart/ir.hpp>
 #include <popart/op/init.hpp>
 #include <popart/op/l1.hpp>
-#include <popart/optimizer.hpp>
 #include <popart/popx/devicex.hpp>
 #include <popart/popx/executablex.hpp>
 #include <popart/popx/irlowering.hpp>

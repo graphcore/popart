@@ -3,7 +3,6 @@
 #include <popart/op/mul.hpp>
 #include <popart/op/pow.hpp>
 #include <popart/op/subtract.hpp>
-#include <popart/optimizer.hpp>
 #include <popart/patterns/powarg0gradoppattern.hpp>
 #include <popart/popx/devicex.hpp>
 #include <popart/tensor.hpp>

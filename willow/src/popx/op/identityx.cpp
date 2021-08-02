@@ -5,7 +5,6 @@
 #include <popart/error.hpp>
 #include <popart/ir.hpp>
 #include <popart/op/identity.hpp>
-#include <popart/optimizer.hpp>
 #include <popart/popx/devicex.hpp>
 #include <popart/popx/op/identityx.hpp>
 #include <popart/popx/opxmanager.hpp>

@@ -12,7 +12,6 @@
 #include <popart/op/identity.hpp>
 #include <popart/op/nll.hpp>
 #include <popart/op/stash.hpp>
-#include <popart/optimizer.hpp>
 #include <popart/popx/devicex.hpp>
 #include <popart/session.hpp>
 #include <popart/sgd.hpp>

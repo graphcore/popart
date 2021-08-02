@@ -9,6 +9,7 @@
 #include <popart/op/sgd2acclupdate.hpp>
 #include <popart/op/sgd2combo.hpp>
 #include <popart/op/sgd2varupdate.hpp>
+#include <popart/optimizer.hpp>
 #include <popart/topocons.hpp>
 
 namespace popart {

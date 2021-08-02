@@ -9,7 +9,6 @@
 #include <popart/inputshapeinfo.hpp>
 #include <popart/ndarraywrapper.hpp>
 #include <popart/op/l1.hpp>
-#include <popart/optimizer.hpp>
 #include <popart/session.hpp>
 #include <popart/tensorinfo.hpp>
 #include <popart/tensornames.hpp>

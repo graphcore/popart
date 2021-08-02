@@ -4,7 +4,6 @@
 
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
-#include <popart/optimizer.hpp>
 #include <popart/sessionoptions.hpp>
 #include <popart/tensor.hpp>
 
