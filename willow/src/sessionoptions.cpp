@@ -300,6 +300,7 @@ std::size_t hash<popart::SessionOptions>::operator()(
   boost::hash_combine(seed, so.decomposeGradSum);
   boost::hash_combine(seed, static_cast<int>(so.virtualGraphMode));
   boost::hash_combine(seed, so.delayVarUpdates);
+  boost::hash_combine(seed, so.scheduleNonWeightUpdateGradientConsumersEarly);
   boost::hash_combine(seed, so.enableStableNorm);
   boost::hash_combine(seed, so.hostAllReduce);
   boost::hash_combine(seed, so.hostWeightUpdate);

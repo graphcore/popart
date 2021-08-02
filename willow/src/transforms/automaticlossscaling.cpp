@@ -237,6 +237,12 @@ bool AutomaticLossScale::apply(Graph &graph) const {
     histogramOp->setup();
     histogramOutputs.push_back(
         histogramOp->outTensor(HistogramOp::getOutIndex()));
+
+    if (ir.getSessionOptions().shouldDelayVarUpdates() &&
+        ir.getSessionOptions().scheduleNonWeightUpdateGradientConsumersEarly) {
+      histogramOp->settings.schedulePriority =
+          std::numeric_limits<double>::max();
+    }
   }
 
   // Get the loss scale tensor and the inverse loss scale tensor:
