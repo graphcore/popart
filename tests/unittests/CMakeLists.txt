@@ -57,6 +57,7 @@ add_popart_cpp_unit_test(unittest_pattern_lambserialisedweight patterns/lambseri
 add_popart_cpp_unit_test(unittest_pattern_sgd2decompose patterns/sgd2decompose.cpp TEST_UTILS test-graphs-test-util ir-query-test-util)
 add_popart_cpp_unit_test(unittest_pattern_sparseaccumulate patterns/sparseaccumulate.cpp TEST_UTILS ir-query-test-util)
 add_popart_cpp_unit_test(unittest_pattern_tiedgather patterns/tiedgather.cpp)
+add_popart_cpp_unit_test(unittest_pattern_updateinplaceprioritiesforipu patterns/updateinplaceprioritiesforipu.cpp)
 
 add_popart_cpp_unit_test(unittest_sgd_optimizer optimizer/sgd_optimizer.cpp)
 

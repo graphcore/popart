@@ -1,64 +1,54 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
+#include <popart/patterns/updateinplaceprioritiesforipu.hpp>
+
+#include <popart/graphutils.hpp>
 #include <popart/ir.hpp>
 #include <popart/op/add.hpp>
 #include <popart/op/conv.hpp>
-#include <popart/patterns/updateinplaceprioritiesforipu.hpp>
+#include <popart/op/dropoutbase.hpp>
+#include <popart/op/groupnorm.hpp>
+#include <popart/op/identity.hpp>
+#include <popart/op/matmul.hpp>
+#include <popart/op/reshape.hpp>
 #include <popart/tensor.hpp>
 
 namespace popart {
 
-// Check for sequence:
-//
-// [Conv] -+
-//         |
-//         + -> X -> [Conv]
-//         |
-// [....] -+
-//
-// or:
-//
-// [Conv] -+
-//         |
-//         + -> X -> [ElementWiseUnary] -> [Conv]
-//         |
-// [....] -+
-//
-// where X is the op argument
-template <typename OP> bool connectsConvs(const OP &op, InIndex argIndex) {
-  const Tensor *inT = op.inTensor(argIndex);
-  if (!inT->hasProducer() || !inT->getProducer()->isConvertibleTo<ConvOp>()) {
-    return false;
-  }
+namespace {
 
-  auto isConsumedByConv = [](const Tensor *t) {
-    for (auto consumer : t->consumers.getOps()) {
-      if (consumer->isConvertibleTo<ConvOp>() &&
-          consumer->inTensor(ConvOp::getDataInIndex()) == t) {
+bool producedByMatMulOrConv(Tensor *t) {
+  bool result = false;
+
+  graphutils::traverse(
+      {t},
+      [&result](const Tensor *u) -> bool {
+        // If producer is MatMul or Conv, stop.
+        if (u->hasProducer()) {
+          const auto producer = u->getProducerUnsafe();
+          if (producer->isConvertibleTo<MatMulBaseOp>() ||
+              producer->isConvertibleTo<ConvOp>()) {
+            result = true;
+            return false;
+          }
+        }
+
         return true;
-      }
-    }
-    return false;
-  };
+      },
+      [](const Op *op, const Tensor *u, const Tensor *v) -> bool {
+        // Whitelist of ops, currently based on what bert requires.
+        return op->isConvertibleTo<DropoutBaseOp>() ||
+               op->isConvertibleTo<GroupNormOp>() ||
+               op->isConvertibleTo<IdentityOp>() ||
+               op->isConvertibleTo<ReshapeBaseOp>();
+      },
+      graphutils::TraversalType::DepthFirst,
+      graphutils::VisitType::Pre,
+      graphutils::TraversalDirection::Backward);
 
-  auto outT = op.outTensor(op.getOutIndex());
-  if (isConsumedByConv(outT)) {
-    return true;
-  }
-
-  for (Op *consumer : outT->consumers.getOps()) {
-    if (consumer->isConvertibleTo<ElementWiseUnaryOp>()) {
-      auto consumerOutT =
-          consumer->outTensor(ElementWiseUnaryOp::getOutIndex());
-      if (isConsumedByConv(consumerOutT)) {
-        return true;
-      }
-    }
-  }
-
-  return false;
+  return result;
 }
 
-void UpdateInplacePrioritiesForIpu::applyImpl(AddOp &op) const {
+void prioritiseBranchProducedByMatMulOrConv(AddOp &op) {
   for (auto &id_p : op.inplacePriorityDefault()) {
     OperatorIdentifier id = std::get<0>(id_p);
     float priority        = std::get<1>(id_p);
@@ -72,17 +62,27 @@ void UpdateInplacePrioritiesForIpu::applyImpl(AddOp &op) const {
       throw error("unrecognised inplace op {}", id);
     }
 
-    if (connectsConvs(op, argIndex)) {
-      priority += 10.0f;
+    if (producedByMatMulOrConv(op.inTensor(argIndex))) {
+      constexpr float arbitraryPositiveValue = 10.0f;
+      priority += arbitraryPositiveValue;
+      logging::pattern::trace("[UpdateInplacePrioritiesForIpu] For Op `{}`, "
+                              "bumping priority of variant `{}`.",
+                              op.debugName(),
+                              id);
     }
 
     op.setInplacePriority(id, priority);
   }
 }
 
+} // namespace
+
 void UpdateInplacePrioritiesForIpu::apply(Op *op) const {
   if (op->isConvertibleTo<AddOp>()) {
-    applyImpl(*dynamic_cast<AddOp *>(op));
+    logging::pattern::trace(
+        "[UpdateInplacePrioritiesForIpu] Applying to Op `{}`.",
+        op->debugName());
+    prioritiseBranchProducedByMatMulOrConv(*dynamic_cast<AddOp *>(op));
   }
 }
 
@@ -90,4 +90,5 @@ namespace {
 static AddPatternName<UpdateInplacePrioritiesForIpu>
     registerName("UpdateInplacePrioritiesForIpu");
 } // namespace
+
 } // namespace popart

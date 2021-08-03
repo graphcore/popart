@@ -161,6 +161,8 @@ Patterns::Patterns(std::vector<std::string> strings) : runtimeAssertsOn{true} {
   for (auto p : strings) {
     if (p == "InPlace") {
       enableInPlace(true);
+    } else if (p == "UpdateInplacePrioritiesForIpu") {
+      enableUpdateInplacePrioritiesForIpu(true);
     } else {
       auto ti = PreAliasPatternManager::tryGetTypeIndex(p);
       if (ti) {
@@ -523,9 +525,12 @@ Patterns &Patterns::enablePattern(const std::type_index &t, bool v) {
 }
 
 Patterns &Patterns::enablePattern(const std::string &t, bool v) {
+  // InPlace and UpdateInplacePrioritiesForIpu need to be handled
+  // separately as they are not PreAliasPatterns.
   if (t == "InPlace") {
-    // InPlace needs to be handled separately as it is not a PreAliasPattern.
     return enableInPlace(v);
+  } else if (t == "UpdateInplacePrioritiesForIpu") {
+    return enableUpdateInplacePrioritiesForIpu(v);
   } else {
     auto ti = PreAliasPatternManager::getTypeIndex(t);
     return enablePattern(ti, v);
