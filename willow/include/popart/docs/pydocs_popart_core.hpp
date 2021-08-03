@@ -3083,9 +3083,9 @@ static const char *__doc_popart_ExchangeStrategy_JustInTime =
 static const char *__doc_popart_ExchangeStrategy_N =
     R"doc(Number of values)doc";
 
-static const char *__doc_popart_ExchangeStrategy_OverlapLoop =
-    R"doc(Preload values in previous device loop iteration for the next
-iteration)doc";
+static const char *__doc_popart_ExchangeStrategy_OverlapInnerLoop = R"doc()doc";
+
+static const char *__doc_popart_ExchangeStrategy_OverlapLoops = R"doc()doc";
 
 static const char *__doc_popart_ExchangeStrategy_OverlapStep =
     R"doc(Preload values in the previous host training step for next step

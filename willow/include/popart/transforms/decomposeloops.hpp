@@ -41,11 +41,24 @@ enum class DecomposeLoopOpType {
   N
 };
 
+// Extent to which topo cons should be applied after decomposition
+enum class DecomposeTopoConLevel {
+  None, // Do not restrict schedule with topocons
+  Full, // Fully restrict schedule with topocons
+  N     // Number of levels
+};
+
 std::ostream &operator<<(std::ostream &os, const DecomposeLoopOpType &);
 
 class DecomposeLoopModel {
 public:
-  DecomposeLoopModel() {}
+  DecomposeLoopModel();
+  DecomposeLoopModel(
+      DecomposeTopoConLevel topoConLevelBefore_,
+      DecomposeTopoConLevel topoConLevelLoop_,
+      DecomposeTopoConLevel topoConLevelAfter_,
+      const std::set<ExchangeStrategy> &computeLikeExchangeStrategies_);
+
   virtual ~DecomposeLoopModel() {}
 
   // Given an Op type, returns the schedule position
@@ -66,6 +79,26 @@ public:
                              LoopIteration iterTo,
                              DecomposeLoopOpType typeFrom,
                              DecomposeLoopOpType typeTo) const;
+
+  DecomposeTopoConLevel getTopoConLevelBefore() const {
+    return topoConLevelBefore;
+  }
+
+  DecomposeTopoConLevel getTopoConLevelLoop() const { return topoConLevelLoop; }
+
+  DecomposeTopoConLevel getTopoConLevelAfter() const {
+    return topoConLevelAfter;
+  }
+
+  std::set<ExchangeStrategy> getComputeLikeExchangeStrategies() const {
+    return computeLikeExchangeStrategies;
+  }
+
+private:
+  DecomposeTopoConLevel topoConLevelBefore;
+  DecomposeTopoConLevel topoConLevelLoop;
+  DecomposeTopoConLevel topoConLevelAfter;
+  std::set<ExchangeStrategy> computeLikeExchangeStrategies;
 };
 
 class DecomposeLoopUnrollModel : public DecomposeLoopModel {
@@ -81,6 +114,11 @@ public:
 class DecomposeLoopOverlapModel : public DecomposeLoopModel {
 public:
   DecomposeLoopOverlapModel() {}
+  DecomposeLoopOverlapModel(
+      DecomposeTopoConLevel topoConLevelBefore_,
+      DecomposeTopoConLevel topoConLevelLoop_,
+      DecomposeTopoConLevel topoConLevelAfter_,
+      const std::set<ExchangeStrategy> &computeLikeExchangeStrategies_);
   int typeToPosition(DecomposeLoopOpType type,
                      LoopIteration iteration) const override;
   LoopIteration getApparentIteration(DecomposeLoopOpType type,
@@ -104,12 +142,17 @@ public:
 
   virtual std::string getName() const final { return "DecomposeLoops"; }
 
-private:
   void decomposeLoop(Graph &graph,
                      LoopOp *loopOp,
                      const DecomposeLoopModel &model) const;
+
+private:
+  bool
+  addTopoConConditionally(Graph &graph, Op *before, Op *after, bool tied) const;
+
   DecomposeLoopOpType
-  getType(const std::map<Op *, DecomposeLoopOpType> &opToType,
+  getType(const DecomposeLoopModel &model,
+          const std::map<Op *, DecomposeLoopOpType> &opToType,
           Op *op,
           std::set<DecomposeLoopOpType> prevTypes) const;
 };

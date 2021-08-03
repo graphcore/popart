@@ -382,15 +382,27 @@ void moveIntoLoop(LoopOp *loop,
 
 std::size_t MainLoops::id() { return typeid(MainLoops).hash_code(); }
 
-Graph &MainLoops::getInnerLoopSubgraph(const Ir &ir) {
+Graph &MainLoops::getInnerLoopSubgraph(Ir &ir) {
   if (ir.getSessionOptions().getAccumulationFactor() > 1) {
     return ir.getGraph(GraphId(getAccumulationGraphName()));
-  } else {
+  } else if (ir.getDataFlow().batchesPerStep() > 1) {
     return ir.getGraph(GraphId(getStepGraphName()));
+  } else {
+    return ir.getMainGraph();
   }
 }
 
-LoopOp *MainLoops::getInnerLoopOp(const Ir &ir) {
+Graph &MainLoops::getOuterLoopSubgraph(Ir &ir) {
+  if (ir.getDataFlow().batchesPerStep() > 1) {
+    return ir.getGraph(GraphId(getStepGraphName()));
+  } else if (ir.getSessionOptions().getAccumulationFactor() > 1) {
+    return ir.getGraph(GraphId(getAccumulationGraphName()));
+  } else {
+    return ir.getMainGraph();
+  }
+}
+
+LoopOp *MainLoops::getInnerLoopOp(Ir &ir) {
   auto getLoopCallsiteOpsOfSubgraph = [](const Ir &ir, const Graph &graph) {
     std::vector<LoopOp *> callSites;
     for (auto op : ir.getAllOps()) {

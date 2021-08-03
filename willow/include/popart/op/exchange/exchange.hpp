@@ -9,17 +9,93 @@ namespace popart {
 
 /**
  * Enum type to specify an exchange strategy
+ *
+ * ==============================================================
+ * JustInTime:
+ * .- outer loop -------------.
+ * |.- inner loop -----------.|
+ * || load - compute - store ||
+ * |'------------------------'|
+ * '--------------------------'
+ *
+ * ==============================================================
+ * OverlapInnerLoop:
+ * .- outer loop ----------------------------------------.
+ * |                  .- inner loop -.                   |
+ * | load - compute - | - store      |                   |
+ * |           load - | - compute -- | - store           |
+ * |                  |   load ----- | - compute - store |
+ * |                  '--------------'                   |
+ * '-----------------------------------------------------'
+ *          ^^^^^^^       ^^^^^^^        ^^^^^^^
+ *          overlap       overlap        overlap
+ *
+ * ==============================================================
+ * OverlapLoops:
+ *                load
+ *                  |
+ *               compute   load            load         < overlap
+ *                  |        |               |
+ *                  1        2               |
+ *              .-- inner loop --.           |
+ *              |   |        |   |           |
+ *              | store  compute |           |          < overlap
+ *              | load       |   |           |          < overlap
+ *              |   |        |   |           |
+ *              '----------------'           |
+ *                  2        1      load compute        < overlap
+ *                  |        |        |      |
+ *                  1        2        3      4
+ * .- outer loop -----------------------------------.
+ * |                |        |        |      |      |
+ * |             compute   store      |    store    |   < overlap
+ * |                \                /              |
+ * |                 1              2               |
+ * |                .-- inner loop --.              |
+ * |                |   |        |   |              |
+ * |                | store  compute |              |   < overlap
+ * |                | load       |   |              |   < overlap
+ * |                |   |        |   |              |
+ * |                '----------------'              |
+ * |                    2        1                  |
+ * |                    |        |                  |
+ * |    load        compute      |       load       |   < overlap
+ * |      |             |        |         |        |
+ * '------------------------------------------------'
+ *        3             4        2         1
+ *        |             |        |         |
+ *    compute           |      store       |            < overlap
+ *        |              \                /
+ *        |              1              2
+ *        |              .-- inner loop --.
+ *        |              |   |        |   |
+ *        |              | store  compute |             < overlap
+ *        |              | load       |   |             < overlap
+ *        |              |   |        |   |
+ *        |              '----------------'
+ *        |                  2        1
+ *        |                  |        |
+ *     store             compute    store               < overlap
+ *                           |
+ *                         store
+ *
+ * ==============================================================
+ * OverlapStep:
+ * Not supported yet
  */
 enum class ExchangeStrategy {
   /// Copy tensor when required
   JustInTime = 0,
-  /// Preload values in previous device loop iteration for the next iteration
-  OverlapLoop = 1,
-  /// Preload values in the previous host training step for next step (implies
-  /// OverlapLoop)
-  OverlapStep = 2,
+  /// Preload values in previous inner loop iteration for the next iteration
+  OverlapInnerLoop = 1,
+  /// Preload values in the previous loop iteration for the next iteration
+  /// (implies OverlapInnerLoop)
+  OverlapLoops = 2,
+  /// Preload values in the previous host training step for next step
+  /// (implies OverlapLoops) - not supported yet
+  OverlapStep = 3,
   /// Number of values
-  N = 3
+  N = 4
 };
 
 /**
@@ -33,6 +109,8 @@ enum class ExchangeDirection {
   /// Number of values
   N = 2
 };
+
+std::ostream &operator<<(std::ostream &, const ExchangeStrategy &);
 
 /**
  * Class describing an external exchanges from IPUs

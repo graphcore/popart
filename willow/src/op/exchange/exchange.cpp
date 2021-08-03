@@ -9,6 +9,32 @@
 
 namespace popart {
 
+std::ostream &operator<<(std::ostream &ost, const ExchangeStrategy &es) {
+  switch (es) {
+  case (ExchangeStrategy::JustInTime): {
+    ost << "JustInTime";
+    break;
+  }
+  case (ExchangeStrategy::OverlapInnerLoop): {
+    ost << "OverlapInnerLoop";
+    break;
+  }
+  case (ExchangeStrategy::OverlapLoops): {
+    ost << "OverlapLoops";
+    break;
+  }
+  case (ExchangeStrategy::OverlapStep): {
+    ost << "OverlapStep";
+    break;
+  }
+  default: {
+    throw error("Unexpected value for ExchangeStrategy {}",
+                static_cast<int>(es));
+  }
+  }
+  return ost;
+}
+
 ExchangeDescriptor::ExchangeDescriptor(ExchangeDirection direction_,
                                        TensorId id_,
                                        OptionalVGraphId vgid_,

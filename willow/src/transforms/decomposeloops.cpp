@@ -6,6 +6,7 @@
 #include <popart/ir.hpp>
 #include <popart/names.hpp>
 #include <popart/op.hpp>
+#include <popart/op/exchange/hostcopy.hpp>
 #include <popart/op/exchange/remote.hpp>
 #include <popart/op/iotilecopy.hpp>
 #include <popart/op/loop.hpp>
@@ -48,6 +49,22 @@ std::ostream &operator<<(std::ostream &os, const DecomposeLoopOpType &dlopt) {
 
 std::size_t DecomposeLoops::id() { return typeid(DecomposeLoops).hash_code(); }
 
+DecomposeLoopModel::DecomposeLoopModel()
+    : topoConLevelBefore(DecomposeTopoConLevel::Full),
+      topoConLevelLoop(DecomposeTopoConLevel::Full),
+      topoConLevelAfter(DecomposeTopoConLevel::Full),
+      computeLikeExchangeStrategies{ExchangeStrategy::JustInTime} {}
+
+DecomposeLoopModel::DecomposeLoopModel(
+    DecomposeTopoConLevel topoConLevelBefore_,
+    DecomposeTopoConLevel topoConLevelLoop_,
+    DecomposeTopoConLevel topoConLevelAfter_,
+    const std::set<ExchangeStrategy> &computeLikeExchangeStrategies_)
+    : topoConLevelBefore(topoConLevelBefore_),
+      topoConLevelLoop(topoConLevelLoop_),
+      topoConLevelAfter(topoConLevelAfter_),
+      computeLikeExchangeStrategies(computeLikeExchangeStrategies_) {}
+
 bool DecomposeLoopModel::hasDependencyConflict(
     LoopIteration iterFrom,
     LoopIteration iterTo,
@@ -78,6 +95,16 @@ bool DecomposeLoopUnrollModel::isBeforeLoop(DecomposeLoopOpType type,
                                             int unrollIndex) const {
   return unrollIndex == 0;
 }
+
+DecomposeLoopOverlapModel::DecomposeLoopOverlapModel(
+    DecomposeTopoConLevel topoConLevelBefore_,
+    DecomposeTopoConLevel topoConLevelLoop_,
+    DecomposeTopoConLevel topoConLevelAfter_,
+    const std::set<ExchangeStrategy> &computeLikeExchangeStrategies_)
+    : DecomposeLoopModel(topoConLevelBefore_,
+                         topoConLevelLoop_,
+                         topoConLevelAfter_,
+                         computeLikeExchangeStrategies_) {}
 
 int DecomposeLoopOverlapModel::typeToPosition(DecomposeLoopOpType type,
                                               LoopIteration iteration) const {
@@ -131,8 +158,66 @@ bool DecomposeLoopOverlapModel::isBeforeLoop(DecomposeLoopOpType type,
   return false;
 }
 
+namespace {
+
+// An Op that should be classified as Compute
+bool isComputeOp(Op *op) { return op->settings.tileSet == TileSet::Compute; }
+
+// An Op that is IO, and on IO tiles
+bool isIOOp(Op *op) {
+  return op->isConvertibleTo<RemoteLoadOp>() ||
+         op->isConvertibleTo<RemoteStoreOp>() ||
+         op->isConvertibleTo<HostLoadOp>() ||
+         op->isConvertibleTo<HostStoreOp>();
+}
+
+// An Op that is IO, and on IO tiles, but still to be classified as Compute
+bool isComputeLikeIOOp(std::set<ExchangeStrategy> computeLikeStrategies,
+                       Op *op) {
+  auto &ir = op->getIr();
+
+  if (auto hostLoadOp = dynamic_cast<HostLoadOp *>(op)) {
+    auto exchangeStrategy = ir.getTensor(hostLoadOp->getHostStreamTensorId())
+                                ->inputSettings.exchangeStrategy();
+    if (hostLoadOp->settings.tileSet == TileSet::IO &&
+        computeLikeStrategies.find(exchangeStrategy) !=
+            computeLikeStrategies.end()) {
+      return true;
+    }
+    return false;
+  }
+  if (auto hostStoreOp = dynamic_cast<HostStoreOp *>(op)) {
+    auto art = ir.getDataFlow().getAnchorReturnTypeMap().at(
+        hostStoreOp->getHostStreamTensorId());
+    auto exchangeStrategy = art.exchangeStrategy();
+    if (hostStoreOp->settings.tileSet == TileSet::IO &&
+        computeLikeStrategies.find(exchangeStrategy) !=
+            computeLikeStrategies.end()) {
+      return true;
+    }
+    return false;
+  }
+  return false;
+}
+
+} // namespace
+
+bool DecomposeLoops::addTopoConConditionally(Graph &graph,
+                                             Op *before,
+                                             Op *after,
+                                             bool tied) const {
+  OpsBeforeKey opsBeforeKey;
+  opsBeforeKey[after] = {before};
+  if (graph.isSchedulable(opsBeforeKey, true)) {
+    graph.topoCons->insert(before, after, tied);
+    return true;
+  }
+  return false;
+}
+
 DecomposeLoopOpType
-DecomposeLoops::getType(const std::map<Op *, DecomposeLoopOpType> &opToType,
+DecomposeLoops::getType(const DecomposeLoopModel &model,
+                        const std::map<Op *, DecomposeLoopOpType> &opToType,
                         Op *op,
                         std::set<DecomposeLoopOpType> prevTypes) const {
 
@@ -149,26 +234,22 @@ DecomposeLoops::getType(const std::map<Op *, DecomposeLoopOpType> &opToType,
     prevTypes.insert(opToType.at(before));
   }
 
-  if (op->settings.tileSet == TileSet::Compute) {
+  if (isComputeOp(op) ||
+      isComputeLikeIOOp(model.getComputeLikeExchangeStrategies(), op)) {
     if (op->isConvertibleTo<IoTileCopyOp>()) {
       if (*prevTypes.rbegin() < DecomposeLoopOpType::Compute) {
         return DecomposeLoopOpType::IoToCompute;
-      } else if (*prevTypes.rbegin() >= DecomposeLoopOpType::IoAfterCompute) {
-        return DecomposeLoopOpType::AuxiliaryAfter;
       } else {
-        return *prevTypes.rbegin();
+        return DecomposeLoopOpType::AuxiliaryAfter;
       }
     }
     if (*prevTypes.rbegin() < DecomposeLoopOpType::ComputeToIo) {
       return DecomposeLoopOpType::Compute;
-    } else if (*prevTypes.rbegin() >= DecomposeLoopOpType::IoAfterCompute) {
-      return DecomposeLoopOpType::AuxiliaryAfter;
     } else {
-      return *prevTypes.rbegin();
+      return DecomposeLoopOpType::AuxiliaryAfter;
     }
   } else {
-    if (op->isConvertibleTo<RemoteLoadOp>() ||
-        op->isConvertibleTo<RemoteStoreOp>()) {
+    if (isIOOp(op)) {
       if (*prevTypes.rbegin() < DecomposeLoopOpType::IoToCompute) {
         return DecomposeLoopOpType::IoBeforeCompute;
       } else if (*prevTypes.rbegin() < DecomposeLoopOpType::AuxiliaryAfter) {
@@ -259,7 +340,7 @@ void DecomposeLoops::decomposeLoop(Graph &graph,
         keep_going = true;
       }
 
-      type         = getType(opToType, op, {type});
+      type         = getType(model, opToType, op, {type});
       opToType[op] = type;
     }
     ++opToTypeIteration;
@@ -279,8 +360,10 @@ void DecomposeLoops::decomposeLoop(Graph &graph,
     auto type = opToType[op];
     opsByType[type].push_back(op);
 
-    logging::transform::trace(
-        "[DecomposeLoops] Op {} type {}", op->debugName(), type);
+    logging::transform::trace("[DecomposeLoops] Op {} type {} tile set {}",
+                              op->debugName(),
+                              type,
+                              op->settings.tileSet);
 
     for (int j = 0; j < unrollFactor; ++j) {
       auto cloneOpUp = op->clone();
@@ -361,6 +444,7 @@ void DecomposeLoops::decomposeLoop(Graph &graph,
               newConstId = ir.createIntermediateTensorId(
                   op->getGraph().removeScope(input.second->id));
             }
+            newConstId = graph.addScope(newConstId);
             if (!graph.getTensors().getConstIds().contains(newConstId)) {
               graph.getTensors().addConstInit(
                   newConstId,
@@ -378,7 +462,8 @@ void DecomposeLoops::decomposeLoop(Graph &graph,
         }
         // Outputs
         for (auto &output : outputMaps[op]) {
-          TensorId outTensorId = op->getGraph().removeScope(output.second->id);
+          TensorId outTensorId =
+              graph.addScope(op->getGraph().removeScope(output.second->id));
           TensorId newOutTensorId = ir.createIntermediateTensorId(outTensorId);
           clones[op][j]->createAndConnectOutTensor(output.first,
                                                    newOutTensorId);
@@ -478,7 +563,13 @@ void DecomposeLoops::decomposeLoop(Graph &graph,
           TensorId sgTensorIdOut;
 
           // Get Op inside the loop matching the producer outside of the loop
-          Op *orig = originals.at(producer);
+          auto origIt = originals.find(producer);
+          if (origIt == originals.end()) {
+            throw error("[DecomposeLoops] Could not find original to Op {}, "
+                        "indicating it is not a cloned operation.",
+                        producer->debugName());
+          }
+          Op *orig = origIt->second;
 
           if (getApparentIteration(orig, -1) == apparentIteration + 1) {
             // Next iteration is inside the loop, wire output -> input
@@ -548,6 +639,7 @@ void DecomposeLoops::decomposeLoop(Graph &graph,
       op->setup();
     }
   }
+  loopOp->setup();
 
   for (auto afterTensor : afterLoopTensorIterMap) {
     logging::transform::trace(
@@ -589,7 +681,7 @@ void DecomposeLoops::decomposeLoop(Graph &graph,
             TensorId outTensorId =
                 op->getGraph().removeScope(output.second->id);
             TensorId newOutTensorId =
-                ir.createIntermediateTensorId(outTensorId);
+                graph.addScope(ir.createIntermediateTensorId(outTensorId));
             clones[op][j]->createAndConnectOutTensor(output.first,
                                                      newOutTensorId);
             afterLoopTensorIterMap[{output.second->id, apparentIteration}] =
@@ -632,6 +724,7 @@ void DecomposeLoops::decomposeLoop(Graph &graph,
               newConstId = ir.createIntermediateTensorId(
                   op->getGraph().removeScope(input.second->id));
             }
+            newConstId = graph.addScope(newConstId);
             if (!graph.getTensors().getConstIds().contains(newConstId)) {
               graph.getTensors().addConstInit(
                   newConstId,
@@ -672,45 +765,52 @@ void DecomposeLoops::decomposeLoop(Graph &graph,
     }
   }
 
-  // 1.) Constraints before the loop
-  for (auto bin0 : beforeLoopBins) {
-    for (Op *before : bin0.second) {
-      graph.topoCons->insert(before, loopOp, false);
-    }
-    for (auto bin1 : beforeLoopBins) {
-      if (bin0.first < bin1.first) {
-        for (Op *before : bin0.second) {
-          for (Op *after : bin1.second) {
-            graph.topoCons->insert(before, after, false);
+  if (model.getTopoConLevelBefore() == DecomposeTopoConLevel::Full) {
+    // 1.) Constraints before the loop
+    for (auto bin0 : beforeLoopBins) {
+      for (Op *before : bin0.second) {
+        addTopoConConditionally(graph, before, loopOp, false);
+      }
+      for (auto bin1 : beforeLoopBins) {
+        if (bin0.first < bin1.first) {
+          for (Op *before : bin0.second) {
+            for (Op *after : bin1.second) {
+              addTopoConConditionally(graph, before, after, false);
+            }
           }
         }
       }
     }
   }
 
-  // 2.) Constraints inside the loop
-  for (auto bin0 : insideLoopBins) {
-    for (auto bin1 : insideLoopBins) {
-      if (bin0.first < bin1.first) {
-        for (Op *before : bin0.second) {
-          for (Op *after : bin1.second) {
-            loopOp->getCalledGraph().topoCons->insert(before, after, false);
+  if (model.getTopoConLevelLoop() == DecomposeTopoConLevel::Full) {
+    // 2.) Constraints inside the loop
+    for (auto bin0 : insideLoopBins) {
+      for (auto bin1 : insideLoopBins) {
+        if (bin0.first < bin1.first) {
+          for (Op *before : bin0.second) {
+            for (Op *after : bin1.second) {
+              addTopoConConditionally(
+                  loopOp->getCalledGraph(), before, after, false);
+            }
           }
         }
       }
     }
   }
 
-  // 3.) Constraints after the loop
-  for (auto bin0 : afterLoopBins) {
-    for (Op *before : bin0.second) {
-      graph.topoCons->insert(loopOp, before, false);
-    }
-    for (auto bin1 : afterLoopBins) {
-      if (bin0.first < bin1.first) {
-        for (Op *before : bin0.second) {
-          for (Op *after : bin1.second) {
-            graph.topoCons->insert(before, after, false);
+  if (model.getTopoConLevelAfter() == DecomposeTopoConLevel::Full) {
+    // 3.) Constraints after the loop
+    for (auto bin0 : afterLoopBins) {
+      for (Op *before : bin0.second) {
+        addTopoConConditionally(graph, loopOp, before, false);
+      }
+      for (auto bin1 : afterLoopBins) {
+        if (bin0.first < bin1.first) {
+          for (Op *before : bin0.second) {
+            for (Op *after : bin1.second) {
+              addTopoConConditionally(graph, before, after, false);
+            }
           }
         }
       }

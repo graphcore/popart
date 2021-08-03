@@ -9,7 +9,11 @@
 #include <popart/op/call.hpp>
 #include <popart/op/concat.hpp>
 #include <popart/op/copyvarupdate.hpp>
+#include <popart/op/exchange/hostcopy.hpp>
 #include <popart/op/identity.hpp>
+#include <popart/op/init.hpp>
+#include <popart/op/iotilecopy.hpp>
+#include <popart/op/loop.hpp>
 #include <popart/op/sgd0varupdate.hpp>
 #include <popart/op/slice.hpp>
 #include <popart/optimizer.hpp>
@@ -194,5 +198,147 @@ GraphTestModel2::GraphTestModel2() {
   ir.updateVertices();
 
   df = DataFlow(1, {{"t5", art}});
+  ir.setDataFlow(df);
+}
+
+GraphTestModel3::GraphTestModel3(popart::ExchangeStrategy strategyA,
+                                 popart::ExchangeStrategy strategyB,
+                                 popart::ExchangeStrategy strategyC) {
+  Graph &graph = ir.getMainGraph();
+
+  SessionOptions flags;
+
+  int64_t batchesPerStep           = 2;
+  flags.accumulationFactor         = 3;
+  flags.enableGradientAccumulation = true;
+
+  ir.setUserOptions(flags);
+
+  TensorInfo tInfo(DataType::FLOAT, Shape{1});
+
+  Op::Settings gSettings(graph, "op", {});
+
+  auto addMandatoryLoopSubgraphIO = [](Graph &sg) {
+    // Add mandatory loop iterator tensor to subgraph (is not an output)
+    TensorId loopIter = sg.addScope(reservedLoopIteratorPrefix());
+    sg.addInput(loopIter, TensorInfo{DataType::INT32, {}});
+
+    // Add mandatory loop condition tensor to subgraph (is also an output)
+    TensorId loopCond = sg.addScope(reservedLoopCondPrefix());
+    sg.addInput(loopCond, TensorInfo{DataType::BOOL, {}});
+    sg.markAsOutput(loopCond);
+  };
+
+  auto &sg0 = ir.createGraph(GraphId(MainLoops::getStepGraphName()));
+  auto &sg1 = ir.createGraph(GraphId(MainLoops::getAccumulationGraphName()));
+
+  addMandatoryLoopSubgraphIO(sg0);
+  addMandatoryLoopSubgraphIO(sg1);
+
+  Op::Settings sg0Settings(sg0, "op", {});
+
+  // For Ops on the Compute tiles
+  Op::Settings sg1ComputeSettings(sg1, "op", {});
+
+  // For Ops on the IO tiles
+  Op::Settings sg1IOSettings(sg1, "op", {});
+
+  sg1ComputeSettings.tileSet = TileSet::Compute;
+  sg1IOSettings.tileSet      = TileSet::IO;
+
+  LoopOp *loop0 = graph.createOp<LoopOp>(
+      Onnx::Operators::Loop_11, gSettings.copy("loop0"), sg0);
+  LoopOp *loop1 = sg0.createOp<LoopOp>(
+      Onnx::Operators::Loop_11, sg0Settings.copy("loop1"), sg1);
+
+  loop0->setTripCountValue(batchesPerStep);
+  loop1->setTripCountValue(flags.accumulationFactor);
+
+  loop0->setup();
+  loop1->setup();
+
+  sg1.createConnectedOp<InitOp>({},
+                                {{InitOp::getOutIndex(), sg1.addScope("A")}},
+                                Onnx::CustomOperators::Init_1,
+                                tInfo,
+                                TensorType::ActGrad,
+                                InitType::Zero,
+                                sg1IOSettings.copy("Init_A"));
+
+  sg1.createConnectedOp<InitOp>({},
+                                {{InitOp::getOutIndex(), sg1.addScope("B")}},
+                                Onnx::CustomOperators::Init_1,
+                                tInfo,
+                                TensorType::ActGrad,
+                                InitType::Zero,
+                                sg1IOSettings.copy("Init_B"));
+
+  TensorId streamA = "A";
+  graph.getTensors().addStream(
+      streamA, tInfo, InputSettings(TileSet::IO, strategyA));
+
+  TensorId streamB = "B";
+  graph.getTensors().addStream(
+      streamB, tInfo, InputSettings(TileSet::IO, strategyB));
+
+  TensorId streamC = "C";
+  graph.getTensors().addActGrad(streamC);
+  graph.getTensors().get(streamC)->info = tInfo;
+
+  sg1.createConnectedOp<HostLoadOp>(
+      {{HostLoadOp::getLocalTensorInIndex(), sg1.addScope("A")}},
+      {{HostLoadOp::getLocalTensorOutIndex(), sg1.addScope("A1")}},
+      Onnx::CustomOperators::HostLoad,
+      sg1IOSettings.copy("HostLoad_A"),
+      streamA);
+
+  sg1.createConnectedOp<HostLoadOp>(
+      {{HostLoadOp::getLocalTensorInIndex(), sg1.addScope("B")}},
+      {{HostLoadOp::getLocalTensorOutIndex(), sg1.addScope("B1")}},
+      Onnx::CustomOperators::HostLoad,
+      sg1IOSettings.copy("HostLoad_B"),
+      streamB);
+
+  // IoTileCopyOp: Copies to the tile set specified by the settings (to compute
+  // tiles)
+  sg1.createConnectedOp<IoTileCopyOp>(
+      {{IoTileCopyOp::getInIndex(), sg1.addScope("A1")}},
+      {{IoTileCopyOp::getOutIndex(), sg1.addScope("A2")}},
+      Onnx::CustomOperators::IoTileCopy,
+      sg1ComputeSettings.copy("IoTileCopyOp_A"));
+
+  // IoTileCopyOp: Copies to the tile set specified by the settings (to compute
+  // tiles)
+  sg1.createConnectedOp<IoTileCopyOp>(
+      {{IoTileCopyOp::getInIndex(), sg1.addScope("B1")}},
+      {{IoTileCopyOp::getOutIndex(), sg1.addScope("B2")}},
+      Onnx::CustomOperators::IoTileCopy,
+      sg1ComputeSettings.copy("IoTileCopyOp_B"));
+
+  sg1.createConnectedOp<AddOp>({{AddOp::getArg0InIndex(), sg1.addScope("A2")},
+                                {AddOp::getArg1InIndex(), sg1.addScope("B2")}},
+                               {{AddOp::getOutIndex(), sg1.addScope("C2")}},
+                               Onnx::Operators::Add_7,
+                               sg1ComputeSettings.copy("AddOp"));
+
+  // IoTileCopyOp: Copies to the tile set specified by the settings (to IO
+  // tiles)
+  sg1.createConnectedOp<IoTileCopyOp>(
+      {{IoTileCopyOp::getInIndex(), sg1.addScope("C2")}},
+      {{IoTileCopyOp::getOutIndex(), sg1.addScope("C")}},
+      Onnx::CustomOperators::IoTileCopy,
+      sg1IOSettings.copy("IoTileCopyOp_C"));
+
+  sg1.createConnectedOp<HostStoreOp>(
+      {{HostStoreOp::getLocalTensorInIndex(), sg1.addScope("C")}},
+      {},
+      Onnx::CustomOperators::HostStore,
+      sg1IOSettings.copy("HostStore_C"),
+      streamC);
+
+  ir.updateVertices();
+
+  auto art = AnchorReturnType("All", TileSet::IO, strategyC);
+  df       = DataFlow(batchesPerStep, {{"C", art}});
   ir.setDataFlow(df);
 }

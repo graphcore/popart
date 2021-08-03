@@ -4,6 +4,7 @@
 
 #include <popart/dataflow.hpp>
 #include <popart/ir.hpp>
+#include <popart/op/exchange/exchange.hpp>
 
 class GraphTestModel {
 public:
@@ -24,6 +25,13 @@ public:
 class GraphTestModel2 : public GraphTestModel {
 public:
   GraphTestModel2();
+};
+
+class GraphTestModel3 : public GraphTestModel {
+public:
+  GraphTestModel3(popart::ExchangeStrategy strategyA,
+                  popart::ExchangeStrategy strategyB,
+                  popart::ExchangeStrategy strategyC);
 };
 
 #endif

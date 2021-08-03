@@ -26,8 +26,10 @@ public:
 
   // Helper functions for accessing the inner loop, and its called subgraph.
   // Note: should only be used after the transform has been applied.
-  static Graph &getInnerLoopSubgraph(const Ir &ir);
-  static LoopOp *getInnerLoopOp(const Ir &ir);
+  static Graph &getInnerLoopSubgraph(Ir &ir);
+  static Graph &getOuterLoopSubgraph(Ir &ir);
+
+  static LoopOp *getInnerLoopOp(Ir &ir);
 };
 
 } // namespace popart
