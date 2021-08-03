@@ -2799,8 +2799,11 @@ void IrLowering::prepareGraph() {
                     numIOTiles);
       }
 
-      const auto computeTiles = gcl::perIPUTiles(
-          graph().getPoplarGraph(), numIOTiles, tilesPerIPU - numIOTiles, true);
+      const auto computeTiles = gcl::perIPUTiles(graph().getPoplarGraph(),
+                                                 numIOTiles,
+                                                 tilesPerIPU - numIOTiles,
+                                                 true,
+                                                 true);
 
       std::vector<unsigned> ioTiles;
       ioTiles.reserve(numIOTiles);

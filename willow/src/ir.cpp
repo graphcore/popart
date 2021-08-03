@@ -77,6 +77,7 @@
 #include <popart/transforms/mergeduplicateops.hpp>
 #include <popart/transforms/mergeexchange.hpp>
 #include <popart/transforms/mergevarupdates.hpp>
+#include <popart/transforms/overlapio.hpp>
 #include <popart/transforms/pipeline.hpp>
 #include <popart/transforms/prune.hpp>
 #include <popart/transforms/randomsetup.hpp>
@@ -593,6 +594,33 @@ void Ir::verifyExplicitMainLoopsSettings() const {
   }
 }
 
+void Ir::verifyOverlapIOSettings() const {
+  auto checkExchangeStrategy = [this](ExchangeStrategy strategy) {
+    if (strategy == ExchangeStrategy::OverlapStep) {
+      throw error("ExchangeStrategy::OverlapStep is not yet supported.");
+    }
+    if ((strategy == ExchangeStrategy::OverlapInnerLoop ||
+         strategy == ExchangeStrategy::OverlapLoops) &&
+        !(getSessionOptions().useHostCopyOps &&
+          getSessionOptions().enableExplicitMainLoops)) {
+      throw error("ExchangeStrategy::OverlapInnerLoop and "
+                  "ExchangeStrategy::OverlapLoops require "
+                  "SessionOptions::useHostCopyOps and "
+                  "SessionOptions::enableExplicitMainLoops to be enabled.");
+    }
+  };
+
+  for (auto anchor : getRootAnchors()) {
+    auto art = getDataFlow().getAnchorReturnTypeMap().at(anchor);
+    checkExchangeStrategy(art.exchangeStrategy());
+  }
+
+  for (auto stream :
+       getMainGraph().getTensors().getOfType(TensorType::Stream)) {
+    checkExchangeStrategy(stream->inputSettings.exchangeStrategy());
+  }
+}
+
 void Ir::verifyBatchSerializationSettings() const {
   if (userOptions.batchSerializationSettings.method ==
           BatchSerializationMethod::Loop &&
@@ -793,6 +821,18 @@ void Ir::verifyTensorIds() const {
   }
 
   logging::ir::info("TensorId check passed");
+}
+
+void Ir::verifyTensorInfos() const {
+  logging::ir::info("Checking TensorInfos are valid");
+  for (auto tensorIdAndTensor : getAllTensors()) {
+    auto tensor = tensorIdAndTensor.second;
+    if (tensor->info.getDataTypeInfo() == nullptr ||
+        tensor->info.dataType() == DataType::UNDEFINED) {
+      throw error("Tensor {} invalid DataType/Info", tensorIdAndTensor.first);
+    }
+  }
+  logging::ir::info("TensorInfo check passed");
 }
 
 void Ir::verifyRecomputeAttributes() const noexcept(false) {
@@ -1089,6 +1129,7 @@ void Ir::prepareImpl(const IrBundle &gb, const HashesMap &cacheEntries) {
   verifyDistributedReplicatedGraphSettings();
   verifyAliasZeroCopySettings();
   verifyExplicitMainLoopsSettings();
+  verifyOverlapIOSettings();
 
   dotCheckpoint(DotCheck::Fwd0);
 
@@ -1403,13 +1444,6 @@ void Ir::prepareImpl(const IrBundle &gb, const HashesMap &cacheEntries) {
     removeIsolatedTensors(true);
   }
 
-  // Merge remote loads/stores into exchanges
-  if (getSessionOptions().enableMergeExchange) {
-    for (auto &id_graph : graphs) {
-      applyTransform(MergeExchange::id(), *id_graph.second);
-    }
-  }
-
   if (autoRecomputationEnabled() && !getSessionOptions().enablePipelining &&
       !getSessionOptions().explicitRecomputation &&
       getSessionOptions().executionPhaseSettings.phases < 2) {
@@ -1428,6 +1462,19 @@ void Ir::prepareImpl(const IrBundle &gb, const HashesMap &cacheEntries) {
   if (getSessionOptions().enablePipelining) {
     applyTransform(Pipeline::id(), getMainGraph());
     updateVertices();
+  }
+
+  if (getSessionOptions().enableExplicitMainLoops &&
+      getSessionOptions().useHostCopyOps) {
+    applyTransform(OverlapIO::id(), getMainGraph());
+    updateVertices();
+  }
+
+  // Merge remote loads/stores into exchanges
+  if (getSessionOptions().enableMergeExchange) {
+    for (auto &id_graph : graphs) {
+      applyTransform(MergeExchange::id(), *id_graph.second);
+    }
   }
 
   if (optimizer && optimizer->getClipNormSettings().size() > 0) {

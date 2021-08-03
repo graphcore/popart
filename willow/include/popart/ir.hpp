@@ -514,6 +514,9 @@ public:
 
   void setMainGraphPathFromLoss();
 
+  /// Verifies that all tensors have valid \a TensorInfos
+  void verifyTensorInfos() const;
+
   /**
    * Marks the Ir as "prepared". This means the Ir is now ready to be lowered.
    * Failing to do this before lowering the Ir will result in an error.
@@ -578,6 +581,7 @@ private:
   void verifyExecutionPhaseSettings() const;
   void verifyAliasZeroCopySettings() const;
   void verifyExplicitMainLoopsSettings() const;
+  void verifyOverlapIOSettings() const;
   void verifyBatchSerializationSettings() const;
   void verifySubgraphs() const;
   void verifyRecomputeAttributes() const noexcept(false);

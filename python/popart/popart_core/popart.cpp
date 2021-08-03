@@ -518,9 +518,12 @@ PYBIND11_MODULE(popart_core, m) {
     en.value("JustInTime",
              ExchangeStrategy::JustInTime,
              DOC(popart, ExchangeStrategy, JustInTime));
-    en.value("OverlapLoop",
-             ExchangeStrategy::OverlapLoop,
-             DOC(popart, ExchangeStrategy, OverlapLoop));
+    en.value("OverlapInnerLoop",
+             ExchangeStrategy::OverlapInnerLoop,
+             DOC(popart, ExchangeStrategy, OverlapInnerLoop));
+    en.value("OverlapLoops",
+             ExchangeStrategy::OverlapLoops,
+             DOC(popart, ExchangeStrategy, OverlapLoops));
     en.value("OverlapStep",
              ExchangeStrategy::OverlapStep,
              DOC(popart, ExchangeStrategy, OverlapStep));
