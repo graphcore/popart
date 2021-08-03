@@ -417,7 +417,6 @@ def test_serialized_matmul(optimizerType):
 
         opts = popart.SessionOptions()
         opts.reportOptions = {"showExecutionSteps": "true"}
-        opts.enableGroupedMatmuls = True
         # TODO(T14786) investigate why swapping causes some tests to fail
         opts.swapLimitScheduler = -1
         # TODO(T14786) investigate why GREEDY causes some tests to fail

@@ -5990,9 +5990,6 @@ static const char *__doc_popart_SessionOptions_enableFullyConnectedPass =
 static const char *__doc_popart_SessionOptions_enableGradientAccumulation =
     R"doc(Enable gradient accumulation.)doc";
 
-static const char *__doc_popart_SessionOptions_enableGroupedMatmuls =
-    R"doc(Enable/disable the grouping of matmuls that are the same shape.)doc";
-
 static const char *__doc_popart_SessionOptions_enableLoadAndOffloadRNGState =
     R"doc(Allows to load/offload device RNG state from host.)doc";
 

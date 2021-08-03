@@ -65,7 +65,6 @@
 #include <popart/transforms/decomposegradsum.hpp>
 #include <popart/transforms/dynamicoptransform.hpp>
 #include <popart/transforms/explicitrecompute.hpp>
-#include <popart/transforms/groupmatmuls.hpp>
 #include <popart/transforms/hostiosetup.hpp>
 #include <popart/transforms/hostreduce.hpp>
 #include <popart/transforms/inferpipelinestages.hpp>
@@ -1326,15 +1325,6 @@ void Ir::prepareImpl(const IrBundle &gb, const HashesMap &cacheEntries) {
 
   if (getSessionOptions().automaticLossScalingSettings.enabled) {
     applyTransform(AutomaticLossScale::id(), getMainGraph());
-  }
-
-  if (getSessionOptions().enableGroupedMatmuls) {
-    logging::ir::warn(
-        "The SessionOption 'enableGroupedMatmuls' is set to 'true', but is now "
-        "deprecated. It will be removed in a future release. It will be left "
-        "to the user to perform the grouping manually by concatenating inputs, "
-        "and slicing the output.");
-    applyTransform(GroupMatMuls::id(), getMainGraph());
   }
 
   // Accumulator Tensor for gradient accumulation / momentum is added here

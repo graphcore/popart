@@ -1323,9 +1323,6 @@ PYBIND11_MODULE(popart_core, m) {
     cls.def_readwrite("enableFullyConnectedPass",
                       &SessionOptions::enableFullyConnectedPass,
                       DOC(popart, SessionOptions, enableFullyConnectedPass));
-    cls.def_readwrite("enableGroupedMatmuls",
-                      &SessionOptions::enableGroupedMatmuls,
-                      DOC(popart, SessionOptions, enableGroupedMatmuls));
     cls.def_readwrite("partialsTypeMatMuls",
                       &SessionOptions::partialsTypeMatMuls,
                       DOC(popart, SessionOptions, partialsTypeMatMuls));

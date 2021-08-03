@@ -731,10 +731,6 @@ def test_outlining_bca4():
     opts.reportOptions = {"showExecutionSteps": "true"}
     opts.enableFullyConnectedPass = False
 
-    # Disabled grouped matmuls so they are all outlined as apposed to being
-    # grouped into 2 groups
-    opts.enableGroupedMatmuls = False
-
     optimizer = popart.ConstSGD(0.01)
 
     session = popart.TrainingSession(

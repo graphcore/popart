@@ -282,7 +282,6 @@ std::size_t hash<popart::SessionOptions>::operator()(
   boost::hash_combine(seed, so.enableFullyConnectedPass);
   boost::hash_combine(seed, static_cast<int>(so.syntheticDataMode));
   boost::hash_combine(seed, so.enableSerializedMatmuls);
-  boost::hash_combine(seed, so.enableGroupedMatmuls);
   boost::hash_combine(seed, so.aliasZeroCopy);
   boost::hash_combine(seed, static_cast<int>(so.numIOTiles));
   boost::hash_combine(seed, so.enableOutlining);

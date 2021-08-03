@@ -16,7 +16,6 @@ import test_util as tu
 def getBaseOptions():
     opts = popart.SessionOptions()
     opts.reportOptions = {"showExecutionSteps": "true"}
-    opts.enableGroupedMatmuls = False
     # TODO(T14786) investigate why swapping causes some tests to fail
     opts.swapLimitScheduler = -1
     # TODO(T14786) investigate why GREEDY causes some tests to fail

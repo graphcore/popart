@@ -791,9 +791,6 @@ struct SessionOptions {
   /// Enable the global #fullyConnectedPass option for matmuls.
   bool enableFullyConnectedPass = true;
 
-  /// Enable/disable the grouping of matmuls that are the same shape.
-  bool enableGroupedMatmuls = false;
-
   /// Enable/disable the serializing of matmuls.
   bool enableSerializedMatmuls = true;
 
