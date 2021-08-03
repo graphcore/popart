@@ -59,25 +59,6 @@ BranchInfo::BranchInfo(const GraphId &graphId_,
     : graphId(graphId_), inputIndicesMap(inputIndicesMap_),
       outputIndicesMap(outputIndicesMap_) {}
 
-// Deprecated constructor can be removed after release.
-IfOp::IfOp(const OperatorIdentifier &opid_,
-           const std::vector<TensorId> inputIds_,
-           const BranchInfo &thenBranchInfo,
-           const BranchInfo &elseBranchInfo,
-           const Op::Settings &settings_)
-    : Op(opid_, settings_), inputIds(inputIds_),
-      thenInputIndicesMap(thenBranchInfo.inputIndicesMap),
-      elseInputIndicesMap(elseBranchInfo.inputIndicesMap),
-      thenOutputIndicesMap(thenBranchInfo.outputIndicesMap),
-      elseOutputIndicesMap(elseBranchInfo.outputIndicesMap),
-      thenGraphId(thenBranchInfo.graphId),
-      elseGraphId(elseBranchInfo.graphId), calledGraphGradOpHelper{this} {
-  logging::op::warn(
-      "Using deprecated IfOp constructor. Parameter inputIds "
-      "will be removed in an upcoming release. Inputs in `inputIds` should be "
-      "connected to the op using `Op::connectInTensor`");
-}
-
 IfOp::IfOp(const OperatorIdentifier &opid_,
            const BranchInfo &thenBranchInfo,
            const BranchInfo &elseBranchInfo,
@@ -327,10 +308,6 @@ IfOp::getBranchOutIndicesMap(const Graph &branchGraph) const {
 }
 
 void IfOp::setup() {
-  // Once the deprecated constructor is removed, this loop may be removed.
-  for (auto &inputId : inputIds) {
-    connectInTensor(input->n(), inputId);
-  }
 
   auto trySetOutInfoFromGraph = [this](const Graph &graph, int outIndex) {
     auto &idxMap = getBranchOutIndicesMap(graph);
@@ -502,7 +479,6 @@ IfGradOp::IfGradOp(const IfOp &fwdOp,
                    const BranchInfo &thenBranchInfo,
                    const BranchInfo &elseBranchInfo)
     : IfOp(Onnx::CustomGradOperators::IfGrad,
-           {},
            thenBranchInfo,
            elseBranchInfo,
            fwdOp.getSettings()),
@@ -683,7 +659,6 @@ static OpCreator<IfOp> ifOpCreator(
 
       Op *op = graph.createOp<IfOp>(
           info.opid,
-          std::vector<TensorId>{},
           BranchInfo{
               thenGraphId, thenInputIndicesMap, thenAndElseOutputIndicesMap},
           BranchInfo{
