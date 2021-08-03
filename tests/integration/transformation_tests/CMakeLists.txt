@@ -21,7 +21,6 @@ add_popart_cpp_unit_test(mergeexchange mergeexchange_test.cpp VARIANTS "Hw")
 add_subdirectory(mergevarupdates)
 
 add_popart_py_unit_test(serializematmul serializematmul.py)
-add_popart_py_unit_test(groupedmatmul groupedmatmul.py)
 add_popart_py_unit_test(explicitrecomputation explicitrecomputation.py)
 add_popart_py_unit_test(batchserialize batchserialize.py)
 add_popart_py_unit_test(batchserialize_dropout_test batchserialize_dropout_test.py VARIANTS Hw)

@@ -53,7 +53,6 @@ def test_sgd_mixed_mode():
 
         opts = popart.SessionOptions()
         opts.reportOptions = {"showExecutionSteps": "true"}
-        opts.enableGroupedMatmuls = False
 
         pat = popart.Patterns(popart.PatternsLevel.Default)
 
