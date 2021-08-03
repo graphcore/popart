@@ -4,7 +4,8 @@
     "../arcanist_linters/clang-format-linter",
     "../arcanist_linters/yapf_linter",
     "../arcanist_linters/gc_copyright_linter",
-    "tests/popart_test_linter"
+    "tests/popart_test_linter",
+    "scripts/linters/isort"
   ],
   "arc.land.onto.default": "master",
   "base": "git:merge-base(origin/master)"
