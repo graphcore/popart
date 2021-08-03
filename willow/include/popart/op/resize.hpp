@@ -6,7 +6,7 @@
 
 namespace popart {
 
-enum class ResizeMode { Nearest, Linear, N };
+enum class ResizeMode { Nearest, Linear, Cubic, N };
 std::string toString(const ResizeMode &);
 std::ostream &operator<<(std::ostream &, const ResizeMode &);
 
