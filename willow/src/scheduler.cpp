@@ -172,6 +172,13 @@ Scheduler::getSchedule(const OpsBeforeKey &gCons,
   const auto rotationTermination =
       shift::RotationTermination(timeLimitScheduler, swapLimitScheduler);
 
+  std::ostringstream oss;
+  oss << "RotationTermination=("
+      << "rotations=" << rotationTermination.maxRotations()
+      << ", seconds=" << rotationTermination.maxSeconds() << ")"
+      << " and nOps=" << pg.getOps().size() << ". ";
+  logging::ir::debug(oss.str());
+
   // Use transitive closure optimizations of
   // 1) the time you might be running the shift step for is large.
   // 2) there are not too many Ops in the Graph.
@@ -179,15 +186,6 @@ Scheduler::getSchedule(const OpsBeforeKey &gCons,
       rotationTermination.longerThan({10.0, 100}) &&
       pg.getOps().size() <=
           pg.getIr().getSessionOptions().transitiveClosureOptimizationThreshold;
-
-  std::ostringstream oss;
-
-  oss << "RotationTermination=("
-      << "rotations=" << rotationTermination.maxRotations()
-      << ", seconds=" << rotationTermination.maxSeconds() << ")"
-      << " and nOps=" << pg.getOps().size() << ". ";
-  logging::ir::debug(oss.str());
-
   const auto transitiveClosureOptimizations =
       useTransitiveClosureOptimizations
           ? shift::TransitiveClosureOptimizations::allOn()
@@ -209,9 +207,7 @@ Scheduler::getSchedule(const OpsBeforeKey &gCons,
                   pg,
                   requireOptimalSchedule,
                   respectExecutionPhases,
-                  useTransitiveClosureOptimizations
-                      ? AnnotateForFasterSwapping::Yes
-                      : AnnotateForFasterSwapping::No);
+                  AnnotateForFasterSwapping::Yes);
 
   if (!pg.getIr()
            .getSessionOptions()
