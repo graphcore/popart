@@ -247,15 +247,6 @@ void validateGclOptions(const std::map<std::string, std::string> &gclOptions) {
   }
 }
 
-void gclEnvironmentDeprecationWarning(const std::string &envVarName,
-                                      const std::string &optName) {
-  logging::warn("You are using a deprecated environment variable \"{}\". This "
-                "will be removed in an upcoming release. Please use the "
-                "session option 'SessionOptions::{}' instead",
-                envVarName,
-                optName);
-}
-
 } // namespace
 
 int ProgressLogger::current(int start, int end, int progress, int total) {
@@ -354,23 +345,13 @@ IrLowering::IrLowering(const Ir &ir,
   const auto &userGclOptions = ir.getSessionOptions().gclOptions;
   validateGclOptions(userGclOptions);
 
-  // Prefer to use `userGclOptions' over environment variables.
   if (userGclOptions.find("useSynclessCollectives") != userGclOptions.end()) {
     gclOptions.set("useSynclessCollectives",
                    userGclOptions.at("useSynclessCollectives"));
-  } else if (std::getenv("GCL_REAL_COLLECTIVES")) {
-    gclEnvironmentDeprecationWarning("GCL_REAL_COLLECTIVES",
-                                     "gclOptions[\"useSynclessCollectives\"]");
-    gclOptions.set("useSynclessCollectives", "true");
   }
 
-  // Prefer to use `maxBytesPerTile' over environment variables.
   if (userGclOptions.find("maxBytesPerTile") != userGclOptions.end()) {
     auto &val = userGclOptions.at("maxBytesPerTile");
-    gclOptions.set("maxBytesPerTile", val);
-  } else if (auto *val = std::getenv("GCL_MAX_BYTES_PER_TILE")) {
-    gclEnvironmentDeprecationWarning("GCL_MAX_BYTES_PER_TILE",
-                                     "gclOptions[\"maxBytesPerTile\"]");
     gclOptions.set("maxBytesPerTile", val);
   }
 }
