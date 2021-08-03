@@ -23,12 +23,6 @@ struct BranchInfo {
 
 class IfOp : public Op {
 public:
-  // Deprecated constructor can be removed after release.
-  IfOp(const OperatorIdentifier &,
-       const std::vector<TensorId> inputIds,
-       const BranchInfo &thenBranchInfo,
-       const BranchInfo &elseBranchInfo,
-       const Op::Settings &);
 
   IfOp(const OperatorIdentifier &,
        const BranchInfo &thenBranchInfo,
