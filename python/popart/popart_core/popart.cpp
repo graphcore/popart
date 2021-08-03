@@ -1648,7 +1648,7 @@ PYBIND11_MODULE(popart_core, m) {
     en.value("SoftmaxGradDirect", PreAliasPatternType::SoftmaxGradDirect);
     en.value("NLLLWithSoftmaxGradDirect",
              PreAliasPatternType::NLLLWithSoftmaxGradDirect);
-    en.value("OptoIdentity", PreAliasPatternType::OptoIdentity);
+    en.value("OpToIdentity", PreAliasPatternType::OptoIdentity);
     en.value("SubtractArg1GradOp",
              PreAliasPatternType::SubtractArg1GradOp,
              DOC(popart, Patterns, enableSubtractArg1GradOp));
@@ -1708,7 +1708,6 @@ PYBIND11_MODULE(popart_core, m) {
     py::class_<Patterns> cls(m, "Patterns");
     cls.def(py::init<>());
     cls.def(py::init<PatternsLevel>(), py::arg("level"));
-    cls.def(py::init<std::vector<PreAliasPatternType>>(), py::arg("types"));
     cls.def(py::init<std::vector<std::string>>(), py::arg("patterns"));
     cls.def_property("PreUniRepl",
                      &Patterns::isPreUniReplEnabled,

@@ -66,8 +66,7 @@ BOOST_AUTO_TEST_CASE(SyntheticData_False) {
       device,
       InputShapeInfo(),
       {},
-      Patterns({popart::PreAliasPatternType::PostNRepl})
-          .enableRuntimeAsserts(false));
+      Patterns::create({"PostNRepl"}).enableRuntimeAsserts(false));
 
   session->prepareDevice();
 
@@ -120,8 +119,7 @@ BOOST_AUTO_TEST_CASE(SyntheticData_True) {
       device,
       InputShapeInfo(),
       options,
-      Patterns({popart::PreAliasPatternType::PostNRepl})
-          .enableRuntimeAsserts(false));
+      Patterns::create({"PostNRepl"}).enableRuntimeAsserts(false));
 
   session->prepareDevice();
 

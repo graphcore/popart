@@ -26,8 +26,7 @@ BOOST_AUTO_TEST_CASE(Cast_OutType_Equals_InType) {
               nullptr,
               *device,
               {},
-              Patterns({PreAliasPatternType::OptoIdentity})
-                  .enableRuntimeAsserts(false)});
+              Patterns::create({"OpToIdentity"}).enableRuntimeAsserts(false)});
 
   // Check that the CastOp has been converted to an IdentityOp
   BOOST_CHECK(ir.opsOfType(Onnx::AiOnnx::OpSet9::Cast).size() == 0);

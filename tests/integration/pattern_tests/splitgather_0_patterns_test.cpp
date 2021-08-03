@@ -50,8 +50,7 @@ BOOST_AUTO_TEST_CASE(SplitGatherTest0) {
               nullptr,
               *device,
               userOptions,
-              Patterns({PreAliasPatternType::SplitGather})
-                  .enableRuntimeAsserts(false)});
+              Patterns::create({"SplitGather"}).enableRuntimeAsserts(false)});
 
   BOOST_CHECK(ir.opsOfType(Onnx::Operators::Gather_1).size() == 2);
 }

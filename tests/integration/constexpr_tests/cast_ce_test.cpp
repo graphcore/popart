@@ -83,15 +83,14 @@ BOOST_AUTO_TEST_CASE(ConstExprTest_AddCastMatMul) {
   auto device = createTestDevice(TEST_TARGET);
 
   Ir ir;
-  ir.prepare(
-      {modelProto,
-       InputShapeInfo(),
-       dataFlow,
-       lossId,
-       &optimizer,
-       *device,
-       {}, // no SessionOptions
-       Patterns({PreAliasPatternType::PostNRepl}).enableRuntimeAsserts(false)});
+  ir.prepare({modelProto,
+              InputShapeInfo(),
+              dataFlow,
+              lossId,
+              &optimizer,
+              *device,
+              {}, // no SessionOptions
+              Patterns::create({"PostNRepl"}).enableRuntimeAsserts(false)});
 
   // Check the ir
   // 1) The Matmul Op is present,
@@ -184,15 +183,14 @@ template <typename FROM, typename TO> void ConstExprTest_AddCastMatMul_Type() {
   auto device    = createTestDevice(TEST_TARGET);
 
   Ir ir;
-  ir.prepare(
-      {modelProto,
-       InputShapeInfo(),
-       dataFlow,
-       lossId,
-       &optimizer,
-       *device,
-       {}, // no SessionOptions
-       Patterns({PreAliasPatternType::PostNRepl}).enableRuntimeAsserts(false)});
+  ir.prepare({modelProto,
+              InputShapeInfo(),
+              dataFlow,
+              lossId,
+              &optimizer,
+              *device,
+              {}, // no SessionOptions
+              Patterns::create({"PostNRepl"}).enableRuntimeAsserts(false)});
 
   // Check the ir
   // 1) The Matmul Op is present,

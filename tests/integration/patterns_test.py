@@ -73,16 +73,6 @@ def test_patterns_str():
     assert (patterns.SoftMaxGradDirect == False)
 
 
-def test_patterns_enum():
-    import popart
-
-    patterns = popart.Patterns([popart.PreAliasPatternType.PostNRepl])
-    patterns.InPlace = True
-    assert (patterns.PostNRepl == True)
-    assert (patterns.InPlace == True)
-    assert (patterns.SoftMaxGradDirect == False)
-
-
 def test_loss_inputs_untouched():
     import popart
 

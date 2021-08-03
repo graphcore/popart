@@ -76,8 +76,7 @@ BOOST_AUTO_TEST_CASE(StepIOTest_BufferInput) {
       device,
       popart::InputShapeInfo(),
       {},
-      popart::Patterns({popart::PreAliasPatternType::PostNRepl})
-          .enableRuntimeAsserts(false));
+      popart::Patterns::create({"PostNRepl"}).enableRuntimeAsserts(false));
 
   // prepare the anchors
   int rawOutputData[10];
@@ -156,8 +155,7 @@ BOOST_AUTO_TEST_CASE(StepIOTest_BufferInput_Ipu,
       ipuDevice,
       popart::InputShapeInfo(),
       {},
-      popart::Patterns({popart::PreAliasPatternType::PostNRepl})
-          .enableRuntimeAsserts(false));
+      popart::Patterns::create({"PostNRepl"}).enableRuntimeAsserts(false));
 
   // prepare the anchors
   int rawOutputData[10];
@@ -229,8 +227,7 @@ BOOST_AUTO_TEST_CASE(StepIOTest_CallbackInput) {
       device,
       popart::InputShapeInfo(),
       {},
-      popart::Patterns({popart::PreAliasPatternType::PostNRepl})
-          .enableRuntimeAsserts(false));
+      popart::Patterns::create({"PostNRepl"}).enableRuntimeAsserts(false));
 
   // prepare the anchors
   int rawOutputData[10];
@@ -334,8 +331,7 @@ BOOST_AUTO_TEST_CASE(StepIOTest_CallbackInput_Ipu,
       ipuDevice,
       popart::InputShapeInfo(),
       {},
-      popart::Patterns({popart::PreAliasPatternType::PostNRepl})
-          .enableRuntimeAsserts(false));
+      popart::Patterns::create({"PostNRepl"}).enableRuntimeAsserts(false));
 
   // prepare the anchors
   int rawOutputData[10];

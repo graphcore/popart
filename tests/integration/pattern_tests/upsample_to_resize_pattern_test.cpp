@@ -41,15 +41,15 @@ BOOST_AUTO_TEST_CASE(UpsampleToResizeTest0) {
   auto device = createTestDevice(TEST_TARGET, 2);
 
   Ir ir;
-  ir.prepare({modelProto,
-              InputShapeInfo(),
-              dataFlow,
-              {},
-              nullptr,
-              *device,
-              userOptions,
-              Patterns({PreAliasPatternType::UpsampleToResize})
-                  .enableRuntimeAsserts(false)});
+  ir.prepare(
+      {modelProto,
+       InputShapeInfo(),
+       dataFlow,
+       {},
+       nullptr,
+       *device,
+       userOptions,
+       Patterns::create({"UpsampleToResize"}).enableRuntimeAsserts(false)});
 
   BOOST_CHECK(ir.opsOfType(Onnx::Operators::Upsample_9).size() == 0);
   BOOST_CHECK(ir.opsOfType(Onnx::CustomOperators::Resize).size() == 1);

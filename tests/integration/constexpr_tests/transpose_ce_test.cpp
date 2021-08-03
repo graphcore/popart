@@ -60,8 +60,7 @@ BOOST_AUTO_TEST_CASE(ConstExprTest_Transpose1) {
       device,
       popart::InputShapeInfo(),
       {},
-      popart::Patterns({popart::PreAliasPatternType::PostNRepl})
-          .enableRuntimeAsserts(false));
+      popart::Patterns::create({"PostNRepl"}).enableRuntimeAsserts(false));
 
   // prepare the anchors
   int rawOutputData[10];
@@ -133,8 +132,7 @@ BOOST_AUTO_TEST_CASE(ConstExprTest_Transpose2) {
       device,
       popart::InputShapeInfo(),
       {},
-      popart::Patterns({popart::PreAliasPatternType::PostNRepl})
-          .enableRuntimeAsserts(false));
+      popart::Patterns::create({"PostNRepl"}).enableRuntimeAsserts(false));
 
   // prepare the anchors
   int rawOutputData[24];
