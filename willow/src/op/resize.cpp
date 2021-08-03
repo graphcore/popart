@@ -14,6 +14,8 @@ std::string toString(const ResizeMode &mode) {
     return "nearest";
   case ResizeMode::Linear:
     return "linear";
+  case ResizeMode::Cubic:
+    return "cubic";
   case ResizeMode::N:
   default:
     throw error("Bad ResizeMode '{}'", static_cast<int>(mode));
@@ -57,12 +59,6 @@ std::vector<std::unique_ptr<Op>> ResizeOp::getGradOps() {
 }
 void ResizeOp::setup() {
   auto inputShape = inShape(getInIndex());
-
-  // Check the mode
-  if (isNotOneOf(mode, {ResizeMode::Nearest, ResizeMode::Linear})) {
-    throw error("Resize op only supports the modes 'nearest' and 'linear' at "
-                "this time.");
-  }
 
   // Sanity check scales
   if (scales.size() != inputShape.size()) {
@@ -126,7 +122,9 @@ const int resize11SizesInIndex  = 3;
 
 ResizeMode getResizeModeFromString(const std::string &mode) {
   static std::map<std::string, ResizeMode> modeMap = {
-      {"nearest", ResizeMode::Nearest}, {"linear", ResizeMode::Linear}};
+      {"nearest", ResizeMode::Nearest},
+      {"linear", ResizeMode::Linear},
+      {"cubic", ResizeMode::Cubic}};
   auto found = modeMap.find(mode);
   if (found != modeMap.end()) {
     return found->second;
