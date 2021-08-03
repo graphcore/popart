@@ -93,8 +93,7 @@ BOOST_AUTO_TEST_CASE(StandardRecomputeTest) {
                 &optimizer,
                 *device,
                 opts,
-                Patterns({PreAliasPatternType::OptoIdentity,
-                          PreAliasPatternType::PostNRepl})
+                Patterns::create({"OpToIdentity", "PostNRepl"})
                     .enableRuntimeAsserts(false)});
 
     // Recompute and Recomputed counters

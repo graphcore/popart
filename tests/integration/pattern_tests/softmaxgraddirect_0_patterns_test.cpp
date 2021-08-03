@@ -83,8 +83,7 @@ BOOST_AUTO_TEST_CASE(SoftmaxGradDirect0) {
 
     auto device = createTestDevice(TEST_TARGET);
 
-    auto patterns = Patterns({PreAliasPatternType::PreUniRepl,
-                              PreAliasPatternType::SoftmaxGradDirect})
+    auto patterns = Patterns::create({"PreUniRepl", "SoftmaxGradDirect"})
                         .enableRuntimeAsserts(false);
     patterns.enableNlllWithSoftMaxGradDirect(enableNlllWithSoftmaxGradDirect);
 

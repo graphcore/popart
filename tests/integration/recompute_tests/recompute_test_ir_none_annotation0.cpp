@@ -71,8 +71,7 @@ BOOST_AUTO_TEST_CASE(NoRecomputeTest) {
                 &optimizer,
                 *device,
                 opts,
-                Patterns({PreAliasPatternType::OptoIdentity,
-                          PreAliasPatternType::PostNRepl})
+                Patterns::create({"OpToIdentity", "PostNRepl"})
                     .enableRuntimeAsserts(false)});
 
     auto opSchedule = ir.getOpSchedule({}, RequireOptimalSchedule::Yes);

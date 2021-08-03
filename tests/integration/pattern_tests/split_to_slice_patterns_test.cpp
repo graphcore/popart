@@ -41,15 +41,14 @@ BOOST_AUTO_TEST_CASE(SplitToSliceTest0) {
   auto device = createTestDevice(TEST_TARGET, 2);
 
   Ir ir;
-  ir.prepare(
-      {modelProto,
-       InputShapeInfo(),
-       dataFlow,
-       {},
-       nullptr,
-       *device,
-       userOptions,
-       Patterns({PreAliasPatternType::SplitOp}).enableRuntimeAsserts(false)});
+  ir.prepare({modelProto,
+              InputShapeInfo(),
+              dataFlow,
+              {},
+              nullptr,
+              *device,
+              userOptions,
+              Patterns::create({"SplitOp"}).enableRuntimeAsserts(false)});
 
   BOOST_CHECK(ir.opsOfType(Onnx::Operators::Slice_1).size() == 3);
   BOOST_CHECK(ir.opsOfType(Onnx::Operators::Split_2).size() == 0);

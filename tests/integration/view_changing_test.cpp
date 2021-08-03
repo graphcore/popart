@@ -54,15 +54,14 @@ BOOST_AUTO_TEST_CASE(ViewChangingTest_Reshape0) {
   auto device    = createTestDevice(TEST_TARGET);
 
   Ir ir;
-  ir.prepare(
-      {modelProto,
-       InputShapeInfo(),
-       dataFlow,
-       lossId,
-       &optimizer,
-       *device,
-       {}, // no SessionOptions
-       Patterns({PreAliasPatternType::PostNRepl}).enableRuntimeAsserts(false)});
+  ir.prepare({modelProto,
+              InputShapeInfo(),
+              dataFlow,
+              lossId,
+              &optimizer,
+              *device,
+              {}, // no SessionOptions
+              Patterns::create({"PostNRepl"}).enableRuntimeAsserts(false)});
 
   // Check the ir
   // 1) that the Reshape Op is present,
@@ -104,15 +103,14 @@ BOOST_AUTO_TEST_CASE(ViewChangingTest_Reshape_Initializer) {
   auto device     = createTestDevice(TEST_TARGET);
 
   Ir ir;
-  ir.prepare(
-      {modelProto,
-       InputShapeInfo(),
-       dataFlow,
-       lossId,
-       &optimizer,
-       *device,
-       {},
-       Patterns({PreAliasPatternType::PostNRepl}).enableRuntimeAsserts(false)});
+  ir.prepare({modelProto,
+              InputShapeInfo(),
+              dataFlow,
+              lossId,
+              &optimizer,
+              *device,
+              {},
+              Patterns::create({"PostNRepl"}).enableRuntimeAsserts(false)});
   BOOST_CHECK(ir.opsOfType(Onnx::Operators::Reshape_5).size() == 1);
   BOOST_CHECK(ir.getMainGraphTensors().get(outId)->info.shape() == outShape);
 }

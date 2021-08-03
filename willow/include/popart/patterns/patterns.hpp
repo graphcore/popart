@@ -190,7 +190,6 @@ private:
   template <typename PATTERN> Patterns &enablePattern(bool v);
 
 public:
-  Patterns(std::vector<PreAliasPatternType> types);
   Patterns(PatternsLevel level);
   Patterns() : Patterns(PatternsLevel::Default) {}
   Patterns(std::vector<std::string> patterns);
@@ -199,11 +198,9 @@ public:
 
   bool isPatternEnabled(const std::type_index &t);
   bool isPatternEnabled(const std::string &t);
-  bool isPatternEnabled(PreAliasPatternType t);
 
   Patterns &enablePattern(const std::type_index &t, bool v);
   Patterns &enablePattern(const std::string &t, bool v);
-  Patterns &enablePattern(PreAliasPatternType t, bool v);
 
   bool isInitAccumulateEnabled();
   bool isPreUniReplEnabled();

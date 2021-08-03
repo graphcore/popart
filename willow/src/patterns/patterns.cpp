@@ -143,19 +143,6 @@ Patterns::Patterns(PatternsLevel level) : runtimeAssertsOn{true} {
   };
 }
 
-Patterns::Patterns(std::vector<PreAliasPatternType> types)
-    : runtimeAssertsOn{true} {
-  logging::pattern::warn(
-      "`Patterns::Patterns(std::vector<PreAliasPatternType> types)' "
-      "constructor is deprecated and will be removed in a future release. "
-      "Please use `static Patterns Patterns::create(std::vector<std::string> "
-      "patterns)' instead");
-
-  for (auto type : types) {
-    auto ti = PreAliasPatternManager::getTypeIndex(type);
-    settings.insert({ti, true});
-  }
-}
 Patterns::Patterns(std::vector<std::string> strings) : runtimeAssertsOn{true} {
 
   for (auto p : strings) {
@@ -202,16 +189,6 @@ bool Patterns::isPatternEnabled(const std::type_index &t) {
 }
 
 bool Patterns::isPatternEnabled(const std::string &t) {
-  auto ti = PreAliasPatternManager::getTypeIndex(t);
-  return isPatternEnabled(ti);
-}
-
-bool Patterns::isPatternEnabled(PreAliasPatternType t) {
-  logging::pattern::warn(
-      "`bool Patterns::isPatternEnabled(PreAliasPatternType t)' is deprecated "
-      "and will be removed in a future release. Please use `bool "
-      "Patterns::isPatternEnabled(const std::string &)' instead");
-
   auto ti = PreAliasPatternManager::getTypeIndex(t);
   return isPatternEnabled(ti);
 }
@@ -535,15 +512,6 @@ Patterns &Patterns::enablePattern(const std::string &t, bool v) {
     auto ti = PreAliasPatternManager::getTypeIndex(t);
     return enablePattern(ti, v);
   }
-}
-
-Patterns &Patterns::enablePattern(PreAliasPatternType t, bool v) {
-  logging::pattern::warn(
-      "`Patterns &Patterns::enablePattern(PreAliasPatternType t, bool v)' is "
-      "deprecated and will be removed in a future release. Please use "
-      "`Patterns &Patterns::enablePattern(const std::string &)' instead");
-  auto ti = PreAliasPatternManager::getTypeIndex(t);
-  return enablePattern(ti, v);
 }
 
 void Patterns::ensureAllMandatoryPreAliasPatternsAreEnabled() const {

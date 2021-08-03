@@ -98,8 +98,7 @@ BOOST_AUTO_TEST_CASE(DirectViewChangeTest0) {
   auto optimizer = ConstSGD(0.01);
   auto device    = createTestDevice(TEST_TARGET);
 
-  auto patterns =
-      Patterns({PreAliasPatternType::PostNRepl}).enableRuntimeAsserts(false);
+  auto patterns = Patterns::create({"PostNRepl"}).enableRuntimeAsserts(false);
   patterns.enableInPlace(true);
 
   SessionOptions opts;

@@ -100,8 +100,7 @@ BOOST_AUTO_TEST_CASE(NormOnlyRecomputeTest) {
                 &optimizer,
                 *device,
                 opts,
-                Patterns({PreAliasPatternType::OptoIdentity,
-                          PreAliasPatternType::PostNRepl})
+                Patterns::create({"OpToIdentity", "PostNRepl"})
                     .enableRuntimeAsserts(false)});
 
     int nRecompute = 0;

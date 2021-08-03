@@ -89,8 +89,7 @@ BOOST_AUTO_TEST_CASE(RecomputeTestPopxNormOnlyCalls0) {
       device,
       InputShapeInfo(),
       opts,
-      Patterns({popart::PreAliasPatternType::PostNRepl,
-                popart::PreAliasPatternType::ConvDataGrad})
+      Patterns::create({"PostNRepl", "ConvDataGrad"})
           .enableRuntimeAsserts(false));
   session->prepareDevice();
 
