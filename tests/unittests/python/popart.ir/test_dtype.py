@@ -7,6 +7,20 @@ import popart.ir as pir
 from popart.ir.testing import get_all_dtypes, get_all_int_dtypes
 
 
+# TODO(T38031): Delete this utility function.
+def _get_torch_version():
+    """Utility function to convert the torch version to a tuple of ints.
+
+    Returns:
+        tuple: The version - a tuple of ints.
+    """
+    v = torch.__version__
+    v = v.split('+')[0]
+    v = v.split('.')
+    v = tuple([int(i) for i in v])
+    return v
+
+
 class Testdtype:
     def test_constructor(self):
         with pytest.raises(TypeError) as excinfo:
@@ -14,6 +28,9 @@ class Testdtype:
         err_msg = "Cannot create popart.ir.dtype.dtype instances."
         assert str(excinfo.value) == err_msg
 
+    # TODO(T38031): Unskip this test.
+    @pytest.mark.skipif(_get_torch_version() < (1, 7, 1),
+                        reason="Requires torch>=1.7.1.")
     def test_properties(self):
         dtypes = get_all_dtypes()
         uint_dtypes = get_all_int_dtypes(include_signed=False)
