@@ -107,7 +107,7 @@ The op class
 ~~~~~~~~~~~~
 
 The `Op
-<https://github.com/graphcore/popart/tree/sdk-release-1.3/willow/include/popart/op.hpp#L59>`_
+<https://github.com/graphcore/popart/tree/sdk-release-2.2/willow/include/popart/op.hpp#L92>`_
 base class provides the methods necessary for the PopART IR passes and
 transformations.
 
@@ -120,9 +120,10 @@ The main methods that you need to override or implement are:
   ``std::make_unique`` copy of the op. This must be implemented.
 
 * ``setup()``: sets the shape and type of the arguments to the op. This must set
-  the type and shape information for all the output ``TensorInfo`` objects (see
-  `tensorinfo.hpp
-  <https://github.com/graphcore/popart/tree/sdk-release-1.3/willow/include/popart/tensorinfo.hpp#L163>`_).
+  the type and shape information for all the output `TensorInfo
+  <https://docs.graphcore.ai/projects/popart-cpp-api/en/latest/api-cpp.html#_CPPv4N6popart10TensorInfoE>`__
+  objects.
+
 
 * ``appendAttributes()``: appends attributes when serialising the op to a
   stream. This is used for some debugging purposes but also for generating the
@@ -268,7 +269,7 @@ The opx class
 ~~~~~~~~~~~~~
 
 The `Opx
-<https://github.com/graphcore/popart/tree/sdk-release-1.3/willow/include/popart/popx/opx.hpp>`_
+<https://github.com/graphcore/popart/tree/sdk-release-2.2/willow/include/popart/popx/opx.hpp>`_
 class provides a ``grow()`` function that implements the corresponding ``Op``
 definition as Poplar or PopLibs calls using the provided ``program::Sequence``.
 Since ``OpxCreator`` uses a generic constructor, you should also check that the
@@ -407,7 +408,7 @@ The ``GradOp`` class will be implicitly created when the overridden method
                             {Onnx::Operators::LeakyRelu_6, leakyReluOpDef}}),
       [](const OpCreatorInfo &info) {
         float alpha = info.attributes.getAttribute<popart::Attributes::Float>(
-            "alpha, 1e-2f);
+            "alpha", 1e-2f);
         // default epsilon is 10**(-2)
         return std::make_unique<LeakyReluOp>(info.opid, alpha, info.settings);
       },
