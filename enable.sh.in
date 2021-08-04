@@ -1,4 +1,5 @@
 #!/bin/bash
+# Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 POPART_ROOT=$(cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd)
 export CMAKE_PREFIX_PATH=${POPART_ROOT}${CMAKE_PREFIX_PATH:+:${CMAKE_PREFIX_PATH}}
 export CPATH=${POPART_ROOT}/@CMAKE_INSTALL_INCLUDEDIR@${CPATH:+:${CPATH}}

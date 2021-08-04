@@ -1,3 +1,4 @@
+// Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 /*
 Define custom documentation strings here. These are accessed like the other
 strings, except with DOC(custom, ...), see below for an example.

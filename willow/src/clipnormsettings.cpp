@@ -1,3 +1,4 @@
+// Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 #include <popart/clipnormsettings.hpp>
 #include <popart/error.hpp>
 #include <popart/logging.hpp>

@@ -1,3 +1,4 @@
+// Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 #include <poprithms/logging/timepartitionlogger.hpp>
 #include <popart/ir.hpp>
 #include <popart/op.hpp>

@@ -1,3 +1,4 @@
+// Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 #include <popart/debugcontext.hpp>
 #include <popart/popx/debugcontextx.hpp>
 //#include <popart/names.hpp>

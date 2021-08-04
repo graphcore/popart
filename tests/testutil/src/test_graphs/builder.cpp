@@ -1,3 +1,4 @@
+// Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 #include <testutil/test_graphs/builder.hpp>
 
 #include <filereader.hpp>

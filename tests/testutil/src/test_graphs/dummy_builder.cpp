@@ -1,3 +1,4 @@
+// Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 #include <testutil/test_graphs/dummy_builder.hpp>
 
 #include <testutil/test_graphs/op/dummy.hpp>

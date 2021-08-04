@@ -1,3 +1,4 @@
+# Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 """
     TL;DR: 
     1) Include POPART_ENABLE_COVERAGE=ON in POPART_CMAKE_ARGS when building PopART,

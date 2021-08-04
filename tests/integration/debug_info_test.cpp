@@ -1,4 +1,4 @@
-
+// Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 
 #define BOOST_TEST_MODULE DebugInfoTest
 

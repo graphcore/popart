@@ -1,4 +1,4 @@
-// Copyright (c) 2021 Tensorscore Ltd. All rights reserved.
+// Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 #ifndef POPART__INTERNAL_IR_BINDINGS_TENSORS_HPP
 #define POPART__INTERNAL_IR_BINDINGS_TENSORS_HPP
 

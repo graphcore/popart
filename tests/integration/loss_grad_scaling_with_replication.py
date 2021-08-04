@@ -1,3 +1,4 @@
+# Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 # 'import test_util' requires adding to sys.path
 import sys
 from pathlib import Path

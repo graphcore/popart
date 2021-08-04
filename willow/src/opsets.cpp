@@ -1,3 +1,4 @@
+// Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 #include "opsets.cpp.gen"
 #include <popart/opidentifier.hpp>
 #include <popart/opsets.hpp>

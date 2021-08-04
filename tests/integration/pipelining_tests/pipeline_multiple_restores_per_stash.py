@@ -1,3 +1,4 @@
+# Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 import popart
 import pytest
 import numpy as np

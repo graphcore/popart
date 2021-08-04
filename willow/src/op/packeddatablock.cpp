@@ -1,3 +1,4 @@
+// Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 #include <onnx/onnx_pb.h>
 
 #include <popart/error.hpp>

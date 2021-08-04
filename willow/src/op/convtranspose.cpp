@@ -1,3 +1,4 @@
+// Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 #include <popart/ir.hpp>
 #include <popart/op/convtranspose.hpp>
 #include <popart/opmanager.hpp>

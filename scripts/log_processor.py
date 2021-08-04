@@ -1,3 +1,4 @@
+# Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 """
     A script that can do some very basic log processing, currently limited to processing the timestamps in the log. Suppose you have a log like this:
 

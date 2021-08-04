@@ -1,4 +1,5 @@
 #!/bin/bash
+# Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 set -e
 
 VENV=@PROJECT_BINARY_DIR@/venv

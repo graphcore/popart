@@ -1,3 +1,4 @@
+// Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 #include <popart/alias/aliasmodel.hpp>
 #include <popart/graph.hpp>
 #include <popart/graphutils.hpp>

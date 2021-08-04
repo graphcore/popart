@@ -1,3 +1,4 @@
+# Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 """Tests for the automatically generated stub files for popart."""
 import re
 from inspect import signature

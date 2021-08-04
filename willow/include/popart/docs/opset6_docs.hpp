@@ -1,3 +1,4 @@
+// Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 #ifndef GUARD_OPSET6_DOCS_HPP
 #define GUARD_OPSET6_DOCS_HPP
 /*

@@ -1,4 +1,4 @@
-// Copyright (c) 2021 Tensorscore Ltd. All rights reserved.
+// Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 #include "bindings/tensors.hpp"
 
 #include <pybind11/numpy.h>

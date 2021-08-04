@@ -1,3 +1,4 @@
+# Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 # This test checks through all the header files it can find
 # in the argument path and checks the files "#include"
 # statements for boost headers.
