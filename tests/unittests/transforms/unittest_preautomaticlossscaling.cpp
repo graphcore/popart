@@ -1,5 +1,4 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#include "popart/error.hpp"
 #define BOOST_TEST_MODULE PreAutomaticLossScaleTest
 #include <algorithm>
 #include <iterator>
@@ -10,8 +9,10 @@
 #include <utility>
 #include <vector>
 
+#include <boost/algorithm/string/predicate.hpp>
 #include <boost/test/unit_test.hpp>
 
+#include <popart/error.hpp>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/names.hpp>
@@ -19,6 +20,7 @@
 #include <popart/op/mul.hpp>
 #include <popart/tensorinfo.hpp>
 #include <popart/transforms/preautomaticlossscaling.hpp>
+#include <popart/util.hpp>
 
 namespace popart {
 
@@ -283,14 +285,11 @@ void addMulOp(TensorId arg0, TensorId arg1, TensorId out, Graph &g, int id) {
       Op::Settings(g, "M" + std::to_string(id)));
 }
 
-bool hasPrefix(const std::string &str, const std::string &prefix) {
-  return str.length() >= prefix.length() &&
-         str.compare(0, prefix.size(), prefix) == 0;
-}
-
 template <typename Ex>
 std::function<bool(const Ex &)>
 checkErrorMsgHasPrefixFn(const std::string &prefix) {
-  return [=](const Ex &ex) -> bool { return hasPrefix(ex.what(), prefix); };
+  return [=](const Ex &ex) -> bool {
+    return boost::algorithm::starts_with(ex.what(), prefix);
+  };
 }
 } // namespace popart

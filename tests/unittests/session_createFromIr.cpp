@@ -1,9 +1,11 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE Test_Session_createFromIr
+#include <boost/algorithm/string/predicate.hpp>
 #include <boost/test/unit_test.hpp>
 
 #include <popart/devicemanager.hpp>
 #include <popart/session.hpp>
+#include <popart/util.hpp>
 
 #include <string>
 
@@ -11,16 +13,11 @@ using namespace popart;
 
 namespace {
 
-bool hasPrefix(const std::string &str, const std::string &prefix) {
-  return str.length() >= prefix.length() &&
-         str.compare(0, prefix.size(), prefix) == 0;
-}
-
 std::function<bool(const error &)>
 checkErrorMsgFunc(const std::string &expectedPrefix) {
 
   return [&](const error &ex) -> bool {
-    return hasPrefix(ex.what(), expectedPrefix);
+    return boost::algorithm::starts_with(ex.what(), expectedPrefix);
   };
 }
 

@@ -1,6 +1,7 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE BuilderPartialsTest
 
+#include <boost/algorithm/string/predicate.hpp>
 #include <boost/test/unit_test.hpp>
 
 #include <popart/builder.hpp>
@@ -17,16 +18,11 @@ struct RunOp {
   TensorId operator()() { return _run(*builder); }
 };
 
-bool hasPrefix(const std::string &str, const std::string &prefix) {
-  return str.length() >= prefix.length() &&
-         str.compare(0, prefix.size(), prefix) == 0;
-}
-
 bool checkErrorMsgIsForUnsupportedPartialsType(const error &ex) {
   // Thrown from Builder::setPartialsType code.
   const auto expected_prefix = "Builder::setPartialsType";
 
-  return hasPrefix(ex.what(), expected_prefix);
+  return boost::algorithm::starts_with(ex.what(), expected_prefix);
 }
 
 bool checkErrorMsgIsForNonExistantAttribute(const error &ex) {
@@ -34,7 +30,7 @@ bool checkErrorMsgIsForNonExistantAttribute(const error &ex) {
   const auto expected_prefix =
       "Node does not have an attribute " + std::string(sPartialsTypeAttribute);
 
-  return hasPrefix(ex.what(), expected_prefix);
+  return boost::algorithm::starts_with(ex.what(), expected_prefix);
 }
 
 // NB: The builder is not responsible for verifying the value of the

@@ -1,5 +1,6 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE Test_StepIO_DeonnxingRegressionTests
+#include <boost/algorithm/string/predicate.hpp>
 #include <boost/test/unit_test.hpp>
 
 #include <popart/dataflow.hpp>
@@ -11,20 +12,18 @@
 #include <popart/stepio.hpp>
 #include <popart/tensorinfo.hpp>
 #include <popart/testdevice.hpp>
+#include <popart/util.hpp>
 
 using namespace popart;
 
 namespace {
 
-bool hasPrefix(const std::string &str, const std::string &prefix) {
-  return str.length() >= prefix.length() &&
-         str.compare(0, prefix.size(), prefix) == 0;
-}
-
 template <typename Ex>
 std::function<bool(const Ex &)>
 checkErrorMsgHasPrefixFn(const std::string &prefix) {
-  return [=](const Ex &ex) -> bool { return hasPrefix(ex.what(), prefix); };
+  return [=](const Ex &ex) -> bool {
+    return boost::algorithm::starts_with(ex.what(), prefix);
+  };
 }
 
 } // namespace

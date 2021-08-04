@@ -1,6 +1,7 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE AnchorReturnTypeValidationTest
 
+#include <boost/algorithm/string/predicate.hpp>
 #include <boost/test/unit_test.hpp>
 #include <popart/dataflow.hpp>
 #include <popart/error.hpp>
@@ -9,10 +10,6 @@
 #include <popart/transforms/mainloops.hpp>
 
 namespace popart {
-bool hasPrefix(const std::string &str, const std::string &prefix) {
-  return str.length() >= prefix.length() &&
-         str.compare(0, prefix.size(), prefix) == 0;
-}
 
 std::function<bool(const error &)>
 checkErrorMsgFunc(const AnchorReturnType art) {
@@ -20,7 +17,7 @@ checkErrorMsgFunc(const AnchorReturnType art) {
     auto expectedPrefix = "AnchorReturnType::" + art.str() +
                           " for TensorId \"x\" is unsupported when explicit "
                           "main loops are enabled.";
-    return hasPrefix(ex.what(), expectedPrefix);
+    return boost::algorithm::starts_with(ex.what(), expectedPrefix);
   };
 }
 
