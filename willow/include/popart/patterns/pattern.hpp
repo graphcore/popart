@@ -59,9 +59,7 @@ enum class PreAliasPatternType {
   LoopScanOut,
   SparseAccumulate,
   PackedDataBlock,
-  LambSerialisedWeight,
-  TiedGather,
-  TiedGatherAccumulate
+  LambSerialisedWeight
 };
 
 // Definition: A tensor is "touched" by a Pattern if
