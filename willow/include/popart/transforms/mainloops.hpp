@@ -9,6 +9,11 @@
 namespace popart {
 
 class MainLoops : public Transform {
+private:
+  void validateAnchorReturnType(Graph &) const;
+  std::pair<LoopOp *, LoopOp *> setupLoops(Graph &) const;
+  void setupAnchors(Graph &, LoopOp *, LoopOp *) const;
+
 public:
   static std::size_t id();
 

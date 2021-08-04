@@ -1439,6 +1439,12 @@ void Ir::prepareImpl(const IrBundle &gb, const HashesMap &cacheEntries) {
 
   dotCheckpoint(DotCheck::PreAlias);
 
+  if (getSessionOptions().enableExplicitMainLoops) {
+    // Add explicit training loops
+    applyTransform(MainLoops::id(), getMainGraph());
+    removeIsolatedTensors(true);
+  }
+
   if (getSessionOptions().useHostCopyOps) {
     // Add anchor HostStore operations
     applyTransform(HostIOSetup::id(2), getMainGraph());
@@ -1446,12 +1452,6 @@ void Ir::prepareImpl(const IrBundle &gb, const HashesMap &cacheEntries) {
     // ops
     applyTransform(IoComputeTileCopy::id(), getMainGraph());
     updateVertices();
-  }
-
-  if (getSessionOptions().enableExplicitMainLoops) {
-    // Add explicit training loops
-    applyTransform(MainLoops::id(), getMainGraph());
-    removeIsolatedTensors(true);
   }
 
   if (autoRecomputationEnabled() && !getSessionOptions().enablePipelining &&

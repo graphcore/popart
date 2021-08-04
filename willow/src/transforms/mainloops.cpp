@@ -1,22 +1,28 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 #include <memory>
 #include <queue>
+#include <vector>
+#include <popart/alias/aliasmodelgrower.hpp>
 #include <popart/aliasesmap.hpp>
+#include <popart/dataflow.hpp>
 #include <popart/error.hpp>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
+#include <popart/logging.hpp>
 #include <popart/names.hpp>
 #include <popart/op.hpp>
+#include <popart/op/add.hpp>
 #include <popart/op/exchange/remote.hpp>
+#include <popart/op/init.hpp>
 #include <popart/op/iotilecopy.hpp>
 #include <popart/op/ipucopy.hpp>
 #include <popart/op/loop.hpp>
 #include <popart/tensor.hpp>
+#include <popart/tensornames.hpp>
 #include <popart/tensors.hpp>
 #include <popart/topocons.hpp>
 #include <popart/transforms/mainloops.hpp>
 #include <popart/transforms/prune.hpp>
-
 namespace popart {
 
 namespace {
@@ -426,28 +432,225 @@ LoopOp *MainLoops::getInnerLoopOp(Ir &ir) {
 }
 
 bool MainLoops::apply(Graph &graph) const {
+  logging::transform::trace(
+      "[MainLoops] Step 1 - Validating anchor return types.");
+  validateAnchorReturnType(graph);
+
+  logging::transform::trace("[MainLoops] Step 2 - Adding loops to main graph.");
+  auto loopOps = setupLoops(graph);
+
+  logging::transform::trace("[MainLoops] Step 3 - Setting up anchors.");
+  setupAnchors(graph, loopOps.first, loopOps.second);
+
+  return true;
+}
+
+void MainLoops::validateAnchorReturnType(Graph &graph) const {
+  auto &ir = graph.getIr();
+
+  for (auto &anchorArt : ir.getDataFlow().getAnchorReturnTypeMap()) {
+    auto rightId = anchorArt.first;
+    auto leftId  = ir.getAnchorRemap().getLeft(rightId);
+    auto art     = anchorArt.second;
+
+    // Check whether the anchor return types are supported.
+    if (!(art.id() == AnchorReturnTypeId::All ||
+          art.id() == AnchorReturnTypeId::Sum)) {
+      throw error(
+          "[MainLoops] AnchorReturnType::{} for Tensor \"{}\" is unsupported "
+          "when explicit main loops are enabled. Supported anchor return types "
+          "are AnchorReturnTypeId::All and AnchorReturnTypeId::Sum.",
+          art.str(),
+          rightId);
+    }
+
+    // When the anchor return type is sum, check if the latest remap of the
+    // anchor is in the main graph.
+    if (!graph.getTensors().contains(leftId) &&
+        art.id() == AnchorReturnTypeId::Sum) {
+      throw internal_error("[MainLoops] The latest remap \"{}\" for anchor "
+                           "\"{}\" is not in the main graph.",
+                           leftId,
+                           rightId);
+    }
+  }
+}
+
+void MainLoops::setupAnchors(Graph &graph,
+                             LoopOp *outerLoop,
+                             LoopOp *innerLoop) const {
   auto &ir                = graph.getIr();
   auto &sessionOptions    = ir.getSessionOptions();
   auto accumulationFactor = sessionOptions.getAccumulationFactor();
   auto batchesPerStep     = ir.getDataFlow().batchesPerStep();
 
-  // Check whether the anchor return types are supported.
-  for (auto &anchorArt : ir.getDataFlow().getAnchorReturnTypeMap()) {
-    // TODO(T39577): Uncomment the AnchorReturnTypeId::Sum line in the if
-    // statement below once this is resolved, and fix the last sentence in the
-    // error message to "Supported anchor return types are
-    // AnchorReturnTypeId::All and AnchorReturnTypeId::Sum."
-    if (!(anchorArt.second.id() == AnchorReturnTypeId::All
-          // || anchorArt.second.id() == AnchorReturnTypeId::Sum
-          )) {
-      throw error(
-          "AnchorReturnType::{} for TensorId \"{}\" is unsupported when "
-          "explicit main loops are enabled. Supported anchor return type "
-          "is AnchorReturnTypeId::All.", // and AnchorReturnTypeId::Sum.",
-          anchorArt.second.str(),
-          anchorArt.first);
+  if (accumulationFactor == 1 && batchesPerStep == 1) {
+    // All anchor return types behave the same.
+    return;
+  }
+
+  Graph &mainGraph  = graph;
+  Graph &outerGraph = getOuterLoopSubgraph(ir);
+  Graph &innerGraph = getInnerLoopSubgraph(ir);
+
+  std::vector<Op *> newMainGraphOps{};
+  std::vector<Op *> newOuterGraphOps{};
+  std::vector<Op *> newInnerGraphOps{};
+
+  for (auto &anchorIdArt : ir.getDataFlow().getAnchorReturnTypeMap()) {
+    auto rightId     = anchorIdArt.first;
+    auto leftId      = ir.getAnchorRemap().getLeft(rightId);
+    auto art         = anchorIdArt.second;
+    TensorInfo tInfo = innerGraph.getTensors().get(leftId)->info;
+
+    switch (art.id()) {
+    case AnchorReturnTypeId::All: {
+      break;
+    }
+    case AnchorReturnTypeId::Sum: {
+      // Progressively build the following graph, starting from the `InitOp`
+      // and following the path down to the output tensor `O`.
+      //
+      // NOTE: Either the `outer` or the `inner` subgraph could be missing.
+      // NOTE: (I' and O') and (I" and O") are explicit (in|out)puts to LoopOps
+      //     that call the outer and inner subgraphs respectively. They're
+      //     loop-carried.
+      //
+      //             .-outer------------------------------.
+      //             |      .-inner----------------.      |
+      // InitOp - I -+- I' -+- I" -.               |      |
+      //             |      |       \              |      |
+      //             |      |   V ---+ AddOp - O" -+- O' -+- O
+      //             |      .______________________.      |
+      //             .____________________________________.
+
+      logging::transform::trace(
+          "[MainLoops] Setting up AnchorReturnType::Sum for anchor {}.",
+          rightId);
+
+      TensorId accumIn  = anchorSumPrefix() + rightId;
+      TensorId accumOut = accumIn + "_out";
+
+      TensorId currId = mainGraph.addScope(accumIn);
+      TensorId oldId  = currId;
+
+      Op *initOp =
+          mainGraph.createOp<InitOp>(Onnx::CustomOperators::Init_1,
+                                     tInfo,
+                                     TensorType::ActGrad,
+                                     InitType::Zero,
+                                     Op::Settings({mainGraph, "Init"}));
+      initOp->createAndConnectOutTensor(InitOp::getOutIndex(), currId);
+      initOp->setup();
+      newMainGraphOps.push_back(initOp);
+
+      if (outerLoop) {
+        oldId  = currId;
+        currId = outerGraph.addScope(accumIn);
+        outerLoop->addLoopInput(
+            outerLoop->subgraphInToOpInIndex(LoopOp::getFirstInputInIndex()),
+            oldId,
+            currId,
+            false);
+      }
+
+      if (innerLoop) {
+        oldId  = currId;
+        currId = innerGraph.addScope(accumIn);
+        innerLoop->addLoopInput(
+            innerLoop->subgraphInToOpInIndex(LoopOp::getFirstInputInIndex()),
+            oldId,
+            currId,
+            false);
+      }
+
+      oldId  = currId;
+      currId = innerGraph.addScope(accumOut);
+      // NOTE: When (bps > 1 && ga == 1), innerGraph == outerGraph.
+      Op *addOp = innerGraph.createOp<AddOp>(Onnx::Operators::Add_7,
+                                             Op::Settings({innerGraph, "Add"}));
+      addOp->connectInTensor(AddOp::getArg0InIndex(), oldId);
+      addOp->connectInTensor(AddOp::getArg1InIndex(), leftId);
+      addOp->createAndConnectOutTensor(AddOp::getOutIndex(), currId);
+      addOp->setup();
+
+      if (innerLoop)
+        newInnerGraphOps.push_back(addOp);
+      else if (outerLoop)
+        newOuterGraphOps.push_back(addOp);
+
+      if (innerLoop && outerLoop) {
+        oldId  = currId;
+        currId = outerGraph.addScope(accumOut);
+        innerLoop->addLoopOutput(innerLoop->subgraphOutToOpOutIndex(
+                                     LoopOp::getFirstOutputOutIndex()),
+                                 currId,
+                                 oldId,
+                                 false);
+      }
+
+      if (innerLoop || outerLoop) {
+        oldId             = currId;
+        currId            = mainGraph.addScope(accumOut);
+        auto existingLoop = outerLoop ? outerLoop : innerLoop;
+        existingLoop->addLoopOutput(existingLoop->subgraphOutToOpOutIndex(
+                                        LoopOp::getFirstOutputOutIndex()),
+                                    currId,
+                                    oldId,
+                                    false);
+      } else {
+        throw internal_error(
+            "Attempting to setup AnchorReturnType::Sum for anchor `{}`, but "
+            "neither the step nor the accumulation loop exists.",
+            rightId);
+      }
+
+      if (innerLoop)
+        innerLoop->setup();
+      if (outerLoop)
+        outerLoop->setup();
+
+      ir.remapAnchor(leftId, currId);
+
+      break;
+    }
+    default: {
+      throw internal_error(
+          "Attempting to setup an unsupported AnchorReturnType::{}. The anchor"
+          " return type validation step should have caught this.",
+          art.id());
+      break;
+    }
+    }
+
+    // Inherit placement attributes.
+    auto inheritPlacementAttributes = [](Graph &g, std::vector<Op *> &ops) {
+      AliasModel aliasModel;
+      AliasModelGrower aliasModelGrower{aliasModel};
+      aliasModelGrower.growFullGraph(g, DataDependenciesOnly::Yes);
+      for (auto op : ops) {
+        op->inheritPlacementAttributes(true, aliasModel);
+        op->setup();
+      }
+    };
+
+    if (newMainGraphOps.size()) {
+      inheritPlacementAttributes(mainGraph, newMainGraphOps);
+    }
+    if (newOuterGraphOps.size()) {
+      inheritPlacementAttributes(outerGraph, newOuterGraphOps);
+    }
+    if (newInnerGraphOps.size()) {
+      inheritPlacementAttributes(innerGraph, newInnerGraphOps);
     }
   }
+}
+
+std::pair<LoopOp *, LoopOp *> MainLoops::setupLoops(Graph &graph) const {
+  auto &ir                = graph.getIr();
+  auto &sessionOptions    = ir.getSessionOptions();
+  auto accumulationFactor = sessionOptions.getAccumulationFactor();
+  auto batchesPerStep     = ir.getDataFlow().batchesPerStep();
 
   // Initially: Point all IDs to the existing main graph
   GraphId mainGraphId  = graph.id;
@@ -459,8 +662,6 @@ bool MainLoops::apply(Graph &graph) const {
   LoopOp *accumLoop = nullptr;
   std::map<TensorId, TensorId> stepTensorRemap;
   std::map<TensorId, TensorId> accumTensorRemap;
-  std::map<OpId, OpId> stepOpRemap;
-  std::map<OpId, OpId> accumOpRemap;
 
   if (batchesPerStep > 1) {
     Op::Settings stepLoopSettings(graph, "stepLoop");
@@ -594,7 +795,7 @@ bool MainLoops::apply(Graph &graph) const {
                               accumLoop->debugName());
   }
 
-  return true;
+  return {stepLoop, accumLoop};
 }
 
 namespace {

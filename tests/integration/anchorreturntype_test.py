@@ -1,13 +1,78 @@
-# Copyright (c) 2018 Graphcore Ltd. All rights reserved.
+# Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 import numpy as np
 import pytest
-import popart
-import torch
 import test_util as tu
 
+import popart
 
-def identity_inference_session(inputShape, inputArray, BPS, art, R=1):
+ALL = popart.AnchorReturnType("all")
+FINAL = popart.AnchorReturnType("final")
+SUM = popart.AnchorReturnType("sum")
+EVERY1 = popart.AnchorReturnType("everyn", 1)
+EVERY2 = popart.AnchorReturnType("everyn", 2)
+EVERY4 = popart.AnchorReturnType("everyn", 4)
 
+
+def generate_identity_inference_session_data():
+    """Generates test cases for the test_identity_inference_session() test. See
+    the test for the meaning of different arguments.
+
+    Returns:
+        A list of arguments to call the test with.
+    """
+    data = []
+
+    # 0-d input tensors, batchesPerStep = 1
+    data.append([[], 1, 1, ALL, 1, True, 1])
+    data.append([[], 1, 1, ALL, 1, False, 1])
+    data.append([[], 1, 1, EVERY1, 1, False, 1])
+    data.append([[], 1, 1, FINAL, 1, False, 1])
+    data.append([[], 1, 1, SUM, 1, True, 1])
+    data.append([[], 1, 1, SUM, 1, False, 1])
+
+    # 0-d input tensors, batchesPerStep > 1
+    inputArray = [1, 2, 3, 4, 5, 6, 7, 8]
+    data.append([[], inputArray, 8, ALL, 1, True, inputArray])
+    data.append([[], inputArray, 8, ALL, 1, False, inputArray])
+    data.append([[], inputArray, 8, EVERY4, 1, False, [4, 8]])
+    data.append([[], inputArray, 8, FINAL, 1, False, 8])
+    data.append([[], inputArray, 8, SUM, 1, True, 36])
+    data.append([[], inputArray, 8, SUM, 1, False, 36])
+
+    # 1-d input tensors, batchesPerStep = 1
+    inputArray = [1, 2]
+    data.append([[2], [1, 2], 1, ALL, 1, True, [1, 2]])
+    data.append([[2], [1, 2], 1, ALL, 1, False, [1, 2]])
+    data.append([[2], [1, 2], 1, EVERY1, 1, False, [1, 2]])
+    data.append([[2], [1, 2], 1, FINAL, 1, False, [1, 2]])
+    data.append([[2], [1, 2], 1, SUM, 1, True, [1, 2]])
+    data.append([[2], [1, 2], 1, SUM, 1, False, [1, 2]])
+
+    # 1-d input tensors, batchesPerStep > 1
+    inputArray = [[1, 2], [3, 4], [5, 6], [7, 8]]
+    data.append([[2], inputArray, 4, ALL, 1, True, inputArray])
+    data.append([[2], inputArray, 4, ALL, 1, False, inputArray])
+    data.append([[2], inputArray, 4, EVERY2, 1, False, [[3, 4], [7, 8]]])
+    data.append([[2], inputArray, 4, FINAL, 1, False, [7, 8]])
+    data.append([[2], inputArray, 4, SUM, 1, True, [16, 20]])
+    data.append([[2], inputArray, 4, SUM, 1, False, [16, 20]])
+
+    # 0-d input tensors, batchesPerStep > 1, replication = 2
+    inputArray = [[1, 2], [3, 4], [5, 6], [7, 8]]
+    data.append([[], inputArray, 4, ALL, 2, True, inputArray])
+    data.append([[], inputArray, 4, ALL, 2, False, inputArray])
+    data.append([[], inputArray, 4, EVERY2, 2, False, [[3, 4], [7, 8]]])
+    data.append([[], inputArray, 4, FINAL, 2, False, [7, 8]])
+    data.append([[], inputArray, 4, SUM, 2, True, [16, 20]])
+    data.append([[], inputArray, 4, SUM, 2, False, [16, 20]])
+
+    return data
+
+
+@pytest.mark.parametrize("inputShape,inputArray,BPS,art,R,explicit,expected",
+                         generate_identity_inference_session_data())
+def test_identity_inference_session(inputShape, inputArray, BPS, art, R,
+                                    explicit, expected):
     builder = popart.Builder()
 
     inInfo = popart.TensorInfo("FLOAT", inputShape)
@@ -24,8 +89,8 @@ def identity_inference_session(inputShape, inputArray, BPS, art, R=1):
     opts = popart.SessionOptions()
     opts.replicatedGraphCount = R
     opts.enableReplicatedGraphs = R > 1
-    # TODO: Remove when T14730 is resolved.
-    opts.enablePrefetchDatastreams = R < 1
+    opts.enableExplicitMainLoops = explicit
+    opts.useHostCopyOps = explicit
 
     device = tu.create_test_device(numIpus=R)
     session = popart.InferenceSession(fnModel=proto,
@@ -37,18 +102,49 @@ def identity_inference_session(inputShape, inputArray, BPS, art, R=1):
 
     anchors = session.initAnchorArrays()
 
-    inputs = {
-        i1: np.array(inputArray, dtype=np.float32),
-    }
+    inputs = {i1: np.array(inputArray, dtype=np.float32)}
     stepio = popart.PyStepIO(inputs, anchors)
 
     session.run(stepio)
 
-    return anchors[o]
+    assert (np.array_equal(anchors[o], expected))
 
 
-def simple_training_session(inputShape, inputArray, BPS, art, GA=1):
+def generate_simple_training_session_data():
+    """Generates test cases for the test_simple_training_session() test. See the
+    test for the meaning of different arguments.
 
+    Returns:
+        A list of arguments to call the test with.
+    """
+    data = []
+
+    # 1-d input tensors, batchesPerStep > 1, gradient accumulation = 2
+    inputArray = [[[1, 2], [3, 4]], [[5, 6], [7, 8]]]
+    data.append([[2], inputArray, 2, ALL, 2, True, inputArray])
+    data.append([[2], inputArray, 2, ALL, 2, False, inputArray])
+    data.append([[2], inputArray, 2, EVERY2, 2, False, [[3, 4], [7, 8]]])
+    data.append([[2], inputArray, 2, FINAL, 2, False, [7, 8]])
+    data.append([[2], inputArray, 2, SUM, 2, False, [16, 20]])
+
+    # Test that art sum works with all permutations of bps = {1, 2}, ga = {1, 2}
+    # and explicit main loops.
+    inputArray = [[1, 2]]
+    data.append([[2], inputArray, 1, SUM, 1, True, [1, 2]])
+    inputArray = [[[1, 2], [3, 4]]]
+    data.append([[2], inputArray, 1, SUM, 2, True, [4, 6]])
+    inputArray = [[1, 2], [3, 4]]
+    data.append([[2], inputArray, 2, SUM, 1, True, [4, 6]])
+    inputArray = [[[1, 2], [3, 4]], [[5, 6], [7, 8]]]
+    data.append([[2], inputArray, 2, SUM, 2, True, [16, 20]])
+
+    return data
+
+
+@pytest.mark.parametrize("inputShape,inputArray,BPS,art,GA,explicit,expected",
+                         generate_simple_training_session_data())
+def test_simple_training_session(inputShape, inputArray, BPS, art, GA,
+                                 explicit, expected):
     builder = popart.Builder()
 
     inInfo = popart.TensorInfo("FLOAT", inputShape)
@@ -67,6 +163,8 @@ def simple_training_session(inputShape, inputArray, BPS, art, GA=1):
     opts = popart.SessionOptions()
     opts.accumulationFactor = GA
     opts.enableGradientAccumulation = GA > 1
+    opts.enableExplicitMainLoops = explicit
+    opts.useHostCopyOps = explicit
 
     session = popart.TrainingSession(fnModel=proto,
                                      dataFlow=dataFlow,
@@ -80,192 +178,12 @@ def simple_training_session(inputShape, inputArray, BPS, art, GA=1):
 
     anchors = session.initAnchorArrays()
 
-    inputs = {
-        i1: np.array(inputArray, dtype=np.float32),
-    }
+    inputs = {i1: np.array(inputArray, dtype=np.float32)}
     stepio = popart.PyStepIO(inputs, anchors)
 
     session.run(stepio)
 
-    return anchors[o]
-
-
-# 0-d input tensors, batchesPerStep = 1
-def test_returntype_all1():
-    inputArray = 1
-    art = popart.AnchorReturnType("All")
-    anchors_o = identity_inference_session([], inputArray, 1, art)
-    assert (np.array_equal(anchors_o, inputArray))
-
-
-def test_returntype_evern1():
-    inputArray = 1
-    art = popart.AnchorReturnType("EveryN", 1)
-    anchors_o = identity_inference_session([], inputArray, 1, art)
-    assert (np.array_equal(anchors_o, inputArray))
-
-
-def test_returntype_final1():
-    inputArray = 1
-    art = popart.AnchorReturnType("Final")
-    anchors_o = identity_inference_session([], inputArray, 1, art)
-    assert (np.array_equal(anchors_o, inputArray))
-
-
-def test_returntype_sum1():
-    inputArray = 1
-    art = popart.AnchorReturnType("Sum")
-    anchors_o = identity_inference_session([], inputArray, 1, art)
-    assert (np.array_equal(anchors_o, inputArray))
-
-
-# 0-d input tensors, batchesPerStep > 1
-def test_returntype_all2():
-    inputArray = [1, 2, 3, 4, 5, 6, 7, 8]
-    art = popart.AnchorReturnType("All")
-    anchors_o = identity_inference_session([], inputArray, 8, art)
-    assert (np.array_equal(anchors_o, inputArray))
-
-
-def test_returntype_everyn2():
-    inputArray = [1, 2, 3, 4, 5, 6, 7, 8]
-    art = popart.AnchorReturnType("EveryN", 4)
-    anchors_o = identity_inference_session([], inputArray, 8, art)
-    assert (np.array_equal(anchors_o, [4, 8]))
-
-
-def test_returntype_final2():
-    inputArray = [1, 2, 3, 4, 5, 6, 7, 8]
-    art = popart.AnchorReturnType("Final")
-    anchors_o = identity_inference_session([], inputArray, 8, art)
-    assert (np.array_equal(anchors_o, 8))
-
-
-def test_returntype_sum2():
-    inputArray = [1, 2, 3, 4, 5, 6, 7, 8]
-    art = popart.AnchorReturnType("Sum")
-    anchors_o = identity_inference_session([], inputArray, 8, art)
-    assert (np.array_equal(anchors_o, 36))
-
-
-# 1-d input tensors, batchesPerStep = 1
-def test_returntype_all3():
-    inputArray = [1, 2]
-    art = popart.AnchorReturnType("All")
-    anchors_o = identity_inference_session([2], inputArray, 1, art)
-    assert (np.array_equal(anchors_o, inputArray))
-
-
-def test_returntype_everyn3():
-    inputArray = [1, 2]
-    art = popart.AnchorReturnType("EveryN", 1)
-    anchors_o = identity_inference_session([2], inputArray, 1, art)
-    assert (np.array_equal(anchors_o, inputArray))
-
-
-def test_returntype_final3():
-    inputArray = [1, 2]
-    art = popart.AnchorReturnType("Final")
-    anchors_o = identity_inference_session([2], inputArray, 1, art)
-    assert (np.array_equal(anchors_o, inputArray))
-
-
-def test_returntype_sum3():
-    inputArray = [1, 2]
-    art = popart.AnchorReturnType("Sum")
-    anchors_o = identity_inference_session([2], inputArray, 1, art)
-    assert (np.array_equal(anchors_o, inputArray))
-
-
-# 1-d input tensors, batchesPerStep > 1
-def test_returntype_all4():
-    inputArray = [[1, 2], [3, 4], [5, 6], [7, 8]]
-    art = popart.AnchorReturnType("All")
-    anchors_o = identity_inference_session([2], inputArray, 4, art)
-    assert (np.array_equal(anchors_o, inputArray))
-
-
-def test_returntype_everyn4():
-    inputArray = [[1, 2], [3, 4], [5, 6], [7, 8]]
-    art = popart.AnchorReturnType("EveryN", 2)
-    anchors_o = identity_inference_session([2], inputArray, 4, art)
-    assert (np.array_equal(anchors_o, [[3, 4], [7, 8]]))
-
-
-def test_returntype_final4():
-    inputArray = [[1, 2], [3, 4], [5, 6], [7, 8]]
-    art = popart.AnchorReturnType("Final")
-    anchors_o = identity_inference_session([2], inputArray, 4, art)
-    assert (np.array_equal(anchors_o, [7, 8]))
-
-
-def test_returntype_sum4():
-    inputArray = [[1, 2], [3, 4], [5, 6], [7, 8]]
-    art = popart.AnchorReturnType("Sum")
-    anchors_o = identity_inference_session([2], inputArray, 4, art)
-    assert (np.array_equal(anchors_o, [16, 20]))
-
-
-# 0-d input tensors, batchesPerStep > 1, replication = 2
-@tu.requires_ipu
-def test_returntype_all5():
-    inputArray = [[1, 2], [3, 4], [5, 6], [7, 8]]
-    art = popart.AnchorReturnType("All")
-    anchors_o = identity_inference_session([], inputArray, 4, art, R=2)
-    assert (np.array_equal(anchors_o, inputArray))
-
-
-@tu.requires_ipu
-def test_returntype_everyn5():
-    inputArray = [[1, 2], [3, 4], [5, 6], [7, 8]]
-    art = popart.AnchorReturnType("EveryN", 2)
-    anchors_o = identity_inference_session([], inputArray, 4, art, R=2)
-    assert (np.array_equal(anchors_o, [[3, 4], [7, 8]]))
-
-
-@tu.requires_ipu
-def test_returntype_final5():
-    inputArray = [[1, 2], [3, 4], [5, 6], [7, 8]]
-    art = popart.AnchorReturnType("Final")
-    anchors_o = identity_inference_session([], inputArray, 4, art, R=2)
-    assert (np.array_equal(anchors_o, [7, 8]))
-
-
-@tu.requires_ipu
-def test_returntype_sum5():
-    inputArray = [[1, 2], [3, 4], [5, 6], [7, 8]]
-    art = popart.AnchorReturnType("Sum")
-    anchors_o = identity_inference_session([], inputArray, 4, art, R=2)
-    assert (np.array_equal(anchors_o, [16, 20]))
-
-
-# 1-d input tensors, batchesPerStep > 1, gradient accumulation = 2
-def test_returntype_all6():
-    inputArray = [[[1, 2], [3, 4]], [[5, 6], [7, 8]]]
-    art = popart.AnchorReturnType("All")
-    anchors_o = simple_training_session([2], inputArray, 2, art, GA=2)
-    assert (np.array_equal(anchors_o, inputArray))
-
-
-def test_returntype_everyn6():
-    inputArray = [[[1, 2], [3, 4]], [[5, 6], [7, 8]]]
-    art = popart.AnchorReturnType("EveryN", 2)
-    anchors_o = simple_training_session([2], inputArray, 2, art, GA=2)
-    assert (np.array_equal(anchors_o, [[3, 4], [7, 8]]))
-
-
-def test_returntype_final6():
-    inputArray = [[[1, 2], [3, 4]], [[5, 6], [7, 8]]]
-    art = popart.AnchorReturnType("Final")
-    anchors_o = simple_training_session([2], inputArray, 2, art, GA=2)
-    assert (np.array_equal(anchors_o, [7, 8]))
-
-
-def test_returntype_sum6():
-    inputArray = [[[1, 2], [3, 4]], [[5, 6], [7, 8]]]
-    art = popart.AnchorReturnType("Sum")
-    anchors_o = simple_training_session([2], inputArray, 2, art, GA=2)
-    assert (np.array_equal(anchors_o, [16, 20]))
+    assert (np.array_equal(anchors[o], expected))
 
 
 # Error cases

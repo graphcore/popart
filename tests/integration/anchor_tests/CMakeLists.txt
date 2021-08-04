@@ -4,8 +4,6 @@
 
 add_popart_cpp_unit_test(
         weights_as_anchors_test_0 weights_as_anchors_test_0.cpp VARIANTS "IpuModel")
-add_popart_cpp_unit_test(
-        art_validation_test art_validation_test.cpp VARIANTS "Cpu")
 add_popart_py_unit_test(anchor_output_test anchor_output_test.py VARIANTS Hw)
 add_popart_py_unit_test(anchor_output_test_2 anchor_output_test_2.py VARIANTS Hw)
 add_popart_py_unit_test(anchor_shape_tests anchor_shape_tests.py VARIANTS Hw)
