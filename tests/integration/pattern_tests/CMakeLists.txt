@@ -38,5 +38,7 @@ add_popart_py_unit_test(test_enable_patterns test_enable_patterns.py)
 
 add_popart_py_unit_test(test_view_simplify_pattern test_view_simplify_pattern.py VARIANTS IpuModel)
 
+add_popart_py_unit_test(test_foldmatmulpattern test_foldmatmulpattern.py)
+
 # TODO(T36508): Re-enable.
 # add_popart_py_unit_test(test_transpose_to_identity_or_reshape test_transpose_to_identity_or_reshape.py VARIANTS IpuModel)
