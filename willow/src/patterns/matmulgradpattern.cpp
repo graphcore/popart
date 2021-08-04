@@ -124,7 +124,7 @@ bool MatMulPattern::matches(Op *op) const {
     auto lhs = op->inTensor(MatMulOp::getLhsInIndex());
     auto rhs = op->inTensor(MatMulOp::getRhsInIndex());
 
-    // Match if either inputs is not a minium 3d tensor
+    // Match if either inputs is not a minimum 3d tensor
     if (lhs->info.rank() >= 3 && rhs->info.rank() >= 3) {
       return false;
     } else {
@@ -187,6 +187,65 @@ bool MatMulPattern::apply(Op *op) const {
   op->getGraph().topoCons->insert(lhsReshapeOp, matmulOp, true);
   op->getGraph().topoCons->insert(rhsReshapeOp, matmulOp, true);
   op->getGraph().topoCons->insert(matmulOp, outReshapeOp, true);
+
+  return true;
+}
+
+bool FoldMatMulPattern::matches(Op *op) const {
+  if (!op->isConvertibleTo<MatMulOp>()) {
+    return false;
+  }
+
+  auto lhs = op->inTensor(MatMulOp::getLhsInIndex());
+  auto rhs = op->inTensor(MatMulOp::getRhsInIndex());
+
+  return lhs->info.rank() == 3 && rhs->info.rank() == 2 &&
+         lhs->info.dim(0) != 1;
+}
+
+bool FoldMatMulPattern::apply(Op *op) const {
+  auto &ir           = op->getIr();
+  auto &graph        = op->getGraph();
+  MatMulOp *matmulOp = dynamic_cast<MatMulOp *>(op);
+
+  auto lhs = matmulOp->inTensor(MatMulOp::getLhsInIndex());
+
+  // Get the new shape for the lhs input
+  auto lhsShape = lhs->info.shape();
+  Shape lhsNewShape;
+  lhsNewShape.push_back(lhsShape.at(0) * lhsShape.at(1));
+  lhsNewShape.push_back(lhsShape.at(2));
+
+  // Create and connect the reshape op
+  auto lhsReshape = graph.createOp<ReshapeOp>(
+      Onnx::Operators::Reshape_5, lhsNewShape, matmulOp->settings);
+  op->transferBaseProperties(lhsReshape);
+
+  lhsReshape->connectInTensor(ReshapeOp::getInIndex(), lhs->id);
+  lhsReshape->createAndConnectOutTensor(ReshapeOp::getOutIndex(),
+                                        ir.createIntermediateTensorId(lhs->id));
+  lhsReshape->setup();
+
+  // Connect the reshaped input to the matmul op
+  matmulOp->disconnectInTensor(MatMulOp::getLhsInIndex(), lhs);
+  matmulOp->connectInTensor(MatMulOp::getLhsInIndex(),
+                            lhsReshape->outId(ReshapeOp::getOutIndex()));
+
+  // Create a new output for the matmul op and call setup.
+  auto matmulOut = matmulOp->outTensor(MatMulOp::getOutIndex());
+  matmulOp->disconnectOutTensor(matmulOut);
+  matmulOp->createAndConnectOutTensor(
+      MatMulOp::getOutIndex(), ir.createIntermediateTensorId(matmulOut->id));
+  matmulOp->setup();
+
+  // Create and connect a reshape op for the new matmul output.
+  auto outReshape = graph.createOp<ReshapeOp>(
+      Onnx::Operators::Reshape_5, matmulOut->info.shape(), matmulOp->settings);
+  op->transferBaseProperties(outReshape);
+  outReshape->connectInTensor(ReshapeOp::getInIndex(),
+                              matmulOp->outId(MatMulOp::getOutIndex()));
+  outReshape->connectOutTensor(ReshapeOp::getOutIndex(), matmulOut->id);
+  outReshape->setup();
 
   return true;
 }
@@ -427,6 +486,8 @@ bool MatMulRhsGradPattern::matches(Op *op) const {
 namespace {
 static PatternCreator<MatMulPattern>
     matMulPattern(PreAliasPatternType::MatMulOp, "MatMulOp", true);
+static PatternCreator<FoldMatMulPattern> foldMatMulPattern("FoldMatMulPattern",
+                                                           true);
 static PatternCreator<MatMulLhsGradPattern>
     matMulLhsGradPattern(PreAliasPatternType::MatMulLHSGradOp,
                          "MatMulLhsGradOp",

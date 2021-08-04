@@ -9,7 +9,7 @@ namespace popart {
 
 /*
   The intention of this pattern is to make sure that all matmuls have 3D inputs
-  of the form  [g x n x m ] i.e. groups x row x colum
+  of the form  [g x n x m ] i.e. groups x row x column
 
                                 [a,b]     [b,c]
                                   |         |
@@ -33,6 +33,16 @@ public:
   std::vector<const Tensor *> touches(Op *) const override { return {}; }
 
   bool apply(Op *op) const override;
+};
+
+// When the lhs input of the matmul is rank 3 and the rhs is rank 2, combine
+// first two dimensions of the rhs input. This stops a ReduceSumOp being
+// inserted into the backward pass.
+class FoldMatMulPattern : public PreAliasPattern {
+public:
+  bool matches(Op *op) const override;
+  bool apply(Op *op) const override;
+  std::vector<const Tensor *> touches(Op *) const override { return {}; }
 };
 
 // The following pattern will expand matmul(lhs/rhs)grad to a transpose and and
