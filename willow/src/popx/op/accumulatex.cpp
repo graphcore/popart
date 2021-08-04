@@ -516,9 +516,12 @@ void SparseAccumulateOpx::grow(poplar::program::Sequence &prog) const {
 
 std::set<TensorId>
 SparseAccumulateOpx::mustExistBeforeCreate(InIndex inIndex) const {
-  if (inIndex == SparseAccumulateOp::getVarToUpdateInIndex() &&
-      hasInput(SparseAccumulateOp::getOriginalVarToUpdateInIndex())) {
-    return {inId(SparseAccumulateOp::getOriginalVarToUpdateInIndex())};
+  if (inIndex == SparseAccumulateOp::getVarToUpdateInIndex()) {
+    if (hasInput(SparseAccumulateOp::getOriginalVarToUpdateInIndex())) {
+      return {inId(SparseAccumulateOp::getOriginalVarToUpdateInIndex())};
+    } else {
+      return {};
+    }
   }
 
   throw internal_error(
