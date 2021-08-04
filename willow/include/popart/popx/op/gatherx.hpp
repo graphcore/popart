@@ -10,46 +10,27 @@
 namespace popart {
 namespace popx {
 
-class GatherBaseOpx : public PopOpx {
+class GatherOpx : public PopOpx {
 public:
-  GatherBaseOpx(Op *, Devicex *);
-  void grow(poplar::program::Sequence &) const override = 0;
+  GatherOpx(Op *, Devicex *);
+  void grow(poplar::program::Sequence &) const final;
 
   // create the input snap::Tensor for input at index
   // default : throw error (not all Opxs can createInput)
   snap::Tensor
   createInputTensor(InIndex index,
-                    const poplar::DebugNameAndId &dnai) const override = 0;
-
+                    const poplar::DebugNameAndId &dnai) const override;
   // default return DEADEND, i.e. unable to create input tensor, and
   // cannot use downstream opxs as candidates to create input
   // tensor
-  InputCreatorType getInputCreatorType(int index0) const override = 0;
-
-  // To create a poplar::Tensor for input index index0, which
-  // poplar::Tensors must already exist?
+  InputCreatorType getInputCreatorType(int index0) const override;
+  // To create a snap::Tensor for input index index0, which
+  // snap::Tensors must already exist?
   std::set<TensorId> mustExistBeforeCreate(int index0) const override;
-
-protected:
-  int64_t axis;
-
-  void setCommonMembersPostVerify(const Op *op);
-};
-
-class GatherOpx final : public GatherBaseOpx {
-public:
-  GatherOpx(Op *, Devicex *);
-  void grow(poplar::program::Sequence &) const final;
-
-  // create the input poplar::Tensor for input at index
-  // default : throw error (not all Opxs can createInput)
-  snap::Tensor
-  createInputTensor(int index, const poplar::DebugNameAndId &dnai) const final;
-
-  InputCreatorType getInputCreatorType(int index) const final;
 
 private:
   popops::SlicePlan plan;
+  int64_t axis;
 };
 
 class GatherGradOpx : public PopOpx {
