@@ -20,7 +20,7 @@ namespace tgutil {
  * \param t Tensor we are querying.
  * \return true if #t is produced by a transpose operation, false otherwise.
  */
-bool isProducedByTranspose(const Tensor *t);
+bool isProducedByTranspose(Tensor *t);
 
 /**
  * \brief Finds the root variable that #t is a view of.
@@ -106,6 +106,17 @@ T *searchProducersFor(Tensor *t);
  */
 template <class T, ExecutionContext Ctx = ExecutionContext::Normal>
 std::vector<T *> findAllConsumers(Tensor *t);
+
+/**
+ * \brief Check if Tensor #t is produced by type #T. If so, return Tensor at the
+ *        producer's #index input. Otherwise return #t
+ *
+ * \tparam T The Op subclass to check #t's producer.
+ * \param index Input index to return if the producer matches.
+ * \param t Tensor for which the producer will be checked.
+ * \return Either #t or Tensor at producer's #index input.
+ */
+template <class T> Tensor *maybeTraverseProducer(InIndex index, Tensor *t);
 
 } // namespace tgutil
 } // namespace popart

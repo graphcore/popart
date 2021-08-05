@@ -23,6 +23,18 @@ TiedGatherOpx::TiedGatherOpx(Op *op, Devicex *device)
   verifyOp<TiedGatherOp>(op, {Onnx::CustomOperators::TiedGather});
 
   setCommonMembersPostVerify(op);
+
+  /*
+    PyTorch BERT was developed based on a bug in DetachOp that caused the tile
+    layout of the weight to be determined by the MatMul, not the TiedGather.
+    This costs extra cycles due to the exchange, but actually has lower
+    memory footprint.
+
+    In order to natively support PyTorch BERT in the short-term, we thus have to
+    disable the TiedGather input creator, so we get the same behaviour that
+    resulted from the DetachOp bug.
+   */
+  inputCreatorPriority = -1;
 }
 
 InputCreatorType TiedGatherOpx::getInputCreatorType(int index0) const {

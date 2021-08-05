@@ -29,14 +29,6 @@ bool isConsumedByAdd(const Tensor *t) {
   return false;
 }
 
-Tensor *maybeTraverseReduceScatter(Tensor *t) {
-  if (t->hasProducer() &&
-      t->getProducer()->isConvertibleTo<ReplicatedReduceScatterOp>()) {
-    return t->getProducer()->inTensor(ReplicatedReduceScatterOp::getInIndex());
-  }
-  return t;
-}
-
 } // namespace
 
 bool LambSerialisedWeightPattern::matches(Op *op) const {
@@ -51,8 +43,9 @@ bool LambSerialisedWeightPattern::matches(Op *op) const {
 
   auto lambsq = dynamic_cast<LambSquareOp *>(op);
   if (lambsq) {
-    auto wSlice = maybeTraverseReduceScatter(
-        lambsq->inTensor(LambSquareOp::getInIndex()));
+    auto wSlice = tgutil::maybeTraverseProducer<ReplicatedReduceScatterOp>(
+        ReplicatedReduceScatterOp::getInIndex(),
+        op->inTensor(LambSquareOp::getInIndex()));
     bool onlyASlice = isProducedBySlice(wSlice);
     // Check we haven't already applied the pattern.
     return onlyASlice &&
@@ -78,7 +71,9 @@ bool LambSerialisedWeightPattern::apply(Op *op) const {
 
   // (1)
   auto rootWeight = tgutil::getVariable(
-      maybeTraverseReduceScatter(op->inTensor(LambSquareOp::getInIndex())));
+      tgutil::maybeTraverseProducer<ReplicatedReduceScatterOp>(
+          ReplicatedReduceScatterOp::getInIndex(),
+          op->inTensor(LambSquareOp::getInIndex())));
   // (2)
   auto r1LambOps =
       tgutil::findAllConsumers<LambSquareOp,
