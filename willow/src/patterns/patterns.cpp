@@ -54,6 +54,7 @@
 #include <popart/patterns/sqrtgradoppattern.hpp>
 #include <popart/patterns/subtractarg1gradoppattern.hpp>
 #include <popart/patterns/sumtoaddpattern.hpp>
+#include <popart/patterns/tiedgatherpattern.hpp>
 #include <popart/patterns/updateinplaceprioritiesforipu.hpp>
 #include <popart/patterns/upsampletoresizepattern.hpp>
 
@@ -326,6 +327,14 @@ bool Patterns::isLambSerialisedWeightEnabled() {
   return isPatternEnabled<LambSerialisedWeightPattern>();
 }
 
+bool Patterns::isTiedGatherEnabled() {
+  return isPatternEnabled<TiedGatherPattern>();
+}
+
+bool Patterns::isTiedGatherAccumulateEnabled() {
+  return isPatternEnabled<TiedGatherAccumulatePattern>();
+}
+
 Patterns &Patterns::enableInitAccumulate(bool v) {
   return enablePattern<InitAccumulatePattern>(v);
 }
@@ -460,6 +469,14 @@ Patterns &Patterns::enableDecomposeBinaryConstScalar(bool v) {
 
 Patterns &Patterns::enableLambSerialisedWeight(bool v) {
   return enablePattern<LambSerialisedWeightPattern>(v);
+}
+
+Patterns &Patterns::enableTiedGather(bool v) {
+  return enablePattern<TiedGatherPattern>(v);
+}
+
+Patterns &Patterns::enableTiedGatherAccumulate(bool v) {
+  return enablePattern<TiedGatherAccumulatePattern>(v);
 }
 
 Patterns &Patterns::enablePattern(const std::type_index &t, bool v) {

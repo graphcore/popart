@@ -1,6 +1,7 @@
-// Copyright(c) 2021 Graphcore Ltd.All rights reserved.
+// Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 #include "tgutils.hpp"
 
+#include <popart/graphutils.hpp>
 #include <popart/op.hpp>
 #include <popart/op/transpose.hpp>
 #include <popart/tensor.hpp>
