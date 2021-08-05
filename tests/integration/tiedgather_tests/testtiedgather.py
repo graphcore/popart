@@ -1,22 +1,25 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 
+import json
+import sys
+from pathlib import Path
+
 import numpy as np
 import pytest
-import json
 
 import popart
 
-import sys
-from pathlib import Path
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 
-from tiedgather_testutils import run_py, check_tensors, check_onnx_model
+from tiedgather_testutils import check_onnx_model, check_tensors, run_py
 
 
-def model(splits=1):
+def model(splits=1, transpose_on_gather=True):
     np.random.seed(1984)
     input_data = np.random.randint(0, 20, (4, )).astype(np.uint32)
     weight_data = np.random.rand(4, 20).astype(np.float32)
+    if not transpose_on_gather:
+        weight_data = weight_data.T
 
     builder = popart.Builder()
 
@@ -26,9 +29,11 @@ def model(splits=1):
     w0 = builder.addInitializedInputTensor(weight_data, 'weight0')
     w0_t = builder.aiOnnx.transpose([w0], debugContext="weight0^T")
 
-    x0 = builder.aiOnnx.gather([w0_t, d0], debugContext="gathered")
+    x0 = builder.aiOnnx.gather([w0_t if transpose_on_gather else w0, d0],
+                               debugContext="gathered")
 
-    x = builder.aiOnnx.matmul([x0, w0], debugContext="matmuld")
+    x = builder.aiOnnx.matmul([x0, w0 if transpose_on_gather else w0_t],
+                              debugContext="matmuld")
     if splits > 1:
         builder.setSerializeMatMul({x}, 'output_channels', splits, True)
     loss = builder.aiGraphcore.l1loss([x], 0.1, debugPrefix='loss')
@@ -41,8 +46,10 @@ def session(train=False,
             include_patterns=True,
             splits=1,
             outline=False,
+            transpose_on_gather=True,
             optim="Sgd"):
-    proto, data, x, loss = model(splits=splits)
+    proto, data, x, loss = model(splits=splits,
+                                 transpose_on_gather=transpose_on_gather)
 
     patterns = popart.Patterns()
     patterns.enablePattern("TiedGather", include_patterns)
@@ -106,16 +113,18 @@ def session(train=False,
 
 
 @pytest.mark.parametrize('splits', (1, 4))
+@pytest.mark.parametrize('transpose_on_gather', (True, False))
 @pytest.mark.parametrize(['phase', 'optimizer'], [("fwd", None),
                                                   ("bwd", "Sgd"),
                                                   ("bwd", "Lamb")])
-def test_tied_gather_pattern_ir(splits, phase, optimizer):
+def test_tied_gather_pattern_ir(splits, phase, optimizer, transpose_on_gather):
     train = phase == "bwd"
 
     sess = session(train,
                    skip_execution=True,
                    splits=splits,
                    optim=optimizer,
+                   transpose_on_gather=transpose_on_gather,
                    outline=False)
 
     ir = json.loads(sess._serializeIr(popart.IrSerializationFormat.JSON))
@@ -139,24 +148,30 @@ def test_tied_gather_pattern_ir(splits, phase, optimizer):
 
 
 @pytest.mark.parametrize('splits', (1, 4))
+@pytest.mark.parametrize('transpose_on_gather', (True, False))
 @pytest.mark.parametrize(['phase', 'optimizer'], [("fwd", None),
                                                   ("bwd", "Sgd"),
                                                   ("bwd", "Lamb")])
-def test_tied_gather_pattern_correctness(splits, phase, optimizer):
+def test_tied_gather_pattern_correctness(splits, phase, optimizer,
+                                         transpose_on_gather):
     train = phase == "bwd"
 
-    outputs_1, proto_1, outnames_1 = session(train,
-                                             skip_execution=False,
-                                             splits=splits,
-                                             optim=optimizer,
-                                             outline=True)
+    outputs_1, proto_1, outnames_1 = session(
+        train,
+        skip_execution=False,
+        splits=splits,
+        optim=optimizer,
+        transpose_on_gather=transpose_on_gather,
+        outline=True)
 
-    outputs_2, proto_2, outnames_2 = session(train,
-                                             skip_execution=False,
-                                             include_patterns=False,
-                                             splits=splits,
-                                             optim=optimizer,
-                                             outline=True)
+    outputs_2, proto_2, outnames_2 = session(
+        train,
+        skip_execution=False,
+        include_patterns=False,
+        splits=splits,
+        optim=optimizer,
+        transpose_on_gather=transpose_on_gather,
+        outline=True)
 
     check_tensors(outputs_1, outputs_2, outnames_1, outnames_2)
     if train:

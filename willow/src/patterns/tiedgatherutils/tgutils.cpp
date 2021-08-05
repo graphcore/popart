@@ -3,13 +3,15 @@
 
 #include <popart/graphutils.hpp>
 #include <popart/op.hpp>
+#include <popart/op/detach.hpp>
+#include <popart/op/slice.hpp>
 #include <popart/op/transpose.hpp>
 #include <popart/tensor.hpp>
 
 namespace popart {
 namespace tgutil {
 
-bool isProducedByTranspose(const Tensor *t) {
+bool isProducedByTranspose(Tensor *t) {
   return t->hasProducer() &&
          t->getProducer()->isConvertibleTo<TransposeBaseOp>();
 }

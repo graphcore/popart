@@ -1,4 +1,4 @@
-// Copyright(c) 2021 Graphcore Ltd.All rights reserved.
+// Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 #include <popart/graph.hpp>
 #include <popart/graphutils.hpp>
 #include <popart/ir.hpp>
@@ -123,6 +123,13 @@ std::vector<T *> findAllConsumers(Tensor *w) {
       graphutils::TraversalDirection::Forward);
 
   return result;
+}
+
+template <class T> Tensor *maybeTraverseProducer(InIndex index, Tensor *t) {
+  if (t->hasProducer() && t->getProducer()->isConvertibleTo<T>()) {
+    return t->getProducer()->inTensor(index);
+  }
+  return t;
 }
 
 } // namespace tgutil

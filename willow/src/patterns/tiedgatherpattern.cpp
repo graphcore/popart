@@ -16,6 +16,7 @@
 #include <popart/op/gather.hpp>
 #include <popart/op/matmul.hpp>
 #include <popart/op/mul.hpp>
+#include <popart/op/reshape.hpp>
 #include <popart/op/slice.hpp>
 #include <popart/op/subtract.hpp>
 #include <popart/op/tiedgather.hpp>
@@ -32,13 +33,13 @@ namespace popart {
 using SerialiseSettings = MatMulBaseOp::SerialiseSettings;
 
 namespace {
-bool canSerialiseTiedGather(const MatMulBaseOp *matmul);
-
-MatMulBaseOp *findMatMulThatConsumesSameRootWeight(const GatherOp *gather) {
-  return tgutil::weightConsumedBy<MatMulBaseOp>(
+bool canSerialiseTiedGather(const MatMulOp *matmul);
+bool exactlyOneProducedByTranspose(const MatMulOp *matmul,
+                                   const GatherOp *gather);
+MatMulOp *findMatMulThatConsumesSameRootWeight(const GatherOp *gather) {
+  return tgutil::weightConsumedBy<MatMulOp>(
       gather->input->tensor(GatherOp::dataInIndex()));
 }
-
 } // namespace
 
 bool TiedGatherPattern::matches(Op *op) const {
@@ -51,21 +52,20 @@ bool TiedGatherPattern::matches(Op *op) const {
     return false;
   }
   if (op->isConvertibleTo<GatherOp>() && !op->isConvertibleTo<TiedGatherOp>()) {
-    if (tgutil::isProducedByTranspose(
-            op->input->tensor(GatherOp::dataInIndex()))) {
-      auto gather = dynamic_cast<GatherOp *>(op);
-      auto matmul = findMatMulThatConsumesSameRootWeight(gather);
+    auto gather = dynamic_cast<GatherOp *>(op);
+    auto matmul = findMatMulThatConsumesSameRootWeight(gather);
 
-      // For the tile layouts to be favourable, we need a Gather whose axis is
-      // the output channel dimension of the MatMul. One way to achieve this is
-      // to transpose the weight and gather on axis 0. There are other
-      // possibilities too, but this is the only one this pattern has so far
-      // been validated for.
-      const bool gatherAxisIsMatMulOutChannelDim = gather->getAxis() == 0;
-      if (matmul && gatherAxisIsMatMulOutChannelDim &&
-          canSerialiseTiedGather(matmul)) {
-        return true;
-      }
+    // For the tile layouts to be favourable, we need a Gather whose axis is
+    // the output channel dimension of the MatMul. One way to achieve this is
+    // to transpose the weight and gather on axis 0. There are other
+    // possibilities too, but this is the only one this pattern has so far
+    // been validated for.
+    const bool gatherAxisIsMatMulOutChannelDim = gather->getAxis() == 0;
+
+    if (matmul && gatherAxisIsMatMulOutChannelDim &&
+        canSerialiseTiedGather(matmul) &&
+        exactlyOneProducedByTranspose(matmul, gather)) {
+      return true;
     }
   }
   return false;
@@ -278,24 +278,24 @@ std::vector<const Tensor *> TiedGatherAccumulatePattern::touches(Op *) const {
 /**
   This pattern matches for graphs of the shape.
 
-  Weight
-    |              \
-  TiedGatherGrad   MatMul
-                    |
-        Accum  -  Accumulate
+        Weight
+            |              \
+  Grad - TiedGatherGrad   MatMul
+                            |
+                Accum  -  Accumulate
 
   And will perform the following transformation
     1) Replace TiedGatherGrad with SparseAccumulate
 
   Resulting in:
 
-    Weight
-    |              \
-    |             MatMul
-    |               |
-    |   Accum  -  Accumulate
-    |     |          |
-  SparseAccumulate  - Optimizer
+        Weight
+          |              \
+          |             MatMul
+          |               |
+  Grad   Accum  -  Accumulate
+    |     |               |
+    SparseAccumulate  - Optimizer
 
   (--> is a topocon)
 */
@@ -400,9 +400,17 @@ bool TiedGatherAccumulatePattern::apply(Op *op) const {
       accumId,
       gather->name());
 
-  // Transpose must be inplace so the accumulator is actually updated
-  accumId = inplaceTranspose(accumId, gatherGrad);
-  // weightId  = inplaceTranspose(weightId, gatherGrad);
+  // TiedGatherPattern will have added a DetachOp and possibly a SliceOp
+  // between the gather and root weight.
+  auto gather_data = tgutil::maybeTraverseProducer<DetachOp>(
+      DetachOp::getInIndex(),
+      tgutil::maybeTraverseProducer<BaseSliceOp>(
+          BaseSliceOp::getInIndex(),
+          gather->input->tensor(GatherOp::dataInIndex())));
+  if (tgutil::isProducedByTranspose(gather_data)) {
+    // Transpose must be inplace so the accumulator is actually updated
+    accumId = inplaceTranspose(accumId, gatherGrad);
+  }
 
   auto &graph = op->getGraph();
 
@@ -501,11 +509,24 @@ namespace {
 /**
  * Check either there is no matmul serialisation, or the mode is OutputChannels.
  */
-bool canSerialiseTiedGather(const MatMulBaseOp *matmul) {
+bool canSerialiseTiedGather(const MatMulOp *matmul) {
   const auto &settings = matmul->getSerialiseSettings();
   return settings.factor <= 1 ||
          settings.mode == SerialiseSettings::Mode::None ||
          settings.mode == SerialiseSettings::Mode::OutputChannels;
+}
+
+/**
+ * There is a transpose producer on exactly one of the ops.
+ */
+bool exactlyOneProducedByTranspose(const MatMulOp *matmul,
+                                   const GatherOp *gather) {
+  return tgutil::isProducedByTranspose(
+             gather->input->tensor(GatherOp::dataInIndex())) !=
+         tgutil::isProducedByTranspose(
+             tgutil::maybeTraverseProducer<ReshapeBaseOp>(
+                 ReshapeBaseOp::getInIndex(),
+                 matmul->input->tensor(MatMulOp::getRhsInIndex())));
 }
 
 } // namespace
