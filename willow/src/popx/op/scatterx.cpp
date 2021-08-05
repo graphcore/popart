@@ -68,7 +68,7 @@ void ScatterDataGradOpx::grow(poplar::program::Sequence &prog) const {
   //
   // popops::scatter requires the indices to be complete coordinates into the
   // data tensor, but ONNX scatter only provides an axis and a scalar index.
-  std::vector<snap::Tensor> indices_mapped(indices.getPoplarTensor().rank());
+  std::vector<snap::Tensor> indices_mapped(indices.rank());
   for (int i = 0; i < indices_mapped.size(); ++i) {
     auto t = scatterutilx::linspace(graph(),
                                     0,
@@ -87,7 +87,7 @@ void ScatterDataGradOpx::grow(poplar::program::Sequence &prog) const {
 
   // Add a degenerate dimension for concatenation
   for (auto &index : indices_mapped) {
-    index = index.expand({index.getPoplarTensor().rank()});
+    index = index.expand({index.rank()});
   }
 
   std::vector<unsigned> update_window_dims(indices_mapped.size());
@@ -107,7 +107,7 @@ void ScatterDataGradOpx::grow(poplar::program::Sequence &prog) const {
                   data.getPoplarTensor(),
                   indices.getPoplarTensor(),
                   update.getPoplarTensor(),
-                  indices.getPoplarTensor().rank() - 1,
+                  indices.rank() - 1,
                   update_window_dims,
                   inserted_window_dims,
                   scatter_dims_to_op,

@@ -68,7 +68,7 @@ snap::Tensor IoTileCopyOpx::unwindTensorLayout(snap::Tensor tensor,
 
   auto tilesPerTile = (numSrcTiles - 1) / numDstTiles + 1;
 
-  auto srcTensorFlat = tensor.getPoplarTensor().flatten();
+  auto srcTensorFlat = tensor.flatten().getPoplarTensor();
   auto dstTensorFlat = dstTensor.flatten();
 
   // Reorder both tensors on the main graph

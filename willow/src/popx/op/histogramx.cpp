@@ -22,7 +22,7 @@ void HistogramOpx::grow(poplar::program::Sequence &prog) const {
 
   auto out = popops::histogram(
       graph().getPoplarGraph(),
-      getInTensor(op.getInIndex()).getPoplarTensor().flatten(),
+      getInTensor(op.getInIndex()).flatten().getPoplarTensor(),
       levelsT,
       op.getAbsoluteOfInput(),
       prog,

@@ -53,7 +53,7 @@ snap::Tensor linspace(snap::Graph &graph,
 }
 
 snap::Tensor matchRank(snap::Tensor a, snap::Tensor b, unsigned dim) {
-  std::vector<std::size_t> shape(a.getPoplarTensor().rank(), 1);
+  std::vector<std::size_t> shape(a.rank(), 1);
   const auto b_shape = b.shape();
 
   std::copy(b_shape.begin(), b_shape.end(), shape.begin() + dim);
@@ -63,7 +63,7 @@ snap::Tensor matchRank(snap::Tensor a, snap::Tensor b, unsigned dim) {
 
 snap::Tensor broadcastShape(snap::Tensor a, snap::Tensor b_) {
   auto b = b_.getPoplarTensor();
-  for (int k = 0; k < a.getPoplarTensor().rank(); ++k) {
+  for (int k = 0; k < a.rank(); ++k) {
     if (b.dim(k) == 1 && a.dim(k) != b.dim(k)) {
       b = b.broadcast(static_cast<unsigned>(a.dim(k)), k);
     }
@@ -83,7 +83,7 @@ void growScatter(poplar::program::Sequence &prog,
   //
   // popops::scatter requires the indices to be complete coordinates into the
   // data tensor, but ONNX scatter only provides an axis and a scalar index.
-  std::vector<snap::Tensor> indices_mapped(indices.getPoplarTensor().rank());
+  std::vector<snap::Tensor> indices_mapped(indices.rank());
   for (int i = 0; i < indices_mapped.size(); ++i) {
     auto t = linspace(graph,
                       0,
@@ -104,7 +104,7 @@ void growScatter(poplar::program::Sequence &prog,
 
   // Add a degenerate dimension for concatenation
   for (auto &index : indices_mapped) {
-    index = index.expand({index.getPoplarTensor().rank()});
+    index = index.expand({index.rank()});
   }
 
   std::vector<unsigned> update_window_dims(indices_mapped.size());
@@ -122,7 +122,7 @@ void growScatter(poplar::program::Sequence &prog,
                   dataToUpdateInPlace.getPoplarTensor(),
                   vectorizedIndices.getPoplarTensor(),
                   replacementValues.getPoplarTensor(),
-                  indices.getPoplarTensor().rank(),
+                  indices.rank(),
                   update_window_dims,
                   inserted_window_dims,
                   scatter_dims_to_op,
@@ -140,7 +140,7 @@ snap::Tensor growScatterUpdateGrad(poplar::program::Sequence &prog,
   //
   // Create a grid of linspaced indices
   // Start by creating 1D linspaced constant tensors
-  std::vector<snap::Tensor> indicesMapped(gradIn.getPoplarTensor().rank());
+  std::vector<snap::Tensor> indicesMapped(gradIn.rank());
   for (int i = 0; i < indicesMapped.size(); ++i) {
     indicesMapped[i] = linspace(graph,
                                 0,
@@ -165,21 +165,20 @@ snap::Tensor growScatterUpdateGrad(poplar::program::Sequence &prog,
 
   for (auto &index : indicesMapped) {
     // Add a degenerate dimension for concatenation
-    index = index.expand({index.getPoplarTensor().rank()});
+    index = index.expand({index.rank()});
   }
 
   // Concat the indices on the degenerate dimension
-  auto indicesGrid =
-      concat(indicesMapped, indices.getPoplarTensor().rank(), graph);
-  indicesGrid = indicesGrid.reinterpret(poplar::UNSIGNED_INT);
+  auto indicesGrid = concat(indicesMapped, indices.rank(), graph);
+  indicesGrid      = indicesGrid.reinterpret(poplar::UNSIGNED_INT);
 
-  const auto indexVectorDim = indicesGrid.getPoplarTensor().rank() - 1;
+  const auto indexVectorDim = indicesGrid.rank() - 1;
   std::vector<std::size_t> sliceSizes(indicesMapped.size(), 1);
 
   std::vector<std::size_t> collapsedSliceDims(indicesMapped.size());
   std::iota(collapsedSliceDims.begin(), collapsedSliceDims.end(), 0);
 
-  std::vector<unsigned> startIndexMap(indicesGrid.getPoplarTensor().rank() - 1);
+  std::vector<unsigned> startIndexMap(indicesGrid.rank() - 1);
   std::iota(startIndexMap.begin(), startIndexMap.end(), 0);
 
   // Gather the elements from the grad input

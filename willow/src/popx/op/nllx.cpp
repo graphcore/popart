@@ -106,10 +106,9 @@ void NllOpx::flattenAndEncodeOneHot(const PopOpx &opx,
   //         class index
   // If N > 2, then the inputs are flattened across all dimenions
   // (except the outer Classes dim in the case of Probs)
-  probs2D = snap::Tensor{
-      probs.getPoplarTensor().flatten(0, probs.getPoplarTensor().rank() - 1),
-      opx.graph()};
-  label1D = snap::Tensor{label.getPoplarTensor().flatten(), opx.graph()};
+  probs2D = snap::Tensor{probs.getPoplarTensor().flatten(0, probs.rank() - 1),
+                         opx.graph()};
+  label1D = snap::Tensor{label.flatten().getPoplarTensor(), opx.graph()};
   // Tensor taking one-hot encoded output must be 2 dimensional
   oneHot = snap::Tensor{
       opx.graph().getPoplarGraph().clone(probs2D.elementType(),
@@ -155,7 +154,7 @@ void NllOpx::applyScalingInPlaceForMeanReductionWithIgnoreIndex(
   // counted when scaling the loss/loss grad
   auto numNonIgnoredSamples =
       popops::reduce(opx.graph().getPoplarGraph(),
-                     mask.getPoplarTensor().flatten(),
+                     mask.flatten().getPoplarTensor(),
                      {0},
                      {popops::Operation::ADD},
                      prog,
@@ -212,11 +211,11 @@ NllOpx::applyMaskInPlaceForIgnoredIndex(const PopOpx &opx,
                                prog,
                                opx.debugContext("cast"));
 
-  if (t.getPoplarTensor().rank() != lossMask.rank()) {
+  if (t.rank() != lossMask.rank()) {
     // If required, broadcast lossMask on the final dimension.
-    auto t_shape                            = t.shape();
-    t_shape[t.getPoplarTensor().rank() - 1] = 1;
-    lossMask                                = lossMask.reshape(t_shape);
+    auto t_shape          = t.shape();
+    t_shape[t.rank() - 1] = 1;
+    lossMask              = lossMask.reshape(t_shape);
   }
 
   // Apply the mask
@@ -295,8 +294,8 @@ void NllOpx::handleLossGradScaling(const PopOpx &opx,
                                    poplar::program::Sequence &prog) {
   // To ensure gradIn has a broadcastable shape, add extra singleton
   // dimensions
-  for (unsigned dim = 0; dim < oneHot.getPoplarTensor().rank(); dim++) {
-    if (dim > gradIn.getPoplarTensor().rank() - 1) {
+  for (unsigned dim = 0; dim < oneHot.rank(); dim++) {
+    if (dim > gradIn.rank() - 1) {
       gradIn = gradIn.expand({dim});
     }
   }
@@ -352,9 +351,8 @@ void NllGradOpx::grow(poplar::program::Sequence &prog) const {
 
   // As for NllOpx, flatten outer dimenstions if rank(probs) > 2
   auto probs2D = snap::Tensor{
-      probs.getPoplarTensor().flatten(0, probs.getPoplarTensor().rank() - 1),
-      graph()};
-  auto label1D = snap::Tensor{label.getPoplarTensor().flatten(), graph()};
+      probs.getPoplarTensor().flatten(0, probs.rank() - 1), graph()};
+  auto label1D = snap::Tensor{label.flatten().getPoplarTensor(), graph()};
 
   // inverse probabilities, we take max(eps, p) to make division safe
   float eps = 1e-10f;

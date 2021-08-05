@@ -133,7 +133,7 @@ void ConvFlipWeightsGradOpx::grow(poplar::program::Sequence &seq) const {
   convWeights   = convWeights.reshape(newShape);
 
   // Taken the 1 off the front convWeights if it was added.
-  if (weights.getPoplarTensor().rank() != weights5D.getPoplarTensor().rank()) {
+  if (weights.rank() != weights5D.rank()) {
     convWeights = convWeights.squeeze({0});
   }
 

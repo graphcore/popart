@@ -154,7 +154,7 @@ snap::Tensor CtcOpx::applyReduction(poplar::program::Sequence &prog,
 
   } else {
     // Reduction is required.
-    auto inTensor1D = ctcLoss.getPoplarTensor().flatten();
+    auto inTensor1D = ctcLoss.flatten().getPoplarTensor();
 
     double scale = 0.;
     switch (op.getReductionType()) {
@@ -324,8 +324,7 @@ CtcGradOpx::applyReductionGrad(poplar::program::Sequence &prog,
     // to the incoming gradient has no effect. We just need to broadcast the
     // scalar into a tensor of shape [N] to get the result we need.
 
-    return snap::Tensor{
-        ctcLossGrad.expand({0}).getPoplarTensor().broadcast(N, 0), graph()};
+    return ctcLossGrad.expand({0}).broadcast(N, 0);
 
   } else {
 

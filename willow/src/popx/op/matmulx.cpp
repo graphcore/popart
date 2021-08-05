@@ -115,8 +115,7 @@ static std::vector<std::size_t> matchRank(std::vector<std::size_t> shape,
 
 static std::pair<snap::Tensor, snap::Tensor> matMatchRank(snap::Tensor lhs,
                                                           snap::Tensor rhs) {
-  auto rank =
-      std::max(lhs.getPoplarTensor().rank(), rhs.getPoplarTensor().rank());
+  auto rank = std::max(lhs.rank(), rhs.rank());
   return {lhs.reshape(matchRank(lhs.shape(), rank)),
           rhs.reshape(matchRank(rhs.shape(), rank))};
 }
@@ -217,7 +216,7 @@ static snap::Tensor matExpandBroadcastDims(snap::Tensor result,
       std::mismatch(lhsShape.begin(), lhsShape.end() - 2, rhsShape.begin());
 
   std::vector<std::size_t> newShape;
-  newShape.reserve(lhs.getPoplarTensor().rank() + rhs.getPoplarTensor().rank());
+  newShape.reserve(lhs.rank() + rhs.rank());
 
   std::copy(lhsShape.begin(), lhsShape.end() - 2, std::back_inserter(newShape));
   std::copy(itrs.second, rhsShape.end() - 2, std::back_inserter(newShape));
@@ -236,7 +235,7 @@ matExpandGroupDims(snap::Tensor result, snap::Tensor lhs, snap::Tensor rhs) {
       lhsShape.begin(), boost::mismatch(lhsShape, rhs.shape()).first);
 
   std::vector<std::size_t> newShape;
-  newShape.reserve(lhs.getPoplarTensor().rank());
+  newShape.reserve(lhs.rank());
 
   std::copy(lhsShape.begin(),
             lhsShape.begin() + offset,
@@ -255,9 +254,9 @@ static snap::Tensor matInterleaveBroadcastDims(snap::Tensor result,
   const auto offset = std::distance(
       lhsShape.begin(), boost::mismatch(lhsShape, rhs.shape()).first);
 
-  const auto length = lhs.getPoplarTensor().rank() - offset - 2;
+  const auto length = lhs.rank() - offset - 2;
 
-  std::vector<unsigned> permutation(result.getPoplarTensor().rank());
+  std::vector<unsigned> permutation(result.rank());
   boost::iota(permutation, 0);
 
   for (int i = 0; i < length; ++i) {
@@ -278,12 +277,11 @@ static snap::Tensor matSqueezeBroadcastDims(snap::Tensor result,
       lhsShape.begin(), boost::mismatch(lhsShape, rhs.shape()).first);
 
   std::vector<std::size_t> squeezeDims;
-  for (auto i = offset; i < result.getPoplarTensor().rank() - 2; ++i) {
+  for (auto i = offset; i < result.rank() - 2; ++i) {
     if (result.dim(static_cast<unsigned>(i)) == 1) {
       squeezeDims.push_back(i);
     }
   }
-
   return snap::Tensor{result.getPoplarTensor().squeeze(squeezeDims), result};
 }
 

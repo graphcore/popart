@@ -197,7 +197,7 @@ void MultiConvWeightsGradBaseOpx::grow(poplar::program::Sequence &prog) const {
     // match the Ir tensor shape
     auto fwdShape =
         op.outInfo(MultiConvWeightsGradBaseOp::getOutIndex(i)).shape_szt();
-    if (outTensors[i].getPoplarTensor().rank() == fwdShape.size() + 1) {
+    if (outTensors[i].rank() == fwdShape.size() + 1) {
       auto wGradShape = outTensors[i].shape();
       if (std::equal(
               wGradShape.begin() + 2, wGradShape.end(), fwdShape.begin() + 1) &&

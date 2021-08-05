@@ -41,7 +41,7 @@ public:
                                           const std::set<TensorId> group_)
       : nelms(nelms_), group(group_) {}
   snap::Tensor apply(snap::Tensor tensor) const final {
-    return snap::Tensor{tensor.getPoplarTensor().slice(0, nelms, 0), tensor};
+    return tensor.slice(0, nelms, 0);
   }
   bool containsAllDataRegions() const final { return false; }
   bool operator==(const ViewChanger &rhs) const final {

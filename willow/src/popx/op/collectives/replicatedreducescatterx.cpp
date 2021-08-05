@@ -61,7 +61,7 @@ void ReplicatedReduceScatterOpx::grow(poplar::program::Sequence &prog) const {
             debugContext()));
       } else {
         prog.add(
-            poplar::program::Copy(toReduceScatter.getPoplarTensor().flatten(),
+            poplar::program::Copy(toReduceScatter.flatten().getPoplarTensor(),
                                   ref.flatten(),
                                   false,
                                   debugContext()));
@@ -75,7 +75,7 @@ void ReplicatedReduceScatterOpx::grow(poplar::program::Sequence &prog) const {
 
   poplar::Tensor reducedScattered =
       gcl::reduceScatter(graph().getPoplarGraph(),
-                         toReduceScatter.getPoplarTensor().flatten(),
+                         toReduceScatter.flatten().getPoplarTensor(),
                          getPoplarCollectiveOperator(rrsOp.getCollectiveOp()),
                          prog,
                          toGCLCommGroup(rrsOp.getGCLCommGroup()),

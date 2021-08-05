@@ -95,7 +95,7 @@ void IdentityLossOpx::grow(poplar::program::Sequence &prog) const {
     setOutTensor(0, PopOpx::cloneNcopy(prog, inTensor));
   } else {
 
-    auto inTensor1D = inTensor.getPoplarTensor().flatten();
+    auto inTensor1D = inTensor.flatten().getPoplarTensor();
 
     double scale;
     switch (op.getReductionType()) {

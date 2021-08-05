@@ -19,7 +19,7 @@ LambSquareOpx::LambSquareOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
 void LambSquareOpx::grow(poplar::program::Sequence &prog) const {
   auto rsq = popops::reduce(
       graph().getPoplarGraph(),
-      getInTensor(LambSquareOp::getInIndex()).getPoplarTensor().flatten(),
+      getInTensor(LambSquareOp::getInIndex()).flatten().getPoplarTensor(),
       poplar::FLOAT,
       {0},
       {popops::Operation::SQUARE_ADD},
