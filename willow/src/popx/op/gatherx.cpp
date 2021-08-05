@@ -16,19 +16,27 @@
 namespace popart {
 namespace popx {
 
-GatherOpx::GatherOpx(Op *op, Devicex *devicex)
-    : PopOpx(op, devicex), plan(), axis() {
-  verifyOp<GatherOp>(op,
-                     {Onnx::Operators::Gather_1, Onnx::Operators::Gather_11});
-  auto &gop = getOp<GatherOp>();
-  axis      = gop.getAxis();
-  plan      = createSlicePlan(graph(),
-                         gop.inInfo(gop.dataInIndex()),
-                         gop.inInfo(gop.indicesInIndex()),
-                         static_cast<size_t>(axis));
+GatherBaseOpx::GatherBaseOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {}
+
+void GatherBaseOpx::setCommonMembersPostVerify(const Op *op) {
+  // Note TiedGatherOp extends GatherOp.
+  axis = dynamic_cast<const GatherOp *>(op)->getAxis();
 
   // We always want the gather to layout its inputs
   inputCreatorPriority = std::numeric_limits<double>::max();
+}
+
+GatherOpx::GatherOpx(Op *op, Devicex *devicex) : GatherBaseOpx(op, devicex) {
+  verifyOp<GatherOp>(op,
+                     {Onnx::Operators::Gather_1, Onnx::Operators::Gather_11});
+
+  setCommonMembersPostVerify(op);
+
+  const auto &gop = getOp<GatherOp>();
+  plan            = createSlicePlan(graph(),
+                         gop.inInfo(gop.dataInIndex()),
+                         gop.inInfo(gop.indicesInIndex()),
+                         axis);
 }
 
 void GatherOpx::grow(poplar::program::Sequence &prog) const {
@@ -125,7 +133,9 @@ InputCreatorType GatherOpx::getInputCreatorType(int index) const {
   return PopOpx::getInputCreatorType(index);
 }
 
-std::set<TensorId> GatherOpx::mustExistBeforeCreate(int) const { return {}; }
+std::set<TensorId> GatherBaseOpx::mustExistBeforeCreate(int) const {
+  return {};
+}
 
 GatherGradOpx::GatherGradOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
   verifyOp<GatherGradOp>(op, Onnx::GradOperators::GatherGrad);

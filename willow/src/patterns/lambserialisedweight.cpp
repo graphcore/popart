@@ -1,4 +1,4 @@
-// Copyright(c) 2021 Graphcore Ltd.All rights reserved.
+// Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 #include <popart/patterns/lambserialisedweight.hpp>
 
 #include <patterns/tiedgatherutils/tgutils.hpp>
@@ -66,6 +66,8 @@ std::vector<const Tensor *> LambSerialisedWeightPattern::touches(Op *) const {
 }
 
 bool LambSerialisedWeightPattern::apply(Op *op) const {
+  logging::pattern::trace("[LambSerialisedWeight] Applying to Op: {}",
+                          op->debugName());
   auto &graph = op->getGraph();
 
   // To fix R1:

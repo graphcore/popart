@@ -241,6 +241,8 @@ public:
   bool isSparseAccumulateEnabled();
   bool isFmodArg0GradOpEnabled();
   bool isLambSerialisedWeightEnabled();
+  bool isTiedGatherEnabled();
+  bool isTiedGatherAccumulateEnabled();
 
   // The following methods are fluent allow you to
   // Pattens().enableInPlace0(false).
@@ -287,6 +289,8 @@ public:
   Patterns &enableSparseAccumulate(bool v);
   Patterns &enableDecomposeBinaryConstScalar(bool v);
   Patterns &enableLambSerialisedWeight(bool v);
+  Patterns &enableTiedGather(bool v);
+  Patterns &enableTiedGatherAccumulate(bool v);
 
   Patterns &enableRuntimeAsserts(bool b) {
     runtimeAssertsOn = b;
