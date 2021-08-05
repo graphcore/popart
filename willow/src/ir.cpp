@@ -1825,6 +1825,12 @@ void checkForDimParams(const TensorId &id, const ONNX_NAMESPACE::TypeProto &t) {
                   id,
                   dimString(),
                   v.dim_param());
+    } else if (v.dim_value() < 0) {
+      throw error("Input tensor '{}' must be specified in InputShapeInfo, as "
+                  "it has shape {}, which uses an unknown value '{}'.",
+                  id,
+                  dimString(),
+                  std::to_string(v.dim_value()));
     }
   }
 }
@@ -4033,8 +4039,8 @@ std::size_t std::hash<popart::Ir>::operator()(const popart::Ir &ir) const {
   return seed;
 }
 
-std::size_t
-std::hash<popart::IrBundle>::operator()(const popart::IrBundle &bundle) const {
+std::size_t std::hash<popart::IrBundle>::
+operator()(const popart::IrBundle &bundle) const {
   size_t seed = 0;
 
   boost::hash_combine(
