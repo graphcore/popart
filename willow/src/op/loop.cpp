@@ -144,6 +144,8 @@ void LoopOp::addLoopInput(InIndex index,
   if (!overwrite) {
     int n = input->maxIndex();
     for (InIndex i = n; i >= index; --i) {
+      adjustModifiedIndices(i, i + 1);
+      adjustAliasInIndices(i, i + 1);
       if (hasInput(i + 1)) {
         disconnectInTensor(i + 1);
       }
@@ -168,6 +170,7 @@ void LoopOp::addLoopOutput(OutIndex index,
     int n = output->maxIndex();
     for (OutIndex i = n; i >= index; --i) {
       if (output->hasIndex(i)) {
+        adjustAliasOutIndices(i, i + 1);
         Tensor *t = output->tensorMap().at(i);
         disconnectOutTensor(t);
         connectOutTensor(i + 1, t->id);

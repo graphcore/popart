@@ -34,6 +34,10 @@ public:
                 view::Chains fwdChains,
                 view::Chains bwdChains);
 
+  void adjustAliasInIndices(InIndex fromIn, InIndex toIn);
+  void adjustAliasOutIndices(OutIndex fromOut, OutIndex toOut);
+  void adjustModifiedIndices(InIndex fromIn, InIndex toIn);
+
   void addModified(InIndex in, view::Regions regions);
 
   view::RegMap fwdRegMap(InIndex, OutIndex) const final;

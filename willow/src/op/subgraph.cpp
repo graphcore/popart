@@ -60,6 +60,60 @@ void SubgraphOp::addAlias(InIndex in,
                                  std::make_pair(fwdChains, bwdChains)));
 }
 
+void SubgraphOp::adjustAliasInIndices(InIndex fromIn, InIndex toIn) {
+  // TODO(T43804): This function iterates over all items in `aliasMap`, which
+  // makes it quite slow. It can be done in constant time with some new data
+  // structures.
+  std::map<std::pair<InIndex, OutIndex>, std::pair<view::Chains, view::Chains>>
+      updateMap;
+
+  // Remove old aliases from map.
+  for (auto it = aliasMap.cbegin(); it != aliasMap.cend();) {
+    const auto &in  = it->first.first;
+    const auto &out = it->first.second;
+    if (in == fromIn) {
+      updateMap[{toIn, out}] = it->second;
+      it                     = aliasMap.erase(it);
+    } else {
+      ++it;
+    }
+  }
+
+  // Update the map with the new aliases.
+  aliasMap.insert(updateMap.begin(), updateMap.end());
+}
+
+void SubgraphOp::adjustAliasOutIndices(OutIndex fromOut, OutIndex toOut) {
+  // TODO(T43804): This function iterates over all items in `aliasMap`, which
+  // makes it quite slow. It can be done in constant time with some new data
+  // structures.
+  std::map<std::pair<InIndex, OutIndex>, std::pair<view::Chains, view::Chains>>
+      updateMap;
+
+  // Remove old aliases from map.
+  for (auto it = aliasMap.cbegin(); it != aliasMap.cend();) {
+    const auto &in  = it->first.first;
+    const auto &out = it->first.second;
+    if (out == fromOut) {
+      updateMap[{in, toOut}] = it->second;
+      it                     = aliasMap.erase(it);
+    } else {
+      ++it;
+    }
+  }
+
+  // Update the map with the new aliases.
+  aliasMap.insert(updateMap.begin(), updateMap.end());
+}
+
+void SubgraphOp::adjustModifiedIndices(InIndex fromIn, InIndex toIn) {
+  if (modifiesMap.count(fromIn) != 0) {
+    const auto &regions = modifiesMap[fromIn];
+    modifiesMap.erase(fromIn);
+    modifiesMap[toIn] = regions;
+  }
+}
+
 void SubgraphOp::addModified(InIndex in, view::Regions regions) {
   modifiesMap.insert(std::make_pair(in, regions));
 }
@@ -103,8 +157,8 @@ view::Regions SubgraphOp::aliases(InIndex in, OutIndex out) const {
       aliasMap.at({in, out}).second.apply(view::Region::getFull(outShape(out)));
   for (const auto &r : aliasRegions) {
     if (r.rank() != inRank(in)) {
-      throw error("Invalid Region of rank {} in CallOp::aliases at InIndex {} "
-                  "where the input Tensor is of rank {}.",
+      throw error("Invalid Region of rank {} in SubgraphOp::aliases at InIndex "
+                  "{} where the input Tensor is of rank {}.",
                   r.rank(),
                   in,
                   inRank(in));
@@ -164,8 +218,8 @@ view::Regions SubgraphOp::modifies(InIndex in) const {
   auto modifiedRegions = modifiesMap.at(in);
   for (const auto &r : modifiedRegions) {
     if (r.rank() != inRank(in)) {
-      throw error("Invalid Region of rank {} in CallOp::modifies at InIndex {} "
-                  "where the input Tensor is of rank {}.",
+      throw error("Invalid Region of rank {} in SubgraphOp::modifies at InIndex"
+                  " {} where the input Tensor is of rank {}.",
                   r.rank(),
                   in,
                   inRank(in));
@@ -232,7 +286,7 @@ SubgraphOp::getIntrospectionInVirtualGraphId(InIndex index,
 
     // Fallback 2: The tensor knows it's own VGID
     // We ask this only after callee introspection, because otherwise the
-    // CallOp's VGID will be reported, which can be wrong if it's nested
+    // SubgraphOp's VGID will be reported, which can be wrong if it's nested
     // consuming operator is on another virtual graph.
     if (tensor->hasVirtualGraphId()) {
       // Tensor has VirtualGraphID given by it's producer or consumer
@@ -305,7 +359,7 @@ SubgraphOp::getIntrospectionOutVirtualGraphId(OutIndex index,
 
     // Fallback 2: The tensor knows it's own VGID
     // We ask this only after callee introspection, because otherwise the
-    // CallOp's VGID will be reported, which can be wrong if it's nested
+    // SubgraphOp's VGID will be reported, which can be wrong if it's nested
     // consuming operator is on another virtual graph.
     if (tensor->hasVirtualGraphId()) {
       // Tensor has VirtualGraphID given by it's producer or consumer
