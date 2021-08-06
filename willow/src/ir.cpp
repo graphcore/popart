@@ -132,7 +132,9 @@ poprithms::logging::TimePartitionLogger &Ir::timePartitionLogger() const {
 
 std::string Ir::timePartitionLoggerStr() const {
   // Only log scopes which took 1% or more of the total time:
-  const auto thresholdPercentage = 1.0;
+  const auto thresholdPercentage =
+      getSessionOptions()
+          .developerSettings.timePartitionLoggerThresholdPercentage;
   return timePartitionLogger().str(thresholdPercentage);
 }
 
@@ -4048,8 +4050,8 @@ std::size_t std::hash<popart::Ir>::operator()(const popart::Ir &ir) const {
   return seed;
 }
 
-std::size_t std::hash<popart::IrBundle>::
-operator()(const popart::IrBundle &bundle) const {
+std::size_t
+std::hash<popart::IrBundle>::operator()(const popart::IrBundle &bundle) const {
   size_t seed = 0;
 
   boost::hash_combine(

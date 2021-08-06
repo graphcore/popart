@@ -508,6 +508,19 @@ struct AutodiffSettings {
       AutodiffStitchStrategy::RecomputeAllNonInputs;
 };
 
+// Struct for development-specific configuration intended to be used by
+// PopART developers, as opposed to PopART users.
+//
+/// NOTE: These options are not subject to deprecation notices and may be
+// changed or removed at any time.
+struct DeveloperSettings {
+
+  DeveloperSettings &operator=(const DeveloperSettings &rhs) = default;
+  // The minimum percentage of the total time a scope must take in order
+  // for it to be logged by the TimePartitionLogger.
+  double timePartitionLoggerThresholdPercentage = 1.0f;
+};
+
 /**
  * A structure containing user configuration options for the Session class.
  */
@@ -952,6 +965,9 @@ struct SessionOptions {
   /// Settings to enable and configure the automatic loss scaling behaviour when
   /// training.
   AutomaticLossScalingSettings automaticLossScalingSettings;
+
+  // Settings for developers to configure testing and benchmarking
+  DeveloperSettings developerSettings;
 
   /// If enabled, casts any tensor of unsupported data types to supported data
   /// types when lowering to Poplar
