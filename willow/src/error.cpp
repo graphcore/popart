@@ -41,6 +41,8 @@ void error::logMessage() {
 }
 
 ErrorSource getErrorSource(const std::exception &e) {
+  logging::warn(
+      "getErrorSource is deprecated and will be removed in a future release.");
   if (dynamic_cast<const popart::internal_error *>(&e)) {
     return ErrorSource::popart_internal;
   }

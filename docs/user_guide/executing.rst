@@ -250,7 +250,7 @@ information:
 * ``getSummaryReport`` retrieves a text summary of the compilation and execution of
   the graph.
 * ``getReport`` returns a libpva `Report` object containing details of the
-  compliation and execution of the graph.
+  compilation and execution of the graph.
   the graph
 
 If profiling is not enabled, then the summary report will say 'Execution profiling not enabled'
@@ -348,3 +348,61 @@ For example:
   [2019-10-16 13:55:05.359] [popart:devicex] [debug] Creating poplar::Tensor 1
   [2019-10-16 13:55:05.359] [popart:devicex] [debug] Creating host-to-device FIFO 1
   [2019-10-16 13:55:05.359] [popart:devicex] [debug] Creating device-to-host FIFO 1
+
+
+Errors
+======
+
+The full hierarchy of error that can be thrown from a popart program is:
+
+.. code-block:: python
+
+  popart_exception
+    popart_internal_exception
+    popart_runtime_error
+  poplibs_exception
+  poplar_exception
+    poplar_runtime_error
+      poplar_application_runtime_error
+      poplar_system_runtime_error
+        poplar_recoverable_runtime_error
+        poplar_unrecoverable_runtime_error
+        poplar_unknown_runtime_error
+
+
+Application errors
+~~~~~~~~~~~~~~~~~~
+
+Application errors will be due to a bug in either the users code or in the framework.
+These are:
+
+.. code-block:: python
+
+  popart.popart_exception
+  popart.popart_internal_exception
+  popart.popart_runtime_error
+  popart.poplibs_exception
+  popart.poplar_application_runtime_error
+
+System errors
+~~~~~~~~~~~~~
+
+These are:
+
+.. code-block:: python
+
+  popart.poplar_recoverable_runtime_error
+  popart.poplar_unrecoverable_runtime_error
+  popart.poplar_unknown_runtime_error
+
+An instance of a `poplar_recoverable_error` has an attribute `recoveryAction` which contains the action required to recover from this error. This will be one of the values:
+
+.. code-block:: python
+
+  .popart.RecoveryAction.IPU_RESET
+  .popart.RecoveryAction.PARTITION_RESET
+  .popart.RecoveryAction.POWER_CYCLE
+
+A `poplar_unrecoverable_error` suggests that the user needs to contact Graphcore support and that this issue could either be an SDK bug or a machine issue.
+
+An `unknown_runtime_error` could be either recoverable or unrecoverable, but there is not enough information to know for sure. In this instance, the 3 recovery options (IPU_RESET, PARTITION_RESET, and POWER_CYCLE) should be tried and if none resolve the issue, then Graphcore support should be contacted.

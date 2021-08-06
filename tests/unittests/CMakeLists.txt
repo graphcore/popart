@@ -87,4 +87,6 @@ add_popart_cpp_unit_test(unittest_pipeline transforms/unittest_pipeline.cpp)
 
 add_popart_cpp_unit_test(unittest_preautomaticlossscaling transforms/unittest_preautomaticlossscaling.cpp)
 
+add_popart_py_unit_test(test_error test_error.py)
+
 add_subdirectory("python")

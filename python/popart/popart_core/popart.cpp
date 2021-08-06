@@ -434,6 +434,34 @@ public:
   }
 };
 
+template <typename type> class recoverable_exception : public py::object {
+public:
+  recoverable_exception() = default;
+  recoverable_exception(handle scope,
+                        const char *name,
+                        handle base = PyExc_Exception) {
+    std::string full_name =
+        scope.attr("__name__").cast<std::string>() + std::string(".") + name;
+    m_ptr = PyErr_NewException(
+        const_cast<char *>(full_name.c_str()), base.ptr(), NULL);
+    if (hasattr(scope, "__dict__") && scope.attr("__dict__").contains(name))
+      pybind11::pybind11_fail(
+          "Error during initialization: multiple incompatible "
+          "definitions with name \"" +
+          std::string(name) + "\"");
+    scope.attr(name) = *this;
+  }
+
+  // Sets the current python recoverable_exception to this exception object with
+  // the given message
+  void setMessage(const char *message) { PyErr_SetString(m_ptr, message); }
+
+  void setRecoveryAction(poplar::RecoveryAction recoveryAction) {
+    py::object x = py::cast(recoveryAction);
+    PyObject_SetAttrString(m_ptr, "recoveryAction", x.ptr());
+  }
+};
+
 PYBIND11_MODULE(popart_core, m) {
   // Import the popart._internal.ir module to reuse some bindings.
   py::module popart_internal_ir = py::module::import("popart._internal.ir");
@@ -3257,35 +3285,112 @@ PYBIND11_MODULE(popart_core, m) {
 
   m.def("closePoplarDebugInfo", [&]() { poplar::DebugInfo::closeStreamer(); });
 
+  {
+    py::enum_<poplar::RecoveryAction> en(m, "RecoveryAction", "");
+    en.value("IPU_RESET", poplar::RecoveryAction::IPU_RESET, "");
+    en.value("PARTITION_RESET", poplar::RecoveryAction::PARTITION_RESET, "");
+    en.value("FULL_RESET", poplar::RecoveryAction::FULL_RESET, "");
+  }
+
   // Exceptions are processed explicitly to allow the main dynamic library
   // to do the type inference.  This prevents some inter dynamic library type
   // inference issues on OS/X
   static py::exception<popart::error> ePopart(m, "popart_exception");
   static py::exception<popart::internal_error> ePopartInternal(
-      m, "popart_internal_exception");
-  static py::exception<poplar::poplar_error> ePoplar(m, "poplar_exception");
+      m, "popart_internal_exception", ePopart);
+  static py::exception<popart::runtime_error> ePopartRuntime(
+      m, "popart_runtime_error", ePopart);
+
   static py::exception<poputil::poplibs_error> ePoplibs(m, "poplibs_exception");
+
+  static py::exception<poplar::poplar_error> ePoplar(m, "poplar_exception");
+  static py::exception<poplar::runtime_error> ePoplarRuntime(
+      m, "poplar_runtime_error", ePoplar);
+  static py::exception<poplar::application_runtime_error>
+      ePoplarApplicationRuntime(
+          m, "poplar_application_runtime_error", ePoplarRuntime);
+  static py::exception<poplar::system_runtime_error> ePoplarSystemRuntime(
+      m, "poplar_system_runtime_error", ePoplarRuntime);
+  static recoverable_exception<poplar::recoverable_runtime_error>
+      ePoplarRecoverableRuntime(
+          m, "poplar_recoverable_runtime_error", ePoplarSystemRuntime);
+  static py::exception<poplar::unrecoverable_runtime_error>
+      ePoplarUnrecoverableRuntime(
+          m, "poplar_unrecoverable_runtime_error", ePoplarSystemRuntime);
+  static py::exception<poplar::unknown_runtime_error> ePoplarUnknownRuntime(
+      m, "poplar_unknown_runtime_error", ePoplarSystemRuntime);
 
   py::register_exception_translator([](std::exception_ptr p) {
     try {
       std::rethrow_exception(p);
-    } catch (std::exception &e) {
-      switch (popart::getErrorSource(e)) {
-      case popart::ErrorSource::popart:
-        ePopart(e.what());
-        return;
-      case popart::ErrorSource::popart_internal:
-        ePopartInternal(e.what());
-        return;
-      case popart::ErrorSource::poplar:
-        ePoplar(e.what());
-        return;
-      case popart::ErrorSource::poplibs:
-        ePoplibs(e.what());
-        return;
-      case popart::ErrorSource::unknown:
-        throw;
-      }
+    } catch (popart::internal_error &e) {
+      ePopartInternal(e.what());
+      return;
+    } catch (popart::runtime_error &e) {
+      ePopartRuntime(e.what());
+      return;
+    } catch (popart::error &e) {
+      ePopart(e.what());
+      return;
+    } catch (poputil::poplibs_error &e) {
+      ePoplibs(e.what());
+      return;
+    } catch (poplar::recoverable_runtime_error &e) {
+      ePoplarRecoverableRuntime.setRecoveryAction(e.getRecoveryAction());
+      // setMessage needs to be the last call, poptorch had issues caused by
+      // this on ubuntu 20.04
+      ePoplarRecoverableRuntime.setMessage(e.what());
+      return;
+    } catch (poplar::unrecoverable_runtime_error &e) {
+      ePoplarUnrecoverableRuntime(e.what());
+      return;
+    } catch (poplar::unknown_runtime_error &e) {
+      ePoplarUnknownRuntime(e.what());
+      return;
+    } catch (poplar::application_runtime_error &e) {
+      ePoplarApplicationRuntime(e.what());
+      return;
+    } catch (poplar::system_runtime_error &e) {
+      ePoplarSystemRuntime(e.what());
+      return;
+    } catch (poplar::runtime_error &e) {
+      ePoplarRuntime(e.what());
+      return;
+    } catch (poplar::poplar_error &e) {
+      ePoplar(e.what());
+      return;
     }
+    throw;
+  });
+
+  // Some functions to test the error translation.
+  m.def("_throw_popart_error",
+        [&](const std::string &msg) { throw popart::error(msg); });
+  m.def("_throw_popart_internal_error",
+        [&](const std::string &msg) { throw popart::internal_error(msg); });
+  m.def("_throw_popart_runtime_error",
+        [&](const std::string &msg) { throw popart::runtime_error(msg); });
+  m.def("_throw_poplibs_error",
+        [&](const std::string &msg) { throw poputil::poplibs_error(msg); });
+  m.def("_throw_poplar_error",
+        [&](const std::string &msg) { throw poplar::poplar_error(msg); });
+  m.def("_throw_poplar_runtime_error",
+        [&](const std::string &msg) { throw poplar::runtime_error(msg); });
+  m.def("_throw_application_runtime_error", [&](const std::string &msg) {
+    throw poplar::application_runtime_error(msg);
+  });
+  m.def("_throw_system_runtime_error", [&](const std::string &msg) {
+    throw poplar::system_runtime_error(msg);
+  });
+  m.def("_throw_recoverable_runtime_error", [&](const std::string &msg) {
+    logging::debug("throwing a poplar recoverable runtime error");
+    throw poplar::recoverable_runtime_error(poplar::RecoveryAction::IPU_RESET,
+                                            msg);
+  });
+  m.def("_throw_unrecoverable_runtime_error", [&](const std::string &msg) {
+    throw poplar::unrecoverable_runtime_error(msg);
+  });
+  m.def("_throw_unknown_runtime_error", [&](const std::string &msg) {
+    throw poplar::unknown_runtime_error(msg);
   });
 }
