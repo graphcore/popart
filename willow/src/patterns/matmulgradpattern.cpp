@@ -139,13 +139,6 @@ bool MatMulPattern::apply(Op *op) const {
 
   MatMulOp *matmulOp = dynamic_cast<MatMulOp *>(op);
 
-  logging::pattern::debug(
-      "Applying MatMulOp pattern to reshape input from {} x {} to {} x {}",
-      matmulOp->lhsIn()->info.shape(),
-      matmulOp->rhsIn()->info.shape(),
-      matmulOp->getExpandedLhsShape(),
-      matmulOp->getExpandedRhsShape());
-
   // The inputs/output tensors of the original matmul
   auto lhs = matmulOp->lhsIn();
   auto rhs = matmulOp->rhsIn();
@@ -158,11 +151,28 @@ bool MatMulPattern::apply(Op *op) const {
   auto outReshapeOp = dynamic_cast<ReshapeOp *>(
       makeReplacementOpInIr(Onnx::Operators::Reshape_5, op, "OutReshape"));
 
+  // Guaranteed to be a minimum of rank 3
+  auto lhsShape = matmulOp->getExpandedLhsShape();
+  auto rhsShape = matmulOp->getExpandedRhsShape();
+  if (lhsShape.size() == 3 && rhsShape.size() == 3 && rhsShape[0] == 1) {
+      // Modify the specific case where the RHS is broadcast on the group dimension.
+      // This avoids a ReduceSumOp being inserted into the during autodiff.
+      lhsShape[1] *= lhsShape[0];
+      lhsShape[0] = 1;
+  }
+
+  logging::pattern::debug(
+      "Applying MatMulOp pattern to reshape input from {} x {} to {} x {}",
+      lhs->info.shape(),
+      rhs->info.shape(),
+      lhsShape,
+      rhsShape);
+
   // expand the lhs input by reshaping it
-  configureReshapeOp(lhsReshapeOp, matmulOp->getExpandedLhsShape(), lhs->id);
+  configureReshapeOp(lhsReshapeOp, lhsShape, lhs->id);
 
   // expand the rhs input by reshaping it
-  configureReshapeOp(rhsReshapeOp, matmulOp->getExpandedRhsShape(), rhs->id);
+  configureReshapeOp(rhsReshapeOp, rhsShape, rhs->id);
 
   // disconnect the mat mul from it's original inputs & output
   matmulOp->disconnectAllInputs();
@@ -180,72 +190,10 @@ bool MatMulPattern::apply(Op *op) const {
                      matmulOp->outTensor(MatMulOp::getOutIndex())->id,
                      out->id);
 
-  // Transfer existing topoCons
-  op->getGraph().topoCons->transfer(op, matmulOp);
-
   // Tie operations together.
   op->getGraph().topoCons->insert(lhsReshapeOp, matmulOp, true);
   op->getGraph().topoCons->insert(rhsReshapeOp, matmulOp, true);
   op->getGraph().topoCons->insert(matmulOp, outReshapeOp, true);
-
-  return true;
-}
-
-bool FoldMatMulPattern::matches(Op *op) const {
-  if (!op->isConvertibleTo<MatMulOp>()) {
-    return false;
-  }
-
-  auto lhs = op->inTensor(MatMulOp::getLhsInIndex());
-  auto rhs = op->inTensor(MatMulOp::getRhsInIndex());
-
-  return lhs->info.rank() == 3 && rhs->info.rank() == 2 &&
-         lhs->info.dim(0) != 1;
-}
-
-bool FoldMatMulPattern::apply(Op *op) const {
-  auto &ir           = op->getIr();
-  auto &graph        = op->getGraph();
-  MatMulOp *matmulOp = dynamic_cast<MatMulOp *>(op);
-
-  auto lhs = matmulOp->inTensor(MatMulOp::getLhsInIndex());
-
-  // Get the new shape for the lhs input
-  auto lhsShape = lhs->info.shape();
-  Shape lhsNewShape;
-  lhsNewShape.push_back(lhsShape.at(0) * lhsShape.at(1));
-  lhsNewShape.push_back(lhsShape.at(2));
-
-  // Create and connect the reshape op
-  auto lhsReshape = graph.createOp<ReshapeOp>(
-      Onnx::Operators::Reshape_5, lhsNewShape, matmulOp->settings);
-  op->transferBaseProperties(lhsReshape);
-
-  lhsReshape->connectInTensor(ReshapeOp::getInIndex(), lhs->id);
-  lhsReshape->createAndConnectOutTensor(ReshapeOp::getOutIndex(),
-                                        ir.createIntermediateTensorId(lhs->id));
-  lhsReshape->setup();
-
-  // Connect the reshaped input to the matmul op
-  matmulOp->disconnectInTensor(MatMulOp::getLhsInIndex(), lhs);
-  matmulOp->connectInTensor(MatMulOp::getLhsInIndex(),
-                            lhsReshape->outId(ReshapeOp::getOutIndex()));
-
-  // Create a new output for the matmul op and call setup.
-  auto matmulOut = matmulOp->outTensor(MatMulOp::getOutIndex());
-  matmulOp->disconnectOutTensor(matmulOut);
-  matmulOp->createAndConnectOutTensor(
-      MatMulOp::getOutIndex(), ir.createIntermediateTensorId(matmulOut->id));
-  matmulOp->setup();
-
-  // Create and connect a reshape op for the new matmul output.
-  auto outReshape = graph.createOp<ReshapeOp>(
-      Onnx::Operators::Reshape_5, matmulOut->info.shape(), matmulOp->settings);
-  op->transferBaseProperties(outReshape);
-  outReshape->connectInTensor(ReshapeOp::getInIndex(),
-                              matmulOp->outId(MatMulOp::getOutIndex()));
-  outReshape->connectOutTensor(ReshapeOp::getOutIndex(), matmulOut->id);
-  outReshape->setup();
 
   return true;
 }
@@ -486,8 +434,6 @@ bool MatMulRhsGradPattern::matches(Op *op) const {
 namespace {
 static PatternCreator<MatMulPattern>
     matMulPattern(PreAliasPatternType::MatMulOp, "MatMulOp", true);
-static PatternCreator<FoldMatMulPattern> foldMatMulPattern("FoldMatMulPattern",
-                                                           true);
 static PatternCreator<MatMulLhsGradPattern>
     matMulLhsGradPattern(PreAliasPatternType::MatMulLHSGradOp,
                          "MatMulLhsGradOp",
