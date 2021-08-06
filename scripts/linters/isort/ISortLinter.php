@@ -22,7 +22,7 @@ final class ISortLinter extends ArcanistExternalLinter {
   }
 
   public function getVersion() {
-    list($stdout) = execx('python -c "import isort; print(isort.__version__)"');
+    list($stdout) = execx('python3 -c "import isort; print(isort.__version__)"');
     $matches = array();
     if (preg_match('/(?P<version>\d+\.\d+\.\d+)$/', $stdout, $matches)) {
       $version = $matches['version'];
