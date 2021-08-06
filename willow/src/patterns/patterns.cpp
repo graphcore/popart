@@ -577,7 +577,6 @@ std::vector<std::unique_ptr<PreAliasPattern>> Patterns::getPreAliasList() {
       {std::type_index(typeid(PowArg0GradOpPattern)), 7},
       {std::type_index(typeid(PowArg1GradOpPattern)), 6},
       {std::type_index(typeid(ContiguateIpuCopyIndicesPattern)), 5},
-      {std::type_index(typeid(FoldMatMulPattern)), 4.5},
       {std::type_index(typeid(MatMulPattern)), 4},
       {std::type_index(typeid(MatMulLhsGradPattern)), 3},
       {std::type_index(typeid(MatMulRhsGradPattern)), 2},

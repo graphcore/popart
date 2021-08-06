@@ -35,16 +35,6 @@ public:
   bool apply(Op *op) const override;
 };
 
-// When the lhs input of the matmul is rank 3 and the rhs is rank 2, combine
-// first two dimensions of the rhs input. This stops a ReduceSumOp being
-// inserted into the backward pass.
-class FoldMatMulPattern : public PreAliasPattern {
-public:
-  bool matches(Op *op) const override;
-  bool apply(Op *op) const override;
-  std::vector<const Tensor *> touches(Op *) const override { return {}; }
-};
-
 // The following pattern will expand matmul(lhs/rhs)grad to a transpose and and
 // a matmul Additionally it may need to add a squeeze/reduce/reshape to the
 // output of the matmul to match the output of the grad op.
