@@ -1,9 +1,9 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 import numpy as np
 import pytest
-import popart
 import test_util as tu
-import pprint
+
+import popart
 
 
 def test_abort_unconditional():
@@ -31,7 +31,7 @@ def test_abort_unconditional():
 
     inputs = {}
     stepio = popart.PyStepIO(inputs, anchors)
-    with pytest.raises(popart.poplar_exception) as e_info:
+    with pytest.raises(popart.poplar_runtime_error) as e_info:
         session.run(stepio)
         assert (e_info.value.args[0].startswith("Abort Program"))
 
@@ -92,5 +92,5 @@ def test_abort_conditional_exception():
 
     inputs = {}
     stepio = popart.PyStepIO(inputs, anchors)
-    with pytest.raises(popart.poplar_exception) as e_info:
+    with pytest.raises(popart.poplar_runtime_error) as e_info:
         session.run(stepio)
