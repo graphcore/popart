@@ -68,6 +68,9 @@ Session options
 .. doxygenstruct:: popart::AccumulateOuterFragmentSettings
   :members:
 
+.. doxygenstruct:: popart::AutomaticLossScalingSettings
+  :members:
+
 .. doxygenenum:: popart::BatchSerializationBatchSchedule
 
 .. doxygenenum:: popart::BatchSerializationMethod
