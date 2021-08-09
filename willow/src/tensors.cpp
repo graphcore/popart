@@ -167,6 +167,7 @@ void Tensors::addConstInit(const TensorId &name,
 void Tensors::addVarInit(const TensorId &name,
                          const ONNX_NAMESPACE::TensorProto *pt,
                          const DebugContext &debugContext) {
+  logging::debug("Adding VarInit Tensor {}", name);
   popart::TensorDebugInfo di(debugContext, name, TensorType::Variable);
   addInit(name, pt, TensorType::Variable, di);
 

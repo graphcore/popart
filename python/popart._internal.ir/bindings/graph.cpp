@@ -1,9 +1,11 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 #include "bindings/graph.hpp"
 
+#include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
+#include "../../popart/shared_cpp/np_utils.hpp"
 #include <popart/graph.hpp>
 #include <popart/graphid.hpp>
 #include <popart/ir.hpp>
@@ -17,6 +19,36 @@ namespace ir {
 void bindGraph(py::module &m) {
   py::class_<Graph>(m, "Graph")
       .def(py::init<Ir &, const GraphId &>())
+      .def("addActGrad", &Graph::addActGrad)
+      .def(
+          "addVarInit",
+          [](Graph &self,
+             const TensorId &tid,
+             const TensorInfo &tinfo,
+             py::array data,
+             const DebugContext &dc) {
+            data = makeContiguous(data);
+            self.addVarInit(tid, tinfo, data.request().ptr, dc);
+          },
+          py::arg("tensorId"),
+          py::arg("tensorInfo"),
+          py::arg("data"),
+          py::arg("debugContext") = std::string())
+      .def(
+          "addConstInit",
+          [](Graph &self,
+             const TensorId &tid,
+             const TensorInfo &tinfo,
+             py::array data,
+             const DebugContext &dc) {
+            data = makeContiguous(data);
+            self.addConstInit(tid, tinfo, data.request().ptr, dc);
+          },
+          py::arg("tensorId"),
+          py::arg("tensorInfo"),
+          py::arg("data"),
+          py::arg("debugContext") = std::string())
+      .def("getTensor", &Graph::getTensor, py::return_value_policy::reference)
       .def("getInputIds",
            &Graph::getInputIds,
            py::return_value_policy::reference)

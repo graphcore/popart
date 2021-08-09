@@ -58,6 +58,17 @@ public:
 
   const Tensors &getTensors() const;
   Tensors &getTensors();
+  Tensor *getTensor(const TensorId &);
+
+  void addActGrad(const TensorId &);
+  void addVarInit(const TensorId &,
+                  const TensorInfo &,
+                  const void *,
+                  const DebugContext &);
+  void addConstInit(const TensorId &,
+                    const TensorInfo &,
+                    const void *,
+                    const DebugContext &);
 
   const Ir &getIr() const { return ir; }
   Ir &getIr() { return ir; }

@@ -117,7 +117,30 @@ Op *Graph::getOp(OpId opId) const {
 }
 
 const Tensors &Graph::getTensors() const { return *(up_tensors.get()); }
+
 Tensors &Graph::getTensors() { return *(up_tensors.get()); }
+
+Tensor *Graph::getTensor(const TensorId &tid) { return getTensors().get(tid); }
+
+void Graph::addActGrad(const TensorId &tensorId) {
+  getTensors().addActGrad(tensorId);
+}
+
+void Graph::addVarInit(const TensorId &name,
+                       const TensorInfo &info,
+                       const void *src,
+                       const DebugContext &debugContext) {
+
+  getTensors().addVarInit(name, info, src, debugContext);
+}
+
+void Graph::addConstInit(const TensorId &name,
+                         const TensorInfo &info,
+                         const void *src,
+                         const DebugContext &debugContext) {
+
+  getTensors().addConstInit(name, info, src, debugContext);
+}
 
 void Graph::addInput(const InIndex &index,
                      const TensorId &tensorId,
