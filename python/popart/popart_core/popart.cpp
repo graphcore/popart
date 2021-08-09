@@ -3385,7 +3385,6 @@ PYBIND11_MODULE(popart_core, m) {
       ePoplar(e.what());
       return;
     }
-    throw;
   });
 
   // Some functions to test the error translation.
