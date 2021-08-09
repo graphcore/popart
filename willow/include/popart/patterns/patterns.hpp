@@ -238,7 +238,6 @@ public:
   bool isRandomUniformLikeOpPatternEnabled();
   bool isZerosLikeOpPatternEnabled();
   bool isDecomposeBinaryConstScalarEnabled();
-  bool isSparseAccumulateEnabled();
   bool isFmodArg0GradOpEnabled();
   bool isLambSerialisedWeightEnabled();
   bool isTiedGatherEnabled();
@@ -286,7 +285,6 @@ public:
   Patterns &enableRandomNormalLikeOpPattern(bool v);
   Patterns &enableRandomUniformLikeOpPattern(bool v);
   Patterns &enableZerosLikeOpPattern(bool v);
-  Patterns &enableSparseAccumulate(bool v);
   Patterns &enableDecomposeBinaryConstScalar(bool v);
   Patterns &enableLambSerialisedWeight(bool v);
   Patterns &enableTiedGather(bool v);

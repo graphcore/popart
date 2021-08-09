@@ -47,7 +47,6 @@
 #include <popart/patterns/sequenceexpander.hpp>
 #include <popart/patterns/sgd1decompose.hpp>
 #include <popart/patterns/softmaxgraddirect.hpp>
-#include <popart/patterns/sparseaccumulatepattern.hpp>
 #include <popart/patterns/splitgather.hpp>
 #include <popart/patterns/splitgradoptoconcatpattern.hpp>
 #include <popart/patterns/splitoppattern.hpp>
@@ -315,10 +314,6 @@ bool Patterns::isDecomposeBinaryConstScalarEnabled() {
   return isPatternEnabled<DecomposeBinaryConstScalar>();
 }
 
-bool Patterns::isSparseAccumulateEnabled() {
-  return isPatternEnabled<SparseAccumulatePattern>();
-}
-
 bool Patterns::isFmodArg0GradOpEnabled() {
   return isPatternEnabled<FmodArg0GradOpPattern>();
 }
@@ -457,10 +452,6 @@ Patterns &Patterns::enableRandomUniformLikeOpPattern(bool v) {
 
 Patterns &Patterns::enableZerosLikeOpPattern(bool v) {
   return enablePattern<LikeOpsPattern<ZerosLikeOp>>(v);
-}
-
-Patterns &Patterns::enableSparseAccumulate(bool v) {
-  return enablePattern<SparseAccumulatePattern>(v);
 }
 
 Patterns &Patterns::enableDecomposeBinaryConstScalar(bool v) {
