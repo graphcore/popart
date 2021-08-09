@@ -109,9 +109,8 @@ std::unique_ptr<Op> AccumulateOp::clone() const {
 /**************** SparseAccumulateOp ****************/
 
 bool SparseAccumulateOp::supportsAccumulationType(const AccumulationType type) {
-  return type == AccumulationType::Add ||
-         type == AccumulationType::DampenedAdd ||
-         type == AccumulationType::DampenedAddSquare;
+  // TODO(T43862): Support DampenedAddSquareg in SparseAccumulatex
+  return type == AccumulationType::Add || type == AccumulationType::DampenedAdd;
 }
 
 SparseAccumulateOp::SparseAccumulateOp(const AccumulationType type_,
