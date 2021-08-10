@@ -3818,38 +3818,40 @@ poplar::ReplicatedStreamMode
 IrLowering::getReplicatedStreamMode(Tensor *tensor) const {
   poplar::ReplicatedStreamMode mode = poplar::ReplicatedStreamMode::BROADCAST;
 
-  if (ir().getSessionOptions().useHostCopyOps) {
-    switch (tensor->getReplicatedStreamMode()) {
-    case Tensor::ReplicatedStreamMode::Broadcast:
-      mode = poplar::ReplicatedStreamMode::BROADCAST;
-      break;
-    case Tensor::ReplicatedStreamMode::Replicate:
-      mode = poplar::ReplicatedStreamMode::REPLICATE;
-      break;
-    }
-    return mode;
-  }
-
   if (tensor->tensorType() == TensorType::Variable) {
     // If it is a variable we 'broadcast' the same tensor
     // to all replicants
     mode = poplar::ReplicatedStreamMode::BROADCAST;
 
-  } else if (tensor->tensorType() == TensorType::Stream) {
-
-    switch (tensor->getReplicatedStreamMode()) {
-    case Tensor::ReplicatedStreamMode::Broadcast:
-      mode = poplar::ReplicatedStreamMode::BROADCAST;
-      break;
-    case Tensor::ReplicatedStreamMode::Replicate:
-      mode = poplar::ReplicatedStreamMode::REPLICATE;
-      break;
+  } else {
+    if (ir().getSessionOptions().useHostCopyOps) {
+      switch (tensor->getReplicatedStreamMode()) {
+      case Tensor::ReplicatedStreamMode::Broadcast:
+        mode = poplar::ReplicatedStreamMode::BROADCAST;
+        break;
+      case Tensor::ReplicatedStreamMode::Replicate:
+        mode = poplar::ReplicatedStreamMode::REPLICATE;
+        break;
+      }
+      return mode;
     }
 
-  } else {
-    throw error("Tensor {} of type {} are not stream to device",
-                tensor->id,
-                tensor->tensorType());
+    if (tensor->tensorType() == TensorType::Stream) {
+
+      switch (tensor->getReplicatedStreamMode()) {
+      case Tensor::ReplicatedStreamMode::Broadcast:
+        mode = poplar::ReplicatedStreamMode::BROADCAST;
+        break;
+      case Tensor::ReplicatedStreamMode::Replicate:
+        mode = poplar::ReplicatedStreamMode::REPLICATE;
+        break;
+      }
+
+    } else {
+      throw error("Tensor {} of type {} are not stream to device",
+                  tensor->id,
+                  tensor->tensorType());
+    }
   }
 
   return mode;
