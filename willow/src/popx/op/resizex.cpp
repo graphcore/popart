@@ -494,7 +494,9 @@ snap::Tensor ResizeGradOpx::padDimension(poplar::program::Sequence &prog,
                                          float scale) const {
   auto slices        = split(input.getPoplarTensor(), dimension);
   auto paddingTensor = graph().getPoplarGraph().addVariable(
-      input.elementType(), slices.at(0).shape());
+      input.elementType(),
+      slices.at(0).shape(),
+      poplar::VariableMappingMethod::LINEAR);
   popops::zero(graph().getPoplarGraph(),
                paddingTensor,
                prog,
