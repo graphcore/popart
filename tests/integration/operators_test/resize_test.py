@@ -195,6 +195,7 @@ def test_resize_nearest_grad_2d(op_tester, factor1, factor2):
     op_tester.run(init_builder, reference, 'train')
 
 
+@tu.requires_ipu_model
 @pytest.mark.parametrize(
     "data_shape, scales",
     [
