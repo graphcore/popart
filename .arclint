@@ -5,11 +5,6 @@
             "version": "=9.0.0-d3a647c305759f37f30257352e621579f53d0073",
             "include": "(\\.(c|cpp|C|cc|c\\+\\+|cxx|h|hpp)$)"
         },
-        "isort": {
-            "type": "isort",
-            "version": "=5.9.2",
-            "include": "(\\.(py.in|py)$)"
-        },
         "yapf": {
             "type": "yapf",
             "version": "=0.27.0",
