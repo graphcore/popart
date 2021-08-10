@@ -5400,6 +5400,15 @@ static const char *__doc_popart_RecomputationType_None =
 static const char *__doc_popart_RecomputationType_NormOnly =
     R"doc(Only Norm ops (+ non-linearities, if following) are recomputed.)doc";
 
+static const char *__doc_popart_RecomputationType_NormOnly_2 =
+    R"doc(Only Norm ops (+ non-linearities, if following) are recomputed.)doc";
+
+static const char *__doc_popart_RecomputationType_RecomputeAll =
+    R"doc(Every ops are recomputed.)doc";
+
+static const char *__doc_popart_RecomputationType_RecomputeAll_2 =
+    R"doc(Every ops are recomputed.)doc";
+
 static const char *__doc_popart_RecomputationType_Pipeline =
     R"doc(Recompute all forward pipeline stages.)doc";
 

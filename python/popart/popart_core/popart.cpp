@@ -1515,6 +1515,9 @@ PYBIND11_MODULE(popart_core, m) {
     en.value("NormOnly",
              RecomputationType::NormOnly,
              DOC(popart, RecomputationType, NormOnly));
+    en.value("RecomputeAll",
+             RecomputationType::RecomputeAll,
+             DOC(popart, RecomputationType, RecomputeAll));
     en.value("Pipeline",
              RecomputationType::Pipeline,
              DOC(popart, RecomputationType, Pipeline));

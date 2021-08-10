@@ -559,7 +559,8 @@ MultiConvWeightsGradBaseOp::MultiConvWeightsGradBaseOp(
   }
 
   if (getIr().getSessionOptions().executionPhaseSettings.phases < 2 &&
-      getIr().getSessionOptions().batchSerializationSettings.factor < 2) {
+      getIr().getSessionOptions().batchSerializationSettings.factor < 2 &&
+      !getIr().getSessionOptions().explicitRecomputation) {
     settings.schedulePriority = std::numeric_limits<double>::lowest();
   }
 }

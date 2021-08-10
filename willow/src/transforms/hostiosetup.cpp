@@ -67,7 +67,8 @@ void HostIOSetup::setupHostLoadOps(Tensor *inTensor) const {
           : 0;
 
   // Only force priority if batch serialisation or phased execution is not used
-  if (sessionOptions.batchSerializationSettings.factor < 2 && num_phases < 2) {
+  if (sessionOptions.batchSerializationSettings.factor < 2 && num_phases < 2 &&
+      !sessionOptions.explicitRecomputation) {
     settings.schedulePriority = std::numeric_limits<double>::lowest();
   }
 
@@ -150,7 +151,8 @@ void HostIOSetup::setupHostStoreOps(Tensor *anchorTensor) const {
           : 0;
 
   // Only force priority if batch serialisation or phased execution is not used
-  if (sessionOptions.batchSerializationSettings.factor < 2 && num_phases < 2) {
+  if (sessionOptions.batchSerializationSettings.factor < 2 && num_phases < 2 &&
+      !sessionOptions.explicitRecomputation) {
     settings.schedulePriority = std::numeric_limits<double>::lowest();
   }
 

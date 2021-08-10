@@ -142,6 +142,8 @@ std::string toString(RecomputationType r) {
     return "RecomputationType::Pipeline";
   case RecomputationType::NormOnly:
     return "RecomputationType::NormOnly";
+  case RecomputationType::RecomputeAll:
+    return "RecomputationType::RecomputeAll";
   case RecomputationType::N:
     throw error("Bad RecomputationType {}", static_cast<int>(r));
   default:

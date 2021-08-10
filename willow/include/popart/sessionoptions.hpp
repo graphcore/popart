@@ -94,6 +94,8 @@ enum class RecomputationType {
   NormOnly,
   /// Recompute all forward pipeline stages.
   Pipeline,
+  /// Recompute all ops.
+  RecomputeAll,
   /// The number of \c RecomputationTypes values.
   N
 };

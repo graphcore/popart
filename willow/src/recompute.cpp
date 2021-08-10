@@ -1,4 +1,5 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
+#include <queue>
 #include <popart/graph.hpp>
 #include <popart/intervals.hpp>
 #include <popart/ir.hpp>
@@ -20,6 +21,26 @@ namespace popart {
 namespace recompute {
 
 namespace {
+
+void allCheckpointAfterLastCheckpoint(Op *lossOp) {
+  // Change to checkpoint mode after the last recompute checkpoints op.
+  // This reduces the compute time as no need to recompute twice the last
+  // recomute segment.
+  logging::transform::info("Turn recompute ops to checkpoint between the last "
+                           "checkpoints and the loss.");
+  OpSearchHelper opSearch;
+  opSearch.pushInputProducers(lossOp);
+  while (!opSearch.empty()) {
+    // Get an op from the search list
+    Op *x = opSearch.pop();
+    // If it is a recompute op, make it to a checkpoint and
+    // keep searching the ops before it.
+    if (x->settings.recomputeType == RecomputeType::Recompute) {
+      opSearch.pushInputProducers(x);
+      x->settings.recomputeType = RecomputeType::Checkpoint;
+    }
+  }
+}
 
 void annotateNormOnly(Graph &graph) {
   for (auto &id_op : graph.getOps()) {
@@ -124,6 +145,18 @@ void annotateStandard(const Graph &graph) {
 
 } // namespace
 
+void annotateRecomputeAll(Graph &graph) {
+  for (auto &id_op : graph.getOps()) {
+    auto op = id_op.second.get();
+    if (op->toLoss == PathToLoss::Yes &&
+        op->settings.recomputeType == RecomputeType::Undefined) {
+      op->settings.recomputeType = RecomputeType::Recompute;
+    }
+  }
+  Op *loss_op = graph.getOp(graph.getIr().getFinalLossOpId());
+  allCheckpointAfterLastCheckpoint(loss_op);
+}
+
 void autoAnnotate(Graph &graph, RecomputationType rctype) {
 
   switch (rctype) {
@@ -140,6 +173,11 @@ void autoAnnotate(Graph &graph, RecomputationType rctype) {
   case RecomputationType::NormOnly: {
     logging::transform::info("Using 'NormOnly' auto-recompute method");
     annotateNormOnly(graph);
+    break;
+  }
+  case RecomputationType::RecomputeAll: {
+    logging::transform::info("Using 'RecomputeAll' auto-recompute method");
+    annotateRecomputeAll(graph);
     break;
   }
 

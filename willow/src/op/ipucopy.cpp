@@ -25,7 +25,8 @@ IpuCopyOp::IpuCopyOp(const OperatorIdentifier &_opid,
                      const Op::Settings &settings_)
     : Op(_opid, settings_), destIpu(_destIpu) {
   if (getIr().getSessionOptions().executionPhaseSettings.phases < 2 &&
-      getIr().getSessionOptions().batchSerializationSettings.factor < 2) {
+      getIr().getSessionOptions().batchSerializationSettings.factor < 2 &&
+      !getIr().getSessionOptions().explicitRecomputation) {
     settings.schedulePriority = std::numeric_limits<double>::lowest();
   }
 }

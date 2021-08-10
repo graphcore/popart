@@ -9,6 +9,7 @@ class Graph;
 
 namespace recompute {
 void autoAnnotate(Graph &graph, RecomputationType rctype);
+void annotateRecomputeAll(Graph &graph);
 
 } // namespace recompute
 } // namespace popart
