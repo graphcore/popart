@@ -130,20 +130,21 @@ class GCovrRunnerParser:
                 "Command 'gcovr' not found. Please install it using pip install gcovr."
             )
 
+        flag = output_types[self.output]
         if self.output in {"html", "csv", "cobertura"}:
             self._create_coverage_folder()
-            flag = self._convert_output_to_flag().split()
+            # We keep the output flags as a string so that we can use .format
+            # to specify any output path
+            flag = flag.format(output_dir=self._output_path)
 
         src_files_dir = self.workspace_dir.joinpath("willow/src")
-        # The only time we have args is when the user
-        # has supplied the --advanced option
         command = [
             'gcovr', '-r', src_files_dir,
             build_files_dir(self.build_dir), '-j16'
         ]
-        # We keep the output flags as a string so that we can use .format
-        # to specify any output path
-        command += args if args else flag
+        # The only time we have args is when the user
+        # has supplied the --advanced option
+        command += args if args else flag.split()
         if self._filter:
             command += self._filter
         # Exclude system library code and headers just in case
