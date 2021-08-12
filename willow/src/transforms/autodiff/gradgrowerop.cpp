@@ -134,19 +134,7 @@ GradGrowerOp::growGradOps(Op *nonGradOp,
                   gradTensorId, gradOp->getScope())) {
             m_inputs[indexGrad] = gradTensorId;
           } else {
-            if (isInputOptional(gradOp, indexGrad)) {
-              m_inputs[indexGrad] = TensorId();
-            } else {
-              throw error("No gradient for non-grad-op {} at index {}, but "
-                          "input {} is not marked as optional on grad-op {}. "
-                          "Could it be that "
-                          "the path along that index did not lead to the final "
-                          "loss, in which case the gradient is zero?",
-                          nonGradOp->debugName(),
-                          indexFwd,
-                          indexGrad,
-                          gradOp->debugName());
-            }
+            m_inputs[indexGrad] = TensorId();
           }
           break;
         }
