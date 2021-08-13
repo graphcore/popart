@@ -24,6 +24,33 @@ struct PackedSequences {
 // process these unpacked sequences, without having to worry about the packing
 // and unpacking.
 //
+// PackedDataBlockOp inputs:
+// 0     inData0
+// 1     inOffsets0
+// 2     inLengths0
+// ...
+// 3N    inDataN
+// 3N+1  inOffsetsN
+// 3N+2  inLengthsN
+// 4N    outOffsets
+// 4N+1  outLengths
+//
+// PackedDataBlockOp outputs:
+// 0     outData
+//
+// Callback graph inputs
+// 0     slicedInData0
+// ...
+// N     slicedInDataN
+//
+// Callback graph outputs:
+// 0     slicedOutData
+//
+// For every input to the callback graph, there are 3 inputs to the
+// PackedDataBlockOp. The last two inputs to the PackedDataBlockOp are the
+// offsets and lengths for slicing the callback output into the output of the
+// PackedDataBlockOp.
+//
 // The below python code demonstrates the function of the packed data block op:
 //   # Input tensors
 //   data, offsets, lengths, result_offsets, result_lengths = ...
