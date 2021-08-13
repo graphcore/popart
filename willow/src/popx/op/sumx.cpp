@@ -22,76 +22,42 @@ SumOpx::SumOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
 }
 
 void SumOpx::grow(poplar::program::Sequence &prog) const {
+
   SumOp &sumOp = getOp<SumOp>();
 
   // The input tensors
   std::vector<poplar::Tensor> inputs;
-  // Collect the input tensors and check if they all have the same shape
-  std::vector<std::size_t> shape;
-  bool needBroadcast = false;
+
+  // The "owner" of all expr nodes
+  std::vector<std::unique_ptr<popops::expr::Expr>> exprs;
+
+  // The queue of expr nodes to be reduced
+  std::queue<popops::expr::Expr *> expr;
+
+  // Add the input tensors as placeholders to the expression
   for (int i = 0; i < sumOp.input->n(); ++i) {
-    auto t = getInTensor(i).getPoplarTensor();
-    if (i == 0) {
-      shape = t.shape();
-    } else if (shape != t.shape()) {
-      needBroadcast = true;
-    }
-    inputs.push_back(t);
+    inputs.push_back(getInTensor(i).getPoplarTensor());
+    exprs.push_back(std::make_unique<popops::expr::PlaceHolder>(i + 1));
+    expr.push(exprs.back().get());
   }
 
-  poplar::Tensor sum;
-  if (!needBroadcast) {
-    for (auto i = 0; i < inputs.size(); i++) {
-      inputs[i] = inputs[i].expand({0});
-    }
-    poplar::Tensor concatTensor = poplar::concat(inputs);
-    poplar::Tensor inputTensor  = concatTensor;
-    if (concatTensor.elementType() == poplar::UNSIGNED_INT) {
-      inputTensor = concatTensor.reinterpret(poplar::INT);
-    }
+  // Build a fairly balanced binary tree
+  while (expr.size() > 1) {
+    auto &a = *expr.front();
+    expr.pop();
+    auto &b = *expr.front();
+    expr.pop();
 
-    // Compute the sum
-    sum = popops::reduce(graph().getPoplarGraph(),
-                         inputTensor,
-                         {0},
-                         {popops::Operation::ADD},
+    exprs.push_back(std::make_unique<popops::expr::Add>(a, b));
+    expr.push(exprs.back().get());
+  }
+
+  // Compute the sum
+  auto sum = popops::map(graph().getPoplarGraph(),
+                         *expr.front(),
+                         inputs,
                          prog,
                          debugContext("sum"));
-    if (concatTensor.elementType() == poplar::UNSIGNED_INT) {
-      sum = sum.reinterpret(poplar::UNSIGNED_INT);
-    }
-  } else {
-    // The "owner" of all expr nodes
-    std::vector<std::unique_ptr<popops::expr::Expr>> exprs;
-
-    // The queue of expr nodes to be reduced
-    std::queue<popops::expr::Expr *> expr;
-
-    // Add the input tensors as placeholders to the expression
-    for (int i = 0; i < sumOp.input->n(); ++i) {
-      exprs.push_back(std::make_unique<popops::expr::PlaceHolder>(i + 1));
-      expr.push(exprs.back().get());
-    }
-
-    // Build a fairly balanced binary tree
-    while (expr.size() > 1) {
-      auto &a = *expr.front();
-      expr.pop();
-      auto &b = *expr.front();
-      expr.pop();
-
-      exprs.push_back(std::make_unique<popops::expr::Add>(a, b));
-      expr.push(exprs.back().get());
-    }
-
-    // Compute the sum
-    sum = popops::map(graph().getPoplarGraph(),
-                      *expr.front(),
-                      inputs,
-                      prog,
-                      debugContext("sum"));
-  }
-
   setOutTensor(SumOp::getOutIndex(), snap::Tensor{sum, graph()});
 }
 
