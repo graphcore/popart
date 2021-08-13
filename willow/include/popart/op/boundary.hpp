@@ -10,7 +10,7 @@ namespace popart {
 class BoundaryOp : public Op {
 public:
   BoundaryOp(const Op::Settings &settings_)
-      : Op(OperatorIdentifier("", "", 0), settings_) {}
+      : Op(OperatorIdentifier("ai.graphcore", "Boundary", 1), settings_) {}
   std::unique_ptr<Op> clone() const override;
   void setup() final {}
   float getSubgraphValue() const final { return 0.0f; }

@@ -568,14 +568,11 @@ std::vector<Op *> getFullSchedule(const Ir &ir) {
 }
 
 void removeBoundaryOps(const Ir &ir) {
-  for (auto &graphId_graphPtr : ir.getGraphs()) {
-    auto graph    = graphId_graphPtr.second.get();
-    auto schedule = graph->getOpSchedule({}, RequireOptimalSchedule::No);
-    for (Op *op : schedule) {
-      if (dynamic_cast<BoundaryOp *>(op)) {
-        graph->topoCons->remove(graph->getOp(op->id));
-        graph->eraseOp(op->id);
-      }
+  for (Op *op : ir.getAllOps()) {
+    if (op->isConvertibleTo<BoundaryOp>()) {
+      auto &graph = op->getGraph();
+      graph.topoCons->remove(op);
+      graph.eraseOp(op->id);
     }
   }
 }

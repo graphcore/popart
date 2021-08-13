@@ -179,7 +179,7 @@ Scheduler::getSchedule(const OpsBeforeKey &gCons,
       << " and nOps=" << pg.getOps().size() << ". ";
   logging::ir::debug(oss.str());
 
-  // Use transitive closure optimizations of
+  // Use transitive closure optimizations if
   // 1) the time you might be running the shift step for is large.
   // 2) there are not too many Ops in the Graph.
   const auto useTransitiveClosureOptimizations =
