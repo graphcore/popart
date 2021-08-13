@@ -236,3 +236,63 @@ def test_dynamicslice_overlap_correct(op_tester):
 
     op_tester.setPatterns(popart.PatternsLevel.All, enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference, 'train')
+
+
+# Tests the situation in which there is no add or sum for the dynamic slice
+# gradient
+def test_non_sum_add_grad_op(op_tester):
+    data = np.random.rand(4).astype(np.float32)
+
+    def init_builder(builder):
+        tensor = builder.addInitializedInputTensor(data)
+        start = builder.addInputTensor(np.asarray(0).astype(np.uint32))
+
+        bias = builder.addInitializedInputTensor(
+            np.asarray(1).astype(np.float32))
+
+        shape_c = builder.aiOnnx.constant(np.array([2, 2]).astype(np.int64))
+
+        out = builder.aiOnnx.add([tensor, bias])
+
+        out = builder.aiOnnx.reshape([out, shape_c])
+        out = builder.aiGraphcore.dynamicslice([out, start],
+                                               axes=[0],
+                                               sizes=[2],
+                                               noOverlap=True)
+
+        sum = builder.aiOnnx.reducesum([out], axes=[0, 1], keepdims=False)
+
+        builder.addOutputTensor(sum)
+
+        result = [
+            sum,
+            popart.reservedGradientPrefix() + sum,
+            popart.reservedGradientPrefix() + tensor
+        ]
+        return result
+
+    def reference(ref_data):
+        tensor = torch.tensor(data, requires_grad=True)
+        print("tensor")
+        print(tensor)
+        bias = torch.nn.Parameter(torch.tensor([1], dtype=torch.float32))
+
+        out = tensor + bias
+        out = out.reshape((2, 2))
+        print("reshaped")
+        print(out)
+
+        out = out[0:2]
+
+        print("out")
+        print(out)
+        out = torch.sum(out)
+
+        d__o = ref_data.getOutputTensorGrad(0)
+        out.backward(torch.tensor(d__o))
+
+        result = [out, torch.tensor(d__o), tensor.grad]
+        return result
+
+    op_tester.setPatterns(popart.PatternsLevel.All, enableRuntimeAsserts=False)
+    op_tester.run(init_builder, reference, 'train')
