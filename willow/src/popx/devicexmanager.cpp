@@ -218,7 +218,7 @@ std::shared_ptr<popart::DeviceInfo> DevicexManager::createHostDevice(
     // Create an ipumodel, using the values set in the options map, else use the
     // defaults
     const std::string ipuVersion =
-        mapFind<std::string>(options, "ipuVersion", "ipu1");
+        mapFind<std::string>(options, "ipuVersion", "ipu2");
     poplar::OptionFlags flags;
 
     addSyncConfig(
