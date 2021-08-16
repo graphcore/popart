@@ -304,6 +304,15 @@ protected:
    * Abstraction of the computation. The Ir is where
    * all the compute graph optimisations, backwards pass construction,
    * re-computation growing etc. happens.
+   *
+   * This is a shared_ptr rather than a unique_ptr as when binding using pybind,
+   * it is impossible to use unique_ptrs as function arguments (see
+   * https://pybind11.readthedocs.io/en/stable/advanced/smart_ptrs.html#std-unique-ptr).
+   * This had minimal effect on tests etc passing unique_ptrs as converting
+   * unique_ptrs to shared_ptrs is possible:
+   * https://en.cppreference.com/w/cpp/memory/shared_ptr/operator%3D.
+   * Furthermore memory increase would be minimal as only one ref to an Ir is
+   * maintained per session.
    */
   std::shared_ptr<Ir> ir;
 
