@@ -310,32 +310,3 @@ install(DIRECTORY docs/
   FILES_MATCHING REGEX ".*\.(py)$")
 
 add_subdirectory(docs)
-
-# Misc
-
-set(OP_METADATA "${CMAKE_CURRENT_BINARY_DIR}/op_metadata.json")
-file(GLOB OP_HPPS "${CMAKE_CURRENT_SOURCE_DIR}/willow/include/popart/op/*.hpp")
-
-execute_process(COMMAND python3 -m pip show clang | grep Version,--version OUTPUT_VARIABLE stdout ERROR_QUIET)
-if("${stdout}" MATCHES "Version: 11.0")
-  message(STATUS "Creating op definitions json file in ${OP_METADATA}")
-
-  add_custom_target(
-    op_metadata ALL
-    DEPENDS "${OP_HPPS}"
-  )
-
-  add_custom_command(
-    TARGET op_metadata
-    COMMAND
-      python3 ${CMAKE_CURRENT_SOURCE_DIR}/scripts/gen_op_metadata.py --jobs 16
-      --opdir ${CMAKE_CURRENT_SOURCE_DIR}/willow/include/popart/op --outfile
-      "${CMAKE_CURRENT_BINARY_DIR}/op_metadata.json"
-    BYPRODUCTS "${OP_METADATA}"
-    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-    COMMENT "Creating ${OP_METADATA} for op constructor definitions"
-    POST_BUILD) 
-else()
-  message(STATUS "python-clang not found, skipping op JSON creation. Please \
-install python-clang (pip install clang) to generate this file.") 
-endif()
