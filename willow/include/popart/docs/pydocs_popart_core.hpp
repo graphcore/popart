@@ -78,21 +78,20 @@ static const char *__doc_popart_Adam =
     R"doc(AdamW, Lamb and AdaMax optimizer implementation.
 
 Akin to any optimizer implementation, this class is responsible for
-updating each weight tensor (:math:`w`) in the model using the
-gradient (:math:`g`) of the loss function with respect to the weight
-as calculated during the backwards pass.
+updating each weight tensor ($w$) in the model using the gradient
+($g$) of the loss function with respect to the weight as calculated
+during the backwards pass.
 
 The optimizer has the following **state** for each weight:
 
-* *first-order momentum* (:math:`m`) * *second-order momentum*
-(:math:`v`) * *time step* (:math:`t`)
+* *first-order momentum* ($m$) * *second-order momentum* ($v$) * *time
+step* ($t$)
 
 The optimizer has the following **hyper parameters**:
 
-* *learning rate* (:math:`\text{lr}`) * *weight decay*
-(:math:`\text{wd}`) * *beta1* (:math:`\beta_1`) * *beta2*
-(:math:`\beta_2`) * *epsilon* (:math:`\epsilon`) * *loss scaling*
-(:math:`\text{ls}`) * *maximum weight norm* (:math:`\text{mwn}`)
+* *learning rate* ($\text{lr}$) * *weight decay* ($\text{wd}$) *
+*beta1* ($\beta_1$) * *beta2* ($\beta_2$) * *epsilon* ($\epsilon$) *
+*loss scaling* ($\text{ls}$) * *maximum weight norm* ($\text{mwn}$)
 
 The values of these parameters can be shared between all weights but
 some can be overridden with weight-specific values (see
@@ -109,11 +108,10 @@ is the value of the gradient *after* any gradient accumulation has
 been performed and *after* the application of a loss scaling factor to
 the gradient has been corrected for.
 
-When the optimizer needs to update a weight, :math:`w`, using a
-gradient, :math:`g`, it first computes a term :math:`g_\text{tmp}`,
-which is effectively is :math:`g` with L2 regularization applied if
-the #WeightDecayMode is set to WeightDecayMode::L2Regularization this,
-as follows:
+When the optimizer needs to update a weight, $w$, using a gradient,
+$g$, it first computes a term $g_\text{tmp}$, which is effectively is
+$g$ with L2 regularization applied if the #WeightDecayMode is set to
+WeightDecayMode::L2Regularization this, as follows:
 
 \f[ g_\text{tmp} := \left\{\begin{aligned} g & \text{ \; (Decay) } \\
 (g + \text{wd} * w) & \text{ \; (L2Regularization) \; . } \\
@@ -161,8 +159,8 @@ lossScaling will not be removed before updating the optimizer state.
 This can improve the numerical stability when accl1_type is set to
 FLOAT16.
 
-**NOTE**: The maximum weight norm is referred to as :math:`\phi` in
-[You et al., 2020](https://arxiv.org/abs/1904.00962).)doc";
+**NOTE**: The maximum weight norm is referred to as $\phi$ in [You et
+al., 2020](https://arxiv.org/abs/1904.00962).)doc";
 
 static const char *__doc_popart_AdamMode =
     R"doc(Enum type describing the mode of an Adam optimizer instance.)doc";
@@ -412,7 +410,10 @@ Parameter ``beta2``:
     The beta2 value to use for this specific weight.
 
 Parameter ``eps``:
-    The epsilon value to use for this specific weight.)doc";
+    The epsilon value to use for this specific weight.
+
+Parameter ``mwn``:
+    The max weight norm value to use for this specific weight.)doc";
 
 static const char *__doc_popart_Adam_insertSpecific_2 =
     R"doc(Insert a weight-specific set of hyper parameters.
@@ -2461,6 +2462,8 @@ static const char *__doc_popart_CollectiveOperator_LogicalOr = R"doc()doc";
 
 static const char *__doc_popart_CollectiveOperator_Max = R"doc()doc";
 
+static const char *__doc_popart_CollectiveOperator_Mean = R"doc()doc";
+
 static const char *__doc_popart_CollectiveOperator_Min = R"doc()doc";
 
 static const char *__doc_popart_CollectiveOperator_Mul = R"doc()doc";
@@ -3122,7 +3125,82 @@ static const char *__doc_popart_ExchangeDirection_Store =
     R"doc(Copy out of IPU on-chip memory)doc";
 
 static const char *__doc_popart_ExchangeStrategy =
-    R"doc(Enum type to specify an exchange strategy)doc";
+    R"doc(
+ Enum type to specify an exchange strategy
+
+ ==============================================================
+ JustInTime:
+ .- outer loop -------------.
+ |.- inner loop -----------.|
+ || load - compute - store ||
+ |'------------------------'|
+ '--------------------------'
+
+ ==============================================================
+ OverlapInnerLoop:
+ .- outer loop ----------------------------------------.
+ |                  .- inner loop -.                   |
+ | load - compute - | - store      |                   |
+ |           load - | - compute -- | - store           |
+ |                  |   load ----- | - compute - store |
+ |                  '--------------'                   |
+ '-----------------------------------------------------'
+          ^^^^^^^       ^^^^^^^        ^^^^^^^
+          overlap       overlap        overlap
+
+ ==============================================================
+ OverlapLoops:
+                load
+                  |
+               compute   load            load         < overlap
+                  |        |               |
+                  1        2               |
+              .-- inner loop --.           |
+              |   |        |   |           |
+              | store  compute |           |          < overlap
+              | load       |   |           |          < overlap
+              |   |        |   |           |
+              '----------------'           |
+                  2        1      load compute        < overlap
+                  |        |        |      |
+                  1        2        3      4
+ .- outer loop -----------------------------------.
+ |                |        |        |      |      |
+ |             compute   store      |    store    |   < overlap
+ |                \                /              |
+ |                 1              2               |
+ |                .-- inner loop --.              |
+ |                |   |        |   |              |
+ |                | store  compute |              |   < overlap
+ |                | load       |   |              |   < overlap
+ |                |   |        |   |              |
+ |                '----------------'              |
+ |                    2        1                  |
+ |                    |        |                  |
+ |    load        compute      |       load       |   < overlap
+ |      |             |        |         |        |
+ '------------------------------------------------'
+        3             4        2         1
+        |             |        |         |
+    compute           |      store       |            < overlap
+        |              \                /
+        |              1              2
+        |              .-- inner loop --.
+        |              |   |        |   |
+        |              | store  compute |             < overlap
+        |              | load       |   |             < overlap
+        |              |   |        |   |
+        |              '----------------'
+        |                  2        1
+        |                  |        |
+     store             compute    store               < overlap
+                           |
+                         store
+
+ ==============================================================
+ OverlapStep:
+ Not supported yet
+    )doc";
 
 static const char *__doc_popart_ExchangeStrategy_JustInTime =
     R"doc(Copy tensor when required)doc";
@@ -3130,13 +3208,16 @@ static const char *__doc_popart_ExchangeStrategy_JustInTime =
 static const char *__doc_popart_ExchangeStrategy_N =
     R"doc(Number of values)doc";
 
-static const char *__doc_popart_ExchangeStrategy_OverlapInnerLoop = R"doc()doc";
+static const char *__doc_popart_ExchangeStrategy_OverlapInnerLoop =
+    R"doc(Preload values in previous inner loop iteration for the next iteration)doc";
 
-static const char *__doc_popart_ExchangeStrategy_OverlapLoops = R"doc()doc";
+static const char *__doc_popart_ExchangeStrategy_OverlapLoops =
+    R"doc(Preload values in the previous loop iteration for the next iteration
+(implies OverlapInnerLoop))doc";
 
 static const char *__doc_popart_ExchangeStrategy_OverlapStep =
     R"doc(Preload values in the previous host training step for next step
-(implies OverlapLoop))doc";
+(implies OverlapLoops) - not supported yet)doc";
 
 static const char *__doc_popart_ExecutionContext = R"doc()doc";
 
@@ -4049,9 +4130,13 @@ static const char *__doc_popart_Ir_verifyExecutionPhaseSettings = R"doc()doc";
 static const char *__doc_popart_Ir_verifyExplicitMainLoopsSettings =
     R"doc()doc";
 
+static const char *__doc_popart_Ir_verifyMeanReductionStrategy = R"doc()doc";
+
 static const char *__doc_popart_Ir_verifyOpInputConnectivity = R"doc()doc";
 
 static const char *__doc_popart_Ir_verifyOpOutputConnectivity = R"doc()doc";
+
+static const char *__doc_popart_Ir_verifyOverlapIOSettings = R"doc()doc";
 
 static const char *__doc_popart_Ir_verifyPipelineSettings = R"doc()doc";
 
@@ -4065,6 +4150,9 @@ static const char *__doc_popart_Ir_verifyTensorConsumerConnectivity =
     R"doc()doc";
 
 static const char *__doc_popart_Ir_verifyTensorIds = R"doc()doc";
+
+static const char *__doc_popart_Ir_verifyTensorInfos =
+    R"doc(Verifies that all tensors have valid *TensorInfos*)doc";
 
 static const char *__doc_popart_Ir_verifyTensorProducerConnectivity =
     R"doc()doc";
@@ -4134,6 +4222,32 @@ static const char *__doc_popart_L1Op_getSubgraphValue = R"doc()doc";
 static const char *__doc_popart_L1Op_lambda = R"doc()doc";
 
 static const char *__doc_popart_L1Op_setup = R"doc()doc";
+
+static const char *__doc_popart_MeanReductionStrategy =
+    R"doc(Enum type to specify when to divide by a mean reduction factor)doc";
+
+static const char *__doc_popart_MeanReductionStrategy_N =
+    R"doc(This divides by the accumulationFactor after all the gradient have
+been reduce and the replicatedGraphCount at the input to the loss
+gradient before the start of the backwards pass. This is to support
+legacy behaviour and is deprecated.)doc";
+
+static const char *__doc_popart_MeanReductionStrategy_Post =
+    R"doc(This divides by the accumulationFactor and replicatedGraphCount after
+all of the gradients have been reduced. In some cases this can be
+faster then using Running, however is prone to overflow.)doc";
+
+static const char *__doc_popart_MeanReductionStrategy_PostAndLoss =
+    R"doc(This divides by the accumulationFactor after all the gradient have
+been reduce and the replicatedGraphCount at the input to the loss
+gradient before the start of the backwards pass. This is to support
+legacy behaviour and is deprecated.)doc";
+
+static const char *__doc_popart_MeanReductionStrategy_Running =
+    R"doc(This keeps the reduction buffer as the current mean. See
+``AccumulationType::Mean`` and ``CollectiveOperator::Mean``. This is
+preferred for numerical stability as the buffer is guarenteed not to
+overflow and is strictly better than dividing before the accumulation.)doc";
 
 static const char *__doc_popart_MergeVarUpdateType =
     R"doc(Enum type used to specify which `VarUpdateOp` ops to merge.)doc";
@@ -4713,8 +4827,8 @@ Parameter ``in``:
     InIndex to check.
 
 Returns:
-    True if any connected variable tensor has a non-empty alias chain
-    and is unmodifiable, false otherwise.)doc";
+    True if any connected variable tensor has a non-empty alias
+    chain and is unmodifiable, false otherwise.)doc";
 
 static const char *__doc_popart_Op_inputsUnmodifiable = R"doc()doc";
 
@@ -5048,14 +5162,30 @@ static const char *__doc_popart_Optimizer_hasSpecific_2 = R"doc()doc";
 
 static const char *__doc_popart_Optimizer_hash = R"doc()doc";
 
+static const char *__doc_popart_Optimizer_lossMeanReplication = R"doc()doc";
+
+static const char *__doc_popart_Optimizer_lossMeanReplicationEnabled =
+    R"doc()doc";
+
 static const char *__doc_popart_Optimizer_lossScaling = R"doc()doc";
 
 static const char *__doc_popart_Optimizer_ls = R"doc()doc";
 
-static const char *__doc_popart_Optimizer_meanGradientAccumulation =
+static const char *__doc_popart_Optimizer_meanGradientAccumulationEnabled =
     R"doc()doc";
 
-static const char *__doc_popart_Optimizer_meanGradientAccumulationEnabled =
+static const char *__doc_popart_Optimizer_meanReduction = R"doc()doc";
+
+static const char *__doc_popart_Optimizer_meanReductionEnabled = R"doc()doc";
+
+static const char *__doc_popart_Optimizer_postMeanAccumulation = R"doc()doc";
+
+static const char *__doc_popart_Optimizer_postMeanAccumulationEnabled =
+    R"doc()doc";
+
+static const char *__doc_popart_Optimizer_postMeanReplication = R"doc()doc";
+
+static const char *__doc_popart_Optimizer_postMeanReplicationEnabled =
     R"doc()doc";
 
 static const char *__doc_popart_Optimizer_replicatedGraphCount = R"doc()doc";
@@ -5124,8 +5254,6 @@ static const char *__doc_popart_Patterns_Patterns_2 = R"doc()doc";
 
 static const char *__doc_popart_Patterns_Patterns_3 = R"doc()doc";
 
-static const char *__doc_popart_Patterns_Patterns_4 = R"doc()doc";
-
 static const char *__doc_popart_Patterns_create = R"doc()doc";
 
 static const char *__doc_popart_Patterns_enableAtan2Arg0GradOp = R"doc()doc";
@@ -5148,6 +5276,9 @@ static const char *__doc_popart_Patterns_enableExpm1GradOp = R"doc()doc";
 static const char *__doc_popart_Patterns_enableInPlace = R"doc()doc";
 
 static const char *__doc_popart_Patterns_enableInitAccumulate = R"doc()doc";
+
+static const char *__doc_popart_Patterns_enableLambSerialisedWeight =
+    R"doc()doc";
 
 static const char *__doc_popart_Patterns_enableLog1pGradOp = R"doc()doc";
 
@@ -5174,8 +5305,6 @@ static const char *__doc_popart_Patterns_enablePattern_2 = R"doc()doc";
 
 static const char *__doc_popart_Patterns_enablePattern_3 = R"doc()doc";
 
-static const char *__doc_popart_Patterns_enablePattern_4 = R"doc()doc";
-
 static const char *__doc_popart_Patterns_enablePostNRepl = R"doc()doc";
 
 static const char *__doc_popart_Patterns_enablePowArg0GradOp = R"doc()doc";
@@ -5197,6 +5326,8 @@ static const char *__doc_popart_Patterns_enableRuntimeAsserts = R"doc()doc";
 static const char *__doc_popart_Patterns_enableSinGradOp = R"doc()doc";
 
 static const char *__doc_popart_Patterns_enableSoftMaxGradDirect = R"doc()doc";
+
+static const char *__doc_popart_Patterns_enableSparseAccumulate = R"doc()doc";
 
 static const char *__doc_popart_Patterns_enableSplitGather = R"doc()doc";
 
@@ -5251,6 +5382,9 @@ static const char *__doc_popart_Patterns_isInPlaceEnabled = R"doc()doc";
 
 static const char *__doc_popart_Patterns_isInitAccumulateEnabled = R"doc()doc";
 
+static const char *__doc_popart_Patterns_isLambSerialisedWeightEnabled =
+    R"doc()doc";
+
 static const char *__doc_popart_Patterns_isLog1pGradOpEnabled = R"doc()doc";
 
 static const char *__doc_popart_Patterns_isLogGradOpEnabled = R"doc()doc";
@@ -5277,8 +5411,6 @@ static const char *__doc_popart_Patterns_isPatternEnabled_2 = R"doc()doc";
 
 static const char *__doc_popart_Patterns_isPatternEnabled_3 = R"doc()doc";
 
-static const char *__doc_popart_Patterns_isPatternEnabled_4 = R"doc()doc";
-
 static const char *__doc_popart_Patterns_isPostNReplEnabled = R"doc()doc";
 
 static const char *__doc_popart_Patterns_isPowArg0GradOpEnabled = R"doc()doc";
@@ -5299,6 +5431,9 @@ static const char *__doc_popart_Patterns_isReciprocalGradOpEnabled =
 static const char *__doc_popart_Patterns_isSinGradOpEnabled = R"doc()doc";
 
 static const char *__doc_popart_Patterns_isSoftMaxGradDirectEnabled =
+    R"doc()doc";
+
+static const char *__doc_popart_Patterns_isSparseAccumulateEnabled =
     R"doc()doc";
 
 static const char *__doc_popart_Patterns_isSplitGatherEnabled = R"doc()doc";
@@ -5471,20 +5606,19 @@ static const char *__doc_popart_SGD =
     R"doc(Stochastic Gradient Descent (%SGD) optimizer.
 
 Akin to any optimizer implementation, this class is responsible for
-updating each weight tensor (:math:`w`) in the model using the
-gradient (:math:`g`) of the loss function with respect to the weight
-as calculated during the backwards pass.
+updating each weight tensor ($w$) in the model using the gradient
+($g$) of the loss function with respect to the weight as calculated
+during the backwards pass.
 
 The %SGD optimizer has the following **state** for each weight:
 
-* *velocity* (:math:`v`)
+* *velocity* ($v$)
 
 The %SGD optimizer has the following **hyper parameters**:
 
-* *learning rate* (:math:`\text{lr}`) * *momentum* (:math:`\text{mm}`)
-* *weight decay* (:math:`\text{wd}`) * *dampening* (:math:`\text{dm}`)
-* *velocity scaling* (:math:`\text{vs}`) * *loss scaling*
-(:math:`\text{ls}`) * *clip norm settings*
+* *learning rate* ($\text{lr}$) * *momentum* ($\text{mm}$) * *weight
+decay* ($\text{wd}$) * *dampening* ($\text{dm}$) * *velocity scaling*
+($\text{vs}$) * *loss scaling* ($\text{ls}$) * *clip norm settings*
 
 The values of these parameters can be shared between all weights but
 some can be overridden with weight-specific values (see
@@ -5498,8 +5632,8 @@ is the value of the gradient *after* any gradient accumulation has
 been performed and *after* the application of a loss scaling factor to
 the gradient has been corrected for.
 
-When the optimizer needs to update a weight, :math:`w`, using a
-gradient, :math:`g`, it first updates the optimizer state as follows:
+When the optimizer needs to update a weight, $w$, using a gradient,
+$g$, it first updates the optimizer state as follows:
 
 \f[ v' := v * \text{mm} + (1 - \text{dm}) * (g + \text{wd} * w) \text{
 \ . } \f]
@@ -5511,11 +5645,10 @@ state to update the weight:
 
 In addition to the above, the *velocity scaling* hyper parameter is a
 scaling factor that can provide improved numerical stability by
-ensuring the values stored in the optimizer state, :math:`v`, are
-scaled by this value. When using this parameter PopART will
-automatically deal with the artificially scaled velocity value during
-the weight update and other hyper parameters do not need to be
-adjusted).
+ensuring the values stored in the optimizer state, $v$, are scaled by
+this value. When using this parameter PopART will automatically deal
+with the artificially scaled velocity value during the weight update
+and other hyper parameters do not need to be adjusted).
 
 In addition, the *loss scaling* hyper parameter is similar in nature
 to the velocity scaling parameter. It is a scaling value that is
@@ -5711,6 +5844,8 @@ static const char *__doc_popart_SGD_dps = R"doc()doc";
 
 static const char *__doc_popart_SGD_dpsf1helper = R"doc()doc";
 
+static const char *__doc_popart_SGD_dpsf2helper = R"doc()doc";
+
 static const char *__doc_popart_SGD_fromDefaultMap = R"doc()doc";
 
 static const char *__doc_popart_SGD_getComplete = R"doc()doc";
@@ -5814,7 +5949,11 @@ static const char *__doc_popart_SGD_slr0helper = R"doc()doc";
 
 static const char *__doc_popart_SGD_slr1helper = R"doc()doc";
 
+static const char *__doc_popart_SGD_slr2helper = R"doc()doc";
+
 static const char *__doc_popart_SGD_smm1helper = R"doc()doc";
+
+static const char *__doc_popart_SGD_smm2helper = R"doc()doc";
 
 static const char *__doc_popart_SGD_swd1helper = R"doc()doc";
 
@@ -5898,7 +6037,7 @@ static const char *__doc_popart_SessionOptions_autoRecomputation =
 to reduce model size at the cost of computation cycles.)doc";
 
 static const char *__doc_popart_SessionOptions_autoRecomputationEnabled =
-    R"doc()doc";
+    R"doc(Returns true if auto-recomputation is enabled.)doc";
 
 static const char *__doc_popart_SessionOptions_autodiffSettings =
     R"doc(Configuration settings for the autodiff transform.)doc";
@@ -5988,7 +6127,8 @@ static const char *__doc_popart_SessionOptions_enableEngineCaching =
     R"doc(Enable Poplar executable caching.)doc";
 
 static const char *__doc_popart_SessionOptions_enableExplicitMainLoops =
-    R"doc()doc";
+    R"doc(Enables explicit main loop transformation, and disables implicit
+training loops. This will become deprecated and enabled by default.)doc";
 
 static const char *__doc_popart_SessionOptions_enableFloatingPointChecks =
     R"doc(Throw an exception when floating point errors occur.)doc";
@@ -6084,13 +6224,22 @@ static const char *__doc_popart_SessionOptions_gclOptions =
     R"doc(GCL options)doc";
 
 static const char *__doc_popart_SessionOptions_getAccumulationFactor =
-    R"doc()doc";
+    R"doc(Helper method to check the accumulation factor settings for
+consistency if gradient accumulation is not enabled and the factor is
+set to >1. Returns the accumulation factor otherwise.)doc";
 
 static const char *__doc_popart_SessionOptions_getGlobalReplicationFactor =
-    R"doc()doc";
+    R"doc(Helper method to handle the different replication options. If
+enableDistributedReplicatedGraphs is true return
+globalReplicationFactor if enableReplicatedGraphs return
+replicatedGraphCount otherwise return 1)doc";
 
 static const char *__doc_popart_SessionOptions_getPrefetchBufferingDepth =
-    R"doc()doc";
+    R"doc(Get the buffering depth for a TensorId. Will return 1 unless
+prefetching is enabled and the buffering depth is overwritten in the
+``prefetchBufferingDepthMap`` variable.
+
+**Not part of public API**)doc";
 
 static const char *__doc_popart_SessionOptions_globalReplicaOffset =
     R"doc(The first replica index that this PopART instance is running.)doc";
@@ -6107,7 +6256,11 @@ to host at the end, this trades off sum-liveness efficiency for cycle
 efficiency.)doc";
 
 static const char *__doc_popart_SessionOptions_groupNormStridedChannelGrouping =
-    R"doc()doc";
+    R"doc(Group norms have a fast math mode /which changes the implementation to
+run faster on IPU but as a consequence/ is incompatable with other
+implementations (i.e running trained weights on host). We default to
+correct and slightly slower but a user can opt into fast but
+incorrect.)doc";
 
 static const char *__doc_popart_SessionOptions_hardwareInstrumentations =
     R"doc()doc";
@@ -6156,6 +6309,11 @@ static const char *__doc_popart_SessionOptions_lstmOptions =
     R"doc(Poplar LSTM options.)doc";
 
 static const char *__doc_popart_SessionOptions_matmulOptions = R"doc()doc";
+
+static const char *
+    __doc_popart_SessionOptions_meanAccumulationAndReplicationReductionStrategy =
+        R"doc(Specify when to divide by a mean reduction factor when
+accumulationAndReplicationReductionType is set to ReductionType::Mean.)doc";
 
 static const char *__doc_popart_SessionOptions_mergeVarUpdate =
     R"doc(Enable merging of VarUpdates into groups of VarUpdates, by flattening
@@ -6238,6 +6396,20 @@ replicas for this instance.)doc";
 static const char *__doc_popart_SessionOptions_reportOptions =
     R"doc(Poplar reporting options.)doc";
 
+static const char
+    *__doc_popart_SessionOptions_scheduleNonWeightUpdateGradientConsumersEarly =
+        R"doc(When #shouldDelayVarUpdates is true, the other ops in the proximity of
+the delayed var updates may inherit the -inf schedule priority used to
+delay the var updates. This is undesirable for some ops that consume
+gradients, as we would like to consume (and thus be able to recycle
+the memory of) those gradients as soon as possible. Two examples are
+HistogramOps when doing automatic loss scaling, and the AccumulateOps
+that accumulate the gradients when doing gradient accumulation.
+
+If true, if #shouldDelayVarUpdates is true, this option will cause the
+schedule priority of the above described ops to be re-overriden to
++inf.)doc";
+
 static const char *__doc_popart_SessionOptions_separateCallOpPdfs =
     R"doc(When generating PDFs of IR graphs, create separate PDFs for each
 subgraph.)doc";
@@ -6251,6 +6423,9 @@ graphs to. If it is empty, then the graphs will not be serialised. The
 names of serialization files will be `poprithms_shift_graph_i.json`
 for the lowest non-existing values of `i`. The directory must already
 exist, PopART will not create it.)doc";
+
+static const char *__doc_popart_SessionOptions_shouldDelayVarUpdates =
+    R"doc()doc";
 
 static const char *__doc_popart_SessionOptions_strictOpVersions =
     R"doc(Strict op version checks will throw an error if the exact version of
@@ -7183,12 +7358,26 @@ throw error("This is an error reason {}", 42);)doc";
 
 static const char *__doc_popart_error_error_4 = R"doc()doc";
 
+static const char *__doc_popart_error_error_5 = R"doc()doc";
+
+static const char *__doc_popart_error_error_6 = R"doc()doc";
+
 static const char *__doc_popart_error_formatMessage =
     R"doc(As the fmt::format function can throw an exception itself we catch the
 FormatError exception here and convert it to a popart exception.)doc";
 
 static const char *__doc_popart_error_logMessage =
     R"doc(Log the exception message)doc";
+
+static const char *__doc_popart_error_prependUid = R"doc()doc";
+
+static const char *__doc_popart_error_stack = R"doc()doc";
+
+static const char *__doc_popart_error_stackreport = R"doc()doc";
+
+static const char *__doc_popart_error_uid = R"doc()doc";
+
+static const char *__doc_popart_error_uid_2 = R"doc()doc";
 
 static const char *__doc_popart_extractCommGroupFromAttrs =
     R"doc(Extracts CommGroup from op's attributes. If the attribute isn't set,
@@ -7436,7 +7625,9 @@ static const char *__doc_popart_operator_lshift_16 = R"doc()doc";
 
 static const char *__doc_popart_operator_lshift_17 = R"doc()doc";
 
-static const char *__doc_popart_operator_lshift_18 =
+static const char *__doc_popart_operator_lshift_18 = R"doc()doc";
+
+static const char *__doc_popart_operator_lshift_19 =
     R"doc(Write a representation of an SGDAccumulatorAndMomentum to an output
 stream.
 
@@ -7449,8 +7640,6 @@ Parameter ``sgdAccMm``:
 Returns:
     The same output stream for chaining.)doc";
 
-static const char *__doc_popart_operator_lshift_19 = R"doc()doc";
-
 static const char *__doc_popart_operator_lshift_20 = R"doc()doc";
 
 static const char *__doc_popart_operator_lshift_21 = R"doc()doc";
@@ -7459,15 +7648,9 @@ static const char *__doc_popart_operator_lshift_22 = R"doc()doc";
 
 static const char *__doc_popart_operator_lshift_23 = R"doc()doc";
 
+static const char *__doc_popart_operator_lshift_24 = R"doc()doc";
+
 static const char *__doc_popart_optimizer_replacement_error = R"doc()doc";
-
-static const char
-    *__doc_popart_optimizer_replacement_error_optimizer_replacement_error =
-        R"doc()doc";
-
-static const char
-    *__doc_popart_optimizer_replacement_error_optimizer_replacement_error_2 =
-        R"doc()doc";
 
 static const char *__doc_popart_popx_Devicex = R"doc()doc";
 
@@ -7719,6 +7902,8 @@ static const char *__doc_popart_reservedConcatInitPrefix = R"doc()doc";
 
 static const char *__doc_popart_reservedConstValuePrefix = R"doc()doc";
 
+static const char *__doc_popart_reservedCounterPrefix = R"doc()doc";
+
 static const char *__doc_popart_reservedDefaultAdamBeta1Prefix = R"doc()doc";
 
 static const char *__doc_popart_reservedDefaultAdamBeta2Prefix = R"doc()doc";
@@ -7742,6 +7927,9 @@ static const char *__doc_popart_reservedDefaultAdaptiveMomentumPrefix =
 static const char *__doc_popart_reservedDefaultDampeningScaleFactor1Prefix =
     R"doc()doc";
 
+static const char *__doc_popart_reservedDefaultDampeningScaleFactor2Prefix =
+    R"doc()doc";
+
 static const char *__doc_popart_reservedDefaultLearningRatePrefix = R"doc()doc";
 
 static const char *__doc_popart_reservedDefaultLossScalingPrefix = R"doc()doc";
@@ -7755,7 +7943,13 @@ static const char *__doc_popart_reservedDefaultScaledLearningRate0Prefix =
 static const char *__doc_popart_reservedDefaultScaledLearningRate1Prefix =
     R"doc()doc";
 
+static const char *__doc_popart_reservedDefaultScaledLearningRate2Prefix =
+    R"doc()doc";
+
 static const char *__doc_popart_reservedDefaultScaledMomentum1Prefix =
+    R"doc()doc";
+
+static const char *__doc_popart_reservedDefaultScaledMomentum2Prefix =
     R"doc()doc";
 
 static const char *__doc_popart_reservedDefaultScaledWeightDecay1Prefix =
@@ -7829,6 +8023,9 @@ static const char *__doc_popart_reservedSpecificAdaptiveMomentumPrefix =
 static const char *__doc_popart_reservedSpecificDampeningScaleFactor1Prefix =
     R"doc()doc";
 
+static const char *__doc_popart_reservedSpecificDampeningScaleFactor2Prefix =
+    R"doc()doc";
+
 static const char *__doc_popart_reservedSpecificLearningRatePrefix =
     R"doc()doc";
 
@@ -7843,7 +8040,13 @@ static const char *__doc_popart_reservedSpecificScaledLearningRate0Prefix =
 static const char *__doc_popart_reservedSpecificScaledLearningRate1Prefix =
     R"doc()doc";
 
+static const char *__doc_popart_reservedSpecificScaledLearningRate2Prefix =
+    R"doc()doc";
+
 static const char *__doc_popart_reservedSpecificScaledMomentum1Prefix =
+    R"doc()doc";
+
+static const char *__doc_popart_reservedSpecificScaledMomentum2Prefix =
     R"doc()doc";
 
 static const char *__doc_popart_reservedSpecificScaledWeightDecay1Prefix =
@@ -7861,6 +8064,13 @@ static const char *__doc_popart_reservedStashedPrefix = R"doc()doc";
 static const char *__doc_popart_reservedStepPrefix = R"doc()doc";
 
 static const char *__doc_popart_reservedUpdatedVarPrefix = R"doc()doc";
+
+static const char *__doc_popart_runtime_error =
+    R"doc(Exception class specific to errors that occur when running a model.
+For example, this error could be thrown when a user-implemented
+IStepIO callback doesn't return any data.
+
+NOTE: This is different from a C++ runtime error.)doc";
 
 static const char *__doc_popart_stripAllReservedPrefixes = R"doc()doc";
 

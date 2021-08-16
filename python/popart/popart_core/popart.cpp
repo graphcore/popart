@@ -181,7 +181,7 @@ public:
 
   void assertNumElements(const popx::Executablex &) const final {}
 
-  ConstVoidData in(TensorId id, int64_t, bool prefetch) final {
+  ConstVoidData in(TensorId id, int64_t, bool prefetch)final {
     py::gil_scoped_acquire acquire;
     py::array a = inputCb(id, prefetch);
     if (!isContiguous(a)) {
@@ -743,11 +743,11 @@ PYBIND11_MODULE(popart_core, m) {
     {
       py::enum_<SGDAccumulatorAndMomentum> en(m, "SGDAccumulatorAndMomentum");
       en.value("Combined",
-               SGDAccumulatorAndMomentum::Combined /*,
-               DOC(popart, SGDAccumulatorAndMomentum, Combined)*/);
+               SGDAccumulatorAndMomentum::Combined,
+               DOC(popart, SGDAccumulatorAndMomentum, Combined));
       en.value("Separate",
-               SGDAccumulatorAndMomentum::Separate /*,
-               DOC(popart, SGDAccumulatorAndMomentum, Separate) */);
+               SGDAccumulatorAndMomentum::Separate,
+               DOC(popart, SGDAccumulatorAndMomentum, Separate));
     }
 
     {
@@ -1243,8 +1243,10 @@ PYBIND11_MODULE(popart_core, m) {
         DOC(popart, SessionOptions, accumulationAndReplicationReductionType));
     cls.def_readwrite(
         "meanAccumulationAndReplicationReductionStrategy",
-        &SessionOptions::meanAccumulationAndReplicationReductionStrategy
-        /* T42271 DOC(popart, SessionOptions, meanAccumulationAndReplicationReductionStrategy)*/);
+        &SessionOptions::meanAccumulationAndReplicationReductionStrategy,
+        DOC(popart,
+            SessionOptions,
+            meanAccumulationAndReplicationReductionStrategy));
     cls.def_readwrite("enableNonStableSoftmax",
                       &SessionOptions::enableNonStableSoftmax,
                       DOC(popart, SessionOptions, enableNonStableSoftmax));
@@ -1478,11 +1480,10 @@ PYBIND11_MODULE(popart_core, m) {
                       DOC(popart, SessionOptions, delayVarUpdates));
     cls.def_readwrite(
         "scheduleNonWeightUpdateGradientConsumersEarly",
-        &SessionOptions::scheduleNonWeightUpdateGradientConsumersEarly
-        /*, TODO(T43312):
+        &SessionOptions::scheduleNonWeightUpdateGradientConsumersEarly,
         DOC(popart,
-        SessionOptions,
-        scheduleNonWeightUpdateGradientConsumersEarly) */);
+            SessionOptions,
+            scheduleNonWeightUpdateGradientConsumersEarly));
   }
   {
     py::enum_<PatternsLevel> en(m, "PatternsLevel", DOC(popart, PatternsLevel));
@@ -2579,8 +2580,8 @@ PYBIND11_MODULE(popart_core, m) {
             py::arg("blank")         = 0,
             py::arg("beam_width")    = 100,
             py::arg("top_paths")     = 1,
-            py::arg("debug_context") = std::string()
-            /*, DOC(popart, AiGraphcoreOpset1, ctcbeamsearchdecoder)*/);
+            py::arg("debug_context") = std::string(),
+            DOC(popart, AiGraphcoreOpset1, ctcbeamsearchdecoder));
   }
   {
     py::class_<Builder> cls(m, "_BuilderCore");

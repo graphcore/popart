@@ -786,20 +786,20 @@ struct SessionOptions {
   AutodiffSettings autodiffSettings;
 
   /// Options to delay variable updates as much as possible.
-  // TODO: Remove with T19212
+  /// TODO: Remove with T19212
   bool delayVarUpdates = true;
 
-  // When #shouldDelayVarUpdates is true, the other ops in the proximity of the
-  // delayed var updates may inherit the -inf schedule priority used to delay
-  // the var updates. This is undesirable for some ops that consume gradients,
-  // as we would like to consume (and thus be able to recycle the memory of)
-  // those gradients as soon as possible. Two examples are HistogramOps when
-  // doing automatic loss scaling, and the AccumulateOps that accumulate
-  // the gradients when doing gradient accumulation.
-  //
-  // If true, if #shouldDelayVarUpdates is true, this option will cause the
-  // schedule priority of the above described ops to be re-overriden to +inf.
-  // TODO: Remove with T19212.
+  /// When #shouldDelayVarUpdates is true, the other ops in the proximity of the
+  /// delayed var updates may inherit the -inf schedule priority used to delay
+  /// the var updates. This is undesirable for some ops that consume gradients,
+  /// as we would like to consume (and thus be able to recycle the memory of)
+  /// those gradients as soon as possible. Two examples are HistogramOps when
+  /// doing automatic loss scaling, and the AccumulateOps that accumulate
+  /// the gradients when doing gradient accumulation.
+  ///
+  /// If true, if #shouldDelayVarUpdates is true, this option will cause the
+  /// schedule priority of the above described ops to be re-overriden to +inf.
+  /// TODO: Remove with T19212.
   bool scheduleNonWeightUpdateGradientConsumersEarly = false;
 
   // TODO: Remove with T19212
@@ -811,9 +811,9 @@ struct SessionOptions {
   /// Enable/disable the serializing of matmuls.
   bool enableSerializedMatmuls = true;
 
-  // For partialsTypeMatMuls, possible values are defined by
-  // `fromString` in op/matmul.cpp. As of last check, those are:
-  // "float", "half" in any letter case.
+  /// For partialsTypeMatMuls, possible values are defined by
+  /// `fromString` in op/matmul.cpp. As of last check, those are:
+  /// "float", "half" in any letter case.
 
   /// Set the partials type globally for matmuls. Can be overridden individually
   /// with Builder.setPartialsType(). Valid values are `"float"` and `"half"`.
@@ -909,18 +909,18 @@ struct SessionOptions {
   /// The first replica index that this PopART instance is running.
   int64_t globalReplicaOffset = 0;
 
-  // Helper method to handle the different replication options.
-  // If enableDistributedReplicatedGraphs is true
-  //   return globalReplicationFactor
-  // if enableReplicatedGraphs
-  //   return replicatedGraphCount
-  // otherwise
-  //   return 1
+  /// Helper method to handle the different replication options.
+  /// If enableDistributedReplicatedGraphs is true
+  ///   return globalReplicationFactor
+  /// if enableReplicatedGraphs
+  ///   return replicatedGraphCount
+  /// otherwise
+  ///   return 1
   int64_t getGlobalReplicationFactor() const;
 
-  // Helper method to check the accumulation factor settings for consistency
-  // if gradient accumulation is not enabled and the factor is set to >1.
-  // Returns the accumulation factor otherwise.
+  /// Helper method to check the accumulation factor settings for consistency
+  /// if gradient accumulation is not enabled and the factor is set to >1.
+  /// Returns the accumulation factor otherwise.
   unsigned getAccumulationFactor() const;
 
   /// Allows to group the streams from host at the beginning and the streams
@@ -984,21 +984,21 @@ struct SessionOptions {
   /// inform on narrowing casts
   bool enableSupportedDataTypeCasting = true;
 
-  // Enables explicit main loop transformation, and disables implicit training
-  // loops. This will become deprecated and enabled by default.
+  /// Enables explicit main loop transformation, and disables implicit training
+  /// loops. This will become deprecated and enabled by default.
   bool enableExplicitMainLoops = false;
 
-  // Group norms have a fast math mode which changes the implementation to run
-  // faster on IPU but as a consequence is incompatable with other
-  // implementations (i.e running trained weights on host). We default to
-  // correct and slightly slower but a user can opt into fast but incorrect.
+  /// Group norms have a fast math mode /which changes the implementation to run
+  /// faster on IPU but as a consequence/ is incompatable with other
+  /// implementations (i.e running trained weights on host). We default to
+  /// correct and slightly slower but a user can opt into fast but incorrect.
   bool groupNormStridedChannelGrouping = false;
 
-  // Get the buffering depth for a TensorId. Will return 1 unless
-  // prefetching is enabled and the buffering depth is overwritten
-  // in the \c prefetchBufferingDepthMap variable.
-  //
-  // **Not part of public API**
+  /// Get the buffering depth for a TensorId. Will return 1 unless
+  /// prefetching is enabled and the buffering depth is overwritten
+  /// in the \c prefetchBufferingDepthMap variable.
+  ///
+  /// **Not part of public API**
   unsigned getPrefetchBufferingDepth(const TensorId &id,
                                      unsigned defaultValue) const;
 
@@ -1019,7 +1019,7 @@ struct SessionOptions {
   /// Total progress ticks until compilation complete
   int compilationProgressTotal = 100;
 
-  // Returns true if auto-recomputation is enabled.
+  /// Returns true if auto-recomputation is enabled.
   bool autoRecomputationEnabled() const;
 
   /// Enables merging remote and host IO operations to facilitate IO overlap
