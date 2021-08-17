@@ -279,88 +279,120 @@ view::Regions Tensor::modifiedRegionsByOps(std::vector<Op *> ops,
 }
 
 VGraphId Tensor::getVirtualGraphIdUnsafe() const {
-  return getVirtualGraphIdAndTileSetUnsafe().first;
+  std::set<OpId> visited;
+  return getVirtualGraphIdAndTileSetUnsafe(visited).first;
+}
+
+VGraphIdAndTileSet Tensor::getVirtualGraphIdAndTileSetUnsafe() const {
+  std::set<OpId> visited;
+  return getVirtualGraphIdAndTileSetUnsafe(visited);
 }
 
 VGraphIdAndTileSet
-Tensor::getVirtualGraphIdAndTileSetUnsafe(std::set<OpId> visited) const {
+Tensor::getVirtualGraphIdAndTileSetUnsafe(std::set<OpId> &visited) const {
 
   constexpr const char *const ctxt{"Tensor::getVirtualGraphIdAndTileSetUnsafe"};
-  logging::ir::trace("{} for Tensor {},", ctxt, str());
+  logging::ir::trace("{} for Tensor {} (visited {}),", ctxt, str(), visited);
   auto scopedStopwatch = getIr().timePartitionLogger().scopedStopwatch(ctxt);
+
+  VGraphIdAndTileSetSet vgidSet;
 
   // If this Tensor has a Producer, use its VirtualGraphId if it has one
   if (hasProducer()) {
     // special case of IPUCopy producer
     auto ipucopy = dynamic_cast<IpuCopyOp *>(getProducer());
     if (ipucopy) {
-      return {ipucopy->getDestIpu(), ipucopy->settings.tileSet};
-    } else if (getProducer()->hasVirtualGraphId()) {
+      vgidSet.insert({ipucopy->getDestIpu(), ipucopy->settings.tileSet});
+    } else {
       if (visited.find(getProducer()->id) == visited.end()) {
         for (auto &indices : getProducer()->output->indicesMap()) {
           if (indices.first == this) {
-            return getProducer()->getIntrospectionOutVirtualGraphId(
-                indices.second[0]);
+            visited.insert(getProducer()->id);
+            vgidSet.insert(getProducer()->getIntrospectionOutVirtualGraphId(
+                indices.second[0], visited));
           }
         }
       }
     }
-  }
-
-  // No producer with an id. Try to get the virtual graph id from a consumer.
-  // Use the id of the first consumer with an id, if there is one
-  for (Op *consumer : consumers.getOps()) {
-    if (visited.find(consumer->id) == visited.end()) {
-      if (consumer->hasVirtualGraphId()) {
-        for (auto &indices : consumer->input->indicesMap()) {
-          if (indices.first == this) {
-            return consumer->getIntrospectionInVirtualGraphId(
-                indices.second[0]);
-          }
-        }
-      }
-    }
-  }
-
-  // no consumers have virtual graph ids. If a consumer
-  // is an IPUCopy, we can derive the virtual graph id from it.
-  for (Op *consumer : consumers.getOps()) {
-    auto ipucopy = dynamic_cast<IpuCopyOp *>(consumer);
-    if (ipucopy) {
-      return {ipucopy->getSourceIpus().at(id), ipucopy->settings.tileSet};
-    }
-  }
-
-  // Graph input, derive from call site
-  if (isGraphInput()) {
+  } else if (isGraphInput()) {
+    // Graph input, derive from call site
     auto callSites = getGraph().getCallSiteOps();
-    if (callSites.size()) {
-      Op *callSite = callSites.front();
-      return {callSite->hasVirtualGraphId() ? callSite->getVirtualGraphId()
-                                            : unusedVGraphId,
-              callSite->settings.tileSet};
+    for (Op *callSite : callSites) {
+      if (callSite->isConvertibleTo<SubgraphOp>() &&
+          visited.find(callSite->id) == visited.end()) {
+        visited.insert(callSite->id);
+        auto opInIndex = callSite->subgraphInToOpInIndex(
+            callSite->getCalledGraphIndex(getGraph().getGraphId()),
+            getGraphInputIndex());
+        if (callSite->hasInput(opInIndex)) {
+          vgidSet.insert(callSite->input->tensor(opInIndex)
+                             ->getVirtualGraphIdAndTileSetUnsafe(visited));
+        } else {
+          vgidSet.insert({callSite->hasVirtualGraphId()
+                              ? callSite->getVirtualGraphId()
+                              : unusedVGraphId,
+                          callSite->settings.tileSet});
+        }
+      }
     }
   }
 
-  // No virtual graph Id determined
-  return {unusedVGraphId, TileSet::Compute};
+  if (vgidSet.empty() || vgidSet.begin()->first == unusedVGraphId) {
+
+    // If a consumer is an IPUCopy, we can derive the virtual graph id from it.
+    for (Op *consumer : consumers.getOps()) {
+      auto ipucopy = dynamic_cast<IpuCopyOp *>(consumer);
+      if (ipucopy) {
+        if (visited.find(consumer->id) == visited.end()) {
+          vgidSet.insert(
+              {ipucopy->getSourceIpus().at(id), ipucopy->settings.tileSet});
+          visited.insert(consumer->id);
+        }
+      }
+    }
+
+    // Try to get the virtual graph id from a consumer.
+    for (Op *consumer : consumers.getOps()) {
+      if (visited.find(consumer->id) == visited.end()) {
+        for (auto &indices : consumer->input->indicesMap()) {
+          if (indices.first->id == this->id) {
+            vgidSet.insert(consumer->getIntrospectionInVirtualGraphId(
+                indices.second[0], visited));
+            visited.insert(consumer->id);
+          }
+        }
+      }
+    }
+  }
+
+  if (vgidSet.empty()) {
+    // No virtual graph ID and tile set determined
+    vgidSet.insert({unusedVGraphId, TileSet::Undefined});
+  }
+
+  logging::ir::trace("{} for Tensor {} (result {}),", ctxt, str(), vgidSet);
+
+  return *vgidSet.begin();
 }
 
 VGraphIdAndTileSet
-Tensor::getVirtualGraphIdAndTileSet(std::set<OpId> visited) const {
-  auto vid = getVirtualGraphIdAndTileSetUnsafe(visited);
-  if (vid == VGraphIdAndTileSet(unusedVGraphId, TileSet::Compute)) {
+Tensor::getVirtualGraphIdAndTileSet(std::set<OpId> &visited) const {
+  auto vgid = getVirtualGraphIdAndTileSetUnsafe(visited);
+  if (vgid == VGraphIdAndTileSet(unusedVGraphId, TileSet::Undefined) ||
+      vgid == VGraphIdAndTileSet(unusedVGraphId, TileSet::Compute)) {
     throw error("Invalid call to getVirtualGraphId, Tensor does not have one");
   }
-  return vid;
+  return vgid;
 }
 
 VGraphId Tensor::getVirtualGraphId() const {
-  auto vid = getVirtualGraphIdAndTileSetUnsafe();
-  if (vid == VGraphIdAndTileSet(unusedVGraphId, TileSet::Compute)) {
+  std::set<OpId> visited;
+  auto vgid = getVirtualGraphIdAndTileSetUnsafe(visited);
+  if (vgid == VGraphIdAndTileSet(unusedVGraphId, TileSet::Undefined) ||
+      vgid == VGraphIdAndTileSet(unusedVGraphId, TileSet::Compute)) {
     throw error("Invalid call to getVirtualGraphId, Tensor does not have one");
   }
-  return vid.first;
+  return vgid.first;
 }
 
 bool Tensor::hasVirtualGraphId() const {

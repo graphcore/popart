@@ -115,7 +115,7 @@ int MultiExchangeOp::numStores() const {
 
 VGraphIdAndTileSet MultiExchangeOp::getIntrospectionInVirtualGraphId(
     InIndex in,
-    std::set<OpId> visited) const {
+    std::set<OpId> &visited) const {
   auto descIndex = inIndexToDescriptorIndex(in);
   auto vgid      = descriptors.at(descIndex.first).getVGraphID();
   auto tiles     = descriptors.at(descIndex.first).getTileSet();
@@ -124,7 +124,7 @@ VGraphIdAndTileSet MultiExchangeOp::getIntrospectionInVirtualGraphId(
 
 VGraphIdAndTileSet MultiExchangeOp::getIntrospectionOutVirtualGraphId(
     OutIndex out,
-    std::set<OpId> visited) const {
+    std::set<OpId> &visited) const {
   auto descIndex = outIndexToDescriptorIndex(out);
   auto vgid      = descriptors.at(descIndex.first).getVGraphID();
   auto tiles     = descriptors.at(descIndex.first).getTileSet();

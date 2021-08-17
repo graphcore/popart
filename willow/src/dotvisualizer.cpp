@@ -93,11 +93,14 @@ std::ofstream &DotVisualizer::strm(const std::string &gString) {
 
 std::string DotVisualizer::getOpNodeColor(Op *n) {
   bool inplace = false;
-  for (auto &x : n->input->tensorMap()) {
-    auto regions = n->aliases(x.first, 0);
-    inplace |= !std::all_of(regions.begin(),
-                            regions.end(),
-                            [](const view::Region &r) { return r.isEmpty(); });
+  if (n->output->n()) {
+    for (auto &x : n->input->tensorMap()) {
+      auto regions = n->aliases(x.first, 0);
+      inplace |=
+          !std::all_of(regions.begin(),
+                       regions.end(),
+                       [](const view::Region &r) { return r.isEmpty(); });
+    }
   }
 
   if (inplace) {
@@ -174,9 +177,8 @@ void DotVisualizer::write() {
     }
     coreNameStream << getNextGraphIndex(gString) << '.' << ' ' << n->opid.type
                    << " (" << n->id << ')';
-    if (dynamic_cast<CallOp *>(n)) {
-      auto calledGraphId = dynamic_cast<CallOp *>(n)->getCalledGraph().id.str();
-      coreNameStream << "<" << getAbridgedGraphName(calledGraphId) << ">";
+    for (auto calledGraphId : n->getCalledGraphIds()) {
+      coreNameStream << "<" << getAbridgedGraphName(calledGraphId.str()) << ">";
     }
     // Add the debug name if present and requested
     if (ir->getSessionOptions().dotOpNames) {
@@ -195,9 +197,20 @@ void DotVisualizer::write() {
     }
 
     if (auto ipuCopy = dynamic_cast<IpuCopyOp *>(n)) {
-      coreNameStream << " sIpu:" << ipuCopy->getSourceIpu();
+      std::set<size_t> sIpus;
+      for (auto ipu : ipuCopy->getSourceIpus()) {
+        sIpus.insert(ipu.second);
+      }
+      if (sIpus.size() > 1) {
+        coreNameStream << " sIpus: (";
+        coreNameStream << logging::join(sIpus.begin(), sIpus.end(), ", ");
+        coreNameStream << ")";
+      } else {
+        coreNameStream << " sIpu:" << ipuCopy->getSourceIpu();
+      }
       coreNameStream << " dIpu:" << ipuCopy->getDestIpu();
     }
+    coreNameStream << " ts:" << n->settings.tileSet;
 
     strm(gString) << nodeDotId(n->id) << " [shape= \"box\", label=\""
                   << coreNameStream.str();

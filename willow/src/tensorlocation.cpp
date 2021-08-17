@@ -58,6 +58,20 @@ bool TensorLocation::isRemote() const {
           (storage == TensorStorage::OffChip));
 }
 
+std::ostream &operator<<(std::ostream &ost, const VGraphIdAndTileSet &vgidats) {
+  ost << "(";
+  ost << vgidats.first << ", " << vgidats.second;
+  ost << ")";
+  return ost;
+}
+
+std::ostream &operator<<(std::ostream &ost, const VGraphIdAndTileSetSet &set) {
+  ost << "[";
+  ost << logging::join(set.begin(), set.end(), ", ");
+  ost << "]";
+  return ost;
+}
+
 std::ostream &operator<<(std::ostream &ost, const TensorStorage &ts) {
   switch (ts) {
   case (TensorStorage::OnChip): {
@@ -83,6 +97,10 @@ std::ostream &operator<<(std::ostream &ost, const TileSet &ts) {
   }
   case (TileSet::IO): {
     ost << "IO";
+    break;
+  }
+  case (TileSet::Undefined): {
+    ost << "Undefined";
     break;
   }
   default: {

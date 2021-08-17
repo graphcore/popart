@@ -216,7 +216,7 @@ void MultiExchangeOpx::grow(poplar::program::Sequence &prog) const {
 snap::Graph &MultiExchangeOpx::inGraph(InIndex in) const {
   if (op_p->getIr().virtualGraphsEnabled()) {
     auto &multiExchangeOp = getOp<MultiExchangeOp>();
-    auto vgid = multiExchangeOp.getIntrospectionInVirtualGraphId(in);
+    auto vgid = multiExchangeOp.Op::getIntrospectionInVirtualGraphId(in);
     return dv_p->lowering().getVirtualGraph(vgid.first, vgid.second);
   } else {
     return dv_p->lowering().graph();
@@ -226,7 +226,7 @@ snap::Graph &MultiExchangeOpx::inGraph(InIndex in) const {
 snap::Graph &MultiExchangeOpx::outGraph(OutIndex out) const {
   if (op_p->getIr().virtualGraphsEnabled()) {
     auto &multiExchangeOp = getOp<MultiExchangeOp>();
-    auto vgid = multiExchangeOp.getIntrospectionInVirtualGraphId(out);
+    auto vgid = multiExchangeOp.Op::getIntrospectionInVirtualGraphId(out);
     return dv_p->lowering().getVirtualGraph(vgid.first, vgid.second);
   } else {
     return dv_p->lowering().graph();

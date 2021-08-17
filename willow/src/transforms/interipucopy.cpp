@@ -58,14 +58,55 @@ public:
 
 namespace {
 
+struct PipelineStageAndVGraphIdLtCmp {
+  bool operator()(std::pair<PipelineStage, VGraphId> const &a,
+                  std::pair<PipelineStage, VGraphId> const &b) const {
+    if (a.first != unusedPipelineStage &&
+        (a.first < b.first || b.first == unusedPipelineStage)) {
+      return true;
+    }
+    if (b.first != unusedPipelineStage &&
+        (b.first < a.first || a.first == unusedPipelineStage)) {
+      return false;
+    }
+    if (a.second < b.second) {
+      return true;
+    } else {
+      return false;
+    }
+  }
+};
+
+struct PipelineStageAndVGraphIdGtCmp {
+  bool operator()(std::pair<PipelineStage, VGraphId> const &a,
+                  std::pair<PipelineStage, VGraphId> const &b) const {
+    if (a.first != unusedPipelineStage &&
+        (a.first > b.first || b.first == unusedPipelineStage)) {
+      return true;
+    }
+    if (b.first != unusedPipelineStage &&
+        (b.first > a.first || a.first == unusedPipelineStage)) {
+      return false;
+    }
+    if (a.second > b.second) {
+      return true;
+    } else {
+      return false;
+    }
+  }
+};
+
 // This transform may happen when pipelining disabled, in which case it should
 // fall back to vgraph id.
-PipelineStage getPipelineStageOrVGraphId(const Op *op) {
-  if (op->hasPipelineStage()) {
-    return op->getPipelineStage();
-  } else {
-    return op->getVirtualGraphId();
-  }
+std::pair<PipelineStage, VGraphId>
+getInPipelineStageAndVGraphId(const Op *op, InIndex index) {
+  std::pair<PipelineStage, VGraphId> pipelineAndVgraphId;
+  pipelineAndVgraphId.first =
+      op->hasPipelineStage() ? op->getPipelineStage() : unusedPipelineStage;
+  std::set<OpId> visited;
+  pipelineAndVgraphId.second =
+      op->getIntrospectionInVirtualGraphId(index, visited).first;
+  return pipelineAndVgraphId;
 }
 
 bool belongsInOptimizerFromHostFragment(const Graph &graph, IpuCopyOp *copyOp) {
@@ -151,7 +192,7 @@ void setExecutionContext(CopiedTensors copiedTensors, const Graph &graph) {
 std::size_t InterIpuCopy::id() { return typeid(InterIpuCopy).hash_code(); }
 
 TensorId InterIpuCopy::generateCopiedTensorId(Tensor *tensor,
-                                              int64_t toIpu) const {
+                                              VGraphId toIpu) const {
   // The copiedTensor id needs to be unique as the same tensor may be copied to
   // multiple ipus's
   TensorId copiedTensor = tensor->id + "_c" + std::to_string(toIpu);
@@ -161,18 +202,29 @@ TensorId InterIpuCopy::generateCopiedTensorId(Tensor *tensor,
 void InterIpuCopy::connectIpuCopy(Graph &,
                                   Tensor *tensor,
                                   Op *fromOp,
-                                  int64_t fromIpu,
+                                  VGraphId fromIpu,
                                   Op *toOp,
-                                  int64_t toIpu) const {
+                                  VGraphId toIpu) const {
 
-  // We have already copied this tensor but we still need to
-  // update the 'to' op to use the copied tensor
-  logging::transform::debug("Already copied output tensor of {}:{} from "
-                            "ipu {} to ipu {}",
-                            fromOp->debugName(),
-                            tensor->id,
-                            fromIpu,
-                            toIpu);
+  if (fromOp != toOp) {
+    // We have already copied this tensor but we still need to
+    // update the 'to' op to use the copied tensor
+    logging::transform::debug("Already copied output tensor of {}:{} from "
+                              "ipu {} to ipu {}",
+                              fromOp->debugName(),
+                              tensor->id,
+                              fromIpu,
+                              toIpu);
+  } else {
+    // For graph inputs
+    logging::transform::debug(
+        "Already copied output tensor of graph {} input {} from "
+        "ipu {} to ipu {}",
+        tensor->getGraph().id.str(),
+        tensor->id,
+        fromIpu,
+        toIpu);
+  }
 
   // Copy the list of index's this input tensor is mapped
   auto indices = toOp->input->indices(tensor);
@@ -199,16 +251,27 @@ void InterIpuCopy::connectIpuCopy(Graph &,
 void InterIpuCopy::insertIpuCopy(Graph &graph,
                                  Tensor *tensor,
                                  Op *fromOp,
-                                 int64_t fromIpu,
+                                 VGraphId fromIpu,
                                  Op *toOp,
-                                 int64_t toIpu) const {
-  // Need to copy the tensor between ipu's
-  logging::transform::debug(
-      "Adding copy of output tensor of {}:{} from ipu {} to ipu {}",
-      fromOp->debugName(),
-      tensor->id,
-      fromIpu,
-      toIpu);
+                                 VGraphId toIpu) const {
+
+  if (fromOp != toOp) {
+    // Need to copy the tensor between ipu's
+    logging::transform::debug(
+        "Adding copy of output tensor of {}:{} from ipu {} to ipu {}",
+        fromOp->debugName(),
+        tensor->id,
+        fromIpu,
+        toIpu);
+  } else {
+    // For graph inputs
+    logging::transform::debug("Adding copy of output tensor of graph {} input "
+                              "{} from ipu {} to ipu {}",
+                              tensor->getGraph().id.str(),
+                              tensor->id,
+                              fromIpu,
+                              toIpu);
+  }
 
   Op::Settings settings(graph, "");
 
@@ -271,6 +334,44 @@ bool InterIpuCopy::apply(Graph &graph) const {
   // Keep a record of which stream tensors are going to which ops
   std::map<TensorId, std::set<OpId>> streamsMap;
 
+  // For each graph input
+  for (auto tid : graph.getInputIds()) {
+    auto tensor  = graph.getTensors().get(tid);
+    auto fromIpu = tensor->getVirtualGraphIdUnsafe();
+
+    // For each consumer op of the tensor
+    // but, take a copy of the map as we will be modifying it.
+    std::map<Op *, int, POpCmp> map = tensor->consumers.getMap();
+    for (auto &c : map) {
+
+      Op *to          = c.first;
+      InIndex toInIdx = to->input->indices(tensor).front();
+
+      if (to->opid != Onnx::CustomOperators::IpuCopy) {
+
+        // Get which ipu the tensor is supposed to be on
+        std::set<OpId> visited;
+        VGraphId toIpu =
+            to->getIntrospectionInVirtualGraphId(toInIdx, visited).first;
+
+        // If the ops are not on the same ipu
+        if (fromIpu != toIpu) {
+
+          bool alreadyCopied = copiedTensors.find(tensor->id, toIpu);
+
+          if (alreadyCopied == true) {
+            connectIpuCopy(graph, tensor, to, fromIpu, to, toIpu);
+          } else {
+            insertIpuCopy(graph, tensor, to, fromIpu, to, toIpu);
+
+            // Record the copy
+            copiedTensors.add(tensor->id, toIpu);
+          }
+        }
+      }
+    }
+  }
+
   // For each op
   for (auto &entry : graph.getOps()) {
 
@@ -278,15 +379,10 @@ bool InterIpuCopy::apply(Graph &graph) const {
 
     if (from->opid != Onnx::CustomOperators::IpuCopy) {
 
-      // Get which ipu the from op is on
-      int64_t fromIpu = -1;
-      if (from->hasVirtualGraphId()) {
-        fromIpu = from->getVirtualGraphId();
-      }
-
       // For each input tensor
       auto &input = from->input;
       for (auto &t : input->tensorMap()) {
+
         Tensor *tensor = t.second;
 
         // Record the tensors so we can later work out if any input
@@ -309,21 +405,21 @@ bool InterIpuCopy::apply(Graph &graph) const {
       for (auto &t : output->tensorMap()) {
 
         Tensor *tensor = t.second;
+        VGraphId fromIpu =
+            from->getIntrospectionOutVirtualGraphId(t.first).first;
 
         // For each consumer op of the tensor
         // but, take a copy of the map as we will be modifying it.
         std::map<Op *, int, POpCmp> map = t.second->consumers.getMap();
         for (auto &c : map) {
 
-          Op *to = c.first;
-
+          Op *to          = c.first;
+          InIndex toInIdx = to->input->indices(tensor).front();
           if (to->opid != Onnx::CustomOperators::IpuCopy) {
 
-            // Get which ipu the to op is on
-            int64_t toIpu = -1;
-            if (to->hasVirtualGraphId()) {
-              toIpu = to->getVirtualGraphId();
-            }
+            // Get which ipu the tensor is supposed to be on
+            VGraphId toIpu =
+                to->getIntrospectionInVirtualGraphId(toInIdx).first;
 
             // If the ops are not on the same ipu
             if (fromIpu != toIpu) {
@@ -353,6 +449,7 @@ bool InterIpuCopy::apply(Graph &graph) const {
   for (auto &s : streamsMap) {
     auto &streamId    = s.first;
     auto &consumerIds = s.second;
+    auto tensor       = graph.getTensors().get(s.first);
 
     if (consumerIds.size() > 1) {
       std::vector<Op *> consumers;
@@ -360,7 +457,25 @@ bool InterIpuCopy::apply(Graph &graph) const {
         consumers.push_back(graph.getOp(id));
       }
 
-      auto sourceOp = *consumers.begin();
+      // Sort by smallest valid PipelineStage & VGraphId
+      std::set<std::pair<PipelineStage, VGraphId>,
+               PipelineStageAndVGraphIdLtCmp>
+          sourceIpusLt;
+
+      // Sort by largest valid PipelineStage & VGraphId
+      std::set<std::pair<PipelineStage, VGraphId>,
+               PipelineStageAndVGraphIdGtCmp>
+          sourceIpusGt;
+
+      for (Op *op : consumers) {
+        auto consumerIpu = getInPipelineStageAndVGraphId(
+            op, op->input->indices(tensor).front());
+        sourceIpusLt.insert(consumerIpu);
+        sourceIpusGt.insert(consumerIpu);
+      }
+
+      // sourceIpu should be the smallest VGraphId
+      auto sourceIpu = *(sourceIpusLt.begin());
 
       if (graph.getIr().getSessionOptions().enablePipelining) {
         // We add an additional constraint on the order of IPU copies here:
@@ -370,54 +485,39 @@ bool InterIpuCopy::apply(Graph &graph) const {
         //  All stream tensors scheduled post-loss are to be copied to a
         //  smaller IPU number than that of sourceOp'
         //
-        if (graph.getTensors().get(s.first)->scheduledPreLoss ==
-            ScheduledPreLoss::Yes) {
-          // sourceOp should be op mapped to smallest vGraphId
-          for (Op *op : consumers) {
-            if (getPipelineStageOrVGraphId(op) <
-                getPipelineStageOrVGraphId(sourceOp)) {
-              sourceOp = op;
-            }
-          }
-        } else {
-          // sourceOp should be op mapped to largest vGraphId
-          for (Op *op : consumers) {
-            if (getPipelineStageOrVGraphId(op) >
-                getPipelineStageOrVGraphId(sourceOp)) {
-              sourceOp = op;
-            }
-          }
+        if (tensor->scheduledPreLoss != ScheduledPreLoss::Yes) {
+          // sourceOp should be op mapped to largest VGraphId
+          sourceIpu = *(sourceIpusGt.begin());
         }
       }
 
-      // Get which ipu the to op is on
-      int64_t sourceIpu = -1;
-      if (sourceOp->hasVirtualGraphId()) {
-        sourceIpu = sourceOp->getVirtualGraphId();
-      }
+      logging::transform::debug(
+          "Mapping stream tensor {} to PipelineStage {} VirtualGraphId {}",
+          tensor->id,
+          sourceIpu.first,
+          sourceIpu.second);
 
       for (auto &op : consumers) {
-        int64_t toIpu = -1;
-        if (op->hasVirtualGraphId()) {
-          toIpu = op->getVirtualGraphId();
-        }
+        VGraphId toIpu = op->getIntrospectionInVirtualGraphId(
+                               op->input->indices(tensor).front())
+                             .first;
 
         // It the case of the first op the ipu will be the same so nothing to do
-        if (sourceIpu != toIpu) {
+        if (sourceIpu.second != toIpu) {
 
           logging::transform::debug(
               "Adding op to copy streaming tensor {} from ipu {} to ipu {}",
               streamId,
-              sourceIpu,
+              sourceIpu.second,
               toIpu);
 
           Tensor *tensor = graph.getTensors().get(streamId);
 
           bool alreadyCopied = copiedTensors.find(tensor->id, toIpu);
           if (alreadyCopied == true) {
-            connectIpuCopy(graph, tensor, sourceOp, sourceIpu, op, toIpu);
+            connectIpuCopy(graph, tensor, op, sourceIpu.second, op, toIpu);
           } else {
-            insertIpuCopy(graph, tensor, sourceOp, sourceIpu, op, toIpu);
+            insertIpuCopy(graph, tensor, op, sourceIpu.second, op, toIpu);
 
             // Record the copy
             copiedTensors.add(tensor->id, toIpu);

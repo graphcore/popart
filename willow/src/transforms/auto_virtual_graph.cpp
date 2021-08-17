@@ -106,7 +106,7 @@ bool AutoVirtualGraph::apply(Graph &graph) const {
   const auto num_ipus = ir.getDeviceInfo()->getNumIpus() / replicationDivisor;
   const auto training = ir.canTrain();
 
-  if (graph.getOps().size() == 0 || num_ipus < 2) {
+  if (graph.getOps().size() == 0) {
     return true;
   }
 
@@ -118,6 +118,13 @@ bool AutoVirtualGraph::apply(Graph &graph) const {
 
   logging::transform::info("[AutoVirtualGraph] Auto virtual graph with {} IPUs",
                            num_ipus);
+
+  if (num_ipus == 1) {
+    for (auto op : ir.getAllOps()) {
+      op->setVirtualGraphId(0);
+    }
+    return true;
+  }
 
   float cumulative_cost = 0.f;
   std::vector<Subgraph> subgraphs;

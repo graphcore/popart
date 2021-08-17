@@ -179,10 +179,14 @@ public:
   std::set<VGraphId> getVirtualGraphIds(Op *op) {
     std::set<VGraphId> vgids;
     for (auto &in : op->input->tensorMap()) {
-      vgids.insert(op->getIntrospectionInVirtualGraphId(in.first).first);
+      std::set<OpId> visited;
+      vgids.insert(
+          op->getIntrospectionInVirtualGraphId(in.first, visited).first);
     }
     for (auto &out : op->output->tensorMap()) {
-      vgids.insert(op->getIntrospectionOutVirtualGraphId(out.first).first);
+      std::set<OpId> visited;
+      vgids.insert(
+          op->getIntrospectionOutVirtualGraphId(out.first, visited).first);
     }
     return vgids;
   }
@@ -190,10 +194,14 @@ public:
   std::set<TileSet> getTileSets(Op *op) {
     std::set<TileSet> tileSets;
     for (auto &in : op->input->tensorMap()) {
-      tileSets.insert(op->getIntrospectionInVirtualGraphId(in.first).second);
+      std::set<OpId> visited;
+      tileSets.insert(
+          op->getIntrospectionInVirtualGraphId(in.first, visited).second);
     }
     for (auto &out : op->output->tensorMap()) {
-      tileSets.insert(op->getIntrospectionOutVirtualGraphId(out.first).second);
+      std::set<OpId> visited;
+      tileSets.insert(
+          op->getIntrospectionOutVirtualGraphId(out.first, visited).second);
     }
     return tileSets;
   }

@@ -123,7 +123,11 @@ void bindTensor(py::module &m) {
       .def("getVirtualGraphIdUnsafe", &Tensor::getVirtualGraphIdUnsafe)
       .def("getVirtualGraphIdAndTileSet", &Tensor::getVirtualGraphIdAndTileSet)
       .def("getVirtualGraphIdAndTileSetUnsafe",
-           &Tensor::getVirtualGraphIdAndTileSetUnsafe)
+           static_cast<VGraphIdAndTileSet (Tensor::*)() const>(
+               &Tensor::getVirtualGraphIdAndTileSetUnsafe))
+      .def("getVirtualGraphIdAndTileSetUnsafe",
+           static_cast<VGraphIdAndTileSet (Tensor::*)(std::set<OpId> &) const>(
+               &Tensor::getVirtualGraphIdAndTileSetUnsafe))
       .def("getBatchAxis", &Tensor::getBatchAxis)
       .def("consumersAllPreLoss", &Tensor::consumersAllPreLoss)
       .def("isModified", &Tensor::isModified)

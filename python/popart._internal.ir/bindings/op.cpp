@@ -109,7 +109,10 @@ void bindOp(py::module &m) {
       .def("getOptionalVGraphId", &Op::getOptionalVGraphId)
       .def("getVirtualGraphId", &Op::getVirtualGraphId)
       .def("getIntrospectionInVirtualGraphId",
-           py::overload_cast<InIndex, std::set<OpId>>(
+           py::overload_cast<InIndex>(&Op::getIntrospectionInVirtualGraphId,
+                                      py::const_))
+      .def("getIntrospectionInVirtualGraphId",
+           py::overload_cast<InIndex, std::set<OpId> &>(
                &Op::getIntrospectionInVirtualGraphId, py::const_))
       .def("setVirtualGraphId", &Op::setVirtualGraphId)
       .def("hasVirtualGraphId", &Op::hasVirtualGraphId)

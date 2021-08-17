@@ -74,8 +74,10 @@ uint64_t IpuCopyOp::getSourceIpu() const {
   // check all source ipus are the same
   for (auto id_source : sourceIpus) {
     if (sourceIpu != id_source.second) {
-      throw error("IpuCopyOp copies tensors from multiple sources: {}",
-                  getFromToStr());
+      throw internal_error("IpuCopyOp copies tensors from multiple sources: {}"
+                           "(use IpuCopyOp::getSourceIpu(const TensorId "
+                           "&tenId) or IpuCopyOp::getSourceIpus() instead.)",
+                           getFromToStr());
     }
   }
   return sourceIpu;
@@ -165,13 +167,13 @@ void IpuCopyOp::disconnectInTensor(InIndex idx, Tensor *t) {
 
 VGraphIdAndTileSet
 IpuCopyOp::getIntrospectionInVirtualGraphId(InIndex index,
-                                            std::set<OpId> visited) const {
+                                            std::set<OpId> &visited) const {
   return {sourceIpus.at(inId(index)), settings.tileSet};
 }
 
 VGraphIdAndTileSet
 IpuCopyOp::getIntrospectionOutVirtualGraphId(OutIndex index,
-                                             std::set<OpId> visited) const {
+                                             std::set<OpId> &visited) const {
   return {destIpu, settings.tileSet};
 }
 

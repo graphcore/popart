@@ -55,10 +55,10 @@ public:
 
   VGraphIdAndTileSet
   getIntrospectionInVirtualGraphId(InIndex index,
-                                   std::set<OpId> visited = {}) const override;
+                                   std::set<OpId> &visited) const override;
   VGraphIdAndTileSet
   getIntrospectionOutVirtualGraphId(OutIndex index,
-                                    std::set<OpId> visited = {}) const override;
+                                    std::set<OpId> &visited) const override;
 
   bool hasSideEffect() const override;
 

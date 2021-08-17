@@ -17,7 +17,7 @@ enum class TensorStorage {
   OnChip = 0,
   /// Store the tensor in streaming memory.
   OffChip = 1,
-  /// Number of values
+  /// Number of values.
   N = 2
 };
 
@@ -29,11 +29,35 @@ enum class TileSet {
   Compute = 0,
   /// The set of tiles designated for IO operations.
   IO = 1,
-  /// Number of values
-  N = 2
+  /// Undefined (no) tile set.
+  Undefined = 2,
+  /// Number of values.
+  N = 3
 };
 
 using VGraphIdAndTileSet = std::pair<VGraphId, TileSet>;
+
+struct VGraphIdAndTileSetCmp {
+  bool operator()(VGraphIdAndTileSet const &a,
+                  VGraphIdAndTileSet const &b) const {
+    if (a.first != unusedVGraphId &&
+        (a.first < b.first || b.first == unusedVGraphId)) {
+      return true;
+    }
+    if (b.first != unusedVGraphId &&
+        (b.first < a.first || a.first == unusedVGraphId)) {
+      return false;
+    }
+    if (a.second < b.second) {
+      return true;
+    } else {
+      return false;
+    }
+  }
+};
+
+using VGraphIdAndTileSetSet =
+    std::set<VGraphIdAndTileSet, VGraphIdAndTileSetCmp>;
 
 /**
  * Enum type to specify whether to shard tensors over replicas.
@@ -118,6 +142,8 @@ public:
   ReplicatedTensorSharding replicatedTensorSharding;
 };
 
+std::ostream &operator<<(std::ostream &, const VGraphIdAndTileSet &);
+std::ostream &operator<<(std::ostream &, const VGraphIdAndTileSetSet &);
 std::ostream &operator<<(std::ostream &, const TensorStorage &);
 std::ostream &operator<<(std::ostream &, const TileSet &);
 std::ostream &operator<<(std::ostream &, const ReplicatedTensorSharding &);

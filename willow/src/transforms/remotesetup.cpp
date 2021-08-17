@@ -279,7 +279,7 @@ bool RemoteSetup::apply(Graph &graph) const {
             }
             InIndex localInIndex = inIndex - 1;
             remoteBufferVGIDs[remoteBufferId].insert(
-                exchangeOp->getIntrospectionInVirtualGraphId(localInIndex)
+                exchangeOp->Op::getIntrospectionInVirtualGraphId(localInIndex)
                     .first);
             logging::transform::trace(
                 "[RemoteSetup] Op {} index {} connected to remote buffer {}. "

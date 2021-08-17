@@ -116,10 +116,10 @@ public:
 
   VGraphIdAndTileSet
   getIntrospectionInVirtualGraphId(InIndex,
-                                   std::set<OpId> visited = {}) const final;
+                                   std::set<OpId> &visited) const final;
   VGraphIdAndTileSet
   getIntrospectionOutVirtualGraphId(OutIndex,
-                                    std::set<OpId> visited = {}) const final;
+                                    std::set<OpId> &visited) const final;
   virtual void growAliasModel(AliasModel &m) const override {
     growAliasModelMulti(m);
   }

@@ -603,11 +603,14 @@ void Ir::verifyOverlapIOSettings() const {
     if ((strategy == ExchangeStrategy::OverlapInnerLoop ||
          strategy == ExchangeStrategy::OverlapLoops) &&
         !(getSessionOptions().useHostCopyOps &&
-          getSessionOptions().enableExplicitMainLoops)) {
-      throw error("ExchangeStrategy::OverlapInnerLoop and "
+          getSessionOptions().enableExplicitMainLoops &&
+          getSessionOptions().virtualGraphMode != VirtualGraphMode::Off)) {
+      throw error("ExchangeStrategy::OverlapInnerLoop, "
                   "ExchangeStrategy::OverlapLoops require "
-                  "SessionOptions::useHostCopyOps and "
-                  "SessionOptions::enableExplicitMainLoops to be enabled.");
+                  "SessionOptions::useHostCopyOps, "
+                  "SessionOptions::enableExplicitMainLoops, "
+                  "VirtualGraphMode::(Manual, Auto, ExecutionPhases) "
+                  "to be enabled.");
     }
   };
 
@@ -1373,8 +1376,11 @@ void Ir::prepareImpl(const IrBundle &gb, const HashesMap &cacheEntries) {
     }
   }
 
-  // Add internal ops to copy tensors between ipu's as needed
-  applyTransform(InterIpuCopy::id(), getMainGraph());
+  for (auto &id_graph : graphs) {
+    auto &graph = getGraph(id_graph.first);
+    // Add internal ops to copy tensors between ipu's as needed
+    applyTransform(InterIpuCopy::id(), graph);
+  }
 
   // Pipelining optimizes copies separately, so only run if this is disabled
   if (!getSessionOptions().enablePipelining) {
@@ -1756,13 +1762,6 @@ void Ir::verifyVirtualGraphIds(bool postAutoVirtualGraphTransform) const {
     throw error(errm.str());
   }
 
-  // Check number ipus makes sense given virtual graphs have been enabled
-  if (!postAutoVirtualGraphTransform && deviceInfo->getNumIpus() == 1) {
-    logging::ir::warn("Auto virtualGraphMode is on, but only one IPU is "
-                      "specified, so no virtual graphs were created. Are you "
-                      "sure you meant to set VirtualGraphMode to auto?");
-  }
-
   // Sanity check the virtual graph ids. Only -1's, no Op has a virtual graph
   // annotation implies a problem.
   if (vGraphs.size() == 1 && vGraphs.count(-1) != 0) {
@@ -1779,7 +1778,7 @@ void Ir::verifyVirtualGraphIds(bool postAutoVirtualGraphTransform) const {
                   "been "
                   "annotated with virtual graph information. Moreover, the "
                   "paramater "
-                  "postAutoVirtualGraphTransoform is true, so AutoVirtualGraph "
+                  "postAutoVirtualGraphTransform is true, so AutoVirtualGraph "
                   "should have been run. This is an inconsistent combination, "
                   "possibly an internal logic error has occured",
                   getSessionOptions().virtualGraphMode);
@@ -4050,8 +4049,8 @@ std::size_t std::hash<popart::Ir>::operator()(const popart::Ir &ir) const {
   return seed;
 }
 
-std::size_t
-std::hash<popart::IrBundle>::operator()(const popart::IrBundle &bundle) const {
+std::size_t std::hash<popart::IrBundle>::
+operator()(const popart::IrBundle &bundle) const {
   size_t seed = 0;
 
   boost::hash_combine(

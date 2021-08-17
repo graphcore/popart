@@ -104,7 +104,7 @@ struct PackedSequences {
 //                              callback_batch_size,
 //                              callback)
 //
-class PackedDataBlockOp : public SubgraphOp {
+class PackedDataBlockOp : public Op {
 public:
   PackedDataBlockOp(const OperatorIdentifier &,
                     const std::vector<int64_t> &maxSequenceLengths,
@@ -120,22 +120,29 @@ public:
 
   float getSubgraphValue() const final { return getLowSubgraphValue(); }
 
-  InIndex subgraphInToOpInIndex(InIndex index) const override;
-  InIndex opInToSubgraphInIndex(InIndex index) const override;
+  Graph &getCalledGraph() const;
+  void setCalledGraph(Graph &);
 
-  OutIndex subgraphOutToOpOutIndex(OutIndex index) const override;
-  OutIndex opOutToSubgraphOutIndex(OutIndex index) const override;
+  // Resolve the virtual graph ID based on the packed data subgraph
+  // 3*N+2 inputs map to N subgraph inputs and 2 subgraph outputs for
+  // determining the virtual graph ID
+  VGraphIdAndTileSet
+  getIntrospectionInVirtualGraphId(InIndex,
+                                   std::set<OpId> &visited) const override;
 
-  Graph &getCalledGraph() const override;
-  void setCalledGraph(Graph &) override;
+  // Resolve the virtual graph ID based on the packed data subgraph
+  // 2 outputs map to 2 subgraph outputs for determining the virtual graph ID
+  VGraphIdAndTileSet
+  getIntrospectionOutVirtualGraphId(OutIndex,
+                                    std::set<OpId> &visited) const override;
 
   // Get the number of inputs of the called graph.
-  int64_t numCallbackInputs();
+  int64_t numCallbackInputs() const;
   // How many PackedDataBlock inputs are packed data tensors.
-  int64_t numDataInputs();
+  int64_t numDataInputs() const;
 
   // How many calls to calledGraph need to be made.
-  int64_t getCallbackIterations();
+  int64_t getCallbackIterations() const;
 
   // Return all the ops packed sequence tensors, with the corresponding offset
   // and length tensors.

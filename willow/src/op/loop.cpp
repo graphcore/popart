@@ -88,6 +88,24 @@ OutIndex LoopOp::opOutToSubgraphOutIndex(OutIndex index) const {
   return index + 1;
 }
 
+VGraphIdAndTileSet
+LoopOp::getIntrospectionInVirtualGraphId(InIndex index,
+                                         std::set<OpId> &visited) const {
+  auto vgid = SubgraphOp::getIntrospectionInVirtualGraphId(index, visited);
+  if (settings.vgraphId && vgid.first == unusedVGraphId &&
+      (index == LoopOp::getMaximumTripCountInIndex() ||
+       index == LoopOp::getTerminationConditionInIndex())) {
+    return {*(settings.vgraphId), settings.tileSet};
+  }
+  return vgid;
+}
+
+VGraphIdAndTileSet
+LoopOp::getIntrospectionOutVirtualGraphId(OutIndex index,
+                                          std::set<OpId> &visited) const {
+  return SubgraphOp::getIntrospectionOutVirtualGraphId(index, visited);
+}
+
 std::vector<const Graph *> LoopOp::getCalledGraphs() const {
   return {&getCalledGraph()};
 }

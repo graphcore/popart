@@ -45,12 +45,7 @@ void updateVGraphInformation(Graph &graph) {
     }
   }
 
-  // No ops have vgraph information and we can skip this
-  if (noVGraphOps.size() == graph.getOps().size()) {
-    return;
-  }
-
-  while (noVGraphOps.size() > 0) {
+  while (!noVGraphOps.empty()) {
     for (auto op : noVGraphOps) {
       trySetVGraphId(op);
     }
@@ -488,7 +483,10 @@ bool PackedDataBlockPattern::apply(Op *op) const {
 
   createLoopOp(packedDataBlock, resultOuterId);
 
-  updateVGraphInformation(packedDataBlock->getCalledGraph());
+  if (graph.getIr().getSessionOptions().virtualGraphMode !=
+      VirtualGraphMode::Off) {
+    updateVGraphInformation(packedDataBlock->getCalledGraph());
+  }
 
   op->disconnectAllInputs();
   op->disconnectAllOutputs();

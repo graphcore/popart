@@ -231,150 +231,91 @@ view::Regions SubgraphOp::modifies(InIndex in) const {
 
 VGraphIdAndTileSet
 SubgraphOp::getIntrospectionInVirtualGraphId(InIndex index,
-                                             std::set<OpId> visited) const {
+                                             std::set<OpId> &visited) const {
   visited.insert(id);
+
+  std::set<VGraphIdAndTileSet, VGraphIdAndTileSetCmp> vgidSet;
 
   InIndex subgraphInIndex = opInToSubgraphInIndex(index);
 
-  if (subgraphInIndex > -1) {
-    auto num_ids = getCalledGraph().getInputIds().size();
-    if (subgraphInIndex >= num_ids) {
-      throw error("[getIntrospectionInVirtualGraphId] "
-                  "SubgraphOp ({}) has {} subgraph inputs, "
-                  "but requested index is {}",
-                  debugName(),
-                  num_ids,
-                  subgraphInIndex);
-    }
-
+  if (subgraphInIndex > -1 &&
+      subgraphInIndex < getCalledGraph().getInputIds().size()) {
     auto tensor_id = getCalledGraph().getInputId(subgraphInIndex);
     auto tensor    = getCalledGraph().getTensors().get(tensor_id);
 
-    // Callee introspection
-    for (auto consumer : tensor->consumers.getOps()) {
-      if (visited.find(consumer->id) == visited.end()) {
-        if (dynamic_cast<SubgraphOp *>(consumer)) {
-          auto subindex = consumer->input->indicesMap().at(tensor)[0];
-          if (consumer->hasVirtualGraphId()) {
-            // Also works if the callee is another subgraph
-            auto vgId =
-                consumer->getIntrospectionInVirtualGraphId(subindex, visited);
-            if (vgId.first > unusedVGraphId)
-              return vgId;
-          }
-        }
-        if (IpuCopyOp *copyConsumer = dynamic_cast<IpuCopyOp *>(consumer)) {
-          return {copyConsumer->getSourceIpu(tensor_id),
-                  copyConsumer->settings.tileSet};
-        }
-      }
-    }
+    // The tensor knows it's own VGID
+    auto vgid = tensor->getVirtualGraphIdAndTileSetUnsafe(visited);
+    vgidSet.insert(vgid);
 
-    // Fallback 1: The tensor has no consumer inside the graph,
+    // The tensor has no consumer inside the graph,
     // look after the graph
     if (tensor->consumers.getOps().empty() && tensor->isGraphOutput()) {
       OutIndex sgOutIndex = tensor->getGraphOutputIndex();
       OutIndex opOutIndex = subgraphOutToOpOutIndex(sgOutIndex);
       if (output->hasIndex(opOutIndex)) {
-        auto vgId = output->tensor(opOutIndex)
+        auto vgid = output->tensor(opOutIndex)
                         ->getVirtualGraphIdAndTileSetUnsafe(visited);
-        if (vgId.first > unusedVGraphId) {
-          return vgId;
-        }
+        vgidSet.insert(vgid);
       }
     }
-
-    // Fallback 2: The tensor knows it's own VGID
-    // We ask this only after callee introspection, because otherwise the
-    // SubgraphOp's VGID will be reported, which can be wrong if it's nested
-    // consuming operator is on another virtual graph.
-    if (tensor->hasVirtualGraphId()) {
-      // Tensor has VirtualGraphID given by it's producer or consumer
-      auto vgId = tensor->getVirtualGraphIdAndTileSet(visited);
-      if (vgId.first > unusedVGraphId) {
-        return vgId;
-      }
+  } else {
+    // No VGID determined by introspection or tensor
+    if (vgidSet.empty() && Op::hasVirtualGraphId()) {
+      vgidSet.insert({Op::getVirtualGraphId(), getSettings().tileSet});
     }
   }
 
-  // Fallback 3: No VGID determined by introspection or tensor
-  return Op::hasVirtualGraphId()
-             ? VGraphIdAndTileSet(Op::getVirtualGraphId(),
-                                  getSettings().tileSet)
-             : VGraphIdAndTileSet(unusedVGraphId, TileSet::Compute);
+  if (vgidSet.empty()) {
+    // No virtual graph ID and tile set determined
+    vgidSet.insert({unusedVGraphId, TileSet::Undefined});
+  }
+
+  return *vgidSet.begin();
 }
 
 VGraphIdAndTileSet
 SubgraphOp::getIntrospectionOutVirtualGraphId(OutIndex index,
-                                              std::set<OpId> visited) const {
+                                              std::set<OpId> &visited) const {
   visited.insert(id);
+
+  std::set<VGraphIdAndTileSet, VGraphIdAndTileSetCmp> vgidSet;
 
   InIndex subgraphOutIndex = opOutToSubgraphOutIndex(index);
 
-  if (subgraphOutIndex > -1) {
-    auto num_ids = getCalledGraph().getOutputIds().size();
-    if (subgraphOutIndex >= num_ids) {
-      throw error("[getIntrospectionOutVirtualGraphId] "
-                  "SubgraphOp ({}) has {} subgraph inputs, "
-                  "but requested index is {}",
-                  debugName(),
-                  num_ids,
-                  subgraphOutIndex);
-    }
-
+  if (subgraphOutIndex > -1 &&
+      subgraphOutIndex < getCalledGraph().getOutputIds().size()) {
     auto tensor_id = getCalledGraph().getOutputId(subgraphOutIndex);
     auto tensor    = getCalledGraph().getTensors().get(tensor_id);
 
-    // Callee introspection
-    if (tensor->hasProducer()) {
-      auto producer = tensor->getProducer();
-      if (visited.find(producer->id) == visited.end()) {
-        if (dynamic_cast<SubgraphOp *>(producer)) {
-          auto subindex = producer->output->indicesMap().at(tensor)[0];
-          if (producer->hasVirtualGraphId()) {
-            // Also works if the callee is another subgraph
-            auto vgId =
-                producer->getIntrospectionOutVirtualGraphId(subindex, visited);
-            if (vgId.first > unusedVGraphId) {
-              return vgId;
-            }
-          }
-        }
-      }
-    }
+    // The tensor knows it's own VGID
+    auto vgid = tensor->getVirtualGraphIdAndTileSetUnsafe(visited);
+    vgidSet.insert(vgid);
 
-    // Fallback 1: The tensor has no producer inside the graph,
+    // The tensor has no producer inside the graph,
     // look before the graph
     if (tensor->isGraphInput()) {
       InIndex sgInIndex = tensor->getGraphInputIndex();
       InIndex opInIndex = subgraphInToOpInIndex(sgInIndex);
       if (hasInput(opInIndex)) {
-        auto vgId = input->tensor(opInIndex)->getVirtualGraphIdAndTileSetUnsafe(
+        auto vgid = input->tensor(opInIndex)->getVirtualGraphIdAndTileSetUnsafe(
             visited);
-        if (vgId.first > unusedVGraphId) {
-          return vgId;
-        }
+        vgidSet.insert(vgid);
       }
     }
 
-    // Fallback 2: The tensor knows it's own VGID
-    // We ask this only after callee introspection, because otherwise the
-    // SubgraphOp's VGID will be reported, which can be wrong if it's nested
-    // consuming operator is on another virtual graph.
-    if (tensor->hasVirtualGraphId()) {
-      // Tensor has VirtualGraphID given by it's producer or consumer
-      auto vgId = tensor->getVirtualGraphIdAndTileSet(visited);
-      if (vgId.first > unusedVGraphId) {
-        return vgId;
-      }
+  } else {
+    // No VGID determined by introspection or tensor
+    if (Op::hasVirtualGraphId()) {
+      vgidSet.insert({Op::getVirtualGraphId(), getSettings().tileSet});
     }
   }
 
-  // Fallback 3: No VGID determined by introspection or tensor
-  return Op::hasVirtualGraphId()
-             ? VGraphIdAndTileSet(Op::getVirtualGraphId(),
-                                  getSettings().tileSet)
-             : VGraphIdAndTileSet(unusedVGraphId, TileSet::Compute);
+  if (vgidSet.empty()) {
+    // No virtual graph ID and tile set determined
+    vgidSet.insert({unusedVGraphId, TileSet::Undefined});
+  }
+
+  return *vgidSet.begin();
 }
 
 bool SubgraphOp::hasSideEffect() const {

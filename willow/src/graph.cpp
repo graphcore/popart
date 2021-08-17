@@ -173,6 +173,10 @@ TensorId Graph::addInput(const TensorInfo &tinfo) {
   return scopedId;
 }
 
+Tensor *Graph::getInputTensor(InIndex idx) const {
+  return getTensors().get(getInputId(idx));
+}
+
 bool Graph::hasInputId(const TensorId &id) const {
   return std::find(graph_inputs.begin(), graph_inputs.end(), id) !=
          graph_inputs.end();
@@ -245,6 +249,10 @@ void Graph::removeOutput(const TensorId &tensorId) {
 
 void Graph::removeOutput(const OutIndex &index) {
   graph_outputs.erase(graph_outputs.begin() + index);
+}
+
+Tensor *Graph::getOutputTensor(OutIndex idx) const {
+  return getTensors().get(getOutputId(idx));
 }
 
 std::vector<const Graph *> Graph::getCalledGraphs() const {

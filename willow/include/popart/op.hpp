@@ -205,11 +205,14 @@ public:
 
   const OptionalVGraphId getOptionalVGraphId() const;
   VGraphId getVirtualGraphId() const;
+
+  VGraphIdAndTileSet getIntrospectionInVirtualGraphId(InIndex) const;
+  VGraphIdAndTileSet getIntrospectionOutVirtualGraphId(OutIndex) const;
+
   virtual VGraphIdAndTileSet
-  getIntrospectionInVirtualGraphId(InIndex, std::set<OpId> visited = {}) const;
+  getIntrospectionInVirtualGraphId(InIndex, std::set<OpId> &visited) const;
   virtual VGraphIdAndTileSet
-  getIntrospectionOutVirtualGraphId(OutIndex,
-                                    std::set<OpId> visited = {}) const;
+  getIntrospectionOutVirtualGraphId(OutIndex, std::set<OpId> &visited) const;
   void setVirtualGraphId(const OptionalVGraphId);
   bool hasVirtualGraphId() const;
 

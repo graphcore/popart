@@ -90,6 +90,13 @@ public:
   OutIndex subgraphOutToOpOutIndex(OutIndex index) const override;
   OutIndex opOutToSubgraphOutIndex(OutIndex index) const override;
 
+  VGraphIdAndTileSet
+  getIntrospectionInVirtualGraphId(InIndex,
+                                   std::set<OpId> &visited) const override;
+  VGraphIdAndTileSet
+  getIntrospectionOutVirtualGraphId(OutIndex,
+                                    std::set<OpId> &visited) const override;
+
   // The input specifying the maximum number of loop iterations
   static InIndex getMaximumTripCountInIndex() { return 0; }
 

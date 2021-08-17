@@ -1244,7 +1244,7 @@ PriTask IrLowering::streamFromHostTask(TensorId streamTensorId,
 
     for (auto tensor : tensors) {
       vgidsTileSetsAndTensors.insert(
-          {tensor->getVirtualGraphIdAndTileSetUnsafe({}), tensor});
+          {tensor->getVirtualGraphIdAndTileSetUnsafe(), tensor});
     }
 
     // Only stream the tensor once for all op's that consume it on an ipu

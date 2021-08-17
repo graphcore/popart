@@ -18,7 +18,7 @@ PackedDataBlockOp::PackedDataBlockOp(
     int64_t callbackBatchSize_,
     Graph &callback_,
     const Op::Settings &settings_)
-    : SubgraphOp(opid_, settings_), maxSequenceLengths(maxSequenceLengths_),
+    : Op(opid_, settings_), maxSequenceLengths(maxSequenceLengths_),
       resultSize(resultSize_), callbackBatchSize(callbackBatchSize_),
       callback(callback_) {}
 
@@ -44,43 +44,53 @@ void PackedDataBlockOp::setup() {
 }
 
 void PackedDataBlockOp::appendOutlineAttributes(OpSerialiserBase &os) const {
-  SubgraphOp::appendOutlineAttributes(os);
+  Op::appendOutlineAttributes(os);
   os.appendAttribute("maxSequenceLengths", maxSequenceLengths);
   os.appendAttribute("resultSize", resultSize);
   os.appendAttribute("callbackBatchSize", callbackBatchSize);
   os.appendAttribute("callback", callback.get().id.str());
 }
 
-InIndex PackedDataBlockOp::subgraphInToOpInIndex(InIndex index) const {
-  throw error("PackedDataBlockOp should have been replaced using "
-              "PackedDataBlock pattern.");
-}
-InIndex PackedDataBlockOp::opInToSubgraphInIndex(InIndex index) const {
-  throw error("PackedDataBlockOp should have been replaced using "
-              "PackedDataBlock pattern.");
+VGraphIdAndTileSet PackedDataBlockOp::getIntrospectionInVirtualGraphId(
+    InIndex index,
+    std::set<OpId> &visited) const {
+  visited.insert(id);
+  if (index / 3 < numDataInputs()) {
+    return callback.get()
+        .getInputTensor(index / 3)
+        ->getVirtualGraphIdAndTileSetUnsafe(visited);
+  } else {
+    return callback.get()
+        .getOutputTensor((index - 3 * numDataInputs()) / 2)
+        ->getVirtualGraphIdAndTileSetUnsafe(visited);
+  }
 }
 
-OutIndex PackedDataBlockOp::subgraphOutToOpOutIndex(OutIndex index) const {
-  throw error("PackedDataBlockOp should have been replaced using "
-              "PackedDataBlock pattern.");
-}
-OutIndex PackedDataBlockOp::opOutToSubgraphOutIndex(OutIndex index) const {
-  throw error("PackedDataBlockOp should have been replaced using "
-              "PackedDataBlock pattern.");
+VGraphIdAndTileSet PackedDataBlockOp::getIntrospectionOutVirtualGraphId(
+    OutIndex index,
+    std::set<OpId> &visited) const {
+  visited.insert(id);
+  return callback.get()
+      .getOutputTensor(index)
+      ->getVirtualGraphIdAndTileSetUnsafe(visited);
 }
 
 Graph &PackedDataBlockOp::getCalledGraph() const { return callback; }
 
 void PackedDataBlockOp::setCalledGraph(Graph &g) { callback = g; }
 
-int64_t PackedDataBlockOp::numCallbackInputs() { return (input->n() - 2) / 3; }
+int64_t PackedDataBlockOp::numCallbackInputs() const {
+  return (input->n() - 2) / 3;
+}
 
-int64_t PackedDataBlockOp::getCallbackIterations() {
+int64_t PackedDataBlockOp::getCallbackIterations() const {
   auto offsetsSize = inShape(1).at(0);
   return offsetsSize / callbackBatchSize;
 }
 
-int64_t PackedDataBlockOp::numDataInputs() { return (input->n() - 2) / 3; }
+int64_t PackedDataBlockOp::numDataInputs() const {
+  return (input->n() - 2) / 3;
+}
 
 std::vector<PackedSequences> PackedDataBlockOp::getPackedInputs() {
   std::vector<PackedSequences> result;
