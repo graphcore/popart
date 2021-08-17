@@ -1,14 +1,15 @@
 # Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-import numpy as np
-import popart
-import torch
-import pytest
-import torch.nn.functional as F
-from op_tester import op_tester
-
 # `import test_util` requires adding to sys.path
 import sys
 from pathlib import Path
+
+import numpy as np
+import pytest
+import torch
+import torch.nn.functional as F
+from op_tester import op_tester
+
+import popart
 
 sys.path.append(Path(__file__).resolve().parent.parent)
 import test_util as tu
@@ -188,6 +189,7 @@ def test_convolution_2(op_tester):
     Test the convolution when the conv in the bwd pass is not the same as the conv in the
     forward pass
     '''
+
     def init_builder(builder):
         data = np.ones([1, 2, 4, 4], dtype=np.float32)
         filt = np.ones([4, 2, 1, 1], dtype=np.float32)
@@ -1878,11 +1880,7 @@ def test_pad11(op_tester):
                   })
 
 
-def _test_pad(op_tester,
-              data,
-              lower_padding,
-              upper_padding,
-              mode,
+def _test_pad(op_tester, data, lower_padding, upper_padding, mode,
               pad_value=0):
     def init_builder(builder):
         i1 = builder.addInputTensor(data)
@@ -3099,6 +3097,19 @@ def test_convtranspose_pytorch_attributes(op_tester):
     run_test(in_chans=1, out_chans=2, data=[5], kernel=[3], pads=[1])
     run_test(in_chans=1, out_chans=2, data=[5], kernel=[5], pads=[2])
     run_test(in_chans=1, out_chans=2, data=[5], kernel=[7], pads=[2])
+
+    # deliberately excessive padding
+    err_msg = r"Negative padding is not supported in convtranspose\."
+    size_tuples = ((5, 3, 3), (9, 7, 7), (11, 9, 9))
+    for out_shape in (True, False):
+        for d, k, p in size_tuples:
+            with pytest.raises(popart.popart_exception, match=err_msg):
+                run_test(in_chans=1,
+                         out_chans=2,
+                         data=[d],
+                         kernel=[k],
+                         pads=[p],
+                         outshape=out_shape)
 
     # stride and pads
     run_test(in_chans=1,

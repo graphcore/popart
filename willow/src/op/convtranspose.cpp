@@ -15,21 +15,20 @@ ConvTransposeOp::ConvTransposeOp(const OperatorIdentifier &_opid,
                                  std::vector<int64_t> outputPadding_,
                                  std::vector<int64_t> outputShape_,
                                  const MultiConvOptions &convOpts_)
-    : Op(_opid, settings_), strides(strides_), pads(pads_),
-      dilations(dilations_), group(group_), padType(padType_),
-      outputPadding(outputPadding_), outputShape(outputShape_),
-      convOpts(convOpts_) {}
+    : Op(_opid, settings_), strides(strides_), dilations(dilations_),
+      group(group_), padType(padType_), convOpts(convOpts_), pads(pads_),
+      outputPadding(outputPadding_), outputShape(outputShape_) {}
 
 std::unique_ptr<Op> ConvTransposeOp::clone() const {
   return std::make_unique<ConvTransposeOp>(*this);
 }
 
 void ConvTransposeOp::setup() {
-  Shape inputShape            = inShape(ConvTransposeOp::getInIndex());
-  Shape kernelShape           = inShape(ConvTransposeOp::getWeightsInIndex());
-  bool output_shape_specified = false;
+  const Shape inputShape  = inShape(getInIndex());
+  const Shape kernelShape = inShape(getWeightsInIndex());
 
   const auto nSpatialDims = inputShape.size() - 2;
+
   // Set the default values.
   strides.resize(nSpatialDims, 1);
   outputPadding.resize(nSpatialDims, 0);
@@ -43,6 +42,8 @@ void ConvTransposeOp::setup() {
     throw error("Non default value for dilations is not supported.");
   }
 
+  // The output shape may or may not be specified
+  bool output_shape_specified = false;
   Shape outShape{inputShape.at(0), kernelShape.at(1) * group};
   if (outputShape.size() == 0) {
     for (int i = 0; i < strides.size(); i++) {
@@ -61,24 +62,101 @@ void ConvTransposeOp::setup() {
 
   outInfo(getOutIndex()) = {inInfo(getInIndex()).dataType(), outShape};
 
-  // Now generate the params
+  // Now calculate the padding
+  std::vector<int64_t> lowerPadding;
+  std::vector<int64_t> upperPadding;
+  for (int dim = 0; dim < nSpatialDims; dim++) {
+    // (kernel size - 1)*dilations
+    // (currently dilation always == 1) but this is the correct maths
+    int64_t k_minus_one_times_d =
+        (inShape(getWeightsInIndex()).at(dim + 2) - 1) * dilations[dim];
+
+    const char *neg_padding_err = "Negative padding is not supported in "
+                                  "convtranspose.";
+    if (output_shape_specified) {
+      // The ONNX doc states that the shape of the output can be explicitly set
+      // which will cause pads values to be auto generated
+
+      // The padding argument results in:
+      // dilation * (kernel_size - 1) - padding amount of zero padding to both
+      // sizes of the input. (source: Pytorch doc)
+      // This is so that it is the inverse of the equivalent convolution with
+      // the same padding.
+
+      // This is the amount of actual padding to actually add the convTranspose
+      // input, tsummed over the start and end of the dimension
+      int64_t total_padding = strides.at(dim) * (inputShape[dim + 2] - 1) +
+                              outputPadding.at(dim) +
+                              (k_minus_one_times_d + 1) - outShape[dim + 2];
+
+      // The extra padding will differ by 1 in the case of an odd number
+      int64_t extra_padding_big   = k_minus_one_times_d - total_padding / 2;
+      int64_t extra_padding_small = extra_padding_big;
+      if (total_padding % 2 == 1) {
+        extra_padding_small--;
+      }
+
+      if (extra_padding_big < 0) {
+        throw error(neg_padding_err);
+      }
+
+      if (padType ==
+          AutoPad::SAME_UPPER) { // When total_padding is an odd number and
+                                 // pad=SAME_UPPER, the extra
+        // padding is added at the end
+        lowerPadding.push_back(extra_padding_small);
+        upperPadding.push_back((k_minus_one_times_d - (total_padding) / 2));
+      } else if (padType == AutoPad::SAME_LOWER || padType == AutoPad::NOTSET) {
+        // Defaulting to "SAME_LOWER" when no auto_pad option is set
+        lowerPadding.push_back(k_minus_one_times_d -
+                               (total_padding - ((total_padding + 1) / 2)));
+        upperPadding.push_back(k_minus_one_times_d - (total_padding + 1) / 2);
+      } else {
+        throw error("`VALID` type for auto_pad cannot be used"
+                    " if the `output_shape` is also set");
+      }
+    } else {
+      // The padding should match pads, but corrected for the effect of the
+      // convolution, as it is the padding of the conv which would be the
+      // inverse of the conv transpose.
+      int64_t extra_padding_lower = k_minus_one_times_d - pads.at(dim);
+      int64_t extra_padding_upper = k_minus_one_times_d +
+                                    outputPadding.at(dim) -
+                                    pads.at(nSpatialDims + dim);
+
+      if (extra_padding_lower < 0 || extra_padding_upper < 0) {
+        throw error(neg_padding_err);
+      }
+
+      lowerPadding.push_back(extra_padding_lower);
+      upperPadding.push_back(extra_padding_upper);
+    }
+  }
+
+  setParams(lowerPadding, upperPadding);
+}
+
+void ConvTransposeOp::setParams(const std::vector<int64_t> &lowerPadding,
+                                const std::vector<int64_t> &upperPadding) {
   params.type      = inInfo(getInIndex()).dataType();
   params.batchSize = inShape(getInIndex()).at(0);
 
-  params.numInChannelsPerGroup  = inputShape.at(1) / group;
+  Shape inputShape             = inShape(getInIndex());
+  params.numInChannelsPerGroup = inputShape.at(1) / group;
+
+  Shape kernelShape             = inShape(getWeightsInIndex());
   params.numOutChannelsPerGroup = kernelShape.at(1);
   params.numGroups              = group;
 
-  inputShape = inShape(getInIndex());
   for (int i = 2; i < inputShape.size(); i++) {
     params.inputShape.push_back(inputShape.at(i));
   }
 
-  kernelShape = inShape(getWeightsInIndex());
   for (int i = 2; i < kernelShape.size(); i++) {
     params.kernelShape.push_back(kernelShape.at(i));
   }
 
+  const auto nSpatialDims = inputShape.size() - 2;
   std::vector<int64_t> zeroes(nSpatialDims, 0);
   std::vector<int64_t> ones(nSpatialDims, 1);
   std::vector<bool> falses(nSpatialDims, false);
@@ -87,44 +165,8 @@ void ConvTransposeOp::setup() {
   params.inputTransformation.upperTruncation = zeroes;
   params.inputTransformation.dilation        = strides;
   params.inputTransformation.flip            = falses;
-
-  for (int i = 0; i < nSpatialDims; i++) {
-    int64_t x = inShape(getWeightsInIndex()).at(i + 2) - 1;
-    if (output_shape_specified) {
-      // The ONNX doc states that the shape of the output can be explicitly set
-      // which will cause pads values to be auto generated
-      int64_t total_padding = strides.at(i) * (inputShape[i + 2] - 1) +
-                              outputPadding.at(i) + (x * dilations[i] + 1) -
-                              outShape[i + 2];
-
-      // The padding argument effectively adds:
-      // dilation * (kernel_size - 1) - padding amount of zero padding to both
-      // sizes of the input. (source: Pytorch doc)
-      if (padType == AutoPad::SAME_UPPER) {
-        // When total_padding is an odd number and pad=SAME_UPPER, the extra
-        // padding is added at the end
-        params.inputTransformation.lowerPadding.push_back(
-            x - (total_padding - ((total_padding) / 2)));
-        params.inputTransformation.upperPadding.push_back(
-            (x - (total_padding) / 2));
-      } else if (padType == AutoPad::SAME_LOWER || padType == AutoPad::NOTSET) {
-        // Defaulting to "SAME_LOWER" when no auto_pad option is set
-        params.inputTransformation.lowerPadding.push_back(
-            x - (total_padding - ((total_padding + 1) / 2)));
-        params.inputTransformation.upperPadding.push_back(
-            (x - (total_padding + 1) / 2));
-      } else {
-        throw error("`VALID` type for auto_pad cannot be used"
-                    " if the `output_shape` is also set");
-      }
-    }
-
-    else {
-      params.inputTransformation.lowerPadding.push_back(x - pads.at(i));
-      params.inputTransformation.upperPadding.push_back(
-          x + outputPadding.at(i) - pads.at(nSpatialDims + i));
-    }
-  }
+  params.inputTransformation.lowerPadding    = lowerPadding;
+  params.inputTransformation.upperPadding    = upperPadding;
 
   params.kernelTransformation.lowerTruncation = zeroes;
   params.kernelTransformation.upperTruncation = zeroes;

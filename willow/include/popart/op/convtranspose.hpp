@@ -31,14 +31,19 @@ public:
   static OutIndex getOutIndex() { return 0; }
 
   std::vector<int64_t> strides;
-  std::vector<int64_t> pads;
   std::vector<int64_t> dilations;
   int64_t group;
   const AutoPad padType;
-  std::vector<int64_t> outputPadding;
-  std::vector<int64_t> outputShape;
   const MultiConvOptions convOpts;
   ConvParameters params;
+
+private:
+  std::vector<int64_t> pads;
+  std::vector<int64_t> outputPadding;
+  std::vector<int64_t> outputShape;
+
+  void setParams(const std::vector<int64_t> &lowerPadding,
+                 const std::vector<int64_t> &upperPadding);
 };
 
 } // namespace popart
