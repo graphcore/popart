@@ -3099,17 +3099,15 @@ def test_convtranspose_pytorch_attributes(op_tester):
     run_test(in_chans=1, out_chans=2, data=[5], kernel=[7], pads=[2])
 
     # deliberately excessive padding
-    err_msg = r"Negative padding is not supported in convtranspose\."
     size_tuples = ((5, 3, 3), (9, 7, 7), (11, 9, 9))
-    for out_shape in (True, False):
-        for d, k, p in size_tuples:
-            with pytest.raises(popart.popart_exception, match=err_msg):
-                run_test(in_chans=1,
-                         out_chans=2,
-                         data=[d],
-                         kernel=[k],
-                         pads=[p],
-                         outshape=out_shape)
+    for d, k, p in size_tuples:
+        for out_shape in (True, False):
+            run_test(in_chans=1,
+                     out_chans=2,
+                     data=[d],
+                     kernel=[k],
+                     pads=[p],
+                     outshape=out_shape)
 
     # stride and pads
     run_test(in_chans=1,

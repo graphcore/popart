@@ -71,8 +71,6 @@ void ConvTransposeOp::setup() {
     int64_t k_minus_one_times_d =
         (inShape(getWeightsInIndex()).at(dim + 2) - 1) * dilations[dim];
 
-    const char *neg_padding_err = "Negative padding is not supported in "
-                                  "convtranspose.";
     if (output_shape_specified) {
       // The ONNX doc states that the shape of the output can be explicitly set
       // which will cause pads values to be auto generated
@@ -94,10 +92,6 @@ void ConvTransposeOp::setup() {
       int64_t extra_padding_small = extra_padding_big;
       if (total_padding % 2 == 1) {
         extra_padding_small--;
-      }
-
-      if (extra_padding_big < 0) {
-        throw error(neg_padding_err);
       }
 
       if (padType ==
@@ -123,10 +117,6 @@ void ConvTransposeOp::setup() {
       int64_t extra_padding_upper = k_minus_one_times_d +
                                     outputPadding.at(dim) -
                                     pads.at(nSpatialDims + dim);
-
-      if (extra_padding_lower < 0 || extra_padding_upper < 0) {
-        throw error(neg_padding_err);
-      }
 
       lowerPadding.push_back(extra_padding_lower);
       upperPadding.push_back(extra_padding_upper);
@@ -161,12 +151,28 @@ void ConvTransposeOp::setParams(const std::vector<int64_t> &lowerPadding,
   std::vector<int64_t> ones(nSpatialDims, 1);
   std::vector<bool> falses(nSpatialDims, false);
 
-  params.inputTransformation.lowerTruncation = zeroes;
-  params.inputTransformation.upperTruncation = zeroes;
-  params.inputTransformation.dilation        = strides;
-  params.inputTransformation.flip            = falses;
-  params.inputTransformation.lowerPadding    = lowerPadding;
-  params.inputTransformation.upperPadding    = upperPadding;
+  params.inputTransformation.dilation = strides;
+  params.inputTransformation.flip     = falses;
+
+  for (auto pad : lowerPadding) {
+    if (pad >= 0) {
+      params.inputTransformation.lowerTruncation.push_back(0);
+      params.inputTransformation.lowerPadding.push_back(pad);
+    } else {
+      params.inputTransformation.lowerTruncation.push_back(-pad);
+      params.inputTransformation.lowerPadding.push_back(0);
+    }
+  }
+
+  for (auto pad : upperPadding) {
+    if (pad >= 0) {
+      params.inputTransformation.upperTruncation.push_back(0);
+      params.inputTransformation.upperPadding.push_back(pad);
+    } else {
+      params.inputTransformation.upperTruncation.push_back(-pad);
+      params.inputTransformation.upperPadding.push_back(0);
+    }
+  }
 
   params.kernelTransformation.lowerTruncation = zeroes;
   params.kernelTransformation.upperTruncation = zeroes;
