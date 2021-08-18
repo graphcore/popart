@@ -1205,11 +1205,11 @@ bool BuilderImpl::hasValueInfo(const TensorId &id) const {
 std::string BuilderImpl::getStrFromTensorIdVec(std::vector<TensorId> v) const {
   const char *const delim = " ";
   std::ostringstream s;
-  std::vector<std::string> v_;
-  for (const auto el : v) {
-    v_.push_back(el.str());
-  }
-  std::copy(v_.begin(), v_.end(), std::ostream_iterator<std::string>(s, delim));
+
+  std::transform(v.cbegin(),
+                 v.cend(),
+                 std::ostream_iterator<std::string>(s, delim),
+                 [](const TensorId &tid) { return tid.str(); });
   return s.str();
 }
 

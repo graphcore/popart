@@ -183,7 +183,7 @@ public:
 
   void assertNumElements(const popx::Executablex &) const final {}
 
-  ConstVoidData in(TensorId id, int64_t, bool prefetch)final {
+  ConstVoidData in(TensorId id, int64_t, bool prefetch) final {
     py::gil_scoped_acquire acquire;
     py::array a = inputCb(id.str(), prefetch);
     if (!isContiguous(a)) {
@@ -604,8 +604,10 @@ PYBIND11_MODULE(popart_core, m) {
     cls.def(std::string() + py::self);
     cls.def(py::self += py::self);
     cls.def(py::self += std::string());
-    cls.def("str", &TensorId::str);
-    cls.def("__str__", &TensorId::str);
+    cls.def("str",
+            static_cast<const std::string &(TensorId::*)() const &>(
+                &TensorId::str));
+    cls.def("__str__", [](const TensorId &tId) { return tId.str(); });
     cls.def(hash(py::self));
   }
   {

@@ -8,10 +8,11 @@ namespace popart {
 
 class TensorId {
 public:
-  TensorId() : id(""){};
-  TensorId(const TensorId &tId) : id(tId.id){};
-  TensorId(const std::string &id_) : id(id_){};
-  TensorId(const char *id_) : id(id_){};
+  TensorId() {}
+  TensorId(const std::string &id_) : id(std::string(id_)) {}
+  TensorId(const char *id_) : id(id_) {}
+
+  // Has all default ctor/copy/move/dtor.
 
   // Operation overloads
   bool operator<(const TensorId &other) const { return this->id < other.id; }
@@ -39,7 +40,8 @@ public:
   TensorId &operator+=(const std::string &other);
 
   // Return string
-  const std::string &str() const { return id; };
+  const std::string &str() const & { return id; }
+  std::string str() && { return id; }
 
 private:
   std::string id;
