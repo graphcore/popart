@@ -795,3 +795,50 @@ def test_unsupported_activation(op_tester):
 
     assert 'Affine' in e_info.value.args[0]
     assert 'not supported' in e_info.value.args[0]
+
+
+# This tests that setup behaves in a predictable way for cloning ops.
+# At the time of writing, this test failed with a segfault. This was
+# due to LSTMOp::setup on a cloned lstm op, overwriting outputs that
+# were connected to it during the explicit recompute transform.
+def test_lstm_explicit_recompute():
+    d1 = np.array([[[1., 2., 3.], [4., 5., 6.]],
+                   [[7., 8., 9.], [10., 11., 12.]]]).astype(np.float32)
+
+    input_size = d1.shape[2]
+    hidden_size = 7
+
+    d2 = np.random.rand(1, 4 * hidden_size, input_size).astype(np.float32)
+    d3 = np.zeros((1, 4 * hidden_size, hidden_size)).astype(np.float32)
+
+    builder = popart.Builder()
+    i1 = builder.addInputTensor(popart.TensorInfo(d1))
+    i2 = builder.addInitializedInputTensor(d2)
+    i3 = builder.addInitializedInputTensor(d3)
+    Y, Y_h, Y_c = builder.aiOnnx.lstm([i1, i2, i3], 3, clip=None)
+    builder.recomputeOutputInBackwardPass(set([Y, Y_h, Y_c]))
+    out = builder.aiOnnx.relu([Y])
+    loss = builder.aiGraphcore.identityloss([out])
+
+    builder.addOutputTensor(loss)
+
+    device = tu.create_test_device()
+
+    opts = popart.SessionOptions()
+    opts.explicitRecomputation = True
+
+    session = popart.TrainingSession(
+        fnModel=builder.getModelProto(),
+        dataFlow=popart.DataFlow(1, {out: popart.AnchorReturnType("All")}),
+        deviceInfo=device,
+        optimizer=popart.ConstSGD(0.1),
+        userOptions=opts,
+        loss=loss)
+
+    # Now the test is passing we can add a check to make sure there
+    # are 2 lstm ops. This is to check that the lstm is being cloned
+    # and we are actually testing what we intended.
+    ir = json.loads(session._serializeIr(popart.IrSerializationFormat.JSON))
+    maingraph = ir['maingraph']
+    lstms = [i for i in maingraph if i['type'] == 'LSTM']
+    assert len(lstms) == 2

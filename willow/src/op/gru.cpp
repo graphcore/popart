@@ -74,28 +74,28 @@ void GRUOp::setup() {
   Shape yhc_shape{num_directions, batch_size, hidden_size};
   trySetOutInfo(getHiddenStateOutIndex(), {data_type, yhc_shape});
 
-  createPassThroughOutput("initstateoutput",
-                          getInitStateOutputPassThroughIndex(),
-                          {data_type, Shape{batch_size, hidden_size}});
-  createPassThroughOutput(
+  maybeCreatePassThroughOutput("initstateoutput",
+                               getInitStateOutputPassThroughIndex(),
+                               {data_type, Shape{batch_size, hidden_size}});
+  maybeCreatePassThroughOutput(
       "intermediates",
       getIntermediatesPassThroughIndex(),
       {data_type,
        Shape{seq_length, getNumIntermediates(), batch_size, hidden_size}});
-  createPassThroughOutput("inputweights",
-                          getInputWeightsPassThroughIndex(),
-                          {data_type, Shape{3, input_size, hidden_size}});
-  createPassThroughOutput("outputweights",
-                          getOutputWeightsPassThroughIndex(),
-                          {data_type, Shape{3, hidden_size, hidden_size}});
-  createPassThroughOutput("biases",
-                          getBiasesPassThroughIndex(),
-                          {data_type, Shape{getNumBiases(), hidden_size}});
-  createPassThroughOutput(
+  maybeCreatePassThroughOutput("inputweights",
+                               getInputWeightsPassThroughIndex(),
+                               {data_type, Shape{3, input_size, hidden_size}});
+  maybeCreatePassThroughOutput("outputweights",
+                               getOutputWeightsPassThroughIndex(),
+                               {data_type, Shape{3, hidden_size, hidden_size}});
+  maybeCreatePassThroughOutput("biases",
+                               getBiasesPassThroughIndex(),
+                               {data_type, Shape{getNumBiases(), hidden_size}});
+  maybeCreatePassThroughOutput(
       "input",
       getInputPassThroughIndex(),
       {data_type, Shape{seq_length, batch_size, input_size}});
-  createPassThroughOutput(
+  maybeCreatePassThroughOutput(
       "output",
       getOutputPassThroughIndex(),
       {data_type, Shape{seq_length, batch_size, hidden_size}});
@@ -103,18 +103,19 @@ void GRUOp::setup() {
 } // namespace popart
 
 // Issue here somewhere with out index
-void GRUOp::createPassThroughOutput(const TensorId &new_id,
-                                    OutIndex pass_through_index,
-                                    const TensorInfo &out_info) {
-  auto tensor_id =
-      (getScope() / logging::format("gru({})_{}", id, new_id)).str();
-  if (hasOutput(pass_through_index)) {
-    disconnectOutTensor(outTensor(pass_through_index));
-  }
-  if (getGraph().getTensors().contains(tensor_id)) {
-    connectOutTensor(pass_through_index, tensor_id);
-  } else {
-    createAndConnectOutTensor(pass_through_index, tensor_id);
+void GRUOp::maybeCreatePassThroughOutput(const TensorId &new_id,
+                                         OutIndex pass_through_index,
+                                         const TensorInfo &out_info) {
+  // If the op is being cloned, or setup is being called a second time, the
+  // output may already be connected; we do not need to recreate it.
+  if (!hasOutput(pass_through_index)) {
+    auto tensor_id =
+        (getScope() / logging::format("gru({})_{}", id, new_id)).str();
+    if (getGraph().getTensors().contains(tensor_id)) {
+      connectOutTensor(pass_through_index, tensor_id);
+    } else {
+      createAndConnectOutTensor(pass_through_index, tensor_id);
+    }
   }
   outInfo(pass_through_index) = out_info;
 }

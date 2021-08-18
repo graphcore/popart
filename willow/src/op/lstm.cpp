@@ -168,48 +168,49 @@ void LSTMOp::setup() {
   trySetOutInfo(getHiddenStateOutIndex(), {data_type, yhc_shape});
   trySetOutInfo(getCellStateOutIndex(), {data_type, yhc_shape});
 
-  createPassThroughOutput("initstateoutput",
-                          getInitStateOutputPassThroughIndex(),
-                          {data_type, Shape{batch_size, hidden_size}});
-  createPassThroughOutput("initstatecellstate",
-                          getInitStateCellStatePassThroughIndex(),
-                          {data_type, Shape{batch_size, hidden_size}});
-  createPassThroughOutput(
+  maybeCreatePassThroughOutput("initstateoutput",
+                               getInitStateOutputPassThroughIndex(),
+                               {data_type, Shape{batch_size, hidden_size}});
+  maybeCreatePassThroughOutput("initstatecellstate",
+                               getInitStateCellStatePassThroughIndex(),
+                               {data_type, Shape{batch_size, hidden_size}});
+  maybeCreatePassThroughOutput(
       "intermediates",
       getIntermediatesPassThroughIndex(),
       {data_type,
        Shape{max_seq_length, getNumIntermediates(), batch_size, hidden_size}});
-  createPassThroughOutput("inputweights",
-                          getInputWeightsPassThroughIndex(),
-                          {data_type, Shape{4, input_size, hidden_size}});
-  createPassThroughOutput("outputweights",
-                          getOutputWeightsPassThroughIndex(),
-                          {data_type, Shape{4, hidden_size, hidden_size}});
-  createPassThroughOutput("biases",
-                          getBiasesPassThroughIndex(),
-                          {data_type, Shape{4, hidden_size}});
-  createPassThroughOutput(
+  maybeCreatePassThroughOutput("inputweights",
+                               getInputWeightsPassThroughIndex(),
+                               {data_type, Shape{4, input_size, hidden_size}});
+  maybeCreatePassThroughOutput("outputweights",
+                               getOutputWeightsPassThroughIndex(),
+                               {data_type, Shape{4, hidden_size, hidden_size}});
+  maybeCreatePassThroughOutput("biases",
+                               getBiasesPassThroughIndex(),
+                               {data_type, Shape{4, hidden_size}});
+  maybeCreatePassThroughOutput(
       "input",
       getInputPassThroughIndex(),
       {data_type, Shape{max_seq_length, batch_size, input_size}});
-  createPassThroughOutput(
+  maybeCreatePassThroughOutput(
       "output",
       getOutputPassThroughIndex(),
       {data_type, Shape{max_seq_length, batch_size, hidden_size}});
 }
 
-void LSTMOp::createPassThroughOutput(const TensorId &new_id,
-                                     OutIndex pass_through_index,
-                                     const TensorInfo &out_info) {
-  auto tensor_id =
-      (getScope() / logging::format("lstm({})_{}", id, new_id)).str();
-  if (hasOutput(pass_through_index)) {
-    disconnectOutTensor(outTensor(pass_through_index));
-  }
-  if (getGraph().getTensors().contains(tensor_id)) {
-    connectOutTensor(pass_through_index, tensor_id);
-  } else {
-    createAndConnectOutTensor(pass_through_index, tensor_id);
+void LSTMOp::maybeCreatePassThroughOutput(const TensorId &new_id,
+                                          OutIndex pass_through_index,
+                                          const TensorInfo &out_info) {
+  // If the op is being cloned, or setup is being called a second time, the
+  // output may already be connected; we do not need to recreate it.
+  if (!hasOutput(pass_through_index)) {
+    auto tensor_id =
+        (getScope() / logging::format("lstm({})_{}", id, new_id)).str();
+    if (getGraph().getTensors().contains(tensor_id)) {
+      connectOutTensor(pass_through_index, tensor_id);
+    } else {
+      createAndConnectOutTensor(pass_through_index, tensor_id);
+    }
   }
   outInfo(pass_through_index) = out_info;
 }
@@ -479,16 +480,19 @@ void PopartLSTMOp::setup() {
   outInfo(getOutputOutIndex())    = {dtype, outputShape};
   outInfo(getCellStateOutIndex()) = {dtype, {getBatchSize(), getHiddenSize()}};
 
+  // If training, create an output for the intermediates.
   if (getIr().isTraining()) {
-    if (output->hasIndex(getIntermediatesOutIndex())) {
-      disconnectOutTensor(outTensor(getIntermediatesOutIndex()));
-    }
-    TensorId intermediates =
-        (getScope() / logging::format("{}_intermediates", id)).str();
-    if (getGraph().getTensors().contains(intermediates)) {
-      connectOutTensor(getIntermediatesOutIndex(), intermediates);
-    } else {
-      createAndConnectOutTensor(getIntermediatesOutIndex(), intermediates);
+
+    // If the op is being cloned, or setup is being called a second time, the
+    // output may already be connected; we do not need to recreate it.
+    if (!output->hasIndex(getIntermediatesOutIndex())) {
+      TensorId intermediates =
+          (getScope() / logging::format("{}_intermediates", id)).str();
+      if (getGraph().getTensors().contains(intermediates)) {
+        connectOutTensor(getIntermediatesOutIndex(), intermediates);
+      } else {
+        createAndConnectOutTensor(getIntermediatesOutIndex(), intermediates);
+      }
     }
     outInfo(getIntermediatesOutIndex()) = {dtype,
                                            {getMaxSeqLength(),

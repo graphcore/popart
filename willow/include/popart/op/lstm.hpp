@@ -98,9 +98,9 @@ public:
   }
 
 private:
-  void createPassThroughOutput(const TensorId &new_id,
-                               OutIndex pass_through_index,
-                               const TensorInfo &out_info);
+  void maybeCreatePassThroughOutput(const TensorId &new_id,
+                                    OutIndex pass_through_index,
+                                    const TensorInfo &out_info);
   // Intermediate results that are retained in the forward pass of training for
   // use in the backward pass.
   int64_t getNumIntermediates() const;
