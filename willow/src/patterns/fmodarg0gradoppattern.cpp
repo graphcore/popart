@@ -12,7 +12,7 @@ namespace popart {
 static auto createConstTensor(Graph &graph, Ir &ir, const Shape &shape) {
   TensorInfo gradInfo(DataType::INT32, shape);
   std::vector<int32_t> gradData(gradInfo.nelms(), 1);
-  const auto &gradId = ir.createIntermediateTensorId("modGradOnes");
+  const auto &gradId = ir.createIntermediateTensorId({"modGradOnes"});
   graph.getTensors().addConstInit(gradId, gradInfo, gradData.data());
   return gradId;
 }
@@ -37,7 +37,7 @@ FmodArg0GradOpPattern::makeAllReplacementOps(Op *op,
   const auto &gradTensor = graph.getTensors().get(gradId);
   auto castTo            = fwdIn0.info.dataType();
   Op::Settings settings  = op->settings;
-  settings.name          = gradId + "_gradCast";
+  settings.name          = gradId.str() + "_gradCast";
   Op *gradCastOp =
       graph.createOp<CastOp>(Onnx::Operators::Cast_9, castTo, settings);
   transferBaseProperties(op, gradCastOp);

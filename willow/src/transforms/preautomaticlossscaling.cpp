@@ -73,7 +73,7 @@ bool PreAutomaticLossScale::apply(Graph &graph) const {
 
         auto proxyOp = graph.createOp<AutoLossScaleProxyOp>(
             Onnx::CustomOperators::AutoLossScaleProxy,
-            gSettings.copy("AlsProxyOp_" + id));
+            gSettings.copy("AlsProxyOp_" + id.str()));
         proxyOp->connectInTensor(AutoLossScaleProxyOp::getInIndex(), id);
         proxyOp->createAndConnectOutTensor(AutoLossScaleProxyOp::getOutIndex(),
                                            proxyId);

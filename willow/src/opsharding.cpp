@@ -40,7 +40,7 @@ std::vector<Op *> ShardingHelper::staticConcat(int64_t axis,
   std::unique_ptr<ConcatOp> concatOpUp =
       std::make_unique<ConcatOp>(Onnx::AiOnnx::OpSet11::Concat, axis, settings);
   ConcatOp *concatOp = concatOpUp.get();
-  concatOp->setName("Concat_" + concatId);
+  concatOp->setName("Concat_" + concatId.str());
   graph->moveIntoGraph(std::move(concatOpUp));
 
   for (size_t b = 0; b < tensorIds.size(); ++b) {
@@ -77,7 +77,7 @@ std::vector<Op *> ShardingHelper::reshapeForSlice(TensorId inId,
   Op *reshapeOp = reshapeOpUp.get();
   graph->moveIntoGraph(std::move(reshapeOpUp));
 
-  reshapeOp->setName("Reshape_" + inId);
+  reshapeOp->setName("Reshape_" + inId.str());
   reshapeOp->connectInTensor(ReshapeOp::getInIndex(), inId);
   connectOutTensor(reshapeOp, outId, ReshapeOp::getOutIndex());
   reshapeOp->setup();
@@ -114,7 +114,7 @@ ShardingHelper::staticShard(int64_t axis,
                                   settings.at(b % settings.size()));
     SliceOp *sliceOp = sliceOpUp.get();
     graph->moveIntoGraph(std::move(sliceOpUp));
-    sliceOp->setName("Slice_" + tensorIds.at(b));
+    sliceOp->setName("Slice_" + tensorIds.at(b).str());
     sliceOp->createAndConnectOutTensor(SliceOp::getOutIndex(), tensorIds.at(b));
   }
   return ops;
@@ -212,7 +212,7 @@ ShardingHelper::dynamicConcat(int64_t axis,
             settings.at(b % settings.size()));
     DynamicUpdateOp *updateOp = updateOpUp.get();
     graph->moveIntoGraph(std::move(updateOpUp));
-    updateOp->setName("Concat_" + concatId);
+    updateOp->setName("Concat_" + concatId.str());
 
     updateOp->connectInTensor(DynamicUpdateOp::getInIndex(),
                               toUpdateSliceTensorId);
@@ -318,7 +318,7 @@ ShardingHelper::dynamicShard(int64_t axis,
                                          settings.at(b % settings.size()));
     DynamicSliceOp *sliceOp = sliceOpUp.get();
     graph->moveIntoGraph(std::move(sliceOpUp));
-    sliceOp->setName("Slice_" + concatId);
+    sliceOp->setName("Slice_" + concatId.str());
     ops.push_back(sliceOp);
 
     sliceOp->connectInTensor(SliceOp::getInIndex(), sliceableTensorId);
@@ -414,7 +414,7 @@ std::vector<Op *> ShardingHelper::dynamicSlice(int64_t axis,
       Onnx::CustomOperators::DynamicSlice_1, axesv, sizesv, true, settings);
   DynamicSliceOp *sliceOp = sliceOpUp.get();
   graph->moveIntoGraph(std::move(sliceOpUp));
-  sliceOp->setName("Slice_" + concatId);
+  sliceOp->setName("Slice_" + concatId.str());
   ops.push_back(sliceOp);
 
   sliceOp->connectInTensor(SliceOp::getInIndex(), sliceableTensorId);
@@ -518,7 +518,7 @@ std::vector<Op *> ShardingHelper::dynamicUpdate(int64_t axis,
                                         settings);
   DynamicUpdateOp *updateOp = updateOpUp.get();
   graph->moveIntoGraph(std::move(updateOpUp));
-  updateOp->setName("Update_" + concatInId);
+  updateOp->setName("Update_" + concatInId.str());
 
   updateOp->connectInTensor(DynamicUpdateOp::getInIndex(), sliceReId);
   updateOp->connectInTensor(DynamicUpdateOp::getIndexInIndex(), indexId);
@@ -558,7 +558,7 @@ std::vector<Op *> ShardingHelper::offset(TensorId tensorId,
         Onnx::Operators::Cast_9, t->info.dataType(), settings);
     CastOp *castOp = castOpUp.get();
     graph->moveIntoGraph(std::move(castOpUp));
-    castOp->setName("Cast_" + offsetId);
+    castOp->setName("Cast_" + offsetId.str());
     castOp->connectInTensor(CastOp::getInIndex(), offsetId);
     offsetId = graph->getIr().createIntermediateTensorId(offsetId);
     castOp->createAndConnectOutTensor(CastOp::getInIndex(), offsetId);
@@ -570,7 +570,7 @@ std::vector<Op *> ShardingHelper::offset(TensorId tensorId,
       std::make_unique<AddOp>(Onnx::Operators::Add_7, settings);
   AddOp *addOp = addOpUp.get();
   graph->moveIntoGraph(std::move(addOpUp));
-  addOp->setName("Add_" + tensorId);
+  addOp->setName("Add_" + tensorId.str());
   addOp->connectInTensor(AddOp::getArg0InIndex(), concatId);
   addOp->connectInTensor(AddOp::getArg1InIndex(), offsetId);
   addOp->createAndConnectOutTensor(AddOp::getOutIndex(), tensorId);
@@ -619,7 +619,7 @@ Tensor *ShardingHelper::initTensor(TensorInfo info,
   Op *initOp = initOpUp.get();
   graph->moveIntoGraph(std::move(initOpUp));
 
-  initOp->setName(tensorId);
+  initOp->setName(tensorId.str());
 
   TensorId initId = graph->getIr().createIntermediateTensorId(tensorId);
   initOp->createAndConnectOutTensor(InitOp::getOutIndex(), initId);

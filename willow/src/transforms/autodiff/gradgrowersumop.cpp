@@ -27,7 +27,8 @@ Op *GradGrowerSumOp::growGradSumOp(Tensor *target,
   // in suboptimal outlining (it's included as an outline attribute).
   auto uniqOp = std::make_unique<SumOp>(
       Onnx::Operators::Sum_8,
-      Op::Settings{mainGraph, getGradSumOpNamePrefix() + "_" + gradientId});
+      Op::Settings{mainGraph,
+                   getGradSumOpNamePrefix() + "_" + gradientId.str()});
   auto opId = mainGraph.moveIntoGraph(std::move(uniqOp));
 
   std::vector<TensorId> inputs;

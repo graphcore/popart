@@ -9,7 +9,7 @@ from popart_core import _InferenceSessionCore, _TrainingSessionCore
 
 
 def _initAnchorArrays(sess: Union["InferenceSession", "TrainingSession"]
-                      ) -> Dict[str, np.array]:
+                      ) -> Dict[popart.TensorId, np.array]:
     """Create the anchor arrays to feed data back into Python with.
 
     Arguments:
@@ -146,7 +146,7 @@ class InferenceSession(_InferenceSessionCore):
         self.accumulationFactor = userOptions.accumulationFactor if \
             userOptions.enableGradientAccumulation else 1
 
-    def initAnchorArrays(self) -> Dict[str, np.array]:
+    def initAnchorArrays(self) -> Dict[popart.TensorId, np.array]:
         """Create the anchor arrays to feed data back into Python with.
 
         Returns:
@@ -253,7 +253,7 @@ class TrainingSession(_TrainingSessionCore):
         self.accumulationFactor = userOptions.accumulationFactor if \
             userOptions.enableGradientAccumulation else 1
 
-    def initAnchorArrays(self) -> Dict[str, np.array]:
+    def initAnchorArrays(self) -> Dict[popart.TensorId, np.array]:
         """Create the anchor arrays to feed data back into Python with.
 
         Returns:

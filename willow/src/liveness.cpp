@@ -148,7 +148,7 @@ void LivenessNode::setTensorIds() {
     if (sgInIdx > -1 && sgInIdx < calledGraph->getInputIds().size()) {
       tensorIds = std::make_pair(getOp()->inId(index), sgTensorId);
     } else {
-      tensorIds = std::make_pair("", "");
+      tensorIds = std::make_pair(TensorId(), TensorId());
     }
   } break;
   case OpStatus::CopyOutput: {
@@ -160,7 +160,7 @@ void LivenessNode::setTensorIds() {
       tensorIds = std::make_pair(getOp()->outId(index),
                                  calledGraph->getOutputId(sgOutIdx));
     } else {
-      tensorIds = std::make_pair("", "");
+      tensorIds = std::make_pair(TensorId(), TensorId());
     }
   } break;
   case OpStatus::CopyLoopCarried: {
@@ -177,7 +177,7 @@ void LivenessNode::setTensorIds() {
   case OpStatus::Enter:
   case OpStatus::Exit:
   default:
-    tensorIds = std::make_pair("", "");
+    tensorIds = std::make_pair(TensorId(), TensorId());
   }
 }
 

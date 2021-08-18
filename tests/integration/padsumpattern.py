@@ -205,8 +205,8 @@ def test_pad_sum7(op_tester):
         builder.addOutputTensor(o)
         return [
             o,
-            popart.reservedGradientPrefix() + i1,
-            popart.reservedGradientPrefix() + o
+            popart.TensorId(popart.reservedGradientPrefix() + i1),
+            popart.TensorId(popart.reservedGradientPrefix() + o)
         ]
 
     def reference(ref_data):

@@ -88,8 +88,8 @@ def test_erf_grad_0(op_tester):
         builder.addOutputTensor(o)
         return [
             o,
-            popart.reservedGradientPrefix() + i0,
-            popart.reservedGradientPrefix() + o,
+            popart.TensorId(popart.reservedGradientPrefix() + i0),
+            popart.TensorId(popart.reservedGradientPrefix() + o),
         ]
 
     def reference(ref_data):
@@ -120,8 +120,8 @@ def test_erf_grad_0b(op_tester):
             builder.addOutputTensor(o)
             return [
                 o,
-                popart.reservedGradientPrefix() + i0,
-                popart.reservedGradientPrefix() + o,
+                popart.TensorId(popart.reservedGradientPrefix() + i0),
+                popart.TensorId(popart.reservedGradientPrefix() + o),
             ]
 
         def reference(ref_data):
@@ -143,8 +143,8 @@ def test_erf_grad_1(op_tester):
         builder.addOutputTensor(o)
         return [
             o,
-            popart.reservedGradientPrefix() + i0,
-            popart.reservedGradientPrefix() + o,
+            popart.TensorId(popart.reservedGradientPrefix() + i0),
+            popart.TensorId(popart.reservedGradientPrefix() + o),
         ]
 
     def reference(ref_data):
@@ -168,8 +168,8 @@ def test_erf_grad_2(op_tester):
         builder.addOutputTensor(o)
         return [
             o,
-            popart.reservedGradientPrefix() + i0,
-            popart.reservedGradientPrefix() + o,
+            popart.TensorId(popart.reservedGradientPrefix() + i0),
+            popart.TensorId(popart.reservedGradientPrefix() + o),
         ]
 
     def reference(ref_data):

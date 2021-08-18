@@ -175,7 +175,8 @@ def find_constructors(node: cindex.Cursor, base: cindex.Cursor) -> Dict:
     # Get the relative include path
     file_ = node.location.file.name
 
-    file_ = Path(file_).resolve().relative_to(Path(__file__).resolve().parents[1])
+    file_ = Path(file_).resolve().relative_to(
+        Path(__file__).resolve().parents[1])
 
     return {
         "name":

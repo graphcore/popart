@@ -39,7 +39,7 @@ snap::Tensor makeWritableRemoteExchangeTensor(Devicex *dv_p,
     snap::Tensor tw =
         snap::Tensor{graph.getPoplarGraph().clone(
                          rbTensor.getPoplarTensor(),
-                         {id + "_writable"},
+                         {id.str() + "_writable"},
                          poplar::TensorCloneMethod::PRESERVE_ORDER_AND_ALIASES),
                      graph};
     return tw;
@@ -60,7 +60,7 @@ snap::Tensor getOrCreateStreamTensor(Devicex *dv_p,
     streamTensor = snap::Tensor{
         graph.getPoplarGraph().clone(
             t.getPoplarTensor(),
-            poplar::DebugContext(context, streamTensorId),
+            poplar::DebugContext(context, streamTensorId.str()),
             poplar::TensorCloneMethod::PRESERVE_ORDER_UNLESS_ALIASES),
         graph};
     dv_p->lowering().setStreamTensor("ST_" + streamTensorId, streamTensor);
@@ -84,7 +84,7 @@ makeWritableHostExchangeTensor(Devicex *dv_p,
     streamTensor = snap::Tensor{
         graph.getPoplarGraph().clone(
             t.getPoplarTensor(),
-            {streamTensorId},
+            {streamTensorId.str()},
             poplar::TensorCloneMethod::PRESERVE_ORDER_UNLESS_ALIASES),
         graph};
     dv_p->lowering().setStreamTensor(id, streamTensor);
@@ -97,7 +97,7 @@ makeWritableHostExchangeTensor(Devicex *dv_p,
     snap::Tensor tw = snap::Tensor{
         graph.getPoplarGraph().clone(
             streamTensor.getPoplarTensor(),
-            {id + "_writable"},
+            {id.str() + "_writable"},
             poplar::TensorCloneMethod::PRESERVE_ORDER_UNLESS_ALIASES),
         graph};
     return tw;

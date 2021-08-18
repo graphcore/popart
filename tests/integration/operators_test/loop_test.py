@@ -28,7 +28,7 @@ def test_simple_for_loop(op_tester):
             loop_builder.addInputTensor(popart.TensorInfo("INT64", []))
             keepgoing = loop_builder.addInputTensor(
                 popart.TensorInfo("BOOL", []))
-            a_in = loop_builder.addUntypedInputTensor(a)
+            a_in = loop_builder.addUntypedInputTensor(str(a))
 
             if builder_setting == "InPlace":
                 a_out = loop_builder.aiOnnx.add([a_in, b])
@@ -94,7 +94,7 @@ def test_loop_matmul(op_tester):
         # Inputs: [iteration_number, condition_in, a_in]
         loop_builder.addInputTensor(popart.TensorInfo("INT64", []))
         keepgoing = loop_builder.addInputTensor(popart.TensorInfo("BOOL", []))
-        a_in = loop_builder.addUntypedInputTensor(a)
+        a_in = loop_builder.addUntypedInputTensor(str(a))
         a_out = loop_builder.aiOnnx.matmul([a_in, b])
 
         # Outputs: [condition_out, a_out]
@@ -137,8 +137,8 @@ def test_loop_stop(op_tester):
         loop_builder.setGraphName("body")
         # Inputs: [iteration_number, condition_in, a_in]
         loop_builder.addInputTensor(popart.TensorInfo("INT64", []))
-        cond_in = loop_builder.addUntypedInputTensor(cond)
-        a_in = loop_builder.addUntypedInputTensor(a)
+        cond_in = loop_builder.addUntypedInputTensor(str(cond))
+        a_in = loop_builder.addUntypedInputTensor(str(a))
         a_out = loop_builder.aiOnnx.mul([a_in, b])
         max = loop_builder.aiOnnx.constant(
             np.array([128]).astype(np.float32), "max")
@@ -189,7 +189,7 @@ def test_loop_scanout(op_tester):
         # Inputs: [iteration_number, condition_in, a_in]
         loop_builder.addInputTensor(popart.TensorInfo("INT64", []))
         keepgoing = loop_builder.addInputTensor(popart.TensorInfo("BOOL", []))
-        a_in = loop_builder.addUntypedInputTensor(a)
+        a_in = loop_builder.addUntypedInputTensor(str(a))
         a_out = loop_builder.aiOnnx.matmul([a_in, b])
         d_out = loop_builder.aiOnnx.add([a_out, c])
 

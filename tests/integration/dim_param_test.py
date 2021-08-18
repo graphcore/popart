@@ -54,7 +54,8 @@ def test_model_with_specified_dim_params(tmpdir):
     proto, outId = get_model_with_dim_param(tmpdir)
 
     inputShapeInfo = popart.InputShapeInfo()
-    inputShapeInfo.add("input_0", popart.TensorInfo("FLOAT", [1, 2, 32, 32]))
+    inputShapeInfo.add(popart.TensorId("input_0"),
+                       popart.TensorInfo("FLOAT", [1, 2, 32, 32]))
 
     session = popart.InferenceSession(
         fnModel=proto,

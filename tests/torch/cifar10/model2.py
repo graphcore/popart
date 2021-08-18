@@ -6,8 +6,8 @@ import sys
 import os
 import torch
 import numpy as np
-from torchvision import transforms, datasets
 import c10driver
+from torchvision import transforms, datasets
 import popart
 import cmdline
 from popart.torch import torchwriter
@@ -18,10 +18,10 @@ nInChans = 3
 nOutChans = 10
 batchSize = 2
 batchesPerStep = 3
-anchors = {"out": popart.AnchorReturnType("Final")}
+anchors = {popart.TensorId("out"): popart.AnchorReturnType("Final")}
 dataFlow = popart.DataFlow(batchesPerStep, anchors)
 inputShapeInfo = popart.InputShapeInfo()
-inputShapeInfo.add("image0",
+inputShapeInfo.add(popart.TensorId("image0"),
                    popart.TensorInfo("FLOAT", [batchSize, nInChans, 32, 32]))
 inNames = ["image0"]
 cifarInIndices = {"image0": 0}

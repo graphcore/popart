@@ -57,8 +57,8 @@ def test_cast_grad(op_tester, npSrcType, torchDstType, builderDstType):
         builder.addOutputTensor(o)
         return [
             o,
-            popart.reservedGradientPrefix() + i1,
-            popart.reservedGradientPrefix() + o
+            popart.TensorId(popart.reservedGradientPrefix() + i1),
+            popart.TensorId(popart.reservedGradientPrefix() + o)
         ]
 
     def reference(ref_data):
@@ -111,7 +111,7 @@ def test_cast_no_grad(npSrcType, builderDstType):
         1, {
             output_:
             popart.AnchorReturnType("All"),
-            popart.reservedGradientPrefix() + input_:
+            popart.TensorId(popart.reservedGradientPrefix() + input_):
             popart.AnchorReturnType("All"),
         })
 
@@ -184,9 +184,9 @@ def test_cast_no_grad_branch(op_tester):
 
         return [
             o,
-            popart.reservedGradientPrefix() + i,
-            popart.reservedGradientPrefix() + w,
-            popart.reservedGradientPrefix() + o,
+            popart.TensorId(popart.reservedGradientPrefix() + i),
+            popart.TensorId(popart.reservedGradientPrefix() + w),
+            popart.TensorId(popart.reservedGradientPrefix() + o),
         ]
 
     def reference(ref_data):

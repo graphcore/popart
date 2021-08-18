@@ -21,8 +21,8 @@ def test_selu(op_tester):
             elif builder_settings is 'backward':
                 result = [
                     o,
-                    popart.reservedGradientPrefix() + i1,
-                    popart.reservedGradientPrefix() + o
+                    popart.TensorId(popart.reservedGradientPrefix() + i1),
+                    popart.TensorId(popart.reservedGradientPrefix() + o)
                 ]
             return result
 

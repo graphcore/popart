@@ -77,15 +77,16 @@ def get_model(batches_per_step, replication_factor, batch_size, channels,
 
 
 def run_model(session, anchors, in_array, label_array):
-    stepio = popart.PyStepIO({
-        "input": in_array,
-        "label": label_array
-    }, anchors)
+    stepio = popart.PyStepIO(
+        {
+            popart.TensorId("input"): in_array,
+            popart.TensorId("label"): label_array
+        }, anchors)
     session.weightsFromHost()
 
     session.run(stepio)
 
-    return anchors["input"], anchors["label"]
+    return anchors[popart.TensorId("input")], anchors[popart.TensorId("label")]
 
 
 def run_test(batches_per_step, replication_factor, batch_size, channels,

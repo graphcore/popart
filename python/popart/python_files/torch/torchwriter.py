@@ -58,7 +58,10 @@ class PytorchNetWriter(NetWriter):
         # note that this might do strange things with batch-normalisation (?)
         self.module.eval()
 
-        inputDataInfos = [self.inputShapeInfo.get(tid) for tid in self.inNames]
+        inputDataInfos = [
+            self.inputShapeInfo.get(popart.TensorId(tid))
+            for tid in self.inNames
+        ]
         inputData = []
         containsint64 = False
         for info in inputDataInfos:
@@ -116,11 +119,13 @@ class PytorchNetWriter(NetWriter):
             torchOptimizer.zero_grad()
             substepInputs = []
             for name in self.inNames:
-                dt = self.inputShapeInfo.get(name).data_type_lcase()
+                dt = self.inputShapeInfo.get(
+                    popart.TensorId(name)).data_type_lcase()
                 if dt == "int32":
                     dt = "int64"  # torch labels must be 'long'
                 substepInputs.append(
-                    torch.tensor(substepInMap[name].astype(dt)))
+                    torch.tensor(
+                        substepInMap[popart.TensorId(name)].astype(dt)))
 
             # forward pass
             substepOutput = self.module(substepInputs)

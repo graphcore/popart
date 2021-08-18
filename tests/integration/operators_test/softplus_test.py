@@ -49,7 +49,7 @@ def test_softplus_grad(op_tester):
         o = builder.aiOnnx.softplus([i1])
         builder.addOutputTensor(o)
         op_tester.setPatterns(['InPlace'], enableRuntimeAsserts=False)
-        result = [o, popart.reservedGradientPrefix() + i1]
+        result = [o, popart.TensorId(popart.reservedGradientPrefix() + i1)]
         return result
 
     def reference(_):

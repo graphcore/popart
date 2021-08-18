@@ -135,9 +135,9 @@ BOOST_AUTO_TEST_CASE(PipelineRecomputeIrTest2) {
     auto dataFlow   = DataFlow(100, {{act, AnchorReturnType("All")}});
 
     SessionOptions userOptions;
-    userOptions.virtualGraphMode     = VirtualGraphMode::Auto;
-    userOptions.enableOutlining      = false;
-    userOptions.enablePipelining     = true;
+    userOptions.virtualGraphMode = VirtualGraphMode::Auto;
+    userOptions.enableOutlining  = false;
+    userOptions.enablePipelining = true;
     if (recomp) {
       userOptions.autoRecomputation = RecomputationType::Standard;
     }

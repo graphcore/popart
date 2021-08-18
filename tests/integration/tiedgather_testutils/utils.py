@@ -1,4 +1,4 @@
-# Copyright(c) 2021 Graphcore Ltd. All rights reserved.
+# Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 
 from typing import Iterable, Any, Callable, Tuple, Union, Mapping, Optional
 import tempfile
@@ -172,12 +172,12 @@ def onnx_to_numpy(tensor: onnx.TensorProto) -> np.ndarray:
     return np_tensor
 
 
-def check_onnx_model(model_1: onnx.ModelProto,
-                     model_2: onnx.ModelProto,
-                     onnx_to_onnx: Mapping[str, str] = {},
-                     transform: Mapping[str, Callable[[np.ndarray],
-                                                      np.ndarray]] = {},
-                     allow_missing: bool = True):
+def check_onnx_model(
+        model_1: onnx.ModelProto,
+        model_2: onnx.ModelProto,
+        onnx_to_onnx: Mapping[str, str] = {},
+        transform: Mapping[str, Callable[[np.ndarray], np.ndarray]] = {},
+        allow_missing: bool = True):
     model_1_weights = {}
     for weight in model_1.graph.initializer:
         model_1_weights[weight.name] = onnx_to_numpy(weight)

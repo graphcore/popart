@@ -174,12 +174,13 @@ def _test_gemm_grad(op_tester,
 
         result = [
             o,
-            popart.reservedGradientPrefix() + i1,
-            popart.reservedGradientPrefix() + i2,
+            popart.TensorId(popart.reservedGradientPrefix() + i1),
+            popart.TensorId(popart.reservedGradientPrefix() + i2),
         ]
         if C is not None:
-            result.append(popart.reservedGradientPrefix() + i3)
-        result.append(popart.reservedGradientPrefix() + o)
+            result.append(
+                popart.TensorId(popart.reservedGradientPrefix() + i3))
+        result.append(popart.TensorId(popart.reservedGradientPrefix() + o))
         return result
 
     def reference(ref_data):

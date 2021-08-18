@@ -40,8 +40,8 @@ def conv_avail_memory(capfd, apply_to_conv=True, avail_mem_prop=0.9):
 
     anchor_names = [
         o,
-        popart.reservedGradientPrefix() + input_,
-        popart.reservedGradientPrefix() + weights
+        popart.TensorId(popart.reservedGradientPrefix() + input_),
+        popart.TensorId(popart.reservedGradientPrefix() + weights)
     ]
     training_dataFlow = popart.DataFlow(
         1, {
@@ -113,8 +113,8 @@ def matmul_avail_memory(capfd, apply_to_conv=True, avail_mem_prop=0.9):
 
     anchor_names = [
         o,
-        popart.reservedGradientPrefix() + input_,
-        popart.reservedGradientPrefix() + weights
+        popart.TensorId(popart.reservedGradientPrefix() + input_),
+        popart.TensorId(popart.reservedGradientPrefix() + weights)
     ]
     training_dataFlow = popart.DataFlow(
         1, {

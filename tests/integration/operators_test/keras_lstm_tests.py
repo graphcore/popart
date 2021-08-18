@@ -37,8 +37,8 @@ def _run_comparison_test(data, result, proto, expected_activations,
         for expected, actual in zip(expected_activations, activations):
             assert expected == actual.decode('utf-8').lower()
 
-    outId = model.graph.output[0].name
-    inId = model.graph.input[0].name
+    outId = popart.TensorId(model.graph.output[0].name)
+    inId = popart.TensorId(model.graph.input[0].name)
 
     dataFlow = popart.DataFlow(1, {outId: popart.AnchorReturnType("All")})
     patterns = popart.Patterns(popart.PatternsLevel.Default)

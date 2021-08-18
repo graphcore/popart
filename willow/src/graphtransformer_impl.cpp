@@ -818,10 +818,10 @@ void GraphTransformerImpl::convertInitializersToConstants(
          ++initializer) {
       if (initializer->name() == id) {
         auto *node = new_nodes.Add();
-        node->set_name(id);
+        node->set_name(id.str());
         node->set_op_type(Onnx::Operators::Constant_9.type);
         node->set_domain("");
-        node->add_output(id);
+        node->add_output(id.str());
 
         auto *attr = node->add_attribute();
         attr->set_name("value");

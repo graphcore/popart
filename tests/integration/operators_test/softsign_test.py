@@ -41,7 +41,7 @@ def test_softsign_grad(op_tester):
         o = builder.aiOnnx.softsign([i1])
         builder.addOutputTensor(o)
         op_tester.setPatterns(['InPlace'], enableRuntimeAsserts=False)
-        result = [o, popart.reservedGradientPrefix() + i1]
+        result = [o, popart.TensorId(popart.reservedGradientPrefix() + i1)]
         return result
 
     def reference(_):

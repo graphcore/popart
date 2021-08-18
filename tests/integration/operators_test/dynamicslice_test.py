@@ -80,8 +80,8 @@ def test_dynamicslice_training(op_tester):
 
         result = [
             sum,
-            popart.reservedGradientPrefix() + sum,
-            popart.reservedGradientPrefix() + tensor
+            popart.TensorId(popart.reservedGradientPrefix() + sum),
+            popart.TensorId(popart.reservedGradientPrefix() + tensor)
         ] + result
         return result
 
@@ -140,8 +140,8 @@ def test_dynamicslice_overlap_wrong(op_tester):
         builder.addOutputTensor(sum)
         result = [
             sum,
-            popart.reservedGradientPrefix() + sum,
-            popart.reservedGradientPrefix() + tensor
+            popart.TensorId(popart.reservedGradientPrefix() + sum),
+            popart.TensorId(popart.reservedGradientPrefix() + tensor)
         ] + result
         return result
 
@@ -206,8 +206,8 @@ def test_dynamicslice_overlap_correct(op_tester):
         builder.addOutputTensor(sum)
         result = [
             sum,
-            popart.reservedGradientPrefix() + sum,
-            popart.reservedGradientPrefix() + tensor
+            popart.TensorId(popart.reservedGradientPrefix() + sum),
+            popart.TensorId(popart.reservedGradientPrefix() + tensor)
         ] + result
         return result
 
@@ -266,8 +266,8 @@ def test_non_sum_add_grad_op(op_tester):
 
         result = [
             sum,
-            popart.reservedGradientPrefix() + sum,
-            popart.reservedGradientPrefix() + tensor
+            popart.TensorId(popart.reservedGradientPrefix() + sum),
+            popart.TensorId(popart.reservedGradientPrefix() + tensor)
         ]
         return result
 

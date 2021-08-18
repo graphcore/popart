@@ -139,14 +139,15 @@ def test_virtual_graph3():
     # Need to anchor the output of the backward pass to stop it being pruned
     dataFlow = popart.DataFlow(
         1, {
-            o: popart.AnchorReturnType("All"),
-            popart.reservedGradientPrefix() + i1:
+            o:
             popart.AnchorReturnType("All"),
-            popart.reservedGradientPrefix() + i2:
+            popart.TensorId(popart.reservedGradientPrefix() + i1):
             popart.AnchorReturnType("All"),
-            popart.reservedGradientPrefix() + i3:
+            popart.TensorId(popart.reservedGradientPrefix() + i2):
             popart.AnchorReturnType("All"),
-            popart.reservedGradientPrefix() + i4:
+            popart.TensorId(popart.reservedGradientPrefix() + i3):
+            popart.AnchorReturnType("All"),
+            popart.TensorId(popart.reservedGradientPrefix() + i4):
             popart.AnchorReturnType("All")
         })
 
@@ -205,14 +206,17 @@ def test_virtual_graph4():
     # Need to anchor the output of the backward pass to stop it being pruned
     dataFlow = popart.DataFlow(
         1, {
-            o1: popart.AnchorReturnType("All"),
-            o2: popart.AnchorReturnType("All"),
-            o3: popart.AnchorReturnType("All"),
-            popart.reservedGradientPrefix() + i1:
+            o1:
             popart.AnchorReturnType("All"),
-            popart.reservedGradientPrefix() + i2:
+            o2:
             popart.AnchorReturnType("All"),
-            popart.reservedGradientPrefix() + i3:
+            o3:
+            popart.AnchorReturnType("All"),
+            popart.TensorId(popart.reservedGradientPrefix() + i1):
+            popart.AnchorReturnType("All"),
+            popart.TensorId(popart.reservedGradientPrefix() + i2):
+            popart.AnchorReturnType("All"),
+            popart.TensorId(popart.reservedGradientPrefix() + i3):
             popart.AnchorReturnType("All")
         })
 
@@ -311,7 +315,8 @@ def test_streaming_optimizer_tensors():
 
         proto = builder.getModelProto()
 
-        anchorId = popart.reservedDefaultScaledLearningRate0Prefix() + "FLOAT"
+        anchorId = popart.TensorId(
+            popart.reservedDefaultScaledLearningRate0Prefix() + "FLOAT")
 
         # Need to anchor the output of the backward pass to stop it being pruned
         dataFlow = popart.DataFlow(bps, [anchorId])

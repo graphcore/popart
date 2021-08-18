@@ -116,8 +116,8 @@ def test_resize_nearest_grad_1d(op_tester, scale_factor):
         builder.addOutputTensor(o)
         return [
             o,
-            popart.reservedGradientPrefix() + d,
-            popart.reservedGradientPrefix() + o,
+            popart.TensorId(popart.reservedGradientPrefix() + d),
+            popart.TensorId(popart.reservedGradientPrefix() + o),
         ]
 
     def reference(ref_data):
@@ -172,8 +172,8 @@ def test_resize_nearest_grad_2d(op_tester, factor1, factor2):
         builder.addOutputTensor(o)
         return [
             o,
-            popart.reservedGradientPrefix() + d,
-            popart.reservedGradientPrefix() + o,
+            popart.TensorId(popart.reservedGradientPrefix() + d),
+            popart.TensorId(popart.reservedGradientPrefix() + o),
         ]
 
     def reference(ref_data):
@@ -227,8 +227,8 @@ def test_nearest_grad(op_tester, data_shape, scales):
         builder.addOutputTensor(o)
         return [
             o,
-            popart.reservedGradientPrefix() + d,
-            popart.reservedGradientPrefix() + o,
+            popart.TensorId(popart.reservedGradientPrefix() + d),
+            popart.TensorId(popart.reservedGradientPrefix() + o),
         ]
 
     def reference(ref_data):
@@ -444,8 +444,8 @@ def test_odd_scale_factors_grad(op_tester, scale_factor, data_shape):
         builder.addOutputTensor(o)
         return [
             o,
-            popart.reservedGradientPrefix() + d,
-            popart.reservedGradientPrefix() + o,
+            popart.TensorId(popart.reservedGradientPrefix() + d),
+            popart.TensorId(popart.reservedGradientPrefix() + o),
         ]
 
     def reference(ref_data):
@@ -538,7 +538,7 @@ def test_resize_sizes_input(op_tester, data_shape, sizes, sizes_dtype):
         d = builder.addInputTensor(data)
         s = builder.aiOnnxOpset11.constant(sizes, False)
         r = builder.aiOnnxOpset11.constant(roi, False)
-        o = builder.aiOnnxOpset11.resize([d, r, '', s])
+        o = builder.aiOnnxOpset11.resize([d, r, popart.TensorId(''), s])
         builder.addOutputTensor(o)
         return [o]
 

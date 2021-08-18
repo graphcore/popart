@@ -218,7 +218,8 @@ def _run_impl(torchWriter, patterns, outputdir, cifarInIndices, device,
         # necessary
         bder = popart.Builder(modelProtoX)
         loss = bder.aiGraphcore.identityloss(
-            [torchWriter.outNames[0]], reduction=popart.ReductionType.Sum)
+            [popart.TensorId(torchWriter.outNames[0])],
+            reduction=popart.ReductionType.Sum)
         session = popart.TrainingSession(fnModel=bder.getModelProto(),
                                          inputShapeInfo=inputShapeInfo,
                                          dataFlow=dataFlow,
@@ -321,7 +322,7 @@ def _run_impl(torchWriter, patterns, outputdir, cifarInIndices, device,
         # so we reshape the input array before passing to the stepio
         inputs = {}
         for tenId in cifarInIndices.keys():
-            inputs[tenId] = \
+            inputs[popart.TensorId(tenId)] = \
                 addStepDimension(stepData[cifarInIndices[tenId]].numpy(),
                                  session.dataFlow.batchesPerStep())
 
@@ -393,9 +394,11 @@ def _run_impl(torchWriter, patterns, outputdir, cifarInIndices, device,
                 # Torch outputs returned for all samples, whereas
                 # anchors are returned as specified by the user.
                 # Subsample torch outputs to match dimensions
-                torchOuput = subsampleBatches(torchOutputs[outName],
-                                              np.shape(anchorArrays[outName]))
-                result = getTensorError(torchOuput, anchorArrays[outName])
+                torchOuput = subsampleBatches(
+                    torchOutputs[outName],
+                    np.shape(anchorArrays[popart.TensorId(outName)]))
+                result = getTensorError(torchOuput,
+                                        anchorArrays[popart.TensorId(outName)])
                 print(reportTensorError(nInd, result))
                 checkResult(result, margin)
 

@@ -32,8 +32,8 @@ def test_convolution_cached_by_default():
     proto = builder.getModelProto()
 
     anchor_names = [
-        popart.reservedGradientPrefix() + i1,
-        popart.reservedGradientPrefix() + i2
+        popart.TensorId(popart.reservedGradientPrefix() + i1),
+        popart.TensorId(popart.reservedGradientPrefix() + i2)
     ]
     dataFlow = \
         popart.DataFlow(1,
@@ -108,8 +108,8 @@ def test_convolution_disable_all():
     proto = builder.getModelProto()
 
     anchor_names = [
-        popart.reservedGradientPrefix() + i1,
-        popart.reservedGradientPrefix() + i2
+        popart.TensorId(popart.reservedGradientPrefix() + i1),
+        popart.TensorId(popart.reservedGradientPrefix() + i2)
     ]
     dataFlow = \
         popart.DataFlow(1,
@@ -272,10 +272,10 @@ def test_matmul_train_cached_by_default():
     proto = builder.getModelProto()
 
     anchor_names = [
-        popart.reservedGradientPrefix() + i1,
-        popart.reservedGradientPrefix() + i2,
-        popart.reservedGradientPrefix() + i3,
-        popart.reservedGradientPrefix() + i4
+        popart.TensorId(popart.reservedGradientPrefix() + i1),
+        popart.TensorId(popart.reservedGradientPrefix() + i2),
+        popart.TensorId(popart.reservedGradientPrefix() + i3),
+        popart.TensorId(popart.reservedGradientPrefix() + i4)
     ]
     dataFlow = popart.DataFlow(
         1, {
@@ -360,12 +360,12 @@ def test_gemm_train_cached_by_default():
     proto = builder.getModelProto()
 
     anchor_names = [
-        popart.reservedGradientPrefix() + i1,
-        popart.reservedGradientPrefix() + i2,
-        popart.reservedGradientPrefix() + i3,
-        popart.reservedGradientPrefix() + i4,
-        popart.reservedGradientPrefix() + i5,
-        popart.reservedGradientPrefix() + i6
+        popart.TensorId(popart.reservedGradientPrefix() + i1),
+        popart.TensorId(popart.reservedGradientPrefix() + i2),
+        popart.TensorId(popart.reservedGradientPrefix() + i3),
+        popart.TensorId(popart.reservedGradientPrefix() + i4),
+        popart.TensorId(popart.reservedGradientPrefix() + i5),
+        popart.TensorId(popart.reservedGradientPrefix() + i6)
     ]
     dataFlow = popart.DataFlow(
         1, {
@@ -622,14 +622,15 @@ def test_outlining_bca3():
     anchor_names = [o]
     dataFlow = popart.DataFlow(
         1, {
-            o: popart.AnchorReturnType("All"),
-            popart.reservedGradientPrefix() + i1:
+            o:
             popart.AnchorReturnType("All"),
-            popart.reservedGradientPrefix() + i2:
+            popart.TensorId(popart.reservedGradientPrefix() + i1):
             popart.AnchorReturnType("All"),
-            popart.reservedGradientPrefix() + i3:
+            popart.TensorId(popart.reservedGradientPrefix() + i2):
             popart.AnchorReturnType("All"),
-            popart.reservedGradientPrefix() + i4:
+            popart.TensorId(popart.reservedGradientPrefix() + i3):
+            popart.AnchorReturnType("All"),
+            popart.TensorId(popart.reservedGradientPrefix() + i4):
             popart.AnchorReturnType("All")
         })
 
@@ -716,14 +717,15 @@ def test_outlining_bca4():
     anchor_names = [o]
     dataFlow = popart.DataFlow(
         1, {
-            o: popart.AnchorReturnType("All"),
-            popart.reservedGradientPrefix() + i1:
+            o:
             popart.AnchorReturnType("All"),
-            popart.reservedGradientPrefix() + i2:
+            popart.TensorId(popart.reservedGradientPrefix() + i1):
             popart.AnchorReturnType("All"),
-            popart.reservedGradientPrefix() + i3:
+            popart.TensorId(popart.reservedGradientPrefix() + i2):
             popart.AnchorReturnType("All"),
-            popart.reservedGradientPrefix() + i4:
+            popart.TensorId(popart.reservedGradientPrefix() + i3):
+            popart.AnchorReturnType("All"),
+            popart.TensorId(popart.reservedGradientPrefix() + i4):
             popart.AnchorReturnType("All")
         })
 

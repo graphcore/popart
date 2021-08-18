@@ -451,10 +451,10 @@ def test_lstm_training_onnx_vs_popart():
 
             return [
                 loss,
-                popart.reservedGradientPrefix() + tData,
-                popart.reservedGradientPrefix() + tIW,
-                popart.reservedGradientPrefix() + tOW,
-                popart.reservedGradientPrefix() + tBiases
+                popart.TensorId(popart.reservedGradientPrefix() + tData),
+                popart.TensorId(popart.reservedGradientPrefix() + tIW),
+                popart.TensorId(popart.reservedGradientPrefix() + tOW),
+                popart.TensorId(popart.reservedGradientPrefix() + tBiases)
             ]
 
         session = PopartTestSession()
@@ -509,10 +509,12 @@ def test_lstm_training_onnx_vs_popart():
 
             return [
                 loss,
-                popart.reservedGradientPrefix() + data_id,
-                popart.reservedGradientPrefix() + input_weights_id,
-                popart.reservedGradientPrefix() + output_weights_id,
-                popart.reservedGradientPrefix() + biases_id,
+                popart.TensorId(popart.reservedGradientPrefix() + data_id),
+                popart.TensorId(popart.reservedGradientPrefix() +
+                                input_weights_id),
+                popart.TensorId(popart.reservedGradientPrefix() +
+                                output_weights_id),
+                popart.TensorId(popart.reservedGradientPrefix() + biases_id),
             ]
 
         session = PopartTestSession()
@@ -546,7 +548,7 @@ def test_lstm_training_onnx_vs_popart():
                                      initial_h, initial_c, sum_outputs)
 
         for k, ov in onnx_out.items():
-            if k.startswith(popart.reservedGradientPrefix()):
+            if str(k).startswith(popart.reservedGradientPrefix()):
                 print(f'Checking anchor {k}')
 
                 if k == 'model_out':
@@ -638,10 +640,10 @@ def test_lstm_torch_grad(op_tester):
         builder.addOutputTensor(Y2)
         return [
             Y2,
-            popart.reservedGradientPrefix() + i1,
-            popart.reservedGradientPrefix() + i2,
-            popart.reservedGradientPrefix() + i3,
-            popart.reservedGradientPrefix() + Y2
+            popart.TensorId(popart.reservedGradientPrefix() + i1),
+            popart.TensorId(popart.reservedGradientPrefix() + i2),
+            popart.TensorId(popart.reservedGradientPrefix() + i3),
+            popart.TensorId(popart.reservedGradientPrefix() + Y2)
         ]
 
     def reference(ref_data):

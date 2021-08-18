@@ -15,8 +15,8 @@ nOutChans = 8
 batchSize = 2
 batchesPerStep = 4
 anchors = {
-    "l1LossVal": popart.AnchorReturnType("EveryN", 2),
-    "out": popart.AnchorReturnType("Final"),
+    popart.TensorId("l1LossVal"): popart.AnchorReturnType("EveryN", 2),
+    popart.TensorId("out"): popart.AnchorReturnType("Final"),
     "im0": popart.AnchorReturnType("All")
 }
 dataFlow = popart.DataFlow(batchesPerStep, anchors)

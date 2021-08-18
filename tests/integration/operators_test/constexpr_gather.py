@@ -37,7 +37,7 @@ def test_gather_rank2_1(op_tester):
         i2 = builder.aiOnnx.constant(d2)
         o = builder.aiOnnx.gather([i1, i2], axis)
         builder.addOutputTensor(o)
-        return [o, popart.reservedGradientPrefix() + i1]
+        return [o, popart.TensorId(popart.reservedGradientPrefix() + i1)]
 
     def reference(ref_data):
         out = np.take(d1, d2, axis=axis)
@@ -60,7 +60,7 @@ def test_gather_rank2_2(op_tester):
         i2 = builder.aiOnnx.constant(d2)
         o = builder.aiOnnx.gather([i1, i2], axis)
         builder.addOutputTensor(o)
-        return [o, popart.reservedGradientPrefix() + i1]
+        return [o, popart.TensorId(popart.reservedGradientPrefix() + i1)]
 
     def reference(ref_data):
         out = np.take(d1, d2, axis=axis)
@@ -84,7 +84,7 @@ def test_gather_rank3_1(op_tester):
         i2 = builder.aiOnnx.constant(d2)
         o = builder.aiOnnx.gather([i1, i2], axis)
         builder.addOutputTensor(o)
-        return [o, popart.reservedGradientPrefix() + i1]
+        return [o, popart.TensorId(popart.reservedGradientPrefix() + i1)]
 
     def reference(ref_data):
         out = np.take(d1, d2, axis=axis)
@@ -106,7 +106,7 @@ def test_gather_rank1_1(op_tester):
         i2 = builder.aiOnnx.constant(d2)
         o = builder.aiOnnx.gather([i1, i2], axis)
         builder.addOutputTensor(o)
-        return [o, popart.reservedGradientPrefix() + i1]
+        return [o, popart.TensorId(popart.reservedGradientPrefix() + i1)]
 
     def reference(ref_data):
         out = np.take(d1, d2, axis=axis)
@@ -151,7 +151,7 @@ def test_gather_example2(op_tester):
         i2 = builder.aiOnnx.constant(d2)
         o = builder.aiOnnx.gather([i1, i2], axis)
         builder.addOutputTensor(o)
-        return [o, popart.reservedGradientPrefix() + i1]
+        return [o, popart.TensorId(popart.reservedGradientPrefix() + i1)]
 
     def reference(ref_data):
         out = np.take(d1, d2, axis=axis)

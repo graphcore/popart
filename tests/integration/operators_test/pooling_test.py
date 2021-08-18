@@ -307,8 +307,8 @@ def test_maxpool_grad(op_tester):
         builder.addOutputTensor(o)
         return [
             o,
-            popart.reservedGradientPrefix() + i1,
-            popart.reservedGradientPrefix() + o
+            popart.TensorId(popart.reservedGradientPrefix() + i1),
+            popart.TensorId(popart.reservedGradientPrefix() + o)
         ]
 
     def reference(ref_data):
@@ -398,8 +398,8 @@ def test_maxpool10_ceil_mode_grad(op_tester):
         builder.addOutputTensor(o)
         return [
             o,
-            popart.reservedGradientPrefix() + i1,
-            popart.reservedGradientPrefix() + o
+            popart.TensorId(popart.reservedGradientPrefix() + i1),
+            popart.TensorId(popart.reservedGradientPrefix() + o)
         ]
 
     def init_builder_manual_padding(builder):
@@ -414,8 +414,8 @@ def test_maxpool10_ceil_mode_grad(op_tester):
         builder.addOutputTensor(o)
         return [
             o,
-            popart.reservedGradientPrefix() + i1,
-            popart.reservedGradientPrefix() + o
+            popart.TensorId(popart.reservedGradientPrefix() + i1),
+            popart.TensorId(popart.reservedGradientPrefix() + o)
         ]
 
     def reference(ref_data):
@@ -461,8 +461,8 @@ def test_globalmaxpool_grad_2d(op_tester):
         builder.addOutputTensor(o)
         return [
             o,
-            popart.reservedGradientPrefix() + i1,
-            popart.reservedGradientPrefix() + o
+            popart.TensorId(popart.reservedGradientPrefix() + i1),
+            popart.TensorId(popart.reservedGradientPrefix() + o)
         ]
 
     def reference(ref_data):
@@ -526,8 +526,8 @@ def test_globalaveragepool_grad_2d(op_tester):
         builder.addOutputTensor(o)
         return [
             o,
-            popart.reservedGradientPrefix() + i1,
-            popart.reservedGradientPrefix() + o
+            popart.TensorId(popart.reservedGradientPrefix() + i1),
+            popart.TensorId(popart.reservedGradientPrefix() + o)
         ]
 
     def reference(ref_data):

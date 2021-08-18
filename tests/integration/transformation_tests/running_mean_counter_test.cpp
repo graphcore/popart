@@ -69,6 +69,7 @@ BOOST_AUTO_TEST_CASE(Default) {
   for (auto op : ir.getAllOps()) {
     if (op->isConvertibleTo<AccumulateOp>()) {
       if (op->inId(AccumulateOp::getVarToUpdateInIndex())
+              .str()
               .find(reservedCounterPrefix()) != std::string::npos) {
         counterAccumulateOps++;
       }
@@ -139,6 +140,7 @@ BOOST_AUTO_TEST_CASE(VirtualGraph) {
   for (auto op : ir.getAllOps()) {
     if (op->isConvertibleTo<AccumulateOp>()) {
       if (op->inId(AccumulateOp::getVarToUpdateInIndex())
+              .str()
               .find(reservedCounterPrefix()) != std::string::npos) {
         counterAccumulateOps++;
       }
@@ -220,6 +222,7 @@ BOOST_AUTO_TEST_CASE(Pipelining) {
   for (auto op : ir.getAllOps()) {
     if (op->isConvertibleTo<AccumulateOp>()) {
       if (op->inId(AccumulateOp::getVarToUpdateInIndex())
+              .str()
               .find(reservedCounterPrefix()) != std::string::npos) {
         counterAccumulateOps++;
       }

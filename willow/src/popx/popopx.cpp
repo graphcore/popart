@@ -311,7 +311,7 @@ poplar::DebugContext PopOpx::debugContext(const std::string name,
 snap::Tensor PopOpx::cloneNcopy(poplar::program::Sequence &prog,
                                 TensorId id) const {
   const snap::Tensor &tensor = get(id);
-  return cloneNcopy(prog, tensor, id + "[cloned]");
+  return cloneNcopy(prog, tensor, id.str() + "[cloned]");
 }
 
 snap::Tensor PopOpx::cloneNcopy(poplar::program::Sequence &prog,

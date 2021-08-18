@@ -38,7 +38,8 @@ def get_session(fnModel, inputShapeInfo, dataFlow, torchWriter, patterns,
 
     # Append identity loss to output tensor
     bder = popart.Builder(fnModel)
-    loss = bder.aiGraphcore.identityloss([torchWriter.outNames[0]])
+    loss = bder.aiGraphcore.identityloss(
+        [popart.TensorId(torchWriter.outNames[0])])
 
     # Reads ONNX model from file and creates backwards graph,
     # performs Ir optimisations
@@ -125,7 +126,7 @@ def run(torchWriter, patterns, outputdir, cifarInIndices):
 
             inputs = {}
             for tenId in cifarInIndices.keys():
-                inputs[tenId] = \
+                inputs[popart.TensorId(tenId)] = \
                     addStepDimension(data[cifarInIndices[tenId]].numpy(),
                                      session.dataFlow.batchesPerStep())
             stepi += 1
@@ -183,8 +184,8 @@ batchesPerStep = 3
 # return the l1 loss "out",
 # and the input tensor "image0"
 anchors = {
-    "out": popart.AnchorReturnType("Final"),
-    "image0": popart.AnchorReturnType("Final")
+    popart.TensorId("out"): popart.AnchorReturnType("Final"),
+    popart.TensorId("image0"): popart.AnchorReturnType("Final")
 }
 
 dataFlow = popart.DataFlow(batchesPerStep, anchors)
@@ -194,7 +195,8 @@ dataFlow = popart.DataFlow(batchesPerStep, anchors)
 # In this example there is 1 streamed input, image0.
 inputShapeInfo = popart.InputShapeInfo()
 inputShapeInfo.add(
-    "image0", popart.TensorInfo("FLOAT", [samplesPerBatch, nChans, 32, 32]))
+    popart.TensorId("image0"),
+    popart.TensorInfo("FLOAT", [samplesPerBatch, nChans, 32, 32]))
 
 inNames = ["image0"]
 outNames = ["out"]

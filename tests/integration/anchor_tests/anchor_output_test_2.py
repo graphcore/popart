@@ -83,8 +83,8 @@ def test_anchor_output():
                 o: art,
                 ip: art,
                 w: art,
-                popart.reservedGradientPrefix() + o: art,
-                popart.reservedGradientPrefix() + w: art,
+                popart.TensorId(popart.reservedGradientPrefix() + o): art,
+                popart.TensorId(popart.reservedGradientPrefix() + w): art,
             })
 
         opts, device = return_options({

@@ -33,13 +33,14 @@ bool LSTMPattern::apply(Op *op) const {
   const int onnxCellGateIndex   = 3;
 
   auto concat = [&](std::vector<TensorId> inputs, auto axis) {
-    return builder.concat(inputs,
-                          axis,
-                          vgraph,
-                          pstage,
-                          pphase,
-                          "concat",
-                          op->getIr().createIntermediateTensorId(inputs.at(0)));
+    return builder.concat(
+        inputs,
+        axis,
+        vgraph,
+        pstage,
+        pphase,
+        "concat",
+        op->getIr().createIntermediateTensorId(inputs.at(0)).str());
   };
 
   auto split = [&](TensorId w, auto axis, std::vector<int64_t> splitSizes) {
@@ -53,16 +54,17 @@ bool LSTMPattern::apply(Op *op) const {
                              pstage,
                              pphase,
                              "transpose",
-                             op->getIr().createIntermediateTensorId(x));
+                             op->getIr().createIntermediateTensorId(x).str());
   };
 
   auto add = [&](std::vector<TensorId> inputs) {
-    return builder.add(inputs,
-                       vgraph,
-                       pstage,
-                       pphase,
-                       "add",
-                       op->getIr().createIntermediateTensorId(inputs.at(0)));
+    return builder.add(
+        inputs,
+        vgraph,
+        pstage,
+        pphase,
+        "add",
+        op->getIr().createIntermediateTensorId(inputs.at(0)).str());
   };
 
   auto reshapeWeights = [&](TensorId w) {

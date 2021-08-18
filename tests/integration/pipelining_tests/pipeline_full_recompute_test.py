@@ -119,11 +119,11 @@ def test_full_recompute_pipelining():
             batches_per_step, {
                 o:
                 popart.AnchorReturnType("All"),
-                popart.reservedGradientPrefix() + qkv_1:
+                popart.TensorId(popart.reservedGradientPrefix() + qkv_1):
                 popart.AnchorReturnType("All"),
-                popart.reservedGradientPrefix() + qkv_2:
+                popart.TensorId(popart.reservedGradientPrefix() + qkv_2):
                 popart.AnchorReturnType("All"),
-                popart.reservedGradientPrefix() + qkv_3:
+                popart.TensorId(popart.reservedGradientPrefix() + qkv_3):
                 popart.AnchorReturnType("All"),
             })
 

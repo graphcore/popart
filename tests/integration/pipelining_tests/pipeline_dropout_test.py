@@ -50,9 +50,11 @@ def test_pipelined_dropout():
             # the input to the forward pass dropout
             dropoutInputs.append(identity0)
             # the input to the backward pass dropout
-            dropoutInputs.append(popart.reservedGradientPrefix() + dropout0)
+            dropoutInputs.append(
+                popart.TensorId(popart.reservedGradientPrefix() + dropout0))
             # the output of the backward pass dropout
-            dropoutGrads.append(popart.reservedGradientPrefix() + identity0)
+            dropoutGrads.append(
+                popart.TensorId(popart.reservedGradientPrefix() + identity0))
             # the output of the forward pass dropout
             dropouts.append(dropout0)
 
@@ -170,9 +172,11 @@ def test_pipelined_recomputed_dropout():
         # the input to the forward pass dropout
         dropoutInputs.append(identity0)
         # the input to the backward pass dropout
-        dropoutInputs.append(popart.reservedGradientPrefix() + dropout0)
+        dropoutInputs.append(
+            popart.TensorId(popart.reservedGradientPrefix() + dropout0))
         # the output of the backward pass dropout
-        dropoutGrads.append(popart.reservedGradientPrefix() + identity0)
+        dropoutGrads.append(
+            popart.TensorId(popart.reservedGradientPrefix() + identity0))
         # the output of the forward pass dropout
         dropouts.append(dropout0)
 

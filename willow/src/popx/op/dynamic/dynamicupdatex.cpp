@@ -48,7 +48,7 @@ void DynamicUpdateOpx::grow(poplar::program::Sequence &prog) const {
       psizes,
       prog,
       debugContext("dynamic_update_" +
-                   op.inId(DynamicTernaryBaseOp::getUpdateInIndex())));
+                   op.inId(DynamicTernaryBaseOp::getUpdateInIndex()).str()));
 
   setOutTensor(DynamicTernaryBaseOp::getOutIndex(), outTensor);
 }

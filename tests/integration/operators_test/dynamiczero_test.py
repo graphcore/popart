@@ -49,9 +49,9 @@ def test_dynamiczero_training(op_tester):
         builder.addOutputTensor(sum)
         result = [
             sum,
-            popart.reservedGradientPrefix() + sum,
-            popart.reservedGradientPrefix() + tensor,
-            popart.reservedGradientPrefix() + inject_tensor,
+            popart.TensorId(popart.reservedGradientPrefix() + sum),
+            popart.TensorId(popart.reservedGradientPrefix() + tensor),
+            popart.TensorId(popart.reservedGradientPrefix() + inject_tensor),
         ] + result
         return result
 

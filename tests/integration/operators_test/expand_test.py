@@ -58,8 +58,8 @@ def expand(op_tester, inplace, int_type):
             builder.addOutputTensor(o)
             return [
                 o,
-                popart.reservedGradientPrefix() + o,
-                popart.reservedGradientPrefix() + i1
+                popart.TensorId(popart.reservedGradientPrefix() + o),
+                popart.TensorId(popart.reservedGradientPrefix() + i1)
             ]
 
     def reference(ref_data):
@@ -120,8 +120,8 @@ def expand_scalar(op_tester, inplace, int_type):
             builder.addOutputTensor(o)
             return [
                 o,
-                popart.reservedGradientPrefix() + o,
-                popart.reservedGradientPrefix() + i1
+                popart.TensorId(popart.reservedGradientPrefix() + o),
+                popart.TensorId(popart.reservedGradientPrefix() + i1)
             ]
 
     def reference(ref_data):
@@ -155,8 +155,8 @@ def expand_smaller_output(op_tester, inplace, int_type):
             builder.addOutputTensor(o)
             return [
                 o,
-                popart.reservedGradientPrefix() + o,
-                popart.reservedGradientPrefix() + i1
+                popart.TensorId(popart.reservedGradientPrefix() + o),
+                popart.TensorId(popart.reservedGradientPrefix() + i1)
             ]
 
     def reference(ref_data):
@@ -189,8 +189,8 @@ def expand_non_one_smaller_output(op_tester, inplace, int_type):
         builder.addOutputTensor(o_identity)
         return [
             o_identity,
-            popart.reservedGradientPrefix() + o,
-            popart.reservedGradientPrefix() + i1
+            popart.TensorId(popart.reservedGradientPrefix() + o),
+            popart.TensorId(popart.reservedGradientPrefix() + i1)
         ]
 
     with pytest.raises(popart.popart_exception) as e_info:
@@ -299,9 +299,9 @@ def test_expand_mul(int_type):
 
         anchor_returns = [
             o,
-            popart.reservedGradientPrefix() + o,
-            popart.reservedGradientPrefix() + i1,
-            popart.reservedGradientPrefix() + w_in
+            popart.TensorId(popart.reservedGradientPrefix() + o),
+            popart.TensorId(popart.reservedGradientPrefix() + i1),
+            popart.TensorId(popart.reservedGradientPrefix() + w_in)
         ]
 
         opts = popart.SessionOptions()

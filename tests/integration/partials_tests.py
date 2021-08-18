@@ -124,8 +124,8 @@ def test_per_op_partials_train():
         builder.addOutputTensor(o)
         return [
             loss,
-            popart.reservedGradientPrefix() + d1,
-            popart.reservedGradientPrefix() + k
+            popart.TensorId(popart.reservedGradientPrefix() + d1),
+            popart.TensorId(popart.reservedGradientPrefix() + k)
         ]
 
     session = PopartTestSession()

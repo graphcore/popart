@@ -26,9 +26,10 @@ batchesPerStep = 3
 anchors = {}
 dataFlow = popart.DataFlow(batchesPerStep, anchors)
 inputShapeInfo = popart.InputShapeInfo()
-inputShapeInfo.add("image0",
+inputShapeInfo.add(popart.TensorId("image0"),
                    popart.TensorInfo("FLOAT", [batchSize, nInChans, 32, 32]))
-inputShapeInfo.add("label", popart.TensorInfo("INT32", [batchSize]))
+inputShapeInfo.add(popart.TensorId("label"),
+                   popart.TensorInfo("INT32", [batchSize]))
 
 inNames = ["image0", "label"]
 cifarInIndices = {"image0": 0, "label": 1}

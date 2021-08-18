@@ -5,6 +5,7 @@
 #include <popart/compoundscalarhelper.hpp>
 #include <popart/op.hpp>
 #include <popart/sgd.hpp>
+#include <popart/tensorid.hpp>
 
 namespace popart {
 
@@ -14,8 +15,8 @@ template class CompoundScalarHelper<Adaptive>;
 
 template <class T>
 bool CompoundScalarHelper<T>::idMatch(const TensorId &optId) const {
-  return (optId.find(specificPrefix()) != std::string::npos) ||
-         (optId.find(defaultPrefix()) != std::string::npos);
+  return (optId.str().find(specificPrefix()) != std::string::npos) ||
+         (optId.str().find(defaultPrefix()) != std::string::npos);
 }
 
 template bool CompoundScalarHelper<SGD>::idMatch(const TensorId &optId) const;
@@ -44,12 +45,12 @@ template <class T>
 OptimizerValue CompoundScalarHelper<T>::getFromScalarId(const TensorId &optId,
                                                         const T &sgd) const {
   // the Optimizer Tensor is specific to a weight
-  if (optId.find(specificPrefix()) != std::string::npos) {
+  if (optId.str().find(specificPrefix()) != std::string::npos) {
     return getFromWeightId(getWeightId(optId), sgd);
   }
 
-  else if (optId.find(defaultPrefix()) != std::string::npos) {
-    return getFromWeightId("defaultCompoundScalarPrefix", sgd);
+  else if (optId.str().find(defaultPrefix()) != std::string::npos) {
+    return getFromWeightId(TensorId("defaultCompoundScalarPrefix"), sgd);
   }
 
   throw internal_error("failed to determine optimizer type from id {}", optId);
@@ -69,7 +70,7 @@ template <class T>
 TensorId CompoundScalarHelper<T>::getScalarId(const Tensor &w,
                                               const T &sgd) const {
   if (sgd.hasSpecific(w)) {
-    return specificPrefix() + w.id;
+    return TensorId(specificPrefix() + w.id.str());
   }
   return defaultPrefix() + w.info.data_type();
 }
@@ -86,7 +87,7 @@ CompoundScalarHelper<Adaptive>::getScalarId(const Tensor &w,
 template <class T>
 TensorId CompoundScalarHelper<T>::getScalarIdIfNonConst(const Tensor &w,
                                                         const T &sgd) const {
-  return isConst(w.id, sgd) ? "" : getScalarId(w, sgd);
+  return isConst(w.id, sgd) ? TensorId("") : getScalarId(w, sgd);
 }
 
 template TensorId
@@ -102,9 +103,9 @@ template TensorId CompoundScalarHelper<Adaptive>::getScalarIdIfNonConst(
 // remove specific prefix to obtain the TensorId of the weight
 template <class T>
 TensorId CompoundScalarHelper<T>::getWeightId(const TensorId &scalarId) const {
-  if (scalarId.find(specificPrefix()) != std::string::npos) {
-    return std::string(scalarId.begin() + specificPrefix().size(),
-                       scalarId.end());
+  if (scalarId.str().find(specificPrefix()) != std::string::npos) {
+    return std::string(scalarId.str().begin() + specificPrefix().size(),
+                       scalarId.str().end());
   }
 
   throw internal_error("CompoundScalarHelper::getWeightId(.) : failed to find "

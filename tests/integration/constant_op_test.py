@@ -39,7 +39,7 @@ def test_sparse_data():
     proto = model.SerializeToString()
 
     anchors = {
-        output.name: popart.AnchorReturnType("All")
+        popart.TensorId(output.name): popart.AnchorReturnType("All")
         for output in model.graph.output
     }
 

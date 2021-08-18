@@ -12,6 +12,7 @@
 #include <popart/patterns/pattern.hpp>
 #include <popart/sessionoptions.hpp>
 #include <popart/stepio.hpp>
+#include <popart/tensorid.hpp>
 
 namespace popart {
 
@@ -462,14 +463,14 @@ public:
    * reductions on the host. Only populated if \c hostAllReduce is enabled in
    * the SessionOptions
    */
-  const std::vector<std::string> &getHostReduceStreamIds() const;
+  const std::vector<TensorId> &getHostReduceStreamIds() const;
 
   /**
    * Access the remote buffers associated with gradient and weight streams
    * that are used in host side all reduce operations. Only populated if
    * \c hostAllReduce and \c hostAllReduceRemoteBuffer are enabled.
    */
-  const std::map<std::string, poplar::RemoteBuffer> &
+  const std::map<TensorId, poplar::RemoteBuffer> &
   getHostReduceRemoteBuffers() const;
 
   /**

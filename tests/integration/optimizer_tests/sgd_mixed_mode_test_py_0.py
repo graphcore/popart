@@ -102,7 +102,7 @@ def test_sgd_mixed_mode():
         "lossScaling": lossScaling
     })
 
-    opt0.insertSpecific(w1name, {
+    opt0.insertSpecific(popart.TensorId(w1name), {
         "weightDecay": (0, True),
         "learningRate": (0.2, False)
     })
@@ -113,7 +113,7 @@ def test_sgd_mixed_mode():
         "lossScaling": lossScaling
     })
 
-    opt1.insertSpecific(w1name, {
+    opt1.insertSpecific(popart.TensorId(w1name), {
         "weightDecay": (0, True),
         "learningRate": (0.5, False)
     })

@@ -201,7 +201,7 @@ void Executablex::resetWeights(
       if (ignoreWeightsInModelWithoutCorrespondingIrWeight) {
         continue;
       } else {
-        throw runtime_error("resetWeights, no tensor '" + tenId +
+        throw runtime_error("resetWeights, no tensor '" + tenId.str() +
                             "' in tensors");
       }
     }

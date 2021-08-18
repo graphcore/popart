@@ -363,8 +363,8 @@ std::string InputCreatorCandidate::str() {
   result += "(";
   for (auto &i : pathToInput) {
     result += " -> " + i.opx->op_p->str() + " ";
-    result += "[" + i.opx->op_p->output->id(i.outIndex);
-    result += "->" + i.opx->op_p->input->id(i.inIndex) + "]";
+    result += "[" + i.opx->op_p->output->id(i.outIndex).str();
+    result += "->" + i.opx->op_p->input->id(i.inIndex).str() + "]";
   }
   result += ")";
 

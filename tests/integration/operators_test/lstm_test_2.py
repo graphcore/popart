@@ -88,13 +88,13 @@ def test_lstm_torch_grad_all_inputs(op_tester):
         builder.addOutputTensor(Y2)
         return [
             Y2,
-            popart.reservedGradientPrefix() + i1,
-            popart.reservedGradientPrefix() + i2,
-            popart.reservedGradientPrefix() + i3,
-            popart.reservedGradientPrefix() + i4,
-            popart.reservedGradientPrefix() + i6,
-            popart.reservedGradientPrefix() + i7,
-            popart.reservedGradientPrefix() + Y2
+            popart.TensorId(popart.reservedGradientPrefix() + i1),
+            popart.TensorId(popart.reservedGradientPrefix() + i2),
+            popart.TensorId(popart.reservedGradientPrefix() + i3),
+            popart.TensorId(popart.reservedGradientPrefix() + i4),
+            popart.TensorId(popart.reservedGradientPrefix() + i6),
+            popart.TensorId(popart.reservedGradientPrefix() + i7),
+            popart.TensorId(popart.reservedGradientPrefix() + Y2)
         ]
 
     def reference(ref_data):
@@ -216,14 +216,16 @@ def test_import_torch_lstm(tmpdir):
 
         # run the popart session
         input_map = {
-            'X': inputs[0],
-            'initial_h': inputs[1],
-            'initial_c': inputs[2]
+            popart.TensorId('X'): inputs[0],
+            popart.TensorId('initial_h'): inputs[1],
+            popart.TensorId('initial_c'): inputs[2]
         }
         stepio = popart.PyStepIO(input_map, anchor_map)
         s.run(stepio)
 
-        return (anchor_map['Y'], anchor_map['Y_h'], anchor_map['Y_c'])
+        return (anchor_map[popart.TensorId('Y')],
+                anchor_map[popart.TensorId('Y_h')],
+                anchor_map[popart.TensorId('Y_c')])
 
     input_size = 2
     hidden_size = 7
@@ -337,17 +339,21 @@ def test_import_torch_lstm_train(tmpdir):
     def run_lstm_popart(onnx_file_name, inputs):
         # generate a popart session
         builder = popart.Builder(onnx_file_name)
-        loss = builder.aiGraphcore.identityloss(['out'])
+        loss = builder.aiGraphcore.identityloss([popart.TensorId('out')])
         outputs = builder.getOutputTensorIds()
         anchors = outputs + [
-            popart.reservedGradientPrefix() + 'out',
-            popart.reservedGradientPrefix() + 'X',
-            popart.reservedGradientPrefix() + 'initial_h',
-            popart.reservedGradientPrefix() + 'initial_c',
-            popart.reservedGradientPrefix() + 'lstm.weight_ih_l0',
-            popart.reservedGradientPrefix() + 'lstm.weight_hh_l0',
-            popart.reservedGradientPrefix() + 'lstm.bias_ih_l0',
-            popart.reservedGradientPrefix() + 'lstm.bias_hh_l0'
+            popart.TensorId(popart.reservedGradientPrefix() + 'out'),
+            popart.TensorId(popart.reservedGradientPrefix() + 'X'),
+            popart.TensorId(popart.reservedGradientPrefix() + 'initial_h'),
+            popart.TensorId(popart.reservedGradientPrefix() + 'initial_c'),
+            popart.TensorId(popart.reservedGradientPrefix() +
+                            'lstm.weight_ih_l0'),
+            popart.TensorId(popart.reservedGradientPrefix() +
+                            'lstm.weight_hh_l0'),
+            popart.TensorId(popart.reservedGradientPrefix() +
+                            'lstm.bias_ih_l0'),
+            popart.TensorId(popart.reservedGradientPrefix() +
+                            'lstm.bias_hh_l0')
         ]
         dataFlow = popart.DataFlow(1, anchors)
         optimizer = popart.ConstSGD(0.1)
@@ -368,27 +374,31 @@ def test_import_torch_lstm_train(tmpdir):
 
         # run the popart session
         input_map = {
-            'X': inputs[0],
-            'initial_h': inputs[1],
-            'initial_c': inputs[2]
+            popart.TensorId('X'): inputs[0],
+            popart.TensorId('initial_h'): inputs[1],
+            popart.TensorId('initial_c'): inputs[2]
         }
         stepio = popart.PyStepIO(input_map, anchor_map)
         s.weightsFromHost()
         s.run(stepio)
         s.modelToHost(get_popart_fname(onnx_file_name))
 
-        anchor_map[popart.reservedGradientPrefix() +
-                   'W'] = anchor_map.pop(popart.reservedGradientPrefix() +
-                                         'lstm.weight_ih_l0')
-        anchor_map[popart.reservedGradientPrefix() +
-                   'R'] = anchor_map.pop(popart.reservedGradientPrefix() +
-                                         'lstm.weight_hh_l0')
-        anchor_map[popart.reservedGradientPrefix() +
-                   'WB'] = anchor_map.pop(popart.reservedGradientPrefix() +
-                                          'lstm.bias_ih_l0')
-        anchor_map[popart.reservedGradientPrefix() +
-                   'RB'] = anchor_map.pop(popart.reservedGradientPrefix() +
-                                          'lstm.bias_hh_l0')
+        anchor_map[popart.TensorId(
+            popart.reservedGradientPrefix() + 'W')] = anchor_map.pop(
+                popart.TensorId(popart.reservedGradientPrefix() +
+                                'lstm.weight_ih_l0'))
+        anchor_map[popart.TensorId(
+            popart.reservedGradientPrefix() + 'R')] = anchor_map.pop(
+                popart.TensorId(popart.reservedGradientPrefix() +
+                                'lstm.weight_hh_l0'))
+        anchor_map[popart.TensorId(
+            popart.reservedGradientPrefix() + 'WB')] = anchor_map.pop(
+                popart.TensorId(popart.reservedGradientPrefix() +
+                                'lstm.bias_ih_l0'))
+        anchor_map[popart.TensorId(
+            popart.reservedGradientPrefix() + 'RB')] = anchor_map.pop(
+                popart.TensorId(popart.reservedGradientPrefix() +
+                                'lstm.bias_hh_l0'))
         return anchor_map
 
     input_size = 2
@@ -405,7 +415,8 @@ def test_import_torch_lstm_train(tmpdir):
     popart_out = run_lstm_popart(fname, (x, h0, c0))
     torch_out = run_lstm_torch(
         torch_lstm, (x, h0, c0),
-        popart_out.pop(popart.reservedGradientPrefix() + 'out'))
+        popart_out.pop(
+            popart.TensorId(popart.reservedGradientPrefix() + 'out')))
     torch_export_lstm(get_torch_fname(fname), torch_lstm, (x, h0, c0))
 
     nr = popart.NumericsReport(fname, get_torch_fname(fname), fname,
@@ -418,7 +429,7 @@ def test_import_torch_lstm_train(tmpdir):
     errors = 0
     for key in popart_out.keys():
         po = popart_out[key]
-        to = torch_out[key]
+        to = torch_out[str(key)]
         print('Checking {}'.format(key))
         if po.shape != to.shape:
             errors += 1
@@ -521,17 +532,22 @@ def test_import_torch_lstm_multi_run(tmpdir):
         for i in range(inputs[0].shape[0]):
             input_data = inputs[0][i]
             input_data = input_data.reshape(1, *input_data.shape)
-            input_map = {'X': input_data, 'initial_h': h0, 'initial_c': c0}
+            input_map = {
+                popart.TensorId('X'): input_data,
+                popart.TensorId('initial_h'): h0,
+                popart.TensorId('initial_c'): c0
+            }
             stepio = popart.PyStepIO(input_map, anchor_map)
             s.run(stepio)
 
-            h0 = anchor_map['Y_h']
-            c0 = anchor_map['Y_c']
-            outs.append(np.copy(anchor_map['Y']))
+            h0 = anchor_map[popart.TensorId('Y_h')]
+            c0 = anchor_map[popart.TensorId('Y_c')]
+            outs.append(np.copy(anchor_map[popart.TensorId('Y')]))
 
         outs = np.concatenate(outs)
 
-        return (outs, anchor_map['Y_h'], anchor_map['Y_c'])
+        return (outs, anchor_map[popart.TensorId('Y_h')],
+                anchor_map[popart.TensorId('Y_c')])
 
     input_size = 2
     hidden_size = 7
@@ -595,9 +611,10 @@ def test_lstm_export_with_constantofshape(tmpdir):
     assert len(nodes) > 0
 
     inputShapeInfo = popart.InputShapeInfo()
-    inputShapeInfo.add("data", popart.TensorInfo("FLOAT", [1, 100, 18]))
+    inputShapeInfo.add(popart.TensorId("data"),
+                       popart.TensorInfo("FLOAT", [1, 100, 18]))
 
-    anchors = {"tag": popart.AnchorReturnType("All")}
+    anchors = {popart.TensorId("tag"): popart.AnchorReturnType("All")}
     dataFlow = popart.DataFlow(1, anchors)
     device = tu.create_test_device()
 
@@ -609,9 +626,10 @@ def test_lstm_export_with_constantofshape(tmpdir):
     session.prepareDevice()
 
     inferenceAnchors = session.initAnchorArrays()
-    stepio = popart.PyStepIO({"data": np_data}, inferenceAnchors)
+    stepio = popart.PyStepIO({popart.TensorId("data"): np_data},
+                             inferenceAnchors)
     session.run(stepio)
-    popartOutput = inferenceAnchors['tag']
+    popartOutput = inferenceAnchors[popart.TensorId('tag')]
 
     assert torchOutput.shape == popartOutput.shape
     assert np.allclose(torchOutput, popartOutput, atol=1e-07)

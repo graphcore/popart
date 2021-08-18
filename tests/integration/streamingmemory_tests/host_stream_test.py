@@ -281,8 +281,8 @@ def run_model(session: popart.TrainingSession, anchors: Dict,
     """
     stepio = popart.PyStepIO(
         {
-            "main_input_123": in_array,
-            "label_input_456": label_array
+            popart.TensorId("main_input_123"): in_array,
+            popart.TensorId("label_input_456"): label_array
         }, anchors)
     session.weightsFromHost()
 
@@ -290,8 +290,9 @@ def run_model(session: popart.TrainingSession, anchors: Dict,
 
     session.weightsToHost()
 
-    return anchors["main_input_123"], anchors["Relu:0"], anchors[
-        "Nll:0"], anchors["MatMul:0"]
+    return anchors[popart.TensorId("main_input_123")], anchors[popart.TensorId(
+        "Relu:0")], anchors[popart.TensorId("Nll:0")], anchors[popart.TensorId(
+            "MatMul:0")]
 
 
 def run_test(batches_per_step: int, replication_factor: int, batch_size: int,

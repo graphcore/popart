@@ -354,7 +354,7 @@ bool AutomaticLossScale::apply(Graph &graph) const {
 
     auto reduceOp = graph.createOp<ReplicatedAllReduceOp>(
         Onnx::CustomOperators::ReplicatedAllReduce,
-        Op::Settings(graph, inId + "_reduced"));
+        Op::Settings(graph, inId.str() + "_reduced"));
 
     reduceOp->connectInTensor(ReplicatedAllReduceOp::getInIndex(), inId);
     reduceOp->createAndConnectOutTensor(ReplicatedAllReduceOp::getOutIndex(),

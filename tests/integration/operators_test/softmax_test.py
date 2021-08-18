@@ -36,8 +36,8 @@ def test_softmax_grad(op_tester):
         builder.addOutputTensor(o)
         return [
             o,
-            popart.reservedGradientPrefix() + i1,
-            popart.reservedGradientPrefix() + o
+            popart.TensorId(popart.reservedGradientPrefix() + i1),
+            popart.TensorId(popart.reservedGradientPrefix() + o)
         ]
 
     def reference(ref_data):
@@ -133,8 +133,8 @@ def _test_softmax_grad(op_tester, data, axis):
         builder.addOutputTensor(o)
         return [
             o, s,
-            popart.reservedGradientPrefix() + i1,
-            popart.reservedGradientPrefix() + o
+            popart.TensorId(popart.reservedGradientPrefix() + i1),
+            popart.TensorId(popart.reservedGradientPrefix() + o)
         ]
 
     def reference(ref_data):

@@ -48,7 +48,7 @@ def test_replica_bitwise_identical_update():
 
         device = tu.create_test_device(2, pattern=popart.SyncPattern.Full)
 
-        w_updated = popart.reservedUpdatedVarPrefix() + w
+        w_updated = popart.TensorId(popart.reservedUpdatedVarPrefix() + w)
 
         dataFlow = popart.DataFlow(
             1, {

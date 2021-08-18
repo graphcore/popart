@@ -90,9 +90,9 @@ def test_per_op_partials_train():
 
         return [
             loss,
-            popart.reservedGradientPrefix() + t1,
-            popart.reservedGradientPrefix() + t2,
-            popart.reservedGradientPrefix() + t3
+            popart.TensorId(popart.reservedGradientPrefix() + t1),
+            popart.TensorId(popart.reservedGradientPrefix() + t2),
+            popart.TensorId(popart.reservedGradientPrefix() + t3)
         ]
 
     session = PopartTestSession()

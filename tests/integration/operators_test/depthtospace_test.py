@@ -129,8 +129,8 @@ def test_depthtospace_grad0(op_tester):
         builder.addOutputTensor(o)
         return [
             o,
-            popart.reservedGradientPrefix() + i1,
-            popart.reservedGradientPrefix() + o,
+            popart.TensorId(popart.reservedGradientPrefix() + i1),
+            popart.TensorId(popart.reservedGradientPrefix() + o),
         ]
 
     def reference(ref_data):
@@ -163,8 +163,8 @@ def test_depthtospace_grad1(op_tester):
         builder.addOutputTensor(o)
         return [
             o,
-            popart.reservedGradientPrefix() + i1,
-            popart.reservedGradientPrefix() + o,
+            popart.TensorId(popart.reservedGradientPrefix() + i1),
+            popart.TensorId(popart.reservedGradientPrefix() + o),
         ]
 
     def reference(ref_data):
@@ -239,8 +239,8 @@ def test_spacetodepth_grad1(op_tester):
         builder.addOutputTensor(o)
         return [
             o,
-            popart.reservedGradientPrefix() + i1,
-            popart.reservedGradientPrefix() + o,
+            popart.TensorId(popart.reservedGradientPrefix() + i1),
+            popart.TensorId(popart.reservedGradientPrefix() + o),
         ]
 
     def reference(ref_data):

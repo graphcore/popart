@@ -58,8 +58,8 @@ def test_scatterreduce_training(op_tester):
         builder.addOutputTensor(out)
         return [
             out,
-            popart.reservedGradientPrefix() + D,
-            popart.reservedGradientPrefix() + out
+            popart.TensorId(popart.reservedGradientPrefix() + D),
+            popart.TensorId(popart.reservedGradientPrefix() + out)
         ]
 
     def reference(ref_data):
@@ -94,8 +94,8 @@ def test_scatterreduce_axis(op_tester, axis):
         builder.addOutputTensor(out)
         return [
             out,
-            popart.reservedGradientPrefix() + D,
-            popart.reservedGradientPrefix() + out
+            popart.TensorId(popart.reservedGradientPrefix() + D),
+            popart.TensorId(popart.reservedGradientPrefix() + out)
         ]
 
     def reference(ref_data):

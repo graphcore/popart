@@ -10,7 +10,7 @@ OpsBeforeKey TopoCons::finalConsumerCons(const Tensor *tensor, Op *last) const {
 
   if (tensor->consumers.n(last) == 0) {
     throw error("Cannot set " + last->str() + " as last consumer of " +
-                tensor->id + ", as it is not a consumer.");
+                tensor->id.str() + ", as it is not a consumer.");
   }
 
   OpsBeforeKey ops;

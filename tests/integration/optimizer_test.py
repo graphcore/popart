@@ -56,9 +56,11 @@ def test_sgd_param_check():
     matches the value supplied to the optimizer constructor
     """
 
-    lrName = popart.reservedDefaultScaledLearningRate0Prefix() + "FLOAT"
-    wdName = popart.reservedDefaultWeightDecayScaleFactor0Prefix() + "FLOAT"
-    lsName = popart.reservedLossScalingPrefix() + "FLOAT"
+    lrName = popart.TensorId(
+        popart.reservedDefaultScaledLearningRate0Prefix() + "FLOAT")
+    wdName = popart.TensorId(
+        popart.reservedDefaultWeightDecayScaleFactor0Prefix() + "FLOAT")
+    lsName = popart.TensorId(popart.reservedLossScalingPrefix() + "FLOAT")
 
     anchorNames = {
         lrName: popart.AnchorReturnType("All"),
@@ -120,7 +122,7 @@ def test_constsgd_vs_sgd():
     We show that if the learning rates match, the training updates are 
     identical, otherwise they differ.
     """
-    anchorNames = {"L1:0": popart.AnchorReturnType("All")}
+    anchorNames = {popart.TensorId("L1:0"): popart.AnchorReturnType("All")}
     lr = 0.01
     wd = 0.01
     ls = 1000
@@ -168,13 +170,16 @@ def test_constsgd_vs_sgd():
         if step == numSteps - 1:
             # We expect to see the diverging losses on the second forward pass
             # after updating the optimizer
-            assert (np.array_equal(anchorsArraysUserSgd["L1:0"][0],
-                                   anchorsArraysConstSgd["L1:0"][0]))
-            assert (np.array_equal(anchorsArraysUserSgd["L1:0"][1],
-                                   anchorsArraysConstSgd["L1:0"][1]) is False)
+            assert (np.array_equal(
+                anchorsArraysUserSgd[popart.TensorId("L1:0")][0],
+                anchorsArraysConstSgd[popart.TensorId("L1:0")][0]))
+            assert (np.array_equal(
+                anchorsArraysUserSgd[popart.TensorId("L1:0")][1],
+                anchorsArraysConstSgd[popart.TensorId("L1:0")][1]) is False)
         else:
-            assert (np.array_equal(anchorsArraysUserSgd["L1:0"],
-                                   anchorsArraysConstSgd["L1:0"]))
+            assert (np.array_equal(
+                anchorsArraysUserSgd[popart.TensorId("L1:0")],
+                anchorsArraysConstSgd[popart.TensorId("L1:0")]))
 
 
 def test_sgd_with_float16_model():
@@ -210,7 +215,7 @@ def test_sgd_with_float16_model():
     })
 
     anchorNames = {
-        popart.reservedGradientPrefix() + inid1:
+        popart.TensorId(popart.reservedGradientPrefix() + inid1):
         popart.AnchorReturnType("All"),
     }
 
@@ -252,7 +257,7 @@ def test_sgd_with_zero_learning_rate():
     # Get the initial weights:
     fn = "init.onnx"
     session.modelToHost(fn)
-    wId = "init_input"
+    wId = popart.TensorId("init_input")
     weights = {wId: np.empty(shape=[2, 2, 3, 3], dtype=np.float32)}
     weightsio = popart.PyWeightsIO(weights)
     session.readWeights(weightsio)

@@ -84,8 +84,9 @@ DecomposeGradSum::getDecomposableGradSumOps(const Graph &graph) const {
       if (op->settings.name.find(GradGrowerSumOp::getGradSumOpNamePrefix()) !=
           std::string::npos) {
         // 3.
-        if (op->outId(SumOp::getOutIndex()).find(reservedGradientPrefix()) !=
-            std::string::npos) {
+        if (op->outId(SumOp::getOutIndex())
+                .str()
+                .find(reservedGradientPrefix()) != std::string::npos) {
           // 4.
           if (op->outTensor(SumOp::getOutIndex())->fromLoss ==
               PathFromLoss::Yes) {
@@ -248,7 +249,7 @@ bool DecomposeGradSum::apply(Graph &graph) const {
     Op::Settings initSettings = firstPartialProducer->getOutSettings(
         firstPartialProducer->output->indices(partialsSumOrder.front())
             .front());
-    initSettings.name = gradSum->id + "_InitOp";
+    initSettings.name = gradSum->id.str() + "_InitOp";
     auto init         = std::make_unique<InitOp>(Onnx::CustomOperators::Init_1,
                                          partialsSumOrder.front()->info,
                                          TensorType::ActGrad,

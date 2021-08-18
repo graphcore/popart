@@ -60,11 +60,13 @@ def get_model_anchors(doSharding,
 
     anchor_map = {nll: art, w0: art, e0: art}
     if doTraining is True:
-        anchor_map[popart.reservedGradientPrefix() + d0] = art
+        anchor_map[popart.TensorId(popart.reservedGradientPrefix() + d0)] = art
         if doPipelining is True and anchorRestoredTensors is True:
-            anchor_map[popart.reservedRestoredPrefix() + e0] = art
+            anchor_map[popart.TensorId(popart.reservedRestoredPrefix() +
+                                       e0)] = art
             anchor_map[d0] = art
-            anchor_map[popart.reservedRestoredPrefix() + d0] = art
+            anchor_map[popart.TensorId(popart.reservedRestoredPrefix() +
+                                       d0)] = art
 
     opts = popart.SessionOptions()
     opts.reportOptions = {"showExecutionSteps": "true"}

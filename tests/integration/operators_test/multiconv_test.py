@@ -176,11 +176,11 @@ def test_multiconv_train_default_parameters_and_conv_options(op_tester, dims):
         out = builder.aiOnnx.add([sumc0, sumc1])
         return [
             out,
-            popart.reservedGradientPrefix() + d0,
-            popart.reservedGradientPrefix() + d1,
-            popart.reservedGradientPrefix() + f0,
-            popart.reservedGradientPrefix() + f1,
-            popart.reservedGradientPrefix() + b1
+            popart.TensorId(popart.reservedGradientPrefix() + d0),
+            popart.TensorId(popart.reservedGradientPrefix() + d1),
+            popart.TensorId(popart.reservedGradientPrefix() + f0),
+            popart.TensorId(popart.reservedGradientPrefix() + f1),
+            popart.TensorId(popart.reservedGradientPrefix() + b1)
         ]
 
     def reference(ref_data):
@@ -252,10 +252,10 @@ def test_multiconv_train_all_conv_options(op_tester):
         out = builder.aiOnnx.add([sumc0, sumc1])
         return [
             out,
-            popart.reservedGradientPrefix() + d0,
-            popart.reservedGradientPrefix() + d1,
-            popart.reservedGradientPrefix() + f0,
-            popart.reservedGradientPrefix() + f1
+            popart.TensorId(popart.reservedGradientPrefix() + d0),
+            popart.TensorId(popart.reservedGradientPrefix() + d1),
+            popart.TensorId(popart.reservedGradientPrefix() + f0),
+            popart.TensorId(popart.reservedGradientPrefix() + f1)
         ]
 
     def reference(ref_data):

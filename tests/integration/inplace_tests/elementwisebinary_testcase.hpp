@@ -118,7 +118,7 @@ public:
       auto aiOnnx = builder.aiOnnxOpset9();
       auto in0    = builder.addInputTensor(info0);
       auto in1    = builder.addInputTensor(info1);
-      opOut       = insertOp(aiOnnx, in0, in1);
+      opOut       = insertOp(aiOnnx, in0, in1).str();
       builder.addOutputTensor(opOut);
 
       return opOut;
@@ -155,7 +155,7 @@ public:
       auto aiOnnx = builder.aiOnnxOpset9();
       auto in0    = builder.addInputTensor(info0);
       auto in1    = builder.addInputTensor(info1);
-      opOut       = insertOp(aiOnnx, in0, in1);
+      opOut       = insertOp(aiOnnx, in0, in1).str();
       builder.addOutputTensor(opOut);
 
       return opOut;

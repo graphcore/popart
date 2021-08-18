@@ -326,7 +326,7 @@ std::unique_ptr<IdentityOp> createIdenityCopyOp(Graph &graph,
                                                 Tensor *tensor,
                                                 VGraphId vGraphId,
                                                 PipelineStage pStage) {
-  Op::Settings identitySettings(graph, tensor->id + "_pipelineCopy");
+  Op::Settings identitySettings(graph, tensor->id.str() + "_pipelineCopy");
   auto op = std::make_unique<IdentityOp>(Onnx::Operators::Identity_1,
                                          identitySettings);
   if (op == nullptr) {
@@ -817,7 +817,7 @@ TensorId createStashableRandomSeed(GetRandomSeedOp *randomSeedOp) {
   logging::transform::debug("Adding Identity Copy for random seed tensor {}",
                             randomSeed->id);
   Op::Settings identitySettings(randomSeedOp->getGraph(),
-                                randomSeed->id + "_pipelineCopyOp");
+                                randomSeed->id.str() + "_pipelineCopyOp");
   TensorId identityOutput = randomSeed->id + "_pipelineCopy";
   IdentityOp *identityOp  = [&] {
     auto x = std::make_unique<IdentityOp>(Onnx::Operators::Identity_1,

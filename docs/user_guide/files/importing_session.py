@@ -12,13 +12,13 @@ output_name = "output"
 torch.onnx.export(model, input_, "alexnet.onnx", output_names=[output_name])
 
 # Create a runtime environment
-anchors = {output_name: popart.AnchorReturnType("All")}
+anchors = {popart.TensorId(output_name): popart.AnchorReturnType("All")}
 dataFlow = popart.DataFlow(100, anchors)
 
 # Append an Nll loss operation to the model
 builder = popart.Builder("alexnet.onnx")
 labels = builder.addInputTensor("INT32", [4])
-nlll = builder.aiGraphcore.nllloss([output_name, labels])
+nlll = builder.aiGraphcore.nllloss([popart.TensorId(output_name), labels])
 
 optimizer = popart.ConstSGD(0.001)
 

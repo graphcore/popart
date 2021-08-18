@@ -18,6 +18,7 @@
 #include <popart/names.hpp>
 #include <popart/op/autolossscaleproxy.hpp>
 #include <popart/op/mul.hpp>
+#include <popart/tensorid.hpp>
 #include <popart/tensorinfo.hpp>
 #include <popart/transforms/preautomaticlossscaling.hpp>
 #include <popart/util.hpp>
@@ -54,7 +55,7 @@ std::function<bool(const Ex &)> checkErrorMsgHasPrefixFn(const std::string &);
  * C - [P] - C* == M1 ------------------ E - [P] - E* == M3 -- G - [P] - G*
  */
 BOOST_AUTO_TEST_CASE(TestAutoLossScaleProxyOpInserted) {
-  auto test = [](std::vector<std::string> toTrackTensors) {
+  auto test = [](std::vector<TensorId> toTrackTensors) {
     Ir ir;
     Graph &g = ir.getMainGraph();
 
@@ -239,7 +240,7 @@ BOOST_AUTO_TEST_CASE(TestNoToTrackTensors) {
  * that are not in the graph.
  */
 BOOST_AUTO_TEST_CASE(TestToTrackTensorsNotInGraph) {
-  auto test = [](std::vector<std::string> toTrackTensors) {
+  auto test = [](std::vector<TensorId> toTrackTensors) {
     Ir ir;
     Graph &g = ir.getMainGraph();
 

@@ -142,8 +142,8 @@ Ir::~Ir() = default;
 
 void Ir::confirmNonReservedId(const TensorId &tenId) const {
   for (auto reservedPrefix : reservedPrefixes()) {
-    if (tenId.find(reservedPrefix) != std::string::npos) {
-      throw error("Provided tensor " + tenId +
+    if (tenId.str().find(reservedPrefix) != std::string::npos) {
+      throw error("Provided tensor " + tenId.str() +
                   " has an invalid name: clash with reserved prefix " +
                   reservedPrefix);
     }
@@ -1617,7 +1617,7 @@ void Ir::addAdditionalModelProtoTensors() {
       hasOnnxModel() ? onnxModel->mutable_graph() : nullptr;
 
   for (const Tensor *tensor : additionalModelProtoTensors) {
-    const std::string &tId = tensor->id;
+    const std::string &tId = tensor->id.str();
     // For additional tensors we want to save in the onnx modelproto, we copy
     // their info into across to the proto.
     if (onnxutil::isInitializer(*onnxModel, tId)) {
@@ -1637,14 +1637,15 @@ void Ir::addAdditionalModelProtoTensors() {
       // externally, then save the this tensor to the same external location
       if (tensor->isOptimizerStateTensor()) {
         // Get corresponding initializer from optimizer state TensorId
-        TensorId initializerId = tId;
+        std::string initializerIdStr = tId;
         for (auto prefix : reservedOptimizerStatePrefixes()) {
-          size_t pos = initializerId.find(prefix);
+          size_t pos = initializerIdStr.find(prefix);
           if (pos != std::string::npos) {
-            initializerId.erase(pos, prefix.length());
+            initializerIdStr.erase(pos, prefix.length());
             break;
           }
         }
+        TensorId initializerId(initializerIdStr);
         if (!onnxutil::isInitializer(*onnxModel, initializerId)) {
           // No candidate path to save tensor data externally
           continue;
@@ -1972,7 +1973,7 @@ void Ir::registerInputTensors() {
     } else {
 
       uint32_t debugid = 0;
-      auto key         = std::string(onnxDebugIdInputMetaDataKey) + tenId;
+      auto key         = std::string(onnxDebugIdInputMetaDataKey) + tenId.str();
       for (auto m : onnxModel->metadata_props()) {
         if (m.key() == key) {
           debugid = std::stoi(m.value());
@@ -2013,7 +2014,7 @@ void Ir::registerInputTensors() {
 
       uint32_t debugid = 0;
       {
-        auto key = std::string(onnxDebugIdInputMetaDataKey) + id;
+        auto key = std::string(onnxDebugIdInputMetaDataKey) + id.str();
         for (auto m : onnxModel->metadata_props()) {
           if (m.key() == key) {
             debugid = std::stoi(m.value());
@@ -2026,8 +2027,8 @@ void Ir::registerInputTensors() {
       {
         {
           TileSet tileSet = TileSet::Compute;
-          auto key =
-              std::string(sTileSetAttribute) + std::string(sNameDelimiter) + id;
+          auto key        = std::string(sTileSetAttribute) +
+                     std::string(sNameDelimiter) + id.str();
           for (auto m : onnxModel->metadata_props()) {
             if (m.key() == key) {
               tileSet = static_cast<TileSet>(std::stoi(m.value()));
@@ -2039,7 +2040,7 @@ void Ir::registerInputTensors() {
         {
           ExchangeStrategy strategy = ExchangeStrategy::JustInTime;
           auto key                  = std::string(sExchangeStrategyAttribute) +
-                     std::string(sNameDelimiter) + id;
+                     std::string(sNameDelimiter) + id.str();
           for (auto m : onnxModel->metadata_props()) {
             if (m.key() == key) {
               strategy = static_cast<ExchangeStrategy>(std::stoi(m.value()));
@@ -2117,8 +2118,8 @@ void Ir::validateAnchors() const {
       std::stringstream ss;
       ss << "Anchor tensor `" << id << "' not in Ir Tensors. ";
       // add some trouble-shooting for a case I stumbled upon:
-      if (id.find(reservedGradientPrefix()) != std::string::npos) {
-        std::string degrad = getNonGradId(id);
+      if (id.str().find(reservedGradientPrefix()) != std::string::npos) {
+        std::string degrad = getNonGradId(id).str();
         if (allTensorIds.find(degrad) != allTensorIds.end()) {
           ss << "\nInterestingly, `" << degrad << '\'' << " IS in tensors.\n";
           ss << "Note that not all tensors can have their gradients "
@@ -2360,7 +2361,7 @@ bool Ir::storingIsDisabledForTensor(const Tensor *tensor) const {
   // 4. The tensor is an Accum__ tensor - these will be zero in the current
   // implementation
   if ((tensor->isAccumulatorTensor() &&
-       tensor->id.find(reservedAccumPrefix()) != std::string::npos)) {
+       tensor->id.str().find(reservedAccumPrefix()) != std::string::npos)) {
     return true;
   }
 
@@ -3666,7 +3667,7 @@ Tensor *Ir::getTensor(const TensorId &tensor_id) const {
     }
   }
 
-  throw error("No Ir::Tensor with TensorId '" + tensor_id +
+  throw error("No Ir::Tensor with TensorId '" + tensor_id.str() +
               "' in Ir::getTensor(..) ");
 }
 
@@ -3746,13 +3747,14 @@ void Ir::setMainGraphPathFromLoss() {
   for (auto &id_op : getMainGraph().getOps()) {
     Op *op = id_op.second.get();
     for (auto inArr : op->input->tensors()) {
-      if (inArr->id.find(reservedGradientPrefix()) != std::string::npos) {
+      if (inArr->id.str().find(reservedGradientPrefix()) != std::string::npos) {
         inArr->fromLoss = PathFromLoss::Yes;
         op->fromLoss    = PathFromLoss::Yes;
       }
     }
     for (auto outArr : op->output->tensors()) {
-      if (outArr->id.find(reservedGradientPrefix()) != std::string::npos) {
+      if (outArr->id.str().find(reservedGradientPrefix()) !=
+          std::string::npos) {
         outArr->fromLoss = PathFromLoss::Yes;
         op->fromLoss     = PathFromLoss::Yes;
       }
@@ -4049,8 +4051,8 @@ std::size_t std::hash<popart::Ir>::operator()(const popart::Ir &ir) const {
   return seed;
 }
 
-std::size_t std::hash<popart::IrBundle>::
-operator()(const popart::IrBundle &bundle) const {
+std::size_t
+std::hash<popart::IrBundle>::operator()(const popart::IrBundle &bundle) const {
   size_t seed = 0;
 
   boost::hash_combine(

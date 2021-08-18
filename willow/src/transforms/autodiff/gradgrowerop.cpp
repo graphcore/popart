@@ -7,6 +7,7 @@
 #include <popart/op.hpp>
 #include <popart/pbwrap.hpp>
 #include <popart/tensor.hpp>
+#include <popart/tensorid.hpp>
 
 namespace popart {
 
@@ -74,7 +75,7 @@ GradGrowerOp::growGradOps(Op *nonGradOp,
     // connect inputs of gradOp
     {
       // inputs to gradOp (to populate in this scope):
-      std::map<int, std::string> m_inputs;
+      std::map<int, TensorId> m_inputs;
       auto isInputOptional = [](Op *op, InIndex i) {
         auto optionalInputs = op->optionalInputs();
         return optionalInputs.find(i) != optionalInputs.end();

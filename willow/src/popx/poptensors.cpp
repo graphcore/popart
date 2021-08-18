@@ -14,7 +14,7 @@ void PopTensors::verify(TensorId id, const snap::Tensor &pt) {
   auto foundViewChangers = viewChangers_.find(id);
 
   if (found != tensors_.end()) {
-    throw internal_error("snap::Tensor " + id + " already in map");
+    throw internal_error("snap::Tensor " + id.str() + " already in map");
   }
 
   if (!ir.containsTensor(id)) {
@@ -95,7 +95,7 @@ void PopTensors::insertAliased(TensorId to, TensorId from) {
 void PopTensors::insertUnsafe(TensorId id, const snap::Tensor &pt) {
   auto found = tensors_.find(id);
   if (found != tensors_.end()) {
-    throw internal_error("snap::Tensor " + id + " already in map");
+    throw internal_error("snap::Tensor " + id.str() + " already in map");
   }
 
   tensors_[id] = std::make_shared<snap::Tensor>(pt);
@@ -108,7 +108,7 @@ bool PopTensors::contains(TensorId id) const {
 const snap::Tensor &PopTensors::get(TensorId id) const {
   auto found = tensors_.find(id);
   if (found == tensors_.end()) {
-    throw error("no snap::Tensor " + id);
+    throw error("no snap::Tensor " + id.str());
   }
   return *found->second;
 }
@@ -116,7 +116,7 @@ const snap::Tensor &PopTensors::get(TensorId id) const {
 const snap::Tensor &PopTensors::getView(TensorId id) const {
   auto found = tensors_.find(id);
   if (found == tensors_.end()) {
-    throw error("no snap::Tensor " + id);
+    throw error("no snap::Tensor " + id.str());
   }
   auto foundView = views_.find(id);
   if (foundView == views_.end()) {
@@ -134,7 +134,7 @@ bool PopTensors::hasViewChangers(TensorId id) const {
 const ViewChangers &PopTensors::getViewChangers(TensorId id) {
   auto foundViewChangers = viewChangers_.find(id);
   if (foundViewChangers == viewChangers_.end()) {
-    throw error("no ViewChangers " + id);
+    throw error("no ViewChangers " + id.str());
   } else {
     return *foundViewChangers->second;
   }

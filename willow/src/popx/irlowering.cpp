@@ -1552,7 +1552,7 @@ void IrLowering::addOpTasks(PriTasks &tasks) {
 
       auto opInput = opInputs[i];
       if (!tasks.contains(initTensorTaskId(std::get<1>(opInput)))) {
-        if (std::get<0>(opInput).empty()) {
+        if (std::get<0>(opInput).str().empty()) {
           // No tensor to clone or alias from
           auto creators =
               getInitTensorCreators(ir().getTensor(std::get<1>(opInput)));
@@ -1585,7 +1585,7 @@ void IrLowering::addOpTasks(PriTasks &tasks) {
           "adding Op output Tensor tasks (Ir Lowering)");
       auto opOutput = opOutputs[i];
       if (!tasks.contains(initTensorTaskId(std::get<1>(opOutput)))) {
-        if (std::get<0>(opOutput).empty()) {
+        if (std::get<0>(opOutput).str().empty()) {
           // No tensor to clone or alias from
           auto creators =
               getInitTensorCreators(ir().getTensor(std::get<1>(opOutput)));
@@ -1685,7 +1685,7 @@ bool IrLowering::tryInitTensorByPostIRAliasing(
 PriTask IrLowering::initTensorTask(InitTensorPtrs inits) {
 
   TensorId dstId;
-  std::map<TensorId, bool> dependencyTensorValues;
+  std::map<std::string, bool> dependencyTensorValues;
   std::vector<boollogic::Term> terms;
   for (auto &init : inits) {
     dstId = init->getDstId();
@@ -1696,8 +1696,8 @@ PriTask IrLowering::initTensorTask(InitTensorPtrs inits) {
       // Dependencies
       std::vector<boollogic::Term> subterms;
       for (auto srcId : init->getDependsOnIds()) {
-        subterms.push_back(boollogic::Term::varTerm(srcId));
-        dependencyTensorValues[srcId] = false;
+        subterms.push_back(boollogic::Term::varTerm(srcId.str()));
+        dependencyTensorValues[srcId.str()] = false;
       }
       terms.push_back(boollogic::Term::andTerm(subterms));
     }
@@ -2158,10 +2158,10 @@ void IrLowering::growOpx(PopOpx *opx,
   for (auto out : opx->op_p->output->tensorIdMap()) {
     auto idx = out.first;
     auto id  = out.second;
-    if (printTensorIds.find(id) != printTensorIds.end()) {
+    if (printTensorIds.find(id.str()) != printTensorIds.end()) {
       auto tensor = opx->getOutTensor(idx).getPoplarTensor();
       auto printProg =
-          poplar::program::PrintTensor(id, tensor, opx->debugContext());
+          poplar::program::PrintTensor(id.str(), tensor, opx->debugContext());
       seqIt->add(printProg);
     }
   }
@@ -3470,7 +3470,7 @@ PriTask IrLowering::fromHostTask(Tensor *tensor,
   auto f = [&sq, tensor, this]() {
     SequenceMap seqs;
     logging::devicex::debug("Adding poplar::program::Copy from host " +
-                            tensor->id);
+                            tensor->id.str());
 
     if (tensors_.hasViewChangers(tensor->id)) {
       if (tensors_.get(tensor->id).numElements() >
@@ -3596,7 +3596,7 @@ PriTask IrLowering::anchorReturnTypeSumTask(Tensor *tensor,
     const TensorId accumulatorId = anchorSumPrefix() + tensor->id;
     auto accumulatorTensor =
         snap::Tensor{graph().getPoplarGraph().clone(
-                         poplarTensor.getPoplarTensor(), accumulatorId),
+                         poplarTensor.getPoplarTensor(), accumulatorId.str()),
                      graph()};
     tensors_.insertUnsafe(accumulatorId, accumulatorTensor);
 
@@ -3605,12 +3605,12 @@ PriTask IrLowering::anchorReturnTypeSumTask(Tensor *tensor,
                        accumulatorTensor.getPoplarTensor(),
                        poplarTensor.getPoplarTensor(),
                        seqs.getSequence(&sq),
-                       "AnchorSum_" + tensor->id);
+                       "AnchorSum_" + tensor->id.str());
     // Zero the accumulator
     popops::zero(graph().getPoplarGraph(),
                  accumulatorTensor.getPoplarTensor(),
                  seqs.getSequence(&progs.initFragment()),
-                 "AnchorSumZero_" + tensor->id);
+                 "AnchorSumZero_" + tensor->id.str());
 
     return seqs;
   };
@@ -3768,7 +3768,7 @@ PriTask IrLowering::toHostEveryNBatchesTask(Tensor *tensor,
   auto f = [&sq, tensor, N, this]() {
     SequenceMap seqs;
     logging::devicex::debug(
-        "Adding conditional poplar::program::Copy to host " + tensor->id);
+        "Adding conditional poplar::program::Copy to host " + tensor->id.str());
 
     snap::Tensor isNthBatch = batchCountCheckingTensors.at(N);
 
@@ -3994,25 +3994,25 @@ std::set<TensorId> IrLowering::getEfficientlyCreatedInputTensors() const {
   return efficientlyCreatedInputTensors;
 }
 
-PopStreamId IrLowering::h2dId(TensorId id) { return "h2d_" + id; }
+PopStreamId IrLowering::h2dId(TensorId id) { return "h2d_" + id.str(); }
 
 PopStreamId IrLowering::d2hId(TensorId id, bool isAnchorStream) {
 
   std::string anchorPrefix = isAnchorStream ? "anchor" : "weight";
 
-  return anchorPrefix + "_d2h_" + id;
+  return anchorPrefix + "_d2h_" + id.str();
 }
 
 PopStreamId IrLowering::gradientStoreStreamId(TensorId id) {
-  return gradientStoreStreamPrefix + id;
+  return gradientStoreStreamPrefix + id.str();
 }
 
 PopStreamId IrLowering::gradientLoadStreamId(TensorId id) {
-  return gradientLoadStreamPrefix + id;
+  return gradientLoadStreamPrefix + id.str();
 }
 
 PopStreamId IrLowering::weightLoadStreamId(TensorId id) {
-  return weightLoadStreamPrefix + id;
+  return weightLoadStreamPrefix + id.str();
 }
 
 std::string IrLowering::cycleCountStreamId(std::string id) {
@@ -4027,7 +4027,7 @@ IrLowering::getOrCreateHostReduceRemoteBuffer(TensorId tensorId,
 
   if (entry == hostReduceRemoteBuffers.end()) {
     auto remoteBuffer = graph.getPoplarGraph().addRemoteBuffer(
-        tensorId, popType(tensorInfo), tensorInfo.nelms(), 1, true);
+        tensorId.str(), popType(tensorInfo), tensorInfo.nelms(), 1, true);
 
     hostReduceRemoteBuffers.emplace(tensorId, remoteBuffer);
     entry = hostReduceRemoteBuffers.find(tensorId);
@@ -4057,7 +4057,7 @@ poplar::DataStream &IrLowering::insertGradientStoreStream(TensorId tensorId,
     }
     streamMapEntry = toHostGradientStreams.find(tensorId);
   } else {
-    throw error("Tensor Id " + tensorId +
+    throw error("Tensor Id " + tensorId.str() +
                 " already exists in toHostGradientStreams");
   }
 
@@ -4086,7 +4086,7 @@ poplar::DataStream &IrLowering::insertGradientLoadStream(TensorId tensorId,
     }
     streamMapEntry = fromHostGradientStreams.find(tensorId);
   } else {
-    throw error("Tensor Id " + tensorId +
+    throw error("Tensor Id " + tensorId.str() +
                 " already exists in fromHostGradientStreams");
   }
 
@@ -4108,7 +4108,7 @@ poplar::DataStream &IrLowering::insertWeightLoadStream(TensorId tensorId,
             poplar::ReplicatedStreamMode::BROADCAST)));
     streamMapEntry = fromHostWeightLoadStreams.find(tensorId);
   } else {
-    throw error("Tensor Id " + tensorId +
+    throw error("Tensor Id " + tensorId.str() +
                 " already exists in weightStoreStreams");
   }
 

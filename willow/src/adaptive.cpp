@@ -379,7 +379,7 @@ Adaptive::getOptimizerInputs(const Tensor &weight) const {
 
   std::vector<std::tuple<TensorId, TensorInfo>> optInputs;
   for (const auto &id : ids) {
-    if (!id.empty()) {
+    if (!id.str().empty()) {
       auto tuppy = std::make_tuple(id, TensorInfo(DataType::FLOAT, {}));
       optInputs.push_back(tuppy);
     }
@@ -409,7 +409,7 @@ void Adaptive::resetTensorData(Tensor &optTensor) const {
 
 float Adaptive::getStoredValue(const TensorId &optId) const {
 
-  if (optId.find(reservedLossScalingPrefix()) != std::string::npos) {
+  if (optId.str().find(reservedLossScalingPrefix()) != std::string::npos) {
     return lossScaling().val();
   }
 

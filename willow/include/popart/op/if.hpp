@@ -23,7 +23,6 @@ struct BranchInfo {
 
 class IfOp : public Op {
 public:
-
   IfOp(const OperatorIdentifier &,
        const BranchInfo &thenBranchInfo,
        const BranchInfo &elseBranchInfo,

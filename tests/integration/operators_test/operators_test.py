@@ -57,9 +57,9 @@ def test_add(op_tester):
         builder.addOutputTensor(o)
         return [
             o,
-            popart.reservedGradientPrefix() + i1,
-            popart.reservedGradientPrefix() + i2,
-            popart.reservedGradientPrefix() + o
+            popart.TensorId(popart.reservedGradientPrefix() + i1),
+            popart.TensorId(popart.reservedGradientPrefix() + i2),
+            popart.TensorId(popart.reservedGradientPrefix() + o)
         ]
 
     def reference(ref_data):
@@ -133,7 +133,7 @@ def test_loop(op_tester):
         # Inputs: [iteration_number, condition_in, a_in]
         loop_builder.addInputTensor(popart.TensorInfo("INT64", []))
         keepgoing = loop_builder.addInputTensor(popart.TensorInfo("BOOL", []))
-        a_in = loop_builder.addUntypedInputTensor(a)
+        a_in = loop_builder.addUntypedInputTensor(str(a))
         a_out = loop_builder.aiOnnx.matmul([a_in, b])
 
         # Outputs: [condition_out, a_out]
@@ -188,6 +188,7 @@ def test_convolution_2(op_tester):
     Test the convolution when the conv in the bwd pass is not the same as the conv in the
     forward pass
     '''
+
     def init_builder(builder):
         data = np.ones([1, 2, 4, 4], dtype=np.float32)
         filt = np.ones([4, 2, 1, 1], dtype=np.float32)
@@ -198,7 +199,11 @@ def test_convolution_2(op_tester):
                                 pads=[0, 0, 0, 0],
                                 strides=[2, 2])
         builder.addOutputTensor(o)
-        return [o, popart.reservedGradientPrefix() + d]
+        return [
+            o,
+            popart.TensorId(
+                popart.TensorId(popart.reservedGradientPrefix() + d))
+        ]
 
     def reference(ref_data):
         expected = np.array([[[[2., 2.], [2., 2.]], [[2., 2.], [2., 2.]],
@@ -312,8 +317,9 @@ def test_convolution_5(op_tester):
         builder.addOutputTensor(o)
         return [
             o,
-            popart.reservedGradientPrefix() + d,
-            popart.reservedGradientPrefix() + o
+            popart.TensorId(
+                popart.TensorId(popart.reservedGradientPrefix() + d)),
+            popart.TensorId(popart.reservedGradientPrefix() + o)
         ]
 
     def init_builder1(builder):
@@ -327,8 +333,9 @@ def test_convolution_5(op_tester):
         builder.addOutputTensor(o)
         return [
             o,
-            popart.reservedGradientPrefix() + d,
-            popart.reservedGradientPrefix() + o
+            popart.TensorId(
+                popart.TensorId(popart.reservedGradientPrefix() + d)),
+            popart.TensorId(popart.reservedGradientPrefix() + o)
         ]
 
     def reference(ref_data):
@@ -374,8 +381,9 @@ def test_convolution_6(op_tester):
         builder.addOutputTensor(o)
         return [
             o,
-            popart.reservedGradientPrefix() + d,
-            popart.reservedGradientPrefix() + o
+            popart.TensorId(
+                popart.TensorId(popart.reservedGradientPrefix() + d)),
+            popart.TensorId(popart.reservedGradientPrefix() + o)
         ]
 
     def reference(ref_data):
@@ -461,8 +469,9 @@ def test_convolution_3d_2(op_tester):
         builder.addOutputTensor(o)
         return [
             o,
-            popart.reservedGradientPrefix() + d,
-            popart.reservedGradientPrefix() + o
+            popart.TensorId(
+                popart.TensorId(popart.reservedGradientPrefix() + d)),
+            popart.TensorId(popart.reservedGradientPrefix() + o)
         ]
 
     def init_builder1(builder):
@@ -476,8 +485,9 @@ def test_convolution_3d_2(op_tester):
         builder.addOutputTensor(o)
         return [
             o,
-            popart.reservedGradientPrefix() + d,
-            popart.reservedGradientPrefix() + o
+            popart.TensorId(
+                popart.TensorId(popart.reservedGradientPrefix() + d)),
+            popart.TensorId(popart.reservedGradientPrefix() + o)
         ]
 
     def reference(ref_data):
@@ -548,8 +558,9 @@ def test_convolution_default_train(op_tester):
         builder.addOutputTensor(o)
         return [
             o,
-            popart.reservedGradientPrefix() + d,
-            popart.reservedGradientPrefix() + o
+            popart.TensorId(
+                popart.TensorId(popart.reservedGradientPrefix() + d)),
+            popart.TensorId(popart.reservedGradientPrefix() + o)
         ]
 
     def reference(ref_data):
@@ -651,7 +662,12 @@ def test_div_grad(op_tester):
         o = builder.aiOnnx.div([i1, i2], "test_div")
         builder.addOutputTensor(o)
         gradPrefix = popart.reservedGradientPrefix()
-        return [o, gradPrefix + i1, gradPrefix + i2, gradPrefix + o]
+        return [
+            o,
+            popart.TensorId(gradPrefix + i1),
+            popart.TensorId(gradPrefix + i2),
+            popart.TensorId(gradPrefix + o)
+        ]
 
     def reference(ref_data):
         t1 = torch.tensor(d1, requires_grad=True)
@@ -700,7 +716,11 @@ def test_fmod_grad(op_tester):
         builder.addOutputTensor(o)
         gradPrefix = popart.reservedGradientPrefix()
 
-        return [o, gradPrefix + i1, i2, gradPrefix + o]
+        return [
+            o,
+            popart.TensorId(gradPrefix + i1), i2,
+            popart.TensorId(gradPrefix + o)
+        ]
 
     def reference(ref_data):
         t1 = torch.tensor(d1, requires_grad=True)
@@ -749,7 +769,11 @@ def test_remainder_grad(op_tester):
         # Check builder shape inference
         assert (builder.getTensorShape(o) == [4])
 
-        return [o, gradPrefix + i1, i2, gradPrefix + o]
+        return [
+            o,
+            popart.TensorId(gradPrefix + i1), i2,
+            popart.TensorId(gradPrefix + o)
+        ]
 
     def reference(ref_data):
         t1 = torch.tensor(d1, requires_grad=True)
@@ -777,7 +801,11 @@ def test_onnx_mod_grad(op_tester, fmod_attr):
         builder.addOutputTensor(o)
         gradPrefix = popart.reservedGradientPrefix()
 
-        return [o, gradPrefix + i1, i2, gradPrefix + o]
+        return [
+            o,
+            popart.TensorId(gradPrefix + i1), i2,
+            popart.TensorId(gradPrefix + o)
+        ]
 
     def reference(ref_data):
         t1 = torch.tensor(d1, requires_grad=True)
@@ -822,8 +850,8 @@ def test_reciprocal_grad(op_tester):
         builder.addOutputTensor(o)
         return [
             o,
-            popart.reservedGradientPrefix() + i1,
-            popart.reservedGradientPrefix() + o
+            popart.TensorId(popart.reservedGradientPrefix() + i1),
+            popart.TensorId(popart.reservedGradientPrefix() + o)
         ]
 
     def reference(ref_data):
@@ -894,8 +922,8 @@ def test_reverse_grad(op_tester):
         builder.addOutputTensor(o)
         return [
             o,
-            popart.reservedGradientPrefix() + i1,
-            popart.reservedGradientPrefix() + o
+            popart.TensorId(popart.reservedGradientPrefix() + i1),
+            popart.TensorId(popart.reservedGradientPrefix() + o)
         ]
 
     def reference(ref_data):
@@ -936,8 +964,8 @@ def test_sqrt_grad(op_tester):
         builder.addOutputTensor(o)
         return [
             o,
-            popart.reservedGradientPrefix() + i1,
-            popart.reservedGradientPrefix() + o
+            popart.TensorId(popart.reservedGradientPrefix() + i1),
+            popart.TensorId(popart.reservedGradientPrefix() + o)
         ]
 
     def reference(ref_data):
@@ -981,7 +1009,12 @@ def test_subtract_grad(op_tester):
         o = builder.aiOnnx.sub([i1, i2], "test_subtract")
         builder.addOutputTensor(o)
         gradPrefix = popart.reservedGradientPrefix()
-        return [o, gradPrefix + i1, gradPrefix + i2, gradPrefix + o]
+        return [
+            o,
+            popart.TensorId(gradPrefix + i1),
+            popart.TensorId(gradPrefix + i2),
+            popart.TensorId(gradPrefix + o)
+        ]
 
     def reference(ref_data):
         t1 = torch.tensor(d1, requires_grad=True)
@@ -1027,8 +1060,8 @@ def test_exp_grad(op_tester):
         builder.addOutputTensor(o)
         return [
             o,
-            popart.reservedGradientPrefix() + i1,
-            popart.reservedGradientPrefix() + o
+            popart.TensorId(popart.reservedGradientPrefix() + i1),
+            popart.TensorId(popart.reservedGradientPrefix() + o)
         ]
 
     def reference(ref_data):
@@ -1071,8 +1104,8 @@ def test_sigmoid_grad(op_tester):
         builder.addOutputTensor(o)
         return [
             o,
-            popart.reservedGradientPrefix() + i1,
-            popart.reservedGradientPrefix() + o
+            popart.TensorId(popart.reservedGradientPrefix() + i1),
+            popart.TensorId(popart.reservedGradientPrefix() + o)
         ]
 
     def reference(ref_data):
@@ -1189,8 +1222,8 @@ def test_topk_2d_grad(op_tester):
             builder.addOutputTensor(vals)
             return [
                 vals, inds,
-                popart.reservedGradientPrefix() + i1,
-                popart.reservedGradientPrefix() + vals
+                popart.TensorId(popart.reservedGradientPrefix() + i1),
+                popart.TensorId(popart.reservedGradientPrefix() + vals)
             ]
 
         def reference(ref_data):
@@ -1218,8 +1251,8 @@ def test_topk_2d_smallest_grad(op_tester):
             builder.addOutputTensor(vals)
             return [
                 vals, inds,
-                popart.reservedGradientPrefix() + i1,
-                popart.reservedGradientPrefix() + vals
+                popart.TensorId(popart.reservedGradientPrefix() + i1),
+                popart.TensorId(popart.reservedGradientPrefix() + vals)
             ]
 
         def reference(ref_data):
@@ -1254,8 +1287,8 @@ def test_topk_2d_unsorted_grad(op_tester):
             builder.addOutputTensor(vals)
             return [
                 vals, inds,
-                popart.reservedGradientPrefix() + i1,
-                popart.reservedGradientPrefix() + vals
+                popart.TensorId(popart.reservedGradientPrefix() + i1),
+                popart.TensorId(popart.reservedGradientPrefix() + vals)
             ]
 
         def reference(ref_data):
@@ -1303,8 +1336,8 @@ def test_transpose_grad(op_tester):
         builder.addOutputTensor(o)
         return [
             o,
-            popart.reservedGradientPrefix() + i1,
-            popart.reservedGradientPrefix() + o
+            popart.TensorId(popart.reservedGradientPrefix() + i1),
+            popart.TensorId(popart.reservedGradientPrefix() + o)
         ]
 
     def reference(ref_data):
@@ -1330,8 +1363,8 @@ def test_transpose_sizes(op_tester):
         builder.addOutputTensor(o)
         return [
             o,
-            popart.reservedGradientPrefix() + i1,
-            popart.reservedGradientPrefix() + o
+            popart.TensorId(popart.reservedGradientPrefix() + i1),
+            popart.TensorId(popart.reservedGradientPrefix() + o)
         ]
 
     def reference(ref_data):
@@ -1397,8 +1430,8 @@ def test_asin_grad(op_tester):
         builder.addOutputTensor(o)
         return [
             o,
-            popart.reservedGradientPrefix() + i1,
-            popart.reservedGradientPrefix() + o,
+            popart.TensorId(popart.reservedGradientPrefix() + i1),
+            popart.TensorId(popart.reservedGradientPrefix() + o),
         ]
 
     def reference(ref_data):
@@ -1463,8 +1496,8 @@ def test_acos_grad(op_tester):
         builder.addOutputTensor(o)
         return [
             o,
-            popart.reservedGradientPrefix() + i1,
-            popart.reservedGradientPrefix() + o,
+            popart.TensorId(popart.reservedGradientPrefix() + i1),
+            popart.TensorId(popart.reservedGradientPrefix() + o),
         ]
 
     def reference(ref_data):
@@ -1533,8 +1566,8 @@ def test_acosh_grad(op_tester):
         builder.addOutputTensor(o)
         return [
             o,
-            popart.reservedGradientPrefix() + i1,
-            popart.reservedGradientPrefix() + o,
+            popart.TensorId(popart.reservedGradientPrefix() + i1),
+            popart.TensorId(popart.reservedGradientPrefix() + o),
         ]
 
     def reference(ref_data):
@@ -1601,8 +1634,8 @@ def test_atan_grad(op_tester):
         builder.addOutputTensor(o)
         return [
             o,
-            popart.reservedGradientPrefix() + i1,
-            popart.reservedGradientPrefix() + o,
+            popart.TensorId(popart.reservedGradientPrefix() + i1),
+            popart.TensorId(popart.reservedGradientPrefix() + o),
         ]
 
     def reference(ref_data):
@@ -1663,8 +1696,8 @@ def test_sinh_grad(op_tester):
         builder.addOutputTensor(o)
         return [
             o,
-            popart.reservedGradientPrefix() + i1,
-            popart.reservedGradientPrefix() + o,
+            popart.TensorId(popart.reservedGradientPrefix() + i1),
+            popart.TensorId(popart.reservedGradientPrefix() + o),
         ]
 
     def reference(ref_data):
@@ -1706,8 +1739,8 @@ def test_log_grad(op_tester):
         builder.addOutputTensor(o)
         return [
             o,
-            popart.reservedGradientPrefix() + i1,
-            popart.reservedGradientPrefix() + o
+            popart.TensorId(popart.reservedGradientPrefix() + i1),
+            popart.TensorId(popart.reservedGradientPrefix() + o)
         ]
 
     def reference(ref_data):
@@ -1750,8 +1783,8 @@ def test_unsqueeze_grad(op_tester):
         builder.addOutputTensor(o)
         return [
             o,
-            popart.reservedGradientPrefix() + i1,
-            popart.reservedGradientPrefix() + o
+            popart.TensorId(popart.reservedGradientPrefix() + i1),
+            popart.TensorId(popart.reservedGradientPrefix() + o)
         ]
 
     def reference(ref_data):
@@ -1878,11 +1911,7 @@ def test_pad11(op_tester):
                   })
 
 
-def _test_pad(op_tester,
-              data,
-              lower_padding,
-              upper_padding,
-              mode,
+def _test_pad(op_tester, data, lower_padding, upper_padding, mode,
               pad_value=0):
     def init_builder(builder):
         i1 = builder.addInputTensor(data)
@@ -1915,8 +1944,8 @@ def test_pad_grad(op_tester):
         builder.addOutputTensor(o)
         return [
             o,
-            popart.reservedGradientPrefix() + i1,
-            popart.reservedGradientPrefix() + o
+            popart.TensorId(popart.reservedGradientPrefix() + i1),
+            popart.TensorId(popart.reservedGradientPrefix() + o)
         ]
 
     def reference(ref_data):
@@ -1952,8 +1981,8 @@ def test_scatter_0(op_tester):
         builder.addOutputTensor(o)
         return [
             o,
-            popart.reservedGradientPrefix() + i1,
-            popart.reservedGradientPrefix() + i3
+            popart.TensorId(popart.reservedGradientPrefix() + i1),
+            popart.TensorId(popart.reservedGradientPrefix() + i3)
         ]
 
     def reference(ref_data):
@@ -1982,8 +2011,8 @@ def test_scatter_1(op_tester):
         builder.addOutputTensor(o)
         return [
             o,
-            popart.reservedGradientPrefix() + i1,
-            popart.reservedGradientPrefix() + i3
+            popart.TensorId(popart.reservedGradientPrefix() + i1),
+            popart.TensorId(popart.reservedGradientPrefix() + i3)
         ]
 
     def reference(ref_data):
@@ -2012,8 +2041,8 @@ def test_scatter_2(op_tester):
         builder.addOutputTensor(o)
         return [
             o,
-            popart.reservedGradientPrefix() + i1,
-            popart.reservedGradientPrefix() + i3
+            popart.TensorId(popart.reservedGradientPrefix() + i1),
+            popart.TensorId(popart.reservedGradientPrefix() + i3)
         ]
 
     def reference(ref_data):
@@ -2242,7 +2271,7 @@ def test_ceil_grad(op_tester):
         i1 = builder.addInputTensor(d1)
         o = builder.aiOnnx.ceil([i1], "test_ceil")
         builder.addOutputTensor(o)
-        return [o, popart.reservedGradientPrefix() + i1]
+        return [o, popart.TensorId(popart.reservedGradientPrefix() + i1)]
 
     def reference(ref_data):
         return [np.ceil(d1).astype(np.float32), np.zeros_like(d1)]
@@ -2296,7 +2325,7 @@ def test_floor_grad(op_tester):
         i1 = builder.addInputTensor(d1)
         o = builder.aiOnnx.floor([i1], "test_floor")
         builder.addOutputTensor(o)
-        return [o, popart.reservedGradientPrefix() + i1]
+        return [o, popart.TensorId(popart.reservedGradientPrefix() + i1)]
 
     def reference(ref_data):
         return [np.floor(d1).astype(np.float32), np.zeros_like(d1)]
@@ -2354,8 +2383,8 @@ def test_clip_grad(op_tester):
         builder.addOutputTensor(o)
         return [
             o,
-            popart.reservedGradientPrefix() + i1,
-            popart.reservedGradientPrefix() + o
+            popart.TensorId(popart.reservedGradientPrefix() + i1),
+            popart.TensorId(popart.reservedGradientPrefix() + o)
         ]
 
     def reference(ref_data):
@@ -2408,7 +2437,7 @@ def test_clip11_default_min(op_tester):
     def init_builder(builder):
         i1 = builder.addInputTensor(d1)
         t_max = builder.aiOnnx.constant(d_max, False)
-        o = builder.aiOnnx.clip([i1, '', t_max])
+        o = builder.aiOnnx.clip([i1, popart.TensorId(''), t_max])
         builder.addOutputTensor(o)
         return [o]
 
@@ -2513,10 +2542,10 @@ def test_instancenorm_grad(op_tester):
 
         return [
             out, normed,
-            popart.reservedGradientPrefix() + i_data,
-            popart.reservedGradientPrefix() + i_scale,
-            popart.reservedGradientPrefix() + i_bias,
-            popart.reservedGradientPrefix() + out
+            popart.TensorId(popart.reservedGradientPrefix() + i_data),
+            popart.TensorId(popart.reservedGradientPrefix() + i_scale),
+            popart.TensorId(popart.reservedGradientPrefix() + i_bias),
+            popart.TensorId(popart.reservedGradientPrefix() + out)
         ]
 
     def reference(ref_data):
@@ -2587,10 +2616,10 @@ def test_instancenorm_grad_5D_input(op_tester):
 
         return [
             out, normed,
-            popart.reservedGradientPrefix() + i_data,
-            popart.reservedGradientPrefix() + i_scale,
-            popart.reservedGradientPrefix() + i_bias,
-            popart.reservedGradientPrefix() + out
+            popart.TensorId(popart.reservedGradientPrefix() + i_data),
+            popart.TensorId(popart.reservedGradientPrefix() + i_scale),
+            popart.TensorId(popart.reservedGradientPrefix() + i_bias),
+            popart.TensorId(popart.reservedGradientPrefix() + out)
         ]
 
     def reference(ref_data):
@@ -3161,7 +3190,7 @@ def test_convtranspose_debug(op_tester):
                                        pads=[0, 0, -1, -1])
         builder.addOutputTensor(o)
         # return [o]
-        return [o, popart.reservedGradientPrefix() + d]
+        return [o, popart.TensorId(popart.reservedGradientPrefix() + d)]
 
     def reference(ref_data):
         return [None, None]
@@ -3260,7 +3289,7 @@ def test_round_grad(op_tester):
         i1 = builder.addInputTensor(d1)
         o = builder.aiOnnxOpset11.round([i1], "test_round")
         builder.addOutputTensor(o)
-        return [o, popart.reservedGradientPrefix() + i1]
+        return [o, popart.TensorId(popart.reservedGradientPrefix() + i1)]
 
     def reference(ref_data):
         return [np.round(d1).astype(np.float32), np.zeros_like(d1)]
@@ -3402,9 +3431,9 @@ def test_where_grad0(op_tester):
         builder.addOutputTensor(o)
         return [
             o,
-            popart.reservedGradientPrefix() + i2,
-            popart.reservedGradientPrefix() + i3,
-            popart.reservedGradientPrefix() + o,
+            popart.TensorId(popart.reservedGradientPrefix() + i2),
+            popart.TensorId(popart.reservedGradientPrefix() + i3),
+            popart.TensorId(popart.reservedGradientPrefix() + o),
         ]
 
     def reference(ref_data):
@@ -3432,9 +3461,9 @@ def test_where_grad1(op_tester):
         builder.addOutputTensor(o)
         return [
             o,
-            popart.reservedGradientPrefix() + i2,
-            popart.reservedGradientPrefix() + i3,
-            popart.reservedGradientPrefix() + o,
+            popart.TensorId(popart.reservedGradientPrefix() + i2),
+            popart.TensorId(popart.reservedGradientPrefix() + i3),
+            popart.TensorId(popart.reservedGradientPrefix() + o),
         ]
 
     def reference(ref_data):
@@ -3462,9 +3491,9 @@ def test_where_grad2(op_tester):
         builder.addOutputTensor(o)
         return [
             o,
-            popart.reservedGradientPrefix() + i2,
-            popart.reservedGradientPrefix() + i3,
-            popart.reservedGradientPrefix() + o,
+            popart.TensorId(popart.reservedGradientPrefix() + i2),
+            popart.TensorId(popart.reservedGradientPrefix() + i3),
+            popart.TensorId(popart.reservedGradientPrefix() + o),
         ]
 
     def reference(ref_data):
@@ -3494,9 +3523,9 @@ def test_where_grad3(op_tester):
         builder.addOutputTensor(o)
         return [
             o,
-            popart.reservedGradientPrefix() + i2,
-            popart.reservedGradientPrefix() + i3,
-            popart.reservedGradientPrefix() + o,
+            popart.TensorId(popart.reservedGradientPrefix() + i2),
+            popart.TensorId(popart.reservedGradientPrefix() + i3),
+            popart.TensorId(popart.reservedGradientPrefix() + o),
         ]
 
     def reference(ref_data):
@@ -3526,9 +3555,9 @@ def test_where_grad4(op_tester):
         builder.addOutputTensor(o)
         return [
             o,
-            popart.reservedGradientPrefix() + i2,
-            popart.reservedGradientPrefix() + i3,
-            popart.reservedGradientPrefix() + o,
+            popart.TensorId(popart.reservedGradientPrefix() + i2),
+            popart.TensorId(popart.reservedGradientPrefix() + i3),
+            popart.TensorId(popart.reservedGradientPrefix() + o),
         ]
 
     def reference(ref_data):
@@ -3558,9 +3587,9 @@ def test_where_grad5(op_tester):
         builder.addOutputTensor(o)
         return [
             o,
-            popart.reservedGradientPrefix() + i2,
-            popart.reservedGradientPrefix() + i3,
-            popart.reservedGradientPrefix() + o,
+            popart.TensorId(popart.reservedGradientPrefix() + i2),
+            popart.TensorId(popart.reservedGradientPrefix() + i3),
+            popart.TensorId(popart.reservedGradientPrefix() + o),
         ]
 
     def reference(ref_data):

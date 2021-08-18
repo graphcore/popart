@@ -182,7 +182,7 @@ BOOST_AUTO_TEST_CASE(DiscontiguousIpuCopyTest1) {
   std::vector<std::pair<VGraphId, VGraphId>> input0SrcDsts;
   for (auto copy : copies) {
     auto srcTenId = copy->getSourceIpus().begin()->first;
-    if (srcTenId.find("input1") != std::string::npos) {
+    if (srcTenId.str().find("input1") != std::string::npos) {
       input0SrcDsts.push_back({copy->getSourceIpu(), copy->getDestIpu()});
     }
   }

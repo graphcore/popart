@@ -279,8 +279,11 @@ def test_auto_loss_scaling_histogram_schedule_priority():
     loss, proto, _, _, _, _, _ = getModelProto()
     bps = 4
 
-    loss_scale_id = "finalLossScale"
-    gradient_anchor_ids = ["Gradient___init_input/1", "Gradient___init_input"]
+    loss_scale_id = popart.TensorId("finalLossScale")
+    gradient_anchor_ids = [
+        popart.TensorId("Gradient___init_input/1"),
+        popart.TensorId("Gradient___init_input")
+    ]
     anchor_ids = gradient_anchor_ids + [loss_scale_id]
 
     session = popart.TrainingSession(fnModel=proto,
@@ -328,8 +331,11 @@ def test_auto_loss_scaling_expected_loss_scale_tensor_values():
     loss, proto, t0, t_shape, label, label_shape, _ = getModelProto()
     bps = 4
 
-    loss_scale_id = "finalLossScale"
-    gradient_anchor_ids = ["Gradient___init_input/1", "Gradient___init_input"]
+    loss_scale_id = popart.TensorId("finalLossScale")
+    gradient_anchor_ids = [
+        popart.TensorId("Gradient___init_input/1"),
+        popart.TensorId("Gradient___init_input")
+    ]
     anchor_ids = gradient_anchor_ids + [loss_scale_id]
 
     session = popart.TrainingSession(fnModel=proto,
@@ -534,8 +540,8 @@ def compare_weights(session0, session1, tmpdir):
         init = session0_proto.graph.initializer[i]
         dtype = mapping.TENSOR_TYPE_TO_NP_TYPE[init.data_type]
         empty_init = np.empty(shape=init.dims, dtype=dtype)
-        session0_weights[init.name] = empty_init
-        session1_weights[init.name] = empty_init
+        session0_weights[popart.TensorId(init.name)] = empty_init
+        session1_weights[popart.TensorId(init.name)] = empty_init
 
     session0.weightsToHost()
     session0.readWeights(popart.PyWeightsIO(session0_weights))
@@ -543,12 +549,12 @@ def compare_weights(session0, session1, tmpdir):
     session1.readWeights(popart.PyWeightsIO(session1_weights))
 
     for i in range(len(session0_proto.graph.initializer)):
-        init_name = session0_proto.graph.initializer[i].name
-        print("Comparing ", init_name)
-        print(session0_weights[init_name])
-        print(session1_weights[init_name])
-        assert np.array_equal(session0_weights[init_name],
-                              session1_weights[init_name])
+        init_id = popart.TensorId(session0_proto.graph.initializer[i].name)
+        print("Comparing ", init_id)
+        print(session0_weights[init_id])
+        print(session1_weights[init_id])
+        assert np.array_equal(session0_weights[init_id],
+                              session1_weights[init_id])
 
 
 def run_automatic_loss_scaling_comparison_test(tmpdir,
@@ -612,7 +618,7 @@ def run_automatic_loss_scaling_comparison_test(tmpdir,
     opts.automaticLossScalingSettings.binEdgeLocation = 0.5
     opts.automaticLossScalingSettings.thresholdUpperCountProportion = 0.2
 
-    ls_id = "finalLossScale"
+    ls_id = popart.TensorId("finalLossScale")
     als_session = popart.TrainingSession(
         fnModel=proto,
         deviceInfo=tu.create_test_device(num_ipus),
@@ -779,8 +785,8 @@ def test_loss_scale_updates_with_grad_accumulation_correctness():
     loss, proto, t0, t_shape, label, label_shape, _ = getModelProto()
     bps = 4
 
-    accl_stats_id = "Accum___autoLossScaleStats"
-    ls_id = "finalLossScale"
+    accl_stats_id = popart.TensorId("Accum___autoLossScaleStats")
+    ls_id = popart.TensorId("finalLossScale")
     session = popart.TrainingSession(fnModel=proto,
                                      deviceInfo=tu.create_test_device(),
                                      dataFlow=popart.DataFlow(
@@ -847,8 +853,8 @@ def test_auto_loss_scaling_update_learning_rate_without_resetting_loss_scale():
     loss, proto, t0, t_shape, label, label_shape, _ = getModelProto()
     bps = 6
 
-    ls_id = "lossScaling_FLOAT16"
-    final_ls_id = "finalLossScale"
+    ls_id = popart.TensorId("lossScaling_FLOAT16")
+    final_ls_id = popart.TensorId("finalLossScale")
 
     session = popart.TrainingSession(fnModel=proto,
                                      deviceInfo=tu.create_test_device(),

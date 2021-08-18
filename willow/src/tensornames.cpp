@@ -13,13 +13,13 @@ TensorId getUpdatedVarId(const TensorId &id) {
 
 TensorId getNonGradId(const TensorId &id) {
   // TODO : constexpr the size of this string T8265
-  return id.substr(std::string(reservedGradientPrefix()).size());
+  return id.str().substr(std::string(reservedGradientPrefix()).size());
 }
 
 bool isGradId(const TensorId &id) {
   const std::string pref = reservedGradientPrefix();
   const auto prefSize    = pref.size();
-  return id.size() > prefSize && id.substr(0, prefSize) == pref;
+  return id.str().size() > prefSize && id.str().substr(0, prefSize) == pref;
 }
 
 TensorId getEdgeGradId(TensorId tenId, OpId opId, int index) {
@@ -112,8 +112,8 @@ TensorId stripAllReservedPrefixes(TensorId id) {
   do {
     lastId = currentId;
     for (auto prefix : reservedPrefixes()) {
-      if (currentId.find(prefix) == 0) {
-        currentId = currentId.substr(prefix.size());
+      if (currentId.str().find(prefix) == 0) {
+        currentId = currentId.str().substr(prefix.size());
       }
     }
   } while (lastId != currentId);

@@ -181,7 +181,7 @@ bool BatchSerialize::apply(Graph &graph) const {
                                         opSettings);
           SliceOp *sliceOp = sliceOpUp.get();
           graph.moveIntoGraph(std::move(sliceOpUp));
-          sliceOp->setName("Slice_" + remoteArgId);
+          sliceOp->setName("Slice_" + remoteArgId.str());
           sliceOp->connectInTensor(SliceOp::getInIndex(), remoteArgRangeId);
           sliceOp->createAndConnectOutTensor(SliceOp::getOutIndex(),
                                              remoteArgRangeSlicedId);
@@ -321,13 +321,13 @@ bool BatchSerialize::apply(Graph &graph) const {
                    ++b) {
                 infos.push_back(serializedTensor->second.serializedInfos.at(b));
               }
-              shardInfos[in.second->id] =
-                  ShardTensorInfo(serializedTensor->second.concatId.empty()
-                                      ? serializedTensor->second.id
-                                      : serializedTensor->second.concatId,
-                                  serializedTensor->second.info,
-                                  infos,
-                                  serializedTensor->second.type);
+              shardInfos[in.second->id] = ShardTensorInfo(
+                  serializedTensor->second.concatId.str().empty()
+                      ? serializedTensor->second.id
+                      : serializedTensor->second.concatId,
+                  serializedTensor->second.info,
+                  infos,
+                  serializedTensor->second.type);
             }
           }
         }
@@ -408,7 +408,8 @@ bool BatchSerialize::apply(Graph &graph) const {
           if (idkv.second.size() == batchSerFactor) {
             serializedTensorMap[{idkv.first, consumerContext}].serializedIds =
                 idkv.second;
-            serializedTensorMap[{idkv.first, consumerContext}].concatId.clear();
+            serializedTensorMap[{idkv.first, consumerContext}].concatId =
+                TensorId();
             logging::trace("[BatchSerialize] Tensor: {} {} shards (ids).",
                            idkv.first,
                            batchSerFactor);
@@ -467,7 +468,7 @@ bool BatchSerialize::apply(Graph &graph) const {
                                 &serializedTensor,
                                 &serializedTensorMap,
                                 &helper]() {
-        if (serializedTensor.second.concatId.empty() &&
+        if (serializedTensor.second.concatId.str().empty() &&
             serializedTensor.second.serializedIds.size() == batchSerFactor) {
           // TODO T20169: Different axis support
           TensorId serId0 = serializedTensor.second.serializedIds.at(0);
@@ -534,7 +535,8 @@ bool BatchSerialize::apply(Graph &graph) const {
 
         auto it = serializedTensorMap.find({tensor->id, producerContext});
 
-        if (it != serializedTensorMap.end() && !it->second.concatId.empty()) {
+        if (it != serializedTensorMap.end() &&
+            !it->second.concatId.str().empty()) {
           // Add concatenated tensor
           for (auto i : indices) {
             if (IpuCopyOp *copyOp = dynamic_cast<IpuCopyOp *>(consumer)) {

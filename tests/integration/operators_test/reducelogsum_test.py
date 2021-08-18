@@ -77,7 +77,8 @@ def test_reducelogsum_training(op_tester):
                     debugContext="test_reducelogsum_{0}_{1}".format(
                         axes, keepdims))
             result.append(out)
-            result.append(popart.reservedGradientPrefix() + tensor)
+            result.append(
+                popart.TensorId(popart.reservedGradientPrefix() + tensor))
             axes_len = len(axes) if axes is not USE_DEFAULT_AXES else 3
             axes_reduce.append(range(3 - (0 if keepdims else axes_len)))
         sum = builder.aiOnnx.sum([
@@ -94,7 +95,7 @@ def test_reducelogsum_training(op_tester):
         builder.addOutputTensor(reshaped_sum)
         result = [
             reshaped_sum,
-            popart.reservedGradientPrefix() + reshaped_sum
+            popart.TensorId(popart.reservedGradientPrefix() + reshaped_sum)
         ] + result
         return result
 

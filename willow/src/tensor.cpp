@@ -725,14 +725,14 @@ bool Tensor::hasTensorData() const {
 
 TensorData *Tensor::tensorData() {
   if (data_.get() == nullptr) {
-    throw error("Data not set for " + id);
+    throw error("Data not set for " + id.str());
   }
   return data_.get();
 }
 
 const TensorData *Tensor::tensorData() const {
   if (data_.get() == nullptr) {
-    throw error("Data not set for " + id);
+    throw error("Data not set for " + id.str());
   }
   return data_.get();
 }
@@ -772,14 +772,15 @@ void Consumers::extend(const std::map<Op *, int, POpCmp> &m) {
 
 void Tensor::setProducer(Op *op) {
   if (hasProducer()) {
-    throw error("Cannot set a producer for Tensor " + id + " as already one");
+    throw error("Cannot set a producer for Tensor " + id.str() +
+                " as already one");
   }
   producer = op;
 }
 
 void Tensor::resetProducer(Op *op) {
   if (!hasProducer()) {
-    throw error("Cannot reset a producer for Tensor " + id +
+    throw error("Cannot reset a producer for Tensor " + id.str() +
                 " as it does not already have one");
   }
   producer = op;
@@ -819,7 +820,7 @@ void Consumers::decrement(Op *op) {
 
 Op *Tensor::getProducer() const {
   if (!hasProducer()) {
-    throw error("No producer for tensor " + id + " to return");
+    throw error("No producer for tensor " + id.str() + " to return");
   }
   return getProducerUnsafe();
 }
@@ -958,7 +959,7 @@ bool Tensor::idIncludesPrefix(const std::vector<std::string> &prefixes) const {
   using boost::algorithm::starts_with;
   return std::any_of(
       prefixes.begin(), prefixes.end(), [this](const std::string prefix) {
-        return starts_with(id, prefix);
+        return starts_with(id.str(), prefix);
       });
 }
 

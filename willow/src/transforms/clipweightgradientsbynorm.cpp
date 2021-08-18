@@ -470,7 +470,7 @@ ClipWeightGradientsByNorm::findGradientClippingGroups(const Graph &graph) {
   // Find all the global norm tensors and get their producers.
   std::vector<Op *> globalNorms;
   for (auto tid : graph.getTensors().getIds(TensorType::ActGrad)) {
-    if (starts_with(tid, reservedGlobalNormPrefix())) {
+    if (starts_with(tid.str(), reservedGlobalNormPrefix())) {
       auto t = graph.getTensors().get(tid);
       globalNorms.push_back(t->getProducer());
     }

@@ -44,7 +44,7 @@ void DynamicSliceOpx::grow(poplar::program::Sequence &prog) const {
       psizes,
       prog,
       debugContext("dynamic_slice_" +
-                   op.inId(DynamicSliceBaseOp::getInIndex())));
+                   op.inId(DynamicSliceBaseOp::getInIndex()).str()));
 
   setOutTensor(DynamicSliceBaseOp::getOutIndex(), snap::Tensor{s, graph()});
 }
@@ -66,7 +66,8 @@ DynamicSliceOpx::createInputTensor(InIndex index,
         graph().getPoplarGraph().addVariable(
             popType(outInfo),
             outInfo.shape_szt(),
-            debugContext(op.inId(DynamicSliceBaseOp::getInIndex()) + "_slice")),
+            debugContext(op.inId(DynamicSliceBaseOp::getInIndex()).str() +
+                         "_slice")),
         graph()};
     dv_p->lowering().getLinearMapper().mapTensor(graph(), sliceTensor);
     auto inShape = op.inShape(DynamicSliceBaseOp::getInIndex());

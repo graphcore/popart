@@ -119,7 +119,8 @@ BOOST_AUTO_TEST_CASE(DiscontiguousIpuCopyTest0) {
       allWeightIds.push_back(
           builder->addInitializedInputTensor(allWeightCvds.back()));
       TensorId actOutId = "act" + std::to_string(nLayersAdded);
-      allActIds.push_back(aiOnnx.add({allWeightIds.back(), actInId}, actOutId));
+      allActIds.push_back(
+          aiOnnx.add({allWeightIds.back(), actInId}, actOutId.str()));
       weightsRead.insert(allWeightIds.back(),
                          {w_readbacks.back().data(), weightInfo});
       ++nLayersAdded;
@@ -225,7 +226,7 @@ BOOST_AUTO_TEST_CASE(DiscontiguousIpuCopyTest0) {
         auto inId  = cop->inId(0);
         for (auto src = cop->getSourceIpu(); src != cop->getDestIpu();
              src += delta) {
-          std::string id         = inId + "__from__" + std::to_string(src);
+          std::string id = inId.str() + "__from__" + std::to_string(src);
           expectedSrcDstsMap[id] = std::make_tuple(src, src + delta);
         }
       }

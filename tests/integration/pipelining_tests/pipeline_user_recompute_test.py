@@ -74,9 +74,9 @@ def test_full_recompute_pipelining():
 
         dataFlow = popart.DataFlow(1, [
             o,
-            popart.reservedGradientPrefix() + weight_1,
-            popart.reservedGradientPrefix() + weight_2,
-            popart.reservedGradientPrefix() + weight_3,
+            popart.TensorId(popart.reservedGradientPrefix() + weight_1),
+            popart.TensorId(popart.reservedGradientPrefix() + weight_2),
+            popart.TensorId(popart.reservedGradientPrefix() + weight_3),
         ])
 
         opts = popart.SessionOptions()
@@ -120,9 +120,11 @@ def test_full_recompute_pipelining():
         ir = json.loads(session._serializeIr(
             popart.IrSerializationFormat.JSON))
         stashes = [op for op in ir["maingraph"] if op["type"] == "Stash"]
-        stashedTensors = [stash["inputs"][0]["name"] for stash in stashes]
+        stashedTensors = [
+            popart.TensorId(stash["inputs"][0]["name"]) for stash in stashes
+        ]
 
-        assert {'x_in', mid_stash} == set(stashedTensors)
+        assert {popart.TensorId('x_in'), mid_stash} == set(stashedTensors)
 
     n_anchors = run_test()
     p_anchors = run_test(popart.RecomputationType.Pipeline, verify)
@@ -187,7 +189,7 @@ def test_delayed_restore_operations():
 
         dataFlow = popart.DataFlow(1, [
             o,
-            popart.reservedGradientPrefix() + weight_1,
+            popart.TensorId(popart.reservedGradientPrefix() + weight_1),
         ])
 
         opts = popart.SessionOptions()

@@ -50,7 +50,7 @@ BOOST_AUTO_TEST_CASE(InplaceLoopTest0) {
 
   // Explicit input
   auto superIn0 = superBuilder->addInputTensor(shape0);
-  auto in0      = builder->addUntypedInputTensor(superIn0);
+  auto in0      = builder->addUntypedInputTensor(superIn0.str());
 
   // Implicit input
   auto superIn1 = superBuilder->addInputTensor(shape0);

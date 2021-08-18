@@ -38,17 +38,17 @@ def test_issue(op_tester):
             builder.addOutputTensor(o)
             return [
                 o, t1,
-                popart.reservedGradientPrefix() + o,
-                popart.reservedGradientPrefix() + i1,
-                popart.reservedGradientPrefix() + i2
+                popart.TensorId(popart.reservedGradientPrefix() + o),
+                popart.TensorId(popart.reservedGradientPrefix() + i1),
+                popart.TensorId(popart.reservedGradientPrefix() + i2)
             ]
         else:
             builder.addOutputTensor(t1)
             return [
                 t1,
-                popart.reservedGradientPrefix() + t1,
-                popart.reservedGradientPrefix() + i1,
-                popart.reservedGradientPrefix() + i2
+                popart.TensorId(popart.reservedGradientPrefix() + t1),
+                popart.TensorId(popart.reservedGradientPrefix() + i1),
+                popart.TensorId(popart.reservedGradientPrefix() + i2)
             ]
 
     def reference(ref_data):

@@ -98,7 +98,7 @@ std::string NumericsReport::fullReport() const {
 std::string NumericsReport::report(TensorId id) const {
   auto found = reports.find(id);
   if (found == reports.end()) {
-    throw error("No report available for " + id);
+    throw error("No report available for " + id.str());
   }
   return found->second;
 }

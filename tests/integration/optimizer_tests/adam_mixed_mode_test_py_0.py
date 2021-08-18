@@ -34,7 +34,7 @@ def run_adam_mixed_mode(steps,
         ip = builder.addInputTensor(
             popart.TensorInfo("FLOAT" if dtype == np.float32 else "FLOAT16",
                               [dsize, dsize]))
-        d__ip = popart.reservedGradientPrefix() + ip
+        d__ip = popart.TensorId(popart.reservedGradientPrefix() + ip)
 
         def add_layer(in_id, name):
             w = builder.addInitializedInputTensor(
@@ -177,8 +177,14 @@ def test_adam_mixed_mode_1(tmpdir):
         "lossScaling": (lossScaling, True),
     })
 
-    adam00.insertSpecific("w_0", {"beta1": (0.9, True), "beta2": (0.99, True)})
-    adam00.insertSpecific("b_0", {"beta1": (0.9, True), "beta2": (0.99, True)})
+    adam00.insertSpecific(popart.TensorId("w_0"), {
+        "beta1": (0.9, True),
+        "beta2": (0.99, True)
+    })
+    adam00.insertSpecific(popart.TensorId("b_0"), {
+        "beta1": (0.9, True),
+        "beta2": (0.99, True)
+    })
 
     adam05 = popart.Adam({
         "defaultLearningRate": (defaultLearningRate5, False),
@@ -189,8 +195,14 @@ def test_adam_mixed_mode_1(tmpdir):
         "lossScaling": (lossScaling, True),
     })
 
-    adam05.insertSpecific("w_0", {"beta1": (0.9, True), "beta2": (0.99, True)})
-    adam05.insertSpecific("b_0", {"beta1": (0.9, True), "beta2": (0.99, True)})
+    adam05.insertSpecific(popart.TensorId("w_0"), {
+        "beta1": (0.9, True),
+        "beta2": (0.99, True)
+    })
+    adam05.insertSpecific(popart.TensorId("b_0"), {
+        "beta1": (0.9, True),
+        "beta2": (0.99, True)
+    })
 
     adam10 = popart.Adam({
         "defaultLearningRate": (defaultLearningRate0, False),
@@ -201,11 +213,11 @@ def test_adam_mixed_mode_1(tmpdir):
         "lossScaling": (lossScaling, False),
     })
 
-    adam10.insertSpecific("w_0", {
+    adam10.insertSpecific(popart.TensorId("w_0"), {
         "beta1": (0.9, False),
         "beta2": (0.99, False)
     })
-    adam10.insertSpecific("b_0", {
+    adam10.insertSpecific(popart.TensorId("b_0"), {
         "beta1": (0.9, False),
         "beta2": (0.99, False)
     })
@@ -219,11 +231,11 @@ def test_adam_mixed_mode_1(tmpdir):
         "lossScaling": (lossScaling, False),
     })
 
-    adam15.insertSpecific("w_0", {
+    adam15.insertSpecific(popart.TensorId("w_0"), {
         "beta1": (0.9, False),
         "beta2": (0.99, False)
     })
-    adam15.insertSpecific("b_0", {
+    adam15.insertSpecific(popart.TensorId("b_0"), {
         "beta1": (0.9, False),
         "beta2": (0.99, False)
     })
@@ -237,11 +249,11 @@ def test_adam_mixed_mode_1(tmpdir):
         "lossScaling": (lossScaling, False),
     })
 
-    adam20.insertSpecific("w_0", {
+    adam20.insertSpecific(popart.TensorId("w_0"), {
         "beta1": (0.9, False),
         "beta2": (0.99, True)
     })
-    adam20.insertSpecific("b_0", {
+    adam20.insertSpecific(popart.TensorId("b_0"), {
         "beta1": (0.9, False),
         "beta2": (0.99, True)
     })
@@ -255,11 +267,11 @@ def test_adam_mixed_mode_1(tmpdir):
         "lossScaling": (lossScaling, False),
     })
 
-    adam25.insertSpecific("w_0", {
+    adam25.insertSpecific(popart.TensorId("w_0"), {
         "beta1": (0.9, False),
         "beta2": (0.99, True)
     })
-    adam25.insertSpecific("b_0", {
+    adam25.insertSpecific(popart.TensorId("b_0"), {
         "beta1": (0.9, False),
         "beta2": (0.99, True)
     })

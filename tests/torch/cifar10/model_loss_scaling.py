@@ -21,8 +21,8 @@ batchSize = 2
 batchesPerStep = 3
 anchors = {
     "conv2.weight": popart.AnchorReturnType("All"),
-    "l1LossVal": popart.AnchorReturnType("All"),
-    "nllLossVal": popart.AnchorReturnType("All"),
+    popart.TensorId("l1LossVal"): popart.AnchorReturnType("All"),
+    popart.TensorId("nllLossVal"): popart.AnchorReturnType("All"),
     "probs": popart.AnchorReturnType("Final"),
     "preProbSquared": popart.AnchorReturnType("Final"),
     nllGradTensorId: popart.AnchorReturnType("Final"),
@@ -30,11 +30,12 @@ anchors = {
 }
 dataFlow = popart.DataFlow(batchesPerStep, anchors)
 inputShapeInfo = popart.InputShapeInfo()
-inputShapeInfo.add("image0",
+inputShapeInfo.add(popart.TensorId("image0"),
                    popart.TensorInfo("FLOAT", [batchSize, nInChans, 32, 32]))
-inputShapeInfo.add("image1",
+inputShapeInfo.add(popart.TensorId("image1"),
                    popart.TensorInfo("FLOAT", [batchSize, nInChans, 32, 32]))
-inputShapeInfo.add("label", popart.TensorInfo("INT32", [batchSize]))
+inputShapeInfo.add(popart.TensorId("label"),
+                   popart.TensorInfo("INT32", [batchSize]))
 
 inNames = ["image0", "image1"]
 cifarInIndices = {"image0": 0, "image1": 0, "label": 1}

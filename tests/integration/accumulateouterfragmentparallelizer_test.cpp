@@ -155,7 +155,7 @@ void checkTensor(Op *op,
       tid,
       weightName,
       op->debugName());
-  BOOST_CHECK_MESSAGE(tid.find(weightName) != std::string::npos, msg);
+  BOOST_CHECK_MESSAGE(tid.str().find(weightName) != std::string::npos, msg);
 };
 
 void checkMultiExchangeOp(Op *op,

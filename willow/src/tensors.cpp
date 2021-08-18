@@ -82,7 +82,7 @@ Tensors::Tensors(Graph &pg) : graph(pg) {}
 Tensor *Tensors::get(TensorId tenId) const {
   auto found = M.find(tenId);
   if (found == M.end()) {
-    throw error("No Ir::Tensor with TensorId '" + tenId +
+    throw error("No Ir::Tensor with TensorId '" + tenId.str() +
                 "' in Tensors::get(..)");
   }
   return found->second.get();
@@ -92,7 +92,7 @@ bool Tensors::contains(TensorId tenId, const Scope &scope) const {
   Scope s = scope;
 
   while (!s.empty()) {
-    auto id = (s / tenId).str();
+    auto id = (s / tenId.str()).str();
     if (M.find(id) != M.end()) {
       return true;
     } else {
@@ -111,7 +111,7 @@ TensorId Tensors::find(TensorId tenId, const Scope &scope) const {
   Scope s = scope;
 
   while (!s.empty()) {
-    auto id = (s / tenId).str();
+    auto id = (s / tenId.str()).str();
     if (M.find(id) != M.end()) {
       return id;
     } else {
@@ -161,7 +161,7 @@ void Tensors::addConstInit(const TensorId &name,
                            const DebugContext &debugContext) {
   popart::TensorDebugInfo di(debugContext, name, TensorType::Const);
   addInit(name, pt, TensorType::Const, di);
-  insertConstId(name);
+  insertConstId(name.str());
 }
 
 void Tensors::addVarInit(const TensorId &name,
@@ -173,7 +173,7 @@ void Tensors::addVarInit(const TensorId &name,
 
   // A sanity check: if the tensor is fixed point, it is Const
   if (get(name)->info.getDataTypeInfo()->isFixedPoint()) {
-    if (!constIds.contains(name)) {
+    if (!constIds.contains(name.str())) {
       std::stringstream ss;
       ss << "Variable Tensor `" << name << "' is fixed-point, but "
          << "currently only floating-point Tensors can be variable in PopART. "
@@ -209,7 +209,7 @@ void Tensors::addConstInit(const TensorId &name,
   popart::TensorDebugInfo di(debugContext, name, info, TensorType::Const);
   insert(name, std::make_unique<Tensor>(name, TensorType::Const, graph, di));
 
-  insertConstId(name);
+  insertConstId(name.str());
 
   Tensor *init = get(name);
   init->info   = info;
@@ -217,7 +217,7 @@ void Tensors::addConstInit(const TensorId &name,
 }
 
 void Tensors::makeConstInit(const TensorId &name, const void *src) {
-  insertConstId(name);
+  insertConstId(name.str());
 
   auto *tensor = get(name);
   if (tensor->hasProducer()) {

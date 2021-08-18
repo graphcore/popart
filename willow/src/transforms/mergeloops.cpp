@@ -258,7 +258,7 @@ void MergeLoops::merge(const std::vector<LoopOp *> loops) const {
     for (auto sg1ConstId : graph1.getTensors().getConstIds().v()) {
       auto sg0ConstId = graph0.addScope(graph1.removeScope(sg1ConstId));
       if (sg1ConstId.find(reservedConstValuePrefix()) != std::string::npos) {
-        if (!graph0.getTensors().getConstIds().contains(sg0ConstId)) {
+        if (!graph0.getTensors().getConstIds().contains(sg0ConstId.str())) {
           Tensor *ct = graph1.getTensors().get(sg1ConstId);
           graph0.getTensors().addConstInit(
               sg0ConstId, ct->info, ct->tensorData()->data());

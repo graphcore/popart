@@ -35,7 +35,7 @@ const TensorId &IOMapWrapper::idAt(int inIndex) const {
   if (found != M.end()) {
     return found->second;
   } else {
-    return nullString;
+    return nullTensorId;
   }
 }
 

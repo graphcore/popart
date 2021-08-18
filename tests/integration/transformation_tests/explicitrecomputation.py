@@ -17,7 +17,7 @@ def test_explicit_recomputation(tmpdir):
         dsize = 10
         builder = popart.Builder()
         ip = builder.addInputTensor(popart.TensorInfo("FLOAT", [dsize, dsize]))
-        d__ip = popart.reservedGradientPrefix() + ip
+        d__ip = popart.TensorId(popart.reservedGradientPrefix() + ip)
 
         def add_layer(in_id):
             np.random.seed(1)
@@ -41,7 +41,8 @@ def test_explicit_recomputation(tmpdir):
 
         anchorIds = []
         for i in (ip, m1, m2, m3):
-            anchorIds.append(popart.reservedGradientPrefix() + i)
+            anchorIds.append(
+                popart.TensorId(popart.reservedGradientPrefix() + i))
 
         out = builder.aiGraphcore.identityloss([m3])
         builder.addOutputTensor(out)

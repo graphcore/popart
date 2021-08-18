@@ -183,8 +183,8 @@ bool TiedGatherPattern::apply(Op *op) const {
       transferBaseProperties(gather, sub);
       sub->connectInTensor(SubtractOp::getArg0InIndex(), a->id);
       // Create constant to subtract from
-      auto subConstId =
-          debugPrefix + "/" + a->id + "_sub_const_" + std::to_string(sub_i_++);
+      auto subConstId = debugPrefix + "/" + a->id.str() + "_sub_const_" +
+                        std::to_string(sub_i_++);
       TensorInfo subInfo(a->info.dataType(), {1});
       std::vector<unsigned> d(1, c);
       graph.getTensors().addConstInit(subConstId, subInfo, d.data());
@@ -370,9 +370,9 @@ bool TiedGatherAccumulatePattern::apply(Op *op) const {
   // TODO(T42654): Find a more robust way than sorting input ids.
   std::sort(accumOps.begin(), accumOps.end(), [](const Op *l, const Op *r) {
     return l->input->tensor(AccumulateOp::getVarToUpdateInIndex())
-               ->id.compare(
-                   r->input->tensor(AccumulateOp::getVarToUpdateInIndex())
-                       ->id) < 0;
+               ->id.str()
+               .compare(r->input->tensor(AccumulateOp::getVarToUpdateInIndex())
+                            ->id.str()) < 0;
   });
   std::sort(gatherOps.begin(), gatherOps.end(), [](const Op *l, const Op *r) {
     return l->name().compare(r->name()) < 0;
@@ -476,10 +476,10 @@ TensorId TiedGatherAccumulatePattern::inplaceTranspose(TensorId tid,
   auto &graph = op->getGraph();
 
   // TransposeInplaceOp's constructor requires a transposeOp
-  auto outplace_up =
-      std::make_unique<TransposeOp>(Onnx::AiOnnx::OpSet9::Transpose,
-                                    std::vector<int64_t>{1, 0},
-                                    Op::Settings(graph, tid + "_Transpose"));
+  auto outplace_up = std::make_unique<TransposeOp>(
+      Onnx::AiOnnx::OpSet9::Transpose,
+      std::vector<int64_t>{1, 0},
+      Op::Settings(graph, tid.str() + "_Transpose"));
   auto transpose_up =
       outplace_up->getInplaceVariant(Onnx::CustomOperators::TransposeInplace);
 

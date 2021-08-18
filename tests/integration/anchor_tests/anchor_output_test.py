@@ -85,8 +85,8 @@ def test_anchor_output():
     o = builder.aiOnnx.softmax([o])
     nll = builder.aiGraphcore.nllloss([o, lb])
 
-    GRAD = popart.reservedGradientPrefix() + w
-    ACCL = popart.reservedAccumPrefix() + w
+    GRAD = popart.TensorId(popart.reservedGradientPrefix() + w)
+    ACCL = popart.TensorId(popart.reservedAccumPrefix() + w)
     art = popart.AnchorReturnType("All")
     data_flow = popart.DataFlow(BATCHES_PER_STEP, {
         o: art,

@@ -79,7 +79,7 @@ void StashOpx::grow(poplar::program::Sequence &prog) const {
                        inTensor.expand({0}).getPoplarTensor(),
                        {0},
                        {hStashSize},
-                       "Stash__" + inId(StashOp::getInIndex())),
+                       "Stash__" + inId(StashOp::getInIndex()).str()),
                    graph()};
 
   // Create the stash tensor (the output) and grow the program to update it.

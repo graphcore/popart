@@ -112,17 +112,18 @@ def test_dataflow():
     ir = _ir.Ir()
     # Check default dataflow
     dataFlow = ir.getDataFlow()
-    assert not ir.getDataFlow().isAnchored("out")
+    assert not ir.getDataFlow().isAnchored(popart.TensorId("out"))
     # Can't get art for anchor we haven't anchored.
     with pytest.raises(popart.popart_exception) as e_info:
-        assert ir.getDataFlow().art("out").id()
+        assert ir.getDataFlow().art(popart.TensorId("out")).id()
         assert e_info.value.args[0].endswith("is not an anchor")
 
-    dataFlow = popart.DataFlow(1, {"out": popart.AnchorReturnType("All")})
+    dataFlow = popart.DataFlow(
+        1, {popart.TensorId("out"): popart.AnchorReturnType("All")})
     ir.setDataFlow(dataFlow)
-    assert ir.getDataFlow().isAnchored("out")
-    assert ir.getDataFlow().art("out").id() == popart.AnchorReturnType(
-        "All").id()
+    assert ir.getDataFlow().isAnchored(popart.TensorId("out"))
+    assert ir.getDataFlow().art(
+        popart.TensorId("out")).id() == popart.AnchorReturnType("All").id()
     # No equality operator for dataflow, so just check we can get it.
     assert ir.getDataFlow()
 

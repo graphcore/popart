@@ -145,10 +145,10 @@ def test_call_grad_1(op_tester, subgraphCopyingStrategy):
             builder.addOutputTensor(out)
             return [
                 out,
-                popart.reservedGradientPrefix() + out,
-                popart.reservedGradientPrefix() + i0,
-                popart.reservedGradientPrefix() + i1,
-                popart.reservedGradientPrefix() + i2
+                popart.TensorId(popart.reservedGradientPrefix() + out),
+                popart.TensorId(popart.reservedGradientPrefix() + i0),
+                popart.TensorId(popart.reservedGradientPrefix() + i1),
+                popart.TensorId(popart.reservedGradientPrefix() + i2)
             ]
 
         return init_builder
@@ -352,9 +352,9 @@ def test_call_grad_2(op_tester, subgraphCopyingStrategy):
         builder.addOutputTensor(out)
         return [
             out,
-            popart.reservedGradientPrefix() + out,
-            popart.reservedGradientPrefix() + i0,
-            popart.reservedGradientPrefix() + i1,
+            popart.TensorId(popart.reservedGradientPrefix() + out),
+            popart.TensorId(popart.reservedGradientPrefix() + i0),
+            popart.TensorId(popart.reservedGradientPrefix() + i1),
         ]
 
     def reference(ref_data):
@@ -416,11 +416,11 @@ def test_call_grad_3(subgraphCopyingStrategy):
         dataFlow = popart.DataFlow(
             1, {
                 ip: art,
-                popart.reservedGradientPrefix() + ip: art,
+                popart.TensorId(popart.reservedGradientPrefix() + ip): art,
                 relu: art,
-                popart.reservedGradientPrefix() + relu: art,
+                popart.TensorId(popart.reservedGradientPrefix() + relu): art,
                 gemm: art,
-                popart.reservedGradientPrefix() + gemm: art
+                popart.TensorId(popart.reservedGradientPrefix() + gemm): art
             })
 
         trainingOptions = popart.SessionOptions()
@@ -489,9 +489,9 @@ def test_call_grad_scoped(op_tester):
         builder.addOutputTensor(out)
         return [
             out,
-            popart.reservedGradientPrefix() + out,
-            popart.reservedGradientPrefix() + i0,
-            popart.reservedGradientPrefix() + i1,
+            popart.TensorId(popart.reservedGradientPrefix() + out),
+            popart.TensorId(popart.reservedGradientPrefix() + i0),
+            popart.TensorId(popart.reservedGradientPrefix() + i1),
         ]
 
     def reference(ref_data):
@@ -569,9 +569,9 @@ def test_stacked_subgraphs(op_tester, subgraphCopyingStrategy):
         builder.addOutputTensor(actIn)
         return [
             actIn,
-            popart.reservedGradientPrefix() + actIn,
-            popart.reservedGradientPrefix() + in0,
-            popart.reservedGradientPrefix() + w0,
+            popart.TensorId(popart.reservedGradientPrefix() + actIn),
+            popart.TensorId(popart.reservedGradientPrefix() + in0),
+            popart.TensorId(popart.reservedGradientPrefix() + w0),
         ]
 
     def reference(ref_data):
@@ -637,9 +637,9 @@ def test_stacked_subgraphs_2(subgraphCopyingStrategy):
         art = popart.AnchorReturnType("All")
         anchor_returns = {
             w0: art,
-            popart.reservedGradientPrefix() + w0: art,
+            popart.TensorId(popart.reservedGradientPrefix() + w0): art,
             in0: art,
-            popart.reservedGradientPrefix() + in0: art
+            popart.TensorId(popart.reservedGradientPrefix() + in0): art
         }
         opts = popart.SessionOptions()
         opts.subgraphCopyingStrategy = subgraphCopyingStrategy
@@ -760,8 +760,8 @@ def test_subgraph_partitioning(op_tester):
 #     out = builder.aiGraphcore.call([i0, i1], 1, subgraph_builder)[0]
 #
 #     anchorMap = {
-#         popart.reservedGradientPrefix() + i0: popart.AnchorReturnType("All"),
-#         popart.reservedGradientPrefix() + i1: popart.AnchorReturnType("All")
+#         popart.TensorId(popart.reservedGradientPrefix() + i0): popart.AnchorReturnType("All"),
+#         popart.TensorId(popart.reservedGradientPrefix() + i1): popart.AnchorReturnType("All")
 #     }
 #
 #     # This should throw some exception, as the grad subgraph is empty
