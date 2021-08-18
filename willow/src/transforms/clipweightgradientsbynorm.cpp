@@ -24,6 +24,8 @@
 #include <popart/transforms/clipweightgradientsbynorm.hpp>
 #include <popart/util.hpp>
 
+#include <poplar/Target.hpp>
+
 namespace popart {
 
 namespace {
@@ -304,13 +306,21 @@ Tensor *createClipFactor(Tensor *globalNorm, Tensor *clipNorm, Graph &graph) {
 }
 
 // Take the maxNorm and create the clipNorm tensor.
-Tensor *createClipNorm(float maxNorm, Graph &graph) {
+Tensor *createClipNorm(float maxNorm, popart::DataType dataType, Graph &graph) {
   auto &ir          = graph.getIr();
   auto clipByNormId = ir.createIntermediateTensorId("clipByNorm");
-  TensorInfo info{DataType::FLOAT, {}};
-  std::vector<float> data{maxNorm};
+  TensorInfo info{dataType, {}};
 
-  graph.getTensors().addConstInit(clipByNormId, info, data.data());
+  std::vector<float> floatData(1, maxNorm);
+  if (dataType == DataType::FLOAT) {
+    graph.getTensors().addConstInit(clipByNormId, info, floatData.data());
+  } else {
+    std::vector<char> halfData(2);
+    poplar::copyFloatToDeviceHalf(
+        poplar::Target(), floatData.data(), halfData.data(), 1);
+    graph.getTensors().addConstInit(clipByNormId, info, halfData.data());
+  }
+
   return graph.getTensors().get(clipByNormId);
 }
 
@@ -364,7 +374,8 @@ void clipWeightGradientsByNorm(int clipGroupIndex,
   }
 
   auto globalNorm = createGlobalNorm(clipGroupIndex, gradNorms, graph);
-  auto clipNorm   = createClipNorm(clippingGroup.maxNorm, graph);
+  auto clipNorm =
+      createClipNorm(clippingGroup.maxNorm, globalNorm->info.dataType(), graph);
   auto clipFactor = createClipFactor(globalNorm, clipNorm, graph);
   addClipByNorms(grads, clipFactor, graph);
 }
