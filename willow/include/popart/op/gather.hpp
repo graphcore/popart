@@ -3,6 +3,7 @@
 #define GUARD_NEURALNET_GATHER_HPP
 
 #include <popart/op.hpp>
+#include <popart/vendored/optional.hpp>
 
 namespace popart {
 
@@ -10,6 +11,7 @@ class GatherOp : public Op {
 public:
   GatherOp(const OperatorIdentifier &_opid,
            int64_t axis_,
+           const nonstd::optional<float> &available_memory_proportion_,
            const Op::Settings &settings_);
 
   std::unique_ptr<Op> clone() const override;
@@ -31,8 +33,17 @@ public:
 
   bool canShard() const override { return true; }
 
+  nonstd::optional<float> getAvailableMemoryProportion() const {
+    return available_memory_proportion;
+  }
+
+  void setAvailableMemoryProportion(float v) {
+    available_memory_proportion = v;
+  }
+
 private:
   int64_t axis = 0;
+  nonstd::optional<float> available_memory_proportion;
 };
 
 class GatherGradOp : public Op {
@@ -60,9 +71,14 @@ public:
 
   bool canShard() const override { return true; }
 
+  nonstd::optional<float> getAvailableMemoryProportion() const {
+    return available_memory_proportion;
+  }
+
 private:
   int64_t axis;
   TensorInfo fwdDataInfo;
+  nonstd::optional<float> available_memory_proportion;
 };
 
 } // namespace popart

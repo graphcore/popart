@@ -64,7 +64,8 @@ ScatterReduceOpx::ScatterReduceOpx(Op *op, Devicex *devicex)
   axis       = static_cast<size_t>(srop.getAxis());
   plan       = createSlicePlan(graph(),
                          srop.inInfo(srop.dataInIndex()),
-                         srop.inInfo(srop.indicesInIndex()));
+                         srop.inInfo(srop.indicesInIndex()),
+                         srop.getAvailableMemoryProportion());
 
   // We always want the ScatterReduce to layout its inputs
   inputCreatorPriority = std::numeric_limits<double>::max();
@@ -196,7 +197,8 @@ ScatterReduceGradOpx::ScatterReduceGradOpx(Op *op, Devicex *devicex)
   axis       = static_cast<size_t>(srop.getAxis());
   plan       = createSlicePlan(graph(),
                          srop.inInfo(srop.gradInIndex()),
-                         srop.inInfo(srop.indicesInIndex()));
+                         srop.inInfo(srop.indicesInIndex()),
+                         srop.getAvailableMemoryProportion());
 
   // We always want the ScatterReduceGrad to layout its inputs
   inputCreatorPriority = std::numeric_limits<double>::max();

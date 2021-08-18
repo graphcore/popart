@@ -36,6 +36,7 @@ GatherOpx::GatherOpx(Op *op, Devicex *devicex) : GatherBaseOpx(op, devicex) {
   plan            = createSlicePlan(graph(),
                          gop.inInfo(gop.dataInIndex()),
                          gop.inInfo(gop.indicesInIndex()),
+                         gop.getAvailableMemoryProportion(),
                          axis);
 }
 

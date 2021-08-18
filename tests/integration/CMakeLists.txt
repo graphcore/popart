@@ -60,7 +60,7 @@ add_popart_py_unit_test(builder_test builder_test.py)
 add_popart_py_unit_test(clip_by_norm_test clip_by_norm_test.py)
 add_popart_py_unit_test(collectives_test collectives_test.py VARIANTS Hw)
 add_popart_py_unit_test(context_scope_test context_scope_test.py)
-add_popart_py_unit_test(convolution_options_test convolution_options_test.py VARIANTS IpuModel)
+add_popart_py_unit_test(available_memory_proportion_test available_memory_proportion_test.py VARIANTS IpuModel)
 add_popart_py_unit_test(cycle_count_test cycle_count_test.py VARIANTS Hw)
 
 add_popart_py_unit_test(decompose_gradient_summation_test decompose_gradient_summation_test.py VARIANTS IpuModel)

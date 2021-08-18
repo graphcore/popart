@@ -100,6 +100,7 @@ gather(Graph &g, TensorId data, TensorId indices, int64_t axis) {
                                         {{GatherOp::outIndex(), out}},
                                         Onnx::AiOnnx::OpSet9::Gather,
                                         axis,
+                                        nonstd::nullopt,
                                         Op::Settings(g, "gather"))};
 }
 std::pair<TensorId, Op *> matmul(Graph &g, TensorId lhs, TensorId rhs) {

@@ -94,6 +94,7 @@ bool TiedGatherPattern::apply(Op *op) const {
   matmul->setUseFullyConnectedPass(false);
 
   const auto axis          = gather->getAxis();
+  const auto availMemProp  = gather->getAvailableMemoryProportion();
   const auto serialisation = matmul->getSerialiseSettings();
 
   auto data          = gather->input->tensor(GatherOp::dataInIndex());
@@ -121,8 +122,8 @@ bool TiedGatherPattern::apply(Op *op) const {
                                    const TensorId &ind,
                                    int64_t i,
                                    const std::string &debugPrefix) {
-    auto tiedGather =
-        graph.createOp<TiedGatherOp>(axis, Op::Settings(graph, debugPrefix));
+    auto tiedGather = graph.createOp<TiedGatherOp>(
+        axis, availMemProp, Op::Settings(graph, debugPrefix));
     transferBaseProperties(gather, tiedGather);
 
     tiedGather->connectInTensor(TiedGatherOp::dataInIndex(), dict);

@@ -14,10 +14,12 @@ class Graph;
 namespace popart {
 namespace popx {
 
-popops::SlicePlan createSlicePlan(const snap::Graph &graph,
-                                  const popart::TensorInfo &dataInfo,
-                                  const popart::TensorInfo &indicesInfo,
-                                  nonstd::optional<size_t> axis = {});
+popops::SlicePlan
+createSlicePlan(const snap::Graph &graph,
+                const popart::TensorInfo &dataInfo,
+                const popart::TensorInfo &indicesInfo,
+                nonstd::optional<float> availableMemoryProportion = {},
+                nonstd::optional<size_t> axis                     = {});
 
 } // namespace popx
 } // namespace popart

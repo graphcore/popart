@@ -3,6 +3,7 @@
 #define GUARD_NEURALNET_SCATTERREDUCE_HPP
 
 #include <popart/op.hpp>
+#include <popart/vendored/optional.hpp>
 
 namespace popart {
 
@@ -15,6 +16,7 @@ public:
                   int64_t axis_,
                   int64_t axis_size_,
                   ScatterReduction reduction_,
+                  const nonstd::optional<float> &available_memory_proportion_,
                   const Op::Settings &settings_);
 
   std::unique_ptr<Op> clone() const final;
@@ -36,6 +38,14 @@ public:
 
   float getSubgraphValue() const final { return getLowSubgraphValue(); }
 
+  nonstd::optional<float> getAvailableMemoryProportion() const {
+    return available_memory_proportion;
+  }
+
+  void setAvailableMemoryProportion(float v) {
+    available_memory_proportion = v;
+  }
+
   static std::string reductionToString(ScatterReduction reduction);
   static ScatterReduction reductionFromString(const std::string &reductionStr);
 
@@ -44,6 +54,7 @@ private:
   int64_t axis;
   int64_t axis_size;
   ScatterReduction reduction;
+  nonstd::optional<float> available_memory_proportion;
 };
 
 class ScatterReduceGradOp : public Op {
@@ -67,10 +78,15 @@ public:
 
   float getSubgraphValue() const final { return getLowSubgraphValue(); }
 
+  nonstd::optional<float> getAvailableMemoryProportion() const {
+    return available_memory_proportion;
+  }
+
 private:
   Shape backward_shape;
   int64_t axis;
   ScatterReduction reduction;
+  nonstd::optional<float> available_memory_proportion;
 };
 
 } // namespace popart

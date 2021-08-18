@@ -31,13 +31,16 @@ ScatterReduceOp::reductionFromString(const std::string &reduction) {
   throw internal_error("Unknown ScatterReduction");
 }
 
-ScatterReduceOp::ScatterReduceOp(const OperatorIdentifier &_opid,
-                                 int64_t axis_,
-                                 int64_t axis_size_,
-                                 ScatterReduction reduction_,
-                                 const Op::Settings &settings_)
+ScatterReduceOp::ScatterReduceOp(
+    const OperatorIdentifier &_opid,
+    int64_t axis_,
+    int64_t axis_size_,
+    ScatterReduction reduction_,
+    const nonstd::optional<float> &available_memory_proportion_,
+    const Op::Settings &settings_)
     : Op(_opid, settings_), backward_shape(), axis(axis_),
-      axis_size(axis_size_), reduction(reduction_) {}
+      axis_size(axis_size_), reduction(reduction_),
+      available_memory_proportion(available_memory_proportion_) {}
 
 std::unique_ptr<Op> ScatterReduceOp::clone() const {
   return std::make_unique<ScatterReduceOp>(*this);
@@ -88,12 +91,15 @@ void ScatterReduceOp::appendOutlineAttributes(OpSerialiserBase &os) const {
   os.appendAttribute("axis", axis);
   os.appendAttribute("reduction", reductionToString(reduction));
   os.appendAttribute("backward_shape", backward_shape);
+  os.appendAttribute("available_memory_proportion",
+                     available_memory_proportion);
 }
 
 ScatterReduceGradOp::ScatterReduceGradOp(const ScatterReduceOp &op)
     : Op(Onnx::CustomGradOperators::ScatterReduceGradOp, op.getSettings()),
       backward_shape(op.getBackwardShape()), axis(op.getAxis()),
-      reduction(op.getReduction()) {}
+      reduction(op.getReduction()),
+      available_memory_proportion(op.getAvailableMemoryProportion()) {}
 
 std::unique_ptr<Op> ScatterReduceGradOp::clone() const {
   return std::make_unique<ScatterReduceGradOp>(*this);
@@ -124,6 +130,8 @@ void ScatterReduceGradOp::appendOutlineAttributes(OpSerialiserBase &os) const {
   os.appendAttribute("axis", axis);
   os.appendAttribute("reduction",
                      ScatterReduceOp::reductionToString(reduction));
+  os.appendAttribute("available_memory_proportion",
+                     available_memory_proportion);
 }
 
 namespace {
@@ -177,11 +185,19 @@ static OpCreator<ScatterReduceOp> ScatterReduceOpCreator(
       auto reduction =
           info.attributes.getAttribute<Attributes::String>("reduction", "sum");
 
+      nonstd::optional<float> available_memory_proportion;
+
+      if (info.attributes.hasAttribute(sAvailMemAttribute)) {
+        available_memory_proportion =
+            info.attributes.getAttribute<Attributes::Float>(sAvailMemAttribute);
+      }
+
       return std::unique_ptr<Op>(
           new ScatterReduceOp(info.opid,
                               axis,
                               axis_size,
                               ScatterReduceOp::reductionFromString(reduction),
+                              available_memory_proportion,
                               info.settings));
     },
     true);

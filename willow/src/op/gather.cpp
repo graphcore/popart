@@ -13,8 +13,10 @@ namespace popart {
 
 GatherOp::GatherOp(const OperatorIdentifier &_opid,
                    int64_t axis_,
+                   const nonstd::optional<float> &available_memory_proportion_,
                    const Op::Settings &settings_)
-    : Op(_opid, settings_), axis(axis_) {}
+    : Op(_opid, settings_), axis(axis_),
+      available_memory_proportion(available_memory_proportion_) {}
 
 std::unique_ptr<Op> GatherOp::clone() const {
   return std::make_unique<GatherOp>(*this);
@@ -60,6 +62,8 @@ void GatherOp::setup() {
 void GatherOp::appendOutlineAttributes(OpSerialiserBase &os) const {
   Op::appendOutlineAttributes(os);
   os.appendAttribute("axis", axis);
+  os.appendAttribute("available_memory_proporition",
+                     available_memory_proportion);
 }
 
 // A gather on a degenerate dimension with a rank 1 index tensor with a single
@@ -72,7 +76,8 @@ bool GatherOp::canBeReplacedByIdentity() const {
 
 GatherGradOp::GatherGradOp(const GatherOp &op, int64_t axis_)
     : Op(Onnx::GradOperators::GatherGrad, op.getSettings()), axis(axis_),
-      fwdDataInfo(op.inInfo(GatherOp::dataInIndex())) {}
+      fwdDataInfo(op.inInfo(GatherOp::dataInIndex())),
+      available_memory_proportion(op.getAvailableMemoryProportion()) {}
 
 std::unique_ptr<Op> GatherGradOp::clone() const {
   return std::make_unique<GatherGradOp>(*this);
@@ -100,6 +105,8 @@ int64_t GatherGradOp::getAxis() const { return axis; }
 void GatherGradOp::appendOutlineAttributes(OpSerialiserBase &os) const {
   Op::appendOutlineAttributes(os);
   os.appendAttribute("axis", axis);
+  os.appendAttribute("available_memory_proporition",
+                     available_memory_proportion);
 }
 
 namespace {
@@ -128,7 +135,15 @@ static OpCreator<GatherOp> gatherOpCreator(
     [](const OpCreatorInfo &info) {
       int64_t axis = info.attributes.getAttribute<Attributes::Int>("axis", 0);
 
-      return std::unique_ptr<Op>(new GatherOp(info.opid, axis, info.settings));
+      nonstd::optional<float> available_memory_proportion;
+
+      if (info.attributes.hasAttribute(sAvailMemAttribute)) {
+        available_memory_proportion =
+            info.attributes.getAttribute<Attributes::Float>(sAvailMemAttribute);
+      }
+
+      return std::unique_ptr<Op>(new GatherOp(
+          info.opid, axis, available_memory_proportion, info.settings));
     },
     true);
 } // namespace
