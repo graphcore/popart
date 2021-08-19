@@ -75,14 +75,18 @@
                 python view_coverage.py gcovr --advanced="--xml coverage.xml"
 """
 
+import io
 import json
 import os
 import re
-import shutil
 import subprocess
+import sys
 from argparse import ArgumentParser
+from contextlib import redirect_stdout
 from pathlib import Path, PosixPath
-from typing import List, Optional
+from typing import Callable, Optional
+
+from gcovr.__main__ import main as gcovr
 
 output_types = {
     "all": "--txt",
@@ -104,9 +108,43 @@ class GCovrRunnerParser:
         self.output = output
         self.workspace_dir = workspace_dir
         self.build_dir = build_dir
-        self._excluded_paths = []
+        self._excluded_paths = set()
+        self._excluded_paths = self._filter_build_directories(
+            lambda f: os.path.isfile(f) and '.gcno' in f)
         self._filter = []
         self._output_path = workspace_dir
+
+    def _filter_build_directories(self, function: Callable[[str], bool]):
+        """"Create a list of directories to exclude from the gcovr search.
+        A given directory is excluded if it does not contain any coverage
+        files and all its child directories are already excluded.
+
+        If we find that a parent directory does not contain the files we want
+        and its children have already been excluded, we replace the children
+        in the set of currently excluded directories with the parent because
+        the children all share the parent as a common ancestor, so it is
+        redundant to include all the children separately.
+        """
+        exclude_dirs = set()
+        build_dir = build_files_dir(self.build_dir)
+        for dirname, dirs, files in os.walk(build_dir, topdown=False):
+            dirs = [os.path.join(dirname, d) for d in dirs]
+            files = [os.path.join(dirname, f) for f in files]
+            dir_satisfies_filter = any(function(i) for i in (files + dirs))
+            if not dir_satisfies_filter and all(d in exclude_dirs
+                                                for d in dirs):
+                for d in dirs:
+                    exclude_dirs.discard(d)
+                exclude_dirs.add(dirname)
+
+        # Paths are treated as regular expressions, so we have to indicate that
+        # each path is complete with ^ and $. This is because a path like
+        # popart/python will match popart/python_core, so even if the former does
+        # not contain coverage files we will end up mistakenly excluding the latter,
+        # which might contain the files we want to find.
+        # Prepending ^ and appending $ prevents this from happening.
+        exclude_dirs = {f'^{d}$' for d in exclude_dirs}
+        return exclude_dirs
 
     def set_output_path(self, path: PosixPath) -> None:
         if not (path.exists() and path.is_dir()):
@@ -114,7 +152,7 @@ class GCovrRunnerParser:
                 f"Output path {path} does not exist or is not a directory.")
         self._output_path = path
 
-    def create_report(self, args=[]) -> str:
+    def create_report(self, args: list = []) -> str:
         coverage = self._run_gcovr(args)
         return self._parse_gcovr_output(coverage)
 
@@ -124,11 +162,9 @@ class GCovrRunnerParser:
             os.mkdir(coverage_dir)
 
     def _run_gcovr(self, args=[]) -> str:
-        gcovr_path = shutil.which("gcovr")
-        if gcovr_path is None:
-            raise RuntimeError(
-                "Command 'gcovr' not found. Please install it using pip install gcovr."
-            )
+        src_files_dir = str(self.workspace_dir)
+        build_dir = str(build_files_dir(self.build_dir))
+        command = ['-r', src_files_dir, build_dir, '-j16']
 
         flag = output_types[self.output]
         if self.output in {"html", "csv", "cobertura"}:
@@ -137,26 +173,22 @@ class GCovrRunnerParser:
             # to specify any output path
             flag = flag.format(output_dir=self._output_path)
 
-        src_files_dir = self.workspace_dir.joinpath("willow/src")
-        command = [
-            'gcovr', '-r', src_files_dir,
-            build_files_dir(self.build_dir), '-j16'
-        ]
         # The only time we have args is when the user
         # has supplied the --advanced option
         command += args if args else flag.split()
         if self._filter:
             command += self._filter
         # Exclude system library code and headers just in case
-        command += [
-            '--exclude-directories', '/usr/include/.*', *self._excluded_paths
-        ]
-        return bash(command, log=False, cwd=self.workspace_dir)
+        command += ['--exclude-directories', '/usr/include/.*']
 
-    def _convert_output_to_flag(self) -> str:
-        flag = output_types[self.output]
-        flag = flag.format(output_dir=self._output_path)
-        return flag
+        for e in self._excluded_paths:
+            command.append('--exclude-directories')
+            command.append(e)
+        output_buffer = io.StringIO()
+        with redirect_stdout(output_buffer):
+            gcovr(command)
+
+        return output_buffer.getvalue()
 
     def _parse_gcovr_output(self, coverage: str) -> None:
         if self.output == "concise":
@@ -169,36 +201,10 @@ class GCovrRunnerParser:
     def set_filter(self, filter_regex: str) -> None:
         if filter_regex:
             filter_regex = filter_regex.strip()
-            excludes = self._get_list_of_excluded_directories(filter_regex)
-            self._excluded_paths = excludes
+            self._excluded_paths = self._excluded_paths.union(
+                self._filter_build_directories(lambda f: re.search(
+                    filter_regex, f)))
             self._filter = ["-f", filter_regex]
-
-    def _get_list_of_excluded_directories(self, file_regex: str) -> List[str]:
-        """
-        Produce a list of flags which forces gcovr to only search directories
-        which contain files matching file_regex for raw gcov files.
-
-        Having gcovr search all the CMakeBuild files when a filter is specified
-        is redundant and results in a long running time when producing a report.
-        We therefore find the directories containing the files which we know
-        will match the file_regex ahead of time, and use this to determine 
-        which directories we can prune from the search.
-        """
-        build_files_path = build_files_dir(self.build_dir)
-        include_dirs = set()
-        exclude_dirs = set()
-        for dirname, _, filenames in os.walk(build_files_path):
-            if any([re.search(file_regex, f) for f in filenames]):
-                include_dirs.add(dirname)
-            else:
-                exclude_dirs.add(dirname)
-
-        exclude_dirs.discard(str(build_files_path))
-        excludes = []
-        for e in exclude_dirs:
-            excludes.append("--exclude-directories")
-            excludes.append(e)
-        return excludes
 
 
 def bash(args, cwd='.', log=True, ignore_return_code=False) -> str:
@@ -244,8 +250,7 @@ def run_tests(build_dir: PosixPath, test_filter_str=""):
 
 
 def build_files_dir(build_dir: str) -> PosixPath:
-    build_files_dir = Path(build_dir).joinpath(
-        "build/popart/willow/CMakeFiles/popart-only.dir/src")
+    build_files_dir = Path(build_dir).joinpath("build/popart")
     return build_files_dir
 
 
@@ -269,11 +274,11 @@ def get_build_dir(path: Optional[str] = None):
             print('Could not infer build directory from the CBT_BUILDTREE '
                   'environment variable.\n Either activate the build tree '
                   'or specify the build directory using the -d flag.')
-            exit(1)
+            sys.exit(1)
     return build_dir
 
 
-def main():
+def main(args=None):
     # Assume the base poplar view directory is two levels above this file.
     workspace_dir = Path(os.path.dirname(__file__)).resolve().parent
 
@@ -343,7 +348,7 @@ def main():
         help=(
             "Regular expression specifying which files to display coverage data for. "
             "Only files matching the expression are displayed.", ))
-    args = parser.parse_args()
+    args = parser.parse_args(args)
     build_dir = get_build_dir(args.directory)
 
     if args.clean:

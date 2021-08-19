@@ -96,3 +96,7 @@ foreach(dep ${popart_deps_with_var_needed_for_bwd_compat})
 endforeach()
 
 option(POPART_ENABLE_COVERAGE "Enable compiler flags which generate code coverage files." OFF)
+option(UPLOAD_COVERAGE_REPORT "Add a ctest which uploads unit test coverage to elasticsearch" OFF)
+# This needs to be given as an arg because the location of a cookie file
+# depends on the CI framework being used.
+set(RESULTS_SERVER_COOKIE_FILE "" CACHE STRING "Absolute path to file containing authorisation cookie for the elasticsearch server.")
