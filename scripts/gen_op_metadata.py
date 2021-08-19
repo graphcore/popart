@@ -1,94 +1,44 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 import argparse
-from glob import glob
-import itertools
 import json
 import os
 import re
 from multiprocessing import Pool
 from pathlib import Path
-from typing import Dict, Iterator, List
+from typing import Any, Dict, Iterator, List, Text, Tuple
 
 from clang import cindex
 
-# Code adapted from:
-# https://github.com/pybind/pybind11_mkdoc/blob/93214d7882cafb92bd9bca0bd5c7ab5aae190286/pybind11_mkdoc/mkdoc_lib.py#L276-L289
-# licensed MIT License (MIT):
-# https://docs.github.com/en/github/creating-cloning-and-archiving-repositories/creating-a-repository-on-github/licensing-a-repository
-# Licence: https://opensource.org/licenses/MIT
+from util import bor, get_project_source_dir
 
-# cython.util.find_library does not find `libclang` for all clang
-# versions and distributions. LLVM switched to a monolithical setup
-# that includes everything under /usr/lib/llvm{version_number}/
-# We therefore glob for the library and select the highest version
-if 'LIBCLANG_PATH' in os.environ:
-    library_file = os.environ['LIBCLANG_PATH']
-    print(f"Using {library_file} libclang file")
-    cindex.Config.set_library_file(library_file)
-else:
-    library_file_dirs = glob("/usr/lib/llvm-*/lib/libclang.so.1")
-    if len(library_file_dirs) > 0:
-        library_file = sorted(library_file_dirs, reverse=True)[0]
-        print(f"Using {library_file} libclang file")
-        cindex.Config.set_library_file(library_file)
-    else:
-        raise FileNotFoundError(
-            "Failed to find libclang.so shared object file! ")
-
-# End 3rd party code.
-"""
-Example output:
-
-        {
-            "name": "AccumulateOp",
-            "constructors": [
-                {
-                    "args": [
-                        {
-                            "arg_name": "type",
-                            "arg_type": "popart::AccumulationType",
-                            "const": false,
-                            "ref": false,
-                            "has_default": false,
-                            "default": ""
-                        },
-                        {
-                            "arg_name": "factor",
-                            "arg_type": "popart::OptimizerValue",
-                            "const": false,
-                            "ref": false,
-                            "has_default": false,
-                            "default": ""
-                        },
-                        {
-                            "arg_name": "",
-                            "arg_type": "Op::Settings",
-                            "const": true,
-                            "ref": true,
-                            "has_default": false,
-                            "default": ""
-                        }
-                    ]
-                }
-            ],
-            "display_name": "AccumulateOp(popart::AccumulationType, popart::OptimizerValue, const Op::Settings &)",
-            "hash": 772877778
-        },
-"""
-
-exceptions = [
-    "MultiConvOptions", "FmodArg0GradOp", "LeakyReluOpBaseAttributes",
-    "ShapeOrLikeOp"
-]
+# Monkey patch clang.cindex.TranslationUnit flags that are not available by
+# default.
+# See: https://clang.llvm.org/doxygen/group__CINDEX__TRANSLATION__UNIT.html#gab1e4965c1ebe8e41d71e90203a723fe9
+cindex.TranslationUnit.PARSE_NONE = 0x0
+cindex.TranslationUnit.PARSE_DETAILED_PREPROCESSING_RECORD = 0x01
+cindex.TranslationUnit.PARSE_INCOMPLETE = 0x02
+cindex.TranslationUnit.PARSE_PRECOMPILED_PREAMBLE = 0x04
+cindex.TranslationUnit.PARSE_CACHE_COMPLETION_RESULTS = 0x08
+cindex.TranslationUnit.PARSE_FOR_SERIALIZATION = 0x10
+cindex.TranslationUnit.PARSE_CXX_CHAINED_PCH = 0x20
+cindex.TranslationUnit.PARSE_SKIP_FUNCTION_BODIES = 0x40
+cindex.TranslationUnit.PARSE_INCLUDE_BRIEF_COMMENTS_IN_CODE_COMPLETION = 0x80
+cindex.TranslationUnit.PARSE_CREATE_PREAMBLE_ON_FIRST_PARSE = 0x100
+cindex.TranslationUnit.PARSE_KEEP_GOING = 0x200
+cindex.TranslationUnit.PARSE_SINGLE_FILE_PARSE = 0x400
+cindex.TranslationUnit.PARSE_LIMIT_SKIP_FUNCTION_BODIES_TO_PREAMBLE = 0x800
+cindex.TranslationUnit.PARSE_INCLUDE_ATTRIBUTED_TYPES = 0x1000
+cindex.TranslationUnit.PARSE_VISIT_IMPLICIT_ATTRIBUTES = 0x2000
+cindex.TranslationUnit.PARSE_IGNORE_NON_ERRORS_FROM_INCLUDED_FILES = 0x4000
+cindex.TranslationUnit.PARSE_RETAIN_EXCLUDED_CONDITIONAL_BLOCKS = 0x8000
 
 
 class DepthCursor(cindex.Cursor):
-    """Cindex cursor with concept of depth to 
-    prevent over-recursion when using walk_preorder. 
-    E.g. when processing a class if it has std::string as an argument, 
-    it will call walk_preorder on std::string to inspect it, and 
-    in turn on std::string's methods. We only want to recurse to a
-    depth of 3 (popart->Class->method)
+    """Cindex cursor with concept of depth to prevent over-recursion when using
+    walk_preorder. E.g. when processing a class if it has std::string as an
+    argument, it will call walk_preorder on std::string to inspect it, and in
+    turn on std::string's methods. We only want to recurse to a depth of 3
+    (popart->Class->method).
 
     Args:
         cindex (Cursor): Original cursor
@@ -112,6 +62,60 @@ class DepthCursor(cindex.Cursor):
                     yield descendant
 
 
+exceptions = [
+    'DynamicBaseOp',
+    'DynamicBinaryBaseOp',
+    'DynamicSliceBaseOp',
+    'DynamicTernaryBaseOp',
+    'ElementWiseBinaryBaseOp',
+    'MultiConvBaseOp',
+    'MultiConvDataGradBaseOp',
+    'MultiConvWeightsGradBaseOp',
+    'RandomBaseOp',
+    'RandomNormalBaseOp',
+    'RandomUniformBaseOp',
+    'ReshapeBaseOp',
+    'TransposeBaseOp',
+    'ZerosBaseOp',
+    "FmodArg0GradOp",
+    'ExchangeDescriptor',
+    "LeakyReluOpBaseAttributes",
+    "MultiConvOptions",
+    "ShapeOrLikeOp",
+    'ReverseBaseOp',
+    'DropoutBaseOp',
+    'CollectivesBaseOp',
+    'SubsampleBaseOp',
+    'BaseSliceOp',
+    'LossOp',
+    'BasePadOp',
+    'BasePadOutplaceOp',
+    'OneWayUnaryInPlaceOp',
+    'OneWayUnaryOp',
+    'BaseSortOp',
+    'ElementWiseNonLinearUnaryGradOp',
+    'ElementWiseBinaryOp',
+    'ElementWiseUnaryBooleanOp',
+    'ElementWiseUnaryOp',
+    'SGD0VarUpdateOpBase',
+    'DynamicBinaryBaseInplaceOp',
+    'ElementWiseInplaceUnaryOp',
+    'DynamicTernaryBaseInplaceOp',
+    'TiedGatherOp',
+    'TiedGatherGradOp',
+    'ScanOp',
+    'ConcatOp',
+    'ConcatInplaceOp',
+    'ConcatGradOp',
+    'ExpandInplaceOp',
+    'ExpandGradOp',
+    'ExpandOp',
+    'IdentityInplaceOp',
+    'TransposeInplaceOp',
+    'UpsampleOp',
+]
+
+
 def find_constructors(node: cindex.Cursor, base: cindex.Cursor) -> Dict:
     """Find info on all the constructors for the given node.
 
@@ -122,7 +126,7 @@ def find_constructors(node: cindex.Cursor, base: cindex.Cursor) -> Dict:
         Dict: A dict containing all the required info about the constructor.
             See function return for what it contains.
     """
-    args = []
+    args_ = []
 
     for c in node.get_arguments():
         ref = False
@@ -147,7 +151,7 @@ def find_constructors(node: cindex.Cursor, base: cindex.Cursor) -> Dict:
             default = " ".join(tokens)
             default = default.split("=")[-1]
 
-        args.append({
+        args_.append({
             "arg_name":
             name.strip(),
             "alt_arg_name":
@@ -167,21 +171,22 @@ def find_constructors(node: cindex.Cursor, base: cindex.Cursor) -> Dict:
         })
     # Add the full string of args, to avoid having to re-create later.
     full_args = ""
-    for i, arg in enumerate(args):
+    for i, arg in enumerate(args_):
         full_args += f"{'const ' if arg['const'] else ''}{arg['arg_type']}{' &' if  arg['ref'] else ''}"
-        if i + 1 != len(args):
+        if i + 1 != len(args_):
             full_args += ", "
 
     # Get the relative include path
     file_ = node.location.file.name
 
-    file_ = Path(file_).resolve().relative_to(Path(__file__).resolve().parents[1])
+    file_ = Path(file_).resolve().relative_to(
+        Path(__file__).resolve().parents[1])
 
     return {
         "name":
         node.spelling,
         "constructors": [{
-            "args": args,
+            "args": args_,
             "full_args": full_args,
         }],
         "display_name":
@@ -196,16 +201,13 @@ def find_constructors(node: cindex.Cursor, base: cindex.Cursor) -> Dict:
     }
 
 
-def derives_from_op(node: cindex.Cursor) -> bool:
-    pass
-
-
 def is_template(node: cindex.Cursor) -> bool:
     return bool(re.match(r"[\w]+<[\w\s,]+>", node.spelling))
 
 
-def process_op_header(path: Path, ops_path: str) -> List[Dict]:
-    """Go through the file's definitions and process each child node in turn. 
+def process_op_header(filename: Path, ops_path: str,
+                      include_directories: List[str]) -> List[Dict]:
+    """Go through the file's definitions and process each child node in turn.
 
     Args:
         path (Path): Path of the hpp file
@@ -214,44 +216,58 @@ def process_op_header(path: Path, ops_path: str) -> List[Dict]:
     Returns:
         List[Dict]: List of dicts with info on the ops
     """
+    path = ops_path / filename
     ops = {}
     print(f"Processing {path}")
+
+    # `-ferror-limit=0` is required to prevent `clang` from stopping on too many
+    # errors.
+    args = ['--language=c++', '--std=c++11', '-ferror-limit=0']
+    args += [f'-I{dir}' for dir in include_directories]
+    opts = bor(
+        cindex.TranslationUnit.PARSE_SKIP_FUNCTION_BODIES,
+        cindex.TranslationUnit.PARSE_DETAILED_PREPROCESSING_RECORD,
+        cindex.TranslationUnit.PARSE_RETAIN_EXCLUDED_CONDITIONAL_BLOCKS,
+        cindex.TranslationUnit.PARSE_INCOMPLETE,
+        cindex.TranslationUnit.PARSE_KEEP_GOING,
+        cindex.TranslationUnit.PARSE_INCLUDE_ATTRIBUTED_TYPES,
+    )
     idx = cindex.Index.create()
-    tu = idx.parse(str(path),
-                   args=['-xc++', '--std=c++11'],
-                   options=cindex.TranslationUnit.PARSE_SKIP_FUNCTION_BODIES
-                   | cindex.TranslationUnit.PARSE_INCOMPLETE)
+    tu = idx.parse(str(path), args=args, options=opts)
+
     base_class = None
     has_pure_virtual = False
+
     for node in DepthCursor(cursor=tu.cursor,
                             depth=0).walk_preorder_depth(max_depth=3):
-        # We only want definitions from the ops folder. Base classes might be
-        # defined in other .../op/*.hpp files.
-        if node.location.file:
-            if not os.path.commonprefix(
-                [ops_path, str(node.location.file)]).endswith("/op"):
-                continue
-        else:
+        # Skip if not in current file.
+        if not (node.location.file and str(node.location.file) == str(path)):
             continue
 
+        # Skip selected ops
         if node.spelling in exceptions:
             continue
+
+        # Skip struct constructors
         if hasattr(
                 node.semantic_parent, "kind"
         ) and node.semantic_parent.kind == cindex.CursorKind.STRUCT_DECL:
-            # Skip struct constructors
             continue
+
         if node.kind == cindex.CursorKind.CLASS_DECL:
             for c in node.get_children():
                 if hasattr(c, "is_pure_virtual_method"
                            ) and c.is_pure_virtual_method():
                     has_pure_virtual = True
+                    exceptions.append(node.spelling)
                     continue
-        # Due to the depth first traversal, we will come to the base specifier first
-        # so we can save the base node that our op derives from here.
+
+        # Due to the depth first traversal, we will come to the base specifier
+        # first so we can save the base node that our op derives from here.
         if node.kind == cindex.CursorKind.CXX_BASE_SPECIFIER:
             base_class = node
             continue
+
         # We only want public constructors.
         if not ((node.kind == cindex.CursorKind.CONSTRUCTOR) and
                 (node.access_specifier == cindex.AccessSpecifier.PUBLIC)):
@@ -262,6 +278,7 @@ def process_op_header(path: Path, ops_path: str) -> List[Dict]:
             continue
 
         d = find_constructors(node, base_class)
+
         if node.spelling in ops.keys():
             ops[node.spelling]["constructors"].append(d["constructors"][0])
             continue
@@ -269,71 +286,126 @@ def process_op_header(path: Path, ops_path: str) -> List[Dict]:
         if d and not has_pure_virtual:
             ops[node.spelling] = d
 
-    return [o for o in ops.values()]
+    return (path, [o for o in ops.values() if o['file'] in str(path)])
 
 
-def parse_ops(ops_path: str, out_path: str, jobs: int = 1) -> None:
+def parse_ops(ops_dir: Path,
+              filenames: List[Path],
+              include_directories: Any,
+              jobs: int = 1) -> Tuple[List, List, List]:
     """Run over all the files in the given dir and process with process_file,
     one thread per file.
 
     Args:
         ops_path (str): Path where the <op>.hpp files are stored
-        out_path (str): File to save the result as
         jobs (int, optional): Number of threads. Defaults to 1.
     """
-    pool = Pool(jobs)
-    ops = []
-    files = list(Path(ops_path).glob('*.hpp'))
-    assert len(files) > 0, "No files found. Please check your opdir argument."
+    data = None
 
-    data = pool.starmap(process_op_header,
-                        [(file, ops_path) for file in files])
+    with Pool(jobs) as p:
+        data = p.starmap(process_op_header,
+                         [(name, ops_dir, include_directories)
+                          for name in filenames])
 
-    pool.close()
-    pool.join()
+    assert data is not None, "Op parsing failed."
 
-    ops = list(itertools.chain.from_iterable(data))
+    filenames = [Path(i[0]) for i in data]
+    namespaces = [namespaces_from_filename(ops_dir, n) for n in filenames]
+    opss = [i[1] for i in data]
 
-    assert len(
-        ops) > 0, "No ops were added to the list. Please check your arguments."
+    n_ops = sum(len(ops) for ops in opss)
+    assert n_ops > 0, "No ops were parsed. Please check your arguments."
+    print(f'Extracted metadata for {n_ops} ops.')
 
-    print(
-        f"Processed {len(ops)} ops, from { ops[0]['name']} to {ops[-1]['name']}"
+    return filenames, namespaces, opss
+
+
+def parse_op_filenames(ops_dir: Path, filenames: Any) -> List[Path]:
+    """The filenames are provided as a string of colon-separated absolute paths.
+    Break this into a list of string, where each item is a path relative to the
+    ops directory.
+
+    Args:
+        ops_dir (Path): Path where the ops are declared
+        filenames (str): The filenames to parse
+
+    Returns:
+        List[Path]: The parsed filenames
+    """
+    filenames = filenames.split(';')
+    filenames = [os.path.relpath(name, ops_dir) for name in filenames]
+    filenames = [Path(name) for name in filenames]
+    return filenames
+
+
+def namespaces_from_filename(ops_dir: Path, filename: Path) -> Tuple[str]:
+    """Convert a filename to namespaces.
+
+    Example:
+        ops_dir = .../popart/op
+        filename = .../popart/op/foo.cpp
+        namespaces = ('op', )
+
+    Example:
+        ops_dir = .../popart/op
+        filename = .../popart/op/bar/baz.cpp
+        namespaces = ('op', 'bar')
+
+    Args:
+        ops_dir (Path): Path where op headers live
+        filename (Path): The file in which ops are declared
+
+    Returns:
+        Tuple[str]: The namespaces.
+    """
+    relpath = Path(os.path.relpath(filename, ops_dir))
+    parts = (ops_dir.parts[-1], ) + relpath.parts[:-1]
+    return parts
+
+
+def main(filenames: str, out: Path, include_directories: Any):
+    proj_root = get_project_source_dir()
+    ops_dir = proj_root / 'willow/include/popart/op'
+    rel_filenames = parse_op_filenames(ops_dir, filenames)
+
+    filenames, namespaces, opss = parse_ops(ops_dir, rel_filenames,
+                                            include_directories, 16)
+
+    metadata = [{
+        'filename': str(f),
+        'namespaces': n,
+        'ops': o
+    } for f, n, o in zip(filenames, namespaces, opss)]
+
+    with open(out, 'w') as f:
+        json.dump(metadata, f, indent=2)
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        '--headers',
+        type=str,
+        required=True,
+        help='Colon-separated list of absolute paths for op headers.',
     )
-
-    my_json = {"Ops": ops}
-    with open(out_path, "w") as outfile:
-        json.dump(my_json, outfile, indent=4)
-
-
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(
-        "Tool to get popART op info in JSON format", add_help=False)
-    dir_path = Path(__file__).resolve().parents[1]
-    parser.add_argument("-j",
-                        "--jobs",
-                        type=int,
-                        help="Number of threads to use",
-                        default=1)
-    parser.add_argument("-d",
-                        "--opdir",
-                        type=str,
-                        help="Directory to find <op>.hpp files",
-                        default=os.path.join(dir_path, "willow", "include",
-                                             "popart", "op"))
-    parser.add_argument("-o",
-                        "--outfile",
-                        type=str,
-                        help="File to save output into.",
-                        default=os.path.join(dir_path, "op_metadata.json"))
-
+    parser.add_argument(
+        '--out',
+        type=str,
+        required=True,
+        help=
+        'The absolute path of the directory where metadata will be written to.',
+    )
+    parser.add_argument(
+        "--include-directories",
+        type=str,
+        help='A semicolon separated list of include directories.')
     args = parser.parse_args()
-    print(
-        f"Processing ops in {args.opdir}\n to {args.outfile}\n with { args.jobs} jobs"
-    )
 
-    parse_ops(args.opdir, args.outfile, args.jobs)
+    include_directories_: Any = []
+    if args.include_directories:
+        include_directories_ = set(args.include_directories.split(';'))
+        include_directories_.discard('')
+        include_directories_ = list(include_directories_)
 
-    with open(args.outfile, 'r') as myfile:
-        assert len(myfile.readlines()) > 1, \
-            "The output file is too small, please check the script has run correctly."
+    main(args.headers, Path(args.out), include_directories_)

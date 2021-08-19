@@ -120,6 +120,9 @@ set(Protobuf_USE_STATIC_LIBS ON)
 find_package(Protobuf 3.6 REQUIRED)
 find_package(ONNX 1.6 REQUIRED)
 
+# Load custom utilities.
+include(cmake/Utils.cmake)
+
 #------ end of find dependencies
 
 #------ configure sources
