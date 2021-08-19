@@ -10,8 +10,9 @@ namespace popart {
 class TiedGatherOp final : public GatherOp {
 public:
   TiedGatherOp(int64_t axis_,
-               const nonstd::optional<float> available_memory_proportion_,
-               const Op::Settings &settings_);
+               const Op::Settings &settings_,
+               const nonstd::optional<float> available_memory_proportion_ =
+                   nonstd::nullopt);
 
   std::unique_ptr<Op> clone() const final;
 

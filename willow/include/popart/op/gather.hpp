@@ -11,8 +11,9 @@ class GatherOp : public Op {
 public:
   GatherOp(const OperatorIdentifier &_opid,
            int64_t axis_,
-           const nonstd::optional<float> &available_memory_proportion_,
-           const Op::Settings &settings_);
+           const Op::Settings &settings_,
+           const nonstd::optional<float> &available_memory_proportion_ =
+               nonstd::nullopt);
 
   std::unique_ptr<Op> clone() const override;
   std::vector<std::unique_ptr<Op>> getGradOps() override;

@@ -13,8 +13,8 @@ namespace popart {
 
 GatherOp::GatherOp(const OperatorIdentifier &_opid,
                    int64_t axis_,
-                   const nonstd::optional<float> &available_memory_proportion_,
-                   const Op::Settings &settings_)
+                   const Op::Settings &settings_,
+                   const nonstd::optional<float> &available_memory_proportion_)
     : Op(_opid, settings_), axis(axis_),
       available_memory_proportion(available_memory_proportion_) {}
 
@@ -143,7 +143,7 @@ static OpCreator<GatherOp> gatherOpCreator(
       }
 
       return std::unique_ptr<Op>(new GatherOp(
-          info.opid, axis, available_memory_proportion, info.settings));
+          info.opid, axis, info.settings, available_memory_proportion));
     },
     true);
 } // namespace

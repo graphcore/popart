@@ -129,15 +129,15 @@ createSlices(const int64_t count, const int64_t stride, Op::Settings settings) {
 
 static std::vector<std::unique_ptr<SplitGatherOp>>
 createGathers(const int64_t count,
-              const nonstd::optional<float> &availMemProp,
-              Op::Settings settings) {
+              Op::Settings settings,
+              const nonstd::optional<float> &availMemProp) {
   std::vector<std::unique_ptr<SplitGatherOp>> gathers;
   gathers.reserve(count);
 
   for (int i = 0; i < count; ++i) {
     settings.vgraphId = i;
     gathers.push_back(std::make_unique<SplitGatherOp>(
-        Onnx::Operators::Gather_1, 0, availMemProp, settings));
+        Onnx::Operators::Gather_1, 0, settings, availMemProp));
   }
 
   return gathers;
@@ -224,7 +224,7 @@ bool SplitGatherPattern::apply(Op *op) const {
   }
 
   // Gather the slice fragments on each IPU
-  auto gathers = createGathers(split, availMemProp, op->settings);
+  auto gathers = createGathers(split, op->settings, availMemProp);
   std::vector<TensorId> gatheredts;
   gatheredts.reserve(split);
   for (int i = 0; i < split; ++i) {
