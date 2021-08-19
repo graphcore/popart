@@ -133,7 +133,7 @@ def test_conv_avail_memory_log(capfd):
     assert_contains(patt, output)
 
 
-# Test outside [0,1) error
+# Test outside [0,1) error which is thrown by Builder::setAvailableMemoryProportion
 @tu.requires_ipu_model
 def test_conv_avail_memory_error(capfd):
 

@@ -6,15 +6,12 @@
 
 #include <filereader.hpp>
 #include <popart/builder.hpp>
-#include <popart/dataflow.hpp>
 #include <popart/error.hpp>
 #include <popart/inputshapeinfo.hpp>
-#include <popart/ir.hpp>
 #include <popart/names.hpp>
 #include <popart/op/l1.hpp>
 #include <popart/op/nll.hpp>
 #include <popart/opmanager.hpp>
-#include <popart/popx/devicex.hpp>
 #include <popart/popx/opx.hpp>
 #include <popart/shapeinference.hpp>
 #include <popart/tensor.hpp>
@@ -174,4 +171,47 @@ BOOST_AUTO_TEST_CASE(Builder_CustomOp_ShapeInference) {
   auto t1                    = aiOnnx.reshape({t0, newShapeId});
   check_equal(builder->getTensorShape(t1), {3 * 6});
   BOOST_CHECK_EQUAL(builder->getTensorDataType(t1), DataType::FLOAT);
+}
+
+void check_operator(const TensorId &output, Builder &builder) {
+  float availableMemoryProportion = 0.75;
+  builder.setAvailableMemoryProportion(output, availableMemoryProportion);
+  float actualMemoryProp =
+      builder.getFloatNodeAttribute(sAvailMemAttribute, {output});
+  BOOST_CHECK_EQUAL(actualMemoryProp, availableMemoryProportion);
+}
+
+bool invalidProportion(const error &ex) {
+  BOOST_CHECK_EQUAL(ex.what(), "availableMemoryProportion must be in (0,1]");
+  return true;
+}
+
+BOOST_AUTO_TEST_CASE(Builder_SetAvailableMemoryProportion) {
+  auto builder     = Builder::create();
+  auto aiOnnx      = builder->aiOnnxOpset11();
+  auto aiGraphcore = builder->aiGraphcoreOpset1();
+
+  TensorInfo shape0{"FLOAT", std::vector<int64_t>{3, 3, 1, 1}};
+  auto in0 = builder->addInputTensor(shape0);
+  auto in1 = builder->addInputTensor(shape0);
+
+  // Check the operators that support available memory proportion
+  check_operator(aiOnnx.gather({in0, in1}), *builder);
+  check_operator(aiOnnx.matmul({in0, in1}), *builder);
+  check_operator(aiOnnx.conv({in0, in1}), *builder);
+  check_operator(aiGraphcore.scatterreduce({in0, in1}, 1), *builder);
+
+  // Check an op that doesn't support available memory proportion is a no-op
+  auto op = aiOnnx.identity({in0});
+  builder->setAvailableMemoryProportion(op, 0.2);
+  BOOST_CHECK_MESSAGE(
+      !builder->nodeHasAttribute(sAvailMemAttribute, {op}),
+      "Identity operator should not have the available memory attribute");
+
+  // Check out-of-range values for available memory proportion
+  op = aiOnnx.gather({in0, in1});
+  BOOST_CHECK_EXCEPTION(
+      builder->setAvailableMemoryProportion(op, 1.1), error, invalidProportion);
+  BOOST_CHECK_EXCEPTION(
+      builder->setAvailableMemoryProportion(op, 0), error, invalidProportion);
 }
