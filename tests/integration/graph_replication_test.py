@@ -33,10 +33,10 @@ def test_weight_update(op_tester):
 
         return [
             o,
-            popart.TensorId(popart.reservedGradientPrefix() + i2), i2, i3,
-            popart.TensorId("scaledLearningRate0___default___FLOAT"),
-            popart.TensorId("weightDecayScaleFactor0___default___FLOAT"),
-            popart.TensorId(popart.reservedGradientPrefix() + o)
+            popart.reservedGradientPrefix() + i2, i2, i3,
+            "scaledLearningRate0___default___FLOAT",
+            "weightDecayScaleFactor0___default___FLOAT",
+            popart.reservedGradientPrefix() + o
         ]
 
     def reference(ref_data):
@@ -107,10 +107,10 @@ def test_weight_update_replicated(op_tester):
 
         return [
             o,
-            popart.TensorId(popart.reservedGradientPrefix() + i2), i2,
-            popart.TensorId(popart.reservedGradientPrefix() + i3), i3,
-            popart.TensorId("scaledLearningRate0___default___FLOAT"),
-            popart.TensorId("weightDecayScaleFactor0___default___FLOAT")
+            popart.reservedGradientPrefix() + i2, i2,
+            popart.reservedGradientPrefix() + i3, i3,
+            "scaledLearningRate0___default___FLOAT",
+            "weightDecayScaleFactor0___default___FLOAT"
         ]
 
     def reference(ref_data):
@@ -286,8 +286,7 @@ def test_identity_loss_grad_replication():
             fnModel=builder.getModelProto(),
             deviceInfo=tu.create_test_device(numIpus=2),
             dataFlow=popart.DataFlow(
-                1,
-                [t3, popart.TensorId(popart.reservedGradientPrefix() + t0)]),
+                1, [t3, popart.reservedGradientPrefix() + t0]),
             loss=t3,
             optimizer=popart.ConstSGD(0.1),
             userOptions=opts,
@@ -297,7 +296,7 @@ def test_identity_loss_grad_replication():
         session.prepareDevice()
         stepio = popart.PyStepIO({t0: t_data, t1: t_data}, anchors)
         session.run(stepio)
-        return anchors[popart.TensorId(popart.reservedGradientPrefix() + t0)]
+        return anchors[popart.reservedGradientPrefix() + t0]
 
     t2_grad = getIdentityLossGradTensor(True)
     t2_grad_no_op_to_id = getIdentityLossGradTensor(False)

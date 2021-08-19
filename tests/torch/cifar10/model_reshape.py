@@ -21,12 +21,12 @@ nOutChans = 10
 batchSize = 2
 batchesPerStep = 3
 anchors = {
-    popart.TensorId("l1LossVal"): popart.AnchorReturnType("All"),
+    "l1LossVal": popart.AnchorReturnType("All"),
 }
 
 dataFlow = popart.DataFlow(batchesPerStep, anchors)
 earlyInfo = popart.InputShapeInfo()
-earlyInfo.add(popart.TensorId("image0"),
+earlyInfo.add("image0",
               popart.TensorInfo("FLOAT", [batchSize, nInChans, 32, 32]))
 inNames = ["image0"]
 cifarInIndices = {"image0": 0}

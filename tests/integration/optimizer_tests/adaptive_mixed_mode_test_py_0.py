@@ -34,7 +34,7 @@ def run_adaptive_mixed_mode(steps,
         ip = builder.addInputTensor(
             popart.TensorInfo("FLOAT" if dtype == np.float32 else "FLOAT16",
                               [dsize, dsize]))
-        d__ip = popart.TensorId(popart.reservedGradientPrefix() + ip)
+        d__ip = popart.reservedGradientPrefix() + ip
 
         def add_layer(in_id, name):
             w = builder.addInitializedInputTensor(
@@ -185,11 +185,11 @@ def test_adaptive_mixed_mode_1(tmpdir):
         "lossScaling": (lossScaling, True),
     })
 
-    adaptive00.insertSpecific(popart.TensorId("w_0"), {
+    adaptive00.insertSpecific("w_0", {
         "alpha": (0.7, True),
         "momentum": (0.8, True)
     })
-    adaptive00.insertSpecific(popart.TensorId("b_0"), {
+    adaptive00.insertSpecific("b_0", {
         "alpha": (0.7, True),
         "momentum": (0.8, True)
     })
@@ -203,11 +203,11 @@ def test_adaptive_mixed_mode_1(tmpdir):
         "lossScaling": (lossScaling, True),
     })
 
-    adaptive05.insertSpecific(popart.TensorId("w_0"), {
+    adaptive05.insertSpecific("w_0", {
         "alpha": (0.7, True),
         "momentum": (0.8, True)
     })
-    adaptive05.insertSpecific(popart.TensorId("b_0"), {
+    adaptive05.insertSpecific("b_0", {
         "alpha": (0.7, True),
         "momentum": (0.8, True)
     })
@@ -221,11 +221,11 @@ def test_adaptive_mixed_mode_1(tmpdir):
         "lossScaling": (lossScaling, False),
     })
 
-    adaptive10.insertSpecific(popart.TensorId("w_0"), {
+    adaptive10.insertSpecific("w_0", {
         "alpha": (0.7, False),
         "momentum": (0.8, False)
     })
-    adaptive10.insertSpecific(popart.TensorId("b_0"), {
+    adaptive10.insertSpecific("b_0", {
         "alpha": (0.7, False),
         "momentum": (0.8, False)
     })
@@ -239,11 +239,11 @@ def test_adaptive_mixed_mode_1(tmpdir):
         "lossScaling": (lossScaling, False),
     })
 
-    adaptive15.insertSpecific(popart.TensorId("w_0"), {
+    adaptive15.insertSpecific("w_0", {
         "alpha": (0.7, False),
         "momentum": (0.8, False)
     })
-    adaptive15.insertSpecific(popart.TensorId("b_0"), {
+    adaptive15.insertSpecific("b_0", {
         "alpha": (0.7, False),
         "momentum": (0.8, False)
     })
@@ -257,11 +257,11 @@ def test_adaptive_mixed_mode_1(tmpdir):
         "lossScaling": (lossScaling, False),
     })
 
-    adaptive20.insertSpecific(popart.TensorId("w_0"), {
+    adaptive20.insertSpecific("w_0", {
         "alpha": (0.7, False),
         "momentum": (0.8, True)
     })
-    adaptive20.insertSpecific(popart.TensorId("b_0"), {
+    adaptive20.insertSpecific("b_0", {
         "alpha": (0.7, False),
         "momentum": (0.8, True)
     })
@@ -275,11 +275,11 @@ def test_adaptive_mixed_mode_1(tmpdir):
         "lossScaling": (lossScaling, False),
     })
 
-    adaptive25.insertSpecific(popart.TensorId("w_0"), {
+    adaptive25.insertSpecific("w_0", {
         "alpha": (0.7, False),
         "momentum": (0.8, True)
     })
-    adaptive25.insertSpecific(popart.TensorId("b_0"), {
+    adaptive25.insertSpecific("b_0", {
         "alpha": (0.7, False),
         "momentum": (0.8, True)
     })

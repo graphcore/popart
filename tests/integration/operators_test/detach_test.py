@@ -52,9 +52,9 @@ def test_detach_grad(op_tester, inplacing):
 
         return [
             o,
-            popart.TensorId(popart.reservedGradientPrefix() + i),
-            popart.TensorId(popart.reservedGradientPrefix() + w),
-            popart.TensorId(popart.reservedGradientPrefix() + o),
+            popart.reservedGradientPrefix() + i,
+            popart.reservedGradientPrefix() + w,
+            popart.reservedGradientPrefix() + o,
         ]
 
     def reference(ref_data):
@@ -170,8 +170,8 @@ def test_detach_grad_branches(detach_branch_popart, detach_branch_pytorch):
 
     dataFlow = popart.DataFlow(1, [
         o, loss,
-        popart.TensorId(popart.reservedGradientPrefix() + o),
-        popart.TensorId(popart.reservedGradientPrefix() + input_), w1, w2
+        popart.reservedGradientPrefix() + o,
+        popart.reservedGradientPrefix() + input_, w1, w2
     ])
 
     opts = popart.SessionOptions()
@@ -305,9 +305,7 @@ def test_detach_error():
     loss = builder.aiGraphcore.nllloss([o, lb])
 
     dataFlow = popart.DataFlow(
-        1,
-        [o, loss,
-         popart.TensorId(popart.reservedGradientPrefix() + input_)])
+        1, [o, loss, popart.reservedGradientPrefix() + input_])
     opts = popart.SessionOptions()
     with pytest.raises(popart.popart_exception) as e_info:
         session = popart.TrainingSession(

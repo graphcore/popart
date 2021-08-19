@@ -14,14 +14,13 @@ nChans = 3
 samplesPerBatch = 2
 batchesPerStep = 4
 anchors = {
-    popart.TensorId("out"): popart.AnchorReturnType("Final"),
-    popart.TensorId("image0"): popart.AnchorReturnType("All")
+    "out": popart.AnchorReturnType("Final"),
+    "image0": popart.AnchorReturnType("All")
 }
 dataFlow = popart.DataFlow(batchesPerStep, anchors)
 inputShapeInfo = popart.InputShapeInfo()
 inputShapeInfo.add(
-    popart.TensorId("image0"),
-    popart.TensorInfo("FLOAT", [samplesPerBatch, nChans, 32, 32]))
+    "image0", popart.TensorInfo("FLOAT", [samplesPerBatch, nChans, 32, 32]))
 
 inNames = ["image0"]
 outNames = ["out"]

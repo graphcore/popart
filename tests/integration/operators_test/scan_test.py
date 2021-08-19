@@ -23,8 +23,8 @@ def test_scan_zip(op_tester, rev_d0, rev_d1, rev_out, op):
         scan_builder = builder.createSubgraphBuilder()
         scan_builder.setGraphName("body")
 
-        td0_in = scan_builder.addUntypedInputTensor(str(td0))
-        td1_in = scan_builder.addUntypedInputTensor(str(td1))
+        td0_in = scan_builder.addUntypedInputTensor(td0)
+        td1_in = scan_builder.addUntypedInputTensor(td1)
         if op == "zip":
             out = scan_builder.aiOnnx.concat([td0_in, td1_in], 0)
         elif op == "add":
@@ -87,8 +87,8 @@ def test_scan_basic_rnn(op_tester, rev_d, rev_out):
         scan_builder = builder.createSubgraphBuilder()
         scan_builder.setGraphName("body")
 
-        ts_in = scan_builder.addUntypedInputTensor(str(ts))
-        td_in = scan_builder.addUntypedInputTensor(str(td))
+        ts_in = scan_builder.addUntypedInputTensor(ts)
+        td_in = scan_builder.addUntypedInputTensor(td)
 
         td_in = scan_builder.reshape_const(scan_builder.aiOnnx, [td_in],
                                            [8, 32, 1])

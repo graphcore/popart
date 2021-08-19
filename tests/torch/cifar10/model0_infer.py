@@ -12,13 +12,12 @@ args = cmdline.parse()
 
 nChans = 3
 batchesPerStep = 4
-anchors = {popart.TensorId("out"): popart.AnchorReturnType("EveryN", 2)}
+anchors = {"out": popart.AnchorReturnType("EveryN", 2)}
 dataFlow = popart.DataFlow(batchesPerStep, anchors)
 inputShapeInfo = popart.InputShapeInfo()
 samplesPerBatch = 6
 inputShapeInfo.add(
-    popart.TensorId("image0"),
-    popart.TensorInfo("FLOAT", [samplesPerBatch, nChans, 32, 32]))
+    "image0", popart.TensorInfo("FLOAT", [samplesPerBatch, nChans, 32, 32]))
 
 inNames = ["image0"]
 outNames = ["out"]

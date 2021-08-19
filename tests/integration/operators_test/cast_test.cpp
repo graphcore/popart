@@ -6,7 +6,6 @@
 #include <popart/builder.hpp>
 #include <popart/dataflow.hpp>
 #include <popart/ir.hpp>
-#include <popart/tensorid.hpp>
 #include <popart/testdevice.hpp>
 
 using namespace popart;
@@ -21,7 +20,7 @@ BOOST_AUTO_TEST_CASE(Cast_OutType_Equals_InType) {
   Ir ir;
   ir.prepare({io::getModelFromString(builder->getModelProto()),
               InputShapeInfo(),
-              DataFlow(1, std::vector<TensorId>{t1}),
+              DataFlow(1, std::vector<std::string>{t1}),
               {},
               nullptr,
               *device,

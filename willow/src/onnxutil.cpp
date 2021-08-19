@@ -430,7 +430,7 @@ void saveInitializersExternally(ONNX_NAMESPACE::ModelProto &model,
     if (appendToExistingFile) {
       std::string idsString;
       for (const auto &s : ids) {
-        idsString = idsString + s.str() + " ";
+        idsString = idsString + s + " ";
       }
       throw error("TensorIds '{}' to be saved externally to existing file {}, "
                   "but file doesn't exist",

@@ -31,7 +31,7 @@ TensorDebugInfo::TensorDebugInfo(const DebugContext &debugContext,
                                  const TensorType &tt)
     : DebugInfo(debugContext, "popart") {
   setValue("category", ProfileValue{"tensor"});
-  setValue("tensorId", ProfileValue{tenid.str()});
+  setValue("tensorId", ProfileValue{tenid});
   setValue("shape", ProfileValue{to_string(info.shape())});
   if (info.getDataTypeInfo() != nullptr) {
     setValue("elementType", ProfileValue{to_string(info.dataType())});
@@ -44,7 +44,7 @@ TensorDebugInfo::TensorDebugInfo(const DebugContext &debugContext,
                                  const TensorType &tt)
     : DebugInfo(debugContext, "popart") {
   setValue("category", ProfileValue{"tensor"});
-  setValue("tensorId", ProfileValue{tenid.str()});
+  setValue("tensorId", ProfileValue{tenid});
   setValue("type", ProfileValue{to_string(tt)});
 }
 } // namespace popart

@@ -74,29 +74,29 @@ void GRUOp::setup() {
   Shape yhc_shape{num_directions, batch_size, hidden_size};
   trySetOutInfo(getHiddenStateOutIndex(), {data_type, yhc_shape});
 
-  createPassThroughOutput({"initstateoutput"},
+  createPassThroughOutput("initstateoutput",
                           getInitStateOutputPassThroughIndex(),
                           {data_type, Shape{batch_size, hidden_size}});
   createPassThroughOutput(
-      {"intermediates"},
+      "intermediates",
       getIntermediatesPassThroughIndex(),
       {data_type,
        Shape{seq_length, getNumIntermediates(), batch_size, hidden_size}});
-  createPassThroughOutput({"inputweights"},
+  createPassThroughOutput("inputweights",
                           getInputWeightsPassThroughIndex(),
                           {data_type, Shape{3, input_size, hidden_size}});
-  createPassThroughOutput({"outputweights"},
+  createPassThroughOutput("outputweights",
                           getOutputWeightsPassThroughIndex(),
                           {data_type, Shape{3, hidden_size, hidden_size}});
-  createPassThroughOutput({"biases"},
+  createPassThroughOutput("biases",
                           getBiasesPassThroughIndex(),
                           {data_type, Shape{getNumBiases(), hidden_size}});
   createPassThroughOutput(
-      {"input"},
+      "input",
       getInputPassThroughIndex(),
       {data_type, Shape{seq_length, batch_size, input_size}});
   createPassThroughOutput(
-      {"output"},
+      "output",
       getOutputPassThroughIndex(),
       {data_type, Shape{seq_length, batch_size, hidden_size}});
 

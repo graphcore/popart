@@ -29,7 +29,7 @@ bool Expm1GradOpPattern::apply(Op *op) const {
 
   TensorInfo onesInfo(fwd_out->info.dataType(), {1});
   std::vector<float> onesData(1, 1.0f);
-  auto onesId = op->getIr().createIntermediateTensorId({"ones"});
+  auto onesId = op->getIr().createIntermediateTensorId("ones");
   op->getGraph().getTensors().addConstInit(
       onesId,
       onesInfo,

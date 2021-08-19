@@ -48,7 +48,7 @@ void OnehotOp::connectInTensor(InIndex inIndex, TensorId tenId) {
 
     // check 2 : that there is already a tensor with the shape tensor's name
     if (!getGraph().getTensors().contains(depthId)) {
-      throw error("no Tensor named `" + depthId.str() + "' recorded in Ir. " +
+      throw error("no Tensor named `" + depthId + "' recorded in Ir. " +
                   " This is the second input in the OneHot constructor. ");
     }
 
@@ -56,8 +56,7 @@ void OnehotOp::connectInTensor(InIndex inIndex, TensorId tenId) {
 
     // check 3 : that the tensor has data
     if (!depthTensor->hasTensorData()) {
-      throw error("The depth Tensor `" + depthId.str() +
-                  "' does not have data");
+      throw error("The depth Tensor `" + depthId + "' does not have data");
     }
 
     TensorData *depthTensorData = depthTensor->tensorData();

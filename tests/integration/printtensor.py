@@ -143,12 +143,12 @@ def test_train(capfd):
 
     matches = re.findall(pattern, output)
 
-    d__i2 = popart.TensorId(popart.reservedGradientPrefix() + i2)
+    d__i2 = popart.reservedGradientPrefix() + i2
 
     assert len(matches) == 3
-    assert matches[0] == str(i2) + ":{{{{1,2},{1,2}}}}"
-    assert matches[1] == str(c1) + ":{{{{2,2},{6,4}}}}"
-    assert matches[2] == str(d__i2) + ":{{{{0.4,0.3},{0.2,0.1}}}}"
+    assert matches[0] == i2 + ":{{{{1,2},{1,2}}}}"
+    assert matches[1] == c1 + ":{{{{2,2},{6,4}}}}"
+    assert matches[2] == d__i2 + ":{{{{0.4,0.3},{0.2,0.1}}}}"
 
 
 def test_custom_title(capfd):

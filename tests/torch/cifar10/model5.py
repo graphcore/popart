@@ -18,14 +18,13 @@ nOutChans = 10
 batchSize = 3
 batchesPerStep = 2
 anchors = {
-    popart.TensorId("nllLossVal"): popart.AnchorReturnType("Final"),
+    "nllLossVal": popart.AnchorReturnType("Final"),
 }
 dataFlow = popart.DataFlow(batchesPerStep, anchors)
 inputShapeInfo = popart.InputShapeInfo()
-inputShapeInfo.add(popart.TensorId("image0"),
+inputShapeInfo.add("image0",
                    popart.TensorInfo("FLOAT", [batchSize, nInChans, 32, 32]))
-inputShapeInfo.add(popart.TensorId("label"),
-                   popart.TensorInfo("INT32", [batchSize]))
+inputShapeInfo.add("label", popart.TensorInfo("INT32", [batchSize]))
 inNames = ["image0", "label"]
 cifarInIndices = {"image0": 0, "label": 1}
 outNames = ["nllLossVal"]

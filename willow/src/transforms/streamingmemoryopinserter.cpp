@@ -574,11 +574,11 @@ void StreamingMemoryOpInserter::applyTensor(
     }
 
     // Transfer tensor configurations
-    if (!loadedTensorId.str().empty()) {
+    if (!loadedTensorId.empty()) {
       tensorConfigs.insert(
           {graph.getTensors().get(loadedTensorId), tensorConfigs.at(tensor)});
     }
-    if (!gatheredTensorId.str().empty()) {
+    if (!gatheredTensorId.empty()) {
       tensorConfigs.insert(
           {graph.getTensors().get(gatheredTensorId), tensorConfigs.at(tensor)});
     }
@@ -659,7 +659,7 @@ StreamingMemoryOpInserter::getReplicatedTensorShardingProposal(
     TensorId tensorId = rtsTensors.getTensor(shardId);
     TensorId refId    = rtsTensors.getReference(shardId);
     // Process initial shard consumers
-    if (!shardId.str().empty()) {
+    if (!shardId.empty()) {
       proposedRTS.insert(shardId, ReplicatedTensorShardingMethod::Native);
 
       logging::transform::trace(
@@ -1201,7 +1201,7 @@ void StreamingMemoryOpInserter::applyReplicatedOptimizerSharding(
           TensorId gatheredId = rtsTensors.getGathered(inTensor->id);
           TensorId tensorId   = rtsTensors.getTensor(inTensor->id);
 
-          if (gatheredId.str().empty()) {
+          if (gatheredId.empty()) {
             auto ref = findRelatedVarTensor({inTensor});
             if (!ref) {
               throw internal_error("[StreamingMemory] Could not find related "
@@ -1829,7 +1829,7 @@ RemoteLoadOp *StreamingMemoryOpInserter::insertRemoteLoadOp(
   // If this tensor is loaded here, it may be loaded in multiple contexts. In
   // this case getPreviousLoadedTensorId is used to 'chain' the tensor inputs.
   // This is necessary to allow be able to outline the RemoteLoadOp code
-  if (!prevLoadId.str().empty()) {
+  if (!prevLoadId.empty()) {
     // Tensor might not have a true producer op, but was previously
     // loaded by a RemoteLoad
     inTensorId = prevLoadId;
@@ -2666,10 +2666,10 @@ void StreamingMemoryOpInserter::ReplicationShardedTensors::insert(
     TensorId gatheredId,
     TensorId tensorId,
     TensorId refId) {
-  if (!shardId.str().empty()) {
+  if (!shardId.empty()) {
     shardToTensors.insert({shardId, {gatheredId, tensorId, refId}});
   }
-  if (!gatheredId.str().empty()) {
+  if (!gatheredId.empty()) {
     gatheredToTensors.insert({gatheredId, {shardId, tensorId, refId}});
   }
 }

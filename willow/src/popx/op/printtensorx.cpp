@@ -33,13 +33,13 @@ std::string PrintTensorOpx::getTitle() const {
     if (title.size() > 0) {
       return logging::format("{}_gradient", title);
     } else {
-      return op_p->outTensor(PrintTensorOp::getOutIndex())->id.str();
+      return op_p->outTensor(PrintTensorOp::getOutIndex())->id;
     }
   } else {
     if (title.size() > 0) {
       return title;
     } else {
-      return op_p->inTensor(PrintTensorOp::getInIndex())->id.str();
+      return op_p->inTensor(PrintTensorOp::getInIndex())->id;
     }
   }
 }

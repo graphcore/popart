@@ -88,7 +88,7 @@ def test_inplace_weight_add(constantWeights):
 
         anchorRets = session.initAnchorArrays()
 
-        inputs = {popart.TensorId("data"): data.copy()}
+        inputs = {"data": data.copy()}
         stepio = popart.PyStepIO(inputs, anchorRets)
 
         session.weightsFromHost()
@@ -171,7 +171,7 @@ def test_non_modifying_inplace(constantWeights):
 
         anchorRets = session.initAnchorArrays()
 
-        inputs = {popart.TensorId("data"): data.copy()}
+        inputs = {"data": data.copy()}
         stepio = popart.PyStepIO(inputs, anchorRets)
 
         session.weightsFromHost()
@@ -276,7 +276,7 @@ def test_non_modifying_inplace_2(constantWeights):
 
         anchorRets = session.initAnchorArrays()
 
-        inputs = {popart.TensorId("data"): data.copy()}
+        inputs = {"data": data.copy()}
         stepio = popart.PyStepIO(inputs, anchorRets)
 
         session.weightsFromHost()

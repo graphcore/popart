@@ -33,8 +33,8 @@ def test_sin_grad(op_tester):
         builder.addOutputTensor(o)
         return [
             o,
-            popart.TensorId(popart.reservedGradientPrefix() + i1),
-            popart.TensorId(popart.reservedGradientPrefix() + o)
+            popart.reservedGradientPrefix() + i1,
+            popart.reservedGradientPrefix() + o
         ]
 
     def reference(ref_data):
@@ -77,8 +77,8 @@ def test_cos_grad(op_tester):
         builder.addOutputTensor(o)
         return [
             o,
-            popart.TensorId(popart.reservedGradientPrefix() + i1),
-            popart.TensorId(popart.reservedGradientPrefix() + o)
+            popart.reservedGradientPrefix() + i1,
+            popart.reservedGradientPrefix() + o
         ]
 
     def reference(ref_data):
@@ -121,8 +121,8 @@ def test_tan_grad(op_tester):
         builder.addOutputTensor(o)
         return [
             o,
-            popart.TensorId(popart.reservedGradientPrefix() + i1),
-            popart.TensorId(popart.reservedGradientPrefix() + o)
+            popart.reservedGradientPrefix() + i1,
+            popart.reservedGradientPrefix() + o
         ]
 
     def reference(ref_data):
@@ -169,8 +169,8 @@ def test_cosh_grad(op_tester):
         builder.addOutputTensor(o)
         return [
             o,
-            popart.TensorId(popart.reservedGradientPrefix() + i1),
-            popart.TensorId(popart.reservedGradientPrefix() + o)
+            popart.reservedGradientPrefix() + i1,
+            popart.reservedGradientPrefix() + o
         ]
 
     def reference(ref_data):
@@ -213,8 +213,8 @@ def test_tanh_grad(op_tester):
         builder.addOutputTensor(o)
         return [
             o,
-            popart.TensorId(popart.reservedGradientPrefix() + i1),
-            popart.TensorId(popart.reservedGradientPrefix() + o)
+            popart.reservedGradientPrefix() + i1,
+            popart.reservedGradientPrefix() + o
         ]
 
     def reference(ref_data):

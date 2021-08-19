@@ -19,7 +19,7 @@ def test_weight_update(tmpdir, subgraphCopyingStrategy):
         ratio = 0.5
         builder = popart.Builder()
         ip = builder.addInputTensor(popart.TensorInfo("FLOAT", [dsize, dsize]))
-        d__ip = popart.TensorId(popart.reservedGradientPrefix() + ip)
+        d__ip = popart.reservedGradientPrefix() + ip
 
         def add_layer(in_id):
             w = builder.addInitializedInputTensor(
@@ -33,8 +33,7 @@ def test_weight_update(tmpdir, subgraphCopyingStrategy):
 
         anchorIds = []
         for i in (ip, m1, m2, m3):
-            anchorIds.append(
-                popart.TensorId(popart.reservedGradientPrefix() + i))
+            anchorIds.append(popart.reservedGradientPrefix() + i)
 
         out = builder.aiGraphcore.identityloss([m3])
         builder.addOutputTensor(out)
@@ -98,7 +97,7 @@ def test_batches_per_step_greater_than_one(subgraphCopyingStrategy):
         batches_per_step = 2
         builder = popart.Builder()
         ip = builder.addInputTensor(popart.TensorInfo("FLOAT", [dsize, dsize]))
-        d__ip = popart.TensorId(popart.reservedGradientPrefix() + ip)
+        d__ip = popart.reservedGradientPrefix() + ip
 
         def add_layer(in_id):
             w = builder.addInitializedInputTensor(
@@ -113,8 +112,7 @@ def test_batches_per_step_greater_than_one(subgraphCopyingStrategy):
 
         anchorIds = []
         for i in (ip, m1, m2, m3):
-            anchorIds.append(
-                popart.TensorId(popart.reservedGradientPrefix() + i))
+            anchorIds.append(popart.reservedGradientPrefix() + i)
 
         out = builder.aiGraphcore.identityloss([m3])
         builder.addOutputTensor(out)

@@ -437,7 +437,7 @@ void DecomposeLoops::decomposeLoop(Graph &graph,
             clones[op][j]->connectInTensor(input.first, it->second);
           } else if (input.second->tensorType() == TensorType::Const) {
             TensorId newConstId;
-            if (input.second->id.str().find(reservedConstValuePrefix()) !=
+            if (input.second->id.find(reservedConstValuePrefix()) !=
                 std::string::npos) {
               newConstId = op->getGraph().removeScope(input.second->id);
             } else {
@@ -445,7 +445,7 @@ void DecomposeLoops::decomposeLoop(Graph &graph,
                   op->getGraph().removeScope(input.second->id));
             }
             newConstId = graph.addScope(newConstId);
-            if (!graph.getTensors().getConstIds().contains(newConstId.str())) {
+            if (!graph.getTensors().getConstIds().contains(newConstId)) {
               graph.getTensors().addConstInit(
                   newConstId,
                   input.second->info,
@@ -717,7 +717,7 @@ void DecomposeLoops::decomposeLoop(Graph &graph,
             }
           } else if (input.second->tensorType() == TensorType::Const) {
             TensorId newConstId;
-            if (input.second->id.str().find(reservedConstValuePrefix()) !=
+            if (input.second->id.find(reservedConstValuePrefix()) !=
                 std::string::npos) {
               newConstId = op->getGraph().removeScope(input.second->id);
             } else {
@@ -725,7 +725,7 @@ void DecomposeLoops::decomposeLoop(Graph &graph,
                   op->getGraph().removeScope(input.second->id));
             }
             newConstId = graph.addScope(newConstId);
-            if (!graph.getTensors().getConstIds().contains(newConstId.str())) {
+            if (!graph.getTensors().getConstIds().contains(newConstId)) {
               graph.getTensors().addConstInit(
                   newConstId,
                   input.second->info,

@@ -7,7 +7,6 @@
 #include <popart/op/sum.hpp>
 #include <popart/pbwrap.hpp>
 #include <popart/tensor.hpp>
-#include <popart/tensorid.hpp>
 #include <popart/tensorindex.hpp>
 #include <popart/tensornames.hpp>
 
@@ -237,8 +236,7 @@ Op *BackwardsGraphCreatorHelper::growGradSumOp(
   auto gradSum = std::make_unique<SumOp>(
       Onnx::Operators::Sum_8,
       Op::Settings{bwdGraph,
-                   GradGrowerSumOp::getGradSumOpNamePrefix() + "_" +
-                       gradId.str()});
+                   GradGrowerSumOp::getGradSumOpNamePrefix() + "_" + gradId});
   OpId opId = bwdGraph.moveIntoGraph(std::move(gradSum));
 
   std::vector<TensorId> inputs;
@@ -449,7 +447,7 @@ std::vector<Op *> BackwardsGraphCreatorHelper::growGradOps(Op *nonGradOp) {
     // connect inputs of gradOp
     {
       // inputs to gradOp (to populate in this scope):
-      std::map<int, TensorId> m_inputs;
+      std::map<int, std::string> m_inputs;
       for (auto &inOutMapper : gradOp->gradInputInfo()) {
         int indexGrad       = inOutMapper.iGrad;
         auto inputId        = getInputTensorId(nonGradOp, inOutMapper);

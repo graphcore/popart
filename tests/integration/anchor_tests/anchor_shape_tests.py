@@ -26,10 +26,10 @@ ANCHOR_TYPES = {
 LEARNING_RATE = 1.0
 # Strings for the anchors.
 INPUT = "input"
-WEIGHTS = popart.TensorId("init_input")
-ACTIVATION = popart.TensorId("Reshape:0")
-GRADIENT = popart.TensorId(popart.reservedGradientPrefix() + WEIGHTS)
-ACCUM = popart.TensorId(popart.reservedAccumPrefix() + WEIGHTS)
+WEIGHTS = "init_input"
+ACTIVATION = "Reshape:0"
+GRADIENT = popart.reservedGradientPrefix() + WEIGHTS
+ACCUM = popart.reservedAccumPrefix() + WEIGHTS
 
 
 def dict_product(d):

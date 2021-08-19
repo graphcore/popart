@@ -79,8 +79,8 @@ def test_onehot_2d_with_axis_training(op_tester):
         builder.addOutputTensor(o)
         return [
             o,
-            popart.TensorId(popart.reservedGradientPrefix() + o),
-            popart.TensorId(popart.reservedGradientPrefix() + i3)
+            popart.reservedGradientPrefix() + o,
+            popart.reservedGradientPrefix() + i3
         ]
 
     def reference(ref_data):
@@ -114,8 +114,8 @@ def test_onehot_2d_without_axis_training(op_tester):
         builder.addOutputTensor(o)
         return [
             o,
-            popart.TensorId(popart.reservedGradientPrefix() + o),
-            popart.TensorId(popart.reservedGradientPrefix() + i3)
+            popart.reservedGradientPrefix() + o,
+            popart.reservedGradientPrefix() + i3
         ]
 
     def reference(ref_data):

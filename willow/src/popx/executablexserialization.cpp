@@ -174,7 +174,7 @@ popart::DataType toPopartDataType(popart::cap::DataType type) {
 void serializeTensor(const popart::Tensor *tensor,
                      popart::cap::Tensor::Builder &tensorBuilder,
                      bool serializeTensorData = true) {
-  tensorBuilder.setId(tensor->id.str());
+  tensorBuilder.setId(tensor->id);
   tensorBuilder.setTensorType(toCapnpTensorType(tensor->tensorType()));
   auto tensorInfoBuilder   = tensorBuilder.initTensorInfo();
   auto dataTypeInfoBuilder = tensorInfoBuilder.initDataTypeInfo();
@@ -290,7 +290,7 @@ void serializePopartExecutable(std::ostream &out,
 
     int i = 0;
     for (auto *tensor : additionalModelProtoTensors) {
-      protoTensorsBuilder.set(i, tensor->id.str());
+      protoTensorsBuilder.set(i, tensor->id);
       ++i;
     }
   }
@@ -303,7 +303,7 @@ void serializePopartExecutable(std::ostream &out,
             linearlyCreatedInputTensors.size());
     int i = 0;
     for (const auto &tid : linearlyCreatedInputTensors) {
-      linearlyCreatedInputTensorsBuilder.set(i, tid.str());
+      linearlyCreatedInputTensorsBuilder.set(i, tid);
       ++i;
     }
   }
@@ -316,7 +316,7 @@ void serializePopartExecutable(std::ostream &out,
             efficientlyCreatedInputTensors.size());
     int i = 0;
     for (const auto &tid : efficientlyCreatedInputTensors) {
-      efficientlyCreatedInputTensorsBuilder.set(i, tid.str());
+      efficientlyCreatedInputTensorsBuilder.set(i, tid);
       ++i;
     }
   }
@@ -327,7 +327,7 @@ void serializePopartExecutable(std::ostream &out,
         irLoweringBuilder.initHostReduceStreamIds(hostReduceStreamIds.size());
     int i = 0;
     for (const auto &tid : hostReduceStreamIds) {
-      hostReduceStreamIdsBuilder.set(i, tid.str());
+      hostReduceStreamIdsBuilder.set(i, tid);
       ++i;
     }
   }
@@ -416,7 +416,7 @@ void serializePopartExecutable(std::ostream &out,
 
     int i = 0;
     for (const auto &kv : collectiveBalancedReorders) {
-      rearrangementsBuilder[i].setId(kv.first.str());
+      rearrangementsBuilder[i].setId(kv.first);
 
       const auto &hostRearrangement = kv.second->getHostRearrangement();
       auto rearrangementBuilder = rearrangementsBuilder[i].initRearrangement();
@@ -585,7 +585,7 @@ deserializeExecutable(std::istream &in,
         irLoweringReader.getLinearlyCreatedInputTensors();
     std::set<TensorId> linearlyCreatedInputTensors_;
     for (const auto t : linearlyCreatedInputTensors) {
-      linearlyCreatedInputTensors_.insert(TensorId(t));
+      linearlyCreatedInputTensors_.insert(t);
     }
     lowering.setLinearlyCreatedInputTensors(linearlyCreatedInputTensors_);
   }
@@ -594,7 +594,7 @@ deserializeExecutable(std::istream &in,
         irLoweringReader.getEfficientlyCreatedInputTensors();
     std::set<TensorId> efficientlyCreatedInputTensors_;
     for (const auto t : efficientlyCreatedInputTensors) {
-      efficientlyCreatedInputTensors_.insert(TensorId(t));
+      efficientlyCreatedInputTensors_.insert(t);
     }
     lowering.setEfficientlyCreatedInputTensors(efficientlyCreatedInputTensors_);
   }
@@ -604,13 +604,13 @@ deserializeExecutable(std::istream &in,
     hostReduceStreamIds_.reserve(hostReduceStreamIds.size());
 
     for (const auto t : hostReduceStreamIds) {
-      hostReduceStreamIds_.push_back(TensorId(t));
+      hostReduceStreamIds_.push_back(t);
     }
     lowering.getHostReduceStreamIds() = hostReduceStreamIds_;
   }
   {
     auto cycleCountIds = irLoweringReader.getCycleCountIds();
-    std::vector<std::string> cycleCountIds_;
+    std::vector<TensorId> cycleCountIds_;
     cycleCountIds_.reserve(cycleCountIds.size());
     for (const auto t : cycleCountIds) {
       cycleCountIds_.push_back(t);

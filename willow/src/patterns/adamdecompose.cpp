@@ -28,13 +28,13 @@ namespace {
 TensorId getLossScaleDerivativeTensorId(TensorId tid, Op *combo) {
   // Replaces lossScaling_ with tid. This handles cases
   // where each comboOp has a specific lossScaling tensor.
-  std::string idStr = tid.str();
-  auto lsId         = combo->inId(AdamComboOp::getLsInIndex()).str();
-  auto lsPrefix     = std::string(reservedLossScalingPrefix());
-  auto pos          = lsId.find(lsPrefix);
+  auto id       = tid;
+  auto lsId     = combo->inId(AdamComboOp::getLsInIndex());
+  auto lsPrefix = std::string(reservedLossScalingPrefix());
+  auto pos      = lsId.find(lsPrefix);
   if (pos != std::string::npos) {
-    idStr = lsId;
-    idStr.replace(pos, lsPrefix.length(), tid.str());
+    id = lsId;
+    id.replace(pos, lsPrefix.length(), tid);
   }
 
   // If a non-specific lossScaling tensor is used, then we want
@@ -42,9 +42,9 @@ TensorId getLossScaleDerivativeTensorId(TensorId tid, Op *combo) {
   // in the optimizer step. Note: These are harmless if a specific lossScaling
   // tensor is used.
   if (combo->hasVirtualGraphId()) {
-    idStr += "_vgid" + std::to_string(combo->getVirtualGraphId());
+    id += "_vgid" + std::to_string(combo->getVirtualGraphId());
   }
-  return idStr;
+  return id;
 }
 } // namespace
 

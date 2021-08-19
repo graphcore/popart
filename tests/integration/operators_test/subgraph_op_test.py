@@ -53,8 +53,8 @@ def test_nested_simple(op_tester):
 
         # Inputs to loop
         iter = loop_builder.addInputTensor(popart.TensorInfo("INT64", []))
-        cond_in = loop_builder.addUntypedInputTensor(str(cond))
-        a_in = loop_builder.addUntypedInputTensor(str(a))
+        cond_in = loop_builder.addUntypedInputTensor(cond)
+        a_in = loop_builder.addUntypedInputTensor(a)
 
         # Computation inside loop
         a_out = loop_builder.aiOnnx.matmul([a_in, b])
@@ -163,9 +163,9 @@ def test_nested_complex(op_tester):
 
         # Inputs to loop 1
         iter1 = loop_builder1.addInputTensor(popart.TensorInfo("INT64", []))
-        cond_in1 = loop_builder1.addUntypedInputTensor(str(cond1))
-        a_in1 = loop_builder1.addUntypedInputTensor(str(a))
-        b_in1 = loop_builder1.addUntypedInputTensor(str(b))
+        cond_in1 = loop_builder1.addUntypedInputTensor(cond1)
+        a_in1 = loop_builder1.addUntypedInputTensor(a)
+        b_in1 = loop_builder1.addUntypedInputTensor(b)
 
         # Computation inside if
         a_out_if0 = if_builder0.aiOnnx.matmul([a_in1, b_in1])
@@ -198,8 +198,8 @@ def test_nested_complex(op_tester):
 
         # Loop 0
         iter0 = loop_builder0.addInputTensor(popart.TensorInfo("INT64", []))
-        cond_in0 = loop_builder0.addUntypedInputTensor(str(cond0))
-        a_in0 = loop_builder0.addUntypedInputTensor(str(a))
+        cond_in0 = loop_builder0.addUntypedInputTensor(cond0)
+        a_in0 = loop_builder0.addUntypedInputTensor(a)
         loop0_loop1 = loop_builder0.aiOnnx.loop([m1, cond1, a_in0, d], 2,
                                                 loop_builder1)[0]
         loop_builder0.addOutputTensor(cond_in0)

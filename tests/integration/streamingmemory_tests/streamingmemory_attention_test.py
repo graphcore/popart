@@ -111,8 +111,8 @@ def test_attention_streamingmemory(tmpdir):
         x = x_in
         for i in range(options["numLayers"]):
             qkv = builder.addInitializedInputTensor(qkv_data, f"qkv_{i}")
-            anchors[popart.TensorId(popart.reservedGradientPrefix() +
-                                    qkv)] = popart.AnchorReturnType("All")
+            anchors[popart.reservedGradientPrefix() +
+                    qkv] = popart.AnchorReturnType("All")
 
             vgid = (i % options["stages"]) if options["phasedExecution"] else i
 

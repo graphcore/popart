@@ -84,8 +84,7 @@ def op_tester(tmpdir):
 
         def getOutputTensorGrad(self, index):
             tensorId = self._outputs[index]
-            gradId = popart.TensorId(popart.reservedGradientPrefix() +
-                                     tensorId)
+            gradId = popart.reservedGradientPrefix() + tensorId
             return self._anchor_map[gradId]
 
         def getOutputTensor(self, index):

@@ -24,7 +24,7 @@ BuilderDebugInfo::BuilderDebugInfo(
   if (inputs.size() > 0) {
     ProfileValue::Vector inputsPV;
     for (auto input : inputs) {
-      inputsPV.push_back(ProfileValue{input.str()});
+      inputsPV.push_back(ProfileValue{input});
     }
     setValue("inputs", inputsPV);
   }
@@ -32,7 +32,7 @@ BuilderDebugInfo::BuilderDebugInfo(
   if (outputs.size() > 0) {
     ProfileValue::Vector outputsPV;
     for (auto output : outputs) {
-      outputsPV.push_back(ProfileValue{output.str()});
+      outputsPV.push_back(ProfileValue{output});
     }
     setValue("outputs", outputsPV);
   }
@@ -95,7 +95,7 @@ void BuilderDebugInfo::setOutputs(const std::vector<TensorId> &outputs) {
   if (outputs.size() > 0) {
     ProfileValue::Vector outputsPV;
     for (auto output : outputs) {
-      outputsPV.push_back(ProfileValue{output.str()});
+      outputsPV.push_back(ProfileValue{output});
     }
     setValue("outputs", outputsPV);
   }
@@ -109,7 +109,7 @@ BuilderVarDebugInfo::BuilderVarDebugInfo(const DebugContext &debugContext,
   setValue("category", ProfileValue{"variable"});
   setValue("api", ProfileValue{api});
 
-  setValue("tensorId", id.str());
+  setValue("tensorId", id);
 
   std::stringstream ss;
   ss << ti.shape();
@@ -177,7 +177,7 @@ BuilderVarDebugInfo::BuilderVarDebugInfo(const DebugContext &debugContext,
     : DebugInfo(debugContext, "popartbuilder") {
   setValue("category", ProfileValue{"variable"});
   setValue("api", ProfileValue{api});
-  setValue("tensorId", id.str());
+  setValue("tensorId", id);
 }
 
 } // namespace popart

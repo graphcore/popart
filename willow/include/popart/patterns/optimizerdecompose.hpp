@@ -40,7 +40,7 @@ protected:
                      TensorId accumId,
                      TensorId gradIntoAccumId,
                      bool accumReduce,
-                     TensorId outputId = TensorId()) const;
+                     TensorId outputId = "") const;
 
   // Reset all values of accumulutor with TensorID
   // Transfers the name and properties from Op, combo and schedules the op to

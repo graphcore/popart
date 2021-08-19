@@ -73,14 +73,13 @@ void updateVGraphInformation(Graph &graph) {
 TensorId createIntermediateTensorId(const TensorId &tid, Ir &ir) {
   auto isNum = [](char c) { return c >= '0' and c <= '9'; };
 
-  int64_t i = tid.str().size() - 1;
-  if (isNum(tid.str().at(i))) {
-    while (isNum(tid.str().at(i))) {
+  int64_t i = tid.size() - 1;
+  if (isNum(tid.at(i))) {
+    while (isNum(tid.at(i))) {
       i -= 1;
     }
-    if (tid.str().at(i) == 't' and tid.str().at(i - 1) == '_' and
-        tid.str().at(i - 2) == '_') {
-      return ir.createIntermediateTensorId(tid.str().substr(0, i - 2));
+    if (tid.at(i) == 't' and tid.at(i - 1) == '_' and tid.at(i - 2) == '_') {
+      return ir.createIntermediateTensorId(tid.substr(0, i - 2));
     }
   }
 

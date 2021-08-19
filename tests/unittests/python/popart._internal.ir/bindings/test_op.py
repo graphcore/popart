@@ -238,8 +238,8 @@ def test_debug_methods():
 
 
 @pytest.mark.parametrize("index", [0, 2, 123])
-@pytest.mark.parametrize("id", [popart.TensorId(i) for i in "abcd"])
-def test_default_outputs(index: int, id: popart.TensorId):
+@pytest.mark.parametrize("id", [i for i in "abcd"])
+def test_default_outputs(index: int, id: str):
     """Test default behaviour of createAndConnectOutTensor
 
     Args:

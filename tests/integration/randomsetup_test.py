@@ -489,10 +489,9 @@ def run_model(builder_fn, steps, seed, training=True):
     builder = popart.Builder()
     loss, inputs, random_outs = builder_fn(builder)
     dataFlow = popart.DataFlow(
-        steps, {
-            popart.TensorId(op[1]): popart.AnchorReturnType("ALL")
-            for op in random_outs.items()
-        })
+        steps,
+        {op[1]: popart.AnchorReturnType("ALL")
+         for op in random_outs.items()})
 
     proto = builder.getModelProto()
     options = popart.SessionOptions()
@@ -542,7 +541,7 @@ def get_anchor_step(run, anchor, step, slice):
              (<index of slice>/<number of slices>) and assumes it always slices
              in the first axis and in equal parts.
     """
-    out = run.anchors[popart.TensorId(run.random_outs[anchor])]
+    out = run.anchors[run.random_outs[anchor]]
     if run.steps > 1:
         out = out[step]
 

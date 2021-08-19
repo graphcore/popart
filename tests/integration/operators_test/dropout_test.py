@@ -69,7 +69,7 @@ def test_dropout_training1():
 
     builder = popart.Builder()
     ip = builder.addInputTensor(popart.TensorInfo("FLOAT", [dsize]))
-    d__ip = popart.TensorId(popart.reservedGradientPrefix() + ip)
+    d__ip = popart.reservedGradientPrefix() + ip
 
     [o1, o2] = builder.aiOnnx.dropout([ip], num_outputs=2, ratio=ratio)
     out = builder.aiGraphcore.identityloss([o1])
@@ -138,7 +138,7 @@ def test_dropout_training4():
     ratio = 0.2
     builder = popart.Builder()
     ip = builder.addInputTensor(popart.TensorInfo("FLOAT", [dsize, dsize]))
-    d__ip = popart.TensorId(popart.reservedGradientPrefix() + ip)
+    d__ip = popart.reservedGradientPrefix() + ip
     [d1] = builder.aiOnnx.dropout([ip], num_outputs=1, ratio=ratio)
 
     # Matmul to change the layout -- ensures we are testing the dependency
@@ -244,7 +244,7 @@ def test_dropout_training7():
     ratio = 0.2
     builder = popart.Builder()
     ip = builder.addInputTensor(popart.TensorInfo("FLOAT", [dsize]))
-    d__ip = popart.TensorId(popart.reservedGradientPrefix() + ip)
+    d__ip = popart.reservedGradientPrefix() + ip
     [d1] = builder.aiOnnx.dropout([ip], num_outputs=1, ratio=ratio)
     [d2] = builder.aiOnnx.dropout([ip], num_outputs=1, ratio=ratio)
     out = builder.aiOnnx.add([d1, d2])
@@ -279,7 +279,7 @@ def test_dropout_training8(op_tester):
         i1 = builder.addInputTensor(d1)
         [o1] = builder.aiOnnx.dropout([i1], num_outputs=1, ratio=ratio)
         builder.addOutputTensor(o1)
-        return [o1, popart.TensorId(popart.reservedGradientPrefix() + i1)]
+        return [o1, popart.reservedGradientPrefix() + i1]
 
     def reference(ref_data):
         dropout = torch.nn.Dropout()
@@ -396,7 +396,7 @@ def get_replicated_dropout_session(replication_factor=4,
                                    seed=0):
     builder = popart.Builder()
     ip = builder.addInputTensor(popart.TensorInfo("FLOAT", [dsize]))
-    d__ip = popart.TensorId(popart.reservedGradientPrefix() + ip)
+    d__ip = popart.reservedGradientPrefix() + ip
     out = ip
     for layer in range(num_layers):
         [out] = builder.aiOnnx.dropout([out], num_outputs=1, ratio=ratio)
@@ -435,7 +435,7 @@ def get_dropout_session(dsize=100,
                         seed=0):
     builder = popart.Builder()
     ip = builder.addInputTensor(popart.TensorInfo("FLOAT", [dsize]))
-    d__ip = popart.TensorId(popart.reservedGradientPrefix() + ip)
+    d__ip = popart.reservedGradientPrefix() + ip
     out = ip
     for numl in range(num_layers):
         [out] = builder.aiOnnx.dropout([out], num_outputs=1, ratio=ratio)

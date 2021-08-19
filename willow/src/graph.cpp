@@ -306,7 +306,7 @@ Op *Graph::growFromNode(const Node &node) {
 Scope Graph::getScope() const { return Scope() / id.str(); }
 
 TensorId Graph::addScope(const TensorId &tensorId) const {
-  return (getScope() / tensorId.str()).str();
+  return (getScope() / tensorId).str();
 }
 
 TensorId Graph::removeScope(const TensorId &scopedId) const {
@@ -317,13 +317,13 @@ TensorId Graph::removeScope(const TensorId &scopedId) const {
     using boost::algorithm::starts_with;
 
     auto scopeStr = getScope().str() + Scope::delimiter();
-    if (!starts_with(scopedId.str(), scopeStr)) {
+    if (!starts_with(scopedId, scopeStr)) {
       throw error(
           "Cannot remove scope from {} as it does not start with scope {}",
           scopedId,
           scopeStr);
     }
-    return scopedId.str().substr(scopeStr.size());
+    return scopedId.substr(scopeStr.size());
   }
 }
 

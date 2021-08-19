@@ -46,12 +46,12 @@ bool AdaptiveDecompose::apply(Op *op) const {
   TensorId updatedWeightId = newWeight->id;
 
   // Qualified tensor names for key tensors of the Adaptive/Lamb optimizers
-  auto stepId            = TensorId(reservedStepPrefix() + weightId);
-  auto accumId           = TensorId(reservedAccumPrefix() + weightId);
-  auto accl1Id           = TensorId(reservedAccl1Prefix() + weightId);
-  auto accl2Id           = TensorId(reservedAccl2Prefix() + weightId);
-  auto accl3Id           = TensorId(reservedAccl3Prefix() + weightId);
-  auto adaptiveUpdaterId = TensorId(reservedAdaptiveUpdaterPrefix() + weightId);
+  auto stepId            = reservedStepPrefix() + weightId;
+  auto accumId           = reservedAccumPrefix() + weightId;
+  auto accl1Id           = reservedAccl1Prefix() + weightId;
+  auto accl2Id           = reservedAccl2Prefix() + weightId;
+  auto accl3Id           = reservedAccl3Prefix() + weightId;
+  auto adaptiveUpdaterId = reservedAdaptiveUpdaterPrefix() + weightId;
 
   if (weightGrad->info.dataType() != weight->info.dataType()) {
     throw error("Currently, weight and weight gradient should have the same "

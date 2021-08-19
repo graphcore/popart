@@ -300,7 +300,7 @@ bool HostReduce::apply(Graph &graph) const {
 
 bool HostReduce::includesRequiredTensor(std::vector<const Tensor *> ts) {
   for (auto t : ts) {
-    if (t->id.str().find(reservedGradientPrefix()) != std::string::npos) {
+    if (t->id.find(reservedGradientPrefix()) != std::string::npos) {
       for (auto con : t->consumers.getOps()) {
         if (con->isConvertibleTo<VarUpdateOp>() ||
             con->isConvertibleTo<GradCopyFromHostOp>() ||

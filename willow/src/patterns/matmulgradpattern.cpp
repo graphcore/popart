@@ -155,11 +155,10 @@ bool MatMulPattern::apply(Op *op) const {
   auto lhsShape = matmulOp->getExpandedLhsShape();
   auto rhsShape = matmulOp->getExpandedRhsShape();
   if (lhsShape.size() == 3 && rhsShape.size() == 3 && rhsShape[0] == 1) {
-    // Modify the specific case where the RHS is broadcast on the group
-    // dimension. This avoids a ReduceSumOp being inserted into the during
-    // autodiff.
-    lhsShape[1] *= lhsShape[0];
-    lhsShape[0] = 1;
+      // Modify the specific case where the RHS is broadcast on the group dimension.
+      // This avoids a ReduceSumOp being inserted into the during autodiff.
+      lhsShape[1] *= lhsShape[0];
+      lhsShape[0] = 1;
   }
 
   logging::pattern::debug(

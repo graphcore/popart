@@ -4,7 +4,6 @@
 #include <../test_runner.hpp>
 #include <boost/test/unit_test.hpp>
 #include <popart/patterns/pattern.hpp>
-#include <popart/tensorid.hpp>
 #include <popart/tensors.hpp>
 
 using namespace popart;
@@ -17,7 +16,7 @@ BOOST_AUTO_TEST_CASE(Inplace_addBias0) {
   std::vector<TestTensor> inputs;
   std::vector<TestTensor> outputs;
 
-  auto add_input_tensor = [&](const TensorId &tensorId,
+  auto add_input_tensor = [&](const std::string &tensorId,
                               const std::vector<int64_t> shape) {
     std::vector<float> data;
     int size = 1;

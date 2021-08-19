@@ -61,12 +61,11 @@ def test_one_ipu():
     builder.virtualGraph(op2_out, 0)
 
     with pytest.raises(popart.popart_exception) as e_info:
-        session = popart.InferenceSession(
-            fnModel=builder.getModelProto(),
-            dataFlow=popart.DataFlow(
-                10, [op2_out, popart.TensorId("loss")]),
-            userOptions=opts,
-            deviceInfo=tu.create_test_device())
+        session = popart.InferenceSession(fnModel=builder.getModelProto(),
+                                          dataFlow=popart.DataFlow(
+                                              10, [op2_out, "loss"]),
+                                          userOptions=opts,
+                                          deviceInfo=tu.create_test_device())
         session.prepareDevice()
     assert e_info.value.args[0].startswith("Pipelining requires more than")
 
@@ -289,15 +288,13 @@ def test_acts_match_restored_acts(inputType):
     input_name = "Cast:0" if inputType is not None else "input"
 
     assert np.allclose(
-        pipelined_anchors[popart.TensorId(popart.reservedRestoredPrefix() +
-                                          "Exp:0")],
-        pipelined_anchors[popart.TensorId("Exp:0")])
+        pipelined_anchors[popart.reservedRestoredPrefix() + "Exp:0"],
+        pipelined_anchors["Exp:0"])
     assert np.allclose(
-        pipelined_anchors[popart.TensorId(popart.reservedRestoredPrefix() +
-                                          input_name)],
-        pipelined_anchors[popart.TensorId(input_name)])
-    assert np.allclose(pipelined_anchors[popart.TensorId("input_raw")],
-                       pipelined_anchors[popart.TensorId(input_name)])
+        pipelined_anchors[popart.reservedRestoredPrefix() + input_name],
+        pipelined_anchors[input_name])
+    assert np.allclose(pipelined_anchors["input_raw"],
+                       pipelined_anchors[input_name])
 
 
 @tu.requires_ipu_model
@@ -390,14 +387,11 @@ def get_model_anchors(doSharding,
 
     anchor_map = {nll: art, w0: art, e0: art}
     if doTraining is True:
-        anchor_map[popart.TensorId(popart.reservedGradientPrefix() +
-                                   d0_cast)] = art
+        anchor_map[popart.reservedGradientPrefix() + d0_cast] = art
         if doPipelining is True and anchorRestoredTensors is True:
-            anchor_map[popart.TensorId(popart.reservedRestoredPrefix() +
-                                       e0)] = art
+            anchor_map[popart.reservedRestoredPrefix() + e0] = art
             anchor_map[d0_cast] = art
-            anchor_map[popart.TensorId(popart.reservedRestoredPrefix() +
-                                       d0_cast)] = art
+            anchor_map[popart.reservedRestoredPrefix() + d0_cast] = art
 
     opts = popart.SessionOptions()
     opts.reportOptions = {"showExecutionSteps": "true"}
@@ -460,7 +454,7 @@ def get_model_anchors(doSharding,
         save_popart_report(session)
 
     if returnRawInput is True:
-        anchors[popart.TensorId("input_raw")] = data
+        anchors["input_raw"] = data
 
     return anchors
 
@@ -658,7 +652,7 @@ def test_multiple_stages_per_virtual_graph_inference():
 
     # test a pipeline stage appearing on multiple virtual graphs
     session.prepare(init_builder)
-    sessionAnchors = session.run({popart.TensorId('data0'): data})
+    sessionAnchors = session.run({'data0': data})
     assert len(sessionAnchors) == 1
     sessionAnchors = [v for k, v in sessionAnchors.items()][0]
     print(sessionAnchors)
@@ -733,7 +727,7 @@ def test_multiple_stages_per_virtual_graph_training(inputType):
         # test a pipeline stage appearing on multiple virtual graphs
         session.prepare(init_builder)
 
-        sessionAnchors = session.run({popart.TensorId('data0'): data})
+        sessionAnchors = session.run({'data0': data})
         assert len(sessionAnchors) == 1
         sessionAnchor = [v for k, v in sessionAnchors.items()][0]
 
@@ -822,7 +816,7 @@ def test_recomputation(inputType):
 
         session.prepare(init_builder)
 
-        anchors = session.run({popart.TensorId('data0'): data})
+        anchors = session.run({'data0': data})
 
         # return the weights
         session._session.weightsToHost()

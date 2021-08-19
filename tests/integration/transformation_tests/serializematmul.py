@@ -300,7 +300,7 @@ def test_matmul_serialization_training_1():
                 popart.AnchorReturnType("All"),
                 rhs:
                 popart.AnchorReturnType("Final"),
-                popart.TensorId(popart.reservedGradientPrefix() + lhs):
+                popart.reservedGradientPrefix() + lhs:
                 popart.AnchorReturnType("All"),
                 #popart.reservedGradientPrefix() + rhs: popart.AnchorReturnType("All"), << T11469
             })
@@ -574,7 +574,7 @@ def test_matmul_serialization_training_2():
                 popart.AnchorReturnType("All"),
                 rhs:
                 popart.AnchorReturnType("Final"),
-                popart.TensorId(popart.reservedGradientPrefix() + lhs):
+                popart.reservedGradientPrefix() + lhs:
                 popart.AnchorReturnType("All"),
             })
 
@@ -849,7 +849,7 @@ def test_matmul_serialization_training_3():
                 popart.AnchorReturnType("All"),
                 rhs:
                 popart.AnchorReturnType("Final"),
-                popart.TensorId(popart.reservedGradientPrefix() + lhs):
+                popart.reservedGradientPrefix() + lhs:
                 popart.AnchorReturnType("All"),
                 #popart.reservedGradientPrefix() + rhs: popart.AnchorReturnType("All"), << T11469
             })
@@ -1116,7 +1116,7 @@ def test_matmul_serialization_precision():
                 popart.AnchorReturnType("All"),
                 rhs:
                 popart.AnchorReturnType("Final"),
-                popart.TensorId(popart.reservedGradientPrefix() + lhs):
+                popart.reservedGradientPrefix() + lhs:
                 popart.AnchorReturnType("All"),
                 #popart.reservedGradientPrefix() + rhs: popart.AnchorReturnType("All"), << T11469
             })
@@ -1400,7 +1400,7 @@ def test_matmul_serialization_training_with_gradient_accumlation():
                 popart.AnchorReturnType("All"),
                 rhs:
                 popart.AnchorReturnType("Final"),
-                popart.TensorId(popart.reservedGradientPrefix() + lhs):
+                popart.reservedGradientPrefix() + lhs:
                 popart.AnchorReturnType("All"),
                 #popart.reservedGradientPrefix() + rhs: popart.AnchorReturnType("All"), << T11469
             })
@@ -1692,7 +1692,7 @@ def test_matmul_serialization_training_with_castop():
                 popart.AnchorReturnType("All"),
                 rhs:
                 popart.AnchorReturnType("Final"),
-                popart.TensorId(popart.reservedGradientPrefix() + lhs):
+                popart.reservedGradientPrefix() + lhs:
                 popart.AnchorReturnType("All"),
             })
 

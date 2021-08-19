@@ -152,8 +152,8 @@ void BatchSerialScheduler::apply() {
     // positive isomporphism results
     if (std::any_of(tensors.begin(), tensors.end(), [](Tensor *t) {
           TensorId id = t->id;
-          return id.str().find(reservedIndexPrefix()) != std::string::npos ||
-                 id.str().find(reservedRandomSeedPrefix()) != std::string::npos;
+          return id.find(reservedIndexPrefix()) != std::string::npos ||
+                 id.find(reservedRandomSeedPrefix()) != std::string::npos;
           ;
         })) {
       continue;

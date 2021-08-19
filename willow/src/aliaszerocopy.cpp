@@ -660,8 +660,8 @@ void AliasZeroCopy::activateAlias(Tensor *ta, Tensor *tb) {
 void AliasZeroCopy::insertAlias(Tensor *ta, Tensor *tb) {
   bool excluded = false;
   for (std::string name : excludeTensorByName) {
-    excluded |= (ta->id.str().find(name) != std::string::npos ||
-                 tb->id.str().find(name) != std::string::npos);
+    excluded |= (ta->id.find(name) != std::string::npos ||
+                 tb->id.find(name) != std::string::npos);
   }
 
   logging::devicex::trace(

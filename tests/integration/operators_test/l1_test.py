@@ -91,8 +91,7 @@ def test_l1_training(op_tester):
                                                 scale,
                                                 reduction=reduction_type)
                 result.append(l1)
-                result.append(
-                    popart.TensorId(popart.reservedGradientPrefix() + tensor))
+                result.append(popart.reservedGradientPrefix() + tensor)
                 return result
 
             def reference(ref_data):
@@ -131,10 +130,7 @@ def test_l1_reduction_equiv(op_tester):
                 loss = builder.aiGraphcore.l1loss(
                     [ip], 0.1, reduction=popart.ReductionType.Sum)
 
-            anchors = [
-                loss,
-                popart.TensorId(popart.reservedGradientPrefix() + ip)
-            ]
+            anchors = [loss, popart.reservedGradientPrefix() + ip]
 
             session = popart.TrainingSession(
                 fnModel=builder.getModelProto(),

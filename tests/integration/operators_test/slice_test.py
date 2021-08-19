@@ -117,8 +117,8 @@ def test_slice_grad(op_tester):
         builder.addOutputTensor(o)
         return [
             o,
-            popart.TensorId(popart.reservedGradientPrefix() + i1),
-            popart.TensorId(popart.reservedGradientPrefix() + o)
+            popart.reservedGradientPrefix() + i1,
+            popart.reservedGradientPrefix() + o
         ]
 
     def reference(ref_data):
@@ -198,7 +198,7 @@ def test_slice_start_out_of_bounds(op_tester):
         o = builder.aiOnnx.slice([i1, starts, ends, axes])
         builder.addOutputTensor(o)
 
-        return [o, popart.TensorId(popart.reservedGradientPrefix() + i1)]
+        return [o, popart.reservedGradientPrefix() + i1]
 
     def reference(ref_data):
         o = d1[:, 1000:1000]
@@ -244,8 +244,8 @@ def test_slice_end_out_of_bounds(op_tester):
 
         return [
             o,
-            popart.TensorId(popart.reservedGradientPrefix() + i1),
-            popart.TensorId(popart.reservedGradientPrefix() + o)
+            popart.reservedGradientPrefix() + i1,
+            popart.reservedGradientPrefix() + o
         ]
 
     def reference(ref_data):
@@ -357,8 +357,8 @@ def test_slice_flip_grad_1(op_tester):
         builder.addOutputTensor(o)
         return [
             o,
-            popart.TensorId(popart.reservedGradientPrefix() + i1),
-            popart.TensorId(popart.reservedGradientPrefix() + o)
+            popart.reservedGradientPrefix() + i1,
+            popart.reservedGradientPrefix() + o
         ]
 
     def reference(ref_data):

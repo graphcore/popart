@@ -24,12 +24,12 @@ def test_max_training(op_tester):
         builder.addOutputTensor(o)
         return [
             o,
-            popart.TensorId(popart.reservedGradientPrefix() + i1),
-            popart.TensorId(popart.reservedGradientPrefix() + i2),
-            popart.TensorId(popart.reservedGradientPrefix() + i3),
-            popart.TensorId(popart.reservedGradientPrefix() + i4),
-            popart.TensorId(popart.reservedGradientPrefix() + i5),
-            popart.TensorId(popart.reservedGradientPrefix() + o)
+            popart.reservedGradientPrefix() + i1,
+            popart.reservedGradientPrefix() + i2,
+            popart.reservedGradientPrefix() + i3,
+            popart.reservedGradientPrefix() + i4,
+            popart.reservedGradientPrefix() + i5,
+            popart.reservedGradientPrefix() + o
         ]
 
     def reference(ref_data):
@@ -64,9 +64,9 @@ def test_min_training_0(op_tester):
         builder.addOutputTensor(o)
         return [
             o,
-            popart.TensorId(popart.reservedGradientPrefix() + i1),
-            popart.TensorId(popart.reservedGradientPrefix() + i2),
-            popart.TensorId(popart.reservedGradientPrefix() + o)
+            popart.reservedGradientPrefix() + i1,
+            popart.reservedGradientPrefix() + i2,
+            popart.reservedGradientPrefix() + o
         ]
 
     def reference(ref_data):
@@ -101,12 +101,12 @@ def test_min_training_1(op_tester):
         builder.addOutputTensor(o)
         return [
             o,
-            popart.TensorId(popart.reservedGradientPrefix() + i1),
-            popart.TensorId(popart.reservedGradientPrefix() + i2),
-            popart.TensorId(popart.reservedGradientPrefix() + i3),
-            popart.TensorId(popart.reservedGradientPrefix() + i4),
-            popart.TensorId(popart.reservedGradientPrefix() + i5),
-            popart.TensorId(popart.reservedGradientPrefix() + o)
+            popart.reservedGradientPrefix() + i1,
+            popart.reservedGradientPrefix() + i2,
+            popart.reservedGradientPrefix() + i3,
+            popart.reservedGradientPrefix() + i4,
+            popart.reservedGradientPrefix() + i5,
+            popart.reservedGradientPrefix() + o
         ]
 
     def reference(ref_data):

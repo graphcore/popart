@@ -341,8 +341,8 @@ def test_cumsum_grad_1d(op_tester):
         builder.addOutputTensor(o)
         return [
             o,
-            popart.TensorId(popart.reservedGradientPrefix() + i0),
-            popart.TensorId(popart.reservedGradientPrefix() + o),
+            popart.reservedGradientPrefix() + i0,
+            popart.reservedGradientPrefix() + o,
         ]
 
     def reference(ref_data):
@@ -366,8 +366,8 @@ def test_cumsum_grad_1d_reverse(op_tester):
         builder.addOutputTensor(o)
         return [
             o,
-            popart.TensorId(popart.reservedGradientPrefix() + i0),
-            popart.TensorId(popart.reservedGradientPrefix() + o),
+            popart.reservedGradientPrefix() + i0,
+            popart.reservedGradientPrefix() + o,
         ]
 
     def reference(ref_data):
@@ -393,8 +393,8 @@ def test_cumsum_grad_2d_axis_0(op_tester):
         builder.addOutputTensor(o)
         return [
             o,
-            popart.TensorId(popart.reservedGradientPrefix() + i0),
-            popart.TensorId(popart.reservedGradientPrefix() + o),
+            popart.reservedGradientPrefix() + i0,
+            popart.reservedGradientPrefix() + o,
         ]
 
     def reference(ref_data):
@@ -418,8 +418,8 @@ def test_cumsum_grad_2d_axis_1(op_tester):
         builder.addOutputTensor(o)
         return [
             o,
-            popart.TensorId(popart.reservedGradientPrefix() + i0),
-            popart.TensorId(popart.reservedGradientPrefix() + o),
+            popart.reservedGradientPrefix() + i0,
+            popart.reservedGradientPrefix() + o,
         ]
 
     def reference(ref_data):
@@ -443,8 +443,8 @@ def test_cumsum_grad_2d_negative_axis(op_tester):
         builder.addOutputTensor(o)
         return [
             o,
-            popart.TensorId(popart.reservedGradientPrefix() + i0),
-            popart.TensorId(popart.reservedGradientPrefix() + o),
+            popart.reservedGradientPrefix() + i0,
+            popart.reservedGradientPrefix() + o,
         ]
 
     def reference(ref_data):
@@ -470,8 +470,8 @@ def test_cumsum_grad_3d(op_tester):
             builder.addOutputTensor(o)
             return [
                 o,
-                popart.TensorId(popart.reservedGradientPrefix() + i0),
-                popart.TensorId(popart.reservedGradientPrefix() + o),
+                popart.reservedGradientPrefix() + i0,
+                popart.reservedGradientPrefix() + o,
             ]
 
         def reference(ref_data):
@@ -497,8 +497,8 @@ def test_cumsum_grad_3d_reverse(op_tester):
             builder.addOutputTensor(o)
             return [
                 o,
-                popart.TensorId(popart.reservedGradientPrefix() + i0),
-                popart.TensorId(popart.reservedGradientPrefix() + o),
+                popart.reservedGradientPrefix() + i0,
+                popart.reservedGradientPrefix() + o,
             ]
 
         def reference(ref_data):

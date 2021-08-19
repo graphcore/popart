@@ -2,7 +2,6 @@
 #include <pybind11/functional.h>
 
 #include <pybind11/numpy.h>
-#include <pybind11/operators.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
@@ -37,7 +36,6 @@
 #include <popart/stepio_generic.hpp>
 #include <popart/stepio_size_assertion.hpp>
 #include <popart/tensordata.hpp>
-#include <popart/tensorid.hpp>
 #include <popart/tensorlocation.hpp>
 #include <popart/tensornames.hpp>
 #include <popart/tensors.hpp>
@@ -185,7 +183,7 @@ public:
 
   ConstVoidData in(TensorId id, int64_t, bool prefetch) final {
     py::gil_scoped_acquire acquire;
-    py::array a = inputCb(id.str(), prefetch);
+    py::array a = inputCb(id, prefetch);
     if (!isContiguous(a)) {
       throw error(
           "PyStepIO is unable to use the numpy input array for tensor "
@@ -194,7 +192,7 @@ public:
           id);
     }
     // To ensure that array is persisted until complete is called
-    inDict[py::str(id.str())] = a;
+    inDict[py::str(id)] = a;
 
     ConstVoidData data;
 
@@ -209,13 +207,13 @@ public:
 
   void inComplete(TensorId id, int64_t) final {
     py::gil_scoped_acquire acquire;
-    inputCompleteCb(id.str());
-    inDict[py::str(id.str())] = py::none();
+    inputCompleteCb(id);
+    inDict[py::str(id)] = py::none();
   }
 
   MutableVoidData out(TensorId id, int64_t) final {
     py::gil_scoped_acquire acquire;
-    py::array a = outputCb(id.str());
+    py::array a = outputCb(id);
     if (!isContiguous(a)) {
       throw error(
           "PyStepIO is unable to use the numpy output array for tensor "
@@ -225,7 +223,7 @@ public:
     }
 
     // To ensure that array is persisted until complete is called
-    outDict[py::str(id.str())] = a;
+    outDict[py::str(id)] = a;
 
     MutableVoidData data;
     data.data = a.request().ptr;
@@ -235,8 +233,8 @@ public:
 
   void outComplete(TensorId id) final {
     py::gil_scoped_acquire acquire;
-    outputCompleteCb(id.str());
-    outDict[py::str(id.str())] = py::none();
+    outputCompleteCb(id);
+    outDict[py::str(id)] = py::none();
   }
 
 private:
@@ -586,30 +584,6 @@ PYBIND11_MODULE(popart_core, m) {
   m.def("getSupportedOperationsDefinition",
         &OpManager::getSupportedOperationsDefinition,
         py::arg("includeInternal"));
-  {
-    py::class_<TensorId> cls(m, "TensorId");
-    cls.def(py::init<std::string>(), py::arg("id"));
-    cls.def(py::init<TensorId>(), py::arg("id"));
-    cls.def(pybind11::self < pybind11::self);
-    cls.def(pybind11::self < std::string());
-    cls.def(std::string() < pybind11::self);
-    cls.def(pybind11::self == pybind11::self);
-    cls.def(pybind11::self == std::string());
-    cls.def(std::string() == pybind11::self);
-    cls.def(pybind11::self != pybind11::self);
-    cls.def(pybind11::self != std::string());
-    cls.def(std::string() != pybind11::self);
-    cls.def(py::self + py::self);
-    cls.def(py::self + std::string());
-    cls.def(std::string() + py::self);
-    cls.def(py::self += py::self);
-    cls.def(py::self += std::string());
-    cls.def("str",
-            static_cast<const std::string &(TensorId::*)() const &>(
-                &TensorId::str));
-    cls.def("__str__", [](const TensorId &tId) { return tId.str(); });
-    cls.def(hash(py::self));
-  }
   {
     py::class_<IStepIO> stepio(m, "IStepIO");
     py::class_<IWeightsIO> weightsio(m, "IWeightsIO");
@@ -2769,7 +2743,8 @@ PYBIND11_MODULE(popart_core, m) {
               domain, opName, static_cast<popart::OpVersion>(OpVersion)};
           std::vector<TensorId> input_vector;
           for (auto item : inputs) {
-            TensorId t = item.cast<TensorId>();
+            std::string str = py::cast<std::string>(item);
+            TensorId t      = static_cast<TensorId>(str);
             input_vector.push_back(t);
           }
           return builder.customOp(

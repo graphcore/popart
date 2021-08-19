@@ -192,7 +192,7 @@ static TensorId slice(TransformBuilder &builder,
                                   pstage,
                                   phase,
                                   name,
-                                  builder.getNextId(name).str());
+                                  builder.getNextId(name));
   } else {
     output = builder.slice(input,
                            starts,
@@ -202,7 +202,7 @@ static TensorId slice(TransformBuilder &builder,
                            pstage,
                            phase,
                            name,
-                           builder.getNextId(name).str());
+                           builder.getNextId(name));
   }
   static unsigned uid = 0;
   builder.getProducer(output)->settings.extraOutlineAttributes.insert(
@@ -286,7 +286,7 @@ static void serializeMatMul(TransformBuilder &builder,
                             pipelineStage,
                             executionPhase,
                             name + "_MatMul",
-                            builder.getNextId(name + "_MatMul").str(),
+                            builder.getNextId(name + "_MatMul"),
                             attrs,
                             matmul->opid);
 
@@ -335,13 +335,12 @@ static void sumByAddInplace(TransformBuilder &builder,
             builder.getProducer(output->id),
             true);
     } else {
-      out =
-          builder.addLhsInplace(inputs,
-                                virtualGraphId,
-                                pipelineStage,
-                                executionPhase,
-                                name + "_AddInplace",
-                                builder.getNextId(name + "_AddInPlace").str());
+      out = builder.addLhsInplace(inputs,
+                                  virtualGraphId,
+                                  pipelineStage,
+                                  executionPhase,
+                                  name + "_AddInplace",
+                                  builder.getNextId(name + "_AddInPlace"));
       if (builder.hasProducer(outputTensors[i]) && builder.hasProducer(out))
         builder.getGraph().topoCons->insert(
             builder.getProducer(outputTensors[i]),
@@ -470,32 +469,30 @@ static void serializeVarUpdate(int sliceDim,
                                    pipelineStage,
                                    executionPhase,
                                    name + "_Reshape",
-                                   builder.getNextId(name + "_Reshape").str());
+                                   builder.getNextId(name + "_Reshape"));
         } else if (op->opid == Onnx::Operators::ReduceSum_1) {
           logging::op::debug("Serializing reduced sum");
-          output =
-              builder.reducesum(output,
-                                0,
-                                {0},
-                                virtualGraphId,
-                                pipelineStage,
-                                executionPhase,
-                                name + "_ReduceSum",
-                                builder.getNextId(name + "_ReduceSum").str());
+          output = builder.reducesum(output,
+                                     0,
+                                     {0},
+                                     virtualGraphId,
+                                     pipelineStage,
+                                     executionPhase,
+                                     name + "_ReduceSum",
+                                     builder.getNextId(name + "_ReduceSum"));
         } else if (op->isConvertibleTo<TransposeBaseOp>()) {
 
           logging::op::debug("Serializing transpose {}", output);
           auto transposeBase = dynamic_cast<TransposeBaseOp *>(op);
           auto transposePerm = transposeBase->getPerm();
 
-          output =
-              builder.transpose(output,
-                                transposePerm,
-                                virtualGraphId,
-                                pipelineStage,
-                                executionPhase,
-                                name + "_Transpose",
-                                builder.getNextId(name + "_Transpose").str());
+          output = builder.transpose(output,
+                                     transposePerm,
+                                     virtualGraphId,
+                                     pipelineStage,
+                                     executionPhase,
+                                     name + "_Transpose",
+                                     builder.getNextId(name + "_Transpose"));
           // Output slice dim changes after the transpose
           axes[0] = transposePerm[axes[0]];
           size    = weightTensor->info.dim(axes[0]) /

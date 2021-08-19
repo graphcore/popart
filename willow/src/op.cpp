@@ -261,8 +261,8 @@ void Op::createAndConnectOutTensor(OutIndex outIndex, TensorId tenId) {
   }
 
   // Avoid double scoping (could be improved by making TensorId a class T33644)
-  if (tenId.str().find(getScope().str()) == std::string::npos) {
-    tenId = (getScope() / tenId.str()).str();
+  if (tenId.find(getScope().str()) == std::string::npos) {
+    tenId = (getScope() / tenId).str();
   }
 
   getGraph().getTensors().addActGrad(tenId, getDebugInfo());
@@ -1197,7 +1197,7 @@ Op::getSubgraphInputs() const {
     if (unsafeProducer) {
       outIndex = unsafeProducer->output->indicesMap().at(tensor).at(0);
     }
-    ins[inIndex] = SubgraphInSig(unsafeProducer, outIndex, tensor->id.str());
+    ins[inIndex] = SubgraphInSig(unsafeProducer, outIndex, tensor->id);
   }
   return ins;
 }
@@ -1278,7 +1278,7 @@ void Op::getInTensorData(TensorId tensorId,
 
   // check 1 : that there is already a tensor with the shape tensor's name
   if (!getGraph().getTensors().contains(tensorId)) {
-    throw error("the tensor `" + tensorId.str() + "` is not defined");
+    throw error("the tensor `" + tensorId + "` is not defined");
   }
 
   Tensor *tensor = getGraph().getTensors().get(tensorId);
@@ -1296,14 +1296,13 @@ void Op::getInTensorData(TensorId tensorId,
   }
 
   if (!validType) {
-    throw error("the tensor `" + tensorId.str() +
+    throw error("the tensor `" + tensorId +
                 "` is not the correct type, it is " + tensor->info.data_type());
   }
 
   // check 5 : that is is rank 0 or rank 1
   if (tensor->info.rank() > 1) {
-    throw error("the rank of tensor `" + tensorId.str() +
-                "` is greater than 1");
+    throw error("the rank of tensor `" + tensorId + "` is greater than 1");
   }
 
   if (tensor->info.dataType() == DataType::INT32) {

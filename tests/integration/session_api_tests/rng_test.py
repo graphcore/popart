@@ -85,8 +85,7 @@ def test_rng_set_and_get():
     def run_session(session):
         stepio = popart.PyStepIO({i0: data_a}, anchors)
         session.run(stepio)
-        return session.getRNGState(), anchors[popart.TensorId(
-            'MatMul:0')].tolist()
+        return session.getRNGState(), anchors['MatMul:0'].tolist()
 
     def run_interference(interfering_session):
         interfering_session.weightsFromHost()

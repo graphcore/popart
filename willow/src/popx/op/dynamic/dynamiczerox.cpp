@@ -47,7 +47,7 @@ void DynamicZeroOpx::grow(poplar::program::Sequence &prog) const {
       psizes,
       prog,
       debugContext("dynamic_zero_" +
-                   op.inId(DynamicBinaryBaseOp::getUpdateInIndex()).str()));
+                   op.inId(DynamicBinaryBaseOp::getUpdateInIndex())));
 
   setOutTensor(DynamicBinaryBaseOp::getOutIndex(), outTensor);
 }

@@ -26,14 +26,14 @@ batchesPerStep = 3
 # anchors, and how they are returned: in this example,
 # return the l1 loss "l1LossVal",
 # the tensor to which the loss is applied "out"
-anchors = {popart.TensorId("out"): popart_core.AnchorReturnType("Final")}
+anchors = {"out": popart_core.AnchorReturnType("Final")}
 dataFlow = popart_core.DataFlow(batchesPerStep, anchors)
 
 # willow is non-dynamic. All input Tensor shapes and
 # types must be fed into the WillowNet constructor.
 # In this example there is 1 streamed input, image0.
 inputShapeInfo = popart_core.InputShapeInfo()
-inputShapeInfo.add(popart.TensorId("image0"),
+inputShapeInfo.add("image0",
                    popart.TensorInfo("FLOAT", [batchSize, nChans, 32, 32]))
 
 inNames = ["image0"]

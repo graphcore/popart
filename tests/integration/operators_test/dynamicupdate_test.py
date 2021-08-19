@@ -97,10 +97,10 @@ def test_dynamicupdate_training(op_tester):
         builder.addOutputTensor(sum)
         result = [
             sum,
-            popart.TensorId(popart.reservedGradientPrefix() + sum),
-            popart.TensorId(popart.reservedGradientPrefix() + tensor0),
-            popart.TensorId(popart.reservedGradientPrefix() + tensor1),
-            popart.TensorId(popart.reservedGradientPrefix() + tensor2),
+            popart.reservedGradientPrefix() + sum,
+            popart.reservedGradientPrefix() + tensor0,
+            popart.reservedGradientPrefix() + tensor1,
+            popart.reservedGradientPrefix() + tensor2,
         ] + result
         return result
 
@@ -162,9 +162,9 @@ def test_dynamicupdate_overlap_wrong(op_tester):
         builder.addOutputTensor(sum)
         result = [
             sum,
-            popart.TensorId(popart.reservedGradientPrefix() + sum),
-            popart.TensorId(popart.reservedGradientPrefix() + tensor0),
-            popart.TensorId(popart.reservedGradientPrefix() + tensor1),
+            popart.reservedGradientPrefix() + sum,
+            popart.reservedGradientPrefix() + tensor0,
+            popart.reservedGradientPrefix() + tensor1,
         ] + result
         return result
 
@@ -234,9 +234,9 @@ def test_dynamicupdate_overlap_correct(op_tester):
         builder.addOutputTensor(sum)
         result = [
             sum,
-            popart.TensorId(popart.reservedGradientPrefix() + sum),
-            popart.TensorId(popart.reservedGradientPrefix() + tensor0),
-            popart.TensorId(popart.reservedGradientPrefix() + tensor1),
+            popart.reservedGradientPrefix() + sum,
+            popart.reservedGradientPrefix() + tensor0,
+            popart.reservedGradientPrefix() + tensor1,
         ] + result
         return result
 

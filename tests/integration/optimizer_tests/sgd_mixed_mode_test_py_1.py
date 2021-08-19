@@ -34,7 +34,7 @@ def run_sgd_mixed_mode(steps,
         ip = builder.addInputTensor(
             popart.TensorInfo("FLOAT" if dtype == np.float32 else "FLOAT16",
                               [dsize, dsize]))
-        d__ip = popart.TensorId(popart.reservedGradientPrefix() + ip)
+        d__ip = popart.reservedGradientPrefix() + ip
 
         def add_layer(in_id, name):
             w = builder.addInitializedInputTensor(
@@ -208,11 +208,11 @@ def test_sgd_mixed_mode_1(tmpdir):
         "lossScaling": (lossScaling, True),
     })
 
-    sgd00.insertSpecific(popart.TensorId("w_0"), {
+    sgd00.insertSpecific("w_0", {
         "momentum": (0.9, True),
         "velocityScaling": (0.25, True)
     })
-    sgd00.insertSpecific(popart.TensorId("b_0"), {
+    sgd00.insertSpecific("b_0", {
         "momentum": (0.9, True),
         "velocityScaling": (0.25, True)
     })
@@ -226,11 +226,11 @@ def test_sgd_mixed_mode_1(tmpdir):
         "lossScaling": (lossScaling, True),
     })
 
-    sgd05.insertSpecific(popart.TensorId("w_0"), {
+    sgd05.insertSpecific("w_0", {
         "momentum": (0.9, True),
         "velocityScaling": (0.25, True)
     })
-    sgd05.insertSpecific(popart.TensorId("b_0"), {
+    sgd05.insertSpecific("b_0", {
         "momentum": (0.9, True),
         "velocityScaling": (0.25, True)
     })
@@ -244,11 +244,11 @@ def test_sgd_mixed_mode_1(tmpdir):
         "lossScaling": (lossScaling, False),
     })
 
-    sgd10.insertSpecific(popart.TensorId("w_0"), {
+    sgd10.insertSpecific("w_0", {
         "momentum": (0.9, False),
         "velocityScaling": (0.25, False)
     })
-    sgd10.insertSpecific(popart.TensorId("b_0"), {
+    sgd10.insertSpecific("b_0", {
         "momentum": (0.9, False),
         "velocityScaling": (0.25, False)
     })
@@ -262,11 +262,11 @@ def test_sgd_mixed_mode_1(tmpdir):
         "lossScaling": (lossScaling, False),
     })
 
-    sgd15.insertSpecific(popart.TensorId("w_0"), {
+    sgd15.insertSpecific("w_0", {
         "momentum": (0.9, False),
         "velocityScaling": (0.25, False)
     })
-    sgd15.insertSpecific(popart.TensorId("b_0"), {
+    sgd15.insertSpecific("b_0", {
         "momentum": (0.9, False),
         "velocityScaling": (0.25, False)
     })
@@ -280,11 +280,11 @@ def test_sgd_mixed_mode_1(tmpdir):
         "lossScaling": (lossScaling, False),
     })
 
-    sgd20.insertSpecific(popart.TensorId("w_0"), {
+    sgd20.insertSpecific("w_0", {
         "momentum": (0.9, False),
         "velocityScaling": (0.25, True)
     })
-    sgd20.insertSpecific(popart.TensorId("b_0"), {
+    sgd20.insertSpecific("b_0", {
         "momentum": (0.9, False),
         "velocityScaling": (0.25, True)
     })
@@ -298,11 +298,11 @@ def test_sgd_mixed_mode_1(tmpdir):
         "lossScaling": (lossScaling, False),
     })
 
-    sgd25.insertSpecific(popart.TensorId("w_0"), {
+    sgd25.insertSpecific("w_0", {
         "momentum": (0.9, False),
         "velocityScaling": (0.25, True)
     })
-    sgd25.insertSpecific(popart.TensorId("b_0"), {
+    sgd25.insertSpecific("b_0", {
         "momentum": (0.9, False),
         "velocityScaling": (0.25, True)
     })

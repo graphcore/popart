@@ -19,7 +19,7 @@ def test_weight_update(tmpdir):
         builder = popart.Builder()
         ip = builder.addInputTensor(
             popart.TensorInfo("FLOAT", [bsize, dsize, dsize]))
-        d__ip = popart.TensorId(popart.reservedGradientPrefix() + ip)
+        d__ip = popart.reservedGradientPrefix() + ip
 
         def add_layer(in_id):
             w = builder.addInitializedInputTensor(

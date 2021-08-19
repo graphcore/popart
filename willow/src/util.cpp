@@ -331,20 +331,20 @@ cast(DataType src, DataType dst, const std::vector<char> &data) {
 }
 
 TensorId getBaseTensorId(const TensorId &t) {
-  int64_t i = t.str().size() - 1;
-  if (!isdigit(t.str().at(i))) {
+  int64_t i = t.size() - 1;
+  if (!isdigit(t.at(i))) {
     return t;
   }
-  while (i >= 0 && isdigit(t.str().at(i))) {
+  while (i >= 0 && isdigit(t.at(i))) {
     i--;
   }
-  if (i < 3 || t.str().at(i) != 't') {
+  if (i < 3 || t.at(i) != 't') {
     return t;
   }
-  if (t.str().at(i - 1) != '_' || t.str().at(i - 2) != '_') {
+  if (t.at(i - 1) != '_' || t.at(i - 2) != '_') {
     return t;
   }
-  return t.str().substr(0, i - 2);
+  return t.substr(0, i - 2);
 }
 
 } // namespace popart

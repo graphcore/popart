@@ -341,9 +341,9 @@ std::vector<TensorId> SGD::getInputIds(const Tensor &w) const {
   const TensorId &varId = w.id;
   std::vector<TensorId> inputs;
   if (!withMomentum) {
-    inputs.resize(4, {""});
+    inputs.resize(4, "");
   } else {
-    inputs.resize(6, {""});
+    inputs.resize(6, "");
   }
 
   // variable
@@ -429,7 +429,7 @@ SGD::getOptimizerInputs(const Tensor &weight) const {
       // else.
       auto tuppy = std::make_tuple(id, TensorInfo(weight.info.dataType(), {}));
       optInputs.push_back(tuppy);
-    } else if (!id.str().empty()) {
+    } else if (!id.empty()) {
       auto tuppy = std::make_tuple(id, TensorInfo(DataType::FLOAT, {}));
       optInputs.push_back(tuppy);
     }
@@ -459,7 +459,7 @@ void SGD::resetTensorData(Tensor &optTensor) const {
 
 float SGD::getStoredValue(const TensorId &optId) const {
 
-  if (optId.str().find(reservedLossScalingPrefix()) != std::string::npos) {
+  if (optId.find(reservedLossScalingPrefix()) != std::string::npos) {
     return lossScaling().val();
   }
 

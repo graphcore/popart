@@ -217,10 +217,10 @@ def test_gru_torch_grad(op_tester):
         builder.addOutputTensor(Y1)
         return [
             Y1,
-            popart.TensorId(popart.reservedGradientPrefix() + Y1),
-            popart.TensorId(popart.reservedGradientPrefix() + i1),
-            popart.TensorId(popart.reservedGradientPrefix() + i2),
-            popart.TensorId(popart.reservedGradientPrefix() + i3),
+            popart.reservedGradientPrefix() + Y1,
+            popart.reservedGradientPrefix() + i1,
+            popart.reservedGradientPrefix() + i2,
+            popart.reservedGradientPrefix() + i3,
         ]
 
     def reference(ref_data):
@@ -459,21 +459,21 @@ def test_gru_torch_grad_all_inputs(op_tester):
         builder.addOutputTensor(Y1)
         print([
             Y1,
-            popart.TensorId(popart.reservedGradientPrefix() + Y1),
-            popart.TensorId(popart.reservedGradientPrefix() + i1),
-            popart.TensorId(popart.reservedGradientPrefix() + i2),
-            popart.TensorId(popart.reservedGradientPrefix() + i3),
-            popart.TensorId(popart.reservedGradientPrefix() + i4),
-            popart.TensorId(popart.reservedGradientPrefix() + i6)
+            popart.reservedGradientPrefix() + Y1,
+            popart.reservedGradientPrefix() + i1,
+            popart.reservedGradientPrefix() + i2,
+            popart.reservedGradientPrefix() + i3,
+            popart.reservedGradientPrefix() + i4,
+            popart.reservedGradientPrefix() + i6
         ])
         return [
             Y1,
-            popart.TensorId(popart.reservedGradientPrefix() + Y1),
-            popart.TensorId(popart.reservedGradientPrefix() + i1),  # input
-            popart.TensorId(popart.reservedGradientPrefix() + i2),  # input/1
-            popart.TensorId(popart.reservedGradientPrefix() + i3),  # input/2 
-            popart.TensorId(popart.reservedGradientPrefix() + i4),  # input/3
-            popart.TensorId(popart.reservedGradientPrefix() + i6)  # input/4
+            popart.reservedGradientPrefix() + Y1,
+            popart.reservedGradientPrefix() + i1,  # input
+            popart.reservedGradientPrefix() + i2,  # input/1
+            popart.reservedGradientPrefix() + i3,  # input/2 
+            popart.reservedGradientPrefix() + i4,  # input/3
+            popart.reservedGradientPrefix() + i6  # input/4
         ]
 
     def reference(ref_data):

@@ -629,7 +629,7 @@ bool MergeVarUpdates::apply(Graph &graph) const {
 
           reshapeOp->connectInTensor(ReshapeBaseOp::getInIndex(), tensor->id);
 
-          auto reshapeOutId = getReshapedPrefix() + tensor->id.str() + "_s" +
+          auto reshapeOutId = getReshapedPrefix() + tensor->id + "_s" +
                               std::to_string(start) + "_e" +
                               std::to_string(end);
 

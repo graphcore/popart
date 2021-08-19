@@ -66,8 +66,8 @@ def test_squeeze_grad(op_tester):
         builder.addOutputTensor(o)
         return [
             o,
-            popart.TensorId(popart.reservedGradientPrefix() + i1),
-            popart.TensorId(popart.reservedGradientPrefix() + o)
+            popart.reservedGradientPrefix() + i1,
+            popart.reservedGradientPrefix() + o
         ]
 
     def reference(ref_data):
@@ -90,8 +90,8 @@ def test_squeeze_limited_grad(op_tester):
         builder.addOutputTensor(o)
         return [
             o,
-            popart.TensorId(popart.reservedGradientPrefix() + i1),
-            popart.TensorId(popart.reservedGradientPrefix() + o)
+            popart.reservedGradientPrefix() + i1,
+            popart.reservedGradientPrefix() + o
         ]
 
     def reference(ref_data):

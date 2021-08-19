@@ -163,16 +163,14 @@ def test_weight_tensor_location_settings_plus_override():
     ir = get_ir(weight_tensor_location_settings=popart.TensorLocationSettings(
         popart.TensorStorage.OffChip, 0),
                 tensor_location_setting_override={
-                    popart.TensorId('W2'):
-                    popart.TensorLocation(popart.TensorStorage.OnChip)
+                    'W2': popart.TensorLocation(popart.TensorStorage.OnChip)
                 })
     check_ir(ir, check_onchip=['W2'], check_offchip=['W0', 'W1'])
 
     ir = get_ir(weight_tensor_location_settings=popart.TensorLocationSettings(
         popart.TensorStorage.OnChip, 0),
                 tensor_location_setting_override={
-                    popart.TensorId('W1'):
-                    popart.TensorLocation(popart.TensorStorage.OffChip)
+                    'W1': popart.TensorLocation(popart.TensorStorage.OffChip)
                 })
     check_ir(ir, check_onchip=['W0', 'W2'], check_offchip=['W1'])
 
@@ -208,7 +206,7 @@ def test_activation_tensor_location_settings_plus_override():
         activation_tensor_location_settings=popart.TensorLocationSettings(
             popart.TensorStorage.OffChip, 0),
         tensor_location_setting_override={
-            popart.TensorId('MatMul:0/1__t6'):
+            'MatMul:0/1__t6':
             popart.TensorLocation(popart.TensorStorage.OnChip)
         })
     check_ir(ir,
@@ -220,7 +218,7 @@ def test_activation_tensor_location_settings_plus_override():
         activation_tensor_location_settings=popart.TensorLocationSettings(
             popart.TensorStorage.OnChip, 0),
         tensor_location_setting_override={
-            popart.TensorId('MatMul:0/1__t6'):
+            'MatMul:0/1__t6':
             popart.TensorLocation(popart.TensorStorage.OffChip)
         })
     check_ir(ir,
@@ -271,8 +269,7 @@ def test_accumulator_tensor_location_settings_plus_override():
         accumulator_tensor_location_settings=popart.TensorLocationSettings(
             popart.TensorStorage.OffChip, 0),
         tensor_location_setting_override={
-            popart.TensorId('Accl___W1'):
-            popart.TensorLocation(popart.TensorStorage.OnChip)
+            'Accl___W1': popart.TensorLocation(popart.TensorStorage.OnChip)
         },
         optimizer=optimizer_with_state)
     check_ir(ir,
@@ -283,8 +280,7 @@ def test_accumulator_tensor_location_settings_plus_override():
         accumulator_tensor_location_settings=popart.TensorLocationSettings(
             popart.TensorStorage.OnChip, 0),
         tensor_location_setting_override={
-            popart.TensorId('Accl___W1'):
-            popart.TensorLocation(popart.TensorStorage.OffChip)
+            'Accl___W1': popart.TensorLocation(popart.TensorStorage.OffChip)
         },
         optimizer=optimizer_with_state)
     check_ir(ir,

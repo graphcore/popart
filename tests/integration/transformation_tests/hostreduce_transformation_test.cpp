@@ -204,41 +204,39 @@ BOOST_AUTO_TEST_CASE(HostReduceTransformationSessionRun) {
 
   BOOST_REQUIRE(session->getHostReduceStreamIds().size() == 4);
   // Careful iterating over getHostReduceStreamIds, no guarantee for order.
-  for (const auto &streamId : session->getHostReduceStreamIds()) {
-    std::string streamIdStr = streamId.str();
-    if (streamIdStr.compare(0,
-                            strlen(gradientStoreStreamPrefix),
-                            gradientStoreStreamPrefix) == 0) {
-      const auto grad_id =
-          streamIdStr.substr(strlen(gradientStoreStreamPrefix));
+  for (const auto &stream_id : session->getHostReduceStreamIds()) {
+    if (stream_id.compare(0,
+                          strlen(gradientStoreStreamPrefix),
+                          gradientStoreStreamPrefix) == 0) {
+      const auto grad_id = stream_id.substr(strlen(gradientStoreStreamPrefix));
       if (grad_id == getGradId(A_id)) {
         void *dst   = raw_A_grad_out.data();
         size_t size = A_info.nbytes();
         session->connectStreamToCallback(
-            streamIdStr, [dst, size](void *g) { std::memcpy(dst, g, size); });
+            stream_id, [dst, size](void *g) { std::memcpy(dst, g, size); });
       } else if (grad_id == getGradId(B_id)) {
         void *dst   = raw_B_grad_out.data();
         size_t size = B_info.nbytes();
         session->connectStreamToCallback(
-            streamIdStr, [dst, size](void *g) { std::memcpy(dst, g, size); });
+            stream_id, [dst, size](void *g) { std::memcpy(dst, g, size); });
       }
-    } else if (streamIdStr.compare(0,
-                                   strlen(weightLoadStreamPrefix),
-                                   weightLoadStreamPrefix) == 0) {
-      const auto weight_id = streamIdStr.substr(strlen(weightLoadStreamPrefix));
+    } else if (stream_id.compare(0,
+                                 strlen(weightLoadStreamPrefix),
+                                 weightLoadStreamPrefix) == 0) {
+      const auto weight_id = stream_id.substr(strlen(weightLoadStreamPrefix));
       if (weight_id == A_id) {
         void *src   = A_dummy_data.data();
         size_t size = A_info.nbytes();
         session->connectStreamToCallback(
-            streamIdStr, [src, size](void *w) { std::memcpy(w, src, size); });
+            stream_id, [src, size](void *w) { std::memcpy(w, src, size); });
       } else if (weight_id == B_id) {
         void *src   = B_dummy_data.data();
         size_t size = B_info.nbytes();
         session->connectStreamToCallback(
-            streamIdStr, [src, size](void *w) { std::memcpy(w, src, size); });
+            stream_id, [src, size](void *w) { std::memcpy(w, src, size); });
       }
     } else {
-      throw error("Unexpected stream id " + streamIdStr);
+      throw error("Unexpected stream id " + stream_id);
     }
   }
 
@@ -420,12 +418,12 @@ BOOST_AUTO_TEST_CASE(HostReduceTransformationVarUpdateExecutionOrder) {
 
   std::mutex callbackMutex;
   std::vector<std::string> callback_handles;
-  for (const auto &streamId : session->getHostReduceStreamIds()) {
-    std::string streamIdStr = streamId.str();
+  for (const auto &stream_id : session->getHostReduceStreamIds()) {
+
     session->connectStreamToCallback(
-        streamIdStr, [&callbackMutex, &callback_handles, streamIdStr](void *g) {
+        stream_id, [&callbackMutex, &callback_handles, stream_id](void *g) {
           const std::lock_guard<std::mutex> callbackLock(callbackMutex);
-          callback_handles.push_back(streamIdStr);
+          callback_handles.push_back(stream_id);
         });
   }
 
@@ -593,18 +591,17 @@ BOOST_AUTO_TEST_CASE(HostReduceHierarchicalReductionWithReplicatedGraphs) {
 
     std::mutex callbackMutex;
     std::unordered_map<TensorId, std::vector<float>> gradients;
-    for (const auto &streamId : session->getHostReduceStreamIds()) {
-      std::string streamIdStr = streamId.str();
-      if (streamIdStr.compare(0,
-                              strlen(gradientStoreStreamPrefix),
-                              gradientStoreStreamPrefix) == 0) {
+    for (const auto &stream_id : session->getHostReduceStreamIds()) {
+      if (stream_id.compare(0,
+                            strlen(gradientStoreStreamPrefix),
+                            gradientStoreStreamPrefix) == 0) {
         const auto grad_id =
-            streamIdStr.substr(strlen(gradientStoreStreamPrefix));
+            stream_id.substr(strlen(gradientStoreStreamPrefix));
         const int64_t nelms = idToInfo[grad_id].nelms();
 
         for (int i = 0; i < replicationFactor; ++i) {
           session->connectStreamToCallback(
-              streamIdStr,
+              stream_id,
               [&callbackMutex, &gradients, grad_id, nelms](void *g) {
                 const std::lock_guard<std::mutex> callbackLock(callbackMutex);
                 float *f      = reinterpret_cast<float *>(g);
@@ -624,14 +621,13 @@ BOOST_AUTO_TEST_CASE(HostReduceHierarchicalReductionWithReplicatedGraphs) {
               },
               i);
         }
-      } else if (streamIdStr.compare(0,
-                                     strlen(weightLoadStreamPrefix),
-                                     weightLoadStreamPrefix) == 0) {
-        const auto weight_id =
-            streamIdStr.substr(strlen(weightLoadStreamPrefix));
-        const int64_t nelms = idToInfo[getGradId(weight_id)].nelms();
+      } else if (stream_id.compare(0,
+                                   strlen(weightLoadStreamPrefix),
+                                   weightLoadStreamPrefix) == 0) {
+        const auto weight_id = stream_id.substr(strlen(weightLoadStreamPrefix));
+        const int64_t nelms  = idToInfo[getGradId(weight_id)].nelms();
         session->connectStreamToCallback(
-            streamIdStr, [&callbackMutex, nelms](void *w) {
+            stream_id, [&callbackMutex, nelms](void *w) {
               const std::lock_guard<std::mutex> callbackLock(callbackMutex);
               float *f = reinterpret_cast<float *>(w);
               std::fill(f, f + nelms, 42.0f);
@@ -892,36 +888,35 @@ BOOST_AUTO_TEST_CASE(HostReduceTransformationGradientStoreGradientLoad) {
 
   std::mutex callbackMutex;
   std::vector<std::string> callback_handles;
-  for (const auto &streamId : session->getHostReduceStreamIds()) {
-    std::string streamIdStr = streamId.str();
-    if (streamIdStr.compare(0,
-                            strlen(gradientStoreStreamPrefix),
-                            gradientStoreStreamPrefix) == 0) {
+  for (const auto &stream_id : session->getHostReduceStreamIds()) {
+    if (stream_id.compare(0,
+                          strlen(gradientStoreStreamPrefix),
+                          gradientStoreStreamPrefix) == 0) {
       session->connectStreamToCallback(
-          streamIdStr,
-          [&callbackMutex, &callback_handles, &idToGradVal, streamIdStr](
+          stream_id,
+          [&callbackMutex, &callback_handles, &idToGradVal, stream_id](
               void *g) {
             const std::lock_guard<std::mutex> callbackLock(callbackMutex);
-            callback_handles.push_back(streamIdStr);
+            callback_handles.push_back(stream_id);
             const auto grad_id =
-                streamIdStr.substr(strlen(gradientStoreStreamPrefix));
+                stream_id.substr(strlen(gradientStoreStreamPrefix));
             float *f             = reinterpret_cast<float *>(g);
             idToGradVal[grad_id] = f[0];
           });
-    } else if (streamIdStr.compare(0,
-                                   strlen(gradientLoadStreamPrefix),
-                                   gradientLoadStreamPrefix) == 0) {
+    } else if (stream_id.compare(0,
+                                 strlen(gradientLoadStreamPrefix),
+                                 gradientLoadStreamPrefix) == 0) {
       session->connectStreamToCallback(
-          streamIdStr,
+          stream_id,
           [&callbackMutex,
            &callback_handles,
            &idToGradVal,
            &idToInfo,
-           streamIdStr](void *g) {
+           stream_id](void *g) {
             const std::lock_guard<std::mutex> callbackLock(callbackMutex);
-            callback_handles.push_back(streamIdStr);
+            callback_handles.push_back(stream_id);
             const auto grad_id =
-                streamIdStr.substr(strlen(gradientLoadStreamPrefix));
+                stream_id.substr(strlen(gradientLoadStreamPrefix));
             const float grad_val = idToGradVal[grad_id];
             const size_t nelms   = idToInfo[grad_id].nelms();
             float *f             = reinterpret_cast<float *>(g);
@@ -1125,32 +1120,31 @@ BOOST_AUTO_TEST_CASE(
     session->prepareDevice();
 
     std::mutex callbackMutex;
-    for (const auto &streamId : session->getHostReduceStreamIds()) {
-      std::string streamIdStr = streamId.str();
-      if (streamIdStr.compare(0,
-                              strlen(gradientStoreStreamPrefix),
-                              gradientStoreStreamPrefix) == 0) {
+    for (const auto &stream_id : session->getHostReduceStreamIds()) {
+      if (stream_id.compare(0,
+                            strlen(gradientStoreStreamPrefix),
+                            gradientStoreStreamPrefix) == 0) {
         for (int i = 0; i < replicationFactor; ++i) {
           session->connectStreamToCallback(
-              streamIdStr,
-              [&callbackMutex, &idToGradVal, streamIdStr](void *g) {
+              stream_id,
+              [&callbackMutex, &idToGradVal, stream_id](void *g) {
                 const std::lock_guard<std::mutex> callbackLock(callbackMutex);
                 const auto grad_id =
-                    streamIdStr.substr(strlen(gradientStoreStreamPrefix));
+                    stream_id.substr(strlen(gradientStoreStreamPrefix));
                 float *f             = reinterpret_cast<float *>(g);
                 idToGradVal[grad_id] = f[0] / (float)replicationFactor;
               },
               i);
         }
-      } else if (streamIdStr.compare(0,
-                                     strlen(gradientLoadStreamPrefix),
-                                     gradientLoadStreamPrefix) == 0) {
+      } else if (stream_id.compare(0,
+                                   strlen(gradientLoadStreamPrefix),
+                                   gradientLoadStreamPrefix) == 0) {
         session->connectStreamToCallback(
-            streamIdStr,
-            [&callbackMutex, &idToGradVal, &idToInfo, streamIdStr](void *g) {
+            stream_id,
+            [&callbackMutex, &idToGradVal, &idToInfo, stream_id](void *g) {
               const std::lock_guard<std::mutex> callbackLock(callbackMutex);
               const auto grad_id =
-                  streamIdStr.substr(strlen(gradientLoadStreamPrefix));
+                  stream_id.substr(strlen(gradientLoadStreamPrefix));
               const float grad_val = idToGradVal[grad_id];
               const size_t nelms   = idToInfo[grad_id].nelms();
               float *f             = reinterpret_cast<float *>(g);
@@ -1409,37 +1403,35 @@ BOOST_AUTO_TEST_CASE(HostReduceTransformationWithAccumulation) {
 
     std::mutex callbackMutex;
     std::vector<std::string> callback_handles;
-    for (const auto &streamId : session->getHostReduceStreamIds()) {
-      std::string streamIdStr = streamId.str();
-      if (streamIdStr.compare(0,
-                              strlen(gradientStoreStreamPrefix),
-                              gradientStoreStreamPrefix) == 0) {
+    for (const auto &stream_id : session->getHostReduceStreamIds()) {
+      if (stream_id.compare(0,
+                            strlen(gradientStoreStreamPrefix),
+                            gradientStoreStreamPrefix) == 0) {
         session->connectStreamToCallback(
-            streamIdStr,
-            [&callbackMutex, &callback_handles, &idToGrad, streamIdStr](
-                void *g) {
+            stream_id,
+            [&callbackMutex, &callback_handles, &idToGrad, stream_id](void *g) {
               const std::lock_guard<std::mutex> callbackLock(callbackMutex);
-              callback_handles.push_back(streamIdStr);
+              callback_handles.push_back(stream_id);
               const auto grad_id =
-                  streamIdStr.substr(strlen(gradientStoreStreamPrefix));
+                  stream_id.substr(strlen(gradientStoreStreamPrefix));
               float *f   = reinterpret_cast<float *>(g);
               auto &grad = idToGrad.at(grad_id);
               std::copy(f, f + grad.size(), grad.data());
             });
-      } else if (streamIdStr.compare(0,
-                                     strlen(gradientLoadStreamPrefix),
-                                     gradientLoadStreamPrefix) == 0) {
+      } else if (stream_id.compare(0,
+                                   strlen(gradientLoadStreamPrefix),
+                                   gradientLoadStreamPrefix) == 0) {
         session->connectStreamToCallback(
-            streamIdStr,
+            stream_id,
             [&callbackMutex,
              &callback_handles,
              &idToGrad,
              &idToInfo,
-             streamIdStr](void *g) {
+             stream_id](void *g) {
               const std::lock_guard<std::mutex> callbackLock(callbackMutex);
-              callback_handles.push_back(streamIdStr);
+              callback_handles.push_back(stream_id);
               const auto grad_id =
-                  streamIdStr.substr(strlen(gradientLoadStreamPrefix));
+                  stream_id.substr(strlen(gradientLoadStreamPrefix));
               const auto &grad = idToGrad.at(grad_id);
               float *f         = reinterpret_cast<float *>(g);
               std::copy(grad.begin(), grad.end(), f);
@@ -1688,34 +1680,31 @@ BOOST_AUTO_TEST_CASE(HostReduceTransformationWithPipelining) {
 
     std::mutex callbackMutex;
     std::vector<std::string> callback_handles;
-    for (const auto &streamId : session->getHostReduceStreamIds()) {
-      std::string streamIdStr = streamId.str();
-      if (streamIdStr.compare(0,
-                              strlen(gradientStoreStreamPrefix),
-                              gradientStoreStreamPrefix) == 0) {
+    for (const auto &stream_id : session->getHostReduceStreamIds()) {
+      if (stream_id.compare(0,
+                            strlen(gradientStoreStreamPrefix),
+                            gradientStoreStreamPrefix) == 0) {
         session->connectStreamToCallback(
-            streamIdStr,
-            [&callbackMutex, &callback_handles, &idToGrad, streamIdStr](
-                void *g) {
+            stream_id,
+            [&callbackMutex, &callback_handles, &idToGrad, stream_id](void *g) {
               const std::lock_guard<std::mutex> callbackLock(callbackMutex);
-              callback_handles.push_back(streamIdStr);
+              callback_handles.push_back(stream_id);
               const auto grad_id =
-                  streamIdStr.substr(strlen(gradientStoreStreamPrefix));
+                  stream_id.substr(strlen(gradientStoreStreamPrefix));
               float *f   = reinterpret_cast<float *>(g);
               auto &grad = idToGrad.at(grad_id);
               std::copy(f, f + grad.size(), grad.data());
             });
-      } else if (streamIdStr.compare(0,
-                                     strlen(gradientLoadStreamPrefix),
-                                     gradientLoadStreamPrefix) == 0) {
+      } else if (stream_id.compare(0,
+                                   strlen(gradientLoadStreamPrefix),
+                                   gradientLoadStreamPrefix) == 0) {
         session->connectStreamToCallback(
-            streamIdStr,
-            [&callbackMutex, &callback_handles, &idToGrad, streamIdStr](
-                void *g) {
+            stream_id,
+            [&callbackMutex, &callback_handles, &idToGrad, stream_id](void *g) {
               const std::lock_guard<std::mutex> callbackLock(callbackMutex);
-              callback_handles.push_back(streamIdStr);
+              callback_handles.push_back(stream_id);
               const auto grad_id =
-                  streamIdStr.substr(strlen(gradientLoadStreamPrefix));
+                  stream_id.substr(strlen(gradientLoadStreamPrefix));
               const auto &grad = idToGrad.at(grad_id);
               float *f         = reinterpret_cast<float *>(g);
               std::copy(grad.begin(), grad.end(), f);
@@ -1960,34 +1949,31 @@ BOOST_AUTO_TEST_CASE(HostReduceTransformationWithPipeliningAndAccumulation) {
 
     std::mutex callbackMutex;
     std::vector<std::string> callback_handles;
-    for (const auto &streamId : session->getHostReduceStreamIds()) {
-      std::string streamIdStr = streamId.str();
-      if (streamIdStr.compare(0,
-                              strlen(gradientStoreStreamPrefix),
-                              gradientStoreStreamPrefix) == 0) {
+    for (const auto &stream_id : session->getHostReduceStreamIds()) {
+      if (stream_id.compare(0,
+                            strlen(gradientStoreStreamPrefix),
+                            gradientStoreStreamPrefix) == 0) {
         session->connectStreamToCallback(
-            streamIdStr,
-            [&callbackMutex, &callback_handles, &idToGrad, streamIdStr](
-                void *g) {
+            stream_id,
+            [&callbackMutex, &callback_handles, &idToGrad, stream_id](void *g) {
               const std::lock_guard<std::mutex> callbackLock(callbackMutex);
-              callback_handles.push_back(streamIdStr);
+              callback_handles.push_back(stream_id);
               const auto grad_id =
-                  streamIdStr.substr(strlen(gradientStoreStreamPrefix));
+                  stream_id.substr(strlen(gradientStoreStreamPrefix));
               float *f   = reinterpret_cast<float *>(g);
               auto &grad = idToGrad.at(grad_id);
               std::copy(f, f + grad.size(), grad.data());
             });
-      } else if (streamIdStr.compare(0,
-                                     strlen(gradientLoadStreamPrefix),
-                                     gradientLoadStreamPrefix) == 0) {
+      } else if (stream_id.compare(0,
+                                   strlen(gradientLoadStreamPrefix),
+                                   gradientLoadStreamPrefix) == 0) {
         session->connectStreamToCallback(
-            streamIdStr,
-            [&callbackMutex, &callback_handles, &idToGrad, streamIdStr](
-                void *g) {
+            stream_id,
+            [&callbackMutex, &callback_handles, &idToGrad, stream_id](void *g) {
               const std::lock_guard<std::mutex> callbackLock(callbackMutex);
-              callback_handles.push_back(streamIdStr);
+              callback_handles.push_back(stream_id);
               const auto grad_id =
-                  streamIdStr.substr(strlen(gradientLoadStreamPrefix));
+                  stream_id.substr(strlen(gradientLoadStreamPrefix));
               const auto &grad = idToGrad.at(grad_id);
               float *f         = reinterpret_cast<float *>(g);
               std::copy(grad.begin(), grad.end(), f);
@@ -2150,27 +2136,25 @@ BOOST_AUTO_TEST_CASE(OATTSimpleTest, *boost::unit_test::disabled()) {
   std::mutex callbackMutex;
   std::vector<std::string> callback_handles;
   std::vector<float> temp_buffer(N * N);
-  for (const auto &streamId : session->getHostReduceStreamIds()) {
-    std::string streamIdStr = streamId.str();
-    if (streamIdStr.compare(0,
-                            strlen(gradientStoreStreamPrefix),
-                            gradientStoreStreamPrefix) == 0) {
-      session->connectStreamToCallback(streamIdStr, [&, streamIdStr](void *g) {
+  for (const auto &stream_id : session->getHostReduceStreamIds()) {
+    if (stream_id.compare(0,
+                          strlen(gradientStoreStreamPrefix),
+                          gradientStoreStreamPrefix) == 0) {
+      session->connectStreamToCallback(stream_id, [&, stream_id](void *g) {
         const std::lock_guard<std::mutex> callbackLock(callbackMutex);
-        callback_handles.push_back(streamIdStr);
+        callback_handles.push_back(stream_id);
         const auto grad_id =
-            streamIdStr.substr(strlen(gradientStoreStreamPrefix));
+            stream_id.substr(strlen(gradientStoreStreamPrefix));
         session->copyFromRemoteBuffer(grad_id, temp_buffer.data(), 0);
         idToGradVal[grad_id] = temp_buffer[0];
       });
-    } else if (streamIdStr.compare(0,
-                                   strlen(gradientLoadStreamPrefix),
-                                   gradientLoadStreamPrefix) == 0) {
-      session->connectStreamToCallback(streamIdStr, [&, streamIdStr](void *g) {
+    } else if (stream_id.compare(0,
+                                 strlen(gradientLoadStreamPrefix),
+                                 gradientLoadStreamPrefix) == 0) {
+      session->connectStreamToCallback(stream_id, [&, stream_id](void *g) {
         const std::lock_guard<std::mutex> callbackLock(callbackMutex);
-        callback_handles.push_back(streamIdStr);
-        const auto grad_id =
-            streamIdStr.substr(strlen(gradientLoadStreamPrefix));
+        callback_handles.push_back(stream_id);
+        const auto grad_id = stream_id.substr(strlen(gradientLoadStreamPrefix));
 
         const float grad_val = idToGradVal.at(grad_id);
         std::fill(temp_buffer.begin(), temp_buffer.end(), grad_val);
@@ -2430,32 +2414,29 @@ BOOST_AUTO_TEST_CASE(OATTWithAccumulation, *boost::unit_test::disabled()) {
     session->weightsFromHost();
     std::mutex callbackMutex;
     std::vector<std::string> callback_handles;
-    for (const auto &streamId : session->getHostReduceStreamIds()) {
-      std::string streamIdStr = streamId.str();
-      if (streamIdStr.compare(0,
-                              strlen(gradientStoreStreamPrefix),
-                              gradientStoreStreamPrefix) == 0) {
-        session->connectStreamToCallback(
-            streamIdStr, [&, streamIdStr](void *g) {
-              const std::lock_guard<std::mutex> callbackLock(callbackMutex);
-              callback_handles.push_back(streamIdStr);
-              const auto grad_id =
-                  streamIdStr.substr(strlen(gradientStoreStreamPrefix));
-              auto &grad = idToGrad.at(grad_id);
-              session->copyFromRemoteBuffer(grad_id, grad.data(), 0);
-            });
-      } else if (streamIdStr.compare(0,
-                                     strlen(gradientLoadStreamPrefix),
-                                     gradientLoadStreamPrefix) == 0) {
-        session->connectStreamToCallback(
-            streamIdStr, [&, streamIdStr](void *g) {
-              const std::lock_guard<std::mutex> callbackLock(callbackMutex);
-              callback_handles.push_back(streamIdStr);
-              const auto grad_id =
-                  streamIdStr.substr(strlen(gradientLoadStreamPrefix));
-              auto &grad = idToGrad.at(grad_id);
-              session->copyToRemoteBuffer(grad.data(), grad_id, 0);
-            });
+    for (const auto &stream_id : session->getHostReduceStreamIds()) {
+      if (stream_id.compare(0,
+                            strlen(gradientStoreStreamPrefix),
+                            gradientStoreStreamPrefix) == 0) {
+        session->connectStreamToCallback(stream_id, [&, stream_id](void *g) {
+          const std::lock_guard<std::mutex> callbackLock(callbackMutex);
+          callback_handles.push_back(stream_id);
+          const auto grad_id =
+              stream_id.substr(strlen(gradientStoreStreamPrefix));
+          auto &grad = idToGrad.at(grad_id);
+          session->copyFromRemoteBuffer(grad_id, grad.data(), 0);
+        });
+      } else if (stream_id.compare(0,
+                                   strlen(gradientLoadStreamPrefix),
+                                   gradientLoadStreamPrefix) == 0) {
+        session->connectStreamToCallback(stream_id, [&, stream_id](void *g) {
+          const std::lock_guard<std::mutex> callbackLock(callbackMutex);
+          callback_handles.push_back(stream_id);
+          const auto grad_id =
+              stream_id.substr(strlen(gradientLoadStreamPrefix));
+          auto &grad = idToGrad.at(grad_id);
+          session->copyToRemoteBuffer(grad.data(), grad_id, 0);
+        });
       }
     }
 
@@ -2688,32 +2669,29 @@ BOOST_AUTO_TEST_CASE(OATTWithPipeliningAndAccumulation,
     session->weightsFromHost();
     std::mutex callbackMutex;
     std::vector<std::string> callback_handles;
-    for (const auto &streamId : session->getHostReduceStreamIds()) {
-      std::string streamIdStr = streamId.str();
-      if (streamIdStr.compare(0,
-                              strlen(gradientStoreStreamPrefix),
-                              gradientStoreStreamPrefix) == 0) {
-        session->connectStreamToCallback(
-            streamIdStr, [&, streamIdStr](void *g) {
-              const std::lock_guard<std::mutex> callbackLock(callbackMutex);
-              callback_handles.push_back(streamIdStr);
-              const auto grad_id =
-                  streamIdStr.substr(strlen(gradientStoreStreamPrefix));
-              auto &grad = idToGrad.at(grad_id);
-              session->copyFromRemoteBuffer(grad_id, grad.data(), 0);
-            });
-      } else if (streamIdStr.compare(0,
-                                     strlen(gradientLoadStreamPrefix),
-                                     gradientLoadStreamPrefix) == 0) {
-        session->connectStreamToCallback(
-            streamIdStr, [&, streamIdStr](void *g) {
-              const std::lock_guard<std::mutex> callbackLock(callbackMutex);
-              callback_handles.push_back(streamIdStr);
-              const auto grad_id =
-                  streamIdStr.substr(strlen(gradientLoadStreamPrefix));
-              auto &grad = idToGrad.at(grad_id);
-              session->copyToRemoteBuffer(grad.data(), grad_id, 0);
-            });
+    for (const auto &stream_id : session->getHostReduceStreamIds()) {
+      if (stream_id.compare(0,
+                            strlen(gradientStoreStreamPrefix),
+                            gradientStoreStreamPrefix) == 0) {
+        session->connectStreamToCallback(stream_id, [&, stream_id](void *g) {
+          const std::lock_guard<std::mutex> callbackLock(callbackMutex);
+          callback_handles.push_back(stream_id);
+          const auto grad_id =
+              stream_id.substr(strlen(gradientStoreStreamPrefix));
+          auto &grad = idToGrad.at(grad_id);
+          session->copyFromRemoteBuffer(grad_id, grad.data(), 0);
+        });
+      } else if (stream_id.compare(0,
+                                   strlen(gradientLoadStreamPrefix),
+                                   gradientLoadStreamPrefix) == 0) {
+        session->connectStreamToCallback(stream_id, [&, stream_id](void *g) {
+          const std::lock_guard<std::mutex> callbackLock(callbackMutex);
+          callback_handles.push_back(stream_id);
+          const auto grad_id =
+              stream_id.substr(strlen(gradientLoadStreamPrefix));
+          auto &grad = idToGrad.at(grad_id);
+          session->copyToRemoteBuffer(grad.data(), grad_id, 0);
+        });
       }
     }
 

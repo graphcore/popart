@@ -146,7 +146,7 @@ bool DataFlow::isBatchCountingRequired() const { return (!rps().empty()); }
 
 AnchorReturnType DataFlow::art(TensorId anchorId) const {
   if (!isAnchored(anchorId)) {
-    throw error("Tensor " + anchorId.str() + " is not an anchor");
+    throw error("Tensor " + anchorId + " is not an anchor");
   }
 
   return m_anchors.at(anchorId);

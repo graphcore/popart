@@ -38,9 +38,9 @@ def test_auto_loss_scaling_clip_final_loss_scale(w_dtype, loss_dtype_str,
     loss_dtype = np.float16 if loss_dtype_str == 'FLOAT16' else np.float32
 
     # Tensor names to anchor
-    fls = popart.TensorId("finalLossScale")
-    ils = popart.TensorId("finalInverseLossScale_0")
-    lsf = popart.TensorId("lossScaleUpdateFactor")
+    fls = "finalLossScale"
+    ils = "finalInverseLossScale_0"
+    lsf = "lossScaleUpdateFactor"
 
     builder = popart.Builder()
 

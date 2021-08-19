@@ -2027,10 +2027,10 @@ BOOST_AUTO_TEST_CASE(session_run_from_serialized_exe_update_optimizer) {
     const auto &optimizerTensors =
         session->getExecutable().getOptimizerTensors();
     for (const auto &o : optimizerTensors) {
-      if (boost::algorithm::icontains(o->id.str(), "learning")) {
+      if (boost::algorithm::icontains(o->id, "learning")) {
         float val = *reinterpret_cast<float *>(o->tensorData()->data());
         BOOST_CHECK(val == newLearningRate);
-      } else if (boost::algorithm::icontains(o->id.str(), "momentum")) {
+      } else if (boost::algorithm::icontains(o->id, "momentum")) {
         float val = *reinterpret_cast<float *>(o->tensorData()->data());
         BOOST_CHECK(val == newMomentum);
       }

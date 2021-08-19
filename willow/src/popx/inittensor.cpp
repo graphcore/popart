@@ -151,7 +151,7 @@ bool InitTensorCreator::initTensor(IrLowering &irLowering) const {
   Tensor *tensor = irLowering.ir().getTensor(getDstId());
 
   auto inputAndView = candidate->createInput(
-      {poplar::DebugNameAndId(getDstId().str() + "_tmp",
+      {poplar::DebugNameAndId(getDstId() + "_tmp",
                               tensor->getDebugInfo().getId(),
                               tensor->getDebugInfo().getPathName())});
 
@@ -175,7 +175,7 @@ bool InitTensorCreator::initTensor(IrLowering &irLowering) const {
   auto input = snap::Tensor{
       irLowering.graph().getPoplarGraph().clone(
           inputAndView.first.getPoplarTensor(),
-          {poplar::DebugNameAndId(getDstId().str(),
+          {poplar::DebugNameAndId(getDstId(),
                                   tensor->getDebugInfo().getId(),
                                   tensor->getDebugInfo().getPathName())}),
       irLowering.graph()};

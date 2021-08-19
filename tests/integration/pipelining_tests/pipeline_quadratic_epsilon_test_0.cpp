@@ -169,9 +169,8 @@ BOOST_AUTO_TEST_CASE(QuadraticEpsilolTest0) {
           builder->addInitializedInputTensor(allWeightCvds.back()));
       TensorId addActOutId = "addAct" + std::to_string(nLayersAdded);
       TensorId sigActOutId = "sigAct" + std::to_string(nLayersAdded);
-      auto addOut =
-          aiOnnx.add({allWeightIds.back(), actInId}, addActOutId.str());
-      auto sigOut = aiOnnx.sigmoid({addOut}, sigActOutId.str());
+      auto addOut = aiOnnx.add({allWeightIds.back(), actInId}, addActOutId);
+      auto sigOut = aiOnnx.sigmoid({addOut}, sigActOutId);
       allSigActIds.push_back(sigOut);
 
       weightsRead.insert(allWeightIds.back(),

@@ -64,8 +64,8 @@ def test_upsample_grad(op_tester):
             builder.addOutputTensor(o)
             return [
                 o,
-                popart.TensorId(popart.reservedGradientPrefix() + d),
-                popart.TensorId(popart.reservedGradientPrefix() + o),
+                popart.reservedGradientPrefix() + d,
+                popart.reservedGradientPrefix() + o,
             ]
 
         def reference(ref_data):

@@ -151,9 +151,9 @@ public:
 
   const ExchangeDirection &getDirection() const { return direction; }
 
-  bool isRemoteExchange() const { return hostStreamTensorId.str().empty(); }
+  bool isRemoteExchange() const { return hostStreamTensorId.empty(); }
 
-  bool isHostExchange() const { return !hostStreamTensorId.str().empty(); }
+  bool isHostExchange() const { return !hostStreamTensorId.empty(); }
 
   const RemoteBufferId &getRemoteBufferId() const { return remoteBufferId; }
   void setRemoteBufferId(RemoteBufferId id) { remoteBufferId = id; }

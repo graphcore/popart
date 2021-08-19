@@ -3,10 +3,10 @@
 #define GUARD_NEURALNET_TENSOR_DEBUGINFO_HPP
 
 #include <popart/debugcontext.hpp>
-#include <popart/tensorid.hpp>
 
 namespace popart {
 
+using TensorId = std::string;
 class TensorInfo;
 enum class TensorType;
 

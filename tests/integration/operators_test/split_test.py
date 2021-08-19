@@ -61,8 +61,8 @@ def test_split_grad(op_tester):
 
         return [
             o,
-            popart.TensorId(popart.reservedGradientPrefix() + i),
-            popart.TensorId(popart.reservedGradientPrefix() + o)
+            popart.reservedGradientPrefix() + i,
+            popart.reservedGradientPrefix() + o
         ]
 
     def reference(ref_data):

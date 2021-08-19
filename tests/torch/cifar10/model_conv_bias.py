@@ -26,8 +26,8 @@ batchesPerStep = 3
 # return the l1 loss "out",
 # and the input tensor "image0"
 anchors = {
-    popart.TensorId("out"): popart.AnchorReturnType("Final"),
-    popart.TensorId("image0"): popart.AnchorReturnType("Final")
+    "out": popart.AnchorReturnType("Final"),
+    "image0": popart.AnchorReturnType("Final")
 }
 dataFlow = popart.DataFlow(batchesPerStep, anchors)
 
@@ -35,7 +35,7 @@ dataFlow = popart.DataFlow(batchesPerStep, anchors)
 # types must be fed into the Net constructor.
 # In this example there is 1 streamed input, image0.
 inputShapeInfo = popart.InputShapeInfo()
-inputShapeInfo.add(popart.TensorId("image0"),
+inputShapeInfo.add("image0",
                    popart.TensorInfo("FLOAT", [batchSize, nChans, 32, 32]))
 
 inNames = ["image0"]

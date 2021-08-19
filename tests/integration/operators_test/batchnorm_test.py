@@ -206,8 +206,8 @@ def test_batchnorm_train_0(op_tester):
 
         return [
             o_y,
-            popart.TensorId(popart.reservedGradientPrefix() + i1),
-            popart.TensorId(popart.reservedGradientPrefix() + o_y)
+            popart.reservedGradientPrefix() + i1,
+            popart.reservedGradientPrefix() + o_y
         ]
 
     def reference(ref_data):
@@ -285,8 +285,8 @@ def test_batchnorm_train_1(op_tester):
 
             return [
                 o_y,
-                popart.TensorId(popart.reservedGradientPrefix() + i1),
-                popart.TensorId(popart.reservedGradientPrefix() + o_y)
+                popart.reservedGradientPrefix() + i1,
+                popart.reservedGradientPrefix() + o_y
             ]
 
         def reference(ref_data):
@@ -329,8 +329,7 @@ def test_batchnorm_train_1(op_tester):
         for init in onnx_model.graph.initializer:
             as_numpy = np.array(init.float_data, dtype=np.float32)
             print(f'Checking {init.name} has been updated')
-            assert not np.allclose(initializers[popart.TensorId(init.name)],
-                                   as_numpy)
+            assert not np.allclose(initializers[init.name], as_numpy)
 
         os.remove(onnx_filename)
 
@@ -549,8 +548,8 @@ def test_batchnorm_train_nonspatial(op_tester):
 
         return [
             o_y,
-            popart.TensorId(popart.reservedGradientPrefix() + i1),
-            popart.TensorId(popart.reservedGradientPrefix() + o_y)
+            popart.reservedGradientPrefix() + i1,
+            popart.reservedGradientPrefix() + o_y
         ]
 
     def reference(ref_data):

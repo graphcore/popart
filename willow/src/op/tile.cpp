@@ -55,40 +55,39 @@ void TileOp::connectInTensor(InIndex inIndex, TensorId tenId) {
 
     // check 2 : that there is already a tensor with the shape tensor's name
     if (!getGraph().getTensors().contains(repeatId)) {
-      throw error("no Tensor named `" + repeatId.str() + "' recorded in Ir. " +
+      throw error("no Tensor named `" + repeatId + "' recorded in Ir. " +
                   " This is the second input in the TileOp constructor. ");
     }
     Tensor *repeatTensor = getGraph().getTensors().get(repeatId);
 
     // check 3 : that the tensor is of type constant
     if (repeatTensor->tensorType() != TensorType::Const) {
-      throw error("The 'Repeats' Tensor `" + repeatId.str() +
+      throw error("The 'Repeats' Tensor `" + repeatId +
                   "' must be of type Constant");
     }
 
     // check 4 : that the tensor has data
     if (!repeatTensor->hasTensorData()) {
-      throw error("The 'Repeats' Tensor `" + repeatId.str() +
-                  "' does not have data");
+      throw error("The 'Repeats' Tensor `" + repeatId + "' does not have data");
     }
     TensorData *tensorData = repeatTensor->tensorData();
 
     // check 5 : that the data is int64 (as per the ONNX spec)
     if (repeatTensor->info.dataType() != DataType::INT64) {
-      throw error("'Repeats' tensor `" + repeatId.str() +
-                  "' is not INT64, it is " + repeatTensor->info.data_type());
+      throw error("'Repeats' tensor `" + repeatId + "' is not INT64, it is " +
+                  repeatTensor->info.data_type());
     }
 
     // check 6 : that it is rank 1
     if (repeatTensor->info.rank() != 1) {
-      throw error("'Repeats' tensor `" + repeatId.str() +
+      throw error("'Repeats' tensor `" + repeatId +
                   "' should be rank 1 in TileOp constructor");
     }
 
     // check 7 : that its length is same as rank of input data tensor
     if (repeatTensor->info.nelms() != inInfo(getInIndex()).rank()) {
       throw error(
-          "'Repeats' tensor `" + repeatId.str() +
+          "'Repeats' tensor `" + repeatId +
           "' should have one element for each dimension of the data tensor");
     }
 
@@ -99,9 +98,9 @@ void TileOp::connectInTensor(InIndex inIndex, TensorId tenId) {
     int64_t *data   = static_cast<int64_t *>(tensorData->data());
     for (int i = 0; i < repeatTensor->info.dim(0); ++i) {
       if (data[i] < 1) {
-        throw error("'Repeats' tensor `" + repeatId.str() +
-                    "' has invalid value `" + std::to_string(data[i]) +
-                    "' at index " + std::to_string(i));
+        throw error("'Repeats' tensor `" + repeatId + "' has invalid value `" +
+                    std::to_string(data[i]) + "' at index " +
+                    std::to_string(i));
       }
       outShape.push_back(inputShape[i] * data[i]);
       repeats.push_back(data[i]);

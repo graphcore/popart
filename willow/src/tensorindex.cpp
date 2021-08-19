@@ -46,7 +46,7 @@ std::vector<TensorId> TensorIndexMap::getSerialised() const {
       maxIndex = ind_tensor.first;
     }
   }
-  std::vector<TensorId> serialised(maxIndex + 1, TensorId(""));
+  std::vector<TensorId> serialised(maxIndex + 1, "");
   for (auto &ind_tensor : tensor_map) {
     serialised[ind_tensor.first] = ind_tensor.second->id;
   }
@@ -102,8 +102,8 @@ void TensorIndexMap::append(std::stringstream &ss,
 int TensorIndexMap::maxIdLength() const {
   int max_id_length = 0;
   for (const auto &tensor_indices : indicesMap()) {
-    max_id_length = std::max(
-        max_id_length, static_cast<int>(tensor_indices.first->id.str().size()));
+    max_id_length = std::max(max_id_length,
+                             static_cast<int>(tensor_indices.first->id.size()));
   }
   return max_id_length;
 }

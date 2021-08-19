@@ -273,8 +273,8 @@ def run_nll_loss_grad_with_ignored_index(popart_reduction_type):
     def getPreparesSession(patterns):
         session = popart.TrainingSession(
             fnModel=builder.getModelProto(),
-            dataFlow=popart.DataFlow(
-                1, [popart.TensorId(popart.reservedGradientPrefix() + ip)]),
+            dataFlow=popart.DataFlow(1,
+                                     [popart.reservedGradientPrefix() + ip]),
             optimizer=popart.ConstSGD(LEARNING_RATE, WEIGHT_DECAY),
             loss=nll,
             patterns=patterns,
@@ -330,10 +330,8 @@ def run_nll_loss_grad_with_ignored_index(popart_reduction_type):
     # Compare
     ###
     torch_ip_grad = input.grad.numpy()
-    px_smd_ip_grad = anchors_SMD[popart.TensorId(
-        popart.reservedGradientPrefix() + ip)]
-    px_no_smd_ip_grad = anchors_NoSMD[popart.TensorId(
-        popart.reservedGradientPrefix() + ip)]
+    px_smd_ip_grad = anchors_SMD[popart.reservedGradientPrefix() + ip]
+    px_no_smd_ip_grad = anchors_NoSMD[popart.reservedGradientPrefix() + ip]
 
     checkResult(getTensorError(torch_ip_grad, px_smd_ip_grad), 1e-8)
     checkResult(getTensorError(torch_ip_grad, px_no_smd_ip_grad), 1e-8)
@@ -443,8 +441,8 @@ def test_loss_scaling(ignore_index, popart_reduction_type, op_tester):
 
         result = [
             out, l1_scaled, nll_scaled,
-            popart.TensorId(popart.reservedGradientPrefix() + ip),
-            popart.TensorId(popart.reservedGradientPrefix() + out)
+            popart.reservedGradientPrefix() + ip,
+            popart.reservedGradientPrefix() + out
         ]
         return result
 
@@ -500,9 +498,7 @@ def test_nllloss_reduction_equiv(op_tester):
                     loss = builder.aiGraphcore.nllloss(
                         [sm, lb], reduction=popart.ReductionType.Sum)
 
-                anchors = [
-                    popart.TensorId(popart.reservedGradientPrefix() + ip)
-                ]
+                anchors = [popart.reservedGradientPrefix() + ip]
                 # Always test 'loss' too, except for when we want to test with
                 # the SoftmaxGradDirect pattern, which requires 'loss' to be
                 # anchored
@@ -558,8 +554,7 @@ def test_nll_no_underflow():
     builder = popart.Builder()
     probs = builder.addInitializedInputTensor(probs_np, "probs")
     builder.addOutputTensor(builder.aiOnnx.identity([probs]))
-    dprobs = popart.TensorId(
-        popart.TensorId(popart.reservedGradientPrefix() + probs))
+    dprobs = popart.reservedGradientPrefix() + probs
     labels = builder.addInputTensor(popart.TensorInfo("INT32", [5]))
     loss = builder.aiGraphcore.nllloss([probs, labels],
                                        popart.ReductionType.Sum,
@@ -623,8 +618,8 @@ def test_nll_input_is_log_probability_training(op_tester):
         builder.addOutputTensor(nll)
         return [
             nll,
-            popart.TensorId(popart.reservedGradientPrefix() + P),
-            popart.TensorId(popart.reservedGradientPrefix() + nll),
+            popart.reservedGradientPrefix() + P,
+            popart.reservedGradientPrefix() + nll,
         ]
 
     def reference(ref_data):
@@ -755,8 +750,8 @@ def test_ctc_loss(op_tester, blank, reduction):
         # match when this is the case as logsoftmax is idempotent).
         return [
             ctc, logits, log_probs,
-            popart.TensorId(popart.reservedGradientPrefix() + logits),
-            popart.TensorId(popart.reservedGradientPrefix() + ctc)
+            popart.reservedGradientPrefix() + logits,
+            popart.reservedGradientPrefix() + ctc
         ]
 
     def reference(ref_data):

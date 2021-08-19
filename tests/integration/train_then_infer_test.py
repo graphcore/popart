@@ -29,8 +29,8 @@ def test_train_then_infer_via_file():
 
     anchor_names = [
         o,
-        popart.TensorId(popart.reservedGradientPrefix() + input),
-        popart.TensorId(popart.reservedGradientPrefix() + weights)
+        popart.reservedGradientPrefix() + input,
+        popart.reservedGradientPrefix() + weights
     ]
     training_dataFlow = popart.DataFlow(
         1, {

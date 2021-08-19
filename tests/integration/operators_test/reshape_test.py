@@ -115,8 +115,8 @@ def test_reshape_neg_one_and_zeros_grad(op_tester):
         builder.addOutputTensor(o)
         return [
             o,
-            popart.TensorId(popart.reservedGradientPrefix() + i1),
-            popart.TensorId(popart.reservedGradientPrefix() + o)
+            popart.reservedGradientPrefix() + i1,
+            popart.reservedGradientPrefix() + o
         ]
 
     def reference(ref_data):
@@ -183,8 +183,8 @@ def test_reshape_graphcore_grad(op_tester):
         builder.addOutputTensor(o)
         return [
             o,
-            popart.TensorId(popart.reservedGradientPrefix() + i1),
-            popart.TensorId(popart.reservedGradientPrefix() + o),
+            popart.reservedGradientPrefix() + i1,
+            popart.reservedGradientPrefix() + o,
         ]
 
     def reference(ref_data):

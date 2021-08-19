@@ -131,7 +131,7 @@ public:
   // must be set after construction
   Tensor(TensorId, TensorType, Graph &, const DebugContext & = {});
   TensorId id;
-  std::string str() const final { return id.str(); }
+  std::string str() const final { return id; }
 
   // a copy of this, but with no consumers or producer
   virtual std::unique_ptr<Tensor> clone(Graph &graph_) const;

@@ -11,7 +11,7 @@ def _get_ir(executionphases_enabled, virtualgraph_enabled, pipeline_enabled):
     ip = builder.addInputTensor(popart.TensorInfo("FLOAT", [dsize, dsize]))
 
     anchorIds = []
-    anchorIds.append(popart.TensorId(popart.reservedGradientPrefix() + ip))
+    anchorIds.append(popart.reservedGradientPrefix() + ip)
 
     def add_layer(in_id):
         w = builder.addInitializedInputTensor(
@@ -32,7 +32,7 @@ def _get_ir(executionphases_enabled, virtualgraph_enabled, pipeline_enabled):
         if pipeline_enabled:
             builder.pipelineStage(x, i)
 
-        anchorIds.append(popart.TensorId(popart.reservedGradientPrefix() + x))
+        anchorIds.append(popart.reservedGradientPrefix() + x)
 
     out = builder.aiGraphcore.identityloss([x])
     if virtualgraph_enabled:

@@ -162,10 +162,7 @@ def test_reducemedian_training_1(op_tester, type, keepdims, axes):
                 axes, keepdims),
         )
         builder.addOutputTensor(sum)
-        return [
-            sum, out[0],
-            popart.TensorId(popart.reservedGradientPrefix() + tensor)
-        ]
+        return [sum, out[0], popart.reservedGradientPrefix() + tensor]
 
     def reference(ref_data):
         tensor = torch.tensor(data)
@@ -213,10 +210,7 @@ def test_reducemedian_training_2(op_tester, type, keepdims, axes):
                 axes, keepdims),
         )
         builder.addOutputTensor(sum)
-        return [
-            sum, out[0],
-            popart.TensorId(popart.reservedGradientPrefix() + tensor)
-        ]
+        return [sum, out[0], popart.reservedGradientPrefix() + tensor]
 
     def reference(ref_data):
         tensor = np.asarray([7], dtype=type).reshape(())

@@ -10,7 +10,6 @@
 #include <set>
 #include <string>
 #include <vector>
-#include <popart/tensorid.hpp>
 
 // forward declaring onnx classes, done to
 // help reduce the number of compilation units
@@ -37,6 +36,7 @@ namespace popart {
 // make popart code clearer
 using Shape        = std::vector<int64_t>;
 using Rank         = int;
+using TensorId     = std::string;
 using DnfTensorIds = std::vector<std::set<TensorId>>;
 using OpName       = std::string;
 using OpDomain     = std::string;

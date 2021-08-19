@@ -92,8 +92,8 @@ def _test_logsoftmax_grad(op_tester, data, axis=1, inplace=True):
         builder.addOutputTensor(o)
         return [
             o,
-            popart.TensorId(popart.reservedGradientPrefix() + i1),
-            popart.TensorId(popart.reservedGradientPrefix() + o)
+            popart.reservedGradientPrefix() + i1,
+            popart.reservedGradientPrefix() + o
         ]
 
     def reference(ref_data):

@@ -25,9 +25,9 @@ static void connectPair(TensorId baseId,
   // correct way of dealing with this is by re-basing the ID's scope to left's
   // scope by stripping out baseId's scope. This probably could be cleaner.
   TensorId unscopedBaseId = baseId;
-  auto findScope          = baseId.str().find_last_of('/');
-  if (findScope != std::string::npos) {
-    unscopedBaseId = baseId.str().substr(findScope + 1);
+  auto findScope          = baseId.find_last_of('/');
+  if (findScope != TensorId::npos) {
+    unscopedBaseId = baseId.substr(findScope + 1);
   }
 
   auto tensor = left->getIr().createIntermediateTensorId(unscopedBaseId);
@@ -36,7 +36,7 @@ static void connectPair(TensorId baseId,
   // The createAndConnectOutTensor already applies scope but connectInTensor
   // does not.
   left->createAndConnectOutTensor(0, tensor);
-  right->connectInTensor(0, (left->getScope() / tensor.str()).str());
+  right->connectInTensor(0, (left->getScope() / tensor).str());
 }
 
 bool SequenceExpander::expand(std::vector<std::unique_ptr<Op>> &seq,

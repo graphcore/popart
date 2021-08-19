@@ -110,7 +110,7 @@ void OpDebugInfo::finalize() {
   if (op.output) {
     for (auto t : op.output->tensorMap()) {
       if (t.second) {
-        std::string n = t.second->id.str();
+        std::string n = t.second->id;
         outputs.push_back(n);
       }
     }

@@ -145,12 +145,10 @@ def get_model_anchors_model1(doSharding,
     art = popart.AnchorReturnType("All")
     anchor_map = {x: art, w0: art}
     if doTraining is True:
-        anchor_map[popart.TensorId(popart.reservedGradientPrefix() + x)] = art
+        anchor_map[popart.reservedGradientPrefix() + x] = art
         if doPipelining is True and anchorRestoredTensors is True:
-            anchor_map[popart.TensorId(popart.reservedRestoredPrefix() +
-                                       x)] = art
-            anchor_map[popart.TensorId(popart.reservedRestoredPrefix() +
-                                       w0)] = art
+            anchor_map[popart.reservedRestoredPrefix() + x] = art
+            anchor_map[popart.reservedRestoredPrefix() + w0] = art
 
     opts = popart.SessionOptions()
     opts.reportOptions = {"showExecutionSteps": "true"}
@@ -254,13 +252,11 @@ def get_model_anchors_model2(doSharding,
 
     anchor_map = {nll: art, w0: art, e0: art, s0: art, c0: art}
     if doTraining is True:
-        anchor_map[popart.TensorId(popart.reservedGradientPrefix() + d0)] = art
+        anchor_map[popart.reservedGradientPrefix() + d0] = art
         if doPipelining is True and anchorRestoredTensors is True:
-            anchor_map[popart.TensorId(popart.reservedRestoredPrefix() +
-                                       e0)] = art
+            anchor_map[popart.reservedRestoredPrefix() + e0] = art
             anchor_map[d0] = art
-            anchor_map[popart.TensorId(popart.reservedRestoredPrefix() +
-                                       d0)] = art
+            anchor_map[popart.reservedRestoredPrefix() + d0] = art
 
     opts = popart.SessionOptions()
     opts.reportOptions = {"showExecutionSteps": "true"}

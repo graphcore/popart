@@ -6,7 +6,6 @@
 #include <ostream>
 #include <vector>
 #include <popart/names.hpp>
-#include <popart/tensorid.hpp>
 
 namespace popart {
 
@@ -45,7 +44,6 @@ private:
   const std::map<int, TensorId> &M;
   int max_index{0};
   std::string nullString{""};
-  TensorId nullTensorId{nullString};
 };
 
 class InputMapWrapper : public IOMapWrapper {

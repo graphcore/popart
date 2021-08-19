@@ -50,11 +50,11 @@ def test_dynamicadd_training(op_tester):
         builder.addOutputTensor(sum)
         result = [
             sum,
-            popart.TensorId(popart.reservedGradientPrefix() + sum),
-            popart.TensorId(popart.reservedGradientPrefix() + tensor),
-            popart.TensorId(popart.reservedGradientPrefix() + add_tensors[0]),
-            popart.TensorId(popart.reservedGradientPrefix() + add_tensors[1]),
-            popart.TensorId(popart.reservedGradientPrefix() + add_tensors[2]),
+            popart.reservedGradientPrefix() + sum,
+            popart.reservedGradientPrefix() + tensor,
+            popart.reservedGradientPrefix() + add_tensors[0],
+            popart.reservedGradientPrefix() + add_tensors[1],
+            popart.reservedGradientPrefix() + add_tensors[2],
         ] + result
         return result
 

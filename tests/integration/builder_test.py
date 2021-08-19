@@ -408,9 +408,9 @@ def test_basic():
     proto = builder.getModelProto()
 
     assert (len(proto) > 0)
-    assert (len(str(i1)) > 0)
-    assert (len(str(i2)) > 0)
-    assert (len(str(o)) > 0)
+    assert (len(i1) > 0)
+    assert (len(i2) > 0)
+    assert (len(o) > 0)
     assert (i1 != i2)
     assert (i2 != o)
 
@@ -491,9 +491,9 @@ def test_add_conv():
     proto = builder.getModelProto()
 
     assert (len(proto) > 0)
-    assert (len(str(i1)) > 0)
-    assert (len(str(i2)) > 0)
-    assert (len(str(o)) > 0)
+    assert (len(i1) > 0)
+    assert (len(i2) > 0)
+    assert (len(o) > 0)
     assert (i1 != i2)
     assert (i2 != o)
 
@@ -550,10 +550,10 @@ def test_add_conv_and_bias():
     proto = builder.getModelProto()
 
     assert (len(proto) > 0)
-    assert (len(str(i1)) > 0)
-    assert (len(str(i2)) > 0)
-    assert (len(str(i3)) > 0)
-    assert (len(str(o)) > 0)
+    assert (len(i1) > 0)
+    assert (len(i2) > 0)
+    assert (len(i3) > 0)
+    assert (len(o) > 0)
     assert (i1 != i2)
     assert (i2 != o)
 
@@ -580,9 +580,9 @@ def test_add_gemm():
     proto = builder.getModelProto()
 
     assert (len(proto) > 0)
-    assert (len(str(i1)) > 0)
-    assert (len(str(i2)) > 0)
-    assert (len(str(o)) > 0)
+    assert (len(i1) > 0)
+    assert (len(i2) > 0)
+    assert (len(o) > 0)
     assert (i1 != i2)
     assert (i2 != o)
 
@@ -655,9 +655,9 @@ def test_add_matmul():
     proto = builder.getModelProto()
 
     assert (len(proto) > 0)
-    assert (len(str(i1)) > 0)
-    assert (len(str(i2)) > 0)
-    assert (len(str(o)) > 0)
+    assert (len(i1) > 0)
+    assert (len(i2) > 0)
+    assert (len(o) > 0)
     assert (i1 != i2)
     assert (i2 != o)
 
@@ -814,7 +814,7 @@ def test_inout_tensor_info():
     assert (builder.getTensorShape(o) == [1, 4, 30, 30])
 
     with pytest.raises(popart.popart_exception) as e_info:
-        builder.getTensorShape(popart.TensorId("NotAnId"))
+        builder.getTensorShape("NotAnId")
     assert (
         e_info.value.args[0].find("is not an input or output tensor. Must be"))
 
@@ -1005,8 +1005,7 @@ def test_add_attribute_missing_node():
     builder = popart.Builder()
     val = 100
     with pytest.raises(popart.popart_exception) as e_info:
-        builder.addNodeAttribute(
-            "test", val, set((popart.TensorId("i"), popart.TensorId("j"))))
+        builder.addNodeAttribute("test", val, set(("i", "j")))
 
     assert (
         e_info.value.args[0].find("Could not find a node with outputs i, j."))
@@ -1368,8 +1367,7 @@ def test_convert_initializers_to_constants():
     graph_transformer.convertInitializersToConstants([i2])
 
     with pytest.raises(popart.popart_exception) as e_info:
-        graph_transformer.convertInitializersToConstants(
-            [popart.TensorId("unknown")])
+        graph_transformer.convertInitializersToConstants(["unknown"])
     assert (e_info.value.args[0] ==
             "TensorId unknown not in the model initalizers")
 
@@ -1515,9 +1513,9 @@ def test_name_scope():
         with builder.nameScope('embedded_scope'):
             o3 = builder.aiOnnx.add([o1, o2], 'myop3')
 
-    assert (str(o1).startswith('scope1'))
-    assert (str(o2).startswith('scope2'))
-    assert (str(o3).startswith('scope2/embedded_scope'))
+    assert (o1.startswith('scope1'))
+    assert (o2.startswith('scope2'))
+    assert (o3.startswith('scope2/embedded_scope'))
 
 
 def test_tensor_names():
@@ -1759,7 +1757,7 @@ def test_opset_version_opset_default_version_changed():
 def test_error_on_invalid_input_tensor():
     with pytest.raises(popart.popart_exception) as e:
         b = popart.Builder()
-        b.aiOnnx.relu([popart.TensorId('blaaa')])  # should throw error
+        b.aiOnnx.relu(['blaaa'])  # should throw error
 
     # Check error mentions unknown tensor name.
     assert ('\'blaaa\'' in str(e))

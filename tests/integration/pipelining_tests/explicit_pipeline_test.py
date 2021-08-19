@@ -17,7 +17,6 @@ def test_explicit_pipelining_0():
     Numerical equivalence test: [Implicit pipelinng + Implicit host i/o] vs
                                 [Explicit pipelinng + Explicit host i/o]
     """
-
     def getAnchors(isExplicit):
         bps = 3
         np.random.seed(1)

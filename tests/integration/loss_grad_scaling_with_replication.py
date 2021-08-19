@@ -36,7 +36,7 @@ def test_loss_grad_scaling_with_replication():
     p1 = builder.getModelProto()
 
     def run_session(proto, loss_id):
-        anchor_id = popart.TensorId(popart.reservedGradientPrefix() + t0)
+        anchor_id = popart.reservedGradientPrefix() + t0
 
         opts = popart.SessionOptions()
         opts.enableReplicatedGraphs = True

@@ -29,8 +29,8 @@ batchesPerStep = 4
 # the l1 loss "out",
 # and the input tensor "image0"
 anchors = {
-    popart.TensorId("out"): popart.AnchorReturnType("EveryN", 2),
-    popart.TensorId("image0"): popart.AnchorReturnType("All")
+    "out": popart.AnchorReturnType("EveryN", 2),
+    "image0": popart.AnchorReturnType("All")
 }
 
 dataFlow = popart.DataFlow(batchesPerStep, anchors)
@@ -39,7 +39,7 @@ dataFlow = popart.DataFlow(batchesPerStep, anchors)
 # types must be fed into the Session constructor.
 # In this example there is 1 streamed input, image0.
 inputShapeInfo = popart.InputShapeInfo()
-inputShapeInfo.add(popart.TensorId("image0"),
+inputShapeInfo.add("image0",
                    popart.TensorInfo("FLOAT", [batchSize, nChans, 32, 32]))
 
 inNames = ["image0"]

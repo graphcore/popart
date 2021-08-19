@@ -55,14 +55,14 @@ class Context:
                     break
 
             if isInitializer == False:
-                inputmap[popart.TensorId(inp.name)] = inputs[i]
+                inputmap[str(inp.name)] = inputs[i]
                 i = i + 1
 
         stepio = popart.PyStepIO(inputmap, anchors)
         self.session.run(stepio)
 
         outputs = [i.name for i in self.model.graph.output]
-        outputs = [anchors[popart.TensorId(i)] for i in outputs]
+        outputs = [anchors[i] for i in outputs]
         return outputs
 
 
@@ -101,8 +101,7 @@ class IpuBackend(onnx.backend.base.Backend):
 
         anchors = {}
         for output in model.graph.output:
-            anchors[popart.TensorId(
-                output.name)] = popart.AnchorReturnType("All")
+            anchors[output.name] = popart.AnchorReturnType("All")
 
         session = popart.InferenceSession(
             fnModel=model.SerializeToString(),

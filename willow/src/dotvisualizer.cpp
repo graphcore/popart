@@ -43,7 +43,7 @@ std::string DotVisualizer::nodeDotId(OpId id) const {
 }
 
 std::string DotVisualizer::tensorDotId(const TensorId &id) const {
-  return '\"' + id.str() + '\"';
+  return '\"' + id + '\"';
 }
 
 std::string DotVisualizer::getTensorNodeColor(TensorType type) const {

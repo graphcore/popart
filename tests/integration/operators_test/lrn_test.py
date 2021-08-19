@@ -70,8 +70,7 @@ def test_lrn_training(op_tester):
                                      size=nsize,
                                      debugContext="test_lrn_{0}".format(nsize))
             result.append(out)
-            result.append(
-                popart.TensorId(popart.reservedGradientPrefix() + tensor))
+            result.append(popart.reservedGradientPrefix() + tensor)
         sum = builder.aiOnnx.sum([
             builder.aiOnnx.reducesum([r],
                                      axes=range(len(data.shape)),
@@ -86,7 +85,7 @@ def test_lrn_training(op_tester):
         builder.addOutputTensor(reshaped_sum)
         result = [
             reshaped_sum,
-            popart.TensorId(popart.reservedGradientPrefix() + reshaped_sum)
+            popart.reservedGradientPrefix() + reshaped_sum
         ] + result
         return result
 

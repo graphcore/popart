@@ -117,7 +117,7 @@ def test_stepio_callbackinput_ipu():
         time.sleep(1)
         print("input_callback ", id)
 
-        t = inputs[popart.TensorId(id)]
+        t = inputs[id]
 
         result = None
 
@@ -152,7 +152,7 @@ def test_stepio_callbackinput_ipu():
         time.sleep(1)
         print("output_callback ", id)
 
-        t = anchors[popart.TensorId(id)]
+        t = anchors[id]
 
         if id == i1:
             result = t[i1_d]

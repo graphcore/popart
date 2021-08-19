@@ -23,9 +23,9 @@ def test_mul(op_tester):
         builder.addOutputTensor(o)
         return [
             o,
-            popart.TensorId(popart.reservedGradientPrefix() + i1),
-            popart.TensorId(popart.reservedGradientPrefix() + i2),
-            popart.TensorId(popart.reservedGradientPrefix() + o)
+            popart.reservedGradientPrefix() + i1,
+            popart.reservedGradientPrefix() + i2,
+            popart.reservedGradientPrefix() + o
         ]
 
     def reference(ref_data):
@@ -55,9 +55,9 @@ def test_broadcast_mul(op_tester):
         builder.addOutputTensor(o)
         return [
             o,
-            popart.TensorId(popart.reservedGradientPrefix() + i1),
-            popart.TensorId(popart.reservedGradientPrefix() + i2),
-            popart.TensorId(popart.reservedGradientPrefix() + o)
+            popart.reservedGradientPrefix() + i1,
+            popart.reservedGradientPrefix() + i2,
+            popart.reservedGradientPrefix() + o
         ]
 
     def reference(ref_data):

@@ -269,7 +269,7 @@ TensorId OptimizerDecompose::gradAccum(Graph &graph,
 
   // The updated accumulator
   TensorId updatedAccumId =
-      !outputId.str().empty() && !accumReduce
+      !outputId.empty() && !accumReduce
           ? outputId
           : graph.getIr().createIntermediateTensorId(accumId);
 
@@ -300,7 +300,7 @@ TensorId OptimizerDecompose::gradAccum(Graph &graph,
                               updatedAccumId);
 
     // The updated, reduced accumulator
-    gradIntoAcclId = !outputId.str().empty()
+    gradIntoAcclId = !outputId.empty()
                          ? outputId
                          : graph.getIr().createIntermediateTensorId(accumId);
 
@@ -377,7 +377,7 @@ TensorId OptimizerDecompose::gradReduce(Graph &graph,
 
   // The reduced gradient
   TensorId reducedGradId =
-      !outputId.str().empty()
+      !outputId.empty()
           ? outputId
           : graph.getIr().createIntermediateTensorId(weightGradId);
 

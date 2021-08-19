@@ -250,8 +250,8 @@ def test_save_tensors_optimizer_state_externally(optimizerInfo):
         assert os.path.getsize(tmpfile) == d1.size * 4 + d2.size * 4
 
         anchorIds = [o]
-        anchorIds.append(popart.TensorId(popart.reservedGradientPrefix() + i1))
-        anchorIds.append(popart.TensorId(popart.reservedGradientPrefix() + i2))
+        anchorIds.append(popart.reservedGradientPrefix() + i1)
+        anchorIds.append(popart.reservedGradientPrefix() + i2)
 
         session = popart.TrainingSession(
             deviceInfo=popart.DeviceManager().createCpuDevice(),
@@ -276,10 +276,8 @@ def test_save_tensors_optimizer_state_externally(optimizerInfo):
             else:
                 size1 = d1.size
                 size2 = d2.size
-            weightsMap[popart.TensorId(pref + i1)] = np.ones(size1).astype(
-                np.float32)
-            weightsMap[popart.TensorId(pref + i2)] = np.ones(size2).astype(
-                np.float32)
+            weightsMap[pref + i1] = np.ones(size1).astype(np.float32)
+            weightsMap[pref + i2] = np.ones(size2).astype(np.float32)
         session.readWeights(popart.PyWeightsIO(weightsMap))
 
         tmpfile1 = os.path.join(tmpdir, "model.onnx")
@@ -304,13 +302,11 @@ def test_save_tensors_optimizer_state_externally(optimizerInfo):
                            weightsMap[i2].flatten())
 
         for pref in extraOptimizerStatePrefs:
-            assert np.allclose(
-                saved_weights[totalSize:totalSize + d1.size],
-                weightsMap[popart.TensorId(pref + i1)].flatten())
+            assert np.allclose(saved_weights[totalSize:totalSize + d1.size],
+                               weightsMap[pref + i1].flatten())
             totalSize += d1.size
-            assert np.allclose(
-                saved_weights[totalSize:totalSize + d2.size],
-                weightsMap[popart.TensorId(pref + i2)].flatten())
+            assert np.allclose(saved_weights[totalSize:totalSize + d2.size],
+                               weightsMap[pref + i2].flatten())
             totalSize += d2.size
 
         # Create new session

@@ -15,7 +15,6 @@
 #include <popart/op/l1.hpp>
 #include <popart/op/matmul.hpp>
 #include <popart/op/reshape.hpp>
-#include <popart/tensorid.hpp>
 #include <popart/tensorinfo.hpp>
 #include <popart/tensornames.hpp>
 #include <popart/transforms/streamingmemory.hpp>
@@ -94,11 +93,10 @@ BOOST_AUTO_TEST_CASE(Test2x2S1ExecutionPhase) {
     TensorInfo inInfo{"FLOAT", std::vector<int64_t>{1, 2 * size}};
     auto input = builder.addInputTensor(inInfo);
 
-    std::vector<TensorId> insl0(2);
-    std::vector<TensorId> insl1(2);
-    insl0[0] = aiOnnx.slice({input}, {size}, {0}, {1}, "CHECKOP_SL0").str();
-    insl0[1] =
-        aiOnnx.slice({input}, {2 * size}, {size}, {1}, "CHECKOP_SL1").str();
+    std::vector<std::string> insl0(2);
+    std::vector<std::string> insl1(2);
+    insl0[0] = aiOnnx.slice({input}, {size}, {0}, {1}, "CHECKOP_SL0");
+    insl0[1] = aiOnnx.slice({input}, {2 * size}, {size}, {1}, "CHECKOP_SL1");
 
     builder.executionPhase(insl0.at(0), 0);
     builder.executionPhase(insl0.at(1), 0);
@@ -721,8 +719,8 @@ BOOST_AUTO_TEST_CASE(Test2x0S2ExecutionPhase) {
     TensorInfo inInfo{"FLOAT", std::vector<int64_t>{batchSize, 2 * size}};
     auto input = builder.addInputTensor(inInfo);
 
-    std::vector<TensorId> insl0(2);
-    std::vector<TensorId> insl1(2);
+    std::vector<std::string> insl0(2);
+    std::vector<std::string> insl1(2);
     insl0[0] = aiOnnx.slice({input}, {size}, {0}, {1}, "CHECKOP_SL0");
     insl0[1] = aiOnnx.slice({input}, {2 * size}, {size}, {1}, "CHECKOP_SL1");
 

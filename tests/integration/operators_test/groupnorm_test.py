@@ -52,10 +52,10 @@ def test_groupnorm_0(op_tester):
         builder.addOutputTensor(o_y)
         return [
             o_y, o_mean, o_invstd,
-            popart.TensorId(popart.reservedGradientPrefix() + i1),
-            popart.TensorId(popart.reservedGradientPrefix() + iB),
-            popart.TensorId(popart.reservedGradientPrefix() + iScale),
-            popart.TensorId(popart.reservedGradientPrefix() + o_y)
+            popart.reservedGradientPrefix() + i1,
+            popart.reservedGradientPrefix() + iB,
+            popart.reservedGradientPrefix() + iScale,
+            popart.reservedGradientPrefix() + o_y
         ]
 
     def reference(ref_data):
@@ -123,10 +123,10 @@ def test_groupnorm_1(op_tester):
         builder.addOutputTensor(o_invstd)
         return [
             o_y, o_mean, o_invstd,
-            popart.TensorId(popart.reservedGradientPrefix() + i1),
-            popart.TensorId(popart.reservedGradientPrefix() + iScale),
-            popart.TensorId(popart.reservedGradientPrefix() + iB),
-            popart.TensorId(popart.reservedGradientPrefix() + o_y)
+            popart.reservedGradientPrefix() + i1,
+            popart.reservedGradientPrefix() + iScale,
+            popart.reservedGradientPrefix() + iB,
+            popart.reservedGradientPrefix() + o_y
         ]
 
     def reference(ref_data):
@@ -249,10 +249,10 @@ def test_groupnorm_3(op_tester):
         builder.addOutputTensor(o_invstd)
         return [
             o_y, o_mean, o_invstd,
-            popart.TensorId(popart.reservedGradientPrefix() + i1),
-            popart.TensorId(popart.reservedGradientPrefix() + iScale),
-            popart.TensorId(popart.reservedGradientPrefix() + iB),
-            popart.TensorId(popart.reservedGradientPrefix() + o_y)
+            popart.reservedGradientPrefix() + i1,
+            popart.reservedGradientPrefix() + iScale,
+            popart.reservedGradientPrefix() + iB,
+            popart.reservedGradientPrefix() + o_y
         ]
 
     def reference(ref_data):
@@ -460,10 +460,10 @@ def test_groupnorm_5(op_tester):
         builder.addOutputTensor(o_y)
         return [
             o_y, o_mean, o_invstd,
-            popart.TensorId(popart.reservedGradientPrefix() + i1),
-            popart.TensorId(popart.reservedGradientPrefix() + iB),
-            popart.TensorId(popart.reservedGradientPrefix() + iScale),
-            popart.TensorId(popart.reservedGradientPrefix() + o_y)
+            popart.reservedGradientPrefix() + i1,
+            popart.reservedGradientPrefix() + iB,
+            popart.reservedGradientPrefix() + iScale,
+            popart.reservedGradientPrefix() + o_y
         ]
 
     def reference(ref_data):

@@ -42,8 +42,7 @@ class ShapedDropoutHarness:
         ti = popart.TensorInfo("FLOAT", self.input_data.shape)
         builder = popart.Builder()
         self.input = builder.addInputTensor(ti)
-        self.input_grad = popart.TensorId(popart.reservedGradientPrefix() +
-                                          self.input)
+        self.input_grad = popart.reservedGradientPrefix() + self.input
 
         self.output = builder.aiGraphcore.shapeddropout([self.input],
                                                         shape=self.drop_shape,

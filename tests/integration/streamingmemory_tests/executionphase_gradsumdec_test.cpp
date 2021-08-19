@@ -12,7 +12,6 @@
 #include <popart/op/l1.hpp>
 #include <popart/op/matmul.hpp>
 #include <popart/op/reshape.hpp>
-#include <popart/tensorid.hpp>
 #include <popart/tensorinfo.hpp>
 #include <popart/tensornames.hpp>
 
@@ -66,14 +65,14 @@ BOOST_AUTO_TEST_CASE(TestDecomposeAcrossExecutionPhases) {
     auto aiOnnx = builder.aiOnnxOpset9();
     TensorInfo inInfo{"FLOAT", std::vector<int64_t>{1, size}};
     auto w0 = builder.addInitializedInputTensor(w0CVData);
-    std::vector<TensorId> outVec;
+    std::vector<std::string> outVec;
     for (int layer = 0; layer < numLayers; layer++) {
       auto input = builder.addInputTensor(inInfo);
       auto out = aiOnnx.matmul({input, w0}, "mm_layer" + std::to_string(layer));
       builder.executionPhase(out, layer * 2);
       out = aiOnnx.relu({out}, "relu_layer" + std::to_string(layer));
       builder.executionPhase(out, layer * 2);
-      outVec.push_back(out.str());
+      outVec.push_back(out);
     }
     auto sum = aiOnnx.sum(outVec);
     auto l1  = builder.aiGraphcoreOpset1().l1loss({sum}, 0.1);

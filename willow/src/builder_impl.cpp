@@ -340,7 +340,7 @@ TensorId BuilderImpl::addInputTensor(const TensorInfo &tensorInfo,
 
   {
     auto a = meta_data->Add();
-    a->set_key(std::string(onnxDebugIdInputMetaDataKey) + id.str());
+    a->set_key(std::string(onnxDebugIdInputMetaDataKey) + id);
     a->set_value(std::to_string(di.getId()));
   }
 
@@ -348,7 +348,7 @@ TensorId BuilderImpl::addInputTensor(const TensorInfo &tensorInfo,
   {
     auto a = meta_data->Add();
     a->set_key(std::string(sTileSetAttribute) + std::string(sNameDelimiter) +
-               id.str());
+               id);
     a->set_value(std::to_string(static_cast<int>(inputSettings.tileSet())));
   }
 
@@ -356,7 +356,7 @@ TensorId BuilderImpl::addInputTensor(const TensorInfo &tensorInfo,
   {
     auto a = meta_data->Add();
     a->set_key(std::string(sExecutionContextAttribute) +
-               std::string(sNameDelimiter) + id.str());
+               std::string(sNameDelimiter) + id);
     a->set_value(
         std::to_string(static_cast<int>(inputSettings.exchangeStrategy())));
   }
@@ -410,7 +410,7 @@ void BuilderImpl::addInputTensorFromParentGraph(const TensorId &tensorId) {
 ONNX_NAMESPACE::ValueInfoProto *BuilderImpl::addGraphInput(const TensorId &id) {
   auto *graph = model_.mutable_graph();
   auto *input = graph->add_input();
-  input->set_name(id.str());
+  input->set_name(id);
 
   return input;
 }
@@ -499,20 +499,20 @@ TensorId BuilderImpl::addInitializedInputTensor(
 
   auto *graph = model_.mutable_graph();
   auto *input = graph->add_input();
-  input->set_name(id.str());
+  input->set_name(id);
 
   auto *type = input->mutable_type();
   *type      = initData.info.getOnnxTypeProto();
 
   auto *initializer = graph->add_initializer();
-  populateTensorProtoFromConstVoidData(initData, id.str(), initializer);
+  populateTensorProtoFromConstVoidData(initData, id, initializer);
 
   // Add the debug_id as meta data
   popart::BuilderVarDebugInfo di(debugContext, "addInitializedInputTensor", id);
 
   auto meta_data = model_.mutable_metadata_props();
   auto a         = meta_data->Add();
-  a->set_key(std::string(onnxDebugIdInputMetaDataKey) + id.str());
+  a->set_key(std::string(onnxDebugIdInputMetaDataKey) + id);
   a->set_value(std::to_string(di.getId()));
 
   return id;
@@ -531,7 +531,7 @@ void BuilderImpl::addOutputTensor(const TensorId &arg0) {
   }
 
   if (!found) {
-    output->set_name(arg0.str());
+    output->set_name(arg0);
   }
 }
 
@@ -653,12 +653,12 @@ void BuilderImpl::op(
 
   // Set the inputs
   for (const auto &input : inputs) {
-    node->add_input(input.str());
+    node->add_input(input);
   }
 
   // Set the outputs
   for (auto &output : outputs) {
-    node->add_output(output.str());
+    node->add_output(output);
   }
 
   // Set the attributes
@@ -1205,11 +1205,7 @@ bool BuilderImpl::hasValueInfo(const TensorId &id) const {
 std::string BuilderImpl::getStrFromTensorIdVec(std::vector<TensorId> v) const {
   const char *const delim = " ";
   std::ostringstream s;
-
-  std::transform(v.cbegin(),
-                 v.cend(),
-                 std::ostream_iterator<std::string>(s, delim),
-                 [](const TensorId &tid) { return tid.str(); });
+  std::copy(v.begin(), v.end(), std::ostream_iterator<std::string>(s, delim));
   return s.str();
 }
 

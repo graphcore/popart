@@ -254,7 +254,7 @@ def _run_torch_test_model(data,
     result = result.detach().numpy()
 
     resultWeights = {
-        popart.TensorId(f'weight{index}'): weight
+        f'weight{index}': weight
         for index, weight in enumerate(resultWeights)
     }
 
@@ -268,10 +268,7 @@ def test_basic(optimizerType):
 
     data = np.random.rand(1, 1, 8, 8).astype(np.float32)
     weights = [np.random.rand(1, 1, 2, 2).astype(np.float32) for _ in range(2)]
-    initialWeights = {
-        popart.TensorId(f'weight{i}'): np.copy(w)
-        for i, w in enumerate(weights)
-    }
+    initialWeights = {f'weight{i}': np.copy(w) for i, w in enumerate(weights)}
 
     popartResult, popartWeights = _run_popart_test_model(
         data, weights, [([0, 1], clipNorm)], optimizerType=optimizerType)
@@ -305,10 +302,7 @@ def test_two_groups(optimizerType):
 
     data = np.random.rand(1, 1, 8, 8).astype(np.float32)
     weights = [np.random.rand(1, 1, 2, 2).astype(np.float32) for _ in range(4)]
-    initialWeights = {
-        popart.TensorId(f'weight{i}'): np.copy(w)
-        for i, w in enumerate(weights)
-    }
+    initialWeights = {f'weight{i}': np.copy(w) for i, w in enumerate(weights)}
 
     clipGroups = [([0, 1], norm1), ([2, 3], norm2)]
 
@@ -347,10 +341,7 @@ def test_pipelined(optimizerType):
 
     data = np.random.rand(1, 1, 8, 8).astype(np.float32)
     weights = [np.random.rand(1, 1, 2, 2).astype(np.float32) for _ in range(4)]
-    initialWeights = {
-        popart.TensorId(f'weight{i}'): np.copy(w)
-        for i, w in enumerate(weights)
-    }
+    initialWeights = {f'weight{i}': np.copy(w) for i, w in enumerate(weights)}
 
     clipGroups = [([0, 1, 2, 3], norm1)]
     pipelineGroups = ((0, 1), (2, 3))
@@ -420,7 +411,7 @@ def test_serialized_matmul(optimizerType):
                 popart.AnchorReturnType("All"),
                 rhs:
                 popart.AnchorReturnType("Final"),
-                popart.TensorId(popart.reservedGradientPrefix() + lhs):
+                popart.reservedGradientPrefix() + lhs:
                 popart.AnchorReturnType("All"),
             })
 
@@ -499,11 +490,9 @@ def test_clipping_all_weights():
 
     dataFlow = popart.DataFlow(
         1, {
-            o:
-            popart.AnchorReturnType("All"),
-            rhs:
-            popart.AnchorReturnType("Final"),
-            popart.TensorId(popart.reservedGradientPrefix() + lhs):
+            o: popart.AnchorReturnType("All"),
+            rhs: popart.AnchorReturnType("Final"),
+            popart.reservedGradientPrefix() + lhs:
             popart.AnchorReturnType("All"),
         })
 

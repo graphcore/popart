@@ -22,10 +22,10 @@ nInChans = 3
 nOutChans = 4
 batchSize = 2
 batchesPerStep = 3
-anchors = {popart.TensorId("l1loss"): popart.AnchorReturnType("Final")}
+anchors = {"l1loss": popart.AnchorReturnType("Final")}
 dataFlow = popart.DataFlow(batchesPerStep, anchors)
 inputShapeInfo = popart.InputShapeInfo()
-inputShapeInfo.add(popart.TensorId("image0"),
+inputShapeInfo.add("image0",
                    popart.TensorInfo("FLOAT", [batchSize, nInChans, 32, 32]))
 
 inNames = ["image0"]

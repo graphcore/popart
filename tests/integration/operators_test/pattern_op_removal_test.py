@@ -18,7 +18,7 @@ def test_atan2_arg0_grad_error(op_tester):
         w1 = builder.addInitializedInputTensor(d2)
         o = builder.aiGraphcore.atan2([w1, i1], "test_atan2")
         builder.addOutputTensor(o)
-        return [o, popart.TensorId(popart.reservedGradientPrefix() + o)]
+        return [o, popart.reservedGradientPrefix() + o]
 
     def reference(ref_data):
         return [None, None]
@@ -43,7 +43,7 @@ def test_atan2_arg1_grad_error(op_tester):
         w1 = builder.addInitializedInputTensor(d2)
         o = builder.aiGraphcore.atan2([i1, w1], "test_atan2")
         builder.addOutputTensor(o)
-        return [o, popart.TensorId(popart.reservedGradientPrefix() + o)]
+        return [o, popart.reservedGradientPrefix() + o]
 
     def reference(ref_data):
         return [None, None]
@@ -69,7 +69,7 @@ def test_cos_grad_error(op_tester):
         o = builder.aiOnnx.add([i1, w1], "test_add")
         o = builder.aiOnnx.cos([o], "test_cos")
         builder.addOutputTensor(o)
-        return [o, popart.TensorId(popart.reservedGradientPrefix() + o)]
+        return [o, popart.reservedGradientPrefix() + o]
 
     def reference(ref_data):
         return [None, None]
@@ -96,7 +96,7 @@ def test_reciprocal_grad_error(op_tester):
         o = builder.aiOnnx.add([i1, w1], "test_add")
         o = builder.aiOnnx.reciprocal([o], "test_reciprocal")
         builder.addOutputTensor(o)
-        return [o, popart.TensorId(popart.reservedGradientPrefix() + o)]
+        return [o, popart.reservedGradientPrefix() + o]
 
     def reference(ref_data):
         return [None, None]
@@ -122,7 +122,7 @@ def test_sqrt_grad_error(op_tester):
         o = builder.aiOnnx.add([i1, w1], "test_add")
         o = builder.aiOnnx.sqrt([o], "test_sqrt")
         builder.addOutputTensor(o)
-        return [o, popart.TensorId(popart.reservedGradientPrefix() + o)]
+        return [o, popart.reservedGradientPrefix() + o]
 
     def reference(ref_data):
         return [None, None]
@@ -147,7 +147,7 @@ def test_subtract_grad_error(op_tester):
         w1 = builder.addInitializedInputTensor(d2)
         o = builder.aiOnnx.sub([i1, w1], "test_sub")
         builder.addOutputTensor(o)
-        return [o, popart.TensorId(popart.reservedGradientPrefix() + o)]
+        return [o, popart.reservedGradientPrefix() + o]
 
     def reference(ref_data):
         return [None, None]
@@ -173,7 +173,7 @@ def test_exp_grad_error(op_tester):
         o = builder.aiOnnx.add([i1, w1], "test_add")
         o = builder.aiOnnx.exp([o], "test_exp")
         builder.addOutputTensor(o)
-        return [o, popart.TensorId(popart.reservedGradientPrefix() + o)]
+        return [o, popart.reservedGradientPrefix() + o]
 
     def reference(ref_data):
         return [None, None]
@@ -199,7 +199,7 @@ def test_expm1_grad_error(op_tester):
         o = builder.aiOnnx.add([i1, w1], "test_add")
         o = builder.aiGraphcore.expm1([o], "test_expm1")
         builder.addOutputTensor(o)
-        return [o, popart.TensorId(popart.reservedGradientPrefix() + o)]
+        return [o, popart.reservedGradientPrefix() + o]
 
     def reference(ref_data):
         return [None, None]
@@ -250,7 +250,7 @@ def test_log1p_grad_error(op_tester):
         o = builder.aiOnnx.add([i1, w1], "test_add")
         o = builder.aiGraphcore.log1p([o], "test_log1p")
         builder.addOutputTensor(o)
-        return [o, popart.TensorId(popart.reservedGradientPrefix() + o)]
+        return [o, popart.reservedGradientPrefix() + o]
 
     def reference(ref_data):
         return [None, None]

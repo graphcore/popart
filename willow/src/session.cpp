@@ -17,7 +17,6 @@
 #include <popart/sessionoptions.hpp>
 #include <popart/tensor.hpp>
 #include <popart/tensordata.hpp>
-#include <popart/tensorid.hpp>
 #include <popart/tensors.hpp>
 #include <popart/transforms/randomsetup.hpp>
 #include <popart/util.hpp>
@@ -233,7 +232,7 @@ TensorInfo Session::getInfo(TensorId id) const {
   assertExecutableLoaded();
   TensorInfo info = executable_->getTensor(id)->info;
   if (!info.isSet()) {
-    throw runtime_error("TensorInfo for `" + id.str() + "' not set");
+    throw runtime_error("TensorInfo for `" + id + "' not set");
   }
   return info;
 }
@@ -758,11 +757,12 @@ void TrainingSession::updateOptimizerFromHost(const Optimizer *optimizer) {
   device_->optimizerFromHost();
 }
 
-const std::vector<TensorId> &TrainingSession::getHostReduceStreamIds() const {
+const std::vector<std::string> &
+TrainingSession::getHostReduceStreamIds() const {
   return device_->getHostReduceStreamIds();
 }
 
-const std::map<TensorId, poplar::RemoteBuffer> &
+const std::map<std::string, poplar::RemoteBuffer> &
 TrainingSession::getHostReduceRemoteBuffers() const {
   return device_->getHostReduceRemoteBuffers();
 }
