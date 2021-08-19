@@ -31,8 +31,8 @@ def available_memory_proportion_harness(capfd, insert_operator,
 
     anchor_names = [
         o,
-        popart.TensorId(popart.reservedGradientPrefix() + input_),
-        popart.TensorId(popart.reservedGradientPrefix() + weights)
+        popart.reservedGradientPrefix() + input_,
+        popart.reservedGradientPrefix() + weights
     ]
     training_dataFlow = popart.DataFlow(
         1, {
