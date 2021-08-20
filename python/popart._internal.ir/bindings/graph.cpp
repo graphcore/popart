@@ -50,7 +50,6 @@ void bindGraph(py::module &m) {
           py::arg("tensorInfo"),
           py::arg("data"),
           py::arg("debugContext") = std::string())
-      .def("addStream", &Graph::addStream)
       .def("getTensor", &Graph::getTensor, py::return_value_policy::reference)
       .def("getInputIds",
            &Graph::getInputIds,

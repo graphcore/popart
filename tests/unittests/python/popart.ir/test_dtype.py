@@ -1,7 +1,8 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 
+import numpy as np
 import pytest
-import torch  # pylint: disable=unused-import
+import torch
 
 import popart.ir as pir
 from popart.ir.testing import get_all_dtypes, get_all_int_dtypes
@@ -53,3 +54,39 @@ class Testdtype:
         assert pir.half == pir.float16
         assert pir.float == pir.float32
         assert pir.double == pir.float64
+
+    def test_conversion_numpy(self):
+        pir_dtypes = get_all_dtypes()
+        np_dtypes = [eval(f'np.{pir_dtype._name}') for pir_dtype in pir_dtypes]
+
+        for pir_dtype, np_dtype in zip(pir_dtypes, np_dtypes):
+            arr = np.zeros((1, ), np_dtype)
+            assert pir_dtype == pir.dtype.as_dtype(arr)
+            assert pir_dtype == pir.dtype.as_dtype(np_dtype)
+            assert pir_dtype.as_numpy() == np_dtype
+
+        with pytest.raises(ValueError) as excinfo:
+            pir.dtype.as_dtype(np.str)
+        exp_message = (f'There is not a `popart.ir.dtype` that is '
+                       f'compatible with {np.str}.')
+        assert str(excinfo.value) == exp_message
+
+    def test_conversion_string(self):
+        pir_dtypes = get_all_dtypes()
+        names = [pir_dtype._name for pir_dtype in pir_dtypes]
+
+        for pir_dtype, name in zip(pir_dtypes, names):
+            assert pir_dtype == pir.dtype.as_dtype(name)
+
+    def test_conversion_python(self):
+        import builtins
+        py_to_pir = {builtins.bool: pir.bool, builtins.float: pir.float32}
+
+        for py_type, pir_dtype in py_to_pir.items():
+            assert pir_dtype == pir.dtype.as_dtype(py_type)
+
+        with pytest.raises(ValueError) as excinfo:
+            pir.dtype.as_dtype(builtins.int)
+        exp_message = (f'There is not a `popart.ir.dtype` that is '
+                       f'compatible with {builtins.int}.')
+        assert str(excinfo.value) == exp_message

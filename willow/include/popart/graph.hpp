@@ -69,7 +69,6 @@ public:
                     const TensorInfo &,
                     const void *,
                     const DebugContext &);
-  void addStream(const TensorId &, const TensorInfo &, const DebugContext &);
 
   const Ir &getIr() const { return ir; }
   Ir &getIr() { return ir; }
