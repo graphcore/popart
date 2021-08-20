@@ -5,6 +5,6 @@ during testing.
 
 from __future__ import absolute_import
 
-from popart.ir.testing._dtype import *
+from popart.ir.testing._dtypes import *
 
 del absolute_import

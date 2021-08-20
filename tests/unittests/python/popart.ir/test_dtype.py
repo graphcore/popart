@@ -26,7 +26,7 @@ class Testdtype:
     def test_constructor(self):
         with pytest.raises(TypeError) as excinfo:
             pir.dtype()
-        err_msg = "Cannot create popart.ir.dtype.dtype instances."
+        err_msg = "Cannot create popart.ir.dtypes.dtype instances."
         assert str(excinfo.value) == err_msg
 
     # TODO(T38031): Unskip this test.

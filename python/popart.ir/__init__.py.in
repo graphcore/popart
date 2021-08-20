@@ -13,6 +13,11 @@ if (actualVersion != requiredVersion):
     raise RuntimeError("This version of popart.ir is not compatible with Python %d.%d (it was built against Python %d.%d)" % \
         (actualVersion + requiredVersion))
 
-from popart.ir.dtype import *
+from popart.ir.dtypes import *
 from popart.ir.graph import *
 from popart.ir.ir import *
+from popart.ir.tensor import *
+
+del sys
+del actualVersion
+del requiredVersion
