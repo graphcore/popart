@@ -16,7 +16,7 @@ ReverseOpx::ReverseOpx(Op *op, Devicex *devicex) : ReverseBaseOpx(op, devicex) {
 
 void ReverseOpx::grow(poplar::program::Sequence &prog) const {
   auto t = getInTensor(ReverseOp::getInIndex()).getPoplarTensor();
-  for (auto dim : dynamic_cast<ReverseOp *>(op_p)->getDimensions()) {
+  for (auto dim : getOp<ReverseOp>().getDimensions()) {
     t = t.reverse(static_cast<unsigned>(dim));
   }
 
@@ -28,7 +28,7 @@ snap::Tensor ReverseBaseOpx::unwindTensorLayout(snap::Tensor tensor,
                                                 InIndex,
                                                 OutIndex) const {
   poplar::Tensor t = tensor.getPoplarTensor();
-  for (auto dim : dynamic_cast<ReverseOp *>(op_p)->getDimensions()) {
+  for (auto dim : getOp<ReverseBaseOp>().getDimensions()) {
     t = t.reverse(static_cast<unsigned>(dim));
   }
 
@@ -37,8 +37,8 @@ snap::Tensor ReverseBaseOpx::unwindTensorLayout(snap::Tensor tensor,
 
 view::RegMap ReverseBaseOpx::unwindRegion(InIndex inIndex,
                                           OutIndex outIndex) const {
-  ReverseBaseOp *op = dynamic_cast<ReverseBaseOp *>(this->op_p);
-  return op->bwdRegMap(inIndex, outIndex);
+  ReverseBaseOp &op = getOp<ReverseBaseOp>();
+  return op.bwdRegMap(inIndex, outIndex);
 }
 
 ReverseInplaceOpx::ReverseInplaceOpx(Op *op, Devicex *devicex)
@@ -48,7 +48,7 @@ ReverseInplaceOpx::ReverseInplaceOpx(Op *op, Devicex *devicex)
 
 void ReverseInplaceOpx::grow(poplar::program::Sequence &) const {
   auto t = getInTensor(ReverseOp::getInIndex()).getPoplarTensor();
-  for (auto dim : dynamic_cast<ReverseInplaceOp *>(op_p)->getDimensions()) {
+  for (auto dim : getOp<ReverseInplaceOp>().getDimensions()) {
     t = t.reverse(static_cast<unsigned>(dim));
   }
 
