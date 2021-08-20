@@ -4,6 +4,7 @@
 from typing import TYPE_CHECKING
 
 import popart._internal.ir as _ir
+from popart.ir.globals import pop_current_graph, push_current_graph
 
 if TYPE_CHECKING:
     from popart.ir.ir import Ir
@@ -63,3 +64,11 @@ class Graph:
         self._debug_name = debug_name
         self._pb_graph = pb_graph
         return self
+
+    def __enter__(self):
+        push_current_graph(self)
+        return self
+
+    def __exit__(self, *exc):
+        pop_current_graph()
+        return False
