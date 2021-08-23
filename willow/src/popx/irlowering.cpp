@@ -91,10 +91,24 @@ namespace popx {
 namespace {
 
 void defaultLogPrinter(int progress, int total) {
+
+  // To avoid overlogging such as
+  //   [info] Compilation 39% complete
+  //   [info] Compilation 39% complete
+  //   [info] Compilation 39% complete
+  //   [info] Compilation 39% complete
+  //
+  // We keep track of the last percentage logged, and only log if the percentage
+  // is different.
+
+  static float lastPercentage{-1.};
   if (total != 0) {
     float percentage = std::floor(100.0f * static_cast<float>(progress) /
                                   static_cast<float>(total));
-    logging::devicex::info("Compilation {}% complete", percentage);
+    if (percentage - lastPercentage != 0.0f) {
+      lastPercentage = percentage;
+      logging::devicex::info("Compilation {}% complete", percentage);
+    }
   }
 }
 

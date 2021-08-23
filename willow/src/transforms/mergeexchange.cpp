@@ -23,14 +23,13 @@ std::size_t MergeExchange::id() { return typeid(MergeExchange).hash_code(); }
 void MergeExchange::insertMultiExchange(
     Graph &graph,
     std::vector<std::pair<int, ExchangeBaseOp *>> exchangeOps) const {
+
+  logging::transform::info("[MergeExchange] inserting multi exchange");
+
   // Strip topocons that would be blocking
   for (auto &op0 : exchangeOps) {
     for (auto &op1 : exchangeOps) {
       if (graph.topoCons->contains(op0.second, op1.second)) {
-        logging::transform::info(
-            "[MergeExchange] Removed topological constraint {} -> {}",
-            op0.second->debugName(),
-            op1.second->debugName());
         graph.topoCons->remove(op0.second, op1.second);
       }
     }
