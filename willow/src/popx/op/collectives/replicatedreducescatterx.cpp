@@ -73,14 +73,14 @@ void ReplicatedReduceScatterOpx::grow(poplar::program::Sequence &prog) const {
   poplar::OptionFlags reduceScatterOptions = dv_p->lowering().gclOptions;
   reduceScatterOptions.set("useReplicatedImplementation", "true");
 
-  poplar::Tensor reducedScattered =
-      gcl::reduceScatter(graph().getPoplarGraph(),
-                         toReduceScatter.flatten().getPoplarTensor(),
-                         getPoplarCollectiveOperator(rrsOp.getCollectiveOp()),
-                         prog,
-                         toGCLCommGroup(rrsOp.getGCLCommGroup()),
-                         debugContext("replicatedReduceScatter"),
-                         reduceScatterOptions);
+  poplar::Tensor reducedScattered = gcl::reduceScatterCrossReplica(
+      graph().getPoplarGraph(),
+      toReduceScatter.flatten().getPoplarTensor(),
+      getPoplarCollectiveOperator(rrsOp.getCollectiveOp()),
+      prog,
+      toGCLCommGroup(rrsOp.getGCLCommGroup()),
+      debugContext("replicatedReduceScatter"),
+      reduceScatterOptions);
 
   setOutTensor(ReplicatedReduceScatterOp::getOutIndex(),
                snap::Tensor{reducedScattered, graph()});

@@ -42,12 +42,12 @@ void GradCopyToHostOpx::grow(poplar::program::Sequence &prog) const {
       dv_p->lowering().getAccumulationFactor() == 1) {
     poplar::OptionFlags allReduceOptions = dv_p->lowering().gclOptions;
     allReduceOptions.set("useReplicatedImplementation", "true");
-    weightDeltas = gcl::allReduce(graph().getPoplarGraph(),
-                                  weightDeltas,
-                                  popops::CollectiveOperator::ADD,
-                                  prog,
-                                  debugContext("allReduce_Add"),
-                                  allReduceOptions);
+    weightDeltas = gcl::allReduceCrossReplica(graph().getPoplarGraph(),
+                                              weightDeltas,
+                                              popops::CollectiveOperator::ADD,
+                                              prog,
+                                              debugContext("allReduce_Add"),
+                                              allReduceOptions);
   }
 
   if (op_p->getIr().getSessionOptions().hostAllReduceRemoteBuffer) {

@@ -25,14 +25,14 @@ void ReplicatedAllReduceOpx::grow(poplar::program::Sequence &prog) const {
   poplar::Tensor toReduce              = getInTensor(inIndex).getPoplarTensor();
   poplar::OptionFlags allReduceOptions = dv_p->lowering().gclOptions;
   allReduceOptions.set("useReplicatedImplementation", "true");
-  poplar::Tensor output =
-      gcl::allReduce(graph().getPoplarGraph(),
-                     toReduce,
-                     getPoplarCollectiveOperator(rarOp.getCollectiveOp()),
-                     prog,
-                     toGCLCommGroup(rarOp.getGCLCommGroup()),
-                     debugContext("replicatedAllReduce"),
-                     allReduceOptions);
+  poplar::Tensor output = gcl::allReduceCrossReplica(
+      graph().getPoplarGraph(),
+      toReduce,
+      getPoplarCollectiveOperator(rarOp.getCollectiveOp()),
+      prog,
+      toGCLCommGroup(rarOp.getGCLCommGroup()),
+      debugContext("replicatedAllReduce"),
+      allReduceOptions);
   setOutTensor(ReplicatedAllReduceOp::getOutIndex(),
                snap::Tensor{output, graph()});
 }
@@ -66,12 +66,13 @@ void ReplicatedAllReduceInplaceOpx::grow(
   poplar::Tensor toReduce = getInTensor(inIndex).getPoplarTensor();
   poplar::OptionFlags allReduceOptions = dv_p->lowering().gclOptions;
   allReduceOptions.set("useReplicatedImplementation", "true");
-  gcl::allReduceInPlace(graph().getPoplarGraph(),
-                        toReduce,
-                        getPoplarCollectiveOperator(rarOp.getCollectiveOp()),
-                        prog,
-                        debugContext("replicatedAllReduce"),
-                        allReduceOptions);
+  gcl::allReduceInPlaceCrossReplica(
+      graph().getPoplarGraph(),
+      toReduce,
+      getPoplarCollectiveOperator(rarOp.getCollectiveOp()),
+      prog,
+      debugContext("replicatedAllReduce"),
+      allReduceOptions);
   setOutTensor(ReplicatedAllReduceInplaceOp::getOutIndex(),
                snap::Tensor{toReduce, graph()});
 }

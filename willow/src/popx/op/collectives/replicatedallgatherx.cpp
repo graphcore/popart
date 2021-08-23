@@ -25,7 +25,7 @@ void ReplicatedAllGatherOpx::grow(poplar::program::Sequence &prog) const {
   poplar::OptionFlags allGatherOptions = dv_p->lowering().gclOptions;
   allGatherOptions.set("useReplicatedImplementation", "true");
 
-  poplar::Tensor gathered = gcl::allGather(
+  poplar::Tensor gathered = gcl::allGatherCrossReplica(
       graph().getPoplarGraph(),
       getInTensor(ReplicatedAllGatherOp::getInIndex()).getPoplarTensor(),
       prog,
