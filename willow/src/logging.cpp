@@ -169,6 +169,8 @@ LoggingContext::LoggingContext() {
 
   if (POPART_LOG_FORMAT) {
     logFormat = std::string(POPART_LOG_FORMAT);
+  } else {
+    logFormat = "%^%Y-%m-%dT%H:%M:%S.%fZ %n %P.%t %L: %v%$";
   }
 
   // Get logging output from the POPART_LOG_DEST environment variable.
@@ -232,7 +234,7 @@ std::shared_ptr<spdlog::logger> LoggingContext::getLogger(Module m) {
     logger->set_level(translate(level));
 
     if (!instance.logFormat.empty()) {
-      logger->set_pattern(instance.logFormat);
+      logger->set_pattern(instance.logFormat, spdlog::pattern_time_type::utc);
     }
 
     // save the logger
