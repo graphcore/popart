@@ -23,7 +23,73 @@ namespace _internal {
 namespace ir {
 
 void bindOp(py::module &m) {
-  // TODO: Move to op/op.cpp and add an extra `op` namespace
+
+  py::class_<OpDebugInfo>(m, "OpDebugInfo", py::module_local())
+      .def(py::init<const DebugContext &, const Op &>())
+      .def("finalize", &OpDebugInfo::finalize);
+  py::class_<TensorLocation>(m, "TensorLocation", py::module_local())
+      .def(py::init<>())
+      .def("operator=", &TensorLocation::operator=)
+      .def("operator==", &TensorLocation::operator==)
+      .def("operator!=", &TensorLocation::operator!=)
+      .def("serialize", &TensorLocation::serialize)
+      .def("isRemote", &TensorLocation::isRemote);
+  py::class_<OptionalVGraphId>(m, "OptionalVGraphId")
+      .def(py::init<>())
+      .def(py::init<int64_t>())
+      .def(py::self == py::self)
+      .def(py::self != py::self)
+      .def("__bool__", &OptionalVGraphId::operator bool)
+      .def("reset", &OptionalVGraphId::reset);
+  py::class_<OptionalPipelineStage>(m, "OptionalPipelineStage")
+      .def(py::init<>())
+      .def(py::init<int64_t>())
+      .def(py::self == py::self)
+      .def(py::self != py::self)
+      .def("__bool__", &OptionalPipelineStage::operator bool)
+      .def("reset", &OptionalPipelineStage::reset);
+  py::class_<OptionalExecutionPhase>(m, "OptionalExecutionPhase")
+      .def(py::init<>())
+      .def(py::init<int64_t>())
+      .def(py::self == py::self)
+      .def(py::self != py::self)
+      .def("__bool__", &OptionalExecutionPhase::operator bool)
+      .def("reset", &OptionalExecutionPhase::reset);
+  py::class_<OptionalBatchSerializedPhase>(m, "OptionalBatchSerializedPhase")
+      .def(py::init<>())
+      .def(py::init<int64_t>())
+      .def(py::self == py::self)
+      .def(py::self != py::self)
+      .def("__bool__", &OptionalBatchSerializedPhase::operator bool)
+      .def("reset", &OptionalBatchSerializedPhase::reset);
+  py::class_<OptionalTensorLocation>(m, "OptionalTensorLocation")
+      .def(py::init<>())
+      .def(py::self == py::self)
+      .def(py::self != py::self)
+      .def("__bool__", &OptionalTensorLocation::operator bool)
+      .def("reset", &OptionalTensorLocation::reset);
+
+  py::class_<NumInputs>(m, "NumInputs")
+      .def(py::init<>())
+      .def(py::init<int>())
+      .def(py::init<int, int>())
+      .def_readwrite("min", &NumInputs::min)
+      .def_readwrite("max", &NumInputs::min);
+  py::class_<OperatorIdentifier>(m, "OperatorIdentifier", py::module_local())
+      .def(py::init<const OpDomain, const OpType, OpVersion, NumInputs, int>(),
+           py::arg("domain"),
+           py::arg("type"),
+           py::arg("version"),
+           py::arg("inputs")  = NumInputs(),
+           py::arg("outputs") = 0)
+      .def_readonly("domain", &OperatorIdentifier::domain)
+      .def_readonly("type", &OperatorIdentifier::type)
+      .def_readonly("version", &OperatorIdentifier::version)
+      .def_readonly("numInputs", &OperatorIdentifier::numInputs)
+      .def_readonly("numOutputs", &OperatorIdentifier::numOutputs)
+      .def(py::self < py::self)
+      .def(py::self == py::self)
+      .def(py::self != py::self);
   py::class_<Op::Settings>(m, "Settings", py::module_local())
       .def(py::init<Graph &, const std::string &>())
       .def(py::init<Graph &, const std::string &, const Scope &>())
