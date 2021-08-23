@@ -38,6 +38,8 @@ function(add_popart_python_module module_name)
 
   target_compile_features(${module_name} PUBLIC cxx_std_14)
 
+  add_coverage_flags_if_enabled(${module_name})
+  
   target_link_libraries(${module_name} PRIVATE popart)
 
   # For some unknown reason, you need the latter command to get
