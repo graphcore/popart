@@ -84,6 +84,7 @@ find_package(Python3 3.6 REQUIRED COMPONENTS Interpreter Development)
 
 if(NOT BUILD_SHARED_LIBS)
   set(Boost_USE_STATIC_LIBS ON)
+  set(Boost_USE_STATIC_RUNTIME ON)
 endif()
 set(boost_components
     # FindBoost bug: finding filesystem component does not transitively find and
