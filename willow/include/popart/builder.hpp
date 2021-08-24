@@ -1166,7 +1166,8 @@ public:
    *
    *
    * \param nodeOutputNames Name of the output matmul tensors of the ONNX node.
-   * \param mode Which dimension of the mat mul to serialize on.
+   * \param mode Which dimension of the mat mul to serialize on (choose from
+   * 'input_channels', 'output_channels', 'reducing_dim', 'none').
    * \param factor The number of serialised matmuls, must be a factor of the
    * dimensions to serialise on.
    *
