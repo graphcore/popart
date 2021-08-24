@@ -267,7 +267,7 @@ function(add_popart_py_unit_test name filename)
 endfunction()
 
 if(${POPART_ENABLE_COVERAGE} AND ${UPLOAD_COVERAGE_REPORT})
-  if(RESULTS_SERVER_COOKIE_FILE and EXISTS ${RESULTS_SERVER_COOKIE_FILE})
+  if(RESULTS_SERVER_COOKIE_FILE AND EXISTS ${RESULTS_SERVER_COOKIE_FILE})
     add_test(NAME upload_coverage_report
       COMMAND "${Python3_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/scripts/upload_coverage.py" 
               ${CMAKE_BINARY_DIR} 
