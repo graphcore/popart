@@ -58,8 +58,7 @@ FmodArg0GradOpPattern::makeAllReplacementOps(Op *op,
 
 namespace {
 static PatternCreator<FmodArg0GradOpPattern>
-    FmodArg0GradOpPattern(PreAliasPatternType::FmodArg0GradOp,
-                          "FmodArg0GradOp",
+    FmodArg0GradOpPattern("FmodArg0GradOp",
                           /* enabled = */ true,
                           /* mandatory = */ true);
 }

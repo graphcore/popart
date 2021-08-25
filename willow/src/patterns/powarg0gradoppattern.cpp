@@ -61,8 +61,7 @@ PowArg0GradOpPattern::makeAllReplacementOps(Op *op,
 
 namespace {
 static PatternCreator<PowArg0GradOpPattern>
-    PowArg0GradOpPattern(PreAliasPatternType::PowArg0GradOp,
-                         "PowArg0GradOp",
+    PowArg0GradOpPattern("PowArg0GradOp",
                          /* enabled = */ true,
                          /* mandatory = */ true);
 }

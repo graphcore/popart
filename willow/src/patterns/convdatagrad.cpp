@@ -102,8 +102,7 @@ bool ConvDataGradPattern::apply(Op *op) const {
 
 namespace {
 static PatternCreator<ConvDataGradPattern>
-    convDataGradPattern(PreAliasPatternType::ConvDataGrad,
-                        "ConvDataGrad",
+    convDataGradPattern("ConvDataGrad",
                         /* enabled = */ true,
                         /* mandatory = */ true);
 }

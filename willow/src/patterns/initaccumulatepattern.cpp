@@ -115,8 +115,7 @@ bool InitAccumulatePattern::apply(Op *op) const {
 
 namespace {
 static PatternCreator<InitAccumulatePattern>
-    InitAccumulatePattern(PreAliasPatternType::InitAccumulate,
-                          "InitAccumulate");
+    InitAccumulatePattern("InitAccumulate");
 }
 
 } // namespace popart

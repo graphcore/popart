@@ -40,8 +40,7 @@ bool SumToAddPattern::apply(Op *op) const {
 }
 
 namespace {
-static PatternCreator<SumToAddPattern>
-    SumToAddPattern(PreAliasPatternType::SumtoAdd, "SumToAdd");
+static PatternCreator<SumToAddPattern> SumToAddPattern("SumToAdd");
 }
 
 } // namespace popart

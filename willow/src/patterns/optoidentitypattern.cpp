@@ -44,8 +44,7 @@ std::vector<std::unique_ptr<Op>> OpToIdentityPattern::sequence(Op *op) const {
 }
 
 namespace {
-static PatternCreator<OpToIdentityPattern>
-    opToIdentityPattern(PreAliasPatternType::OptoIdentity, "OpToIdentity");
+static PatternCreator<OpToIdentityPattern> opToIdentityPattern("OpToIdentity");
 }
 
 } // namespace popart

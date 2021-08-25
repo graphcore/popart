@@ -155,10 +155,11 @@ bool MatMulPattern::apply(Op *op) const {
   auto lhsShape = matmulOp->getExpandedLhsShape();
   auto rhsShape = matmulOp->getExpandedRhsShape();
   if (lhsShape.size() == 3 && rhsShape.size() == 3 && rhsShape[0] == 1) {
-      // Modify the specific case where the RHS is broadcast on the group dimension.
-      // This avoids a ReduceSumOp being inserted into the during autodiff.
-      lhsShape[1] *= lhsShape[0];
-      lhsShape[0] = 1;
+    // Modify the specific case where the RHS is broadcast on the group
+    // dimension. This avoids a ReduceSumOp being inserted into the during
+    // autodiff.
+    lhsShape[1] *= lhsShape[0];
+    lhsShape[0] = 1;
   }
 
   logging::pattern::debug(
@@ -432,16 +433,11 @@ bool MatMulRhsGradPattern::matches(Op *op) const {
 }
 
 namespace {
-static PatternCreator<MatMulPattern>
-    matMulPattern(PreAliasPatternType::MatMulOp, "MatMulOp", true);
+static PatternCreator<MatMulPattern> matMulPattern("MatMulOp", true);
 static PatternCreator<MatMulLhsGradPattern>
-    matMulLhsGradPattern(PreAliasPatternType::MatMulLHSGradOp,
-                         "MatMulLhsGradOp",
-                         true);
+    matMulLhsGradPattern("MatMulLhsGradOp", true);
 static PatternCreator<MatMulRhsGradPattern>
-    matMulRhsGradPattern(PreAliasPatternType::MatMulRHSGradOp,
-                         "MatMulRhsGradOp",
-                         true);
+    matMulRhsGradPattern("MatMulRhsGradOp", true);
 } // namespace
 
 } // namespace popart

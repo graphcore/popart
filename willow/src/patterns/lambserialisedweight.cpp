@@ -201,8 +201,7 @@ SumOp *LambSerialisedWeightPattern::insertSumOp(Graph &graph,
 
 namespace {
 PatternCreator<LambSerialisedWeightPattern>
-    tiedGatherer(PreAliasPatternType::LambSerialisedWeight,
-                 "LambSerialisedWeight",
+    tiedGatherer("LambSerialisedWeight",
                  true,   // On by default
                  false); // Not mandatory
 } // namespace

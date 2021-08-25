@@ -400,8 +400,7 @@ bool ScanToLoopPattern::apply(Op *op) const {
 
 namespace {
 static PatternCreator<ScanToLoopPattern>
-    ScanToLoopPattern(PreAliasPatternType::ScanToLoop,
-                      "ScanToLoop",
+    ScanToLoopPattern("ScanToLoop",
                       /* enabled = */ true,
                       /* mandatory = */ true);
 

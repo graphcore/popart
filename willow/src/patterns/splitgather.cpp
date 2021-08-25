@@ -287,8 +287,7 @@ bool SplitGatherPattern::apply(Op *op) const {
 }
 
 namespace {
-static PatternCreator<SplitGatherPattern>
-    splitGatherer(PreAliasPatternType::SplitGather, "SplitGather", false);
+static PatternCreator<SplitGatherPattern> splitGatherer("SplitGather", false);
 }
 
 } // namespace popart

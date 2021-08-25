@@ -63,8 +63,7 @@ Atan2Arg0GradOpPattern::makeAllReplacementOps(Op *op,
 
 namespace {
 static PatternCreator<Atan2Arg0GradOpPattern>
-    PowArg0GradOpPattern(PreAliasPatternType::Atan2Arg0GradOp,
-                         "Atan2Arg0GradOp",
+    PowArg0GradOpPattern("Atan2Arg0GradOp",
                          /* enabled = */ true,
                          /* mandatory = */ true);
 }

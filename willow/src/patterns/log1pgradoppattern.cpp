@@ -58,10 +58,7 @@ bool Log1pGradOpPattern::apply(Op *op) const {
 
 namespace {
 static PatternCreator<Log1pGradOpPattern>
-    Log1pGradOpPattern(PreAliasPatternType::Log1pGradOp,
-                       "Log1pGradOp",
-                       true,
-                       true);
+    Log1pGradOpPattern("Log1pGradOp", true, true);
 }
 
 } // namespace popart

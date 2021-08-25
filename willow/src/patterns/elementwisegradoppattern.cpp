@@ -17,8 +17,7 @@ namespace {
 // (fwd_in) -> [Sign] -> (tmp1)
 // {(tmp1), (grad_in)} -> [Mul] -> (grad_out)
 static PatternCreator<ElementWiseGradOpPattern<AbsGradOp, SignOp>>
-    sinGradOpPattern(PreAliasPatternType::AbsGradOp,
-                     "AbsGradOp",
+    sinGradOpPattern("AbsGradOp",
                      /* enabled = */ true,
                      /* mandatory = */ true);
 
@@ -26,8 +25,7 @@ static PatternCreator<ElementWiseGradOpPattern<AbsGradOp, SignOp>>
 // (fwd_in) -> [Cos] -> (tmp1)
 // {(tmp1), (grad_in)} -> [Mul] -> (grad_out)
 static PatternCreator<ElementWiseGradOpPattern<SinGradOp, CosOp>>
-    absGradOpPattern(PreAliasPatternType::SinGradOp,
-                     "SinGradOp",
+    absGradOpPattern("SinGradOp",
                      /* enabled = */ true,
                      /* mandatory = */ true);
 

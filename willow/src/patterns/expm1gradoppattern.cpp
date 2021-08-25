@@ -61,10 +61,7 @@ bool Expm1GradOpPattern::apply(Op *op) const {
 
 namespace {
 static PatternCreator<Expm1GradOpPattern>
-    Expm1GradOpPattern(PreAliasPatternType::Expm1GradOp,
-                       "Expm1GradOp",
-                       true,
-                       true);
+    Expm1GradOpPattern("Expm1GradOp", true, true);
 }
 
 } // namespace popart

@@ -65,8 +65,7 @@ bool ReciprocalGradOpPattern::apply(Op *op) const {
 
 namespace {
 static PatternCreator<ReciprocalGradOpPattern>
-    reciprocalGradOpPattern(PreAliasPatternType::ReciprocalGradOp,
-                            "ReciprocalGradOp",
+    reciprocalGradOpPattern("ReciprocalGradOp",
                             /* enabled = */ true,
                             /* mandatory = */ true);
 

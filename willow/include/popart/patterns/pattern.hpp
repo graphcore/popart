@@ -9,60 +9,6 @@
 
 namespace popart {
 
-// All patterns which are run before any tensor aliasing has been performed
-enum class PreAliasPatternType {
-  PreUniRepl = 0,
-  PostNRepl,
-  SoftmaxGradDirect,
-  NLLLWithSoftmaxGradDirect,
-  OptoIdentity,
-  SubtractArg1GradOp,
-  MulArgGradOp,
-  ReciprocalGradOp,
-  DivArg0GradOp,
-  DivArg1GradOp,
-  SinGradOp,
-  CosGradOp,
-  Atan2Arg0GradOp,
-  Atan2Arg1GradOp,
-  SqrtGradOp,
-  ExpGradOp,
-  Expm1GradOp,
-  Log1pGradOp,
-  LogGradOp,
-  CoshOp,
-  NegativeOneScale,
-  PadSum,
-  AbsGradOp,
-  SplitGather,
-  ConvDataGrad,
-  SumtoAdd,
-  SplitGradOpToConcat,
-  SplitOp,
-  PowArg0GradOp,
-  PowArg1GradOp,
-  ContiguateIPUCopyIndices,
-  MatMulOp,
-  MatMulLHSGradOp,
-  MatMulRHSGradOp,
-  SGD1Decompose,
-  LSTMOp,
-  InitAccumulate,
-  UpsampleToResize,
-  RandomNormalLikeOpPattern,
-  RandomUniformLikeOpPattern,
-  ZerosLikeOpPattern,
-  ConvTranspose,
-  DecomposeBinaryConstScalar,
-  FmodArg0GradOp,
-  ScanToLoop,
-  LoopScanOut,
-  PackedDataBlock,
-  LambSerialisedWeight,
-  TiedGather,
-  TiedGatherAccumulate
-};
-
 // Definition: A tensor is "touched" by a Pattern if
 // its state is different at any point in the execution of the
 // computation graph, different measured between

@@ -221,7 +221,7 @@ bool TiedGatherPattern::apply(Op *op) const {
       // Slice the Dictionary
       auto dataSlice =
           insertSliceOp(i * sliceSize, (i + 1) * sliceSize, serialName);
-      // Subtract the indicies
+      // Subtract the indices
       auto indicesSub =
           subtractWithConstant(indices, i * sliceSize, serialName);
       // Add the tied gather to the graph
@@ -252,8 +252,7 @@ bool TiedGatherPattern::apply(Op *op) const {
 }
 
 namespace {
-PatternCreator<TiedGatherPattern> tiedGatherer(PreAliasPatternType::TiedGather,
-                                               "TiedGather",
+PatternCreator<TiedGatherPattern> tiedGatherer("TiedGather",
                                                false,  // Off by default
                                                false); // Not mandatory
 } // namespace
@@ -498,8 +497,7 @@ TensorId TiedGatherAccumulatePattern::inplaceTranspose(TensorId tid,
 
 namespace {
 PatternCreator<TiedGatherAccumulatePattern>
-    tiedGatherAccumulater(PreAliasPatternType::TiedGatherAccumulate,
-                          "TiedGatherAccumulate",
+    tiedGatherAccumulater("TiedGatherAccumulate",
                           false,  // Off by default
                           false); // Not mandatory
 } // namespace

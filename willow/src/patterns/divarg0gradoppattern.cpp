@@ -33,8 +33,7 @@ DivArg0GradOpPattern::makeAllReplacementOps(Op *op,
 
 namespace {
 static PatternCreator<DivArg0GradOpPattern>
-    DivArg0GradOpPattern(PreAliasPatternType::DivArg0GradOp,
-                         "DivArg0GradOp",
+    DivArg0GradOpPattern("DivArg0GradOp",
                          /* enabled = */ true,
                          /* mandatory = */ true);
 }

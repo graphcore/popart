@@ -55,8 +55,8 @@ bool DecomposeBinaryConstScalar::apply(Op *op_) const {
   auto scalarId = op.getIr().createIntermediateTensorId("scalar");
 
   auto v_f32 = op.value();
-  // Handle special case for halfs.
-  // TODO: T37480 Move this fix for halfs down in the code.
+  // Handle special case for halves.
+  // TODO: T37480 Move this fix for halves down in the code.
   if (input->info.dataType() == DataType::FLOAT16) {
     std::vector<float16_t> data{v_f32};
     op.getGraph().getTensors().addConstInit(
@@ -90,8 +90,7 @@ bool DecomposeBinaryConstScalar::apply(Op *op_) const {
 
 namespace {
 static PatternCreator<popart::DecomposeBinaryConstScalar>
-    binCaso(PreAliasPatternType::DecomposeBinaryConstScalar,
-            "DecomposeBinaryConstScalar");
+    binCaso("DecomposeBinaryConstScalar");
 
 } // namespace
 

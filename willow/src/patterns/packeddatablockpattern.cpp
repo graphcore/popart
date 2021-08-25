@@ -233,7 +233,7 @@ CallbackIO setupCallbackInputs(PackedDataBlockOp *op, const TensorId resultId) {
                  {DataType::BOOL, {}},
                  false);
 
-  // The result needs to be a persisten input, and these need to be the first
+  // The result needs to be a persistent input, and these need to be the first
   // inputs.
   auto &resultInfo    = op->outInfo(0);
   auto scopedResultId = graph.addScope(resultId);
@@ -497,8 +497,7 @@ bool PackedDataBlockPattern::apply(Op *op) const {
 
 namespace {
 static PatternCreator<PackedDataBlockPattern>
-    PackedDataBlockPattern(PreAliasPatternType::PackedDataBlock,
-                           "PackedDataBlock");
+    PackedDataBlockPattern("PackedDataBlock");
 }
 
 } // namespace popart

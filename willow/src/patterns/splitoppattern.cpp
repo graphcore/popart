@@ -86,8 +86,7 @@ bool SplitOpPattern::apply(Op *op) const {
 }
 
 namespace {
-static PatternCreator<SplitOpPattern>
-    splitOpPattern(PreAliasPatternType::SplitOp, "SplitOp");
+static PatternCreator<SplitOpPattern> splitOpPattern("SplitOp");
 }
 
 } // namespace popart

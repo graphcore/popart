@@ -93,7 +93,7 @@ bool ConvTransposePattern::apply(Op *op) const {
 
 namespace {
 static PatternCreator<ConvTransposePattern>
-    convTransposePattern(PreAliasPatternType::ConvTranspose, "ConvTranspose");
+    convTransposePattern("ConvTranspose");
 }
 
 } // namespace popart

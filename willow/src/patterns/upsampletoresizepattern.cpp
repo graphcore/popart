@@ -73,8 +73,7 @@ bool UpsampleToResizePattern::apply(Op *op) const {
 
 namespace {
 static PatternCreator<popart::UpsampleToResizePattern>
-    UpsampleToResizePattern(PreAliasPatternType::UpsampleToResize,
-                            "UpsampleToResize");
+    UpsampleToResizePattern("UpsampleToResize");
 }
 
 } // namespace popart

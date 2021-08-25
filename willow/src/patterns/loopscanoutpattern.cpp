@@ -180,8 +180,7 @@ bool LoopScanOutPattern::apply(Op *op) const {
 
 namespace {
 static PatternCreator<LoopScanOutPattern>
-    LoopScanOutPattern(PreAliasPatternType::LoopScanOut,
-                       "LoopScanOut",
+    LoopScanOutPattern("LoopScanOut",
                        /* enabled = */ true,
                        /* mandatory = */ true);
 

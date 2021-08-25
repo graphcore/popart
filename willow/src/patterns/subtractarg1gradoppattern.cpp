@@ -39,8 +39,7 @@ SubtractArg1GradOpPattern::makeAllReplacementOps(Op *op,
 
 namespace {
 static PatternCreator<SubtractArg1GradOpPattern>
-    PreUniReplPattern(PreAliasPatternType::SubtractArg1GradOp,
-                      "SubtractArg1GradOp");
+    PreUniReplPattern("SubtractArg1GradOp");
 }
 
 } // namespace popart

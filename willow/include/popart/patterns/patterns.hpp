@@ -60,26 +60,12 @@ private:
 
   PreAliasPatternManager() = default;
 
-  std::map<PreAliasPatternType, std::type_index> patternTypeToTypeIndex;
   std::map<std::type_index, PreAliasPatternInfo> patternInfos;
 
   // Singleton
   static PreAliasPatternManager &getInstance();
 
 public:
-  // could add another parameter to set which level this pattern is in.
-  static void
-  registerPattern(PreAliasPatternType type,
-                  const std::type_index &ti,
-                  std::string name,
-                  bool enabled,
-                  bool mandatory,
-                  std::function<std::unique_ptr<PreAliasPattern>()> func) {
-    getInstance().patternInfos.insert(
-        {ti, PreAliasPatternInfo{enabled, mandatory, name, func}});
-    getInstance().patternTypeToTypeIndex.insert({type, ti});
-  }
-
   static void
   registerPattern(const std::type_index &ti,
                   std::string name,
@@ -93,10 +79,6 @@ public:
   static const std::map<std::type_index, PreAliasPatternInfo> &
   getPatternInfos() {
     return getInstance().patternInfos;
-  }
-
-  static std::type_index getTypeIndex(PreAliasPatternType type) {
-    return getInstance().patternTypeToTypeIndex.at(type);
   }
 
   static const PreAliasPatternInfo &getInfo(const std::type_index &ti) {
@@ -149,23 +131,6 @@ public:
 // PreAliasPatternManager
 template <class PATTERN> class PatternCreator {
 public:
-  PatternCreator(PreAliasPatternType type,
-                 std::string name,
-                 bool enabled   = true,
-                 bool mandatory = false) {
-    auto ti = std::type_index(typeid(PATTERN));
-    PreAliasPatternManager::registerPattern(
-        type,
-        ti,
-        name,
-        enabled,
-        mandatory,
-        [name]() -> std::unique_ptr<PreAliasPattern> {
-          return std::unique_ptr<PATTERN>(new PATTERN());
-        });
-    AddPatternName<PATTERN> registerName(name);
-  }
-
   PatternCreator(std::string name,
                  bool enabled   = true,
                  bool mandatory = false) {
@@ -244,7 +209,7 @@ public:
   bool isTiedGatherAccumulateEnabled();
 
   // The following methods are fluent allow you to
-  // Pattens().enableInPlace0(false).
+  // Patterns().enableInPlace0(false).
   //           enablePreUniRepl(true);
   Patterns &enableInitAccumulate(bool v);
   Patterns &enablePreUniRepl(bool v);
