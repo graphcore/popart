@@ -174,8 +174,8 @@ addOnesTensor(Graph &graph, const TensorId &tensorId, const TensorInfo info) {
       throw error("[AutomaticLossScale transform] Can only create a 'ones' "
                   "tensor of FLOAT16 and FLOAT data types.");
     }
+    ir.addAdditionalModelProtoTensor(tensorId);
   }
-
   return graph.getTensors().get(tensorId);
 }
 
