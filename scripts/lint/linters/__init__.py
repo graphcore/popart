@@ -1,0 +1,2 @@
+# Copyright (c) 2021 Graphcore Ltd. All rights reserved.
+from lint.linters.base_linter import *

@@ -5,7 +5,8 @@
     "../arcanist_linters/yapf_linter",
     "../arcanist_linters/gc_copyright_linter",
     "tests/popart_test_linter",
-    "scripts/linters/isort"
+    "scripts/linters/isort",
+    "scripts/lint"
   ],
   "arc.land.onto.default": "master",
   "base": "git:merge-base(origin/master)"

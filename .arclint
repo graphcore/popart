@@ -27,7 +27,8 @@
         "popart-test-linter": {
             "type": "popart-test-linter",
             "include": "(\\.py$)",
-            "exclude": "(docs/user_guide/files/tests/test_examples.py)"
+            "exclude": "(docs/user_guide/files/tests/test_examples.py)",
+            "exclude": "(tests/linters/.*)"
         },
         "gc-copyright": {
             "type": "gc-copyright",
@@ -37,6 +38,9 @@
                 "(.*Doxyfile.in$)",
                 "(willow/include/popart/vendored/.*)"
             ]
+        },
+        "autopatch": {
+            "type": "autopatch"
         }
     }
 }
