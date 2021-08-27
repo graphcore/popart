@@ -1,5 +1,5 @@
 {
-    "linters": {
+    "linters": { 
         "clang-format": {
             "type": "clang-format",
             "version": "=9.0.0-d3a647c305759f37f30257352e621579f53d0073",
