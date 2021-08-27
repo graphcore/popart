@@ -10,6 +10,19 @@
             "class": "lint.linters.ClangFormatLinter",
             "version": "9.0.0.d3a647c305759f37f30257352e621579f53d0073",
             "include": "(\\.(c|cpp|C|cc|c\\+\\+|cxx|h|hpp)$)"
+        },
+        "gc-copyright": {
+            "class": "lint.linters.CopyrightLinter",
+            "version": "0.0.0",
+            "exclude": [
+                "(CMakeLists.txt$)",
+                "(build_scripts/.*)",
+                "(.*Doxyfile.in$)",
+                "(willow/include/popart/vendored/.*)",
+                "(.arclint)",
+                "(.arcconfig)",
+                "(.json$)"
+            ]
         }
     }
 }

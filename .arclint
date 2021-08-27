@@ -1,15 +1,5 @@
 {
     "linters": { 
-        "clang-format": {
-            "type": "clang-format",
-            "version": "=9.0.0-d3a647c305759f37f30257352e621579f53d0073",
-            "include": "(\\.(c|cpp|C|cc|c\\+\\+|cxx|h|hpp)$)"
-        },
-        "yapf": {
-            "type": "yapf",
-            "version": "=0.27.0",
-            "include": "(\\.py$)"
-        },
         "text-rst": {
             "type": "text",
             "include": "(\\.(rst)$)",
@@ -29,15 +19,6 @@
             "include": "(\\.py$)",
             "exclude": "(docs/user_guide/files/tests/test_examples.py)",
             "exclude": "(tests/linters/.*)"
-        },
-        "gc-copyright": {
-            "type": "gc-copyright",
-            "exclude": [
-                "(CMakeLists.txt$)",
-                "(build_scripts/.*)",
-                "(.*Doxyfile.in$)",
-                "(willow/include/popart/vendored/.*)"
-            ]
         },
         "autopatch": {
             "type": "autopatch"
