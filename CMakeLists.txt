@@ -123,6 +123,7 @@ find_package(ONNX 1.6 REQUIRED)
 
 # Load custom utilities.
 include(cmake/Utils.cmake)
+
 #------ end of find dependencies
 
 #------ configure sources

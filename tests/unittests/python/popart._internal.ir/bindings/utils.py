@@ -4,7 +4,7 @@ import popart._internal.ir as _ir
 import numpy as np
 
 
-def create_ir(graph_ids: List[str]):
+def create_ir(graph_ids: List[str] = []):
     """Small helper function to create an Ir with some graphs
 
     Args:
@@ -14,11 +14,12 @@ def create_ir(graph_ids: List[str]):
         Ir: An Ir with the required graphs.
     """
     ir = _ir.Ir()
-    graphs = []
+    graphs = [ir.getMainGraph()]
     for name in graph_ids:
         id = _ir.GraphId(name)
         g = _ir.Graph(ir, id)
         graphs.append(g)
+
     return ir, graphs
 
 

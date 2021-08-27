@@ -4,6 +4,7 @@
 
 #include <popart/op.hpp>
 #include <popart/op/subgraph.hpp>
+#include <popart/tensorindex.hpp>
 
 namespace popart {
 
