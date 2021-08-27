@@ -355,7 +355,7 @@ TensorId BuilderImpl::addInputTensor(const TensorInfo &tensorInfo,
   // Add metadata to annotate an input tensor's exchange strategy
   {
     auto a = meta_data->Add();
-    a->set_key(std::string(sExecutionContextAttribute) +
+    a->set_key(std::string(sExchangeStrategyAttribute) +
                std::string(sNameDelimiter) + id);
     a->set_value(
         std::to_string(static_cast<int>(inputSettings.exchangeStrategy())));

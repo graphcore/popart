@@ -3,11 +3,13 @@
 #include <queue>
 #include <popart/error.hpp>
 #include <popart/graph.hpp>
+#include <popart/graphutils.hpp>
 #include <popart/ir.hpp>
 #include <popart/names.hpp>
 #include <popart/op.hpp>
 #include <popart/op/exchange/hostcopy.hpp>
 #include <popart/op/exchange/remote.hpp>
+#include <popart/op/init.hpp>
 #include <popart/op/iotilecopy.hpp>
 #include <popart/op/loop.hpp>
 #include <popart/tensor.hpp>
@@ -44,6 +46,11 @@ std::ostream &operator<<(std::ostream &os, const DecomposeLoopOpType &dlopt) {
     os << "Undefined";
     break;
   }
+  return os;
+}
+
+std::ostream &operator<<(std::ostream &os, const DecomposeLoopModel &m) {
+  os << m.getName();
   return os;
 }
 
@@ -174,30 +181,57 @@ bool isIOOp(Op *op) {
 // An Op that is IO, and on IO tiles, but still to be classified as Compute
 bool isComputeLikeIOOp(std::set<ExchangeStrategy> computeLikeStrategies,
                        Op *op) {
-  auto &ir = op->getIr();
+  auto &ir             = op->getIr();
+  bool isComputeLikeIo = false;
 
-  if (auto hostLoadOp = dynamic_cast<HostLoadOp *>(op)) {
-    auto exchangeStrategy = ir.getTensor(hostLoadOp->getHostStreamTensorId())
-                                ->inputSettings.exchangeStrategy();
-    if (hostLoadOp->settings.tileSet == TileSet::IO &&
-        computeLikeStrategies.find(exchangeStrategy) !=
-            computeLikeStrategies.end()) {
-      return true;
+  auto isOpComputeLike = [&ir, &computeLikeStrategies](Op *opToCheck) {
+    if (auto hostLoadOp = dynamic_cast<HostLoadOp *>(opToCheck)) {
+      auto exchangeStrategy = ir.getTensor(hostLoadOp->getHostStreamTensorId())
+                                  ->inputSettings.exchangeStrategy();
+      if (hostLoadOp->settings.tileSet == TileSet::IO &&
+          computeLikeStrategies.find(exchangeStrategy) !=
+              computeLikeStrategies.end()) {
+        return true;
+      }
+      return false;
+    }
+    if (auto hostStoreOp = dynamic_cast<HostStoreOp *>(opToCheck)) {
+      auto art = ir.getDataFlow().getAnchorReturnTypeMap().at(
+          hostStoreOp->getHostStreamTensorId());
+      auto exchangeStrategy = art.exchangeStrategy();
+      if (hostStoreOp->settings.tileSet == TileSet::IO &&
+          computeLikeStrategies.find(exchangeStrategy) !=
+              computeLikeStrategies.end()) {
+        return true;
+      }
+      return false;
     }
     return false;
-  }
-  if (auto hostStoreOp = dynamic_cast<HostStoreOp *>(op)) {
-    auto art = ir.getDataFlow().getAnchorReturnTypeMap().at(
-        hostStoreOp->getHostStreamTensorId());
-    auto exchangeStrategy = art.exchangeStrategy();
-    if (hostStoreOp->settings.tileSet == TileSet::IO &&
-        computeLikeStrategies.find(exchangeStrategy) !=
-            computeLikeStrategies.end()) {
-      return true;
-    }
-    return false;
-  }
-  return false;
+  };
+
+  isComputeLikeIo |= isOpComputeLike(op);
+
+  graphutils::traverse(
+      op->output->tensors(),
+      [&isComputeLikeIo, op, &isOpComputeLike](Tensor *t) -> bool {
+        for (auto consumer : t->consumers.getOps()) {
+          isComputeLikeIo |= isOpComputeLike(consumer);
+        }
+        return true;
+      },
+      [op](Op *c, Tensor *t0, Tensor *t1) -> bool {
+        if (c->getGraph().id != op->getGraph().id) {
+          return false;
+        }
+        return c->isConvertibleTo<HostLoadOp>() ||
+               c->isConvertibleTo<HostStoreOp>() ||
+               c->isConvertibleTo<InitOp>();
+      },
+      graphutils::TraversalType::DepthFirst,
+      graphutils::VisitType::Pre,
+      graphutils::TraversalDirection::Forward);
+
+  return isComputeLikeIo;
 }
 
 } // namespace
@@ -239,6 +273,8 @@ DecomposeLoops::getType(const DecomposeLoopModel &model,
     if (op->isConvertibleTo<IoTileCopyOp>()) {
       if (*prevTypes.rbegin() < DecomposeLoopOpType::Compute) {
         return DecomposeLoopOpType::IoToCompute;
+      } else if (*prevTypes.rbegin() < DecomposeLoopOpType::ComputeToIo) {
+        return DecomposeLoopOpType::Compute;
       } else {
         return DecomposeLoopOpType::AuxiliaryAfter;
       }
@@ -285,8 +321,11 @@ void DecomposeLoops::decomposeLoop(Graph &graph,
     return;
   }
 
-  logging::transform::trace("[DecomposeLoops] Decomposing {}",
-                            loopOp->debugName());
+  logging::transform::trace("[DecomposeLoops] Decomposing {} with model {} "
+                            "(compute like IO strategies: {})",
+                            loopOp->debugName(),
+                            model,
+                            model.getComputeLikeExchangeStrategies());
 
   std::map<DecomposeLoopOpType, std::vector<Op *>> opsByType;
   std::map<Op *, DecomposeLoopOpType> opToType;
@@ -743,24 +782,66 @@ void DecomposeLoops::decomposeLoop(Graph &graph,
     }
   }
 
-  // Add topocons
+  // Add and remove topocons
   std::map<int, std::vector<Op *>> beforeLoopBins;
   std::map<int, std::vector<Op *>> insideLoopBins;
   std::map<int, std::vector<Op *>> afterLoopBins;
 
+  std::map<int, std::vector<Op *>> apparentIterationMap;
+
   for (size_t i = 0; i < schedule.size(); ++i) {
-    Op *op = schedule.at(i);
-    auto pos =
-        model.typeToPosition(opToType.at(op), getApparentIteration(op, -1));
+    Op *op                 = schedule.at(i);
+    auto apparentIteration = getApparentIteration(op, -1);
+    apparentIterationMap[apparentIteration].push_back(op);
+    auto pos = model.typeToPosition(opToType.at(op), apparentIteration);
     insideLoopBins[pos].push_back(op);
     for (int j = 0; j < unrollFactor; ++j) {
-      Op *cloneOp = clones[schedule.at(i)][j];
-      auto pos =
-          model.typeToPosition(opToType.at(op), getApparentIteration(op, j));
+      Op *cloneOp            = clones[schedule.at(i)][j];
+      auto apparentIteration = getApparentIteration(op, j);
+      apparentIterationMap[apparentIteration].push_back(op);
+      auto pos = model.typeToPosition(opToType.at(op), apparentIteration);
       if (isBeforeLoop(op, j)) {
         beforeLoopBins[pos].push_back(cloneOp);
       } else {
         afterLoopBins[pos].push_back(cloneOp);
+      }
+    }
+  }
+
+  // Log Op bins
+  auto logBins = [](std::string name, std::map<int, std::vector<Op *>> bins) {
+    std::stringstream ss;
+    for (auto bin : bins) {
+      ss << std::endl;
+      std::vector<std::string> names;
+      names.reserve(bin.second.size());
+      for (auto op : bin.second) {
+        names.push_back(op->debugName());
+      }
+      ss << "    " << bin.first << ": ";
+      ss << logging::join(names.begin(), names.end(), ", ");
+    }
+    logging::trace("[DecomposeLoops] {} bins: {}", name, ss.str());
+  };
+
+  if (logging::shouldLog(logging::Module::transform, logging::Level::Trace)) {
+    logBins("before loop", beforeLoopBins);
+    logBins("inside loop", insideLoopBins);
+    logBins("after loop", afterLoopBins);
+  }
+
+  // Remove any topocons spanning multiple apparent iterations (see
+  // DecomposeLoopOpType enum), since these are now invalid and may block
+  // overlap
+  for (auto &iteration0 : apparentIterationMap) {
+    for (auto &iteration1 : apparentIterationMap) {
+      if (iteration0.first != iteration1.first) {
+        for (auto op0 : iteration0.second) {
+          for (auto op1 : iteration1.second) {
+            auto &topo = op0->getGraph().topoCons;
+            topo->remove(op0, op1);
+          }
+        }
       }
     }
   }

@@ -38,9 +38,14 @@ bool MultiExchangeOpx::canUnwind(InIndex in, OutIndex out) const {
 }
 
 snap::Tensor MultiExchangeOpx::unwindTensorLayout(snap::Tensor tensor,
-                                                  InIndex,
+                                                  InIndex in,
                                                   OutIndex) const {
-  return tensor;
+  auto &multiExchangeOp = getOp<MultiExchangeOp>();
+  auto inIndices        = multiExchangeOp.inIndexToDescriptorIndex(in);
+  auto descriptor  = multiExchangeOp.getExchangeDescriptor(inIndices.first);
+  auto descriptorx = getExchangeDescriptorx(dv_p, descriptor);
+
+  return descriptorx->unwind(srcVirtualGraph(in), tensor);
 }
 
 view::RegMap MultiExchangeOpx::unwindRegion(InIndex, OutIndex) const {

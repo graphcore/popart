@@ -20,6 +20,9 @@ namespace popart {
  *
  * ==============================================================
  * OverlapInnerLoop:
+ * - Boxes denote subgraphs / subgraph Ops / loops
+ * - Inputs/outputs are loop carried in order
+ *
  * .- outer loop ----------------------------------------.
  * |                  .- inner loop -.                   |
  * | load - compute - | - store      |                   |
@@ -31,7 +34,11 @@ namespace popart {
  *          overlap       overlap        overlap
  *
  * ==============================================================
- * OverlapLoops:
+ * OverlapLoops
+ * - Boxes denote subgraphs / subgraph Ops / loops
+ * - Numbers on boxes are matching subgraph/loop inputs and outputs
+ * - Overlap indicators indicate compute & load/store pairs overlapping in time
+ *
  *                load
  *                  |
  *               compute   load            load         < overlap
@@ -66,7 +73,7 @@ namespace popart {
  *        |             |        |         |
  *    compute           |      store       |            < overlap
  *        |              \                /
- *        |              1              2
+ *        |               1              2
  *        |              .-- inner loop --.
  *        |              |   |        |   |
  *        |              | store  compute |             < overlap

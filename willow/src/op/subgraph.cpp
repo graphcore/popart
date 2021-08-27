@@ -109,8 +109,8 @@ void SubgraphOp::adjustAliasOutIndices(OutIndex fromOut, OutIndex toOut) {
 void SubgraphOp::adjustModifiedIndices(InIndex fromIn, InIndex toIn) {
   if (modifiesMap.count(fromIn) != 0) {
     const auto &regions = modifiesMap[fromIn];
+    modifiesMap[toIn]   = regions;
     modifiesMap.erase(fromIn);
-    modifiesMap[toIn] = regions;
   }
 }
 

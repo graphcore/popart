@@ -6383,6 +6383,9 @@ from host stream to host. This can be done on the device or on the
 host. Done on host by default to save memory, but often at the expense
 of cycles, especially for larger anchor tensors.)doc";
 
+static const char *__doc_popart_SessionOptions_rearrangeStreamsOnHost =
+    R"doc()doc";
+
 static const char *__doc_popart_SessionOptions_replicatedGraphCount =
     R"doc(If enableReplicatedGraphs is true, ``replicatedGraphCount`` will set
 the number of model replications. For example, if your model uses 1

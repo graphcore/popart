@@ -31,10 +31,19 @@ private:
   // Generate a name for the new tensor
   TensorId generateCopiedTensorId(Tensor *tensor, TileSet toIoTiles) const;
 
-  void
-  insertIoTileCopy(Graph &graph, Tensor *tensor, Op *fromOp, Op *toOp) const;
+  void insertIoTileCopy(Graph &graph,
+                        Tensor *tensor,
+                        TileSet fromTileSet,
+                        TileSet toTileSet,
+                        Op *fromOp,
+                        Op *toOp,
+                        InIndex inIndex) const;
 
-  void connectIoTileCopy(Graph &graph, Tensor *tensor, Op *toOp) const;
+  void connectIoTileCopy(Graph &graph,
+                         Tensor *tensor,
+                         TileSet toTileSet,
+                         Op *toOp,
+                         InIndex inIndex) const;
 };
 
 } // namespace popart

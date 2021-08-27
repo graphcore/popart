@@ -52,6 +52,8 @@ std::ostream &operator<<(std::ostream &os, const DecomposeLoopOpType &);
 
 class DecomposeLoopModel {
 public:
+  virtual std::string getName() const { return "DecomposeLoopModel"; }
+
   DecomposeLoopModel();
   DecomposeLoopModel(
       DecomposeTopoConLevel topoConLevelBefore_,
@@ -101,8 +103,14 @@ private:
   std::set<ExchangeStrategy> computeLikeExchangeStrategies;
 };
 
+std::ostream &operator<<(std::ostream &os, const DecomposeLoopModel &);
+
 class DecomposeLoopUnrollModel : public DecomposeLoopModel {
 public:
+  std::string getName() const final override {
+    return "DecomposeLoopUnrollModel";
+  }
+
   DecomposeLoopUnrollModel() {}
   int typeToPosition(DecomposeLoopOpType type,
                      LoopIteration iteration) const override;
@@ -113,6 +121,10 @@ public:
 
 class DecomposeLoopOverlapModel : public DecomposeLoopModel {
 public:
+  std::string getName() const final override {
+    return "DecomposeLoopOverlapModel";
+  }
+
   DecomposeLoopOverlapModel() {}
   DecomposeLoopOverlapModel(
       DecomposeTopoConLevel topoConLevelBefore_,

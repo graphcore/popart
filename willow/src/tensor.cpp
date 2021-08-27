@@ -312,6 +312,7 @@ Tensor::getVirtualGraphIdAndTileSetUnsafe(std::set<OpId> &visited) const {
                 indices.second[0], visited));
           }
         }
+        visited.insert(producer->id);
       }
     }
   } else if (isGraphInput()) {
@@ -362,6 +363,7 @@ Tensor::getVirtualGraphIdAndTileSetUnsafe(std::set<OpId> &visited) const {
           }
         }
       }
+      visited.insert(consumer->id);
     }
   }
 

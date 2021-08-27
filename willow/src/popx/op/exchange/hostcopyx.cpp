@@ -54,9 +54,13 @@ InputCreatorType HostLoadOpx::getInputCreatorType(InIndex index) const {
              : PopOpx::getInputCreatorType(index);
 }
 
-snap::Tensor
-HostLoadOpx::unwindTensorLayout(snap::Tensor tensor, InIndex, OutIndex) const {
-  return tensor;
+snap::Tensor HostLoadOpx::unwindTensorLayout(snap::Tensor tensor,
+                                             InIndex in,
+                                             OutIndex out) const {
+  auto &hostLoadOp = getOp<HostLoadOp>();
+  std::shared_ptr<ExchangeDescriptorx> descriptorx =
+      getExchangeDescriptorx(dv_p, hostLoadOp.getExchangeDescriptor(0));
+  return descriptorx->unwind(srcVirtualGraph(in), tensor);
 }
 
 view::RegMap HostLoadOpx::unwindRegion(InIndex, OutIndex) const {

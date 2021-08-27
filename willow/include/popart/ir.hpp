@@ -492,6 +492,9 @@ public:
 
   bool hasReplicatedTensorSharding() const;
 
+  // Checks if any inputs or anchors have overlapped IO enabled
+  bool hasOverlappedIO() const;
+
   void setRequiresRandomSeed() { requiresRandomSeed_ = true; }
   bool getRequiresRandomSeed() const { return requiresRandomSeed_; }
 

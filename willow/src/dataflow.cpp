@@ -82,6 +82,14 @@ std::ostream &operator<<(std::ostream &oss, AnchorReturnTypeId art) {
   return oss;
 }
 
+std::ostream &operator<<(std::ostream &oss, InputSettings is) {
+  oss << "InputSettings[";
+  oss << is.exchangeStrategy() << ", ";
+  oss << is.tileSet();
+  oss << "]";
+  return oss;
+}
+
 std::size_t AnchorReturnType::hash() const {
   return std::hash<std::string>()(artStr_) ^ std::hash<int>()(returnPeriod_) ^
          std::hash<int>()(static_cast<int>(tileSet_)) ^

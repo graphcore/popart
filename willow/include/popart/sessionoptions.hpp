@@ -624,6 +624,12 @@ struct SessionOptions {
   /// cycles, especially for larger anchor tensors.
   bool rearrangeAnchorsOnHost = true;
 
+  /// Before stream tensors are streamed from host to device, they are not
+  /// necessarily arranged in memory as required when they are to be copied
+  /// from host stream to device. This can be done on the device or on the host.
+  /// Done on device by default.
+  bool rearrangeStreamsOnHost = false;
+
   /// By default, we will use prefetching for input data streams. Poplar will
   /// speculatively read data for a stream before is is required to allow the
   /// 'preparation' of the data to occur in parallel with compute.

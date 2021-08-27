@@ -28,33 +28,32 @@ TensorId IoComputeTileCopy::generateCopiedTensorId(Tensor *tensor,
 
 void IoComputeTileCopy::connectIoTileCopy(Graph &,
                                           Tensor *tensor,
-                                          Op *toOp) const {
-
-  // Copy the list of index's this input tensor is mapped
-  auto indices = toOp->input->indices(tensor);
+                                          TileSet toTileSet,
+                                          Op *toOp,
+                                          InIndex inIndex) const {
 
   // Remove this input tensor from the to op for each index
-  for (auto i : indices) {
-    logging::transform::debug(
-        "Disconnecting out {} from {}:{}", tensor->id, toOp->debugName(), i);
-    toOp->disconnectInTensor(i, tensor);
-  }
+  logging::transform::debug("Disconnecting out {} from {}:{}",
+                            tensor->id,
+                            toOp->debugName(),
+                            inIndex);
+  toOp->disconnectInTensor(inIndex, tensor);
 
-  TensorId copiedTensor =
-      generateCopiedTensorId(tensor, toOp->settings.tileSet);
+  TensorId copiedTensor = generateCopiedTensorId(tensor, toTileSet);
 
   // Add the copied input tensor to the to op for each index
-  for (auto i : indices) {
-    logging::transform::debug(
-        "Connecting in {} from {}:{}", copiedTensor, toOp->debugName(), i);
-    toOp->connectInTensor(i, copiedTensor);
-  }
+  logging::transform::debug(
+      "Connecting in {} from {}:{}", copiedTensor, toOp->debugName(), inIndex);
+  toOp->connectInTensor(inIndex, copiedTensor);
 }
 
 void IoComputeTileCopy::insertIoTileCopy(Graph &graph,
                                          Tensor *tensor,
+                                         TileSet fromTileSet,
+                                         TileSet toTileSet,
                                          Op *fromOp,
-                                         Op *toOp) const {
+                                         Op *toOp,
+                                         InIndex inIndex) const {
 
   Op::Settings settings(graph, "");
 
@@ -68,26 +67,21 @@ void IoComputeTileCopy::insertIoTileCopy(Graph &graph,
   auto indices = toOp->input->indices(tensor);
 
   // Remove this input tensor from the to op for each index
-  for (auto i : indices) {
-    logging::transform::debug(
-        "Disconnecting in {} from {}:{}", tensor->id, toOp->debugName(), i);
-    toOp->disconnectInTensor(i, tensor);
-  }
+  logging::transform::debug(
+      "Disconnecting in {} from {}:{}", tensor->id, toOp->debugName(), inIndex);
+  toOp->disconnectInTensor(inIndex, tensor);
 
   ioCopy->connectInTensor(IoTileCopyOp::getInIndex(), tensor->id);
 
-  TensorId copiedTensor =
-      generateCopiedTensorId(tensor, toOp->settings.tileSet);
+  TensorId copiedTensor = generateCopiedTensorId(tensor, toTileSet);
 
   ioCopy->createAndConnectOutTensor(0, copiedTensor);
   ioCopy->setup();
 
   // Add the copied input tensor to the to op for each index
-  for (auto i : indices) {
-    logging::transform::debug(
-        "Connecting in {} to {}:{}", copiedTensor, toOp->debugName(), i);
-    toOp->connectInTensor(i, copiedTensor);
-  }
+  logging::transform::debug(
+      "Connecting in {} to {}:{}", copiedTensor, toOp->debugName(), inIndex);
+  toOp->connectInTensor(inIndex, copiedTensor);
 
   auto &sessionOptions = graph.getIr().getSessionOptions();
   bool isPhased =
@@ -102,18 +96,26 @@ void IoComputeTileCopy::insertIoTileCopy(Graph &graph,
       !isPhased || sessionOptions.executionPhaseSettings.schedule ==
                        ExecutionPhaseSchedule::Interleaving;
 
-  if (fromOp->settings.tileSet == TileSet::IO) {
+  if (fromTileSet == TileSet::IO) {
     // Copy direction: From IO tiles
-    graph.topoCons->insert(fromOp, ioCopy, tiedTopoCon);
-    ioCopy->settings         = fromOp->settings;
+    if (fromOp) {
+      graph.topoCons->insert(fromOp, ioCopy, tiedTopoCon);
+      ioCopy->settings = fromOp->settings;
+    } else if (toOp) {
+      ioCopy->settings = toOp->settings;
+    }
     ioCopy->settings.name    = "";
     ioCopy->settings.tileSet = TileSet::Compute;
   }
 
-  if (toOp->settings.tileSet == TileSet::IO) {
+  if (toTileSet == TileSet::IO) {
     // Copy direction: To IO tiles
-    graph.topoCons->insert(ioCopy, toOp, tiedTopoCon);
-    ioCopy->settings         = toOp->settings;
+    if (toOp) {
+      graph.topoCons->insert(ioCopy, toOp, tiedTopoCon);
+      ioCopy->settings = toOp->settings;
+    } else if (fromOp) {
+      ioCopy->settings = fromOp->settings;
+    }
     ioCopy->settings.name    = "";
     ioCopy->settings.tileSet = TileSet::IO;
   }
@@ -124,8 +126,7 @@ void IoComputeTileCopy::insertIoTileCopy(Graph &graph,
 
 bool IoComputeTileCopy::apply(Graph &graph) const {
   // Keep a record of which tensors have been copied to/from IO tiles
-  std::set<TensorId> copiedTensors;
-  std::set<TensorId> processedTensors;
+  std::set<std::pair<TensorId, TileSet>> copiedTensors;
 
   auto schedule = graph.getOpSchedule({}, RequireOptimalSchedule::Yes);
 
@@ -140,35 +141,18 @@ bool IoComputeTileCopy::apply(Graph &graph) const {
     std::set<Tensor *> tensors;
 
     if (from->opid != Onnx::CustomOperators::IoTileCopy) {
-      // For each input tensor
       auto &input  = from->input;
       auto &output = from->output;
 
-      // Any tensor without producer: IO/Compute mapped to the first consumer
+      // Any tensor without producer
       for (auto &t : input->tensorMap()) {
         Tensor *tensor = t.second;
-        if (tensor->tensorType() == TensorType::Stream ||
-            tensor->tensorType() == TensorType::Const ||
-            tensor->tensorType() == TensorType::Variable) {
-          auto it = processedTensors.find(tensor->id);
-          if (it == processedTensors.end()) {
-            logging::trace("[IoComputeTileCopy] Tensor {} placed on TileSet "
-                           "determined by {}",
-                           tensor->id,
-                           from->debugName());
-            tensors.insert(tensor);
-            processedTensors.insert(tensor->id);
-          }
-        }
+        tensors.insert(tensor);
       }
-      // Any tensor produced by this op: IO/Compute mapped to this op
+      // Any tensor produced by this op
       for (auto &t : output->tensorMap()) {
         Tensor *tensor = t.second;
-        auto it        = processedTensors.find(tensor->id);
-        if (it == processedTensors.end()) {
-          tensors.insert(tensor);
-          processedTensors.insert(tensor->id);
-        }
+        tensors.insert(tensor);
       }
 
       // For each tensor
@@ -176,12 +160,15 @@ bool IoComputeTileCopy::apply(Graph &graph) const {
 
         // For each consumer op of the tensor
         // but, take a copy of the map as we will be modifying it.
-        auto &map = tensor->consumers.getMap();
+        auto map = tensor->consumers.getMap();
 
         std::map<size_t, Op *> consumersInOrder;
 
         for (auto &kv : map) {
-          consumersInOrder.insert({opScheduleIndex.at(kv.first), kv.first});
+          auto it = opScheduleIndex.find(kv.first);
+          if (it != opScheduleIndex.end()) {
+            consumersInOrder.insert({it->second, kv.first});
+          }
         }
 
         for (auto &c : consumersInOrder) {
@@ -189,18 +176,27 @@ bool IoComputeTileCopy::apply(Graph &graph) const {
 
           if (to->opid != Onnx::CustomOperators::IoTileCopy) {
 
-            // If the ops have different IO tile status
-            if (from->settings.tileSet != to->settings.tileSet) {
+            for (auto inIndex : to->input->indices(tensor)) {
+              auto fromTileSet =
+                  tensor->getVirtualGraphIdAndTileSetUnsafe().second;
+              auto toTileSet =
+                  to->getIntrospectionInVirtualGraphId(inIndex).second;
 
-              bool alreadyCopied =
-                  copiedTensors.find(tensor->id) != copiedTensors.end();
+              // If the ops have different IO tile status
+              if (fromTileSet != toTileSet) {
 
-              if (alreadyCopied == true) {
-                connectIoTileCopy(graph, tensor, to);
-              } else {
-                insertIoTileCopy(graph, tensor, from, to);
-                // Record the copy
-                copiedTensors.insert(tensor->id);
+                bool alreadyCopied =
+                    copiedTensors.find({tensor->id, toTileSet}) !=
+                    copiedTensors.end();
+
+                if (alreadyCopied == true) {
+                  connectIoTileCopy(graph, tensor, toTileSet, to, inIndex);
+                } else {
+                  insertIoTileCopy(
+                      graph, tensor, fromTileSet, toTileSet, from, to, inIndex);
+                  // Record the copy
+                  copiedTensors.insert({tensor->id, toTileSet});
+                }
               }
             }
           }

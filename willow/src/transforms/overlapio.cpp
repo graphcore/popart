@@ -126,10 +126,9 @@ bool OverlapIO::apply(Graph &graph) const {
                                : DecomposeTopoConLevel::Full,
                   computeLikeExchangeStrategies));
           ir.removeIsolatedTensors(true);
-          computeLikeExchangeStrategies.insert(
-              ExchangeStrategy::OverlapInnerLoop);
         }
       }
+      computeLikeExchangeStrategies.insert(ExchangeStrategy::OverlapInnerLoop);
       ir.verifyTensorInfos();
     }
 

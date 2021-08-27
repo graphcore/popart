@@ -171,8 +171,16 @@ public:
       std::string b(
           parallelSchedule.at(i).second - parallelSchedule.at(i).first, 'x');
       std::string c(schedule.size() - parallelSchedule.at(i).second, ' ');
-      logging::transform::trace(
-          "{}{}{} ({}: {})", a, b, c, i, schedule.at(i)->debugName());
+      logging::transform::trace("{}{}{} ({}: {}, VGID: {}, TileSet: {})",
+                                a,
+                                b,
+                                c,
+                                i,
+                                schedule.at(i)->debugName(),
+                                schedule.at(i)->hasVirtualGraphId()
+                                    ? schedule.at(i)->getVirtualGraphId()
+                                    : unusedVGraphId,
+                                schedule.at(i)->settings.tileSet);
     }
   }
 
@@ -959,7 +967,9 @@ bool SubgraphOutline::apply(Graph &graph) const {
   // Get the software parallel schedule to generate sequences that should
   // be outlined as a whole
   localoutline::SoftParallelismModel softParallelismModel(schedule);
-  // softParallelismModel.log();
+  if (logging::shouldLog(logging::Module::transform, logging::Level::Trace)) {
+    softParallelismModel.log();
+  }
 
   auto matches =
       getRinseMatches(schedule,

@@ -596,7 +596,7 @@ void Ir::verifyExplicitMainLoopsSettings() const {
 }
 
 void Ir::verifyOverlapIOSettings() const {
-  auto checkExchangeStrategy = [this](ExchangeStrategy strategy) {
+  auto isOverlappingExchangeStrategy = [this](ExchangeStrategy strategy) {
     if (strategy == ExchangeStrategy::OverlapStep) {
       throw error("ExchangeStrategy::OverlapStep is not yet supported.");
     }
@@ -616,12 +616,12 @@ void Ir::verifyOverlapIOSettings() const {
 
   for (auto anchor : getRootAnchors()) {
     auto art = getDataFlow().getAnchorReturnTypeMap().at(anchor);
-    checkExchangeStrategy(art.exchangeStrategy());
+    isOverlappingExchangeStrategy(art.exchangeStrategy());
   }
 
   for (auto stream :
        getMainGraph().getTensors().getOfType(TensorType::Stream)) {
-    checkExchangeStrategy(stream->inputSettings.exchangeStrategy());
+    isOverlappingExchangeStrategy(stream->inputSettings.exchangeStrategy());
   }
 }
 
@@ -873,6 +873,32 @@ bool Ir::hasReplicatedTensorSharding() const {
   }
 
   return false;
+}
+
+bool Ir::hasOverlappedIO() const {
+  auto isOverlappingExchangeStrategy = [this](ExchangeStrategy strategy) {
+    if (strategy == ExchangeStrategy::OverlapStep ||
+        strategy == ExchangeStrategy::OverlapInnerLoop ||
+        strategy == ExchangeStrategy::OverlapLoops) {
+      return true;
+    }
+    return false;
+  };
+
+  bool overlap = false;
+
+  for (auto anchor : getRootAnchors()) {
+    auto art = getDataFlow().getAnchorReturnTypeMap().at(anchor);
+    overlap |= isOverlappingExchangeStrategy(art.exchangeStrategy());
+  }
+
+  for (auto stream :
+       getMainGraph().getTensors().getOfType(TensorType::Stream)) {
+    overlap |=
+        isOverlappingExchangeStrategy(stream->inputSettings.exchangeStrategy());
+  }
+
+  return overlap;
 }
 
 void Ir::verifyDistributedReplicatedGraphSettings() const {
@@ -1406,8 +1432,11 @@ void Ir::prepareImpl(const IrBundle &gb, const HashesMap &cacheEntries) {
 
   updateVertices();
 
-  applyTransform(IoComputeTileCopy::id(), getMainGraph());
-  updateVertices();
+  for (auto &id_graph : graphs) {
+    auto &graph = getGraph(id_graph.first);
+    applyTransform(IoComputeTileCopy::id(), graph);
+    updateVertices();
+  }
 
   // Optimizer accumulate outer fragment.
   if (userOptions.accumulateOuterFragmentSettings.schedule ==
@@ -1454,10 +1483,14 @@ void Ir::prepareImpl(const IrBundle &gb, const HashesMap &cacheEntries) {
   if (getSessionOptions().useHostCopyOps) {
     // Add anchor HostStore operations
     applyTransform(HostIOSetup::id(2), getMainGraph());
-    // Repeat IoComputeTileCopy to also insert IO tile copies before HostStore
-    // ops
-    applyTransform(IoComputeTileCopy::id(), getMainGraph());
     updateVertices();
+  }
+
+  // Repeat IoComputeTileCopy to also insert IO tile copies before e.g.
+  // HostStore ops
+  for (auto &id_graph : graphs) {
+    auto &graph = getGraph(id_graph.first);
+    applyTransform(IoComputeTileCopy::id(), graph);
   }
 
   if (autoRecomputationEnabled() && !getSessionOptions().enablePipelining &&
@@ -2048,6 +2081,8 @@ void Ir::registerInputTensors() {
           settings.setExchangeStrategy(strategy);
         }
       }
+
+      logging::ir::trace("Tensor: {} input settings: {}", id, settings);
 
       DebugNameAndId dnid(debugid);
       DebugContext onnxDc(dnid);

@@ -148,6 +148,9 @@ private:
   // example: export POPART_PRINT_TENSORS="MatMul:0 L1:0"
   std::unordered_set<TensorId> printTensorIds;
 
+  // Keep track of which tensors already have been printed
+  std::unordered_set<TensorId> printedTensorIds;
+
   // This keeps track of whether there the accumulateOuterFragment is empty
   // TODO T12001 a class which encapsulates framgments which has this attribute.
   bool outerLoopFragEmpty = true;
@@ -308,8 +311,6 @@ private:
 
   PriTask pipelinedCopyTask(Op *, TaskId prevTaskId);
 
-  bool doRearrangeOnHost(Tensor *tensor) const;
-
   // Return the name that will be passed when compiling the executable
   std::string getPoplarGraphDebugName();
 
@@ -448,6 +449,13 @@ public:
   unsigned getGlobalReplicationFactor() const;
 
   bool isReplicatedGraph() const;
+
+  // Determine if a tensor-related stream requires rearranging on the host
+  // - Overlapping IO and Compute is more likely to occur if tensors are
+  //   rearranged on the host.
+  // - Rearrange on the host uses less IPU memory but may require more cycles
+  // - Rearrange on the device uses more IPU memory but may require fewer cycles
+  bool doRearrangeOnHost(Tensor *tensor) const;
 
   // The number of Poplar sequences associated with a graph.
   int getNumFragments(const Graph &graph) const;

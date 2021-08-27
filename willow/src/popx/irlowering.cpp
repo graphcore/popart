@@ -1232,9 +1232,7 @@ PriTask IrLowering::setInitTensorValTask(Tensor *tensor) {
 PriTask IrLowering::streamFromHostTask(TensorId streamTensorId,
                                        std::vector<Tensor *> tensors) {
   auto f = [this, streamTensorId, tensors]() {
-    std::set<std::pair<VGraphIdAndTileSet, Tensor *>,
-             VgidAndTileSetAndPTensorCmp>
-        vgidsTileSetsAndTensors;
+    std::set<VGraphIdAndTileSet> vgidsAndTileSets;
 
     std::vector<std::pair<Tensor *, Op *>> consumerOps;
     for (Tensor *t : tensors) {
@@ -1252,19 +1250,17 @@ PriTask IrLowering::streamFromHostTask(TensorId streamTensorId,
         // for the current tensor
         auto index          = op->input->indicesMap().at(tensor)[0];
         auto vgidAndTileSet = op->getIntrospectionInVirtualGraphId(index);
-        vgidsTileSetsAndTensors.insert({vgidAndTileSet, tensor});
+        vgidsAndTileSets.insert(vgidAndTileSet);
       }
     }
 
     for (auto tensor : tensors) {
-      vgidsTileSetsAndTensors.insert(
-          {tensor->getVirtualGraphIdAndTileSetUnsafe(), tensor});
+      vgidsAndTileSets.insert(tensor->getVirtualGraphIdAndTileSetUnsafe());
     }
 
     // Only stream the tensor once for all op's that consume it on an ipu
-    for (auto &vgidTileSetAndTensor : vgidsTileSetsAndTensors) {
-      auto vgidAndTileSet = vgidTileSetAndTensor.first;
-      auto tensor         = vgidTileSetAndTensor.second;
+    for (auto &vgidAndTileSet : vgidsAndTileSets) {
+      auto tensor = ir().getTensor(streamTensorId);
       poplar::OptionFlags options{};
 
       // Determine stream configuration.
@@ -2065,10 +2061,31 @@ void IrLowering::growOpx(PopOpx *opx,
 
   auto seqIt = seqInterval.first;
 
+  auto printTensorForOpx = [this, opx, &seqIt](TensorId id,
+                                               snap::Tensor tensor) {
+    if (printTensorIds.find(id) != printTensorIds.end() &&
+        printedTensorIds.find(id) == printedTensorIds.end()) {
+      auto printProg = poplar::program::PrintTensor(
+          id, tensor.getPoplarTensor(), opx->debugContext());
+      seqIt->add(printProg);
+      printedTensorIds.insert(id);
+    }
+  };
+
   if (opxTrace) {
     seqIt->add(poplar::program::PrintTensor(opx->op_p->str() + "/enter",
                                             opxTraceTensor.getPoplarTensor(),
                                             opx->debugContext()));
+  }
+
+  // Add print tensor for tensors in POPART_PRINT_TENSORS on inputs.
+  for (auto in : opx->op_p->input->tensorIdMap()) {
+    auto idx = in.first;
+    auto id  = in.second;
+    if (dv_p->lowering().tensors().contains(id)) {
+      auto tensor = opx->getInTensor(idx);
+      printTensorForOpx(id, tensor);
+    }
   }
 
   // Build a map of all tensors that are inputs and not
@@ -2168,15 +2185,13 @@ void IrLowering::growOpx(PopOpx *opx,
         opx->op_p->debugName());
   }
 
-  // Add print tensor for tensors in POPART_PRINT_TENSORS.
+  // Add print tensor for tensors in POPART_PRINT_TENSORS on outputs.
   for (auto out : opx->op_p->output->tensorIdMap()) {
     auto idx = out.first;
     auto id  = out.second;
-    if (printTensorIds.find(id) != printTensorIds.end()) {
-      auto tensor = opx->getOutTensor(idx).getPoplarTensor();
-      auto printProg =
-          poplar::program::PrintTensor(id, tensor, opx->debugContext());
-      seqIt->add(printProg);
+    if (dv_p->lowering().tensors().contains(id)) {
+      auto tensor = opx->getOutTensor(idx);
+      printTensorForOpx(id, tensor);
     }
   }
 
@@ -3821,8 +3836,13 @@ bool IrLowering::doRearrangeOnHost(Tensor *tensor) const {
   if (tensor->tensorType() == TensorType::Variable) {
     return true;
   } else if (tensor->tensorType() == TensorType::Stream) {
-    return false;
-  } else if (ir().isAnchored(tensor->id) || ir().isRootAnchor(tensor->id)) {
+    return ir().getSessionOptions().rearrangeStreamsOnHost;
+  } else if (ir().isAnchored(tensor->id)) {
+    auto art = ir().getDataFlow().getAnchorReturnTypeMap().at(
+        ir().getAnchorRemap().getRight(tensor->id));
+    return ir().getSessionOptions().rearrangeAnchorsOnHost;
+  } else if (ir().isRootAnchor(tensor->id)) {
+    auto art = ir().getDataFlow().getAnchorReturnTypeMap().at(tensor->id);
     return ir().getSessionOptions().rearrangeAnchorsOnHost;
   }
   return true;

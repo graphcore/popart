@@ -109,9 +109,12 @@ InputCreatorType RemoteLoadOpx::getInputCreatorType(InIndex index) const {
 }
 
 snap::Tensor RemoteLoadOpx::unwindTensorLayout(snap::Tensor tensor,
-                                               InIndex,
-                                               OutIndex) const {
-  return tensor;
+                                               InIndex in,
+                                               OutIndex out) const {
+  auto &remoteLoadOp = getOp<RemoteLoadOp>();
+  std::shared_ptr<ExchangeDescriptorx> descriptorx =
+      getExchangeDescriptorx(dv_p, remoteLoadOp.getExchangeDescriptor(0));
+  return descriptorx->unwind(srcVirtualGraph(in), tensor);
 }
 
 view::RegMap RemoteLoadOpx::unwindRegion(InIndex, OutIndex) const {

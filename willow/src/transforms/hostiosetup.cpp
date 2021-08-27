@@ -9,7 +9,6 @@
 #include <popart/op/init.hpp>
 #include <popart/tensor.hpp>
 #include <popart/tensors.hpp>
-#include <popart/topocons.hpp>
 #include <popart/transforms/hostiosetup.hpp>
 
 namespace popart {
@@ -106,6 +105,7 @@ void HostIOSetup::setupHostLoadOps(Tensor *inTensor) const {
   initOp->setVirtualGraphId(vgID);
   hostLoadOp->setVirtualGraphId(vgID);
 
+  initOp->settings.tileSet     = inTensor->inputSettings.tileSet();
   hostLoadOp->settings.tileSet = inTensor->inputSettings.tileSet();
 
   if (ir.getSessionOptions().enablePipelining) {

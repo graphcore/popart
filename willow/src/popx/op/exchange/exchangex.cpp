@@ -16,7 +16,6 @@ snap::Tensor makeWritableRemoteExchangeTensor(Devicex *dv_p,
                                               TensorId id,
                                               RemoteBufferId rbid,
                                               snap::Graph &graph,
-                                              poplar::program::Sequence &prog,
                                               snap::Tensor t) {
   snap::Tensor rbTensor;
   if (!dv_p->lowering().hasRemoteBuffer(rbid)) {
@@ -73,7 +72,6 @@ makeWritableHostExchangeTensor(Devicex *dv_p,
                                TensorId id,
                                TensorId streamTensorId,
                                snap::Graph &graph,
-                               poplar::program::Sequence &prog,
                                snap::Tensor t,
                                const poplar::DebugContext &context) {
   snap::Tensor streamTensor =
@@ -113,6 +111,11 @@ ExchangeBaseOpx::ExchangeBaseOpx(Op *op, Devicex *devicex)
 ExchangeDescriptorx::ExchangeDescriptorx(Devicex *dv_p_,
                                          ExchangeDescriptor descriptor_)
     : dv_p(dv_p_), descriptor(descriptor_) {}
+
+snap::Tensor ExchangeDescriptorx::unwind(snap::Graph &,
+                                         snap::Tensor tensor) const {
+  return tensor;
+}
 
 std::unique_ptr<ExchangeDescriptorx>
 getExchangeDescriptorx(Devicex *dv_p, ExchangeDescriptor descriptor) {
@@ -184,12 +187,16 @@ void HostLoadDescriptorx::exchange(snap::Graph &graph,
   auto it = streams.find(descriptor.getHostStreamTensorId());
 
   if (it != streams.end()) {
-    logging::opx::debug("Found host stream in getFromHostStreams {}",
-                        descriptor.getHostStreamTensorId());
+    bool rearrangeOnHost = dv_p->lowering().doRearrangeOnHost(
+        dv_p->ir().getTensor(descriptor.getHostStreamTensorId()));
+    logging::opx::debug(
+        "Found host stream in getFromHostStreams {} doRearrangeOnHost: {}",
+        descriptor.getHostStreamTensorId(),
+        rearrangeOnHost);
     auto stream = streams.at(descriptor.getHostStreamTensorId());
 
     poplar::program::Copy copy_prog(
-        stream, streamTensor.getPoplarTensor(), false, context);
+        stream, streamTensor.getPoplarTensor(), rearrangeOnHost, context);
     prog.add(copy_prog);
 
   } else {
@@ -206,7 +213,6 @@ void HostLoadDescriptorx::post(snap::Graph &graph,
                                      inTensors.at(0).first,
                                      descriptor.getHostStreamTensorId(),
                                      graph,
-                                     prog,
                                      inTensors.at(0).second,
                                      context));
 
@@ -221,6 +227,19 @@ void HostLoadDescriptorx::post(snap::Graph &graph,
                                       false,
                                       context);
   prog.add(tmp_copy_prog);
+}
+
+snap::Tensor HostLoadDescriptorx::unwind(snap::Graph &graph,
+                                         snap::Tensor tensor) const {
+  poplar::DebugContext context;
+  snap::Tensor unwound =
+      makeWritableHostExchangeTensor(dv_p,
+                                     TensorId(),
+                                     descriptor.getHostStreamTensorId(),
+                                     graph,
+                                     tensor,
+                                     context);
+  return unwound;
 }
 
 void HostStoreDescriptorx::pre(snap::Graph &graph,
@@ -254,8 +273,13 @@ void HostStoreDescriptorx::exchange(snap::Graph &graph,
                               context);
 
   if (it != streams.end()) {
-    logging::opx::debug("Found host stream in getFromHostStreams {}",
-                        descriptor.getHostStreamTensorId());
+    bool rearrangeOnHost = dv_p->lowering().doRearrangeOnHost(
+        dv_p->ir().getTensor(descriptor.getHostStreamTensorId()));
+
+    logging::opx::debug(
+        "Found host stream in getFromHostStreams {} doRearrangeOnHost: {}",
+        descriptor.getHostStreamTensorId(),
+        rearrangeOnHost);
     auto stream      = streams.at(descriptor.getHostStreamTensorId());
     auto nElmsStream = stream.numElements();
     auto nElmsTensor = streamTensor.numElements();
@@ -269,7 +293,7 @@ void HostStoreDescriptorx::exchange(snap::Graph &graph,
     }
 
     poplar::program::Copy copy_prog(
-        streamTensor.getPoplarTensor(), stream, false, context);
+        streamTensor.getPoplarTensor(), stream, rearrangeOnHost, context);
     prog.add(copy_prog);
 
   } else {
@@ -334,7 +358,6 @@ void RemoteLoadDescriptorx::post(snap::Graph &graph,
                                        inTensors.at(0).first,
                                        descriptor.getRemoteBufferId(),
                                        graph,
-                                       prog,
                                        inTensors.at(0).second));
 
   auto buffer =
@@ -345,6 +368,14 @@ void RemoteLoadDescriptorx::post(snap::Graph &graph,
                                       false,
                                       context);
   prog.add(tmp_copy_prog);
+}
+
+snap::Tensor RemoteLoadDescriptorx::unwind(snap::Graph &graph,
+                                           snap::Tensor tensor) const {
+  auto context         = DebugContext();
+  snap::Tensor unwound = makeWritableRemoteExchangeTensor(
+      dv_p, TensorId(), descriptor.getRemoteBufferId(), graph, tensor);
+  return unwound;
 }
 
 void RemoteStoreDescriptorx::pre(snap::Graph &graph,

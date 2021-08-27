@@ -181,7 +181,7 @@ public:
 
   void assertNumElements(const popx::Executablex &) const final {}
 
-  ConstVoidData in(TensorId id, int64_t, bool prefetch) final {
+  ConstVoidData in(TensorId id, int64_t, bool prefetch)final {
     py::gil_scoped_acquire acquire;
     py::array a = inputCb(id, prefetch);
     if (!isContiguous(a)) {
@@ -1267,6 +1267,9 @@ PYBIND11_MODULE(popart_core, m) {
     cls.def_readwrite("rearrangeAnchorsOnHost",
                       &SessionOptions::rearrangeAnchorsOnHost,
                       DOC(popart, SessionOptions, rearrangeAnchorsOnHost));
+    cls.def_readwrite("rearrangeStreamsOnHost",
+                      &SessionOptions::rearrangeStreamsOnHost,
+                      DOC(popart, SessionOptions, rearrangeStreamsOnHost));
     cls.def_readwrite("executionPhaseSettings",
                       &SessionOptions::executionPhaseSettings,
                       DOC(popart, SessionOptions, executionPhaseSettings));

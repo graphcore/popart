@@ -165,6 +165,8 @@ private:
   ExchangeStrategy exchangeStrategy_;
 };
 
+std::ostream &operator<<(std::ostream &, InputSettings);
+
 /**
  * This class specifies parameters for host-device data streams. The parameters
  * are used to control the amount input data processed each step (that is: each

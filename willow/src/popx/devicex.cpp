@@ -395,6 +395,13 @@ Devicex::Devicex(Executablex &exe, std::shared_ptr<DeviceInfo> deviceInfo_)
 
   logging::devicex::info("Setting selected device: {}", *deviceInfo);
 
+  if (ir().hasOverlappedIO()) {
+    logging::devicex::info("Setting engine options to optimize overlapped IO "
+                           "(profiler.perExecutionStreamCopyCycles = false)");
+    lowering().engineOptions.set("profiler.perExecutionStreamCopyCycles",
+                                 "false");
+  }
+
   if (ir().getSessionOptions().enablePrefetchDatastreams) {
     logging::devicex::info("Setting engine options for prefetch data streams "
                            "(exchange.streamBufferOverlap = hostRearrangeOnly, "
