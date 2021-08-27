@@ -3243,6 +3243,7 @@ PYBIND11_MODULE(popart_core, m) {
   m.def("reservedAcclToReducePrefix", &reservedAcclToReducePrefix);
   m.def("reservedAcclToUpdatePrefix", &reservedAcclToUpdatePrefix);
   m.def("reservedAcclFinalOutPrefix", &reservedAcclFinalOutPrefix);
+  m.def("reservedFinalReducedGradPrefix", &reservedFinalReducedGradPrefix);
 
   m.def("reservedAdamUpdaterPrefix", &reservedAdamUpdaterPrefix);
   m.def("reservedLambR1SqPrefix", &reservedLambR1SqPrefix);

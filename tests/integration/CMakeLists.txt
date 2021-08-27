@@ -27,6 +27,8 @@ add_popart_cpp_unit_test(opmanagertest op_manager_test.cpp)
 add_popart_cpp_unit_test(opxtensoraliasingtest opx_tensor_aliasing_test.cpp)
 add_popart_cpp_unit_test(outliningirtest outlining_ir_test.cpp)
 add_popart_cpp_unit_test(poprithmstransitiveclosuretest poprithmstransitiveclosure_test.cpp TEST_UTILS test-graphs-test-util)
+# TODO (T46218): Re-enable test after fixing PRNG behaviour.
+# add_popart_cpp_unit_test(prng_test prng_test.cpp VARIANTS Hw)
 add_popart_cpp_unit_test(prunetest prune_test.cpp TEST_UTILS test-graphs-test-util)
 add_popart_cpp_unit_test(simple_addition_test simple_addition_test.cpp)
 add_popart_cpp_unit_test(subgraph_partitioning_test subgraph_partitioning_test.cpp)
