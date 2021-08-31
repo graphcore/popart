@@ -23,7 +23,6 @@ namespace _internal {
 namespace ir {
 
 void bindOp(py::module &m) {
-  // TODO: Move to op/op.cpp and add an extra `op` namespace
   py::class_<Op::Settings>(m, "Settings", py::module_local())
       .def(py::init<Graph &, const std::string &>())
       .def(py::init<Graph &, const std::string &, const Scope &>())

@@ -233,7 +233,7 @@ def test_string_methods(op_name: str, domain: str, op_type: str, op_num: int,
 def test_debug_methods():
     """Test the debug info methods work.
     """
-    op, _, _ = create_op("ai.onnx", "dummy", 1, 1, 1)
+    op, _, _ = create_dummy_op("ai.onnx", "dummy", 1, 1, 1)
 
     op.finalizeDebugInfo()
 
@@ -247,7 +247,7 @@ def test_default_outputs(index: int, id: str):
         index (int): Output index
         id (str): Tensor id
     """
-    op, ir, g = create_op("ai.onnx", "dummy", 1, 1, 1)
+    op, ir, g = create_dummy_op("ai.onnx", "dummy", 1, 1, 1)
 
     op.createAndConnectOutTensor(index, id)
     assert op.hasOutput(index)
@@ -264,7 +264,7 @@ def test_default_outputs(index: int, id: str):
 def test_default_properties():
     """Test default returns for various methods
     """
-    op, ir, g = create_op("ai.onnx", "dummy", 1, 1, 1)
+    op, ir, g = create_dummy_op("ai.onnx", "dummy", 1, 1, 1)
     assert op.getCalledGraphs() == []
     assert op.getCalledGraphIds() == []
     for m in [
@@ -289,7 +289,7 @@ def test_default_properties():
 def test_grad_methods():
     """Test errors for gradient methods (no gradient op will have been generated.)
     """
-    op, ir, g = create_op("ai.onnx", "dummy", 1, 1, 1)
+    op, ir, g = create_dummy_op("ai.onnx", "dummy", 1, 1, 1)
     with pytest.raises(popart.popart_exception) as e_info:
         op.gradInputInfo()
         assert e_info.value.args[0].startswith(
@@ -303,12 +303,6 @@ def test_grad_methods():
 def test_scope():
     """Test setting and getting scope on ops
     """
-    op, ir, g = create_op("ai.onnx", "dummy", 1, 1, 1)
+    op, ir, g = create_dummy_op("ai.onnx", "dummy", 1, 1, 1)
     op.setScope(g.getScope())
     assert op.getScope() == g.getScope()
-
-
-# TODO: T41718 many methods will not work for the generic `Op` class.
-# In particular we cannot move a 'no-name' base op type into a graph
-# and so cannot test tensor inputs/outputs. Once derived Op classes
-# are created add tests here or in test_ops.py

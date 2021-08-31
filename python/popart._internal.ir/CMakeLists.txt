@@ -66,8 +66,13 @@ add_custom_target(popart_op_metadata ALL DEPENDS ${popart_op_metadata_path})
 set(op_bindings__all ${popart_op_bindings_dir}/_all.gen.cpp)
 add_custom_command(
   OUTPUT ${op_bindings} ${op_bindings__all}
-  DEPENDS popart_op_metadata ${gen_op_bindings_path}
-          ${templates_dir}/op/_op.cpp.j2 ${templates_dir}/op/_op.hpp.j2
+         ${popart_op_bindings_dir}/../graph.gen.cpp
+  DEPENDS popart_op_metadata
+          ${gen_op_metadata_path}
+          ${gen_op_bindings_path}
+          ${templates_dir}/graph.cpp.j2
+          ${templates_dir}/op/_op.cpp.j2
+          ${templates_dir}/op/_op.hpp.j2
           ${templates_dir}/op/_all.cpp.j2
   WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
   COMMAND python3 ${gen_op_bindings_path} --json_path
@@ -83,11 +88,13 @@ add_popart_python_module(
   ../popart/shared_cpp/np_utils.cpp
   ${op_binding_sources}
   ${op_bindings__all}
+  ${popart_op_bindings_dir}/../graph.gen.cpp
   bindings/debugcontext.cpp
   bindings/graph.cpp
   bindings/graphid.cpp
   bindings/ir.cpp
   bindings/op.cpp
+  bindings/op/enums.cpp
   bindings/scope.cpp
   bindings/tensor.cpp
   bindings/tensordata.cpp

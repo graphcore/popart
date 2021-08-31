@@ -33,8 +33,18 @@ void {{fun_name}}(py::module &m) {
 
       {% for op in ops %}
       py::class_<{{op["name"]}}, popart::Op, std::shared_ptr<{{op["name"]}}>>(sm, "{{op["name"]}}")
-      {%- for args in op["constructors"] -%}
-      .def(py::init<{{args["full_args"]}}>())
+      {%- for ctor in op["constructors"] -%}
+      .def(py::init<{{ctor["full_args"]}}>(),
+      {% for arg in ctor["args"] -%}
+      py::arg("
+            {%- if arg["arg_name"]|length > 0 -%}
+            {{arg["arg_name"]}}
+            {%- else -%}
+            {{arg["alt_arg_name"]}}
+            {%- endif -%}")
+      {%- if not loop.last -%},{%- endif -%}
+      {%- endfor -%}
+      )
       {% endfor -%};
       {% endfor -%}
 }

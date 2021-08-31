@@ -5,11 +5,16 @@ from itertools import accumulate
 from pathlib import Path
 
 
-def get_project_source_dir():
+def get_project_source_dir() -> Path:
+    """Get the base popart source directory, the parent of this file's directory.
+
+    Returns:
+        Path: The Path object to the source directory.
+    """
     return Path(__file__).resolve().parents[1].resolve()
 
 
-def bor(*args: int):
+def bor(*args: int) -> int:
     """Bitwise or.
 
     Example:
