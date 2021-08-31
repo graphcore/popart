@@ -26,4 +26,6 @@ add_popart_py_unit_test(serializematmul serializematmul.py)
 add_popart_py_unit_test(explicitrecomputation explicitrecomputation.py)
 add_popart_py_unit_test(batchserialize batchserialize.py)
 add_popart_py_unit_test(batchserialize_dropout_test batchserialize_dropout_test.py VARIANTS Hw)
-add_popart_py_unit_test(overlapio overlapio.py VARIANTS Hw)
+
+# TODO: T45099 figure out how to decrease host overhead for overlapped IO test to avoid flakyness
+#add_popart_py_unit_test(overlapio overlapio.py VARIANTS Hw)
