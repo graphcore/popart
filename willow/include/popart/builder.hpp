@@ -1047,11 +1047,11 @@ public:
   void outputTensorLocation(const TensorId &nodeOutputName,
                             TensorLocation value) {
     addNodeAttribute(
-        sExecutionPhaseAttribute, value.serialize(), {nodeOutputName});
+        sOutputTensorLocationAttribute, value.serialize(), {nodeOutputName});
   }
 
   void recomputeOutput(const TensorId &nodeOutputName, RecomputeType value) {
-    addNodeAttribute(sExecutionPhaseAttribute,
+    addNodeAttribute(sRecomputeOutputAttribute,
                      static_cast<int64_t>(value),
                      {nodeOutputName});
   }
