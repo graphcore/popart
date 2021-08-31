@@ -90,7 +90,8 @@ def _error_message_if_linter_invalid(linter, config) -> str:
             linter.name,
             f"Version requirement not satisfied for linter {linter.name}. "
             f"Version required: {config.version}. "
-            f"You have: {'.'.join(str(i) for i in linter.get_version())}")
+            f"You have: {('.'.join(str(i) for i in linter.get_version())) if linter.get_version() != None else None}"
+        )
 
     return error_msg
 
