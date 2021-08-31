@@ -94,7 +94,6 @@ add_popart_python_module(
   bindings/tensorinfo.cpp
   bindings/tensors.cpp
   bindings/basicoptionals.cpp
-  bindings/opdebuginfo.cpp
   bindings/opidentifier.cpp
   bindings/tensorlocation.cpp
   bindings/op/enums.cpp

@@ -7,7 +7,6 @@
 #include "bindings/op.hpp"
 #include "bindings/op/_all.hpp"
 #include "bindings/op/enums.hpp"
-#include "bindings/opdebuginfo.hpp"
 #include "bindings/opidentifier.hpp"
 #include "bindings/scope.hpp"
 #include "bindings/tensor.hpp"
@@ -42,7 +41,6 @@ PYBIND11_MODULE(popart_internal_ir, m) {
   bindTensorInfo(m);
   bindTensors(m);
   bindBasicOptionals(m);
-  bindOpDebugInfo(m);
   bindOpIdentifier(m);
   bindTensorLocation(m);
   {

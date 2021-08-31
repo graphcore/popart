@@ -232,8 +232,7 @@ def test_debug_methods():
     """Test the debug info methods work.
     """
     op, _, _ = create_op("ai.onnx", "dummy", 1, 1, 1)
-    debug = op.getDebugInfo()
-    debug.finalize()
+
     op.finalizeDebugInfo()
 
 
