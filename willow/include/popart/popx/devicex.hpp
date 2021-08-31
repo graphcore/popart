@@ -102,11 +102,6 @@ public:
   bool isEngineLoaded() const;
   void setEngineIsLoaded(bool isLoaded);
 
-  const std::vector<TensorId> &getHostReduceStreamIds() const;
-
-  const std::map<TensorId, poplar::RemoteBuffer> &
-  getHostReduceRemoteBuffers() const;
-
   void connectRandomSeedStream();
 
   void connectRngStateStream();

@@ -322,17 +322,6 @@ void serializePopartExecutable(std::ostream &out,
   }
 
   {
-    auto hostReduceStreamIds = ir_lowering.getHostReduceStreamIds();
-    auto hostReduceStreamIdsBuilder =
-        irLoweringBuilder.initHostReduceStreamIds(hostReduceStreamIds.size());
-    int i = 0;
-    for (const auto &tid : hostReduceStreamIds) {
-      hostReduceStreamIdsBuilder.set(i, tid);
-      ++i;
-    }
-  }
-
-  {
     auto cycleCountIds = ir_lowering.getCycleCountIds();
     auto cycleCountIdsBuilder =
         irLoweringBuilder.initCycleCountIds(cycleCountIds.size());
@@ -597,16 +586,6 @@ deserializeExecutable(std::istream &in,
       efficientlyCreatedInputTensors_.insert(t);
     }
     lowering.setEfficientlyCreatedInputTensors(efficientlyCreatedInputTensors_);
-  }
-  {
-    auto hostReduceStreamIds = irLoweringReader.getHostReduceStreamIds();
-    std::vector<TensorId> hostReduceStreamIds_;
-    hostReduceStreamIds_.reserve(hostReduceStreamIds.size());
-
-    for (const auto t : hostReduceStreamIds) {
-      hostReduceStreamIds_.push_back(t);
-    }
-    lowering.getHostReduceStreamIds() = hostReduceStreamIds_;
   }
   {
     auto cycleCountIds = irLoweringReader.getCycleCountIds();

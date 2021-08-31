@@ -66,7 +66,6 @@
 #include <popart/transforms/dynamicoptransform.hpp>
 #include <popart/transforms/explicitrecompute.hpp>
 #include <popart/transforms/hostiosetup.hpp>
-#include <popart/transforms/hostreduce.hpp>
 #include <popart/transforms/inferpipelinestages.hpp>
 #include <popart/transforms/inplaceaccumulategradpartialsintooptimizeraccumtensor.hpp>
 #include <popart/transforms/interipucopy.hpp>
@@ -1371,34 +1370,6 @@ void Ir::prepareImpl(const IrBundle &gb, const HashesMap &cacheEntries) {
   }
   decomposedOptimizers = true;
 
-  if (getSessionOptions().hostWeightUpdate &&
-      !getSessionOptions().hostAllReduce) {
-    throw error(
-        "Host weight update can't be enabled without enabling hostAllReduce.");
-  }
-
-  if (getSessionOptions().hostAllReduce) {
-    logging::warn("Enabling SessionOptions.hostAllReduce to reduce gradients "
-                  "between instances is deprecated. This feature will be "
-                  "removed in a future release.");
-    if (canTrain()) {
-      if (getSessionOptions().hostWeightUpdate &&
-          !getSessionOptions().hostAllReduce) {
-        throw error("Host weight update can't be enabled without enabling "
-                    "hostAllReduce.");
-      }
-      if (userOptions.mergeVarUpdate != MergeVarUpdateType::None) {
-        throw error("hostAllReduce does not work with MergeVarUpdates");
-      }
-
-      applyTransform(HostReduce::id(), getMainGraph());
-      updateVertices();
-    } else {
-      logging::ir::info("Skipping hostAllReduce transform when running "
-                        "inference or evaluation");
-    }
-  }
-
   for (auto &id_graph : graphs) {
     auto &graph = getGraph(id_graph.first);
     // Add internal ops to copy tensors between ipu's as needed
@@ -2204,11 +2175,6 @@ bool Ir::applyPreAliasPattern(const PreAliasPattern *pattern, Graph &graph) {
     // doesn't touch the inputs to the loss.
     if (this->canTrain() && !this->constructedFinalLoss &&
         touchesInputToLoss(op)) {
-      return false;
-    }
-
-    if (this->canTrain() && getSessionOptions().hostAllReduce &&
-        HostReduce::includesRequiredTensor(pattern->touches(op))) {
       return false;
     }
 

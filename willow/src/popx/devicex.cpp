@@ -1140,15 +1140,6 @@ std::set<TensorId> Devicex::getEfficientlyCreatedInputTensors() const {
   return lowering().getEfficientlyCreatedInputTensors();
 }
 
-const std::vector<TensorId> &Devicex::getHostReduceStreamIds() const {
-  return lowering().getHostReduceStreamIds();
-}
-
-const std::map<TensorId, poplar::RemoteBuffer> &
-Devicex::getHostReduceRemoteBuffers() const {
-  return lowering().getHostReduceRemoteBuffers();
-}
-
 void Devicex::connectStream(const std::string &streamHandle,
                             void *host_buffer) {
   POPART_TRACEPOINT();

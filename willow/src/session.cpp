@@ -757,16 +757,6 @@ void TrainingSession::updateOptimizerFromHost(const Optimizer *optimizer) {
   device_->optimizerFromHost();
 }
 
-const std::vector<std::string> &
-TrainingSession::getHostReduceStreamIds() const {
-  return device_->getHostReduceStreamIds();
-}
-
-const std::map<std::string, poplar::RemoteBuffer> &
-TrainingSession::getHostReduceRemoteBuffers() const {
-  return device_->getHostReduceRemoteBuffers();
-}
-
 void TrainingSession::copyFromRemoteBuffer(const std::string &buffer,
                                            void *w,
                                            int repeat_index,

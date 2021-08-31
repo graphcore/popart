@@ -22,17 +22,6 @@ Import the Horovod PopART extension:
   import horovod.popart as hvd
 
 
-Enable the ``hostAllReduce`` PopART session option:
-
-.. code-block:: python
-
-
-  userOpts = popart.SessionOptions()
-
-  # Enable host side AllReduce operations in the graph
-  userOpts.hostAllReduce = True
-
-
 Initialise the Horovod runtime:
 
 .. code-block:: python

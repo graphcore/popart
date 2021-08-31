@@ -75,7 +75,6 @@
 #include <popart/topocons.hpp>
 #include <popart/transforms/randomsetup.hpp>
 
-#include <popart/op/hostreducevarupdate.hpp>
 #include <popart/op/varupdate.hpp>
 #include <popart/popx/op/ipucopyx.hpp>
 #include <popart/tensornames.hpp>
@@ -4053,42 +4052,18 @@ std::string IrLowering::cycleCountStreamId(std::string id) {
   return "d2h_" + std::string(cycleCountPrefix()) + "_" + id;
 }
 
-poplar::RemoteBuffer &
-IrLowering::getOrCreateHostReduceRemoteBuffer(TensorId tensorId,
-                                              TensorInfo tensorInfo,
-                                              snap::Graph &graph) {
-  auto entry = hostReduceRemoteBuffers.find(tensorId);
-
-  if (entry == hostReduceRemoteBuffers.end()) {
-    auto remoteBuffer = graph.getPoplarGraph().addRemoteBuffer(
-        tensorId, popType(tensorInfo), tensorInfo.nelms(), 1, true);
-
-    hostReduceRemoteBuffers.emplace(tensorId, remoteBuffer);
-    entry = hostReduceRemoteBuffers.find(tensorId);
-  }
-
-  return entry->second;
-}
-
 poplar::DataStream &IrLowering::insertGradientStoreStream(TensorId tensorId,
                                                           TensorInfo tensorInfo,
                                                           snap::Graph &graph) {
   auto streamMapEntry = toHostGradientStreams.find(tensorId);
 
   if (streamMapEntry == toHostGradientStreams.end()) {
-    if (ir().getSessionOptions().hostAllReduceRemoteBuffer) {
-      toHostGradientStreams.emplace(
-          tensorId,
-          poplar::DataStream(graph.getPoplarGraph().addDeviceToHostFIFO(
-              gradientStoreStreamId(tensorId), poplar::CHAR, 1)));
-    } else {
-      toHostGradientStreams.emplace(
-          tensorId,
-          poplar::DataStream(graph.getPoplarGraph().addDeviceToHostFIFO(
-              gradientStoreStreamId(tensorId),
-              popType(tensorInfo),
-              tensorInfo.nelms())));
-    }
+    toHostGradientStreams.emplace(
+        tensorId,
+        poplar::DataStream(graph.getPoplarGraph().addDeviceToHostFIFO(
+            gradientStoreStreamId(tensorId),
+            popType(tensorInfo),
+            tensorInfo.nelms())));
     streamMapEntry = toHostGradientStreams.find(tensorId);
   } else {
     throw error("Tensor Id " + tensorId +
@@ -4104,20 +4079,13 @@ poplar::DataStream &IrLowering::insertGradientLoadStream(TensorId tensorId,
   auto streamMapEntry = fromHostGradientStreams.find(tensorId);
 
   if (streamMapEntry == fromHostGradientStreams.end()) {
-    if (ir().getSessionOptions().hostAllReduceRemoteBuffer) {
-      fromHostGradientStreams.emplace(
-          tensorId,
-          poplar::DataStream(graph.getPoplarGraph().addHostToDeviceFIFO(
-              gradientLoadStreamId(tensorId), poplar::CHAR, 1)));
-    } else {
-      fromHostGradientStreams.emplace(
-          tensorId,
-          poplar::DataStream(graph.getPoplarGraph().addHostToDeviceFIFO(
-              gradientLoadStreamId(tensorId),
-              popType(tensorInfo),
-              tensorInfo.nelms(),
-              poplar::ReplicatedStreamMode::BROADCAST)));
-    }
+    fromHostGradientStreams.emplace(
+        tensorId,
+        poplar::DataStream(graph.getPoplarGraph().addHostToDeviceFIFO(
+            gradientLoadStreamId(tensorId),
+            popType(tensorInfo),
+            tensorInfo.nelms(),
+            poplar::ReplicatedStreamMode::BROADCAST)));
     streamMapEntry = fromHostGradientStreams.find(tensorId);
   } else {
     throw error("Tensor Id " + tensorId +
@@ -4147,19 +4115,6 @@ poplar::DataStream &IrLowering::insertWeightLoadStream(TensorId tensorId,
   }
 
   return streamMapEntry->second;
-}
-
-const std::vector<TensorId> &IrLowering::getHostReduceStreamIds() const {
-  return hostReduceStreamIds;
-}
-
-std::vector<TensorId> &IrLowering::getHostReduceStreamIds() {
-  return hostReduceStreamIds;
-}
-
-const std::map<TensorId, poplar::RemoteBuffer> &
-IrLowering::getHostReduceRemoteBuffers() const {
-  return hostReduceRemoteBuffers;
 }
 
 } // namespace popx

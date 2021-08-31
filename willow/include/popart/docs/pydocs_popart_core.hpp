@@ -6265,17 +6265,6 @@ incorrect.)doc";
 static const char *__doc_popart_SessionOptions_hardwareInstrumentations =
     R"doc()doc";
 
-static const char *__doc_popart_SessionOptions_hostAllReduce =
-    R"doc(Perform AllReduce operation on the host. Only useful for training
-session.)doc";
-
-static const char *__doc_popart_SessionOptions_hostAllReduceRemoteBuffer =
-    R"doc(Enable the use of ``poplar::RemoteBuffers`` for hostAllReduce
-operations.)doc";
-
-static const char *__doc_popart_SessionOptions_hostWeightUpdate =
-    R"doc(Perform weight update on the host. Only useful for training session.)doc";
-
 static const char *__doc_popart_SessionOptions_implicitPipeliningEnabled =
     R"doc()doc";
 
@@ -7254,16 +7243,6 @@ Parameter ``userOptions``:
 Parameter ``patterns``:
     Optimization patterns to apply.)doc";
 
-static const char *__doc_popart_TrainingSession_getHostReduceRemoteBuffers =
-    R"doc(Access the remote buffers associated with gradient and weight streams
-that are used in host side all reduce operations. Only populated if
-``hostAllReduce`` and ``hostAllReduceRemoteBuffer`` are enabled.)doc";
-
-static const char *__doc_popart_TrainingSession_getHostReduceStreamIds =
-    R"doc(Access the stream IDs for variables that are involved in host side
-reductions on the host. Only populated if ``hostAllReduce`` is enabled
-in the SessionOptions)doc";
-
 static const char *__doc_popart_TrainingSession_updateOptimizerFromHost =
     R"doc(Update the optimizer and the associated hyperparameters but not the
 optimizer state tensors.
@@ -7430,10 +7409,6 @@ static const char *__doc_popart_hash_value = R"doc()doc";
 static const char *__doc_popart_hash_value_2 = R"doc()doc";
 
 static const char *__doc_popart_hash_value_3 = R"doc()doc";
-
-static const char *__doc_popart_hostReduceGradCopyPrefix = R"doc()doc";
-
-static const char *__doc_popart_hostReduceVarCopyPrefix = R"doc()doc";
 
 static const char *__doc_popart_initTensorTypeInfoMap = R"doc()doc";
 
@@ -7768,12 +7743,6 @@ static const char *__doc_popart_popx_Devicex_getGlobalReplicaOffset =
     R"doc()doc";
 
 static const char *__doc_popart_popx_Devicex_getGlobalReplicationFactor =
-    R"doc()doc";
-
-static const char *__doc_popart_popx_Devicex_getHostReduceRemoteBuffers =
-    R"doc()doc";
-
-static const char *__doc_popart_popx_Devicex_getHostReduceStreamIds =
     R"doc()doc";
 
 static const char *__doc_popart_popx_Devicex_getLinearlyCreatedInputTensors =

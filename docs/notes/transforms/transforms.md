@@ -33,7 +33,6 @@ Please find below a brief description of existing transforms:
 | GroupMatMuls                                                      | Combine multiple `MatMulOps` into a single `Op`.<br/>(**NOTE**: Deprecated, to be removed after release).                                            |
 | HostIoSetup(1)                                                    | Create a `InitOp`->`HostLostOp`->input combo for each input tensor (stream from host) tensor.                                                        |
 | HostIoSetup(2)                                                    | Add a `HostStoreOp` (no init) for each output tensor (stream to host).                                                                               |
-| HostReduce                                                        | <mark>TBD</mark>                                                                                                                                     |
 | InferPipelineStages                                               | If no nodes in the Onnx model have the 'PipelineStage' attribute set, assign pipeline stages to `Ops` based on their associated virtual graphs.      |
 | InplaceAccumulateGrad-<br/>PartialsIntoOptimizer-<br/>AccumTensor | Reduce tensor liveness by directly accumulating grad partials into the optimizer accumulator instead of a separate gradsum accumulator first.        |
 | InterIpuCopy                                                      | Make explicit any copying of tensor data between IPUs (by adding `IpuCopyOps`).                                                                      |
@@ -95,7 +94,6 @@ We refer to these conditions in our list of assumptions, guarantees and preserve
 | ExplicitRecompute                                                 |                                 |                                 |                      |
 | GroupMatMuls                                                      |                                 |                                 |                      |
 | HostIoSetup                                                       |                                 |                                 |                      |
-| HostReduce                                                        |                                 |                                 |                      |
 | InferPipelineStages                                               | `VGRAPH`                        | `PSTAGE`                        |                      |
 | InplaceAccumulateGrad-<br/>PartialsIntoOptimizer-<br/>AccumTensor |                                 |                                 |                      |
 | InterIpuCopy                                                      |                                 | `NO_IMPLICIT_COPY`              |                      |
@@ -176,16 +174,16 @@ We refer to these conditions in our list of assumptions, guarantees and preserve
   op->inheritPlacementAttributes(true);
   op->setup();
   ```
-  
+
   **NOTE**: In other words, make sure the transform preserves the `VGRAPH`,
   `PSTAGE`, `EPHASE` and `BPHASE` as defined above. If these conditions hold
   before the transform is applied, then they should hold afterwards, also.
-  
+
 * **Aliases** If a transform modifies, adds or removes any tensor or `Op` that
   is aliasing, the aliases must be updated after the transform has finished. If the
   transform itself relies on aliasing information, it can also update the aliases
   during the transform:
-  
+
   ```c++
   if (getSessionOptions().enableSerializedMatmuls) {
     applyTransform(SerializeMatMuls::id(), getMainGraph());

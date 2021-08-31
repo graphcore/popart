@@ -202,11 +202,9 @@ private:
   std::map<TensorId, snap::Tensor> streamTensors;
 
   // Streams for doing allreduce on host side
-  std::map<TensorId, poplar::RemoteBuffer> hostReduceRemoteBuffers;
   std::map<TensorId, poplar::DataStream> toHostGradientStreams;
   std::map<TensorId, poplar::DataStream> fromHostGradientStreams;
   std::map<TensorId, poplar::DataStream> fromHostWeightLoadStreams;
-  std::vector<TensorId> hostReduceStreamIds;
 
   // The maximum number of inputs on any Op
   int maxOpInputs;
@@ -609,20 +607,12 @@ public:
    */
   void setStreamTensor(TensorId tid, snap::Tensor t);
 
-  poplar::RemoteBuffer &
-  getOrCreateHostReduceRemoteBuffer(TensorId, TensorInfo, snap::Graph &);
   poplar::DataStream &
   insertGradientStoreStream(TensorId, TensorInfo, snap::Graph &);
   poplar::DataStream &
   insertGradientLoadStream(TensorId, TensorInfo, snap::Graph &);
   poplar::DataStream &
   insertWeightLoadStream(TensorId, TensorInfo, snap::Graph &);
-
-  const std::vector<TensorId> &getHostReduceStreamIds() const;
-  std::vector<TensorId> &getHostReduceStreamIds();
-
-  const std::map<TensorId, poplar::RemoteBuffer> &
-  getHostReduceRemoteBuffers() const;
 
   const std::map<TensorId, poplar::DataStream> &getFromHostStreams() const {
     return fromHostStreams;

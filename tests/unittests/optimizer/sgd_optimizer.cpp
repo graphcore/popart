@@ -408,7 +408,7 @@ BOOST_AUTO_TEST_CASE(TestCreateOpIntegrationWithCompoundScalarHelper_SGD2) {
 
 BOOST_AUTO_TEST_CASE(TestCreateOpAllOtherFields_SGD0) {
   {
-    // No GradAccum, Replica or HostReduce
+    // No GradAccum, or Replica
     SGD0TestCase tc;
 
     SessionOptions opts;
@@ -433,7 +433,6 @@ BOOST_AUTO_TEST_CASE(TestCreateOpAllOtherFields_SGD0) {
     opts.enableGradientAccumulation = false;
     opts.enableReplicatedGraphs     = true;
     opts.replicatedGraphCount       = 2;
-    opts.hostAllReduce              = false;
     tc.ir.setUserOptions(opts);
     tc.setFactorsFromOptions();
 
@@ -453,7 +452,6 @@ BOOST_AUTO_TEST_CASE(TestCreateOpAllOtherFields_SGD0) {
     opts.accumulationFactor         = 2;
     opts.enableReplicatedGraphs     = true;
     opts.replicatedGraphCount       = 2;
-    opts.hostAllReduce              = false;
     tc.ir.setUserOptions(opts);
     tc.setFactorsFromOptions();
 
@@ -463,25 +461,6 @@ BOOST_AUTO_TEST_CASE(TestCreateOpAllOtherFields_SGD0) {
     BOOST_REQUIRE(sgd0);
 
     BOOST_REQUIRE(sgd0->reductionType == OptimizerReductionType::AccumReduce);
-  }
-  {
-    // HostReduce
-    SGD0TestCase tc;
-
-    SessionOptions opts;
-    opts.enableGradientAccumulation = false;
-    opts.enableReplicatedGraphs     = true;
-    opts.replicatedGraphCount       = 2;
-    opts.hostAllReduce              = true;
-    tc.ir.setUserOptions(opts);
-    tc.setFactorsFromOptions();
-
-    const auto op = tc.sgd.createOp(*tc.w, tc.graph());
-
-    const auto sgd0 = dynamic_cast<const SGD0ComboOp *>(op.get());
-    BOOST_REQUIRE(sgd0);
-
-    BOOST_REQUIRE(sgd0->reductionType == OptimizerReductionType::None);
   }
 }
 

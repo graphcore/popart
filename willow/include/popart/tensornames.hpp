@@ -248,13 +248,6 @@ constexpr const char *reservedSpecificStepPrefix() {
   return "step___specific___";
 }
 
-constexpr const char *hostReduceGradCopyPrefix() {
-  return "hostReduceGradCopy___";
-}
-constexpr const char *hostReduceVarCopyPrefix() {
-  return "hostReduceVarCopy___";
-}
-
 constexpr const char *anchorSumPrefix() { return "anchorSum___"; }
 
 constexpr const char *cycleCountPrefix() { return "cycleCount___"; }

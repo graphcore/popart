@@ -289,7 +289,6 @@ const static AiGraphcoreOpIdV1 Gelu_1("Gelu", 1, 1);
 const static AiGraphcoreOpIdV1 GeluInplace("GeluInplace");
 const static AiGraphcoreOpIdV1 GetRandomSeed("GetRandomSeed");
 const static AiGraphcoreOpIdV1 GradCopyFromHost("GradCopyFromHost");
-const static AiGraphcoreOpIdV1 GradCopyToHost("GradCopyToHost");
 const static AiGraphcoreOpIdV1 GradientAccumulation("GradientAccl");
 const static AiGraphcoreOpIdV1 GroupNormalization_1("GroupNormalization", 3, 3);
 const static AiGraphcoreOpIdV1 HardSigmoidInplace("HardSigmoidInplace");

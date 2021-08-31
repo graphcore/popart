@@ -1374,18 +1374,6 @@ PYBIND11_MODULE(popart_core, m) {
     cls.def_readwrite("customCodeletCompileFlags",
                       &SessionOptions::customCodeletCompileFlags,
                       DOC(popart, SessionOptions, customCodeletCompileFlags));
-    cls.def_readwrite("hostAllReduce",
-                      &SessionOptions::hostAllReduce,
-                      DOC(popart, SessionOptions, hostAllReduce));
-    cls.def_readwrite("hostWeightUpdate",
-                      &SessionOptions::hostWeightUpdate,
-                      DOC(popart, SessionOptions, hostWeightUpdate));
-    cls.def_readwrite("hostAllReduceRemoteBuffer",
-                      &SessionOptions::hostAllReduceRemoteBuffer,
-                      DOC(popart, SessionOptions, hostAllReduceRemoteBuffer));
-    cls.def_readwrite("hostWeightUpdate",
-                      &SessionOptions::hostWeightUpdate,
-                      DOC(popart, SessionOptions, hostWeightUpdate));
 
     cls.def_readwrite("kahnTieBreaker",
                       &SessionOptions::kahnTieBreaker,
@@ -1967,9 +1955,6 @@ PYBIND11_MODULE(popart_core, m) {
     cls.def("_serializeIr", &TrainingSession::serializeIr, py::arg("format"));
     // Accessor for internal objects
     cls.def("getIr", &TrainingSession::getIr);
-    cls.def("getHostReduceStreamIds",
-            &TrainingSession::getHostReduceStreamIds,
-            DOC(popart, TrainingSession, getHostReduceStreamIds));
     cls.def("connectStreamToCallback",
             &TrainingSession::connectStreamToCallback,
             DOC(popart, Session, connectStreamToCallback));
@@ -3254,8 +3239,6 @@ PYBIND11_MODULE(popart_core, m) {
   m.def("reservedSpecificAdamEpsPrefix", &reservedSpecificAdamEpsPrefix);
   m.def("reservedDefaultStepPrefix", &reservedDefaultStepPrefix);
   m.def("reservedSpecificStepPrefix", &reservedSpecificStepPrefix);
-  m.def("hostReduceGradCopyPrefix", &hostReduceGradCopyPrefix);
-  m.def("hostReduceVarCopyPrefix", &hostReduceVarCopyPrefix);
 
   // These are helper methods to allow unit tests to start & stop
   // the debug info. They should move to poplar whenit has a python

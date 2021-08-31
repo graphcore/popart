@@ -14,7 +14,6 @@
 #include <popart/inputshapeinfo.hpp>
 #include <popart/ir.hpp>
 #include <popart/logging.hpp>
-#include <popart/op/hostreducevarupdate.hpp>
 #include <popart/opmanager.hpp>
 #include <popart/tensorinfo.hpp>
 #include <popart/transforms/prune.hpp>
@@ -117,21 +116,6 @@ BOOST_AUTO_TEST_CASE(SelectivePruning) {
 }
 
 BOOST_AUTO_TEST_CASE(KeepOpsWithSideEffects) {
-  // The GradCopyToHost op must be registered as it is not done so by default.
-  auto gradCopyToHostOpDef =
-      OpDefinition({OpDefinition::Inputs({{"X", {DataType::FLOAT}}}),
-                    OpDefinition::Outputs({}),
-                    OpDefinition::Attributes({})});
-
-  auto gradCopyToHostCreator = OpCreator<GradCopyToHostOp>(
-      OpDefinitions(
-          {{Onnx::CustomOperators::GradCopyToHost, gradCopyToHostOpDef}}),
-      [](const OpCreatorInfo &info) {
-        return std::unique_ptr<GradCopyToHostOp>(
-            new GradCopyToHostOp(info.settings));
-      },
-      true);
-
   // Given: A model with two ops with side effects and one identity output op.
   auto builder = Builder::create();
   auto aiOnnx  = builder->aiOnnxOpset11();
@@ -145,13 +129,6 @@ BOOST_AUTO_TEST_CASE(KeepOpsWithSideEffects) {
                     0,
                     {{"bufferid", 0}},
                     "remote_store");
-
-  builder->customOp(Onnx::CustomOperators::GradCopyToHost,
-                    1,
-                    {input},
-                    0,
-                    {},
-                    "grad_copy_to_host");
 
   auto output = aiOnnx.identity({input}, "output");
   builder->addOutputTensor(output);
@@ -172,7 +149,7 @@ BOOST_AUTO_TEST_CASE(KeepOpsWithSideEffects) {
   ir.logIr();
 
   // Then: All the ops should have been kept.
-  BOOST_TEST(ir.getMainGraphOps().size() == 3);
+  BOOST_TEST(ir.getMainGraphOps().size() == 2);
 }
 
 BOOST_AUTO_TEST_CASE(PruneGraphModel1Test) {

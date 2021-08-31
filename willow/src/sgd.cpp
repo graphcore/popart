@@ -277,13 +277,9 @@ std::unique_ptr<Op> SGD::createOp(const Tensor &w, Graph &graph) const {
                              static_cast<int>(sgdAccMm));
       }
     } else {
-      if (graph.getIr().getSessionOptions().hostAllReduce) {
-        reductionType = OptimizerReductionType::None;
-      } else {
-        // Disable [accl|accum]Reduce in favor of gradReduce when not using
-        // gradient accumulation.
-        reductionType = OptimizerReductionType::GradReduce;
-      }
+      // Disable [accl|accum]Reduce in favor of gradReduce when not using
+      // gradient accumulation.
+      reductionType = OptimizerReductionType::GradReduce;
     }
   }
 

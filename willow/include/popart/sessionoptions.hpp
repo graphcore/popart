@@ -834,15 +834,6 @@ struct SessionOptions {
   /// order central moment is calculated.
   bool enableStableNorm = false;
 
-  /// Perform AllReduce operation on the host. Only useful for training session.
-  bool hostAllReduce = false;
-
-  /// Perform weight update on the host. Only useful for training session.
-  bool hostWeightUpdate = false;
-
-  /// Enable the use of \c poplar::RemoteBuffers for hostAllReduce operations.
-  bool hostAllReduceRemoteBuffer = false;
-
   /// Poplar engine options.
   std::map<std::string, std::string> engineOptions;
 

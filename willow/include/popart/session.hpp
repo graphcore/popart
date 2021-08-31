@@ -457,20 +457,6 @@ public:
    */
   void updateOptimizerFromHost(const Optimizer *optimizer);
 
-  /**
-   * Access the stream IDs for variables that are involved in host side
-   * reductions on the host. Only populated if \c hostAllReduce is enabled in
-   * the SessionOptions
-   */
-  const std::vector<std::string> &getHostReduceStreamIds() const;
-
-  /**
-   * Access the remote buffers associated with gradient and weight streams
-   * that are used in host side all reduce operations. Only populated if
-   * \c hostAllReduce and \c hostAllReduceRemoteBuffer are enabled.
-   */
-  const std::map<std::string, poplar::RemoteBuffer> &
-  getHostReduceRemoteBuffers() const;
 
   /**
    * Read from a RemoteBuffer object into a user space pointer \p w.

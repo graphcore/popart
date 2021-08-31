@@ -94,18 +94,14 @@ def train():
     userOpts = popart.SessionOptions()
     device = get_device()
 
-    # Enable host side AllReduce operations in the graph
-    userOpts.hostAllReduce = True
     training, optimizer = init_session(proto, loss, dataFlow, userOpts, device)
-    if userOpts.hostAllReduce:
-        hvd.init()
+    hvd.init()
 
-        distributed_optimizer = hvd.DistributedOptimizer(
-            optimizer, training.session, userOpts)
-        distributed_optimizer.insert_host_allreduce()
+    distributed_optimizer = hvd.DistributedOptimizer(
+        optimizer, training.session, userOpts)
 
-        # Broadcast weights to all the other processes
-        hvd.broadcast_weights(training.session, root_rank=0)
+    # Broadcast weights to all the other processes
+    hvd.broadcast_weights(training.session, root_rank=0)
 
     training.session.weightsFromHost()
 
