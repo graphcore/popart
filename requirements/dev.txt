@@ -1,0 +1,45 @@
+# Copyright (c) 2021 Graphcore Ltd. All rights reserved.
+#
+# PopART requirement files are organised as follows:
+#
+# requirements.txt       - Includes both `requirements-build.txt` and
+#                          `requirements-run.txt`.
+# requirements/build.txt - A list of packages required for building PopART.
+# requirements/run.txt   - A list of packages required for running PopART.
+# requirements/dev.txt   - A list of packages recommended to be installed for
+#                          PopART developers. This includes packages like
+#                          conan, cmake, ninja, view, sphinx as well as packages
+#                          that are normally required to build the Poplar view
+#                          but that aren't strictly speaking PopART
+#                          requirements.
+
+# Packages we depend on at build-time:
+-r build.txt
+# Packages we depend on at run/test-time:
+-r run.txt
+# Packages we depend on in some dev scripts:
+-r ../scripts/requirements.txt
+
+# Packages required for other things in the view.
+lit==0.7.1
+lxml==4.6.1
+pycapnp==0.6.4
+typing==3.7.4.3
+typing-extensions==3.7.4.3
+
+# Requirements for linters.
+dataclasses==0.8
+clang-format==9.0.0
+yapf==0.27.0
+
+# Documentation stuff.
+sphinx==3.4.3
+breathe==4.26.1
+docutils==0.16
+
+# Build system stuff.
+cmake==3.18.4
+ninja==1.8.2
+conan==1.22.2
+git+ssh://git@phabricator.sourcevertex.net/diffusion/VIEW/view.git
+

@@ -1,0 +1,28 @@
+# Copyright (c) 2021 Graphcore Ltd. All rights reserved.
+#
+# PopART requirement files are organised as follows:
+#
+# requirements.txt       - Includes both `requirements-build.txt` and
+#                          `requirements-run.txt`.
+# requirements/build.txt - A list of packages required for building PopART.
+# requirements/run.txt   - A list of packages required for running PopART.
+# requirements/dev.txt   - A list of packages recommended to be installed for
+#                          PopART developers. This includes packages like
+#                          conan, cmake, ninja, view, sphinx as well as packages
+#                          that are normally required to build the Poplar view
+#                          but that aren't strictly speaking PopART
+#                          requirements.
+
+# NOTE: Don't add things here you wouldn't want to be installed on CI.
+
+# Packages we depend on at run/test-time:
+numpy==1.19.2
+onnx==1.6.0
+protobuf==3.11.2
+pytest==6.1.2
+pytest-forked==1.3.0
+--find-links https://download.pytorch.org/whl/torch_stable.html
+torch==1.9.0+cpu; sys_platform != "darwin"
+torchvision==0.10.0+cpu; sys_platform != "darwin"
+torch==1.9.0; sys_platform == "darwin"
+torchvision==0.10.0; sys_platform == "darwin"
