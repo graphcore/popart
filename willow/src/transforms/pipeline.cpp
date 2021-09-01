@@ -922,7 +922,7 @@ void Pipeline::setFinalFwdStageRecomputation(Graph &graph) {
   }
 
   if (finalFwdStage) {
-    // Traverse Forward from inputs to stage.
+    // Iterate through Ops in topological order.
     // Add to frontier when RecomputeType::Checkpoint && ScheduledPreLoss::Yes
     // is reached. If an Op in the frontier is in this new Op's history,
     // remove it from the frontier. Finally propagate
@@ -931,8 +931,8 @@ void Pipeline::setFinalFwdStageRecomputation(Graph &graph) {
     logging::trace("[Pipeline::setFinalFwdStageRecomputation] Setting "
                    "FinalStage Recompute for {}",
                    pStage);
-    std::vector<std::pair<Op *, std::set<OpId>>> toCheck;
-    std::set<OpId> seen;
+
+    std::map<OpId, std::set<OpId>> paths;
     std::vector<Op *> frontier;
 
     auto sameContextAndStage = [&pStage](Op *op) {
@@ -945,6 +945,9 @@ void Pipeline::setFinalFwdStageRecomputation(Graph &graph) {
       auto it = frontier.begin();
       while (it != frontier.end()) {
         if (path.find((*it)->id) != path.end()) {
+          logging::trace("[Pipeline::setFinalFwdStageRecomputation] Pruned "
+                         "from frontier {}",
+                         (*it)->debugName());
           it = frontier.erase(it);
         } else {
           ++it;
@@ -952,54 +955,29 @@ void Pipeline::setFinalFwdStageRecomputation(Graph &graph) {
       }
     };
 
-    auto addToCheck = [&toCheck](Op *op, std::set<OpId> pathUpToOp) {
-      pathUpToOp.insert(op->id);
-      toCheck.push_back({op, pathUpToOp});
-    };
-
-    auto addConsumers = [&sameContextAndStage,
-                         &pruneFromFrontier,
-                         &frontier,
-                         &seen,
-                         &addToCheck](Tensor *t, const std::set<OpId> &path) {
-      for (auto con : t->consumers.getOps()) {
-        if (sameContextAndStage(con)) {
-          if (con->settings.recomputeType == RecomputeType::Checkpoint) {
-            pruneFromFrontier(path);
-          }
-
-          bool visited = seen.find(con->id) != seen.end();
-          if (!visited) {
-            seen.insert(con->id);
-            addToCheck(con, path);
-            if (con->settings.recomputeType == RecomputeType::Checkpoint) {
-              frontier.push_back(con);
-            }
-          }
-          if (visited &&
-              con->settings.recomputeType != RecomputeType::Checkpoint) {
-            // Design Note: Adding already visited operations into toCheck
-            // increases the complexity of the algorithm. This could be
-            // improved by iterating through the operations in topological
-            // order. However, that would require scheduling the whole graph
-            // which is likely more expensive.
-            //
-            // Only need to re-add non-checkpoint operations so that all paths
-            // to a checkpoint operation will be prunedFromFrontier.
-            addToCheck(con, path);
+    auto addConsumerPaths = [&sameContextAndStage,
+                             &paths](Op *op, const std::set<OpId> path) {
+      for (auto t : op->output->tensors()) {
+        for (auto con : t->consumers.getOps()) {
+          if (sameContextAndStage(con)) {
+            paths[con->id].insert(path.begin(), path.end());
           }
         }
       }
     };
 
-    for (auto t : start[pStage]) {
-      addConsumers(t, {});
-    }
-    while (!toCheck.empty()) {
-      auto op_path = toCheck.back();
-      toCheck.pop_back();
-      for (auto t : op_path.first->output->tensors()) {
-        addConsumers(t, op_path.second);
+    for (auto op : graph.getOpSchedule({}, RequireOptimalSchedule::No)) {
+      if (sameContextAndStage(op)) {
+        auto path = paths[op->id];
+        path.insert(op->id);
+        addConsumerPaths(op, path);
+        if (op->settings.recomputeType == RecomputeType::Checkpoint) {
+          pruneFromFrontier(path);
+          frontier.push_back(op);
+          logging::trace(
+              "[Pipeline::setFinalFwdStageRecomputation] Added to frontier {}",
+              op->debugName());
+        }
       }
     }
 
