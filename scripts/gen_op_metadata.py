@@ -8,7 +8,14 @@ from glob import glob
 from pathlib import Path
 from typing import Any, Dict, Iterator, List, Text, Tuple
 
-from clang import cindex
+# clang is not a common install. Raise error and point to readme in case of missing package.
+try:
+    from clang import cindex
+except:
+    raise ImportError(
+        "Failed to import python package `clang`, usually installed with package `libclang`."
+        "Please make sure you install all dependencies. See the README.md for details."
+    )
 
 from util import bor, get_project_source_dir
 

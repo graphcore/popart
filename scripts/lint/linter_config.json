@@ -21,7 +21,8 @@
                 "(willow/include/popart/vendored/.*)",
                 "(.arclint)",
                 "(.arcconfig)",
-                "(.json$)"
+                "(.json$)",
+                "(.md$)"
             ]
         }
     }

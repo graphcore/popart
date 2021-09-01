@@ -19,7 +19,14 @@ from pathlib import Path
 from subprocess import CalledProcessError, check_output
 from typing import Dict, Text
 
-import jinja2
+# jinja2 is not a common install. Raise error and point to readme in case of missing package.
+try:
+    import jinja2
+except:
+    raise ImportError(
+        "Failed to import python package jinja2."
+        "Please make sure you install all dependencies. See the README.md for details."
+    )
 from util import get_project_source_dir
 
 

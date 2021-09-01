@@ -103,6 +103,18 @@ sudo pip3 install torch==1.7.1+cpu torchvision==0.8.2+cpu -f https://download.py
 sudo pip3 install mypy==0.812
 ```
 
+##### **jinja2** (version 2.11.3 or compatible)
+
+```
+sudo pip3 install Jinja2==2.11.3
+```
+
+##### **libclang** (version 12.0.0 or compatible)
+
+```
+sudo pip3 install libclang==12.0.0
+```
+
 ### Installing Third-Party Library Dependencies
 
 PopART compiles against a number of libraries that you will need to have available on your system:
