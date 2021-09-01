@@ -2,8 +2,8 @@
 """
     TL;DR: 
     1) Include POPART_ENABLE_COVERAGE=ON in POPART_CMAKE_ARGS when building PopART,
-    2) Install gcovr locally using `pip install gcovr`
-    3) Check out the command-line options below or run `python view_coverage.py -h`
+    2) Install gcovr locally using 'pip install gcovr'
+    3) Check out the command-line options below or run 'python view_coverage.py -h'
 
     ----
     This script combines under one CLI the ability to run tests and view coverage of
@@ -87,6 +87,8 @@ from pathlib import Path, PosixPath
 from typing import Callable, Optional
 
 from gcovr.__main__ import main as gcovr
+
+from util import bash
 
 output_types = {
     "all": "--txt",

@@ -266,28 +266,28 @@ function(add_popart_py_unit_test name filename)
   endforeach()
 endfunction()
 
-# TODO: re-enable once the upload is fixed: T45076
-# if(${POPART_ENABLE_COVERAGE} AND ${UPLOAD_COVERAGE_REPORT})
-#   if(RESULTS_SERVER_COOKIE_FILE AND EXISTS ${RESULTS_SERVER_COOKIE_FILE})
-#     add_test(NAME upload_coverage_report
-#       COMMAND "${Python3_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/scripts/upload_coverage.py" 
-#               ${CMAKE_BINARY_DIR} 
-#               https://elasticsearch.sourcevertex.net
-#               --cookie-file=${RESULTS_SERVER_COOKIE_FILE}
-#               )
-#     # We want the coverage report generation to run after all other tests to 
-#     # be able to reliably clean all previously generated coverage output.
-#     # Otherwise, the unit test coverage reports will contain coverage
-#     # data from tests that ran before, or alongside, the coverage script.
-#     set_property(TEST upload_coverage_report PROPERTY DEPENDS )
-#     set_property(TEST upload_coverage_report PROPERTY RUN_SERIAL TRUE)
-#   else()
-#     message(WARNING " Path to authentication cookie not provided. Skipping coverage report upload. \
-# Set the RESULTS_SERVER_COOKIE_FILE to the absolute path of the file containing the cookie if you \
-# want to upload coverage reports to elasticsearch."
-#     )
-#   endif()
-# endif()
+
+if(${POPART_ENABLE_COVERAGE} AND ${UPLOAD_COVERAGE_REPORT})
+  if(RESULTS_SERVER_COOKIE_FILE AND EXISTS ${RESULTS_SERVER_COOKIE_FILE})
+    add_test(NAME upload_coverage_report
+      COMMAND "${Python3_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/scripts/upload_coverage.py" 
+              ${CMAKE_BINARY_DIR} 
+              https://elasticsearch.sourcevertex.net
+              --cookie-file=${RESULTS_SERVER_COOKIE_FILE}
+              )
+    # We want the coverage report generation to run after all other tests to 
+    # be able to reliably clean all previously generated coverage output.
+    # Otherwise, the unit test coverage reports will contain coverage
+    # data from tests that ran before, or alongside, the coverage script.
+    set_property(TEST upload_coverage_report PROPERTY DEPENDS )
+    set_property(TEST upload_coverage_report PROPERTY RUN_SERIAL TRUE)
+  else()
+    message(WARNING " Path to authentication cookie not provided. Skipping coverage report upload. \
+Set the RESULTS_SERVER_COOKIE_FILE to the absolute path of the file containing the cookie if you \
+want to upload coverage reports to elasticsearch."
+    )
+  endif()
+endif()
 
 add_subdirectory(testutil)
 add_subdirectory(integration)

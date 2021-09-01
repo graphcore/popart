@@ -8,7 +8,7 @@ from datetime import datetime
 from pathlib import Path, PosixPath
 
 from elasticsearch import RequestsHttpConnection
-from elasticsearch_dsl import Date, Document, Float, Keyword, connections
+from elasticsearch_dsl import Boolean, Date, Document, Float, Keyword, connections
 from view_coverage import GCovrRunnerParser, clean_coverage_output, run_tests
 
 
@@ -17,6 +17,7 @@ class CoverageMetrics(Document):
     Unit test statement and branch coverage across all source
     files in PopART
     """
+    code_metrics_type = Keyword(required=True)
     unittest_branch_covered = Float(required=True)
     unittest_branch_total = Float(required=True)
     unittest_branch_percent = Float(required=True)
@@ -24,7 +25,9 @@ class CoverageMetrics(Document):
     unittest_line_total = Float(required=True)
     unittest_line_percent = Float(required=True)
     timestamp = Date(required=True, default_timezone='UTC')
-    diff_id = Keyword()
+    is_diff_build = Boolean(required=True)
+    diff_id = Keyword(required=False)
+    commit_id = Keyword(required=False)
 
     class Index:
         name = "popart_coverage"
@@ -53,34 +56,19 @@ def get_unittest_coverage_json_report(workspace_dir: PosixPath,
     return json.loads(runner.create_report())
 
 
-def get_diff_id(workspace_dir: PosixPath) -> str:
-    """Extract the differential revision ID either from the environment
-    or the commit message of the latest diff.
+def set_build_details(workspace_dir: PosixPath,
+                      metrics: CoverageMetrics) -> str:
+    """ Set is_diff_build, diff_id and commit_id as appropriate. """
 
-    If the revision ID is not present in the environment, we execute
-    git show --summary from `workspace_dir` and parse this for the
-    diff ID. We therefore expect the most recent commit to be one from
-    an arc patch.
+    is_diff_build = (os.environ.get("GCCI_DIFF_BUILD", "false") == "true")
 
-    If we cannot determine a diff ID we return the empty string.
-    """
-    diff_revision_var = os.environ.get("GCCI_DIFF_REVISION")
-    if diff_revision_var:
-        return diff_revision_var
-    process = subprocess.Popen(["git", "show", "--summary"],
-                               cwd=workspace_dir,
-                               stdout=subprocess.PIPE,
-                               universal_newlines=True)
-    stdout, _ = process.communicate()
-    # There is probably a more programatic way to find the Diff Id
-    # of the revision being built, but using the conduit API is a headache.
-    index = stdout.find("Reviewers:")
-    match = re.findall(
-        r'Differential Revision: https://phabricator.sourcevertex.net/(?P<diff_id>D\d+)',
-        stdout[index:])
-    if match:
-        return match[-1]
-    return ''
+    if not is_diff_build:
+        metrics.is_diff_build = False
+        metrics.commit_id = os.environ.get("GIT_COMMIT", "<undefined>")
+
+    else:
+        metrics.is_diff_build = True
+        metrics.diff_id = os.environ.get("GCCI_DIFF_REVISION", "<undefined>")
 
 
 if __name__ == "__main__":
@@ -119,11 +107,12 @@ if __name__ == "__main__":
         CoverageMetrics.init()
 
     metrics = CoverageMetrics()
+    metrics.code_metrics_type = "PopART Test Coverage"
     metrics.unittest_branch_covered = report['branch_covered']
     metrics.unittest_branch_total = report['branch_total']
     metrics.unittest_branch_percent = report['branch_percent']
     metrics.unittest_line_covered = report['line_covered']
     metrics.unittest_line_total = report['line_total']
     metrics.unittest_line_percent = report['line_percent']
-    metrics.diff_id = get_diff_id(workspace_dir)
+    set_build_details(workspace_dir, metrics)
     metrics.save()
