@@ -213,7 +213,7 @@ bool isComputeLikeIOOp(std::set<ExchangeStrategy> computeLikeStrategies,
 
   graphutils::traverse(
       op->output->tensors(),
-      [&isComputeLikeIo, op, &isOpComputeLike](Tensor *t) -> bool {
+      [&isComputeLikeIo, &isOpComputeLike](Tensor *t) -> bool {
         for (auto consumer : t->consumers.getOps()) {
           isComputeLikeIo |= isOpComputeLike(consumer);
         }

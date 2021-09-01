@@ -876,13 +876,10 @@ bool Ir::hasReplicatedTensorSharding() const {
 }
 
 bool Ir::hasOverlappedIO() const {
-  auto isOverlappingExchangeStrategy = [this](ExchangeStrategy strategy) {
-    if (strategy == ExchangeStrategy::OverlapStep ||
-        strategy == ExchangeStrategy::OverlapInnerLoop ||
-        strategy == ExchangeStrategy::OverlapLoops) {
-      return true;
-    }
-    return false;
+  auto isOverlappingExchangeStrategy = [](ExchangeStrategy strategy) {
+    return strategy == ExchangeStrategy::OverlapStep ||
+           strategy == ExchangeStrategy::OverlapInnerLoop ||
+           strategy == ExchangeStrategy::OverlapLoops;
   };
 
   bool overlap = false;
@@ -4096,8 +4093,8 @@ std::size_t std::hash<popart::Ir>::operator()(const popart::Ir &ir) const {
   return seed;
 }
 
-std::size_t std::hash<popart::IrBundle>::
-operator()(const popart::IrBundle &bundle) const {
+std::size_t
+std::hash<popart::IrBundle>::operator()(const popart::IrBundle &bundle) const {
   size_t seed = 0;
 
   boost::hash_combine(
