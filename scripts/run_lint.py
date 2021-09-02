@@ -85,7 +85,8 @@ def _error_message_if_linter_invalid(linter, config) -> str:
             linter.name,
             f"Linter {linter.name} is not available or installed. "
             f"Install using: {linter.install_instructions(config.version)}")
-    elif config.version and not _correct_version(linter, config):
+    elif config.version and linter.get_version() and not _correct_version(
+            linter, config):
         error_msg = LinterMessage(
             linter.name,
             f"Version requirement not satisfied for linter {linter.name}. "
