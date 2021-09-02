@@ -142,6 +142,13 @@ void Graph::addConstInit(const TensorId &name,
   getTensors().addConstInit(name, info, src, debugContext);
 }
 
+void Graph::addStream(const TensorId &name,
+                      const TensorInfo &info,
+                      const DebugContext &debugContext) {
+
+  getTensors().addStream(name, info, debugContext);
+}
+
 void Graph::addInput(const InIndex &index,
                      const TensorId &tensorId,
                      const TensorInfo &tensorInfo,
