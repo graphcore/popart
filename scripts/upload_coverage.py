@@ -30,7 +30,7 @@ class CoverageMetrics(Document):
     commit_id = Keyword(required=False)
 
     class Index:
-        name = "popart_coverage"
+        name = "code_metrics"
 
     def save(self, **kwargs):
         self.timestamp = datetime.utcnow()
