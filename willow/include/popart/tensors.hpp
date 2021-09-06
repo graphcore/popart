@@ -67,7 +67,7 @@ public:
   std::vector<TensorId> getNoProducerIds() const;
   void append(std::stringstream &) const;
 
-  const VectorAndSet &getConstIds() const { return constIds; }
+  const VectorAndSet<TensorId> &getConstIds() const { return constIds; }
   void insertConstId(const std::string &);
   // remove all Tensors which have no producer and no consumers
   void removeIsolated(bool retainRemote);
@@ -76,7 +76,7 @@ public:
 
 private:
   // Store the Tensors of type Const
-  VectorAndSet constIds;
+  VectorAndSet<TensorId> constIds;
 
   std::unordered_map<TensorId, std::unique_ptr<Tensor>> M;
   // adds to M, but first confirms that TensorId not already in
