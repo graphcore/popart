@@ -77,14 +77,12 @@ BOOST_AUTO_TEST_CASE(TestRestoreParams) {
   // These must be false
   testParams.kernelTransformation.flip = {false, false};
 
-  // These must be zero
-  testParams.outputTransformation.lowerTruncation = {0, 0};
-  testParams.outputTransformation.upperTruncation = {0, 0};
-
   // These need to work
-  testParams.outputTransformation.stride       = {24, 25};
-  testParams.outputTransformation.lowerPadding = {26, 27};
-  testParams.outputTransformation.upperPadding = {28, 29};
+  testParams.outputTransformation.lowerTruncation = {21, 22};
+  testParams.outputTransformation.upperTruncation = {23, 24};
+  testParams.outputTransformation.stride          = {24, 25};
+  testParams.outputTransformation.lowerPadding    = {26, 27};
+  testParams.outputTransformation.upperPadding    = {28, 29};
 
   std::vector<ConvParameters> paramsVec;
   paramsVec.push_back(testParams);

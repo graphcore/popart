@@ -224,6 +224,8 @@ public:
   // Usually all zero but can be set by restoreAttributesFromParams
   Shape lowerInTruncs(int64_t convIndex) const;
   Shape upperInTruncs(int64_t convIndex) const;
+  Shape lowerOutTruncs(int64_t convIndex) const;
+  Shape upperOutTruncs(int64_t convIndex) const;
 
 private:
   void checkParameters() const;
@@ -235,10 +237,11 @@ private:
   ConvDilations flatDilations;
   ConvDilations flatInDilations;
 
-  // Allows the input dims to be directly truncated
+  // Allows the input dims and output to be directly truncated
   // Needed for some cases of restoreAttributesFromParams such as to calculate
   // the gradient of a convolution with (zeros) padding > kernel_size
   ConvTruncs flatInTruncs;
+  ConvTruncs flatOutTruncs;
 
   // Encapsulates per-conv and global options
   MultiConvOptions convOpts;

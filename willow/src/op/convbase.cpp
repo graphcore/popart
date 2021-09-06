@@ -187,11 +187,11 @@ Shape MultiConvBaseOp::getOutShape(int convIndex, const ConvPads &pads) const {
 
   // Take into account any input trunction. An example of this is calculating
   // the data gradient of a convolution whose padding exceeds its kernel size.
-  Shape lowerTruncs = lowerInTruncs(convIndex);
-  Shape upperTruncs = upperInTruncs(convIndex);
+  Shape lowInTruncs = lowerInTruncs(convIndex);
+  Shape upInTruncs  = upperInTruncs(convIndex);
   for (size_t dim = 0; dim < nSpatialDims; dim++) {
-    inSpatialD[dim] -= lowerTruncs[dim];
-    inSpatialD[dim] -= upperTruncs[dim];
+    inSpatialD[dim] -= lowInTruncs[dim];
+    inSpatialD[dim] -= upInTruncs[dim];
   }
 
   Shape spatialOutShape =
@@ -204,6 +204,16 @@ Shape MultiConvBaseOp::getOutShape(int convIndex, const ConvPads &pads) const {
                                               getInDilations(convIndex),
                                               padType);
 
+  // Take into account any output truncation.
+  Shape lowOutTruncs = lowerOutTruncs(convIndex);
+  Shape upOutTruncs  = upperOutTruncs(convIndex);
+
+  for (size_t dim = 0; dim < nSpatialDims; dim++) {
+    spatialOutShape[dim] -= lowOutTruncs[dim];
+    spatialOutShape[dim] -= upOutTruncs[dim];
+  }
+
+  // Combine to make the full output shape
   for (int spDim = 0; spDim < nSpatialDims; ++spDim) {
     outShape[spDim + 2] = spatialOutShape[spDim];
   }
@@ -252,6 +262,7 @@ void MultiConvBaseOp::restoreAttributesFromParams(
   flatPads.clear();
   flatOutPads.clear();
   flatInTruncs.clear();
+  flatOutTruncs.clear();
 
   for (auto param : ps) {
     // inputTransformation
@@ -261,7 +272,7 @@ void MultiConvBaseOp::restoreAttributesFromParams(
     flatPads.insert(flatPads.end(),
                     param.inputTransformation.upperPadding.begin(),
                     param.inputTransformation.upperPadding.end());
-    flatInDilations.insert(flatInDilations.begin(),
+    flatInDilations.insert(flatInDilations.end(),
                            param.inputTransformation.dilation.begin(),
                            param.inputTransformation.dilation.end());
     flatInTruncs.insert(flatInTruncs.end(),
@@ -288,12 +299,6 @@ void MultiConvBaseOp::restoreAttributesFromParams(
                 "kernelTransformation.upperPadding");
     ensureFalses(param.kernelTransformation.flip, "kernelTransformation.flip");
 
-    // outputTransformation
-    ensureZeros(param.outputTransformation.lowerTruncation,
-                "outputTransformation.lowerTruncation");
-    ensureZeros(param.outputTransformation.upperTruncation,
-                "outputTransformation.upperTruncation");
-
     flatStrides.insert(flatStrides.end(),
                        param.outputTransformation.stride.begin(),
                        param.outputTransformation.stride.end());
@@ -304,7 +309,14 @@ void MultiConvBaseOp::restoreAttributesFromParams(
     flatOutPads.insert(flatOutPads.end(),
                        param.outputTransformation.upperPadding.begin(),
                        param.outputTransformation.upperPadding.end());
+    flatOutTruncs.insert(flatOutTruncs.end(),
+                         param.outputTransformation.lowerTruncation.begin(),
+                         param.outputTransformation.lowerTruncation.end());
+    flatOutTruncs.insert(flatOutTruncs.end(),
+                         param.outputTransformation.upperTruncation.begin(),
+                         param.outputTransformation.upperTruncation.end());
   }
+
   // The padding has been adjusted, so we can unset the AutoPad type
   padType = AutoPad::NOTSET;
 }
@@ -506,6 +518,36 @@ Shape MultiConvBaseOp::upperInTruncs(int64_t convIndex) const {
   return result;
 }
 
+Shape MultiConvBaseOp::lowerOutTruncs(int64_t convIndex) const {
+  const auto nSpatialDims = getNSpatialDims(convIndex);
+
+  Shape result;
+  if (flatOutTruncs.empty()) {
+    result.resize(nSpatialDims, 0);
+  } else {
+    const auto cumulativeSpatialDims = getCumulativeSpatialDims(convIndex);
+    const auto cumulativeTruncs      = cumulativeSpatialDims * 2;
+    result = {flatOutTruncs.begin() + cumulativeTruncs,
+              flatOutTruncs.begin() + cumulativeTruncs + nSpatialDims};
+  }
+  return result;
+}
+
+Shape MultiConvBaseOp::upperOutTruncs(int64_t convIndex) const {
+  const auto nSpatialDims = getNSpatialDims(convIndex);
+
+  Shape result;
+  if (flatOutTruncs.empty()) {
+    result.resize(nSpatialDims, 0);
+  } else {
+    const auto cumulativeSpatialDims = getCumulativeSpatialDims(convIndex);
+    const auto cumulativeTruncs      = cumulativeSpatialDims * 2;
+    result = {flatOutTruncs.begin() + cumulativeTruncs + nSpatialDims,
+              flatOutTruncs.begin() + cumulativeTruncs + nSpatialDims * 2};
+  }
+  return result;
+}
+
 void MultiConvBaseOp::setup() {
   checkParameters();
 
@@ -590,8 +632,8 @@ ConvParameters MultiConvBaseOp::getParameters(int convIndex) const {
   result.kernelTransformation.upperPadding    = zeros;
   result.kernelTransformation.flip            = falses;
 
-  result.outputTransformation.lowerTruncation = zeros;
-  result.outputTransformation.upperTruncation = zeros;
+  result.outputTransformation.lowerTruncation = lowerOutTruncs(convIndex);
+  result.outputTransformation.upperTruncation = upperOutTruncs(convIndex);
   result.outputTransformation.stride          = getStrides(convIndex);
   result.outputTransformation.lowerPadding    = lowerOutPads(convIndex);
   result.outputTransformation.upperPadding    = upperOutPads(convIndex);
