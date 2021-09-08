@@ -115,7 +115,7 @@ def create_new_op(inputs: Dict[int, "_ir.Tensor"],
             op.connectInTensor(i, t.id)
         for i, t in outputs.items():
             op.connectOutTensor(i, t.id)
-    op.setup()
+        op.setup()
     return op
 
 

@@ -183,7 +183,7 @@ def test_init_op(init_type: "_ir.InitType", connected: bool):
         op = g.createOp_InitOp(opid, out0.info, out0.tensorType(), init_type,
                                settings, 0)
         op.connectOutTensor(0, out0.id)
-    op.setup()
+        op.setup()
     assert not op.hasInput(0)
     assert op.outTensor(0) == out0
     assert op.hasOutput(0)
@@ -220,7 +220,7 @@ def test_call_op(connected: bool):
         op = main.createOp_CallOp(opid, sub_graph, settings)
         op.connectInTensor(0, in0.id)
         op.connectOutTensor(0, out0.id)
-    op.setup()
+        op.setup()
 
     assert op.getCalledGraphs()[0] == sub_graph
     assert op.getCalledGraphIds()[0] == "sub_graph"
@@ -238,9 +238,9 @@ def test_nll_op(reduction: _ir.ReductionType, ignoreIndex: int,
 
     Args:
         reduction (_ir.ReductionType): The reduction type to use
-        ignoreIndex (int): The index to ignore. Note this has to be converted to 
+        ignoreIndex (int): The index to ignore. Note this has to be converted to
             an _ir.OptionalInt
-        connected (bool): Whether to use the createConnected<opname> function or 
+        connected (bool): Whether to use the createConnected<opname> function or
             just create<opname>
     """
     _, graphs = create_ir()
@@ -269,8 +269,6 @@ def test_nll_op(reduction: _ir.ReductionType, ignoreIndex: int,
             inputIsLogProbability=True,
             opid=opid,
             settings=settings)
-
-        op.setup()
         return
     op = main.createOp_NllOp(
         opid=opid,
@@ -289,7 +287,7 @@ def test_gather_op(connected: bool) -> None:
     """Test the Gather Op.
 
     Args:
-        connected (bool): Whether to use the createConnected<opname> function or 
+        connected (bool): Whether to use the createConnected<opname> function or
             just create<opname>
     """
     _, graphs = create_ir()
@@ -323,4 +321,51 @@ def test_gather_op(connected: bool) -> None:
     op.connectInTensor(0, in0.id)
     op.connectInTensor(1, weight.id)
     op.connectOutTensor(0, out0.id)
+    op.setup()
+
+
+@pytest.mark.parametrize("num_groups", [1, 2])
+@pytest.mark.parametrize("connected", [True, False])
+def test_group_norm_op(connected: bool, num_groups: int) -> None:
+    """Test the Group Norm Op.
+
+    Args:
+        num_groups (int): The number of groups used by the Op
+        connected (bool): Whether to use the createConnected<opname> function or
+            just create<opname>
+    """
+    _, graphs = create_ir()
+    main = graphs[0]
+    num_inputs = _ir.NumInputs(3, 3)
+    in0 = add_actgrad_tensor("in0", [8, 4], main)
+    weight = add_random_tensor("weight", _ir.TensorType.Variable, [4], main)
+    bias = add_random_tensor("bias", _ir.TensorType.Variable, [4], main)
+    out = add_actgrad_tensor("out", [8, 4], main)
+    mean = add_actgrad_tensor("mean", [8 * num_groups], main)
+    invstddev = add_actgrad_tensor("invstddev", [8 * num_groups], main)
+
+    opid = _ir.OperatorIdentifier("ai.graphcore", "GroupNormalization", 1,
+                                  num_inputs, 3)
+    settings = _ir.Settings(main, "nll")
+
+    if connected:
+        ins: Dict[int, str] = {0: in0.id, 1: weight.id, 2: bias.id}
+        outs: Dict[int, str] = {0: out.id, 1: mean.id, 2: invstddev.id}
+        op = main.createConnectedOp_GroupNormOp(ins,
+                                                outs,
+                                                opid=opid,
+                                                num_groups_=num_groups,
+                                                epsilon_=1e-5,
+                                                settings=settings)
+        return
+    op = main.createOp_GroupNormOp(opid=opid,
+                                   num_groups_=num_groups,
+                                   epsilon_=1e-5,
+                                   settings=settings)
+    op.connectInTensor(0, in0.id)
+    op.connectInTensor(1, weight.id)
+    op.connectInTensor(2, bias.id)
+    op.connectOutTensor(0, out.id)
+    op.connectOutTensor(1, mean.id)
+    op.connectOutTensor(2, invstddev.id)
     op.setup()
