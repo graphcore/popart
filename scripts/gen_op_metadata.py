@@ -115,6 +115,8 @@ def find_constructors(node: cindex.Cursor, base: cindex.Cursor) -> Dict:
         if re.match("const", type_):
             type_ = re.sub("const ", "", type_)
             const = True
+        if type_ == "bool":
+            type_ = "bool&&"
         tokens = []
         for token in c.get_tokens():
             if token.spelling == "=":
