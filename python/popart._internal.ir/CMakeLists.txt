@@ -28,6 +28,7 @@ list(
   ${popart_op_headers_dir}/div.hpp
   ${popart_op_headers_dir}/pow.hpp
   ${popart_op_headers_dir}/dropout.hpp
+  ${popart_op_headers_dir}/gather.hpp
   ${popart_op_headers_dir}/equal.hpp
   ${popart_op_headers_dir}/or.hpp
   ${popart_op_headers_dir}/not.hpp

@@ -119,8 +119,11 @@ def create_new_op(inputs: Dict[int, "_ir.Tensor"],
     return op
 
 
-def add_actgrad_tensor(id_: str, shape: List[int], g: "_ir.Graph"):
-    t_info = _ir.TensorInfo(_ir.DataType.FLOAT, shape)
+def add_actgrad_tensor(id_: str,
+                       shape: List[int],
+                       g: "_ir.Graph",
+                       dtype: "_ir.DataType" = _ir.DataType.FLOAT):
+    t_info = _ir.TensorInfo(dtype, shape)
     g.addActGrad(id_)
     t = g.getTensor(id_)
     t.info = t_info

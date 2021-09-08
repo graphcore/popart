@@ -22,6 +22,16 @@ void bindOptional(py::module &m) {
       .def("__str__", [](OptInt &self) { return std::to_string(self.value()); })
       .def("__repr__",
            [](OptInt &self) { return std::to_string(self.value()); });
+
+  using OptFloat = nonstd::optional<float>;
+
+  py::class_<OptFloat>(m, "OptionalFloat")
+      // .def(py::init<>()) <- Don't bind, leads to bad optional access.
+      .def(py::init<float>())
+      .def("__str__",
+           [](OptFloat &self) { return std::to_string(self.value()); })
+      .def("__repr__",
+           [](OptFloat &self) { return std::to_string(self.value()); });
 }
 } // namespace op
 } // namespace ir

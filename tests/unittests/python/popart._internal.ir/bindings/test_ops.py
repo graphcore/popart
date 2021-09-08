@@ -282,3 +282,45 @@ def test_nll_op(reduction: _ir.ReductionType, ignoreIndex: int,
     op.connectInTensor(1, l.id)
     op.connectOutTensor(0, out0.id)
     op.setup()
+
+
+@pytest.mark.parametrize("connected", [True, False])
+def test_gather_op(connected: bool) -> None:
+    """Test the Gather Op.
+
+    Args:
+        connected (bool): Whether to use the createConnected<opname> function or 
+            just create<opname>
+    """
+    _, graphs = create_ir()
+    main = graphs[0]
+    num_inputs = _ir.NumInputs(2, 2)
+    in0 = add_actgrad_tensor("in0", [8], main, _ir.DataType.INT32)
+    weight = add_random_tensor("weight", _ir.TensorType.Variable, [16, 4],
+                               main)
+    out0 = add_actgrad_tensor("out0", [8, 4], main)
+
+    opid = _ir.OperatorIdentifier("ai.graphcore", "Gather", 11, num_inputs, 1)
+    settings = _ir.Settings(main, "gather")
+    if connected:
+        ins: Dict[int, str] = {0: in0.id, 1: weight.id}
+        outs: Dict[int, str] = {0: out0.id}
+        op = main.createConnectedOp_GatherOp(
+            ins,
+            outs,
+            opid=opid,
+            axis_=0,
+            available_memory_proportion_=_ir.OptionalFloat(0.4),
+            settings=settings)
+
+        op.setup()
+        return
+    op = main.createOp_GatherOp(
+        opid=opid,
+        axis_=0,
+        available_memory_proportion_=_ir.OptionalFloat(0.4),
+        settings=settings)
+    op.connectInTensor(0, in0.id)
+    op.connectInTensor(1, weight.id)
+    op.connectOutTensor(0, out0.id)
+    op.setup()
