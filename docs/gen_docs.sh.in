@@ -14,12 +14,17 @@ pip install sphinx==3.4.3 breathe==4.26.1 docutils==0.16
 
 source @POPLAR_ENABLE_SCRIPT@
 
-export PYTHONPATH=@PROJECT_BINARY_DIR@/python:$PYTHONPATH
-export LIBRARY_PATH=@PROJECT_BINARY_DIR@/python:$LIBRARY_PATH
-export LD_LIBRARY_PATH=@PROJECT_BINARY_DIR@/python:$LD_LIBRARY_PATH
+export PYTHONPATH=@PROJECT_BINARY_DIR@/python/popart:$PYTHONPATH
+export PYTHONPATH=@PROJECT_BINARY_DIR@/python/popart._internal.ir:$PYTHONPATH
+export PYTHONPATH=$(ls -d @PROJECT_BINARY_DIR@/python/popart/popart_*/ | tr '\n' ':' | tr ' ' ':')$PYTHONPATH
+export LIBRARY_PATH=@PROJECT_BINARY_DIR@/python/popart._internal.ir:$LIBRARY_PATH
+export LIBRARY_PATH=$(ls -d @PROJECT_BINARY_DIR@/python/popart/popart_*/ | tr '\n' ':' | tr ' ' ':')$LIBRARY_PATH
+export LD_LIBRARY_PATH=@PROJECT_BINARY_DIR@/python/popart._internal.ir:$LD_LIBRARY_PATH
+export LD_LIBRARY_PATH=$(ls -d @PROJECT_BINARY_DIR@/python/popart/popart_*/ | tr '\n' ':' | tr ' ' ':')$LD_LIBRARY_PATH
 
 echo gen_docs.sh
-echo $LIBRARY_PATH
-echo $PYTHONPATH
+echo "PYTHONPATH=$PYTHONPATH"
+echo "LIBRARY_PATH=$LIBRARY_PATH"
+echo "LD_LIBRARY_PATH=$LD_LIBRARY_PATH"
 echo @PYTHON_EXECUTABLE@ ${*}
 @PYTHON_EXECUTABLE@ ${*}
