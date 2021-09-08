@@ -25,7 +25,7 @@ public:
     enum class Mode { None, InputChannels, ReducingDim, OutputChannels };
 
     Mode mode           = Mode::None;
-    int64_t factor      = 0;
+    uint32_t factor     = 0;
     bool keep_precision = false;
   };
 

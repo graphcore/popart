@@ -214,6 +214,12 @@ void MatMulOp::setup() {
     if (getSerialiseSettings().mode !=
         MatMulBaseOp::SerialiseSettings::Mode::None) {
 
+      if (getSerialiseSettings().factor == 0) {
+        throw error("Invalid serialisation factor {}. Serialisation factor "
+                    "must be a non-zero positive integer.",
+                    getSerialiseSettings().factor);
+      }
+
       // assuming
       // lhs = [group_dims, input_channels, reduce_dim]
       // rhs = [group_dims, reduce_dim, output_channels]
