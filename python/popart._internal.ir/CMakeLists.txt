@@ -19,10 +19,25 @@ list(
   APPEND
   op_headers
   ${popart_op_headers_dir}/add.hpp
+  ${popart_op_headers_dir}/subtract.hpp
+  ${popart_op_headers_dir}/sum.hpp
   ${popart_op_headers_dir}/call.hpp
   ${popart_op_headers_dir}/exchange/hostcopy.hpp
   ${popart_op_headers_dir}/init.hpp
-  ${popart_op_headers_dir}/mul.hpp)
+  ${popart_op_headers_dir}/mul.hpp
+  ${popart_op_headers_dir}/div.hpp
+  ${popart_op_headers_dir}/pow.hpp
+  ${popart_op_headers_dir}/dropout.hpp
+  ${popart_op_headers_dir}/equal.hpp
+  ${popart_op_headers_dir}/or.hpp
+  ${popart_op_headers_dir}/not.hpp
+  ${popart_op_headers_dir}/relu.hpp
+  ${popart_op_headers_dir}/transpose.hpp
+  ${popart_op_headers_dir}/split.hpp
+  ${popart_op_headers_dir}/negate.hpp
+  ${popart_op_headers_dir}/softmax.hpp
+  ${popart_op_headers_dir}/nll.hpp
+  ${popart_op_headers_dir}/tanh.hpp)
 # file(GLOB_RECURSE op_headers ${popart_op_headers_dir}/*.hpp)
 
 # Store lists of the locations of the sources and headers for generated op
@@ -104,6 +119,7 @@ add_popart_python_module(
   bindings/opidentifier.cpp
   bindings/tensorlocation.cpp
   bindings/op/enums.cpp
+  bindings/op/optional.cpp
   popart._internal.ir.cpp)
 
 target_include_directories(

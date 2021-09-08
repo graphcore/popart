@@ -82,7 +82,7 @@ def create_new_op(inputs: Dict[int, "_ir.Tensor"],
                   g: "_ir.Graph",
                   inplace: bool = False,
                   connected: bool = False,
-                  *args):
+                  **kwargs):
     num_inputs = _ir.NumInputs(len(inputs), len(inputs))
     opid = _ir.OperatorIdentifier("ai.onnx", op_name, 1, num_inputs,
                                   len(outputs))
@@ -97,15 +97,19 @@ def create_new_op(inputs: Dict[int, "_ir.Tensor"],
             outp[i] = t.id
         # For some reason inplace ops don't need opid
         if inplace:
-            op = create_new_op_fn(inp, outp, settings, *args)
+            op = create_new_op_fn(inp, outp, settings=settings, **kwargs)
         else:
-            op = create_new_op_fn(inp, outp, opid, settings, *args)
+            op = create_new_op_fn(inp,
+                                  outp,
+                                  opid=opid,
+                                  settings=settings,
+                                  **kwargs)
     else:
         create_new_op_fn = getattr(g, f"createOp_{op_name}")
         if inplace:
-            op = create_new_op_fn(settings, *args)
+            op = create_new_op_fn(settings=settings, **kwargs)
         else:
-            op = create_new_op_fn(opid, settings, *args)
+            op = create_new_op_fn(opid=opid, settings=settings, **kwargs)
         for i, t in inputs.items():
             op.connectInTensor(i, t.id)
         for i, t in outputs.items():

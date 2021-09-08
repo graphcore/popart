@@ -15,7 +15,11 @@ namespace ir {
 namespace op {
 
 void bindEnums(py::module &m) {
-
+  py::enum_<ReductionType>(m, "ReductionType", py::module_local())
+      .value("Sum", ReductionType::Sum)
+      .value("Mean", ReductionType::Mean)
+      .value("NoReduction", ReductionType::NoReduction)
+      .value("N", ReductionType::N);
   py::enum_<InitType>(m, "InitType", py::module_local())
       .value("NoInit", InitType::NoInit)
       .value("Zero", InitType::Zero);

@@ -106,14 +106,14 @@ def find_constructors(node: cindex.Cursor, base: cindex.Cursor) -> Dict:
         ref = False
         const = False
         name = c.spelling
-        type = c.type.spelling
-        fulltype = type
+        type_ = c.type.spelling
+        fulltype = type_
         has_default = False
-        if re.match("const", type):
-            type = re.sub("&", "", type)
+        if re.match("const", type_):
+            type_ = re.sub("&", "", type_)
             ref = True
-        if re.match("const", type):
-            type = re.sub("const ", "", type)
+        if re.match("const", type_):
+            type_ = re.sub("const ", "", type_)
             const = True
         tokens = []
         for token in c.get_tokens():
@@ -124,14 +124,17 @@ def find_constructors(node: cindex.Cursor, base: cindex.Cursor) -> Dict:
             tokens += [t.spelling for t in list(c.get_tokens())]
             default = " ".join(tokens)
             default = default.split("=")[-1]
-
+        if type_.strip() == "Op::Settings":
+            name = "settings"
+        if type_.strip() == "popart::OperatorIdentifier":
+            name = "opid"
         args_.append({
             "arg_name":
             name.strip(),
             "alt_arg_name":
-            type.strip().lower().replace('popart::', '').replace('::', ''),
+            type_.strip().lower().replace('popart::', '').replace('::', ''),
             "arg_type":
-            type.strip(),
+            type_.strip(),
             "fulltype":
             fulltype,
             "const":

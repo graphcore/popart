@@ -1,28 +1,31 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-from typing import Dict, List, Tuple
+from typing import Any, Dict, List, Tuple
 import pytest
 import popart._internal.ir as _ir
 import numpy as np
 import popart
 from utils import *
-"""
-Currently bound:
-['AddArg0GradOp', 'AddArg1GradOp', 'AddLhsInplaceOp', 'AddOp', 'AddRhsInplaceOp',
- 'CallGradOp', 'CallOp', 'InitOp', 'MulArg0GradOp', 'MulArg1GradOp', 'MulLhsInplaceOp',
-  'MulOp', 'MulRhsInplaceOp', '__doc__', '__loader__', '__name__', '__package__', '__spec__', 'exchange']
-"""
 
 
 def unary_op_tester(op_name: str,
                     g: _ir.Graph,
                     inplace: bool = False,
                     connected: bool = False,
-                    *args):
+                    **kwargs):
+    """Helper to test unary ops
+
+    Args:
+        op_name (str): Name of op to create. Must match the create<op_name> function.
+        g (_ir.Graph): The graph to add the op to.
+        inplace (bool, optional): Whether to use the inplace variant. Defaults to False.
+        connected (bool, optional): Whether to use the createConnected<opname> function or 
+            just create<opname>. Defaults to False.
+    """
     in0 = add_actgrad_tensor("in0", [1, 2, 3], g)
     out0 = add_actgrad_tensor("out0", [1, 2, 3], g)
     ins = {0: in0}
     outs = {0: out0}
-    op = create_new_op(ins, outs, op_name, g, inplace, connected, *args)
+    op = create_new_op(ins, outs, op_name, g, inplace, connected, **kwargs)
     for i, t in ins.items():
         assert op.inTensor(i) == t
         assert op.hasInput(i)
@@ -40,6 +43,15 @@ def binary_op_tester(op_name: str,
                      inplace: bool = False,
                      connected: bool = False,
                      *args):
+    """Helper to test binary ops
+
+    Args:
+        op_name (str): Name of op to create. Must match the create<op_name> function.
+        g (_ir.Graph): The graph to add the op to.
+        inplace (bool, optional): Whether to use the inplace variant. Defaults to False.
+        connected (bool, optional): [Whether to use the createConnected<opname> function or 
+            just create<opname>. Defaults to False.
+    """
     in0 = add_actgrad_tensor("in0", [1, 2, 3], g)
     in1 = add_random_tensor("in1", _ir.TensorType.Variable, [1, 2, 3], g)
     out0 = add_actgrad_tensor("out0", [1, 2, 3], g)
@@ -58,29 +70,76 @@ def binary_op_tester(op_name: str,
     assert op.getCalledGraphIds() == []
 
 
-@pytest.mark.parametrize("op_name,inplace", [("AddOp", False),
-                                             ("MulOp", False),
-                                             ("AddLhsInplaceOp", True),
-                                             ("AddRhsInplaceOp", True),
-                                             ("MulLhsInplaceOp", True),
-                                             ("MulRhsInplaceOp", True)])
+# yapf mangles these param lists
+# yapf: disable, pylint: disable-all
+@pytest.mark.parametrize("op_name,inplace",
+[("AddOp", False),
+("MulOp", False),
+("DivOp", False),
+("EqualOp", False),
+("NotOp", False),
+("PowOp", False),
+("OrOp", False),
+("SumOp", False),
+("AddLhsInplaceOp", True),
+("AddRhsInplaceOp", True),
+("MulLhsInplaceOp", True),
+("MulRhsInplaceOp", True),
+("PowLhsInplaceOp", True),
+])
+# yapf: enable, pylint: enable-all
 @pytest.mark.parametrize("connected", [True, False])
-def test_binary_ops(op_name, inplace, connected):
+def test_binary_ops(op_name: str, inplace: bool, connected: bool) -> None:
+    """Test binary ops
+
+    Args:
+        op_name (str): The op name e.g. AddOp
+        inplace (bool): Whether this op is inplace
+        connected (bool): Whether to use the createConnected<opname> function or 
+            just create<opname>
+    """
     _, graphs = create_ir()
     g = graphs[0]
     binary_op_tester(op_name, g, inplace, connected)
 
 
-@pytest.mark.parametrize("op_name,args", [("HostLoadOp", ("streamTensor"))])
 @pytest.mark.parametrize("connected", [True, False])
-def test_unary_ops(op_name: str, args: Tuple[str, Tuple], connected: bool):
+# yapf: disable, pylint: disable-all
+@pytest.mark.parametrize("op_name,kwargs",
+[
+("HostLoadOp", {"sid_": "streamTensor"}),
+("ReluOp", {}),
+("TransposeOp", {"perm_": [0, 2, 1]}),
+("NegateOp", {}),
+("TanhOp", {}),
+("NotOp", {}),
+("SoftmaxOp", {"axis_": 0}),
+("SplitOp", {"axis_": 0,"split_": [1]})
+])
+# yapf: enable, pylint: enable-all
+def test_unary_ops(connected: bool, op_name: str,
+                   kwargs: Dict[str, Any]) -> None:
+    """Test unary (1 in, 1 out) ops
+
+    Args:
+        connected (bool): Whether to use the createConnected<opname> function or 
+            just create<opname>
+        op_name (str): Name of the op e.g. AddOp
+        kwargs (Dict[str, Any]): Additional kwargs to pass to the ops
+    """
     _, graphs = create_ir()
     g = graphs[0]
-    unary_op_tester(op_name, g, False, connected, args)
+    unary_op_tester(op_name, g, False, connected, **kwargs)
 
 
 @pytest.mark.parametrize("connected", [True, False])
-def test_host_store_op(connected: bool):
+def test_host_store_op(connected: bool) -> None:
+    """Test the host store op
+
+    Args:
+        connected (bool): Whether to use the createConnected<opname> function or 
+            just create<opname>
+    """
     _, graphs = create_ir()
     g = graphs[0]
     in0 = add_actgrad_tensor("out0", [1, 2, 3], g)
@@ -103,6 +162,13 @@ def test_host_store_op(connected: bool):
 @pytest.mark.parametrize("init_type", [_ir.InitType.Zero, _ir.InitType.NoInit])
 @pytest.mark.parametrize("connected", [True, False])
 def test_init_op(init_type: "_ir.InitType", connected: bool):
+    """Test the special case of the init op
+
+    Args:
+        init_type (_ir.InitType): The initialisation type to use (zero/no init)
+        connected (bool): Whether to use the createConnected<opname> function or 
+            just create<opname>
+    """
     _, graphs = create_ir()
     g = graphs[0]
     out0 = add_actgrad_tensor("out0", [1, 2, 3], g)
@@ -125,6 +191,12 @@ def test_init_op(init_type: "_ir.InitType", connected: bool):
 
 @pytest.mark.parametrize("connected", [True, False])
 def test_call_op(connected: bool):
+    """Test the special case of the call op
+
+    Args:
+        connected (bool): Whether to use the createConnected<opname> function or 
+            just create<opname>
+    """
     _, graphs = create_ir(["sub_graph"])  # main graph and 'sub_graph'
     main = graphs[0]
     sub_graph = graphs[1]
@@ -134,7 +206,7 @@ def test_call_op(connected: bool):
 
     sub_graph.addInput("inputA", in0.info)
 
-    opid = _ir.OperatorIdentifier("ai.onnx", "Call", 1, num_inputs, 1)
+    opid = _ir.OperatorIdentifier("ai.graphcore", "Call", 1, num_inputs, 1)
 
     settings = _ir.Settings(main, "new_settings")
 
@@ -151,3 +223,61 @@ def test_call_op(connected: bool):
 
     assert op.getCalledGraphs()[0] == sub_graph
     assert op.getCalledGraphIds()[0] == "sub_graph"
+
+
+@pytest.mark.parametrize("reduction", [
+    _ir.ReductionType.Mean, _ir.ReductionType.Sum,
+    _ir.ReductionType.NoReduction
+])
+@pytest.mark.parametrize("ignoreIndex", [0, 1, 2])
+@pytest.mark.parametrize("connected", [True, False])
+def test_nll_op(reduction: _ir.ReductionType, ignoreIndex: int,
+                connected: bool) -> None:
+    """Test the Nll Op, special case with unusual arguments.
+
+    Args:
+        reduction (_ir.ReductionType): The reduction type to use
+        ignoreIndex (int): The index to ignore. Note this has to be converted to 
+            an _ir.OptionalInt
+        connected (bool): Whether to use the createConnected<opname> function or 
+            just create<opname>
+    """
+    _, graphs = create_ir()
+    main = graphs[0]
+    num_inputs = _ir.NumInputs(2, 2)
+    in0 = add_actgrad_tensor("in0", [8, 2, 3], main)
+
+    t_info = _ir.TensorInfo(_ir.DataType.INT32, [8, 2])
+    main.addActGrad("label")
+    l = main.getTensor("label")
+    l.info = t_info
+
+    out0 = add_actgrad_tensor("out0", [1, 2, 3], main)
+
+    opid = _ir.OperatorIdentifier("ai.graphcore", "nll", 1, num_inputs, 1)
+    settings = _ir.Settings(main, "nll")
+
+    if connected:
+        ins: Dict[int, str] = {0: in0.id, 1: l.id}
+        outs: Dict[int, str] = {0: out0.id}
+        op = main.createConnectedOp_NllOp(
+            ins,
+            outs,
+            ignoreIndex=_ir.OptionalInt(ignoreIndex),  # <- Note this
+            reduction=_ir.ReductionType.Mean,
+            inputIsLogProbability=True,
+            opid=opid,
+            settings=settings)
+
+        op.setup()
+        return
+    op = main.createOp_NllOp(
+        opid=opid,
+        ignoreIndex=_ir.OptionalInt(ignoreIndex),  # <- Note this
+        reduction=_ir.ReductionType.Mean,
+        inputIsLogProbability=True,
+        settings=settings)
+    op.connectInTensor(0, in0.id)
+    op.connectInTensor(1, l.id)
+    op.connectOutTensor(0, out0.id)
+    op.setup()
