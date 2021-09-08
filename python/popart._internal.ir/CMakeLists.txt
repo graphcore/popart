@@ -35,6 +35,7 @@ list(
   ${popart_op_headers_dir}/not.hpp
   ${popart_op_headers_dir}/relu.hpp
   ${popart_op_headers_dir}/reshape.hpp
+  ${popart_op_headers_dir}/gelu.hpp
   ${popart_op_headers_dir}/transpose.hpp
   ${popart_op_headers_dir}/split.hpp
   ${popart_op_headers_dir}/negate.hpp

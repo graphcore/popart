@@ -109,6 +109,7 @@ def test_binary_ops(op_name: str, inplace: bool, connected: bool) -> None:
 [
 ("HostLoadOp", {"sid_": "streamTensor"}),
 ("ReluOp", {}),
+("GeluOp", {}),
 ("TransposeOp", {"perm_": [0, 2, 1]}),
 ("ReshapeOp", {"s": [3, 1, 2], "handleZero": False}),
 ("NegateOp", {}),
