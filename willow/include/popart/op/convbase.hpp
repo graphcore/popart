@@ -42,6 +42,10 @@ struct ConvParameters {
   } outputTransformation;
 };
 
+std::ostream &operator<<(std::ostream &os, const ConvParameters::Input &input);
+std::ostream &operator<<(std::ostream &os, const ConvParameters::Output &input);
+std::ostream &operator<<(std::ostream &os, const ConvParameters &params);
+
 inline bool operator==(const ConvParameters::Input &a,
                        const ConvParameters::Input &b) {
   return std::tie(a.lowerTruncation,

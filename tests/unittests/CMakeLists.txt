@@ -69,6 +69,7 @@ add_popart_cpp_unit_test(unittest_tensorindexmaptestwrapper testutil/irquery/uni
 add_popart_cpp_unit_test(unittest_tensorindextestwrapper testutil/irquery/unittest_tensorindextestwrapper.cpp TEST_UTILS ir-query-test-util trompeloeil)
 add_popart_cpp_unit_test(unittest_tensortestwrapper testutil/irquery/unittest_tensortestwrapper.cpp TEST_UTILS ir-query-test-util trompeloeil)
 
+add_popart_cpp_unit_test(unittest_op_conv op/conv.cpp)
 add_popart_cpp_unit_test(unittest_op_sgd2combo op/sgd2combo.cpp)
 add_popart_cpp_unit_test(unittest_op_varupdate op/varupdate.cpp)
 

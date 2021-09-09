@@ -12,6 +12,48 @@ ConvParameters getConvGradParameters(const ConvParameters &fwdParams);
 ConvParameters canonicalizeConvParams(const ConvParameters &param);
 } // namespace popx
 
+std::ostream &operator<<(std::ostream &os, const ConvParameters::Input &input) {
+  os << "[lowerTruncation: " << input.lowerTruncation
+     << " upperTruncation: " << input.upperTruncation
+     << " dilation: " << input.dilation
+     << " lowerPadding: " << input.lowerPadding
+     << " upperPadding: " << input.upperPadding << " flip: [";
+
+  for (auto it = input.flip.begin(); it != input.flip.end(); it++) {
+    os << static_cast<bool>(*it);
+    if (it + 1 != input.flip.end()) {
+      os << " ";
+    }
+  }
+
+  os << "]]";
+  return os;
+}
+
+std::ostream &operator<<(std::ostream &os,
+                         const ConvParameters::Output &input) {
+  os << "[lowerTruncation: " << input.lowerTruncation
+     << " upperTruncation: " << input.upperTruncation
+     << " stride: " << input.stride << " lowerPadding: " << input.lowerPadding
+     << " upperPadding: " << input.upperPadding << "]";
+
+  return os;
+}
+
+std::ostream &operator<<(std::ostream &os, const ConvParameters &params) {
+  os << "type: " << params.type << " batchSize: " << params.batchSize
+     << " numInChannelsPerGroup: " << params.numInChannelsPerGroup
+     << " numOutChannelsPerGroup: " << params.numOutChannelsPerGroup
+     << " numGroups: " << params.numGroups
+     << " inputShape: " << params.inputShape
+     << " kernelShape :" << params.kernelShape
+     << " inputTransformation: " << params.inputTransformation
+     << " kernelTransformation: " << params.kernelTransformation
+     << " outputTransformation: " << params.outputTransformation;
+
+  return os;
+}
+
 MultiConvOptions::MultiConvOptions(
     const std::map<std::string, std::string> sessionConvOptions,
     const Attributes &attr) {
@@ -178,6 +220,30 @@ void MultiConvBaseOp::setParamsFromDataGradOp(const Op *op) {
   restoreAttributesFromParams(ps);
 }
 
+namespace {
+void ensureZeros(const std::vector<int64_t> &vals, const char *name) {
+  for (auto val : vals) {
+    if (val != 0) {
+      std::stringstream ss;
+      ss << "non-zero param." << name << " is not supported in "
+         << "MultiConvBaseOp.";
+      throw error(ss.str());
+    }
+  }
+}
+
+void ensureFalses(const std::vector<bool> &vals, const char *name) {
+  for (auto val : vals) {
+    if (val) {
+      std::stringstream ss;
+      ss << "true param." << name << " is not supported in "
+         << "MultiConvBaseOp.";
+      throw error(ss.str());
+    }
+  }
+}
+} // namespace
+
 void MultiConvBaseOp::restoreAttributesFromParams(
     const std::vector<ConvParameters> &ps) {
   // Restore Op parameters from Conv parameters so that setup() works
@@ -198,43 +264,46 @@ void MultiConvBaseOp::restoreAttributesFromParams(
     flatInDilations.insert(flatInDilations.begin(),
                            param.inputTransformation.dilation.begin(),
                            param.inputTransformation.dilation.end());
-    flatInTruncs.insert(flatInTruncs.begin(),
+    flatInTruncs.insert(flatInTruncs.end(),
                         param.inputTransformation.lowerTruncation.begin(),
                         param.inputTransformation.lowerTruncation.end());
-    flatInTruncs.insert(flatInTruncs.begin(),
+    flatInTruncs.insert(flatInTruncs.end(),
                         param.inputTransformation.upperTruncation.begin(),
                         param.inputTransformation.upperTruncation.end());
+    ensureFalses(param.inputTransformation.flip, "inputTransformation.flip");
 
     // kernelTransformation
+    ensureZeros(param.kernelTransformation.lowerTruncation,
+                "kernelTransformation.lowerTruncation");
+    ensureZeros(param.kernelTransformation.upperTruncation,
+                "kernelTransformation.upperTruncation");
+
     flatDilations.insert(flatDilations.end(),
                          param.kernelTransformation.dilation.begin(),
                          param.kernelTransformation.dilation.end());
 
+    ensureZeros(param.kernelTransformation.lowerPadding,
+                "kernelTransformation.lowerPadding");
+    ensureZeros(param.kernelTransformation.upperPadding,
+                "kernelTransformation.upperPadding");
+    ensureFalses(param.kernelTransformation.flip, "kernelTransformation.flip");
+
     // outputTransformation
+    ensureZeros(param.outputTransformation.lowerTruncation,
+                "outputTransformation.lowerTruncation");
+    ensureZeros(param.outputTransformation.upperTruncation,
+                "outputTransformation.upperTruncation");
+
     flatStrides.insert(flatStrides.end(),
                        param.outputTransformation.stride.begin(),
                        param.outputTransformation.stride.end());
 
-    flatOutPads.insert(flatOutPads.begin(),
+    flatOutPads.insert(flatOutPads.end(),
                        param.outputTransformation.lowerPadding.begin(),
                        param.outputTransformation.lowerPadding.end());
-    flatOutPads.insert(flatOutPads.begin(),
+    flatOutPads.insert(flatOutPads.end(),
                        param.outputTransformation.upperPadding.begin(),
                        param.outputTransformation.upperPadding.end());
-
-    for (auto trunc : param.outputTransformation.lowerTruncation) {
-      if (trunc != 0) {
-        throw error("non-zero param.outputTransformation.lowerTruncation is not"
-                    "supported in MultiConvBaseOp.");
-      }
-    }
-
-    for (auto trunc : param.outputTransformation.upperTruncation) {
-      if (trunc != 0) {
-        throw error("non-zero param.outputTransformation.upperTruncation is not"
-                    "supported in MultiConvBaseOp.");
-      }
-    }
   }
   // The padding has been adjusted, so we can unset the AutoPad type
   padType = AutoPad::NOTSET;
