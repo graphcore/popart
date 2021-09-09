@@ -130,7 +130,7 @@ snap::Tensor BasePadOpx::cloneNcopyEdges(snap::Tensor t,
   logging::devicex::debug("Cloning and copying the constant padding for op {}",
                           getBasePadOp().str());
 
-  const auto tRank = t.getPoplarTensor().rank();
+  const auto tRank = t.rank();
 
   // partition the input into the "core" and the padding edges.
   auto chisseled = getChisseled(t);
@@ -221,10 +221,10 @@ snap::Tensor BasePadOpx::constantModePadGrow(snap::Tensor inTensor,
     std::vector<poplar::Tensor> allPads;
     allPads.reserve(chisseledDst.lows.size() + chisseledDst.upps.size());
     for (const auto &x : chisseledDst.lows) {
-      allPads.push_back(x.getPoplarTensor().flatten());
+      allPads.push_back(x.flatten().getPoplarTensor());
     }
     for (const auto &x : chisseledDst.upps) {
-      allPads.push_back(x.getPoplarTensor().flatten());
+      allPads.push_back(x.flatten().getPoplarTensor());
     }
     auto cat = poplar::concat(allPads, 0);
     popops::zero(graph().getPoplarGraph(), cat, s, debugContext("zero"));

@@ -105,7 +105,7 @@ void NllOpx::flattenAndEncodeOneHot(const PopOpx &opx,
   //         class index
   // If N > 2, then the inputs are flattened across all dimenions
   // (except the outer Classes dim in the case of Probs)
-  probs2D = snap::Tensor{probs.getPoplarTensor().flatten(0, probs.rank() - 1),
+  probs2D = snap::Tensor{probs.flatten(0, probs.rank() - 1).getPoplarTensor(),
                          opx.graph()};
   label1D = snap::Tensor{label.flatten().getPoplarTensor(), opx.graph()};
   // Tensor taking one-hot encoded output must be 2 dimensional
@@ -350,7 +350,7 @@ void NllGradOpx::grow(poplar::program::Sequence &prog) const {
 
   // As for NllOpx, flatten outer dimenstions if rank(probs) > 2
   auto probs2D = snap::Tensor{
-      probs.getPoplarTensor().flatten(0, probs.rank() - 1), graph()};
+      probs.flatten(0, probs.rank() - 1).getPoplarTensor(), graph()};
   auto label1D = snap::Tensor{label.flatten().getPoplarTensor(), graph()};
 
   // inverse probabilities, we take max(eps, p) to make division safe

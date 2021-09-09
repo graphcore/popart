@@ -282,7 +282,7 @@ static snap::Tensor matSqueezeBroadcastDims(snap::Tensor result,
       squeezeDims.push_back(i);
     }
   }
-  return snap::Tensor{result.getPoplarTensor().squeeze(squeezeDims), result};
+  return snap::Tensor{result.squeeze(squeezeDims).getPoplarTensor(), result};
 }
 
 template <typename T1, typename T2>
