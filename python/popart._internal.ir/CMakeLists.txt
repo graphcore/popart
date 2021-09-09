@@ -119,6 +119,12 @@ add_popart_python_module(
   bindings/basicoptionals.cpp
   bindings/opidentifier.cpp
   bindings/tensorlocation.cpp
+  bindings/bwdgraphinfo.cpp
+  # Transforms
+  bindings/transforms/transform.cpp
+  bindings/transforms/prune.cpp
+  bindings/transforms/autodiff.cpp
+  # end transforms
   bindings/op/enums.cpp
   bindings/op/optional.cpp
   popart._internal.ir.cpp)

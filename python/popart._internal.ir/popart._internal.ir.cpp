@@ -1,5 +1,6 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 #include "bindings/basicoptionals.hpp"
+#include "bindings/bwdgraphinfo.hpp"
 #include "bindings/debugcontext.hpp"
 #include "bindings/graph.hpp"
 #include "bindings/graphid.hpp"
@@ -15,11 +16,14 @@
 #include "bindings/tensorinfo.hpp"
 #include "bindings/tensorlocation.hpp"
 #include "bindings/tensors.hpp"
+// transforms
+#include "bindings/transforms/autodiff.hpp"
+#include "bindings/transforms/prune.hpp"
+#include "bindings/transforms/transform.hpp"
 
 #include <pybind11/pybind11.h>
 
 #include <popart/ir.hpp>
-
 namespace popart {
 namespace _internal {
 namespace ir {
@@ -44,10 +48,19 @@ PYBIND11_MODULE(popart_internal_ir, m) {
   bindBasicOptionals(m);
   bindOpIdentifier(m);
   bindTensorLocation(m);
+  bindBwdGraphInfo(m);
+  // Ops
   {
     op::_bindAll(m);
     op::bindEnums(m);
     op::bindOptional(m);
+  }
+  // Transforms
+  {
+    auto sm = m.def_submodule("transforms");
+    transforms::bindTransform(sm);
+    transforms::bindPrune(sm);
+    transforms::bindAutodiff(sm);
   }
 }
 } // namespace ir

@@ -36,12 +36,12 @@ public:
   /**
    * Implementation of Transform::apply. Will apply autodiff to whole IR.
    */
-  virtual bool apply(Graph &graph) const final;
+  virtual bool apply(Graph &graph) const override;
 
   /**
    * Apply autodiff to entire IR.
    */
-  virtual bool applyToIr(Ir &ir) const final;
+  virtual bool applyToIr(Ir &ir) const;
 
   /**
    * Apply `createBwdGraph` and `stitch` recursively, top-down, resulting in
@@ -171,9 +171,9 @@ public:
          AutodiffStitchStrategy stitchStrategy,
          const nonstd::optional<std::vector<InIndex>> &stitchIndices);
 
-  virtual std::size_t getId() const final { return id(); }
+  virtual std::size_t getId() const override { return id(); }
 
-  virtual std::string getName() const final { return "Autodiff"; }
+  virtual std::string getName() const override { return "Autodiff"; }
 
 private:
   // Helper class to create stitchers (add a setter if it helps with testing).

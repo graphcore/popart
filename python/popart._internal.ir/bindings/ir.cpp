@@ -33,7 +33,10 @@ void bindIr(py::module &m) {
       .def("setIsPrepared", &Ir::setIsPrepared)
       .def("isPrepared", &Ir::isPrepared)
       .def("setDataFlow", &Ir::setDataFlow)
-      .def("getDataFlow", &Ir::getDataFlow);
+      .def("getDataFlow", &Ir::getDataFlow)
+      .def("applyTransform", &popart::Ir::applyTransform)
+      .def("setDeviceInfo", &Ir::setDeviceInfo)
+      .def("logIr", &Ir::logIr);
 }
 
 } // namespace ir

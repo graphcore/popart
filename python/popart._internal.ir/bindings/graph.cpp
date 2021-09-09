@@ -1,5 +1,6 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 #include "bindings/graph.hpp"
+#include "bindings/op.hpp"
 
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
@@ -125,9 +126,11 @@ void bindGraph(py::module &m) {
           py::arg("tensorInfo"),
           py::arg("data"),
           py::arg("debugContext") = std::string())
-      .def("getTensor", [](Graph &self, const TensorId &name) {
-        return self.getTensors().get(name);
-      });
+      .def("getTensor",
+           [](Graph &self, const TensorId &name) {
+             return self.getTensors().get(name);
+           })
+      .def("getOpIds", &Graph::getOpIds);
 
   bindCreateOpFunctionToGraphClass(g);
 

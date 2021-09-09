@@ -4,6 +4,8 @@
 #include <pybind11/operators.h>
 #include <pybind11/pybind11.h>
 
+#include <functional>
+#include <sstream>
 #include <string>
 #include <popart/graphid.hpp>
 
@@ -19,7 +21,12 @@ void bindGraphId(py::module &m) {
       .def(py::self < py::self)
       .def(py::self == py::self)
       .def(py::self != py::self)
-      .def("str", &GraphId::str, py::return_value_policy::reference);
+      .def("str", &GraphId::str, py::return_value_policy::reference)
+      .def("__hash__", [](GraphId &self) {
+        std::hash<std::string> hasher;
+        auto hashed = hasher(self.str());
+        return hashed;
+      });
   // Allow for string to be implicitly converted to a GraphId.
   py::implicitly_convertible<std::string, GraphId>();
 }

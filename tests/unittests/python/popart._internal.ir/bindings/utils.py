@@ -1,6 +1,7 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-from typing import Dict, List
+from typing import Dict, List, Tuple
 import popart._internal.ir as _ir
+import popart
 import numpy as np
 
 
@@ -160,3 +161,161 @@ def add_random_tensor(id_: str, t_type: "_ir.TensorType", shape: List[int],
 
     else:
         raise TypeError("Incorrect tensor type")
+
+
+def make_main_graph(num_inputs: int = 2
+                    ) -> Tuple[_ir.Ir, List[_ir.Tensor], List[_ir.Tensor]]:
+    """
+    Creates the following graph, with num_inputs inputs, 
+    alternating data inputs and variable inputs.
+
+    Init (act) Init (var)  Init (act) Init (var)
+    │          │           │          │
+    ▼          ▼           ▼          ▼
+    Hostload   Hostload    Hostload   Hostload    etc..
+    │          │           │          │
+    │          │           │          │
+    ▼          ▼           ▼          ▼
+    ┌────────────────────────────────────┐
+    │                Call                │
+    │                                    │
+    └──────────────────┬─────────────────┘
+                        │
+                        │
+                        ▼
+                    HostStore
+    Args:
+        num_inputs (int, optional): Number of main graph inputs. Defaults to 2.
+
+    Returns:
+        Tuple[_ir.Ir, List[_ir.Tensor], List[_ir.Tensor]]:
+            The ir, The subgraph output tensors, and the variable tensors
+    """
+    ir, _ = create_ir()
+
+    main = ir.getMainGraph()
+
+    t_info = _ir.TensorInfo(_ir.DataType.FLOAT, [1, 2, 3])
+
+    inits: Dict[int, _ir.Op] = dict()
+    hostloads: Dict[int, _ir.Op] = dict()
+    inputs = {i: t_info for i in range(num_inputs)}
+
+    for i in range(len(inputs)):
+        # init i
+        opid = _ir.OperatorIdentifier("ai.onnx", f"Init{i}", 1,
+                                      _ir.NumInputs(0, 0), 1)
+        actgrads = []
+        vars_ = []
+        settings = _ir.Settings(main, f"input{i}")
+        if i % 2 == 0:
+            ttype = _ir.TensorType.ActGrad
+            inits[i] = main.createConnectedOp_InitOp(
+                {}, {0: f"init{i}"}, opid, t_info, ttype, _ir.InitType.Zero,
+                settings, 0)
+            actgrads.append(inits[i])
+        else:
+            ttype = _ir.TensorType.Variable
+            inits[i] = main.createConnectedOp_InitOp(
+                {}, {0: f"init{i}"}, opid, t_info, ttype, _ir.InitType.Zero,
+                settings, 0)
+            vars_.append(inits[i].outTensor(0))
+
+        # hostload i
+        opid = _ir.OperatorIdentifier("ai.onnx", f"HostLoad{i}", 1,
+                                      _ir.NumInputs(1, 1), 1)
+        hostloads[i] = main.createConnectedOp_HostLoadOp(
+            {0: inits[i].outTensor(0).id}, {0: f"hostload{i}"}, opid, settings,
+            f"hl{i}")
+
+    settings = _ir.Settings(main, "call")
+    fwd = make_sub_graph(ir, inputs)
+
+    fwd_outs = [fwd.getTensor(tid) for tid in fwd.getOutputIds()]
+
+    opid = _ir.OperatorIdentifier("ai.graphcore", "Call", 1,
+                                  _ir.NumInputs(num_inputs, num_inputs), 1)
+    call = main.createConnectedOp_CallOp(
+        {i: hostloads[i].outTensor(0).id
+         for i in range(len(hostloads))}, {0: "call0"}, opid, fwd, settings)
+
+    # host store
+    opid = _ir.OperatorIdentifier("ai.onnx", "HostStore", 1, _ir.NumInputs(
+        1, 1), 1)
+    settings = _ir.Settings(main, "host_store")
+
+    _ = main.createConnectedOp_HostStoreOp({0: call.outTensor(0).id}, {}, opid,
+                                           settings, "hs1")
+
+    deviceInfo = popart.DeviceManager().createIpuModelDevice({})
+    ir.setDeviceInfo(deviceInfo)
+
+    ir.setIsPrepared()
+    ir.logIr()
+
+    print(fwd_outs, vars_)
+
+    return ir, fwd_outs, vars_
+
+
+def make_sub_graph(ir: _ir.Ir, ins: Dict[int, _ir.TensorInfo]) -> _ir.Graph:
+    """
+    Makes the following subgraph, with len(ins) inputs. 
+
+    input0  input1  input2  ...  input n
+    │       │       │            │
+    │       │       │            │
+    │       │       │            │
+    └─►add ◄┘       │            │
+        │           │            │
+        └──────►add◄┘            │
+                │                │
+                │                │
+                │                │
+                └────►add ...    ▼
+
+
+                               add
+                                │
+                                ▼
+                             softmax
+                                │
+                                ▼
+                               out
+
+    Args:
+        ir (_ir.Ir): The ir to add the subgraph to
+        ins (Dict[int, _ir.TensorInfo]): The map of in indices to tensorinfos.
+
+    Returns:
+        _ir.Graph: The subgraph in question.
+    """
+    g = ir.createGraph(_ir.GraphId("fwd"))
+
+    for i, tinfo in ins.items():
+        g.addInput(g.addScope(f"in{i}"), tinfo)
+
+    inputs = g.getInputIds()
+
+    t = g.getTensor(inputs[0])
+    for i in range(1, len(ins)):
+        settings = _ir.Settings(g, f"add{i}")
+        opid = _ir.OperatorIdentifier("ai.onnx", f"Add{i}", 1,
+                                      _ir.NumInputs(2, 2), 1)
+        add = g.createConnectedOp_AddOp({
+            0: t.id,
+            1: inputs[i]
+        }, {0: g.addScope(f"add{i}")}, opid, settings)
+        t = add.outTensor(0)
+
+    settings = _ir.Settings(g, "softmax0")
+    opid = _ir.OperatorIdentifier("ai.onnx", "SoftMax", 1, _ir.NumInputs(1, 1),
+                                  1)
+    sm = g.createConnectedOp_SoftmaxOp({0: t.id}, {0: g.addScope("sm0")},
+                                       opid=opid,
+                                       axis_=0,
+                                       settings=settings)
+
+    g.markAsOutput(sm.outTensor(0).id)
+
+    return g

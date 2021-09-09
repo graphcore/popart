@@ -9,6 +9,11 @@
 #include <popart/op.hpp>
 #include <popart/scope.hpp>
 
+#include <popart/transforms/autodiff.hpp>
+#include <popart/vendored/optional.hpp>
+
+#include <popart/transforms/transform.hpp>
+
 namespace py = pybind11;
 
 namespace popart {
