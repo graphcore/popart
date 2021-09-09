@@ -136,6 +136,50 @@ std::vector<Tensor *> rootTensors(Tensor *tensor);
 std::map<Op *, std::set<Op *>> getOpsWithBefores(const std::set<Op *> &ops);
 std::map<Op *, std::set<Op *>> getOpsWithBefores(const std::vector<Op *> &ops);
 
+class Edge {
+public:
+  Edge() : fromIndex(-1), toIndex(-1), out(-1), in(-1){};
+  Edge(int fromIndex_, int toIndex_)
+      : fromIndex(fromIndex_), toIndex(toIndex_), out(-1), in(-1){};
+  Edge(int fromIndex_, int toIndex_, OutIndex out_, InIndex in_)
+      : fromIndex(fromIndex_), toIndex(toIndex_), out(out_), in(in_){};
+
+  int getFrom() const { return fromIndex; }
+  int getTo() const { return toIndex; }
+
+  OutIndex getOut() const { return out; }
+
+  InIndex getIn() const { return in; }
+
+private:
+  // The predicate vector index
+  int fromIndex;
+  // The predicate vector index
+  int toIndex;
+  // The output index on the from-Op to follow (optional, defaults to -1 (follow
+  // all indices))
+  OutIndex out;
+  // The input index on the to-Op to check (optional, defaults to -1 (check all
+  // indices))
+  InIndex in;
+};
+
+bool operator<(const Edge &a, const Edge &b);
+
+using OpPred  = std::function<bool(const Op *op)>;
+using OpPreds = std::vector<OpPred>;
+using Edges   = std::set<Edge>;
+
+/**
+ * Returns Ops matching the \a preds connected by directed \a edges
+ * \param preds Predicate functions that match Ops
+ * \param edges Connectivity matrix between predicated Ops, where the fromIndex
+ * and toIndex of the \a edges correspond to the indices in the \a preds vector.
+ * \return vector of all matches
+ */
+std::vector<std::vector<Op *>>
+findMatchingOps(Graph &graph, OpPreds preds, Edges edges);
+
 } // namespace graphutils
 } // namespace popart
 

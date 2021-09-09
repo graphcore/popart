@@ -371,5 +371,142 @@ std::map<Op *, std::set<Op *>> getOpsWithBefores(const std::vector<Op *> &ops) {
   return getOpsWithBefores(opss);
 }
 
+namespace {
+class PartialMatch {
+public:
+  std::vector<Op *> finalize() {
+    std::vector<Op *> opVec;
+    for (auto &op : ops) {
+      opVec.push_back(op.second);
+    }
+    return opVec;
+  }
+
+  // Ops that match the structure and predicate at index
+  std::map<int, Op *> ops;
+
+  // Number of Ops before the current predicate index can be processed
+  std::map<int, int> befores;
+};
+} // namespace
+
+bool operator<(const Edge &a, const Edge &b) {
+  std::vector<int> av{a.getFrom(), a.getTo(), a.getOut(), a.getIn()};
+  std::vector<int> bv{b.getFrom(), b.getTo(), b.getOut(), b.getIn()};
+  return av < bv;
+}
+
+std::vector<std::vector<Op *>>
+findMatchingOps(Graph &graph, OpPreds preds, Edges edges) {
+
+  std::map<int, std::set<Edge>> outEdgeMap;
+  std::map<int, std::set<Edge>> inEdgeMap;
+
+  for (auto &edge : edges) {
+    outEdgeMap[edge.getFrom()].insert(edge);
+    inEdgeMap[edge.getTo()].insert(edge);
+  }
+
+  std::map<int, int> befores;
+  for (int i = 0; i < preds.size(); ++i) {
+    befores[i] = 0;
+  }
+
+  for (auto &edge : edges) {
+    befores[edge.getTo()] += 1;
+  }
+
+  std::vector<PartialMatch> partialMatches;
+  PartialMatch match;
+  match.befores = befores;
+  partialMatches.push_back(match);
+
+  std::vector<std::vector<Op *>> matches;
+
+  while (!partialMatches.empty()) {
+    auto match = partialMatches.back();
+    partialMatches.pop_back();
+
+    int index = -1;
+    for (auto &before : match.befores) {
+      if (before.second == 0 &&
+          match.ops.find(before.first) == match.ops.end()) {
+        index = before.first;
+      }
+    }
+
+    if (index != -1) {
+      std::set<Op *> candidates;
+
+      auto inEdges = inEdgeMap.find(index);
+
+      if (inEdges == inEdgeMap.end() || inEdges->second.size() == 0) {
+        auto &gOps = graph.getOps();
+        for (auto &gOp : gOps) {
+          if (preds.at(index)(gOp.second.get())) {
+            candidates.insert(gOp.second.get());
+          }
+        }
+      } else {
+        bool first = true;
+        for (auto &inEdge : inEdges->second) {
+          auto fromOp = match.ops.at(inEdge.getFrom());
+          std::set<Tensor *> tensors;
+          if (inEdge.getOut() == -1) {
+            auto fromTensors = fromOp->output->tensors();
+            tensors.insert(fromTensors.begin(), fromTensors.end());
+          } else {
+            if (fromOp->hasOutput(inEdge.getOut())) {
+              tensors.insert(fromOp->output->tensor(inEdge.getOut()));
+            }
+          }
+          std::set<Op *> localCandidates;
+          for (auto t : tensors) {
+            for (auto c : t->consumers.getOps()) {
+              if (((inEdge.getIn() == -1) ||
+                   ((c->input->hasIndex(inEdge.getIn())) &&
+                    (c->input->tensor(inEdge.getIn()) == t))) &&
+                  preds.at(index)(c)) {
+                localCandidates.insert(c);
+              }
+            }
+          }
+          if (first) {
+            candidates = localCandidates;
+          } else {
+            std::set<Op *> intersectCandidates;
+            std::set_intersection(candidates.begin(),
+                                  candidates.end(),
+                                  localCandidates.begin(),
+                                  localCandidates.end(),
+                                  std::inserter(intersectCandidates,
+                                                intersectCandidates.begin()));
+            candidates = intersectCandidates;
+          }
+          first = false;
+        }
+      }
+
+      for (auto candidate : candidates) {
+        auto nextMatch       = match;
+        nextMatch.ops[index] = candidate;
+        auto outEdges        = outEdgeMap.find(index);
+        if (outEdges != outEdgeMap.end()) {
+          for (auto &edge : outEdges->second) {
+            nextMatch.befores.at(edge.getTo())--;
+          }
+        }
+        if (nextMatch.ops.size() == preds.size()) {
+          matches.push_back(nextMatch.finalize());
+        } else {
+          partialMatches.push_back(nextMatch);
+        }
+      }
+    }
+  }
+
+  return matches;
+}
+
 } // namespace graphutils
 } // namespace popart
