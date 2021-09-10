@@ -138,11 +138,11 @@ std::map<Op *, std::set<Op *>> getOpsWithBefores(const std::vector<Op *> &ops);
 
 class Edge {
 public:
-  Edge() : fromIndex(-1), toIndex(-1), out(-1), in(-1){};
+  Edge() : fromIndex(-1), toIndex(-1), out(-1), in(-1) {}
   Edge(int fromIndex_, int toIndex_)
-      : fromIndex(fromIndex_), toIndex(toIndex_), out(-1), in(-1){};
+      : fromIndex(fromIndex_), toIndex(toIndex_), out(-1), in(-1) {}
   Edge(int fromIndex_, int toIndex_, OutIndex out_, InIndex in_)
-      : fromIndex(fromIndex_), toIndex(toIndex_), out(out_), in(in_){};
+      : fromIndex(fromIndex_), toIndex(toIndex_), out(out_), in(in_) {}
 
   int getFrom() const { return fromIndex; }
   int getTo() const { return toIndex; }
