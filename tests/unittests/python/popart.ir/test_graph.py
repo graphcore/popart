@@ -23,3 +23,14 @@ class TestGraph:
         with pytest.raises(RuntimeError) as excinfo:
             gcg()
         assert str(excinfo.value).startswith(exp_prefix)
+
+    def test_tensor_id_conflict(self):
+        ir = pir.Ir()
+        main = ir.main_graph()
+        with main:
+            name0 = pir.variable(1, name="tensor").id
+            name1 = pir.variable(1, name="tensor").id
+            name2 = pir.constant(1, name="tensor").id
+        assert name0 == "tensor"
+        ids = [name0, name1, name2]
+        assert len(ids) == len(set(ids))

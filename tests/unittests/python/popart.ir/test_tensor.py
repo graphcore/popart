@@ -6,6 +6,12 @@ import popart._internal.ir as _ir
 import popart.ir as pir
 from popart import popart_exception
 
+type_map = {
+    pir.Variable: _ir.TensorType.Variable,
+    pir.Constant: _ir.TensorType.Const
+}
+ctor_map = {pir.Variable: pir.variable, pir.Constant: pir.constant}
+
 
 class TestTensor:
     @pytest.mark.parametrize('t_class', [pir.Variable, pir.Constant])
@@ -21,11 +27,6 @@ class TestTensor:
         ir = pir.Ir()
         main = ir.main_graph()
 
-        type_map = {
-            pir.Variable: _ir.TensorType.Variable,
-            pir.Constant: _ir.TensorType.Const
-        }
-
         with main:
             kwargs = {}
             if name is not None:
@@ -33,23 +34,22 @@ class TestTensor:
             if dtype is not None:
                 kwargs['dtype'] = dtype
 
-            exp_name = f'{name}_0' if name is not None else 't_0'
+            exp_name = f'{name}' if name is not None else 't'
             exp_dtype = dtype if dtype is not None else pir.float32
 
-            t = t_class(data, **kwargs)
+            t = ctor_map[t_class](data, **kwargs)
 
+            assert isinstance(t, t_class)
             assert t.dtype == exp_dtype
             assert t.shape == (1, 2, 3)
-            assert t.dim == 3
             assert t.nelms == 6
             assert t.name == exp_name
-            assert t._graph == main
 
-            pb_t: _ir.Tensor = t._graph._pb_graph.getTensor(exp_name)
+            pb_t: _ir.Tensor = main._pb_graph.getTensor(exp_name)
             assert pb_t.id == t.name
-            assert pb_t.id == t._pb_tensor_id
+            assert pb_t.id == t.id
             assert pb_t.tensorType() == type_map[t_class]
-            assert pb_t.hasTensorData() == True
+            assert pb_t.hasTensorData()
 
     @pytest.mark.parametrize('t_class', [pir.Variable, pir.Constant])
     def test_construction1(self, t_class):
@@ -58,38 +58,10 @@ class TestTensor:
         main = ir.main_graph()
 
         with main:
-            t = t_class(1)
+            t = ctor_map[t_class](1)
             assert t.dtype == pir.float32
             assert t.shape == ()
-            assert t.dim == 0
             assert t.nelms == 1
-
-    @pytest.mark.parametrize('dtype', [pir.float16, pir.float32])
-    @pytest.mark.parametrize('name', ['a', None])
-    def test_construction2(self, name, dtype):
-        """Test construction of placeholder tensors."""
-        ir = pir.Ir()
-        main = ir.main_graph()
-
-        exp_name = f'{name}_0' if name is not None else 't_0'
-        exp_dtype = dtype if dtype is not None else pir.float32
-
-        with main:
-            kwargs = {'name': name} if name is not None else {}
-            t = pir.Placeholder(dtype, (1, 2, 3), **kwargs)
-
-            assert t.dtype == exp_dtype
-            assert t.shape == (1, 2, 3)
-            assert t.dim == 3
-            assert t.nelms == 6
-            assert t.name == exp_name
-            assert t._graph == main
-
-            # No tensor is created in the IR yet.
-            with pytest.raises(popart_exception) as excinfo:
-                t._graph._pb_graph.getTensor(exp_name)
-            exp_prefix = 'No Ir::Tensor with TensorId'
-            assert excinfo.value.args[0].startswith(exp_prefix)
 
     def test__ensure_tensor(self):
         """Test the `_ensure_tensor()` method."""
@@ -97,8 +69,8 @@ class TestTensor:
         main = ir.main_graph()
 
         with main:
-            a = pir.Variable(1)
-            b = pir.Variable(2)
+            a = pir.variable(1)
+            b = pir.variable(2)
             c = a._ensure_tensor(b)
             d = a._ensure_tensor(3)
 

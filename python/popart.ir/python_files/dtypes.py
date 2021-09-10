@@ -2,17 +2,20 @@
 """Definition and instances of a class to represent `Tensor` data types."""
 
 import builtins
+from typing import Any, Mapping
 
 import numpy as np
 
 import popart._internal.ir as _ir
 
 # A dictionary to map from numpy to popart.ir types.
-_NP_TO_PIR = {}
+_NP_TO_PIR: Mapping[np.dtype, 'dtype'] = {}
 # A dictionary to map from string to popart.ir types.
-_STR_TO_PIR = {}
+_STR_TO_PIR: Mapping[str, 'dtype'] = {}
 # A dictionary to map from Python to popart.ir types.
-_PY_TO_PIR = {}
+_PY_TO_PIR: Mapping[Any, 'dtype'] = {}
+# A dictionart to map from popart._ir to popart.ir types.
+_PB_TO_PIR: Mapping[_ir.DataType, 'dtype'] = {}
 
 
 class dtype:
@@ -80,17 +83,27 @@ class dtype:
             dtype: A `popart.ir.dtype` corresponding to `type_value`.
         """
         try:
-            return _NP_TO_PIR[type_value]
-        except (KeyError, TypeError):
-            pass
-
-        try:
             return _STR_TO_PIR[type_value]
         except (KeyError, TypeError):
             pass
 
         try:
             return _PY_TO_PIR[type_value]
+        except (KeyError, TypeError):
+            pass
+
+        try:
+            return _PB_TO_PIR[type_value]
+        except (KeyError, TypeError):
+            pass
+
+        try:
+            return _NP_TO_PIR[type_value]
+        except (KeyError, TypeError):
+            pass
+
+        try:
+            return _NP_TO_PIR[np.dtype(type_value)]
         except (KeyError, TypeError):
             pass
 
@@ -174,6 +187,10 @@ class dtype:
         if py_type is not None:
             assert py_type not in _PY_TO_PIR
             _PY_TO_PIR[py_type] = self
+
+        if pb_type is not None:
+            assert py_type not in _PB_TO_PIR
+            _PB_TO_PIR[pb_type] = self
 
         return self
 

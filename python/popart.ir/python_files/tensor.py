@@ -1,6 +1,5 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-from abc import ABC
-from typing import Optional, Tuple, Union
+from typing import Any, Optional, Sequence, Tuple, Union
 
 import numpy as np
 
@@ -8,56 +7,45 @@ import popart._internal.ir as _ir
 from popart.ir import dtypes
 from popart.ir.globals import gcg
 
-__all__ = ['Tensor', 'Placeholder', 'Constant', 'Variable']
+__all__ = ['Tensor', 'Variable', 'variable', 'Constant', 'constant']
 
 
-class Tensor(ABC):
-    def __init__(self, dtype: dtypes.dtype, shape: Tuple[int], name: str,
-                 pb_tensor_id: str):
-        """An abstract base class that represents a tensor in the PopART IR.
+class Tensor:
+    def __init__(self):
+        """Wraps a tensor in the PopART IR."""
+        self._pb_tensor: _ir.Tensor
+        raise RuntimeError("pir.Tensor cannot be constructed directly.")
 
-        Args:
-            dtype (dtype):
-                The data type of the tensor.
-            shape (Tuple[int]):
-                The shape of the tensor.
-            name (str):
-                The name of the tensor.
-            pb_tensor_id (str):
-                The ID of the corresponding pybind11 tensor.
-        """
-        self._dtype = dtype
-        self._shape = shape
-        self._name = name
-        self._pb_tensor_id = pb_tensor_id
-        self._graph = gcg()
+    @classmethod
+    def _from_pb_tensor(cls, pb_tensor: _ir.Tensor) -> 'Tensor':
+        self = super().__new__(cls)
+        self._pb_tensor = pb_tensor
+        return self
 
     @property
-    def dim(self) -> int:
-        """Returns the number of dimensions of `self` tensor.
-
-        Returns:
-            int: The number of dimensions of `self` tensor.
-        """
-        return len(self._shape)
+    def id(self) -> str:
+        return str(self._pb_tensor.id)
 
     @property
     def dtype(self) -> dtypes.dtype:
-        return self._dtype
+        return dtypes.dtype.as_dtype(self._pb_tensor.info.dataType())
 
     @property
-    def shape(self) -> Tuple[int]:
-        return self._shape
+    def shape(self) -> Tuple[int, ...]:
+        return tuple(self._pb_tensor.info.shape())
 
     @property
     def nelms(self) -> int:
-        return 1 if self._shape == () else sum(self._shape)
+        return self._pb_tensor.info.nelms()
 
     @property
     def name(self) -> str:
-        return self._name
+        return self._pb_tensor.getGraph().removeScope(self.id)
 
-    def _ensure_tensor(self, other) -> 'Tensor':
+    def __str__(self) -> str:
+        return f"{self.name} {self.dtype} {self.shape}"
+
+    def _ensure_tensor(self, other: Any) -> 'Tensor':
         """A helper method that's used in operator overloading to ensure that
         all operands are of type `Tensor`.
 
@@ -71,115 +59,76 @@ class Tensor(ABC):
         if isinstance(other, Tensor):
             return other
         else:
-            return Constant(other, self._dtype)
-
-    def __repr__(self) -> str:
-        return self._name
-
-
-class Placeholder(Tensor):
-    def __init__(self,
-                 dtype: dtypes.dtype,
-                 shape: Tuple[int],
-                 name: Optional[str] = None):
-        """A placeholder `Tensor` used to represent a place in the graph that
-        will be filled with data during runtime.
-
-        This class only holds metadata for this place - its data type and its
-        shape. This could be, for example, the input of a subraph or a tensor
-        that has been produced by an operation.
-
-        Args:
-            dtype (dtype):
-                The data type of the tensor.
-            shape (Tuple[int]):
-                The shape of the tensor.
-            name (Optional[str]):
-                The name of the tensor. Defaults to None.
-        """
-        g = gcg()
-        pb_g = g._pb_graph
-
-        name = name if name else 't'
-        name = g._create_tensor_name(name)
-        pb_tensor_id = pb_g.addScope(name)
-
-        super().__init__(dtype, shape, name, pb_tensor_id)
+            return constant(other, self.dtype)
 
 
 class Variable(Tensor):
-    def __init__(self,
-                 data: np.array,
-                 dtype: Optional[dtypes.dtype] = dtypes.float32,
-                 name: Optional[str] = None):
-        """A variable tensor is initialised with data during graph creation.
-
-        This tensor can be used to represent a model weight or any other
-        parameter that can change while running a model.
-
-        Args:
-            data (np.array):
-                The data used to initialise the tensor.
-            dtype (dtype):
-                The data type of the tensor. Defaults to `pir.float32`.
-            name (Optional[str]):
-                The name of the tensor. Defaults to `None`.
-        """
-        g = gcg()
-        pb_g = g._pb_graph
-
-        data = np.array(data, dtype=dtype.as_numpy())
-
-        name = name if name else 't'
-        name = g._create_tensor_name(name)
-        info = _ir.TensorInfo(
-            dtypes.dtype.as_dtype(data)._pb_dtype, data.shape)
-        pb_tensor_id = pb_g.addScope(name)
-        pb_g.addVarInit(pb_tensor_id, info, data)
-
-        super().__init__(dtypes.dtype.as_dtype(data), data.shape, name,
-                         pb_tensor_id)
+    """Wraps a Tensor in the PopART IR that has TensorType.Variable"""
 
 
 class Constant(Tensor):
-    def __init__(self,
-                 data: Union[np.array, int, tuple, list],
-                 dtype: Optional[dtypes.dtype] = dtypes.float32,
-                 name: Optional[str] = None):
-        """A constant tensor is initialised with data during graph creation.
+    """Wraps a Tensor in the PopART IR that has TensorType.Constant"""
 
-        This tensor cannot change during the runtime of a model. The inteded use
-        of this class is when doing operations between `popart.ir.Tensor`
-        instances and other types, such as `numpy.ndarray` objects, numbers, or
-        list or tuples of numbers.
 
-        Example:
-            >>> import popart.ir as pir
-            >>> main = pir.Ir().main_graph()
-            >>> with main:
-            >>>     a = pir.Variable(0)
-            >>>     # The `1` will be implicitly converted to a `Constant`.
-            >>>     b = a + 1
+def variable(data: Union[np.ndarray, Sequence[Any], int, float],
+             dtype: Optional[dtypes.dtype] = dtypes.float32,
+             name: Optional[str] = None) -> Variable:
+    """A variable tensor that is initialised with data during graph creation.
 
-        Args:
-            data (np.array):
-                The data used to initialise the tensor.
-            dtype (dtype):
-                The data type of the tensor. Defaults to `pir.float32`.
-            name (Optional[str]):
-                The name of the tensor. Defaults to `None`.
-        """
-        g = gcg()
-        pb_g = g._pb_graph
+    This tensor can be used to represent a model weight or any other
+    parameter that can change while running a model.
 
-        data = np.array(data, dtype=dtype.as_numpy())
+    Must be created in the main graph scope. Example:
+        >>> import popart.ir as pir
+        >>> with pir.Ir().main_graph():
+        >>>     a = pir.variable(0)
 
-        name = name if name else 't'
-        name = g._create_tensor_name(name)
-        info = _ir.TensorInfo(
-            dtypes.dtype.as_dtype(data)._pb_dtype, data.shape)
-        pb_tensor_id = pb_g.addScope(name)
-        pb_g.addConstInit(pb_tensor_id, info, data)
+    Args:
+        data (np.ndarray, or a value numpy can use to construct an np.ndarray):
+            The data used to initialise the tensor.
+        dtype (dtype):
+            The data type of the tensor. Defaults to `pir.float32`.
+        name (Optional[str]):
+            The name of the tensor. Defaults to `None`.
+    """
+    g = gcg()
+    pb_g = g._pb_graph
+    data = np.array(data, dtype=dtype.as_numpy())
+    info = _ir.TensorInfo(dtype._pb_dtype, data.shape)
+    pb_id = g._create_tensor_id(name)
+    pb_g.addVarInit(pb_id, info, data)
+    return Variable._from_pb_tensor(pb_g.getTensor(pb_id))
 
-        super().__init__(dtypes.dtype.as_dtype(data), data.shape, name,
-                         pb_tensor_id)
+
+def constant(data: Union[np.ndarray, Sequence[Any], int, float],
+             dtype: Optional[dtypes.dtype] = dtypes.float32,
+             name: Optional[str] = None) -> Constant:
+    """A constant tensor that is initialised with data during graph creation.
+
+    This tensor cannot change during the runtime of a model. The inteded use
+    of this class is when doing operations between `popart.ir.Tensor`
+    instances and other types, such as `numpy.ndarray` objects, numbers, or
+    list or tuples of numbers.
+
+    Example:
+        >>> import popart.ir as pir
+        >>> with pir.Ir().main_graph():
+        >>>     a = pir.variable(0)
+        >>>     # The `1` will be implicitly converted to a `Constant`.
+        >>>     b = a + 1
+
+    Args:
+        data (np.array, or a value numpy can use to construct an np.ndarray):
+            The data used to initialise the tensor.
+        dtype (dtype):
+            The data type of the tensor. Defaults to `pir.float32`.
+        name (Optional[str]):
+            The name of the tensor. Defaults to `None`.
+    """
+    g = gcg()
+    pb_g = g._pb_graph
+    data = np.array(data, dtype=dtype.as_numpy())
+    info = _ir.TensorInfo(dtype._pb_dtype, data.shape)
+    pb_id = g._create_tensor_id(name)
+    pb_g.addConstInit(pb_id, info, data)
+    return Constant._from_pb_tensor(pb_g.getTensor(pb_id))

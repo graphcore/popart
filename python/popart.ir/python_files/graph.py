@@ -2,7 +2,7 @@
 """Definition of a class that represents graphs in the PopART IR."""
 
 from collections import Counter
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 import popart._internal.ir as _ir
 from popart.ir.globals import pop_current_graph, push_current_graph
@@ -31,7 +31,6 @@ class Graph:
         self._ir: Ir = None
         self._debug_name: str = None
         self._pb_graph: _ir.Graph = None
-        self._pure_tensor_names: Counter = None
 
         raise TypeError(f"Cannot create {self.__module__}.Graph instances "
                         "using the constructor.")
@@ -65,31 +64,29 @@ class Graph:
         self._ir = ir
         self._debug_name = debug_name
         self._pb_graph = pb_graph
-        # Tensors are named `{pure_name}_{id}`, where `pure_name` is either
-        # user-specified or inferred from the name of the Python variable that a
-        # tensor is assigned to. The following counter counts these so that a
-        # unique name can be given to tensors that have the same pure name.
-        # See `Graph._create_name()`.
-        self._pure_tensor_names = Counter()
         return self
 
-    def _create_tensor_name(self, name: str) -> str:
-        """Generate a unique tensor name.
+    def _create_tensor_id(self, name: Optional[str] = None) -> str:
+        """Generate a unique tensor id.
 
-        Each name will be appended with `_{id}`, where `id` is a positive
-        integer, so that all tensors within a graph have unique names.
+        If the name already exists in the graph it will be modified
+        to be made unique in the graph.
+        The graph scope will then be added to construct the global unique id.
 
         Args:
-            name (str):
+            name (Optional[str]):
                 A name which will be appended with an id to make unique.
+                Defaults to `t`
 
         Returns:
             str:
-                The unique name of the tensor.
+                The unique id of the tensor.
         """
-        id = self._pure_tensor_names[name]
-        self._pure_tensor_names[name] += 1
-        return f'{name}_{id}'
+        name = name if name else 't'
+        _id = self._pb_graph.addScope(name)
+        if _id in self._pb_graph:
+            _id = self._ir._pb_ir.createIntermediateTensorId(_id)
+        return _id
 
     def __enter__(self):
         push_current_graph(self)

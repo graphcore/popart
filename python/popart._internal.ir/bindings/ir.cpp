@@ -36,7 +36,8 @@ void bindIr(py::module &m) {
       .def("getDataFlow", &Ir::getDataFlow)
       .def("applyTransform", &popart::Ir::applyTransform)
       .def("setDeviceInfo", &Ir::setDeviceInfo)
-      .def("logIr", &Ir::logIr);
+      .def("logIr", &Ir::logIr)
+      .def("createIntermediateTensorId", &Ir::createIntermediateTensorId);
 }
 
 } // namespace ir

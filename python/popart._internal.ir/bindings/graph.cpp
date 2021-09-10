@@ -130,7 +130,10 @@ void bindGraph(py::module &m) {
            [](Graph &self, const TensorId &name) {
              return self.getTensors().get(name);
            })
-      .def("getOpIds", &Graph::getOpIds);
+      .def("getOpIds", &Graph::getOpIds)
+      .def("__contains__", [](Graph &self, const TensorId &name) {
+        return self.getTensors().contains(name);
+      });
 
   bindCreateOpFunctionToGraphClass(g);
 
