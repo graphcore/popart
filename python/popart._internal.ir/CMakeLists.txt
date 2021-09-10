@@ -142,8 +142,9 @@ configure_file(
   __init__.py.in
   "${CMAKE_CURRENT_BINARY_DIR}/../popart/popart/_internal/ir/__init__.py" @ONLY)
 
+# This works because "_internal/ir/__init__.py" imports the pybind .so using from ... import *
 install(
-  DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/"
+  FILES "${CMAKE_CURRENT_BINARY_DIR}/popart_internal_ir.pyi"
   DESTINATION "${INSTALL_PYDIR}/popart/_internal/ir/"
-  FILES_MATCHING
-  PATTERN "*.pyi")
+  RENAME "__init__.pyi"
+  OPTIONAL)
