@@ -192,11 +192,18 @@ float DampeningScaleFactor1Helper::val(const TensorId &weightId,
   float vs = sgd.velocityScalings().get(weightId).val();
   float ls = sgd.lossScaling().val();
   float af = sgd.meanReductionEnabled() ? sgd.getAccumulationFactor() : 1.0f;
-  float rf =
-      sgd.gradientAccumulationEnabled() &&
-              (!sgd.meanReductionEnabled() || sgd.lossMeanReplicationEnabled())
-          ? sgd.getReplicatedGraphCount()
-          : 1.0f;
+  float rf = 1.0f;
+  if (sgd.gradientAccumulationEnabled() &&
+      (!sgd.meanReductionEnabled() || sgd.lossMeanReplicationEnabled())) {
+    // Gradient Accumulation with ReductionType::Sum or
+    // MeanReductionStrategy::PostAndLoss
+    rf = sgd.getReplicatedGraphCount();
+  } else if (!sgd.gradientAccumulationEnabled() &&
+             (sgd.meanReductionEnabled() &&
+              !sgd.lossMeanReplicationEnabled())) {
+    // No Gradient Accumulation without MeanReductionStrategy::PostAndLoss
+    rf = 1.0f / static_cast<float>(sgd.getReplicatedGraphCount());
+  }
   return val(dm, vs, ls, af, rf);
 }
 

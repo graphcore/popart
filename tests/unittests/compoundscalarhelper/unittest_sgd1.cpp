@@ -124,7 +124,7 @@ BOOST_AUTO_TEST_CASE(TestSGD1_ReplicaMeanPost) {
   opts.meanAccumulationAndReplicationReductionStrategy =
       MeanReductionStrategy::Post;
   sgd.setFactorsFromOptions(opts);
-  validate(sgd, 0.1f, (1.0f - 0.8f) * 0.01f, (1.0f - 0.8f), 0.9f);
+  validate(sgd, 0.1f, (1.0f - 0.8f) * 0.01f, (1.0f - 0.8f) / 2.0f, 0.9f);
 }
 
 BOOST_AUTO_TEST_CASE(TestSGD1_ReplicaMeanRunning) {
@@ -143,7 +143,7 @@ BOOST_AUTO_TEST_CASE(TestSGD1_ReplicaMeanRunning) {
   opts.meanAccumulationAndReplicationReductionStrategy =
       MeanReductionStrategy::Running;
   sgd.setFactorsFromOptions(opts);
-  validate(sgd, 0.1f, (1.0f - 0.8f) * 0.01f, (1.0f - 0.8f), 0.9f);
+  validate(sgd, 0.1f, (1.0f - 0.8f) * 0.01f, (1.0f - 0.8f) / 2.0f, 0.9f);
 }
 
 BOOST_AUTO_TEST_CASE(TestSGD1_AccumSum) {
