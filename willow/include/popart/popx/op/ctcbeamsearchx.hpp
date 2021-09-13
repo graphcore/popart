@@ -18,7 +18,7 @@ class CtcBeamSearchDecoderOpx : public PopOpx {
 public:
   CtcBeamSearchDecoderOpx(Op *op, Devicex *device);
 
-  void grow(poplar::program::Sequence &prog) const final;
+  void grow(snap::program::Sequence &prog) const final;
 
 private:
   // Unique pointer so we can forward-declare to avoid including poplar headers.

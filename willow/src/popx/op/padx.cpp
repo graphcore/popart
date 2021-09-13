@@ -125,7 +125,7 @@ BasePadOpx::Chisseled BasePadOpx::getChisseled(const snap::Tensor &t0) const {
 }
 
 snap::Tensor BasePadOpx::cloneNcopyEdges(snap::Tensor t,
-                                         poplar::program::Sequence &se) const {
+                                         snap::program::Sequence &se) const {
 
   logging::devicex::debug("Cloning and copying the constant padding for op {}",
                           getBasePadOp().str());
@@ -172,7 +172,7 @@ snap::Tensor BasePadOpx::cloneNcopyEdges(snap::Tensor t,
 }
 
 snap::Tensor BasePadOpx::constantModePadGrow(snap::Tensor inTensor,
-                                             poplar::program::Sequence &s,
+                                             snap::program::Sequence &s,
                                              bool inPlaceAllowed) const {
 
   auto mk_padded =
@@ -227,7 +227,10 @@ snap::Tensor BasePadOpx::constantModePadGrow(snap::Tensor inTensor,
       allPads.push_back(x.flatten().getPoplarTensor());
     }
     auto cat = poplar::concat(allPads, 0);
-    popops::zero(graph().getPoplarGraph(), cat, s, debugContext("zero"));
+    popops::zero(graph().getPoplarGraph(),
+                 cat,
+                 s.getPoplarSequence(),
+                 debugContext("zero"));
     return outTensor;
   }
 
@@ -241,7 +244,7 @@ snap::Tensor BasePadOpx::constantModePadGrow(snap::Tensor inTensor,
 }
 
 snap::Tensor BasePadOpx::unflippedPadGrow(snap::Tensor inTensor,
-                                          poplar::program::Sequence &prog,
+                                          snap::program::Sequence &prog,
                                           bool inPlaceAllowed) const {
 
   auto &&padBaseOp = getBasePadOp();
@@ -279,18 +282,18 @@ snap::Tensor BasePadOpx::unflippedPadGrow(snap::Tensor inTensor,
 }
 
 snap::Tensor BasePadOpx::padGrow(snap::Tensor inTensor,
-                                 poplar::program::Sequence &prog,
+                                 snap::program::Sequence &prog,
                                  bool inPlaceAllowed) const {
   return unflippedPadGrow(flip(inTensor), prog, inPlaceAllowed);
 }
 
-void PadOpx::grow(poplar::program::Sequence &prog) const {
+void PadOpx::grow(snap::program::Sequence &prog) const {
   auto in0    = PopOpx::getInTensor(BasePadOp::getInIndex());
   auto padded = padGrow(in0, prog, false);
   setOutTensor(BasePadOp::getOutIndex(), padded);
 }
 
-void PadInplaceOpx::grow(poplar::program::Sequence &prog) const {
+void PadInplaceOpx::grow(snap::program::Sequence &prog) const {
   auto in0    = PopOpx::getInTensor(BasePadOp::getInIndex());
   auto padded = padGrow(in0, prog, true);
   setOutTensor(BasePadOp::getOutIndex(), padded);

@@ -10,11 +10,11 @@
 namespace popart {
 namespace popx {
 
-snap::Tensor ArgMaxOpx::extremaOp(poplar::program::Sequence &prog,
+snap::Tensor ArgMaxOpx::extremaOp(snap::program::Sequence &prog,
                                   const snap::Tensor &input) const {
   return snap::Tensor{popnn::argMax(graph().getPoplarGraph(),
                                     input.getPoplarTensor(),
-                                    prog,
+                                    prog.getPoplarSequence(),
                                     debugContext("argmax")),
                       graph()};
 }

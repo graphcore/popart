@@ -69,7 +69,7 @@ public:
   TPoolOpx(Op *op_, Devicex *devicex_, const popnn::PoolingType pooling_type_)
       : PoolOpx(op_, devicex_), pooling_type(pooling_type_) {}
 
-  void grow(poplar::program::Sequence &prog) const {
+  void grow(snap::program::Sequence &prog) const {
 
     OP &aOp = getOp<OP>();
 
@@ -95,7 +95,7 @@ public:
         snap::Tensor{popnn::pooling::pool(graph().getPoplarGraph(),
                                           pool_params,
                                           getInTensor(0).getPoplarTensor(),
-                                          prog,
+                                          prog.getPoplarSequence(),
                                           debugContext("pool"),
                                           dv_p->lowering().pooling_options),
                      graph()});
@@ -111,7 +111,7 @@ public:
                const popnn::PoolingType pooling_type_)
       : PoolOpx(op_, devicex_), pooling_type(pooling_type_) {}
 
-  void grow(poplar::program::Sequence &prog) const {
+  void grow(snap::program::Sequence &prog) const {
     GRADOP &agOp = getOp<GRADOP>();
 
     auto pool_params = GetPoolingParameters(pooling_type,
@@ -141,7 +141,7 @@ public:
                 getInTensor(GRADOP::getPooledInIndex()).getPoplarTensor(),
                 getInTensor(GRADOP::getGradPooledInIndex()).getPoplarTensor(),
                 false, // useScaledVariant TODO T7295
-                prog,
+                prog.getPoplarSequence(),
                 debugContext("poolInputGradient"),
                 dv_p->lowering().pooling_options),
             graph()});

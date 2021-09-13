@@ -12,13 +12,13 @@ namespace popx {
 class NegateOpx : public ElementWiseUnaryOpx {
 public:
   NegateOpx(Op *, Devicex *);
-  void grow(poplar::program::Sequence &) const final;
+  void grow(snap::program::Sequence &) const final;
 };
 
 class NegateGradOpx : public ElementWiseUnaryOpx {
 public:
   NegateGradOpx(Op *, Devicex *);
-  void grow(poplar::program::Sequence &) const final;
+  void grow(snap::program::Sequence &) const final;
 };
 
 } // namespace popx

@@ -15,7 +15,7 @@ ReciprocalOpx::ReciprocalOpx(Op *op, Devicex *devicex)
   verifyOp<ReciprocalOp>(op, Onnx::Operators::Reciprocal_6);
 }
 
-void ReciprocalOpx::grow(poplar::program::Sequence &prog) const {
+void ReciprocalOpx::grow(snap::program::Sequence &prog) const {
   auto ones =
       getConst(popType(op_p->inInfo(0)), {1}, 1.0, "ones").getPoplarTensor();
 
@@ -24,7 +24,7 @@ void ReciprocalOpx::grow(poplar::program::Sequence &prog) const {
                                         popops::expr::BinaryOpType::DIVIDE,
                                         ones,
                                         getInTensor(0).getPoplarTensor(),
-                                        prog,
+                                        prog.getPoplarSequence(),
                                         debugContext("divide")),
                             graph()});
 }

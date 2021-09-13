@@ -10,7 +10,7 @@
 namespace popart {
 namespace popx {
 
-void TileOpx::grow(poplar::program::Sequence &prog) const {
+void TileOpx::grow(snap::program::Sequence &prog) const {
   // not in-place, so cloning input
   auto outTensor =
       cloneNcopy(prog, getInTensor(TileOp::getInIndex())).getPoplarTensor();
@@ -38,7 +38,7 @@ TileGradOpx::TileGradOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
 // GradIn [2, 6, 4, 7]
 // Repeats [2]
 // GradOut = Sum([2, 4], [6, 7]) = [8, 11]
-void TileGradOpx::grow(poplar::program::Sequence &prog) const {
+void TileGradOpx::grow(snap::program::Sequence &prog) const {
   auto inTensor = getInTensor(TileGradOp::getInIndex()).getPoplarTensor();
   poplar::Tensor intermediateTensor = inTensor;
   poplar::Tensor outTensor;
@@ -61,7 +61,7 @@ void TileGradOpx::grow(poplar::program::Sequence &prog) const {
                            popops::expr::BinaryOpType::ADD,
                            outTensor,
                            t,
-                           prog,
+                           prog.getPoplarSequence(),
                            debugContext(std::string("reduceAdd") +
                                         sNameDelimiter +
                                         std::to_string(start)));

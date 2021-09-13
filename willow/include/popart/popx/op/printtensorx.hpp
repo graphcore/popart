@@ -12,7 +12,7 @@ namespace popx {
 class PrintTensorOpx : public PopOpx {
 public:
   PrintTensorOpx(Op *, Devicex *);
-  void grow(poplar::program::Sequence &) const final;
+  void grow(snap::program::Sequence &) const final;
 
 private:
   std::string getTitle() const;

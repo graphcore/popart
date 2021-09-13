@@ -13,7 +13,7 @@
 namespace popart {
 namespace popx {
 
-void StashOpx::growStaticStashUpdate(poplar::program::Sequence &prog,
+void StashOpx::growStaticStashUpdate(snap::program::Sequence &prog,
                                      const snap::Tensor &stashIndex,
                                      const snap::Tensor &inTensor,
                                      const snap::Tensor &outTensor) const {
@@ -40,7 +40,7 @@ void StashOpx::growStaticStashUpdate(poplar::program::Sequence &prog,
   prog.add(switchCase);
 }
 
-void StashOpx::growDynamicStashUpdate(poplar::program::Sequence &prog,
+void StashOpx::growDynamicStashUpdate(snap::program::Sequence &prog,
                                       const snap::Tensor &stashIndex,
                                       const snap::Tensor &inTensor,
                                       const snap::Tensor &outTensor) const {
@@ -51,11 +51,11 @@ void StashOpx::growDynamicStashUpdate(poplar::program::Sequence &prog,
                         stashIndex.getPoplarTensor(),
                         {0},
                         {1},
-                        prog,
+                        prog.getPoplarSequence(),
                         debugContext("stash"));
 }
 
-void StashOpx::grow(poplar::program::Sequence &prog) const {
+void StashOpx::grow(snap::program::Sequence &prog) const {
   // Create the stash size tensor.
   const auto stashSize =
       getConst(poplar::UNSIGNED_INT, {}, hStashSize, "stash_size");
@@ -93,12 +93,14 @@ void StashOpx::grow(poplar::program::Sequence &prog) const {
   // Create a "1" tensor and grow program to increment stash index by 1.
   const auto one =
       getConst(poplar::UNSIGNED_INT, {}, 1.0, "one").getPoplarTensor();
-  popops::addInPlace(
-      graph().getPoplarGraph(), stashIndex.getPoplarTensor(), one, prog);
+  popops::addInPlace(graph().getPoplarGraph(),
+                     stashIndex.getPoplarTensor(),
+                     one,
+                     prog.getPoplarSequence());
   popops::remInPlace(graph().getPoplarGraph(),
                      stashIndex.getPoplarTensor(),
                      stashSize.getPoplarTensor(),
-                     prog);
+                     prog.getPoplarSequence());
 }
 
 StashOpx::StashOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {

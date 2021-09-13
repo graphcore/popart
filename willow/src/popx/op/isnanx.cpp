@@ -12,7 +12,7 @@ IsNaNx::IsNaNx(Op *op, Devicex *devicex) : ElementWiseUnaryOpx(op, devicex) {
   verifyOp<IsNaN>(op, Onnx::Operators::IsNaN_9);
 }
 
-void IsNaNx::grow(poplar::program::Sequence &prog) const {
+void IsNaNx::grow(snap::program::Sequence &prog) const {
   setOutTensor(
       IsNaN::getOutIndex(),
       snap::Tensor{
@@ -20,7 +20,7 @@ void IsNaNx::grow(poplar::program::Sequence &prog) const {
                       popops::expr::BinaryOpType::NOT_EQUAL,
                       getInTensor(IsNaN::getInIndex()).getPoplarTensor(),
                       getInTensor(IsNaN::getInIndex()).getPoplarTensor(),
-                      prog,
+                      prog.getPoplarSequence(),
                       debugContext()),
           graph()});
 }

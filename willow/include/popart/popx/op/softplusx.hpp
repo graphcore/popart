@@ -12,7 +12,7 @@ class SoftPlusComputex : public EwuComputex {
 public:
   SoftPlusComputex() {}
 
-  void inplace(poplar::program::Sequence &,
+  void inplace(snap::program::Sequence &,
                snap::Graph &,
                const snap::Tensor &,
                const poplar::DebugNameAndId &,
@@ -32,7 +32,7 @@ public:
 class SoftPlusGradOpx : public PopOpx {
 public:
   SoftPlusGradOpx(Op *, Devicex *);
-  void grow(poplar::program::Sequence &) const final;
+  void grow(snap::program::Sequence &) const final;
 };
 
 } // namespace popx

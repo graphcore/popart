@@ -31,10 +31,10 @@ public:
 
 protected:
   // sorted values, and indices of sorted values
-  FullSortResult growFullSortResult(poplar::program::Sequence &prog) const;
+  FullSortResult growFullSortResult(snap::program::Sequence &prog) const;
 
   // indices of sorted values
-  snap::Tensor growIndicesSort(poplar::program::Sequence &prog) const;
+  snap::Tensor growIndicesSort(snap::program::Sequence &prog) const;
 
   // axis to sort on
   unsigned axis;

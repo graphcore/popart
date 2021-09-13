@@ -7,6 +7,8 @@
 
 #include <poplar/Program.hpp>
 
+#include <snap/Program.hpp>
+
 namespace popart {
 namespace popx {
 
@@ -14,7 +16,7 @@ AbortOpx::AbortOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
   verifyOp<AbortOp>(op, Onnx::CustomOperators::Abort);
 }
 
-void AbortOpx::grow(poplar::program::Sequence &prog) const {
+void AbortOpx::grow(snap::program::Sequence &prog) const {
   if (hasInput(AbortOp::getInIndex())) {
     poplar::Tensor condition =
         getInTensor(AbortOp::getInIndex()).getPoplarTensor();

@@ -10,7 +10,7 @@ namespace popx {
 class RMSPropUpdaterOpx : public PopOpx {
 public:
   RMSPropUpdaterOpx(Op *, Devicex *);
-  void grow(poplar::program::Sequence &) const final;
+  void grow(snap::program::Sequence &) const final;
 
   // does not create inputs
 };

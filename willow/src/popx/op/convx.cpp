@@ -37,7 +37,7 @@ snap::Tensor ConvOpx::createDataInput(const poplar::DebugNameAndId &dnai,
 }
 
 std::vector<snap::Tensor>
-ConvOpx::convolve(poplar::program::Sequence &prog,
+ConvOpx::convolve(snap::program::Sequence &prog,
                   const std::vector<snap::Tensor> &weights) const {
   ConvOp &op = getOp<ConvOp>();
   auto outTensor =
@@ -47,7 +47,7 @@ ConvOpx::convolve(poplar::program::Sequence &prog,
                        weights[0].getPoplarTensor(),
                        getPoplarConvParams(op.getParameters()),
                        false,
-                       prog,
+                       prog.getPoplarSequence(),
                        debugContext("convolution"),
                        getConvOptions(0),
                        &(dv_p->convCache)),
@@ -60,8 +60,8 @@ ConvWeightsGradOpx::ConvWeightsGradOpx(Op *op, Devicex *devicex)
   verifyOp<ConvWeightsGradOp>(op, Onnx::GradOperators::ConvWeightsGrad);
 }
 
-std::vector<snap::Tensor> ConvWeightsGradOpx::calculateWeightDeltas(
-    poplar::program::Sequence &prog) const {
+std::vector<snap::Tensor>
+ConvWeightsGradOpx::calculateWeightDeltas(snap::program::Sequence &prog) const {
   ConvWeightsGradOp &gradOp = getOp<ConvWeightsGradOp>();
 
   const snap::Tensor &zDelta = getInTensor(gradOp.getGradConvolvedInIndex());
@@ -72,7 +72,7 @@ std::vector<snap::Tensor> ConvWeightsGradOpx::calculateWeightDeltas(
                                     zDelta.getPoplarTensor(),
                                     acts.getPoplarTensor(),
                                     getPoplarConvParams(gradOp.getParameters()),
-                                    prog,
+                                    prog.getPoplarSequence(),
                                     debugContext("weightDeltas"),
                                     getConvOptions(),
                                     &dv_p->convCache),
@@ -85,7 +85,7 @@ ConvFlipWeightsGradOpx::ConvFlipWeightsGradOpx(Op *op_, Devicex *devicex_)
   verifyOp<ConvFlipWeightsOp>(op_, Onnx::CustomOperators::ConvFlipWeights);
 }
 
-void ConvFlipWeightsGradOpx::grow(poplar::program::Sequence &seq) const {
+void ConvFlipWeightsGradOpx::grow(snap::program::Sequence &seq) const {
 
   auto &op    = getOp<ConvFlipWeightsOp>();
   auto params = op.getParameters();
@@ -123,7 +123,7 @@ void ConvFlipWeightsGradOpx::grow(poplar::program::Sequence &seq) const {
         graph().getPoplarGraph(),
         w.getPoplarTensor(),
         c,
-        seq,
+        seq.getPoplarSequence(),
         debugContext(logging::format("group{}_transposeXY", i)));
   }
 

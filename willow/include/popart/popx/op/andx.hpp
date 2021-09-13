@@ -14,7 +14,7 @@ namespace popx {
 class AndOpx : public BinaryComparisonOpx {
 public:
   AndOpx(Op *, Devicex *);
-  void grow(poplar::program::Sequence &) const final;
+  void grow(snap::program::Sequence &) const final;
 };
 
 } // namespace popx

@@ -54,12 +54,12 @@ public:
   BasePadOpx(Op *, Devicex *);
   const BasePadOp &getBasePadOp() const;
   snap::Tensor padGrow(snap::Tensor inTensor,
-                       poplar::program::Sequence &,
+                       snap::program::Sequence &,
                        bool inPlaceAllowed) const;
 
 private:
   snap::Tensor constantModePadGrow(snap::Tensor inTensor,
-                                   poplar::program::Sequence &,
+                                   snap::program::Sequence &,
                                    bool inPlaceAllowed) const;
 
   // Padding with a constant needs to layout the constant. Sometimes there is an
@@ -71,7 +71,7 @@ private:
   // Return a Tensor of the same shape as inTensor, which is an alias of
   // inTensor at the core, and a copy of inTensor on the padding edges.
   snap::Tensor cloneNcopyEdges(snap::Tensor inTensor,
-                               poplar::program::Sequence &) const;
+                               snap::program::Sequence &) const;
 
   struct Chisseled {
     Chisseled(snap::Tensor c,
@@ -88,20 +88,20 @@ private:
   snap::Tensor flip(const snap::Tensor &) const;
 
   snap::Tensor unflippedPadGrow(snap::Tensor inTensor,
-                                poplar::program::Sequence &,
+                                snap::program::Sequence &,
                                 bool inPlaceAllowed) const;
 };
 
 class PadOpx : public BasePadOpx {
 public:
   PadOpx(Op *, Devicex *);
-  void grow(poplar::program::Sequence &) const final;
+  void grow(snap::program::Sequence &) const final;
 };
 
 class PadInplaceOpx : public BasePadOpx {
 public:
   PadInplaceOpx(Op *, Devicex *);
-  void grow(poplar::program::Sequence &) const final;
+  void grow(snap::program::Sequence &) const final;
 };
 
 } // namespace popx

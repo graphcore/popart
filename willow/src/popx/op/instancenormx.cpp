@@ -26,7 +26,7 @@ InstanceNormOpx::InstanceNormOpx(Op *op, Devicex *devicex)
   verifyOp<InstanceNormOp>(op, {Onnx::Operators::InstanceNormalization_6});
 }
 
-void InstanceNormOpx::grow(poplar::program::Sequence &prog) const {
+void InstanceNormOpx::grow(snap::program::Sequence &prog) const {
 
   auto &op = getOp<InstanceNormOp>();
 
@@ -48,7 +48,7 @@ void InstanceNormOpx::grow(poplar::program::Sequence &prog) const {
       popnn::in::instanceNormStatistics(graph().getPoplarGraph(),
                                         input,
                                         epsilon,
-                                        prog,
+                                        prog.getPoplarSequence(),
                                         false,
                                         stable_algo,
                                         poplar::FLOAT,
@@ -61,7 +61,7 @@ void InstanceNormOpx::grow(poplar::program::Sequence &prog) const {
                                              b,
                                              mean,
                                              invStdDev,
-                                             prog,
+                                             prog.getPoplarSequence(),
                                              debugContext("instanceNorm"));
 
   // Return the result
@@ -78,7 +78,7 @@ InstanceNormGradOpx::InstanceNormGradOpx(Op *op, Devicex *devicex)
                                Onnx::GradOperators::InstanceNormalizationGrad);
 }
 
-void InstanceNormGradOpx::grow(poplar::program::Sequence &prog) const {
+void InstanceNormGradOpx::grow(snap::program::Sequence &prog) const {
   auto out_grad =
       getInTensor(InstanceNormGradOp::getOutGradInIndex()).getPoplarTensor();
   auto input =
@@ -95,7 +95,7 @@ void InstanceNormGradOpx::grow(poplar::program::Sequence &prog) const {
                                     input,
                                     mean,
                                     inv_std_dev,
-                                    prog,
+                                    prog.getPoplarSequence(),
                                     debugContext("instanceNormWhiten"));
 
   auto input_grad = popnn::in::instanceNormGradients(
@@ -104,7 +104,7 @@ void InstanceNormGradOpx::grow(poplar::program::Sequence &prog) const {
       out_grad,
       inv_std_dev,
       scale,
-      prog,
+      prog.getPoplarSequence(),
       poplar::FLOAT, // TODO: could this be HALF?
       debugContext("instanceNormGradients"));
 
@@ -113,7 +113,7 @@ void InstanceNormGradOpx::grow(poplar::program::Sequence &prog) const {
       graph().getPoplarGraph(),
       input_whitened,
       out_grad,
-      prog,
+      prog.getPoplarSequence(),
       poplar::FLOAT,
       debugContext("instanceNormParamGradients"));
 

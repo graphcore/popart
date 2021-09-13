@@ -9,7 +9,7 @@
 namespace popart {
 namespace popx {
 
-void HistogramOpx::grow(poplar::program::Sequence &prog) const {
+void HistogramOpx::grow(snap::program::Sequence &prog) const {
   auto &op    = getOp<HistogramOp>();
   auto levels = op.getLevels();
 
@@ -25,7 +25,7 @@ void HistogramOpx::grow(poplar::program::Sequence &prog) const {
       getInTensor(op.getInIndex()).flatten().getPoplarTensor(),
       levelsT,
       op.getAbsoluteOfInput(),
-      prog,
+      prog.getPoplarSequence(),
       debugContext());
 
   setOutTensor(op.getOutIndex(), snap::Tensor{out, graph()});

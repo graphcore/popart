@@ -38,7 +38,7 @@ view::RegMap MinOpx::unwindRegion(InIndex, OutIndex) const {
   return [](const view::Region &r) { return view::Regions(1, r); };
 }
 
-void MinOpx::grow(poplar::program::Sequence &prog) const {
+void MinOpx::grow(snap::program::Sequence &prog) const {
   auto outTensor = cloneNcopy(prog, getInTensor(0));
 
   if (op_p->input->n() > 1) {
@@ -49,7 +49,7 @@ void MinOpx::grow(poplar::program::Sequence &prog) const {
                       popops::expr::BinaryOpType::MINIMUM,
                       outTensor.getPoplarTensor(),
                       getInTensor(i).getPoplarTensor(),
-                      prog,
+                      prog.getPoplarSequence(),
                       debugContext(std::string("min") + sNameDelimiter +
                                    std::to_string(i))),
           graph()};
@@ -62,7 +62,7 @@ void MinOpx::grow(poplar::program::Sequence &prog) const {
 MinArgGradOpx::MinArgGradOpx(Op *op_, Devicex *devicex_)
     : PopOpx(op_, devicex_) {}
 
-void MinArgGradOpx::grow(poplar::program::Sequence &prog) const {
+void MinArgGradOpx::grow(snap::program::Sequence &prog) const {
 
   // Create a mask of the min input tensor. Set a element to 1 if it is
   // the minimum element value of all inputs (i.e. is in the fwd output) else 0
@@ -80,7 +80,7 @@ void MinArgGradOpx::grow(poplar::program::Sequence &prog) const {
       {getInTensor(MinArgGradOp::getFwdOutInIndex()).getPoplarTensor(),
        getInTensor(MinArgGradOp::getFwdInIndex()).getPoplarTensor(),
        getInTensor(MinArgGradOp::getGradInIndex()).getPoplarTensor()},
-      prog,
+      prog.getPoplarSequence(),
       debugContext("result"));
 
   auto shapeOfOutputOfFwdOp = inInfo(MinArgGradOp::getFwdOutInIndex()).shape();
@@ -96,7 +96,7 @@ void MinArgGradOpx::grow(poplar::program::Sequence &prog) const {
                             result,
                             vXtoY<int64_t, std::size_t>(axes),
                             {popops::Operation::ADD},
-                            prog,
+                            prog.getPoplarSequence(),
                             debugContext("out"));
 
   // Reshape the output, to add 1's if needed

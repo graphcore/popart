@@ -41,21 +41,29 @@ DnfTensorIds PopOpx::mustExistBeforeCreateDNF(int index0) const {
   return {mustExistBeforeCreate(index0)};
 }
 
-void PopOpx::grow(poplar::program::Sequence &) const {
+void PopOpx::grow(snap::program::Sequence &) const {
   throw error("adding poplar::Tensors not implemented for {}", op_p->opid);
 }
 
-void PopOpx::grow(std::vector<poplar::program::Sequence> &sequences) const {
+void PopOpx::grow(std::vector<snap::program::Sequence> &sequences) const {
   if (sequences.empty()) {
     auto partitioner  = dv_p->lowering().getSubgraphPartitioner();
     auto subgraphPart = partitioner->getOpSubgraphPartBegin(op_p);
 
     std::stringstream ss;
     ss << op_p->getGraph().id.str() << "/" << subgraphPart;
-    sequences.resize(1, poplar::program::Sequence({}, debugContext(ss.str())));
+    sequences.resize(1,
+                     snap::program::Sequence(
+                         debugContext(ss.str()),
+                         // Using `graph()` here was causing an error due
+                         // to ipucopy not having a virtual graph id set.
+                         // snap::program::Sequence does not require a specific
+                         // graph though, just any snap::Graph, so use the main
+                         // graph provided by `dv_p->lowering().graph()`.
+                         dv_p->lowering().graph()));
   }
 
-  // By default, use the PopOpx::grow(poplar::program::Sequence &) function.
+  // By default, use the PopOpx::grow(snap::program::Sequence &) function.
   // Currently, only CallOpx overloads this PopOpx::grow method to grow over
   // multiple fragments.
   grow(*sequences.begin());
@@ -308,13 +316,13 @@ poplar::DebugContext PopOpx::debugContext(const std::string name,
   return {getDebugNameAndId(), name, loc};
 }
 
-snap::Tensor PopOpx::cloneNcopy(poplar::program::Sequence &prog,
+snap::Tensor PopOpx::cloneNcopy(snap::program::Sequence &prog,
                                 TensorId id) const {
   const snap::Tensor &tensor = get(id);
   return cloneNcopy(prog, tensor, id + "[cloned]");
 }
 
-snap::Tensor PopOpx::cloneNcopy(poplar::program::Sequence &prog,
+snap::Tensor PopOpx::cloneNcopy(snap::program::Sequence &prog,
                                 const snap::Tensor &tensor,
                                 const std::string name) const {
 

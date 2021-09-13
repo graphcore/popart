@@ -19,7 +19,7 @@ ReplicatedAllGatherOpx::ReplicatedAllGatherOpx(Op *op, Devicex *devicex)
   inputCreatorPriority = -1.0;
 }
 
-void ReplicatedAllGatherOpx::grow(poplar::program::Sequence &prog) const {
+void ReplicatedAllGatherOpx::grow(snap::program::Sequence &prog) const {
   auto &op = getOp<ReplicatedAllGatherOp>();
 
   poplar::OptionFlags allGatherOptions = dv_p->lowering().gclOptions;
@@ -28,7 +28,7 @@ void ReplicatedAllGatherOpx::grow(poplar::program::Sequence &prog) const {
   poplar::Tensor gathered = gcl::allGatherCrossReplica(
       graph().getPoplarGraph(),
       getInTensor(ReplicatedAllGatherOp::getInIndex()).getPoplarTensor(),
-      prog,
+      prog.getPoplarSequence(),
       toGCLCommGroup(op.getGCLCommGroup()),
       debugContext("replicatedAllGather"),
       allGatherOptions);

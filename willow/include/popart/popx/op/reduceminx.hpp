@@ -11,13 +11,13 @@ namespace popx {
 class ReduceMinOpx : public PopOpx {
 public:
   ReduceMinOpx(Op *, Devicex *);
-  void grow(poplar::program::Sequence &) const override;
+  void grow(snap::program::Sequence &) const override;
 };
 
 class ReduceMinGradOpx : public PopOpx {
 public:
   ReduceMinGradOpx(Op *, Devicex *);
-  void grow(poplar::program::Sequence &) const override;
+  void grow(snap::program::Sequence &) const override;
 };
 
 } // namespace popx

@@ -20,7 +20,7 @@ namespace popx {
 class CtcOpx : public PopOpx {
 public:
   CtcOpx(Op *, Devicex *);
-  void grow(poplar::program::Sequence &) const final;
+  void grow(snap::program::Sequence &) const final;
 
   // See PopOpx::createInputTensor.
   virtual snap::Tensor
@@ -35,7 +35,7 @@ public:
 
 private:
   // Helper function to apply reduction.
-  snap::Tensor applyReduction(poplar::program::Sequence &prog,
+  snap::Tensor applyReduction(snap::program::Sequence &prog,
                               snap::Tensor loss,
                               snap::Tensor targetLengths) const;
 
@@ -47,11 +47,11 @@ private:
 class CtcGradOpx : public PopOpx {
 public:
   CtcGradOpx(Op *, Devicex *);
-  void grow(poplar::program::Sequence &) const final;
+  void grow(snap::program::Sequence &) const final;
 
 private:
   // Helper function to apply partial derivative of reduction.
-  snap::Tensor applyReductionGrad(poplar::program::Sequence &prog,
+  snap::Tensor applyReductionGrad(snap::program::Sequence &prog,
                                   const snap::Tensor &ctcLossGrad,
                                   const snap::Tensor &targetLengths) const;
 };

@@ -35,7 +35,7 @@ HardSigmoidOpx::HardSigmoidOpx(Op *op, Devicex *devicex)
       op, {Onnx::Operators::HardSigmoid_1, Onnx::Operators::HardSigmoid_6});
 }
 
-void HardSigmoidComputex::inplace(poplar::program::Sequence &prog,
+void HardSigmoidComputex::inplace(snap::program::Sequence &prog,
                                   snap::Graph &graph,
                                   const snap::Tensor &tensor,
                                   const poplar::DebugNameAndId &dnai,
@@ -55,7 +55,7 @@ void HardSigmoidComputex::inplace(poplar::program::Sequence &prog,
   popops::mapInPlace(graph.getPoplarGraph(),
                      *exprs.back(),
                      {tensor.getPoplarTensor()},
-                     prog,
+                     prog.getPoplarSequence(),
                      {dnai, debug_prefix});
 }
 
@@ -74,7 +74,7 @@ HardSigmoidGradOpx::HardSigmoidGradOpx(Op *op, Devicex *devicex)
   verifyOp<HardSigmoidGradOp>(op, Onnx::GradOperators::HardSigmoidGrad);
 }
 
-void HardSigmoidGradOpx::grow(poplar::program::Sequence &prog) const {
+void HardSigmoidGradOpx::grow(snap::program::Sequence &prog) const {
   const auto &op = getOp<HardSigmoidGradOp>();
   const auto input =
       getInTensor(HardSigmoidGradOp::getGradInIndex()).getPoplarTensor();
@@ -116,7 +116,7 @@ void HardSigmoidGradOpx::grow(poplar::program::Sequence &prog) const {
   auto output = popops::map(graph().getPoplarGraph(),
                             *exprs.back(),
                             {input, fwd_input},
-                            prog,
+                            prog.getPoplarSequence(),
                             debugContext("hardsigmoid_grad"));
 
   setOutTensor(HardSigmoidGradOp::getOutIndex(), snap::Tensor{output, graph()});

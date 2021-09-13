@@ -17,13 +17,13 @@ public:
 class RemoteStoreOpx : public RemoteBaseOpx {
 public:
   RemoteStoreOpx(Op *, Devicex *);
-  void grow(poplar::program::Sequence &) const final;
+  void grow(snap::program::Sequence &) const final;
 };
 
 class RemoteLoadOpx : public RemoteBaseOpx {
 public:
   RemoteLoadOpx(Op *, Devicex *);
-  void grow(poplar::program::Sequence &) const final;
+  void grow(snap::program::Sequence &) const final;
   InputCreatorType getInputCreatorType(InIndex index) const final;
   snap::Tensor unwindTensorLayout(snap::Tensor, InIndex, OutIndex) const final;
   view::RegMap unwindRegion(InIndex, OutIndex) const final;

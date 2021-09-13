@@ -12,7 +12,7 @@ namespace popx {
 class BitwiseNotOpx : public ElementWiseUnaryOpx {
 public:
   BitwiseNotOpx(Op *, Devicex *);
-  void grow(poplar::program::Sequence &) const final;
+  void grow(snap::program::Sequence &) const final;
 };
 
 class BitwiseBinaryOpx : public ElementWiseBinaryOpx {
@@ -20,7 +20,7 @@ class BitwiseBinaryOpx : public ElementWiseBinaryOpx {
 
 public:
   BitwiseBinaryOpx(Op *, Devicex *);
-  void grow(poplar::program::Sequence &) const final;
+  void grow(snap::program::Sequence &) const final;
 };
 
 } // namespace popx
