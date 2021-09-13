@@ -134,11 +134,11 @@ TensorId ParsedTensorId::removeScope(const Scope &s) {
 void ParsedTensorId::generateId() {
   tId = "";
   // Add the scopes
-  for (const auto scope : scopes) {
+  for (const auto &scope : scopes) {
     tId += scope + sNameDelimiter;
   }
   // Add the prefixes
-  for (const auto prefix : prefixes) {
+  for (const auto &prefix : prefixes) {
     tId += prefix;
   }
   // Add the name

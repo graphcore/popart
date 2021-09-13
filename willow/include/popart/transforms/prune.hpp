@@ -52,13 +52,13 @@ public:
   static std::size_t id();
 
   Prune() : Transform() {}
-  virtual ~Prune() override {}
+  ~Prune() override {}
 
-  virtual bool apply(Graph &graph) const;
+  bool apply(Graph &graph) const override;
 
-  virtual std::size_t getId() const { return id(); }
+  std::size_t getId() const override { return id(); }
 
-  virtual std::string getName() const { return "Prune"; }
+  std::string getName() const override { return "Prune"; }
 };
 
 } // namespace popart
