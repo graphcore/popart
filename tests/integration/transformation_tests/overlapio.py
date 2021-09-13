@@ -176,11 +176,11 @@ def run_model(batches_per_step, accum_factor, replicas, tile_set,
 
 
 def test_overlap_training():
-    c0, w0 = run_model(4, 8, 1, popart.TileSet.Compute,
+    c0, w0 = run_model(4, 8, 16, popart.TileSet.Compute,
                        popart.ExchangeStrategy.JustInTime)
-    c1, w1 = run_model(4, 8, 1, popart.TileSet.IO,
+    c1, w1 = run_model(4, 8, 16, popart.TileSet.IO,
                        popart.ExchangeStrategy.JustInTime)
-    c2, w2 = run_model(4, 8, 1, popart.TileSet.IO,
+    c2, w2 = run_model(4, 8, 16, popart.TileSet.IO,
                        popart.ExchangeStrategy.OverlapInnerLoop)
 
     # Check all weights are equal

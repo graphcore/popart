@@ -1496,7 +1496,8 @@ ReplicatedTensorShardingIndices Op::getReplicatedTensorShardingIndices() const {
 }
 
 void Op::configureForReplicatedTensorSharding(
-    ReplicatedTensorShardingIndices indices) {
+    ReplicatedTensorShardingIndices indices,
+    CommGroup shardingDomain) {
   setup();
 }
 

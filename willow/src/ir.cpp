@@ -853,27 +853,6 @@ void Ir::verifyRecomputeAttributes() const noexcept(false) {
   }
 }
 
-bool Ir::hasReplicatedTensorSharding() const {
-  if (userOptions.activationTensorLocationSettings.location
-          .replicatedTensorSharding == ReplicatedTensorSharding::On) {
-    return true;
-  }
-  if (userOptions.weightTensorLocationSettings.location
-          .replicatedTensorSharding == ReplicatedTensorSharding::On) {
-    return true;
-  }
-  if (userOptions.optimizerStateTensorLocationSettings.location
-          .replicatedTensorSharding == ReplicatedTensorSharding::On) {
-    return true;
-  }
-  if (userOptions.accumulatorTensorLocationSettings.location
-          .replicatedTensorSharding == ReplicatedTensorSharding::On) {
-    return true;
-  }
-
-  return false;
-}
-
 bool Ir::hasOverlappedIO() const {
   auto isOverlappingExchangeStrategy = [](ExchangeStrategy strategy) {
     return strategy == ExchangeStrategy::OverlapStep ||
@@ -932,11 +911,6 @@ void Ir::verifyDistributedReplicatedGraphSettings() const {
                     localReplicationFactor,
                     globalReplicationFactor);
       }
-    }
-
-    if (hasReplicatedTensorSharding()) {
-      throw error("Distributed Replicated graphs are not supported with "
-                  "Replicated Tensor Sharding.");
     }
   }
 }

@@ -5,6 +5,7 @@
 #include <memory>
 #include <vector>
 
+#include <popart/commgroup.hpp>
 #include <popart/names.hpp>
 
 namespace popart {
@@ -90,6 +91,7 @@ public:
   ///                TileSet::Compute,
   ///                ReplicatedTensorSharding::Off)
   TensorLocation(TensorStorage storage);
+
   /// Equivalent to calling
   /// TensorLocation(storage,
   ///                TileSet::Compute,
@@ -97,6 +99,17 @@ public:
   ///                replicatedTensorSharding)
   TensorLocation(TensorStorage storage,
                  ReplicatedTensorSharding replicatedTensorSharding);
+
+  /// Equivalent to calling
+  /// TensorLocation(storage,
+  ///                TileSet::Compute,
+  ///                TileSet::Compute,
+  ///                replicatedTensorSharding,
+  ///                shardingDomain)
+  TensorLocation(TensorStorage storage,
+                 ReplicatedTensorSharding replicatedTensorSharding,
+                 CommGroup shardingDomain);
+
   /// Construct a TensorLocation from parameters.
   /// \param storage The memory location of the tensor(s).
   /// \param loadTileSet The tiles through which the tensor(s) are loaded onto
@@ -108,6 +121,23 @@ public:
                  TileSet loadTileSet,
                  TileSet storageTileSet,
                  ReplicatedTensorSharding replicatedTensorSharding);
+
+  /// Construct a TensorLocation from parameters.
+  /// \param storage The memory location of the tensor(s).
+  /// \param loadTileSet The tiles through which the tensor(s) are loaded onto
+  ///                    the chip.
+  /// \param storageTileSet The tiles on which the tensor(s) are stored.
+  /// \param replicatedTensorSharding Whether to apply replicated tensor.
+  ///                                 sharding.
+  /// \param shardingDomain GCL communication group across which to shard
+  ///                       the tensor. Perpendicular replicas will not shard,
+  ///                       and reduce gradients normally (via AllReduce).
+  ///                       Defaults to sharding across all replicas.
+  TensorLocation(TensorStorage storage,
+                 TileSet loadTileSet,
+                 TileSet storageTileSet,
+                 ReplicatedTensorSharding replicatedTensorSharding,
+                 CommGroup shardingDomain);
 
   // Construct a TensorsorLocation from a previously serialised instance
   // (not currently part of public API).
@@ -140,6 +170,8 @@ public:
   TileSet storageTileSet;
   /// Whether to apply replicated tensor sharding (RTS) or not.
   ReplicatedTensorSharding replicatedTensorSharding;
+  /// The GCL comm groups across which to shard the tensor
+  CommGroup shardingDomain;
 };
 
 std::ostream &operator<<(std::ostream &, const VGraphIdAndTileSet &);

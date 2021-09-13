@@ -206,6 +206,9 @@ struct TensorLocationSettings {
   int minElementsForReplicatedTensorSharding = 8192;
 };
 
+std::string toString(const TensorLocationSettings &);
+std::ostream &operator<<(std::ostream &, const TensorLocationSettings &);
+
 /**
  * Enum type that describes how to change the batch serialisation subgraph
  * schedule before outlining. \b NOTE: This setting is experimental and may

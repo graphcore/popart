@@ -33,6 +33,17 @@ void ReplicatedAllReduceOpx::grow(poplar::program::Sequence &prog) const {
       toGCLCommGroup(rarOp.getGCLCommGroup()),
       debugContext("replicatedAllReduce"),
       allReduceOptions);
+
+  logging::transform::trace("[ReplicatedAllReduceOpx::grow] comm group: {}, "
+                            "input shape: {}, output shape: {}",
+                            rarOp.getGCLCommGroup(),
+                            toReduce.shape(),
+                            output.shape());
+
+  if (hasInViewChangers(ReplicatedAllReduceOp::getInIndex())) {
+    setOutViewChangers(ReplicatedAllReduceOp::getOutIndex(),
+                       getInViewChangers(ReplicatedAllReduceOp::getInIndex()));
+  }
   setOutTensor(ReplicatedAllReduceOp::getOutIndex(),
                snap::Tensor{output, graph()});
 }
@@ -66,6 +77,9 @@ void ReplicatedAllReduceInplaceOpx::grow(
   poplar::Tensor toReduce = getInTensor(inIndex).getPoplarTensor();
   poplar::OptionFlags allReduceOptions = dv_p->lowering().gclOptions;
   allReduceOptions.set("useReplicatedImplementation", "true");
+
+  auto inputShape = toReduce.shape();
+
   gcl::allReduceInPlaceCrossReplica(
       graph().getPoplarGraph(),
       toReduce,
@@ -73,6 +87,19 @@ void ReplicatedAllReduceInplaceOpx::grow(
       prog,
       debugContext("replicatedAllReduce"),
       allReduceOptions);
+
+  auto outputShape = toReduce.shape();
+
+  logging::transform::trace("[ReplicatedAllReduceOpx::grow] comm group: {}, "
+                            "input shape: {}, output shape: {}",
+                            rarOp.getGCLCommGroup(),
+                            inputShape,
+                            outputShape);
+
+  if (hasInViewChangers(ReplicatedAllReduceOp::getInIndex())) {
+    setOutViewChangers(ReplicatedAllReduceOp::getOutIndex(),
+                       getInViewChangers(ReplicatedAllReduceOp::getInIndex()));
+  }
   setOutTensor(ReplicatedAllReduceInplaceOp::getOutIndex(),
                snap::Tensor{toReduce, graph()});
 }

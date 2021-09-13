@@ -209,8 +209,21 @@ CollectivesBaseOpx::getCollectiveBalancedReorder() const {
 
 gcl::CollectiveBalancedReorder *
 CollectivesBaseOpx::createCollectiveBalancedReorder(snap::Tensor tensor) const {
-  auto replicationFactor = dv_p->lowering().getReplicationFactor();
-  auto group             = getCollectiveLinkedGroup();
+  auto globalReplicationFactor = dv_p->lowering().getGlobalReplicationFactor();
+  auto replicationFactor       = globalReplicationFactor;
+  auto group                   = getCollectiveLinkedGroup();
+
+  for (auto op : group.second) {
+    if (auto collective = dynamic_cast<CollectivesBaseOp *>(op)) {
+      auto shardingDomain = collective->getGCLCommGroup();
+      if (shardingDomain.replicaGroupSize > 0 &&
+          (shardingDomain.type == CommGroupType::Consecutive ||
+           shardingDomain.type == CommGroupType::Orthogonal)) {
+        replicationFactor = shardingDomain.replicaGroupSize;
+      }
+    }
+  }
+
   auto cbr =
       dv_p->lowering().getCollectiveBalancedReorder(*group.first.begin());
   if (!cbr.get()) {
@@ -220,11 +233,33 @@ CollectivesBaseOpx::createCollectiveBalancedReorder(snap::Tensor tensor) const {
         replicationFactor,
         getDebugNameAndId());
     for (auto tensor_id : group.first) {
-      logging::opx::trace("[CollectivesBaseOpx] CBR created for {}", tensor_id);
+      logging::opx::trace("[CollectivesBaseOpx] CBR created for {}, sharding "
+                          "factor: {}, global replication factor: {}",
+                          tensor_id,
+                          replicationFactor,
+                          globalReplicationFactor);
       dv_p->lowering().setCollectiveBalancedReorder(tensor_id, cbr);
     }
   }
   return cbr.get();
+}
+
+gcl::CommGroup toGCLCommGroup(const popart::CommGroup &group) {
+  gcl::CommGroupType type;
+  switch (group.type) {
+  case popart::CommGroupType::All:
+    type = gcl::CommGroupType::ALL;
+    break;
+  case popart::CommGroupType::Consecutive:
+    type = gcl::CommGroupType::CONSECUTIVE;
+    break;
+  case popart::CommGroupType::Orthogonal:
+    type = gcl::CommGroupType::ORTHOGONAL;
+    break;
+  default:
+    throw error("Cannot convert unknown CommGroup type");
+  }
+  return {type, group.replicaGroupSize};
 }
 
 } // namespace popx

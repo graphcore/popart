@@ -11,6 +11,7 @@
 #include <popart/adam.hpp>
 #include <popart/adaptive.hpp>
 #include <popart/builder.hpp>
+#include <popart/commgroup.hpp>
 #include <popart/debugcontext.hpp>
 #include <popart/devicemanager.hpp>
 #include <popart/docs/pydocs_popart_core.hpp>
@@ -902,6 +903,10 @@ PYBIND11_MODULE(popart_core, m) {
     cls.def(py::init<TensorStorage, ReplicatedTensorSharding>(),
             py::arg("storage"),
             py::arg("replicatedTensorSharding"));
+    cls.def(py::init<TensorStorage, ReplicatedTensorSharding, CommGroup>(),
+            py::arg("storage"),
+            py::arg("replicatedTensorSharding"),
+            py::arg("shardingDomain"));
     cls.def(
         py::init<TensorStorage, TileSet, TileSet, ReplicatedTensorSharding>(),
         py::arg("storage"),
@@ -920,6 +925,9 @@ PYBIND11_MODULE(popart_core, m) {
     cls.def_readwrite("replicatedTensorSharding",
                       &TensorLocation::replicatedTensorSharding,
                       DOC(popart, TensorLocation, replicatedTensorSharding));
+    cls.def_readwrite("shardingDomain",
+                      &TensorLocation::shardingDomain,
+                      DOC(popart, TensorLocation, shardingDomain));
   }
   {
     py::class_<AutomaticLossScalingSettings> cls(
@@ -3078,6 +3086,17 @@ PYBIND11_MODULE(popart_core, m) {
     en.value("Orthogonal",
              CommGroupType::Orthogonal,
              DOC(popart, CommGroupType, Orthogonal));
+  }
+  {
+    py::class_<CommGroup> cls(m, "CommGroup");
+    cls.def(py::init<>());
+    cls.def(py::init<CommGroupType, unsigned>(),
+            py::arg("type"),
+            py::arg("replicaGroupSize"));
+    cls.def_readwrite("type", &CommGroup::type, DOC(popart, CommGroup, type));
+    cls.def_readwrite("replicaGroupSize",
+                      &CommGroup::replicaGroupSize,
+                      DOC(popart, TensorLocation, loadTileSet));
   }
 
   {

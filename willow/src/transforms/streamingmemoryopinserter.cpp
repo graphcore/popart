@@ -348,6 +348,29 @@ void StreamingMemoryOpInserter::apply() {
   logging::transform::debug(
       "[StreamingMemory] Processing tensors for streaming memory");
 
+  if (logging::shouldLog(logging::Module::transform, logging::Level::Trace)) {
+    auto &options = graph.getIr().getSessionOptions();
+
+    std::stringstream ss;
+    ss << "\n";
+    ss << "    activations: " << options.activationTensorLocationSettings
+       << "\n";
+    ss << "    weights: " << options.weightTensorLocationSettings << "\n";
+    ss << "    optimizer state: "
+       << options.optimizerStateTensorLocationSettings << "\n";
+    ss << "    accumulator: " << options.accumulatorTensorLocationSettings
+       << "\n";
+    ss << "    overrides:"
+       << "\n";
+    for (auto &settingsOverride : options.tensorLocationSettingsOverride) {
+      ss << "       " << settingsOverride.first << ": "
+         << settingsOverride.second << "\n";
+    }
+
+    logging::transform::trace("[StreamingMemory] TensorLocation settings: {}",
+                              ss.str());
+  }
+
   createTensorSchedule();
 
   // Determine tensor configuration in reverse from bottom to top
@@ -449,7 +472,8 @@ void StreamingMemoryOpInserter::applyTensor(
                                       context,
                                       loadedTensorId,
                                       gatheredTensorId,
-                                      stripAllReservedPrefixes(tensor->id));
+                                      stripAllReservedPrefixes(tensor->id),
+                                      tensorConfig.location.shardingDomain);
     }
 
     // Add constraints to ensure new operations are scheduled in the right
@@ -871,6 +895,7 @@ void StreamingMemoryOpInserter::RTSAllReduceToScatter(
     TensorId refId) {
   if (inTensor->hasProducer() &&
       inTensor->getProducer()->isConvertibleTo<ReplicatedAllReduceOp>()) {
+
     // Try to shard index by changing an AllReduce into a
     // ReduceScatter
     ReplicatedAllReduceOp *replicatedAllReduce =
@@ -913,17 +938,40 @@ void StreamingMemoryOpInserter::RTSAllReduceToScatter(
     // replaced, had.
     tensorConfig.settings = replicatedAllReduce->settings;
 
+    CommGroup complementaryGroup = getComplementCommGroup(
+        graph.getIr(), tensorConfig.location.shardingDomain);
+
+    bool needsAllReduce =
+        complementaryGroup.replicaGroupSize > 1 &&
+        (complementaryGroup.type == CommGroupType::Orthogonal ||
+         complementaryGroup.type == CommGroupType::Consecutive);
+
+    TensorId scatterOutId =
+        needsAllReduce ? graph.getIr().createIntermediateTensorId(outId)
+                       : outId;
+
     ReplicatedReduceScatterOp *replicatedReduceScatter =
         insertReplicatedReduceScatterOp(tensorConfig,
                                         context,
                                         inId,
-                                        outId,
+                                        scatterOutId,
                                         stripAllReservedPrefixes(refId),
-                                        replicatedAllReduce->getCollectiveOp());
+                                        replicatedAllReduce->getCollectiveOp(),
+                                        tensorConfig.location.shardingDomain);
 
-    graph.topoCons->transfer(replicatedAllReduce, replicatedReduceScatter);
+    graph.topoCons->transfer(
+        replicatedAllReduce, replicatedReduceScatter, !needsAllReduce);
 
-    replicatedAllReduce->getGraph().eraseOp(replicatedAllReduce->id);
+    if (needsAllReduce) {
+      replicatedAllReduce->connectInTensor(ReplicatedAllReduceOp::getInIndex(),
+                                           scatterOutId);
+      replicatedAllReduce->connectOutTensor(
+          ReplicatedAllReduceOp::getOutIndex(), outId);
+      replicatedAllReduce->setGCLCommGroup(complementaryGroup);
+      replicatedAllReduce->setup();
+    } else {
+      replicatedAllReduce->getGraph().eraseOp(replicatedAllReduce->id);
+    }
 
     // Tensor outId is now replicated tensor sharded
     rtsTensors.insert(outId, "", outId, stripAllReservedPrefixes(refId));
@@ -958,7 +1006,8 @@ void StreamingMemoryOpInserter::RTSLocalScatter(
                                   inTensor->id,
                                   outId,
                                   stripAllReservedPrefixes(refId),
-                                  CollectiveOperator::Local);
+                                  CollectiveOperator::Local,
+                                  tensorConfig.location.shardingDomain);
 
   // Tensor outId is now replicated tensor sharded
   rtsTensors.insert(
@@ -1130,11 +1179,21 @@ void StreamingMemoryOpInserter::applyReplicatedOptimizerSharding(
     TensorId refId = proposedRTS.getRefTensorId(op->id);
 
     if (proposedRTS.isProposed(op->id)) {
+      CommGroup shardingDomain;
+
       // RTS operator
       auto rtsIndices = op->getReplicatedTensorShardingIndices();
       for (auto indices : rtsIndices) {
         for (InIndex inIdx : indices.first) {
           Tensor *inTensor = op->input->tensor(inIdx);
+
+          Tensor *varTensor = findRelatedVarTensor({inTensor});
+
+          if (varTensor) {
+            shardingDomain =
+                tensorConfigs.at(varTensor).location.shardingDomain;
+          }
+
           if (!rtsTensors.hasShard(inTensor->id)) {
             auto method = proposedRTS.getMethod(inTensor->id);
 
@@ -1175,11 +1234,13 @@ void StreamingMemoryOpInserter::applyReplicatedOptimizerSharding(
         // Configure the op with all sharded inputs added
         logging::transform::trace("[StreamingMemory] Configuring {} for "
                                   "replicated tensor sharding "
-                                  "(indices: {}->{})",
+                                  "(indices: {}->{}, shardingDomain: {})",
                                   op->debugName(),
                                   indices.first,
-                                  indices.second);
-        op->configureForReplicatedTensorSharding({indices});
+                                  indices.second,
+                                  shardingDomain);
+
+        op->configureForReplicatedTensorSharding({indices}, shardingDomain);
         // Add output tensors as RTS tensors
         for (auto outIndex : indices.second) {
           TensorId outId = op->outId(outIndex);
@@ -1224,7 +1285,8 @@ void StreamingMemoryOpInserter::applyReplicatedOptimizerSharding(
                                         context,
                                         inTensor->id,
                                         gatheredId,
-                                        stripAllReservedPrefixes(refId));
+                                        stripAllReservedPrefixes(refId),
+                                        tensorConfig.location.shardingDomain);
 
             rtsTensors.insert(inTensor->id,
                               gatheredId,
@@ -1845,8 +1907,17 @@ RemoteLoadOp *StreamingMemoryOpInserter::insertRemoteLoadOp(
       // The actual tensor shape is now:
       // (initInfo.nelms() - 1) / replicationFactor + 1
 
+      auto rf = replicationFactor;
+      if (tensorConfig.location.shardingDomain.replicaGroupSize > 0 &&
+          (tensorConfig.location.shardingDomain.type ==
+               CommGroupType::Consecutive ||
+           tensorConfig.location.shardingDomain.type ==
+               CommGroupType::Orthogonal)) {
+        rf = tensorConfig.location.shardingDomain.replicaGroupSize;
+      }
+
       Shape oldShape = initInfo.shape();
-      Shape newShape = {(initInfo.nelms() - 1) / replicationFactor + 1};
+      Shape newShape = {(initInfo.nelms() - 1) / rf + 1};
 
       logging::transform::trace(
           "[StreamingMemory] RTS tensor {} shapes: {} -> {}",
@@ -1912,7 +1983,8 @@ ReplicatedAllGatherOp *StreamingMemoryOpInserter::insertReplicatedAllGatherOp(
     const TensorStreamingContext context,
     const TensorId &loadedTensorId,
     TensorId &gatheredTensorId,
-    const TensorId &referenceTensorId) {
+    const TensorId &referenceTensorId,
+    const CommGroup &group) {
   ReplicatedAllGatherOp *allGather = nullptr;
 
   auto loadedInfo = graph.getTensors().get(loadedTensorId)->info;
@@ -1931,7 +2003,7 @@ ReplicatedAllGatherOp *StreamingMemoryOpInserter::insertReplicatedAllGatherOp(
   // tensor from the individual replicas
   auto allGatherOp = std::make_unique<ReplicatedAllGatherOp>(
       Onnx::CustomOperators::ReplicatedAllGather,
-      CommGroup{},
+      group,
       tensorConfig.settings,
       gatherInfo);
   allGather = allGatherOp.get();
@@ -2011,7 +2083,8 @@ StreamingMemoryOpInserter::insertReplicatedReduceScatterOp(
     const TensorId &inTensorId,
     const TensorId &outTensorId,
     const TensorId &weightTensorId,
-    const CollectiveOperator collectiveOp) {
+    const CollectiveOperator &collectiveOp,
+    const CommGroup &group) {
 
   logging::transform::trace(
       "[StreamingMemory] Adding replicated reduce scatter "
@@ -2024,7 +2097,7 @@ StreamingMemoryOpInserter::insertReplicatedReduceScatterOp(
   auto replicatedReduceScatterOp = std::make_unique<ReplicatedReduceScatterOp>(
       Onnx::CustomOperators::ReplicatedReduceScatter,
       collectiveOp,
-      CommGroup{},
+      group,
       tensorConfig.settings);
   auto replicatedReduceScatter = replicatedReduceScatterOp.get();
   graph.moveIntoGraph(std::move(replicatedReduceScatterOp));
@@ -2209,6 +2282,10 @@ StreamingMemoryOpInserter::determineTensorLocation(Tensor *tensor) const {
   auto isWeight =
       type == TensorType::Variable && !isOptimizerState && !isAccumulator;
 
+  auto isSharedOptimizerAndAccumulator = isOptimizerState && isAccumulator;
+  auto accumulationDisabled = !(sessionOptions.enableGradientAccumulation &&
+                                sessionOptions.accumulationFactor > 1);
+
   // Result variable.
   OptionalTensorLocation result;
   const char *logReason = "";
@@ -2277,7 +2354,8 @@ StreamingMemoryOpInserter::determineTensorLocation(Tensor *tensor) const {
         logReason = "weightTensorLocationSettings.location in SessionOptions";
       }
 
-      if (isAccumulator) {
+      if (isAccumulator &&
+          !(isSharedOptimizerAndAccumulator && accumulationDisabled)) {
         // Use optimizer state tensor location settings.
         result = sessionOptions.accumulatorTensorLocationSettings.location;
         logReason =

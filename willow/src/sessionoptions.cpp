@@ -257,6 +257,22 @@ bool SessionOptions::shouldDelayVarUpdates() const {
          !enableExplicitMainLoops;
 }
 
+std::string toString(const TensorLocationSettings &tls) {
+  std::stringstream ss;
+  ss << "(";
+  ss << "minElementsForOffChip=" << tls.minElementsForOffChip << ", ";
+  ss << "minElementsForReplicatedTensorSharding="
+     << tls.minElementsForReplicatedTensorSharding << ", ";
+  ss << "location=" << tls.location;
+  ss << ")";
+  return ss.str();
+}
+
+std::ostream &operator<<(std::ostream &os, const TensorLocationSettings &tls) {
+  os << toString(tls);
+  return os;
+}
+
 // No implementation required
 
 } // namespace popart

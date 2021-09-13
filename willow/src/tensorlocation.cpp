@@ -1,5 +1,6 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
 
+#include <popart/commgroup.hpp>
 #include <popart/error.hpp>
 #include <popart/tensorlocation.hpp>
 
@@ -8,26 +9,39 @@ namespace popart {
 TensorLocation::TensorLocation()
     : storage(TensorStorage::OnChip), loadTileSet(TileSet::Compute),
       storageTileSet(TileSet::Compute),
-      replicatedTensorSharding(ReplicatedTensorSharding::Off) {}
+      replicatedTensorSharding(ReplicatedTensorSharding::Off),
+      shardingDomain() {}
 
 TensorLocation::TensorLocation(TensorStorage storage_)
     : storage(storage_), loadTileSet(TileSet::Compute),
       storageTileSet(TileSet::Compute),
-      replicatedTensorSharding(ReplicatedTensorSharding::Off) {}
+      replicatedTensorSharding(ReplicatedTensorSharding::Off),
+      shardingDomain() {}
 
 TensorLocation::TensorLocation(std::vector<int64_t> serialized)
     : storage(static_cast<TensorStorage>(serialized[0])),
       loadTileSet(static_cast<TileSet>(serialized[1])),
       storageTileSet(static_cast<TileSet>(serialized[2])),
       replicatedTensorSharding(
-          static_cast<ReplicatedTensorSharding>(serialized[3])) {}
+          static_cast<ReplicatedTensorSharding>(serialized[3])),
+      shardingDomain(static_cast<CommGroupType>(serialized[4]),
+                     static_cast<unsigned>(serialized[5])) {}
 
 TensorLocation::TensorLocation(
     TensorStorage storage_,
     ReplicatedTensorSharding replicatedTensorSharding_)
     : storage(storage_), loadTileSet(TileSet::Compute),
       storageTileSet(TileSet::Compute),
-      replicatedTensorSharding(replicatedTensorSharding_) {}
+      replicatedTensorSharding(replicatedTensorSharding_), shardingDomain() {}
+
+TensorLocation::TensorLocation(
+    TensorStorage storage_,
+    ReplicatedTensorSharding replicatedTensorSharding_,
+    CommGroup shardingDomain_)
+    : storage(storage_), loadTileSet(TileSet::Compute),
+      storageTileSet(TileSet::Compute),
+      replicatedTensorSharding(replicatedTensorSharding_),
+      shardingDomain(shardingDomain_) {}
 
 TensorLocation::TensorLocation(
     TensorStorage storage_,
@@ -37,6 +51,17 @@ TensorLocation::TensorLocation(
     : storage(storage_), loadTileSet(loadTileSet_),
       storageTileSet(storageTileSet_),
       replicatedTensorSharding(replicatedTensorSharding_) {}
+
+TensorLocation::TensorLocation(
+    TensorStorage storage_,
+    TileSet loadTileSet_,
+    TileSet storageTileSet_,
+    ReplicatedTensorSharding replicatedTensorSharding_,
+    CommGroup shardingDomain_)
+    : storage(storage_), loadTileSet(loadTileSet_),
+      storageTileSet(storageTileSet_),
+      replicatedTensorSharding(replicatedTensorSharding_),
+      shardingDomain(shardingDomain_) {}
 
 bool TensorLocation::operator==(const TensorLocation &rhs) const {
   return serialize() == rhs.serialize();
@@ -50,7 +75,9 @@ std::vector<int64_t> TensorLocation::serialize() const {
   return {static_cast<int64_t>(storage),
           static_cast<int64_t>(loadTileSet),
           static_cast<int64_t>(storageTileSet),
-          static_cast<int64_t>(replicatedTensorSharding)};
+          static_cast<int64_t>(replicatedTensorSharding),
+          static_cast<int64_t>(shardingDomain.type),
+          static_cast<int64_t>(shardingDomain.replicaGroupSize)};
 }
 
 bool TensorLocation::isRemote() const {
@@ -135,6 +162,9 @@ std::ostream &operator<<(std::ostream &ost, const TensorLocation &tl) {
   ost << ", loadTileSet=" << tl.loadTileSet;
   ost << ", storageTileSet=" << tl.storageTileSet;
   ost << ", RTS=" << tl.replicatedTensorSharding;
+  if (tl.replicatedTensorSharding == ReplicatedTensorSharding::On) {
+    ost << ", shardingDomain=" << tl.shardingDomain;
+  }
   ost << ")";
   return ost;
 }

@@ -38,9 +38,14 @@ void PopTensors::verify(TensorId id, const snap::Tensor &pt) {
 
     if (shape != irTensor->info.shape_szt()) {
       std::stringstream ss;
-      ss << "snap::Tensor " << id << " of unexpected shape. "
-         << "Poplar tensor shape: " << shape
-         << ". Expected (Ir) tensor shape: " << irTensor->info.shape_szt()
+      ss << "snap::Tensor " << id << " of unexpected shape. ";
+      if (foundViewChangers == viewChangers_.end()) {
+        ss << "Poplar tensor shape: " << pt.shape() << "->" << shape
+           << " (view changed)";
+      } else {
+        ss << "Poplar tensor shape: " << shape;
+      }
+      ss << ". Expected (Ir) tensor shape: " << irTensor->info.shape_szt()
          << ". This for tensor " << irTensor->str();
       throw error(ss.str());
     }

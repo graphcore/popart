@@ -11,6 +11,7 @@
 #include <popops/CollectiveTypes.hpp>
 
 #include <gcl/CollectiveBalancedReorder.hpp>
+#include <gcl/Collectives.hpp>
 
 namespace popart {
 namespace popx {
@@ -100,6 +101,14 @@ public:
   gcl::CollectiveBalancedReorder *
   createCollectiveBalancedReorder(snap::Tensor tensor) const;
 };
+
+/**
+ * Converts give \ref CommGroup to GCL's CommGroup type.
+
+ * \param input PopART \ref CommGroup.
+ * \return GCL CommGroup.
+ */
+gcl::CommGroup toGCLCommGroup(const popart::CommGroup &input);
 
 } // namespace popx
 } // namespace popart

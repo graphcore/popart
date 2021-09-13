@@ -2,11 +2,8 @@
 #ifndef GUARD_NEURALNET_COLLECTIVES_HPP
 #define GUARD_NEURALNET_COLLECTIVES_HPP
 
+#include <popart/commgroup.hpp>
 #include <popart/op.hpp>
-
-namespace gcl {
-class CommGroup;
-} // namespace gcl
 
 namespace popart {
 
@@ -25,67 +22,6 @@ enum class CollectiveOperator {
 
 std::ostream &operator<<(std::ostream &os, const CollectiveOperator &op);
 
-/// PopART equivalent of GCL CommGroupType. Each of these enumeration constants
-/// have a corresponding GCL CommGroupType value.
-enum class CommGroupType {
-  /** All replicas viewed as one group, replica group size is ignored. */
-  All = 0,
-
-  /** Groups are consecutive in replica.
-   * If there are N replicas denoted {0, ... N-1} and group size is k,
-   * then there are N/k groups of size k:
-   *   {0, 1, ... k-1}, {k, ... 2k-1} ... {N-k-1, ... N-1}
-   */
-  Consecutive,
-
-  /** Groups are sliced orthogonal to the replica ordering.
-   * If there are N replicas denoted {0, ... N-1} and group size is k,
-   * then there are m = N/k groups of size k:
-   *   {0, m, 2m, ...}, {1, m+1, 2m+1, ...} ... {m-1, 2m-1, ... N-1}
-   */
-  Orthogonal,
-  N
-};
-
-/** Struct to specify sub-groups of replicas.
- *
- * Examples of derived sub-groups:
- * - IPU-link domain sub-rack:
- *   \code
- *     type == Consecutive && replicaGroupSize == 64/replica-size/N
- *   \endcode
- *   where N is power of two and replicaGroupSize > 1.
- * - Complete IPU-link domain / full rack:
- *   \code
- *     type == Consecutive && replicaGroupSize == 64/replica-size
- *   \endcode
- * - Using GW-links only:
- *   \code
- *     type == Orthogonal && replicaGroupSize == 64/replica-size
- *   \endcode
- */
-struct CommGroup {
-  CommGroup();
-
-  /**
-   * Construct CommGroup
-   *
-   * \param groupType replica group type
-   * \param groupSize replica group size
-   */
-  CommGroup(CommGroupType type, unsigned groupSize)
-      : type(type), replicaGroupSize(groupSize) {}
-
-  /** Replica group type */
-  CommGroupType type = CommGroupType::All;
-
-  /** Replica group size */
-  unsigned replicaGroupSize = 0;
-};
-
-std::ostream &operator<<(std::ostream &os, CommGroupType commType);
-std::ostream &operator<<(std::ostream &os, const CommGroup &group);
-
 class CollectivesBaseOp : public Op {
 public:
   CollectivesBaseOp(const OperatorIdentifier &_opid,
@@ -100,6 +36,8 @@ public:
 
   // Gathered/reduced/scattered output
   static OutIndex getOutIndex() { return 0; }
+
+  void setGCLCommGroup(CommGroup group_) { group = group_; }
   CommGroup getGCLCommGroup() const { return group; }
 
   void appendOutlineAttributes(OpSerialiserBase &os) const override;
@@ -128,12 +66,10 @@ CommGroup extractCommGroupFromAttrs(const Attributes &attrs);
 CommGroup extractCommGroupFromVector(const std::vector<int64_t> &vec);
 
 /**
- * Converts give \ref CommGroup to GCL's CommGroup type.
-
- * \param input PopART \ref CommGroup.
- * \return GCL CommGroup.
+ * Calculates the complementary group such that the two CommGroups together
+ * span all replicas
  */
-::gcl::CommGroup toGCLCommGroup(const ::popart::CommGroup &input);
+CommGroup getComplementCommGroup(const Ir &ir, CommGroup group);
 
 } // namespace popart
 

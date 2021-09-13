@@ -22,12 +22,10 @@ public:
   float getSubgraphValue() const final { return getHighSubgraphValue(); }
   void appendOutlineAttributes(OpSerialiserBase &) const override;
   CollectiveOperator getCollectiveOp() const { return op; }
-  CommGroup getGCLCommGroup() const;
   virtual void growAliasModel(AliasModel &) const override;
 
 protected:
   CollectiveOperator op;
-  CommGroup group;
 };
 
 class ReplicatedAllReduceInplaceOp : public ReplicatedAllReduceOp {
@@ -45,9 +43,6 @@ public:
   std::unique_ptr<Op> clone() const final;
   void setup() final;
 };
-
-class Attributes;
-CommGroup extractCommGroupFromAttrs(const Attributes &attrs);
 
 } // namespace popart
 

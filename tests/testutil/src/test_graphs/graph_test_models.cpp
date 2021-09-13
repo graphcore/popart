@@ -1,6 +1,8 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 #include <testutil/test_graphs/graph_test_models.hpp>
 
+#include <popart/adam.hpp>
+#include <popart/clipnormsettings.hpp>
 #include <popart/dataflow.hpp>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
@@ -13,11 +15,18 @@
 #include <popart/op/identity.hpp>
 #include <popart/op/init.hpp>
 #include <popart/op/iotilecopy.hpp>
+#include <popart/op/l1.hpp>
 #include <popart/op/loop.hpp>
+#include <popart/op/matmul.hpp>
 #include <popart/op/sgd0varupdate.hpp>
 #include <popart/op/slice.hpp>
 #include <popart/optimizer.hpp>
 #include <popart/optimizervalue.hpp>
+#include <popart/patterns/adamdecompose.hpp>
+#include <popart/patterns/optimizerdecompose.hpp>
+#include <popart/patterns/sgd0decompose.hpp>
+#include <popart/patterns/sgd1decompose.hpp>
+#include <popart/patterns/sgd2decompose.hpp>
 #include <popart/sgd.hpp>
 #include <popart/tensor.hpp>
 #include <popart/topocons.hpp>
@@ -340,5 +349,153 @@ GraphTestModel3::GraphTestModel3(popart::ExchangeStrategy strategyA,
 
   auto art = AnchorReturnType("All", TileSet::IO, strategyC);
   df       = DataFlow(batchesPerStep, {{"C", art}});
+  ir.setDataFlow(df);
+}
+
+OptimizerTestModel::OptimizerTestModel(TestOptimizer opt,
+                                       unsigned accumulationFactor,
+                                       SessionOptions options) {
+  Graph &graph = ir.getMainGraph();
+
+  Op::Settings settings(graph, "op", {});
+
+  int64_t batchesPerStep = 2;
+  if (accumulationFactor > 1) {
+    options.enableGradientAccumulation = true;
+    options.accumulationFactor         = accumulationFactor;
+  }
+
+  ir.setUserOptions(options);
+
+  TensorInfo t0Info{DataType::FLOAT, {4, 4}};
+  float t0Data[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16};
+  graph.getTensors().addVarInit("t0", t0Info, static_cast<void *>(&t0Data));
+
+  TensorInfo t1Info{DataType::FLOAT, {4}};
+  float t1Data[] = {1, 2, 3, 4};
+  graph.getTensors().addVarInit("t1", t1Info, static_cast<void *>(&t1Data));
+
+  TensorInfo t2Info{DataType::FLOAT, {4, 4}};
+  graph.getTensors().addStream("t2", t2Info);
+
+  graph.createConnectedOp<InitOp>({},
+                                  {{InitOp::getOutIndex(), "t2"}},
+                                  Onnx::CustomOperators::Init_1,
+                                  t2Info,
+                                  TensorType::ActGrad,
+                                  InitType::Zero,
+                                  settings.copy("Init_t2"));
+
+  graph.createConnectedOp<HostLoadOp>(
+      {{HostLoadOp::getLocalTensorInIndex(), "t2"}},
+      {{HostLoadOp::getLocalTensorOutIndex(), "t2_loaded"}},
+      Onnx::CustomOperators::HostLoad,
+      settings.copy("HostLoad_t2"),
+      "t2");
+
+  graph.createConnectedOp<MatMulOp>({{MatMulOp::getLhsInIndex(), "t0"},
+                                     {MatMulOp::getRhsInIndex(), "t2_loaded"}},
+                                    {{MatMulOp::getOutIndex(), "t3"}},
+                                    Onnx::Operators::MatMul_9,
+                                    settings.copy("MatMulOp"),
+                                    nonstd::nullopt,
+                                    MatMulOp::SerialiseSettings(),
+                                    OptionalDataType());
+
+  graph.createConnectedOp<AddOp>(
+      {{AddOp::getArg0InIndex(), "t1"}, {AddOp::getArg1InIndex(), "t3"}},
+      {{AddOp::getOutIndex(), "t4"}},
+      Onnx::Operators::Add_7,
+      settings.copy("AddOp"));
+
+  graph.createConnectedOp<L1Op>({{L1Op::getInIndex(), "t4"}},
+                                {{L1Op::getOutIndex(), "t5"}},
+                                Onnx::CustomOperators::L1,
+                                1.0,
+                                ReductionType::Mean,
+                                settings.copy("L1Op"));
+
+  ir.setFinalLoss("t5");
+
+  std::shared_ptr<Optimizer> optimizer;
+  std::shared_ptr<OptimizerDecompose> decomposer;
+
+  switch (opt) {
+  case TestOptimizer::SGD0: {
+    optimizer  = std::make_shared<SGD>(0.1, 0.1, 0.0, 0.0, 0.1, 1.0);
+    decomposer = std::make_shared<SGD0Decompose>();
+    break;
+  }
+  case TestOptimizer::SGD1: {
+    optimizer  = std::make_shared<SGD>(0.1,
+                                      0.1,
+                                      0.8,
+                                      0.1,
+                                      0.1,
+                                      1.0,
+                                      std::vector<ClipNormSettings>{},
+                                      SGDAccumulatorAndMomentum::Combined);
+    decomposer = std::make_shared<SGD1Decompose>();
+    break;
+  }
+  case TestOptimizer::SGD2: {
+    optimizer  = std::make_shared<SGD>(0.1,
+                                      0.1,
+                                      0.8,
+                                      0.1,
+                                      0.1,
+                                      1.0,
+                                      std::vector<ClipNormSettings>{},
+                                      SGDAccumulatorAndMomentum::Separate);
+    decomposer = std::make_shared<SGD2Decompose>();
+    break;
+  }
+  case TestOptimizer::Adam: {
+    optimizer  = std::make_shared<Adam>(0.1,
+                                       0.1,
+                                       0.99,
+                                       0.9,
+                                       1e-6,
+                                       1.0,
+                                       AdamMode::Adam,
+                                       WeightDecayMode::L2Regularization,
+                                       DataType::FLOAT,
+                                       DataType::FLOAT,
+                                       DataType::FLOAT);
+    decomposer = std::make_shared<AdamDecompose>();
+    break;
+  }
+  case TestOptimizer::Lamb: {
+    optimizer  = std::make_shared<Adam>(0.1,
+                                       0.1,
+                                       0.99,
+                                       0.9,
+                                       1e-6,
+                                       1.0,
+                                       AdamMode::Lamb,
+                                       WeightDecayMode::L2Regularization,
+                                       DataType::FLOAT,
+                                       DataType::FLOAT,
+                                       DataType::FLOAT);
+    decomposer = std::make_shared<AdamDecompose>();
+    break;
+  }
+  case TestOptimizer::N:
+  default:
+    throw internal_error("Unsupported TestOptimizer {}",
+                         static_cast<unsigned>(opt));
+  }
+
+  ir.setOptimizer(*optimizer);
+
+  ir.updateVertices();
+
+  ir.constructBackwards();
+
+  ir.applyPreAliasPattern(decomposer.get(), graph);
+
+  ir.updateVertices();
+
+  df = DataFlow(batchesPerStep);
   ir.setDataFlow(df);
 }

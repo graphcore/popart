@@ -6,9 +6,18 @@ import test_util as tu
 import pprint
 import importlib
 import os
+import sys
 import torch
 import shutil
 import json
+import pathlib
+from pathlib import Path
+import argparse
+import subprocess
+import popdist
+import popdist.popart
+import onnx
+from onnx import numpy_helper
 
 PARTITION_NAME = 'partition0'
 
@@ -319,42 +328,285 @@ def test_distributed_hierarchical_replicated_weight_update():
         assert np.allclose(anchors[k], torch_ground_truth[k].detach().numpy())
 
 
-@pytest.mark.parametrize(
-    "tensor", ["activation", "weight", "optimizerState", "accumulator"])
-def test_replicated_tensor_sharding_error(tensor):
+def replicated_tensor_sharding_core():
+    parser = argparse.ArgumentParser(description="Parse launch parameters.")
+    parser.add_argument("--tensors", nargs="*")
+    parser.add_argument("--tmpdir", nargs="?")
+    parser.add_argument("--filename", nargs="?")
+    parser.add_argument("--compute_batch", nargs="?")
+    args = parser.parse_args(sys.argv[2:])
+
+    ipus_per_replica = 1
+
+    batches_per_step = 10
+    accumulation_factor = 4
+    compute_batch = int(args.compute_batch)
+    hidden_size = 4
+    reduction = popart.ReductionType.Sum
+
+    deviceInfo = popdist.popart.getDevice(ipus_per_replica)
+    num_local_replicas = popdist.getNumLocalReplicas()
+    num_total_replicas = popdist.getNumTotalReplicas()
+
     builder = popart.Builder()
 
-    inShape = [2, 2]
-    inInfo = popart.TensorInfo("FLOAT", inShape)
+    np.random.seed(12321)
+    weight_data = np.random.rand(hidden_size, hidden_size).astype(np.float32)
 
-    i1 = builder.addInputTensor(inInfo)
-    w1 = builder.addInitializedInputTensor(np.zeros(inShape, dtype=np.float32),
-                                           "w1")
-    o = builder.aiOnnx.add([i1, w1])
-    l1 = builder.aiGraphcore.l1loss([o], 0.0)
+    input_data = []
+    label_data = []
+
+    for i in range(
+            0, batches_per_step * num_local_replicas * accumulation_factor *
+            compute_batch):
+        np.random.seed(popdist.getInstanceIndex() +
+                       i * popdist.getNumInstances())
+        input_data += [np.random.rand(hidden_size).astype(np.float32)]
+        label_data += [np.random.randint(0, hidden_size, size=1)]
+
+    input_data = np.concatenate(input_data)
+    label_data = np.concatenate(label_data)
+
+    builder = popart.Builder()
+
+    d0 = builder.addInputTensor(
+        popart.TensorInfo("FLOAT", (compute_batch, hidden_size)), "d0")
+    l0 = builder.addInputTensor(popart.TensorInfo("UINT32", (compute_batch, )),
+                                "l0")
+
+    data = {}
+
+    data[d0] = input_data.reshape((batches_per_step, num_local_replicas,
+                                   accumulation_factor, compute_batch, -1))
+
+    w0 = builder.addInitializedInputTensor(weight_data, 'weight0')
+    x = builder.aiOnnx.matmul([d0, w0])
+
+    x = builder.aiOnnx.softmax([x])
+
+    data[l0] = label_data.reshape((batches_per_step,
+                    num_local_replicas,
+                    accumulation_factor,
+                    compute_batch,
+                    -1))\
+                .astype(np.uint32)
+    loss = builder.aiGraphcore.nllloss([x, l0],
+                                       reduction=reduction,
+                                       debugContext='loss')
 
     proto = builder.getModelProto()
 
-    dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("All")})
+    dataFlow = popart.DataFlow(
+        batches_per_step,
+        {av: popart.AnchorReturnType("ALL")
+         for av in [x, loss]})
 
     opts = popart.SessionOptions()
-    userOption = tensor + "TensorLocationSettings"
-    locationSetting = getattr(opts, userOption)
-    locationSetting.location.replicatedTensorSharding = popart.ReplicatedTensorSharding.On
-    setattr(opts, userOption, locationSetting)
-    opts.enableDistributedReplicatedGraphs = True
-    opts.globalReplicaOffset = 0
-    opts.globalReplicationFactor = 2
+    if accumulation_factor > 1:
+        opts.enableGradientAccumulation = True
+        opts.accumulationFactor = accumulation_factor
+    opts.explicitRecomputation = True
+    opts.enableExplicitMainLoops = True
+    opts.useHostCopyOps = True
+    # Let popdist handle distributed settings, such as:
+    # opts.enableDistributedReplicatedGraphs
+    # opts.globalReplicaOffset
+    # opts.globalReplicationFactor
+    popdist.popart.configureSessionOptions(opts)
 
-    with pytest.raises(popart.popart_exception) as e_info:
-        session = popart.TrainingSession(fnModel=proto,
-                                         dataFlow=dataFlow,
-                                         deviceInfo=tu.create_test_device(),
-                                         userOptions=opts,
-                                         loss=l1,
-                                         optimizer=popart.ConstSGD(0.01))
+    for tensor in ["weight", "optimizerState", "accumulator"]:
+        userOption = tensor + "TensorLocationSettings"
+        print(
+            f"Setting RTS: {userOption}, num_total_replicas: {num_total_replicas} num_local_replicas: {num_local_replicas}"
+        )
+        locationSetting = getattr(opts, userOption)
+        locationSetting.minElementsForOffChip = 0
+        locationSetting.minElementsForReplicatedTensorSharding = num_total_replicas
+        if tensor in args.tensors:
+            locationSetting.location.replicatedTensorSharding = popart.ReplicatedTensorSharding.On
+        if num_total_replicas > num_local_replicas:
+            locationSetting.location.shardingDomain = popart.CommGroup(
+                popart.CommGroupType.Consecutive, num_local_replicas)
+        setattr(opts, userOption, locationSetting)
 
-    assert (
-        e_info.value.args[0] ==
-        "Distributed Replicated graphs are not supported with Replicated Tensor Sharding."
-    )
+    optimizer = popart.Adam(
+        {
+            "defaultLearningRate": (0.01, False),
+            "defaultBeta1": (0.9, False),
+            "defaultBeta2": (0.999, False),
+            "defaultEps": (1e-06, False),
+            "defaultWeightDecay": (0.1, False),
+            "lossScaling": (10, False),
+        },
+        weight_decay_mode=popart.WeightDecayMode.Decay,
+        mode=popart.AdamMode.LambNoBias)
+
+    session = popart.TrainingSession(fnModel=proto,
+                                     dataFlow=dataFlow,
+                                     deviceInfo=deviceInfo,
+                                     userOptions=opts,
+                                     loss=loss,
+                                     optimizer=optimizer)
+
+    session.prepareDevice()
+
+    session.weightsFromHost()
+
+    anchors = session.initAnchorArrays()
+
+    stepio = popart.PyStepIO(data, anchors)
+
+    session.run(stepio)
+
+    tmp_path = Path(args.tmpdir)
+    tmp_path.mkdir(parents=True, exist_ok=True)
+    file_path = str(tmp_path / args.filename)
+    session.modelToHost(file_path)
+    post_proto = onnx.load(file_path)
+
+
+rts_configs = [
+    [
+        # Baseline
+        {
+            "filename": "rts0.onnx",
+            "num_replicas": 8,
+            "num_instances": 1,
+            "compute_batch": 6,
+        },
+        # 2 ILD/GCD
+        {
+            "filename": "rts1.onnx",
+            "num_replicas": 16,
+            "num_instances": 2,
+            "compute_batch": 3,
+        }
+    ],
+    [
+        # Baseline
+        {
+            "filename": "rts0.onnx",
+            "num_replicas": 16,
+            "num_instances": 1,
+            "compute_batch": 6,
+            "partition": "partition0",
+            "hosts": ["ipu.host0", "ipu.host1"]
+        },
+        # 2 ILD/GCD
+        {
+            "filename": "rts1.onnx",
+            "num_replicas": 32,
+            "num_instances": 2,
+            "compute_batch": 3,
+            "partition": "partition0",
+            "hosts": ["ipu.host0", "ipu.host1"]
+        }
+    ]
+]
+
+
+# This is a replicated tensor sharding test in which we run a hierarchical reduction where
+# weights and optimizer states are scattered within the GCD/ILD (contiguous) and the scattered gradients all-reduced across
+# GCD/ILD (orthogonal)
+@pytest.mark.parametrize("configs", rts_configs)
+@pytest.mark.parametrize(
+    "tensors", [[], ["weight", "optimizerState"], ["optimizerState"]])
+def test_replicated_tensor_sharding(tmpdir, configs, tensors):
+    rtol = 1.e-3
+    atol = 1.e-5
+
+    debug = True
+    reset = True
+    remove = False
+
+    for config in configs:
+        test_path = pathlib.Path(__file__).resolve()
+
+        # Set to the partition name available
+        partition = None
+        if "partition" in config:
+            partition = config["partition"]
+
+        # Configure if testing multi-host instances
+        hosts = []
+        if "hosts" in config:
+            hosts = config["hosts"]
+        if (len(hosts) > config["num_instances"]):
+            hosts = hosts[0:config["num_instances"]]
+
+        num_replicas = config["num_replicas"]
+        ipus_per_replica = 1
+        num_instances = config["num_instances"]
+
+        command = ["poprun"]
+
+        if debug:
+            command.append("-vv")
+
+        if len(hosts) > 1:
+            command.append("--host")
+            command.append(",".join([str(host) for host in hosts]))
+
+        command.append("--num-replicas")
+        command.append(str(num_replicas))
+        command.append("--num-instances")
+        command.append(str(num_instances))
+        command.append("--ipus-per-replica")
+        command.append(str(ipus_per_replica))
+
+        if not debug:
+            command.append("--only-output-from-instance")
+            command.append(str(0))
+
+        if partition is not None:
+            command.append("--vipu-partition")
+            command.append(partition)
+
+        command.append("--reset-partition")
+        command.append("yes" if reset else "no")
+        command.append("--update-partition")
+        command.append("yes")
+        command.append("--remove-partition")
+        command.append("yes" if remove else "no")
+
+        command.append("--mpi-global-args=--allow-run-as-root")
+        command.append(
+            "--mpi-local-args=-x LD_LIBRARY_PATH -x PYTHONPATH -x PATH")
+        command.append("python3")
+        command.append(test_path)
+        command.append("replicated_tensor_sharding_core")
+        command.append("--tensor")
+        for t in tensors:
+            command.append(t)
+        command.append("--tmpdir")
+        command.append(tmpdir)
+        command.append("--filename")
+        command.append(config["filename"])
+        command.append("--compute_batch")
+        command.append(str(config["compute_batch"]))
+
+        out = subprocess.run(command)
+
+    print(f"Testing {len(configs)} configurations")
+
+    tmp_path = Path(tmpdir)
+
+    gt_onnx = onnx.load(str(tmp_path / configs[0]["filename"]))
+
+    for i in range(1, len(configs)):
+        print(f"Testing run {i}: {configs[i]}")
+
+        val_onnx = onnx.load(str(tmp_path / configs[i]["filename"]))
+        for j in range(len(gt_onnx.graph.initializer)):
+            print(f"Checking initializer {j}")
+            gt = gt_onnx.graph.initializer[j]
+            gt = numpy_helper.to_array(gt)
+            val = val_onnx.graph.initializer[j]
+            val = numpy_helper.to_array(val)
+            print("Max difference:", np.max(np.abs(val - gt)))
+            assert np.allclose(gt, val, rtol=rtol, atol=atol, equal_nan=False)
+
+
+# Distributed test fixture entry point
+if __name__ == '__main__':
+    globals()[sys.argv[1]]()

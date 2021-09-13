@@ -27,6 +27,7 @@ def get_ir(model_file_name='model.onnx',
            batch_size=1,
            num_iterations=1,
            num_replicas=1,
+           accumulation_factor=2,
            optimizer=popart.SGD({"defaultLearningRate": (0.5, False)})):
 
     np.random.seed(10911)
@@ -69,6 +70,9 @@ def get_ir(model_file_name='model.onnx',
     opts.enableOutlining = enable_outlining
     opts.enableReplicatedGraphs = True if num_replicas > 1 else False
     opts.replicatedGraphCount = num_replicas
+    if accumulation_factor > 1:
+        opts.enableGradientAccumulation = True
+        opts.accumulationFactor = accumulation_factor
 
     if activation_tensor_location_settings is not None:
         opts.activationTensorLocationSettings = activation_tensor_location_settings
@@ -103,8 +107,8 @@ def get_ir(model_file_name='model.onnx',
     anchors = session.initAnchorArrays()
 
     for i in range(num_iterations):
-        ip_data = np.random.rand(num_replicas, batch_size, dsize,
-                                 dsize).astype(np.float32)
+        ip_data = np.random.rand(num_replicas, accumulation_factor, batch_size,
+                                 dsize, dsize).astype(np.float32)
         stepio = popart.PyStepIO({ip: ip_data}, anchors)
         session.run(stepio)
 

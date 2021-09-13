@@ -27,8 +27,9 @@ public:
 
   // Lamb + replicated tensor sharding:
   // Distributed L2 norm of the weight and updater tensor
-  void configureForReplicatedTensorSharding(
-      ReplicatedTensorShardingIndices indices) final;
+  void
+  configureForReplicatedTensorSharding(ReplicatedTensorShardingIndices indices,
+                                       CommGroup shardingDomain) final;
 };
 
 } // namespace popart

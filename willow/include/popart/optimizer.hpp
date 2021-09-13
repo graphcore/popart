@@ -39,6 +39,8 @@ enum class OptimizerReductionType {
   AccumReduce
 };
 
+std::ostream &operator<<(std::ostream &os, const OptimizerReductionType &ort);
+
 /***
  * Enum type for different types of weight decay.
  */
@@ -48,6 +50,8 @@ enum class WeightDecayMode {
   /// L2 regularization (e.g. PyTorch-like Adam)
   L2Regularization
 };
+
+std::ostream &operator<<(std::ostream &os, const WeightDecayMode &wdm);
 
 std::map<std::string, OptimizerValue>
 getOptMap(const std::map<std::string, std::pair<float, bool>> &m);

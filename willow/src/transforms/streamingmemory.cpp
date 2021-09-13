@@ -100,13 +100,12 @@ void StreamingMemory::verifyExecutionPhases(Graph &graph) const {
 
 bool StreamingMemory::apply(Graph &graph) const {
 
-  auto &ir                    = graph.getIr();
-  auto &sessionOptions        = ir.getSessionOptions();
-  const int replicationFactor = sessionOptions.enableReplicatedGraphs
-                                    ? sessionOptions.replicatedGraphCount
-                                    : 1;
-  const int total_num_ipus = ir.getDeviceInfo()->getNumIpus();
-  const int num_ipus       = total_num_ipus / replicationFactor;
+  auto &ir                         = graph.getIr();
+  auto &sessionOptions             = ir.getSessionOptions();
+  const int localReplicationFactor = sessionOptions.replicatedGraphCount;
+  const int replicationFactor = sessionOptions.getGlobalReplicationFactor();
+  const int total_num_ipus    = ir.getDeviceInfo()->getNumIpus();
+  const int num_ipus          = total_num_ipus / localReplicationFactor;
 
   const auto num_stages =
       sessionOptions.virtualGraphMode == VirtualGraphMode::ExecutionPhases

@@ -133,7 +133,17 @@ std::shared_ptr<DeviceInfo> DeviceManager::createOfflineIPUDevice(
       return device;
     }
   }
-  return nullptr;
+  std::vector<std::string> opts;
+  opts.reserve(options.size());
+  for (auto opt : options) {
+    std::stringstream ss;
+    ss << opt.first << ": " << opt.second;
+    opts.push_back(ss.str());
+  }
+  throw error("Could not acquire OfflineIpu with options [{}] from any of {} "
+              "providers.",
+              logging::join(opts.begin(), opts.end(), ","),
+              providers.size());
 }
 
 std::shared_ptr<DeviceInfo> DeviceManager::acquireAvailableDevice(

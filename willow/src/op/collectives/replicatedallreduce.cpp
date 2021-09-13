@@ -46,8 +46,6 @@ void ReplicatedAllReduceOp::appendOutlineAttributes(
   os.appendAttribute("op", static_cast<int>(op));
 }
 
-CommGroup ReplicatedAllReduceOp::getGCLCommGroup() const { return group; }
-
 ReplicatedAllReduceInplaceOp::ReplicatedAllReduceInplaceOp(
     const OperatorIdentifier &_opid,
     CollectiveOperator op_,

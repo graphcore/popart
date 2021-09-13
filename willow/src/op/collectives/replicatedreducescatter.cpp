@@ -31,15 +31,27 @@ void ReplicatedReduceScatterOp::setup() {
 
   const auto &inInfo_ = inInfo(getInIndex());
 
-  const auto replicationFactor =
-      getIr().getSessionOptions().replicatedGraphCount;
-  int64_t nelms = inInfo_.nelms();
+  auto globalReplicationFactor =
+      getIr().getSessionOptions().getGlobalReplicationFactor();
+  auto replicationFactor = globalReplicationFactor;
+  int64_t nelms          = inInfo_.nelms();
+
+  if (getGCLCommGroup().replicaGroupSize > 0 &&
+      (getGCLCommGroup().type == CommGroupType::Consecutive ||
+       getGCLCommGroup().type == CommGroupType::Orthogonal)) {
+    replicationFactor = getGCLCommGroup().replicaGroupSize;
+  }
 
   // ceil(numElements / replicationFactor)
   auto outElms = (nelms + replicationFactor - 1) / replicationFactor;
 
   outInfo(getOutIndex()) =
       TensorInfo(inInfo_.dataType(), {outElms}, inInfo_.shape());
+
+  logging::op::trace("[ReplicatedReduceScatterOp] Global replication factor: "
+                     "{}, sharding factor: {}",
+                     globalReplicationFactor,
+                     replicationFactor);
 }
 
 void ReplicatedReduceScatterOp::appendOutlineAttributes(

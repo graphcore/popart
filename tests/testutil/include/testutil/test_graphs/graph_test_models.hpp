@@ -5,6 +5,7 @@
 #include <popart/dataflow.hpp>
 #include <popart/ir.hpp>
 #include <popart/op/exchange/exchange.hpp>
+#include <popart/sessionoptions.hpp>
 
 class GraphTestModel {
 public:
@@ -39,6 +40,28 @@ public:
   GraphTestModel3(popart::ExchangeStrategy strategyA,
                   popart::ExchangeStrategy strategyB,
                   popart::ExchangeStrategy strategyC);
+};
+
+enum class TestOptimizer {
+  SGD0 = 0,
+  SGD1,
+  SGD2,
+  Adam,
+  Lamb,
+  N,
+};
+
+class OptimizerTestModel : public GraphTestModel {
+public:
+  /**
+   * Construct simple test graph updating two weights with an optimizer
+   * \param TestOptimizer The optimizer to insert into the graph
+   * \param accumulationFactor Gradient accumulation factor
+   * \param options Options for the session
+   */
+  OptimizerTestModel(TestOptimizer opt,
+                     unsigned accumulationFactor,
+                     popart::SessionOptions options);
 };
 
 #endif

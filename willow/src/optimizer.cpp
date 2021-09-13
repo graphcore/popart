@@ -155,6 +155,44 @@ size_t Optimizer::hash() const {
   return seed;
 }
 
+std::ostream &operator<<(std::ostream &os, const OptimizerReductionType &ort) {
+  switch (ort) {
+  case OptimizerReductionType::None:
+    os << "None";
+    break;
+  case OptimizerReductionType::GradReduce:
+    os << "GradReduce";
+    break;
+  case OptimizerReductionType::AcclReduce:
+    os << "AcclReduce";
+    break;
+  case OptimizerReductionType::AccumReduce:
+    os << "AccumReduce";
+    break;
+  default: {
+    throw error("Unexpected value for OptimizerReductionType {}",
+                static_cast<int>(ort));
+  }
+  }
+  return os;
+}
+
+std::ostream &operator<<(std::ostream &os, const WeightDecayMode &wdm) {
+  switch (wdm) {
+  case WeightDecayMode::Decay:
+    os << "Decay";
+    break;
+  case WeightDecayMode::L2Regularization:
+    os << "L2Regularization";
+    break;
+  default: {
+    throw error("Unexpected value for WeightDecayMode {}",
+                static_cast<int>(wdm));
+  }
+  }
+  return os;
+}
+
 } // namespace popart
 
 namespace std {

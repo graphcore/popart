@@ -376,7 +376,8 @@ protected:
                               const TensorStreamingContext context,
                               const TensorId &loadedTensorId,
                               TensorId &gatheredTensorId,
-                              const TensorId &referenceTensorId);
+                              const TensorId &referenceTensorId,
+                              const CommGroup &group);
 
   // Helper function to insert a ReplicatedReduceScatter.
   ReplicatedReduceScatterOp *
@@ -385,7 +386,8 @@ protected:
                                   const TensorId &inTensorId,
                                   const TensorId &outTensorId,
                                   const TensorId &weightTensorId,
-                                  const CollectiveOperator collectiveOp);
+                                  const CollectiveOperator &collectiveOp,
+                                  const CommGroup &group);
 
   // Helper function to insert a CopyVarUpdate.
   CopyVarUpdateOp *insertCopyVarUpdateOp(VarUpdateOp *op,

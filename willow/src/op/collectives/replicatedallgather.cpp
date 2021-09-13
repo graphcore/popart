@@ -27,8 +27,16 @@ std::unique_ptr<Op> ReplicatedAllGatherOp::clone() const {
 }
 
 void ReplicatedAllGatherOp::setup() {
-  const auto replicationFactor =
-      getIr().getSessionOptions().replicatedGraphCount;
+  auto globalReplicationFactor =
+      getIr().getSessionOptions().getGlobalReplicationFactor();
+  auto replicationFactor = globalReplicationFactor;
+
+  if (getGCLCommGroup().replicaGroupSize > 0 &&
+      (getGCLCommGroup().type == CommGroupType::Consecutive ||
+       getGCLCommGroup().type == CommGroupType::Orthogonal)) {
+    replicationFactor = getGCLCommGroup().replicaGroupSize;
+  }
+
   DataType type =
       inTensor(ReplicatedAllGatherOp::getInIndex())->info.dataType();
   Shape shape = gatheredOutInfo.shape();
@@ -39,6 +47,11 @@ void ReplicatedAllGatherOp::setup() {
   }
   gatheredOutInfo.set(type, shape);
   outInfo(getOutIndex()) = gatheredOutInfo;
+
+  logging::op::trace("[ReplicatedAllGatherOp] Global replication factor: {}, "
+                     "sharding factor: {}",
+                     globalReplicationFactor,
+                     replicationFactor);
 }
 
 static OpDefinition::DataTypes T = {DataType::FLOAT,

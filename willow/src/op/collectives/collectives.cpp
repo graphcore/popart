@@ -60,32 +60,6 @@ std::ostream &operator<<(std::ostream &os, const CollectiveOperator &op) {
   return os;
 }
 
-CommGroup::CommGroup() = default;
-
-std::ostream &operator<<(std::ostream &os, CommGroupType commType) {
-  switch (commType) {
-  case CommGroupType::All:
-    os << "All";
-    break;
-  case CommGroupType::Consecutive:
-    os << "Consecutive";
-    break;
-  case CommGroupType::Orthogonal:
-    os << "Orthogonal";
-    break;
-  default:
-    throw error("Unsupported CommGroupType {}",
-                std::underlying_type_t<CommGroupType>(commType));
-  }
-  return os;
-}
-
-std::ostream &operator<<(std::ostream &os, const CommGroup &group) {
-  os << "CommGroup(type=" << group.type
-     << ", replicaGroupSize=" << group.replicaGroupSize << ")";
-  return os;
-}
-
 CommGroup extractCommGroupFromVector(const std::vector<int64_t> &vec) {
   using IntegerCommType = std::underlying_type_t<CommGroupType>;
   static const std::array<IntegerCommType, 3> knownTypeValues{
@@ -124,22 +98,21 @@ CommGroup extractCommGroupFromAttrs(const Attributes &attrs) {
   return extractCommGroupFromVector(commGroupInfo);
 }
 
-::gcl::CommGroup toGCLCommGroup(const ::popart::CommGroup &group) {
-  ::gcl::CommGroupType type;
+CommGroup getComplementCommGroup(const Ir &ir, CommGroup group) {
+  auto numReplicas = ir.getSessionOptions().getGlobalReplicationFactor();
   switch (group.type) {
-  case ::popart::CommGroupType::All:
-    type = ::gcl::CommGroupType::ALL;
-    break;
-  case ::popart::CommGroupType::Consecutive:
-    type = ::gcl::CommGroupType::CONSECUTIVE;
-    break;
-  case ::popart::CommGroupType::Orthogonal:
-    type = ::gcl::CommGroupType::ORTHOGONAL;
-    break;
+  case CommGroupType::Consecutive:
+    return CommGroup(CommGroupType::Orthogonal,
+                     numReplicas / group.replicaGroupSize);
+  case CommGroupType::Orthogonal:
+    return CommGroup(CommGroupType::Consecutive,
+                     numReplicas / group.replicaGroupSize);
+  case CommGroupType::None:
+    return CommGroup(CommGroupType::All, 0);
+  case CommGroupType::All:
   default:
-    throw error("Cannot convert unknown CommGroup type");
+    return CommGroup(CommGroupType::None, 0);
   }
-  return {type, group.replicaGroupSize};
 }
 
 } // namespace popart

@@ -539,10 +539,6 @@ private:
   // Get all tensorIds in all graphs
   std::set<TensorId> getAllTensorIds() const;
 
-  // modify the Ir using with pattern matching
-  // Returns true if a change to the Ir was made.
-  bool applyPreAliasPattern(const PreAliasPattern *, Graph &);
-
   // gradients are named automatically. To prevent them
   // getting names already taken by non-gradient tensors,
   // we check that a reserved pattern is not present.
@@ -724,6 +720,10 @@ public:
    * \return A map between the OpIds in the original and new graphs
    * */
   std::map<OpId, OpId> cloneGraph(GraphId originalGraphId, GraphId newGraphId);
+
+  // modify the Ir using with pattern matching
+  // Returns true if a change to the Ir was made.
+  bool applyPreAliasPattern(const PreAliasPattern *, Graph &);
 
 private:
   uint64_t intermediate_tensor_counter{0};

@@ -6920,6 +6920,8 @@ static const char *__doc_popart_TensorLocation_operator_ne = R"doc()doc";
 static const char *__doc_popart_TensorLocation_replicatedTensorSharding =
     R"doc(Whether to apply replicated tensor sharding (RTS) or not.)doc";
 
+static const char *__doc_popart_TensorLocation_shardingDomain = R"doc()doc";
+
 static const char *__doc_popart_TensorLocation_serialize = R"doc()doc";
 
 static const char *__doc_popart_TensorLocation_storage =

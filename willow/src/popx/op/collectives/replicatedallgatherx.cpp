@@ -29,6 +29,7 @@ void ReplicatedAllGatherOpx::grow(poplar::program::Sequence &prog) const {
       graph().getPoplarGraph(),
       getInTensor(ReplicatedAllGatherOp::getInIndex()).getPoplarTensor(),
       prog,
+      toGCLCommGroup(op.getGCLCommGroup()),
       debugContext("replicatedAllGather"),
       allGatherOptions);
   if (hasInput(ReplicatedAllGatherOp::getCollectiveLinkedIndex())) {

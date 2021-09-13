@@ -65,6 +65,8 @@ add_popart_py_unit_test(cycle_count_test cycle_count_test.py VARIANTS Hw)
 add_popart_py_unit_test(decompose_gradient_summation_test decompose_gradient_summation_test.py VARIANTS IpuModel)
 add_popart_py_unit_test(device_test device_test.py VARIANTS Hw)
 add_popart_py_unit_test(dim_param_test dim_param_test.py)
+# TODO T45747 Requires 2xPOD16
+#add_popart_py_unit_test(distributed_replicated_graph_test distributed_replicated_graph_test.py VARIANTS Hw)
 add_popart_py_unit_test(doc_test doc_test.py)
 add_popart_py_unit_test(dont_inplace_test dont_inplace_test.py)
 add_popart_py_unit_test(dropout_replicated_pipeline dropout_replicated_pipeline.py VARIANTS Hw)

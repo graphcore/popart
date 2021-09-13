@@ -693,7 +693,8 @@ public:
   // Configure the operation for replicated tensor sharding at the specific
   // indices
   virtual void
-  configureForReplicatedTensorSharding(ReplicatedTensorShardingIndices indices);
+  configureForReplicatedTensorSharding(ReplicatedTensorShardingIndices indices,
+                                       CommGroup shardingDomain);
 
   // T41400 is to remove all other versions of `transferBaseProperties` and
   // replace with this.
