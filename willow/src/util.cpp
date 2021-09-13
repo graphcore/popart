@@ -347,4 +347,18 @@ TensorId getBaseTensorId(const TensorId &t) {
   return t.substr(0, i - 2);
 }
 
+std::vector<std::string> splitString(std::string s, std::string delimiter) {
+  std::vector<std::string> result;
+
+  size_t pos = 0;
+  while ((pos = s.find(delimiter)) != std::string::npos) {
+    result.push_back(s.substr(0, pos));
+    s.erase(0, pos + delimiter.length());
+  }
+
+  result.push_back(s);
+
+  return result;
+}
+
 } // namespace popart

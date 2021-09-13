@@ -53,6 +53,8 @@ add_popart_cpp_unit_test(unittest_vectorandset unittest_vectorandset.cpp)
 add_popart_cpp_unit_test(unittest_utils unittest_utils.cpp TEST_UTILS trompeloeil)
 add_popart_cpp_unit_test(unittest_Session_createFromIr session_createFromIr.cpp)
 
+add_popart_cpp_unit_test(unittest_parsedtensorid unittest_parsedtensorid.cpp)
+
 add_popart_cpp_unit_test(unittest_pattern_optimizerdecompose patterns/optimizerdecompose.cpp)
 add_popart_cpp_unit_test(unittest_pattern_lambserialisedweight patterns/lambserialisedweight.cpp)
 add_popart_cpp_unit_test(unittest_pattern_sgd2decompose patterns/sgd2decompose.cpp TEST_UTILS test-graphs-test-util ir-query-test-util)

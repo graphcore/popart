@@ -2,6 +2,8 @@
 #define BOOST_TEST_MODULE UnittestUtils
 
 #include <sstream>
+#include <string>
+#include <vector>
 
 #include <boost/test/unit_test.hpp>
 
@@ -35,4 +37,30 @@ BOOST_AUTO_TEST_CASE(unittest_utils_streamoperator_tuple) {
   // Test operator<< for std::tuples.
   BOOST_TEST("(5, test_value)" == toString(std::make_tuple(5, "test_value")));
   BOOST_TEST("(-1, j, 3)" == toString(std::make_tuple(-1, 'j', 3)));
+}
+
+BOOST_AUTO_TEST_CASE(unittest_utils_split_string) {
+  // Tests that splitting of string is working.
+  std::string test = "Never give in - never, never, never, never, in nothing "
+                     "great or small, large or petty, never give in except to "
+                     "convictions of honour and good sense";
+  std::string delimiter = "never";
+  std::vector<std::string> expected{
+      "Never give in - ",
+      ", ",
+      ", ",
+      ", ",
+      ", in nothing great or small, large or petty, ",
+      " give in except to convictions of honour and good sense"};
+
+  auto result = popart::splitString(test, delimiter);
+  BOOST_CHECK_EQUAL_COLLECTIONS(
+      result.begin(), result.end(), expected.begin(), expected.end());
+
+  test      = "Without delimiter";
+  delimiter = "/";
+  expected  = {test};
+  result    = popart::splitString(test, delimiter);
+  BOOST_CHECK_EQUAL_COLLECTIONS(
+      result.begin(), result.end(), expected.begin(), expected.end());
 }

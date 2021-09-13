@@ -341,6 +341,13 @@ void validateReduceAxes(const std::vector<int64_t> &axes,
                         int64_t inShapeSize,
                         const std::string &message);
 
+/* Split a string by delimeter
+ * \param s The string to split
+ * \param delimiter the delimiter to split the string by
+ * \returns Vector of strings separated by the delimiter
+ */
+std::vector<std::string> splitString(std::string s, std::string delimiter);
+
 } // namespace popart
 
 #endif
