@@ -61,6 +61,7 @@ public:
   // the output of an Opm)
   void addActGrad(TensorId, const DebugContext &dc = {});
   std::vector<TensorId> getIds(TensorType) const;
+  std::vector<Tensor *> getAll() const;
   std::vector<Tensor *> getOfType(TensorType) const;
   std::vector<Tensor *> getOfType(const std::vector<TensorType> &) const;
   std::vector<TensorId> getAllTensorIds() const;

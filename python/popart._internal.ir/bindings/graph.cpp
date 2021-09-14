@@ -53,6 +53,16 @@ void bindGraph(py::module &m) {
           py::arg("debugContext") = std::string())
       .def("addStream", &Graph::addStream)
       .def("getTensor", &Graph::getTensor, py::return_value_policy::reference)
+      .def(
+          "getTensors",
+          [](Graph &self) { return self.getTensors().getAll(); },
+          py::return_value_policy::reference)
+      .def(
+          "getTensorsOfType",
+          [](Graph &self, TensorType tensor_type) {
+            return self.getTensors().getOfType(tensor_type);
+          },
+          py::return_value_policy::reference)
       .def("getInputIds",
            &Graph::getInputIds,
            py::return_value_policy::reference)
@@ -89,45 +99,6 @@ void bindGraph(py::module &m) {
       .def("getScope", &Graph::getScope)
       .def_readonly("id", &Graph::id)
       .def("getGraphString", &Graph::getGraphString)
-      .def(
-          "addActGrad",
-          [](Graph &self, TensorId &name, DebugContext &dc) {
-            self.getTensors().addActGrad(name, dc);
-          },
-          py::arg("tensorId"),
-          py::arg("debugContext") = std::string())
-      .def(
-          "addVarInit",
-          [](Graph &self,
-             const TensorId &tid,
-             const TensorInfo &tinfo,
-             py::array data,
-             const DebugContext &dc) {
-            data = makeContiguous(data);
-            self.getTensors().addVarInit(tid, tinfo, data.request().ptr, dc);
-          },
-          py::arg("tensorId"),
-          py::arg("tensorInfo"),
-          py::arg("data"),
-          py::arg("debugContext") = std::string())
-      .def(
-          "addConstInit",
-          [](Graph &self,
-             const TensorId &tid,
-             const TensorInfo &tinfo,
-             py::array data,
-             const DebugContext &dc) {
-            data = makeContiguous(data);
-            self.getTensors().addConstInit(tid, tinfo, data.request().ptr, dc);
-          },
-          py::arg("tensorId"),
-          py::arg("tensorInfo"),
-          py::arg("data"),
-          py::arg("debugContext") = std::string())
-      .def("getTensor",
-           [](Graph &self, const TensorId &name) {
-             return self.getTensors().get(name);
-           })
       .def("getOpIds", &Graph::getOpIds)
       .def("__contains__", [](Graph &self, const TensorId &name) {
         return self.getTensors().contains(name);

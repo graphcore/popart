@@ -37,7 +37,12 @@ void bindIr(py::module &m) {
       .def("applyTransform", &popart::Ir::applyTransform)
       .def("setDeviceInfo", &Ir::setDeviceInfo)
       .def("logIr", &Ir::logIr)
-      .def("createIntermediateTensorId", &Ir::createIntermediateTensorId);
+      .def("createIntermediateTensorId", &Ir::createIntermediateTensorId)
+      .def("serializeToJSON", [](Ir &self) {
+        std::stringstream ss;
+        self.serialise(Ir::SerialiseFormat::JSON, ss);
+        return ss.str();
+      });
 }
 
 } // namespace ir

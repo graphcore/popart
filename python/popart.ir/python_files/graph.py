@@ -1,10 +1,10 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 """Definition of a class that represents graphs in the PopART IR."""
-
-from collections import Counter
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Any, Optional, Tuple
 
 import popart._internal.ir as _ir
+
+from popart.ir.tensor import Tensor, Variable, Constant
 from popart.ir.globals import pop_current_graph, push_current_graph
 
 if TYPE_CHECKING:
@@ -87,6 +87,28 @@ class Graph:
         if _id in self._pb_graph:
             _id = self._ir._pb_ir.createIntermediateTensorId(_id)
         return _id
+
+    def __contains__(self, value: Any) -> bool:
+        if isinstance(value, Tensor):
+            return value.id in self._pb_graph
+        return False
+
+    def get_tensors(self) -> Tuple[Tensor, ...]:
+        """Return all Tensors in the Graph"""
+        return tuple(
+            Tensor._from_pb_tensor(t) for t in self._pb_graph.getTensors())
+
+    def get_variables(self) -> Tuple[Variable, ...]:
+        """Return all Variable Tensors in the Graph"""
+        return tuple(
+            Variable._from_pb_tensor(t)
+            for t in self._pb_graph.getTensorsOfType(_ir.TensorType.Variable))
+
+    def get_constants(self) -> Tuple[Constant, ...]:
+        """Return all Constant Tensors in the Graph"""
+        return tuple(
+            Constant._from_pb_tensor(t)
+            for t in self._pb_graph.getTensorsOfType(_ir.TensorType.Const))
 
     def __enter__(self):
         push_current_graph(self)

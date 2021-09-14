@@ -61,6 +61,11 @@ class Tensor:
         else:
             return constant(other, self.dtype)
 
+    def __add__(self, other: Any) -> 'Tensor':
+        """Returns ops.add(self, other)."""
+        import popart.ir.ops as ops
+        return ops.add(self, self._ensure_tensor(other))
+
 
 class Variable(Tensor):
     """Wraps a Tensor in the PopART IR that has TensorType.Variable"""

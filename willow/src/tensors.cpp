@@ -28,6 +28,16 @@ std::vector<TensorId> Tensors::getAllTensorIds() const {
   return allIds;
 }
 
+std::vector<Tensor *> Tensors::getAll() const {
+  std::vector<Tensor *> tensors;
+  for (auto &id_pt : M) {
+    tensors.push_back(id_pt.second.get());
+  }
+  // Sort the vector by id to return a deterministic list.
+  std::sort(tensors.begin(), tensors.end(), PTensorCmp());
+  return tensors;
+}
+
 // remove all Tensors with no producer and no consumers
 void Tensors::removeIsolated(bool retainIoTensors) {
   auto hostLoadTensors = graph.getIr().getHostLoadTensors();
