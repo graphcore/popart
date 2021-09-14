@@ -24,6 +24,7 @@
 #include <popart/transforms/pipeline.hpp>
 #include <popart/transforms/randomsetup.hpp>
 #include <popart/transforms/subgraphoutline.hpp>
+#include <popart/util.hpp>
 #include <popart/vertex.hpp>
 
 #include <popart/graphutils.hpp>
@@ -2088,7 +2089,8 @@ void ExplicitPipelineHelper::createFlushPhase(
         auto newInputTensorId = innerLoopSubgraphClone.removeScope(tensor->id);
 
         auto mapIt = tensorIdsToFlushStage.find(
-            {pStageMin, innerLoopSubgraph.addScope(newInputTensorId)});
+            {pStageMin,
+             addScope(innerLoopSubgraph.getScope(), newInputTensorId)});
         if (mapIt != tensorIdsToFlushStage.end()) {
           // The tensors is an output from the loop op
           newInputTensorId = mapIt->second;

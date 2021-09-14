@@ -17,6 +17,7 @@
 #include <popart/tensornames.hpp>
 #include <popart/tensors.hpp>
 #include <popart/topocons.hpp>
+#include <popart/util.hpp>
 #include <poparttracepoint.hpp>
 
 // Ops required for Graph::getCalledOps
@@ -175,7 +176,7 @@ void Graph::addInput(const TensorId &tensorId, const TensorInfo &tensorInfo) {
 
 TensorId Graph::addInput(const TensorInfo &tinfo) {
   auto tensorId = logging::format("input_{}", graph_inputs.size());
-  auto scopedId = addScope(tensorId);
+  auto scopedId = addScope(getScope(), tensorId);
   addInput(scopedId, tinfo);
   return scopedId;
 }
@@ -311,10 +312,6 @@ Op *Graph::growFromNode(const Node &node) {
 }
 
 Scope Graph::getScope() const { return Scope() / id.str(); }
-
-TensorId Graph::addScope(const TensorId &tensorId) const {
-  return (getScope() / tensorId).str();
-}
 
 TensorId Graph::removeScope(const TensorId &scopedId) const {
 
@@ -742,7 +739,7 @@ void Graph::copyFrom(const Graph &other,
   for (auto &id : other.getTensors().getAllTensorIds()) {
     auto tensor = other.getTensors().get(id);
 
-    auto newId = this->addScope(other.removeScope(id));
+    auto newId = addScope(this->getScope(), other.removeScope(id));
 
     if (!getTensors().contains(newId)) {
       auto tensorClone = tensor->clone(*this);
@@ -784,7 +781,7 @@ void Graph::copyFrom(const Graph &other,
     // add graph inputs and outputs
     for (auto &id : other.getInputIds()) {
       auto unscopedId = other.removeScope(id);
-      auto newId      = this->addScope(unscopedId);
+      auto newId      = addScope(this->getScope(), unscopedId);
       this->markAsInput(newId);
     }
   }
@@ -792,7 +789,7 @@ void Graph::copyFrom(const Graph &other,
   if (copyOutputMarkings == CopyOutputMarkings::Yes) {
     for (auto &id : other.getOutputIds()) {
       auto unscopedId = other.removeScope(id);
-      auto newId      = this->addScope(unscopedId);
+      auto newId      = addScope(this->getScope(), unscopedId);
       this->markAsOutput(newId);
     }
   }

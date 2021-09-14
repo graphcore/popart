@@ -83,7 +83,7 @@ class Graph:
                 The unique id of the tensor.
         """
         name = name if name else 't'
-        _id = self._pb_graph.addScope(name)
+        _id = _ir.addScope(self._pb_graph.getScope(), name)
         if _id in self._pb_graph:
             _id = self._ir._pb_ir.createIntermediateTensorId(_id)
         return _id

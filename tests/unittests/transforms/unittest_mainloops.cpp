@@ -10,6 +10,7 @@
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/transforms/mainloops.hpp>
+#include <popart/util.hpp>
 
 namespace popart {
 
@@ -29,7 +30,7 @@ BOOST_AUTO_TEST_CASE(mainloops_throw_anchor_in_subgraph) {
   float data[] = {1};
 
   TensorId x   = "x";
-  TensorId xSg = sg.addScope("x");
+  TensorId xSg = addScope(sg.getScope(), "x");
   g.getTensors().addVarInit(x, info, static_cast<void *>(&data));
   sg.addInput(xSg, info);
 

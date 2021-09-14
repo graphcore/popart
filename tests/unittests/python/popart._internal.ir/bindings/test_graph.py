@@ -117,8 +117,8 @@ def test_graph_scope_functions():
     g1 = ir.createGraph(g1Id)
 
     # Test addScope
-    assert g1.addScope("tensor1") == "g1/tensor1"
-    assert g1.addScope("foobar") == "g1/foobar"
+    assert _ir.addScope(g1.getScope(), "tensor1") == "g1/tensor1"
+    assert _ir.addScope(g1.getScope(), "foobar") == "g1/foobar"
 
     # Test removeScope
     assert g1.removeScope("g1/tensor1") == "tensor1"

@@ -8,6 +8,7 @@
 #include <boost/test/unit_test.hpp>
 
 #include <popart/logging.hpp>
+#include <popart/scope.hpp>
 #include <popart/util.hpp>
 
 namespace {
@@ -63,4 +64,16 @@ BOOST_AUTO_TEST_CASE(unittest_utils_split_string) {
   result    = popart::splitString(test, delimiter);
   BOOST_CHECK_EQUAL_COLLECTIONS(
       result.begin(), result.end(), expected.begin(), expected.end());
+}
+
+BOOST_AUTO_TEST_CASE(unittest_add_and_remove_scopes) {
+  popart::TensorId tId = "g1/g2/g3/name";
+
+  popart::Scope s4;
+  s4 = s4 / "g4";
+
+  auto result = addScope(s4, tId);
+
+  popart::TensorId expected = "g4/g1/g2/g3/name";
+  BOOST_CHECK_EQUAL(result, expected);
 }

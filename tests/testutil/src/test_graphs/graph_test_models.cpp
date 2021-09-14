@@ -30,6 +30,7 @@
 #include <popart/sgd.hpp>
 #include <popart/tensor.hpp>
 #include <popart/topocons.hpp>
+#include <popart/util.hpp>
 
 using namespace popart;
 
@@ -86,18 +87,21 @@ GraphTestModel1::GraphTestModel1() {
   graph.topoCons->insert(s2, s0, false);
 
   // Subgraph 0
-  subgraph0.addInput(subgraph0.addScope("t3"),
+  subgraph0.addInput(addScope(subgraph0.getScope(), "t3"),
                      graph.getTensors().get("t3")->info);
-  subgraph0.addInput(subgraph0.addScope("t1"),
+  subgraph0.addInput(addScope(subgraph0.getScope(), "t1"),
                      graph.getTensors().get("t1")->info);
   subgraph0.createConnectedOp<SGD0VarUpdateOp>(
-      {{SGD0VarUpdateOp::getVarToUpdateInIndex(), subgraph0.addScope("t3")},
-       {SGD0VarUpdateOp::getUpdaterInIndex(), subgraph0.addScope("t1")}},
-      {{SGD0VarUpdateOp::getUpdatedVarOutIndex(), subgraph0.addScope("t7")}},
+      {{SGD0VarUpdateOp::getVarToUpdateInIndex(),
+        addScope(subgraph0.getScope(), "t3")},
+       {SGD0VarUpdateOp::getUpdaterInIndex(),
+        addScope(subgraph0.getScope(), "t1")}},
+      {{SGD0VarUpdateOp::getUpdatedVarOutIndex(),
+        addScope(subgraph0.getScope(), "t7")}},
       OptimizerValue(0.5, true),
       OptimizerValue(0.5, true),
       sg0Settings.copy("SGD0VarUpdate"));
-  subgraph0.markAsOutput(subgraph0.addScope("t7"));
+  subgraph0.markAsOutput(addScope(subgraph0.getScope(), "t7"));
 
   // Call which modifies part of a weight indirectly
   graph.createConnectedOp<CallOp>({{0, "t3"}, {1, "t1"}},
@@ -108,14 +112,14 @@ GraphTestModel1::GraphTestModel1() {
                                   gSettings.copy("Call0"));
 
   // Subgraph 1
-  subgraph1.addInput(subgraph1.addScope("t2"),
+  subgraph1.addInput(addScope(subgraph1.getScope(), "t2"),
                      graph.getTensors().get("t2")->info);
   subgraph1.createConnectedOp<IdentityOp>(
-      {{IdentityOp::getInIndex(), subgraph1.addScope("t2")}},
-      {{IdentityOp::getOutIndex(), subgraph1.addScope("t8")}},
+      {{IdentityOp::getInIndex(), addScope(subgraph1.getScope(), "t2")}},
+      {{IdentityOp::getOutIndex(), addScope(subgraph1.getScope(), "t8")}},
       Onnx::Operators::Identity_1,
       sg1Settings.copy("Identity"));
-  subgraph1.markAsOutput(subgraph1.addScope("t8"));
+  subgraph1.markAsOutput(addScope(subgraph1.getScope(), "t8"));
 
   // Pruneable call
   graph.createConnectedOp<CallOp>({{0, "t2"}},
@@ -229,11 +233,11 @@ GraphTestModel3::GraphTestModel3(popart::ExchangeStrategy strategyA,
 
   auto addMandatoryLoopSubgraphIO = [](Graph &sg) {
     // Add mandatory loop iterator tensor to subgraph (is not an output)
-    TensorId loopIter = sg.addScope(reservedLoopIteratorPrefix());
+    TensorId loopIter = addScope(sg.getScope(), reservedLoopIteratorPrefix());
     sg.addInput(loopIter, TensorInfo{DataType::INT32, {}});
 
     // Add mandatory loop condition tensor to subgraph (is also an output)
-    TensorId loopCond = sg.addScope(reservedLoopCondPrefix());
+    TensorId loopCond = addScope(sg.getScope(), reservedLoopCondPrefix());
     sg.addInput(loopCond, TensorInfo{DataType::BOOL, {}});
     sg.markAsOutput(loopCond);
   };
@@ -266,21 +270,23 @@ GraphTestModel3::GraphTestModel3(popart::ExchangeStrategy strategyA,
   loop0->setup();
   loop1->setup();
 
-  sg1.createConnectedOp<InitOp>({},
-                                {{InitOp::getOutIndex(), sg1.addScope("A")}},
-                                Onnx::CustomOperators::Init_1,
-                                tInfo,
-                                TensorType::ActGrad,
-                                InitType::Zero,
-                                sg1IOSettings.copy("Init_A"));
+  sg1.createConnectedOp<InitOp>(
+      {},
+      {{InitOp::getOutIndex(), addScope(sg1.getScope(), "A")}},
+      Onnx::CustomOperators::Init_1,
+      tInfo,
+      TensorType::ActGrad,
+      InitType::Zero,
+      sg1IOSettings.copy("Init_A"));
 
-  sg1.createConnectedOp<InitOp>({},
-                                {{InitOp::getOutIndex(), sg1.addScope("B")}},
-                                Onnx::CustomOperators::Init_1,
-                                tInfo,
-                                TensorType::ActGrad,
-                                InitType::Zero,
-                                sg1IOSettings.copy("Init_B"));
+  sg1.createConnectedOp<InitOp>(
+      {},
+      {{InitOp::getOutIndex(), addScope(sg1.getScope(), "B")}},
+      Onnx::CustomOperators::Init_1,
+      tInfo,
+      TensorType::ActGrad,
+      InitType::Zero,
+      sg1IOSettings.copy("Init_B"));
 
   TensorId streamA = "A";
   graph.getTensors().addStream(
@@ -295,15 +301,15 @@ GraphTestModel3::GraphTestModel3(popart::ExchangeStrategy strategyA,
   graph.getTensors().get(streamC)->info = tInfo;
 
   sg1.createConnectedOp<HostLoadOp>(
-      {{HostLoadOp::getLocalTensorInIndex(), sg1.addScope("A")}},
-      {{HostLoadOp::getLocalTensorOutIndex(), sg1.addScope("A1")}},
+      {{HostLoadOp::getLocalTensorInIndex(), addScope(sg1.getScope(), "A")}},
+      {{HostLoadOp::getLocalTensorOutIndex(), addScope(sg1.getScope(), "A1")}},
       Onnx::CustomOperators::HostLoad,
       sg1IOSettings.copy("HostLoad_A"),
       streamA);
 
   sg1.createConnectedOp<HostLoadOp>(
-      {{HostLoadOp::getLocalTensorInIndex(), sg1.addScope("B")}},
-      {{HostLoadOp::getLocalTensorOutIndex(), sg1.addScope("B1")}},
+      {{HostLoadOp::getLocalTensorInIndex(), addScope(sg1.getScope(), "B")}},
+      {{HostLoadOp::getLocalTensorOutIndex(), addScope(sg1.getScope(), "B1")}},
       Onnx::CustomOperators::HostLoad,
       sg1IOSettings.copy("HostLoad_B"),
       streamB);
@@ -311,35 +317,36 @@ GraphTestModel3::GraphTestModel3(popart::ExchangeStrategy strategyA,
   // IoTileCopyOp: Copies to the tile set specified by the settings (to compute
   // tiles)
   sg1.createConnectedOp<IoTileCopyOp>(
-      {{IoTileCopyOp::getInIndex(), sg1.addScope("A1")}},
-      {{IoTileCopyOp::getOutIndex(), sg1.addScope("A2")}},
+      {{IoTileCopyOp::getInIndex(), addScope(sg1.getScope(), "A1")}},
+      {{IoTileCopyOp::getOutIndex(), addScope(sg1.getScope(), "A2")}},
       Onnx::CustomOperators::IoTileCopy,
       sg1ComputeSettings.copy("IoTileCopyOp_A"));
 
   // IoTileCopyOp: Copies to the tile set specified by the settings (to compute
   // tiles)
   sg1.createConnectedOp<IoTileCopyOp>(
-      {{IoTileCopyOp::getInIndex(), sg1.addScope("B1")}},
-      {{IoTileCopyOp::getOutIndex(), sg1.addScope("B2")}},
+      {{IoTileCopyOp::getInIndex(), addScope(sg1.getScope(), "B1")}},
+      {{IoTileCopyOp::getOutIndex(), addScope(sg1.getScope(), "B2")}},
       Onnx::CustomOperators::IoTileCopy,
       sg1ComputeSettings.copy("IoTileCopyOp_B"));
 
-  sg1.createConnectedOp<AddOp>({{AddOp::getArg0InIndex(), sg1.addScope("A2")},
-                                {AddOp::getArg1InIndex(), sg1.addScope("B2")}},
-                               {{AddOp::getOutIndex(), sg1.addScope("C2")}},
-                               Onnx::Operators::Add_7,
-                               sg1ComputeSettings.copy("AddOp"));
+  sg1.createConnectedOp<AddOp>(
+      {{AddOp::getArg0InIndex(), addScope(sg1.getScope(), "A2")},
+       {AddOp::getArg1InIndex(), addScope(sg1.getScope(), "B2")}},
+      {{AddOp::getOutIndex(), addScope(sg1.getScope(), "C2")}},
+      Onnx::Operators::Add_7,
+      sg1ComputeSettings.copy("AddOp"));
 
   // IoTileCopyOp: Copies to the tile set specified by the settings (to IO
   // tiles)
   sg1.createConnectedOp<IoTileCopyOp>(
-      {{IoTileCopyOp::getInIndex(), sg1.addScope("C2")}},
-      {{IoTileCopyOp::getOutIndex(), sg1.addScope("C")}},
+      {{IoTileCopyOp::getInIndex(), addScope(sg1.getScope(), "C2")}},
+      {{IoTileCopyOp::getOutIndex(), addScope(sg1.getScope(), "C")}},
       Onnx::CustomOperators::IoTileCopy,
       sg1IOSettings.copy("IoTileCopyOp_C"));
 
   sg1.createConnectedOp<HostStoreOp>(
-      {{HostStoreOp::getLocalTensorInIndex(), sg1.addScope("C")}},
+      {{HostStoreOp::getLocalTensorInIndex(), addScope(sg1.getScope(), "C")}},
       {},
       Onnx::CustomOperators::HostStore,
       sg1IOSettings.copy("HostStore_C"),

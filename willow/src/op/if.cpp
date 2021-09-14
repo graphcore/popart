@@ -13,6 +13,7 @@
 #include <popart/tensornames.hpp>
 #include <popart/tensors.hpp>
 #include <popart/transforms/autodiff/calledgraphgradophelper.hpp>
+#include <popart/util.hpp>
 
 namespace popart {
 
@@ -564,13 +565,13 @@ static OpCreator<IfOp> ifOpCreator(
       for (auto &input : thenBranch.input()) {
         thenInputIds.push_back(input.name());
         inputInfos[input.name()] =
-            tensors.get(parentGraph.addScope(input.name()))->info;
+            tensors.get(addScope(parentGraph.getScope(), input.name()))->info;
       }
       std::vector<TensorId> elseInputIds;
       for (auto &input : elseBranch.input()) {
         elseInputIds.push_back(input.name());
         inputInfos[input.name()] =
-            tensors.get(parentGraph.addScope(input.name()))->info;
+            tensors.get(addScope(parentGraph.getScope(), input.name()))->info;
       }
 
       std::vector<TensorId> parentScopedImplicitTensorIds;
@@ -578,13 +579,15 @@ static OpCreator<IfOp> ifOpCreator(
       for (auto implicitTensorId : thenImplicitTensorIds) {
         thenInputIds.push_back(implicitTensorId);
         inputInfos[implicitTensorId] =
-            tensors.get(parentGraph.addScope(implicitTensorId))->info;
+            tensors.get(addScope(parentGraph.getScope(), implicitTensorId))
+                ->info;
       }
       auto elseImplicitTensorIds = onnxutil::getImplicitTensorIds(elseBranch);
       for (auto implicitTensorId : elseImplicitTensorIds) {
         elseInputIds.push_back(implicitTensorId);
         inputInfos[implicitTensorId] =
-            tensors.get(parentGraph.addScope(implicitTensorId))->info;
+            tensors.get(addScope(parentGraph.getScope(), implicitTensorId))
+                ->info;
       }
 
       // Collect all output names
@@ -670,28 +673,29 @@ static OpCreator<IfOp> ifOpCreator(
         op->connectInTensor(op->input->n(), id);
       }
       for (auto &inputId : inputIds) {
-        op->connectInTensor(op->input->n(), parentGraph.addScope(inputId));
+        op->connectInTensor(op->input->n(),
+                            addScope(parentGraph.getScope(), inputId));
       }
 
       // Construct then graph
       for (auto id : thenInputIds) {
-        auto scopedId = thenGraph.addScope(id);
+        auto scopedId = addScope(thenGraph.getScope(), id);
         thenGraph.addInput(scopedId, inputInfos.at(id));
       }
       thenGraph.constructFromOnnxGraph(thenBranch);
       for (auto id : thenOutputIds) {
-        auto scopedId = thenGraph.addScope(id);
+        auto scopedId = addScope(thenGraph.getScope(), id);
         thenGraph.markAsOutput(scopedId);
       }
 
       // Construct else graph
       for (auto id : elseInputIds) {
-        auto scopedId = elseGraph.addScope(id);
+        auto scopedId = addScope(elseGraph.getScope(), id);
         elseGraph.addInput(scopedId, inputInfos.at(id));
       }
       elseGraph.constructFromOnnxGraph(elseBranch);
       for (auto id : elseOutputIds) {
-        auto scopedId = elseGraph.addScope(id);
+        auto scopedId = addScope(elseGraph.getScope(), id);
         elseGraph.markAsOutput(scopedId);
       }
 
