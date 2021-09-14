@@ -12,6 +12,7 @@
 #include <parsedtensorid.hpp>
 
 struct ParsedTensorIdFixture {
+  // Fixture available in all fixtured tests
   ParsedTensorIdFixture()
       : d(popart::sNameDelimiter), p1(popart::reservedGradientPrefix()),
         p2(popart::reservedUpdatedVarPrefix()),
@@ -43,6 +44,7 @@ struct ParsedTensorIdFixture {
 BOOST_FIXTURE_TEST_SUITE(ParsedTensorIdTestSuite, ParsedTensorIdFixture)
 
 BOOST_AUTO_TEST_CASE(testBasicParsedTensorId) {
+  // Tests ParsedTensorId for the most basic cases
   std::string testStr  = "basic";
   popart::TensorId tId = testStr;
   popart::ParsedTensorId pTId(tId);
@@ -55,6 +57,7 @@ BOOST_AUTO_TEST_CASE(testBasicParsedTensorId) {
 }
 
 BOOST_AUTO_TEST_CASE(testParsedTensorIdPrefixes) {
+  // Tests adding and removing of prefixes when the TensorId is without scopes
   std::string name = "testParsedTensorIdPrefixes";
   popart::TensorId tId(name);
   popart::ParsedTensorId pTId(tId);
@@ -76,9 +79,15 @@ BOOST_AUTO_TEST_CASE(testParsedTensorIdPrefixes) {
 
   pTId.removePrefixIfExist(p2);
   BOOST_CHECK_EQUAL(pTId.getId(), p1 + p3 + name);
+
+  // Test parsing when prefix is not added by the function
+  name = std::string(p1) + "testTIdScope";
+  pTId = {name};
+  BOOST_CHECK_EQUAL(pTId.getId(), name);
 }
 
 BOOST_AUTO_TEST_CASE(testParsedTensorIdScopes) {
+  // Tests adding and removing of scopes when the TensorId is without prefixes
   std::string name = "testTIdScope";
   popart::TensorId tId(name);
   popart::ParsedTensorId pTId(tId);
@@ -96,9 +105,23 @@ BOOST_AUTO_TEST_CASE(testParsedTensorIdScopes) {
 
   BOOST_CHECK_EXCEPTION(
       pTId.removeScope(scope2), popart::error, checkErrorMsgRemoveScopes);
+
+  // Test parsing when scope is not added by the function
+  name = "g1/testTIdScope";
+  pTId = {name};
+  BOOST_CHECK_EQUAL(pTId.getId(), name);
+
+  // Test with empty scope
+  popart::Scope emptyScope;
+  name = "empty";
+  pTId = {name};
+  pTId.addScope(emptyScope);
+  BOOST_CHECK_EQUAL(pTId.getId(), name);
 }
 
 BOOST_AUTO_TEST_CASE(testParsedTensorIdMixedScopePrefixesAndNames) {
+  // Tests adding and removing of scopes and prefixes without restrictions on
+  // TensorId
   std::string name = "testParsedTensorIdMixedScopePrefixesAndNames";
   popart::TensorId tId(name);
   popart::ParsedTensorId pTId(tId);
@@ -135,6 +158,7 @@ BOOST_AUTO_TEST_CASE(testParsedTensorIdMixedScopePrefixesAndNames) {
 BOOST_AUTO_TEST_SUITE_END()
 
 BOOST_AUTO_TEST_CASE(testDocumentationParsedTensorId) {
+  // Test of documentation
   popart::TensorId tId = "g1/g2/Step___Accl___name";
   popart::ParsedTensorId pTId(tId);
 

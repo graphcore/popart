@@ -62,7 +62,8 @@ void ParsedTensorId::parseName() {
     auto lastScope = scopes.back();
     pos            = name.find(lastScope);
     if (pos != std::string::npos) {
-      name.erase(0, pos + lastScope.length());
+      name.erase(
+          0, pos + std::string(sNameDelimiter).length() + lastScope.length());
     }
   }
 
@@ -97,11 +98,13 @@ TensorId ParsedTensorId::removePrefixIfExist(const std::string &prefix) {
 }
 
 TensorId ParsedTensorId::addScope(const Scope &s) {
-  auto foundScopes = splitString(s.str(), sNameDelimiter);
+  if (!s.empty()) {
+    auto foundScopes = splitString(s.str(), sNameDelimiter);
 
-  // Insert scopes
-  foundScopes.insert(foundScopes.end(), scopes.begin(), scopes.end());
-  scopes = {foundScopes.begin(), foundScopes.end()};
+    // Insert scopes
+    foundScopes.insert(foundScopes.end(), scopes.begin(), scopes.end());
+    scopes = {foundScopes.begin(), foundScopes.end()};
+  }
 
   generateId();
   return tId;
