@@ -158,7 +158,7 @@ GradGrowerOp::growGradOps(Op *nonGradOp,
 
         if (nonGradOp->input->hasIndex(nonGradIn)) {
           TensorId inId      = nonGradOp->input->tensor(nonGradIn)->id;
-          TensorId outId     = getEdgeGradId(inId, nonGradOpId, nonGradIn);
+          TensorId outId     = getEdgeGradId(nonGradOpId, nonGradIn);
           v_outputs[gradOut] = outId;
         }
       }

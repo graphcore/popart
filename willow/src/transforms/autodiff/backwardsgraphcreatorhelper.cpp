@@ -473,7 +473,7 @@ std::vector<Op *> BackwardsGraphCreatorHelper::growGradOps(Op *nonGradOp) {
         }
 
         TensorId inId  = nonGradOp->inId(nonGradIn);
-        TensorId outId = getEdgeGradId(inId, nonGradOpId, nonGradIn);
+        TensorId outId = getEdgeGradId(nonGradOpId, nonGradIn);
         if (v_outputs.size() < gradOut + 1) {
           v_outputs.resize(gradOut + 1, "");
         }
