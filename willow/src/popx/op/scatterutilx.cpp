@@ -72,7 +72,7 @@ snap::Tensor broadcastShape(snap::Tensor a, snap::Tensor b_) {
   return snap::Tensor{b, b_};
 }
 
-void growScatter(snap::program::Sequence &prog,
+void growScatter(poplar::program::Sequence &prog,
                  snap::Graph &graph,
                  const snap::Tensor &indices,
                  const snap::Tensor &replacementValues,
@@ -126,11 +126,11 @@ void growScatter(snap::program::Sequence &prog,
                   update_window_dims,
                   inserted_window_dims,
                   scatter_dims_to_op,
-                  prog.getPoplarSequence(),
+                  prog,
                   dnai);
 }
 
-snap::Tensor growScatterUpdateGrad(snap::program::Sequence &prog,
+snap::Tensor growScatterUpdateGrad(poplar::program::Sequence &prog,
                                    snap::Graph &graph,
                                    const snap::Tensor &gradIn,
                                    const snap::Tensor &indices,
@@ -190,7 +190,7 @@ snap::Tensor growScatterUpdateGrad(snap::program::Sequence &prog,
                                      sliceSizes,
                                      collapsedSliceDims,
                                      startIndexMap,
-                                     prog.getPoplarSequence(),
+                                     prog,
                                      {dnai, "gather"}),
                       graph};
 }

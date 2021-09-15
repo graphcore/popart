@@ -30,7 +30,7 @@ ScaledAddRhsInplaceOpx::ScaledAddRhsInplaceOpx(Op *op, Devicex *devicex)
                                   {Onnx::CustomOperators::ScaledAddRhsInplace});
 }
 
-snap::Tensor ScaledAddOpx::compute(snap::program::Sequence &prog,
+snap::Tensor ScaledAddOpx::compute(poplar::program::Sequence &prog,
                                    snap::Tensor in0,
                                    snap::Tensor in1,
                                    snap::Tensor s0,
@@ -48,7 +48,7 @@ snap::Tensor ScaledAddOpx::compute(snap::program::Sequence &prog,
                         s0.getPoplarTensor(),
                         in1.getPoplarTensor(),
                         s1.getPoplarTensor(),
-                        prog.getPoplarSequence(),
+                        prog,
                         debugContext("t_t_t_t"));
   } else if (s0.valid() && !s1.valid()) {
     throw error("Unsupported tensor scale0 with non-tensor scale1.");
@@ -60,7 +60,7 @@ snap::Tensor ScaledAddOpx::compute(snap::program::Sequence &prog,
                         in0.getPoplarTensor(),
                         in1.getPoplarTensor(),
                         s1.getPoplarTensor(),
-                        prog.getPoplarSequence(),
+                        prog,
                         debugContext("t_1_t_t"));
   } else {
     popops::scaledAddTo(graph().getPoplarGraph(),
@@ -68,13 +68,13 @@ snap::Tensor ScaledAddOpx::compute(snap::program::Sequence &prog,
                         s0f,
                         in1.getPoplarTensor(),
                         s1f,
-                        prog.getPoplarSequence(),
+                        prog,
                         debugContext("t_c_t_c"));
   }
   return in0;
 }
 
-void ScaledAddOpx::grow(snap::program::Sequence &prog) const {
+void ScaledAddOpx::grow(poplar::program::Sequence &prog) const {
   auto &scaledAddOp = getOp<ScaledAddOp>();
 
   snap::Tensor out;
@@ -103,7 +103,7 @@ void ScaledAddOpx::grow(snap::program::Sequence &prog) const {
   setOutTensor(ScaledAddOp::getOutIndex(), out);
 }
 
-void ScaledAddLhsInplaceOpx::grow(snap::program::Sequence &prog) const {
+void ScaledAddLhsInplaceOpx::grow(poplar::program::Sequence &prog) const {
   auto &scaledAddOp = getOp<ScaledAddLhsInplaceOp>();
 
   snap::Tensor out;
@@ -132,7 +132,7 @@ void ScaledAddLhsInplaceOpx::grow(snap::program::Sequence &prog) const {
   setOutTensor(ScaledAddOp::getOutIndex(), out);
 }
 
-void ScaledAddRhsInplaceOpx::grow(snap::program::Sequence &prog) const {
+void ScaledAddRhsInplaceOpx::grow(poplar::program::Sequence &prog) const {
   auto &scaledAddOp = getOp<ScaledAddRhsInplaceOp>();
 
   snap::Tensor out;

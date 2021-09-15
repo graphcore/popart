@@ -21,7 +21,7 @@ public:
   snap::Tensor createDataInput(const poplar::DebugNameAndId &dnai,
                                int convIndex) const final;
   std::vector<snap::Tensor>
-  convolve(snap::program::Sequence &,
+  convolve(poplar::program::Sequence &,
            const std::vector<snap::Tensor> &weights) const final;
 };
 
@@ -29,13 +29,13 @@ class ConvWeightsGradOpx : public MultiConvWeightsGradBaseOpx {
 public:
   ConvWeightsGradOpx(Op *, Devicex *);
   std::vector<snap::Tensor>
-  calculateWeightDeltas(snap::program::Sequence &) const final;
+  calculateWeightDeltas(poplar::program::Sequence &) const final;
 };
 
 class ConvFlipWeightsGradOpx : public PopOpx {
 public:
   ConvFlipWeightsGradOpx(Op *, Devicex *);
-  void grow(snap::program::Sequence &) const final;
+  void grow(poplar::program::Sequence &) const final;
 };
 
 } // namespace popx

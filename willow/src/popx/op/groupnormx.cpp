@@ -25,7 +25,7 @@ GroupNormOpx::GroupNormOpx(Op *op, Devicex *devicex) : NormOpx(op, devicex) {
   verifyOp<GroupNormOp>(op, {Onnx::CustomOperators::GroupNormalization_1});
 }
 
-void GroupNormOpx::grow(snap::program::Sequence &prog) const {
+void GroupNormOpx::grow(poplar::program::Sequence &prog) const {
 
   auto &op = getOp<GroupNormOp>();
 
@@ -46,7 +46,7 @@ void GroupNormOpx::grow(snap::program::Sequence &prog) const {
   poplar::Tensor mean;
   poplar::Tensor invStdDev;
 
-  // See poplibs groupnorm impl for information on this option. It is either
+  // See poplibs groupnorm impl for infomation on this option. It is either
   // correct and slightly slower or incorrect and fast. We default to correct
   // and slightly slower.
   const bool fastMathGroupNorm =
@@ -59,7 +59,7 @@ void GroupNormOpx::grow(snap::program::Sequence &prog) const {
       popnn::gn::groupNormStatistics(graph().getPoplarGraph(),
                                      input,
                                      epsilon,
-                                     prog.getPoplarSequence(),
+                                     prog,
                                      static_cast<unsigned int>(num_groups),
                                      false,
                                      stable_algo,
@@ -74,7 +74,7 @@ void GroupNormOpx::grow(snap::program::Sequence &prog) const {
                                           b,
                                           mean,
                                           invStdDev,
-                                          prog.getPoplarSequence(),
+                                          prog,
                                           debugContext("groupNorm"),
                                           flags);
 
@@ -91,7 +91,7 @@ GroupNormGradOpx::GroupNormGradOpx(Op *op, Devicex *devicex)
   verifyOp<GroupNormGradOp>(op, Onnx::GradOperators::GroupNormalizationGrad);
 }
 
-void GroupNormGradOpx::grow(snap::program::Sequence &prog) const {
+void GroupNormGradOpx::grow(poplar::program::Sequence &prog) const {
 
   auto x = getInTensor(GroupNormGradOp::getXInIndex()).getPoplarTensor();
   auto yGrad =
@@ -104,7 +104,7 @@ void GroupNormGradOpx::grow(snap::program::Sequence &prog) const {
 
   auto &op = getOp<GroupNormGradOp>();
 
-  // See poplibs groupnorm impl for information on this option. It is either
+  // See poplibs groupnorm impl for infomation on this option. It is either
   // correct and slightly slower or incorrect and fast. We default to correct
   // and slightly slower.
   const bool fastMathGroupNorm =
@@ -118,7 +118,7 @@ void GroupNormGradOpx::grow(snap::program::Sequence &prog) const {
                                  x,
                                  mean,
                                  invStdDev,
-                                 prog.getPoplarSequence(),
+                                 prog,
                                  debugContext("whitenedActs"),
                                  flags);
 
@@ -129,7 +129,7 @@ void GroupNormGradOpx::grow(snap::program::Sequence &prog) const {
                                     yGrad,
                                     invStdDev,
                                     scale,
-                                    prog.getPoplarSequence(),
+                                    prog,
                                     poplar::FLOAT,
                                     debugContext("operandGrad"),
                                     flags);
@@ -141,7 +141,7 @@ void GroupNormGradOpx::grow(snap::program::Sequence &prog) const {
       popnn::gn::groupNormParamGradients(graph().getPoplarGraph(),
                                          xWhitened,
                                          yGrad,
-                                         prog.getPoplarSequence(),
+                                         prog,
                                          poplar::FLOAT,
                                          debugContext("scaleOffsetGrads"),
                                          flags);

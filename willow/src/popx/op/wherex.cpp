@@ -15,7 +15,7 @@ WhereOpx::WhereOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
   verifyOp<WhereOp>(op, {Onnx::Operators::Where_9});
 }
 
-void WhereOpx::grow(snap::program::Sequence &prog) const {
+void WhereOpx::grow(poplar::program::Sequence &prog) const {
 
   const auto condition =
       getInTensor(WhereOp::conditionInIndex()).getPoplarTensor();
@@ -26,7 +26,7 @@ void WhereOpx::grow(snap::program::Sequence &prog) const {
                                      x,
                                      y,
                                      condition,
-                                     prog.getPoplarSequence(),
+                                     prog,
                                      debugContext(),
                                      poplar::OptionFlags());
 
@@ -37,7 +37,7 @@ WhereXGradOpx::WhereXGradOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
   verifyOp<WhereXGradOp>(op, Onnx::GradOperators::WhereXGrad);
 }
 
-void WhereXGradOpx::grow(snap::program::Sequence &prog) const {
+void WhereXGradOpx::grow(poplar::program::Sequence &prog) const {
 
   const auto &op = getOp<WhereXGradOp>();
   const auto whereOutGrad =
@@ -63,13 +63,13 @@ void WhereXGradOpx::grow(snap::program::Sequence &prog) const {
   auto condition2 = popops::cast(graph().getPoplarGraph(),
                                  condition,
                                  whereOutGrad.elementType(),
-                                 prog.getPoplarSequence(),
+                                 prog,
                                  debugContext("cast_x"));
 
   auto gradX = popops::mul(graph().getPoplarGraph(),
                            whereOutGrad,
                            condition2,
-                           prog.getPoplarSequence(),
+                           prog,
                            debugContext("grad_x"));
 
   // Reduces the output.
@@ -77,7 +77,7 @@ void WhereXGradOpx::grow(snap::program::Sequence &prog) const {
                                gradX,
                                reduction_dims,
                                {popops::Operation::ADD},
-                               prog.getPoplarSequence(),
+                               prog,
                                debugContext("add"));
   // The reduce above will have removed all the reduction dims.
   // Some dims of size 1 may need to be added back in, we reshape.
@@ -90,7 +90,7 @@ WhereYGradOpx::WhereYGradOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
   verifyOp<WhereYGradOp>(op, Onnx::GradOperators::WhereYGrad);
 }
 
-void WhereYGradOpx::grow(snap::program::Sequence &prog) const {
+void WhereYGradOpx::grow(poplar::program::Sequence &prog) const {
 
   const auto &op = getOp<WhereYGradOp>();
   const auto whereOutGrad =
@@ -112,28 +112,26 @@ void WhereYGradOpx::grow(snap::program::Sequence &prog) const {
     }
   }
 
-  poplar::Tensor condition2 = popops::logicalNot(graph().getPoplarGraph(),
-                                                 condition,
-                                                 prog.getPoplarSequence(),
-                                                 debugContext("logical_not"));
+  poplar::Tensor condition2 = popops::logicalNot(
+      graph().getPoplarGraph(), condition, prog, debugContext("logical_not"));
 
   auto condition3 = popops::cast(graph().getPoplarGraph(),
                                  condition2,
                                  whereOutGrad.elementType(),
-                                 prog.getPoplarSequence(),
+                                 prog,
                                  debugContext("cast_y"));
 
   auto gradY = popops::mul(graph().getPoplarGraph(),
                            whereOutGrad,
                            condition3,
-                           prog.getPoplarSequence(),
+                           prog,
                            debugContext("grad_y"));
 
   auto gradY2 = popops::reduce(graph().getPoplarGraph(),
                                gradY,
                                reduction_dims,
                                {popops::Operation::ADD},
-                               prog.getPoplarSequence(),
+                               prog,
                                debugContext("add"));
   gradY2      = gradY2.reshape(yShape);
 

@@ -11,7 +11,7 @@ namespace popx {
 class DropoutOpx : public ElementWiseUnaryOpx {
 public:
   DropoutOpx(Op *, Devicex *);
-  void grow(snap::program::Sequence &) const override;
+  void grow(poplar::program::Sequence &) const override;
 };
 
 } // namespace popx

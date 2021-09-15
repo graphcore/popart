@@ -13,7 +13,7 @@ namespace popx {
 class ScatterReduceOpx : public PopOpx {
 public:
   ScatterReduceOpx(Op *, Devicex *);
-  void grow(snap::program::Sequence &) const final;
+  void grow(poplar::program::Sequence &) const final;
   snap::Tensor
   createInputTensor(InIndex index,
                     const poplar::DebugNameAndId &dnai) const final;
@@ -30,7 +30,7 @@ private:
 class ScatterReduceGradOpx : public PopOpx {
 public:
   ScatterReduceGradOpx(Op *, Devicex *);
-  void grow(snap::program::Sequence &) const final;
+  void grow(poplar::program::Sequence &) const final;
 
   snap::Tensor
   createInputTensor(InIndex index,

@@ -1,5 +1,4 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
-#include <poprithms/logging/timepartitionlogger.hpp>
 #include <popart/popx/devicex.hpp>
 #include <popart/popx/irlowering.hpp>
 #include <popart/popx/opx.hpp>
@@ -40,22 +39,16 @@ bool Opx::createsEquiv(int, const Opx *, int) const {
 
 poplar::Tensor Opx::cloneNcopy(poplar::program::Sequence &prog,
                                TensorId id) const {
-  const poplar::Tensor &tensor = get(id);
-  return cloneNcopy(prog, tensor, id + "[cloned]");
+  return PopOpx::cloneNcopy(prog, id).getPoplarTensor();
 }
 
 poplar::Tensor Opx::cloneNcopy(poplar::program::Sequence &prog,
                                const poplar::Tensor &tensor,
                                std::string name) const {
-
-  const auto scopedTimer =
-      getDevicex()->ir().timePartitionLogger().scopedStopwatch(
-          "Clone (and copy)");
-
-  // TODO Would be good to get the name of the tensor
-  auto outTensor = graph().clone(tensor, debugContext(name));
-  prog.add(poplar::program::Copy(tensor, outTensor, false, debugContext()));
-  return outTensor;
+  return PopOpx::cloneNcopy(prog,
+                            snap::Tensor{tensor, dv_p->lowering().graph()},
+                            std::move(name))
+      .getPoplarTensor();
 }
 
 poplar::Tensor Opx::broadcast(const std::vector<int64_t> &desired_shape,
@@ -136,14 +129,6 @@ poplar::Tensor Opx::getConst(const poplar::Type &type,
 poplar::Tensor Opx::getScalarVariable(const poplar::Type &type,
                                       const std::string &name) const {
   return PopOpx::getScalarVariable(type, name).getPoplarTensor();
-}
-
-void Opx::grow(snap::program::Sequence &prog) const {
-  return grow(prog.getPoplarSequence());
-}
-
-void Opx::grow(poplar::program::Sequence &) const {
-  throw error("adding poplar::Tensors not implemented for {}", op_p->opid);
 }
 
 } // namespace popx

@@ -12,7 +12,7 @@ class AccumulateBaseOpx : public VarUpdateOpx {
 public:
   AccumulateBaseOpx(Op *, Devicex *);
 
-  void grow(snap::program::Sequence &) const override = 0;
+  void grow(poplar::program::Sequence &) const override = 0;
 
   // can create the accumulator input Tensor (@Var index)
   // from the weight gradient tensor (@Updater index)
@@ -30,20 +30,20 @@ public:
 class AccumulateOpx final : public AccumulateBaseOpx {
 public:
   AccumulateOpx(Op *, Devicex *);
-  void grow(snap::program::Sequence &) const final;
+  void grow(poplar::program::Sequence &) const final;
 };
 
 class RescaleAccumulateOpx final : public AccumulateBaseOpx {
 public:
   RescaleAccumulateOpx(Op *, Devicex *);
-  void grow(snap::program::Sequence &) const final;
+  void grow(poplar::program::Sequence &) const final;
 };
 
 class SparseAccumulateOpx final : public AccumulateBaseOpx {
 public:
   SparseAccumulateOpx(Op *, Devicex *);
 
-  void grow(snap::program::Sequence &) const final;
+  void grow(poplar::program::Sequence &) const final;
 
   snap::Tensor
   createInputTensor(InIndex, const poplar::DebugNameAndId &dnai) const final;

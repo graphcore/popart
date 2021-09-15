@@ -17,7 +17,7 @@ PReluOpx::PReluOpx(Op *op, Devicex *devicex)
   verifyOp<PReluOp>(op);
 }
 
-void PReluOpx::grow(snap::program::Sequence &prog) const {
+void PReluOpx::grow(poplar::program::Sequence &prog) const {
   auto inputPH = pe::_1;
   auto slopePH = pe::_2;
 
@@ -30,7 +30,7 @@ void PReluOpx::grow(snap::program::Sequence &prog) const {
                   expression,
                   {getInTensor(PReluOp::getArg0InIndex()).getPoplarTensor(),
                    getInTensor(PReluOp::getArg1InIndex()).getPoplarTensor()},
-                  prog.getPoplarSequence(),
+                  prog,
                   debugContext("prelu"));
 
   setOutTensor(PReluOp::getOutIndex(), snap::Tensor{result, graph()});

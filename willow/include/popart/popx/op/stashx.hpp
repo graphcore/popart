@@ -11,17 +11,17 @@ namespace popx {
 class StashOpx : public PopOpx {
 public:
   StashOpx(Op *, Devicex *);
-  void grow(snap::program::Sequence &) const final;
+  void grow(poplar::program::Sequence &) const final;
 
 private:
   size_t hStashSize;
   bool canDynamicUpdateStash;
 
-  void growDynamicStashUpdate(snap::program::Sequence &prog,
+  void growDynamicStashUpdate(poplar::program::Sequence &prog,
                               const snap::Tensor &stashIndex,
                               const snap::Tensor &inTensor,
                               const snap::Tensor &outTensor) const;
-  void growStaticStashUpdate(snap::program::Sequence &prog,
+  void growStaticStashUpdate(poplar::program::Sequence &prog,
                              const snap::Tensor &stashIndex,
                              const snap::Tensor &inTensor,
                              const snap::Tensor &outTensor) const;

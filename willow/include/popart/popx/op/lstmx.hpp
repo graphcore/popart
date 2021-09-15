@@ -18,7 +18,7 @@ namespace popx {
 class LSTMOpx : public PopOpx {
 public:
   LSTMOpx(Op *, Devicex *);
-  void grow(snap::program::Sequence &) const final;
+  void grow(poplar::program::Sequence &) const final;
   InputCreatorType getInputCreatorType(InIndex) const final;
   snap::Tensor
   createInputTensor(InIndex index,
@@ -30,14 +30,14 @@ public:
                                                   const snap::Tensor &);
 
 private:
-  void growBias(snap::program::Sequence &) const;
+  void growBias(poplar::program::Sequence &) const;
   popnn::lstm::LstmWeights getLSTMWeights() const;
   popnn::lstm::LstmState getInitialState() const;
   snap::Tensor createLSTMInput() const;
   void prepareInitialState(popnn::lstm::LstmState &,
-                           snap::program::Sequence &) const;
-  void prepareWeights(snap::program::Sequence &) const;
-  snap::Tensor getInput(snap::program::Sequence &) const;
+                           poplar::program::Sequence &) const;
+  void prepareWeights(poplar::program::Sequence &) const;
+  snap::Tensor getInput(poplar::program::Sequence &) const;
   std::unique_ptr<snap::Tensor> createIntermediate() const;
   void reshapeAndInsert(OutIndex index, const snap::Tensor &) const;
   bool inputCreated(InIndex) const;
@@ -51,7 +51,7 @@ private:
 class LSTMGradOpx : public PopOpx {
 public:
   LSTMGradOpx(Op *, Devicex *);
-  void grow(snap::program::Sequence &) const final;
+  void grow(poplar::program::Sequence &) const final;
 
 private:
   snap::Tensor getCellStateGrad() const;

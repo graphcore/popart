@@ -12,14 +12,14 @@ CosOpx::CosOpx(Op *op, Devicex *devicex) : ElementWiseUnaryOpx(op, devicex) {
   verifyOp<CosOp>(op, Onnx::Operators::Cos_7);
 }
 
-void CosOpx::grow(snap::program::Sequence &prog) const {
+void CosOpx::grow(poplar::program::Sequence &prog) const {
   setOutTensor(
       CosOp::getOutIndex(),
       snap::Tensor{
           popops::map(graph().getPoplarGraph(),
                       popops::expr::UnaryOpType::COS,
                       getInTensor(CosOp::getInIndex()).getPoplarTensor(),
-                      prog.getPoplarSequence(),
+                      prog,
                       debugContext()),
           graph()});
 }

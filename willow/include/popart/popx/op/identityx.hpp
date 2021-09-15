@@ -12,32 +12,32 @@ namespace popx {
 class IdentityOpx : public ElementWiseUnaryOpx {
 public:
   IdentityOpx(Op *, Devicex *);
-  void grow(snap::program::Sequence &) const final;
+  void grow(poplar::program::Sequence &) const final;
 };
 
 class IdentityInplaceOpx : public PopOpx {
 public:
   IdentityInplaceOpx(Op *, Devicex *);
-  void grow(snap::program::Sequence &) const final;
+  void grow(poplar::program::Sequence &) const final;
 };
 
 class IdentityGradOpx : public ElementWiseUnaryOpx {
 public:
   IdentityGradOpx(Op *, Devicex *);
-  void grow(snap::program::Sequence &) const final;
+  void grow(poplar::program::Sequence &) const final;
 };
 
 class IdentityLossOpx : public PopOpx {
 public:
   IdentityLossOpx(Op *, Devicex *);
-  void grow(snap::program::Sequence &) const final;
+  void grow(poplar::program::Sequence &) const final;
   InputCreatorType getInputCreatorType(InIndex) const final;
 };
 
 class IdentityLossGradOpx : public PopOpx {
 public:
   IdentityLossGradOpx(Op *, Devicex *);
-  void grow(snap::program::Sequence &) const final;
+  void grow(poplar::program::Sequence &) const final;
 
   bool outputCreatedExternally(OutIndex) const final { return true; }
 };

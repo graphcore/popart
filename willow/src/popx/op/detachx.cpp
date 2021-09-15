@@ -14,7 +14,7 @@ DetachOpx::DetachOpx(popart::Op *op, popart::popx::Devicex *devicex)
   verifyOp<DetachOp>(op, Onnx::CustomOperators::Detach_1);
 }
 
-void DetachOpx::grow(snap::program::Sequence &prog) const {
+void DetachOpx::grow(poplar::program::Sequence &prog) const {
   auto input = getInTensor(DetachOp::getInIndex());
 
   auto output = cloneNcopy(prog, input);
@@ -26,7 +26,7 @@ DetachInplaceOpx::DetachInplaceOpx(Op *op, Devicex *devicex)
   verifyOp<DetachInplaceOp>(op);
 }
 
-void DetachInplaceOpx::grow(snap::program::Sequence &) const {
+void DetachInplaceOpx::grow(poplar::program::Sequence &) const {
   setOutTensor(DetachOp::getOutIndex(), getInTensor(DetachOp::getInIndex()));
 }
 

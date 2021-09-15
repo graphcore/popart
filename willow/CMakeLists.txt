@@ -84,7 +84,6 @@ set(POPART_ONLY_DEPS_LIBS
     pva
     gcl
     snap
-    gccs
 )
 
 set(POPART_DEPS_INCLUDES

@@ -66,7 +66,7 @@ snap::Tensor MultiConvOpx::createDataInput(const poplar::DebugNameAndId &dnai,
 }
 
 std::vector<snap::Tensor>
-MultiConvOpx::convolve(snap::program::Sequence &prog,
+MultiConvOpx::convolve(poplar::program::Sequence &prog,
                        const std::vector<snap::Tensor> &weights) const {
   std::vector<poplin::multiconv::ConvolutionArgs> allConvArgs;
   MultiConvBaseOp &op = getOp<MultiConvBaseOp>();
@@ -84,7 +84,7 @@ MultiConvOpx::convolve(snap::program::Sequence &prog,
   auto pOuts = poplin::multiconv::convolution(graph().getPoplarGraph(),
                                               allConvArgs,
                                               false,
-                                              prog.getPoplarSequence(),
+                                              prog,
                                               debugContext("multiConvolution"),
                                               getGlobalOptions(),
                                               &dv_p->convCache);
@@ -103,7 +103,7 @@ MultiConvWeightsGradOpx::MultiConvWeightsGradOpx(Op *op, Devicex *devicex)
 }
 
 std::vector<snap::Tensor> MultiConvWeightsGradOpx::calculateWeightDeltas(
-    snap::program::Sequence &prog) const {
+    poplar::program::Sequence &prog) const {
 
   // The multiconv api for calculating weight deltas is deprecated.
   // Use the standard convolution api
@@ -119,7 +119,7 @@ std::vector<snap::Tensor> MultiConvWeightsGradOpx::calculateWeightDeltas(
                                       zDelta.getPoplarTensor(),
                                       acts.getPoplarTensor(),
                                       getPoplarConvParams(op.getParameters(i)),
-                                      prog.getPoplarSequence(),
+                                      prog,
                                       debugContext("weightDeltas"),
                                       getConvOptions(i),
                                       &dv_p->convCache),

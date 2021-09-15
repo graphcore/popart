@@ -522,12 +522,13 @@ std::map<Op *, int, POpCmp> IrLowering::getMainGraphOpCounts() const {
   return counts;
 }
 
-void IrLowering::instrumentWithHardwareCycleCounter(snap::program::Sequence &sq,
-                                                    int64_t tileId,
-                                                    std::string id) {
+void IrLowering::instrumentWithHardwareCycleCounter(
+    poplar::program::Sequence &sq,
+    int64_t tileId,
+    std::string id) {
   poplar::Tensor cycleCountTensor =
       poplar::cycleCount(graph().getPoplarGraph(),
-                         sq.getPoplarSequence(),
+                         sq,
                          static_cast<unsigned int>(tileId),
                          poplar::SyncType::INTERNAL,
                          cycleCountPrefix());
@@ -600,23 +601,10 @@ snap::Graph &IrLowering::getVirtualGraph(VGraphId virtualGraphIndex,
   }
 }
 
-namespace {
-
-std::vector<poplar::program::Program>
-toPoplarProgs(const std::vector<snap::program::Program> &snapProgs) {
-  std::vector<poplar::program::Program> poplarProgs(snapProgs.size());
-  for (int i = 0; i < snapProgs.size(); i++) {
-    poplarProgs[i] = snapProgs[i].getPoplarProgram();
-  }
-  return poplarProgs;
-}
-
-} // namespace
-
 std::string IrLowering::getSerializedGraph() const {
   std::stringstream ss;
   pGraph->getPoplarGraph().serialize(
-      ss, toPoplarProgs(progs.progs()), poplar::SerializationFormat::Binary);
+      ss, progs.progs(), poplar::SerializationFormat::Binary);
   return ss.str();
 }
 
@@ -961,7 +949,7 @@ IrLowering::getTensorCreators(Tensor *tensor) const {
       std::shared_ptr<InputMultiCreatorCandidate> multiCandidate =
           std::make_shared<InputMultiCreatorCandidate>();
       for (auto candidate : candidates) {
-        // Important to add candidates sorted by priority.
+        // Important to add candidates sorted by priorty.
         // Highest first - ICreatorCandidate::greaterThan.
         multiCandidate->addCreatorCandidate(candidate);
       }
@@ -1016,7 +1004,7 @@ PriTask IrLowering::initRandomSeed() {
 
   auto initRandomSeedTask = [this, streamedSeedId]() {
     logging::devicex::debug("Initializing random seed.");
-    SequenceMap seqs(graph());
+    SequenceMap seqs;
     auto &prog = seqs.getSequence(&progs.setRandomSeedFromHostFragment());
     auto &seed = tensors_.get(streamedSeedId);
     // Set the seed to the same value for each replica. When combined with
@@ -1025,7 +1013,7 @@ PriTask IrLowering::initRandomSeed() {
     poprand::setSeed(graph().getPoplarGraph(),
                      seed.getPoplarTensor(),
                      0,
-                     prog.getPoplarSequence(),
+                     prog,
                      logging::format("{}/set", streamedSeedId));
 
     // After setting the seed, offset the tensor by replication index.
@@ -1033,10 +1021,8 @@ PriTask IrLowering::initRandomSeed() {
     // required to provide distinct behaviour for each replia.
     auto offset = graph().getPoplarGraph().addReplicationIndexConstant();
     graph().getPoplarGraph().setTileMapping(offset, 0);
-    popops::addInPlace(graph().getPoplarGraph(),
-                       seed[0].getPoplarTensor(),
-                       offset,
-                       prog.getPoplarSequence());
+    popops::addInPlace(
+        graph().getPoplarGraph(), seed[0].getPoplarTensor(), offset, prog);
     return seqs;
   };
 
@@ -1066,17 +1052,16 @@ PriTask IrLowering::rngStateFromHost() {
 
     logging::devicex::debug("Initializing RNG h2d.");
 
-    SequenceMap seqs(graph());
+    SequenceMap seqs;
     seqs.getSequence(&progs.rngStateFromHostFragment())
         .add(poplar::program::Copy(streamRngFromHost,
                                    rngStateTensor.getPoplarTensor(),
                                    false,
                                    {"copyStreamRngStateTensor"}));
-    poplar::setHwSeeds(
-        graph().getPoplarGraph(),
-        rngStateTensor.getPoplarTensor(),
-        seqs.getSequence(&progs.rngStateFromHostFragment()).getPoplarSequence(),
-        "RNG set");
+    poplar::setHwSeeds(graph().getPoplarGraph(),
+                       rngStateTensor.getPoplarTensor(),
+                       seqs.getSequence(&progs.rngStateFromHostFragment()),
+                       "RNG set");
     logging::devicex::debug("RNG size {}", rngSize);
     return seqs;
   };
@@ -1089,7 +1074,7 @@ PriTask IrLowering::rngStateFromHost() {
 PriTask IrLowering::initRngStateTensor() {
   // Add a new tensor to the graph to store the Hw seed
   auto initRngStateTensorTask = [this]() {
-    SequenceMap seqs(graph());
+    SequenceMap seqs;
     auto workersPerIPU =
         graph().getPoplarGraph().getTarget().getNumWorkerContexts();
     auto numTiles  = graph().getPoplarGraph().getTarget().getNumTiles();
@@ -1099,7 +1084,7 @@ PriTask IrLowering::initRngStateTensor() {
                                              {"rngStateTensor"}),
         graph()};
     linearMapper.mapTensor(graph(), rngStateTensor);
-    return SequenceMap(graph());
+    return SequenceMap();
   };
   return {+1e6, initRngStateTensorTaskId(), {}, initRngStateTensorTask};
 }
@@ -1114,11 +1099,10 @@ PriTask IrLowering::rngStateToHost() {
 
     logging::devicex::debug("Initializing RNG d2h.");
     logging::devicex::debug("RNG size {}", rngSize);
-    SequenceMap seqs(graph());
+    SequenceMap seqs;
     rngStateTensor = snap::Tensor{
         poplar::getHwSeeds(graph().getPoplarGraph(),
-                           seqs.getSequence(&progs.rngStateToHostFragment())
-                               .getPoplarSequence(),
+                           seqs.getSequence(&progs.rngStateToHostFragment()),
                            "RNG get"),
         graph()};
     seqs.getSequence(&progs.rngStateToHostFragment())
@@ -1231,7 +1215,7 @@ PriTask IrLowering::setInitTensorValTask(Tensor *tensor) {
           tensor->info.data_type());
     }
     }
-    return SequenceMap(graph());
+    return SequenceMap();
   };
 
   return {// priority unimportant
@@ -1312,7 +1296,7 @@ PriTask IrLowering::streamFromHostTask(TensorId streamTensorId,
                                                       mode,
                                                       options));
     }
-    return SequenceMap(graph());
+    return SequenceMap();
   };
   return {
       0,                                    // priority unimportant
@@ -1342,7 +1326,7 @@ PriTask IrLowering::streamToHostTask(TensorId streamTensorId,
                                 d2hId(streamTensorId, isAnchorStream),
                                 popType(tensors.front()->info),
                                 tensors.front()->info.nelms()));
-    return SequenceMap(graph());
+    return SequenceMap();
   };
 
   return {
@@ -1474,7 +1458,7 @@ PriTask IrLowering::pipelinedCopyTask(Op *op, TaskId prevTaskId) {
   auto copyOpx = dynamic_cast<IpuCopyOpx *>(opx);
 
   auto f = [this, copyOp, copyOpx]() {
-    SequenceMap seqs(graph());
+    SequenceMap seqs;
     logging::debug("Adding pipelined copies for op {}", copyOp->debugName());
     auto &prog = progs.pipelineIpuCopyFragment(
         logging::format("{}, {}, PipelineStage({})",
@@ -1819,7 +1803,7 @@ PriTask IrLowering::initTensorTask(InitTensorPtrs inits) {
                               init->str(),
                               success ? "yes" : "no");
       if (success) {
-        return SequenceMap(graph());
+        return SequenceMap();
       }
     }
     // None of the inits worked
@@ -1919,7 +1903,7 @@ IrLowering::opTasks(Op *op, double priority, TaskId prevOpTaskId) {
   }
 
   auto opTaskGrowFunc = [op, this]() {
-    SequenceMap seqs(graph());
+    SequenceMap seqs;
     const auto &containingGraph = op->getGraph();
     const auto &opts            = ir().getSessionOptions();
     // if this Op is not in the main scope
@@ -2041,8 +2025,8 @@ IrLowering::opTasks(Op *op, double priority, TaskId prevOpTaskId) {
 
   for (auto &partIdAndDependencies : opGrowPartIds) {
     if (partIdAndDependencies.first != unusedGrowPartId) {
-      auto opTaskPartGrowFunc = [partIdAndDependencies, opx, this]() {
-        SequenceMap seqs(graph());
+      auto opTaskPartGrowFunc = [partIdAndDependencies, opx]() {
+        SequenceMap seqs;
 
         // Grow a part of the Opx
         opx->growPart(partIdAndDependencies.first);
@@ -2145,7 +2129,7 @@ void IrLowering::growOpx(PopOpx *opx,
   // Grow code for the op into a separate vector, because we may decide to
   // now include code for this in the poplar program. But we need to grow it
   // in any case.
-  std::vector<snap::program::Sequence> seqVec;
+  std::vector<poplar::program::Sequence> seqVec;
 
   {
     const auto growTimeTracker = ir().timePartitionLogger().scopedStopwatch(
@@ -2235,7 +2219,7 @@ void IrLowering::growOpx(PopOpx *opx,
                                popops::expr::NotEqual(lhsExpr, rhsExpr),
                                {nonModified.second.first.getPoplarTensor(),
                                 nonModified.second.second.getPoplarTensor()},
-                               seqIt->getPoplarSequence(),
+                               *seqIt,
                                opx->debugContext("opxModifyChecking"),
                                {});
       auto checkReduced = check.flatten();
@@ -2245,7 +2229,7 @@ void IrLowering::growOpx(PopOpx *opx,
                                       checkReduced,
                                       {0},
                                       {popops::Operation::LOGICAL_OR},
-                                      seqIt->getPoplarSequence(),
+                                      *seqIt,
                                       opx->debugContext("opxModifyChecking"));
       } else {
         checkReduced = checkReduced.squeeze({0});
@@ -2257,12 +2241,9 @@ void IrLowering::growOpx(PopOpx *opx,
                           nonModified.first),
           check,
           opx->debugContext("if"));
-      auto elseProg =
-          snap::program::Sequence(opx->debugContext("else"), graph());
-      seqIt->add(poplar::program::If(checkReduced,
-                                     ifProg,
-                                     elseProg.getPoplarSequence(),
-                                     opx->debugContext("opxModifyCheck")));
+      auto elseProg = poplar::program::Sequence({}, opx->debugContext("else"));
+      seqIt->add(poplar::program::If(
+          checkReduced, ifProg, elseProg, opx->debugContext("opxModifyCheck")));
     }
   }
 
@@ -2334,7 +2315,7 @@ void IrLowering::opTaskFunc(TaskId taskId, Op *op, SequenceMap &seqs) {
     // 2 special case Ops when there is a gradient accumulator / velocity.
     // If we are doing gradient accumulation, we need to ensure the reset
     // and var update aren't run every time. Instead, these fragments sit
-    // outside the "main" loop of the forwards and backwards passes.
+    // outside the "main" loop of the fowards and backwards passes.
     // special case Op 1:
     if (ir().getSessionOptions().enableGradientAccumulation &&
         context == ExecutionContext::AccumulateOuterFragment) {
@@ -2519,19 +2500,16 @@ unsigned IrLowering::getAccumulationFactor() const {
   return ir().getSessionOptions().getAccumulationFactor();
 }
 
-// Floating point settings are not supported on CPU
+// Floating point settings are not suported on CPU
 void IrLowering::setFloatingPointBehaviour(snap::Graph &graph) {
 
   if (ir().getSessionOptions().enableFloatingPointChecks) {
     if (deviceInfo->getType() == DeviceType::Ipu) {
       logging::devicex::info("Enabling all floating point checks");
-      // Not enabling stochasitc rounding, that is done in a separate call
+      // Not enabling stochasitc rounding, that is done in a seperate call
       poplar::FloatingPointBehaviour behaviour(true, true, true, false, true);
       poplar::setFloatingPointBehaviour(
-          graph.getPoplarGraph(),
-          progs.initFragment().getPoplarSequence(),
-          behaviour,
-          "/init");
+          graph.getPoplarGraph(), progs.initFragment(), behaviour, "/init");
     } else {
       logging::devicex::warn(
           "Floating point checks cannot be enabled for non IPU devices");
@@ -2539,17 +2517,15 @@ void IrLowering::setFloatingPointBehaviour(snap::Graph &graph) {
   }
 }
 
-// Stochastic rounding is only supported on the IPU
+// Stocastic rounding is only supported on the IPU
 void IrLowering::setStochasticRoundingBehaviour(snap::Graph &graph) {
 
   if (ir().getSessionOptions().enableStochasticRounding) {
     if (deviceInfo->getType() == DeviceType::Ipu) {
       logging::devicex::info("Enabling stochastic rounding");
       bool behaviour = true;
-      poplar::setStochasticRounding(graph.getPoplarGraph(),
-                                    progs.initFragment().getPoplarSequence(),
-                                    behaviour,
-                                    "/init");
+      poplar::setStochasticRounding(
+          graph.getPoplarGraph(), progs.initFragment(), behaviour, "/init");
     } else {
       logging::devicex::warn(
           "Stochastic rounding cannot be enabled for non IPU devices");
@@ -2728,7 +2704,6 @@ void IrLowering::prepareGraph() {
   }
 
   initPoplarGraph();
-  progs.initWithSnapGraph(graph());
 
   logging::devicex::info("Poplar graph initialised");
 
@@ -3271,7 +3246,7 @@ void IrLowering::prepareGraph() {
           seqs.find(emplaceTask.name) != seqs.end()) {
         logging::devicex::trace("Adding sequences for task {}",
                                 emplaceTask.name);
-        auto &sequenceMap = seqs.at(emplaceTask.name);
+        auto &sequenceMap = seqs[emplaceTask.name];
         for (auto seq : sequenceMap.getFullSequenceMap()) {
           // Emplace intermediate sequence in final sequence
           seq.first->add(*seq.second);
@@ -3303,7 +3278,7 @@ void IrLowering::prepareGraph() {
                               subgraphTaskNames.size());
       emplaceTaskSeqs(subgraphTaskNames);
     }
-    seqs.insert({createTask.name, createTask.f()});
+    seqs[createTask.name] = createTask.f();
   }
   // Emplace any main graph task sequences
   emplaceTaskSeqs({});
@@ -3325,21 +3300,19 @@ void IrLowering::prepareGraph() {
   if (ir().getSessionOptions().exportPoplarVertexGraph) {
     std::ofstream strm;
     strm.open("poplar_vertex_graph.dot", std::ios::out);
-    graph().getPoplarGraph().outputVertexGraph(strm,
-                                               toPoplarProgs(progs.progs()));
+    graph().getPoplarGraph().outputVertexGraph(strm, progs.progs());
   }
 
   if (ir().getSessionOptions().exportPoplarComputationGraph) {
     std::ofstream strm;
     strm.open("poplar_compute_graph.dot", std::ios::out);
-    graph().getPoplarGraph().outputComputeGraph(strm,
-                                                toPoplarProgs(progs.progs()));
+    graph().getPoplarGraph().outputComputeGraph(strm, progs.progs());
   }
 
   prepareGraphHasBeenCalled_ = true;
 }
 
-snap::program::Sequence &IrLowering::getAnchorReturnFragment(Tensor *tensor) {
+poplar::program::Sequence &IrLowering::getAnchorReturnFragment(Tensor *tensor) {
   if (ir().getSessionOptions().implicitPipeliningEnabled()) {
     auto isOptimizerTensorCopy = [&](Op *x) {
       return x->isConvertibleTo<IpuCopyOp>() &&
@@ -3400,7 +3373,7 @@ poplar::Executable IrLowering::getExecutable() {
       logging::devicex::info("Starting compilation");
 
       auto executable = poplar::compileGraph(graph().getPoplarGraph(),
-                                             toPoplarProgs(progs.progs()),
+                                             progs.progs(),
                                              engineOptions,
                                              std::ref(progressLogger),
                                              getPoplarGraphDebugName());
@@ -3514,7 +3487,8 @@ TaskId IrLowering::pipelinedCopyTaskId(Op *op) {
   return TaskId(TaskId::Type::PipelinedCopyTask, op->id, op->opid);
 }
 
-PriTask IrLowering::fromHostTask(Tensor *tensor, snap::program::Sequence &sq) {
+PriTask IrLowering::fromHostTask(Tensor *tensor,
+                                 poplar::program::Sequence &sq) {
   double priority;
   if (ir().getSessionOptions().groupHostSync) {
     priority = std::numeric_limits<double>::max();
@@ -3522,7 +3496,7 @@ PriTask IrLowering::fromHostTask(Tensor *tensor, snap::program::Sequence &sq) {
     priority = -1e6; // writes to device: always as late as possible (default)
   }
   auto f = [&sq, tensor, this]() {
-    SequenceMap seqs(graph());
+    SequenceMap seqs;
     logging::devicex::debug("Adding poplar::program::Copy from host " +
                             tensor->id);
 
@@ -3533,7 +3507,7 @@ PriTask IrLowering::fromHostTask(Tensor *tensor, snap::program::Sequence &sq) {
         // to zero-init it
         popops::zero(graph().getPoplarGraph(),
                      tensors_.get(tensor->id).getPoplarTensor(),
-                     seqs.getSequence(&sq).getPoplarSequence(),
+                     seqs.getSequence(&sq),
                      {"copyFromHost"});
       }
     }
@@ -3559,16 +3533,11 @@ PriTask IrLowering::fromHostTask(Tensor *tensor, snap::program::Sequence &sq) {
 }
 
 PriTask IrLowering::toHostTask(Tensor *tensor,
-                               snap::program::Sequence &sq,
+                               poplar::program::Sequence &sq,
                                ToHostStreamType stype) const {
 
   auto f = [&sq, tensor, this, stype]() {
-    // Have to use pGraph instead of IrLowering::graph() because we need a
-    // non-const snap::Graph.
-    if (pGraph == nullptr) {
-      throw error("snap::Graph is null");
-    }
-    SequenceMap seqs(*pGraph);
+    SequenceMap seqs;
     logging::devicex::debug("Adding poplar::program::Copy to host "
                             "(Type: {}) {}",
                             static_cast<int>(stype),
@@ -3647,9 +3616,9 @@ PriTask IrLowering::toHostTask(Tensor *tensor,
 }
 
 PriTask IrLowering::anchorReturnTypeSumTask(Tensor *tensor,
-                                            snap::program::Sequence &sq) {
+                                            poplar::program::Sequence &sq) {
   auto f = [&sq, tensor, this]() {
-    SequenceMap seqs(graph());
+    SequenceMap seqs;
 
     const auto &poplarTensor     = tensors_.get(tensor->id);
     const TensorId accumulatorId = anchorSumPrefix() + tensor->id;
@@ -3663,12 +3632,12 @@ PriTask IrLowering::anchorReturnTypeSumTask(Tensor *tensor,
     popops::addInPlace(graph().getPoplarGraph(),
                        accumulatorTensor.getPoplarTensor(),
                        poplarTensor.getPoplarTensor(),
-                       seqs.getSequence(&sq).getPoplarSequence(),
+                       seqs.getSequence(&sq),
                        "AnchorSum_" + tensor->id);
     // Zero the accumulator
     popops::zero(graph().getPoplarGraph(),
                  accumulatorTensor.getPoplarTensor(),
-                 seqs.getSequence(&progs.initFragment()).getPoplarSequence(),
+                 seqs.getSequence(&progs.initFragment()),
                  "AnchorSumZero_" + tensor->id);
 
     return seqs;
@@ -3695,7 +3664,7 @@ PriTask IrLowering::anchorReturnTypeSumTask(Tensor *tensor,
           f};
 }
 
-PriTask IrLowering::initBatchCounterTensorsTask(snap::program::Sequence &sq) {
+PriTask IrLowering::initBatchCounterTensorsTask(poplar::program::Sequence &sq) {
 
   auto f = [&sq, this]() {
     logging::devicex::debug("Adding batch counter tensors");
@@ -3721,7 +3690,7 @@ PriTask IrLowering::initBatchCounterTensorsTask(snap::program::Sequence &sq) {
       // Set the initial values of the tensors_.
       popops::zero(graph().getPoplarGraph(),
                    batchCountingTensors[N].getPoplarTensor(),
-                   sq.getPoplarSequence(),
+                   sq,
                    logging::format("initBatchCountTensors[{}]", N));
       sq.add(
           poplar::program::Copy(falseConst.getPoplarTensor(),
@@ -3732,7 +3701,7 @@ PriTask IrLowering::initBatchCounterTensorsTask(snap::program::Sequence &sq) {
 
     // Make sure const 1 tensor exists
     getConst(graph(), poplar::INT, {}, 1, "one");
-    return SequenceMap(graph());
+    return SequenceMap();
   };
 
   return {+1e6, // followed by writes to host: always as early as possible
@@ -3741,14 +3710,14 @@ PriTask IrLowering::initBatchCounterTensorsTask(snap::program::Sequence &sq) {
           f};
 }
 
-PriTask IrLowering::updateBatchCountTask(snap::program::Sequence &sq) {
+PriTask IrLowering::updateBatchCountTask(poplar::program::Sequence &sq) {
 
   auto f = [&sq, this]() {
-    SequenceMap seqs(graph());
+    SequenceMap seqs;
     logging::devicex::debug("Adding batch count checker program");
 
     // Placeholder 'do nothing' branch if not running assign program
-    snap::program::Sequence emptyseq(poplar::DebugContext{"empty"}, graph());
+    poplar::program::Sequence emptyseq({}, {"empty"});
 
     // Increment the batch count at the at the earliest point
     // the anchor tensor is required, and check if it is a
@@ -3758,14 +3727,14 @@ PriTask IrLowering::updateBatchCountTask(snap::program::Sequence &sq) {
                          batchCountingTensors[N].getPoplarTensor(),
                          getConst(graph(), poplar::INT, {}, 1, "batchCount/one")
                              .getPoplarTensor(),
-                         seqs.getSequence(&sq).getPoplarSequence());
+                         seqs.getSequence(&sq));
 
       batchCountCheckingTensors[N] = snap::Tensor{
           popops::eq(graph().getPoplarGraph(),
                      batchCountingTensors[N].getPoplarTensor(),
                      getConst(graph(), poplar::INT, {}, N, "batchCount/n")
                          .getPoplarTensor(),
-                     seqs.getSequence(&sq).getPoplarSequence()),
+                     seqs.getSequence(&sq)),
           graph()};
 
       // Reset batch count once it has reached N
@@ -3776,7 +3745,7 @@ PriTask IrLowering::updateBatchCountTask(snap::program::Sequence &sq) {
                                 batchCountingTensors[N].getPoplarTensor(),
                                 false,
                                 {"copyZero"}),
-          emptyseq.getPoplarSequence(),
+          emptyseq,
           {"batchCountResetCheck"}));
     }
     return seqs;
@@ -3822,16 +3791,16 @@ std::map<PipelineStage, VGraphId> IrLowering::getPipelineToVGraphIdMap() const {
 
 PriTask IrLowering::toHostEveryNBatchesTask(Tensor *tensor,
                                             int N,
-                                            snap::program::Sequence &sq) {
+                                            poplar::program::Sequence &sq) {
 
   auto f = [&sq, tensor, N, this]() {
-    SequenceMap seqs(graph());
+    SequenceMap seqs;
     logging::devicex::debug(
         "Adding conditional poplar::program::Copy to host " + tensor->id);
 
     snap::Tensor isNthBatch = batchCountCheckingTensors.at(N);
 
-    snap::program::Sequence copyseq(poplar::DebugContext{"copy"}, graph());
+    poplar::program::Sequence copyseq({}, {"copy"});
     copyseq.add(
         poplar::program::Copy(tensors_.get(tensor->id).getPoplarTensor(),
                               toHostAnchorStreams.at(tensor->id),
@@ -3839,12 +3808,10 @@ PriTask IrLowering::toHostEveryNBatchesTask(Tensor *tensor,
                               {"copyToHostEveryNBatches"}));
 
     // Placeholder 'do nothing' branch if not running copy program
-    snap::program::Sequence emptyseq(poplar::DebugContext{"empty"}, graph());
+    poplar::program::Sequence emptyseq({}, {"empty"});
 
-    seqs.getSequence(&sq).add(poplar::program::If(isNthBatch.getPoplarTensor(),
-                                                  copyseq.getPoplarSequence(),
-                                                  emptyseq.getPoplarSequence(),
-                                                  {"nthBatchCheck"}));
+    seqs.getSequence(&sq).add(poplar::program::If(
+        isNthBatch.getPoplarTensor(), copyseq, emptyseq, {"nthBatchCheck"}));
     return seqs;
   };
 

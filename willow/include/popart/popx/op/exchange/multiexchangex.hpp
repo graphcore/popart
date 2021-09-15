@@ -13,7 +13,7 @@ namespace popx {
 class MultiExchangeOpx : public ExchangeBaseOpx {
 public:
   MultiExchangeOpx(Op *, Devicex *);
-  void grow(snap::program::Sequence &) const final;
+  void grow(poplar::program::Sequence &) const final;
   std::vector<std::pair<int, int>> getSegments() const;
 
   // Resolves the part ID by fist resolving which exchange descriptors consume
@@ -37,9 +37,9 @@ public:
 
 class MultiExchangeOpxState : public OpxState {
 public:
-  std::map<int, snap::program::Sequence> preSeqs;
-  std::map<int, snap::program::Sequence> exchangeSeqs;
-  std::map<int, snap::program::Sequence> postSeqs;
+  std::map<int, poplar::program::Sequence> preSeqs;
+  std::map<int, poplar::program::Sequence> exchangeSeqs;
+  std::map<int, poplar::program::Sequence> postSeqs;
 };
 
 } // namespace popx

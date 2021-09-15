@@ -11,7 +11,7 @@ namespace popx {
 class EqualOpx : public BinaryComparisonOpx {
 public:
   EqualOpx(Op *, Devicex *);
-  void grow(snap::program::Sequence &) const final;
+  void grow(poplar::program::Sequence &) const final;
 };
 
 } // namespace popx

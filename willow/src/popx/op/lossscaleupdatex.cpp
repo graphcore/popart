@@ -16,7 +16,7 @@
 namespace popart {
 namespace popx {
 
-void LossScaleUpdateOpx::grow(snap::program::Sequence &prog) const {
+void LossScaleUpdateOpx::grow(poplar::program::Sequence &prog) const {
   auto &op = getOp<LossScaleUpdateOp>();
   auto &ir = op_p->getIr();
 
@@ -61,11 +61,11 @@ void LossScaleUpdateOpx::grow(snap::program::Sequence &prog) const {
           .getPoplarTensor();
   popops::zero(graph().getPoplarGraph(),
                sumLowerBinCounts,
-               prog.getPoplarSequence(),
+               prog,
                debugContext("zeroLowerBinCounts"));
   popops::zero(graph().getPoplarGraph(),
                sumUpperBinCounts,
-               prog.getPoplarSequence(),
+               prog,
                debugContext("zeroUpperBinCounts"));
 
   for (int i = op.getFirstStatisticsTensorInIndex(); i < op.input->n(); i++) {
@@ -76,57 +76,55 @@ void LossScaleUpdateOpx::grow(snap::program::Sequence &prog) const {
     popops::addInPlace(graph().getPoplarGraph(),
                        sumLowerBinCounts,
                        lowerBinCount,
-                       prog.getPoplarSequence(),
+                       prog,
                        debugContext("sumLowerBinCounts"));
     popops::addInPlace(graph().getPoplarGraph(),
                        sumUpperBinCounts,
                        upperBinCount,
-                       prog.getPoplarSequence(),
+                       prog,
                        debugContext("sumUpperBinCounts"));
   }
 
   sumLowerBinCounts = popops::cast(graph().getPoplarGraph(),
                                    sumLowerBinCounts,
                                    poplar::FLOAT,
-                                   prog.getPoplarSequence(),
+                                   prog,
                                    debugContext());
   sumUpperBinCounts = popops::cast(graph().getPoplarGraph(),
                                    sumUpperBinCounts,
                                    poplar::FLOAT,
-                                   prog.getPoplarSequence(),
+                                   prog,
                                    debugContext());
   popops::mulInPlace(graph().getPoplarGraph(),
                      sumLowerBinCounts,
                      f,
-                     prog.getPoplarSequence(),
+                     prog,
                      debugContext("scaleSumLowerBinCounts"));
 
   auto shouldScaleDown = popops::map(graph().getPoplarGraph(),
                                      popops::expr::BinaryOpType::GREATER_THAN,
                                      sumUpperBinCounts,
                                      sumLowerBinCounts,
-                                     prog.getPoplarSequence(),
+                                     prog,
                                      debugContext());
 
   auto lossScaleUpdateFactor =
       getInTensor(op.getLossScaleUpdateFactorInIndex()).getPoplarTensor();
   auto updateFactorDType = popType(op.getUpdateFactorDType());
-  snap::program::Sequence scaleUp(graph()), scaleDown(graph());
+  poplar::program::Sequence scaleUp, scaleDown;
   popops::mulInPlace(graph().getPoplarGraph(),
                      lossScaleUpdateFactor,
                      2.0,
-                     scaleUp.getPoplarSequence(),
+                     scaleUp,
                      debugContext("scaleUp"));
   popops::mulInPlace(graph().getPoplarGraph(),
                      lossScaleUpdateFactor,
                      0.5,
-                     scaleDown.getPoplarSequence(),
+                     scaleDown,
                      debugContext("scaleDown"));
 
-  prog.add(poplar::program::If(shouldScaleDown,
-                               scaleDown.getPoplarSequence(),
-                               scaleUp.getPoplarSequence(),
-                               debugContext("lossScaleUpdate")));
+  prog.add(poplar::program::If(
+      shouldScaleDown, scaleDown, scaleUp, debugContext("lossScaleUpdate")));
   if (op.getClipOutput()) {
     // Whenever the finalLossScale is in fp16 or the weights are in fp16, the
     // finalLossScale should be clipped so that its value fits in the fp16
@@ -144,12 +142,12 @@ void LossScaleUpdateOpx::grow(snap::program::Sequence &prog) const {
     auto clipAt = popops::div(graph().getPoplarGraph(),
                               clipAt_,
                               lossScaling,
-                              prog.getPoplarSequence(),
+                              prog,
                               debugContext("clipAtValue"));
     popops::minInPlace(graph().getPoplarGraph(),
                        lossScaleUpdateFactor,
                        clipAt,
-                       prog.getPoplarSequence(),
+                       prog,
                        debugContext("clipOutput"));
   }
 

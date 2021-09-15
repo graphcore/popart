@@ -16,14 +16,14 @@ LambSquareOpx::LambSquareOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
   verifyOp<LambSquareOp>(op, Onnx::CustomOperators::LambSquare);
 }
 
-void LambSquareOpx::grow(snap::program::Sequence &prog) const {
+void LambSquareOpx::grow(poplar::program::Sequence &prog) const {
   auto rsq = popops::reduce(
       graph().getPoplarGraph(),
       getInTensor(LambSquareOp::getInIndex()).flatten().getPoplarTensor(),
       poplar::FLOAT,
       {0},
       {popops::Operation::SQUARE_ADD},
-      prog.getPoplarSequence(),
+      prog,
       debugContext("LambSquaredReducedFP32"));
 
   setOutTensor(LambSquareOp::getOutIndex(), snap::Tensor{rsq, graph()});

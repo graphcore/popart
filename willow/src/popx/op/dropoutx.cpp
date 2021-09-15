@@ -24,7 +24,7 @@ growDropout(snap::Graph &graph,
             const poplar::Tensor &refTensor,
             float ratio,
             const PopOpx &opx,
-            snap::program::Sequence &prog) {
+            poplar::program::Sequence &prog) {
   double dropoutProbability = 1. - static_cast<double>(ratio);
 
   // When ratio is outside of (0,1), an error is thrown in op creation,
@@ -38,14 +38,14 @@ growDropout(snap::Graph &graph,
                                  refTensor,
                                  refTensor.elementType(),
                                  dropoutProbability,
-                                 prog.getPoplarSequence(),
+                                 prog,
                                  opx.debugContext("mask"));
 
   // Use the mask to multiply by the input tensor and scale up.
   auto dropout = popops::map(graph.getPoplarGraph(),
                              pe::Mul(pe::Mul(pe::_1, pe::_2), pe::Const(scale)),
                              {mask, input},
-                             prog.getPoplarSequence(),
+                             prog,
                              opx.debugContext("dropout"));
 
   return {dropout, mask};
@@ -61,7 +61,7 @@ DropoutOpx::DropoutOpx(Op *op, Devicex *devicex)
                        Onnx::Operators::Dropout_10});
 }
 
-void DropoutOpx::grow(snap::program::Sequence &prog) const {
+void DropoutOpx::grow(poplar::program::Sequence &prog) const {
   auto &op = getOp<DropoutOp>();
 
   if (op_p->getIr().canTrain()) {
@@ -86,7 +86,7 @@ void DropoutOpx::grow(snap::program::Sequence &prog) const {
                      snap::Tensor{popops::cast(graph().getPoplarGraph(),
                                                mask,
                                                poplar::BOOL,
-                                               prog.getPoplarSequence(),
+                                               prog,
                                                debugContext("mask")),
                                   graph()});
       }
@@ -101,7 +101,7 @@ void DropoutOpx::grow(snap::program::Sequence &prog) const {
           refTensor,
           dropoutProbability,
           scale,
-          prog.getPoplarSequence(),
+          prog,
           debugContext("dropout"));
       setOutTensor(op.getOutIndex(), snap::Tensor{dropout, graph()});
     }

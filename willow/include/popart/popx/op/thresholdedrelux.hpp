@@ -12,7 +12,7 @@ class ThresholdedReluComputex : public EwuComputex {
 public:
   ThresholdedReluComputex(float _alpha) : alpha(_alpha) {}
 
-  void inplace(snap::program::Sequence &,
+  void inplace(poplar::program::Sequence &,
                snap::Graph &,
                const snap::Tensor &,
                const poplar::DebugNameAndId &,
@@ -42,7 +42,7 @@ public:
 class ThresholdedReluGradOpx : public PopOpx {
 public:
   ThresholdedReluGradOpx(Op *, Devicex *);
-  void grow(snap::program::Sequence &) const final;
+  void grow(poplar::program::Sequence &) const final;
 };
 
 } // namespace popx

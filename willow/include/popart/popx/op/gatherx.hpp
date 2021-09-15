@@ -13,7 +13,7 @@ namespace popx {
 class GatherBaseOpx : public PopOpx {
 public:
   GatherBaseOpx(Op *, Devicex *);
-  void grow(snap::program::Sequence &) const override = 0;
+  void grow(poplar::program::Sequence &) const override = 0;
 
   // create the input snap::Tensor for input at index
   // default : throw error (not all Opxs can createInput)
@@ -39,7 +39,7 @@ protected:
 class GatherOpx final : public GatherBaseOpx {
 public:
   GatherOpx(Op *, Devicex *);
-  void grow(snap::program::Sequence &) const final;
+  void grow(poplar::program::Sequence &) const final;
 
   // create the input poplar::Tensor for input at index
   // default : throw error (not all Opxs can createInput)
@@ -55,7 +55,7 @@ private:
 class GatherGradOpx : public PopOpx {
 public:
   GatherGradOpx(Op *, Devicex *);
-  void grow(snap::program::Sequence &) const final;
+  void grow(poplar::program::Sequence &) const final;
 
   static std::tuple<poplar::Tensor, poplar::Tensor, poplar::Tensor>
   handleNDMultiUpdate(poplar::Tensor target,

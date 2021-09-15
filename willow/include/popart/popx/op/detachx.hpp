@@ -16,13 +16,13 @@ class DetachOpx : public ElementWiseUnaryOpx {
 
 public:
   DetachOpx(popart::Op *, popart::popx::Devicex *);
-  void grow(snap::program::Sequence &) const;
+  void grow(poplar::program::Sequence &) const;
 };
 
 class DetachInplaceOpx : public ElementWiseUnaryOpx {
 public:
   DetachInplaceOpx(Op *, Devicex *);
-  void grow(snap::program::Sequence &) const final;
+  void grow(poplar::program::Sequence &) const final;
 };
 
 } // namespace popx

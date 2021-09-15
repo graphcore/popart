@@ -9,11 +9,11 @@
 namespace popart {
 namespace popx {
 
-snap::Tensor ArgMinOpx::extremaOp(snap::program::Sequence &prog,
+snap::Tensor ArgMinOpx::extremaOp(poplar::program::Sequence &prog,
                                   const snap::Tensor &input) const {
   return snap::Tensor{popnn::argMin(graph().getPoplarGraph(),
                                     input.getPoplarTensor(),
-                                    prog.getPoplarSequence(),
+                                    prog,
                                     debugContext("argmin")),
                       graph()};
 }

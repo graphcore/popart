@@ -12,7 +12,7 @@ TransposeOpx::TransposeOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
   verifyOp<TransposeOp>(op);
 }
 
-void TransposeOpx::grow(snap::program::Sequence &prog) const {
+void TransposeOpx::grow(poplar::program::Sequence &prog) const {
   auto perm = getOp<TransposeOp>().getPerm();
   std::vector<unsigned> unsigned_perm;
   for (auto i : perm) {
@@ -81,7 +81,7 @@ view::RegMap TransposeInplaceOpx::unwindRegion(InIndex inIndex,
   return op->bwdRegMap(inIndex, outIndex);
 }
 
-void TransposeInplaceOpx::grow(snap::program::Sequence &) const {
+void TransposeInplaceOpx::grow(poplar::program::Sequence &) const {
   auto perm = getOp<TransposeInplaceOp>().getPerm();
   std::vector<unsigned> unsigned_perm;
   for (auto i : perm) {

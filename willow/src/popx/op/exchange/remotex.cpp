@@ -19,7 +19,7 @@ RemoteStoreOpx::RemoteStoreOpx(Op *op, Devicex *devicex)
   verifyOp<RemoteStoreOp>(op, Onnx::CustomOperators::RemoteStore);
 }
 
-void RemoteStoreOpx::grow(snap::program::Sequence &prog) const {
+void RemoteStoreOpx::grow(poplar::program::Sequence &prog) const {
   auto &remoteStoreOp = getOp<RemoteStoreOp>();
 
   TensorId inTensorId =
@@ -57,7 +57,7 @@ RemoteLoadOpx::RemoteLoadOpx(Op *op, Devicex *devicex)
   verifyOp<RemoteLoadOp>(op, Onnx::CustomOperators::RemoteLoad);
 }
 
-void RemoteLoadOpx::grow(snap::program::Sequence &prog) const {
+void RemoteLoadOpx::grow(poplar::program::Sequence &prog) const {
   auto &remoteLoadOp = getOp<RemoteLoadOp>();
 
   TensorId inTensorId =

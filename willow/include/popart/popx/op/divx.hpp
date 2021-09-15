@@ -11,7 +11,7 @@ namespace popx {
 class DivOpx : public ElementWiseBinaryOpx {
 public:
   DivOpx(Op *, Devicex *);
-  void grow(snap::program::Sequence &) const final;
+  void grow(poplar::program::Sequence &) const final;
 };
 
 } // namespace popx

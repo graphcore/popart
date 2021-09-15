@@ -21,7 +21,7 @@ MeanOpx::MeanOpx(Op *op, Devicex *devicex) : ElementWiseUnaryOpx(op, devicex) {
   verifyOp<MeanOp>(op, {Onnx::Operators::Mean_8, Onnx::Operators::Mean_6});
 }
 
-void MeanOpx::grow(snap::program::Sequence &prog) const {
+void MeanOpx::grow(poplar::program::Sequence &prog) const {
   auto outTensor = cloneNcopy(prog, getInTensor(0));
 
   if (op_p->input->n() > 1) {
@@ -57,7 +57,7 @@ void MeanOpx::grow(snap::program::Sequence &prog) const {
         popops::map(graph().getPoplarGraph(),
                     pe::Divide(*expr.front(), pe::Const(op_p->input->n())),
                     inputs,
-                    prog.getPoplarSequence(),
+                    prog,
                     debugContext("mean")),
         graph()};
   }
@@ -68,7 +68,7 @@ void MeanOpx::grow(snap::program::Sequence &prog) const {
 MeanArgGradOpx::MeanArgGradOpx(Op *op_, Devicex *devicex_)
     : PopOpx(op_, devicex_) {}
 
-void MeanArgGradOpx::grow(snap::program::Sequence &prog) const {
+void MeanArgGradOpx::grow(poplar::program::Sequence &prog) const {
   auto &gradOp = getOp<MeanArgGradOp>();
 
   auto shapeOfInputToBwdOp = inInfo(MeanArgGradOp::getGradInIndex()).shape();
@@ -85,14 +85,14 @@ void MeanArgGradOpx::grow(snap::program::Sequence &prog) const {
       getInTensor(MeanArgGradOp::getGradInIndex()).getPoplarTensor(),
       vXtoY<int64_t, std::size_t>(axes),
       {popops::Operation::ADD},
-      prog.getPoplarSequence(),
+      prog,
       debugContext("reduce"));
 
   // scale the grad input (reduced)
   popops::mapInPlace(graph().getPoplarGraph(),
                      pe::Mul(pe::_1, pe::Const(gradOp.getScale())),
                      {out},
-                     prog.getPoplarSequence(),
+                     prog,
                      debugContext("mull"));
 
   // Reshape the output, to add 1's if needed

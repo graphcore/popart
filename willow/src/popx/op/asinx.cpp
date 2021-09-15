@@ -25,7 +25,7 @@ AsinOpx::AsinOpx(Op *op, Devicex *devicex)
   verifyOp<AsinOp>(op, Onnx::Operators::Asin_7);
 }
 
-snap::Tensor AsinComputex::outplace(snap::program::Sequence &p,
+snap::Tensor AsinComputex::outplace(poplar::program::Sequence &p,
                                     snap::Graph &g,
                                     const snap::Tensor &t,
                                     const poplar::DebugNameAndId &dnai,
@@ -35,7 +35,7 @@ snap::Tensor AsinComputex::outplace(snap::program::Sequence &p,
   return outTensor;
 }
 
-void AsinComputex::inplace(snap::program::Sequence &p,
+void AsinComputex::inplace(poplar::program::Sequence &p,
                            snap::Graph &g,
                            const snap::Tensor &t,
                            const poplar::DebugNameAndId &dnai,
@@ -44,7 +44,7 @@ void AsinComputex::inplace(snap::program::Sequence &p,
   popops::mapInPlace(g.getPoplarGraph(),
                      popops::expr::UnaryOpType::ASIN,
                      t.getPoplarTensor(),
-                     p.getPoplarSequence(),
+                     p,
                      {dnai, s});
 }
 
@@ -52,7 +52,7 @@ AsinGradOpx::AsinGradOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
   verifyOp<AsinGradOp>(op, Onnx::GradOperators::AsinGrad);
 }
 
-void AsinGradOpx::grow(snap::program::Sequence &prog) const {
+void AsinGradOpx::grow(poplar::program::Sequence &prog) const {
   const auto input =
       getInTensor(AsinGradOp::getGradInIndex()).getPoplarTensor();
   const auto fwd_input =
@@ -70,7 +70,7 @@ void AsinGradOpx::grow(snap::program::Sequence &prog) const {
   auto output = popops::map(graph().getPoplarGraph(),
                             *exprs.back(),
                             {input, fwd_input},
-                            prog.getPoplarSequence(),
+                            prog,
                             debugContext("inverse_sine_grad"));
 
   setOutTensor(AsinGradOp::getOutIndex(), snap::Tensor{output, graph()});

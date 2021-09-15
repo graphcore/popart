@@ -14,13 +14,13 @@ class ScaleComputex : public EwuComputex {
 public:
   ScaleComputex(double x) : scale_factor(x) {}
 
-  snap::Tensor outplace(snap::program::Sequence &,
+  snap::Tensor outplace(poplar::program::Sequence &,
                         snap::Graph &,
                         const snap::Tensor &tensor,
                         const poplar::DebugNameAndId &,
                         const std::string &) const final;
 
-  void inplace(snap::program::Sequence &,
+  void inplace(poplar::program::Sequence &,
                snap::Graph &,
                const snap::Tensor &,
                const poplar::DebugNameAndId &,

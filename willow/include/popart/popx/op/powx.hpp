@@ -13,14 +13,14 @@ class PowComputex : public EwbComputex {
 public:
   explicit PowComputex(EwbComputex::InplacePolicy ip);
 
-  snap::Tensor outplace(snap::program::Sequence &,
+  snap::Tensor outplace(poplar::program::Sequence &,
                         snap::Graph &,
                         const snap::Tensor &,
                         const snap::Tensor &,
                         const poplar::DebugNameAndId &,
                         const std::string &) const final;
 
-  void inplace(snap::program::Sequence &,
+  void inplace(poplar::program::Sequence &,
                snap::Graph &,
                const snap::Tensor &,
                const snap::Tensor &,

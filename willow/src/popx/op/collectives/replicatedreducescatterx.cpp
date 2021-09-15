@@ -22,7 +22,7 @@ ReplicatedReduceScatterOpx::ReplicatedReduceScatterOpx(Op *op, Devicex *devicex)
       op, Onnx::CustomOperators::ReplicatedReduceScatter);
 }
 
-void ReplicatedReduceScatterOpx::grow(snap::program::Sequence &prog) const {
+void ReplicatedReduceScatterOpx::grow(poplar::program::Sequence &prog) const {
   const auto &rrsOp = getOp<ReplicatedReduceScatterOp>();
 
   const auto inIndex   = ReplicatedReduceScatterOp::getInIndex();
@@ -47,10 +47,8 @@ void ReplicatedReduceScatterOpx::grow(snap::program::Sequence &prog) const {
                                 toReduceScatter.elementType(),
                                 inId(ReplicatedReduceScatterOp::getInIndex())),
                             graph()};
-      popops::zero(graph().getPoplarGraph(),
-                   c.getPoplarTensor(),
-                   prog.getPoplarSequence(),
-                   debugContext());
+      popops::zero(
+          graph().getPoplarGraph(), c.getPoplarTensor(), prog, debugContext());
       auto ref = cbr->undoRearrangeForCollective(c.getPoplarTensor());
       if (hasInViewChangers(ReplicatedReduceScatterOp::getInIndex())) {
         prog.add(poplar::program::Copy(
@@ -79,7 +77,7 @@ void ReplicatedReduceScatterOpx::grow(snap::program::Sequence &prog) const {
       graph().getPoplarGraph(),
       toReduceScatter.flatten().getPoplarTensor(),
       getPoplarCollectiveOperator(rrsOp.getCollectiveOp()),
-      prog.getPoplarSequence(),
+      prog,
       toGCLCommGroup(rrsOp.getGCLCommGroup()),
       debugContext("replicatedReduceScatter"),
       reduceScatterOptions);

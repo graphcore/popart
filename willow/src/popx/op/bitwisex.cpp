@@ -16,14 +16,14 @@ BitwiseNotOpx::BitwiseNotOpx(Op *op, Devicex *devicex)
   verifyOp<BitwiseNotOpx>(op, {Onnx::AiGraphcore::OpSet1::BitwiseNot});
 }
 
-void BitwiseNotOpx::grow(snap::program::Sequence &prog) const {
+void BitwiseNotOpx::grow(poplar::program::Sequence &prog) const {
   insert(
       outId(BitwiseNotOp::getOutIndex()),
       snap::Tensor{
           popops::map(graph().getPoplarGraph(),
                       popops::expr::UnaryOpType::BITWISE_NOT,
                       get(inId(BitwiseNotOp::getInIndex())).getPoplarTensor(),
-                      prog.getPoplarSequence(),
+                      prog,
                       debugContext()),
           graph()});
 }
@@ -37,7 +37,7 @@ BitwiseBinaryOpx::BitwiseBinaryOpx(Op *op, Devicex *devicex)
                               Onnx::AiGraphcore::OpSet1::BitwiseXnor});
 }
 
-void BitwiseBinaryOpx::grow(snap::program::Sequence &prog) const {
+void BitwiseBinaryOpx::grow(poplar::program::Sequence &prog) const {
   insert(
       outId(BitwiseBinaryOp::getOutIndex()),
       snap::Tensor{
@@ -46,7 +46,7 @@ void BitwiseBinaryOpx::grow(snap::program::Sequence &prog) const {
               determineOpType(),
               getInTensor(BitwiseBinaryOp::getArg0InIndex()).getPoplarTensor(),
               getInTensor(BitwiseBinaryOp::getArg1InIndex()).getPoplarTensor(),
-              prog.getPoplarSequence(),
+              prog,
               debugContext()),
           graph()});
 }

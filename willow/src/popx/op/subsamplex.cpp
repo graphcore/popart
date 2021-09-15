@@ -32,7 +32,7 @@ SubsampleOpx::SubsampleOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
   verifyOp<SubsampleOp>(op, {Onnx::CustomOperators::Subsample_1});
 }
 
-void SubsampleOpx::grow(snap::program::Sequence &prog) const {
+void SubsampleOpx::grow(poplar::program::Sequence &prog) const {
 
   SubsampleOp &op = getOp<SubsampleOp>();
   auto outTensor  = getInTensor(SubsampleOp::getInIndex()).getPoplarTensor();
@@ -42,7 +42,7 @@ void SubsampleOpx::grow(snap::program::Sequence &prog) const {
                cloneNcopy(prog, snap::Tensor{outTensor, graph()}));
 }
 
-void SubsampleInplaceOpx::grow(snap::program::Sequence &) const {
+void SubsampleInplaceOpx::grow(poplar::program::Sequence &) const {
   SubsampleInplaceOp &op = getOp<SubsampleInplaceOp>();
   auto outTensor = getInTensor(SubsampleOp::getInIndex()).getPoplarTensor();
   outTensor      = subsample(outTensor, op.strides_u32());
@@ -58,7 +58,7 @@ SubsampleGradOpx::SubsampleGradOpx(Op *op, Devicex *devicex)
 // 2. Create a subsample of that tensor that matches what we did in the fwd pass
 // 3. Copy the input gradients onto the subsample view of the output
 // 4. Return the output tensor
-void SubsampleGradOpx::grow(snap::program::Sequence &prog) const {
+void SubsampleGradOpx::grow(poplar::program::Sequence &prog) const {
 
   SubsampleGradOp &gradOp = getOp<SubsampleGradOp>();
   auto &in = getInTensor(SubsampleGradOp::getInIndex()).getPoplarTensor();

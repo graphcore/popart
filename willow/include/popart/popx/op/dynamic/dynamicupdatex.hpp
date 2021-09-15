@@ -11,7 +11,7 @@ namespace popx {
 class DynamicUpdateOpx : public PopOpx {
 public:
   DynamicUpdateOpx(Op *, Devicex *);
-  void grow(snap::program::Sequence &) const override;
+  void grow(poplar::program::Sequence &) const override;
   InputCreatorType getInputCreatorType(InIndex index) const override;
   snap::Tensor unwindTensorLayout(snap::Tensor, InIndex, OutIndex) const final;
   view::RegMap unwindRegion(InIndex, OutIndex) const final;
@@ -19,14 +19,14 @@ public:
   createInputTensor(InIndex index,
                     const poplar::DebugNameAndId &dnai) const final;
   std::set<TensorId> mustExistBeforeCreate(InIndex) const final;
-  virtual snap::Tensor cloneNcopyOpt(snap::program::Sequence &,
+  virtual snap::Tensor cloneNcopyOpt(poplar::program::Sequence &,
                                      const snap::Tensor &) const;
 };
 
 class DynamicUpdateInplaceOpx : public DynamicUpdateOpx {
 public:
   DynamicUpdateInplaceOpx(Op *, Devicex *);
-  snap::Tensor cloneNcopyOpt(snap::program::Sequence &,
+  snap::Tensor cloneNcopyOpt(poplar::program::Sequence &,
                              const snap::Tensor &) const override;
 };
 

@@ -10,7 +10,7 @@ namespace popx {
 class SGD0VarUpdateOpx : public VarUpdateOpx {
 public:
   SGD0VarUpdateOpx(Op *, Devicex *);
-  void grow(snap::program::Sequence &) const final;
+  void grow(poplar::program::Sequence &) const final;
 
   // does not create inputs
 };

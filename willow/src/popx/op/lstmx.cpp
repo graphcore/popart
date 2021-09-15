@@ -47,7 +47,7 @@ std::unique_ptr<snap::Tensor> LSTMOpx::createIntermediate() const {
   }
 }
 
-void LSTMOpx::grow(snap::program::Sequence &prog) const {
+void LSTMOpx::grow(poplar::program::Sequence &prog) const {
   prepareWeights(prog);
   growBias(prog);
 
@@ -66,7 +66,7 @@ void LSTMOpx::grow(snap::program::Sequence &prog) const {
                            input.getPoplarTensor(),
                            *weights,
                            getPoplarTensor(intermediate.get()),
-                           prog.getPoplarSequence(),
+                           prog,
                            debugContext("lstmFwd"),
                            dv_p->lowering().lstmOptions,
                            &dv_p->matmulCache);
@@ -123,7 +123,7 @@ snap::Tensor LSTMOpx::getSeqLens() const {
   }
 }
 
-void LSTMOpx::growBias(snap::program::Sequence &prog) const {
+void LSTMOpx::growBias(poplar::program::Sequence &prog) const {
   // bias in onnx is shape [num_directions, 8 * hidden_size]
   // bias in poplibs is [4, hidden_size]
   auto &lstm_op        = getOp<LSTMOp>();
@@ -145,12 +145,12 @@ void LSTMOpx::growBias(snap::program::Sequence &prog) const {
                        popops::expr::BinaryOpType::ADD,
                        biases.getPoplarTensor(),
                        bias_input.slice(4 * hidden_size, 8 * hidden_size, 1),
-                       prog.getPoplarSequence(),
+                       prog,
                        debugContext("add"));
   } else {
     popops::zero(graph().getPoplarGraph(),
                  biases.getPoplarTensor(),
-                 prog.getPoplarSequence(),
+                 prog,
                  debugContext("zero"));
   }
 }
@@ -193,7 +193,7 @@ snap::Tensor LSTMOpx::reshapePoplibWeightsForOnnx(snap::Tensor poplib_weights,
   // where
   //   num_directions is always 1 for popart
   //   and K is either input_size or hidden_size, for the inputWeights or
-  //   outputWeights respectively
+  //   outputWeights respectivly
   // and order is W[iofc]
   //
   // poplibs expects weights in shape [4, K, hidden_size]
@@ -299,7 +299,7 @@ std::set<TensorId> LSTMOpx::mustExistBeforeCreate(InIndex) const {
   return {};
 }
 
-void LSTMOpx::prepareWeights(snap::program::Sequence &prog) const {
+void LSTMOpx::prepareWeights(poplar::program::Sequence &prog) const {
   // check to see if the weights were created
   prog.add(poplar::program::Copy(
       getInTensor(LSTMOp::getWeightsInIndex()).getPoplarTensor(),
@@ -317,7 +317,7 @@ void LSTMOpx::prepareWeights(snap::program::Sequence &prog) const {
       debugContext()));
 }
 
-snap::Tensor LSTMOpx::getInput(snap::program::Sequence &prog) const {
+snap::Tensor LSTMOpx::getInput(poplar::program::Sequence &prog) const {
   if (!inputCreated(LSTMOp::getInputInIndex())) {
     auto input     = createInputTensor(LSTMOp::getInputInIndex(),
                                    getDebugNameAndId("input"));
@@ -333,7 +333,7 @@ snap::Tensor LSTMOpx::getInput(snap::program::Sequence &prog) const {
 }
 
 void LSTMOpx::prepareInitialState(popnn::lstm::LstmState &init_state,
-                                  snap::program::Sequence &prog) const {
+                                  poplar::program::Sequence &prog) const {
   auto &lstm_op           = getOp<LSTMOp>();
   auto hasInitC           = lstm_op.hasInitialCInput();
   auto hasInitH           = lstm_op.hasInitialHInput();
@@ -343,20 +343,14 @@ void LSTMOpx::prepareInitialState(popnn::lstm::LstmState &init_state,
 
   // If initC and initH are not present, one or both will need zeroing.
   if (!hasInitC && !hasInitH) {
-    zeroInitialState(graph().getPoplarGraph(),
-                     init_state,
-                     prog.getPoplarSequence(),
-                     debugContext());
+    zeroInitialState(
+        graph().getPoplarGraph(), init_state, prog, debugContext());
   } else if (!hasInitC) {
-    popops::zero(graph().getPoplarGraph(),
-                 init_state.cellState,
-                 prog.getPoplarSequence(),
-                 debugContext());
+    popops::zero(
+        graph().getPoplarGraph(), init_state.cellState, prog, debugContext());
   } else if (!hasInitH) {
-    popops::zero(graph().getPoplarGraph(),
-                 init_state.output,
-                 prog.getPoplarSequence(),
-                 debugContext());
+    popops::zero(
+        graph().getPoplarGraph(), init_state.output, prog, debugContext());
   }
 
   // Copy initC input to initialState.cellState is initC is provided.
@@ -387,7 +381,7 @@ LSTMGradOpx::LSTMGradOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
   verifyOp<LSTMGradOp>(op, Onnx::GradOperators::LSTMGrad);
 }
 
-void LSTMGradOpx::grow(snap::program::Sequence &prog) const {
+void LSTMGradOpx::grow(poplar::program::Sequence &prog) const {
   popnn::lstm::LstmState init_state;
   init_state.output =
       getInTensor(LSTMGradOp::getInitStateOutputInIndex()).getPoplarTensor();
@@ -433,7 +427,7 @@ void LSTMGradOpx::grow(snap::program::Sequence &prog) const {
   popops::addInPlace(graph().getPoplarGraph(),
                      output_grad_copy[output_grad_copy.dim(0) - 1],
                      output_h_grad.getPoplarTensor(),
-                     prog.getPoplarSequence(),
+                     prog,
                      debugContext());
 
   poplar::Tensor input_grad;
@@ -441,7 +435,7 @@ void LSTMGradOpx::grow(snap::program::Sequence &prog) const {
 
   auto init_state_grad = lstmBwdWithWU(graph().getPoplarGraph(),
                                        lstm_params,
-                                       prog.getPoplarSequence(),
+                                       prog,
                                        init_state,
                                        intermediates,
                                        weights,

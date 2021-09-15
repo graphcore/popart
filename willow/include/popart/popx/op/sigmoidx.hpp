@@ -14,13 +14,13 @@ class SigmoidComputex : public EwuComputex {
 public:
   SigmoidComputex() = default;
 
-  snap::Tensor outplace(snap::program::Sequence &,
+  snap::Tensor outplace(poplar::program::Sequence &,
                         snap::Graph &,
                         const snap::Tensor &,
                         const poplar::DebugNameAndId &,
                         const std::string &) const final;
 
-  void inplace(snap::program::Sequence &,
+  void inplace(poplar::program::Sequence &,
                snap::Graph &,
                const snap::Tensor &,
                const poplar::DebugNameAndId &,
@@ -44,7 +44,7 @@ public:
 class SigmoidGradOpx : public ElementWiseUnaryOpx {
 public:
   SigmoidGradOpx(Op *, Devicex *);
-  void grow(snap::program::Sequence &) const final;
+  void grow(poplar::program::Sequence &) const final;
 };
 
 } // namespace popx

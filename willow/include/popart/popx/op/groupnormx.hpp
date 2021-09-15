@@ -12,7 +12,7 @@ namespace popx {
 class GroupNormOpx : public NormOpx {
 public:
   GroupNormOpx(Op *, Devicex *);
-  void grow(snap::program::Sequence &) const final;
+  void grow(poplar::program::Sequence &) const final;
 
 private:
 };
@@ -20,7 +20,7 @@ private:
 class GroupNormGradOpx : public NormOpx {
 public:
   GroupNormGradOpx(Op *, Devicex *);
-  void grow(snap::program::Sequence &) const final;
+  void grow(poplar::program::Sequence &) const final;
 
 private:
 };

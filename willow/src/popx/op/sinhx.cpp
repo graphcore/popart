@@ -25,7 +25,7 @@ SinhOpx::SinhOpx(Op *op, Devicex *devicex)
   verifyOp<SinhOp>(op, Onnx::Operators::Sinh_9);
 }
 
-snap::Tensor SinhComputex::outplace(snap::program::Sequence &p,
+snap::Tensor SinhComputex::outplace(poplar::program::Sequence &p,
                                     snap::Graph &g,
                                     const snap::Tensor &t,
                                     const poplar::DebugNameAndId &dnai,
@@ -35,7 +35,7 @@ snap::Tensor SinhComputex::outplace(snap::program::Sequence &p,
   return outTensor;
 }
 
-void SinhComputex::inplace(snap::program::Sequence &p,
+void SinhComputex::inplace(poplar::program::Sequence &p,
                            snap::Graph &g,
                            const snap::Tensor &t,
                            const poplar::DebugNameAndId &dnai,
@@ -48,18 +48,15 @@ void SinhComputex::inplace(snap::program::Sequence &p,
   exprs.push_back(std::make_unique<pe::Mul>(pe::Const(0.5f), *exprs.back()));
 
   // apply the inplace SINH
-  popops::mapInPlace(g.getPoplarGraph(),
-                     *exprs.back(),
-                     {t.getPoplarTensor()},
-                     p.getPoplarSequence(),
-                     {dnai, s});
+  popops::mapInPlace(
+      g.getPoplarGraph(), *exprs.back(), {t.getPoplarTensor()}, p, {dnai, s});
 }
 
 SinhGradOpx::SinhGradOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
   verifyOp<SinhGradOp>(op, Onnx::GradOperators::SinhGrad);
 }
 
-void SinhGradOpx::grow(snap::program::Sequence &prog) const {
+void SinhGradOpx::grow(poplar::program::Sequence &prog) const {
   const auto input =
       getInTensor(SinhGradOp::getGradInIndex()).getPoplarTensor();
   const auto fwd_input =
@@ -75,7 +72,7 @@ void SinhGradOpx::grow(snap::program::Sequence &prog) const {
   auto output = popops::map(graph().getPoplarGraph(),
                             *exprs.back(),
                             {input, fwd_input},
-                            prog.getPoplarSequence(),
+                            prog,
                             debugContext("output_grad"));
 
   setOutTensor(SinhGradOp::getOutIndex(), snap::Tensor{output, graph()});

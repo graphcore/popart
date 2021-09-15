@@ -15,7 +15,7 @@ OrOpx::OrOpx(Op *op, Devicex *devicex) : BinaryComparisonOpx(op, devicex) {
   verifyOp<OrOp>(op, {Onnx::Operators::Or_1, Onnx::Operators::Or_7});
 }
 
-void OrOpx::grow(snap::program::Sequence &prog) const {
+void OrOpx::grow(poplar::program::Sequence &prog) const {
 
   insert(outId(OrOp::getOutIndex()),
          snap::Tensor{
@@ -23,7 +23,7 @@ void OrOpx::grow(snap::program::Sequence &prog) const {
                          popops::expr::BinaryOpType::LOGICAL_OR,
                          get(inId(OrOp::getArg0InIndex())).getPoplarTensor(),
                          get(inId(OrOp::getArg1InIndex())).getPoplarTensor(),
-                         prog.getPoplarSequence(),
+                         prog,
                          debugContext()),
              graph()});
 }

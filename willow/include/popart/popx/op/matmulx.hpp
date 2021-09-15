@@ -21,7 +21,7 @@ public:
   std::set<TensorId> mustExistBeforeCreate(InIndex index0) const final;
 
   MatMulOp *getMatMulOp() const;
-  void grow(snap::program::Sequence &) const final;
+  void grow(poplar::program::Sequence &) const final;
 
   poplar::Type getOutputType(const snap::Tensor &output) const;
   static std::vector<std::size_t> onnxShapeToPoplar(const Shape &shape);

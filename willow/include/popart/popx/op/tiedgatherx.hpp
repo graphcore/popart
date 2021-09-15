@@ -10,7 +10,7 @@ namespace popx {
 class TiedGatherOpx final : public GatherBaseOpx {
 public:
   TiedGatherOpx(Op *, Devicex *);
-  void grow(snap::program::Sequence &) const final;
+  void grow(poplar::program::Sequence &) const final;
 
   InputCreatorType getInputCreatorType(int index0) const final;
 

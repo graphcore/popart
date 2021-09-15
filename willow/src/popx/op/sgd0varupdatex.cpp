@@ -19,7 +19,7 @@ SGD0VarUpdateOpx::SGD0VarUpdateOpx(Op *op, Devicex *devicex)
   verifyOp<SGD0VarUpdateOp>(op, Onnx::CustomOperators::SGD0VarUpdate);
 }
 
-void SGD0VarUpdateOpx::grow(snap::program::Sequence &prog) const {
+void SGD0VarUpdateOpx::grow(poplar::program::Sequence &prog) const {
 
   // Weight update (matching pytorch implementation)
   //  w <- w * (1 - lr * wd) - (lr/ls) * weight_gradient
@@ -47,7 +47,7 @@ void SGD0VarUpdateOpx::grow(snap::program::Sequence &prog) const {
         {getInTensor(SGD0VarUpdateOp::getVarToUpdateInIndex())
              .getPoplarTensor(),
          getInTensor(SGD0VarUpdateOp::getWdsf0InIndex()).getPoplarTensor()},
-        prog.getPoplarSequence(),
+        prog,
         debugContext("nonConstWeightDecay"));
   }
 
@@ -59,7 +59,7 @@ void SGD0VarUpdateOpx::grow(snap::program::Sequence &prog) const {
                          pe::Mul(pe::_1, pe::Const(scaleFactor)),
                          {getInTensor(SGD0VarUpdateOp::getVarToUpdateInIndex())
                               .getPoplarTensor()},
-                         prog.getPoplarSequence(),
+                         prog,
                          debugContext("constWeightDecay"));
     }
   }
@@ -79,9 +79,9 @@ void SGD0VarUpdateOpx::grow(snap::program::Sequence &prog) const {
         popops::neg(
             graph().getPoplarGraph(),
             getInTensor(SGD0VarUpdateOp::getSlr0InIndex()).getPoplarTensor(),
-            prog.getPoplarSequence(),
+            prog,
             debugContext("neg")),
-        prog.getPoplarSequence(),
+        prog,
         debugContext("nonConstScaledSubtract"));
   }
 
@@ -92,7 +92,7 @@ void SGD0VarUpdateOpx::grow(snap::program::Sequence &prog) const {
         getInTensor(vu_op.getVarToUpdateInIndex()).getPoplarTensor(), // weights
         weightDeltas, // weightDeltas
         -vu_op.initSlr0.val(),
-        prog.getPoplarSequence(),
+        prog,
         debugContext("scaledSubtract"));
   }
 

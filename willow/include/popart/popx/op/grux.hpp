@@ -15,7 +15,7 @@ namespace popx {
 class GRUOpx : public PopOpx {
 public:
   GRUOpx(Op *, Devicex *);
-  void grow(snap::program::Sequence &) const final;
+  void grow(poplar::program::Sequence &) const final;
   InputCreatorType getInputCreatorType(InIndex) const final;
   snap::Tensor
   createInputTensor(InIndex index,
@@ -27,15 +27,15 @@ public:
   static snap::Tensor reshapePoplibBiasesForOnnx(snap::Tensor);
 
 private:
-  void growBias(snap::program::Sequence &) const;
+  void growBias(poplar::program::Sequence &) const;
   popnn::gru::GruParams createGRUParams() const;
   popnn::gru::GruWeights getGRUWeights() const;
   snap::Tensor getInitialState() const;
   snap::Tensor createGRUInput() const;
-  void prepareWeights(snap::program::Sequence &) const;
+  void prepareWeights(poplar::program::Sequence &) const;
   void prepareInitialState(snap::Tensor &init_state_h,
-                           snap::program::Sequence &prog) const;
-  snap::Tensor getInput(snap::program::Sequence &) const;
+                           poplar::program::Sequence &prog) const;
+  snap::Tensor getInput(poplar::program::Sequence &) const;
   std::unique_ptr<snap::Tensor> createIntermediate() const;
   void reshapeAndInsert(OutIndex index, const snap::Tensor &) const;
   bool inputCreated(InIndex) const;
@@ -49,7 +49,7 @@ private:
 class GRUGradOpx : public PopOpx {
 public:
   GRUGradOpx(Op *, Devicex *);
-  void grow(snap::program::Sequence &) const final;
+  void grow(poplar::program::Sequence &) const final;
 
 private:
   snap::Tensor getHiddenStateGrad() const;

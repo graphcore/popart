@@ -18,7 +18,7 @@ SigmoidOpx::SigmoidOpx(Op *op, Devicex *devicex)
   verifyOp<SigmoidOp>(op, Onnx::Operators::Sigmoid_6);
 }
 
-snap::Tensor SigmoidComputex::outplace(snap::program::Sequence &p,
+snap::Tensor SigmoidComputex::outplace(poplar::program::Sequence &p,
                                        snap::Graph &g,
                                        const snap::Tensor &t,
                                        const poplar::DebugNameAndId &dnai,
@@ -28,7 +28,7 @@ snap::Tensor SigmoidComputex::outplace(snap::program::Sequence &p,
   return outTensor;
 }
 
-void SigmoidComputex::inplace(snap::program::Sequence &p,
+void SigmoidComputex::inplace(poplar::program::Sequence &p,
                               snap::Graph &g,
                               const snap::Tensor &t,
                               const poplar::DebugNameAndId &dnai,
@@ -38,7 +38,7 @@ void SigmoidComputex::inplace(snap::program::Sequence &p,
   popnn::nonLinearityInPlace(g.getPoplarGraph(),
                              popnn::NonLinearityType::SIGMOID,
                              t.getPoplarTensor(),
-                             p.getPoplarSequence(),
+                             p,
                              {dnai, s});
 }
 
@@ -47,15 +47,15 @@ SigmoidGradOpx::SigmoidGradOpx(Op *op, Devicex *devicex)
   verifyOp<SigmoidGradOp>(op, Onnx::GradOperators::SigmoidGrad);
 }
 
-void SigmoidGradOpx::grow(snap::program::Sequence &prog) const {
+void SigmoidGradOpx::grow(poplar::program::Sequence &prog) const {
   auto outTensor = popnn::nonLinearityInputGradient(
       graph().getPoplarGraph(),         // graph,
       popnn::NonLinearityType::SIGMOID, // nonLinearityType,
       getInTensor(SigmoidGradOp::getFwdOutInIndex()).getPoplarTensor(), // out,
       getInTensor(SigmoidGradOp::getGradInIndex())
-          .getPoplarTensor(),   // outGradient,
-      prog.getPoplarSequence(), // prog,
-      debugContext()            // debugContext
+          .getPoplarTensor(), // outGradient,
+      prog,                   // prog,
+      debugContext()          // debugContext
   );
 
   setOutTensor(SigmoidOp::getOutIndex(), snap::Tensor{outTensor, graph()});

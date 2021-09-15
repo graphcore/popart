@@ -18,7 +18,7 @@ SGD1VarUpdateOpx::SGD1VarUpdateOpx(Op *op, Devicex *devicex)
   verifyOp<SGD1VarUpdateOp>(op, Onnx::CustomOperators::SGD1VarUpdate);
 }
 
-void SGD1VarUpdateOpx::grow(snap::program::Sequence &prog) const {
+void SGD1VarUpdateOpx::grow(poplar::program::Sequence &prog) const {
 
   // see optimizer.hpp for the equations implemented here
 
@@ -40,9 +40,9 @@ void SGD1VarUpdateOpx::grow(snap::program::Sequence &prog) const {
         popops::neg(
             graph().getPoplarGraph(),
             getInTensor(SGD1VarUpdateOp::getSlr1InIndex()).getPoplarTensor(),
-            prog.getPoplarSequence(),
+            prog,
             debugContext("neg")),
-        prog.getPoplarSequence(),
+        prog,
         debugContext("nonConstScaledSubtractSGD1"));
   }
 
@@ -52,7 +52,7 @@ void SGD1VarUpdateOpx::grow(snap::program::Sequence &prog) const {
                         weights,
                         velocity,
                         -sgd1varUpdateOp.initSlr1.val(),
-                        prog.getPoplarSequence(),
+                        prog,
                         debugContext("constScaledSubtractSGD1"));
   }
 

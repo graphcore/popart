@@ -12,10 +12,10 @@ namespace popx {
 class ArgExtremaOpx : public PopOpx {
 public:
   ArgExtremaOpx(Op *, Devicex *);
-  void grow(snap::program::Sequence &) const override;
+  void grow(poplar::program::Sequence &) const override;
 
 private:
-  virtual snap::Tensor extremaOp(snap::program::Sequence &,
+  virtual snap::Tensor extremaOp(poplar::program::Sequence &,
                                  const snap::Tensor &) const = 0;
 };
 

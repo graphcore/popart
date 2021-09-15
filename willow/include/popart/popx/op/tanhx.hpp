@@ -12,7 +12,7 @@ namespace popx {
 class TanhOpx : public PopOpx {
 public:
   TanhOpx(Op *, Devicex *);
-  void grow(snap::program::Sequence &) const final;
+  void grow(poplar::program::Sequence &) const final;
   InputCreatorType getInputCreatorType(InIndex) const final;
   snap::Tensor unwindTensorLayout(snap::Tensor tensor,
                                   InIndex inIndex,
@@ -23,7 +23,7 @@ public:
 class TanhGradOpx : public PopOpx {
 public:
   TanhGradOpx(Op *, Devicex *);
-  void grow(snap::program::Sequence &) const final;
+  void grow(poplar::program::Sequence &) const final;
 };
 
 } // namespace popx

@@ -22,7 +22,7 @@ namespace popart {
 namespace popx {
 
 // convert inverse standard deviation to variance
-snap::Tensor NormOpx::convertInvSdToVar(snap::program::Sequence &prog,
+snap::Tensor NormOpx::convertInvSdToVar(poplar::program::Sequence &prog,
                                         const snap::Tensor &invSd,
                                         float epsilon,
                                         const poplar::Type dstType) const {
@@ -30,14 +30,14 @@ snap::Tensor NormOpx::convertInvSdToVar(snap::program::Sequence &prog,
   return snap::Tensor{popops::invStdDevToVariance(graph().getPoplarGraph(),
                                                   invSd.getPoplarTensor(),
                                                   epsilon,
-                                                  prog.getPoplarSequence(),
+                                                  prog,
                                                   dstType,
                                                   debugContext("invSdToVar")),
                       graph()};
 }
 
 // convert variant to inverse standard deviation
-snap::Tensor NormOpx::convertVarToInvSd(snap::program::Sequence &prog,
+snap::Tensor NormOpx::convertVarToInvSd(poplar::program::Sequence &prog,
                                         const snap::Tensor &var,
                                         float epsilon,
                                         const poplar::Type dstType) const {
@@ -45,7 +45,7 @@ snap::Tensor NormOpx::convertVarToInvSd(snap::program::Sequence &prog,
   return snap::Tensor{popops::varianceToInvStdDev(graph().getPoplarGraph(),
                                                   var.getPoplarTensor(),
                                                   epsilon,
-                                                  prog.getPoplarSequence(),
+                                                  prog,
                                                   dstType,
                                                   debugContext("varToInvSd")),
                       graph()};

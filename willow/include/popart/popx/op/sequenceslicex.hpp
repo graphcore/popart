@@ -10,13 +10,13 @@ namespace popx {
 class SequenceSliceOpx : public PopOpx {
 public:
   SequenceSliceOpx(Op *, Devicex *);
-  void grow(snap::program::Sequence &) const final;
+  void grow(poplar::program::Sequence &) const final;
 };
 
 class SequenceSliceInplaceOpx : public PopOpx {
 public:
   SequenceSliceInplaceOpx(Op *, Devicex *);
-  void grow(snap::program::Sequence &) const final;
+  void grow(poplar::program::Sequence &) const final;
 };
 
 } // namespace popx

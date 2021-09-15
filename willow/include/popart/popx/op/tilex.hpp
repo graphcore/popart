@@ -11,7 +11,7 @@ namespace popx {
 class TileOpx : public PopOpx {
 public:
   TileOpx(Op *, Devicex *);
-  void grow(snap::program::Sequence &) const final;
+  void grow(poplar::program::Sequence &) const final;
 
   // Design decision: InputCreatorType could be CANUNWIND, but not overriding
   // default, DEADEND. The unwind function would slice the output over each
@@ -22,7 +22,7 @@ public:
 class TileGradOpx : public PopOpx {
 public:
   TileGradOpx(Op *, Devicex *);
-  void grow(snap::program::Sequence &) const final;
+  void grow(poplar::program::Sequence &) const final;
 };
 
 } // namespace popx

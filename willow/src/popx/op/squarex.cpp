@@ -13,12 +13,12 @@ SquareOpx::SquareOpx(Op *op, Devicex *devicex)
   verifyOp<SquareOp>(op, Onnx::CustomOperators::Square);
 }
 
-void SquareOpx::grow(snap::program::Sequence &prog) const {
+void SquareOpx::grow(poplar::program::Sequence &prog) const {
   setOutTensor(0,
                snap::Tensor{popops::map(graph().getPoplarGraph(),
                                         popops::expr::UnaryOpType::SQUARE,
                                         getInTensor(0).getPoplarTensor(),
-                                        prog.getPoplarSequence(),
+                                        prog,
                                         debugContext()),
                             graph()});
 }

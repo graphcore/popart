@@ -12,13 +12,13 @@ namespace popx {
 class MeanOpx : public ElementWiseUnaryOpx {
 public:
   MeanOpx(Op *, Devicex *);
-  void grow(snap::program::Sequence &) const final;
+  void grow(poplar::program::Sequence &) const final;
 };
 
 class MeanArgGradOpx : public PopOpx {
 public:
   MeanArgGradOpx(Op *, Devicex *);
-  void grow(snap::program::Sequence &) const final;
+  void grow(poplar::program::Sequence &) const final;
 };
 
 } // namespace popx
