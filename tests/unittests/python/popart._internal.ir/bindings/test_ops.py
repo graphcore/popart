@@ -111,6 +111,7 @@ def test_binary_ops(op_name: str, inplace: bool, connected: bool) -> None:
 ("ReluOp", {}),
 ("GeluOp", {}),
 ("TransposeOp", {"perm_": [0, 2, 1]}),
+("SliceOp", {"starts_":[1], "ends_":[3], "steps_":[1], "axes_":[0]}),
 ("ReshapeOp", {"s": [3, 1, 2], "handleZero": False}),
 ("NegateOp", {}),
 ("TanhOp", {}),
