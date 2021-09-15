@@ -1902,7 +1902,8 @@ std::map<TensorId, TensorId> ExplicitPipelineHelper::createFillPhase() {
         auto tensor = indexAndTensor.second;
 
         // We remove the inner loop scope from the tensor
-        auto newInputTensorId = innerLoopSubgraph.removeScope(tensor->id);
+        auto newInputTensorId =
+            removeScope(innerLoopSubgraph.getScope(), tensor->id);
 
         if (tensor->hasProducer()) {
           // As we are looping over the ops schedule the first tensor will not
@@ -1921,7 +1922,8 @@ std::map<TensorId, TensorId> ExplicitPipelineHelper::createFillPhase() {
         auto tensor = indexAndTensor.second;
 
         // We remove the inner loop scope from the tensor
-        auto newOutputTensorId = innerLoopSubgraph.removeScope(tensor->id);
+        auto newOutputTensorId =
+            removeScope(innerLoopSubgraph.getScope(), tensor->id);
         // Create the tensor with the tensorId made above
 
         // It could be tempting to set the tensorIds with graph.addScope()
@@ -1984,7 +1986,7 @@ ExplicitPipelineHelper::modifyInputAndOutputInInnerLoop(
           false);
 
       // Add output which are going to the flush stage
-      auto loopOutId = innerLoopSubgraph.removeScope(outTensor->id);
+      auto loopOutId = removeScope(innerLoopSubgraph.getScope(), outTensor->id);
       // The output in this pipeline stage in the main loop will be connected to
       // the next pipeline stage in the flush stage, thus we add 1 to pStage
       tensorIdsToFlushStage[{pStage + 1, outTensor->id}] = loopOutId;
@@ -2086,7 +2088,8 @@ void ExplicitPipelineHelper::createFlushPhase(
         auto tensor = indexAndTensor.second;
 
         // We remove the inner loop scope from the tensor
-        auto newInputTensorId = innerLoopSubgraphClone.removeScope(tensor->id);
+        auto newInputTensorId =
+            removeScope(innerLoopSubgraphClone.getScope(), tensor->id);
 
         auto mapIt = tensorIdsToFlushStage.find(
             {pStageMin,
@@ -2110,7 +2113,8 @@ void ExplicitPipelineHelper::createFlushPhase(
         auto tensor = indexAndTensor.second;
 
         // We remove the inner loop scope from the tensor
-        auto newOutputTensorId = innerLoopSubgraphClone.removeScope(tensor->id);
+        auto newOutputTensorId =
+            removeScope(innerLoopSubgraphClone.getScope(), tensor->id);
         // Create the tensor with the tensorId made above
 
         // It could be tempting to set the tensorIds with graph.addScope()

@@ -218,7 +218,6 @@ public:
   bool hasOutputId(const TensorId &id) const;
   Tensor *getOutputTensor(OutIndex idx) const;
 
-  TensorId removeScope(const TensorId &) const;
   Scope getScope() const;
 
   /// Replace oldId with newId on any consumers.

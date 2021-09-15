@@ -1173,7 +1173,7 @@ ShardingPlan Op::loopShard(const ShardingPlan adjustedInputPlan,
       TensorId updatedSerialIndexTensorScopedId =
           ir.createIntermediateTensorId(serialIndexTensorScopedId);
       TensorId updatedSerialIndexTensorId =
-          subgraph.removeScope(updatedSerialIndexTensorScopedId);
+          removeScope(subgraph.getScope(), updatedSerialIndexTensorScopedId);
       indexAddOp->createAndConnectOutTensor(AddOp::getOutIndex(),
                                             updatedSerialIndexTensorScopedId);
       indexAddOp->setup();

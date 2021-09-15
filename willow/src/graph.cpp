@@ -313,24 +313,6 @@ Op *Graph::growFromNode(const Node &node) {
 
 Scope Graph::getScope() const { return Scope() / id.str(); }
 
-TensorId Graph::removeScope(const TensorId &scopedId) const {
-
-  if (getScope().str().empty()) {
-    return scopedId;
-  } else {
-    using boost::algorithm::starts_with;
-
-    auto scopeStr = getScope().str() + Scope::delimiter();
-    if (!starts_with(scopedId, scopeStr)) {
-      throw error(
-          "Cannot remove scope from {} as it does not start with scope {}",
-          scopedId,
-          scopeStr);
-    }
-    return scopedId.substr(scopeStr.size());
-  }
-}
-
 OpId Graph::moveIntoGraph(std::unique_ptr<Op> op) {
   // Op may be moved in from a different graph
   op->settings.graph = *this;
@@ -739,7 +721,7 @@ void Graph::copyFrom(const Graph &other,
   for (auto &id : other.getTensors().getAllTensorIds()) {
     auto tensor = other.getTensors().get(id);
 
-    auto newId = addScope(this->getScope(), other.removeScope(id));
+    auto newId = addScope(this->getScope(), removeScope(other.getScope(), id));
 
     if (!getTensors().contains(newId)) {
       auto tensorClone = tensor->clone(*this);
@@ -780,7 +762,7 @@ void Graph::copyFrom(const Graph &other,
   if (copyInputMarkings == CopyInputMarkings::Yes) {
     // add graph inputs and outputs
     for (auto &id : other.getInputIds()) {
-      auto unscopedId = other.removeScope(id);
+      auto unscopedId = removeScope(other.getScope(), id);
       auto newId      = addScope(this->getScope(), unscopedId);
       this->markAsInput(newId);
     }
@@ -788,7 +770,7 @@ void Graph::copyFrom(const Graph &other,
 
   if (copyOutputMarkings == CopyOutputMarkings::Yes) {
     for (auto &id : other.getOutputIds()) {
-      auto unscopedId = other.removeScope(id);
+      auto unscopedId = removeScope(other.getScope(), id);
       auto newId      = addScope(this->getScope(), unscopedId);
       this->markAsOutput(newId);
     }

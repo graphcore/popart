@@ -111,7 +111,7 @@ std::vector<TensorId> IfOp::getGradOpInputIds(const Graph &gradThenGraph,
       switch (expIn.type) {
       case ExpectedConnectionType::Fwd: {
         auto scopedId   = expIn.fwdId;
-        auto unscopedId = fwdGraph.removeScope(scopedId);
+        auto unscopedId = removeScope(fwdGraph.getScope(), scopedId);
         requiredGradOpInputs.insert(unscopedId);
         break;
       }
@@ -168,7 +168,7 @@ IfOp::getOpInIdToBwdGraphInIndexMap(const Graph &fwdGraph,
     case ExpectedConnectionType::Fwd: {
       // branch input to tensor id
       auto branchInId = expIn.fwdId;
-      auto opInId     = fwdGraph.removeScope(branchInId);
+      auto opInId     = removeScope(fwdGraph.getScope(), branchInId);
       result.insert({opInId, i});
       break;
     }

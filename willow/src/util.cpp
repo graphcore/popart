@@ -369,4 +369,10 @@ TensorId addScope(const Scope &s, const TensorId &t) {
   return pTId.getId();
 }
 
+TensorId removeScope(const Scope &s, const TensorId &t) {
+  ParsedTensorId pTId(t);
+  pTId.removeScope(s);
+  return pTId.getId();
+}
+
 } // namespace popart

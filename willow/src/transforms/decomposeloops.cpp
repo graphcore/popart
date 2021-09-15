@@ -479,10 +479,11 @@ void DecomposeLoops::decomposeLoop(Graph &graph,
             TensorId newConstId;
             if (input.second->id.find(reservedConstValuePrefix()) !=
                 std::string::npos) {
-              newConstId = op->getGraph().removeScope(input.second->id);
+              newConstId =
+                  removeScope(op->getGraph().getScope(), input.second->id);
             } else {
               newConstId = ir.createIntermediateTensorId(
-                  op->getGraph().removeScope(input.second->id));
+                  removeScope(op->getGraph().getScope(), input.second->id));
             }
             newConstId = addScope(graph.getScope(), newConstId);
             if (!graph.getTensors().getConstIds().contains(newConstId)) {
@@ -503,7 +504,8 @@ void DecomposeLoops::decomposeLoop(Graph &graph,
         // Outputs
         for (auto &output : outputMaps[op]) {
           TensorId outTensorId = addScope(
-              graph.getScope(), op->getGraph().removeScope(output.second->id));
+              graph.getScope(),
+              removeScope(op->getGraph().getScope(), output.second->id));
           TensorId newOutTensorId = ir.createIntermediateTensorId(outTensorId);
           clones[op][j]->createAndConnectOutTensor(output.first,
                                                    newOutTensorId);
@@ -719,7 +721,7 @@ void DecomposeLoops::decomposeLoop(Graph &graph,
             }
           } else {
             TensorId outTensorId =
-                op->getGraph().removeScope(output.second->id);
+                removeScope(op->getGraph().getScope(), output.second->id);
             TensorId newOutTensorId = addScope(
                 graph.getScope(), ir.createIntermediateTensorId(outTensorId));
             clones[op][j]->createAndConnectOutTensor(output.first,
@@ -759,10 +761,11 @@ void DecomposeLoops::decomposeLoop(Graph &graph,
             TensorId newConstId;
             if (input.second->id.find(reservedConstValuePrefix()) !=
                 std::string::npos) {
-              newConstId = op->getGraph().removeScope(input.second->id);
+              newConstId =
+                  removeScope(op->getGraph().getScope(), input.second->id);
             } else {
               newConstId = ir.createIntermediateTensorId(
-                  op->getGraph().removeScope(input.second->id));
+                  removeScope(op->getGraph().getScope(), input.second->id));
             }
             newConstId = addScope(graph.getScope(), newConstId);
             if (!graph.getTensors().getConstIds().contains(newConstId)) {

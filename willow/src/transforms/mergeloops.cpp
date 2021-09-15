@@ -155,8 +155,8 @@ bool MergeLoops::canMerge(const std::vector<LoopOp *> loopOps,
                 consumer->inTensor(DynamicSliceOp::getIndexInIndex());
             Tensor *out = consumer->outTensor(DynamicSliceOp::getOutIndex());
             // Check that both update+slice are based on the loop iterator
-            if (inIdx->getGraph().removeScope(inIdx->id) ==
-                    outIdx->getGraph().removeScope(outIdx->id) &&
+            if (removeScope(inIdx->getGraph().getScope(), inIdx->id) ==
+                    removeScope(outIdx->getGraph().getScope(), outIdx->id) &&
                 in->info == out->info &&
                 dproducer->getAxes() == dconsumer->getAxes()) {
               resolved = true;
@@ -166,8 +166,8 @@ bool MergeLoops::canMerge(const std::vector<LoopOp *> loopOps,
                   "({}/{} {}/{} {}/{})",
                   producer->debugName(),
                   consumer->debugName(),
-                  inIdx->getGraph().removeScope(inIdx->id),
-                  outIdx->getGraph().removeScope(outIdx->id),
+                  removeScope(inIdx->getGraph().getScope(), inIdx->id),
+                  removeScope(outIdx->getGraph().getScope(), outIdx->id),
                   in->info,
                   out->info,
                   dproducer->getAxes(),
@@ -257,8 +257,8 @@ void MergeLoops::merge(const std::vector<LoopOp *> loops) const {
 
     // Check/move constants
     for (auto sg1ConstId : graph1.getTensors().getConstIds().v()) {
-      auto sg0ConstId =
-          addScope(graph0.getScope(), graph1.removeScope(sg1ConstId));
+      auto sg0ConstId = addScope(graph0.getScope(),
+                                 removeScope(graph1.getScope(), sg1ConstId));
       if (sg1ConstId.find(reservedConstValuePrefix()) != std::string::npos) {
         if (!graph0.getTensors().getConstIds().contains(sg0ConstId)) {
           Tensor *ct = graph1.getTensors().get(sg1ConstId);
@@ -315,8 +315,8 @@ void MergeLoops::merge(const std::vector<LoopOp *> loops) const {
 
         // Not connected yet, add input from loop1 onto loop0
         if (new_input) {
-          TensorId loop0sgInId =
-              addScope(graph0.getScope(), graph1.removeScope(loop1sgInId));
+          TensorId loop0sgInId = addScope(
+              graph0.getScope(), removeScope(graph1.getScope(), loop1sgInId));
 
           auto existingTensorIds =
               loop0->getCalledGraph().getTensors().getAllTensorIds();
@@ -383,8 +383,8 @@ void MergeLoops::merge(const std::vector<LoopOp *> loops) const {
         }
         for (auto &output : op->output->tensorMap()) {
           TensorId loop1sgId = output.second->id;
-          TensorId loop0sgId =
-              addScope(graph0.getScope(), graph1.removeScope(loop1sgId));
+          TensorId loop0sgId = addScope(
+              graph0.getScope(), removeScope(graph1.getScope(), loop1sgId));
           sgTensorRemap.insert({loop1sgId, loop0sgId});
           clonedOp->createAndConnectOutTensor(output.first, loop0sgId);
         }

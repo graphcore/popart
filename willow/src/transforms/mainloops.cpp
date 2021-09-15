@@ -228,7 +228,8 @@ void moveIntoLoop(LoopOp *loop,
   // Add explicit inputs
   for (auto &explicitIds : opsToMove.getExplicitTensorIds()) {
     TensorId opInId = explicitIds.first;
-    TensorId sgInId = addScope(subgraph.getScope(), graph.removeScope(opInId));
+    TensorId sgInId =
+        addScope(subgraph.getScope(), removeScope(graph.getScope(), opInId));
     logging::transform::trace(
         "[moveIntoLoop] Adding explicit input {} -> {} on LoopOp {}",
         opInId,
@@ -245,7 +246,8 @@ void moveIntoLoop(LoopOp *loop,
   // Add implicit inputs
   for (auto &implicitId : opsToMove.getImplicitTensors()) {
     TensorId opInId = implicitId;
-    TensorId sgInId = addScope(subgraph.getScope(), graph.removeScope(opInId));
+    TensorId sgInId =
+        addScope(subgraph.getScope(), removeScope(graph.getScope(), opInId));
     logging::transform::trace(
         "[moveIntoLoop] Adding implicit input {} -> {} on LoopOp {}",
         opInId,
@@ -300,8 +302,8 @@ void moveIntoLoop(LoopOp *loop,
       connectInTensorFn(op, cloneOp, input.first, subgraphTensorId);
     }
     for (auto output : op->output->tensorIdMap()) {
-      TensorId subgraphTensorId =
-          addScope(subgraph.getScope(), graph.removeScope(output.second));
+      TensorId subgraphTensorId = addScope(
+          subgraph.getScope(), removeScope(graph.getScope(), output.second));
       cloneOp->createAndConnectOutTensor(output.first, subgraphTensorId);
       remap[output.second] = subgraphTensorId;
     }

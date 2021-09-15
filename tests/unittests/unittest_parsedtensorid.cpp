@@ -117,6 +117,8 @@ BOOST_AUTO_TEST_CASE(testParsedTensorIdScopes) {
   pTId = {name};
   pTId.addScope(emptyScope);
   BOOST_CHECK_EQUAL(pTId.getId(), name);
+  pTId.removeScope(emptyScope);
+  BOOST_CHECK_EQUAL(pTId.getId(), name);
 }
 
 BOOST_AUTO_TEST_CASE(testParsedTensorIdMixedScopePrefixesAndNames) {

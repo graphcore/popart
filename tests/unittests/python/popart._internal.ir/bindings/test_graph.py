@@ -121,11 +121,11 @@ def test_graph_scope_functions():
     assert _ir.addScope(g1.getScope(), "foobar") == "g1/foobar"
 
     # Test removeScope
-    assert g1.removeScope("g1/tensor1") == "tensor1"
-    assert g1.removeScope("g1/foobar") == "foobar"
+    assert _ir.removeScope(g1.getScope(), "g1/tensor1") == "tensor1"
+    assert _ir.removeScope(g1.getScope(), "g1/foobar") == "foobar"
 
     with pytest.raises(popart.popart_exception) as excinfo:
-        g1.removeScope("h1/tensor1")
+        _ir.removeScope(g1.getScope(), "h1/tensor1")
 
     # Test getScope
     assert g1.getScope().str() == "g1"

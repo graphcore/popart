@@ -11,7 +11,10 @@ namespace popart {
 namespace _internal {
 namespace ir {
 
-void bindUtil(py::module &m) { m.def("addScope", &addScope); }
+void bindUtil(py::module &m) {
+  m.def("addScope", &addScope);
+  m.def("removeScope", &removeScope);
+}
 
 } // namespace ir
 } // namespace _internal
