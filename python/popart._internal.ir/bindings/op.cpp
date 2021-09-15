@@ -34,6 +34,10 @@ void bindOp(py::module &m) {
       .def(py::init<const OperatorIdentifier &, const Op::Settings &>())
       .def_readwrite("id", &Op::id)
       .def_readwrite("opid", &Op::opid)
+      // Bind a method that returns the OpType only, as we do not want to deal
+      // with full ONNX OpIdentifiers in the high-level Python API.
+      .def("opType",
+           [](const Op &self) -> std::string { return self.opid.type; })
       .def("getSettings", py::overload_cast<>(&Op::getSettings))
       .def("getInSettings", &Op::getInSettings)
       .def("getOutSettings", &Op::getOutSettings)

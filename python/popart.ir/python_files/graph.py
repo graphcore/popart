@@ -28,7 +28,6 @@ class Graph:
         """
         # The following attributes and their types are declared here for the
         # sake of Python language servers.
-        self._ir: Ir = None
         self._debug_name: str = None
         self._pb_graph: _ir.Graph = None
 
@@ -37,13 +36,15 @@ class Graph:
 
     @property
     def name(self) -> str:
-        return self._debug_name
+        return self._pb_graph.getScope().str()
+
+    def ir(self) -> 'Ir':
+        import popart.ir.Ir
+        return popart.ir.Ir._from_pb(self._pb_graph.getIr())
 
     @classmethod
-    def _factory(
+    def _from_pb(
             cls,
-            ir: 'Ir',
-            debug_name: str,
             pb_graph: '_ir.Graph',
     ) -> 'Graph':
         """Factory method to construct `Graph` instances.
@@ -61,8 +62,6 @@ class Graph:
                 The main graph of the `Ir`.
         """
         self: 'Graph' = super().__new__(cls)
-        self._ir = ir
-        self._debug_name = debug_name
         self._pb_graph = pb_graph
         return self
 
@@ -85,7 +84,7 @@ class Graph:
         name = name if name else 't'
         _id = self._pb_graph.addScope(name)
         if _id in self._pb_graph:
-            _id = self._ir._pb_ir.createIntermediateTensorId(_id)
+            _id = self._pb_graph.getIr().createIntermediateTensorId(_id)
         return _id
 
     def __contains__(self, value: Any) -> bool:

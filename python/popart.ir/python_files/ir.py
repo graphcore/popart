@@ -18,17 +18,33 @@ class Ir:
     """
 
     def __init__(self):
-        """Initializes the `Ir` class."""
+        """Initialises a new `Ir`."""
         self._pb_ir = _ir.Ir()
-        self._main_graph = Graph._factory(self, 'main',
-                                          self._pb_ir.getMainGraph())
-        self._subgraphs = []
         # Subgraphs are named `{pure_name}_{id}`, where `pure_name` comes from
         # the qualified name of the Python function that created the graph. The
         # following counter counts these so that a unique name can be given to
         # subgraphs that have been created from the same Python function.
         # See `Ir._create_name()`.
         self._pure_names = Counter()
+
+    @classmethod
+    def _from_pb(
+            cls,
+            pb_ir: '_ir.Ir',
+    ) -> 'Ir':
+        """Factory method to construct `Ir` instances.
+
+        Args:
+            pb_ir (_ir.Ir):
+                An instance of the low-level pybind11 `Ir`.
+
+        Returns:
+            Ir:
+                A popart.ir.Ir that reprsents the passed pb_ir.
+        """
+        self: 'Ir' = super().__new__(cls)
+        self._pb_ir = pb_ir
+        return self
 
     def main_graph(self) -> 'Graph':
         """Every IR is initialised with a main graph. This method returns this
@@ -38,7 +54,7 @@ class Ir:
             Graph:
                 The main graph of the IR.
         """
-        return self._main_graph
+        return Graph._from_pb(self._pb_ir.getMainGraph())
 
     def get_graph(
             self,
@@ -61,11 +77,7 @@ class Ir:
             Graph:
                 A graph that corresponds to the input Python function.
         """
-        name = self._create_name(fn.__qualname__)
-        _graph = self._pb_ir.createGraph(name)
-        graph = Graph._factory(self, name, _graph)
-        self._subgraphs.append(graph)
-        return graph
+        raise NotImplementedError()
 
     def _create_name(self, name: str) -> str:
         """Generate a graph name based on the qualified name of the Python

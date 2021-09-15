@@ -2,6 +2,9 @@
 #include "bindings/graph.hpp"
 #include "bindings/op.hpp"
 
+#include <algorithm>
+#include <iterator>
+
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
@@ -102,9 +105,25 @@ void bindGraph(py::module &m) {
       .def_readonly("id", &Graph::id)
       .def("getGraphString", &Graph::getGraphString)
       .def("getOpIds", &Graph::getOpIds)
-      .def("__contains__", [](Graph &self, const TensorId &name) {
-        return self.getTensors().contains(name);
-      });
+      .def("__contains__",
+           [](Graph &self, const TensorId &name) {
+             return self.getTensors().contains(name);
+           })
+      .def("getIr", py::overload_cast<>(&Graph::getIr, py::const_))
+      .def(
+          "getOps",
+          [](const Graph &self) -> std::vector<Op *> {
+            const auto nOps = self.getOps().size();
+            std::vector<Op *> ops;
+            ops.reserve(nOps);
+
+            std::transform(self.getOps().cbegin(),
+                           self.getOps().cend(),
+                           std::back_inserter(ops),
+                           [](auto &id_op) { return id_op.second.get(); });
+            return ops;
+          },
+          py::return_value_policy::reference);
 
   bindCreateOpFunctionToGraphClass(g);
 
