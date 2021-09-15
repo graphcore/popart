@@ -136,13 +136,10 @@ public:
   //     number of input buffer fetches per replica expected for this tensor.
   // \param maxOutFetchesPerReplFun a function mapping tensor ids to the maximum
   //     number of output buffer fetches per replica expected for this tensor.
-  // \param makeThreadSafe Use mutexes to protect the splitter and adapters.
-  //     Needed when using asynchronous multi-threaded callbacks.
   StepIOSplitter(
       unsigned replicationFactor,
       std::function<unsigned(const TensorId &)> maxInFetchesPerReplFun,
-      std::function<unsigned(const TensorId &)> maxOutFetchesPerReplFun,
-      bool makeThreadSafe);
+      std::function<unsigned(const TensorId &)> maxOutFetchesPerReplFun);
   // Don't allow copying.
   StepIOSplitter(const StepIOSplitter &) = delete;
   // Don't allow assigning.
@@ -182,8 +179,6 @@ public:
   // Give the splitter a change to call outComplete upstream.
   virtual void outCompletionCallback(TensorId id, unsigned replicationIndex);
 
-  bool threadSafetyEnabled() const;
-
 private:
   // The number of replications.
   unsigned replicationFactor;
@@ -196,8 +191,6 @@ private:
   IStepIO *upstreamIo;
   // Map tuples TensorId to a map from replication indices to IStepIO adapters.
   std::map<TensorId, SplitIOTensorInfo> downstreamIoMap;
-  // Are locks needed in the callbacks?
-  bool makeThreadSafe;
 };
 
 } // namespace popart

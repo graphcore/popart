@@ -436,16 +436,6 @@ Devicex::Devicex(Executablex &exe, std::shared_ptr<DeviceInfo> deviceInfo_)
     lowering().engineOptions.set(it.first, it.second);
   }
 
-  if (ir().getSessionOptions().engineOptions.find(
-          "target.maxStreamCallbackThreadsPerNumaNode") ==
-      ir().getSessionOptions().engineOptions.end()) {
-    logging::devicex::info("Setting engine option {} = {}",
-                           "target.maxStreamCallbackThreadsPerNumaNode",
-                           "0");
-    lowering().engineOptions.set("target.maxStreamCallbackThreadsPerNumaNode",
-                                 "0");
-  }
-
   for (auto it : ir().getSessionOptions().reportOptions) {
     logging::devicex::info(
         "Setting report option {} = {}", it.first, it.second);
@@ -859,9 +849,7 @@ void Devicex::loadEngineAndConnectStreams() {
         [&](const TensorId &id) {
           return ir().getDataFlow().numOutFetchesPerRepl(
               ir().getSessionOptions(), id);
-        },
-        lowering().engineOptions.at(
-            "target.maxStreamCallbackThreadsPerNumaNode") != "0");
+        });
     stepIoSplitter->reset();
 
     auto engineToInputStreamWithCallback = [&pEngine = pEngine,
