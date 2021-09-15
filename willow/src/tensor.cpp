@@ -805,8 +805,7 @@ Tensor::Tensor(TensorId n,
                Graph &g,
                const DebugContext &debugContext)
     : Vertex(), id(n), consumers(this), graph(g), producer(nullptr),
-      tensorTypeInfo(&getTensorTypeInfoMap().at(t)), data_(nullptr),
-      di(debugContext, n, t) {}
+      tensorType_(t), data_(nullptr), di(debugContext, n, t) {}
 
 void Consumers::decrement(Op *op) {
   auto found = consumers_m.find(op);
@@ -1088,19 +1087,14 @@ const std::map<Tensor *, std::vector<int>, TensorIndexMap::TensorPtrComparator>
   return indices_map;
 }
 
-const std::map<TensorType, TensorTypeInfo> &getTensorTypeInfoMap() {
-  static std::map<TensorType, TensorTypeInfo> M = initTensorTypeInfoMap();
-  return M;
-}
+TensorType Tensor::tensorType() const { return tensorType_; }
 
-TensorType Tensor::tensorType() const { return tensorTypeInfo->type(); }
+void Tensor::setTensorType(TensorType t) { tensorType_ = t; }
 
-const std::string &Tensor::tensor_type() const {
-  return tensorTypeInfo->type_s();
-}
-
-void Tensor::setTensorType(TensorType t) {
-  tensorTypeInfo = &getTensorTypeInfoMap().at(t);
+std::string Tensor::tensor_type() const {
+  std::stringstream ss;
+  ss << tensorType_;
+  return ss.str();
 }
 
 std::vector<Op *> Tensor::associatedOps() const {
@@ -1111,26 +1105,6 @@ std::vector<Op *> Tensor::associatedOps() const {
   }
 
   return result;
-}
-
-TensorType TensorTypeInfo::type() const { return tensorType_; }
-
-const std::string &TensorTypeInfo::type_s() const { return tensor_type_; }
-
-TensorTypeInfo::TensorTypeInfo(TensorType t_, std::string ts_)
-    : tensorType_(t_), tensor_type_(ts_) {}
-
-std::map<TensorType, TensorTypeInfo> initTensorTypeInfoMap() {
-  std::map<TensorType, TensorTypeInfo> tensor_types_m = {
-      {TensorType::ActGrad, {TensorType::ActGrad, "ActGrad"}},
-      {TensorType::Const, {TensorType::Const, "Const"}},
-      {TensorType::Stream, {TensorType::Stream, "Stream"}},
-      {TensorType::Unknown, {TensorType::Unknown, "Unknown"}},
-      {TensorType::Variable, {TensorType::Variable, "Variable"}}};
-  if (tensor_types_m.size() != static_cast<int64_t>(TensorType::N)) {
-    throw error("missing element in TensorTypes");
-  }
-  return tensor_types_m;
 }
 
 VariableTensor::VariableTensor(TensorId n,

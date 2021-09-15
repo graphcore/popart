@@ -516,7 +516,7 @@ AliasZeroCopy::getLivenessIntervals(Tensor *t,
   auto &tensorScheduleIndices = analyzer->getScheduleIndices(t);
 
   if ((!t->hasProducer() && t->getGraph().id == ir->getMainGraph().id) ||
-      t->getTensorTypeInfo()->type() == TensorType::Const) {
+      t->tensorType() == TensorType::Const) {
     // Being conservative and keeping main graph tensors without producer
     // always live
     insertInterval(0, analyzer->getOpScheduleSize());

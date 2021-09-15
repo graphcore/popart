@@ -32,13 +32,6 @@ void bindTensor(py::module &m) {
       .value("Gradient", VariableUpdateType::Gradient)
       .value("Copy", VariableUpdateType::Copy);
 
-  py::class_<TensorTypeInfo>(m, "TensorTypeInfo")
-      .def(py::init<TensorType, std::string>(), py::arg("t_"), py::arg("ts_"))
-      .def("type", &TensorTypeInfo::type)
-      .def("type_s",
-           &TensorTypeInfo::type_s,
-           py::return_value_policy::reference);
-
   py::class_<Tensor>(m, "Tensor")
       .def(py::init<TensorId, TensorType, Graph &>(),
            py::arg("tensorId"),
@@ -53,9 +46,6 @@ void bindTensor(py::module &m) {
       .def("clone", &Tensor::clone, py::arg("graph"))
       .def("tensorType", &Tensor::tensorType)
       .def("tensor_type", &Tensor::tensor_type)
-      .def("getTensorTypeInfo",
-           &Tensor::getTensorTypeInfo,
-           py::return_value_policy::reference)
       .def("setTensorType", &Tensor::setTensorType, py::arg("tensorType"))
       .def("getReplicatedStreamMode", &Tensor::getReplicatedStreamMode)
       .def("setReplicatedStreamMode",

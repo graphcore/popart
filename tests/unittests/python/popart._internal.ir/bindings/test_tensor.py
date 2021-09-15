@@ -23,23 +23,6 @@ def test_variable_update_type_creation():
     _ir.VariableUpdateType.Copy
 
 
-def test_tensor_type_info_construction():
-    """ Test that we can construct a popart._internal.ir.TensorTypeInfo object.
-    """
-    _ = _ir.TensorTypeInfo(_ir.TensorType.ActGrad, "ActGrad")
-
-
-def test_tensor_type_info_type_type_s():
-    """ Test the type() and type_s methods of a
-    popart._internal.ir.TensorTypeInfo object.
-    """
-    type = _ir.TensorType.Const
-    typeS = "Const"
-    tTypeInfo = _ir.TensorTypeInfo(type, typeS)
-    assert tTypeInfo.type() == type
-    assert tTypeInfo.type_s() == typeS
-
-
 def test_tensor_construction():
     """ Test that we can construct a popart._internal.ir.Tensor object. """
     ir = _ir.Ir()
@@ -89,20 +72,6 @@ def test_tensor_tensor_type1():
     tTypes = {_ir.TensorType.ActGrad: "ActGrad", _ir.TensorType.Const: "Const"}
     for i, (tType, tTypeStr) in enumerate(tTypes.items()):
         assert Tensor(f"t{i}", tType).tensor_type() == tTypeStr
-
-
-def test_tensor_get_tensor_type_info():
-    """ Test the getTensorTypeInfo() method of a popart._internal.ir.Tensor
-    object.
-    """
-    ir = _ir.Ir()
-    g = ir.createGraph("g")
-    Tensor = lambda id, type: _ir.Tensor(id, type, g)
-    tTypes = {_ir.TensorType.ActGrad: "ActGrad", _ir.TensorType.Const: "Const"}
-    for i, (tType, tTypeStr) in enumerate(tTypes.items()):
-        tTypeInfo = Tensor(f"t{i}", tType).getTensorTypeInfo()
-        assert tTypeInfo.type() == tType
-        assert tTypeInfo.type_s() == tTypeStr
 
 
 def test_tensor_set_tensor_type():

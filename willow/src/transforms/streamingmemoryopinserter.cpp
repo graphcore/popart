@@ -522,7 +522,7 @@ void StreamingMemoryOpInserter::applyTensor(
       bool requiresProducerTopoCons = false;
       bool requiresRewiring         = false;
 
-      if (tensor->getTensorTypeInfo()->type() == TensorType::Variable &&
+      if (tensor->tensorType() == TensorType::Variable &&
           tensor->id != consumerOpConfig.tensor->id) {
         // Current tensor (root var) is not the same as the actually
         // consumed tensor (descendant)
@@ -1323,7 +1323,7 @@ void StreamingMemoryOpInserter::getTensorOpSchedule(
     Tensor *tensor,
     TensorConfig &tensorConfig) const {
   auto &sessionOptions = graph.getIr().getSessionOptions();
-  if (tensor->getTensorTypeInfo()->type() == TensorType::Variable) {
+  if (tensor->tensorType() == TensorType::Variable) {
     tensorConfig.ioSchedule =
         sessionOptions.executionPhaseSettings.weightIOSchedule;
     // Test optimizer state & accumulator separately, because a tensor can be
@@ -1411,7 +1411,7 @@ void StreamingMemoryOpInserter::getRootVarTensor(Tensor *tensor,
                                                  Tensor *&rootTensor) const {
   // Check if the alias is an identity chain
   for (auto alias : aliasModel.allAliases(*tensor)) {
-    if (alias->getTensorTypeInfo()->type() == TensorType::Variable) {
+    if (alias->tensorType() == TensorType::Variable) {
       rootTensor = alias;
     }
   }
@@ -1823,8 +1823,7 @@ void StreamingMemoryOpInserter::setLoadingOpPhaseAndPriority(
       }
       // Optimizer states OnDemand are given a priority that delays the load
       // until the optimizer needs it
-      if (tensorConfig.tensor->getTensorTypeInfo()->type() ==
-              TensorType::Variable &&
+      if (tensorConfig.tensor->tensorType() == TensorType::Variable &&
           tensorConfig.tensor->isOptimizerStateTensor() &&
           !tensorConfig.tensor->isAccumulatorTensor()) {
         setPriority(op, isPhasedExecution(), true, tensorConfig.schedule);
@@ -2174,8 +2173,7 @@ RemoteStoreOp *StreamingMemoryOpInserter::insertRemoteStoreOp(
     if (tensorConfig.ioSchedule == ExecutionPhaseIOSchedule::Preload) {
       setPriority(
           remoteStore, isPhasedExecution(), false, tensorConfig.schedule);
-    } else if (tensorConfig.tensor->getTensorTypeInfo()->type() ==
-                   TensorType::Variable &&
+    } else if (tensorConfig.tensor->tensorType() == TensorType::Variable &&
                tensorConfig.tensor->isOptimizerStateTensor() &&
                !tensorConfig.tensor->isAccumulatorTensor()) {
       setPriority(

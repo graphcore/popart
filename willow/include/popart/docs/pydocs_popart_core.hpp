@@ -6952,18 +6952,6 @@ static const char *__doc_popart_TensorStorage_OnChip =
 
 static const char *__doc_popart_TensorType = R"doc()doc";
 
-static const char *__doc_popart_TensorTypeInfo = R"doc()doc";
-
-static const char *__doc_popart_TensorTypeInfo_TensorTypeInfo = R"doc()doc";
-
-static const char *__doc_popart_TensorTypeInfo_tensorType = R"doc()doc";
-
-static const char *__doc_popart_TensorTypeInfo_tensor_type = R"doc()doc";
-
-static const char *__doc_popart_TensorTypeInfo_type = R"doc()doc";
-
-static const char *__doc_popart_TensorTypeInfo_type_s = R"doc()doc";
-
 static const char *__doc_popart_TensorType_ActGrad = R"doc()doc";
 
 static const char *__doc_popart_TensorType_Const = R"doc()doc";
@@ -7027,8 +7015,6 @@ static const char *__doc_popart_Tensor_getProducer = R"doc()doc";
 static const char *__doc_popart_Tensor_getProducerUnsafe = R"doc()doc";
 
 static const char *__doc_popart_Tensor_getReplicatedStreamMode = R"doc()doc";
-
-static const char *__doc_popart_Tensor_getTensorTypeInfo = R"doc()doc";
 
 static const char *__doc_popart_Tensor_getVirtualGraphId = R"doc()doc";
 
@@ -7132,8 +7118,6 @@ static const char *__doc_popart_Tensor_tensorData_2 = R"doc()doc";
 static const char *__doc_popart_Tensor_tensorLocationInfo = R"doc()doc";
 
 static const char *__doc_popart_Tensor_tensorType = R"doc()doc";
-
-static const char *__doc_popart_Tensor_tensorTypeInfo = R"doc()doc";
 
 static const char *__doc_popart_Tensor_tensor_type = R"doc()doc";
 
@@ -7411,8 +7395,6 @@ static const char *__doc_popart_getRecompId = R"doc()doc";
 
 static const char *__doc_popart_getRemoteArgTensorId = R"doc()doc";
 
-static const char *__doc_popart_getTensorTypeInfoMap = R"doc()doc";
-
 static const char *__doc_popart_getUpdatedVarId = R"doc()doc";
 
 static const char *__doc_popart_hash_value = R"doc()doc";
@@ -7420,8 +7402,6 @@ static const char *__doc_popart_hash_value = R"doc()doc";
 static const char *__doc_popart_hash_value_2 = R"doc()doc";
 
 static const char *__doc_popart_hash_value_3 = R"doc()doc";
-
-static const char *__doc_popart_initTensorTypeInfoMap = R"doc()doc";
 
 static const char *__doc_popart_internal_error =
     R"doc(Exception class specific to internal errors This should be used as an

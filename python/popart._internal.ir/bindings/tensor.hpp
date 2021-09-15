@@ -12,7 +12,7 @@ namespace ir {
 
 /**
  * Add bindings for `popart::Tensor`, `popart::TensorType`,
- * `popart::VariableUpdateType`, `popart::TensorTypeInfo` classes to pybind
+ * `popart::VariableUpdateType` classes to pybind
  * module.
  **/
 void bindTensor(py::module &m);

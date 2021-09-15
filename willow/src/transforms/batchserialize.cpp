@@ -106,7 +106,7 @@ bool BatchSerialize::apply(Graph &graph) const {
 
       bool op_has_batch = false;
       for (auto &entry : op->input->indicesMap()) {
-        auto type  = entry.first->getTensorTypeInfo()->type();
+        auto type  = entry.first->tensorType();
         auto shape = entry.first->info.shape();
         auto nelms = entry.first->info.nelms();
 

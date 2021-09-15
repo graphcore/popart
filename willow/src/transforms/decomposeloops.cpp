@@ -575,7 +575,7 @@ void DecomposeLoops::decomposeLoop(Graph &graph,
     Op *op                          = schedule.at(i);
     LoopIteration apparentIteration = getApparentIteration(op, -1);
     for (auto &input : inputMaps[op]) {
-      if (input.second->getTensorTypeInfo()->type() == TensorType::Const) {
+      if (input.second->tensorType() == TensorType::Const) {
         // Constants remain connected (no iteration dependency)
         continue;
       }

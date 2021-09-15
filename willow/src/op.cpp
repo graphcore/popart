@@ -875,8 +875,7 @@ void Op::inheritPlacementAttributes(bool inheritSerializations,
 
     std::set<Tensor *, PTensorCmp> associatedVariableTensors;
 
-    if (inIndexAndTensor.second->getTensorTypeInfo()->type() ==
-        TensorType::Variable) {
+    if (inIndexAndTensor.second->tensorType() == TensorType::Variable) {
       associatedVariableTensors.insert(inIndexAndTensor.second);
     }
 
@@ -884,7 +883,7 @@ void Op::inheritPlacementAttributes(bool inheritSerializations,
     Tensor *inputTensor = inIndexAndTensor.second;
     if (aliasModel.contains(inputTensor->id)) {
       for (auto &alias : aliasModel.allAliases(*inputTensor)) {
-        if (alias->getTensorTypeInfo()->type() == TensorType::Variable) {
+        if (alias->tensorType() == TensorType::Variable) {
           associatedVariableTensors.insert(alias);
           associatedVariableTensors.insert(inIndexAndTensor.second);
         }

@@ -80,19 +80,6 @@ private:
   Tensor *tensorConsumed;
 };
 
-class TensorTypeInfo {
-public:
-  TensorTypeInfo(TensorType, std::string);
-  TensorType type() const;
-  const std::string &type_s() const;
-
-private:
-  TensorType tensorType_;
-  std::string tensor_type_;
-};
-const std::map<TensorType, TensorTypeInfo> &getTensorTypeInfoMap();
-std::map<TensorType, TensorTypeInfo> initTensorTypeInfoMap();
-
 class TensorLocationInfo {
 public:
   void setRemote(bool remote_) { remote = remote_; }
@@ -138,8 +125,7 @@ public:
 
   // ActGrad, Variable, etc:
   TensorType tensorType() const;
-  const std::string &tensor_type() const;
-  const TensorTypeInfo *getTensorTypeInfo() const { return tensorTypeInfo; }
+  std::string tensor_type() const;
   void setTensorType(TensorType);
 
   // Accessor's for the replicated stream mode
@@ -285,7 +271,7 @@ public:
 protected:
   Graph &graph;
   Op *producer;
-  const TensorTypeInfo *tensorTypeInfo;
+  TensorType tensorType_;
 
   // By default stream tensors are replicated
   ReplicatedStreamMode replicatedStreamMode = ReplicatedStreamMode::Replicate;
@@ -327,7 +313,6 @@ struct PTensorCmp {
     return a->id < b->id;
   }
 };
-
 
 } // namespace popart
 
