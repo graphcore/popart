@@ -83,10 +83,10 @@ exceptions = [
     'ElementWiseNonLinearUnaryGradOp', 'ElementWiseBinaryOp',
     'ElementWiseUnaryBooleanOp', 'ElementWiseUnaryOp', 'SGD0VarUpdateOpBase',
     'DynamicBinaryBaseInplaceOp', 'ElementWiseInplaceUnaryOp',
-    'DynamicTernaryBaseInplaceOp', 'TiedGatherOp', 'TiedGatherGradOp',
-    'ScanOp', 'ConcatOp', 'ConcatInplaceOp', 'ConcatGradOp', 'ExpandInplaceOp',
-    'ExpandGradOp', 'ExpandOp', 'IdentityInplaceOp', 'TransposeInplaceOp',
-    'UpsampleOp', 'PopartLSTMOp', 'PopartLSTMGradOp'
+    'DynamicTernaryBaseInplaceOp', 'TiedGatherGradOp', 'ScanOp', 'ConcatOp',
+    'ConcatInplaceOp', 'ConcatGradOp', 'ExpandInplaceOp', 'ExpandGradOp',
+    'ExpandOp', 'IdentityInplaceOp', 'TransposeInplaceOp', 'UpsampleOp',
+    'PopartLSTMOp', 'PopartLSTMGradOp'
 ]
 
 
