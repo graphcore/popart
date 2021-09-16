@@ -96,6 +96,8 @@ void bindGraph(py::module &m) {
            py::overload_cast<const OutIndex &>(&Graph::removeOutput))
       .def("getOutputId", &Graph::getOutputId)
       .def("hasOutputId", &Graph::hasOutputId)
+      .def("addScope", &Graph::addScope)
+      .def("removeScope", &Graph::removeScope)
       .def("getScope", &Graph::getScope)
       .def_readonly("id", &Graph::id)
       .def("getGraphString", &Graph::getGraphString)

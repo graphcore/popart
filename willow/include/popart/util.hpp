@@ -349,24 +349,6 @@ void validateReduceAxes(const std::vector<int64_t> &axes,
  */
 std::vector<std::string> splitString(std::string s, std::string delimiter);
 
-/**
- * Adds a scope to the TensorId
- * The resulting TensorId will be on the form <scopes><prefixes><names>
- * \param s The scope to be added to \a t
- * \param t The TensorId to add the scope to
- * \return The resulting TensorId
- */
-TensorId addScope(const Scope &s, const TensorId &t);
-
-/**
- * Removes a scope from the TensorId
- * The resulting TensorId will be on the form <scopes><prefixes><names>
- * \param s The scope to be removed from \a t
- * \param t The TensorId to remove the scope from
- * \return The resulting TensorId
- */
-TensorId removeScope(const Scope &s, const TensorId &t);
-
 } // namespace popart
 
 #endif

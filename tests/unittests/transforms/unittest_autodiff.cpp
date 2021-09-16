@@ -17,7 +17,6 @@
 #include <popart/op/sum.hpp>
 #include <popart/sgd.hpp>
 #include <popart/tensornames.hpp>
-#include <popart/util.hpp>
 
 #define private public
 #include <popart/transforms/autodiff.hpp>
@@ -354,9 +353,9 @@ void addTestIr2(Ir &ir) {
   auto &subgraphA = ir.createGraph(GraphId("A"));
 
   // Create subgraph A.
-  auto a_in  = addScope(subgraphA.getScope(), "a_in");
-  auto a_tmp = addScope(subgraphA.getScope(), "a_tmp");
-  auto a_out = addScope(subgraphA.getScope(), "a_out");
+  auto a_in  = subgraphA.addScope("a_in");
+  auto a_tmp = subgraphA.addScope("a_tmp");
+  auto a_out = subgraphA.addScope("a_out");
   subgraphA.addInput(a_in, tInfo);
 
   // Add SimpleTestOp0.
@@ -415,9 +414,9 @@ void addTestIr3(Ir &ir) {
   auto &subgraphA = ir.createGraph(GraphId("A"));
 
   // Create subgraph A.
-  auto a_in0  = addScope(subgraphA.getScope(), "a_in0");
-  auto a_in1  = addScope(subgraphA.getScope(), "a_in1");
-  auto a_out0 = addScope(subgraphA.getScope(), "a_out0");
+  auto a_in0  = subgraphA.addScope("a_in0");
+  auto a_in1  = subgraphA.addScope("a_in1");
+  auto a_out0 = subgraphA.addScope("a_out0");
   subgraphA.addInput(a_in0, tInfo);
   subgraphA.addInput(a_in1, tInfo);
 
@@ -471,9 +470,9 @@ void addTestIr4(Ir &ir) {
   auto &subgraphA = ir.createGraph(GraphId("A"));
 
   // Create subgraph A.
-  auto in  = addScope(subgraphA.getScope(), "in");
-  auto tmp = addScope(subgraphA.getScope(), "tmp");
-  auto out = addScope(subgraphA.getScope(), "out");
+  auto in  = subgraphA.addScope("in");
+  auto tmp = subgraphA.addScope("tmp");
+  auto out = subgraphA.addScope("out");
   subgraphA.addInput(in, tInfo);
 
   // Add SimpleTestOp0.
@@ -550,9 +549,9 @@ void addTestIr5(Ir &ir) {
     auto &branch = ir.createGraph(branchName);
 
     // Create subgraph.
-    auto in  = addScope(branch.getScope(), "in");
-    auto tmp = addScope(branch.getScope(), "tmp");
-    auto out = addScope(branch.getScope(), "out");
+    auto in  = branch.addScope("in");
+    auto tmp = branch.addScope("tmp");
+    auto out = branch.addScope("out");
     branch.addInput(in, tInfo);
 
     // Add SimpleTestOp0.
@@ -801,11 +800,11 @@ BOOST_AUTO_TEST_CASE(autodiff_1) {
 
   // OK, create expected tensor IDs.
   auto &bwdGraph     = tw_bwdGraph->unwrap().get();
-  auto _k_a_in       = addScope(bwdGraph.getScope(), "a_in");
-  auto _k_a_tmp      = addScope(bwdGraph.getScope(), "a_tmp");
-  auto _k_a_in_grad  = addScope(bwdGraph.getScope(), getGradId("a_in"));
-  auto _k_a_tmp_grad = addScope(bwdGraph.getScope(), getGradId("a_tmp"));
-  auto _k_a_out_grad = addScope(bwdGraph.getScope(), getGradId("a_out"));
+  auto _k_a_in       = bwdGraph.addScope("a_in");
+  auto _k_a_tmp      = bwdGraph.addScope("a_tmp");
+  auto _k_a_in_grad  = bwdGraph.addScope(getGradId("a_in"));
+  auto _k_a_tmp_grad = bwdGraph.addScope(getGradId("a_tmp"));
+  auto _k_a_out_grad = bwdGraph.addScope(getGradId("a_out"));
 
   // We don't actually know the values of indices _x and _y, let's determine
   // them. We know CallOps always have contiguous indices from 0 and we know
@@ -938,9 +937,9 @@ BOOST_AUTO_TEST_CASE(autodiff_createBwdGraph_0) {
 
   // Get some tensor ids.
   auto &subgraphA = ir.getGraph(GraphId("A"));
-  auto a_in       = addScope(subgraphA.getScope(), "a_in");
-  auto a_tmp      = addScope(subgraphA.getScope(), "a_tmp");
-  auto a_out      = addScope(subgraphA.getScope(), "a_out");
+  auto a_in       = subgraphA.addScope("a_in");
+  auto a_tmp      = subgraphA.addScope("a_tmp");
+  auto a_out      = subgraphA.addScope("a_out");
 
   // Now apply the createBwdGraph function.
   Autodiff autodiff;
@@ -957,12 +956,12 @@ BOOST_AUTO_TEST_CASE(autodiff_createBwdGraph_0) {
   auto &bwdGraph   = tw_bwdGraph->unwrap().get();
 
   // Create some tensors IDs we expect.
-  auto _k_a_in       = addScope(bwdGraph.getScope(), "a_in");
-  auto _k_a_tmp      = addScope(bwdGraph.getScope(), "a_tmp");
-  auto _k_a_out      = addScope(bwdGraph.getScope(), "a_out");
-  auto _k_a_in_grad  = addScope(bwdGraph.getScope(), getGradId("a_in"));
-  auto _k_a_tmp_grad = addScope(bwdGraph.getScope(), getGradId("a_tmp"));
-  auto _k_a_out_grad = addScope(bwdGraph.getScope(), getGradId("a_out"));
+  auto _k_a_in       = bwdGraph.addScope("a_in");
+  auto _k_a_tmp      = bwdGraph.addScope("a_tmp");
+  auto _k_a_out      = bwdGraph.addScope("a_out");
+  auto _k_a_in_grad  = bwdGraph.addScope(getGradId("a_in"));
+  auto _k_a_tmp_grad = bwdGraph.addScope(getGradId("a_tmp"));
+  auto _k_a_out_grad = bwdGraph.addScope(getGradId("a_out"));
 
   // We don't actually know the values of indices _x, _y, _z. Let's check
   // the inputs are what we expect and determine their values.
@@ -1080,9 +1079,9 @@ BOOST_AUTO_TEST_CASE(autodiff_createBwdGraph_1) {
 
   // Get tensorIds.
   auto &subgraphA = ir.getGraph(GraphId("A"));
-  auto a_in0      = addScope(subgraphA.getScope(), "a_in0");
-  auto a_in1      = addScope(subgraphA.getScope(), "a_in1");
-  auto a_out0     = addScope(subgraphA.getScope(), "a_out0");
+  auto a_in0      = subgraphA.addScope("a_in0");
+  auto a_in1      = subgraphA.addScope("a_in1");
+  auto a_out0     = subgraphA.addScope("a_out0");
 
   auto test = [&](Autodiff::TensorIds provided, Autodiff::TensorIds required) {
     std::cout << "----------------------------------------" << std::endl;
@@ -1313,9 +1312,9 @@ BOOST_AUTO_TEST_CASE(autodiff_stitch_0) {
 
     // Get some info about IR.
     auto &fwdGraph = ir.getGraph(irInfo._j);
-    irInfo.in      = addScope(fwdGraph.getScope(), "in");
-    irInfo.tmp     = addScope(fwdGraph.getScope(), "tmp");
-    irInfo.out     = addScope(fwdGraph.getScope(), "out");
+    irInfo.in      = fwdGraph.addScope("in");
+    irInfo.tmp     = fwdGraph.addScope("tmp");
+    irInfo.out     = fwdGraph.addScope("out");
 
     // Now apply the createBwdGraph function on _j to generate _k.
     Autodiff autodiff;
@@ -1336,12 +1335,12 @@ BOOST_AUTO_TEST_CASE(autodiff_stitch_0) {
     auto &bwdGraph   = tw_bwdGraph->unwrap().get();
 
     // Create some tensors IDs we need.
-    irInfo._k_in       = addScope(bwdGraph.getScope(), "in");
-    irInfo._k_tmp      = addScope(bwdGraph.getScope(), "tmp");
-    irInfo._k_out      = addScope(bwdGraph.getScope(), "out");
-    irInfo._k_in_grad  = addScope(bwdGraph.getScope(), getGradId("in"));
-    irInfo._k_tmp_grad = addScope(bwdGraph.getScope(), getGradId("tmp"));
-    irInfo._k_out_grad = addScope(bwdGraph.getScope(), getGradId("out"));
+    irInfo._k_in       = bwdGraph.addScope("in");
+    irInfo._k_tmp      = bwdGraph.addScope("tmp");
+    irInfo._k_out      = bwdGraph.addScope("out");
+    irInfo._k_in_grad  = bwdGraph.addScope(getGradId("in"));
+    irInfo._k_tmp_grad = bwdGraph.addScope(getGradId("tmp"));
+    irInfo._k_out_grad = bwdGraph.addScope(getGradId("out"));
 
     // Get _w, _x_, _y and _z.
     irInfo._w =

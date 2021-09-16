@@ -124,7 +124,6 @@ add_popart_python_module(
   bindings/opidentifier.cpp
   bindings/tensorlocation.cpp
   bindings/bwdgraphinfo.cpp
-  bindings/util.cpp
   # Transforms
   bindings/transforms/transform.cpp
   bindings/transforms/prune.cpp

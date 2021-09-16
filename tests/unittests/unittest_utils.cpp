@@ -5,11 +5,9 @@
 #include <string>
 #include <vector>
 
-#include <boost/algorithm/string/predicate.hpp>
 #include <boost/test/unit_test.hpp>
 
 #include <popart/logging.hpp>
-#include <popart/scope.hpp>
 #include <popart/util.hpp>
 
 namespace {
@@ -22,11 +20,6 @@ template <typename T> std::string toString(const T &t) {
   return ss.str();
 }
 } // namespace
-
-bool checkErrorMsgRemoveScopes(const popart::error &ex) {
-  const auto expectedPrefix = "Cannot remove scope from ";
-  return boost::algorithm::starts_with(ex.what(), expectedPrefix);
-}
 
 BOOST_AUTO_TEST_CASE(unittest_utils_streamoperator_pair) {
   // T41277. This test was failing with `libpva.so: undefined symbol: dlsym`.
@@ -70,24 +63,4 @@ BOOST_AUTO_TEST_CASE(unittest_utils_split_string) {
   result    = popart::splitString(test, delimiter);
   BOOST_CHECK_EQUAL_COLLECTIONS(
       result.begin(), result.end(), expected.begin(), expected.end());
-}
-
-BOOST_AUTO_TEST_CASE(unittest_add_and_remove_scopes) {
-  popart::TensorId tId = "g1/g2/g3/name";
-
-  popart::Scope s12;
-  s12 = s12 / "g1" / "g2";
-  popart::Scope s3;
-  s3 = s3 / "g3";
-  popart::Scope s4;
-  s4 = s4 / "g4";
-
-  BOOST_CHECK_EXCEPTION(
-      removeScope(s3, tId), popart::error, checkErrorMsgRemoveScopes);
-  auto result = removeScope(s12, tId);
-  result      = removeScope(s3, result);
-  result      = addScope(s4, result);
-
-  popart::TensorId expected = "g4/name";
-  BOOST_CHECK_EQUAL(result, expected);
 }

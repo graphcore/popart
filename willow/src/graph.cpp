@@ -17,7 +17,6 @@
 #include <popart/tensornames.hpp>
 #include <popart/tensors.hpp>
 #include <popart/topocons.hpp>
-#include <popart/util.hpp>
 #include <poparttracepoint.hpp>
 
 // Ops required for Graph::getCalledOps
@@ -176,7 +175,7 @@ void Graph::addInput(const TensorId &tensorId, const TensorInfo &tensorInfo) {
 
 TensorId Graph::addInput(const TensorInfo &tinfo) {
   auto tensorId = logging::format("input_{}", graph_inputs.size());
-  auto scopedId = addScope(getScope(), tensorId);
+  auto scopedId = addScope(tensorId);
   addInput(scopedId, tinfo);
   return scopedId;
 }
@@ -312,6 +311,28 @@ Op *Graph::growFromNode(const Node &node) {
 }
 
 Scope Graph::getScope() const { return Scope() / id.str(); }
+
+TensorId Graph::addScope(const TensorId &tensorId) const {
+  return (getScope() / tensorId).str();
+}
+
+TensorId Graph::removeScope(const TensorId &scopedId) const {
+
+  if (getScope().str().empty()) {
+    return scopedId;
+  } else {
+    using boost::algorithm::starts_with;
+
+    auto scopeStr = getScope().str() + Scope::delimiter();
+    if (!starts_with(scopedId, scopeStr)) {
+      throw error(
+          "Cannot remove scope from {} as it does not start with scope {}",
+          scopedId,
+          scopeStr);
+    }
+    return scopedId.substr(scopeStr.size());
+  }
+}
 
 OpId Graph::moveIntoGraph(std::unique_ptr<Op> op) {
   // Op may be moved in from a different graph
@@ -721,7 +742,7 @@ void Graph::copyFrom(const Graph &other,
   for (auto &id : other.getTensors().getAllTensorIds()) {
     auto tensor = other.getTensors().get(id);
 
-    auto newId = addScope(this->getScope(), removeScope(other.getScope(), id));
+    auto newId = this->addScope(other.removeScope(id));
 
     if (!getTensors().contains(newId)) {
       auto tensorClone = tensor->clone(*this);
@@ -762,16 +783,16 @@ void Graph::copyFrom(const Graph &other,
   if (copyInputMarkings == CopyInputMarkings::Yes) {
     // add graph inputs and outputs
     for (auto &id : other.getInputIds()) {
-      auto unscopedId = removeScope(other.getScope(), id);
-      auto newId      = addScope(this->getScope(), unscopedId);
+      auto unscopedId = other.removeScope(id);
+      auto newId      = this->addScope(unscopedId);
       this->markAsInput(newId);
     }
   }
 
   if (copyOutputMarkings == CopyOutputMarkings::Yes) {
     for (auto &id : other.getOutputIds()) {
-      auto unscopedId = removeScope(other.getScope(), id);
-      auto newId      = addScope(this->getScope(), unscopedId);
+      auto unscopedId = other.removeScope(id);
+      auto newId      = this->addScope(unscopedId);
       this->markAsOutput(newId);
     }
   }

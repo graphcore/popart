@@ -296,7 +296,7 @@ def make_sub_graph(ir: _ir.Ir, ins: Dict[int, _ir.TensorInfo]) -> _ir.Graph:
     g = ir.createGraph(_ir.GraphId("fwd"))
 
     for i, tinfo in ins.items():
-        g.addInput(_ir.addScope(g.getScope(), f"in{i}"), tinfo)
+        g.addInput(g.addScope(f"in{i}"), tinfo)
 
     inputs = g.getInputIds()
 
@@ -305,18 +305,16 @@ def make_sub_graph(ir: _ir.Ir, ins: Dict[int, _ir.TensorInfo]) -> _ir.Graph:
         settings = _ir.Settings(g, f"add{i}")
         opid = _ir.OperatorIdentifier("ai.onnx", f"Add{i}", 1,
                                       _ir.NumInputs(2, 2), 1)
-        add = g.createConnectedOp_AddOp(
-            {
-                0: t.id,
-                1: inputs[i]
-            }, {0: _ir.addScope(g.getScope(), f"add{i}")}, opid, settings)
+        add = g.createConnectedOp_AddOp({
+            0: t.id,
+            1: inputs[i]
+        }, {0: g.addScope(f"add{i}")}, opid, settings)
         t = add.outTensor(0)
 
     settings = _ir.Settings(g, "softmax0")
     opid = _ir.OperatorIdentifier("ai.onnx", "SoftMax", 1, _ir.NumInputs(1, 1),
                                   1)
-    sm = g.createConnectedOp_SoftmaxOp({0: t.id},
-                                       {0: _ir.addScope(g.getScope(), "sm0")},
+    sm = g.createConnectedOp_SoftmaxOp({0: t.id}, {0: g.addScope("sm0")},
                                        opid=opid,
                                        axis_=0,
                                        settings=settings)

@@ -24,7 +24,6 @@
 #include <popart/subgraph/subgraphutil.hpp>
 #include <popart/topocons.hpp>
 #include <popart/transforms/subgraphoutline.hpp>
-#include <popart/util.hpp>
 #include <popart/vendored/optional.hpp>
 
 using boost::find;
@@ -722,7 +721,7 @@ Graph &SubgraphOutline::createSubgraph(
 
   // create graph inputs
   for (auto tensor : instance.external_inputs) {
-    auto input_id = addScope(subgraph.getScope(), tensor->id);
+    auto input_id = subgraph.addScope(tensor->id);
     subgraph.addInput(input_id, tensor->info);
     auto t = subgraph.getTensors().get(input_id);
     if (tensor_map.find(tensor) != tensor_map.end()) {

@@ -21,7 +21,6 @@
 #include <popart/op/matmul.hpp>
 #include <popart/session.hpp>
 #include <popart/testdevice.hpp>
-#include <popart/util.hpp>
 #include <popart/vendored/optional.hpp>
 
 namespace ublas = boost::numeric::ublas;
@@ -92,9 +91,9 @@ BOOST_AUTO_TEST_CASE(TestBasicInference) {
 
   // Build the call subgraph - it only contains a MatMul.
   Graph &callGraph   = ir->createGraph({"callGraph"});
-  TensorId wInCall   = addScope(callGraph.getScope(), "weight(mmLhs)");
-  TensorId actInCall = addScope(callGraph.getScope(), "act(mmRhs)");
-  TensorId outInCall = addScope(callGraph.getScope(), "out");
+  TensorId wInCall   = callGraph.addScope("weight(mmLhs)");
+  TensorId actInCall = callGraph.addScope("act(mmRhs)");
+  TensorId outInCall = callGraph.addScope("out");
 
   callGraph.addInput(wInCall, tInfo);
   callGraph.addInput(actInCall, tInfo);

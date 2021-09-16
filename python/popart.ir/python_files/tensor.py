@@ -40,7 +40,7 @@ class Tensor:
 
     @property
     def name(self) -> str:
-        return _ir.removeScope(self._pb_tensor.getGraph().getScope(), self.id)
+        return self._pb_tensor.getGraph().removeScope(self.id)
 
     def __str__(self) -> str:
         return f"{self.name} {self.dtype} {self.shape}"

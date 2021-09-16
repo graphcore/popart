@@ -11,7 +11,6 @@
 #include <popart/op.hpp>
 #include <popart/op/identity.hpp>
 #include <popart/transforms/autodiff/calledgraphgradophelper.hpp>
-#include <popart/util.hpp>
 
 using namespace popart;
 
@@ -217,43 +216,32 @@ BOOST_AUTO_TEST_CASE(calledgraphgradophelper_getCalledGraphGradInInfo) {
 
   // Tensor info for tensors in the IR.
   TensorInfo tInfo{DataType::INT32, {}};
-  fwdCalledGraph.addInput(addScope(fwdCalledGraph.getScope(), "a_in0"), tInfo);
-  fwdCalledGraph.addInput(addScope(fwdCalledGraph.getScope(), "a_in1"), tInfo);
-  fwdCalledGraph.addInput(addScope(fwdCalledGraph.getScope(), "a_in2"), tInfo);
-  fwdCalledGraph.addInput(addScope(fwdCalledGraph.getScope(), "a_in3"), tInfo);
-  fwdCalledGraph.getTensors().addActGrad(
-      addScope(fwdCalledGraph.getScope(), "a_out0"));
-  fwdCalledGraph.markAsOutput(addScope(fwdCalledGraph.getScope(), "a_out0"));
-  fwdCalledGraph.getTensors().addActGrad(
-      addScope(fwdCalledGraph.getScope(), "a_out1"));
-  fwdCalledGraph.markAsOutput(addScope(fwdCalledGraph.getScope(), "a_out1"));
+  fwdCalledGraph.addInput(fwdCalledGraph.addScope("a_in0"), tInfo);
+  fwdCalledGraph.addInput(fwdCalledGraph.addScope("a_in1"), tInfo);
+  fwdCalledGraph.addInput(fwdCalledGraph.addScope("a_in2"), tInfo);
+  fwdCalledGraph.addInput(fwdCalledGraph.addScope("a_in3"), tInfo);
+  fwdCalledGraph.getTensors().addActGrad(fwdCalledGraph.addScope("a_out0"));
+  fwdCalledGraph.markAsOutput(fwdCalledGraph.addScope("a_out0"));
+  fwdCalledGraph.getTensors().addActGrad(fwdCalledGraph.addScope("a_out1"));
+  fwdCalledGraph.markAsOutput(fwdCalledGraph.addScope("a_out1"));
 
-  bwdCalledGraph.addInput(addScope(bwdCalledGraph.getScope(), "a_bwd_in0"),
-                          tInfo);
-  bwdCalledGraph.addInput(addScope(bwdCalledGraph.getScope(), "a_bwd_in1"),
-                          tInfo);
-  bwdCalledGraph.addInput(addScope(bwdCalledGraph.getScope(), "a_bwd_in2"),
-                          tInfo);
-  bwdCalledGraph.addInput(addScope(bwdCalledGraph.getScope(), "a_bwd_in3"),
-                          tInfo);
-  bwdCalledGraph.addInput(addScope(bwdCalledGraph.getScope(), "a_bwd_in4"),
-                          tInfo);
+  bwdCalledGraph.addInput(bwdCalledGraph.addScope("a_bwd_in0"), tInfo);
+  bwdCalledGraph.addInput(bwdCalledGraph.addScope("a_bwd_in1"), tInfo);
+  bwdCalledGraph.addInput(bwdCalledGraph.addScope("a_bwd_in2"), tInfo);
+  bwdCalledGraph.addInput(bwdCalledGraph.addScope("a_bwd_in3"), tInfo);
+  bwdCalledGraph.addInput(bwdCalledGraph.addScope("a_bwd_in4"), tInfo);
 
-  BwdGraphInfo bwdGraphInfo{bwdCalledGraph.id,
-                            {
-                                // Expected inputs.
-                                {addScope(fwdCalledGraph.getScope(), "a_in3"),
-                                 ExpectedConnectionType::Fwd},
-                                {addScope(fwdCalledGraph.getScope(), "a_out0"),
-                                 ExpectedConnectionType::Fwd},
-                                {addScope(fwdCalledGraph.getScope(), "a_in2"),
-                                 ExpectedConnectionType::Fwd},
-                                {addScope(fwdCalledGraph.getScope(), "a_out1"),
-                                 ExpectedConnectionType::FwdGrad},
-                                {addScope(fwdCalledGraph.getScope(), "a_in0"),
-                                 ExpectedConnectionType::Fwd},
-                            },
-                            {}};
+  BwdGraphInfo bwdGraphInfo{
+      bwdCalledGraph.id,
+      {
+          // Expected inputs.
+          {fwdCalledGraph.addScope("a_in3"), ExpectedConnectionType::Fwd},
+          {fwdCalledGraph.addScope("a_out0"), ExpectedConnectionType::Fwd},
+          {fwdCalledGraph.addScope("a_in2"), ExpectedConnectionType::Fwd},
+          {fwdCalledGraph.addScope("a_out1"), ExpectedConnectionType::FwdGrad},
+          {fwdCalledGraph.addScope("a_in0"), ExpectedConnectionType::Fwd},
+      },
+      {}};
 
   auto subgraphInToOpInIndex = [](SubgraphIndex, InIndex i) -> InIndex {
     return i + 1;
@@ -310,26 +298,22 @@ BOOST_AUTO_TEST_CASE(calledgraphgradophelper_getCalledGraphGradInInfo_error_0) {
 
   // Tensor info for tensors in the IR.
   TensorInfo tInfo{DataType::INT32, {}};
-  fwdCalledGraph.addInput(addScope(fwdCalledGraph.getScope(), "a_in0"), tInfo);
-  fwdCalledGraph.addInput(addScope(fwdCalledGraph.getScope(), "a_in1"), tInfo);
-  fwdCalledGraph.getTensors().addActGrad(
-      addScope(fwdCalledGraph.getScope(), "a_out0"));
-  fwdCalledGraph.markAsOutput(addScope(fwdCalledGraph.getScope(), "a_out0"));
-  fwdCalledGraph.getTensors().addActGrad(
-      addScope(fwdCalledGraph.getScope(), "a_out1"));
-  fwdCalledGraph.markAsOutput(addScope(fwdCalledGraph.getScope(), "a_out1"));
+  fwdCalledGraph.addInput(fwdCalledGraph.addScope("a_in0"), tInfo);
+  fwdCalledGraph.addInput(fwdCalledGraph.addScope("a_in1"), tInfo);
+  fwdCalledGraph.getTensors().addActGrad(fwdCalledGraph.addScope("a_out0"));
+  fwdCalledGraph.markAsOutput(fwdCalledGraph.addScope("a_out0"));
+  fwdCalledGraph.getTensors().addActGrad(fwdCalledGraph.addScope("a_out1"));
+  fwdCalledGraph.markAsOutput(fwdCalledGraph.addScope("a_out1"));
 
-  bwdCalledGraph.addInput(addScope(bwdCalledGraph.getScope(), "a_bwd_in0"),
-                          tInfo);
+  bwdCalledGraph.addInput(bwdCalledGraph.addScope("a_bwd_in0"), tInfo);
 
-  BwdGraphInfo bwdGraphInfo{
-      bwdCalledGraph.id,
-      {
-          // Expected inputs.
-          {addScope(fwdCalledGraph.getScope(), "non-existing-tensor"),
-           ExpectedConnectionType::Fwd},
-      },
-      {}};
+  BwdGraphInfo bwdGraphInfo{bwdCalledGraph.id,
+                            {
+                                // Expected inputs.
+                                {fwdCalledGraph.addScope("non-existing-tensor"),
+                                 ExpectedConnectionType::Fwd},
+                            },
+                            {}};
 
   auto bwdGraphInToGradOpInIndex = [](InIndex i) -> InIndex { return i; };
 
@@ -401,32 +385,24 @@ BOOST_AUTO_TEST_CASE(calledgraphgradophelper_getCalledGraphGradOutToNonGradIn) {
 
   // Tensor info for tensors in the IR.
   TensorInfo tInfo{DataType::INT32, {}};
-  fwdCalledGraph.addInput(addScope(fwdCalledGraph.getScope(), "a_in0"), tInfo);
-  fwdCalledGraph.addInput(addScope(fwdCalledGraph.getScope(), "a_in1"), tInfo);
-  fwdCalledGraph.addInput(addScope(fwdCalledGraph.getScope(), "a_in2"), tInfo);
+  fwdCalledGraph.addInput(fwdCalledGraph.addScope("a_in0"), tInfo);
+  fwdCalledGraph.addInput(fwdCalledGraph.addScope("a_in1"), tInfo);
+  fwdCalledGraph.addInput(fwdCalledGraph.addScope("a_in2"), tInfo);
 
-  bwdCalledGraph.getTensors().addActGrad(
-      addScope(bwdCalledGraph.getScope(), "a_bwd_out0"));
-  bwdCalledGraph.markAsOutput(
-      addScope(bwdCalledGraph.getScope(), "a_bwd_out0"));
-  bwdCalledGraph.getTensors().addActGrad(
-      addScope(bwdCalledGraph.getScope(), "a_bwd_out1"));
-  bwdCalledGraph.markAsOutput(
-      addScope(bwdCalledGraph.getScope(), "a_bwd_out1"));
-  bwdCalledGraph.getTensors().addActGrad(
-      addScope(bwdCalledGraph.getScope(), "a_bwd_out2"));
-  bwdCalledGraph.markAsOutput(
-      addScope(bwdCalledGraph.getScope(), "a_bwd_out2"));
+  bwdCalledGraph.getTensors().addActGrad(bwdCalledGraph.addScope("a_bwd_out0"));
+  bwdCalledGraph.markAsOutput(bwdCalledGraph.addScope("a_bwd_out0"));
+  bwdCalledGraph.getTensors().addActGrad(bwdCalledGraph.addScope("a_bwd_out1"));
+  bwdCalledGraph.markAsOutput(bwdCalledGraph.addScope("a_bwd_out1"));
+  bwdCalledGraph.getTensors().addActGrad(bwdCalledGraph.addScope("a_bwd_out2"));
+  bwdCalledGraph.markAsOutput(bwdCalledGraph.addScope("a_bwd_out2"));
 
-  BwdGraphInfo bwdGraphInfo{bwdCalledGraph.id,
-                            {},
-                            {// Expected inputs.
-                             {addScope(fwdCalledGraph.getScope(), "a_in2"),
-                              ExpectedConnectionType::FwdGrad},
-                             {addScope(fwdCalledGraph.getScope(), "a_in0"),
-                              ExpectedConnectionType::FwdGrad},
-                             {addScope(fwdCalledGraph.getScope(), "a_in1"),
-                              ExpectedConnectionType::FwdGrad}}};
+  BwdGraphInfo bwdGraphInfo{
+      bwdCalledGraph.id,
+      {},
+      {// Expected inputs.
+       {fwdCalledGraph.addScope("a_in2"), ExpectedConnectionType::FwdGrad},
+       {fwdCalledGraph.addScope("a_in0"), ExpectedConnectionType::FwdGrad},
+       {fwdCalledGraph.addScope("a_in1"), ExpectedConnectionType::FwdGrad}}};
 
   auto subgraphInToOpInIndex = [](SubgraphIndex, InIndex i) -> InIndex {
     return i + 1;
@@ -474,19 +450,16 @@ BOOST_AUTO_TEST_CASE(
 
   // Tensor info for tensors in the IR.
   TensorInfo tInfo{DataType::INT32, {}};
-  fwdCalledGraph.addInput(addScope(fwdCalledGraph.getScope(), "a_in0"), tInfo);
+  fwdCalledGraph.addInput(fwdCalledGraph.addScope("a_in0"), tInfo);
 
-  bwdCalledGraph.getTensors().addActGrad(
-      addScope(bwdCalledGraph.getScope(), "a_bwd_out0"));
-  bwdCalledGraph.markAsOutput(
-      addScope(bwdCalledGraph.getScope(), "a_bwd_out0"));
+  bwdCalledGraph.getTensors().addActGrad(bwdCalledGraph.addScope("a_bwd_out0"));
+  bwdCalledGraph.markAsOutput(bwdCalledGraph.addScope("a_bwd_out0"));
 
-  BwdGraphInfo bwdGraphInfo{
-      bwdCalledGraph.id,
-      {},
-      {// Expected inputs.
-       {addScope(fwdCalledGraph.getScope(), "non-existent"),
-        ExpectedConnectionType::FwdGrad}}};
+  BwdGraphInfo bwdGraphInfo{bwdCalledGraph.id,
+                            {},
+                            {// Expected inputs.
+                             {fwdCalledGraph.addScope("non-existent"),
+                              ExpectedConnectionType::FwdGrad}}};
 
   auto subgraphInToOpInIndex = [](SubgraphIndex, InIndex i) -> InIndex {
     return i + 1;

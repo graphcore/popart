@@ -16,7 +16,6 @@
 #include "bindings/tensorinfo.hpp"
 #include "bindings/tensorlocation.hpp"
 #include "bindings/tensors.hpp"
-#include "bindings/util.hpp"
 // transforms
 #include "bindings/transforms/autodiff.hpp"
 #include "bindings/transforms/prune.hpp"
@@ -50,7 +49,6 @@ PYBIND11_MODULE(popart_internal_ir, m) {
   bindOpIdentifier(m);
   bindTensorLocation(m);
   bindBwdGraphInfo(m);
-  bindUtil(m);
   // Ops
   {
     op::_bindAll(m);

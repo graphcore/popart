@@ -111,24 +111,22 @@ TensorId ParsedTensorId::addScope(const Scope &s) {
 }
 
 TensorId ParsedTensorId::removeScope(const Scope &s) {
-  if (!s.empty()) {
-    auto foundScopes = splitString(s.str(), sNameDelimiter);
+  auto foundScopes = splitString(s.str(), sNameDelimiter);
 
-    auto sScopeIt        = foundScopes.begin();
-    const auto sScopeEnd = foundScopes.end();
+  auto sScopeIt        = foundScopes.begin();
+  const auto sScopeEnd = foundScopes.end();
 
-    auto tScopeIt        = scopes.begin();
-    const auto tScopeEnd = scopes.end();
+  auto tScopeIt        = scopes.begin();
+  const auto tScopeEnd = scopes.end();
 
-    for (; sScopeIt != sScopeEnd; ++sScopeIt, ++tScopeIt) {
-      if (tScopeIt == tScopeEnd || *sScopeIt != *tScopeIt) {
-        throw error(
-            "Cannot remove scope from {} as it does not start with scope {}",
-            tId,
-            *sScopeIt);
-      } else {
-        scopes.pop_front();
-      }
+  for (; sScopeIt != sScopeEnd; ++sScopeIt, ++tScopeIt) {
+    if (tScopeIt == tScopeEnd || *sScopeIt != *tScopeIt) {
+      throw error(
+          "Cannot remove scope from {} as it does not start with scope {}",
+          tId,
+          *sScopeIt);
+    } else {
+      scopes.pop_front();
     }
   }
 

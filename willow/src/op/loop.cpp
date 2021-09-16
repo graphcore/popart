@@ -11,7 +11,6 @@
 #include <popart/tensordata.hpp>
 #include <popart/tensornames.hpp>
 #include <popart/tensors.hpp>
-#include <popart/util.hpp>
 
 namespace popart {
 
@@ -288,7 +287,7 @@ static OpCreator<LoopOp> loopOpCreator(
       auto implicitTensorIds = onnxutil::getImplicitTensorIds(callee);
       for (auto implicitTensorId : implicitTensorIds) {
         auto parentScopedImplicitTensorId =
-            addScope(parentGraph.getScope(), implicitTensorId);
+            parentGraph.addScope(implicitTensorId);
         Tensor *tensor =
             parentGraph.getTensors().get(parentScopedImplicitTensorId);
         opInputs.push_back({implicitTensorId, tensor->info});
@@ -318,11 +317,10 @@ static OpCreator<LoopOp> loopOpCreator(
         TensorId scopedTensorId;
         if (i < loopBodyInputs.size()) {
           // Explicit
-          scopedTensorId =
-              addScope(calleeGraph.getScope(), loopBodyInputs.at(i));
+          scopedTensorId = calleeGraph.addScope(loopBodyInputs.at(i));
         } else {
           // Implicit
-          scopedTensorId = addScope(calleeGraph.getScope(), kv.first);
+          scopedTensorId = calleeGraph.addScope(kv.first);
         }
         logging::op::trace("[LoopOp] Callee: {}, input: {} - {} -> {}",
                            callee.name(),
@@ -357,7 +355,7 @@ static OpCreator<LoopOp> loopOpCreator(
 
       // Mark body outputs
       for (TensorId outputId : loopBodyOutputs) {
-        TensorId scopedTensorId = addScope(calleeGraph.getScope(), outputId);
+        TensorId scopedTensorId = calleeGraph.addScope(outputId);
         calleeGraph.markAsOutput(scopedTensorId);
       }
 

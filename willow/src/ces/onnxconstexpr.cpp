@@ -8,7 +8,6 @@
 #include <popart/opmanager.hpp>
 #include <popart/tensor.hpp>
 #include <popart/tensors.hpp>
-#include <popart/util.hpp>
 
 namespace popart {
 
@@ -36,7 +35,7 @@ void OnnxConstExprUtil::processConstantNode(
   // Add the scope of the current graph to the tensorID of the node output, this
   // is done for ops as standard, but we also need to do it for the special case
   // of constants.
-  TensorId name = addScope(graph->getScope(), node.output(0));
+  TensorId name = graph->addScope(node.output(0));
   // We assume that a tensor coming from a Constant Node should
   // not have a gradient computed for it or be updated during training
   // We will implement a separate tool to convert between

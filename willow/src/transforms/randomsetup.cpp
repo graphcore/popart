@@ -16,7 +16,6 @@
 #include <popart/tensors.hpp>
 #include <popart/topocons.hpp>
 #include <popart/transforms/randomsetup.hpp>
-#include <popart/util.hpp>
 
 #include "popart/tensornames.hpp"
 #include "popart/vendored/optional.hpp"
@@ -274,9 +273,8 @@ RandomSetup::determineBaseSeedsMaps(const Ir &ir,
       for (auto &strand : opStrands) {
         auto id = ModifyRandomSeedOp::getSeedInTensorId();
         id      = getTensorIdForStrand(id, strand);
-        inBaseSeedIds[graphId][strand] = addScope(graph.getScope(), id + "_in");
-        outBaseSeedIds[graphId][strand] =
-            addScope(graph.getScope(), id + "_out");
+        inBaseSeedIds[graphId][strand]  = graph.addScope(id + "_in");
+        outBaseSeedIds[graphId][strand] = graph.addScope(id + "_out");
       }
     }
   }
@@ -553,7 +551,7 @@ RandomSetup::addModifyRandomSeedOp(Graph &graph,
 
   auto constId = ModifyRandomSeedOp::getSeedModifierTensorId(modifier);
   constId      = getTensorIdForStrand(constId, strand);
-  constId      = addScope(graph.getScope(), constId);
+  constId      = graph.addScope(constId);
 
   // Insert a constant tensor modifier for this op.
   std::vector<uint32_t> modifierData(1, {modifier});
@@ -580,7 +578,7 @@ RandomSetup::addModifyRandomSeedOp(Graph &graph,
 
     TensorId outId = ModifyRandomSeedOp::getModifiedSeedTensorId(modifier);
     outId          = getTensorIdForStrand(outId, strand);
-    outId          = addScope(graph.getScope(), outId);
+    outId          = graph.addScope(outId);
 
     modifyRandomSeedOp->createAndConnectOutTensor(
         ModifyRandomSeedOp::getModifiedSeedOutIndex(), outId);
@@ -770,7 +768,7 @@ void RandomSetup::connectSubgraphOp(Graph &graph,
     TensorId outId = TensorId(reservedRandomSeedPrefix()) + "_loopcarry" +
                      std::to_string(op->id);
     outId = getTensorIdForStrand(outId, strand);
-    outId = addScope(graph.getScope(), outId);
+    outId = graph.addScope(outId);
     op->createAndConnectOutTensor(outIndex, outId);
 
     logging::trace("[RandomSetup] Passing seed tensor {} to {} in {} "

@@ -23,8 +23,6 @@
 #include <popart/topocons.hpp>
 #include <popart/transforms/mainloops.hpp>
 #include <popart/transforms/prune.hpp>
-#include <popart/util.hpp>
-
 namespace popart {
 
 namespace {
@@ -228,8 +226,7 @@ void moveIntoLoop(LoopOp *loop,
   // Add explicit inputs
   for (auto &explicitIds : opsToMove.getExplicitTensorIds()) {
     TensorId opInId = explicitIds.first;
-    TensorId sgInId =
-        addScope(subgraph.getScope(), removeScope(graph.getScope(), opInId));
+    TensorId sgInId = subgraph.addScope(graph.removeScope(opInId));
     logging::transform::trace(
         "[moveIntoLoop] Adding explicit input {} -> {} on LoopOp {}",
         opInId,
@@ -246,8 +243,7 @@ void moveIntoLoop(LoopOp *loop,
   // Add implicit inputs
   for (auto &implicitId : opsToMove.getImplicitTensors()) {
     TensorId opInId = implicitId;
-    TensorId sgInId =
-        addScope(subgraph.getScope(), removeScope(graph.getScope(), opInId));
+    TensorId sgInId = subgraph.addScope(graph.removeScope(opInId));
     logging::transform::trace(
         "[moveIntoLoop] Adding implicit input {} -> {} on LoopOp {}",
         opInId,
@@ -302,8 +298,8 @@ void moveIntoLoop(LoopOp *loop,
       connectInTensorFn(op, cloneOp, input.first, subgraphTensorId);
     }
     for (auto output : op->output->tensorIdMap()) {
-      TensorId subgraphTensorId = addScope(
-          subgraph.getScope(), removeScope(graph.getScope(), output.second));
+      TensorId subgraphTensorId =
+          subgraph.addScope(graph.removeScope(output.second));
       cloneOp->createAndConnectOutTensor(output.first, subgraphTensorId);
       remap[output.second] = subgraphTensorId;
     }
@@ -535,7 +531,7 @@ void MainLoops::setupAnchors(Graph &graph,
       TensorId accumIn  = anchorSumPrefix() + rightId;
       TensorId accumOut = accumIn + "_out";
 
-      TensorId currId = addScope(mainGraph.getScope(), accumIn);
+      TensorId currId = mainGraph.addScope(accumIn);
       TensorId oldId  = currId;
 
       Op *initOp =
@@ -550,7 +546,7 @@ void MainLoops::setupAnchors(Graph &graph,
 
       if (outerLoop) {
         oldId  = currId;
-        currId = addScope(outerGraph.getScope(), accumIn);
+        currId = outerGraph.addScope(accumIn);
         outerLoop->addLoopInput(
             outerLoop->subgraphInToOpInIndex(LoopOp::getFirstInputInIndex()),
             oldId,
@@ -560,7 +556,7 @@ void MainLoops::setupAnchors(Graph &graph,
 
       if (innerLoop) {
         oldId  = currId;
-        currId = addScope(innerGraph.getScope(), accumIn);
+        currId = innerGraph.addScope(accumIn);
         innerLoop->addLoopInput(
             innerLoop->subgraphInToOpInIndex(LoopOp::getFirstInputInIndex()),
             oldId,
@@ -569,7 +565,7 @@ void MainLoops::setupAnchors(Graph &graph,
       }
 
       oldId  = currId;
-      currId = addScope(innerGraph.getScope(), accumOut);
+      currId = innerGraph.addScope(accumOut);
       // NOTE: When (bps > 1 && ga == 1), innerGraph == outerGraph.
       Op *addOp = innerGraph.createOp<AddOp>(Onnx::Operators::Add_7,
                                              Op::Settings({innerGraph, "Add"}));
@@ -585,7 +581,7 @@ void MainLoops::setupAnchors(Graph &graph,
 
       if (innerLoop && outerLoop) {
         oldId  = currId;
-        currId = addScope(outerGraph.getScope(), accumOut);
+        currId = outerGraph.addScope(accumOut);
         innerLoop->addLoopOutput(innerLoop->subgraphOutToOpOutIndex(
                                      LoopOp::getFirstOutputOutIndex()),
                                  currId,
@@ -595,7 +591,7 @@ void MainLoops::setupAnchors(Graph &graph,
 
       if (innerLoop || outerLoop) {
         oldId             = currId;
-        currId            = addScope(mainGraph.getScope(), accumOut);
+        currId            = mainGraph.addScope(accumOut);
         auto existingLoop = outerLoop ? outerLoop : innerLoop;
         existingLoop->addLoopOutput(existingLoop->subgraphOutToOpOutIndex(
                                         LoopOp::getFirstOutputOutIndex()),
@@ -674,13 +670,11 @@ std::pair<LoopOp *, LoopOp *> MainLoops::setupLoops(Graph &graph) const {
     Graph &stepGraph = ir.createGraph({"stepGraph"});
 
     // Add mandatory loop iterator tensor to subgraph (is not an output)
-    TensorId loopItScopedId =
-        addScope(stepGraph.getScope(), reservedLoopIteratorPrefix());
+    TensorId loopItScopedId = stepGraph.addScope(reservedLoopIteratorPrefix());
     stepGraph.addInput(loopItScopedId, TensorInfo(DataType::INT32, {}));
 
     // Add mandatory loop condition tensor to subgraph (is also an output)
-    TensorId loopCondScopedId =
-        addScope(stepGraph.getScope(), reservedLoopCondPrefix());
+    TensorId loopCondScopedId = stepGraph.addScope(reservedLoopCondPrefix());
     stepGraph.addInput(loopCondScopedId, TensorInfo(DataType::BOOL, {}));
     stepGraph.markAsOutput(loopCondScopedId);
 
@@ -734,13 +728,11 @@ std::pair<LoopOp *, LoopOp *> MainLoops::setupLoops(Graph &graph) const {
     Graph &accumGraph = ir.createGraph({getAccumulationGraphName()});
 
     // Add mandatory loop iterator tensor to subgraph (is not an output)
-    TensorId loopItScopedId =
-        addScope(accumGraph.getScope(), reservedLoopIteratorPrefix());
+    TensorId loopItScopedId = accumGraph.addScope(reservedLoopIteratorPrefix());
     accumGraph.addInput(loopItScopedId, TensorInfo(DataType::INT32, {}));
 
     // Add mandatory loop condition tensor to subgraph (is also an output)
-    TensorId loopCondScopedId =
-        addScope(accumGraph.getScope(), reservedLoopCondPrefix());
+    TensorId loopCondScopedId = accumGraph.addScope(reservedLoopCondPrefix());
     accumGraph.addInput(loopCondScopedId, TensorInfo(DataType::BOOL, {}));
     accumGraph.markAsOutput(loopCondScopedId);
 

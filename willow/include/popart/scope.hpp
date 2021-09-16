@@ -4,7 +4,6 @@
 
 #include <string>
 #include <vector>
-#include <popart/names.hpp>
 
 namespace popart {
 
