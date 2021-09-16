@@ -33,12 +33,10 @@ GatherOpx::GatherOpx(Op *op, Devicex *devicex) : GatherBaseOpx(op, devicex) {
   setCommonMembersPostVerify(op);
 
   const auto &gop = getOp<GatherOp>();
-  auto options    = createSlicePlanOptions(SlicePlanUsedFor::Slice,
-                                        gop.getAvailableMemoryProportion());
   plan            = createSlicePlan(graph(),
                          gop.inInfo(gop.dataInIndex()),
                          gop.inInfo(gop.indicesInIndex()),
-                         options,
+                         gop.getAvailableMemoryProportion(),
                          axis);
 }
 

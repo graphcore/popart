@@ -6,7 +6,6 @@
 #include <popart/util.hpp>
 
 #include <popops/Cast.hpp>
-#include <popops/ElementWise.hpp>
 #include <popops/Gather.hpp>
 #include <popops/Scatter.hpp>
 #include <poputil/TileMapping.hpp>
@@ -71,44 +70,6 @@ snap::Tensor broadcastShape(snap::Tensor a, snap::Tensor b_) {
   }
 
   return snap::Tensor{b, b_};
-}
-
-snap::Tensor linearizeIndices(const PopOpx &opx,
-                              poplar::program::Sequence &prog,
-                              snap::Tensor indices,
-                              int numDataCols) {
-  // Linearize the indices: map from 2-d indices to 1-d
-  auto result     = indices.getPoplarTensor().flatten(1, indices.rank());
-  int numCols     = static_cast<int>(result.dim(1));
-  auto colIndices = scatterutilx::linspace(opx.graph(),
-                                           0,
-                                           numCols,
-                                           opx.getDebugNameAndId("colIds"),
-                                           1,
-                                           result.elementType());
-
-  // numDataCols * indices + colIndices
-  result =
-      opx.cloneNcopy(prog, snap::Tensor{result, opx.graph()}, "copyIndices")
-          .getPoplarTensor();
-  auto numDataColsConst = opx.graph().getPoplarGraph().addConstant(
-      result.elementType(), {}, numDataCols, opx.getDebugNameAndId("numCols"));
-  opx.graph().getPoplarGraph().setTileMapping(numDataColsConst, 0);
-
-  popops::mulInPlace(opx.graph().getPoplarGraph(),
-                     result,
-                     numDataColsConst,
-                     prog,
-                     opx.getDebugNameAndId("numColsMulIndices"));
-  popops::addInPlace(opx.graph().getPoplarGraph(),
-                     result,
-                     colIndices.getPoplarTensor(),
-                     prog,
-                     opx.getDebugNameAndId("indicesAddColIds"));
-
-  result = result.flatten();
-  result = result.expand({1});
-  return snap::Tensor{result, opx.graph()};
 }
 
 void growScatter(poplar::program::Sequence &prog,
