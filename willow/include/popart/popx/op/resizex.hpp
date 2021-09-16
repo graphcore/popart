@@ -12,20 +12,20 @@ namespace popx {
 class ResizeOpx : public PopOpx {
 public:
   ResizeOpx(Op *, Devicex *);
-  void grow(poplar::program::Sequence &) const final;
+  void grow(snap::program::Sequence &) const final;
 };
 
 class ResizeGradOpx : public PopOpx {
 public:
   ResizeGradOpx(Op *, Devicex *);
-  void grow(poplar::program::Sequence &) const final;
+  void grow(snap::program::Sequence &) const final;
 
 private:
-  snap::Tensor reduceDimension(poplar::program::Sequence &,
+  snap::Tensor reduceDimension(snap::program::Sequence &,
                                const snap::Tensor &input,
                                int dimension,
                                float scale) const;
-  snap::Tensor padDimension(poplar::program::Sequence &,
+  snap::Tensor padDimension(snap::program::Sequence &,
                             const snap::Tensor &input,
                             int dimension,
                             int64_t newSize,

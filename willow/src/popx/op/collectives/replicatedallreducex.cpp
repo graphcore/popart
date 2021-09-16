@@ -18,7 +18,7 @@ ReplicatedAllReduceOpx::ReplicatedAllReduceOpx(Op *op, Devicex *devicex)
   verifyOp<CollectivesBaseOp>(op);
 }
 
-void ReplicatedAllReduceOpx::grow(poplar::program::Sequence &prog) const {
+void ReplicatedAllReduceOpx::grow(snap::program::Sequence &prog) const {
   const auto &rarOp = getOp<ReplicatedAllReduceOp>();
 
   const auto inIndex                   = ReplicatedAllReduceOp::getInIndex();
@@ -29,7 +29,7 @@ void ReplicatedAllReduceOpx::grow(poplar::program::Sequence &prog) const {
       graph().getPoplarGraph(),
       toReduce,
       getPoplarCollectiveOperator(rarOp.getCollectiveOp()),
-      prog,
+      prog.getPoplarSequence(),
       toGCLCommGroup(rarOp.getGCLCommGroup()),
       debugContext("replicatedAllReduce"),
       allReduceOptions);
@@ -69,8 +69,7 @@ ReplicatedAllReduceInplaceOpx::ReplicatedAllReduceInplaceOpx(Op *op,
       op, Onnx::CustomOperators::ReplicatedAllReduceInplace);
 }
 
-void ReplicatedAllReduceInplaceOpx::grow(
-    poplar::program::Sequence &prog) const {
+void ReplicatedAllReduceInplaceOpx::grow(snap::program::Sequence &prog) const {
   const auto &rarOp = getOp<ReplicatedAllReduceOp>();
 
   const auto inIndex      = ReplicatedAllReduceInplaceOp::getInIndex();
@@ -84,7 +83,7 @@ void ReplicatedAllReduceInplaceOpx::grow(
       graph().getPoplarGraph(),
       toReduce,
       getPoplarCollectiveOperator(rarOp.getCollectiveOp()),
-      prog,
+      prog.getPoplarSequence(),
       debugContext("replicatedAllReduce"),
       allReduceOptions);
 

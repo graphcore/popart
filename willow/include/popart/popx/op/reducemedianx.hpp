@@ -12,13 +12,13 @@ namespace popx {
 class ReduceMedianOpx : public PopOpx {
 public:
   ReduceMedianOpx(Op *, Devicex *);
-  void grow(poplar::program::Sequence &) const override;
+  void grow(snap::program::Sequence &) const override;
 };
 
 class ReduceMedianGradOpx : public PopOpx {
 public:
   ReduceMedianGradOpx(Op *, Devicex *);
-  void grow(poplar::program::Sequence &) const override;
+  void grow(snap::program::Sequence &) const override;
 };
 
 namespace reducemedianinternal {

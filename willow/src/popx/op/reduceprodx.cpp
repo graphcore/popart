@@ -21,7 +21,7 @@ ReduceProdOpx::ReduceProdOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
   verifyOp<ReduceProdOp>(op);
 }
 
-void ReduceProdOpx::grow(poplar::program::Sequence &prog) const {
+void ReduceProdOpx::grow(snap::program::Sequence &prog) const {
   const auto &op   = getOp<ReduceProdOp>();
   const auto input = getInTensor(ReduceProdOp::getInIndex()).getPoplarTensor();
 
@@ -29,7 +29,7 @@ void ReduceProdOpx::grow(poplar::program::Sequence &prog) const {
                                       input,
                                       vector_cast<std::size_t>(op.getAxes()),
                                       {popops::Operation::MUL},
-                                      prog,
+                                      prog.getPoplarSequence(),
                                       debugContext("mul"));
 
   setOutTensor(
@@ -44,7 +44,7 @@ ReduceProdGradOpx::ReduceProdGradOpx(Op *op, Devicex *devicex)
   verifyOp<ReduceProdGradOp>(op, Onnx::GradOperators::ReduceProdGrad);
 }
 
-void ReduceProdGradOpx::grow(poplar::program::Sequence &prog) const {
+void ReduceProdGradOpx::grow(snap::program::Sequence &prog) const {
   const auto &op = getOp<ReduceProdGradOp>();
   auto output    = cloneNcopy(prog, getInTensor(ReduceProdGradOp::getInIndex()))
                     .getPoplarTensor();
@@ -111,14 +111,14 @@ void ReduceProdGradOpx::grow(poplar::program::Sequence &prog) const {
     popops::mapInPlace(graph().getPoplarGraph(),
                        pe::Mul(pe::_1, pe::_2),
                        {left, fwd_input.slice(i - 1, i, 0)},
-                       prog,
+                       prog.getPoplarSequence(),
                        debugContext("mul"));
     popops::mapInPlace(
         graph().getPoplarGraph(),
         pe::Mul(pe::_1, pe::_2),
         {right,
          fwd_input.slice(lrcumprod.dim(0) - i, lrcumprod.dim(0) - i + 1, 0)},
-        prog,
+        prog.getPoplarSequence(),
         debugContext("mul"));
   }
 

@@ -18,13 +18,13 @@ public:
                     const poplar::DebugNameAndId &dnai) const final;
   std::set<TensorId> mustExistBeforeCreate(InIndex index0) const final;
   InputCreatorType getInputCreatorType(InIndex) const final;
-  void grow(poplar::program::Sequence &) const final;
+  void grow(snap::program::Sequence &) const final;
 
   poplar::OptionFlags getConvOptions(int, std::string pass = "") const;
   std::string getFwdPassFlagString() const;
 
   virtual std::vector<snap::Tensor>
-  convolve(poplar::program::Sequence &prog,
+  convolve(snap::program::Sequence &prog,
            const std::vector<snap::Tensor> &weights) const {
     throw error("No 'convolve' implementation for {}", op_p->opid);
   }
@@ -64,9 +64,9 @@ snap::Tensor reshapeOnnxWeightsForPoplar(const snap::Tensor &weights,
 class MultiConvWeightsGradBaseOpx : public PopOpx {
 public:
   MultiConvWeightsGradBaseOpx(Op *op, Devicex *dv) : PopOpx(op, dv) {}
-  void grow(poplar::program::Sequence &) const final;
+  void grow(snap::program::Sequence &) const final;
   virtual std::vector<snap::Tensor>
-  calculateWeightDeltas(poplar::program::Sequence &) const {
+  calculateWeightDeltas(snap::program::Sequence &) const {
     throw error("No 'calculateWeightDeltas' implementation for {}", op_p->opid);
   }
 

@@ -13,13 +13,13 @@ class ClipComputex : public EwuComputex {
 public:
   ClipComputex(float min_, float max_) : min(min_), max(max_) {}
 
-  snap::Tensor outplace(poplar::program::Sequence &,
+  snap::Tensor outplace(snap::program::Sequence &,
                         snap::Graph &,
                         const snap::Tensor &tensor,
                         const poplar::DebugNameAndId &,
                         const std::string &) const final;
 
-  void inplace(poplar::program::Sequence &,
+  void inplace(snap::program::Sequence &,
                snap::Graph &,
                const snap::Tensor &,
                const poplar::DebugNameAndId &,
@@ -61,7 +61,7 @@ public:
 class ClipGradOpx : public PopOpx {
 public:
   ClipGradOpx(Op *, Devicex *);
-  void grow(poplar::program::Sequence &) const final;
+  void grow(snap::program::Sequence &) const final;
 };
 
 } // namespace popx

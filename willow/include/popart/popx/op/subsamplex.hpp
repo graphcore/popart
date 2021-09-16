@@ -13,20 +13,20 @@ class SubsampleOpx : public PopOpx {
 
 public:
   SubsampleOpx(Op *, Devicex *);
-  void grow(poplar::program::Sequence &) const final;
+  void grow(snap::program::Sequence &) const final;
 };
 
 class SubsampleInplaceOpx : public PopOpx {
 
 public:
   SubsampleInplaceOpx(Op *, Devicex *);
-  void grow(poplar::program::Sequence &) const final;
+  void grow(snap::program::Sequence &) const final;
 };
 
 class SubsampleGradOpx : public PopOpx {
 public:
   SubsampleGradOpx(Op *, Devicex *);
-  void grow(poplar::program::Sequence &) const final;
+  void grow(snap::program::Sequence &) const final;
 };
 
 } // namespace popx

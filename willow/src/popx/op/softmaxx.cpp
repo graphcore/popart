@@ -50,7 +50,7 @@ SoftmaxOpx::SoftmaxOpx(Op *op, Devicex *devicex)
               devicex->ir().getSessionOptions().enableNonStableSoftmax,
               op->inInfo(SoftmaxOp::getInIndex()).shape_szt())) {}
 
-snap::Tensor SoftmaxComputex::outplace(poplar::program::Sequence &p,
+snap::Tensor SoftmaxComputex::outplace(snap::program::Sequence &p,
                                        snap::Graph &g,
                                        const snap::Tensor &t,
                                        const poplar::DebugNameAndId &dnai,
@@ -60,7 +60,7 @@ snap::Tensor SoftmaxComputex::outplace(poplar::program::Sequence &p,
   return outTensor;
 }
 
-void SoftmaxComputex::inplace(poplar::program::Sequence &p,
+void SoftmaxComputex::inplace(snap::program::Sequence &p,
                               snap::Graph &g,
                               const snap::Tensor &tIn,
                               const poplar::DebugNameAndId &dnai,
@@ -78,8 +78,11 @@ void SoftmaxComputex::inplace(poplar::program::Sequence &p,
     nlType = popnn::NonLinearityType::SOFTMAX_STABLE;
   }
 
-  popnn::nonLinearityInPlace(
-      g.getPoplarGraph(), nlType, input.getPoplarTensor(), p, {dnai, dbs});
+  popnn::nonLinearityInPlace(g.getPoplarGraph(),
+                             nlType,
+                             input.getPoplarTensor(),
+                             p.getPoplarSequence(),
+                             {dnai, dbs});
 }
 
 snap::Tensor SoftmaxComputex::reshape(const snap::Tensor &t) const {
@@ -118,7 +121,7 @@ NlllWithSoftmaxGradDirectOpx::NlllWithSoftmaxGradDirectOpx(Op *op,
 //   d(loss)/d(v_i) = p_i
 //   d(loss)/d(v_j) = p_j - 1
 
-void SoftmaxGradDirectOpx::grow(poplar::program::Sequence &prog) const {
+void SoftmaxGradDirectOpx::grow(snap::program::Sequence &prog) const {
   SoftmaxGradDirectOp &op = getOp<SoftmaxGradDirectOp>();
   const snap::Tensor &probs =
       getInTensor(SoftmaxGradDirectOp::getProbsInIndex());
@@ -138,7 +141,7 @@ void SoftmaxGradDirectOpx::grow(poplar::program::Sequence &prog) const {
   popops::mapInPlace(graph().getPoplarGraph(),
                      pe::Add(pe::Neg(pe::_1), pe::_2),
                      {oneHot.getPoplarTensor(), probs2D.getPoplarTensor()},
-                     prog,
+                     prog.getPoplarSequence(),
                      debugContext("negsub"));
 
   // Output is reshaped to match probs input shape
@@ -156,7 +159,7 @@ void SoftmaxGradDirectOpx::grow(poplar::program::Sequence &prog) const {
   setOutTensor(0, oneHot);
 }
 
-void SoftmaxGradOpx::grow(poplar::program::Sequence &prog) const {
+void SoftmaxGradOpx::grow(snap::program::Sequence &prog) const {
   const auto axis = getOp<SoftmaxGradOp>().getAxis();
 
   // Note: Implementation for SOFTMAX and SOFTMAX_STABLE gradient
@@ -172,14 +175,14 @@ void SoftmaxGradOpx::grow(poplar::program::Sequence &prog) const {
       popnn::NonLinearityType::SOFTMAX_STABLE, // nonLinearityType
       outActs2D.getPoplarTensor(),             // out,
       outGrad,                                 // outGradient,
-      prog,                                    // prog,
+      prog.getPoplarSequence(),                // prog,
       debugContext("SoftmaxGrad")              // debugContext
   );
 
   setOutTensor(0, snap::Tensor{outTensor.reshape(outActs.shape()), graph()});
 }
 
-void NlllWithSoftmaxGradDirectOpx::grow(poplar::program::Sequence &prog) const {
+void NlllWithSoftmaxGradDirectOpx::grow(snap::program::Sequence &prog) const {
   NlllWithSoftmaxGradDirectOp &op = getOp<NlllWithSoftmaxGradDirectOp>();
 
   const snap::Tensor &probs =
@@ -201,7 +204,7 @@ void NlllWithSoftmaxGradDirectOpx::grow(poplar::program::Sequence &prog) const {
                                  popops::expr::BinaryOpType::MULTIPLY,
                                  oneHot.getPoplarTensor(),
                                  probs2D.getPoplarTensor(),
-                                 prog,
+                                 prog.getPoplarSequence(),
                                  debugContext("mul"));
 
   // Now compute the SoftmaxGrad:
@@ -212,7 +215,7 @@ void NlllWithSoftmaxGradDirectOpx::grow(poplar::program::Sequence &prog) const {
   popops::mapInPlace(graph().getPoplarGraph(),
                      pe::Add(pe::Neg(pe::_1), pe::_2),
                      {oneHot.getPoplarTensor(), probs2D.getPoplarTensor()},
-                     prog,
+                     prog.getPoplarSequence(),
                      debugContext("NegSub"));
 
   // Output is reshaped to match probs input shape
@@ -236,7 +239,7 @@ void NlllWithSoftmaxGradDirectOpx::grow(poplar::program::Sequence &prog) const {
                                                        oneHotProbs,
                                                        {1},
                                                        {popops::Operation::ADD},
-                                                       prog,
+                                                       prog.getPoplarSequence(),
                                                        debugContext("add")),
                                         graph()};
 
@@ -246,7 +249,7 @@ void NlllWithSoftmaxGradDirectOpx::grow(poplar::program::Sequence &prog) const {
   popops::mapInPlace(graph().getPoplarGraph(),
                      pe::Log(pe::Add(pe::_1, pe::_2)),
                      {reduction.getPoplarTensor(), eps.getPoplarTensor()},
-                     prog,
+                     prog.getPoplarSequence(),
                      debugContext("LogEpsMul"));
 
   // TODO: T8305, re-use the mask created above

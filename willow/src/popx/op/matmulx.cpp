@@ -380,7 +380,7 @@ void MatMulOpx::verifyCacheSizeUnchanged(size_t beforeCacheSize) const {
 // let `a` be a tensor with shape [2, 1, 4, 5, 1, 7, 8], and `b` be a tensor
 // with shape [2, 3, 1, 5, 6, 8, 9]. We would expect an output tensor with shape
 // [2, 3, 4, 5, 6, 7, 9].
-void MatMulOpx::grow(poplar::program::Sequence &prog) const {
+void MatMulOpx::grow(snap::program::Sequence &prog) const {
 
   auto &matmul = getOp<MatMulOp>();
 
@@ -454,7 +454,7 @@ void MatMulOpx::grow(poplar::program::Sequence &prog) const {
       poplin::matMulGrouped(graph().getPoplarGraph(), // graph
                             combinedBroadcastTs.first.getPoplarTensor(),  // A
                             combinedBroadcastTs.second.getPoplarTensor(), // B
-                            prog, // prog
+                            prog.getPoplarSequence(), // prog
                             outputType,
                             debugContext("matmulGrouped"), // debugContext
                             opts,                          // options

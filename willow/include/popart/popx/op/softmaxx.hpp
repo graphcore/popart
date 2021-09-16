@@ -14,13 +14,13 @@ public:
   SoftmaxComputex(int64_t ax, bool ens, const std::vector<size_t> &os)
       : axis(ax), enableNonStable(ens), outShape(os) {}
 
-  snap::Tensor outplace(poplar::program::Sequence &,
+  snap::Tensor outplace(snap::program::Sequence &,
                         snap::Graph &,
                         const snap::Tensor &,
                         const poplar::DebugNameAndId &,
                         const std::string &) const final;
 
-  void inplace(poplar::program::Sequence &,
+  void inplace(snap::program::Sequence &,
                snap::Graph &,
                const snap::Tensor &,
                const poplar::DebugNameAndId &,
@@ -55,27 +55,27 @@ public:
 class SoftmaxGradOpx : public ElementWiseUnaryOpx {
 public:
   SoftmaxGradOpx(Op *, Devicex *);
-  void grow(poplar::program::Sequence &) const final;
+  void grow(snap::program::Sequence &) const final;
 };
 
 // compute dL/dv from lab and p, where p = softmax(v), L = nll(p, lab)
 class SoftmaxGradDirectOpx : public PopOpx {
 public:
   SoftmaxGradDirectOpx(Op *, Devicex *);
-  void grow(poplar::program::Sequence &) const final;
+  void grow(snap::program::Sequence &) const final;
 };
 
 // As above, but combines the loss calculation to reduce redundancy
 class NlllWithSoftmaxGradDirectOpx : public PopOpx {
 public:
   NlllWithSoftmaxGradDirectOpx(Op *, Devicex *);
-  void grow(poplar::program::Sequence &) const final;
+  void grow(snap::program::Sequence &) const final;
 
 private:
   void handleLossOutNotReducedToScalar(snap::Tensor &reduction,
                                        const snap::Tensor &label,
                                        snap::Tensor &label1D,
-                                       poplar::program::Sequence &prog) const;
+                                       snap::program::Sequence &prog) const;
 };
 
 } // namespace popx

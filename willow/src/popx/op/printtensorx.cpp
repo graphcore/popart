@@ -11,7 +11,7 @@ PrintTensorOpx::PrintTensorOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
   verifyOp<PrintTensorOp>(op, Onnx::CustomOperators::PrintTensor_1);
 }
 
-void PrintTensorOpx::grow(poplar::program::Sequence &prog) const {
+void PrintTensorOpx::grow(snap::program::Sequence &prog) const {
   auto input = getInTensor(PrintTensorOp::getInIndex());
 
   if (getOp<PrintTensorOp>().shouldPrint()) {

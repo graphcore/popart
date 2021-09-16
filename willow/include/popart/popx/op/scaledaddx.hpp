@@ -11,10 +11,10 @@ namespace popx {
 class ScaledAddOpx : public PopOpx {
 public:
   ScaledAddOpx(Op *, Devicex *);
-  void grow(poplar::program::Sequence &) const override;
+  void grow(snap::program::Sequence &) const override;
 
 protected:
-  snap::Tensor compute(poplar::program::Sequence &prog,
+  snap::Tensor compute(snap::program::Sequence &prog,
                        snap::Tensor in0,
                        snap::Tensor in1,
                        snap::Tensor s0,
@@ -27,13 +27,13 @@ protected:
 class ScaledAddLhsInplaceOpx : public ScaledAddOpx {
 public:
   ScaledAddLhsInplaceOpx(Op *, Devicex *);
-  void grow(poplar::program::Sequence &) const final;
+  void grow(snap::program::Sequence &) const final;
 };
 
 class ScaledAddRhsInplaceOpx : public ScaledAddOpx {
 public:
   ScaledAddRhsInplaceOpx(Op *, Devicex *);
-  void grow(poplar::program::Sequence &) const final;
+  void grow(snap::program::Sequence &) const final;
 };
 
 } // namespace popx

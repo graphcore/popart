@@ -68,7 +68,7 @@ protected:
         graph()};
   }
 
-  snap::Tensor getBiases(poplar::program::Sequence &prog) const {
+  snap::Tensor getBiases(snap::program::Sequence &prog) const {
     auto &lstmOp = getOp<LSTMOP>();
 
     if (hasInput(lstmOp.getBiasesInIndex())) {
@@ -77,7 +77,7 @@ protected:
       auto biases = createBiasesInput();
       popops::zero(graph().getPoplarGraph(),
                    biases.getPoplarTensor(),
-                   prog,
+                   prog.getPoplarSequence(),
                    debugContext("zeroBiases"));
       return biases;
     }
@@ -93,8 +93,7 @@ protected:
                               &dv_p->matmulCache);
   }
 
-  popnn::lstm::LstmState
-  getInitialState(poplar::program::Sequence &prog) const {
+  popnn::lstm::LstmState getInitialState(snap::program::Sequence &prog) const {
     auto &lstmOp = getOp<LSTMOP>();
 
     if (hasInput(lstmOp.getInitialStateInIndex())) {
@@ -105,8 +104,10 @@ protected:
       return {initialOutput, initialCellState};
     } else {
       auto initialState = createInitialStateInput();
-      zeroInitialState(
-          graph().getPoplarGraph(), initialState, prog, debugContext());
+      zeroInitialState(graph().getPoplarGraph(),
+                       initialState,
+                       prog.getPoplarSequence(),
+                       debugContext());
       return initialState;
     }
   }
@@ -124,7 +125,7 @@ protected:
     }
   }
 
-  popnn::lstm::LstmWeights getWeights(poplar::program::Sequence &prog) const {
+  popnn::lstm::LstmWeights getWeights(snap::program::Sequence &prog) const {
     auto &lstmOp    = getOp<LSTMOP>();
     auto inputSize  = lstmOp.getInputSize();
     auto hiddenSize = lstmOp.getHiddenSize();
@@ -143,7 +144,7 @@ protected:
 class PopartLSTMOpx : public PopartLSTMOpxBase<PopartLSTMOp> {
 public:
   PopartLSTMOpx(Op *, Devicex *);
-  void grow(poplar::program::Sequence &) const final;
+  void grow(snap::program::Sequence &) const final;
 
   InputCreatorType getInputCreatorType(InIndex) const final;
   snap::Tensor
@@ -160,7 +161,7 @@ private:
 class PopartLSTMGradOpx : public PopartLSTMOpxBase<PopartLSTMGradOp> {
 public:
   PopartLSTMGradOpx(Op *, Devicex *);
-  void grow(poplar::program::Sequence &) const final;
+  void grow(snap::program::Sequence &) const final;
 };
 
 } // namespace popx

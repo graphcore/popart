@@ -16,7 +16,7 @@ AccumulatorScaleOpx::AccumulatorScaleOpx(Op *op, Devicex *devicex)
   verifyOp<AccumulatorScaleOp>(op, {Onnx::CustomOperators::AccumulatorScale});
 }
 
-void AccumulatorScaleOpx::grow(poplar::program::Sequence &prog) const {
+void AccumulatorScaleOpx::grow(snap::program::Sequence &prog) const {
 
   auto &accumulateOp = getOp<AccumulatorScaleOp>();
 
@@ -30,13 +30,13 @@ void AccumulatorScaleOpx::grow(poplar::program::Sequence &prog) const {
     if (val == 0.0f) {
       popops::zero(graph().getPoplarGraph(),
                    accum,
-                   prog,
+                   prog.getPoplarSequence(),
                    debugContext("AccumulatorScale"));
     } else {
       popops::mulInPlace(graph().getPoplarGraph(),
                          accum,
                          val,
-                         prog,
+                         prog.getPoplarSequence(),
                          debugContext("AccumulatorScale"));
     }
   } else {
@@ -45,7 +45,7 @@ void AccumulatorScaleOpx::grow(poplar::program::Sequence &prog) const {
     popops::mulInPlace(graph().getPoplarGraph(),
                        accum,
                        factor,
-                       prog,
+                       prog.getPoplarSequence(),
                        debugContext("AccumulatorScale"));
   }
 

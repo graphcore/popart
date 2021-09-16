@@ -12,13 +12,13 @@ namespace popx {
 class OnehotOpx : public PopOpx {
 public:
   OnehotOpx(Op *, Devicex *);
-  void grow(poplar::program::Sequence &) const final;
+  void grow(snap::program::Sequence &) const final;
 };
 
 class OnehotGradOpx : public PopOpx {
 public:
   OnehotGradOpx(Op *, Devicex *);
-  void grow(poplar::program::Sequence &) const final;
+  void grow(snap::program::Sequence &) const final;
 };
 
 } // namespace popx

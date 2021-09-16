@@ -28,7 +28,7 @@ CtcBeamSearchDecoderOpx::CtcBeamSearchDecoderOpx(Op *op_, Devicex *devicex)
                                  op.getBeamWidth());
 }
 
-void CtcBeamSearchDecoderOpx::grow(poplar::program::Sequence &prog) const {
+void CtcBeamSearchDecoderOpx::grow(snap::program::Sequence &prog) const {
   const auto &op = getOp<CtcBeamSearchDecoderOp>();
   const auto &logProbs =
       getInTensor(CtcBeamSearchDecoderOp::getLogProbsInIndex())
@@ -41,7 +41,7 @@ void CtcBeamSearchDecoderOpx::grow(poplar::program::Sequence &prog) const {
       graph().getPoplarGraph(),
       logProbs,
       dataLengths,
-      prog,
+      prog.getPoplarSequence(),
       op.getBlankClass(),
       op.getBeamWidth(),
       op.getTopPaths(),

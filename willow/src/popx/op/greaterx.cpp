@@ -18,7 +18,7 @@ GreaterOpx::GreaterOpx(Op *op, Devicex *devicex)
                       {Onnx::Operators::Greater_7, Onnx::Operators::Greater_9});
 }
 
-void GreaterOpx::grow(poplar::program::Sequence &prog) const {
+void GreaterOpx::grow(snap::program::Sequence &prog) const {
 
   insert(
       outId(GreaterOp::getOutIndex()),
@@ -27,7 +27,7 @@ void GreaterOpx::grow(poplar::program::Sequence &prog) const {
                       popops::expr::BinaryOpType::GREATER_THAN,
                       get(inId(GreaterOp::getArg0InIndex())).getPoplarTensor(),
                       get(inId(GreaterOp::getArg1InIndex())).getPoplarTensor(),
-                      prog,
+                      prog.getPoplarSequence(),
                       debugContext()),
           graph()});
 }

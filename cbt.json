@@ -12,7 +12,8 @@
     "boost",
     "protobuf",
     "capnproto",
-    "trompeloeil"
+    "trompeloeil",
+    "gccs"
   ],
   "superproject_cmake_includes" : [ "SuperProjectConfig.cmake" ]
 }

@@ -15,7 +15,7 @@
 namespace popart {
 namespace popx {
 
-void DynamicAddOpx::grow(poplar::program::Sequence &prog) const {
+void DynamicAddOpx::grow(snap::program::Sequence &prog) const {
   auto &op    = getOp<DynamicTernaryBaseOp>();
   auto tensor = getInTensor(DynamicTernaryBaseOp::getUpdateInIndex());
   auto index =
@@ -35,11 +35,11 @@ void DynamicAddOpx::grow(poplar::program::Sequence &prog) const {
       popops::cast(graph().getPoplarGraph(),
                    index.reshape({op.getAxes().size()}),
                    poplar::UNSIGNED_INT,
-                   prog,
+                   prog.getPoplarSequence(),
                    debugContext()),
       paxes,
       psizes,
-      prog,
+      prog.getPoplarSequence(),
       debugContext("dynamic_add_slice_" +
                    op.inId(DynamicTernaryBaseOp::getUpdateInIndex())));
 
@@ -49,7 +49,7 @@ void DynamicAddOpx::grow(poplar::program::Sequence &prog) const {
       popops::expr::BinaryOpType::ADD,
       s,
       slice,
-      prog,
+      prog.getPoplarSequence(),
       debugContext("dynamic_add_mip_" +
                    op.inId(DynamicTernaryBaseOp::getUpdateInIndex())));
 
@@ -61,18 +61,18 @@ void DynamicAddOpx::grow(poplar::program::Sequence &prog) const {
       popops::cast(graph().getPoplarGraph(),
                    index.reshape({op.getAxes().size()}),
                    poplar::UNSIGNED_INT,
-                   prog,
+                   prog.getPoplarSequence(),
                    debugContext()),
       paxes,
       psizes,
-      prog,
+      prog.getPoplarSequence(),
       debugContext("dynamic_add_" +
                    op.inId(DynamicTernaryBaseOp::getUpdateInIndex())));
 
   setOutTensor(DynamicTernaryBaseOp::getOutIndex(), outTensor);
 }
 
-snap::Tensor DynamicAddInplaceOpx::cloneNcopyOpt(poplar::program::Sequence &s,
+snap::Tensor DynamicAddInplaceOpx::cloneNcopyOpt(snap::program::Sequence &s,
                                                  const snap::Tensor &t) const {
   if (t.getPoplarTensor().isParallelWriteable()) {
     return t;

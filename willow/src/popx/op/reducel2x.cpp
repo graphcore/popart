@@ -22,7 +22,7 @@ ReduceL2Opx::ReduceL2Opx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
   verifyOp<ReduceL2Op>(op);
 }
 
-void ReduceL2Opx::grow(poplar::program::Sequence &prog) const {
+void ReduceL2Opx::grow(snap::program::Sequence &prog) const {
   const auto &op   = getOp<ReduceL2Op>();
   const auto input = getInTensor(ReduceL2Op::getInIndex()).getPoplarTensor();
 
@@ -30,10 +30,12 @@ void ReduceL2Opx::grow(poplar::program::Sequence &prog) const {
                                       input,
                                       vector_cast<std::size_t>(op.getAxes()),
                                       {popops::Operation::SQUARE_ADD},
-                                      prog,
+                                      prog.getPoplarSequence(),
                                       debugContext("squareAdd"));
-  popops::sqrtInPlace(
-      graph().getPoplarGraph(), output_tensor, prog, debugContext("sqrt"));
+  popops::sqrtInPlace(graph().getPoplarGraph(),
+                      output_tensor,
+                      prog.getPoplarSequence(),
+                      debugContext("sqrt"));
   setOutTensor(ReduceL2Op::getOutIndex(),
                snap::Tensor{output_tensor.reshape(
                                 outInfo(ReduceL2Op::getOutIndex()).shape_szt()),
@@ -45,7 +47,7 @@ ReduceL2GradOpx::ReduceL2GradOpx(Op *op, Devicex *devicex)
   verifyOp<ReduceL2GradOp>(op, Onnx::GradOperators::ReduceL2Grad);
 }
 
-void ReduceL2GradOpx::grow(poplar::program::Sequence &prog) const {
+void ReduceL2GradOpx::grow(snap::program::Sequence &prog) const {
   const auto &op = getOp<ReduceL2GradOp>();
   auto output    = getInTensor(ReduceL2GradOp::getOutIndex()).getPoplarTensor();
   auto scale =
@@ -70,7 +72,7 @@ void ReduceL2GradOpx::grow(poplar::program::Sequence &prog) const {
   output = popops::map(graph().getPoplarGraph(),
                        pe::Divide(pe::Mul(pe::_1, pe::_2), pe::_3),
                        {output, fwd_input, scale},
-                       prog,
+                       prog.getPoplarSequence(),
                        debugContext("output"));
 
   // output now matches the shape of output_shape

@@ -16,7 +16,7 @@ namespace popx {
 
 AddComputex::AddComputex(EwbComputex::InplacePolicy ip) : EwbComputex(ip) {}
 
-snap::Tensor AddComputex::outplace(poplar::program::Sequence &prog,
+snap::Tensor AddComputex::outplace(snap::program::Sequence &prog,
                                    snap::Graph &graph,
                                    const snap::Tensor &a,
                                    const snap::Tensor &b,
@@ -25,12 +25,12 @@ snap::Tensor AddComputex::outplace(poplar::program::Sequence &prog,
   return snap::Tensor{popops::add(graph.getPoplarGraph(),
                                   a.getPoplarTensor(),
                                   b.getPoplarTensor(),
-                                  prog,
+                                  prog.getPoplarSequence(),
                                   {dnai, name}),
                       graph};
 }
 
-void AddComputex::inplace(poplar::program::Sequence &prog,
+void AddComputex::inplace(snap::program::Sequence &prog,
                           snap::Graph &graph,
                           const snap::Tensor &tInOut,
                           const snap::Tensor &tIn,
@@ -39,7 +39,7 @@ void AddComputex::inplace(poplar::program::Sequence &prog,
   popops::addInPlace(graph.getPoplarGraph(),
                      tInOut.getPoplarTensor(),
                      tIn.getPoplarTensor(),
-                     prog,
+                     prog.getPoplarSequence(),
                      {dnai, name});
 }
 

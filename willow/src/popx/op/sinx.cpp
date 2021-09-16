@@ -12,14 +12,14 @@ SinOpx::SinOpx(Op *op, Devicex *devicex) : ElementWiseUnaryOpx(op, devicex) {
   verifyOp<SinOp>(op, Onnx::Operators::Sin_7);
 }
 
-void SinOpx::grow(poplar::program::Sequence &prog) const {
+void SinOpx::grow(snap::program::Sequence &prog) const {
   setOutTensor(
       SinOp::getOutIndex(),
       snap::Tensor{
           popops::map(graph().getPoplarGraph(),
                       popops::expr::UnaryOpType::SIN,
                       getInTensor(SinOp::getInIndex()).getPoplarTensor(),
-                      prog,
+                      prog.getPoplarSequence(),
                       debugContext()),
           graph()});
 }

@@ -18,7 +18,7 @@ Log1pOpx::Log1pOpx(Op *op, Devicex *devicex)
   verifyOp<Log1pOp>(op, Onnx::CustomOperators::Log1p_1);
 }
 
-snap::Tensor Log1pComputex::outplace(poplar::program::Sequence &p,
+snap::Tensor Log1pComputex::outplace(snap::program::Sequence &p,
                                      snap::Graph &g,
                                      const snap::Tensor &t,
                                      const poplar::DebugNameAndId &dnai,
@@ -27,12 +27,12 @@ snap::Tensor Log1pComputex::outplace(poplar::program::Sequence &p,
   return snap::Tensor{popops::map(g.getPoplarGraph(),
                                   popops::expr::UnaryOpType::LOGARITHM_ONE_PLUS,
                                   t.getPoplarTensor(),
-                                  p,
+                                  p.getPoplarSequence(),
                                   {dnai, dbs}),
                       g};
 }
 
-void Log1pComputex::inplace(poplar::program::Sequence &p,
+void Log1pComputex::inplace(snap::program::Sequence &p,
                             snap::Graph &g,
                             const snap::Tensor &t,
                             const poplar::DebugNameAndId &dnai,
@@ -41,7 +41,7 @@ void Log1pComputex::inplace(poplar::program::Sequence &p,
   popops::mapInPlace(g.getPoplarGraph(),
                      popops::expr::UnaryOpType::LOGARITHM_ONE_PLUS,
                      t.getPoplarTensor(),
-                     p,
+                     p.getPoplarSequence(),
                      {dnai, dbs});
 }
 

@@ -34,7 +34,7 @@ ThresholdedReluOpx::ThresholdedReluOpx(Op *op, Devicex *devicex)
   verifyOp<ThresholdedReluOp>(op, {Onnx::Operators::ThresholdedRelu_10});
 }
 
-void ThresholdedReluComputex::inplace(poplar::program::Sequence &prog,
+void ThresholdedReluComputex::inplace(snap::program::Sequence &prog,
                                       snap::Graph &graph,
                                       const snap::Tensor &tensor,
                                       const poplar::DebugNameAndId &dnai,
@@ -47,7 +47,7 @@ void ThresholdedReluComputex::inplace(poplar::program::Sequence &prog,
   popops::mapInPlace(graph.getPoplarGraph(),
                      expression,
                      {tensor.getPoplarTensor()},
-                     prog,
+                     prog.getPoplarSequence(),
                      {dnai, debug_prefix});
 }
 
@@ -66,7 +66,7 @@ ThresholdedReluGradOpx::ThresholdedReluGradOpx(Op *op, Devicex *devicex)
   verifyOp<ThresholdedReluGradOp>(op, Onnx::GradOperators::ThresholdedReluGrad);
 }
 
-void ThresholdedReluGradOpx::grow(poplar::program::Sequence &prog) const {
+void ThresholdedReluGradOpx::grow(snap::program::Sequence &prog) const {
   const auto &op = getOp<ThresholdedReluGradOp>();
   const auto input =
       getInTensor(ThresholdedReluGradOp::getGradInIndex()).getPoplarTensor();
@@ -83,7 +83,7 @@ void ThresholdedReluGradOpx::grow(poplar::program::Sequence &prog) const {
   auto output = popops::map(graph().getPoplarGraph(),
                             expression,
                             {input, fwd_input},
-                            prog,
+                            prog.getPoplarSequence(),
                             debugContext("thresholdedrelu_grad"));
 
   setOutTensor(ThresholdedReluGradOp::getOutIndex(),

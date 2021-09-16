@@ -6,6 +6,7 @@
 #include <poplar/Program.hpp>
 
 #include <snap/Graph.hpp>
+#include <snap/Program.hpp>
 #include <snap/Tensor.hpp>
 
 namespace popart {
@@ -15,7 +16,7 @@ namespace sortutilx {
 snap::Tensor getIotaTensor(snap::Graph &graph,
                            const snap::Tensor &input,
                            unsigned axis,
-                           poplar::program::Sequence &prog,
+                           snap::program::Sequence &prog,
                            const poplar::DebugNameAndId &dnai);
 
 } // namespace sortutilx
