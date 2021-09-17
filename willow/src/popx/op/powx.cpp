@@ -12,7 +12,7 @@ namespace popx {
 
 PowComputex::PowComputex(EwbComputex::InplacePolicy ip) : EwbComputex(ip) {}
 
-snap::Tensor PowComputex::outplace(poplar::program::Sequence &prog,
+snap::Tensor PowComputex::outplace(snap::program::Sequence &prog,
                                    snap::Graph &graph,
                                    const snap::Tensor &a,
                                    const snap::Tensor &b,
@@ -21,12 +21,12 @@ snap::Tensor PowComputex::outplace(poplar::program::Sequence &prog,
   return snap::Tensor{popops::pow(graph.getPoplarGraph(),
                                   a.getPoplarTensor(),
                                   b.getPoplarTensor(),
-                                  prog,
+                                  prog.getPoplarSequence(),
                                   {dnai, debugStr}),
                       graph};
 }
 
-void PowComputex::inplace(poplar::program::Sequence &prog,
+void PowComputex::inplace(snap::program::Sequence &prog,
                           snap::Graph &graph,
                           const snap::Tensor &tInOut,
                           const snap::Tensor &tIn,
@@ -35,7 +35,7 @@ void PowComputex::inplace(poplar::program::Sequence &prog,
   popops::powInPlace(graph.getPoplarGraph(),
                      tInOut.getPoplarTensor(),
                      tIn.getPoplarTensor(),
-                     prog,
+                     prog.getPoplarSequence(),
                      {dnai, debugStr});
 }
 

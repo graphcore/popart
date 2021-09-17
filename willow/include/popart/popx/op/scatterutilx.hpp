@@ -3,6 +3,7 @@
 #define NEURALNET_GUARD_POPX_OP_SCATTERUTILX_HPP
 
 #include <snap/Graph.hpp>
+#include <snap/Program.hpp>
 #include <snap/Tensor.hpp>
 
 namespace popart {
@@ -27,7 +28,7 @@ snap::Tensor matchRank(snap::Tensor, snap::Tensor, unsigned dim);
 // Assumes b is broadcastable into a
 snap::Tensor broadcastShape(snap::Tensor, snap::Tensor);
 
-void growScatter(poplar::program::Sequence &prog,
+void growScatter(snap::program::Sequence &prog,
                  snap::Graph &,
                  const snap::Tensor &indices,
                  const snap::Tensor &replacementValues,
@@ -35,7 +36,7 @@ void growScatter(poplar::program::Sequence &prog,
                  int64_t axis,
                  const poplar::DebugNameAndId &dnai);
 
-snap::Tensor growScatterUpdateGrad(poplar::program::Sequence &prog,
+snap::Tensor growScatterUpdateGrad(snap::program::Sequence &prog,
                                    snap::Graph &graph,
                                    const snap::Tensor &gradIn,
                                    const snap::Tensor &indices,

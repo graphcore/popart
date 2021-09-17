@@ -10,7 +10,7 @@ namespace popx {
 class AdaDeltaUpdaterOpx : public PopOpx {
 public:
   AdaDeltaUpdaterOpx(Op *, Devicex *);
-  void grow(poplar::program::Sequence &) const final;
+  void grow(snap::program::Sequence &) const final;
 
   // can create the accumulator2 input Tensor (@Accl2 index)
   // from the weight gradient tensor (@Accl1 index)

@@ -28,19 +28,19 @@ protected:
 class ExpandOpx : public BaseExpandOpx {
 public:
   ExpandOpx(Op *, Devicex *);
-  void grow(poplar::program::Sequence &) const final;
+  void grow(snap::program::Sequence &) const final;
 };
 
 class ExpandInplaceOpx : public BaseExpandOpx {
 public:
   ExpandInplaceOpx(Op *, Devicex *);
-  void grow(poplar::program::Sequence &) const final;
+  void grow(snap::program::Sequence &) const final;
 };
 
 class ExpandGradOpx : public PopOpx {
 public:
   ExpandGradOpx(Op *, Devicex *);
-  void grow(poplar::program::Sequence &) const final;
+  void grow(snap::program::Sequence &) const final;
 
 private:
   std::vector<size_t> xShape;

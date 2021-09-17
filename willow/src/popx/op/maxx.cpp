@@ -19,7 +19,7 @@ MaxOpx::MaxOpx(Op *op, Devicex *devicex) : ElementWiseUnaryOpx(op, devicex) {
   verifyOp<MaxOp>(op, {Onnx::Operators::Max_8, Onnx::Operators::Max_6});
 }
 
-void MaxOpx::grow(poplar::program::Sequence &prog) const {
+void MaxOpx::grow(snap::program::Sequence &prog) const {
 
   auto outTensor = cloneNcopy(prog, getInTensor(0));
 
@@ -31,7 +31,7 @@ void MaxOpx::grow(poplar::program::Sequence &prog) const {
                       popops::expr::BinaryOpType::MAXIMUM,
                       outTensor.getPoplarTensor(),
                       getInTensor(i).getPoplarTensor(),
-                      prog,
+                      prog.getPoplarSequence(),
                       debugContext(std::string("max") + sNameDelimiter +
                                    std::to_string(i))),
           graph()};
@@ -44,7 +44,7 @@ void MaxOpx::grow(poplar::program::Sequence &prog) const {
 MaxArgGradOpx::MaxArgGradOpx(Op *op_, Devicex *devicex_)
     : PopOpx(op_, devicex_) {}
 
-void MaxArgGradOpx::grow(poplar::program::Sequence &prog) const {
+void MaxArgGradOpx::grow(snap::program::Sequence &prog) const {
   // Create a mask of the max input tensor. Set a element to 1 if it is
   // the maximum element value of all inputs (i.e. is in the fwd output) else 0
   // 1. Subtract the input of the forward op tensor from the out of the
@@ -61,7 +61,7 @@ void MaxArgGradOpx::grow(poplar::program::Sequence &prog) const {
       {getInTensor(MaxArgGradOp::getFwdInIndex()).getPoplarTensor(),
        getInTensor(MaxArgGradOp::getFwdOutInIndex()).getPoplarTensor(),
        getInTensor(MaxArgGradOp::getGradInIndex()).getPoplarTensor()},
-      prog,
+      prog.getPoplarSequence(),
       debugContext("result"));
 
   auto shapeOfOutputOfFwdOp = inInfo(MaxArgGradOp::getFwdOutInIndex()).shape();
@@ -77,7 +77,7 @@ void MaxArgGradOpx::grow(poplar::program::Sequence &prog) const {
                             result,
                             vXtoY<int64_t, std::size_t>(axes),
                             {popops::Operation::ADD},
-                            prog,
+                            prog.getPoplarSequence(),
                             debugContext("reduce"));
 
   // Reshape the output, to add 1's if needed

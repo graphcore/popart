@@ -13,7 +13,7 @@ namespace popx {
 class IpuCopyOpx : public PopOpx {
 public:
   IpuCopyOpx(Op *, Devicex *);
-  void grow(poplar::program::Sequence &) const final;
+  void grow(snap::program::Sequence &) const final;
 
   // When pipelining is enabled, `IpuCopyOpx::grow` is not used.
   // `createPipelinedOutput` is used in place of grow, and created the
@@ -21,7 +21,7 @@ public:
   PreparedCopyTensors createPipelinedOutput() const;
   // `growPipelined` add the copy program to the input Sequence. This is called
   // for every pipeline cycle the copy appears in.
-  void growPipelined(poplar::program::Sequence &, PreparedCopyTensors) const;
+  void growPipelined(snap::program::Sequence &, PreparedCopyTensors) const;
 
   InputCreatorType getInputCreatorType(InIndex index) const final {
     return InputCreatorType::CanUnwind;

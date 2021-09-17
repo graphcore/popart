@@ -10,13 +10,13 @@ namespace popx {
 class CumSumOpx : public PopOpx {
 public:
   CumSumOpx(Op *, Devicex *);
-  void grow(poplar::program::Sequence &) const final;
+  void grow(snap::program::Sequence &) const final;
 };
 
 class CumSumGradOpx : public PopOpx {
 public:
   CumSumGradOpx(Op *, Devicex *);
-  void grow(poplar::program::Sequence &) const final;
+  void grow(snap::program::Sequence &) const final;
 };
 
 } // namespace popx

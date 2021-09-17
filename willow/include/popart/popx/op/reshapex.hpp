@@ -21,13 +21,13 @@ public:
 class ReshapeOpx : public ReshapeBaseOpx {
 public:
   ReshapeOpx(Op *, Devicex *);
-  void grow(poplar::program::Sequence &) const final;
+  void grow(snap::program::Sequence &) const final;
 };
 
 class ReshapeInplaceOpx : public ReshapeBaseOpx {
 public:
   ReshapeInplaceOpx(Op *, Devicex *);
-  void grow(poplar::program::Sequence &) const final;
+  void grow(snap::program::Sequence &) const final;
 };
 
 // The gradient of a reshape is the reshape in reverse

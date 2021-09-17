@@ -9,7 +9,7 @@ namespace sortutilx {
 snap::Tensor getIotaTensor(snap::Graph &graph,
                            const snap::Tensor &input,
                            unsigned axis,
-                           poplar::program::Sequence &prog,
+                           snap::program::Sequence &prog,
                            const poplar::DebugNameAndId &dnai) {
   // The number of elements to be sorted per 1-D vector
   const auto sortSize = input.dim(axis);

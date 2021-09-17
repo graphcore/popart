@@ -19,7 +19,7 @@ ReduceSumOpx::ReduceSumOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
   verifyOp<ReduceSumOp>(op);
 }
 
-void ReduceSumOpx::grow(poplar::program::Sequence &prog) const {
+void ReduceSumOpx::grow(snap::program::Sequence &prog) const {
   const auto &op   = getOp<ReduceSumOp>();
   const auto input = getInTensor(ReduceSumOp::getInIndex()).getPoplarTensor();
 
@@ -27,7 +27,7 @@ void ReduceSumOpx::grow(poplar::program::Sequence &prog) const {
                                       input,
                                       vector_cast<std::size_t>(op.getAxes()),
                                       {popops::Operation::ADD},
-                                      prog,
+                                      prog.getPoplarSequence(),
                                       debugContext("add"));
 
   setOutTensor(
@@ -42,7 +42,7 @@ ReduceSumGradOpx::ReduceSumGradOpx(Op *op, Devicex *devicex)
   verifyOp<ReduceSumGradOp>(op, Onnx::GradOperators::ReduceSumGrad);
 }
 
-void ReduceSumGradOpx::grow(poplar::program::Sequence &prog) const {
+void ReduceSumGradOpx::grow(snap::program::Sequence &prog) const {
   const auto &op = getOp<ReduceSumGradOp>();
   auto output    = cloneNcopy(prog, getInTensor(ReduceSumGradOp::getInIndex()))
                     .getPoplarTensor();

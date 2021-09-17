@@ -71,6 +71,7 @@ set(POPART_PRIVATE_DEPS_LIBS
 )
 
 set(POPART_ONLY_DEPS_INCLUDES
+  ${GCCS_INCLUDE_DIR}
 )
 set(POPART_ONLY_DEPS_LIBS
     poplar
@@ -84,6 +85,7 @@ set(POPART_ONLY_DEPS_LIBS
     pva
     gcl
     snap
+    gccs
 )
 
 set(POPART_DEPS_INCLUDES

@@ -17,7 +17,7 @@ namespace popx {
 class BatchNormOpx : public NormOpx {
 public:
   BatchNormOpx(Op *, Devicex *);
-  void grow(poplar::program::Sequence &) const final;
+  void grow(snap::program::Sequence &) const final;
 
 private:
   // Output type for growSpatial.
@@ -29,14 +29,14 @@ private:
     nonstd::optional<snap::Tensor> savedVar;
   };
 
-  snap::Tensor batchNormalise(poplar::program::Sequence &prog,
+  snap::Tensor batchNormalise(snap::program::Sequence &prog,
                               const snap::Tensor &x,
                               const snap::Tensor &scale,
                               const snap::Tensor &b,
                               const snap::Tensor &mean,
                               const snap::Tensor &invSd) const;
 
-  GrowSpatialOutput growSpatial(poplar::program::Sequence &prog,
+  GrowSpatialOutput growSpatial(snap::program::Sequence &prog,
                                 BatchNormOp &op,
                                 snap::Tensor &x,
                                 snap::Tensor &scale,
@@ -48,7 +48,7 @@ private:
 class BatchNormGradOpx : public NormOpx {
 public:
   BatchNormGradOpx(Op *, Devicex *);
-  void grow(poplar::program::Sequence &) const final;
+  void grow(snap::program::Sequence &) const final;
 
 private:
   // Output type for growSpatial.
@@ -59,14 +59,14 @@ private:
   };
 
   std::tuple<snap::Tensor, snap::Tensor, snap::Tensor>
-  batchNormaliseGrad(poplar::program::Sequence &prog,
+  batchNormaliseGrad(snap::program::Sequence &prog,
                      const snap::Tensor &x,
                      const snap::Tensor &scale,
                      const snap::Tensor &mean,
                      const snap::Tensor &invSd,
                      const snap::Tensor &yGrad) const;
 
-  GrowSpatialOutput growSpatial(poplar::program::Sequence &prog,
+  GrowSpatialOutput growSpatial(snap::program::Sequence &prog,
                                 BatchNormGradOp &op,
                                 snap::Tensor &x,
                                 snap::Tensor &scale,

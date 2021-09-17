@@ -48,7 +48,7 @@ view::RegMap BaseConcatOpx::unwindRegion(InIndex inIndex,
   return cop->bwdRegMap(inIndex, outIndex);
 }
 
-void ConcatOpx::grow(poplar::program::Sequence &prog) const {
+void ConcatOpx::grow(snap::program::Sequence &prog) const {
   std::vector<poplar::Tensor> tensors;
   tensors.reserve(op->input->n());
 
@@ -68,7 +68,7 @@ ConcatInplaceOpx::ConcatInplaceOpx(Op *op_, Devicex *devicex)
   verifyOp<ConcatOp>(op_);
 }
 
-void ConcatInplaceOpx::grow(poplar::program::Sequence &) const {
+void ConcatInplaceOpx::grow(snap::program::Sequence &) const {
   std::vector<poplar::Tensor> tensors;
   tensors.reserve(op->input->n());
 
@@ -87,7 +87,7 @@ ConcatGradOpx::ConcatGradOpx(Op *op_, Devicex *devicex)
   verifyOp<ConcatGradOp>(op_, Onnx::GradOperators::ConcatGrad);
 }
 
-void ConcatGradOpx::grow(poplar::program::Sequence &prog) const {
+void ConcatGradOpx::grow(snap::program::Sequence &prog) const {
   auto input = getInTensor(ConcatGradOp::getInIndex()).getPoplarTensor();
   auto out   = input.slice(static_cast<std::size_t>(op->getStart()),
                          static_cast<std::size_t>(op->getEnd()),

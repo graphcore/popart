@@ -11,6 +11,19 @@
 namespace popart {
 namespace popx {
 
+namespace {
+
+snap::program::Sequence &
+get(std::map<int, snap::program::Sequence> &xs, int index, snap::Graph &graph) {
+  auto found = xs.find(index);
+  if (found == xs.end()) {
+    xs.insert({index, graph});
+  }
+  return xs.at(index);
+}
+
+} // namespace
+
 MultiExchangeOpx::MultiExchangeOpx(Op *op, Devicex *devicex)
     : ExchangeBaseOpx(op, devicex) {
   verifyOp<MultiExchangeOp>(op, Onnx::CustomOperators::MultiExchange);
@@ -148,14 +161,14 @@ void MultiExchangeOpx::growPart(OpxGrowPartId id) const {
                       descriptor);
   descriptorx->pre(
       srcVirtualGraph(multiExchangeOp.descriptorIndexToInIndices(id).front()),
-      state->preSeqs[id],
+      popart::popx::get(state->preSeqs, id, graph()),
       debugContext());
 
   // Exchange
   logging::opx::debug("[MultiExchangeOpx] Growing exchange for {}", descriptor);
   descriptorx->exchange(
       srcVirtualGraph(multiExchangeOp.descriptorIndexToInIndices(id).front()),
-      state->exchangeSeqs[id],
+      popart::popx::get(state->exchangeSeqs, id, graph()),
       debugContext());
 
   // Post process the exchange
@@ -163,7 +176,7 @@ void MultiExchangeOpx::growPart(OpxGrowPartId id) const {
                       descriptor);
   descriptorx->post(
       srcVirtualGraph(multiExchangeOp.descriptorIndexToInIndices(id).front()),
-      state->postSeqs[id],
+      popart::popx::get(state->postSeqs, id, graph()),
       debugContext());
 
   // Set output view changers
@@ -190,7 +203,7 @@ void MultiExchangeOpx::growPart(OpxGrowPartId id) const {
   }
 }
 
-void MultiExchangeOpx::grow(poplar::program::Sequence &prog) const {
+void MultiExchangeOpx::grow(snap::program::Sequence &prog) const {
   auto &multiExchangeOp = getOp<MultiExchangeOp>();
 
   MultiExchangeOpxState *state =
@@ -203,17 +216,17 @@ void MultiExchangeOpx::grow(poplar::program::Sequence &prog) const {
   for (int j = 0; j < segments.size(); ++j) {
     // Prepare for the exchange
     for (int i = segments.at(j).first; i < segments.at(j).second; ++i) {
-      prog.add(state->preSeqs[i]);
+      prog.add(popart::popx::get(state->preSeqs, i, graph()));
     }
 
     // Exchange
     for (int i = segments.at(j).first; i < segments.at(j).second; ++i) {
-      prog.add(state->exchangeSeqs[i]);
+      prog.add(popart::popx::get(state->exchangeSeqs, i, graph()));
     }
 
     // Post process the exchange
     for (int i = segments.at(j).first; i < segments.at(j).second; ++i) {
-      prog.add(state->postSeqs[i]);
+      prog.add(popart::popx::get(state->postSeqs, i, graph()));
     }
   }
 }

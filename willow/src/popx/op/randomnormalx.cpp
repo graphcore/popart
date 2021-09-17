@@ -11,7 +11,7 @@ RandomNormalOpx::RandomNormalOpx(Op *op, Devicex *devicex)
   verifyOp<RandomNormalOp>(op, Onnx::Operators::RandomNormal_1);
 }
 
-void RandomNormalOpx::grow(poplar::program::Sequence &prog) const {
+void RandomNormalOpx::grow(snap::program::Sequence &prog) const {
   auto &op        = getOp<RandomNormalOp>();
   auto outputInfo = op.outInfo(op.getOutIndex());
   auto shape      = vXtoY<int64_t, std::size_t>(outputInfo.shape());
@@ -31,7 +31,7 @@ void RandomNormalOpx::grow(poplar::program::Sequence &prog) const {
                       poplarType,
                       op.getMean(),
                       op.getScale(),
-                      prog);
+                      prog.getPoplarSequence());
 
   setOutTensor(op.getOutIndex(), snap::Tensor{output, graph()});
 }

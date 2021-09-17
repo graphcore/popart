@@ -40,7 +40,7 @@ GatherOpx::GatherOpx(Op *op, Devicex *devicex) : GatherBaseOpx(op, devicex) {
                          axis);
 }
 
-void GatherOpx::grow(poplar::program::Sequence &prog) const {
+void GatherOpx::grow(snap::program::Sequence &prog) const {
   const auto outputShape = outInfo(GatherOp::outIndex()).shape_szt();
   auto indices = getInTensor(GatherOp::indicesInIndex()).getPoplarTensor();
   auto data    = getInTensor(GatherOp::dataInIndex()).getPoplarTensor();
@@ -74,7 +74,7 @@ void GatherOpx::grow(poplar::program::Sequence &prog) const {
                                    offsets,
                                    {0},
                                    {1},
-                                   prog,
+                                   prog.getPoplarSequence(),
                                    plan,
                                    poplar::OptionFlags(),
                                    debugContext());
@@ -175,7 +175,7 @@ GatherGradOpx::handleNDMultiUpdate(poplar::Tensor target,
   return {target, update, indices};
 }
 
-void GatherGradOpx::grow(poplar::program::Sequence &prog) const {
+void GatherGradOpx::grow(snap::program::Sequence &prog) const {
   const auto outputShape =
       vXtoY<int64_t, std::size_t>(outShape(GatherGradOp::gradOutIndex()));
 
@@ -190,7 +190,10 @@ void GatherGradOpx::grow(poplar::program::Sequence &prog) const {
                                           debugContext("result"));
 
   // Zero the result tensor
-  popops::zero(graph().getPoplarGraph(), result, prog, debugContext("zero"));
+  popops::zero(graph().getPoplarGraph(),
+               result,
+               prog.getPoplarSequence(),
+               debugContext("zero"));
 
   if (result.numElements() == 0 || update.numElements() == 0 ||
       indices.numElements() == 0) {
@@ -216,7 +219,7 @@ void GatherGradOpx::grow(poplar::program::Sequence &prog) const {
                          scale,
                          {0},
                          {1},
-                         prog,
+                         prog.getPoplarSequence(),
                          popops::SlicePlan(),
                          poplar::OptionFlags(),
                          debugContext());

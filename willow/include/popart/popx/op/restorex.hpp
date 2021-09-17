@@ -21,20 +21,20 @@ template <typename Derived> class RestoreBaseOpx : public PopOpx {
 public:
   RestoreBaseOpx(Op *op, Devicex *devicex);
 
-  void grow(poplar::program::Sequence &) const = 0;
+  void grow(snap::program::Sequence &) const = 0;
 
 protected:
   bool canDynamicSliceRestore;
 
-  snap::Tensor growRestore(poplar::program::Sequence &prog,
+  snap::Tensor growRestore(snap::program::Sequence &prog,
                            const snap::Tensor &stash) const;
 
 private:
-  snap::Tensor growStaticSliceRestore(poplar::program::Sequence &prog,
+  snap::Tensor growStaticSliceRestore(snap::program::Sequence &prog,
                                       int64_t stashSize,
                                       const snap::Tensor &stashIndex,
                                       const snap::Tensor &stash) const;
-  snap::Tensor growDynamicSliceRestore(poplar::program::Sequence &prog,
+  snap::Tensor growDynamicSliceRestore(snap::program::Sequence &prog,
                                        const snap::Tensor &stashIndex,
                                        const snap::Tensor &stash) const;
 };
@@ -42,7 +42,7 @@ private:
 class RestoreOpx final : public RestoreBaseOpx<RestoreOpx> {
 public:
   RestoreOpx(Op *, Devicex *);
-  void grow(poplar::program::Sequence &) const final;
+  void grow(snap::program::Sequence &) const final;
 
   using OpType = RestoreOp;
 };
@@ -50,7 +50,7 @@ public:
 class RestoreInplaceOpx final : public RestoreBaseOpx<RestoreInplaceOpx> {
 public:
   RestoreInplaceOpx(Op *, Devicex *);
-  void grow(poplar::program::Sequence &) const final;
+  void grow(snap::program::Sequence &) const final;
 
   using OpType = RestoreInplaceOp;
 };

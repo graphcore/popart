@@ -15,19 +15,19 @@ public:
   EwuComputex()          = default;
   virtual ~EwuComputex() = default;
 
-  virtual snap::Tensor outplace(poplar::program::Sequence &,
+  virtual snap::Tensor outplace(snap::program::Sequence &,
                                 snap::Graph &,
                                 const snap::Tensor &,
                                 const poplar::DebugNameAndId &,
                                 const std::string &) const;
 
-  virtual void inplace(poplar::program::Sequence &,
+  virtual void inplace(snap::program::Sequence &,
                        snap::Graph &,
                        const snap::Tensor &t,
                        const poplar::DebugNameAndId &,
                        const std::string &) const = 0;
 
-  snap::Tensor cloneNcopy(poplar::program::Sequence &,
+  snap::Tensor cloneNcopy(snap::program::Sequence &,
                           snap::Graph &,
                           const snap::Tensor &,
                           const poplar::DebugNameAndId &) const;
@@ -54,7 +54,7 @@ public:
   ElementWiseUnaryOutplaceOpx(Op *,
                               Devicex *,
                               std::unique_ptr<EwuComputex> cx_);
-  void grow(poplar::program::Sequence &) const final;
+  void grow(snap::program::Sequence &) const final;
 
 private:
   std::unique_ptr<EwuComputex> cx;
@@ -67,7 +67,7 @@ public:
                              Devicex *devx,
                              std::unique_ptr<EwuComputex> cx_)
       : ElementWiseUnaryOpx(op, devx), cx(std::move(cx_)) {}
-  void grow(poplar::program::Sequence &prog) const final;
+  void grow(snap::program::Sequence &prog) const final;
 
 private:
   std::unique_ptr<EwuComputex> cx;
@@ -117,7 +117,7 @@ public:
   InIndex getOutplaceArgInIndex() const;
 
   // Evaluate the operation out-of-place
-  virtual snap::Tensor outplace(poplar::program::Sequence &,
+  virtual snap::Tensor outplace(snap::program::Sequence &,
                                 snap::Graph &,
                                 const snap::Tensor &,
                                 const snap::Tensor &,
@@ -126,7 +126,7 @@ public:
 
   // Evaluate the operation in-place
   // Assigns the result to the first tensor input
-  virtual void inplace(poplar::program::Sequence &,
+  virtual void inplace(snap::program::Sequence &,
                        snap::Graph &,
                        const snap::Tensor &,
                        const snap::Tensor &,
@@ -159,7 +159,7 @@ public:
                                std::unique_ptr<EwbComputex> cx_)
       : ElementWiseBinaryOpx(op, devx), cx(std::move(cx_)) {}
 
-  void grow(poplar::program::Sequence &) const final;
+  void grow(snap::program::Sequence &) const final;
 
 private:
   std::unique_ptr<EwbComputex> cx;
@@ -173,7 +173,7 @@ public:
                               std::unique_ptr<EwbComputex> cx_)
       : ElementWiseBinaryOpx(op, devx), cx(std::move(cx_)) {}
 
-  void grow(poplar::program::Sequence &) const final;
+  void grow(snap::program::Sequence &) const final;
 
 private:
   std::unique_ptr<EwbComputex> cx;

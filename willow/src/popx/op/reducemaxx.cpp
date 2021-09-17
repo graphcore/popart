@@ -22,7 +22,7 @@ ReduceMaxOpx::ReduceMaxOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
   verifyOp<ReduceMaxOp>(op);
 }
 
-void ReduceMaxOpx::grow(poplar::program::Sequence &prog) const {
+void ReduceMaxOpx::grow(snap::program::Sequence &prog) const {
   const auto &op   = getOp<ReduceMaxOp>();
   const auto input = getInTensor(ReduceMaxOp::getInIndex()).getPoplarTensor();
 
@@ -30,7 +30,7 @@ void ReduceMaxOpx::grow(poplar::program::Sequence &prog) const {
                                       input,
                                       vector_cast<std::size_t>(op.getAxes()),
                                       {popops::Operation::MAX},
-                                      prog,
+                                      prog.getPoplarSequence(),
                                       debugContext("max"));
 
   setOutTensor(
@@ -45,7 +45,7 @@ ReduceMaxGradOpx::ReduceMaxGradOpx(Op *op, Devicex *devicex)
   verifyOp<ReduceMaxGradOp>(op, Onnx::GradOperators::ReduceMaxGrad);
 }
 
-void ReduceMaxGradOpx::grow(poplar::program::Sequence &prog) const {
+void ReduceMaxGradOpx::grow(snap::program::Sequence &prog) const {
   const auto &op = getOp<ReduceMaxGradOp>();
   auto output    = cloneNcopy(prog, getInTensor(ReduceMaxGradOp::getInIndex()))
                     .getPoplarTensor();
@@ -73,7 +73,7 @@ void ReduceMaxGradOpx::grow(poplar::program::Sequence &prog) const {
       {mask,
        getInTensor(ReduceMaxGradOp::getFwdInInIndex()).getPoplarTensor(),
        output},
-      prog,
+      prog.getPoplarSequence(),
       debugContext("maskmul"));
 
   // output now matches the shape of output_shape

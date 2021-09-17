@@ -12,13 +12,13 @@ class GeluComputex : public EwuComputex {
 public:
   GeluComputex() = default;
 
-  snap::Tensor outplace(poplar::program::Sequence &,
+  snap::Tensor outplace(snap::program::Sequence &,
                         snap::Graph &,
                         const snap::Tensor &,
                         const poplar::DebugNameAndId &,
                         const std::string &) const final;
 
-  void inplace(poplar::program::Sequence &,
+  void inplace(snap::program::Sequence &,
                snap::Graph &,
                const snap::Tensor &,
                const poplar::DebugNameAndId &,
@@ -42,7 +42,7 @@ public:
 class GeluGradOpx : public PopOpx {
 public:
   GeluGradOpx(Op *, Devicex *);
-  void grow(poplar::program::Sequence &) const final;
+  void grow(snap::program::Sequence &) const final;
 };
 
 } // namespace popx

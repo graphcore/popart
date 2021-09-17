@@ -12,13 +12,13 @@ namespace popx {
 class LRNOpx : public PopOpx {
 public:
   LRNOpx(Op *, Devicex *);
-  void grow(poplar::program::Sequence &) const final;
+  void grow(snap::program::Sequence &) const final;
 };
 
 class LRNGradOpx : public PopOpx {
 public:
   LRNGradOpx(Op *, Devicex *);
-  void grow(poplar::program::Sequence &) const final;
+  void grow(snap::program::Sequence &) const final;
 };
 
 } // namespace popx

@@ -11,7 +11,7 @@ namespace popx {
 class CopyVarUpdateOpx : public VarUpdateOpx {
 public:
   CopyVarUpdateOpx(Op *, Devicex *);
-  void grow(poplar::program::Sequence &) const final;
+  void grow(snap::program::Sequence &) const final;
 
   // can create updater Tensor from updated Tensor. That is, use the Var Tensor
   // to create the updater.

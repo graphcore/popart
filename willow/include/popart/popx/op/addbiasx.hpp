@@ -13,7 +13,7 @@ namespace popx {
 class AddBiasOpx : public PopOpx {
 public:
   AddBiasOpx(Op *, Devicex *);
-  void grow(poplar::program::Sequence &) const override;
+  void grow(snap::program::Sequence &) const override;
 
   std::set<TensorId> mustExistBeforeCreate(int index0) const override;
   InputCreatorType getInputCreatorType(InIndex) const final;
@@ -25,13 +25,13 @@ public:
 class AddBiasInplaceOpx : public AddBiasOpx {
 public:
   AddBiasInplaceOpx(Op *, Devicex *);
-  void grow(poplar::program::Sequence &) const final;
+  void grow(snap::program::Sequence &) const final;
 };
 
 class AddBiasDataGradOpx : public PopOpx {
 public:
   AddBiasDataGradOpx(Op *, Devicex *);
-  void grow(poplar::program::Sequence &) const final;
+  void grow(snap::program::Sequence &) const final;
 };
 
 class AddBiasBiasGradOpx : public ReduceSumOpx {

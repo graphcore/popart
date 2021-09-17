@@ -23,7 +23,7 @@ InputCreatorType CallOpx::getInputCreatorType(InIndex) const {
   return InputCreatorType::CanDelegate;
 }
 
-void CallOpx::copyModified(poplar::program::Sequence &prog,
+void CallOpx::copyModified(snap::program::Sequence &prog,
                            InIndex inputIndex) const {
   auto &callop = getOp<CallOp>();
   auto &i      = inputIndex;
@@ -65,7 +65,7 @@ void CallOpx::copyModified(poplar::program::Sequence &prog,
   }
 }
 
-void CallOpx::copyInput(poplar::program::Sequence &prog,
+void CallOpx::copyInput(snap::program::Sequence &prog,
                         InIndex inputIndex) const {
   auto &callop = getOp<CallOp>();
   auto &i      = inputIndex;
@@ -112,7 +112,7 @@ void CallOpx::copyInput(poplar::program::Sequence &prog,
   }
 }
 
-void CallOpx::copyOutput(poplar::program::Sequence &prog,
+void CallOpx::copyOutput(snap::program::Sequence &prog,
                          OutIndex outputIndex) const {
   auto &callop = getOp<CallOp>();
   auto &i      = outputIndex;
@@ -161,7 +161,7 @@ void CallOpx::copyOutput(poplar::program::Sequence &prog,
   }
 }
 
-void CallOpx::doCall(poplar::program::Sequence &prog,
+void CallOpx::doCall(snap::program::Sequence &prog,
                      SubgraphPartIndex subgraphPart) const {
   auto &callop       = getOp<CallOp>();
   auto &called_graph = callop.getCalledGraph();
@@ -175,7 +175,7 @@ void CallOpx::doCall(poplar::program::Sequence &prog,
   prog.add(poplar::program::Call(graph_prog, debugContext(dbgStr)));
 }
 
-void CallOpx::grow(std::vector<poplar::program::Sequence> &sequences) const {
+void CallOpx::grow(std::vector<snap::program::Sequence> &sequences) const {
 
   auto partitioner    = dv_p->lowering().getSubgraphPartitioner();
   auto &callop        = getOp<CallOp>();
@@ -198,7 +198,7 @@ void CallOpx::grow(std::vector<poplar::program::Sequence> &sequences) const {
         int subgraphPart = (sequences.size() + offsetSubgraphPart);
         std::stringstream ss;
         ss << callop.getGraph().id.str() << "/" << subgraphPart;
-        sequences.push_back({{}, debugContext(ss.str())});
+        sequences.push_back({debugContext(ss.str()), graph()});
       }
 
       using CallOpPartType = liveness::SubgraphPartitioner::CallOpPartType;
@@ -242,7 +242,7 @@ void CallOpx::grow(std::vector<poplar::program::Sequence> &sequences) const {
   }
 }
 
-void CallOpx::grow(poplar::program::Sequence &prog) const {
+void CallOpx::grow(snap::program::Sequence &prog) const {
   throw error("growing CallOpx requires a vector of sequences {}", op_p->opid);
 }
 

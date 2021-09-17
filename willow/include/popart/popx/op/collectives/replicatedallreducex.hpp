@@ -10,7 +10,7 @@ namespace popx {
 class ReplicatedAllReduceOpx : public CollectivesBaseOpx {
 public:
   ReplicatedAllReduceOpx(Op *, Devicex *);
-  void grow(poplar::program::Sequence &) const override;
+  void grow(snap::program::Sequence &) const override;
   InputCreatorType getInputCreatorType(InIndex index) const final;
   snap::Tensor unwindTensorLayout(snap::Tensor, InIndex, OutIndex) const final;
   view::RegMap unwindRegion(InIndex, OutIndex) const final;
@@ -19,7 +19,7 @@ public:
 class ReplicatedAllReduceInplaceOpx : public ReplicatedAllReduceOpx {
 public:
   ReplicatedAllReduceInplaceOpx(Op *, Devicex *);
-  void grow(poplar::program::Sequence &) const final;
+  void grow(snap::program::Sequence &) const final;
 };
 
 } // namespace popx

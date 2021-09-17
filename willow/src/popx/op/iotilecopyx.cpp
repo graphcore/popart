@@ -16,7 +16,7 @@ IoTileCopyOpx::IoTileCopyOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
   verifyOp<IoTileCopyOp>(op, Onnx::CustomOperators::IoTileCopy);
 }
 
-void IoTileCopyOpx::grow(poplar::program::Sequence &prog) const {
+void IoTileCopyOpx::grow(snap::program::Sequence &prog) const {
   poplar::Tensor outTensor =
       getOutTensor(IoTileCopyOp::getOutIndex()).getPoplarTensor();
   poplar::Tensor inView =

@@ -36,7 +36,7 @@ snap::Tensor ClipComputex::broadcastClipTensor(snap::Tensor clipT,
   return snap::Tensor{t, clipT};
 }
 
-snap::Tensor ClipComputex::outplace(poplar::program::Sequence &prog,
+snap::Tensor ClipComputex::outplace(snap::program::Sequence &prog,
                                     snap::Graph &graph,
                                     const snap::Tensor &tensor,
                                     const poplar::DebugNameAndId &dnai,
@@ -51,7 +51,7 @@ snap::Tensor ClipComputex::outplace(poplar::program::Sequence &prog,
                                   tensor.getPoplarTensor(),
                                   minT.getPoplarTensor(),
                                   maxT.getPoplarTensor(),
-                                  prog,
+                                  prog.getPoplarSequence(),
                                   {dnai, s}),
                       graph};
 }
@@ -92,7 +92,7 @@ float ClipComputex::getMaxFromClipInplaceOp(Op *op) {
   return clipInOp->getClipMax();
 }
 
-void ClipComputex::inplace(poplar::program::Sequence &prog,
+void ClipComputex::inplace(snap::program::Sequence &prog,
                            snap::Graph &graph,
                            const snap::Tensor &tensor,
                            const poplar::DebugNameAndId &dnai,
@@ -108,7 +108,7 @@ void ClipComputex::inplace(poplar::program::Sequence &prog,
                      tensor.getPoplarTensor(),
                      minT.getPoplarTensor(),
                      maxT.getPoplarTensor(),
-                     prog,
+                     prog.getPoplarSequence(),
                      {dnai, s});
 }
 
@@ -134,7 +134,7 @@ ClipGradOpx::ClipGradOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
   verifyOp<ClipGradOp>(op, Onnx::GradOperators::ClipGrad);
 }
 
-void ClipGradOpx::grow(poplar::program::Sequence &prog) const {
+void ClipGradOpx::grow(snap::program::Sequence &prog) const {
   // Gradient of clip op is a unit step function, with rising
   // edge at 'min' and falling edge at 'max'
 
@@ -166,7 +166,7 @@ void ClipGradOpx::grow(poplar::program::Sequence &prog) const {
            fwdOut.getPoplarTensor(),
            clipmin.getPoplarTensor(),
            clipmax.getPoplarTensor()},
-          prog,
+          prog.getPoplarSequence(),
           debugContext("ApplyMinMaxMask")),
       graph()};
 

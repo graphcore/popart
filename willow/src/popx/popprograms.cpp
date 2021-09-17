@@ -15,6 +15,7 @@
 #include <poplar/Program.hpp>
 
 #include <snap/Graph.hpp>
+#include <snap/Program.hpp>
 
 namespace popart {
 namespace popx {
@@ -86,164 +87,174 @@ std::ostream &operator<<(std::ostream &out,
 }
 
 PopPrograms::PopPrograms(IrLowering *ir_lowering_p_)
-    : ir_lowering_p(ir_lowering_p_) {
+    : ir_lowering_p(ir_lowering_p_) {}
+
+void PopPrograms::initWithSnapGraph(snap::Graph &g) {
   // Populate seqs with Sequences that have names.
   for (int i = 0; i < static_cast<int>(ProgramFragmentIndex::N); ++i) {
     std::stringstream ss;
     ss << static_cast<ProgramFragmentIndex>(i);
-    seqs.push_back(poplar::program::Sequence({}, ss.str()));
+    seqs.push_back(snap::program::Sequence({ss.str()}, g));
   }
+
+  pipelineIpuCopySeq.reset(new snap::program::Sequence(g));
 }
 
-const poplar::program::Sequence &
+const snap::program::Sequence &
 PopPrograms::streamWeightsFromHostFragment() const {
   return seqs.at(static_cast<int>(ProgramFragmentIndex::StreamWeightsFromHost));
 }
-poplar::program::Sequence &PopPrograms::streamWeightsFromHostFragment() {
+snap::program::Sequence &PopPrograms::streamWeightsFromHostFragment() {
   return seqs.at(static_cast<int>(ProgramFragmentIndex::StreamWeightsFromHost));
 }
 
-const poplar::program::Sequence &
+const snap::program::Sequence &
 PopPrograms::streamOptimizerFromHostFragment() const {
   return seqs.at(
       static_cast<int>(ProgramFragmentIndex::StreamOptimizerFromHost));
 }
-poplar::program::Sequence &PopPrograms::streamOptimizerFromHostFragment() {
+snap::program::Sequence &PopPrograms::streamOptimizerFromHostFragment() {
   return seqs.at(
       static_cast<int>(ProgramFragmentIndex::StreamOptimizerFromHost));
 }
 
-const poplar::program::Sequence &
+const snap::program::Sequence &
 PopPrograms::setRandomSeedFromHostFragment() const {
   return seqs.at(static_cast<int>(ProgramFragmentIndex::SetRandomSeedFromHost));
 }
-poplar::program::Sequence &PopPrograms::setRandomSeedFromHostFragment() {
+snap::program::Sequence &PopPrograms::setRandomSeedFromHostFragment() {
   return seqs.at(static_cast<int>(ProgramFragmentIndex::SetRandomSeedFromHost));
 }
 
-const poplar::program::Sequence &PopPrograms::rngStateFromHostFragment() const {
+const snap::program::Sequence &PopPrograms::rngStateFromHostFragment() const {
   return seqs.at(static_cast<int>(ProgramFragmentIndex::RngStateFromHost));
 }
 
-poplar::program::Sequence &PopPrograms::rngStateFromHostFragment() {
+snap::program::Sequence &PopPrograms::rngStateFromHostFragment() {
   return seqs.at(static_cast<int>(ProgramFragmentIndex::RngStateFromHost));
 }
 
-const poplar::program::Sequence &PopPrograms::rngStateToHostFragment() const {
+const snap::program::Sequence &PopPrograms::rngStateToHostFragment() const {
   return seqs.at(static_cast<int>(ProgramFragmentIndex::RngStateToHost));
 }
 
-poplar::program::Sequence &PopPrograms::rngStateToHostFragment() {
+snap::program::Sequence &PopPrograms::rngStateToHostFragment() {
   return seqs.at(static_cast<int>(ProgramFragmentIndex::RngStateToHost));
 }
 
-const poplar::program::Sequence &
+const snap::program::Sequence &
 PopPrograms::cycleCountTensorToHostFragment() const {
   return seqs.at(
       static_cast<int>(ProgramFragmentIndex::CycleCountTensortoHost));
 }
-poplar::program::Sequence &PopPrograms::cycleCountTensorToHostFragment() {
+snap::program::Sequence &PopPrograms::cycleCountTensorToHostFragment() {
   return seqs.at(
       static_cast<int>(ProgramFragmentIndex::CycleCountTensortoHost));
 }
 
-const poplar::program::Sequence &PopPrograms::initFragment() const {
+const snap::program::Sequence &PopPrograms::initFragment() const {
   return seqs.at(static_cast<int>(ProgramFragmentIndex::Init));
 }
 
-poplar::program::Sequence &PopPrograms::initFragment() {
+snap::program::Sequence &PopPrograms::initFragment() {
   return seqs.at(static_cast<int>(ProgramFragmentIndex::Init));
 }
 
-const poplar::program::Sequence &PopPrograms::preForwardFragment() const {
+const snap::program::Sequence &PopPrograms::preForwardFragment() const {
   return seqs.at(static_cast<int>(ProgramFragmentIndex::PreForward));
 }
 
-poplar::program::Sequence &PopPrograms::preForwardFragment() {
+snap::program::Sequence &PopPrograms::preForwardFragment() {
   return seqs.at(static_cast<int>(ProgramFragmentIndex::PreForward));
 }
 
-const poplar::program::Sequence &PopPrograms::forwardFragment() const {
+const snap::program::Sequence &PopPrograms::forwardFragment() const {
   return seqs.at(static_cast<int>(ProgramFragmentIndex::Forward));
 }
 
-poplar::program::Sequence &PopPrograms::forwardFragment() {
+snap::program::Sequence &PopPrograms::forwardFragment() {
   return seqs.at(static_cast<int>(ProgramFragmentIndex::Forward));
 }
 
-const poplar::program::Sequence &PopPrograms::backwardFragment() const {
+const snap::program::Sequence &PopPrograms::backwardFragment() const {
   return seqs.at(static_cast<int>(ProgramFragmentIndex::Backward));
 }
 
-poplar::program::Sequence &PopPrograms::backwardFragment() {
+snap::program::Sequence &PopPrograms::backwardFragment() {
   return seqs.at(static_cast<int>(ProgramFragmentIndex::Backward));
 }
 
-const poplar::program::Sequence &PopPrograms::toHostFinalCopyFragment() const {
+const snap::program::Sequence &PopPrograms::toHostFinalCopyFragment() const {
   return seqs.at(static_cast<int>(ProgramFragmentIndex::ToHostFinalCopy));
 }
 
-poplar::program::Sequence &PopPrograms::toHostFinalCopyFragment() {
+snap::program::Sequence &PopPrograms::toHostFinalCopyFragment() {
   return seqs.at(static_cast<int>(ProgramFragmentIndex::ToHostFinalCopy));
 }
 
-const poplar::program::Sequence &PopPrograms::accumulateOuterFragment() const {
+const snap::program::Sequence &PopPrograms::accumulateOuterFragment() const {
   return seqs.at(
       static_cast<int>(ProgramFragmentIndex::VarUpdateFromAccumulator));
 }
 
-poplar::program::Sequence &PopPrograms::accumulateOuterFragment() {
+snap::program::Sequence &PopPrograms::accumulateOuterFragment() {
   return seqs.at(
       static_cast<int>(ProgramFragmentIndex::VarUpdateFromAccumulator));
 }
 
-const poplar::program::Sequence &PopPrograms::weightsToHostFragment() const {
+const snap::program::Sequence &PopPrograms::weightsToHostFragment() const {
   return seqs.at(static_cast<int>(ProgramFragmentIndex::WeightstoHost));
 }
 
-poplar::program::Sequence &PopPrograms::weightsToHostFragment() {
+snap::program::Sequence &PopPrograms::weightsToHostFragment() {
   return seqs.at(static_cast<int>(ProgramFragmentIndex::WeightstoHost));
 }
 
-poplar::program::Sequence PopPrograms::weightsFromHost() const {
-  poplar::program::Sequence prog({}, {"weightsFromHost"});
+snap::program::Sequence PopPrograms::weightsFromHost() const {
+  snap::program::Sequence prog(poplar::DebugContext{"weightsFromHost"},
+                               ir_lowering_p->graph());
   prog.add(streamWeightsFromHostFragment());
   return prog;
 }
 
-poplar::program::Sequence PopPrograms::optimizerFromHost() const {
-  poplar::program::Sequence prog({}, {"optimizerFromHost"});
+snap::program::Sequence PopPrograms::optimizerFromHost() const {
+  snap::program::Sequence prog(poplar::DebugContext{"optimizerFromHost"},
+                               ir_lowering_p->graph());
   prog.add(streamOptimizerFromHostFragment());
   return prog;
 }
 
-poplar::program::Sequence PopPrograms::setRandomSeedFromHost() const {
-  poplar::program::Sequence prog({}, {"setRandomSeedFromHost"});
+snap::program::Sequence PopPrograms::setRandomSeedFromHost() const {
+  snap::program::Sequence prog(poplar::DebugContext{"setRandomSeedFromHost"},
+                               ir_lowering_p->graph());
   prog.add(setRandomSeedFromHostFragment());
   return prog;
 }
 
-poplar::program::Sequence PopPrograms::cycleCountTensorToHost() const {
-  poplar::program::Sequence prog({}, {"cycleCountTensorToHost"});
+snap::program::Sequence PopPrograms::cycleCountTensorToHost() const {
+  snap::program::Sequence prog(poplar::DebugContext{"cycleCountTensorToHost"},
+                               ir_lowering_p->graph());
   prog.add(cycleCountTensorToHostFragment());
   return prog;
 }
 
-poplar::program::Sequence PopPrograms::rngStateFromHost() const {
-  poplar::program::Sequence prog({}, {"rngStateFromHost"});
+snap::program::Sequence PopPrograms::rngStateFromHost() const {
+  snap::program::Sequence prog(poplar::DebugContext{"rngStateFromHost"},
+                               ir_lowering_p->graph());
   prog.add(rngStateFromHostFragment());
   return prog;
 }
 
-poplar::program::Sequence PopPrograms::rngStateToHost() const {
-  poplar::program::Sequence prog({}, {"rngStateToHost"});
+snap::program::Sequence PopPrograms::rngStateToHost() const {
+  snap::program::Sequence prog(poplar::DebugContext{"rngStateToHost"},
+                               ir_lowering_p->graph());
   prog.add(rngStateToHostFragment());
   return prog;
 }
 
 void PopPrograms::addPipelineCycle(
     PipelineCycle pCycle,
-    poplar::program::Sequence &sq,
+    snap::program::Sequence &sq,
     std::ostringstream &ss,
     std::map<PipelineStage, poplar::Function> &mainFunctions) const {
   // Inside each pipeline cycle
@@ -306,10 +317,10 @@ void PopPrograms::addPipelineCycle(
   // Note: Always do all the copies. This is ensure that ALL copies are
   // outlined across pipelineCycles AND merged across pipelineStages.
   ss << logging::format("\n  IpuCopies");
-  sq.add(pipelineIpuCopySeq);
+  sq.add(*pipelineIpuCopySeq.get());
 }
 
-poplar::program::Sequence
+snap::program::Sequence
 PopPrograms::getFullProgramFromPipelineFragments() const {
   // First, some terminology:
   // - Pipeline Stage
@@ -358,7 +369,7 @@ PopPrograms::getFullProgramFromPipelineFragments() const {
   //      - Followed by H framents for all Pipeline Stages participating in the
   //        Pipeline Cycle.
   //      - Followed by C framents for all Pipeline Stages (see (2) for an
-  //        explaination)
+  //        explanation)
   //    The full pipeline program is then assembled from the programs for each
   //    Pipeline Cycle.
   //
@@ -410,7 +421,7 @@ PopPrograms::getFullProgramFromPipelineFragments() const {
   // Note that in order to satisfy the requirement that 'operations on a
   // Pipeline Stage have no dependencies on other Pipeline Stages', layers
   // that have dependents on other Pipeline Stages on the same IPU are
-  // augmented with Stash operations in the IR that copy thier activations to
+  // augmented with Stash operations in the IR that copy their activations to
   // a FILO buffer, or stash. Also, layers that depend on other Pipeline Stages
   // on the same IPU are augmented with Restore operations that restore their
   // inputs from these stashes. The scheduling of these new operations are
@@ -487,12 +498,14 @@ PopPrograms::getFullProgramFromPipelineFragments() const {
   std::map<PipelineStage, poplar::Function> mainFunctions;
 
   for (auto &stage_seq : pipelineSeqs.at(PipelineFragmentId::Main)) {
+    const snap::program::Sequence &sequence = stage_seq.second;
     mainFunctions.insert({stage_seq.first,
                           ir_lowering_p->graph().getPoplarGraph().addFunction(
-                              stage_seq.second)});
+                              sequence.getPoplarSequence())});
   }
 
-  poplar::program::Sequence fill({}, {"fill"});
+  snap::program::Sequence fill(poplar::DebugContext{"fill"},
+                               ir_lowering_p->graph());
   for (PipelineCycle pCycle = pInfo.fillPhase.start;
        pCycle <= pInfo.fillPhase.end;
        pCycle++) {
@@ -502,12 +515,14 @@ PopPrograms::getFullProgramFromPipelineFragments() const {
 
   // All pipeline cycles in the main phase are identical. So we create the
   // program for a single cycle and repeat for mainCycles
-  poplar::program::Sequence main({}, {"main"});
+  snap::program::Sequence main(poplar::DebugContext{"main"},
+                               ir_lowering_p->graph());
   int64_t mainCycles = pInfo.getMainCycles();
   ss << "\nPipeline Cycle 'Main', " + std::to_string(mainCycles) + " cycles";
   addPipelineCycle(pInfo.mainPhase.start, main, ss, mainFunctions);
 
-  poplar::program::Sequence flush({}, {"flush"});
+  snap::program::Sequence flush(poplar::DebugContext{"flush"},
+                                ir_lowering_p->graph());
   for (PipelineCycle pCycle = pInfo.flushPhase.start;
        pCycle <= pInfo.flushPhase.end;
        pCycle++) {
@@ -518,17 +533,20 @@ PopPrograms::getFullProgramFromPipelineFragments() const {
   logging::devicex::debug("Pipelining program construction summary:");
   logging::devicex::debug(ss.str());
 
-  poplar::program::Sequence inner({}, {"inner"});
+  snap::program::Sequence inner(poplar::DebugContext{"inner"},
+                                ir_lowering_p->graph());
 
   inner.add(fill);
   // This is the inner main cycles loop, if doing pipelining without gradient
   // accumulation, this the batches per step loop, as batch size = micro_batch
   // size
-  inner.add(poplar::program::Repeat(
-      static_cast<uint32_t>(mainCycles), main, {"inerLoop"}));
+  inner.add(poplar::program::Repeat(static_cast<uint32_t>(mainCycles),
+                                    main.getPoplarSequence(),
+                                    {"inerLoop"}));
   inner.add(flush);
 
-  poplar::program::Sequence outer({}, {"outer"});
+  snap::program::Sequence outer(poplar::DebugContext{"outer"},
+                                ir_lowering_p->graph());
 
   outer.add(initFragment());
 
@@ -538,7 +556,8 @@ PopPrograms::getFullProgramFromPipelineFragments() const {
     // If doing gradient accumulation, the inner loop is over mini batches,
     // and this outer loop loops over multiple batches per step.
     auto bps = ir_lowering_p->ir().getDataFlow().batchesPerStep();
-    outer.add(poplar::program::Repeat(bps, inner, {"outerloop"}));
+    outer.add(
+        poplar::program::Repeat(bps, inner.getPoplarSequence(), {"outerloop"}));
   } else {
     // No gradient accumulation, so just add one iteration of the inner program.
     outer.add(inner);
@@ -549,11 +568,12 @@ PopPrograms::getFullProgramFromPipelineFragments() const {
   return outer;
 }
 
-poplar::program::Sequence PopPrograms::program() const {
+snap::program::Sequence PopPrograms::program() const {
   const auto &opts      = ir_lowering_p->ir().getSessionOptions();
   auto instrumentations = opts.hardwareInstrumentations;
 
-  poplar::program::Sequence outer({}, {"outer"});
+  snap::program::Sequence outer(poplar::DebugContext{"outer"},
+                                ir_lowering_p->graph());
 
   if (opts.enableExplicitMainLoops) {
     outer.add(initFragment());
@@ -565,7 +585,8 @@ poplar::program::Sequence PopPrograms::program() const {
     if (opts.implicitPipeliningEnabled()) {
       outer.add(getFullProgramFromPipelineFragments());
     } else {
-      poplar::program::Sequence prog({}, {"program"});
+      snap::program::Sequence prog(poplar::DebugContext{"program"},
+                                   ir_lowering_p->graph());
       prog.add(preForwardFragment());
       prog.add(forwardFragment());
       prog.add(backwardFragment());
@@ -577,8 +598,10 @@ poplar::program::Sequence PopPrograms::program() const {
         logging::devicex::trace(
             "Adding gradient accumulation repeat loop with {} iterations",
             accumulationFactor);
-        prog = {poplar::program::Repeat(
-            accumulationFactor, prog, {"accumulationLoop"})};
+        poplar::program::Repeat repeat(
+            accumulationFactor, prog.getPoplarSequence(), {"accumulationLoop"});
+        prog = snap::program::Sequence(ir_lowering_p->graph());
+        prog.add(repeat);
         prog.add(accumulateOuterFragment());
       }
 
@@ -604,8 +627,8 @@ poplar::program::Sequence PopPrograms::program() const {
       // BatchesPerStep loop
       logging::devicex::trace("Adding batches per step loop with {} iterations",
                               batchesPerStep);
-      outer.add(
-          poplar::program::Repeat(batchesPerStep, prog, {"batchesPerStep"}));
+      outer.add(poplar::program::Repeat(
+          batchesPerStep, prog.getPoplarSequence(), {"batchesPerStep"}));
       outer.add(toHostFinalCopyFragment());
     }
   }
@@ -618,14 +641,15 @@ poplar::program::Sequence PopPrograms::program() const {
   return outer;
 }
 
-poplar::program::Sequence PopPrograms::weightsToHost() const {
-  poplar::program::Sequence prog({}, {"weightsToHost"});
+snap::program::Sequence PopPrograms::weightsToHost() const {
+  snap::program::Sequence prog(poplar::DebugContext{"weightsToHost"},
+                               ir_lowering_p->graph());
   prog.add(weightsToHostFragment());
   return prog;
 }
 
-const std::vector<poplar::program::Program> PopPrograms::progs() const {
-  std::vector<poplar::program::Program> ps(ProgramIndex::N);
+const std::vector<snap::program::Program> PopPrograms::progs() const {
+  std::vector<snap::program::Program> ps(ProgramIndex::N);
 
   ps[ProgramIndex::WeightsFromHost]        = weightsFromHost();
   ps[ProgramIndex::OptimizerFromHost]      = optimizerFromHost();
@@ -639,7 +663,7 @@ const std::vector<poplar::program::Program> PopPrograms::progs() const {
   return ps;
 }
 
-poplar::program::Sequence &
+snap::program::Sequence &
 PopPrograms::programFragment(PopPrograms::ProgramFragmentIndex index) {
   return seqs.at(static_cast<int>(index));
 }
@@ -653,7 +677,7 @@ int PopPrograms::getNumFragments(const Graph &graph) const {
   }
 }
 
-std::vector<poplar::program::Sequence> &
+std::vector<snap::program::Sequence> &
 PopPrograms::scopeFragments(const Graph &graph) {
   auto scopeIt = scopeSeqs.find(graph.id.str());
   if (scopeIt == scopeSeqs.end()) {
@@ -663,7 +687,7 @@ PopPrograms::scopeFragments(const Graph &graph) {
   }
 }
 
-poplar::program::Sequence &
+snap::program::Sequence &
 PopPrograms::scopeFragment(const Graph &graph, SubgraphPartIndex subgraphPart) {
   return scopeSeqs.at(graph.id.str()).at(subgraphPart);
 }
@@ -696,11 +720,11 @@ void PopPrograms::createFragment(const Graph &graph,
       // Check funcs matches scopeSeqs.
       assert(funcs.size() < subgraphPart + 1);
       // Resize scopeSeqs. The funcs vector will be resized to match below.
-      seqs.resize(subgraphPart + 1);
+      seqs.resize(subgraphPart + 1, {ir_lowering_p->graph()});
     }
   } else {
     // Vector does not exist, create one that contains the subgraph part.
-    std::vector<poplar::program::Sequence> seqs;
+    std::vector<snap::program::Sequence> seqs;
 
     for (size_t part = 0; part <= subgraphPart; ++part) {
       std::stringstream dbgCtx;
@@ -709,7 +733,8 @@ void PopPrograms::createFragment(const Graph &graph,
       } else {
         dbgCtx << graph.id.str() << "/" << part;
       }
-      seqs.push_back(poplar::program::Sequence({}, dbgCtx.str()));
+      seqs.push_back(
+          snap::program::Sequence(dbgCtx.str(), ir_lowering_p->graph()));
     }
 
     scopeSeqs.insert({graph.id.str(), seqs});
@@ -719,8 +744,8 @@ void PopPrograms::createFragment(const Graph &graph,
 std::vector<poplar::Function> &
 PopPrograms::getFragmentFunctions(const Graph &graph, snap::Graph &snapGraph) {
 
-  auto seq2func = [&](poplar::program::Sequence &seq) {
-    return snapGraph.getPoplarGraph().addFunction(seq);
+  auto seq2func = [&](snap::program::Sequence &seq) {
+    return snapGraph.getPoplarGraph().addFunction(seq.getPoplarSequence());
   };
 
   auto funcsIt = funcs.find(graph.id.str());
@@ -764,7 +789,7 @@ void PopPrograms::recordRecomputed(OpId id, ExecutionPhase phase) {
   beenRecomputed.insert({id, phase});
 }
 
-std::vector<poplar::program::Sequence>::iterator
+std::vector<snap::program::Sequence>::iterator
 PopPrograms::recomputeFragment(OpId id) {
   auto found = recomputeSeqs.find(id);
   if (found == recomputeSeqs.end()) {
@@ -774,12 +799,12 @@ PopPrograms::recomputeFragment(OpId id) {
 }
 
 SequenceMap::SequenceInterval PopPrograms::createRecomputeFragment(OpId id) {
-  recomputeSeqs.insert({id, {poplar::program::Sequence{}}});
+  recomputeSeqs.insert({id, {snap::program::Sequence{ir_lowering_p->graph()}}});
   return SequenceMap::SequenceInterval(recomputeSeqs[id].begin(),
                                        recomputeSeqs[id].end());
 }
 
-poplar::program::Sequence &
+snap::program::Sequence &
 PopPrograms::forwardOrBackwardFragment(ScheduledPreLoss preLoss) {
   switch (preLoss) {
   case ScheduledPreLoss::Yes: {
@@ -796,7 +821,7 @@ PopPrograms::forwardOrBackwardFragment(ScheduledPreLoss preLoss) {
   }
 }
 
-poplar::program::Sequence &
+snap::program::Sequence &
 PopPrograms::pipelineFragment(PipelineStage pipelineStage,
                               PipelineFragmentId frag,
                               const std::string &desc) {
@@ -809,40 +834,42 @@ PopPrograms::pipelineFragment(PipelineStage pipelineStage,
     } else {
       pipelineDescs.at(frag).insert({pipelineStage, "\n    " + desc});
       pipelineSeqs.at(frag).insert(
-          {pipelineStage, poplar::program::Sequence{}});
+          {pipelineStage, snap::program::Sequence{ir_lowering_p->graph()}});
       return pipelineSeqs.at(frag).at(pipelineStage);
     }
   } else {
     pipelineDescs.insert({frag, {{pipelineStage, "\n    " + desc}}});
-    pipelineSeqs.insert({frag, {{pipelineStage, poplar::program::Sequence{}}}});
+    pipelineSeqs.insert(
+        {frag,
+         {{pipelineStage, snap::program::Sequence{ir_lowering_p->graph()}}}});
     return pipelineSeqs.at(frag).at(pipelineStage);
   }
 }
 
-poplar::program::Sequence &
+snap::program::Sequence &
 PopPrograms::pipelineMainFragment(PipelineStage pipelineStage,
                                   const std::string &desc) {
   return pipelineFragment(pipelineStage, PipelineFragmentId::Main, desc);
 }
 
-poplar::program::Sequence &
+snap::program::Sequence &
 PopPrograms::pipelineToDeviceStreamFragment(PipelineStage pipelineStage,
                                             const std::string &desc) {
   return pipelineFragment(
       pipelineStage, PipelineFragmentId::ToDeviceStream, desc);
 }
 
-poplar::program::Sequence &
+snap::program::Sequence &
 PopPrograms::pipelineToHostStreamFragment(PipelineStage pipelineStage,
                                           const std::string &desc) {
   return pipelineFragment(
       pipelineStage, PipelineFragmentId::ToHostStream, desc);
 }
 
-poplar::program::Sequence &
+snap::program::Sequence &
 PopPrograms::pipelineIpuCopyFragment(const std::string &desc) {
   pipelineIpuCopyDesc.append("\n    " + desc);
-  return pipelineIpuCopySeq;
+  return *pipelineIpuCopySeq.get();
 }
 
 std::string

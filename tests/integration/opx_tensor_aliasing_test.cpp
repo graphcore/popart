@@ -6,6 +6,7 @@
 #include <boost/test/unit_test.hpp>
 
 #include <filereader.hpp>
+#include <snap/Program.hpp>
 #include <popops/ElementWise.hpp>
 #include <popart/builder.hpp>
 #include <popart/dataflow.hpp>
@@ -61,13 +62,13 @@ public:
                                       CustomOperators::OpxTensorAliasingTest);
   }
 
-  void grow(poplar::program::Sequence &prog) const final {
+  void grow(snap::program::Sequence &prog) const final {
     auto inTensor =
         getInTensor(OpxTensorAliasingTestOp::inIndex()).getPoplarTensor();
     popops::mulInPlace(graph().getPoplarGraph(),
                        inTensor,
                        inTensor,
-                       prog,
+                       prog.getPoplarSequence(),
                        debugContext("mulInPlace"));
     setOutTensor(OpxTensorAliasingTestOp::outIndex(),
                  snap::Tensor{inTensor, graph()});

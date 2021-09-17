@@ -105,7 +105,7 @@ CumSumOpx::CumSumOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
 // We multiply the triangular matrix with the input matrix which effectively
 // gives us cumulative sum. We shuffle and reshape back to get the final
 // result. We expect good performance as MatMul is highly optimised on the IPU.
-void CumSumOpx::grow(poplar::program::Sequence &prog) const {
+void CumSumOpx::grow(snap::program::Sequence &prog) const {
 
   const auto &op       = getOp<CumSumOp>();
   const int64_t axis   = op.getAxis();
@@ -132,7 +132,7 @@ void CumSumOpx::grow(poplar::program::Sequence &prog) const {
   x = poplin::matMul(graph().getPoplarGraph(),
                      x,
                      triangularM,
-                     prog,
+                     prog.getPoplarSequence(),
                      debugContext("cumsum_mul"));
   x = x.reshape(xMiddleShape);
   x = x.dimShuffle(perm);
@@ -148,7 +148,7 @@ CumSumGradOpx::CumSumGradOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
 // dCumulativeSum(dOut) = reverse(CumulativeSum(reverse(dOut))
 // This can be interpreted as the MatMul gradient where the
 // triangular matrix has been transposed.
-void CumSumGradOpx::grow(poplar::program::Sequence &prog) const {
+void CumSumGradOpx::grow(snap::program::Sequence &prog) const {
 
   const auto &op       = getOp<CumSumGradOp>();
   const int64_t axis   = op.getAxis();
@@ -174,7 +174,7 @@ void CumSumGradOpx::grow(poplar::program::Sequence &prog) const {
   dx = poplin::matMul(graph().getPoplarGraph(),
                       dx,
                       triangularM,
-                      prog,
+                      prog.getPoplarSequence(),
                       debugContext("cumsum_mul"));
   dx = dx.reshape(xMiddleShape);
   dx = dx.dimShuffle(perm);

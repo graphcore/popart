@@ -12,12 +12,12 @@ SqrtOpx::SqrtOpx(Op *op, Devicex *devicex) : ElementWiseUnaryOpx(op, devicex) {
   verifyOp<SqrtOp>(op, Onnx::Operators::Sqrt_6);
 }
 
-void SqrtOpx::grow(poplar::program::Sequence &prog) const {
+void SqrtOpx::grow(snap::program::Sequence &prog) const {
   setOutTensor(0,
                snap::Tensor{popops::map(graph().getPoplarGraph(),
                                         popops::expr::UnaryOpType::SQRT,
                                         getInTensor(0).getPoplarTensor(),
-                                        prog,
+                                        prog.getPoplarSequence(),
                                         debugContext()),
                             graph()});
 }

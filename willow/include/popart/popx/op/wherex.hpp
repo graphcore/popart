@@ -10,19 +10,19 @@ namespace popx {
 class WhereOpx : public PopOpx {
 public:
   WhereOpx(Op *, Devicex *);
-  void grow(poplar::program::Sequence &) const final;
+  void grow(snap::program::Sequence &) const final;
 };
 
 class WhereXGradOpx : public PopOpx {
 public:
   WhereXGradOpx(Op *, Devicex *);
-  void grow(poplar::program::Sequence &) const final;
+  void grow(snap::program::Sequence &) const final;
 };
 
 class WhereYGradOpx : public PopOpx {
 public:
   WhereYGradOpx(Op *, Devicex *);
-  void grow(poplar::program::Sequence &) const final;
+  void grow(snap::program::Sequence &) const final;
 };
 
 } // namespace popx

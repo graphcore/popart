@@ -12,7 +12,7 @@ namespace popx {
 class IsNaNx : public ElementWiseUnaryOpx {
 public:
   IsNaNx(Op *, Devicex *);
-  void grow(poplar::program::Sequence &) const final;
+  void grow(snap::program::Sequence &) const final;
 };
 
 } // namespace popx
