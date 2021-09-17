@@ -96,6 +96,19 @@ auto batchnormShapeInferenceFun = [](popart::ShapeInferenceContext &ctx) {
   }
 };
 
+// Shape inference is the process of infering the shape of the outputs of
+// a node in the ONNX graph. It is run each time a new node is added to the
+// model. It is executed inside BuilderImpl::runShapeInference via one of two
+// code paths, depending how the shape inference function is registered:
+// 1. registered in an Onnx operator schema. We do this for all aiGraphcore
+//    and aiOnnx operators except for Batchnorm. See willow/src/defs.cc for
+//    examples.
+// 2. registered with the popart ShapeInferenceContext. This may be perferable
+//    for developers of custom operators, as it does not require understanding
+//    of the ONNX opset schema.
+//
+// We register the batchnorm shape inference functions via method (2) to ensure
+// we have internal examples of this second code path.
 static popart::RegisterShapeInferenceFunction
     batchnormRegister9(popart::Onnx::Operators::BatchNormalization_9,
                        batchnormShapeInferenceFun);

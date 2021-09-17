@@ -177,25 +177,21 @@ void BuilderImpl::runShapeInference(ONNX_NAMESPACE::NodeProto *node,
     ONNX_NAMESPACE::shape_inference::InferShapes(model_);
   }
 
-  auto getValueInfo =
-      [&](const TensorId &id) -> const ONNX_NAMESPACE::ValueInfoProto * {
-    for (int i = 0; i < model_.graph().value_info_size(); i++) {
-      if (model_.graph().value_info(i).name() == id) {
-        return &model_.graph().value_info(i);
-      }
-    }
-    return nullptr;
-  };
-
   // Check shape inference worked.
   for (int i = 0; i < node->output_size(); i++) {
-    auto &id         = node->output(i);
-    auto *value_info = getValueInfo(id);
-    if (!value_info) {
+    auto &id = node->output(i);
+    if (!isValueTensor(id)) {
       logging::builder::info(
           "Shape inference failed for output '{}' of node '{}'",
           id,
           node->op_type());
+
+      // Guarantee that the output is added to the 'value info' field.
+      // Its shape field is not populated, as it is not known.
+      auto valueInfo = model_.mutable_graph()->add_value_info();
+      valueInfo->set_name(id);
+      auto tt = valueInfo->mutable_type()->mutable_tensor_type();
+      tt->set_elem_type(onnxutil::getTPDataType(DataType::UNDEFINED));
     }
   }
 }
