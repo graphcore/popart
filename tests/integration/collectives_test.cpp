@@ -10,6 +10,7 @@
 #include <popart/ndarraywrapper.hpp>
 #include <popart/op/collectives/replicatedallgather.hpp>
 #include <popart/op/collectives/replicatedallreduce.hpp>
+#include <popart/op/collectives/replicatedreducescatter.hpp>
 #include <popart/op/dynamic/dynamicslice.hpp>
 #include <popart/op/exchange/remote.hpp>
 #include <popart/op/init.hpp>
@@ -143,11 +144,12 @@ BOOST_AUTO_TEST_CASE(ReplicatedAllReduceTest) {
     TensorId A_id = bder->addInputTensor(A_info, "A");
 
     TensorInfo B_info{"FLOAT", std::vector<int64_t>{N}};
-    TensorId B_id = bder->customOp(Onnx::CustomOperators::ReplicatedAllReduce,
-                                   1,
-                                   {A_id},
-                                   1,
-                                   {{"op", static_cast<int>(variant)}})[0];
+    TensorId B_id =
+        bder->customOp(Onnx::CustomOperators::ReplicatedAllReduce,
+                       1,
+                       {A_id},
+                       1,
+                       {{sCollectiveOperator, static_cast<int>(variant)}})[0];
 
     bder->addOutputTensor(B_id);
 
@@ -345,14 +347,14 @@ BOOST_AUTO_TEST_CASE(ReplicatedReduceScatterTest) {
 
     TensorId A_id = bder->addInputTensor(A_info, "A");
 
-    int64_t out_shape = (N + replicationFactor - 1) / replicationFactor;
-    TensorInfo B_info{"FLOAT", std::vector<int64_t>{out_shape}};
+    int64_t outShape = (N + replicationFactor - 1) / replicationFactor;
+    TensorInfo B_info{"FLOAT", std::vector<int64_t>{outShape}};
     TensorId B_id =
         bder->customOp(Onnx::CustomOperators::ReplicatedReduceScatter,
                        1,
                        {A_id},
                        1,
-                       {{"op", static_cast<int>(variant)}})[0];
+                       {{sCollectiveOperator, static_cast<int>(variant)}})[0];
 
     bder->addOutputTensor(B_id);
 
@@ -369,9 +371,9 @@ BOOST_AUTO_TEST_CASE(ReplicatedReduceScatterTest) {
 
     std::map<popart::TensorId, popart::IArray &> inputs = {{A_id, A_wrapper}};
 
-    std::vector<float> raw_B_out(replicationFactor * out_shape);
+    std::vector<float> raw_B_out(replicationFactor * outShape);
     TensorInfo B_info_replicated{
-        "FLOAT", std::vector<int64_t>{replicationFactor, out_shape}};
+        "FLOAT", std::vector<int64_t>{replicationFactor, outShape}};
 
     popart::NDArrayWrapper<float> B_wrapper(raw_B_out.data(),
                                             B_info_replicated.shape());
@@ -462,8 +464,8 @@ BOOST_AUTO_TEST_CASE(ReplicatedAllGatherTest) {
 
   TensorId A_id = bder->addInputTensor(A_info, "A");
 
-  int64_t out_shape = replicationFactor * N;
-  TensorInfo B_info{"FLOAT", std::vector<int64_t>{out_shape}};
+  int64_t outShape = replicationFactor * N;
+  TensorInfo B_info{"FLOAT", std::vector<int64_t>{outShape}};
   TensorId B_id = bder->customOp(
       Onnx::CustomOperators::ReplicatedAllGather, 1, {A_id}, 1, {})[0];
 
@@ -482,9 +484,9 @@ BOOST_AUTO_TEST_CASE(ReplicatedAllGatherTest) {
 
   std::map<popart::TensorId, popart::IArray &> inputs = {{A_id, A_wrapper}};
 
-  std::vector<float> raw_B_out(replicationFactor * out_shape);
+  std::vector<float> raw_B_out(replicationFactor * outShape);
   TensorInfo B_info_replicated{
-      "FLOAT", std::vector<int64_t>{replicationFactor, out_shape}};
+      "FLOAT", std::vector<int64_t>{replicationFactor, outShape}};
 
   popart::NDArrayWrapper<float> B_wrapper(raw_B_out.data(),
                                           B_info_replicated.shape());
@@ -530,11 +532,27 @@ template <> struct OpToIdentifierMap<popart::ReplicatedAllReduceOp> {
   static const OperatorIdentifier id;
 };
 
+template <> struct OpToIdentifierMap<popart::ReplicatedAllReduceInplaceOp> {
+  static const OperatorIdentifier id;
+};
+
+template <> struct OpToIdentifierMap<popart::ReplicatedReduceScatterOp> {
+  static const OperatorIdentifier id;
+};
+
 const OperatorIdentifier OpToIdentifierMap<popart::ReplicatedAllGatherOp>::id =
     Onnx::CustomOperators::ReplicatedAllGather;
 
 const OperatorIdentifier OpToIdentifierMap<popart::ReplicatedAllReduceOp>::id =
     Onnx::CustomOperators::ReplicatedAllReduce;
+
+const OperatorIdentifier
+    OpToIdentifierMap<popart::ReplicatedAllReduceInplaceOp>::id =
+        Onnx::CustomOperators::ReplicatedAllReduceInplace;
+
+const OperatorIdentifier
+    OpToIdentifierMap<popart::ReplicatedReduceScatterOp>::id =
+        Onnx::CustomOperators::ReplicatedReduceScatter;
 
 template <typename OpTy>
 static std::vector<const OpTy *>
@@ -586,8 +604,8 @@ BOOST_AUTO_TEST_CASE(ReplicatedAllGatherTest_CommGroup_All) {
 
   TensorId A_id = bder->addInputTensor(A_info, "A");
 
-  int64_t out_shape = replicationFactor * N;
-  TensorInfo B_info{"FLOAT", std::vector<int64_t>{out_shape}};
+  int64_t outShape = replicationFactor * N;
+  TensorInfo B_info{"FLOAT", std::vector<int64_t>{outShape}};
   TensorId B_id =
       bder->customOp(Onnx::CustomOperators::ReplicatedAllGather,
                      1,
@@ -616,9 +634,9 @@ BOOST_AUTO_TEST_CASE(ReplicatedAllGatherTest_CommGroup_All) {
 
   std::map<popart::TensorId, popart::IArray &> inputs = {{A_id, A_wrapper}};
 
-  std::vector<float> raw_B_out(replicationFactor * out_shape);
+  std::vector<float> raw_B_out(replicationFactor * outShape);
   TensorInfo B_info_replicated{
-      "FLOAT", std::vector<int64_t>{replicationFactor, out_shape}};
+      "FLOAT", std::vector<int64_t>{replicationFactor, outShape}};
 
   popart::NDArrayWrapper<float> B_wrapper(raw_B_out.data(),
                                           B_info_replicated.shape());
@@ -647,5 +665,179 @@ BOOST_AUTO_TEST_CASE(ReplicatedAllGatherTest_CommGroup_All) {
     BOOST_ASSERT(allGather->getGCLCommGroup().type ==
                  popart::CommGroupType::All);
     BOOST_ASSERT(allGather->getGCLCommGroup().replicaGroupSize == 4);
+  }
+}
+
+// Test if ReplicatedReduceScatter -> ReplicatedAllReduce(Inplace) produces the
+// correct output when running the two Ops across orthogonal CommGroups
+BOOST_AUTO_TEST_CASE(ReplicatedScatterAndReduceCommGroupTest) {
+  int rOffset = 10000;
+
+  for (int testId = 0; testId < 4; ++testId) {
+    bool useInplace         = testId % 2 != 0;
+    auto collectiveOperator = ((testId / 2) % 2) == 0
+                                  ? CollectiveOperator::Add
+                                  : CollectiveOperator::Local;
+
+    logging::info("[ReplicatedScatterAndReduceCommGroupTest] Use inplace: {}, "
+                  "collectiveOperator: {}",
+                  useInplace,
+                  collectiveOperator);
+
+    const int numIPUs           = 4;
+    const int replicationFactor = 4;
+    const int groupSize         = 2;
+    int64_t N                   = 4;
+    auto bder                   = Builder::create();
+    auto aiOnnx                 = bder->aiOnnxOpset9();
+    auto aiGraphcore            = bder->aiGraphcoreOpset1();
+
+    // Tensor A of shape N
+    TensorInfo A_info{"FLOAT", std::vector<int64_t>{N}};
+    std::vector<float> v_A_init(A_info.nelms());
+
+    TensorInfo A_info_replicated{"FLOAT",
+                                 std::vector<int64_t>{replicationFactor, N}};
+    std::vector<float> v_A_init_replicated(replicationFactor * A_info.nelms());
+
+    int k = 0;
+    for (int i = 0; i < replicationFactor; ++i) {
+      for (int j = 0; j < N; ++j) {
+        v_A_init_replicated[k] = i * rOffset + (float)j;
+        ++k;
+      }
+    }
+
+    TensorId A_id = bder->addInputTensor(A_info, "A");
+
+    int64_t outShape = N / groupSize;
+
+    TensorId B_id = bder->customOp(
+        Onnx::CustomOperators::ReplicatedReduceScatter,
+        1,
+        {A_id},
+        1,
+        {{sCollectiveCommGroup, std::vector<int64_t>{1, groupSize}},
+         {sCollectiveOperator, static_cast<int64_t>(collectiveOperator)}})[0];
+    TensorId C_id = bder->customOp(
+        useInplace ? Onnx::CustomOperators::ReplicatedAllReduceInplace
+                   : Onnx::CustomOperators::ReplicatedAllReduce,
+        1,
+        {B_id},
+        1,
+        {{sCollectiveCommGroup,
+          std::vector<int64_t>{2, replicationFactor / groupSize}}})[0];
+
+    bder->addOutputTensor(B_id);
+    bder->addOutputTensor(C_id);
+
+    auto proto         = bder->getModelProto();
+    auto modelProto    = io::getModelFromString(proto);
+    auto art           = AnchorReturnType("All");
+    int batchesPerStep = 1;
+    auto dataFlow      = DataFlow(batchesPerStep, {{B_id, art}, {C_id, art}});
+    auto device        = createTestDevice(TEST_TARGET, numIPUs);
+
+    // inputs:
+    popart::NDArrayWrapper<float> A_wrapper(v_A_init_replicated.data(),
+                                            A_info_replicated);
+
+    std::map<popart::TensorId, popart::IArray &> inputs = {{A_id, A_wrapper}};
+
+    std::vector<float> raw_B_out(replicationFactor * outShape);
+    TensorInfo B_info_replicated{
+        "FLOAT", std::vector<int64_t>{replicationFactor, outShape}};
+
+    popart::NDArrayWrapper<float> B_wrapper(raw_B_out.data(),
+                                            B_info_replicated.shape());
+
+    std::vector<float> raw_C_out(replicationFactor * outShape);
+    TensorInfo C_info_replicated{
+        "FLOAT", std::vector<int64_t>{replicationFactor, outShape}};
+
+    popart::NDArrayWrapper<float> C_wrapper(raw_C_out.data(),
+                                            C_info_replicated.shape());
+
+    std::map<popart::TensorId, popart::IArray &> anchors = {
+        {B_id, B_wrapper},
+        {C_id, C_wrapper},
+    };
+
+    if (device != nullptr) {
+      auto opts                   = SessionOptions();
+      opts.enableReplicatedGraphs = true;
+      opts.replicatedGraphCount   = replicationFactor;
+
+      auto session = popart::InferenceSession::createFromOnnxModel(
+          proto,
+          dataFlow,
+          device,
+          popart::InputShapeInfo(),
+          opts,
+          popart::Patterns(PatternsLevel::Default));
+      session->prepareDevice();
+      popart::StepIO stepio(inputs, anchors);
+      session->run(stepio);
+
+      const popart::ReplicatedReduceScatterOp *reduceScatter =
+          findFirstOp<popart::ReplicatedReduceScatterOp>(session);
+      BOOST_ASSERT(reduceScatter->getGCLCommGroup().type ==
+                   popart::CommGroupType::Consecutive);
+      BOOST_ASSERT(reduceScatter->getGCLCommGroup().replicaGroupSize ==
+                   groupSize);
+
+      if (useInplace) {
+        const popart::ReplicatedAllReduceInplaceOp *allReduce =
+            findFirstOp<popart::ReplicatedAllReduceInplaceOp>(session);
+        BOOST_ASSERT(allReduce->getGCLCommGroup().type ==
+                     popart::CommGroupType::Orthogonal);
+        BOOST_ASSERT(allReduce->getGCLCommGroup().replicaGroupSize ==
+                     replicationFactor / groupSize);
+      } else {
+        const popart::ReplicatedAllReduceOp *allReduce =
+            findFirstOp<popart::ReplicatedAllReduceOp>(session);
+        BOOST_ASSERT(allReduce->getGCLCommGroup().type ==
+                     popart::CommGroupType::Orthogonal);
+        BOOST_ASSERT(allReduce->getGCLCommGroup().replicaGroupSize ==
+                     replicationFactor / groupSize);
+      }
+
+      auto sum = 0.f;
+      for (int r = 0; r < replicationFactor; ++r) {
+        sum += r * rOffset;
+      }
+
+      for (int r = 0; r < replicationFactor / groupSize; ++r) {
+        float lower = r * groupSize;
+        float upper = (r + 1) * groupSize - 1;
+        for (int j = 0; j < groupSize * outShape; ++j) {
+          if (collectiveOperator == CollectiveOperator::Add) {
+            if (!useInplace) {
+              BOOST_CHECK_CLOSE(raw_B_out[r * (groupSize * outShape) + j],
+                                groupSize * (upper + lower) / 2.f * rOffset +
+                                    j * groupSize,
+                                1e-6f);
+            }
+
+            BOOST_CHECK_CLOSE(raw_C_out[r * (groupSize * outShape) + j],
+                              sum + j * replicationFactor,
+                              1e-6f);
+          }
+          if (collectiveOperator == CollectiveOperator::Local) {
+            if (!useInplace) {
+              BOOST_CHECK_CLOSE(raw_B_out[r * (groupSize * outShape) + j],
+                                (j / outShape + r * groupSize) * rOffset + j,
+                                1e-6f);
+            }
+
+            BOOST_CHECK_CLOSE(raw_C_out[r * (groupSize * outShape) + j],
+                              (j / outShape + (j / outShape) + groupSize) *
+                                      rOffset +
+                                  j * replicationFactor / groupSize,
+                              1e-6f);
+          }
+        }
+      }
+    }
   }
 }

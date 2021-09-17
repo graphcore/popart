@@ -42,8 +42,8 @@ void ReplicatedAllReduceOp::setup() {
 
 void ReplicatedAllReduceOp::appendOutlineAttributes(
     OpSerialiserBase &os) const {
-  Op::appendOutlineAttributes(os);
-  os.appendAttribute("op", static_cast<int>(op));
+  CollectivesBaseOp::appendOutlineAttributes(os);
+  os.appendAttribute(sCollectiveOperator, static_cast<int>(op));
 }
 
 ReplicatedAllReduceInplaceOp::ReplicatedAllReduceInplaceOp(
@@ -104,10 +104,11 @@ static OpDefinition::DataTypes T = {DataType::FLOAT,
                                     DataType::INT32,
                                     DataType::UINT32};
 
-static OpDefinition
-    ReplicatedAllReduceOpDef({OpDefinition::Inputs({{"X", T}}),
-                              OpDefinition::Outputs({{"Y", T}}),
-                              OpDefinition::Attributes({{"op", {"*"}}})});
+static OpDefinition ReplicatedAllReduceOpDef(
+    {OpDefinition::Inputs({{"X", T}}),
+     OpDefinition::Outputs({{"Y", T}}),
+     OpDefinition::Attributes({{sCollectiveOperator, {"*"}},
+                               {sCollectiveCommGroup, {"*"}}})});
 
 static OpCreator<ReplicatedAllReduceOp> ReplicatedAllReduceOpCreator(
     OpDefinitions({{Onnx::CustomOperators::ReplicatedAllReduce,
@@ -116,7 +117,7 @@ static OpCreator<ReplicatedAllReduceOp> ReplicatedAllReduceOpCreator(
       CommGroup group       = extractCommGroupFromAttrs(info.attributes);
       CollectiveOperator op = static_cast<CollectiveOperator>(
           info.attributes.getAttribute<Attributes::Int>(
-              "op", static_cast<int>(CollectiveOperator::Add)));
+              sCollectiveOperator, static_cast<int>(CollectiveOperator::Add)));
 
       return std::unique_ptr<ReplicatedAllReduceOp>(
           new ReplicatedAllReduceOp(info.opid, op, group, info.settings));
@@ -126,7 +127,8 @@ static OpCreator<ReplicatedAllReduceOp> ReplicatedAllReduceOpCreator(
 static OpDefinition ReplicatedAllReduceInplaceOpDef(
     {OpDefinition::Inputs({{"X", T}}),
      OpDefinition::Outputs({{"Y", T}}),
-     OpDefinition::Attributes({{"op", {"*"}}})});
+     OpDefinition::Attributes({{sCollectiveOperator, {"*"}},
+                               {sCollectiveCommGroup, {"*"}}})});
 
 static OpCreator<ReplicatedAllReduceInplaceOp>
     ReplicatedAllReduceInplaceOpCreator(
@@ -136,7 +138,8 @@ static OpCreator<ReplicatedAllReduceInplaceOp>
           CommGroup group       = extractCommGroupFromAttrs(info.attributes);
           CollectiveOperator op = static_cast<CollectiveOperator>(
               info.attributes.getAttribute<Attributes::Int>(
-                  "op", static_cast<int>(CollectiveOperator::Add)));
+                  sCollectiveOperator,
+                  static_cast<int>(CollectiveOperator::Add)));
 
           return std::unique_ptr<ReplicatedAllReduceInplaceOp>(
               new ReplicatedAllReduceInplaceOp(
