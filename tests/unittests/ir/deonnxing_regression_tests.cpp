@@ -326,7 +326,7 @@ BOOST_AUTO_TEST_CASE(TestSerialise) {
 
     auto &subGraph  = ir.createGraph(GraphId{irDirectSubgraphId});
     const auto subT = subGraph.addInput(tInfo);
-    const auto subU = subGraph.addScope("u");
+    const auto subU = addScope(subGraph.getScope(), "u");
 
     auto idOp = subGraph.createConnectedOp<IdentityOp>(
         {{IdentityOp::getInIndex(), subT}},

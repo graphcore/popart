@@ -40,6 +40,7 @@
 #include <popart/tensorlocation.hpp>
 #include <popart/tensornames.hpp>
 #include <popart/tensors.hpp>
+#include <popart/util.hpp>
 #include <popart/vendored/optional.hpp>
 #include <popart/version.hpp>
 

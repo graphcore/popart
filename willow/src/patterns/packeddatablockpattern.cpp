@@ -9,6 +9,7 @@
 #include <popart/op/reshape.hpp>
 #include <popart/op/sequenceslice.hpp>
 #include <popart/patterns/packeddatablockpattern.hpp>
+#include <popart/util.hpp>
 
 namespace popart {
 
@@ -194,7 +195,8 @@ TensorId getInnerOffsets(Graph &graph,
   }
 
   TensorId tInnerOffsets =
-      graph.addScope(graph.getIr().createIntermediateTensorId("tInnerOffsets"));
+      addScope(graph.getScope(),
+               graph.getIr().createIntermediateTensorId("tInnerOffsets"));
   graph.getTensors().addConstInit(tInnerOffsets,
                                   {DataType::UINT32, {callbackBatchSize}},
                                   tInnerOffsetsData.data());
@@ -222,8 +224,8 @@ CallbackIO setupCallbackInputs(PackedDataBlockOp *op, const TensorId resultId) {
 
   // For the loop op, the first two graph inputs are always the loop index and
   // condition.
-  inputInfo.loopIteration = graph.addScope("loopIndex");
-  inputInfo.loopCondition = graph.addScope("loopCondition");
+  inputInfo.loopIteration = addScope(graph.getScope(), "loopIndex");
+  inputInfo.loopCondition = addScope(graph.getScope(), "loopCondition");
   graph.addInput(LoopOp::getLoopIterationInIndex(),
                  inputInfo.loopIteration,
                  {DataType::INT32, {}},
@@ -236,14 +238,14 @@ CallbackIO setupCallbackInputs(PackedDataBlockOp *op, const TensorId resultId) {
   // The result needs to be a persistent input, and these need to be the first
   // inputs.
   auto &resultInfo    = op->outInfo(0);
-  auto scopedResultId = graph.addScope(resultId);
+  auto scopedResultId = addScope(graph.getScope(), resultId);
   graph.addInput(
       LoopOp::getFirstInputInIndex(), scopedResultId, resultInfo, false);
 
   // Inputs should only be added once. The inputs and result may share lengths
   // and offsets.
   auto tryAddCallbackInput = [&](Tensor *t) {
-    auto scopedId = graph.addScope(t->id);
+    auto scopedId = addScope(graph.getScope(), t->id);
     if (!graph.hasInputId(scopedId)) {
       graph.addInput(scopedId, t->info);
     }

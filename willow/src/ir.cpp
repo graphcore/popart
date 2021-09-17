@@ -3937,7 +3937,8 @@ std::map<OpId, OpId> cloneOpsAndAddTensors(Graph &originalGraph,
 
       // Remove the scope from the old graph, and add the new scope
       auto clonedInputTensorId =
-          clonedGraph.addScope(originalGraph.removeScope(tensor->id));
+          addScope(clonedGraph.getScope(),
+                   removeScope(originalGraph.getScope(), tensor->id));
 
       if (tensor->hasProducer()) {
         clonedInputTensorId = originalTensorIdAndClonedTensorId.at(tensor->id);
@@ -3953,7 +3954,8 @@ std::map<OpId, OpId> cloneOpsAndAddTensors(Graph &originalGraph,
       auto tensor = indexAndTensor.second;
       // We remove the inner loop scope from the tensor
       auto clonedOutputTensorId =
-          clonedGraph.addScope(originalGraph.removeScope(tensor->id));
+          addScope(clonedGraph.getScope(),
+                   removeScope(originalGraph.getScope(), tensor->id));
       // Create the tensor with the tensorId made above
 
       clonedOp->createAndConnectOutTensor(index, clonedOutputTensorId);
@@ -3976,7 +3978,8 @@ std::map<OpId, OpId> Ir::cloneGraph(GraphId originalGraphId,
   for (const auto &tensorId : graphInputTensorId) {
     auto tensorInfo = originalGraph.getTensors().get(tensorId)->info;
     auto clonedTensorId =
-        clonedGraph.addScope(originalGraph.removeScope(tensorId));
+        addScope(clonedGraph.getScope(),
+                 removeScope(originalGraph.getScope(), tensorId));
     clonedGraph.addInput(clonedTensorId, tensorInfo);
   }
 
@@ -3984,7 +3987,8 @@ std::map<OpId, OpId> Ir::cloneGraph(GraphId originalGraphId,
   for (const auto tensor :
        originalGraph.getTensors().getOfType(TensorType::Const)) {
     clonedGraph.getTensors().addConstInit(
-        clonedGraph.addScope(originalGraph.removeScope(tensor->id)),
+        addScope(clonedGraph.getScope(),
+                 removeScope(originalGraph.getScope(), tensor->id)),
         tensor->info,
         tensor->tensorData()->data(),
         {});
@@ -3998,7 +4002,8 @@ std::map<OpId, OpId> Ir::cloneGraph(GraphId originalGraphId,
   for (const auto &tensorId : graphOutputTensorId) {
     auto tensorInfo = originalGraph.getTensors().get(tensorId)->info;
     auto clonedTensorId =
-        clonedGraph.addScope(originalGraph.removeScope(tensorId));
+        addScope(clonedGraph.getScope(),
+                 removeScope(originalGraph.getScope(), tensorId));
     clonedGraph.markAsOutput(clonedTensorId);
   }
 
@@ -4039,8 +4044,8 @@ std::size_t std::hash<popart::Ir>::operator()(const popart::Ir &ir) const {
   return seed;
 }
 
-std::size_t std::hash<popart::IrBundle>::
-operator()(const popart::IrBundle &bundle) const {
+std::size_t
+std::hash<popart::IrBundle>::operator()(const popart::IrBundle &bundle) const {
   size_t seed = 0;
 
   boost::hash_combine(

@@ -16,6 +16,7 @@
 #include <popart/tensors.hpp>
 #include <popart/topocons.hpp>
 #include <popart/transforms/decomposeloops.hpp>
+#include <popart/util.hpp>
 
 namespace popart {
 
@@ -478,12 +479,13 @@ void DecomposeLoops::decomposeLoop(Graph &graph,
             TensorId newConstId;
             if (input.second->id.find(reservedConstValuePrefix()) !=
                 std::string::npos) {
-              newConstId = op->getGraph().removeScope(input.second->id);
+              newConstId =
+                  removeScope(op->getGraph().getScope(), input.second->id);
             } else {
               newConstId = ir.createIntermediateTensorId(
-                  op->getGraph().removeScope(input.second->id));
+                  removeScope(op->getGraph().getScope(), input.second->id));
             }
-            newConstId = graph.addScope(newConstId);
+            newConstId = addScope(graph.getScope(), newConstId);
             if (!graph.getTensors().getConstIds().contains(newConstId)) {
               graph.getTensors().addConstInit(
                   newConstId,
@@ -501,8 +503,9 @@ void DecomposeLoops::decomposeLoop(Graph &graph,
         }
         // Outputs
         for (auto &output : outputMaps[op]) {
-          TensorId outTensorId =
-              graph.addScope(op->getGraph().removeScope(output.second->id));
+          TensorId outTensorId = addScope(
+              graph.getScope(),
+              removeScope(op->getGraph().getScope(), output.second->id));
           TensorId newOutTensorId = ir.createIntermediateTensorId(outTensorId);
           clones[op][j]->createAndConnectOutTensor(output.first,
                                                    newOutTensorId);
@@ -718,9 +721,9 @@ void DecomposeLoops::decomposeLoop(Graph &graph,
             }
           } else {
             TensorId outTensorId =
-                op->getGraph().removeScope(output.second->id);
-            TensorId newOutTensorId =
-                graph.addScope(ir.createIntermediateTensorId(outTensorId));
+                removeScope(op->getGraph().getScope(), output.second->id);
+            TensorId newOutTensorId = addScope(
+                graph.getScope(), ir.createIntermediateTensorId(outTensorId));
             clones[op][j]->createAndConnectOutTensor(output.first,
                                                      newOutTensorId);
             afterLoopTensorIterMap[{output.second->id, apparentIteration}] =
@@ -758,12 +761,13 @@ void DecomposeLoops::decomposeLoop(Graph &graph,
             TensorId newConstId;
             if (input.second->id.find(reservedConstValuePrefix()) !=
                 std::string::npos) {
-              newConstId = op->getGraph().removeScope(input.second->id);
+              newConstId =
+                  removeScope(op->getGraph().getScope(), input.second->id);
             } else {
               newConstId = ir.createIntermediateTensorId(
-                  op->getGraph().removeScope(input.second->id));
+                  removeScope(op->getGraph().getScope(), input.second->id));
             }
-            newConstId = graph.addScope(newConstId);
+            newConstId = addScope(graph.getScope(), newConstId);
             if (!graph.getTensors().getConstIds().contains(newConstId)) {
               graph.getTensors().addConstInit(
                   newConstId,

@@ -17,6 +17,7 @@
 #include <popart/tensorinfo.hpp>
 #include <popart/tensors.hpp>
 #include <popart/testdevice.hpp>
+#include <popart/util.hpp>
 
 #include <onnx/onnx_pb.h>
 
@@ -67,14 +68,14 @@ BOOST_AUTO_TEST_CASE(TestLoopAccumulation) {
 
   ////// actual body: accum += 1
 
-  const auto sgAccum = accumLoopGraph.addScope(accum);
+  const auto sgAccum = addScope(accumLoopGraph.getScope(), accum);
   accumLoop->addLoopInput(std::max(LoopOp::getFirstInputInIndex(),
                                    accumLoop->input->maxIndex() + 1),
                           accum,
                           sgAccum,
                           false);
 
-  const auto one = accumLoopGraph.addScope(TensorId{"one"});
+  const auto one = addScope(accumLoopGraph.getScope(), TensorId{"one"});
   accumLoopGraph.getTensors().addConstInit(one, info, oneHost.data(), {"one"});
 
   const TensorId sgAccumOut = ir->createIntermediateTensorId(sgAccum);
@@ -198,11 +199,13 @@ std::tuple<LoopOp *, Graph &> createLoopOp(Ir &ir,
   Graph &loopSubgraph = ir.createGraph(GraphId{subgraphName});
 
   // Add mandatory loop iterator tensor to subgraph (is not an output)
-  TensorId loopIter = loopSubgraph.addScope(reservedLoopIteratorPrefix());
+  TensorId loopIter =
+      addScope(loopSubgraph.getScope(), reservedLoopIteratorPrefix());
   loopSubgraph.addInput(loopIter, TensorInfo{DataType::INT32, {}});
 
   // Add mandatory loop condition tensor to subgraph (is also an output)
-  TensorId loopCond = loopSubgraph.addScope(reservedLoopCondPrefix());
+  TensorId loopCond =
+      addScope(loopSubgraph.getScope(), reservedLoopCondPrefix());
   loopSubgraph.addInput(loopCond, TensorInfo{DataType::BOOL, {}});
   loopSubgraph.markAsOutput(loopCond);
 

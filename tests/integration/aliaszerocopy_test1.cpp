@@ -13,6 +13,7 @@
 #include <popart/op/init.hpp>
 #include <popart/op/loop.hpp>
 #include <popart/subgraphcopyingstrategy.hpp>
+#include <popart/util.hpp>
 
 #include <algorithm>
 #include <map>
@@ -33,11 +34,13 @@ BOOST_AUTO_TEST_CASE(AliasZeroCopyLoopTest0) {
   auto &subgraph   = ir.createGraph(subgraph_id);
 
   // Add mandatory loop iterator tensor to subgraph (is not an output)
-  TensorId loopItScopedId = subgraph.addScope(reservedLoopIteratorPrefix());
+  TensorId loopItScopedId =
+      addScope(subgraph.getScope(), reservedLoopIteratorPrefix());
   subgraph.addInput(loopItScopedId, TensorInfo(DataType::INT32, {}));
 
   // Add mandatory loop condition tensor to subgraph (is also an output)
-  TensorId loopCondScopedId = subgraph.addScope(reservedLoopCondPrefix());
+  TensorId loopCondScopedId =
+      addScope(subgraph.getScope(), reservedLoopCondPrefix());
   subgraph.addInput(loopCondScopedId, TensorInfo(DataType::BOOL, {}));
   subgraph.markAsOutput(loopCondScopedId);
 
@@ -59,13 +62,13 @@ BOOST_AUTO_TEST_CASE(AliasZeroCopyLoopTest0) {
   graph.moveIntoGraph(std::move(loopOpUp));
   loopOp->setTripCountValue(4);
 
-  TensorId staId = subgraph.addScope(taId);
-  TensorId stbId = subgraph.addScope(tbId);
+  TensorId staId = addScope(subgraph.getScope(), taId);
+  TensorId stbId = addScope(subgraph.getScope(), tbId);
 
   TensorId tcId = "C";
   TensorId tdId = "D";
 
-  TensorId stdId = subgraph.addScope(tdId);
+  TensorId stdId = addScope(subgraph.getScope(), tdId);
 
   std::unique_ptr<AddOp> addOpUp =
       std::make_unique<AddOp>(Onnx::Operators::Add_7, sgsettings);

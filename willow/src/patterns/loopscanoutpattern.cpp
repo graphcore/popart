@@ -15,6 +15,7 @@
 #include <popart/tensorindex.hpp>
 #include <popart/tensorinfo.hpp>
 #include <popart/topocons.hpp>
+#include <popart/util.hpp>
 
 namespace popart {
 
@@ -73,7 +74,7 @@ bool LoopScanOutPattern::apply(Op *op) const {
           loopOp->opInToSubgraphInIndex(LoopOp::getMaximumTripCountInIndex()));
 
       TensorId initId          = ir.createIntermediateTensorId(loopScanOutId);
-      TensorId loopSgInitId    = newLoopSubgraph.addScope(initId);
+      TensorId loopSgInitId    = addScope(newLoopSubgraph.getScope(), initId);
       TensorId loopSgUpdatedId = ir.createIntermediateTensorId(loopScanSgOutId);
 
       // InitOp as a "producer" Op

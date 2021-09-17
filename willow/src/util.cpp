@@ -13,6 +13,8 @@
 #include <popart/tensorindex.hpp>
 #include <popart/util.hpp>
 
+#include <parsedtensorid.hpp>
+
 #include <boost/lexical_cast.hpp>
 
 namespace popart {
@@ -359,6 +361,18 @@ std::vector<std::string> splitString(std::string s, std::string delimiter) {
   result.push_back(s);
 
   return result;
+}
+
+TensorId addScope(const Scope &s, const TensorId &t) {
+  ParsedTensorId pTId(t);
+  pTId.addScope(s);
+  return pTId.getId();
+}
+
+TensorId removeScope(const Scope &s, const TensorId &t) {
+  ParsedTensorId pTId(t);
+  pTId.removeScope(s);
+  return pTId.getId();
 }
 
 } // namespace popart

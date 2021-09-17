@@ -27,6 +27,7 @@
 #include <popart/tensors.hpp>
 #include <popart/testdevice.hpp>
 #include <popart/transforms/autodiff.hpp>
+#include <popart/util.hpp>
 
 float generateReferenceWeights(float, std::vector<float>, int, float);
 
@@ -88,10 +89,10 @@ BOOST_AUTO_TEST_CASE(TestBasicTrainingLoop) {
     auto &fwd = ir->createGraph(GraphId("fwd-subgraph"));
     Op::Settings fwdSettings(fwd, "fwd", fwd.getScope());
 
-    TensorId fwdData    = fwd.addScope("data");
-    TensorId fwdWeights = fwd.addScope("weights");
-    TensorId fwdTmp     = fwd.addScope("tmp");
-    TensorId fwdLoss    = fwd.addScope("loss");
+    TensorId fwdData    = addScope(fwd.getScope(), "data");
+    TensorId fwdWeights = addScope(fwd.getScope(), "weights");
+    TensorId fwdTmp     = addScope(fwd.getScope(), "tmp");
+    TensorId fwdLoss    = addScope(fwd.getScope(), "loss");
     fwd.addInput(fwdData, tInfo);
     fwd.addInput(fwdWeights, tInfo);
 
@@ -129,15 +130,15 @@ BOOST_AUTO_TEST_CASE(TestBasicTrainingLoop) {
 
     auto &bwd = ir->getGraph(result.at(fwd.id).bwdGraphId);
 
-    TensorId bwdData    = bwd.addScope("data");
-    TensorId bwdWeights = bwd.addScope("weights");
-    TensorId bwdLoss    = bwd.addScope("loss");
-    TensorId bwdLossGrad =
-        bwd.addScope(reservedGradientPrefix() + std::string("loss"));
-    TensorId bwdDataGrad =
-        bwd.addScope(reservedGradientPrefix() + std::string("data"));
-    TensorId bwdWeightsGrad =
-        bwd.addScope(reservedGradientPrefix() + std::string("weights"));
+    TensorId bwdData     = addScope(bwd.getScope(), "data");
+    TensorId bwdWeights  = addScope(bwd.getScope(), "weights");
+    TensorId bwdLoss     = addScope(bwd.getScope(), "loss");
+    TensorId bwdLossGrad = addScope(
+        bwd.getScope(), reservedGradientPrefix() + std::string("loss"));
+    TensorId bwdDataGrad = addScope(
+        bwd.getScope(), reservedGradientPrefix() + std::string("data"));
+    TensorId bwdWeightsGrad = addScope(
+        bwd.getScope(), reservedGradientPrefix() + std::string("weights"));
 
     // Create training loop.
     // -------------------------------------------------------------------------
@@ -145,11 +146,12 @@ BOOST_AUTO_TEST_CASE(TestBasicTrainingLoop) {
     Op::Settings loopSettings(graph, "loop");
 
     // Add mandatory loop iterator tensor to subgraph (is not an output)
-    TensorId loopIter = loopSg.addScope(reservedLoopIteratorPrefix());
+    TensorId loopIter =
+        addScope(loopSg.getScope(), reservedLoopIteratorPrefix());
     loopSg.addInput(loopIter, TensorInfo{DataType::INT32, {}});
 
     // Add mandatory loop condition tensor to subgraph (is also an output)
-    TensorId loopCond = loopSg.addScope(reservedLoopCondPrefix());
+    TensorId loopCond = addScope(loopSg.getScope(), reservedLoopCondPrefix());
     loopSg.addInput(loopCond, TensorInfo{DataType::BOOL, {}});
     loopSg.markAsOutput(loopCond);
 
@@ -158,13 +160,13 @@ BOOST_AUTO_TEST_CASE(TestBasicTrainingLoop) {
         graph.createOp<LoopOp>(Onnx::Operators::Loop_11, loopSettings, loopSg);
     loopOp->setTripCountValue(loopTripCount);
 
-    TensorId loopWeights = loopSg.addScope(weights);
+    TensorId loopWeights = addScope(loopSg.getScope(), weights);
     loopOp->addLoopInput(
         LoopOp::getFirstInputInIndex(), weights, loopWeights, false);
 
     // Init data tensor. This is op is required for HostLoadOp - see
     // hostcopy.hpp.
-    TensorId dataPrehostload = loopSg.addScope("D_prehostload");
+    TensorId dataPrehostload = addScope(loopSg.getScope(), "D_prehostload");
     loopSg.createConnectedOp<InitOp>({},
                                      {{InitOp::getOutIndex(), dataPrehostload}},
                                      Onnx::CustomOperators::Init_1,
@@ -174,7 +176,7 @@ BOOST_AUTO_TEST_CASE(TestBasicTrainingLoop) {
                                      loopSettings.copy("Init"));
 
     // Fill data tensor with data from host.
-    TensorId loopData = loopSg.addScope("D");
+    TensorId loopData = addScope(loopSg.getScope(), "D");
     loopSg.createConnectedOp<HostLoadOp>(
         {{HostLoadOp::getLocalTensorInIndex(), dataPrehostload}},
         {{HostLoadOp::getLocalTensorOutIndex(), loopData}},
@@ -183,7 +185,7 @@ BOOST_AUTO_TEST_CASE(TestBasicTrainingLoop) {
         dataStream);
 
     // Call the loss (forward) subgraph.
-    TensorId loopLoss = loopSg.addScope("loss");
+    TensorId loopLoss = addScope(loopSg.getScope(), "loss");
     loopSg.createConnectedOp<CallOp>(
         {
             {fwd.getInputIndex(fwdData), loopData},
@@ -197,8 +199,8 @@ BOOST_AUTO_TEST_CASE(TestBasicTrainingLoop) {
         loopSettings.copy("CallFwd"));
 
     // Call the backward loss subgraph.
-    TensorId loopWeightsGrad = loopSg.addScope("W_grad");
-    TensorId loopOne         = loopSg.addScope("one");
+    TensorId loopWeightsGrad = addScope(loopSg.getScope(), "W_grad");
+    TensorId loopOne         = addScope(loopSg.getScope(), "one");
     loopSg.getTensors().addConstInit(loopOne, tInfo, oneHost.data());
     loopSg.createConnectedOp<CallOp>(
         {
@@ -208,7 +210,8 @@ BOOST_AUTO_TEST_CASE(TestBasicTrainingLoop) {
             {bwd.getInputIndex(bwdWeights), loopWeights},
         },
         {
-            {bwd.getOutputIndex(bwdDataGrad), loopSg.addScope("data_grad")},
+            {bwd.getOutputIndex(bwdDataGrad),
+             addScope(loopSg.getScope(), "data_grad")},
             {bwd.getOutputIndex(bwdWeightsGrad), loopWeightsGrad},
         },
         Onnx::AiGraphcore::OpSet1::Call,
@@ -216,7 +219,7 @@ BOOST_AUTO_TEST_CASE(TestBasicTrainingLoop) {
         loopSettings.copy("CallBwd"));
 
     // Weight update.
-    TensorId loopWeightsOut = loopSg.addScope(weightsOut);
+    TensorId loopWeightsOut = addScope(loopSg.getScope(), weightsOut);
     loopSg.createConnectedOp<AccumulateOp>(
         {
             {AccumulateOp::getVarToUpdateInIndex(), loopWeights},
