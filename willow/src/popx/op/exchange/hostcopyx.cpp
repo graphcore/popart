@@ -17,7 +17,7 @@ HostLoadOpx::HostLoadOpx(Op *op, Devicex *devicex) : HostBaseOpx(op, devicex) {
   verifyOp<HostLoadOp>(op, Onnx::CustomOperators::HostLoad);
 }
 
-void HostLoadOpx::grow(snap::program::Sequence &prog) const {
+void HostLoadOpx::grow(poplar::program::Sequence &prog) const {
   auto &hostLoadOp = getOp<HostLoadOp>();
 
   TensorId inTensorId =
@@ -72,7 +72,7 @@ HostStoreOpx::HostStoreOpx(Op *op, Devicex *devicex)
   verifyOp<HostStoreOp>(op, Onnx::CustomOperators::HostStore);
 }
 
-void HostStoreOpx::grow(snap::program::Sequence &prog) const {
+void HostStoreOpx::grow(poplar::program::Sequence &prog) const {
   auto &hostStoreOp = getOp<HostStoreOp>();
 
   TensorId inTensorId =

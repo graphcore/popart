@@ -11,7 +11,7 @@ RandomUniformOpx::RandomUniformOpx(Op *op, Devicex *devicex)
   verifyOp<RandomUniformOp>(op, Onnx::Operators::RandomUniform_1);
 }
 
-void RandomUniformOpx::grow(snap::program::Sequence &prog) const {
+void RandomUniformOpx::grow(poplar::program::Sequence &prog) const {
   auto &op        = getOp<RandomUniformOp>();
   auto outputInfo = op.outInfo(op.getOutIndex());
   auto shape      = vXtoY<int64_t, std::size_t>(outputInfo.shape());
@@ -31,7 +31,7 @@ void RandomUniformOpx::grow(snap::program::Sequence &prog) const {
                        poplarType,
                        op.getLow(),
                        op.getHigh(),
-                       prog.getPoplarSequence(),
+                       prog,
                        debugContext());
 
   setOutTensor(op.getOutIndex(), snap::Tensor{output, graph()});

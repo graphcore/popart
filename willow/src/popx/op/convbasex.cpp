@@ -16,7 +16,7 @@ namespace popx {
 
 std::set<TensorId> MultiConvBaseOpx::mustExistBeforeCreate(InIndex) const {
   // creation of both weights and of input are done
-  // without requiring the pre-existence of any
+  // without requiring the pre-existance of any
   // other poplar::Tensor, so returning empty TensorId vector
   return {};
 }
@@ -126,7 +126,7 @@ poplar::OptionFlags MultiConvBaseOpx::getConvOptions(int convIndex,
   return optionFlags;
 }
 
-void MultiConvBaseOpx::grow(snap::program::Sequence &prog) const {
+void MultiConvBaseOpx::grow(poplar::program::Sequence &prog) const {
   MultiConvBaseOp &op = getOp<MultiConvBaseOp>();
   std::vector<snap::Tensor> allWeights;
 
@@ -182,7 +182,7 @@ void MultiConvWeightsGradBaseOpx::verifyCacheSizeUnchanged(
   }
 }
 
-void MultiConvWeightsGradBaseOpx::grow(snap::program::Sequence &prog) const {
+void MultiConvWeightsGradBaseOpx::grow(poplar::program::Sequence &prog) const {
   MultiConvWeightsGradBaseOp &op = getOp<MultiConvWeightsGradBaseOp>();
 
   auto cacheSize                       = dv_p->convCache.size();

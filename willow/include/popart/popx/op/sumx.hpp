@@ -11,7 +11,7 @@ namespace popx {
 class SumOpx : public PopOpx {
 public:
   SumOpx(Op *, Devicex *);
-  void grow(snap::program::Sequence &) const final;
+  void grow(poplar::program::Sequence &) const final;
   InputCreatorType getInputCreatorType(InIndex) const final;
   snap::Tensor unwindTensorLayout(snap::Tensor tensor,
                                   InIndex inIndex,
@@ -22,7 +22,7 @@ public:
 class SumArgGradOpx : public PopOpx {
 public:
   SumArgGradOpx(Op *, Devicex *);
-  void grow(snap::program::Sequence &) const final;
+  void grow(poplar::program::Sequence &) const final;
 };
 
 } // namespace popx

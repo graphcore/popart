@@ -68,7 +68,7 @@ snap::Tensor BaseExpandOpx::unwindTensorLayout(snap::Tensor t,
         std::vector<uint64_t>{input_shape.cbegin(), input_shape.cend()}) {
       std::ostringstream oss;
       oss << "Incorrect shape of compute poplar Tensor in unwinding expand. "
-          << "Expected it to have the shape of the input, " << input_shape
+          << "Expected it to have the shape of the intput, " << input_shape
           << ", but it has shape " << tensor.shape() << ". ";
       throw error(oss.str());
     }
@@ -109,7 +109,7 @@ snap::Tensor BaseExpandOpx::expand_broadcast(const Shape output_shape,
   return snap::Tensor{expand, tx};
 }
 
-void ExpandOpx::grow(snap::program::Sequence &prog) const {
+void ExpandOpx::grow(poplar::program::Sequence &prog) const {
 
   auto output_shape = outShape(ExpandOp::getOutIndex());
   auto expand = cloneNcopy(prog, getInTensor(ExpandOp::getInTensorIndex()));
@@ -122,7 +122,7 @@ ExpandInplaceOpx::ExpandInplaceOpx(Op *op_, Devicex *devicex)
   verifyOp<ExpandOp>(op_);
 }
 
-void ExpandInplaceOpx::grow(snap::program::Sequence &) const {
+void ExpandInplaceOpx::grow(poplar::program::Sequence &) const {
   auto output_shape = outShape(ExpandOp::getOutIndex());
   auto expand       = getInTensor(ExpandOp::getInTensorIndex());
   expand            = expand_broadcast(output_shape, expand);
@@ -139,7 +139,7 @@ ExpandGradOpx::ExpandGradOpx(Op *op_, Devicex *devicex) : PopOpx(op_, devicex) {
   }
 }
 
-void ExpandGradOpx::grow(snap::program::Sequence &prog) const {
+void ExpandGradOpx::grow(poplar::program::Sequence &prog) const {
   const auto dY = getInTensor(ExpandGradOp::getDYIndex()).getPoplarTensor();
 
   std::vector<size_t> axes;
@@ -154,7 +154,7 @@ void ExpandGradOpx::grow(snap::program::Sequence &prog) const {
                            dY,
                            axes,
                            {popops::Operation::ADD},
-                           prog.getPoplarSequence(),
+                           prog,
                            debugContext("add"));
   dX      = dX.reshape(xShape);
   setOutTensor(ExpandGradOp::getOutIndex(),

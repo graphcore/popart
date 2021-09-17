@@ -15,7 +15,7 @@ class RandomUniformOpx : public PopOpx {
 public:
   RandomUniformOpx(Op *, Devicex *);
 
-  void grow(snap::program::Sequence &) const final;
+  void grow(poplar::program::Sequence &) const final;
 };
 
 } // namespace popx

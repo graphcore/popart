@@ -22,7 +22,7 @@ DynamicUpdateOpx::DynamicUpdateOpx(Op *op, Devicex *devicex)
   inputCreatorPriority = std::numeric_limits<double>::max();
 }
 
-void DynamicUpdateOpx::grow(snap::program::Sequence &prog) const {
+void DynamicUpdateOpx::grow(poplar::program::Sequence &prog) const {
   auto &op    = getOp<DynamicTernaryBaseOp>();
   auto tensor = getInTensor(DynamicTernaryBaseOp::getUpdateInIndex());
   auto index =
@@ -42,11 +42,11 @@ void DynamicUpdateOpx::grow(snap::program::Sequence &prog) const {
       popops::cast(graph().getPoplarGraph(),
                    index.reshape({op.getAxes().size()}),
                    poplar::UNSIGNED_INT,
-                   prog.getPoplarSequence(),
+                   prog,
                    debugContext()),
       paxes,
       psizes,
-      prog.getPoplarSequence(),
+      prog,
       debugContext("dynamic_update_" +
                    op.inId(DynamicTernaryBaseOp::getUpdateInIndex())));
 
@@ -187,7 +187,7 @@ DynamicUpdateOpx::mustExistBeforeCreate(InIndex index) const {
   return mustExist;
 }
 
-snap::Tensor DynamicUpdateOpx::cloneNcopyOpt(snap::program::Sequence &s,
+snap::Tensor DynamicUpdateOpx::cloneNcopyOpt(poplar::program::Sequence &s,
                                              const snap::Tensor &t) const {
   return cloneNcopy(s, t);
 }
@@ -198,7 +198,7 @@ DynamicUpdateInplaceOpx::DynamicUpdateInplaceOpx(Op *op, Devicex *devicex)
 }
 
 snap::Tensor
-DynamicUpdateInplaceOpx::cloneNcopyOpt(snap::program::Sequence &s,
+DynamicUpdateInplaceOpx::cloneNcopyOpt(poplar::program::Sequence &s,
                                        const snap::Tensor &t) const {
   if (t.getPoplarTensor().isParallelWriteable()) {
     return t;

@@ -13,13 +13,13 @@ namespace popx {
 class MaxOpx : public ElementWiseUnaryOpx {
 public:
   MaxOpx(Op *, Devicex *);
-  void grow(snap::program::Sequence &) const final;
+  void grow(poplar::program::Sequence &) const final;
 };
 
 class MaxArgGradOpx : public PopOpx {
 public:
   MaxArgGradOpx(Op *, Devicex *);
-  void grow(snap::program::Sequence &) const final;
+  void grow(poplar::program::Sequence &) const final;
 };
 
 } // namespace popx

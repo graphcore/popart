@@ -11,16 +11,16 @@ namespace popx {
 class IfOpx : public PopOpx {
 public:
   IfOpx(Op *, Devicex *);
-  void grow(snap::program::Sequence &) const final;
+  void grow(poplar::program::Sequence &) const final;
 
 private:
-  void copyInputs(snap::program::Sequence &thenProg,
-                  snap::program::Sequence &elseProg) const;
+  void copyInputs(poplar::program::Sequence &thenProg,
+                  poplar::program::Sequence &elseProg) const;
 
-  void callBranch(snap::program::Sequence &prog, const Graph &graph) const;
+  void callBranch(poplar::program::Sequence &prog, const Graph &graph) const;
 
-  void copyOutputs(snap::program::Sequence &thenProg,
-                   snap::program::Sequence &elseProg,
+  void copyOutputs(poplar::program::Sequence &thenProg,
+                   poplar::program::Sequence &elseProg,
                    const std::vector<snap::Tensor> &outputs) const;
 
   std::vector<snap::Tensor> prepareOutputs() const;

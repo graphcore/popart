@@ -19,7 +19,7 @@ EqualOpx::EqualOpx(Op *op, Devicex *devicex)
                      Onnx::Operators::Equal_11});
 }
 
-void EqualOpx::grow(snap::program::Sequence &prog) const {
+void EqualOpx::grow(poplar::program::Sequence &prog) const {
 
   insert(outId(EqualOp::getOutIndex()),
          snap::Tensor{
@@ -27,7 +27,7 @@ void EqualOpx::grow(snap::program::Sequence &prog) const {
                          popops::expr::BinaryOpType::EQUAL,
                          get(inId(EqualOp::getArg0InIndex())).getPoplarTensor(),
                          get(inId(EqualOp::getArg1InIndex())).getPoplarTensor(),
-                         prog.getPoplarSequence(),
+                         prog,
                          debugContext()),
              graph()});
 }

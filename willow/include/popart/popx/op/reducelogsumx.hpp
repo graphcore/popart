@@ -11,13 +11,13 @@ namespace popx {
 class ReduceLogSumOpx : public PopOpx {
 public:
   ReduceLogSumOpx(Op *, Devicex *);
-  void grow(snap::program::Sequence &) const override;
+  void grow(poplar::program::Sequence &) const override;
 };
 
 class ReduceLogSumGradOpx : public PopOpx {
 public:
   ReduceLogSumGradOpx(Op *, Devicex *);
-  void grow(snap::program::Sequence &) const override;
+  void grow(poplar::program::Sequence &) const override;
 };
 
 } // namespace popx

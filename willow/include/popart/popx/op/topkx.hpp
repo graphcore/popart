@@ -12,7 +12,7 @@ namespace popx {
 class TopKOpx : public BaseSortOpx {
 public:
   TopKOpx(Op *, Devicex *);
-  void grow(snap::program::Sequence &) const final;
+  void grow(poplar::program::Sequence &) const final;
 
 private:
   unsigned K;
@@ -21,7 +21,7 @@ private:
 class TopKGradOpx : public PopOpx {
 public:
   TopKGradOpx(Op *, Devicex *);
-  void grow(snap::program::Sequence &) const final;
+  void grow(poplar::program::Sequence &) const final;
   // The info of the output of this Op
   const std::vector<size_t> &getGradOutShape() const;
 

@@ -23,7 +23,7 @@ ReduceSumSquareOpx::ReduceSumSquareOpx(Op *op, Devicex *devicex)
   verifyOp<ReduceSumSquareOp>(op);
 }
 
-void ReduceSumSquareOpx::grow(snap::program::Sequence &prog) const {
+void ReduceSumSquareOpx::grow(poplar::program::Sequence &prog) const {
   const auto &op = getOp<ReduceSumSquareOp>();
   const auto input =
       getInTensor(ReduceSumSquareOp::getInIndex()).getPoplarTensor();
@@ -32,7 +32,7 @@ void ReduceSumSquareOpx::grow(snap::program::Sequence &prog) const {
                                       input,
                                       vector_cast<std::size_t>(op.getAxes()),
                                       {popops::Operation::SQUARE_ADD},
-                                      prog.getPoplarSequence(),
+                                      prog,
                                       debugContext("squareAdd"));
 
   setOutTensor(
@@ -47,7 +47,7 @@ ReduceSumSquareGradOpx::ReduceSumSquareGradOpx(Op *op, Devicex *devicex)
   verifyOp<ReduceSumSquareGradOp>(op, Onnx::GradOperators::ReduceSumSquareGrad);
 }
 
-void ReduceSumSquareGradOpx::grow(snap::program::Sequence &prog) const {
+void ReduceSumSquareGradOpx::grow(poplar::program::Sequence &prog) const {
   const auto &op = getOp<ReduceSumSquareGradOp>();
   auto output =
       cloneNcopy(prog, getInTensor(ReduceSumSquareGradOp::getOutIndex()))
@@ -70,7 +70,7 @@ void ReduceSumSquareGradOpx::grow(snap::program::Sequence &prog) const {
       pe::Mul(pe::Mul(pe::_1, pe::_2), pe::Const(2)),
       {output,
        getInTensor(ReduceSumSquareGradOp::getFwdInInIndex()).getPoplarTensor()},
-      prog.getPoplarSequence(),
+      prog,
       debugContext("mul"));
 
   // output now matches the shape of output_shape

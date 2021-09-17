@@ -10,7 +10,7 @@ namespace popx {
 class AbortOpx : public PopOpx {
 public:
   AbortOpx(Op *, Devicex *);
-  void grow(snap::program::Sequence &) const final;
+  void grow(poplar::program::Sequence &) const final;
 };
 
 } // namespace popx

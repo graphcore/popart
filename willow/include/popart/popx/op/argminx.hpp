@@ -14,7 +14,7 @@ public:
   using ArgExtremaOpx::ArgExtremaOpx;
 
 private:
-  snap::Tensor extremaOp(snap::program::Sequence &,
+  snap::Tensor extremaOp(poplar::program::Sequence &,
                          const snap::Tensor &) const final;
 };
 

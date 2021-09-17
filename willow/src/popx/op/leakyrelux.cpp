@@ -16,7 +16,7 @@ namespace popx {
 namespace pe = popops::expr;
 
 snap::Tensor
-LeakyReluComputex::outplace(snap::program::Sequence &prog,
+LeakyReluComputex::outplace(poplar::program::Sequence &prog,
                             snap::Graph &graph,
                             const snap::Tensor &tensor,
                             const poplar::DebugNameAndId &dnai,
@@ -26,7 +26,7 @@ LeakyReluComputex::outplace(snap::program::Sequence &prog,
   return out_tensor;
 }
 
-void LeakyReluComputex::inplace(snap::program::Sequence &prog,
+void LeakyReluComputex::inplace(poplar::program::Sequence &prog,
                                 snap::Graph &graph,
                                 const snap::Tensor &tensor,
                                 const poplar::DebugNameAndId &dnai,
@@ -39,7 +39,7 @@ void LeakyReluComputex::inplace(snap::program::Sequence &prog,
   popops::mapInPlace(graph.getPoplarGraph(),
                      expression,
                      {tensor.getPoplarTensor()},
-                     prog.getPoplarSequence(),
+                     prog,
                      {dnai, debug_prefix});
 }
 
@@ -82,7 +82,7 @@ LeakyReluGradOpx::LeakyReluGradOpx(Op *op, Devicex *devicex)
   verifyOp<LeakyReluGradOp>(op, Onnx::GradOperators::LeakyReluGrad);
 }
 
-void LeakyReluGradOpx::grow(snap::program::Sequence &prog) const {
+void LeakyReluGradOpx::grow(poplar::program::Sequence &prog) const {
   auto &op = getOp<LeakyReluGradOp>();
 
   poplar::Tensor grad  = getInTensor(0).getPoplarTensor();
@@ -99,7 +99,7 @@ void LeakyReluGradOpx::grow(snap::program::Sequence &prog) const {
   auto output = popops::map(graph().getPoplarGraph(),
                             expression,
                             {grad, input},
-                            prog.getPoplarSequence(),
+                            prog,
                             debugContext("leakyrelu_grad"));
 
   setOutTensor(0, snap::Tensor{output, graph()});

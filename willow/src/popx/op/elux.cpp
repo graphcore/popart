@@ -32,7 +32,7 @@ EluOpx::EluOpx(Op *op, Devicex *devicex)
   verifyOp<EluOp>(op, {Onnx::Operators::Elu_1, Onnx::Operators::Elu_6});
 }
 
-void EluComputex::inplace(snap::program::Sequence &prog,
+void EluComputex::inplace(poplar::program::Sequence &prog,
                           snap::Graph &graph,
                           const snap::Tensor &tensor,
                           const poplar::DebugNameAndId &dnai,
@@ -52,7 +52,7 @@ void EluComputex::inplace(snap::program::Sequence &prog,
   popops::mapInPlace(graph.getPoplarGraph(),
                      *exprs.back(),
                      {tensor.getPoplarTensor()},
-                     prog.getPoplarSequence(),
+                     prog,
                      {dnai, debug_prefix});
 }
 
@@ -68,7 +68,7 @@ EluGradOpx::EluGradOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
   verifyOp<EluGradOp>(op, Onnx::GradOperators::EluGrad);
 }
 
-void EluGradOpx::grow(snap::program::Sequence &prog) const {
+void EluGradOpx::grow(poplar::program::Sequence &prog) const {
   const auto &op   = getOp<EluGradOp>();
   const auto input = getInTensor(EluGradOp::getGradInIndex()).getPoplarTensor();
   const auto fwd_input =
@@ -95,7 +95,7 @@ void EluGradOpx::grow(snap::program::Sequence &prog) const {
   auto output = popops::map(graph().getPoplarGraph(),
                             *exprs.back(),
                             {input, fwd_input},
-                            prog.getPoplarSequence(),
+                            prog,
                             debugContext("elu_grad"));
 
   setOutTensor(EluGradOp::getOutIndex(), snap::Tensor{output, graph()});

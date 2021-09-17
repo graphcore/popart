@@ -10,7 +10,7 @@ namespace popx {
 class InitOpx : public PopOpx {
 public:
   InitOpx(Op *, Devicex *);
-  void grow(snap::program::Sequence &) const final;
+  void grow(poplar::program::Sequence &) const final;
   bool outputCreatedExternally(OutIndex) const final { return true; }
 };
 

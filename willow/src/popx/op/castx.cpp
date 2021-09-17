@@ -13,11 +13,11 @@ CastOpx::CastOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
   verifyOp<CastOp>(op);
 }
 
-void CastOpx::grow(snap::program::Sequence &prog) const {
+void CastOpx::grow(poplar::program::Sequence &prog) const {
   auto out = popops::cast(graph().getPoplarGraph(),
                           getInTensor(CastOp::getInIndex()).getPoplarTensor(),
                           popType(op_p->outInfo(CastOp::getOutIndex())),
-                          prog.getPoplarSequence(),
+                          prog,
                           debugContext());
 
   if (hasInViewChangers(CastOp::getInIndex())) {

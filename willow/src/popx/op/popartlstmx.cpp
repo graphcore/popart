@@ -42,7 +42,7 @@ PopartLSTMOpx::PopartLSTMOpx(Op *op, Devicex *devicex)
   verifyOp<PopartLSTMOp>(op, Onnx::CustomOperators::LSTM_1);
 }
 
-void PopartLSTMOpx::grow(snap::program::Sequence &prog) const {
+void PopartLSTMOpx::grow(poplar::program::Sequence &prog) const {
   auto input         = getInTensor(PopartLSTMOp::getInputInIndex());
   auto &lstm_op      = getOp<PopartLSTMOp>();
   auto seq_lens      = getSeqLens();
@@ -60,7 +60,7 @@ void PopartLSTMOpx::grow(snap::program::Sequence &prog) const {
                            input.getPoplarTensor(),
                            lstmWeights,
                            getPoplarTensor(intermediates.get()),
-                           prog.getPoplarSequence(),
+                           prog,
                            debugContext("lstmFwd"),
                            dv_p->lowering().lstmOptions,
                            &dv_p->matmulCache);
@@ -145,7 +145,7 @@ PopartLSTMGradOpx::PopartLSTMGradOpx(Op *op, Devicex *devicex)
   verifyOp<PopartLSTMGradOp>(op, Onnx::GradOperators::PopartLSTMGrad);
 }
 
-void PopartLSTMGradOpx::grow(snap::program::Sequence &prog) const {
+void PopartLSTMGradOpx::grow(poplar::program::Sequence &prog) const {
   auto intermediates = getInTensor(PopartLSTMGradOp::getIntermediatesInIndex());
   auto forwardInput  = getInTensor(PopartLSTMGradOp::getInputInIndex());
   auto forwardOutput = getInTensor(PopartLSTMGradOp::getFwdOutputInIndex());
@@ -168,7 +168,7 @@ void PopartLSTMGradOpx::grow(snap::program::Sequence &prog) const {
   auto params        = createLSTMParams(grad_lstm_op, seq_lens);
   auto initStateGrad = lstmBwdWithWU(graph().getPoplarGraph(),
                                      params,
-                                     prog.getPoplarSequence(),
+                                     prog,
                                      initState,
                                      intermediates.getPoplarTensor(),
                                      lstmWeights,

@@ -22,13 +22,13 @@ public:
 class ReverseOpx : public ReverseBaseOpx {
 public:
   ReverseOpx(Op *, Devicex *);
-  void grow(snap::program::Sequence &) const final;
+  void grow(poplar::program::Sequence &) const final;
 };
 
 class ReverseInplaceOpx : public ReverseBaseOpx {
 public:
   ReverseInplaceOpx(Op *, Devicex *);
-  void grow(snap::program::Sequence &) const final;
+  void grow(poplar::program::Sequence &) const final;
 };
 
 // The gradient of a reverse is also a reverse

@@ -9,7 +9,7 @@
 namespace popart {
 namespace popx {
 
-snap::Tensor SignComputex::outplace(snap::program::Sequence &prog,
+snap::Tensor SignComputex::outplace(poplar::program::Sequence &prog,
                                     snap::Graph &graph,
                                     const snap::Tensor &tensor,
                                     const poplar::DebugNameAndId &dnai,
@@ -18,12 +18,12 @@ snap::Tensor SignComputex::outplace(snap::program::Sequence &prog,
   return snap::Tensor{popops::map(graph.getPoplarGraph(),
                                   popops::expr::UnaryOpType::SIGNUM,
                                   tensor.getPoplarTensor(),
-                                  prog.getPoplarSequence(),
+                                  prog,
                                   {dnai, s}),
                       graph};
 }
 
-void SignComputex::inplace(snap::program::Sequence &prog,
+void SignComputex::inplace(poplar::program::Sequence &prog,
                            snap::Graph &graph,
                            const snap::Tensor &tensor,
                            const poplar::DebugNameAndId &dnai,
@@ -32,7 +32,7 @@ void SignComputex::inplace(snap::program::Sequence &prog,
   popops::mapInPlace(graph.getPoplarGraph(),
                      popops::expr::UnaryOpType::SIGNUM,
                      tensor.getPoplarTensor(),
-                     prog.getPoplarSequence(),
+                     prog,
                      {dnai, s});
 }
 

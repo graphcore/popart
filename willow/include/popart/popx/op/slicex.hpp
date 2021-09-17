@@ -25,7 +25,7 @@ public:
 class SliceOpx : public BaseSliceOpx {
 public:
   SliceOpx(Op *, Devicex *);
-  void grow(snap::program::Sequence &) const final;
+  void grow(poplar::program::Sequence &) const final;
 
 private:
   SliceOp *getSliceOp() const;
@@ -34,7 +34,7 @@ private:
 class SliceInplaceOpx : public BaseSliceOpx {
 public:
   SliceInplaceOpx(Op *, Devicex *);
-  void grow(snap::program::Sequence &) const final;
+  void grow(poplar::program::Sequence &) const final;
 
 private:
   SliceInplaceOp *getSliceInplaceOp() const;

@@ -21,7 +21,7 @@ SumOpx::SumOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
   verifyOp<SumOp>(op, {Onnx::Operators::Sum_6, Onnx::Operators::Sum_8});
 }
 
-void SumOpx::grow(snap::program::Sequence &prog) const {
+void SumOpx::grow(poplar::program::Sequence &prog) const {
 
   SumOp &sumOp = getOp<SumOp>();
 
@@ -56,7 +56,7 @@ void SumOpx::grow(snap::program::Sequence &prog) const {
   auto sum = popops::map(graph().getPoplarGraph(),
                          *expr.front(),
                          inputs,
-                         prog.getPoplarSequence(),
+                         prog,
                          debugContext("sum"));
   setOutTensor(SumOp::getOutIndex(), snap::Tensor{sum, graph()});
 }
@@ -90,7 +90,7 @@ view::RegMap SumOpx::unwindRegion(InIndex, OutIndex) const {
 SumArgGradOpx::SumArgGradOpx(Op *op_, Devicex *devicex_)
     : PopOpx(op_, devicex_) {}
 
-void SumArgGradOpx::grow(snap::program::Sequence &prog) const {
+void SumArgGradOpx::grow(poplar::program::Sequence &prog) const {
   auto gradOp = getOp<SumArgGradOp>();
 
   auto shapeOfInputToBwdOp = inInfo(VariadicGradOp::getGradInIndex()).shape();
@@ -107,7 +107,7 @@ void SumArgGradOpx::grow(snap::program::Sequence &prog) const {
       getInTensor(SumArgGradOp::getGradInIndex()).getPoplarTensor(),
       vXtoY<int64_t, std::size_t>(axes),
       {popops::Operation::ADD},
-      prog.getPoplarSequence(),
+      prog,
       debugContext("add"));
 
   logging::info("{} Shape of SumArgGradOpx output {} {}",

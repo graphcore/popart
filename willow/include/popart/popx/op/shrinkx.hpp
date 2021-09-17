@@ -12,13 +12,13 @@ class ShrinkComputex : public EwuComputex {
 public:
   ShrinkComputex(float lambd, float bias) : lambd_(lambd), bias_(bias) {}
 
-  snap::Tensor outplace(snap::program::Sequence &,
+  snap::Tensor outplace(poplar::program::Sequence &,
                         snap::Graph &,
                         const snap::Tensor &,
                         const poplar::DebugNameAndId &,
                         const std::string &) const final;
 
-  void inplace(snap::program::Sequence &,
+  void inplace(poplar::program::Sequence &,
                snap::Graph &,
                const snap::Tensor &,
                const poplar::DebugNameAndId &,
@@ -50,7 +50,7 @@ public:
 class ShrinkGradOpx : public PopOpx {
 public:
   ShrinkGradOpx(Op *, Devicex *);
-  void grow(snap::program::Sequence &) const final;
+  void grow(poplar::program::Sequence &) const final;
 };
 
 } // namespace popx

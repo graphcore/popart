@@ -12,13 +12,13 @@ namespace popx {
 class DynamicAddOpx : public DynamicUpdateOpx {
 public:
   DynamicAddOpx(Op *op, Devicex *devicex) : DynamicUpdateOpx(op, devicex) {}
-  void grow(snap::program::Sequence &) const final;
+  void grow(poplar::program::Sequence &) const final;
 };
 
 class DynamicAddInplaceOpx : public DynamicAddOpx {
 public:
   DynamicAddInplaceOpx(Op *op, Devicex *devicex) : DynamicAddOpx(op, devicex) {}
-  snap::Tensor cloneNcopyOpt(snap::program::Sequence &,
+  snap::Tensor cloneNcopyOpt(poplar::program::Sequence &,
                              const snap::Tensor &) const override;
 };
 

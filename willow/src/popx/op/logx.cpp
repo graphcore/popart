@@ -13,12 +13,12 @@ LogOpx::LogOpx(Op *op, Devicex *devicex) : ElementWiseUnaryOpx(op, devicex) {
   verifyOp<LogOp>(op, Onnx::Operators::Log_6);
 }
 
-void LogOpx::grow(snap::program::Sequence &prog) const {
+void LogOpx::grow(poplar::program::Sequence &prog) const {
   auto outTensor =
       popops::map(graph().getPoplarGraph(),
                   popops::expr::UnaryOpType::LOGARITHM,
                   getInTensor(LogOp::getInIndex()).getPoplarTensor(),
-                  prog.getPoplarSequence(),
+                  prog,
                   debugContext());
 
   setOutTensor(LogOp::getOutIndex(), snap::Tensor{outTensor, graph()});

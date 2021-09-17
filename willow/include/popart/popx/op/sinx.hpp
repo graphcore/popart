@@ -12,7 +12,7 @@ namespace popx {
 class SinOpx : public ElementWiseUnaryOpx {
 public:
   SinOpx(Op *, Devicex *);
-  void grow(snap::program::Sequence &) const final;
+  void grow(poplar::program::Sequence &) const final;
 };
 
 } // namespace popx

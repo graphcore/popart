@@ -20,7 +20,7 @@ IdentityOpx::IdentityOpx(Op *op, Devicex *devicex)
   verifyOp<IdentityOp>(op, Onnx::Operators::Identity_1);
 }
 
-void IdentityOpx::grow(snap::program::Sequence &prog) const {
+void IdentityOpx::grow(poplar::program::Sequence &prog) const {
   setOutTensor(0, PopOpx::cloneNcopy(prog, getInTensor(0)));
 }
 
@@ -29,7 +29,7 @@ IdentityInplaceOpx::IdentityInplaceOpx(Op *op, Devicex *devicex)
   verifyOp<IdentityInplaceOp>(op);
 }
 
-void IdentityInplaceOpx::grow(snap::program::Sequence &) const {
+void IdentityInplaceOpx::grow(poplar::program::Sequence &) const {
   setOutTensor(0, getInTensor(0));
 }
 
@@ -38,7 +38,7 @@ IdentityGradOpx::IdentityGradOpx(Op *op, Devicex *devicex)
   verifyOp<IdentityGradOp>(op, Onnx::GradOperators::IdentityGrad);
 }
 
-void IdentityGradOpx::grow(snap::program::Sequence &prog) const {
+void IdentityGradOpx::grow(poplar::program::Sequence &prog) const {
   setOutTensor(0, PopOpx::cloneNcopy(prog, getInTensor(0)));
 }
 
@@ -47,7 +47,7 @@ IdentityLossOpx::IdentityLossOpx(Op *op, Devicex *devicex)
   verifyOp<IdentityLossOp>(op, Onnx::CustomOperators::IdentityLoss);
 }
 
-void IdentityLossGradOpx::grow(snap::program::Sequence &prog) const {
+void IdentityLossGradOpx::grow(poplar::program::Sequence &prog) const {
   IdentityLossGradOp &identitylossop = getOp<IdentityLossGradOp>();
   auto output                        = getInTensor(0).getPoplarTensor();
   poplar::Tensor reference           = getOutTensor(0).getPoplarTensor();
@@ -63,7 +63,7 @@ void IdentityLossGradOpx::grow(snap::program::Sequence &prog) const {
       output = popops::map(graph().getPoplarGraph(),
                            pe::Divide(pe::_1, pe::Const(scale)),
                            {getInTensor(0).getPoplarTensor()},
-                           prog.getPoplarSequence(),
+                           prog,
                            debugContext("div"));
     } else if (identitylossop.getReductionType() != ReductionType::Sum) {
       // Only mean and sum are supported.
@@ -72,12 +72,12 @@ void IdentityLossGradOpx::grow(snap::program::Sequence &prog) const {
     }
     popops::zero(graph().getPoplarGraph(),
                  reference,
-                 prog.getPoplarSequence(),
+                 prog,
                  debugContext("zero_identity_reference_tensor"));
     popops::addInPlace(graph().getPoplarGraph(),
                        reference,
                        output,
-                       prog.getPoplarSequence(),
+                       prog,
                        debugContext("add_gradient_to_reference"));
   }
 }
@@ -86,7 +86,7 @@ InputCreatorType IdentityLossOpx::getInputCreatorType(InIndex) const {
   return InputCreatorType::CanUnwind;
 }
 
-void IdentityLossOpx::grow(snap::program::Sequence &prog) const {
+void IdentityLossOpx::grow(poplar::program::Sequence &prog) const {
   const IdentityLossOp &op = getOp<IdentityLossOp>();
   const auto &inTensor(getInTensor(0));
 
@@ -125,7 +125,7 @@ void IdentityLossOpx::grow(snap::program::Sequence &prog) const {
                                     inTensor1D,
                                     {0},
                                     {popops::Operation::ADD, false, t_scale},
-                                    prog.getPoplarSequence(),
+                                    prog,
                                     debugContext("add"));
 
     setOutTensor(0, snap::Tensor{reduction, graph()});

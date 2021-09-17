@@ -116,7 +116,6 @@ find_package(poprithms REQUIRED)
 find_package(libpvti REQUIRED)
 find_package(pva REQUIRED)
 find_package(gcl REQUIRED)
-find_package(gccs REQUIRED)
 
 find_package(poprithms REQUIRED)
 

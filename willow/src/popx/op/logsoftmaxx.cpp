@@ -40,7 +40,7 @@ LogSoftmaxInplaceOpx::LogSoftmaxInplaceOpx(Op *op, Devicex *devicex)
           devicex,
           createLogSoftmaxComputex<LogSoftmaxInplaceOp>(op)) {}
 
-snap::Tensor LogSoftmaxComputex::outplace(snap::program::Sequence &p,
+snap::Tensor LogSoftmaxComputex::outplace(poplar::program::Sequence &p,
                                           snap::Graph &g,
                                           const snap::Tensor &t,
                                           const poplar::DebugNameAndId &dnai,
@@ -50,15 +50,13 @@ snap::Tensor LogSoftmaxComputex::outplace(snap::program::Sequence &p,
   return outTensor;
 }
 
-void LogSoftmaxComputex::inplace(snap::program::Sequence &p,
+void LogSoftmaxComputex::inplace(poplar::program::Sequence &p,
                                  snap::Graph &g,
                                  const snap::Tensor &t,
                                  const poplar::DebugNameAndId &dnai,
                                  const std::string &s) const {
-  popnn::logSoftmaxInPlace(g.getPoplarGraph(),
-                           coerceTo2D(t, axis).getPoplarTensor(),
-                           p.getPoplarSequence(),
-                           {dnai, s});
+  popnn::logSoftmaxInPlace(
+      g.getPoplarGraph(), coerceTo2D(t, axis).getPoplarTensor(), p, {dnai, s});
 }
 
 snap::Tensor LogSoftmaxComputex::reshape(const snap::Tensor &t) const {
@@ -86,7 +84,7 @@ LogSoftmaxGradOpx::LogSoftmaxGradOpx(Op *op, Devicex *devicex)
 //
 // we want dL/dx_i = sum_j dL/dy_j * dy_j/dx_i
 //                 = g_i - softmax(x_i) * sum_j g_j
-void LogSoftmaxGradOpx::grow(snap::program::Sequence &prog) const {
+void LogSoftmaxGradOpx::grow(poplar::program::Sequence &prog) const {
   const auto axis = getOp<LogSoftmaxGradOp>().getAxis();
 
   // The gradient of the loss w.r.t. the probabilities (g in above description)
@@ -107,7 +105,7 @@ void LogSoftmaxGradOpx::grow(snap::program::Sequence &prog) const {
   auto probs = popnn::nonLinearity(graph().getPoplarGraph(),
                                    nlType,
                                    pre_probs.getPoplarTensor(),
-                                   prog.getPoplarSequence(),
+                                   prog,
                                    debugContext("nonLinearity"));
 
   // sum_j (g_j)
@@ -121,7 +119,7 @@ void LogSoftmaxGradOpx::grow(snap::program::Sequence &prog) const {
                               d_probs.getPoplarTensor(),
                               redDims,
                               {popops::Operation::ADD},
-                              prog.getPoplarSequence(),
+                              prog,
                               debugContext("reduce"))
                    .reshape(upRanked);
 
@@ -129,7 +127,7 @@ void LogSoftmaxGradOpx::grow(snap::program::Sequence &prog) const {
   auto dv = popops::map(graph().getPoplarGraph(),
                         pe::Sub(pe::_1, pe::Mul(pe::_2, pe::_3)),
                         {d_probs.getPoplarTensor(), probs, sum_g},
-                        prog.getPoplarSequence(),
+                        prog,
                         debugContext("SubMul"));
 
   dv = dv.reshape(inInfo(LogSoftmaxGradOp::getActsInIndex()).shape_szt());

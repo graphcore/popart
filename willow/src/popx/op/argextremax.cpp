@@ -14,7 +14,7 @@ ArgExtremaOpx::ArgExtremaOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
   verifyOp<ArgExtremaOp>(op);
 }
 
-void ArgExtremaOpx::grow(snap::program::Sequence &prog) const {
+void ArgExtremaOpx::grow(poplar::program::Sequence &prog) const {
   auto input         = getInTensor(0).getPoplarTensor();
   auto dims          = input.shape().size();
   auto &argExtremaOp = getOp<ArgExtremaOp>();
@@ -50,7 +50,7 @@ void ArgExtremaOpx::grow(snap::program::Sequence &prog) const {
   result = popops::cast(graph().getPoplarGraph(),
                         result,
                         poplar::INT,
-                        prog.getPoplarSequence(),
+                        prog,
                         debugContext("cast"));
   setOutTensor(0, snap::Tensor{result, graph()});
 }

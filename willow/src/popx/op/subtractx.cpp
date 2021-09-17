@@ -14,7 +14,7 @@ SubtractOpx::SubtractOpx(Op *op, Devicex *devicex)
   verifyOp<SubtractOp>(op, {Onnx::Operators::Sub_6, Onnx::Operators::Sub_7});
 }
 
-void SubtractOpx::grow(snap::program::Sequence &prog) const {
+void SubtractOpx::grow(poplar::program::Sequence &prog) const {
   setOutTensor(
       SubtractOp::getOutIndex(),
       snap::Tensor{
@@ -23,7 +23,7 @@ void SubtractOpx::grow(snap::program::Sequence &prog) const {
               popops::expr::BinaryOpType::SUBTRACT,
               getInTensor(SubtractOp::getArg0InIndex()).getPoplarTensor(),
               getInTensor(SubtractOp::getArg1InIndex()).getPoplarTensor(),
-              prog.getPoplarSequence(),
+              prog,
               debugContext()),
           graph()});
 }

@@ -16,7 +16,7 @@ AbsOpx::AbsOpx(Op *op, Devicex *devicex) : ElementWiseUnaryOpx(op, devicex) {
   verifyOp<AbsOp>(op, {Onnx::Operators::Abs_6});
 }
 
-void AbsOpx::grow(snap::program::Sequence &prog) const {
+void AbsOpx::grow(poplar::program::Sequence &prog) const {
 
   setOutTensor(
       AbsOp::getOutIndex(),
@@ -24,7 +24,7 @@ void AbsOpx::grow(snap::program::Sequence &prog) const {
           popops::map(graph().getPoplarGraph(),
                       popops::expr::UnaryOpType::ABSOLUTE,
                       getInTensor(AbsOp::getInIndex()).getPoplarTensor(),
-                      prog.getPoplarSequence(),
+                      prog,
                       debugContext()),
           graph()});
 }
