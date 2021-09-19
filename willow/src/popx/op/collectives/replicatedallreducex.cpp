@@ -85,7 +85,6 @@ void ReplicatedAllReduceInplaceOpx::grow(
       toReduce,
       getPoplarCollectiveOperator(rarOp.getCollectiveOp()),
       prog,
-      toGCLCommGroup(rarOp.getGCLCommGroup()),
       debugContext("replicatedAllReduce"),
       allReduceOptions);
 

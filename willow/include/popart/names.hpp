@@ -193,7 +193,6 @@ static constexpr const char *gradientLoadStreamPrefix  = "gradientLoad__";
 static constexpr const char *weightLoadStreamPrefix    = "weightLoad__";
 
 static constexpr const char *onnxDebugIdInputMetaDataKey = "__debug_id/input/";
-static constexpr const char *sCollectiveOperator  = "__collectiveOperator";
 static constexpr const char *sCollectiveCommGroup = "__collectiveCommGroup";
 } // namespace popart
 

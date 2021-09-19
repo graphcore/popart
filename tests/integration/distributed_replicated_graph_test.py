@@ -331,7 +331,6 @@ def test_distributed_hierarchical_replicated_weight_update():
 def replicated_tensor_sharding_core():
     parser = argparse.ArgumentParser(description="Parse launch parameters.")
     parser.add_argument("--tensors", nargs="*")
-    parser.add_argument("--optim", nargs="?")
     parser.add_argument("--tmpdir", nargs="?")
     parser.add_argument("--filename", nargs="?")
     parser.add_argument("--compute_batch", nargs="?")
@@ -430,20 +429,17 @@ def replicated_tensor_sharding_core():
                 popart.CommGroupType.Consecutive, num_local_replicas)
         setattr(opts, userOption, locationSetting)
 
-    if args.optim == "Adam":
-        optimizer = popart.Adam(
-            {
-                "defaultLearningRate": (0.01, False),
-                "defaultBeta1": (0.9, False),
-                "defaultBeta2": (0.999, False),
-                "defaultEps": (1e-06, False),
-                "defaultWeightDecay": (0.1, False),
-                "lossScaling": (10, False),
-            },
-            weight_decay_mode=popart.WeightDecayMode.Decay,
-            mode=popart.AdamMode.AdamNoBias)
-    if args.optim == "SGD":
-        optimizer = popart.ConstSGD(0.01)
+    optimizer = popart.Adam(
+        {
+            "defaultLearningRate": (0.01, False),
+            "defaultBeta1": (0.9, False),
+            "defaultBeta2": (0.999, False),
+            "defaultEps": (1e-06, False),
+            "defaultWeightDecay": (0.1, False),
+            "lossScaling": (10, False),
+        },
+        weight_decay_mode=popart.WeightDecayMode.Decay,
+        mode=popart.AdamMode.LambNoBias)
 
     session = popart.TrainingSession(fnModel=proto,
                                      dataFlow=dataFlow,
@@ -471,30 +467,14 @@ def replicated_tensor_sharding_core():
 
 rts_configs = [
     [
-        # Baseline: 4 replicas
-        {
-            "filename": "rts0.onnx",
-            "num_replicas": 4,
-            "num_instances": 1,
-            "compute_batch": 6,
-        },
-        # Comparison: 8 replicas
-        {
-            "filename": "rts1.onnx",
-            "num_replicas": 8,
-            "num_instances": 1,
-            "compute_batch": 3,
-        }
-    ],
-    [
-        # Baseline: 8 replicas, 1 instance
+        # Baseline
         {
             "filename": "rts0.onnx",
             "num_replicas": 8,
             "num_instances": 1,
             "compute_batch": 6,
         },
-        # Comparison: 16 replicas, 2 instances (2 GCD, 1 ILD)
+        # 2 ILD/GCD
         {
             "filename": "rts1.onnx",
             "num_replicas": 16,
@@ -503,39 +483,23 @@ rts_configs = [
         }
     ],
     [
-        # Baseline: 16 replicas, 1 instance
+        # Baseline
         {
-            "filename":
-            "rts0.onnx",
-            "num_replicas":
-            16,
-            "num_instances":
-            1,
-            "compute_batch":
-            6,
-            "partition":
-            "fabiant",
-            "hosts": [
-                "gbnwp-pod009-3.ipu.graphcore.ai",
-                "gbnwp-pod010-3.ipu.graphcore.ai"
-            ]
+            "filename": "rts0.onnx",
+            "num_replicas": 16,
+            "num_instances": 1,
+            "compute_batch": 6,
+            "partition": "partition0",
+            "hosts": ["ipu.host0", "ipu.host1"]
         },
-        # Comparison: 32 replicas, 2 instances (2 GCD, 2 ILD)
+        # 2 ILD/GCD
         {
-            "filename":
-            "rts1.onnx",
-            "num_replicas":
-            32,
-            "num_instances":
-            2,
-            "compute_batch":
-            3,
-            "partition":
-            "fabiant",
-            "hosts": [
-                "gbnwp-pod009-3.ipu.graphcore.ai",
-                "gbnwp-pod010-3.ipu.graphcore.ai"
-            ]
+            "filename": "rts1.onnx",
+            "num_replicas": 32,
+            "num_instances": 2,
+            "compute_batch": 3,
+            "partition": "partition0",
+            "hosts": ["ipu.host0", "ipu.host1"]
         }
     ]
 ]
@@ -547,8 +511,7 @@ rts_configs = [
 @pytest.mark.parametrize("configs", rts_configs)
 @pytest.mark.parametrize(
     "tensors", [[], ["weight", "optimizerState"], ["optimizerState"]])
-@pytest.mark.parametrize("optim", ["SGD", "Adam"])
-def test_replicated_tensor_sharding(tmpdir, configs, tensors, optim):
+def test_replicated_tensor_sharding(tmpdir, configs, tensors):
     rtol = 1.e-3
     atol = 1.e-5
 
@@ -621,8 +584,6 @@ def test_replicated_tensor_sharding(tmpdir, configs, tensors, optim):
         command.append(config["filename"])
         command.append("--compute_batch")
         command.append(str(config["compute_batch"]))
-        command.append("--optim")
-        command.append(optim)
 
         out = subprocess.run(command)
 
