@@ -29,6 +29,9 @@ except:
     )
 from util import get_project_source_dir
 
+# Flag to only warn about clang-format once
+CLANG_FORMAT_WARNING_PRINTED = False
+
 
 def clang_format_file(fname: Path) -> int:
     """Format a file using clang format, if installed.
@@ -55,9 +58,11 @@ def clang_format_file(fname: Path) -> int:
         # FCalledProcessError for multiple thread:
         # Above won't work on CentOS, in which case,
         # just skip formatting as not required.
-        print("Package clang-format not installed or "
-              "formatting failed. Not formatting file.")
-        print(str(e.output))
+        if not CLANG_FORMAT_WARNING_PRINTED:
+            print("Package clang-format not installed or "
+                  "formatting failed. Not formatting file.")
+            print(str(e.output))
+            CLANG_FORMAT_WARNING_PRINTED = True
         return e.returncode
     finally:
         # Any weird remaining errors.

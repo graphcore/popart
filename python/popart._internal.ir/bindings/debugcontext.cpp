@@ -12,7 +12,7 @@ namespace _internal {
 namespace ir {
 
 void bindDebugContext(py::module &m) {
-  py::class_<SourceLocation>(m, "SourceLocation")
+  py::class_<SourceLocation>(m, "SourceLocation", py::module_local())
       .def(py::init<std::string, std::string, unsigned>(),
            py::arg("functionName"),
            py::arg("fileName"),

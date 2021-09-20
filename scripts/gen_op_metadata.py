@@ -89,6 +89,84 @@ exceptions = [
     'PopartLSTMOp', 'PopartLSTMGradOp'
 ]
 
+# Complie some regexes ahead of time for speed.
+PATTERNS = [
+    (re.compile(r'(?<!^)(?=[A-Z])'), '_'),
+    (re.compile(r'[^A-Za-z0-9]+'), '_'),
+]
+
+
+def format_alt_name(str_: str) -> str:
+    """Run some regexes to format an alternative argument name from
+    the type name, in approximately snake_case.
+    e.g. 'const popart::TensorType &' -> 'tensor_type'
+
+    Args:
+        str_ (str): The argument name
+
+    Returns:
+        str: The new formatted name
+    """
+    for p, r in PATTERNS:
+        str_ = p.sub(r, str_).lower()
+    str_ = str_.replace("const_", "")
+    str_ = str_.replace("popart_", "")
+    if str_.endswith("_"):
+        str_ = str_[:-1]
+    return str_.strip()
+
+
+class CppArgument():
+    """A wrapper round the cindex.Cursor that represents a cpp
+    constructor argument. Some of the properties / functions on
+    the cindex cursor objects aren't very reliable or useful, so
+    this class adds some for our purposes.
+
+    All quite self explanatory in the context of a Cpp constructor argument.
+    """
+
+    def __init__(self, c: cindex.Cursor) -> None:
+        self.cursor: cindex.Cursor = c
+        self.type_: cindex.Type = c.type
+        self.tokens = [t.spelling for t in c.get_tokens()]
+
+    @property
+    def name(self) -> str:
+        if "Op::Settings" in self.type_.spelling:
+            return "settings"
+        if "popart::OperatorIdentifier" in self.type_.spelling:
+            return "opid"
+        return self.cursor.spelling.strip()
+
+    @property
+    def is_const(self) -> bool:
+        return "const" in self.type_.spelling
+
+    @property
+    def is_ref(self) -> bool:
+        return self.type_.kind.spelling == "LValueReference"
+
+    @property
+    def type_name(self):
+        if "&" not in self.type_.spelling:
+            # Always pass by reference
+            return self.type_.spelling + "&"
+        return self.type_.spelling
+
+    @property
+    def has_default(self) -> bool:
+        return "=" in self.tokens
+
+    @property
+    def default(self) -> str:
+        return " ".join(
+            self.tokens).split("=")[-1].strip() if "=" in self.tokens else ""
+
+    @property
+    def alt_name(self) -> str:
+        "See format_alt_name"
+        return format_alt_name(self.type_.spelling)
+
 
 def find_constructors(node: cindex.Cursor, base: cindex.Cursor) -> Dict:
     """Find info on all the constructors for the given node.
@@ -103,55 +181,20 @@ def find_constructors(node: cindex.Cursor, base: cindex.Cursor) -> Dict:
     args_ = []
 
     for c in node.get_arguments():
-        ref = False
-        const = False
-        name = c.spelling
-        type_ = c.type.spelling
-        fulltype = type_
-        has_default = False
-        if re.match("const", type_):
-            type_ = re.sub("&", "", type_)
-            ref = True
-        if re.match("const", type_):
-            type_ = re.sub("const ", "", type_)
-            const = True
-        if type_ == "bool":
-            type_ = "bool&&"
-        tokens = []
-        for token in c.get_tokens():
-            if token.spelling == "=":
-                has_default = True
-        default = ""
-        if has_default:
-            tokens += [t.spelling for t in list(c.get_tokens())]
-            default = " ".join(tokens)
-            default = default.split("=")[-1]
-        if type_.strip() == "Op::Settings":
-            name = "settings"
-        if type_.strip() == "popart::OperatorIdentifier":
-            name = "opid"
+        cpp_arg = CppArgument(c)
         args_.append({
-            "arg_name":
-            name.strip(),
-            "alt_arg_name":
-            type_.strip().lower().replace('popart::', '').replace('::', ''),
-            "arg_type":
-            type_.strip(),
-            "fulltype":
-            fulltype,
-            "const":
-            const,
-            "ref":
-            ref,
-            "has_default":
-            has_default,
-            "default":
-            default.replace(" ", ""),
+            "arg_name": cpp_arg.name,
+            "alt_arg_name": cpp_arg.alt_name,
+            "arg_type": cpp_arg.type_name,
+            "const": cpp_arg.is_const,
+            "ref": cpp_arg.is_ref,
+            "has_default": cpp_arg.has_default,
+            "default": cpp_arg.default
         })
     # Add the full string of args, to avoid having to re-create later.
     full_args = ""
     for i, arg in enumerate(args_):
-        full_args += f"{'const ' if arg['const'] else ''}{arg['arg_type']}{' &' if  arg['ref'] else ''}"
+        full_args += arg["arg_type"]
         if i + 1 != len(args_):
             full_args += ", "
 
