@@ -30,7 +30,7 @@ BOOST_AUTO_TEST_CASE(mainloops_throw_anchor_in_subgraph) {
   float data[] = {1};
 
   TensorId x   = "x";
-  TensorId xSg = addScope(sg.getScope(), "x");
+  TensorId xSg = addScope(sg, "x");
   g.getTensors().addVarInit(x, info, static_cast<void *>(&data));
   sg.addInput(xSg, info);
 

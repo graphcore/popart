@@ -83,8 +83,7 @@ void BackwardsGraphCreatorHelper::growGradGraph(
   std::map<TensorId, TensorId> fwdToBwdTensorIdMap;
   for (auto &fwdId : fwdGraph.getTensors().getAllTensorIds()) {
     auto fwdTensor = fwdGraph.getTensors().get(fwdId);
-    auto bwdId =
-        addScope(bwdGraph.getScope(), removeScope(fwdGraph.getScope(), fwdId));
+    auto bwdId     = addScope(bwdGraph, removeScope(fwdGraph, fwdId));
     auto bwdTensor = fwdTensor->clone(bwdGraph);
     bwdTensor->id  = bwdId;
     if (fwdTensor->hasTensorData()) {
@@ -257,30 +256,30 @@ Op *BackwardsGraphCreatorHelper::growGradSumOp(
 }
 
 bool BackwardsGraphCreatorHelper::bwdIdIsGrad(const TensorId &id) {
-  auto x = removeScope(bwdGraph.getScope(), id);
+  auto x = removeScope(bwdGraph, id);
   return popart::isGradId(x);
 }
 
 bool BackwardsGraphCreatorHelper::bwdIdIsNonGrad(const TensorId &id) {
-  auto x = removeScope(bwdGraph.getScope(), id);
+  auto x = removeScope(bwdGraph, id);
   return !popart::isGradId(x);
 }
 
 TensorId BackwardsGraphCreatorHelper::fwdIdToBwdGradId(const TensorId &id) {
-  auto x = removeScope(fwdGraph.getScope(), id);
+  auto x = removeScope(fwdGraph, id);
   x      = popart::getGradId(x);
-  return addScope(bwdGraph.getScope(), x);
+  return addScope(bwdGraph, x);
 }
 
 TensorId BackwardsGraphCreatorHelper::bwdGradIdToFwdId(const TensorId &id) {
-  auto x = removeScope(bwdGraph.getScope(), id);
+  auto x = removeScope(bwdGraph, id);
   x      = popart::getNonGradId(x);
-  return addScope(fwdGraph.getScope(), x);
+  return addScope(fwdGraph, x);
 }
 
 TensorId BackwardsGraphCreatorHelper::bwdNonGradIdToFwdId(const TensorId &id) {
-  auto x = removeScope(bwdGraph.getScope(), id);
-  return addScope(fwdGraph.getScope(), x);
+  auto x = removeScope(bwdGraph, id);
+  return addScope(fwdGraph, x);
 }
 
 bool BackwardsGraphCreatorHelper::opIsReadyToCreateGradients(Op *op) {
@@ -382,8 +381,7 @@ TensorId BackwardsGraphCreatorHelper::getInputTensorId(
   //  This will be a tensor internal to fwdGraph
   case GradOpInType::In: {
     auto fwdId = nonGradOp->inId(indexFwd);
-    auto bwdId =
-        addScope(bwdGraph.getScope(), removeScope(fwdGraph.getScope(), fwdId));
+    auto bwdId = addScope(bwdGraph, removeScope(fwdGraph, fwdId));
     return bwdId;
   }
 
@@ -391,8 +389,7 @@ TensorId BackwardsGraphCreatorHelper::getInputTensorId(
   //  This will be a tensor internal to fwdGraph
   case GradOpInType::Out: {
     auto fwdId = nonGradOp->outId(indexFwd);
-    auto bwdId =
-        addScope(bwdGraph.getScope(), removeScope(fwdGraph.getScope(), fwdId));
+    auto bwdId = addScope(bwdGraph, removeScope(fwdGraph, fwdId));
     return bwdId;
   }
 

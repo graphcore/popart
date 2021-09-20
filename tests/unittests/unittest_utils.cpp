@@ -8,6 +8,7 @@
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/test/unit_test.hpp>
 
+#include <popart/ir.hpp>
 #include <popart/logging.hpp>
 #include <popart/scope.hpp>
 #include <popart/util.hpp>
@@ -46,47 +47,22 @@ BOOST_AUTO_TEST_CASE(unittest_utils_streamoperator_tuple) {
   BOOST_TEST("(-1, j, 3)" == toString(std::make_tuple(-1, 'j', 3)));
 }
 
-BOOST_AUTO_TEST_CASE(unittest_utils_split_string) {
-  // Tests that splitting of string is working.
-  std::string test = "Never give in - never, never, never, never, in nothing "
-                     "great or small, large or petty, never give in except to "
-                     "convictions of honour and good sense";
-  std::string delimiter = "never";
-  std::vector<std::string> expected{
-      "Never give in - ",
-      ", ",
-      ", ",
-      ", ",
-      ", in nothing great or small, large or petty, ",
-      " give in except to convictions of honour and good sense"};
-
-  auto result = popart::splitString(test, delimiter);
-  BOOST_CHECK_EQUAL_COLLECTIONS(
-      result.begin(), result.end(), expected.begin(), expected.end());
-
-  test      = "Without delimiter";
-  delimiter = "/";
-  expected  = {test};
-  result    = popart::splitString(test, delimiter);
-  BOOST_CHECK_EQUAL_COLLECTIONS(
-      result.begin(), result.end(), expected.begin(), expected.end());
-}
-
 BOOST_AUTO_TEST_CASE(unittest_add_and_remove_scopes) {
   popart::TensorId tId = "g1/g2/g3/name";
 
-  popart::Scope s12;
-  s12 = s12 / "g1" / "g2";
-  popart::Scope s3;
-  s3 = s3 / "g3";
-  popart::Scope s4;
-  s4 = s4 / "g4";
+  popart::Ir ir;
+  auto &mainG = ir.getMainGraph();
+  auto &g1    = ir.createGraph({"g1"});
+  auto &g2    = ir.createGraph({"g2"});
+  auto &g3    = ir.createGraph({"g3"});
+  auto &g4    = ir.createGraph({"g4"});
 
   BOOST_CHECK_EXCEPTION(
-      removeScope(s3, tId), popart::error, checkErrorMsgRemoveScopes);
-  auto result = removeScope(s12, tId);
-  result      = removeScope(s3, result);
-  result      = addScope(s4, result);
+      removeScope(g2, tId), popart::error, checkErrorMsgRemoveScopes);
+  auto result = removeScope(g1, tId);
+  result      = removeScope(g2, result);
+  result      = removeScope(g3, result);
+  result      = addScope(g4, result);
 
   popart::TensorId expected = "g4/name";
   BOOST_CHECK_EQUAL(result, expected);

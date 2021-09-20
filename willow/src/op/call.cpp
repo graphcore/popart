@@ -165,7 +165,7 @@ static OpCreator<CallOp> callOpCreator(
       auto implicitTensorIds = onnxutil::getImplicitTensorIds(callee);
       for (auto implicitTensorId : implicitTensorIds) {
         auto parentScopedImplicitTensorId =
-            addScope(parentGraph.getScope(), implicitTensorId);
+            addScope(parentGraph, implicitTensorId);
         parentScopedImplicitTensorIds.push_back(parentScopedImplicitTensorId);
       }
       logging::op::trace("[CallOp] Callee: {}, implicit tensors: {}",
@@ -242,8 +242,7 @@ static OpCreator<CallOp> callOpCreator(
             // Assume callee graph inputs are in the same order as this
             // op's node inputs
             TensorInfo calleeInputInfo = inputInfos.at(inputs.at(i));
-            auto scopedId =
-                addScope(calleeGraph->getScope(), callee.input(i).name());
+            auto scopedId = addScope(*calleeGraph, callee.input(i).name());
             calleeGraph->addInput(scopedId, calleeInputInfo);
           }
         }
@@ -251,11 +250,10 @@ static OpCreator<CallOp> callOpCreator(
         // Implicit inputs
         for (auto implicitTensorId : implicitTensorIds) {
           auto parentScopedImplicitTensorId =
-              addScope(parentGraph.getScope(), implicitTensorId);
+              addScope(parentGraph, implicitTensorId);
           Tensor *tensor =
               parentGraph.getTensors().get(parentScopedImplicitTensorId);
-          auto calleeScopedId =
-              addScope(calleeGraph->getScope(), implicitTensorId);
+          auto calleeScopedId = addScope(*calleeGraph, implicitTensorId);
           calleeGraph->addInput(calleeScopedId, tensor->info);
           logging::op::trace("[CallOp] Callee: {}, implicit tensor: {} -> {}",
                              callee.name(),
@@ -266,7 +264,7 @@ static OpCreator<CallOp> callOpCreator(
         calleeGraph->constructFromOnnxGraph(callee);
 
         for (auto &output : callee.output()) {
-          auto scopedId = addScope(calleeGraph->getScope(), output.name());
+          auto scopedId = addScope(*calleeGraph, output.name());
           calleeGraph->markAsOutput(scopedId);
         }
       }

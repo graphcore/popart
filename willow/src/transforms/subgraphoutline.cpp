@@ -722,7 +722,7 @@ Graph &SubgraphOutline::createSubgraph(
 
   // create graph inputs
   for (auto tensor : instance.external_inputs) {
-    auto input_id = addScope(subgraph.getScope(), tensor->id);
+    auto input_id = addScope(subgraph, tensor->id);
     subgraph.addInput(input_id, tensor->info);
     auto t = subgraph.getTensors().get(input_id);
     if (tensor_map.find(tensor) != tensor_map.end()) {

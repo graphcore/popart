@@ -21,9 +21,8 @@ BOOST_AUTO_TEST_CASE(backwardsgraphcreatorhelper_bwdIdIsGrad) {
   Graph &bwdGraph = ir.createGraph(GraphId("bwd"));
   BackwardsGraphCreatorHelper helper{fwdGraph, bwdGraph};
 
-  BOOST_REQUIRE(!helper.bwdIdIsGrad(addScope(bwdGraph.getScope(), "t0")));
-  BOOST_REQUIRE(
-      helper.bwdIdIsGrad(addScope(bwdGraph.getScope(), getGradId("t0"))));
+  BOOST_REQUIRE(!helper.bwdIdIsGrad(addScope(bwdGraph, "t0")));
+  BOOST_REQUIRE(helper.bwdIdIsGrad(addScope(bwdGraph, getGradId("t0"))));
 }
 
 BOOST_AUTO_TEST_CASE(backwardsgraphcreatorhelper_bwdIdIsNonGrad) {
@@ -33,9 +32,8 @@ BOOST_AUTO_TEST_CASE(backwardsgraphcreatorhelper_bwdIdIsNonGrad) {
   Graph &bwdGraph = ir.createGraph(GraphId("bwd"));
   BackwardsGraphCreatorHelper helper{fwdGraph, bwdGraph};
 
-  BOOST_REQUIRE(helper.bwdIdIsNonGrad(addScope(bwdGraph.getScope(), "t0")));
-  BOOST_REQUIRE(
-      !helper.bwdIdIsNonGrad(addScope(bwdGraph.getScope(), getGradId("t0"))));
+  BOOST_REQUIRE(helper.bwdIdIsNonGrad(addScope(bwdGraph, "t0")));
+  BOOST_REQUIRE(!helper.bwdIdIsNonGrad(addScope(bwdGraph, getGradId("t0"))));
 }
 
 BOOST_AUTO_TEST_CASE(backwardsgraphcreatorhelper_fwdIdToBwdGradId) {
@@ -45,8 +43,8 @@ BOOST_AUTO_TEST_CASE(backwardsgraphcreatorhelper_fwdIdToBwdGradId) {
   Graph &bwdGraph = ir.createGraph(GraphId("bwd"));
   BackwardsGraphCreatorHelper helper{fwdGraph, bwdGraph};
 
-  BOOST_REQUIRE(addScope(bwdGraph.getScope(), getGradId("t2")) ==
-                helper.fwdIdToBwdGradId(addScope(fwdGraph.getScope(), "t2")));
+  BOOST_REQUIRE(addScope(bwdGraph, getGradId("t2")) ==
+                helper.fwdIdToBwdGradId(addScope(fwdGraph, "t2")));
 }
 BOOST_AUTO_TEST_CASE(backwardsgraphcreatorhelper_bwdGradIdToFwdId) {
 
@@ -55,9 +53,8 @@ BOOST_AUTO_TEST_CASE(backwardsgraphcreatorhelper_bwdGradIdToFwdId) {
   Graph &bwdGraph = ir.createGraph(GraphId("bwd"));
   BackwardsGraphCreatorHelper helper{fwdGraph, bwdGraph};
 
-  BOOST_REQUIRE(
-      addScope(fwdGraph.getScope(), "t2") ==
-      helper.bwdGradIdToFwdId(addScope(bwdGraph.getScope(), getGradId("t2"))));
+  BOOST_REQUIRE(addScope(fwdGraph, "t2") ==
+                helper.bwdGradIdToFwdId(addScope(bwdGraph, getGradId("t2"))));
 }
 
 BOOST_AUTO_TEST_CASE(backwardsgraphcreatorhelper_bwdNonGradIdToFwdId) {
@@ -67,7 +64,6 @@ BOOST_AUTO_TEST_CASE(backwardsgraphcreatorhelper_bwdNonGradIdToFwdId) {
   Graph &bwdGraph = ir.createGraph(GraphId("bwd"));
   BackwardsGraphCreatorHelper helper{fwdGraph, bwdGraph};
 
-  BOOST_REQUIRE(
-      addScope(fwdGraph.getScope(), "t2") ==
-      helper.bwdNonGradIdToFwdId(addScope(bwdGraph.getScope(), "t2")));
+  BOOST_REQUIRE(addScope(fwdGraph, "t2") ==
+                helper.bwdNonGradIdToFwdId(addScope(bwdGraph, "t2")));
 }

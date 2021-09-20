@@ -194,9 +194,8 @@ TensorId getInnerOffsets(Graph &graph,
     tInnerOffsetsData.push_back(i * maxTokensPerSequence);
   }
 
-  TensorId tInnerOffsets =
-      addScope(graph.getScope(),
-               graph.getIr().createIntermediateTensorId("tInnerOffsets"));
+  TensorId tInnerOffsets = addScope(
+      graph, graph.getIr().createIntermediateTensorId("tInnerOffsets"));
   graph.getTensors().addConstInit(tInnerOffsets,
                                   {DataType::UINT32, {callbackBatchSize}},
                                   tInnerOffsetsData.data());
@@ -224,8 +223,8 @@ CallbackIO setupCallbackInputs(PackedDataBlockOp *op, const TensorId resultId) {
 
   // For the loop op, the first two graph inputs are always the loop index and
   // condition.
-  inputInfo.loopIteration = addScope(graph.getScope(), "loopIndex");
-  inputInfo.loopCondition = addScope(graph.getScope(), "loopCondition");
+  inputInfo.loopIteration = addScope(graph, "loopIndex");
+  inputInfo.loopCondition = addScope(graph, "loopCondition");
   graph.addInput(LoopOp::getLoopIterationInIndex(),
                  inputInfo.loopIteration,
                  {DataType::INT32, {}},
@@ -238,14 +237,14 @@ CallbackIO setupCallbackInputs(PackedDataBlockOp *op, const TensorId resultId) {
   // The result needs to be a persistent input, and these need to be the first
   // inputs.
   auto &resultInfo    = op->outInfo(0);
-  auto scopedResultId = addScope(graph.getScope(), resultId);
+  auto scopedResultId = addScope(graph, resultId);
   graph.addInput(
       LoopOp::getFirstInputInIndex(), scopedResultId, resultInfo, false);
 
   // Inputs should only be added once. The inputs and result may share lengths
   // and offsets.
   auto tryAddCallbackInput = [&](Tensor *t) {
-    auto scopedId = addScope(graph.getScope(), t->id);
+    auto scopedId = addScope(graph, t->id);
     if (!graph.hasInputId(scopedId)) {
       graph.addInput(scopedId, t->info);
     }

@@ -203,12 +203,12 @@ BOOST_AUTO_TEST_CASE(DirectViewChangeTest1) {
   auto &subG = ir.getGraph(GraphId("BuilderGraph_2"));
 
   auto superIn0T = ir.getMainGraph().getTensors().get(superIn0);
-  auto subGinT   = subG.getTensors().get(addScope(subG.getScope(), superIn0));
+  auto subGinT   = subG.getTensors().get(addScope(subG, superIn0));
   auto actT0     = ir.getMainGraph().getTensors().get(acts[0]);
   auto actT1     = ir.getMainGraph().getTensors().get(acts[1]);
 
-  auto cT  = subG.getTensors().get(addScope(subG.getScope(), c3));
-  auto t1T = subG.getTensors().get(addScope(subG.getScope(), t1));
+  auto cT  = subG.getTensors().get(addScope(subG, c3));
+  auto t1T = subG.getTensors().get(addScope(subG, t1));
 
   auto ops = ir.getMainGraph().getDirectViewChain(superIn0T, actT0);
   // Call op is not viewChanging

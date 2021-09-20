@@ -671,7 +671,7 @@ TensorId ShardingHelper::createOrGetIndexTensor(uint32_t index,
     ss << "_" << *(settings.vgraphId);
   }
 
-  TensorId id = addScope(graph->getScope(), ss.str());
+  TensorId id = addScope(*graph, ss.str());
   if (!graph->getTensors().contains(id)) {
     TensorInfo indexTensorInfo(DataType::UINT32, {1});
     std::vector<uint32_t> idData(1, index);
@@ -692,7 +692,7 @@ TensorId ShardingHelper::createOrGetConstTensor(DataType type,
   if (settings.vgraphId) {
     ss << "_" << *(settings.vgraphId);
   }
-  TensorId id = addScope(graph->getScope(), ss.str());
+  TensorId id = addScope(*graph, ss.str());
   if (!graph->getTensors().contains(id)) {
     TensorInfo indexTensorInfo(type, {1});
     std::vector<T> idData(1, value);
@@ -1122,13 +1122,11 @@ ShardingPlan Op::loopShard(const ShardingPlan adjustedInputPlan,
   }
 
   // Add mandatory loop iterator tensor to subgraph (is not an output)
-  TensorId loopItScopedId =
-      addScope(subgraph.getScope(), reservedLoopIteratorPrefix());
+  TensorId loopItScopedId = addScope(subgraph, reservedLoopIteratorPrefix());
   subgraph.addInput(loopItScopedId, TensorInfo(DataType::INT32, {}));
 
   // Add mandatory loop condition tensor to subgraph (is also an output)
-  TensorId loopCondScopedId =
-      addScope(subgraph.getScope(), reservedLoopCondPrefix());
+  TensorId loopCondScopedId = addScope(subgraph, reservedLoopCondPrefix());
   subgraph.addInput(loopCondScopedId, TensorInfo(DataType::BOOL, {}));
   subgraph.markAsOutput(loopCondScopedId);
 
@@ -1149,8 +1147,7 @@ ShardingPlan Op::loopShard(const ShardingPlan adjustedInputPlan,
     // Connect a loop iterator starting at 0
     TensorId serialIndexTensorId =
         helper.createOrGetIndexTensor(0, indexSettings);
-    auto serialIndexTensorScopedId =
-        addScope(subgraph.getScope(), serialIndexTensorId);
+    auto serialIndexTensorScopedId = addScope(subgraph, serialIndexTensorId);
 
     if (serialIndexTensorScopedIds.find(serialIndexTensorScopedId) ==
         serialIndexTensorScopedIds.end()) {
@@ -1173,7 +1170,7 @@ ShardingPlan Op::loopShard(const ShardingPlan adjustedInputPlan,
       TensorId updatedSerialIndexTensorScopedId =
           ir.createIntermediateTensorId(serialIndexTensorScopedId);
       TensorId updatedSerialIndexTensorId =
-          removeScope(subgraph.getScope(), updatedSerialIndexTensorScopedId);
+          removeScope(subgraph, updatedSerialIndexTensorScopedId);
       indexAddOp->createAndConnectOutTensor(AddOp::getOutIndex(),
                                             updatedSerialIndexTensorScopedId);
       indexAddOp->setup();
@@ -1192,7 +1189,7 @@ ShardingPlan Op::loopShard(const ShardingPlan adjustedInputPlan,
     TensorId opInId;
     auto infoMap = adjustedInputPlan.getInfoMap();
 
-    auto inScopedId = addScope(subgraph.getScope(), in.second->id);
+    auto inScopedId = addScope(subgraph, in.second->id);
 
     Settings preInsideLoopSettings =
         adjustInSettings(in.first, insideLoopSettings);
@@ -1253,7 +1250,7 @@ ShardingPlan Op::loopShard(const ShardingPlan adjustedInputPlan,
 
   // Connect the cloned Op outputs
   for (const auto &out : outputMap) {
-    TensorId shardOutId = addScope(subgraph.getScope(), out.second->id);
+    TensorId shardOutId = addScope(subgraph, out.second->id);
     clonedOp->createAndConnectOutTensor(out.first, shardOutId);
   }
 
@@ -1313,7 +1310,7 @@ ShardingPlan Op::loopShard(const ShardingPlan adjustedInputPlan,
       serialIndexTensorScopedId = getOrCreateIterator(postInsideLoopSettings);
     }
 
-    auto initScopedId = addScope(subgraph.getScope(), initTensor->id);
+    auto initScopedId = addScope(subgraph, initTensor->id);
     loopOp->addLoopInput(loopInIndex++, initTensor->id, initScopedId, false);
     TensorId updatedTensorId = ir.createIntermediateTensorId(initScopedId);
 

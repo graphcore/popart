@@ -74,44 +74,44 @@ addTestGraph(Ir &ir) {
   Op::Settings settings = Op::Settings{subgraphA, "TestOp"};
 
   // Create subgraph A.
-  subgraphA.addInput(addScope(subgraphA.getScope(), "i0"), tInfo);
-  subgraphA.addInput(addScope(subgraphA.getScope(), "i1"), tInfo);
-  subgraphA.addInput(addScope(subgraphA.getScope(), "i2"), tInfo);
+  subgraphA.addInput(addScope(subgraphA, "i0"), tInfo);
+  subgraphA.addInput(addScope(subgraphA, "i1"), tInfo);
+  subgraphA.addInput(addScope(subgraphA, "i2"), tInfo);
 
   // Add SimpleTestOps.
   auto testOp0 = subgraphA.createOp<TestOp>(settings);
   auto testOp1 = subgraphA.createOp<TestOp>(settings);
   auto testOp2 = subgraphA.createOp<TestOp>(settings);
 
-  testOp0->connectInTensor(1, addScope(subgraphA.getScope(), "i0"));
-  testOp0->createAndConnectOutTensor(1, addScope(subgraphA.getScope(), "tmp0"));
+  testOp0->connectInTensor(1, addScope(subgraphA, "i0"));
+  testOp0->createAndConnectOutTensor(1, addScope(subgraphA, "tmp0"));
   testOp0->setup();
 
-  testOp1->connectInTensor(1, addScope(subgraphA.getScope(), "tmp0"));
-  testOp1->connectInTensor(2, addScope(subgraphA.getScope(), "i1"));
-  testOp1->createAndConnectOutTensor(1, addScope(subgraphA.getScope(), "tmp1"));
-  testOp1->createAndConnectOutTensor(2, addScope(subgraphA.getScope(), "tmp2"));
+  testOp1->connectInTensor(1, addScope(subgraphA, "tmp0"));
+  testOp1->connectInTensor(2, addScope(subgraphA, "i1"));
+  testOp1->createAndConnectOutTensor(1, addScope(subgraphA, "tmp1"));
+  testOp1->createAndConnectOutTensor(2, addScope(subgraphA, "tmp2"));
   testOp1->setup();
 
-  testOp2->connectInTensor(1, addScope(subgraphA.getScope(), "tmp1"));
-  testOp2->connectInTensor(2, addScope(subgraphA.getScope(), "tmp2"));
-  testOp2->connectInTensor(3, addScope(subgraphA.getScope(), "i2"));
-  testOp2->createAndConnectOutTensor(1, addScope(subgraphA.getScope(), "o0"));
-  testOp2->createAndConnectOutTensor(2, addScope(subgraphA.getScope(), "o1"));
-  testOp2->createAndConnectOutTensor(3, addScope(subgraphA.getScope(), "o2"));
+  testOp2->connectInTensor(1, addScope(subgraphA, "tmp1"));
+  testOp2->connectInTensor(2, addScope(subgraphA, "tmp2"));
+  testOp2->connectInTensor(3, addScope(subgraphA, "i2"));
+  testOp2->createAndConnectOutTensor(1, addScope(subgraphA, "o0"));
+  testOp2->createAndConnectOutTensor(2, addScope(subgraphA, "o1"));
+  testOp2->createAndConnectOutTensor(3, addScope(subgraphA, "o2"));
   testOp2->setup();
 
-  subgraphA.markAsOutput(addScope(subgraphA.getScope(), "o0"));
-  subgraphA.markAsOutput(addScope(subgraphA.getScope(), "o1"));
-  subgraphA.markAsOutput(addScope(subgraphA.getScope(), "o2"));
+  subgraphA.markAsOutput(addScope(subgraphA, "o0"));
+  subgraphA.markAsOutput(addScope(subgraphA, "o1"));
+  subgraphA.markAsOutput(addScope(subgraphA, "o2"));
 
   return {{testOp0, testOp1, testOp2},
-          {addScope(subgraphA.getScope(), "i0"),
-           addScope(subgraphA.getScope(), "i1"),
-           addScope(subgraphA.getScope(), "i2")},
-          {addScope(subgraphA.getScope(), "o0"),
-           addScope(subgraphA.getScope(), "o1"),
-           addScope(subgraphA.getScope(), "o2")}};
+          {addScope(subgraphA, "i0"),
+           addScope(subgraphA, "i1"),
+           addScope(subgraphA, "i2")},
+          {addScope(subgraphA, "o0"),
+           addScope(subgraphA, "o1"),
+           addScope(subgraphA, "o2")}};
 }
 
 BOOST_AUTO_TEST_CASE(tensorindexmaptestwrapper_ops) {

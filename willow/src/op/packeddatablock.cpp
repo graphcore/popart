@@ -163,14 +163,14 @@ static OpCreator<PackedDataBlockOp> packeddatablock_OpCreator(
             inputShape.push_back(tinfo.shape().at(dim_index));
           }
 
-          auto scopedId = addScope(callbackGraph->getScope(),
-                                   callback.input(input_index).name());
+          auto scopedId =
+              addScope(*callbackGraph, callback.input(input_index).name());
           callbackGraph->addInput(scopedId, {tinfo.dataType(), inputShape});
         }
 
         callbackGraph->constructFromOnnxGraph(callback);
         for (auto &output : callback.output()) {
-          auto scopedId = addScope(callbackGraph->getScope(), output.name());
+          auto scopedId = addScope(*callbackGraph, output.name());
           callbackGraph->markAsOutput(scopedId);
         }
       }

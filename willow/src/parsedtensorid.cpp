@@ -1,8 +1,11 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 
+#include <algorithm>
 #include <parsedtensorid.hpp>
 #include <regex>
+#include <string>
 #include <popart/error.hpp>
+#include <popart/ir.hpp>
 #include <popart/names.hpp>
 #include <popart/scope.hpp>
 #include <popart/tensornames.hpp>
@@ -18,40 +21,12 @@ void ParsedTensorId::parse() {
 }
 
 void ParsedTensorId::parseScopes() {
-  auto splittedString = splitString(inputTId, sNameDelimiter);
-  splittedString.pop_back();
-  scopes = {splittedString.begin(), splittedString.end()};
+  auto scopesVector = findMatches(inputTId, irScopes);
+  scopes            = {scopesVector.begin(), scopesVector.end()};
 }
 
 void ParsedTensorId::parsePrefixes() {
-  std::string idWithoutScopes = inputTId;
-  if (!scopes.empty()) {
-    auto lastScope = scopes.back();
-    auto pos       = idWithoutScopes.find(lastScope);
-    if (pos != std::string::npos) {
-      idWithoutScopes.erase(0, pos + lastScope.length());
-    }
-  }
-
-  // Static lambda initialization - r will only be initialized once
-  const static std::regex r = []() {
-    std::string re;
-    for (auto prefix : reservedPrefixes()) {
-      re += prefix + "|";
-    }
-    std::regex r{re};
-    return r;
-  }();
-
-  for (auto it = std::sregex_iterator(
-           idWithoutScopes.begin(), idWithoutScopes.end(), r);
-       it != std::sregex_iterator();
-       ++it) {
-    std::smatch sm = *it;
-    if (sm.length() > 0) {
-      prefixes.push_back(sm.str());
-    }
-  }
+  prefixes = findMatches(inputTId, reservedPrefixes());
 }
 
 void ParsedTensorId::parseName() {
@@ -99,8 +74,12 @@ TensorId ParsedTensorId::removePrefixIfExist(const std::string &prefix) {
 
 TensorId ParsedTensorId::addScope(const Scope &s) {
   if (!s.empty()) {
-    auto foundScopes = splitString(s.str(), sNameDelimiter);
-
+    // Extract the scopes
+    auto foundScopes = findMatches(s.str(), irScopes);
+    if (foundScopes.empty()) {
+      throw error("Cannot add scope {} as it matches no Graphs in the Ir",
+                  s.str());
+    }
     // Insert scopes
     foundScopes.insert(foundScopes.end(), scopes.begin(), scopes.end());
     scopes = {foundScopes.begin(), foundScopes.end()};
@@ -112,7 +91,11 @@ TensorId ParsedTensorId::addScope(const Scope &s) {
 
 TensorId ParsedTensorId::removeScope(const Scope &s) {
   if (!s.empty()) {
-    auto foundScopes = splitString(s.str(), sNameDelimiter);
+    auto foundScopes = findMatches(s.str(), irScopes);
+    if (foundScopes.empty()) {
+      throw error("Cannot remove scope {} as it matches no Graphs in the Ir",
+                  s.str());
+    }
 
     auto sScopeIt        = foundScopes.begin();
     const auto sScopeEnd = foundScopes.end();
@@ -134,6 +117,58 @@ TensorId ParsedTensorId::removeScope(const Scope &s) {
 
   generateId();
   return tId;
+}
+
+bool ParsedTensorId::scopeExist(const Scope &s) {
+  if (!s.empty()) {
+    auto sVec        = findMatches(s.str(), irScopes);
+    auto foundScopes = findMatches(tId, sVec);
+
+    if (!foundScopes.empty()) {
+      for (auto const fs : foundScopes) {
+        if (std::find(scopes.begin(), scopes.end(), fs) == scopes.end()) {
+          return false;
+        }
+      }
+      return true;
+    }
+  }
+  return false;
+}
+
+bool ParsedTensorId::prefixExist(const std::string &p) {
+  return std::find(prefixes.begin(), prefixes.end(), p) != prefixes.end();
+}
+
+void ParsedTensorId::setIrScopes(const Ir &ir) {
+  for (const auto &gIdAndGPointer : ir.getGraphs()) {
+    auto const gId = gIdAndGPointer.first.str();
+    if (!gId.empty()) {
+      irScopes.push_back(gIdAndGPointer.first.str());
+    }
+  }
+}
+
+std::vector<std::string>
+ParsedTensorId::findMatches(const std::string &s,
+                            const std::vector<std::string> &potentialMatches) {
+
+  std::vector<std::string> matches;
+  // Store begin and length of the match in s
+  std::map<std::size_t, std::size_t> strBeginAndStrLengths;
+  for (const auto &pm : potentialMatches) {
+    auto pos = s.find(pm);
+    if (pos != std::string::npos) {
+      strBeginAndStrLengths[pos] = pm.length();
+    }
+  }
+
+  // Extract in correct order
+  for (const auto &beginAndLen : strBeginAndStrLengths) {
+    matches.push_back(s.substr(beginAndLen.first, beginAndLen.second));
+  }
+
+  return matches;
 }
 
 void ParsedTensorId::generateId() {

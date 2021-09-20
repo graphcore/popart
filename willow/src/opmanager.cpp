@@ -24,7 +24,7 @@ OpDomain sanitizeDomain(const OpDomain &domain) {
 std::vector<TensorId> getInputIds(const Node &node, const Graph &graph) {
   std::vector<TensorId> inputIds;
   for (int i = 0; i < node.input_size(); i++) {
-    inputIds.push_back(addScope(graph.getScope(), node.input(i)));
+    inputIds.push_back(addScope(graph, node.input(i)));
   }
   return inputIds;
 }
@@ -32,7 +32,7 @@ std::vector<TensorId> getInputIds(const Node &node, const Graph &graph) {
 std::vector<TensorId> getOutputIds(const Node &node, const Graph &graph) {
   std::vector<TensorId> outputIds;
   for (int i = 0; i < node.output_size(); i++) {
-    outputIds.push_back(addScope(graph.getScope(), node.output(i)));
+    outputIds.push_back(addScope(graph, node.output(i)));
   }
   return outputIds;
 }

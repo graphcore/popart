@@ -14,6 +14,8 @@
 
 namespace popart {
 
+class Graph;
+
 // For comparing equality of floating point types.
 template <typename T> bool isAlmostEqual(T lhs, T rhs) {
   return std::fabs(lhs - rhs) <= std::numeric_limits<T>::epsilon();
@@ -342,30 +344,24 @@ void validateReduceAxes(const std::vector<int64_t> &axes,
                         const std::string &message);
 
 /**
- * Splits a string by delimeter
- * \param s The string to split
- * \param delimiter the delimiter to split the string by
- * \returns Vector of strings separated by the delimiter
- */
-std::vector<std::string> splitString(std::string s, std::string delimiter);
-
-/**
  * Adds a scope to the TensorId
  * The resulting TensorId will be on the form <scopes><prefixes><names>
- * \param s The scope to be added to \a t
+ *
+ * \param g The graph containing the scope to be added to \a t
  * \param t The TensorId to add the scope to
  * \return The resulting TensorId
  */
-TensorId addScope(const Scope &s, const TensorId &t);
+TensorId addScope(const Graph &g, const TensorId &t);
 
 /**
  * Removes a scope from the TensorId
  * The resulting TensorId will be on the form <scopes><prefixes><names>
- * \param s The scope to be removed from \a t
+ *
+ * \param g The graph containing the scope to be removed from \a t
  * \param t The TensorId to remove the scope from
  * \return The resulting TensorId
  */
-TensorId removeScope(const Scope &s, const TensorId &t);
+TensorId removeScope(const Graph &g, const TensorId &t);
 
 } // namespace popart
 

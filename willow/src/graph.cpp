@@ -176,7 +176,7 @@ void Graph::addInput(const TensorId &tensorId, const TensorInfo &tensorInfo) {
 
 TensorId Graph::addInput(const TensorInfo &tinfo) {
   auto tensorId = logging::format("input_{}", graph_inputs.size());
-  auto scopedId = addScope(getScope(), tensorId);
+  auto scopedId = addScope(*this, tensorId);
   addInput(scopedId, tinfo);
   return scopedId;
 }
@@ -721,7 +721,7 @@ void Graph::copyFrom(const Graph &other,
   for (auto &id : other.getTensors().getAllTensorIds()) {
     auto tensor = other.getTensors().get(id);
 
-    auto newId = addScope(this->getScope(), removeScope(other.getScope(), id));
+    auto newId = addScope(*this, removeScope(other, id));
 
     if (!getTensors().contains(newId)) {
       auto tensorClone = tensor->clone(*this);
@@ -762,16 +762,16 @@ void Graph::copyFrom(const Graph &other,
   if (copyInputMarkings == CopyInputMarkings::Yes) {
     // add graph inputs and outputs
     for (auto &id : other.getInputIds()) {
-      auto unscopedId = removeScope(other.getScope(), id);
-      auto newId      = addScope(this->getScope(), unscopedId);
+      auto unscopedId = removeScope(other, id);
+      auto newId      = addScope(*this, unscopedId);
       this->markAsInput(newId);
     }
   }
 
   if (copyOutputMarkings == CopyOutputMarkings::Yes) {
     for (auto &id : other.getOutputIds()) {
-      auto unscopedId = removeScope(other.getScope(), id);
-      auto newId      = addScope(this->getScope(), unscopedId);
+      auto unscopedId = removeScope(other, id);
+      auto newId      = addScope(*this, unscopedId);
       this->markAsOutput(newId);
     }
   }

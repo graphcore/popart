@@ -3937,8 +3937,7 @@ std::map<OpId, OpId> cloneOpsAndAddTensors(Graph &originalGraph,
 
       // Remove the scope from the old graph, and add the new scope
       auto clonedInputTensorId =
-          addScope(clonedGraph.getScope(),
-                   removeScope(originalGraph.getScope(), tensor->id));
+          addScope(clonedGraph, removeScope(originalGraph, tensor->id));
 
       if (tensor->hasProducer()) {
         clonedInputTensorId = originalTensorIdAndClonedTensorId.at(tensor->id);
@@ -3954,8 +3953,7 @@ std::map<OpId, OpId> cloneOpsAndAddTensors(Graph &originalGraph,
       auto tensor = indexAndTensor.second;
       // We remove the inner loop scope from the tensor
       auto clonedOutputTensorId =
-          addScope(clonedGraph.getScope(),
-                   removeScope(originalGraph.getScope(), tensor->id));
+          addScope(clonedGraph, removeScope(originalGraph, tensor->id));
       // Create the tensor with the tensorId made above
 
       clonedOp->createAndConnectOutTensor(index, clonedOutputTensorId);
@@ -3978,8 +3976,7 @@ std::map<OpId, OpId> Ir::cloneGraph(GraphId originalGraphId,
   for (const auto &tensorId : graphInputTensorId) {
     auto tensorInfo = originalGraph.getTensors().get(tensorId)->info;
     auto clonedTensorId =
-        addScope(clonedGraph.getScope(),
-                 removeScope(originalGraph.getScope(), tensorId));
+        addScope(clonedGraph, removeScope(originalGraph, tensorId));
     clonedGraph.addInput(clonedTensorId, tensorInfo);
   }
 
@@ -3987,8 +3984,7 @@ std::map<OpId, OpId> Ir::cloneGraph(GraphId originalGraphId,
   for (const auto tensor :
        originalGraph.getTensors().getOfType(TensorType::Const)) {
     clonedGraph.getTensors().addConstInit(
-        addScope(clonedGraph.getScope(),
-                 removeScope(originalGraph.getScope(), tensor->id)),
+        addScope(clonedGraph, removeScope(originalGraph, tensor->id)),
         tensor->info,
         tensor->tensorData()->data(),
         {});
@@ -4002,8 +3998,7 @@ std::map<OpId, OpId> Ir::cloneGraph(GraphId originalGraphId,
   for (const auto &tensorId : graphOutputTensorId) {
     auto tensorInfo = originalGraph.getTensors().get(tensorId)->info;
     auto clonedTensorId =
-        addScope(clonedGraph.getScope(),
-                 removeScope(originalGraph.getScope(), tensorId));
+        addScope(clonedGraph, removeScope(originalGraph, tensorId));
     clonedGraph.markAsOutput(clonedTensorId);
   }
 

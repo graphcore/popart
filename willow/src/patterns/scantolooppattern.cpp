@@ -64,21 +64,19 @@ bool ScanToLoopPattern::apply(Op *op) const {
     auto loopSubgraphScope = loopSubgraph.getScope();
 
     // Add mandatory loop iterator tensor to subgraph (is not an output)
-    TensorId loopSgItId =
-        addScope(loopSubgraph.getScope(), getLoopIteratorId());
+    TensorId loopSgItId = addScope(loopSubgraph, getLoopIteratorId());
     TensorId loopSgRevItId =
-        addScope(loopSubgraph.getScope(), getReversedLoopIteratorId());
+        addScope(loopSubgraph, getReversedLoopIteratorId());
     loopSubgraph.addInput(loopSgItId, TensorInfo(DataType::INT32, {}));
 
     // Add mandatory loop condition tensor to subgraph (is also an output)
-    TensorId loopSgCondId =
-        addScope(loopSubgraph.getScope(), reservedLoopCondPrefix());
+    TensorId loopSgCondId = addScope(loopSubgraph, reservedLoopCondPrefix());
     loopSubgraph.addInput(loopSgCondId, TensorInfo(DataType::BOOL, {}));
     loopSubgraph.markAsOutput(loopSgCondId);
 
     // Add reverse loop iterator
     TensorId loopSgMaxTripCountM1Id =
-        addScope(loopSubgraph.getScope(), getMaxTripCountM1Id());
+        addScope(loopSubgraph, getMaxTripCountM1Id());
     TensorInfo indexTensorInfo(DataType::INT32, {1});
     std::vector<int32_t> idData(1, scanOp->getTripCountValue() - 1);
     loopSubgraph.getTensors().addConstInit(
@@ -119,8 +117,7 @@ bool ScanToLoopPattern::apply(Op *op) const {
       auto varInId        = scanOp->inId(n);
       TensorId scanSgInId = scanSubgraph.getInputId(n);
       TensorId loopSgInId =
-          addScope(loopSubgraph.getScope(),
-                   removeScope(scanSubgraph.getScope(), scanSgInId));
+          addScope(loopSubgraph, removeScope(scanSubgraph, scanSgInId));
       tensorRemap[scanSgInId] = loopSgInId;
       loopOp->addLoopInput(
           LoopOp::getFirstInputInIndex() + n, varInId, loopSgInId, true);
@@ -131,8 +128,7 @@ bool ScanToLoopPattern::apply(Op *op) const {
       auto scanInId       = scanOp->inId(N + m);
       TensorId scanSgInId = scanSubgraph.getInputId(N + m);
       TensorId loopSgInId =
-          addScope(loopSubgraph.getScope(),
-                   removeScope(scanSubgraph.getScope(), scanSgInId));
+          addScope(loopSubgraph, removeScope(scanSubgraph, scanSgInId));
       tensorRemap[scanSgInId] = loopSgInId;
 
       TensorId loopSgInIdTmp0 = ir.createIntermediateTensorId(loopSgInId);
@@ -195,8 +191,7 @@ bool ScanToLoopPattern::apply(Op *op) const {
       auto implicitInId   = scanOp->inId(N + M + l);
       TensorId scanSgInId = scanSubgraph.getInputId(N + M + l);
       TensorId loopSgInId =
-          addScope(loopSubgraph.getScope(),
-                   removeScope(scanSubgraph.getScope(), scanSgInId));
+          addScope(loopSubgraph, removeScope(scanSubgraph, scanSgInId));
       tensorRemap[scanSgInId] = loopSgInId;
       loopOp->addLoopInput(LoopOp::getFirstInputInIndex() + N + M + l,
                            implicitInId,
@@ -220,8 +215,7 @@ bool ScanToLoopPattern::apply(Op *op) const {
       // Resolve Op outputs
       for (auto &out : scanSgOp->output->tensorMap()) {
         TensorId loopSgOutId =
-            addScope(loopSubgraph.getScope(),
-                     removeScope(scanSubgraph.getScope(), out.second->id));
+            addScope(loopSubgraph, removeScope(scanSubgraph, out.second->id));
         tensorRemap[out.second->id] = loopSgOutId;
         loopSgOp->createAndConnectOutTensor(out.first, loopSgOutId);
       }
@@ -247,7 +241,7 @@ bool ScanToLoopPattern::apply(Op *op) const {
       TensorId loopSgUpdatedId = ir.createIntermediateTensorId(loopSgOutId);
 
       TensorId initId       = ir.createIntermediateTensorId(scanOutId);
-      TensorId loopSgInitId = addScope(loopSubgraph.getScope(), initId);
+      TensorId loopSgInitId = addScope(loopSubgraph, initId);
 
       // For reshaping
       TensorId loopSgInitRId = ir.createIntermediateTensorId(loopSgInitId);
