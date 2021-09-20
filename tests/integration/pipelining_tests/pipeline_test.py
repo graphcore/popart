@@ -840,6 +840,37 @@ def test_recomputation(inputType):
     assert np.array_equal(w0, w1)
 
 
+# Test that pipeline IpuCopyOpx handles internal aliases correctly. Expectation
+# that the ConatOp output contains such internal aliases and the pipelined
+# program compiles successfully.
+def test_internal_alias_ipucopy():
+    builder = popart.Builder()
+
+    with builder.virtualGraph(0), builder.pipelineStage(0):
+        model_input = builder.addInputTensor(
+            popart.TensorInfo("FLOAT", [1, 2, 1]))
+        concat = builder.aiOnnx.concat([model_input, model_input], axis=1)
+
+    with builder.virtualGraph(1), builder.pipelineStage(1):
+        result = builder.aiOnnx.add([concat, concat])
+
+    opts = popart.SessionOptions()
+    opts.enablePipelining = True
+    opts.virtualGraphMode = popart.VirtualGraphMode.Manual
+
+    session = popart.InferenceSession(
+        fnModel=builder.getModelProto(),
+        dataFlow=popart.DataFlow(2, {result: popart.AnchorReturnType("All")}),
+        deviceInfo=tu.create_test_device(numIpus=2),
+        userOptions=opts)
+
+    session.prepareDevice()
+
+    feed_dict = {model_input: np.zeros([2, 2, 1], dtype=np.float32)}
+    stepio = popart.PyStepIO(feed_dict, session.initAnchorArrays())
+    session.run(stepio)
+
+
 @tu.requires_ipu_model
 def test_bad_auto_staging():
     bps = 4

@@ -4,6 +4,7 @@
 #include <popart/op/ipucopy.hpp>
 #include <popart/popx/devicex.hpp>
 #include <popart/popx/irlowering.hpp>
+#include <popart/popx/namesx.hpp>
 #include <popart/popx/op/ipucopyx.hpp>
 #include <popart/popx/opxmanager.hpp>
 #include <popart/tensorindex.hpp>
@@ -36,13 +37,14 @@ void IpuCopyOpx::grow(poplar::program::Sequence &prog) const {
   }
 }
 
-void IpuCopyOpx::createPipelinedOutput() const {
-
+PreparedCopyTensors IpuCopyOpx::createPipelinedOutput() const {
   const auto growTimeTracker =
       op_p->getIr().timePartitionLogger().scopedStopwatch(
           "Creating IpuCopy pipeline output (Ir Lowering)");
 
   IpuCopyOp &op = getOp<IpuCopyOp>();
+
+  PreparedCopyTensors copyTensors;
 
   logging::devicex::trace(
       "Creating destination tensors for {}, {}", op.str(), op.getFromToStr());
@@ -50,7 +52,7 @@ void IpuCopyOpx::createPipelinedOutput() const {
   for (auto &idx_tensor : op.input->tensorMap()) {
     auto idx = idx_tensor.first;
 
-    // When pipelining, create the copy destination, but dont add the copy
+    // When pipelining, create the copy destination, but don't add the copy
     // program.
     poplar::Tensor tLocalForCopy, tForCopy;
     auto t = poputil::createIpuCopy(dv_p->lowering().graph().getPoplarGraph(),
@@ -60,23 +62,28 @@ void IpuCopyOpx::createPipelinedOutput() const {
                                     tLocalForCopy,
                                     debugContext("createOutput"));
     setOutTensor(idx, snap::Tensor{t, dv_p->lowering().graph()});
+    copyTensors[idx] = {tForCopy, tLocalForCopy};
   }
+  return copyTensors;
 }
 
-void IpuCopyOpx::growPipelined(poplar::program::Sequence &prog) const {
+void IpuCopyOpx::growPipelined(poplar::program::Sequence &prog,
+                               PreparedCopyTensors copyTensors) const {
   IpuCopyOp &op = getOp<IpuCopyOp>();
 
   for (auto &idx_tensor : op.input->tensorMap()) {
     auto idx   = idx_tensor.first;
     auto outId = op_p->outId(idx);
 
-    auto &source      = getInTensor(idx).getPoplarTensor();
-    auto &destination = dv_p->lowering().tensors().get(outId);
+    // Use prepared tForCopy & tLocalForCopy tensors to mirror aliasing between
+    // source and destination tensor
 
     // Using dontOutline=false will ensure the copies (buffers & code) are
     // reused.
-    prog.add(poplar::program::Copy(
-        source, destination.getPoplarTensor(), false, debugContext()));
+    prog.add(poplar::program::Copy(copyTensors.at(idx).first,
+                                   copyTensors.at(idx).second,
+                                   false,
+                                   debugContext()));
   }
 }
 

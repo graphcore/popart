@@ -3,6 +3,7 @@
 #define GUARD_NEURALNET_IPUCOPYX_HPP
 
 #include <popart/names.hpp>
+#include <popart/popx/namesx.hpp>
 #include <popart/popx/popopx.hpp>
 
 namespace popart {
@@ -17,10 +18,10 @@ public:
   // When pipelining is enabled, `IpuCopyOpx::grow` is not used.
   // `createPipelinedOutput` is used in place of grow, and created the
   // destination tensor for the copy.
-  void createPipelinedOutput() const;
+  PreparedCopyTensors createPipelinedOutput() const;
   // `growPipelined` add the copy program to the input Sequence. This is called
   // for every pipeline cycle the copy appears in.
-  void growPipelined(poplar::program::Sequence &) const;
+  void growPipelined(poplar::program::Sequence &, PreparedCopyTensors) const;
 
   InputCreatorType getInputCreatorType(InIndex index) const final {
     return InputCreatorType::CanUnwind;

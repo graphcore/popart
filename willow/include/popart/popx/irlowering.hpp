@@ -23,6 +23,7 @@
 #include <popart/popx/enigma.hpp>
 #include <popart/popx/inittensor.hpp>
 #include <popart/popx/linearmapper.hpp>
+#include <popart/popx/namesx.hpp>
 #include <popart/popx/opxstate.hpp>
 #include <popart/popx/poplaroptionsx.hpp>
 #include <popart/popx/popprograms.hpp>
@@ -150,6 +151,9 @@ private:
 
   // Keep track of which tensors already have been printed
   std::unordered_set<TensorId> printedTensorIds;
+
+  // Keep track of Pipeline IPU copy source and targets
+  std::map<OpId, PreparedCopyTensors> pipelineIpuCopySrcDst;
 
   // This keeps track of whether there the accumulateOuterFragment is empty
   // TODO T12001 a class which encapsulates framgments which has this attribute.

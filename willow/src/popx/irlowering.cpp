@@ -1465,7 +1465,8 @@ PriTask IrLowering::pipelinedCopyTask(Op *op, TaskId prevTaskId) {
                         copyOp->debugName(),
                         copyOp->getFromToStr(),
                         copyOp->getPipelineStage()));
-    copyOpx->growPipelined(seqs.getSequence(&prog));
+    copyOpx->growPipelined(seqs.getSequence(&prog),
+                           pipelineIpuCopySrcDst[copyOp->id]);
     return seqs;
   };
 
@@ -2416,7 +2417,8 @@ void IrLowering::pipelinedOpTaskFunc(TaskId taskId, Op *op, SequenceMap &seqs) {
       // `createPipelinedOutput` method. Later, for each pipeline cycle
       // the copy appears in, a new copy program is added to the cycles
       // sequence using `IpuCopyOpx::growPipelined`.
-      dynamic_cast<IpuCopyOpx *>(opx)->createPipelinedOutput();
+      pipelineIpuCopySrcDst[op->id] =
+          dynamic_cast<IpuCopyOpx *>(opx)->createPipelinedOutput();
     } else if (op->settings.recomputeType == RecomputeType::Checkpoint ||
                op->settings.recomputeType == RecomputeType::Undefined) {
       logging::devicex::debug(
