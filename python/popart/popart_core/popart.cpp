@@ -183,7 +183,7 @@ public:
 
   void assertNumElements(const popx::Executablex &) const final {}
 
-  ConstVoidData in(TensorId id, int64_t, bool prefetch) final {
+  ConstVoidData in(TensorId id, int64_t, bool prefetch)final {
     py::gil_scoped_acquire acquire;
     py::array a = inputCb(id, prefetch);
     if (!isContiguous(a)) {
@@ -2551,6 +2551,11 @@ PYBIND11_MODULE(popart_core, m) {
             py::arg("top_paths")     = 1,
             py::arg("debug_context") = std::string(),
             DOC(popart, AiGraphcoreOpset1, ctcbeamsearchdecoder));
+    cls.def("swish",
+            &AiGraphcoreOpset1::swish,
+            py::arg("args")         = pybind11::list(),
+            py::arg("debugContext") = std::string(),
+            DOC(popart, AiGraphcoreOpset1, swish));
   }
   {
     py::class_<Builder> cls(m, "_BuilderCore");

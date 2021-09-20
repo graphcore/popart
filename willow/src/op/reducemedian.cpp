@@ -37,7 +37,7 @@ bool ReduceMedianOp::canBeReplacedByIdentity() const {
 
 ReduceMedianGradOp::ReduceMedianGradOp(const ReduceMedianOp &fwd_op,
                                        const Shape &backward_shape)
-    : ReduceGradOp(Onnx::GradOperators::ReduceMedianGrad,
+    : ReduceGradOp(Onnx::CustomGradOperators::ReduceMedianGrad,
                    fwd_op,
                    backward_shape) {}
 

@@ -851,6 +851,18 @@ public:
                          Attributes::Int axis       = -1,
                          ScatterReduction reduction = ScatterReduction::Sum,
                          const DebugContext &debugContext = {});
+
+  /**
+   * Add a swish operation to the model.
+   *
+   * The operation computes the swish activation function, also known
+   * as the SiLU activation.
+   *
+   * \param args Vector with single input tensor id.
+   * \return The name of the result tensor.
+   */
+  TensorId swish(const std::vector<TensorId> &args,
+                 const DebugContext &debugContext = {});
 };
 
 /**

@@ -197,7 +197,6 @@ const static AiGraphcoreOpIdV1 ReduceLogSumExpGrad("ReduceLogSumExpGrad");
 const static AiGraphcoreOpIdV1 ReduceLogSumGrad("ReduceLogSumGrad");
 const static AiGraphcoreOpIdV1 ReduceMaxGrad("ReduceMaxGrad");
 const static AiGraphcoreOpIdV1 ReduceMeanGrad("ReduceMeanGrad");
-const static AiGraphcoreOpIdV1 ReduceMedianGrad("ReduceMedianGrad");
 const static AiGraphcoreOpIdV1 ReduceMinGrad("ReduceMinGrad");
 const static AiGraphcoreOpIdV1 ReduceProdGrad("ReduceProdGrad");
 const static AiGraphcoreOpIdV1 ReduceSumGrad("ReduceSumGrad");
@@ -373,6 +372,8 @@ const static AiGraphcoreOpIdV1 Stash("Stash");
 const static AiGraphcoreOpIdV1 Subsample_1("Subsample", 1, 1);
 const static AiGraphcoreOpIdV1 SubsampleInplace("SubsampleInplace");
 const static AiGraphcoreOpIdV1 Sync("Sync");
+const static AiGraphcoreOpIdV1 Swish("Swish", 1, 1);
+const static AiGraphcoreOpIdV1 SwishInplace("SwishInplace");
 const static AiGraphcoreOpIdV1 ThresholdedReluInplace("ThresholdedReluInplace");
 const static AiGraphcoreOpIdV1 TiedGather("PopartTiedGather");
 const static AiGraphcoreOpIdV1 TransposeInplace("TransposeInplace");
@@ -442,6 +443,7 @@ const static OperatorIdentifier ShapedDropout =
 const static OperatorIdentifier Subsample     = CustomOperators::Subsample_1;
 const static OperatorIdentifier Abort         = CustomOperators::Abort;
 const static OperatorIdentifier ScatterReduce = CustomOperators::ScatterReduce;
+const static OperatorIdentifier Swish         = CustomOperators::Swish;
 } // namespace OpSet1
 } // namespace AiGraphcore
 
@@ -463,9 +465,11 @@ const static AiGraphcoreOpIdV1 IfGrad("IfGrad");
 const static AiGraphcoreOpIdV1 L1Grad("L1Grad");
 const static AiGraphcoreOpIdV1 NllGrad("NllGrad");
 const static AiGraphcoreOpIdV1 CtcGrad("CtcGrad");
+const static AiGraphcoreOpIdV1 ReduceMedianGrad("ReduceMedianGrad");
 const static AiGraphcoreOpIdV1 ScatterReduceGradOp("ScatterReduceGradOp");
 const static AiGraphcoreOpIdV1 SoftmaxGradDirect("SoftmaxGradDirect");
 const static AiGraphcoreOpIdV1 SubsampleGrad("SubsampleGrad");
+const static AiGraphcoreOpIdV1 SwishGrad("SwishGrad");
 const static AiGraphcoreOpIdV1 UnaryZeroGradOp("UnaryZeroGrad");
 } // namespace CustomGradOperators
 } // namespace Onnx

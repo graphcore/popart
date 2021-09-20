@@ -88,7 +88,7 @@ void ReduceMedianOpx::grow(poplar::program::Sequence &prog) const {
 
 ReduceMedianGradOpx::ReduceMedianGradOpx(Op *op, Devicex *devicex)
     : PopOpx(op, devicex) {
-  verifyOp<ReduceMedianGradOp>(op, Onnx::GradOperators::ReduceMedianGrad);
+  verifyOp<ReduceMedianGradOp>(op, Onnx::CustomGradOperators::ReduceMedianGrad);
 }
 
 void ReduceMedianGradOpx::grow(poplar::program::Sequence &prog) const {
@@ -193,7 +193,7 @@ namespace {
 OpxCreator<ReduceMedianOpx>
     ReduceMedianOpxCreator({Onnx::AiGraphcore::OpSet1::ReduceMedian});
 OpxCreator<ReduceMedianGradOpx>
-    ReduceMedianGradOpxCreator(Onnx::GradOperators::ReduceMedianGrad);
+    ReduceMedianGradOpxCreator(Onnx::CustomGradOperators::ReduceMedianGrad);
 } // namespace
 
 } // namespace popx

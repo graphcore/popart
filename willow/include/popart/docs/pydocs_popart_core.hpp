@@ -1328,6 +1328,18 @@ Parameter ``debugContext``:
 Returns:
     The name of the result tensor.)doc";
 
+static const char *__doc_popart_AiGraphcoreOpset1_swish =
+    R"doc(Add a swish operation to the model.
+
+The operation computes the swish activation function, also known as
+the SiLU activation.
+
+Parameter ``args``:
+    Vector with single input tensor id.
+
+Returns:
+    The name of the result tensor.)doc";
+
 static const char *__doc_popart_AiOnnxMlOpset1 = R"doc()doc";
 
 static const char *__doc_popart_AiOnnxMlOpset1_AiOnnxMlOpset1 = R"doc()doc";
