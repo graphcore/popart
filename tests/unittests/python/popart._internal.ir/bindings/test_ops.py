@@ -296,14 +296,14 @@ def test_gather_op(connected: bool) -> None:
     main = graphs[0]
     num_inputs = _ir.NumInputs(2, 2)
     in0 = add_actgrad_tensor("in0", [8], main, _ir.DataType.INT32)
-    weight = add_random_tensor("weight", _ir.TensorType.Variable, [16, 4],
-                               main)
+    indices = add_random_tensor("indices", _ir.TensorType.Variable, [16, 4],
+                                main)
     out0 = add_actgrad_tensor("out0", [8, 4], main)
 
     opid = _ir.OperatorIdentifier("ai.graphcore", "Gather", 11, num_inputs, 1)
     settings = _ir.Settings(main, "gather")
     if connected:
-        ins: Dict[int, str] = {0: in0.id, 1: weight.id}
+        ins: Dict[int, str] = {0: in0.id, 1: indices.id}
         outs: Dict[int, str] = {0: out0.id}
         op = main.createConnectedOp_GatherOp(
             ins,
@@ -321,7 +321,45 @@ def test_gather_op(connected: bool) -> None:
         available_memory_proportion_=_ir.OptionalFloat(0.4),
         settings=settings)
     op.connectInTensor(0, in0.id)
-    op.connectInTensor(1, weight.id)
+    op.connectInTensor(1, indices.id)
+    op.connectOutTensor(0, out0.id)
+    op.setup()
+
+
+@pytest.mark.parametrize("connected", [True, False])
+def test_tiedgather_op(connected: bool) -> None:
+    """Test the Tied Gather Op.
+
+    Args:
+        connected (bool): Whether to use the createConnected<opname> function or
+            just create<opname>
+    """
+    _, graphs = create_ir()
+    main = graphs[0]
+    num_inputs = _ir.NumInputs(2, 2)
+    in0 = add_actgrad_tensor("in0", [8], main, _ir.DataType.INT32)
+    indices = add_random_tensor("indices", _ir.TensorType.Variable, [16, 4],
+                                main)
+    out0 = add_actgrad_tensor("out0", [8, 4], main)
+
+    settings = _ir.Settings(main, "tiedgather")
+    if connected:
+        ins: Dict[int, str] = {0: in0.id, 1: indices.id}
+        outs: Dict[int, str] = {0: out0.id}
+        op = main.createConnectedOp_TiedGatherOp(
+            ins,
+            outs,
+            axis_=0,
+            available_memory_proportion_=_ir.OptionalFloat(0.4),
+            settings=settings)
+        op.setup()
+        return
+    op = main.createOp_TiedGatherOp(
+        axis_=0,
+        available_memory_proportion_=_ir.OptionalFloat(0.4),
+        settings=settings)
+    op.connectInTensor(0, in0.id)
+    op.connectInTensor(1, indices.id)
     op.connectOutTensor(0, out0.id)
     op.setup()
 
@@ -370,42 +408,4 @@ def test_group_norm_op(connected: bool, num_groups: int) -> None:
     op.connectOutTensor(0, out.id)
     op.connectOutTensor(1, mean.id)
     op.connectOutTensor(2, invstddev.id)
-    op.setup()
-
-
-@pytest.mark.parametrize("connected", [True, False])
-def test_tiedgather_op(connected: bool) -> None:
-    """Test the Tied Gather Op.
-
-    Args:
-        connected (bool): Whether to use the createConnected<opname> function or
-            just create<opname>
-    """
-    _, graphs = create_ir()
-    main = graphs[0]
-    num_inputs = _ir.NumInputs(2, 2)
-    in0 = add_actgrad_tensor("in0", [8], main, _ir.DataType.INT32)
-    weight = add_random_tensor("weight", _ir.TensorType.Variable, [16, 4],
-                               main)
-    out0 = add_actgrad_tensor("out0", [8, 4], main)
-
-    settings = _ir.Settings(main, "tiedgather")
-    if connected:
-        ins: Dict[int, str] = {0: in0.id, 1: weight.id}
-        outs: Dict[int, str] = {0: out0.id}
-        op = main.createConnectedOp_TiedGatherOp(
-            ins,
-            outs,
-            axis_=0,
-            available_memory_proportion_=_ir.OptionalFloat(0.4),
-            settings=settings)
-        op.setup()
-        return
-    op = main.createOp_TiedGatherOp(
-        axis_=0,
-        available_memory_proportion_=_ir.OptionalFloat(0.4),
-        settings=settings)
-    op.connectInTensor(0, in0.id)
-    op.connectInTensor(1, weight.id)
-    op.connectOutTensor(0, out0.id)
     op.setup()

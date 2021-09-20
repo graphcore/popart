@@ -4,6 +4,8 @@
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
+#include <popart/basicoptionals.hpp>
+#include <popart/tensorinfo.hpp>
 #include <popart/vendored/optional.hpp>
 
 namespace py = pybind11;
@@ -26,12 +28,16 @@ void bindOptional(py::module &m) {
   using OptFloat = nonstd::optional<float>;
 
   py::class_<OptFloat>(m, "OptionalFloat")
-      // .def(py::init<>()) <- Don't bind, leads to bad optional access.
+      .def(py::init<>())
       .def(py::init<float>())
       .def("__str__",
            [](OptFloat &self) { return std::to_string(self.value()); })
       .def("__repr__",
            [](OptFloat &self) { return std::to_string(self.value()); });
+
+  py::class_<BasicOptional<popart::DataType, 0>>(m, "OptionalDataType")
+      .def(py::init<>())
+      .def(py::init<DataType>());
 }
 } // namespace op
 } // namespace ir
