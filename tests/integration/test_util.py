@@ -185,3 +185,28 @@ def requires_ipu_model(func):
         _run_test_on_target(func, "IpuModel", args, kwargs)
 
     return decorated_func
+
+
+def set_autoreport_options(options,
+                           directory,
+                           output_graph_profile=True,
+                           output_execution_profile=False,
+                           max_execution_reports=1000):
+    """Sets autoReport engine options in the IPUConfig.
+
+    Set outputExecutionProfile to True to allow execution reports to be
+    generated.
+
+    If execution reports are enabled, max_execution_reports controls the
+    maximum number of executions included in a report.
+    """
+    engineOptions = {
+        "autoReport.directory": str(directory),
+        "autoReport.outputGraphProfile": str(output_graph_profile).lower(),
+        "autoReport.outputExecutionProfile":
+        str(output_execution_profile).lower(),
+        "autoReport.executionProfileProgramRunCount":
+        str(max_execution_reports),
+    }
+    for opt in engineOptions:
+        options.engineOptions[opt] = engineOptions[opt]

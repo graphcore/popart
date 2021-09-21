@@ -10,6 +10,8 @@ import pytest
 
 import popart
 
+import pva
+
 # `import test_util` requires adding to sys.path
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 import test_util as tu
@@ -40,6 +42,63 @@ Expectation: Anchor streams (Anchor) and inputs (X0, ..., X1, Labels),
              or from the IPU to the host (anchors),
              will overlap in time with the MatMul operations.
 """
+
+
+def get_compute_io_overlap_percentage(report, runIndex):
+    """
+    Returns the percentage of compute and IO overlapped in the execution
+    report.
+    """
+
+    # Execution steps for the run at runIndex
+    steps = report.execution.runs[runIndex].steps
+    computeIntervals = []
+    streamCopyIntervals = []
+
+    class IntervalVisitor(pva.ProgramVisitor):
+        streamCopyStart = 0
+        streamCopyMid = False
+
+        def __init__(self, cyclesFrom, cyclesTo):
+            self.cyclesFrom = cyclesFrom
+            self.cyclesTo = cyclesTo
+            super(IntervalVisitor, self).__init__()
+
+        def visitOnTileExecute(self, _):
+            computeIntervals.append([self.cyclesFrom.max, self.cyclesTo.max])
+
+        def visitStreamCopyMid(self, _):
+            streamCopyIntervals.append(
+                [self.cyclesFrom.max, self.cyclesTo.max])
+
+    for step in steps:
+        ipu = step.ipus[0]
+        f = ipu.activeCycles.cyclesFrom
+        t = ipu.activeCycles.cyclesTo
+        v = IntervalVisitor(f, t)
+        step.program.accept(v)
+
+        def checkOverlap(low1, high1, low2, high2):
+            return low1 < high2 and low2 < high1
+
+        def getOverlap(low1, high1, low2, high2):
+            overlap = min(high1, high2) - max(low1, low2)
+            return overlap
+
+        # Compute amount of overlap of compute and stream copy (mid) intervals
+        overlap = 0
+        for compute in computeIntervals:
+            for stream in streamCopyIntervals:
+                if checkOverlap(compute[0], compute[1], stream[0], stream[1]):
+                    overlap += getOverlap(compute[0], compute[1], stream[0],
+                                          stream[1])
+
+    computeTotal, streamCopyTotal = (
+        sum(i[1] - i[0] for i in intervals)
+        for intervals in [computeIntervals, streamCopyIntervals])
+
+    # Return percentage overlap
+    return max(overlap / streamCopyTotal, overlap / computeTotal)
 
 
 def get_model(size, batches_per_step, num_inputs, num_matmuls, tile_set,
@@ -84,7 +143,7 @@ def get_model(size, batches_per_step, num_inputs, num_matmuls, tile_set,
     return proto, inputs, weights, labels, dataFlow, loss, sum
 
 
-def run_model(batches_per_step, accum_factor, replicas, tile_set,
+def run_model(tmpdir, batches_per_step, accum_factor, replicas, tile_set,
               exchange_strategy):
     size = 64
 
@@ -94,13 +153,16 @@ def run_model(batches_per_step, accum_factor, replicas, tile_set,
     opts = popart.SessionOptions()
     opts.enableExplicitMainLoops = True
     opts.useHostCopyOps = True
-    opts.instrumentWithHardwareCycleCounter = True
+    opts.instrumentWithHardwareCycleCounter = False
     opts.virtualGraphMode = popart.VirtualGraphMode.Auto
 
     # Both true & false should work - testing with false to avoid
     # host-cycle-overhead
     opts.rearrangeAnchorsOnHost = False
     opts.rearrangeStreamsOnHost = False
+
+    # Set session options to generate the report
+    tu.set_autoreport_options(opts, tmpdir, output_execution_profile=True)
 
     if accum_factor > 1:
         opts.enableGradientAccumulation = True
@@ -140,9 +202,8 @@ def run_model(batches_per_step, accum_factor, replicas, tile_set,
 
     session.weightsFromHost()
 
-    warmup_iterations = 5
-    calc_iterations = 20
-    cycles = 0
+    warmup_iterations = 1
+    calc_iterations = 1
 
     for i in range(warmup_iterations + calc_iterations):
         datainputs = {
@@ -155,9 +216,6 @@ def run_model(batches_per_step, accum_factor, replicas, tile_set,
             0, size, (replicas * batches_per_step * accum_factor, 1, size))
         stepio = popart.PyStepIO(datainputs, anchors)
         session.run(stepio)
-        if i >= warmup_iterations:
-            cycles += session.getCycleCount()
-    cycles = cycles / calc_iterations
 
     session.weightsToHost()
     weights_data = {
@@ -170,17 +228,20 @@ def run_model(batches_per_step, accum_factor, replicas, tile_set,
     for w in weights_data:
         assert np.count_nonzero(np.isnan(weights_data[w])) == 0
 
-    print("Cycles: ", cycles)
+    report = session.getReport()
 
-    return cycles, weights_data
+    overlapPercentage = get_compute_io_overlap_percentage(
+        report, warmup_iterations)
+
+    return overlapPercentage, weights_data
 
 
-def test_overlap_training():
-    c0, w0 = run_model(4, 8, 16, popart.TileSet.Compute,
+def test_overlap_training(tmpdir):
+    p0, w0 = run_model(tmpdir, 1, 8, 2, popart.TileSet.Compute,
                        popart.ExchangeStrategy.JustInTime)
-    c1, w1 = run_model(4, 8, 16, popart.TileSet.IO,
+    p1, w1 = run_model(tmpdir, 1, 8, 2, popart.TileSet.IO,
                        popart.ExchangeStrategy.JustInTime)
-    c2, w2 = run_model(4, 8, 16, popart.TileSet.IO,
+    p2, w2 = run_model(tmpdir, 1, 8, 2, popart.TileSet.IO,
                        popart.ExchangeStrategy.OverlapInnerLoop)
 
     # Check all weights are equal
@@ -188,6 +249,17 @@ def test_overlap_training():
         assert np.allclose(w0[w], w1[w], equal_nan=False)
         assert np.allclose(w0[w], w2[w], equal_nan=False)
 
-    # Check overlapped IO is at least 10% faster
-    assert (c2 < 0.9 * c0)
-    assert (c2 < 0.9 * c1)
+    # Reference values (MK2 C200):
+    # p0 0.0
+    # p1 0.14851003840357785
+    # p2 0.4811525129982669
+
+    print("p0", p0)
+    print("p1", p1)
+    print("p2", p2)
+
+    # Check that overlapped IO increases compute-IO overlap percentage significantly
+    # At least 25% more than not using IO tiles at all
+    assert p2 - p0 > 0.25
+    # At least 25% more than using IO tiles but no overlap strategy
+    assert p2 - p1 > 0.25
