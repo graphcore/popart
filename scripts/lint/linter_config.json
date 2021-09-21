@@ -22,6 +22,7 @@
                 "(.arclint)",
                 "(.arcconfig)",
                 "(.json$)",
+                "(.rst$)",
                 "(.md$)"
             ]
         }

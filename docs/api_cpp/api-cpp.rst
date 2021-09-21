@@ -137,7 +137,7 @@ Stochastic Gradient Descent (SGD)
 
   #include <popart/optimizer.hpp>
 
-.. doxygenstruct:: popart::ClipNormSettings
+.. doxygenclass:: popart::ClipNormSettings
   :members:
 
 .. doxygenclass:: popart::SGD
@@ -184,9 +184,6 @@ Builder
    :members:
 
 .. doxygenclass:: popart::AiGraphcoreOpset1
-   :members:
-
-.. doxygenclass:: popart::BuilderImpl
    :members:
 
 
