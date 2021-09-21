@@ -183,7 +183,7 @@ public:
 
   void assertNumElements(const popx::Executablex &) const final {}
 
-  ConstVoidData in(TensorId id, int64_t, bool prefetch)final {
+  ConstVoidData in(TensorId id, int64_t, bool prefetch) final {
     py::gil_scoped_acquire acquire;
     py::array a = inputCb(id, prefetch);
     if (!isContiguous(a)) {
@@ -1839,6 +1839,26 @@ PYBIND11_MODULE(popart_core, m) {
             &InferenceSession::serializeIr,
             py::arg("format"),
             DOC(popart, Session, serializeIr));
+    // Helpers needed to implement the extra public methods defined in the
+    // Python Session classes directly, rather than the C++ class.
+    cls.def(
+        "_getDataFlow",
+        [](const InferenceSession &s) { return s.getIr().getDataFlow(); },
+        py::return_value_policy::reference);
+    cls.def(
+        "_replicationFactor",
+        [](const InferenceSession &s) -> int64_t {
+          const auto &opts = s.getIr().getSessionOptions();
+          return opts.enableReplicatedGraphs ? opts.replicatedGraphCount : 1;
+        },
+        py::return_value_policy::reference);
+    cls.def(
+        "_accumulationFactor",
+        [](const InferenceSession &s) -> int64_t {
+          const auto &opts = s.getIr().getSessionOptions();
+          return opts.enableGradientAccumulation ? opts.accumulationFactor : 1;
+        },
+        py::return_value_policy::reference);
   }
   {
     py::class_<TrainingSession> cls(m, "_TrainingSessionCore");
@@ -1967,6 +1987,26 @@ PYBIND11_MODULE(popart_core, m) {
     cls.def("connectStreamToCallback",
             &TrainingSession::connectStreamToCallback,
             DOC(popart, Session, connectStreamToCallback));
+    // Helpers needed to implement the extra public methods defined in the
+    // Python Session classes directly, rather than the C++ class.
+    cls.def(
+        "_getDataFlow",
+        [](const InferenceSession &s) { return s.getIr().getDataFlow(); },
+        py::return_value_policy::reference);
+    cls.def(
+        "_replicationFactor",
+        [](const InferenceSession &s) -> int64_t {
+          const auto &opts = s.getIr().getSessionOptions();
+          return opts.enableReplicatedGraphs ? opts.replicatedGraphCount : 1;
+        },
+        py::return_value_policy::reference);
+    cls.def(
+        "_accumulationFactor",
+        [](const InferenceSession &s) -> int64_t {
+          const auto &opts = s.getIr().getSessionOptions();
+          return opts.enableGradientAccumulation ? opts.accumulationFactor : 1;
+        },
+        py::return_value_policy::reference);
   }
   {
     py::class_<GraphTransformer> cls(m, "GraphTransformer");

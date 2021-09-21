@@ -140,11 +140,17 @@ class InferenceSession(_InferenceSessionCore):
               self).__init__(fnModel, dataFlow, deviceInfo, inputShapeInfo,
                              userOptions, patterns, name)
 
-        self.dataFlow = dataFlow
-        self.replicationFactor = userOptions.replicatedGraphCount if \
-            userOptions.enableReplicatedGraphs else 1
-        self.accumulationFactor = userOptions.accumulationFactor if \
-            userOptions.enableGradientAccumulation else 1
+    @property
+    def dataFlow(self):
+        return self._getDataFlow()
+
+    @property
+    def replicationFactor(self):
+        return self._replicationFactor()
+
+    @property
+    def accumulationFactor(self):
+        return self._accumulationFactor()
 
     def initAnchorArrays(self) -> Dict[str, np.array]:
         """Create the anchor arrays to feed data back into Python with.
@@ -247,11 +253,17 @@ class TrainingSession(_TrainingSessionCore):
               self).__init__(fnModel, dataFlow, loss, optimizer, deviceInfo,
                              inputShapeInfo, userOptions, patterns, name)
 
-        self.dataFlow = dataFlow
-        self.replicationFactor = userOptions.replicatedGraphCount if \
-            userOptions.enableReplicatedGraphs else 1
-        self.accumulationFactor = userOptions.accumulationFactor if \
-            userOptions.enableGradientAccumulation else 1
+    @property
+    def dataFlow(self):
+        return self._getDataFlow()
+
+    @property
+    def replicationFactor(self):
+        return self._replicationFactor()
+
+    @property
+    def accumulationFactor(self):
+        return self._accumulationFactor()
 
     def initAnchorArrays(self) -> Dict[str, np.array]:
         """Create the anchor arrays to feed data back into Python with.
