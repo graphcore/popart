@@ -125,7 +125,7 @@ bool ParsedTensorId::scopeExist(const Scope &s) {
     auto foundScopes = findMatches(tId, sVec);
 
     if (!foundScopes.empty()) {
-      for (auto const fs : foundScopes) {
+      for (auto const &fs : foundScopes) {
         if (std::find(scopes.begin(), scopes.end(), fs) == scopes.end()) {
           return false;
         }
