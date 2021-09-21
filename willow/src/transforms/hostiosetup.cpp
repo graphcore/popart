@@ -25,7 +25,8 @@ bool HostIOSetup::apply(Graph &graph) const {
 
   if (pass == 1) {
     for (auto &t : graph.getTensors().getOfType(TensorType::Stream)) {
-      if (!t->isOptimizerTensor()) {
+      // Skip tensors that are not streamed like regular input streams
+      if (!t->isOptimizerTensor() && !t->isRandomSeedTensor()) {
         setupHostLoadOps(t);
       }
     }

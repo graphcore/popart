@@ -32,12 +32,16 @@ Run = collections.namedtuple("Run",
 whole = Slice(index=0, total_slices=1)
 
 
-def test_random_behaviour_governed_by_seed():
+@pytest.mark.parametrize("useHostCopyOps", [False, True])
+def test_random_behaviour_governed_by_seed(useHostCopyOps):
     """
     Create a model with 1 dropout and run it a few times with different session
     seeds. Check that using the same seed results in the same output and using
     different seeds results in different outputs.
     """
+
+    options = popart.SessionOptions()
+    options.useHostCopyOps = useHostCopyOps
 
     num_steps = 1
     num_elems = 100
@@ -52,9 +56,18 @@ def test_random_behaviour_governed_by_seed():
             [main_dropout0], reduction=popart.ReductionType.Mean)
         return loss, {main_in0: d0}, {'main_dropout0': main_dropout0}
 
-    run0 = run_model(builder_fn=model_fn, steps=num_steps, seed=0)
-    run1 = run_model(builder_fn=model_fn, steps=num_steps, seed=0)
-    run2 = run_model(builder_fn=model_fn, steps=num_steps, seed=11583)
+    run0 = run_model(builder_fn=model_fn,
+                     steps=num_steps,
+                     seed=0,
+                     options=options)
+    run1 = run_model(builder_fn=model_fn,
+                     steps=num_steps,
+                     seed=0,
+                     options=options)
+    run2 = run_model(builder_fn=model_fn,
+                     steps=num_steps,
+                     seed=11583,
+                     options=options)
 
     # run0 and run1 (which use the same seed) should agree on each step.
     for s in range(num_steps):
@@ -471,7 +484,11 @@ def test_random_op_in_loop_body():
                 # yapf: enable
 
 
-def run_model(builder_fn, steps, seed, training=True):
+def run_model(builder_fn,
+              steps,
+              seed,
+              training=True,
+              options=popart.SessionOptions()):
     """
     Helper function that runs a model and returns the anchors.
 
@@ -494,7 +511,6 @@ def run_model(builder_fn, steps, seed, training=True):
          for op in random_outs.items()})
 
     proto = builder.getModelProto()
-    options = popart.SessionOptions()
     optimizer = popart.SGD({"defaultLearningRate": (0.1, True)})
     patterns = popart.Patterns()
 
