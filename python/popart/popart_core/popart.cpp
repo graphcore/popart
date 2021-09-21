@@ -2409,6 +2409,7 @@ PYBIND11_MODULE(popart_core, m) {
             py::arg("planType")                   = pybind11::none(),
             py::arg("perConvReservedTiles")       = pybind11::none(),
             py::arg("cycleBackOff")               = pybind11::none(),
+            py::arg("enableConvDithering")        = pybind11::bool_(),
             py::arg("debugPrefix")                = std::string(),
             DOC(popart, AiGraphcoreOpset1, multiconv));
     cls.def("multiconv",
@@ -2424,6 +2425,7 @@ PYBIND11_MODULE(popart_core, m) {
             py::arg("planType")                   = pybind11::none(),
             py::arg("perConvReservedTiles")       = pybind11::none(),
             py::arg("cycleBackOff")               = pybind11::none(),
+            py::arg("enableConvDithering")        = pybind11::bool_(),
             py::arg("debugContext")               = std::string(),
             DOC(popart, AiGraphcoreOpset1, multiconv));
     cls.def("shapeddropout",

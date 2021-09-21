@@ -160,6 +160,8 @@ static constexpr const char *sRecomputeOutputAttribute =
 static constexpr const char *sPartialsTypeAttribute  = "__partials_type";
 static constexpr const char *sAvailMemAttribute      = "__available_memory";
 static constexpr const char *sPipelineStageAttribute = "__pipeline_stage";
+static constexpr const char *sEnableConvDitheringAttribute =
+    "__enable_conv_dithering";
 static constexpr const char *sOutputTensorLocationAttribute =
     "__output_tensor_location";
 static constexpr const char *sOutputTypeAttribute       = "__output_type";

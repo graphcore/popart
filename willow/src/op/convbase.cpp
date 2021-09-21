@@ -80,6 +80,12 @@ MultiConvOptions::MultiConvOptions(
       partialsTypes = pts;
     }
   }
+
+  if (attr.hasAttribute(sEnableConvDitheringAttribute)) {
+    enableConvDithering =
+        attr.getAttribute<Attributes::String>(sEnableConvDitheringAttribute);
+  }
+
   // Catch bad string early (i.e. before handing off to poplar)
   if (partialsTypes.size()) {
     // Convert to lower case
@@ -149,6 +155,9 @@ MultiConvOptions::getConvOptions(int convIndex) const {
   if (availableMemoryProportions.size()) {
     strings["availableMemoryProportion"] =
         std::to_string(availableMemoryProportions[convIndex]);
+  }
+  if (enableConvDithering) {
+    strings["enableConvDithering"] = *enableConvDithering;
   }
   return strings;
 }

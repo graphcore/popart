@@ -168,6 +168,9 @@ public:
    * \param planType Run convolutions in parallel or series.
    * \param perConvReservedTiles Tiles to reserve per convolution when planning.
    * \param cycleBackOff Cycle back-off proportion, [0, 1).
+   * \param enableConvDithering If true, then convolutions with different
+            parameters will be laid out from different tiles in an effort to
+            improve tile balance in models.
    * \param debugContext Optional debug context.
    *
    * All input vectors must be either empty, or equal in length to
@@ -189,6 +192,7 @@ public:
             const nonstd::optional<std::string> planType     = nonstd::nullopt,
             const nonstd::optional<int> perConvReservedTiles = nonstd::nullopt,
             const nonstd::optional<float> cycleBackOff       = nonstd::nullopt,
+            const nonstd::optional<bool> enableConvDithering = nonstd::nullopt,
             const DebugContext &debugContext                 = {});
 
   /**

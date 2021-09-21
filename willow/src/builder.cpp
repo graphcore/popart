@@ -496,6 +496,7 @@ std::vector<TensorId> AiGraphcoreOpset1::multiconv(
     const nonstd::optional<std::string> planType,
     const nonstd::optional<int> perConvReservedTiles,
     const nonstd::optional<float> cycleBackOff,
+    const nonstd::optional<bool> enableConvDithering,
     const DebugContext &debugContext) {
 
   // Some checks:
@@ -636,6 +637,11 @@ std::vector<TensorId> AiGraphcoreOpset1::multiconv(
     finalAttributes[sPartialsTypeAttribute] = partialsTypes;
   }
   finalAttributes["numConvs"] = static_cast<int64_t>(numConvs);
+  if (enableConvDithering) {
+    bool value{*enableConvDithering};
+    finalAttributes[sEnableConvDitheringAttribute] =
+        std::string(value ? "true" : "false");
+  }
 
   BuilderDebugInfo di(
       debugContext, __POPART_FUNCTION_NAME__, flatTensors, finalAttributes);

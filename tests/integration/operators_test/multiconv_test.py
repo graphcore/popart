@@ -4,7 +4,9 @@ import numpy as np
 import popart
 import torch
 import pytest
+import re
 from op_tester import op_tester
+from unittest.mock import patch
 
 # `import test_util` requires adding to sys.path
 import sys
@@ -360,3 +362,89 @@ def _torch_convolution(numDims, shapes, dilation, padding, stride):
         raise Exception("Torch convoltion dims can be only 1, 2 or 3")
 
     return conv
+
+
+@pytest.fixture(scope="module", autouse=True)
+def enable_poplibs_logging():
+    with patch.dict("os.environ", {"POPLIBS_LOG_LEVEL": "DEBUG"}):
+        yield
+
+
+def conv_dithering_harness(op_tester, capfd, dithering):
+    bs0 = 1
+    chans_in0 = 6
+    chans_out0 = 9
+    size0 = 4
+    kernel_size0 = 3
+
+    bs1 = 2
+    chans_in1 = 3
+    chans_out1 = 4
+    size1 = 5
+    kernel_size1 = 2
+
+    data0 = np.random.rand(bs0, chans_in0, size0, size0).astype(np.float32)
+    data1 = np.random.rand(bs1, chans_in1, size1, size1).astype(np.float32)
+
+    filt0 = np.random.rand(chans_out0, chans_in0, kernel_size0,
+                           kernel_size0).astype(np.float32)
+    filt1 = np.random.rand(chans_out1, chans_in1, kernel_size1,
+                           kernel_size1).astype(np.float32)
+
+    def init_builder(builder):
+        d0 = builder.addInputTensor(data0)
+        d1 = builder.addInputTensor(data1)
+        f0 = builder.addInputTensor(filt0)
+        f1 = builder.addInitializedInputTensor(filt1)
+        [c0, c1] = builder.aiGraphcore.multiconv([[d0, f0], [d1, f1]],
+                                                 enableConvDithering=dithering)
+        return [c0, c1]
+
+    def reference(ref_data):
+        d0 = torch.tensor(data0)
+        d1 = torch.tensor(data1)
+        conv0 = torch.nn.Conv2d(chans_in0, chans_out0, kernel_size0)
+        conv1 = torch.nn.Conv2d(chans_in1, chans_out1, kernel_size1)
+        conv0.weight.data = torch.tensor(filt0)
+        conv0.bias.data = torch.tensor([0.0 for i in range(chans_out0)])
+        conv1.weight.data = torch.tensor(filt1)
+        conv1.bias.data = torch.tensor([0.0 for i in range(chans_out1)])
+        c0 = conv0(d0)
+        c1 = conv1(d1)
+        return [c0, c1]
+
+    # TODO (T33079): This can be removed when all tests pass model validation.
+    op_tester.check_model = True
+    op_tester.run(init_builder, reference, step_type='infer')
+
+    captured = capfd.readouterr()
+    return captured.err
+
+
+def assert_contains(pattern, output):
+    # Find the regex matches.
+    matches = re.findall(pattern, output)
+    assert len(
+        matches
+    ) > 0, f"Failed to find pattern {pattern} in log output:\n\n{output}"
+
+
+def assert_does_not_contain(pattern, output):
+    # Find the regex matches.
+    matches = re.findall(pattern, output)
+    assert len(
+        matches
+    ) == 0, f"Found pattern {pattern} that must not have been found in log output:\n\n{output}"
+
+
+# Test that poplar gets our instruction to set the enableConvDithering option.
+# Do this by matching the poplibs logs.
+@tu.requires_ipu_model
+@pytest.mark.parametrize("dithering", [False, True])
+def test_conv_dithering(op_tester, capfd, dithering):
+    output = conv_dithering_harness(op_tester, capfd, dithering)
+    zero_or_one = "1" if dithering else "0"
+    negated_result = "0" if dithering else "1"
+    assert_contains(r" +enableConvDithering +" + zero_or_one, output)
+    assert_does_not_contain(r" +enableConvDithering +" + negated_result,
+                            output)
