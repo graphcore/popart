@@ -1,6 +1,5 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 import popart.ir as pir
-
 import popart._internal.ir as _ir
 
 __all__ = ['contains_op_of_type']

@@ -45,7 +45,7 @@ class Tensor:
     def __str__(self) -> str:
         return f"{self.name} {self.dtype} {self.shape}"
 
-    def _ensure_tensor(self, other: Any) -> 'Tensor':
+    def _ensure_tensor(self, value: Any) -> 'Tensor':
         """A helper method that's used in operator overloading to ensure that
         all operands are of type `Tensor`.
 
@@ -56,15 +56,30 @@ class Tensor:
             Tensor:
                 A `popart.ir.Tensor`.
         """
-        if isinstance(other, Tensor):
-            return other
+        if isinstance(value, Tensor):
+            return value
         else:
-            return constant(other, self.dtype)
+            return constant(value, self.dtype)
 
-    def __add__(self, other: Any) -> 'Tensor':
-        """Returns ops.add(self, other)."""
+    def __add__(self, value: Any) -> 'Tensor':
+        """Returns ops.add(self, value)."""
         import popart.ir.ops as ops
-        return ops.add(self, self._ensure_tensor(other))
+        return ops.add(self, self._ensure_tensor(value))
+
+    def __sub__(self, value: Any) -> 'Tensor':
+        """Returns ops.sub(self, value)."""
+        import popart.ir.ops as ops
+        return ops.sub(self, self._ensure_tensor(value))
+
+    def __mul__(self, value: Any) -> 'Tensor':
+        """Returns ops.mul(self, value)."""
+        import popart.ir.ops as ops
+        return ops.mul(self, self._ensure_tensor(value))
+
+    def __truediv__(self, value: Any) -> 'Tensor':
+        """Returns ops.div(self, value)."""
+        import popart.ir.ops as ops
+        return ops.div(self, self._ensure_tensor(value))
 
 
 class Variable(Tensor):

@@ -1,0 +1,4 @@
+add_popart_py_unit_test(unittest_python_popart.ir_ops_add test_add.py)
+add_popart_py_unit_test(unittest_python_popart.ir_ops_sub test_sub.py)
+add_popart_py_unit_test(unittest_python_popart.ir_ops_mul test_mul.py)
+add_popart_py_unit_test(unittest_python_popart.ir_ops_div test_div.py)
