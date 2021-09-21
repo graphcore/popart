@@ -118,7 +118,9 @@ ClipOpx::ClipOpx(Op *op, Devicex *devicex)
           devicex,
           ClipComputex::get(ClipComputex::getMinFromClipOp(op),
                             ClipComputex::getMaxFromClipOp(op))) {
-  verifyOp<ClipOp>(op, {Onnx::Operators::Clip_1, Onnx::Operators::Clip_6});
+  verifyOp<ClipOp>(op, {Onnx::Operators::Clip_1,
+                        Onnx::Operators::Clip_6,
+                        Onnx::Operators::Clip_11});
 }
 
 ClipInplaceOpx::ClipInplaceOpx(Op *op, Devicex *devicex)
