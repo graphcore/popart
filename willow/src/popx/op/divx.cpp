@@ -13,7 +13,7 @@ DivOpx::DivOpx(Op *op, Devicex *devicex) : ElementWiseBinaryOpx(op, devicex) {
   verifyOp<DivOp>(op, {Onnx::Operators::Div_6, Onnx::Operators::Div_7});
 }
 
-void DivOpx::grow(snap::program::Sequence &prog) const {
+void DivOpx::grow(poplar::program::Sequence &prog) const {
   setOutTensor(
       0,
       snap::Tensor{
@@ -21,7 +21,7 @@ void DivOpx::grow(snap::program::Sequence &prog) const {
                       popops::expr::BinaryOpType::DIVIDE,
                       getInTensor(DivOp::getArg0InIndex()).getPoplarTensor(),
                       getInTensor(DivOp::getArg1InIndex()).getPoplarTensor(),
-                      prog.getPoplarSequence(),
+                      prog,
                       debugContext()),
           graph()});
 }

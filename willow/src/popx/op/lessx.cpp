@@ -16,7 +16,7 @@ LessOpx::LessOpx(Op *op, Devicex *devicex) : BinaryComparisonOpx(op, devicex) {
   verifyOp<LessOp>(op, {Onnx::Operators::Less_7, Onnx::Operators::Less_9});
 }
 
-void LessOpx::grow(snap::program::Sequence &prog) const {
+void LessOpx::grow(poplar::program::Sequence &prog) const {
 
   insert(outId(LessOp::getOutIndex()),
          snap::Tensor{
@@ -24,7 +24,7 @@ void LessOpx::grow(snap::program::Sequence &prog) const {
                          popops::expr::BinaryOpType::LESS_THAN,
                          get(inId(LessOp::getArg0InIndex())).getPoplarTensor(),
                          get(inId(LessOp::getArg1InIndex())).getPoplarTensor(),
-                         prog.getPoplarSequence(),
+                         prog,
                          debugContext()),
              graph()});
 }

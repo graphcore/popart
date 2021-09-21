@@ -12,7 +12,7 @@ class SeluComputex : public EwuComputex {
 public:
   SeluComputex(float _alpha, float _gamma) : alpha(_alpha), gamma(_gamma) {}
 
-  void inplace(snap::program::Sequence &,
+  void inplace(poplar::program::Sequence &,
                snap::Graph &,
                const snap::Tensor &,
                const poplar::DebugNameAndId &,
@@ -44,7 +44,7 @@ public:
 class SeluGradOpx : public PopOpx {
 public:
   SeluGradOpx(Op *, Devicex *);
-  void grow(snap::program::Sequence &) const final;
+  void grow(poplar::program::Sequence &) const final;
 };
 
 } // namespace popx

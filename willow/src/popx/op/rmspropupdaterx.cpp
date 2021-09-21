@@ -20,7 +20,7 @@ RMSPropUpdaterOpx::RMSPropUpdaterOpx(Op *op, Devicex *devicex)
   verifyOp<RMSPropUpdaterOp>(op, Onnx::CustomOperators::RMSPropUpdater);
 }
 
-void RMSPropUpdaterOpx::grow(snap::program::Sequence &prog) const {
+void RMSPropUpdaterOpx::grow(poplar::program::Sequence &prog) const {
 
   // see adaptive.hpp for the equations implemented here
 
@@ -70,7 +70,7 @@ void RMSPropUpdaterOpx::grow(snap::program::Sequence &prog) const {
                                       denominatorexpr),
                            grad.elementType()),
                   tensors,
-                  prog.getPoplarSequence(),
+                  prog,
                   debugContext(""));
 
   if (hasInViewChangers(RMSPropUpdaterOp::getGradInIndex())) {

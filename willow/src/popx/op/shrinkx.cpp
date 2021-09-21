@@ -35,7 +35,7 @@ ShrinkOpx::ShrinkOpx(Op *op, Devicex *devicex)
   verifyOp<ShrinkOp>(op, {Onnx::Operators::Shrink_9});
 }
 
-snap::Tensor ShrinkComputex::outplace(snap::program::Sequence &prog,
+snap::Tensor ShrinkComputex::outplace(poplar::program::Sequence &prog,
                                       snap::Graph &graph,
                                       const snap::Tensor &tensor,
                                       const poplar::DebugNameAndId &dnai,
@@ -45,7 +45,7 @@ snap::Tensor ShrinkComputex::outplace(snap::program::Sequence &prog,
   return out_tensor;
 }
 
-void ShrinkComputex::inplace(snap::program::Sequence &prog,
+void ShrinkComputex::inplace(poplar::program::Sequence &prog,
                              snap::Graph &graph,
                              const snap::Tensor &tensor,
                              const poplar::DebugNameAndId &dnai,
@@ -58,7 +58,7 @@ void ShrinkComputex::inplace(snap::program::Sequence &prog,
                             pe::Gt(pe::_1, pe::Const(this->lambd()))),
                  pe::Lt(pe::_1, pe::Const(-this->lambd()))),
       {tensor.getPoplarTensor()},
-      prog.getPoplarSequence(),
+      prog,
       {dnai, debug_prefix});
 }
 
@@ -75,7 +75,7 @@ ShrinkGradOpx::ShrinkGradOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
   verifyOp<ShrinkGradOp>(op, Onnx::GradOperators::ShrinkGrad);
 }
 
-void ShrinkGradOpx::grow(snap::program::Sequence &prog) const {
+void ShrinkGradOpx::grow(poplar::program::Sequence &prog) const {
   const auto &op = getOp<ShrinkGradOp>();
   const auto input =
       getInTensor(ShrinkGradOp::getGradInIndex()).getPoplarTensor();
@@ -93,7 +93,7 @@ void ShrinkGradOpx::grow(snap::program::Sequence &prog) const {
   auto output = popops::map(graph().getPoplarGraph(),
                             *exprs.back(),
                             {input, fwd_input},
-                            prog.getPoplarSequence(),
+                            prog,
                             debugContext("output_grad"));
 
   setOutTensor(ShrinkGradOp::getOutIndex(), snap::Tensor{output, graph()});

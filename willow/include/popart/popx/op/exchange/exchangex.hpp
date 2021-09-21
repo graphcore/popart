@@ -18,13 +18,13 @@ public:
   }
 
   virtual void pre(snap::Graph &graph,
-                   snap::program::Sequence &prog,
+                   poplar::program::Sequence &prog,
                    poplar::DebugContext context)      = 0;
   virtual void exchange(snap::Graph &graph,
-                        snap::program::Sequence &prog,
+                        poplar::program::Sequence &prog,
                         poplar::DebugContext context) = 0;
   virtual void post(snap::Graph &graph,
-                    snap::program::Sequence &prog,
+                    poplar::program::Sequence &prog,
                     poplar::DebugContext context)     = 0;
 
   virtual snap::Tensor unwind(snap::Graph &, snap::Tensor) const;
@@ -44,13 +44,13 @@ class HostLoadDescriptorx : public ExchangeDescriptorx {
 public:
   HostLoadDescriptorx(Devicex *dv_p_, ExchangeDescriptor descriptor);
   void pre(snap::Graph &graph,
-           snap::program::Sequence &prog,
+           poplar::program::Sequence &prog,
            poplar::DebugContext context) override;
   void exchange(snap::Graph &graph,
-                snap::program::Sequence &prog,
+                poplar::program::Sequence &prog,
                 poplar::DebugContext context) override;
   void post(snap::Graph &graph,
-            snap::program::Sequence &prog,
+            poplar::program::Sequence &prog,
             poplar::DebugContext context) override;
   snap::Tensor unwind(snap::Graph &, snap::Tensor) const override;
 };
@@ -59,13 +59,13 @@ class HostStoreDescriptorx : public ExchangeDescriptorx {
 public:
   HostStoreDescriptorx(Devicex *dv_p_, ExchangeDescriptor descriptor_);
   void pre(snap::Graph &graph,
-           snap::program::Sequence &prog,
+           poplar::program::Sequence &prog,
            poplar::DebugContext context) override;
   void exchange(snap::Graph &graph,
-                snap::program::Sequence &prog,
+                poplar::program::Sequence &prog,
                 poplar::DebugContext context) override;
   void post(snap::Graph &graph,
-            snap::program::Sequence &prog,
+            poplar::program::Sequence &prog,
             poplar::DebugContext context) override;
 };
 
@@ -73,13 +73,13 @@ class RemoteLoadDescriptorx : public ExchangeDescriptorx {
 public:
   RemoteLoadDescriptorx(Devicex *dv_p_, ExchangeDescriptor descriptor_);
   void pre(snap::Graph &graph,
-           snap::program::Sequence &prog,
+           poplar::program::Sequence &prog,
            poplar::DebugContext context) override;
   void exchange(snap::Graph &graph,
-                snap::program::Sequence &prog,
+                poplar::program::Sequence &prog,
                 poplar::DebugContext context) override;
   void post(snap::Graph &graph,
-            snap::program::Sequence &prog,
+            poplar::program::Sequence &prog,
             poplar::DebugContext context) override;
   snap::Tensor unwind(snap::Graph &, snap::Tensor) const override;
 };
@@ -88,13 +88,13 @@ class RemoteStoreDescriptorx : public ExchangeDescriptorx {
 public:
   RemoteStoreDescriptorx(Devicex *dv_p_, ExchangeDescriptor descriptor);
   void pre(snap::Graph &graph,
-           snap::program::Sequence &prog,
+           poplar::program::Sequence &prog,
            poplar::DebugContext context) override;
   void exchange(snap::Graph &graph,
-                snap::program::Sequence &prog,
+                poplar::program::Sequence &prog,
                 poplar::DebugContext context) override;
   void post(snap::Graph &graph,
-            snap::program::Sequence &prog,
+            poplar::program::Sequence &prog,
             poplar::DebugContext context) override;
 };
 

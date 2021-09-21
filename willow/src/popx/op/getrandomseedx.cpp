@@ -14,7 +14,7 @@
 namespace popart {
 namespace popx {
 
-void GetRandomSeedOpx::grow(snap::program::Sequence &prog) const {
+void GetRandomSeedOpx::grow(poplar::program::Sequence &prog) const {
   auto seed = getInTensor(op_p->getSeedInIndex()).getPoplarTensor();
 
   // Increment the seed
@@ -30,7 +30,7 @@ void GetRandomSeedOpx::grow(snap::program::Sequence &prog) const {
   popops::addInPlace(graph().getPoplarGraph(),
                      seed,
                      poplar::concat({grf, one}),
-                     prog.getPoplarSequence(),
+                     prog,
                      debugContext("RandomSeedIncrement"));
 
   setOutTensor(GetRandomSeedOp::getUpdatedSeedOutIndex(),

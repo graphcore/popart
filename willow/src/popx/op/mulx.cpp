@@ -11,7 +11,7 @@ namespace popx {
 
 MulComputex::MulComputex(EwbComputex::InplacePolicy ip) : EwbComputex(ip) {}
 
-snap::Tensor MulComputex::outplace(snap::program::Sequence &prog,
+snap::Tensor MulComputex::outplace(poplar::program::Sequence &prog,
                                    snap::Graph &graph,
                                    const snap::Tensor &a,
                                    const snap::Tensor &b,
@@ -20,12 +20,12 @@ snap::Tensor MulComputex::outplace(snap::program::Sequence &prog,
   return snap::Tensor{popops::mul(graph.getPoplarGraph(),
                                   a.getPoplarTensor(),
                                   b.getPoplarTensor(),
-                                  prog.getPoplarSequence(),
+                                  prog,
                                   {dnai, debugStr}),
                       graph};
 }
 
-void MulComputex::inplace(snap::program::Sequence &prog,
+void MulComputex::inplace(poplar::program::Sequence &prog,
                           snap::Graph &graph,
                           const snap::Tensor &tInOut,
                           const snap::Tensor &tIn,
@@ -34,7 +34,7 @@ void MulComputex::inplace(snap::program::Sequence &prog,
   popops::mulInPlace(graph.getPoplarGraph(),
                      tInOut.getPoplarTensor(),
                      tIn.getPoplarTensor(),
-                     prog.getPoplarSequence(),
+                     prog,
                      {dnai, debugStr});
 }
 

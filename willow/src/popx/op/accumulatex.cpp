@@ -84,7 +84,7 @@ AccumulateOpx::AccumulateOpx(Op *op, Devicex *devicex)
   verifyOp<AccumulateOp>(op, {Onnx::CustomOperators::Accumulate});
 }
 
-void AccumulateOpx::grow(snap::program::Sequence &prog) const {
+void AccumulateOpx::grow(poplar::program::Sequence &prog) const {
 
   auto &accumulateOp = getOp<AccumulateOp>();
 
@@ -113,7 +113,7 @@ void AccumulateOpx::grow(snap::program::Sequence &prog) const {
                         accum,
                         grad,
                         1.0f,
-                        prog.getPoplarSequence(),
+                        prog,
                         debugContext("constAdd"));
     break;
   }
@@ -124,25 +124,19 @@ void AccumulateOpx::grow(snap::program::Sequence &prog) const {
     auto counter_1 = popops::add(graph().getPoplarGraph(),
                                  counter,
                                  1.0f,
-                                 prog.getPoplarSequence(),
+                                 prog,
                                  debugContext("counter_1"));
-    auto b         = popops::div(graph().getPoplarGraph(),
-                         1.0f,
-                         counter_1,
-                         prog.getPoplarSequence(),
-                         debugContext("b"));
-    auto a         = popops::sub(graph().getPoplarGraph(),
-                         1.0f,
-                         b,
-                         prog.getPoplarSequence(),
-                         debugContext("a"));
+    auto b         = popops::div(
+        graph().getPoplarGraph(), 1.0f, counter_1, prog, debugContext("b"));
+    auto a =
+        popops::sub(graph().getPoplarGraph(), 1.0f, b, prog, debugContext("a"));
 
     popops::scaledAddTo(graph().getPoplarGraph(),
                         accum,
                         a,
                         grad,
                         b,
-                        prog.getPoplarSequence(),
+                        prog,
                         debugContext("Mean"));
     break;
   }
@@ -161,7 +155,7 @@ void AccumulateOpx::grow(snap::program::Sequence &prog) const {
                             accum,
                             grad,
                             1.0f,
-                            prog.getPoplarSequence(),
+                            prog,
                             debugContext("constAdd"));
       } else {
         // accum += factor * grad
@@ -169,7 +163,7 @@ void AccumulateOpx::grow(snap::program::Sequence &prog) const {
                             accum,
                             grad,
                             val,
-                            prog.getPoplarSequence(),
+                            prog,
                             debugContext("constDampenedAdd"));
       }
     } else {
@@ -179,7 +173,7 @@ void AccumulateOpx::grow(snap::program::Sequence &prog) const {
                           accum,
                           grad,
                           factor,
-                          prog.getPoplarSequence(),
+                          prog,
                           debugContext("dampenedAdd"));
     }
     break;
@@ -199,7 +193,7 @@ void AccumulateOpx::grow(snap::program::Sequence &prog) const {
             graph().getPoplarGraph(),
             pe::Add(pe::_1, pe::Square(pe::Cast(pe::_2, accum.elementType()))),
             {accum, grad},
-            prog.getPoplarSequence(),
+            prog,
             debugContext("constAddSquare"));
       } else {
         auto val = accumulateOp.getFactor().val();
@@ -211,7 +205,7 @@ void AccumulateOpx::grow(snap::program::Sequence &prog) const {
                                     pe::Cast(pe::_2, accum.elementType())),
                             pe::Cast(pe::_2, accum.elementType()))),
             {accum, grad},
-            prog.getPoplarSequence(),
+            prog,
             debugContext("constDampenedAddSquare"));
       }
     } else {
@@ -224,7 +218,7 @@ void AccumulateOpx::grow(snap::program::Sequence &prog) const {
               pe::Mul(pe::Mul(pe::_3, pe::Cast(pe::_2, accum.elementType())),
                       pe::Cast(pe::_2, accum.elementType()))),
           {accum, grad, factor},
-          prog.getPoplarSequence(),
+          prog,
           debugContext("dampenedAddSquare"));
     }
     break;
@@ -236,7 +230,7 @@ void AccumulateOpx::grow(snap::program::Sequence &prog) const {
                          pe::Add(pe::Mul(pe::Const(val), pe::_1),
                                  pe::Cast(pe::_2, accum.elementType())),
                          {accum, grad},
-                         prog.getPoplarSequence(),
+                         prog,
                          debugContext("constDecayAdd"));
     } else {
       auto factor =
@@ -246,7 +240,7 @@ void AccumulateOpx::grow(snap::program::Sequence &prog) const {
           pe::Add(pe::Mul(pe::Cast(pe::_3, accum.elementType()), pe::_1),
                   pe::Cast(pe::_2, accum.elementType())),
           {accum, grad, factor},
-          prog.getPoplarSequence(),
+          prog,
           debugContext("decayAdd"));
     }
     break;
@@ -259,7 +253,7 @@ void AccumulateOpx::grow(snap::program::Sequence &prog) const {
           pe::Add(pe::Mul(pe::Const(val), pe::_1),
                   pe::Square(pe::Cast(pe::_2, accum.elementType()))),
           {accum, grad},
-          prog.getPoplarSequence(),
+          prog,
           debugContext("constDecayAddSquare"));
     } else {
       auto factor =
@@ -269,7 +263,7 @@ void AccumulateOpx::grow(snap::program::Sequence &prog) const {
           pe::Add(pe::Mul(pe::Cast(pe::_3, accum.elementType()), pe::_1),
                   pe::Square(pe::Cast(pe::_2, accum.elementType()))),
           {accum, grad, factor},
-          prog.getPoplarSequence(),
+          prog,
           debugContext("decayAddSquare"));
     }
     break;
@@ -283,7 +277,7 @@ void AccumulateOpx::grow(snap::program::Sequence &prog) const {
                   pe::Mul(pe::Const(1.0f - val),
                           pe::Cast(pe::_2, accum.elementType()))),
           {accum, grad},
-          prog.getPoplarSequence(),
+          prog,
           debugContext("constMovingAverage"));
     } else {
       auto factor =
@@ -295,7 +289,7 @@ void AccumulateOpx::grow(snap::program::Sequence &prog) const {
                                    accum.elementType()),
                           pe::Cast(pe::_2, accum.elementType()))),
           {accum, grad, factor},
-          prog.getPoplarSequence(),
+          prog,
           debugContext("movingAverage"));
     }
     break;
@@ -310,7 +304,7 @@ void AccumulateOpx::grow(snap::program::Sequence &prog) const {
                                   pe::Cast(pe::_2, accum.elementType())),
                           pe::Cast(pe::_2, accum.elementType()))),
           {accum, grad},
-          prog.getPoplarSequence(),
+          prog,
           debugContext("constMovingAverageSquare"));
     } else {
       auto factor =
@@ -322,7 +316,7 @@ void AccumulateOpx::grow(snap::program::Sequence &prog) const {
                                   pe::Cast(pe::_2, accum.elementType())),
                           pe::Cast(pe::_2, accum.elementType()))),
           {accum, grad, factor},
-          prog.getPoplarSequence(),
+          prog,
           debugContext("movingAverageSquare"));
     }
     break;
@@ -336,7 +330,7 @@ void AccumulateOpx::grow(snap::program::Sequence &prog) const {
                            pe::Cast(pe::Abs(pe::_2), accum.elementType())),
                    accum.elementType()),
           {accum, grad},
-          prog.getPoplarSequence(),
+          prog,
           debugContext("constInfinity"));
     } else {
       auto factor =
@@ -348,7 +342,7 @@ void AccumulateOpx::grow(snap::program::Sequence &prog) const {
                       pe::Cast(pe::Abs(pe::_2), accum.elementType())),
               accum.elementType()),
           {accum, grad, factor},
-          prog.getPoplarSequence(),
+          prog,
           debugContext("infinity"));
     }
     break;
@@ -465,7 +459,7 @@ snap::Tensor SparseAccumulateOpx::createInputTensor(
                       graph()};
 }
 
-void SparseAccumulateOpx::grow(snap::program::Sequence &prog) const {
+void SparseAccumulateOpx::grow(poplar::program::Sequence &prog) const {
   const auto op = getOp<SparseAccumulateOp>();
 
   const auto &initFactor = op.getFactor();
@@ -491,7 +485,7 @@ void SparseAccumulateOpx::grow(snap::program::Sequence &prog) const {
     factor = popops::cast(graph().getPoplarGraph(),
                           factor,
                           accl.elementType(),
-                          prog.getPoplarSequence(),
+                          prog,
                           debugContext("factor_cast"));
   }
 
@@ -510,7 +504,7 @@ void SparseAccumulateOpx::grow(snap::program::Sequence &prog) const {
                          factor,
                          {0},
                          {1},
-                         prog.getPoplarSequence(),
+                         prog,
                          popops::SlicePlan(),
                          poplar::OptionFlags(),
                          debugContext("nonConstSparseSGD1Accl"));
@@ -546,7 +540,7 @@ RescaleAccumulateOpx::RescaleAccumulateOpx(Op *op, Devicex *devicex)
   verifyOp<RescaleAccumulateOp>(op, {Onnx::CustomOperators::RescaleAccumulate});
 }
 
-void RescaleAccumulateOpx::grow(snap::program::Sequence &prog) const {
+void RescaleAccumulateOpx::grow(poplar::program::Sequence &prog) const {
 
   auto &accumulateOp = getOp<RescaleAccumulateOp>();
 
@@ -576,32 +570,26 @@ void RescaleAccumulateOpx::grow(snap::program::Sequence &prog) const {
     poplar::Tensor a, b;
     if (isConst) {
       auto val = accumulateOp.getFactor().val();
-      a        = popops::mul(graph().getPoplarGraph(),
-                      rescaleRatio,
-                      val,
-                      prog.getPoplarSequence(),
-                      debugContext("a"));
-      b        = getConst(poplar::FLOAT, {}, 1.0f - val, "b").getPoplarTensor();
+      a        = popops::mul(
+          graph().getPoplarGraph(), rescaleRatio, val, prog, debugContext("a"));
+      b = getConst(poplar::FLOAT, {}, 1.0f - val, "b").getPoplarTensor();
     } else {
       auto factor = getInTensor(RescaleAccumulateOp::getFactorInIndex())
                         .getPoplarTensor();
       a = popops::mul(graph().getPoplarGraph(),
                       rescaleRatio,
                       factor,
-                      prog.getPoplarSequence(),
+                      prog,
                       debugContext("a"));
-      b = popops::sub(graph().getPoplarGraph(),
-                      1.0f,
-                      factor,
-                      prog.getPoplarSequence(),
-                      debugContext("b"));
+      b = popops::sub(
+          graph().getPoplarGraph(), 1.0f, factor, prog, debugContext("b"));
     }
     popops::scaledAddTo(graph().getPoplarGraph(),
                         accum,
                         a,
                         grad,
                         b,
-                        prog.getPoplarSequence(),
+                        prog,
                         debugContext("movingAverage"));
     break;
   }
@@ -615,7 +603,7 @@ void RescaleAccumulateOpx::grow(snap::program::Sequence &prog) const {
                                   pe::Cast(pe::_2, accum.elementType())),
                           pe::Cast(pe::_2, accum.elementType()))),
           {accum, grad, rescaleRatio},
-          prog.getPoplarSequence(),
+          prog,
           debugContext("constMovingAverageSquare"));
     } else {
       auto factor = getInTensor(RescaleAccumulateOp::getFactorInIndex())
@@ -629,7 +617,7 @@ void RescaleAccumulateOpx::grow(snap::program::Sequence &prog) const {
                               pe::Cast(pe::_2, accum.elementType())),
                       pe::Cast(pe::_2, accum.elementType()))),
           {accum, grad, rescaleRatio, factor},
-          prog.getPoplarSequence(),
+          prog,
           debugContext("movingAverageSquare"));
     }
     break;
@@ -642,7 +630,7 @@ void RescaleAccumulateOpx::grow(snap::program::Sequence &prog) const {
           pe::Max(pe::Mul(pe::Mul(pe::Const(val), pe::_3), pe::_1),
                   pe::Cast(pe::Abs(pe::_2), accum.elementType())),
           {accum, grad, rescaleRatio},
-          prog.getPoplarSequence(),
+          prog,
           debugContext("constInfinity"));
     } else {
       auto factor = getInTensor(RescaleAccumulateOp::getFactorInIndex())
@@ -654,7 +642,7 @@ void RescaleAccumulateOpx::grow(snap::program::Sequence &prog) const {
                       pe::_1),
               pe::Cast(pe::Abs(pe::_2), accum.elementType())),
           {accum, grad, rescaleRatio, factor},
-          prog.getPoplarSequence(),
+          prog,
           debugContext("infinity"));
     }
     break;

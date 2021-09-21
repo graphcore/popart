@@ -12,7 +12,7 @@ namespace popx {
 class SquareOpx : public ElementWiseUnaryOpx {
 public:
   SquareOpx(Op *, Devicex *);
-  void grow(snap::program::Sequence &) const final;
+  void grow(poplar::program::Sequence &) const final;
 };
 
 } // namespace popx

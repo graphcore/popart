@@ -250,7 +250,7 @@ private:
   static TaskId streamFromHostTaskId(TensorId);
 
   // Task to append a Copy from poplar::Stream to snap::Tensor
-  PriTask fromHostTask(Tensor *tensor, snap::program::Sequence &streamSq);
+  PriTask fromHostTask(Tensor *tensor, poplar::program::Sequence &streamSq);
 
   static TaskId fromHostTaskId(TensorId);
 
@@ -260,32 +260,34 @@ private:
                            bool isAnchorStream);
   static TaskId streamToHostTaskId(TensorId, bool isAnchorStream);
 
-  snap::program::Sequence &getAnchorReturnFragment(Tensor *tensor);
+  poplar::program::Sequence &getAnchorReturnFragment(Tensor *tensor);
 
   // Task to append a Copy to poplar::Stream from snap::Tensor
-  PriTask
-  toHostTask(Tensor *tensor, snap::program::Sequence &, ToHostStreamType) const;
+  PriTask toHostTask(Tensor *tensor,
+                     poplar::program::Sequence &,
+                     ToHostStreamType) const;
   static TaskId toHostTaskId(TensorId, bool isAnchorStream);
 
   // Task to create an accumulator and scaleAddto to a snap::Tensor to be
   // Copied on the final batch per step
-  PriTask anchorReturnTypeSumTask(Tensor *tensor, snap::program::Sequence &sq);
+  PriTask anchorReturnTypeSumTask(Tensor *tensor,
+                                  poplar::program::Sequence &sq);
   static TaskId anchorSumTaskId(const TensorId &);
 
   // Task to create snap::Tensors from nothing, specifically for
   // use in keeping track of the batch count
-  PriTask initBatchCounterTensorsTask(snap::program::Sequence &sq);
+  PriTask initBatchCounterTensorsTask(poplar::program::Sequence &sq);
   static TaskId initBatchCounterTensorsTaskId();
 
   // Task to add a program to increment and check the batch count
-  PriTask updateBatchCountTask(snap::program::Sequence &sq);
+  PriTask updateBatchCountTask(poplar::program::Sequence &sq);
   static TaskId updateBatchCountTaskId();
 
   // Task to append a Copy to poplar::Stream from snap::Tensor every
   // N batches
   PriTask toHostEveryNBatchesTask(Tensor *tensor,
                                   ReturnPeriod N,
-                                  snap::program::Sequence &);
+                                  poplar::program::Sequence &);
 
   // The tasks associated with lowering an operation
   std::vector<PriTask> opTasks(Op *, double priority, TaskId prevOpTaskId);
@@ -390,7 +392,7 @@ public:
 
   PopTensors &tensors() { return tensors_; }
 
-  void instrumentWithHardwareCycleCounter(snap::program::Sequence &,
+  void instrumentWithHardwareCycleCounter(poplar::program::Sequence &,
                                           int64_t tileId = 0,
                                           std::string id = "");
 

@@ -12,7 +12,7 @@ namespace popx {
 class DynamicZeroOpx : public DynamicUpdateOpx {
 public:
   DynamicZeroOpx(Op *op, Devicex *devicex) : DynamicUpdateOpx(op, devicex) {}
-  void grow(snap::program::Sequence &) const override;
+  void grow(poplar::program::Sequence &) const override;
   InputCreatorType getInputCreatorType(InIndex index) const final;
 };
 
@@ -20,7 +20,7 @@ class DynamicZeroInplaceOpx : public DynamicZeroOpx {
 public:
   DynamicZeroInplaceOpx(Op *op, Devicex *devicex)
       : DynamicZeroOpx(op, devicex) {}
-  snap::Tensor cloneNcopyOpt(snap::program::Sequence &,
+  snap::Tensor cloneNcopyOpt(poplar::program::Sequence &,
                              const snap::Tensor &) const override;
 };
 

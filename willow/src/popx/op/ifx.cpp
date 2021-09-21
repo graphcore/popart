@@ -12,13 +12,13 @@
 namespace popart {
 namespace popx {
 
-void IfOpx::copyInputs(snap::program::Sequence &thenProg,
-                       snap::program::Sequence &elseProg) const {
+void IfOpx::copyInputs(poplar::program::Sequence &thenProg,
+                       poplar::program::Sequence &elseProg) const {
   auto &ifop      = getOp<IfOp>();
   auto &thenGraph = ifop.getThenGraph();
   auto &elseGraph = ifop.getElseGraph();
 
-  auto copyInput = [&](snap::program::Sequence &prog,
+  auto copyInput = [&](poplar::program::Sequence &prog,
                        const Graph &graph,
                        InIndex ifopInputIndex,
                        InIndex branchInputIndex) {
@@ -32,7 +32,7 @@ void IfOpx::copyInputs(snap::program::Sequence &thenProg,
     prog.add(copyProg);
   };
 
-  auto copyBranchInputs = [&](snap::program::Sequence &prog,
+  auto copyBranchInputs = [&](poplar::program::Sequence &prog,
                               const Graph &graph) {
     auto &idxMap = ifop.getBranchInIndicesMap(graph);
     for (auto &opIdx_branchIdx : idxMap) {
@@ -46,7 +46,7 @@ void IfOpx::copyInputs(snap::program::Sequence &thenProg,
   copyBranchInputs(elseProg, elseGraph);
 }
 
-void IfOpx::callBranch(snap::program::Sequence &prog,
+void IfOpx::callBranch(poplar::program::Sequence &prog,
                        const Graph &graph) const {
   auto &branch_progs = dv_p->lowering().progs.scopeFragments(graph);
   for (auto branch_prog : branch_progs) {
@@ -54,14 +54,14 @@ void IfOpx::callBranch(snap::program::Sequence &prog,
   }
 }
 
-void IfOpx::copyOutputs(snap::program::Sequence &thenProg,
-                        snap::program::Sequence &elseProg,
+void IfOpx::copyOutputs(poplar::program::Sequence &thenProg,
+                        poplar::program::Sequence &elseProg,
                         const std::vector<snap::Tensor> &outputs) const {
   auto &ifop      = getOp<IfOp>();
   auto &thenGraph = ifop.getThenGraph();
   auto &elseGraph = ifop.getElseGraph();
 
-  auto copyOutput = [&](snap::program::Sequence &prog,
+  auto copyOutput = [&](poplar::program::Sequence &prog,
                         const Graph &graph,
                         OutIndex opIndex,
                         OutIndex branchIndex) {
@@ -75,17 +75,17 @@ void IfOpx::copyOutputs(snap::program::Sequence &thenProg,
     prog.add(copyProg);
   };
 
-  auto zeroOutput = [&](snap::program::Sequence &prog, OutIndex opIndex) {
+  auto zeroOutput = [&](poplar::program::Sequence &prog, OutIndex opIndex) {
     auto opId     = outId(opIndex);
     auto opOutput = outputs.at(opIndex);
     popops::zero(graph().getPoplarGraph(),
                  opOutput.getPoplarTensor(),
-                 prog.getPoplarSequence(),
+                 prog,
                  debugContext("zero"));
   };
 
   auto copyOrZeroBranchOutput =
-      [&](snap::program::Sequence &prog, const Graph &graph, int outIndex) {
+      [&](poplar::program::Sequence &prog, const Graph &graph, int outIndex) {
         auto &idxMap = ifop.getBranchOutIndicesMap(graph);
         auto found   = idxMap.find(outIndex);
         if (found != idxMap.end()) {
@@ -138,13 +138,13 @@ IfOpx::IfOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
   verifyOp<IfOp>(op);
 }
 
-void IfOpx::grow(snap::program::Sequence &prog) const {
+void IfOpx::grow(poplar::program::Sequence &prog) const {
   auto &ifop = getOp<IfOp>();
 
   auto thenDbgStr = logging::format("{}/then", ifop.getThenGraph().id);
   auto elseDbgStr = logging::format("{}/else", ifop.getElseGraph().id);
-  snap::program::Sequence then_prog(debugContext(thenDbgStr), graph());
-  snap::program::Sequence else_prog(debugContext(elseDbgStr), graph());
+  poplar::program::Sequence then_prog({}, debugContext(thenDbgStr));
+  poplar::program::Sequence else_prog({}, debugContext(elseDbgStr));
 
   copyInputs(then_prog, else_prog);
 
@@ -160,10 +160,8 @@ void IfOpx::grow(snap::program::Sequence &prog) const {
 
   // Reshape to scalar in case the user passed in tensor of shape [1]
   condition = condition.reshape({});
-  prog.add(poplar::program::If(condition,
-                               then_prog.getPoplarSequence(),
-                               else_prog.getPoplarSequence(),
-                               debugContext("condition")));
+  prog.add(poplar::program::If(
+      condition, then_prog, else_prog, debugContext("condition")));
 
   for (int i = 0; i < outputs.size(); i++) {
     setOutTensor(i, outputs.at(i));

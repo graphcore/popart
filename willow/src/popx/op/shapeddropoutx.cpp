@@ -16,7 +16,7 @@ ShapedDropoutOpx::ShapedDropoutOpx(Op *op, Devicex *devicex)
   verifyOp<ShapedDropoutOp>(op, {Onnx::CustomOperators::ShapedDropout_1});
 }
 
-void ShapedDropoutOpx::grow(snap::program::Sequence &prog) const {
+void ShapedDropoutOpx::grow(poplar::program::Sequence &prog) const {
   if (!op_p->getIr().canTrain()) {
     // In inference mode, shaped dropout is an identity function
     auto output = cloneNcopy(prog, getInTensor(ShapedDropoutOp::getInIndex()));
@@ -36,7 +36,7 @@ void ShapedDropoutOpx::grow(snap::program::Sequence &prog) const {
       refTensor.getPoplarTensor(),
       keepProbability,
       scale,
-      prog.getPoplarSequence(),
+      prog,
       debugContext("shapedDropout"));
 
   setOutTensor(op.getOutIndex(), snap::Tensor{shapedDropout, graph()});

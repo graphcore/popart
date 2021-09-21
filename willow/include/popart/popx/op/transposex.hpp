@@ -12,7 +12,7 @@ namespace popx {
 class TransposeOpx : public PopOpx {
 public:
   TransposeOpx(Op *, Devicex *);
-  void grow(snap::program::Sequence &) const final;
+  void grow(poplar::program::Sequence &) const final;
   InputCreatorType getInputCreatorType(InIndex) const final;
   snap::Tensor unwindTensorLayout(snap::Tensor tensor,
                                   InIndex inIndex,
@@ -24,7 +24,7 @@ class TransposeInplaceOpx : public PopOpx {
 public:
   TransposeInplaceOpx(Op *, Devicex *);
   InputCreatorType getInputCreatorType(InIndex) const final;
-  void grow(snap::program::Sequence &) const final;
+  void grow(poplar::program::Sequence &) const final;
 
   snap::Tensor unwindTensorLayout(snap::Tensor tensor,
                                   InIndex inIndex,

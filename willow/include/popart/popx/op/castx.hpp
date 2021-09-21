@@ -11,7 +11,7 @@ namespace popx {
 class CastOpx : public PopOpx {
 public:
   CastOpx(Op *, Devicex *);
-  void grow(snap::program::Sequence &) const final;
+  void grow(poplar::program::Sequence &) const final;
 };
 
 class CastGradOpx : public CastOpx {

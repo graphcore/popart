@@ -15,16 +15,14 @@ InitOpx::InitOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
   verifyOp<InitOp>(op, Onnx::CustomOperators::Init_1);
 }
 
-void InitOpx::grow(snap::program::Sequence &prog) const {
+void InitOpx::grow(poplar::program::Sequence &prog) const {
   auto &initOp          = getOp<InitOp>();
   const auto &outTensor = getOutTensor(InitOp::getOutIndex()).getPoplarTensor();
 
   switch (initOp.getInitType()) {
   case InitType::Zero: {
-    popops::zero(graph().getPoplarGraph(),
-                 outTensor,
-                 prog.getPoplarSequence(),
-                 debugContext("init_zero"));
+    popops::zero(
+        graph().getPoplarGraph(), outTensor, prog, debugContext("init_zero"));
     break;
   }
   case InitType::NoInit: {

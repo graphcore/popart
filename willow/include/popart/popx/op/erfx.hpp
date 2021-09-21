@@ -12,13 +12,13 @@ namespace popx {
 class ErfxOpx : public ElementWiseUnaryOpx {
 public:
   ErfxOpx(Op *, Devicex *);
-  void grow(snap::program::Sequence &) const final;
+  void grow(poplar::program::Sequence &) const final;
 };
 
 class ErfxGradOpx : public ElementWiseUnaryOpx {
 public:
   ErfxGradOpx(Op *, Devicex *);
-  void grow(snap::program::Sequence &) const final;
+  void grow(poplar::program::Sequence &) const final;
 };
 
 } // namespace popx

@@ -76,7 +76,7 @@ TiedGatherOpx::createInputTensor(const InIndex index,
 // Identical to GatherOpx::grow however:
 //    1) uses popops::gather instead of popops::multislice
 //    2) range checks the indices and masks those out of range
-void TiedGatherOpx::grow(snap::program::Sequence &prog) const {
+void TiedGatherOpx::grow(poplar::program::Sequence &prog) const {
   const auto indicesShape = inShape(TiedGatherOp::indicesInIndex());
   const auto outputShape =
       vXtoY<int64_t, std::size_t>(outShape(TiedGatherOp::outIndex()));
@@ -114,17 +114,17 @@ void TiedGatherOpx::grow(snap::program::Sequence &prog) const {
       mask              = popops::lt(graph().getPoplarGraph(),
                         offsets,
                         static_cast<unsigned>(gather_size),
-                        prog.getPoplarSequence(),
+                        prog,
                         debugContext("mask<size"));
       auto indices_mask = popops::cast(graph().getPoplarGraph(),
                                        mask,
                                        offsets.elementType(),
-                                       prog.getPoplarSequence(),
+                                       prog,
                                        debugContext("mask_castInt"));
       offsets           = popops::mul(graph().getPoplarGraph(),
                             offsets,
                             indices_mask,
-                            prog.getPoplarSequence(),
+                            prog,
                             debugContext("masked_indices"));
     }
 
@@ -133,7 +133,7 @@ void TiedGatherOpx::grow(snap::program::Sequence &prog) const {
                                  data,
                                  offsets,
                                  0,
-                                 prog.getPoplarSequence(),
+                                 prog,
                                  popops::GatherParams(),
                                  debugContext());
 
@@ -142,12 +142,12 @@ void TiedGatherOpx::grow(snap::program::Sequence &prog) const {
       auto out_mask = popops::cast(graph().getPoplarGraph(),
                                    mask,
                                    data.elementType(),
-                                   prog.getPoplarSequence(),
+                                   prog,
                                    debugContext("mask_cast"));
       popops::mulInPlace(graph().getPoplarGraph(),
                          result,
                          out_mask.expand({1}),
-                         prog.getPoplarSequence(),
+                         prog,
                          debugContext("masked_result"));
     }
 

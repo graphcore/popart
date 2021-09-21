@@ -44,7 +44,7 @@ SliceOpx::SliceOpx(Op *op, Devicex *devicex) : BaseSliceOpx(op, devicex) {
   verifyOp<SliceOp>(op);
 }
 
-void SliceOpx::grow(snap::program::Sequence &prog) const {
+void SliceOpx::grow(poplar::program::Sequence &prog) const {
   auto t = getInTensor(SliceOp::getInIndex()).getPoplarTensor();
   for (auto slice : getSliceOp()->getSlices()) {
     t = t.slice(slice.start, slice.end, static_cast<unsigned>(slice.axis));
@@ -59,7 +59,7 @@ void SliceOpx::grow(snap::program::Sequence &prog) const {
 
 SliceOp *SliceOpx::getSliceOp() const { return dynamic_cast<SliceOp *>(op_p); }
 
-void SliceInplaceOpx::grow(snap::program::Sequence &) const {
+void SliceInplaceOpx::grow(poplar::program::Sequence &) const {
   auto t = getInTensor(SliceOp::getInIndex()).getPoplarTensor();
   for (auto slice : getSliceInplaceOp()->getSlices()) {
     t = t.slice(slice.start, slice.end, static_cast<unsigned>(slice.axis));

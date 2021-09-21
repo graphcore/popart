@@ -28,7 +28,7 @@ private:
 class ConcatOpx : public BaseConcatOpx {
 public:
   ConcatOpx(Op *, Devicex *);
-  void grow(snap::program::Sequence &) const final;
+  void grow(poplar::program::Sequence &) const final;
 
 private:
   const ConcatOp *const op;
@@ -37,7 +37,7 @@ private:
 class ConcatInplaceOpx : public BaseConcatOpx {
 public:
   ConcatInplaceOpx(Op *, Devicex *);
-  void grow(snap::program::Sequence &) const final;
+  void grow(poplar::program::Sequence &) const final;
 
 private:
   const ConcatOp *const op;
@@ -46,7 +46,7 @@ private:
 class ConcatGradOpx : public PopOpx {
 public:
   ConcatGradOpx(Op *, Devicex *);
-  void grow(snap::program::Sequence &) const final;
+  void grow(poplar::program::Sequence &) const final;
 
 private:
   const ConcatGradOp *const op;

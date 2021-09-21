@@ -12,7 +12,7 @@ SplitOpx::SplitOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
   verifyOp<SplitOp>(op, {Onnx::Operators::Split_2, Onnx::Operators::Split_11});
 }
 
-void SplitOpx::grow(snap::program::Sequence &prog) const {
+void SplitOpx::grow(poplar::program::Sequence &prog) const {
   auto &splitOp     = getOp<SplitOp>();
   auto input        = getInTensor(SplitOp::getInIndex()).getPoplarTensor();
   unsigned int axis = static_cast<unsigned int>(splitOp.getAxis());

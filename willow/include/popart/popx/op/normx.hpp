@@ -24,12 +24,12 @@ public:
   NormOpx(Op *, Devicex *);
 
 protected:
-  snap::Tensor convertInvSdToVar(snap::program::Sequence &prog,
+  snap::Tensor convertInvSdToVar(poplar::program::Sequence &prog,
                                  const snap::Tensor &invSd,
                                  float epsilon,
                                  const poplar::Type dstType) const;
 
-  snap::Tensor convertVarToInvSd(snap::program::Sequence &prog,
+  snap::Tensor convertVarToInvSd(poplar::program::Sequence &prog,
                                  const snap::Tensor &var,
                                  float epsilon,
                                  const poplar::Type dstType) const;

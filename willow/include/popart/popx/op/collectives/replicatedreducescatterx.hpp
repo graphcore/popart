@@ -10,7 +10,7 @@ namespace popx {
 class ReplicatedReduceScatterOpx : public CollectivesBaseOpx {
 public:
   ReplicatedReduceScatterOpx(Op *, Devicex *);
-  void grow(snap::program::Sequence &) const final;
+  void grow(poplar::program::Sequence &) const final;
 
   snap::Tensor
   createInputTensor(InIndex, const poplar::DebugNameAndId &dnai) const final;

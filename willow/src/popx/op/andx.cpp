@@ -15,7 +15,7 @@ AndOpx::AndOpx(Op *op, Devicex *devicex) : BinaryComparisonOpx(op, devicex) {
   verifyOp<AndOp>(op, {Onnx::Operators::And_1, Onnx::Operators::And_7});
 }
 
-void AndOpx::grow(snap::program::Sequence &prog) const {
+void AndOpx::grow(poplar::program::Sequence &prog) const {
 
   insert(outId(AndOp::getOutIndex()),
          snap::Tensor{
@@ -23,7 +23,7 @@ void AndOpx::grow(snap::program::Sequence &prog) const {
                          popops::expr::BinaryOpType::LOGICAL_AND,
                          get(inId(AndOp::getArg0InIndex())).getPoplarTensor(),
                          get(inId(AndOp::getArg1InIndex())).getPoplarTensor(),
-                         prog.getPoplarSequence(),
+                         prog,
                          debugContext()),
              graph()});
 }

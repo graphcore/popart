@@ -6,10 +6,8 @@
 #include <unordered_map>
 
 #include <poplar/Program.hpp>
-
-#include <snap/Program.hpp>
-
 #include <popart/names.hpp>
+
 #include <popart/popx/pritask.hpp>
 
 namespace popart {
@@ -61,40 +59,40 @@ public:
 
   // Program fragments are not necessarily complete program that can be given to
   // a poplar engine.
-  const snap::program::Sequence &streamWeightsFromHostFragment() const;
-  snap::program::Sequence &streamWeightsFromHostFragment();
-  const snap::program::Sequence &streamOptimizerFromHostFragment() const;
-  snap::program::Sequence &streamOptimizerFromHostFragment();
-  const snap::program::Sequence &setRandomSeedFromHostFragment() const;
-  snap::program::Sequence &setRandomSeedFromHostFragment();
-  const snap::program::Sequence &cycleCountTensorToHostFragment() const;
-  snap::program::Sequence &rngStateFromHostFragment();
-  const snap::program::Sequence &rngStateFromHostFragment() const;
-  snap::program::Sequence &rngStateToHostFragment();
-  const snap::program::Sequence &rngStateToHostFragment() const;
-  snap::program::Sequence &cycleCountTensorToHostFragment();
-  const snap::program::Sequence &toHostFinalCopyFragment() const;
-  snap::program::Sequence &toHostFinalCopyFragment();
-  const snap::program::Sequence &initFragment() const;
-  snap::program::Sequence &initFragment();
-  const snap::program::Sequence &preForwardFragment() const;
-  snap::program::Sequence &preForwardFragment();
-  const snap::program::Sequence &forwardFragment() const;
-  snap::program::Sequence &forwardFragment();
-  const snap::program::Sequence &backwardFragment() const;
-  snap::program::Sequence &backwardFragment();
-  const snap::program::Sequence &accumulateOuterFragment() const;
-  snap::program::Sequence &accumulateOuterFragment();
-  const snap::program::Sequence &weightsToHostFragment() const;
-  snap::program::Sequence &weightsToHostFragment();
+  const poplar::program::Sequence &streamWeightsFromHostFragment() const;
+  poplar::program::Sequence &streamWeightsFromHostFragment();
+  const poplar::program::Sequence &streamOptimizerFromHostFragment() const;
+  poplar::program::Sequence &streamOptimizerFromHostFragment();
+  const poplar::program::Sequence &setRandomSeedFromHostFragment() const;
+  poplar::program::Sequence &setRandomSeedFromHostFragment();
+  const poplar::program::Sequence &cycleCountTensorToHostFragment() const;
+  poplar::program::Sequence &rngStateFromHostFragment();
+  const poplar::program::Sequence &rngStateFromHostFragment() const;
+  poplar::program::Sequence &rngStateToHostFragment();
+  const poplar::program::Sequence &rngStateToHostFragment() const;
+  poplar::program::Sequence &cycleCountTensorToHostFragment();
+  const poplar::program::Sequence &toHostFinalCopyFragment() const;
+  poplar::program::Sequence &toHostFinalCopyFragment();
+  const poplar::program::Sequence &initFragment() const;
+  poplar::program::Sequence &initFragment();
+  const poplar::program::Sequence &preForwardFragment() const;
+  poplar::program::Sequence &preForwardFragment();
+  const poplar::program::Sequence &forwardFragment() const;
+  poplar::program::Sequence &forwardFragment();
+  const poplar::program::Sequence &backwardFragment() const;
+  poplar::program::Sequence &backwardFragment();
+  const poplar::program::Sequence &accumulateOuterFragment() const;
+  poplar::program::Sequence &accumulateOuterFragment();
+  const poplar::program::Sequence &weightsToHostFragment() const;
+  poplar::program::Sequence &weightsToHostFragment();
   // If ScheduledPreLoss::Yes, then return forwardFragment(), else return
   // backwardFragment()
-  snap::program::Sequence &forwardOrBackwardFragment(ScheduledPreLoss);
+  poplar::program::Sequence &forwardOrBackwardFragment(ScheduledPreLoss);
 
   // A list of programs that can be run by the Poplar engine.
-  const std::vector<snap::program::Program> progs() const;
+  const std::vector<poplar::program::Program> progs() const;
 
-  snap::program::Sequence &programFragment(PopPrograms::ProgramFragmentIndex);
+  poplar::program::Sequence &programFragment(PopPrograms::ProgramFragmentIndex);
 
   // Sub-graph program fragments, getters and setters for poplar sequences and
   // functions for subgraphs.
@@ -102,10 +100,10 @@ public:
   // The number of Poplar sequences associated with a graph.
   int getNumFragments(const Graph &graph) const;
   // Get a vector of all Poplar sequences associated with a graph.
-  std::vector<snap::program::Sequence> &scopeFragments(const Graph &);
+  std::vector<poplar::program::Sequence> &scopeFragments(const Graph &);
   // Get a specific Poplar sequence associated with a graph.
-  snap::program::Sequence &scopeFragment(const Graph &,
-                                         SubgraphPartIndex subgraphPart);
+  poplar::program::Sequence &scopeFragment(const Graph &,
+                                           SubgraphPartIndex subgraphPart);
   // Determine if any Poplar sequences associated with a graph are allocated.
   bool containsFragments(const Graph &graph) const;
   // Determine whether a specific Poplar sequence associated with a graph has
@@ -126,7 +124,7 @@ public:
 
   // Get the program fragment for a recomputed op. createRecomputeFragment must
   // be called first.
-  std::vector<snap::program::Sequence>::iterator recomputeFragment(OpId);
+  std::vector<poplar::program::Sequence>::iterator recomputeFragment(OpId);
   // Create the program fragment for a recomputed op.
   SequenceMap::SequenceInterval createRecomputeFragment(OpId);
 
@@ -146,42 +144,43 @@ public:
   // a pipeline program fragment takes a 'description' string, that describes
   // the code being added to the returned fragment. This description is added
   // to pipelineDescs to build up a full description of the program.
-  snap::program::Sequence &
+  poplar::program::Sequence &
   pipelineFragment(PipelineStage, PipelineFragmentId, const std::string &desc);
 
-  snap::program::Sequence &
+  poplar::program::Sequence &
   pipelineToDeviceStreamFragment(PipelineStage pipelineStage,
                                  const std::string &desc);
-  snap::program::Sequence &pipelineMainFragment(PipelineStage,
-                                                const std::string &desc);
+  poplar::program::Sequence &pipelineMainFragment(PipelineStage,
+                                                  const std::string &desc);
 
   // To stream anchors that are computed in the pipelineMainFragment
-  snap::program::Sequence &
+  poplar::program::Sequence &
   pipelineToHostStreamFragment(PipelineStage, const std::string &desc);
-  snap::program::Sequence &pipelineIpuCopyFragment(const std::string &desc);
+  poplar::program::Sequence &pipelineIpuCopyFragment(const std::string &desc);
 
   void addPipelineCycle(
       PipelineCycle pCycle,
-      snap::program::Sequence &sq,
+      poplar::program::Sequence &sq,
       std::ostringstream &ss,
       std::map<PipelineStage, poplar::Function> &mainFunctions) const;
 
   IrLowering *ir_lowering_p;
 
 private:
-  std::vector<snap::program::Sequence> seqs;
+  std::vector<poplar::program::Sequence> seqs;
 
   // The sub-graph program fragments will be stored here
-  std::unordered_map<std::string, std::vector<snap::program::Sequence>>
+  std::unordered_map<std::string, std::vector<poplar::program::Sequence>>
       scopeSeqs;
   std::unordered_map<std::string, std::vector<poplar::Function>> funcs;
 
   // The recompute program fragments will be stored here. We store the sequences
   // in singleton vectors because grow code requires iterators to vectors.
-  std::map<OpId, std::vector<snap::program::Sequence>> recomputeSeqs;
+  std::map<OpId, std::vector<poplar::program::Sequence>> recomputeSeqs;
 
   // Pipelining fragments for each pipeline stage are stored here
-  std::map<PipelineFragmentId, std::map<PipelineStage, snap::program::Sequence>>
+  std::map<PipelineFragmentId,
+           std::map<PipelineStage, poplar::program::Sequence>>
       pipelineSeqs;
 
   // ... and their corresponding descriptions
@@ -189,25 +188,21 @@ private:
       pipelineDescs;
 
   // IpuCopy program
-  std::unique_ptr<snap::program::Sequence> pipelineIpuCopySeq;
+  poplar::program::Sequence pipelineIpuCopySeq;
   std::string pipelineIpuCopyDesc;
 
-public:
-  void initWithSnapGraph(snap::Graph &);
-
-private:
-  snap::program::Sequence getFullProgramFromPipelineFragments() const;
+  poplar::program::Sequence getFullProgramFromPipelineFragments() const;
 
   std::set<std::pair<OpId, ExecutionPhase>> beenRecomputed;
 
-  snap::program::Sequence weightsFromHost() const;
-  snap::program::Sequence optimizerFromHost() const;
-  snap::program::Sequence setRandomSeedFromHost() const;
-  snap::program::Sequence rngStateFromHost() const;
-  snap::program::Sequence cycleCountTensorToHost() const;
-  snap::program::Sequence program() const;
-  snap::program::Sequence rngStateToHost() const;
-  snap::program::Sequence weightsToHost() const;
+  poplar::program::Sequence weightsFromHost() const;
+  poplar::program::Sequence optimizerFromHost() const;
+  poplar::program::Sequence setRandomSeedFromHost() const;
+  poplar::program::Sequence rngStateFromHost() const;
+  poplar::program::Sequence cycleCountTensorToHost() const;
+  poplar::program::Sequence program() const;
+  poplar::program::Sequence rngStateToHost() const;
+  poplar::program::Sequence weightsToHost() const;
 };
 
 } // namespace popx

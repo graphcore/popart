@@ -13,12 +13,12 @@ NegateOpx::NegateOpx(Op *op, Devicex *devicex)
   verifyOp<NegateOp>(op, Onnx::Operators::Neg_6);
 }
 
-void NegateOpx::grow(snap::program::Sequence &prog) const {
+void NegateOpx::grow(poplar::program::Sequence &prog) const {
   setOutTensor(0,
                snap::Tensor{popops::map(graph().getPoplarGraph(),
                                         popops::expr::UnaryOpType::NEGATE,
                                         getInTensor(0).getPoplarTensor(),
-                                        prog.getPoplarSequence(),
+                                        prog,
                                         debugContext()),
                             graph()});
 }
@@ -28,12 +28,12 @@ NegateGradOpx::NegateGradOpx(Op *op, Devicex *devicex)
   verifyOp<NegateGradOp>(op, Onnx::GradOperators::NegGrad);
 }
 
-void NegateGradOpx::grow(snap::program::Sequence &prog) const {
+void NegateGradOpx::grow(poplar::program::Sequence &prog) const {
   setOutTensor(0,
                snap::Tensor{popops::map(graph().getPoplarGraph(),
                                         popops::expr::UnaryOpType::NEGATE,
                                         getInTensor(0).getPoplarTensor(),
-                                        prog.getPoplarSequence(),
+                                        prog,
                                         debugContext()),
                             graph()});
 }

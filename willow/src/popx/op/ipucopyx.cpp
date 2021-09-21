@@ -18,7 +18,7 @@ IpuCopyOpx::IpuCopyOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
   verifyOp<IpuCopyOp>(op, Onnx::CustomOperators::IpuCopy);
 }
 
-void IpuCopyOpx::grow(snap::program::Sequence &prog) const {
+void IpuCopyOpx::grow(poplar::program::Sequence &prog) const {
 
   IpuCopyOp &op = getOp<IpuCopyOp>();
 
@@ -30,7 +30,7 @@ void IpuCopyOpx::grow(snap::program::Sequence &prog) const {
     // Need to get the non virtual graph, so cannot use PopOpx::graph()
     auto t = poputil::copyToIpu(dv_p->lowering().graph().getPoplarGraph(),
                                 getInTensor(idx).getPoplarTensor(),
-                                prog.getPoplarSequence(),
+                                prog,
                                 static_cast<int>(op.getDestIpu()),
                                 debugContext("ipuCopy"));
     setOutTensor(idx, snap::Tensor{t, dv_p->lowering().graph()});
@@ -67,7 +67,7 @@ PreparedCopyTensors IpuCopyOpx::createPipelinedOutput() const {
   return copyTensors;
 }
 
-void IpuCopyOpx::growPipelined(snap::program::Sequence &prog,
+void IpuCopyOpx::growPipelined(poplar::program::Sequence &prog,
                                PreparedCopyTensors copyTensors) const {
   IpuCopyOp &op = getOp<IpuCopyOp>();
 

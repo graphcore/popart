@@ -17,7 +17,7 @@ public:
 class HostLoadOpx : public HostBaseOpx {
 public:
   HostLoadOpx(Op *, Devicex *);
-  void grow(snap::program::Sequence &) const final;
+  void grow(poplar::program::Sequence &) const final;
 
   InputCreatorType getInputCreatorType(InIndex) const final;
   snap::Tensor unwindTensorLayout(snap::Tensor, InIndex, OutIndex) const final;
@@ -27,7 +27,7 @@ public:
 class HostStoreOpx : public HostBaseOpx {
 public:
   HostStoreOpx(Op *, Devicex *);
-  void grow(snap::program::Sequence &) const final;
+  void grow(poplar::program::Sequence &) const final;
 
   InputCreatorType getInputCreatorType(InIndex) const final;
   snap::Tensor unwindTensorLayout(snap::Tensor, InIndex, OutIndex) const final;

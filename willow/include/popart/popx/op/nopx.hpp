@@ -12,7 +12,7 @@ namespace popx {
 class NopOpx : public PopOpx {
 public:
   NopOpx(Op *, Devicex *);
-  void grow(snap::program::Sequence &) const final;
+  void grow(poplar::program::Sequence &) const final;
 };
 
 } // namespace popx

@@ -11,7 +11,7 @@ SyncOpx::SyncOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
   verifyOp<SyncOp>(op, Onnx::CustomOperators::Sync);
 }
 
-void SyncOpx::grow(snap::program::Sequence &prog) const {
+void SyncOpx::grow(poplar::program::Sequence &prog) const {
   auto &syncOp = getOp<SyncOp>();
   prog.add(poplar::program::Sync(syncOp.getSyncType()));
 }

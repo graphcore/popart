@@ -26,7 +26,7 @@ RestoreBaseOpx<Derived>::RestoreBaseOpx(Op *op, Devicex *devicex)
 
 template <typename Derived>
 snap::Tensor
-RestoreBaseOpx<Derived>::growRestore(snap::program::Sequence &prog,
+RestoreBaseOpx<Derived>::growRestore(poplar::program::Sequence &prog,
                                      const snap::Tensor &stash) const {
   const auto &op       = getOp<typename Derived::OpType>();
   const auto stashSize = op.getStashSize();
@@ -56,15 +56,12 @@ RestoreBaseOpx<Derived>::growRestore(snap::program::Sequence &prog,
 
   // Create a "1" tensor and grow program to increment stash index by 1.
   auto one = getConst(poplar::UNSIGNED_INT, {}, 1.0, "one").getPoplarTensor();
-  popops::addInPlace(graph().getPoplarGraph(),
-                     stashIndex,
-                     one,
-                     prog.getPoplarSequence(),
-                     debugContext());
+  popops::addInPlace(
+      graph().getPoplarGraph(), stashIndex, one, prog, debugContext());
   popops::remInPlace(graph().getPoplarGraph(),
                      stashIndex,
                      stashSizeTensor,
-                     prog.getPoplarSequence(),
+                     prog,
                      debugContext());
 
   return actFromStash;
@@ -72,7 +69,7 @@ RestoreBaseOpx<Derived>::growRestore(snap::program::Sequence &prog,
 
 template <typename Derived>
 snap::Tensor RestoreBaseOpx<Derived>::growStaticSliceRestore(
-    snap::program::Sequence &prog,
+    poplar::program::Sequence &prog,
     const int64_t stashSize,
     const snap::Tensor &stashIndex,
     const snap::Tensor &stash) const {
@@ -110,7 +107,7 @@ snap::Tensor RestoreBaseOpx<Derived>::growStaticSliceRestore(
 
 template <typename Derived>
 snap::Tensor RestoreBaseOpx<Derived>::growDynamicSliceRestore(
-    snap::program::Sequence &prog,
+    poplar::program::Sequence &prog,
     const snap::Tensor &stashIndex,
     const snap::Tensor &stash) const {
 
@@ -120,13 +117,13 @@ snap::Tensor RestoreBaseOpx<Derived>::growDynamicSliceRestore(
                            stashIndex.getPoplarTensor(),
                            {0},
                            {1},
-                           prog.getPoplarSequence(),
+                           prog,
                            debugContext("grow_restore_dynamic_slice"));
 
   return snap::Tensor{actFromStash.squeeze({0}), graph()};
 }
 
-void RestoreInplaceOpx::grow(snap::program::Sequence &prog) const {
+void RestoreInplaceOpx::grow(poplar::program::Sequence &prog) const {
   auto actToRestore = getInTensor(RestoreInplaceOp::getActToRestoreInIndex());
   auto stash        = getInTensor(RestoreInplaceOp::getStashInIndex());
 
@@ -142,7 +139,7 @@ void RestoreInplaceOpx::grow(snap::program::Sequence &prog) const {
 RestoreInplaceOpx::RestoreInplaceOpx(Op *op, Devicex *devicex)
     : RestoreBaseOpx(op, devicex) {}
 
-void RestoreOpx::grow(snap::program::Sequence &prog) const {
+void RestoreOpx::grow(poplar::program::Sequence &prog) const {
   auto stash = getInTensor(RestoreOp::getStashInIndex());
 
   auto actFromStash = growRestore(prog, stash);

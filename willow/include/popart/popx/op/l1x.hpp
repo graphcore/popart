@@ -11,14 +11,14 @@ namespace popx {
 class L1Opx : public PopOpx {
 public:
   L1Opx(Op *, Devicex *);
-  void grow(snap::program::Sequence &) const final;
+  void grow(poplar::program::Sequence &) const final;
   InputCreatorType getInputCreatorType(InIndex) const final;
 };
 
 class L1GradOpx : public PopOpx {
 public:
   L1GradOpx(Op *, Devicex *);
-  void grow(snap::program::Sequence &) const final;
+  void grow(poplar::program::Sequence &) const final;
 };
 
 } // namespace popx
