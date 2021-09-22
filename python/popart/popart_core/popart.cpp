@@ -1991,18 +1991,18 @@ PYBIND11_MODULE(popart_core, m) {
     // Python Session classes directly, rather than the C++ class.
     cls.def(
         "_getDataFlow",
-        [](const InferenceSession &s) { return s.getIr().getDataFlow(); },
+        [](const TrainingSession &s) { return s.getIr().getDataFlow(); },
         py::return_value_policy::reference);
     cls.def(
         "_replicationFactor",
-        [](const InferenceSession &s) -> int64_t {
+        [](const TrainingSession &s) -> int64_t {
           const auto &opts = s.getIr().getSessionOptions();
           return opts.enableReplicatedGraphs ? opts.replicatedGraphCount : 1;
         },
         py::return_value_policy::reference);
     cls.def(
         "_accumulationFactor",
-        [](const InferenceSession &s) -> int64_t {
+        [](const TrainingSession &s) -> int64_t {
           const auto &opts = s.getIr().getSessionOptions();
           return opts.enableGradientAccumulation ? opts.accumulationFactor : 1;
         },
