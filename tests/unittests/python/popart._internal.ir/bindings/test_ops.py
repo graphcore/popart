@@ -77,6 +77,7 @@ def binary_op_tester(op_name: str,
 ("MulOp", False),
 ("DivOp", False),
 ("EqualOp", False),
+("AndOp", False),
 ("NotOp", False),
 ("PowOp", False),
 ("OrOp", False),
@@ -117,7 +118,8 @@ def test_binary_ops(op_name: str, inplace: bool, connected: bool) -> None:
 ("TanhOp", {}),
 ("NotOp", {}),
 ("SoftmaxOp", {"axis_": 0}),
-("SplitOp", {"axis_": 0,"split_": [1]})
+("SplitOp", {"axis_": 0,"split_": [1]}),
+("CastOp", {"_to": _ir.DataType.FLOAT})
 ])
 # yapf: enable, pylint: enable-all
 def test_unary_ops(connected: bool, op_name: str,

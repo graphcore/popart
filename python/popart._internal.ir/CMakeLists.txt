@@ -29,10 +29,12 @@ list(
   ${popart_op_headers_dir}/pow.hpp
   ${popart_op_headers_dir}/dropout.hpp
   ${popart_op_headers_dir}/gather.hpp
+  ${popart_op_headers_dir}/cast.hpp
   ${popart_op_headers_dir}/tiedgather.hpp
   ${popart_op_headers_dir}/groupnorm.hpp
   ${popart_op_headers_dir}/equal.hpp
   ${popart_op_headers_dir}/or.hpp
+  ${popart_op_headers_dir}/and.hpp
   ${popart_op_headers_dir}/not.hpp
   ${popart_op_headers_dir}/relu.hpp
   ${popart_op_headers_dir}/reshape.hpp

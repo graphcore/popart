@@ -35,6 +35,10 @@ class Tensor:
         return tuple(self._pb_tensor.info.shape())
 
     @property
+    def rank(self) -> int:
+        return self._pb_tensor.info.rank()
+
+    @property
     def nelms(self) -> int:
         return self._pb_tensor.info.nelms()
 
@@ -45,7 +49,8 @@ class Tensor:
     def __str__(self) -> str:
         return f"{self.name} {self.dtype} {self.shape}"
 
-    def _ensure_tensor(self, value: Any) -> 'Tensor':
+    def _ensure_tensor(self, value: Any,
+                       dtype: Optional[dtypes.dtype] = None) -> 'Tensor':
         """A helper method that's used in operator overloading to ensure that
         all operands are of type `Tensor`.
 
@@ -59,7 +64,8 @@ class Tensor:
         if isinstance(value, Tensor):
             return value
         else:
-            return constant(value, self.dtype)
+            dtype = self.dtype if dtype is None else dtype
+            return constant(value, dtype)
 
     def __add__(self, value: Any) -> 'Tensor':
         """Returns ops.add(self, value)."""
@@ -80,6 +86,22 @@ class Tensor:
         """Returns ops.div(self, value)."""
         import popart.ir.ops as ops
         return ops.div(self, self._ensure_tensor(value))
+
+    def transpose(self,
+                  permutation: Optional[Tuple[int, ...]] = None) -> 'Tensor':
+        """Returns ops.transpose(self, permutation)."""
+        import popart.ir.ops as ops
+        return ops.transpose(self, permutation)
+
+    def reshape(self, shape: Tuple[int, ...]) -> 'Tensor':
+        """Returns ops.reshape(self, shape)."""
+        import popart.ir.ops as ops
+        return ops.reshape(self, shape)
+
+    @property
+    def T(self) -> 'Tensor':
+        """Returns the Tensor transposed with reversed axes."""
+        return self.transpose()
 
 
 class Variable(Tensor):

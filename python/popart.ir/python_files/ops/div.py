@@ -8,15 +8,19 @@ __all__ = ['div']
 
 
 def div(x1: Tensor, x2: Tensor) -> Tensor:
-    """Divides two Tensors element-wise. Follows numpy broadcasting rules.
-        Arguments must have the same dtype. Output will be the same dtype as the inputs.
-        With integer values floor division is used.
-        Args:
-            x1, x2: Tensor
-                Tensors to be divided.
-        Returns:
-            mul: Tensor
-                The division of x1 by x2"""
+    """
+    Divides two Tensors element-wise.
+    Follows numpy broadcasting rules. Arguments must have the same dtype.
+    Output will be the same dtype as the inputs.
+    With integer values floor division is used.
+
+    Args:
+        x1, x2: Tensor
+            Tensors to be divided.
+    Returns:
+        mul: Tensor
+            The division of x1 by x2
+    """
     g = gcg()
     pb_g = g._pb_graph
 

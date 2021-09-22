@@ -3,6 +3,14 @@ from popart.ir.tensor import Tensor
 from popart.ir.graph import Graph
 import popart._internal.ir as _ir
 from typing import Optional
+from popart.ir import dtypes
+
+
+def cast_if_needed(t: Tensor, data_type: dtypes.dtype) -> Tensor:
+    from popart.ir.ops.cast import cast
+    if t.dtype != data_type:
+        return cast(t, data_type)
+    return t
 
 
 def check_in_graph(graph: Graph, *tensors: Tensor):

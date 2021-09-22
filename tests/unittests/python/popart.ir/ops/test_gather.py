@@ -15,8 +15,8 @@ class TestGather:
             indices = pir.variable([[0, 1], [1, 0]])
             c = ops.gather(t, indices)
 
-        assert len(ir.main_graph().get_tensors()) == 3
-        assert len(ir.main_graph().get_variables()) == 2
+        assert len(g.get_tensors()) == 3
+        assert len(g.get_variables()) == 2
         contains_op_of_type("Gather", _ir.op.GatherOp, g)
 
 
@@ -30,6 +30,6 @@ class TestTiedGather:
             indices = pir.variable([[0, 1], [1, 0]])
             c = ops.tied_gather(t, indices)
 
-        assert len(ir.main_graph().get_tensors()) == 3
-        assert len(ir.main_graph().get_variables()) == 2
+        assert len(g.get_tensors()) == 3
+        assert len(g.get_variables()) == 2
         contains_op_of_type("PopartTiedGather", _ir.op.TiedGatherOp, g)

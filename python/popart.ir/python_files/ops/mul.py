@@ -8,13 +8,18 @@ __all__ = ['mul']
 
 
 def mul(lhs: Tensor, rhs: Tensor) -> Tensor:
-    """Multiplies two Tensors element-wise. Follows numpy broadcasting rules. Arguments must have the same dtype.
-        Args:
-            lhs, rhs: Tensor
-                Tensors to be multiplied.
-        Returns:
-            mul: Tensor
-                The product of lhs and rhs"""
+    """
+    Multiplies two Tensors element-wise.
+    Follows numpy broadcasting rules.
+    Arguments must have the same dtype.
+    
+    Args:
+        lhs, rhs: Tensor
+            Tensors to be multiplied.
+    Returns:
+        mul: Tensor
+            The product of lhs and rhs
+    """
     g = gcg()
     pb_g = g._pb_graph
 
