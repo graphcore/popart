@@ -52,6 +52,14 @@ Data input and output (IStepIO)
 .. doxygenclass:: popart::StepIOGeneric
   :members:
 
+..doxygentypedef:: popart::StepIOCallback::InputCallback
+..doxygentypedef:: popart::StepIOCallback::InputCallbackComplete
+..doxygentypedef:: popart::StepIOCallback::OutputCallback
+..doxygentypedef:: popart::StepIOCallback::OutputCallbackComplete
+
+.. doxygenclass:: popart::StepIOCallback
+  :members:
+
 
 Session options
 ..............

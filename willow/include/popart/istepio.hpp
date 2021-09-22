@@ -13,14 +13,19 @@ class Executablex;
 
 /**
  * An abstract base class through which input and output data is passed to a
- * Session (see Session::run).
+ * Session (see Session::run). Data is passed via buffers. In the case of
+ * buffers returned by IStepIO::in PopART *reads* from those buffers and in
+ * the case of IStepIO::out PopART *writes* to these buffers. The
+ * IStepIO::inComplete and IStepIO::outComplete functions are called by
+ * PopART to signal it is done with an input or output buffer.
  *
- * An IStepIO implementation should conceptually implement a rolling list of
+ * An IStepIO implementation should conceptually implement a rolling queue of
  * active buffers for each input and output tensor. Every successful call to
- * IStepIO::in should yield a new data buffer for PopART and add it to the head
- * of the conceptual list. Conversely, every call to IStepIO::inComplete should
- * be taken to mean that the buffer at the tail-end of the list is no longer
- * being used by PopART. This buffer is removed from the conceptual list.
+ * IStepIO::in should yield a new data buffer for PopART to read from and add
+ * it to the head of the conceptual queue. Conversely, every call to
+ * IStepIO::inComplete should be taken to mean that the buffer at the tail-end
+ * of the queue is no longer being used by PopART. This buffer is removed from
+ * the conceptual queue.
  *
  * Note that a IStepIO::in call with the \c prefetch flag set is only
  * considered successful when it returns data.

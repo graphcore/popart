@@ -16,27 +16,98 @@ namespace popx {
 class Executablex;
 }
 
+/**
+ * @brief Class that implements the IStepIO interface using user-provided
+ * callback functions.
+ *
+ * The IStepIO interface contains a number of pure virtual member functions
+ * through which PopART receives buffers to read data from and buffers to write
+ * data to.
+ * This class inherits from IStepIO and implements those member functions
+ * by delegating the logic to the callback functions passed in the constructor.
+ * This gives the user full control as to how data buffers are provisioned.
+ *
+ * See IStepIO for more details on the expected behaviour of the callbacks.
+ */
 class StepIOCallback : public IStepIO {
 
 public:
-  using InputCallback          = std::function<ConstVoidData(TensorId, bool)>;
-  using InputCompleteCallback  = std::function<void(TensorId)>;
-  using OutputCallback         = std::function<MutableVoidData(TensorId)>;
+  /**
+   * Callable object that implements IStepIO::in().
+   */
+  using InputCallback = std::function<ConstVoidData(TensorId, bool)>;
+  /**
+   * Callable object that implements IStepIO::inComplete().
+   */
+  using InputCompleteCallback = std::function<void(TensorId)>;
+  /**
+   * Callable object that implements IStepIO::out().
+   */
+  using OutputCallback = std::function<MutableVoidData(TensorId)>;
+  /**
+   * Callable object that implements IStepIO::outComplete().
+   */
   using OutputCompleteCallback = std::function<void(TensorId)>;
 
-  StepIOCallback(InputCallback inputCb_,
-                 InputCompleteCallback inputCompleteCb_,
-                 OutputCallback outputCb_,
-                 OutputCompleteCallback outputCompleteCb_)
-      : inputCb(inputCb_), inputCompleteCb(inputCompleteCb_),
-        outputCb(outputCb_), outputCompleteCb(outputCompleteCb_) {}
+  /**
+   * @brief Construct a new StepIOCallback object.
+   *
+   * @param inputCallback The callback function the constructed
+   *   StepIOCallback instance will use when IStepIO::in() is called.
+   *   See IStepIO for details on how to implement this method.
+   * @param inputCompleteCallback The callback function the constructed
+   *   StepIOCallback instance will use when IStepIO::inComplete() is
+   *   called. See IStepIO for details on how to implement this method.
+   * @param outputCallback The callback function the constructed
+   *   StepIOCallback instance will use when IStepIO::out() is called.
+   *   See IStepIO for details on how to implement this method.
+   * @param outputCompleteCallback The callback function the constructed
+   *   StepIOCallback instance will use when IStepIO::outComplete() is
+   * called. See IStepIO for details on how to implement this method.
+   */
+  StepIOCallback(InputCallback inputCallback,
+                 InputCompleteCallback inputCompleteCallback,
+                 OutputCallback outputCallback,
+                 OutputCompleteCallback outputCompleteCallback)
+      : inputCb(inputCallback), inputCompleteCb(inputCompleteCallback),
+        outputCb(outputCallback), outputCompleteCb(outputCompleteCallback) {}
 
   void assertNumElements(const popx::Executablex &) const {}
 
+  /**
+   * This function is called by PopART when a StepIOCallback instance is
+   * passed to Session::run() and will internally call the
+   * `inputCallback` parameter passed to the constructor.
+   *
+   * You should not call this function directly.
+   */
   ConstVoidData in(TensorId id, int64_t numElements, bool prefetch)final;
+
+  /**
+   * This function is called by PopART when a StepIOCallback instance is
+   * passed to Session::run() and will internally call the
+   * `inputCompleteCallback` parameter passed to the constructor.
+   *
+   * You should not call this function directly.
+   */
   void inComplete(TensorId id, int64_t numElements) final;
 
+  /**
+   * This function is called by PopART when a StepIOCallback instance is
+   * passed to Session::run() and will internally call the
+   * `outputCallback` parameter passed to the constructor.
+   *
+   * You should not call this function directly.
+   */
   MutableVoidData out(TensorId id, int64_t numElements) final;
+
+  /**
+   * This function is called by PopART when a StepIOCallback instance is
+   * passed to Session::run() and will internally call the
+   * `outputCompleteCallback` parameter passed to the constructor.
+   *
+   * You should not call this function directly.
+   */
   void outComplete(TensorId id) final;
 
 private:

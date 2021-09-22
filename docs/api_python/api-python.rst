@@ -4,10 +4,33 @@ PopART Python API
 Sessions
 --------
 
-.. automodule:: popart.session
+Training session
+^^^^^^^^^^^^^^^^
+
+.. autoclass:: popart.TrainingSession
     :members:
     :undoc-members:
-    :show-inheritance:
+
+
+Inference session
+^^^^^^^^^^^^^^^^^
+
+.. autoclass:: popart.InferenceSession
+    :members:
+    :undoc-members:
+
+Data input and output
+^^^^^^^^^^^^^^^^^^^^^
+
+.. note:: The base class for IO in PopART is `IStepIO`. The way in which this class is used is detailed in our `C++ API documentation <https://docs.graphcore.ai/projects/popart-cpp-api/en/latest/api-cpp.html#data-input-and-output-istepio>`_.
+
+.. autoclass:: popart.PyStepIO
+    :special-members: __init__
+    :members:
+
+.. autoclass:: popart.PyStepIOCallback
+    :special-members: __init__
+    :members:
 
 Builder
 --------
@@ -43,16 +66,6 @@ AiGraphcoreOpset1
 ^^^^^^^^^^^^^^^^^
 
 .. autoclass:: popart_core.AiGraphcoreOpset1
-    :members:
-
-
-Session
--------
-
-.. autoclass:: popart_core._InferenceSessionCore
-    :members:
-
-.. autoclass:: popart_core._TrainingSessionCore
     :members:
 
 Patterns
@@ -117,7 +130,7 @@ Optimizers
     :members:
 
 SGD
-###
+^^^
 
 .. autoclass:: popart_core.SGD
     :members:
@@ -125,7 +138,7 @@ SGD
     :private-members:
 
 ConstSGD
-########
+^^^^^^^^
 
 .. autoclass:: popart_core.ConstSGD
     :members:
@@ -133,7 +146,7 @@ ConstSGD
     :private-members:
 
 Adam
-####
+^^^^
 
 .. autoclass:: popart_core.Adam
     :members:

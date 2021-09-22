@@ -603,15 +603,20 @@ PYBIND11_MODULE(popart_core, m) {
         "Sum", AnchorReturnTypeId::Sum, DOC(popart, AnchorReturnTypeId, Sum));
 
     {
-      py::class_<PyStepIO> cls(m, "PyStepIO", stepio);
+      py::class_<PyStepIO> cls(
+          m, "PyStepIO", stepio, DOC(custom, PyStepIO, class));
       cls.def(py::init<std::map<TensorId, py::array>,
                        std::map<TensorId, py::array>>(),
               py::arg("inputs"),
-              py::arg("outputs"));
-      cls.def("enableRuntimeAsserts", &PyStepIO::enableRuntimeAsserts);
+              py::arg("outputs"),
+              py::doc(DOC(custom, PyStepIO, init)));
+      cls.def("enableRuntimeAsserts",
+              &PyStepIO::enableRuntimeAsserts,
+              py::doc(DOC(custom, PyStepIO, enableRuntimeAsserts)));
     }
     {
-      py::class_<PyStepIOCallback> cls(m, "PyStepIOCallback", stepio);
+      py::class_<PyStepIOCallback> cls(
+          m, "PyStepIOCallback", stepio, DOC(custom, PyStepIOCallback, class));
       cls.def(py::init<std::function<py::array(std::string, bool)>,
                        std::function<void(std::string)>,
                        std::function<py::array(std::string)>,
@@ -619,7 +624,8 @@ PYBIND11_MODULE(popart_core, m) {
               py::arg("input_callback"),
               py::arg("input_complete_callback"),
               py::arg("output_callback"),
-              py::arg("output_complete_callback"));
+              py::arg("output_complete_callback"),
+              py::doc(DOC(custom, PyStepIOCallback, init)));
     }
     {
       py::class_<PyWeightsIO> cls(m, "PyWeightsIO", weightsio);
