@@ -1,6 +1,7 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 #include "bindings/graph.hpp"
 #include "bindings/op.hpp"
+#include "bindings/op/manualbindops.hpp"
 
 #include <algorithm>
 #include <iterator>
@@ -126,6 +127,10 @@ void bindGraph(py::module &m) {
   bindCreateOpFunctionToGraphClass(g);
 
   bindCreateConnectedOpFunctionToGraphClass(g);
+
+  bindManualCreateOpFunctionToGraphClass(g);
+
+  bindManualCreateConnectedOpFunctionToGraphClass(g);
 }
 
 } // namespace ir

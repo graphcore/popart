@@ -22,6 +22,7 @@ list(
   ${popart_op_headers_dir}/subtract.hpp
   ${popart_op_headers_dir}/sum.hpp
   ${popart_op_headers_dir}/call.hpp
+  # ${popart_op_headers_dir}/matmul.hpp # Manually bound
   ${popart_op_headers_dir}/exchange/hostcopy.hpp
   ${popart_op_headers_dir}/init.hpp
   ${popart_op_headers_dir}/mul.hpp
@@ -118,6 +119,8 @@ add_popart_python_module(
   bindings/ir.cpp
   bindings/op.cpp
   bindings/op/enums.cpp
+  bindings/op/matmul.cpp
+  bindings/op/manualbindops.cpp
   bindings/scope.cpp
   bindings/tensor.cpp
   bindings/tensordata.cpp

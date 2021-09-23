@@ -194,6 +194,61 @@ def test_init_op(init_type: "_ir.InitType", connected: bool):
     assert op.outId(0) == out0.id
 
 
+@pytest.mark.parametrize("serialise_mode,serialise_factor",
+                         [(_ir.op.SerialiseSettingsMode.NoSerialisation, 0),
+                          (_ir.op.SerialiseSettingsMode.InputChannels, 2),
+                          (_ir.op.SerialiseSettingsMode.ReducingDim, 2),
+                          (_ir.op.SerialiseSettingsMode.OutputChannels, 2)])
+@pytest.mark.parametrize(
+    "partials_type",
+    [_ir.op.MatMulPartialsType.FLOAT, _ir.op.MatMulPartialsType.HALF])
+@pytest.mark.parametrize("connected", [True, False])
+def test_matmul_op(serialise_mode: _ir.op.SerialiseSettingsMode,
+                   serialise_factor: int,
+                   partials_type: _ir.op.MatMulPartialsType, connected: bool):
+    """Test the bindings for matmul op, a special case op with extra settings.
+
+    Args:
+        serialise_mode (_ir.op.SerialiseSettingsMode): Serialisation mode (see matmul.hpp)
+        serialise_factor (int): Factor to serialise by.
+        partials_type (_ir.op.MatMulPartialsType): Partials calculation type (FLOAT, HALF)
+        connected (bool): Whether to use the createConnected<opname> function or 
+            just create<opname>
+    """
+    _, graphs = create_ir()
+    g = graphs[0]
+    in0 = add_actgrad_tensor("in0", [4, 6], g)
+    in1 = add_actgrad_tensor("in1", [6, 12], g)
+    out0 = add_actgrad_tensor("out0", [4, 12], g)
+    opid = _ir.OperatorIdentifier("ai.onnx", "MatMul", 1, _ir.NumInputs(2, 2),
+                                  1)
+    serialise_settings = _ir.op.SerialiseSettings()
+    serialise_settings.mode = serialise_mode
+    serialise_settings.factor = serialise_factor
+    optfloat = _ir.OptionalFloat(1.0)
+    settings = _ir.Settings(g, "new_settings")
+    dtype = _ir.OptionalDataType(_ir.DataType.FLOAT)
+
+    if connected:
+        op = g.createConnectedOp_MatMulOp({
+            0: in0.id,
+            1: in1.id
+        }, {0: out0.id}, opid, settings, optfloat, serialise_settings, dtype,
+                                          partials_type)
+        return
+
+    op = g.createOp_MatMulOp(opid, settings, optfloat, serialise_settings,
+                             dtype, partials_type)
+    op.connectInTensor(0, in0.id)
+    op.connectInTensor(1, in1.id)
+    op.connectOutTensor(0, out0.id)
+    op.setup()
+    assert isinstance(op, _ir.op.MatMulOp)
+    assert op.inTensor(0) == in0
+    assert op.inTensor(1) == in1
+    assert op.outTensor(0) == out0
+
+
 @pytest.mark.parametrize("connected", [True, False])
 def test_call_op(connected: bool):
     """Test the special case of the call op

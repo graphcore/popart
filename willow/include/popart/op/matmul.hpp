@@ -96,10 +96,10 @@ class MatMulOp : public MatMulBaseOp {
 public:
   MatMulOp(const OperatorIdentifier &_opid,
            const Op::Settings &settings_,
-           const nonstd::optional<float> availableMemoryProportion,
+           const nonstd::optional<float> &availableMemoryProportion,
            const SerialiseSettings &serialization_,
-           const OptionalDataType outputType,
-           const MatMulPartialsType partialsType_ = MatMulPartialsType::FLOAT);
+           const OptionalDataType &outputType,
+           const MatMulPartialsType &partialsType_ = MatMulPartialsType::FLOAT);
   MatMulOp(const MatMulOp &) = default;
   MatMulOp &operator=(const MatMulOp &) = delete;
   ~MatMulOp() override                  = default;
@@ -155,7 +155,7 @@ public:
 
   const MatMulOp *getCloneOfCreator() const;
 
-  float getSubgraphValue() const final { return getHighSubgraphValue(); }
+  float getSubgraphValue() const override { return getHighSubgraphValue(); }
 
 protected:
   TensorInfo fwdOpOutputGrad;
@@ -177,7 +177,7 @@ public:
   static OutIndex getOutIndex() { return 0; }
 
   void setup() final;
-  std::unique_ptr<Op> clone() const final;
+  std::unique_ptr<Op> clone() const override;
   const std::vector<GradInOutMapper> &gradInputInfo() const final;
   const std::map<int, int> &gradOutToNonGradIn() const final;
 
@@ -211,7 +211,7 @@ public:
   static OutIndex getOutIndex() { return 0; }
 
   void setup() final;
-  std::unique_ptr<Op> clone() const final;
+  std::unique_ptr<Op> clone() const override;
   const std::vector<GradInOutMapper> &gradInputInfo() const final;
   const std::map<int, int> &gradOutToNonGradIn() const final;
 

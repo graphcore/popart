@@ -17,13 +17,12 @@ namespace ir {
  *  As the base Op class has virtual and pure virtual methods, we must create
  * this in-between class that redirects virtual calls back to Python.
  *
- * \tparam T The op type. This is a template in case we have other Op classes
- * that require the trampoline. Defaults to Op.
+ * \tparam BaseOp The op type. This is a template in case we have other Op
+ * classes that require the trampoline. Defaults to Op.
  */
-template <class T = Op> class PyOp : public T {
+template <class BaseOp = Op> class PyOp : public BaseOp {
 public:
-  PyOp(const OperatorIdentifier &_opid, const Op::Settings &settings_)
-      : Op(_opid, settings_) {}
+  using BaseOp::BaseOp;
 
   // See discussion in https://github.com/pybind/pybind11/issues/673 for why
   // this is required
@@ -39,15 +38,15 @@ public:
   }
   Op *clone_wrapper() const {
     PYBIND11_OVERLOAD_PURE(
-        Op *,  /* Return type */
-        Op,    /* Parent class */
-        clone, /* Name of function in C++ (must match Python name) */
+        Op *,   /* Return type */
+        BaseOp, /* Parent class */
+        clone,  /* Name of function in C++ (must match Python name) */
     );
   }
   float getSubgraphValue() const override {
     PYBIND11_OVERRIDE_PURE(
         float,            /* Return type */
-        Op,               /* Parent class */
+        BaseOp,           /* Parent class */
         getSubgraphValue, /* Name of function in C++ (must match Python name) */
     );
   }
@@ -65,7 +64,7 @@ public:
   std::shared_ptr<Op>
   getInplaceVariant_wrapper(const OperatorIdentifier &opid) const {
     PYBIND11_OVERLOAD(std::shared_ptr<Op>, /* Return type */
-                      Op,                  /* Parent class */
+                      BaseOp,              /* Parent class */
                       getInplaceVariant,   /* Name of function in C++ (must
                                               match Python name) */
                       opid);

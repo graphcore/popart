@@ -74,10 +74,10 @@ const MatMulOp *MatMulBaseGradOp::getCloneOfCreator() const {
 
 MatMulOp::MatMulOp(const OperatorIdentifier &_opid,
                    const Op::Settings &settings_,
-                   const nonstd::optional<float> availableMemoryProportion_,
+                   const nonstd::optional<float> &availableMemoryProportion_,
                    const SerialiseSettings &serialization_,
-                   const OptionalDataType outputType_,
-                   const MatMulPartialsType partialsType_)
+                   const OptionalDataType &outputType_,
+                   const MatMulPartialsType &partialsType_)
     : MatMulBaseOp(_opid,
                    settings_,
                    Phase::Fwd,
