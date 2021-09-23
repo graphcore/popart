@@ -83,8 +83,7 @@ def test_lstm_torch_grad_all_inputs(op_tester):
         i7 = builder.addInputTensor(initial_c)
         Y, Y_h, Y_c = builder.aiOnnx.lstm([i1, i2, i3, i4, i5, i6, i7], 3)
         Ys = builder.aiOnnx.squeeze([Y], [])
-        Y1 = builder.aiOnnx.add([Ys, Y_h])
-        Y2 = builder.aiOnnx.add([Y1, Y_c])
+        Y2 = builder.aiOnnx.add([Ys, Y_h])
         builder.addOutputTensor(Y2)
         return [
             Y2,
@@ -110,14 +109,12 @@ def test_lstm_torch_grad_all_inputs(op_tester):
         a = torch.tensor(d1, requires_grad=True)
         Y, (Y_h, Y_c) = lstm(a, (h0, c0))
         Ys = Y.squeeze()
-        Y1 = Ys + Y_h
-        Y2 = Y1 + Y_c
+        Y2 = Ys + Y_h
 
         Y.retain_grad()
         Y_h.retain_grad()
         Y_c.retain_grad()
         Ys.retain_grad()
-        Y1.retain_grad()
 
         d__o = ref_data.getOutputTensorGrad(0)
         Y2.backward(torch.tensor(d__o))

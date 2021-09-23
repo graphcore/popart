@@ -429,7 +429,7 @@ def test_lstm_training_onnx_vs_popart():
     seq_lens_id = 'seqLen'
 
     def run_onnx_lstm(data, input_weights, output_weights, biases, seq_lens,
-                      initial_h, initial_c, sum_outputs):
+                      initial_h, initial_c):
         def init_builder(builder):
             tData = builder.addInputTensor(data, data_id)
             tIW = builder.addInitializedInputTensor(input_weights,
@@ -445,8 +445,6 @@ def test_lstm_training_onnx_vs_popart():
                 3,
                 clip=None)
             out = Y
-            if sum_outputs:
-                out = builder.aiOnnx.add([Y, Y_c], "sum_out_and_cell_state")
             loss = builder.aiGraphcore.identityloss([out])
 
             return [
@@ -464,7 +462,7 @@ def test_lstm_training_onnx_vs_popart():
         return anchors
 
     def run_popart_lstm(data, input_weights, output_weights, biases, initial_h,
-                        initial_c, sum_outputs):
+                        initial_c):
         def init_builder(builder):
             tData = builder.addInputTensor(data, data_id)
             tIW = builder.addInitializedInputTensor(input_weights,
@@ -502,9 +500,6 @@ def test_lstm_training_onnx_vs_popart():
             assert builder.getTensorDtypeString(out) == "float32"
             assert builder.getTensorDtypeString(cell_state) == "float32"
 
-            if sum_outputs:
-                out = builder.aiOnnx.add([out, cell_state],
-                                         "sum_out_and_cell_state")
             loss = builder.aiGraphcore.identityloss([out])
 
             return [
@@ -536,23 +531,19 @@ def test_lstm_training_onnx_vs_popart():
     initial_h = np_rand(num_directions, batch_size, hidden_size)
     initial_c = np_rand(num_directions, batch_size, hidden_size)
 
-    # Run with sum_outputs set to True
-    for sum_outputs in [True, False]:
-        onnx_out = run_onnx_lstm(data, onnx_input_weights, onnx_output_weights,
-                                 onnx_biases, seq_lens, initial_h, initial_c,
-                                 sum_outputs)
-        popart_out = run_popart_lstm(data, onnx_input_weights,
-                                     onnx_output_weights, onnx_biases,
-                                     initial_h, initial_c, sum_outputs)
+    onnx_out = run_onnx_lstm(data, onnx_input_weights, onnx_output_weights,
+                             onnx_biases, seq_lens, initial_h, initial_c)
+    popart_out = run_popart_lstm(data, onnx_input_weights, onnx_output_weights,
+                                 onnx_biases, initial_h, initial_c)
 
-        for k, ov in onnx_out.items():
-            if k.startswith(popart.reservedGradientPrefix()):
-                print(f'Checking anchor {k}')
+    for k, ov in onnx_out.items():
+        if k.startswith(popart.reservedGradientPrefix()):
+            print(f'Checking anchor {k}')
 
-                if k == 'model_out':
-                    ov = np.squeeze(ov)
-                pv = popart_out[k]
-                assert np.array_equal(ov, pv)
+            if k == 'model_out':
+                ov = np.squeeze(ov)
+            pv = popart_out[k]
+            assert np.array_equal(ov, pv)
 
 
 def test_lstm_torch(op_tester):

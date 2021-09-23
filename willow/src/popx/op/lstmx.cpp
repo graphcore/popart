@@ -433,6 +433,17 @@ void LSTMGradOpx::grow(poplar::program::Sequence &prog) const {
   poplar::Tensor input_grad;
   popnn::lstm::LstmWeights weights_grad;
 
+  if (lstm_params.rnn.variableTimeSteps() &&
+      lstm_grad_op.hasCellStateGradInput()) {
+    logging::opx::warn(
+        "Looks like you are attempting to use the cell state output (LSTMOp "
+        "output Y_c) and the sequence lengths input (LSTMOp input "
+        "sequence_lens) of the LSTMOp at the same time, for the op {}. This is "
+        "no longer supported and the cell state gradient shall just be treated "
+        "as a tensor of zeros",
+        lstm_op.debugName());
+  }
+
   auto init_state_grad = lstmBwdWithWU(graph().getPoplarGraph(),
                                        lstm_params,
                                        prog,

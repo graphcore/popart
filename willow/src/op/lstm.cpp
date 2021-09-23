@@ -272,7 +272,8 @@ int LSTMOp::getInBatchAxis(InIndex index) const {
 int LSTMOp::getOutBatchAxis(OutIndex index) const {
   if (index == getOutputOutIndex()) {
     return 2;
-  } else if (index == getHiddenStateOutIndex() || getCellStateOutIndex()) {
+  } else if (index == getHiddenStateOutIndex() ||
+             index == getCellStateOutIndex()) {
     return 1;
   }
   return 0;
