@@ -421,6 +421,43 @@ def test_tiedgather_op(connected: bool) -> None:
     op.setup()
 
 
+@pytest.mark.parametrize("connected", [True, False])
+def test_scatter_op(connected: bool) -> None:
+    """Test the scatter Op.
+
+    Args:
+        connected (bool): Whether to use the createConnected<opname> function or
+            just create<opname>
+    """
+    _, graphs = create_ir()
+    main = graphs[0]
+    num_inputs = _ir.NumInputs(3, 3)
+    in0 = add_actgrad_tensor("in0", [3, 3], main, _ir.DataType.INT32)
+    indices = add_random_tensor("indices", _ir.TensorType.Variable, [2, 3],
+                                main)
+    updates = add_actgrad_tensor("updates", [2, 3], main, _ir.DataType.INT32)
+    out0 = add_actgrad_tensor("out0", [3, 3], main)
+
+    opid = _ir.OperatorIdentifier("ai.onnx", "Scatter", 11, num_inputs, 1)
+    settings = _ir.Settings(main, "scatter")
+    if connected:
+        ins: Dict[int, str] = {0: in0.id, 1: indices.id, 2: updates.id}
+        outs: Dict[int, str] = {0: out0.id}
+        op = main.createConnectedOp_ScatterOp(ins,
+                                              outs,
+                                              axis_=0,
+                                              opid=opid,
+                                              settings=settings)
+        op.setup()
+        return
+    op = main.createOp_ScatterOp(axis_=0, opid=opid, settings=settings)
+    op.connectInTensor(0, in0.id)
+    op.connectInTensor(1, indices.id)
+    op.connectInTensor(2, updates.id)
+    op.connectOutTensor(0, out0.id)
+    op.setup()
+
+
 @pytest.mark.parametrize("num_groups", [1, 2])
 @pytest.mark.parametrize("connected", [True, False])
 def test_group_norm_op(connected: bool, num_groups: int) -> None:

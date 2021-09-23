@@ -15,3 +15,4 @@ from .logical_or import *
 from .logical_not import *
 from .cast import *
 from .split import *
+from .scatter import *
