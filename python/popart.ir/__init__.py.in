@@ -21,3 +21,5 @@ from popart.ir.tensor import *
 del sys
 del actualVersion
 del requiredVersion
+
+__all__ = [name for name in dir()]
