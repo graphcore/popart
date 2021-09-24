@@ -99,7 +99,8 @@ def _run_popart_test_model(data,
                            clipInfo,
                            pipelineGroups=None,
                            accumulationFactor=None,
-                           optimizerType=None):
+                           optimizerType=None,
+                           enablePipelining=False):
     # make sure the weights are not accidently modified in this function
     weights = [np.copy(i) for i in weights]
     bld = popart.Builder()
@@ -156,11 +157,11 @@ def _run_popart_test_model(data,
     opts = popart.SessionOptions()
     opts.enableOutlining = False
     if pipelineGroups:
-        opts.enableGradientAccumulation = True
-        opts.accumulationFactor = accumulationFactor
-        opts.enablePipelining = True
         opts.virtualGraphMode = popart.VirtualGraphMode.Manual
+        opts.accumulationFactor = accumulationFactor
+        opts.enableGradientAccumulation = True
         opts.accumulateOuterFragmentSettings.schedule = popart.AccumulateOuterFragmentSchedule.OverlapMemoryOptimized
+        opts.enablePipelining = enablePipelining
 
     sess = popart.TrainingSession(proto,
                                   dataFlow=dataFlow,
@@ -334,7 +335,8 @@ def test_two_groups(optimizerType):
 
 # piplining is not working for adam yet
 @pytest.mark.parametrize("optimizerType", allOptimizerTypes)
-def test_pipelined(optimizerType):
+@pytest.mark.parametrize("enablePipelining", [True, False])
+def test_pipelined(optimizerType, enablePipelining):
     print()
     np.random.seed(0)
     norm1 = 15
@@ -352,7 +354,8 @@ def test_pipelined(optimizerType):
         clipGroups,
         pipelineGroups,
         accumulationFactor=3,
-        optimizerType=optimizerType)
+        optimizerType=optimizerType,
+        enablePipelining=enablePipelining)
     popartResult = popartResult[1]
     torchResult, torchWeights = _run_torch_test_model(
         data,

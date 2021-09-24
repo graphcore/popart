@@ -182,7 +182,7 @@ std::vector<Tensor *> copyToSameVGraph(const std::vector<Tensor *> ts,
   std::vector<Tensor *> result;
 
   for (auto t : ts) {
-    if (t->getVirtualGraphId() == destination) {
+    if (!t->hasVirtualGraphId() || t->getVirtualGraphId() == destination) {
       result.push_back(t);
     } else {
       auto x = createCopyOnVGraph(t, vGraphId, graph);
@@ -367,11 +367,7 @@ void clipWeightGradientsByNorm(int clipGroupIndex,
     gradNorms.push_back(gradNorm);
   }
 
-  auto &ir   = graph.getIr();
-  auto &opts = ir.getSessionOptions();
-  if (opts.enablePipelining) {
-    gradNorms = copyToSameVGraph(gradNorms, 0, graph);
-  }
+  gradNorms = copyToSameVGraph(gradNorms, 0, graph);
 
   auto globalNorm = createGlobalNorm(clipGroupIndex, gradNorms, graph);
   auto clipNorm =
