@@ -512,7 +512,7 @@ void Adam::resetTensorData(Tensor &optTensor) const {
 float Adam::getStoredValue(const TensorId &optId) const {
 
   if (optId.find(reservedLossScalingPrefix()) != std::string::npos) {
-    return lossScaling().val();
+    return getFinalLossScalingVal();
   }
 
   if (b1helper.idMatch(optId)) {

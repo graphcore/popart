@@ -6,7 +6,7 @@
 
 #include <popart/graph.hpp>
 #include <popart/op.hpp>
-#include <popart/op/scale.hpp>
+#include <popart/op/identity.hpp>
 #include <popart/opmanager.hpp>
 #include <popart/optimizer.hpp>
 #include <popart/pbwrap.hpp>
@@ -32,21 +32,8 @@ Op *GradGrowerLoss::growLossGradients() {
   // avoid doing an additional operation.
   const auto &optimizer = dep.get().getOptimizer();
 
-  bool meanReduce =
-      dep.get()
-              .getSessionOptions()
-              .meanAccumulationAndReplicationReductionStrategy ==
-          MeanReductionStrategy::PostAndLoss &&
-      dep.get().getSessionOptions().accumulationAndReplicationReductionType ==
-          ReductionType::Mean;
-
   if (optimizer.lossScaling().isConst()) {
-    // By default this will be 1.0f.
-    float lossScale = optimizer.lossScaling().val();
-
-    if (meanReduce) {
-      lossScale /= dep.get().getSessionOptions().getGlobalReplicationFactor();
-    }
+    float lossScale = optimizer.getFinalLossScalingVal();
 
     switch (gradStarterInfo.dataType()) {
     case DataType::FLOAT: {
@@ -130,17 +117,15 @@ Op *GradGrowerLoss::growLossGradients() {
 
     return nullptr;
   } else {
-    // In the case where the user wants to apply loss scaling with a scaling
-    // factor that is not constant we need to apply scaling differently. We need
-    // the finalLossOp gradient tensor to match the optimizer's loss scaling
-    // tensor.
+    // Connect the streamed loss scale tensor to the gradient of the
+    // final loss tensor via an identity op.
     TensorId lossScalingId =
         optimizer.getLossScalingTensorId(gradStarterInfo.dataType());
-    std::unique_ptr<popart::Op> lossScalingInputOp = OpManager::createOp(
-        Domain::ai_graphcore,
-        "Scale",
-        dep.get().getOpSetVersionFromModel(Domain::ai_graphcore),
-        dep.get().getMainGraph());
+    std::unique_ptr<popart::Op> lossScalingInputOp =
+        OpManager::createOp(Domain::ai_onnx,
+                            "Identity",
+                            dep.get().getOpSetVersionFromModel(Domain::ai_onnx),
+                            dep.get().getMainGraph());
 
     OpId lossScalingInputOpId =
         dep.get().getMainGraph().moveIntoGraph(std::move(lossScalingInputOp));
@@ -152,12 +137,6 @@ Op *GradGrowerLoss::growLossGradients() {
     dep.get().getMainGraph().connectOutputs(OutputVecWrapper(outputs),
                                             lossScalingInputOpId);
     Op *op = dep.get().getMainGraph().getOp(lossScalingInputOpId);
-    if (meanReduce) {
-      dynamic_cast<ScaleOp *>(op)->setScaleFactor(
-          1.0f / dep.get().getSessionOptions().getGlobalReplicationFactor());
-    } else {
-      dynamic_cast<ScaleOp *>(op)->setScaleFactor(1.0f);
-    }
     op->setup();
     return op;
   }

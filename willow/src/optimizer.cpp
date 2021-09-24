@@ -135,6 +135,19 @@ int64_t Optimizer::getAccumulationFactor() const {
   return accumulationFactor;
 }
 
+float Optimizer::getFinalLossScalingVal() const {
+  if (!factorsAreSetFromOptions) {
+    throw error("Cannot call Optimizer::getLossScalingVal until "
+                "Optimizer::setFactorsFromOptions has been called");
+  }
+
+  float lossScalingVal = ls.val();
+
+  return lossMeanReplicationEnabled()
+             ? lossScalingVal / getReplicatedGraphCount()
+             : lossScalingVal;
+}
+
 TensorId Optimizer::getLossScalingTensorId(DataType t) {
   return reservedLossScalingPrefix() + getDataTypeInfoMap().at(t).name();
 }

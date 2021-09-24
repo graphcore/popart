@@ -58,7 +58,7 @@ getOptMap(const std::map<std::string, std::pair<float, bool>> &m);
 
 template <typename... Args>
 runtime_error optimizer_replacement_error(const std::string &s,
-                                          const Args &... args) {
+                                          const Args &...args) {
   return runtime_error("New optimizer is not a valid replacement. " + s,
                        args...);
 }
@@ -179,7 +179,15 @@ public:
   getOptimizerInputs(const Tensor &weight) const = 0;
 
   const OptimizerValue &lossScaling() const { return ls; }
+
+  // The loss scaling value supplied by the user.
   float getLossScalingVal() const { return ls.val(); }
+
+  // The compound scalar value of the loss scaling tensor added
+  // to the graph. The user-defined loss scaling may be scaled
+  // by the inverse of the graph replication factor, depending
+  // on SessionOptions.
+  float getFinalLossScalingVal() const;
 
   static TensorId getLossScalingTensorId(DataType);
   virtual TensorId

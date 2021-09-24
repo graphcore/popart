@@ -456,7 +456,7 @@ void SGD::resetTensorData(Tensor &optTensor) const {
 float SGD::getStoredValue(const TensorId &optId) const {
 
   if (optId.find(reservedLossScalingPrefix()) != std::string::npos) {
-    return lossScaling().val();
+    return getFinalLossScalingVal();
   }
 
   if (slr0helper.idMatch(optId)) {
