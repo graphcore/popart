@@ -1,3 +1,5 @@
+.. _popart_supported_ops:
+
 Supported operators
 -------------------
 

@@ -25,6 +25,8 @@ PopART User Guide
     supported_ops
     custom_ops
     env_vars
+    overlap_io
+    tensor_locations
+    glossary
     references
-    batch_size
     legal

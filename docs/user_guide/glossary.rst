@@ -58,3 +58,26 @@ arranged in the shape:
 
 However, there is no constraint of the shape of the input array, except that it
 has the correct number of elements.
+
+Virtual graph
+~~~~~~~~~~~~~
+
+Subdivision of a graph to a subset of IPU tiles. While ``virtualGraphId`` in PopART
+refers to the graph associated with an IPU, the virtual graph can be subdivided
+further into tile sets ``IO`` and ``Compute``.
+
+Off-chip streaming memory
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Large pool of memory not located on the IPU that can be used to offload tensors
+from the IPU. Tensor location settings can be used to specify which tensors
+should be offloaded. Decreases on-chip memory usage.
+
+RTS (replicated tensor sharding)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Eliminate storage and compute redundancy by sharding a weight, optimizer state
+or accumulator tensor equally across ``N`` data parallel replicas. When the
+replicas require the full tensor, ``ReplicatedAllGatherOp`` is used.
+Increases performance, especially in conjunction with off-chip remote memory,
+decreases on-chip memory usage.
