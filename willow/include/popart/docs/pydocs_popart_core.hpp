@@ -6209,9 +6209,6 @@ static const char *__doc_popart_SessionOptions_engineOptions =
 static const char *__doc_popart_SessionOptions_executionPhaseSettings =
     R"doc(Configuration settings for execution phases.)doc";
 
-static const char *__doc_popart_SessionOptions_explicitPipelining =
-    R"doc(Enable explicit pipelining.)doc";
-
 static const char *__doc_popart_SessionOptions_explicitPipeliningEnabled =
     R"doc()doc";
 

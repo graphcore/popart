@@ -312,7 +312,6 @@ std::size_t hash<popart::SessionOptions>::operator()(
   boost::hash_combine(seed, so.mergeVarUpdateMemThreshold);
   boost::hash_combine(seed, so.looseThresholdAtPeak);
   boost::hash_combine(seed, so.explicitRecomputation);
-  boost::hash_combine(seed, so.explicitPipelining);
   boost::hash_combine(seed, so.partialsTypeMatMuls);
   boost::hash_combine(seed, so.decomposeGradSum);
   boost::hash_combine(seed, static_cast<int>(so.virtualGraphMode));

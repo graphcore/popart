@@ -1291,8 +1291,6 @@ PYBIND11_MODULE(popart_core, m) {
     cls.def_readwrite("explicitRecomputation",
                       &SessionOptions::explicitRecomputation,
                       DOC(popart, SessionOptions, explicitRecomputation));
-    cls.def_readwrite("explicitPipelining",
-                      &SessionOptions::explicitPipelining);
     cls.def_readwrite("batchSerializationSettings",
                       &SessionOptions::batchSerializationSettings,
                       DOC(popart, SessionOptions, batchSerializationSettings));

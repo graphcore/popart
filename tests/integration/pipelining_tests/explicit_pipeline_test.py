@@ -41,7 +41,6 @@ def test_explicit_pipelining_0():
         opts.virtualGraphMode = popart.VirtualGraphMode.Manual
 
         if isExplicit:
-            opts.explicitPipelining = True
             opts.enableExplicitMainLoops = True
             opts.useHostCopyOps = True
 

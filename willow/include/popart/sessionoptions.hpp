@@ -746,15 +746,12 @@ struct SessionOptions {
   /// Enable explicit recomputation.
   bool explicitRecomputation = false;
 
-  /// Enable explicit pipelining.
-  bool explicitPipelining = false;
-
   bool explicitPipeliningEnabled() const {
-    return enablePipelining && explicitPipelining;
+    return enablePipelining && useHostCopyOps && enableExplicitMainLoops;
   }
 
   bool implicitPipeliningEnabled() const {
-    return enablePipelining && !explicitPipelining;
+    return enablePipelining && !(useHostCopyOps && enableExplicitMainLoops);
   }
 
   /**
