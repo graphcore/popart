@@ -171,19 +171,6 @@ SessionOptions::NumIOTiles::operator int() const {
   // If the option was set, it takes priority.
   if (userAssignedValue) {
     return value;
-  }
-  // The GCL environment variable should only be used if the session option has
-  // not been set.
-  else if (std::getenv("GCL_NUM_IO_TILES")) {
-    logging::warn(
-        "You are using a deprecated environement variable \"{}\". This "
-        "will be removed in an upcoming release. Please use the "
-        "session option 'SessionOptions::{}' instead",
-        "GCL_NUM_IO_TILES",
-        "numIOTiles");
-
-    const char *env_p = std::getenv("GCL_NUM_IO_TILES");
-    return boost::lexical_cast<int>(env_p);
   } else {
     return 0;
   }
