@@ -487,14 +487,6 @@ void SparseAccumulateOpx::grow(snap::program::Sequence &prog) const {
           : getInTensor(SparseAccumulateOp::getFactorInIndex())
                 .getPoplarTensor();
 
-  if (factor.elementType() != accl.elementType()) {
-    factor = popops::cast(graph().getPoplarGraph(),
-                          factor,
-                          accl.elementType(),
-                          prog.getPoplarSequence(),
-                          debugContext("factor_cast"));
-  }
-
   // Rolls axis to front.
   const auto inputs =
       GatherGradOpx::handleNDMultiUpdate(accl, grad, indices, axis);
