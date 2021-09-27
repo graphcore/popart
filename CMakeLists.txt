@@ -331,11 +331,19 @@ else()
   message(FATAL_ERROR "Unknown system name")
 endif()
 
-configure_file(enable.sh.in
-  ${PROJECT_BINARY_DIR}/enable.sh
-  @ONLY)
+# Create enable.sh for Bash
+set(SHEBANG "#!/bin/bash")
+set(SCRIPT_PATH "\${BASH_SOURCE[0]}")
+configure_file(enable-shell.in enable.sh @ONLY)
 
+# Create enable.zsh for Zsh
+set(SHEBANG "#!/bin/zsh")
+set(SCRIPT_PATH "\${(%):-%x}")
+configure_file(enable-shell.in enable.zsh @ONLY)
+
+# Install all enable files
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/enable.sh
+              ${CMAKE_CURRENT_BINARY_DIR}/enable.zsh
         DESTINATION .)
 #------ end of enable script
 
