@@ -12,6 +12,7 @@
 #include <popart/op/collectives/replicatedallgather.hpp>
 #include <popart/op/collectives/replicatedreducescatter.hpp>
 #include <popart/op/detach.hpp>
+#include <popart/op/div.hpp>
 #include <popart/op/dropout.hpp>
 #include <popart/op/gather.hpp>
 #include <popart/op/matmul.hpp>
@@ -414,8 +415,40 @@ bool TiedGatherAccumulatePattern::apply(Op *op) const {
 
   auto &graph = op->getGraph();
 
+  auto accumType = denseAccumOp->getAccumulationType();
+  Tensor *factor =
+      denseAccumOp->getFactor().isConst()
+          ? nullptr
+          : denseAccumOp->inTensor(SparseAccumulateOp::getFactorInIndex());
+
+  if (factor != nullptr && accumType == AccumulationType::Mean) {
+    auto inv_counter = factor->id + "_inverse";
+    if (!graph.getTensors().contains(inv_counter)) {
+      TensorInfo one_info(factor->info.dataType(), {});
+      std::vector<float> one_data(one_info.nelms(), 1);
+      const auto &one_id = graph.getIr().createIntermediateTensorId("one");
+      graph.getTensors().addConstInit(one_id, one_info, one_data.data());
+      auto inv_op = graph.createConnectedOp<DivOp>(
+          {{DivOp::getArg0InIndex(), one_id},
+           {DivOp::getArg1InIndex(), factor->id}},
+          {{DivOp::getOutIndex(), inv_counter}},
+          Onnx::Operators::Div_7,
+          Op::Settings(graph, "mean_accumulate_inverse"));
+      transferBaseProperties(gatherGrad, inv_op);
+
+      for (auto cons : factor->consumers.getOps()) {
+        if (cons->isConvertibleTo<AccumulateOp>() &&
+            cons->inId(AccumulateOp::getVarToUpdateInIndex()) == factor->id) {
+          graph.topoCons->insert(cons, inv_op);
+        }
+      }
+    }
+    accumType = AccumulationType::DampenedAdd;
+    factor    = graph.getTensor(inv_counter);
+  }
+
   auto sparseAccumOp = graph.createOp<SparseAccumulateOp>(
-      denseAccumOp->getAccumulationType(),
+      accumType,
       denseAccumOp->getFactor(),
       gatherGrad->getAxis(),
       Op::Settings(graph, "_tiedAccumulate/" + std::to_string(serialIndex)));
@@ -435,7 +468,7 @@ bool TiedGatherAccumulatePattern::apply(Op *op) const {
         // the index at which the dampening scale factor is received,
         SparseAccumulateOp::getFactorInIndex(),
         // the name of the dampening scale factor
-        denseAccumOp->inId(AccumulateOp::getFactorInIndex()));
+        factor->id);
   }
   // Indices
   sparseAccumOp->connectInTensor(

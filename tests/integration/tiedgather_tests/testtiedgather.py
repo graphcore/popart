@@ -47,7 +47,8 @@ def session(train=False,
             splits=1,
             outline=False,
             transpose_on_gather=True,
-            optim="Sgd"):
+            optim="Sgd",
+            mean_reduction_strategy=popart.MeanReductionStrategy.Running):
     proto, data, x, loss = model(splits=splits,
                                  transpose_on_gather=transpose_on_gather)
 
@@ -59,6 +60,9 @@ def session(train=False,
         "enableOutlining": outline,
         "enableGradientAccumulation": True,
         "accumulationFactor": 2,
+        "accumulationAndReplicationReductionType": popart.ReductionType.Mean,
+        "meanAccumulationAndReplicationReductionStrategy":
+        mean_reduction_strategy,
     }
 
     if optim == "Lamb":
@@ -114,10 +118,14 @@ def session(train=False,
 
 @pytest.mark.parametrize('splits', (1, 4))
 @pytest.mark.parametrize('transpose_on_gather', (True, False))
+@pytest.mark.parametrize(
+    'mean_reduction_strategy',
+    (popart.MeanReductionStrategy.Post, popart.MeanReductionStrategy.Running))
 @pytest.mark.parametrize(['phase', 'optimizer'], [("fwd", None),
                                                   ("bwd", "Sgd"),
                                                   ("bwd", "Lamb")])
-def test_tied_gather_pattern_ir(splits, phase, optimizer, transpose_on_gather):
+def test_tied_gather_pattern_ir(splits, phase, optimizer, transpose_on_gather,
+                                mean_reduction_strategy):
     train = phase == "bwd"
 
     sess = session(train,
@@ -125,7 +133,8 @@ def test_tied_gather_pattern_ir(splits, phase, optimizer, transpose_on_gather):
                    splits=splits,
                    optim=optimizer,
                    transpose_on_gather=transpose_on_gather,
-                   outline=False)
+                   outline=False,
+                   mean_reduction_strategy=mean_reduction_strategy)
 
     ir = json.loads(sess._serializeIr(popart.IrSerializationFormat.JSON))
 
@@ -146,14 +155,27 @@ def test_tied_gather_pattern_ir(splits, phase, optimizer, transpose_on_gather):
             list(filter(lambda op: op["type"] == "PopartSparseAccumulate",
                         ops))) == splits
 
+        inv_op = list(
+            filter(
+                lambda op: op["name"] == "mean_accumulate_inverse" and op[
+                    "type"] == "Div", ops))
+        if mean_reduction_strategy == popart.MeanReductionStrategy.Running and optimizer != "Sgd":
+            assert len(inv_op) == 1
+        else:
+            assert len(inv_op) == 0
+
 
 @pytest.mark.parametrize('splits', (1, 4))
 @pytest.mark.parametrize('transpose_on_gather', (True, False))
+@pytest.mark.parametrize(
+    'mean_reduction_strategy',
+    (popart.MeanReductionStrategy.Post, popart.MeanReductionStrategy.Running))
 @pytest.mark.parametrize(['phase', 'optimizer'], [("fwd", None),
                                                   ("bwd", "Sgd"),
                                                   ("bwd", "Lamb")])
 def test_tied_gather_pattern_correctness(splits, phase, optimizer,
-                                         transpose_on_gather):
+                                         transpose_on_gather,
+                                         mean_reduction_strategy):
     train = phase == "bwd"
 
     outputs_1, proto_1, outnames_1 = session(
@@ -162,7 +184,8 @@ def test_tied_gather_pattern_correctness(splits, phase, optimizer,
         splits=splits,
         optim=optimizer,
         transpose_on_gather=transpose_on_gather,
-        outline=True)
+        outline=True,
+        mean_reduction_strategy=mean_reduction_strategy)
 
     outputs_2, proto_2, outnames_2 = session(
         train,
@@ -171,7 +194,8 @@ def test_tied_gather_pattern_correctness(splits, phase, optimizer,
         splits=splits,
         optim=optimizer,
         transpose_on_gather=transpose_on_gather,
-        outline=True)
+        outline=True,
+        mean_reduction_strategy=mean_reduction_strategy)
 
     check_tensors(outputs_1, outputs_2, outnames_1, outnames_2)
     if train:
