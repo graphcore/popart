@@ -10,7 +10,7 @@
 namespace poprithms {
 namespace schedule {
 namespace shift {
-class SolutionCache;
+class ScheduleCache;
 }
 } // namespace schedule
 } // namespace poprithms
@@ -71,7 +71,7 @@ public:
                      bool respectExecutionPhase) const;
 
 private:
-  std::unique_ptr<poprithms::schedule::shift::SolutionCache> cacher;
+  std::unique_ptr<poprithms::schedule::shift::ScheduleCache> cacher;
 };
 
 } // namespace popart

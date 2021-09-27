@@ -21,11 +21,11 @@
 #include <poprithms/logging/logging.hpp>
 #include <poprithms/logging/timepartitionlogger.hpp>
 #include <poprithms/schedule/shift/graph.hpp>
-#include <poprithms/schedule/shift/kahntiebreaker.hpp>
+#include <poprithms/schedule/shift/kahndecider.hpp>
 #include <poprithms/schedule/shift/rotationtermination.hpp>
+#include <poprithms/schedule/shift/schedulecache.hpp>
 #include <poprithms/schedule/shift/scheduledgraph.hpp>
 #include <poprithms/schedule/shift/settings.hpp>
-#include <poprithms/schedule/shift/solutioncache.hpp>
 #include <poprithms/schedule/shift/transitiveclosureoptimizations.hpp>
 #include <poparttracepoint.hpp>
 
@@ -193,7 +193,7 @@ Scheduler::getSchedule(const OpsBeforeKey &gCons,
 
   // The complete set of options for the scheduler:
   poprithms::schedule::shift::Settings settings(
-      kahnTieBreakerFromString(kahnTieBreakerString),
+      {kahnTieBreakerFromString(kahnTieBreakerString), {}},
       transitiveClosureOptimizations,
       rotationTermination,
       shift::Settings::defaultRotationAlgo(),
@@ -240,7 +240,7 @@ bool Scheduler::isSchedulable(const OpsBeforeKey &gCons,
   return grower.isSchedulable();
 }
 
-Scheduler::Scheduler() : cacher(std::make_unique<shift::SolutionCache>()) {}
+Scheduler::Scheduler() : cacher(std::make_unique<shift::ScheduleCache>()) {}
 Scheduler::~Scheduler() = default;
 
 } // namespace popart

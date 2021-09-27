@@ -2,6 +2,10 @@
 #include <boost/filesystem.hpp>
 #include <schedulegraphgrower.hpp>
 #include <poprithms/logging/timepartitionlogger.hpp>
+#include <poprithms/schedule/shift/fromcache.hpp>
+#include <poprithms/schedule/shift/scheduledgraph.hpp>
+#include <poprithms/schedule/shift/summarywriter.hpp>
+#include <poprithms/schedule/vanilla/vanilla.hpp>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/tensorindex.hpp>
@@ -71,35 +75,35 @@ std::vector<Op *> ShiftGraphGrower::getSchedule() const {
 }
 
 void ShiftGraphGrower::initialize(const shift::Settings &settings,
-                                  shift::SolutionCache &cache) {
+                                  shift::ScheduleCache &cache) {
 
   POPART_TRACEPOINT();
+
+  const auto hitType =
+      shift::probeCache(g, settings.rotationTermination(), &cache);
+
   std::stringstream logNameStream;
   logNameStream << "Scheduling. TCOs="
                 << (settings.tcos() ==
                     shift::TransitiveClosureOptimizations::allOn())
                 << " Refine="
-                << settings.rotationTermination().longerThan({10., 100});
+                << settings.rotationTermination().longerThan({10., 100})
+                << " CacheHit=" << std::get<0>(hitType);
   const auto logName = logNameStream.str();
   const auto scopedStopwatch =
       pg.getIr().timePartitionLogger().scopedStopwatch(logName);
-  logging::ir::info(logName);
 
-  const auto cString =
-      (cache.find(g, settings) != nullptr)
-          ? "Will retrieve cached schedule"
-          : "Will schedule from scratch, as this (Graph, Settings) "
-            "key is not in the cache. ";
-
-  logging::ir::info(cString);
+  logging::ir::info("{}. Graph has {} Ops. ", logName, g.nOps());
 
   auto gCopy = g;
-  scheduledShiftGraph =
-      shift::ScheduledGraph(std::move(gCopy), settings, &cache, &cache);
+
+  scheduledShiftGraph = shift::fromCache(
+      std::move(gCopy), settings, shift::FileWriter::Default(), &cache, &cache);
 }
 
 bool ShiftGraphGrower::isSchedulable() const {
-  return shift::ScheduledGraph::isSchedulable(g);
+  return vanilla::Query<uint64_t>::isSchedulable(
+      g.getFwdEdges_u64(), g.getFwdLinks(), vanilla::VerifyEdges::No);
 }
 
 std::string ShiftGraphGrower::getSerializationString() const {

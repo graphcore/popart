@@ -3,6 +3,7 @@
 #define GUARD_NEURALNET_SCHEDULEGRAPHGROWER_HPP
 
 #include <unordered_map>
+#include <poprithms/schedule/shift/schedulecache.hpp>
 #include <poprithms/schedule/shift/scheduledgraph.hpp>
 #include <popart/names.hpp>
 
@@ -40,7 +41,7 @@ public:
   std::vector<Op *> getSchedule() const;
 
   void initialize(const poprithms::schedule::shift::Settings &settings,
-                  poprithms::schedule::shift::SolutionCache &cache);
+                  poprithms::schedule::shift::ScheduleCache &cache);
 
   bool isSchedulable() const;
 

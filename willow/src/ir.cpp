@@ -305,19 +305,12 @@ namespace {
 
 const constexpr char *const partitionLoggerName{"TimePartitionLogger"};
 
-// If partitionLoggerName (above) is already taken by another
-// TimePartitionLogger, then add some random characters to it until a unique
-// name is found. This might be required for example when running popart tests
-// in parallel.
-constexpr bool appendToMakeUnique{true};
-
 } // namespace
 
 Ir::Ir()
     : timePartitionLogger_(
           std::make_unique<poprithms::logging::SwitchingTimePartitionLogger>(
-              partitionLoggerName,
-              appendToMakeUnique)),
+              partitionLoggerName)),
       onnxModel(nullptr) {
 
   graphs.insert(
