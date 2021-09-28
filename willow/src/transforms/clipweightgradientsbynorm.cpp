@@ -34,7 +34,12 @@ namespace {
 // Taken from Pattern::transferBaseProperties.
 void transferBaseProperties(Op *from, Op *to) {
   if (from->hasVirtualGraphId()) {
-    to->setVirtualGraphId(from->getVirtualGraphId());
+    if (from->isConvertibleTo<IpuCopyOp>()) {
+      auto ipuCopy = dynamic_cast<IpuCopyOp *>(from);
+      to->setVirtualGraphId(ipuCopy->getDestIpu());
+    } else {
+      to->setVirtualGraphId(from->getVirtualGraphId());
+    }
   }
   if (from->hasExecutionPhase()) {
     to->setExecutionPhase(from->getExecutionPhase());
@@ -178,14 +183,13 @@ Tensor *createCopyOnVGraph(Tensor *t, VGraphId destination, Graph &graph) {
 std::vector<Tensor *> copyToSameVGraph(const std::vector<Tensor *> ts,
                                        VGraphId destination,
                                        Graph &graph) {
-  auto vGraphId = 0;
   std::vector<Tensor *> result;
 
   for (auto t : ts) {
     if (!t->hasVirtualGraphId() || t->getVirtualGraphId() == destination) {
       result.push_back(t);
     } else {
-      auto x = createCopyOnVGraph(t, vGraphId, graph);
+      auto x = createCopyOnVGraph(t, destination, graph);
       result.push_back(x);
     }
   }
@@ -356,6 +360,30 @@ std::vector<Tensor *> getGrads(Graph &graph,
   return result;
 }
 
+popart::VGraphId chooseGlobalNormVgid(std::vector<popart::Tensor *> gradNorms) {
+  std::map<popart::VGraphId, int> gradNormVgidCounts;
+  int maxCount                = 0;
+  popart::VGraphId chosenVgid = popart::unusedVGraphId;
+
+  // vgid chosen with most grad norms so requires least number of copies
+  for (auto gradNorm : gradNorms) {
+    if (gradNorm->hasVirtualGraphId()) {
+      auto vgid = gradNorm->getVirtualGraphId();
+      if (gradNormVgidCounts.count(vgid)) {
+        gradNormVgidCounts[vgid]++;
+      } else {
+        gradNormVgidCounts[vgid] = 1;
+      }
+      if (gradNormVgidCounts[vgid] > maxCount) {
+        maxCount   = gradNormVgidCounts[vgid];
+        chosenVgid = vgid;
+      }
+    }
+  }
+
+  return chosenVgid;
+}
+
 void clipWeightGradientsByNorm(int clipGroupIndex,
                                const ClipNormSettings &clippingGroup,
                                Graph &graph) {
@@ -367,7 +395,9 @@ void clipWeightGradientsByNorm(int clipGroupIndex,
     gradNorms.push_back(gradNorm);
   }
 
-  gradNorms = copyToSameVGraph(gradNorms, 0, graph);
+  auto globalNormVgid = chooseGlobalNormVgid(gradNorms);
+
+  gradNorms = copyToSameVGraph(gradNorms, globalNormVgid, graph);
 
   auto globalNorm = createGlobalNorm(clipGroupIndex, gradNorms, graph);
   auto clipNorm =
