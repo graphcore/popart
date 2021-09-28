@@ -52,16 +52,22 @@ SoftPlusGradOpx::SoftPlusGradOpx(Op *op, Devicex *devicex)
 }
 
 void SoftPlusGradOpx::grow(poplar::program::Sequence &prog) const {
-  const auto fwd_input =
-      getInTensor(SoftPlusGradOp::getFwdArgInIndex()).getPoplarTensor();
+  const auto grad_in   = getInTensor(SoftPlusGradOp::getGradInIndex());
+  const auto fwd_input = getInTensor(SoftPlusGradOp::getFwdArgInIndex());
 
   // The derivative of the softplus activation function is:
+  //
   // exp(x)/(exp(x) + 1) = 1/(exp(-x) + 1) = sigmoid(x)
-  auto output = popnn::nonLinearity(graph().getPoplarGraph(),
-                                    popnn::NonLinearityType::SIGMOID,
-                                    fwd_input,
-                                    prog,
-                                    debugContext("softplus_grad"));
+  //
+  // Applying the elementwise chain rule gives:
+  //
+  // grad_out = grad_in * sigmoid(x)
+  auto output =
+      popops::map(graph().getPoplarGraph(),
+                  pe::_1 * pe::Sigmoid(pe::_2),
+                  {grad_in.getPoplarTensor(), fwd_input.getPoplarTensor()},
+                  prog,
+                  debugContext("softplus_grad"));
 
   setOutTensor(SoftPlusGradOp::getOutIndex(), snap::Tensor{output, graph()});
 }
