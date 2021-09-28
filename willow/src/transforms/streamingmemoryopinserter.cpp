@@ -2351,7 +2351,8 @@ StreamingMemoryOpInserter::determineTensorLocation(Tensor *tensor) const {
       if (isOptimizerState) {
         // Use optimizer state tensor location settings.
         result = sessionOptions.optimizerStateTensorLocationSettings.location;
-        logReason = "weightTensorLocationSettings.location in SessionOptions";
+        logReason =
+            "optimizerStateTensorLocationSettings.location in SessionOptions";
       }
 
       if (isAccumulator &&
