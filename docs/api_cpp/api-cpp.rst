@@ -406,7 +406,7 @@ Patterns
 
 .. code-block:: cpp
 
-  #include <popart/patterns.hpp>
+  #include <popart/patterns/patterns.hpp>
 
 .. doxygenclass:: popart::Patterns
    :members:
