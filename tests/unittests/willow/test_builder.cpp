@@ -228,21 +228,19 @@ BOOST_AUTO_TEST_CASE(Builder_SetAvailableMemoryProportion) {
   auto in0 = builder->addInputTensor(shape0);
   auto in1 = builder->addInputTensor(shape0);
 
-  // Check the operators that support available memory proportion
+  // Check various operators that support lowering the available memory
+  // proportion at the opx level.
   check_operator(aiOnnx.gather({in0, in1}), *builder);
   check_operator(aiOnnx.matmul({in0, in1}), *builder);
   check_operator(aiOnnx.conv({in0, in1}), *builder);
   check_operator(aiGraphcore.scatterreduce({in0, in1}, 1), *builder);
 
-  // Check an op that doesn't support available memory proportion is a no-op
-  auto op = aiOnnx.identity({in0});
-  builder->setAvailableMemoryProportion(op, 0.2);
-  BOOST_CHECK_MESSAGE(
-      !builder->nodeHasAttribute(sAvailMemAttribute, {op}),
-      "Identity operator should not have the available memory attribute");
+  // Check an op that doesn't the available memory proportion is still sets the
+  // node attribute.
+  check_operator(aiOnnx.identity({in0}), *builder);
 
   // Check out-of-range values for available memory proportion
-  op = aiOnnx.gather({in0, in1});
+  auto op = aiOnnx.gather({in0, in1});
   BOOST_CHECK_EXCEPTION(
       builder->setAvailableMemoryProportion(op, 1.1), error, invalidProportion);
   BOOST_CHECK_EXCEPTION(

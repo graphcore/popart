@@ -1705,17 +1705,7 @@ std::string Builder::getPartialsType(const TensorId &nodeOutputName) {
 void Builder::setAvailableMemoryProportion(
     const TensorId &nodeOutputName,
     const float availableMemoryProportion) {
-  auto nodeProto = impl_->findNodeProtoByOutputNames({nodeOutputName});
-  std::vector<std::string> supported_ops = {
-      "Conv", "MatMul", "Gather", "ScatterReduce"};
-  bool not_supported_op = std::find(supported_ops.begin(),
-                                    supported_ops.end(),
-                                    nodeProto.op_type()) == supported_ops.end();
-
-  if (not_supported_op) {
-    return;
-  } else if (availableMemoryProportion > 1.0f ||
-             availableMemoryProportion <= 0.0f) {
+  if (availableMemoryProportion > 1.0f || availableMemoryProportion <= 0.0f) {
     throw error("availableMemoryProportion must be in (0,1]");
   }
 
