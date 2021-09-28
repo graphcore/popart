@@ -65,13 +65,13 @@ trainingSession.prepareDevice()
 
 # Generate some random input data
 trainingData = np.random.rand(1, 2).astype(np.float16)
-trainingDataLables = np.random.rand(1).astype(np.int32)
+trainingDataLabels = np.random.rand(1).astype(np.int32)
 
 # Create buffers to receive results from the execution
 trainingAnchors = trainingSession.initAnchorArrays()
 trainingStepio = popart.PyStepIO({
     ip: trainingData,
-    lb: trainingDataLables
+    lb: trainingDataLabels
 }, trainingAnchors)
 
 # Copy the weights to the device from the host
@@ -96,13 +96,13 @@ trainingSession.readWeights(weightsIo)
 
 # Generate some random input data
 interenceData = np.random.rand(1, 2).astype(np.float16)
-interenceDataLables = np.random.rand(1).astype(np.int32)
+interenceDataLabels = np.random.rand(1).astype(np.int32)
 
 # Create buffers to receive results from the execution
 inferenceAnchors = inferenceSession.initAnchorArrays()
 inferenceStepio = popart.PyStepIO({
     ip: interenceData,
-    lb: interenceDataLables
+    lb: interenceDataLabels
 }, inferenceAnchors)
 
 # Write weights to the session

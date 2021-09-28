@@ -1,4 +1,4 @@
-Installed a bunch of things (see poplar readme for an imcomplete list:
+Installed a bunch of things (see poplar readme for an incomplete list:
 breathe, sphinx, pdflatex, etc)
 
 Note that the version of sphinx is important:

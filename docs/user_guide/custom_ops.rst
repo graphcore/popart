@@ -497,7 +497,7 @@ an operation from earlier inputs.
 Using the op in a program
 -------------------------
 
-The op can be referenced, using the values in the op identifer, in a Python
+The op can be referenced, using the values in the op identifier, in a Python
 program using the ``builder``. For example, from `run_leaky_relu.py
 <https://github.com/graphcore/tutorials/tree/sdk-release-2.2/feature_examples/popart/custom_operators/leaky_relu_example/run_leaky_relu.py>`_:
 

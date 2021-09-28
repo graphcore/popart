@@ -52,7 +52,7 @@ def get_device(simulation=True):
         if device is None:
             raise OSError("Failed to acquire IPU.")
     else:
-        print("Aquiring IPU")
+        print("Acquiring IPU")
         device = deviceManager.acquireAvailableDevice(num_ipus)
         if device is None:
             raise OSError("Failed to acquire IPU.")
