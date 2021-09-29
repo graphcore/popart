@@ -84,6 +84,12 @@ void bindGraph(py::module &m) {
       .def("addInput",
            py::overload_cast<const TensorId &, const TensorInfo &>(
                &Graph::addInput))
+      .def("getInputTensor",
+           &Graph::getInputTensor,
+           py::return_value_policy::reference)
+      .def("getOutputTensor",
+           &Graph::getOutputTensor,
+           py::return_value_policy::reference)
       .def("getInputId", &Graph::getInputId)
       .def("hasInputId", &Graph::hasInputId)
       .def("removeInput",

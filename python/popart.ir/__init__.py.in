@@ -20,6 +20,7 @@ from popart.ir.ir import *
 from popart.ir.tensor import *
 from popart.ir.streams import *
 from popart.ir.module import *
+import popart.ir.transforms
 
 del sys
 del actualVersion

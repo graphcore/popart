@@ -4,6 +4,8 @@
 from collections import Counter
 from typing import Any, Callable
 
+from numpy.lib.index_tricks import ndindex
+
 import popart._internal.ir as _ir
 from popart.ir.graph import Graph
 from popart.ir.context import gcg
@@ -132,21 +134,7 @@ class Ir:
         """Generate a graph name based on the qualified name of the Python
         function that created it.
 
-        Each name will be appended with `_{id}`, where `id` is a positive
-        integer, so that if the same function is used to create multiple graphs,
-        they will all have unique names.
-
         NOTE: Occurrences of ".<locals>" in the name are removed.
-
-        Example:
-            Suppose a graph function:
-                >>> class Foo:
-                ...     def bar():
-                ...         # Graph definition...
-            Creating the following graphs:
-                >>> ir.get_graph(Foo.bar)
-                >>> ir.get_graph(Foo.bar)
-            will result in graph names `Foo.bar_0` and `Foo.bar_1`.
 
         Args:
             name (str):

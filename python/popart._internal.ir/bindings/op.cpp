@@ -158,6 +158,14 @@ void bindOp(py::module &m) {
       .def("outTensor",
            py::overload_cast<OutIndex>(&Op::outTensor),
            py::return_value_policy::reference)
+      .def(
+          "getInputTensors",
+          [](Op &self) { return self.input->tensors(); },
+          py::return_value_policy::reference)
+      .def(
+          "getOutputTensors",
+          [](Op &self) { return self.output->tensors(); },
+          py::return_value_policy::reference)
       .def("inId", py::overload_cast<InIndex>(&Op::inId))
       .def("outId", py::overload_cast<OutIndex>(&Op::outId))
       .def("inInfo",

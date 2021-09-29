@@ -47,7 +47,7 @@ void bindAutodiff(py::module &m) {
              Ir &ir,
              const GraphId &fwdGraphId,
              const TensorIds &gradsProvidedForFwdId,
-             const TensorIds &gradsRequiredForFwdId,
+             const nonstd::optional<TensorIds> &gradsRequiredForFwdId,
              const FwdGraphToBwdGraphInfo &calledGraphsGradInfo,
              AutodiffStitchStrategy stitchStrategy) {
             return self.apply(ir,
@@ -59,8 +59,8 @@ void bindAutodiff(py::module &m) {
           },
           py::arg("ir"),
           py::arg("fwdGraphId"),
-          py::arg("gradsProvidedForFwdId") = std::vector<TensorId>(),
-          py::arg("gradsRequiredForFwdId") = std::vector<TensorId>(),
+          py::arg("gradsProvidedForFwdId") = TensorIds(),
+          py::arg("gradsRequiredForFwdId") = nonstd::optional<TensorIds>(),
           py::arg("calledGraphsGradInfo")  = FwdGraphToBwdGraphInfo(),
           py::arg("stitchStrategy") = AutodiffStitchStrategy::SafeAddFwdOutputs)
       .def("applyToIr", &Autodiff::applyToIr)

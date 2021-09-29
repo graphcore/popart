@@ -42,6 +42,28 @@ class Graph:
         from popart.ir import Ir
         return Ir._from_pb(self._pb_graph.getIr())
 
+    def get_input_tensors(self) -> Tuple[Tensor, ...]:
+        """Get the input tensors to the graph.
+
+        Returns:
+            Tuple[Tensor, ...]: A tuple of all the input tensors.
+        """
+        _pb_ins = self._pb_graph.getInputIds()
+        return tuple(
+            Tensor._from_pb_tensor(self._pb_graph.getTensor(o))
+            for o in _pb_ins)
+
+    def get_output_tensors(self) -> Tuple[Tensor, ...]:
+        """Get the output tensors from the graph.
+
+        Returns:
+            Tuple[Tensor, ...]: A tuple of all the output tensors.
+        """
+        _pb_outs = self._pb_graph.getOutputIds()
+        return tuple(
+            Tensor._from_pb_tensor(self._pb_graph.getTensor(o))
+            for o in _pb_outs)
+
     @classmethod
     def _from_pb(
             cls,
@@ -91,6 +113,14 @@ class Graph:
         if isinstance(value, Tensor):
             return value.id in self._pb_graph
         return False
+
+    def __eq__(self, value: Any) -> bool:
+        if isinstance(value, Graph):
+            return self._pb_graph.id == value._pb_graph.id
+        return False
+
+    def get_tensor(self, tensor_id: str) -> Tensor:
+        return Tensor._from_pb_tensor(self._pb_graph.getTensor(tensor_id))
 
     def get_tensors(self) -> Tuple[Tensor, ...]:
         """Return all Tensors in the Graph"""

@@ -6,6 +6,7 @@
 #include <pybind11/stl.h>
 #include <popart/basicoptionals.hpp>
 #include <popart/tensorinfo.hpp>
+#include <popart/tensors.hpp>
 #include <popart/vendored/optional.hpp>
 
 namespace py = pybind11;
@@ -29,6 +30,12 @@ void bindOptional(py::module &m) {
   py::class_<BasicOptional<popart::DataType, 0>>(m, "OptionalDataType")
       .def(py::init<>())
       .def(py::init<DataType>());
+
+  using OptTensors = nonstd::optional<std::vector<TensorId>>;
+
+  py::class_<OptTensors>(m, "OptionalTensors")
+      .def(py::init<>())
+      .def(py::init<std::vector<TensorId>>());
 }
 } // namespace op
 } // namespace ir
