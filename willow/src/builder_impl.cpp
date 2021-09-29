@@ -1086,7 +1086,7 @@ void BuilderImpl::loadModelProto(const std::string &modelProtoOrFilename) {
     if (opset.domain() == Domain::ai_graphcore &&
         (opset.version() < minGraphcoreOperatorSetVersion ||
          opset.version() < maxGraphcoreOperatorSetVersion)) {
-      throw error("Encountered GraphCore opset version {}, Maximimum supported "
+      throw error("Encountered Graphcore opset version {}, Maximimum supported "
                   "opset is {}, minimum {} and default {}.",
                   opset.version(),
                   minGraphcoreOperatorSetVersion,
