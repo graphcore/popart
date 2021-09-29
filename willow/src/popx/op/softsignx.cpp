@@ -48,20 +48,25 @@ SoftSignGradOpx::SoftSignGradOpx(Op *op, Devicex *devicex)
 }
 
 void SoftSignGradOpx::grow(poplar::program::Sequence &prog) const {
-  const auto fwd_input =
-      getInTensor(SoftSignGradOp::getFwdArgInIndex()).getPoplarTensor();
+  const auto grad_in   = getInTensor(SoftSignGradOp::getGradInIndex());
+  const auto fwd_input = getInTensor(SoftSignGradOp::getFwdArgInIndex());
 
   // The derivative of the softsign activation function is:
   // 1/((1 + abs(x))^2)
+  //
+  // Applying the elementwise chain rule gives:
+  //
+  // grad_out = grad_in /((1 + abs(x))^2)
   auto expr = pe::Divide(
       pe::_1,
-      pe::Pow(pe::Add(pe::Const(1.0f), pe::Abs(pe::_1)), pe::Const(2.0f)));
+      pe::Pow(pe::Add(pe::Const(1.0f), pe::Abs(pe::_2)), pe::Const(2.0f)));
 
-  auto output = popops::map(graph().getPoplarGraph(),
-                            expr,
-                            {fwd_input},
-                            prog,
-                            debugContext("softsign_grad"));
+  auto output =
+      popops::map(graph().getPoplarGraph(),
+                  expr,
+                  {grad_in.getPoplarTensor(), fwd_input.getPoplarTensor()},
+                  prog,
+                  debugContext("softsign_grad"));
 
   setOutTensor(SoftSignGradOp::getOutIndex(), snap::Tensor{output, graph()});
 }
