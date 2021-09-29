@@ -22,7 +22,7 @@ AdamUpdaterOpx::AdamUpdaterOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
   verifyOp<AdamUpdaterOp>(op, Onnx::CustomOperators::AdamUpdater);
 }
 
-void AdamUpdaterOpx::grow(poplar::program::Sequence &prog) const {
+void AdamUpdaterOpx::grow(snap::program::Sequence &prog) const {
   auto &adamUpdaterOp = getOp<AdamUpdaterOp>();
 
   poplar::Tensor var;
@@ -54,8 +54,10 @@ void AdamUpdaterOpx::grow(poplar::program::Sequence &prog) const {
         getInTensor(AdamUpdaterOp::getStepInIndex()).getPoplarTensor();
 
     // Update step
-    popops::mapInPlace(
-        graph().getPoplarGraph(), pe::Add(pe::_1, pe::Const(1)), {step}, prog);
+    popops::mapInPlace(graph().getPoplarGraph(),
+                       pe::Add(pe::_1, pe::Const(1)),
+                       {step},
+                       prog.getPoplarSequence());
 
     tensors.push_back(step);
     stepIndex = tensors.size();
@@ -160,7 +162,7 @@ void AdamUpdaterOpx::grow(poplar::program::Sequence &prog) const {
   poplar::Tensor updater = popops::map(graph().getPoplarGraph(),
                                        pe::Cast(expr, elemType),
                                        tensors,
-                                       prog,
+                                       prog.getPoplarSequence(),
                                        debugContext(""));
 
   if (hasInput(AdamUpdaterOp::getVarInIndex())) {

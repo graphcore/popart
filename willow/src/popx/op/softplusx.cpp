@@ -19,7 +19,7 @@ SoftPlusOpx::SoftPlusOpx(Op *op, Devicex *devicex)
   verifyOp<SoftPlusOp>(op, {Onnx::Operators::Softplus_1});
 }
 
-void SoftPlusComputex::inplace(poplar::program::Sequence &prog,
+void SoftPlusComputex::inplace(snap::program::Sequence &prog,
                                snap::Graph &graph,
                                const snap::Tensor &tensor,
                                const poplar::DebugNameAndId &dnai,
@@ -34,7 +34,7 @@ void SoftPlusComputex::inplace(poplar::program::Sequence &prog,
   popops::mapInPlace(graph.getPoplarGraph(),
                      expr,
                      {tensor.getPoplarTensor()},
-                     prog,
+                     prog.getPoplarSequence(),
                      {dnai, debug_prefix});
 }
 
@@ -51,7 +51,7 @@ SoftPlusGradOpx::SoftPlusGradOpx(Op *op, Devicex *devicex)
   verifyOp<SoftPlusGradOp>(op, Onnx::GradOperators::SoftPlusGrad);
 }
 
-void SoftPlusGradOpx::grow(poplar::program::Sequence &prog) const {
+void SoftPlusGradOpx::grow(snap::program::Sequence &prog) const {
   const auto grad_in   = getInTensor(SoftPlusGradOp::getGradInIndex());
   const auto fwd_input = getInTensor(SoftPlusGradOp::getFwdArgInIndex());
 
@@ -66,7 +66,7 @@ void SoftPlusGradOpx::grow(poplar::program::Sequence &prog) const {
       popops::map(graph().getPoplarGraph(),
                   pe::_1 * pe::Sigmoid(pe::_2),
                   {grad_in.getPoplarTensor(), fwd_input.getPoplarTensor()},
-                  prog,
+                  prog.getPoplarSequence(),
                   debugContext("softplus_grad"));
 
   setOutTensor(SoftPlusGradOp::getOutIndex(), snap::Tensor{output, graph()});

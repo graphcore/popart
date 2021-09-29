@@ -90,7 +90,10 @@ public:
 
   poplar::Tensor getScalarVariable(const poplar::Type &type,
                                    const std::string &name) const;
+
   using PopOpx::grow;
+  void grow(snap::program::Sequence &) const final;
+  virtual void grow(poplar::program::Sequence &) const;
 };
 
 } // namespace popx

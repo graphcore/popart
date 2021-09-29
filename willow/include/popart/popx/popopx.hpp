@@ -7,6 +7,7 @@
 #include <poplar/IPUModel.hpp>
 
 #include <snap/Graph.hpp>
+#include <snap/Program.hpp>
 #include <snap/Tensor.hpp>
 
 #include <popart/error.hpp>
@@ -103,11 +104,11 @@ public:
 
   // adds snap::Tensors to devicex_->popTensors,
   // one for each output of op_.
-  virtual void grow(poplar::program::Sequence &) const;
+  virtual void grow(snap::program::Sequence &) const;
   // Akin to the grow function above except it allows for growing over multiple
   // fragments. This is mostly for CallOp optimisations, the default behaviour
   // is to call the single sequence grow function.
-  virtual void grow(std::vector<poplar::program::Sequence> &) const;
+  virtual void grow(std::vector<snap::program::Sequence> &) const;
 
   // Get the part id of the Opx grow function that creates the output tensor
   virtual std::set<OpxGrowPartId> getInGrowPartIds(Tensor *inTensor) const;
@@ -119,9 +120,9 @@ public:
 
   // clone the snap::Tensor identified by its TensorId, and copy the contents
   // of it.
-  snap::Tensor cloneNcopy(poplar::program::Sequence &, TensorId) const;
+  snap::Tensor cloneNcopy(snap::program::Sequence &, TensorId) const;
   // clone the snap::Tensor and copy the contents of it.
-  snap::Tensor cloneNcopy(poplar::program::Sequence &,
+  snap::Tensor cloneNcopy(snap::program::Sequence &,
                           const snap::Tensor &,
                           const std::string name = "") const;
 

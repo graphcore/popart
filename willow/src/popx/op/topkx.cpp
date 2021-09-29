@@ -32,7 +32,7 @@ const std::vector<size_t> &TopKGradOpx::getGradOutShape() const {
   return gradOutShape;
 }
 
-void TopKGradOpx::grow(poplar::program::Sequence &prog) const {
+void TopKGradOpx::grow(snap::program::Sequence &prog) const {
   auto indices = getInTensor(TopKGradOp::indicesInIndex());
 
   auto gradIn = getInTensor(TopKGradOp::gradInIndex());
@@ -47,7 +47,7 @@ void TopKGradOpx::grow(poplar::program::Sequence &prog) const {
 
   popops::zero(graph().getPoplarGraph(),
                dataGrad.getPoplarTensor(),
-               prog,
+               prog.getPoplarSequence(),
                debugContext("zero"));
 
   scatterutilx::growScatter(prog,
@@ -61,12 +61,12 @@ void TopKGradOpx::grow(poplar::program::Sequence &prog) const {
   setOutTensor(TopKGradOp::gradOutIndex(), dataGrad);
 }
 
-void TopKOpx::grow(poplar::program::Sequence &prog) const {
+void TopKOpx::grow(snap::program::Sequence &prog) const {
   auto negateTensor = [&](auto &x) {
     return popops::map(graph().getPoplarGraph(),
                        popops::expr::UnaryOpType::NEGATE,
                        x,
-                       prog,
+                       prog.getPoplarSequence(),
                        debugContext("neg"));
   };
 
@@ -105,7 +105,7 @@ void TopKOpx::grow(poplar::program::Sequence &prog) const {
                               topKInds,
                               K,
                               topk.getSorted(),
-                              prog,
+                              prog.getPoplarSequence(),
                               debugContext("topK"));
   if (!topk.getLargest()) {
     topKVals = negateTensor(topKVals);

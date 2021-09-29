@@ -12,7 +12,7 @@ class SoftSignComputex : public EwuComputex {
 public:
   SoftSignComputex() {}
 
-  void inplace(poplar::program::Sequence &,
+  void inplace(snap::program::Sequence &,
                snap::Graph &,
                const snap::Tensor &,
                const poplar::DebugNameAndId &,
@@ -32,7 +32,7 @@ public:
 class SoftSignGradOpx : public PopOpx {
 public:
   SoftSignGradOpx(Op *, Devicex *);
-  void grow(poplar::program::Sequence &) const final;
+  void grow(snap::program::Sequence &) const final;
 };
 
 } // namespace popx

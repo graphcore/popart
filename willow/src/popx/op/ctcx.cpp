@@ -39,7 +39,7 @@ CtcOpx::CtcOpx(Op *op_, Devicex *devicex)
                            {});
 }
 
-void CtcOpx::grow(poplar::program::Sequence &prog) const {
+void CtcOpx::grow(snap::program::Sequence &prog) const {
 
   const auto &op = getOp<CtcOp>();
   const auto &ir = op.getIr();
@@ -65,7 +65,7 @@ void CtcOpx::grow(poplar::program::Sequence &prog) const {
         targets.getPoplarTensor(),
         inputLengths.getPoplarTensor(),
         targetLengths.getPoplarTensor(),
-        prog,
+        prog.getPoplarSequence(),
         op.getBlank(),
         *plan,
         debugContext("lossAndGrad"));
@@ -141,7 +141,7 @@ std::set<TensorId> CtcOpx::mustExistBeforeCreate(InIndex index) const {
   }
 }
 
-snap::Tensor CtcOpx::applyReduction(poplar::program::Sequence &prog,
+snap::Tensor CtcOpx::applyReduction(snap::program::Sequence &prog,
                                     snap::Tensor ctcLoss,
                                     snap::Tensor targetLengths) const {
 
@@ -171,7 +171,7 @@ snap::Tensor CtcOpx::applyReduction(poplar::program::Sequence &prog,
                          pe::Cast(pe::Max(pe::_2, pe::Const(1)),
                                   ctcLoss.elementType())),
               {ctcLoss.getPoplarTensor(), targetLengths.getPoplarTensor()},
-              prog,
+              prog.getPoplarSequence(),
               debugContext("divByTargetLen")),
           graph()};
 
@@ -197,7 +197,7 @@ snap::Tensor CtcOpx::applyReduction(poplar::program::Sequence &prog,
             ctcLoss.getPoplarTensor(),
             {0},
             {popops::Operation::ADD, false, t_scale.getPoplarTensor()},
-            prog,
+            prog.getPoplarSequence(),
             debugContext("reduce")),
         graph()};
   }
@@ -209,7 +209,7 @@ CtcGradOpx::CtcGradOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
   verifyOp<CtcGradOp>(op, Onnx::CustomGradOperators::CtcGrad);
 }
 
-void CtcGradOpx::grow(poplar::program::Sequence &prog) const {
+void CtcGradOpx::grow(snap::program::Sequence &prog) const {
 
   const CtcGradOp &gradOp = getOp<CtcGradOp>();
 
@@ -253,7 +253,7 @@ void CtcGradOpx::grow(poplar::program::Sequence &prog) const {
       graph().getPoplarGraph(),
       expr,
       {logProbsGradientWrtCtcLoss.getPoplarTensor(), adjustedCtcLossGrad},
-      prog,
+      prog.getPoplarSequence(),
       debugContext("chainRule"));
 
   setOutTensor(CtcGradOp::getLogProbsGradientOutIndex(),
@@ -261,14 +261,14 @@ void CtcGradOpx::grow(poplar::program::Sequence &prog) const {
 }
 
 snap::Tensor
-CtcGradOpx::applyReductionGrad(poplar::program::Sequence &prog,
+CtcGradOpx::applyReductionGrad(snap::program::Sequence &prog,
                                const snap::Tensor &ctcLossGrad,
                                const snap::Tensor &targetLengths) const {
 
   // In the forward pass we the loss output of the CTC loss function outputs
   // loss tensor of size [N]. Depending on reduction settings, we applied either
   // applied no reduction, a sum reduction or a mean reduction to end up with
-  // an output of size [N], [] or [] respecitvely, depending on settings. In
+  // an output of size [N], [] or [] respectively, depending on settings. In
   // this function we take the gradient of this output and turn it into a
   // gradient input that can be applied to the CTC loss function gradient by
   // multiplying the incoming gradient with the partial derivative of the
@@ -299,7 +299,7 @@ CtcGradOpx::applyReductionGrad(poplar::program::Sequence &prog,
         popops::map(graph().getPoplarGraph(),
                     pe::Mul(pe::_1, pe::Const(1.0f / totalSamples)),
                     {ctcLossGrad.getPoplarTensor()},
-                    prog,
+                    prog.getPoplarSequence(),
                     debugContext("divBySamples"));
 
     // Expand tensor to [N].
@@ -312,7 +312,7 @@ CtcGradOpx::applyReductionGrad(poplar::program::Sequence &prog,
                                pe::Cast(pe::Max(pe::_2, pe::Const(1)),
                                         newCtcLossGrad.elementType())),
                     {newCtcLossGrad, targetLengths.getPoplarTensor()},
-                    prog,
+                    prog.getPoplarSequence(),
                     debugContext("divByTargetLen"));
     return snap::Tensor{newCtcLossGrad, graph()};
 

@@ -22,7 +22,7 @@ AdamVarUpdateOpx::AdamVarUpdateOpx(Op *op, Devicex *devicex)
   verifyOp<AdamVarUpdateOp>(op, Onnx::CustomOperators::AdamVarUpdate);
 }
 
-void AdamVarUpdateOpx::grow(poplar::program::Sequence &prog) const {
+void AdamVarUpdateOpx::grow(snap::program::Sequence &prog) const {
 
   // see adam.hpp for the equations implemented here
 
@@ -107,14 +107,17 @@ void AdamVarUpdateOpx::grow(poplar::program::Sequence &prog) const {
                         var,
                         updater,
                         -adamVarUpdateOp.initLr.val(),
-                        prog);
+                        prog.getPoplarSequence());
   } else {
     // Calculate final non-const learning rate tensor from expression
-    poplar::Tensor lrt =
-        popops::map(graph().getPoplarGraph(), pe::Neg(lr), tensors, prog);
+    poplar::Tensor lrt = popops::map(graph().getPoplarGraph(),
+                                     pe::Neg(lr),
+                                     tensors,
+                                     prog.getPoplarSequence());
 
     // Variable update: var -= lr * updater
-    popops::scaledAddTo(graph().getPoplarGraph(), var, updater, lrt, prog);
+    popops::scaledAddTo(
+        graph().getPoplarGraph(), var, updater, lrt, prog.getPoplarSequence());
   }
 
   if (hasInViewChangers(AdamVarUpdateOp::getVarToUpdateInIndex())) {

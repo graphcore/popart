@@ -19,7 +19,7 @@ CopyVarUpdateOpx::CopyVarUpdateOpx(Op *op, Devicex *devicex)
   verifyOp<CopyVarUpdateOp>(op, Onnx::CustomOperators::CopyVarUpdate);
 }
 
-void CopyVarUpdateOpx::grow(poplar::program::Sequence &prog) const {
+void CopyVarUpdateOpx::grow(snap::program::Sequence &prog) const {
   auto vu_op = getOp<CopyVarUpdateOp>();
   poplar::program::Copy copy(
       getInTensor(VarUpdateWithUpdaterOp::getUpdaterInIndex())

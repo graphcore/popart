@@ -19,7 +19,7 @@ SGD1AcclUpdateOpx::SGD1AcclUpdateOpx(Op *op, Devicex *devicex)
   verifyOp<SGD1AcclUpdateOp>(op, {Onnx::CustomOperators::SGD1AcclUpdate});
 }
 
-void SGD1AcclUpdateOpx::grow(poplar::program::Sequence &prog) const {
+void SGD1AcclUpdateOpx::grow(snap::program::Sequence &prog) const {
 
   //   See optimizer.hpp for derivation of the equations implemented here
 
@@ -36,7 +36,7 @@ void SGD1AcclUpdateOpx::grow(poplar::program::Sequence &prog) const {
     if (smm1Val == 0.0f) {
       popops::zero(graph().getPoplarGraph(),
                    toUpdate,
-                   prog,
+                   prog.getPoplarSequence(),
                    debugContext("resetZeroMm"));
     } else {
       // This may be a mix of half and float but the Mul can handle because
@@ -45,7 +45,7 @@ void SGD1AcclUpdateOpx::grow(poplar::program::Sequence &prog) const {
           graph().getPoplarGraph(),
           pe::Mul(pe::_1, pe::Const(smm1Val)),
           {toUpdate},
-          prog,
+          prog.getPoplarSequence(),
           debugContext("constMomentumScaling_" + std::to_string(smm1Val)));
     }
   } else {
@@ -56,7 +56,7 @@ void SGD1AcclUpdateOpx::grow(poplar::program::Sequence &prog) const {
         pe::Mul(pe::_1, pe::Cast(pe::_2, toUpdate.elementType())),
         {toUpdate,
          getInTensor(SGD1AcclUpdateOp::getSmm1InIndex()).getPoplarTensor()},
-        prog,
+        prog.getPoplarSequence(),
         debugContext("nonConstMomentumScaling"));
   }
 
@@ -72,7 +72,7 @@ void SGD1AcclUpdateOpx::grow(poplar::program::Sequence &prog) const {
           toUpdate,
           weights,
           swd1Val,
-          prog,
+          prog.getPoplarSequence(),
           debugContext("constScaledAddSwd1_" + std::to_string(swd1Val)));
     }
   } else {
@@ -81,7 +81,7 @@ void SGD1AcclUpdateOpx::grow(poplar::program::Sequence &prog) const {
         toUpdate,
         weights,
         getInTensor(SGD1AcclUpdateOp::getSwd1InIndex()).getPoplarTensor(),
-        prog,
+        prog.getPoplarSequence(),
         debugContext("nonConstScaledAddSwd1"));
   }
 

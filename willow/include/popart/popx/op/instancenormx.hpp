@@ -12,7 +12,7 @@ namespace popx {
 class InstanceNormOpx : public NormOpx {
 public:
   InstanceNormOpx(Op *, Devicex *);
-  void grow(poplar::program::Sequence &) const final;
+  void grow(snap::program::Sequence &) const final;
 
 private:
 };
@@ -20,7 +20,7 @@ private:
 class InstanceNormGradOpx : public NormOpx {
 public:
   InstanceNormGradOpx(Op *, Devicex *);
-  void grow(poplar::program::Sequence &) const final;
+  void grow(snap::program::Sequence &) const final;
 };
 
 } // namespace popx

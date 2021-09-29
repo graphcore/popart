@@ -66,7 +66,7 @@ snap::Tensor ScaledVarUpdateOpx::getOrCreateWdTensor() const {
   }
 }
 
-void ScaledVarUpdateOpx::grow(poplar::program::Sequence &prog) const {
+void ScaledVarUpdateOpx::grow(snap::program::Sequence &prog) const {
 
   // see adaptive.hpp for the equations implemented here
 
@@ -92,7 +92,7 @@ void ScaledVarUpdateOpx::grow(poplar::program::Sequence &prog) const {
                getInTensor(ScaledVarUpdateOp::getVarToUpdateInIndex()));
 }
 
-void ScaledVarUpdateOpx::growWithLrAsInput(poplar::program::Sequence &prog,
+void ScaledVarUpdateOpx::growWithLrAsInput(snap::program::Sequence &prog,
                                            const ScaledVarUpdateOp &op,
                                            const snap::Tensor &var,
                                            const snap::Tensor &updater) const {
@@ -102,7 +102,7 @@ void ScaledVarUpdateOpx::growWithLrAsInput(poplar::program::Sequence &prog,
                           var.getPoplarTensor(),
                           updater.getPoplarTensor(),
                           -op.initLr.val(),
-                          prog,
+                          prog.getPoplarSequence(),
                           debugContext("_c_0"));
     } else {
       popops::scaledAddTo(graph().getPoplarGraph(),
@@ -110,21 +110,24 @@ void ScaledVarUpdateOpx::growWithLrAsInput(poplar::program::Sequence &prog,
                           1.0f - op.initLr.val() * op.initWd.val(),
                           updater.getPoplarTensor(),
                           -op.initLr.val(),
-                          prog,
+                          prog.getPoplarSequence(),
                           debugContext("_c_c"));
     }
   } else {
     poplar::Tensor lrt = getOrCreateLrTensor().getPoplarTensor();
 
     // (-lr)                    (negate lr)
-    lrt = popops::map(graph().getPoplarGraph(), pe::Neg(pe::_1), {lrt}, prog);
+    lrt = popops::map(graph().getPoplarGraph(),
+                      pe::Neg(pe::_1),
+                      {lrt},
+                      prog.getPoplarSequence());
 
     if (op.initWd.isConst() && op.initWd.val() == 0.0f) {
       popops::scaledAddTo(graph().getPoplarGraph(),
                           var.getPoplarTensor(),
                           updater.getPoplarTensor(),
                           lrt,
-                          prog,
+                          prog.getPoplarSequence(),
                           debugContext("_t_0"));
     } else {
       poplar::Tensor wdt = getOrCreateWdTensor().getPoplarTensor();
@@ -133,7 +136,7 @@ void ScaledVarUpdateOpx::growWithLrAsInput(poplar::program::Sequence &prog,
       wdt = popops::map(graph().getPoplarGraph(),
                         pe::Add(pe::Const(1.0f), pe::Mul(pe::_1, pe::_2)),
                         {lrt, wdt},
-                        prog);
+                        prog.getPoplarSequence());
 
       // var = (1.0 + (-lr) * wd) * var + (-lr) * updater
       popops::scaledAddTo(graph().getPoplarGraph(),
@@ -141,14 +144,14 @@ void ScaledVarUpdateOpx::growWithLrAsInput(poplar::program::Sequence &prog,
                           wdt,
                           updater.getPoplarTensor(),
                           lrt,
-                          prog,
+                          prog.getPoplarSequence(),
                           debugContext("_t_t"));
     }
   }
 }
 
 void ScaledVarUpdateOpx::growWithLrInUpdater(
-    poplar::program::Sequence &prog,
+    snap::program::Sequence &prog,
     const ScaledVarUpdateOp &op,
     const snap::Tensor &var,
     const snap::Tensor &updater) const {
@@ -158,7 +161,7 @@ void ScaledVarUpdateOpx::growWithLrInUpdater(
       popops::mapInPlace(graph().getPoplarGraph(),
                          pe::Sub(pe::_1, pe::_2),
                          {var.getPoplarTensor(), updater.getPoplarTensor()},
-                         prog,
+                         prog.getPoplarSequence(),
                          debugContext("__0"));
     } else {
       // var = var - (wd * var + updater)
@@ -168,7 +171,7 @@ void ScaledVarUpdateOpx::growWithLrInUpdater(
                           1.0f - op.initWd.val(),
                           updater.getPoplarTensor(),
                           -1.0f,
-                          prog,
+                          prog.getPoplarSequence(),
                           debugContext("__c"));
     }
   } else {
@@ -178,7 +181,7 @@ void ScaledVarUpdateOpx::growWithLrInUpdater(
         graph().getPoplarGraph(),
         pe::Sub(pe::Mul(pe::_1, pe::Sub(pe::Const(1.0f), pe::_3)), pe::_2),
         {var.getPoplarTensor(), updater.getPoplarTensor(), wdt},
-        prog,
+        prog.getPoplarSequence(),
         debugContext("__t"));
   }
 }

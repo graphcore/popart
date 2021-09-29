@@ -11,7 +11,7 @@ ZerosOpx::ZerosOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
   verifyOp<ZerosOp>(op, Onnx::CustomOperators::Zeros_1);
 }
 
-void ZerosOpx::grow(poplar::program::Sequence &) const {
+void ZerosOpx::grow(snap::program::Sequence &) const {
   auto &op = getOp<ZerosOp>();
 
   auto outputInfo = op.outInfo(op.getOutIndex());

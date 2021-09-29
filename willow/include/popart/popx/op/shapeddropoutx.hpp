@@ -10,7 +10,7 @@ namespace popx {
 class ShapedDropoutOpx : public PopOpx {
 public:
   ShapedDropoutOpx(Op *, Devicex *);
-  void grow(poplar::program::Sequence &) const override;
+  void grow(snap::program::Sequence &) const override;
 
 private:
   snap::Tensor getReferenceTensor() const;

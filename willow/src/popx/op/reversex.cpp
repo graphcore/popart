@@ -14,7 +14,7 @@ ReverseOpx::ReverseOpx(Op *op, Devicex *devicex) : ReverseBaseOpx(op, devicex) {
   verifyOp<ReverseOp>(op);
 }
 
-void ReverseOpx::grow(poplar::program::Sequence &prog) const {
+void ReverseOpx::grow(snap::program::Sequence &prog) const {
   auto t = getInTensor(ReverseOp::getInIndex()).getPoplarTensor();
   for (auto dim : getOp<ReverseOp>().getDimensions()) {
     t = t.reverse(static_cast<unsigned>(dim));
@@ -46,7 +46,7 @@ ReverseInplaceOpx::ReverseInplaceOpx(Op *op, Devicex *devicex)
   verifyOp<ReverseInplaceOp>(op);
 }
 
-void ReverseInplaceOpx::grow(poplar::program::Sequence &) const {
+void ReverseInplaceOpx::grow(snap::program::Sequence &) const {
   auto t = getInTensor(ReverseOp::getInIndex()).getPoplarTensor();
   for (auto dim : getOp<ReverseInplaceOp>().getDimensions()) {
     t = t.reverse(static_cast<unsigned>(dim));

@@ -22,7 +22,7 @@ ReduceLogSumExpOpx::ReduceLogSumExpOpx(Op *op, Devicex *devicex)
   verifyOp<ReduceLogSumExpOp>(op);
 }
 
-void ReduceLogSumExpOpx::grow(poplar::program::Sequence &prog) const {
+void ReduceLogSumExpOpx::grow(snap::program::Sequence &prog) const {
   const auto &op = getOp<ReduceLogSumExpOp>();
   const auto input =
       getInTensor(ReduceLogSumExpOp::getInIndex()).getPoplarTensor();
@@ -32,7 +32,7 @@ void ReduceLogSumExpOpx::grow(poplar::program::Sequence &prog) const {
                                input,
                                vector_cast<std::size_t>(op.getAxes()),
                                {popops::Operation::MAX},
-                               prog,
+                               prog.getPoplarSequence(),
                                debugContext("maxval"));
   auto broadcast_maxval = maxval.reshape(new_shape);
 
@@ -47,19 +47,19 @@ void ReduceLogSumExpOpx::grow(poplar::program::Sequence &prog) const {
   auto expinput = popops::map(graph().getPoplarGraph(),
                               pe::Exp(pe::Sub(pe::_1, pe::_2)),
                               {input, broadcast_maxval},
-                              prog,
+                              prog.getPoplarSequence(),
                               debugContext("expinput"));
 
   auto output_tensor = popops::reduce(graph().getPoplarGraph(),
                                       expinput,
                                       vector_cast<std::size_t>(op.getAxes()),
                                       {popops::Operation::ADD},
-                                      prog,
+                                      prog.getPoplarSequence(),
                                       debugContext("output"));
   output_tensor      = popops::map(graph().getPoplarGraph(),
                               pe::Add(pe::Log(pe::_1), pe::_2),
                               {output_tensor, maxval},
-                              prog,
+                              prog.getPoplarSequence(),
                               debugContext("logAdd"));
 
   setOutTensor(
@@ -74,7 +74,7 @@ ReduceLogSumExpGradOpx::ReduceLogSumExpGradOpx(Op *op, Devicex *devicex)
   verifyOp<ReduceLogSumExpGradOp>(op, Onnx::GradOperators::ReduceLogSumExpGrad);
 }
 
-void ReduceLogSumExpGradOpx::grow(poplar::program::Sequence &prog) const {
+void ReduceLogSumExpGradOpx::grow(snap::program::Sequence &prog) const {
   const auto &op = getOp<ReduceLogSumExpGradOp>();
   auto output =
       getInTensor(ReduceLogSumExpGradOp::getInIndex()).getPoplarTensor();
@@ -93,7 +93,7 @@ void ReduceLogSumExpGradOpx::grow(poplar::program::Sequence &prog) const {
                                fwd_input,
                                vector_cast<std::size_t>(op.getAxes()),
                                {popops::Operation::MAX},
-                               prog,
+                               prog.getPoplarSequence(),
                                debugContext("maxval"));
   auto broadcast_maxval = maxval.reshape(new_shape);
 
@@ -112,7 +112,7 @@ void ReduceLogSumExpGradOpx::grow(poplar::program::Sequence &prog) const {
                   pe::Mul(pe::Divide(pe::_1, pe::Exp(pe::Sub(pe::_2, pe::_4))),
                           pe::Exp(pe::Sub(pe::_3, pe::_4))),
                   {output, scale, fwd_input, broadcast_maxval},
-                  prog,
+                  prog.getPoplarSequence(),
                   debugContext("output"));
 
   // output now matches the shape of output_shape

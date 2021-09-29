@@ -19,7 +19,7 @@ SoftSignOpx::SoftSignOpx(Op *op, Devicex *devicex)
   verifyOp<SoftSignOp>(op, {Onnx::Operators::Softsign_1});
 }
 
-void SoftSignComputex::inplace(poplar::program::Sequence &prog,
+void SoftSignComputex::inplace(snap::program::Sequence &prog,
                                snap::Graph &graph,
                                const snap::Tensor &tensor,
                                const poplar::DebugNameAndId &dnai,
@@ -30,7 +30,7 @@ void SoftSignComputex::inplace(poplar::program::Sequence &prog,
   popops::mapInPlace(graph.getPoplarGraph(),
                      expr,
                      {tensor.getPoplarTensor()},
-                     prog,
+                     prog.getPoplarSequence(),
                      {dnai, debug_prefix});
 }
 
@@ -47,7 +47,7 @@ SoftSignGradOpx::SoftSignGradOpx(Op *op, Devicex *devicex)
   verifyOp<SoftSignGradOp>(op, Onnx::GradOperators::SoftSignGrad);
 }
 
-void SoftSignGradOpx::grow(poplar::program::Sequence &prog) const {
+void SoftSignGradOpx::grow(snap::program::Sequence &prog) const {
   const auto grad_in   = getInTensor(SoftSignGradOp::getGradInIndex());
   const auto fwd_input = getInTensor(SoftSignGradOp::getFwdArgInIndex());
 
@@ -65,7 +65,7 @@ void SoftSignGradOpx::grow(poplar::program::Sequence &prog) const {
       popops::map(graph().getPoplarGraph(),
                   expr,
                   {grad_in.getPoplarTensor(), fwd_input.getPoplarTensor()},
-                  prog,
+                  prog.getPoplarSequence(),
                   debugContext("softsign_grad"));
 
   setOutTensor(SoftSignGradOp::getOutIndex(), snap::Tensor{output, graph()});

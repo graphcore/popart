@@ -34,7 +34,7 @@ SeluOpx::SeluOpx(Op *op, Devicex *devicex)
   verifyOp<SeluOp>(op, {Onnx::Operators::Selu_1, Onnx::Operators::Selu_6});
 }
 
-void SeluComputex::inplace(poplar::program::Sequence &prog,
+void SeluComputex::inplace(snap::program::Sequence &prog,
                            snap::Graph &graph,
                            const snap::Tensor &tensor,
                            const poplar::DebugNameAndId &dnai,
@@ -55,7 +55,7 @@ void SeluComputex::inplace(poplar::program::Sequence &prog,
   popops::mapInPlace(graph.getPoplarGraph(),
                      *exprs.back(),
                      {tensor.getPoplarTensor()},
-                     prog,
+                     prog.getPoplarSequence(),
                      {dnai, debug_prefix});
 }
 
@@ -72,7 +72,7 @@ SeluGradOpx::SeluGradOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
   verifyOp<SeluGradOp>(op, Onnx::GradOperators::SeluGrad);
 }
 
-void SeluGradOpx::grow(poplar::program::Sequence &prog) const {
+void SeluGradOpx::grow(snap::program::Sequence &prog) const {
   const auto &op = getOp<SeluGradOp>();
   const auto input =
       getInTensor(SeluGradOp::getGradInIndex()).getPoplarTensor();
@@ -107,7 +107,7 @@ void SeluGradOpx::grow(poplar::program::Sequence &prog) const {
   auto output = popops::map(graph().getPoplarGraph(),
                             *exprs.back(),
                             {input, fwd_input},
-                            prog,
+                            prog.getPoplarSequence(),
                             debugContext("selu_grad"));
 
   setOutTensor(SeluGradOp::getOutIndex(), snap::Tensor{output, graph()});

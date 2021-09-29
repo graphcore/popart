@@ -117,12 +117,13 @@ _safe_find_dependency(libpvti)
 _safe_find_dependency(pva)
 _safe_find_dependency(gcl)
 _safe_find_dependency(popir)
+_safe_find_dependency(gccs)
 
 include("${CMAKE_CURRENT_LIST_DIR}/popart--popart-only-targets.cmake"
     RESULT_VARIABLE popart_popart-only_FOUND
 )
 
-# Remove popart-only from the list of oustanding components to find.
+# Remove popart-only from the list of outstanding components to find.
 if(popart-only IN_LIST _components_to_find)
   list(REMOVE_ITEM _components_to_find popart-only)
 endif()

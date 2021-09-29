@@ -14,13 +14,13 @@ class ExpComputex : public EwuComputex {
 public:
   ExpComputex() = default;
 
-  snap::Tensor outplace(poplar::program::Sequence &,
+  snap::Tensor outplace(snap::program::Sequence &,
                         snap::Graph &,
                         const snap::Tensor &,
                         const poplar::DebugNameAndId &,
                         const std::string &) const final;
 
-  void inplace(poplar::program::Sequence &,
+  void inplace(snap::program::Sequence &,
                snap::Graph &,
                const snap::Tensor &,
                const poplar::DebugNameAndId &,

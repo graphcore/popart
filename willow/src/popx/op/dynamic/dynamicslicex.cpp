@@ -23,7 +23,7 @@ DynamicSliceOpx::DynamicSliceOpx(Op *op, Devicex *devicex)
   inputCreatorPriority = -1.0;
 }
 
-void DynamicSliceOpx::grow(poplar::program::Sequence &prog) const {
+void DynamicSliceOpx::grow(snap::program::Sequence &prog) const {
   auto &op    = getOp<DynamicSliceBaseOp>();
   auto tensor = getInTensor(DynamicSliceBaseOp::getInIndex()).getPoplarTensor();
   auto index =
@@ -38,11 +38,11 @@ void DynamicSliceOpx::grow(poplar::program::Sequence &prog) const {
       popops::cast(graph().getPoplarGraph(),
                    index.reshape({op.getAxes().size()}),
                    poplar::UNSIGNED_INT,
-                   prog,
+                   prog.getPoplarSequence(),
                    debugContext()),
       paxes,
       psizes,
-      prog,
+      prog.getPoplarSequence(),
       debugContext("dynamic_slice_" +
                    op.inId(DynamicSliceBaseOp::getInIndex())));
 

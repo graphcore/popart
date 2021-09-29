@@ -17,7 +17,7 @@ ReduceMedianOpx::ReduceMedianOpx(Op *op, Devicex *devicex)
   verifyOp<ReduceMedianOp>(op);
 }
 
-void ReduceMedianOpx::grow(poplar::program::Sequence &prog) const {
+void ReduceMedianOpx::grow(snap::program::Sequence &prog) const {
   const auto &op    = getOp<ReduceMedianOp>();
   const auto &axes  = op.getAxes();
   const auto &input = getInTensor(ReduceMedianOp::getInIndex());
@@ -49,7 +49,7 @@ void ReduceMedianOpx::grow(poplar::program::Sequence &prog) const {
                               output,
                               indices,
                               pp.axes_complement.size(),
-                              prog,
+                              prog.getPoplarSequence(),
                               debugContext("sort"));
 
   size_t median_i;
@@ -91,7 +91,7 @@ ReduceMedianGradOpx::ReduceMedianGradOpx(Op *op, Devicex *devicex)
   verifyOp<ReduceMedianGradOp>(op, Onnx::CustomGradOperators::ReduceMedianGrad);
 }
 
-void ReduceMedianGradOpx::grow(poplar::program::Sequence &prog) const {
+void ReduceMedianGradOpx::grow(snap::program::Sequence &prog) const {
   const auto &grad_op = getOp<ReduceMedianGradOp>();
   const auto &axes    = grad_op.getAxes();
   const auto &backward_shape =
@@ -103,7 +103,10 @@ void ReduceMedianGradOpx::grow(poplar::program::Sequence &prog) const {
       vector_cast<std::size_t>(output_shape),
       poplar::VariableMappingMethod::LINEAR,
       debugContext("initGrad"));
-  popops::zero(graph().getPoplarGraph(), grad, prog, debugContext("zeroGrad"));
+  popops::zero(graph().getPoplarGraph(),
+               grad,
+               prog.getPoplarSequence(),
+               debugContext("zeroGrad"));
 
   auto grad_top =
       cloneNcopy(prog, getInTensor(ReduceMedianGradOp::getInIndex()))

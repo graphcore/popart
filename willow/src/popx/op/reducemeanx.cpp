@@ -23,7 +23,7 @@ ReduceMeanOpx::ReduceMeanOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
   verifyOp<ReduceMeanOp>(op);
 }
 
-void ReduceMeanOpx::grow(poplar::program::Sequence &prog) const {
+void ReduceMeanOpx::grow(snap::program::Sequence &prog) const {
   const auto &op   = getOp<ReduceMeanOp>();
   const auto input = getInTensor(ReduceMeanOp::getInIndex()).getPoplarTensor();
 
@@ -31,7 +31,7 @@ void ReduceMeanOpx::grow(poplar::program::Sequence &prog) const {
                                       input,
                                       vector_cast<std::size_t>(op.getAxes()),
                                       {popops::Operation::ADD},
-                                      prog,
+                                      prog.getPoplarSequence(),
                                       debugContext("add"));
 
   output_tensor = popops::map(
@@ -40,7 +40,7 @@ void ReduceMeanOpx::grow(poplar::program::Sequence &prog) const {
                  pe::Const(inInfo(ReduceMeanOp::getInIndex()).nelms() /
                            outInfo(ReduceMeanOp::getOutIndex()).nelms())),
       {output_tensor},
-      prog,
+      prog.getPoplarSequence(),
       debugContext("div"));
 
   setOutTensor(
@@ -55,7 +55,7 @@ ReduceMeanGradOpx::ReduceMeanGradOpx(Op *op, Devicex *devicex)
   verifyOp<ReduceMeanGradOp>(op, Onnx::GradOperators::ReduceMeanGrad);
 }
 
-void ReduceMeanGradOpx::grow(poplar::program::Sequence &prog) const {
+void ReduceMeanGradOpx::grow(snap::program::Sequence &prog) const {
   const auto &op = getOp<ReduceMeanGradOp>();
   auto output    = cloneNcopy(prog, getInTensor(ReduceMeanGradOp::getInIndex()))
                     .getPoplarTensor();
@@ -78,7 +78,7 @@ void ReduceMeanGradOpx::grow(poplar::program::Sequence &prog) const {
                  pe::Const(outInfo(ReduceMeanGradOp::getOutIndex()).nelms() /
                            inInfo(ReduceMeanGradOp::getInIndex()).nelms())),
       {output},
-      prog,
+      prog.getPoplarSequence(),
       debugContext("div"));
 
   // output now matches the shape of output_shape

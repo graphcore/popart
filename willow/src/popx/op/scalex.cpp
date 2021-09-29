@@ -17,7 +17,7 @@ snap::Tensor ScaleComputex::getScaleTensor(const poplar::Type &type,
   return snap::Tensor{tensor, graph};
 }
 
-snap::Tensor ScaleComputex::outplace(poplar::program::Sequence &prog,
+snap::Tensor ScaleComputex::outplace(snap::program::Sequence &prog,
                                      snap::Graph &graph,
                                      const snap::Tensor &tensor,
                                      const poplar::DebugNameAndId &dnai,
@@ -28,7 +28,7 @@ snap::Tensor ScaleComputex::outplace(poplar::program::Sequence &prog,
                   popops::expr::BinaryOpType::MULTIPLY,
                   tensor.getPoplarTensor(),
                   getScaleTensor(tensor.elementType(), graph).getPoplarTensor(),
-                  prog,
+                  prog.getPoplarSequence(),
                   {dnai, s}),
       graph};
 }
@@ -49,7 +49,7 @@ float ScaleComputex::getFromScaleInplaceOp(Op *op) {
   return scaleInOp->getScaleFactor();
 }
 
-void ScaleComputex::inplace(poplar::program::Sequence &prog,
+void ScaleComputex::inplace(snap::program::Sequence &prog,
                             snap::Graph &graph,
                             const snap::Tensor &tensor,
                             const poplar::DebugNameAndId &dnai,
@@ -60,7 +60,7 @@ void ScaleComputex::inplace(poplar::program::Sequence &prog,
       popops::expr::BinaryOpType::MULTIPLY,
       tensor.getPoplarTensor(),
       getScaleTensor(tensor.elementType(), graph).getPoplarTensor(),
-      prog,
+      prog.getPoplarSequence(),
       {dnai, s});
 }
 

@@ -13,7 +13,7 @@ namespace popx {
 class MinOpx : public ElementWiseUnaryOpx {
 public:
   MinOpx(Op *, Devicex *);
-  void grow(poplar::program::Sequence &) const final;
+  void grow(snap::program::Sequence &) const final;
 
   InputCreatorType getInputCreatorType(InIndex) const override;
 
@@ -25,7 +25,7 @@ public:
 class MinArgGradOpx : public PopOpx {
 public:
   MinArgGradOpx(Op *, Devicex *);
-  void grow(poplar::program::Sequence &) const final;
+  void grow(snap::program::Sequence &) const final;
 };
 
 } // namespace popx

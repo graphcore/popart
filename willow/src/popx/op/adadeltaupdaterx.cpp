@@ -21,7 +21,7 @@ AdaDeltaUpdaterOpx::AdaDeltaUpdaterOpx(Op *op, Devicex *devicex)
   inputCreatorPriority = std::numeric_limits<double>::max();
 }
 
-void AdaDeltaUpdaterOpx::grow(poplar::program::Sequence &prog) const {
+void AdaDeltaUpdaterOpx::grow(snap::program::Sequence &prog) const {
 
   // see adaptive.hpp for the equations implemented here
 
@@ -55,7 +55,7 @@ void AdaDeltaUpdaterOpx::grow(poplar::program::Sequence &prog) const {
                        pe::Cast(pe::_1, accl1.elementType())),
                grad.elementType()),
       tensors,
-      prog,
+      prog.getPoplarSequence(),
       debugContext(""));
 
   if (hasInViewChangers(AdaDeltaUpdaterOp::getGradInIndex())) {

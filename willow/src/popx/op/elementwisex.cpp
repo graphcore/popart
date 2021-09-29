@@ -127,7 +127,7 @@ snap::Tensor ElementWiseBinaryOpx::createInputTensor(
               std::to_string(index));
 }
 
-void ElementWiseUnaryInplaceOpx::grow(poplar::program::Sequence &prog) const {
+void ElementWiseUnaryInplaceOpx::grow(snap::program::Sequence &prog) const {
 
   const auto growTimeTracker =
       op_p->getIr().timePartitionLogger().scopedStopwatch(
@@ -156,7 +156,7 @@ void ElementWiseUnaryInplaceOpx::grow(poplar::program::Sequence &prog) const {
   setOutTensor(ElementWiseUnaryOp::getOutIndex(), outTensor);
 }
 
-void ElementWiseUnaryOutplaceOpx::grow(poplar::program::Sequence &prog) const {
+void ElementWiseUnaryOutplaceOpx::grow(snap::program::Sequence &prog) const {
   auto outTensor = cx->outplace(prog,
                                 graph(),
                                 getInTensor(ElementWiseUnaryOp::getInIndex()),
@@ -177,7 +177,7 @@ view::RegMap ElementWiseBinaryOpx::unwindRegion(InIndex, OutIndex) const {
   return [](const view::Region &r) { return view::Regions(1, r); };
 }
 
-snap::Tensor EwuComputex::cloneNcopy(poplar::program::Sequence &prog,
+snap::Tensor EwuComputex::cloneNcopy(snap::program::Sequence &prog,
                                      snap::Graph &graph,
                                      const snap::Tensor &tensor,
                                      const poplar::DebugNameAndId &dnai) const {
@@ -189,7 +189,7 @@ snap::Tensor EwuComputex::cloneNcopy(poplar::program::Sequence &prog,
   return snap::Tensor{outTensor, graph};
 }
 
-snap::Tensor EwuComputex::outplace(poplar::program::Sequence &prog,
+snap::Tensor EwuComputex::outplace(snap::program::Sequence &prog,
                                    snap::Graph &graph,
                                    const snap::Tensor &tensor,
                                    const poplar::DebugNameAndId &dnai,
@@ -236,7 +236,7 @@ InIndex EwbComputex::getOutplaceArgInIndex() const {
   return inplaceIdx == arg0Idx ? arg1Idx : arg0Idx;
 }
 
-void ElementWiseBinaryOutplaceOpx::grow(poplar::program::Sequence &prog) const {
+void ElementWiseBinaryOutplaceOpx::grow(snap::program::Sequence &prog) const {
   if (cx->inplaceSupported()) {
     throw internal_error(
         "Operation {} was configured for inplacing and attempting "
@@ -278,7 +278,7 @@ void ElementWiseBinaryOutplaceOpx::grow(poplar::program::Sequence &prog) const {
   setOutTensor(outIdx, outTensor);
 }
 
-void ElementWiseBinaryInplaceOpx::grow(poplar::program::Sequence &prog) const {
+void ElementWiseBinaryInplaceOpx::grow(snap::program::Sequence &prog) const {
   if (!cx->inplaceSupported()) {
     throw error("Invalid operation {} was not configured for inplacing and "
                 "attempting to compute in-place",

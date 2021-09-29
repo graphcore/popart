@@ -55,7 +55,7 @@ view::RegMap LoopOpx::unwindRegion(InIndex in, OutIndex out) const {
 }
 
 void LoopOpx::copyExplicitOpInputsToBodyOutputs(
-    poplar::program::Sequence &prog) const {
+    snap::program::Sequence &prog) const {
   auto &op       = getOp<LoopOp>();
   auto &subgraph = op.getCalledGraph();
 
@@ -100,7 +100,7 @@ void LoopOpx::copyExplicitOpInputsToBodyOutputs(
 }
 
 void LoopOpx::copyImplicitOpInputsToImplicitBodyInputs(
-    poplar::program::Sequence &prog) const {
+    snap::program::Sequence &prog) const {
   auto &op       = getOp<LoopOp>();
   auto &subgraph = op.getCalledGraph();
 
@@ -147,12 +147,12 @@ void LoopOpx::copyImplicitOpInputsToImplicitBodyInputs(
 }
 
 void LoopOpx::copyBodyOutputsToExplicitBodyInputs(
-    poplar::program::Sequence &prog) const {
+    snap::program::Sequence &prog) const {
   auto &op       = getOp<LoopOp>();
   auto &subgraph = op.getCalledGraph();
 
-  poplar::program::Sequence tmpCopiesProg;
-  poplar::program::Sequence finalCopiesProg;
+  snap::program::Sequence tmpCopiesProg(graph());
+  snap::program::Sequence finalCopiesProg(graph());
 
   // Skip the trip count tensor
   // Body output 0   ->  Body input 1
@@ -200,8 +200,7 @@ void LoopOpx::copyBodyOutputsToExplicitBodyInputs(
   prog.add(finalCopiesProg);
 }
 
-void LoopOpx::copyBodyOutputsToOpOutputs(
-    poplar::program::Sequence &prog) const {
+void LoopOpx::copyBodyOutputsToOpOutputs(snap::program::Sequence &prog) const {
   auto &op = getOp<LoopOp>();
 
   // Skip the cond-out tensor
@@ -240,7 +239,7 @@ void LoopOpx::copyBodyOutputsToOpOutputs(
 }
 
 void LoopOpx::copyModifiedBodyInputsToOpInputs(
-    poplar::program::Sequence &prog) const {
+    snap::program::Sequence &prog) const {
   auto &op                = getOp<LoopOp>();
   const auto &graph       = op.getGraph();
   const auto &calledGraph = op.getCalledGraph();
@@ -289,7 +288,7 @@ void LoopOpx::copyModifiedBodyInputsToOpInputs(
   }
 }
 
-void LoopOpx::grow(poplar::program::Sequence &prog) const {
+void LoopOpx::grow(snap::program::Sequence &prog) const {
   // Builds the logic for loops (pseudocode):
   //
   // copyExplicitOpInputsToBodyOutputs(); // will set condOut
@@ -344,7 +343,7 @@ void LoopOpx::grow(poplar::program::Sequence &prog) const {
   poputil::mapTensorLinearly(graph().getPoplarGraph(), iteratorTensor);
   popops::zero(graph().getPoplarGraph(),
                iteratorTensor,
-               prog,
+               prog.getPoplarSequence(),
                debugContext("iterator_0"));
 
   // 4: Create a poplar only boolean variable exit, set it to false
@@ -358,9 +357,9 @@ void LoopOpx::grow(poplar::program::Sequence &prog) const {
   auto maxTripCountValue = op.getTripCountValue();
 
   // 6: Create the three loop body programs
-  poplar::program::Sequence loopProg({}, debugContext("loop"));
-  poplar::program::Sequence loopExitProg({}, debugContext("exit"));
-  poplar::program::Sequence loopContinueProg({}, debugContext("continue"));
+  snap::program::Sequence loopProg(debugContext("loop"), graph());
+  snap::program::Sequence loopExitProg(debugContext("exit"), graph());
+  snap::program::Sequence loopContinueProg(debugContext("continue"), graph());
 
   // 7: Update the exit condition
   if (hasInput(LoopOp::getMaximumTripCountInIndex())) {
@@ -372,14 +371,14 @@ void LoopOpx::grow(poplar::program::Sequence &prog) const {
                                           popops::expr::Not(popops::expr::_2)),
                          popops::expr::Gte(popops::expr::_3, popops::expr::_4)),
         {exitTensor, condOutTensor, iteratorTensor, maxTripCountTensor},
-        loopProg,
+        loopProg.getPoplarSequence(),
         debugContext("exit_update"));
   } else {
     popops::mapInPlace(
         graph().getPoplarGraph(),
         popops::expr::Or(popops::expr::_1, popops::expr::Not(popops::expr::_2)),
         {exitTensor, condOutTensor},
-        loopProg,
+        loopProg.getPoplarSequence(),
         debugContext("exit_update"));
   }
 
@@ -410,7 +409,7 @@ void LoopOpx::grow(poplar::program::Sequence &prog) const {
       graph().getPoplarGraph(),
       popops::expr::Add(popops::expr::_1, popops::expr::Const(1)),
       {iteratorTensor},
-      loopContinueProg,
+      loopContinueProg.getPoplarSequence(),
       debugContext("iterator_update"));
 
   // Test if the loop continue condition will not change, and if the loop
@@ -422,15 +421,17 @@ void LoopOpx::grow(poplar::program::Sequence &prog) const {
     loopProg.add(loopContinueProg);
   } else {
     // 12: Add conditional around the loop body program
-    loopProg.add(poplar::program::If(
-        exitTensor, loopExitProg, loopContinueProg, debugContext("condition")));
+    loopProg.add(poplar::program::If(exitTensor,
+                                     loopExitProg.getPoplarSequence(),
+                                     loopContinueProg.getPoplarSequence(),
+                                     debugContext("condition")));
   }
 
   // 13: Repeat the loop conditional program
   logging::opx::debug(
       "[LoopOpx] Max trip count: {} ({})", maxTripCountValue, op.debugName());
   prog.add(poplar::program::Repeat(
-      maxTripCountValue, loopProg, debugContext("loop")));
+      maxTripCountValue, loopProg.getPoplarSequence(), debugContext("loop")));
 
   // 14: Copy body outputs to op outputs
   copyBodyOutputsToOpOutputs(prog);

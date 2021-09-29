@@ -12,7 +12,7 @@ IsInfx::IsInfx(Op *op, Devicex *devicex) : ElementWiseUnaryOpx(op, devicex) {
   verifyOp<IsInf>(op, Onnx::Operators::IsInf_10);
 }
 
-void IsInfx::grow(poplar::program::Sequence &prog) const {
+void IsInfx::grow(snap::program::Sequence &prog) const {
   // (x == x) && x !isFinite
   setOutTensor(
       IsInf::getOutIndex(),
@@ -23,7 +23,7 @@ void IsInfx::grow(poplar::program::Sequence &prog) const {
                   popops::expr::Equal(popops::expr::_1, popops::expr::_1),
                   popops::expr::Not(popops::expr::IsFinite(popops::expr::_1))),
               {get(inId(0)).getPoplarTensor()},
-              prog,
+              prog.getPoplarSequence(),
               debugContext()),
           graph()});
 }

@@ -13,7 +13,7 @@ namespace popx {
 class SubtractOpx : public ElementWiseBinaryOpx {
 public:
   SubtractOpx(Op *, Devicex *);
-  void grow(poplar::program::Sequence &) const final;
+  void grow(snap::program::Sequence &) const final;
 };
 
 // TODO (task T5432) should inherit from ReduceSum when we have numpy

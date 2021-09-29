@@ -12,7 +12,7 @@ namespace popx {
 class FmodOpx : public ElementWiseBinaryOpx {
 public:
   FmodOpx(Op *, Devicex *);
-  void grow(poplar::program::Sequence &) const override final;
+  void grow(snap::program::Sequence &) const override final;
 };
 
 } // namespace popx

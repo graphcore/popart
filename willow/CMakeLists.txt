@@ -59,7 +59,7 @@ set(CAPNPC_OUTPUT_DIR "${CMAKE_CURRENT_BINARY_DIR}/include/popart/capnp")
 add_subdirectory(capnp)
 
 ################################################################################
-##### Dependecy visibility levels (see [comment-willow-targets])
+##### Dependency visibility levels (see [comment-willow-targets])
 ################################################################################
 
 set(POPART_PRIVATE_DEPS_INCLUDES
@@ -84,6 +84,7 @@ set(POPART_ONLY_DEPS_LIBS
     pva
     gcl
     snap
+    gccs
 )
 
 set(POPART_DEPS_INCLUDES
@@ -122,7 +123,7 @@ set(patterns_tgutil_sources
   src/patterns/tiedgatherutils/tgutils_impl.hpp
 )
 
-# poplar backend op specifc:
+# poplar backend op specific:
 file(GLOB x_sources src/popx/*cpp)
 file(GLOB opx_sources src/popx/op/*cpp)
 file(GLOB opx_dyn_sources src/popx/op/dynamic/*cpp)
@@ -194,7 +195,7 @@ set_target_properties(popart-only PROPERTIES
     # libpopart.so, not libpopart-only.so.
     OUTPUT_NAME popart
 
-    # Need position indepenent code to make dynamic library with static libs.
+    # Need position independent code to make dynamic library with static libs.
     POSITION_INDEPENDENT_CODE ON
 )
 target_compile_features(popart-only PRIVATE cxx_std_14)
@@ -206,7 +207,7 @@ set(popart_common_definitions "")
 
 # Hack: Poptorch doesn't need onnx, but it includes the monolithic names.hpp,
 # which has many declarations intended to be private only that use
-# ONNX_NAMESPACE. Thus, we make it a public definition in popart-ony.
+# ONNX_NAMESPACE. Thus, we make it a public definition in popart-only.
 get_target_property(onnx_defs onnx INTERFACE_COMPILE_DEFINITIONS)
 get_target_property(onnx_proto_defs onnx_proto INTERFACE_COMPILE_DEFINITIONS)
 list(APPEND onnx_defs ${onnx_proto_defs})

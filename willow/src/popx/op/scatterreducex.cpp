@@ -19,7 +19,7 @@ namespace popx {
 
 namespace {
 poplar::Tensor linearizeIndices(const PopOpx &opx,
-                                poplar::program::Sequence &prog,
+                                snap::program::Sequence &prog,
                                 poplar::Tensor indices) {
   // Linearize the indices: map from 2-d indices to 1-d
   auto result     = indices.flatten(1, indices.rank());
@@ -42,12 +42,12 @@ poplar::Tensor linearizeIndices(const PopOpx &opx,
   popops::mulInPlace(opx.graph().getPoplarGraph(),
                      result,
                      numColsConst,
-                     prog,
+                     prog.getPoplarSequence(),
                      opx.getDebugNameAndId("numColsMulIndices"));
   popops::addInPlace(opx.graph().getPoplarGraph(),
                      result,
                      colIndices.getPoplarTensor(),
-                     prog,
+                     prog.getPoplarSequence(),
                      opx.getDebugNameAndId("indicesAddColIds"));
 
   result = result.flatten();
@@ -71,7 +71,7 @@ ScatterReduceOpx::ScatterReduceOpx(Op *op, Devicex *devicex)
   inputCreatorPriority = std::numeric_limits<double>::max();
 }
 
-void ScatterReduceOpx::grow(poplar::program::Sequence &prog) const {
+void ScatterReduceOpx::grow(snap::program::Sequence &prog) const {
   auto data = getInTensor(ScatterReduceOp::dataInIndex()).getPoplarTensor();
   auto indices =
       getInTensor(ScatterReduceOp::indicesInIndex()).getPoplarTensor();
@@ -91,8 +91,11 @@ void ScatterReduceOpx::grow(poplar::program::Sequence &prog) const {
                                            poplar::OptionFlags(),
                                            debugContext("scatterreduceOutput"));
 
-  popops::fill(
-      graph().getPoplarGraph(), out, prog, 0.0f, debugContext("scatterFill"));
+  popops::fill(graph().getPoplarGraph(),
+               out,
+               prog.getPoplarSequence(),
+               0.0f,
+               debugContext("scatterFill"));
 
   // popops::multiUpdateAdd is roughly:
   //   for i indices:
@@ -133,7 +136,7 @@ void ScatterReduceOpx::grow(poplar::program::Sequence &prog) const {
                          scale,
                          {0},
                          sizes,
-                         prog,
+                         prog.getPoplarSequence(),
                          plan,
                          poplar::OptionFlags(),
                          debugContext("scatterAdd"));
@@ -204,7 +207,7 @@ ScatterReduceGradOpx::ScatterReduceGradOpx(Op *op, Devicex *devicex)
   inputCreatorPriority = std::numeric_limits<double>::max();
 }
 
-void ScatterReduceGradOpx::grow(poplar::program::Sequence &prog) const {
+void ScatterReduceGradOpx::grow(snap::program::Sequence &prog) const {
   auto gradIn =
       getInTensor(ScatterReduceGradOp::gradInIndex()).getPoplarTensor();
   auto indices =
@@ -234,7 +237,7 @@ void ScatterReduceGradOpx::grow(poplar::program::Sequence &prog) const {
                                    indices,
                                    {0},
                                    {1},
-                                   prog,
+                                   prog.getPoplarSequence(),
                                    plan,
                                    poplar::OptionFlags(),
                                    debugContext("scatterAddGrad"));

@@ -13,7 +13,7 @@ FmodOpx::FmodOpx(Op *op, Devicex *devicex) : ElementWiseBinaryOpx(op, devicex) {
   verifyOp<FmodOp>(op, {Onnx::AiGraphcore::OpSet1::Fmod});
 }
 
-void FmodOpx::grow(poplar::program::Sequence &prog) const {
+void FmodOpx::grow(snap::program::Sequence &prog) const {
   setOutTensor(
       FmodOp::getOutIndex(),
       snap::Tensor{
@@ -21,7 +21,7 @@ void FmodOpx::grow(poplar::program::Sequence &prog) const {
                       popops::expr::BinaryOpType::REMAINDER,
                       getInTensor(FmodOp::getArg0InIndex()).getPoplarTensor(),
                       getInTensor(FmodOp::getArg1InIndex()).getPoplarTensor(),
-                      prog,
+                      prog.getPoplarSequence(),
                       debugContext()),
           graph()});
 }

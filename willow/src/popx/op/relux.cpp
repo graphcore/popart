@@ -20,7 +20,7 @@ ReluOpx::ReluOpx(Op *op, Devicex *devicex)
   verifyOp<ReluOp>(op, Onnx::Operators::Relu_6);
 }
 
-snap::Tensor ReluComputex::outplace(poplar::program::Sequence &p,
+snap::Tensor ReluComputex::outplace(snap::program::Sequence &p,
                                     snap::Graph &g,
                                     const snap::Tensor &t,
                                     const poplar::DebugNameAndId &dnai,
@@ -30,7 +30,7 @@ snap::Tensor ReluComputex::outplace(poplar::program::Sequence &p,
   return outTensor;
 }
 
-void ReluComputex::inplace(poplar::program::Sequence &p,
+void ReluComputex::inplace(snap::program::Sequence &p,
                            snap::Graph &g,
                            const snap::Tensor &t,
                            const poplar::DebugNameAndId &dnai,
@@ -40,7 +40,7 @@ void ReluComputex::inplace(poplar::program::Sequence &p,
   popnn::nonLinearityInPlace(g.getPoplarGraph(),
                              popnn::NonLinearityType::RELU,
                              t.getPoplarTensor(),
-                             p,
+                             p.getPoplarSequence(),
                              {dnai, s});
 }
 
@@ -48,7 +48,7 @@ ReluGradOpx::ReluGradOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
   verifyOp<ReluGradOp>(op, Onnx::GradOperators::ReluGrad);
 }
 
-void ReluGradOpx::grow(poplar::program::Sequence &prog) const {
+void ReluGradOpx::grow(snap::program::Sequence &prog) const {
 
   ReluGradOp &rgop = getOp<ReluGradOp>();
 
@@ -57,7 +57,7 @@ void ReluGradOpx::grow(poplar::program::Sequence &prog) const {
       popnn::NonLinearityType::RELU, // nonLinearityType,
       getInTensor(rgop.getReludInIndex()).getPoplarTensor(),     // out,
       getInTensor(rgop.getGradReludInIndex()).getPoplarTensor(), // outGradient,
-      prog,                                                      // prog,
+      prog.getPoplarSequence(),                                  // prog,
       debugContext()                                             // debugContext
   );
 

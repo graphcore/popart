@@ -10,7 +10,7 @@ namespace popx {
 class AdamVarUpdateOpx : public VarUpdateOpx {
 public:
   AdamVarUpdateOpx(Op *, Devicex *);
-  void grow(poplar::program::Sequence &) const final;
+  void grow(snap::program::Sequence &) const final;
 
   // does not create inputs
 };
