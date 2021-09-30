@@ -22,7 +22,9 @@ namespace popart {
  * A structure containing user configuration for automatic loss scaling
  * settings.
  *
- * **Note:** Automatic loss scaling is currently in preview.
+ * **Note:** Automatic loss scaling is currently experimental and under
+ * active development. We recommend that the user sets the loss scale
+ * manually.
  */
 struct AutomaticLossScalingSettings {
   AutomaticLossScalingSettings() = default;
@@ -966,7 +968,9 @@ struct SessionOptions {
   /// Settings to enable and configure the automatic loss scaling behaviour when
   /// training.
   ///
-  /// **Note:** Automatic loss scaling is currently in preview.
+  /// **Note:** Automatic loss scaling is currently experimental and under
+  /// active development. We recommend that the user sets the loss scale
+  /// manually.
   AutomaticLossScalingSettings automaticLossScalingSettings;
 
   // Settings for developers to configure testing and benchmarking
