@@ -1,7 +1,9 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-import popart._internal.ir as _ir
 import popart.ir as pir
 import popart.ir.ops as ops
+
+import popart._internal.ir as _ir
+
 from utils import contains_op_of_type
 
 
@@ -9,7 +11,7 @@ class TestMul:
     def test_fn(self):
         ir = pir.Ir()
         g = ir.main_graph()
-        
+
         with g:
             a = pir.variable(1)
             b = pir.variable(2)
@@ -21,7 +23,7 @@ class TestMul:
     def test_dunder(self):
         ir = pir.Ir()
         g = ir.main_graph()
-        
+
         with g:
             a = pir.variable(1)
             b = pir.variable(2)
@@ -33,7 +35,7 @@ class TestMul:
     def test_ensure_tensor(self):
         ir = pir.Ir()
         g = ir.main_graph()
-        
+
         with g:
             a = pir.variable(1)
             c = a * 2

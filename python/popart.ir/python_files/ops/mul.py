@@ -27,6 +27,7 @@ def mul(lhs: Tensor, rhs: Tensor) -> Tensor:
 
     settings = _ir.Settings(pb_g, 'mul')
     opid = _ir.OperatorIdentifier("ai.onnx", "Mul", 7, _ir.NumInputs(2, 2), 1)
+
     op = pb_g.createConnectedOp_MulOp(
         {
             0: lhs.id,

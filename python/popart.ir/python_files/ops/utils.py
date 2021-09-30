@@ -2,8 +2,9 @@
 from popart.ir.tensor import Tensor
 from popart.ir.graph import Graph
 import popart._internal.ir as _ir
-from typing import Optional
 from popart.ir import dtypes
+
+from typing import Optional
 
 
 def cast_if_needed(t: Tensor, data_type: dtypes.dtype) -> Tensor:

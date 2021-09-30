@@ -39,8 +39,8 @@ class Graph:
         return self._pb_graph.getScope().str()
 
     def ir(self) -> 'Ir':
-        import popart.ir.Ir
-        return popart.ir.Ir._from_pb(self._pb_graph.getIr())
+        from popart.ir import Ir
+        return Ir._from_pb(self._pb_graph.getIr())
 
     @classmethod
     def _from_pb(

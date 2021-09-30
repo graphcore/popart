@@ -1,7 +1,9 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-import popart._internal.ir as _ir
 import popart.ir as pir
 import popart.ir.ops as ops
+
+import popart._internal.ir as _ir
+
 from utils import contains_op_of_type
 
 
