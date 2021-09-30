@@ -18,6 +18,7 @@ from popart.ir.graph import *
 from popart.ir.ir import *
 from popart.ir.tensor import *
 from popart.ir.streams import *
+from popart.ir.module import *
 
 del sys
 del actualVersion

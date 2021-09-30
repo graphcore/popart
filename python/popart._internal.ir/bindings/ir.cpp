@@ -29,6 +29,10 @@ void bindIr(py::module &m) {
       .def("createGraph",
            &popart::Ir::createGraph,
            py::return_value_policy::reference)
+      .def("createUniqueSubgraphId",
+           [](Ir &self, const std::string &id) -> std::string {
+             return self.createUniqueSubgraphId(GraphId{id}).str();
+           })
       .def("removeGraph", &popart::Ir::removeGraph)
       .def("setIsPrepared", &Ir::setIsPrepared)
       .def("isPrepared", &Ir::isPrepared)

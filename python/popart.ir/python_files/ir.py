@@ -6,6 +6,9 @@ from typing import Any, Callable
 
 import popart._internal.ir as _ir
 from popart.ir.graph import Graph
+from popart.ir.globals import gcg
+from popart.ir.module import Module
+from popart.ir.tensor import Tensor, subgraph_input, subgraph_output
 
 __all__ = ['Ir']
 
@@ -20,12 +23,6 @@ class Ir:
     def __init__(self):
         """Initialises a new `Ir`."""
         self._pb_ir = _ir.Ir()
-        # Subgraphs are named `{pure_name}_{id}`, where `pure_name` comes from
-        # the qualified name of the Python function that created the graph. The
-        # following counter counts these so that a unique name can be given to
-        # subgraphs that have been created from the same Python function.
-        # See `Ir._create_name()`.
-        self._pure_names = Counter()
 
     @classmethod
     def _from_pb(
@@ -77,7 +74,59 @@ class Ir:
             Graph:
                 A graph that corresponds to the input Python function.
         """
-        raise NotImplementedError()
+        g = gcg()
+        pb_g = g._pb_graph
+
+        if isinstance(fn, Module):
+            qualname = fn.__class__.__qualname__
+        else:
+            # Note all Python functions will have __qualname__.
+            if not callable(fn) or not hasattr(fn, '__qualname__'):
+                raise TypeError(
+                    "Callable `fn` must be either a function or a class that extends popart.ir.Module"
+                )
+            else:
+                qualname = fn.__qualname__
+
+        name = self._create_name(qualname)
+        _pb_subgraph = self._pb_ir.createGraph(name)
+        subgraph = Graph._from_pb(_pb_subgraph)
+
+        with subgraph:
+            # FIXME: Ignore/warn/error on duplicate inputs, as we do not want
+            # to create dubplicate subgraph inputs
+
+            in_args = []
+            for arg in args:
+                if isinstance(arg, Tensor):
+                    t = arg
+                    in_args.append(
+                        subgraph_input(t.dtype, t.shape,
+                                       _ir.removeScope(pb_g, t.id)))
+                else:
+                    in_args.append(arg)
+
+            in_kwargs = {}
+            for k, v in kwargs.items():
+                if isinstance(v, Tensor):
+                    t = v
+                    in_kwargs[k] = subgraph_input(t.dtype, t.shape,
+                                                  _ir.removeScope(pb_g, t.id))
+                else:
+                    in_kwargs[k] = v
+
+            outputs = fn(*in_args, **in_kwargs)
+
+            if outputs is None:
+                outputs = []
+
+            if isinstance(outputs, Tensor):
+                outputs = (outputs, )
+
+            for out in outputs:
+                subgraph_output(out)
+
+        return subgraph
 
     def _create_name(self, name: str) -> str:
         """Generate a graph name based on the qualified name of the Python
@@ -108,6 +157,5 @@ class Ir:
                 The name of the graph.
         """
         name = name.replace(".<locals>", "")
-        id = self._pure_names[name]
-        self._pure_names[name] += 1
-        return f'{name}_{id}'
+        name = self._pb_ir.createUniqueSubgraphId(name)
+        return name

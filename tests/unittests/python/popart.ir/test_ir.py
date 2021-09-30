@@ -16,8 +16,6 @@ def test_constructor():
     ir = pir.Ir()
     # The low-level IR should have only one graph - the main graph.
     assert len(ir._pb_ir.getAllGraphs()) == 1
-    # The `_pure_names` counter should be empty.
-    assert len(ir._pure_names) == 0
 
     main_graph = ir.main_graph()
     assert isinstance(main_graph, pir.Graph)
