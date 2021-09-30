@@ -1,8 +1,7 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-
 from typing import List
 import popart._internal.ir as _ir
-from popart.ir.globals import gcg
+from popart.ir.context import get_current_context
 from popart.ir.tensor import Tensor
 from .utils import check_in_graph
 
@@ -15,14 +14,14 @@ def dynamicslice(t: Tensor, index: Tensor, axes: List[int], sizes: List[int],
     Returns a cloned slice of the input Tensor.
 
     The word "dynamic" refers to the fact that the index can be specified
-    during runtime. 
-   
+    during runtime.
+
     A slice along an axis can be defined as by the tuple
     ( start, stop, step )
     start - will be equal the index for the respective axis
     stop - will be equal index + size for the respective axis
     step - will equal 1
-   
+
     Limitations:
     Assuming we would like to slice A with dimension (4, 3)
     - Step other than 1 is not supported (i.e. t[::2,:] is not supported)
@@ -39,7 +38,7 @@ def dynamicslice(t: Tensor, index: Tensor, axes: List[int], sizes: List[int],
             The axes to slice from.
         sizes: List[int]
             The sizes of the slices for the specified axes.
-            For example: 
+            For example:
             If index = [1, 2], axes = [0, 3] and sizes = [2, 4], the Tensor will be sliced
             t[1:2, :, :, 2:4]
         noOverlap : bool
@@ -51,12 +50,13 @@ def dynamicslice(t: Tensor, index: Tensor, axes: List[int], sizes: List[int],
         out: Tensor
             A clone (i.e. not a view) of the sliced input tensor.
     """
-    g = gcg()
+    ctx = get_current_context()
+    g = ctx.graph
     pb_g = g._pb_graph
 
     check_in_graph(g, t, index)
 
-    settings = _ir.Settings(pb_g, 'dynamicslice')
+    settings = ctx._get_op_settings('dynamicslice')
     opid = _ir.OperatorIdentifier("ai.graphcore", "DynamicSlice", 1,
                                   _ir.NumInputs(2, 2), 1)
     op = pb_g.createConnectedOp_DynamicSliceOp(

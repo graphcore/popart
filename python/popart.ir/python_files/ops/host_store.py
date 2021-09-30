@@ -1,6 +1,6 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 import popart._internal.ir as _ir
-from popart.ir.globals import gcg
+from popart.ir.context import get_current_context
 from popart.ir.tensor import Tensor
 from popart.ir.streams import DeviceToHostStream
 
@@ -19,7 +19,8 @@ def host_store(d2h_stream: DeviceToHostStream, t: Tensor) -> None:
     Args:
         t (Tensor): The input tensor to copy to host.
     """
-    g = gcg()
+    ctx = get_current_context()
+    g = ctx.graph
     pb_g = g._pb_graph
 
     check_in_graph(g, t)
@@ -38,5 +39,5 @@ def host_store(d2h_stream: DeviceToHostStream, t: Tensor) -> None:
                                   _ir.NumInputs(1), 0)
 
     pb_g.createConnectedOp_HostStoreOp({0: t.id}, {}, opid,
-                                       _ir.Settings(pb_g, 'host_store'),
+                                       ctx._get_op_settings('host_store'),
                                        d2h_stream.tensor_id())

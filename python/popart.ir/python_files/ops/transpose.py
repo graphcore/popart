@@ -1,7 +1,7 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 from typing import Optional, Tuple
 import popart._internal.ir as _ir
-from popart.ir.globals import gcg
+from popart.ir.context import get_current_context
 from popart.ir.tensor import Tensor
 from .utils import check_in_graph
 
@@ -32,12 +32,13 @@ def transpose(t: Tensor,
             f"Values in permutation must be less than the tensor's rank {t.rank}. "
             f"Found {tuple(filter(lambda dim: dim >= t.rank, permutation))}")
 
-    g = gcg()
+    ctx = get_current_context()
+    g = ctx.graph
     pb_g = g._pb_graph
 
     check_in_graph(g, t)
 
-    settings = _ir.Settings(pb_g, 'transpose')
+    settings = ctx._get_op_settings('transpose')
     opid = _ir.OperatorIdentifier("ai.onnx", "Transpose", 1, _ir.NumInputs(
         1, 1), 1)
     op = pb_g.createConnectedOp_TransposeOp(

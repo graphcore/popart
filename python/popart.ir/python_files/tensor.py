@@ -4,7 +4,7 @@ import numpy as np
 
 import popart._internal.ir as _ir
 from popart.ir import dtypes
-from popart.ir.globals import gcg
+from popart.ir.context import gcg
 
 __all__ = [
     'Tensor', 'Variable', 'variable', 'Constant', 'constant', 'subgraph_input',
@@ -108,6 +108,11 @@ class Tensor:
         import popart.ir.ops as ops
         return ops.reshape(self, shape)
 
+    def copy_to_ipu(self, dst: int, src: Optional[int] = None) -> 'Tensor':
+        """Returns ops.ipu_copy(self, dst, src)."""
+        import popart.ir.ops as ops
+        return ops.ipu_copy(self, dst, src)
+
     @property
     def T(self) -> 'Tensor':
         """Returns the Tensor transposed with reversed axes."""
@@ -178,9 +183,21 @@ class Tensor:
 class Variable(Tensor):
     """Wraps a Tensor in the PopART IR that has TensorType.Variable"""
 
+    def copy_to_ipu(self, dst: int, src: int) -> 'Tensor':
+        """Returns ops.ipu_copy(self, dst, src).
+            Must provide a src value."""
+        import popart.ir.ops as ops
+        return ops.ipu_copy(self, dst, src)
+
 
 class Constant(Tensor):
     """Wraps a Tensor in the PopART IR that has TensorType.Constant"""
+
+    def copy_to_ipu(self, dst: int, src: int) -> 'Tensor':
+        """Returns ops.ipu_copy(self, dst, src).
+            Must provide a src value."""
+        import popart.ir.ops as ops
+        return ops.ipu_copy(self, dst, src)
 
 
 def variable(data: Union[np.ndarray, Sequence[Any], int, float],

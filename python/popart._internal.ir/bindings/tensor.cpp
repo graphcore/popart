@@ -56,10 +56,12 @@ void bindTensor(py::module &m) {
       // TODO(T42234): Bind and test getProducerUnsafe, getProducer, setProducer
       // resetProducer, hasProducer.
       // .def("getProducerUnsafe", &Tensor::getProducerUnsafe)
-      // .def("getProducer", &Tensor::getProducer)
+      .def("hasProducer", &Tensor::hasProducer)
+      .def("getProducer",
+           &Tensor::getProducer,
+           py::return_value_policy::reference)
       // .def("setProducer", &Tensor::setProducer, py::arg("op"))
       // .def("resetProducer", &Tensor::resetProducer, py::arg("op"))
-      // .def("hasProducer", &Tensor::hasProducer)
       // TODO(T42233): Bind and test isGraphInput, getGraphInputIndex,
       // isGraphOutput, getGraphOutputIndex.
       // .def("isGraphInput", &Tensor::isGraphInput)

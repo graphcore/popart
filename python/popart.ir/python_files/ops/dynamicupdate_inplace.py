@@ -2,7 +2,7 @@
 
 from typing import List
 import popart._internal.ir as _ir
-from popart.ir.globals import gcg
+from popart.ir.context import get_current_context
 from popart.ir.tensor import Tensor
 from .utils import check_in_graph
 
@@ -21,8 +21,8 @@ def dynamicupdate_inplace(
     Dynamically updates a tensor inplace.
 
     The word "dynamic" refers to the fact that the index can be specified
-    during runtime. 
-   
+    during runtime.
+
     index, axes and sizes determines the slice of t which will be updated.
     The dimension of this slice and t_update must match.
     A slice along an axis can be defined as by the tuple
@@ -30,7 +30,7 @@ def dynamicupdate_inplace(
     start - will be equal the index for the respective axis
     stop - will be equal index + size for the respective axis
     step - will equal 1
-   
+
     Limitations:
     Assuming we would like to update t with dimension (4, 3).
     The slicing of t will have the following limitations:
@@ -50,26 +50,27 @@ def dynamicupdate_inplace(
             The axess of t to make the update at.
         sizes: List[int]
             The sizes of the updates along the specified axes.
-            For example: 
+            For example:
             If index = [1, 2], axes = [0, 3] and sizes = [2, 4], the Tensor will be updated at
             t[1:2, :, :, 2:4]
         noOverlap : bool
             If set to true, then correct gradient backpropagation is only guaranteed if
             each region in the output tensor has exactly one populator
             (operation that writes data to this region).
-            There are no run-time or compile-time checks possible to ensure this.            
+            There are no run-time or compile-time checks possible to ensure this.      
         updateInInfo : TensorInfo
-           The TensorInfo (containing data_type, shape and meta_shape) for the t_update 
+           The TensorInfo (containing data_type, shape and meta_shape) for the t_update
     Returns:
         out: Tensor
             The updated tensor.
     """
-    g = gcg()
+    ctx = get_current_context()
+    g = ctx.graph
     pb_g = g._pb_graph
 
     check_in_graph(g, t, index)
 
-    settings = _ir.Settings(pb_g, 'dynamicupdate_inplace')
+    settings = ctx._get_op_settings('dynamicupdate_inplace')
     opid = _ir.OperatorIdentifier("ai.graphcore", "DynamicUpdateInplace", 1,
                                   _ir.NumInputs(3, 3), 1)
     op = pb_g.createConnectedOp_DynamicUpdateInplaceOp(

@@ -1,6 +1,6 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 import popart._internal.ir as _ir
-from popart.ir.globals import gcg
+from popart.ir.context import get_current_context
 from popart.ir.tensor import Tensor
 from popart.ir.streams import HostToDeviceStream
 
@@ -26,7 +26,8 @@ def host_load(h2d_stream: HostToDeviceStream,
     Returns:
         Tensor: The output tensor streamed from host.
     """
-    g = gcg()
+    ctx = get_current_context()
+    g = ctx.graph
 
     dtype = h2d_stream.dtype
     shape = h2d_stream.shape
@@ -52,7 +53,7 @@ def host_load(h2d_stream: HostToDeviceStream,
         info,
         _ir.TensorType.ActGrad,
         _ir.InitType.Zero,
-        _ir.Settings(pb_g, 'init'),
+        ctx._get_op_settings('init'),
         -1,
     )
 
@@ -63,7 +64,7 @@ def host_load(h2d_stream: HostToDeviceStream,
         {0: name_init},
         {0: name_hostload},
         opid_host_load,
-        _ir.Settings(pb_g, 'host_load'),
+        ctx._get_op_settings('host_load'),
         stream_tensor_id,
     )
 

@@ -1,7 +1,7 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 from typing import Optional, Tuple
 import popart._internal.ir as _ir
-from popart.ir.globals import gcg
+from popart.ir.context import get_current_context
 from popart.ir.tensor import Tensor
 from .utils import check_in_graph, convert_optional_float
 
@@ -49,7 +49,8 @@ def scatter(t: Tensor, indices: Tensor, values: Tensor,
         scatter: Tensor
             The tensor with updated values.
     """
-    g = gcg()
+    ctx = get_current_context()
+    g = ctx.graph
     pb_g = g._pb_graph
 
     check_in_graph(g, t)
@@ -58,7 +59,7 @@ def scatter(t: Tensor, indices: Tensor, values: Tensor,
 
     opid = _ir.OperatorIdentifier("ai.onnx", "Scatter", 11, _ir.NumInputs(
         3, 3), 1)
-    settings = _ir.Settings(pb_g, "scatter")
+    settings = ctx._get_op_settings("scatter")
     op = pb_g.createConnectedOp_ScatterOp(
         {
             0: t.id,

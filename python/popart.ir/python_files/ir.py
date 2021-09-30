@@ -6,7 +6,7 @@ from typing import Any, Callable
 
 import popart._internal.ir as _ir
 from popart.ir.graph import Graph
-from popart.ir.globals import gcg
+from popart.ir.context import gcg
 from popart.ir.module import Module
 from popart.ir.tensor import Tensor, subgraph_input, subgraph_output
 

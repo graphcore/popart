@@ -1,13 +1,13 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 from .add import *
-from .cast import *
 from .call import *
+from .cast import *
 from .div import *
-from .gather import *
-from .gelu import *
 from .dynamicslice import *
 from .dynamicupdate import *
 from .dynamicupdate_inplace import *
+from .gather import *
+from .gelu import *
 from .group_norm import *
 from .host_load import *
 from .host_store import *

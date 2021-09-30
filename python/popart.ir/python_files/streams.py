@@ -1,5 +1,5 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-from popart.ir.globals import gcg
+from popart.ir.context import gcg
 from popart.ir.tensor import Tensor
 from popart.ir.dtypes import dtype
 
