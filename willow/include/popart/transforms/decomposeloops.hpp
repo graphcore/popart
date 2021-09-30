@@ -159,8 +159,7 @@ public:
                      const DecomposeLoopModel &model) const;
 
 private:
-  bool
-  addTopoConConditionally(Graph &graph, Op *before, Op *after, bool tied) const;
+  bool addTopoCon(Graph &graph, Op *before, Op *after, bool tied) const;
 
   DecomposeLoopOpType
   getType(const DecomposeLoopModel &model,

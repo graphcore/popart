@@ -237,17 +237,12 @@ bool isComputeLikeIOOp(std::set<ExchangeStrategy> computeLikeStrategies,
 
 } // namespace
 
-bool DecomposeLoops::addTopoConConditionally(Graph &graph,
-                                             Op *before,
-                                             Op *after,
-                                             bool tied) const {
-  OpsBeforeKey opsBeforeKey;
-  opsBeforeKey[after] = {before};
-  if (graph.isSchedulable(opsBeforeKey, true)) {
-    graph.topoCons->insert(before, after, tied);
-    return true;
-  }
-  return false;
+bool DecomposeLoops::addTopoCon(Graph &graph,
+                                Op *before,
+                                Op *after,
+                                bool tied) const {
+  graph.topoCons->insert(before, after, tied);
+  return true;
 }
 
 DecomposeLoopOpType
@@ -851,13 +846,13 @@ void DecomposeLoops::decomposeLoop(Graph &graph,
     // 1.) Constraints before the loop
     for (auto bin0 : beforeLoopBins) {
       for (Op *before : bin0.second) {
-        addTopoConConditionally(graph, before, loopOp, false);
+        addTopoCon(graph, before, loopOp, false);
       }
       for (auto bin1 : beforeLoopBins) {
         if (bin0.first < bin1.first) {
           for (Op *before : bin0.second) {
             for (Op *after : bin1.second) {
-              addTopoConConditionally(graph, before, after, false);
+              addTopoCon(graph, before, after, false);
             }
           }
         }
@@ -872,8 +867,7 @@ void DecomposeLoops::decomposeLoop(Graph &graph,
         if (bin0.first < bin1.first) {
           for (Op *before : bin0.second) {
             for (Op *after : bin1.second) {
-              addTopoConConditionally(
-                  loopOp->getCalledGraph(), before, after, false);
+              addTopoCon(loopOp->getCalledGraph(), before, after, false);
             }
           }
         }
@@ -885,13 +879,13 @@ void DecomposeLoops::decomposeLoop(Graph &graph,
     // 3.) Constraints after the loop
     for (auto bin0 : afterLoopBins) {
       for (Op *before : bin0.second) {
-        addTopoConConditionally(graph, loopOp, before, false);
+        addTopoCon(graph, loopOp, before, false);
       }
       for (auto bin1 : afterLoopBins) {
         if (bin0.first < bin1.first) {
           for (Op *before : bin0.second) {
             for (Op *after : bin1.second) {
-              addTopoConConditionally(graph, before, after, false);
+              addTopoCon(graph, before, after, false);
             }
           }
         }
