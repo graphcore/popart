@@ -183,7 +183,7 @@ public:
 
   void assertNumElements(const popx::Executablex &) const final {}
 
-  ConstVoidData in(TensorId id, int64_t, bool prefetch)final {
+  ConstVoidData in(TensorId id, int64_t, bool prefetch) final {
     py::gil_scoped_acquire acquire;
     py::array a = inputCb(id, prefetch);
     if (!isContiguous(a)) {
@@ -1742,7 +1742,7 @@ PYBIND11_MODULE(popart_core, m) {
     cls.def(py::init(&InferenceSession::createFromIr),
             py::arg("ir"),
             py::arg("deviceInfo"),
-            py::arg("name") = "inference");
+            py::arg("name") = "fromIr");
     cls.def(
         "compileAndExport",
         [](InferenceSession &session,

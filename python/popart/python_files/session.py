@@ -208,6 +208,16 @@ class InferenceSession(_InferenceSessionCore):
         if not err.isSuccessful():
             raise popart.OutOfMemoryException(err)
 
+    @classmethod
+    def fromIr(cls, ir, deviceInfo: popart.DeviceInfo,
+               name: str = "fromIr") -> 'InferenceSession':
+        self = super().__new__(cls)
+        super(InferenceSession, self).__init__(ir=ir,
+                                               deviceInfo=deviceInfo,
+                                               name=name)
+
+        return self
+
 
 class TrainingSession(_TrainingSessionCore):
     """Create a runtime class for executing an ONNX graph on a set of IPU
