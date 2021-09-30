@@ -236,21 +236,12 @@ void TopoCons::remove(Op *op) {
 }
 
 void TopoCons::remove(Op *before, Op *after) {
-
-  logging::ir::debug("Removing topological constraints from {} -> {}",
-                     before->str(),
-                     after->str());
-
   valsAfter[before].erase(after);
   valsBefore[after].erase(before);
 }
 
 // insert the topological constraint before -> after
 void TopoCons::insert(Op *before, Op *after, bool tied) {
-
-  logging::ir::debug("Inserting topological constraint from {} to {}",
-                     before->str(),
-                     after->str());
 
   if (before == after) {
     throw error("Cannot have \"a -> a\" topological constraint");
