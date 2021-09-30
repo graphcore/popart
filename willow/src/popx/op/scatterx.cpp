@@ -1,16 +1,18 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #include <popart/error.hpp>
 #include <popart/op/scatter.hpp>
+#include <popart/popx/irlowering.hpp>
 #include <popart/popx/op/scatterutilx.hpp>
 #include <popart/popx/op/scatterx.hpp>
+#include <popart/popx/op/sliceplanx.hpp>
 #include <popart/popx/opxmanager.hpp>
 #include <popart/util.hpp>
 
 #include <popops/Cast.hpp>
+#include <popops/DynamicSlice.hpp>
+#include <popops/ElementWise.hpp>
 #include <popops/Gather.hpp>
 #include <popops/Scatter.hpp>
-#include <poputil/TileMapping.hpp>
-
 #include <poputil/TileMapping.hpp>
 
 namespace popart {
@@ -31,20 +33,125 @@ concat(const std::vector<snap::Tensor> &ts, unsigned d, snap::Graph &graph) {
 
 } // unnamed namespace
 
-ScatterOpx::ScatterOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
+ScatterOpx::ScatterOpx(Op *op, Devicex *devicex)
+    : PopOpx(op, devicex), plan(), axis() {
   verifyOp<ScatterOp>(
       op, {Onnx::Operators::Scatter_9, Onnx::Operators::Scatter_11});
+  auto &sop    = getOp<ScatterOp>();
+  axis         = sop.getAxis();
+  auto options = createSlicePlanOptions(SlicePlanUsedFor::Update);
+  plan         = createSlicePlan(graph(),
+                         sop.inInfo(sop.dataInIndex()),
+                         sop.inInfo(sop.indicesInIndex()),
+                         options);
 
-  axis = dynamic_cast<ScatterOp *>(op)->getAxis();
+  inputCreatorPriority = std::numeric_limits<double>::max();
 }
 
 void ScatterOpx::grow(snap::program::Sequence &prog) const {
-  auto indices = getInTensor(ScatterOp::indicesInIndex());
-  auto data    = cloneNcopy(prog, getInTensor(ScatterOp::dataInIndex()));
-  auto values  = getInTensor(ScatterOp::updatesInIndex());
-  scatterutilx::growScatter(
-      prog, graph(), indices, values, data, axis, getDebugNameAndId("scatter"));
-  setOutTensor(ScatterOp::outIndex(), data);
+  auto dataInput = getInTensor(ScatterOp::dataInIndex());
+  auto indices   = getInTensor(ScatterOp::indicesInIndex());
+  auto values    = getInTensor(ScatterOp::updatesInIndex());
+  auto dataInfo  = inInfo(ScatterOp::dataInIndex());
+  auto uaxis     = static_cast<unsigned>(axis);
+
+  auto sliceable = popops::createSliceableTensor(graph().getPoplarGraph(),
+                                                 dataInput.elementType(),
+                                                 {dataInput.numElements(), 1},
+                                                 {0},
+                                                 {1},
+                                                 plan,
+                                                 poplar::OptionFlags(),
+                                                 debugContext("scatterOuput"));
+
+  auto out =
+      alignToAxis(snap::Tensor{sliceable, graph()}, dataInfo.shape(), uaxis);
+
+  prog.add(poplar::program::Copy(dataInput.getPoplarTensor(),
+                                 out.getPoplarTensor(),
+                                 false,
+                                 debugContext("copyToScatter")));
+  indices = indices.dimRoll(uaxis);
+  values  = values.dimRoll(uaxis);
+
+  if (indices.rank() < 2) {
+    // popops::multiUpdate requires 2-d inputs
+    indices = indices.expand({1});
+    values  = values.expand({1, 1});
+  } else {
+    auto numDataCols = dataInfo.nelms() / dataInfo.shape().at(uaxis);
+    indices = scatterutilx::linearizeIndices(*this, prog, indices, numDataCols);
+    values  = values.flatten();
+    values  = values.expand({1, 1});
+  }
+
+  // Assume indices are non-negative
+  indices = indices.reinterpret(poplar::UNSIGNED_INT);
+
+  popops::multiUpdate(graph().getPoplarGraph(),
+                      sliceable,
+                      values.getPoplarTensor(),
+                      indices.getPoplarTensor(),
+                      {0},
+                      {1},
+                      prog.getPoplarSequence(),
+                      plan,
+                      poplar::OptionFlags(),
+                      debugContext("scatter"));
+
+  setOutTensor(ScatterOp::outIndex(), out);
+}
+
+snap::Tensor
+ScatterOpx::createInputTensor(InIndex index,
+                              const poplar::DebugNameAndId &dnai) const {
+  if (index != ScatterOp::indicesInIndex() &&
+      index != ScatterOp::updatesInIndex()) {
+    throw error("ScatterOpx::createInput : Invalid index = {}", index);
+  }
+
+  auto dataInfo             = inInfo(ScatterOp::dataInIndex());
+  auto indicesInfo          = inInfo(ScatterOp::indicesInIndex());
+  auto numEntries           = static_cast<size_t>(dataInfo.nelms());
+  auto numLookups           = static_cast<size_t>(indicesInfo.nelms());
+  size_t outputSize         = 1;
+  std::vector<size_t> dims  = {0};
+  std::vector<size_t> sizes = {outputSize};
+  auto uaxis                = static_cast<unsigned>(axis);
+
+  if (index == ScatterOp::indicesInIndex()) {
+    auto indices = popops::createIndicesTensor(graph().getPoplarGraph(),
+                                               dims,
+                                               numLookups,
+                                               plan,
+                                               poplar::OptionFlags(),
+                                               dnai);
+    indices      = indices.reinterpret(popType(indicesInfo));
+    return alignToAxis(
+        snap::Tensor{indices, graph()}, indicesInfo.shape(), uaxis);
+  }
+
+  auto updatesInfo = inInfo(ScatterOp::updatesInIndex());
+  auto updates     = popops::createSliceTensor(graph().getPoplarGraph(),
+                                           popType(updatesInfo),
+                                           {numEntries, outputSize},
+                                           dims,
+                                           sizes,
+                                           numLookups,
+                                           plan,
+                                           poplar::OptionFlags(),
+                                           dnai);
+  return alignToAxis(
+      snap::Tensor{updates, graph()}, updatesInfo.shape(), uaxis);
+}
+
+InputCreatorType ScatterOpx::getInputCreatorType(InIndex index) const {
+  if (index == ScatterOp::indicesInIndex() ||
+      index == ScatterOp::updatesInIndex()) {
+    return InputCreatorType::CanCreate;
+  }
+
+  return PopOpx::getInputCreatorType(index);
 }
 
 ScatterDataGradOpx::ScatterDataGradOpx(Op *op, Devicex *devicex)
