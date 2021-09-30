@@ -152,10 +152,13 @@ void PopartLSTMGradOpx::grow(snap::program::Sequence &prog) const {
   auto forwardOutputGrad =
       getInTensor(PopartLSTMGradOp::getFwdOutputGradInIndex());
 
-  const snap::Tensor *forwardCellStateGrad = nullptr;
+  popnn::lstm::LstmState lastStepStateGrad;
+  popnn::lstm::LstmState *lastStepStateGradPtr = nullptr;
   if (hasInput(PopartLSTMGradOp::getFwdCellStateGradInIndex())) {
-    forwardCellStateGrad =
-        &getInTensor(PopartLSTMGradOp::getFwdCellStateGradInIndex());
+    lastStepStateGrad.cellState =
+        getInTensor(PopartLSTMGradOp::getFwdCellStateGradInIndex())
+            .getPoplarTensor();
+    lastStepStateGradPtr = &lastStepStateGrad;
   }
 
   auto initState   = getInitialState(prog);
@@ -175,7 +178,7 @@ void PopartLSTMGradOpx::grow(snap::program::Sequence &prog) const {
                                      forwardInput.getPoplarTensor(),
                                      forwardOutput.getPoplarTensor(),
                                      forwardOutputGrad.getPoplarTensor(),
-                                     getPoplarTensor(forwardCellStateGrad),
+                                     lastStepStateGradPtr,
                                      &inputGrad,
                                      weightsGrad,
                                      debugContext("lstmBwdWithWU"),

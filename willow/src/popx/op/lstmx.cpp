@@ -450,6 +450,13 @@ void LSTMGradOpx::grow(snap::program::Sequence &prog) const {
         lstm_op.debugName());
   }
 
+  popnn::lstm::LstmState lastStepStateGrad;
+  popnn::lstm::LstmState *lastStepStateGradPtr = nullptr;
+  if (!lstm_params.rnn.variableTimeSteps()) {
+    lastStepStateGrad.cellState = output_c_grad.getPoplarTensor();
+    lastStepStateGradPtr        = &lastStepStateGrad;
+  }
+
   auto init_state_grad = lstmBwdWithWU(graph().getPoplarGraph(),
                                        lstm_params,
                                        prog.getPoplarSequence(),
@@ -459,7 +466,7 @@ void LSTMGradOpx::grow(snap::program::Sequence &prog) const {
                                        forward_input,
                                        forward_output,
                                        output_grad_copy,
-                                       &output_c_grad.getPoplarTensor(),
+                                       lastStepStateGradPtr,
                                        &input_grad,
                                        weights_grad,
                                        debugContext("lstmBwdWithWU"),
