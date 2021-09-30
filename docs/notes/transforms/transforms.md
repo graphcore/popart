@@ -49,6 +49,7 @@ Please find below a brief description of existing transforms:
 | RandomSetup                                                       | Add random seed inputs to any `Ops` that require them.                                                                                               |
 | RemoteSetup                                                       | Assign remote buffer identities and offsets to RemoteArg tensors.                                                                                    |
 | SerializeMatMuls                                                  | Split `MatMulOps` over a given dimension in order to serialise and make memory usage more granular.                                                  |
+| StochasticRounding                                                | Assign a stochastic rounding method attribute to all Ops if stochastic rounding is enabled                                                                 |
 | StreamingMemory(1)                                                | Map ops to phases, enable caching on variables.                                                                                                      |
 | StreamingMemory(2)                                                | Enable caching on variables, map remaining ops to phases, cut graph and insert replicated tensor sharding, remote load and remote store ops.         |
 | SubgraphOutline                                                   | Extract repeated `Ops` structures into new `Graphs` and call them with `CallOps` to safe memory.                                                     |
@@ -76,6 +77,7 @@ guarantees of transforms:
 | `PSTAGE`           | Each `Op` in the main graph has a `PipelineStage` assigned to it.                                       |
 | `EPHASE`           | Each `Op` in the main graph has an `ExecutionPhase` assigned to it.                                     |
 | `BPHASE`           | Each `Op` in the main graph has a `BatchSerializedPhase` assigned to it.                                |
+| `STOCHR`           | Each `Op` in the main graph has a `StochasticRoundingMethod` assigned to it if and only if stochastic rounding is enabled.                            |
 |                    |                                                                                                         |
 
 We refer to these conditions in our list of assumptions, guarantees and preserved conditions below:
@@ -110,6 +112,7 @@ We refer to these conditions in our list of assumptions, guarantees and preserve
 | RandomSetup                                                       |                                 |                                 |                      |
 | RemoteSetup                                                       |                                 |                                 |                      |
 | SerializeMatMuls                                                  |                                 |                                 |                      |
+| StochasticRounding                                                |                                 | `STOCHR`                        | All                  |
 | StreamingMemory                                                   |                                 |                                 |                      |
 | SubgraphOutline                                                   |                                 |                                 |                      |
 |                                                                   |                                 |                                 |                      |

@@ -83,6 +83,7 @@
 #include <popart/transforms/randomsetup.hpp>
 #include <popart/transforms/remotesetup.hpp>
 #include <popart/transforms/serializematmuls.hpp>
+#include <popart/transforms/stochasticrounding.hpp>
 #include <popart/transforms/streamingmemory.hpp>
 #include <popart/transforms/subgraphoutline.hpp>
 
@@ -112,6 +113,8 @@
 
 #include <popart/alias/aliasmodel.hpp>
 #include <popart/alias/aliasmodelgrower.hpp>
+
+#include <stochasticroundingassumptionverifier.hpp>
 
 namespace popart {
 
@@ -1544,6 +1547,10 @@ void Ir::prepareImpl(const IrBundle &gb, const HashesMap &cacheEntries) {
 
   applyTransform(RemoteSetup::id(), getMainGraph());
 
+  if (getSessionOptions().enableStochasticRounding) {
+    applyTransform(StochasticRounding::id(), getMainGraph());
+  }
+
   removeIsolatedTensors(true);
 
   // confirm that all the anchor names provided
@@ -1580,6 +1587,9 @@ void Ir::prepareImpl(const IrBundle &gb, const HashesMap &cacheEntries) {
     verifyRecomputeAttributes();
     verifyExecutionContexts();
     verifyPipelineStageAttributes();
+
+    StochasticRoundingAssumptionVerifier srVerifier{*this};
+    srVerifier.verify();
   }
   // end of checks
 

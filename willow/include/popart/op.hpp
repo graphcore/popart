@@ -157,6 +157,9 @@ public:
 
     OptionalBatchSerializedPhase batchSerializedPhase;
 
+    // The desired stochastic rounding behaviour, if set.
+    OptionalStochasticRoundingMethod stochasticRoundingMethod;
+
     // If the OP should be placed on I/O tiles instead of regular tiles
     TileSet tileSet{TileSet::Compute};
 
@@ -226,6 +229,11 @@ public:
   void setVirtualGraphId(const OptionalVGraphId);
   bool hasVirtualGraphId() const;
 
+  void setPipelineStage(OptionalPipelineStage);
+  bool hasPipelineStage() const;
+  PipelineStage getPipelineStage() const;
+  OptionalPipelineStage getOptionalPipelineStage() const;
+
   const OptionalExecutionPhase getOptionalExecutionPhase() const;
   virtual ExecutionPhase getExecutionPhase() const;
   void setExecutionPhase(const OptionalExecutionPhase);
@@ -236,12 +244,13 @@ public:
   void setBatchSerializedPhase(const OptionalBatchSerializedPhase);
   bool hasBatchSerializedPhase() const;
 
-  bool isExcludedFromPattern(const Pattern *) const;
+  const OptionalStochasticRoundingMethod
+  getOptionalStochasticRoundingMethod() const;
+  virtual StochasticRoundingMethod getStochasticRoundingMethod() const;
+  void setStochasticRoundingMethod(const OptionalStochasticRoundingMethod);
+  bool hasStochasticRoundingMethod() const;
 
-  void setPipelineStage(OptionalPipelineStage);
-  bool hasPipelineStage() const;
-  PipelineStage getPipelineStage() const;
-  OptionalPipelineStage getOptionalPipelineStage() const;
+  bool isExcludedFromPattern(const Pattern *) const;
 
   virtual int getInBatchAxis(InIndex) const { return 0; }
   virtual int getOutBatchAxis(OutIndex) const { return 0; }

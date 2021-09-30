@@ -804,6 +804,33 @@ bool Op::hasBatchSerializedPhase() const {
   }
 }
 
+const OptionalStochasticRoundingMethod
+Op::getOptionalStochasticRoundingMethod() const {
+  return settings.stochasticRoundingMethod;
+}
+
+void Op::setStochasticRoundingMethod(
+    const OptionalStochasticRoundingMethod value) {
+  settings.stochasticRoundingMethod = value;
+}
+
+StochasticRoundingMethod Op::getStochasticRoundingMethod() const {
+  if (!hasStochasticRoundingMethod()) {
+    throw error("Cannot return StochasticRoundingMethod for Op {}. "
+                "It has not had this attribute set",
+                debugName());
+  }
+  return *(settings.stochasticRoundingMethod);
+}
+
+bool Op::hasStochasticRoundingMethod() const {
+  if (settings.stochasticRoundingMethod) {
+    return true;
+  } else {
+    return false;
+  }
+}
+
 OptionalPipelineStage Op::getOptionalPipelineStage() const {
   return settings.pipelineStage;
 }

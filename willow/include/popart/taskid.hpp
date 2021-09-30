@@ -49,6 +49,7 @@ public:
     FromHostTask,
     FromOpTask,
     InitBatchCounterTensorsTask,
+    InitRngSeedsTask,
     InitRandomSeedTask,
     InitRngStateTensorTask,
     InitTensorTask,

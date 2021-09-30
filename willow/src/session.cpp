@@ -24,6 +24,8 @@
 
 #include <poparttracepoint.hpp>
 
+#include <popx/rng/rngstatelowering.hpp>
+
 namespace popart {
 
 namespace {

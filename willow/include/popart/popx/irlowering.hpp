@@ -48,6 +48,9 @@ class LivenessAnalyzer;
 } // namespace liveness
 namespace popx {
 
+// Forward declaration.
+class RngStateLowering;
+
 // TODO: Find common location to share between devicex and IrLowering
 class devicex_memory_allocation_err : public popart::memory_allocation_err {
 
@@ -171,6 +174,7 @@ private:
   // Helper class to interpret results of liveness analyzer.
   std::unique_ptr<liveness::SubgraphPartitioner> subgraphPartitioner;
 
+  // Tensor used for uploading / downloading the random number state.
   snap::Tensor rngStateTensor;
 
   // Non-const tensors used to keep track of batch count, modulo the return
@@ -350,6 +354,8 @@ public:
   IrLowering(const Ir &,
              std::shared_ptr<DeviceInfo> deviceInfo,
              bool prepareGraphHasBeenCalled = false);
+  virtual ~IrLowering();
+
   const Ir &ir() const { return _ir; }
 
   PopPrograms progs;
@@ -360,6 +366,9 @@ public:
   poplar::OptionFlags gclOptions;
   poplar::OptionFlags engineOptions;
   poplar::OptionFlags reportOptions;
+
+  // Unique ptr so that rngstatelowering.hpp can be a private header.
+  std::unique_ptr<RngStateLowering> rngStateLowering;
 
   void setDevicex(Devicex *d) { dv_p = d; }
   // Used for opx creation

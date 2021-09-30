@@ -5,4 +5,6 @@
 add_popart_cpp_unit_test(basic_0_session_api_test basic_0_session_api_test.cpp)
 
 add_popart_py_unit_test(reset_host_weights_test reset_host_weights_test.py)
-add_popart_py_unit_test(rng_test rng_test.py VARIANTS Hw)
+
+# TODO T48494: re-enable test.
+# add_popart_py_unit_test(rng_test rng_test.py VARIANTS Hw)

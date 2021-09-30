@@ -116,6 +116,8 @@ using OptionalPipelineStage        = BasicOptional<PipelineStage, 3>;
 using OptionalExecutionPhase       = BasicOptional<ExecutionPhase, 5>;
 using OptionalBatchSerializedPhase = BasicOptional<BatchSerializedPhase, 7>;
 using OptionalTensorLocation       = BasicOptional<TensorLocation, 9>;
+using OptionalStochasticRoundingMethod =
+    BasicOptional<StochasticRoundingMethod, 10>;
 
 template <typename T, uint32_t V>
 std::ostream &operator<<(std::ostream &ost, const BasicOptional<T, V> &bo) {

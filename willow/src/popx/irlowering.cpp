@@ -79,10 +79,18 @@
 #include <popart/popx/op/ipucopyx.hpp>
 #include <popart/tensornames.hpp>
 
+#include <popx/rng/rngstatelowering.hpp>
+
 #include <poparttracepoint.hpp>
 
 #include <stepiosplitter.hpp>
 #include <popart/subgraphpartitioner.hpp>
+
+#include <popops/ElementWise.hpp>
+#include <popops/Expr.hpp>
+#include <popops/Reduce.hpp>
+
+namespace pe = popops::expr;
 
 namespace popart {
 namespace popx {
@@ -332,7 +340,7 @@ IrLowering::IrLowering(const Ir &ir,
     : _ir(ir), deviceInfo(deviceInfo_), progressLogger(ir.getSessionOptions()),
       prepareGraphHasBeenCalled_(prepareGraphHasBeenCalled),
       tileCounterGraphConstVar(0), tileCounterGraphScalarVar(-1), tensors_(ir),
-      progs(PopPrograms(this)) {
+      progs(PopPrograms(this)), rngStateLowering() {
   POPART_TRACEPOINT();
 
   // Set the opxTrace flag based on the environment variable
@@ -369,6 +377,8 @@ IrLowering::IrLowering(const Ir &ir,
     gclOptions.set("maxBytesPerTile", val);
   }
 }
+
+IrLowering::~IrLowering() = default;
 
 std::map<Op *, int, POpCmp> IrLowering::getMainGraphOpSeriesNums() const {
   std::map<Op *, int, POpCmp> nums;
@@ -1059,31 +1069,46 @@ PriTask IrLowering::initRandomSeed() {
     logging::devicex::debug("Initializing random seed.");
     SequenceMap seqs(graph());
     auto &prog = seqs.getSequence(&progs.setRandomSeedFromHostFragment());
-    auto &seed = tensors_.get(streamedSeedId);
-    // Set the seed to the same value for each replica. When combined with
-    // Poplar Engine Option "target.deterministicWorkers":"portable" this should
-    // ensure the same stochastic rounding on each replica.
-    poprand::setSeed(graph().getPoplarGraph(),
-                     seed.getPoplarTensor(),
-                     0,
-                     prog.getPoplarSequence(),
-                     logging::format("{}/set", streamedSeedId));
 
-    // After setting the seed, offset the tensor by replication index.
-    // This seed will be used for random operations, such as Dropout, and is
-    // required to provide distinct behaviour for each replia.
+    // NOTE: The `streamedSeedId` tensor is a 2xUINT32 tensor streamed from the
+    // host to the device and serves as the basis of two mechanisms:
+    //
+    // - Firstly, it is used as a base value to compute explicit seed tensor
+    //   values for random ops in the IR. This mechanism is used instead of
+    //   relying on the IPU's random state so that random Ops are deterministic
+    //   in the case of recomputation.
+    // - Secondly, we use `streamSeedId` to derive two RNG states on the device
+    //   using RngStateLowering.
+
+    auto &seed = tensors_.get(streamedSeedId);
+
+    // Set the RNG state based on the replica-identical seed.
+    if (!rngStateLowering) {
+      throw internal_error("[IrLowering] Member 'rngStateLowering' unexpected "
+                           "not set");
+    }
+
+    rngStateLowering->lowerInitRngStatesFromSeed(
+        prog, {seed.getPoplarTensor(), graph()}, "initRngStatesFromSeed");
+
+    // Now, change `streamedSeedId` in a way that is distinct for each replica
+    // so that 1) the explicit seeds for random ops derived from
+    // `streamedSeedId` are now replica distinct and 2) we can set the RNG
+    // state to it's natural resting state: replica differing.
+
     auto offset = graph().getPoplarGraph().addReplicationIndexConstant();
     graph().getPoplarGraph().setTileMapping(offset, 0);
     popops::addInPlace(graph().getPoplarGraph(),
                        seed[0].getPoplarTensor(),
                        offset,
                        prog.getPoplarSequence());
+
     return seqs;
   };
 
   std::vector<PriTaskDependency> deps;
   deps.push_back(taskWhichCreates(streamedSeedId));
-  // Stream the seed tensor to device before using to set PRNGs
+  // Stream the seed tensor to device before using to set RNGs
   deps.push_back({fromHostTaskId(streamedSeedId), DependencyType::Scheduler});
 
   return {
@@ -1981,6 +2006,7 @@ IrLowering::opTasks(Op *op, double priority, TaskId prevOpTaskId) {
           subgraphPart);
       // Record each scope task fragment separately first.
       growOpx(opx, seqs[&progs.scopeFragment(containingGraph, subgraphPart)]);
+
     } else if (opts.implicitPipeliningEnabled()) {
       pipelinedOpTaskFunc(opTaskId(op), op, seqs);
     } else {
@@ -2114,12 +2140,17 @@ IrLowering::opTasks(Op *op, double priority, TaskId prevOpTaskId) {
 
 void IrLowering::growOpx(PopOpx *opx,
                          SequenceMap::SequenceInterval seqInterval) {
+
+  if (!rngStateLowering) {
+    throw internal_error("[IrLowering] Member 'rngStateLowering' unexpected "
+                         "not set");
+  }
+
   logging::devicex::trace("Calling growOpx for Op {} with debugName {}",
                           opx->op_p->str(),
                           opx->op_p->debugName());
 
-  auto seqIt = seqInterval.first;
-
+  auto seqIt             = seqInterval.first;
   auto printTensorForOpx = [this, opx, &seqIt](TensorId id,
                                                snap::Tensor tensor) {
     if (printTensorIds.find(id) != printTensorIds.end() &&
@@ -2188,20 +2219,34 @@ void IrLowering::growOpx(PopOpx *opx,
     }
   }
 
+  auto begin = subgraphPartitioner->getOpSubgraphPartBegin(opx->op_p);
+  auto end   = subgraphPartitioner->getOpSubgraphPartEnd(opx->op_p);
+
   // Grow code for the op into a separate vector, because we may decide to
   // now include code for this in the poplar program. But we need to grow it
   // in any case.
   std::vector<snap::program::Sequence> seqVec;
 
+  // Add at least one Seq, so we can grow RNG/SR state changes.
+  std::stringstream ss;
+  ss << opx->op_p->getGraph().id.str() << "/" << begin;
+  seqVec.resize(1,
+                snap::program::Sequence(opx->debugContext(ss.str()), graph()));
+
+  // Lower any pre-Op RNG state logic.
+  rngStateLowering->lowerSetRngState(seqVec.front(), opx);
+
+  // Lower the Op.
   {
     const auto growTimeTracker = ir().timePartitionLogger().scopedStopwatch(
         "Lowering ops to poplar (\"grow\" methods)");
     opx->grow(seqVec);
   }
 
+  // Lower any post-Op RNG state logic.
+  rngStateLowering->lowerGetRngState(seqVec.back(), opx);
+
   // Sanity check: did the op grow over the correct number of subgraph parts?
-  auto begin = subgraphPartitioner->getOpSubgraphPartBegin(opx->op_p);
-  auto end   = subgraphPartitioner->getOpSubgraphPartEnd(opx->op_p);
   if (seqVec.size() != (end - begin)) {
     throw internal_error("Expected {} to lower into {} subgraph parts (got {})",
                          opx->op_p->debugName(),
@@ -2778,6 +2823,7 @@ void IrLowering::prepareGraph() {
 
   initPoplarGraph();
   progs.initWithSnapGraph(graph());
+  rngStateLowering = std::make_unique<RngStateLowering>(*this, graph());
 
   logging::devicex::info("Poplar graph initialised");
 

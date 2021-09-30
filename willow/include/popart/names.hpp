@@ -74,6 +74,36 @@ static constexpr const BatchSerializedPhase unusedBatchSerializedPhase = -2;
 
 static constexpr const OpxGrowPartId unusedGrowPartId = -1;
 
+/**
+ * Used to describe the stochastic rounding which is applied to the output(s) of
+ * an Op. See also `docs/notes/ir/attributes/stochasticroundingmethod.md`
+ **/
+enum StochasticRoundingMethod {
+  /// Apply stochastic rounding with a replica-local seed. That is, stochastic
+  /// rounding performed by an Op on one replica is nominally different to
+  /// stochastic rounding performed by the same Op on another replica. Use this
+  /// setting for Ops where you want to apply stochastic rounding but you cannot
+  /// meet the condition of StochasticRoundingMethod::IdenticalSeeds. For
+  /// example, this setting can be useful for gradient accumulation steps.
+  DifferingSeeds = 1,
+  /// Apply stochastic rounding with a RNG state (the value of
+  /// poplar::getHwSeeds) that is identical across replicas. Use this option on,
+  /// e.g., the weight update step to ensure that the weight tensor on each
+  /// replica has stochastic rounding applied to it in the same way and there is
+  /// no weight drift.
+  ///
+  /// REQUIREMENT: The ability to provide an RNG state (the value of
+  /// poplar::getHwSeeds) that is identical on each replica relies on all Ops
+  /// that use this setting to behave in a way that does not violate this
+  /// property for Ops that follow it. More formally, you must only apply this
+  /// setting to Ops for which you can guarantee that if the RNG state is the
+  /// same across replicas before the Op is executed then the RNG state is still
+  /// the same on all replicas after the Op is done executing. A typically
+  /// sufficient (but not necessary) condition is that all input tensors of
+  /// the Op have the same value across replicas.
+  IdenticalSeeds = 2
+};
+
 using StashIndex = int64_t;
 
 // The identifier for a remote buffer

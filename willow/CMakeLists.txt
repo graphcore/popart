@@ -125,6 +125,7 @@ set(patterns_tgutil_sources
 
 # poplar backend op specific:
 file(GLOB x_sources src/popx/*cpp)
+file(GLOB x_rng_sources src/popx/rng/*cpp)
 file(GLOB opx_sources src/popx/op/*cpp)
 file(GLOB opx_dyn_sources src/popx/op/dynamic/*cpp)
 file(GLOB opx_exc_sources src/popx/op/exchange/*cpp)
@@ -150,6 +151,7 @@ set(sources
 set(sources
   ${sources}
   ${x_sources}
+  ${x_rng_sources}
   ${opx_sources}
   ${opx_dyn_sources}
   ${opx_exc_sources}
