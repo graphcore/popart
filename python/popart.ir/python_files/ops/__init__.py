@@ -11,6 +11,7 @@ from .gelu import *
 from .group_norm import *
 from .host_load import *
 from .host_store import *
+from .ipu_copy import *
 from .logical_and import *
 from .logical_not import *
 from .logical_or import *
