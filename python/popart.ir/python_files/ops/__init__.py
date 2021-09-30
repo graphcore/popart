@@ -1,6 +1,7 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 from .add import *
 from .cast import *
+from .call import *
 from .div import *
 from .gather import *
 from .gelu import *
