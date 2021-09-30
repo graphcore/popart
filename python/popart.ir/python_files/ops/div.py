@@ -1,6 +1,6 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 import popart._internal.ir as _ir
-from popart.ir.globals import gcg
+from popart.ir.context import get_current_context
 from popart.ir.tensor import Tensor
 from .utils import check_in_graph
 
@@ -21,12 +21,13 @@ def div(x1: Tensor, x2: Tensor) -> Tensor:
         mul: Tensor
             The division of x1 by x2
     """
-    g = gcg()
+    ctx = get_current_context()
+    g = ctx.graph
     pb_g = g._pb_graph
 
     check_in_graph(g, x1, x2)
 
-    settings = _ir.Settings(pb_g, 'div')
+    settings = ctx._get_op_settings('div')
     opid = _ir.OperatorIdentifier("ai.onnx", "Div", 7, _ir.NumInputs(2, 2), 1)
     op = pb_g.createConnectedOp_DivOp(
         {

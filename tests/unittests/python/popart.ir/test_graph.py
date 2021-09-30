@@ -1,10 +1,6 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-
 import pytest
-import numpy as np
-
 import popart.ir as pir
-from popart.ir.globals import gcg
 
 
 def test_context_manager():
@@ -14,14 +10,14 @@ def test_context_manager():
     exp_prefix = 'Trying to access a graph, but no graph has been selected.'
 
     with pytest.raises(RuntimeError) as excinfo:
-        gcg()
+        pir.gcg()
     assert str(excinfo.value).startswith(exp_prefix)
 
     with main:
-        assert gcg() == main
+        assert pir.gcg() == main
 
     with pytest.raises(RuntimeError) as excinfo:
-        gcg()
+        pir.gcg()
     assert str(excinfo.value).startswith(exp_prefix)
 
 

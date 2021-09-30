@@ -1,6 +1,6 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 import popart._internal.ir as _ir
-from popart.ir.globals import gcg
+from popart.ir.context import get_current_context
 from popart.ir.graph import Graph
 from popart.ir.tensor import Tensor
 
@@ -40,7 +40,8 @@ def call(subgraph: Graph,
     """
     subgraph_in_to_parent_in = subgraph_in_to_parent_in if subgraph_in_to_parent_in is not None else {}
 
-    g = gcg()
+    ctx = get_current_context()
+    g = ctx.graph
     pb_g = g._pb_graph
     pb_sg = subgraph._pb_graph
 
@@ -50,7 +51,7 @@ def call(subgraph: Graph,
                                   0)
 
     pb_callop = pb_g.createOp_CallOp(opid, subgraph._pb_graph,
-                                     _ir.Settings(pb_g, op_name))
+                                     ctx._get_op_settings(op_name))
 
     # 1. Connect explictly passed inputs. These would have been created first
     #    by ir.get_graph, so we do them first. ir.get_graph will have created

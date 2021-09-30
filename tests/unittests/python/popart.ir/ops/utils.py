@@ -1,10 +1,8 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
+from typing import Type, List
+
 import popart.ir as pir
 import popart._internal.ir as _ir
-
-from typing import Type
-
-__all__ = ['contains_op_of_type']
 
 
 def contains_op_of_type(opType: str, PbOpType: Type[_ir.Op],

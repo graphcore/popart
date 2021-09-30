@@ -1,6 +1,6 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 import popart._internal.ir as _ir
-from popart.ir.globals import gcg
+from popart.ir.context import get_current_context
 from popart.ir.tensor import Tensor
 from .utils import check_in_graph
 
@@ -20,12 +20,13 @@ def mul(lhs: Tensor, rhs: Tensor) -> Tensor:
         mul: Tensor
             The product of lhs and rhs
     """
-    g = gcg()
+    ctx = get_current_context()
+    g = ctx.graph
     pb_g = g._pb_graph
 
     check_in_graph(g, lhs, rhs)
 
-    settings = _ir.Settings(pb_g, 'mul')
+    settings = ctx._get_op_settings('mul')
     opid = _ir.OperatorIdentifier("ai.onnx", "Mul", 7, _ir.NumInputs(2, 2), 1)
 
     op = pb_g.createConnectedOp_MulOp(

@@ -1,7 +1,7 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 import popart._internal.ir as _ir
 from popart.ir import dtypes
-from popart.ir.globals import gcg
+from popart.ir.context import get_current_context
 from popart.ir.tensor import Tensor
 from .utils import check_in_graph, cast_if_needed
 
@@ -21,7 +21,8 @@ def logical_or(lhs: Tensor, rhs: Tensor) -> Tensor:
         out: Tensor
             The value (lhs OR rhs)
     """
-    g = gcg()
+    ctx = get_current_context()
+    g = ctx.graph
     pb_g = g._pb_graph
 
     check_in_graph(g, lhs, rhs)
@@ -29,7 +30,7 @@ def logical_or(lhs: Tensor, rhs: Tensor) -> Tensor:
     lhs = cast_if_needed(lhs, dtypes.bool)
     rhs = cast_if_needed(rhs, dtypes.bool)
 
-    settings = _ir.Settings(pb_g, 'or')
+    settings = ctx._get_op_settings('or')
     opid = _ir.OperatorIdentifier("ai.onnx", "Or", 7, _ir.NumInputs(2, 2), 1)
     op = pb_g.createConnectedOp_OrOp(
         {

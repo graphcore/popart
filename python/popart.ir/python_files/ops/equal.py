@@ -1,6 +1,6 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 import popart._internal.ir as _ir
-from popart.ir.globals import gcg
+from popart.ir.context import get_current_context
 from popart.ir.tensor import Tensor
 from .utils import check_in_graph
 
@@ -19,12 +19,13 @@ def equal(lhs: Tensor, rhs: Tensor) -> Tensor:
         out: Tensor
             The value (lhs == rhs)
     """
-    g = gcg()
+    ctx = get_current_context()
+    g = ctx.graph
     pb_g = g._pb_graph
 
     check_in_graph(g, lhs, rhs)
 
-    settings = _ir.Settings(pb_g, 'equal')
+    settings = ctx._get_op_settings('equal')
     opid = _ir.OperatorIdentifier("ai.onnx", "Equal", 7, _ir.NumInputs(2, 2),
                                   1)
     op = pb_g.createConnectedOp_AndOp(

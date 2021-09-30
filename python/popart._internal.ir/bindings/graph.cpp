@@ -15,6 +15,7 @@
 #include <popart/graphid.hpp>
 #include <popart/ir.hpp>
 #include <popart/op/call.hpp>
+#include <popart/topocons.hpp>
 
 namespace py = pybind11;
 
@@ -23,6 +24,10 @@ namespace _internal {
 namespace ir {
 
 void bindGraph(py::module &m) {
+  py::class_<TopoCons> tc(m, "TopoCon");
+
+  tc.def("insert", py::overload_cast<Op *, Op *, bool>(&TopoCons::insert));
+
   py::class_<Graph> g(m, "Graph");
 
   g.def(py::init<Ir &, const GraphId &>())
@@ -110,6 +115,10 @@ void bindGraph(py::module &m) {
            })
       .def("getIr", py::overload_cast<>(&Graph::getIr, py::const_))
       .def(
+          "topoCons",
+          [](Graph &self) { return self.topoCons.get(); },
+          py::return_value_policy::reference)
+      .def(
           "getOps",
           [](const Graph &self) -> std::vector<Op *> {
             const auto nOps = self.getOps().size();
@@ -122,6 +131,17 @@ void bindGraph(py::module &m) {
                            [](auto &id_op) { return id_op.second.get(); });
             return ops;
           },
+          py::return_value_policy::reference)
+      .def(
+          "getOpSchedule",
+          [](const Graph &self,
+             bool requireOptimalSchedule) -> std::vector<Op *> {
+            return self.getOpSchedule({},
+                                      requireOptimalSchedule
+                                          ? RequireOptimalSchedule::Yes
+                                          : RequireOptimalSchedule::No);
+          },
+          py::arg("requireOptimalSchedule") = true,
           py::return_value_policy::reference);
 
   bindCreateOpFunctionToGraphClass(g);

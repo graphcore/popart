@@ -1,7 +1,7 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 from typing import Optional
 import popart._internal.ir as _ir
-from popart.ir.globals import gcg
+from popart.ir.context import get_current_context
 from popart.ir.tensor import Tensor
 from .utils import check_in_graph
 
@@ -27,12 +27,13 @@ def group_norm(x: Tensor,
         out: Tensor
             The group normalised Tensor.
     """
-    g = gcg()
+    ctx = get_current_context()
+    g = ctx.graph
     pb_g = g._pb_graph
 
     check_in_graph(g, x, weight, bias)
 
-    settings = _ir.Settings(pb_g, 'group_norm')
+    settings = ctx._get_op_settings('group_norm')
     opid = _ir.OperatorIdentifier("ai.graphcore", "GroupNorm", 1,
                                   _ir.NumInputs(3, 3), 3)
     op = pb_g.createConnectedOp_GroupNormOp(

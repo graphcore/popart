@@ -1,7 +1,7 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 import popart._internal.ir as _ir
 from popart.ir.dtypes import dtype
-from popart.ir.globals import gcg
+from popart.ir.context import get_current_context
 from popart.ir.tensor import Tensor
 from .utils import check_in_graph
 
@@ -21,12 +21,13 @@ def cast(t: Tensor, data_type: dtype) -> Tensor:
         add: Tensor
             The sum of lhs and rhs
     """
-    g = gcg()
+    ctx = get_current_context()
+    g = ctx.graph
     pb_g = g._pb_graph
 
     check_in_graph(g, t)
 
-    settings = _ir.Settings(pb_g, 'cast')
+    settings = ctx._get_op_settings('cast')
     opid = _ir.OperatorIdentifier("ai.onnx", "Cast", 9, _ir.NumInputs(1, 1), 1)
     op = pb_g.createConnectedOp_CastOp(
         {0: t.id},

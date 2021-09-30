@@ -1,7 +1,7 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 from typing import Optional, Tuple
 import popart._internal.ir as _ir
-from popart.ir.globals import gcg
+from popart.ir.context import get_current_context
 from popart.ir.tensor import Tensor
 from .utils import check_in_graph, convert_optional_float
 
@@ -33,12 +33,13 @@ def gather(t: Tensor,
             The maximum proportion of available memory on each tile that this layer
             should consume temporarily during the course of the operation.
             Defaults to 1.0 if not set globally.
-                
+
     Returns:
         gather: Tensor
             The gathered elements concatenated.
     """
-    g = gcg()
+    ctx = get_current_context()
+    g = ctx.graph
     pb_g = g._pb_graph
 
     check_in_graph(g, t)
@@ -49,7 +50,7 @@ def gather(t: Tensor,
 
     opid = _ir.OperatorIdentifier("ai.graphcore", "Gather", 11,
                                   _ir.NumInputs(2, 2), 1)
-    settings = _ir.Settings(pb_g, "gather")
+    settings = ctx._get_op_settings("gather")
     op = pb_g.createConnectedOp_GatherOp(
         {
             0: t.id,
@@ -99,7 +100,8 @@ def tied_gather(t: Tensor,
             The gathered elements concatenated.
     """
 
-    g = gcg()
+    ctx = get_current_context()
+    g = ctx.graph
     pb_g = g._pb_graph
 
     check_in_graph(g, t)
@@ -108,7 +110,7 @@ def tied_gather(t: Tensor,
     available_memory_proportion = convert_optional_float(
         available_memory_proportion)
 
-    settings = _ir.Settings(pb_g, "tiedgather")
+    settings = ctx._get_op_settings("tiedgather")
     op = pb_g.createConnectedOp_TiedGatherOp(
         {
             0: t.id,

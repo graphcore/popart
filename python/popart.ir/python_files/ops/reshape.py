@@ -2,7 +2,7 @@
 from typing import Optional, Tuple
 import numpy as np
 import popart._internal.ir as _ir
-from popart.ir.globals import gcg
+from popart.ir.context import get_current_context
 from popart.ir.tensor import Tensor
 from .utils import check_in_graph
 
@@ -27,7 +27,8 @@ def reshape(t: Tensor, shape: Tuple[int, ...]) -> Tensor:
         out: Tensor
             The reshaped tensor
     """
-    g = gcg()
+    ctx = get_current_context()
+    g = ctx.graph
     pb_g = g._pb_graph
 
     check_in_graph(g, t)
@@ -42,7 +43,7 @@ def reshape(t: Tensor, shape: Tuple[int, ...]) -> Tensor:
             f"Reshape shape can contain at most one '-1' value. Provided {shape}."
         )
 
-    settings = _ir.Settings(pb_g, 'reshape')
+    settings = ctx._get_op_settings('reshape')
     opid = _ir.OperatorIdentifier("ai.onnx", "Reshape", 5, _ir.NumInputs(1, 1),
                                   1)
     op = pb_g.createConnectedOp_ReshapeOp(

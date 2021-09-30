@@ -29,7 +29,8 @@ void bindOp(py::module &m) {
       .def("copy", &Op::Settings::copy)
       // Not binding setFromAttributes as it is ONNX based.
       .def_readwrite("name", &Op::Settings::name)
-      .def("getIr", &Op::Settings::getIr);
+      .def("getIr", &Op::Settings::getIr)
+      .def_readwrite("vgraphId", &Op::Settings::vgraphId);
   py::class_<Op, PyOp<>, std::shared_ptr<Op>>(m, "Op")
       .def(py::init<const OperatorIdentifier &, const Op::Settings &>())
       .def_readwrite("id", &Op::id)

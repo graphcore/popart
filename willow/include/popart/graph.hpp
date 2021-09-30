@@ -283,11 +283,6 @@ public:
   std::pair<bool, std::vector<Op *>> getDirectViewChain(Tensor *from,
                                                         Tensor *to);
 
-private:
-  std::vector<Op *>
-  growGradOps(Op *nonGradOp, const std::map<TensorId, TensorId> &gradTensorMap);
-
-public:
   std::unique_ptr<TopoCons> topoCons;
   const GraphId id;
 
@@ -301,6 +296,9 @@ public:
   void setOnnxToOnnx(std::unique_ptr<onnxpasses::IOnnxToOnnx>);
 
 private:
+  std::vector<Op *>
+  growGradOps(Op *nonGradOp, const std::map<TensorId, TensorId> &gradTensorMap);
+
   std::unique_ptr<Tensors> up_tensors;
   std::map<OpId, std::unique_ptr<Op>> ops;
   std::vector<TensorId> graph_inputs;

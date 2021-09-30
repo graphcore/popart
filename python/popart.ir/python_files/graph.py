@@ -1,11 +1,12 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 """Definition of a class that represents graphs in the PopART IR."""
 from typing import TYPE_CHECKING, Any, Optional, Tuple
+from contextlib import contextmanager
 
 import popart._internal.ir as _ir
 
 from popart.ir.tensor import Tensor, Variable, Constant
-from popart.ir.globals import pop_current_graph, push_current_graph
+from popart.ir.context import get_current_context
 
 if TYPE_CHECKING:
     from popart.ir.ir import Ir
@@ -28,7 +29,6 @@ class Graph:
         """
         # The following attributes and their types are declared here for the
         # sake of Python language servers.
-        self._debug_name: str = None
         self._pb_graph: _ir.Graph = None
 
         raise TypeError(f"Cannot create {self.__module__}.Graph instances "
@@ -110,9 +110,9 @@ class Graph:
             for t in self._pb_graph.getTensorsOfType(_ir.TensorType.Const))
 
     def __enter__(self):
-        push_current_graph(self)
+        get_current_context().push_graph(self)
         return self
 
     def __exit__(self, *exc):
-        pop_current_graph()
+        get_current_context().pop_graph()
         return False

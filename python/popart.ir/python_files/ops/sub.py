@@ -1,6 +1,6 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 import popart._internal.ir as _ir
-from popart.ir.globals import gcg
+from popart.ir.context import get_current_context
 from popart.ir.tensor import Tensor
 from .utils import check_in_graph
 
@@ -15,12 +15,13 @@ def sub(lhs: Tensor, rhs: Tensor) -> Tensor:
         Returns:
             add: Tensor
                 The value of (lhs - rhs)"""
-    g = gcg()
+    ctx = get_current_context()
+    g = ctx.graph
     pb_g = g._pb_graph
 
     check_in_graph(g, lhs, rhs)
 
-    settings = _ir.Settings(pb_g, 'sub')
+    settings = ctx._get_op_settings('sub')
     opid = _ir.OperatorIdentifier("ai.onnx", "Sub", 7, _ir.NumInputs(2, 2), 1)
     op = pb_g.createConnectedOp_SubtractOp(
         {
