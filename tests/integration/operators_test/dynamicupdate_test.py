@@ -1,19 +1,9 @@
 # Copyright (c) 2020 Graphcore Ltd. All rights reserved.
-import itertools
 import numpy as np
 import popart
 import torch
-import pytest
-import torch.nn.functional as F
 from op_tester import op_tester
 from unittest.mock import Mock
-
-# importing test_session and test_util requires adding to sys.path
-import sys
-from pathlib import Path
-sys.path.append(str(Path(__file__).resolve().parent.parent))
-from test_session import PopartTestSession
-import test_util as tu
 
 
 # Test a chain of non-overlapping dynamic updates
@@ -59,6 +49,45 @@ def test_dynamicupdate(op_tester):
     def reference(ref_data):
         result = []
         result.append(np.concatenate((data0, data1, data2), axis=1))
+        return result
+
+    op_tester.setPatterns(popart.PatternsLevel.All, enableRuntimeAsserts=False)
+    op_tester.run(init_builder, reference, 'infer')
+
+
+# Test dynamic update for multiple dimensions that don't divide the input evenly
+def test_dynamicupdate_multi_dim(op_tester):
+    data = np.random.rand(5, 12, 7).astype(np.float32)
+    data_update = np.random.rand(3, 4, 5).astype(np.float32)
+    axes = [0, 1, 2]
+    indices = [1, 3, 2]
+    sizes = data_update.shape
+
+    def init_builder(builder):
+        t_update = builder.addInputTensor(data_update)
+        result = []
+        out = builder.addInputTensor(data)
+
+        assert builder.getTensorShape(out) == list(data.shape)
+
+        index = builder.addInputTensor(np.asarray(indices, np.uint32))
+        out = builder.aiGraphcore.dynamicupdate([out, index, t_update],
+                                                axes=axes,
+                                                sizes=sizes,
+                                                noOverlap=True)
+
+        assert builder.getTensorShape(out) == list(data.shape)
+
+        builder.addOutputTensor(out)
+        result.append(out)
+        return result
+
+    def reference(_):
+        result = []
+        data[indices[0]:(indices[0] + sizes[0]), indices[1]:(
+            indices[1] + sizes[1]), indices[2]:(indices[2] +
+                                                sizes[2])] = data_update
+        result.append(data)
         return result
 
     op_tester.setPatterns(popart.PatternsLevel.All, enableRuntimeAsserts=False)

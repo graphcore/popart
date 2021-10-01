@@ -41,11 +41,11 @@ namespace popart {
  * \a stop - will be equal \a index + \a size for the respective axis
  * \a step - will equal 1
  *
- * Limitation:
+ * Limitations:
  * Assuming we would like to slice A with dimension (4, 3)
  * - Step other than 1 is not supported (i.e. A[::2,:] is not supported)
  * - Negative slicing is not supported (i.e. A[:-1,:] is not supported)
- * - \a stop larger than the size of the axis is not supported
+ * - \a stop greater than the size of the axis is not supported
  *  (i.e. A[:5,:] is not supported)
  *
  * Example:
@@ -111,6 +111,15 @@ public:
   static InIndex getInIndex() { return 0; }
 };
 
+/**
+ * Dynamic Binary Base Op
+ *
+ * Base class for operators acting on a run-time selectable slice of a tensor.
+ * The word "binary" refers to the fact that the operator takes two tensors as
+ * input.
+ *
+ * \see DynamicBaseOp for details
+ **/
 class DynamicBinaryBaseOp : public DynamicBaseOp {
 public:
   DynamicBinaryBaseOp(const OperatorIdentifier &_opid,
@@ -133,6 +142,7 @@ public:
   mapInplaceProposal(const AliasModel &, OperatorIdentifier) const override;
 
 protected:
+  /// The TensorInfo (data_type, shape and meta_shape) for the update tensor
   TensorInfo updateInInfo;
 };
 
@@ -153,6 +163,15 @@ public:
   view::Regions modifies(InIndex) const final;
 };
 
+/**
+ * Dynamic Ternary Base Op
+ *
+ * Base class for operators acting on a run-time selectable slice of a tensor.
+ * The word "ternary" refers to the fact that the operator takes three tensors
+ * as input.
+ *
+ * \see DynamicBaseOp for details
+ **/
 class DynamicTernaryBaseOp : public DynamicBinaryBaseOp {
 public:
   DynamicTernaryBaseOp(const OperatorIdentifier &_opid,

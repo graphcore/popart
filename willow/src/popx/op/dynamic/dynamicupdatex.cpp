@@ -95,6 +95,9 @@ DynamicUpdateOpx::createInputTensor(InIndex index,
                                     const poplar::DebugNameAndId &dnai) const {
   auto &op = getOp<DynamicTernaryBaseOp>();
 
+  // Create the slice we want to update for
+  // NOTE: Do not confuse "InIndex index" with the Tensor we usually call
+  // "index"
   if (index == DynamicTernaryBaseOp::getInIndex()) {
     if (dv_p->lowering().tensors().contains(
             op_p->input->id(DynamicTernaryBaseOp::getUpdateInIndex()))) {
@@ -113,6 +116,9 @@ DynamicUpdateOpx::createInputTensor(InIndex index,
     }
   }
 
+  // Create the updatee
+  // NOTE: Do not confuse "InIndex index" with the Tensor we usually call
+  // "index"
   if (index == DynamicTernaryBaseOp::getUpdateInIndex()) {
     if (dv_p->lowering().tensors().contains(
             op_p->input->id(DynamicTernaryBaseOp::getInIndex()))) {
@@ -123,13 +129,25 @@ DynamicUpdateOpx::createInputTensor(InIndex index,
       std::vector<size_t> paxes(op.getAxes().begin(), op.getAxes().end());
       std::vector<size_t> psizes(op.getSizes().begin(), op.getSizes().end());
 
+      // We ensure that the slices from createSliceableTensorFromSlice have
+      // identical layout.
+      // The slices will be spread across fewer tiles, but we will avoid
+      // huge exchange copies as the output layout does not depend on the index
+      // The output layout will match regardless of the slice size and index at
+      // runtime
+      std::vector<size_t> begin(updateShape.size(), 0);
+      std::vector<size_t> end = vector_cast<size_t>(updateShape);
       std::vector<size_t> numSlices(paxes.size(), 0);
       for (size_t i = 0; i < paxes.size(); ++i) {
-        numSlices[i] = updateShape[paxes[i]] / psizes[i];
+        numSlices[i]  = updateShape[paxes[i]];
+        end[paxes[i]] = 1;
       }
       return snap::Tensor{
-          popops::createSliceableTensorFromSlice(
-              graph().getPoplarGraph(), inTensor, paxes, numSlices, dnai),
+          popops::createSliceableTensorFromSlice(graph().getPoplarGraph(),
+                                                 inTensor.slice(begin, end),
+                                                 paxes,
+                                                 numSlices,
+                                                 dnai),
           graph()};
     }
   }
