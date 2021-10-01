@@ -6,6 +6,17 @@
 
 namespace popart {
 
+/**
+ * Dynamic Slice Op
+ *
+ * This class takes two Tesnors as input (as indicated in \see
+ * opidentifier.hpp)
+ * 1. The Tensor to slice from
+ * 2. The index of the starting point of the slice
+ *    ( \see DynamicBaseOp for explanation)
+ *
+ * The output is the sliced tensor
+ **/
 class DynamicSliceOp : public DynamicSliceBaseOp {
 public:
   DynamicSliceOp(const OperatorIdentifier &_opid,

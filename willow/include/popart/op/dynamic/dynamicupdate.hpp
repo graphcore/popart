@@ -6,6 +6,20 @@
 
 namespace popart {
 
+/**
+ * Dynamic Update Op
+ *
+ * This class takes three Tesnors as input (as indicated in \see
+ * opidentifier.hpp)
+ * 1. The Tensor to be updated
+ * 2. The index of the tensor to be updated
+ *  ( \see DynamicBaseOp for explanation)
+ * 3. The Tensor to update with (must match dimension with (index, axes, sizes))
+ *
+ * The output is the updated Tensor
+ *
+ * \see DynamicTernaryBaseOp for details
+ **/
 class DynamicUpdateOp : public DynamicTernaryBaseOp {
 public:
   DynamicUpdateOp(const OperatorIdentifier &_opid,
