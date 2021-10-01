@@ -226,6 +226,44 @@ def test_host_store_op(connected: bool) -> None:
     assert op.inId(0) == in0.id
 
 
+@pytest.mark.parametrize("source,destination", ([0, 1], [2, 4], [3, 1]))
+@pytest.mark.parametrize("connected", [True, False])
+def test_ipu_copy_op(source: int, destination: int, connected: bool) -> None:
+    """Test the ipu copy op
+
+    Args:
+        source (int): Source IPU
+        destination (int): Destination IPU
+        connected (bool): Whether to use the createConnected<opname> function or 
+            just create<opname>
+    """
+    _, graphs = create_ir()
+    g = graphs[0]
+    in0 = add_actgrad_tensor("in0", [1, 2, 3], g)
+    opid = _ir.OperatorIdentifier("ai.graphcore", "IpuCopy", 1,
+                                  _ir.NumInputs(0, 0), 1)
+    settings = _ir.Settings(g, "new_settings")
+    if connected:
+        op = g.createConnectedOp_IpuCopyOp({0: in0.id}, {0: "outId"}, opid,
+                                           source, destination, settings)
+        op.setup()
+    else:
+        op = g.createOp_IpuCopyOp(opid, destination, settings)
+        op.connectInTensor(0, in0.id, source)
+        op.createAndConnectOutTensor(0, "outId")
+        op.setup()
+
+    assert op.inTensor(0) == in0
+    assert op.hasInput(0)
+    assert op.hasOutput(0)
+    assert op.outId(0) == "outId"
+    assert op.getDestIpu() == destination
+    assert op.getSourceIpu() == source
+    assert op.getSourceIpu("in0") == source
+    assert op.getMinSourceIpu() == source
+    assert op.getMaxSourceIpu() == source
+
+
 @pytest.mark.parametrize("init_type", [_ir.InitType.Zero, _ir.InitType.NoInit])
 @pytest.mark.parametrize("connected", [True, False])
 def test_init_op(init_type: "_ir.InitType", connected: bool):

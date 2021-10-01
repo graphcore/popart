@@ -46,6 +46,7 @@ list(
   ${popart_op_headers_dir}/transpose.hpp
   ${popart_op_headers_dir}/slice.hpp
   ${popart_op_headers_dir}/split.hpp
+  # ${popart_op_headers_dir}/ipucopy.hpp manual binding
   ${popart_op_headers_dir}/negate.hpp
   ${popart_op_headers_dir}/softmax.hpp
   ${popart_op_headers_dir}/nll.hpp
@@ -123,6 +124,7 @@ add_popart_python_module(
   bindings/op.cpp
   # Manual ops
   bindings/op/enums.cpp
+  bindings/op/ipucopy.cpp
   bindings/op/call.cpp
   bindings/op/matmul.cpp
   bindings/op/manualbindops.cpp
