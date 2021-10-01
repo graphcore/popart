@@ -1,16 +1,19 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 from typing import Any, Dict, List, Tuple
-import pytest
-import popart._internal.ir as _ir
+
 import numpy as np
-import popart
+import pytest
 from utils import *
+
+import popart
+import popart._internal.ir as _ir
 
 
 def unary_op_tester(op_name: str,
                     g: _ir.Graph,
                     inplace: bool = False,
                     connected: bool = False,
+                    *args,
                     **kwargs):
     """Helper to test unary ops
 
@@ -25,17 +28,9 @@ def unary_op_tester(op_name: str,
     out0 = add_actgrad_tensor("out0", [1, 2, 3], g)
     ins = {0: in0}
     outs = {0: out0}
-    op = create_new_op(ins, outs, op_name, g, inplace, connected, **kwargs)
-    for i, t in ins.items():
-        assert op.inTensor(i) == t
-        assert op.hasInput(i)
-        assert op.inId(i) == t.id
-    for i, t in outs.items():
-        assert op.outTensor(i) == t
-        assert op.hasOutput(i)
-        assert op.outId(i) == t.id
-    assert op.getCalledGraphs() == []
-    assert op.getCalledGraphIds() == []
+    op = create_new_op(ins, outs, op_name, g, inplace, connected, *args,
+                       **kwargs)
+    op_assertions(op, ins, outs)
 
 
 def binary_op_tester(op_name: str,
@@ -60,6 +55,45 @@ def binary_op_tester(op_name: str,
     outs = {0: out0}
     op = create_new_op(ins, outs, op_name, g, inplace, connected, *args,
                        **kwargs)
+    op_assertions(op, ins, outs)
+
+
+def ternary_op_tester(op_name: str,
+                      g: _ir.Graph,
+                      inplace: bool = False,
+                      connected: bool = False,
+                      *args,
+                      **kwargs):
+    """Helper to test ternary ops
+
+    Args:
+        op_name (str): Name of op to create. Must match the create<op_name> function.
+        g (_ir.Graph): The graph to add the op to.
+        inplace (bool, optional): Whether to use the inplace variant. Defaults to False.
+        connected (bool, optional): [Whether to use the createConnected<opname> function or 
+            just create<opname>. Defaults to False.
+    """
+    in0 = add_actgrad_tensor("in0", [1, 2, 3], g)
+    in1 = add_random_tensor("in1", _ir.TensorType.Variable, [1, 2, 3], g)
+    in2 = add_random_tensor("in2", _ir.TensorType.Variable, [1, 2, 3], g)
+    out0 = add_actgrad_tensor("out0", [1, 2, 3], g)
+    ins = {0: in0, 1: in1, 2: in2}
+    outs = {0: out0}
+    op = create_new_op(ins, outs, op_name, g, inplace, connected, *args,
+                       **kwargs)
+    op_assertions(op, ins, outs)
+
+
+def op_assertions(op: Any, ins: Dict[int, "_ir.Tensor"],
+                  outs: Dict[int, "_ir.Tensor"]):
+    """
+    Assert that the operators has proper input, output and no call graphs.
+
+    Args:
+        op (Any): The operator to check
+        ins (dict): The inputs to the operator
+        outs (dict): The outputs to the operator
+    """
     for i, t in ins.items():
         assert op.inTensor(i) == t
         assert op.hasInput(i)
@@ -70,6 +104,29 @@ def binary_op_tester(op_name: str,
         assert op.outId(i) == t.id
     assert op.getCalledGraphs() == []
     assert op.getCalledGraphIds() == []
+
+
+@pytest.mark.parametrize("connected", [True, False])
+# yapf: disable, pylint: disable-all
+@pytest.mark.parametrize("op_name,inplace,kwargs",
+[
+("DynamicUpdateOp", False, {"axes_":[0], "sizes_":[1], "noOverlap_":False, "updateInInfo_": _ir.TensorInfo()}),
+])
+# yapf: enable, pylint: enable-all
+def test_ternary_ops(connected: bool, inplace: bool, op_name: str,
+                     kwargs: Dict[str, Any]) -> None:
+    """Test unary (3 in, 1 out) ops
+
+    Args:
+        connected (bool): Whether to use the createConnected<opname> function or 
+            just create<opname>
+        inplace (bool): Whether this op is inplace
+        op_name (str): Name of the op e.g. AddOp
+        kwargs (Dict[str, Any]): Additional kwargs to pass to the ops
+    """
+    _, graphs = create_ir()
+    g = graphs[0]
+    ternary_op_tester(op_name, g, inplace, connected, **kwargs)
 
 
 # yapf mangles these param lists

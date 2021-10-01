@@ -7,6 +7,7 @@ from .gather import *
 from .gelu import *
 from .cast import *
 from .dynamicslice import *
+from .dynamicupdate import *
 from .group_norm import *
 from .host_load import *
 from .host_store import *

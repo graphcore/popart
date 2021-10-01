@@ -39,6 +39,7 @@ list(
   ${popart_op_headers_dir}/and.hpp
   ${popart_op_headers_dir}/not.hpp
   ${popart_op_headers_dir}/relu.hpp
+  ${popart_op_headers_dir}/dynamic/dynamicupdate.hpp
   ${popart_op_headers_dir}/reshape.hpp
   ${popart_op_headers_dir}/dynamic/dynamicslice.hpp
   ${popart_op_headers_dir}/gelu.hpp
