@@ -214,10 +214,11 @@ snap::Tensor BasePadOpx::constantModePadGrow(snap::Tensor inTensor,
         graph().getPoplarGraph().clone(propitious.second.getPoplarTensor()),
         graph()};
     auto chisseledDst = getChisseled(outTensor);
-    s.add(poplar::program::Copy(inTensor.getPoplarTensor(),
-                                chisseledDst.core.getPoplarTensor(),
-                                false,
-                                debugContext()));
+    s.getPoplarSequence().add(
+        poplar::program::Copy(inTensor.getPoplarTensor(),
+                              chisseledDst.core.getPoplarTensor(),
+                              false,
+                              debugContext()));
     std::vector<poplar::Tensor> allPads;
     allPads.reserve(chisseledDst.lows.size() + chisseledDst.upps.size());
     for (const auto &x : chisseledDst.lows) {

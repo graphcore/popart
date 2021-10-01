@@ -87,7 +87,8 @@ void SubsampleGradOpx::grow(snap::program::Sequence &prog) const {
   auto ss_output = subsample(outTensor.getPoplarTensor(), gradOp.strides_u32());
 
   // Copy the input tensor into the subsampled view of the output
-  prog.add(poplar::program::Copy(in, ss_output, false, debugContext()));
+  prog.getPoplarSequence().add(
+      poplar::program::Copy(in, ss_output, false, debugContext()));
 
   // Return the output
   setOutTensor(SubsampleGradOp::getOutIndex(), outTensor);

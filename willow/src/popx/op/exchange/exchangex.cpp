@@ -226,7 +226,7 @@ void HostLoadDescriptorx::post(snap::Graph &graph,
                                       outTensors.at(0).getPoplarTensor(),
                                       false,
                                       context);
-  prog.add(tmp_copy_prog);
+  prog.getPoplarSequence().add(tmp_copy_prog);
 }
 
 snap::Tensor HostLoadDescriptorx::unwind(snap::Graph &graph,
@@ -256,7 +256,7 @@ void HostStoreDescriptorx::pre(snap::Graph &graph,
                                       streamTensor.getPoplarTensor(),
                                       false,
                                       context);
-  prog.add(tmp_copy_prog);
+  prog.getPoplarSequence().add(tmp_copy_prog);
 }
 
 void HostStoreDescriptorx::exchange(snap::Graph &graph,
@@ -342,11 +342,11 @@ void RemoteLoadDescriptorx::exchange(snap::Graph &graph,
                                     rbTensor.getPoplarTensor(),
                                     offset.getPoplarTensor(),
                                     context);
-    prog.add(copy_prog);
+    prog.getPoplarSequence().add(copy_prog);
   } else {
     poplar::program::Copy copy_prog(
         buffer.first, rbTensor.getPoplarTensor(), context);
-    prog.add(copy_prog);
+    prog.getPoplarSequence().add(copy_prog);
   }
 }
 
@@ -367,7 +367,7 @@ void RemoteLoadDescriptorx::post(snap::Graph &graph,
                                       outTensors.at(0).getPoplarTensor(),
                                       false,
                                       context);
-  prog.add(tmp_copy_prog);
+  prog.getPoplarSequence().add(tmp_copy_prog);
 }
 
 snap::Tensor RemoteLoadDescriptorx::unwind(snap::Graph &graph,
@@ -401,7 +401,7 @@ void RemoteStoreDescriptorx::pre(snap::Graph &graph,
                                       rbTensor.getPoplarTensor(),
                                       false,
                                       context);
-  prog.add(tmp_copy_prog);
+  prog.getPoplarSequence().add(tmp_copy_prog);
 }
 
 void RemoteStoreDescriptorx::exchange(snap::Graph &graph,
@@ -420,11 +420,11 @@ void RemoteStoreDescriptorx::exchange(snap::Graph &graph,
                                     buffer.first,
                                     offset.getPoplarTensor(),
                                     context);
-    prog.add(copy_prog);
+    prog.getPoplarSequence().add(copy_prog);
   } else {
     poplar::program::Copy copy_prog(
         rbTensor.getPoplarTensor(), buffer.first, context);
-    prog.add(copy_prog);
+    prog.getPoplarSequence().add(copy_prog);
   }
 }
 

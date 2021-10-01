@@ -185,7 +185,7 @@ snap::Tensor EwuComputex::cloneNcopy(snap::program::Sequence &prog,
       graph.getPoplarGraph().clone(tensor.getPoplarTensor(), {dnai});
   poplar::program::Copy copyProg(
       tensor.getPoplarTensor(), outTensor, false, {dnai});
-  prog.add(copyProg);
+  prog.getPoplarSequence().add(copyProg);
   return snap::Tensor{outTensor, graph};
 }
 

@@ -37,7 +37,7 @@ void StashOpx::growStaticStashUpdate(snap::program::Sequence &prog,
                                                       std::to_string(i))));
   }
 
-  prog.add(switchCase);
+  prog.getPoplarSequence().add(switchCase);
 }
 
 void StashOpx::growDynamicStashUpdate(snap::program::Sequence &prog,

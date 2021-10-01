@@ -298,7 +298,7 @@ void PopPrograms::addPipelineCycle(
     auto stage = stage_seq.first;
     if (pInfo.doStage(pCycle, stage)) {
       ss << "\n  ps" << stage << " : Main";
-      sq.add(poplar::program::Call(stage_seq.second));
+      sq.getPoplarSequence().add(poplar::program::Call(stage_seq.second));
     }
   }
 
@@ -540,9 +540,10 @@ PopPrograms::getFullProgramFromPipelineFragments() const {
   // This is the inner main cycles loop, if doing pipelining without gradient
   // accumulation, this the batches per step loop, as batch size = micro_batch
   // size
-  inner.add(poplar::program::Repeat(static_cast<uint32_t>(mainCycles),
-                                    main.getPoplarSequence(),
-                                    {"inerLoop"}));
+  inner.getPoplarSequence().add(
+      poplar::program::Repeat(static_cast<uint32_t>(mainCycles),
+                              main.getPoplarSequence(),
+                              {"inerLoop"}));
   inner.add(flush);
 
   snap::program::Sequence outer(poplar::DebugContext{"outer"},
@@ -556,7 +557,7 @@ PopPrograms::getFullProgramFromPipelineFragments() const {
     // If doing gradient accumulation, the inner loop is over mini batches,
     // and this outer loop loops over multiple batches per step.
     auto bps = ir_lowering_p->ir().getDataFlow().batchesPerStep();
-    outer.add(
+    outer.getPoplarSequence().add(
         poplar::program::Repeat(bps, inner.getPoplarSequence(), {"outerloop"}));
   } else {
     // No gradient accumulation, so just add one iteration of the inner program.
@@ -601,7 +602,7 @@ snap::program::Sequence PopPrograms::program() const {
         poplar::program::Repeat repeat(
             accumulationFactor, prog.getPoplarSequence(), {"accumulationLoop"});
         prog = snap::program::Sequence(ir_lowering_p->graph());
-        prog.add(repeat);
+        prog.getPoplarSequence().add(repeat);
         prog.add(accumulateOuterFragment());
       }
 
@@ -627,7 +628,7 @@ snap::program::Sequence PopPrograms::program() const {
       // BatchesPerStep loop
       logging::devicex::trace("Adding batches per step loop with {} iterations",
                               batchesPerStep);
-      outer.add(poplar::program::Repeat(
+      outer.getPoplarSequence().add(poplar::program::Repeat(
           batchesPerStep, prog.getPoplarSequence(), {"batchesPerStep"}));
       outer.add(toHostFinalCopyFragment());
     }

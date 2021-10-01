@@ -67,10 +67,11 @@ void ScatterOpx::grow(snap::program::Sequence &prog) const {
   auto out =
       alignToAxis(snap::Tensor{sliceable, graph()}, dataInfo.shape(), uaxis);
 
-  prog.add(poplar::program::Copy(dataInput.getPoplarTensor(),
-                                 out.getPoplarTensor(),
-                                 false,
-                                 debugContext("copyToScatter")));
+  prog.getPoplarSequence().add(
+      poplar::program::Copy(dataInput.getPoplarTensor(),
+                            out.getPoplarTensor(),
+                            false,
+                            debugContext("copyToScatter")));
   indices = indices.dimRoll(uaxis);
   values  = values.dimRoll(uaxis);
 
