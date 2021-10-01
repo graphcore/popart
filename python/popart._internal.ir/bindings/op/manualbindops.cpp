@@ -11,6 +11,7 @@
 #include <vector>
 #include <popart/basicoptionals.hpp>
 
+#include <popart/op/call.hpp>
 #include <popart/op/matmul.hpp>
 
 namespace popart {
@@ -18,6 +19,34 @@ namespace _internal {
 namespace ir {
 
 void bindManualCreateOpFunctionToGraphClass(py::class_<Graph> g) {
+  // CallOp
+  g.def("createOp_CallOp",
+        py::overload_cast<const popart::OperatorIdentifier &,
+                          popart::Graph &,
+                          const Op::Settings &>(
+            &Graph::createOp<CallOp,
+                             const popart::OperatorIdentifier &,
+                             popart::Graph &,
+                             const Op::Settings &>),
+        py::arg("opid"),
+        py::arg("callee"),
+        py::arg("settings"),
+        py::return_value_policy::reference)
+      .def("createOp_CallOp",
+           py::overload_cast<const popart::OperatorIdentifier &,
+                             popart::Graph &,
+                             const std::vector<int> &,
+                             const Op::Settings &>(
+               &Graph::createOp<CallOp,
+                                const popart::OperatorIdentifier &,
+                                popart::Graph &,
+                                const std::vector<int> &,
+                                const Op::Settings &>),
+           py::arg("opid"),
+           py::arg("callee"),
+           py::arg("modifiedInputsViaAttrs"),
+           py::arg("settings"),
+           py::return_value_policy::reference);
 
   // MatMulOp
   g.def("createOp_MatMulOp",
@@ -38,6 +67,43 @@ void bindManualCreateOpFunctionToGraphClass(py::class_<Graph> g) {
 }
 
 void bindManualCreateConnectedOpFunctionToGraphClass(py::class_<Graph> g) {
+
+  // CallOp
+  g.def("createConnectedOp_CallOp",
+        py::overload_cast<const std::map<InIndex, TensorId> &,
+                          const std::map<OutIndex, TensorId> &,
+                          const popart::OperatorIdentifier &,
+                          popart::Graph &,
+                          const Op::Settings &>(
+            &Graph::createConnectedOp<CallOp,
+                                      const popart::OperatorIdentifier &,
+                                      popart::Graph &,
+                                      const Op::Settings &>),
+        py::arg("in"),
+        py::arg("out"),
+        py::arg("opid"),
+        py::arg("callee"),
+        py::arg("settings"),
+        py::return_value_policy::reference)
+      .def("createConnectedOp_CallOp",
+           py::overload_cast<const std::map<InIndex, TensorId> &,
+                             const std::map<OutIndex, TensorId> &,
+                             const popart::OperatorIdentifier &,
+                             popart::Graph &,
+                             const std::vector<int> &,
+                             const Op::Settings &>(
+               &Graph::createConnectedOp<CallOp,
+                                         const popart::OperatorIdentifier &,
+                                         popart::Graph &,
+                                         const std::vector<int> &,
+                                         const Op::Settings &>),
+           py::arg("in"),
+           py::arg("out"),
+           py::arg("opid"),
+           py::arg("callee"),
+           py::arg("modifiedInputsViaAttrs"),
+           py::arg("settings"),
+           py::return_value_policy::reference);
 
   // MatMulOp
   g.def("createConnectedOp_MatMulOp",
