@@ -21,7 +21,7 @@ list(
   ${popart_op_headers_dir}/add.hpp
   ${popart_op_headers_dir}/subtract.hpp
   ${popart_op_headers_dir}/sum.hpp
-  ${popart_op_headers_dir}/call.hpp
+  # ${popart_op_headers_dir}/call.hpp # Manually bound
   # ${popart_op_headers_dir}/matmul.hpp # Manually bound
   ${popart_op_headers_dir}/exchange/hostcopy.hpp
   ${popart_op_headers_dir}/init.hpp
@@ -121,9 +121,12 @@ add_popart_python_module(
   bindings/graphid.cpp
   bindings/ir.cpp
   bindings/op.cpp
+  # Manual ops
   bindings/op/enums.cpp
+  bindings/op/call.cpp
   bindings/op/matmul.cpp
   bindings/op/manualbindops.cpp
+  # End ops
   bindings/scope.cpp
   bindings/tensor.cpp
   bindings/tensordata.cpp

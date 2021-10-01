@@ -60,9 +60,7 @@ def call(subgraph: Graph,
     #    the input indices here.
     sgInIdx = 0
     for t in subgraph_fn_param_inputs:
-        # FIXME: Method not pybinded.
-        # callInIdx = pb_callop.subgraphInToOpInIndex(sgInIdx)
-        callInIdx = sgInIdx
+        callInIdx = pb_callop.subgraphInToOpInIndex(sgInIdx)
         pb_callop.connectInTensor(callInIdx, t.id)
         sgInIdx += 1
 
@@ -72,8 +70,7 @@ def call(subgraph: Graph,
         check_in_graph(subgraph, sg_tensor)
 
         sgInIdx = pb_sg.getInputIndex(sg_tensor.id)
-        # callInIdx = pb_callop.subgraphInToOpInIndex(sgInIdx)
-        callInIdx = sgInIdx
+        callInIdx = pb_callop.subgraphInToOpInIndex(sgInIdx)
         pb_callop.connectInTensor(callInIdx, parent_tensor.id)
 
     # 3. Connect outputs. We introspect the subgraph to get its outputs then,
