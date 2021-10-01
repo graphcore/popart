@@ -94,11 +94,9 @@ def test_tensor_get_set_replicated_streaming_mode():
     ir = _ir.Ir()
     g = ir.createGraph("g")
     t = _ir.Tensor("t", _ir.TensorType.ActGrad, g)
-    assert t.getReplicatedStreamMode(
-    ) == _ir.Tensor.ReplicatedStreamMode.Replicate
-    t.setReplicatedStreamMode(_ir.Tensor.ReplicatedStreamMode.Broadcast)
-    assert t.getReplicatedStreamMode(
-    ) == _ir.Tensor.ReplicatedStreamMode.Broadcast
+    assert t.getReplicatedStreamMode() == popart.ReplicatedStreamMode.Replicate
+    t.setReplicatedStreamMode(popart.ReplicatedStreamMode.Broadcast)
+    assert t.getReplicatedStreamMode() == popart.ReplicatedStreamMode.Broadcast
 
 
 def test_tensor_has_tensor_data():
@@ -230,8 +228,8 @@ def test_replicated_stream_mode_creation():
     """ Test that we can create a
     popart._internal.ir.Tensor.ReplicatedStreamMode enum.
     """
-    _ir.Tensor.ReplicatedStreamMode.Replicate
-    _ir.Tensor.ReplicatedStreamMode.Broadcast
+    popart.ReplicatedStreamMode.Replicate
+    popart.ReplicatedStreamMode.Broadcast
 
 
 # TODO(T42205): Write unit test for the following methods and attributes of the

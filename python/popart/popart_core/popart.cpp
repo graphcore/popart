@@ -31,6 +31,7 @@
 #include <popart/optimizervalue.hpp>
 #include <popart/patterns/patterns.hpp>
 #include <popart/popx/devicex.hpp>
+#include <popart/replicatedstreammode.hpp>
 #include <popart/session.hpp>
 #include <popart/sessionoptions.hpp>
 #include <popart/sgd.hpp>
@@ -183,7 +184,7 @@ public:
 
   void assertNumElements(const popx::Executablex &) const final {}
 
-  ConstVoidData in(TensorId id, int64_t, bool prefetch) final {
+  ConstVoidData in(TensorId id, int64_t, bool prefetch)final {
     py::gil_scoped_acquire acquire;
     py::array a = inputCb(id, prefetch);
     if (!isContiguous(a)) {
@@ -559,6 +560,16 @@ PYBIND11_MODULE(popart_core, m) {
              DOC(popart, ExchangeStrategy, OverlapStep));
   }
   {
+    py::enum_<ReplicatedStreamMode> en(
+        m, "ReplicatedStreamMode", DOC(popart, ReplicatedStreamMode));
+    en.value("Replicate",
+             ReplicatedStreamMode::Replicate,
+             DOC(popart, ReplicatedStreamMode, Replicate));
+    en.value("Broadcast",
+             ReplicatedStreamMode::Broadcast,
+             DOC(popart, ReplicatedStreamMode, Broadcast));
+  }
+  {
     py::class_<OpDefinition::Input> cls(m, "OpDefinition::Input");
     cls.def_readonly("name", &OpDefinition::Input::name);
     cls.def_readonly("supportedTensors",
@@ -676,8 +687,11 @@ PYBIND11_MODULE(popart_core, m) {
     cls.def(py::init<TileSet, ExchangeStrategy>(),
             py::arg("tileSet")          = TileSet::Compute,
             py::arg("exchangeStrategy") = ExchangeStrategy::JustInTime);
+    cls.def(py::init<ReplicatedStreamMode>(),
+            py::arg("relicatedStreamMode") = ReplicatedStreamMode::Replicate);
     cls.def("tileSet", &InputSettings::tileSet);
     cls.def("exchangeStrategy", &InputSettings::exchangeStrategy);
+    cls.def("replicatedStreamMode", &InputSettings::replicatedStreamMode);
   }
   {
     // Reuse TensorInfo from the popart._internal.ir module.

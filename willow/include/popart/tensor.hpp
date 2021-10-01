@@ -11,6 +11,7 @@
 #include <popart/istepio.hpp>
 #include <popart/names.hpp>
 #include <popart/op.hpp>
+#include <popart/replicatedstreammode.hpp>
 #include <popart/tensordata.hpp>
 #include <popart/tensordebuginfo.hpp>
 #include <popart/tensorinfo.hpp>
@@ -111,9 +112,6 @@ private:
 
 class Tensor : public Vertex {
 public:
-  // The type of replication to use if a Stream tensor
-  enum class ReplicatedStreamMode { Replicate, Broadcast };
-
   // note : producer (if there is one)
   // must be set after construction
   Tensor(TensorId, TensorType, Graph &, const DebugContext & = {});
@@ -130,10 +128,10 @@ public:
 
   // Accessor's for the replicated stream mode
   ReplicatedStreamMode getReplicatedStreamMode() const {
-    return replicatedStreamMode;
+    return inputSettings.replicatedStreamMode();
   }
   void setReplicatedStreamMode(const ReplicatedStreamMode &mode) {
-    replicatedStreamMode = mode;
+    inputSettings.setReplicatedStreamMode(mode);
   }
 
   // Return all the pipeline stages the tensor is used in.
@@ -272,9 +270,6 @@ protected:
   Graph &graph;
   Op *producer;
   TensorType tensorType_;
-
-  // By default stream tensors are replicated
-  ReplicatedStreamMode replicatedStreamMode = ReplicatedStreamMode::Replicate;
 
   // c++ note : we cannot initialise this as {nullptr} with gcc
   // when using pimpl, it must be initialised in the .cpp constructor

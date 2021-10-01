@@ -42,6 +42,7 @@
 #include <popart/opmanager.hpp>
 #include <popart/optimizer.hpp>
 #include <popart/pbwrap.hpp>
+#include <popart/replicatedstreammode.hpp>
 #include <popart/scheduler.hpp>
 #include <popart/sessionoptions.hpp>
 #include <popart/tensor.hpp>
@@ -2039,6 +2040,20 @@ void Ir::registerInputTensors() {
           }
           settings.setExchangeStrategy(strategy);
         }
+
+        {
+          ReplicatedStreamMode replicatedStreamMode =
+              ReplicatedStreamMode::Replicate;
+          auto key = std::string(sReplicatedStreamMode) +
+                     std::string(sNameDelimiter) + id;
+          for (auto m : onnxModel->metadata_props()) {
+            if (m.key() == key) {
+              replicatedStreamMode =
+                  static_cast<ReplicatedStreamMode>(std::stoi(m.value()));
+            }
+          }
+          settings.setReplicatedStreamMode(replicatedStreamMode);
+        }
       }
 
       logging::ir::trace("Tensor: {} input settings: {}", id, settings);
@@ -2774,7 +2789,7 @@ void Ir::ensureOptimizerTensorCreated(const TensorId &optId,
     optimizer->setTensorData(optTensor);
 
     // optimizer tensors are a special type of stream which is broadcast
-    optTensor.setReplicatedStreamMode(Tensor::ReplicatedStreamMode::Broadcast);
+    optTensor.setReplicatedStreamMode(ReplicatedStreamMode::Broadcast);
   }
 }
 

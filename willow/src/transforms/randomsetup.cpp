@@ -12,6 +12,7 @@
 #include <popart/op/modifyrandomseed.hpp>
 #include <popart/op/randombase.hpp>
 #include <popart/opidentifier.hpp>
+#include <popart/replicatedstreammode.hpp>
 #include <popart/tensor.hpp>
 #include <popart/tensors.hpp>
 #include <popart/topocons.hpp>
@@ -498,7 +499,7 @@ void RandomSetup::addGetRandomSeedOp(Ir &ir, const Config &cfg) const {
 
   graph.getTensors().addStream(randomSeedFromHost, seedTensorInfo);
   Tensor &seedTensor = *graph.getTensors().get(randomSeedFromHost);
-  seedTensor.setReplicatedStreamMode(Tensor::ReplicatedStreamMode::Replicate);
+  seedTensor.setReplicatedStreamMode(ReplicatedStreamMode::Replicate);
 
   logging::debug("[RandomSetup] Added tensor {}.", randomSeedFromHost);
 

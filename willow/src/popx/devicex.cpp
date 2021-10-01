@@ -873,6 +873,12 @@ void Devicex::loadEngineAndConnectStreams() {
         this->inputStreams[std::make_tuple(tensor->id, replicationIndex)] = ds;
 
         auto callback = std::make_unique<PrefetchCallback>(ds);
+
+        if (tensor->getReplicatedStreamMode() ==
+                ReplicatedStreamMode::Broadcast &&
+            replicationIndex != 0)
+          break;
+
         pEngine->connectStreamToCallback(
             streamId, replicationIndex, std::move(callback));
       }
@@ -1006,6 +1012,16 @@ void Devicex::reconnectInputStreams() {
 
       auto callback = std::make_unique<PrefetchCallback>(
           this->inputStreams[std::make_tuple(tensor->id, replicationIndex)]);
+
+      if (tensor->getReplicatedStreamMode() ==
+              ReplicatedStreamMode::Broadcast &&
+          replicationFactor != 0) {
+        logging::devicex::debug("Tensor is broadcasted ({}) and should not be "
+                                "streamed to non-zero replicas.",
+                                tensor->getReplicatedStreamMode());
+        break;
+      }
+
       pEngine->connectStreamToCallback(
           lowering().h2dId(id), replicationIndex, std::move(callback));
     }

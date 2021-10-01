@@ -357,6 +357,14 @@ TensorId BuilderImpl::addInputTensor(const TensorInfo &tensorInfo,
         std::to_string(static_cast<int>(inputSettings.exchangeStrategy())));
   }
 
+  // Add  metadata to annotate an input's broadcast mode
+  {
+    auto a = meta_data->Add();
+    a->set_key(sReplicatedStreamMode + std::string(sNameDelimiter) + id);
+    a->set_value(
+        std::to_string(static_cast<int>(inputSettings.replicatedStreamMode())));
+  }
+
   return id;
 }
 

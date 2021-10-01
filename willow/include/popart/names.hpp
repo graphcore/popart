@@ -171,6 +171,7 @@ static constexpr const char *sTileSetAttribute          = "__tile_set";
 static constexpr const char *sOutlineAttribute          = "__outline";
 static constexpr const char *sDebugInfoId               = "__debug_info_id";
 static constexpr const char *sExchangeStrategyAttribute = "__exchange_strategy";
+static constexpr const char *sReplicatedStreamMode = "__replicated_stream_mode";
 
 static constexpr const char *sSerializeMatMulModeAttribute =
     "__serialize_matmul_mode";

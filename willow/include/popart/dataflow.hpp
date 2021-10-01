@@ -8,6 +8,7 @@
 #include <vector>
 #include <popart/names.hpp>
 #include <popart/op/exchange/exchange.hpp>
+#include <popart/replicatedstreammode.hpp>
 
 namespace popart {
 
@@ -141,8 +142,8 @@ private:
 using AnchorReturnTypeMap = std::map<TensorId, AnchorReturnType>;
 
 /**
- * A class that describes the #TileSet and #ExchangeStrategy used for an input
- * tensor.
+ * A class that describes the #TileSet, #ExchangeStrategy, and
+ * #ReplicatedStreamMode used for an input tensor.
  *
  */
 class InputSettings {
@@ -151,18 +152,27 @@ public:
 
   InputSettings(TileSet tileSet, ExchangeStrategy exchangeStrategy);
 
+  InputSettings(ReplicatedStreamMode replicatedStreamMode);
+
   const TileSet &tileSet() const { return tileSet_; }
   const ExchangeStrategy &exchangeStrategy() const { return exchangeStrategy_; }
+  ReplicatedStreamMode replicatedStreamMode() const {
+    return replicatedStreamMode_;
+  }
 
   void setTileSet(TileSet tileSet) { tileSet_ = tileSet; }
 
   void setExchangeStrategy(ExchangeStrategy exchangeStrategy) {
     exchangeStrategy_ = exchangeStrategy;
   }
+  void setReplicatedStreamMode(ReplicatedStreamMode streamMode) {
+    replicatedStreamMode_ = streamMode;
+  }
 
 private:
   TileSet tileSet_;
   ExchangeStrategy exchangeStrategy_;
+  ReplicatedStreamMode replicatedStreamMode_;
 };
 
 std::ostream &operator<<(std::ostream &, InputSettings);

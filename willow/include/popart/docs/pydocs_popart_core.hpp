@@ -3234,6 +3234,12 @@ static const char *__doc_popart_ExchangeStrategy_JustInTime =
 static const char *__doc_popart_ExchangeStrategy_N =
     R"doc(Number of values)doc";
 
+static const char *__doc_popart_ReplicatedStreamMode = R"doc()doc";
+
+static const char *__doc_popart_ReplicatedStreamMode_Replicate = R"doc()doc";
+
+static const char *__doc_popart_ReplicatedStreamMode_Broadcast = R"doc()doc";
+
 static const char *__doc_popart_ExchangeStrategy_OverlapInnerLoop =
     R"doc(Preload values in previous inner loop iteration for the next iteration)doc";
 
@@ -6980,14 +6986,6 @@ static const char *__doc_popart_TensorType_Stream = R"doc()doc";
 static const char *__doc_popart_TensorType_Unknown = R"doc()doc";
 
 static const char *__doc_popart_TensorType_Variable = R"doc()doc";
-
-static const char *__doc_popart_Tensor_ReplicatedStreamMode = R"doc()doc";
-
-static const char *__doc_popart_Tensor_ReplicatedStreamMode_Broadcast =
-    R"doc()doc";
-
-static const char *__doc_popart_Tensor_ReplicatedStreamMode_Replicate =
-    R"doc()doc";
 
 static const char *__doc_popart_Tensor_Tensor = R"doc()doc";
 

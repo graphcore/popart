@@ -3901,10 +3901,10 @@ IrLowering::getReplicatedStreamMode(Tensor *tensor) const {
   } else {
     if (ir().getSessionOptions().useHostCopyOps) {
       switch (tensor->getReplicatedStreamMode()) {
-      case Tensor::ReplicatedStreamMode::Broadcast:
+      case ReplicatedStreamMode::Broadcast:
         mode = poplar::ReplicatedStreamMode::BROADCAST;
         break;
-      case Tensor::ReplicatedStreamMode::Replicate:
+      case ReplicatedStreamMode::Replicate:
         mode = poplar::ReplicatedStreamMode::REPLICATE;
         break;
       }
@@ -3914,10 +3914,10 @@ IrLowering::getReplicatedStreamMode(Tensor *tensor) const {
     if (tensor->tensorType() == TensorType::Stream) {
 
       switch (tensor->getReplicatedStreamMode()) {
-      case Tensor::ReplicatedStreamMode::Broadcast:
+      case ReplicatedStreamMode::Broadcast:
         mode = poplar::ReplicatedStreamMode::BROADCAST;
         break;
-      case Tensor::ReplicatedStreamMode::Replicate:
+      case ReplicatedStreamMode::Replicate:
         mode = poplar::ReplicatedStreamMode::REPLICATE;
         break;
       }

@@ -1,0 +1,1 @@
+add_popart_py_unit_test(test_tensor_replication tensor_replication.py VARIANTS "Hw")

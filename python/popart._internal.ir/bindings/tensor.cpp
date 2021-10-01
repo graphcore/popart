@@ -148,11 +148,6 @@ void bindTensor(py::module &m) {
       .def_readonly("tensorLocationInfo", &Tensor::tensorLocationInfo)
       .def_readonly("inputSettings", &Tensor::inputSettings)
       .def_readonly("id", &Tensor::id);
-
-  py::enum_<Tensor::ReplicatedStreamMode>(m.attr("Tensor"),
-                                          "ReplicatedStreamMode")
-      .value("Replicate", Tensor::ReplicatedStreamMode::Replicate)
-      .value("Broadcast", Tensor::ReplicatedStreamMode::Broadcast);
 }
 
 } // namespace ir

@@ -3,6 +3,8 @@
 #include <popart/error.hpp>
 #include <popart/stepio_size_assertion.hpp>
 
+#include <popart/replicatedstreammode.hpp>
+
 namespace popart {
 namespace iosizecheck {
 
@@ -82,10 +84,18 @@ std::string CorrectnessAsserter::getBaseError(const std::string &io,
   return oss.str();
 }
 
-int64_t CorrectnessAsserter::getInExpected(const TensorId &id) const {
+int64_t CorrectnessAsserter::getBaseExpected(const TensorId &id) const {
   const auto onnxTensorElms = getNElms(id);
-  const auto expected       = onnxTensorElms * rFact * aFact * bps;
+  const auto expected       = onnxTensorElms * aFact * bps;
   return expected;
+}
+
+int64_t CorrectnessAsserter::getInExpected(const TensorId &id) const {
+  const auto broadcast = exe.getTensor(id)->getReplicatedStreamMode() ==
+                         ReplicatedStreamMode::Broadcast;
+  const auto expected = getBaseExpected(id) * (broadcast ? 1 : rFact);
+  return expected;
+  // If broadcasted the replication factor should be ignored.
 }
 
 int64_t CorrectnessAsserter::getArtDivisor(AnchorReturnType art) const {
@@ -108,7 +118,9 @@ int64_t CorrectnessAsserter::getOutExpected(const TensorId &id) const {
     throw internal_error(
         "Non-anchored Tensor in CorrectnessAsserter::checkOut");
   }
-  return getInExpected(id) / getArtDivisor(ir.getDataFlow().art(id));
+  const auto expected =
+      getBaseExpected(id) * rFact / getArtDivisor(ir.getDataFlow().art(id));
+  return expected;
 }
 
 } // namespace iosizecheck

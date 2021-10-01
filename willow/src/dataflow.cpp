@@ -4,6 +4,7 @@
 #include <poprithms/util/stringutil.hpp>
 #include <popart/dataflow.hpp>
 #include <popart/error.hpp>
+#include <popart/replicatedstreammode.hpp>
 #include <popart/sessionoptions.hpp>
 
 namespace popart {
@@ -98,10 +99,18 @@ std::size_t AnchorReturnType::hash() const {
 
 InputSettings::InputSettings()
     : tileSet_(TileSet::Compute),
-      exchangeStrategy_(ExchangeStrategy::JustInTime) {}
+      exchangeStrategy_(ExchangeStrategy::JustInTime),
+      replicatedStreamMode_(ReplicatedStreamMode::Replicate) {}
 
 InputSettings::InputSettings(TileSet tileSet, ExchangeStrategy exchangeStrategy)
-    : tileSet_(tileSet), exchangeStrategy_(exchangeStrategy) {}
+    : tileSet_(tileSet), exchangeStrategy_(exchangeStrategy),
+      replicatedStreamMode_(ReplicatedStreamMode::Replicate) {}
+
+InputSettings::InputSettings(ReplicatedStreamMode replicatedStreamMode)
+    : tileSet_(TileSet::Compute),
+      exchangeStrategy_(ExchangeStrategy::JustInTime) {
+  replicatedStreamMode_ = replicatedStreamMode;
+}
 
 DataFlow::DataFlow() : batchesPerStep_(0) {}
 

@@ -79,6 +79,8 @@ private:
                            int64_t expected,
                            int64_t nElms) const;
 
+  int64_t getBaseExpected(const TensorId &id) const;
+
   int64_t getInExpected(const TensorId &id) const;
 
   int64_t getArtDivisor(AnchorReturnType art) const;
