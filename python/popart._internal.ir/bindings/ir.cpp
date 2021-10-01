@@ -25,6 +25,9 @@ void bindIr(py::module &m) {
            py::return_value_policy::reference)
       .def(
           "getGraph", &popart::Ir::getGraph, py::return_value_policy::reference)
+      .def("getSessionOptions",
+           py::overload_cast<>(&popart::Ir::getSessionOptions),
+           py::return_value_policy::reference)
       .def("hasGraph", &popart::Ir::hasGraph)
       .def("createGraph",
            &popart::Ir::createGraph,

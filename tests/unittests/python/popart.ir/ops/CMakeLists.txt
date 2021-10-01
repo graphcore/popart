@@ -11,6 +11,7 @@ add_popart_py_unit_test(unittest_python_popart.ir_ops_host_store test_host_store
 add_popart_py_unit_test(unittest_python_popart.ir_ops_and test_logical_and.py)
 add_popart_py_unit_test(unittest_python_popart.ir_ops_not test_logical_not.py)
 add_popart_py_unit_test(unittest_python_popart.ir_ops_or test_logical_or.py)
+add_popart_py_unit_test(unittest_python_popart.ir_ops_matmul test_matmul.py)
 add_popart_py_unit_test(unittest_python_popart.ir_ops_mul test_mul.py)
 add_popart_py_unit_test(unittest_python_popart.ir_ops_reshape test_reshape.py)
 add_popart_py_unit_test(unittest_python_popart.ir_ops_scatter test_scatter.py)
