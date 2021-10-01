@@ -5,6 +5,8 @@ from .call import *
 from .div import *
 from .gather import *
 from .gelu import *
+from .cast import *
+from .dynamicslice import *
 from .group_norm import *
 from .host_load import *
 from .host_store import *
