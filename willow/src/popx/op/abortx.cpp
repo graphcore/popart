@@ -20,9 +20,9 @@ void AbortOpx::grow(snap::program::Sequence &prog) const {
   if (hasInput(AbortOp::getInIndex())) {
     poplar::Tensor condition =
         getInTensor(AbortOp::getInIndex()).getPoplarTensor();
-    prog.add(poplar::program::AbortOnCondition(condition));
+    prog.getPoplarSequence().add(poplar::program::AbortOnCondition(condition));
   } else {
-    prog.add(poplar::program::Abort());
+    prog.getPoplarSequence().add(poplar::program::Abort());
   }
 }
 

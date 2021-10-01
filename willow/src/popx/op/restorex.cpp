@@ -103,7 +103,7 @@ snap::Tensor RestoreBaseOpx<Derived>::growStaticSliceRestore(
             debugContext("static-restore/switch-copy-" + std::to_string(i))));
   }
 
-  prog.add(switchCase);
+  prog.getPoplarSequence().add(switchCase);
 
   return snap::Tensor{actFromStash.squeeze({0}), graph()};
 }
@@ -132,10 +132,11 @@ void RestoreInplaceOpx::grow(snap::program::Sequence &prog) const {
 
   const auto actFromStash = growRestore(prog, stash);
 
-  prog.add(poplar::program::Copy(actFromStash.getPoplarTensor(),
-                                 actToRestore.getPoplarTensor(),
-                                 false,
-                                 debugContext()));
+  prog.getPoplarSequence().add(
+      poplar::program::Copy(actFromStash.getPoplarTensor(),
+                            actToRestore.getPoplarTensor(),
+                            false,
+                            debugContext()));
   setOutTensor(RestoreInplaceOp::getRestoredActOutIndex(), actToRestore);
 }
 

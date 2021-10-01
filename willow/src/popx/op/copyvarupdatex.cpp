@@ -27,7 +27,7 @@ void CopyVarUpdateOpx::grow(snap::program::Sequence &prog) const {
       getInTensor(VarUpdateOp::getVarToUpdateInIndex()).getPoplarTensor(),
       false,
       debugContext());
-  prog.add(copy);
+  prog.getPoplarSequence().add(copy);
 
   // output is a reference to destination of the copy
   setOutTensor(VarUpdateOp::getUpdatedVarOutIndex(),

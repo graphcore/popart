@@ -28,7 +28,7 @@ void InitOpx::grow(snap::program::Sequence &prog) const {
     break;
   }
   case InitType::NoInit: {
-    prog.add(poplar::program::WriteUndef(outTensor));
+    prog.getPoplarSequence().add(poplar::program::WriteUndef(outTensor));
     break;
   }
   default:

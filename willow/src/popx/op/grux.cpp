@@ -71,7 +71,7 @@ void GRUOpx::prepareInitialState(snap::Tensor &init_state_h,
 
   // Check the inputs have been created
   if (hasInitH) {
-    prog.add(poplar::program::Copy(
+    prog.getPoplarSequence().add(poplar::program::Copy(
         getInTensor(GRUOp::getInitialHInIndex()).getPoplarTensor(),
         createInputTensor(GRUOp::getInitialHInIndex(),
                           getDebugNameAndId("initH"))
@@ -209,7 +209,7 @@ void GRUOpx::growBias(snap::program::Sequence &prog) const {
     bias_input = bias_input.reshape({3, 2, hidden_size});
 
     poplar::program::Copy copyProg(bias_input, biases, false, debugContext());
-    prog.add(copyProg);
+    prog.getPoplarSequence().add(copyProg);
     return;
   }
 
@@ -220,7 +220,7 @@ void GRUOpx::growBias(snap::program::Sequence &prog) const {
   auto hidden_bias = poplar::concat({bhr, bhz, bhh});
 
   poplar::program::Copy copyProg(input_bias, biases, false, debugContext());
-  prog.add(copyProg);
+  prog.getPoplarSequence().add(copyProg);
 
   popops::mapInPlace(graph().getPoplarGraph(),
                      popops::expr::BinaryOpType::ADD,
@@ -382,14 +382,14 @@ std::set<TensorId> GRUOpx::mustExistBeforeCreate(InIndex) const { return {}; }
 
 void GRUOpx::prepareWeights(snap::program::Sequence &prog) const {
   // check to see if the weights were created
-  prog.add(poplar::program::Copy(
+  prog.getPoplarSequence().add(poplar::program::Copy(
       getInTensor(GRUOp::getWeightsInIndex()).getPoplarTensor(),
       reshapePoplibWeightsForOnnx(
           snap::Tensor{getGRUWeights().inputWeights, graph()})
           .getPoplarTensor(),
       false,
       debugContext()));
-  prog.add(poplar::program::Copy(
+  prog.getPoplarSequence().add(poplar::program::Copy(
       getInTensor(GRUOp::getRecurrenceInIndex()).getPoplarTensor(),
       reshapePoplibWeightsForOnnx(
           snap::Tensor{getGRUWeights().outputWeights, graph()})
@@ -403,10 +403,11 @@ snap::Tensor GRUOpx::getInput(snap::program::Sequence &prog) const {
     auto input =
         createInputTensor(GRUOp::getInputInIndex(), getDebugNameAndId("input"));
     auto raw_input = getInTensor(GRUOp::getInputInIndex());
-    prog.add(poplar::program::Copy(raw_input.getPoplarTensor(),
-                                   input.getPoplarTensor(),
-                                   false,
-                                   debugContext()));
+    prog.getPoplarSequence().add(
+        poplar::program::Copy(raw_input.getPoplarTensor(),
+                              input.getPoplarTensor(),
+                              false,
+                              debugContext()));
     return input;
   } else {
     return getInTensor(GRUOp::getInputInIndex());

@@ -139,7 +139,7 @@ void LSTMOpx::growBias(snap::program::Sequence &prog) const {
                                    biases.getPoplarTensor(),
                                    false,
                                    debugContext());
-    prog.add(copyProg);
+    prog.getPoplarSequence().add(copyProg);
 
     popops::mapInPlace(graph().getPoplarGraph(),
                        popops::expr::BinaryOpType::ADD,
@@ -301,14 +301,14 @@ std::set<TensorId> LSTMOpx::mustExistBeforeCreate(InIndex) const {
 
 void LSTMOpx::prepareWeights(snap::program::Sequence &prog) const {
   // check to see if the weights were created
-  prog.add(poplar::program::Copy(
+  prog.getPoplarSequence().add(poplar::program::Copy(
       getInTensor(LSTMOp::getWeightsInIndex()).getPoplarTensor(),
       reshapePoplibWeightsForOnnx(
           snap::Tensor{getLSTMWeights().inputWeights, graph()}, true)
           .getPoplarTensor(),
       false,
       debugContext()));
-  prog.add(poplar::program::Copy(
+  prog.getPoplarSequence().add(poplar::program::Copy(
       getInTensor(LSTMOp::getRecurrenceInIndex()).getPoplarTensor(),
       reshapePoplibWeightsForOnnx(
           snap::Tensor{getLSTMWeights().outputWeights, graph()}, true)
@@ -322,10 +322,11 @@ snap::Tensor LSTMOpx::getInput(snap::program::Sequence &prog) const {
     auto input     = createInputTensor(LSTMOp::getInputInIndex(),
                                    getDebugNameAndId("input"));
     auto raw_input = getInTensor(LSTMOp::getInputInIndex());
-    prog.add(poplar::program::Copy(raw_input.getPoplarTensor(),
-                                   input.getPoplarTensor(),
-                                   false,
-                                   debugContext()));
+    prog.getPoplarSequence().add(
+        poplar::program::Copy(raw_input.getPoplarTensor(),
+                              input.getPoplarTensor(),
+                              false,
+                              debugContext()));
     return input;
   } else {
     return getInTensor(LSTMOp::getInputInIndex());
@@ -364,7 +365,7 @@ void LSTMOpx::prepareInitialState(popnn::lstm::LstmState &init_state,
     auto init_c = getInitialState().cellState;
     init_c      = init_c.reshape({num_directions, batch_size, hidden_size});
 
-    prog.add(poplar::program::Copy(
+    prog.getPoplarSequence().add(poplar::program::Copy(
         getInTensor(LSTMOp::getInitialCInIndex()).getPoplarTensor(),
         init_c,
         false,
@@ -375,7 +376,7 @@ void LSTMOpx::prepareInitialState(popnn::lstm::LstmState &init_state,
     auto init_h = getInitialState().output;
     init_h      = init_h.reshape({num_directions, batch_size, hidden_size});
 
-    prog.add(poplar::program::Copy(
+    prog.getPoplarSequence().add(poplar::program::Copy(
         getInTensor(LSTMOp::getInitialHInIndex()).getPoplarTensor(),
         init_h,
         false,

@@ -30,7 +30,8 @@ snap::Tensor getIotaTensor(snap::Graph &graph,
   // Fill a tensor with [0, 1, 2, ... nToSort-1] along "axis"
   auto indices = graph.getPoplarGraph().clone(
       poplar::INT, input.getPoplarTensor(), {dnai, "clone"});
-  prog.add(poplar::program::WriteUndef(indices, {dnai, "writeUndef"}));
+  prog.getPoplarSequence().add(
+      poplar::program::WriteUndef(indices, {dnai, "writeUndef"}));
 
   // new view of indices, dim-shuffling the given axis
   // to the back, and making 2-D
@@ -42,7 +43,7 @@ snap::Tensor getIotaTensor(snap::Graph &graph,
 
   // Loop over the front dimension and copy in the constant.
   for (int i = 0; i < nToSort; ++i) {
-    prog.add(poplar::program::Copy(
+    prog.getPoplarSequence().add(poplar::program::Copy(
         singleRowIota, shuffledView[i], false, {dnai, "copy"}));
   }
 

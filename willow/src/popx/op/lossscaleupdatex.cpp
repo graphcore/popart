@@ -123,10 +123,11 @@ void LossScaleUpdateOpx::grow(snap::program::Sequence &prog) const {
                      scaleDown.getPoplarSequence(),
                      debugContext("scaleDown"));
 
-  prog.add(poplar::program::If(shouldScaleDown,
-                               scaleDown.getPoplarSequence(),
-                               scaleUp.getPoplarSequence(),
-                               debugContext("lossScaleUpdate")));
+  prog.getPoplarSequence().add(
+      poplar::program::If(shouldScaleDown,
+                          scaleDown.getPoplarSequence(),
+                          scaleUp.getPoplarSequence(),
+                          debugContext("lossScaleUpdate")));
   if (op.getClipOutput()) {
     // Whenever the finalLossScale is in fp16 or the weights are in fp16, the
     // finalLossScale should be clipped so that its value fits in the fp16

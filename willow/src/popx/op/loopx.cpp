@@ -84,7 +84,7 @@ void LoopOpx::copyExplicitOpInputsToBodyOutputs(
                 &op, op.subgraphOutToOpOutIndex(i))) {
           poplar::program::Copy copyProg(
               opInputTensor, bodyOutputTensor, false, debugContext("inputs"));
-          prog.add(copyProg);
+          prog.getPoplarSequence().add(copyProg);
           logging::opx::trace(
               "[LoopOpx] explicit input {} -> output {} copied", inId, outId);
         } else {
@@ -126,7 +126,7 @@ void LoopOpx::copyImplicitOpInputsToImplicitBodyInputs(
       if (dv_p->lowering().getAliasZeroCopy()->copyInputRequired(&op, i)) {
         poplar::program::Copy copyProg(
             opInputTensor, bodyInputTensor, false, debugContext("inputs"));
-        prog.add(copyProg);
+        prog.getPoplarSequence().add(copyProg);
         logging::opx::trace(
             "[LoopOpx] implicit input {} -> implicit input {} copied",
             opInId,
@@ -179,9 +179,9 @@ void LoopOpx::copyBodyOutputsToExplicitBodyInputs(
         auto tmp = dstVirtualGraph(op.subgraphOutToOpOutIndex(i))
                        .getPoplarGraph()
                        .clone(bodyOutputTensor);
-        tmpCopiesProg.add(poplar::program::Copy(
+        tmpCopiesProg.getPoplarSequence().add(poplar::program::Copy(
             bodyOutputTensor, tmp, false, debugContext("tmpCopies")));
-        finalCopiesProg.add(poplar::program::Copy(
+        finalCopiesProg.getPoplarSequence().add(poplar::program::Copy(
             tmp, bodyInputTensor, false, debugContext("finalCopies")));
         logging::opx::trace(
             "[LoopOpx] output {} -> explicit input {} copied", outId, inId);
@@ -221,7 +221,7 @@ void LoopOpx::copyBodyOutputsToOpOutputs(snap::program::Sequence &prog) const {
         auto opOutputTensor   = get(opOutputTensorId).getPoplarTensor();
         poplar::program::Copy copyProg(
             bodyOutputTensor, opOutputTensor, false, debugContext("outputs"));
-        prog.add(copyProg);
+        prog.getPoplarSequence().add(copyProg);
         logging::opx::trace("[LoopOpx] output {} -> output {} copied",
                             bodyOutputTensorId,
                             opOutputTensorId);
@@ -278,7 +278,7 @@ void LoopOpx::copyModifiedBodyInputsToOpInputs(
             "[CallOpx] Copying modified input {}->{}", sgTensorId, opTensorId);
         poplar::program::Copy copy_prog(
             sgPopTensor, opPopTensor, false, debugContext());
-        prog.add(copy_prog);
+        prog.getPoplarSequence().add(copy_prog);
       } else {
         logging::opx::trace("[CallOpx] Skipping copy modified input {}->{}",
                             sgTensorId,
@@ -326,7 +326,7 @@ void LoopOpx::grow(snap::program::Sequence &prog) const {
 
   // 0: Set condOut to true if the cond is not shipped as op input
   if (!hasInput(LoopOp::getTerminationConditionInIndex())) {
-    prog.add(poplar::program::Copy(
+    prog.getPoplarSequence().add(poplar::program::Copy(
         tconst, condOutTensor, {}, debugContext("cond_true")));
   }
 
@@ -350,7 +350,7 @@ void LoopOpx::grow(snap::program::Sequence &prog) const {
   auto exitTensor = graph().getPoplarGraph().addVariable(
       poplar::BOOL, {}, debugContext("exit"));
   poputil::mapTensorLinearly(graph().getPoplarGraph(), exitTensor);
-  prog.add(poplar::program::Copy(
+  prog.getPoplarSequence().add(poplar::program::Copy(
       fconst, exitTensor, {}, debugContext("exit_false")));
 
   // 5: Get the max trip count value
@@ -392,7 +392,7 @@ void LoopOpx::grow(snap::program::Sequence &prog) const {
           .getPoplarTensor();
   poplar::program::Copy copyProg(
       iteratorTensor, bodyInputTensor, false, debugContext());
-  loopContinueProg.add(copyProg);
+  loopContinueProg.getPoplarSequence().add(copyProg);
 
   // 10: Add the loop body itself
   auto &called_graph = op.getCalledGraph();
@@ -400,7 +400,7 @@ void LoopOpx::grow(snap::program::Sequence &prog) const {
 
   for (size_t part = 0; part < graph_progs.size(); ++part) {
     auto dbgStr = logging::format("{}/{}", called_graph.id.str(), part);
-    loopContinueProg.add(
+    loopContinueProg.getPoplarSequence().add(
         poplar::program::Call(graph_progs.at(part), debugContext(dbgStr)));
   }
 
@@ -421,16 +421,17 @@ void LoopOpx::grow(snap::program::Sequence &prog) const {
     loopProg.add(loopContinueProg);
   } else {
     // 12: Add conditional around the loop body program
-    loopProg.add(poplar::program::If(exitTensor,
-                                     loopExitProg.getPoplarSequence(),
-                                     loopContinueProg.getPoplarSequence(),
-                                     debugContext("condition")));
+    loopProg.getPoplarSequence().add(
+        poplar::program::If(exitTensor,
+                            loopExitProg.getPoplarSequence(),
+                            loopContinueProg.getPoplarSequence(),
+                            debugContext("condition")));
   }
 
   // 13: Repeat the loop conditional program
   logging::opx::debug(
       "[LoopOpx] Max trip count: {} ({})", maxTripCountValue, op.debugName());
-  prog.add(poplar::program::Repeat(
+  prog.getPoplarSequence().add(poplar::program::Repeat(
       maxTripCountValue, loopProg.getPoplarSequence(), debugContext("loop")));
 
   // 14: Copy body outputs to op outputs
