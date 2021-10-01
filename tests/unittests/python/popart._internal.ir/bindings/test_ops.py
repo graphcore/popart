@@ -42,7 +42,8 @@ def binary_op_tester(op_name: str,
                      g: _ir.Graph,
                      inplace: bool = False,
                      connected: bool = False,
-                     *args):
+                     *args,
+                     **kwargs):
     """Helper to test binary ops
 
     Args:
@@ -57,7 +58,8 @@ def binary_op_tester(op_name: str,
     out0 = add_actgrad_tensor("out0", [1, 2, 3], g)
     ins = {0: in0, 1: in1}
     outs = {0: out0}
-    op = create_new_op(ins, outs, op_name, g, inplace, connected, *args)
+    op = create_new_op(ins, outs, op_name, g, inplace, connected, *args,
+                       **kwargs)
     for i, t in ins.items():
         assert op.inTensor(i) == t
         assert op.hasInput(i)
@@ -72,25 +74,27 @@ def binary_op_tester(op_name: str,
 
 # yapf mangles these param lists
 # yapf: disable, pylint: disable-all
-@pytest.mark.parametrize("op_name,inplace",
-[("AddOp", False),
-("MulOp", False),
-("DivOp", False),
-("EqualOp", False),
-("AndOp", False),
-("NotOp", False),
-("PowOp", False),
-("OrOp", False),
-("SumOp", False),
-("AddLhsInplaceOp", True),
-("AddRhsInplaceOp", True),
-("MulLhsInplaceOp", True),
-("MulRhsInplaceOp", True),
-("PowLhsInplaceOp", True),
+@pytest.mark.parametrize("op_name,inplace,kwargs",
+[("AddOp", False, {}),
+("MulOp", False, {}),
+("DivOp", False, {}),
+("EqualOp", False, {}),
+("AndOp", False, {}),
+("NotOp", False, {}),
+("PowOp", False, {}),
+("OrOp", False, {}),
+("SumOp", False, {}),
+("DynamicSliceOp", False, {"axes_":[0], "sizes_":[1], "noOverlap_":False}),
+("AddLhsInplaceOp", True, {}),
+("AddRhsInplaceOp", True, {}),
+("MulLhsInplaceOp", True, {}),
+("MulRhsInplaceOp", True, {}),
+("PowLhsInplaceOp", True, {}),
 ])
 # yapf: enable, pylint: enable-all
 @pytest.mark.parametrize("connected", [True, False])
-def test_binary_ops(op_name: str, inplace: bool, connected: bool) -> None:
+def test_binary_ops(op_name: str, inplace: bool, connected: bool,
+                    kwargs: Dict[str, Any]) -> None:
     """Test binary ops
 
     Args:
@@ -98,10 +102,11 @@ def test_binary_ops(op_name: str, inplace: bool, connected: bool) -> None:
         inplace (bool): Whether this op is inplace
         connected (bool): Whether to use the createConnected<opname> function or 
             just create<opname>
+        kwargs (Dict[str, Any]): Additional kwargs to pass to the ops
     """
     _, graphs = create_ir()
     g = graphs[0]
-    binary_op_tester(op_name, g, inplace, connected)
+    binary_op_tester(op_name, g, inplace, connected, **kwargs)
 
 
 @pytest.mark.parametrize("connected", [True, False])
