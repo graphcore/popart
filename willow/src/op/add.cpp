@@ -61,6 +61,10 @@ const std::vector<GradInOutMapper> &AddArg0GradOp::gradInputInfo() const {
 
 void AddArg0GradOp::setup() { outInfo(getOutIndex()) = forward_op_arg_info; }
 
+std::unique_ptr<Op> AddArg0GradOp::clone() const {
+  return std::make_unique<AddArg0GradOp>(*this);
+}
+
 AddArg1GradOp::AddArg1GradOp(const Op &op, const std::vector<int64_t> &_axes)
     : ReduceSumOp(Onnx::GradOperators::AddArg1Grad,
                   _axes,
@@ -84,6 +88,10 @@ const std::vector<GradInOutMapper> &AddArg1GradOp::gradInputInfo() const {
 }
 
 void AddArg1GradOp::setup() { outInfo(getOutIndex()) = forward_op_arg_info; }
+
+std::unique_ptr<Op> AddArg1GradOp::clone() const {
+  return std::make_unique<AddArg1GradOp>(*this);
+}
 
 namespace {
 
