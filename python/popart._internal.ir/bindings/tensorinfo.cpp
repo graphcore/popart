@@ -35,6 +35,7 @@ void bindTensorInfo(py::module &m) {
       .value("UNDEFINED", DataType::UNDEFINED);
 
   py::class_<TensorInfo>(m, "TensorInfo")
+      .def(py::init<>())
       .def(py::init<DataType, const Shape &>(),
            py::arg("dataType"),
            py::arg("shape"))
