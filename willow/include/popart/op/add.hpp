@@ -53,6 +53,8 @@ public:
   const std::map<int, int> &gradOutToNonGradIn() const override final;
   void setup() final;
 
+  std::unique_ptr<Op> clone() const final;
+
 private:
   TensorInfo forward_op_arg_info;
 };
@@ -64,6 +66,8 @@ public:
 
   const std::map<int, int> &gradOutToNonGradIn() const override final;
   void setup() final;
+
+  std::unique_ptr<Op> clone() const final;
 
 private:
   TensorInfo forward_op_arg_info;
