@@ -114,6 +114,11 @@ class Tensor:
         """Returns the Tensor transposed with reversed axes."""
         return self.transpose()
 
+    def __matmul__(self, other: Any) -> 'Tensor':
+        """Returns ops.matmul(self, other)."""
+        import popart.ir.ops as ops
+        return ops.matmul(self, self._ensure_tensor(other))
+
 
 class Variable(Tensor):
     """Wraps a Tensor in the PopART IR that has TensorType.Variable"""
