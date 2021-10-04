@@ -234,7 +234,7 @@ def getModelProto(shard=False, pipeline=False):
         sf = builder.aiOnnx.softmax([rs])
         label_shape = [2]
         labels = builder.addInputTensor("INT32", label_shape)
-        loss = builder.aiGraphcore.nllloss([sf, labels])
+        loss = builder.aiGraphcore.nllloss([sf, labels], ignoreIndex=1)
 
     # Pick some weight tensors that we want to set specific optimizer tensor
     # values for

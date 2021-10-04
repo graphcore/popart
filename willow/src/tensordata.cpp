@@ -40,6 +40,16 @@ void TensorData::resetData(const TensorInfo &info, const void *from) {
   std::memcpy(data_.data(), from, info.nbytes());
 }
 
+void TensorData::resetDataWithNonMatchingSize(const TensorInfo &info,
+                                              const std::vector<char> from) {
+  if (from.size() != info.nbytes()) {
+    throw error("Size of supplied tensor data does not match expected size "
+                "from TensorInfo");
+  }
+  data_.resize(info.nbytes());
+  std::memcpy(data_.data(), from.data(), info.nbytes());
+}
+
 bool WeightsIO::contains(TensorId id) const {
   return weights.find(id) != weights.end();
 }

@@ -30,10 +30,16 @@ public:
   // Input data must be the same size as the existing data_
   void resetData(const TensorInfo &, const void *src);
 
-  // reset the data in the TensorData bt copying from
+  // reset the data in the TensorData by copying from
   // ONNX_NAMESPACE::TensorProto. Input data must be the same size as the
   // existing data_
   void resetData(const ONNX_NAMESPACE::TensorProto &);
+
+  // reset the data in the TensorData by copying from src.
+  // Input data does not have to be the same size as the
+  // existing data_
+  void resetDataWithNonMatchingSize(const TensorInfo &info,
+                                    const std::vector<char> from);
 
   template <typename RESULT_TYPE>
   std::vector<RESULT_TYPE> copyDataAs(int expectedResultSize) const {

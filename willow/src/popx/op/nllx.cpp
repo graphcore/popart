@@ -134,6 +134,8 @@ void NllOpx::applyScalingInPlaceForMeanReduction(
                                     prog.getPoplarSequence(),
                                     opx.debugContext("combinedLossScale"));
 
+  // Note: if combined_scale is fp32 and t is fp16, the downcast is handled
+  // here by poplar
   popops::mulInPlace(opx.graph().getPoplarGraph(),
                      t.getPoplarTensor(),
                      combined_scale,
@@ -172,12 +174,26 @@ void NllOpx::applyScalingInPlaceForMeanReductionWithIgnoreIndex(
                      prog.getPoplarSequence(),
                      opx.debugContext("numNonIgnoredSamples_min"));
 
+  // popops::div requires inputs of the same data type. We support the mixed
+  // case where gradIn is fp32 but the mask tensor is fp32. So here we upcast
+  // if required
+  if (numNonIgnoredSamples.elementType() !=
+      scale.getPoplarTensor().elementType()) {
+    numNonIgnoredSamples = popops::cast(opx.graph().getPoplarGraph(),
+                                        numNonIgnoredSamples,
+                                        scale.getPoplarTensor().elementType(),
+                                        prog.getPoplarSequence(),
+                                        opx.debugContext("cast"));
+  }
+
   auto combined_scale = popops::div(opx.graph().getPoplarGraph(),
                                     scale.getPoplarTensor(),
                                     numNonIgnoredSamples,
                                     prog.getPoplarSequence(),
                                     opx.debugContext("combinedLossScale"));
 
+  // Note: if combined_scale is fp32 and t is fp16, the downcast is handled
+  // here by poplar
   popops::mulInPlace(opx.graph().getPoplarGraph(),
                      t.getPoplarTensor(),
                      combined_scale,

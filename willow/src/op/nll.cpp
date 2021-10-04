@@ -109,6 +109,15 @@ NllGradOp::NllGradOp(const NllOp &op_)
       ignoreIndex_(op_.getOptionalIgnoreIndex()),
       inputIsLogProbability_(op_.inputIsLogProbability()) {}
 
+NllGradOp::NllGradOp(const TensorId &lossId,
+                     const nonstd::optional<int> ignoreIndex,
+                     const ReductionType reduction,
+                     const bool inputIsLogProbability,
+                     const Op::Settings &settings)
+    : Op(Onnx::CustomGradOperators::NllGrad, settings), lossId_(lossId),
+      reduction_(reduction), ignoreIndex_(ignoreIndex),
+      inputIsLogProbability_(inputIsLogProbability) {}
+
 std::unique_ptr<Op> NllGradOp::clone() const {
   return std::make_unique<NllGradOp>(*this);
 }

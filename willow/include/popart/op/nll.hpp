@@ -48,6 +48,12 @@ private:
 class NllGradOp : public Op {
 public:
   NllGradOp(const NllOp &);
+  NllGradOp(const TensorId &lossId,
+            const nonstd::optional<int> ignoreIndex,
+            const ReductionType reduction,
+            const bool inputIsLogProbability,
+            const Op::Settings &settings);
+
   const std::vector<GradInOutMapper> &gradInputInfo() const final;
   const std::map<int, int> &gradOutToNonGradIn() const final;
   void setup() final;

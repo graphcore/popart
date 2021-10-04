@@ -35,6 +35,15 @@ template <typename T> bool isNotOneOf(const T &x, const std::vector<T> &ys) {
 }
 
 /**
+ * Returns true if able to find a single loss scale tensor in the graph
+ * that has consumers.
+ *
+ * \param graph The graph, in which the loss scale belongs.
+ * \return bool True if the graph has a single connected loss scale tensor.
+ */
+bool hasSingleConnectedLossScaleTensor(const Graph &graph);
+
+/**
  * Get the loss scale tensor of a graph.
  *
  * \param graph The graph, in which the loss scale belongs.

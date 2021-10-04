@@ -19,20 +19,40 @@
 
 namespace popart {
 
+namespace {
+
+bool hasConnectedTensor(const Graph &graph, const TensorId id) {
+  if (graph.getTensors().contains(id)) {
+    return graph.getTensors().get(id)->consumers.getTotal() > 0;
+  } else {
+    return false;
+  }
+}
+
+} // namespace
+
+bool hasSingleConnectedLossScaleTensor(const Graph &graph) {
+  const Optimizer &optimizer = graph.getIr().getOptimizer();
+  TensorId lsFP16 = optimizer.getLossScalingTensorId(DataType::FLOAT16);
+  TensorId lsFP32 = optimizer.getLossScalingTensorId(DataType::FLOAT);
+
+  // Exclusive or
+  return hasConnectedTensor(graph, lsFP16) != hasConnectedTensor(graph, lsFP32);
+}
+
 Tensor *getLossScaleTensor(const Graph &graph) {
   const Ir &ir               = graph.getIr();
   const Optimizer &optimizer = ir.getOptimizer();
 
   TensorId lsFP16 = optimizer.getLossScalingTensorId(DataType::FLOAT16);
   TensorId lsFP32 = optimizer.getLossScalingTensorId(DataType::FLOAT);
-  bool existsLossScaleFP16 = graph.getTensors().contains(lsFP16);
-  bool existsLossScaleFP32 = graph.getTensors().contains(lsFP32);
+  bool existsLossScaleFP16 = hasConnectedTensor(graph, lsFP16);
+  bool existsLossScaleFP32 = hasConnectedTensor(graph, lsFP32);
 
   Tensor *lossScaleTensor;
   if (existsLossScaleFP16 && existsLossScaleFP32) {
-    throw error("[AutomaticLossScale transform] Unable to determine the data "
-                "type of the loss scale tensor, as both tensors '{}' and '{}' "
-                "exist in graph {}",
+    throw error("Unable to determine the data type of the loss scale tensor, "
+                "as both tensors '{}' and '{}' exist in graph {}",
                 lsFP16,
                 lsFP32,
                 graph.id);
@@ -42,8 +62,7 @@ Tensor *getLossScaleTensor(const Graph &graph) {
     } else if (existsLossScaleFP32) {
       lossScaleTensor = graph.getTensors().get(lsFP32);
     } else {
-      throw error("[AutomaticLossScale transform] Unable to find any loss "
-                  "scale tensor in graph '{}'",
+      throw error("Unable to find any loss scale tensor in graph '{}'",
                   graph.id);
     }
   }
