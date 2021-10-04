@@ -18,6 +18,7 @@ from .matmul import *
 from .mul import *
 from .reshape import *
 from .scatter import *
+from .slice import *
 from .softmax import *
 from .split import *
 from .sub import *

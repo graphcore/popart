@@ -2,7 +2,6 @@
 import popart._internal.ir as _ir
 from popart.ir.globals import gcg
 from popart.ir.tensor import Tensor
-
 from .utils import check_in_graph
 
 __all__ = ['add']

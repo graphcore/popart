@@ -22,4 +22,4 @@ class TestHostStore:
 
         assert len(g.get_tensors()) == 3
         assert len(g.get_variables()) == 1
-        contains_op_of_type("HostStore", _ir.op.exchange.HostStoreOp, g)
+        assert contains_op_of_type("HostStore", _ir.op.exchange.HostStoreOp, g)

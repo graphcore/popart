@@ -1,6 +1,5 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 from typing import Any, Optional, Sequence, Tuple, Union
-
 import numpy as np
 
 import popart._internal.ir as _ir
@@ -118,6 +117,62 @@ class Tensor:
         """Returns ops.matmul(self, other)."""
         import popart.ir.ops as ops
         return ops.matmul(self, self._ensure_tensor(other))
+
+    def __getitem__(self, key) -> 'Tensor':
+        """
+        Supports slicing and integer indexing.
+        It differs from numpy in that when doing single element selection the dimension of that axis isn't reduced.
+
+        Examples:
+        ```
+        # Slicing
+        x[0]        # Select all elements where i==0 for axis 0
+        x[0,1]      # Select all elements where i==0, j==1 for axis 0 and 1
+        x[0:2]      # Slice axis 0 between index 0 and 2
+        x[:2,3:]    # Slice axis 0 upto 2 and axis 1 from index 3
+        x[:,::-1]   # Select all elements for axis 0 and reverse axis 1
+
+        # Integer indexing
+        indices = Tensor([[0,1], [1,0]], dtype='int32')
+        x[indices]  # Select elements [0,1] and [1,0] from `x`
+        ```
+        """
+
+        import popart.ir.ops as ops
+
+        if isinstance(key, (slice, int)) or (isinstance(key, tuple) and all(
+                isinstance(e, (slice, int)) for e in key)):
+            # Basic slicing (integer or slices)
+            key = (key, ) if isinstance(key, (slice, int)) else key
+
+            start = []
+            stop = []
+            step = []
+
+            for key_i in key:
+                if isinstance(key_i, int):
+                    start += [key_i]
+                    stop += [key_i + 1]
+                    step += [1]
+
+                elif isinstance(key_i, slice):
+                    start += [key_i.start]
+                    stop += [key_i.stop]
+                    step += [key_i.step]
+
+            return ops.slice(self, start, stop, step)
+
+        elif (isinstance(key, Tensor)
+              and key.dtype in (dtypes.int8, dtypes.int16, dtypes.int32,
+                                dtypes.int64, dtypes.uint8, dtypes.uint16,
+                                dtypes.uint32, dtypes.uint64)):
+            # Integer indexing
+            return ops.gather(self, key)
+
+        else:
+            raise IndexError(
+                "Only integers, slices (`:`) and integer arrays are valid indices."
+            )
 
 
 class Variable(Tensor):
