@@ -397,6 +397,11 @@ Attributes::Graphs Attributes::getAttribute(const std::string &key) const {
   throw error("no attribute key {}", key);
 }
 
+ONNX_NAMESPACE::AttributeProto *Attributes::createOwnedAttribute() {
+  owned_attributes.emplace_back(new ONNX_NAMESPACE::AttributeProto());
+  return owned_attributes.back().get();
+}
+
 // Adds the key and value
 template <>
 void Attributes::setAttribute(const std::string &key, Attributes::Int &value) {
@@ -404,8 +409,7 @@ void Attributes::setAttribute(const std::string &key, Attributes::Int &value) {
     names.push_back(key);
   }
 
-  ONNX_NAMESPACE::AttributeProto *attribute =
-      new ONNX_NAMESPACE::AttributeProto();
+  ONNX_NAMESPACE::AttributeProto *attribute = createOwnedAttribute();
   attribute->set_name(key);
   attribute->set_i(value);
   att_map[key] = attribute;
@@ -417,8 +421,7 @@ void Attributes::setAttribute(const std::string &key, Attributes::Ints &value) {
     names.push_back(key);
   }
 
-  ONNX_NAMESPACE::AttributeProto *attribute =
-      new ONNX_NAMESPACE::AttributeProto();
+  ONNX_NAMESPACE::AttributeProto *attribute = createOwnedAttribute();
   attribute->set_name(key);
   for (int i = 0; i < value.size(); ++i) {
     attribute->add_ints(value[i]);
@@ -432,8 +435,7 @@ void Attributes::setAttribute(const std::string &key, std::string &value) {
     names.push_back(key);
   }
 
-  ONNX_NAMESPACE::AttributeProto *attribute =
-      new ONNX_NAMESPACE::AttributeProto();
+  ONNX_NAMESPACE::AttributeProto *attribute = createOwnedAttribute();
   attribute->set_name(key);
   attribute->set_s(value.c_str());
   att_map[key] = attribute;
