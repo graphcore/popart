@@ -11,6 +11,7 @@
 #include <vector>
 #include <popart/basicoptionals.hpp>
 
+#include <popart/op/accumulate.hpp>
 #include <popart/op/call.hpp>
 #include <popart/op/ipucopy.hpp>
 #include <popart/op/matmul.hpp>
@@ -76,6 +77,20 @@ void bindManualCreateOpFunctionToGraphClass(py::class_<Graph> g) {
         py::arg("destIpu"),
         py::arg("settings"),
         py::return_value_policy::reference);
+
+  // AccumulateOp
+  g.def(
+      "createOp_AccumulateOp",
+      [](Graph &self,
+         AccumulationType type,
+         OptimizerValue factor,
+         const Op::Settings &settings) {
+        return self.createOp<AccumulateOp>(type, factor, settings);
+      },
+      py::arg("accumulationType"),
+      py::arg("factor"),
+      py::arg("settings"),
+      py::return_value_policy::reference);
 }
 
 void bindManualCreateConnectedOpFunctionToGraphClass(py::class_<Graph> g) {
@@ -177,6 +192,25 @@ void bindManualCreateConnectedOpFunctionToGraphClass(py::class_<Graph> g) {
       py::arg("opid"),
       py::arg("sourceIpu"),
       py::arg("destIpu"),
+      py::arg("settings"),
+      py::return_value_policy::reference);
+
+  // AccumulateOp
+  g.def(
+      "createConnectedOp_AccumulateOp",
+      [](Graph &self,
+         const std::map<InIndex, TensorId> &in,
+         const std::map<OutIndex, TensorId> &out,
+         AccumulationType type,
+         OptimizerValue factor,
+         const Op::Settings &settings) {
+        return self.createConnectedOp<AccumulateOp>(
+            in, out, type, factor, settings);
+      },
+      py::arg("in"),
+      py::arg("out"),
+      py::arg("accumulationType"),
+      py::arg("factor"),
       py::arg("settings"),
       py::return_value_policy::reference);
 }

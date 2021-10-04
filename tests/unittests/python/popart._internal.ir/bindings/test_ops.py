@@ -604,3 +604,40 @@ def test_group_norm_op(connected: bool, num_groups: int) -> None:
     op.connectOutTensor(1, mean.id)
     op.connectOutTensor(2, invstddev.id)
     op.setup()
+
+
+@pytest.mark.parametrize("connected", [True, False])
+def test_accumulate_op(connected: bool) -> None:
+    """Test the Accumulate Op.
+
+    Args:
+        connected (bool): Whether to use the createConnected<opname> function or
+            just create<opname>
+    """
+    _, graphs = create_ir()
+    main = graphs[0]
+    num_inputs = _ir.NumInputs(2, 2)
+    weight = add_random_tensor("weight", _ir.TensorType.Variable, [4], main)
+    grad = add_actgrad_tensor("grad", [4], main)
+    out = add_actgrad_tensor("updated_weight", [4], main)
+
+    opid = _ir.OperatorIdentifier("ai.graphcore", "Accumulate", 1, num_inputs,
+                                  1)
+    settings = _ir.Settings(main, "accumulate")
+
+    if connected:
+        ins: Dict[int, str] = {0: weight.id, 1: grad.id}
+        outs: Dict[int, str] = {0: out.id}
+        op = main.createConnectedOp_AccumulateOp(ins,
+                                                 outs,
+                                                 _ir.AccumulationType.Add,
+                                                 _ir.OptimizerValue(0.5),
+                                                 settings=settings)
+        return
+    op = main.createOp_AccumulateOp(_ir.AccumulationType.Add,
+                                    _ir.OptimizerValue(0.5),
+                                    settings=settings)
+    op.connectInTensor(0, weight.id)
+    op.connectInTensor(1, grad.id)
+    op.connectOutTensor(0, out.id)
+    op.setup()

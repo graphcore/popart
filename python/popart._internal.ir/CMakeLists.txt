@@ -18,6 +18,7 @@ set(gen_op_bindings_path ${PROJECT_SOURCE_DIR}/scripts/gen_op_bindings.py)
 list(
   APPEND
   op_headers
+  # ${popart_op_headers_dir}/accumulate.hpp # Manually bound
   ${popart_op_headers_dir}/add.hpp
   ${popart_op_headers_dir}/subtract.hpp
   ${popart_op_headers_dir}/sum.hpp
@@ -131,7 +132,9 @@ add_popart_python_module(
   bindings/op/ipucopy.cpp
   bindings/op/call.cpp
   bindings/op/matmul.cpp
+  bindings/op/accumulate.cpp
   bindings/op/manualbindops.cpp
+  bindings/op/optimizervalue.cpp
   # End ops
   bindings/scope.cpp
   bindings/tensor.cpp

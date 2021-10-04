@@ -7,11 +7,13 @@
 #include "bindings/ir.hpp"
 #include "bindings/op.hpp"
 #include "bindings/op/_all.hpp"
+#include "bindings/op/accumulate.hpp"
 #include "bindings/op/call.hpp"
 #include "bindings/op/enums.hpp"
 #include "bindings/op/ipucopy.hpp"
 #include "bindings/op/manualbindops.hpp"
 #include "bindings/op/matmul.hpp"
+#include "bindings/op/optimizervalue.hpp"
 #include "bindings/op/optional.hpp"
 #include "bindings/opidentifier.hpp"
 #include "bindings/scope.hpp"
@@ -66,6 +68,8 @@ PYBIND11_MODULE(popart_internal_ir, m) {
     op::bindOptional(m);
     op::bindIpuCopy(m);
     op::bindMatmul(m);
+    op::bindOptimizerValue(m);
+    op::bindAccumulate(m);
   }
   // Transforms
   {

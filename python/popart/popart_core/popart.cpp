@@ -721,15 +721,7 @@ PYBIND11_MODULE(popart_core, m) {
     en.value("Sum", ScatterReduction::Sum);
   }
   {
-    py::class_<OptimizerValue> optimizerValue(m, "OptimizerValue");
-    optimizerValue.def(
-        py::init<float, bool>(), py::arg("val"), py::arg("isConst"));
-    optimizerValue.def(py::init<float>(), py::arg("val"));
-    optimizerValue.def(py::init<>());
-    optimizerValue.def(py::init<std::pair<float, bool>>());
-
-    optimizerValue.def("val", &OptimizerValue::val);
-    optimizerValue.def("isConst", &OptimizerValue::isConst);
+    m.attr("OptimizerValue") = popart_internal_ir.attr("OptimizerValue");
 
     py::class_<OptimizerValueMap> optimizerValueMap(m, "OptimizerValueMap");
     optimizerValueMap.def("getDefault", &OptimizerValueMap::getDefault);
