@@ -168,9 +168,9 @@ public:
    * \param planType Run convolutions in parallel or series.
    * \param perConvReservedTiles Tiles to reserve per convolution when planning.
    * \param cycleBackOff Cycle back-off proportion, [0, 1).
-   * \param enableConvDithering If true, then convolutions with different
-            parameters will be laid out from different tiles in an effort to
-            improve tile balance in models.
+   * \param enableConvDithering Enable convolution dithering per convolution. If
+            true, then convolutions with different parameters will be laid out
+            from different tiles in an effort to improve tile balance in models.
    * \param debugContext Optional debug context.
    *
    * All input vectors must be either empty, or equal in length to
@@ -192,7 +192,7 @@ public:
             const nonstd::optional<std::string> planType     = nonstd::nullopt,
             const nonstd::optional<int> perConvReservedTiles = nonstd::nullopt,
             const nonstd::optional<float> cycleBackOff       = nonstd::nullopt,
-            const nonstd::optional<bool> enableConvDithering = nonstd::nullopt,
+            const std::vector<int64_t> enableConvDithering   = {},
             const DebugContext &debugContext                 = {});
 
   /**
@@ -1220,6 +1220,14 @@ public:
    */
   void setPartialsType(const TensorId &nodeOutputName,
                        const std::string partialsType);
+
+  /**
+   * Enable convolution dithering.
+   *
+   * \param nodeOutputName Name of the output tensor of the ONNX node.
+   * \param value 1, if convolution dithering should be enabled. 0, otherwise.
+   */
+  void setEnableConvDithering(const TensorId &nodeOutputName, int64_t value);
 
   /**
    * Get the partials type for the given node.

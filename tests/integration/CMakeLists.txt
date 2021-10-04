@@ -63,6 +63,7 @@ add_popart_py_unit_test(collectives_test collectives_test.py VARIANTS Hw)
 add_popart_py_unit_test(context_scope_test context_scope_test.py)
 add_popart_py_unit_test(available_memory_proportion_test available_memory_proportion_test.py VARIANTS IpuModel)
 add_popart_py_unit_test(cycle_count_test cycle_count_test.py VARIANTS Hw)
+add_popart_py_unit_test(conv_dithering_test conv_dithering_test.py VARIANTS IpuModel)
 
 add_popart_py_unit_test(decompose_gradient_summation_test decompose_gradient_summation_test.py VARIANTS IpuModel)
 add_popart_py_unit_test(device_test device_test.py VARIANTS Hw)
@@ -155,7 +156,7 @@ if ("Hw" IN_LIST ENABLED_TEST_VARIANTS)
   # Uses all IPUs
   set_tests_properties("Hw_default_cycle_count_test" PROPERTIES RUN_SERIAL TRUE)
   # Doesn't wait to attach
-  set_tests_properties("Hw_default_syncpatterntest" PROPERTIES RUN_SERIAL TRUE) 
+  set_tests_properties("Hw_default_syncpatterntest" PROPERTIES RUN_SERIAL TRUE)
 endif()
 
 add_subdirectory(anchor_tests)

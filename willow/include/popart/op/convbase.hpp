@@ -127,7 +127,7 @@ public:
   nonstd::optional<std::string> planType;
   nonstd::optional<int> perConvReservedTiles;
   nonstd::optional<float> cycleBackOff;
-  nonstd::optional<std::string> enableConvDithering;
+  std::vector<int64_t> enableConvDithering;
 };
 
 class MultiConvBaseOp : public Op {
