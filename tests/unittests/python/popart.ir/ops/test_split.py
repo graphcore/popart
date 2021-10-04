@@ -19,7 +19,7 @@ class TestSplit:
 
         assert len(g.get_tensors()) == 3
         assert len(g.get_variables()) == 1
-        contains_op_of_type("Split", _ir.op.SplitOp, g)
+        assert contains_op_of_type("Split", _ir.op.SplitOp, g)
 
     def test_fn_list(self):
         ir = pir.Ir()
@@ -32,7 +32,7 @@ class TestSplit:
 
         assert len(g.get_tensors()) == 4
         assert len(g.get_variables()) == 1
-        contains_op_of_type("Split", _ir.op.SplitOp, g)
+        assert contains_op_of_type("Split", _ir.op.SplitOp, g)
 
     def test_invalid_int(self):
         ir = pir.Ir()

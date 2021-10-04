@@ -18,5 +18,5 @@ class TestHostLoad:
 
         assert len(g.get_tensors()) == 3
         assert len(g.get_variables()) == 0
-        contains_op_of_type("HostLoad", _ir.op.exchange.HostLoadOp, g)
-        contains_op_of_type("Init", _ir.op.InitOp, g)
+        assert contains_op_of_type("HostLoad", _ir.op.exchange.HostLoadOp, g)
+        assert contains_op_of_type("Init", _ir.op.InitOp, g)

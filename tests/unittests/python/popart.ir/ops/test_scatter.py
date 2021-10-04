@@ -30,4 +30,4 @@ class TestScatter:
 
         assert len(g.get_tensors()) == 4
         assert len(g.get_variables()) == 3
-        contains_op_of_type("Scatter", _ir.op.ScatterOp, g)
+        assert contains_op_of_type("Scatter", _ir.op.ScatterOp, g)
