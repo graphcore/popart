@@ -3,6 +3,7 @@
 #define GUARD_NEURALNET_ATTRIBUTES_HPP
 
 #include <map>
+#include <memory>
 #include <string>
 #include <vector>
 #include <popart/names.hpp>
@@ -68,6 +69,9 @@ public:
 private:
   std::map<std::string, onnxAttPtr> att_map;
   std::vector<std::string> names;
+
+  std::vector<std::shared_ptr<ONNX_NAMESPACE::AttributeProto>> owned_attributes;
+  ONNX_NAMESPACE::AttributeProto *createOwnedAttribute();
 };
 
 // Check that `x` is 0 or 1 before doing the conversion to bool.
