@@ -442,7 +442,7 @@ def assert_does_not_contain(pattern, output):
 @tu.requires_ipu_model
 @pytest.mark.parametrize("dithering", [False, True])
 def test_conv_dithering(op_tester, capfd, dithering):
-    output = conv_dithering_harness(op_tester, capfd, dithering)
+    output = conv_dithering_harness(op_tester, capfd, [dithering, dithering])
     zero_or_one = "1" if dithering else "0"
     negated_result = "0" if dithering else "1"
     assert_contains(r" +enableConvDithering +" + zero_or_one, output)

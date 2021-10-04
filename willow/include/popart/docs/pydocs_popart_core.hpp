@@ -1030,6 +1030,11 @@ Parameter ``perConvReservedTiles``:
 Parameter ``cycleBackOff``:
     Cycle back-off proportion, [0, 1).
 
+Parameter ``enableConvDithering``:
+    Enable convolution dithering per convolution. If true, then
+    convolutions with different parameters will be laid out from
+    different tiles in an effort to improve tile balance in models.
+
 Parameter ``debugContext``:
     Optional debug context.
 
@@ -2355,6 +2360,15 @@ Parameter ``nodeOutputName``:
 
 Parameter ``availableMemoryProportion``:
     The available memory proportion 0 < x <= 1.)doc";
+
+static const char *__doc_popart_Builder_setEnableConvDithering =
+    R"doc(Enable convolution dithering.
+
+Parameter ``nodeOutputName``:
+    Name of the output tensor of the ONNX node.
+
+Parameter ``value``:
+    1, if convolution dithering should be enabled. 0, otherwise.)doc";
 
 static const char *__doc_popart_Builder_setGraphName =
     R"doc(Specifies a graph name.

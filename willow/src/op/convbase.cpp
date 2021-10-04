@@ -82,8 +82,24 @@ MultiConvOptions::MultiConvOptions(
   }
 
   if (attr.hasAttribute(sEnableConvDitheringAttribute)) {
-    enableConvDithering =
-        attr.getAttribute<Attributes::String>(sEnableConvDitheringAttribute);
+    // Set from locally set attribute
+    if (attr.getAttribute<Attributes::Ints>(sEnableConvDitheringAttribute)
+            .size()) {
+      // > 1 convolution
+      enableConvDithering =
+          attr.getAttribute<Attributes::Ints>(sEnableConvDitheringAttribute);
+    } else {
+      // only one convolution
+      enableConvDithering = {
+          attr.getAttribute<Attributes::Int>(sEnableConvDitheringAttribute)};
+    }
+  } else {
+    // Set from session-wide convolution settings
+    auto convDitheringOpt = sessionConvOptions.find("enableConvDithering");
+    if (convDitheringOpt != sessionConvOptions.end()) {
+      enableConvDithering =
+          std::vector<int64_t>(numConvs, std::stoll(convDitheringOpt->second));
+    }
   }
 
   // Catch bad string early (i.e. before handing off to poplar)
@@ -156,8 +172,9 @@ MultiConvOptions::getConvOptions(int convIndex) const {
     strings["availableMemoryProportion"] =
         std::to_string(availableMemoryProportions[convIndex]);
   }
-  if (enableConvDithering) {
-    strings["enableConvDithering"] = *enableConvDithering;
+  if (enableConvDithering.size()) {
+    strings["enableConvDithering"] =
+        enableConvDithering[convIndex] != 0 ? "true" : "false";
   }
   return strings;
 }

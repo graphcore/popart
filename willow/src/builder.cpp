@@ -496,7 +496,7 @@ std::vector<TensorId> AiGraphcoreOpset1::multiconv(
     const nonstd::optional<std::string> planType,
     const nonstd::optional<int> perConvReservedTiles,
     const nonstd::optional<float> cycleBackOff,
-    const nonstd::optional<bool> enableConvDithering,
+    const std::vector<int64_t> enableConvDithering,
     const DebugContext &debugContext) {
 
   // Some checks:
@@ -546,6 +546,7 @@ std::vector<TensorId> AiGraphcoreOpset1::multiconv(
   checkParamSize(availableMemoryProportions.size(),
                  "availableMemoryProportions");
   checkParamSize(partialsTypes.size(), "partialsTypes");
+  checkParamSize(enableConvDithering.size(), "enableConvDithering");
 
   // 4. Check the parameters of each conv individually
   std::vector<int64_t> emptyParams;
@@ -637,10 +638,8 @@ std::vector<TensorId> AiGraphcoreOpset1::multiconv(
     finalAttributes[sPartialsTypeAttribute] = partialsTypes;
   }
   finalAttributes["numConvs"] = static_cast<int64_t>(numConvs);
-  if (enableConvDithering) {
-    bool value{*enableConvDithering};
-    finalAttributes[sEnableConvDitheringAttribute] =
-        std::string(value ? "true" : "false");
+  if (!enableConvDithering.empty()) {
+    finalAttributes[sEnableConvDitheringAttribute] = enableConvDithering;
   }
 
   BuilderDebugInfo di(
@@ -1711,6 +1710,27 @@ void Builder::setAvailableMemoryProportion(
 
   addNodeAttribute(
       sAvailMemAttribute, availableMemoryProportion, {nodeOutputName});
+}
+
+void Builder::setEnableConvDithering(const TensorId &nodeOutputName,
+                                     int64_t value) {
+  if (value != 0 && value != 1) {
+    throw error("enableConvDithering must be a bool value");
+  }
+
+  const auto &nodeProto = impl_->findNodeProtoByOutputNames({nodeOutputName});
+  const auto &opType    = nodeProto.op_type();
+
+  const bool isConv = opType == "Conv";
+
+  if (!isConv) {
+    throw error(
+        "Builder::setEnableConvDithering should only be called on convolutions "
+        "but was given: " +
+        opType);
+  }
+
+  addNodeAttribute(sEnableConvDitheringAttribute, value, {nodeOutputName});
 }
 
 void Builder::setGraphName(const std::string &name) {
