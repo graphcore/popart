@@ -6,18 +6,19 @@ from popart.ir.globals import gcg
 from popart.ir.tensor import Tensor
 from .utils import check_in_graph
 
-__all__ = ["dynamicupdate"]
+__all__ = ["dynamicupdate_inplace"]
 
 
-def dynamicupdate(t: Tensor,
-                  index: Tensor,
-                  t_update: Tensor,
-                  axes: List[int],
-                  sizes: List[int],
-                  noOverlap: bool,
-                  updateInInfo: _ir.TensorInfo = _ir.TensorInfo()) -> Tensor:
+def dynamicupdate_inplace(
+        t: Tensor,
+        index: Tensor,
+        t_update: Tensor,
+        axes: List[int],
+        sizes: List[int],
+        noOverlap: bool,
+        updateInInfo: _ir.TensorInfo = _ir.TensorInfo()) -> Tensor:
     """
-    Dynamically updates a tensor.
+    Dynamically updates a tensor inplace.
 
     The word "dynamic" refers to the fact that the index can be specified
     during runtime. 
@@ -68,15 +69,15 @@ def dynamicupdate(t: Tensor,
 
     check_in_graph(g, t, index)
 
-    settings = _ir.Settings(pb_g, 'dynamicupdate')
-    opid = _ir.OperatorIdentifier("ai.graphcore", "DynamicUpdate", 1,
+    settings = _ir.Settings(pb_g, 'dynamicupdate_inplace')
+    opid = _ir.OperatorIdentifier("ai.graphcore", "DynamicUpdateInplace", 1,
                                   _ir.NumInputs(3, 3), 1)
-    op = pb_g.createConnectedOp_DynamicUpdateOp(
+    op = pb_g.createConnectedOp_DynamicUpdateInplaceOp(
         {
             0: t.id,
             1: index.id,
             2: t_update.id
-        }, {0: g._create_tensor_id(f"dynamicupdate_out")}, opid, axes, sizes,
-        noOverlap, settings, updateInInfo)
+        }, {0: g._create_tensor_id(f"dynamicupdateinplace_out")}, opid, axes,
+        sizes, noOverlap, settings, updateInInfo)
 
     return Tensor._from_pb_tensor(op.outTensor(0))
