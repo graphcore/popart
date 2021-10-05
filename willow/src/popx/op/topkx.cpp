@@ -118,6 +118,8 @@ void TopKOpx::grow(snap::program::Sequence &prog) const {
 
   // of shape: [a0, a1, a3, K]
   topKVals = topKVals.reshape(valsShape_t);
+
+  topKInds = topKInds.reinterpret(poplar::INT);
   topKInds = topKInds.reshape(valsShape_t);
 
   // of shape [a0, a1, K, a3]

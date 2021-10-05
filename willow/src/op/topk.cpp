@@ -36,8 +36,7 @@ void TopKOp::setup() {
 
   shape[getAxis()] = getK();
 
-  // TODO T8133 : how to manage this correctly, should be INT64
-  outInfo(getIndicesOutIndex()) = TensorInfo(DataType::UINT32, shape);
+  outInfo(getIndicesOutIndex()) = TensorInfo(DataType::INT32, shape);
   outInfo(getValuesOutIndex()) =
       TensorInfo(inInfo(getInIndex()).dataType(), shape);
 }
