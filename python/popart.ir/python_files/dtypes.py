@@ -225,8 +225,9 @@ double = float64
 # Delete the `dtype` factory from the `dtype` class.
 del dtype._factory
 
-# A set of objects that won't be imported when using `from dtype import *`.
-exclude_from_all = set([name for name in dir() if name.startswith('_')])
-exclude_from_all.add('exclude_from_all')
-
-__all__ = [name for name in dir() if name not in exclude_from_all]
+# Must define all statically so language servers can parse import *
+__all__ = [
+    "dtype", "bool", "int8", "int16", "int32", "int64", "uint8", "uint16",
+    "uint32", "uint64", "half", "float16", "float", "float32", "double",
+    "float64", "complex64", "complex128"
+]

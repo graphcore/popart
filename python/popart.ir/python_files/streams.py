@@ -7,9 +7,7 @@ import popart._internal.ir as _ir
 
 from typing import Tuple, Optional
 
-__all__ = [
-    'DeviceToHostStream', 'HostToDeviceStream', 'h2d_stream', 'd2h_stream'
-]
+__all__ = ['h2d_stream', 'd2h_stream']
 
 
 class _Stream:
@@ -54,7 +52,8 @@ class DeviceToHostStream(_Stream):
     pass
 
 
-def h2d_stream(dtype: dtype, shape: Tuple[int],
+def h2d_stream(shape: Tuple[int, ...],
+               dtype: dtype,
                name: Optional[str] = None) -> HostToDeviceStream:
     g = gcg()
     mg = g.ir().main_graph()
@@ -75,7 +74,8 @@ def h2d_stream(dtype: dtype, shape: Tuple[int],
     return HostToDeviceStream(Tensor._from_pb_tensor(pb_mg.getTensor(name)))
 
 
-def d2h_stream(dtype: dtype, shape: Tuple[int],
+def d2h_stream(shape: Tuple[int, ...],
+               dtype: dtype,
                name: Optional[str] = None) -> DeviceToHostStream:
     g = gcg()
     mg = g.ir().main_graph()

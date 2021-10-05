@@ -4,17 +4,14 @@ import pytest
 
 import popart._internal.ir as _ir
 import popart.ir as pir
-from popart import popart_exception
+from popart.ir.tensor import Variable, Constant
 
-type_map = {
-    pir.Variable: _ir.TensorType.Variable,
-    pir.Constant: _ir.TensorType.Const
-}
-ctor_map = {pir.Variable: pir.variable, pir.Constant: pir.constant}
+type_map = {Variable: _ir.TensorType.Variable, Constant: _ir.TensorType.Const}
+ctor_map = {Variable: pir.variable, Constant: pir.constant}
 
 
 class TestTensor:
-    @pytest.mark.parametrize('t_class', [pir.Variable, pir.Constant])
+    @pytest.mark.parametrize('t_class', [Variable, Constant])
     @pytest.mark.parametrize('data', [
         np.random.rand(1, 2, 3),
         [[[1, 2, 3], [4, 5, 6]]],
@@ -51,7 +48,7 @@ class TestTensor:
             assert pb_t.tensorType() == type_map[t_class]
             assert pb_t.hasTensorData()
 
-    @pytest.mark.parametrize('t_class', [pir.Variable, pir.Constant])
+    @pytest.mark.parametrize('t_class', [Variable, Constant])
     def test_construction1(self, t_class):
         """Test construction of tensors that hold 0-d data at graph creation."""
         ir = pir.Ir()
@@ -75,5 +72,21 @@ class TestTensor:
             d = a._ensure_tensor(3)
 
             assert c == b
-            assert isinstance(d, pir.Constant)
+            assert isinstance(d, Constant)
             assert d.dtype == a.dtype
+
+    def test_from_pb_type(self):
+        """Test the from_pb_tensor returns the correct python type"""
+        ir = pir.Ir()
+        main = ir.main_graph()
+
+        with main:
+            a = pir.variable(1)
+            c = pir.constant(2)
+
+        assert isinstance(a, Variable)
+        new_a = pir.Tensor._from_pb_tensor(a._pb_tensor)
+        assert isinstance(new_a, Variable)
+        assert isinstance(c, Constant)
+        new_c = pir.Tensor._from_pb_tensor(c._pb_tensor)
+        assert isinstance(new_c, Constant)

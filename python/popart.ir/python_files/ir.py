@@ -103,7 +103,7 @@ class Ir:
                 if isinstance(arg, Tensor):
                     t = arg
                     in_args.append(
-                        subgraph_input(t.dtype, t.shape,
+                        subgraph_input(t.shape, t.dtype,
                                        _ir.removeScope(pb_g, t.id)))
                 else:
                     in_args.append(arg)
@@ -112,7 +112,7 @@ class Ir:
             for k, v in kwargs.items():
                 if isinstance(v, Tensor):
                     t = v
-                    in_kwargs[k] = subgraph_input(t.dtype, t.shape,
+                    in_kwargs[k] = subgraph_input(t.shape, t.dtype,
                                                   _ir.removeScope(pb_g, t.id))
                 else:
                     in_kwargs[k] = v

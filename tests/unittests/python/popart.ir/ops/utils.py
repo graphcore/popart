@@ -1,5 +1,5 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-from typing import Type, List
+from typing import Type
 
 import popart.ir as pir
 import popart._internal.ir as _ir

@@ -7,8 +7,7 @@ from popart.ir import dtypes
 from popart.ir.context import gcg
 
 __all__ = [
-    'Tensor', 'Variable', 'variable', 'Constant', 'constant', 'subgraph_input',
-    'subgraph_output'
+    'Tensor', 'variable', 'constant', 'subgraph_input', 'subgraph_output'
 ]
 
 
@@ -20,6 +19,12 @@ class Tensor:
 
     @classmethod
     def _from_pb_tensor(cls, pb_tensor: _ir.Tensor) -> 'Tensor':
+        if cls == Tensor:
+            if pb_tensor.tensor_type() == "Variable":
+                return Variable._from_pb_tensor(pb_tensor)
+            elif pb_tensor.tensor_type() == "Const":
+                return Constant._from_pb_tensor(pb_tensor)
+
         self = super().__new__(cls)
         self._pb_tensor = pb_tensor
         return self
@@ -49,7 +54,7 @@ class Tensor:
         return _ir.removeScope(self._pb_tensor.getGraph(), self.id)
 
     def __repr__(self) -> str:
-        return f"{self.name} {self.dtype} {self.shape}"
+        return f"Tensor[id={self.id} type={self.dtype} shape={self.shape}]"
 
     def __hash__(self):
         """Hashes the Tensor, based on #id"""
@@ -264,8 +269,9 @@ def constant(data: Union[np.ndarray, Sequence[Any], int, float],
     return Constant._from_pb_tensor(pb_g.getTensor(pb_id))
 
 
-def subgraph_input(dtype: Optional[dtypes.dtype], shape: Tuple[int],
-                   unscoped_name: str) -> Tensor:
+def subgraph_input(shape: Tuple[int],
+                   dtype: dtypes.dtype,
+                   name: Optional[str] = None) -> Tensor:
     """Create a new input tensor to the current graph.
 
     You can use this function when defining a subgraph to create a new input
@@ -276,7 +282,7 @@ def subgraph_input(dtype: Optional[dtypes.dtype], shape: Tuple[int],
         >>> import popart.ir as pir
         >>>
         >>> def add_w(x):
-        >>>     w = pir.subgraph_input(x.dtype, x.shape, "w")
+        >>>     w = pir.subgraph_input(x.shape, x.dtype, "w")
         >>>     return w + x
         >>>
         >>> ir = pir.Ir()
@@ -287,18 +293,17 @@ def subgraph_input(dtype: Optional[dtypes.dtype], shape: Tuple[int],
         >>>     y = ops.call(add_w_graph, x, w)
 
     Args:
-        data (np.array, or a value numpy can use to construct an np.ndarray):
-            The data used to initialise the tensor.
+        shape (Tuple[int, ...])
+            The shape of the Tensor
         dtype (dtype):
-            The data type of the tensor. Defaults to `pir.float32`.
-        unscoped_name (str):
-            The name of the tensor. Note this should not include the Graph
-            scope.
+            The data type of the tensor
+        name (Optional[str]):
+            The name of the tensor.
     """
     g = gcg()
     pb_g = g._pb_graph
 
-    pb_id = _ir.addScope(pb_g, unscoped_name)
+    pb_id = g._create_tensor_id(name)
     pb_info = _ir.TensorInfo(dtype._pb_dtype, shape)
 
     pb_g.addInput(pb_id, pb_info)
@@ -317,7 +322,7 @@ def subgraph_output(t: Tensor) -> None:
         >>> import popart.ir as pir
         >>>
         >>> def add_w(x):
-        >>>     w = pir.subgraph_input(x.dtype, x.shape, "w")
+        >>>     w = pir.subgraph_input(x.shape, x.dtype, "w")
         >>>     y = w + x
         >>>     pir.subgraph_output(y)
         >>>
@@ -331,7 +336,7 @@ def subgraph_output(t: Tensor) -> None:
     Args:
         t (Tensor):
             The subgraph tensor to mark as an output in the current graph.
-    
+
     Throws:
         ValueError:
             If #t is not in the current graph.

@@ -40,7 +40,7 @@ class TestCall:
                 self.w: pir.Tensor = None
 
             def build(self, x):
-                self.w = pir.subgraph_input(x.dtype, x.shape, "w")
+                self.w = pir.subgraph_input(x.shape, x.dtype, "w")
                 return self.w + x
 
         with g:

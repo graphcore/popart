@@ -17,7 +17,7 @@ class TestHostStore:
             b = ops.add(a, a)
 
             # Adds a dummy ActGrad tensor in the main graph as the stream handle
-            d2h = pir.d2h_stream(pir.dtypes.float32, ())
+            d2h = pir.d2h_stream((), pir.dtypes.float32)
             ops.host_store(d2h, b)
 
         assert len(g.get_tensors()) == 3

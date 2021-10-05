@@ -13,7 +13,7 @@ class TestHostLoad:
         g = ir.main_graph()
 
         with g:
-            h2d = pir.h2d_stream(pir.dtypes.float32, ())
+            h2d = pir.h2d_stream((), pir.dtypes.float32)
             x = ops.host_load(h2d, "x")
 
         assert len(g.get_tensors()) == 3

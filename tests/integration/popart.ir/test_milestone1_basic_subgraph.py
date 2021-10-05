@@ -3,6 +3,7 @@
 """
 
 import popart.ir as pir
+from popart.ir.streams import HostToDeviceStream, DeviceToHostStream
 import popart.ir.ops as ops
 
 import popart._internal.ir as _ir
@@ -27,11 +28,11 @@ class Linear(pir.Module):
 
     def build(self, x: pir.Tensor, out_features: int,
               bias: bool = True) -> pir.Tensor:
-        self.W = pir.subgraph_input(pir.float32, (x.shape[-1], out_features),
+        self.W = pir.subgraph_input((x.shape[-1], out_features), pir.float32,
                                     "W")
         y = x @ self.W
         if bias:
-            self.b = pir.subgraph_input(pir.float32, (out_features, ), "b")
+            self.b = pir.subgraph_input((out_features, ), pir.float32, "b")
             y = y + self.b
         return y
 
@@ -42,13 +43,13 @@ _INPUT_SHAPE = (2, 16)
 # Build model using popart.ir API, then return the underlying Ir.
 # Also returns the streams for the input and output tensors, and the data of the
 # variables.
-def build_model() -> Tuple[_ir.Ir, pir.HostToDeviceStream, pir.
-                           DeviceToHostStream, np.array, np.array]:
+def build_model(
+) -> Tuple[_ir.Ir, HostToDeviceStream, DeviceToHostStream, np.array, np.array]:
     ir = pir.Ir()
 
     main = ir.main_graph()
     with main:
-        x_h2d = pir.h2d_stream(pir.float32, _INPUT_SHAPE, name="x_stream")
+        x_h2d = pir.h2d_stream(_INPUT_SHAPE, pir.float32, name="x_stream")
         x = ops.host_load(x_h2d, "x")
 
         out_features = x.shape[-1]
@@ -70,7 +71,7 @@ def build_model() -> Tuple[_ir.Ir, pir.HostToDeviceStream, pir.
                          lin.b: b
                      })
 
-        y_d2h = pir.d2h_stream(pir.float32, _INPUT_SHAPE, name="x_stream")
+        y_d2h = pir.d2h_stream(_INPUT_SHAPE, pir.float32, name="x_stream")
         ops.host_store(y_d2h, y)
 
     return ir._pb_ir, x_h2d, y_d2h, W_data, b_data

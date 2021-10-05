@@ -22,7 +22,7 @@ data = np.arange(64).reshape(4, 4, 4).astype('float32')
 
 def run_ir(ir, y):
     ir = ir._pb_ir  # Internal ir
-    y_d2h = pir.d2h_stream(y.dtype, y.shape, name="y_stream")
+    y_d2h = pir.d2h_stream(y.shape, y.dtype, name="y_stream")
     ops.host_store(y_d2h, y)
     y_id = y_d2h.tensor_id()
 

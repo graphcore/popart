@@ -14,18 +14,19 @@ def test_subgraph():
 
         def build(self, x: pir.Tensor, out_features: int,
                   bias: bool = True) -> pir.Tensor:
-            self.W = pir.subgraph_input(pir.float32,
-                                        (x.shape[-1], out_features), "W")
+            self.W = pir.subgraph_input((x.shape[-1], out_features),
+                                        pir.float32,
+                                        "W")
             y = ops.mul(x, self.W)
             if bias:
-                self.b = pir.subgraph_input(pir.float32, (out_features, ), "b")
+                self.b = pir.subgraph_input((out_features, ), pir.float32, "b")
                 y = y + self.b
             return y
 
     ir = pir.Ir()
     main = ir.main_graph()
     with main:
-        h2d = pir.h2d_stream(pir.dtypes.float32, (16, 16))
+        h2d = pir.h2d_stream((16, 16), pir.dtypes.float32)
         x = ops.host_load(h2d, "x")
 
         W = pir.variable(np.random.normal(0, 0.1, (16, 16)), name="W")
@@ -42,7 +43,7 @@ def test_subgraph():
                                        })
 
         y = call_info.get_output_tensors()[0]
-        d2h = pir.d2h_stream(y.dtype, y.shape)
+        d2h = pir.d2h_stream(y.shape, y.dtype)
         ops.host_store(d2h, y)
 
     assert len(ss_graph.get_input_tensors()) == 3

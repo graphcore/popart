@@ -102,8 +102,12 @@ void bindTensor(py::module &m) {
              self.setTensorData(info, data.request().ptr);
            })
       .def("associatedOps", &Tensor::associatedOps)
-      .def("getGraph", py::overload_cast<>(&Tensor::getGraph))
-      .def("getGraph_const", py::overload_cast<>(&Tensor::getGraph, py::const_))
+      .def("getGraph",
+           py::overload_cast<>(&Tensor::getGraph),
+           py::return_value_policy::reference)
+      .def("getGraph_const",
+           py::overload_cast<>(&Tensor::getGraph, py::const_),
+           py::return_value_policy::reference)
       .def("getIr",
            py::overload_cast<>(&Tensor::getIr),
            py::return_value_policy::reference)
