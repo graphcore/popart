@@ -62,6 +62,7 @@ static OpDefinition::DataTypes T1 = {DataType::UINT32};
 // for the purposes of testing
 static OpDefinition lossScaleUpdateOpDef(
     {OpDefinition::Inputs({{"loss_scale_update_factor", T0},
+                           {"loss_scaling", T0},
                            {"grad_statistics", T1}}),
      OpDefinition::Outputs({{"loss_scale_update_factor_updated", T0}}),
      OpDefinition::Attributes({{"to", {"FLOAT|FLOAT16"}},

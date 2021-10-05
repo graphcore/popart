@@ -33,7 +33,9 @@ public:
   static InIndex getLossScaleUpdateFactorInIndex() { return 0; }
 
   // Gradient tensor statistics are inputs at indices 0-N
-  static InIndex getFirstStatisticsTensorInIndex() { return 1; }
+  static InIndex getFirstStatisticsTensorInIndex() { return 2; }
+
+  static InIndex getLossScalingInIndex() { return 1; }
 
   // The factor by which to multiply the loss scale tensor
   static OutIndex getUpdatedLossScaleUpdateFactorOutIndex() { return 0; }

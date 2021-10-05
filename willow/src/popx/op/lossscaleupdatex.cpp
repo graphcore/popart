@@ -136,7 +136,8 @@ void LossScaleUpdateOpx::grow(snap::program::Sequence &prog) const {
     // As a result, the lossScaleUpdateFactor should be clipped at
     // 2^15 / lossScaling to satisfy the requirement above.
     auto lossScaling =
-        get(getLossScaleTensor(op.getGraph())->id).getPoplarTensor();
+        getInTensor(op.getLossScalingInIndex()).getPoplarTensor();
+
     auto clipAt_ = graph().getPoplarGraph().addConstant<float>(
         lossScaling.elementType(), {1}, std::numeric_limits<short>::max() + 1);
     graph().getPoplarGraph().setTileMapping(clipAt_, 0);
