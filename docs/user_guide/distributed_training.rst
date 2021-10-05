@@ -78,4 +78,4 @@ A small example illustrating how to use Horovod with PopART:
 .. literalinclude:: files/simple_distributed_training.py
 
 
-A more comprehensive example on a real dataset can be found in `<https://github.com/graphcore/tutorials/tree/sdk-release-2.2/feature_examples/popart/distributed_training/horovod>`_.
+A more comprehensive example on a real dataset can be found in `<https://github.com/graphcore/tutorials/tree/sdk-release-2.3/feature_examples/popart/distributed_training/horovod>`_.
