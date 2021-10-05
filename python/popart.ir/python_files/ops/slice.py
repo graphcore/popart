@@ -1,7 +1,7 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 from typing import Optional, Union, List
 import popart._internal.ir as _ir
-from popart.ir.globals import gcg
+from popart.ir.context import get_current_context
 from popart.ir.tensor import Tensor
 from .utils import check_in_graph
 
@@ -45,8 +45,8 @@ def slice(t: Tensor,
     Returns:
         Tensor: output tensor
     """
-
-    g = gcg()
+    ctx = get_current_context()
+    g = ctx.graph
     pb_g = g._pb_graph
 
     check_in_graph(g, t)
@@ -94,7 +94,7 @@ def slice(t: Tensor,
 
     opid = _ir.OperatorIdentifier("ai.onnx", "Slice", 11, _ir.NumInputs(1, 1),
                                   1)
-    settings = _ir.Settings(pb_g, "slice")
+    settings = ctx._get_op_settings("slice")
     op = pb_g.createConnectedOp_SliceOp(
         {0: t.id},
         {0: g._create_tensor_id("slice_out")},
