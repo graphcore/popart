@@ -389,6 +389,8 @@ bool AutomaticLossScale::apply(Graph &graph) const {
 
   lossScaleUpdateOp->connectInTensor(
       LossScaleUpdateOp::getLossScaleUpdateFactorInIndex(), lsUpdateFactor->id);
+  lossScaleUpdateOp->connectInTensor(LossScaleUpdateOp::getLossScalingInIndex(),
+                                     lossScaleTensor->id);
   lossScaleUpdateOp->createAndConnectOutTensor(
       LossScaleUpdateOp::getUpdatedLossScaleUpdateFactorOutIndex(),
       reservedUpdatedVarPrefix() + lsUpdateFactor->id);
@@ -432,7 +434,7 @@ bool AutomaticLossScale::apply(Graph &graph) const {
   // Disconnect the loss scale tensor from its consumers and reconnect to the
   // updated loss scale tensor
   for (Op *consumer : lossScaleTensor->consumers.getOps()) {
-    if (consumer != lsMulOp) {
+    if (consumer != lsMulOp && consumer != lossScaleUpdateOp) {
       auto inIndices = consumer->input->indices(lossScaleTensor);
       for (auto inIndex : inIndices) {
         consumer->disconnectInTensor(inIndex);
