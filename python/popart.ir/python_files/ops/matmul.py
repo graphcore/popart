@@ -4,7 +4,7 @@ from typing_extensions import Literal
 from enum import Enum
 
 import popart._internal.ir as _ir
-from popart.ir.context import get_current_context
+from popart.ir.context import get_current_context, op_debug_context
 from popart.ir.tensor import Tensor
 from popart.ir import dtypes
 from .utils import check_in_graph, convert_optional_float
@@ -24,6 +24,7 @@ class SerialiseMode(Enum):
     OutputChannels = "OutputChannels"
 
 
+@op_debug_context
 def matmul(lhs: Tensor,
            rhs: Tensor,
            available_memory_proportion: Optional[float] = None,

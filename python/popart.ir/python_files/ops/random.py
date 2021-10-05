@@ -1,6 +1,6 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 import popart._internal.ir as _ir
-from popart.ir.context import get_current_context
+from popart.ir.context import get_current_context, op_debug_context
 from popart.ir.tensor import Tensor
 from typing import Tuple
 from popart.ir import dtypes
@@ -9,6 +9,7 @@ from .utils import check_in_graph, convert_optional_dtype
 __all__ = ['random_uniform', 'random_normal']
 
 
+@op_debug_context
 def random_uniform(seed_tensor: Tensor,
                    shape: Tuple[int, ...],
                    low: float = 0.0,
@@ -58,6 +59,7 @@ def random_uniform(seed_tensor: Tensor,
     return Tensor._from_pb_tensor(op.outTensor(0))
 
 
+@op_debug_context
 def random_normal(seed_tensor: Tensor,
                   shape: Tuple[int, ...],
                   mean: float = 0.0,

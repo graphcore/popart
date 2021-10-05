@@ -2,9 +2,9 @@
 from typing import Iterable, List, Mapping, Optional, Tuple, Union
 
 import popart._internal.ir as _ir
-from popart.ir.context import get_current_context
+from popart.ir.context import get_current_context, op_debug_context
 from popart.ir.graph import Graph
-from popart.ir.tensor import Tensor, subgraph_input
+from popart.ir.tensor import Tensor
 
 from .utils import check_in_graph
 
@@ -12,6 +12,7 @@ __all__ = ['repeat']
 
 
 # TODO: T49287 add a repeat_with_info
+@op_debug_context
 def repeat(repeat_subgraph: Graph,
            repeat_trip_count: int,
            *subgraph_fn_param_inputs: Tensor,

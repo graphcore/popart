@@ -1,16 +1,20 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-from typing import TYPE_CHECKING, Any, Callable, DefaultDict, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Callable, DefaultDict, Dict, Iterable, List, Optional, TypeVar, Union, overload
+import inspect
+import os
 from collections import defaultdict
 from functools import wraps
 from contextlib import contextmanager
+
 import popart._internal.ir as _ir
 
 if TYPE_CHECKING:
     from popart.ir.graph import Graph
+    from popart.ir.tensor import Tensor
 
 __all__ = [
     'get_current_graph', 'get_main_graph', 'gcg', 'gmg', 'virtual_graph',
-    'pipeline_stage', 'in_sequence'
+    'pipeline_stage', 'in_sequence', 'name_scope'
 ]
 
 
@@ -21,12 +25,14 @@ class Context:
 
     def _reset(self):
         self._graphs: List['Graph'] = []
-        # By default place all ops on ipu 0
-        self._virtual_graph_ids: List[int] = [0]
-        self._pipeline_stages: List[int] = []
+        self._virtual_graph_id: int = 0
+        self._pipeline_stage: Optional[int] = None
         self._in_sequence: Optional[bool] = None
         self._previous_ops: DefaultDict[_ir.GraphId, List[
             _ir.Op]] = defaultdict(list)
+        self._debug_info: Optional[_ir.DebugInfo] = None
+        self._debug_context_frame_offset: int = 0
+        self._name_scope: List[str] = []
 
         self._hook_handle: int = 0
         self._op_created_hooks: Dict[int, Callable[[_ir.Op], Any]] = {}
@@ -35,7 +41,7 @@ class Context:
         """Return an internal_ir Settings object using any values specified by a context.
             For example: virtual_graph"""
         pb_g = self.graph._pb_graph
-        settings = _ir.Settings(pb_g, name)
+        settings = _ir.Settings(pb_g, "/".join((*self.name_scopes, name)))
 
         vgid = self.virtual_graph_id
         if vgid is not None:
@@ -45,29 +51,28 @@ class Context:
         if pstage is not None:
             settings.pipelineStage = _ir.OptionalPipelineStage(pstage)
 
+        if self._debug_info is not None:
+            settings.debugInfoId = self._debug_info.getId()
+
         return settings
-
-    def push_virtual_graph_id(self, vgid: int):
-        self._virtual_graph_ids.append(vgid)
-
-    def pop_virtual_graph_id(self) -> int:
-        return self._virtual_graph_ids.pop()
 
     @property
     def virtual_graph_id(self) -> Optional[int]:
-        return self._virtual_graph_ids[-1] if len(
-            self._virtual_graph_ids) > 0 else None
-
-    def push_pipeline_stage(self, stage: int):
-        self._pipeline_stages.append(stage)
-
-    def pop_pipeline_stage(self) -> int:
-        return self._pipeline_stages.pop()
+        return self._virtual_graph_id
 
     @property
     def pipeline_stage(self) -> Optional[int]:
-        return self._pipeline_stages[-1] if len(
-            self._pipeline_stages) > 0 else None
+        return self._pipeline_stage
+
+    def push_name_scope(self, name: str):
+        self._name_scope.append(name)
+
+    def pop_name_scope(self) -> str:
+        return self._name_scope.pop()
+
+    @property
+    def name_scopes(self):
+        return list(self._name_scope)
 
     def push_graph(self, g: 'Graph'):
         if len(self._graphs) > 0 and self._graphs[0].ir() != g.ir():
@@ -237,18 +242,20 @@ gmg = get_main_graph
 def virtual_graph(vgid: int):
     """Set the virtual graph id on Ops created in this context."""
     ctx = get_current_context()
-    ctx.push_virtual_graph_id(vgid)
+    prev = ctx._virtual_graph_id
+    ctx._virtual_graph_id = vgid
     yield vgid
-    ctx.pop_virtual_graph_id()
+    ctx._virtual_graph_id = prev
 
 
 @contextmanager
 def pipeline_stage(stage: int):
     """Set the pipeline stage on Ops created in this context."""
     ctx = get_current_context()
-    ctx.push_pipeline_stage(stage)
+    prev = ctx._pipeline_stage
+    ctx._pipeline_stage = stage
     yield stage
-    ctx.pop_pipeline_stage()
+    ctx._pipeline_stage = prev
 
 
 @contextmanager
@@ -265,3 +272,114 @@ def in_sequence(enabled: bool = True):
     ctx.in_sequence = enabled
     yield enabled
     ctx.in_sequence = prev  # type: ignore
+
+
+@contextmanager
+def name_scope(name: str):
+    """Set the virtual graph id on Ops created in this context."""
+    ctx = get_current_context()
+    ctx.push_name_scope(name)
+    yield ctx.name_scopes
+    ctx.pop_name_scope()
+
+
+@contextmanager
+def debug_context_frame_offset(i: int):
+    ctx = get_current_context()
+    # Plus 1 to account for frame usage as a decorator
+    ctx._debug_context_frame_offset += (i + 1)
+    yield ctx._debug_context_frame_offset
+    ctx._debug_context_frame_offset -= (i + 1)
+
+
+def _tensor_ids_from_maybe_tensors(
+        ts: Union['Tensor', Iterable[Any]]) -> _ir.ProfileValue:
+    from popart.ir.tensor import Tensor
+    if isinstance(ts, Tensor):
+        ids = [_ir.ProfileValue(ts.id)]
+    else:
+        ids = [_ir.ProfileValue(t.id) for t in ts if isinstance(t, Tensor)]
+    return _ir.ProfileValue(ids)
+
+
+def get_source_location(offset: int):
+    stack = inspect.getouterframes(inspect.currentframe())
+    try:
+        debug_frame = stack[offset + 1]
+    except IndexError as e:
+        raise IndexError(
+            f"Incorrect source location offset. Stack {len(stack)}, Offset {offset+1}"
+        ) from e
+    return _ir.SourceLocation(debug_frame.function,
+                              os.path.realpath(debug_frame.filename),
+                              debug_frame.lineno)
+
+
+# overload is required so that `op_debug_context` does not remove typehints
+Fn = TypeVar('Fn')
+
+
+@overload
+def op_debug_context(name: str) -> Callable[[Fn], Fn]:
+    ...
+
+
+@overload
+def op_debug_context(name: Fn) -> Fn:
+    ...
+
+
+def op_debug_context(name):  # type: ignore
+    """Decorator to specify a new op debug context. Typical usage:
+        ```
+        @op_debug_context
+        def add(lhs, rhs):
+            ...
+        ```
+        or, to specify the context name:
+        ```
+        @op_debug_context("op")
+        def my_op(x):
+            ...
+        ```
+    """
+    _name: str = name  # type: ignore
+
+    def outer(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            ctx = get_current_context()
+            prev = ctx._debug_info
+
+            # TODO: Allow for parent layer DebugInfo to be passed here.
+            dc = _ir.DebugContext(
+                "/".join((*ctx.name_scopes, _name)),
+                get_source_location(ctx._debug_context_frame_offset + 1))
+
+            di = _ir.DebugInfo(dc, "popart.ir")
+            di.setValue("category", "op")
+            di.setValue("api", _name)
+
+            inputs = _tensor_ids_from_maybe_tensors((*args, *kwargs.values()))
+            di.setValue("inputs", inputs)
+            ctx._debug_info = di
+
+            # Run function
+            result = func(*args, **kwargs)
+
+            if result is not None:
+                try:
+                    outputs = _tensor_ids_from_maybe_tensors(result)
+                    di.setValue("outputs", outputs)
+                except TypeError:
+                    pass
+
+            ctx._debug_info = prev
+            return result
+
+        return wrapper
+
+    if callable(name):
+        _name = name.__name__
+        return outer(name)
+    return outer

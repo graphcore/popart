@@ -1,12 +1,13 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 import popart._internal.ir as _ir
-from popart.ir.context import get_current_context
+from popart.ir.context import get_current_context, op_debug_context
 from popart.ir.tensor import Tensor
 from .utils import check_in_graph
 
 __all__ = ['increment_mod', 'increment_mod_']
 
 
+@op_debug_context
 def increment_mod(t: Tensor, increment: float, modulus: float) -> Tensor:
     """
     Compute `(t + increment) % modulus`
@@ -46,6 +47,7 @@ def increment_mod(t: Tensor, increment: float, modulus: float) -> Tensor:
     return Tensor._from_pb_tensor(op.outTensor(0))
 
 
+@op_debug_context
 def increment_mod_(t: Tensor, increment: float, modulus: float) -> Tensor:
     """
     Compute `(t + increment) % modulus` inplace on `t`

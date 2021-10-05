@@ -2,7 +2,7 @@
 from typing import Optional, Union
 import popart._internal.ir as _ir
 from popart.ir import dtypes
-from popart.ir.context import get_current_context
+from popart.ir.context import get_current_context, op_debug_context
 from popart.ir.tensor import Tensor
 
 from .utils import check_in_graph
@@ -10,6 +10,7 @@ from .utils import check_in_graph
 __all__ = ['accumulate', 'accumulate_square', 'accumulate_mean']
 
 
+@op_debug_context
 def accumulate(t: Tensor, X: Tensor,
                f: Optional[Union[float, Tensor]] = None) -> Tensor:
     """
@@ -63,6 +64,7 @@ def accumulate(t: Tensor, X: Tensor,
     return Tensor._from_pb_tensor(op.outTensor(0))
 
 
+@op_debug_context
 def accumulate_square(t: Tensor,
                       X: Tensor,
                       f: Optional[Union[float, Tensor]] = None) -> Tensor:
@@ -116,12 +118,13 @@ def accumulate_square(t: Tensor,
     return Tensor._from_pb_tensor(op.outTensor(0))
 
 
+@op_debug_context
 def accumulate_mean(t: Tensor, X: Tensor,
                     step: Union[float, Tensor]) -> Tensor:
     """
     Updates a tensor `t` inplace using `t = (step/(step+1)) * t + (1/(step+1)) * X`.
     Intended to be used to keep track of the mean of a series of values.
-    
+
     For example:
     ```
     with g:

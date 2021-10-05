@@ -2,7 +2,7 @@
 from typing import Mapping, Union, Tuple
 
 import popart._internal.ir as _ir
-from popart.ir.context import get_current_context
+from popart.ir.context import get_current_context, debug_context_frame_offset, op_debug_context
 from popart.ir.graph import Graph
 from popart.ir.tensor import Tensor
 
@@ -35,7 +35,7 @@ class CallInfo:
         """
         Provided an input or output tensor in the `called_graph`, this method
         returns the associated input or output tensor on the CallOp.
-        
+
         Args:
             subgraph_tensor (Tensor): The tensor in the subgraph.
 
@@ -66,7 +66,7 @@ class CallInfo:
 
         Raises:
             popart_error: If `parent_tensor` is not an input to the CallOp.
-        
+
         Returns:
             Tensor: The tensor in the `called_graph`.
         """
@@ -122,6 +122,7 @@ class CallInfo:
         self._op.addModified(index, _regions)
 
 
+@debug_context_frame_offset(1)
 def call(subgraph: Graph,
          *subgraph_fn_param_inputs: Tensor,
          subgraph_in_to_parent_in: Optional[Mapping[Tensor, Tensor]] = None
@@ -166,6 +167,7 @@ def call(subgraph: Graph,
     return out_tensors
 
 
+@op_debug_context("call")
 def call_with_info(
         subgraph: Graph,
         *subgraph_fn_param_inputs: Tensor,

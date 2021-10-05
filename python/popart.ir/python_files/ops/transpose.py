@@ -1,18 +1,19 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 from typing import Optional, Tuple
 import popart._internal.ir as _ir
-from popart.ir.context import get_current_context
+from popart.ir.context import get_current_context, op_debug_context
 from popart.ir.tensor import Tensor
 from .utils import check_in_graph
 
 __all__ = ["transpose", "transpose_"]
 
 
+@op_debug_context
 def transpose(t: Tensor,
               permutation: Optional[Tuple[int, ...]] = None) -> Tensor:
     """
     Permute the axes of a Tensor. By default reverses the axes of t.
-    
+
     Args:
         t: Tensor
             Tensor to be transposed.
@@ -45,6 +46,7 @@ def transpose(t: Tensor,
     return Tensor._from_pb_tensor(op.outTensor(0))
 
 
+@op_debug_context
 def transpose_(t: Tensor,
                permutation: Optional[Tuple[int, ...]] = None) -> Tensor:
     """
@@ -52,7 +54,7 @@ def transpose_(t: Tensor,
 
     This is the inplace version of :func:`~ops.transpose`. Behaviour is the same, but modifies the
         tensor inplace.
-    
+
     Args:
         t: Tensor
             Tensor to be transposed.

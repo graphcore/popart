@@ -3,11 +3,12 @@ from typing import Iterable, Optional
 
 import popart._internal.ir as _ir
 from popart.ir import dtypes, Tensor
-from popart.ir.context import get_current_context
+from popart.ir.context import get_current_context, op_debug_context
 
 __all__ = ['init']
 
 
+@op_debug_context
 def init(shape: Iterable[int], dtype: dtypes.dtype,
          name: Optional[str] = None) -> Tensor:
     """

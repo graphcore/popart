@@ -1,13 +1,14 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 from typing import Optional
 import popart._internal.ir as _ir
-from popart.ir.context import get_current_context
+from popart.ir.context import debug_context_frame_offset, get_current_context, op_debug_context
 from popart.ir.tensor import Tensor
 from .utils import check_in_graph
 
 __all__ = ['group_norm', 'layer_norm']
 
 
+@op_debug_context
 def group_norm(t: Tensor,
                weight: Tensor,
                bias: Tensor,
@@ -58,12 +59,13 @@ def group_norm(t: Tensor,
     return Tensor._from_pb_tensor(op.outTensor(0))
 
 
+@debug_context_frame_offset(1)
 def layer_norm(t: Tensor, weight: Tensor, bias: Tensor,
                eps: float = 1e-5) -> Tensor:
     """
     Applies Layer Normalisation over a tensor `t`.
     Uses `group_norm` under the hood.
-    
+
     Args:
         t: Tensor
             Tensor to be normalized.

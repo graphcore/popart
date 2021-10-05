@@ -1,6 +1,6 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 import popart._internal.ir as _ir
-from popart.ir.context import get_current_context
+from popart.ir.context import get_current_context, op_debug_context
 from popart.ir.tensor import Tensor
 from popart.ir.streams import DeviceToHostStream
 
@@ -9,6 +9,7 @@ from .utils import check_in_graph
 __all__ = ['host_store']
 
 
+@op_debug_context
 def host_store(d2h_stream: DeviceToHostStream, t: Tensor) -> None:
     """
     Host Store: an op to represent the transfer of data from the device to the

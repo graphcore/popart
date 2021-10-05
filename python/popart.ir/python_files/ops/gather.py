@@ -1,13 +1,14 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 from typing import Optional, Tuple
 import popart._internal.ir as _ir
-from popart.ir.context import get_current_context
+from popart.ir.context import get_current_context, op_debug_context
 from popart.ir.tensor import Tensor
 from .utils import check_in_graph, convert_optional_float
 
 __all__ = ["gather", "tied_gather"]
 
 
+@op_debug_context
 def gather(t: Tensor,
            indices: Tensor,
            axis: int = 0,
@@ -64,6 +65,7 @@ def gather(t: Tensor,
     return Tensor._from_pb_tensor(op.outTensor(0))
 
 
+@op_debug_context
 def tied_gather(t: Tensor,
                 indices: Tensor,
                 axis: int = 0,

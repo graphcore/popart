@@ -2,7 +2,7 @@
 from typing import Optional
 
 import popart._internal.ir as _ir
-from popart.ir.context import get_current_context
+from popart.ir.context import get_current_context, op_debug_context
 from popart.ir.tensor import Tensor
 from popart.ir.streams import HostToDeviceStream
 from .init import init
@@ -10,6 +10,7 @@ from .init import init
 __all__ = ['host_load']
 
 
+@op_debug_context
 def host_load(h2d_stream: HostToDeviceStream,
               name: Optional[str] = None) -> Tensor:
     """

@@ -1,13 +1,13 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 import popart._internal.ir as _ir
-from popart.ir import dtypes
-from popart.ir.context import get_current_context
+from popart.ir.context import get_current_context, op_debug_context
 from popart.ir.tensor import Tensor
 from .utils import check_in_graph
 
 __all__ = ['detach', 'detach_']
 
 
+@op_debug_context
 def detach(t: Tensor) -> Tensor:
     """
     Prevents gradient computation of this tensor.
@@ -38,6 +38,7 @@ def detach(t: Tensor) -> Tensor:
     return Tensor._from_pb_tensor(op.outTensor(0))
 
 
+@op_debug_context
 def detach_(x: Tensor) -> Tensor:
     """
     This is the inplace version of :func:`~ops.detach`. Behaviour is the same, but blocks gradient

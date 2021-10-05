@@ -1,12 +1,13 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 import popart._internal.ir as _ir
-from popart.ir.context import get_current_context
+from popart.ir.context import get_current_context, op_debug_context
 from popart.ir.tensor import Tensor
 from .utils import check_in_graph, handle_negative_axis
 
 __all__ = ["softmax"]
 
 
+@op_debug_context
 def softmax(t: Tensor, axis: int) -> Tensor:
     """
     Computes the softmax operation on a Tensor. This recales the slices of axis

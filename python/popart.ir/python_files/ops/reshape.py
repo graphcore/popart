@@ -1,8 +1,8 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-from typing import Optional, Tuple
+from typing import Tuple
 import numpy as np
 import popart._internal.ir as _ir
-from popart.ir.context import get_current_context
+from popart.ir.context import get_current_context, debug_context_frame_offset, op_debug_context
 from popart.ir.tensor import Tensor
 from .utils import check_in_graph
 
@@ -15,6 +15,7 @@ def reshape_handle_negative_axis(t: Tensor,
     return tuple(axis if axis > 0 else replacement for axis in shape)
 
 
+@op_debug_context
 def reshape(t: Tensor, shape: Tuple[int, ...]) -> Tensor:
     """
     Reshape a Tensor.
@@ -54,6 +55,7 @@ def reshape(t: Tensor, shape: Tuple[int, ...]) -> Tensor:
     return Tensor._from_pb_tensor(op.outTensor(0))
 
 
+@op_debug_context
 def reshape_(t: Tensor, shape: Tuple[int, ...]) -> Tensor:
     """
     Reshape a Tensor inplace.
@@ -95,6 +97,7 @@ def reshape_(t: Tensor, shape: Tuple[int, ...]) -> Tensor:
     return Tensor._from_pb_tensor(op.outTensor(0))
 
 
+@debug_context_frame_offset(1)
 def flatten(t: Tensor) -> Tensor:
     """
     Flatten a tensor. Uses `reshape`.
@@ -108,6 +111,7 @@ def flatten(t: Tensor) -> Tensor:
     return reshape(t, (-1, ))
 
 
+@debug_context_frame_offset(1)
 def flatten_(t: Tensor) -> Tensor:
     """
     Flatten a tensor inplace. Uses `reshape_` (inplace).

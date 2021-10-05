@@ -3,6 +3,8 @@
 
 #include <pybind11/cast.h>
 #include <pybind11/pybind11.h>
+#include <pybind11/stl.h>
+
 #include <popart/debugcontext.hpp>
 
 namespace py = pybind11;
@@ -19,7 +21,8 @@ void bindDebugContext(py::module &m) {
            py::arg("lineNumber"));
 
   py::class_<ProfileValue>(m, "ProfileValue")
-      .def(py::init<ProfileValue::String>(), py::arg("init"));
+      .def(py::init<ProfileValue::String>(), py::arg("init"))
+      .def(py::init<ProfileValue::Vector>(), py::arg("init"));
   // Allow for string to be implicitly converted to a ProfileValue.
   py::implicitly_convertible<ProfileValue::String, ProfileValue>();
 
@@ -28,10 +31,15 @@ void bindDebugContext(py::module &m) {
       .def(py::init<const DebugContext &, std::string>(),
            py::arg("debugContext"),
            py::arg("layer"))
-      .def("setValue", &DebugInfo::setValue, py::arg("name"), py::arg("value"));
+      .def("setValue", &DebugInfo::setValue, py::arg("name"), py::arg("value"))
+      .def("getId", &DebugInfo::getId);
 
   py::class_<DebugContext>(m, "DebugContext")
       .def(py::init<std::string, SourceLocation>(),
+           py::arg("name"),
+           py::arg("loc"))
+      .def(py::init<const DebugInfo &, std::string, SourceLocation>(),
+           py::arg("debugInfo"),
            py::arg("name"),
            py::arg("loc"))
       .def(py::init([]() -> DebugContext {

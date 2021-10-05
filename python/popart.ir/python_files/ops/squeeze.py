@@ -1,7 +1,6 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 from typing import Optional, List
-import popart._internal.ir as _ir
-from popart.ir.context import get_current_context
+from popart.ir.context import debug_context_frame_offset
 from popart.ir.tensor import Tensor
 from .reshape import reshape
 from .utils import handle_negative_axis
@@ -9,6 +8,7 @@ from .utils import handle_negative_axis
 __all__ = ["squeeze"]
 
 
+@debug_context_frame_offset(1)
 def squeeze(t: Tensor, axes: Optional[List[int]] = None) -> Tensor:
     """
     Remove axes of length one from the tensor

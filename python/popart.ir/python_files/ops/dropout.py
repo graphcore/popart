@@ -1,12 +1,13 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 import popart._internal.ir as _ir
-from popart.ir.context import get_current_context
+from popart.ir.context import get_current_context, op_debug_context
 from popart.ir.tensor import Tensor
 from .utils import check_in_graph
 
 __all__ = ['dropout']
 
 
+@op_debug_context
 def dropout(t: Tensor, seed_tensor: Tensor, p: float):
     """
     Randomly zeros elements of `t` with a probability of `p`. The dropout mask is created using samples

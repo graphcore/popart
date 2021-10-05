@@ -1,13 +1,14 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 from typing import Iterable
 import popart._internal.ir as _ir
-from popart.ir.context import get_current_context
+from popart.ir.context import get_current_context, op_debug_context
 from popart.ir.tensor import Tensor
 from .utils import check_in_graph
 
 __all__ = ["dynamic_update", "dynamic_update_"]
 
 
+@op_debug_context
 def dynamic_update(t: Tensor, index: Tensor, t_update: Tensor,
                    axes: Iterable[int], sizes: Iterable[int],
                    no_overlap: bool) -> Tensor:
@@ -80,6 +81,7 @@ def dynamic_update(t: Tensor, index: Tensor, t_update: Tensor,
     return Tensor._from_pb_tensor(op.outTensor(0))
 
 
+@op_debug_context
 def dynamic_update_(t: Tensor, index: Tensor, t_update: Tensor,
                     axes: Iterable[int], sizes: Iterable[int],
                     no_overlap: bool) -> Tensor:

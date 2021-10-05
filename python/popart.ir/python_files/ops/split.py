@@ -1,13 +1,14 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-from typing import Optional, Tuple, List, Union
+from typing import List, Union
 import popart._internal.ir as _ir
-from popart.ir.context import get_current_context
+from popart.ir.context import get_current_context, op_debug_context
 from popart.ir.tensor import Tensor
 from .utils import check_in_graph, handle_negative_axis
 
 __all__ = ["split"]
 
 
+@op_debug_context
 def split(t: Tensor, splits: Union[int, List[int]],
           axis: int = 0) -> List[Tensor]:
     """

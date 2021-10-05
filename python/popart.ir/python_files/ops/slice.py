@@ -1,7 +1,7 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 from typing import Optional, Tuple, Union, List
 import popart._internal.ir as _ir
-from popart.ir.context import get_current_context
+from popart.ir.context import get_current_context, op_debug_context
 from popart.ir.tensor import Tensor
 from .utils import check_in_graph
 
@@ -11,6 +11,7 @@ INT_MIN = -2**31
 INT_MAX = 2**31 - 1
 
 
+@op_debug_context
 def slice(t: Tensor,
           start: Optional[Union[int, List[Optional[int]]]] = None,
           stop: Optional[Union[int, List[Optional[int]]]] = None,
@@ -73,6 +74,7 @@ def slice(t: Tensor,
     return Tensor._from_pb_tensor(op.outTensor(0))
 
 
+@op_debug_context
 def slice_(t: Tensor,
            start: Optional[Union[int, List[Optional[int]]]] = None,
            stop: Optional[Union[int, List[Optional[int]]]] = None,

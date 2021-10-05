@@ -1,8 +1,7 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 from typing import Optional, Union
 import popart._internal.ir as _ir
-from popart.ir import dtypes
-from popart.ir.context import get_current_context
+from popart.ir.context import get_current_context, op_debug_context
 from popart.ir.tensor import Tensor
 
 from .utils import check_in_graph
@@ -60,6 +59,7 @@ def create_adamupdater(acc_first_order: Tensor,
     return Tensor._from_pb_tensor(op.outTensor(0))
 
 
+@op_debug_context
 def adamupdater(acc_first_order: Tensor,
                 acc_second_order: Tensor,
                 weight: Optional[Tensor] = None,
@@ -124,6 +124,7 @@ def adamupdater(acc_first_order: Tensor,
                               beta1, beta2, epsilon)
 
 
+@op_debug_context
 def lambupdater(acc_first_order: Tensor,
                 acc_second_order: Tensor,
                 weight: Optional[Tensor] = None,
@@ -188,6 +189,7 @@ def lambupdater(acc_first_order: Tensor,
                               beta1, beta2, epsilon)
 
 
+@op_debug_context
 def adamaxupdater(acc_first_order: Tensor,
                   acc_second_order: Tensor,
                   weight: Optional[Tensor] = None,

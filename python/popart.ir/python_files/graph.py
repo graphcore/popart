@@ -136,6 +136,7 @@ class Graph:
                 The unique id of the tensor.
         """
         name = name if name else 't'
+        name = "/".join((*get_current_context().name_scopes, name))
         _id = _ir.addScope(self._pb_graph, name)
         if _id in self._pb_graph:
             _id = self._pb_graph.getIr().createIntermediateTensorId(_id)

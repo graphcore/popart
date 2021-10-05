@@ -4,7 +4,7 @@ import numpy as np
 
 import popart._internal.ir as _ir
 from popart.ir import dtypes
-from popart.ir.context import gcg
+from popart.ir.context import gcg, debug_context_frame_offset
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -73,22 +73,26 @@ class Tensor:
         from popart.ir import Ir
         return Ir._from_pb(self._pb_tensor.getIr())
 
+    @debug_context_frame_offset(1)
     def transpose(self,
                   permutation: Optional[Iterable[int]] = None) -> 'Tensor':
         """Returns `ops.transpose(self, permutation)`."""
         import popart.ir.ops as ops
         return ops.transpose(self, permutation)
 
+    @debug_context_frame_offset(1)
     def reshape(self, shape: Iterable[int]) -> 'Tensor':
         """Returns `ops.reshape(self, shape)`."""
         import popart.ir.ops as ops
         return ops.reshape(self, shape)
 
+    @debug_context_frame_offset(1)
     def detach(self) -> 'Tensor':
         """Return detached tensor"""
         import popart.ir.ops as ops
         return ops.detach(self)
 
+    @debug_context_frame_offset(1)
     def copy_to_ipu(self, destination: int,
                     source: Optional[int] = None) -> 'Tensor':
         """
@@ -106,6 +110,7 @@ class Tensor:
         return ops.ipu_copy(self, destination, source)
 
     @property
+    @debug_context_frame_offset(2)
     def T(self) -> 'Tensor':
         """Returns the Tensor transposed with reversed axes."""
         return self.transpose()
@@ -144,57 +149,68 @@ class Tensor:
             dtype = self.dtype if dtype is None else dtype
             return constant(value, dtype)
 
+    @debug_context_frame_offset(1)
     def __add__(self, value: Any) -> 'Tensor':
         """Returns `ops.add(self, value)`."""
         import popart.ir.ops as ops
         return ops.add(self, self._ensure_tensor(value))
 
+    @debug_context_frame_offset(1)
     def __sub__(self, value: Any) -> 'Tensor':
         """Returns `ops.sub(self, value)`."""
         import popart.ir.ops as ops
         return ops.sub(self, self._ensure_tensor(value))
 
+    @debug_context_frame_offset(1)
     def __mul__(self, value: Any) -> 'Tensor':
         """Returns `ops.mul(self, value)`."""
         import popart.ir.ops as ops
         return ops.mul(self, self._ensure_tensor(value))
 
+    @debug_context_frame_offset(1)
     def __truediv__(self, value: Any) -> 'Tensor':
         """Returns `ops.div(self, value)`."""
         import popart.ir.ops as ops
         return ops.div(self, self._ensure_tensor(value))
 
+    @debug_context_frame_offset(1)
     def transpose_(self,
                    permutation: Optional[Iterable[int]] = None) -> 'Tensor':
         """Returns ops.transpose(self, permutation). Inplace"""
         import popart.ir.ops as ops
         return ops.transpose_(self, permutation)
 
+    @debug_context_frame_offset(1)
     def reshape_(self, shape: Iterable[int]) -> 'Tensor':
         """Returns ops.reshape_(self, shape) inplace."""
         import popart.ir.ops as ops
         return ops.reshape_(self, shape)
 
+    @debug_context_frame_offset(1)
     def flatten_(self, shape: Iterable[int]) -> 'Tensor':
         """Returns ops.flatten_(self). Inplace."""
         import popart.ir.ops as ops
         return ops.flatten_(self, shape)
 
+    @debug_context_frame_offset(1)
     def detach_(self) -> 'Tensor':
         """Detach tensor inplace."""
         import popart.ir.ops as ops
         return ops.detach_(self)
 
     @property
+    @debug_context_frame_offset(2)
     def T_(self) -> 'Tensor':
         """Returns the Tensor transposed with reversed axes. Inplace."""
         return self.transpose_()
 
+    @debug_context_frame_offset(1)
     def __matmul__(self, other: Any) -> 'Tensor':
         """Returns `ops.matmul(self, other)`."""
         import popart.ir.ops as ops
         return ops.matmul(self, self._ensure_tensor(other))
 
+    @debug_context_frame_offset(1)
     def __getitem__(self, key) -> 'Tensor':
         """
         Supports slicing and integer indexing.
@@ -263,6 +279,7 @@ class Variable(Tensor, tensor_type="Variable"):
     parameter that can change while running a model.
     """
 
+    @debug_context_frame_offset(1)
     def copy_to_ipu(self, dst: int, src: int) -> 'Tensor':
         """Returns `ops.ipu_copy(self, dst, src)`.
             Must provide a src value."""
@@ -276,6 +293,7 @@ class Constant(Tensor, tensor_type="Const"):
     This tensor cannot change during the runtime of a model.
     """
 
+    @debug_context_frame_offset(1)
     def copy_to_ipu(self, dst: int, src: int) -> 'Tensor':
         """Returns ops.ipu_copy(self, dst, src).
             Must provide a src value."""
@@ -391,11 +409,11 @@ def subgraph_input(shape: Iterable[int],
     Example:
     ```
     import popart.ir as pir
-    
+
     def add_w(x):
         w = pir.subgraph_input(x.shape, x.dtype, "w")
         return w + x
-    
+
     ir = pir.Ir()
     with ir.main_graph():
         w = pir.variable(1)
@@ -438,12 +456,12 @@ def subgraph_output(t: Tensor) -> None:
     Example:
     ```
     import popart.ir as pir
-    
+
     def add_w(x):
         w = pir.subgraph_input(x.shape, x.dtype, "w")
         y = w + x
         pir.subgraph_output(y)
-    
+
     ir = pir.Ir()
     with ir.main_graph():
         w = pir.variable(1)
