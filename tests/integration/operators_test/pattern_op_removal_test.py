@@ -55,6 +55,29 @@ def test_atan2_arg1_grad_error(op_tester):
         "This op should have been removed by pattern Atan2Arg1GradOp"))
 
 
+def test_convflipweights_grad_error(op_tester):
+    x = np.random.rand(1, 1, 2, 2).astype(np.float32)
+    W = np.random.rand(1, 1, 2, 2).astype(np.float32)
+
+    def init_builder(builder):
+        d = builder.addInputTensor(x)
+        f = builder.addInitializedInputTensor(W)
+
+        o = builder.aiOnnxOpset11.convtranspose([d, f])
+        builder.addOutputTensor(o)
+        return [o, popart.reservedGradientPrefix() + o]
+
+    def reference(ref_data):
+        return [None, None]
+
+    op_tester.setPatterns(['ConvTranspose'], enableRuntimeAsserts=False)
+    with pytest.raises(popart.popart_exception) as e_info:
+        op_tester.run(init_builder, reference, 'train')
+
+    assert (e_info.value.args[0].endswith(
+        "This op should have been removed by pattern ConvFlipWeightsGradOp"))
+
+
 def test_cos_grad_error(op_tester):
     d1 = np.random.rand(2, 7).astype(np.float32)
     d2 = np.random.rand(2, 7).astype(np.float32)

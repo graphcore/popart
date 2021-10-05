@@ -445,12 +445,12 @@ void Graph::setVarUpdateConstraints() {
   }
 }
 
-// T12001 don't use topoCons
+// TODO T12001 don't use topoCons.
 void Graph::setConvFlipWeightConstraints() {
-  // The ConvFlipWeights op is used exclusively in the backwards pass as an
+  // When the ConvFlipWeights op is used in the backwards pass as an
   // input to the bwd conv or multiconv op. Since it acts only on an input
-  // to the graph, it has no dependencies. Constrain it to schedule after all
-  // other ops producing tensors consumed by the bwd conv.
+  // to the graph (the conv weight), it has no dependencies. Constrain it to
+  // schedule after all other ops producing tensors consumed by the bwd conv.
   for (auto &id_op : getOps()) {
     auto op = id_op.second.get();
     if (op->isConvertibleTo<ConvFlipWeightsOp>()) {
@@ -461,6 +461,12 @@ void Graph::setConvFlipWeightConstraints() {
             if (consumedByBwdConvT->id == wT->id) {
               continue;
             } else {
+              // The grad op, despite being converted to a ConvFlipWeightsOp,
+              // will depend on the gradient in.
+              if (!consumedByBwdConvT->hasProducer()) {
+                continue;
+              }
+
               // Apply constraint: All other ops producing tensors
               // consumed by the bwd conv must happen before the
               // flipweights
@@ -478,10 +484,11 @@ void Graph::setConvFlipWeightConstraints() {
           // op. Do not apply constraints, so might schedule of these ops
           // might not be optimized for liveness
           logging::ir::warn(
-              "ConvFlipWeightsOp, {}, has an unexpected number of consumers. "
-              "Not constraining its schedule. This may result in a schedule "
-              "not optimized for minimum max-liveness.",
-              op->str());
+              "ConvFlipWeightsOp, {}, has an unexpected number of consumers "
+              "({}). Not constraining its schedule. This may result in a "
+              "schedule not optimized for minimum max-liveness.",
+              op->str(),
+              wT->consumers.getTotal());
         }
       }
     }

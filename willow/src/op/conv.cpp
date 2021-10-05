@@ -110,6 +110,12 @@ void ConvFlipWeightsOp::setup() {
   outInfo(getOutIndex()) = {weightsIn.dataType(), weightsOutShape};
 }
 
+std::vector<std::unique_ptr<Op>> ConvFlipWeightsOp::getGradOps() {
+  std::vector<std::unique_ptr<Op>> upops;
+  upops.emplace_back(std::make_unique<ConvFlipWeightsGradOp>(*this));
+  return upops;
+}
+
 void ConvFlipWeightsOp::appendOutlineAttributes(OpSerialiserBase &os) const {
   Op::appendOutlineAttributes(os);
 
@@ -118,6 +124,35 @@ void ConvFlipWeightsOp::appendOutlineAttributes(OpSerialiserBase &os) const {
     os.appendAttribute(key_val.first, key_val.second);
   }
   os.appendAttribute("groupReshape", groupReshape);
+}
+
+ConvFlipWeightsGradOp::ConvFlipWeightsGradOp(
+    const ConvFlipWeightsOp &convFlipWeightsOp)
+    : ConvFlipWeightsOp(Onnx::GradOperators::ConvFlipWeightsGrad,
+                        convFlipWeightsOp.settings) {
+  setGroupReshape(convFlipWeightsOp.getGroupReshape());
+  setParameters(convFlipWeightsOp.getParameters());
+  setConvOptions(convFlipWeightsOp.getMultiConvOptions());
+}
+
+std::unique_ptr<Op> ConvFlipWeightsGradOp::clone() const {
+  return std::make_unique<ConvFlipWeightsGradOp>(*this);
+}
+
+const std::vector<GradInOutMapper> &
+ConvFlipWeightsGradOp::gradInputInfo() const {
+  static const std::vector<GradInOutMapper> inInfo = {
+      // Simply drop the op in place such that the grad associated with the
+      // output becomes the input
+      {getInIndex(), getOutIndex(), GradOpInType::GradOut}};
+  return inInfo;
+}
+
+const std::map<int, int> &ConvFlipWeightsGradOp::gradOutToNonGradIn() const {
+  // The only output of the grap op (which is the same flip) matches the only
+  // input
+  static const std::map<int, int> outInfo = {{getOutIndex(), getInIndex()}};
+  return outInfo;
 }
 
 namespace {

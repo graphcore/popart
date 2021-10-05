@@ -1932,8 +1932,6 @@ def test_pad_grad(op_tester):
     op_tester.run(init_builder, reference, 'train')
 
 
-
-
 def test_shape(op_tester):
     d1 = np.random.rand(2, 4, 3).astype(np.float32)
     d2 = np.zeros((4, 6), dtype=np.float32)
@@ -2670,6 +2668,60 @@ def test_convtranspose(op_tester):
 
     op_tester.setPatterns(['ConvTranspose'], enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference, step_type='infer')
+
+
+@pytest.mark.parametrize('with_pattern', [True, False])
+def test_convtranspose_grad(op_tester, with_pattern):
+    x = np.array([[[[-0.6548, 2.1528, -0.7060, 1.2557],
+                    [0.5779, 1.6015, 0.0200, -0.5367],
+                    [0.9002, -1.0468, -0.5903, -0.9868],
+                    [-0.0274, 0.0813, 0.3434, 0.0679]]]]).astype(np.float32)
+    W = np.array([[[[-0.2817, 0.2606], [-0.4299,
+                                        -0.4982]]]]).astype(np.float32)
+
+    def init_builder(builder):
+        d = builder.addInputTensor(x)
+        f = builder.addInitializedInputTensor(W)
+        o = builder.aiOnnxOpset11.convtranspose([d, f])
+        two = builder.aiOnnxOpset11.constant(np.array([2.0], dtype=np.float32),
+                                             False, "two")
+        o_sq = builder.aiOnnxOpset11.pow([o, two])
+
+        builder.addOutputTensor(o_sq)
+        return [
+            o_sq,
+            popart.reservedGradientPrefix() + d,
+            popart.reservedGradientPrefix() + f,
+            popart.reservedGradientPrefix() + o_sq
+        ]
+
+    def reference(ref_data):
+        t1 = torch.tensor(x, requires_grad=True)
+        t2 = torch.tensor(W, requires_grad=True)
+
+        out = torch.nn.functional.conv_transpose2d(t1, t2)
+
+        # Ensure the gradient varies throughout with a non-linearity
+        out = out**2.0
+        print(out)
+
+        d__o = torch.tensor(ref_data.getOutputTensorGrad(0))
+        out.backward(d__o)
+
+        print(t1.grad)
+
+        return [out, t1.grad, t2.grad, None]
+
+    patterns = [
+        'ConvTranspose', 'ConvFlipWeightsGradOp', 'ConvDataGrad',
+        'PowArg0GradOp', 'SqrtGradOp'
+    ]
+
+    if with_pattern:
+        patterns.append('ConvFlipWeightsDoubleFlip')
+
+    op_tester.setPatterns(patterns, enableRuntimeAsserts=False)
+    op_tester.run(init_builder, reference, step_type='train')
 
 
 def test_convtranspose_auto_pad(op_tester):

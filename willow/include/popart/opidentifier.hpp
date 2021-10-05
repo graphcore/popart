@@ -145,6 +145,7 @@ const static AiGraphcoreOpIdV1 ClipGrad("ClipGrad");
 const static AiGraphcoreOpIdV1 ConcatGrad("ConcatGrad");
 const static AiGraphcoreOpIdV1 ConvDataGrad("ConvDataGrad");
 const static AiGraphcoreOpIdV1 ConvWeightsGrad("ConvWeightsGrad");
+const static AiGraphcoreOpIdV1 ConvFlipWeightsGrad("ConvFlipWeightsGrad");
 const static AiGraphcoreOpIdV1 CosGrad("CosGrad");
 const static AiGraphcoreOpIdV1 CumSumGrad("CumSumGrad");
 const static AiGraphcoreOpIdV1 DivArg0Grad("DivArg0Grad");

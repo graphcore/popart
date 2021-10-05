@@ -16,6 +16,8 @@
 #include <popart/patterns/atan2arg1gradoppattern.hpp>
 #include <popart/patterns/contiguateipucopyindices.hpp>
 #include <popart/patterns/convdatagrad.hpp>
+#include <popart/patterns/convflipweightsdoubleflippattern.hpp>
+#include <popart/patterns/convflipweightsgradoppattern.hpp>
 #include <popart/patterns/cosgradoppattern.hpp>
 #include <popart/patterns/coshoppattern.hpp>
 #include <popart/patterns/decomposebinaryconstscalar.hpp>
@@ -268,6 +270,14 @@ bool Patterns::isSqrtGradOpEnabled() {
   return isPatternEnabled<SqrtGradOpPattern>();
 }
 
+bool Patterns::isConvFlipWeightsDoubleFlipEnabled() {
+  return isPatternEnabled<ConvFlipWeightsDoubleFlipPattern>();
+}
+
+bool Patterns::isConvFlipWeightsGradOpEnabled() {
+  return isPatternEnabled<ConvFlipWeightsGradOpPattern>();
+}
+
 bool Patterns::isExpGradOpEnabled() {
   return isPatternEnabled<ExpGradOpPattern>();
 }
@@ -408,6 +418,14 @@ Patterns &Patterns::enableCosGradOp(bool v) {
 
 Patterns &Patterns::enableSqrtGradOp(bool v) {
   return enablePattern<SqrtGradOpPattern>(v);
+}
+
+Patterns &Patterns::enableConvFlipWeightsDoubleFlip(bool v) {
+  return enablePattern<ConvFlipWeightsDoubleFlipPattern>(v);
+}
+
+Patterns &Patterns::enableConvFlipWeightsGradOp(bool v) {
+  return enablePattern<ConvFlipWeightsGradOpPattern>(v);
 }
 
 Patterns &Patterns::enableExpGradOp(bool v) {
@@ -561,6 +579,8 @@ std::vector<std::unique_ptr<PreAliasPattern>> Patterns::getPreAliasList() {
   }
 
   static std::map<std::type_index, float> patternPriority{
+      {std::type_index(typeid(ConvFlipWeightsDoubleFlipPattern)), 53},
+      {std::type_index(typeid(ConvFlipWeightsGradOpPattern)), 52},
       {std::type_index(typeid(Atan2Arg0GradOpPattern)), 51},
       {std::type_index(typeid(Atan2Arg1GradOpPattern)), 50},
       {std::type_index(typeid(DecomposeBinaryConstScalar)), 47},

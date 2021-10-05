@@ -217,6 +217,8 @@ public:
     return updateInplacePrioritiesForIpuEnabled;
   }
   bool isSqrtGradOpEnabled();
+  bool isConvFlipWeightsDoubleFlipEnabled();
+  bool isConvFlipWeightsGradOpEnabled();
   bool isExpGradOpEnabled();
   bool isExpm1GradOpEnabled();
   bool isLog1pGradOpEnabled();
@@ -265,6 +267,8 @@ public:
     return *this;
   }
   Patterns &enableSqrtGradOp(bool v);
+  Patterns &enableConvFlipWeightsDoubleFlip(bool v);
+  Patterns &enableConvFlipWeightsGradOp(bool v);
   Patterns &enableExpGradOp(bool v);
   Patterns &enableExpm1GradOp(bool v);
   Patterns &enableLog1pGradOp(bool v);

@@ -73,8 +73,10 @@ public:
   ConvFlipWeightsOp(const OperatorIdentifier &_opid,
                     const Op::Settings &settings_);
   ~ConvFlipWeightsOp() override;
-  std::unique_ptr<Op> clone() const final;
+  std::unique_ptr<Op> clone() const;
   void setup() final;
+
+  std::vector<std::unique_ptr<Op>> getGradOps() final;
 
   static InIndex getInIndex() { return 0; }
   static OutIndex getOutIndex() { return 0; }
@@ -82,6 +84,7 @@ public:
   const ConvParameters &getParameters() const { return params; }
   void setParameters(const ConvParameters &p) { params = p; }
 
+  bool getGroupReshape() const { return groupReshape; }
   void setGroupReshape(bool reshape) { groupReshape = reshape; }
 
   float getSubgraphValue() const final { return getLowSubgraphValue(); }
@@ -89,6 +92,7 @@ public:
   void appendOutlineAttributes(OpSerialiserBase &os) const final;
 
   void setConvOptions(const MultiConvOptions &opts) { convOpts = opts; }
+  const MultiConvOptions &getMultiConvOptions() const { return convOpts; }
   std::map<std::string, std::string> getConvOptions() const {
     return convOpts.getConvOptions(0);
   }
@@ -99,6 +103,15 @@ private:
   bool groupReshape;
   ConvParameters params;
   MultiConvOptions convOpts;
+};
+
+class ConvFlipWeightsGradOp : public ConvFlipWeightsOp {
+public:
+  ConvFlipWeightsGradOp(const ConvFlipWeightsGradOp &) = default;
+  ConvFlipWeightsGradOp(const ConvFlipWeightsOp &convFlipWeightsOp);
+  std::unique_ptr<Op> clone() const final;
+  const std::vector<GradInOutMapper> &gradInputInfo() const final;
+  const std::map<int, int> &gradOutToNonGradIn() const final;
 };
 
 class ConvDataGradOp : public MultiConvDataGradBaseOp {
