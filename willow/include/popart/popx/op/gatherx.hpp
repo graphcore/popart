@@ -28,7 +28,7 @@ public:
 
   // To create a poplar::Tensor for input index index0, which
   // poplar::Tensors must already exist?
-  std::set<TensorId> mustExistBeforeCreate(int index0) const override;
+  std::set<TensorId> mustExistBeforeCreate(InIndex) const final;
 
 protected:
   int64_t axis;
@@ -62,8 +62,21 @@ public:
                       poplar::Tensor update,
                       poplar::Tensor indices,
                       int64_t axis);
+  // create the input poplar::Tensor for input at index
+  // default : throw error (not all Opxs can createInput)
+  snap::Tensor
+  createInputTensor(InIndex index,
+                    const poplar::DebugNameAndId &dnai) const final;
+  // default return DEADEND, i.e. unable to create input tensor, and
+  // cannot use downstream opxs as candidates to create input
+  // tensor
+  InputCreatorType getInputCreatorType(InIndex index) const final;
+  // To create a poplar::Tensor for the given input index, which
+  // poplar::Tensors must already exist?
+  std::set<TensorId> mustExistBeforeCreate(InIndex) const final { return {}; }
 
 private:
+  popops::SlicePlan plan;
   int64_t axis;
 };
 
