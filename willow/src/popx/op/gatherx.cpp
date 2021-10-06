@@ -38,7 +38,6 @@ GatherOpx::GatherOpx(Op *op, Devicex *devicex) : GatherBaseOpx(op, devicex) {
   plan            = createSlicePlan(graph(),
                          gop.inInfo(gop.dataInIndex()),
                          gop.inInfo(gop.indicesInIndex()),
-                         gop.outInfo(gop.outIndex()),
                          options,
                          axis);
 }
@@ -129,11 +128,7 @@ GatherOpx::createInputTensor(InIndex index,
   return snap::Tensor{indices.reshape(indicesInfo.shape_szt()), graph()};
 }
 
-InputCreatorType GatherOpx::getInputCreatorType(InIndex index) const {
-  if (inInfo(index).nelms() == 0) {
-    return PopOpx::getInputCreatorType(index);
-  }
-
+InputCreatorType GatherOpx::getInputCreatorType(int index) const {
   if (index == GatherOp::dataInIndex() || index == GatherOp::indicesInIndex()) {
     return InputCreatorType::CanCreate;
   }
@@ -148,68 +143,7 @@ std::set<TensorId> GatherBaseOpx::mustExistBeforeCreate(int) const {
 GatherGradOpx::GatherGradOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
   verifyOp<GatherGradOp>(op, Onnx::GradOperators::GatherGrad);
 
-  auto &gop    = getOp<GatherGradOp>();
-  axis         = gop.getAxis();
-  auto options = createSlicePlanOptions(SlicePlanUsedFor::UpdateAdd,
-                                        gop.getAvailableMemoryProportion());
-  plan         = createSlicePlan(graph(),
-                         inInfo(gop.gradInIndex()),
-                         inInfo(gop.indicesInIndex()),
-                         outInfo(gop.gradOutIndex()),
-                         options,
-                         axis);
-
-  // We always want this op to layout its inputs
-  inputCreatorPriority = std::numeric_limits<double>::max();
-}
-
-snap::Tensor
-GatherGradOpx::createInputTensor(InIndex index,
-                                 const poplar::DebugNameAndId &dnai) const {
-  if (index != GatherGradOp::gradInIndex() &&
-      index != GatherGradOp::indicesInIndex()) {
-    throw error("GatherGradOpx::createInput Cannot create input {}", index);
-  }
-  std::vector<size_t> dims  = {static_cast<size_t>(axis)};
-  std::vector<size_t> sizes = {1};
-
-  if (index == GatherGradOp::gradInIndex()) {
-    auto gradInfo        = inInfo(index);
-    const auto dataShape = gradInfo.shape_szt();
-
-    return snap::Tensor{popops::createSliceableTensor(graph().getPoplarGraph(),
-                                                      popType(gradInfo),
-                                                      dataShape,
-                                                      dims,
-                                                      sizes,
-                                                      plan,
-                                                      poplar::OptionFlags(),
-                                                      dnai),
-                        graph()};
-  }
-
-  auto indicesInfo = inInfo(index);
-  auto indices     = popops::createIndicesTensor(graph().getPoplarGraph(),
-                                             dims,
-                                             indicesInfo.nelms(),
-                                             plan,
-                                             poplar::OptionFlags(),
-                                             dnai);
-  indices          = indices.reinterpret(popType(indicesInfo));
-  return snap::Tensor{indices.reshape(indicesInfo.shape_szt()), graph()};
-}
-
-InputCreatorType GatherGradOpx::getInputCreatorType(InIndex index) const {
-  if (inInfo(index).nelms() == 0) {
-    return PopOpx::getInputCreatorType(index);
-  }
-
-  if (index == GatherGradOp::gradInIndex() ||
-      index == GatherGradOp::indicesInIndex()) {
-    return InputCreatorType::CanCreate;
-  }
-
-  return PopOpx::getInputCreatorType(index);
+  axis = dynamic_cast<GatherGradOp *>(op)->getAxis();
 }
 
 std::tuple<poplar::Tensor, poplar::Tensor, poplar::Tensor>
@@ -250,14 +184,12 @@ void GatherGradOpx::grow(snap::program::Sequence &prog) const {
   auto update  = getInTensor(GatherGradOp::gradInIndex()).getPoplarTensor();
   auto indices = getInTensor(GatherGradOp::indicesInIndex()).getPoplarTensor();
 
-  auto result = popops::createSliceableTensor(graph().getPoplarGraph(),
-                                              update.elementType(),
-                                              outputShape,
-                                              {static_cast<size_t>(axis)},
-                                              {1},
-                                              plan,
-                                              poplar::OptionFlags(),
-                                              debugContext("gatherGradResult"));
+  auto result = popops::createGatherInput(graph().getPoplarGraph(),
+                                          update.elementType(),
+                                          outputShape,
+                                          static_cast<unsigned>(axis),
+                                          popops::GatherParams{},
+                                          debugContext("result"));
 
   // Zero the result tensor
   popops::zero(graph().getPoplarGraph(),
@@ -290,9 +222,9 @@ void GatherGradOpx::grow(snap::program::Sequence &prog) const {
                          {0},
                          {1},
                          prog.getPoplarSequence(),
-                         plan,
+                         popops::SlicePlan(),
                          poplar::OptionFlags(),
-                         debugContext("gatherGrad"));
+                         debugContext());
 
   setOutTensor(GatherGradOp::gradOutIndex(), snap::Tensor{result, graph()});
 }

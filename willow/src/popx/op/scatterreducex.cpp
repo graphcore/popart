@@ -28,7 +28,6 @@ ScatterReduceOpx::ScatterReduceOpx(Op *op, Devicex *devicex)
   plan         = createSlicePlan(graph(),
                          srop.inInfo(srop.dataInIndex()),
                          srop.inInfo(srop.indicesInIndex()),
-                         srop.outInfo(srop.outIndex()),
                          options);
 
   // We always want the ScatterReduce to layout its inputs
@@ -166,7 +165,6 @@ ScatterReduceGradOpx::ScatterReduceGradOpx(Op *op, Devicex *devicex)
   plan         = createSlicePlan(graph(),
                          srop.inInfo(srop.gradInIndex()),
                          srop.inInfo(srop.indicesInIndex()),
-                         srop.outInfo(srop.gradOutIndex()),
                          options);
 
   // We always want the ScatterReduceGrad to layout its inputs
