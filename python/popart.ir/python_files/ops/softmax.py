@@ -2,13 +2,9 @@
 import popart._internal.ir as _ir
 from popart.ir.context import get_current_context
 from popart.ir.tensor import Tensor
-from .utils import check_in_graph
+from .utils import check_in_graph, handle_negative_axis
 
 __all__ = ["softmax"]
-
-
-def handle_negative_axis(t: Tensor, axis: int) -> int:
-    return len(t.shape) + axis if axis < 0 else axis
 
 
 def softmax(t: Tensor, axis: int) -> Tensor:

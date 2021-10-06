@@ -5,7 +5,7 @@ from popart.ir.dtypes import dtype
 
 import popart._internal.ir as _ir
 
-from typing import Tuple, Optional
+from typing import Iterable, Optional
 
 __all__ = ['h2d_stream', 'd2h_stream']
 
@@ -52,8 +52,7 @@ class DeviceToHostStream(_Stream):
     pass
 
 
-def h2d_stream(shape: Tuple[int, ...],
-               dtype: dtype,
+def h2d_stream(shape: Iterable[int], dtype: dtype,
                name: Optional[str] = None) -> HostToDeviceStream:
     g = gcg()
     mg = g.ir().main_graph()
@@ -69,13 +68,12 @@ def h2d_stream(shape: Tuple[int, ...],
         name = "h2d_stream"
     name = mg._create_tensor_id(name)
 
-    pb_mg.addStream(name, _ir.TensorInfo(dtype._pb_dtype, shape), name)
+    pb_mg.addStream(name, _ir.TensorInfo(dtype._pb_dtype, list(shape)), name)
 
     return HostToDeviceStream(Tensor._from_pb_tensor(pb_mg.getTensor(name)))
 
 
-def d2h_stream(shape: Tuple[int, ...],
-               dtype: dtype,
+def d2h_stream(shape: Iterable[int], dtype: dtype,
                name: Optional[str] = None) -> DeviceToHostStream:
     g = gcg()
     mg = g.ir().main_graph()
@@ -93,6 +91,6 @@ def d2h_stream(shape: Tuple[int, ...],
 
     pb_mg.addActGrad(name)
     pb_t = pb_mg.getTensor(name)
-    pb_t.info = _ir.TensorInfo(dtype._pb_dtype, shape)
+    pb_t.info = _ir.TensorInfo(dtype._pb_dtype, list(shape))
 
     return DeviceToHostStream(Tensor._from_pb_tensor(pb_t))

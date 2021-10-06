@@ -48,8 +48,8 @@ def gather(t: Tensor,
     available_memory_proportion = convert_optional_float(
         available_memory_proportion)
 
-    opid = _ir.OperatorIdentifier("ai.graphcore", "Gather", 11,
-                                  _ir.NumInputs(2, 2), 1)
+    opid = _ir.OperatorIdentifier("ai.onnx", "Gather", 11, _ir.NumInputs(2, 2),
+                                  1)
     settings = ctx._get_op_settings("gather")
     op = pb_g.createConnectedOp_GatherOp(
         {

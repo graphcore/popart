@@ -1,5 +1,5 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-from typing import Any, Optional, Sequence, Tuple, Union
+from typing import Any, Optional, Iterable, Tuple, Union
 import numpy as np
 
 import popart._internal.ir as _ir
@@ -103,12 +103,12 @@ class Tensor:
         return ops.div(self, self._ensure_tensor(value))
 
     def transpose(self,
-                  permutation: Optional[Tuple[int, ...]] = None) -> 'Tensor':
+                  permutation: Optional[Iterable[int]] = None) -> 'Tensor':
         """Returns ops.transpose(self, permutation)."""
         import popart.ir.ops as ops
         return ops.transpose(self, permutation)
 
-    def reshape(self, shape: Tuple[int, ...]) -> 'Tensor':
+    def reshape(self, shape: Iterable[int]) -> 'Tensor':
         """Returns ops.reshape(self, shape)."""
         import popart.ir.ops as ops
         return ops.reshape(self, shape)
@@ -202,7 +202,7 @@ class Constant(Tensor):
         return ops.ipu_copy(self, dst, src)
 
 
-def variable(data: Union[np.ndarray, Sequence[Any], int, float],
+def variable(data: Union[np.ndarray, Iterable[Any], int, float],
              dtype: Optional[dtypes.dtype] = dtypes.float32,
              name: Optional[str] = None) -> Variable:
     """A variable tensor that is initialised with data during graph creation.
@@ -225,14 +225,14 @@ def variable(data: Union[np.ndarray, Sequence[Any], int, float],
     """
     g = gcg()
     pb_g = g._pb_graph
-    data = np.array(data, dtype=dtype.as_numpy())
-    info = _ir.TensorInfo(dtype._pb_dtype, data.shape)
+    np_data: np.ndarray = np.array(data, dtype=dtype.as_numpy())
+    info = _ir.TensorInfo(dtype._pb_dtype, np_data.shape)
     pb_id = g._create_tensor_id(name)
-    pb_g.addVarInit(pb_id, info, data)
+    pb_g.addVarInit(pb_id, info, np_data)
     return Variable._from_pb_tensor(pb_g.getTensor(pb_id))
 
 
-def constant(data: Union[np.ndarray, Sequence[Any], int, float],
+def constant(data: Union[np.ndarray, Iterable[Any], int, float],
              dtype: Optional[dtypes.dtype] = dtypes.float32,
              name: Optional[str] = None) -> Constant:
     """A constant tensor that is initialised with data during graph creation.
@@ -259,14 +259,14 @@ def constant(data: Union[np.ndarray, Sequence[Any], int, float],
     """
     g = gcg()
     pb_g = g._pb_graph
-    data = np.array(data, dtype=dtype.as_numpy())
-    info = _ir.TensorInfo(dtype._pb_dtype, data.shape)
+    np_data: np.ndarray = np.array(data, dtype=dtype.as_numpy())
+    info = _ir.TensorInfo(dtype._pb_dtype, np_data.shape)
     pb_id = g._create_tensor_id(name)
-    pb_g.addConstInit(pb_id, info, data)
+    pb_g.addConstInit(pb_id, info, np_data)
     return Constant._from_pb_tensor(pb_g.getTensor(pb_id))
 
 
-def subgraph_input(shape: Tuple[int],
+def subgraph_input(shape: Iterable[int],
                    dtype: dtypes.dtype,
                    name: Optional[str] = None) -> Tensor:
     """Create a new input tensor to the current graph.
@@ -301,7 +301,7 @@ def subgraph_input(shape: Tuple[int],
     pb_g = g._pb_graph
 
     pb_id = g._create_tensor_id(name)
-    pb_info = _ir.TensorInfo(dtype._pb_dtype, shape)
+    pb_info = _ir.TensorInfo(dtype._pb_dtype, list(shape))
 
     pb_g.addInput(pb_id, pb_info)
 

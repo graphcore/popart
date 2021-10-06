@@ -3,7 +3,7 @@ from typing import Optional, Tuple, List, Union
 import popart._internal.ir as _ir
 from popart.ir.context import get_current_context
 from popart.ir.tensor import Tensor
-from .utils import check_in_graph
+from .utils import check_in_graph, handle_negative_axis
 
 __all__ = ["split"]
 
@@ -12,7 +12,7 @@ def split(t: Tensor, splits: Union[int, List[int]],
           axis: int = 0) -> List[Tensor]:
     """
     Splits a tensor on a given axis into a list of tensors.
-    
+
     Args:
         t: Tensor
             Tensor to be split.
@@ -30,6 +30,8 @@ def split(t: Tensor, splits: Union[int, List[int]],
     pb_g = g._pb_graph
 
     check_in_graph(g, t)
+
+    axis = handle_negative_axis(t, axis)
 
     if isinstance(splits, int):
         axis_len = t.shape[axis]

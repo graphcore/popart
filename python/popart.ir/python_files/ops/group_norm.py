@@ -15,7 +15,7 @@ def group_norm(x: Tensor,
                eps: float = 1e-5) -> Tensor:
     """
     Applies Group Normalisation over a Tensor. https://arxiv.org/abs/1803.08494
-    
+
     Args:
         x: Tensor
             Tensor to be normalized.
@@ -36,7 +36,7 @@ def group_norm(x: Tensor,
     check_in_graph(g, x, weight, bias)
 
     settings = ctx._get_op_settings('group_norm')
-    opid = _ir.OperatorIdentifier("ai.graphcore", "GroupNorm", 1,
+    opid = _ir.OperatorIdentifier("ai.graphcore", "GroupNormalization", 1,
                                   _ir.NumInputs(3, 3), 3)
     op = pb_g.createConnectedOp_GroupNormOp(
         {

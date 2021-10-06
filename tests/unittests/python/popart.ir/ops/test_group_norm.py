@@ -20,7 +20,7 @@ class TestGroupNorm:
             y = ops.group_norm(x, weight, bias, groups)
         assert len(g.get_tensors()) == 6
         assert len(g.get_variables()) == 3
-        assert contains_op_of_type("GroupNorm", _ir.op.GroupNormOp, g)
+        assert contains_op_of_type("GroupNormalization", _ir.op.GroupNormOp, g)
 
     def test_layer_norm(self):
         ir = pir.Ir()
@@ -33,4 +33,4 @@ class TestGroupNorm:
             y = ops.layer_norm(x, weight, bias)
         assert len(g.get_tensors()) == 6
         assert len(g.get_variables()) == 3
-        assert contains_op_of_type("GroupNorm", _ir.op.GroupNormOp, g)
+        assert contains_op_of_type("GroupNormalization", _ir.op.GroupNormOp, g)
