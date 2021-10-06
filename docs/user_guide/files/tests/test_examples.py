@@ -69,15 +69,6 @@ class TestPythonDocExamples(ExamplesTester):
         filename = "weights.py"
         self.run_python(filename, self.base_path)
 
-    def test_documentation_horovod(self):
-        """Test horovod example. Will skip if horovod not installed."""
-        filename = "simple_distributed_training.py"
-        module = "horovod.popart"
-        if module in sys.modules:
-            self.run_python(filename, self.base_path)
-        else:
-            pytest.skip(f"{module} not found. Skipping test.")
-
 
 class TestPopartCustomOperatorCube(ExamplesTester):
     """Tests for example of Popart cube custom operator"""
