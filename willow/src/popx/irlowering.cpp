@@ -694,6 +694,12 @@ TaskId IrLowering::taskWhichPopulates(TensorId id) const {
   }
 }
 
+PriTask
+IrLowering::getDependencyFreeInitTensorCreatorTask(const TensorId &tensorID) {
+  const Tensor *tensor = ir().getTensor(tensorID);
+  return initTensorTask(getInitTensorCreators(tensor, true));
+}
+
 std::vector<ICreatorCandidatePtr>
 IrLowering::getCreatorEndpoints(const Tensor *startTensor,
                                 bool excludeEndpointsFromPath,
@@ -919,8 +925,35 @@ IrLowering::getCreatorEndpoints(const Tensor *startTensor,
   return endpoints;
 }
 
+void IrLowering::removeNonDependencyFreeCreators(
+    std::vector<ICreatorCandidatePtr> &candidates) {
+  auto not_dependency_free = [](const ICreatorCandidatePtr &candidate) {
+    auto dnfTensorIDs = candidate->mustExistBeforeCreate();
+
+    // No sets at all
+    if (dnfTensorIDs.empty()) {
+      logging::devicex::trace("Nothing in dnfTensorIDs");
+      return false;
+    }
+
+    // At least one set is empty
+    for (auto &set : dnfTensorIDs) {
+      if (set.empty()) {
+        logging::devicex::trace("Returning as a set is empty");
+        return false;
+      }
+    }
+
+    return true;
+  };
+
+  candidates.erase(
+      std::remove_if(candidates.begin(), candidates.end(), not_dependency_free),
+      candidates.end());
+}
+
 std::vector<ICreatorCandidatePtr>
-IrLowering::getTensorCreators(Tensor *tensor) const {
+IrLowering::getTensorCreators(const Tensor *tensor, bool dependencyFree) const {
   // Search of the graph to get the candidate Opxs that
   // know how to create this tensor.
   // The pathFromInput argument is an empty vector, as
@@ -931,6 +964,12 @@ IrLowering::getTensorCreators(Tensor *tensor) const {
                           tensor->info.nelms());
 
   std::vector<ICreatorCandidatePtr> candidates = getCreatorEndpoints(tensor);
+
+  if (dependencyFree) {
+    logging::devicex::trace("Finding a dependency-free creator for {}",
+                            tensor->id);
+    removeNonDependencyFreeCreators(candidates);
+  }
 
   logging::devicex::trace(
       "{} creator candidate(s) for {}", candidates.size(), tensor->id);
@@ -977,8 +1016,9 @@ IrLowering::getTensorCreators(Tensor *tensor) const {
 
 // Design decision : leave the option for a Tensor to be
 // created based on complex global criteria open.
-InitTensorPtrs IrLowering::getInitTensorCreators(Tensor *tensor) {
-  auto candidates = getTensorCreators(tensor);
+InitTensorPtrs IrLowering::getInitTensorCreators(const Tensor *tensor,
+                                                 bool dependencyFree) const {
+  auto candidates = getTensorCreators(tensor, dependencyFree);
 
   // 1. A unique candidate creator will create the tensor
   // 2. The tensor will be unwound (have its layout modified)
@@ -1007,6 +1047,7 @@ InitTensorPtrs IrLowering::getInitTensorCreators(Tensor *tensor) {
 
     return creators;
   } else {
+    logging::devicex::trace("Reverting to linear creator");
     return {std::make_shared<InitTensorLinear>(tensor->id, 1.0f)};
   }
 }
@@ -3260,13 +3301,15 @@ void IrLowering::prepareGraph() {
                           "SUBGRAPH and TENSOR dependencies.");
   auto createSchedule = tasks.getLinearised({DependencyType::Output,
                                              DependencyType::SubGraph,
-                                             DependencyType::Tensor});
+                                             DependencyType::Tensor},
+                                            *this);
 
   logging::devicex::debug("Creating linear task schedule with OUTPUT, "
                           "SUBGRAPH and SCHEDULER dependencies.");
   auto emplaceSchedule = tasks.getLinearised({DependencyType::Output,
                                               DependencyType::SubGraph,
-                                              DependencyType::Scheduler});
+                                              DependencyType::Scheduler},
+                                             *this);
 
   auto emplaceTaskSeqs = [&](std::set<TaskId> filter) {
     // 2.) Add intermediate sequences in final sequence

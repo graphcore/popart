@@ -86,6 +86,8 @@ public:
   // Equality.
   bool operator==(const TaskId &rhs) const;
 
+  const nonstd::optional<TensorId> &getTensorId() const { return tensorId; }
+
 private:
   // The type of task.
   Type type;

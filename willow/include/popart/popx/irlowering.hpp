@@ -225,7 +225,11 @@ private:
 
   // Task to create a snap::Tensor from nothing, choosing
   // the correct create call (createWeights, addLinearly, etc)
-  InitTensorPtrs getInitTensorCreators(Tensor *);
+  // If dependencyFree is true, the creator must not depend on any other tensor
+  // having been created. This can be (sparingly) used to resolve cyclic
+  // dependencies
+  InitTensorPtrs getInitTensorCreators(const Tensor *,
+                                       bool dependencyFree = false) const;
 
   // Task to create a snap::Tensor with methods defined by InitTensorPtrs
   PriTask initTensorTask(InitTensorPtrs inits);
@@ -441,6 +445,10 @@ public:
   // poplar::Program. For Variable Tensors, this is the Copy from Stream program
   TaskId taskWhichPopulates(TensorId) const;
 
+  // Obtain a dependency-free creator task for a tensor.
+  // This is useful for resolving cyclic dependencies with tensor creation.
+  PriTask getDependencyFreeInitTensorCreatorTask(const TensorId &);
+
   // Helper method to get the replication factor based on the user options
   unsigned getReplicationFactor() const;
   unsigned getAccumulationFactor() const;
@@ -496,9 +504,14 @@ public:
                       bool excludeEndpointsFromPath = true,
                       bool includeDeadends          = false) const;
 
+  // Remove any creators which are have dependencies on other tensors
+  static void removeNonDependencyFreeCreators(
+      std::vector<ICreatorCandidatePtr> &candidates);
+
   // Get a single creator candidate for creating a tensor
   // Will throw an error if multiple candidates that do not agree are found
-  std::vector<ICreatorCandidatePtr> getTensorCreators(Tensor *tensor) const;
+  std::vector<ICreatorCandidatePtr>
+  getTensorCreators(const Tensor *tensor, bool dependencyFree) const;
 
   snap::Tensor getConst(snap::Graph &graph,
                         const poplar::Type &type,

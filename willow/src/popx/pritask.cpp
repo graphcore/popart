@@ -1,9 +1,9 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
 #include <algorithm>
-
-#include <queue> // we use a priority_queue
 #include <sstream>
+#include <poprithms/schedule/scc/scc.hpp>
 #include <popart/error.hpp>
+#include <popart/popx/irlowering.hpp>
 #include <popart/popx/pritask.hpp>
 
 namespace popart {
@@ -195,11 +195,174 @@ bool PriTasks::contains(const TaskId &taskId) {
   return tasksMap.find(taskId) != tasksMap.end();
 }
 
+std::vector<const TaskId *> PriTasks::getStongComponentElements(
+    const std::vector<const TaskId *> &unscheduled,
+    const std::unordered_map<TaskId, std::set<TaskId>> &dependantsOf) {
+
+  // For the purpose here, it does not matter if the edges are forward or not
+  poprithms::schedule::scc::FwdEdges edges;
+  edges.reserve(unscheduled.size());
+
+  std::unordered_map<TaskId, uint64_t> taskToIdx;
+
+  for (size_t idx = 0; idx < unscheduled.size(); idx++) {
+    taskToIdx[*unscheduled[idx]] = idx;
+  }
+
+  for (size_t idx = 0; idx < unscheduled.size(); idx++) {
+    edges.emplace_back();
+
+    // BN Because of the use of CNF, this results in more dependencies than
+    // there could be, i.e. that "OR" as expressed as if an "AND". A more
+    // complex alternative could be to pick the first possibility or a random
+    // one
+    for (auto &dependant : dependantsOf.at(*unscheduled[idx])) {
+      if (taskToIdx.count(dependant) == 0) {
+        continue;
+      }
+
+      edges[idx].push_back(taskToIdx.at(dependant));
+    }
+  }
+
+  auto strongComponents(
+      poprithms::schedule::scc::getStronglyConnectedComponents(edges));
+
+  std::vector<const TaskId *> strongElements;
+
+  for (auto &component : strongComponents) {
+    for (uint64_t element : component) {
+      strongElements.push_back(unscheduled[element]);
+    }
+  }
+
+  return strongElements;
+}
+
+void PriTasks::schedule(
+    std::priority_queue<PriTask> &pq,
+    std::vector<PriTask> &linearisedTasks,
+    const std::unordered_map<TaskId, std::set<TaskId>> &dependantsOf,
+    std::unordered_map<TaskId, PriTask> &tasksMapCopy,
+    popx::IrLowering &irLowering,
+    bool allowFallback) {
+  // while there are dependency-free tasks which have not been added
+  while (!pq.empty()) {
+    // 1) add the lowest (highest) priority dep-free task
+    linearisedTasks.push_back(tasksMap.at(pq.top().name));
+    auto &parent = linearisedTasks.back().name;
+    pq.pop();
+    // update the dependencies of child tasks, pushing child tasks
+    // onto the priority queue if they become dep-free.
+    for (auto &child : dependantsOf.at(parent)) {
+      bool changed = tasksMapCopy[child].removeDep(parent);
+      if (changed && tasksMapCopy[child].dependsOn.size() == 0) {
+        pq.push(tasksMapCopy[child]);
+      }
+    }
+  }
+
+  // confirm that the linearisedTasks contains all the tasks.
+  // circular dependencies will prevent this.
+  if (linearisedTasks.size() == dependantsOf.size()) {
+    return;
+  }
+
+  std::vector<const TaskId *> unscheduled;
+  unscheduled.reserve(dependantsOf.size() - linearisedTasks.size());
+
+  for (auto &task : tasksMap) {
+    bool present = false;
+
+    auto &taskId = task.first;
+    for (auto &t : linearisedTasks) {
+      if (taskId == t.name) {
+        present = true;
+        break;
+      }
+    }
+
+    if (!present) {
+      unscheduled.push_back(&taskId);
+    }
+  }
+
+  // If allowFallback, try to replace a task (currently only an initTensorTask)
+  // with a dependency-free version and resume the algorithm.
+  if (allowFallback) {
+    auto unscheduledCycleElemenets =
+        getStongComponentElements(unscheduled, dependantsOf);
+
+    logging::devicex::trace("Cycle detected in PriTasks::getLinearised, "
+                            "trying to remove by using dependency-free "
+                            "alternatives: {} unscheduled of which {} "
+                            "are in cycles",
+                            unscheduled.size(),
+                            unscheduledCycleElemenets.size());
+
+    for (auto *taskId : unscheduled) {
+      // Replace task with dependency-free alternative
+      logging::devicex::trace("Using dependency-free altenative creator for {}",
+                              *taskId);
+
+      auto &pritask       = tasksMapCopy[*taskId];
+      auto &tensorCreated = pritask.name.getTensorId();
+
+      if (!tensorCreated) {
+        continue;
+      }
+
+      tasksMapCopy[*taskId] =
+          irLowering.getDependencyFreeInitTensorCreatorTask(*tensorCreated);
+
+      if (!tasksMapCopy[*taskId].dependsOn.empty()) {
+        std::stringstream ss;
+        ss << *taskId << " is not a dependency-free alternative because "
+           << "it has the following dependencies: ";
+        for (auto it = tasksMapCopy[*taskId].dependsOn.begin();
+             it != tasksMapCopy[*taskId].dependsOn.end();
+             it++) {
+          if (it != tasksMapCopy[*taskId].dependsOn.begin()) {
+            ss << ", ";
+          }
+          ss << *it;
+        }
+        throw error(ss.str());
+      }
+      pq.push(tasksMapCopy[*taskId]);
+
+      // Fallback suceeded recurse to schedule again
+      schedule(
+          pq, linearisedTasks, dependantsOf, tasksMapCopy, irLowering, true);
+      return;
+    }
+  }
+
+  std::stringstream ss;
+  ss << "different sizes of linearisedTasks (" << linearisedTasks.size()
+     << ") and actual tasks (" << dependantsOf.size() << ").";
+  ss << "\n tasks not in linearisedTasks:\n";
+
+  for (auto taskId : unscheduled) {
+    ss << *taskId << "   [ ";
+    if (tasksMap.find(*taskId) != tasksMap.end()) {
+      auto &depends = tasksMap.at(*taskId).dependsOn;
+      ss << logging::join(depends.begin(), depends.end(), ", ");
+    } else {
+      ss << "\n xxxxx ";
+    }
+    ss << ']' << "\n\n";
+  }
+  throw error(ss.str());
+}
+
 // this function will reorder v_tasks so that there are no dependency breakages.
 std::vector<PriTask>
-PriTasks::getLinearised(std::set<DependencyType> dependencies) const {
+PriTasks::getLinearised(std::set<DependencyType> dependencies,
+                        popx::IrLowering &irLowering,
+                        bool allowFallback) {
   std::priority_queue<PriTask> pq;
-  std::unordered_map<TaskId, std::set<TaskId>> dependentsOf;
+  std::unordered_map<TaskId, std::set<TaskId>> dependantsOf;
   std::vector<PriTask> linearisedTasks;
 
   auto tasksMapCopy = tasksMap;
@@ -209,7 +372,7 @@ PriTasks::getLinearised(std::set<DependencyType> dependencies) const {
                                              DependencyType::Tensor};
 
   for (auto &x : tasksMapCopy) {
-    dependentsOf[x.first] = {};
+    dependantsOf[x.first] = {};
     for (auto depType : removeDepTypes) {
       if (dependencies.find(depType) == dependencies.end()) {
         x.second.removeDep(depType);
@@ -230,7 +393,7 @@ PriTasks::getLinearised(std::set<DependencyType> dependencies) const {
       for (auto &parent : task.dependsOn) {
         if (dependencies.find(parent.getType()) != dependencies.end()) {
           for (auto &taskId : parent.getTaskIds()) {
-            if (dependentsOf.find(taskId) == dependentsOf.end()) {
+            if (dependantsOf.find(taskId) == dependantsOf.end()) {
               std::stringstream ss;
               ss << "In first step of building linearised priorities "
                  << "There is a task named " << name << " which claims to"
@@ -238,60 +401,20 @@ PriTasks::getLinearised(std::set<DependencyType> dependencies) const {
                  << taskId << ".";
               throw error(ss.str());
             }
-            // weird how you can just do this even if parent is not yet in map
-            dependentsOf[taskId].insert(name);
+            dependantsOf[taskId].insert(name);
           }
         }
       }
     }
   }
 
-  // while there are dependency-free tasks which have not been added
-  while (!pq.empty()) {
-    // 1) add the lowest (highest) priority dep-free task
-    linearisedTasks.push_back(tasksMap.at(pq.top().name));
-    auto &parent = linearisedTasks.back().name;
-    pq.pop();
-    // update the dependencies of child tasks, pushing child tasks
-    // onto the priority queue if they become dep-free.
-    for (auto &child : dependentsOf.at(parent)) {
-      bool changed = tasksMapCopy[child].removeDep(parent);
-      if (changed && tasksMapCopy[child].dependsOn.size() == 0) {
-        pq.push(tasksMapCopy[child]);
-      }
-    }
-  }
-
-  // confirm that the linearisedTasks contains all the tasks.
-  // circular dependencies will prevent this.
-  if (linearisedTasks.size() != dependentsOf.size()) {
-    std::stringstream ss;
-    ss << "different sizes of linearisedTasks (" << linearisedTasks.size()
-       << ") and actual tasks (" << dependentsOf.size() << ").";
-    ss << "\n tasks not in linearisedTasks:\n";
-    for (auto &x : dependentsOf) {
-      bool present = false;
-      auto parent  = x.first;
-      for (auto &t : linearisedTasks) {
-        if (parent == t.name) {
-          present = true;
-        }
-      }
-      if (present == false) {
-        ss << parent << "   [ ";
-        if (tasksMap.find(parent) != tasksMap.end()) {
-          auto &depends = tasksMap.at(parent).dependsOn;
-          ss << logging::join(depends.begin(), depends.end(), ", ");
-        } else {
-          ss << "\n xxxxx ";
-        }
-        ss << ']' << "\n\n";
-      }
-    }
-    throw error(ss.str());
-  }
-
-  // ok, all tasks linearised.
+  // Perform the scheduling
+  schedule(pq,
+           linearisedTasks,
+           dependantsOf,
+           tasksMapCopy,
+           irLowering,
+           allowFallback);
   return linearisedTasks;
 }
 

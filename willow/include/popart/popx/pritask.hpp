@@ -3,6 +3,7 @@
 #define GUARD_PRITASK_HPP
 
 #include <functional>
+#include <queue>
 #include <set>
 #include <string>
 #include <unordered_map>
@@ -129,7 +130,7 @@ private:
 std::ostream &operator<<(std::ostream &oss, const DependencyType &dt);
 std::ostream &operator<<(std::ostream &oss, const PriTaskDependency &ptd);
 
-/** A Pritask is a task which has a priority and a set of dependent tasks. */
+/** A Pritask is a task which has a priority and a set of dependant tasks. */
 class PriTask {
 public:
   double priority;
@@ -159,6 +160,10 @@ public:
 // returns true if "a" has lower priority than "b"
 bool operator<(const PriTask &a, const PriTask &b);
 
+namespace popx {
+class IrLowering;
+}
+
 class PriTasks {
 public:
   std::unordered_map<TaskId, PriTask> tasksMap;
@@ -168,10 +173,34 @@ public:
   // return the tasks in an order of descending priority as far
   // as possible, subject to all dependencies being satisfied.
   // the algorithm used is a variant of  Kahn's algorithm.
+  // If allowFallback is set, any task with altenativeCreator set can be
+  // replaced with dependency free version using the creator. In this case,
+  // pritasks in taskMap will be modifed.
   // An error is thrown if not linearizable (schedulable).
-  std::vector<PriTask>
-  getLinearised(std::set<DependencyType> dependencies) const;
+  std::vector<PriTask> getLinearised(std::set<DependencyType> dependencies,
+                                     popx::IrLowering &irLowering,
+                                     bool allowFallback = false);
   PriTasks() = default;
+
+private:
+  // Returns stong component elements wthin unscheduled based on dependencies
+  // specified by dependantOf: in the event of a cyclic dependency, any
+  // candidate which can be replaced with a dependency free version must
+  // be part of a strong component or the replacement will never resolve the
+  // cycle.
+  static std::vector<const TaskId *> getStongComponentElements(
+      const std::vector<const TaskId *> &unscheduled,
+      const std::unordered_map<TaskId, std::set<TaskId>> &dependantsOf);
+
+  // Perform actual scheduling (topological sorting) of the tasks
+  // Allows recursive calling in case of allowFalling being true.
+  void
+  schedule(std::priority_queue<PriTask> &pq,
+           std::vector<PriTask> &linearisedTasks,
+           const std::unordered_map<TaskId, std::set<TaskId>> &dependantsOf,
+           std::unordered_map<TaskId, PriTask> &taskMapsCopy,
+           popx::IrLowering &irLowering,
+           bool allowFallback);
 };
 
 } // namespace popart
