@@ -70,6 +70,7 @@ void ConstFolder::registerConstFoldOpMap() {
   tmpConstFoldOps.push_back(std::make_unique<IdentityLossCFold>());
   tmpConstFoldOps.push_back(std::make_unique<NegCFold>());
   tmpConstFoldOps.push_back(std::make_unique<ReciprocalCFold>());
+  tmpConstFoldOps.push_back(std::make_unique<ReduceProdCFold>());
   tmpConstFoldOps.push_back(std::make_unique<ReluCFold>());
   tmpConstFoldOps.push_back(std::make_unique<ReshapeCFold>());
   tmpConstFoldOps.push_back(std::make_unique<ScaleCFold>());

@@ -208,6 +208,55 @@ Constants ReluCFold::fold(const NodeProto &node, const Constants &inputs) {
   return res;
 }
 
+Constants ReduceProdCFold::fold(const NodeProto &node,
+                                const Constants &inputs) {
+  const auto in0 = inputs.at(node.input(0));
+  auto in0_shape = in0.shape().get();
+  auto in0_rank  = in0_shape.size();
+
+  // Prepare default axes in case they're not specified
+  std::vector<int64_t> default_axes(in0_rank);
+  std::iota(default_axes.begin(), default_axes.end(), 0);
+
+  // Fetch the axes and keepdims
+  auto attr = Attributes(node.attribute());
+  std::vector<int64_t> axes =
+      attr.getAttribute<Attributes::Ints>("axes", default_axes);
+
+  // Convert negative axes to valid ones, as per ONNX spec
+  for (auto &i : axes) {
+    if (i < 0)
+      i += in0_rank;
+  }
+  const auto keepdims = attr.getAttribute<Attributes::Int>("keepdims", 1);
+
+  // Calculate resulting shape after reduction
+  auto reducedShapeInitializer(in0_shape);
+  for (auto i : axes)
+    reducedShapeInitializer[i] = 1;
+
+  auto reducedShape = poprithms::ndarray::Shape(reducedShapeInitializer);
+
+  auto reducedTensor = in0.reduceProduct(reducedShape);
+
+  if (!keepdims) { // remove the reduced axes if necessary
+    std::vector<int64_t> prunedShapeInitializer;
+    for (int i = 0; i < reducedShapeInitializer.size(); ++i) {
+      bool shouldBeKept =
+          (std::find(axes.begin(), axes.end(), i) == axes.end());
+      if (shouldBeKept) {
+        prunedShapeInitializer.push_back(reducedShapeInitializer[i]);
+      }
+    }
+    reducedTensor = reducedTensor.reshape(prunedShapeInitializer);
+  }
+
+  Constants res;
+  res.insert({node.output(0), reducedTensor});
+
+  return res;
+}
+
 Constants ReshapeCFold::fold(const NodeProto &node, const Constants &inputs) {
   const auto nIns = node.input_size();
 
@@ -239,6 +288,18 @@ Constants ScaleCFold::fold(const NodeProto &node, const Constants &inputs) {
   const auto f       = host::Tensor::float64(scale).to(in0Type);
   Constants res;
   res.insert({node.output(0), (in0 * f).to(in0Type)});
+  return res;
+}
+
+Constants ShapeCFold::fold(const NodeProto &node, const Constants &inputs) {
+  using namespace poprithms::compute;
+
+  const auto inShape = inputs.at(node.input(0)).shape();
+
+  Constants res;
+  res.insert({node.output(0),
+              host::Tensor::int64({inShape.rank_i64()}, inShape.get())});
+
   return res;
 }
 
@@ -312,21 +373,6 @@ Constants UnsqueezeCFold::fold(const NodeProto &node, const Constants &inputs) {
   Constants res;
   res.insert({node.output(0),
               in0.unsqueeze(getAxes_u64(axes, axes.size() + in0.rank_u64()))});
-  return res;
-}
-
-// ShapeCFold takes a tensor as input and outputs an 1D int64 tensor containing
-// the shape of the input tensor.
-// Example: For input tensor of shape (2,3,5) output tensor is {2,3,5}.
-Constants ShapeCFold::fold(const NodeProto &node, const Constants &inputs) {
-  using namespace poprithms::compute;
-
-  const auto inShape = inputs.at(node.input(0)).shape();
-
-  Constants res;
-  res.insert({node.output(0),
-              host::Tensor::int64({inShape.rank_i64()}, inShape.get())});
-
   return res;
 }
 

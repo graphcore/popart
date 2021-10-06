@@ -144,6 +144,14 @@ public:
   Constants fold(const NodeProto &, const Constants &) final;
 };
 
+class ReduceProdCFold : public ConstFoldOp {
+public:
+  ReduceProdCFold() : ConstFoldOp("ReduceProd") {}
+  virtual ~ReduceProdCFold() = default;
+
+  Constants fold(const NodeProto &, const Constants &) final;
+};
+
 class ReluCFold : public ConstFoldOp {
 public:
   ReluCFold() : ConstFoldOp("Relu") {}
@@ -164,6 +172,17 @@ class ScaleCFold : public ConstFoldOp {
 public:
   ScaleCFold() : ConstFoldOp("Scale") {}
   virtual ~ScaleCFold() = default;
+
+  Constants fold(const NodeProto &, const Constants &) final;
+};
+
+/// ShapeCFold takes a tensor as input and outputs a 1D int64 tensor containing
+/// the shape of the input tensor.
+/// Example: For input tensor of shape (2,3,5) output tensor is {2,3,5}.
+class ShapeCFold : public ConstFoldOp {
+public:
+  ShapeCFold() : ConstFoldOp("Shape") {}
+  virtual ~ShapeCFold() = default;
 
   Constants fold(const NodeProto &, const Constants &) final;
 };
@@ -196,14 +215,6 @@ class UnsqueezeCFold : public ConstFoldOp {
 public:
   UnsqueezeCFold() : ConstFoldOp("Unsqueeze") {}
   virtual ~UnsqueezeCFold() = default;
-
-  Constants fold(const NodeProto &, const Constants &) final;
-};
-
-class ShapeCFold : public ConstFoldOp {
-public:
-  ShapeCFold() : ConstFoldOp("Shape") {}
-  virtual ~ShapeCFold() = default;
 
   Constants fold(const NodeProto &, const Constants &) final;
 };

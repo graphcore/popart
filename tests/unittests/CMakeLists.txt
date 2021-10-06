@@ -99,6 +99,8 @@ add_popart_cpp_unit_test(unittest_willow_error willow/test_error.cpp)
 
 add_popart_py_unit_test(test_error test_error.py)
 
+add_popart_cpp_unit_test(unittest_reduceprodce ces/reduceprodce.cpp)
+
 add_subdirectory("compoundscalarhelper")
 
 add_subdirectory("python")

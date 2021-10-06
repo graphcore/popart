@@ -10,6 +10,7 @@
 #include <popart/ces/floorce.hpp>
 #include <popart/ces/gatherce.hpp>
 #include <popart/ces/identityce.hpp>
+#include <popart/ces/reduceprodce.hpp>
 #include <popart/ces/reshapece.hpp>
 #include <popart/ces/scalece.hpp>
 #include <popart/ces/slicece.hpp>
@@ -177,6 +178,7 @@ void ConstExprOpManager::registerConstOps() {
   registerConstOp<ConstExprIdentity>("Flatten");
   registerConstOp<ConstExprIdentity>("FlattenInplace");
   registerConstOp<ConstExprFloor>("Floor");
+  registerConstOp<ConstExprReduceProd>("ReduceProd");
 }
 
 std::unique_ptr<ConstExprOp> ConstExprOpManager::createConstExprOp(Op *op) {
