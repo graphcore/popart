@@ -51,7 +51,10 @@ void bindIr(py::module &m) {
              self.serialise(Ir::SerialiseFormat::JSON, ss);
              return ss.str();
            })
-      .def("updateVertices", &Ir::updateVertices);
+      .def("updateVertices", &Ir::updateVertices)
+      .def("setPatterns", &Ir::setPatterns)
+      .def("applyPreAliasPatterns", &Ir::applyPreAliasPatterns)
+      .def("applyInplacePattern", &Ir::applyInplacePattern);
 }
 
 } // namespace ir

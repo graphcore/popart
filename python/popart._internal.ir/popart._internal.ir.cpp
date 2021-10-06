@@ -25,6 +25,9 @@
 #include "bindings/transforms/autodiff.hpp"
 #include "bindings/transforms/prune.hpp"
 #include "bindings/transforms/transform.hpp"
+// Patterns
+#include "bindings/patterns/pattern.hpp"
+#include "bindings/patterns/patterns.hpp"
 
 #include <pybind11/pybind11.h>
 
@@ -70,6 +73,12 @@ PYBIND11_MODULE(popart_internal_ir, m) {
     transforms::bindTransform(sm);
     transforms::bindPrune(sm);
     transforms::bindAutodiff(sm);
+  }
+  // Patterns
+  {
+    auto sm = m.def_submodule("patterns");
+    patterns::bindPattern(sm);
+    patterns::bindPatterns(sm);
   }
 }
 } // namespace ir

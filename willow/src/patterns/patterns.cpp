@@ -522,6 +522,38 @@ void Patterns::ensureAllMandatoryPreAliasPatternsAreEnabled() const {
   }
 }
 
+std::vector<std::string> Patterns::getAllPreAliasPatternNames() {
+  Patterns patterns = Patterns(PatternsLevel::All);
+
+  auto preAliasList = patterns.getPreAliasList();
+  std::vector<std::string> outs;
+
+  for (const auto &p : preAliasList) {
+    outs.push_back(p->getPatternName());
+  }
+
+  return outs;
+}
+
+bool Patterns::isMandatory(Pattern &pattern) {
+  const auto &patternInfosMap = PreAliasPatternManager::getPatternInfos();
+  auto tIndex                 = std::type_index(typeid(pattern));
+
+  auto val = patternInfosMap.at(tIndex);
+
+  return val.mandatory;
+}
+
+bool Patterns::isMandatory(std::string &pattern_name) {
+  const auto &patternInfosMap = PreAliasPatternManager::getPatternInfos();
+  for (auto idx : patternInfosMap) {
+    if (idx.second.name == pattern_name) {
+      return idx.second.mandatory;
+    }
+  }
+  return false;
+}
+
 std::vector<std::unique_ptr<PreAliasPattern>> Patterns::getPreAliasList() {
 
   if (runtimeAssertsOn) {

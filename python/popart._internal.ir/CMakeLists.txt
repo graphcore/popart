@@ -117,6 +117,10 @@ add_popart_python_module(
   ${op_binding_sources}
   ${op_bindings__all}
   ${popart_op_bindings_dir}/../graph.gen.cpp
+  # patterns
+  bindings/patterns/pattern.cpp
+  bindings/patterns/patterns.cpp
+  # End patterns
   bindings/debugcontext.cpp
   bindings/graph.cpp
   bindings/graphid.cpp

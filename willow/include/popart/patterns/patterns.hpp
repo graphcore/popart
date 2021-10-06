@@ -167,6 +167,32 @@ public:
   Patterns &enablePattern(const std::type_index &t, bool v);
   Patterns &enablePattern(const std::string &t, bool v);
 
+  /**
+   * Get all the PreAliasPattern names, using the same order as getPreAliasList.
+   *
+   * \returns std::vector<std::string> all the names as strings in a vector.
+   */
+  static std::vector<std::string> getAllPreAliasPatternNames();
+
+  /**
+   * Check if the given pattern is mandatory (throws an error at runtime if
+   * disabled and enableRuntimeAsserts is true).
+   *
+   * \param pattern The pattern to check.
+   * \returns true If mandatory.
+   * \returns false Otherwise.
+   */
+  static bool isMandatory(Pattern &pattern);
+
+  /**
+   * isMandatory(Pattern &pattern) but with string pattern name.
+   *
+   * \param patternName The pattern name to check.
+   * \returns true If mandatory.
+   * \returns false Otherwise.
+   */
+  static bool isMandatory(std::string &patternName);
+
   bool isInitAccumulateEnabled();
   bool isPreUniReplEnabled();
   bool isPostNReplEnabled();
