@@ -43,7 +43,6 @@ ScatterOpx::ScatterOpx(Op *op, Devicex *devicex)
   plan         = createSlicePlan(graph(),
                          sop.inInfo(sop.dataInIndex()),
                          sop.inInfo(sop.indicesInIndex()),
-                         sop.outInfo(sop.outIndex()),
                          options);
 
   inputCreatorPriority = std::numeric_limits<double>::max();

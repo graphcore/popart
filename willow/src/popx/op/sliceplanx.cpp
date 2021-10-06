@@ -49,12 +49,11 @@ createSlicePlanOptions(SlicePlanUsedFor usedFor,
 popops::SlicePlan createSlicePlan(const snap::Graph &graph,
                                   const popart::TensorInfo &dataInfo,
                                   const popart::TensorInfo &indicesInfo,
-                                  const popart::TensorInfo &outputInfo,
                                   const poplar::OptionFlags &options,
                                   nonstd::optional<size_t> axis) {
-  auto numEntries = static_cast<size_t>(dataInfo.nelms());
-  auto numLookups = static_cast<size_t>(indicesInfo.nelms());
-  auto outputSize = static_cast<size_t>(outputInfo.nelms());
+  auto numEntries   = static_cast<size_t>(dataInfo.nelms());
+  auto numLookups   = static_cast<size_t>(indicesInfo.nelms());
+  size_t outputSize = 1;
 
   if (numLookups == 0 || numEntries == 0) {
     return popops::SlicePlan();
@@ -62,7 +61,7 @@ popops::SlicePlan createSlicePlan(const snap::Graph &graph,
 
   if (axis.has_value()) {
     numEntries = dataInfo.shape_szt()[*axis];
-    outputSize = outputInfo.shape_szt()[*axis];
+    outputSize = dataInfo.nelms() / numEntries;
   }
 
   return popops::embedding::plan(graph.getPoplarGraph(),

@@ -23,7 +23,6 @@ createSlicePlanOptions(SlicePlanUsedFor usedFor,
 popops::SlicePlan createSlicePlan(const snap::Graph &graph,
                                   const popart::TensorInfo &dataInfo,
                                   const popart::TensorInfo &indicesInfo,
-                                  const popart::TensorInfo &outputInfo,
                                   const poplar::OptionFlags &options,
                                   nonstd::optional<size_t> axis = {});
 
