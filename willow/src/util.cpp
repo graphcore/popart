@@ -240,21 +240,12 @@ void validateReduceAxis(int64_t axis_,
                 message);
   }
 
-  if (inShapeSize <= axis_) {
-    throw error("Cannot compute Reduce on axis {} when input rank is {}, "
-                "invalid Reduce {}.",
-                axis_,
-                inShapeSize,
-                message);
-  }
-
   // From the onnx spec:
   // Accepted range is [-r, r-1] where r = rank(data).
-  if (axis_ > static_cast<int64_t>(inShapeSize) - 1 ||
-      axis_ < -static_cast<int64_t>(inShapeSize)) {
+  if (axis_ > inShapeSize - 1 || axis_ < -inShapeSize) {
     throw error("Axis {} is out of acceptable range [{}, {}]",
                 axis_,
-                -static_cast<int64_t>(inShapeSize),
+                -inShapeSize,
                 inShapeSize - 1);
   }
 }

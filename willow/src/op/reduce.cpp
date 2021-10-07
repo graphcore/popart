@@ -33,12 +33,12 @@ void ReduceOp::setup() {
     axes.resize(input_shape.size());
     std::iota(axes.begin(), axes.end(), int64_t(0));
   } else {
+    // Check the axes are all in the right range.
+    validateReduceAxes(axes, input_shape.size(), str());
     // Normalize to positive axes.
-    normalizeReduceAxes(axes, inShape(getInIndex()).size());
+    normalizeReduceAxes(axes, input_shape.size());
     // Sort the axes for general backend compatibility.
     std::sort(axes.begin(), axes.end());
-    // Check the axes are all in the right range.
-    validateReduceAxes(axes, inShape(getInIndex()).size(), str());
   }
 
   Shape output_shape;
