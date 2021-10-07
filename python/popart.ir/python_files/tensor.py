@@ -172,10 +172,7 @@ class Tensor:
 
             return ops.slice(self, start, stop, step)
 
-        elif (isinstance(key, Tensor)
-              and key.dtype in (dtypes.int8, dtypes.int16, dtypes.int32,
-                                dtypes.int64, dtypes.uint8, dtypes.uint16,
-                                dtypes.uint32, dtypes.uint64)):
+        elif (isinstance(key, Tensor) and key.dtype.is_int):
             # Integer indexing
             return ops.gather(self, key)
 
@@ -289,7 +286,7 @@ def subgraph_input(shape: Tuple[int],
         >>> with ir.main_graph():
         >>>     w = pir.variable(1)
         >>>     x = pir.variable(3)
-        >>>     add_w_graph = ir.get_graph(add_w, x, w)
+        >>>     add_w_graph = ir.create_graph(add_w, x, w)
         >>>     y = ops.call(add_w_graph, x, w)
 
     Args:
@@ -330,7 +327,7 @@ def subgraph_output(t: Tensor) -> None:
         >>> with ir.main_graph():
         >>>     w = pir.variable(1)
         >>>     x = pir.variable(3)
-        >>>     add_w_graph = ir.get_graph(add_w, x, w)
+        >>>     add_w_graph = ir.create_graph(add_w, x, w)
         >>>     y = ops.call(add_w_graph, x, w)
 
     Args:

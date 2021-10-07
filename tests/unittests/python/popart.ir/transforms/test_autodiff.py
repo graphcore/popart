@@ -15,8 +15,7 @@ def test_subgraph():
         def build(self, x: pir.Tensor, out_features: int,
                   bias: bool = True) -> pir.Tensor:
             self.W = pir.subgraph_input((x.shape[-1], out_features),
-                                        pir.float32,
-                                        "W")
+                                        pir.float32, "W")
             y = ops.mul(x, self.W)
             if bias:
                 self.b = pir.subgraph_input((out_features, ), pir.float32, "b")
@@ -33,7 +32,7 @@ def test_subgraph():
         b = pir.variable(np.zeros(16), name="b")
 
         ss = ScaleNShift()
-        ss_graph = ir.get_graph(ss, x, out_features=16)
+        ss_graph = ir.create_graph(ss, x, out_features=16)
 
         call_info = ops.call_with_info(ss_graph,
                                        x,

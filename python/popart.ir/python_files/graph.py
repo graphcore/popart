@@ -21,7 +21,7 @@ class Graph:
         This class cannot be instantiated using the constructor. `Graph`
         instances are created by the `Ir` class. During construction, each `Ir`
         constructs a default `main` graph. More `Graph` instances can be made
-        using the `get_graph()` method of the `Ir` class.
+        using the `create_graph()` method of the `Ir` class.
 
         Raises:
             TypeError:

@@ -18,7 +18,7 @@ class TestCall:
         with g:
             a = pir.variable(1)
 
-            id_graph = ir.get_graph(id_fn, a)
+            id_graph = ir.create_graph(id_fn, a)
             b = ops.call(id_graph, a)
 
         assert len(g.get_tensors()) == 2
@@ -49,7 +49,7 @@ class TestCall:
 
             # First graph
             add_weight0 = AddWeight()
-            add_weight_graph0 = ir.get_graph(add_weight0, x0)
+            add_weight_graph0 = ir.create_graph(add_weight0, x0)
 
             # First call site
             y0 = ops.call(add_weight_graph0,
@@ -65,9 +65,9 @@ class TestCall:
                           subgraph_in_to_parent_in={add_weight0.w: w1})
 
             # Second graph from new instance of module.
-            # ir.get_graph should be able to create a new unique Graph name.
+            # ir.create_graph should be able to create a new unique Graph name.
             add_weight1 = AddWeight()
-            add_weight_graph1 = ir.get_graph(add_weight1, x0)
+            add_weight_graph1 = ir.create_graph(add_weight1, x0)
 
             # Call second graph. Reuse x0 and w1 as inputs.
             y2 = ops.call(add_weight_graph1,
@@ -78,7 +78,7 @@ class TestCall:
             # This calls `build` again, and thus simply overwrites add_weight1.w
             # to be the tensor in the new subgraph add_weight_graph2.
             old_w1_id = add_weight1.w.id
-            add_weight_graph2 = ir.get_graph(add_weight1, x1)
+            add_weight_graph2 = ir.create_graph(add_weight1, x1)
 
             assert old_w1_id != add_weight1.w.id
 

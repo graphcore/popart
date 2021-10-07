@@ -55,7 +55,7 @@ class Ir:
         """
         return Graph._from_pb(self._pb_ir.getMainGraph())
 
-    def get_graph(
+    def create_graph(
             self,
             fn: Callable[..., Any],
             *args: Any,
@@ -135,6 +135,16 @@ class Ir:
         function that created it.
 
         NOTE: Occurrences of ".<locals>" in the name are removed.
+
+        Example:
+            Suppose a graph function:
+                >>> class Foo:
+                ...     def bar():
+                ...         # Graph definition...
+            Creating the following graphs:
+                >>> ir.create_graph(Foo.bar)
+                >>> ir.create_graph(Foo.bar)
+            will result in graph names `Foo.bar_0` and `Foo.bar_1`.
 
         Args:
             name (str):

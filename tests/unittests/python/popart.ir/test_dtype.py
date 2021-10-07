@@ -35,6 +35,7 @@ class Testdtype:
     def test_properties(self):
         dtypes = get_all_dtypes()
         uint_dtypes = get_all_int_dtypes(include_signed=False)
+        int_dtypes = get_all_int_dtypes()
         for pir_dtype in dtypes:
             if pir_dtype in uint_dtypes:
                 # PyTorch doesn't have unsigned integers. These are tested
@@ -44,11 +45,13 @@ class Testdtype:
             assert torch_dtype.is_complex == pir_dtype.is_complex
             assert torch_dtype.is_floating_point == pir_dtype.is_floating_point
             assert torch_dtype.is_signed == pir_dtype.is_signed
+            assert pir_dtype.is_int == (pir_dtype in int_dtypes)
         for pir_dtype in uint_dtypes:
             torch_dtype = eval(f'torch.{pir_dtype._name[1:]}')
             assert torch_dtype.is_complex == pir_dtype.is_complex
             assert torch_dtype.is_floating_point == pir_dtype.is_floating_point
             assert torch_dtype.is_signed == True
+            assert pir_dtype.is_int == True
 
     def test_aliases(self):
         assert pir.half == pir.float16

@@ -53,7 +53,7 @@ def call(subgraph: Graph,
         subgraph (Graph): The called graph.
         *subgraph_fn_param_inputs (Tensor):
             parent tensors that correspond to the inputs of the callable passed
-            to ir.get_graph(callable, ...) when constructing #subgraph earlier.
+            to ir.create_graph(callable, ...) when constructing #subgraph earlier.
             The inputs passed MUST be provided here in the EXACT SAME ORDER as
             to ir.get_grah(callable, ...).
         subgraph_in_to_parent_in (Mapping[Tensor, Tensor] = {}):
@@ -126,8 +126,8 @@ def call_with_info(
     pb_callop = pb_g.createOp_CallOp(opid, subgraph._pb_graph,
                                      ctx._get_op_settings(op_name))
 
-    # 1. Connect explictly passed inputs. These would have been created first
-    #    by ir.get_graph, so we do them first. ir.get_graph will have created
+    # 1. Connect explicitly passed inputs. These would have been created first
+    #    by ir.create_graph, so we do them first. ir.create_graph will have created
     #    the input tensors t_0,...,t_N at input indices 0,..,N, respectively. We
     #    require that the user has passed the parent tensors that correspond to
     #    these inputs in the exact same order, so we can trivially reconstruct

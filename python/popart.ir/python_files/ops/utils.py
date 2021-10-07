@@ -19,7 +19,7 @@ def check_in_graph(graph: Graph, *tensors: Tensor):
     for tensor in tensors:
         if tensor not in graph:
             raise ValueError(
-                f"{tensor} is not in the current Graph {graph.name}.")
+                f"'{tensor}' is not in the current Graph {graph.name}.")
 
 
 def convert_optional_float(v: Optional[float]):

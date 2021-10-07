@@ -60,7 +60,7 @@ class Context:
                 "Trying to access a graph, but no graph has been selected. Hint - "
                 "try performing the operations in a context manager (e.g. "
                 "`with graph_instance:`) or inside of a function that's called by "
-                "`popart.ir.Ir().get_graph()`")
+                "`popart.ir.Ir().create_graph()`")
         return self._graphs[-1]
 
     @property

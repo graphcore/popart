@@ -5,13 +5,10 @@
 import popart.ir as pir
 from popart.ir.streams import HostToDeviceStream, DeviceToHostStream
 import popart.ir.ops as ops
-
 import popart._internal.ir as _ir
-
+from popart.ir.streams import HostToDeviceStream, DeviceToHostStream
 import popart
-
 import numpy as np
-
 from typing import Tuple
 
 # `import test_util` requires adding to sys.path
@@ -62,7 +59,7 @@ def build_model(
         b = pir.variable(b_data, name="b")
 
         lin = Linear()
-        lin_graph = ir.get_graph(lin, x, out_features=out_features)
+        lin_graph = ir.create_graph(lin, x, out_features=out_features)
 
         y = ops.call(lin_graph,
                      x,
@@ -71,7 +68,7 @@ def build_model(
                          lin.b: b
                      })
 
-        y_d2h = pir.d2h_stream(_INPUT_SHAPE, pir.float32, name="x_stream")
+        y_d2h = pir.d2h_stream(_INPUT_SHAPE, pir.float32, name="y_stream")
         ops.host_store(y_d2h, y)
 
     return ir._pb_ir, x_h2d, y_d2h, W_data, b_data
