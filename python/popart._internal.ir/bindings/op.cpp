@@ -160,11 +160,25 @@ void bindOp(py::module &m) {
            py::return_value_policy::reference)
       .def(
           "getInputTensors",
-          [](Op &self) { return self.input->tensors(); },
+          [](Op &self) {
+            // Return elements in index order
+            std::vector<Tensor *> inputs;
+            for (auto &idx_tensor : self.input->tensorMap()) {
+              inputs.push_back(idx_tensor.second);
+            }
+            return inputs;
+          },
           py::return_value_policy::reference)
       .def(
           "getOutputTensors",
-          [](Op &self) { return self.output->tensors(); },
+          [](Op &self) {
+            // Return elements in index order
+            std::vector<Tensor *> outputs;
+            for (auto &idx_tensor : self.output->tensorMap()) {
+              outputs.push_back(idx_tensor.second);
+            }
+            return outputs;
+          },
           py::return_value_policy::reference)
       .def("inId", py::overload_cast<InIndex>(&Op::inId))
       .def("outId", py::overload_cast<OutIndex>(&Op::outId))

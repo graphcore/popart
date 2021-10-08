@@ -34,10 +34,20 @@ class CallInfo:
         )
 
     def get_input_tensors(self) -> Tuple[Tensor, ...]:
+        """Return inputs to the CallOp in index order.
+
+        Returns:
+            Tuple[Tensor, ...]
+        """
         return tuple(
             Tensor._from_pb_tensor(t) for t in self._op.getInputTensors())
 
     def get_output_tensors(self) -> Tuple[Tensor, ...]:
+        """Return outputs to the CallOp in index order.
+
+        Returns:
+            Tuple[Tensor, ...]
+        """
         return tuple(
             Tensor._from_pb_tensor(t) for t in self._op.getOutputTensors())
 
@@ -151,8 +161,6 @@ def call_with_info(
     #    for each one, create an output tensor of the call op in the parent
     #    graph.
 
-    outnames = []
-
     def id_like_subgraph_tensor(tensor_id: str) -> str:
         return g._create_tensor_id(
             _ir.addScope(pb_g, _ir.removeScope(pb_sg, tensor_id)))
@@ -162,8 +170,6 @@ def call_with_info(
         callOutIdx = pb_callop.subgraphOutToOpOutIndex(sgOutIdx)
         parent_tensor_id = id_like_subgraph_tensor(pb_sg_out_id)
         pb_callop.createAndConnectOutTensor(callOutIdx, parent_tensor_id)
-
-        outnames.append(parent_tensor_id)
 
     pb_callop.setup()
 
