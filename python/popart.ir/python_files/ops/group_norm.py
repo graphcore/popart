@@ -5,7 +5,7 @@ from popart.ir.context import get_current_context
 from popart.ir.tensor import Tensor
 from .utils import check_in_graph
 
-__all__ = ['group_norm']
+__all__ = ['group_norm', 'layer_norm']
 
 
 def group_norm(x: Tensor,
@@ -23,6 +23,8 @@ def group_norm(x: Tensor,
             Tensor to scale output of normalisation.
         bias: Tensor
             Tensor to shift output of normalisation.
+        num_groups:
+            Number of groups to separate the channels into.
     Returns:
         out: Tensor
             The group normalised Tensor.
@@ -54,3 +56,23 @@ def group_norm(x: Tensor,
     )
 
     return Tensor._from_pb_tensor(op.outTensor(0))
+
+
+def layer_norm(x: Tensor, weight: Tensor, bias: Tensor,
+               eps: float = 1e-5) -> Tensor:
+    """
+    Applies Layer Normalisation over a Tensor.
+    Uses `group_norm` under the hood.
+    
+    Args:
+        x: Tensor
+            Tensor to be normalized.
+        weight: Tensor
+            Tensor to scale output of normalisation.
+        bias: Tensor
+            Tensor to shift output of normalisation.
+    Returns:
+        out: Tensor
+            The layer normalised Tensor.
+    """
+    return group_norm(x, weight=weight, bias=bias, num_groups=1, eps=eps)
