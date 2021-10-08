@@ -433,7 +433,8 @@ static void handleRandomReferences(const Match &match, Ir &ir) {
 
 // Create a subgraph for the match and
 // replace instances of the match with a CallOp
-static std::vector<Replacement> applyMatch(const Match &match, Ir &ir) {
+static std::vector<Replacement>
+applyMatch(const Match &match, Ir &ir, AliasesMap &aliasesMap) {
   verifyMatchInstances(match);
 
   // TODO: Verify. This is possibly too strict. Can probably be dropped.
@@ -447,7 +448,6 @@ static std::vector<Replacement> applyMatch(const Match &match, Ir &ir) {
   handleRandomReferences(match, ir);
 
   std::vector<Replacement> replacements;
-  AliasesMap aliasesMap{&ir};
 
   // Replace the matches with call ops
   for (auto &instance : match.instances) {
@@ -459,6 +459,38 @@ static std::vector<Replacement> applyMatch(const Match &match, Ir &ir) {
   return replacements;
 }
 
+// Function to filter out Matches which, for some instance, have an alias
+// between an input and an output that do not agree on Shape. This is because
+// currently CallOp aliases are grown into Poprithms' alias models as CrossLinks
+// which assume that any aliases have matching shapes, so violating this
+// assumption would lead to an exception.
+bool matchIsAliasCompatible(const Match &match, AliasesMap &aliasesMap) {
+
+  bool aliasCompatible = true;
+  for (const auto &instance : match.instances) {
+    // Get the aliases object for the right graph.
+    auto &aliases = aliasesMap.getAliases(instance.getGraph());
+
+    for (int i = 0; i < instance.external_inputs.size(); i++) {
+      Tensor *inTensor = instance.external_inputs[i];
+      for (int j = 0; j < instance.external_outputs.size(); j++) {
+        Tensor *outTensor = instance.external_outputs[j];
+        // If shapes match then there isn't a problem.
+        if (aliasCompatible &&
+            inTensor->info.shape() != outTensor->info.shape()) {
+          // If there is a non-empty alias, we must filter this match out.
+          auto regions = aliases.getChainsFromTo(inTensor, outTensor);
+          if (!regions.isEmpty()) {
+            aliasCompatible = false;
+          }
+        }
+      }
+    }
+  }
+
+  return aliasCompatible;
+}
+
 // Returns a vector of Match instance
 // sorted so the smallest matches are at the back
 std::vector<Match>
@@ -466,7 +498,8 @@ getRinseMatches(const std::vector<Op *> &ops,
                 const std::vector<std::pair<size_t, size_t>> &sequences,
                 float threshold,
                 float sequenceBreakCost,
-                bool copyCostPruning) {
+                bool copyCostPruning,
+                AliasesMap &aliasesMap) {
 
   if (logging::shouldLog(logging::Module::transform, logging::Level::Trace)) {
     std::vector<int> intSchedule = fwtools::subgraph::getIntSchedule(ops);
@@ -528,12 +561,20 @@ getRinseMatches(const std::vector<Op *> &ops,
   sortMatches<fwtools::subgraph::Match>(fw_matches);
 
   std::vector<Match> matches;
-
   for (auto &match : fw_matches) {
-    logging::transform::trace("[SubgraphOutline] Match length: {}, starts: {}",
-                              match.length,
-                              match.starts);
-    matches.emplace_back(match, ops);
+    // Filter out those cases where there are aliases between inputs and outputs
+    // but the shapes of those inputs and outputs are not identical. This is
+    // because, when we grow the Poprithms' AliasModel for the CallOp's that
+    // call the subgraph that replaces the Op clusters, Poprithms assumes that
+    // these shapes match.
+    Match wrappedMatch{match, ops};
+    if (matchIsAliasCompatible(wrappedMatch, aliasesMap)) {
+      logging::transform::trace(
+          "[SubgraphOutline] Match length: {}, starts: {}",
+          match.length,
+          match.starts);
+      matches.push_back(wrappedMatch);
+    }
   }
 
   return matches;
@@ -972,12 +1013,15 @@ bool SubgraphOutline::apply(Graph &graph) const {
     softParallelismModel.log();
   }
 
+  AliasesMap aliasesMap{&ir};
+
   auto matches =
       getRinseMatches(schedule,
                       softParallelismModel.getParallelSchedule(),
                       ir.getSessionOptions().outlineThreshold,
                       ir.getSessionOptions().outlineSequenceBreakCost,
-                      ir.getSessionOptions().enableOutliningCopyCostPruning);
+                      ir.getSessionOptions().enableOutliningCopyCostPruning,
+                      aliasesMap);
 
   if (logging::shouldLog(logging::Module::none, logging::Level::Trace)) {
     unsigned i = 0;
@@ -1001,7 +1045,7 @@ bool SubgraphOutline::apply(Graph &graph) const {
     // Make sure all instances have the same outputs
     match.equalizeInstanceOutputs();
 
-    auto replacements = applyMatch(match, ir);
+    auto replacements = applyMatch(match, ir, aliasesMap);
     applyReplacements(matches, replacements);
   }
 
