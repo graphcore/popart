@@ -1,5 +1,5 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-from typing import Any, Optional, Iterable, Tuple, Union
+from typing import Any, Dict, Iterable, Optional, Tuple, Type, Union
 import numpy as np
 
 import popart._internal.ir as _ir
@@ -17,13 +17,23 @@ class Tensor:
         self._pb_tensor: _ir.Tensor
         raise RuntimeError("pir.Tensor cannot be constructed directly.")
 
+    # Dictionary to track Tensor subclasses
+    _tensor_types: Dict[str, 'Type[Tensor]'] = {}
+
+    def __init_subclass__(cls, tensor_type: Optional[str] = None,
+                          **kwargs) -> None:
+        """Hook called when creating a Tensor subclass.
+            Argument tensor_type is used to allow _from_pb_tensor to return
+            the correct subclass for any Tensor retrieved from the internal IR"""
+        super().__init_subclass__(**kwargs)
+        if tensor_type is not None:
+            Tensor._tensor_types[tensor_type] = cls
+
     @classmethod
     def _from_pb_tensor(cls, pb_tensor: _ir.Tensor) -> 'Tensor':
-        if cls == Tensor:
-            if pb_tensor.tensor_type() == "Variable":
-                return Variable._from_pb_tensor(pb_tensor)
-            elif pb_tensor.tensor_type() == "Const":
-                return Constant._from_pb_tensor(pb_tensor)
+        specifc_cls = cls._tensor_types.get(pb_tensor.tensor_type(), None)  # type: ignore
+        if specifc_cls is not None and cls != specifc_cls:
+            return specifc_cls._from_pb_tensor(pb_tensor)
 
         self = super().__new__(cls)
         self._pb_tensor = pb_tensor
@@ -189,7 +199,7 @@ class Tensor:
             )
 
 
-class Variable(Tensor):
+class Variable(Tensor, tensor_type="Variable"):
     """Wraps a Tensor in the PopART IR that has TensorType.Variable"""
 
     def copy_to_ipu(self, dst: int, src: int) -> 'Tensor':
@@ -199,7 +209,7 @@ class Variable(Tensor):
         return ops.ipu_copy(self, dst, src)
 
 
-class Constant(Tensor):
+class Constant(Tensor, tensor_type="Const"):
     """Wraps a Tensor in the PopART IR that has TensorType.Constant"""
 
     def copy_to_ipu(self, dst: int, src: int) -> 'Tensor':
