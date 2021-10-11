@@ -160,7 +160,7 @@ command-line tool. This may be a single IPU or a group of IPUs.
 The method ``createIpuModelDevice`` is used to create a Poplar software emulation
 of an IPU device.  Similarly, the method ``createCpuDevice`` creates a simple Poplar CPU backend.
 See the `PopART C++ API Reference
-<https://www.graphcore.ai/docs/popart-c-api-reference>`_ for details.
+<https://docs.graphcore.ai/projects/popart-cpp-api>`_ for details.
 
 By default the functions ``acquireAvailableDevice`` and ``acquireDeviceById``
 will attach the device immediately to the running process. You can pass the
@@ -256,10 +256,13 @@ information:
 If profiling is not enabled, then the summary report will say 'Execution profiling not enabled'
 and the report will contain no information in the execution.
 
-For more information on the libpva Report, see the pva user guide and api document:
-* `Libpva User Guide <https://docs.graphcore.ai/projects/poplar-user-guide/en/latest/index.html>`_
-* `Libpva C++ API Reference <https://docs.graphcore.ai/projects/poplar-api/en/latest/pva.html>`_
-* `Libpva Python API Reference <https://docs.graphcore.ai/projects/poplar-api/en/latest/pva-python.html>`_.
+For more information on the libpva Report, see the user guide and API document:
+
+* `Libpva User Guide <https://docs.graphcore.ai/projects/libpva>`_
+
+* `Libpva C++ API Reference <https://docs.graphcore.ai/projects/libpva/en/latest/api-cpp.html>`_
+
+* `Libpva Python API Reference <https://docs.graphcore.ai/projects/libpva/en/latest/api-python.html>`_.
 
 For more information on profiling control and the information returned by these functions, see the
 Profiling chapter of the
