@@ -222,13 +222,13 @@ Constants ReduceProdCFold::fold(const NodeProto &node,
   auto attr = Attributes(node.attribute());
   std::vector<int64_t> axes =
       attr.getAttribute<Attributes::Ints>("axes", default_axes);
-
-  // Convert negative axes to valid ones, as per ONNX spec
-  for (auto &i : axes) {
-    if (i < 0)
-      i += in0_rank;
-  }
   const auto keepdims = attr.getAttribute<Attributes::Int>("keepdims", 1);
+
+  // Mimic ReduceOp::setup
+  // Check the axes are all in the right range.
+  validateReduceAxes(axes, in0_rank, "ReduceProdCFold::fold");
+  // Normalize to positive axes.
+  normalizeReduceAxes(axes, in0_rank);
 
   // Calculate resulting shape after reduction
   auto reducedShapeInitializer(in0_shape);
