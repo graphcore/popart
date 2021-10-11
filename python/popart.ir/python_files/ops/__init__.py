@@ -22,5 +22,6 @@ from .scatter import *
 from .slice import *
 from .softmax import *
 from .split import *
+from .squeeze import *
 from .sub import *
 from .transpose import *

@@ -189,11 +189,10 @@ class TestSlice:
         ir = pir.Ir()
         with ir.main_graph():
             t = pir.variable(data)
-            y = t[
-                0]  # Axis isn't reduced automatically. See docstring of `__getitem__`
+            y = t[0]
             y_host = run_ir(ir, y)
 
-        y_numpy = data[0:1]
+        y_numpy = data[0]
         assert_array_equal(y_host, y_numpy)
 
     def test_dunder_slice(self):
@@ -210,10 +209,8 @@ class TestSlice:
         ir = pir.Ir()
         with ir.main_graph():
             t = pir.variable(data)
-            y = t[
-                0, 3:0:
-                -1]  # Axis isn't reduced automatically. See docstring of `__getitem__`
+            y = t[0, 3:0:-1, 2]
             y_host = run_ir(ir, y)
 
-        y_numpy = data[0:1, 3:0:-1]
+        y_numpy = data[0, 3:0:-1, 2]
         assert_array_equal(y_host, y_numpy)

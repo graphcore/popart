@@ -19,7 +19,11 @@ def check_in_graph(graph: Graph, *tensors: Tensor):
     for tensor in tensors:
         if tensor not in graph:
             raise ValueError(
-                f"'{tensor}' is not in the current Graph {graph.name}.")
+                f"{tensor} is not in the current Graph {graph.name}.")
+
+
+def handle_negative_axis(t: Tensor, axis: int) -> int:
+    return len(t.shape) + axis if axis < 0 else axis
 
 
 def handle_negative_axis(t: Tensor, axis: int) -> int:

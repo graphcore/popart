@@ -131,7 +131,7 @@ class Tensor:
     def __getitem__(self, key) -> 'Tensor':
         """
         Supports slicing and integer indexing.
-        It differs from numpy in that when doing single element selection the dimension of that axis isn't reduced.
+        If a single index is selected during slicing the dimention will be squeezed - this matches numpy slicing rules.
 
         Examples:
         ```
@@ -158,19 +158,26 @@ class Tensor:
             start = []
             stop = []
             step = []
+            int_slices = []
 
-            for key_i in key:
+            for i, key_i in enumerate(key):
                 if isinstance(key_i, int):
                     start += [key_i]
                     stop += [key_i + 1]
                     step += [1]
+                    int_slices += [i]
 
                 elif isinstance(key_i, slice):
                     start += [key_i.start]
                     stop += [key_i.stop]
                     step += [key_i.step]
 
-            return ops.slice(self, start, stop, step)
+            out = ops.slice(self, start, stop, step)
+
+            if len(int_slices) > 0:
+                out = ops.squeeze(out, axes=int_slices)
+
+            return out
 
         elif (isinstance(key, Tensor) and key.dtype.is_int):
             # Integer indexing
