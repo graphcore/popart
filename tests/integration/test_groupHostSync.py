@@ -50,7 +50,6 @@ def test_groupHostSync():
     lines = summaryReport.split('\n')
     order = []
     pastSwitch = False
-    countStreams = 0
     countSeq = 0
 
     # Analyse a sequence:
@@ -84,26 +83,21 @@ def test_groupHostSync():
             countSeq += 1
             if countSeq > 6:
                 break
-        if re.search(r"OnTileExecute: [0-9]{3}/Op/Add", l):
-            order.append("add")
-        if re.search(r"OnTileExecute: [0-9]{3}/abs/Op/Absolute", l):
-            order.append("abs")
-        if re.search(r"[0-9]{3}/add/ReduceExpression", l):
-            order.append("reduce")
+        if re.search(r"OnTileExecute: ", l):
+            order.append("execution")
         if re.search(r"\bStreamCopy(Mid)?\b", l):
             order.append("streamcopy")
-            countStreams += 1
 
     # The streamcopy to host should only happen at the end (after
     # ReduceExpression)
-    # Expected list with the option enabled: [4,4,1,2,3,4]
-    # Expected list without the option: [4,4,1,4,4,2,3,4]
-    assert (order[0] == "streamcopy")
-    assert (order[1] == "streamcopy")
-    assert (order[2] == "add")
-    assert (order[3] == "abs")
-    assert (order[4] == "reduce")
-    assert (order[5] == "streamcopy")
-    # The number of Streamcopies happening in total
-    # (start counting from the Switch) should be 3.
-    assert (countStreams == 3)
+    # There should be at least 3 stream copies and some executions
+    assert len(order) > 3
+    # There should be 2 stream copies at the start and 1 at the end
+    assert order[0] == "streamcopy"
+    assert order[1] == "streamcopy"
+    assert order[-1] == "streamcopy"
+    # 3 stream copies in total
+    assert order.count("streamcopy") == 3
+    # Everything else should be execution
+    for i in order[2:-1]:
+        assert i == 'execution'
