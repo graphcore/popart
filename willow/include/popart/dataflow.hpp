@@ -235,8 +235,11 @@ public:
   }
 
 private:
-  // The number of batches processed by the backend in one call to train
-  // or infer.
+  /// The number of batches processed by the backend in one call to train
+  /// or infer.
+  /// For an \c InferenceSession this is equal to the number of executions of
+  /// the model.
+  /// For a \c TrainingSession this is equal to the number of weight updates.
   int batchesPerStep_;
 
   // The set of tensors to return to the user after execution, and how

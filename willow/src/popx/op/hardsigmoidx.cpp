@@ -43,12 +43,12 @@ void HardSigmoidComputex::inplace(snap::program::Sequence &prog,
   //   Hardsigmoid definition: max(0, min(1, alpha*x+beta))
   std::vector<std::unique_ptr<popops::expr::Expr>> exprs;
 
-  // These two linea compute the linear combination alpha*x+beta
+  // These two lines compute the linear combination alpha*x+beta
   exprs.push_back(
       std::make_unique<pe::Mul>(pe::Const(this->getAlpha()), pe::_1));
   exprs.push_back(
       std::make_unique<pe::Add>(pe::Const(this->getBeta()), *exprs.back()));
-  // These two lineas compute the max-min part
+  // These two lines compute the max-min part
   exprs.push_back(std::make_unique<pe::Min>(pe::Const(1.0f), *exprs.back()));
   exprs.push_back(std::make_unique<pe::Max>(pe::Const(0.0f), *exprs.back()));
 

@@ -112,6 +112,16 @@ public:
   // The first regular, user-defined loop output
   static OutIndex getFirstOutputOutIndex() { return 1; }
 
+  /**
+   * Add a variadic input to the loop operator.
+   *
+   * \param index The position at which a Tensor is consumed by the Op.
+   * \param tensorId The id of the tensor to add as an input.
+   * \param subgraphTensorId Tensor which is going to be created in the
+   *                         subgraph.
+   * \param overwrite If true the original tensor at `index` will be
+   *                  replaced.
+   **/
   void addLoopInput(InIndex index,
                     TensorId tensorId,
                     TensorId subgraphTensorId,

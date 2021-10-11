@@ -42,6 +42,10 @@ Batches per step
 
 The number of batches to run in a single call to ``Session::run``.
 
+For an ``InferenceSession`` this is equal to the number of executions of the model.
+
+For a ``TrainingSession`` this is equal to the number of weight updates.
+
 Step size
 ~~~~~~~~~
 

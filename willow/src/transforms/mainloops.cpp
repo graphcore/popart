@@ -669,7 +669,7 @@ std::pair<LoopOp *, LoopOp *> MainLoops::setupLoops(Graph &graph) const {
     Op::Settings stepLoopSettings(graph, "stepLoop");
     stepLoopSettings.executionContext = ExecutionContext::Normal;
 
-    Graph &stepGraph = ir.createGraph({"stepGraph"});
+    Graph &stepGraph = ir.createGraph({getStepGraphName()});
 
     // Add mandatory loop iterator tensor to subgraph (is not an output)
     TensorId loopItScopedId = addScope(stepGraph, reservedLoopIteratorPrefix());
@@ -695,7 +695,6 @@ std::pair<LoopOp *, LoopOp *> MainLoops::setupLoops(Graph &graph) const {
   // Move operations into the step loop
   if (batchesPerStep > 1) {
     std::vector<Op *> ops;
-    std::set<TensorId> requiredOutTensorIds;
     for (Op *op : schedule) {
       if ((op->settings.executionContext == ExecutionContext::Normal ||
            op->settings.executionContext ==
@@ -751,7 +750,6 @@ std::pair<LoopOp *, LoopOp *> MainLoops::setupLoops(Graph &graph) const {
   // Move operations into the accumulation loop
   if (accumulationFactor > 1) {
     std::vector<Op *> ops;
-    std::set<TensorId> requiredOutTensorIds;
     for (Op *op : schedule) {
       if (op->settings.executionContext == ExecutionContext::Normal &&
           op->id != accumLoop->id) {

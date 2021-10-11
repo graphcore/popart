@@ -83,7 +83,6 @@ public:
    *                  corresponding indices in the first SubgraphableOpCluster
    *                  instance.
    * \param aliasesMap AliasesMap with alias information for instance's graph.
-   * \param subgraphId The returned subgraph's id.
    * \return The replacement CallOp's pointer.
    **/
   static Op *replaceWithCallOp(const SubgraphableOpCluster &instance,
