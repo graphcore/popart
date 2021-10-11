@@ -21,8 +21,8 @@ INVALID_AXES = [-RANK - 1, RANK]
 def check_op_with_invalid_axes(opset, reduceOp, axis):
     with pytest.raises(popart.popart_exception) as e_info:
         builder = popart.Builder()
-        x = builder.aiOnnx.constant(
-            np.random.rand(*SHAPE).astype(np.float32), "FLOAT")
+        tensor_info = popart.TensorInfo("FLOAT", SHAPE)
+        x = builder.addInputTensor(tensor_info, "input")
 
         # reducemedian returns 2 outputs in an array, so we convert the singleton outputs into arrays as well
         ys = getattr(getattr(builder, opset), reduceOp)([x], axes=[axis])
