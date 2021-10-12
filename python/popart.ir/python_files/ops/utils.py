@@ -26,9 +26,5 @@ def handle_negative_axis(t: Tensor, axis: int) -> int:
     return len(t.shape) + axis if axis < 0 else axis
 
 
-def handle_negative_axis(t: Tensor, axis: int) -> int:
-    return len(t.shape) + axis if axis < 0 else axis
-
-
 def convert_optional_float(v: Optional[float]):
     return _ir.OptionalFloat(v) if v is not None else _ir.OptionalFloat()

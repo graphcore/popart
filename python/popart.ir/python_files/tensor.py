@@ -31,7 +31,8 @@ class Tensor:
 
     @classmethod
     def _from_pb_tensor(cls, pb_tensor: _ir.Tensor) -> 'Tensor':
-        specifc_cls = cls._tensor_types.get(pb_tensor.tensor_type(), None)  # type: ignore
+        specifc_cls = cls._tensor_types.get(pb_tensor.tensor_type(),
+                                            None)  # type: ignore
         if specifc_cls is not None and cls != specifc_cls:
             return specifc_cls._from_pb_tensor(pb_tensor)
 
@@ -73,6 +74,10 @@ class Tensor:
     def __eq__(self, other: Any) -> bool:
         """Tensor equality, based on #id"""
         return isinstance(other, Tensor) and (self.id == other.id)
+
+    def __len__(self) -> int:
+        """Size of 0th axis"""
+        return self.shape[0]
 
     def _ensure_tensor(self, value: Any,
                        dtype: Optional[dtypes.dtype] = None) -> 'Tensor':

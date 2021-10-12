@@ -64,3 +64,13 @@ class TestReshape:
             message = str(excinfo.value)
             assert "Reshape shape can contain at most one '-1' value" in message
             assert "(-1, -1, 1)" in message
+
+    def test_flatten(self):
+        ir = pir.Ir()
+        g = ir.main_graph()
+
+        with g:
+            a = pir.variable(np.ones((1, 2, 3)))
+            c = ops.flatten(a)
+        assert c.shape == (6, )
+        assert contains_op_of_type("Reshape", _ir.op.ReshapeOp, g)

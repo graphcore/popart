@@ -39,6 +39,7 @@ class TestTensor:
             assert isinstance(t, t_class)
             assert t.dtype == exp_dtype
             assert t.shape == (1, 2, 3)
+            assert len(t) == 1
             assert t.nelms == 6
             assert t.name == exp_name
 

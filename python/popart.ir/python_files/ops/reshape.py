@@ -6,10 +6,11 @@ from popart.ir.context import get_current_context
 from popart.ir.tensor import Tensor
 from .utils import check_in_graph
 
-__all__ = ["reshape"]
+__all__ = ["reshape", "flatten"]
 
 
-def handle_negative_axis(t: Tensor, shape: Tuple[int, ...]) -> Tuple[int, ...]:
+def reshape_handle_negative_axis(t: Tensor,
+                                 shape: Tuple[int, ...]) -> Tuple[int, ...]:
     replacement = t.nelms // np.prod(np.abs(shape))
     return tuple(axis if axis > 0 else replacement for axis in shape)
 
@@ -48,6 +49,19 @@ def reshape(t: Tensor, shape: Tuple[int, ...]) -> Tensor:
                                   1)
     op = pb_g.createConnectedOp_ReshapeOp(
         {0: t.id}, {0: g._create_tensor_id(f"{t.name}_reshaped")}, opid,
-        handle_negative_axis(t, shape), settings, False)
+        reshape_handle_negative_axis(t, shape), settings, False)
 
     return Tensor._from_pb_tensor(op.outTensor(0))
+
+
+def flatten(t: Tensor) -> Tensor:
+    """
+    Flatern a tensor. Uses `reshape`.
+
+    Args:
+        t (Tensor): input tensor
+
+    Returns:
+        Tensor: Tensor with a 1-D shape
+    """
+    return reshape(t, (-1, ))
