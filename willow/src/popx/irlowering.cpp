@@ -330,7 +330,8 @@ IrLowering::IrLowering(const Ir &ir,
                        std::shared_ptr<DeviceInfo> deviceInfo_,
                        bool prepareGraphHasBeenCalled)
     : _ir(ir), deviceInfo(deviceInfo_), progressLogger(ir.getSessionOptions()),
-      prepareGraphHasBeenCalled_(prepareGraphHasBeenCalled), tensors_(ir),
+      prepareGraphHasBeenCalled_(prepareGraphHasBeenCalled),
+      tileCounterGraphConstVar(0), tileCounterGraphScalarVar(-1), tensors_(ir),
       progs(PopPrograms(this)) {
   POPART_TRACEPOINT();
 
@@ -552,13 +553,11 @@ snap::Tensor IrLowering::getConst(snap::Graph &graph,
                                   const std::vector<size_t> &shape,
                                   double val,
                                   const poplar::DebugContext &debugContext) {
-  static unsigned tileCounter = 0;
-
-  auto tensor =
+  const auto tensor =
       graph.getPoplarGraph().addConstant(type, shape, val, debugContext);
-  auto tilesTotal = graph.getPoplarGraph().getTarget().getTilesPerIPU();
-  auto tile       = tileCounter % tilesTotal;
-  tileCounter++;
+  const auto tilesTotal = graph.getPoplarGraph().getTarget().getTilesPerIPU();
+  const auto tile       = tileCounterGraphConstVar % tilesTotal;
+  tileCounterGraphConstVar++;
 
   graph.getPoplarGraph().setTileMapping(tensor, tile);
   return snap::Tensor{tensor, graph};
@@ -568,12 +567,12 @@ snap::Tensor
 IrLowering::getScalarVariable(snap::Graph &graph,
                               const poplar::Type &type,
                               const poplar::DebugContext &debugContext) {
-  static int tileCounter = -1;
-
-  auto tensor     = graph.getPoplarGraph().addVariable(type, {}, debugContext);
-  auto tilesTotal = graph.getPoplarGraph().getTarget().getTilesPerIPU();
-  auto tile       = (tilesTotal + (tileCounter % tilesTotal)) % tilesTotal;
-  tileCounter--;
+  const auto tensor =
+      graph.getPoplarGraph().addVariable(type, {}, debugContext);
+  const auto tilesTotal = graph.getPoplarGraph().getTarget().getTilesPerIPU();
+  const auto tile =
+      (tilesTotal + (tileCounterGraphScalarVar % tilesTotal)) % tilesTotal;
+  tileCounterGraphScalarVar--;
 
   graph.getPoplarGraph().setTileMapping(tensor, tile);
   return snap::Tensor{tensor, graph};

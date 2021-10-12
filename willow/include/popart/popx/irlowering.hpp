@@ -216,6 +216,9 @@ private:
   // Container for temporary Opx states during lowering
   std::map<OpId, std::unique_ptr<OpxState>> opxState;
 
+  unsigned tileCounterGraphConstVar;
+  int tileCounterGraphScalarVar;
+
   void setMetadataFromIr();
 
   void verifyTaskOrder(const std::vector<TaskId> &taskOrder) const;
