@@ -128,10 +128,26 @@ class Tensor:
         import popart.ir.ops as ops
         return ops.reshape(self, shape)
 
-    def copy_to_ipu(self, dst: int, src: Optional[int] = None) -> 'Tensor':
-        """Returns ops.ipu_copy(self, dst, src)."""
+    def detach(self) -> 'Tensor':
+        """Return detached tensor"""
         import popart.ir.ops as ops
-        return ops.ipu_copy(self, dst, src)
+        return ops.detach(self)
+
+    def copy_to_ipu(self, destination: int,
+                    source: Optional[int] = None) -> 'Tensor':
+        """
+        Copies a Tensor to a virtual graph.
+
+        Args:
+            destination: int
+                Ipu for the tensor to be copied to.
+            source: Optional[int]
+                Ipu for the tensor to be copied from.
+                By default, the source will be taken from the producer of the tensor.
+                If the tensor does not have a producer a source MUST be provided.
+        """
+        import popart.ir.ops as ops
+        return ops.ipu_copy(self, destination, source)
 
     @property
     def T(self) -> 'Tensor':

@@ -182,7 +182,8 @@ def test_binary_ops(op_name: str, inplace: bool, connected: bool,
 ("NotOp", {}),
 ("SoftmaxOp", {"axis_": 0}),
 ("SplitOp", {"axis_": 0,"split_": [1]}),
-("CastOp", {"_to": _ir.DataType.FLOAT})
+("CastOp", {"_to": _ir.DataType.FLOAT}),
+("DetachOp", {}),
 ])
 # yapf: enable, pylint: enable-all
 def test_unary_ops(connected: bool, op_name: str,

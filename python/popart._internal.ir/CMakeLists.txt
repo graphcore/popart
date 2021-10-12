@@ -51,6 +51,7 @@ list(
   ${popart_op_headers_dir}/negate.hpp
   ${popart_op_headers_dir}/softmax.hpp
   ${popart_op_headers_dir}/nll.hpp
+  ${popart_op_headers_dir}/detach.hpp
   ${popart_op_headers_dir}/tanh.hpp)
 # file(GLOB_RECURSE op_headers ${popart_op_headers_dir}/*.hpp)
 

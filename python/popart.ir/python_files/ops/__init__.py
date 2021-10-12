@@ -3,6 +3,7 @@ from .accumulate import *
 from .add import *
 from .call import *
 from .cast import *
+from .detach import *
 from .div import *
 from .dynamicslice import *
 from .dynamicupdate import *
