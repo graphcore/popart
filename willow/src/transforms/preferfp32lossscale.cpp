@@ -1,4 +1,5 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
+#include <popart/graphutils.hpp>
 #include <popart/ir.hpp>
 #include <popart/op/nll.hpp>
 #include <popart/op/softmax.hpp>
@@ -7,12 +8,8 @@
 #include <popart/util.hpp>
 
 namespace popart {
-namespace {
 
-// To return true, the op's implementation must be able to handle mixed
-// precision maths. We have no good way to know this programmatically at the
-// point of running this pattern, so we hard code this information here.
-bool isMixedPrecisionLossGradOp(Op *op) {
+bool PreferFp32LossScale::isMixedPrecisionLossGradOp(Op *op) const {
   // All NLL-like operations
   if (op->isConvertibleTo<NllGradOp>()) {
     return true;
@@ -25,9 +22,76 @@ bool isMixedPrecisionLossGradOp(Op *op) {
   return false;
 }
 
-} // namespace
+Tensor *PreferFp32LossScale::getLossScaleInputTensor(Op *op) const {
+  if (op->isConvertibleTo<NllGradOp>()) {
+    return op->inTensor(NllGradOp::getGradInIndex());
+  } else if (op->isConvertibleTo<SoftmaxGradDirectOp>()) {
+    return op->inTensor(SoftmaxGradDirectOp::getGradProbsInIndex());
+  } else if (op->isConvertibleTo<NlllWithSoftmaxGradDirectOp>()) {
+    return op->inTensor(NlllWithSoftmaxGradDirectOp::getGradProbsInIndex());
+  }
 
-bool shouldApply(const Graph &graph) {
+  throw internal_error("PreferFp32LossScale Pattern: unexpected op type.");
+}
+
+bool PreferFp32LossScale::isPassThroughOp(Op *op) const {
+  // Single input op
+  if (op->input->n() == 1) {
+
+    // All outputs must have same type as input
+    DataType inputType = op->input->tensors().front()->info.dataType();
+    for (Tensor *output : op->output->tensors()) {
+      if (output->info.dataType() != inputType) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  return false;
+}
+
+FromLossScaleTraversalOps
+PreferFp32LossScale::traverseFromLossScaleTensor(const Graph &graph) const {
+  Tensor *lossScaleTensor = getLossScaleTensor(graph);
+
+  std::vector<Op *> passThroughOps, mplgoCandidates;
+
+  auto visitor = [this, &passThroughOps, &mplgoCandidates](Tensor *t) {
+    if (!(t->hasProducer())) {
+      return true;
+    }
+
+    Op *producer = t->getProducer();
+
+    // Pass-through ops. Continue traversal
+    if (isPassThroughOp(producer)) {
+      passThroughOps.push_back(producer);
+      return true;
+    }
+
+    // MPLGO candidates. Terminate traversal here
+    else {
+      if (std::find(mplgoCandidates.begin(), mplgoCandidates.end(), producer) ==
+          mplgoCandidates.end()) {
+        mplgoCandidates.push_back(producer);
+      }
+      return false;
+    }
+  };
+
+  graphutils::traverse(
+      {lossScaleTensor},
+      visitor,
+      [](Op *op, Tensor *tq, Tensor *tn) { return true; }, // no filter
+      graphutils::TraversalType::BreadthFirst,
+      graphutils::VisitType::Pre,
+      graphutils::TraversalDirection::Forward);
+
+  return {passThroughOps, mplgoCandidates};
+}
+
+bool PreferFp32LossScale::shouldApply(const Graph &graph) const {
   // Only relevant if we are training
   if (!graph.getIr().canTrain()) {
     return false;
@@ -43,17 +107,24 @@ bool shouldApply(const Graph &graph) {
     return false;
   }
 
-  // All consumers must be able to handle fp16 input gradients, and
+  auto traversalResults             = traverseFromLossScaleTensor(graph);
+  std::vector<Op *> passThroughOps  = traversalResults.first;
+  std::vector<Op *> mplgoCandidates = traversalResults.second;
+
+  // All candidates must be able to handle fp16 input gradients, and
   // fp32 activations
-  for (Op *consumer : lossScaleTensor->consumers.getOps()) {
-    if (!isMixedPrecisionLossGradOp(consumer)) {
+  for (Op *candidate : mplgoCandidates) {
+    if (!isMixedPrecisionLossGradOp(candidate)) {
       return false;
     }
-  }
 
-  // All MPLGOs must produce fp16 gradients
-  for (Op *consumer : lossScaleTensor->consumers.getOps()) {
-    for (Tensor *output : consumer->output->tensors()) {
+    // The loss scale gradient input must be a scalar tensor
+    if (getLossScaleInputTensor(candidate)->info.nelms() != 1) {
+      return false;
+    }
+
+    // All MPLGOs must produce fp16 gradients
+    for (Tensor *output : candidate->output->tensors()) {
       if (output->info.dataType() != DataType::FLOAT16) {
         return false;
       }
@@ -66,11 +137,17 @@ bool shouldApply(const Graph &graph) {
 bool PreferFp32LossScale::apply(Graph &graph) const {
   if (!shouldApply(graph)) {
     return true;
+  } else {
+    logging::debug(
+        "PreferFp32LossScale: Conditions met to apply the transform.");
   }
 
-  Tensor *lossScaleTensor = getLossScaleTensor(graph);
+  auto traversalResults             = traverseFromLossScaleTensor(graph);
+  std::vector<Op *> passThroughOps  = traversalResults.first;
+  std::vector<Op *> mplgoCandidates = traversalResults.second;
 
-  // Set data type to float
+  // Set loss scale data type to float
+  Tensor *lossScaleTensor = getLossScaleTensor(graph);
   lossScaleTensor->info.set(DataType::FLOAT);
 
   // Reset the tensor data with float data
@@ -81,21 +158,55 @@ bool PreferFp32LossScale::apply(Graph &graph) const {
         lossScaleTensor->info, convertedData);
   }
 
+  // Re-call Op setup functions to propagate the loss scale data type change
+  // to the MPLGO inputs
+  auto tensorTypeCheck =
+      [](Op *op, Tensor *t, DataType dataType, std::string direction) {
+        if (t->info.dataType() != dataType) {
+          std::stringstream ss;
+          ss << "PreferFp32LossScale: Pass-through Op " << op->str();
+          ss << "has non-" << dataType << " " << direction << " tensor "
+             << t->id;
+
+          throw internal_error(ss.str());
+        }
+        return;
+      };
+
+  for (Op *passThroughOp : passThroughOps) {
+    // Confirm input is fp32
+    for (Tensor *input : passThroughOp->input->tensors()) {
+      tensorTypeCheck(passThroughOp, input, DataType::FLOAT, "input");
+    }
+
+    // Confirm output is fp16
+    for (Tensor *output : passThroughOp->output->tensors()) {
+      tensorTypeCheck(passThroughOp, output, DataType::FLOAT16, "output");
+    }
+
+    passThroughOp->setup();
+
+    // Re-call setup function and confirm output is now fp32
+    for (Tensor *output : passThroughOp->output->tensors()) {
+      tensorTypeCheck(passThroughOp, output, DataType::FLOAT, "output");
+    }
+  }
+
   // A sanity check. For each consumer of lossScaleTensor re-call its Op's
   // setup function, and confirm that output type is still same
-  for (Op *consumer : lossScaleTensor->consumers.getOps()) {
+  for (Op *mplgo : mplgoCandidates) {
     std::map<TensorId, DataType> oldDataTypes, newDataTypes;
-    for (Tensor *output : consumer->output->tensors()) {
+    for (Tensor *output : mplgo->output->tensors()) {
       oldDataTypes.emplace(output->id, output->info.dataType());
     }
-    consumer->setup();
-    for (Tensor *output : consumer->output->tensors()) {
+    mplgo->setup();
+    for (Tensor *output : mplgo->output->tensors()) {
       newDataTypes.emplace(output->id, output->info.dataType());
     }
     if (oldDataTypes != newDataTypes) {
       throw internal_error("PreferFp32LossScale: the transform has modified "
                            "the output data type(s) of Op {}",
-                           consumer->str());
+                           mplgo->str());
     }
   }
 
