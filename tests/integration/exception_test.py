@@ -16,12 +16,12 @@ import test_util as tu
 # when it run's out of memory
 @tu.requires_ipu
 def test_out_of_memory_exception():
-    deviceInfo = tu.create_test_device(1, tilesPerIPU=tu.USE_ALL_TILES)
+    deviceInfo = tu.create_test_device(1, tilesPerIPU=4)
 
     builder = popart.Builder()
 
     inputs = [
-        builder.addInputTensor(popart.TensorInfo("FLOAT", [2000, 2000]))
+        builder.addInputTensor(popart.TensorInfo("FLOAT", [100, 100]))
         for i in range(8)
     ]
 
