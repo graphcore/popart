@@ -62,7 +62,7 @@ Data input and output (IStepIO)
 
 
 Session options
-..............
+...............
 
 .. code-block:: cpp
 
@@ -143,10 +143,14 @@ Stochastic Gradient Descent (SGD)
 
 .. code-block:: cpp
 
-  #include <popart/optimizer.hpp>
+  #include <popart/clipnormsettings.hpp>
 
 .. doxygenclass:: popart::ClipNormSettings
   :members:
+
+.. code-block:: cpp
+
+  #include <popart/sgd.hpp>
 
 .. doxygenclass:: popart::SGD
   :members:
@@ -169,7 +173,7 @@ Adam, AdaMax & Lamb
 
 
 AdaDelta, RMSProp & AdaGrad
-.........................
+...........................
 
 .. code-block:: cpp
 

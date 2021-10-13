@@ -617,8 +617,8 @@ public:
   ///
   /// **EXAMPLE**:
   /// ```
-  /// SGD({{"defaultLearningRate", {0.02, False}},
-  ///     {"defaultMomentum":{0.6, True}}});
+  /// SGD({{"defaultLearningRate", {0.02, false}},
+  ///     {"defaultMomentum", {0.6, true}}});
   /// ```
   /// This will create an SGD Optimizer which has a constant momentum of 0.6 and
   /// a changeable learning rate initially of 0.02. All OptimizerValues not
@@ -635,7 +635,7 @@ public:
   /// methods), and other default parameters of main constructor.
   SGD() : SGD(std::map<std::string, std::pair<float, bool>>{}) {}
 
-  /// Construct an SGD instance with default values.
+  /// Copy constructor
   SGD(const SGD &) = default;
   ~SGD()           = default;
 
