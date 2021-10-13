@@ -1470,6 +1470,9 @@ PYBIND11_MODULE(popart_core, m) {
     cls.def_readwrite("enableMergeExchange",
                       &SessionOptions::enableMergeExchange,
                       DOC(popart, SessionOptions, enableMergeExchange));
+    cls.def_readwrite("ensureFp32LossScaleTensor",
+                      &SessionOptions::ensureFp32LossScaleTensor,
+                      DOC(popart, SessionOptions, ensureFp32LossScaleTensor));
     cls.def_readwrite("delayVarUpdates",
                       &SessionOptions::delayVarUpdates,
                       DOC(popart, SessionOptions, delayVarUpdates));

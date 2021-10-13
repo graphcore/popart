@@ -1,5 +1,5 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#define BOOST_TEST_MODULE TestPreferFp32LossScaleTransform
+#define BOOST_TEST_MODULE TestEnsureFp32LossScaleTransform
 #include <boost/test/unit_test.hpp>
 
 #include <popart/graph.hpp>
@@ -12,13 +12,18 @@
 #include <popart/sgd.hpp>
 #include <popart/tensorinfo.hpp>
 #include <popart/tensors.hpp>
-#include <popart/transforms/preferfp32lossscale.hpp>
+#include <popart/transforms/ensurefp32lossscale.hpp>
 
 using namespace popart;
 
 using PassThroughOps            = std::vector<Op *>;
 using TerminalOps               = std::vector<Op *>;
 using FromLossScaleTraversalOps = std::pair<PassThroughOps, TerminalOps>;
+
+BOOST_AUTO_TEST_CASE(TestEnsureFp32LossScaleTransformSessionOption) {
+  auto opts = SessionOptions();
+  BOOST_CHECK(opts.ensureFp32LossScaleTensor == false);
+}
 
 /*
   lossScale -- NllGradOp -- gradOut
@@ -181,7 +186,7 @@ void testReplacesFp16LossScaleWithFp32(
   ir.removeIsolatedTensors(true); // remove fp32 loss scale tensor from graph
 
   // Transform graph
-  ir.applyTransform(PreferFp32LossScale::id(), ir.getMainGraph());
+  ir.applyTransform(EnsureFp32LossScale::id(), ir.getMainGraph());
 
   // Run checks:
   // The loss scale tensor is fp32
@@ -203,13 +208,13 @@ void testReplacesFp16LossScaleWithFp32(
   }
 }
 
-BOOST_AUTO_TEST_CASE(TestDoNotReplaceCastedFp16LossScaleWithFp32) {
+BOOST_AUTO_TEST_CASE(TestReplacesFp16LossScaleWithFp32) {
   testReplacesFp16LossScaleWithFp32(nllGradOp);
   testReplacesFp16LossScaleWithFp32(reshapeChain);
   testReplacesFp16LossScaleWithFp32(nllGradOps);
 }
 
-BOOST_AUTO_TEST_CASE(TestReplacesFp16LossScaleWithFp32) {
+BOOST_AUTO_TEST_CASE(TestDoNotReplaceCastedFp16LossScaleWithFp32) {
   Ir ir;
   Graph &g = ir.getMainGraph();
 
@@ -231,8 +236,11 @@ BOOST_AUTO_TEST_CASE(TestReplacesFp16LossScaleWithFp32) {
 
   ir.removeIsolatedTensors(true); // remove fp32 loss scale tensor from graph
 
-  // Transform graph
-  ir.applyTransform(PreferFp32LossScale::id(), ir.getMainGraph());
+  // Graph transformation fails on this graph. Graph traversal from the loss
+  // scale tensor terminates at the CastOp. A CastOp consumer of the loss scale
+  // tensor prevets us from being able to convert the tensor to fp32.
+  BOOST_CHECK_THROW(
+      ir.applyTransform(EnsureFp32LossScale::id(), ir.getMainGraph()), error);
 
   // Check loss scale tensor is still fp16
   BOOST_CHECK(g.getTensors().get(lossScale)->info.dataType() ==

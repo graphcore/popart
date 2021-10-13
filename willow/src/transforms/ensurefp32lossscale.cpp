@@ -4,12 +4,12 @@
 #include <popart/op/nll.hpp>
 #include <popart/op/softmax.hpp>
 #include <popart/optimizer.hpp>
-#include <popart/transforms/preferfp32lossscale.hpp>
+#include <popart/transforms/ensurefp32lossscale.hpp>
 #include <popart/util.hpp>
 
 namespace popart {
 
-bool PreferFp32LossScale::isMixedPrecisionLossGradOp(Op *op) const {
+bool EnsureFp32LossScale::isMixedPrecisionLossGradOp(Op *op) const {
   // All NLL-like operations
   if (op->isConvertibleTo<NllGradOp>()) {
     return true;
@@ -22,7 +22,7 @@ bool PreferFp32LossScale::isMixedPrecisionLossGradOp(Op *op) const {
   return false;
 }
 
-Tensor *PreferFp32LossScale::getLossScaleInputTensor(Op *op) const {
+Tensor *EnsureFp32LossScale::getLossScaleInputTensor(Op *op) const {
   if (op->isConvertibleTo<NllGradOp>()) {
     return op->inTensor(NllGradOp::getGradInIndex());
   } else if (op->isConvertibleTo<SoftmaxGradDirectOp>()) {
@@ -31,10 +31,10 @@ Tensor *PreferFp32LossScale::getLossScaleInputTensor(Op *op) const {
     return op->inTensor(NlllWithSoftmaxGradDirectOp::getGradProbsInIndex());
   }
 
-  throw internal_error("PreferFp32LossScale Pattern: unexpected op type.");
+  throw internal_error("EnsureFp32LossScale Pattern: unexpected op type.");
 }
 
-bool PreferFp32LossScale::isPassThroughOp(Op *op) const {
+bool EnsureFp32LossScale::isPassThroughOp(Op *op) const {
   // Single input op
   if (op->input->n() == 1) {
 
@@ -52,7 +52,7 @@ bool PreferFp32LossScale::isPassThroughOp(Op *op) const {
 }
 
 FromLossScaleTraversalOps
-PreferFp32LossScale::traverseFromLossScaleTensor(const Graph &graph) const {
+EnsureFp32LossScale::traverseFromLossScaleTensor(const Graph &graph) const {
   Tensor *lossScaleTensor = getLossScaleTensor(graph);
 
   std::vector<Op *> passThroughOps, mplgoCandidates;
@@ -91,7 +91,7 @@ PreferFp32LossScale::traverseFromLossScaleTensor(const Graph &graph) const {
   return {passThroughOps, mplgoCandidates};
 }
 
-bool PreferFp32LossScale::shouldApply(const Graph &graph) const {
+bool EnsureFp32LossScale::shouldApply(const Graph &graph) const {
   // Only relevant if we are training
   if (!graph.getIr().canTrain()) {
     return false;
@@ -107,6 +107,10 @@ bool PreferFp32LossScale::shouldApply(const Graph &graph) const {
     return false;
   }
 
+  return true;
+}
+
+bool EnsureFp32LossScale::canApply(const Graph &graph) const {
   auto traversalResults             = traverseFromLossScaleTensor(graph);
   std::vector<Op *> passThroughOps  = traversalResults.first;
   std::vector<Op *> mplgoCandidates = traversalResults.second;
@@ -134,12 +138,18 @@ bool PreferFp32LossScale::shouldApply(const Graph &graph) const {
   return true;
 }
 
-bool PreferFp32LossScale::apply(Graph &graph) const {
+bool EnsureFp32LossScale::apply(Graph &graph) const {
   if (!shouldApply(graph)) {
     return true;
+  }
+
+  if (!canApply(graph)) {
+    throw error(
+        "EnsureFp32LossScale: Unable to apply the transform on graph {}",
+        graph.id);
   } else {
     logging::debug(
-        "PreferFp32LossScale: Conditions met to apply the transform.");
+        "EnsureFp32LossScale: Conditions met to apply the transform.");
   }
 
   auto traversalResults             = traverseFromLossScaleTensor(graph);
@@ -164,7 +174,7 @@ bool PreferFp32LossScale::apply(Graph &graph) const {
       [](Op *op, Tensor *t, DataType dataType, std::string direction) {
         if (t->info.dataType() != dataType) {
           std::stringstream ss;
-          ss << "PreferFp32LossScale: Pass-through Op " << op->str();
+          ss << "EnsureFp32LossScale: Pass-through Op " << op->str();
           ss << "has non-" << dataType << " " << direction << " tensor "
              << t->id;
 
@@ -204,7 +214,7 @@ bool PreferFp32LossScale::apply(Graph &graph) const {
       newDataTypes.emplace(output->id, output->info.dataType());
     }
     if (oldDataTypes != newDataTypes) {
-      throw internal_error("PreferFp32LossScale: the transform has modified "
+      throw internal_error("EnsureFp32LossScale: the transform has modified "
                            "the output data type(s) of Op {}",
                            mplgo->str());
     }
@@ -213,12 +223,12 @@ bool PreferFp32LossScale::apply(Graph &graph) const {
   return true;
 }
 
-std::size_t PreferFp32LossScale::id() {
-  return typeid(PreferFp32LossScale).hash_code();
+std::size_t EnsureFp32LossScale::id() {
+  return typeid(EnsureFp32LossScale).hash_code();
 }
 
 namespace {
-bool init = Transform::registerTransform(new PreferFp32LossScale);
+bool init = Transform::registerTransform(new EnsureFp32LossScale);
 }
 
 } // namespace popart

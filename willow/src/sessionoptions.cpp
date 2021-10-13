@@ -325,6 +325,7 @@ std::size_t hash<popart::SessionOptions>::operator()(
   boost::hash_combine(seed, so.kahnTieBreaker);
   boost::hash_combine(seed, so.automaticLossScalingSettings.hash());
   boost::hash_combine(seed, so.enableSupportedDataTypeCasting);
+  boost::hash_combine(seed, so.ensureFp32LossScaleTensor);
 
   boost::hash_combine(seed, so.groupNormStridedChannelGrouping);
   boost::hash_combine(

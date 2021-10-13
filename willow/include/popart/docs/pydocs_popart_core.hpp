@@ -6220,6 +6220,9 @@ data types and over/underflows, and inform on narrowing casts)doc";
 static const char *__doc_popart_SessionOptions_engineOptions =
     R"doc(Poplar engine options.)doc";
 
+static const char *__doc_popart_SessionOptions_ensureFp32LossScaleTensor =
+    R"doc()doc";
+
 static const char *__doc_popart_SessionOptions_executionPhaseSettings =
     R"doc(Configuration settings for execution phases.)doc";
 

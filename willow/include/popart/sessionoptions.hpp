@@ -1025,6 +1025,14 @@ struct SessionOptions {
 
   /// Enables merging remote and host IO operations to facilitate IO overlap
   bool enableMergeExchange = true;
+
+  /// Only compatible with models that have an fp16 loss scale tensor. When
+  /// `true` the loss scale tensor will be an fp32 tensor, and will be combined
+  /// with fp16 activations as late as possible to produce the first fp16
+  /// activation gradients. This allows the user to choose a loss scale value
+  /// greater than max(fp16). This is also recommended when automatic loss
+  /// scaling is enabled.
+  bool ensureFp32LossScaleTensor = false;
 };
 
 } // namespace popart

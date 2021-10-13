@@ -92,7 +92,7 @@ add_popart_cpp_unit_test(unittest_pipeline transforms/unittest_pipeline.cpp)
 add_popart_cpp_unit_test(unittest_recompute transforms/unittest_recompute_mode.cpp)
 
 add_popart_cpp_unit_test(unittest_preautomaticlossscaling transforms/unittest_preautomaticlossscaling.cpp)
-add_popart_cpp_unit_test(unittest_preferfp32lossscale transforms/unittest_preferfp32lossscale.cpp)
+add_popart_cpp_unit_test(unittest_ensurefp32lossscale transforms/unittest_ensurefp32lossscale.cpp)
 
 add_popart_cpp_unit_test(unittest_willow_builder willow/test_builder.cpp)
 add_popart_cpp_unit_test(unittest_willow_error willow/test_error.cpp)

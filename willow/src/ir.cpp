@@ -64,6 +64,7 @@
 #include <popart/transforms/clipweightgradientsbynorm.hpp>
 #include <popart/transforms/decomposegradsum.hpp>
 #include <popart/transforms/dynamicoptransform.hpp>
+#include <popart/transforms/ensurefp32lossscale.hpp>
 #include <popart/transforms/explicitrecompute.hpp>
 #include <popart/transforms/hostiosetup.hpp>
 #include <popart/transforms/inferpipelinestages.hpp>
@@ -77,7 +78,6 @@
 #include <popart/transforms/mergevarupdates.hpp>
 #include <popart/transforms/overlapio.hpp>
 #include <popart/transforms/pipeline.hpp>
-#include <popart/transforms/preferfp32lossscale.hpp>
 #include <popart/transforms/prune.hpp>
 #include <popart/transforms/randomsetup.hpp>
 #include <popart/transforms/remotesetup.hpp>
@@ -1248,10 +1248,12 @@ void Ir::prepareImpl(const IrBundle &gb, const HashesMap &cacheEntries) {
     updateVertices();
   }
 
-  // If appropriate convert the fp16 loss scale tensor to fp32. This relies on
-  // assumptions of the ability of the Opx implementations for the consumers of
-  // the loss scale tensor to handle mixed-precision inputs
-  applyTransform(PreferFp32LossScale::id(), getMainGraph());
+  // Convert the fp16 loss scale tensor to fp32. This relies on assumptions of
+  // the ability of the Opx implementations for the consumers of the loss scale
+  // tensor to handle mixed-precision inputs
+  if (getSessionOptions().ensureFp32LossScaleTensor) {
+    applyTransform(EnsureFp32LossScale::id(), getMainGraph());
+  }
 
   // Dynamicoptransform decomposes grad sums that contain
   // DynamicAdd/DynamicUpdate gradients, which can be decomposed efficiently

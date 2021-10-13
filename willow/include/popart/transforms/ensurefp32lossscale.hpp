@@ -1,6 +1,6 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_PREFER_FP32_LOSS_SCALE_HPP
-#define GUARD_NEURALNET_PREFER_FP32_LOSS_SCALE_HPP
+#ifndef GUARD_NEURALNET_ENSURE_FP32_LOSS_SCALE_HPP
+#define GUARD_NEURALNET_ENSURE_FP32_LOSS_SCALE_HPP
 
 #include <popart/transforms/transform.hpp>
 
@@ -62,18 +62,18 @@ using PassThroughOps            = std::vector<Op *>;
 using TerminalOps               = std::vector<Op *>;
 using FromLossScaleTraversalOps = std::pair<PassThroughOps, TerminalOps>;
 
-class PreferFp32LossScale : public Transform {
+class EnsureFp32LossScale : public Transform {
 public:
   static std::size_t id();
 
-  PreferFp32LossScale() : Transform() {}
-  virtual ~PreferFp32LossScale() override {}
+  EnsureFp32LossScale() : Transform() {}
+  virtual ~EnsureFp32LossScale() override {}
 
   virtual bool apply(Graph &graph) const final;
 
   virtual std::size_t getId() const final { return id(); }
 
-  virtual std::string getName() const final { return "PreferFp32LossScale"; }
+  virtual std::string getName() const final { return "EnsureFp32LossScale"; }
 
   /**
    * To return true, the op's implementation must be able to handle mixed
@@ -122,13 +122,25 @@ public:
   traverseFromLossScaleTensor(const Graph &graph) const;
 
   /**
-   * Run the checks to see if the transform should be applied. If these fail,
-   * the loss scale tensor is not converted from fp16 to fp32, etc.
+   * Run the checks to see if the transform should be applied.
    *
    * \param graph The graph that the checks are run on.
    * \return True if the checks pass.
    **/
   bool shouldApply(const Graph &graph) const;
+
+  /**
+   * Run the checks to see if the transform can be applied. If these fail,
+   * the loss scale tensor is not converted from fp16 to fp32, etc.
+   *
+   * ..warning::
+   *
+   *    Not safe to call if shouldApply(graph) returns 'false'.
+   *
+   * \param graph The graph that the checks are run on.
+   * \return True if the checks pass.
+   **/
+  bool canApply(const Graph &graph) const;
 };
 
 } // namespace popart
