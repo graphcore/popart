@@ -267,62 +267,52 @@ bool AutomaticLossScale::apply(Graph &graph) const {
                                         clipOutput,
                                         Op::Settings(graph, ""));
 
+  // Case 0, 1, 2 or 3: Sum the statistics tensors
+  // Sum the histogram tensors
+  auto statsSumOp =
+      graph.createOp<SumOp>(Onnx::Operators::Sum_8, Op::Settings(graph, ""));
+
+  for (int i = 0; i < histogramOutputs.size(); i++) {
+    Tensor *tensor = histogramOutputs.at(i);
+    statsSumOp->connectInTensor(i, tensor->id);
+  }
+
+  statsSumOp->createAndConnectOutTensor(SumOp::getOutIndex(),
+                                        "summedHistograms");
+  statsSumOp->inheritPlacementAttributes(false, aliasModel);
+  statsSumOp->setup();
+
+  // Cast the summed gradients to prevent uint32 overflow after gradient
+  // accumulation and replicated all reduce.
+  auto statsCastOp =
+      graph.createOp<CastOp>(Onnx::Operators::Cast_9,
+                             DataType::FLOAT,
+                             Op::Settings(graph, "HistogramCast"));
+  statsCastOp->connectInTensor(CastOp::getInIndex(), "summedHistograms");
+  statsCastOp->createAndConnectOutTensor(CastOp::getOutIndex(),
+                                         "summedCastedHistograms");
+  statsCastOp->inheritPlacementAttributes(false, aliasModel);
+  statsCastOp->setup();
+
   // The grad statistics tensors to connect to the LossScaleUpdateOp
-  std::vector<Tensor *> finalStatisticsTensors;
-
-  // Case 0
-  if (!(doingGraphReplication(graph) || doingGradientAccumulation(graph))) {
-    finalStatisticsTensors = histogramOutputs;
-  }
-
-  // Case 1, 2 or 3: Sum the statistics tensors
-  else {
-    // Sum the histogram tensors
-    auto statsSumOp =
-        graph.createOp<SumOp>(Onnx::Operators::Sum_8, Op::Settings(graph, ""));
-
-    for (int i = 0; i < histogramOutputs.size(); i++) {
-      Tensor *tensor = histogramOutputs.at(i);
-      statsSumOp->connectInTensor(i, tensor->id);
-    }
-
-    statsSumOp->createAndConnectOutTensor(SumOp::getOutIndex(),
-                                          "summedHistograms");
-    statsSumOp->inheritPlacementAttributes(false, aliasModel);
-    statsSumOp->setup();
-
-    // Cast the summed gradients to prevent uint32 overflow after gradient
-    // accumulation and replicated all reduce.
-    auto statsCastOp =
-        graph.createOp<CastOp>(Onnx::Operators::Cast_9,
-                               DataType::FLOAT,
-                               Op::Settings(graph, "HistogramCast"));
-    statsCastOp->connectInTensor(CastOp::getInIndex(), "summedHistograms");
-    statsCastOp->createAndConnectOutTensor(CastOp::getOutIndex(),
-                                           "summedCastedHistograms");
-    statsCastOp->inheritPlacementAttributes(false, aliasModel);
-    statsCastOp->setup();
-
-    finalStatisticsTensors = {statsCastOp->outTensor(CastOp::getOutIndex())};
-  }
+  Tensor *finalStatisticsTensor = statsCastOp->outTensor(CastOp::getOutIndex());
 
   // Case 2 or 3, Accumulate the summed gradient statistics in the inner loop,
   // reset the accumulator in the outer loop.
   if (doingGradientAccumulation(graph)) {
-    Tensor *inTensor = finalStatisticsTensors.back();
-
     // 1. add variable accl tensor, set tensor data to zeros
     TensorId toAcclId = getStatisticsAccumulatorTensorId();
-    std::vector<uint32_t> d(inTensor->info.nelms(), 0);
-    graph.getTensors().addVarInit(toAcclId, inTensor->info, d.data());
+    std::vector<uint32_t> d(finalStatisticsTensor->info.nelms(), 0);
+    graph.getTensors().addVarInit(
+        toAcclId, finalStatisticsTensor->info, d.data());
 
     // 2. add op to accumulate
+    TensorId inId    = finalStatisticsTensor->id;
     auto statsAcclOp = graph.createOp<AddRhsInplaceOp>(Op::Settings(graph, ""));
-    statsAcclOp->connectInTensor(AddRhsInplaceOp::getArg0InIndex(),
-                                 inTensor->id);
+    statsAcclOp->connectInTensor(AddRhsInplaceOp::getArg0InIndex(), inId);
     statsAcclOp->connectInTensor(AddRhsInplaceOp::getArg1InIndex(), toAcclId);
     statsAcclOp->createAndConnectOutTensor(AddRhsInplaceOp::getOutIndex(),
-                                           inTensor->id + "_accld");
+                                           inId + "_accld");
     statsAcclOp->inheritPlacementAttributes(false, aliasModel);
     statsAcclOp->setup();
     TensorId accldId = statsAcclOp->outId(AddRhsInplaceOp::getOutIndex());
@@ -333,8 +323,7 @@ bool AutomaticLossScale::apply(Graph &graph) const {
     statsAcclResetOp->connectInTensor(
         AccumulatorZeroOp::getVarToUpdateInIndex(), toAcclId);
     statsAcclResetOp->createAndConnectOutTensor(
-        AccumulatorZeroOp::getUpdatedVarOutIndex(),
-        inTensor->id + "_accld_reset");
+        AccumulatorZeroOp::getUpdatedVarOutIndex(), inId + "_accld_reset");
     statsAcclResetOp->inheritPlacementAttributes(false, aliasModel);
     statsAcclResetOp->setup();
 
@@ -344,13 +333,13 @@ bool AutomaticLossScale::apply(Graph &graph) const {
 
     graph.topoCons->insert(lossScaleUpdateOp, statsAcclResetOp);
 
-    finalStatisticsTensors = {
-        statsAcclOp->outTensor(AddRhsInplaceOp::getOutIndex())};
+    finalStatisticsTensor =
+        statsAcclOp->outTensor(AddRhsInplaceOp::getOutIndex());
   }
 
   // Case 1 or 3, Reduce the summed or accumulated statistics tensor
   if (doingGraphReplication(graph)) {
-    TensorId inId = finalStatisticsTensors.back()->id;
+    TensorId inId = finalStatisticsTensor->id;
 
     auto reduceOp = graph.createOp<ReplicatedAllReduceOp>(
         Onnx::CustomOperators::ReplicatedAllReduce,
@@ -372,15 +361,13 @@ bool AutomaticLossScale::apply(Graph &graph) const {
       reduceOp->settings.executionContext = ExecutionContext::Normal;
     }
 
-    finalStatisticsTensors = {
-        reduceOp->outTensor(ReplicatedAllReduceOp::getOutIndex())};
+    finalStatisticsTensor =
+        reduceOp->outTensor(ReplicatedAllReduceOp::getOutIndex());
   }
 
-  for (int i = 0; i < finalStatisticsTensors.size(); i++) {
-    Tensor *tensor = finalStatisticsTensors.at(i);
-    lossScaleUpdateOp->connectInTensor(
-        i + LossScaleUpdateOp::getFirstStatisticsTensorInIndex(), tensor->id);
-  }
+  lossScaleUpdateOp->connectInTensor(
+      LossScaleUpdateOp::getStatisticsTensorInIndex(),
+      finalStatisticsTensor->id);
 
   // Create variable tensor, initialised to 'ones' for input at
   // LossScaleUpdateOp::getLossScaleUpdateFactorInIndex

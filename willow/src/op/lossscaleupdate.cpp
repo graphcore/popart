@@ -14,17 +14,15 @@ std::unique_ptr<Op> LossScaleUpdateOp::clone() const {
 
 void LossScaleUpdateOp::setup() {
   // Verify input shapes:
-  // - 1D, gradient statistics tensors, each of shape [2] (one element for
+  // - 1D, gradient statistics tensor, each of shape [2] (one element for
   //   upper bin counts, one element for lower bin counts)
 
-  for (int i = getFirstStatisticsTensorInIndex(); i < input->n(); i++) {
-    if (inShape(i) != std::vector<int64_t>{2}) {
-      throw error("LossScaleUpdateOp {}, input {} has unexpected shape. "
-                  "Expected shape [2], but it is {}",
-                  str(),
-                  i,
-                  inShape(i));
-    }
+  if (inShape(getStatisticsTensorInIndex()) != std::vector<int64_t>{2}) {
+    throw error("LossScaleUpdateOp {}, input {} has unexpected shape. "
+                "Expected shape [2], but it is {}",
+                str(),
+                getStatisticsTensorInIndex(),
+                inShape(getStatisticsTensorInIndex()));
   }
 
   Shape outShape({}); // scalar tensor

@@ -21,11 +21,17 @@ void LossScaleUpdateOpx::grow(snap::program::Sequence &prog) const {
   auto &ir = op_p->getIr();
 
   // Check there is at least one 'gradient statistics' input
-  if (!hasInput(op.getFirstStatisticsTensorInIndex())) {
+  if (!hasInput(op.getStatisticsTensorInIndex())) {
     throw error("LossScaleUpdateOpx {} does not have any input at InIndex {}",
                 op.str(),
-                op.getFirstStatisticsTensorInIndex());
+                op.getStatisticsTensorInIndex());
   }
+
+  if (op.input->n() != 3) {
+    throw error("LossScaleUpdateOpx has {} inputs, but 3 inputs are expected.",
+                op.input->n());
+  }
+
   // Get automatic loss scaling hyperparameters.
   float thresholdUpperCountProportion =
       ir.getSessionOptions()
@@ -49,62 +55,31 @@ void LossScaleUpdateOpx::grow(snap::program::Sequence &prog) const {
   // where f = t/(1-t)
   float f = thresholdUpperCountProportion / (1 - thresholdUpperCountProportion);
 
-  auto sumLowerBinCounts =
-      getScalarVariable(
-          popType(op.inInfo(op.getFirstStatisticsTensorInIndex()).dataType()),
-          "sumLowerBinCounts")
-          .getPoplarTensor();
-  auto sumUpperBinCounts =
-      getScalarVariable(
-          popType(op.inInfo(op.getFirstStatisticsTensorInIndex()).dataType()),
-          "sumUpperBinCounts")
-          .getPoplarTensor();
-  popops::zero(graph().getPoplarGraph(),
-               sumLowerBinCounts,
-               prog.getPoplarSequence(),
-               debugContext("zeroLowerBinCounts"));
-  popops::zero(graph().getPoplarGraph(),
-               sumUpperBinCounts,
-               prog.getPoplarSequence(),
-               debugContext("zeroUpperBinCounts"));
+  auto gradStats =
+      getInTensor(op.getStatisticsTensorInIndex()).getPoplarTensor();
+  auto lowerBinCount = gradStats.slice(0, 1, 0).reshape({});
+  auto upperBinCount = gradStats.slice(1, 2, 0).reshape({});
 
-  for (int i = op.getFirstStatisticsTensorInIndex(); i < op.input->n(); i++) {
-    auto gradStats     = getInTensor(i).getPoplarTensor();
-    auto lowerBinCount = gradStats.slice(0, 1, 0);
-    auto upperBinCount = gradStats.slice(1, 2, 0);
-
-    popops::addInPlace(graph().getPoplarGraph(),
-                       sumLowerBinCounts,
-                       lowerBinCount,
-                       prog.getPoplarSequence(),
-                       debugContext("sumLowerBinCounts"));
-    popops::addInPlace(graph().getPoplarGraph(),
-                       sumUpperBinCounts,
-                       upperBinCount,
-                       prog.getPoplarSequence(),
-                       debugContext("sumUpperBinCounts"));
-  }
-
-  sumLowerBinCounts = popops::cast(graph().getPoplarGraph(),
-                                   sumLowerBinCounts,
-                                   poplar::FLOAT,
-                                   prog.getPoplarSequence(),
-                                   debugContext());
-  sumUpperBinCounts = popops::cast(graph().getPoplarGraph(),
-                                   sumUpperBinCounts,
-                                   poplar::FLOAT,
-                                   prog.getPoplarSequence(),
-                                   debugContext());
+  lowerBinCount = popops::cast(graph().getPoplarGraph(),
+                               lowerBinCount,
+                               poplar::FLOAT,
+                               prog.getPoplarSequence(),
+                               debugContext());
+  upperBinCount = popops::cast(graph().getPoplarGraph(),
+                               upperBinCount,
+                               poplar::FLOAT,
+                               prog.getPoplarSequence(),
+                               debugContext());
   popops::mulInPlace(graph().getPoplarGraph(),
-                     sumLowerBinCounts,
+                     lowerBinCount,
                      f,
                      prog.getPoplarSequence(),
                      debugContext("scaleSumLowerBinCounts"));
 
   auto shouldScaleDown = popops::map(graph().getPoplarGraph(),
                                      popops::expr::BinaryOpType::GREATER_THAN,
-                                     sumUpperBinCounts,
-                                     sumLowerBinCounts,
+                                     upperBinCount,
+                                     lowerBinCount,
                                      prog.getPoplarSequence(),
                                      debugContext());
 

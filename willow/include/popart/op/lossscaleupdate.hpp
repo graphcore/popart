@@ -9,8 +9,8 @@ namespace popart {
 // This op takes as inputs:
 // - The loss scale update factor, used to update the loss scale tensor and
 //   inverse loss scale tensors.
-// - Any number > 0 of 'gradient statistics' tensors, each of which is 1D
-//   tensor with 2 elements
+// - The loss scale.
+// - 'gradient statistics' tensors, which is 1D tensor with 2 elements.
 //
 // and outputs:
 // - The loss scale update factor - a scalar tensor. This can be used to
@@ -32,9 +32,10 @@ public:
   // The loss scale update factor
   static InIndex getLossScaleUpdateFactorInIndex() { return 0; }
 
-  // Gradient tensor statistics are inputs at indices 0-N
-  static InIndex getFirstStatisticsTensorInIndex() { return 2; }
+  // Gradient tensor statistics
+  static InIndex getStatisticsTensorInIndex() { return 2; }
 
+  // The loss scale
   static InIndex getLossScalingInIndex() { return 1; }
 
   // The factor by which to multiply the loss scale tensor

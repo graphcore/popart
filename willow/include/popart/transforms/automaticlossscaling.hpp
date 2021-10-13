@@ -65,11 +65,14 @@
 // lossGrad -- ... -- ConvWeightsGrad --- t0 -- ...
 //  (*= ls)                                |
 //                                          - HistogramOp -- t0_stats
-//             ... -- Matmul -- t1 -- ...                     |
-//                               |                            |
-//                                - HistogramOp -- t1_stats   |
-//                                                      |     |
-//                                                      |     |
+//            ... -- Matmul -- t1 -- ...                     |
+//                              |                            |
+//                               - HistogramOp -- t1_stats   |
+//                                                    |     /
+//                                                    SumOp
+//                                                      |
+//                                                 stats_summed
+//                                                      |
 //               ls_update_factor -----------> LossScaleUpdateOp
 //                       |                              |
 //                       |                    ls_update_factor_updated
