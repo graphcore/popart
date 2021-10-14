@@ -72,8 +72,7 @@ void ReplicatedReduceScatterOpx::grow(snap::program::Sequence &prog) const {
     }
   }
 
-  poplar::OptionFlags reduceScatterOptions = dv_p->lowering().gclOptions;
-  reduceScatterOptions.set("useReplicatedImplementation", "true");
+  const poplar::OptionFlags &reduceScatterOptions = dv_p->lowering().gclOptions;
 
   poplar::Tensor reducedScattered = gcl::reduceScatterCrossReplica(
       graph().getPoplarGraph(),
