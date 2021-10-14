@@ -21,11 +21,10 @@ ReplicatedAllReduceOpx::ReplicatedAllReduceOpx(Op *op, Devicex *devicex)
 void ReplicatedAllReduceOpx::grow(snap::program::Sequence &prog) const {
   const auto &rarOp = getOp<ReplicatedAllReduceOp>();
 
-  const auto inIndex                   = ReplicatedAllReduceOp::getInIndex();
-  poplar::Tensor toReduce              = getInTensor(inIndex).getPoplarTensor();
-  poplar::OptionFlags allReduceOptions = dv_p->lowering().gclOptions;
-  allReduceOptions.set("useReplicatedImplementation", "true");
-  poplar::Tensor output = gcl::allReduceCrossReplica(
+  const auto inIndex      = ReplicatedAllReduceOp::getInIndex();
+  poplar::Tensor toReduce = getInTensor(inIndex).getPoplarTensor();
+  const poplar::OptionFlags &allReduceOptions = dv_p->lowering().gclOptions;
+  poplar::Tensor output                       = gcl::allReduceCrossReplica(
       graph().getPoplarGraph(),
       toReduce,
       getPoplarCollectiveOperator(rarOp.getCollectiveOp()),
@@ -74,10 +73,8 @@ void ReplicatedAllReduceInplaceOpx::grow(snap::program::Sequence &prog) const {
 
   const auto inIndex      = ReplicatedAllReduceInplaceOp::getInIndex();
   poplar::Tensor toReduce = getInTensor(inIndex).getPoplarTensor();
-  poplar::OptionFlags allReduceOptions = dv_p->lowering().gclOptions;
-  allReduceOptions.set("useReplicatedImplementation", "true");
-
-  auto inputShape = toReduce.shape();
+  const poplar::OptionFlags &allReduceOptions = dv_p->lowering().gclOptions;
+  auto inputShape                             = toReduce.shape();
 
   gcl::allReduceInPlaceCrossReplica(
       graph().getPoplarGraph(),

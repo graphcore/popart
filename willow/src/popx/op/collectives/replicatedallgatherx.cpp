@@ -22,8 +22,7 @@ ReplicatedAllGatherOpx::ReplicatedAllGatherOpx(Op *op, Devicex *devicex)
 void ReplicatedAllGatherOpx::grow(snap::program::Sequence &prog) const {
   auto &op = getOp<ReplicatedAllGatherOp>();
 
-  poplar::OptionFlags allGatherOptions = dv_p->lowering().gclOptions;
-  allGatherOptions.set("useReplicatedImplementation", "true");
+  const poplar::OptionFlags &allGatherOptions = dv_p->lowering().gclOptions;
 
   poplar::Tensor gathered = gcl::allGatherCrossReplica(
       graph().getPoplarGraph(),
