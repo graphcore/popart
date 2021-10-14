@@ -20,6 +20,17 @@ namespace popx {
 
 class IrLowering;
 
+/**
+ * Class for managing the complete set of \c programs that a \c Devicex can run.
+ *
+ * A \c program in this context is the instance of the  \c poplar::Program class
+ * which represents a control program that executes operations on the graph.
+ *
+ * The state \c std::vector<snap::program::Sequence> \c seqs contains all these
+ * programs, and is populated during \c IrLowering. The programs are passed to
+ * \c poplar::compileGraph to construct the executable (see
+ * \c IrLowering::getExecutable()).
+ **/
 class PopPrograms {
 
 public:
