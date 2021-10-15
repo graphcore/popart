@@ -14,13 +14,22 @@ class Graph;
 namespace popart {
 namespace popx {
 
-popops::SlicePlan
-createSlicePlan(const snap::Graph &graph,
-                const popart::TensorInfo &dataInfo,
-                const popart::TensorInfo &indicesInfo,
-                nonstd::optional<float> availableMemoryProportion = {},
-                nonstd::optional<size_t> axis                     = {});
+enum class SlicePlanUsedFor { Slice, Update, UpdateAdd };
 
+poplar::OptionFlags
+createSlicePlanOptions(SlicePlanUsedFor usedFor,
+                       nonstd::optional<float> availableMemoryProportion = {});
+
+popops::SlicePlan createSlicePlan(const snap::Graph &graph,
+                                  const popart::TensorInfo &dataInfo,
+                                  const popart::TensorInfo &indicesInfo,
+                                  const poplar::OptionFlags &options,
+                                  nonstd::optional<size_t> axis = {});
+
+// Align input to have same axes alignment and shape as popart IR.
+snap::Tensor alignToAxis(const snap::Tensor &input,
+                         const popart::Shape &shape,
+                         unsigned int axis);
 } // namespace popx
 } // namespace popart
 
