@@ -118,6 +118,8 @@ public:
                      float epsilon                    = 1e-05f,
                      const DebugContext &debugContext = {});
 
+  // clang-format off
+// Need long lines for URLs
   /**
    * Add a multi-convolution to the model.
    *
@@ -162,8 +164,7 @@ public:
    * \param pads The pads for each convolution.
    * \param outPads The output padding for each convolution.
    * \param strides The strides for each convolution.
-   * \param availableMemoryProportions The available memory proportions per
-            conv, each [0, 1).
+   * \param availableMemoryProportions The available memory proportions per conv, each [0, 1).
    * \param partialsTypes The partials type per convolution.
    * \param planType Run convolutions in parallel or series.
    * \param perConvReservedTiles Tiles to reserve per convolution when planning.
@@ -179,7 +180,10 @@ public:
    *
    * \return The TensorId of the output tensor from each convolution.
    *
+   * \sa <a href="https://docs.graphcore.ai/projects/available-memory/">Optimising Temporary Memory Usage for Convolutions and Matmuls on the IPU</a> for for some practical examples of using `availableMemoryProportion`
+   *
    */
+  // clang-format on
   std::vector<TensorId>
   multiconv(const MultiConvInputs &tensors,
             const MultiConvDilations &dilations                  = {},
@@ -1248,13 +1252,18 @@ public:
     addNodeAttribute(sInplaceOpPriorities, priorities, {nodeOutputName});
   }
 
+  // clang-format off
+  // Need long lines for URL
   /**
    * Set the available memory for the given node. Used on the convolution op.
    *
+   * \sa <a href="https://docs.graphcore.ai/projects/available-memory/">Optimising Temporary Memory Usage for Convolutions and Matmuls on the IPU</a> for for some practical examples of using `availableMemoryProportion`
+
+   *
    * \param nodeOutputName Name of the output tensor of the ONNX node.
-   * \param availableMemoryProportion The available memory proportion 0 < x
-   * <= 1.
+   * \param availableMemoryProportion The available memory proportion [0, 1).
    */
+  // clang-format on
   void setAvailableMemoryProportion(const TensorId &nodeOutputName,
                                     const float availableMemoryProportion);
   /**
