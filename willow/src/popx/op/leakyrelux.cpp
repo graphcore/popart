@@ -85,16 +85,18 @@ LeakyReluGradOpx::LeakyReluGradOpx(Op *op, Devicex *devicex)
 void LeakyReluGradOpx::grow(snap::program::Sequence &prog) const {
   auto &op = getOp<LeakyReluGradOp>();
 
-  poplar::Tensor grad  = getInTensor(0).getPoplarTensor();
-  poplar::Tensor input = getInTensor(1).getPoplarTensor();
+  auto grad = getInTensor(LeakyReluGradOp::getGradInIndex()).getPoplarTensor();
+  auto input =
+      getInTensor(LeakyReluGradOp::getFwdArgInIndex()).getPoplarTensor();
 
-  float alpha = op.getAlpha();
+  auto alpha = op.getAlpha();
 
-  // (grad * (x < 0.0f ? alpha : 1))
-  pe::Mul expression = pe::Mul(pe::Select(pe::Const(alpha),
-                                          pe::Const(1.0f),
-                                          pe::Lt(pe::_2, pe::Const(0.0f))),
-                               pe::_1);
+  // x < 0.0f : alpha * grad : grad)
+  // Expression is built with grad on each side of the Select so data type can
+  // be inferred correctly. Was a problem with float16.
+  auto expression = pe::Select(pe::Mul(pe::Const(alpha), pe::_1),
+                               pe::_1,
+                               pe::Lt(pe::_2, pe::Const(0.0f)));
 
   auto output = popops::map(graph().getPoplarGraph(),
                             expression,
