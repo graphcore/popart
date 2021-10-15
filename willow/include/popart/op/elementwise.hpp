@@ -107,7 +107,7 @@ class ElementWiseBinaryBaseOp : public Op {
 public:
   ElementWiseBinaryBaseOp(const OperatorIdentifier &_opid,
                           const Op::Settings &_settings);
-  void setup() final;
+  void setup() override;
 
   // Current implementation places arg0 input at index 0, and arg1 input
   // at index 1.

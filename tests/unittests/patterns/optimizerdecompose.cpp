@@ -11,7 +11,7 @@
 #include <popart/ir.hpp>
 #include <popart/op/accumulate.hpp>
 #include <popart/op/adamcombo.hpp>
-#include <popart/op/cast.hpp>
+#include <popart/op/mul.hpp>
 #include <popart/optimizervalue.hpp>
 #include <popart/patterns/patterns.hpp>
 
@@ -20,10 +20,11 @@ using namespace popart;
 BOOST_AUTO_TEST_CASE(TestGradUnscaleTypeMismatch) {
   // In the case where any of the OptimizerStateTensors in Adam are not fp32 and
   // the weight is fp16, the gradient to be unscaled will be fp16. All
-  // OptimizerTensors are stored as fp32. This test checks a cast is added when
-  // gradUnscale multiplies the fp32 optimizerTensor with the fp16 grad. It also
-  // checks the output of the cast is not an OptimizerTensor to avoid any
-  // interaction with optimizerFromHost.
+  // OptimizerTensors are stored as fp32. The pattern's gradUnscale function
+  // multiplies the fp32 optimizerTensor with the fp16 grad. This test checks
+  // that the MulOp with mixed precision inputs and fp16 output is added in the
+  // Ir. It also checks the output of the mulyiplication is not an
+  // OptimizerTensor to avoid any interaction with optimizerFromHost.
   Ir ir;
   Graph &graph = ir.getMainGraph();
 
@@ -75,15 +76,13 @@ BOOST_AUTO_TEST_CASE(TestGradUnscaleTypeMismatch) {
                       adam->inId(AdamComboOp::getUpdaterInIndex()),
                       false);
 
-  Op *castOp = nullptr;
-  for (auto op : ir.getAllOps()) {
-    if (op->isConvertibleTo<CastOp>()) {
-      castOp = op;
-      break;
-    }
-  }
-  BOOST_REQUIRE(castOp != nullptr);
-  auto *castedGs = castOp->outTensor(CastOp::getOutIndex());
+  // A single instance of MulOp in the Ir:
+  std::vector<Op *> mulOps = ir.opsOfType(Onnx::AiOnnx::OpSet7::Mul);
+  BOOST_REQUIRE(mulOps.size() == 1);
+  auto mulOp = mulOps.back();
+
+  auto *castedGs = mulOp->outTensor(MulOp::getOutIndex());
+  BOOST_REQUIRE(castedGs->info.dataType() == DataType::FLOAT16);
   BOOST_REQUIRE(!castedGs->isOptimizerTensor());
 }
 

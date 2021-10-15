@@ -45,67 +45,6 @@ BOOST_AUTO_TEST_CASE(NumpyBroadcastShape) {
   }
 }
 
-BOOST_AUTO_TEST_CASE(NumpyBroadcastTensorInfo) {
-  for (const auto &test_case : test_cases) {
-    BOOST_TEST(popart::npBroadcastable(
-        popart::TensorInfo(popart::DataType::FLOAT16, test_case.a_shape),
-        popart::TensorInfo(popart::DataType::FLOAT16, test_case.b_shape)));
-
-    const auto new_tensor = popart::npOut(
-        popart::TensorInfo(popart::DataType::FLOAT16, test_case.a_shape),
-        popart::TensorInfo(popart::DataType::FLOAT16, test_case.b_shape));
-    BOOST_TEST(new_tensor.shape() == test_case.result_shape,
-               boost::test_tools::per_element());
-    BOOST_TEST(new_tensor.dataType() == popart::DataType::FLOAT16);
-  }
-}
-
-BOOST_AUTO_TEST_CASE(NumpyBroadcastTensoInfoDataTypeMismatch) {
-  for (const auto &test_case : test_cases) {
-    BOOST_TEST(!popart::npBroadcastable(
-        popart::TensorInfo(popart::DataType::FLOAT16, test_case.a_shape),
-        popart::TensorInfo(popart::DataType::INT32, test_case.b_shape)));
-
-    const size_t ERR_LEN = 500;
-
-    const auto addShape = [&](const std::vector<int64_t> &shape,
-                              std::ostream &os) {
-      auto it = shape.begin();
-      if (it == shape.end()) {
-        return;
-      }
-
-      while (true) {
-        os << *it;
-        it++;
-        if (it == shape.end()) {
-          return;
-        }
-        os << " ";
-      }
-    };
-
-    const auto predicate = [&](popart::error e) {
-      std::ostringstream errm;
-      errm << "np broadcasting failed, incompatible types FLOAT16 and INT32 ";
-      errm << "(shapes [";
-      addShape(test_case.a_shape, errm);
-      errm << "] and [";
-      addShape(test_case.b_shape, errm);
-      errm << "])";
-
-      return e.what() == errm.str();
-    };
-
-    BOOST_CHECK_EXCEPTION(
-        popart::npOut(
-            popart::TensorInfo(popart::DataType::FLOAT16, test_case.a_shape),
-            popart::TensorInfo(popart::DataType::INT32, test_case.b_shape)),
-        popart::error,
-        predicate);
-  }
-}
-
 struct BroadcastBackwardTestCase {
   std::vector<int64_t> in_shape;
   std::vector<int64_t> out_shape;
@@ -196,31 +135,6 @@ BOOST_AUTO_TEST_CASE(NumpyBroadcastException) {
 
     BOOST_CHECK_EXCEPTION(
         popart::npOut(test_case.a_shape, test_case.b_shape, test_case.name),
-        popart::error,
-        predicate);
-  }
-}
-
-BOOST_AUTO_TEST_CASE(NumpyBroadcastTensorInfoShapeException) {
-  for (const auto &test_case : exception_test_cases) {
-
-    // Skip tests with a debug name as not supported for TensorInfo use
-    if (test_case.name != "") {
-      continue;
-    }
-
-    const auto predicate = [&](popart::error e) {
-      return test_case.msg == e.what();
-    };
-
-    BOOST_TEST(!popart::npBroadcastable(
-        popart::TensorInfo(popart::DataType::FLOAT16, test_case.a_shape),
-        popart::TensorInfo(popart::DataType::FLOAT16, test_case.b_shape)));
-
-    BOOST_CHECK_EXCEPTION(
-        popart::npOut(
-            popart::TensorInfo(popart::DataType::FLOAT16, test_case.a_shape),
-            popart::TensorInfo(popart::DataType::FLOAT16, test_case.b_shape)),
         popart::error,
         predicate);
   }

@@ -72,13 +72,30 @@ bool npBroadcastable(const std::vector<int64_t> &s0,
 bool npBroadcastable(const std::vector<int64_t> &s0,
                      const std::vector<int64_t> &s1,
                      size_t &overlap);
-bool npBroadcastable(const TensorInfo &i0, const TensorInfo &i1);
 
 /// Calculate the numpy broadcast shape as described in
 /// https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html
 std::vector<int64_t> npOut(const std::vector<int64_t> &s0,
                            const std::vector<int64_t> &s1,
                            const std::string &debugName = "");
+
+/// Returns the DataType of the output tensor of a numpy broadcast
+/// operation.
+///
+/// Note: the inferred DataType matches that of Poplar, which is not
+/// necessarily the same as that inferred by numpy.
+DataType getOutputDataType(const TensorInfo &i0,
+                           const TensorInfo &i1,
+                           const std::string &debugName);
+
+/// Calculate the numpy broadcast shape as described in
+/// https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html
+///
+/// Note: The inferred DataType of the returned TensorInfo is that of Poplar,
+/// and does not necessarily match that of numpy.
+TensorInfo npOut(const TensorInfo &i0,
+                 const TensorInfo &i1,
+                 const std::string &debugName = "");
 
 /// Compute the reduction axis for a reduction op.
 std::vector<int64_t> npReductionAxis(const std::vector<int64_t> &in,
@@ -228,6 +245,11 @@ public:
   ONNX_NAMESPACE::TypeProto getOnnxTypeProto() const;
   const DataTypeInfo *getDataTypeInfo() const;
 
+  static std::string
+  npOutDataTypeExceptionMessage(const TensorInfo &i0,
+                                const TensorInfo &i1,
+                                const std::string &debugName);
+
 private:
   const DataTypeInfo *dataTypeInfo = nullptr;
   // The tensor's actual shape
@@ -240,15 +262,6 @@ private:
 std::ostream &operator<<(std::ostream &stream, const TensorInfo &ti);
 std::ostream &operator<<(std::ostream &stream, const DataType &dt);
 
-// Check if two tensors can be (numpy) broadcasted based on
-// https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html
-bool npBroadcastable(const TensorInfo &i0, const TensorInfo &i1);
-
-// Calculate the numpy broadcast shape as described in
-// https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html
-TensorInfo npOut(const TensorInfo &i0,
-                 const TensorInfo &i1,
-                 const std::string &debugName = "");
 } // namespace popart
 
 #endif

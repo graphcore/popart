@@ -160,14 +160,6 @@ bool npBroadcastable(const std::vector<int64_t> &s0,
   return broadcastable;
 }
 
-bool npBroadcastable(const TensorInfo &i0, const TensorInfo &i1) {
-  if (i0.dataType() != i1.dataType()) {
-    return false;
-  }
-
-  return npBroadcastable(i0.shape(), i1.shape());
-}
-
 // Calculate the numpy broadcast shape as described in
 // https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html
 //
@@ -235,22 +227,27 @@ std::vector<int64_t> npOut(const std::vector<int64_t> &s0,
   return result;
 }
 
+std::string
+TensorInfo::npOutDataTypeExceptionMessage(const TensorInfo &i0,
+                                          const TensorInfo &i1,
+                                          const std::string &debugName) {
+  std::stringstream ss;
+  ss << "np broadcasting failed";
+
+  if (!debugName.empty()) {
+    ss << " on " << debugName;
+  }
+
+  ss << ", incompatible types " << i0.data_type();
+  ss << " and " << i1.data_type() << " (shapes " << i0.shape() << " and "
+     << i1.shape() << ")";
+
+  return ss.str();
+}
+
 TensorInfo npOut(const TensorInfo &i0,
                  const TensorInfo &i1,
                  const std::string &debugName) {
-  if (i0.dataType() != i1.dataType()) {
-    std::stringstream ss;
-    ss << "np broadcasting failed";
-
-    if (!debugName.empty()) {
-      ss << " on " << debugName;
-    }
-
-    ss << ", incompatible types " << i0.data_type();
-    ss << " and " << i1.data_type() << " (shapes {} and {})";
-
-    throw error(ss.str(), i0.shape(), i1.shape());
-  }
 
   // Propagate meta shape correctly (used for replicated tensor sharding)
   Shape metaShape;
@@ -266,6 +263,10 @@ TensorInfo npOut(const TensorInfo &i0,
     metaShape = i0.metaShape();
   } else if (i1.metaShape().size()) {
     metaShape = i1.metaShape();
+  }
+
+  if (i0.dataType() != i1.dataType()) {
+    throw error(TensorInfo::npOutDataTypeExceptionMessage(i0, i1, debugName));
   }
 
   return {i0.dataType(), npOut(i0.shape(), i1.shape(), debugName), metaShape};

@@ -20,6 +20,10 @@ public:
   std::unique_ptr<Op> clone() const final;
   static OperatorIdentifier getOpId(const Ir &ir);
 
+  // Specialised output type inference because of popops::mul support for
+  // mixed-precision inputs
+  void setup() final;
+
 private:
   bool hasLhsInplaceVariant() const final { return true; }
   bool hasRhsInplaceVariant() const final { return true; }
@@ -36,6 +40,10 @@ public:
   MulLhsInplaceOp(const Op::Settings &_settings)
       : ElementWiseBinaryInplaceLhsOp(Onnx::CustomOperators::MulLhsInplace,
                                       _settings) {}
+
+  // Specialised output type inference because of popops::mulInPlace support for
+  // mixed-precision inputs
+  void setup() final;
 };
 
 class MulRhsInplaceOp : public ElementWiseBinaryInplaceRhsOp<MulRhsInplaceOp> {
@@ -43,6 +51,10 @@ public:
   MulRhsInplaceOp(const Op::Settings &_settings)
       : ElementWiseBinaryInplaceRhsOp(Onnx::CustomOperators::MulRhsInplace,
                                       _settings) {}
+
+  // Specialised output type inference because of popops::mulInPlace support for
+  // mixed-precision inputs
+  void setup() final;
 };
 
 class MulArg0GradOp : public ElementWiseBinaryArg0GradOp<MulArg0GradOp> {

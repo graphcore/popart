@@ -40,6 +40,67 @@ OperatorIdentifier MulOp::getRhsOperatorIdentifier() const {
   return Onnx::CustomOperators::MulRhsInplace;
 }
 
+bool isFp32Scalar(const TensorInfo &info) {
+  return info.dataType() == DataType::FLOAT && info.nelms() == 1;
+}
+
+bool isFp16Fp32ScalarMixedPrecision(const TensorInfo &i0,
+                                    const TensorInfo &i1) {
+  const auto type0 = i0.dataType();
+  const auto type1 = i1.dataType();
+
+  return ((isFp32Scalar(i0) || type0 == DataType::FLOAT16) &&
+          (isFp32Scalar(i1) || type1 == DataType::FLOAT16) && (type0 != type1));
+}
+
+// Numpy broadcasting supports different data types, e.g.:
+// >>> np.array([1., 2.]).astype(np.int8) *
+//     np.array([3.]).astype(np.float32)
+// array([3., 6.], dtype=float32)
+//
+// but in general mixed precision maths isn't supported when lowering
+// to the poplar backend.
+//
+// The popops::mul and popops::mulInPlace methods are an exception to this is.
+// For these calls, fp32-fp16 mixed precision inputs are supported in the case
+// that the fp32 tensor is scalar. We therefore use a special type inference
+// function for these cases.
+DataType getOutputDataType(const TensorInfo &i0,
+                           const TensorInfo &i1,
+                           const std::string &debugName) {
+  if (i0.dataType() == i1.dataType()) {
+    return i0.dataType();
+  } else if (isFp16Fp32ScalarMixedPrecision(i0, i1)) {
+    return DataType::FLOAT16;
+  } else {
+    throw error(TensorInfo::npOutDataTypeExceptionMessage(i0, i1, debugName));
+  }
+}
+
+void MulOp::setup() {
+  auto outShape =
+      prettyNpOut(inShape(getArg0InIndex()), inShape(getArg1InIndex()));
+  auto outType = getOutputDataType(
+      inInfo(getArg0InIndex()), inInfo(getArg1InIndex()), str());
+  outInfo(getOutIndex()) = {outType, outShape};
+}
+
+void MulLhsInplaceOp::setup() {
+  auto outShape =
+      prettyNpOut(inShape(getArg0InIndex()), inShape(getArg1InIndex()));
+  auto outType = getOutputDataType(
+      inInfo(getArg0InIndex()), inInfo(getArg1InIndex()), str());
+  outInfo(getOutIndex()) = {outType, outShape};
+}
+
+void MulRhsInplaceOp::setup() {
+  auto outShape =
+      prettyNpOut(inShape(getArg0InIndex()), inShape(getArg1InIndex()));
+  auto outType = getOutputDataType(
+      inInfo(getArg0InIndex()), inInfo(getArg1InIndex()), str());
+  outInfo(getOutIndex()) = {outType, outShape};
+}
+
 MulArg0GradOp::MulArg0GradOp(const Op &op_,
                              const std::vector<int64_t> &_reduction_axes)
     : ElementWiseBinaryArg0GradOp(Onnx::GradOperators::MulArg0Grad,
