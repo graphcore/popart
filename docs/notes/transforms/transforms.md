@@ -41,7 +41,7 @@ Please find below a brief description of existing transforms:
 | MergeCopies                                                       | Combine groups of `IpuCopyOps` that are consumed by the same `Op`.                                                                                   |
 | MergeDuplicateOps                                                 | Combine `Ops` that perform the exact same computation.                                                                                               |
 | MergeLoops                                                        | Combine compatible `LoopOps` into one.                                                                                                               |
-| MergeExchange                             | Combine adjacent `RemoteLoadOps`/`RemoteStoreOps`/`HostLoadOps`/`HostStoreOps` into MultiExchange operations for efficiency. |
+| MergeExchange                                                     | Combine adjacent `RemoteLoadOps`/`RemoteStoreOps`/`HostLoadOps`/`HostStoreOps` into MultiExchange operations for efficiency.                         |
 | MergeVarUpdates                                                   | Combine compatible `VarUpdateOp` ops.                                                                                                                |
 | Pipeline                                                          | Remove dependencies between `Ops` assigned to different pipeline stages on the same IPU by adding `StashOps` and `RestoreOps` to the graph.          |
 | PreAutomaticLossScale                                             | Annotate a user-specified list of tensors by passing them through an `AutomaticLossScalingProxyOp`, to find their gradients in `AutomaticLossScale`. |
@@ -130,7 +130,7 @@ We refer to these conditions in our list of assumptions, guarantees and preserve
   ```
 
 * **Determinism** The transformation's changes should be deterministic. That is,
-  for a two Graph objects that are equivalent in terms of values, the transform
+  for two Graph objects that are equivalent in terms of values, the transform
   should make equivalent changes to both graphs. Common ways in which
   non-determinism is introduced is by accidentally using containers ordered by
   pointer value. For example, using a `std::map` with a `key_type` of `Op*` and

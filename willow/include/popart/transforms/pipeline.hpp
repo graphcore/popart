@@ -14,19 +14,6 @@ namespace popart {
 /**
  * A helper class for constructing the pipeline on a per-cycle basis
  *
- * PipelineStage: Set of operations that can be executed together. The stages
- *                segment the original compute graph such that they can be
- *                extracted and rearranged to be executed in parallel.
- *
- * PipelineCycle: A cycle or iteration of the pipelined execution.
- *
- * PipelinePhase: The three phases a pipeline consists of:
- *                - fill (ramp up, adding a new pipeline stage in each
- *                        iteration),
- *                - main (running all pipeline stages in parallel)
- *                - flush (ramp down, discontinue a pipeline stage in each
- *                         iteration)
- *
  * After the flush/ramp down is completed, accumulated gradients can be applied
  * to the weight update
  */
@@ -182,50 +169,18 @@ private:
   bool applyExplicit(Graph &graph) const;
 };
 
-// clang-format off
 /**
  * \class ExplicitPipeline
  * \brief Transforms the graph to express the pipeline explicitly.
- * 
+ *
  * .. warning::
- * 
- *    Will not work with a nested scope (for example in stepLoop and gradAccumulation)
  *
- *  
- * .. note::
- * 
- *    See PopPrograms::getFullProgramFromPipelineFragments() for a
- *    description of terminology used in the transform, and an explanation of
- *    how an equivalent pipeline is constructed during Ir-lowering
- * 
- * 
- * Consider a graph, sharded over 3 virtual graphs, and split into 3
- * pipeline stages:
+ *    Will not work with a nested scope (for example in stepLoop and
+ *    gradAccumulation)
  *
- * in -> ps0 -> copy -> ps1 -> copy -> ps2 -> out
- * 
- * Where
- * in         denotes the host to device copying
- * ps<number> denotes the pipeline stage
- * copy       denotes the inter IPU copying
- * out        denotes the device to host copying
- *
- * The pipelined graph with N PipelineCycles then looks like:
- * P = number of pipeline stages
- * G = number of gradient accumulation OR batches per step
- * N = number of cycles = 2 * (P - 1) + (G - (P - 1))
- * 
- * {     fill phase (P-1 cycles)    } {----------- main phase -----------} { flush phase (P-1 cycles) }
- *  Pipeline        Pipeline               Main Pipeline Cycle              Pipeline       Pipeline
- *  Cycle 0         Cycle 1            (Repeat G-(P-1)=N-2(P-1) times)      Cycle N-2      Cycle N-1
- *
- *                                       .--- < loop carried < ----.
- *                                       |                         |
- * in -> ps0 -> copy -> ps1 -> copy -> loop_in -> ps2 -> out       |                                     } parallel
- *                in -> ps0 -> copy -> loop_in -> ps1 -> copy -> loop_out -> ps2 -> out                  } execution
- *                                          in -> ps0 -> copy -> loop_out -> ps1 -> copy -> ps2 -> out   } slots
+ * See docs/notes/transforms/pipelining.md for a detailed description
+ * of pipelining
  */
-// clang-format on
 class ExplicitPipelineHelper {
 public:
   /**

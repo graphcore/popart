@@ -207,6 +207,14 @@ public:
   void initWithSnapGraph(snap::Graph &);
 
 private:
+  /**
+   * Return the program based on the pipeline fragments.
+   *
+   * See docs/notes/transforms/pipelining.md#assemble-from-fragments for
+   * detailed explanation.
+   *
+   * \return The program based on the pipeline fragments
+   **/
   snap::program::Sequence getFullProgramFromPipelineFragments() const;
 
   std::set<std::pair<OpId, ExecutionPhase>> beenRecomputed;
