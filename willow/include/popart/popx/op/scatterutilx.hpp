@@ -8,7 +8,6 @@
 
 namespace popart {
 namespace popx {
-class PopOpx;
 namespace scatterutilx {
 
 // poplin::linspace only supports float or half, this is for int
@@ -28,12 +27,6 @@ snap::Tensor matchRank(snap::Tensor, snap::Tensor, unsigned dim);
 //
 // Assumes b is broadcastable into a
 snap::Tensor broadcastShape(snap::Tensor, snap::Tensor);
-
-// Linearize the indices: map from 2-d indices to 1-d
-snap::Tensor linearizeIndices(const PopOpx &opx,
-                              snap::program::Sequence &prog,
-                              snap::Tensor indices,
-                              int numDataCols);
 
 void growScatter(snap::program::Sequence &prog,
                  snap::Graph &,

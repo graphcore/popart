@@ -5,8 +5,6 @@
 #include <popart/names.hpp>
 #include <popart/popx/popopx.hpp>
 
-#include <popops/DynamicSlice.hpp>
-
 namespace popart {
 namespace popx {
 
@@ -14,16 +12,8 @@ class ScatterOpx : public PopOpx {
 public:
   ScatterOpx(Op *, Devicex *);
   void grow(snap::program::Sequence &) const final;
-  snap::Tensor
-  createInputTensor(InIndex index,
-                    const poplar::DebugNameAndId &dnai) const final;
-
-  InputCreatorType getInputCreatorType(InIndex index) const final;
-
-  std::set<TensorId> mustExistBeforeCreate(InIndex) const final { return {}; }
 
 private:
-  popops::SlicePlan plan;
   int64_t axis;
 };
 
