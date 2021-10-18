@@ -10,7 +10,7 @@ from popart.ir.ops.call import CallInfo
 
 __all__ = [
     'autodiff', 'get_expected_forward_inputs_from_call',
-    'ExpectedConnectionType'
+    'ExpectedConnectionType', 'ExpectedConnection', 'GradGraphInfo'
 ]
 
 
@@ -47,10 +47,10 @@ class ExpectedConnection:
         return self
 
     def __repr__(self) -> str:
-        return f"({self.connection_type}, {self.tensor})"
+        return f"({self.connection_type}, {self.fwd_tensor})"
 
     @property
-    def tensor(self) -> Tensor:
+    def fwd_tensor(self) -> Tensor:
         return Tensor._from_pb_tensor(
             self._fwd_graph.getTensor(self._pb_ec.fwdId))
 
@@ -117,10 +117,10 @@ class GradGraphInfo:
         return tuple(self._expected_outputs)
 
     def get_input_tensors(self) -> Tuple[Tensor, ...]:
-        return tuple(map(lambda ec: ec.tensor, self._expected_inputs))
+        return tuple(map(lambda ec: ec.fwd_tensor, self._expected_inputs))
 
     def get_output_tensors(self) -> Tuple[Tensor, ...]:
-        return tuple(map(lambda ec: ec.tensor, self._expected_outputs))
+        return tuple(map(lambda ec: ec.fwd_tensor, self._expected_outputs))
 
 
 def autodiff(
@@ -196,7 +196,7 @@ def get_expected_forward_inputs_from_call(
 
     return {
         Tensor._from_pb_tensor(grad_info.graph._pb_graph.getInputTensor(idx)):
-        call_info.subgraph_to_op_tensor(act.tensor)
+        call_info.subgraph_to_op_tensor(act.fwd_tensor)
         for idx, act in enumerate(grad_info.expected_inputs)
         if act.connection_type == ExpectedConnectionType.Fwd
     }

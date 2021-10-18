@@ -7,12 +7,21 @@ import popart._internal.ir as _ir
 
 from typing import Iterable, Optional
 
-__all__ = ['h2d_stream', 'd2h_stream']
+__all__ = [
+    'HostToDeviceStream', 'DeviceToHostStream', 'h2d_stream', 'd2h_stream'
+]
 
 
 class _Stream:
-    def __init__(self, tensor: Tensor):
+    def __init__(self):
+        raise NotImplementedError(
+            "Cannot construct a popart.ir._Stream directly.")
+
+    @classmethod
+    def _from_tensor(cls, tensor: Tensor) -> '_Stream':
+        self = cls.__new__(cls)
         self._stream_tensor = tensor
+        return self
 
     @property
     def dtype(self):
@@ -70,7 +79,8 @@ def h2d_stream(shape: Iterable[int], dtype: dtype,
 
     pb_mg.addStream(name, _ir.TensorInfo(dtype._pb_dtype, list(shape)), name)
 
-    return HostToDeviceStream(Tensor._from_pb_tensor(pb_mg.getTensor(name)))
+    return HostToDeviceStream._from_tensor(
+        Tensor._from_pb_tensor(pb_mg.getTensor(name)))
 
 
 def d2h_stream(shape: Iterable[int], dtype: dtype,
@@ -93,4 +103,4 @@ def d2h_stream(shape: Iterable[int], dtype: dtype,
     pb_t = pb_mg.getTensor(name)
     pb_t.info = _ir.TensorInfo(dtype._pb_dtype, list(shape))
 
-    return DeviceToHostStream(Tensor._from_pb_tensor(pb_t))
+    return DeviceToHostStream._from_tensor(Tensor._from_pb_tensor(pb_t))
