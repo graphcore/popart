@@ -433,11 +433,12 @@ bool MatMulRhsGradPattern::matches(Op *op) const {
 }
 
 namespace {
-static PatternCreator<MatMulPattern> matMulPattern("MatMulOp", true);
+// The MatMul patterns are both enabled by default and mandatory.
+static PatternCreator<MatMulPattern> matMulPattern("MatMulOp", true, true);
 static PatternCreator<MatMulLhsGradPattern>
-    matMulLhsGradPattern("MatMulLhsGradOp", true);
+    matMulLhsGradPattern("MatMulLhsGradOp", true, true);
 static PatternCreator<MatMulRhsGradPattern>
-    matMulRhsGradPattern("MatMulRhsGradOp", true);
+    matMulRhsGradPattern("MatMulRhsGradOp", true, true);
 } // namespace
 
 } // namespace popart

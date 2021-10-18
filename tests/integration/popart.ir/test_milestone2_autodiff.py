@@ -199,7 +199,7 @@ def test_autodiff():
 
     ir.updateVertices()
 
-    ir.setPatterns(_ir.patterns.Patterns(_ir.patterns.PatternsLevel.Default))
+    ir.setPatterns(_ir.patterns.Patterns(_ir.patterns.PatternsLevel.Minimal))
     for g in ir.getAllGraphs():
         ir.applyPreAliasPatterns(g)
         ir.applyInplacePattern(g)

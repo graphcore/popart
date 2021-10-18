@@ -42,6 +42,9 @@ BOOST_AUTO_TEST_CASE(PipelineRecomputeIrTest2) {
 
     auto act = aiOnnx.add({input1, w1});
 
+    int numSigmoidsPerPipe      = 3;
+    int numBinaryPostNlsPerPipe = 4;
+
     auto getPipe = [nlt, &aiOnnx, &aiGraphcore](TensorId act, VGraphId vgid) {
       //    >-------- [8,4] ---------------------------------------
       //             /     \                                       |
@@ -86,10 +89,10 @@ BOOST_AUTO_TEST_CASE(PipelineRecomputeIrTest2) {
       (void)vgid;
 
       auto actIn = act;
-      auto act0  = aiOnnx.slice({act}, {6, 4}, {0, 0}, {0, 1});
+      auto act0  = aiOnnx.slice({actIn}, {6, 4}, {0, 0}, {0, 1});
       act0       = aiGraphcore.scale({act0}, 0.6);
 
-      auto act1 = aiOnnx.slice({act}, {8, 4}, {2, 0}, {0, 1});
+      auto act1 = aiOnnx.slice({actIn}, {8, 4}, {2, 0}, {0, 1});
       act1      = aiGraphcore.scale({act1}, 0.7);
 
       auto act00 = aiOnnx.slice({act0}, {4, 4}, {0, 0}, {0, 1});
@@ -135,9 +138,9 @@ BOOST_AUTO_TEST_CASE(PipelineRecomputeIrTest2) {
     auto dataFlow   = DataFlow(100, {{act, AnchorReturnType("All")}});
 
     SessionOptions userOptions;
-    userOptions.virtualGraphMode     = VirtualGraphMode::Auto;
-    userOptions.enableOutlining      = false;
-    userOptions.enablePipelining     = true;
+    userOptions.virtualGraphMode = VirtualGraphMode::Auto;
+    userOptions.enableOutlining  = false;
+    userOptions.enablePipelining = true;
     if (recomp) {
       userOptions.autoRecomputation = RecomputationType::Standard;
     }
@@ -152,9 +155,6 @@ BOOST_AUTO_TEST_CASE(PipelineRecomputeIrTest2) {
     auto device = createTestDevice(TEST_TARGET, nIpus);
 
     Patterns patterns(PatternsLevel::Default);
-    patterns.enableMatMulOp(false);
-    patterns.enableMatMulLhsGradOp(false);
-    patterns.enableMatMulRhsGradOp(false);
 
     Ir ir;
     ir.prepare({modelProto,
@@ -181,18 +181,46 @@ BOOST_AUTO_TEST_CASE(PipelineRecomputeIrTest2) {
       }
     }
 
-    for (auto ipu = 0; ipu < nIpus - 1; ++ipu) {
-      if (nlt == NlType::Sigmoid && recomp == false) {
-        BOOST_CHECK(stashIpus[ipu] == 7);
-      }
+    // NOTE: This calculation may not be quite correct. If this
+    // test fails due to this figure being wrong, check what the calculation
+    // should be based off the model. In particular, the following are somewhat
+    // conjecture:
+    //   1. expectedStashesPerPostNl for NlType::Sin, as this case seems to be
+    //      intentionally untested.
+    //   2. The calculation of the additional number of stashes due to the
+    //      outplace ReshapeOps (with and without recomputation).
+    //
+    // SigmoidGrads require grads of the one output, SinGrads require grads of
+    // both inputs.
+    const auto expectedStashesPerPostNl = nlt == NlType::Sigmoid ? 1 : 2;
+    // Two of the sigmoid outputs will be recomputed.
+    const auto expectedNumRecomputedSigmoids = recomp ? 2 : 0;
 
-      else if (nlt == NlType::Sigmoid && recomp == true) {
-        // Two of the sigmoid outputs will be recomputed
-        BOOST_CHECK(stashIpus[ipu] == 5);
-      }
+    // Recall the Pattern `MatMulOp` will Reshape both inputs of all MatMuls in
+    // the forward pass. In our model, due to the inputs being overlapping
+    // slices of the same tensor, the Reshapes will not be inplace, and thus
+    // their outputs will be stashed. However, given the model and the way
+    // RecomputationType::Standard is currently implemented, all these Reshapes
+    // will be recomputed in the backward pass and therefore not stashed.
+    const auto reshapesPerMatMul = 2;
+    const auto numMatMuls        = 2;
+    const auto numOutplaceReshapes =
+        recomp ? 0 : reshapesPerMatMul * numMatMuls;
+    const auto expectedStashesPerIpu =
+        numSigmoidsPerPipe + numOutplaceReshapes +
+        (expectedStashesPerPostNl * numBinaryPostNlsPerPipe) -
+        expectedNumRecomputedSigmoids;
+
+    for (auto ipu = 0; ipu < nIpus - 1; ++ipu) {
+      BOOST_CHECK(stashIpus[ipu] == expectedStashesPerIpu);
     }
 
     if (withLogging) {
+      std::cout << "NlType = " << (nlt == NlType::Sigmoid ? "Sigmoid" : "Sin")
+                << std::endl;
+      std::cout << "recomp = " << std::boolalpha << recomp << std::noboolalpha
+                << std::endl;
+
       std::array<std::stringstream, nIpus> sss;
       pipeline_recompute_util::fillLogStreams(sss, sched);
       for (int64_t ipu = 0; ipu < nIpus; ++ipu) {
