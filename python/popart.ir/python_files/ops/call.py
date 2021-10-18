@@ -19,9 +19,32 @@ class CallInfo:
     def called_graph(self):
         return Graph._from_pb(self._op.getCalledGraphs()[0])
 
+    def subgraph_in_to_op_in_index(self, idx: int) -> Tensor:
+        return self._op.subgraphInToOpInIndex(idx)
+
+    def op_in_to_subgraph_in_index(self, idx: int) -> Tensor:
+        return self._op.opInToSubgraphInIndex(idx)
+
+    def subgraph_out_to_op_out_index(self, idx: int) -> Tensor:
+        return self._op.subgraphOutToOpOutIndex(idx)
+
+    def op_out_to_subgraph_out_index(self, idx: int) -> Tensor:
+        return self._op.opOutToSubgraphOutIndex(idx)
+
     def subgraph_to_op_tensor(self, subgraph_tensor: Tensor) -> Tensor:
-        """Provided an tensor in the called_graph this method returns
-            the associated input or output tensor on the CallOp."""
+        """
+        Provided an input or output tensor in the `called_graph`, this method
+        returns the associated input or output tensor on the CallOp.
+        
+        Args:
+            subgraph_tensor (Tensor): The tensor in the subgraph.
+
+        Raises:
+            ValueError: If `subgraph_tensor` is not an input or output of the called graph.
+
+        Returns:
+            Tensor: The associated input or output tensor on the CallOp
+        """
         sgraph = self.called_graph._pb_graph
         if sgraph.hasInputId(subgraph_tensor.id):
             idx = sgraph.getInputIndex(subgraph_tensor.id)
@@ -32,6 +55,37 @@ class CallInfo:
         raise ValueError(
             f"Tensor {subgraph_tensor.name} is not an Input or Output of the called graph {sgraph.id}"
         )
+
+    def op_in_to_subgraph_in_tensor(self, parent_tensor: Tensor) -> Tensor:
+        """
+        Provided an input tensor on the CallOp, this method returns the
+        associated input tensor in the `called_graph`.
+
+        Args:
+            parent_tensor (Tensor): The tensor from the parent graph.
+
+        Raises:
+            popart_error: If `parent_tensor` is not an input to the CallOp.
+        
+        Returns:
+            Tensor: The tensor in the `called_graph`.
+        """
+        pb_subgraph = self.called_graph._pb_graph
+
+        # Throws if not an input
+        op_in_idx = self._op.firstInIndex(parent_tensor._pb_tensor)
+        pb_sub_tensor = pb_subgraph.getInputTensor(
+            self._op.opInToSubgraphInIndex(op_in_idx))
+
+        return Tensor._from_pb_tensor(pb_sub_tensor)
+
+    def get_op_input_tensor(self, op_in_idx: int) -> Tensor:
+        pb_op_in_tensor = self._op.inTensor(op_in_idx)
+        return Tensor._from_pb_tensor(pb_op_in_tensor)
+
+    def get_op_output_tensor(self, op_out_idx: int) -> Tensor:
+        pb_op_out_tensor = self._op.outTensor(op_out_idx)
+        return Tensor._from_pb_tensor(pb_op_out_tensor)
 
     def get_input_tensors(self) -> Tuple[Tensor, ...]:
         """Return inputs to the CallOp in index order.

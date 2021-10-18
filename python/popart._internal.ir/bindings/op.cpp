@@ -195,6 +195,17 @@ void bindOp(py::module &m) {
       .def("inRank", &Op::inRank)
       .def("outRank", &Op::outRank)
       .def("outIndex", &Op::outIndex)
+      .def("firstInIndex",
+           [](const Op *self, Tensor *t) -> InIndex {
+             const auto indices = self->input->indices(t);
+             if (indices.size() < 1) {
+               throw popart::error(
+                   "Op `{}` does not have Tensor `{}` as an input",
+                   self->debugName(),
+                   t->id);
+             }
+             return indices[0];
+           })
       // TODO: T42819 add bindings for (outline) attributes
       //   .def("appendAttributes", &Op::appendAttributes)
       //   .def("appendOutlineAttributes", &Op::appendOutlineAttributes)

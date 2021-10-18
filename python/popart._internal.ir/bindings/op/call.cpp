@@ -42,7 +42,9 @@ void bindCall(py::module &m) {
            py::arg("modifiedInputsViaAttrs"),
            py::arg("settings"))
       .def("subgraphInToOpInIndex", &CallOp::subgraphInToOpInIndex)
+      .def("opInToSubgraphInIndex", &CallOp::opInToSubgraphInIndex)
       .def("subgraphOutToOpOutIndex", &CallOp::subgraphOutToOpOutIndex)
+      .def("opOutToSubgraphOutIndex", &CallOp::opOutToSubgraphOutIndex)
       .def("getCalledGraph",
            &CallOp::getCalledGraph,
            py::return_value_policy::reference);
