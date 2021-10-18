@@ -73,7 +73,7 @@ public:
   ConvFlipWeightsOp(const OperatorIdentifier &_opid,
                     const Op::Settings &settings_);
   ~ConvFlipWeightsOp() override;
-  std::unique_ptr<Op> clone() const;
+  std::unique_ptr<Op> clone() const override;
   void setup() final;
 
   std::vector<std::unique_ptr<Op>> getGradOps() final;
