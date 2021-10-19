@@ -34,7 +34,7 @@ def test_auto_loss_scaling_clip_final_loss_scale(w_dtype, loss_dtype_str,
     # Test params
     learning_rate = 0.1
     bps = 20  # Bathes per step
-    should_clip = w_dtype == np.float16 or loss_dtype_str == 'FLOAT16'
+    should_clip = loss_dtype_str == 'FLOAT16'
     loss_dtype = np.float16 if loss_dtype_str == 'FLOAT16' else np.float32
 
     # Tensor names to anchor

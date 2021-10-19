@@ -251,14 +251,11 @@ bool AutomaticLossScale::apply(Graph &graph) const {
   std::set<Tensor *> inverseLossScaleTensors =
       getInverseLossScaleTensors(graph);
 
-  // Check if the loss scale should be clipped. Either should be true:
-  // 1. Any of toTrackTensors is FLOAT16.
-  // 2. lossScaleTensor is FLOAT16.
-  bool clipOutput = std::any_of(
-      toTrackTensors.begin(), toTrackTensors.end(), [](const Tensor *tensor) {
-        return (tensor->info.dataType() == DataType::FLOAT16);
-      });
-  clipOutput |= lossScaleTensor->info.dataType() == DataType::FLOAT16;
+  // The inverse loss scale tensor is always fp32. If the loss scale factor is
+  // fp16, then we must ensure the algorithm does not increase the final loss
+  // scale to above max(fp16). Othwerwise the gradient scaling and unscaling
+  // will not be result in an identity operation.
+  bool clipOutput = lossScaleTensor->info.dataType() == DataType::FLOAT16;
 
   // Pass loss scale tensor and HistogramOp outputs into the LossScaleUpdateOp
   auto lossScaleUpdateOp =
