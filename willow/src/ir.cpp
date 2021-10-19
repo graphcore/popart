@@ -254,6 +254,16 @@ std::vector<Tensor *> Ir::optimizerTensors() const {
   return optimizerTensors;
 }
 
+std::vector<Tensor *> Ir::optimizerStateTensors() const {
+  std::vector<Tensor *> optimizerStateTensors;
+  for (auto tensor : getTensors().getOfType(TensorType::Variable)) {
+    if (tensor->isOptimizerStateTensor()) {
+      optimizerStateTensors.push_back(tensor);
+    }
+  }
+  return optimizerStateTensors;
+}
+
 void Ir::updateOptimizer(const Optimizer &newOptimizer) {
   // TODO this will be cleaner when T12589 is done
   auto newOptimizerClone = newOptimizer.clone();

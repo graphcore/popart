@@ -255,8 +255,12 @@ public:
                  std::stringstream &ss,
                  bool useScheduler = true) const;
 
-  // The tensors specific to the optimization. Learning rate(s), momentum(s) etc
+  // The optimizer parameter tensors such as learning rate(s), momentum(s),
+  // weight decay factor(s), loss scaling
   std::vector<Tensor *> optimizerTensors() const;
+
+  // The optimizer state variables such as accumulation and step tensors
+  std::vector<Tensor *> optimizerStateTensors() const;
 
   /**
    * The original input tensor ID (used to identify streams) and the tensors

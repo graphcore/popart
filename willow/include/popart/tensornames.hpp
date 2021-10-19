@@ -82,13 +82,19 @@ TensorId stripAllReservedPrefixes(const TensorId &id);
 // Collection of prefixes
 
 /**
- * Returns a vector containing all optimizer prefixes
+ * Returns a vector containing all optimizer prefixes. These
+ * include prefixes for optimizer parameters such as learning
+ * rate, momentum factor, and weight decay factor. These need
+ * to be identifiable when copying optimizer settings to/from
+ * the IPU
  * \return A vector containing all optimizer prefixes
  */
 const std::vector<std::string> &reservedOptimizerPrefixes();
 
 /**
- * Returns a vector containing all optimizer state prefixes
+ * Returns a vector containing all optimizer state prefixes.
+ * These include prefixes for variables that constitute the
+ * optimizer state such as accumulation and step tensors
  * \return A vector containing all optimizer state prefixes
  */
 const std::vector<std::string> &reservedOptimizerStatePrefixes();
