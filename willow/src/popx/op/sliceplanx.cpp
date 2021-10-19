@@ -26,8 +26,10 @@ createSlicePlan(const snap::Graph &graph,
     outputSize = dataInfo.nelms() / numEntries;
   }
 
-  // TODO(T40999): this can be removed once "cycles" is made the default
-  poplar::OptionFlags opts{{"planMinimisationTarget", "cycles"}};
+  // Use the "memory" target for all slice plans
+  // This can be overridden with:
+  //   POPLIBS_SLICE_PLAN_FORCE_TARGET=cycles
+  poplar::OptionFlags opts{{"planMinimisationTarget", "memory"}};
 
   if (availableMemoryProportion.has_value()) {
     opts.set("availableMemoryProportion",
