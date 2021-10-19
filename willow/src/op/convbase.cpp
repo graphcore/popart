@@ -209,6 +209,18 @@ Shape MultiConvBaseOp::getOutShape(int convIndex, const ConvPads &pads) const {
   outShape[0] = inInfo(getDataInIndex(convIndex)).dim(0); // batch size
   outShape[1] = getNOutChans(convIndex);
 
+  Shape kernSpatialD = getSpatialK(convIndex);
+
+  // Take into account any kenel truncation. an example of this is calculating
+  // the gradient of a convolution whose kernel covered only padding and not
+  // acutual inputs.
+  Shape lowKernTruncs = lowerKernTruncs(convIndex);
+  Shape upKernTruncs  = upperKernTruncs(convIndex);
+  for (size_t dim = 0; dim < nSpatialDims; dim++) {
+    kernSpatialD[dim] -= lowKernTruncs[dim];
+    kernSpatialD[dim] -= upKernTruncs[dim];
+  }
+
   Shape inSpatialD = getSpatialD(convIndex);
 
   // Take into account any input trunction. An example of this is calculating
@@ -222,7 +234,7 @@ Shape MultiConvBaseOp::getOutShape(int convIndex, const ConvPads &pads) const {
 
   Shape spatialOutShape =
       HasReceptiveFieldOp::getSpatialOutShape(inSpatialD,
-                                              getSpatialK(convIndex),
+                                              kernSpatialD,
                                               pads,
                                               getOutPads(convIndex),
                                               getStrides(convIndex),
@@ -284,9 +296,13 @@ void MultiConvBaseOp::restoreAttributesFromParams(
     const std::vector<ConvParameters> &ps) {
   // Restore Op parameters from Conv parameters so that setup() works
   flatStrides.clear();
-  flatDilations.clear();
   flatPads.clear();
   flatOutPads.clear();
+  flatDilations.clear();
+  flatInDilations.clear();
+
+  flatKernTruncs.clear();
+
   flatInTruncs.clear();
   flatOutTruncs.clear();
 
@@ -310,10 +326,12 @@ void MultiConvBaseOp::restoreAttributesFromParams(
     ensureFalses(param.inputTransformation.flip, "inputTransformation.flip");
 
     // kernelTransformation
-    ensureZeros(param.kernelTransformation.lowerTruncation,
-                "kernelTransformation.lowerTruncation");
-    ensureZeros(param.kernelTransformation.upperTruncation,
-                "kernelTransformation.upperTruncation");
+    flatKernTruncs.insert(flatKernTruncs.end(),
+                          param.kernelTransformation.lowerTruncation.begin(),
+                          param.kernelTransformation.lowerTruncation.end());
+    flatKernTruncs.insert(flatKernTruncs.end(),
+                          param.kernelTransformation.upperTruncation.begin(),
+                          param.kernelTransformation.upperTruncation.end());
 
     flatDilations.insert(flatDilations.end(),
                          param.kernelTransformation.dilation.begin(),
@@ -514,6 +532,36 @@ ConvDilations MultiConvBaseOp::getInDilations(int64_t convIndex) const {
   return result;
 }
 
+Shape MultiConvBaseOp::lowerKernTruncs(int64_t convIndex) const {
+  const auto nSpatialDims = getNSpatialDims(convIndex);
+
+  Shape result;
+  if (flatKernTruncs.empty()) {
+    result.resize(nSpatialDims, 0);
+  } else {
+    const auto cumulativeSpatialDims = getCumulativeSpatialDims(convIndex);
+    const auto cumulativeTruncs      = cumulativeSpatialDims * 2;
+    result = {flatKernTruncs.begin() + cumulativeTruncs,
+              flatKernTruncs.begin() + cumulativeTruncs + nSpatialDims};
+  }
+  return result;
+}
+
+Shape MultiConvBaseOp::upperKernTruncs(int64_t convIndex) const {
+  const auto nSpatialDims = getNSpatialDims(convIndex);
+
+  Shape result;
+  if (flatKernTruncs.empty()) {
+    result.resize(nSpatialDims, 0);
+  } else {
+    const auto cumulativeSpatialDims = getCumulativeSpatialDims(convIndex);
+    const auto cumulativeTruncs      = cumulativeSpatialDims * 2;
+    result = {flatKernTruncs.begin() + cumulativeTruncs + nSpatialDims,
+              flatKernTruncs.begin() + cumulativeTruncs + nSpatialDims * 2};
+  }
+  return result;
+}
+
 Shape MultiConvBaseOp::lowerInTruncs(int64_t convIndex) const {
   const auto nSpatialDims = getNSpatialDims(convIndex);
 
@@ -651,8 +699,8 @@ ConvParameters MultiConvBaseOp::getParameters(int convIndex) const {
   result.inputTransformation.upperPadding    = upperPads(convIndex);
   result.inputTransformation.flip            = falses;
 
-  result.kernelTransformation.lowerTruncation = zeros;
-  result.kernelTransformation.upperTruncation = zeros;
+  result.kernelTransformation.lowerTruncation = lowerKernTruncs(convIndex);
+  result.kernelTransformation.upperTruncation = upperKernTruncs(convIndex);
   result.kernelTransformation.dilation        = getDilations(convIndex);
   result.kernelTransformation.lowerPadding    = zeros;
   result.kernelTransformation.upperPadding    = zeros;

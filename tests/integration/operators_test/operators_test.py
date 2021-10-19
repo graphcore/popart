@@ -399,6 +399,81 @@ def test_convolution_6(op_tester):
     op_tester.run(init_builder, reference, step_type='train')
 
 
+def test_convolution_7(op_tester):
+    batch_size = 1
+    chans_in = 4
+    chans_out = 2
+    size_y = 8
+    size_x = 10
+    kernel_size_y = 3
+    kernel_size_x = 5
+    padding_y = 4
+    padding_x = 2
+    dilation_y = 3
+    dilation_x = 3
+    stride_y = 2
+    stride_x = 1
+
+    data = np.ones([batch_size, chans_in, size_y, size_x], dtype=np.float32)
+    filt = np.ones([chans_out, chans_in, kernel_size_y, kernel_size_x],
+                   dtype=np.float32)
+
+    def init_builder(builder):
+        d = builder.addInputTensor(data)
+        f = builder.addInputTensor(filt)
+        o = builder.aiOnnx.conv(
+            [d, f],
+            dilations=[dilation_y, dilation_x],
+            pads=[padding_y, padding_x, padding_y, padding_x],
+            strides=[stride_y, stride_x])
+        builder.addOutputTensor(o)
+        return [
+            o,
+            popart.reservedGradientPrefix() + d,
+            popart.reservedGradientPrefix() + o
+        ]
+
+    def reference(ref_data):
+        d = torch.tensor(data, requires_grad=True)
+        conv = torch.nn.Conv2d(chans_in,
+                               chans_out, (kernel_size_y, kernel_size_x),
+                               stride=(stride_y, stride_x),
+                               padding=(padding_y, padding_x),
+                               dilation=(dilation_y, dilation_x))
+        conv.weight.data = torch.tensor(filt)
+        conv.bias.data = torch.tensor([0.0 for i in range(chans_out)])
+        o = conv(d)
+
+        # With dilation, the input kernel size is 7 by 13:
+        # X~~X~~X~~X~~X
+        # ~~~~~~~~~~~~~
+        # ~~~~~~~~~~~~~
+        # X~~X~~X~~X~~X
+        # ~~~~~~~~~~~~~
+        # ~~~~~~~~~~~~~
+        # X~~X~~X~~X~~X
+
+        # The padded input spatial size is (16, 14).
+        # For the forward convolution, the spatial output size is (5, 2).
+        # This means that the left and right of the kernel onlys convolve over
+        # the padded input. The data gradient, therefore, is only affected by
+        # the middle column of the kernel.
+
+        # Poplin identifies this when calculating the backwards conv parameters
+        # and truncates the kernel on both sides of the x-axis. This test tests
+        # that the truncation is correctlu passed to the ConvOp created to
+        # replace the ConvDataGradOp.
+
+        d__o = ref_data.getOutputTensorGrad(0)
+        o.backward(torch.tensor(d__o))
+        dg = d.grad
+
+        return [o, dg, None]
+
+    op_tester.setPatterns(['ConvDataGrad'], enableRuntimeAsserts=False)
+    op_tester.run(init_builder, reference, step_type='train')
+
+
 def test_convolution_3d(op_tester):
     batch_size = 1
     chans_in = 2

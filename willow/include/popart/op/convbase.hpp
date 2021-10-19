@@ -223,6 +223,8 @@ public:
   ConvDilations getInDilations(int64_t convIndex) const;
 
   // Usually all zero but can be set by restoreAttributesFromParams
+  Shape lowerKernTruncs(int64_t convIndex) const;
+  Shape upperKernTruncs(int64_t convIndex) const;
   Shape lowerInTruncs(int64_t convIndex) const;
   Shape upperInTruncs(int64_t convIndex) const;
   Shape lowerOutTruncs(int64_t convIndex) const;
@@ -231,12 +233,25 @@ public:
 private:
   void checkParameters() const;
 
+  // The options are "flat" versions of ConvParameters for multiple
+  // convolutions as follows:
+  // Sort priority:
+  // 1. convIndex ascending
+  // 2. lower than upper (padding and truncation only)
+  // 3. dimension ascending
+  // (i.e. the value for dimensions will be back-to-back in the vector)
+
   // Directly passed in from onnx model attributes
   ConvStrides flatStrides;
   ConvPads flatPads;
   ConvPads flatOutPads;
   ConvDilations flatDilations;
   ConvDilations flatInDilations;
+
+  // Allows for the kernel to be truncated. Needed for the gradient in some
+  // cases e.g. where the kernel size combined with stride and dilation, as well
+  // as the input size, means that parts of the kernel are not used.
+  ConvTruncs flatKernTruncs;
 
   // Allows the input dims and output to be directly truncated
   // Needed for some cases of restoreAttributesFromParams such as to calculate
