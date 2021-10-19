@@ -17,53 +17,19 @@ from onnx import numpy_helper
 
 # TODO(T42812): Remove Mean when PostAndLoss is removed.
 
-
-@tu.requires_ipu
-@pytest.mark.parametrize("batchserial", ["Unroll", "Loop"])
-@pytest.mark.parametrize("explicit_loops", [True, False])
-@pytest.mark.parametrize("reduction_type",
-                         ["Sum", "Mean", "MeanRunning", "MeanPost"])
-def test_global_batch_size_correctness_test_sgd_(tmpdir, reduction_type,
-                                                 batchserial, explicit_loops):
-    run_global_batch_size_correctness_test(tmpdir, reduction_type, "SGD",
-                                           batchserial, explicit_loops)
+batchserial_options = ["Unroll", "Loop"]
+explicit_loops_options = [True, False]
+reduction_types = ["Sum", "Mean", "MeanRunning", "MeanPost"]
+optimizers = ["SGD", "SGDM1", "SGDM2", "ADAM"]
 
 
 @tu.requires_ipu
-@pytest.mark.parametrize("batchserial", ["Unroll", "Loop"])
-@pytest.mark.parametrize("explicit_loops", [True, False])
-@pytest.mark.parametrize("reduction_type",
-                         ["Sum", "Mean", "MeanRunning", "MeanPost"])
-def test_global_batch_size_correctness_test_sgdm1(tmpdir, reduction_type,
-                                                  batchserial, explicit_loops):
-    run_global_batch_size_correctness_test(tmpdir, reduction_type, "SGDM1",
-                                           batchserial, explicit_loops)
-
-
-@tu.requires_ipu
-@pytest.mark.parametrize("batchserial", ["Unroll", "Loop"])
-@pytest.mark.parametrize("explicit_loops", [True, False])
-@pytest.mark.parametrize("reduction_type",
-                         ["Sum", "Mean", "MeanRunning", "MeanPost"])
-def test_global_batch_size_correctness_test_sgdm2(tmpdir, reduction_type,
-                                                  batchserial, explicit_loops):
-    run_global_batch_size_correctness_test(tmpdir, reduction_type, "SGDM2",
-                                           batchserial, explicit_loops)
-
-
-@tu.requires_ipu
-@pytest.mark.parametrize("batchserial", ["Unroll", "Loop"])
-@pytest.mark.parametrize("explicit_loops", [True, False])
-@pytest.mark.parametrize("reduction_type",
-                         ["Sum", "Mean", "MeanRunning", "MeanPost"])
-def test_global_batch_size_correctness_test_adam(tmpdir, reduction_type,
-                                                 batchserial, explicit_loops):
-    run_global_batch_size_correctness_test(tmpdir, reduction_type, "ADAM",
-                                           batchserial, explicit_loops)
-
-
-def run_global_batch_size_correctness_test(tmpdir, reduction_type, optim,
-                                           batchserial, explicit_loops):
+@pytest.mark.parametrize("explicit_loops", explicit_loops_options)
+@pytest.mark.parametrize("batchserial", batchserial_options)
+@pytest.mark.parametrize("reduction_type", reduction_types)
+@pytest.mark.parametrize("optim", optimizers)
+def test_global_batch_size_correctness_test(tmpdir, optim, reduction_type,
+                                            batchserial, explicit_loops):
     batches_per_step = 2
     hidden_size = 4
     reduction = popart.ReductionType.Sum if reduction_type == "Sum" else popart.ReductionType.Mean
@@ -155,15 +121,6 @@ def run_global_batch_size_correctness_test(tmpdir, reduction_type, optim,
                     "lossScaling": (20, False),
                 },
                 mode=popart.AdamMode.AdamNoBias)  # to increase errors
-        elif optim is "LAMB":
-            optimizer = popart.Adam(
-                {
-                    "defaultLearningRate": (0.1, False),
-                    "defaultBeta1": (0.9, False),
-                    "defaultBeta2": (0.999, False),
-                    "lossScaling": (20, False),
-                },
-                mode=popart.AdamMode.LambNoBias)  # to increase errors
 
         if explicit_loops:
             options.enableExplicitMainLoops = True

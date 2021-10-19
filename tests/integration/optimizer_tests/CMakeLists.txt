@@ -20,47 +20,19 @@ add_popart_py_unit_test(sgd_mixed_mode_test_py_0 sgd_mixed_mode_test_py_0.py)
 add_popart_py_unit_test(sgd_mixed_mode_test_py_1 sgd_mixed_mode_test_py_1.py)
 add_popart_py_unit_test(sgd1_accumulator_test sgd1_accumulator_test.py)
 
-# NOTE: CMake bug: For some reason, the keywords get set wrong if VARIANTS comes
-#       after MATCHEXPR
-add_popart_py_unit_test(global_batch_size_test global_batch_size_test.py VARIANTS Hw MATCHEXPR "sgd_[Sum")
-add_popart_py_unit_test(global_batch_size_test global_batch_size_test.py VARIANTS Hw MATCHEXPR "sgd_[Mean")
-add_popart_py_unit_test(global_batch_size_test global_batch_size_test.py VARIANTS Hw MATCHEXPR "sgd_[MeanPost")
-add_popart_py_unit_test(global_batch_size_test global_batch_size_test.py VARIANTS Hw MATCHEXPR "sgd_[MeanRunning")
+# global_batch_size_test starts here
+set(batchserial_options "Unroll" "Loop")
+set(explicit_loops_options "True" "False")
+set(reduction_types "Sum" "Mean" "MeanRunning" "MeanPost")
+set(optimizers "SGD" "SGDM1" "SGDM2" "ADAM")
 
-add_popart_py_unit_test(global_batch_size_test global_batch_size_test.py VARIANTS Hw MATCHEXPR "sgdm1[Sum")
-add_popart_py_unit_test(global_batch_size_test global_batch_size_test.py VARIANTS Hw MATCHEXPR "sgdm1[Mean")
-add_popart_py_unit_test(global_batch_size_test global_batch_size_test.py VARIANTS Hw MATCHEXPR "sgdm1[MeanPost")
-add_popart_py_unit_test(global_batch_size_test global_batch_size_test.py VARIANTS Hw MATCHEXPR "sgdm1[MeanRunning")
-
-add_popart_py_unit_test(global_batch_size_test global_batch_size_test.py VARIANTS Hw MATCHEXPR "sgdm2[Sum")
-add_popart_py_unit_test(global_batch_size_test global_batch_size_test.py VARIANTS Hw MATCHEXPR "sgdm2[Mean")
-add_popart_py_unit_test(global_batch_size_test global_batch_size_test.py VARIANTS Hw MATCHEXPR "sgdm2[MeanPost")
-add_popart_py_unit_test(global_batch_size_test global_batch_size_test.py VARIANTS Hw MATCHEXPR "sgdm2[MeanRunning")
-
-add_popart_py_unit_test(global_batch_size_test global_batch_size_test.py VARIANTS Hw MATCHEXPR "adam[Sum")
-add_popart_py_unit_test(global_batch_size_test global_batch_size_test.py VARIANTS Hw MATCHEXPR "adam[Mean")
-add_popart_py_unit_test(global_batch_size_test global_batch_size_test.py VARIANTS Hw MATCHEXPR "adam[MeanPost")
-add_popart_py_unit_test(global_batch_size_test global_batch_size_test.py VARIANTS Hw MATCHEXPR "adam[MeanRunning")
-
-# Running the above in parallel causes timeouts
-if("Hw" IN_LIST ENABLED_TEST_VARIANTS)
-  set_tests_properties("Hw_default_global_batch_size_test-sgd_[Sum" PROPERTIES RUN_SERIAL TRUE)
-  set_tests_properties("Hw_default_global_batch_size_test-sgd_[Mean" PROPERTIES RUN_SERIAL TRUE)
-  set_tests_properties("Hw_default_global_batch_size_test-sgd_[MeanPost" PROPERTIES RUN_SERIAL TRUE)
-  set_tests_properties("Hw_default_global_batch_size_test-sgd_[MeanRunning" PROPERTIES RUN_SERIAL TRUE)
-
-  set_tests_properties("Hw_default_global_batch_size_test-sgdm1[Sum" PROPERTIES RUN_SERIAL TRUE)
-  set_tests_properties("Hw_default_global_batch_size_test-sgdm1[Mean" PROPERTIES RUN_SERIAL TRUE)
-  set_tests_properties("Hw_default_global_batch_size_test-sgdm1[MeanPost" PROPERTIES RUN_SERIAL TRUE)
-  set_tests_properties("Hw_default_global_batch_size_test-sgdm1[MeanRunning" PROPERTIES RUN_SERIAL TRUE)
-
-  set_tests_properties("Hw_default_global_batch_size_test-sgdm2[Sum" PROPERTIES RUN_SERIAL TRUE)
-  set_tests_properties("Hw_default_global_batch_size_test-sgdm2[Mean" PROPERTIES RUN_SERIAL TRUE)
-  set_tests_properties("Hw_default_global_batch_size_test-sgdm2[MeanPost" PROPERTIES RUN_SERIAL TRUE)
-  set_tests_properties("Hw_default_global_batch_size_test-sgdm2[MeanRunning" PROPERTIES RUN_SERIAL TRUE)
-
-  set_tests_properties("Hw_default_global_batch_size_test-adam[Sum" PROPERTIES RUN_SERIAL TRUE)
-  set_tests_properties("Hw_default_global_batch_size_test-adam[Mean" PROPERTIES RUN_SERIAL TRUE)
-  set_tests_properties("Hw_default_global_batch_size_test-adam[MeanPost" PROPERTIES RUN_SERIAL TRUE)
-  set_tests_properties("Hw_default_global_batch_size_test-adam[MeanRunning" PROPERTIES RUN_SERIAL TRUE)
-endif()
+foreach(optimizer ${optimizers})
+  foreach(reduction_type ${reduction_types})
+    foreach(batchserial ${batchserial_options})
+      foreach(explicit_loops ${explicit_loops_options})
+# linter complains if this is indented
+add_popart_py_unit_test(global_batch_size_test global_batch_size_test.py VARIANTS Hw MATCHEXPR "[${optimizer}-${reduction_type}-${batchserial}-${explicit_loops}]")
+      endforeach()
+    endforeach()
+  endforeach()
+endforeach()
