@@ -113,8 +113,6 @@ OpJsonSerialiser::OpJsonSerialiser(const Op *op, std::stringstream &ss_)
   ss << "{";
 
   appendKeyValue("type", op->opid.type);
-  appendKeyValue("version", op->opid.version);
-  appendKeyValue("domain", op->opid.domain);
   appendKeyValue("name", op->getName());
 
   appendKeyValues("inputs",

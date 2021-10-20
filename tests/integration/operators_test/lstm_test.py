@@ -171,8 +171,6 @@ def test_lstm_popart(op_tester):
     # There should be one lstm and it should be the aigraphcore lstm
     lstms = [op for op in graph if op['type'] == 'LSTM']
     assert len(lstms) == 1
-    assert lstms[0]['domain'] == 'ai.graphcore'
-
 
 def test_lstm_outlining(op_tester):
     d1 = np.array([[[1., 2., 3.], [4., 5., 6.]],

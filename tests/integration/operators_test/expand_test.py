@@ -39,7 +39,6 @@ def run_and_test_value(op_tester, inplace, init_builder, reference, mode):
 
         inplace = [op for op in graph if op['type'] == 'ExpandInplace']
         assert len(inplace) == 1
-        assert inplace[0]['domain'] == 'ai.graphcore'
 
 
 def expand(op_tester, inplace, int_type):
@@ -204,7 +203,6 @@ def expand_non_one_smaller_output(op_tester, inplace, int_type):
 
             inplace = [op for op in graph if op['type'] == 'ExpandInplace']
             assert len(inplace) == 1
-            assert inplace[0]['domain'] == 'ai.graphcore'
 
     assert (
         'corresponding dimensions must have the same value or one of them must be 1'
