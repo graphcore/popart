@@ -56,7 +56,7 @@ def test_groupHostSync():
     # default order :
     #  Switch
     #   Repeat
-    #     StreamCopy (FromHost) x2
+    #     StreamCopy (FromHost) x1
     #     StreamCopy(ToHost) x1
     #     Add
     #     StreamCopy(ToHost) x2
@@ -67,8 +67,7 @@ def test_groupHostSync():
     # with the option:
     #  Switch
     #   Repeat
-    #     StreamCopy (FromHost) x2
-    #     StreamCopy(ToHost)   x1
+    #     StreamCopy (FromHost) x1
     #     Add
     #     Absolute
     #     Reduce
@@ -90,14 +89,13 @@ def test_groupHostSync():
 
     # The streamcopy to host should only happen at the end (after
     # ReduceExpression)
-    # There should be at least 3 stream copies and some executions
+    # There should be 2 stream copies and some executions
     assert len(order) > 3
-    # There should be 2 stream copies at the start and 1 at the end
+    # There should be 1 stream copy at the start and 1 at the end
     assert order[0] == "streamcopy"
-    assert order[1] == "streamcopy"
     assert order[-1] == "streamcopy"
-    # 3 stream copies in total
-    assert order.count("streamcopy") == 3
+    # 2 stream copies in total
+    assert order.count("streamcopy") == 2
     # Everything else should be execution
     for i in order[2:-1]:
         assert i == 'execution'
