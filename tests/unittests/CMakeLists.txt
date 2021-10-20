@@ -76,6 +76,7 @@ add_popart_cpp_unit_test(unittest_op_sgd2combo op/sgd2combo.cpp)
 add_popart_cpp_unit_test(unittest_op_varupdate op/varupdate.cpp)
 
 add_popart_cpp_unit_test(unittest_ir_deonnxing_regression_tests ir/deonnxing_regression_tests.cpp)
+add_popart_cpp_unit_test(unittest_ir_tensor_accessors ir/tensor_accessors.cpp)
 add_popart_cpp_unit_test(unittest_ir_clone_graph ir/clone_graph.cpp TEST_UTILS test-graphs-test-util)
 
 add_popart_cpp_unit_test(unittest_stepio_deonnxing_regression_tests stepio/deonnxing_regression_tests.cpp)

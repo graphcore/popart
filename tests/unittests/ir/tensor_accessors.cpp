@@ -1,5 +1,5 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#define BOOST_TEST_MODULE Test_ir_tensor_accessors
+#define BOOST_TEST_MODULE Test_Ir_TensorAccessors
 #include <boost/test/unit_test.hpp>
 
 #include <popart/graph.hpp>
@@ -38,7 +38,6 @@ BOOST_AUTO_TEST_CASE(TestOptimizerStateTensorAccessor) {
 
   std::vector<float> dummy_buffer(4);
 
-  std::vector<TensorId> ids;
   // Some example optimizer state tensor ids with prefixes that should
   // be picked up
   tensors.addVarInit("Accl1___model.lin.weight", w_info, dummy_buffer.data());
