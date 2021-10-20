@@ -42,6 +42,105 @@ public:
                   popart::ExchangeStrategy strategyC);
 };
 
+/**
+ * Populate an IR with the graph from the `basic_graph.cpp` example:
+ *
+ * Psuedo code:
+ *
+ *     x = h2d_stream(...)
+ *     w = var(0, ...)
+ *     w += x
+ *     c = const(5)
+ *     y = w + c
+ *     d2h_stream(y)
+ *
+ * ASCII representation:
+ *
+ *               Init
+ *                |
+ *              [x__t0]
+ *                |
+ *                v
+ *            HostLoad
+ *      w         |
+ *      |    [x__t0__t1]
+ *      |         |
+ *      '-----.   |
+ *            v   v
+ *          Accumulate
+ *              |
+ *           [w__t2]   [c=5.0f]
+ *              | .-------'
+ *              | |
+ *              v v
+ *              Add
+ *               |
+ *              [y]
+ *               |
+ *               v
+ *           HostStore
+ **/
+class GraphTestModel4 : public GraphTestModel {
+public:
+  GraphTestModel4();
+  GraphTestModel4(popart::Tensor::ReplicatedStreamMode xMode);
+};
+
+/**
+ * Forwards pass:
+ *
+ *   [inputs]         [labels]        [weights  ]
+ *     |                 |             |       |
+ *     v                 |             |       |
+ *   Identity            |             |       |
+ *     |                 |             |       |
+ *     |    .------------(-------------'       |
+ *     |    |            |                     |
+ *     |----(------------(-----------.         |
+ *     |    |            |           |         |
+ *     v    v            |           |         |
+ *     MatMul            |           |         |
+ *     |                 |           |         |
+ *     | .---------------'           |         |
+ *     | |                           |         |
+ *     v v                           |         |
+ *     Sub                           |         |
+ *     |                             |         |
+ *     |---------------------.       |         |
+ *     v                     |       |         |
+ *     L1                    |       |         |
+ *     |                     |       |         |
+ *     v                     |       |         |
+ *   [loss:L1:0]             |       |         |
+ *                           |       |         |
+ * Backwards pass:           |       |         |
+ *                           |       |         |
+ *    [1]                    |       |         |
+ *     |  .------------------'       |         |
+ *     v  v                          |         |
+ *   L1Grad            .-------------'         |
+ *     |               |                       |
+ *     |               v                       |
+ *     | TransposeInplace                      |
+ *     |  |                                    |
+ *     v  v                                    |
+ *    MatMul                                   |
+ *     |                                       |
+ *     v                                       |
+ *    ReplicatedAllReduce                      |
+ *     |                                       |
+ *     |         .-----------------------------'
+ *     v         v
+ *    SGD0VarUpdate
+ *     |
+ *   [...]
+ *
+ **/
+class GraphTestModel5 : public GraphTestModel {
+public:
+  GraphTestModel5();
+};
+
 enum class TestOptimizer {
   SGD0 = 0,
   SGD1,

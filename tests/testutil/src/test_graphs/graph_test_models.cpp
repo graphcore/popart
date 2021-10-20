@@ -7,8 +7,10 @@
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/op.hpp>
+#include <popart/op/accumulate.hpp>
 #include <popart/op/add.hpp>
 #include <popart/op/call.hpp>
+#include <popart/op/collectives/replicatedallreduce.hpp>
 #include <popart/op/concat.hpp>
 #include <popart/op/copyvarupdate.hpp>
 #include <popart/op/exchange/hostcopy.hpp>
@@ -20,6 +22,8 @@
 #include <popart/op/matmul.hpp>
 #include <popart/op/sgd0varupdate.hpp>
 #include <popart/op/slice.hpp>
+#include <popart/op/subtract.hpp>
+#include <popart/op/transpose.hpp>
 #include <popart/optimizer.hpp>
 #include <popart/optimizervalue.hpp>
 #include <popart/patterns/adamdecompose.hpp>
@@ -31,6 +35,8 @@
 #include <popart/tensor.hpp>
 #include <popart/topocons.hpp>
 #include <popart/util.hpp>
+
+#include <poplar/ReplicatedStreamMode.hpp>
 
 using namespace popart;
 
@@ -351,6 +357,220 @@ GraphTestModel3::GraphTestModel3(popart::ExchangeStrategy strategyA,
   auto art = AnchorReturnType("All", TileSet::IO, strategyC);
   df       = DataFlow(batchesPerStep, {{"C", art}});
   ir.setDataFlow(df);
+}
+
+GraphTestModel4::GraphTestModel4()
+    : GraphTestModel4(popart::Tensor::ReplicatedStreamMode::Replicate) {}
+
+GraphTestModel4::GraphTestModel4(popart::Tensor::ReplicatedStreamMode xMode) {
+  // Will make dense tensors of this shape with the following repeated values.
+  const TensorInfo tInfo{DataType::FLOAT, Shape{2, 2}};
+  constexpr float cVal = 5.0f;
+  constexpr float wVal = 0.0f;
+
+  const std::vector<float> expectedYData(tInfo.nelms(), 7.0f);
+
+  Graph &graph = ir.getMainGraph();
+
+  // First create the stream tensor x, then create the
+  // Init -> HostLoad(x) -> xLoad. No ops should consume x, only xLoad.
+
+  TensorId x = "x";
+
+  graph.getTensors().addStream(x, tInfo, {"x"});
+  graph.getTensors().get(x)->setReplicatedStreamMode(xMode);
+
+  TensorId xInit = ir.createIntermediateTensorId(x);
+  TensorId xLoad = ir.createIntermediateTensorId(xInit);
+
+  graph.createConnectedOp<InitOp>({},
+                                  {{InitOp::getOutIndex(), xInit}},
+                                  Onnx::CustomOperators::Init_1,
+                                  tInfo,
+                                  TensorType::ActGrad,
+                                  InitType::Zero,
+                                  Op::Settings{graph, "xInit"});
+
+  graph.createConnectedOp<HostLoadOp>(
+      {{HostLoadOp::getLocalTensorInIndex(), xInit}},
+      {{HostLoadOp::getLocalTensorOutIndex(), xLoad}},
+      Onnx::CustomOperators::HostLoad,
+      Op::Settings{graph, "hostload_x"},
+      x);
+
+  TensorId w = "w";
+  std::vector<float> wHost(tInfo.nelms(), wVal);
+  graph.getTensors().addVarInit(w, tInfo, wHost.data(), {"w"});
+
+  TensorId wOut = ir.createIntermediateTensorId(w);
+
+  graph.createConnectedOp<AccumulateOp>(
+      {{AccumulateOp::getVarToUpdateInIndex(), w},
+       {AccumulateOp::getUpdaterInIndex(), xLoad}},
+      {{AccumulateOp::getUpdatedVarOutIndex(), wOut}},
+      AccumulationType::Add,
+      OptimizerValue{}, // Presumably ignored for add.
+      Op::Settings{graph, "accumIntoW"});
+
+  TensorId c = "c";
+  std::vector<float> cHost(tInfo.nelms(), cVal);
+  graph.getTensors().addConstInit(c, tInfo, cHost.data(), {"c"});
+
+  TensorId y = "y";
+
+  graph.createConnectedOp<AddOp>(
+      {{AddOp::getArg0InIndex(), wOut}, {AddOp::getArg1InIndex(), c}},
+      {{AddOp::getOutIndex(), y}},
+      Onnx::Operators::Add_7,
+      Op::Settings{graph, "addY"});
+
+  // Must set for HostStored tensors, as HostStoreOpx needs this info.
+  // We use AnchorReturnType("All"), as the notion of, for example "Final" does
+  // not really translate when there is no implicit or even explicit training
+  // loop. Final would work though.
+  constexpr int bps = 1;
+  ir.setDataFlow(DataFlow{bps, {{y, AnchorReturnType("All")}}});
+
+  // In general, the user's y tensor that they want to stream may get replaced,
+  // copied into subgraphs, etc., so there is an "anchor remap" from their
+  // original tensor to the actual streamed tensor (note, anchors can be any
+  // TensorType except Stream). This latter tensor is the "stream tensor"
+  // attribute of the HostStoreOp.
+  //
+  // In this case, no transformation of the original y tensor has occured, so
+  // the anchor remap maps to y, but we follow the general precedent regardless.
+  TensorId streamY = ir.getAnchorRemap().getRight(y);
+
+  graph.createConnectedOp<HostStoreOp>(
+      {{HostStoreOp::getLocalTensorInIndex(), y}},
+      {},
+      Onnx::CustomOperators::HostStore,
+      Op::Settings{graph, "hostStoreY"},
+      streamY);
+
+  ///// Set Ir state required for lowering
+
+  // Some logic in Devicex::loadEngineAndConnectStreams depends on this being
+  // set: if useHostCopyOps, for each HostLoad op: get its stream tensor, then
+  // get the stream created for that tensor and "connect" it as per usual.
+  auto &opts          = ir.getSessionOptions();
+  opts.useHostCopyOps = true;
+
+  // Need this as prevents devicex from creating implicit for loop.
+  opts.enableExplicitMainLoops = true;
+
+  // Sets ScheduledPreLoss on all vertices, which determines if lowered into
+  // forward or backward fragment.
+  ir.updateVertices();
+
+  // As the final step before lowering, must mark the Ir as "prepared", or the
+  // lowering will immediately throw.
+  ir.setIsPrepared();
+}
+
+GraphTestModel5::GraphTestModel5() {
+
+  Graph &graph = ir.getMainGraph();
+
+  TensorId inputs = "inputs";
+  TensorInfo inputsInfo{DataType::FLOAT, {1, 1, 10}};
+
+  graph.getTensors().addStream(inputs, inputsInfo, {"inputs"});
+  graph.getTensors().get(inputs)->setReplicatedStreamMode(
+      Tensor::ReplicatedStreamMode::Replicate);
+
+  TensorId labels = "labels";
+  TensorInfo labelsInfo{DataType::FLOAT, {1, 1, 5}};
+
+  graph.getTensors().addStream(labels, labelsInfo, {"labels"});
+  graph.getTensors().get(labels)->setReplicatedStreamMode(
+      Tensor::ReplicatedStreamMode::Replicate);
+
+  TensorId weights = "weights";
+  TensorInfo weightsInfo{DataType::FLOAT, {1, 10, 5}};
+  std::vector<float> weightsData(50, 0.0f);
+  graph.getTensors().addVarInit(
+      "weights", weightsInfo, static_cast<void *>(weightsData.data()));
+
+  auto idOp =
+      graph.createConnectedOp<IdentityOp>({{IdentityOp::getInIndex(), inputs}},
+                                          {{IdentityOp::getOutIndex(), "t1"}},
+                                          Onnx::Operators::Identity_1,
+                                          Op::Settings{graph, "Identity"});
+
+  auto matMulOp = graph.createConnectedOp<MatMulOp>(
+      {{MatMulOp::getLhsInIndex(), inputs},
+       {MatMulOp::getRhsInIndex(), weights}},
+      {{MatMulOp::getOutIndex(), "t2"}},
+      Onnx::Operators::MatMul_1,
+      Op::Settings{graph, "MatMul"},
+      0.6f,
+      MatMulBaseOp::SerialiseSettings{
+          MatMulBaseOp::SerialiseSettings::Mode::None, 0, false},
+      DataType::FLOAT,
+      MatMulPartialsType::FLOAT);
+
+  auto subtractOp = graph.createConnectedOp<SubtractOp>(
+      {{SubtractOp::getArg0InIndex(), matMulOp->outId(MatMulOp::getOutIndex())},
+       {SubtractOp::getArg1InIndex(), labels}},
+      {{SubtractOp::getOutIndex(), "t3"}},
+      Onnx::Operators::Sub_1,
+      Op::Settings{graph, "Sub"});
+
+  auto l1Op = graph.createConnectedOp<L1Op>(
+      {{L1Op::getInIndex(), subtractOp->outId(SubtractOp::getOutIndex())}},
+      {{L1Op::getOutIndex(), "loss"}},
+      Onnx::CustomOperators::L1,
+      0.1f,
+      ReductionType::Mean,
+      Op::Settings{graph, "L1"});
+
+  TensorId grad1 = "grad1";
+  TensorInfo grad1Info{DataType::FLOAT, {}};
+  std::vector<float> grad1Data(grad1Info.nelms(), 1.0f);
+  graph.getTensors().addConstInit(grad1, grad1Info, grad1Data.data(), {grad1});
+
+  auto l1gradOp = graph.createConnectedOp<L1GradOp>(
+      {{L1GradOp::getFwdActInIndex(), l1Op->inId(L1Op::getInIndex())},
+       {L1GradOp::getGradInIndex(), grad1}},
+      {{L1GradOp::getOutIndex(), "t3grad"}},
+      *l1Op);
+
+  auto transposeOp = graph.createConnectedOp<TransposeOp>(
+      {{TransposeOp::getInIndex(), idOp->inId(IdentityOp::getInIndex())}},
+      {{TransposeOp::getOutIndex(), "tmp1"}},
+      Onnx::Operators::Transpose_1,
+      Shape{0, 2, 1},
+      Op::Settings{graph, "Transpose"});
+
+  auto gradMatMul = graph.createConnectedOp<MatMulOp>(
+      {{MatMulOp::getLhsInIndex(),
+        transposeOp->outId(TransposeOp::getOutIndex())},
+       {MatMulOp::getRhsInIndex(), l1gradOp->outId(L1GradOp::getOutIndex())}},
+      {{MatMulOp::getOutIndex(), "inputsgrad"}},
+      Onnx::Operators::MatMul_1,
+      Op::Settings{graph, "MatMul"},
+      0.6f,
+      MatMulBaseOp::SerialiseSettings{
+          MatMulBaseOp::SerialiseSettings::Mode::None, 0, false},
+      DataType::FLOAT,
+      MatMulPartialsType::FLOAT);
+
+  auto allReduceOp = graph.createConnectedOp<ReplicatedAllReduceOp>(
+      {{ReplicatedAllReduceOp::getInIndex(),
+        gradMatMul->outId(MatMulOp::getOutIndex())}},
+      {{ReplicatedAllReduceOp::getOutIndex(), "inputsgradrepl"}},
+      Onnx::CustomOperators::ReplicatedAllReduce,
+      Op::Settings{graph, "ReplicatedAllReduce"});
+
+  graph.createConnectedOp<SGD0VarUpdateOp>(
+      {{SGD0VarUpdateOp::getVarToUpdateInIndex(), weights},
+       {SGD0VarUpdateOp::getUpdaterInIndex(),
+        allReduceOp->outId(ReplicatedAllReduceOp::getOutIndex())}},
+      {{SGD0VarUpdateOp::getUpdatedVarOutIndex(), "weights__updated"}},
+      OptimizerValue(0.5, true),
+      OptimizerValue(0.5, true),
+      Op::Settings{graph, "SGD0VarUpdate"});
 }
 
 OptimizerTestModel::OptimizerTestModel(TestOptimizer opt,
