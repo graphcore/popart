@@ -15,6 +15,7 @@
 #include <popart/op/accumulate.hpp>
 #include <popart/op/accumulatorscale.hpp>
 #include <popart/op/accumulatorzero.hpp>
+#include <popart/op/adamupdater.hpp>
 #include <popart/op/call.hpp>
 #include <popart/op/ipucopy.hpp>
 #include <popart/op/loop.hpp>
@@ -199,6 +200,25 @@ void bindManualCreateOpFunctionToGraphClass(py::class_<Graph> g) {
       [](Graph &self, const Op::Settings &settings) {
         return self.createOp<op::PyVarUpdateOp<AccumulatorZeroOp>>(settings);
       },
+      py::arg("settings"),
+      py::return_value_policy::reference);
+  // AdamUpdaterOp
+  g.def(
+      "createOp_AdamUpdaterOp",
+      [](Graph &self,
+         AdamMode mode_,
+         OptimizerValue wd,
+         OptimizerValue b1,
+         OptimizerValue b2,
+         OptimizerValue eps,
+         const Op::Settings &settings) {
+        return self.createOp<AdamUpdaterOp>(mode_, wd, b1, b2, eps, settings);
+      },
+      py::arg("mode_"),
+      py::arg("wd"),
+      py::arg("b1"),
+      py::arg("b2"),
+      py::arg("eps"),
       py::arg("settings"),
       py::return_value_policy::reference);
 }
@@ -467,6 +487,32 @@ void bindManualCreateConnectedOpFunctionToGraphClass(py::class_<Graph> g) {
       },
       py::arg("in"),
       py::arg("out"),
+      py::arg("settings"),
+      py::return_value_policy::reference);
+
+  // AdamUpdaterOp
+  g.def(
+      "createConnectedOp_AdamUpdaterOp",
+      [](Graph &self,
+         const std::map<InIndex, TensorId> &in,
+         const std::map<OutIndex, TensorId> &out,
+         AdamMode mode_,
+         OptimizerValue wd,
+         OptimizerValue b1,
+         OptimizerValue b2,
+         OptimizerValue eps,
+         const Op::Settings &settings) {
+        return self.createConnectedOp<AdamUpdaterOp>(
+            in, out, mode_, wd, b1, b2, eps, settings);
+      },
+
+      py::arg("in"),
+      py::arg("out"),
+      py::arg("mode_"),
+      py::arg("wd"),
+      py::arg("b1"),
+      py::arg("b2"),
+      py::arg("eps"),
       py::arg("settings"),
       py::return_value_policy::reference);
 }

@@ -873,3 +873,43 @@ def test_accumulate_zero_op(connected: bool) -> None:
     op.connectInTensor(2, factor.id)
     op.connectOutTensor(0, out.id)
     op.setup()
+
+
+@pytest.mark.parametrize("connected", [True, False])
+def test_adamupdater_op(connected: bool) -> None:
+    """Test the AdamUpdater Op.
+
+    Args:
+        connected (bool): Whether to use the createConnected<opname> function or
+            just create<opname>
+    """
+    _, graphs = create_ir()
+    g = graphs[0]
+    w = add_random_tensor("w", _ir.TensorType.Variable, [0, 1], g)
+    mode = _ir.AdamMode.Adam
+    wd = _ir.OptimizerValue(0.02)
+    b1 = _ir.OptimizerValue(0.9)
+    b2 = _ir.OptimizerValue(0.99)
+    eps = _ir.OptimizerValue(0.4)
+    m = add_random_tensor("m", _ir.TensorType.Variable, [4, 1], g)
+    v = add_random_tensor("v", _ir.TensorType.Variable, [2, 1], g)
+    t = add_random_tensor("t", _ir.TensorType.Variable, [1], g)
+    out = add_actgrad_tensor("out", [1, 4], g)
+
+    ins = {0: w.id, 1: m.id, 2: v.id, 3: t.id}
+    outs: Dict[int, str] = {0: out.id}
+    settings = _ir.Settings(g, "new_settings")
+
+    if connected:
+        op = g.createConnectedOp_AdamUpdaterOp(ins, outs, mode, wd, b1, b2,
+                                               eps, settings)
+        op.setup()
+        return
+    op = g.createOp_AdamUpdaterOp(mode, wd, b1, b2, eps, settings)
+    op.connectInTensor(0, w.id)
+    op.connectInTensor(1, m.id)
+    op.connectInTensor(2, v.id)
+    op.connectInTensor(3, t.id)
+
+    op.connectOutTensor(0, out.id)
+    op.setup()

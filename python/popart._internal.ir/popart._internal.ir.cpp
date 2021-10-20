@@ -11,6 +11,7 @@
 #include "bindings/op/accumulate.hpp"
 #include "bindings/op/accumulatorscale.hpp"
 #include "bindings/op/accumulatorzero.hpp"
+#include "bindings/op/adamupdater.hpp"
 #include "bindings/op/call.hpp"
 #include "bindings/op/enums.hpp"
 #include "bindings/op/ipucopy.hpp"
@@ -82,6 +83,7 @@ PYBIND11_MODULE(popart_internal_ir, m) {
     op::bindAccumulate(m);
     op::bindAccumulatorScale(m);
     op::bindAccumulatorZero(m);
+    op::bindAdamUpdater(m);
   }
   // Transforms
   {

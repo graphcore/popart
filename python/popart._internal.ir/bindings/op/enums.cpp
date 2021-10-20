@@ -6,8 +6,8 @@
 #include <pybind11/stl.h>
 
 #include <popart/op/collectives/collectives.hpp>
+#include <popart/adam.hpp>
 #include <popart/op/init.hpp>
-
 namespace py = pybind11;
 
 namespace popart {
@@ -34,6 +34,12 @@ void bindEnums(py::module &m) {
       .value("LogicalOr", CollectiveOperator::LogicalOr)
       .value("SquareAdd", CollectiveOperator::SquareAdd)
       .value("Local", CollectiveOperator::Local);
+  py::enum_<AdamMode>(m, "AdamMode", py::module_local())
+      .value("Adam", AdamMode::Adam)
+      .value("AdamNoBias", AdamMode::AdamNoBias)
+      .value("AdaMax", AdamMode::AdaMax)
+      .value("Lamb", AdamMode::Lamb)
+      .value("LambNoBias", AdamMode::LambNoBias);
 }
 } // namespace op
 } // namespace ir

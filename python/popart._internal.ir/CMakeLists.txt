@@ -146,6 +146,7 @@ add_popart_python_module(
   bindings/op/matmul.cpp
   bindings/op/accumulate.cpp
   bindings/op/manualbindops.cpp
+  bindings/op/adamupdater.cpp
   bindings/op/optimizervalue.cpp
   bindings/op/varupdate.cpp
   bindings/op/accumulatorscale.cpp
