@@ -609,12 +609,33 @@ deserializeExecutable(std::istream &in,
     }
   }
   {
-    auto capnpProtoTensors = irReader.getAdditionalModelProtoTensors();
-    for (const std::string id : capnpProtoTensors) {
-      auto *tensor = deserializedTensors[id].get();
-      ir.addAdditionalModelProtoTensor(tensor);
+    // It is unsafe to call 'addAdditionalModelProtoTensors' twice on the Ir.
+    // Only call on the passed-by-reference Ir if it is safe to do so.
+    if (ir.additionalModelProtoTensorsHaveBeenAdded()) {
+      // Check that the Ir we are modifying has expected
+      // additionalModelProtoTensors
+      std::set<TensorId> irAdditionalIds;
+      for (const Tensor *tensor : ir.getAdditionalModelProtoTensors()) {
+        irAdditionalIds.insert(tensor->id);
+      }
+      for (const TensorId id : irReader.getAdditionalModelProtoTensors()) {
+        if (!ir.tensorExistsInInitialisers(id) &&
+            irAdditionalIds.find(id) == irAdditionalIds.end()) {
+          throw error("deserializeExecutable : Deserialization failed. Ir "
+                      "passed by reference is already prepared, but tensor "
+                      "with TensorId {} in the deserialized executable exists "
+                      "in neither its 'additionalModelProtoTensors' nor its "
+                      "model proto's initializers.",
+                      id);
+        }
+      }
+    } else {
+      for (const TensorId id : irReader.getAdditionalModelProtoTensors()) {
+        auto *tensor = deserializedTensors[id].get();
+        ir.addAdditionalModelProtoTensor(tensor);
+      }
+      ir.addAdditionalModelProtoTensors();
     }
-    ir.addAdditionalModelProtoTensors();
   }
 
   std::map<TensorId, gcl::CollectiveBalancedHostRearrangement>

@@ -110,7 +110,7 @@ void compare_executables(const popx::Executablex &exe1,
   }
 }
 
-BOOST_AUTO_TEST_CASE(serialize_deserialize) {
+std::unique_ptr<Builder> getBuiltModel() {
   // the dimensions of the matrices
   int K = 6;
   int M = 7;
@@ -149,13 +149,20 @@ BOOST_AUTO_TEST_CASE(serialize_deserialize) {
   float lossLambda = 0.26;
   auto l1 =
       bder->aiGraphcoreOpset1().l1loss({C_id}, lossLambda, ReductionType::Sum);
+  bder->addOutputTensor(l1);
 
+  return bder;
+}
+
+BOOST_AUTO_TEST_CASE(serialize_deserialize) {
+  auto bder       = getBuiltModel();
   auto proto      = bder->getModelProto();
   auto modelProto = io::getModelFromString(proto);
   auto art        = AnchorReturnType("All");
+  auto l1         = bder->getOutputTensorIds()[0];
   // one batch per step
   int batchesPerStep = 1;
-  auto dataFlow      = DataFlow(batchesPerStep, {{C_id, art}});
+  auto dataFlow      = DataFlow(batchesPerStep, {{l1, art}});
 
   auto device = popart::createTestDevice(TestDeviceType::Hw);
 
@@ -173,14 +180,6 @@ BOOST_AUTO_TEST_CASE(serialize_deserialize) {
       popart::InputShapeInfo(),
       opts,
       popart::Patterns(PatternsLevel::Default));
-
-  // prepare the anchors. We have the output C,
-  std::vector<float> raw_C_out(C_info.nelms());
-  popart::NDArrayWrapper<float> C_wrapper(raw_C_out.data(), C_info.shape());
-
-  std::map<popart::TensorId, popart::IArray &> anchors = {
-      {C_id, C_wrapper},
-  };
 
   session->prepareDevice();
 
@@ -213,51 +212,14 @@ BOOST_AUTO_TEST_CASE(serialize_deserialize) {
 // but with an Adam optimizer and gradient accumulation to ensure the creation
 // of the Accum___ tensors.
 BOOST_AUTO_TEST_CASE(serialize_deserialize_adam) {
-  // the dimensions of the matrices
-  int K = 6;
-  int M = 7;
-  int N = 8;
-
-  // we will generate random initializations
-  int seed = 1013;
-  DefaultRandomEngine eng(seed);
-  UniformRealDistribution<float> fdis(-4.f, +4.f);
-
-  // prepare a Builder for creating onnx model
-  auto bder   = Builder::create();
-  auto aiOnnx = bder->aiOnnxOpset9();
-
-  // matrix A of shape M x K
-  TensorInfo A_info{"FLOAT", std::vector<int64_t>{M, K}};
-  std::vector<float> v_A_init(A_info.nelms());
-  for (auto &val : v_A_init) {
-    val = fdis(eng);
-  }
-  TensorId A_id = bder->addInitializedInputTensor({v_A_init.data(), A_info});
-
-  // matrix B of shape K x N
-  TensorInfo B_info{"FLOAT", std::vector<int64_t>{K, N}};
-  std::vector<float> v_B_init(B_info.nelms());
-  for (auto &val : v_B_init) {
-    val = fdis(eng);
-  }
-  TensorId B_id = bder->addInitializedInputTensor({v_B_init.data(), B_info});
-
-  // matrix C = A * B (output of network)
-  TensorInfo C_info{"FLOAT", std::vector<int64_t>{M, N}};
-  TensorId C_id = aiOnnx.matmul({A_id, B_id});
-
-  // l1 loss with penalty term, will be applied to C
-  float lossLambda = 0.26;
-  auto l1 =
-      bder->aiGraphcoreOpset1().l1loss({C_id}, lossLambda, ReductionType::Sum);
-
+  auto bder       = getBuiltModel();
   auto proto      = bder->getModelProto();
   auto modelProto = io::getModelFromString(proto);
   auto art        = AnchorReturnType("All");
+  auto l1         = bder->getOutputTensorIds()[0];
   // one batch per step
   int batchesPerStep = 1;
-  auto dataFlow      = DataFlow(batchesPerStep, {{C_id, art}});
+  auto dataFlow      = DataFlow(batchesPerStep, {{l1, art}});
 
   auto device = popart::createTestDevice(TestDeviceType::Hw);
 
@@ -291,14 +253,6 @@ BOOST_AUTO_TEST_CASE(serialize_deserialize_adam) {
       opts,
       popart::Patterns(PatternsLevel::Default));
 
-  // prepare the anchors. We have the output C,
-  std::vector<float> raw_C_out(C_info.nelms());
-  popart::NDArrayWrapper<float> C_wrapper(raw_C_out.data(), C_info.shape());
-
-  std::map<popart::TensorId, popart::IArray &> anchors = {
-      {C_id, C_wrapper},
-  };
-
   session->prepareDevice();
 
   const char *serializedExecutableFilePath = "temp.capnp";
@@ -313,6 +267,7 @@ BOOST_AUTO_TEST_CASE(serialize_deserialize_adam) {
     ir.setDataFlow(dataFlow);
     ir.setUserOptions(opts);
     ir.setOnnxModel(modelProto);
+
     std::ifstream ifs(serializedExecutableFilePath);
     BOOST_CHECK(popx::serialization::containsExecutable(ifs));
     BOOST_CHECK(!popx::serialization::containsPoplarExecutable(ifs));
@@ -322,6 +277,160 @@ BOOST_AUTO_TEST_CASE(serialize_deserialize_adam) {
     auto deserializedExecutable =
         popx::serialization::deserializeExecutable(ifs, ir, ir_lowering);
     compare_executables(executable, *deserializedExecutable);
+  }
+}
+
+BOOST_AUTO_TEST_CASE(serialize_deserialize_adam_pre_prepared_ir) {
+  auto bder       = getBuiltModel();
+  auto proto      = bder->getModelProto();
+  auto modelProto = io::getModelFromString(proto);
+  auto art        = AnchorReturnType("All");
+  auto l1         = bder->getOutputTensorIds()[0];
+  // one batch per step
+  int batchesPerStep = 1;
+  auto dataFlow      = DataFlow(batchesPerStep, {{l1, art}});
+
+  auto device = popart::createTestDevice(TestDeviceType::Hw);
+
+  auto opts                       = SessionOptions();
+  opts.enableGradientAccumulation = true;
+  opts.accumulationFactor         = 10;
+
+  // training info
+  auto optimizer = Adam(
+      {
+          {"defaultLearningRate", {0.02, false}},
+          {"defaultWeightDecay", {0.2, false}},
+          {"defaultBeta1", {0.2, false}},
+          {"defaultBeta2", {0.2, false}},
+          {"defaultEps", {0.2, false}},
+          {"lossScaling", {0.2, false}},
+      },
+      AdamMode::AdaMax,
+      WeightDecayMode::L2Regularization,
+      DataType::FLOAT,
+      DataType::FLOAT,
+      DataType::FLOAT);
+
+  auto session = popart::TrainingSession::createFromOnnxModel(
+      proto,
+      dataFlow,
+      l1,
+      optimizer,
+      device,
+      popart::InputShapeInfo(),
+      opts,
+      popart::Patterns(PatternsLevel::Default));
+
+  session->prepareDevice();
+
+  const char *serializedExecutableFilePath = "temp.capnp";
+  const auto &executable                   = session->getExecutable();
+  {
+    std::ofstream out(serializedExecutableFilePath);
+    popx::serialization::serializeExecutable(out, nullptr, &executable, 0);
+  }
+
+  {
+    Ir ir;
+    ir.prepare({io::getModelFromString(proto),
+                popart::InputShapeInfo(),
+                dataFlow,
+                l1,
+                &optimizer,
+                *device,
+                opts,
+                popart::Patterns(PatternsLevel::Default)});
+
+    std::ifstream ifs(serializedExecutableFilePath);
+    BOOST_CHECK(popx::serialization::containsExecutable(ifs));
+    BOOST_CHECK(!popx::serialization::containsPoplarExecutable(ifs));
+
+    bool skipGraphCompilation = true;
+    popx::IrLowering ir_lowering(ir, device, skipGraphCompilation);
+    auto deserializedExecutable =
+        popx::serialization::deserializeExecutable(ifs, ir, ir_lowering);
+    compare_executables(executable, *deserializedExecutable);
+  }
+}
+
+BOOST_AUTO_TEST_CASE(
+    serialize_deserialize_adam_pre_prepared_ir_different_optimizer_state) {
+  auto bder       = getBuiltModel();
+  auto proto      = bder->getModelProto();
+  auto modelProto = io::getModelFromString(proto);
+  auto art        = AnchorReturnType("All");
+  auto l1         = bder->getOutputTensorIds()[0];
+  // one batch per step
+  int batchesPerStep = 1;
+  auto dataFlow      = DataFlow(batchesPerStep, {{l1, art}});
+
+  auto device = popart::createTestDevice(TestDeviceType::Hw);
+
+  auto opts                       = SessionOptions();
+  opts.enableGradientAccumulation = true;
+  opts.accumulationFactor         = 10;
+
+  // training info
+  auto optimizer = Adam(
+      {
+          {"defaultLearningRate", {0.02, false}},
+          {"defaultWeightDecay", {0.2, false}},
+          {"defaultBeta1", {0.2, false}},
+          {"defaultBeta2", {0.2, false}},
+          {"defaultEps", {0.2, false}},
+          {"lossScaling", {0.2, false}},
+      },
+      AdamMode::AdaMax,
+      WeightDecayMode::L2Regularization,
+      DataType::FLOAT,
+      DataType::FLOAT,
+      DataType::FLOAT);
+
+  auto session = popart::TrainingSession::createFromOnnxModel(
+      proto,
+      dataFlow,
+      l1,
+      optimizer,
+      device,
+      popart::InputShapeInfo(),
+      opts,
+      popart::Patterns(PatternsLevel::Default));
+
+  session->prepareDevice();
+
+  const char *serializedExecutableFilePath = "temp.capnp";
+  const auto &executable                   = session->getExecutable();
+  {
+    std::ofstream out(serializedExecutableFilePath);
+    popx::serialization::serializeExecutable(out, nullptr, &executable, 0);
+  }
+
+  {
+    auto newOptimizer = SGD({{"defaultLearningRate", {0.01, false}}});
+
+    Ir ir;
+    ir.prepare({io::getModelFromString(proto),
+                popart::InputShapeInfo(),
+                dataFlow,
+                l1,
+                &newOptimizer,
+                *device,
+                opts,
+                popart::Patterns(PatternsLevel::Default)});
+
+    std::ifstream ifs(serializedExecutableFilePath);
+    BOOST_CHECK(popx::serialization::containsExecutable(ifs));
+    BOOST_CHECK(!popx::serialization::containsPoplarExecutable(ifs));
+
+    bool skipGraphCompilation = true;
+    popx::IrLowering ir_lowering(ir, device, skipGraphCompilation);
+
+    // Ir passed by reference to 'deserializeExecutable' has different
+    // 'additionalModelProtoTensors' to Ir used to serialize executable.
+    BOOST_CHECK_THROW(
+        popx::serialization::deserializeExecutable(ifs, ir, ir_lowering),
+        popart::error);
   }
 }
 

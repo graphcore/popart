@@ -217,6 +217,10 @@ public:
   // add them in.
   void addAdditionalModelProtoTensors();
 
+  bool additionalModelProtoTensorsHaveBeenAdded() const {
+    return additionalModelProtoTensorsAdded;
+  }
+
   const std::set<Tensor *, PTensorCmp> &getAdditionalModelProtoTensors() const {
     return additionalModelProtoTensors;
   }
@@ -614,6 +618,9 @@ private:
   // Additional tensors that we want to add to the model proto when saving to a
   // .onnx file
   std::set<Tensor *, PTensorCmp> additionalModelProtoTensors;
+  // A flag to record if the Ir's model proto has had any additional tensor
+  // protos added.
+  bool additionalModelProtoTensorsAdded = false;
 
   // learning rate, momentum, etc.
   // Optimizer needed to construct backwards pass:

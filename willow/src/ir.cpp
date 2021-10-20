@@ -1650,6 +1650,7 @@ void Ir::addAdditionalModelProtoTensors() {
       }
     }
   }
+  additionalModelProtoTensorsAdded = true;
 }
 
 void Ir::addAdditionalModelProtoTensor(const TensorId &id) {
