@@ -14,21 +14,43 @@ namespace pe = popops::expr;
 namespace popart {
 namespace popx {
 
+namespace {
+bool twoTensorsParallelWritable(const poplar::Tensor &a,
+                                const poplar::Tensor &b) {
+  if (a.rank() != b.rank()) {
+    throw error("CopyVarUpdateOpx needs the tensors to be the same rank.");
+  }
+
+  if (a.rank() == 0) {
+    return poplar::concat(a.flatten(), b.flatten()).isParallelWriteable();
+  }
+
+  return poplar::concat(a, b).isParallelWriteable();
+}
+} // namespace
+
 CopyVarUpdateOpx::CopyVarUpdateOpx(Op *op, Devicex *devicex)
     : VarUpdateOpx(op, devicex) {
   verifyOp<CopyVarUpdateOp>(op, Onnx::CustomOperators::CopyVarUpdate);
 }
 
 void CopyVarUpdateOpx::grow(snap::program::Sequence &prog) const {
-  auto vu_op = getOp<CopyVarUpdateOp>();
-  poplar::program::Copy copy(
-      getInTensor(VarUpdateWithUpdaterOp::getUpdaterInIndex())
-          .getPoplarTensor(),
-      getInTensor(VarUpdateOp::getVarToUpdateInIndex()).getPoplarTensor(),
-      false,
-      debugContext());
-  prog.getPoplarSequence().add(copy);
+  auto &updater  = getInTensor(VarUpdateWithUpdaterOp::getUpdaterInIndex());
+  auto &toUpdate = getInTensor(VarUpdateOp::getVarToUpdateInIndex());
 
+  if (twoTensorsParallelWritable(updater.getPoplarTensor(),
+                                 toUpdate.getPoplarTensor())) {
+    poplar::program::Copy copy(updater.getPoplarTensor(),
+                               toUpdate.getPoplarTensor(),
+                               false,
+                               debugContext());
+    prog.getPoplarSequence().add(copy);
+  } else {
+    auto newUpdater = cloneNcopy(prog, updater).getPoplarTensor();
+    poplar::program::Copy copy(
+        newUpdater, toUpdate.getPoplarTensor(), false, debugContext());
+    prog.getPoplarSequence().add(copy);
+  }
   // output is a reference to destination of the copy
   setOutTensor(VarUpdateOp::getUpdatedVarOutIndex(),
                getInTensor(VarUpdateOp::getVarToUpdateInIndex()));
