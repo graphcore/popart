@@ -35,7 +35,7 @@ public:
                      float scale_,
                      const Op::Settings &settings_);
 
-  void appendOutlineAttributes(OpSerialiserBase &) const final;
+  void appendOutlineAttributes(OpSerialiserBase &) const override;
 
   float getMean() const { return mean; }
   float getScale() const { return scale; }
@@ -54,7 +54,7 @@ public:
                       float low_,
                       const Op::Settings &settings_);
 
-  void appendOutlineAttributes(OpSerialiserBase &) const final;
+  void appendOutlineAttributes(OpSerialiserBase &) const override;
 
   float getHigh() const { return high; }
   float getLow() const { return low; }

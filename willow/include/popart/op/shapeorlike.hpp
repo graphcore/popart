@@ -24,7 +24,7 @@ public:
 
   static const OpDefinition::DataTypes &likeSupportedInputTypes();
 
-  float getSubgraphValue() const final { return getLowSubgraphValue(); }
+  float getSubgraphValue() const override { return getLowSubgraphValue(); }
 
   void validateDataType(DataType dataType, OperatorIdentifier opid);
 
