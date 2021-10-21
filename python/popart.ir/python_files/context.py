@@ -8,7 +8,10 @@ import popart._internal.ir as _ir
 if TYPE_CHECKING:
     from popart.ir.graph import Graph
 
-__all__ = ['get_current_graph', 'gcg', 'virtual_graph', 'in_sequence']
+__all__ = [
+    'get_current_graph', 'gcg', 'virtual_graph', 'pipeline_stage',
+    'in_sequence'
+]
 
 
 class Context:
@@ -19,6 +22,7 @@ class Context:
     def _reset(self):
         self._graphs: List['Graph'] = []
         self._virtual_graph_ids: List[int] = []
+        self._pipeline_stages: List[int] = []
         self._in_sequence: Optional[bool] = None
         self._previous_ops: DefaultDict[_ir.GraphId, List[
             _ir.Op]] = defaultdict(list)
@@ -33,6 +37,10 @@ class Context:
         if vgid is not None:
             settings.vgraphId = _ir.OptionalVGraphId(vgid)
 
+        pstage = self.pipeline_stage
+        if pstage is not None:
+            settings.pipelineStage = _ir.OptionalPipelineStage(pstage)
+
         return settings
 
     def push_virtual_graph_id(self, vgid: int):
@@ -45,6 +53,17 @@ class Context:
     def virtual_graph_id(self) -> Optional[int]:
         return self._virtual_graph_ids[-1] if len(
             self._virtual_graph_ids) > 0 else None
+
+    def push_pipeline_stage(self, stage: int):
+        self._pipeline_stages.append(stage)
+
+    def pop_pipeline_stage(self) -> int:
+        return self._pipeline_stages.pop()
+
+    @property
+    def pipeline_stage(self) -> Optional[int]:
+        return self._pipeline_stages[-1] if len(
+            self._pipeline_stages) > 0 else None
 
     def push_graph(self, g: 'Graph'):
         self._graphs.append(g)
@@ -173,6 +192,15 @@ def virtual_graph(vgid: int):
     ctx.push_virtual_graph_id(vgid)
     yield vgid
     ctx.pop_virtual_graph_id()
+
+
+@contextmanager
+def pipeline_stage(stage: int):
+    """Set the pipeline stage on Ops created in this context."""
+    ctx = get_current_context()
+    ctx.push_pipeline_stage(stage)
+    yield stage
+    ctx.pop_pipeline_stage()
 
 
 @contextmanager
