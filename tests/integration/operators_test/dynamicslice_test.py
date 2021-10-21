@@ -1,16 +1,20 @@
 # Copyright (c) 2020 Graphcore Ltd. All rights reserved.
 import numpy as np
+import pytest
 import popart
 import torch
 from op_tester import op_tester
 
 
-# Test a set of non-overlapping dynamic slices
+# Test a set of non-overlapping dynamic slices, with both the two and three
+# input version of dynamic slice. The three input version is inplacable on the
+# third input (slice input).
 # tensor -> S0 -> out0
 # tensor -> S1 -> out1
 # tensor -> S2 -> out2
 # where out0, out1 and out2 are non-overlapping subregions of the tensor
-def test_dynamicslice(op_tester):
+@pytest.mark.parametrize("slice_input", [False, True])
+def test_dynamicslice(op_tester, slice_input):
     data = np.random.rand(5, 12, 7).astype(np.float32)
     axes = [1]
     sizes = [3]
@@ -21,10 +25,14 @@ def test_dynamicslice(op_tester):
         for sliceid in range(4):
             index = builder.addInputTensor(np.asarray([sliceid * 3],
                                                       np.uint32))
-            out = builder.aiGraphcore.dynamicslice([tensor, index],
-                                                   axes=axes,
-                                                   sizes=sizes,
-                                                   noOverlap=True)
+            slice_in = builder.aiGraphcore.init(
+                [5, 3, 7], popart.DataType.FLOAT, popart.InitType.Zero,
+                "slice_input")
+            out = builder.aiGraphcore.dynamicslice(
+                [tensor, index, slice_in] if slice_input else [tensor, index],
+                axes=axes,
+                sizes=sizes,
+                noOverlap=True)
             builder.addOutputTensor(out)
 
             # TODO T46821: The shape given by getTensorShape is wrong

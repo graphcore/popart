@@ -9,12 +9,13 @@ namespace popart {
 /**
  * Dynamic Slice Op
  *
- * This class takes two Tesnors as input (as indicated in \see
+ * This Op takes two or three Tensors as input (as indicated in \see
  * opidentifier.hpp)
  * 1. The Tensor to slice from
  * 2. The index of the starting point of the slice
  *    ( \see DynamicBaseOp for explanation)
- *
+ * 3. The tensor to write the slice into (not used in outplace variant)
+
  * The output is the sliced tensor
  **/
 class DynamicSliceOp : public DynamicSliceBaseOp {
@@ -24,8 +25,55 @@ public:
                  std::vector<int64_t> sizes_,
                  bool noOverlap_,
                  const Op::Settings &);
-  std::unique_ptr<Op> clone() const final;
+  std::unique_ptr<Op> clone() const override;
   std::vector<std::unique_ptr<Op>> getGradOps() final;
+  static InIndex getSliceInIndex() { return 2; }
+
+  std::vector<std::tuple<OperatorIdentifier, float>>
+  inplacePriorityDefault() const override;
+
+  std::unique_ptr<Op>
+  getInplaceVariant(const OperatorIdentifier &) const override;
+
+  void growAliasModel(AliasModel &) const override;
+
+  poprithms::memory::inplace::Proposal
+  mapInplaceProposal(const AliasModel &, OperatorIdentifier) const override;
+};
+
+/**
+ * Dynamic Slice Inplace Op
+ *
+ * This Op takes three Tensors as input (as indicated in \see
+ * opidentifier.hpp)
+ * 1. The Tensor to slice from
+ * 2. The index of the starting point of the slice
+ *    ( \see DynamicBaseOp for explanation)
+ * 3. The tensor to write the slice into
+ *
+ * The output is the sliced tensor, aliased
+ **/
+class DynamicSliceInplaceOp : public DynamicSliceOp {
+public:
+  DynamicSliceInplaceOp(const OperatorIdentifier &_opid,
+                        std::vector<int64_t> axes_,
+                        std::vector<int64_t> sizes_,
+                        bool noOverlap_,
+                        const Op::Settings &);
+  DynamicSliceInplaceOp(const DynamicSliceOp &);
+  std::unique_ptr<Op> clone() const final;
+
+  std::vector<std::tuple<OperatorIdentifier, float>>
+  inplacePriorityDefault() const final;
+
+  std::unique_ptr<Op>
+  getInplaceVariant(const OperatorIdentifier &o) const final;
+
+  view::RegMap fwdRegMap(InIndex, OutIndex) const final;
+  view::RegMap bwdRegMap(InIndex, OutIndex) const final;
+
+  view::Regions modifies(InIndex) const override;
+  view::Regions aliases(InIndex, OutIndex) const override;
 };
 
 class DynamicSlicePadGradOp : public DynamicBaseOp {
