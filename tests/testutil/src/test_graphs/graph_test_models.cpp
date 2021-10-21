@@ -360,9 +360,9 @@ GraphTestModel3::GraphTestModel3(popart::ExchangeStrategy strategyA,
 }
 
 GraphTestModel4::GraphTestModel4()
-    : GraphTestModel4(popart::Tensor::ReplicatedStreamMode::Replicate) {}
+    : GraphTestModel4(popart::ReplicatedStreamMode::Replicate) {}
 
-GraphTestModel4::GraphTestModel4(popart::Tensor::ReplicatedStreamMode xMode) {
+GraphTestModel4::GraphTestModel4(popart::ReplicatedStreamMode xMode) {
   // Will make dense tensors of this shape with the following repeated values.
   const TensorInfo tInfo{DataType::FLOAT, Shape{2, 2}};
   constexpr float cVal = 5.0f;
@@ -477,14 +477,14 @@ GraphTestModel5::GraphTestModel5() {
 
   graph.getTensors().addStream(inputs, inputsInfo, {"inputs"});
   graph.getTensors().get(inputs)->setReplicatedStreamMode(
-      Tensor::ReplicatedStreamMode::Replicate);
+      ReplicatedStreamMode::Replicate);
 
   TensorId labels = "labels";
   TensorInfo labelsInfo{DataType::FLOAT, {1, 1, 5}};
 
   graph.getTensors().addStream(labels, labelsInfo, {"labels"});
   graph.getTensors().get(labels)->setReplicatedStreamMode(
-      Tensor::ReplicatedStreamMode::Replicate);
+      ReplicatedStreamMode::Replicate);
 
   TensorId weights = "weights";
   TensorInfo weightsInfo{DataType::FLOAT, {1, 10, 5}};

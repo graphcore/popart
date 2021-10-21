@@ -4,6 +4,8 @@
 
 #include <ostream>
 
+namespace popart {
+
 /* ReplicatedStreamMode:
  *
  * Describes how variables are streamed to Replicas
@@ -24,5 +26,7 @@ enum class ReplicatedStreamMode {
 };
 
 std::ostream &operator<<(std::ostream &os, const ReplicatedStreamMode &tt);
+
+} // namespace popart
 
 #endif // GUARD_STREAM_MODE_HPP

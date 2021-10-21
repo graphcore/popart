@@ -5,6 +5,7 @@
 #include <popart/dataflow.hpp>
 #include <popart/ir.hpp>
 #include <popart/op/exchange/exchange.hpp>
+#include <popart/replicatedstreammode.hpp>
 #include <popart/sessionoptions.hpp>
 
 class GraphTestModel {
@@ -83,7 +84,7 @@ public:
 class GraphTestModel4 : public GraphTestModel {
 public:
   GraphTestModel4();
-  GraphTestModel4(popart::Tensor::ReplicatedStreamMode xMode);
+  GraphTestModel4(popart::ReplicatedStreamMode xMode);
 };
 
 /**

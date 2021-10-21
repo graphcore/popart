@@ -6,6 +6,8 @@
 #include <ostream>
 #include <popart/replicatedstreammode.hpp>
 
+namespace popart {
+
 std::ostream &operator<<(std::ostream &os, const ReplicatedStreamMode &tt) {
   switch (tt) {
   case ReplicatedStreamMode::Broadcast:
@@ -21,5 +23,7 @@ std::ostream &operator<<(std::ostream &os, const ReplicatedStreamMode &tt) {
 
   return os;
 }
+
+} // namespace popart
 
 #endif
