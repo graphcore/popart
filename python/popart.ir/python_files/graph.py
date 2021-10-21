@@ -1,6 +1,7 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 """Definition of a class that represents graphs in the PopART IR."""
-from typing import TYPE_CHECKING, Any, Optional, Tuple
+from functools import wraps
+from typing import TYPE_CHECKING, Any, Callable, Optional, Tuple
 
 import popart._internal.ir as _ir
 
@@ -182,3 +183,28 @@ class Graph:
     def __exit__(self, *exc):
         get_current_context().pop_graph()
         return False
+
+    def register_op_created_hook(self, fn: Callable[[_ir.Op], Any]):
+        """Register a function to be called after an Op is created in the graph.
+
+        Args:
+            fn (Callable[[_ir.Op], Any]): Function to be called.
+
+        Returns:
+            int: Hook handle. Can be passed to `Graph.remove_op_created_hook` to remove the hook.
+        """
+
+        @wraps(fn)
+        def hook(op: _ir.Op):
+            if Graph._from_pb(op.getGraph()) == self:
+                fn(op)
+
+        return get_current_context().register_op_created_hook(hook)
+
+    def remove_op_created_hook(self, handle: int):
+        """Remove an Op created hook. `handle` should be the result of calling `Graph.register_op_created_hook`.
+
+        Args:
+            handle (int): handle to an Op created hook.
+        """
+        get_current_context().remove_op_created_hook(handle)

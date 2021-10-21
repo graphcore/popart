@@ -1,5 +1,5 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-from typing import TYPE_CHECKING, Callable, DefaultDict, List, Optional
+from typing import TYPE_CHECKING, Any, Callable, DefaultDict, Dict, List, Optional
 from collections import defaultdict
 from functools import wraps
 from contextlib import contextmanager
@@ -27,6 +27,9 @@ class Context:
         self._in_sequence: Optional[bool] = None
         self._previous_ops: DefaultDict[_ir.GraphId, List[
             _ir.Op]] = defaultdict(list)
+
+        self._hook_handle: int = 0
+        self._op_created_hooks: Dict[int, Callable[[_ir.Op], Any]] = {}
 
     def _get_op_settings(self, name: str) -> _ir.Settings:
         """Return an internal_ir Settings object using any values specified by a context.
@@ -118,6 +121,16 @@ class Context:
         raise AttributeError(
             "Cannot delete in_sequence. Set to 'False' instead.")
 
+    def register_op_created_hook(self, fn: Callable[[_ir.Op], Any]) -> int:
+        self._hook_handle += 1
+        self._op_created_hooks[self._hook_handle] = fn
+        return self._hook_handle
+
+    def remove_op_created_hook(self, handle: int):
+        if handle not in self._op_created_hooks.keys():
+            raise ValueError(f"Unknown op created hook {handle}")
+        self._op_created_hooks.pop(handle)
+
     def _patch_op_listener(self):
         """Wraps all `createConnectedOp` and `createOp` in the internal library.
             Allowing for the creation of ops to be tracked by popart.ir.
@@ -139,6 +152,8 @@ class Context:
     def _op_created(self, op: _ir.Op):
         """Callback for when an op is created."""
         self._add_in_sequence_topocons(op)
+        for fn in self._op_created_hooks.values():
+            fn(op)
 
     def _add_in_sequence_topocons(self, op):
         """Adds topocons to ensure operations are executed in sequence.
@@ -249,4 +264,4 @@ def in_sequence(enabled: bool = True):
     prev = ctx.in_sequence
     ctx.in_sequence = enabled
     yield enabled
-    ctx.in_sequence = prev
+    ctx.in_sequence = prev  # type: ignore
