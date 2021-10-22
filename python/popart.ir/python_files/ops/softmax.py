@@ -16,7 +16,7 @@ def softmax(t: Tensor, axis: int) -> Tensor:
     Args:
         t: Tensor
             Tensor to be softmaxed.
-        shape: tuple of ints
+        axis: int
             The axis along which the softmax will be computed.
     Returns:
         out: Tensor

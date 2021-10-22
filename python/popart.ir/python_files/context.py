@@ -4,7 +4,6 @@ from collections import defaultdict
 from functools import wraps
 from contextlib import contextmanager
 import popart._internal.ir as _ir
-from popart.ir import context
 
 if TYPE_CHECKING:
     from popart.ir.graph import Graph
