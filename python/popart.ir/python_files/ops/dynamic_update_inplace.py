@@ -6,19 +6,19 @@ from popart.ir.context import get_current_context
 from popart.ir.tensor import Tensor
 from .utils import check_in_graph
 
-__all__ = ["dynamicupdate_inplace"]
+__all__ = ["dynamic_update_inplace"]
 
 
-def dynamicupdate_inplace(
+def dynamic_update_inplace(
         t: Tensor,
         index: Tensor,
         t_update: Tensor,
         axes: List[int],
         sizes: List[int],
-        noOverlap: bool,
-        updateInInfo: _ir.TensorInfo = _ir.TensorInfo()) -> Tensor:
+        no_overlap: bool,
+        update_in_info: _ir.TensorInfo = _ir.TensorInfo()) -> Tensor:
     """
-    Dynamically updates a tensor inplace.
+    Dynamically updates tensor `t` inplace.
 
     The word "dynamic" refers to the fact that the index can be specified
     during runtime.
@@ -53,12 +53,12 @@ def dynamicupdate_inplace(
             For example:
             If index = [1, 2], axes = [0, 3] and sizes = [2, 4], the Tensor will be updated at
             t[1:2, :, :, 2:4]
-        noOverlap : bool
+        no_overlap : bool
             If set to true, then correct gradient backpropagation is only guaranteed if
             each region in the output tensor has exactly one populator
             (operation that writes data to this region).
             There are no run-time or compile-time checks possible to ensure this.      
-        updateInInfo : TensorInfo
+        update_in_info : TensorInfo
            The TensorInfo (containing data_type, shape and meta_shape) for the t_update
     Returns:
         out: Tensor
@@ -79,6 +79,6 @@ def dynamicupdate_inplace(
             1: index.id,
             2: t_update.id
         }, {0: g._create_tensor_id(f"dynamicupdateinplace_out")}, opid, axes,
-        sizes, noOverlap, settings, updateInInfo)
+        sizes, no_overlap, settings, update_in_info)
 
     return Tensor._from_pb_tensor(op.outTensor(0))

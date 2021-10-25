@@ -10,13 +10,13 @@ __all__ = ['cast']
 
 def cast(t: Tensor, data_type: dtype) -> Tensor:
     """
-    Adds two Tensors element-wise.
-    Follows numpy broadcasting rules.
-    Arguments must have the same dtype.
+    Casts tensor `t` to data type `dtype`.
 
     Args:
-        lhs, rhs: Tensor
-            Tensors to be added.
+        t: Tensor
+            Tensors to be casted.
+        data_type: popart.ir.dtypes.dtype
+            Dtype to cast to
     Returns:
         add: Tensor
             The sum of lhs and rhs

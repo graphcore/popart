@@ -19,9 +19,9 @@ class TestDynamicUpdateInplace:
             axes = [0, 2]
             sizes = [1, 3]
             t_update = pir.variable(np.random.rand(sizes[0], sizes[1]))
-            noOverlap = True
-            c = ops.dynamicupdate_inplace(t, index, t_update, axes, sizes,
-                                          noOverlap)
+            no_overlap = True
+            c = ops.dynamic_update_inplace(t, index, t_update, axes, sizes,
+                                           no_overlap)
 
         assert c.shape == t.shape
         assert len(g.get_tensors()) == 4

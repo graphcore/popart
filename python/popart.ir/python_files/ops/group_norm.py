@@ -8,16 +8,16 @@ from .utils import check_in_graph
 __all__ = ['group_norm', 'layer_norm']
 
 
-def group_norm(x: Tensor,
+def group_norm(t: Tensor,
                weight: Tensor,
                bias: Tensor,
                num_groups: int,
                eps: float = 1e-5) -> Tensor:
     """
-    Applies Group Normalisation over a Tensor. https://arxiv.org/abs/1803.08494
+    Applies Group Normalisation over a tensor `t` as described in https://arxiv.org/abs/1803.08494
 
     Args:
-        x: Tensor
+        t: Tensor
             Tensor to be normalized.
         weight: Tensor
             Tensor to scale output of normalisation.
@@ -33,14 +33,14 @@ def group_norm(x: Tensor,
     g = ctx.graph
     pb_g = g._pb_graph
 
-    check_in_graph(g, x, weight, bias)
+    check_in_graph(g, t, weight, bias)
 
     settings = ctx._get_op_settings('group_norm')
     opid = _ir.OperatorIdentifier("ai.graphcore", "GroupNormalization", 1,
                                   _ir.NumInputs(3, 3), 3)
     op = pb_g.createConnectedOp_GroupNormOp(
         {
-            0: x.id,
+            0: t.id,
             1: weight.id,
             2: bias.id
         },
@@ -58,14 +58,14 @@ def group_norm(x: Tensor,
     return Tensor._from_pb_tensor(op.outTensor(0))
 
 
-def layer_norm(x: Tensor, weight: Tensor, bias: Tensor,
+def layer_norm(t: Tensor, weight: Tensor, bias: Tensor,
                eps: float = 1e-5) -> Tensor:
     """
-    Applies Layer Normalisation over a Tensor.
+    Applies Layer Normalisation over a tensor `t`.
     Uses `group_norm` under the hood.
     
     Args:
-        x: Tensor
+        t: Tensor
             Tensor to be normalized.
         weight: Tensor
             Tensor to scale output of normalisation.
@@ -75,4 +75,4 @@ def layer_norm(x: Tensor, weight: Tensor, bias: Tensor,
         out: Tensor
             The layer normalised Tensor.
     """
-    return group_norm(x, weight=weight, bias=bias, num_groups=1, eps=eps)
+    return group_norm(t, weight=weight, bias=bias, num_groups=1, eps=eps)

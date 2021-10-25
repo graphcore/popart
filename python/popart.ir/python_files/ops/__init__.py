@@ -5,9 +5,9 @@ from .call import *
 from .cast import *
 from .detach import *
 from .div import *
-from .dynamicslice import *
-from .dynamicupdate import *
-from .dynamicupdate_inplace import *
+from .dynamic_slice import *
+from .dynamic_update import *
+from .dynamic_update_inplace import *
 from .gather import *
 from .gelu import *
 from .group_norm import *

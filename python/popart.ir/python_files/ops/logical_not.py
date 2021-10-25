@@ -8,13 +8,13 @@ from .utils import check_in_graph, cast_if_needed
 __all__ = ['logical_not']
 
 
-def logical_not(x: Tensor) -> Tensor:
+def logical_not(t: Tensor) -> Tensor:
     """
-    Computes element-wise the value of NOT x.
+    Computes element-wise the value of NOT t.
     Inputs will be cast to bool if needed.
 
     Args:
-        x: Tensor
+        t: Tensor
             Input tensor.
     Returns:
         out: Tensor
@@ -23,14 +23,14 @@ def logical_not(x: Tensor) -> Tensor:
     g = ctx.graph
     pb_g = g._pb_graph
 
-    check_in_graph(g, x)
+    check_in_graph(g, t)
 
-    x = cast_if_needed(x, dtypes.bool)
+    t = cast_if_needed(t, dtypes.bool)
 
     settings = ctx._get_op_settings('not')
     opid = _ir.OperatorIdentifier("ai.onnx", "Not", 1, _ir.NumInputs(1, 1), 1)
     op = pb_g.createConnectedOp_NotOp(
-        {0: x.id},
+        {0: t.id},
         {0: g._create_tensor_id("not_out")},
         opid,
         settings,

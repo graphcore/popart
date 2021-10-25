@@ -5,11 +5,11 @@ from popart.ir.context import get_current_context
 from popart.ir.tensor import Tensor
 from .utils import check_in_graph
 
-__all__ = ["dynamicslice"]
+__all__ = ["dynamic_slice"]
 
 
-def dynamicslice(t: Tensor, index: Tensor, axes: List[int], sizes: List[int],
-                 noOverlap: bool) -> Tensor:
+def dynamic_slice(t: Tensor, index: Tensor, axes: List[int], sizes: List[int],
+                  no_overlap: bool) -> Tensor:
     """
     Returns a cloned slice of the input Tensor.
 
@@ -41,7 +41,7 @@ def dynamicslice(t: Tensor, index: Tensor, axes: List[int], sizes: List[int],
             For example:
             If index = [1, 2], axes = [0, 3] and sizes = [2, 4], the Tensor will be sliced
             t[1:2, :, :, 2:4]
-        noOverlap : bool
+        no_overlap : bool
             If set to true, then correct gradient backpropagation is only guaranteed if
             each region in the output tensor has exactly one populator
             (operation that writes data to this region).
@@ -63,7 +63,7 @@ def dynamicslice(t: Tensor, index: Tensor, axes: List[int], sizes: List[int],
         {
             0: t.id,
             1: index.id
-        }, {0: g._create_tensor_id(f"dynamicslice_out")}, opid, axes, sizes,
-        noOverlap, settings)
+        }, {0: g._create_tensor_id(f"dynamic_slice_out")}, opid, axes, sizes,
+        no_overlap, settings)
 
     return Tensor._from_pb_tensor(op.outTensor(0))
