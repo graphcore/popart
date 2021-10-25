@@ -1345,6 +1345,8 @@ Parameter ``args``:
 Returns:
     The name of the result tensor.)doc";
 
+static const char *__doc_popart_AiGraphcoreOpset1_incrementmod = R"doc()doc";
+
 static const char *__doc_popart_AiOnnxMlOpset1 = R"doc()doc";
 
 static const char *__doc_popart_AiOnnxMlOpset1_AiOnnxMlOpset1 = R"doc()doc";
