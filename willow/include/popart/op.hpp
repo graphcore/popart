@@ -84,6 +84,16 @@ public:
   bool operator==(const GradInOutMapper &rhs) const;
 };
 
+/**
+ * Parent class for the concrete \c Ops implementations.
+ *
+ * The \c poplar implementation which the \c Op represents can be found in the
+ * corresponding \see Opx class, and will be lowered to \c poplar.
+ *
+ * See
+ * https://docs.graphcore.ai/projects/popart-user-guide/en/latest/custom_ops.html
+ * for further details.
+ **/
 class Op : public Vertex {
 public:
   // We use pointers to TensorIndexMaps for PIMPL reasons.
@@ -275,6 +285,15 @@ public:
   virtual bool canBeReplacedByIdentity() const;
 
 public:
+  /**
+   * Constructor of the \c Op class.
+   *
+   * \param _opid    The operator identifier specifying domain:type:version,
+   *                 minimum and maximum number of input tensors and number of
+   *                 output tensors
+   * \param settings Object containing general Op settings such as graph, name
+   *                 and scope.
+   **/
   Op(const OperatorIdentifier &_opid, const Op::Settings &settings);
 
   // Note: copy constructor does NOT copy input and output
