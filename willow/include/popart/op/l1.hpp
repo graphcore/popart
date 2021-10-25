@@ -36,6 +36,9 @@ class L1GradOp : public Op {
 
 public:
   L1GradOp(const L1Op &);
+  L1GradOp(const float lambda_,
+           const ReductionType reduction_,
+           const Op::Settings &settings_);
   const std::vector<GradInOutMapper> &gradInputInfo() const final;
   const std::map<int, int> &gradOutToNonGradIn() const final;
   void setup() final;

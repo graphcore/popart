@@ -52,6 +52,12 @@ L1GradOp::L1GradOp(const L1Op &op_)
     : Op(Onnx::CustomGradOperators::L1Grad, op_.getSettings()),
       lambda(op_.getLambda()), reduction(op_.getReductionType()) {}
 
+L1GradOp::L1GradOp(const float lambda_,
+                   const ReductionType reduction_,
+                   const Op::Settings &settings_)
+    : Op(Onnx::CustomGradOperators::L1Grad, settings_), lambda(lambda_),
+      reduction(reduction_) {}
+
 std::unique_ptr<Op> L1GradOp::clone() const {
   return std::make_unique<L1GradOp>(*this);
 }

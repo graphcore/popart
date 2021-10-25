@@ -5,6 +5,7 @@
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/op/cast.hpp>
+#include <popart/op/l1.hpp>
 #include <popart/op/nll.hpp>
 #include <popart/op/reshape.hpp>
 #include <popart/op/scale.hpp>
@@ -135,6 +136,27 @@ auto nllGradOps = [](Graph &g,
 };
 
 /*
+  lossScale -- L1GradOp -- gradOut
+  probs ---------'
+
+ */
+auto l1GradOp = [](Graph &g,
+                   const TensorId probs,
+                   const TensorId label,
+                   const TensorId lossScale) {
+  auto l1GradOp =
+      g.createConnectedOp<L1GradOp>({{L1GradOp::getFwdActInIndex(), probs},
+                                     {L1GradOp::getGradInIndex(), lossScale}},
+                                    {{L1GradOp::getOutIndex(), "gradOut"}},
+                                    0.1,
+                                    ReductionType::Mean,
+                                    Op::Settings(g, ""));
+
+  FromLossScaleTraversalOps ops{{}, {l1GradOp}};
+  return ops;
+};
+
+/*
   lossScale(fp16) = stream
   probs(fp16), label(fp16) = const
 
@@ -212,6 +234,7 @@ BOOST_AUTO_TEST_CASE(TestReplacesFp16LossScaleWithFp32) {
   testReplacesFp16LossScaleWithFp32(nllGradOp);
   testReplacesFp16LossScaleWithFp32(reshapeChain);
   testReplacesFp16LossScaleWithFp32(nllGradOps);
+  testReplacesFp16LossScaleWithFp32(l1GradOp);
 }
 
 BOOST_AUTO_TEST_CASE(TestDoNotReplaceCastedFp16LossScaleWithFp32) {

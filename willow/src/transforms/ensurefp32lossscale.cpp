@@ -1,6 +1,7 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 #include <popart/graphutils.hpp>
 #include <popart/ir.hpp>
+#include <popart/op/l1.hpp>
 #include <popart/op/nll.hpp>
 #include <popart/op/softmax.hpp>
 #include <popart/optimizer.hpp>
@@ -10,7 +11,7 @@
 namespace popart {
 
 bool EnsureFp32LossScale::isMixedPrecisionLossGradOp(Op *op) const {
-  // All NLL-like operations
+  // All NllLoss-grad-like operations
   if (op->isConvertibleTo<NllGradOp>()) {
     return true;
   } else if (op->isConvertibleTo<SoftmaxGradDirectOp>()) {
@@ -19,16 +20,27 @@ bool EnsureFp32LossScale::isMixedPrecisionLossGradOp(Op *op) const {
     return true;
   }
 
+  // L1Grad Op
+  else if (op->isConvertibleTo<L1GradOp>()) {
+    return true;
+  }
+
   return false;
 }
 
 Tensor *EnsureFp32LossScale::getLossScaleInputTensor(Op *op) const {
+  // All NllLoss-grad-like operations
   if (op->isConvertibleTo<NllGradOp>()) {
     return op->inTensor(NllGradOp::getGradInIndex());
   } else if (op->isConvertibleTo<SoftmaxGradDirectOp>()) {
     return op->inTensor(SoftmaxGradDirectOp::getGradProbsInIndex());
   } else if (op->isConvertibleTo<NlllWithSoftmaxGradDirectOp>()) {
     return op->inTensor(NlllWithSoftmaxGradDirectOp::getGradProbsInIndex());
+  }
+
+  // L1Grad Op
+  else if (op->isConvertibleTo<L1GradOp>()) {
+    return op->inTensor(L1GradOp::getGradInIndex());
   }
 
   throw internal_error("EnsureFp32LossScale Pattern: unexpected op type.");
