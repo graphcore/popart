@@ -545,14 +545,20 @@ def test_scatter_op(connected: bool) -> None:
     if connected:
         ins: Dict[int, str] = {0: in0.id, 1: indices.id, 2: updates.id}
         outs: Dict[int, str] = {0: out0.id}
-        op = main.createConnectedOp_ScatterOp(ins,
-                                              outs,
-                                              axis_=0,
-                                              opid=opid,
-                                              settings=settings)
+        op = main.createConnectedOp_ScatterOp(
+            ins,
+            outs,
+            axis_=0,
+            opid=opid,
+            available_memory_proportion_=_ir.OptionalFloat(0.4),
+            settings=settings)
         op.setup()
         return
-    op = main.createOp_ScatterOp(axis_=0, opid=opid, settings=settings)
+    op = main.createOp_ScatterOp(
+        axis_=0,
+        opid=opid,
+        available_memory_proportion_=_ir.OptionalFloat(0.4),
+        settings=settings)
     op.connectInTensor(0, in0.id)
     op.connectInTensor(1, indices.id)
     op.connectInTensor(2, updates.id)

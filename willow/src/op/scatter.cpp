@@ -11,10 +11,13 @@
 
 namespace popart {
 
-ScatterOp::ScatterOp(const OperatorIdentifier &_opid,
-                     int64_t axis_,
-                     const Op::Settings &settings_)
-    : Op(_opid, settings_), axis(axis_) {}
+ScatterOp::ScatterOp(
+    const OperatorIdentifier &_opid,
+    int64_t axis_,
+    const Op::Settings &settings_,
+    const nonstd::optional<float> &available_memory_proportion_)
+    : Op(_opid, settings_), axis(axis_),
+      available_memory_proportion(available_memory_proportion_) {}
 
 std::unique_ptr<Op> ScatterOp::clone() const {
   return std::make_unique<ScatterOp>(*this);
@@ -52,10 +55,12 @@ void ScatterOp::setup() {
 void ScatterOp::appendOutlineAttributes(OpSerialiserBase &os) const {
   Op::appendOutlineAttributes(os);
   os.appendAttribute("axis", axis);
+  os.appendAttribute(sAvailMemAttribute, available_memory_proportion);
 }
 
 ScatterDataGradOp::ScatterDataGradOp(const ScatterOp &op, int64_t axis_)
-    : Op(Onnx::GradOperators::ScatterDataGrad, op.getSettings()), axis(axis_) {}
+    : Op(Onnx::GradOperators::ScatterDataGrad, op.getSettings()), axis(axis_),
+      available_memory_proportion(op.getAvailableMemoryProportion()) {}
 
 std::unique_ptr<Op> ScatterDataGradOp::clone() const {
   return std::make_unique<ScatterDataGradOp>(*this);
@@ -85,11 +90,12 @@ int64_t ScatterDataGradOp::getAxis() const { return axis; }
 void ScatterDataGradOp::appendOutlineAttributes(OpSerialiserBase &os) const {
   Op::appendOutlineAttributes(os);
   os.appendAttribute("axis", axis);
+  os.appendAttribute(sAvailMemAttribute, available_memory_proportion);
 }
 
 ScatterUpdateGradOp::ScatterUpdateGradOp(const ScatterOp &op, int64_t axis_)
-    : Op(Onnx::GradOperators::ScatterUpdateGrad, op.getSettings()),
-      axis(axis_) {}
+    : Op(Onnx::GradOperators::ScatterUpdateGrad, op.getSettings()), axis(axis_),
+      available_memory_proportion(op.getAvailableMemoryProportion()) {}
 
 std::unique_ptr<Op> ScatterUpdateGradOp::clone() const {
   return std::make_unique<ScatterUpdateGradOp>(*this);
@@ -120,6 +126,7 @@ int64_t ScatterUpdateGradOp::getAxis() const { return axis; }
 void ScatterUpdateGradOp::appendOutlineAttributes(OpSerialiserBase &os) const {
   Op::appendOutlineAttributes(os);
   os.appendAttribute("axis", axis);
+  os.appendAttribute(sAvailMemAttribute, available_memory_proportion);
 }
 
 namespace {
@@ -154,7 +161,15 @@ static OpCreator<ScatterOp> ScatterOpCreator(
     [](const OpCreatorInfo &info) {
       int64_t axis = info.attributes.getAttribute<Attributes::Int>("axis", 0);
 
-      return std::unique_ptr<Op>(new ScatterOp(info.opid, axis, info.settings));
+      nonstd::optional<float> available_memory_proportion;
+
+      if (info.attributes.hasAttribute(sAvailMemAttribute)) {
+        available_memory_proportion =
+            info.attributes.getAttribute<Attributes::Float>(sAvailMemAttribute);
+      }
+
+      return std::unique_ptr<Op>(new ScatterOp(
+          info.opid, axis, info.settings, available_memory_proportion));
     },
     true);
 } // namespace

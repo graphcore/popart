@@ -3,6 +3,7 @@
 #define GUARD_NEURALNET_SCATTER_HPP
 
 #include <popart/op.hpp>
+#include <popart/vendored/optional.hpp>
 
 namespace popart {
 
@@ -10,7 +11,9 @@ class ScatterOp : public Op {
 public:
   ScatterOp(const OperatorIdentifier &_opid,
             int64_t axis_,
-            const Op::Settings &settings_);
+            const Op::Settings &settings_,
+            const nonstd::optional<float> &available_memory_proportion_ =
+                nonstd::nullopt);
 
   std::unique_ptr<Op> clone() const final;
   std::vector<std::unique_ptr<Op>> getGradOps() final;
@@ -28,8 +31,17 @@ public:
 
   float getSubgraphValue() const final { return getLowSubgraphValue(); }
 
+  nonstd::optional<float> getAvailableMemoryProportion() const {
+    return available_memory_proportion;
+  }
+
+  void setAvailableMemoryProportion(float v) {
+    available_memory_proportion = v;
+  }
+
 private:
   int64_t axis = 0;
+  nonstd::optional<float> available_memory_proportion;
 };
 
 // This is a scatter of zeros into the grad input. This is because these
@@ -54,8 +66,13 @@ public:
 
   float getSubgraphValue() const final { return getLowSubgraphValue(); }
 
+  nonstd::optional<float> getAvailableMemoryProportion() const {
+    return available_memory_proportion;
+  }
+
 private:
   int64_t axis;
+  nonstd::optional<float> available_memory_proportion;
 };
 
 // This is a gather of elements from the grad input based on the indices used in
@@ -80,8 +97,13 @@ public:
 
   float getSubgraphValue() const final { return getLowSubgraphValue(); }
 
+  nonstd::optional<float> getAvailableMemoryProportion() const {
+    return available_memory_proportion;
+  }
+
 private:
   int64_t axis;
+  nonstd::optional<float> available_memory_proportion;
 };
 
 } // namespace popart

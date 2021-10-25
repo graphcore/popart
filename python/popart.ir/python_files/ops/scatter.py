@@ -8,8 +8,11 @@ from .utils import check_in_graph, convert_optional_float
 __all__ = ["scatter"]
 
 
-def scatter(t: Tensor, indices: Tensor, values: Tensor,
-            axis: int = 0) -> Tensor:
+def scatter(t: Tensor,
+            indices: Tensor,
+            values: Tensor,
+            axis: int = 0,
+            available_memory_proportion: Optional[float] = None) -> Tensor:
     """
     Select multiple elements from an array, given by `indices`, and updates the values from `values`.
 
@@ -44,6 +47,10 @@ def scatter(t: Tensor, indices: Tensor, values: Tensor,
             The values to update the tensor with
         axis: int
             Which axis to set on. Default is 0.
+        available_memory_proportion: Optional[float]
+            The maximum proportion of available memory on each tile that this layer
+            should consume temporarily during the course of the operation.
+            Defaults to 1.0 if not set globally.
                 
     Returns:
         scatter: Tensor
@@ -57,6 +64,9 @@ def scatter(t: Tensor, indices: Tensor, values: Tensor,
     check_in_graph(g, indices)
     check_in_graph(g, values)
 
+    available_memory_proportion = convert_optional_float(
+        available_memory_proportion)
+
     opid = _ir.OperatorIdentifier("ai.onnx", "Scatter", 11, _ir.NumInputs(
         3, 3), 1)
     settings = ctx._get_op_settings("scatter")
@@ -68,6 +78,7 @@ def scatter(t: Tensor, indices: Tensor, values: Tensor,
         }, {0: g._create_tensor_id("scatter_out")},
         axis_=axis,
         opid=opid,
+        available_memory_proportion_=available_memory_proportion,
         settings=settings)
 
     return Tensor._from_pb_tensor(op.outTensor(0))

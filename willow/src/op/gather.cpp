@@ -9,6 +9,22 @@
 #include <popart/opserialiser.hpp>
 #include <popart/tensor.hpp>
 
+namespace {
+nonstd::optional<float> default_memory_proportion() {
+  nonstd::optional<float> default_value;
+  auto env_value = std::getenv("POPART_GATHER_MEMORY");
+
+  if (env_value != nullptr) {
+    default_value = std::strtof(env_value, 0);
+    popart::logging::debug("using POPART_GATHER_MEMORY={} for available memory "
+                           "proportion for GatherOp",
+                           *default_value);
+  }
+
+  return default_value;
+}
+} // namespace
+
 namespace popart {
 
 GatherOp::GatherOp(const OperatorIdentifier &_opid,
@@ -62,8 +78,7 @@ void GatherOp::setup() {
 void GatherOp::appendOutlineAttributes(OpSerialiserBase &os) const {
   Op::appendOutlineAttributes(os);
   os.appendAttribute("axis", axis);
-  os.appendAttribute("available_memory_proporition",
-                     available_memory_proportion);
+  os.appendAttribute(sAvailMemAttribute, available_memory_proportion);
 }
 
 // A gather on a degenerate dimension with a rank 1 index tensor with a single
@@ -105,8 +120,7 @@ int64_t GatherGradOp::getAxis() const { return axis; }
 void GatherGradOp::appendOutlineAttributes(OpSerialiserBase &os) const {
   Op::appendOutlineAttributes(os);
   os.appendAttribute("axis", axis);
-  os.appendAttribute("available_memory_proporition",
-                     available_memory_proportion);
+  os.appendAttribute(sAvailMemAttribute, available_memory_proportion);
 }
 
 namespace {
@@ -135,9 +149,11 @@ static OpCreator<GatherOp> gatherOpCreator(
     [](const OpCreatorInfo &info) {
       int64_t axis = info.attributes.getAttribute<Attributes::Int>("axis", 0);
 
-      nonstd::optional<float> available_memory_proportion;
+      nonstd::optional<float> available_memory_proportion =
+          default_memory_proportion();
 
-      if (info.attributes.hasAttribute(sAvailMemAttribute)) {
+      if (info.attributes.hasAttribute(sAvailMemAttribute) &&
+          !available_memory_proportion.has_value()) {
         available_memory_proportion =
             info.attributes.getAttribute<Attributes::Float>(sAvailMemAttribute);
       }
