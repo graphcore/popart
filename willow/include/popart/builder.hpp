@@ -871,6 +871,19 @@ public:
    */
   TensorId swish(const std::vector<TensorId> &args,
                  const DebugContext &debugContext = {});
+
+  /**
+   * Add an incrementmod (y = (x + increment) % modulus) operation to the model.
+   *
+   * \param args Vector with single input tensor id.
+   * \param increment Scalar increment
+   * \param modulus Scalar modulus
+   * \return The name of the result tensor.
+   */
+  TensorId incrementmod(const std::vector<TensorId> &args,
+                        Attributes::Float increment,
+                        Attributes::Float modulus,
+                        const DebugContext &debugContext = {});
 };
 
 /**

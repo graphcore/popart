@@ -17,6 +17,9 @@ public:
   void appendAttribute(const std::string &name, float value) {
     map.insert({name, std::to_string(value)});
   }
+  void appendAttribute(const std::string &name, double value) {
+    map.insert({name, std::to_string(value)});
+  }
   void appendAttribute(const std::string &name, int value) {
     map.insert({name, std::to_string(value)});
   }
@@ -53,6 +56,12 @@ public:
   }
   virtual void appendAttribute(const std::string &name,
                                nonstd::optional<float> value) {
+    if (value) {
+      map.insert({name, std::to_string(*value)});
+    }
+  }
+  virtual void appendAttribute(const std::string &name,
+                               nonstd::optional<double> value) {
     if (value) {
       map.insert({name, std::to_string(*value)});
     }

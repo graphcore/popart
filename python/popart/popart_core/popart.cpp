@@ -2571,6 +2571,13 @@ PYBIND11_MODULE(popart_core, m) {
             py::arg("args")         = pybind11::list(),
             py::arg("debugContext") = std::string(),
             DOC(popart, AiGraphcoreOpset1, swish));
+    cls.def("incrementmod",
+            &AiGraphcoreOpset1::incrementmod,
+            py::arg("args") = pybind11::list(),
+            py::arg("increment"),
+            py::arg("modulus"),
+            py::arg("debugContext") = std::string(),
+            DOC(popart, AiGraphcoreOpset1, swish));
   }
   {
     py::class_<Builder> cls(m, "_BuilderCore");

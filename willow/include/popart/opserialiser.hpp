@@ -18,12 +18,14 @@ public:
   virtual ~OpSerialiserBase() {}
 
   void appendAttribute(const std::string &, float);
+  void appendAttribute(const std::string &, double);
   void appendAttribute(const std::string &, int);
   void appendAttribute(const std::string &, int64_t);
   void appendAttribute(const std::string &, uint32_t);
   void appendAttribute(const std::string &, uint64_t);
   void appendAttribute(const std::string &, const std::string &);
   void appendAttribute(const std::string &, const std::vector<float> &);
+  void appendAttribute(const std::string &, const std::vector<double> &);
   void appendAttribute(const std::string &, const std::vector<int64_t> &);
   void appendAttribute(const std::string &, const Scope &);
   void appendAttribute(const std::string &, bool);
@@ -32,6 +34,8 @@ public:
                                nonstd::optional<int64_t>)          = 0;
   virtual void appendAttribute(const std::string &,
                                nonstd::optional<float>)            = 0;
+  virtual void appendAttribute(const std::string &,
+                               nonstd::optional<double>)           = 0;
   virtual void appendAttribute(const std::string &,
                                const std::map<TensorId, uint64_t>) = 0;
 
@@ -64,6 +68,7 @@ public:
 
   void appendAttribute(const std::string &, nonstd::optional<int64_t>) override;
   void appendAttribute(const std::string &, nonstd::optional<float>) override;
+  void appendAttribute(const std::string &, nonstd::optional<double>) override;
   void appendAttribute(const std::string &,
                        const std::map<TensorId, uint64_t>) override;
 
@@ -82,6 +87,7 @@ public:
 
   void appendAttribute(const std::string &, nonstd::optional<int64_t>) override;
   void appendAttribute(const std::string &, nonstd::optional<float>) override;
+  void appendAttribute(const std::string &, nonstd::optional<double>) override;
   void appendAttribute(const std::string &,
                        const std::map<TensorId, uint64_t>) override;
 
@@ -113,6 +119,7 @@ public:
 
   void appendAttribute(const std::string &, nonstd::optional<int64_t>) override;
   void appendAttribute(const std::string &, nonstd::optional<float>) override;
+  void appendAttribute(const std::string &, nonstd::optional<double>) override;
   void appendAttribute(const std::string &,
                        const std::map<TensorId, uint64_t>) override;
 

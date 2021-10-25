@@ -34,6 +34,13 @@ void OpSerialiserBase::appendAttribute(const std::string &name,
 }
 
 void OpSerialiserBase::appendAttribute(const std::string &name,
+                                       const std::vector<double> &v) {
+  std::ostringstream oss;
+  oss << v;
+  appendStrAttr(name, oss.str());
+}
+
+void OpSerialiserBase::appendAttribute(const std::string &name,
                                        const std::vector<int64_t> &v) {
   std::ostringstream oss;
   oss << v;
@@ -41,6 +48,10 @@ void OpSerialiserBase::appendAttribute(const std::string &name,
 }
 
 void OpSerialiserBase::appendAttribute(const std::string &name, float value) {
+  appendStrAttr(name, std::to_string(value));
+}
+
+void OpSerialiserBase::appendAttribute(const std::string &name, double value) {
   appendStrAttr(name, std::to_string(value));
 }
 
@@ -87,6 +98,13 @@ void OpSerialiser::appendAttribute(const std::string &name,
 
 void OpSerialiser::appendAttribute(const std::string &name,
                                    nonstd::optional<float> value) {
+  if (value) {
+    appendAttr(name, *value);
+  }
+}
+
+void OpSerialiser::appendAttribute(const std::string &name,
+                                   nonstd::optional<double> value) {
   if (value) {
     appendAttr(name, *value);
   }
@@ -229,6 +247,13 @@ void OpJsonSerialiser::appendAttribute(const std::string &name,
 }
 
 void OpJsonSerialiser::appendAttribute(const std::string &name,
+                                       nonstd::optional<double> value) {
+  if (value) {
+    appendAttr(name, *value);
+  }
+}
+
+void OpJsonSerialiser::appendAttribute(const std::string &name,
                                        const std::map<TensorId, uint64_t> map) {
   appendAttr(name, logging::format("{}", map));
 }
@@ -263,6 +288,17 @@ void OpEquivIdCreator::appendAttribute(const std::string &,
 
 void OpEquivIdCreator::appendAttribute(const std::string &,
                                        nonstd::optional<float> value) {
+  if (value) {
+    appendAttr(*value);
+  } else {
+    // something should always be written for
+    // `value` when creating an equivalence id
+    appendAttr('?');
+  }
+}
+
+void OpEquivIdCreator::appendAttribute(const std::string &,
+                                       nonstd::optional<double> value) {
   if (value) {
     appendAttr(*value);
   } else {

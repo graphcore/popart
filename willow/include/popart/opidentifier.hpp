@@ -298,6 +298,9 @@ const static AiGraphcoreOpIdV1 Histogram("Histogram", 1, 1);
 const static AiGraphcoreOpIdV1 HostSGD0VarUpdate("HostSGD0VarUpdate");
 const static AiGraphcoreOpIdV1 IdentityInplace("IdentityInplace");
 const static AiGraphcoreOpIdV1 IdentityLoss("IdentityLoss", 1, 1);
+const static AiGraphcoreOpIdV1 IncrementMod_1("IncrementMod", 1, 1);
+const static AiGraphcoreOpIdV1
+    IncrementModInplace_1("IncrementModInplace", 1, 1);
 const static AiGraphcoreOpIdV1 Init_1("Init", 0, 1);
 const static AiGraphcoreOpIdV1 IoTileCopy("IoTileCopy");
 const static AiGraphcoreOpIdV1 IpuCopy("IpuCopy");
@@ -422,6 +425,9 @@ const static OperatorIdentifier Gelu        = CustomOperators::Gelu_1;
 const static OperatorIdentifier GroupNormalization =
     CustomOperators::GroupNormalization_1;
 const static OperatorIdentifier IdentityLoss = CustomOperators::IdentityLoss;
+const static OperatorIdentifier IncrementMod = CustomOperators::IncrementMod_1;
+const static OperatorIdentifier IncrementModInplace =
+    CustomOperators::IncrementModInplace_1;
 const static OperatorIdentifier Init         = CustomOperators::Init_1;
 const static OperatorIdentifier L1           = CustomOperators::L1;
 const static OperatorIdentifier Log1p        = CustomOperators::Log1p_1;
