@@ -103,6 +103,10 @@ ResizeGradOp::ResizeGradOp(const ResizeOp &op_)
                gradScales(op_)),
       fwdScales(op_.getScales()) {}
 
+std::unique_ptr<Op> ResizeGradOp::clone() const {
+  return std::make_unique<ResizeGradOp>(*this);
+}
+
 const std::vector<GradInOutMapper> &ResizeGradOp::gradInputInfo() const {
   static const std::vector<GradInOutMapper> inInfo = {
       {getInIndex(), ResizeOp::getOutIndex(), GradOpInType::GradOut}};
