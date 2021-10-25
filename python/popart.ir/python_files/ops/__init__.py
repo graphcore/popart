@@ -20,6 +20,7 @@ from .logical_not import *
 from .logical_or import *
 from .matmul import *
 from .mul import *
+from .print_tensor import *
 from .reshape import *
 from .scatter import *
 from .slice import *

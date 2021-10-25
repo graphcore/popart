@@ -29,6 +29,7 @@ list(
   ${popart_op_headers_dir}/mul.hpp
   ${popart_op_headers_dir}/div.hpp
   ${popart_op_headers_dir}/pow.hpp
+  ${popart_op_headers_dir}/printtensor.hpp
   ${popart_op_headers_dir}/dropout.hpp
   ${popart_op_headers_dir}/gather.hpp
   ${popart_op_headers_dir}/scatter.hpp
