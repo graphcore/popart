@@ -123,17 +123,17 @@ class GradGraphInfo:
         return tuple(map(lambda ec: ec.fwd_tensor, self._expected_outputs))
 
 
-def autodiff(
-        graph: Graph,
-        gradsProvided: Optional[Iterable[Tensor]] = None,
-        gradsRequired: Optional[Iterable[Tensor]] = None,
-        calledGraphsGradInfo: Optional[Mapping[Graph, GradGraphInfo]] = None,
-        returnAllGradGraphs: bool = False):
+def autodiff(graph: Graph,
+             grads_provided: Optional[Iterable[Tensor]] = None,
+             grads_required: Optional[Iterable[Tensor]] = None,
+             called_graphs_grad_info: Optional[
+                 Mapping[Graph, GradGraphInfo]] = None,
+             return_all_grad_graphs: bool = False):
     """Differentiate a Graph.
 
-        The graph will be differentiated using the chain rule starting from `gradsProvided`.
-        The outputs of the returned graph will be the gradient of the Tensors in `gradsRequired`.
-        By default `gradProvided` will be all of the outputs of the forward graph and `gradsRequired` will
+        The graph will be differentiated using the chain rule starting from `grads_provided`.
+        The outputs of the returned graph will be the gradient of the Tensors in `grads_required`.
+        By default `gradProvided` will be all of the outputs of the forward graph and `grads_required` will
         be all of the inputs to the forward graph.
 
         Any Tensors in the forward graph that are needed to compute the gradients will be added as outputs
@@ -143,31 +143,42 @@ def autodiff(
         to the gradient graph. This can include tensors which are outputs of the forward graph `ExpectedConnectionType.Fwd`,
         or a gradient of an output of the forwards graph `ExpectedConnectionType.FwdGrad`.
 
-        Any graphs called in the forward graph will recursively have `autodiff` called on it. Arg `calledGraphsGradInfo` can be
+        Any graphs called in the forward graph will recursively have `autodiff` called on it. Arg `called_graphs_grad_info` can be
         used to specify the result of `autodiff` on a called graph that has already been differentiated.
-        By default GradGraphInfo will only be returned for the provided forward graph. Arg `returnAllGradGraphs` can be set to `True` to return
-        info on all graphs that `autodiff` as executed on as a result of this transformation."""
+        By default GradGraphInfo will only be returned for the provided forward graph. Arg `return_all_grad_graphs` can be set to `True` to return
+        info on all graphs that `autodiff` as executed on as a result of this transformation.
 
-    gradsProvided = graph.get_output_tensors(
-    ) if gradsProvided is None else gradsProvided
-    gradsRequired = graph.get_input_tensors(
-    ) if gradsRequired is None else gradsRequired
-    calledGraphsGradInfo = {} if calledGraphsGradInfo is None else calledGraphsGradInfo
+    Args:
+        graph (pir.Graph
+        grads_provided (Optional[Iterable[pir.Tensor]], optional) Defaults to all outputs of the provided graph.
+        grads_required (Optional[Iterable[pir.Tensor]], optional). Defaults to all inputs of the provided graph.
+        called_graphs_grad_info (Optional[Mapping[pir.Graph, GradGraphInfo]], optional). Defaults to None.
+        return_all_grad_graphs (bool, optional). Defaults to False.
+
+    Returns:
+        grad_info: GradGraphInfo
+    """
+
+    grads_provided = graph.get_output_tensors(
+    ) if grads_provided is None else grads_provided
+    grads_required = graph.get_input_tensors(
+    ) if grads_required is None else grads_required
+    called_graphs_grad_info = {} if called_graphs_grad_info is None else called_graphs_grad_info
 
     _pb_ir = graph.ir()._pb_ir
     transform = _ir.transforms.Autodiff()
 
     _pb_result = transform.apply(
-        _pb_ir, _ir.GraphId(graph.name), [t.id for t in gradsProvided],
-        _ir.OptionalTensors([t.id for t in gradsRequired]),
+        _pb_ir, _ir.GraphId(graph.name), [t.id for t in grads_provided],
+        _ir.OptionalTensors([t.id for t in grads_required]),
         {k: v._pb_bwd_info
-         for k, v in calledGraphsGradInfo.items()})
+         for k, v in called_graphs_grad_info.items()})
 
     result: Mapping[str, GradGraphInfo] = {}
     for k, v in _pb_result.items():
         result[k.str()] = GradGraphInfo._from_pb(_pb_ir, graph._pb_graph, v)
 
-    if returnAllGradGraphs:
+    if return_all_grad_graphs:
         return result
 
     return result[graph.name]
