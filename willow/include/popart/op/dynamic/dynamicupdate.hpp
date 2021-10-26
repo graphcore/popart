@@ -9,17 +9,18 @@ namespace popart {
 /**
  * Dynamic Update Op
  *
- * This class takes three \c Tensors as input (as indicated in \see
+ * This class takes three \c TensorIds as input (as indicated in \see
  * opidentifier.hpp)
- * 1. The \c Tensor to be updated
- * 2. The index of the tensor to be updated
- *    ( \see DynamicBaseOp for explanation)
- * 3. The Tensor to update with (must match dimension with
- *    ( \c index, \c axes, \c sizes ))
  *
- * The output is the updated \c Tensor
+ * 1. The \c TensorId of the tensor to be updated.
+ * 2. The \c TensorId of the index of the starting point of the slice
+ *    ( \see DynamicBaseOp for explanation).
+ * 3. The \c TensorId to update with (must match dimension with
+ *    ( \c index, \c axes, \c sizes )).
  *
- * \see DynamicTernaryBaseOp for details
+ * The output is the \c TensorId of the updated tensor.
+ *
+ * \see DynamicTernaryBaseOp for details.
  **/
 class DynamicUpdateOp : public DynamicTernaryBaseOp {
 public:
