@@ -80,6 +80,10 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 #------ find dependencies
 # Versions are not given where packages don't support them.
 
+# Use the first Python installation found.
+set(Python_FIND_STRATEGY LOCATION)
+# Always search for the virtualenv Python first.
+set(Python_FIND_VIRTUALENV FIRST)
 find_package(Python3 3.6 REQUIRED COMPONENTS Interpreter Development)
 
 if(NOT BUILD_SHARED_LIBS)
