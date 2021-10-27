@@ -216,8 +216,7 @@ def call_with_info(
     #    graph.
 
     def id_like_subgraph_tensor(tensor_id: str) -> str:
-        return g._create_tensor_id(
-            _ir.addScope(pb_g, _ir.removeScope(pb_sg, tensor_id)))
+        return g._create_tensor_id(_ir.removeScope(pb_sg, tensor_id))
 
     for pb_sg_out_id in pb_sg.getOutputIds():
         sgOutIdx = pb_sg.getOutputIndex(pb_sg_out_id)

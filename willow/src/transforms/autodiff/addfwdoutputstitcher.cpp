@@ -70,7 +70,8 @@ BwdGraphInfo AddFwdOutputStitcher::stitch(
           SubgraphIndex cg = 0;
           OutIndex opOutIndex =
               op->subgraphOutToOpOutIndex(cg, subgraphOutIndex);
-          auto tmpId = ir.createIntermediateTensorId("autodiff_output");
+          auto tmpId = addScope(
+              op->getGraph(), ir.createIntermediateTensorId("autodiff_output"));
           op->createAndConnectOutTensor(opOutIndex, tmpId);
           op->setup();
         } else {
