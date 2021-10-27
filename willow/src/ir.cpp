@@ -971,19 +971,6 @@ void Ir::verifyPipelineStageAttributes() const {
   }
 }
 
-void Ir::verifyMeanReductionStrategy() const {
-  if (getSessionOptions().accumulationAndReplicationReductionType ==
-          ReductionType::Mean &&
-      getSessionOptions().meanAccumulationAndReplicationReductionStrategy ==
-          MeanReductionStrategy::PostAndLoss) {
-    logging::warn(
-        "Setting meanAccumulationAndReplicationReductionStrategy to "
-        "MeanReductionStrategy::PostAndLoss is deprecated. Consider using "
-        "MeanReductionStrategy::Running or MeanReductionStrategy::Post "
-        "instead.");
-  }
-}
-
 bool Ir::isCandidateForConstExprFolding(const Tensor &tensor) const {
   // A tensor is computable as a const expression if it is Const. This would
   // also be true for Variable tensors during inference, unless the user calls
@@ -1117,8 +1104,6 @@ void Ir::prepareImpl(const IrBundle &gb, const HashesMap &cacheEntries) {
   setPatterns(gb.patterns);
   setOnnxModel(gb.modelProto);
   setSessionName(gb.sessionName);
-
-  verifyMeanReductionStrategy();
 
   if (graphs.size() == 1) {
     if (isPrepared()) {

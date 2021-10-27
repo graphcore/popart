@@ -733,10 +733,14 @@ PYBIND11_MODULE(popart_core, m) {
   }
   {
     // T42271
-    py::enum_<MeanReductionStrategy> en(m, "MeanReductionStrategy");
-    en.value("Running", MeanReductionStrategy::Running);
-    en.value("Post", MeanReductionStrategy::Post);
-    en.value("PostAndLoss", MeanReductionStrategy::PostAndLoss);
+    py::enum_<MeanReductionStrategy> en(
+        m, "MeanReductionStrategy", DOC(popart, MeanReductionStrategy));
+    en.value("Running",
+             MeanReductionStrategy::Running,
+             SINGLE_LINE_DOC(popart, MeanReductionStrategy, Running));
+    en.value("Post",
+             MeanReductionStrategy::Post,
+             SINGLE_LINE_DOC(popart, MeanReductionStrategy, Post));
   }
   {
     py::enum_<ScatterReduction> en(m, "ScatterReduction");
@@ -2951,20 +2955,20 @@ PYBIND11_MODULE(popart_core, m) {
       return std::unique_ptr<DeviceManager, py::nodelete>(
           &DeviceManager::createDeviceManager());
     }));
-    cls.def(
-        "tryAcquireAvailableDevice",
-        static_cast<std::shared_ptr<DeviceInfo> (DeviceManager::*)(
-            int,
-            int,
-            SyncPattern,
-            DeviceConnectionType,
-            DeviceSelectionCriterion)>(&DeviceManager::tryAcquireAvailableDevice),
-        py::arg("numIpus")            = 1,
-        py::arg("tilesPerIpu")        = 0,
-        py::arg("pattern")            = SyncPattern::Full,
-        py::arg("connectionType")     = DeviceConnectionType::Always,
-        py::arg("selectionCriterion") = DeviceSelectionCriterion::First,
-        DOC(popart, DeviceManager, tryAcquireAvailableDevice));
+    cls.def("tryAcquireAvailableDevice",
+            static_cast<std::shared_ptr<DeviceInfo> (DeviceManager::*)(
+                int,
+                int,
+                SyncPattern,
+                DeviceConnectionType,
+                DeviceSelectionCriterion)>(
+                &DeviceManager::tryAcquireAvailableDevice),
+            py::arg("numIpus")            = 1,
+            py::arg("tilesPerIpu")        = 0,
+            py::arg("pattern")            = SyncPattern::Full,
+            py::arg("connectionType")     = DeviceConnectionType::Always,
+            py::arg("selectionCriterion") = DeviceSelectionCriterion::First,
+            DOC(popart, DeviceManager, tryAcquireAvailableDevice));
     cls.def(
         "acquireAvailableDevice",
         static_cast<std::shared_ptr<DeviceInfo> (DeviceManager::*)(

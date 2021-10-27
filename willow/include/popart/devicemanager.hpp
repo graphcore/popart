@@ -197,14 +197,14 @@ public:
    * constrained.
    * \param numIpus The number of IPUs on the device [=1].
    * \param tilesPerIPU The number of tiles per IPU (0 will match any number)
-   * [=0]
+   *   [=0]
    * \param pattern The sync pattern to use.
    * \param connectionType The connection type, for deciding when to attach to
-   * the device.
+   *   the device.
    * \param selectionCriterion How to select a device from the list of valid
-   * selections.
+   *   selections.
    * \return A device, which can be used with a session. If no device is
-   * acquired, a nullptr is returned.
+   *   acquired, a nullptr is returned.
    */
   std::shared_ptr<DeviceInfo> tryAcquireAvailableDevice(
       int numIpus                         = 1,
@@ -219,12 +219,12 @@ public:
    * DeviceConnectionType::Always.
    * \param numIpus The number of IPUs on the device [=1].
    * \param tilesPerIPU The number of tiles per IPU (0 will match any number)
-   * [=0]
+   *   [=0]
    * \param pattern The sync pattern to use.
    * \param connectionType The connection type, for deciding when to attach to
-   * the device.
+   *   the device.
    * \param selectionCriterion How to select a device from the list of valid
-   * selections.
+   *   selections.
    * \return A device, which can be used with a session.
    */
   std::shared_ptr<DeviceInfo> acquireAvailableDevice(
@@ -243,9 +243,9 @@ public:
    * \param id The index of the IPU to be used.
    * \param pattern The sync pattern to use.
    * \param connectionType The connection type, for deciding when to attach to
-   * the device.
+   *   the device.
    * \return A device, which can be used with a session. If no device is
-   * acquired, a nullptr is returned.
+   *   acquired, a nullptr is returned.
    */
   std::shared_ptr<DeviceInfo> tryAcquireDeviceById(
       int id,
@@ -258,7 +258,7 @@ public:
    * \param id The index of the IPU to be used.
    * \param pattern The sync pattern to use.
    * \param connectionType The connection type, for deciding when to attach to
-   * the device.
+   *   the device.
    * \return A device, which can be used with a session.
    */
   std::shared_ptr<DeviceInfo> acquireDeviceById(

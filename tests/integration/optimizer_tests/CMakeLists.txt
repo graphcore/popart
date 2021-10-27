@@ -23,7 +23,7 @@ add_popart_py_unit_test(sgd1_accumulator_test sgd1_accumulator_test.py)
 # global_batch_size_test starts here
 set(batchserial_options "Unroll" "Loop")
 set(explicit_loops_options "True" "False")
-set(reduction_types "Sum" "Mean" "MeanRunning" "MeanPost")
+set(reduction_types "Sum" "MeanRunning" "MeanPost")
 set(optimizers "SGD" "SGDM1" "SGDM2" "ADAM")
 
 foreach(optimizer ${optimizers})

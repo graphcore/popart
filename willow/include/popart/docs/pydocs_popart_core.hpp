@@ -3907,43 +3907,46 @@ static const char *__singlelinedoc_popart_DeviceInfo_type = R"doc()doc";
 static const char *__doc_popart_DeviceManager =
     R"doc(A class to manage devices.)doc";
 
-static const char *__doc_popart_DeviceManager_tryAcquireAvailableDevice =
-    R"doc()doc";
+static const char *__singlelinedoc_popart_DeviceManager =
+    R"doc(A class to manage devices.)doc";
 
 static const char *__doc_popart_DeviceManager_acquireAvailableDevice =
-    R"doc(Finds the first available hardware device, with a certain number of IPUs.
-This method will attach to the device.
+    R"doc(Finds an available hardware device, with a certain number of IPUs.
+This method will attach to the device if ``connectionType`` is equal to
+DeviceConnectionType::Always.
 
 Args:
  numIpus: The number of IPUs on the device [=1].
  tilesPerIPU: The number of tiles per IPU (0 will match any number)
-[=0]
+   [=0]
+ pattern: The sync pattern to use.
+ connectionType: The connection type, for deciding when to attach to
+   the device.
+ selectionCriterion: How to select a device from the list of valid
+   selections.
 
 Returns:
- A device, which can be used with a session. If
-``allowReturnNullDevice`` is set to 'true' then this will be a nullptr if
-no device is available.)doc";
+ A device, which can be used with a session.)doc";
 
 static const char *__singlelinedoc_popart_DeviceManager_acquireAvailableDevice =
-    R"doc(Finds the first available hardware device, with a certain number of IPUs. This method will attach to the device. Args: numIpus: The number of IPUs on the device [=1]. tilesPerIPU: The number of tiles per IPU (0 will match any number) [=0] Returns: A device, which can be used with a session. If ``allowReturnNullDevice`` is set to 'true' then this will be a nullptr if no device is available.)doc";
-
-static const char *__doc_popart_DeviceManager_tryAcquireDeviceById =
-    R"doc()doc";
+    R"doc(Finds an available hardware device, with a certain number of IPUs. This method will attach to the device if ``connectionType`` is equal to DeviceConnectionType::Always. Args: numIpus: The number of IPUs on the device [=1]. tilesPerIPU: The number of tiles per IPU (0 will match any number) [=0] pattern: The sync pattern to use. connectionType: The connection type, for deciding when to attach to the device. selectionCriterion: How to select a device from the list of valid selections. Returns: A device, which can be used with a session.)doc";
 
 static const char *__doc_popart_DeviceManager_acquireDeviceById =
     R"doc(Allocates the hardware device by id. This id can be found running :code:`gc-info
- -l`. This method will attach to the device.
+ -l`. This method will attach to the device if ``connectionType`` is equal
+to DeviceConnectionType::Always.
 
 Args:
  id: The index of the IPU to be used.
+ pattern: The sync pattern to use.
+ connectionType: The connection type, for deciding when to attach to
+   the device.
 
 Returns:
- A device, which can be used with a session. If
-``allowReturnNullDevice`` is set to 'true' then this will be a nullptr if
-the specified device is not available.)doc";
+ A device, which can be used with a session.)doc";
 
 static const char *__singlelinedoc_popart_DeviceManager_acquireDeviceById =
-    R"doc(Allocates the hardware device by id. This id can be found running :code:`gc-info -l`. This method will attach to the device. Args: id: The index of the IPU to be used. Returns: A device, which can be used with a session. If ``allowReturnNullDevice`` is set to 'true' then this will be a nullptr if the specified device is not available.)doc";
+    R"doc(Allocates the hardware device by id. This id can be found running :code:`gc-info -l`. This method will attach to the device if ``connectionType`` is equal to DeviceConnectionType::Always. Args: id: The index of the IPU to be used. pattern: The sync pattern to use. connectionType: The connection type, for deciding when to attach to the device. Returns: A device, which can be used with a session.)doc";
 
 static const char *__doc_popart_DeviceManager_attachTimeout = R"doc()doc";
 
@@ -4081,6 +4084,50 @@ Args:
 
 static const char *__singlelinedoc_popart_DeviceManager_setOnDemandAttachTimeout =
     R"doc(If unable to attach to a device on first try, the attach timeout set here is the length of time (in seconds) that the DeviceManager will wait to try and attach. Note: this only takes effect when trying to attach with a DeviceConnectionType::OnDemand DeviceConnectionType. Args: seconds: The attach timeout in seconds.)doc";
+
+static const char *__doc_popart_DeviceManager_tryAcquireAvailableDevice =
+    R"doc(Finds an available hardware device, with a certain number of IPUs.
+This method will attach to the device if ``connectionType`` is equal to
+DeviceConnectionType::Always. It will not except if this fails, making
+it suitable when polling for an available device when resources are
+constrained.
+
+Args:
+ numIpus: The number of IPUs on the device [=1].
+ tilesPerIPU: The number of tiles per IPU (0 will match any number)
+   [=0]
+ pattern: The sync pattern to use.
+ connectionType: The connection type, for deciding when to attach to
+   the device.
+ selectionCriterion: How to select a device from the list of valid
+   selections.
+
+Returns:
+ A device, which can be used with a session. If no device is
+ acquired, a nullptr is returned.)doc";
+
+static const char *__singlelinedoc_popart_DeviceManager_tryAcquireAvailableDevice =
+    R"doc(Finds an available hardware device, with a certain number of IPUs. This method will attach to the device if ``connectionType`` is equal to DeviceConnectionType::Always. It will not except if this fails, making it suitable when polling for an available device when resources are constrained. Args: numIpus: The number of IPUs on the device [=1]. tilesPerIPU: The number of tiles per IPU (0 will match any number) [=0] pattern: The sync pattern to use. connectionType: The connection type, for deciding when to attach to the device. selectionCriterion: How to select a device from the list of valid selections. Returns: A device, which can be used with a session. If no device is acquired, a nullptr is returned.)doc";
+
+static const char *__doc_popart_DeviceManager_tryAcquireDeviceById =
+    R"doc(Allocates the hardware device by id. This id can be found running :code:`gc-info
+ -l`. This method will try to attach to the device if ``connectionType`` is
+equal to DeviceConnectionType::Always. It will not except if this fails,
+making it suitable when polling for an available device when resources are
+constrained.
+
+Args:
+ id: The index of the IPU to be used.
+ pattern: The sync pattern to use.
+ connectionType: The connection type, for deciding when to attach to
+   the device.
+
+Returns:
+ A device, which can be used with a session. If no device is
+ acquired, a nullptr is returned.)doc";
+
+static const char *__singlelinedoc_popart_DeviceManager_tryAcquireDeviceById =
+    R"doc(Allocates the hardware device by id. This id can be found running :code:`gc-info -l`. This method will try to attach to the device if ``connectionType`` is equal to DeviceConnectionType::Always. It will not except if this fails, making it suitable when polling for an available device when resources are constrained. Args: id: The index of the IPU to be used. pattern: The sync pattern to use. connectionType: The connection type, for deciding when to attach to the device. Returns: A device, which can be used with a session. If no device is acquired, a nullptr is returned.)doc";
 
 static const char *__doc_popart_DeviceProvider =
     R"doc(The interface for device providers which are registered with the device
@@ -6409,11 +6456,6 @@ static const char *__doc_popart_Ir_verifyExplicitMainLoopsSettings =
 static const char *__singlelinedoc_popart_Ir_verifyExplicitMainLoopsSettings =
     R"doc()doc";
 
-static const char *__doc_popart_Ir_verifyMeanReductionStrategy = R"doc()doc";
-
-static const char *__singlelinedoc_popart_Ir_verifyMeanReductionStrategy =
-    R"doc()doc";
-
 static const char *__doc_popart_Ir_verifyOpInputConnectivity = R"doc()doc";
 
 static const char *__singlelinedoc_popart_Ir_verifyOpInputConnectivity =
@@ -6614,48 +6656,41 @@ static const char *__doc_popart_L1Op_setup = R"doc()doc";
 static const char *__singlelinedoc_popart_L1Op_setup = R"doc()doc";
 
 static const char *__doc_popart_MeanReductionStrategy =
-    R"doc(Enum type to specify when to divide by a mean reduction factor)doc";
+    R"doc(Enum type that specifies when to divide by a mean reduction factor, when
+doing mean reduction over a sequence of tensors :math:`t_1, t_2, ..., t_k`.)doc";
 
 static const char *__singlelinedoc_popart_MeanReductionStrategy =
-    R"doc(Enum type to specify when to divide by a mean reduction factor)doc";
+    R"doc(Enum type that specifies when to divide by a mean reduction factor, when doing mean reduction over a sequence of tensors :math:`t_1, t_2, ..., t_k`.)doc";
 
 static const char *__doc_popart_MeanReductionStrategy_N =
-    R"doc(This divides by the accumulationFactor after all the gradient have been
-reduce
-and the replicatedGraphCount at the input to the loss gradient
-before the start of the backwards pass.
-This is to support legacy behaviour and is deprecated.)doc";
+    R"doc(The number of ``MeanReductionStrategy`` values.)doc";
 
 static const char *__singlelinedoc_popart_MeanReductionStrategy_N =
-    R"doc(This divides by the accumulationFactor after all the gradient have been reduce and the replicatedGraphCount at the input to the loss gradient before the start of the backwards pass. This is to support legacy behaviour and is deprecated.)doc";
+    R"doc(The number of ``MeanReductionStrategy`` values.)doc";
 
 static const char *__doc_popart_MeanReductionStrategy_Post =
-    R"doc(This divides by the accumulationFactor and replicatedGraphCount
-after all of the gradients have been reduced.
-In some cases this can be faster then using Running, however is prone
-to overflow.)doc";
+    R"doc(Keep the accumulation factor as the running sum,
+and divide by :math:`k` once at the end of the accumulation.
+This strategy will generally be faster than Running,
+but is prone to overflow (especially when using :code:`fp16`).)doc";
 
 static const char *__singlelinedoc_popart_MeanReductionStrategy_Post =
-    R"doc(This divides by the accumulationFactor and replicatedGraphCount after all of the gradients have been reduced. In some cases this can be faster then using Running, however is prone to overflow.)doc";
-
-static const char *__doc_popart_MeanReductionStrategy_PostAndLoss =
-    R"doc(This divides by the accumulationFactor after all the gradient have been
-reduce
-and the replicatedGraphCount at the input to the loss gradient
-before the start of the backwards pass.
-This is to support legacy behaviour and is deprecated.)doc";
-
-static const char *__singlelinedoc_popart_MeanReductionStrategy_PostAndLoss =
-    R"doc(This divides by the accumulationFactor after all the gradient have been reduce and the replicatedGraphCount at the input to the loss gradient before the start of the backwards pass. This is to support legacy behaviour and is deprecated.)doc";
+    R"doc(Keep the accumulation factor as the running sum, and divide by :math:`k` once at the end of the accumulation. This strategy will generally be faster than Running, but is prone to overflow (especially when using :code:`fp16`).)doc";
 
 static const char *__doc_popart_MeanReductionStrategy_Running =
-    R"doc(This keeps the reduction buffer as the current mean. See ``AccumulationType::Mean`` and ``CollectiveOperator::Mean.``
-This is preferred for numerical stability as the buffer is guarenteed
-not to overflow and is strictly better than dividing before the
-accumulation.)doc";
+    R"doc(Keep the reduction buffer as the mean of the tensors accumulated so far.
+If we have just processed :math:`t_1, ..., t_f`,
+the current accumulator :math:`s` is the mean of these values, and
+the next accumulator update is
+:math:`s = (f/(f+1)) * s + (1/(f+1)) * t_{f+1}` to keep :math:`s` a running
+mean.
+
+This strategy guarantees :math:`s \le \max(a_1, ..., a_k)` throughout the
+accumulation, therefore it will not overflow, but it is generally slower
+than Post.)doc";
 
 static const char *__singlelinedoc_popart_MeanReductionStrategy_Running =
-    R"doc(This keeps the reduction buffer as the current mean. See ``AccumulationType::Mean`` and ``CollectiveOperator::Mean.`` This is preferred for numerical stability as the buffer is guarenteed not to overflow and is strictly better than dividing before the accumulation.)doc";
+    R"doc(Keep the reduction buffer as the mean of the tensors accumulated so far. If we have just processed :math:`t_1, ..., t_f`, the current accumulator :math:`s` is the mean of these values, and the next accumulator update is :math:`s = (f/(f+1)) * s + (1/(f+1)) * t_{f+1}` to keep :math:`s` a running mean. This strategy guarantees :math:`s \le \max(a_1, ..., a_k)` throughout the accumulation, therefore it will not overflow, but it is generally slower than Post.)doc";
 
 static const char *__doc_popart_MergeVarUpdateType =
     R"doc(Enum type used to specify which :code:`VarUpdateOp` ops to merge.)doc";
@@ -8533,17 +8568,6 @@ static const char *__doc_popart_Optimizer_hash = R"doc()doc";
 
 static const char *__singlelinedoc_popart_Optimizer_hash = R"doc()doc";
 
-static const char *__doc_popart_Optimizer_lossMeanReplication = R"doc()doc";
-
-static const char *__singlelinedoc_popart_Optimizer_lossMeanReplication =
-    R"doc()doc";
-
-static const char *__doc_popart_Optimizer_lossMeanReplicationEnabled =
-    R"doc()doc";
-
-static const char *__singlelinedoc_popart_Optimizer_lossMeanReplicationEnabled =
-    R"doc()doc";
-
 static const char *__doc_popart_Optimizer_lossScaling = R"doc()doc";
 
 static const char *__singlelinedoc_popart_Optimizer_lossScaling = R"doc()doc";
@@ -9473,19 +9497,23 @@ static const char *__doc_popart_RecomputeType_Undefined = R"doc()doc";
 static const char *__singlelinedoc_popart_RecomputeType_Undefined = R"doc()doc";
 
 static const char *__doc_popart_ReductionType =
-    R"doc(Defines the type of reduction used when weight updates of a batch are
-computed in one go and are reduced over the gradients of the whole
-minibatch.)doc";
+    R"doc(Defines the reduction operation to use over a sequence of tensors.
+
+Two use-cases for this enum type are:
+* denoting how to reduce individual losses produced by a LossOp over a
+  minibatch (specified by the LossOp :code:`reduction` parameter)
+* denoting how to reduce weight gradients over a number of replicas when
+  gradient accumulation is enabled (specified by the global
+  :code:`accumulationAndReplicationReductionType` session option))doc";
 
 static const char *__singlelinedoc_popart_ReductionType =
-    R"doc(Defines the type of reduction used when weight updates of a batch are computed in one go and are reduced over the gradients of the whole minibatch.)doc";
+    R"doc(Defines the reduction operation to use over a sequence of tensors. Two use-cases for this enum type are: * denoting how to reduce individual losses produced by a LossOp over a minibatch (specified by the LossOp :code:`reduction` parameter) * denoting how to reduce weight gradients over a number of replicas when gradient accumulation is enabled (specified by the global :code:`accumulationAndReplicationReductionType` session option))doc";
 
 static const char *__doc_popart_ReductionType_Mean =
-    R"doc(Take the mean of the loss values and divide the gradient by the number
-of samples.)doc";
+    R"doc(Take the mean of the input values.)doc";
 
 static const char *__singlelinedoc_popart_ReductionType_Mean =
-    R"doc(Take the mean of the loss values and divide the gradient by the number of samples.)doc";
+    R"doc(Take the mean of the input values.)doc";
 
 static const char *__doc_popart_ReductionType_N =
     R"doc(The number of ReductionType values.)doc";
@@ -9494,16 +9522,18 @@ static const char *__singlelinedoc_popart_ReductionType_N =
     R"doc(The number of ReductionType values.)doc";
 
 static const char *__doc_popart_ReductionType_NoReduction =
-    R"doc(Leave the loss values as they are and do not scale the gradient.)doc";
+    R"doc(Don't reduce the input values, keeping them stacked into a single
+tensor. More specifically, values :math:`t_1, ..., t_k` get collected
+into a tensor :math:`[t_1, ..., t_k]`.)doc";
 
 static const char *__singlelinedoc_popart_ReductionType_NoReduction =
-    R"doc(Leave the loss values as they are and do not scale the gradient.)doc";
+    R"doc(Don't reduce the input values, keeping them stacked into a single tensor. More specifically, values :math:`t_1, ..., t_k` get collected into a tensor :math:`[t_1, ..., t_k]`.)doc";
 
 static const char *__doc_popart_ReductionType_Sum =
-    R"doc(Sum the output of the loss values and do not scale the gradient.)doc";
+    R"doc(Sum the input values and do not scale the output.)doc";
 
 static const char *__singlelinedoc_popart_ReductionType_Sum =
-    R"doc(Sum the output of the loss values and do not scale the gradient.)doc";
+    R"doc(Sum the input values and do not scale the output.)doc";
 
 static const char *__doc_popart_RemoteBufferInfo =
     R"doc(Stores the shape and the numerical type of the remote buffer)doc";

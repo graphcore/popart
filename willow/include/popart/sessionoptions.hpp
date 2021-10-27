@@ -419,26 +419,27 @@ enum class SubgraphCopyingStrategy {
 };
 
 /**
- * Enum type to specify when to divide by a mean reduction factor
+ * Enum type that specifies when to divide by a mean reduction factor, when
+ * doing mean reduction over a sequence of tensors \f$t_1, t_2, ..., t_k\f$.
  */
 enum class MeanReductionStrategy {
-  /// This keeps the reduction buffer as the current mean. See \c
-  /// AccumulationType::Mean and \c CollectiveOperator::Mean.
-  /// This is preferred for numerical stability as the buffer is guarenteed
-  /// not to overflow and is strictly better than dividing before the
-  /// accumulation.
+  /// Keep the reduction buffer as the mean of the tensors accumulated so far.
+  /// If we have just processed \f$t_1, ..., t_f\f$,
+  /// the current accumulator \f$s\f$ is the mean of these values, and
+  /// the next accumulator update is
+  /// \f$s = (f/(f+1)) * s + (1/(f+1)) * t_{f+1}\f$ to keep \f$s\f$ a running
+  /// mean.
+  ///
+  /// This strategy guarantees \f$s \le \max(a_1, ..., a_k)\f$ throughout the
+  /// accumulation, therefore it will not overflow, but it is generally slower
+  /// than Post.
   Running = 0,
-  /// This divides by the accumulationFactor and replicatedGraphCount
-  /// after all of the gradients have been reduced.
-  /// In some cases this can be faster then using Running, however is prone
-  /// to overflow.
+  /// Keep the accumulation factor as the running sum,
+  /// and divide by \f$k\f$ once at the end of the accumulation.
+  /// This strategy will generally be faster than Running,
+  /// but is prone to overflow (especially when using `fp16`).
   Post,
-  /// This divides by the accumulationFactor after all the gradient have been
-  /// reduce
-  /// and the replicatedGraphCount at the input to the loss gradient
-  /// before the start of the backwards pass.
-  /// This is to support legacy behaviour and is deprecated.
-  PostAndLoss,
+  /// The number of \c MeanReductionStrategy values.
   N
 };
 
@@ -652,7 +653,7 @@ struct SessionOptions {
   /// Specify when to divide by a mean reduction factor when
   /// accumulationAndReplicationReductionType is set to ReductionType::Mean.
   MeanReductionStrategy meanAccumulationAndReplicationReductionStrategy =
-      MeanReductionStrategy::PostAndLoss;
+      MeanReductionStrategy::Post;
 
   /// If enableReplicatedGraphs is true, \c replicatedGraphCount will set the
   /// number of model replications. For example, if your model uses 1 IPU, a

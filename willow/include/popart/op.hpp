@@ -40,16 +40,22 @@ enum class ExecutionContext {
   Subgraph
 };
 
-/// Defines the type of reduction used when weight updates of a batch are
-/// computed in one go and are reduced over the gradients of the whole
-/// minibatch.
+/// Defines the reduction operation to use over a sequence of tensors.
+///
+/// Two use-cases for this enum type are:
+/// * denoting how to reduce individual losses produced by a LossOp over a
+///   minibatch (specified by the LossOp `reduction` parameter)
+/// * denoting how to reduce weight gradients over a number of replicas when
+///   gradient accumulation is enabled (specified by the global
+///   `accumulationAndReplicationReductionType` session option)
 enum class ReductionType {
-  /// Sum the output of the loss values and do not scale the gradient.
+  /// Sum the input values and do not scale the output.
   Sum = 0,
-  /// Take the mean of the loss values and divide the gradient by the number
-  /// of samples.
+  /// Take the mean of the input values.
   Mean,
-  /// Leave the loss values as they are and do not scale the gradient.
+  /// Don't reduce the input values, keeping them stacked into a single
+  /// tensor. So values \f$t_1, ..., t_k\f$ get collected
+  /// into a tensor \f$[t_1, ..., t_k]\f$.
   NoReduction,
   /// The number of ReductionType values.
   N

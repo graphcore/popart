@@ -63,26 +63,6 @@ BOOST_AUTO_TEST_CASE(TestAdaptive_ReplicaSum) {
   validate(adaptive, 0.1f, 1.0f);
 }
 
-BOOST_AUTO_TEST_CASE(TestAdaptive_ReplicaMeanPostAndLoss) {
-  Adaptive adaptive{{
-                        {"defaultLearningRate", {0.1f, true}},
-                    },
-                    AdaptiveMode::AdaGrad,
-                    WeightDecayMode::Decay,
-                    DataType::FLOAT,
-                    DataType::FLOAT,
-                    DataType::FLOAT,
-                    DataType::FLOAT};
-  SessionOptions opts;
-  opts.enableReplicatedGraphs                  = true;
-  opts.replicatedGraphCount                    = 2;
-  opts.accumulationAndReplicationReductionType = ReductionType::Mean;
-  opts.meanAccumulationAndReplicationReductionStrategy =
-      MeanReductionStrategy::PostAndLoss;
-  adaptive.setFactorsFromOptions(opts);
-  validate(adaptive, 0.1f, 1.0f);
-}
-
 BOOST_AUTO_TEST_CASE(TestAdaptive_ReplicaMeanPost) {
   Adaptive adaptive{{
                         {"defaultLearningRate", {0.1f, true}},
@@ -138,26 +118,6 @@ BOOST_AUTO_TEST_CASE(TestAdaptive_AccumSum) {
   opts.accumulationFactor         = 4;
   adaptive.setFactorsFromOptions(opts);
   validate(adaptive, 0.1f, 1.0f);
-}
-
-BOOST_AUTO_TEST_CASE(TestAdaptive_AccumMeanPostAndLoss) {
-  Adaptive adaptive{{
-                        {"defaultLearningRate", {0.1f, true}},
-                    },
-                    AdaptiveMode::AdaGrad,
-                    WeightDecayMode::Decay,
-                    DataType::FLOAT,
-                    DataType::FLOAT,
-                    DataType::FLOAT,
-                    DataType::FLOAT};
-  SessionOptions opts;
-  opts.enableGradientAccumulation              = true;
-  opts.accumulationFactor                      = 4;
-  opts.accumulationAndReplicationReductionType = ReductionType::Mean;
-  opts.meanAccumulationAndReplicationReductionStrategy =
-      MeanReductionStrategy::PostAndLoss;
-  adaptive.setFactorsFromOptions(opts);
-  validate(adaptive, 0.1f, 1.0f / 4.0f);
 }
 
 BOOST_AUTO_TEST_CASE(TestAdaptive_AccumMeanPost) {

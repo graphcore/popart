@@ -15,11 +15,9 @@ import json
 import onnx
 from onnx import numpy_helper
 
-# TODO(T42812): Remove Mean when PostAndLoss is removed.
-
 batchserial_options = ["Unroll", "Loop"]
 explicit_loops_options = [True, False]
-reduction_types = ["Sum", "Mean", "MeanRunning", "MeanPost"]
+reduction_types = ["Sum", "MeanRunning", "MeanPost"]
 optimizers = ["SGD", "SGDM1", "SGDM2", "ADAM"]
 
 
@@ -139,8 +137,6 @@ def test_global_batch_size_correctness_test(tmpdir, optim, reduction_type,
         if accumulation_factor > 1:
             options.enableGradientAccumulation = True
             options.accumulationFactor = accumulation_factor
-            if reduction_type == "Mean":
-                options.meanAccumulationAndReplicationReductionStrategy = popart.MeanReductionStrategy.PostAndLoss
             if reduction_type == "MeanRunning":
                 options.meanAccumulationAndReplicationReductionStrategy = popart.MeanReductionStrategy.Running
             if reduction_type == "MeanPost":

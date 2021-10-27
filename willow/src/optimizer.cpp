@@ -56,20 +56,13 @@ void Optimizer::setFactorsFromOptions(const SessionOptions &opts) {
   meanReduction =
       opts.accumulationAndReplicationReductionType == ReductionType::Mean;
 
-  postMeanAccumulation =
-      enableGradientAccumulation && meanReduction &&
-      (opts.meanAccumulationAndReplicationReductionStrategy ==
-           MeanReductionStrategy::Post ||
-       opts.meanAccumulationAndReplicationReductionStrategy ==
-           MeanReductionStrategy::PostAndLoss);
+  postMeanAccumulation = enableGradientAccumulation && meanReduction &&
+                         opts.meanAccumulationAndReplicationReductionStrategy ==
+                             MeanReductionStrategy::Post;
 
   postMeanReplication = replicatedGraphCount > 1 && meanReduction &&
                         opts.meanAccumulationAndReplicationReductionStrategy ==
                             MeanReductionStrategy::Post;
-  // TODO(T42812): Remove after deprecation period
-  lossMeanReplication = replicatedGraphCount > 1 && meanReduction &&
-                        opts.meanAccumulationAndReplicationReductionStrategy ==
-                            MeanReductionStrategy::PostAndLoss;
   factorsAreSetFromOptions = true;
 }
 
@@ -111,14 +104,6 @@ bool Optimizer::postMeanReplicationEnabled() const {
   return postMeanReplication;
 }
 
-bool Optimizer::lossMeanReplicationEnabled() const {
-  if (!factorsAreSetFromOptions) {
-    throw error("Cannot call Optimizer::lossMeanReplicationEnabled until "
-                "Optimizer::setFactorsFromOptions has been called");
-  }
-  return lossMeanReplication;
-}
-
 int64_t Optimizer::getReplicatedGraphCount() const {
   if (!factorsAreSetFromOptions) {
     throw error("Cannot call Optimizer::getReplicatedGraphCount until "
@@ -143,9 +128,7 @@ float Optimizer::getFinalLossScalingVal() const {
 
   float lossScalingVal = ls.val();
 
-  return lossMeanReplicationEnabled()
-             ? lossScalingVal / getReplicatedGraphCount()
-             : lossScalingVal;
+  return lossScalingVal;
 }
 
 TensorId Optimizer::getLossScalingTensorId(DataType t) {

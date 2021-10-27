@@ -105,11 +105,15 @@ Session Options
 
 .. autoclass:: popart::Instrumentation
 
+.. autoclass:: popart::MeanReductionStrategy
+
 .. autoclass:: popart::MergeVarUpdateType
 
 .. autoclass:: popart::SyntheticDataMode
 
 .. autoclass:: popart::RecomputationType
+
+.. autoclass:: popart::ReductionType
 
 .. autoclass:: popart::VirtualGraphMode
 

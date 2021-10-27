@@ -201,7 +201,6 @@ public:
   bool meanReductionEnabled() const;
   bool postMeanAccumulationEnabled() const;
   bool postMeanReplicationEnabled() const;
-  bool lossMeanReplicationEnabled() const;
   int64_t getReplicatedGraphCount() const;
   int64_t getAccumulationFactor() const;
 
@@ -245,7 +244,6 @@ private:
   bool meanReduction;
   bool postMeanAccumulation;
   bool postMeanReplication;
-  bool lossMeanReplication;
   int64_t accumulationFactor;
   int64_t replicatedGraphCount;
 

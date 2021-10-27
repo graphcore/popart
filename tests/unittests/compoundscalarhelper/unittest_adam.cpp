@@ -68,26 +68,6 @@ BOOST_AUTO_TEST_CASE(TestAdam_ReplicaSum) {
   validate(adam, 0.1f, 1.0f, 1e-3f);
 }
 
-BOOST_AUTO_TEST_CASE(TestAdam_ReplicaMeanPostAndLoss) {
-  Adam adam{{
-                {"defaultLearningRate", {0.1f, true}},
-                {"defaultEps", {1e-3f, true}},
-            },
-            AdamMode::Adam,
-            WeightDecayMode::Decay,
-            DataType::FLOAT,
-            DataType::FLOAT,
-            DataType::FLOAT};
-  SessionOptions opts;
-  opts.enableReplicatedGraphs                  = true;
-  opts.replicatedGraphCount                    = 2;
-  opts.accumulationAndReplicationReductionType = ReductionType::Mean;
-  opts.meanAccumulationAndReplicationReductionStrategy =
-      MeanReductionStrategy::PostAndLoss;
-  adam.setFactorsFromOptions(opts);
-  validate(adam, 0.1f, 1.0f, 1e-3f);
-}
-
 BOOST_AUTO_TEST_CASE(TestAdam_ReplicaMeanPost) {
   Adam adam{{
                 {"defaultLearningRate", {0.1f, true}},
@@ -143,26 +123,6 @@ BOOST_AUTO_TEST_CASE(TestAdam_AccumSum) {
   opts.accumulationFactor         = 4;
   adam.setFactorsFromOptions(opts);
   validate(adam, 0.1f, 1.0f, 1e-3f);
-}
-
-BOOST_AUTO_TEST_CASE(TestAdam_AccumMeanPostAndLoss) {
-  Adam adam{{
-                {"defaultLearningRate", {0.1f, true}},
-                {"defaultEps", {1e-3f, true}},
-            },
-            AdamMode::Adam,
-            WeightDecayMode::Decay,
-            DataType::FLOAT,
-            DataType::FLOAT,
-            DataType::FLOAT};
-  SessionOptions opts;
-  opts.enableGradientAccumulation              = true;
-  opts.accumulationFactor                      = 4;
-  opts.accumulationAndReplicationReductionType = ReductionType::Mean;
-  opts.meanAccumulationAndReplicationReductionStrategy =
-      MeanReductionStrategy::PostAndLoss;
-  adam.setFactorsFromOptions(opts);
-  validate(adam, 0.1f, 1.0f / 4.0f, 1e-3f);
 }
 
 BOOST_AUTO_TEST_CASE(TestAdam_AccumMeanPost) {

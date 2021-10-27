@@ -99,9 +99,13 @@ Session options
 
 .. doxygenenum:: popart::IrSerializationFormat
 
+.. doxygenenum:: popart::MeanReductionStrategy
+
 .. doxygenenum:: popart::MergeVarUpdateType
 
 .. doxygenenum:: popart::RecomputationType
+
+.. doxygenenum:: popart::ReductionType
 
 .. doxygenenum:: popart::SubgraphCopyingStrategy
 

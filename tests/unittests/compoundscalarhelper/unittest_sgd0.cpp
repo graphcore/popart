@@ -44,19 +44,6 @@ BOOST_AUTO_TEST_CASE(TestSGD0_ReplicaSum) {
   validate(sgd, 0.1f, 1.0f - (0.1f * 0.01f));
 }
 
-BOOST_AUTO_TEST_CASE(TestSGD0_ReplicaMeanPostAndLoss) {
-  SGD sgd{{{"defaultLearningRate", {0.1f, true}},
-           {"defaultWeightDecay", {0.01f, true}}}};
-  SessionOptions opts;
-  opts.enableReplicatedGraphs                  = true;
-  opts.replicatedGraphCount                    = 2;
-  opts.accumulationAndReplicationReductionType = ReductionType::Mean;
-  opts.meanAccumulationAndReplicationReductionStrategy =
-      MeanReductionStrategy::PostAndLoss;
-  sgd.setFactorsFromOptions(opts);
-  validate(sgd, 0.1f, 1.0f - (0.1f * 0.01f));
-}
-
 BOOST_AUTO_TEST_CASE(TestSGD0_ReplicaMeanPost) {
   SGD sgd{{{"defaultLearningRate", {0.1f, true}},
            {"defaultWeightDecay", {0.01f, true}}}};
@@ -91,19 +78,6 @@ BOOST_AUTO_TEST_CASE(TestSGD0_AccumSum) {
   opts.replicatedGraphCount   = 2;
   sgd.setFactorsFromOptions(opts);
   validate(sgd, 0.1f, 1.0f - (0.1f * 0.01f));
-}
-
-BOOST_AUTO_TEST_CASE(TestSGD0_AccumMeanPostAndLoss) {
-  SGD sgd{{{"defaultLearningRate", {0.1f, true}},
-           {"defaultWeightDecay", {0.01f, true}}}};
-  SessionOptions opts;
-  opts.enableGradientAccumulation              = true;
-  opts.accumulationFactor                      = 4;
-  opts.accumulationAndReplicationReductionType = ReductionType::Mean;
-  opts.meanAccumulationAndReplicationReductionStrategy =
-      MeanReductionStrategy::PostAndLoss;
-  sgd.setFactorsFromOptions(opts);
-  validate(sgd, 0.1f / 4.0f, 1.0f - (0.1f * 0.01f));
 }
 
 BOOST_AUTO_TEST_CASE(TestSGD0_AccumMeanPost) {
