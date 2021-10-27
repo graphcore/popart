@@ -88,6 +88,9 @@ void RngStateLowering::lowerInitRngStatesFromSeed(
   // later before Ops with stochastic rounding method
   // `StochasticRoundingMethod::DifferingSeeds` are ran.
   lowerGetHwSeeds(seq, differingSeedsRngStateTensor, dbgCtx);
+
+  // Set initial RNG state to IdenticalSeeds.
+  lowerSetHwSeeds(seq, identicalSeedsRngStateTensor, dbgCtx);
 }
 
 void RngStateLowering::lowerSetRngState(snap::program::Sequence &seq,
@@ -95,7 +98,9 @@ void RngStateLowering::lowerSetRngState(snap::program::Sequence &seq,
 
   Op *op = opx->op_p;
 
-  if (op->hasStochasticRoundingMethod()) {
+  if (op->hasStochasticRoundingMethod() &&
+      // TODO(T48752): Remove _enableRngStateManagement.
+      op->getIr().getSessionOptions()._enableRngStateManagement) {
     if (op->getStochasticRoundingMethod() ==
         StochasticRoundingMethod::DifferingSeeds) {
       lowerSetHwSeeds(seq,
@@ -115,7 +120,9 @@ void RngStateLowering::lowerGetRngState(snap::program::Sequence &seq,
 
   Op *op = opx->op_p;
 
-  if (op->hasStochasticRoundingMethod()) {
+  if (op->hasStochasticRoundingMethod() &&
+      // TODO(T48752): Remove _enableRngStateManagement.
+      op->getIr().getSessionOptions()._enableRngStateManagement) {
     if (op->getStochasticRoundingMethod() ==
         StochasticRoundingMethod::DifferingSeeds) {
       lowerGetHwSeeds(seq,

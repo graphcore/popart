@@ -739,6 +739,12 @@ struct SessionOptions {
   /// Enable stochastic rounding.
   bool enableStochasticRounding = false;
 
+  // Temporary option (not public) to enable RNG management as it currently
+  // results in a performance hit. Set to `true` to enable RNG state management
+  // functionality. TODO(T48752): remove this option (and default to enabling
+  // RNG state management) once T48402 is implemented.
+  bool _enableRngStateManagement = false;
+
   /// Configuration settings for execution phases.
   ExecutionPhaseSettings executionPhaseSettings;
 

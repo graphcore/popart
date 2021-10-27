@@ -1371,6 +1371,8 @@ PYBIND11_MODULE(popart_core, m) {
     cls.def_readwrite("enableStochasticRounding",
                       &SessionOptions::enableStochasticRounding,
                       DOC(popart, SessionOptions, enableStochasticRounding));
+    cls.def_readwrite("_enableRngStateManagement",
+                      &SessionOptions::_enableRngStateManagement);
     cls.def_readwrite("enableFullyConnectedPass",
                       &SessionOptions::enableFullyConnectedPass,
                       DOC(popart, SessionOptions, enableFullyConnectedPass));
