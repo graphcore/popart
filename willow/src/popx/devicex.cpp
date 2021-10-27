@@ -430,6 +430,22 @@ Devicex::Devicex(Executablex &exe, std::shared_ptr<DeviceInfo> deviceInfo_)
                                  numberRuntimeReplica);
   }
 
+  // The engine option `target.deterministicWorkers=true` ensures that random
+  // behaviour is deterministic on all hardware but comes at the cost of
+  // some performance. Note that we expect actual random Ops to be explicitly
+  // seeded (so they are not affected) so the only time we actually need this
+  // option is when the user enables stochastic rounding. We set this to "false"
+  // when stochastic rounding is not enabled for a small performance boost. Note
+  // that we avoid setting the option all together if the user sets it
+  // explicitly.
+  if (ir().getSessionOptions().engineOptions.find(
+          "target.deterministicWorkers") ==
+      ir().getSessionOptions().engineOptions.end()) {
+    auto detWorkerValue =
+        (ir().getSessionOptions().enableStochasticRounding) ? "true" : "false";
+    lowering().engineOptions.set("target.deterministicWorkers", detWorkerValue);
+  }
+
   for (auto it : ir().getSessionOptions().engineOptions) {
     logging::devicex::info(
         "Setting engine option {} = {}", it.first, it.second);
@@ -441,6 +457,7 @@ Devicex::Devicex(Executablex &exe, std::shared_ptr<DeviceInfo> deviceInfo_)
         "Setting report option {} = {}", it.first, it.second);
     lowering().reportOptions.set(it.first, it.second);
   }
+
   executable_.lowering().setDevicex(this);
 }
 

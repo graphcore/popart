@@ -736,7 +736,10 @@ struct SessionOptions {
   /// Throw an exception when floating point errors occur.
   bool enableFloatingPointChecks = false;
 
-  /// Enable stochastic rounding.
+  /// Enable stochastic rounding. PopART will set the Poplar engine option
+  /// "target.deterministicWorkers" to "true" if this option is set and to
+  /// "false" if it is not set. You can override this behaviour by adding a
+  /// value for "target.deterministicWorkers" to SessionOptions::engineOptions.
   bool enableStochasticRounding = false;
 
   // Temporary option (not public) to enable RNG management as it currently

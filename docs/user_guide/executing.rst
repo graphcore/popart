@@ -127,6 +127,29 @@ need not be a model output -- any tensor can be anchored.
 It is the anchored tensors that are considered 'output' in the context of a
 ``IStepIO`` object.
 
+Session options
+===============
+
+In this section we detail a number of selected session options.
+
+Stochastic rounding
+~~~~~~~~~~~~~~~~~~~
+
+You can enable
+`stochastic rounding <https://docs.graphcore.ai/projects/ai-float-white-paper/en/latest/ai-float.html?highlight=stochastic%20rounding#deterministic-versus-stochastic-rounding>`_
+in PopART by setting the following session option:
+
+.. code-block:: python
+
+  opts = popart.SessionOptions()
+  opts.enableStochasticRounding = True
+
+.. note::
+   Enabling stochastic rounding in PopART will result in the Poplar engine
+   option "target.deterministicWorkers" being set to "true" (otherwise it
+   will default to "false"). You can override this engine option with
+   the session option ``opts.engineOptions``.
+
 Selecting a device for execution
 ================================
 
