@@ -153,7 +153,7 @@ def test_ternary_ops(connected: bool, inplace: bool, op_name: str,
 @pytest.mark.parametrize("connected", [True, False])
 def test_binary_ops(op_name: str, inplace: bool, connected: bool,
                     kwargs: Dict[str, Any]) -> None:
-    """Test binary ops
+    """Test binary (2 in, 1 out) ops
 
     Args:
         op_name (str): The op name e.g. AddOp
@@ -184,6 +184,9 @@ def test_binary_ops(op_name: str, inplace: bool, connected: bool,
 ("SplitOp", {"axis_": 0,"split_": [1]}),
 ("CastOp", {"_to": _ir.DataType.FLOAT}),
 ("DetachOp", {}),
+("DropoutOp", {"ratio_": 0.7}),
+("RandomUniformOp", {"shape_": (2,3), "dataType_": _ir.OptionalDataType(_ir.DataType.FLOAT),  "low_": 0.0, "high_": 1.0}),
+("RandomNormalOp", {"shape_": (2,3), "dataType_": _ir.OptionalDataType(_ir.DataType.FLOAT),  "mean_": 0.0, "scale_": 1.0}),
 ])
 # yapf: enable, pylint: enable-all
 def test_unary_ops(connected: bool, op_name: str,

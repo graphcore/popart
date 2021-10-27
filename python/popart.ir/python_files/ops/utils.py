@@ -28,3 +28,8 @@ def handle_negative_axis(t: Tensor, axis: int) -> int:
 
 def convert_optional_float(v: Optional[float]):
     return _ir.OptionalFloat(v) if v is not None else _ir.OptionalFloat()
+
+
+def convert_optional_dtype(dt: Optional[dtypes.dtype]):
+    return _ir.OptionalDataType(
+        dt._pb_dtype) if dt is not None else _ir.OptionalDataType()

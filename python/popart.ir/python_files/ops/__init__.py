@@ -5,6 +5,7 @@ from .call import *
 from .cast import *
 from .detach import *
 from .div import *
+from .dropout import *
 from .dynamic_slice import *
 from .dynamic_update import *
 from .dynamic_update_inplace import *
@@ -20,6 +21,7 @@ from .logical_not import *
 from .logical_or import *
 from .matmul import *
 from .mul import *
+from .random import *
 from .print_tensor import *
 from .reshape import *
 from .scatter import *
