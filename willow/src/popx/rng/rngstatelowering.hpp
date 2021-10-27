@@ -15,12 +15,13 @@ namespace popx {
 /**
  * This class is responsible for lowering RNG/SR related Poplar calls to Poplar
  * sequences. With 'RNG state' we mean the state you can load/store with
- * Poplar's `getHwSeed/setHwSeed` functions and with SR seed we mean the
- * enabledness of stochastic rounding.
+ * Poplar's `getHwSeed/setHwSeed` functions. When using stochastic rounding, we
+ * maintain two RNG states, one that is shared by all replicas, and one that is
+ * not. This class implements methods to lower the logic for managing two
+ * distinct RNG states.
  *
  * When stochastic rounding is enabled the assumption we make is that
- * `stochasticRoundingMethod` attribute is set for all Ops. This class offers
- * methods to set
+ * `stochasticRoundingMethod` attribute is set for all Ops.
  *
  * NOTE: We have deliberately chosen to avoid adding this functionality in to
  * IrLowering to avoid adding too much into one class.
@@ -37,8 +38,8 @@ public:
    * Lower the code required to initialise the RNG state tensors from a new
    * seed.
    *
-   * ASSUMPTION: The value of the seed tensor passed inis expected to be
-   * identical across replicas.
+   * ASSUMPTION: The value of the seed tensor passed in is identical across
+   * replicas.
    *
    * In pseudo-code:
    * ```
