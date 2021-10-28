@@ -39,29 +39,29 @@ ExchangeDescriptor RemoteStoreOp::getExchangeDescriptor(int index) const {
                             output->n());
 }
 
-RemoteLoadOp::RemoteLoadOp(const OperatorIdentifier &_opid,
-                           const Op::Settings &settings_,
-                           RemoteBufferId rbid_)
+RemoteLoadInplaceOp::RemoteLoadInplaceOp(const OperatorIdentifier &_opid,
+                                         const Op::Settings &settings_,
+                                         RemoteBufferId rbid_)
     : ExchangeBaseOp(_opid, settings_), remoteBufferId(rbid_) {}
 
-std::unique_ptr<Op> RemoteLoadOp::clone() const {
-  return std::make_unique<RemoteLoadOp>(*this);
+std::unique_ptr<Op> RemoteLoadInplaceOp::clone() const {
+  return std::make_unique<RemoteLoadInplaceOp>(*this);
 }
 
-void RemoteLoadOp::appendOutlineAttributes(OpSerialiserBase &os) const {
+void RemoteLoadInplaceOp::appendOutlineAttributes(OpSerialiserBase &os) const {
   Op::appendOutlineAttributes(os);
   os.appendAttribute("bufferid", remoteBufferId);
 }
 
-void RemoteLoadOp::setup() {
+void RemoteLoadInplaceOp::setup() {
   outInfo(getLocalTensorOutIndex()) = inInfo(getLocalTensorInIndex());
 }
 
-view::Regions RemoteLoadOp::modifies(InIndex index) const {
+view::Regions RemoteLoadInplaceOp::modifies(InIndex index) const {
   return aliases(index, 0);
 }
 
-view::Regions RemoteLoadOp::aliases(InIndex in, OutIndex) const {
+view::Regions RemoteLoadInplaceOp::aliases(InIndex in, OutIndex) const {
   if (in == getLocalTensorInIndex()) {
     return {view::Region::getFull(inShape(in), view::AccessType::Write)};
   } else if (in == getRemoteBufferOffsetInIndex()) {
@@ -71,7 +71,8 @@ view::Regions RemoteLoadOp::aliases(InIndex in, OutIndex) const {
   }
 }
 
-view::RegMap RemoteLoadOp::fwdRegMap(InIndex inIndex, OutIndex outIndex) const {
+view::RegMap RemoteLoadInplaceOp::fwdRegMap(InIndex inIndex,
+                                            OutIndex outIndex) const {
   if (inIndex == getRemoteBufferOffsetInIndex() &&
       output->hasIndex(getLocalTensorOutIndex())) {
     auto emptyRegion =
@@ -83,7 +84,8 @@ view::RegMap RemoteLoadOp::fwdRegMap(InIndex inIndex, OutIndex outIndex) const {
   return Op::fwdRegMap(inIndex, outIndex);
 }
 
-view::RegMap RemoteLoadOp::bwdRegMap(InIndex inIndex, OutIndex outIndex) const {
+view::RegMap RemoteLoadInplaceOp::bwdRegMap(InIndex inIndex,
+                                            OutIndex outIndex) const {
   if (inIndex == getRemoteBufferOffsetInIndex() &&
       output->hasIndex(getLocalTensorOutIndex())) {
     auto emptyRegion =
@@ -96,12 +98,12 @@ view::RegMap RemoteLoadOp::bwdRegMap(InIndex inIndex, OutIndex outIndex) const {
 }
 
 ReplicatedTensorShardingIndices
-RemoteLoadOp::getReplicatedTensorShardingIndices() const {
-  return {{{RemoteLoadOp::getLocalTensorInIndex()},
-           {RemoteLoadOp::getLocalTensorOutIndex()}}};
+RemoteLoadInplaceOp::getReplicatedTensorShardingIndices() const {
+  return {{{RemoteLoadInplaceOp::getLocalTensorInIndex()},
+           {RemoteLoadInplaceOp::getLocalTensorOutIndex()}}};
 }
 
-ExchangeDescriptor RemoteLoadOp::getExchangeDescriptor(int index) const {
+ExchangeDescriptor RemoteLoadInplaceOp::getExchangeDescriptor(int index) const {
   return ExchangeDescriptor(ExchangeDirection::Load,
                             remoteBufferId,
                             settings.vgraphId,
@@ -125,13 +127,14 @@ static OpDefinition remoteStoreOpDef(
      OpDefinition::Outputs({}),
      OpDefinition::Attributes({})});
 
-static OpCreator<RemoteLoadOp> remoteLoadOpCreator(
-    OpDefinitions({{Onnx::CustomOperators::RemoteLoad, remoteLoadOpDef}}),
+static OpCreator<RemoteLoadInplaceOp> remoteLoadOpCreator(
+    OpDefinitions({{Onnx::CustomOperators::RemoteLoadInplace,
+                    remoteLoadOpDef}}),
     [](const OpCreatorInfo &info) {
       int64_t bufferid =
           info.attributes.getAttribute<Attributes::Int>("bufferid");
-      return std::unique_ptr<RemoteLoadOp>(
-          new RemoteLoadOp(info.opid, info.settings, bufferid));
+      return std::unique_ptr<RemoteLoadInplaceOp>(
+          new RemoteLoadInplaceOp(info.opid, info.settings, bufferid));
     },
     true);
 

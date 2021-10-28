@@ -54,16 +54,18 @@ void RemoteStoreOpx::grow(snap::program::Sequence &prog) const {
 
 RemoteLoadOpx::RemoteLoadOpx(Op *op, Devicex *devicex)
     : RemoteBaseOpx(op, devicex) {
-  verifyOp<RemoteLoadOp>(op, Onnx::CustomOperators::RemoteLoad);
+  verifyOp<RemoteLoadInplaceOp>(op, Onnx::CustomOperators::RemoteLoadInplace);
 }
 
 void RemoteLoadOpx::grow(snap::program::Sequence &prog) const {
-  auto &remoteLoadOp = getOp<RemoteLoadOp>();
+  auto &remoteLoadOp = getOp<RemoteLoadInplaceOp>();
 
   TensorId inTensorId =
-      remoteLoadOp.input->tensor(RemoteLoadOp::getLocalTensorInIndex())->id;
+      remoteLoadOp.input->tensor(RemoteLoadInplaceOp::getLocalTensorInIndex())
+          ->id;
   TensorId outTensorId =
-      remoteLoadOp.output->tensor(RemoteLoadOp::getLocalTensorOutIndex())->id;
+      remoteLoadOp.output->tensor(RemoteLoadInplaceOp::getLocalTensorOutIndex())
+          ->id;
 
   // Tensor completely overwritten
   logging::opx::debug("[RemoteLoadOpx] Growing RemoteLoad for tensor {} -> {}, "
@@ -72,16 +74,17 @@ void RemoteLoadOpx::grow(snap::program::Sequence &prog) const {
                       outTensorId,
                       remoteLoadOp.getRemoteBufferId());
 
-  snap::Tensor inTensor = getInTensor(RemoteLoadOp::getLocalTensorInIndex());
+  snap::Tensor inTensor =
+      getInTensor(RemoteLoadInplaceOp::getLocalTensorInIndex());
   TensorId offsetId;
   snap::Tensor offset;
 
   if (remoteLoadOp.input->hasIndex(
-          RemoteLoadOp::getRemoteBufferOffsetInIndex())) {
-    offsetId =
-        remoteLoadOp.input->tensor(RemoteLoadOp::getRemoteBufferOffsetInIndex())
-            ->id;
-    offset = getInTensor(RemoteLoadOp::getRemoteBufferOffsetInIndex());
+          RemoteLoadInplaceOp::getRemoteBufferOffsetInIndex())) {
+    offsetId = remoteLoadOp.input
+                   ->tensor(RemoteLoadInplaceOp::getRemoteBufferOffsetInIndex())
+                   ->id;
+    offset = getInTensor(RemoteLoadInplaceOp::getRemoteBufferOffsetInIndex());
   }
 
   std::shared_ptr<ExchangeDescriptorx> descriptorx =
@@ -92,18 +95,18 @@ void RemoteLoadOpx::grow(snap::program::Sequence &prog) const {
   descriptorx->exchange(graph(), prog, debugContext());
   descriptorx->post(graph(), prog, debugContext());
 
-  if (hasInViewChangers(RemoteLoadOp::getLocalTensorInIndex())) {
+  if (hasInViewChangers(RemoteLoadInplaceOp::getLocalTensorInIndex())) {
     setOutViewChangers(
-        RemoteLoadOp::getLocalTensorOutIndex(),
-        getInViewChangers(RemoteLoadOp::getLocalTensorInIndex()));
+        RemoteLoadInplaceOp::getLocalTensorOutIndex(),
+        getInViewChangers(RemoteLoadInplaceOp::getLocalTensorInIndex()));
   }
 
-  setOutTensor(RemoteLoadOp::getLocalTensorOutIndex(),
+  setOutTensor(RemoteLoadInplaceOp::getLocalTensorOutIndex(),
                descriptorx->getOutTensors().at(0));
 }
 
 InputCreatorType RemoteLoadOpx::getInputCreatorType(InIndex index) const {
-  return index == RemoteLoadOp::getLocalTensorInIndex()
+  return index == RemoteLoadInplaceOp::getLocalTensorInIndex()
              ? InputCreatorType::CanUnwind
              : PopOpx::getInputCreatorType(index);
 }
@@ -111,7 +114,7 @@ InputCreatorType RemoteLoadOpx::getInputCreatorType(InIndex index) const {
 snap::Tensor RemoteLoadOpx::unwindTensorLayout(snap::Tensor tensor,
                                                InIndex in,
                                                OutIndex out) const {
-  auto &remoteLoadOp = getOp<RemoteLoadOp>();
+  auto &remoteLoadOp = getOp<RemoteLoadInplaceOp>();
   std::shared_ptr<ExchangeDescriptorx> descriptorx =
       getExchangeDescriptorx(dv_p, remoteLoadOp.getExchangeDescriptor(0));
   return descriptorx->unwind(srcVirtualGraph(in), tensor);
@@ -125,7 +128,7 @@ namespace {
 OpxCreator<RemoteStoreOpx>
     remoteStoreOpxCreator(Onnx::CustomOperators::RemoteStore);
 OpxCreator<RemoteLoadOpx>
-    remoteLoadOpxCreator(Onnx::CustomOperators::RemoteLoad);
+    remoteLoadOpxCreator(Onnx::CustomOperators::RemoteLoadInplace);
 } // namespace
 } // namespace popx
 } // namespace popart

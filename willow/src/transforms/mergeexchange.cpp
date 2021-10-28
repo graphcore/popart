@@ -154,7 +154,7 @@ bool MergeExchange::apply(Graph &graph) const {
     }
 
     bool isInit   = op->isConvertibleTo<InitOp>();
-    bool isRemote = op->isConvertibleTo<RemoteLoadOp>() ||
+    bool isRemote = op->isConvertibleTo<RemoteLoadInplaceOp>() ||
                     op->isConvertibleTo<RemoteStoreOp>();
     bool isHost =
         op->isConvertibleTo<HostLoadOp>() || op->isConvertibleTo<HostStoreOp>();
@@ -165,8 +165,9 @@ bool MergeExchange::apply(Graph &graph) const {
                                         prevOp->settings.executionContext;
     bool bspChanged = prevOp && op->hasBatchSerializedPhase() !=
                                     prevOp->hasBatchSerializedPhase();
-    bool isMerge = (seenRemoteLoads && op->isConvertibleTo<RemoteStoreOp>()) ||
-                   (seenRemoteStores && op->isConvertibleTo<RemoteLoadOp>());
+    bool isMerge =
+        (seenRemoteLoads && op->isConvertibleTo<RemoteStoreOp>()) ||
+        (seenRemoteStores && op->isConvertibleTo<RemoteLoadInplaceOp>());
     bool isAof = (op->settings.executionContext ==
                   ExecutionContext::AccumulateOuterFragment);
 
@@ -249,7 +250,8 @@ bool MergeExchange::apply(Graph &graph) const {
       seenRemoteStores = false;
     }
 
-    seenRemoteLoads  = seenRemoteLoads || op->isConvertibleTo<RemoteLoadOp>();
+    seenRemoteLoads =
+        seenRemoteLoads || op->isConvertibleTo<RemoteLoadInplaceOp>();
     seenRemoteStores = seenRemoteStores || op->isConvertibleTo<RemoteStoreOp>();
 
     if (isRemote || isHost || isMulti) {

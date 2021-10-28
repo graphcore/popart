@@ -14,7 +14,7 @@
 
 namespace popart {
 
-class RemoteLoadOp;
+class RemoteLoadInplaceOp;
 class RemoteStoreOp;
 class ReplicatedAllGatherOp;
 class ReplicatedAllReduceOp;
@@ -361,9 +361,9 @@ protected:
                                     const TensorStreamingContext &context);
 
   // Helper functions to insert a RemoteLoadOp.
-  RemoteLoadOp *insertRemoteLoadOp(const TensorConfig &tensorConfig,
-                                   const TensorStreamingContext context,
-                                   TensorId &loadedTensorId);
+  RemoteLoadInplaceOp *insertRemoteLoadOp(const TensorConfig &tensorConfig,
+                                          const TensorStreamingContext context,
+                                          TensorId &loadedTensorId);
 
   // Helper functions to insert a RemoteStoreOp.
   RemoteStoreOp *insertRemoteStoreOp(const TensorConfig &tensorConfig,

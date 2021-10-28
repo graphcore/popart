@@ -173,7 +173,7 @@ bool isComputeOp(Op *op) { return op->settings.tileSet == TileSet::Compute; }
 
 // An Op that is IO, and on IO tiles
 bool isIOOp(Op *op) {
-  return op->isConvertibleTo<RemoteLoadOp>() ||
+  return op->isConvertibleTo<RemoteLoadInplaceOp>() ||
          op->isConvertibleTo<RemoteStoreOp>() ||
          op->isConvertibleTo<HostLoadOp>() ||
          op->isConvertibleTo<HostStoreOp>();

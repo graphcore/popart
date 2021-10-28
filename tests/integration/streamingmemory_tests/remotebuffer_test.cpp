@@ -69,7 +69,7 @@ BOOST_AUTO_TEST_CASE(RemoteBufferLoadStoreTest_0) {
                                    static_cast<int64_t>(InitType::NoInit));
 
   TensorInfo B_info{"FLOAT", std::vector<int64_t>{K, N, N}};
-  TensorId B_id = bder->customOp(Onnx::CustomOperators::RemoteLoad,
+  TensorId B_id = bder->customOp(Onnx::CustomOperators::RemoteLoadInplace,
                                  1,
                                  {C_id},
                                  1,
@@ -195,7 +195,7 @@ BOOST_AUTO_TEST_CASE(RemoteBufferLoadStoreTest_1) {
 
   TensorInfo B_info{"FLOAT", std::vector<int64_t>{K, N, N}};
   TensorId B_l_id =
-      bder->customOp(Onnx::CustomOperators::RemoteLoad,
+      bder->customOp(Onnx::CustomOperators::RemoteLoadInplace,
                      1,
                      {A_id},
                      1,
@@ -303,7 +303,7 @@ BOOST_AUTO_TEST_CASE(RemoteBufferLoadStoreTest_2) {
                  "store");
 
   TensorInfo B_info{"FLOAT", std::vector<int64_t>{K, N, N}};
-  TensorId B_l_id = bder->customOp(Onnx::CustomOperators::RemoteLoad,
+  TensorId B_l_id = bder->customOp(Onnx::CustomOperators::RemoteLoadInplace,
                                    1,
                                    {A_bc_id},
                                    1,
@@ -402,7 +402,7 @@ BOOST_AUTO_TEST_CASE(RemoteBufferLoadOutlineTest) {
       bder->addInitializedInputTensor({v_B_init.data(), B_info}, "B");
 
   TensorInfo C_info{"FLOAT", std::vector<int64_t>{K, N, N}};
-  TensorId C_id = bder->customOp(Onnx::CustomOperators::RemoteLoad,
+  TensorId C_id = bder->customOp(Onnx::CustomOperators::RemoteLoadInplace,
                                  1,
                                  {A_id},
                                  1,
@@ -410,7 +410,7 @@ BOOST_AUTO_TEST_CASE(RemoteBufferLoadOutlineTest) {
                                  "load")[0];
 
   TensorInfo D_info{"FLOAT", std::vector<int64_t>{K, N, N}};
-  TensorId D_id = bder->customOp(Onnx::CustomOperators::RemoteLoad,
+  TensorId D_id = bder->customOp(Onnx::CustomOperators::RemoteLoadInplace,
                                  1,
                                  {B_id},
                                  1,
@@ -467,16 +467,17 @@ BOOST_AUTO_TEST_CASE(RemoteBufferLoadOutlineTest) {
         BOOST_CHECK(callOp->modifies(0).front().getAccessType() ==
                     view::AccessType::Write);
       }
-      if (RemoteLoadOp *remoteLoadOp = dynamic_cast<RemoteLoadOp *>(op)) {
+      if (RemoteLoadInplaceOp *remoteLoadOp =
+              dynamic_cast<RemoteLoadInplaceOp *>(op)) {
         BOOST_CHECK(remoteLoadOp
-                        ->aliases(RemoteLoadOp::getLocalTensorInIndex(),
-                                  RemoteLoadOp::getLocalTensorOutIndex())
+                        ->aliases(RemoteLoadInplaceOp::getLocalTensorInIndex(),
+                                  RemoteLoadInplaceOp::getLocalTensorOutIndex())
                         .front() == view::Region::getFull(A_info.shape()));
         BOOST_CHECK(
-            remoteLoadOp->modifies(RemoteLoadOp::getLocalTensorInIndex())
+            remoteLoadOp->modifies(RemoteLoadInplaceOp::getLocalTensorInIndex())
                 .front() == view::Region::getFull(A_info.shape()));
         BOOST_CHECK(
-            remoteLoadOp->modifies(RemoteLoadOp::getLocalTensorInIndex())
+            remoteLoadOp->modifies(RemoteLoadInplaceOp::getLocalTensorInIndex())
                 .front()
                 .getAccessType() == view::AccessType::Write);
       }

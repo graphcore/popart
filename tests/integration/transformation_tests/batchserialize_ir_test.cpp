@@ -707,7 +707,7 @@ BOOST_AUTO_TEST_CASE(TestBatchSerialWithOverlappedSchedule) {
   //     etc.
 
   auto isRemoteLoad = [](Op *op, int bsp) {
-    return (op->isConvertibleTo<RemoteLoadOp>()) &&
+    return (op->isConvertibleTo<RemoteLoadInplaceOp>()) &&
            (op->getBatchSerializedPhase() == bsp);
   };
   auto isIoTileCopyToCompute = [](Op *op, int bsp) {
@@ -716,7 +716,7 @@ BOOST_AUTO_TEST_CASE(TestBatchSerialWithOverlappedSchedule) {
            (op->getBatchSerializedPhase() == bsp);
   };
   auto isCompute = [](Op *op, int bsp) {
-    return (!op->isConvertibleTo<RemoteLoadOp>()) &&
+    return (!op->isConvertibleTo<RemoteLoadInplaceOp>()) &&
            (!op->isConvertibleTo<IoTileCopyOp>()) &&
            (!op->isConvertibleTo<RemoteStoreOp>()) &&
            (op->getBatchSerializedPhase() == bsp);

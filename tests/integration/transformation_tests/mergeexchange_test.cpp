@@ -55,18 +55,18 @@ void createModelWithRemoteExchange(Ir *ir, bool mergeExchange) {
                                              TensorType::ActGrad,
                                              InitType::Zero,
                                              Op::Settings{g, "init"});
-  auto loadOp0 =
-      g.createConnectedOp<RemoteLoadOp>({{0, "init0"}},
-                                        {{0, "load0"}},
-                                        Onnx::CustomOperators::RemoteLoad,
-                                        Op::Settings{g, "load"},
-                                        0);
-  auto loadOp1 =
-      g.createConnectedOp<RemoteLoadOp>({{0, "init1"}},
-                                        {{0, "load1"}},
-                                        Onnx::CustomOperators::RemoteLoad,
-                                        Op::Settings{g, "load"},
-                                        1);
+  auto loadOp0 = g.createConnectedOp<RemoteLoadInplaceOp>(
+      {{0, "init0"}},
+      {{0, "load0"}},
+      Onnx::CustomOperators::RemoteLoadInplace,
+      Op::Settings{g, "load"},
+      0);
+  auto loadOp1 = g.createConnectedOp<RemoteLoadInplaceOp>(
+      {{0, "init1"}},
+      {{0, "load1"}},
+      Onnx::CustomOperators::RemoteLoadInplace,
+      Op::Settings{g, "load"},
+      1);
 
   auto storeOp0 =
       g.createConnectedOp<RemoteStoreOp>({{0, "load0"}},
@@ -125,14 +125,14 @@ BOOST_AUTO_TEST_CASE(TestMergeRemoteExchange) {
 
     if (mergeExchange) {
       BOOST_REQUIRE_EQUAL(
-          ir->opsOfType(Onnx::CustomOperators::RemoteLoad).size(), 0);
+          ir->opsOfType(Onnx::CustomOperators::RemoteLoadInplace).size(), 0);
       BOOST_REQUIRE_EQUAL(
           ir->opsOfType(Onnx::CustomOperators::RemoteStore).size(), 0);
       BOOST_REQUIRE_EQUAL(
           ir->opsOfType(Onnx::CustomOperators::MultiExchange).size(), 2);
     } else {
       BOOST_REQUIRE_EQUAL(
-          ir->opsOfType(Onnx::CustomOperators::RemoteLoad).size(), 2);
+          ir->opsOfType(Onnx::CustomOperators::RemoteLoadInplace).size(), 2);
       BOOST_REQUIRE_EQUAL(
           ir->opsOfType(Onnx::CustomOperators::RemoteStore).size(), 2);
       BOOST_REQUIRE_EQUAL(

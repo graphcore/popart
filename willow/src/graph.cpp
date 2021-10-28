@@ -405,7 +405,7 @@ void Graph::setVarUpdateConstraints() {
             }
 
             // Modifiers that don't force all consumers to occur before
-            if (modifier->isConvertibleTo<RemoteLoadOp>() ||
+            if (modifier->isConvertibleTo<RemoteLoadInplaceOp>() ||
                 modifier->isConvertibleTo<MultiExchangeOp>() ||
                 modifier->isConvertibleTo<AccumulateOp>() ||
                 modifier->isConvertibleTo<AccumulatorScaleOp>()) {
@@ -413,7 +413,7 @@ void Graph::setVarUpdateConstraints() {
             }
 
             // Consumers that don't need to run before modifiers
-            if (consumer->isConvertibleTo<RemoteLoadOp>() ||
+            if (consumer->isConvertibleTo<RemoteLoadInplaceOp>() ||
                 consumer->isConvertibleTo<MultiExchangeOp>() ||
                 consumer->isConvertibleTo<RemoteStoreOp>() ||
                 consumer->isConvertibleTo<SliceInplaceOp>()) {

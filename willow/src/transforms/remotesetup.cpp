@@ -68,7 +68,7 @@ void RemoteSetup::getRemoteArgMapping(Graph &graph,
         for (Op *consumer : tfront->consumers.getOps()) {
           // Only certain ops can be on the path between RemoteArg and
           // RemoteLoad/Store.
-          if (consumer->opid == Onnx::CustomOperators::RemoteLoad ||
+          if (consumer->opid == Onnx::CustomOperators::RemoteLoadInplace ||
               consumer->opid == Onnx::CustomOperators::RemoteStore ||
               consumer->opid == Onnx::CustomOperators::MultiExchange) {
             for (InIndex inIndex : consumer->input->indices(tfront)) {
@@ -154,12 +154,13 @@ bool RemoteSetup::apply(Graph &graph) const {
   // Create remote buffer info for RemoteLoad/RemoteStore/RemoteExchange ops
   // with set buffer ID
   for (Op *op : ir.getAllOps()) {
-    if (RemoteLoadOp *loadOp = dynamic_cast<RemoteLoadOp *>(op)) {
+    if (RemoteLoadInplaceOp *loadOp = dynamic_cast<RemoteLoadInplaceOp *>(op)) {
       auto allRemoteBufferIds = ir.getAllRemoteBufferInfos();
       RemoteBufferId id       = loadOp->getRemoteBufferId();
       if (id > -1 && allRemoteBufferIds.find(id) == allRemoteBufferIds.end()) {
         auto info = RemoteBufferInfo(
-            loadOp->output->tensor(RemoteLoadOp::getLocalTensorOutIndex())
+            loadOp->output
+                ->tensor(RemoteLoadInplaceOp::getLocalTensorOutIndex())
                 ->info,
             1);
         ir.setRemoteBufferInfo(id, info);
@@ -259,7 +260,8 @@ bool RemoteSetup::apply(Graph &graph) const {
                 remoteBufferId,
                 rs->inInfo(RemoteStoreOp::getLocalTensorInIndex()));
           }
-          if (RemoteLoadOp *rl = dynamic_cast<RemoteLoadOp *>(op)) {
+          if (RemoteLoadInplaceOp *rl =
+                  dynamic_cast<RemoteLoadInplaceOp *>(op)) {
             rl->setRemoteBufferId(remoteBufferId);
             remoteBufferVGIDs[remoteBufferId].insert(
                 rl->hasVirtualGraphId() ? rl->getVirtualGraphId()
@@ -269,7 +271,7 @@ bool RemoteSetup::apply(Graph &graph) const {
                 "Tensor info {}.",
                 rl->debugName(),
                 remoteBufferId,
-                rl->outInfo(RemoteLoadOp::getLocalTensorOutIndex()));
+                rl->outInfo(RemoteLoadInplaceOp::getLocalTensorOutIndex()));
           }
           if (MultiExchangeOp *exchangeOp =
                   dynamic_cast<MultiExchangeOp *>(op)) {
@@ -373,7 +375,7 @@ bool RemoteSetup::apply(Graph &graph) const {
 
   // Verify every Remote*Op has valid RemoteBufferIDs
   for (Op *op : ir.getAllOps()) {
-    if (RemoteLoadOp *loadOp = dynamic_cast<RemoteLoadOp *>(op)) {
+    if (RemoteLoadInplaceOp *loadOp = dynamic_cast<RemoteLoadInplaceOp *>(op)) {
       if (loadOp->getRemoteBufferId() < 0) {
         throw error("Op {} has no valid remote buffer set.", op->debugName());
       }

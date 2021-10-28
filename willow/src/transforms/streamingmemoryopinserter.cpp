@@ -96,7 +96,7 @@ void StreamingMemoryOpInserter::setPriority(Op *op,
       // Remote load & all gather can be scheduled together in a way that
       // minimizes liveness
       if (!onDemandOptimizerState &&
-          (op->isConvertibleTo<RemoteLoadOp>() ||
+          (op->isConvertibleTo<RemoteLoadInplaceOp>() ||
            op->isConvertibleTo<ReplicatedAllGatherOp>())) {
         op->settings.schedulePriority = priority;
       }
@@ -109,7 +109,7 @@ void StreamingMemoryOpInserter::setPriority(Op *op,
       // Optimizer related ops and remote store can be scheduled together
       // in a way that minimizes liveness
       if ((onDemandOptimizerState &&
-           (op->isConvertibleTo<RemoteLoadOp>() ||
+           (op->isConvertibleTo<RemoteLoadInplaceOp>() ||
             op->isConvertibleTo<ReplicatedAllGatherOp>())) ||
           op->isOptimizerOp() || op->isConvertibleTo<ReplicatedAllReduceOp>() ||
           op->isConvertibleTo<ReplicatedReduceScatterOp>() ||
@@ -127,7 +127,7 @@ void StreamingMemoryOpInserter::setPriority(Op *op,
       --priority;
       // All remote loads must be scheduled before replicated operations
       // to maximize overlap (collectives block overlap)
-      if (op->isConvertibleTo<RemoteLoadOp>()) {
+      if (op->isConvertibleTo<RemoteLoadInplaceOp>()) {
         op->settings.schedulePriority = priority;
       }
       --priority;
@@ -166,7 +166,7 @@ void StreamingMemoryOpInserter::setPriority(Op *op,
       --priority;
       // All remote loads must be scheduled before replicated operations
       // to maximize overlap (collectives block overlap)
-      if (op->isConvertibleTo<RemoteLoadOp>()) {
+      if (op->isConvertibleTo<RemoteLoadInplaceOp>()) {
         op->settings.schedulePriority = priority;
       }
       priority = -(maxCompressedPriority + 1);
@@ -437,7 +437,7 @@ void StreamingMemoryOpInserter::applyTensor(
   TensorId loadedTensorId   = tensor->id;
   TensorId gatheredTensorId = tensor->id;
 
-  RemoteLoadOp *remoteLoad         = nullptr;
+  RemoteLoadInplaceOp *remoteLoad  = nullptr;
   RemoteStoreOp *remoteStore       = nullptr;
   ReplicatedAllGatherOp *allGather = nullptr;
 
@@ -642,10 +642,10 @@ StreamingMemoryOpInserter::getReplicatedTensorShardingProposal(
   // Checks if the root tensor, created by InitOp, is RTS
   auto checkRemoteBufferRTS = [&rtsTensors, &proposedRTS, &argOpMap, &opArgMap](
                                   Op *op) {
-    if (op->isConvertibleTo<RemoteLoadOp>() ||
+    if (op->isConvertibleTo<RemoteLoadInplaceOp>() ||
         op->isConvertibleTo<RemoteStoreOp>()) {
-      auto &args =
-          opArgMap.at({op, RemoteLoadOp::getRemoteBufferOffsetInIndex()});
+      auto &args = opArgMap.at(
+          {op, RemoteLoadInplaceOp::getRemoteBufferOffsetInIndex()});
       for (auto arg : args) {
         auto &ops = argOpMap.at(arg);
         for (auto opAndIdx : ops) {
@@ -1841,13 +1841,13 @@ void StreamingMemoryOpInserter::setLoadingOpPhaseAndPriority(
   }
 }
 
-RemoteLoadOp *StreamingMemoryOpInserter::insertRemoteLoadOp(
+RemoteLoadInplaceOp *StreamingMemoryOpInserter::insertRemoteLoadOp(
     const TensorConfig &tensorConfig,
     const TensorStreamingContext context,
     TensorId &loadedTensorId) {
 
-  RemoteLoadOp *remoteLoad = nullptr;
-  InitOp *init             = nullptr;
+  RemoteLoadInplaceOp *remoteLoad = nullptr;
+  InitOp *init                    = nullptr;
 
   if (isPhasedExecution() && context.context == ExecutionContext::Normal) {
     // Phase must be set when storing in phase.
@@ -1864,8 +1864,8 @@ RemoteLoadOp *StreamingMemoryOpInserter::insertRemoteLoadOp(
                             tensorConfig.tensor->id,
                             context);
 
-  auto remoteLoadOp = std::make_unique<RemoteLoadOp>(
-      Onnx::CustomOperators::RemoteLoad, tensorConfig.settings);
+  auto remoteLoadOp = std::make_unique<RemoteLoadInplaceOp>(
+      Onnx::CustomOperators::RemoteLoadInplace, tensorConfig.settings);
   remoteLoad = remoteLoadOp.get();
 
   // Setting the execution context ensures it's scheduled in the correct
@@ -1963,11 +1963,11 @@ RemoteLoadOp *StreamingMemoryOpInserter::insertRemoteLoadOp(
   // for outlining and aliasing purposes
 
   // RemoteLoad updates the inTensorId...
-  remoteLoad->connectInTensor(RemoteLoadOp::getLocalTensorInIndex(),
+  remoteLoad->connectInTensor(RemoteLoadInplaceOp::getLocalTensorInIndex(),
                               inTensorId);
   // ... and aliases it under loadedTensorId
-  remoteLoad->createAndConnectOutTensor(RemoteLoadOp::getLocalTensorOutIndex(),
-                                        loadedTensorId);
+  remoteLoad->createAndConnectOutTensor(
+      RemoteLoadInplaceOp::getLocalTensorOutIndex(), loadedTensorId);
 
   remoteLoad->setup();
 

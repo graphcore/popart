@@ -50,7 +50,7 @@ namespace popart {
  *
  * This Op does not have any output.
  *
- * See also \see RemoteLoadOp.
+ * See also \see RemoteLoadInplaceOp.
  **/
 class RemoteStoreOp : public ExchangeBaseOp {
 public:
@@ -125,10 +125,10 @@ private:
  *
  * See also \see RemoteStoreOp.
  **/
-class RemoteLoadOp : public ExchangeBaseOp {
+class RemoteLoadInplaceOp : public ExchangeBaseOp {
 public:
   /**
-   * Construct the \c RemoteLoadOp
+   * Construct the \c RemoteLoadInplaceOp
    *
    * Parameters specifically related to this class:
    *
@@ -141,9 +141,9 @@ public:
    *
    * See constructor of the parent class for the rest of input parameters.
    **/
-  RemoteLoadOp(const OperatorIdentifier &,
-               const Op::Settings &,
-               RemoteBufferId rbid_ = -1UL);
+  RemoteLoadInplaceOp(const OperatorIdentifier &,
+                      const Op::Settings &,
+                      RemoteBufferId rbid_ = -1UL);
 
   std::unique_ptr<Op> clone() const final;
   void setup() final;

@@ -65,10 +65,10 @@ AccumulateOuterFragmentParallelizer::OpCluster::OpCluster(const Graph *graph,
 
   // Populate remoteLoadOps
   remoteLoadOps.clear();
-  std::copy_if(ops.begin(),
-               ops.end(),
-               std::back_inserter(remoteLoadOps),
-               [](Op *op) { return op->isConvertibleTo<RemoteLoadOp>(); });
+  std::copy_if(
+      ops.begin(), ops.end(), std::back_inserter(remoteLoadOps), [](Op *op) {
+        return op->isConvertibleTo<RemoteLoadInplaceOp>();
+      });
 
   // Populate remoteStoreOps
   remoteStoreOps.clear();
@@ -92,7 +92,8 @@ AccumulateOuterFragmentParallelizer::OpCluster::OpCluster(const Graph *graph,
   for (auto remoteLoadOp : remoteLoadOps) {
     // RemoteLoadOp will do exactly one load.
     loadShapes.insert(
-        remoteLoadOp->outInfo(RemoteLoadOp::getLocalTensorOutIndex()).shape());
+        remoteLoadOp->outInfo(RemoteLoadInplaceOp::getLocalTensorOutIndex())
+            .shape());
   }
   for (auto MultiExchangeOp : multiExchangeOps) {
     // Exchange can multiple loads as well as stores. Work out number of loads
@@ -148,7 +149,7 @@ bool AccumulateOuterFragmentParallelizer::OpCluster::overlaps(
 
 bool AccumulateOuterFragmentParallelizer::OpCluster::hasRemoteOp() const {
   return std::any_of(ops.begin(), ops.end(), [](Op *op) {
-    return op->isConvertibleTo<RemoteLoadOp>() ||
+    return op->isConvertibleTo<RemoteLoadInplaceOp>() ||
            op->isConvertibleTo<RemoteStoreOp>() ||
            op->isConvertibleTo<MultiExchangeOp>();
   });
@@ -207,7 +208,8 @@ AccumulateOuterFragmentParallelizer::OpCluster::calcNumLoadBytes() const {
     loadBytesPerVgid[remoteLoadOp->hasVirtualGraphId()
                          ? remoteLoadOp->getVirtualGraphId()
                          : unusedVGraphId] +=
-        remoteLoadOp->outInfo(RemoteLoadOp::getLocalTensorOutIndex()).nbytes();
+        remoteLoadOp->outInfo(RemoteLoadInplaceOp::getLocalTensorOutIndex())
+            .nbytes();
   }
   for (auto MultiExchangeOp : multiExchangeOps) {
     // Exchange can multiple loads as well as stores. Work out number of loads
