@@ -46,14 +46,16 @@ public:
 /**
  * Dynamic Slice Inplace Op
  *
- * This Op takes three Tensors as input (as indicated in \see
+ * This Op takes two or three \c TensorIds as input (as indicated in \see
  * opidentifier.hpp)
- * 1. The Tensor to slice from
- * 2. The index of the starting point of the slice
- *    ( \see DynamicBaseOp for explanation)
- * 3. The tensor to write the slice into
  *
- * The output is the sliced tensor, aliased
+ * 1. The \c TensorId of tensor to slice from.
+ * 2. The (optional) \c TensorId of the index of the starting point of the slice
+ *    ( \see DynamicBaseOp for explanation).
+ * 3. The \c TensorId of the tensor to write the slice into (not used in
+ *    outplace variant).
+ *
+ * The output is the \c TensorId of the sliced tensor, aliased
  **/
 class DynamicSliceInplaceOp : public DynamicSliceOp {
 public:
