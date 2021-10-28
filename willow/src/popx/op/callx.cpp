@@ -199,7 +199,7 @@ void CallOpx::grow(std::vector<snap::program::Sequence> &sequences) const {
         int subgraphPart = (sequences.size() + offsetSubgraphPart);
         std::stringstream ss;
         ss << callop.getGraph().id.str() << "/" << subgraphPart;
-        sequences.push_back({debugContext(ss.str()), graph()});
+        sequences.push_back({debugContext(ss.str()), dv_p->lowering().graph()});
       }
 
       using CallOpPartType = liveness::SubgraphPartitioner::CallOpPartType;
