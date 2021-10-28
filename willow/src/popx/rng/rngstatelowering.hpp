@@ -31,6 +31,7 @@ public:
    * Initialise a RngStateLowering object.
    */
   RngStateLowering(const IrLowering &irLowering, snap::Graph &graph);
+  virtual ~RngStateLowering();
 
   /**
    * Lower the code required to initialise the RNG state tensors from a new

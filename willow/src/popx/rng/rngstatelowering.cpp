@@ -45,6 +45,8 @@ RngStateLowering::RngStateLowering(const IrLowering &irLowering_,
   setTensorLayout(identicalSeedsRngStateTensor);
 }
 
+RngStateLowering::~RngStateLowering() = default;
+
 void RngStateLowering::lowerInitRngStatesFromSeed(
     snap::program::Sequence &seq,
     const snap::Tensor &seed,
