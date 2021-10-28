@@ -45,6 +45,7 @@ void bindCall(py::module &m) {
       .def("opInToSubgraphInIndex", &CallOp::opInToSubgraphInIndex)
       .def("subgraphOutToOpOutIndex", &CallOp::subgraphOutToOpOutIndex)
       .def("opOutToSubgraphOutIndex", &CallOp::opOutToSubgraphOutIndex)
+      .def("addModified", &CallOp::addModified)
       .def("getCalledGraph",
            &CallOp::getCalledGraph,
            py::return_value_policy::reference);

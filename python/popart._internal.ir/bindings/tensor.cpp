@@ -7,6 +7,7 @@
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
 #include <string>
+#include <popart/aliasesmap.hpp>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/names.hpp>
@@ -128,17 +129,13 @@ void bindTensor(py::module &m) {
       .def("consumersAllPreLoss", &Tensor::consumersAllPreLoss)
       .def("isModified", &Tensor::isModified)
       .def("isAliased", &Tensor::isAliased)
-      // TODO(T42224): Enable and test the following. Needs binding of Aliases.
-      // .def("modifiedRegionsByOps",
-      //      py::overload_cast<std::vector<Op *>, Aliases &>(
-      //          &Tensor::modifiedRegionsByOps),
-      //      py::arg("ops"),
-      //      py::arg("aliases"))
-      // .def("modifiedRegionsByOps",
-      //      py::overload_cast<std::vector<OpId>, Aliases &>(
-      //          &Tensor::modifiedRegionsByOps),
-      //      py::arg("opIds"),
-      //      py::arg("aliases"))
+      .def("modifiedRegionsByOps",
+           [](Tensor &self, std::vector<Op *> ops) {
+             auto &graph = self.getGraph();
+             // Not binding Aliases/AliasesMap for now.
+             AliasesMap aliasMap(graph);
+             return self.modifiedRegionsByOps(ops, aliasMap.getAliases(graph));
+           })
       .def("getDataViaGraphTraversal", &Tensor::getDataViaGraphTraversal)
       .def("getDebugInfo",
            &Tensor::getDebugInfo,

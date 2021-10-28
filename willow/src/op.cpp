@@ -1140,13 +1140,28 @@ int Op::inRank(InIndex index) const { return inTensor(index)->info.rank(); }
 
 int Op::outRank(InIndex index) const { return outTensor(index)->info.rank(); }
 
+InIndex Op::inIndex(Tensor *tensor) const {
+  if (!input->contains(tensor)) {
+    throw internal_error(
+        "Cannot find input index of tensor {} for {}", tensor->id, debugName());
+  }
+  auto inIndices = input->indices(tensor);
+  if (inIndices.size() > 1) {
+    throw internal_error("Tensor {} is an input of {} at more than one index",
+                         tensor->id,
+                         debugName());
+  }
+  return inIndices.at(0);
+}
+
 OutIndex Op::outIndex(Tensor *tensor) const {
-  std::vector<OutIndex> outIndices = output->indices(tensor);
-  if (outIndices.size() == 0) {
+  if (!output->contains(tensor)) {
     throw internal_error("Cannot find output index of tensor {} for {}",
                          tensor->id,
                          debugName());
-  } else if (outIndices.size() > 1) {
+  }
+  auto outIndices = output->indices(tensor);
+  if (outIndices.size() > 1) {
     throw internal_error("Tensor {} is an output of {} at more than one index",
                          tensor->id,
                          debugName());

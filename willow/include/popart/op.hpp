@@ -585,6 +585,7 @@ public:
   Rank inRank(InIndex index) const;
   Rank outRank(OutIndex index) const;
 
+  InIndex inIndex(Tensor *) const;
   OutIndex outIndex(Tensor *) const;
 
   // Virtual method to append the op attributes to the stream. This method

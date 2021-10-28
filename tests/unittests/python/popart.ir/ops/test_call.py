@@ -1,9 +1,11 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
+import pytest
+
 import popart.ir as pir
 import popart.ir.ops as ops
 
 import popart._internal.ir as _ir
-import pytest
+
 from utils import contains_op_of_type, num_op_of_type
 
 

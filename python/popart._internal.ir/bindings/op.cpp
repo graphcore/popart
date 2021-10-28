@@ -197,6 +197,7 @@ void bindOp(py::module &m) {
       .def("outTensorCount", &Op::outTensorCount)
       .def("inRank", &Op::inRank)
       .def("outRank", &Op::outRank)
+      .def("inIndex", &Op::inIndex)
       .def("outIndex", &Op::outIndex)
       .def("firstInIndex",
            [](const Op *self, Tensor *t) -> InIndex {

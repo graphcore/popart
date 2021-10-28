@@ -151,6 +151,7 @@ add_popart_python_module(
   bindings/tensors.cpp
   bindings/basicoptionals.cpp
   bindings/opidentifier.cpp
+  bindings/region.cpp
   bindings/tensorlocation.cpp
   bindings/bwdgraphinfo.cpp
   bindings/util.cpp
