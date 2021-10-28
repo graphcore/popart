@@ -16,9 +16,10 @@ bool PreUniRepl::matches(Op *op) const {
   // must be consumed by only op (and only once)
   if (op->input->n() != 1) {
     return false;
-  } else if (!op->inTensor(0)->hasProducer()) {
+  } else if (op->hasInput(0) && !op->input->tensor(0)->hasProducer()) {
     return false;
-  } else if (op->input->tensor(0)->consumers.getTotal() != 1) {
+  } else if (op->hasInput(0) &&
+             op->input->tensor(0)->consumers.getTotal() != 1) {
     return false;
   }
 
