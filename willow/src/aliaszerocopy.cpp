@@ -453,13 +453,24 @@ void AliasZeroCopy::disableDeadCodeNodes() {
   for (int64_t i = 0; i < analyzer->getOpScheduleSize(); ++i) {
     auto &node = analyzer->getOpScheduleAt(i);
 
+    requiredNodes[{node.getOp(), node.getStatus(), node.getIndex()}] |=
+        !disabledNodes[i];
+  }
+
+  // Update disabledNodes with the final setting of requiredNodes.
+  // This ensures future liveness analysis is consistent with the lowered
+  // program.
+  for (int64_t i = 0; i < analyzer->getOpScheduleSize(); ++i) {
+    auto &node = analyzer->getOpScheduleAt(i);
+
+    auto required =
+        requiredNodes[{node.getOp(), node.getStatus(), node.getIndex()}];
+    disabledNodes[i] = !required;
+
     logging::opx::trace("[AliasZeroCopy] index: {} node: {} disabled: {}",
                         i,
                         node,
-                        static_cast<int>(disabledNodes[i]));
-
-    requiredNodes[{node.getOp(), node.getStatus(), node.getIndex()}] |=
-        !disabledNodes[i];
+                        static_cast<int>(!required));
   }
 }
 
