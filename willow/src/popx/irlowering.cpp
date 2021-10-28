@@ -1328,7 +1328,7 @@ PriTask IrLowering::streamFromHostTask(TensorId streamTensorId,
       Tensor *tensor = tensorAndOp.first;
       Op *op         = tensorAndOp.second;
       // Assume another op will copy the tensor for an ipucopy
-      if (op->opid != Onnx::CustomOperators::IpuCopy) {
+      if (op->isConvertibleTo<IpuCopyOp>()) {
         // VirtualGraphId with subgraph call introspection
         // for the current tensor
         auto index          = op->input->indicesMap().at(tensor)[0];
