@@ -21,7 +21,8 @@ class Context:
 
     def _reset(self):
         self._graphs: List['Graph'] = []
-        self._virtual_graph_ids: List[int] = []
+        # By default place all ops on ipu 0
+        self._virtual_graph_ids: List[int] = [0]
         self._pipeline_stages: List[int] = []
         self._in_sequence: Optional[bool] = None
         self._previous_ops: DefaultDict[_ir.GraphId, List[

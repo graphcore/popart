@@ -252,6 +252,7 @@ Op *BackwardsGraphCreatorHelper::growGradSumOp(
   bwdGraph.connectOutputs(OutputVecWrapper(outputs), opId);
   Op *op = bwdGraph.getOps()[opId].get();
   op->setup();
+  op->inheritPlacementAttributes(true, gradSumAliases);
   return op;
 }
 

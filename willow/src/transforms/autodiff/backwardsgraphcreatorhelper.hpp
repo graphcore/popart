@@ -80,6 +80,7 @@ private:
 
   const Graph &fwdGraph;
   Graph &bwdGraph;
+  AliasModel gradSumAliases;
 
   // A map of fwd tensors to their corresponding gradient tensors
   std::map<TensorId, TensorId> gradTensorMap;

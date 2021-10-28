@@ -1,14 +1,11 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 """Definition of a class that represents the PopART IR."""
 
-from collections import Counter
 from typing import Any, Callable, Optional
 
-from numpy.lib.index_tricks import ndindex
-
+import popart
 import popart._internal.ir as _ir
 from popart.ir.graph import Graph
-from popart.ir.context import gcg
 from popart.ir.module import Module
 from popart.ir.tensor import Tensor, subgraph_input, subgraph_output
 
@@ -26,6 +23,17 @@ class Ir:
     def __init__(self):
         """Initialises a new `Ir`."""
         self._pb_ir = _ir.Ir()
+        # Set better defaults for popart.ir programs.
+        # Some parts of graph construction use the session options to make decisions,
+        # such as inheritPlacementAttributes and scheduling priorities. So we must set
+        # the options when we construct the _internal IR before the user starts constructing
+        # the graphs.
+        opts = self._pb_ir.getSessionOptions()
+        opts.virtualGraphMode = popart.VirtualGraphMode.Manual
+        opts.useHostCopyOps = True
+        opts.aliasZeroCopy = True
+        opts.enableExplicitMainLoops = True
+        opts.explicitRecomputation = True
 
     @classmethod
     def _from_pb(
@@ -77,9 +85,6 @@ class Ir:
             Graph:
                 A graph that corresponds to the input Python function.
         """
-        g = gcg()
-        pb_g = g._pb_graph
-
         if isinstance(fn, Module):
             qualname = fn.__class__.__qualname__
         else:
@@ -103,9 +108,7 @@ class Ir:
             for arg in args:
                 if isinstance(arg, Tensor):
                     t = arg
-                    in_args.append(
-                        subgraph_input(t.shape, t.dtype,
-                                       _ir.removeScope(pb_g, t.id)))
+                    in_args.append(subgraph_input(t.shape, t.dtype, t.name))
                 else:
                     in_args.append(arg)
 
@@ -113,8 +116,7 @@ class Ir:
             for k, v in kwargs.items():
                 if isinstance(v, Tensor):
                     t = v
-                    in_kwargs[k] = subgraph_input(t.shape, t.dtype,
-                                                  _ir.removeScope(pb_g, t.id))
+                    in_kwargs[k] = subgraph_input(t.shape, t.dtype, t.name)
                 else:
                     in_kwargs[k] = v
 

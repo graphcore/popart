@@ -28,7 +28,10 @@ class TestIpuCopy:
 
         with g:
             a = pir.variable(1)
-            a_0 = a + 1
+            # None will disable annotations of virtual_graph. Not recommended
+            # but ipu_copy should throw an error if it happens.
+            with pir.virtual_graph(None):
+                a_0 = a + 1
             with pytest.raises(TypeError) as excinfo:
                 a_1 = ops.ipu_copy(a_0, 1)
             msg = str(excinfo.value)
