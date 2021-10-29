@@ -46,6 +46,7 @@ enabled. These settings will become the default in future releases.
 
 Explicit main loops will cause the PopART IR to be transformed such that the
 two training loops will become visible:
+
   - One loop for the device iterations, with ``batches per step`` iterations.
 
   - One loop for the gradient accumulations, with ``accl_factor`` iterations.
