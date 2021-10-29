@@ -8,14 +8,8 @@ from .utils import check_in_graph
 __all__ = ["dynamic_update"]
 
 
-def dynamic_update(
-        t: Tensor,
-        index: Tensor,
-        t_update: Tensor,
-        axes: List[int],
-        sizes: List[int],
-        no_overlap: bool,
-        update_in_info: _ir.TensorInfo = _ir.TensorInfo()) -> Tensor:
+def dynamic_update(t: Tensor, index: Tensor, t_update: Tensor, axes: List[int],
+                   sizes: List[int], no_overlap: bool) -> Tensor:
     """
     Dynamically updates a tensor.
 
@@ -29,7 +23,7 @@ def dynamic_update(
     start - will be equal the index for the respective axis
     stop - will be equal index + size for the respective axis
     step - will equal 1
-   
+
     Limitations:
     Assuming we would like to update t with dimension (4, 3).
     The slicing of t will have the following limitations:
@@ -57,8 +51,6 @@ def dynamic_update(
             each region in the output tensor has exactly one populator
             (operation that writes data to this region).
             There are no run-time or compile-time checks possible to ensure this.
-        update_in_info : TensorInfo
-           The TensorInfo (containing data_type, shape and meta_shape) for the t_update
     Returns:
         out: Tensor
             The updated tensor.
@@ -72,12 +64,16 @@ def dynamic_update(
     settings = ctx._get_op_settings('dynamicupdate')
     opid = _ir.OperatorIdentifier("ai.graphcore", "DynamicUpdate", 1,
                                   _ir.NumInputs(3, 3), 1)
+    # This ensures that `t` is created by calling `popops::createSliceableTensorFromSlice`
+    # with `t_update`.
+    # Does the user need control over this?
+    settings.inferTensorMappingToFrom = {0: 2}
     op = pb_g.createConnectedOp_DynamicUpdateOp(
         {
             0: t.id,
             1: index.id,
             2: t_update.id
         }, {0: g._create_tensor_id(f"dynamic_update_out")}, opid, axes, sizes,
-        no_overlap, settings, update_in_info)
+        no_overlap, settings, t_update._pb_tensor.info)
 
     return Tensor._from_pb_tensor(op.outTensor(0))
