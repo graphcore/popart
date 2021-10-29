@@ -51,6 +51,9 @@ private:
  **/
 class IncrementModInplaceOp : public ElementWiseInplaceUnaryOp {
 public:
+  IncrementModInplaceOp(double increment_,
+                        double modulus_,
+                        const Op::Settings &settings);
   IncrementModInplaceOp(const IncrementModOp &);
   std::unique_ptr<Op> clone() const final;
   void appendOutlineAttributes(OpSerialiserBase &) const override;

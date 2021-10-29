@@ -187,6 +187,8 @@ def test_binary_ops(op_name: str, inplace: bool, connected: bool,
 ("DropoutOp", {"ratio_": 0.7}),
 ("RandomUniformOp", {"shape_": (2,3), "dataType_": _ir.OptionalDataType(_ir.DataType.FLOAT),  "low_": 0.0, "high_": 1.0}),
 ("RandomNormalOp", {"shape_": (2,3), "dataType_": _ir.OptionalDataType(_ir.DataType.FLOAT),  "mean_": 0.0, "scale_": 1.0}),
+("IncrementModOp", {"increment_": 1, "modulus_": 3}),
+("IncrementModInplaceOp", {"increment_": 1, "modulus_": 3})
 ])
 # yapf: enable, pylint: enable-all
 def test_unary_ops(connected: bool, op_name: str,
@@ -201,7 +203,7 @@ def test_unary_ops(connected: bool, op_name: str,
     """
     _, graphs = create_ir()
     g = graphs[0]
-    unary_op_tester(op_name, g, False, connected, **kwargs)
+    unary_op_tester(op_name, g, "Inplace" in op_name, connected, **kwargs)
 
 
 @pytest.mark.parametrize("connected", [True, False])

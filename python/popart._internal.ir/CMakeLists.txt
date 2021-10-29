@@ -25,6 +25,7 @@ list(
   # ${popart_op_headers_dir}/call.hpp # Manually bound
   # ${popart_op_headers_dir}/matmul.hpp # Manually bound
   ${popart_op_headers_dir}/exchange/hostcopy.hpp
+  ${popart_op_headers_dir}/incrementmod.hpp
   ${popart_op_headers_dir}/init.hpp
   ${popart_op_headers_dir}/mul.hpp
   ${popart_op_headers_dir}/div.hpp

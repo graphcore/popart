@@ -24,6 +24,13 @@ void IncrementModOp::appendOutlineAttributes(OpSerialiserBase &os) const {
   os.appendAttribute("modulus", modulus);
 }
 
+IncrementModInplaceOp::IncrementModInplaceOp(double increment_,
+                                             double modulus_,
+                                             const Op::Settings &settings)
+    : ElementWiseInplaceUnaryOp(Onnx::CustomOperators::IncrementModInplace_1,
+                                settings),
+      increment(increment_), modulus(modulus_) {}
+
 IncrementModInplaceOp::IncrementModInplaceOp(
     const IncrementModOp &incrementModOp)
     : ElementWiseInplaceUnaryOp(Onnx::CustomOperators::IncrementModInplace_1,
