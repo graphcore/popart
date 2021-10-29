@@ -119,7 +119,9 @@ void bindGraph(py::module &m) {
            [](Graph &self, const TensorId &name) {
              return self.getTensors().contains(name);
            })
-      .def("getIr", py::overload_cast<>(&Graph::getIr, py::const_))
+      .def("getIr",
+           py::overload_cast<>(&Graph::getIr, py::const_),
+           py::return_value_policy::reference)
       .def(
           "topoCons",
           [](Graph &self) { return self.topoCons.get(); },

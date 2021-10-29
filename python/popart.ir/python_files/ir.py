@@ -1,13 +1,17 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 """Definition of a class that represents the PopART IR."""
 
-from typing import Any, Callable, Optional
+from weakref import WeakValueDictionary
+from typing import TYPE_CHECKING, Any, Callable, Dict, Optional
 
 import popart
 import popart._internal.ir as _ir
 from popart.ir.graph import Graph
 from popart.ir.module import Module
 from popart.ir.tensor import Tensor, subgraph_input, subgraph_output
+
+if TYPE_CHECKING:
+    IrCache = WeakValueDictionary[int, 'Ir']
 
 __all__ = ['Ir']
 
@@ -35,24 +39,36 @@ class Ir:
         opts.enableExplicitMainLoops = True
         opts.explicitRecomputation = True
 
+        Ir._ir_cache[self.id] = self
+        self._graph_cache: Dict[str, Graph] = {}
+
+    _ir_cache: 'IrCache' = WeakValueDictionary()
+
     @classmethod
     def _from_pb(
             cls,
             pb_ir: '_ir.Ir',
     ) -> 'Ir':
-        """Factory method to construct `Ir` instances.
+        """Factory method to return popart.ir.Ir for a pybind _ir.Ir.
 
         Args:
             pb_ir (_ir.Ir):
                 An instance of the low-level pybind11 `Ir`.
 
+        Raises:
+            RuntimeError: If the pb_ir does not already have a popart.ir Ir in-memory.
+
         Returns:
             Ir:
                 A popart.ir.Ir that reprsents the passed pb_ir.
         """
-        self: 'Ir' = super().__new__(cls)
-        self._pb_ir = pb_ir
-        return self
+        _id = pb_ir.getId()
+        if _id not in Ir._ir_cache:
+            raise RuntimeError(
+                "Constructing a new Ir with _from_pb is unexpected. "
+                "This implies the Ir was garbage collected. "
+                "Is a popart.ir class missing a back reference to Ir?")
+        return Ir._ir_cache[_id]
 
     def main_graph(self) -> 'Graph':
         """Every IR is initialised with a main graph. This method returns this

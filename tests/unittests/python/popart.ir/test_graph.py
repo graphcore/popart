@@ -40,4 +40,12 @@ def test_has_name():
     g = ir.main_graph()
     name = g.name
     assert isinstance(name, str)
-    hash(g.id)  # test __hash__
+    hash(g.id)  # test __hash__
+
+
+def test_graph_cache():
+    ir = pir.Ir()
+    pb_g = ir.main_graph()._pb_graph
+    g1 = pir.Graph._from_pb(pb_g)
+    g2 = pir.Graph._from_pb(pb_g)
+    assert g1 is g2  # test Ir._graph_cache

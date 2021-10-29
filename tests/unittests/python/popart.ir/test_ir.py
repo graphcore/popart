@@ -5,6 +5,7 @@ This file should contain unittests to check the correct working of the Ir class
 from the popart.ir package. This is a public-facing API. Tests in this file
 should be quick to run (these are explicitly not integration tests).
 """
+import gc
 
 import popart.ir as pir
 
@@ -32,3 +33,20 @@ def test_multiple_ir():
 def test_repr():
     ir1 = pir.Ir()
     str(ir1)
+
+
+def test_cache():
+    # Force the Ir._ir_cache to start empty
+    gc.collect()
+
+    ir = pir.Ir()
+    ir1 = pir.Ir._from_pb(ir._pb_ir)
+    assert ir is ir1
+
+    assert len(pir.Ir._ir_cache) == 1
+    del ir
+    gc.collect()
+    assert len(pir.Ir._ir_cache) == 1
+    del ir1
+    gc.collect()
+    assert len(pir.Ir._ir_cache) == 0

@@ -1,7 +1,6 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 """Definition of a class that represents graphs in the PopART IR."""
 from typing import TYPE_CHECKING, Any, Optional, Tuple
-from contextlib import contextmanager
 
 import popart._internal.ir as _ir
 
@@ -29,10 +28,44 @@ class Graph:
         """
         # The following attributes and their types are declared here for the
         # sake of Python language servers.
-        self._pb_graph: _ir.Graph = None
+        self._pb_graph: _ir.Graph
+        # Back reference to Ir is required to avoid garbage collection of Ir.
+        self._ir: 'Ir'
 
         raise TypeError(f"Cannot create {self.__module__}.Graph instances "
                         "using the constructor.")
+
+    @classmethod
+    def _from_pb(
+            cls,
+            pb_graph: '_ir.Graph',
+    ) -> 'Graph':
+        """Factory method to construct `Graph` instances.
+
+        Args:
+            ir (Ir):
+                An instance of `Ir` in which the graph resides.
+            debug_name (str):
+                A debug name that's assigned to the subgraph.
+            pb_graph (_ir.Graph):
+                An instance of the low-level pybind11 `Graph`.
+
+        Returns:
+            Graph:
+                The main graph of the `Ir`.
+        """
+        from popart.ir.ir import Ir
+        ir = Ir._from_pb(pb_graph.getIr())
+        _id = pb_graph.id.str()
+        if _id in ir._graph_cache:
+            return ir._graph_cache[_id]
+
+        self: 'Graph' = super().__new__(cls)
+        self._pb_graph = pb_graph
+        self._ir = ir
+
+        ir._graph_cache[_id] = self
+        return self
 
     @property
     def name(self) -> str:
@@ -43,8 +76,7 @@ class Graph:
         return str(self._pb_graph.id.str())
 
     def ir(self) -> 'Ir':
-        from popart.ir import Ir
-        return Ir._from_pb(self._pb_graph.getIr())
+        return self._ir
 
     def get_main_graph(self) -> 'Graph':
         return self.ir().main_graph()
@@ -70,29 +102,6 @@ class Graph:
         return tuple(
             Tensor._from_pb_tensor(self._pb_graph.getTensor(o))
             for o in _pb_outs)
-
-    @classmethod
-    def _from_pb(
-            cls,
-            pb_graph: '_ir.Graph',
-    ) -> 'Graph':
-        """Factory method to construct `Graph` instances.
-
-        Args:
-            ir (Ir):
-                An instance of `Ir` in which the graph resides.
-            debug_name (str):
-                A debug name that's assigned to the subgraph.
-            pb_graph (_ir.Graph):
-                An instance of the low-level pybind11 `Graph`.
-
-        Returns:
-            Graph:
-                The main graph of the `Ir`.
-        """
-        self: 'Graph' = super().__new__(cls)
-        self._pb_graph = pb_graph
-        return self
 
     def _create_tensor_id(self, name: Optional[str] = None) -> str:
         """Generate a unique tensor id.
