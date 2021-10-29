@@ -31,7 +31,7 @@ public:
   /**
    * Initialise a RngStateLowering object.
    */
-  RngStateLowering(const IrLowering &irLowering, snap::Graph &graph);
+  RngStateLowering(IrLowering &irLowering, snap::Graph &graph);
   virtual ~RngStateLowering();
 
   /**
@@ -94,6 +94,42 @@ public:
    */
   virtual void lowerGetRngState(snap::program::Sequence &seq, PopOpx *opx);
 
+  /**
+   * @return Task to set up combinedRngStateTensor
+   */
+  PriTask initRngStateTensor();
+
+  /**
+   * @return Task to set up lowering of rng state tensors from host to device
+   * The lowered program is equivalent to the following pseudocode:
+   * ```
+   * def rngStateToHostLowered():
+   *   combinedRngStateTensor = [
+   *     identicalSeedsRngStateTensor,
+   *     differingSeedsRngStateTensor
+   *   ]
+   *   rngState = combinedRngStateTensor
+   * ```
+   */
+  PriTask rngStateFromHost();
+
+  /**
+   * @return Task to set up lowering of rng state tensors from device to host
+   * The lowered program is equivalent to the following pseudocode:
+   * ```
+   * def rngStateFromHostLowered():
+   *   combinedRngStateTensor = newRngState
+   *   identicalSeedsRngStateTensor = combinedRngStateTensor[0]
+   *   differingSeedsRngStateTensor = combinedRngStateTensor[1]
+   * ```
+   */
+  PriTask rngStateToHost();
+
+  // 2 tensors: identicalSeedsRngStateTensor and differingSeedsRngStateTensor
+  static const unsigned numRngStateTensors = 2;
+  // Size of single RNG state in bytes
+  static const unsigned rngStateSizePerWorker = 4;
+
 private:
   // Helper function to ensure our tensors have a layout that prevents
   // unnecessary exchanges.
@@ -109,8 +145,13 @@ private:
                                snap::Tensor &rngState,
                                const poplar::DebugContext &dbgCtx) const;
 
+  // Functions for commonly accessed values
+  unsigned getNumWorkersPerTile();
+  unsigned getNumTiles();
+  unsigned getCombinedRngStateSize();
+
   // Reference to IR.
-  std::reference_wrapper<const IrLowering> irLowering;
+  std::reference_wrapper<IrLowering> irLowering;
   // Reference to the snap Graph.
   std::reference_wrapper<snap::Graph> graph;
 
@@ -118,6 +159,15 @@ private:
   // that is not identical.
   snap::Tensor differingSeedsRngStateTensor;
   snap::Tensor identicalSeedsRngStateTensor;
+
+  // Tensor used to upload / download the value [identicalSeedsRngStateTensor,
+  // differingSeedsRngStateTensor].
+  snap::Tensor combinedRngStateTensor;
+
+  // TaskIds for the different tasks
+  static const TaskId initRngStateTensorTaskId;
+  static const TaskId rngStateFromHostTaskId;
+  static const TaskId rngStateToHostTaskId;
 };
 
 } // namespace popx

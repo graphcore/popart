@@ -34,6 +34,7 @@
 #include <poprand/codelets.hpp>
 #include <poprithms/logging/timepartitionlogger.hpp>
 #include <poputil/exceptions.hpp>
+#include <popx/rng/rngstatelowering.hpp>
 #include <popart/devicemanager.hpp>
 #include <popart/error.hpp>
 #include <popart/graph.hpp>
@@ -676,7 +677,9 @@ void Devicex::connectRandomSeedStream() {
 
 void Devicex::connectRngStateStream() {
   int totalNumTiles = deviceInfo->getNumIpus() * deviceInfo->getTilesPerIPU();
-  int rngSize       = totalNumTiles * deviceInfo->getNumWorkerContexts() * 4;
+  int rngSize       = totalNumTiles * deviceInfo->getNumWorkerContexts() *
+                RngStateLowering::rngStateSizePerWorker *
+                RngStateLowering::numRngStateTensors;
   for (uint16_t replicaId = 0; replicaId < getReplicationFactor();
        ++replicaId) {
     rngBuffer[replicaId] = std::vector<uint32_t>(rngSize);
@@ -684,22 +687,14 @@ void Devicex::connectRngStateStream() {
     auto h2d_callback = [this, replicaId, rngSize](void *ptr) {
       uint32_t *data   = reinterpret_cast<uint32_t *>(ptr);
       uint32_t *buffer = rngBuffer[replicaId].data();
-      for (int k = 0; k < rngSize; k++) {
-        *data = *buffer;
-        data++;
-        buffer++;
-      }
+      std::copy(buffer, buffer + rngSize, data);
       logging::devicex::debug("Updating RNG state for replica:{}", replicaId);
     };
 
     auto d2h_callback = [this, replicaId, rngSize](void *ptr) {
       uint32_t *data   = reinterpret_cast<uint32_t *>(ptr);
       uint32_t *buffer = rngBuffer[replicaId].data();
-      for (int k = 0; k < rngSize; k++) {
-        *buffer = *data;
-        data++;
-        buffer++;
-      }
+      std::copy(data, data + rngSize, buffer);
       logging::devicex::debug("Retrieving RNG for replica:{}", replicaId);
     };
 
@@ -729,27 +724,37 @@ std::vector<uint32_t> Devicex::getRngStateToHost() {
   // Reset the buffer
   logging::devicex::debug("Cleaning the rng buffer before receiving data");
   int totalNumTiles = deviceInfo->getNumIpus() * deviceInfo->getTilesPerIPU();
-  int rngSize       = totalNumTiles * deviceInfo->getNumWorkerContexts() * 4;
+  int rngSize       = totalNumTiles * deviceInfo->getNumWorkerContexts() *
+                RngStateLowering::rngStateSizePerWorker *
+                RngStateLowering::numRngStateTensors;
   for (auto &buffer : rngBuffer) {
     buffer.second = std::vector<uint32_t>(rngSize);
   }
   pEngine->disableExecutionProfiling();
   run(PopPrograms::ProgramIndex::RngStateToHost, "GetRngState");
   logging::devicex::debug("Copying data to host");
-  std::vector<uint32_t> seedValue;
+  std::vector<uint32_t> rngState;
   for (uint16_t replicaId = 0; replicaId < getReplicationFactor();
        ++replicaId) {
-    seedValue.insert(seedValue.end(),
-                     rngBuffer[replicaId].begin(),
-                     rngBuffer[replicaId].end());
+    rngState.insert(rngState.end(),
+                    rngBuffer[replicaId].begin(),
+                    rngBuffer[replicaId].end());
   }
-  return seedValue;
+  return rngState;
 }
 
-void Devicex::setRngStateValue(const std::vector<uint32_t> seedValue) {
+void Devicex::setRngStateValue(const std::vector<uint32_t> rngState) {
   int totalNumTiles = deviceInfo->getNumIpus() * deviceInfo->getTilesPerIPU();
-  int rngSize       = totalNumTiles * deviceInfo->getNumWorkerContexts() * 4;
-  const uint32_t *seed_ptr = seedValue.data();
+  int rngSize       = totalNumTiles * deviceInfo->getNumWorkerContexts() *
+                RngStateLowering::rngStateSizePerWorker *
+                RngStateLowering::numRngStateTensors;
+  if (rngState.size() != rngSize) {
+    throw runtime_error("Devicex::setRngStateValue received rngState of size "
+                        "{}; was expecting size {}",
+                        rngState.size(),
+                        rngSize);
+  }
+  const uint32_t *seed_ptr = rngState.data();
   for (uint16_t replicaId = 0; replicaId < getReplicationFactor();
        ++replicaId) {
     rngBuffer[replicaId].assign(seed_ptr, seed_ptr + rngSize);

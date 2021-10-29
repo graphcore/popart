@@ -1077,7 +1077,8 @@ PriTask IrLowering::initRandomSeed() {
     //   values for random ops in the IR. This mechanism is used instead of
     //   relying on the IPU's random state so that random Ops are deterministic
     //   in the case of recomputation.
-    // - Secondly, we use `streamSeedId` to derive two RNG states on the device
+    // - Secondly, we use `streamedSeedId` to derive two RNG states on the
+    // device
     //   using RngStateLowering.
 
     auto &seed = tensors_.get(streamedSeedId);
@@ -1117,90 +1118,6 @@ PriTask IrLowering::initRandomSeed() {
       deps,                   // depends on
       initRandomSeedTask      // what to run when the task is executed
   };
-}
-
-PriTask IrLowering::rngStateFromHost() {
-  auto rngStateFromHostTask = [this]() {
-    int rngSize = (graph().getPoplarGraph().getTarget().getNumTiles()) *
-                  graph().getPoplarGraph().getTarget().getNumWorkerContexts() *
-                  4;
-    auto streamRngFromHost = graph().getPoplarGraph().addHostToDeviceFIFO(
-        "h2d_rngStateTensor",
-        poplar::UNSIGNED_INT,
-        rngSize,
-        poplar::ReplicatedStreamMode::REPLICATE);
-
-    logging::devicex::debug("Initializing RNG h2d.");
-
-    SequenceMap seqs(graph());
-    seqs.getSequence(&progs.rngStateFromHostFragment())
-        .getPoplarSequence()
-        .add(poplar::program::Copy(streamRngFromHost,
-                                   rngStateTensor.getPoplarTensor(),
-                                   false,
-                                   {"copyStreamRngStateTensor"}));
-    poplar::setHwSeeds(
-        graph().getPoplarGraph(),
-        rngStateTensor.getPoplarTensor(),
-        seqs.getSequence(&progs.rngStateFromHostFragment()).getPoplarSequence(),
-        "RNG set");
-    logging::devicex::debug("RNG size {}", rngSize);
-    return seqs;
-  };
-  return {0,
-          rngStateFromHostTaskId(),
-          {{initRngStateTensorTaskId(), DependencyType::Tensor}},
-          rngStateFromHostTask};
-}
-
-PriTask IrLowering::initRngStateTensor() {
-  // Add a new tensor to the graph to store the Hw seed
-  auto initRngStateTensorTask = [this]() {
-    SequenceMap seqs(graph());
-    auto workersPerIPU =
-        graph().getPoplarGraph().getTarget().getNumWorkerContexts();
-    auto numTiles  = graph().getPoplarGraph().getTarget().getNumTiles();
-    rngStateTensor = snap::Tensor{
-        graph().getPoplarGraph().addVariable(poplar::UNSIGNED_INT,
-                                             {numTiles, workersPerIPU, 4},
-                                             {"rngStateTensor"}),
-        graph()};
-    linearMapper.mapTensor(graph(), rngStateTensor);
-    return SequenceMap(graph());
-  };
-  return {+1e6, initRngStateTensorTaskId(), {}, initRngStateTensorTask};
-}
-
-PriTask IrLowering::rngStateToHost() {
-  auto rngStateToHostTask = [this]() {
-    int rngSize = graph().getPoplarGraph().getTarget().getNumTiles() *
-                  graph().getPoplarGraph().getTarget().getNumWorkerContexts() *
-                  4;
-    auto streamRngToHost = graph().getPoplarGraph().addDeviceToHostFIFO(
-        "d2h_rngStateTensor", poplar::UNSIGNED_INT, rngSize);
-
-    logging::devicex::debug("Initializing RNG d2h.");
-    logging::devicex::debug("RNG size {}", rngSize);
-    SequenceMap seqs(graph());
-    rngStateTensor = snap::Tensor{
-        poplar::getHwSeeds(graph().getPoplarGraph(),
-                           seqs.getSequence(&progs.rngStateToHostFragment())
-                               .getPoplarSequence(),
-                           "RNG get"),
-        graph()};
-    seqs.getSequence(&progs.rngStateToHostFragment())
-        .getPoplarSequence()
-        .add(poplar::program::Copy(rngStateTensor.getPoplarTensor(),
-                                   streamRngToHost,
-                                   false,
-                                   {"rngStateToHost"}));
-    return seqs;
-  };
-
-  return {0,
-          rngStateToHostTaskId(),
-          {{initRngStateTensorTaskId(), DependencyType::Tensor}},
-          rngStateToHostTask};
 }
 
 template <typename T>
@@ -3147,9 +3064,9 @@ void IrLowering::prepareGraph() {
   }
 
   if (ir().getSessionOptions().enableLoadAndOffloadRNGState) {
-    tasks.add(initRngStateTensor());
-    tasks.add(rngStateFromHost());
-    tasks.add(rngStateToHost());
+    tasks.add(rngStateLowering->initRngStateTensor());
+    tasks.add(rngStateLowering->rngStateFromHost());
+    tasks.add(rngStateLowering->rngStateToHost());
   }
 
   // Depending on anchor return types specified by the user, some
@@ -3567,18 +3484,6 @@ TaskId IrLowering::updateBatchCountTaskId() {
 
 TaskId IrLowering::initRandomSeedTaskId() {
   return TaskId(TaskId::Type::InitRandomSeedTask);
-}
-
-TaskId IrLowering::rngStateFromHostTaskId() {
-  return TaskId(TaskId::Type::RngStateFromHostTask);
-}
-
-TaskId IrLowering::rngStateToHostTaskId() {
-  return TaskId(TaskId::Type::RngStateToHostTask);
-}
-
-TaskId IrLowering::initRngStateTensorTaskId() {
-  return TaskId(TaskId::Type::InitRngStateTensorTask);
 }
 
 TaskId IrLowering::initTensorTaskId(TensorId id) {

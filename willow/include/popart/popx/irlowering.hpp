@@ -174,9 +174,6 @@ private:
   // Helper class to interpret results of liveness analyzer.
   std::unique_ptr<liveness::SubgraphPartitioner> subgraphPartitioner;
 
-  // Tensor used for uploading / downloading the random number state.
-  snap::Tensor rngStateTensor;
-
   // Non-const tensors used to keep track of batch count, modulo the return
   // period
   std::map<ReturnPeriod, snap::Tensor> batchCountingTensors;
@@ -242,13 +239,6 @@ private:
 
   PriTask initRandomSeed();
   static TaskId initRandomSeedTaskId();
-
-  PriTask rngStateFromHost();
-  static TaskId rngStateFromHostTaskId();
-  PriTask rngStateToHost();
-  static TaskId rngStateToHostTaskId();
-  PriTask initRngStateTensor();
-  static TaskId initRngStateTensorTaskId();
 
   PriTask setInitTensorValTask(Tensor *);
   static TaskId setInitTensorValTaskId(TensorId);

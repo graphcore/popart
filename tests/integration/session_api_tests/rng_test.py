@@ -18,24 +18,26 @@ def test_rng_set_and_get():
         with the option to enable rng set/get.
     2. Get the initial RNG state values
     3. Step 1 : do 5 runs of the training session, twice
-    5. Step 2 : 
+    4. Step 2 : 
         - reset the RNG to the initial state
         - do 5 runs of the training session 
         - capture the rng state
-        - do 1 runs of the validation session
-        - restaure the rng
+        - do 1 run of the validation session
+        - restore the rng
         - do 5 runs of the training session again
-    6. Step 3 :
+    5. Step 3 :
         - Reset the RNG to the initial state
         - do 5 runs of the training session, 
-        - do 1 runs of the validation session
+        - do 1 run of the validation session
         - do 5 runs of the training session again
-    7. Results comparison:
+    6. Results comparison:
         Steps 1 and 2 must have the same outputs
         after the series of 5 runs.
         Step 3 must have a different output after the second 
-        serie of 5 runs, due to session overwritting RNG state.
+        series of 5 runs, due to session overwritting RNG state.
     """
+
+    np.random.seed(0)
 
     # Model definition
     builder = popart.Builder()
@@ -46,7 +48,6 @@ def test_rng_set_and_get():
     out = builder.aiOnnx.matmul([i0, w0])
     loss = builder.aiGraphcore.l1loss([out], 0.1)
 
-    np.random.seed(0)
     device = tu.create_test_device(1)
 
     # Enable the options
@@ -54,6 +55,7 @@ def test_rng_set_and_get():
     options.enableLoadAndOffloadRNGState = True
     options.enableStochasticRounding = True
     options.constantWeights = False
+    options._enableRngStateManagement = True
 
     # Training session
     bps = 5
@@ -123,6 +125,8 @@ def test_rng_set_and_get():
 
     # Small tests about the seed
     init_rng = session.getRNGState()
+
+    # not all states are valid, but we don't check that as long as the size is correct
     new_rng = [k for k in range(len(init_rng))]
     session.setRNGState(new_rng)
     rng1 = session.getRNGState()
@@ -131,3 +135,10 @@ def test_rng_set_and_get():
     session.setRNGState(init_rng)
     rng2 = session.getRNGState()
     assert (rng2 == init_rng)
+
+    # check that an RNGState of the wrong size raises an exception
+    init_rng.append(0)
+    with pytest.raises(popart.popart_exception) as e_info:
+        session.setRNGState(init_rng)
+    assert e_info.value.args[0].startswith(
+        "Devicex::setRngStateValue received rngState of size")

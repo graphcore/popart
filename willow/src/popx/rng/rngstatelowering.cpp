@@ -11,24 +11,23 @@
 
 #include <popx/rng/rngstatelowering.hpp>
 
+#include <popart/popx/pritask.hpp>
+
 namespace popart {
 namespace popx {
 
-RngStateLowering::RngStateLowering(const IrLowering &irLowering_,
-                                   snap::Graph &graph_)
+RngStateLowering::RngStateLowering(IrLowering &irLowering_, snap::Graph &graph_)
     : irLowering{irLowering_}, graph{graph_}, differingSeedsRngStateTensor{},
       identicalSeedsRngStateTensor{} {
 
   // Create the PRNG state tensor tensors.
-  auto workersPerTile =
-      graph.get().getPoplarGraph().getTarget().getNumWorkerContexts();
-  auto numTiles = graph.get().getPoplarGraph().getTarget().getNumTiles();
-
   // Create tensor to hold the inacive RNG state.
+  std::vector<size_t> rngStateTensorShape{
+      getNumTiles(), getNumWorkersPerTile(), rngStateSizePerWorker};
   differingSeedsRngStateTensor =
       snap::Tensor{graph.get().getPoplarGraph().addVariable(
                        poplar::UNSIGNED_INT,
-                       {numTiles, workersPerTile, 4},
+                       rngStateTensorShape,
                        {"differingSeedsRngStateTensor"}),
                    graph.get()};
   // Layout tensor carefully to avoid exchanges.
@@ -38,8 +37,8 @@ RngStateLowering::RngStateLowering(const IrLowering &irLowering_,
   identicalSeedsRngStateTensor =
       snap::Tensor{graph.get().getPoplarGraph().addVariable(
                        poplar::UNSIGNED_INT,
-                       {numTiles, workersPerTile, 4},
-                       {"differingSeedsRngStateTensor"}),
+                       rngStateTensorShape,
+                       {"identicalSeedsRngStateTensor"}),
                    graph.get()};
   // Layout tensor carefully to avoid exchanges.
   setTensorLayout(identicalSeedsRngStateTensor);
@@ -179,6 +178,121 @@ void RngStateLowering::lowerGetHwSeeds(
   seq.add(poplar::program::Copy(
       tmp.getPoplarTensor(), rngState.getPoplarTensor(), false, dbgCtx));
 }
+
+PriTask RngStateLowering::initRngStateTensor() {
+  // Set up combinedRngStateTensor
+  auto initRngStateTensorTask = [this]() {
+    SequenceMap seqs(graph.get());
+    std::vector<size_t> combinedRngStateTensorShape{numRngStateTensors,
+                                                    getNumTiles(),
+                                                    getNumWorkersPerTile(),
+                                                    rngStateSizePerWorker};
+    combinedRngStateTensor = snap::Tensor{
+        graph.get().getPoplarGraph().addVariable(poplar::UNSIGNED_INT,
+                                                 combinedRngStateTensorShape,
+                                                 {"combinedRngStateTensor"}),
+        graph.get()};
+    irLowering.get().getLinearMapper().mapTensor(graph.get(),
+                                                 combinedRngStateTensor);
+    return SequenceMap(graph.get());
+  };
+  return {+1e6, initRngStateTensorTaskId, {}, initRngStateTensorTask};
+}
+
+PriTask RngStateLowering::rngStateFromHost() {
+  auto rngStateFromHostTask = [this]() {
+    auto streamRngFromHost = graph.get().getPoplarGraph().addHostToDeviceFIFO(
+        "h2d_rngStateTensor",
+        poplar::UNSIGNED_INT,
+        getCombinedRngStateSize(),
+        poplar::ReplicatedStreamMode::REPLICATE);
+
+    logging::devicex::debug("Initializing RNG h2d.");
+    logging::devicex::debug("RNG size {}", getCombinedRngStateSize());
+
+    SequenceMap seqs(graph.get());
+    auto &seq =
+        seqs.getSequence(&irLowering.get().progs.rngStateFromHostFragment());
+
+    // Stream newRngState to combinedRngStateTensor
+    seq.add(poplar::program::Copy(streamRngFromHost,
+                                  combinedRngStateTensor.getPoplarTensor(),
+                                  false,
+                                  {"copyStreamRngStateTensor"}));
+    // Copy first half of combinedRngStateTensor to identicalSeedsRngStateTensor
+    seq.add(poplar::program::Copy(
+        combinedRngStateTensor.getPoplarTensor()[0],
+        identicalSeedsRngStateTensor.getPoplarTensor(),
+        false,
+        {"copyRngStateTensorToIdenticalSeedsRngStateTensor"}));
+    // Copy second half of combinedRngStateTensor to
+    // differingSeedsRngStateTensor
+    seq.add(poplar::program::Copy(
+        combinedRngStateTensor.getPoplarTensor()[1],
+        differingSeedsRngStateTensor.getPoplarTensor(),
+        false,
+        {"copyRngStateTensorToDifferingSeedsRngStateTensor"}));
+    return seqs;
+  };
+  return {0,
+          rngStateFromHostTaskId,
+          {{initRngStateTensorTaskId, DependencyType::Tensor}},
+          rngStateFromHostTask};
+}
+
+PriTask RngStateLowering::rngStateToHost() {
+  auto rngStateToHostTask = [this]() {
+    auto streamRngToHost = graph.get().getPoplarGraph().addDeviceToHostFIFO(
+        "d2h_rngStateTensor", poplar::UNSIGNED_INT, getCombinedRngStateSize());
+
+    logging::devicex::debug("Initializing RNG d2h.");
+    logging::devicex::debug("RNG size {}", getCombinedRngStateSize());
+
+    SequenceMap seqs(graph.get());
+    auto &seq =
+        seqs.getSequence(&irLowering.get().progs.rngStateToHostFragment());
+
+    // Update combinedRngStateTensor with the new values of
+    // identicalSeedsRngStateTensor and differingSeedsRngStateTensor
+    seq.add(poplar::program::Copy(
+        poplar::concat(
+            identicalSeedsRngStateTensor.expand({0}).getPoplarTensor(),
+            differingSeedsRngStateTensor.expand({0}).getPoplarTensor()),
+        combinedRngStateTensor.getPoplarTensor(),
+        false,
+        "seedsToRngStateTensor"));
+    // Stream combinedRngStateTensor to host
+    seq.add(poplar::program::Copy(combinedRngStateTensor.getPoplarTensor(),
+                                  streamRngToHost,
+                                  false,
+                                  {"rngStateToHost"}));
+    return seqs;
+  };
+
+  return {0,
+          rngStateToHostTaskId,
+          {{initRngStateTensorTaskId, DependencyType::Tensor}},
+          rngStateToHostTask};
+}
+
+unsigned RngStateLowering::getNumWorkersPerTile() {
+  return graph.get().getPoplarGraph().getTarget().getNumWorkerContexts();
+}
+
+unsigned RngStateLowering::getNumTiles() {
+  return graph.get().getPoplarGraph().getTarget().getNumTiles();
+}
+
+unsigned RngStateLowering::getCombinedRngStateSize() {
+  return combinedRngStateTensor.numElements();
+}
+
+const TaskId RngStateLowering::initRngStateTensorTaskId =
+    TaskId(TaskId::Type::InitRngStateTensorTask);
+const TaskId RngStateLowering::rngStateFromHostTaskId =
+    TaskId(TaskId::Type::RngStateFromHostTask);
+const TaskId RngStateLowering::rngStateToHostTaskId =
+    TaskId(TaskId::Type::RngStateToHostTask);
 
 } // namespace popx
 } // namespace popart
