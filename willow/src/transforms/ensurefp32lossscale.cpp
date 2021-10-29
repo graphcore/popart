@@ -1,6 +1,9 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
+#include <popart/alias/aliasmodel.hpp>
+#include <popart/alias/aliasmodelgrower.hpp>
 #include <popart/graphutils.hpp>
 #include <popart/ir.hpp>
+#include <popart/op/cast.hpp>
 #include <popart/op/l1.hpp>
 #include <popart/op/nll.hpp>
 #include <popart/op/softmax.hpp>
@@ -43,7 +46,7 @@ Tensor *EnsureFp32LossScale::getLossScaleInputTensor(Op *op) const {
     return op->inTensor(L1GradOp::getGradInIndex());
   }
 
-  throw internal_error("EnsureFp32LossScale Pattern: unexpected op type.");
+  throw internal_error("EnsureFp32LossScale Transform: unexpected op type.");
 }
 
 bool EnsureFp32LossScale::isPassThroughOp(Op *op) const {
@@ -69,7 +72,10 @@ EnsureFp32LossScale::traverseFromLossScaleTensor(const Graph &graph) const {
 
   std::vector<Op *> passThroughOps, mplgoCandidates;
 
-  auto visitor = [this, &passThroughOps, &mplgoCandidates](Tensor *t) {
+  const auto &graphId = graph.id;
+
+  auto visitor = [this, &passThroughOps, &mplgoCandidates, &graphId](
+                     Tensor *t) {
     if (!(t->hasProducer())) {
       return true;
     }
@@ -86,6 +92,18 @@ EnsureFp32LossScale::traverseFromLossScaleTensor(const Graph &graph) const {
     else {
       if (std::find(mplgoCandidates.begin(), mplgoCandidates.end(), producer) ==
           mplgoCandidates.end()) {
+        // All valid MPLGO candidates must produce fp16 gradients
+        for (Tensor *output : producer->output->tensors()) {
+          if (output->info.dataType() != DataType::FLOAT16) {
+            throw error("EnsureFp32LossScale: Unable to apply the transform on "
+                        "graph '{}'. Graph traversal terminating at Op '{}', "
+                        "but output tensor '{}' is not of data type fp16.",
+                        graphId,
+                        producer->str(),
+                        output->id);
+          }
+        }
+
         mplgoCandidates.push_back(producer);
       }
       return false;
@@ -122,53 +140,112 @@ bool EnsureFp32LossScale::shouldApply(const Graph &graph) const {
   return true;
 }
 
-bool EnsureFp32LossScale::canApply(const Graph &graph) const {
-  auto traversalResults             = traverseFromLossScaleTensor(graph);
-  std::vector<Op *> passThroughOps  = traversalResults.first;
-  std::vector<Op *> mplgoCandidates = traversalResults.second;
-
-  // All candidates must be able to handle fp16 input gradients, and
-  // fp32 activations
-  for (Op *candidate : mplgoCandidates) {
-    if (!isMixedPrecisionLossGradOp(candidate)) {
-      return false;
-    }
-
-    // The loss scale gradient input must be a scalar tensor
-    if (getLossScaleInputTensor(candidate)->info.nelms() != 1) {
-      return false;
-    }
-
-    // All MPLGOs must produce fp16 gradients
-    for (Tensor *output : candidate->output->tensors()) {
-      if (output->info.dataType() != DataType::FLOAT16) {
-        return false;
-      }
+bool hasFp32Fp16MixedPrecisionInputs(Op *op) {
+  bool hasFp16Inputs = false;
+  bool hasFp32Inputs = false;
+  for (Tensor *input : op->input->tensors()) {
+    if (input->info.dataType() == DataType::FLOAT16) {
+      hasFp16Inputs = true;
+    } else if (input->info.dataType() == DataType::FLOAT) {
+      hasFp32Inputs = true;
     }
   }
 
-  return true;
+  return hasFp16Inputs && hasFp32Inputs;
 }
 
+/**
+ * Before:
+ *   tensor -- Op
+ *        '--- AnotherOp
+ * After:
+ *   tensor -- Cast(fp32) -- upCastTensor -- Op
+ *        '--- AnotherOp
+ **/
+void EnsureFp32LossScale::upCastTensor(Op *op, InIndex index) const {
+  Tensor *tensor = op->inTensor(index);
+  if (tensor->info.dataType() != DataType::FLOAT16) {
+    throw error("EnsureFp32LossScale: Cannot upcast tensor '{}', as it does "
+                "not have data type 'DataType::FLOAT16'",
+                tensor->id);
+  }
+
+  op->disconnectInTensor(index, tensor);
+
+  TensorId upCastTensorId = op->getIr().createIntermediateTensorId(tensor->id);
+  auto &g                 = op->getGraph();
+  auto castOp =
+      g.createConnectedOp<CastOp>({{CastOp::getInIndex(), tensor->id}},
+                                  {{CastOp::getOutIndex(), upCastTensorId}},
+                                  Onnx::Operators::Cast_9,
+                                  DataType::FLOAT,
+                                  Op::Settings(g, ""));
+  AliasModel aliasModel;
+  AliasModelGrower aliasModelGrower{aliasModel};
+  aliasModelGrower.growFullGraph(g, DataDependenciesOnly::Yes);
+  castOp->inheritPlacementAttributes(false, aliasModel);
+
+  op->connectInTensor(index, upCastTensorId);
+}
+
+/**
+ * Before:
+ *   Op -- tensor -- AnotherOp
+ * After:
+ *   Op -- tensor -- CastOp -- downCastTensor -- AnotherOp
+ **/
+void EnsureFp32LossScale::downCastTensor(Tensor *tensor) const {
+  if (tensor->info.dataType() != DataType::FLOAT) {
+    throw error("EnsureFp32LossScale: Cannot downcast tensor '{}', as it does "
+                "not have data type 'DataType::FLOAT32'",
+                tensor->id);
+  }
+
+  TensorId downCastTensorId =
+      tensor->getIr().createIntermediateTensorId(tensor->id);
+  auto &g = tensor->getGraph();
+  auto castOp =
+      g.createConnectedOp<CastOp>({{CastOp::getInIndex(), tensor->id}},
+                                  {{CastOp::getOutIndex(), downCastTensorId}},
+                                  Onnx::Operators::Cast_9,
+                                  DataType::FLOAT16,
+                                  Op::Settings(g, ""));
+  AliasModel aliasModel;
+  AliasModelGrower aliasModelGrower{aliasModel};
+  aliasModelGrower.growFullGraph(g, DataDependenciesOnly::Yes);
+  castOp->inheritPlacementAttributes(false, aliasModel);
+
+  // Disconnect tensor's consumers, and reconnect to output of castOp
+  for (Op *op : tensor->consumers.getOps()) {
+    if (op != castOp) {
+      for (InIndex index : op->input->indices(tensor)) {
+        op->disconnectInTensor(index, tensor);
+        op->connectInTensor(index, downCastTensorId);
+      }
+    }
+  }
+}
+
+/**
+ * Apply as follows:
+ * 1. Convert loss scale tensor to fp32
+ * 2. For each passThroughOp re-call setup() such that output tensors are now
+ *    fp32
+ * 3. For each mplgoCandidate:
+ *   3.1. If candidate is valid MPLGO, check output types are unchanged
+ *   3.2. If candidate is not a valid MPLGO, upcast fp16 inputs to fp32,
+ *        re-call setup(), check outputs are fp32, downcast outputs to fp16
+ **/
 bool EnsureFp32LossScale::apply(Graph &graph) const {
   if (!shouldApply(graph)) {
     return true;
   }
 
-  if (!canApply(graph)) {
-    throw error(
-        "EnsureFp32LossScale: Unable to apply the transform on graph {}",
-        graph.id);
-  } else {
-    logging::debug(
-        "EnsureFp32LossScale: Conditions met to apply the transform.");
-  }
-
   auto traversalResults             = traverseFromLossScaleTensor(graph);
   std::vector<Op *> passThroughOps  = traversalResults.first;
   std::vector<Op *> mplgoCandidates = traversalResults.second;
 
-  // Set loss scale data type to float
+  // 1. Set loss scale data type to float
   Tensor *lossScaleTensor = getLossScaleTensor(graph);
   lossScaleTensor->info.set(DataType::FLOAT);
 
@@ -180,14 +257,14 @@ bool EnsureFp32LossScale::apply(Graph &graph) const {
         lossScaleTensor->info, convertedData);
   }
 
-  // Re-call Op setup functions to propagate the loss scale data type change
+  // 2. Re-call Op setup functions to propagate the loss scale data type change
   // to the MPLGO inputs
   auto tensorTypeCheck =
       [](Op *op, Tensor *t, DataType dataType, std::string direction) {
         if (t->info.dataType() != dataType) {
           std::stringstream ss;
           ss << "EnsureFp32LossScale: Pass-through Op " << op->str();
-          ss << "has non-" << dataType << " " << direction << " tensor "
+          ss << " has non-" << dataType << " " << direction << " tensor "
              << t->id;
 
           throw internal_error(ss.str());
@@ -214,21 +291,71 @@ bool EnsureFp32LossScale::apply(Graph &graph) const {
     }
   }
 
-  // A sanity check. For each consumer of lossScaleTensor re-call its Op's
-  // setup function, and confirm that output type is still same
-  for (Op *mplgo : mplgoCandidates) {
-    std::map<TensorId, DataType> oldDataTypes, newDataTypes;
-    for (Tensor *output : mplgo->output->tensors()) {
+  // 3.
+  for (Op *candidate : mplgoCandidates) {
+    std::map<TensorId, DataType> oldDataTypes;
+    for (Tensor *output : candidate->output->tensors()) {
       oldDataTypes.emplace(output->id, output->info.dataType());
     }
-    mplgo->setup();
-    for (Tensor *output : mplgo->output->tensors()) {
-      newDataTypes.emplace(output->id, output->info.dataType());
+
+    // A valid candidate must:
+    //   - be able to handle fp16 input gradients, and fp32 activations
+    //   - have a scalar loss scale gradient input tensor
+    if (isMixedPrecisionLossGradOp(candidate) &&
+        getLossScaleInputTensor(candidate)->info.nelms() == 1) {
+      // 3.1. Re-call candidate's setup() function, and check outputs
+      //      types are unchanged
+      candidate->setup();
+
+      std::map<TensorId, DataType> newDataTypes;
+      for (Tensor *output : candidate->output->tensors()) {
+        newDataTypes.emplace(output->id, output->info.dataType());
+      }
+
+      if (oldDataTypes != newDataTypes) {
+        throw internal_error("EnsureFp32LossScale: the transform has modified "
+                             "the output data type(s) of Op {}",
+                             candidate->str());
+      }
     }
-    if (oldDataTypes != newDataTypes) {
-      throw internal_error("EnsureFp32LossScale: the transform has modified "
-                           "the output data type(s) of Op {}",
-                           mplgo->str());
+
+    else {
+      // 3.2
+
+      // Verify candidate has mixed precision inputs
+      if (!hasFp32Fp16MixedPrecisionInputs(candidate)) {
+        throw internal_error("EnsureFp32LossScale: MPLGO candidate '{}' "
+                             "expected to have mixed-precision inputs",
+                             candidate->str());
+      }
+
+      // Upcast fp16 inputs to fp32
+      for (int i = 0; i < candidate->input->n(); i++) {
+        Tensor *input = candidate->input->tensor(i);
+        if (input->info.dataType() == DataType::FLOAT16) {
+          upCastTensor(candidate, i);
+        }
+      }
+
+      // Re-call setup
+      candidate->setup();
+
+      // Check all fp16 outputs are now fp32
+      for (const auto &id_type : oldDataTypes) {
+        TensorId id          = id_type.first;
+        DataType oldDataType = id_type.second;
+        if (oldDataType == DataType::FLOAT16) {
+          if (graph.getTensor(id)->info.dataType() == DataType::FLOAT) {
+            // Downcast fp32 outputs that were previously fp16
+            downCastTensor(graph.getTensor(id));
+          } else {
+            throw internal_error(
+                "EnsureFp32LossScale: expecting data type of tensor '{}' to "
+                "have been converted to fp32 by this transform.",
+                id);
+          }
+        }
+      }
     }
   }
 

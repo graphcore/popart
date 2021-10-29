@@ -31,10 +31,7 @@ namespace popart {
 //   - We 'pass through' single-input ops that do not combine the loss scale
 //     with an activation tensor.
 //   - Otherwise we terminate the traversal. We refer to these terminal ops
-//     as 'mixed precision loss grad op' (or MPLGO) candidates.
-//   - If all MPLGO candidates have an implementation that supports mixed
-//     mixed precision inputs (based on a local hard-coded list), we apply the
-//     transform. Otherwise, we abort.
+//     as 'mixed precision loss grad op' (or MPLGO) candidates
 //
 // To apply the transform, we convert the loss scale tensor from fp16 to fp32,
 // and all pass-through ops are converted to fp32-input, fp32-output.
@@ -58,6 +55,16 @@ namespace popart {
 //         \
 //          \                               act_fp16 --.
 //           ------- PassThroughOp1 -- grad1_fp32 -- MPLGO1 -- grad3_fp16
+//
+// If an MPLGO candidate is not a valid MPLGO, its fp16 inputs are upcast
+// so that the computation occurs in fp32, and its fp32 outputs are downcast,
+// so that the consumers (and the rest of the backwards pass) are unaffected.
+// Again, for the basic case:
+//    act_fp16 -----------.
+//    lossScale_fp16 -- Non-MPLGO -- grad_fp16
+// is replaced with:
+//    act_fp16 -- CastOp -- act_fp32 --.
+//    lossScale_fp32 ------------ Non-MPLGO -- grad_fp32 -- CastOp -- grad_fp16
 using PassThroughOps            = std::vector<Op *>;
 using TerminalOps               = std::vector<Op *>;
 using FromLossScaleTraversalOps = std::pair<PassThroughOps, TerminalOps>;
@@ -130,17 +137,23 @@ public:
   bool shouldApply(const Graph &graph) const;
 
   /**
-   * Run the checks to see if the transform can be applied. If these fail,
-   * the loss scale tensor is not converted from fp16 to fp32, etc.
+   * Upcast fp16 tensor at input index \a index to \a op to fp32. This is done
+   * by disconnecting the input tensor, inserting a CastOp, and re-connecting
+   * the output tensor of the CastOp at \a index.
    *
-   * ..warning::
-   *
-   *    Not safe to call if shouldApply(graph) returns 'false'.
-   *
-   * \param graph The graph that the checks are run on.
-   * \return True if the checks pass.
+   * \param op The op whose input is to be upcast.
+   * \param index The input index to \a op at which the tensor is to be upcast.
    **/
-  bool canApply(const Graph &graph) const;
+  void upCastTensor(Op *op, InIndex index) const;
+
+  /**
+   * Downcast fp16 \a tensor to fp16. This is done by disconnecting it from
+   * its consumers, inserting a CastOp, and re-connecting the output tensor
+   * of the CastOp to the consumers.
+   *
+   * \param tensor The tensor to be downcast.
+   **/
+  void downCastTensor(Tensor *tensor) const;
 };
 
 } // namespace popart

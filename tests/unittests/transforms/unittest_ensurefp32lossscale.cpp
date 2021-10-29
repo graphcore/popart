@@ -5,9 +5,12 @@
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/op/cast.hpp>
+#include <popart/op/identity.hpp>
 #include <popart/op/l1.hpp>
+#include <popart/op/matmul.hpp>
 #include <popart/op/nll.hpp>
 #include <popart/op/reshape.hpp>
+#include <popart/op/resize.hpp>
 #include <popart/op/scale.hpp>
 #include <popart/opidentifier.hpp>
 #include <popart/sgd.hpp>
@@ -157,6 +160,84 @@ auto l1GradOp = [](Graph &g,
 };
 
 /*
+  lossScale - Reshape - t0 - Resize -- t1 -- Matmul -- gradOut
+                                               /
+  probs --------------------------------------
+*/
+auto matmul = [](Graph &g,
+                 const TensorId probs,
+                 const TensorId label,
+                 const TensorId lossScale) {
+  TensorId t0 = "reshapedLossScale";
+  auto reshapeOp =
+      g.createConnectedOp<ReshapeOp>({{ReshapeOp::getInIndex(), lossScale}},
+                                     {{ReshapeOp::getOutIndex(), t0}},
+                                     Onnx::Operators::Reshape_5,
+                                     Shape{1, 1},
+                                     Op::Settings(g, ""));
+
+  TensorId t1               = "upsampledLossScale";
+  std::vector<float> scales = {10.0, 4.0};
+  auto resizeOp = g.createConnectedOp<ResizeOp>({{ResizeOp::getInIndex(), t0}},
+                                                {{ResizeOp::getOutIndex(), t1}},
+                                                Onnx::Operators::Resize_10,
+                                                Op::Settings(g, ""),
+                                                ResizeMode::Nearest,
+                                                scales);
+
+  auto matmulOp = g.createConnectedOp<MatMulOp>(
+      {{MatMulOp::getLhsInIndex(), probs}, {MatMulOp::getRhsInIndex(), t1}},
+      {{MatMulOp::getOutIndex(), "gradOut"}},
+      Onnx::Operators::MatMul_9,
+      Op::Settings(g, ""),
+      0.1,
+      MatMulBaseOp::SerialiseSettings(),
+      OptionalDataType());
+
+  // Connect the matmul's output only so that it has a consumer, so that we
+  // can test that it is downcast as expected.
+  auto identityOp = g.createConnectedOp<IdentityOp>(
+      {{IdentityOp::getInIndex(), "gradOut"}},
+      {{IdentityOp::getOutIndex(), "gradOut_copy"}},
+      Onnx::Operators::Identity_1,
+      Op::Settings{g, ""});
+
+  FromLossScaleTraversalOps ops{{reshapeOp, resizeOp}, {matmulOp}};
+  return ops;
+};
+
+// MatMulOp is not a valid MPLGO, so the fwd activation input will be cast
+// to FP32 such that the output is FP32, and the output will be downcast back
+// to FP16. Verify that this is the case.
+auto extraMatmulChecks = [](const Graph &g) {
+  const Ir &ir = g.getIr();
+
+  // Check graph has a matmul op
+  auto matmulOps = ir.opsOfType(Onnx::Operators::MatMul_9);
+  BOOST_CHECK(matmulOps.size() == 1);
+  Op *matmulOp = matmulOps[0];
+
+  // Check that the graph contains two Cast ops
+  BOOST_CHECK(ir.opsOfType(Onnx::Operators::Cast_9).size() == 2);
+
+  // Check that one of matmul's input tensors is produed by a CastOp
+  bool hasInputProducedByCastOp = false;
+  for (Tensor *input : matmulOp->input->tensors()) {
+    if (input->getProducer()->isConvertibleTo<CastOp>()) {
+      hasInputProducedByCastOp = true;
+    }
+  }
+  BOOST_CHECK(hasInputProducedByCastOp);
+
+  // Check that matmul's output tensor is consumed by a CastOp
+  BOOST_CHECK(matmulOp->output->tensors().size() == 1);
+  Tensor *output = matmulOp->output->tensors()[0];
+  BOOST_CHECK(output->consumers.getTotal() == 1);
+  Op *consumer = output->consumers.getOps()[0];
+  BOOST_CHECK(consumer->isConvertibleTo<CastOp>());
+};
+
+/*
   lossScale(fp16) = stream
   probs(fp16), label(fp16) = const
 
@@ -174,7 +255,8 @@ void testReplacesFp16LossScaleWithFp32(
                                             const TensorId probs,
                                             const TensorId label,
                                             const TensorId lossScale)>
-        constructGraph) {
+        constructGraph,
+    std::function<void(const Graph &g)> extraChecks = [](const Graph &g) {}) {
   Ir ir;
   Graph &g = ir.getMainGraph();
 
@@ -222,10 +304,13 @@ void testReplacesFp16LossScaleWithFp32(
     }
   }
 
-  // All loss grad outputs are fp16
+  // All loss grad outputs are fp16, or are cast to fp16
   for (Op *op : terminalOps) {
     for (Tensor *output : op->output->tensors()) {
-      BOOST_CHECK(output->info.dataType() == DataType::FLOAT16);
+      if (!(output->consumers.getTotal() == 1 &&
+            output->consumers.getOps()[0]->isConvertibleTo<CastOp>())) {
+        BOOST_CHECK(output->info.dataType() == DataType::FLOAT16);
+      }
     }
   }
 }
@@ -235,6 +320,7 @@ BOOST_AUTO_TEST_CASE(TestReplacesFp16LossScaleWithFp32) {
   testReplacesFp16LossScaleWithFp32(reshapeChain);
   testReplacesFp16LossScaleWithFp32(nllGradOps);
   testReplacesFp16LossScaleWithFp32(l1GradOp);
+  testReplacesFp16LossScaleWithFp32(matmul, extraMatmulChecks);
 }
 
 BOOST_AUTO_TEST_CASE(TestDoNotReplaceCastedFp16LossScaleWithFp32) {
