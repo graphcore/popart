@@ -174,14 +174,15 @@ def autodiff(graph: Graph,
         {k: v._pb_bwd_info
          for k, v in called_graphs_grad_info.items()})
 
-    result: Mapping[str, GradGraphInfo] = {}
+    result: Mapping[Graph, GradGraphInfo] = {}
     for k, v in _pb_result.items():
-        result[k.str()] = GradGraphInfo._from_pb(_pb_ir, graph._pb_graph, v)
+        _graph = Graph._from_pb(_pb_ir.getGraph(k))
+        result[_graph] = GradGraphInfo._from_pb(_pb_ir, _graph._pb_graph, v)
 
     if return_all_grad_graphs:
         return result
 
-    return result[graph.name]
+    return result[graph]
 
 
 def get_expected_forward_inputs_from_call(

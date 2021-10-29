@@ -1490,8 +1490,8 @@ void IrLowering::addOpTasks(PriTasks &tasks) {
       "adding Op tasks (Ir Lowering)");
 
   // Ensure there is a program fragment for every Ir Graph
-  logging::devicex::info("[addOpTasks] for {} Graphs.",
-                         ir().getGraphSchedule().size());
+  logging::devicex::debug("[addOpTasks] for {} Graphs.",
+                          ir().getGraphSchedule().size());
   for (auto graph : ir().getGraphSchedule()) {
     int numParts = subgraphPartitioner->getNumSubgraphParts(*graph);
     for (int p = 0; p < numParts; ++p) {

@@ -22,6 +22,7 @@ void bindGraphId(py::module &m) {
       .def(py::self == py::self)
       .def(py::self != py::self)
       .def("str", &GraphId::str, py::return_value_policy::reference)
+      .def("__str__", &GraphId::str, py::return_value_policy::reference)
       .def("__hash__", [](GraphId &self) {
         std::hash<std::string> hasher;
         auto hashed = hasher(self.str());

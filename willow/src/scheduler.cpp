@@ -172,6 +172,7 @@ Scheduler::getSchedule(const OpsBeforeKey &gCons,
   const auto rotationTermination =
       shift::RotationTermination(timeLimitScheduler, swapLimitScheduler);
 
+  logging::ir::debug("Scheduling Graph {}", pg.id);
   std::ostringstream oss;
   oss << "RotationTermination=("
       << "rotations=" << rotationTermination.maxRotations()

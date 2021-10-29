@@ -738,9 +738,9 @@ void SubgraphPartitioner::logSubgraphPartition(
     const Graph &graph,
     const SubgraphPartition &partition,
     bool partitionable) const {
-  if (logging::devicex::isEnabled(logging::Level::Debug)) {
+  if (logging::devicex::isEnabled(logging::Level::Trace)) {
 
-    logging::devicex::debug("[SubgraphPartitioner] Determined subgraph "
+    logging::devicex::trace("[SubgraphPartitioner] Determined subgraph "
                             "partition for {} ({}):",
                             graph.getGraphString(),
                             partitionable ? "partitionable"

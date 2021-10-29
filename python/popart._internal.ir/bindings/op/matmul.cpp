@@ -1,8 +1,8 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 #include "bindings/op/matmul.hpp"
 #include "bindings/op.hpp"
-#include "bindings/op/optional.hpp"
 #include "bindings/op/manualbindops.hpp"
+#include "bindings/op/optional.hpp"
 
 #include "bindings/basicoptionals.hpp"
 #include <pybind11/numpy.h>
@@ -63,7 +63,9 @@ void bindMatmul(py::module &m) {
            py::arg("serialization"),
            py::arg("outputType"),
            py::arg("partialsType"),
-           py::arg("enableFullyConnectedPass"));
+           py::arg("enableFullyConnectedPass"))
+      .def("setAvailableMemoryProportion",
+           &MatMulBaseOp::setAvailableMemoryProportion);
 
   py::class_<MatMulOp, MatMulBaseOp, std::shared_ptr<MatMulOp>>(sm, "MatMulOp")
       .def(py::init<const popart::OperatorIdentifier &,

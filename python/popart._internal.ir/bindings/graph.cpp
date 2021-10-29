@@ -150,7 +150,11 @@ void bindGraph(py::module &m) {
                                           : RequireOptimalSchedule::No);
           },
           py::arg("requireOptimalSchedule") = true,
-          py::return_value_policy::reference);
+          py::return_value_policy::reference)
+      .def("eraseOp", &Graph::eraseOp)
+      .def("getCalledGraphs",
+           &Graph::getCalledGraphs,
+           py::return_value_policy::reference);
 
   bindCreateOpFunctionToGraphClass(g);
 

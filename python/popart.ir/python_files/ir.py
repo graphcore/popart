@@ -1,7 +1,5 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 """Definition of a class that represents the PopART IR."""
-
-from collections import Counter
 from typing import TYPE_CHECKING, Any, Callable, Dict, Iterable, List, Optional
 from weakref import WeakValueDictionary
 
@@ -87,7 +85,7 @@ class Ir:
             *args: Any,
             **kwargs: Any,
     ) -> 'Graph':
-        """Create a graph from a Python function.
+        """Create a graph from a python callable.
 
         Args:
             fn (Callable[..., Any]):

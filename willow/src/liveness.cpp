@@ -345,10 +345,10 @@ void LivenessAnalyzer::apply() {
   }
 
   // Log the global schedule.
-  logging::devicex::debug("[LivenessAnalyzer] Global schedule:");
+  logging::devicex::trace("[LivenessAnalyzer] Global schedule:");
   size_t i = 0;
   for (const auto &node : opSchedule) {
-    logging::devicex::debug("[LivenessAnalyzer] #{}: {}", i++, node);
+    logging::devicex::trace("[LivenessAnalyzer] #{}: {}", i++, node);
   }
 }
 

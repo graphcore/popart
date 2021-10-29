@@ -1,13 +1,13 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-from popart.ir.tensor import Tensor
-from popart.ir.graph import Graph
-import popart._internal.ir as _ir
-from popart.ir import dtypes
-
 from typing import Optional
 
+import popart._internal.ir as _ir
+from popart.ir.tensor import Tensor
+from popart.ir.graph import Graph
+from popart.ir.dtypes import dtype
 
-def cast_if_needed(t: Tensor, data_type: dtypes.dtype) -> Tensor:
+
+def cast_if_needed(t: Tensor, data_type: dtype) -> Tensor:
     from popart.ir.ops.cast import cast
     if t.dtype != data_type:
         return cast(t, data_type)
@@ -30,6 +30,6 @@ def convert_optional_float(v: Optional[float]):
     return _ir.OptionalFloat(v) if v is not None else _ir.OptionalFloat()
 
 
-def convert_optional_dtype(dt: Optional[dtypes.dtype]):
+def convert_optional_dtype(dt: Optional[dtype]):
     return _ir.OptionalDataType(
         dt._pb_dtype) if dt is not None else _ir.OptionalDataType()

@@ -42,7 +42,7 @@ def split(t: Tensor, splits: Union[int, List[int]],
         splits = [axis_len // splits] * splits
 
     outputs_t = {
-        i: g._create_tensor_id(f"{t.id}_split_{i}")
+        i: g._create_tensor_id(f"{t.name}_split_{i}")
         for i in range(len(splits))
     }
 

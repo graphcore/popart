@@ -112,6 +112,21 @@ void bindOp(py::module &m) {
       .def("setup", &Op::setup)
       // See above for why it is PyOp<>::clone_wrapper
       .def("clone", [](PyOp<> &self) { return self.clone_wrapper(); })
+      .def(
+          "cloneIntoGraph",
+          [](Op &self, Graph &graph) {
+            // Clone the operator
+            auto clonedOpUp = self.clone();
+            // Change ownership of the cloned operator after obtaining the raw
+            // pointer
+            auto clonedOp = clonedOpUp.get();
+            graph.moveIntoGraph(std::move(clonedOpUp));
+            // Change scope of the clonedOp so that it is no longer a part of
+            // the old graph
+            clonedOp->settings.scope = graph.getScope();
+            return clonedOp;
+          },
+          py::return_value_policy::reference)
       .def("getSubgraphValue", &Op::getSubgraphValue)
       .def("finalizeDebugInfo", &Op::finalizeDebugInfo)
       .def("setCalledSubgraphGradInfo", &Op::setCalledSubgraphGradInfo)
@@ -155,6 +170,9 @@ void bindOp(py::module &m) {
       .def("getSeedInIndex", &Op::getSeedInIndex)
       .def("hasInput", &Op::hasInput)
       .def("hasOutput", &Op::hasOutput)
+      .def(
+          "hasInputTensor",
+          [](Op &self, Tensor *tensor) { return self.input->contains(tensor); })
       .def("inTensor",
            py::overload_cast<InIndex>(&Op::inTensor),
            py::return_value_policy::reference)
@@ -183,6 +201,14 @@ void bindOp(py::module &m) {
             return outputs;
           },
           py::return_value_policy::reference)
+      .def(
+          "getInputIndexMap",
+          [](Op &self) { return self.input->tensorMap(); },
+          py::return_value_policy::reference)
+      .def(
+          "getOutputIndexMap",
+          [](Op &self) { return self.output->tensorMap(); },
+          py::return_value_policy::reference)
       .def("inId", py::overload_cast<InIndex>(&Op::inId))
       .def("outId", py::overload_cast<OutIndex>(&Op::outId))
       .def("inInfo",
@@ -210,17 +236,15 @@ void bindOp(py::module &m) {
              }
              return indices[0];
            })
-      // TODO: T42819 add bindings for (outline) attributes
-      //   .def("appendAttributes", &Op::appendAttributes)
-      //   .def("appendOutlineAttributes", &Op::appendOutlineAttributes)
       .def("prettyNpOut",
            py::overload_cast<const Shape &, const Shape &>(&Op::prettyNpOut,
                                                            py::const_))
       .def("prettyNpOut",
            py::overload_cast<const TensorInfo &, const TensorInfo &>(
                &Op::prettyNpOut, py::const_))
-      // TODO: T41718 test call ops
-      .def("getCalledGraphs", &Op::getCalledGraphs)
+      .def("getCalledGraphs",
+           &Op::getCalledGraphs,
+           py::return_value_policy::reference)
       .def("getCalledGraphIds", &Op::getCalledGraphIds)
       .def("getCalledGraphIndex", &Op::getCalledGraphIndex)
       .def("opInToSubgraphInIndex", &Op::opInToSubgraphInIndex)

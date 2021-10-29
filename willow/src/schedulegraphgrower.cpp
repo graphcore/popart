@@ -93,7 +93,7 @@ void ShiftGraphGrower::initialize(const shift::Settings &settings,
   const auto scopedStopwatch =
       pg.getIr().timePartitionLogger().scopedStopwatch(logName);
 
-  logging::ir::info("{}. Graph has {} Ops. ", logName, g.nOps());
+  logging::ir::debug("{}. Graph has {} Ops. ", logName, g.nOps());
 
   auto gCopy = g;
 

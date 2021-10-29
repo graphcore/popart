@@ -33,6 +33,9 @@ void bindTensor(py::module &m) {
       .value("Gradient", VariableUpdateType::Gradient)
       .value("Copy", VariableUpdateType::Copy);
 
+  py::class_<Consumers>(m, "Consumers")
+      .def("getOps", &Consumers::getOps, py::return_value_policy::reference);
+
   py::class_<Tensor>(m, "Tensor")
       .def(py::init<TensorId, TensorType, Graph &>(),
            py::arg("tensorId"),

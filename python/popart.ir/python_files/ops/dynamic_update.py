@@ -40,9 +40,9 @@ def dynamic_update(t: Tensor, index: Tensor, t_update: Tensor,
             The indices to start the slice from.
         t_update: Tensor
             The tensor to update t with.
-        axes: List[int]
+        axes: Iterable[int]
             The axess of t to make the update at.
-        sizes: List[int]
+        sizes: Iterable[int]
             The sizes of the updates along the specified axes.
             For example:
             If index = [1, 2], axes = [0, 3] and sizes = [2, 4], the Tensor will be updated at

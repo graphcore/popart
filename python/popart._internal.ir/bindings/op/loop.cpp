@@ -49,17 +49,20 @@ void bindRepeat(py::module &m) {
       .def("getTripCountValue", &LoopOp::getTripCountValue)
       .def("setTripCountValue", &LoopOp::setTripCountValue)
       .def("getCalledGraph", &LoopOp::getCalledGraph)
-      .def("opInToSubgraphInIndex", &LoopOp::opInToSubgraphInIndex)
-      .def("addModified", &LoopOp::addModified)
+      .def("opInToSubgraphInIndex",
+           py::overload_cast<OutIndex>(&LoopOp::opInToSubgraphInIndex,
+                                       py::const_))
+      .def("opOutToSubgraphOutIndex",
+           py::overload_cast<OutIndex>(&LoopOp::opOutToSubgraphOutIndex,
+                                       py::const_))
       .def("subgraphInToOpInIndex",
            py::overload_cast<InIndex>(&LoopOp::subgraphInToOpInIndex,
                                       py::const_))
       .def("subgraphOutToOpOutIndex",
            py::overload_cast<InIndex>(&LoopOp::subgraphOutToOpOutIndex,
                                       py::const_))
-      .def("opOutToSubgraphOutIndex",
-           py::overload_cast<OutIndex>(&LoopOp::opOutToSubgraphOutIndex,
-                                       py::const_));
+      .def("addModified", &LoopOp::addModified)
+      .def("getNumExplicitInputs", &LoopOp::getNumExplicitInputs);
 }
 } // namespace op
 } // namespace ir

@@ -1812,9 +1812,15 @@ PYBIND11_MODULE(popart_core, m) {
     cls.def("loadEngineAndConnectStreams",
             &InferenceSession::loadEngineAndConnectStreams,
             DOC(popart, Session, loadEngineAndConnectStreams));
+    cls.def("weightsToHost",
+            &InferenceSession::weightsToHost,
+            DOC(popart, Session, weightsToHost));
     cls.def("weightsFromHost",
             &InferenceSession::weightsFromHost,
             DOC(popart, Session, weightsFromHost));
+    cls.def("readWeights",
+            &InferenceSession::readWeights,
+            DOC(popart, Session, readWeights));
     cls.def("writeWeights",
             &InferenceSession::writeWeights,
             DOC(popart, Session, writeWeights));
