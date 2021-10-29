@@ -128,13 +128,13 @@ void RngStateLowering::lowerGetRngState(snap::program::Sequence &seq,
     if (op->getStochasticRoundingMethod() ==
         StochasticRoundingMethod::DifferingSeeds) {
       lowerGetHwSeeds(seq,
-                      identicalSeedsRngStateTensor,
+                      differingSeedsRngStateTensor,
                       opx->debugContext("lowerGetRngState/DifferingSeeds"));
     } else if (op->getStochasticRoundingMethod() ==
                StochasticRoundingMethod::IdenticalSeeds) {
       lowerGetHwSeeds(seq,
                       identicalSeedsRngStateTensor,
-                      opx->debugContext("lowerSetRngState/IdenticalSeeds"));
+                      opx->debugContext("lowerGetRngState/IdenticalSeeds"));
     }
   }
 }
