@@ -1727,6 +1727,11 @@ void Builder::setAvailableMemoryProportion(
     throw error("availableMemoryProportion must be in (0,1]");
   }
 
+  if (nodeHasAttribute(sAvailMemAttribute, {nodeOutputName})) {
+    // Remove the previous value before updating to workaround ONNX limitation
+    removeNodeAttribute(sAvailMemAttribute, {nodeOutputName});
+  }
+
   addNodeAttribute(
       sAvailMemAttribute, availableMemoryProportion, {nodeOutputName});
 }

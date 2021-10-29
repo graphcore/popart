@@ -246,3 +246,32 @@ BOOST_AUTO_TEST_CASE(Builder_SetAvailableMemoryProportion) {
   BOOST_CHECK_EXCEPTION(
       builder->setAvailableMemoryProportion(op, 0), error, invalidProportion);
 }
+
+BOOST_AUTO_TEST_CASE(Builder_UpdateAvailableMemoryProportion) {
+  // Test that updating the available memory proportion does not error.
+  // This is needed to support:
+  //  1) first setting a global available memory proportion
+  //  2) tune a specific operator to have its own available memory proportion
+  auto builder     = Builder::create();
+  auto aiOnnx      = builder->aiOnnxOpset11();
+  auto aiGraphcore = builder->aiGraphcoreOpset1();
+
+  TensorInfo shape0{"FLOAT", std::vector<int64_t>{3, 3, 1, 1}};
+  auto in0    = builder->addInputTensor(shape0);
+  auto in1    = builder->addInputTensor(shape0);
+  auto output = aiOnnx.gather({in0, in1});
+
+  // Set available memory proportion the first time
+  float globalValue = 0.6;
+  builder->setAvailableMemoryProportion(output, globalValue);
+  float actualMemoryProp =
+      builder->getFloatNodeAttribute(sAvailMemAttribute, {output});
+  BOOST_CHECK_EQUAL(actualMemoryProp, globalValue);
+
+  // Update the available memory proportion
+  float newValue = 0.2;
+  builder->setAvailableMemoryProportion(output, newValue);
+  actualMemoryProp =
+      builder->getFloatNodeAttribute(sAvailMemAttribute, {output});
+  BOOST_CHECK_EQUAL(actualMemoryProp, newValue);
+}
