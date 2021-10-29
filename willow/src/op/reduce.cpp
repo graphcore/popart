@@ -92,7 +92,7 @@ ReduceGradOp::ReduceGradOp(const AiGraphcoreOpIdV1 &opid_,
                            const ReduceOp &fwdOp,
                            const Shape &backward_shape_)
     : Op(opid_, fwdOp.getSettings()),
-      outputTensorInfo(fwdOp.inInfo(ReduceOp::getInIndex())),
+      outputTensorShape(fwdOp.inShape(ReduceOp::getInIndex())),
       backward_shape(backward_shape_), axes(fwdOp.getAxes()) {}
 
 std::unique_ptr<Op> ReduceGradOp::clone() const {
@@ -113,7 +113,9 @@ const std::map<int, int> &ReduceGradOp::gradOutToNonGradIn() const {
 
 const Shape &ReduceGradOp::backwardShape() const { return backward_shape; }
 
-void ReduceGradOp::setup() { outInfo(getOutIndex()) = outputTensorInfo; }
+void ReduceGradOp::setup() {
+  outInfo(getOutIndex()) = {inInfo(getInIndex()).dataType(), outputTensorShape};
+}
 
 const std::vector<int64_t> &ReduceGradOp::getAxes() const { return axes; }
 

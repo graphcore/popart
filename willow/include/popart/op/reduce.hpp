@@ -82,7 +82,7 @@ public:
   float getSubgraphValue() const final { return getLowSubgraphValue(); }
 
 protected:
-  TensorInfo outputTensorInfo;
+  Shape outputTensorShape;
   // Copied from constructing ReduceOp. In this context, it is
   // the shape of this grad Op's input, but with '1's inserted where
   // broadcasts are required to obtain the gradient of the fwd Op's input
