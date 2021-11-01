@@ -1008,14 +1008,21 @@ void Pipeline::setFinalFwdStageRecomputation(Graph &graph) {
       }
     }
 
+    std::set<OpId> visited;
+    for (auto op : frontier) {
+      visited.insert(op->id);
+    }
+
     while (!frontier.empty()) {
       auto op = frontier.back();
       frontier.pop_back();
       op->settings.recomputeType = RecomputeType::Checkpoint;
       for (auto t : op->output->tensors()) {
         for (auto con : t->consumers.getOps()) {
-          if (sameContextAndStage(con)) {
+          if (visited.find(con->id) == visited.end() &&
+              sameContextAndStage(con)) {
             frontier.push_back(con);
+            visited.insert(con->id);
           }
         }
       }
