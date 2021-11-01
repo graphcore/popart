@@ -1,13 +1,14 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 """Definition of a class that represents the PopART IR."""
-from typing import TYPE_CHECKING, Any, Callable, Dict, Iterable, List, Optional
+import inspect
 from weakref import WeakValueDictionary
+from typing import TYPE_CHECKING, Any, Callable, Dict, Iterable, List, Optional
 
 import popart
 import popart._internal.ir as _ir
 from popart.ir.graph import Graph
 from popart.ir.module import Module
-from popart.ir.tensor import Tensor, subgraph_input, subgraph_output
+from popart.ir.tensor import Tensor, TensorByRef, subgraph_input, subgraph_output
 
 if TYPE_CHECKING:
     IrCache = WeakValueDictionary[int, 'Ir']
@@ -115,6 +116,8 @@ class Ir:
         _pb_subgraph = self._pb_ir.createGraph(name)
         subgraph = Graph._from_pb(_pb_subgraph)
 
+        parameters = inspect.signature(fn, follow_wrapped=True).parameters
+
         with subgraph:
             dupes = self._find_duplicate_tensors(
                 [arg for arg in args if isinstance(arg, Tensor)])
@@ -124,10 +127,18 @@ class Ir:
                     "Please ensure tensor inputs to subgraphs are unique.")
 
             in_args = []
-            for arg in args:
+            params = list(parameters.items())
+            for idx, arg in enumerate(args):
                 if isinstance(arg, Tensor):
                     t = arg
-                    in_args.append(subgraph_input(t.shape, t.dtype, t.name))
+                    try:
+                        name, param = params[idx]
+                        by_ref = param.annotation is TensorByRef
+                    except IndexError:
+                        name = t.id
+                        by_ref = False
+                    in_args.append(
+                        subgraph_input(t.shape, t.dtype, name, by_ref=by_ref))
                 else:
                     in_args.append(arg)
 
@@ -135,7 +146,15 @@ class Ir:
             for k, v in kwargs.items():
                 if isinstance(v, Tensor):
                     t = v
-                    in_kwargs[k] = subgraph_input(t.shape, t.dtype, t.name)
+                    try:
+                        param = parameters[k]
+                        by_ref = param.annotation is TensorByRef
+                    except AttributeError:
+                        by_ref = False
+                    in_kwargs[k] = subgraph_input(t.shape,
+                                                  t.dtype,
+                                                  k,
+                                                  by_ref=by_ref)
                 else:
                     in_kwargs[k] = v
 

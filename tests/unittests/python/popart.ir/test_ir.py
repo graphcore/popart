@@ -50,3 +50,21 @@ def test_cache():
     del ir1
     gc.collect()
     assert len(pir.Ir._ir_cache) == 0
+
+
+def test_create_graph():
+    ir = pir.Ir()
+
+    def foo(x: pir.TensorByRef, y: pir.Tensor, c: int):
+        return (x * c) + y
+
+    with ir.main_graph():
+        v1 = pir.variable(1)
+        v2 = pir.variable(2)
+
+        g = ir.create_graph(foo, v1, v2, 5)
+
+    assert len(g._by_ref_inputs) == 1
+    x = g.get_input_tensors()[0]
+    assert x == g._by_ref_inputs.pop()
+    assert x.name == "x"

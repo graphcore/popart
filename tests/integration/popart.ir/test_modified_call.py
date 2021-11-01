@@ -25,7 +25,7 @@ def test_modified():
         ops.host_store(x_non_modify_stream, x)
 
         info = ops.call_with_info(sg, x)
-        info.set_input_modified(x)
+        info.set_op_input_modified(x)
         x_modifiy_stream = pir.d2h_stream(x.shape, x.dtype)
         ops.host_store(x_modifiy_stream, x)
 

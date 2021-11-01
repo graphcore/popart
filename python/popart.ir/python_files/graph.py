@@ -1,7 +1,7 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 """Definition of a class that represents graphs in the PopART IR."""
 from functools import wraps
-from typing import TYPE_CHECKING, Any, Callable, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Callable, Optional, Tuple, Set
 
 import popart._internal.ir as _ir
 
@@ -30,6 +30,7 @@ class Graph:
         # The following attributes and their types are declared here for the
         # sake of Python language servers.
         self._pb_graph: _ir.Graph
+        self._by_ref_inputs: Set[Tensor]
         # Back reference to Ir is required to avoid garbage collection of Ir.
         self._ir: 'Ir'
 
@@ -54,6 +55,7 @@ class Graph:
         ir = Ir._from_pb(pb_graph.getIr())
         self: 'Graph' = super().__new__(cls)
         self._pb_graph = pb_graph
+        self._by_ref_inputs = set()
         self._ir = ir
 
         ir._graph_cache[self.id] = self

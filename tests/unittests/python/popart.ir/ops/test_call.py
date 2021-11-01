@@ -5,7 +5,6 @@ import popart.ir as pir
 import popart.ir.ops as ops
 
 import popart._internal.ir as _ir
-
 from utils import contains_op_of_type, num_op_of_type
 
 
@@ -121,6 +120,23 @@ class TestCall:
         test_subgraph(add_weight_graph0)
         test_subgraph(add_weight_graph1)
         test_subgraph(add_weight_graph2)
+
+    def test_by_ref(self):
+        ir = pir.Ir()
+
+        def foo(x: pir.TensorByRef, y: pir.Tensor):
+            return ops.accumulate(x, y)
+
+        with ir.main_graph():
+            v1 = pir.variable(1)
+            v2 = pir.variable(2)
+
+            g = ir.create_graph(foo, v1, v2)
+            info = ops.call_with_info(g, v1, v2)
+
+        assert len(g._by_ref_inputs) == 1
+        assert info._op.modifiesIndex(0)
+        assert not info._op.modifiesIndex(1)
 
 
 # TODO: Test nested subgraphs

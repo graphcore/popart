@@ -1,5 +1,5 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-from typing import Any, Dict, Iterable, Optional, Tuple, Type, Union
+from typing import Any, Dict, Iterable, NewType, Optional, Tuple, Type, Union
 import numpy as np
 
 import popart._internal.ir as _ir
@@ -11,7 +11,8 @@ if TYPE_CHECKING:
     from popart.ir import Ir
 
 __all__ = [
-    'Tensor', 'variable', 'constant', 'subgraph_input', 'subgraph_output'
+    'Tensor', 'variable', 'constant', 'subgraph_input', 'subgraph_output',
+    'TensorByRef'
 ]
 
 
@@ -379,7 +380,8 @@ def constant(
 
 def subgraph_input(shape: Iterable[int],
                    dtype: dtypes.dtype,
-                   name: Optional[str] = None) -> Tensor:
+                   name: Optional[str] = None,
+                   by_ref: bool = False) -> Tensor:
     """Create a new input tensor to the current graph.
 
     You can use this function when defining a subgraph to create a new input
@@ -418,7 +420,12 @@ def subgraph_input(shape: Iterable[int],
 
     pb_g.addInput(pb_id, pb_info)
 
-    return Tensor._from_pb_tensor(pb_g.getTensor(pb_id))
+    t = Tensor._from_pb_tensor(pb_g.getTensor(pb_id))
+
+    if by_ref:
+        g._by_ref_inputs.add(t)
+
+    return t
 
 
 def subgraph_output(t: Tensor) -> None:
@@ -461,3 +468,9 @@ def subgraph_output(t: Tensor) -> None:
     check_in_graph(g, t)
 
     pb_g.markAsOutput(t.id)
+
+
+# This type alias can be used in input annotations to specify that
+# a graph input should be flagged as copyModified.
+# See `CallInfo.set_op_input_modified`.
+TensorByRef = NewType("TensorByRef", Tensor)

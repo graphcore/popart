@@ -105,16 +105,16 @@ class CallInfo:
         return tuple(
             Tensor._from_pb_tensor(t) for t in self._op.getOutputTensors())
 
-    def set_input_modified(self, in_tensor: Tensor):
-        """Specify that the input tensor `in_tensor` is modified by the call op.
+    def set_op_input_modified(self, op_tensor: Tensor):
+        """Specify that the input tensor `op_tensor` is modified by the call op.
             this will guarentee that any modification to the graph input during the execution
-            of the called graph will also change `in_tensor`.
+            of the called graph will also change `op_tensor`.
             The regions modified by the call op will be specified by the Ops in the called graph.
 
         Args:
-            in_tensor (Tensor): Tensor to be modified.
+            op_tensor (Tensor): Tensor to be modified.
         """
-        index = self._op.inIndex(in_tensor._pb_tensor)
+        index = self._op.inIndex(op_tensor._pb_tensor)
         _graph = self._op.getCalledGraph()
         _sg_tensor = _graph.getInputTensor(
             self.op_in_to_subgraph_in_index(index))
@@ -253,4 +253,9 @@ def call_with_info(
 
     pb_callop.setup()
 
-    return CallInfo(pb_callop)
+    info = CallInfo(pb_callop)
+
+    for t in subgraph._by_ref_inputs:
+        info.set_op_input_modified(info.subgraph_to_op_tensor(t))
+
+    return info
