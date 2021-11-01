@@ -13,7 +13,7 @@ class TestHostStore:
         g = ir.main_graph()
 
         with g:
-            a = pir.variable(1, name="a")
+            a = pir.variable(1.0, name="a")
             b = ops.add(a, a)
 
             # Adds a dummy ActGrad tensor in the main graph as the stream handle

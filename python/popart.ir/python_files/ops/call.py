@@ -117,22 +117,22 @@ def call(subgraph: Graph,
         subgraph (Graph): The called graph.
         *subgraph_fn_param_inputs (Tensor):
             parent tensors that correspond to the inputs of the callable passed
-            to ir.create_graph(callable, ...) when constructing #subgraph earlier.
+            to ir.create_graph(callable, ...) when constructing `subgraph` earlier.
             The inputs passed MUST be provided here in the EXACT SAME ORDER as
-            to ir.get_grah(callable, ...).
+            to ir.get_graph(callable, ...).
         subgraph_in_to_parent_in (Mapping[Tensor, Tensor] = {}):
             Mapping of `subgraph tensor -> parent tensor` that corresponds to
             the inputs that the callable defined internally, e.g. by using
             popart.ir.subgraph_input. Defaults to an empty dictionary.
 
     Returns:
-        None: If #subgraph has no output tensors.
+        None: If `subgraph` has no output tensors.
         Tensor:
             The output tensor of the call in the parent graph, if #subgraph has
             exactly 1 output.
         Tuple[Tensor, ...]:
             Tuple of the output tensors of the call in the parent graph, if
-            #subgraph has >1 outputs. The tensors will be in ascending order of
+            `subgraph` has >1 outputs. The tensors will be in ascending order of
             the graph output index of the corresponding subgraph tensor.
     """
     info = call_with_info(subgraph,
@@ -153,7 +153,8 @@ def call(subgraph: Graph,
 def call_with_info(
         subgraph: Graph,
         *subgraph_fn_param_inputs: Tensor,
-        subgraph_in_to_parent_in: Optional[Mapping[Tensor, Tensor]] = None
+        subgraph_in_to_parent_in: Optional[Mapping[Tensor, Tensor]] = None,
+        check_inputs: bool = True,
 ) -> CallInfo:
     """
     Call Op: An op that invokes a subgraph with the provided input tensors.
@@ -163,19 +164,29 @@ def call_with_info(
         subgraph (Graph): The called graph.
         *subgraph_fn_param_inputs (Tensor):
             parent tensors that correspond to the inputs of the callable passed
-            to ir.get_graph(callable, ...) when constructing #subgraph earlier.
+            to ir.get_graph(callable, ...) when constructing `subgraph` earlier.
             The inputs passed MUST be provided here in the EXACT SAME ORDER as
-            to ir.get_grah(callable, ...).
+            to ir.get_graph(callable, ...).
         subgraph_in_to_parent_in (Mapping[Tensor, Tensor] = {}):
             Mapping of `subgraph tensor -> parent tensor` that corresponds to
             the inputs that the callable defined internally, e.g. by using
             popart.ir.subgraph_input. Defaults to an empty dictionary.
-
+        check_inputs (bool = True):
+            Check when called if all inputs have been provided.
     Returns:
         info: CallInfo
             Information on the created callsite.
     """
     subgraph_in_to_parent_in = subgraph_in_to_parent_in if subgraph_in_to_parent_in is not None else {}
+
+    if check_inputs and len(subgraph_fn_param_inputs) + len(
+            subgraph_in_to_parent_in) != len(subgraph.get_input_tensors()):
+        raise ValueError(
+            "Not enough inputs have been provided: the number of graph inputs does not equal the number of "
+            "subgraph_fn_param_inputs plus subgraph_in_to_parent_in inputs: {} != {} + {}"
+            .format(len(subgraph.get_input_tensors()),
+                    len(subgraph_fn_param_inputs),
+                    len(subgraph_in_to_parent_in)))
 
     ctx = get_current_context()
     g = ctx.graph

@@ -38,9 +38,16 @@ class Graph:
     def name(self) -> str:
         return self._pb_graph.getScope().str()
 
+    @property
+    def id(self) -> str:
+        return str(self._pb_graph.id.str())
+
     def ir(self) -> 'Ir':
         from popart.ir import Ir
         return Ir._from_pb(self._pb_graph.getIr())
+
+    def get_main_graph(self) -> 'Graph':
+        return self.ir().main_graph()
 
     def get_input_tensors(self) -> Tuple[Tensor, ...]:
         """Get the input tensors to the graph.
@@ -114,10 +121,17 @@ class Graph:
             return value.id in self._pb_graph
         return False
 
-    def __eq__(self, value: Any) -> bool:
-        if isinstance(value, Graph):
-            return self._pb_graph.id == value._pb_graph.id
-        return False
+    def __eq__(self, other: Any) -> bool:
+        """Graph equality, based on graph and Ir `id`"""
+        return isinstance(
+            other, Graph) and self.id == other.id and self.ir() == other.ir()
+
+    def __hash__(self):
+        """Hashes the Graph, based on graph and Ir `id`"""
+        return hash((self.id, self.ir()))
+
+    def __repr__(self) -> str:
+        return f"Graph[id={self.id} name={self.name}]"
 
     def get_tensor(self, tensor_id: str) -> Tensor:
         return Tensor._from_pb_tensor(self._pb_graph.getTensor(tensor_id))

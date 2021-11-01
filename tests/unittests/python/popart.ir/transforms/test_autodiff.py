@@ -29,7 +29,7 @@ def test_subgraph():
         x = ops.host_load(h2d, "x")
 
         W = pir.variable(np.random.normal(0, 0.1, (16, 16)), name="W")
-        b = pir.variable(np.zeros(16), name="b")
+        b = pir.variable(np.zeros(16), name="b", dtype=pir.dtypes.float32)
 
         ss = ScaleNShift()
         ss_graph = ir.create_graph(ss, x, out_features=16)

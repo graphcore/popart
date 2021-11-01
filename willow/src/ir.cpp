@@ -318,11 +318,13 @@ IrBundle::IrBundle(const ONNX_NAMESPACE::ModelProto &modelProto_,
 namespace {
 
 const constexpr char *const partitionLoggerName{"TimePartitionLogger"};
+static uint64_t static_id = 0;
 
 } // namespace
 
 Ir::Ir()
-    : timePartitionLogger_(
+    : id(static_id++),
+      timePartitionLogger_(
           std::make_unique<poprithms::logging::SwitchingTimePartitionLogger>(
               partitionLoggerName)),
       onnxModel(nullptr) {
@@ -4076,8 +4078,8 @@ std::size_t std::hash<popart::Ir>::operator()(const popart::Ir &ir) const {
   return seed;
 }
 
-std::size_t
-std::hash<popart::IrBundle>::operator()(const popart::IrBundle &bundle) const {
+std::size_t std::hash<popart::IrBundle>::
+operator()(const popart::IrBundle &bundle) const {
   size_t seed = 0;
 
   boost::hash_combine(

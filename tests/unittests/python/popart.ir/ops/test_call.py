@@ -3,7 +3,7 @@ import popart.ir as pir
 import popart.ir.ops as ops
 
 import popart._internal.ir as _ir
-
+import pytest
 from utils import contains_op_of_type, num_op_of_type
 
 
@@ -50,6 +50,10 @@ class TestCall:
             # First graph
             add_weight0 = AddWeight()
             add_weight_graph0 = ir.create_graph(add_weight0, x0)
+
+            with pytest.raises(ValueError):
+                # Call without `subgraph_in_to_parent_in`
+                y0 = ops.call(add_weight_graph0, x0)
 
             # First call site
             y0 = ops.call(add_weight_graph0,

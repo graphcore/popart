@@ -5,6 +5,10 @@ import numpy as np
 import popart._internal.ir as _ir
 from popart.ir import dtypes
 from popart.ir.context import gcg
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from popart.ir import Ir
 
 __all__ = [
     'Tensor', 'variable', 'constant', 'subgraph_input', 'subgraph_output'
@@ -13,7 +17,7 @@ __all__ = [
 
 class Tensor:
     def __init__(self):
-        """Wraps a tensor in the PopART IR."""
+        """popart.ir Tensor."""
         self._pb_tensor: _ir.Tensor
         raise RuntimeError("pir.Tensor cannot be constructed directly.")
 
@@ -23,7 +27,7 @@ class Tensor:
     def __init_subclass__(cls, tensor_type: Optional[str] = None,
                           **kwargs) -> None:
         """Hook called when creating a Tensor subclass.
-            Argument tensor_type is used to allow _from_pb_tensor to return
+            Argument `tensor_type` is used to allow `_from_pb_tensor` to return
             the correct subclass for any Tensor retrieved from the internal IR"""
         super().__init_subclass__(**kwargs)
         if tensor_type is not None:
@@ -64,16 +68,58 @@ class Tensor:
     def name(self) -> str:
         return _ir.removeScope(self._pb_tensor.getGraph(), self.id)
 
+    def ir(self) -> 'Ir':
+        from popart.ir import Ir
+        return Ir._from_pb(self._pb_tensor.getIr())
+
+    def transpose(self,
+                  permutation: Optional[Iterable[int]] = None) -> 'Tensor':
+        """Returns `ops.transpose(self, permutation)`."""
+        import popart.ir.ops as ops
+        return ops.transpose(self, permutation)
+
+    def reshape(self, shape: Iterable[int]) -> 'Tensor':
+        """Returns `ops.reshape(self, shape)`."""
+        import popart.ir.ops as ops
+        return ops.reshape(self, shape)
+
+    def detach(self) -> 'Tensor':
+        """Return detached tensor"""
+        import popart.ir.ops as ops
+        return ops.detach(self)
+
+    def copy_to_ipu(self, destination: int,
+                    source: Optional[int] = None) -> 'Tensor':
+        """
+        Copies a Tensor to a virtual graph.
+
+        Args:
+            destination (int):
+                Ipu for the tensor to be copied to.
+            source (Optional[int]):
+                Ipu for the tensor to be copied from.
+                By default, the source will be taken from the producer of the tensor.
+                If the tensor does not have a producer a source MUST be provided.
+        """
+        import popart.ir.ops as ops
+        return ops.ipu_copy(self, destination, source)
+
+    @property
+    def T(self) -> 'Tensor':
+        """Returns the Tensor transposed with reversed axes."""
+        return self.transpose()
+
     def __repr__(self) -> str:
-        return f"Tensor[id={self.id} type={self.dtype} shape={self.shape}]"
+        return f"Tensor[name={self.name} type={self.dtype} shape={self.shape}]"
 
     def __hash__(self):
-        """Hashes the Tensor, based on #id"""
-        return hash(self.id)
+        """Hashes the Tensor, based on Tensor and Ir `id`"""
+        return hash((self.id, self.ir()))
 
     def __eq__(self, other: Any) -> bool:
-        """Tensor equality, based on #id"""
-        return isinstance(other, Tensor) and (self.id == other.id)
+        """Tensor equality, based on Tensor and Ir `id`"""
+        return isinstance(
+            other, Tensor) and self.id == other.id and self.ir() == other.ir()
 
     def __len__(self) -> int:
         """Size of 0th axis"""
@@ -98,64 +144,27 @@ class Tensor:
             return constant(value, dtype)
 
     def __add__(self, value: Any) -> 'Tensor':
-        """Returns ops.add(self, value)."""
+        """Returns `ops.add(self, value)`."""
         import popart.ir.ops as ops
         return ops.add(self, self._ensure_tensor(value))
 
     def __sub__(self, value: Any) -> 'Tensor':
-        """Returns ops.sub(self, value)."""
+        """Returns `ops.sub(self, value)`."""
         import popart.ir.ops as ops
         return ops.sub(self, self._ensure_tensor(value))
 
     def __mul__(self, value: Any) -> 'Tensor':
-        """Returns ops.mul(self, value)."""
+        """Returns `ops.mul(self, value)`."""
         import popart.ir.ops as ops
         return ops.mul(self, self._ensure_tensor(value))
 
     def __truediv__(self, value: Any) -> 'Tensor':
-        """Returns ops.div(self, value)."""
+        """Returns `ops.div(self, value)`."""
         import popart.ir.ops as ops
         return ops.div(self, self._ensure_tensor(value))
 
-    def transpose(self,
-                  permutation: Optional[Iterable[int]] = None) -> 'Tensor':
-        """Returns ops.transpose(self, permutation)."""
-        import popart.ir.ops as ops
-        return ops.transpose(self, permutation)
-
-    def reshape(self, shape: Iterable[int]) -> 'Tensor':
-        """Returns ops.reshape(self, shape)."""
-        import popart.ir.ops as ops
-        return ops.reshape(self, shape)
-
-    def detach(self) -> 'Tensor':
-        """Return detached tensor"""
-        import popart.ir.ops as ops
-        return ops.detach(self)
-
-    def copy_to_ipu(self, destination: int,
-                    source: Optional[int] = None) -> 'Tensor':
-        """
-        Copies a Tensor to a virtual graph.
-
-        Args:
-            destination: int
-                Ipu for the tensor to be copied to.
-            source: Optional[int]
-                Ipu for the tensor to be copied from.
-                By default, the source will be taken from the producer of the tensor.
-                If the tensor does not have a producer a source MUST be provided.
-        """
-        import popart.ir.ops as ops
-        return ops.ipu_copy(self, destination, source)
-
-    @property
-    def T(self) -> 'Tensor':
-        """Returns the Tensor transposed with reversed axes."""
-        return self.transpose()
-
     def __matmul__(self, other: Any) -> 'Tensor':
-        """Returns ops.matmul(self, other)."""
+        """Returns `ops.matmul(self, other)`."""
         import popart.ir.ops as ops
         return ops.matmul(self, self._ensure_tensor(other))
 
@@ -221,17 +230,24 @@ class Tensor:
 
 
 class Variable(Tensor, tensor_type="Variable"):
-    """Wraps a Tensor in the PopART IR that has TensorType.Variable"""
+    """
+    popart.ir variable tensor.
+    This tensor can be used to represent a model weight or any other
+    parameter that can change while running a model.
+    """
 
     def copy_to_ipu(self, dst: int, src: int) -> 'Tensor':
-        """Returns ops.ipu_copy(self, dst, src).
+        """Returns `ops.ipu_copy(self, dst, src)`.
             Must provide a src value."""
         import popart.ir.ops as ops
         return ops.ipu_copy(self, dst, src)
 
 
 class Constant(Tensor, tensor_type="Const"):
-    """Wraps a Tensor in the PopART IR that has TensorType.Constant"""
+    """
+    popart.ir constant tensor.
+    This tensor cannot change during the runtime of a model.
+    """
 
     def copy_to_ipu(self, dst: int, src: int) -> 'Tensor':
         """Returns ops.ipu_copy(self, dst, src).
@@ -240,65 +256,96 @@ class Constant(Tensor, tensor_type="Const"):
         return ops.ipu_copy(self, dst, src)
 
 
-def variable(data: Union[np.ndarray, Iterable[Any], int, float],
-             dtype: Optional[dtypes.dtype] = dtypes.float32,
-             name: Optional[str] = None) -> Variable:
-    """A variable tensor that is initialised with data during graph creation.
+downcast_np_dtypes = {
+    np.dtype('int64'): np.dtype('int32'),
+    np.dtype('uint64'): np.dtype('uint32'),
+    np.dtype('float64'): np.dtype('float32'),
+}
+
+
+def variable(
+        data: Union[np.ndarray, Iterable[Any], int, float, bool],
+        dtype: Optional[dtypes.dtype] = None,
+        name: Optional[str] = None,
+        downcast: bool = True,
+) -> Variable:
+    """
+    A variable tensor that is initialised with data during graph creation.
 
     This tensor can be used to represent a model weight or any other
     parameter that can change while running a model.
 
     Must be created in the main graph scope. Example:
-        >>> import popart.ir as pir
-        >>> with pir.Ir().main_graph():
-        >>>     a = pir.variable(0)
+    ```
+    import popart.ir as pir
+    with pir.Ir().main_graph():
+        a = pir.variable(0)
+    ```
 
     Args:
         data (np.ndarray, or a value numpy can use to construct an np.ndarray):
             The data used to initialise the tensor.
-        dtype (dtype):
-            The data type of the tensor. Defaults to `pir.float32`.
+        dtype (Optional[dtype]):
+            The data type of the tensor to be created, if not specified Numpy will infer the data
+            type and be downcasted to 32 bits if necessary.
         name (Optional[str]):
             The name of the tensor. Defaults to `None`.
+        downcast (bool):
+            If no dtype is provided 64 bit float/ints will be downcasted to 32 bit variants. Default to True.
     """
     g = gcg()
     pb_g = g._pb_graph
-    np_data: np.ndarray = np.array(data, dtype=dtype.as_numpy())
-    info = _ir.TensorInfo(dtype._pb_dtype, np_data.shape)
+    np_dtype = dtype.as_numpy() if dtype is not None else None
+    np_data: np.ndarray = np.array(data, dtype=np_dtype)
+    if np_data.dtype in downcast_np_dtypes and downcast and dtype is None:
+        np_data = np_data.astype(downcast_np_dtypes[np_data.dtype])
+    pir_dt = dtypes.dtype.as_dtype(np_data)
+    info = _ir.TensorInfo(pir_dt._pb_dtype, np_data.shape)
     pb_id = g._create_tensor_id(name)
     pb_g.addVarInit(pb_id, info, np_data)
     return Variable._from_pb_tensor(pb_g.getTensor(pb_id))
 
 
-def constant(data: Union[np.ndarray, Iterable[Any], int, float],
-             dtype: Optional[dtypes.dtype] = dtypes.float32,
-             name: Optional[str] = None) -> Constant:
+def constant(
+        data: Union[np.ndarray, Iterable[Any], int, float],
+        dtype: Optional[dtypes.dtype] = None,
+        name: Optional[str] = None,
+        downcast: bool = True,
+) -> Constant:
     """A constant tensor that is initialised with data during graph creation.
 
-    This tensor cannot change during the runtime of a model. The inteded use
+    This tensor cannot change during the runtime of a model. The intended use
     of this class is when doing operations between `popart.ir.Tensor`
     instances and other types, such as `numpy.ndarray` objects, numbers, or
     list or tuples of numbers.
 
     Example:
-        >>> import popart.ir as pir
-        >>> with pir.Ir().main_graph():
-        >>>     a = pir.variable(0)
-        >>>     # The `1` will be implicitly converted to a `Constant`.
-        >>>     b = a + 1
+    ```
+    import popart.ir as pir
+    ir = pir.Ir()
+    with ir.main_graph():
+        a = pir.constant(0)
+        # The `1` will be implicitly converted to a `Constant`.
+        b = a + 1
+    ```
 
     Args:
         data (np.array, or a value numpy can use to construct an np.ndarray):
             The data used to initialise the tensor.
-        dtype (dtype):
-            The data type of the tensor. Defaults to `pir.float32`.
+        dtype (Optional[dtype]):
+            The data type of the tensor to be created, if not specified Numpy will infer the data
+            type and be downcasted to 32 bits if necessary.
         name (Optional[str]):
             The name of the tensor. Defaults to `None`.
     """
     g = gcg()
     pb_g = g._pb_graph
-    np_data: np.ndarray = np.array(data, dtype=dtype.as_numpy())
-    info = _ir.TensorInfo(dtype._pb_dtype, np_data.shape)
+    np_dtype = dtype.as_numpy() if dtype is not None else None
+    np_data: np.ndarray = np.array(data, dtype=np_dtype)
+    if np_data.dtype in downcast_np_dtypes and downcast and dtype is None:
+        np_data = np_data.astype(downcast_np_dtypes[np_data.dtype])
+    pir_dt = dtypes.dtype.as_dtype(np_data)
+    info = _ir.TensorInfo(pir_dt._pb_dtype, np_data.shape)
     pb_id = g._create_tensor_id(name)
     pb_g.addConstInit(pb_id, info, np_data)
     return Constant._from_pb_tensor(pb_g.getTensor(pb_id))
@@ -314,18 +361,20 @@ def subgraph_input(shape: Iterable[int],
     subgraph for this input.
 
     Example:
-        >>> import popart.ir as pir
-        >>>
-        >>> def add_w(x):
-        >>>     w = pir.subgraph_input(x.shape, x.dtype, "w")
-        >>>     return w + x
-        >>>
-        >>> ir = pir.Ir()
-        >>> with ir.main_graph():
-        >>>     w = pir.variable(1)
-        >>>     x = pir.variable(3)
-        >>>     add_w_graph = ir.create_graph(add_w, x, w)
-        >>>     y = ops.call(add_w_graph, x, w)
+    ```
+    import popart.ir as pir
+    
+    def add_w(x):
+        w = pir.subgraph_input(x.shape, x.dtype, "w")
+        return w + x
+    
+    ir = pir.Ir()
+    with ir.main_graph():
+        w = pir.variable(1)
+        x = pir.variable(3)
+        add_w_graph = ir.create_graph(add_w, x, w)
+        y = ops.call(add_w_graph, x, w)
+    ```
 
     Args:
         shape (Tuple[int, ...])
@@ -354,19 +403,21 @@ def subgraph_output(t: Tensor) -> None:
     return that tensor in the parent graph.
 
     Example:
-        >>> import popart.ir as pir
-        >>>
-        >>> def add_w(x):
-        >>>     w = pir.subgraph_input(x.shape, x.dtype, "w")
-        >>>     y = w + x
-        >>>     pir.subgraph_output(y)
-        >>>
-        >>> ir = pir.Ir()
-        >>> with ir.main_graph():
-        >>>     w = pir.variable(1)
-        >>>     x = pir.variable(3)
-        >>>     add_w_graph = ir.create_graph(add_w, x, w)
-        >>>     y = ops.call(add_w_graph, x, w)
+    ```
+    import popart.ir as pir
+    
+    def add_w(x):
+        w = pir.subgraph_input(x.shape, x.dtype, "w")
+        y = w + x
+        pir.subgraph_output(y)
+    
+    ir = pir.Ir()
+    with ir.main_graph():
+        w = pir.variable(1)
+        x = pir.variable(3)
+        add_w_graph = ir.create_graph(add_w, x, w)
+        y = ops.call(add_w_graph, x, w)
+    ```
 
     Args:
         t (Tensor):

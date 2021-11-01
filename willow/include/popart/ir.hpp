@@ -1,3 +1,4 @@
+
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
 #ifndef GUARD_NEURALNET_WILLOWIR_HPP
 #define GUARD_NEURALNET_WILLOWIR_HPP
@@ -120,6 +121,9 @@ public:
 
   Ir(const Ir &) = delete;
   Ir &operator=(const Ir &) = delete;
+
+  // Unique id of each IR instance
+  uint64_t getId() const { return id; }
 
   // Set the onnxModel.
   // A note on constant tensors: The outputs of ONNX Constant Operators
@@ -535,6 +539,9 @@ public:
   void setIsPrepared();
 
 private:
+  // Unique id of each IR instance
+  const uint64_t id;
+
   void prepareImpl(const IrBundle &, const HashesMap &cacheEntries);
 
   // Accessors for the tensors in the top-level graph

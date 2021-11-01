@@ -112,12 +112,13 @@ class dtype:
 
         if hasattr(type_value, 'dtype'):
             try:
-                return _NP_TO_PIR[np.dtype(type_value.dtype).type]
+                return _NP_TO_PIR[type_value.dtype]
             except (KeyError, TypeError):
                 pass
 
-        raise ValueError(f'There is not a `popart.ir.dtype` that is compatible'
-                         f' with {type_value}.')
+        raise ValueError(
+            f'There is not a `popart.ir.dtype` that is compatible'
+            f' with value: {type_value}, type: {type(type_value)}.')
 
     def as_numpy(self) -> np.dtype:
         """Converts the `popart.ir.dtype` to a corresponding `numpy.dtype`.
@@ -204,24 +205,24 @@ class dtype:
 
 # yapf: disable
 # Fixed point types
-bool = dtype._factory('bool', False, False, False, False, np.bool, builtins.bool, _ir.DataType.BOOL)
-int8 = dtype._factory('int8', False, True, False, True, np.int8, None, _ir.DataType.INT8)
-int16 = dtype._factory('int16', False, True, False, True, np.int16, None, _ir.DataType.INT16)
-int32 = dtype._factory('int32', False, True, False, True, np.int32, None, _ir.DataType.INT32)
-int64 = dtype._factory('int64', False, True, False, True, np.int64, None, _ir.DataType.INT64)
-uint8 = dtype._factory('uint8', False, True, False, False, np.uint8, None, _ir.DataType.UINT8)
-uint16 = dtype._factory('uint16', False, True, False, False, np.uint16, None, _ir.DataType.UINT16)
-uint32 = dtype._factory('uint32', False, True, False, False, np.uint32, None, _ir.DataType.UINT32)
-uint64 = dtype._factory('uint64', False, True, False, False, np.uint64, None, _ir.DataType.UINT64)
+bool = dtype._factory('bool', False, False, False, False, np.dtype('bool_'), builtins.bool, _ir.DataType.BOOL)
+int8 = dtype._factory('int8', False, True, False, True, np.dtype('int8'), None, _ir.DataType.INT8)
+int16 = dtype._factory('int16', False, True, False, True, np.dtype('int16'), None, _ir.DataType.INT16)
+int32 = dtype._factory('int32', False, True, False, True, np.dtype('int32'), None, _ir.DataType.INT32)
+int64 = dtype._factory('int64', False, True, False, True, np.dtype('int64'), None, _ir.DataType.INT64)
+uint8 = dtype._factory('uint8', False, True, False, False, np.dtype('uint8'), None, _ir.DataType.UINT8)
+uint16 = dtype._factory('uint16', False, True, False, False, np.dtype('uint16'), None, _ir.DataType.UINT16)
+uint32 = dtype._factory('uint32', False, True, False, False, np.dtype('uint32'), None, _ir.DataType.UINT32)
+uint64 = dtype._factory('uint64', False, True, False, False, np.dtype('uint64'), None, _ir.DataType.UINT64)
 
 # Floating point types
-float16 = dtype._factory('float16', False, False, True, True, np.float16, None, _ir.DataType.FLOAT16)
-float32 = dtype._factory('float32', False, False, True, True, np.float32, builtins.float, _ir.DataType.FLOAT)
-float64 = dtype._factory('float64', False, False, True, True, np.float64, None, _ir.DataType.DOUBLE)
+float16 = dtype._factory('float16', False, False, True, True, np.dtype('float16'), None, _ir.DataType.FLOAT16)
+float32 = dtype._factory('float32', False, False, True, True, np.dtype('float32'), builtins.float, _ir.DataType.FLOAT)
+float64 = dtype._factory('float64', False, False, True, True, np.dtype('float64'), None, _ir.DataType.DOUBLE)
 
 # Complex types
-complex64 = dtype._factory('complex64', True, False, False, True, np.complex64, None, _ir.DataType.COMPLEX64)
-complex128 = dtype._factory('complex128', True, False, False, True, np.complex128, None, _ir.DataType.COMPLEX128)
+complex64 = dtype._factory('complex64', True, False, False, True, np.dtype('complex64'), None, _ir.DataType.COMPLEX64)
+complex128 = dtype._factory('complex128', True, False, False, True, np.dtype('complex128'), None, _ir.DataType.COMPLEX128)
 # yapf: enable
 
 # Type aliases

@@ -16,7 +16,7 @@ def test_random_seed_setup():
                                   name='seed_stream')
         seed = ops.host_load(seed_h2d, 'seed')
 
-        x = pir.variable(0)
+        x = pir.variable(0.0)
         x = ops.dropout(x, seed + 1, p=0.1)
         y = ops.dropout(x, seed + 2, p=0.7)
 

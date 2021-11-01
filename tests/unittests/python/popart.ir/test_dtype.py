@@ -26,8 +26,6 @@ class Testdtype:
     def test_constructor(self):
         with pytest.raises(TypeError) as excinfo:
             pir.dtype()
-        err_msg = "Cannot create popart.ir.dtypes.dtype instances."
-        assert str(excinfo.value) == err_msg
 
     # TODO(T38031): Unskip this test.
     @pytest.mark.skipif(_get_torch_version() < (1, 7, 1),
@@ -70,9 +68,6 @@ class Testdtype:
 
         with pytest.raises(ValueError) as excinfo:
             pir.dtype.as_dtype(np.str)
-        exp_message = (f'There is not a `popart.ir.dtype` that is '
-                       f'compatible with {np.str}.')
-        assert str(excinfo.value) == exp_message
 
     def test_conversion_string(self):
         pir_dtypes = get_all_dtypes()
@@ -83,13 +78,11 @@ class Testdtype:
 
     def test_conversion_python(self):
         import builtins
-        py_to_pir = {builtins.bool: pir.bool, builtins.float: pir.float32}
+        py_to_pir = {
+            builtins.bool: pir.bool,
+            builtins.float: pir.float32,
+            builtins.int: pir.int64
+        }
 
         for py_type, pir_dtype in py_to_pir.items():
             assert pir_dtype == pir.dtype.as_dtype(py_type)
-
-        with pytest.raises(ValueError) as excinfo:
-            pir.dtype.as_dtype(builtins.int)
-        exp_message = (f'There is not a `popart.ir.dtype` that is '
-                       f'compatible with {builtins.int}.')
-        assert str(excinfo.value) == exp_message

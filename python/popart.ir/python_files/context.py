@@ -9,8 +9,8 @@ if TYPE_CHECKING:
     from popart.ir.graph import Graph
 
 __all__ = [
-    'get_current_graph', 'gcg', 'virtual_graph', 'pipeline_stage',
-    'in_sequence'
+    'get_current_graph', 'get_main_graph', 'gcg', 'gmg', 'virtual_graph',
+    'pipeline_stage', 'in_sequence'
 ]
 
 
@@ -66,6 +66,11 @@ class Context:
             self._pipeline_stages) > 0 else None
 
     def push_graph(self, g: 'Graph'):
+        if len(self._graphs) > 0 and self._graphs[0].ir() != g.ir():
+            raise RuntimeError(
+                f"Trying to a create a context manager nested in another context, "
+                "when the previous context's Ir is different. "
+                f"{self._graphs[0].ir()} != {g.ir()}")
         self._graphs.append(g)
 
     def pop_graph(self) -> 'Graph':
@@ -80,6 +85,16 @@ class Context:
                 "`with graph_instance:`) or inside of a function that's called by "
                 "`popart.ir.Ir().create_graph()`")
         return self._graphs[-1]
+
+    @property
+    def main_graph(self):
+        if len(self._graphs) == 0:
+            raise RuntimeError(
+                "Trying to access the main_graph, but no graph has been selected. Hint - "
+                "try performing the operations in a context manager (e.g. "
+                "`with graph_instance:`) or inside of a function that's called by "
+                "`popart.ir.Ir().create_graph()`")
+        return self._graphs[0].get_main_graph()
 
     @property
     def in_sequence(self):
@@ -168,7 +183,8 @@ def get_current_context() -> Context:
 
 
 def get_current_graph() -> 'Graph':
-    """Get the graph that is at the top of the global graph stack.
+    """
+    Get the current graph from the current context.
 
     Raises:
         RuntimeError:
@@ -181,8 +197,24 @@ def get_current_graph() -> 'Graph':
     return get_current_context().graph
 
 
-# Alias for get_current_graph().
+def get_main_graph() -> 'Graph':
+    """
+    Get the main graph from the current context.
+
+    Raises:
+        RuntimeError:
+            If the stack is empty.
+
+    Returns:
+        Graph:
+            The main graph.
+    """
+    return get_current_context().main_graph
+
+
+# Alias for get_current_graph() and get_main_graph()
 gcg = get_current_graph
+gmg = get_main_graph
 
 
 @contextmanager

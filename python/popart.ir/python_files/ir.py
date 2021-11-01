@@ -2,7 +2,7 @@
 """Definition of a class that represents the PopART IR."""
 
 from collections import Counter
-from typing import Any, Callable
+from typing import Any, Callable, Optional
 
 from numpy.lib.index_tricks import ndindex
 
@@ -16,7 +16,8 @@ __all__ = ['Ir']
 
 
 class Ir:
-    """Class that represents the PopART IR.
+    """
+    Class that represents the PopART IR.
 
     This class contains a main graph. Furthermore, it defines methods and
     decorators for creating additional graphs from Python functions.
@@ -130,6 +131,20 @@ class Ir:
 
         return subgraph
 
+    def create_empty_graph(self, name: Optional[str] = None):
+        """Create a new graph.
+
+        Args:
+            name (Optional[str], optional): Name of the graph. Defaults to "graph".
+
+        Returns:
+            Graph
+        """
+        name = name or "graph"
+        _pb_subgraph = self._pb_ir.createGraph(
+            name)  # type: ignore GraphId != str
+        return Graph._from_pb(_pb_subgraph)
+
     def _create_name(self, name: str) -> str:
         """Generate a graph name based on the qualified name of the Python
         function that created it.
@@ -157,3 +172,16 @@ class Ir:
         name = name.replace(".<locals>", "")
         name = self._pb_ir.createUniqueSubgraphId(name)
         return name
+
+    @property
+    def id(self) -> int:
+        return self._pb_ir.getId()
+
+    def __hash__(self) -> int:
+        return hash(self.id)
+
+    def __eq__(self, other) -> bool:
+        return isinstance(other, Ir) and self.id == other.id
+
+    def __repr__(self) -> str:
+        return f"Ir[id={self.id}]"

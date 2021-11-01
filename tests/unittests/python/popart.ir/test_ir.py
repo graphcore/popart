@@ -19,3 +19,16 @@ def test_constructor():
 
     main_graph = ir.main_graph()
     assert isinstance(main_graph, pir.Graph)
+
+
+def test_multiple_ir():
+    ir1 = pir.Ir()
+    ir2 = pir.Ir()
+    assert ir1.id != ir2.id
+    assert ir1 != ir2  # test __eq__
+    assert len(set([ir1, ir2])) == 2  # test __hash__
+
+
+def test_repr():
+    ir1 = pir.Ir()
+    str(ir1)

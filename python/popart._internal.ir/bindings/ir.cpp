@@ -17,6 +17,7 @@ void bindIr(py::module &m) {
 
   py::class_<Ir, std::shared_ptr<Ir>>(m, "Ir")
       .def(py::init<>())
+      .def("getId", &Ir::getId)
       .def("getMainGraph",
            py::overload_cast<>(&Ir::getMainGraph),
            py::return_value_policy::reference)

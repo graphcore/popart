@@ -4,7 +4,7 @@ import pytest
 
 import popart._internal.ir as _ir
 import popart.ir as pir
-from popart.ir.tensor import Variable, Constant
+from popart.ir.tensor import Variable, Constant, downcast_np_dtypes
 
 type_map = {Variable: _ir.TensorType.Variable, Constant: _ir.TensorType.Const}
 ctor_map = {Variable: pir.variable, Constant: pir.constant}
@@ -32,7 +32,19 @@ class TestTensor:
                 kwargs['dtype'] = dtype
 
             exp_name = f'{name}' if name is not None else 't'
-            exp_dtype = dtype if dtype is not None else pir.float32
+
+            def exp_np_dtype_(dtype):
+                if dtype is not None:
+                    return dtype
+                else:
+                    np_data = np.array(data)
+                    if np_data.dtype in downcast_np_dtypes:
+                        return pir.dtypes.dtype.as_dtype(
+                            downcast_np_dtypes[np_data.dtype])
+                    else:
+                        return pir.dtypes.dtype.as_dtype(np_data.dtype)
+
+            exp_dtype = exp_np_dtype_(dtype)
 
             t = ctor_map[t_class](data, **kwargs)
 
@@ -48,6 +60,7 @@ class TestTensor:
             assert pb_t.id == t.id
             assert pb_t.tensorType() == type_map[t_class]
             assert pb_t.hasTensorData()
+            hash(t)
 
     @pytest.mark.parametrize('t_class', [Variable, Constant])
     def test_construction1(self, t_class):
@@ -56,7 +69,7 @@ class TestTensor:
         main = ir.main_graph()
 
         with main:
-            t = ctor_map[t_class](1)
+            t = ctor_map[t_class](1.0)
             assert t.dtype == pir.float32
             assert t.shape == ()
             assert t.nelms == 1
@@ -91,3 +104,22 @@ class TestTensor:
         assert isinstance(c, Constant)
         new_c = pir.Tensor._from_pb_tensor(c._pb_tensor)
         assert isinstance(new_c, Constant)
+
+    def test_get_ir(self):
+        ir = pir.Ir()
+        main = ir.main_graph()
+
+        with main:
+            a = pir.variable(1)
+            assert a.ir() == ir
+
+    def test_cmp(self):
+        ir = pir.Ir()
+        main = ir.main_graph()
+
+        with main:
+            a = pir.variable(1)
+            b = pir.variable(1)
+            assert a != b  # test __eq__
+            assert len(set([a, b])) == 2  # test __hash__
+            str(a)  # test __repr__
