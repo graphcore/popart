@@ -21,7 +21,7 @@ namespace popart {
  *
  * 1. The \c TensorId of the \c inTensor to copy to remote memory.
  * 2. The (optional) \c TensorId 0-rank tensor called \c offset .
- *    - If set to a vaule >= 0 \c offset will specify the row in the remote
+ *    - If set to a value >= 0 \c offset will specify the row in the remote
  *      buffer the \c inTensor will be written to (see below for explanation).
  *    - If set to -1 \c RemoteSetup will assign a unique value.
  *
@@ -103,7 +103,7 @@ private:
  *
  * Loads a tensor from remote (off-chip) buffer.
  * The tensor will be loaded from the memory location corresponding to
- * \c RemoteBufferId, and will be stored in the memory location correpsonding to
+ * \c RemoteBufferId, and will be stored in the memory location corresponding to
  * \c inTensor.
  *
  * This class takes between one and two \c TensorIds as inputs
@@ -114,12 +114,12 @@ private:
  *    - In the \a outplace version this \c Op will clone the \c inTensor, then
  *      write the loaded data to the clone
  * 2. The (optional) \c TensorId to a 0-rank tensor called \c offset .
- *    - If set to a vaule >= 0 \c offset will specify the row in the remote
+ *    - If set to a value >= 0 \c offset will specify the row in the remote
  *      buffer the tensor will be loaded from (see below for explanation).
  *    - If set to -1 \c RemoteSetup will assign a unique value.
  *
  * The relationship between \c offset, \c RemoteBufferId and \c RemoteSetup
- * is thouroughly described in \see RemoteStoreOp.
+ * is thoroughly described in \see RemoteStoreOp.
  *
  * The output is the \c TensorId of the loaded tensor.
  *
