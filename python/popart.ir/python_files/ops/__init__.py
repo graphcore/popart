@@ -3,6 +3,7 @@ from .accumulate import *
 from .add import *
 from .call import *
 from .cast import *
+from .copy_var_update import *
 from .detach import *
 from .div import *
 from .dropout import *

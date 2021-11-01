@@ -148,6 +148,7 @@ def test_ternary_ops(connected: bool, inplace: bool, op_name: str,
 ("MulLhsInplaceOp", True, {}),
 ("MulRhsInplaceOp", True, {}),
 ("PowLhsInplaceOp", True, {}),
+("CopyVarUpdateOp", True, {}),
 ])
 # yapf: enable, pylint: enable-all
 @pytest.mark.parametrize("connected", [True, False])
