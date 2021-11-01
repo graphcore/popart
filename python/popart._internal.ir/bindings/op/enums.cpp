@@ -5,6 +5,7 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
+#include <popart/op/collectives/collectives.hpp>
 #include <popart/op/init.hpp>
 
 namespace py = pybind11;
@@ -23,6 +24,16 @@ void bindEnums(py::module &m) {
   py::enum_<InitType>(m, "InitType", py::module_local())
       .value("NoInit", InitType::NoInit)
       .value("Zero", InitType::Zero);
+  py::enum_<CollectiveOperator>(m, "CollectiveOperator", py::module_local())
+      .value("Add", CollectiveOperator::Add)
+      .value("Mean", CollectiveOperator::Mean)
+      .value("Mul", CollectiveOperator::Mul)
+      .value("Min", CollectiveOperator::Min)
+      .value("Max", CollectiveOperator::Max)
+      .value("LogicalAnd", CollectiveOperator::LogicalAnd)
+      .value("LogicalOr", CollectiveOperator::LogicalOr)
+      .value("SquareAdd", CollectiveOperator::SquareAdd)
+      .value("Local", CollectiveOperator::Local);
 }
 } // namespace op
 } // namespace ir

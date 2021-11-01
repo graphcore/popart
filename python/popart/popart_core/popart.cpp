@@ -3152,28 +3152,8 @@ PYBIND11_MODULE(popart_core, m) {
              DeviceSelectionCriterion::Random,
              DOC(popart, DeviceSelectionCriterion, Random));
   }
-  {
-    py::enum_<CommGroupType> en(m, "CommGroupType");
-    en.value("All", CommGroupType::All, DOC(popart, CommGroupType, All));
-    en.value("Consecutive",
-             CommGroupType::Consecutive,
-             DOC(popart, CommGroupType, Consecutive));
-    en.value("Orthogonal",
-             CommGroupType::Orthogonal,
-             DOC(popart, CommGroupType, Orthogonal));
-  }
-  {
-    py::class_<CommGroup> cls(m, "CommGroup");
-    cls.def(py::init<>());
-    cls.def(py::init<CommGroupType, unsigned>(),
-            py::arg("type"),
-            py::arg("replicaGroupSize"));
-    cls.def_readwrite("type", &CommGroup::type, DOC(popart, CommGroup, type));
-    cls.def_readwrite("replicaGroupSize",
-                      &CommGroup::replicaGroupSize,
-                      DOC(popart, TensorLocation, loadTileSet));
-  }
-
+  { m.attr("CommGroupType") = popart_internal_ir.attr("CommGroupType"); }
+  { m.attr("CommGroup") = popart_internal_ir.attr("CommGroup"); }
   {
     // PyBinding to a singleton
     py::class_<DeviceManager, std::unique_ptr<DeviceManager, py::nodelete>> cls(

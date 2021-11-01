@@ -9,7 +9,6 @@ from .div import *
 from .dropout import *
 from .dynamic_slice import *
 from .dynamic_update import *
-from .dynamic_update_inplace import *
 from .gather import *
 from .gelu import *
 from .group_norm import *
@@ -34,3 +33,5 @@ from .split import *
 from .squeeze import *
 from .sub import *
 from .transpose import *
+
+import popart.ir.ops.collectives

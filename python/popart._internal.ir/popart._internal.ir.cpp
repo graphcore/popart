@@ -1,6 +1,7 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 #include "bindings/basicoptionals.hpp"
 #include "bindings/bwdgraphinfo.hpp"
+#include "bindings/commgroup.hpp"
 #include "bindings/debugcontext.hpp"
 #include "bindings/graph.hpp"
 #include "bindings/graphid.hpp"
@@ -65,6 +66,7 @@ PYBIND11_MODULE(popart_internal_ir, m) {
   bindRegion(m);
   bindTensorLocation(m);
   bindBwdGraphInfo(m);
+  bindCommGroup(m);
   bindUtil(m);
   // Ops
   {

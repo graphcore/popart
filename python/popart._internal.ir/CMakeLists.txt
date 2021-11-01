@@ -36,6 +36,10 @@ list(
   ${popart_op_headers_dir}/gather.hpp
   ${popart_op_headers_dir}/scatter.hpp
   ${popart_op_headers_dir}/cast.hpp
+  ${popart_op_headers_dir}/collectives/collectives.hpp
+  ${popart_op_headers_dir}/collectives/replicatedallgather.hpp
+  ${popart_op_headers_dir}/collectives/replicatedallreduce.hpp
+  ${popart_op_headers_dir}/collectives/replicatedreducescatter.hpp
   ${popart_op_headers_dir}/copyvarupdate.hpp
   ${popart_op_headers_dir}/tiedgather.hpp
   ${popart_op_headers_dir}/groupnorm.hpp
@@ -157,6 +161,7 @@ add_popart_python_module(
   bindings/region.cpp
   bindings/tensorlocation.cpp
   bindings/bwdgraphinfo.cpp
+  bindings/commgroup.cpp
   bindings/util.cpp
   # Transforms
   bindings/transforms/transform.cpp

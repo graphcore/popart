@@ -191,7 +191,10 @@ def test_binary_ops(op_name: str, inplace: bool, connected: bool,
 ("VarUpdateOp", {}),
 ("VarUpdateWithUpdaterOp", {}),
 ("IncrementModOp", {"increment_": 1, "modulus_": 3}),
-("IncrementModInplaceOp", {"increment_": 1, "modulus_": 3})
+("IncrementModInplaceOp", {"increment_": 1, "modulus_": 3}),
+("ReplicatedAllReduceOp", {"op_": _ir.CollectiveOperator.Add, "group": _ir.CommGroup()}),
+("ReplicatedReduceScatterOp", {"op_": _ir.CollectiveOperator.Add, "group": _ir.CommGroup()}),
+("ReplicatedAllGatherOp", {"group": _ir.CommGroup()}),
 ])
 # yapf: enable, pylint: enable-all
 def test_unary_ops(connected: bool, op_name: str,
