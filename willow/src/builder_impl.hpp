@@ -8,6 +8,7 @@
 #include <popart/dataflow.hpp>
 #include <popart/names.hpp>
 #include <popart/opidentifier.hpp>
+#include <popart/variablesettings.hpp>
 
 #include <popart/vendored/any.hpp>
 
@@ -43,6 +44,11 @@ public:
 
   TensorId
   addInitializedInputTensor(const ConstVoidData &initData,
+                            const popart::DebugContext &debugContext = {});
+
+  TensorId
+  addInitializedInputTensor(const ConstVoidData &initData,
+                            const VariableSettings &vs,
                             const popart::DebugContext &debugContext = {});
 
   void addOutputTensor(const TensorId &arg0);

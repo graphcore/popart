@@ -17,6 +17,7 @@
 #include <popart/shapeinference.hpp>
 #include <popart/tensordata.hpp>
 #include <popart/tensorinfo.hpp>
+#include <popart/variablesettings.hpp>
 
 #include <onnx/checker.h>
 #include <onnx/shape_inference/implementation.h>
@@ -496,6 +497,13 @@ void BuilderImpl::populateTensorProtoFromConstVoidData(
 TensorId BuilderImpl::addInitializedInputTensor(
     const ConstVoidData &initData,
     const popart::DebugContext &debugContext) {
+  return addInitializedInputTensor(initData, VariableSettings(), debugContext);
+}
+
+TensorId BuilderImpl::addInitializedInputTensor(
+    const ConstVoidData &initData,
+    const VariableSettings &variableSettings,
+    const popart::DebugContext &debugContext) {
   const auto debugPrefix = debugContext.getPathName();
   std::string name       = debugPrefix.empty() ? "init_input" : debugPrefix;
 
@@ -518,6 +526,25 @@ TensorId BuilderImpl::addInitializedInputTensor(
   auto a         = meta_data->Add();
   a->set_key(std::string(onnxDebugIdInputMetaDataKey) + id);
   a->set_value(std::to_string(di.getId()));
+
+  auto commGroupType         = meta_data->Add();
+  auto commGroupSize         = meta_data->Add();
+  auto variableRetrievalMode = meta_data->Add();
+
+  commGroupType->set_key(std::string(sCommGroupType) +
+                         std::string(sNameDelimiter) + id);
+  commGroupType->set_value(std::to_string(
+      static_cast<int>(variableSettings.getSharedVariableDomain().type)));
+
+  commGroupSize->set_key(std::string(sCommGroupSize) +
+                         std::string(sNameDelimiter) + id);
+  commGroupSize->set_value(std::to_string(static_cast<int>(
+      variableSettings.getSharedVariableDomain().replicaGroupSize)));
+
+  variableRetrievalMode->set_key(std::string(sVariableSettings) +
+                                 std::string(sNameDelimiter) + id);
+  variableRetrievalMode->set_value(
+      std::to_string(static_cast<int>(variableSettings.getRetrievalMode())));
 
   return id;
 }

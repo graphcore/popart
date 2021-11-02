@@ -15,6 +15,7 @@
 #include <popart/tensordata.hpp>
 #include <popart/tensordebuginfo.hpp>
 #include <popart/tensorinfo.hpp>
+#include <popart/variablesettings.hpp>
 #include <popart/vertex.hpp>
 #include <popart/voiddata.hpp>
 
@@ -283,6 +284,10 @@ protected:
 class VariableTensor : public Tensor {
 public:
   VariableTensor(TensorId, Graph &, const DebugContext & = {});
+  VariableTensor(TensorId n,
+                 Graph &,
+                 VariableSettings &,
+                 const DebugContext & = {});
 
   std::unique_ptr<Tensor> clone(Graph &graph_) const override;
 
@@ -296,8 +301,12 @@ public:
   void setCopyFromTensor(TensorId value) { copyFromTensor = value; }
   TensorId getCopyFromTensor() { return copyFromTensor; }
 
+  /// \return The VariableSettings of this Variable
+  VariableSettings getVariableSettings() const { return variableSettings; }
+
 private:
   VariableUpdateType variableUpdateType;
+  VariableSettings variableSettings;
 
   // If the type is copy, this will identity where to copy from
   TensorId copyFromTensor;

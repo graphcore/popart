@@ -25,6 +25,7 @@
 #include <popart/tensornames.hpp>
 #include <popart/topocons.hpp>
 #include <popart/util.hpp>
+#include <popart/variablesettings.hpp>
 
 #include <popart/alias/aliasmodel.hpp>
 #include <popart/alias/aliasmodelgrower.hpp>
@@ -1112,6 +1113,13 @@ VariableTensor::VariableTensor(TensorId n,
                                const DebugContext &debugContext)
     : Tensor(n, TensorType::Variable, g, debugContext),
       variableUpdateType(VariableUpdateType::Gradient) {}
+
+VariableTensor::VariableTensor(TensorId n,
+                               Graph &g,
+                               VariableSettings &vs,
+                               const DebugContext &debugContext)
+    : Tensor(n, TensorType::Variable, g, debugContext),
+      variableUpdateType(VariableUpdateType::Gradient), variableSettings(vs) {}
 
 std::unique_ptr<Tensor> VariableTensor::clone(Graph &graph_) const {
   std::unique_ptr<Tensor> theClone(

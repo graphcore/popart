@@ -7,6 +7,7 @@
 #include <popart/aliases.hpp>
 #include <popart/chains.hpp>
 #include <popart/names.hpp>
+#include <popart/variablesettings.hpp>
 #include <popart/vectorandset.hpp>
 
 namespace popart {
@@ -35,6 +36,16 @@ public:
   void addVarInit(const TensorId &,
                   const TensorInfo &,
                   const void *,
+                  const DebugContext &dc = {});
+
+  void addVarInit(const TensorId &,
+                  const ONNX_NAMESPACE::TensorProto *,
+                  const VariableSettings &,
+                  const DebugContext &dc = {});
+  void addVarInit(const TensorId &,
+                  const TensorInfo &,
+                  const void *,
+                  const VariableSettings &,
                   const DebugContext &dc = {});
 
   // create a Constant Tensor

@@ -16,6 +16,7 @@
 #include <popart/opidentifier.hpp>
 #include <popart/tensorinfo.hpp>
 #include <popart/tensorlocation.hpp>
+#include <popart/variablesettings.hpp>
 
 #include <popart/vendored/any.hpp>
 #include <popart/vendored/optional.hpp>
@@ -993,6 +994,19 @@ public:
    */
   TensorId
   addInitializedInputTensor(const ConstVoidData &initData,
+                            const popart::DebugContext &debugContext = {});
+
+  /**
+   * Add a new pre-initialized input tensor to the model.
+   *
+   * \param initData The initial data of the input tensor.
+   * \param variableSettings
+   * \param debugContext Optional debug information.
+   * \return The unique name of the input tensor.
+   */
+  TensorId
+  addInitializedInputTensor(const ConstVoidData &initData,
+                            const VariableSettings &variableSettings,
                             const popart::DebugContext &debugContext = {});
 
   /**

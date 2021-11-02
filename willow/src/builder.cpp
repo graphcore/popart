@@ -11,6 +11,7 @@
 #include <popart/op/receptive.hpp>
 #include <popart/opidentifier.hpp>
 #include <popart/tensor.hpp>
+#include <popart/variablesettings.hpp>
 #include <poparttracepoint.hpp>
 
 namespace popart {
@@ -417,6 +418,13 @@ TensorId
 Builder::addInitializedInputTensor(const ConstVoidData &initData,
                                    const popart::DebugContext &debugContext) {
   return impl_->addInitializedInputTensor(initData, debugContext);
+}
+
+TensorId
+Builder::addInitializedInputTensor(const ConstVoidData &initData,
+                                   const VariableSettings &vs,
+                                   const popart::DebugContext &debugContext) {
+  return impl_->addInitializedInputTensor(initData, vs, debugContext);
 }
 
 void Builder::addOutputTensor(const TensorId &arg0) {
