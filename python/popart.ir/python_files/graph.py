@@ -36,23 +36,41 @@ class Graph:
                         "using the constructor.")
 
     @classmethod
-    def _from_pb(
-            cls,
-            pb_graph: '_ir.Graph',
-    ) -> 'Graph':
+    def _create_from_pb(cls, pb_graph: '_ir.Graph') -> 'Graph':
         """Factory method to construct `Graph` instances.
+            This method explicitly creates a new `popart.ir.Graph`.
+            `Graph._from_pb` should be used if a `popart.ir.Graph` may
+            have already been constructed for the `pb_graph`
 
         Args:
-            ir (Ir):
-                An instance of `Ir` in which the graph resides.
-            debug_name (str):
-                A debug name that's assigned to the subgraph.
             pb_graph (_ir.Graph):
                 An instance of the low-level pybind11 `Graph`.
 
         Returns:
-            Graph:
-                The main graph of the `Ir`.
+            Graph
+        """
+        from popart.ir.ir import Ir
+        ir = Ir._from_pb(pb_graph.getIr())
+        self: 'Graph' = super().__new__(cls)
+        self._pb_graph = pb_graph
+        self._ir = ir
+
+        ir._graph_cache[self.id] = self
+        return self
+
+    @classmethod
+    def _from_pb(
+            cls,
+            pb_graph: '_ir.Graph',
+    ) -> 'Graph':
+        """Method to get or construct `Graph` instances.
+
+        Args:
+            pb_graph (_ir.Graph):
+                An instance of the low-level pybind11 `Graph`.
+
+        Returns:
+            Graph
         """
         from popart.ir.ir import Ir
         ir = Ir._from_pb(pb_graph.getIr())
@@ -60,12 +78,7 @@ class Graph:
         if _id in ir._graph_cache:
             return ir._graph_cache[_id]
 
-        self: 'Graph' = super().__new__(cls)
-        self._pb_graph = pb_graph
-        self._ir = ir
-
-        ir._graph_cache[_id] = self
-        return self
+        return cls._create_from_pb(pb_graph)
 
     @property
     def name(self) -> str:
