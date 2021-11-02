@@ -3,6 +3,7 @@
 #include "bindings/basicoptionals.hpp"
 #include "bindings/op/matmul.hpp"
 #include "bindings/op/optional.hpp"
+#include "bindings/op/varupdate.hpp"
 
 #include <pybind11/numpy.h>
 #include <pybind11/operators.h>
@@ -12,9 +13,12 @@
 #include <popart/basicoptionals.hpp>
 
 #include <popart/op/accumulate.hpp>
+#include <popart/op/accumulatorscale.hpp>
+#include <popart/op/accumulatorzero.hpp>
 #include <popart/op/call.hpp>
 #include <popart/op/ipucopy.hpp>
 #include <popart/op/matmul.hpp>
+#include <popart/op/varupdate.hpp>
 
 namespace popart {
 namespace _internal {
@@ -78,6 +82,23 @@ void bindManualCreateOpFunctionToGraphClass(py::class_<Graph> g) {
         py::arg("settings"),
         py::return_value_policy::reference);
 
+  // AccumulateBaseOp
+  g.def(
+      "createOp_AccumulateBaseOp",
+      [](Graph &self,
+         OperatorIdentifier opid,
+         AccumulationType type,
+         OptimizerValue factor,
+         const Op::Settings &settings) {
+        return self.createOp<op::PyVarUpdateOp<AccumulateBaseOp>>(
+            opid, type, factor, settings);
+      },
+      py::arg("opid"),
+      py::arg("accumulationType"),
+      py::arg("optimizer_value"),
+      py::arg("settings"),
+      py::return_value_policy::reference);
+
   // AccumulateOp
   g.def(
       "createOp_AccumulateOp",
@@ -89,6 +110,66 @@ void bindManualCreateOpFunctionToGraphClass(py::class_<Graph> g) {
       },
       py::arg("accumulationType"),
       py::arg("factor"),
+      py::arg("settings"),
+      py::return_value_policy::reference);
+
+  // VarUpdateOp
+  g.def(
+      "createOp_VarUpdateOp",
+      [](Graph &self, OperatorIdentifier opid, const Op::Settings &settings) {
+        return self.createOp<op::PyVarUpdateOp<>>(opid, settings);
+      },
+      py::arg("opid"),
+      py::arg("settings"),
+      py::return_value_policy::reference);
+
+  // VarUpdateWithUpdaterOp
+  g.def(
+      "createOp_VarUpdateWithUpdaterOp",
+      [](Graph &self, OperatorIdentifier opid, const Op::Settings &settings) {
+        return self.createOp<op::PyVarUpdateOp<VarUpdateWithUpdaterOp>>(
+            opid, settings);
+      },
+      py::arg("opid"),
+      py::arg("settings"),
+      py::return_value_policy::reference);
+
+  // SparseAccumulateOp
+  g.def(
+      "createOp_SparseAccumulateOp",
+      [](Graph &self,
+         AccumulationType accumulationType,
+         const OptimizerValue &optimizer_value,
+         unsigned axis,
+         const Op::Settings &settings) {
+        return self.createOp<op::PyVarUpdateOp<SparseAccumulateOp>>(
+            accumulationType, optimizer_value, axis, settings);
+      },
+      py::arg("accumulationType"),
+      py::arg("optimizer_value"),
+      py::arg("axis"),
+      py::arg("settings"),
+      py::return_value_policy::reference);
+
+  // AccumulatorScaleOp
+  g.def(
+      "createOp_AccumulatorScaleOp",
+      [](Graph &self,
+         const OptimizerValue factor,
+         const Op::Settings &settings) {
+        return self.createOp<op::PyVarUpdateOp<AccumulatorScaleOp>>(factor,
+                                                                    settings);
+      },
+      py::arg("factor"),
+      py::arg("settings"),
+      py::return_value_policy::reference);
+
+  // AccumulatorZeroOp
+  g.def(
+      "createOp_AccumulatorZeroOp",
+      [](Graph &self, const Op::Settings &settings) {
+        return self.createOp<op::PyVarUpdateOp<AccumulatorZeroOp>>(settings);
+      },
       py::arg("settings"),
       py::return_value_policy::reference);
 }
@@ -195,6 +276,27 @@ void bindManualCreateConnectedOpFunctionToGraphClass(py::class_<Graph> g) {
       py::arg("settings"),
       py::return_value_policy::reference);
 
+  // AccumulateBaseOp
+  g.def(
+      "createConnectedOp_AccumulateBaseOp",
+      [](Graph &self,
+         const std::map<InIndex, TensorId> &in,
+         const std::map<OutIndex, TensorId> &out,
+         OperatorIdentifier opid,
+         AccumulationType type,
+         OptimizerValue factor,
+         const Op::Settings &settings) {
+        return self.createConnectedOp<op::PyVarUpdateOp<AccumulateBaseOp>>(
+            in, out, opid, type, factor, settings);
+      },
+      py::arg("in"),
+      py::arg("out"),
+      py::arg("opid"),
+      py::arg("accumulationType"),
+      py::arg("optimizer_value"),
+      py::arg("settings"),
+      py::return_value_policy::reference);
+
   // AccumulateOp
   g.def(
       "createConnectedOp_AccumulateOp",
@@ -211,6 +313,95 @@ void bindManualCreateConnectedOpFunctionToGraphClass(py::class_<Graph> g) {
       py::arg("out"),
       py::arg("accumulationType"),
       py::arg("factor"),
+      py::arg("settings"),
+      py::return_value_policy::reference);
+
+  // VarUpdateOp
+  g.def(
+      "createConnectedOp_VarUpdateOp",
+      [](Graph &self,
+         const std::map<InIndex, TensorId> &in,
+         const std::map<OutIndex, TensorId> &out,
+         OperatorIdentifier opid,
+         const Op::Settings &settings) {
+        return self.createConnectedOp<op::PyVarUpdateOp<>>(
+            in, out, opid, settings);
+      },
+      py::arg("in"),
+      py::arg("out"),
+      py::arg("opid"),
+      py::arg("settings"),
+      py::return_value_policy::reference);
+
+  // VarUpdateWithUpdaterOp
+  g.def(
+      "createConnectedOp_VarUpdateWithUpdaterOp",
+      [](Graph &self,
+         const std::map<InIndex, TensorId> &in,
+         const std::map<OutIndex, TensorId> &out,
+         OperatorIdentifier opid,
+         const Op::Settings &settings) {
+        return self
+            .createConnectedOp<op::PyVarUpdateOp<VarUpdateWithUpdaterOp>>(
+                in, out, opid, settings);
+      },
+      py::arg("in"),
+      py::arg("out"),
+      py::arg("opid"),
+      py::arg("settings"),
+      py::return_value_policy::reference);
+
+  // SparseAccumulateOp
+  g.def(
+      "createConnectedOp_SparseAccumulateOp",
+      [](Graph &self,
+         const std::map<InIndex, TensorId> &in,
+         const std::map<OutIndex, TensorId> &out,
+         AccumulationType accumulationType,
+         const OptimizerValue &optimizer_value,
+         unsigned axis,
+         const Op::Settings &settings) {
+        return self.createConnectedOp<op::PyVarUpdateOp<SparseAccumulateOp>>(
+            in, out, accumulationType, optimizer_value, axis, settings);
+      },
+      py::arg("in"),
+      py::arg("out"),
+      py::arg("accumulationType"),
+      py::arg("optimizer_value"),
+      py::arg("axis"),
+      py::arg("settings"),
+      py::return_value_policy::reference);
+
+  // AccumulatorScaleOp
+  g.def(
+      "createConnectedOp_AccumulatorScaleOp",
+      [](Graph &self,
+         const std::map<InIndex, TensorId> &in,
+         const std::map<OutIndex, TensorId> &out,
+         const OptimizerValue factor,
+         const Op::Settings &settings) {
+        return self.createConnectedOp<op::PyVarUpdateOp<AccumulatorScaleOp>>(
+            in, out, factor, settings);
+      },
+      py::arg("in"),
+      py::arg("out"),
+      py::arg("factor"),
+      py::arg("settings"),
+      py::return_value_policy::reference);
+
+  // AccumulatorZeroOp
+  g.def(
+      "createConnectedOp_AccumulatorZeroOp",
+      [](Graph &self,
+         const std::map<InIndex, TensorId> &in,
+         const std::map<OutIndex, TensorId> &out,
+
+         const Op::Settings &settings) {
+        return self.createConnectedOp<op::PyVarUpdateOp<AccumulatorZeroOp>>(
+            in, out, settings);
+      },
+      py::arg("in"),
+      py::arg("out"),
       py::arg("settings"),
       py::return_value_policy::reference);
 }

@@ -44,7 +44,7 @@ public:
 
   static constexpr InIndex getFactorInIndex() { return 2; }
 
-  float getSubgraphValue() const final {
+  float getSubgraphValue() const override {
     if (type == AccumulationType::MovingAverage ||
         type == AccumulationType::MovingAverageSquare ||
         type == AccumulationType::Infinity) {
@@ -68,7 +68,7 @@ public:
                OptimizerValue factor,
                const Op::Settings &);
 
-  std::unique_ptr<Op> clone() const final;
+  std::unique_ptr<Op> clone() const override;
 };
 
 /// The same as AccumulateOp however it also includes a rescale factor
@@ -133,16 +133,16 @@ public:
  *
  * You probably do not need this outside of the TiedGatherPattern.
  */
-class SparseAccumulateOp final : public AccumulateBaseOp {
+class SparseAccumulateOp : public AccumulateBaseOp {
 public:
   SparseAccumulateOp(AccumulationType type,
                      const OptimizerValue &factor,
                      unsigned axis,
                      const Op::Settings &);
 
-  std::unique_ptr<Op> clone() const final;
+  std::unique_ptr<Op> clone() const override;
 
-  void appendOutlineAttributes(OpSerialiserBase &) const final;
+  void appendOutlineAttributes(OpSerialiserBase &) const override;
 
   static constexpr InIndex getIndicesInIndex() { return 3; }
   static constexpr InIndex getOriginalVarToUpdateInIndex() { return 4; }

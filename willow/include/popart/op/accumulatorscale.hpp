@@ -20,12 +20,12 @@ class AccumulatorScaleOp : public VarUpdateOp {
 
 public:
   AccumulatorScaleOp(const OptimizerValue factor_, const Op::Settings &);
-  std::unique_ptr<Op> clone() const final;
-  std::map<InIndex, TensorId> optimizerInputs() const final;
-  void appendOutlineAttributes(OpSerialiserBase &) const final;
+  std::unique_ptr<Op> clone() const override;
+  std::map<InIndex, TensorId> optimizerInputs() const override;
+  void appendOutlineAttributes(OpSerialiserBase &) const override;
   static InIndex getFactorInIndex() { return 2; }
   const OptimizerValue &getFactor() const { return factor; }
-  float getSubgraphValue() const final { return getLowSubgraphValue(); }
+  float getSubgraphValue() const override { return getLowSubgraphValue(); }
   view::Regions modifies(InIndex) const override;
 };
 

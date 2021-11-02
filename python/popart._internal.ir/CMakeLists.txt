@@ -140,6 +140,9 @@ add_popart_python_module(
   bindings/op/accumulate.cpp
   bindings/op/manualbindops.cpp
   bindings/op/optimizervalue.cpp
+  bindings/op/varupdate.cpp
+  bindings/op/accumulatorscale.cpp
+  bindings/op/accumulatorzero.cpp
   # End ops
   bindings/scope.cpp
   bindings/tensor.cpp

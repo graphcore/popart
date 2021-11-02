@@ -2,6 +2,7 @@
 #include "bindings/op/accumulate.hpp"
 #include "bindings/op.hpp"
 #include "bindings/op/optional.hpp"
+#include "bindings/op/varupdate.hpp"
 
 #include "bindings/basicoptionals.hpp"
 #include <pybind11/numpy.h>
@@ -36,13 +37,41 @@ void bindAccumulate(py::module &m) {
 
   sm = sm.def_submodule("op", "Python bindings for PopART ops.");
 
-  py::class_<AccumulateOp, popart::Op, std::shared_ptr<AccumulateOp>>(
-      sm, "AccumulateOp")
+  py::class_<AccumulateBaseOp,
+             VarUpdateWithUpdaterOp,
+             PyVarUpdateOp<AccumulateBaseOp>,
+             std::shared_ptr<AccumulateBaseOp>>(sm, "AccumulateBaseOp")
+      .def(py::init<const OperatorIdentifier &,
+                    AccumulationType,
+                    OptimizerValue,
+                    const Op::Settings &>(),
+           py::arg("opid"),
+           py::arg("accumulationType"),
+           py::arg("optimizer_value"),
+           py::arg("settings"))
+      .def("getAccumulationType", &AccumulateBaseOp::getAccumulationType);
+
+  py::class_<AccumulateOp,
+             AccumulateBaseOp,
+             PyVarUpdateOp<AccumulateOp>,
+             std::shared_ptr<AccumulateOp>>(sm, "AccumulateOp")
       .def(py::init<AccumulationType, OptimizerValue, const Op::Settings &>(),
            py::arg("accumulationType"),
            py::arg("factor"),
-           py::arg("settings"))
-      .def("getAccumulationType", &AccumulateBaseOp::getAccumulationType);
+           py::arg("settings"));
+
+  py::class_<SparseAccumulateOp,
+             AccumulateBaseOp,
+             PyVarUpdateOp<SparseAccumulateOp>,
+             std::shared_ptr<SparseAccumulateOp>>(sm, "SparseAccumulateOp")
+      .def(py::init<AccumulationType,
+                    const OptimizerValue &,
+                    unsigned,
+                    const Op::Settings &>(),
+           py::arg("accumulationType"),
+           py::arg("optimizer_value"),
+           py::arg("axis"),
+           py::arg("settings"));
 }
 } // namespace op
 } // namespace ir

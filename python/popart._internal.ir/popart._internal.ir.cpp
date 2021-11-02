@@ -8,6 +8,8 @@
 #include "bindings/op.hpp"
 #include "bindings/op/_all.hpp"
 #include "bindings/op/accumulate.hpp"
+#include "bindings/op/accumulatorscale.hpp"
+#include "bindings/op/accumulatorzero.hpp"
 #include "bindings/op/call.hpp"
 #include "bindings/op/enums.hpp"
 #include "bindings/op/ipucopy.hpp"
@@ -15,6 +17,7 @@
 #include "bindings/op/matmul.hpp"
 #include "bindings/op/optimizervalue.hpp"
 #include "bindings/op/optional.hpp"
+#include "bindings/op/varupdate.hpp"
 #include "bindings/opidentifier.hpp"
 #include "bindings/scope.hpp"
 #include "bindings/tensor.hpp"
@@ -69,7 +72,10 @@ PYBIND11_MODULE(popart_internal_ir, m) {
     op::bindIpuCopy(m);
     op::bindMatmul(m);
     op::bindOptimizerValue(m);
+    op::bindVarupdate(m);
     op::bindAccumulate(m);
+    op::bindAccumulatorScale(m);
+    op::bindAccumulatorZero(m);
   }
   // Transforms
   {

@@ -187,6 +187,8 @@ def test_binary_ops(op_name: str, inplace: bool, connected: bool,
 ("DropoutOp", {"ratio_": 0.7}),
 ("RandomUniformOp", {"shape_": (2,3), "dataType_": _ir.OptionalDataType(_ir.DataType.FLOAT),  "low_": 0.0, "high_": 1.0}),
 ("RandomNormalOp", {"shape_": (2,3), "dataType_": _ir.OptionalDataType(_ir.DataType.FLOAT),  "mean_": 0.0, "scale_": 1.0}),
+("VarUpdateOp", {}),
+("VarUpdateWithUpdaterOp", {}),
 ("IncrementModOp", {"increment_": 1, "modulus_": 3}),
 ("IncrementModInplaceOp", {"increment_": 1, "modulus_": 3})
 ])
@@ -619,6 +621,50 @@ def test_group_norm_op(connected: bool, num_groups: int) -> None:
 
 
 @pytest.mark.parametrize("connected", [True, False])
+def test_accumulate_base_op(connected: bool) -> None:
+    """Test the AccumulateBaseOp.
+
+    Args:
+        connected (bool): Whether to use the createConnected<opname> function or
+            just create<opname>
+    """
+    _, graphs = create_ir()
+    main = graphs[0]
+    num_inputs = _ir.NumInputs(2, 2)
+    input_ = add_actgrad_tensor("input", [4], main)
+    updater = add_actgrad_tensor("updater", [4], main)
+    factor = add_actgrad_tensor("factor", [4], main)
+    out = add_actgrad_tensor("updated_weight", [4], main)
+
+    opid = _ir.OperatorIdentifier("ai.graphcore", "AccumulateBaseOp", 1,
+                                  num_inputs, 1)
+    settings = _ir.Settings(main, "AccumulateBaseOp")
+
+    if connected:
+        ins: Dict[int, str] = {0: input_.id, 1: updater.id, 2: factor.id}
+        outs: Dict[int, str] = {0: out.id}
+        op = main.createConnectedOp_AccumulateBaseOp(
+            ins,
+            outs,
+            _ir.OperatorIdentifier("ai.graphcore", "AccumulateBaseOp", 1,
+                                   _ir.NumInputs(1, 1), 1),
+            _ir.AccumulationType.Add,
+            _ir.OptimizerValue(0.5),
+            settings=settings)
+        return
+    op = main.createOp_AccumulateBaseOp(_ir.OperatorIdentifier(
+        "ai.graphcore", "AccumulateBaseOp", 1, _ir.NumInputs(1, 1), 1),
+                                        _ir.AccumulationType.Add,
+                                        _ir.OptimizerValue(0.5),
+                                        settings=settings)
+    op.connectInTensor(0, input_.id)
+    op.connectInTensor(1, updater.id)
+    op.connectInTensor(2, factor.id)
+    op.connectOutTensor(0, out.id)
+    op.setup()
+
+
+@pytest.mark.parametrize("connected", [True, False])
 def test_accumulate_op(connected: bool) -> None:
     """Test the Accumulate Op.
 
@@ -651,5 +697,132 @@ def test_accumulate_op(connected: bool) -> None:
                                     settings=settings)
     op.connectInTensor(0, weight.id)
     op.connectInTensor(1, grad.id)
+    op.connectOutTensor(0, out.id)
+    op.setup()
+
+
+@pytest.mark.parametrize("connected", [True, False])
+def test_sparse_accumulate_op(connected: bool) -> None:
+    """Test the SparseAccumulateOp.
+
+    Args:
+        connected (bool): Whether to use the createConnected<opname> function or
+            just create<opname>
+    """
+    _, graphs = create_ir()
+    main = graphs[0]
+    num_inputs = _ir.NumInputs(2, 2)
+    input_ = add_actgrad_tensor("input", [4], main)
+    updater = add_actgrad_tensor("updater", [4], main)
+    factor = add_actgrad_tensor("factor", [4], main)
+    indices = add_actgrad_tensor("indices", [4], main)
+    original_var = add_random_tensor("original_var", _ir.TensorType.Variable,
+                                     [4], main)
+    out = add_actgrad_tensor("updated_weight", [4], main)
+
+    opid = _ir.OperatorIdentifier("ai.graphcore", "SparseAccumulate", 1,
+                                  num_inputs, 1)
+    settings = _ir.Settings(main, "SparseAccumulate")
+
+    if connected:
+        ins: Dict[int, str] = {
+            0: input_.id,
+            1: updater.id,
+            2: factor.id,
+            3: indices.id,
+            4: original_var.id
+        }
+        outs: Dict[int, str] = {0: out.id}
+        op = main.createConnectedOp_SparseAccumulateOp(
+            ins,
+            outs,
+            _ir.AccumulationType.Add,
+            _ir.OptimizerValue(0.5),
+            0,
+            settings=settings)
+        return
+    op = main.createOp_SparseAccumulateOp(_ir.AccumulationType.Add,
+                                          _ir.OptimizerValue(0.5),
+                                          0,
+                                          settings=settings)
+    op.connectInTensor(0, input_.id)
+    op.connectInTensor(1, updater.id)
+    op.connectInTensor(2, factor.id)
+    op.connectInTensor(3, indices.id)
+    op.connectInTensor(4, original_var.id)
+    op.connectOutTensor(0, out.id)
+    op.setup()
+
+
+@pytest.mark.parametrize("connected", [True, False])
+def test_accumulate_scale_op(connected: bool) -> None:
+    """Test the AccumulatorScaleOp.
+
+    Args:
+        connected (bool): Whether to use the createConnected<opname> function or
+            just create<opname>
+    """
+    _, graphs = create_ir()
+    main = graphs[0]
+    num_inputs = _ir.NumInputs(2, 2)
+    input_ = add_actgrad_tensor("input", [4], main)
+    updater = add_actgrad_tensor("updater", [4], main)
+    factor = add_actgrad_tensor("factor", [4], main)
+    out = add_actgrad_tensor("updated_weight", [4], main)
+
+    settings = _ir.Settings(main, "AccumulatorScaleOp")
+
+    if connected:
+        ins: Dict[int, str] = {
+            0: input_.id,
+            1: updater.id,
+            2: factor.id,
+        }
+        outs: Dict[int, str] = {0: out.id}
+        op = main.createConnectedOp_AccumulatorScaleOp(ins,
+                                                       outs,
+                                                       _ir.OptimizerValue(0.5),
+                                                       settings=settings)
+        return
+    op = main.createOp_AccumulatorScaleOp(_ir.OptimizerValue(0.5),
+                                          settings=settings)
+    op.connectInTensor(0, input_.id)
+    op.connectInTensor(1, updater.id)
+    op.connectInTensor(2, factor.id)
+    op.connectOutTensor(0, out.id)
+    op.setup()
+
+
+@pytest.mark.parametrize("connected", [True, False])
+def test_accumulate_zero_op(connected: bool) -> None:
+    """Test the AccumulatorZeroOp.
+
+    Args:
+        connected (bool): Whether to use the createConnected<opname> function or
+            just create<opname>
+    """
+    _, graphs = create_ir()
+    main = graphs[0]
+    num_inputs = _ir.NumInputs(2, 2)
+    input_ = add_actgrad_tensor("input", [4], main)
+    updater = add_actgrad_tensor("updater", [4], main)
+    factor = add_actgrad_tensor("factor", [4], main)
+    out = add_actgrad_tensor("updated_weight", [4], main)
+
+    opid = _ir.OperatorIdentifier("ai.graphcore", "AccumulatorZeroOp", 1,
+                                  num_inputs, 1)
+    settings = _ir.Settings(main, "AccumulatorZeroOp")
+
+    if connected:
+        ins: Dict[int, str] = {0: input_.id, 1: updater.id, 2: factor.id}
+        outs: Dict[int, str] = {0: out.id}
+        op = main.createConnectedOp_AccumulatorZeroOp(ins,
+                                                      outs,
+                                                      settings=settings)
+        return
+    op = main.createOp_AccumulatorZeroOp(settings=settings)
+    op.connectInTensor(0, input_.id)
+    op.connectInTensor(1, updater.id)
+    op.connectInTensor(2, factor.id)
     op.connectOutTensor(0, out.id)
     op.setup()
