@@ -43,6 +43,14 @@ void ScaledAddOp::growAliasModel(AliasModel &m) const {
   m.insertBinaryModifier(*this);
 }
 
+ScaledAddLhsInplaceOp::ScaledAddLhsInplaceOp(float scale_0_,
+                                             float scale_1_,
+                                             const Op::Settings &settings_)
+    : ScaledAddOp(Onnx::CustomOperators::ScaledAddLhsInplace,
+                  scale_0_,
+                  scale_1_,
+                  settings_) {}
+
 ScaledAddLhsInplaceOp::ScaledAddLhsInplaceOp(const ScaledAddOp &scale_op)
     : ScaledAddOp(Onnx::CustomOperators::ScaledAddLhsInplace,
                   scale_op.getScale0(),

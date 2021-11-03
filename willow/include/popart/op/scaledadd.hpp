@@ -60,6 +60,9 @@ protected:
 
 class ScaledAddLhsInplaceOp : public ScaledAddOp {
 public:
+  ScaledAddLhsInplaceOp(float scale_0_,
+                        float scale_1_,
+                        const Op::Settings &settings_);
   ScaledAddLhsInplaceOp(const ScaledAddOp &);
   std::unique_ptr<Op> clone() const final;
 

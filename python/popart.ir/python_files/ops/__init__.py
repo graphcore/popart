@@ -28,6 +28,7 @@ from .random import *
 from .print_tensor import *
 from .reshape import *
 from .remote_store import *
+from .scaled_add import *
 from .scatter import *
 from .slice import *
 from .softmax import *

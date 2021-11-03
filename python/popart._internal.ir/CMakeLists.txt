@@ -20,6 +20,7 @@ list(
   op_headers
   # ${popart_op_headers_dir}/accumulate.hpp # Manually bound
   ${popart_op_headers_dir}/add.hpp
+  ${popart_op_headers_dir}/scaledadd.hpp
   ${popart_op_headers_dir}/subtract.hpp
   ${popart_op_headers_dir}/sum.hpp
   # ${popart_op_headers_dir}/loop.hpp # Manually bound

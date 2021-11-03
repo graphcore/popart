@@ -19,6 +19,7 @@ def accumulate(t: Tensor, X: Tensor,
     Does not apply numpy broadcasting.
     Uses mixed precision poplibs operations.
     `t` and `X` must be the same shape, but can be different types.
+    `f` must be scalar.
 
     Args:
         t: Tensor
@@ -74,6 +75,7 @@ def accumulate_square(t: Tensor,
     Does not apply numpy broadcasting.
     Uses mixed precision poplibs operations.
     `t` and `X` must be the same shape, but can be different types.
+    `f` must be scalar.
 
     Args:
         t: Tensor
@@ -139,6 +141,7 @@ def accumulate_mean(t: Tensor, X: Tensor,
     Does not apply numpy broadcasting.
     Uses mixed precision poplibs operations.
     `t` and `X` must be the same shape, but can be different types.
+    `step` must be scalar.
 
     Args:
         `t`: Tensor
