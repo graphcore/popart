@@ -59,11 +59,18 @@ the device populating tensors ``a`` and ``b``, respectively.
 Another operation, ``add``, then sums these two tensors.
 Finally, the ``host_store`` streams the result data back from the device to the host.
 
-..
-  Data types
-  ^^^^^^^^^^
 
-  - Add notes about popart.ir data types here.
+Data types
+^^^^^^^^^^
+
+Currently, ``popart.ir`` supports the data types listed in :numref:`ir_datatypes_table`.
+These data types are defined in ``popart.ir`` directly and
+will be converted to their IPU-compatible data type. Note that the ``int64``
+and ``uint64`` will be downcast to ``int32`` and ``uint32`` respectively
+if the session option ``enableSupportedDataTypeCasting`` is set to ``True``.
+
+.. include:: popartir_datatype.rst
+
 
 ..
   Variables
