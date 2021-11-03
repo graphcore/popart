@@ -92,9 +92,7 @@ BOOST_AUTO_TEST_CASE(BasicReplicatedTensorShardingTest) {
     case TestOptimizer::SGD0: {
       graphutils::OpPreds preds{
           [](const Op *op) { return op->isConvertibleTo<InitOp>(); },
-          [](const Op *op) {
-            return op->isConvertibleTo<RemoteLoadInplaceOp>();
-          },
+          [](const Op *op) { return op->isConvertibleTo<RemoteLoadOp>(); },
           [](const Op *op) {
             auto rop = dynamic_cast<const ReplicatedAllGatherOp *>(op);
             return rop &&
@@ -119,12 +117,8 @@ BOOST_AUTO_TEST_CASE(BasicReplicatedTensorShardingTest) {
       graphutils::OpPreds preds{
           [](const Op *op) { return op->isConvertibleTo<InitOp>(); },
           [](const Op *op) { return op->isConvertibleTo<InitOp>(); },
-          [](const Op *op) {
-            return op->isConvertibleTo<RemoteLoadInplaceOp>();
-          },
-          [](const Op *op) {
-            return op->isConvertibleTo<RemoteLoadInplaceOp>();
-          },
+          [](const Op *op) { return op->isConvertibleTo<RemoteLoadOp>(); },
+          [](const Op *op) { return op->isConvertibleTo<RemoteLoadOp>(); },
           [](const Op *op) {
             auto rop = dynamic_cast<const ReplicatedAllGatherOp *>(op);
             return rop &&
@@ -152,12 +146,8 @@ BOOST_AUTO_TEST_CASE(BasicReplicatedTensorShardingTest) {
       graphutils::OpPreds preds{
           [](const Op *op) { return op->isConvertibleTo<InitOp>(); },
           [](const Op *op) { return op->isConvertibleTo<InitOp>(); },
-          [](const Op *op) {
-            return op->isConvertibleTo<RemoteLoadInplaceOp>();
-          },
-          [](const Op *op) {
-            return op->isConvertibleTo<RemoteLoadInplaceOp>();
-          },
+          [](const Op *op) { return op->isConvertibleTo<RemoteLoadOp>(); },
+          [](const Op *op) { return op->isConvertibleTo<RemoteLoadOp>(); },
           [](const Op *op) {
             auto rop = dynamic_cast<const ReplicatedAllGatherOp *>(op);
             return rop &&
@@ -192,18 +182,12 @@ BOOST_AUTO_TEST_CASE(BasicReplicatedTensorShardingTest) {
     };
     case TestOptimizer::Adam: {
       graphutils::OpPreds preds{
-          [](const Op *op) { return op->isConvertibleTo<InitOp>(); }, // 0
-          [](const Op *op) { return op->isConvertibleTo<InitOp>(); }, // 1
-          [](const Op *op) { return op->isConvertibleTo<InitOp>(); }, // 2
-          [](const Op *op) {
-            return op->isConvertibleTo<RemoteLoadInplaceOp>();
-          }, // 3
-          [](const Op *op) {
-            return op->isConvertibleTo<RemoteLoadInplaceOp>();
-          }, // 4
-          [](const Op *op) {
-            return op->isConvertibleTo<RemoteLoadInplaceOp>();
-          }, // 5
+          [](const Op *op) { return op->isConvertibleTo<InitOp>(); },       // 0
+          [](const Op *op) { return op->isConvertibleTo<InitOp>(); },       // 1
+          [](const Op *op) { return op->isConvertibleTo<InitOp>(); },       // 2
+          [](const Op *op) { return op->isConvertibleTo<RemoteLoadOp>(); }, // 3
+          [](const Op *op) { return op->isConvertibleTo<RemoteLoadOp>(); }, // 4
+          [](const Op *op) { return op->isConvertibleTo<RemoteLoadOp>(); }, // 5
           [](const Op *op) {
             auto rop = dynamic_cast<const ReplicatedAllGatherOp *>(op);
             return rop &&
@@ -259,18 +243,12 @@ BOOST_AUTO_TEST_CASE(BasicReplicatedTensorShardingTest) {
     };
     case TestOptimizer::Lamb: {
       graphutils::OpPreds preds{
-          [](const Op *op) { return op->isConvertibleTo<InitOp>(); }, // 0
-          [](const Op *op) { return op->isConvertibleTo<InitOp>(); }, // 1
-          [](const Op *op) { return op->isConvertibleTo<InitOp>(); }, // 2
-          [](const Op *op) {
-            return op->isConvertibleTo<RemoteLoadInplaceOp>();
-          }, // 3
-          [](const Op *op) {
-            return op->isConvertibleTo<RemoteLoadInplaceOp>();
-          }, // 4
-          [](const Op *op) {
-            return op->isConvertibleTo<RemoteLoadInplaceOp>();
-          }, // 5
+          [](const Op *op) { return op->isConvertibleTo<InitOp>(); },       // 0
+          [](const Op *op) { return op->isConvertibleTo<InitOp>(); },       // 1
+          [](const Op *op) { return op->isConvertibleTo<InitOp>(); },       // 2
+          [](const Op *op) { return op->isConvertibleTo<RemoteLoadOp>(); }, // 3
+          [](const Op *op) { return op->isConvertibleTo<RemoteLoadOp>(); }, // 4
+          [](const Op *op) { return op->isConvertibleTo<RemoteLoadOp>(); }, // 5
           [](const Op *op) {
             auto rop = dynamic_cast<const ReplicatedAllGatherOp *>(op);
             return rop &&
@@ -404,9 +382,7 @@ BOOST_AUTO_TEST_CASE(DistributedReplicatedTensorShardingTest) {
     case TestOptimizer::SGD0: {
       graphutils::OpPreds preds{
           [](const Op *op) { return op->isConvertibleTo<InitOp>(); },
-          [](const Op *op) {
-            return op->isConvertibleTo<RemoteLoadInplaceOp>();
-          },
+          [](const Op *op) { return op->isConvertibleTo<RemoteLoadOp>(); },
           [](const Op *op) {
             auto rop = dynamic_cast<const ReplicatedAllGatherOp *>(op);
             return rop && rop->getGCLCommGroup() ==
@@ -436,12 +412,8 @@ BOOST_AUTO_TEST_CASE(DistributedReplicatedTensorShardingTest) {
       graphutils::OpPreds preds{
           [](const Op *op) { return op->isConvertibleTo<InitOp>(); },
           [](const Op *op) { return op->isConvertibleTo<InitOp>(); },
-          [](const Op *op) {
-            return op->isConvertibleTo<RemoteLoadInplaceOp>();
-          },
-          [](const Op *op) {
-            return op->isConvertibleTo<RemoteLoadInplaceOp>();
-          },
+          [](const Op *op) { return op->isConvertibleTo<RemoteLoadOp>(); },
+          [](const Op *op) { return op->isConvertibleTo<RemoteLoadOp>(); },
           [](const Op *op) {
             auto rop = dynamic_cast<const ReplicatedAllGatherOp *>(op);
             return rop && rop->getGCLCommGroup() ==
@@ -481,12 +453,8 @@ BOOST_AUTO_TEST_CASE(DistributedReplicatedTensorShardingTest) {
       graphutils::OpPreds preds{
           [](const Op *op) { return op->isConvertibleTo<InitOp>(); },
           [](const Op *op) { return op->isConvertibleTo<InitOp>(); },
-          [](const Op *op) {
-            return op->isConvertibleTo<RemoteLoadInplaceOp>();
-          },
-          [](const Op *op) {
-            return op->isConvertibleTo<RemoteLoadInplaceOp>();
-          },
+          [](const Op *op) { return op->isConvertibleTo<RemoteLoadOp>(); },
+          [](const Op *op) { return op->isConvertibleTo<RemoteLoadOp>(); },
           [](const Op *op) {
             auto rop = dynamic_cast<const ReplicatedAllGatherOp *>(op);
             return rop && rop->getGCLCommGroup() ==
@@ -527,18 +495,12 @@ BOOST_AUTO_TEST_CASE(DistributedReplicatedTensorShardingTest) {
     };
     case TestOptimizer::Adam: {
       graphutils::OpPreds preds{
-          [](const Op *op) { return op->isConvertibleTo<InitOp>(); }, // 0
-          [](const Op *op) { return op->isConvertibleTo<InitOp>(); }, // 1
-          [](const Op *op) { return op->isConvertibleTo<InitOp>(); }, // 2
-          [](const Op *op) {
-            return op->isConvertibleTo<RemoteLoadInplaceOp>();
-          }, // 3
-          [](const Op *op) {
-            return op->isConvertibleTo<RemoteLoadInplaceOp>();
-          }, // 4
-          [](const Op *op) {
-            return op->isConvertibleTo<RemoteLoadInplaceOp>();
-          }, // 5
+          [](const Op *op) { return op->isConvertibleTo<InitOp>(); },       // 0
+          [](const Op *op) { return op->isConvertibleTo<InitOp>(); },       // 1
+          [](const Op *op) { return op->isConvertibleTo<InitOp>(); },       // 2
+          [](const Op *op) { return op->isConvertibleTo<RemoteLoadOp>(); }, // 3
+          [](const Op *op) { return op->isConvertibleTo<RemoteLoadOp>(); }, // 4
+          [](const Op *op) { return op->isConvertibleTo<RemoteLoadOp>(); }, // 5
           [](const Op *op) {
             auto rop = dynamic_cast<const ReplicatedAllGatherOp *>(op);
             return rop && rop->getGCLCommGroup() ==
@@ -600,18 +562,12 @@ BOOST_AUTO_TEST_CASE(DistributedReplicatedTensorShardingTest) {
     };
     case TestOptimizer::Lamb: {
       graphutils::OpPreds preds{
-          [](const Op *op) { return op->isConvertibleTo<InitOp>(); }, // 0
-          [](const Op *op) { return op->isConvertibleTo<InitOp>(); }, // 1
-          [](const Op *op) { return op->isConvertibleTo<InitOp>(); }, // 2
-          [](const Op *op) {
-            return op->isConvertibleTo<RemoteLoadInplaceOp>();
-          }, // 3
-          [](const Op *op) {
-            return op->isConvertibleTo<RemoteLoadInplaceOp>();
-          }, // 4
-          [](const Op *op) {
-            return op->isConvertibleTo<RemoteLoadInplaceOp>();
-          }, // 5
+          [](const Op *op) { return op->isConvertibleTo<InitOp>(); },       // 0
+          [](const Op *op) { return op->isConvertibleTo<InitOp>(); },       // 1
+          [](const Op *op) { return op->isConvertibleTo<InitOp>(); },       // 2
+          [](const Op *op) { return op->isConvertibleTo<RemoteLoadOp>(); }, // 3
+          [](const Op *op) { return op->isConvertibleTo<RemoteLoadOp>(); }, // 4
+          [](const Op *op) { return op->isConvertibleTo<RemoteLoadOp>(); }, // 5
           [](const Op *op) {
             auto rop = dynamic_cast<const ReplicatedAllGatherOp *>(op);
             return rop && rop->getGCLCommGroup() ==

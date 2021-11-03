@@ -681,7 +681,7 @@ Op *BatchSerialScheduler::getLastRemoteLoad(
 
   for (auto it = findIt->second.rbegin(); it != findIt->second.rend(); ++it) {
     auto op = it->second;
-    if (op->isConvertibleTo<RemoteLoadInplaceOp>()) {
+    if (op->isConvertibleTo<RemoteLoadOp>()) {
       return op;
     }
   }
@@ -743,7 +743,7 @@ Op *BatchSerialScheduler::getFirstComputeOp(
 
   for (auto it = findIt->second.begin(); it != findIt->second.end(); ++it) {
     auto op = it->second;
-    if ((!op->isConvertibleTo<RemoteLoadInplaceOp>()) &&
+    if ((!op->isConvertibleTo<RemoteLoadOp>()) &&
         (!op->isConvertibleTo<IoTileCopyOp>()) &&
         (!op->isConvertibleTo<RemoteStoreOp>())) {
       return op;
@@ -908,7 +908,7 @@ void BatchSerialScheduler::tryToMakeAmenableToParallelization() {
 
   // Predicate function to test if an op is a RemoteLoadOp.
   auto isRemoteLoad = [](Op *op) -> bool {
-    return (op->isConvertibleTo<RemoteLoadInplaceOp>());
+    return (op->isConvertibleTo<RemoteLoadOp>());
   };
   // Predicate function to test if an op is a RemoteLoadStore.
   auto isRemoteStore = [](Op *op) -> bool {

@@ -65,10 +65,10 @@ AccumulateOuterFragmentParallelizer::OpCluster::OpCluster(const Graph *graph,
 
   // Populate remoteLoadOps
   remoteLoadOps.clear();
-  std::copy_if(
-      ops.begin(), ops.end(), std::back_inserter(remoteLoadOps), [](Op *op) {
-        return op->isConvertibleTo<RemoteLoadInplaceOp>();
-      });
+  std::copy_if(ops.begin(),
+               ops.end(),
+               std::back_inserter(remoteLoadOps),
+               [](Op *op) { return op->isConvertibleTo<RemoteLoadOp>(); });
 
   // Populate remoteStoreOps
   remoteStoreOps.clear();
@@ -149,7 +149,7 @@ bool AccumulateOuterFragmentParallelizer::OpCluster::overlaps(
 
 bool AccumulateOuterFragmentParallelizer::OpCluster::hasRemoteOp() const {
   return std::any_of(ops.begin(), ops.end(), [](Op *op) {
-    return op->isConvertibleTo<RemoteLoadInplaceOp>() ||
+    return op->isConvertibleTo<RemoteLoadOp>() ||
            op->isConvertibleTo<RemoteStoreOp>() ||
            op->isConvertibleTo<MultiExchangeOp>();
   });

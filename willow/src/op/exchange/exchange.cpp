@@ -50,10 +50,11 @@ ExchangeDescriptor::ExchangeDescriptor(ExchangeDirection direction_,
                                        OptionalVGraphId vgid_,
                                        TileSet tileSet_,
                                        int numInputs_,
-                                       int numOutputs_)
+                                       int numOutputs_,
+                                       bool inplace_)
     : direction(direction_), remoteBufferId(id_), hostStreamTensorId(),
       vgid(vgid_), tileSet(tileSet_), numInputs(numInputs_),
-      numOutputs(numOutputs_) {}
+      numOutputs(numOutputs_), inplace(inplace_) {}
 
 std::ostream &operator<<(std::ostream &ost, const ExchangeDirection &ed) {
   switch (ed) {

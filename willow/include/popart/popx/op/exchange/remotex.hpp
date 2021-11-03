@@ -29,6 +29,11 @@ public:
   view::RegMap unwindRegion(InIndex, OutIndex) const final;
 };
 
+class RemoteLoadInplaceOpx : public RemoteLoadOpx {
+public:
+  RemoteLoadInplaceOpx(Op *, Devicex *);
+};
+
 } // namespace popx
 } // namespace popart
 

@@ -1,4 +1,5 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
+// Test the RemoteStore, RemoteLoad and RemoteLoadInplace Ops
 #define BOOST_TEST_MODULE RemoteBufferTest
 
 #include <../random_util.hpp>
@@ -356,6 +357,94 @@ BOOST_AUTO_TEST_CASE(RemoteBufferLoadStoreTest_2) {
           groundTruth[i] = v_A_init[0] * v_W_init[n1 + n0 * N];
           BOOST_CHECK_CLOSE(raw_B_out[i], groundTruth[i], 1e-4f);
         }
+      }
+    }
+  }
+}
+
+// Test the outplace version of RemoteLoad
+// I.e. that the output tensor does not alias the input tensor
+// 1. Fill tensor A with random values
+// 2. Load tensor from remote buffer (although we didn't store anything there)
+//    a. Use tensor A as the input tensor
+//    b. Use tensor B as the output tensor
+// 3. Use options which checks for aliasing in Opx
+// 4. Check that the Op has no alias regions or modifies regions
+BOOST_AUTO_TEST_CASE(RemoteBufferLoadOutplaceTest) {
+  // Dimension of tensor
+  int64_t K = 3;
+  int64_t M = 89;
+  int64_t N = 97;
+  std::vector<int64_t> dims{K, M, N};
+
+  // Create the builder
+  auto builder     = Builder::create();
+  auto aiOnnx      = builder->aiOnnxOpset9();
+  auto aiGraphcore = builder->aiGraphcoreOpset1();
+
+  // Fill a tensor with random numbers
+  int seed = 2208;
+  DefaultRandomEngine dre(seed);
+  UniformRealDistribution<float> distribution(-4.f, 4.f);
+  TensorInfo AInfo{"FLOAT", dims};
+  std::vector<float> vAInit(AInfo.nelms());
+  for (auto &val : vAInit) {
+    val = distribution(dre);
+  }
+  TensorId AId =
+      builder->addInitializedInputTensor({vAInit.data(), AInfo}, "A");
+
+  // Load tensor B, and add it as an output
+  TensorInfo BInfo{"FLOAT", dims};
+  TensorId BId = builder->customOp(Onnx::CustomOperators::RemoteLoad, // OpId
+                                   1,                   // OpsetVersion
+                                   {AId},               // Input vectors
+                                   1,                   // Num outputs
+                                   {{"bufferid", 0}},   // Attributes
+                                   "loadNoInplace")[0]; // Debug context
+  builder->addOutputTensor(BId);
+
+  // Set the input and output of the session
+  // No input is needed
+  std::map<popart::TensorId, popart::IArray &> inputs = {};
+  // Set the output
+  std::vector<float> rawBOut(BInfo.nelms());
+  popart::NDArrayWrapper<float> BWrapper(rawBOut.data(), BInfo.shape());
+  std::map<popart::TensorId, popart::IArray &> anchors = {{BId, BWrapper}};
+
+  // Set options which checks for aliasing in opx
+  auto opts              = SessionOptions();
+  opts.opxAliasChecking  = true;
+  opts.opxModifyChecking = true;
+
+  // Setup dataFlow
+  auto art           = AnchorReturnType("All");
+  int batchesPerStep = 1;
+  auto dataFlow      = DataFlow(batchesPerStep, {{BId, art}});
+
+  auto device = createTestDevice(TEST_TARGET);
+  if (device != nullptr) {
+    // Setup inference session
+    auto session = popart::InferenceSession::createFromOnnxModel(
+        builder->getModelProto(),
+        dataFlow,
+        device,
+        popart::InputShapeInfo(),
+        opts,
+        popart::Patterns(PatternsLevel::Default));
+    // Compile
+    session->prepareDevice();
+    // Run model (no input from host needed)
+    popart::StepIO stepio(inputs, anchors);
+    session->run(stepio);
+
+    // Get the IR in order to get the ops
+    auto &ir = session->getIr();
+
+    for (Op *op : ir.getAllOps()) {
+      if (RemoteLoadOp *remoteLoadOp = dynamic_cast<RemoteLoadOp *>(op)) {
+        BOOST_CHECK(!remoteLoadOp->doesAlias());
+        BOOST_CHECK(!remoteLoadOp->modifies());
       }
     }
   }

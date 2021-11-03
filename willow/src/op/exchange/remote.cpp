@@ -1,4 +1,5 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
+#include "popart/opidentifier.hpp"
 #include <algorithm>
 #include <popart/alias/aliasmodel.hpp>
 #include <popart/graph.hpp>
@@ -11,6 +12,7 @@
 
 namespace popart {
 
+// RemoteStoreOp
 RemoteStoreOp::RemoteStoreOp(const OperatorIdentifier &_opid,
                              const Op::Settings &settings_,
                              RemoteBufferId rbid_)
@@ -39,22 +41,78 @@ ExchangeDescriptor RemoteStoreOp::getExchangeDescriptor(int index) const {
                             output->n());
 }
 
-RemoteLoadInplaceOp::RemoteLoadInplaceOp(const OperatorIdentifier &_opid,
-                                         const Op::Settings &settings_,
-                                         RemoteBufferId rbid_)
+// RemoteLoadOp
+RemoteLoadOp::RemoteLoadOp(const OperatorIdentifier &_opid,
+                           const Op::Settings &settings_,
+                           RemoteBufferId rbid_)
     : ExchangeBaseOp(_opid, settings_), remoteBufferId(rbid_) {}
 
-std::unique_ptr<Op> RemoteLoadInplaceOp::clone() const {
-  return std::make_unique<RemoteLoadInplaceOp>(*this);
+std::unique_ptr<Op> RemoteLoadOp::clone() const {
+  return std::make_unique<RemoteLoadOp>(*this);
 }
 
-void RemoteLoadInplaceOp::appendOutlineAttributes(OpSerialiserBase &os) const {
+void RemoteLoadOp::setup() {
+  outInfo(getLocalTensorOutIndex()) = inInfo(getLocalTensorInIndex());
+}
+
+void RemoteLoadOp::appendOutlineAttributes(OpSerialiserBase &os) const {
   Op::appendOutlineAttributes(os);
   os.appendAttribute("bufferid", remoteBufferId);
 }
 
-void RemoteLoadInplaceOp::setup() {
-  outInfo(getLocalTensorOutIndex()) = inInfo(getLocalTensorInIndex());
+ReplicatedTensorShardingIndices
+RemoteLoadOp::getReplicatedTensorShardingIndices() const {
+  return {{{RemoteLoadOp::getLocalTensorInIndex()},
+           {RemoteLoadOp::getLocalTensorOutIndex()}}};
+}
+
+ExchangeDescriptor RemoteLoadOp::getExchangeDescriptor(int index) const {
+  return ExchangeDescriptor(ExchangeDirection::Load,
+                            remoteBufferId,
+                            settings.vgraphId,
+                            settings.tileSet,
+                            input->n(),
+                            output->n(),
+                            false);
+}
+
+std::vector<std::tuple<OperatorIdentifier, float>>
+RemoteLoadOp::inplacePriorityDefault() const {
+  return {{Onnx::CustomOperators::RemoteLoadInplace, 10}};
+}
+
+std::unique_ptr<Op>
+RemoteLoadOp::getInplaceVariant(const OperatorIdentifier &operatorId) const {
+  if (operatorId == Onnx::CustomOperators::RemoteLoadInplace) {
+    return std::make_unique<RemoteLoadInplaceOp>(*this);
+  }
+  // Catch remaining cases and throw an error
+  return Op::getInplaceVariant(operatorId);
+}
+
+void RemoteLoadOp::growAliasModel(AliasModel &m) const {
+  m.insertUnaryModifier0(*this);
+}
+
+poprithms::memory::inplace::Proposal
+RemoteLoadOp::mapInplaceProposal(const AliasModel &aliasModel,
+                                 OperatorIdentifier opId) const {
+  return mapInplaceProposalGate0(aliasModel, opId);
+}
+
+// RemoteLoadInplaceOp
+RemoteLoadInplaceOp::RemoteLoadInplaceOp(const OperatorIdentifier &_opid,
+                                         const Op::Settings &settings_,
+                                         RemoteBufferId rbid_)
+    : RemoteLoadOp(_opid, settings_, rbid_) {}
+
+RemoteLoadInplaceOp::RemoteLoadInplaceOp(const RemoteLoadOp &remoteLoadOp)
+    : RemoteLoadOp(Onnx::CustomOperators::RemoteLoadInplace,
+                   remoteLoadOp.getSettings(),
+                   remoteLoadOp.getRemoteBufferId()) {}
+
+std::unique_ptr<Op> RemoteLoadInplaceOp::clone() const {
+  return std::make_unique<RemoteLoadInplaceOp>(*this);
 }
 
 view::Regions RemoteLoadInplaceOp::modifies(InIndex index) const {
@@ -67,7 +125,7 @@ view::Regions RemoteLoadInplaceOp::aliases(InIndex in, OutIndex) const {
   } else if (in == getRemoteBufferOffsetInIndex()) {
     return {view::Region::getEmpty(inRank(in))};
   } else {
-    throw error("Invalid index passed to RemoteLoadOp::aliases");
+    throw error("Invalid index passed to RemoteLoadInplaceOp::aliases");
   }
 }
 
@@ -97,10 +155,15 @@ view::RegMap RemoteLoadInplaceOp::bwdRegMap(InIndex inIndex,
   return Op::bwdRegMap(inIndex, outIndex);
 }
 
-ReplicatedTensorShardingIndices
-RemoteLoadInplaceOp::getReplicatedTensorShardingIndices() const {
-  return {{{RemoteLoadInplaceOp::getLocalTensorInIndex()},
-           {RemoteLoadInplaceOp::getLocalTensorOutIndex()}}};
+std::vector<std::tuple<OperatorIdentifier, float>>
+RemoteLoadInplaceOp::inplacePriorityDefault() const {
+  return {};
+}
+
+std::unique_ptr<Op>
+RemoteLoadInplaceOp::getInplaceVariant(const OperatorIdentifier &o) const {
+  // This throws an error
+  return Op::getInplaceVariant(o);
 }
 
 ExchangeDescriptor RemoteLoadInplaceOp::getExchangeDescriptor(int index) const {
@@ -109,7 +172,8 @@ ExchangeDescriptor RemoteLoadInplaceOp::getExchangeDescriptor(int index) const {
                             settings.vgraphId,
                             settings.tileSet,
                             input->n(),
-                            output->n());
+                            output->n(),
+                            true);
 }
 
 static OpDefinition::DataTypes T = {DataType::FLOAT,
@@ -127,7 +191,17 @@ static OpDefinition remoteStoreOpDef(
      OpDefinition::Outputs({}),
      OpDefinition::Attributes({})});
 
-static OpCreator<RemoteLoadInplaceOp> remoteLoadOpCreator(
+static OpCreator<RemoteLoadOp> remoteLoadOpCreator(
+    OpDefinitions({{Onnx::CustomOperators::RemoteLoad, remoteLoadOpDef}}),
+    [](const OpCreatorInfo &info) {
+      int64_t bufferid =
+          info.attributes.getAttribute<Attributes::Int>("bufferid");
+      return std::unique_ptr<RemoteLoadOp>(
+          new RemoteLoadOp(info.opid, info.settings, bufferid));
+    },
+    true);
+
+static OpCreator<RemoteLoadInplaceOp> remoteLoadInplaceOpCreator(
     OpDefinitions({{Onnx::CustomOperators::RemoteLoadInplace,
                     remoteLoadOpDef}}),
     [](const OpCreatorInfo &info) {

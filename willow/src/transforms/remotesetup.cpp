@@ -154,13 +154,12 @@ bool RemoteSetup::apply(Graph &graph) const {
   // Create remote buffer info for RemoteLoad/RemoteStore/RemoteExchange ops
   // with set buffer ID
   for (Op *op : ir.getAllOps()) {
-    if (RemoteLoadInplaceOp *loadOp = dynamic_cast<RemoteLoadInplaceOp *>(op)) {
+    if (RemoteLoadOp *loadOp = dynamic_cast<RemoteLoadOp *>(op)) {
       auto allRemoteBufferIds = ir.getAllRemoteBufferInfos();
       RemoteBufferId id       = loadOp->getRemoteBufferId();
       if (id > -1 && allRemoteBufferIds.find(id) == allRemoteBufferIds.end()) {
         auto info = RemoteBufferInfo(
-            loadOp->output
-                ->tensor(RemoteLoadInplaceOp::getLocalTensorOutIndex())
+            loadOp->output->tensor(RemoteLoadOp::getLocalTensorOutIndex())
                 ->info,
             1);
         ir.setRemoteBufferInfo(id, info);
@@ -260,8 +259,7 @@ bool RemoteSetup::apply(Graph &graph) const {
                 remoteBufferId,
                 rs->inInfo(RemoteStoreOp::getLocalTensorInIndex()));
           }
-          if (RemoteLoadInplaceOp *rl =
-                  dynamic_cast<RemoteLoadInplaceOp *>(op)) {
+          if (RemoteLoadOp *rl = dynamic_cast<RemoteLoadOp *>(op)) {
             rl->setRemoteBufferId(remoteBufferId);
             remoteBufferVGIDs[remoteBufferId].insert(
                 rl->hasVirtualGraphId() ? rl->getVirtualGraphId()
@@ -271,7 +269,7 @@ bool RemoteSetup::apply(Graph &graph) const {
                 "Tensor info {}.",
                 rl->debugName(),
                 remoteBufferId,
-                rl->outInfo(RemoteLoadInplaceOp::getLocalTensorOutIndex()));
+                rl->outInfo(RemoteLoadOp::getLocalTensorOutIndex()));
           }
           if (MultiExchangeOp *exchangeOp =
                   dynamic_cast<MultiExchangeOp *>(op)) {
@@ -375,7 +373,7 @@ bool RemoteSetup::apply(Graph &graph) const {
 
   // Verify every Remote*Op has valid RemoteBufferIDs
   for (Op *op : ir.getAllOps()) {
-    if (RemoteLoadInplaceOp *loadOp = dynamic_cast<RemoteLoadInplaceOp *>(op)) {
+    if (RemoteLoadOp *loadOp = dynamic_cast<RemoteLoadOp *>(op)) {
       if (loadOp->getRemoteBufferId() < 0) {
         throw error("Op {} has no valid remote buffer set.", op->debugName());
       }

@@ -50,7 +50,7 @@ namespace popart {
  *
  * This Op does not have any output.
  *
- * See also \see RemoteLoadInplaceOp.
+ * See also \see RemoteLoadOp.
  **/
 class RemoteStoreOp : public ExchangeBaseOp {
 public:
@@ -78,7 +78,7 @@ public:
   static InIndex getRemoteBufferOffsetInIndex() { return 1; }
   static InIndex getLocalTensorInIndex() { return 0; }
 
-  void appendOutlineAttributes(OpSerialiserBase &) const override;
+  void appendOutlineAttributes(OpSerialiserBase &) const final;
 
   void setRemoteBufferId(RemoteBufferId remoteBufferId_) {
     remoteBufferId = remoteBufferId_;
@@ -125,10 +125,10 @@ private:
  *
  * See also \see RemoteStoreOp.
  **/
-class RemoteLoadInplaceOp : public ExchangeBaseOp {
+class RemoteLoadOp : public ExchangeBaseOp {
 public:
   /**
-   * Construct the \c RemoteLoadInplaceOp
+   * Construct the \c RemoteLoadOp
    *
    * Parameters specifically related to this class:
    *
@@ -141,24 +141,18 @@ public:
    *
    * See constructor of the parent class for the rest of input parameters.
    **/
-  RemoteLoadInplaceOp(const OperatorIdentifier &,
-                      const Op::Settings &,
-                      RemoteBufferId rbid_ = -1UL);
+  RemoteLoadOp(const OperatorIdentifier &,
+               const Op::Settings &,
+               RemoteBufferId rbid_ = -1UL);
 
-  std::unique_ptr<Op> clone() const final;
+  std::unique_ptr<Op> clone() const override;
   void setup() final;
 
   static InIndex getRemoteBufferOffsetInIndex() { return 1; }
   static InIndex getLocalTensorInIndex() { return 0; }
   static OutIndex getLocalTensorOutIndex() { return 0; }
 
-  view::Regions modifies(InIndex) const final;
-  view::Regions aliases(InIndex, OutIndex) const final;
-
-  view::RegMap fwdRegMap(InIndex, OutIndex) const final;
-  view::RegMap bwdRegMap(InIndex, OutIndex) const final;
-
-  void appendOutlineAttributes(OpSerialiserBase &) const override;
+  void appendOutlineAttributes(OpSerialiserBase &) const final;
 
   void setRemoteBufferId(RemoteBufferId remoteBufferId_) {
     remoteBufferId = remoteBufferId_;
@@ -168,16 +162,57 @@ public:
   bool canShard() const final { return true; }
 
   ReplicatedTensorShardingIndices
-  getReplicatedTensorShardingIndices() const override;
+  getReplicatedTensorShardingIndices() const final;
 
-  virtual void growAliasModel(AliasModel &m) const override {
-    growAliasModelMulti(m);
-  }
+  ExchangeDescriptor getExchangeDescriptor(int index) const override;
+
+  std::vector<std::tuple<OperatorIdentifier, float>>
+  inplacePriorityDefault() const override;
+
+  std::unique_ptr<Op>
+  getInplaceVariant(const OperatorIdentifier &) const override;
+
+  void growAliasModel(AliasModel &) const final;
+
+  poprithms::memory::inplace::Proposal
+  mapInplaceProposal(const AliasModel &, OperatorIdentifier) const final;
+
+protected:
+  RemoteBufferId remoteBufferId;
+};
+
+/**
+ * Remote Load Inplace Op
+ *
+ * See also \see RemoteLoadOp for explanation.
+ **/
+class RemoteLoadInplaceOp : public RemoteLoadOp {
+public:
+  /**
+   * Construct the \c RemoteLoadInplaceOp
+   *
+   * See constructor of the parent class for the input parameters.
+   **/
+  RemoteLoadInplaceOp(const OperatorIdentifier &,
+                      const Op::Settings &,
+                      RemoteBufferId rbid_ = -1UL);
+  RemoteLoadInplaceOp(const RemoteLoadOp &);
+
+  std::unique_ptr<Op> clone() const final;
+
+  view::Regions modifies(InIndex) const final;
+  view::Regions aliases(InIndex, OutIndex) const final;
+
+  view::RegMap fwdRegMap(InIndex, OutIndex) const final;
+  view::RegMap bwdRegMap(InIndex, OutIndex) const final;
+
+  std::vector<std::tuple<OperatorIdentifier, float>>
+  inplacePriorityDefault() const final;
+
+  std::unique_ptr<Op>
+  getInplaceVariant(const OperatorIdentifier &o) const final;
 
   ExchangeDescriptor getExchangeDescriptor(int index) const final;
-
-private:
-  RemoteBufferId remoteBufferId;
 };
 
 } // namespace popart

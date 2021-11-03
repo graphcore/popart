@@ -96,7 +96,7 @@ void StreamingMemoryOpInserter::setPriority(Op *op,
       // Remote load & all gather can be scheduled together in a way that
       // minimizes liveness
       if (!onDemandOptimizerState &&
-          (op->isConvertibleTo<RemoteLoadInplaceOp>() ||
+          (op->isConvertibleTo<RemoteLoadOp>() ||
            op->isConvertibleTo<ReplicatedAllGatherOp>())) {
         op->settings.schedulePriority = priority;
       }
@@ -109,7 +109,7 @@ void StreamingMemoryOpInserter::setPriority(Op *op,
       // Optimizer related ops and remote store can be scheduled together
       // in a way that minimizes liveness
       if ((onDemandOptimizerState &&
-           (op->isConvertibleTo<RemoteLoadInplaceOp>() ||
+           (op->isConvertibleTo<RemoteLoadOp>() ||
             op->isConvertibleTo<ReplicatedAllGatherOp>())) ||
           op->isOptimizerOp() || op->isConvertibleTo<ReplicatedAllReduceOp>() ||
           op->isConvertibleTo<ReplicatedReduceScatterOp>() ||
@@ -127,7 +127,7 @@ void StreamingMemoryOpInserter::setPriority(Op *op,
       --priority;
       // All remote loads must be scheduled before replicated operations
       // to maximize overlap (collectives block overlap)
-      if (op->isConvertibleTo<RemoteLoadInplaceOp>()) {
+      if (op->isConvertibleTo<RemoteLoadOp>()) {
         op->settings.schedulePriority = priority;
       }
       --priority;
@@ -166,7 +166,7 @@ void StreamingMemoryOpInserter::setPriority(Op *op,
       --priority;
       // All remote loads must be scheduled before replicated operations
       // to maximize overlap (collectives block overlap)
-      if (op->isConvertibleTo<RemoteLoadInplaceOp>()) {
+      if (op->isConvertibleTo<RemoteLoadOp>()) {
         op->settings.schedulePriority = priority;
       }
       priority = -(maxCompressedPriority + 1);
@@ -642,7 +642,7 @@ StreamingMemoryOpInserter::getReplicatedTensorShardingProposal(
   // Checks if the root tensor, created by InitOp, is RTS
   auto checkRemoteBufferRTS = [&rtsTensors, &proposedRTS, &argOpMap, &opArgMap](
                                   Op *op) {
-    if (op->isConvertibleTo<RemoteLoadInplaceOp>() ||
+    if (op->isConvertibleTo<RemoteLoadOp>() ||
         op->isConvertibleTo<RemoteStoreOp>()) {
       auto &args = opArgMap.at(
           {op, RemoteLoadInplaceOp::getRemoteBufferOffsetInIndex()});

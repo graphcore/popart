@@ -320,7 +320,7 @@ BOOST_AUTO_TEST_CASE(Test1x0S1ExecutionPhase) {
           "Op: {} {}", op->debugName(), op->settings.schedulePriority);
 
       ExecutionPhase phase = op->getExecutionPhase();
-      if (op->isConvertibleTo<RemoteLoadInplaceOp>()) {
+      if (op->isConvertibleTo<RemoteLoadOp>()) {
         if (op->settings.schedulePriority == 0.0) {
           std::get<0>(remoteOpsPerPhase[phase]) += 1;
         } else {
@@ -339,7 +339,7 @@ BOOST_AUTO_TEST_CASE(Test1x0S1ExecutionPhase) {
       // Check strict ordering in each phase due to having
       // ExecutionPhaseSchedule::Batch
       // enabled: RemoteLoad before IOTileCopy before RemoteStore
-      if (op->isConvertibleTo<RemoteLoadInplaceOp>()) {
+      if (op->isConvertibleTo<RemoteLoadOp>()) {
         BOOST_CHECK(ioTileCopyInPhase.find(op->getExecutionPhase()) ==
                     ioTileCopyInPhase.end());
         BOOST_CHECK(remoteStoreInPhase.find(op->getExecutionPhase()) ==
@@ -469,7 +469,7 @@ BOOST_AUTO_TEST_CASE(Test1x0S2ExecutionPhase) {
       logging::trace("Op: {}", op->debugName());
 
       ExecutionPhase phase = op->getExecutionPhase();
-      if (op->isConvertibleTo<RemoteLoadInplaceOp>()) {
+      if (op->isConvertibleTo<RemoteLoadOp>()) {
         if (op->settings.schedulePriority == 0.0) {
           std::get<0>(remoteOpsPerPhase[phase]) += 1;
         } else {
@@ -612,7 +612,7 @@ BOOST_AUTO_TEST_CASE(Test1x0S4ExecutionPhase) {
         logging::trace("Op: {}", op->debugName());
 
         ExecutionPhase phase = op->getExecutionPhase();
-        if (op->isConvertibleTo<RemoteLoadInplaceOp>()) {
+        if (op->isConvertibleTo<RemoteLoadOp>()) {
           if (op->settings.schedulePriority == 0.0) {
             std::get<0>(remoteOpsPerPhase[phase]) += 1;
           } else {
@@ -794,7 +794,7 @@ BOOST_AUTO_TEST_CASE(Test2x0S2ExecutionPhase) {
           "Op: {} {}", op->debugName(), op->settings.schedulePriority);
 
       ExecutionPhase phase = op->getExecutionPhase();
-      if (op->isConvertibleTo<RemoteLoadInplaceOp>()) {
+      if (op->isConvertibleTo<RemoteLoadOp>()) {
         if (op->settings.schedulePriority == 0.0) {
           std::get<0>(remoteOpsPerPhase[phase]) += 1;
         } else {

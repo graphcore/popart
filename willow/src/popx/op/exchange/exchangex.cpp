@@ -16,8 +16,10 @@ snap::Tensor makeWritableRemoteExchangeTensor(Devicex *dv_p,
                                               TensorId id,
                                               RemoteBufferId rbid,
                                               snap::Graph &graph,
-                                              snap::Tensor t) {
+                                              snap::Tensor t,
+                                              bool inplace) {
   snap::Tensor rbTensor;
+  // Clone the input tensor if the remote buffer tensor does not exist
   if (!dv_p->lowering().hasRemoteBuffer(rbid)) {
     rbTensor = snap::Tensor{
         graph.getPoplarGraph().clone(
@@ -29,6 +31,17 @@ snap::Tensor makeWritableRemoteExchangeTensor(Devicex *dv_p,
   }
   auto buffer = dv_p->lowering().getRemoteBuffer(rbid);
   rbTensor    = buffer.second.value();
+  // The outplacing of the tensor will be done explicitly
+  if (!inplace) {
+    snap::Tensor tw =
+        snap::Tensor{graph.getPoplarGraph().clone(
+                         rbTensor.getPoplarTensor(),
+                         {id + "_writable"},
+                         poplar::TensorCloneMethod::PRESERVE_ORDER_AND_ALIASES),
+                     graph};
+    return tw;
+  }
+  // Outplace fallback
   if (!t.getPoplarTensor().isParallelWriteable() ||
       t.getPoplarTensor().containsConstant()) {
     logging::opx::warn("Tensor {} is not a writable remote buffer "
@@ -358,7 +371,8 @@ void RemoteLoadDescriptorx::post(snap::Graph &graph,
                                        inTensors.at(0).first,
                                        descriptor.getRemoteBufferId(),
                                        graph,
-                                       inTensors.at(0).second));
+                                       inTensors.at(0).second,
+                                       descriptor.inplace));
 
   auto buffer =
       dv_p->lowering().getRemoteBuffer(descriptor.getRemoteBufferId());
@@ -372,9 +386,14 @@ void RemoteLoadDescriptorx::post(snap::Graph &graph,
 
 snap::Tensor RemoteLoadDescriptorx::unwind(snap::Graph &graph,
                                            snap::Tensor tensor) const {
-  auto context         = DebugContext();
-  snap::Tensor unwound = makeWritableRemoteExchangeTensor(
-      dv_p, TensorId(), descriptor.getRemoteBufferId(), graph, tensor);
+  auto context = DebugContext();
+  snap::Tensor unwound =
+      makeWritableRemoteExchangeTensor(dv_p,
+                                       TensorId(),
+                                       descriptor.getRemoteBufferId(),
+                                       graph,
+                                       tensor,
+                                       descriptor.inplace);
   return unwound;
 }
 
