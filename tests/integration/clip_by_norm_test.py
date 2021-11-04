@@ -472,31 +472,39 @@ def test_serialized_matmul(optimizerType):
 
 def test_clipping_all_weights():
     input_channels = 6
-    reducing_dim = 2
-    output_channels = 4
+    np.random.seed(0)
 
-    lhs_shape = [input_channels, reducing_dim]
-    rhs_shape = [reducing_dim, output_channels]
-    lhs_data = np.ones((*lhs_shape, ), dtype=np.float32)
-    rhs_data = np.ones((*rhs_shape, ), dtype=np.float32)
+    a_shape = [input_channels]
+    b_shape = [input_channels]
+    a_data = np.ones((*a_shape, ), dtype=np.float32)
+    b_data = np.ones((*b_shape, ), dtype=np.float32)
+    X_data = np.random.rand(*b_shape).astype(np.float32)
+    target_data = np.random.rand(*b_shape).astype(np.float32)
 
     builder = popart.Builder()
 
-    lhs = builder.addInitializedInputTensor(lhs_data, "lhs")
-    rhs = builder.addInitializedInputTensor(rhs_data, "rhs")
+    a = builder.addInitializedInputTensor(a_data, "a")
+    b = builder.addInitializedInputTensor(b_data, "b")
+    X = builder.addInputTensor(popart.TensorInfo(X_data))
+    target = builder.addInputTensor(popart.TensorInfo(target_data))
 
-    o = builder.aiOnnx.matmul([lhs, rhs])
+    # a + b * X
+    out = builder.aiOnnx.add([a, builder.aiOnnx.mul([b, X])])
+    # MSE loss
+    sub = builder.aiOnnx.sub([target, out])
+    square = builder.aiOnnx.mul([sub, sub])
+    loss = builder.aiGraphcore.identityloss(
+        [square], reduction=popart.ReductionType.Mean)
 
-    loss = builder.aiGraphcore.l1loss([o], 0.1)
+    builder.addOutputTensor(out)
+    builder.addOutputTensor(loss)
 
     proto = builder.getModelProto()
 
     dataFlow = popart.DataFlow(
         1, {
-            o: popart.AnchorReturnType("All"),
-            rhs: popart.AnchorReturnType("Final"),
-            popart.reservedGradientPrefix() + lhs:
-            popart.AnchorReturnType("All"),
+            out: popart.AnchorReturnType("Final"),
+            loss: popart.AnchorReturnType("Final")
         })
 
     opts = popart.SessionOptions()

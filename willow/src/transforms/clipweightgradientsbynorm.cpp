@@ -30,6 +30,22 @@ namespace popart {
 
 namespace {
 
+struct GradientInfo {
+  Tensor *gradToClip;
+  Op *clippedGradientConsumer;
+
+  GradientInfo()                     = default;
+  GradientInfo(const GradientInfo &) = default;
+  GradientInfo(GradientInfo &&)      = default;
+  GradientInfo &operator=(const GradientInfo &) = default;
+  GradientInfo &operator=(GradientInfo &&) = default;
+  ~GradientInfo()                          = default;
+
+  explicit GradientInfo(Tensor *gradToClip, Op *clippedGradientConsumer)
+      : gradToClip(gradToClip),
+        clippedGradientConsumer(clippedGradientConsumer) {}
+};
+
 // Helper method for creating new ops.
 // Taken from Pattern::transferBaseProperties.
 void transferBaseProperties(Op *from, Op *to) {
@@ -229,7 +245,10 @@ Tensor *createGlobalNorm(int clipGroupIndex,
   return sqrt->outTensor(SqrtOp::getOutIndex());
 }
 
-void addClipByNorm(Tensor *grad, Tensor *clipFactor, Graph &graph) {
+void addClipByNorm(Tensor *grad,
+                   Op *gradientOp,
+                   Tensor *clipFactor,
+                   Graph &graph) {
   auto &ir = graph.getIr();
 
   Op::Settings settings(graph, "", {});
@@ -263,22 +282,21 @@ void addClipByNorm(Tensor *grad, Tensor *clipFactor, Graph &graph) {
   }
   logging::debug("{}", ss.str());
 
-  for (auto op : grad->consumers.getOps()) {
-    if (op != mulOp && !op->isConvertibleTo<ReduceSumSquareOp>()) {
-      auto indices = op->input->indices(grad);
-      for (auto idx : indices) {
-        op->disconnectInTensor(idx);
-        op->connectInTensor(idx, mulOp->outId(MulOp::getOutIndex()));
-      }
-    }
+  auto indices = gradientOp->input->indices(grad);
+  for (auto idx : indices) {
+    gradientOp->disconnectInTensor(idx);
+    gradientOp->connectInTensor(idx, mulOp->outId(MulOp::getOutIndex()));
   }
 }
 
-void addClipByNorms(std::vector<Tensor *> grads,
+void addClipByNorms(const std::vector<GradientInfo> &gradInfos,
                     Tensor *clipFactor,
                     Graph &graph) {
-  for (auto grad : grads) {
-    addClipByNorm(grad, clipFactor, graph);
+  for (const auto &gradInfo : gradInfos) {
+    addClipByNorm(gradInfo.gradToClip,
+                  gradInfo.clippedGradientConsumer,
+                  clipFactor,
+                  graph);
   }
 }
 
@@ -328,16 +346,16 @@ Tensor *createClipNorm(float maxNorm, popart::DataType dataType, Graph &graph) {
   return graph.getTensors().get(clipByNormId);
 }
 
-std::vector<Tensor *> getGrads(Graph &graph,
-                               const ClipNormSettings &clippingGroup) {
-  std::vector<Tensor *> result;
+std::vector<GradientInfo> getGrads(Graph &graph,
+                                   const ClipNormSettings &clippingGroup) {
+  std::vector<GradientInfo> result;
 
   auto varUpdates = getVarUpdates(graph, clippingGroup);
   for (auto op : varUpdates) {
     if (op->isConvertibleTo<SGD0VarUpdateOp>() ||
         op->isConvertibleTo<SGD1VarUpdateOp>()) {
       auto grad = op->inTensor(VarUpdateWithUpdaterOp::getUpdaterInIndex());
-      result.push_back(grad);
+      result.emplace_back(grad, op);
     } else if (op->isConvertibleTo<AdamVarUpdateOp>()) {
       auto adamUpdater =
           op->inTensor(VarUpdateWithUpdaterOp::getUpdaterInIndex())
@@ -351,7 +369,7 @@ std::vector<Tensor *> getGrads(Graph &graph,
         throw internal_error("These should be AccumulateOps.");
       }
       auto grad = accl1->inTensor(AccumulateOp::getUpdaterInIndex());
-      result.push_back(grad);
+      result.emplace_back(grad, accl1);
     } else {
       throw internal_error("Unable to handle op {}", op->str());
     }
@@ -387,11 +405,12 @@ popart::VGraphId chooseGlobalNormVgid(std::vector<popart::Tensor *> gradNorms) {
 void clipWeightGradientsByNorm(int clipGroupIndex,
                                const ClipNormSettings &clippingGroup,
                                Graph &graph) {
-  auto grads = getGrads(graph, clippingGroup);
+  auto gradInfos = getGrads(graph, clippingGroup);
 
   std::vector<Tensor *> gradNorms;
-  for (auto grad : grads) {
-    auto gradNorm = addReduceSumSquare(grad, graph);
+  gradNorms.reserve(gradInfos.size());
+  for (const auto &gradInfo : gradInfos) {
+    auto gradNorm = addReduceSumSquare(gradInfo.gradToClip, graph);
     gradNorms.push_back(gradNorm);
   }
 
@@ -403,7 +422,7 @@ void clipWeightGradientsByNorm(int clipGroupIndex,
   auto clipNorm =
       createClipNorm(clippingGroup.maxNorm, globalNorm->info.dataType(), graph);
   auto clipFactor = createClipFactor(globalNorm, clipNorm, graph);
-  addClipByNorms(grads, clipFactor, graph);
+  addClipByNorms(gradInfos, clipFactor, graph);
 }
 
 // Find all the gradient clipping ops linked to the `globalNormProducer`.
