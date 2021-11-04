@@ -505,37 +505,23 @@ rts_configs = [
     [
         # Baseline: 16 replicas, 1 instance
         {
-            "filename":
-            "rts0.onnx",
-            "num_replicas":
-            16,
-            "num_instances":
-            1,
-            "compute_batch":
-            6,
-            "partition":
-            "fabiant",
-            "hosts": [
-                "gbnwp-pod009-3.ipu.graphcore.ai",
-                "gbnwp-pod010-3.ipu.graphcore.ai"
-            ]
+            "filename": "rts0.onnx",
+            "num_replicas": 16,
+            "num_instances": 1,
+            "compute_batch": 6,
+            # Change following parameters such that they match the test system:
+            "partition": "p",
+            "hosts": ["host0", "host1"]
         },
         # Comparison: 32 replicas, 2 instances (2 GCD, 2 ILD)
         {
-            "filename":
-            "rts1.onnx",
-            "num_replicas":
-            32,
-            "num_instances":
-            2,
-            "compute_batch":
-            3,
-            "partition":
-            "fabiant",
-            "hosts": [
-                "gbnwp-pod009-3.ipu.graphcore.ai",
-                "gbnwp-pod010-3.ipu.graphcore.ai"
-            ]
+            "filename": "rts1.onnx",
+            "num_replicas": 32,
+            "num_instances": 2,
+            "compute_batch": 3,
+            # Change following parameters such that they match the test system:
+            "partition": "p",
+            "hosts": ["host0", "host1"]
         }
     ]
 ]
