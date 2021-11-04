@@ -11,6 +11,7 @@
 
 #include <popart/graph.hpp>
 #include <popart/op/call.hpp>
+#include <popart/region.hpp>
 #include <popart/vendored/optional.hpp>
 
 namespace py = pybind11;

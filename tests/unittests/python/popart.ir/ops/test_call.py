@@ -94,7 +94,7 @@ class TestCall:
                           subgraph_in_to_parent_in={add_weight1.w: w0})
 
         # Test main graph
-        # 4 vars + y0 + y1 + y2 + y4
+        # 4 vars + y0 + y1 + y2 + y3
         # 4 call sites total
         assert len(g.get_tensors()) == 8
         assert len(g.get_variables()) == 4

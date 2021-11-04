@@ -17,6 +17,7 @@
 #include <popart/op/accumulatorzero.hpp>
 #include <popart/op/call.hpp>
 #include <popart/op/ipucopy.hpp>
+#include <popart/op/loop.hpp>
 #include <popart/op/matmul.hpp>
 #include <popart/op/varupdate.hpp>
 
@@ -71,6 +72,34 @@ void bindManualCreateOpFunctionToGraphClass(py::class_<Graph> g) {
         py::arg("partialsType"),
         py::return_value_policy::reference);
 
+  // LoopOp
+  g.def("createOp_LoopOp",
+        py::overload_cast<const popart::OperatorIdentifier &,
+                          const Op::Settings &,
+                          popart::Graph &>(
+            &Graph::createOp<LoopOp,
+                             const popart::OperatorIdentifier &,
+                             const Op::Settings &,
+                             popart::Graph &>),
+        py::arg("opid"),
+        py::arg("settings"),
+        py::arg("callee_"),
+        py::return_value_policy::reference);
+  g.def("createOp_LoopOp",
+        py::overload_cast<const popart::OperatorIdentifier &,
+                          const Op::Settings &,
+                          popart::Graph &,
+                          int &>(
+            &Graph::createOp<LoopOp,
+                             const popart::OperatorIdentifier &,
+                             const Op::Settings &,
+                             popart::Graph &,
+                             int &>),
+        py::arg("opid"),
+        py::arg("settings"),
+        py::arg("callee_"),
+        py::arg("numImplicitScanOutputs_"),
+        py::return_value_policy::reference);
   // IpuCopyOp
   g.def("createOp_IpuCopyOp",
         &Graph::createOp<IpuCopyOp,
@@ -232,6 +261,42 @@ void bindManualCreateConnectedOpFunctionToGraphClass(py::class_<Graph> g) {
         py::arg("partialsType"),
         py::return_value_policy::reference);
 
+  // LoopOp
+  g.def("createConnectedOp_LoopOp",
+        py::overload_cast<const std::map<InIndex, TensorId> &,
+                          const std::map<OutIndex, TensorId> &,
+                          const popart::OperatorIdentifier &,
+                          const Op::Settings &,
+                          popart::Graph &>(
+            &Graph::createConnectedOp<LoopOp,
+                                      const popart::OperatorIdentifier &,
+                                      const Op::Settings &,
+                                      popart::Graph &>),
+        py::arg("in"),
+        py::arg("out"),
+        py::arg("opid"),
+        py::arg("settings"),
+        py::arg("callee_"),
+        py::return_value_policy::reference);
+  g.def("createConnectedOp_LoopOp",
+        py::overload_cast<const std::map<InIndex, TensorId> &,
+                          const std::map<OutIndex, TensorId> &,
+                          const popart::OperatorIdentifier &,
+                          const Op::Settings &,
+                          popart::Graph &,
+                          int &>(
+            &Graph::createConnectedOp<LoopOp,
+                                      const popart::OperatorIdentifier &,
+                                      const Op::Settings &,
+                                      popart::Graph &,
+                                      int &>),
+        py::arg("in"),
+        py::arg("out"),
+        py::arg("opid"),
+        py::arg("settings"),
+        py::arg("callee_"),
+        py::arg("numImplicitScanOutputs_"),
+        py::return_value_policy::reference);
   // IpuCopyOp
   g.def(
       "createConnectedOp_IpuCopyOp",

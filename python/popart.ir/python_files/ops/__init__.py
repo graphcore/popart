@@ -21,6 +21,7 @@ from .ipu_copy import *
 from .logical_and import *
 from .logical_not import *
 from .logical_or import *
+from .repeat import *
 from .matmul import *
 from .mul import *
 from .random import *

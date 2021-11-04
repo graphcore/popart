@@ -86,7 +86,7 @@ exceptions = [
     'DynamicTernaryBaseInplaceOp', 'TiedGatherGradOp', 'ScanOp', 'ConcatOp',
     'ConcatInplaceOp', 'ConcatGradOp', 'ExpandInplaceOp', 'ExpandGradOp',
     'ExpandOp', 'IdentityInplaceOp', 'TransposeInplaceOp', 'UpsampleOp',
-    'PopartLSTMOp', 'PopartLSTMGradOp', 'IpuCopyOp', 'CallOp'
+    'PopartLSTMOp', 'PopartLSTMGradOp', 'IpuCopyOp', 'CallOp', 'LoopOp'
 ]
 
 # Complie some regexes ahead of time for speed.

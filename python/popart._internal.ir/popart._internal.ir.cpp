@@ -13,6 +13,7 @@
 #include "bindings/op/call.hpp"
 #include "bindings/op/enums.hpp"
 #include "bindings/op/ipucopy.hpp"
+#include "bindings/op/loop.hpp"
 #include "bindings/op/manualbindops.hpp"
 #include "bindings/op/matmul.hpp"
 #include "bindings/op/optimizervalue.hpp"
@@ -73,6 +74,7 @@ PYBIND11_MODULE(popart_internal_ir, m) {
     op::bindOptional(m);
     op::bindIpuCopy(m);
     op::bindMatmul(m);
+    op::bindRepeat(m);
     op::bindOptimizerValue(m);
     op::bindVarupdate(m);
     op::bindAccumulate(m);

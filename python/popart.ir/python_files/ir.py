@@ -1,8 +1,9 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 """Definition of a class that represents the PopART IR."""
 
+from collections import Counter
+from typing import TYPE_CHECKING, Any, Callable, Dict, Iterable, List, Optional
 from weakref import WeakValueDictionary
-from typing import TYPE_CHECKING, Any, Callable, Dict, Optional
 
 import popart
 import popart._internal.ir as _ir
@@ -117,8 +118,12 @@ class Ir:
         subgraph = Graph._from_pb(_pb_subgraph)
 
         with subgraph:
-            # FIXME: Ignore/warn/error on duplicate inputs, as we do not want
-            # to create dubplicate subgraph inputs
+            dupes = self._find_duplicate_tensors(
+                [arg for arg in args if isinstance(arg, Tensor)])
+            if len(dupes) > 0:
+                raise ValueError(
+                    f"There are duplicate tensors in the inputs to {name}: {[d.id for d in dupes]} "
+                    "Please ensure tensor inputs to subgraphs are unique.")
 
             in_args = []
             for arg in args:
@@ -148,6 +153,29 @@ class Ir:
                 subgraph_output(out)
 
         return subgraph
+
+    def _find_duplicate_tensors(self,
+                                tensors: Iterable[Tensor]) -> List[Tensor]:
+        """Get the duplicate tensors (by tensor id) from a list.
+
+        Args:
+            tensors (Iterable[Tensor]): Tensors to check
+
+        Returns:
+            List[Tensor]: The duplicates (once each).
+        """
+        seen = {}
+        dupes = []
+
+        for t in tensors:
+            if t.id not in seen:
+                seen[t.id] = 1
+            else:
+                if seen[t.id] == 1:
+                    dupes.append(t)
+                seen[t.id] += 1
+
+        return dupes
 
     def create_empty_graph(self, name: Optional[str] = None):
         """Create a new graph.

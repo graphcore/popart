@@ -395,6 +395,49 @@ def test_call_op(connected: bool):
     assert op.getCalledGraphIds()[0] == "sub_graph"
 
 
+def test_loop_op():
+    """Test setting up the loop op.
+    """
+    _, graphs = create_ir(["sub_graph"])  # main graph and 'sub_graph'
+    main = graphs[0]
+    sub_graph = graphs[1]
+    num_inputs = _ir.NumInputs(2, 2)
+    main.addConstInit("loopcount", _ir.TensorInfo(_ir.DataType.INT64, []),
+                      np.array(10))
+    main.addConstInit("keepgoing", _ir.TensorInfo(_ir.DataType.BOOL, []),
+                      np.array(True))
+    a = add_actgrad_tensor("a", [1, 2, 3], main, _ir.DataType.FLOAT)
+    b = add_actgrad_tensor("b", [1, 2, 3], main, _ir.DataType.FLOAT)
+
+    sub_graph.addInput("loopcount", _ir.TensorInfo(_ir.DataType.INT64, []))
+    sub_graph.addInput("keepgoing", _ir.TensorInfo(_ir.DataType.BOOL, []))
+    sub_graph.addInput("a", a.info)
+    sub_graph.addInput("b", b.info)
+
+    opid = _ir.OperatorIdentifier("ai.graphcore", "Loop", 1, num_inputs, 1)
+
+    settings = _ir.Settings(main, "new_settings")
+
+    add = sub_graph.createConnectedOp_AddOp(
+        {
+            0: a.id,
+            1: b.id
+        },
+        {0: "out"},
+        _ir.OperatorIdentifier("ai.onnx", "Add", 1, num_inputs, 1),
+        settings,
+    )
+    sub_graph.markAsOutput(add.outTensor(0).id)
+    sub_graph.markAsOutput("keepgoing")
+
+    ins: Dict[int, str] = {0: "loopcount", 1: "keepgoing", 2: a.id}
+    outs: Dict[int, str] = {0: add.outTensor(0).id}
+    op = main.createConnectedOp_LoopOp(ins, outs, opid, settings, sub_graph)
+
+    assert op.getCalledGraphs()[0] == sub_graph
+    assert op.getCalledGraphIds()[0] == "sub_graph"
+
+
 @pytest.mark.parametrize("reduction", [
     _ir.ReductionType.Mean, _ir.ReductionType.Sum,
     _ir.ReductionType.NoReduction
