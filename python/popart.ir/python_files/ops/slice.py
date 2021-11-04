@@ -1,11 +1,11 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-from typing import Optional, Union, List
+from typing import Optional, Tuple, Union, List
 import popart._internal.ir as _ir
 from popart.ir.context import get_current_context
 from popart.ir.tensor import Tensor
 from .utils import check_in_graph
 
-__all__ = ["slice"]
+__all__ = ["slice", "slice_"]
 
 INT_MIN = -2**31
 INT_MAX = 2**31 - 1
@@ -54,6 +54,81 @@ def slice(t: Tensor,
     if start is None and stop is None and step is None:
         return t
 
+    start, stop, step, axis = process_args(start, stop, step, axis)
+
+    opid = _ir.OperatorIdentifier("ai.onnx", "Slice", 11, _ir.NumInputs(1, 1),
+                                  1)
+    settings = ctx._get_op_settings("slice")
+    op = pb_g.createConnectedOp_SliceOp(
+        {0: t.id},
+        {0: g._create_tensor_id("slice_out")},
+        starts_=start,
+        ends_=stop,
+        axes_=axis,
+        steps_=step,
+        opid=opid,
+        settings=settings,
+    )
+
+    return Tensor._from_pb_tensor(op.outTensor(0))
+
+
+def slice_(t: Tensor,
+           start: Optional[Union[int, List[Optional[int]]]] = None,
+           stop: Optional[Union[int, List[Optional[int]]]] = None,
+           step: Optional[Union[int, List[Optional[int]]]] = None,
+           axis: Optional[Union[int, List[int]]] = None) -> Tensor:
+    """
+    Selects elements from a tensor using a slice or multiple slices. Inplace.
+
+    This is the inplace version of :func:`~ops.slice`. Behaviour is the same, but modifies the
+        tensor inplace.
+    ```
+
+    Args:
+        t (Tensor): Tensor to slice
+        start: Index of first element (inclusive) or `None` which defaults to 0.
+        stop: Index of last element (exclusive) or `None` which defaults to last
+            element (inclusive) if step is forward or first element (inclusive) if step is backwards.
+        step: `1` for forward or `-1` for backwards.
+        axis: Axis of tensor to slice on or `None` will default to each axis sequentially.
+
+    Returns:
+        Tensor: alias of the input tensor t.
+    """
+    ctx = get_current_context()
+    g = ctx.graph
+    pb_g = g._pb_graph
+
+    check_in_graph(g, t)
+
+    if start is None and stop is None and step is None:
+        return t
+
+    start, stop, step, axis = process_args(start, stop, step, axis)
+
+    opid = _ir.OperatorIdentifier("ai.graphcore", "SliceInplace", 1,
+                                  _ir.NumInputs(1, 1), 1)
+    settings = ctx._get_op_settings("slice_inplace")
+    op = pb_g.createConnectedOp_SliceInplaceOp(
+        {0: t.id},
+        {0: g._create_tensor_id("slice_out")},
+        starts_=start,
+        ends_=stop,
+        axes_=axis,
+        steps_=step,
+        opid=opid,
+        settings=settings,
+    )
+
+    return Tensor._from_pb_tensor(op.outTensor(0))
+
+
+def process_args(start: Optional[Union[int, List[Optional[int]]]] = None,
+                 stop: Optional[Union[int, List[Optional[int]]]] = None,
+                 step: Optional[Union[int, List[Optional[int]]]] = None,
+                 axis: Optional[Union[int, List[int]]] = None) -> Tuple:
+
     # Convert to list if scalar
     start = [start] if start is not None and isinstance(start, int) else start
     stop = [stop] if stop is not None and isinstance(stop, int) else stop
@@ -92,18 +167,4 @@ def slice(t: Tensor,
         stop = [((INT_MAX if step[i] > 0 else INT_MIN) if e is None else e)
                 for i, e in enumerate(stop)]
 
-    opid = _ir.OperatorIdentifier("ai.onnx", "Slice", 11, _ir.NumInputs(1, 1),
-                                  1)
-    settings = ctx._get_op_settings("slice")
-    op = pb_g.createConnectedOp_SliceOp(
-        {0: t.id},
-        {0: g._create_tensor_id("slice_out")},
-        starts_=start,
-        ends_=stop,
-        axes_=axis,
-        steps_=step,
-        opid=opid,
-        settings=settings,
-    )
-
-    return Tensor._from_pb_tensor(op.outTensor(0))
+    return start, stop, step, axis

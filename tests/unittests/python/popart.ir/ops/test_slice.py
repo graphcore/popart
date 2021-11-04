@@ -20,27 +20,27 @@ import test_util as tu
 data = np.arange(64).reshape(4, 4, 4).astype('float32')
 
 
-def run_ir(ir, y):
-    ir = ir._pb_ir  # Internal ir
+def run_ir(ir: pir.Ir, y: pir.Tensor):
+    ir_ = ir._pb_ir  # Internal ir
     y_d2h = pir.d2h_stream(y.shape, y.dtype, name="y_stream")
     ops.host_store(y_d2h, y)
     y_id = y_d2h.tensor_id()
 
     dataFlow = popart.DataFlow(
         batchesPerStep=1, anchorTensors={y_id: popart.AnchorReturnType("All")})
-    ir.setDataFlow(dataFlow)
+    ir_.setDataFlow(dataFlow)
 
-    opts = ir.getSessionOptions()
+    opts = ir_.getSessionOptions()
     opts.useHostCopyOps = True
     opts.enableExplicitMainLoops = True
     opts.aliasZeroCopy = True
     opts.explicitRecomputation = True
 
-    ir.updateVertices()
-    ir.setIsPrepared()
+    ir_.updateVertices()
+    ir_.setIsPrepared()
 
     session = popart.InferenceSession.fromIr(
-        ir=ir, deviceInfo=tu.create_test_device())
+        ir=ir_, deviceInfo=tu.create_test_device())
 
     session.prepareDevice()
 
@@ -53,137 +53,193 @@ def run_ir(ir, y):
     session.weightsFromHost()
     session.run(stepio)
 
-    y = anchors[y_id]
-    return y
+    y_ = anchors[y_id]
+    return y_
 
 
 class TestSlice:
-    def test_fn(self):
+    @pytest.mark.parametrize("inplace", [True, False])
+    def test_fn(self, inplace):
         ir = pir.Ir()
         g = ir.main_graph()
         with g:
             t = pir.variable(data)
-            y = ops.slice(t, start=1, stop=3, step=1, axis=0)
+            if inplace:
+                y = ops.slice_(t, start=1, stop=3, step=1, axis=0)
+            else:
+                y = ops.slice(t, start=1, stop=3, step=1, axis=0)
 
-        assert contains_op_of_type("Slice", _ir.op.SliceOp, g)
+        if not inplace:
+            assert contains_op_of_type("Slice", _ir.op.SliceOp, g)
+        else:
+            assert contains_op_of_type("SliceInplace", _ir.op.SliceInplaceOp,
+                                       g)
         assert len(g.get_tensors()) == 2
         assert len(g.get_variables()) == 1
 
-    def test_fn_numerically(self):
+    @pytest.mark.parametrize("inplace", [True, False])
+    def test_fn_numerically(self, inplace):
         ir = pir.Ir()
         g = ir.main_graph()
         with g:
             t = pir.variable(data)
-            y = ops.slice(t, start=1, stop=3, step=1, axis=0)
+            if inplace:
+                y = ops.slice_(t, start=1, stop=3, step=1, axis=0)
+            else:
+                y = ops.slice(t, start=1, stop=3, step=1, axis=0)
             y_host = run_ir(ir, y)
 
         y_numpy = data[1:3]
         assert_array_equal(y_host, y_numpy)
 
-    def test_start_only(self):
+    @pytest.mark.parametrize("inplace", [True, False])
+    def test_start_only(self, inplace):
         ir = pir.Ir()
         with ir.main_graph():
             t = pir.variable(data)
-            y = ops.slice(t, start=1)
+            if inplace:
+                y = ops.slice_(t, start=1)
+            else:
+                y = ops.slice(t, start=1)
             y_host = run_ir(ir, y)
 
         y_numpy = data[1:]
         assert_array_equal(y_host, y_numpy)
 
-    def test_start_only_multidim(self):
+    @pytest.mark.parametrize("inplace", [True, False])
+    def test_start_only_multidim(self, inplace):
         ir = pir.Ir()
         with ir.main_graph():
             t = pir.variable(data)
-            y = ops.slice(t, start=[1, 2])
+            if inplace:
+                y = ops.slice_(t, start=[1, 2])
+            else:
+                y = ops.slice(t, start=[1, 2])
             y_host = run_ir(ir, y)
 
         y_numpy = data[1:, 2:]
         assert_array_equal(y_host, y_numpy)
 
-    def test_stop_only(self):
+    @pytest.mark.parametrize("inplace", [True, False])
+    def test_stop_only(self, inplace):
         ir = pir.Ir()
         with ir.main_graph():
             t = pir.variable(data)
-            y = ops.slice(t, stop=2)
+            if inplace:
+                y = ops.slice_(t, stop=2)
+            else:
+                y = ops.slice(t, stop=2)
             y_host = run_ir(ir, y)
 
         y_numpy = data[:2]
         assert_array_equal(y_host, y_numpy)
 
-    def test_stop_only_multidim(self):
+    @pytest.mark.parametrize("inplace", [True, False])
+    def test_stop_only_multidim(self, inplace):
         ir = pir.Ir()
         with ir.main_graph():
             t = pir.variable(data)
-            y = ops.slice(t, stop=[2, 3])
+            if inplace:
+                y = ops.slice_(t, stop=[2, 3])
+            else:
+                y = ops.slice(t, stop=[2, 3])
             y_host = run_ir(ir, y)
 
         y_numpy = data[:2, :3]
         assert_array_equal(y_host, y_numpy)
 
-    def test_identity_fn(self):
+    @pytest.mark.parametrize("inplace", [True, False])
+    def test_identity_fn(self, inplace):
         ir = pir.Ir()
         with ir.main_graph():
             t = pir.variable(data)
-            y = ops.slice(t, axis=0)  # `axis=0` is redundant
+            if inplace:
+                y = ops.slice_(t, axis=0)  # `axis=0` is redundant
+            else:
+                y = ops.slice(t, axis=0)  # `axis=0` is redundant
 
         assert len(ir.main_graph().get_tensors()) == 1
         assert len(ir.main_graph().get_variables()) == 1
 
-    def test_identity_numerically(self):
+    @pytest.mark.parametrize("inplace", [True, False])
+    def test_identity_numerically(self, inplace):
         ir = pir.Ir()
         with ir.main_graph():
             t = pir.variable(data)
-            y = ops.slice(t, axis=0)  # `axis=0` is redundant
+            if inplace:
+                y = ops.slice_(t, axis=0)  # `axis=0` is redundant
+            else:
+                y = ops.slice(t, axis=0)  # `axis=0` is redundant
             y_host = run_ir(ir, y)
 
         assert_array_equal(y_host, data)
 
-    def test_start_and_stop(self):
+    @pytest.mark.parametrize("inplace", [True, False])
+    def test_start_and_stop(self, inplace):
         ir = pir.Ir()
         with ir.main_graph():
             t = pir.variable(data)
-            y = ops.slice(t, start=[1, 2], stop=[3, 4])
+            if inplace:
+                y = ops.slice_(t, start=[1, 2], stop=[3, 4])
+            else:
+                y = ops.slice(t, start=[1, 2], stop=[3, 4])
             y_host = run_ir(ir, y)
 
         y_numpy = data[1:3, 2:4]
         assert_array_equal(y_host, y_numpy)
 
-    def test_step(self):
+    @pytest.mark.parametrize("inplace", [True, False])
+    def test_step(self, inplace):
         ir = pir.Ir()
         with ir.main_graph():
             t = pir.variable(data)
-            y = ops.slice(t, start=[1, 3], stop=[3, 1], step=[1, -1])
+            if inplace:
+                y = ops.slice_(t, start=[1, 3], stop=[3, 1], step=[1, -1])
+            else:
+                y = ops.slice(t, start=[1, 3], stop=[3, 1], step=[1, -1])
             y_host = run_ir(ir, y)
 
         y_numpy = data[1:3, 3:1:-1]
         assert_array_equal(y_host, y_numpy)
 
-    def test_negative_start(self):
+    @pytest.mark.parametrize("inplace", [True, False])
+    def test_negative_start(self, inplace):
         ir = pir.Ir()
         with ir.main_graph():
             t = pir.variable(data)
-            y = ops.slice(t, start=-2, step=-1)
+            if inplace:
+                y = ops.slice_(t, start=-2, step=-1)
+            else:
+                y = ops.slice(t, start=-2, step=-1)
             y_host = run_ir(ir, y)
 
         y_numpy = data[-2::-1]
         assert_array_equal(y_host, y_numpy)
 
-    def test_axis(self):
+    @pytest.mark.parametrize("inplace", [True, False])
+    def test_axis(self, inplace):
         ir = pir.Ir()
         with ir.main_graph():
             t = pir.variable(data)
-            y = ops.slice(t, start=[1, 2], stop=[3, 4], axis=[2, 1])
+            if inplace:
+                y = ops.slice_(t, start=[1, 2], stop=[3, 4], axis=[2, 1])
+            else:
+                y = ops.slice(t, start=[1, 2], stop=[3, 4], axis=[2, 1])
             y_host = run_ir(ir, y)
 
         y_numpy = data[:, 2:4, 1:3]
         assert_array_equal(y_host, y_numpy)
 
-    def test_error_lengths(self):
+    @pytest.mark.parametrize("inplace", [True, False])
+    def test_error_lengths(self, inplace):
         ir = pir.Ir()
         with ir.main_graph():
             t = pir.variable(data)
             with pytest.raises(ValueError):
-                y = ops.slice(t, start=[2], stop=[3, 4], axis=[2, 1])
+                if inplace:
+                    y = ops.slice_(t, start=[2], stop=[3, 4], axis=[2, 1])
+                else:
+                    y = ops.slice(t, start=[2], stop=[3, 4], axis=[2, 1])
 
     def test_dunder_scalar(self):
         ir = pir.Ir()

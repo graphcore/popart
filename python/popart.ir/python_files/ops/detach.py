@@ -5,7 +5,7 @@ from popart.ir.context import get_current_context
 from popart.ir.tensor import Tensor
 from .utils import check_in_graph
 
-__all__ = ['detach']
+__all__ = ['detach', 'detach_']
 
 
 def detach(t: Tensor) -> Tensor:
@@ -32,6 +32,33 @@ def detach(t: Tensor) -> Tensor:
         {0: t.id},
         {0: g._create_tensor_id("detach_out")},
         opid,
+        settings,
+    )
+
+    return Tensor._from_pb_tensor(op.outTensor(0))
+
+
+def detach_(x: Tensor) -> Tensor:
+    """
+    This is the inplace version of :func:`~ops.detach`. Behaviour is the same, but blocks gradient
+        propagation inplace on the input tensor.
+
+    Args:
+        x: Tensor
+            Input tensor.
+    Returns:
+        out: Tensor
+    """
+    ctx = get_current_context()
+    g = ctx.graph
+    pb_g = g._pb_graph
+
+    check_in_graph(g, x)
+
+    settings = ctx._get_op_settings('detach_inplace')
+    op = pb_g.createConnectedOp_DetachInplaceOp(
+        {0: x.id},
+        {0: g._create_tensor_id("detach_out")},
         settings,
     )
 

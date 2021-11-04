@@ -74,3 +74,30 @@ class TestReshape:
             c = ops.flatten(a)
         assert c.shape == (6, )
         assert contains_op_of_type("Reshape", _ir.op.ReshapeOp, g)
+
+    def test_inplace(self):
+        ir = pir.Ir()
+        g = ir.main_graph()
+
+        with g:
+            a = pir.variable(np.ones((1, 2, 3)))
+            c = ops.reshape_(a, (3, 2, 1))
+
+        assert a._pb_tensor.isAliased()
+        assert c.shape == (3, 2, 1)
+        assert len(g.get_tensors()) == 2
+        assert contains_op_of_type("ReshapeInplace", _ir.op.ReshapeInplaceOp,
+                                   g)
+
+    def test_flatten_inplace(self):
+        ir = pir.Ir()
+        g = ir.main_graph()
+
+        with g:
+            a = pir.variable(np.ones((1, 2, 3)))
+            c = ops.flatten_(a)
+
+        assert a._pb_tensor.isAliased()
+        assert c.shape == (6, )
+        assert contains_op_of_type("ReshapeInplace", _ir.op.ReshapeInplaceOp,
+                                   g)

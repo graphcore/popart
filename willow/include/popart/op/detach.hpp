@@ -32,6 +32,7 @@ public:
 class DetachInplaceOp : public DetachOp {
 public:
   DetachInplaceOp(const DetachOp &detachOp);
+  DetachInplaceOp(const Op::Settings &settings);
 
   std::unique_ptr<Op> clone() const override;
 

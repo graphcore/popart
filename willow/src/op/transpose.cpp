@@ -186,6 +186,13 @@ TransposeInplaceOp::TransposeInplaceOp(const TransposeOp &op)
                       op.getPerm(),
                       op.settings) {}
 
+TransposeInplaceOp::TransposeInplaceOp(const OperatorIdentifier &_opid,
+                                       const Shape &perm,
+                                       const Op::Settings &settings_)
+    : TransposeBaseOp(Onnx::CustomOperators::TransposeInplace,
+                      perm,
+                      settings_) {}
+
 std::unique_ptr<Op> TransposeInplaceOp::clone() const {
   return std::make_unique<TransposeInplaceOp>(*this);
 }

@@ -163,6 +163,32 @@ class Tensor:
         import popart.ir.ops as ops
         return ops.div(self, self._ensure_tensor(value))
 
+    def transpose_(self,
+                   permutation: Optional[Iterable[int]] = None) -> 'Tensor':
+        """Returns ops.transpose(self, permutation). Inplace"""
+        import popart.ir.ops as ops
+        return ops.transpose_(self, permutation)
+
+    def reshape_(self, shape: Iterable[int]) -> 'Tensor':
+        """Returns ops.reshape_(self, shape) inplace."""
+        import popart.ir.ops as ops
+        return ops.reshape_(self, shape)
+
+    def flatten_(self, shape: Iterable[int]) -> 'Tensor':
+        """Returns ops.flatten_(self). Inplace."""
+        import popart.ir.ops as ops
+        return ops.flatten_(self, shape)
+
+    def detach_(self) -> 'Tensor':
+        """Detach tensor inplace."""
+        import popart.ir.ops as ops
+        return ops.detach_(self)
+
+    @property
+    def T_(self) -> 'Tensor':
+        """Returns the Tensor transposed with reversed axes. Inplace."""
+        return self.transpose_()
+
     def __matmul__(self, other: Any) -> 'Tensor':
         """Returns `ops.matmul(self, other)`."""
         import popart.ir.ops as ops

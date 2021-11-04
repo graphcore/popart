@@ -38,6 +38,9 @@ DetachOp::inplacePriorityDefault() const {
 DetachInplaceOp::DetachInplaceOp(const DetachOp &detachOp)
     : DetachOp(Onnx::CustomOperators::DetachInplace, detachOp.settings) {}
 
+DetachInplaceOp::DetachInplaceOp(const Op::Settings &settings)
+    : DetachOp(Onnx::CustomOperators::DetachInplace, settings) {}
+
 std::unique_ptr<Op> DetachInplaceOp::clone() const {
   return std::make_unique<DetachInplaceOp>(*this);
 }
