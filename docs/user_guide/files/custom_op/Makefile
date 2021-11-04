@@ -1,5 +1,6 @@
+# Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 CXX ?= g++
-CXXFLAGS = -std=c++11 -ggdb3 -O3 -shared -fPIC
+CXXFLAGS = -std=c++11 -O3 -shared -fPIC
 LDLIBS = -lpopart -lpoplar -lpopops
 ONNX_NAMESPACE = -DONNX_NAMESPACE=onnx
 
