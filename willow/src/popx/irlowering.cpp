@@ -1583,7 +1583,6 @@ void IrLowering::addOpTasks(PriTasks &tasks) {
               std::make_shared<InitTensorCloning>(
                   std::get<0>(opInput),
                   std::get<1>(opInput),
-                  logging::format("input/{}", i),
                   10.0f));
         }
       }
@@ -1616,7 +1615,6 @@ void IrLowering::addOpTasks(PriTasks &tasks) {
               std::make_shared<InitTensorCloning>(
                   std::get<0>(opOutput),
                   std::get<1>(opOutput),
-                  logging::format("output/{}", i),
                   10.0f));
         }
       }

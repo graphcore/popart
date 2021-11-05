@@ -75,10 +75,8 @@ bool InitTensorPostIrAliasing::initTensor(IrLowering &irLowering) const {
 
 InitTensorCloning::InitTensorCloning(TensorId srcId_,
                                      TensorId dstId_,
-                                     const std::string postfix_,
                                      double priority_)
-    : InitTensorBase(InitMethod::Cloning, dstId_, priority_), postfix(postfix_),
-      srcId(srcId_) {}
+    : InitTensorBase(InitMethod::Cloning, dstId_, priority_), srcId(srcId_) {}
 
 bool InitTensorCloning::initTensor(IrLowering &irLowering) const {
   if (!irLowering.tensors().contains(srcId)) {
@@ -108,13 +106,12 @@ bool InitTensorCloning::initTensor(IrLowering &irLowering) const {
     Op *producer = t->getProducer();
     dst          = dstGraph.getPoplarGraph().clone(
         src.getPoplarTensor(),
-        {poplar::DebugNameAndId(
-            logging::format(
-                "{}/{}", producer->settings.graph.get().getGraphId(), postfix),
-            producer->getDebugInfo().getId(),
-            producer->getDebugInfo().getPathName())});
+        {poplar::DebugNameAndId(dstId,
+                                producer->getDebugInfo().getId(),
+                                producer->getDebugInfo().getPathName())});
   } else {
-    dst = dstGraph.getPoplarGraph().clone(src.getPoplarTensor());
+    dst = dstGraph.getPoplarGraph().clone(src.getPoplarTensor(),
+                                          {poplar::DebugNameAndId(dstId)});
   }
 
   if (irLowering.tensors().hasViewChangers(getSrcId())) {

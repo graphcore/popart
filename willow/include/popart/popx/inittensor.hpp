@@ -65,7 +65,6 @@ protected:
   // Additional representation
   virtual std::string extraStr() const { return ""; }
 
-private:
   // The method identifier, used to generate a string representation for each
   // InitTensor
   InitMethod method;
@@ -112,7 +111,7 @@ public:
   bool hasSrcId() const override { return true; }
   TensorId getSrcId() const override { return srcId; }
 
-private:
+protected:
   TensorId srcId;
 };
 
@@ -121,16 +120,12 @@ private:
  */
 class InitTensorCloning : public InitTensorBase {
 public:
-  InitTensorCloning(TensorId srcId,
-                    TensorId dstId,
-                    const std::string postfix,
-                    double priority);
+  InitTensorCloning(TensorId srcId, TensorId dstId, double priority);
   bool initTensor(IrLowering &irLowering) const override;
   bool hasSrcId() const override { return true; }
   TensorId getSrcId() const override { return srcId; }
 
-private:
-  std::string postfix;
+protected:
   TensorId srcId;
 };
 
