@@ -175,7 +175,7 @@ void RngStateLowering::lowerGetHwSeeds(
                                              seq.getPoplarSequence(),
                                              dbgCtx),
                           graph.get()};
-  seq.add(poplar::program::Copy(
+  seq.getPoplarSequence().add(poplar::program::Copy(
       tmp.getPoplarTensor(), rngState.getPoplarTensor(), false, dbgCtx));
 }
 
@@ -215,19 +215,20 @@ PriTask RngStateLowering::rngStateFromHost() {
         seqs.getSequence(&irLowering.get().progs.rngStateFromHostFragment());
 
     // Stream newRngState to combinedRngStateTensor
-    seq.add(poplar::program::Copy(streamRngFromHost,
-                                  combinedRngStateTensor.getPoplarTensor(),
-                                  false,
-                                  {"copyStreamRngStateTensor"}));
+    seq.getPoplarSequence().add(
+        poplar::program::Copy(streamRngFromHost,
+                              combinedRngStateTensor.getPoplarTensor(),
+                              false,
+                              {"copyStreamRngStateTensor"}));
     // Copy first half of combinedRngStateTensor to identicalSeedsRngStateTensor
-    seq.add(poplar::program::Copy(
+    seq.getPoplarSequence().add(poplar::program::Copy(
         combinedRngStateTensor.getPoplarTensor()[0],
         identicalSeedsRngStateTensor.getPoplarTensor(),
         false,
         {"copyRngStateTensorToIdenticalSeedsRngStateTensor"}));
     // Copy second half of combinedRngStateTensor to
     // differingSeedsRngStateTensor
-    seq.add(poplar::program::Copy(
+    seq.getPoplarSequence().add(poplar::program::Copy(
         combinedRngStateTensor.getPoplarTensor()[1],
         differingSeedsRngStateTensor.getPoplarTensor(),
         false,
@@ -254,7 +255,7 @@ PriTask RngStateLowering::rngStateToHost() {
 
     // Update combinedRngStateTensor with the new values of
     // identicalSeedsRngStateTensor and differingSeedsRngStateTensor
-    seq.add(poplar::program::Copy(
+    seq.getPoplarSequence().add(poplar::program::Copy(
         poplar::concat(
             identicalSeedsRngStateTensor.expand({0}).getPoplarTensor(),
             differingSeedsRngStateTensor.expand({0}).getPoplarTensor()),
@@ -262,10 +263,11 @@ PriTask RngStateLowering::rngStateToHost() {
         false,
         "seedsToRngStateTensor"));
     // Stream combinedRngStateTensor to host
-    seq.add(poplar::program::Copy(combinedRngStateTensor.getPoplarTensor(),
-                                  streamRngToHost,
-                                  false,
-                                  {"rngStateToHost"}));
+    seq.getPoplarSequence().add(
+        poplar::program::Copy(combinedRngStateTensor.getPoplarTensor(),
+                              streamRngToHost,
+                              false,
+                              {"rngStateToHost"}));
     return seqs;
   };
 
