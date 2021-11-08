@@ -23,6 +23,7 @@
 #include "bindings/op/varupdate.hpp"
 #include "bindings/opidentifier.hpp"
 #include "bindings/region.hpp"
+#include "bindings/remotebufferinfo.hpp"
 #include "bindings/scope.hpp"
 #include "bindings/tensor.hpp"
 #include "bindings/tensordata.hpp"
@@ -66,6 +67,7 @@ PYBIND11_MODULE(popart_internal_ir, m) {
   bindOpIdentifier(m);
   bindRegion(m);
   bindTensorLocation(m);
+  bindRemoteBufferInfo(m);
   bindBwdGraphInfo(m);
   bindCommGroup(m);
   bindUtil(m);

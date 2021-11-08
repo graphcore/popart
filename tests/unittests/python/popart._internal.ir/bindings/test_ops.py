@@ -1,7 +1,6 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict
 
-import numpy as np
 import pytest
 from utils import *
 
@@ -210,6 +209,56 @@ def test_unary_ops(connected: bool, op_name: str,
     _, graphs = create_ir()
     g = graphs[0]
     unary_op_tester(op_name, g, "Inplace" in op_name, connected, **kwargs)
+
+
+@pytest.mark.parametrize("connected", [True, False])
+@pytest.mark.parametrize("use_offset", [True, False])
+def test_remote_store_op(connected: bool, use_offset: bool) -> None:
+    """Test that the input and output tensors of remote store op are correct
+
+    Args:
+        connected (bool): Whether to use the createConnected<opname> function or 
+            just create<opname>
+        use_offset (bool): Whether or not to specify the optional offset Tensor
+    """
+    _, graphs = create_ir()
+    g = graphs[0]
+    t = add_actgrad_tensor("t", [1, 2, 3], g)
+    opid = _ir.OperatorIdentifier("ai.onnx", "Init", 1, _ir.NumInputs(0, 0), 1)
+    settings = _ir.Settings(g, "new_settings")
+
+    offset = add_actgrad_tensor("offset", [1], g)
+    if use_offset:
+        if connected:
+            op = g.createConnectedOp_RemoteStoreOp({
+                0: t.id,
+                1: offset.id
+            }, {}, opid, settings, 1)
+        else:
+            op = g.createOp_RemoteStoreOp(opid, settings, 1)
+            op.connectInTensor(0, t.id)
+            op.connectInTensor(1, offset.id)
+    else:
+        if connected:
+            op = g.createConnectedOp_RemoteStoreOp({
+                0: t.id,
+            }, {}, opid, settings, 1)
+        else:
+            op = g.createOp_RemoteStoreOp(opid, settings, 1)
+            op.connectInTensor(0, t.id)
+
+    op.setup()
+
+    assert op.hasInput(0)
+    assert op.inTensor(0) == t
+    assert op.inId(0) == t.id
+    if use_offset:
+        assert op.hasInput(1)
+        assert op.inTensor(1) == offset
+        assert op.inId(1) == offset.id
+    else:
+        assert not op.hasInput(1)
+    assert not op.hasOutput(0)
 
 
 @pytest.mark.parametrize("connected", [True, False])

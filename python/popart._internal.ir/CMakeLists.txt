@@ -26,6 +26,7 @@ list(
   # ${popart_op_headers_dir}/call.hpp # Manually bound
   # ${popart_op_headers_dir}/matmul.hpp # Manually bound
   ${popart_op_headers_dir}/exchange/hostcopy.hpp
+  ${popart_op_headers_dir}/exchange/remote.hpp
   ${popart_op_headers_dir}/incrementmod.hpp
   ${popart_op_headers_dir}/init.hpp
   ${popart_op_headers_dir}/mul.hpp
@@ -160,6 +161,7 @@ add_popart_python_module(
   bindings/basicoptionals.cpp
   bindings/opidentifier.cpp
   bindings/region.cpp
+  bindings/remotebufferinfo.cpp
   bindings/tensorlocation.cpp
   bindings/bwdgraphinfo.cpp
   bindings/commgroup.cpp

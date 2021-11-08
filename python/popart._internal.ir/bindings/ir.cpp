@@ -55,7 +55,8 @@ void bindIr(py::module &m) {
       .def("updateVertices", &Ir::updateVertices)
       .def("setPatterns", &Ir::setPatterns)
       .def("applyPreAliasPatterns", &Ir::applyPreAliasPatterns)
-      .def("applyInplacePattern", &Ir::applyInplacePattern);
+      .def("applyInplacePattern", &Ir::applyInplacePattern)
+      .def("setRemoteBufferInfo", &Ir::setRemoteBufferInfo);
 }
 
 } // namespace ir

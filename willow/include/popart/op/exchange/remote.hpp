@@ -29,14 +29,14 @@ namespace popart {
  * \c RemoteBufferId will be of rank \a x+1, where the new dimension (the row)
  * will be of size \c N.
  *
- * \c Op instances with matching \c RemoteBufferIds will \a outline together,
+ * \c Op instances with matching \c RemoteBufferId will \a outline together,
  * meaning that if multiple different tensors are to be stored under the same
- * remote buffer IDs, a different offset value has to be supplied for each
+ * remote buffer ID, a different offset value has to be supplied for each
  * tensor.
  *
  * For using the automatic \see RemoteSetup configuration, the \c offset
  * tensor should be a unique constant tensor per \c inTensor per
- * \c RemoteBufferIds.
+ * \c RemoteBufferId.
  * If the constant \c offset tensor has value -1, \c RemoteSetup will assign
  * a unique value, otherwise the supplied \c offset value will be used.
  * \c RemoteSetup will call \c Ir::setRemoteBufferInfo to configure the
