@@ -5,7 +5,7 @@ from popart.ir.dtypes import dtype
 
 import popart._internal.ir as _ir
 
-from typing import Iterable, Optional
+from typing import Any, Iterable, Optional
 
 __all__ = [
     'HostToDeviceStream', 'DeviceToHostStream', 'h2d_stream', 'd2h_stream'
@@ -18,8 +18,8 @@ class _Stream:
             "Cannot construct a popart.ir._Stream directly.")
 
     @classmethod
-    def _from_tensor(cls, tensor: Tensor) -> '_Stream':
-        self = cls.__new__(cls)
+    def _from_tensor(cls, tensor: Tensor):
+        self = super().__new__(cls)
         self._stream_tensor = tensor
         return self
 
@@ -34,6 +34,16 @@ class _Stream:
     def tensor_id(self):
         return self._stream_tensor.id
 
+    def __hash__(self):
+        return hash(self._stream_tensor)
+
+    def __eq__(self, other: Any):
+        return isinstance(
+            other, _Stream) and self._stream_tensor == other._stream_tensor
+
+    def __str__(self):
+        return str(self._stream_tensor)
+
 
 class HostToDeviceStream(_Stream):
     """
@@ -45,7 +55,9 @@ class HostToDeviceStream(_Stream):
     subgraph(s) any number of times, and in all cases PopART will stream the next
     value into the provided tensor.
     """
-    pass
+
+    def __str__(self):
+        return f"HostToDeviceStream {super().__str__()}"
 
 
 class DeviceToHostStream(_Stream):
@@ -58,7 +70,9 @@ class DeviceToHostStream(_Stream):
     subgraph(s) any number of times, and in all cases PopART will stream the value
     of the provided tensor down the provided stream.
     """
-    pass
+
+    def __str__(self):
+        return f"DeviceToHostStream {super().__str__()}"
 
 
 def h2d_stream(shape: Iterable[int], dtype: dtype,

@@ -56,7 +56,10 @@ void bindIr(py::module &m) {
       .def("setPatterns", &Ir::setPatterns)
       .def("applyPreAliasPatterns", &Ir::applyPreAliasPatterns)
       .def("applyInplacePattern", &Ir::applyInplacePattern)
-      .def("setRemoteBufferInfo", &Ir::setRemoteBufferInfo);
+      .def("setRemoteBufferInfo", &Ir::setRemoteBufferInfo)
+      .def("dataStreamTensors",
+           &Ir::dataStreamTensors,
+           py::return_value_policy::reference);
 }
 
 } // namespace ir
