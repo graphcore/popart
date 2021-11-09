@@ -115,7 +115,7 @@ enum class MergeVarUpdateType {
   All,
   /// Merge into groups while attempting not to increase maximum
   /// variable liveness, and also not slice tensor variables so
-  /// they they will need to be processed by different VarUpdateOp ops.
+  /// they will need to be processed by different VarUpdateOp ops.
   AutoLoose,
   /// Merge into groups, so that VarUpdateOp ops process tensors of
   /// exactly `mergeVarUpdateMemThreshold` in size.
@@ -319,12 +319,13 @@ enum class ExecutionPhaseIOSchedule {
  * different weights of the same execution phase.
  *
  * The steps for phased execution consists of:
- *   - Copy to IO tiles if necessary (1)
- *   - Run collective operations if necessary (2)
- *   - Load optimizer state (3)
- *   - Update optimizer state (4)
- *   - Apply optimizer (5)
- *   - Store updated tensor if necessary (6)
+ *
+ * - Copy to IO tiles if necessary (1)
+ * - Run collective operations if necessary (2)
+ * - Load optimizer state (3)
+ * - Update optimizer state (4)
+ * - Apply optimizer (5)
+ * - Store updated tensor if necessary (6)
  */
 enum class ExecutionPhaseSchedule {
   /// Process above steps for one weight at a time (for example: 123456, 123456,
@@ -655,7 +656,7 @@ struct SessionOptions {
   std::map<TensorId, unsigned> prefetchBufferingDepthMap;
 
   /// By default, we use the stable softmax Poplar function. The input tensor
-  /// to softmax, _x_, is preprocessed by subtracting max(_x_) from each element
+  /// to softmax, *x*, is preprocessed by subtracting max(*x*) from each element
   /// before computing the exponentials, ensuring numerical stability. If you
   /// are sure the inputs to your softmax operations are small enough to not
   /// cause overflow when computing the exponential, you can enable the
@@ -698,8 +699,9 @@ struct SessionOptions {
   /// Enable pipelining of virtual graphs
   bool enablePipelining = false;
 
-  /// Use synthetic data: disable data transfer to/from the host.
-  /// Set to #SyntheticDataMode::Off to use real data.
+  /// This options specifies whether to use real or synthetic data to initialize
+  /// input tensors. Anything but the #SyntheticDataMode::Off value disables
+  /// streaming to/from host.
   SyntheticDataMode syntheticDataMode = SyntheticDataMode::Off;
 
   /// Add instrumentation to your program to count the number of device cycles

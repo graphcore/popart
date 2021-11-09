@@ -157,6 +157,9 @@ public:
    * Calls to multiconv() are mapped to
    * poplar::poplin::multiconv::convolution().
    *
+   * All input vectors must be either empty, or equal in length to
+   * the number of convolutions. Note that groups for each convolution are
+   * automatically inferred from the shapes of the data and weight inputs.
    *
    * \param tensors List of [DataId, WeightId, BiasId (optional)] for each
    *        convolution.
@@ -171,17 +174,13 @@ public:
    * \param perConvReservedTiles Tiles to reserve per convolution when planning.
    * \param cycleBackOff Cycle back-off proportion, [0, 1).
    * \param enableConvDithering Enable convolution dithering per convolution. If
-            true, then convolutions with different parameters will be laid out
-            from different tiles in an effort to improve tile balance in models.
+   *        true, then convolutions with different parameters will be laid out
+   *        from different tiles in an effort to improve tile balance in models.
    * \param debugContext Optional debug context.
-   *
-   * All input vectors must be either empty, or equal in length to
-   * the number of convolutions. Note that groups for each convolution are
-   * automatically inferred from the shapes of the data and weight inputs.
    *
    * \return The TensorId of the output tensor from each convolution.
    *
-   * \sa <a href="https://docs.graphcore.ai/projects/available-memory/">Optimising Temporary Memory Usage for Convolutions and Matmuls on the IPU</a> for for some practical examples of using `availableMemoryProportion`
+   * \sa <a href="https://docs.graphcore.ai/projects/available-memory/">Optimising Temporary Memory Usage for Convolutions and Matmuls on the IPU</a> for some practical examples of using `availableMemoryProportion`
    *
    */
   // clang-format on
@@ -313,8 +312,8 @@ public:
    * \param blocksize Indicates the scale factor: if the input is [N, C, H, W]
    *     and the blocksize is B, the output will be [N, C/(B*B), H*B, W*B].
    * \param mode Specifies how the data is rearranged:
-   *   *  "DCR": depth-column-row order
-   *   *  "CRD": column-row-depth order
+   *    * "DCR": depth-column-row order
+   *    * "CRD": column-row-depth order
    * \param debugContext Optional debug context.
    * \return A tensor which is a rearrangement of the input tensor.
    */
@@ -445,7 +444,7 @@ public:
    * Slice a 2D tensor based on offsets specified by a tensor.
    *
    * The outermost dimension is sliced;
-   *   tOut[tOutOffset:tOutOffset+tN][...] = tIn[tInOffset:tInOffset+tN][...]
+   * tOut[tOutOffset:tOutOffset+tN][...] = tIn[tInOffset:tInOffset+tN][...]
    * for each entry in tN/tInOffset/tOutOffset; entries after the first tN==0
    * may be ignored. Unreferenced elements of tOut are zeroed if zeroUnused is
    * set. The same output element should not be written by multiple inputs.
@@ -683,7 +682,7 @@ public:
    *
    * \param arg Vector with single input tensor id.
    * \param shape The shape of the output Tensor. The output Tensor
-   * must contain the same number of elements as the input Tensor.
+   *     must contain the same number of elements as the input Tensor.
    * \param name Optional identifier for operation.
    * \return The name of the result tensor.
    */
@@ -699,7 +698,7 @@ public:
    *
    * \param args Input tensors.
    * \return Computes the element-wise remainder of division. The remainder has
-   * the same sign as the dividend.
+   *     the same sign as the dividend.
    */
   TensorId fmod(const std::vector<TensorId> &args,
                 const DebugContext &debugContext = {});
@@ -711,7 +710,7 @@ public:
    * sign as the divisor.
    * \param args Input tensors.
    * \return Computes the element-wise remainder of division. The remainder has
-   * the same sign as the divisor.
+   *     the same sign as the divisor.
    */
   TensorId remainder(const std::vector<TensorId> &args,
                      const DebugContext &debugContext = {});
@@ -980,8 +979,8 @@ public:
    * Add a new named input tensor to the model.
    *
    * \param tensorId The identifier string of the input tensor. This identifier
-   * must already exist in the parent GraphProto's name scope and must appear
-   * topologically before this sub-graph.
+   *     must already exist in the parent GraphProto's name scope and must
+   *     appear topologically before this sub-graph.
    */
   void addInputTensorFromParentGraph(const TensorId &tensorId);
 
@@ -1160,7 +1159,7 @@ public:
    * Add checkpoint operations to the model.
    *
    * This is the same as an identity but is recomputeType Checkpoint by default.
-   *  Use this to checkpoint a subset of an operation's output tensors.
+   * Use this to checkpoint a subset of an operation's output tensors.
    *
    * \param nodeOutputNames Tensors to checkpoint.
    * \return The checkpointed tensors.
@@ -1214,9 +1213,9 @@ public:
    *
    * \param nodeOutputNames Name of the output matmul tensors of the ONNX node.
    * \param mode Which dimension of the mat mul to serialize on (choose from
-   * 'input_channels', 'output_channels', 'reducing_dim', 'none').
+   *     'input_channels', 'output_channels', 'reducing_dim', 'none').
    * \param factor The number of serialised matmuls, must be a factor of the
-   * dimensions to serialise on.
+   *     dimensions to serialise on.
    *
    */
   void setSerializeMatMul(const std::set<TensorId> &nodeOutputNames,
@@ -1284,7 +1283,7 @@ public:
   /**
    * Set the available memory for the given node. Used on the convolution op.
    *
-   * \sa <a href="https://docs.graphcore.ai/projects/available-memory/">Optimising Temporary Memory Usage for Convolutions and Matmuls on the IPU</a> for for some practical examples of using `availableMemoryProportion`
+   * \sa <a href="https://docs.graphcore.ai/projects/available-memory/">Optimising Temporary Memory Usage for Convolutions and Matmuls on the IPU</a> for some practical examples of using `availableMemoryProportion`
 
    *
    * \param nodeOutputName Name of the output tensor of the ONNX node.

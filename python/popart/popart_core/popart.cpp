@@ -536,39 +536,41 @@ PYBIND11_MODULE(popart_core, m) {
   }
   {
     py::enum_<InitType> en(m, "InitType", DOC(popart, InitType));
-    en.value("NoInit", InitType::NoInit, DOC(popart, InitType, NoInit));
-    en.value("Zero", InitType::Zero, DOC(popart, InitType, Zero));
+    en.value(
+        "NoInit", InitType::NoInit, SINGLE_LINE_DOC(popart, InitType, NoInit));
+    en.value("Zero", InitType::Zero, SINGLE_LINE_DOC(popart, InitType, Zero));
   }
   {
     py::enum_<TileSet> en(m, "TileSet", DOC(popart, TileSet));
-    en.value("Compute", TileSet::Compute, DOC(popart, TileSet, Compute));
-    en.value("IO", TileSet::IO, DOC(popart, TileSet, IO));
+    en.value(
+        "Compute", TileSet::Compute, SINGLE_LINE_DOC(popart, TileSet, Compute));
+    en.value("IO", TileSet::IO, SINGLE_LINE_DOC(popart, TileSet, IO));
   }
   {
     py::enum_<ExchangeStrategy> en(
         m, "ExchangeStrategy", DOC(popart, ExchangeStrategy));
     en.value("JustInTime",
              ExchangeStrategy::JustInTime,
-             DOC(popart, ExchangeStrategy, JustInTime));
+             SINGLE_LINE_DOC(popart, ExchangeStrategy, JustInTime));
     en.value("OverlapInnerLoop",
              ExchangeStrategy::OverlapInnerLoop,
-             DOC(popart, ExchangeStrategy, OverlapInnerLoop));
+             SINGLE_LINE_DOC(popart, ExchangeStrategy, OverlapInnerLoop));
     en.value("OverlapLoops",
              ExchangeStrategy::OverlapLoops,
-             DOC(popart, ExchangeStrategy, OverlapLoops));
+             SINGLE_LINE_DOC(popart, ExchangeStrategy, OverlapLoops));
     en.value("OverlapStep",
              ExchangeStrategy::OverlapStep,
-             DOC(popart, ExchangeStrategy, OverlapStep));
+             SINGLE_LINE_DOC(popart, ExchangeStrategy, OverlapStep));
   }
   {
     py::enum_<ReplicatedStreamMode> en(
         m, "ReplicatedStreamMode", DOC(popart, ReplicatedStreamMode));
     en.value("Replicate",
              ReplicatedStreamMode::Replicate,
-             DOC(popart, ReplicatedStreamMode, Replicate));
+             SINGLE_LINE_DOC(popart, ReplicatedStreamMode, Replicate));
     en.value("Broadcast",
              ReplicatedStreamMode::Broadcast,
-             DOC(popart, ReplicatedStreamMode, Broadcast));
+             SINGLE_LINE_DOC(popart, ReplicatedStreamMode, Broadcast));
   }
   {
     py::class_<OpDefinition::Input> cls(m, "OpDefinition::Input");
@@ -605,14 +607,16 @@ PYBIND11_MODULE(popart_core, m) {
     py::enum_<AnchorReturnTypeId> en(m, "AnchorReturnTypeId");
     en.value("Final",
              AnchorReturnTypeId::Final,
-             DOC(popart, AnchorReturnTypeId, Final));
+             SINGLE_LINE_DOC(popart, AnchorReturnTypeId, Final));
     en.value("EveryN",
              AnchorReturnTypeId::EveryN,
-             DOC(popart, AnchorReturnTypeId, EveryN));
-    en.value(
-        "All", AnchorReturnTypeId::All, DOC(popart, AnchorReturnTypeId, All));
-    en.value(
-        "Sum", AnchorReturnTypeId::Sum, DOC(popart, AnchorReturnTypeId, Sum));
+             SINGLE_LINE_DOC(popart, AnchorReturnTypeId, EveryN));
+    en.value("All",
+             AnchorReturnTypeId::All,
+             SINGLE_LINE_DOC(popart, AnchorReturnTypeId, All));
+    en.value("Sum",
+             AnchorReturnTypeId::Sum,
+             SINGLE_LINE_DOC(popart, AnchorReturnTypeId, Sum));
 
     {
       py::class_<PyStepIO> cls(
@@ -718,11 +722,14 @@ PYBIND11_MODULE(popart_core, m) {
   }
   {
     py::enum_<ReductionType> en(m, "ReductionType");
-    en.value("Mean", ReductionType::Mean, DOC(popart, ReductionType, Mean));
+    en.value("Mean",
+             ReductionType::Mean,
+             SINGLE_LINE_DOC(popart, ReductionType, Mean));
     en.value("NoReduction",
              ReductionType::NoReduction,
-             DOC(popart, ReductionType, NoReduction));
-    en.value("Sum", ReductionType::Sum, DOC(popart, ReductionType, Sum));
+             SINGLE_LINE_DOC(popart, ReductionType, NoReduction));
+    en.value(
+        "Sum", ReductionType::Sum, SINGLE_LINE_DOC(popart, ReductionType, Sum));
   }
   {
     // T42271
@@ -747,21 +754,22 @@ PYBIND11_MODULE(popart_core, m) {
 
     {
       py::enum_<WeightDecayMode> en(m, "WeightDecayMode");
-      en.value(
-          "Decay", WeightDecayMode::Decay, DOC(popart, WeightDecayMode, Decay));
+      en.value("Decay",
+               WeightDecayMode::Decay,
+               SINGLE_LINE_DOC(popart, WeightDecayMode, Decay));
       en.value("L2Regularization",
                WeightDecayMode::L2Regularization,
-               DOC(popart, WeightDecayMode, L2Regularization));
+               SINGLE_LINE_DOC(popart, WeightDecayMode, L2Regularization));
     }
 
     {
       py::enum_<SGDAccumulatorAndMomentum> en(m, "SGDAccumulatorAndMomentum");
       en.value("Combined",
                SGDAccumulatorAndMomentum::Combined,
-               DOC(popart, SGDAccumulatorAndMomentum, Combined));
+               SINGLE_LINE_DOC(popart, SGDAccumulatorAndMomentum, Combined));
       en.value("Separate",
                SGDAccumulatorAndMomentum::Separate,
-               DOC(popart, SGDAccumulatorAndMomentum, Separate));
+               SINGLE_LINE_DOC(popart, SGDAccumulatorAndMomentum, Separate));
     }
 
     {
@@ -807,15 +815,19 @@ PYBIND11_MODULE(popart_core, m) {
     {
       {
         py::enum_<AdamMode> en(m, "AdamMode");
-        en.value("Adam", AdamMode::Adam, DOC(popart, AdamMode, Adam));
+        en.value(
+            "Adam", AdamMode::Adam, SINGLE_LINE_DOC(popart, AdamMode, Adam));
         en.value("AdamNoBias",
                  AdamMode::AdamNoBias,
-                 DOC(popart, AdamMode, AdamNoBias));
-        en.value("Lamb", AdamMode::Lamb, DOC(popart, AdamMode, Lamb));
+                 SINGLE_LINE_DOC(popart, AdamMode, AdamNoBias));
+        en.value(
+            "Lamb", AdamMode::Lamb, SINGLE_LINE_DOC(popart, AdamMode, Lamb));
         en.value("LambNoBias",
                  AdamMode::LambNoBias,
-                 DOC(popart, AdamMode, LambNoBias));
-        en.value("AdaMax", AdamMode::AdaMax, DOC(popart, AdamMode, AdaMax));
+                 SINGLE_LINE_DOC(popart, AdamMode, LambNoBias));
+        en.value("AdaMax",
+                 AdamMode::AdaMax,
+                 SINGLE_LINE_DOC(popart, AdamMode, AdaMax));
       }
       py::class_<Adam> adam(m, "Adam", optimizer, DOC(popart, Adam));
       adam.def(py::init([](py::dict pyd,
@@ -998,16 +1010,16 @@ PYBIND11_MODULE(popart_core, m) {
         DOC(popart, BatchSerializationTransformContext));
     en.value("Forward",
              BatchSerializationTransformContext::Fwd,
-             DOC(popart, BatchSerializationTransformContext, Fwd));
+             SINGLE_LINE_DOC(popart, BatchSerializationTransformContext, Fwd));
     en.value("Backward",
              BatchSerializationTransformContext::Bwd,
-             DOC(popart, BatchSerializationTransformContext, Bwd));
+             SINGLE_LINE_DOC(popart, BatchSerializationTransformContext, Bwd));
     en.value("Fwd",
              BatchSerializationTransformContext::Fwd,
-             DOC(popart, BatchSerializationTransformContext, Fwd));
+             SINGLE_LINE_DOC(popart, BatchSerializationTransformContext, Fwd));
     en.value("Bwd",
              BatchSerializationTransformContext::Bwd,
-             DOC(popart, BatchSerializationTransformContext, Bwd));
+             SINGLE_LINE_DOC(popart, BatchSerializationTransformContext, Bwd));
   }
   {
     // This setting is experimental and may change.
@@ -1015,13 +1027,13 @@ PYBIND11_MODULE(popart_core, m) {
         m, "BatchSerializationMethod", DOC(popart, BatchSerializationMethod));
     en.value("UnrollDynamic",
              BatchSerializationMethod::UnrollDynamic,
-             DOC(popart, BatchSerializationMethod, UnrollDynamic));
+             SINGLE_LINE_DOC(popart, BatchSerializationMethod, UnrollDynamic));
     en.value("UnrollStatic",
              BatchSerializationMethod::UnrollStatic,
-             DOC(popart, BatchSerializationMethod, UnrollStatic));
+             SINGLE_LINE_DOC(popart, BatchSerializationMethod, UnrollStatic));
     en.value("Loop",
              BatchSerializationMethod::Loop,
-             DOC(popart, BatchSerializationMethod, Loop));
+             SINGLE_LINE_DOC(popart, BatchSerializationMethod, Loop));
   }
   {
     // This setting is experimental and may change.
@@ -1029,18 +1041,22 @@ PYBIND11_MODULE(popart_core, m) {
         m,
         "BatchSerializationBatchSchedule",
         DOC(popart, BatchSerializationBatchSchedule));
-    en.value("Scheduler",
-             BatchSerializationBatchSchedule::Scheduler,
-             DOC(popart, BatchSerializationBatchSchedule, Scheduler));
-    en.value("Isomorphic",
-             BatchSerializationBatchSchedule::Isomorphic,
-             DOC(popart, BatchSerializationBatchSchedule, Isomorphic));
-    en.value("OverlapOnIo",
-             BatchSerializationBatchSchedule::OverlapOnIo,
-             DOC(popart, BatchSerializationBatchSchedule, OverlapOnIo));
+    en.value(
+        "Scheduler",
+        BatchSerializationBatchSchedule::Scheduler,
+        SINGLE_LINE_DOC(popart, BatchSerializationBatchSchedule, Scheduler));
+    en.value(
+        "Isomorphic",
+        BatchSerializationBatchSchedule::Isomorphic,
+        SINGLE_LINE_DOC(popart, BatchSerializationBatchSchedule, Isomorphic));
+    en.value(
+        "OverlapOnIo",
+        BatchSerializationBatchSchedule::OverlapOnIo,
+        SINGLE_LINE_DOC(popart, BatchSerializationBatchSchedule, OverlapOnIo));
     en.value("OverlapOnCompute",
              BatchSerializationBatchSchedule::OverlapOnCompute,
-             DOC(popart, BatchSerializationBatchSchedule, OverlapOnCompute));
+             SINGLE_LINE_DOC(
+                 popart, BatchSerializationBatchSchedule, OverlapOnCompute));
   }
   {
     py::class_<BatchSerializationSettings> cls(
@@ -1189,10 +1205,10 @@ PYBIND11_MODULE(popart_core, m) {
     py::enum_<SubgraphCopyingStrategy> en(m, "SubgraphCopyingStrategy");
     en.value("OnEnterAndExit",
              SubgraphCopyingStrategy::OnEnterAndExit,
-             DOC(popart, SubgraphCopyingStrategy, OnEnterAndExit));
+             SINGLE_LINE_DOC(popart, SubgraphCopyingStrategy, OnEnterAndExit));
     en.value("JustInTime",
              SubgraphCopyingStrategy::JustInTime,
-             DOC(popart, SubgraphCopyingStrategy, JustInTime));
+             SINGLE_LINE_DOC(popart, SubgraphCopyingStrategy, JustInTime));
   }
   {
     py::class_<ClipNormSettings> cls(m, "ClipNormSettings");
@@ -1502,126 +1518,138 @@ PYBIND11_MODULE(popart_core, m) {
   }
   {
     py::enum_<PatternsLevel> en(m, "PatternsLevel", DOC(popart, PatternsLevel));
-    en.value("All", PatternsLevel::All, DOC(popart, PatternsLevel, All));
     en.value(
-        "Default", PatternsLevel::Default, DOC(popart, PatternsLevel, Default));
-    en.value(
-        "Minimal", PatternsLevel::Minimal, DOC(popart, PatternsLevel, Minimal));
+        "All", PatternsLevel::All, SINGLE_LINE_DOC(popart, PatternsLevel, All));
+    en.value("Default",
+             PatternsLevel::Default,
+             SINGLE_LINE_DOC(popart, PatternsLevel, Default));
+    en.value("Minimal",
+             PatternsLevel::Minimal,
+             SINGLE_LINE_DOC(popart, PatternsLevel, Minimal));
     en.value("NoPatterns",
              PatternsLevel::NoPatterns,
-             DOC(popart, PatternsLevel, NoPatterns));
+             SINGLE_LINE_DOC(popart, PatternsLevel, NoPatterns));
   }
   {
     py::enum_<DotCheck> en(m, "DotCheck", DOC(popart, DotCheck));
-    en.value("Fwd0", DotCheck::Fwd0, DOC(popart, DotCheck, Fwd0));
-    en.value("Fwd1", DotCheck::Fwd1, DOC(popart, DotCheck, Fwd1));
-    en.value("Bwd0", DotCheck::Bwd0, DOC(popart, DotCheck, Bwd0));
-    en.value("PreAlias", DotCheck::PreAlias, DOC(popart, DotCheck, PreAlias));
-    en.value("Final", DotCheck::Final, DOC(popart, DotCheck, Final));
+    en.value("Fwd0", DotCheck::Fwd0, SINGLE_LINE_DOC(popart, DotCheck, Fwd0));
+    en.value("Fwd1", DotCheck::Fwd1, SINGLE_LINE_DOC(popart, DotCheck, Fwd1));
+    en.value("Bwd0", DotCheck::Bwd0, SINGLE_LINE_DOC(popart, DotCheck, Bwd0));
+    en.value("PreAlias",
+             DotCheck::PreAlias,
+             SINGLE_LINE_DOC(popart, DotCheck, PreAlias));
+    en.value(
+        "Final", DotCheck::Final, SINGLE_LINE_DOC(popart, DotCheck, Final));
   }
   {
     py::enum_<RecomputationType> en(
         m, "RecomputationType", DOC(popart, RecomputationType));
     en.value("NoRecompute",
              RecomputationType::None,
-             DOC(popart, RecomputationType, None));
+             SINGLE_LINE_DOC(popart, RecomputationType, None));
     en.value("Standard",
              RecomputationType::Standard,
-             DOC(popart, RecomputationType, Standard));
+             SINGLE_LINE_DOC(popart, RecomputationType, Standard));
     en.value("NormOnly",
              RecomputationType::NormOnly,
-             DOC(popart, RecomputationType, NormOnly));
+             SINGLE_LINE_DOC(popart, RecomputationType, NormOnly));
     en.value("RecomputeAll",
              RecomputationType::RecomputeAll,
-             DOC(popart, RecomputationType, RecomputeAll));
+             SINGLE_LINE_DOC(popart, RecomputationType, RecomputeAll));
     en.value("Pipeline",
              RecomputationType::Pipeline,
-             DOC(popart, RecomputationType, Pipeline));
+             SINGLE_LINE_DOC(popart, RecomputationType, Pipeline));
   }
   {
     py::enum_<RecomputeType> en(m, "RecomputeType", DOC(popart, RecomputeType));
     en.value("Undefined",
              RecomputeType::Undefined,
-             DOC(popart, RecomputeType, Undefined));
+             SINGLE_LINE_DOC(popart, RecomputeType, Undefined));
     en.value("Checkpoint",
              RecomputeType::Checkpoint,
-             DOC(popart, RecomputeType, Checkpoint));
+             SINGLE_LINE_DOC(popart, RecomputeType, Checkpoint));
     en.value("Recompute",
              RecomputeType::Recompute,
-             DOC(popart, RecomputeType, Recompute));
+             SINGLE_LINE_DOC(popart, RecomputeType, Recompute));
     en.value("Recomputed",
              RecomputeType::Recomputed,
-             DOC(popart, RecomputeType, Recomputed));
+             SINGLE_LINE_DOC(popart, RecomputeType, Recomputed));
   }
   {
     py::enum_<TensorStorage> en(m, "TensorStorage", DOC(popart, TensorStorage));
-    en.value(
-        "OnChip", TensorStorage::OnChip, DOC(popart, TensorStorage, OnChip));
-    en.value(
-        "OffChip", TensorStorage::OffChip, DOC(popart, TensorStorage, OffChip));
+    en.value("OnChip",
+             TensorStorage::OnChip,
+             SINGLE_LINE_DOC(popart, TensorStorage, OnChip));
+    en.value("OffChip",
+             TensorStorage::OffChip,
+             SINGLE_LINE_DOC(popart, TensorStorage, OffChip));
   }
   {
     py::enum_<ReplicatedTensorSharding> en(
         m, "ReplicatedTensorSharding", DOC(popart, ReplicatedTensorSharding));
     en.value("Off",
              ReplicatedTensorSharding::Off,
-             DOC(popart, ReplicatedTensorSharding, Off));
+             SINGLE_LINE_DOC(popart, ReplicatedTensorSharding, Off));
     en.value("On",
              ReplicatedTensorSharding::On,
-             DOC(popart, ReplicatedTensorSharding, On));
+             SINGLE_LINE_DOC(popart, ReplicatedTensorSharding, On));
   }
   {
     py::enum_<ExecutionPhaseIOSchedule> en(
         m, "ExecutionPhaseIOSchedule", DOC(popart, ExecutionPhaseIOSchedule));
     en.value("Preload",
              ExecutionPhaseIOSchedule::Preload,
-             DOC(popart, ExecutionPhaseIOSchedule, Preload));
+             SINGLE_LINE_DOC(popart, ExecutionPhaseIOSchedule, Preload));
     en.value("OnDemand",
              ExecutionPhaseIOSchedule::OnDemand,
-             DOC(popart, ExecutionPhaseIOSchedule, OnDemand));
+             SINGLE_LINE_DOC(popart, ExecutionPhaseIOSchedule, OnDemand));
   }
   {
     py::enum_<ExecutionPhaseSchedule> en(
         m, "ExecutionPhaseSchedule", DOC(popart, ExecutionPhaseSchedule));
     en.value("Interleaving",
              ExecutionPhaseSchedule::Interleaving,
-             DOC(popart, ExecutionPhaseSchedule, Interleaving));
+             SINGLE_LINE_DOC(popart, ExecutionPhaseSchedule, Interleaving));
     en.value("Batch",
              ExecutionPhaseSchedule::Batch,
-             DOC(popart, ExecutionPhaseSchedule, Batch));
+             SINGLE_LINE_DOC(popart, ExecutionPhaseSchedule, Batch));
     en.value("BatchClusteredIO",
              ExecutionPhaseSchedule::BatchClusteredIO,
-             DOC(popart, ExecutionPhaseSchedule, BatchClusteredIO));
+             SINGLE_LINE_DOC(popart, ExecutionPhaseSchedule, BatchClusteredIO));
   }
   {
     py::enum_<AccumulateOuterFragmentSchedule> en(
         m,
         "AccumulateOuterFragmentSchedule",
         DOC(popart, AccumulateOuterFragmentSchedule));
-    en.value("Scheduler",
-             AccumulateOuterFragmentSchedule::Scheduler,
-             DOC(popart, AccumulateOuterFragmentSchedule, Scheduler));
+    en.value(
+        "Scheduler",
+        AccumulateOuterFragmentSchedule::Scheduler,
+        SINGLE_LINE_DOC(popart, AccumulateOuterFragmentSchedule, Scheduler));
     en.value("Serial",
              AccumulateOuterFragmentSchedule::Serial,
-             DOC(popart, AccumulateOuterFragmentSchedule, Serial));
-    en.value(
-        "OverlapCycleOptimized",
-        AccumulateOuterFragmentSchedule::OverlapCycleOptimized,
-        DOC(popart, AccumulateOuterFragmentSchedule, OverlapCycleOptimized));
-    en.value(
-        "OverlapMemoryOptimized",
-        AccumulateOuterFragmentSchedule::OverlapMemoryOptimized,
-        DOC(popart, AccumulateOuterFragmentSchedule, OverlapMemoryOptimized));
+             SINGLE_LINE_DOC(popart, AccumulateOuterFragmentSchedule, Serial));
+    en.value("OverlapCycleOptimized",
+             AccumulateOuterFragmentSchedule::OverlapCycleOptimized,
+             SINGLE_LINE_DOC(popart,
+                             AccumulateOuterFragmentSchedule,
+                             OverlapCycleOptimized));
+    en.value("OverlapMemoryOptimized",
+             AccumulateOuterFragmentSchedule::OverlapMemoryOptimized,
+             SINGLE_LINE_DOC(popart,
+                             AccumulateOuterFragmentSchedule,
+                             OverlapMemoryOptimized));
   }
   {
     py::enum_<SyncPattern> en(m, "SyncPattern", DOC(popart, SyncPattern));
-    en.value("Full", SyncPattern::Full, DOC(popart, SyncPattern, Full));
+    en.value(
+        "Full", SyncPattern::Full, SINGLE_LINE_DOC(popart, SyncPattern, Full));
     en.value("SinglePipeline",
              SyncPattern::SinglePipeline,
-             DOC(popart, SyncPattern, SinglePipeline));
+             SINGLE_LINE_DOC(popart, SyncPattern, SinglePipeline));
     en.value("ReplicaAndLadder",
              SyncPattern::ReplicaAndLadder,
-             DOC(popart, SyncPattern, ReplicaAndLadder));
+             SINGLE_LINE_DOC(popart, SyncPattern, ReplicaAndLadder));
     en.attr("__str__") = py::cpp_function(
         [](const SyncPattern &sp) {
           std::stringstream ss;
@@ -1634,52 +1662,60 @@ PYBIND11_MODULE(popart_core, m) {
   {
     py::enum_<MergeVarUpdateType> en(
         m, "MergeVarUpdateType", DOC(popart, MergeVarUpdateType));
-    en.value(
-        "Off", MergeVarUpdateType::None, DOC(popart, MergeVarUpdateType, None));
-    en.value(
-        "All", MergeVarUpdateType::All, DOC(popart, MergeVarUpdateType, All));
+    en.value("Off",
+             MergeVarUpdateType::None,
+             SINGLE_LINE_DOC(popart, MergeVarUpdateType, None));
+    en.value("All",
+             MergeVarUpdateType::All,
+             SINGLE_LINE_DOC(popart, MergeVarUpdateType, All));
     en.value("AutoTight",
              MergeVarUpdateType::AutoTight,
-             DOC(popart, MergeVarUpdateType, AutoTight));
+             SINGLE_LINE_DOC(popart, MergeVarUpdateType, AutoTight));
     en.value("AutoLoose",
              MergeVarUpdateType::AutoLoose,
-             DOC(popart, MergeVarUpdateType, AutoLoose));
+             SINGLE_LINE_DOC(popart, MergeVarUpdateType, AutoLoose));
   }
   {
     py::enum_<VirtualGraphMode> en(m, "VirtualGraphMode");
-    en.value("Off", VirtualGraphMode::Off, DOC(popart, VirtualGraphMode, Off));
+    en.value("Off",
+             VirtualGraphMode::Off,
+             SINGLE_LINE_DOC(popart, VirtualGraphMode, Off));
     en.value("Manual",
              VirtualGraphMode::Manual,
-             DOC(popart, VirtualGraphMode, Manual));
-    en.value(
-        "Auto", VirtualGraphMode::Auto, DOC(popart, VirtualGraphMode, Auto));
+             SINGLE_LINE_DOC(popart, VirtualGraphMode, Manual));
+    en.value("Auto",
+             VirtualGraphMode::Auto,
+             SINGLE_LINE_DOC(popart, VirtualGraphMode, Auto));
     en.value("ExecutionPhases",
              VirtualGraphMode::ExecutionPhases,
-             DOC(popart, VirtualGraphMode, ExecutionPhases));
+             SINGLE_LINE_DOC(popart, VirtualGraphMode, ExecutionPhases));
   }
   {
     py::enum_<SyntheticDataMode> en(m, "SyntheticDataMode");
-    en.value(
-        "Off", SyntheticDataMode::Off, DOC(popart, SyntheticDataMode, Off));
+    en.value("Off",
+             SyntheticDataMode::Off,
+             SINGLE_LINE_DOC(popart, SyntheticDataMode, Off));
     en.value("Zeros",
              SyntheticDataMode::Zeros,
-             DOC(popart, SyntheticDataMode, Zeros));
+             SINGLE_LINE_DOC(popart, SyntheticDataMode, Zeros));
     en.value("RandomNormal",
              SyntheticDataMode::RandomNormal,
-             DOC(popart, SyntheticDataMode, RandomNormal));
+             SINGLE_LINE_DOC(popart, SyntheticDataMode, RandomNormal));
   }
   {
     py::enum_<IrSerializationFormat> en(m, "IrSerializationFormat");
     en.value("JSON",
              IrSerializationFormat::JSON,
-             DOC(popart, IrSerializationFormat, JSON));
+             SINGLE_LINE_DOC(popart, IrSerializationFormat, JSON));
   }
   {
     py::enum_<Instrumentation> en(m, "Instrumentation");
-    en.value(
-        "Outer", Instrumentation::Outer, DOC(popart, Instrumentation, Outer));
-    en.value(
-        "Inner", Instrumentation::Inner, DOC(popart, Instrumentation, Inner));
+    en.value("Outer",
+             Instrumentation::Outer,
+             SINGLE_LINE_DOC(popart, Instrumentation, Outer));
+    en.value("Inner",
+             Instrumentation::Inner,
+             SINGLE_LINE_DOC(popart, Instrumentation, Inner));
   }
   {
     py::class_<Patterns> cls(m, "Patterns");
@@ -2381,7 +2417,6 @@ PYBIND11_MODULE(popart_core, m) {
             &Builder::setGraphName,
             py::arg("name"),
             DOC(popart, Builder, setGraphName));
-    cls.def("setGraphName", &Builder::setGraphName, py::arg("name"));
     cls.def("addInputTensor",
             py::overload_cast<const TensorInfo &, const popart::DebugContext &>(
                 &Builder::addInputTensor),
@@ -2865,32 +2900,33 @@ PYBIND11_MODULE(popart_core, m) {
   }
   {
     py::enum_<DeviceType> en(m, "DeviceType");
-    en.value(
-        "IpuModel", DeviceType::IpuModel, DOC(popart, DeviceType, IpuModel));
-    en.value("Cpu", DeviceType::Cpu, DOC(popart, DeviceType, Cpu));
-    en.value("Ipu", DeviceType::Ipu, DOC(popart, DeviceType, Ipu));
-    en.value("Sim", DeviceType::Sim, DOC(popart, DeviceType, Sim));
+    en.value("IpuModel",
+             DeviceType::IpuModel,
+             SINGLE_LINE_DOC(popart, DeviceType, IpuModel));
+    en.value("Cpu", DeviceType::Cpu, SINGLE_LINE_DOC(popart, DeviceType, Cpu));
+    en.value("Ipu", DeviceType::Ipu, SINGLE_LINE_DOC(popart, DeviceType, Ipu));
+    en.value("Sim", DeviceType::Sim, SINGLE_LINE_DOC(popart, DeviceType, Sim));
   }
   {
     py::enum_<DeviceConnectionType> en(m, "DeviceConnectionType");
     en.value("Always",
              DeviceConnectionType::Always,
-             DOC(popart, DeviceConnectionType, Always));
+             SINGLE_LINE_DOC(popart, DeviceConnectionType, Always));
     en.value("OnDemand",
              DeviceConnectionType::OnDemand,
-             DOC(popart, DeviceConnectionType, OnDemand));
+             SINGLE_LINE_DOC(popart, DeviceConnectionType, OnDemand));
     en.value("Never",
              DeviceConnectionType::Never,
-             DOC(popart, DeviceConnectionType, Never));
+             SINGLE_LINE_DOC(popart, DeviceConnectionType, Never));
   }
   {
     py::enum_<DeviceSelectionCriterion> en(m, "DeviceSelectionCriterion");
     en.value("First",
              DeviceSelectionCriterion::First,
-             DOC(popart, DeviceSelectionCriterion, First));
+             SINGLE_LINE_DOC(popart, DeviceSelectionCriterion, First));
     en.value("Random",
              DeviceSelectionCriterion::Random,
-             DOC(popart, DeviceSelectionCriterion, Random));
+             SINGLE_LINE_DOC(popart, DeviceSelectionCriterion, Random));
   }
   {
     py::enum_<VariableRetrievalMode> en(m, "VariableRetrievalMode");
@@ -2928,26 +2964,25 @@ PYBIND11_MODULE(popart_core, m) {
       return std::unique_ptr<DeviceManager, py::nodelete>(
           &DeviceManager::createDeviceManager());
     }));
-    cls.def(
-        "acquireAvailableDevice",
-        static_cast<std::shared_ptr<DeviceInfo> (DeviceManager::*)(
-            int,
-            int,
-            SyncPattern,
-            DeviceConnectionType,
-            DeviceSelectionCriterion,
-            bool)>(&DeviceManager::acquireAvailableDevice),
-        py::arg("numIpus")            = 1,
-        py::arg("tilesPerIpu")        = 0,
-        py::arg("pattern")            = SyncPattern::Full,
-        py::arg("connectionType")     = DeviceConnectionType::Always,
-        py::arg("selectionCriterion") = DeviceSelectionCriterion::First,
-        py::arg("allowReturnNullDevice") = true);
+    cls.def("acquireAvailableDevice",
+            static_cast<std::shared_ptr<DeviceInfo> (DeviceManager::*)(
+                int,
+                int,
+                SyncPattern,
+                DeviceConnectionType,
+                DeviceSelectionCriterion,
+                bool)>(&DeviceManager::acquireAvailableDevice),
+            py::arg("numIpus")               = 1,
+            py::arg("tilesPerIpu")           = 0,
+            py::arg("pattern")               = SyncPattern::Full,
+            py::arg("connectionType")        = DeviceConnectionType::Always,
+            py::arg("selectionCriterion")    = DeviceSelectionCriterion::First,
+            py::arg("allowReturnNullDevice") = true);
     cls.def("acquireDeviceById",
             &DeviceManager::acquireDeviceById,
             py::arg("id"),
-            py::arg("pattern")        = SyncPattern::Full,
-            py::arg("connectionType") = DeviceConnectionType::Always,
+            py::arg("pattern")               = SyncPattern::Full,
+            py::arg("connectionType")        = DeviceConnectionType::Always,
             py::arg("allowReturnNullDevice") = true,
             DOC(popart, DeviceManager, acquireDeviceById));
     cls.def("createCpuDevice", &DeviceManager::createCpuDevice);

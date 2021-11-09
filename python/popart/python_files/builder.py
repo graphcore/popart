@@ -287,9 +287,9 @@ class AiOnnx8(AiOnnx7):
             body: SubgraphBuilder for the graph to run in the scan.
             num_scan_inputs: The number of scan_inputs
             directions: A list of int which specifies the direction
-            of the scan_input. 0 indicates forward direction and 1
-            indicates reverse direction. If not omitted, scan_input tensors
-            will be scanned in the forward direction.
+                of the scan_input. 0 indicates forward direction and 1
+                indicates reverse direction. If not omitted, scan_input tensors
+                will be scanned in the forward direction.
 
         Keyword Arguments:
             debugContext: A string to prepend to the name of the tensor. Default: "".

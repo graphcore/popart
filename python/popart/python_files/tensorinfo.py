@@ -35,6 +35,7 @@ class TensorInfo(_TensorInfoCore):
 
     For example:
         TensorInfo(dtype, shape)
+        
         TensorInfo(numpy.ndarray)
 
     Raises:

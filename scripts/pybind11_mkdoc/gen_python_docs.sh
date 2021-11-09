@@ -5,7 +5,7 @@
 # poplar_view build directory:
 # bash gen_python_docs.sh path/to/poplar-install/include
 # This will generate willow/include/popart/pydocs_popart_core.hpp which contains the docstrings
-# for the python bindings. See the githib repo above for details on how to access them, or
+# for the python bindings. See the github repo above for details on how to access them, or
 # look at some other docstrings for examples.
 
 # If run from inside Poplarview, then LLVM and LIBCLANG directories are identified automatically.
@@ -76,6 +76,7 @@ $EXTRA_INCLUDES_STR \
 willow/include/popart/adam.hpp \
 willow/include/popart/builder.hpp \
 willow/include/popart/clipnormsettings.hpp \
+willow/include/popart/commgroup.hpp \
 willow/include/popart/devicemanager.hpp \
 willow/include/popart/dataflow.hpp \
 willow/include/popart/op.hpp \
@@ -94,6 +95,7 @@ willow/include/popart/optimizer.hpp \
 willow/include/popart/optimizervalue.hpp \
 willow/include/popart/patterns/patterns.hpp \
 willow/include/popart/popx/devicex.hpp \
+willow/include/popart/replicatedstreammode.hpp \
 willow/include/popart/session.hpp \
 willow/include/popart/sessionoptions.hpp \
 willow/include/popart/sgd.hpp \
@@ -104,9 +106,9 @@ willow/include/popart/tensorlocation.hpp \
 willow/include/popart/tensornames.hpp \
 willow/include/popart/tensors.hpp \
 willow/include/popart/tensor.hpp \
+willow/include/popart/variablesettings.hpp \
 -o $OUT_FILE"
 
 eval $CMD
 
-YEAR=$(date +"%Y")
-sed -i "1s;^;// Copyright (c) $YEAR Graphcore Ltd. All rights reserved.\n;" $OUT_FILE
+arc lint "$OUT_FILE"

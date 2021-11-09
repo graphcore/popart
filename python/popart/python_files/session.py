@@ -168,7 +168,7 @@ class InferenceSession(_InferenceSessionCore):
 
         Arguments:
             filename: Where to save the executable and metadata. If
-            it does not exist, it will be created.
+                      it does not exist, it will be created.
 
         Raises:
             popart.OutOfMemoryException: If an out of memory event occurs
@@ -291,7 +291,7 @@ class TrainingSession(_TrainingSessionCore):
 
         Arguments:
             filename: Where to save the executable and metadata. If
-            it does not exist, it will be created.
+                      it does not exist, it will be created.
 
         Raises:
             popart.OutOfMemoryException: If an out of memory event occurs

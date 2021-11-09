@@ -262,7 +262,7 @@ RandomSetup::determineBaseSeedsMaps(const Ir &ir,
 
     if (graphId == ir.getMainGraph().id) {
       // The main graph always uses the output of the GetRandomSeedOp, hence use
-      // [randomSeed___updated] for for all strands.
+      // [randomSeed___updated] for all strands.
       for (auto &strand : opStrands) {
         inBaseSeedIds[graphId][strand] =
             GetRandomSeedOp::getUpdatedSeedTensorId();

@@ -87,10 +87,10 @@ Session Options
 
 .. autoclass:: popart::BatchSerializationSettings
   :members:
+
 .. autoclass:: popart::BatchSerializationBatchSchedule
 
 .. autoclass:: popart::DotCheck
-  :members:
 
 .. autoclass:: popart::ExecutionPhaseSchedule
 

@@ -260,9 +260,9 @@ enum class AdaptiveMode {
  * \f[
  *    v_1' &:= \left\{\begin{aligned}
  *        \alpha * m + (1 - \alpha) * g_\text{tmp}^2 & \text{ \;
- * (RMSProp/AdaDelta) } \\
+ *    (RMSProp/AdaDelta) } \\
  *        \alpha * m + (1 - \alpha) * g_\text{tmp}^2 & \text{ \;
- * (CenteredRMSProp) } \\
+ *    (CenteredRMSProp) } \\
  *        v_1 + g_\text{tmp}^2 & \text{ \; (AdaGrad) } \\
  *    \end{aligned}\right.\\
  * \f]
@@ -271,7 +271,8 @@ enum class AdaptiveMode {
  *
  * \f[
  *    v_2' &:= \alpha * v_2 + (1 - \alpha) * g_\text{tmp} \text{ \;
- * (CenteredRMSProp) } \\ \f]
+ *    (CenteredRMSProp) } \\
+ * \f]
  *
  * Next, it computes the update term \f$u_\text{tmp}\f$:
  *
@@ -290,7 +291,8 @@ enum class AdaptiveMode {
  *
  * \f[
  *    v_2' := \alpha * v_2 + (1 - \alpha) * u_\text{tmp}^2  \text{ \; (AdaDelta)
- * } \\ \f]
+ *    } \\
+ * \f]
  *
  * Next the third momentum is updated for all modes:
  *
@@ -304,7 +306,8 @@ enum class AdaptiveMode {
  *    w' := \left\{\begin{aligned}
  *        w - \text{lr} * (v_3' + \text{wd} * w) &\text{ \; (Decay) } \\
  *        w - \text{lr} * v_3'                   &\text{ \; (L2Regularization) }
- * \\ \end{aligned}\right. \f]
+ *    \\ \end{aligned}\right.
+ * \f]
  *
  * In addition to the above, the *loss scaling* hyper parameter is similar in
  * nature to the velocity scaling parameter. It is a scaling value that is

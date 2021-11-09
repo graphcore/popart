@@ -233,9 +233,9 @@ enum class AdamMode {
  *    m' &:= \beta_1 * m + (1 - \beta_1) * g_\text{tmp} \\
  *    v' &:= \left\{\begin{aligned}
  *        \beta_2 * v + (1 - \beta_2) * g_\text{tmp}^2 & \text{ \;
- * (Adam/AdamNoBias) } \\
+ *    (Adam/AdamNoBias) } \\
  *        \beta_2 * v + (1 - \beta_2) * g_\text{tmp}^2 & \text{ \;
- * (Lamb/LambNoBias) } \\
+ *    (Lamb/LambNoBias) } \\
  *        \text{max}(\beta_2 * v, |g_\text{tmp}|)      & \text{ \; (AdaMax) } \\
  *    \end{aligned}\right.\\
  *    t' &:= t + 1 \\
@@ -254,9 +254,10 @@ enum class AdamMode {
  *    \end{aligned}\right.\\
  *    u_\text{tmp} &:= \left\{\begin{aligned}
  *        \frac{m_\text{tmp}}{(\sqrt{v_\text{tmp}} + \epsilon)} + \text{wd} * w
- * &\text{ \; (Decay) } \\
+ *    &\text{ \; (Decay) } \\
  *        \frac{m_\text{tmp}}{(\sqrt{v_\text{tmp}} + \epsilon)} &\text{ \;
- * (L2Regularization) } \\ \end{aligned}\right. \f]
+ *    (L2Regularization) } \\ \end{aligned}\right.
+ * \f]
  *
  * Finally, the optimizer updates the weight as follows:
  *
@@ -264,8 +265,8 @@ enum class AdamMode {
  *    w' := \left\{\begin{aligned}
  *        w - \text{lr} * u_\text{tmp} &\text{ \; (Adam/AdamNoBias/AdaMax) } \\
  *        w - \biggl(\frac{\text{min}(\lVert{w}\rVert,
- * \text{mwn})}{\lVert{u_\text{tmp}}\rVert}\biggr) *
- * \text{lr} *  u_\text{tmp} &\text{ \; (Lamb/LambNoBias) } \\
+ *    \text{mwn})}{\lVert{u_\text{tmp}}\rVert}\biggr) *
+ *    \text{lr} *  u_\text{tmp} &\text{ \; (Lamb/LambNoBias) } \\
  *    \end{aligned}\right.
  * \f]
  *
@@ -281,7 +282,7 @@ enum class AdamMode {
  * FLOAT16.
  *
  * **NOTE**: The maximum weight norm is referred to as \f$\phi\f$ in
- *        [You et al., 2020](https://arxiv.org/abs/1904.00962).
+ * <a href="https://arxiv.org/abs/1904.00962">You et al., 2020</a>.
  */
 class Adam : public Optimizer {
 

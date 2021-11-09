@@ -9,17 +9,22 @@ strings, except with DOC(custom, ...), see below for an example.
 #define __VA_SIZE(...) __EXPAND(__COUNT(__VA_ARGS__, 7, 6, 5, 4, 3, 2, 1))
 #define __CAT1(a, b) a##b
 #define __CAT2(a, b) __CAT1(a, b)
-#define __DOC1(n1) __doc_##n1
-#define __DOC2(n1, n2) __doc_##n1##_##n2
-#define __DOC3(n1, n2, n3) __doc_##n1##_##n2##_##n3
-#define __DOC4(n1, n2, n3, n4) __doc_##n1##_##n2##_##n3##_##n4
-#define __DOC5(n1, n2, n3, n4, n5) __doc_##n1##_##n2##_##n3##_##n4##_##n5
-#define __DOC6(n1, n2, n3, n4, n5, n6)                                         \
-  __doc_##n1##_##n2##_##n3##_##n4##_##n5##_##n6
+#define __DOC1(n1) n1
+#define __DOC2(n1, n2) n1##_##n2
+#define __DOC3(n1, n2, n3) n1##_##n2##_##n3
+#define __DOC4(n1, n2, n3, n4) n1##_##n2##_##n3##_##n4
+#define __DOC5(n1, n2, n3, n4, n5) n1##_##n2##_##n3##_##n4##_##n5
+#define __DOC6(n1, n2, n3, n4, n5, n6) n1##_##n2##_##n3##_##n4##_##n5##_##n6
 #define __DOC7(n1, n2, n3, n4, n5, n6, n7)                                     \
-  __doc_##n1##_##n2##_##n3##_##n4##_##n5##_##n6##_##n7
+  n1##_##n2##_##n3##_##n4##_##n5##_##n6##_##n7
 #define DOC(...)                                                               \
-  __EXPAND(__EXPAND(__CAT2(__DOC, __VA_SIZE(__VA_ARGS__)))(__VA_ARGS__))
+  __CAT2(                                                                      \
+      __doc_,                                                                  \
+      __EXPAND(__EXPAND(__CAT2(__DOC, __VA_SIZE(__VA_ARGS__)))(__VA_ARGS__)))
+#define SINGLE_LINE_DOC(...)                                                   \
+  __CAT2(                                                                      \
+      __singlelinedoc_,                                                        \
+      __EXPAND(__EXPAND(__CAT2(__DOC, __VA_SIZE(__VA_ARGS__)))(__VA_ARGS__)))
 
 #if defined(__GNUG__)
 #pragma GCC diagnostic push
@@ -39,7 +44,8 @@ static const char *__doc_custom_PyStepIO_class =
     to read from and write to, respectively.)doc";
 
 static const char *__doc_custom_PyStepIO_init =
-    R"doc(Construct a new PyStepIO instance.
+    R"doc(
+        Construct a new PyStepIO instance.
 
         Args:
             inputs:
@@ -64,7 +70,8 @@ static const char *__doc_custom_PyStepIO_init =
     )doc";
 
 static const char *__doc_custom_PyStepIO_enableRuntimeAsserts =
-    R"doc(Enable (or disable) run-time checks that check the sizes of the provided numpy arrays.
+    R"doc(
+        Enable (or disable) run-time checks that check the sizes of the provided numpy arrays.
 
         Args:
             arg0:
@@ -81,19 +88,19 @@ static const char *__doc_custom_PyStepIOCallback_class =
 static const char *__doc_custom_PyStepIOCallback_init =
     R"doc(Construct a new PyStepIOCallback instance.
 
-        Args:
-            input_callback:
-                Callable object that the PyStepIOCallback instance will use when `IStepIO::in()` is called.
-                See `IStepIO <https://docs.graphcore.ai/projects/popart-cpp-api/en/latest/api-cpp.html#data-input-and-output-istepio>`_ for details on how to implement this method.
-            input_complete_callback:
-                Callable object that the PyStepIOCallback instance will use when `IStepIO::inComplete()` is called.
-                See `IStepIO <https://docs.graphcore.ai/projects/popart-cpp-api/en/latest/api-cpp.html#data-input-and-output-istepio>`_ for details on how to implement this method.
-            output_callback:
-                Callable object that the PyStepIOCallback instance will use when `IStepIO::out()` is called.
-                See `IStepIO <https://docs.graphcore.ai/projects/popart-cpp-api/en/latest/api-cpp.html#data-input-and-output-istepio>`_ for details on how to implement this method.
-            output_complete_callback:
-                Callable object that the PyStepIOCallback instance will use when `IStepIO::outComplete()` is called.
-                See `IStepIO <https://docs.graphcore.ai/projects/popart-cpp-api/en/latest/api-cpp.html#data-input-and-output-istepio>`_ for details on how to implement this method.
+Args:
+    input_callback: 
+        Callable object that the PyStepIOCallback instance will use when ``IStepIO::in()`` is called.
+        See `IStepIO <https://docs.graphcore.ai/projects/popart-cpp-api/en/latest/api-cpp.html#data-input-and-output-istepio>`_ for details on how to implement this method.
+    input_complete_callback: 
+        Callable object that the PyStepIOCallback instance will use when ``IStepIO::inComplete()`` is called.
+        See `IStepIO <https://docs.graphcore.ai/projects/popart-cpp-api/en/latest/api-cpp.html#data-input-and-output-istepio>`_ for details on how to implement this method.
+    output_callback: 
+        Callable object that the PyStepIOCallback instance will use when ``IStepIO::out()`` is called.
+        See `IStepIO <https://docs.graphcore.ai/projects/popart-cpp-api/en/latest/api-cpp.html#data-input-and-output-istepio>`_ for details on how to implement this method.
+    output_complete_callback: 
+        Callable object that the PyStepIOCallback instance will use when ``IStepIO::outComplete()`` is called.
+        See `IStepIO <https://docs.graphcore.ai/projects/popart-cpp-api/en/latest/api-cpp.html#data-input-and-output-istepio>`_ for details on how to implement this method.
     )doc";
 
 // clang-format on
