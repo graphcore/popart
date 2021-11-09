@@ -29,47 +29,6 @@ except:
     )
 from util import get_project_source_dir
 
-# Flag to only warn about clang-format once
-CLANG_FORMAT_WARNING_PRINTED = False
-
-
-def clang_format_file(fname: Path) -> int:
-    """Format a file using clang format, if installed.
-
-    Args:
-        fname (Path): Path to the file to format.
-
-    Returns:
-        int: The retval result from the clang format command.
-    """
-
-    try:
-        lc = ["clang-format", str(fname), "-i"]
-        _ = check_output(lc)
-    except FileNotFoundError as e:
-        # File not found error for single thread:
-        # Above won't work on CentOS, in which case,
-        # just skip formatting as not required.
-        print("Package clang-format not installed or "
-              "formatting failed. Not formatting file.")
-        print(str(e.strerror))
-        return e.errno
-    except CalledProcessError as e:
-        # FCalledProcessError for multiple thread:
-        # Above won't work on CentOS, in which case,
-        # just skip formatting as not required.
-        if not CLANG_FORMAT_WARNING_PRINTED:
-            print("Package clang-format not installed or "
-                  "formatting failed. Not formatting file.")
-            print(str(e.output))
-            CLANG_FORMAT_WARNING_PRINTED = True
-        return e.returncode
-    finally:
-        # Any weird remaining errors.
-        pass
-
-    return 0
-
 
 def render_template(template_path: Path, **kwargs) -> Text:
     """Render the given template given **kwargs of data to use.
@@ -119,7 +78,6 @@ def create_rendered_files(metadata: Dict, template_path: Path,
 
     with open(filepath, "w") as f:
         f.write(out)
-    clang_format_file(filepath)
 
     out = render_template(Path(str(template_path).replace('.cpp', '.hpp')),
                           namespaces=namespaces,
@@ -127,7 +85,6 @@ def create_rendered_files(metadata: Dict, template_path: Path,
     filepath = Path(str(filepath).replace('.cpp', '.hpp'))
     with open(filepath, "w") as f:
         f.write(out)
-    clang_format_file(filepath)
 
 
 def create__all_file(metadatas: tuple, template_path: Path,
@@ -171,8 +128,6 @@ def create__all_file(metadatas: tuple, template_path: Path,
     with open(filepath, "w") as f:
         f.write(out)
 
-    clang_format_file(filepath)
-
 
 def create_graph_file(metadatas: tuple, template_path: Path, out_dir: Path):
     """Create the graph.cpp.gen file that contains the createOp and createConnectedOp
@@ -190,8 +145,6 @@ def create_graph_file(metadatas: tuple, template_path: Path, out_dir: Path):
     out = render_template(template_path, metadatas=metadatas)
     with open(filepath, "w") as f:
         f.write(out)
-
-    clang_format_file(filepath)
 
 
 def main(json_path: Path, out: Path, jobs: int) -> None:
