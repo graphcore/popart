@@ -1,3 +1,8 @@
+.. _popart_building:
+
+Building graphs in PopART
+-------------------------
+
 PopART has a ``Builder`` class for constructing ONNX graphs without needing a third
 party framework.
 
@@ -32,7 +37,7 @@ described in the following sections and in :any:`popart_executing`.
 The DataFlow object is described in more detail in :any:`popart_executing`.
 
 Adding operations to the graph
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The builder adds operations to the graph by calling one of the many
 operation methods.  Each of these methods has a common signature.
@@ -56,7 +61,7 @@ In some cases other arguments are required, for instance:
   output = builder.aiOnnx.gather(['input', 'indices'], axis=1, debugContext="My-Gather")
 
 Adding parameters to the graph
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Parameters, for instance the weights of a convolution, are represented as
 initialised inputs to the graph.  They can be added with the
@@ -68,7 +73,7 @@ initialised inputs to the graph.  They can be added with the
   w1 = builder.addInitializedInputTensor(w_data)
 
 Setting outputs
-^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~
 
 The outputs of the graph should be marked appropriately, using the
 ``addOutputTensor`` method:
@@ -78,7 +83,7 @@ The outputs of the graph should be marked appropriately, using the
   builder.addOutputTensor(output)
 
 Setting the IPU number for operations
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 When creating a graph which will run on a multiple IPU system, nodes need
 to be marked with an annotation to describe which IPU they will run upon.

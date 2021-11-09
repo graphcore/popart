@@ -18,7 +18,7 @@ PopART User Guide
 
     intro
     importing
-    builder
+    builderonnx
     executing
     performance
     supported_ops
@@ -26,6 +26,7 @@ PopART User Guide
     env_vars
     overlap_io
     tensor_locations
+    popartir
     glossary
     references
     legal
