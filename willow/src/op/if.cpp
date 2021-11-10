@@ -345,7 +345,7 @@ std::vector<const Graph *> IfOp::getCalledGraphs() const {
 }
 
 InIndex IfOp::opInToSubgraphInIndex(SubgraphIndex subgraphIndex,
-                                    InIndex inIndex) {
+                                    InIndex inIndex) const {
   if (!input->hasIndex(inIndex)) {
     throw error(
         "Invalid inIndex for Op {} (op does not have an input with index {})",
@@ -373,7 +373,7 @@ InIndex IfOp::opInToSubgraphInIndex(SubgraphIndex subgraphIndex,
 }
 
 InIndex IfOp::subgraphInToOpInIndex(SubgraphIndex subgraphIndex,
-                                    InIndex inIndex) {
+                                    InIndex inIndex) const {
 
   auto getInIndex = [inIndex](Graph &subgraph,
                               const std::map<InIndex, InIndex> &map) {
@@ -406,7 +406,7 @@ InIndex IfOp::subgraphInToOpInIndex(SubgraphIndex subgraphIndex,
 }
 
 OutIndex IfOp::opOutToSubgraphOutIndex(SubgraphIndex subgraphIndex,
-                                       OutIndex outIndex) {
+                                       OutIndex outIndex) const {
   if (!output->hasIndex(outIndex)) {
     throw error(
         "Invalid outIndex for Op {} (op does not have an output with index {})",
@@ -434,7 +434,7 @@ OutIndex IfOp::opOutToSubgraphOutIndex(SubgraphIndex subgraphIndex,
 }
 
 OutIndex IfOp::subgraphOutToOpOutIndex(SubgraphIndex subgraphIndex,
-                                       OutIndex outIndex) {
+                                       OutIndex outIndex) const {
 
   auto getOutIndex = [outIndex](Graph &subgraph,
                                 const std::map<OutIndex, OutIndex> &map) {

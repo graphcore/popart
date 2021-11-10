@@ -332,7 +332,7 @@ std::vector<const Graph *> SubgraphOp::getCalledGraphs() const {
 }
 
 InIndex SubgraphOp::opInToSubgraphInIndex(SubgraphIndex subgraphIndex,
-                                          InIndex inIndex) {
+                                          InIndex inIndex) const {
   if (subgraphIndex != 0) {
     throw error("Invalid subgraphIndex for Op {} (expected 0, got {})",
                 debugName(),
@@ -350,7 +350,7 @@ InIndex SubgraphOp::opInToSubgraphInIndex(SubgraphIndex subgraphIndex,
 }
 
 InIndex SubgraphOp::subgraphInToOpInIndex(SubgraphIndex subgraphIndex,
-                                          InIndex inIndex) {
+                                          InIndex inIndex) const {
   if (subgraphIndex != 0) {
     throw error("Invalid subgraphIndex for Op {} (expected 0, got {})",
                 debugName(),
@@ -368,7 +368,7 @@ InIndex SubgraphOp::subgraphInToOpInIndex(SubgraphIndex subgraphIndex,
 }
 
 OutIndex SubgraphOp::opOutToSubgraphOutIndex(SubgraphIndex subgraphIndex,
-                                             OutIndex outIndex) {
+                                             OutIndex outIndex) const {
   if (subgraphIndex != 0) {
     throw error("Invalid subgraphIndex for Op {} (expected 0, got {})",
                 debugName(),
@@ -386,7 +386,7 @@ OutIndex SubgraphOp::opOutToSubgraphOutIndex(SubgraphIndex subgraphIndex,
 }
 
 OutIndex SubgraphOp::subgraphOutToOpOutIndex(SubgraphIndex subgraphIndex,
-                                             OutIndex outIndex) {
+                                             OutIndex outIndex) const {
   if (subgraphIndex != 0) {
     throw error("Invalid subgraphIndex for Op {} (expected 0, got {})",
                 debugName(),

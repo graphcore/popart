@@ -47,13 +47,13 @@ public:
   }
 
   InIndex subgraphInToOpInIndex(SubgraphIndex subgraphIndex,
-                                InIndex inIndex) override {
+                                InIndex inIndex) const override {
     // Set subgraphInToOpInIndexImpl to override test class's behaviour.
     return subgraphInToOpInIndexImpl(subgraphIndex, inIndex);
   }
 
   OutIndex subgraphOutToOpOutIndex(SubgraphIndex subgraphIndex,
-                                   OutIndex outIndex) override {
+                                   OutIndex outIndex) const override {
     // Set subgraphInToOpInIndexImpl to override test class's behaviour.
     return subgraphOutToOpOutIndexImpl(subgraphIndex, outIndex);
   }

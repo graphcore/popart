@@ -402,22 +402,22 @@ TensorInfo Op::prettyNpOut(const TensorInfo &i0, const TensorInfo &i1) const {
 }
 
 InIndex Op::opInToSubgraphInIndex(SubgraphIndex subgraphIndex,
-                                  InIndex inIndex) {
+                                  InIndex inIndex) const {
   throw error("Op {} has no subgraphs", debugName());
 }
 
 InIndex Op::subgraphInToOpInIndex(SubgraphIndex subgraphIndex,
-                                  InIndex inIndex) {
+                                  InIndex inIndex) const {
   throw error("Op {} has no subgraphs", debugName());
 }
 
 OutIndex Op::opOutToSubgraphOutIndex(SubgraphIndex subgraphIndex,
-                                     OutIndex outIndex) {
+                                     OutIndex outIndex) const {
   throw error("Op {} has no subgraphs", debugName());
 }
 
 OutIndex Op::subgraphOutToOpOutIndex(SubgraphIndex subgraphIndex,
-                                     OutIndex outIndex) {
+                                     OutIndex outIndex) const {
   throw error("Op {} has no subgraphs", debugName());
 }
 

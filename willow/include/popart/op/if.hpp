@@ -23,7 +23,6 @@ struct BranchInfo {
 
 class IfOp : public Op {
 public:
-
   IfOp(const OperatorIdentifier &,
        const BranchInfo &thenBranchInfo,
        const BranchInfo &elseBranchInfo,
@@ -47,13 +46,13 @@ public:
   std::vector<const Graph *> getCalledGraphs() const override;
 
   virtual InIndex opInToSubgraphInIndex(SubgraphIndex subgraphIndex,
-                                        InIndex inIndex) override;
+                                        InIndex inIndex) const override;
   virtual InIndex subgraphInToOpInIndex(SubgraphIndex subgraphIndex,
-                                        InIndex inIndex) override;
+                                        InIndex inIndex) const override;
   virtual OutIndex opOutToSubgraphOutIndex(SubgraphIndex subgraphIndex,
-                                           OutIndex outIndex) override;
+                                           OutIndex outIndex) const override;
   virtual OutIndex subgraphOutToOpOutIndex(SubgraphIndex subgraphIndex,
-                                           OutIndex outIndex) override;
+                                           OutIndex outIndex) const override;
 
   // Override to avoid getGradOps being called before we're ready.
   virtual float calcAutoVirtualGraphCost(std::set<int> &inputs_seen) override;

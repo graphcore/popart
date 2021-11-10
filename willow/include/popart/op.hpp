@@ -616,22 +616,22 @@ public:
   // for this op, return the associated subgraph's InIndex (or return -1
   // to indicate it is not used by this subgraph).
   virtual InIndex opInToSubgraphInIndex(SubgraphIndex subgraphIndex,
-                                        InIndex inIndex);
+                                        InIndex inIndex) const;
   // For each subgraphIndex [0,getCalledGraphs().size()) and each valid
   // subgraph's input index, return the associated op's input index (or return
   // -1 to indicate there isn't one).
   virtual InIndex subgraphInToOpInIndex(SubgraphIndex subgraphIndex,
-                                        InIndex inIndex);
+                                        InIndex inIndex) const;
   // For each subgraphIndex [0,getCalledGraphs().size()) and each valid OutIndex
   // for this op, return the associated subgraph's OutIndex (or return -1
   // to indicate it is not used by this subgraph).
   virtual OutIndex opOutToSubgraphOutIndex(SubgraphIndex subgraphIndex,
-                                           OutIndex outIndex);
+                                           OutIndex outIndex) const;
   // For each subgraphIndex [0,getCalledGraphs().size()) and each valid
   // subgraph's output index, return the associated op's output index (or return
   // -1 to indicate there isn't one).
   virtual OutIndex subgraphOutToOpOutIndex(SubgraphIndex subgraphIndex,
-                                           OutIndex outIndex);
+                                           OutIndex outIndex) const;
 
 public:
   // The functionality required for sub-graph matching
