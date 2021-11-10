@@ -186,6 +186,10 @@ const std::vector<std::string> &reservedPrefixes() {
 
     const auto &optStatePrefs = reservedOptimizerStatePrefixes();
     prefs.insert(prefs.end(), optStatePrefs.begin(), optStatePrefs.end());
+
+    const auto &accumulatorPrefs = reservedAccumulatorPrefixes();
+    prefs.insert(prefs.end(), accumulatorPrefs.begin(), accumulatorPrefs.end());
+
     return prefs;
   }();
 
