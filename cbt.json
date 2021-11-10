@@ -1,19 +1,21 @@
 {
   "dependencies" : [
     "poprithms",
-    "poplar",
-    "poplibs",
-    "popir",
     "onnx",
     "pybind11",
     "gcdoc",
-    "gcl",
     "spdlog",
     "boost",
     "protobuf",
     "capnproto",
-    "trompeloeil",
-    "gccs"
+    "trompeloeil"
+  ],
+  "optional_dependencies": [
+      "poplar",
+      "poplibs",
+      "popir",
+      "gcl",
+      "gccs"
   ],
   "superproject_cmake_includes" : [ "SuperProjectConfig.cmake" ]
 }

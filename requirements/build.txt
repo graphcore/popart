@@ -16,6 +16,7 @@
 # NOTE: Don't add things here you wouldn't want to be installed on CI.
 
 # Packages we depend on at build-time:
+wheel
 jinja2==2.11.3
 libclang==12.0.0
 mypy==0.910
