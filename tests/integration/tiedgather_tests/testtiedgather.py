@@ -36,7 +36,7 @@ def model(splits=1, transpose_on_gather=True):
                               debugContext="matmuld")
     if splits > 1:
         builder.setSerializeMatMul({x}, 'output_channels', splits, True)
-    loss = builder.aiGraphcore.l1loss([x], 0.1, debugPrefix='loss')
+    loss = builder.aiGraphcore.l1loss([x], 0.1, debugContext='loss')
 
     return builder.getModelProto(), {d0: input_data}, x, loss
 
