@@ -408,6 +408,24 @@ void Ir::removeIsolatedTensors(bool retainIoTensors) {
   getTensors().removeIsolated(retainIoTensors);
 }
 
+void Ir::removeIsolatedGraphs() {
+  auto sorted = getGraphSchedule(getMainGraph().id);
+
+  if (sorted.size() != graphs.size()) {
+    std::vector<GraphId> sortedIds;
+    std::transform(sorted.begin(),
+                   sorted.end(),
+                   std::back_inserter(sortedIds),
+                   [](const Graph *g) { return g->id; });
+    for (auto it = graphs.begin(); it != graphs.end();) {
+      it = (std::find(sortedIds.begin(), sortedIds.end(), it->first) ==
+            sortedIds.end())
+               ? graphs.erase(it)
+               : std::next(it);
+    }
+  };
+}
+
 void Ir::setExecutionMode(const ExecutionMode &mode) { executionMode = mode; }
 
 void Ir::setOptimizer(const Optimizer &o) {
@@ -3056,9 +3074,23 @@ std::vector<const Graph *> Ir::getGraphSchedule() const {
   auto sorted = getGraphSchedule(getMainGraph().id);
 
   if (sorted.size() != graphs.size()) {
-    throw error("Unable to schedule all graphs. {} != {}",
-                sorted.size(),
-                graphs.size());
+    std::stringstream ss;
+    ss << logging::format("Unable to schedule all graphs. {} != {}. ",
+                          sorted.size(),
+                          graphs.size());
+    std::vector<GraphId> sortedIds;
+    std::transform(sorted.begin(),
+                   sorted.end(),
+                   std::back_inserter(sortedIds),
+                   [](const Graph *g) { return g->id; });
+    ss << "Missing: " << std::endl;
+    for (const auto &g : graphs) {
+      if (std::find(sortedIds.begin(), sortedIds.end(), g.first) ==
+          sortedIds.end()) {
+        ss << "  " << g.first << std::endl;
+      }
+    }
+    throw error(ss.str());
   }
 
   return sorted;

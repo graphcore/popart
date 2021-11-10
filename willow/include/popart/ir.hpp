@@ -184,6 +184,10 @@ public:
   // the have no producers or consumers
   void removeIsolatedTensors(bool retainIoTensors);
 
+  // Remove any Graphs that are not called by the main graph
+  // (or by their called graphs; ad infinitum)
+  void removeIsolatedGraphs();
+
   // Set which execution mode we are using
   void setExecutionMode(const ExecutionMode &mode);
 

@@ -103,6 +103,8 @@ class Ir:
         """
         if isinstance(fn, Module):
             qualname = fn.__class__.__qualname__
+            parameters = inspect.signature(fn.build,
+                                           follow_wrapped=True).parameters
         else:
             # Note all Python functions will have __qualname__.
             if not callable(fn) or not hasattr(fn, '__qualname__'):
@@ -111,12 +113,11 @@ class Ir:
                 )
             else:
                 qualname = fn.__qualname__
+            parameters = inspect.signature(fn, follow_wrapped=True).parameters
 
         name = self._create_name(qualname)
         _pb_subgraph = self._pb_ir.createGraph(name)
         subgraph = Graph._from_pb(_pb_subgraph)
-
-        parameters = inspect.signature(fn, follow_wrapped=True).parameters
 
         with subgraph:
             dupes = self._find_duplicate_tensors(

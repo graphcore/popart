@@ -57,6 +57,8 @@ void bindIr(py::module &m) {
       .def("applyPreAliasPatterns", &Ir::applyPreAliasPatterns)
       .def("applyInplacePattern", &Ir::applyInplacePattern)
       .def("setRemoteBufferInfo", &Ir::setRemoteBufferInfo)
+      .def("removeIsolatedTensors", &Ir::removeIsolatedTensors)
+      .def("removeIsolatedGraphs", &Ir::removeIsolatedGraphs)
       .def("dataStreamTensors",
            &Ir::dataStreamTensors,
            py::return_value_policy::reference);
