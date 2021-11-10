@@ -143,6 +143,12 @@ void bindTensor(py::module &m) {
       .def("getDebugInfo",
            &Tensor::getDebugInfo,
            py::return_value_policy::reference)
+      .def("getCopyFromTensor", &Tensor::getCopyFromTensor)
+      .def("getVariableUpdateType", &Tensor::getVariableUpdateType)
+      .def("setCopyFromTensor", &Tensor::setCopyFromTensor, py::arg("value"))
+      .def("setVariableUpdateType",
+           &Tensor::setVariableUpdateType,
+           py::arg("type"))
       .def_readonly("consumers", &Tensor::consumers)
       .def_readwrite("info", &Tensor::info)
       .def_readonly("tensorLocationInfo", &Tensor::tensorLocationInfo)

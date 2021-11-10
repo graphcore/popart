@@ -205,7 +205,8 @@ void Tensors::addVarInit(const TensorId &name,
                          const DebugContext &debugContext) {
   popart::TensorDebugInfo di(debugContext, name, info, TensorType::Variable);
   insert(name,
-         std::unique_ptr<VariableTensor>(new VariableTensor(name, graph, di)));
+         std::unique_ptr<Tensor>(
+             new Tensor(name, TensorType::Variable, graph, di)));
 
   Tensor *init = get(name);
   init->info   = info;
@@ -242,11 +243,7 @@ void Tensors::addInit(const TensorId &name,
                       TensorType tt,
                       const DebugInfo &di) {
 
-  if (tt == TensorType::Variable) {
-    insert(name, std::make_unique<VariableTensor>(name, graph, di));
-  } else {
-    insert(name, std::make_unique<Tensor>(name, tt, graph, di));
-  }
+  insert(name, std::make_unique<Tensor>(name, tt, graph, di));
 
   Tensor *init = get(name);
   init->info   = TensorInfo(*pt);

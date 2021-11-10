@@ -59,19 +59,17 @@ void BatchNormOp::setup() {
 
     // If we have variable input for mean/var then set the update approach to
     // copy
+    auto meanTensor = inTensor(getMeanInIndex());
+    auto varTensor  = inTensor(getVarInIndex());
 
-    if (inTensor(getMeanInIndex())->tensorType() == TensorType::Variable) {
-      auto *variableTensor =
-          dynamic_cast<VariableTensor *>(inTensor(getMeanInIndex()));
-      variableTensor->setVariableUpdateType(VariableUpdateType::Copy);
-      variableTensor->setCopyFromTensor(outId(getMeanOutIndex()));
+    if (meanTensor->tensorType() == TensorType::Variable) {
+      meanTensor->setVariableUpdateType(VariableUpdateType::Copy);
+      meanTensor->setCopyFromTensor(outId(getMeanOutIndex()));
     }
 
-    if (inTensor(getVarInIndex())->tensorType() == TensorType::Variable) {
-      auto *variableTensor =
-          dynamic_cast<VariableTensor *>(inTensor(getVarInIndex()));
-      variableTensor->setVariableUpdateType(VariableUpdateType::Copy);
-      variableTensor->setCopyFromTensor(outId(getVarOutIndex()));
+    if (varTensor->tensorType() == TensorType::Variable) {
+      varTensor->setVariableUpdateType(VariableUpdateType::Copy);
+      varTensor->setCopyFromTensor(outId(getVarOutIndex()));
     }
   }
 

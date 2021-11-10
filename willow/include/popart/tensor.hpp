@@ -116,6 +116,7 @@ public:
   // note : producer (if there is one)
   // must be set after construction
   Tensor(TensorId, TensorType, Graph &, const DebugContext & = {});
+  Tensor(TensorId, VariableSettings, Graph &, const DebugContext & = {});
   TensorId id;
   std::string str() const final { return id; }
 
@@ -279,18 +280,12 @@ protected:
   int getBatchAxisFromOp(Op *, bool, int) const;
 
   const TensorDebugInfo di;
-};
 
-class VariableTensor : public Tensor {
+  /**
+   * Members of old subclass VariableTensor
+   * class VariableTensor : public Tensor {
+   */
 public:
-  VariableTensor(TensorId, Graph &, const DebugContext & = {});
-  VariableTensor(TensorId n,
-                 Graph &,
-                 VariableSettings &,
-                 const DebugContext & = {});
-
-  std::unique_ptr<Tensor> clone(Graph &graph_) const override;
-
   void setVariableUpdateType(VariableUpdateType type) {
     variableUpdateType = type;
   }

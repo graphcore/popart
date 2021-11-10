@@ -645,10 +645,18 @@ std::ostream &operator<<(std::ostream &os, const TensorType &tt) {
 }
 
 std::unique_ptr<Tensor> Tensor::clone(Graph &graph_) const {
-  std::unique_ptr<Tensor> theClone(
-      new Tensor("clone_" + id, tensorType(), graph_, getDebugInfo()));
-  theClone->info = info;
-  return theClone;
+  if (tensorType() == TensorType::Variable) {
+    std::unique_ptr<Tensor> theClone(
+        new Tensor("clone_" + id, variableSettings, graph_, getDebugInfo()));
+    theClone->info = info;
+    return theClone;
+  }
+  {
+    std::unique_ptr<Tensor> theClone(
+        new Tensor("clone_" + id, tensorType(), graph_, getDebugInfo()));
+    theClone->info = info;
+    return theClone;
+  }
 }
 
 Consumers::Consumers(Tensor *tensorConsumed_)
@@ -806,7 +814,18 @@ Tensor::Tensor(TensorId n,
                Graph &g,
                const DebugContext &debugContext)
     : Vertex(), id(n), consumers(this), graph(g), producer(nullptr),
-      tensorType_(t), data_(nullptr), di(debugContext, n, t) {}
+      tensorType_(t), data_(nullptr), di(debugContext, n, t),
+      variableUpdateType(VariableUpdateType::Gradient),
+      variableSettings(VariableSettings()) {}
+
+Tensor::Tensor(TensorId n,
+               VariableSettings vs,
+               Graph &g,
+               const DebugContext &debugContext)
+    : Vertex(), id(n), consumers(this), graph(g), producer(nullptr),
+      tensorType_(TensorType::Variable), data_(nullptr),
+      di(debugContext, n, TensorType::Variable),
+      variableUpdateType(VariableUpdateType::Gradient), variableSettings(vs) {}
 
 void Consumers::decrement(Op *op) {
   auto found = consumers_m.find(op);
@@ -1106,26 +1125,6 @@ std::vector<Op *> Tensor::associatedOps() const {
   }
 
   return result;
-}
-
-VariableTensor::VariableTensor(TensorId n,
-                               Graph &g,
-                               const DebugContext &debugContext)
-    : Tensor(n, TensorType::Variable, g, debugContext),
-      variableUpdateType(VariableUpdateType::Gradient) {}
-
-VariableTensor::VariableTensor(TensorId n,
-                               Graph &g,
-                               VariableSettings &vs,
-                               const DebugContext &debugContext)
-    : Tensor(n, TensorType::Variable, g, debugContext),
-      variableUpdateType(VariableUpdateType::Gradient), variableSettings(vs) {}
-
-std::unique_ptr<Tensor> VariableTensor::clone(Graph &graph_) const {
-  std::unique_ptr<Tensor> theClone(
-      new VariableTensor("clone_" + id, graph_, getDebugInfo()));
-  theClone->info = info;
-  return theClone;
 }
 
 } // namespace popart

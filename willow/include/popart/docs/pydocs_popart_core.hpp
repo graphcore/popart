@@ -7138,6 +7138,18 @@ static const char *__doc_popart_Tensor_tensorType = R"doc()doc";
 
 static const char *__doc_popart_Tensor_tensor_type = R"doc()doc";
 
+static const char *__doc_popart_Tensor_copyFromTensor = R"doc()doc";
+
+static const char *__doc_popart_Tensor_getCopyFromTensor = R"doc()doc";
+
+static const char *__doc_popart_Tensor_getVariableUpdateType = R"doc()doc";
+
+static const char *__doc_popart_Tensor_setCopyFromTensor = R"doc()doc";
+
+static const char *__doc_popart_Tensor_setVariableUpdateType = R"doc()doc";
+
+static const char *__doc_popart_Tensor_variableUpdateType = R"doc()doc";
+
 static const char *__doc_popart_Tensors = R"doc()doc";
 
 static const char *__doc_popart_Tensors_M = R"doc()doc";
@@ -7267,26 +7279,6 @@ change the IR after it has been constructed.
 
 Parameter ``optimizer``:
     A pointer to a popart::Optimizer.)doc";
-
-static const char *__doc_popart_VariableTensor = R"doc()doc";
-
-static const char *__doc_popart_VariableTensor_VariableTensor = R"doc()doc";
-
-static const char *__doc_popart_VariableTensor_clone = R"doc()doc";
-
-static const char *__doc_popart_VariableTensor_copyFromTensor = R"doc()doc";
-
-static const char *__doc_popart_VariableTensor_getCopyFromTensor = R"doc()doc";
-
-static const char *__doc_popart_VariableTensor_getVariableUpdateType =
-    R"doc()doc";
-
-static const char *__doc_popart_VariableTensor_setCopyFromTensor = R"doc()doc";
-
-static const char *__doc_popart_VariableTensor_setVariableUpdateType =
-    R"doc()doc";
-
-static const char *__doc_popart_VariableTensor_variableUpdateType = R"doc()doc";
 
 static const char *__doc_popart_VariableUpdateType = R"doc()doc";
 

@@ -2719,8 +2719,7 @@ void Ir::constructBackwards() {
   // add weight update ops (we are ignoring momentums for now)
   for (auto &varId : getTensors().getIds(TensorType::Variable)) {
 
-    VariableTensor *tensor =
-        dynamic_cast<VariableTensor *>(getTensors().get(varId));
+    Tensor *tensor = getTensors().get(varId);
     switch (tensor->getVariableUpdateType()) {
     case VariableUpdateType::Copy:
       // Updates the var by copying it from another tensor
@@ -4078,8 +4077,8 @@ std::size_t std::hash<popart::Ir>::operator()(const popart::Ir &ir) const {
   return seed;
 }
 
-std::size_t std::hash<popart::IrBundle>::
-operator()(const popart::IrBundle &bundle) const {
+std::size_t
+std::hash<popart::IrBundle>::operator()(const popart::IrBundle &bundle) const {
   size_t seed = 0;
 
   boost::hash_combine(
