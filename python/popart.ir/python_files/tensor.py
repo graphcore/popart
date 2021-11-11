@@ -1,11 +1,11 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-from typing import Any, Dict, Iterable, NewType, Optional, Tuple, Type, Union
+from typing import Any, Dict, Iterable, Optional, Tuple, Type, Union, TYPE_CHECKING
 import numpy as np
 
 import popart._internal.ir as _ir
 from popart.ir import dtypes
 from popart.ir.context import gcg, debug_context_frame_offset
-from typing import TYPE_CHECKING
+from popart.ir.typing import NewAliasAnnotation
 
 if TYPE_CHECKING:
     from popart.ir import Ir
@@ -172,6 +172,12 @@ class Tensor:
         """Returns `ops.div(self, value)`."""
         import popart.ir.ops as ops
         return ops.div(self, self._ensure_tensor(value))
+
+    @debug_context_frame_offset(1)
+    def __neg__(self) -> 'Tensor':
+        """Returns `ops.negate(self)`."""
+        import popart.ir.ops as ops
+        return ops.negate(self)
 
     @debug_context_frame_offset(1)
     def transpose_(self,
@@ -488,7 +494,15 @@ def subgraph_output(t: Tensor) -> None:
     pb_g.markAsOutput(t.id)
 
 
-# This type alias can be used in input annotations to specify that
-# a graph input should be flagged as copyModified.
-# See `CallInfo.set_op_input_modified`.
-TensorByRef = NewType("TensorByRef", Tensor)
+"""TensorByRef
+This type alias can be used in function argument annotations to specify that
+a graph input should be flagged as copyModified. Example:
+```
+def increment(a: TensorByRef):
+    ops.var_update.accumulate(a, pir.constant(1))
+```
+When converted to a graph and called, the modification to the graph input `a` will be propagated to the
+corresponding input tensor at the callsite.
+This is the same as using `pir.subgraph_input(..., by_ref=True)`.
+"""
+TensorByRef = NewAliasAnnotation("TensorByRef", Tensor)

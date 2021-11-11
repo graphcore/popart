@@ -4,33 +4,28 @@ import popart._internal.ir as _ir
 from popart.ir.context import get_current_context, op_debug_context
 from popart.ir.tensor import Tensor
 
-from .utils import check_in_graph
+from ..utils import check_in_graph
+from .utils import handle_optimizer_value
 
 __all__ = ['adam_updater', 'lamb_updater', 'adamax_updater']
 
 
-def addOptimizerValue(var, g, ins, index):
-    if isinstance(var, Tensor):
-        check_in_graph(g, var)
-        ins[index] = var.id
-        ov = _ir.OptimizerValue(0.0, False)
-    elif isinstance(var, float):
-        ov = _ir.OptimizerValue(var, True)
-    else:
-        ov = _ir.OptimizerValue()
-    return ov
+def weight_decay_is_required(weight_decay: Union[None, float, Tensor]):
+    if weight_decay is not None:
+        return weight_decay != 0.0
+    return False
 
 
-def create_adam_updater(acc_first_order: Tensor,
-                        acc_second_order: Tensor,
-                        ins,
-                        mode,
-                        weight: Optional[Tensor] = None,
-                        time_step: Optional[Tensor] = None,
-                        weight_decay: Optional[Union[float, Tensor]] = None,
-                        beta1: Optional[Union[float, Tensor]] = None,
-                        beta2: Optional[Union[float, Tensor]] = None,
-                        epsilon: Union[float, Tensor] = 1e-07) -> Tensor:
+def create_adamupdater(acc_first_order: Tensor,
+                       acc_second_order: Tensor,
+                       ins,
+                       mode,
+                       weight: Optional[Tensor] = None,
+                       time_step: Optional[Tensor] = None,
+                       weight_decay: Optional[Union[float, Tensor]] = None,
+                       beta1: Optional[Union[float, Tensor]] = None,
+                       beta2: Optional[Union[float, Tensor]] = None,
+                       epsilon: Union[float, Tensor] = 1e-07) -> Tensor:
 
     ctx = get_current_context()
     g = ctx.graph
@@ -47,12 +42,12 @@ def create_adam_updater(acc_first_order: Tensor,
     outs = {
         0: g._create_tensor_id('Updater'),
     }
-    wd = addOptimizerValue(weight_decay, g, ins, 4)
-    b1 = addOptimizerValue(beta1, g, ins, 5)
-    b2 = addOptimizerValue(beta2, g, ins, 6)
-    eps = addOptimizerValue(epsilon, g, ins, 7)
+    wd = handle_optimizer_value(g, weight_decay, ins, 4)
+    b1 = handle_optimizer_value(g, beta1, ins, 5)
+    b2 = handle_optimizer_value(g, beta2, ins, 6)
+    eps = handle_optimizer_value(g, epsilon, ins, 7)
 
-    settings = ctx._get_op_settings('adam_updater')
+    settings = ctx._get_op_settings('adamupdater')
     op = pb_g.createConnectedOp_AdamUpdaterOp(ins, outs, mode, wd, b1, b2, eps,
                                               settings)
 
@@ -82,6 +77,8 @@ def adam_updater(acc_first_order: Tensor,
     updater term (FP16/FP32, without weight decay mode: decay) x:
     x = mc / (sqrt(vc) + eps)
 
+    Note: `time_step` will be incremented by one.
+
     Args:
         acc_first_order: Tensor (m)
             First order momentum (FP16/FP32).
@@ -105,9 +102,9 @@ def adam_updater(acc_first_order: Tensor,
             An updater to update weight.
     """
     ins = {1: acc_first_order.id, 2: acc_second_order.id}
-    if weight_decay is not None and weight is None:
+    if weight_decay_is_required(weight_decay) and weight is None:
         raise ValueError("Weight decay requires weight to be not None.")
-    if weight is not None and weight_decay is not None:
+    if weight_decay_is_required(weight_decay) and weight is not None:
         ins[0] = weight.id
 
     if time_step is not None and (beta1 is None or beta2 is None):
@@ -119,9 +116,9 @@ def adam_updater(acc_first_order: Tensor,
     else:
         adam_mode = _ir.AdamMode.AdamNoBias
 
-    return create_adam_updater(acc_first_order, acc_second_order, ins,
-                               adam_mode, weight, time_step, weight_decay,
-                               beta1, beta2, epsilon)
+    return create_adamupdater(acc_first_order, acc_second_order, ins,
+                              adam_mode, weight, time_step, weight_decay,
+                              beta1, beta2, epsilon)
 
 
 @op_debug_context
@@ -147,6 +144,8 @@ def lamb_updater(acc_first_order: Tensor,
     updater term (FP16/FP32, without weight decay mode: decay) x:
     x = mc / (sqrt(vc) + eps)
 
+    Note: `time_step` will be incremented by one.
+
     Args:
         acc_first_order: Tensor (m)
             First order momentum (FP16/FP32).
@@ -169,10 +168,9 @@ def lamb_updater(acc_first_order: Tensor,
             An updater to update weight.
     """
     ins = {1: acc_first_order.id, 2: acc_second_order.id}
-    if weight_decay is not None and weight is None:
+    if weight_decay_is_required(weight_decay) and weight is None:
         raise ValueError("Weight decay requires weight to be not None.")
-
-    if weight is not None and weight_decay is not None:
+    if weight_decay_is_required(weight_decay) and weight is not None:
         ins[0] = weight.id
 
     if time_step is not None and (beta1 is None or beta2 is None):
@@ -184,9 +182,9 @@ def lamb_updater(acc_first_order: Tensor,
     else:
         adam_mode = _ir.AdamMode.LambNoBias
 
-    return create_adam_updater(acc_first_order, acc_second_order, ins,
-                               adam_mode, weight, time_step, weight_decay,
-                               beta1, beta2, epsilon)
+    return create_adamupdater(acc_first_order, acc_second_order, ins,
+                              adam_mode, weight, time_step, weight_decay,
+                              beta1, beta2, epsilon)
 
 
 @op_debug_context
@@ -207,6 +205,7 @@ def adamax_updater(acc_first_order: Tensor,
     updater term (FP16/FP32, without weight decay mode: decay) x:
     x = mc / (vc + eps)
 
+    Note: `time_step` will be incremented by one.
 
     Args:
         acc_first_order: Tensor (m)
@@ -229,16 +228,18 @@ def adamax_updater(acc_first_order: Tensor,
             An updater to update weight.
     """
     ins = {1: acc_first_order.id, 2: acc_second_order.id}
-    if weight_decay is not None and weight is None:
+    if weight_decay_is_required(weight_decay) and weight is None:
         raise ValueError("Weight decay requires weight to be not None.")
-    if weight is not None and weight_decay is not None:
+
+    if weight_decay_is_required(weight_decay) and weight is not None:
         ins[0] = weight.id
+
     if time_step is None:
         raise ValueError("AdaMax requires time_step not None.")
     else:
         ins[3] = time_step.id
         adam_mode = _ir.AdamMode.AdaMax
 
-    return create_adam_updater(acc_first_order, acc_second_order, ins,
-                               adam_mode, weight, time_step, weight_decay,
-                               beta1, None, epsilon)
+    return create_adamupdater(acc_first_order, acc_second_order, ins,
+                              adam_mode, weight, time_step, weight_decay,
+                              beta1, None, epsilon)

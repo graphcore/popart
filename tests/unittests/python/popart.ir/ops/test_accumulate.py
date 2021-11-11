@@ -14,7 +14,7 @@ class TestAccumulate:
         with g:
             a = pir.variable(1)
             b = pir.constant(2)
-            c = ops.accumulate(a, b)
+            c = ops.var_updates.accumulate_(a, b)
         assert len(g.get_tensors()) == 3
         assert len(g.get_variables()) == 1
         assert contains_op_of_type("Accumulate", _ir.op.AccumulateOp, g)
@@ -28,7 +28,7 @@ class TestAccumulate:
         with g:
             a = pir.variable(1)
             b = pir.constant(2)
-            c = ops.accumulate(a, b, 0.9)
+            c = ops.var_updates.accumulate_(a, b, 0.9)
         assert len(g.get_tensors()) == 3
         assert len(g.get_variables()) == 1
         assert contains_op_of_type("Accumulate", _ir.op.AccumulateOp, g)
@@ -43,7 +43,7 @@ class TestAccumulate:
             a = pir.variable(1)
             b = pir.constant(2)
             factor = pir.variable(0.9)
-            c = ops.accumulate(a, b, factor)
+            c = ops.var_updates.accumulate_(a, b, factor)
         assert contains_op_of_type("Accumulate", _ir.op.AccumulateOp, g)
         op = g._pb_graph.getOps()[0]
         op.getAccumulationType() == _ir.AccumulationType.DampenedAdd
@@ -55,7 +55,7 @@ class TestAccumulate:
         with g:
             a = pir.variable(1)
             b = pir.constant(2)
-            c = ops.accumulate_square(a, b, 0.999)
+            c = ops.var_updates.accumulate_square_(a, b, 0.999)
         assert contains_op_of_type("Accumulate", _ir.op.AccumulateOp, g)
         op = g._pb_graph.getOps()[0]
         op.getAccumulationType() == _ir.AccumulationType.DampenedAddSquare
@@ -68,7 +68,7 @@ class TestAccumulate:
             a = pir.variable(1)
             b = pir.constant(2)
             step = pir.variable(0)
-            c = ops.accumulate_mean(a, b, step)
+            c = ops.var_updates.accumulate_mean_(a, b, step)
         assert contains_op_of_type("Accumulate", _ir.op.AccumulateOp, g)
         op = g._pb_graph.getOps()[0]
         op.getAccumulationType() == _ir.AccumulationType.Mean

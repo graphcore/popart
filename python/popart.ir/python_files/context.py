@@ -186,11 +186,12 @@ class Context:
         if self._in_sequence is not None:
             if self._in_sequence:
                 for prev_op in self._previous_ops[g.id]:
-                    g.topoCons().insert(prev_op, op, False)
+                    if prev_op.id != op.id:
+                        g.topoCons().insert(prev_op, op, False)
                 self._previous_ops[g.id].clear()
             else:
                 prev_ops = self._previous_ops[g.id]
-                if len(prev_ops) > 0:
+                if len(prev_ops) > 0 and prev_ops[0].id != op.id:
                     g.topoCons().insert(prev_ops[0], op, False)
             self._previous_ops[g.id].append(op)
 

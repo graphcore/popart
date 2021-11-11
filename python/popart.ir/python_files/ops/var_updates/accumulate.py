@@ -1,18 +1,23 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-from typing import Optional, Union
+from typing import Any, Dict, Optional, Union
 import popart._internal.ir as _ir
 from popart.ir import dtypes
 from popart.ir.context import get_current_context, op_debug_context
+from popart.ir.graph import Graph
 from popart.ir.tensor import Tensor
 
-from .utils import check_in_graph
+from ..utils import check_in_graph
+from .utils import handle_optimizer_value
 
-__all__ = ['accumulate', 'accumulate_square', 'accumulate_mean']
+__all__ = [
+    'accumulate_', 'accumulate_square_', 'accumulate_mean_',
+    'accumulate_moving_average_', 'accumulate_moving_average_square_'
+]
 
 
 @op_debug_context
-def accumulate(t: Tensor, X: Tensor,
-               f: Optional[Union[float, Tensor]] = None) -> Tensor:
+def accumulate_(t: Tensor, X: Tensor,
+                f: Optional[Union[float, Tensor]] = None) -> Tensor:
     """
     Updates tensor `t` inplace using `t = t + (f * X)`.
 
@@ -40,15 +45,7 @@ def accumulate(t: Tensor, X: Tensor,
 
     ins = {0: t.id, 1: X.id}
 
-    ov: _ir.OptimizerValue
-    if isinstance(f, Tensor):
-        check_in_graph(g, f)
-        ins[2] = f.id
-        ov = _ir.OptimizerValue(0.0, False)
-    elif isinstance(f, float):
-        ov = _ir.OptimizerValue(f, True)
-    else:
-        ov = _ir.OptimizerValue()
+    ov = handle_optimizer_value(g, f, ins, 2)
 
     settings = ctx._get_op_settings('accumulate')
     op = pb_g.createConnectedOp_AccumulateOp(
@@ -66,9 +63,8 @@ def accumulate(t: Tensor, X: Tensor,
 
 
 @op_debug_context
-def accumulate_square(t: Tensor,
-                      X: Tensor,
-                      f: Optional[Union[float, Tensor]] = None) -> Tensor:
+def accumulate_square_(t: Tensor, X: Tensor,
+                       f: Union[float, Tensor] = 1.0) -> Tensor:
     """
     Updates tensor `t` inplace using `t = t + (f * X^2)`.
 
@@ -96,15 +92,7 @@ def accumulate_square(t: Tensor,
 
     ins = {0: t.id, 1: X.id}
 
-    ov: _ir.OptimizerValue
-    if isinstance(f, Tensor):
-        check_in_graph(g, f)
-        ins[2] = f.id
-        ov = _ir.OptimizerValue(0.0, False)
-    elif isinstance(f, float):
-        ov = _ir.OptimizerValue(f, True)
-    else:
-        ov = _ir.OptimizerValue(1.0, True)
+    ov = handle_optimizer_value(g, f, ins, 2)
 
     settings = ctx._get_op_settings('accumulate')
     op = pb_g.createConnectedOp_AccumulateOp(
@@ -121,8 +109,8 @@ def accumulate_square(t: Tensor,
 
 
 @op_debug_context
-def accumulate_mean(t: Tensor, X: Tensor,
-                    step: Union[float, Tensor]) -> Tensor:
+def accumulate_mean_(t: Tensor, X: Tensor,
+                     step: Union[float, Tensor]) -> Tensor:
     """
     Updates a tensor `t` inplace using `t = (step/(step+1)) * t + (1/(step+1)) * X`.
     Intended to be used to keep track of the mean of a series of values.
@@ -174,6 +162,98 @@ def accumulate_mean(t: Tensor, X: Tensor,
         },
         _ir.AccumulationType.Mean,
         _ir.OptimizerValue(),
+        settings,
+    )
+
+    return Tensor._from_pb_tensor(op.outTensor(0))
+
+
+@op_debug_context
+def accumulate_moving_average_(t: Tensor, X: Tensor,
+                               f: Union[float, Tensor]) -> Tensor:
+    """
+    Updates tensor `t` inplace using `t = (f * t) + ((1-f) * X)`.
+
+    Does not apply numpy broadcasting.
+    Uses mixed precision poplibs operations.
+    `t` and `X` must be the same shape, but can be different types.
+    `f` must be scalar.
+
+    Args:
+        t: Tensor
+            Tensor to be updated.
+        X: Tensor
+            Value to update the variable
+        f: Union[float, Tensor]
+            Scalar to apply to update before the addition.
+    Returns:
+        updated: Tensor
+            An alias to the variable.
+    """
+    ctx = get_current_context()
+    g = ctx.graph
+    pb_g = g._pb_graph
+
+    check_in_graph(g, t, X)
+
+    ins = {0: t.id, 1: X.id}
+
+    ov = handle_optimizer_value(g, f, ins, 2)
+
+    settings = ctx._get_op_settings('accumulate')
+    op = pb_g.createConnectedOp_AccumulateOp(
+        ins,
+        {
+            0: g._create_tensor_id('accumulate_moving_avg__' + t.name),
+        },
+        _ir.AccumulationType.MovingAverage,
+        ov,
+        settings,
+    )
+
+    return Tensor._from_pb_tensor(op.outTensor(0))
+
+
+@op_debug_context
+def accumulate_moving_average_square_(t: Tensor, X: Tensor,
+                                      f: Union[float, Tensor]) -> Tensor:
+    """
+    Updates tensor `t` inplace using `t = (f * t) + ((1-f) * X^2)`.
+
+    Does not apply numpy broadcasting.
+    Uses mixed precision poplibs operations.
+    `t` and `X` must be the same shape, but can be different types.
+    `f` must be scalar.
+
+    Args:
+        t: Tensor
+            Tensor to be updated.
+        X: Tensor
+            Value to update the variable
+        f: Union[float, Tensor]
+            Scalar to apply to update before the addition.
+    Returns:
+        updated: Tensor
+            An alias to the variable.
+    """
+    ctx = get_current_context()
+    g = ctx.graph
+    pb_g = g._pb_graph
+
+    check_in_graph(g, t, X)
+
+    ins = {0: t.id, 1: X.id}
+
+    ov = handle_optimizer_value(g, f, ins, 2)
+
+    settings = ctx._get_op_settings('accumulate')
+    op = pb_g.createConnectedOp_AccumulateOp(
+        ins,
+        {
+            0: g._create_tensor_id('accumulate_moving_avg_square__' + t.name),
+        },
+        _ir.AccumulationType.MovingAverageSquare,
+        ov,
         settings,
     )
 

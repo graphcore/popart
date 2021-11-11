@@ -1,10 +1,9 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-from .accumulate import *
-from .adam_updater import *
+from typing import TYPE_CHECKING
+
 from .add import *
 from .call import *
 from .cast import *
-from .copy_var_update import *
 from .detach import *
 from .div import *
 from .dropout import *
@@ -39,3 +38,10 @@ from .sub import *
 from .transpose import *
 
 import popart.ir.ops.collectives
+import popart.ir.ops.var_updates
+
+if TYPE_CHECKING:
+    # Static Type Checking requires "import .. as"
+    # however this causes a circular import at runtime
+    import popart.ir.ops.collectives as collectives
+    import popart.ir.ops.var_updates as var_updates

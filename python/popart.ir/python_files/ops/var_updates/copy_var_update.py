@@ -2,13 +2,13 @@
 from popart.ir.context import get_current_context, op_debug_context
 from popart.ir.tensor import Tensor
 
-from .utils import check_in_graph
+from ..utils import check_in_graph
 
-__all__ = ['copy_var_update']
+__all__ = ['copy_var_update_']
 
 
 @op_debug_context
-def copy_var_update(t: Tensor, X: Tensor) -> Tensor:
+def copy_var_update_(t: Tensor, X: Tensor) -> Tensor:
     """
     Updates tensor `t` inplace by copying `X`.
 

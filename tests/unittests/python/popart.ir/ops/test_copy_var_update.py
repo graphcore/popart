@@ -14,7 +14,7 @@ class TestAccumulate:
         with g:
             a = pir.variable(1)
             b = pir.constant(2)
-            c = ops.copy_var_update(a, b)
+            c = ops.var_updates.copy_var_update_(a, b)
         assert len(g.get_tensors()) == 3
         assert len(g.get_variables()) == 1
         assert contains_op_of_type("CopyVarUpdate", _ir.op.CopyVarUpdateOp, g)

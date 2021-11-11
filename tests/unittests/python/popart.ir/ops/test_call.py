@@ -125,7 +125,7 @@ class TestCall:
         ir = pir.Ir()
 
         def foo(x: pir.TensorByRef, y: pir.Tensor):
-            return ops.accumulate(x, y)
+            return ops.var_updates.accumulate_(x, y)
 
         with ir.main_graph():
             v1 = pir.variable(1)

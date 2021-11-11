@@ -17,7 +17,8 @@ def test_modified():
     with g, pir.in_sequence():
         x = pir.variable(1)
 
-        sg = ir.create_graph(lambda x: ops.accumulate(x, pir.constant(1)), x)
+        sg = ir.create_graph(
+            lambda x: ops.var_updates.accumulate_(x, pir.constant(1)), x)
 
         ops.call(sg, x)  # type: ignore
         # Store x
