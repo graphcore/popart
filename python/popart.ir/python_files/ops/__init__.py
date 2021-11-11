@@ -1,6 +1,6 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 from .accumulate import *
-from .adamupdater import *
+from .adam_updater import *
 from .add import *
 from .call import *
 from .cast import *

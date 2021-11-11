@@ -6,7 +6,7 @@ from popart.ir.tensor import Tensor
 
 from .utils import check_in_graph
 
-__all__ = ['adamupdater', 'lambupdater', 'adamaxupdater']
+__all__ = ['adam_updater', 'lamb_updater', 'adamax_updater']
 
 
 def addOptimizerValue(var, g, ins, index):
@@ -21,16 +21,16 @@ def addOptimizerValue(var, g, ins, index):
     return ov
 
 
-def create_adamupdater(acc_first_order: Tensor,
-                       acc_second_order: Tensor,
-                       ins,
-                       mode,
-                       weight: Optional[Tensor] = None,
-                       time_step: Optional[Tensor] = None,
-                       weight_decay: Optional[Union[float, Tensor]] = None,
-                       beta1: Optional[Union[float, Tensor]] = None,
-                       beta2: Optional[Union[float, Tensor]] = None,
-                       epsilon: Union[float, Tensor] = 1e-07) -> Tensor:
+def create_adam_updater(acc_first_order: Tensor,
+                        acc_second_order: Tensor,
+                        ins,
+                        mode,
+                        weight: Optional[Tensor] = None,
+                        time_step: Optional[Tensor] = None,
+                        weight_decay: Optional[Union[float, Tensor]] = None,
+                        beta1: Optional[Union[float, Tensor]] = None,
+                        beta2: Optional[Union[float, Tensor]] = None,
+                        epsilon: Union[float, Tensor] = 1e-07) -> Tensor:
 
     ctx = get_current_context()
     g = ctx.graph
@@ -52,7 +52,7 @@ def create_adamupdater(acc_first_order: Tensor,
     b2 = addOptimizerValue(beta2, g, ins, 6)
     eps = addOptimizerValue(epsilon, g, ins, 7)
 
-    settings = ctx._get_op_settings('adamupdater')
+    settings = ctx._get_op_settings('adam_updater')
     op = pb_g.createConnectedOp_AdamUpdaterOp(ins, outs, mode, wd, b1, b2, eps,
                                               settings)
 
@@ -60,14 +60,14 @@ def create_adamupdater(acc_first_order: Tensor,
 
 
 @op_debug_context
-def adamupdater(acc_first_order: Tensor,
-                acc_second_order: Tensor,
-                weight: Optional[Tensor] = None,
-                time_step: Optional[Tensor] = None,
-                weight_decay: Optional[Union[float, Tensor]] = None,
-                beta1: Optional[Union[float, Tensor]] = None,
-                beta2: Optional[Union[float, Tensor]] = None,
-                epsilon: Union[float, Tensor] = 1e-07) -> Tensor:
+def adam_updater(acc_first_order: Tensor,
+                 acc_second_order: Tensor,
+                 weight: Optional[Tensor] = None,
+                 time_step: Optional[Tensor] = None,
+                 weight_decay: Optional[Union[float, Tensor]] = None,
+                 beta1: Optional[Union[float, Tensor]] = None,
+                 beta2: Optional[Union[float, Tensor]] = None,
+                 epsilon: Union[float, Tensor] = 1e-07) -> Tensor:
     """
     Calculate a updater term x for Adam as follows.
     accumulated bias corrected first order momentum (FP16/FP32) mc:
@@ -119,20 +119,20 @@ def adamupdater(acc_first_order: Tensor,
     else:
         adam_mode = _ir.AdamMode.AdamNoBias
 
-    return create_adamupdater(acc_first_order, acc_second_order, ins,
-                              adam_mode, weight, time_step, weight_decay,
-                              beta1, beta2, epsilon)
+    return create_adam_updater(acc_first_order, acc_second_order, ins,
+                               adam_mode, weight, time_step, weight_decay,
+                               beta1, beta2, epsilon)
 
 
 @op_debug_context
-def lambupdater(acc_first_order: Tensor,
-                acc_second_order: Tensor,
-                weight: Optional[Tensor] = None,
-                time_step: Optional[Tensor] = None,
-                weight_decay: Optional[Union[float, Tensor]] = None,
-                beta1: Optional[Union[float, Tensor]] = None,
-                beta2: Optional[Union[float, Tensor]] = None,
-                epsilon: Union[float, Tensor] = 1e-07) -> Tensor:
+def lamb_updater(acc_first_order: Tensor,
+                 acc_second_order: Tensor,
+                 weight: Optional[Tensor] = None,
+                 time_step: Optional[Tensor] = None,
+                 weight_decay: Optional[Union[float, Tensor]] = None,
+                 beta1: Optional[Union[float, Tensor]] = None,
+                 beta2: Optional[Union[float, Tensor]] = None,
+                 epsilon: Union[float, Tensor] = 1e-07) -> Tensor:
     """
     Calculate a updater term x for Lamb as follows.
     accumulated bias corrected first order momentum (FP16/FP32) mc:
@@ -184,19 +184,19 @@ def lambupdater(acc_first_order: Tensor,
     else:
         adam_mode = _ir.AdamMode.LambNoBias
 
-    return create_adamupdater(acc_first_order, acc_second_order, ins,
-                              adam_mode, weight, time_step, weight_decay,
-                              beta1, beta2, epsilon)
+    return create_adam_updater(acc_first_order, acc_second_order, ins,
+                               adam_mode, weight, time_step, weight_decay,
+                               beta1, beta2, epsilon)
 
 
 @op_debug_context
-def adamaxupdater(acc_first_order: Tensor,
-                  acc_second_order: Tensor,
-                  weight: Optional[Tensor] = None,
-                  time_step: Tensor = None,
-                  weight_decay: Optional[Union[float, Tensor]] = None,
-                  beta1: Union[float, Tensor] = 0.9,
-                  epsilon: Union[float, Tensor] = 1e-07) -> Tensor:
+def adamax_updater(acc_first_order: Tensor,
+                   acc_second_order: Tensor,
+                   weight: Optional[Tensor] = None,
+                   time_step: Tensor = None,
+                   weight_decay: Optional[Union[float, Tensor]] = None,
+                   beta1: Union[float, Tensor] = 0.9,
+                   epsilon: Union[float, Tensor] = 1e-07) -> Tensor:
     """
     Calculate a updater term x for Adamax as follows.
     accumulated bias corrected first order momentum (FP16/FP32) mc:
@@ -239,6 +239,6 @@ def adamaxupdater(acc_first_order: Tensor,
         ins[3] = time_step.id
         adam_mode = _ir.AdamMode.AdaMax
 
-    return create_adamupdater(acc_first_order, acc_second_order, ins,
-                              adam_mode, weight, time_step, weight_decay,
-                              beta1, None, epsilon)
+    return create_adam_updater(acc_first_order, acc_second_order, ins,
+                               adam_mode, weight, time_step, weight_decay,
+                               beta1, None, epsilon)

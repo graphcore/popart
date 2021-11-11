@@ -927,7 +927,7 @@ def test_accumulate_zero_op(connected: bool) -> None:
 
 
 @pytest.mark.parametrize("connected", [True, False])
-def test_adamupdater_op(connected: bool) -> None:
+def test_adam_updater_op(connected: bool) -> None:
     """Test the AdamUpdater Op.
 
     Args:
