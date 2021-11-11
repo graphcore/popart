@@ -339,9 +339,10 @@ bool Region::contains(const Region &rhs) const {
 int64_t Region::flatIndex(const std::vector<int64_t> &index) const {
   int64_t flat = 0;
   for (int64_t d = 0; d < rank(); ++d) {
-    flat += index[d];
-    if (d < rank() - 1)
+    flat += index[d] - lower[d];
+    if (d < rank() - 1) {
       flat *= (upper[d + 1] - lower[d + 1]);
+    }
   }
   return flat;
 }
@@ -350,7 +351,7 @@ std::vector<int64_t> Region::dimIndex(int64_t index) const {
   std::vector<int64_t> dim(rank());
   for (int64_t d = rank() - 1; d >= 0; --d) {
     int64_t size = (upper[d] - lower[d]);
-    dim[d]       = index % size;
+    dim[d]       = index % size + lower[d];
     index        = index / size;
   }
   return dim;

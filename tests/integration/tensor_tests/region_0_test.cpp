@@ -202,3 +202,25 @@ BOOST_AUTO_TEST_CASE(Region_AccessType0) {
       view::combine({view::AccessType::Write, view::AccessType::ReadWrite}) ==
       view::AccessType::ReadWrite);
 }
+
+BOOST_AUTO_TEST_CASE(Region_indices) {
+  view::Region r0({{2, 1, 0}, {4, 3, 7}});
+
+  auto d0 = r0.dimIndex(0);
+  auto d1 = r0.dimIndex(14);
+  auto d2 = r0.dimIndex(27);
+
+  auto d0x = std::vector<int64_t>{2, 1, 0};
+  auto d1x = std::vector<int64_t>{3, 1, 0};
+  auto d2x = std::vector<int64_t>{3, 2, 6};
+
+  BOOST_CHECK(d0 == d0x);
+  BOOST_CHECK(d1 == d1x);
+  BOOST_CHECK(d2 == d2x);
+
+  for (int64_t i = 0; i < 28; ++i) {
+    auto dimIndex  = r0.dimIndex(i);
+    auto flatIndex = r0.flatIndex(dimIndex);
+    BOOST_CHECK_EQUAL(flatIndex, i);
+  }
+}
