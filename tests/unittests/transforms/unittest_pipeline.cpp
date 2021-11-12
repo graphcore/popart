@@ -137,6 +137,7 @@ BOOST_AUTO_TEST_CASE(setfinalstagerecompute_fail) {
   g.createConnectedOp<TestOp>(
       {{0, "t4"}}, {{0, "t5"}}, false, false, settings1);
 
+  // More than one 'finalFwdStage' candidate
   BOOST_REQUIRE_THROW(Pipeline::setFinalFwdStageRecomputation(g),
                       internal_error);
 }
@@ -158,10 +159,13 @@ BOOST_AUTO_TEST_CASE(setfinalstagerecompute_nofrontier) {
   // PostLoss
   g.createConnectedOp<TestOp>({{0, "t2"}}, {{0, "t3"}}, false, false, settings);
 
-  Pipeline::setFinalFwdStageRecomputation(g);
-
-  BOOST_REQUIRE(op1->settings.recomputeType == RecomputeType::Checkpoint);
-  BOOST_REQUIRE(op2->settings.recomputeType == RecomputeType::Checkpoint);
+  // All pre-loss ops are marked recompute, so the frontier (from which
+  // checkpoint annotations are forward-propagated) is empty.
+  // Note: a call to Pipeline::setFinalFwdStageRecomputation is only expected
+  // after a call to Pipeline::setRecompute, which should guarantee a
+  // non-empty frontier.
+  BOOST_REQUIRE_THROW(Pipeline::setFinalFwdStageRecomputation(g),
+                      internal_error);
 }
 
 BOOST_AUTO_TEST_CASE(setfinalstagerecompute_nontopoorder) {

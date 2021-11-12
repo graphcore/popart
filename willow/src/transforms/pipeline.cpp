@@ -744,7 +744,8 @@ void setRecomputation(Graph &graph,
     return false;
   };
 
-  // Initialise ops to be Recompute, except Ops whose output enters an IpuCopy.
+  // Initialise ops to be Recompute, except Ops whose output enters an IpuCopy,
+  // or IpuCopys themselves.
   for (auto &id_op : graph.getOps()) {
     auto op = id_op.second.get();
     if (isRecomputable(op)) {
@@ -763,6 +764,8 @@ void setRecomputation(Graph &graph,
           op->settings.recomputeType = RecomputeType::Recompute;
         }
       }
+    } else if (op->isConvertibleTo<IpuCopyOp>()) {
+      op->settings.recomputeType = RecomputeType::Checkpoint;
     }
   }
 
@@ -885,11 +888,10 @@ bool containsSeedTensor(std::set<TensorId> ids) {
 void Pipeline::setFinalFwdStageRecomputation(Graph &graph) {
   // This annotation pass will try to set the Ops between
   // the topologically final Checkpoints and the loss
-  // to NOT be recomputed. This avoid a program where
+  // to NOT be recomputed. This avoids a program where
   // operations are run twice in a row with no benefit to
   // liveness.
   std::map<PipelineStage, std::pair<bool, bool>> prePostLoss;
-  std::map<PipelineStage, std::vector<Tensor *>> start;
   // Find PipelineStages with SchedulePreLoss Yes and No.
   // This should only be where the final loss is executed.
   for (auto &id_op : graph.getOps()) {
@@ -900,11 +902,6 @@ void Pipeline::setFinalFwdStageRecomputation(Graph &graph) {
           op->scheduledPreLoss == ScheduledPreLoss::Yes;
       prePostLoss[pStage].second |=
           op->scheduledPreLoss == ScheduledPreLoss::No;
-      for (auto t : op->input->tensors()) {
-        if (!isProducedOnIPU(t)) {
-          start[pStage].push_back(t);
-        }
-      }
     }
   }
 
@@ -936,10 +933,24 @@ void Pipeline::setFinalFwdStageRecomputation(Graph &graph) {
     std::map<OpId, std::set<OpId>> paths;
     std::vector<Op *> frontier;
 
-    auto sameContextAndStage = [&pStage](Op *op) {
+    auto hasSamePipelineStage = [](Op *op, PipelineStage pStage) {
+      if (op->isConvertibleTo<IpuCopyOp>()) {
+        std::set<PipelineStage> allPStages;
+
+        for (const Tensor *t : op->output->tensors()) {
+          auto pStages = t->getPipelineStages();
+          allPStages.insert(pStages.begin(), pStages.end());
+        }
+        return allPStages.find(pStage) != allPStages.end();
+      } else {
+        return op->getPipelineStage() == pStage;
+      }
+    };
+
+    auto sameContextAndStage = [&pStage, &hasSamePipelineStage](Op *op) {
       return op->scheduledPreLoss == ScheduledPreLoss::Yes &&
              op->settings.executionContext == ExecutionContext::Normal &&
-             op->getPipelineStage() == pStage;
+             hasSamePipelineStage(op, pStage);
     };
 
     auto pruneFromFrontier = [&frontier](const std::set<OpId> &path) {
@@ -983,19 +994,11 @@ void Pipeline::setFinalFwdStageRecomputation(Graph &graph) {
     }
 
     if (frontier.empty()) {
-      // If frontier is empty then there were no Checkpoint ops
-      // in the final stage. In this case we should set everything to
-      // Checkpoint to avoid computing, then recomputing the same ops
-      // right after.
-      logging::trace("[Pipeline::setFinalFwdStageRecomputation] frontier was "
-                     "empty, checkpointing the stage.");
-      for (auto t : start[pStage]) {
-        for (auto con : t->consumers.getOps()) {
-          if (sameContextAndStage(con)) {
-            frontier.push_back(con);
-          }
-        }
-      }
+      // Since IpuCopyOps are checkpointed in Pipeline::setRecompute, we always
+      // expect a non-empty frontier.
+      throw internal_error("[Pipeline::setFinalFwdStageRecomputation] Frontier "
+                           "is empty. No checkpoint operations have been found "
+                           "on the final forward PipelineStage.");
     }
 
     if (logging::shouldLog(logging::Module::popart, logging::Level::Trace)) {

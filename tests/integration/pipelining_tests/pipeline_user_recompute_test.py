@@ -250,7 +250,7 @@ def test_delayed_restore_operations():
 
 
 @tu.requires_ipu_model
-def test_final_stage_recompute():
+def test_final_stage_recompute_0():
     np.random.seed(0)
 
     gradient_accumulation = 5
@@ -312,3 +312,64 @@ def test_final_stage_recompute():
             assert op["attributes"]["recompute"] == "YES"
         elif x_no_recomp in map(lambda out: out["name"], op["outputs"]):
             assert op["attributes"]["recompute"] == "NO"
+
+
+@tu.requires_ipu_model
+def test_final_stage_recompute_1():
+    """
+    Model:
+    out = NllLoss(Softmax(Matmul(x, w)), Cast(label))
+
+    {Matmul} : ps0, {Nll, Softmax, Cast} : ps1
+
+    Note that there are two 'paths' to the loss on the final forward
+    PipelineStage: {Cast -> NllLoss} and {Softmax -> NllLoss}.
+
+    Veryify that auto-recomputation in the final forward PipelineStage
+    when doing RecomputationType::Pipeline auto-recomputation behaves
+    as expected.
+
+    If you checkpoint an operation on one path to the loss, do not expect to
+    see ops on the other path recomputed.
+    """
+
+    builder = popart.Builder()
+    x = builder.addInputTensor("FLOAT16", [2, 4])
+    w_data = np.random.rand(4, 3).astype(np.float16)
+    w = builder.addInitializedInputTensor(w_data)
+    label = builder.addInputTensor("INT32", [2])
+
+    with builder.virtualGraph(0), builder.pipelineStage(0):
+        mm = builder.aiOnnx.matmul([x, w])
+
+    with builder.virtualGraph(1), builder.pipelineStage(1):
+        sfm = builder.aiOnnx.softmax([mm])
+        label = builder.aiOnnx.cast([label], "UINT32")
+        loss = builder.aiGraphcore.nllloss([sfm, label])
+
+    # Checkpoint tensor along one path to the loss
+    builder.recomputeOutputInBackwardPass(label,
+                                          popart.RecomputeType.Checkpoint)
+
+    opts = popart.SessionOptions()
+    opts.autoRecomputation = popart.RecomputationType.Pipeline
+    opts.enablePipelining = True
+    opts.virtualGraphMode = popart.VirtualGraphMode.Manual
+
+    s = popart.TrainingSession(fnModel=builder.getModelProto(),
+                               userOptions=opts,
+                               loss=loss,
+                               optimizer=popart.ConstSGD(0.1),
+                               deviceInfo=tu.create_test_device(
+                                   numIpus=2, opts={"compileIPUCode": False}),
+                               dataFlow=popart.DataFlow(3, [loss]))
+    ir = json.loads(s._serializeIr(popart.IrSerializationFormat.JSON))
+
+    recomputed_ops = []
+    for op in ir["maingraph"]:
+        finalFwdPipelineStage = "1"
+        if op["attributes"]["__pipeline_stage"] == finalFwdPipelineStage:
+            if op["attributes"]["recompute"] == "YES":
+                recomputed_ops.append(op)
+
+    assert len(recomputed_ops) == 0
