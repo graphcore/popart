@@ -23,6 +23,8 @@ from .logical_or import *
 from .repeat import *
 from .matmul import *
 from .mul import *
+from .negative_log_likelihood import *
+from .negate import *
 from .random import *
 from .print_tensor import *
 from .reshape import *
