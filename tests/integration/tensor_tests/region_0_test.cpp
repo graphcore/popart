@@ -2,10 +2,56 @@
 #define BOOST_TEST_MODULE Region0Test
 
 #include <boost/test/unit_test.hpp>
+#include <cstdint>
 #include <vector>
+#include <popart/names.hpp>
 #include <popart/region.hpp>
 
 using namespace popart;
+
+BOOST_AUTO_TEST_CASE(Region_transpose) {
+  view::Region r0({1, 2, 3}, {10, 20, 30});
+  auto tr0 = r0.transpose({1, 0, 2});
+  view::Region expected({2, 1, 3}, {20, 10, 30});
+  BOOST_CHECK(tr0 == expected);
+}
+
+BOOST_AUTO_TEST_CASE(Region_reverse) {
+  // Lower indices
+  unsigned l0 = 1;
+  unsigned l1 = 2;
+  unsigned l2 = 3;
+  // Upper indices
+  unsigned u0 = 10;
+  unsigned u1 = 20;
+  unsigned u2 = 30;
+  // Shapes
+  unsigned s0 = 100;
+  unsigned s1 = 200;
+  unsigned s2 = 300;
+  view::Region r0({l0, l1, l2}, {u0, u1, u2});
+  auto rr0 = r0.reverse({s0, s1, s2}, {2, 1});
+  view::Region expected({l0, s1 - u1, s2 - u2}, {u0, s1 - l1, s2 - l2});
+  BOOST_CHECK(rr0 == expected);
+}
+
+BOOST_AUTO_TEST_CASE(Region_cut) {
+  view::Region r0({{2, 1, 0}, {4, 3, 7}});
+  auto cr0 = r0.cut({{3}, {2}}, false);
+  view::Regions expected({{{3, 1, 0}, {4, 2, 7}},
+                          {{3, 2, 0}, {4, 3, 7}},
+                          {{2, 1, 0}, {3, 2, 7}},
+                          {{2, 2, 0}, {3, 3, 7}}});
+  BOOST_CHECK(cr0 == expected);
+}
+
+BOOST_AUTO_TEST_CASE(Region_get_full) {
+  Shape shape{1, 2, 3};
+  auto r0 = view::Region::getFull(shape);
+
+  view::Region expected({{0, 0, 0}, {1, 2, 3}});
+  BOOST_CHECK(r0 == expected);
+}
 
 BOOST_AUTO_TEST_CASE(Region_Scale0) {
   view::Region r0({0, 0}, {3, 3});
@@ -41,6 +87,19 @@ BOOST_AUTO_TEST_CASE(Region_Sub1) {
   BOOST_CHECK(subs.front() == r3 || subs.back() == r3);
   BOOST_CHECK(subs.front() == r4 || subs.back() == r4);
   BOOST_CHECK(subs.front() != subs.back());
+}
+
+BOOST_AUTO_TEST_CASE(Region_Sub2) {
+  view::Region r0({0, 0}, {6, 6});
+  view::Region r1({0, 0}, {3, 6});
+
+  view::Regions subs = r0.sub(r1);
+
+  BOOST_CHECK(subs.size() == 1);
+
+  view::Region expected({3, 0}, {6, 6});
+  BOOST_CHECK(subs.front() == expected);
+  BOOST_CHECK(subs.front() == subs.back());
 }
 
 BOOST_AUTO_TEST_CASE(Region_Merge0) {

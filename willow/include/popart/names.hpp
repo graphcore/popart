@@ -34,28 +34,50 @@ namespace popart {
 
 // Some type aliases, which hopefully
 // make popart code clearer
-using Shape        = std::vector<int64_t>;
-using Rank         = int;
+/// The dimensions of a tensor, equivalent to `numpy.shape`.
+using Shape = std::vector<int64_t>;
+/// Rank of a tensor. That is, the number of indices.
+using Rank = int;
+/// Label put on a tensor to distinguish it from the others in the graph.
 using TensorId     = std::string;
 using DnfTensorIds = std::vector<std::set<TensorId>>;
-using OpName       = std::string;
-using OpDomain     = std::string;
-using OpType       = std::string;
-using OpVersion    = unsigned;
+/// Name of the instance of the operator.
+using OpName = std::string;
+/**
+ * Specifies who created the operator.
+ * Part of domain.type:version used as an Op identifier by ONNX
+ * (https://github.com/onnx/onnx/blob/master/docs/Versioning.md)
+ **/
+using OpDomain = std::string;
+/**
+ * Specifies the type of an operator.
+ * Part of domain.type:version used as an Op identifier by ONNX
+ * (https://github.com/onnx/onnx/blob/master/docs/Versioning.md)
+ **/
+using OpType = std::string;
+/**
+ * Specifies the version of the operator.
+ * Part of domain.type:version used as an Op identifier by ONNX
+ * (https://github.com/onnx/onnx/blob/master/docs/Versioning.md)
+ **/
+using OpVersion = unsigned;
+/// Label put on a operator to distinguish it from the others in the graph.
 using OpId         = int;
 using ReturnPeriod = int;
-// The index of a subgraph for an Op.
+/// The index of a subgraph for an Op.
 using SubgraphIndex = int;
-// The index of the subgraph part.
+/// The index of the subgraph part.
 using SubgraphPartIndex = int;
-// Identifies a part of an Opx grow function
+/// Identifies a part of an Opx grow function.
 using OpxGrowPartId = int;
-// The position at which a Tensor is consumed by an Op
+/// The position at which a tensor is output by an Op.
 using InIndex = int;
-// The position at which a Tensor is output by an Op
+/// The position at which a tensor is output by an Op.
 using OutIndex = int;
-// The set of indices that have to be replica sharded together, and the outputs
-// that will be replica sharded as a result
+/**
+ * The set of indices that have to be replica sharded together, and the outputs
+ * that will be replica sharded as a result.
+ **/
 using ReplicatedTensorShardingIndices =
     std::set<std::pair<std::set<InIndex>, std::set<OutIndex>>>;
 using PipelineCycle = int64_t;
