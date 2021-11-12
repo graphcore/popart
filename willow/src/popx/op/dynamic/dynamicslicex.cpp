@@ -49,10 +49,11 @@ void DynamicSliceOpx::grow(snap::program::Sequence &prog) const {
   auto outTensor = s;
   // Output tensor mirrors layout of the input slice provided
   if (op.hasInput(DynamicSliceOp::getSliceInIndex())) {
-    cloneNcopy(prog,
-               getInTensor(DynamicSliceOp::getSliceInIndex()),
-               op.inId(DynamicSliceOp::getSliceInIndex()) + "_writeable")
-        .getPoplarTensor();
+    outTensor =
+        cloneNcopy(prog,
+                   getInTensor(DynamicSliceOp::getSliceInIndex()),
+                   op.inId(DynamicSliceOp::getSliceInIndex()) + "_writeable")
+            .getPoplarTensor();
     prog.getPoplarSequence().add(poplar::program::Copy(s, outTensor));
   }
 
@@ -210,10 +211,12 @@ void DynamicSliceInplaceOpx::grow(snap::program::Sequence &prog) const {
 
   auto writeableSlice = slice.getPoplarTensor();
   if (!writeableSlice.isParallelWriteable()) {
-    cloneNcopy(prog,
-               slice,
-               op.inId(DynamicSliceInplaceOp::getSliceInIndex()) + "_writeable")
-        .getPoplarTensor();
+    writeableSlice =
+        cloneNcopy(prog,
+                   slice,
+                   op.inId(DynamicSliceInplaceOp::getSliceInIndex()) +
+                       "_writeable")
+            .getPoplarTensor();
   }
 
   prog.getPoplarSequence().add(poplar::program::Copy(s, writeableSlice));
