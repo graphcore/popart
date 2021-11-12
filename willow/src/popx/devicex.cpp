@@ -1255,6 +1255,30 @@ void Devicex::connectStreamToCallback(const std::string &streamHandle,
   pEngine->connectStreamToCallback(streamHandle, index, callback);
 }
 
+void Devicex::connectHostFunction(
+    const std::string &functionHandle,
+    std::function<void(const void *const *, size_t, void *const *, size_t)>
+        callback,
+    unsigned index) {
+  POPART_TRACEPOINT();
+
+  using Callback =
+      std::function<void(const void *const *, size_t, void *const *, size_t)>;
+  struct Adaptor final : public poplar::HostCallback {
+    Callback cb;
+
+    Adaptor(Callback cb) : cb(std::move(cb)) {}
+
+    void operator()(poplar::ArrayRef<const void *> inputs,
+                    poplar::ArrayRef<void *> outputs) override {
+      cb(inputs.data(), inputs.size(), outputs.data(), outputs.size());
+    }
+  };
+  poplar::HostCallbackHandle cbHandle{
+      std::unique_ptr<poplar::HostCallback>(new Adaptor(std::move(callback)))};
+  pEngine->connectHostFunction(functionHandle, index, std::move(cbHandle));
+}
+
 void Devicex::copyFromRemoteBuffer(const PopStreamId buffer,
                                    void *w,
                                    int repeat_index,

@@ -2,6 +2,7 @@
 #ifndef GUARD_NEURALNET_NET_HPP
 #define GUARD_NEURALNET_NET_HPP
 
+#include <functional>
 #include <memory>
 #include <vector>
 
@@ -152,6 +153,16 @@ public:
    * from IPU.
    */
   void connectStream(const std::string &streamHandle, void *buffer);
+
+  /**
+   * Connect Poplar host function callbacks.
+   * \p index referes to the replica index when using replicated graphs.
+   */
+  void connectHostFunction(
+      const std::string &functionHandle,
+      std::function<void(const void *const *, size_t, void *const *, size_t)>
+          callback,
+      unsigned index = 0);
 
   /**
    * Perform one step.
@@ -456,7 +467,6 @@ public:
    * \param optimizer A pointer to a popart::Optimizer.
    */
   void updateOptimizerFromHost(const Optimizer *optimizer);
-
 
   /**
    * Read from a RemoteBuffer object into a user space pointer \p w.

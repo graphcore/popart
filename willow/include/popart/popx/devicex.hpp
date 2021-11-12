@@ -115,6 +115,13 @@ public:
   // given pointer.
   void connectStream(const std::string &streamHandle, void *host_buffer);
 
+  // Connect a callback to the given poplar host function handle.
+  void connectHostFunction(
+      const std::string &functionHandle,
+      std::function<void(const void *const *, size_t, void *const *, size_t)>
+          callback,
+      unsigned index);
+
   void copyFromRemoteBuffer(const PopStreamId buffer,
                             void *w,
                             int repeat_index,
