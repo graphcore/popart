@@ -29,7 +29,7 @@ def test_enum_specfic_devices():
 
 
 @tu.requires_ipu
-def test_aquire_device_by_id_0():
+def test_aquire_device_by_id():
     """Test that aquiring by id works.
     """
     deviceManager = popart.DeviceManager()
@@ -44,71 +44,10 @@ def test_aquire_device_by_id_0():
 
 
 @tu.requires_ipu
-def test_aquire_device_by_id_1():
-    """
-    Test that an error is thrown if trying to acquire device by id with
-    an invalid id
-    """
-    deviceManager = popart.DeviceManager()
-    invalidId = 999
-    with pytest.raises(
-            popart.poplar_exception,
-            match="No such device set id: '" + str(invalidId) + "'") as e:
-        deviceManager.acquireDeviceById(invalidId)
-
-
-@tu.requires_ipu
-def test_aquire_device_by_id_2():
-    """
-    Test that an error is thrown if trying to acquire device by id when it
-    has already been attached to
-    """
-    deviceManager = popart.DeviceManager()
-    deviceId = 0
-    device = deviceManager.acquireDeviceById(deviceId)
-    with pytest.raises(popart.popart_exception,
-                       match="Unable to acquire device with id") as e:
-        deviceManager.acquireDeviceById(deviceId)
-
-
-@tu.requires_ipu
-def test_default_connection_type_0():
+def test_default_connection_type():
     deviceManager = popart.DeviceManager()
     device = deviceManager.acquireAvailableDevice(1)
     assert device.connectionType == popart.DeviceConnectionType.Always
-
-
-@tu.requires_ipu
-def test_default_connection_type_1():
-    """
-    Test that error is thrown if try to acquire more devices than are
-    available
-    """
-    deviceManager = popart.DeviceManager()
-    ipus = 256  # More IPUs than are available
-    with pytest.raises(
-            popart.popart_exception,
-            match=
-            "Failed to acquire device. Ensure that there are sufficient IPUs available"
-    ) as e:
-        deviceManager.acquireAvailableDevice(ipus)
-
-
-@tu.requires_ipu
-def test_default_connection_type_2():
-    """
-    Test that error is thrown if try to acquire a single IPU when all have
-    already been attached to
-    """
-    deviceManager = popart.DeviceManager()
-    availableIpus = len(deviceManager.enumerateDevices())
-    d0 = deviceManager.acquireAvailableDevice(availableIpus)
-    with pytest.raises(
-            popart.popart_exception,
-            match=
-            "Failed to acquire device. Ensure that there are sufficient IPUs available"
-    ) as e:
-        deviceManager.acquireAvailableDevice(1)
 
 
 @tu.requires_ipu
