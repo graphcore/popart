@@ -61,9 +61,9 @@ void NllOpx::grow(snap::program::Sequence &prog) const {
   if (probs.elementType() == poplar::HALF)
     eps_f = 6.104e-05;
 
-  snap::Tensor eps = getConst(probs.elementType(), {1}, eps_f, "epsilon");
-
   if (!op.inputIsLogProbability()) {
+    snap::Tensor eps = getConst(probs.elementType(), {1}, eps_f, "epsilon");
+
     // Take max of prob and eps to reduction make sure it does not have any
     // 0's and log it,
     popops::mapInPlace(graph().getPoplarGraph(),
@@ -379,16 +379,6 @@ void NllGradOpx::grow(snap::program::Sequence &prog) const {
     eps = 6.104e-05f;
   }
 
-  auto smallConst = graph().getPoplarGraph().addConstant(
-      probs.elementType(), {1}, eps, debugContext("eps"));
-  graph().getPoplarGraph().setTileMapping(smallConst, 0);
-  auto safeProbs = popops::map(graph().getPoplarGraph(),
-                               popops::expr::BinaryOpType::MAXIMUM,
-                               smallConst,
-                               probs2D.getPoplarTensor(),
-                               prog.getPoplarSequence(),
-                               debugContext("max"));
-
   // oneHot: initialised to be 1 at position "label", 0 elsewhere.
   auto oneHot =
       snap::Tensor{graph().getPoplarGraph().clone(probs2D.elementType(),
@@ -410,12 +400,17 @@ void NllGradOpx::grow(snap::program::Sequence &prog) const {
                        prog.getPoplarSequence(),
                        debugContext("negOneHot"));
   } else {
+    auto smallConst = graph().getPoplarGraph().addConstant(
+        probs.elementType(), {1}, eps, debugContext("eps"));
+    graph().getPoplarGraph().setTileMapping(smallConst, 0);
+
     // oneHot: set to -1/p at position "label", 0 elsewhere.
-    popops::mapInPlace(graph().getPoplarGraph(),
-                       pe::Divide(pe::Neg(pe::_1), pe::_2),
-                       {oneHot.getPoplarTensor(), safeProbs},
-                       prog.getPoplarSequence(),
-                       debugContext("NegDiv"));
+    popops::mapInPlace(
+        graph().getPoplarGraph(),
+        pe::Divide(pe::Neg(pe::_1), pe::Max(pe::_2, pe::_3)),
+        {oneHot.getPoplarTensor(), probs2D.getPoplarTensor(), smallConst},
+        prog.getPoplarSequence(),
+        debugContext("NegDivSafeProbs"));
   }
 
   // Output is reshaped to match probs input shape
