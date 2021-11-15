@@ -1311,11 +1311,21 @@ PriTask IrLowering::streamToHostTask(TensorId streamTensorId,
                                      std::vector<Tensor *> tensors,
                                      bool isAnchorStream) {
   auto f = [this, tensors, streamTensorId, isAnchorStream]() {
-    logging::devicex::debug("Creating device-to-host FIFO for snap::Tensor "
-                            "{} (isAnchorStream = {}) with {} elements",
-                            streamTensorId,
-                            isAnchorStream,
-                            tensors.front()->info.nelms());
+    poplar::OptionFlags options{};
+    auto streamTensor   = ir().getTensor(streamTensorId);
+    auto bufferingDepth = getBufferingDepth(streamTensor);
+    if (bufferingDepth > 1) {
+      // Configure the buffering depth of the stream.
+      options.set("bufferingDepth", std::to_string(bufferingDepth));
+    }
+
+    logging::devicex::debug(
+        "Creating device-to-host FIFO for snap::Tensor "
+        "{} (isAnchorStream = {}) with {} elements, buffering depth: {}",
+        streamTensorId,
+        isAnchorStream,
+        tensors.front()->info.nelms(),
+        bufferingDepth);
 
     auto pToHostStreams = &toHostAnchorStreams;
     if (!isAnchorStream) {
@@ -1326,7 +1336,8 @@ PriTask IrLowering::streamToHostTask(TensorId streamTensorId,
                             graph().getPoplarGraph().addDeviceToHostFIFO(
                                 d2hId(streamTensorId, isAnchorStream),
                                 popType(tensors.front()->info),
-                                tensors.front()->info.nelms()));
+                                tensors.front()->info.nelms(),
+                                options));
     return SequenceMap(graph());
   };
 
@@ -1581,9 +1592,7 @@ void IrLowering::addOpTasks(PriTasks &tasks) {
                   std::get<0>(opInput), std::get<1>(opInput), 50.0f));
           initTensorMap[std::get<1>(opInput)].insert(
               std::make_shared<InitTensorCloning>(
-                  std::get<0>(opInput),
-                  std::get<1>(opInput),
-                  10.0f));
+                  std::get<0>(opInput), std::get<1>(opInput), 10.0f));
         }
       }
     }
@@ -1613,9 +1622,7 @@ void IrLowering::addOpTasks(PriTasks &tasks) {
                   std::get<0>(opOutput), std::get<1>(opOutput), 50.0f));
           initTensorMap[std::get<1>(opOutput)].insert(
               std::make_shared<InitTensorCloning>(
-                  std::get<0>(opOutput),
-                  std::get<1>(opOutput),
-                  10.0f));
+                  std::get<0>(opOutput), std::get<1>(opOutput), 10.0f));
         }
       }
     }

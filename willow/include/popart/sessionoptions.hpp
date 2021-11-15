@@ -641,18 +641,17 @@ struct SessionOptions {
   bool enablePrefetchDatastreams = true;
 
   /// When #enablePrefetchDatastreams is set this is the default buffering
-  /// depth value used for input streams that are not re-arranged on the host.
+  /// depth value used for streams that are not re-arranged on the host.
   /// This value can be overridden via #prefetchBufferingDepthMap.
   unsigned defaultPrefetchBufferingDepth = 1;
 
   /// When #enablePrefetchDatastreams is set this mapping can be used to set
-  /// tensor-specific buffering depths for tensors that are streamed to the
-  /// host (typically input tensors). This buffering depth could be envisaged
-  /// as being the size of a circular buffer that feeds data to Poplar.
-  /// A buffering depth greater than 1 may improve the performance
-  /// due to increased parallelisation but comes at the cost of increasing
-  /// the memory footprint. Streams for tensors that have no entry in this
-  /// map default to a buffering depth of 1.
+  /// stream-specific buffering depths. This buffering depth could be envisaged
+  /// as being the size of a circular buffer that feeds data to and from Poplar.
+  /// A buffering depth greater than 1 may improve the performance due to
+  /// increased parallelisation but comes at the cost of increasing the memory
+  /// footprint. Streams for tensors that have no entry in this map default to a
+  /// buffering depth of #defaultPrefetchBufferingDepth.
   std::map<TensorId, unsigned> prefetchBufferingDepthMap;
 
   /// By default, we use the stable softmax Poplar function. The input tensor
