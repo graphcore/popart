@@ -67,6 +67,7 @@ list(
   ${popart_op_headers_dir}/tanh.hpp)
 # file(GLOB_RECURSE op_headers ${popart_op_headers_dir}/*.hpp)
 
+
 # Store lists of the locations of the sources and headers for generated op
 # bindings.
 set(op_binding_headers "")
@@ -87,12 +88,13 @@ list(APPEND op_bindings ${op_binding_headers} ${op_binding_sources})
 set(popart_include_directories "")
 get_include_directories_from_target(popart-only popart_include_directories)
 
+
 # Custom target for generating op metadata.
 # ------------------------------------------------------------------------------
 # Command for parsing all op headers and generating a metadata file.
 add_custom_command(
   OUTPUT ${popart_op_metadata_path}
-  DEPENDS popart-only ${gen_op_metadata_path}
+  DEPENDS popart-only ${gen_op_metadata_path} ${op_headers}
   WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
   COMMAND
     python3 ${gen_op_metadata_path} --headers "\"${op_headers}\"" --out
@@ -101,6 +103,13 @@ add_custom_command(
 
 # A corresponding target to the command above.
 add_custom_target(popart_op_metadata ALL DEPENDS ${popart_op_metadata_path})
+
+file(GLOB_RECURSE files_to_remove ${popart_op_bindings_dir}/*.gen.*pp)
+add_custom_target(remove_files COMMENT "Removing old generated files from ${popart_op_bindings_dir}..." )
+add_custom_command(TARGET remove_files
+                  DEPENDS popart_op_metadata
+                  COMMAND ${CMAKE_COMMAND} -E remove -f ${files_to_remove} COMMAND_EXPAND_LISTS)
+
 
 # Custom target for generating op binding source files.
 # ------------------------------------------------------------------------------
