@@ -48,10 +48,16 @@ std::ostream &operator<<(std::ostream &os, VariableRetrievalMode &vrm);
 
 class VariableSettings {
 private:
-  CommGroup sharedVariableDomain;
-  VariableRetrievalMode retrievalMode;
+  CommGroup sharedVariableDomain      = CommGroup(CommGroupType::All, 0);
+  VariableRetrievalMode retrievalMode = VariableRetrievalMode::OnePerGroup;
 
 public:
+  /**
+   * Runs test to see if the VariableSettings are invalid, and throws an error
+   * if so.
+   */
+  void verify();
+
   /**
    * \return the CommGroup sharedVariableDomain of this VariableSettings.
    */
@@ -76,6 +82,21 @@ public:
   // Entirely custom VariableSettings
   VariableSettings(CommGroup sharedVariableDomain_,
                    VariableRetrievalMode retrievalMode_);
+
+  /**
+   * Calculate the number of replicas that will
+   * return this variable
+   * \param replicaCount Number of global replicas
+   * \return Number of variables returned
+   */
+  unsigned numReplicasReturningVariable(unsigned replicaCount);
+
+  /**
+   * Get the default \a first member of a group
+   * \param group The group to return the representative for.
+   * \return the representative replica of this group
+   */
+  unsigned getGroupRepresentative(unsigned group);
 };
 } // namespace popart
 

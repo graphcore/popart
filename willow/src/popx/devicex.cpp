@@ -59,6 +59,7 @@
 #include <popart/tensors.hpp>
 #include <popart/topocons.hpp>
 #include <popart/transforms/randomsetup.hpp>
+#include <popart/variablesettings.hpp>
 #include <poparttracepoint.hpp>
 
 #include <stepiosplitter.hpp>
@@ -256,43 +257,115 @@ void Devicex::remoteBufferWeightsToHost() {
   for (auto *tensor : executable_.getWeightTensors()) {
     const auto &initId = tensor->id;
     if (tensor->tensorLocationInfo.isRemote()) {
-      logging::devicex::debug("remoteBufferWeightsToHost: {}", initId);
+      logging::devicex::debug("remoteBufferWeightsToHost: {}, [type={}]",
+                              initId,
+                              tensor->tensorType());
       auto remoteBufferInfo = tensor->tensorLocationInfo.getRemoteBufferInfo();
       char *data0           = d2hWeightBuffers[initId].data();
 
-      if (tensor->tensorLocationInfo.isSharded()) {
-        // Replicated weight sharding, each replica holds 1/repfactor
-        // parts of the weight
-        const auto &cbr = executable_.getCollectiveBalancedHostRearrangement(
-            getRemoteArgTensorId(stripAllReservedPrefixes(tensor->id)));
+      CommGroup commGroup =
+          tensor->getVariableSettings().getSharedVariableDomain();
 
-        auto elemSize =
-            static_cast<int64_t>(tensor->info.getDataTypeInfo()->nbytes());
-        auto nelms = cbr.getNumRearrangedTensorElems();
+      unsigned replicas = getReplicationFactor();
+      unsigned returned =
+          tensor->getVariableSettings().numReplicasReturningVariable(replicas);
 
-        // Temporary buffer that can hold the padded weight shards
-        // from all replicas
-        std::vector<char> tmp(nelms * elemSize);
+      if (!replicas) {
+        logging::devicex::err("Replicas == {}", replicas);
+      }
+      if (!returned) {
+        logging::devicex::err("Returned == {}", returned);
+      }
 
-        for (unsigned replica_id = 0; replica_id < getReplicationFactor();
-             ++replica_id) {
-          pEngine->copyFromRemoteBuffer(
-              lowering().getRemoteBufferName(remoteBufferInfo.first),
-              &tmp[replica_id * nelms / getReplicationFactor() * elemSize],
-              static_cast<int>(remoteBufferInfo.second),
-              replica_id);
-        }
+      unsigned groups = commGroup.replicaGroupSize
+                            ? (replicas / commGroup.replicaGroupSize)
+                            : returned;
+      unsigned replication_refactor = getReplicationFactor() / groups;
 
-        // Rearrange collected weights into d2h buffer
-        cbr.undoRearrangeForCollective(&tmp[0], data0, elemSize);
-      } else {
-        // Weight should be the same for each replica if not using sharded,
-        // only return weights from replica_id == 0
+      unsigned nelms            = tensor->info.nelms();
+      unsigned returnedPerGroup = returned / groups;
+
+      // Lamba expression that does the reading op automatically
+      auto copyFromRemoteBuffer = [&](char *from, unsigned replica_id) {
         pEngine->copyFromRemoteBuffer(
             lowering().getRemoteBufferName(remoteBufferInfo.first),
-            data0,
+            from,
             static_cast<int>(remoteBufferInfo.second),
-            0);
+            replica_id);
+      };
+
+      for (unsigned group = 0; group < groups; group++) {
+        // every group always returns at least one
+
+        // defines the group by the first member and the increment between
+        // groups
+        unsigned group_main =
+            tensor->getVariableSettings().getGroupRepresentative(group);
+        unsigned group_increment = (commGroup.type == CommGroupType::Orthogonal)
+                                       ? commGroup.replicaGroupSize
+                                       : 1;
+
+        if (tensor->tensorLocationInfo.isSharded()) {
+          // Replicated weight sharding, each replica holds 1/repfactor
+          // parts of the weight
+          const auto &cbr = executable_.getCollectiveBalancedHostRearrangement(
+              getRemoteArgTensorId(stripAllReservedPrefixes(tensor->id)));
+
+          auto elemSize =
+              static_cast<int64_t>(tensor->info.getDataTypeInfo()->nbytes());
+          auto nelms = cbr.getNumRearrangedTensorElems();
+
+          // Temporary buffer that can hold the padded weight shards
+          // from all replicas
+          std::vector<char> tmp(nelms * elemSize);
+
+          for (unsigned group_member = 0; group_member < replication_refactor;
+               group_member++) {
+            unsigned replica_id = (group_main + group_member) * group_increment;
+            copyFromRemoteBuffer(
+                &tmp[replica_id * nelms / replication_refactor * elemSize],
+                replica_id);
+          }
+
+          unsigned address;
+          if (returned == groups) {
+            address = group * tensor->info.nelms() * elemSize;
+          } else if (returned == getReplicationFactor()) {
+            address = group_main * tensor->info.nelms() * elemSize;
+          } else {
+            throw internal_error(
+                "Attempting to return an unsuported number of "
+                "weight replicas: Returned (r) = {}, Groups (G)"
+                " = {}, Replication Factor (R) = {}. r != G && "
+                "r != R",
+                returned,
+                groups,
+                getReplicationFactor());
+          }
+
+          cbr.undoRearrangeForCollective(&tmp[0], &data0[address], elemSize);
+
+          for (unsigned group_member = 1; group_member < returnedPerGroup;
+               group_member++) {
+            unsigned replica_id = (group_main + group_member) * group_increment;
+            unsigned address_ =
+                replica_id * tensor->info.nelms() / returned * elemSize;
+            memcpy(
+                &data0[address_],
+                &data0[address],
+                static_cast<int64_t>(tensor->info.getDataTypeInfo()->nbytes()));
+          }
+        } else {
+          for (unsigned group_member = 0; group_member < returnedPerGroup;
+               group_member++) {
+            unsigned replica_id = (group_main + group_member) * group_increment;
+            unsigned long index =
+                replica_id * nelms / returned *
+                static_cast<int64_t>(tensor->info.getDataTypeInfo()->nbytes());
+            copyFromRemoteBuffer(&data0[index],
+                                 group * returnedPerGroup + group_member);
+          }
+        }
       }
     }
   }
@@ -975,10 +1048,20 @@ void Devicex::loadEngineAndConnectStreams() {
     logging::devicex::debug("Connected d2h weight data streams");
     for (auto *tensor : executable_.getWeightTensors()) {
       if (!tensor->hasProducer()) {
-        const auto &initId       = tensor->id;
-        int64_t n_bytes          = tensor->info.nbytes();
-        d2hWeightBuffers[initId] = std::vector<char>(n_bytes);
-        char *data0              = d2hWeightBuffers[initId].data();
+        const auto &initId = tensor->id;
+        int64_t n_bytes    = tensor->info.nbytes();
+        logging::devicex::debug(
+            "Connecting {} [type={}]", initId, tensor->tensorType());
+        if (tensor->tensorType() == TensorType::Variable) {
+          d2hWeightBuffers[initId] = std::vector<char>(
+              tensor->getVariableSettings().numReplicasReturningVariable(
+                  getReplicationFactor()) *
+              n_bytes);
+        } else {
+          d2hWeightBuffers[initId] = std::vector<char>(n_bytes);
+        }
+
+        char *data0 = d2hWeightBuffers[initId].data();
         if (!ir().streamingIsDisabledForTensor(tensor)) {
           // Only connect non-cached tensor streams,
           // RemoteBuffer handled separately

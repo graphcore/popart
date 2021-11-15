@@ -205,6 +205,8 @@ static constexpr const char *sReplicatedStreamMode = "__replicated_stream_mode";
 static constexpr const char *sCommGroupType        = "__comm_group_type";
 static constexpr const char *sCommGroupSize        = "__comm_group_size";
 static constexpr const char *sVariableSettings     = "__variable_settings";
+static constexpr const char *sVariableRetrievalMode =
+    "__variable_retrieval_mode";
 
 static constexpr const char *sSerializeMatMulModeAttribute =
     "__serialize_matmul_mode";

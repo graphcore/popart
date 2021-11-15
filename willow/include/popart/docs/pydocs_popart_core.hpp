@@ -2565,6 +2565,8 @@ replicas denoted {0, ... N-1} and group size is k, then there are m =
 N/k groups of size k: {0, m, 2m, ...}, {1, m+1, 2m+1, ...} ... {m-1,
 2m-1, ... N-1})doc";
 
+static const char *__doc_popart_CommGroupType_None = R"doc()doc";
+
 static const char *__doc_popart_CommGroup_CommGroup = R"doc()doc";
 
 static const char *__doc_popart_CommGroup_CommGroup_2 =
@@ -2581,6 +2583,11 @@ static const char *__doc_popart_CommGroup_replicaGroupSize =
 
 static const char *__doc_popart_CommGroup_type =
     R"doc(Replica group type */)doc";
+
+static const char *__doc_popart_VariableRetrievalMode_OnePerGroup = R"doc()doc";
+static const char *__doc_popart_VariableRetrievalMode_AllReduceReplicas =
+    R"doc()doc";
+static const char *__doc_popart_VariableRetrievalMode_AllReplicas = R"doc()doc";
 
 static const char *__doc_popart_ConstSGD =
     R"doc(Stochastic Gradient Descent (SGD) optimizer with constant learning

@@ -42,6 +42,7 @@
 #include <popart/tensornames.hpp>
 #include <popart/tensors.hpp>
 #include <popart/util.hpp>
+#include <popart/variablesettings.hpp>
 #include <popart/vendored/optional.hpp>
 #include <popart/version.hpp>
 
@@ -2890,6 +2891,32 @@ PYBIND11_MODULE(popart_core, m) {
     en.value("Random",
              DeviceSelectionCriterion::Random,
              DOC(popart, DeviceSelectionCriterion, Random));
+  }
+  {
+    py::enum_<VariableRetrievalMode> en(m, "VariableRetrievalMode");
+    en.value("OnePerGroup",
+             VariableRetrievalMode::OnePerGroup,
+             DOC(popart, VariableRetrievalMode, OnePerGroup));
+    en.value("AllReduceReplicas",
+             VariableRetrievalMode::AllReduceReplicas,
+             DOC(popart, VariableRetrievalMode, AllReduceReplicas));
+    en.value("AllReplicas",
+             VariableRetrievalMode::AllReplicas,
+             DOC(popart, VariableRetrievalMode, AllReplicas));
+  }
+  {
+    py::class_<VariableSettings> cls(m, "VariableSettings");
+    cls.def(py::init<>());
+    cls.def(py::init<CommGroup>(), py::arg("sharedVariableDomain_"));
+    cls.def(py::init<VariableRetrievalMode>(), py::arg("retrievalMode_"));
+    cls.def(py::init<CommGroup, VariableRetrievalMode>(),
+            py::arg("sharedVariableDomain_"),
+            py::arg("retrievalMode_"));
+    cls.def("numReplicasReturningVariable",
+            &VariableSettings::numReplicasReturningVariable);
+    cls.def("getGroupRepresentative",
+            &VariableSettings::getGroupRepresentative,
+            py::arg("group"));
   }
   { m.attr("CommGroupType") = popart_internal_ir.attr("CommGroupType"); }
   { m.attr("CommGroup") = popart_internal_ir.attr("CommGroup"); }

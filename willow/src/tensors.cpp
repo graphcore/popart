@@ -1,6 +1,7 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #include <poprithms/logging/timepartitionlogger.hpp>
 #include <popart/chains.hpp>
+#include <popart/commgroup.hpp>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/names.hpp>
@@ -10,6 +11,7 @@
 #include <popart/tensordebuginfo.hpp>
 #include <popart/tensorindex.hpp>
 #include <popart/tensors.hpp>
+#include <popart/variablesettings.hpp>
 
 namespace popart {
 

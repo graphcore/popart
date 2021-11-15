@@ -299,9 +299,12 @@ public:
   /// \return The VariableSettings of this Variable
   VariableSettings getVariableSettings() const { return variableSettings; }
 
+  /// \return the shape of the tensor, considering replica groups
+  std::vector<int64_t> returnedShape(unsigned replicationFactor);
+
 private:
   VariableUpdateType variableUpdateType;
-  VariableSettings variableSettings;
+  VariableSettings variableSettings = VariableSettings();
 
   // If the type is copy, this will identity where to copy from
   TensorId copyFromTensor;

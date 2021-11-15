@@ -1093,6 +1093,21 @@ void Consumers::increment(Op *op) {
   }
 }
 
+std::vector<int64_t> Tensor::returnedShape(unsigned replicationFactor) {
+  int64_t returned =
+      variableSettings.numReplicasReturningVariable(replicationFactor);
+  std::vector<int64_t> tensor_shape = info.shape();
+  std::vector<int64_t> return_shape(tensor_shape.size() + 1);
+
+  // Read in elements
+  return_shape[0] = returned;
+  for (auto i = 0; i < tensor_shape.size(); i++) {
+    return_shape[i + 1] = tensor_shape[i];
+  }
+
+  return return_shape;
+}
+
 std::vector<Op *> Consumers::getOps() const {
   std::vector<Op *> ops;
   ops.reserve(consumers_m.size());
