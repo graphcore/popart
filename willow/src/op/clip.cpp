@@ -133,6 +133,30 @@ static OpCreator<ClipOp> clip6OpCreator(
 static OpCreator<ClipOp> clip11OpCreator(
     OpDefinitions({{Onnx::Operators::Clip_11, clipOpV11Def}}),
     [](const OpCreatorInfo &info, Graph &graph) {
+      // If min/max input has been connected then it must have data at model
+      // build time
+      if (info.hasInputTensor(ClipOp::clip11MinInputIndex()) &&
+          !info.getInputTensor(ClipOp::clip11MinInputIndex())
+               ->hasTensorData()) {
+        throw error("Op {}({}), inputs=[{}] currently only supports constant "
+                    "min/max parameters. Input 'min' ({}) has no data.",
+                    info.settings.name,
+                    info.opid,
+                    info.getInputIds().at(0),
+                    info.getInputTensor(ClipOp::clip11MinInputIndex())->id);
+      }
+
+      if (info.hasInputTensor(ClipOp::clip11MaxInputIndex()) &&
+          !info.getInputTensor(ClipOp::clip11MaxInputIndex())
+               ->hasTensorData()) {
+        throw error("Op {}({}), inputs=[{}] currently only supports constant "
+                    "min/max parameters. Input 'max' ({}) has no data.",
+                    info.settings.name,
+                    info.opid,
+                    info.getInputIds().at(0),
+                    info.getInputTensor(ClipOp::clip11MaxInputIndex())->id);
+      }
+
       float minValue = info.getInputScalarValue<float>(
           ClipOp::clip11MinInputIndex(), std::numeric_limits<float>::lowest());
       float maxValue = info.getInputScalarValue<float>(

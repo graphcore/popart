@@ -9,6 +9,7 @@ add_popart_py_unit_test(boolean_test boolean_test.py)
 add_popart_py_unit_test(call_test call_test.py)
 add_popart_py_unit_test(call_test_ipu_model call_test_ipu_model.py VARIANTS IpuModel)
 add_popart_py_unit_test(cast_test_py cast_test_py.py VARIANTS Hw) # Run on Hw, because float16 is not accurately modelled on IpuModel.
+add_popart_py_unit_test(clip_test.py clip_test.py)
 add_popart_py_unit_test(constexpr_2d_transpose constexpr_2d_transpose.py)
 add_popart_py_unit_test(constexpr_add constexpr_add.py)
 add_popart_py_unit_test(constexpr_gather constexpr_gather.py)
