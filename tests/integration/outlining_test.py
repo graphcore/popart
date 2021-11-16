@@ -162,7 +162,7 @@ def test_batches_per_step_greater_than_one(subgraphCopyingStrategy):
     popart.SubgraphCopyingStrategy.OnEnterAndExit,
     popart.SubgraphCopyingStrategy.JustInTime
 ])
-def test_outlining_in_subgraphs(subgraphCopyingStrategy):
+def test_outlining_in_subgraphs(subgraphCopyingStrategy, tmpdir):
     data = [np.random.rand(4, 4).astype(np.float32) for i in range(2)]
     weights = [np.random.rand(4, 4).astype(np.float32) for i in range(2)]
 
@@ -220,6 +220,9 @@ def test_outlining_in_subgraphs(subgraphCopyingStrategy):
         x = np.matmul(x, weights[1])
         return x
 
+    debug_filename = str(tmpdir) + "/debug.json"
+    popart.initializePoplarDebugInfo(debug_filename, "json")
+
     popart_output, ir = run_popart()
     ref_output = run_reference()
     print(f'popart_output: {popart_output}\n')
@@ -237,3 +240,20 @@ def test_outlining_in_subgraphs(subgraphCopyingStrategy):
 
     # 2 Call ops should have been added for the outlined MatMuls.
     assert ops.count('Call') == 3
+
+    popart.closePoplarDebugInfo()
+    num_outlined_calls = 0
+    with open(debug_filename) as json_file:
+        data = json.load(json_file)
+        for context in data["contexts"]:
+            if context['layer'] == "popart" and \
+               'attributes' in context and \
+               'callee' in context['attributes'] and \
+               context['attributes']['callee'] == 'call_subgraph(0)':
+                num_outlined_calls += 1
+                assert 'outlinedDebugContextIds' in context
+                assert 'replacedDebugContextIds' in context
+                assert len(context['outlinedDebugContextIds']) > 0
+                assert len(context['outlinedDebugContextIds']) == \
+                       len(context['replacedDebugContextIds'])
+    assert num_outlined_calls == 2

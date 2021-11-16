@@ -4,6 +4,7 @@
 #include <boost/range/algorithm/find.hpp>
 #include <cmath>
 #include <memory>
+#include <sstream>
 
 #include <popart/aliasesmap.hpp>
 #include <popart/error.hpp>
@@ -814,6 +815,35 @@ Graph &SubgraphOutline::createSubgraph(
   return subgraph;
 }
 
+static void addCallOutlineDebugInfo(Op *call,
+                                    const SubgraphableOpCluster &instance,
+                                    const std::map<Op *, int> &index_map) {
+  // Debug context IDs of PopArt ops that were replaced by a Call...
+  {
+    std::ostringstream oss("[", std::ios::ate);
+    for (auto const opId : instance.ops) {
+      oss << instance.graph->getOp(opId)->debugInfo.getId() << ",";
+    }
+    if (oss.tellp() > 1) {
+      oss.seekp(-1, oss.cur); // Replace last comma
+    }
+    oss << "]";
+    call->debugInfo.setValue("replacedDebugContextIds", oss.str());
+  }
+  // ...and corresponding debug context IDs of PopArt ops in the Call function
+  {
+    std::ostringstream oss("[", std::ios::ate);
+    for (auto const &opAndIndex : index_map) {
+      oss << opAndIndex.first->debugInfo.getId() << ",";
+    }
+    if (oss.tellp() > 1) {
+      oss.seekp(-1, oss.cur); // Replace last comma
+    }
+    oss << "]";
+    call->debugInfo.setValue("outlinedDebugContextIds", oss.str());
+  }
+}
+
 Op *SubgraphOutline::replaceWithCallOp(const SubgraphableOpCluster &instance,
                                        Graph &subgraph,
                                        const std::map<Op *, int> &index_map,
@@ -891,6 +921,7 @@ Op *SubgraphOutline::replaceWithCallOp(const SubgraphableOpCluster &instance,
   if (execution_context) {
     callOp->settings.executionContext = execution_context.value();
   }
+  addCallOutlineDebugInfo(callOp, instance, index_map);
 
   // Set the position w.r.t loss, if possible. If any of the internal ops
   // is connected to the final loss, then so is this CallOp. Note that we use
