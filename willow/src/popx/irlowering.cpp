@@ -2869,27 +2869,19 @@ void IrLowering::prepareGraph() {
                     numIOTiles);
       }
 
+      const auto ioTiles =
+          gcl::perIPUTiles(graph().getPoplarGraph(), 0, numIOTiles, true, true);
       const auto computeTiles = gcl::perIPUTiles(graph().getPoplarGraph(),
                                                  numIOTiles,
                                                  tilesPerIPU - numIOTiles,
                                                  true,
                                                  true);
 
-      std::vector<unsigned> ioTiles;
-      ioTiles.reserve(numIOTiles);
-      unsigned j = 0;
-      for (unsigned i = 0; i < tilesPerIPU; ++i) {
-        if (j < computeTiles.size() && computeTiles[j] == i) {
-          ++j;
-        } else {
-          ioTiles.push_back(i);
-        }
-      }
-
       for (VGraphId ipu = 0; ipu < numIPUs; ++ipu) {
         unsigned startTile = static_cast<unsigned>(ipu) * tilesPerIPU;
         unsigned endTile   = (static_cast<unsigned>(ipu) + 1) * tilesPerIPU;
         auto ipuGraph      = graph().createVirtualGraph(startTile, endTile);
+
         virtualGraphs.emplace_back(ipuGraph.createVirtualGraph(computeTiles),
                                    ipuGraph.createVirtualGraph(ioTiles));
         logging::devicex::info("Created virtual graph {} with {} tiles",
