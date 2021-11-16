@@ -22,6 +22,7 @@ from popart.ir.streams import *
 from popart.ir.random_seed import *
 from popart.ir.module import *
 import popart.ir.transforms
+import popart.ir.remote_buffer_handle
 
 del sys
 del actualVersion

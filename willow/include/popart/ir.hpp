@@ -57,8 +57,17 @@ public:
   const std::string sessionName;
 };
 
+/// Stores the shape and the numerical type of the remote buffer
 class RemoteBufferInfo {
 public:
+  /**
+   * Construct a new Remote Buffer Info object.
+   *
+   * \param info_ Shape and numerical type of the tensor stored in the remote
+   *              buffer
+   * \param repeats_ How many tensors of the same type and numerical shall the
+   *                 remote buffer allocate space for
+   */
   RemoteBufferInfo(TensorInfo info_, uint64_t repeats_)
       : info(info_), repeats(repeats_) {}
   TensorInfo info;
