@@ -11,11 +11,54 @@
 #include <popops/ElementWise.hpp>
 #include <popops/Expr.hpp>
 #include <popops/Reduce.hpp>
+#include <poputil/VarStructure.hpp>
 
 namespace pe = popops::expr;
 
 namespace popart {
 namespace popx {
+
+namespace {
+template <typename ClonerT>
+snap::Tensor cloneAndGroupImpl(ClonerT &default_cloner,
+                               snap::program::Sequence &p,
+                               snap::Graph &g,
+                               const snap::Tensor &t,
+                               const poplar::DebugContext &d = {}) {
+  auto groupings =
+      poputil::detectDimGroupings(g.getPoplarGraph(), t.getPoplarTensor());
+
+  snap::Tensor outTensor;
+  // If there's no dimension grouping, clone into a tensor that is mapped with
+  // the softmax reduction axis in tile-contiguous blocks.
+  if (groupings.empty()) {
+    // Make the grain size the vector width multiplied by the number of workers
+    // per tile.
+    auto grain_size =
+        g.getPoplarGraph().getTarget().getVectorWidth(t.elementType()) *
+        g.getPoplarGraph().getTarget().getNumWorkerContexts();
+
+    // Create the tensor.
+    outTensor = {
+        g.getPoplarGraph().clone(t.getPoplarTensor(),
+                                 d,
+                                 poplar::TensorCloneMethod::CREATE_NEW_ORDER),
+        g};
+    poputil::mapTensorLinearly(
+        g.getPoplarGraph(), outTensor.getPoplarTensor(), 0, grain_size);
+
+    // Copy the values to it.
+    p.getPoplarSequence().add(poplar::program::Copy(t.getPoplarTensor(),
+                                                    outTensor.getPoplarTensor(),
+                                                    /* dontOutline = */ false,
+                                                    d));
+  } else {
+    outTensor = default_cloner(p, t);
+  }
+
+  return outTensor;
+}
+} // namespace
 
 template <typename T>
 std::unique_ptr<LogSoftmaxComputex> createLogSoftmaxComputex(Op *op) {
@@ -45,7 +88,12 @@ snap::Tensor LogSoftmaxComputex::outplace(snap::program::Sequence &p,
                                           const snap::Tensor &t,
                                           const poplar::DebugNameAndId &dnai,
                                           const std::string &s) const {
-  auto outTensor = cloneNcopy(p, g, t, dnai);
+  const auto cloner = [this, &g, &dnai](snap::program::Sequence &p,
+                                        const snap::Tensor &t) -> snap::Tensor {
+    return cloneNcopy(p, g, t, dnai);
+  };
+
+  snap::Tensor outTensor = cloneAndGroupImpl(cloner, p, g, t, dnai);
   inplace(p, g, outTensor, dnai, s);
   return outTensor;
 }
@@ -104,11 +152,12 @@ void LogSoftmaxGradOpx::grow(snap::program::Sequence &prog) const {
   } else {
     nlType = popnn::NonLinearityType::SOFTMAX_STABLE;
   }
-  auto probs = popnn::nonLinearity(graph().getPoplarGraph(),
-                                   nlType,
-                                   pre_probs.getPoplarTensor(),
-                                   prog.getPoplarSequence(),
-                                   debugContext("nonLinearity"));
+  auto probs = cloneNcopyGrouped(prog, pre_probs);
+  popnn::nonLinearityInPlace(graph().getPoplarGraph(),
+                             nlType,
+                             probs.getPoplarTensor(),
+                             prog.getPoplarSequence(),
+                             debugContext("nonLinearity"));
 
   // sum_j (g_j)
   // reduce along all dimensions except 0 (0 is the sample index)
@@ -126,14 +175,25 @@ void LogSoftmaxGradOpx::grow(snap::program::Sequence &prog) const {
                    .reshape(upRanked);
 
   // g_i - softmax(x_i) * sum_j (g_j)
-  auto dv = popops::map(graph().getPoplarGraph(),
-                        pe::Sub(pe::_1, pe::Mul(pe::_2, pe::_3)),
-                        {d_probs.getPoplarTensor(), probs, sum_g},
-                        prog.getPoplarSequence(),
-                        debugContext("SubMul"));
+  auto dv =
+      popops::map(graph().getPoplarGraph(),
+                  pe::Sub(pe::_1, pe::Mul(pe::_2, pe::_3)),
+                  {d_probs.getPoplarTensor(), probs.getPoplarTensor(), sum_g},
+                  prog.getPoplarSequence(),
+                  debugContext("SubMul"));
 
   dv = dv.reshape(inInfo(LogSoftmaxGradOp::getActsInIndex()).shape_szt());
   setOutTensor(0, snap::Tensor{dv, graph()});
+}
+
+snap::Tensor LogSoftmaxGradOpx::cloneNcopyGrouped(snap::program::Sequence &s,
+                                                  const snap::Tensor &t) const {
+  const auto cloner = [this](snap::program::Sequence &p,
+                             const snap::Tensor &t) -> snap::Tensor {
+    return cloneNcopy(p, t);
+  };
+
+  return cloneAndGroupImpl(cloner, s, graph(), t, debugContext("CloneProbs"));
 }
 
 namespace {

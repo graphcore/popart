@@ -48,6 +48,9 @@ class LogSoftmaxGradOpx : public ElementWiseUnaryOpx {
 public:
   LogSoftmaxGradOpx(Op *, Devicex *);
   void grow(snap::program::Sequence &) const final;
+
+  snap::Tensor cloneNcopyGrouped(snap::program::Sequence &s,
+                                 const snap::Tensor &t) const;
 };
 
 } // namespace popx
