@@ -65,7 +65,7 @@ DeviceManager::getDevice(SyncPattern syncPattern,
       return device;
     }
   }
-  return nullptr;
+  throw error("Unable to get device with id '{}'", deviceManagerId);
 }
 
 std::vector<std::shared_ptr<DeviceInfo>>
@@ -91,48 +91,17 @@ DeviceManager::enumerateDevices(SyncPattern pattern,
   return devices;
 }
 
-std::shared_ptr<DeviceInfo> DeviceManager::createCpuDevice() {
+std::shared_ptr<DeviceInfo> DeviceManager::createHostDevice(
+    DeviceType type,
+    const std::map<std::string, std::string> &options) {
   for (auto p : providers) {
-    std::shared_ptr<DeviceInfo> device =
-        p->createHostDevice(DeviceType::Cpu, {});
-    if (device != nullptr)
-      return device;
-  }
-  return nullptr;
-}
-
-std::shared_ptr<DeviceInfo> DeviceManager::createIpuModelDevice(
-    std::map<std::string, std::string> &options) {
-  for (auto p : providers) {
-    std::shared_ptr<DeviceInfo> device =
-        p->createHostDevice(DeviceType::IpuModel, options);
-    if (device != nullptr)
-      return device;
-  }
-  return nullptr;
-}
-
-std::shared_ptr<DeviceInfo>
-DeviceManager::createSimDevice(std::map<std::string, std::string> &options) {
-  for (auto p : providers) {
-    std::shared_ptr<DeviceInfo> device =
-        p->createHostDevice(DeviceType::Sim, options);
-    if (device != nullptr)
-      return device;
-  }
-  return nullptr;
-}
-
-std::shared_ptr<DeviceInfo> DeviceManager::createOfflineIPUDevice(
-    std::map<std::string, std::string> &options) {
-
-  for (auto p : providers) {
-    std::shared_ptr<DeviceInfo> device =
-        p->createHostDevice(DeviceType::OfflineIpu, options);
+    std::shared_ptr<DeviceInfo> device = p->createHostDevice(type, options);
     if (device != nullptr) {
       return device;
     }
   }
+
+  // Unable to create host device
   std::vector<std::string> opts;
   opts.reserve(options.size());
   for (auto opt : options) {
@@ -140,10 +109,30 @@ std::shared_ptr<DeviceInfo> DeviceManager::createOfflineIPUDevice(
     ss << opt.first << ": " << opt.second;
     opts.push_back(ss.str());
   }
-  throw error("Could not acquire OfflineIpu with options [{}] from any of {} "
+  throw error("Could not acquire {} device with options [{}] from any of {} "
               "providers.",
+              type,
               logging::join(opts.begin(), opts.end(), ","),
               providers.size());
+}
+
+std::shared_ptr<DeviceInfo> DeviceManager::createCpuDevice() {
+  return createHostDevice(DeviceType::Cpu, {});
+}
+
+std::shared_ptr<DeviceInfo> DeviceManager::createIpuModelDevice(
+    std::map<std::string, std::string> &options) {
+  return createHostDevice(DeviceType::IpuModel, options);
+}
+
+std::shared_ptr<DeviceInfo>
+DeviceManager::createSimDevice(std::map<std::string, std::string> &options) {
+  return createHostDevice(DeviceType::Sim, options);
+}
+
+std::shared_ptr<DeviceInfo> DeviceManager::createOfflineIPUDevice(
+    std::map<std::string, std::string> &options) {
+  return createHostDevice(DeviceType::OfflineIpu, options);
 }
 
 std::shared_ptr<DeviceInfo> DeviceManager::acquireAvailableDevice(
@@ -151,7 +140,8 @@ std::shared_ptr<DeviceInfo> DeviceManager::acquireAvailableDevice(
     int tilesPerIPU,
     SyncPattern pattern,
     DeviceConnectionType connectionType,
-    DeviceSelectionCriterion selectionCriterion) {
+    DeviceSelectionCriterion selectionCriterion,
+    bool allowReturnNullDevice) {
   if (numIpus > 0 && ((numIpus & (numIpus - 1)) != 0)) {
     throw error("You have attempted to acquire {} IPUs. The number of IPUs "
                 "requested must be a power of two",
@@ -184,13 +174,25 @@ std::shared_ptr<DeviceInfo> DeviceManager::acquireAvailableDevice(
     }
   }
 
-  return nullptr;
+  if (allowReturnNullDevice) {
+    logging::warn(
+        "No avaialble device was found. Returning a null device because "
+        "'allowReturnNullDevice' is set to 'true'. Note that in a future "
+        "release this option will be set to 'false' by default.");
+    return nullptr;
+  } else {
+    throw error(
+        "Failed to acquire device. Ensure that there are sufficient IPUs "
+        "available. If you have enabled the Poplar SDK you can check device "
+        "availability with the `gc-monitor` command-line utility.");
+  }
 }
 
 std::shared_ptr<DeviceInfo>
 DeviceManager::acquireDeviceById(int id,
                                  SyncPattern pattern,
-                                 DeviceConnectionType connectionType) {
+                                 DeviceConnectionType connectionType,
+                                 bool allowReturnNullDevice) {
   if (connectionType == DeviceConnectionType::Never) {
     throw error("Trying to acquire a hardware device when connectionType is "
                 "DeviceConnectionType::Never");
@@ -203,10 +205,24 @@ DeviceManager::acquireDeviceById(int id,
     if (device->attach()) {
       return device;
     } else {
-      return nullptr;
+      if (allowReturnNullDevice) {
+        logging::warn(
+            "Device with id '{}' is not availble. Returning a null device "
+            "because 'allowReturnNullDevice' is set to 'true'. Note that in a "
+            "future release this option will be set to 'false' by default.",
+            id);
+      } else {
+        throw error(
+            "Unable to acquire device with id '{}' and connection type "
+            "'DeviceConnectionType::Always'. Ensure it is available. If "
+            "you have enabled the Poplar SDK you can check device "
+            "availability with the `gc-monitor` command-line utility.",
+            id);
+      }
     }
   }
 
+  // Guaranteed not to be nullptr by getDevice
   return device;
 }
 

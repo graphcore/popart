@@ -2935,17 +2935,20 @@ PYBIND11_MODULE(popart_core, m) {
             int,
             SyncPattern,
             DeviceConnectionType,
-            DeviceSelectionCriterion)>(&DeviceManager::acquireAvailableDevice),
+            DeviceSelectionCriterion,
+            bool)>(&DeviceManager::acquireAvailableDevice),
         py::arg("numIpus")            = 1,
         py::arg("tilesPerIpu")        = 0,
         py::arg("pattern")            = SyncPattern::Full,
         py::arg("connectionType")     = DeviceConnectionType::Always,
-        py::arg("selectionCriterion") = DeviceSelectionCriterion::First);
+        py::arg("selectionCriterion") = DeviceSelectionCriterion::First,
+        py::arg("allowReturnNullDevice") = true);
     cls.def("acquireDeviceById",
             &DeviceManager::acquireDeviceById,
             py::arg("id"),
             py::arg("pattern")        = SyncPattern::Full,
             py::arg("connectionType") = DeviceConnectionType::Always,
+            py::arg("allowReturnNullDevice") = true,
             DOC(popart, DeviceManager, acquireDeviceById));
     cls.def("createCpuDevice", &DeviceManager::createCpuDevice);
     cls.def("createIpuModelDevice", [](DeviceManager &dm, py::dict e) {

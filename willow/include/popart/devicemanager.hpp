@@ -179,13 +179,25 @@ public:
       DeviceConnectionType connectionType = DeviceConnectionType::Always,
       int tilesPerIPU                     = 0);
 
+  /**
+   * Create a 'simulated' device on the host.
+   *
+   * \param type The type of device.
+   * \param options Configuration settings for the host device.
+   * \return A device.
+   */
+  std::shared_ptr<DeviceInfo>
+  createHostDevice(DeviceType type,
+                   const std::map<std::string, std::string> &options);
+
   /** Finds the first available hardware device, with a certain number of IPUs.
    * This method will attach to the device.
    * \param numIpus The number of IPUs on the device [=1].
    * \param tilesPerIPU The number of tiles per IPU (0 will match any number)
    * [=0]
-   * \return A device, which can be used with a session. Will return
-   * nullptr if no device is available.
+   * \return A device, which can be used with a session. If
+   * \c allowReturnNullDevice is set to 'true' then this will be a nullptr if
+   * no device is available.
    */
   std::shared_ptr<DeviceInfo> acquireAvailableDevice(
       int numIpus                         = 1,
@@ -193,17 +205,21 @@ public:
       SyncPattern pattern                 = SyncPattern::Full,
       DeviceConnectionType connectionType = DeviceConnectionType::Always,
       DeviceSelectionCriterion selectionCriterion =
-          DeviceSelectionCriterion::First);
+          DeviceSelectionCriterion::First,
+      bool allowReturnNullDevice = true);
 
   /** Allocates the hardware device by id. This id can be found running `gc-info
    *  -l`. This method will attach to the device.
    * \param id The index of the IPU to be used.
-   * \return A device. Will return nullptr if the device is not available.
+   * \return A device, which can be used with a session. If
+   * \c allowReturnNullDevice is set to 'true' then this will be a nullptr if
+   * the specified device is not available.
    */
   std::shared_ptr<DeviceInfo> acquireDeviceById(
       int id,
       SyncPattern pattern                 = SyncPattern::Full,
-      DeviceConnectionType connectionType = DeviceConnectionType::Always);
+      DeviceConnectionType connectionType = DeviceConnectionType::Always,
+      bool allowReturnNullDevice          = true);
 
   /** Create a 'simulated' CPU device.
    * \return A device.
