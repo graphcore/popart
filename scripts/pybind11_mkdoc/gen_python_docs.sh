@@ -1,35 +1,20 @@
 #!/bin/bash -e
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 
-# How to use:
-# First, install the mkdoc python module:
-# `python3 -m pip install git+git://github.com/pybind/pybind11_mkdoc.git@master`
-# Also install python-clang if you don't have it already:
-# `python3 -m pip install clang`
-#
-# Then run this file with either a poplar SDK include directory or the
+# Run this file with either a poplar SDK include directory or the
 # poplar_view build directory:
 # bash gen_python_docs.sh path/to/poplar-install/include
 # This will generate willow/include/popart/pydocs_popart_core.hpp which contains the docstrings
 # for the python bindings. See the githib repo above for details on how to access them, or
 # look at some other docstrings for examples.
 
+# If run from inside Poplarview, then LLVM and LIBCLANG directories are identified automatically.
+# Otherwise they must be specified by the user using LLVM_DIR_PATH and LIBCLANG_PATH environment parameters.
+
 # Re-run this every time you make a change to .hpp dcumentation you want reflected in the
 # python docs. E.g. if you update the doxygen comments to sessionoptions.globalReplicationFactor
-#  in willow/include/popart/sessionoptions.hpp, Run this, and it will copy the changes to pydocs_popart_core.hpp
+# in willow/include/popart/sessionoptions.hpp, Run this, and it will copy the changes to pydocs_popart_core.hpp
 # and the changes will appear in the python docs.
-
-CMD="python3 -c 'import pkgutil; print(1 if pkgutil.find_loader(\"pybind11_mkdoc\") else 0)'"
-INSTALLED=`eval $CMD`
-
-# Check python module installed
-if [[ $INSTALLED -eq 0 ]]
-then
-    echo "Python pybind11_mkdoc package not found."
-    echo "Please install from:"
-    echo "https://github.com/pybind/pybind11_mkdoc"
-    exit 0
-fi
 
 # Check a poplar include or build dir was supplied.
 if [ -z "$1" ]
@@ -44,15 +29,28 @@ else
     if [[  $(git config --get remote.origin.url) == *"POPLARVIEW"* ]]
     then
         echo "In poplar_view, assuming a build dir"
-        EXTRA_INCLUDES_STR="-I "$1"/install/gcl/include \
-        -I "$1"/install/libpva/include \
-        -I "$1"/install/popir/include \
-        -I "$1"/install/poplar/include \
-        -I "$1"/install/poplibs/include \
-        -I "$1"/install/poprithms/include"
+        EXTRA_INCLUDES_STR="-I $1/install/gccs/include \
+        -I $1/install/gcl/include \
+        -I $1/install/libpva/include \
+        -I $1/install/popir/include \
+        -I $1/install/poplar/include \
+        -I $1/install/poplibs/include \
+        -I $1/install/poprithms/include"
+        # If LLVM_DIR_PATH is not set, give it a default value inside the POPLARVIEW build directory
+        # LIBCLANG_PATH in this case should be automatically found inside $LLVM_DIR_PATH
+        if [ -z "$LLVM_DIR_PATH" ]
+        then
+            LLVM_DIR_PATH="$1/install/llvm"
+        fi
     else
         echo "Not in poplar_view, assuming a poplar SDK include dir"
-        EXTRA_INCLUDES_STR="-I "$1""
+        EXTRA_INCLUDES_STR="-I $1"
+
+        if [[ -z "$LLVM_DIR_PATH" || -z "$LIBCLANG_PATH" ]]
+        then
+            echo "Please specify llvm directory and libclang.so paths through LLVM_DIR_PATH and LIBCLANG_PATH environment variables when running outside of POPLARVIEW"
+            exit 0
+        fi
     fi
     cd "$cwd"
 fi
@@ -66,7 +64,10 @@ fi
 echo "Generating python docs from .hpp files:"
 
 OUT_FILE="willow/include/popart/docs/pydocs_popart_core.hpp"
-CMD="python3 -m pybind11_mkdoc \
+CMD="PYTHONPATH=./scripts:$PYTHONPATH \
+LLVM_DIR_PATH=$LLVM_DIR_PATH \
+CPATH=$CPATH:/usr/include/c++/4.8.5/x86_64-redhat-linux/ \
+python3 -m pybind11_mkdoc \
 -I /usr/include \
 $EXTRA_INCLUDES_STR \
 -I willow/include \

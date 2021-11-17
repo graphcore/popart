@@ -21,7 +21,8 @@
             "exclude": "(tests/linters/.*)"
         },
         "autopatch": {
-            "type": "autopatch"
+            "type": "autopatch",
+            "exclude": "(scripts/pybind11_mkdoc)"
         }
     }
 }
