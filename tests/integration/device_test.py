@@ -72,6 +72,22 @@ def test_aquire_device_by_id_2():
 
 
 @tu.requires_ipu
+def test_aquire_device_by_id_3():
+    """
+    Test that no error is thrown if trying to acquire device by id when it
+    has already been attached to when allowReturnNullDevice is True, and that
+    a null device is returned.
+    """
+    deviceManager = popart.DeviceManager()
+    deviceId = 0
+    device0 = deviceManager.acquireDeviceById(deviceId)
+    assert device0 != None
+    device1 = deviceManager.acquireDeviceById(deviceId,
+                                              allowReturnNullDevice=True)
+    assert device1 == None
+
+
+@tu.requires_ipu
 def test_default_connection_type_0():
     deviceManager = popart.DeviceManager()
     device = deviceManager.acquireAvailableDevice(1)

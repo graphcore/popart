@@ -211,6 +211,7 @@ DeviceManager::acquireDeviceById(int id,
             "because 'allowReturnNullDevice' is set to 'true'. Note that in a "
             "future release this option will be set to 'false' by default.",
             id);
+        return nullptr;
       } else {
         throw error(
             "Unable to acquire device with id '{}' and connection type "
