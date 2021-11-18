@@ -140,11 +140,32 @@ ElementWiseBinaryBaseOp::getReplicatedTensorShardingIndices() const {
     auto outInf  = outInfo(ElementWiseBinaryBaseOp::getOutIndex());
 
     // Non-broadcasted inputs that match the output need to be RTS
-    if (arg0Inf == outInf) {
+    // Catch all cases where the input tensor may already be sharded, but the
+    // output is not yet, or vice versa
+    // Cases:
+    // a.) Input and output are not sharded yet (no meta shape)
+    // b.) Input and output are sharded (both have meta shape)
+    // c.) Input is sharded (has meta shape) but output is not yet
+    // d.) Input is not sharded, but the output is (has meta shape)
+    //
+    // the meta-shape stores the shape that the tensor had before sharding
+    // (the combined shape over all replicas that shard the tensor)
+
+    bool arg0ms = arg0Inf.metaShape().empty();
+    bool arg1ms = arg1Inf.metaShape().empty();
+    bool outms  = outInf.metaShape().empty();
+
+    if ((arg0ms && arg0Inf.shape() == outInf.shape() && outms) ||
+        (!arg0ms && arg0Inf.metaShape() == outInf.metaShape() && !outms) ||
+        (!arg0ms && arg0Inf.metaShape() == outInf.shape() && outms) ||
+        (arg0ms && arg0Inf.shape() == outInf.metaShape() && !outms)) {
       rtsInIndices.insert(ElementWiseBinaryBaseOp::getArg0InIndex());
     }
 
-    if (arg1Inf == outInf) {
+    if ((arg1ms && arg1Inf.shape() == outInf.shape() && outms) ||
+        (!arg1ms && arg1Inf.metaShape() == outInf.metaShape() && !outms) ||
+        (!arg1ms && arg1Inf.metaShape() == outInf.shape() && outms) ||
+        (arg1ms && arg1Inf.shape() == outInf.metaShape() && !outms)) {
       rtsInIndices.insert(ElementWiseBinaryBaseOp::getArg1InIndex());
     }
 

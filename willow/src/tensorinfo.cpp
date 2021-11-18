@@ -346,6 +346,11 @@ std::vector<int64_t> npReductionAxis(const std::vector<int64_t> &in,
 void TensorInfo::append(std::ostream &ss) const {
   ss << padded(dataTypeInfo->name(), 8);
   appendSequence(ss, shape_v);
+  if (!meta_shape_v.empty()) {
+    ss << " (meta-shape: ";
+    appendSequence(ss, meta_shape_v);
+    ss << ")";
+  }
 }
 
 bool TensorInfo::isSet() const { return dataTypeInfo != nullptr; }
