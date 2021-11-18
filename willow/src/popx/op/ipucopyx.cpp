@@ -33,7 +33,7 @@ void IpuCopyOpx::grow(snap::program::Sequence &prog) const {
                                 prog.getPoplarSequence(),
                                 static_cast<int>(op.getDestIpu()),
                                 debugContext("ipuCopy"));
-    setOutTensor(idx, snap::Tensor{t, dv_p->lowering().graph()});
+    setOutTensor(idx, snap::Tensor{t, dstVirtualGraph(idx)});
   }
 }
 
@@ -61,7 +61,7 @@ PreparedCopyTensors IpuCopyOpx::createPipelinedOutput() const {
                                     tForCopy,
                                     tLocalForCopy,
                                     debugContext("createOutput"));
-    setOutTensor(idx, snap::Tensor{t, dv_p->lowering().graph()});
+    setOutTensor(idx, snap::Tensor{t, dstVirtualGraph(idx)});
     copyTensors[idx] = {tForCopy, tLocalForCopy};
   }
   return copyTensors;

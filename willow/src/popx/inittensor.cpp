@@ -11,6 +11,20 @@
 namespace popart {
 namespace popx {
 
+namespace {
+
+snap::Graph &getDstGraph(Tensor *t, IrLowering &irLowering) {
+  auto vgid = t->getVirtualGraphIdAndTileSetUnsafe();
+
+  if (vgid.first == unusedVGraphId) {
+    return irLowering.graph();
+  } else {
+    return irLowering.getVirtualGraph(vgid.first, vgid.second);
+  }
+}
+
+} // namespace
+
 InitTensorBase::InitTensorBase(InitMethod method_,
                                TensorId dstId_,
                                double priority_)
@@ -86,9 +100,7 @@ bool InitTensorCloning::initTensor(IrLowering &irLowering) const {
   Tensor *t = irLowering.ir().getTensor(srcId);
   auto vgid = t->getVirtualGraphIdAndTileSetUnsafe();
 
-  auto &dstGraph = vgid.first == unusedVGraphId
-                       ? irLowering.graph()
-                       : irLowering.getVirtualGraph(vgid.first, vgid.second);
+  auto &dstGraph = getDstGraph(t, irLowering);
 
   logging::debug("Cloning tensor {} to {} (vgid: {} tileset: {}). Source "
                  "TensorInfo is: {}",
@@ -166,6 +178,8 @@ bool InitTensorCreator::initTensor(IrLowering &irLowering) const {
 
   logging::devicex::trace("Cloning poplar::Tensor {}.", getDstId());
 
+  auto &dstGraph = getDstGraph(tensor, irLowering);
+
   // The clone makes sure to only keep the necessary parts of the unwound
   // tensor alive, and contiguate it,
   // reducing IPU memory liveness and fragmentation (see T18661)
@@ -175,7 +189,7 @@ bool InitTensorCreator::initTensor(IrLowering &irLowering) const {
           {poplar::DebugNameAndId(getDstId(),
                                   tensor->getDebugInfo().getId(),
                                   tensor->getDebugInfo().getPathName())}),
-      irLowering.graph()};
+      dstGraph};
 
   irLowering.tensors().insert(getDstId(), input);
   irLowering.addEfficientlyCreatedInputTensors(getDstId());
@@ -207,9 +221,7 @@ bool InitTensorLinear::initTensor(IrLowering &irLowering) const {
       vgid.first,
       vgid.second);
 
-  auto &dstGraph = vgid.first == unusedVGraphId
-                       ? irLowering.graph()
-                       : irLowering.getVirtualGraph(vgid.first, vgid.second);
+  auto &dstGraph = getDstGraph(tensor, irLowering);
 
   auto dataType = tensor->info.dataType();
 
