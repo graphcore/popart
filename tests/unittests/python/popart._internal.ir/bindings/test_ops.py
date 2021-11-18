@@ -265,13 +265,16 @@ def test_remote_store_op(connected: bool, use_offset: bool) -> None:
 
 @pytest.mark.parametrize("connected", [True, False])
 @pytest.mark.parametrize("use_offset", [True, False])
-def test_remote_load_op(connected: bool, use_offset: bool) -> None:
-    """Test that the input and output tensors of remote load op are correct
+@pytest.mark.parametrize("inplace", [True, False])
+def test_remote_load_op(connected: bool, use_offset: bool,
+                        inplace: bool) -> None:
+    """Test that the input and output tensors of remote load op are correct.
 
     Args:
         connected (bool): Whether to use the createConnected<opname> function or 
             just create<opname>
         use_offset (bool): Whether or not to specify the optional offset Tensor
+        inplace (bool): Whether or not to use the inplace version
     """
     _, graphs = create_ir()
     g = graphs[0]
@@ -281,24 +284,28 @@ def test_remote_load_op(connected: bool, use_offset: bool) -> None:
     out_id = "out_id"
 
     offset = add_actgrad_tensor("offset", [1], g)
+
+    opCreator = g.createOp_RemoteLoadOp if not inplace else g.createOp_RemoteLoadInplaceOp
+    connectedOpCreator = g.createConnectedOp_RemoteLoadOp if not inplace else g.createConnectedOp_RemoteLoadInplaceOp
+
     if use_offset:
         if connected:
-            op = g.createConnectedOp_RemoteLoadOp({
+            op = connectedOpCreator({
                 0: t.id,
                 1: offset.id
             }, {0: "out_id"}, opid, settings, 1)
         else:
-            op = g.createOp_RemoteLoadOp(opid, settings, 1)
+            op = opCreator(opid, settings, 1)
             op.connectInTensor(0, t.id)
             op.connectInTensor(1, offset.id)
             op.createAndConnectOutTensor(0, out_id)
     else:
         if connected:
-            op = g.createConnectedOp_RemoteLoadOp({
+            op = connectedOpCreator({
                 0: t.id,
             }, {0: "out_id"}, opid, settings, 1)
         else:
-            op = g.createOp_RemoteLoadOp(opid, settings, 1)
+            op = opCreator(opid, settings, 1)
             op.connectInTensor(0, t.id)
             op.createAndConnectOutTensor(0, out_id)
 

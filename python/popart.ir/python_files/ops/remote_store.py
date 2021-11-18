@@ -1,7 +1,7 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 from typing import Optional
 import popart._internal.ir as _ir
-from popart.ir.context import get_current_context
+from popart.ir.context import get_current_context, op_debug_context
 from popart.ir.tensor import Tensor
 from popart.ir.remote_buffer_handle import RemoteBufferHandle
 from .utils import check_in_graph
@@ -9,6 +9,7 @@ from .utils import check_in_graph
 __all__ = ["remote_store"]
 
 
+@op_debug_context
 def remote_store(
         t: Tensor,
         offset: Optional[Tensor] = None,
