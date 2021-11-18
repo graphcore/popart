@@ -194,6 +194,16 @@ offChipRtsLocation = popart.TensorLocationSettings(
     minElementsForOffChip=0,
     minElementsForReplicatedTensorSharding=2)
 
+# Replicated tensor sharding OnChip settings
+onChipRtsLocation = popart.TensorLocationSettings(
+    location=popart.TensorLocation(
+        storage=popart.TensorStorage.OnChip,
+        loadTileSet=popart.TileSet.Compute,
+        storageTileSet=popart.TileSet.Compute,
+        replicatedTensorSharding=popart.ReplicatedTensorSharding.On),
+    minElementsForOffChip=0,
+    minElementsForReplicatedTensorSharding=2)
+
 
 @tu.requires_ipu
 def test_weight_update(tmpdir):

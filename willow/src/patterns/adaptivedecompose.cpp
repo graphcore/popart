@@ -350,6 +350,7 @@ bool AdaptiveDecompose::apply(Op *op) const {
                                                   adaptiveUpdaterId);
       }
 
+      updaterScaleOp->settings.optimizerOp = true;
       updaterScaleOp->setup();
       if (combo->withGradAccum) {
         updaterScaleOp->settings.executionContext =

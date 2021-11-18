@@ -321,10 +321,9 @@ void ElementWiseBinaryInplaceOpx::grow(snap::program::Sequence &prog) const {
     tInOut = cx->outplace(prog, g, tInOut, tIn, getDebugNameAndId(), "");
   }
 
-  if (hasInViewChangers(ElementWiseBinaryOp::getArg0InIndex())) {
-    setOutViewChangers(
-        ElementWiseBinaryOp::getOutIndex(),
-        getInViewChangers(ElementWiseBinaryOp::getArg0InIndex()));
+  if (hasInViewChangers(cx->getInplaceArgInIndex())) {
+    setOutViewChangers(ElementWiseBinaryOp::getOutIndex(),
+                       getInViewChangers(cx->getInplaceArgInIndex()));
   }
   setOutTensor(outIdx, tInOut);
 }
