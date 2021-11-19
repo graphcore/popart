@@ -183,13 +183,13 @@ public:
   PriTasks() = default;
 
 private:
-  // Returns stong component elements wthin unscheduled based on dependencies
+  // Returns strong component elements within unscheduled based on dependencies
   // specified by dependantOf: in the event of a cyclic dependency, any
   // candidate which can be replaced with a dependency free version must
   // be part of a strong component or the replacement will never resolve the
   // cycle.
-  static std::vector<const TaskId *> getStongComponentElements(
-      const std::vector<const TaskId *> &unscheduled,
+  static std::vector<TaskId> getStongComponentElements(
+      const std::vector<TaskId> &unscheduled,
       const std::unordered_map<TaskId, std::set<TaskId>> &dependantsOf);
 
   // Perform actual scheduling (topological sorting) of the tasks

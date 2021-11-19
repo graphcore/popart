@@ -195,8 +195,8 @@ bool PriTasks::contains(const TaskId &taskId) {
   return tasksMap.find(taskId) != tasksMap.end();
 }
 
-std::vector<const TaskId *> PriTasks::getStongComponentElements(
-    const std::vector<const TaskId *> &unscheduled,
+std::vector<TaskId> PriTasks::getStongComponentElements(
+    const std::vector<TaskId> &unscheduled,
     const std::unordered_map<TaskId, std::set<TaskId>> &dependantsOf) {
 
   // For the purpose here, it does not matter if the edges are forward or not
@@ -206,7 +206,7 @@ std::vector<const TaskId *> PriTasks::getStongComponentElements(
   std::unordered_map<TaskId, uint64_t> taskToIdx;
 
   for (size_t idx = 0; idx < unscheduled.size(); idx++) {
-    taskToIdx[*unscheduled[idx]] = idx;
+    taskToIdx[unscheduled[idx]] = idx;
   }
 
   for (size_t idx = 0; idx < unscheduled.size(); idx++) {
@@ -216,7 +216,7 @@ std::vector<const TaskId *> PriTasks::getStongComponentElements(
     // there could be, i.e. that "OR" as expressed as if an "AND". A more
     // complex alternative could be to pick the first possibility or a random
     // one
-    for (auto &dependant : dependantsOf.at(*unscheduled[idx])) {
+    for (auto &dependant : dependantsOf.at(unscheduled[idx])) {
       if (taskToIdx.count(dependant) == 0) {
         continue;
       }
@@ -228,7 +228,7 @@ std::vector<const TaskId *> PriTasks::getStongComponentElements(
   auto strongComponents(
       poprithms::schedule::scc::getStronglyConnectedComponents(edges));
 
-  std::vector<const TaskId *> strongElements;
+  std::vector<TaskId> strongElements;
 
   for (auto &component : strongComponents) {
     for (uint64_t element : component) {
@@ -268,7 +268,7 @@ void PriTasks::schedule(
     return;
   }
 
-  std::vector<const TaskId *> unscheduled;
+  std::vector<TaskId> unscheduled;
   unscheduled.reserve(dependantsOf.size() - linearisedTasks.size());
 
   for (auto &task : tasksMap) {
@@ -283,55 +283,61 @@ void PriTasks::schedule(
     }
 
     if (!present) {
-      unscheduled.push_back(&taskId);
+      unscheduled.push_back(taskId);
     }
   }
 
   // If allowFallback, try to replace a task (currently only an initTensorTask)
   // with a dependency-free version and resume the algorithm.
   if (allowFallback) {
-    auto unscheduledCycleElemenets =
+    auto unscheduledCycleElements =
         getStongComponentElements(unscheduled, dependantsOf);
 
-    logging::devicex::trace("Cycle detected in PriTasks::getLinearised, "
-                            "trying to remove by using dependency-free "
-                            "alternatives: {} unscheduled of which {} "
-                            "are in cycles",
-                            unscheduled.size(),
-                            unscheduledCycleElemenets.size());
+    logging::devicex::info("[PriTasks::schedule] Cycle detected, "
+                           "trying to remove by using dependency-free "
+                           "alternatives: {} unscheduled of which {} "
+                           "are in cycles ({})",
+                           unscheduled.size(),
+                           unscheduledCycleElements.size(),
+                           unscheduledCycleElements);
 
-    for (auto *taskId : unscheduled) {
-      // Replace task with dependency-free alternative
-      logging::devicex::trace("Using dependency-free altenative creator for {}",
-                              *taskId);
+    for (auto taskId : unscheduled) {
+      auto &pritask  = tasksMapCopy[taskId];
+      auto &tensorId = pritask.name.getTensorId();
 
-      auto &pritask       = tasksMapCopy[*taskId];
-      auto &tensorCreated = pritask.name.getTensorId();
-
-      if (!tensorCreated) {
+      if (pritask.name.getType() != TaskId::Type::InitTensorTask || !tensorId) {
+        // Not an init tensor task
         continue;
       }
 
-      tasksMapCopy[*taskId] =
-          irLowering.getDependencyFreeInitTensorCreatorTask(*tensorCreated);
+      // Replace task with dependency-free alternative
+      logging::devicex::trace(
+          "Using dependency-free alternative creator for task {} tensor {}",
+          taskId,
+          *tensorId);
 
-      if (!tasksMapCopy[*taskId].dependsOn.empty()) {
+      tasksMapCopy[taskId] =
+          irLowering.getDependencyFreeInitTensorCreatorTask(*tensorId);
+
+      if (!tasksMapCopy[taskId].dependsOn.empty()) {
         std::stringstream ss;
-        ss << *taskId << " is not a dependency-free alternative because "
+        ss << taskId << " is not a dependency-free alternative because "
            << "it has the following dependencies: ";
-        for (auto it = tasksMapCopy[*taskId].dependsOn.begin();
-             it != tasksMapCopy[*taskId].dependsOn.end();
+        for (auto it = tasksMapCopy[taskId].dependsOn.begin();
+             it != tasksMapCopy[taskId].dependsOn.end();
              it++) {
-          if (it != tasksMapCopy[*taskId].dependsOn.begin()) {
+          if (it != tasksMapCopy[taskId].dependsOn.begin()) {
             ss << ", ";
           }
           ss << *it;
         }
         throw error(ss.str());
       }
-      pq.push(tasksMapCopy[*taskId]);
+      pq.push(tasksMapCopy[taskId]);
+      // Inject replacement task
+      tasksMap[taskId] = tasksMapCopy[taskId];
 
-      // Fallback suceeded recurse to schedule again
+      // Fallback succeeded, recurse to schedule again
       schedule(
           pq, linearisedTasks, dependantsOf, tasksMapCopy, irLowering, true);
       return;
@@ -344,9 +350,9 @@ void PriTasks::schedule(
   ss << "\n tasks not in linearisedTasks:\n";
 
   for (auto taskId : unscheduled) {
-    ss << *taskId << "   [ ";
-    if (tasksMap.find(*taskId) != tasksMap.end()) {
-      auto &depends = tasksMap.at(*taskId).dependsOn;
+    ss << taskId << "   [ ";
+    if (tasksMap.find(taskId) != tasksMap.end()) {
+      auto &depends = tasksMap.at(taskId).dependsOn;
       ss << logging::join(depends.begin(), depends.end(), ", ");
     } else {
       ss << "\n xxxxx ";

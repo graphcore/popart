@@ -3262,14 +3262,16 @@ void IrLowering::prepareGraph() {
   auto createSchedule = tasks.getLinearised({DependencyType::Output,
                                              DependencyType::SubGraph,
                                              DependencyType::Tensor},
-                                            *this);
+                                            *this,
+                                            true);
 
   logging::devicex::debug("Creating linear task schedule with OUTPUT, "
                           "SUBGRAPH and SCHEDULER dependencies.");
   auto emplaceSchedule = tasks.getLinearised({DependencyType::Output,
                                               DependencyType::SubGraph,
                                               DependencyType::Scheduler},
-                                             *this);
+                                             *this,
+                                             false);
 
   auto emplaceTaskSeqs = [&](std::set<TaskId> filter) {
     // 2.) Add intermediate sequences in final sequence

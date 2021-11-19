@@ -89,6 +89,8 @@ public:
 
   const nonstd::optional<TensorId> &getTensorId() const { return tensorId; }
 
+  const Type &getType() const { return type; }
+
 private:
   // The type of task.
   Type type;
