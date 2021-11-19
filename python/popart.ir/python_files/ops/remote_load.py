@@ -5,7 +5,7 @@ from popart.ir.context import get_current_context, op_debug_context
 from popart.ir.tensor import Tensor
 from popart.ir.graph import Graph
 from popart.ir.remote_buffer_handle import RemoteBufferHandle
-from .utils import check_in_graph
+from .utils import check_in_graph, prepare_remote_buffer
 
 __all__ = ["remote_load", "remote_load_"]
 
@@ -14,7 +14,7 @@ __all__ = ["remote_load", "remote_load_"]
 def remote_load(
         t: Tensor,
         offset: Optional[Tensor] = None,
-        remote_buffer_handle: Optional[RemoteBufferHandle] = None) -> None:
+        remote_buffer_handle: Optional[RemoteBufferHandle] = None) -> Tensor:
     """Load a tensor from remote (off-chip) buffer.
 
     The tensor will be loaded from the memory location corresponding to
@@ -72,7 +72,7 @@ def remote_load(
 def remote_load_(
         t: Tensor,
         offset: Optional[Tensor] = None,
-        remote_buffer_handle: Optional[RemoteBufferHandle] = None) -> None:
+        remote_buffer_handle: Optional[RemoteBufferHandle] = None) -> Tensor:
     """Load a tensor from remote (off-chip) buffer inplace.
 
     This op is identical to `remote_load` with the exception of how `t` is handled.
@@ -121,47 +121,3 @@ def remote_load_(
             settings, remote_buffer_handle.remote_buffer_id)
 
     return Tensor._from_pb_tensor(op.outTensor(0))
-
-
-def prepare_remote_buffer(t: Tensor,
-                          remote_buffer_handle: Optional[RemoteBufferHandle],
-                          g: Graph) -> RemoteBufferHandle:
-    """Prepare the remote buffer.
-
-    Args:
-        t (Tensor): Input tensor to the op.
-        remote_buffer_handle (Optional[RemoteBufferHandle]): If set:
-          The remote buffer handle to use in the preparation
-        g (Graph): The graph to set the remote buffer info to
-
-    Raises:
-        ValueError: If there is a shape or type mismatch between `t` and
-          `remote_buffer_handle`
-
-    Returns:
-        RemoteBufferHandle: The remote buffer handle used in the preparation.
-    """
-    if remote_buffer_handle is None:
-        remote_buffer_handle = RemoteBufferHandle(
-            remote_buffer_id=None,
-            tensor_shape=t._pb_tensor.shape,
-            tensor_dtype=t._pb_tensor.dtype,
-            repeats=1)
-
-    info = _ir.TensorInfo(remote_buffer_handle.tensor_dtype._pb_dtype,
-                          remote_buffer_handle.tensor_shape)
-    if t._pb_tensor.info.dataType() != info.dataType():
-        raise ValueError(
-            f"DataType of {t.id} ({t._pb_tensor.info.dataType()}) "
-            f"does not match that of the RemoteBufferHandle ({info.dataType()})"
-        )
-    if t._pb_tensor.info.shape() != info.shape():
-        raise ValueError(
-            f"DataType of {t.id} ({t._pb_tensor.info.shape()}) "
-            f"does not match that of the RemoteBufferHandle ({info.shape()})")
-
-    g._ir._pb_ir.setRemoteBufferInfo(
-        remote_buffer_handle.remote_buffer_id,
-        _ir.RemoteBufferInfo(info, remote_buffer_handle.repeats))
-
-    return remote_buffer_handle

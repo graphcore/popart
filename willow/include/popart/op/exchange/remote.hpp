@@ -115,7 +115,7 @@ private:
  *      write the loaded data to the clone
  * 2. The (optional) \c TensorId to a 0-rank tensor called \c offset .
  *    - If set to a value >= 0 \c offset will specify the row in the remote
- *      buffer the tensor will be loaded from (see below for explanation).
+ *      buffer the tensor will be loaded.
  *    - If set to -1 \c RemoteSetup will assign a unique value.
  *
  * The relationship between \c offset, \c RemoteBufferId and \c RemoteSetup

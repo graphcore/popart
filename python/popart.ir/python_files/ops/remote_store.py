@@ -4,7 +4,7 @@ import popart._internal.ir as _ir
 from popart.ir.context import get_current_context, op_debug_context
 from popart.ir.tensor import Tensor
 from popart.ir.remote_buffer_handle import RemoteBufferHandle
-from .utils import check_in_graph
+from .utils import check_in_graph, prepare_remote_buffer
 
 __all__ = ["remote_store"]
 
@@ -51,28 +51,7 @@ def remote_store(
     if offset is not None:
         check_in_graph(g, offset)
 
-    if remote_buffer_handle is None:
-        remote_buffer_handle = RemoteBufferHandle(
-            remote_buffer_id=None,
-            tensor_shape=t._pb_tensor.shape,
-            tensor_dtype=t._pb_tensor.dtype,
-            repeats=1)
-
-    info = _ir.TensorInfo(remote_buffer_handle.tensor_dtype._pb_dtype,
-                          remote_buffer_handle.tensor_shape)
-    if t._pb_tensor.info.dataType() != info.dataType():
-        raise ValueError(
-            f"DataType of {t.id} ({t._pb_tensor.info.dataType()}) "
-            f"does not match that of the RemoteBufferHandle ({info.dataType()})"
-        )
-    if t._pb_tensor.info.shape() != info.shape():
-        raise ValueError(
-            f"DataType of {t.id} ({t._pb_tensor.info.shape()}) "
-            f"does not match that of the RemoteBufferHandle ({info.shape()})")
-
-    g._ir._pb_ir.setRemoteBufferInfo(
-        remote_buffer_handle.remote_buffer_id,
-        _ir.RemoteBufferInfo(info, remote_buffer_handle.repeats))
+    remote_buffer_handle = prepare_remote_buffer(t, remote_buffer_handle, g)
 
     settings = ctx._get_op_settings('remote_store')
     opid = _ir.OperatorIdentifier("ai.graphcore", "RemoteStore", 1,

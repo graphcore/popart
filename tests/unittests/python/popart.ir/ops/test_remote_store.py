@@ -14,11 +14,12 @@ from utils import contains_op_of_type
 class TestRemoteStore:
     @pytest.mark.parametrize("use_offset", [True, False])
     @pytest.mark.parametrize("use_remote_buffer_id", [True, False])
+    @pytest.mark.parametrize("use_rbh", [True, False])
     @pytest.mark.parametrize("tensor_shape", [(7, 11, 13), (17, 19)])
     @pytest.mark.parametrize("repeats", [3, 5])
     @pytest.mark.parametrize("tensor_dtype", [float16, float32])
     def test_remote_store_graph(self, use_offset: bool,
-                                use_remote_buffer_id: bool,
+                                use_remote_buffer_id: bool, use_rbh: bool,
                                 tensor_shape: Tuple[int, ...], repeats: int,
                                 tensor_dtype: dtype) -> None:
         """Test that the graph is correct when using the remote store op.
@@ -26,6 +27,7 @@ class TestRemoteStore:
         Args:
             use_offset (bool): Whether or not to use offset
             use_remote_buffer_id (bool): Whether or not to set the remote buffer_id
+            use_rbh (bool): Whether or not to specify the remote buffer handle
             tensor_shape (Tuple[int, ...]): The shape of the tensor to be stored
             repeats (int): The number of tensors to potentially store in the buffer
             tensor_dtype (dtype): The type of the tensors to be stored
@@ -60,10 +62,14 @@ class TestRemoteStore:
                 RemoteBufferHandle._buffers = {}
                 return
 
-            rbh = RemoteBufferHandle(remote_buffer_id=remote_buffer_id,
-                                     tensor_shape=tensor_shape,
-                                     tensor_dtype=tensor_dtype,
-                                     repeats=repeats)
+            if use_rbh:
+                rbh = RemoteBufferHandle(remote_buffer_id=remote_buffer_id,
+                                         tensor_shape=tensor_shape,
+                                         tensor_dtype=tensor_dtype,
+                                         repeats=repeats)
+            else:
+                rbh = None
+
             ops.remote_store(t, offset, rbh)
 
         assert len(g.get_tensors()) == n_tensors
