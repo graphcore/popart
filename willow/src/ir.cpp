@@ -4014,7 +4014,7 @@ std::map<OpId, OpId> cloneOpsAndAddTensors(Graph &originalGraph,
       }
 
       // Attach to the new tensor to the cloned op
-      clonedOp->connectInTensor(index, clonedInputTensorId);
+      clonedOp->connectInTensorLike(op, index, clonedInputTensorId);
     }
     // Then we clone the output tensors
     auto tensorOuputMap = op->output->tensorMap();

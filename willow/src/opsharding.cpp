@@ -886,17 +886,6 @@ ShardingPlan Op::unrollShard(const ShardingPlan adjustedInputPlan,
     num_shards = std::max(num_shards, idkv.second.size());
   }
 
-  auto connectInTensorFn = [this](Op *op, InIndex index, TensorId tensorId) {
-    IpuCopyOp *srcOp = dynamic_cast<IpuCopyOp *>(this);
-    IpuCopyOp *dstOp = dynamic_cast<IpuCopyOp *>(op);
-    if (srcOp && dstOp) {
-      TensorId srcTensorId = srcOp->input->tensor(index)->id;
-      dstOp->connectInTensor(index, tensorId, srcOp->getSourceIpu(srcTensorId));
-    } else {
-      op->connectInTensor(index, tensorId);
-    }
-  };
-
   std::vector<Op *> cloneOps;
   for (size_t b = 0; b < num_shards; ++b) {
     auto clonedOpUp = clone();
@@ -913,14 +902,16 @@ ShardingPlan Op::unrollShard(const ShardingPlan adjustedInputPlan,
       auto serializedTensor = inputs.find(in.second->id);
       if (serializedTensor == inputs.end()) {
         // Tensors not split
-        connectInTensorFn(clonedOp, in.first, in.second->id);
+        clonedOp->connectInTensorLike(this, in.first, in.second->id);
       } else {
         if (serializedTensor->second.size() == num_shards) {
           // Tensors split dimension
-          connectInTensorFn(clonedOp, in.first, serializedTensor->second[b]);
+          clonedOp->connectInTensorLike(
+              this, in.first, serializedTensor->second[b]);
         } else if (serializedTensor->second.size() == 1) {
           // Tensors not split
-          connectInTensorFn(clonedOp, in.first, serializedTensor->second[0]);
+          clonedOp->connectInTensorLike(
+              this, in.first, serializedTensor->second[0]);
         } else {
           throw error("[Op::unrollShard] Number of input tensors must be 1 or "
                       "match the "

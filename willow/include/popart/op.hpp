@@ -338,6 +338,26 @@ public:
 
   virtual void connectInTensor(InIndex, TensorId);
 
+  /**
+   * Connects the input tensor analogously to the other Op, which is useful
+   * when cloning graphs or Ops, because it avoids having to check if the Op
+   * requires special considerations when connecting inputs.
+   *
+   * IpuCopyOp is currently the only Op where this applies, since a source
+   * virtual graph has to be specified when connecting it otherwise:
+   *
+   * \code
+   * void connectInTensor(InIndex, TensorId, uint64_t sourceIpu);
+   * \endcode
+   *
+   * \param other An Op of the same type as the current Op, from which to
+   *              copy how the tensor at the corresponding index should be
+   *              connected.
+   * \param index The input index to connect.
+   * \param tenId The tensor to connect.
+   */
+  void connectInTensorLike(const Op *other, InIndex index, TensorId tenId);
+
   void connectOutTensor(OutIndex, TensorId);
 
   // Disconnect an input test from the op

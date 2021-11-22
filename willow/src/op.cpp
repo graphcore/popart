@@ -158,6 +158,28 @@ void Op::connectInTensor(InIndex inIndex, TensorId tenId) {
   defaultConnectInTensor(inIndex, tenId);
 }
 
+void Op::connectInTensorLike(const Op *other, InIndex index, TensorId tenId) {
+  IpuCopyOp *dstOp       = dynamic_cast<IpuCopyOp *>(this);
+  const IpuCopyOp *srcOp = dynamic_cast<const IpuCopyOp *>(other);
+  if (srcOp && dstOp) {
+    if (!srcOp->hasInput(index)) {
+      throw error("[Op::connectInTensorLike] Op {} has no input {}.",
+                  srcOp->debugName(),
+                  index);
+    }
+    TensorId srcTensorId = srcOp->input->tensor(index)->id;
+    dstOp->connectInTensor(index, tenId, srcOp->getSourceIpu(srcTensorId));
+  } else if (dstOp) {
+    throw error(
+        "[Op::connectInTensorLike] Op {} is an IpuCopyOp but {} is not.",
+        dstOp->debugName(),
+        other->debugName(),
+        index);
+  } else {
+    connectInTensor(index, tenId);
+  }
+}
+
 void Op::connectOutTensor(OutIndex outIndex, TensorId tenId) {
   if (output->hasIndex(outIndex)) {
     throw internal_error(
