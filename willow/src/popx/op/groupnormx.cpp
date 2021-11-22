@@ -46,15 +46,6 @@ void GroupNormOpx::grow(snap::program::Sequence &prog) const {
   poplar::Tensor mean;
   poplar::Tensor invStdDev;
 
-  // See poplibs groupnorm impl for information on this option. It is either
-  // correct and slightly slower or incorrect and fast. We default to correct
-  // and slightly slower.
-  const bool fastMathGroupNorm =
-      op.getIr().getSessionOptions().groupNormStridedChannelGrouping;
-
-  poplar::OptionFlags flags{{"groupNormStridedChannelGrouping",
-                             fastMathGroupNorm ? "true" : "false"}};
-
   std::tie(mean, invStdDev) =
       popnn::gn::groupNormStatistics(graph().getPoplarGraph(),
                                      input,
@@ -64,8 +55,7 @@ void GroupNormOpx::grow(snap::program::Sequence &prog) const {
                                      false,
                                      stable_algo,
                                      poplar::FLOAT,
-                                     debugContext("groupNormStatistics"),
-                                     flags);
+                                     debugContext("groupNormStatistics"));
 
   // Calculate the normalization
   auto result = popnn::gn::groupNormalise(graph().getPoplarGraph(),
@@ -75,8 +65,7 @@ void GroupNormOpx::grow(snap::program::Sequence &prog) const {
                                           mean,
                                           invStdDev,
                                           prog.getPoplarSequence(),
-                                          debugContext("groupNorm"),
-                                          flags);
+                                          debugContext("groupNorm"));
 
   // Return the result
   setOutTensor(GroupNormOp::getYOutIndex(),
@@ -102,25 +91,13 @@ void GroupNormGradOpx::grow(snap::program::Sequence &prog) const {
   auto invStdDev =
       getInTensor(GroupNormGradOp::getInvStdDevInIndex()).getPoplarTensor();
 
-  auto &op = getOp<GroupNormGradOp>();
-
-  // See poplibs groupnorm impl for information on this option. It is either
-  // correct and slightly slower or incorrect and fast. We default to correct
-  // and slightly slower.
-  const bool fastMathGroupNorm =
-      op.getIr().getSessionOptions().groupNormStridedChannelGrouping;
-
-  poplar::OptionFlags flags{{"groupNormStridedChannelGrouping",
-                             fastMathGroupNorm ? "true" : "false"}};
-
   poplar::Tensor xWhitened =
       popnn::gn::groupNormWhiten(graph().getPoplarGraph(),
                                  x,
                                  mean,
                                  invStdDev,
                                  prog.getPoplarSequence(),
-                                 debugContext("whitenedActs"),
-                                 flags);
+                                 debugContext("whitenedActs"));
 
   // Compute the delta for the operand
   poplar::Tensor xGrad =
@@ -131,8 +108,7 @@ void GroupNormGradOpx::grow(snap::program::Sequence &prog) const {
                                     scale,
                                     prog.getPoplarSequence(),
                                     poplar::FLOAT,
-                                    debugContext("operandGrad"),
-                                    flags);
+                                    debugContext("operandGrad"));
 
   // Compute the deltas for scaled and offset
   poplar::Tensor scaleGrad;
@@ -143,8 +119,7 @@ void GroupNormGradOpx::grow(snap::program::Sequence &prog) const {
                                          yGrad,
                                          prog.getPoplarSequence(),
                                          poplar::FLOAT,
-                                         debugContext("scaleOffsetGrads"),
-                                         flags);
+                                         debugContext("scaleOffsetGrads"));
 
   // Return the result
   setOutTensor(GroupNormGradOp::getXGradOutIndex(),
