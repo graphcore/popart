@@ -5,7 +5,7 @@ import numpy as np
 import popart._internal.ir as _ir
 from popart.ir import dtypes
 from popart.ir.context import gcg, debug_context_frame_offset
-from popart.ir.typing import NewAliasAnnotation
+from popart.ir.typing_ import NewAliasAnnotation
 
 if TYPE_CHECKING:
     from popart.ir import Ir
