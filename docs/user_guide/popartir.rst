@@ -21,5 +21,5 @@ an experimental PopART Python module which you can use to create
 PopART models are represented using an intermediate representation (IR).
 The ``popart.ir`` package allows you to manipulate these IRs.
 
-
+.. include:: popartir_concepts.rst
 .. include:: builderpopartir.rst

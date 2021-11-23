@@ -1,5 +1,8 @@
+Creating a model
+^^^^^^^^^^^^^^^^
+
 Creating a model with ``popart.ir``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+""""""""""""""""""""""""""""""""""""
 
 To use ``popart.ir`` you first need to import it as a Python package:
 
@@ -40,7 +43,7 @@ Finally, the ``host_store`` streams the result data back from the device to the 
 
 
 Data types
-~~~~~~~~~~
+"""""""""""
 
 Currently, ``popart.ir`` supports the data types listed in :numref:`ir_datatypes_table`.
 These data types are defined in ``popart.ir`` directly and
@@ -53,32 +56,32 @@ if the session option ``enableSupportedDataTypeCasting`` is set to ``True``.
 
 ..
   Variables
-  ~~~~~~~~~
+  ^^^^^^^^^
 
   - Explain what variables are and how to add them.
 
 ..
   Adding operations to a graph
-  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
   - Explain how you can add ops to a graph (we haven't explained subgraphs at this point, so add to the main graph).
   - Explain what in_sequence does and show how to use it.
 
 ..
   Data input and output
-  ~~~~~~~~~~~~~~~~~~~~~
+  ^^^^^^^^^^^^^^^^^^^^^
 
   - Explain what host_load and host_store do and how to add them.
 
 ..
   Available operations
-  ~~~~~~~~~~~~~~~~~~~~
+  ^^^^^^^^^^^^^^^^^^^^
 
   - Detail supported operations (with links to the Python API).
 
 ..
   Creating subgraphs
-  ~~~~~~~~~~~~~~~~~~
+  ^^^^^^^^^^^^^^^^^^
 
   - Explain how you create a subgraph.
 
@@ -101,13 +104,13 @@ if the session option ``enableSupportedDataTypeCasting`` is set to ``True``.
 
 ..
   Using the context manager
-  ~~~~~~~~~~~~~~~~~~~~~~~~~
+  ^^^^^^^^^^^^^^^^^^^^^^^^^
 
   - Explain how to use our context manager, and why/when you want to use it.
 
 ..
   Applying transforms
-  ~~~~~~~~~~~~~~~~~~~
+  ^^^^^^^^^^^^^^^^^^^
 
   - Explain what transforms are available and how you use them.
 
@@ -119,7 +122,7 @@ if the session option ``enableSupportedDataTypeCasting`` is set to ``True``.
 
 ..
   Running a model created in `popart.ir`
-  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
   - Explain how you can run a popart.ir IR.
   - Describe how to set up DataFlow, Sessions, anchors, any assumptions etc.
