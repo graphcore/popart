@@ -81,7 +81,7 @@ BOOST_AUTO_TEST_CASE(BasicReplicatedTensorShardingTest) {
     ir.updateVertices();
     ir.setIsPrepared();
 
-    ir.dotCheckpoint(DotCheck::Final);
+    ir.dotCheckpoint(ir, "Final");
 
     IrTestWrapper tw_ir{ir};
     auto tw_mainGraph =
@@ -371,7 +371,7 @@ BOOST_AUTO_TEST_CASE(DistributedReplicatedTensorShardingTest) {
     ir.updateVertices();
     ir.setIsPrepared();
 
-    ir.dotCheckpoint(DotCheck::Final);
+    ir.dotCheckpoint(ir, "Final");
 
     IrTestWrapper tw_ir{ir};
     auto tw_mainGraph =

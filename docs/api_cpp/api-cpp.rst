@@ -88,8 +88,6 @@ Session options
 
 .. doxygenenum:: popart::BatchSerializationTransformContext
 
-.. doxygenenum:: popart::DotCheck
-
 .. doxygenenum:: popart::ExecutionPhaseIOSchedule
 
 .. doxygenstruct:: popart::ExecutionPhaseSettings

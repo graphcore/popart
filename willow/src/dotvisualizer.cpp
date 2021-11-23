@@ -1,8 +1,11 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
+#include <algorithm>
 #include <boost/algorithm/string.hpp>
 #include <filereader.hpp>
 #include <fstream>
 #include <sstream>
+#include <string>
+#include <vector>
 #include <popart/dotvisualizer.hpp>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
@@ -14,8 +17,7 @@
 
 namespace popart {
 
-DotVisualizer::DotVisualizer(const Ir *_ir_, DotCheck _check_)
-    : ir(_ir_), check(_check_) {
+DotVisualizer::DotVisualizer(std::string _check_) : check(_check_) {
   // Register the root graph
   graphMapping.insert({"", "r"});
 }
@@ -62,10 +64,10 @@ std::string DotVisualizer::getTensorNodeColor(TensorType type) const {
   }
 }
 
-std::ofstream &DotVisualizer::strm(const std::string &gString) {
+std::ofstream &DotVisualizer::strm(const std::string &gString, const Ir &ir) {
 
   std::string abridgedGraphId;
-  if (ir->getSessionOptions().separateCallOpPdfs == true) {
+  if (ir.getSessionOptions().separateCallOpPdfs == true) {
     abridgedGraphId = getAbridgedGraphName(gString);
   } else {
     abridgedGraphId = "all";
@@ -74,9 +76,8 @@ std::ofstream &DotVisualizer::strm(const std::string &gString) {
   auto found = ofstreams.find(abridgedGraphId);
   if (found == ofstreams.end()) {
     // the full path to the .dot file to be written
-    std::string dotfn = io::appendDirFn(ir->getSessionOptions().logDir,
-                                        getDotCheckString(check) + '_' +
-                                            abridgedGraphId + ".dot");
+    std::string dotfn = io::appendDirFn(ir.getSessionOptions().logDir,
+                                        check + '_' + abridgedGraphId + ".dot");
     logging::ir::info("Appending to open dot file {}", dotfn);
     ofstreams[abridgedGraphId] = std::ofstream{};
     auto &thisStream           = ofstreams[abridgedGraphId];
@@ -139,24 +140,29 @@ void DotVisualizer::makeNodeIfRequired(const Tensor *tensor,
   }
 }
 
-void DotVisualizer::write() {
-  if (!getDotChecks().count(DotCheck::All) &&
-      getDotChecks().count(check) == 0) {
+void DotVisualizer::write(const Ir &ir) {
+  std::string upperCheck = check;
+  // Cast to upper case
+  std::transform(
+      upperCheck.begin(), upperCheck.end(), upperCheck.begin(), ::toupper);
+
+  if (!getDotChecks(ir).count("ALL") &&
+      getDotChecks(ir).count(upperCheck) == 0) {
     return;
   }
 
   logging::ir::trace("Obtaining Op Schedule in DotVisualizer::write");
-  auto scheduledOps = ir->getOpSchedule({}, RequireOptimalSchedule::Yes);
+  auto scheduledOps = ir.getOpSchedule({}, RequireOptimalSchedule::Yes);
 
-  int start = std::max(0, ir->getSessionOptions().firstDotOp);
-  int end   = std::min<int>(ir->getSessionOptions().finalDotOp,
+  int start = std::max(0, ir.getSessionOptions().firstDotOp);
+  int end   = std::min<int>(ir.getSessionOptions().finalDotOp,
                           static_cast<int>(scheduledOps.size()));
 
   if (!(start < end) && scheduledOps.size() != 0) {
     throw error("Invalid dot range ({}, {}) with schedule of size {}, "
                 "as no Ops will be exported to the .dot file",
-                ir->getSessionOptions().firstDotOp,
-                ir->getSessionOptions().finalDotOp,
+                ir.getSessionOptions().firstDotOp,
+                ir.getSessionOptions().finalDotOp,
                 scheduledOps.size());
   }
 
@@ -181,7 +187,7 @@ void DotVisualizer::write() {
       coreNameStream << "<" << getAbridgedGraphName(calledGraphId.str()) << ">";
     }
     // Add the debug name if present and requested
-    if (ir->getSessionOptions().dotOpNames) {
+    if (ir.getSessionOptions().dotOpNames) {
       if (!n->name().empty()) {
         coreNameStream << " (" << n->id << ":" << n->name() << ")";
       } else {
@@ -212,18 +218,19 @@ void DotVisualizer::write() {
     }
     coreNameStream << " ts:" << n->settings.tileSet;
 
-    strm(gString) << nodeDotId(n->id) << " [shape= \"box\", label=\""
-                  << coreNameStream.str();
-    strm(gString) << "\", color = " << getOpNodeColor(n) << "];\n";
+    strm(gString, ir) << nodeDotId(n->id) << " [shape= \"box\", label=\""
+                      << coreNameStream.str();
+    strm(gString, ir) << "\", color = " << getOpNodeColor(n) << "];\n";
 
     for (auto &ind_ten : n->input->tensorMap()) {
       if (ind_ten.second->hasProducer() == false) {
         if (tensorsVisited.count(ind_ten.second->id) == 0) {
-          makeNodeIfRequired(ind_ten.second, strm(gString));
+          makeNodeIfRequired(ind_ten.second, strm(gString, ir));
           for (auto &c : ind_ten.second->consumers.getOps()) {
-            strm(gString) << tensorDotId(ind_ten.second->id) << " -> "
-                          << generateNodeName(c) << " [color=black, label=\""
-                          << ind_ten.second->id << "\"];\n";
+            strm(gString, ir)
+                << tensorDotId(ind_ten.second->id) << " -> "
+                << generateNodeName(c) << " [color=black, label=\""
+                << ind_ten.second->id << "\"];\n";
           }
         }
       }
@@ -232,25 +239,27 @@ void DotVisualizer::write() {
     for (auto &ind_ten : n->output->tensorMap()) {
       auto &consumers = ind_ten.second->consumers;
       for (auto &c : consumers.getOps()) {
-        strm(gString) << generateNodeName(n) << " -> " << generateNodeName(c)
-                      << " [color=black, label=\"" << ind_ten.second->id << "\n"
-                      << ind_ten.second->info.shape() << "\"];\n";
+        strm(gString, ir) << generateNodeName(n) << " -> "
+                          << generateNodeName(c) << " [color=black, label=\""
+                          << ind_ten.second->id << "\\n"
+                          << ind_ten.second->info.shape() << "\"];\n";
       }
 
       if (consumers.getOps().size() == 0) {
         // must be an output
-        makeNodeIfRequired(ind_ten.second, strm(gString));
-        strm(gString) << generateNodeName(n) << " -> "
-                      << tensorDotId(ind_ten.second->id)
-                      << " [color=black, label=\"" << ind_ten.second->id
-                      << "\"];\n";
+        makeNodeIfRequired(ind_ten.second, strm(gString, ir));
+        strm(gString, ir) << generateNodeName(n) << " -> "
+                          << tensorDotId(ind_ten.second->id)
+                          << " [color=black, label=\"" << ind_ten.second->id
+                          << "\"];\n";
       }
     }
 
     // For simplicity only show the after constraint
     for (auto &after : n->getGraph().topoCons->getAfters(n)) {
-      strm(gString) << generateNodeName(n) << " -> " << generateNodeName(after)
-                    << " [color=grey, style=dotted];\n";
+      strm(gString, ir) << generateNodeName(n) << " -> "
+                        << generateNodeName(after)
+                        << " [color=grey, style=dotted];\n";
     }
   }
   for (auto &x : ofstreams) {
@@ -261,22 +270,31 @@ void DotVisualizer::write() {
   logging::ir::trace("Dot file(s) written");
 }
 
-std::set<DotCheck> DotVisualizer::getDotChecks() {
-  auto dotChecks = ir->getSessionOptions().dotChecks;
+std::set<std::string> DotVisualizer::getDotChecks(const Ir &ir) {
+  // Cast to vector in order to later cast the values to upper
+  std::vector<std::string> dotChecks{ir.getSessionOptions().dotChecks.begin(),
+                                     ir.getSessionOptions().dotChecks.end()};
 
   auto popartDotChecks = getPopartEnvVar("DOT_CHECKS");
-  if (popartDotChecks && std::strcmp(popartDotChecks, "") != 0) {
-    std::vector<std::string> dotCheckStrings;
-    boost::split(
-        dotCheckStrings, popartDotChecks, [](char c) { return c == ':'; });
 
-    for (auto &s : dotCheckStrings) {
-      auto c = dotCheckFromString(s);
-      dotChecks.insert(c);
+  if (popartDotChecks && std::strcmp(popartDotChecks, "") != 0) {
+    std::vector<std::string> dotCheckFromPopartEnv;
+    boost::split(dotCheckFromPopartEnv, popartDotChecks, [](char c) {
+      return c == ':';
+    });
+
+    for (auto &s : dotCheckFromPopartEnv) {
+      dotChecks.push_back(s);
     }
   }
 
-  return dotChecks;
+  // Cast to upper case
+  for (auto &dotCheck : dotChecks) {
+    std::transform(
+        dotCheck.begin(), dotCheck.end(), dotCheck.begin(), ::toupper);
+  }
+
+  return std::set<std::string>{dotChecks.begin(), dotChecks.end()};
 }
 
 } // namespace popart

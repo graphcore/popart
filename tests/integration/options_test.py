@@ -23,7 +23,7 @@ def test_set_dotchecks():
     opts = popart.SessionOptions()
     assert (len(opts.dotChecks) == 0)
 
-    opts.dotChecks = {popart.DotCheck.Final, popart.DotCheck.Fwd0}
+    opts.dotChecks = {"Final", "Fwd0"}
     assert (len(opts.dotChecks) == 2)
 
 

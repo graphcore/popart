@@ -63,7 +63,7 @@ int runTest(std::string modelPath, std::string outputDir, bool convertPdf) {
   std::vector<std::string> dotStrings;
 
   // Only the FINAL .dot file. Append others here as required.
-  sessionOpts.dotChecks.insert(DotCheck::Final);
+  sessionOpts.dotChecks.insert("Final");
 
   sessionOpts.logDir = "./dotTestTmp" + randomString(14);
   boost::filesystem::create_directory(sessionOpts.logDir);
@@ -94,7 +94,7 @@ int runTest(std::string modelPath, std::string outputDir, bool convertPdf) {
   // isn't installed on the buildbot so disabled here.
   if (convertPdf) {
     for (auto check : sessionOpts.dotChecks) {
-      auto dot_string = getDotCheckString(check);
+      auto dot_string = check;
       std::stringstream command_ss;
       command_ss << "dot "
                  << " -Tpdf "

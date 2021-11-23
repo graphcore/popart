@@ -207,7 +207,7 @@ BOOST_AUTO_TEST_CASE(QuadraticEpsilolTest0) {
     unsigned numIpus = 1;
 
     if (exportFinalDotFiles) {
-      userOptions.dotChecks.insert(DotCheck::Final);
+      userOptions.dotChecks.insert("Final");
       userOptions.logDir = "./dotTestContinuous_" + std::to_string(continuous);
       boost::filesystem::create_directories(userOptions.logDir);
     }

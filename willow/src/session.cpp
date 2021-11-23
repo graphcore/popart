@@ -5,6 +5,7 @@
 
 #include <filereader.hpp>
 #include <onnxutil.hpp>
+#include <popart/dotvisualizer.hpp>
 #include <popart/error.hpp>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
@@ -653,6 +654,9 @@ InferenceSession::createFromIr(std::shared_ptr<Ir> ir,
   if (!deviceInfo) {
     throw error("InferenceSession::createFromIr: Must pass valid DeviceInfo.");
   }
+
+  DotVisualizer viz("Final");
+  viz.write(*ir);
 
   ir->setIsPrepared();
   auto session = std::unique_ptr<InferenceSession>(
