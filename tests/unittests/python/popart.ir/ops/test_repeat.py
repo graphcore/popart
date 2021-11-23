@@ -91,7 +91,7 @@ def run_ir(ir: pir.Ir, bps: int, y_id: str,
     opts.explicitRecomputation = True
 
     _pb_ir.updateVertices()
-    _pb_ir.setIsPrepared()
+
     _pb_ir.setPatterns(
         _ir.patterns.Patterns(_ir.patterns.PatternsLevel.Default))
 

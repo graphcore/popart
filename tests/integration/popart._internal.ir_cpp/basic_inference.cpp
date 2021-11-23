@@ -182,7 +182,6 @@ BOOST_AUTO_TEST_CASE(TestBasicInference) {
   opts.explicitRecomputation   = true;
   opts.useHostCopyOps          = true;
   ir->updateVertices();
-  ir->setIsPrepared();
 
   // Lower IR.
   const auto session = InferenceSession::createFromIr(

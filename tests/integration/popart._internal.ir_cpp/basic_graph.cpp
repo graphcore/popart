@@ -153,10 +153,6 @@ BOOST_AUTO_TEST_CASE(TestBasicGraph) {
   // forward or backward fragment.
   ir->updateVertices();
 
-  // As the final step before lowering, must mark the Ir as "prepared", or the
-  // lowering will immediately throw.
-  ir->setIsPrepared();
-
   ///// Lower Ir
 
   const auto session = InferenceSession::createFromIr(

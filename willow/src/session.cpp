@@ -654,10 +654,7 @@ InferenceSession::createFromIr(std::shared_ptr<Ir> ir,
     throw error("InferenceSession::createFromIr: Must pass valid DeviceInfo.");
   }
 
-  if (!ir->isPrepared()) {
-    throw error("InferenceSession::createFromIr: Ir must be prepared.");
-  }
-
+  ir->setIsPrepared();
   auto session = std::unique_ptr<InferenceSession>(
       new InferenceSession(std::move(ir), std::move(deviceInfo), name));
 
@@ -699,7 +696,7 @@ InferenceSession::createFromOnnxModel(const std::string &model,
 TrainingSession::~TrainingSession() = default;
 
 std::unique_ptr<TrainingSession>
-TrainingSession::createFromIr(std::unique_ptr<Ir> ir,
+TrainingSession::createFromIr(std::shared_ptr<Ir> ir,
                               std::shared_ptr<DeviceInfo> deviceInfo,
                               const std::string name) {
   POPART_TRACEPOINT();
@@ -709,10 +706,7 @@ TrainingSession::createFromIr(std::unique_ptr<Ir> ir,
     throw error("TrainingSession::createFromIr: Must pass valid DeviceInfo.");
   }
 
-  if (!ir->isPrepared()) {
-    throw error("TrainingSession::createFromIr: Ir must be prepared.");
-  }
-
+  ir->setIsPrepared();
   auto session = std::unique_ptr<TrainingSession>(
       new TrainingSession(std::move(ir), std::move(deviceInfo), name));
 

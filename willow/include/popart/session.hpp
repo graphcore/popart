@@ -425,7 +425,7 @@ public:
   ~TrainingSession() override;
 
   static std::unique_ptr<TrainingSession>
-  createFromIr(std::unique_ptr<Ir> ir,
+  createFromIr(std::shared_ptr<Ir> ir,
                std::shared_ptr<DeviceInfo> deviceInfo,
                const std::string name = DefaultTrainingSessionName);
 

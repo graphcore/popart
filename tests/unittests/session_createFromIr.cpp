@@ -23,7 +23,7 @@ checkErrorMsgFunc(const std::string &expectedPrefix) {
 
 template <typename SessionTy>
 void requireThrowsOnNullDeviceInfo(const std::string &sesionTyName) {
-  auto ir = std::make_unique<Ir>();
+  auto ir = std::shared_ptr<Ir>();
   const std::shared_ptr<DeviceInfo> di;
 
   BOOST_REQUIRE_EXCEPTION(
@@ -34,28 +34,9 @@ void requireThrowsOnNullDeviceInfo(const std::string &sesionTyName) {
                         "::createFromIr: Must pass valid DeviceInfo."));
 }
 
-template <typename SessionTy>
-void requireThrowsOnUnpreparedIr(const std::string &sesionTyName) {
-  // TODO(T36404 follow-up): Create Ir whose isPrepared() always returns false,
-  // so test is not tied to semantics of default ctor.
-  auto ir       = std::make_unique<Ir>();
-  const auto di = DeviceManager::createDeviceManager().createCpuDevice();
-
-  BOOST_REQUIRE_EXCEPTION(
-      SessionTy::createFromIr(std::move(ir), di),
-      error,
-      // Thrown from sesionTyName::createFromIr code.
-      checkErrorMsgFunc(sesionTyName + "::createFromIr: Ir must be prepared"));
-}
-
 } // namespace
 
 BOOST_AUTO_TEST_CASE(TestThrowsOnNullDeviceInfo) {
   requireThrowsOnNullDeviceInfo<InferenceSession>("InferenceSession");
   requireThrowsOnNullDeviceInfo<TrainingSession>("TrainingSession");
-}
-
-BOOST_AUTO_TEST_CASE(TestThrowsOnUnpreparedIr) {
-  requireThrowsOnUnpreparedIr<InferenceSession>("InferenceSession");
-  requireThrowsOnUnpreparedIr<TrainingSession>("TrainingSession");
 }

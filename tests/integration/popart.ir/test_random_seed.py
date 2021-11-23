@@ -45,7 +45,6 @@ def test_random_seed_setup():
     opts.replicatedGraphCount = replicas
 
     ir.updateVertices()
-    ir.setIsPrepared()
 
     device = popart.DeviceManager().createIpuModelDevice({"numIPUs": replicas})
     session = popart.InferenceSession.fromIr(ir=ir, deviceInfo=device)

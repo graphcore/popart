@@ -205,8 +205,6 @@ def test_autodiff():
         ir.applyInplacePattern(g)
     ir.updateVertices()
 
-    ir.setIsPrepared()
-
     session = popart.InferenceSession.fromIr(
         ir=ir, deviceInfo=tu.create_test_device())
 

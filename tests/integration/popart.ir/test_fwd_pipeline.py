@@ -119,7 +119,6 @@ def test_fwd_pipeline():
 
     # Prepare graph
     ir.updateVertices()
-    ir.setIsPrepared()
 
     # Create an IR inference session
     session = popart.InferenceSession.fromIr(

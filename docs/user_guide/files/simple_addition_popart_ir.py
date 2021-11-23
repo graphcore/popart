@@ -31,7 +31,6 @@ opts = ir.getSessionOptions()
 opts.useHostCopyOps = True
 opts.enableExplicitMainLoops = True
 ir.updateVertices()
-ir.setIsPrepared()
 
 device = popart.DeviceManager().createCpuDevice()
 session = popart.InferenceSession.fromIr(ir=ir, deviceInfo=device)

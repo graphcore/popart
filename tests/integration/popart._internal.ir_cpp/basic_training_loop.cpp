@@ -268,7 +268,6 @@ BOOST_AUTO_TEST_CASE(TestBasicTrainingLoop) {
       auto &_graph = ir->getGraph(id_graph.first);
       ir->applyInplacePattern(_graph);
     }
-    ir->setIsPrepared();
 
     // Lower IR.
     const auto session = TrainingSession::createFromIr(

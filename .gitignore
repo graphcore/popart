@@ -15,4 +15,4 @@ experimental
 .coverage
 *compile_commands.json*
 .cache/
-
+*.code-workspace

@@ -101,7 +101,6 @@ def test_basic_subgraph():
     opts.explicitRecomputation = True
 
     ir.updateVertices()
-    ir.setIsPrepared()
 
     session = popart.InferenceSession.fromIr(
         ir=ir, deviceInfo=tu.create_test_device())

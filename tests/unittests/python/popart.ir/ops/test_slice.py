@@ -37,7 +37,6 @@ def run_ir(ir: pir.Ir, y: pir.Tensor):
     opts.explicitRecomputation = True
 
     ir_.updateVertices()
-    ir_.setIsPrepared()
 
     session = popart.InferenceSession.fromIr(
         ir=ir_, deviceInfo=tu.create_test_device())
