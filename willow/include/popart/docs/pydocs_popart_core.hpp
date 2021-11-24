@@ -7487,8 +7487,6 @@ static const char *__doc_popart_Op_debugInfo = R"doc()doc";
 
 static const char *__singlelinedoc_popart_Op_debugInfo = R"doc()doc";
 
-static const char *__singlelinedoc_popart_Op_debugInfo = R"doc()doc";
-
 static const char *__doc_popart_Op_debugName = R"doc()doc";
 
 static const char *__singlelinedoc_popart_Op_debugName = R"doc()doc";
