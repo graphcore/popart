@@ -209,22 +209,6 @@ class Ir:
             name)  # type: ignore GraphId != str
         return Graph._from_pb(_pb_subgraph)
 
-    def dot_checkpoint(self, check: str) -> None:
-        """Output a graphical representation of the graph in DOT format.
-
-        The checkpoints are not active by default.
-        They can be activated by either setting the `dotChecks` options in the session options
-        equal to the checks to be activated, or by setting the environmental variable
-        `POPART_DOT_CHECKS` equal to the checks to be activated.
-        Note that if either `dotChecks` or `POPART_DOT_CHECKS` is set to `ALL`, all checkpoints
-        will be activated.
-        See also: https://docs.graphcore.ai/projects/popart-user-guide/en/latest/env_vars.html#generating-dot-files
-
-        Args:
-            check (str): Name of the check
-        """
-        self._pb_ir.dotCheckpoint(self._pb_ir, check)
-
     def _create_name(self, name: str) -> str:
         """Generate a graph name based on the qualified name of the Python
         function that created it.

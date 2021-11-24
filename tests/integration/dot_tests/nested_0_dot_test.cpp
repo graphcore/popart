@@ -34,7 +34,7 @@ BOOST_AUTO_TEST_CASE(Dot_nested0) {
     opts.outlineThreshold   = 0.00001;
     opts.dotOpNames         = true;
     opts.separateCallOpPdfs = separateCallOpPdfs;
-    opts.dotChecks.insert("Final");
+    opts.dotChecks.insert(DotCheck::Final);
 
     opts.logDir = "./nestedDotTest" + randomString(14);
     boost::filesystem::create_directories(opts.logDir);

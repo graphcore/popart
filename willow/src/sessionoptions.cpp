@@ -11,6 +11,33 @@
 
 namespace popart {
 
+constexpr static int NDotChecks = static_cast<int>(DotCheck::N);
+
+namespace {
+
+std::array<std::string, NDotChecks> getDotCheckIds() {
+
+  std::array<std::string, NDotChecks> V;
+  V[static_cast<int>(DotCheck::Fwd0)]     = "fwd0";
+  V[static_cast<int>(DotCheck::Fwd1)]     = "fwd1";
+  V[static_cast<int>(DotCheck::Bwd0)]     = "bwd0";
+  V[static_cast<int>(DotCheck::PreAlias)] = "prealias";
+  V[static_cast<int>(DotCheck::Final)]    = "final";
+  V[static_cast<int>(DotCheck::All)]      = "all";
+
+  // verify that we have registered all the DotChecks
+  // c++, when will we be able to make this constexpr?
+  if (!std::all_of(V.cbegin(), V.cend(), [](const std::string &s) {
+        return s.size() > 0;
+      })) {
+    throw error("Not all DotChecks have a string registered in getDotCheckIds");
+  }
+
+  return V;
+}
+
+} // namespace
+
 AutomaticLossScalingSettings::AutomaticLossScalingSettings(
     bool enabled_,
     const nonstd::optional<std::vector<TensorId>> &toTrackTensors_,
@@ -60,6 +87,28 @@ BatchSerializationSettings::BatchSerializationSettings(
       concatOnPipelineStageChange{concatOnPipelineStageChange_},
       transformContext{transformContext_}, method{method_},
       batchSchedule{batchSchedule_} {}
+
+std::string getDotCheckString(DotCheck d) {
+  const static std::array<std::string, NDotChecks> V = getDotCheckIds();
+  return V[static_cast<int>(d)];
+}
+
+DotCheck dotCheckFromString(const std::string &s) {
+  const static std::map<std::string, DotCheck> dotCheckStringsMap{
+      {"FWD0", DotCheck::Fwd0},
+      {"FWD1", DotCheck::Fwd1},
+      {"BWD0", DotCheck::Bwd0},
+      {"PREALIAS", DotCheck::PreAlias},
+      {"FINAL", DotCheck::Final},
+      {"ALL", DotCheck::All}};
+
+  auto found = dotCheckStringsMap.find(s);
+  if (found != dotCheckStringsMap.end()) {
+    return found->second;
+  } else {
+    throw error("Unrecognised dot check '{}'", s);
+  }
+}
 
 std::string toString(VirtualGraphMode v) {
   switch (v) {

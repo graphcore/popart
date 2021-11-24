@@ -90,6 +90,8 @@ Session Options
 
 .. autoclass:: popart::BatchSerializationBatchSchedule
 
+.. autoclass:: popart::DotCheck
+
 .. autoclass:: popart::ExecutionPhaseSchedule
 
 .. autoclass:: popart::TensorLocationSettings

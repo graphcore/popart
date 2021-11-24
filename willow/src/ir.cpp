@@ -277,9 +277,9 @@ void Ir::updateOptimizer(const Optimizer &newOptimizer) {
   optimizer = std::move(newOptimizerClone);
 }
 
-void Ir::dotCheckpoint(const Ir &ir, std::string check) const {
-  DotVisualizer viz(check);
-  viz.write(ir);
+void Ir::dotCheckpoint(DotCheck check) const {
+  DotVisualizer viz(this, check);
+  viz.write();
 }
 
 void Ir::confirmNoReservedIds() const {
@@ -1174,13 +1174,13 @@ void Ir::prepareImpl(const IrBundle &gb, const HashesMap &cacheEntries) {
   verifyExplicitMainLoopsSettings();
   verifyOverlapIOSettings();
 
-  dotCheckpoint(*this, "Fwd0");
+  dotCheckpoint(DotCheck::Fwd0);
 
   for (auto &id_graph : graphs) {
     auto &graph = getGraph(id_graph.first);
     applyPreAliasPatterns(graph);
   }
-  dotCheckpoint(*this, "Fwd1");
+  dotCheckpoint(DotCheck::Fwd1);
 
   if (RandomSetup::requiresRandomSeed(*this)) {
     setRequiresRandomSeed();
@@ -1244,7 +1244,7 @@ void Ir::prepareImpl(const IrBundle &gb, const HashesMap &cacheEntries) {
   }
 
   updateVertices();
-  dotCheckpoint(*this, "Bwd0");
+  dotCheckpoint(DotCheck::Bwd0);
 
   // Delaying this preserves all "compute" tensor names a user might want
   // to anchor, so it should be called after the transforms relevant for the
@@ -1449,7 +1449,7 @@ void Ir::prepareImpl(const IrBundle &gb, const HashesMap &cacheEntries) {
   applyTransform(InplaceAccumulateGradPartialsIntoOptimizerAccumTensor::id(),
                  getMainGraph());
 
-  dotCheckpoint(*this, "PreAlias");
+  dotCheckpoint(DotCheck::PreAlias);
 
   if (getSessionOptions().enableExplicitMainLoops) {
     // Add explicit training loops
@@ -1579,7 +1579,7 @@ void Ir::prepareImpl(const IrBundle &gb, const HashesMap &cacheEntries) {
   // We allow duplicates.
   validateAnchors();
 
-  dotCheckpoint(*this, "Final");
+  dotCheckpoint(DotCheck::Final);
   logIr();
 
   finalizeOpDebugInfo();

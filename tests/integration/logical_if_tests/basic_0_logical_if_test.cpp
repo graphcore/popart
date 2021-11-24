@@ -367,7 +367,7 @@ BOOST_AUTO_TEST_CASE(LogicalIf_train1) {
   ConstVoidData in1CVData = {in1Data, info};
 
   TestRunner runner;
-  runner.opts.dotChecks.insert("Final");
+  runner.opts.dotChecks.insert(DotCheck::Final);
   runner.opts.separateCallOpPdfs = false;
   runner.patterns.enableInPlace(false);
   runner.patterns.enableSubtractArg1GradOp(true);

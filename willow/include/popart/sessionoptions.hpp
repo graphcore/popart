@@ -62,6 +62,30 @@ struct AutomaticLossScalingSettings {
 };
 
 /**
+ * Enum type used to identify at which stages of IR construction to export
+ * `.dot` files.
+ */
+enum class DotCheck {
+  /// Generate graph after construction of the forward pass.
+  Fwd0 = 0,
+  /// Generate graph after running pre-aliasing patterns.
+  Fwd1,
+  /// Generate graph after backwards construction.
+  Bwd0,
+  /// Generate graph after all transformations, patterns, except the aliasing.
+  PreAlias,
+  /// Generate graph after running aliasing patterns (the final IR).
+  Final,
+  /// Generate all graphs
+  All,
+  /// The number of \c DotCheck values.
+  N
+};
+
+std::string getDotCheckString(DotCheck);
+DotCheck dotCheckFromString(const std::string &);
+
+/**
  * Enum type to specify which ops to recompute in the backwards pass when doing
  * auto-recomputation.
  */
@@ -518,7 +542,7 @@ struct SessionOptions {
   std::string logDir;
 
   /// When to write `.dot` files during Ir construction.
-  std::set<std::string> dotChecks = {};
+  std::set<DotCheck> dotChecks = {};
 
   /// The ops to write to the `.dot` file will be a continuous interval
   /// of the schedule, controlled by firstDotOp and finalDotOp. In particular,

@@ -228,9 +228,9 @@ BOOST_AUTO_TEST_CASE(Inplace_numericsIpNip0) {
     auto dataFlow = DataFlow(1, {{out, art}});
 
     auto opts = SessionOptions();
-    opts.dotChecks.insert("Bwd0");
-    opts.dotChecks.insert("Fwd0");
-    opts.dotChecks.insert("Final");
+    opts.dotChecks.insert(DotCheck::Bwd0);
+    opts.dotChecks.insert(DotCheck::Fwd0);
+    opts.dotChecks.insert(DotCheck::Final);
     opts.dotOpNames      = false;
     opts.logDir          = "./dotfiles";
     opts.enableOutlining = outlining;

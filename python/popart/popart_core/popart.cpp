@@ -1401,6 +1401,11 @@ PYBIND11_MODULE(popart_core, m) {
                       DOC(popart, SessionOptions, enableStableNorm));
     cls.def_readwrite("groupNormStridedChannelGrouping",
                       &SessionOptions::groupNormStridedChannelGrouping);
+    // set in python use the python set constructor, so something like
+    // mySessionOptions.dotChecks = {popart.DotCheck.FINAL}
+    cls.def_readwrite("dotChecks",
+                      &SessionOptions::dotChecks,
+                      DOC(popart, SessionOptions, dotChecks));
     cls.def_readwrite("customCodelets",
                       &SessionOptions::customCodelets,
                       DOC(popart, SessionOptions, customCodelets));
@@ -1510,9 +1515,6 @@ PYBIND11_MODULE(popart_core, m) {
         DOC(popart,
             SessionOptions,
             scheduleNonWeightUpdateGradientConsumersEarly));
-    cls.def_readwrite("dotChecks",
-                      &SessionOptions::dotChecks,
-                      DOC(popart, SessionOptions, dotChecks));
   }
   {
     py::enum_<PatternsLevel> en(m, "PatternsLevel", DOC(popart, PatternsLevel));
@@ -1527,6 +1529,17 @@ PYBIND11_MODULE(popart_core, m) {
     en.value("NoPatterns",
              PatternsLevel::NoPatterns,
              SINGLE_LINE_DOC(popart, PatternsLevel, NoPatterns));
+  }
+  {
+    py::enum_<DotCheck> en(m, "DotCheck", DOC(popart, DotCheck));
+    en.value("Fwd0", DotCheck::Fwd0, SINGLE_LINE_DOC(popart, DotCheck, Fwd0));
+    en.value("Fwd1", DotCheck::Fwd1, SINGLE_LINE_DOC(popart, DotCheck, Fwd1));
+    en.value("Bwd0", DotCheck::Bwd0, SINGLE_LINE_DOC(popart, DotCheck, Bwd0));
+    en.value("PreAlias",
+             DotCheck::PreAlias,
+             SINGLE_LINE_DOC(popart, DotCheck, PreAlias));
+    en.value(
+        "Final", DotCheck::Final, SINGLE_LINE_DOC(popart, DotCheck, Final));
   }
   {
     py::enum_<RecomputationType> en(

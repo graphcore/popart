@@ -4176,6 +4176,56 @@ static const char *__singlelinedoc_popart_DomainOpSet_getOpsetVersion =
 
 static const char *__doc_popart_DomainOpSet_impl = R"doc()doc";
 
+static const char *__singlelinedoc_popart_DomainOpSet_impl = R"doc()doc";
+
+static const char *__doc_popart_DotCheck =
+    R"doc(Enum type used to identify at which stages of IR construction to export
+:code:`.dot` files.)doc";
+
+static const char *__singlelinedoc_popart_DotCheck =
+    R"doc(Enum type used to identify at which stages of IR construction to export :code:`.dot` files.)doc";
+
+static const char *__doc_popart_DotCheck_All = R"doc(Generate all graphs)doc";
+
+static const char *__singlelinedoc_popart_DotCheck_All =
+    R"doc(Generate all graphs)doc";
+
+static const char *__doc_popart_DotCheck_Bwd0 =
+    R"doc(Generate graph after backwards construction.)doc";
+
+static const char *__singlelinedoc_popart_DotCheck_Bwd0 =
+    R"doc(Generate graph after backwards construction.)doc";
+
+static const char *__doc_popart_DotCheck_Final =
+    R"doc(Generate graph after running aliasing patterns (the final IR).)doc";
+
+static const char *__singlelinedoc_popart_DotCheck_Final =
+    R"doc(Generate graph after running aliasing patterns (the final IR).)doc";
+
+static const char *__doc_popart_DotCheck_Fwd0 =
+    R"doc(Generate graph after construction of the forward pass.)doc";
+
+static const char *__singlelinedoc_popart_DotCheck_Fwd0 =
+    R"doc(Generate graph after construction of the forward pass.)doc";
+
+static const char *__doc_popart_DotCheck_Fwd1 =
+    R"doc(Generate graph after running pre-aliasing patterns.)doc";
+
+static const char *__singlelinedoc_popart_DotCheck_Fwd1 =
+    R"doc(Generate graph after running pre-aliasing patterns.)doc";
+
+static const char *__doc_popart_DotCheck_N =
+    R"doc(The number of ``DotCheck`` values.)doc";
+
+static const char *__singlelinedoc_popart_DotCheck_N =
+    R"doc(The number of ``DotCheck`` values.)doc";
+
+static const char *__doc_popart_DotCheck_PreAlias =
+    R"doc(Generate graph after all transformations, patterns, except the aliasing.)doc";
+
+static const char *__singlelinedoc_popart_DotCheck_PreAlias =
+    R"doc(Generate graph after all transformations, patterns, except the aliasing.)doc";
+
 static const char *__doc_popart_ErrorSource = R"doc()doc";
 
 static const char *__singlelinedoc_popart_ErrorSource = R"doc()doc";
@@ -7484,8 +7534,6 @@ static const char *__singlelinedoc_popart_Op_createAndConnectOutTensor =
     R"doc()doc";
 
 static const char *__doc_popart_Op_debugInfo = R"doc()doc";
-
-static const char *__singlelinedoc_popart_Op_debugInfo = R"doc()doc";
 
 static const char *__singlelinedoc_popart_Op_debugInfo = R"doc()doc";
 
@@ -12687,6 +12735,8 @@ static const char *__doc_popart_cycleCountPrefix = R"doc()doc";
 
 static const char *__singlelinedoc_popart_cycleCountPrefix = R"doc()doc";
 
+static const char *__doc_popart_dotCheckFromString = R"doc()doc";
+
 static const char *__singlelinedoc_popart_dotCheckFromString = R"doc()doc";
 
 static const char *__doc_popart_error = R"doc(Exception class for popart)doc";
@@ -12795,6 +12845,10 @@ span all replicas)doc";
 
 static const char *__singlelinedoc_popart_getComplementCommGroup =
     R"doc(Calculates the complementary group such that the two CommGroups together span all replicas)doc";
+
+static const char *__doc_popart_getDotCheckString = R"doc()doc";
+
+static const char *__singlelinedoc_popart_getDotCheckString = R"doc()doc";
 
 static const char *__doc_popart_getEdgeGradId =
     R"doc(Creates a TensorId of the edge-gradient along the edge where tensor is

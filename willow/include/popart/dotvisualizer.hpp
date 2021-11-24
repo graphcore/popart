@@ -2,7 +2,6 @@
 #ifndef GUARD_NEURALNET_POPART_DOTVISUALIZER_HPP
 #define GUARD_NEURALNET_POPART_DOTVISUALIZER_HPP
 
-#include <string>
 #include <popart/names.hpp>
 #include <popart/sessionoptions.hpp>
 
@@ -10,13 +9,14 @@ namespace popart {
 class Ir;
 class DotVisualizer {
 public:
-  DotVisualizer(std::string _check_);
+  DotVisualizer(const Ir *, DotCheck);
 
   // write .dot files
-  void write(const Ir &ir);
+  void write();
 
 private:
-  std::string check;
+  const Ir *ir;
+  DotCheck check;
 
   using AbridgedGraphName = std::string;
   using FullGraphName     = std::string;
@@ -27,7 +27,7 @@ private:
 
   // Each graph has it's own ofstream (if separateCallOpPdfs is true)
   std::map<AbridgedGraphName, std::ofstream> ofstreams;
-  std::ofstream &strm(const FullGraphName &gString, const Ir &ir);
+  std::ofstream &strm(const FullGraphName &gString);
 
   // the name that an Op has in the .dot file
   std::string nodeDotId(OpId) const;
@@ -50,7 +50,7 @@ private:
   std::map<FullGraphName, int> graphScheduleCounter;
   int getNextGraphIndex(const FullGraphName &gString);
 
-  std::set<std::string> getDotChecks(const Ir &ir);
+  std::set<DotCheck> getDotChecks();
 };
 } // namespace popart
 

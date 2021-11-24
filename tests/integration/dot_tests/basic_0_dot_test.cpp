@@ -35,9 +35,9 @@ BOOST_AUTO_TEST_CASE(Dot_basic0) {
   auto aiOnnx  = builder->aiOnnxOpset9();
 
   auto opts = SessionOptions();
-  opts.dotChecks.insert("Fwd0");
-  opts.dotChecks.insert("Fwd1");
-  opts.dotChecks.insert("Final");
+  opts.dotChecks.insert(DotCheck::Fwd0);
+  opts.dotChecks.insert(DotCheck::Fwd1);
+  opts.dotChecks.insert(DotCheck::Final);
 
   opts.logDir = "./dotTestTmp" + randomString(14);
   boost::filesystem::create_directories(opts.logDir);
@@ -91,7 +91,7 @@ BOOST_AUTO_TEST_CASE(Dot_dotOpNames0) {
     auto aiOnnx  = builder->aiOnnxOpset9();
     auto opts    = SessionOptions();
     // just the one .dot file will be written
-    opts.dotChecks.insert("Bwd0");
+    opts.dotChecks.insert(DotCheck::Bwd0);
     opts.dotOpNames = dotOpNames;
     opts.logDir     = "./dotTestTmp" + randomString(14);
     boost::filesystem::create_directories(opts.logDir);
@@ -169,7 +169,7 @@ BOOST_AUTO_TEST_CASE(Dot_dotStartEnd) {
         auto opts    = SessionOptions();
 
         // just the one .dot file will be written
-        opts.dotChecks.insert("Bwd0");
+        opts.dotChecks.insert(DotCheck::Bwd0);
         opts.dotOpNames = true;
         opts.firstDotOp = start;
         opts.finalDotOp = end;

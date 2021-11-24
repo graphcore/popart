@@ -61,8 +61,7 @@ void bindIr(py::module &m) {
       .def("removeIsolatedGraphs", &Ir::removeIsolatedGraphs)
       .def("dataStreamTensors",
            &Ir::dataStreamTensors,
-           py::return_value_policy::reference)
-      .def("dotCheckpoint", &Ir::dotCheckpoint);
+           py::return_value_policy::reference);
 }
 
 } // namespace ir

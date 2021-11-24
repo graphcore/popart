@@ -298,7 +298,7 @@ BOOST_AUTO_TEST_CASE(TestFindMatchingOps) {
   GraphTestModel1 model;
   auto &graph = model.getIr().getMainGraph();
 
-  model.getIr().dotCheckpoint(model.getIr(), "Final");
+  model.getIr().dotCheckpoint(DotCheck::Final);
 
   {
     graphutils::OpPreds preds{

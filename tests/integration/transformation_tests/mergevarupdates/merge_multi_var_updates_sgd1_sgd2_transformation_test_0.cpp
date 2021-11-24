@@ -124,7 +124,7 @@ BOOST_AUTO_TEST_CASE(Transformation_MergeMultiSGD1) {
     opts.swapLimitScheduler = 20;
     opts.firstDotOp         = 0;
     opts.finalDotOp         = 200;
-    opts.dotChecks.insert("Final");
+    opts.dotChecks.insert(DotCheck::Final);
     opts.logDir                     = ".";
     opts.mergeVarUpdate             = mvu;
     opts.mergeVarUpdateMemThreshold = mvu == MergeVarUpdateType::AutoLoose

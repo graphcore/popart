@@ -117,7 +117,7 @@ BOOST_AUTO_TEST_CASE(DatalessTrainingMatmul) {
     if (genPdf) {
       opts.firstDotOp = 0;
       opts.finalDotOp = 100;
-      opts.dotChecks.insert("Final");
+      opts.dotChecks.insert(DotCheck::Final);
       opts.logDir = "./dotfiles";
       if (!boost::filesystem::exists(opts.logDir)) {
         boost::filesystem::create_directories(opts.logDir);
@@ -217,7 +217,8 @@ BOOST_AUTO_TEST_CASE(DatalessTrainingMatmul) {
 
     // dot -Tpdf -o final.pdf final.dot
     if (genPdf) {
-      for (auto dot_string : opts.dotChecks) {
+      for (auto check : opts.dotChecks) {
+        auto dot_string = getDotCheckString(check);
         std::stringstream command_ss;
         command_ss << "dot "
                    << " -Tpdf "

@@ -40,7 +40,7 @@ BOOST_AUTO_TEST_CASE(OverlapInnerLoop) {
   ir.updateVertices();
   ir.setIsPrepared();
 
-  ir.dotCheckpoint(ir, "Final");
+  ir.dotCheckpoint(DotCheck::Final);
 
   IrTestWrapper tw_ir{ir};
   auto tw_mainGraph = tw_ir.hasGraph(ir.getMainGraph().id, Require::MustBeTrue);
@@ -137,7 +137,7 @@ BOOST_AUTO_TEST_CASE(OverlapInnerLoopA) {
   ir.updateVertices();
   ir.setIsPrepared();
 
-  ir.dotCheckpoint(ir, "Final");
+  ir.dotCheckpoint(DotCheck::Final);
 
   IrTestWrapper tw_ir{ir};
   auto tw_mainGraph = tw_ir.hasGraph(ir.getMainGraph().id, Require::MustBeTrue);
@@ -234,7 +234,7 @@ BOOST_AUTO_TEST_CASE(OverlapInnerLoopC) {
   ir.updateVertices();
   ir.setIsPrepared();
 
-  ir.dotCheckpoint(ir, "Final");
+  ir.dotCheckpoint(DotCheck::Final);
 
   IrTestWrapper tw_ir{ir};
   auto tw_mainGraph = tw_ir.hasGraph(ir.getMainGraph().id, Require::MustBeTrue);
