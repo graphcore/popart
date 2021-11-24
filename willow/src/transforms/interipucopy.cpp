@@ -17,6 +17,8 @@
 
 namespace popart {
 
+using IpuNumber = int64_t;
+
 class CopiedTensors {
 
   // record which tensors have been copied to which ipu's

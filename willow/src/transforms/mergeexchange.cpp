@@ -18,11 +18,99 @@
 
 namespace popart {
 
+using ExchangeOps = std::vector<std::pair<int, ExchangeBaseOp *>>;
+
+namespace {
+bool hasDataDependency(Op *const op,
+                       const ExchangeOps &exchangeOps,
+                       const std::map<OpId, int> &opToPosition) {
+  if (exchangeOps.empty()) {
+    return false;
+  }
+
+  std::set<OpId> exchangeOpIds;
+  for (auto &exchangeOp : exchangeOps) {
+    exchangeOpIds.insert(exchangeOp.second->id);
+  }
+
+  std::vector<graphutils::TensorAndCallStack> inputs;
+
+  for (auto input : op->input->tensorMap()) {
+    inputs.push_back({input.second, {}});
+  }
+
+  // Walk back from the current exchange Op and ensure we do not encounter
+  // any other exchange Op currently scheduled for merging.
+  //
+  //  InitOp
+  //     |
+  //  RemoteLoad                        } even if scheduled adjacently,
+  //     |         <- data dependency   } cannot be merged to
+  //  RemoteStore                       } MultiExchangeOp
+
+  bool dataDependency = false;
+  graphutils::traverse(
+      inputs,
+      [&exchangeOpIds, &dataDependency](Tensor *t) {
+        if (t->hasProducer()) {
+          if (exchangeOpIds.find(t->getProducer()->id) != exchangeOpIds.end()) {
+            // The current exchange Op depends on data/tensors
+            // from a previous exchange Op, and so cannot be merged
+            dataDependency = true;
+            return false;
+          }
+        }
+        return true;
+      },
+      [&exchangeOps, &opToPosition, &op](Op *top, Tensor *t0, Tensor *t1) {
+        if (op->getGraph().id != top->getGraph().id) {
+          return true;
+        } else {
+          auto it = opToPosition.find(top->id);
+          if (it != opToPosition.end()) {
+            return exchangeOps.front().first < it->second;
+          }
+        }
+        return false;
+      },
+      graphutils::TraversalType::DepthFirst,
+      graphutils::VisitType::Pre,
+      graphutils::TraversalDirection::Backward);
+
+  return dataDependency;
+}
+
+void addInitOpCons(Op *const op, OpsBeforeKey &beforeKeys) {
+  // Ensure the scheduler allows InitOps to be scheduled before
+  // RemoteLoad/HostLoad/RemoteStore/HostStore/MultiExchange
+  //
+  //  InitOp0                   valid if both InitOp0 and InitOp1 can be
+  //     |         InitOp1      scheduled before RemoteLoad0 and RemoteLoad1
+  //     |            |
+  //  RemoteLoad0     |         } mergeable to MultiExchangeOp
+  //               RemoteLoad1  }
+
+  beforeKeys.insert({op, {}});
+  for (auto &beforeKey : beforeKeys) {
+    if (beforeKey.first->isConvertibleTo<InitOp>()) {
+      beforeKeys.at(op).push_back(beforeKey.first);
+    }
+  }
+}
+
+bool isMergableOp(Op *const op) {
+  return op->isConvertibleTo<RemoteLoadOp>() ||
+         op->isConvertibleTo<RemoteStoreOp>() ||
+         op->isConvertibleTo<HostLoadOp>() ||
+         op->isConvertibleTo<HostStoreOp>() ||
+         op->isConvertibleTo<MultiExchangeOp>();
+}
+} // namespace
+
 std::size_t MergeExchange::id() { return typeid(MergeExchange).hash_code(); }
 
-void MergeExchange::insertMultiExchange(
-    Graph &graph,
-    std::vector<std::pair<int, ExchangeBaseOp *>> exchangeOps) const {
+Op *MergeExchange::insertMultiExchange(Graph &graph,
+                                       ExchangeOps exchangeOps) const {
 
   logging::transform::info("[MergeExchange] inserting multi exchange");
 
@@ -107,22 +195,32 @@ void MergeExchange::insertMultiExchange(
 
   logging::transform::debug("[MergeExchange] MultiExchangeOp {} added.",
                             multiExchangeOp->debugName());
+  return multiExchangeOp;
 }
 
-void MergeExchange::conditionallyInsertMultiExchange(
+Op *MergeExchange::conditionallyInsertMultiExchange(
     Graph &graph,
-    std::vector<std::pair<int, ExchangeBaseOp *>> exchangeOps,
+    ExchangeOps exchangeOps,
     const OpsBeforeKey &keys) const {
 
   if (exchangeOps.size() > 1 && graph.isSchedulable(keys, true)) {
-    insertMultiExchange(graph, exchangeOps);
+    return insertMultiExchange(graph, exchangeOps);
   }
+  return nullptr;
 }
 
 bool MergeExchange::apply(Graph &graph) const {
+  applyToOps(graph, {});
+  return true;
+}
+
+std::vector<Op *>
+MergeExchange::applyToOps(Graph &graph,
+                          const std::set<OpId> include_ops) const {
   // Keep a record of which tensors have been copied to/from IO tiles
   std::set<TensorId> copiedTensors;
   std::set<TensorId> processedTensors;
+  std::vector<Op *> createdOps;
 
   auto schedule = graph.getOpSchedule({}, RequireOptimalSchedule::Yes);
 
@@ -135,7 +233,7 @@ bool MergeExchange::apply(Graph &graph) const {
     opToPosition[op->id] = i++;
   }
 
-  std::vector<std::pair<int, ExchangeBaseOp *>> exchangeOps;
+  ExchangeOps exchangeOps;
 
   bool seenRemoteLoads  = false;
   bool seenRemoteStores = false;
@@ -153,13 +251,13 @@ bool MergeExchange::apply(Graph &graph) const {
       prevOp = schedule.at(i - 1);
     }
 
-    bool isInit   = op->isConvertibleTo<InitOp>();
-    bool isRemote = op->isConvertibleTo<RemoteLoadOp>() ||
-                    op->isConvertibleTo<RemoteStoreOp>();
-    bool isHost =
-        op->isConvertibleTo<HostLoadOp>() || op->isConvertibleTo<HostStoreOp>();
+    if (!include_ops.empty() && include_ops.find(op->id) == include_ops.end()) {
+      // Only merge ops in include_ops
+      continue;
+    }
 
-    bool isMulti = op->isConvertibleTo<MultiExchangeOp>();
+    bool isInit     = op->isConvertibleTo<InitOp>();
+    bool isMergable = isMergableOp(op);
 
     bool contextChanged = prevOp && op->settings.executionContext !=
                                         prevOp->settings.executionContext;
@@ -170,79 +268,21 @@ bool MergeExchange::apply(Graph &graph) const {
     bool isAof = (op->settings.executionContext ==
                   ExecutionContext::AccumulateOuterFragment);
 
-    bool dataDependency = false;
-    if ((isInit || isRemote || isHost || isMulti) && !exchangeOps.empty()) {
-
-      // Ensure the scheduler allows InitOps to be scheduled before
-      // RemoteLoad/HostLoad/RemoteStore/HostStore/MultiExchange
-      //
-      //  InitOp0                   valid if both InitOp0 and InitOp1 can be
-      //     |         InitOp1      scheduled before RemoteLoad0 and RemoteLoad1
-      //     |            |
-      //  RemoteLoad0     |         } mergeable to MultiExchangeOp
-      //               RemoteLoad1  }
-
-      beforeKeys.insert({op, {}});
-      for (auto &beforeKey : beforeKeys) {
-        if (beforeKey.first->isConvertibleTo<InitOp>()) {
-          beforeKeys.at(op).push_back(beforeKey.first);
-        }
-      }
-
-      std::set<OpId> exchangeOpIds;
-      for (auto &exchangeOp : exchangeOps) {
-        exchangeOpIds.insert(exchangeOp.second->id);
-      }
-
-      std::vector<graphutils::TensorAndCallStack> inputs;
-
-      for (auto input : op->input->tensorMap()) {
-        inputs.push_back({input.second, {}});
-      }
-
-      // Walk back from the current exchange Op and ensure we do not encounter
-      // any other exchange Op currently scheduled for merging.
-      //
-      //  InitOp
-      //     |
-      //  RemoteLoad                        } even if scheduled adjacently,
-      //     |         <- data dependency   } cannot be merged to
-      //  RemoteStore                       } MultiExchangeOp
-
-      graphutils::traverse(
-          inputs,
-          [&exchangeOpIds, &dataDependency](Tensor *t) {
-            if (t->hasProducer()) {
-              if (exchangeOpIds.find(t->getProducer()->id) !=
-                  exchangeOpIds.end()) {
-                // The current exchange Op depends on data/tensors
-                // from a previous exchange Op, and so cannot be merged
-                dataDependency = true;
-                return false;
-              }
-            }
-            return true;
-          },
-          [&exchangeOps, &opToPosition, &op](Op *top, Tensor *t0, Tensor *t1) {
-            if (op->getGraph().id != top->getGraph().id) {
-              return true;
-            } else {
-              auto it = opToPosition.find(top->id);
-              if (it != opToPosition.end()) {
-                return exchangeOps.front().first < it->second;
-              }
-            }
-            return false;
-          },
-          graphutils::TraversalType::DepthFirst,
-          graphutils::VisitType::Pre,
-          graphutils::TraversalDirection::Backward);
+    if ((isInit || isMergable) && !exchangeOps.empty()) {
+      addInitOpCons(op, beforeKeys);
     }
 
-    if (contextChanged || dataDependency ||
-        !(isInit || isRemote || isHost || isMulti) || bspChanged ||
-        (inhibitMerging && isAof && isMerge)) {
-      conditionallyInsertMultiExchange(graph, exchangeOps, beforeKeys);
+    bool dataDependency = (isInit || isMergable) &&
+                          hasDataDependency(op, exchangeOps, opToPosition);
+
+    if (contextChanged || dataDependency || !(isInit || isMergable) ||
+        bspChanged || (inhibitMerging && isAof && isMerge)) {
+      auto multiOp =
+          conditionallyInsertMultiExchange(graph, exchangeOps, beforeKeys);
+      if (multiOp != nullptr) {
+        createdOps.push_back(multiOp);
+      }
+
       exchangeOps.clear();
       beforeKeys.clear();
       seenRemoteLoads  = false;
@@ -252,15 +292,19 @@ bool MergeExchange::apply(Graph &graph) const {
     seenRemoteLoads  = seenRemoteLoads || op->isConvertibleTo<RemoteLoadOp>();
     seenRemoteStores = seenRemoteStores || op->isConvertibleTo<RemoteStoreOp>();
 
-    if (isRemote || isHost || isMulti) {
+    if (isMergable) {
       if (ExchangeBaseOp *exchOp = dynamic_cast<ExchangeBaseOp *>(op)) {
         exchangeOps.push_back({i, exchOp});
       }
     }
   }
-  conditionallyInsertMultiExchange(graph, exchangeOps, beforeKeys);
+  auto multiOp =
+      conditionallyInsertMultiExchange(graph, exchangeOps, beforeKeys);
+  if (multiOp != nullptr) {
+    createdOps.push_back(multiOp);
+  }
 
-  return true;
+  return createdOps;
 }
 
 namespace {

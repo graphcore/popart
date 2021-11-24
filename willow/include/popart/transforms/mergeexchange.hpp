@@ -10,10 +10,6 @@
 
 namespace popart {
 
-using IpuNumber = int64_t;
-
-IpuNumber getIpuNumber(const Op *op);
-
 class MergeExchange : public Transform {
 public:
   static std::size_t id();
@@ -21,17 +17,20 @@ public:
   MergeExchange() : Transform() {}
   virtual ~MergeExchange() override {}
 
-  virtual bool apply(Graph &graph) const final;
+  virtual bool apply(Graph &graph) const override;
 
-  virtual std::size_t getId() const final { return id(); }
+  std::vector<Op *> applyToOps(Graph &graph,
+                               const std::set<OpId> include_ops) const;
 
-  virtual std::string getName() const final { return "MergeExchange"; }
+  virtual std::size_t getId() const override { return id(); }
+
+  virtual std::string getName() const override { return "MergeExchange"; }
 
 private:
-  void insertMultiExchange(
+  Op *insertMultiExchange(
       Graph &graph,
       std::vector<std::pair<int, ExchangeBaseOp *>> exchangeOps) const;
-  void conditionallyInsertMultiExchange(
+  Op *conditionallyInsertMultiExchange(
       Graph &graph,
       std::vector<std::pair<int, ExchangeBaseOp *>> exchangeOps,
       const OpsBeforeKey &keys) const;

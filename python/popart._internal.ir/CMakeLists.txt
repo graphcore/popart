@@ -46,6 +46,7 @@ list(
   ${popart_op_headers_dir}/tiedgather.hpp
   ${popart_op_headers_dir}/groupnorm.hpp
   ${popart_op_headers_dir}/equal.hpp
+  ${popart_op_headers_dir}/exchange/multiexchange.hpp
   ${popart_op_headers_dir}/or.hpp
   ${popart_op_headers_dir}/and.hpp
   ${popart_op_headers_dir}/not.hpp
@@ -184,6 +185,7 @@ add_popart_python_module(
   bindings/transforms/transform.cpp
   bindings/transforms/prune.cpp
   bindings/transforms/autodiff.cpp
+  bindings/transforms/mergeexchange.cpp
   # end transforms
   bindings/op/enums.cpp
   bindings/op/optional.cpp

@@ -183,16 +183,21 @@ class Context:
             OpA will be executed before OpB and OpC. OpD will be executed after OpB and OpC.
             """
         g = op.getGraph()
+        ops = g.getOpIds()
+
+        def insert_topocon(before):
+            if before.id != op.id and before.id in ops:
+                g.topoCons().insert(before, op, False)
+
         if self._in_sequence is not None:
             if self._in_sequence:
                 for prev_op in self._previous_ops[g.id]:
-                    if prev_op.id != op.id:
-                        g.topoCons().insert(prev_op, op, False)
+                    insert_topocon(prev_op)
                 self._previous_ops[g.id].clear()
             else:
                 prev_ops = self._previous_ops[g.id]
-                if len(prev_ops) > 0 and prev_ops[0].id != op.id:
-                    g.topoCons().insert(prev_ops[0], op, False)
+                if len(prev_ops) > 0:
+                    insert_topocon(prev_ops[0])
             self._previous_ops[g.id].append(op)
 
 
