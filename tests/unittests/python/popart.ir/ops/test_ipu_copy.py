@@ -32,10 +32,10 @@ class TestIpuCopy:
             # but ipu_copy should throw an error if it happens.
             with pir.virtual_graph(None):
                 a_0 = a + 1
-            with pytest.raises(TypeError) as excinfo:
+            with pytest.raises(ValueError) as excinfo:
                 a_1 = ops.ipu_copy(a_0, 1)
             msg = str(excinfo.value)
-            assert "has a producer without a VirtualGraphId" in msg
+            assert "Could not infer virtual graph" in msg
 
     def test_fn_with_no_producer(self):
         ir = pir.Ir()
@@ -54,11 +54,11 @@ class TestIpuCopy:
 
         with g:
             a = pir.variable(1)
-            with pytest.raises(TypeError) as excinfo:
+            with pytest.raises(ValueError) as excinfo:
                 a_1 = ops.ipu_copy(a, 1)
             msg = str(excinfo.value)
-            assert "does not have a producer" in msg
-            assert "must provide a source" in msg
+            assert "Could not infer virtual graph" in msg
+            assert "Please specify `source`" in msg
 
     def test_tensor_fns(self):
         ir = pir.Ir()

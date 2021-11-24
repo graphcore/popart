@@ -58,6 +58,7 @@ list(
   ${popart_op_headers_dir}/transpose.hpp
   ${popart_op_headers_dir}/slice.hpp
   ${popart_op_headers_dir}/split.hpp
+  ${popart_op_headers_dir}/iotilecopy.hpp
   # ${popart_op_headers_dir}/ipucopy.hpp manual binding
   ${popart_op_headers_dir}/negate.hpp
   ${popart_op_headers_dir}/softmax.hpp

@@ -35,21 +35,12 @@ def ipu_copy(t: Tensor, destination: int,
     check_in_graph(g, t)
 
     if source is None:
-        if t._pb_tensor.hasProducer():
-            producer = t._pb_tensor.getProducer()
-            if isinstance(producer, _ir.op.IpuCopyOp):
-                source = producer.getDestIpu()
-            else:
-                if not producer.hasVirtualGraphId():
-                    raise TypeError(
-                        f"Tensor to be copied \"{t}\" has a producer without a VirtualGraphId. Either: "
-                        "set the VirtualGraph or specify `source` when copying."
-                    )
-                source = producer.getVirtualGraphId()
-        else:
-            raise TypeError(
-                f"Tensor to be copied {t} does not have a producer. You must provide a source when copying for this tensor."
-            )
+        # Use internal method to infer the input tensor's virtual graph.
+        source = t._pb_tensor.getVirtualGraphIdUnsafe()
+        if source == -1:
+            raise ValueError(
+                f"Could not infer virtual graph for Tensor to be copied \"{t}\" . "
+                "Please specify `source` when copying for this tensor.")
 
     settings = ctx._get_op_settings('ipucopy')
     opid = _ir.OperatorIdentifier("ai.graphcore", "IpuCopy", 1,

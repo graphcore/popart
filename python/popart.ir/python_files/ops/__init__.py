@@ -16,6 +16,7 @@ from .host_load import *
 from .host_store import *
 from .increment_mod import *
 from .init import *
+from .io_tile_copy import *
 from .ipu_copy import *
 from .logical_and import *
 from .logical_not import *

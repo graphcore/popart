@@ -34,7 +34,8 @@ void bindOp(py::module &m) {
       .def_readwrite("pipelineStage", &Op::Settings::pipelineStage)
       .def_readwrite("inferTensorMappingToFrom",
                      &Op::Settings::inferTensorMappingToFrom)
-      .def_readwrite("debugInfoId", &Op::Settings::debugInfoId);
+      .def_readwrite("debugInfoId", &Op::Settings::debugInfoId)
+      .def_readwrite("tileSet", &Op::Settings::tileSet);
   py::class_<Op, PyOp<>, std::shared_ptr<Op>>(m, "Op")
       .def(py::init<const OperatorIdentifier &, const Op::Settings &>())
       .def_readwrite("id", &Op::id)

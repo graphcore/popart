@@ -13,8 +13,8 @@ if TYPE_CHECKING:
     from popart.ir.tensor import Tensor
 
 __all__ = [
-    'get_current_graph', 'get_main_graph', 'gcg', 'gmg', 'virtual_graph',
-    'pipeline_stage', 'in_sequence', 'name_scope'
+    'get_current_graph', 'get_main_graph', 'gcg', 'gmg', 'ipu',
+    'virtual_graph', 'pipeline_stage', 'in_sequence', 'name_scope', 'io_tiles'
 ]
 
 
@@ -33,6 +33,7 @@ class Context:
         self._debug_info: Optional[_ir.DebugInfo] = None
         self._debug_context_frame_offset: int = 0
         self._name_scope: List[str] = []
+        self._io_tile_set: bool = False
 
         self._hook_handle: int = 0
         self._op_created_hooks: Dict[int, Callable[[_ir.Op], Any]] = {}
@@ -51,6 +52,9 @@ class Context:
         if pstage is not None:
             settings.pipelineStage = _ir.OptionalPipelineStage(pstage)
 
+        if self.io_tile_set:
+            settings.tileSet = _ir.TileSet.IO
+
         if self._debug_info is not None:
             settings.debugInfoId = self._debug_info.getId()
 
@@ -63,6 +67,10 @@ class Context:
     @property
     def pipeline_stage(self) -> Optional[int]:
         return self._pipeline_stage
+
+    @property
+    def io_tile_set(self) -> bool:
+        return self._io_tile_set
 
     def push_name_scope(self, name: str):
         self._name_scope.append(name)
@@ -254,6 +262,10 @@ def virtual_graph(vgid: int):
     ctx._virtual_graph_id = prev
 
 
+# Alias for virtual_graph
+ipu = virtual_graph
+
+
 @contextmanager
 def pipeline_stage(stage: int):
     """Set the pipeline stage on Ops created in this context."""
@@ -278,6 +290,16 @@ def in_sequence(enabled: bool = True):
     ctx.in_sequence = enabled
     yield enabled
     ctx.in_sequence = prev  # type: ignore
+
+
+@contextmanager
+def io_tiles():
+    """Execute Ops created in this context on IO tiles of the current ipu."""
+    ctx = get_current_context()
+    prev = ctx._io_tile_set
+    ctx._io_tile_set = True
+    yield
+    ctx._io_tile_set = prev
 
 
 @contextmanager
