@@ -116,6 +116,45 @@ def test_logical_if(op_tester):
     test(False)
 
 
+# Test else subgraph has no input from parent graph.
+def test_logical_if_2(op_tester):
+    def test(then_branch):
+        d1 = np.asarray(1).astype(np.int32)
+        d2 = np.asarray(2).astype(np.int32)
+        d3 = np.asarray(then_branch)
+        d_emptyConst = np.asarray(10).astype(np.int32)
+
+        def init_builder(builder):
+            i1 = builder.addInitializedInputTensor(d1)
+            i2 = builder.aiOnnx.constant(d2)
+            condition = builder.aiOnnx.constant(d3)
+
+            then_builder = builder.createSubgraphBuilder()
+            then_builder.addInputTensorFromParentGraph(i1)
+            then_builder.addInputTensorFromParentGraph(i2)
+            then_builder.addOutputTensor(then_builder.aiOnnx.add([i1, i2]))
+
+            else_builder = builder.createSubgraphBuilder()
+            d_emptyOut = else_builder.aiOnnx.constant(d_emptyConst)
+            d_out = else_builder.aiGraphcore.nop([d_emptyOut])
+            else_builder.addOutputTensor(d_out)
+            o = builder.aiOnnx.logical_if([condition], 1, else_builder,
+                                          then_builder)[0]
+            builder.addOutputTensor(o)
+            return [o]
+
+        def reference(ref_data):
+            if then_branch is True:
+                return [np.asarray(3).astype(np.int32)]
+            else:
+                return [np.asarray(10).astype(np.int32)]
+
+        op_tester.run(init_builder, reference, 'infer')
+
+    test(True)
+    test(False)
+
+
 def test_loop(op_tester):
     i1 = np.array([[1, 2], [3, 4]]).astype(np.float32)
     i2 = np.array([[1, 2], [3, 4]]).astype(np.float32)

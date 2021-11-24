@@ -75,6 +75,39 @@ public:
                  std::string subgraphId = "call");
 
   /**
+   * Create an 'empty' subgraph from an op cluster.
+   *
+   * \param instance A SubgraphableOpCluster that is used as a template
+   *                 for which we build 'empty' subgraph where
+   *                 inputs and output tensors can be connected via
+   *                 nops and output tensors can be set to default values.
+   * \param ir The IR.
+   * \param index_map An empty map, passed by reference. Used to map from op in
+   *                  the new subgraph to their corresponding indices in the
+   *                  SubgraphableOpCluster instance. Required as input
+   *                  argument to 'replaceWithEmptyElseBranchIfOp'.
+   * \param subgraphId The returned subgraph's id.
+   * \param identityInputToOutputIndiciesMapping Specifies the connections
+   *  of inputs to outputs via nop operations in the 'empty' subgraph.
+   *  Each pair must have the same shape and type.
+   * \param outputIndiciesAndValues Map of pairs of output indices and values.
+   * \return A Graph, low compute subgraph which stands for the op when
+   *                  it is not executed.
+   **/
+  static Graph &createEmptySubgraph(
+      const SubgraphableOpCluster &instance,
+      Ir &ir,
+      std::map<Op *, int> &index_map,
+      std::string subgraphId,
+      const std::map<InIndex, OutIndex> &identityInputToOutputIndiciesMapping,
+      const std::map<OutIndex, float> &outputIndiciesAndValues);
+
+  // Helper function to reuse code.
+  static void setSubgraphOpSettingsFromClusterInstance(
+      Op *op,
+      const SubgraphableOpCluster &instance);
+
+  /**
    * Replace a cluster of ops with a call to a subgraph.
    *
    * \param instance The SubgraphableOpClusters instance to be replaced.
@@ -89,6 +122,30 @@ public:
                                Graph &subgraph,
                                const std::map<Op *, int> &index_map,
                                AliasesMap &aliasesMap);
+
+  /**
+   * Replace an op with if op. Where the op is moved to the first branch
+   * of if op. Its second branch is for low intensity compute which passes
+   * input tensors to outputs or provide default output tensors.
+   *
+   * \param instance The SubgraphableOpClusters instance which holds op
+   * to be replaced.
+   * \param subgraph if then branch subgraph which contains the op.
+   * \param emptySubgraph if else low intensity compute branch subgraph.
+   * \param index_map Used to map from ops in the new subgraph to their
+   *                  corresponding indices in the first SubgraphableOpCluster
+   *                  instance.
+   * \param aliasesMap AliasesMap with alias information for instance's graph.
+   * \param flag a Tensor deciding which branch should be used.
+   * \return The replacement IfOp's pointer.
+   **/
+  static Op *
+  replaceWithEmptyElseBranchIfOp(const SubgraphableOpCluster &instance,
+                                 Graph &subgraph,
+                                 Graph &emptySubgraph,
+                                 const std::map<Op *, int> &index_map,
+                                 AliasesMap &aliasesMap,
+                                 Tensor *flag);
 };
 
 } // namespace popart

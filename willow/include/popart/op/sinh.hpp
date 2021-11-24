@@ -21,6 +21,7 @@ public:
 class SinhInplaceOp : public ElementWiseInplaceUnaryOp {
 public:
   SinhInplaceOp(const SinhOp &);
+  SinhInplaceOp(const Op::Settings &settings);
   std::unique_ptr<Op> clone() const final;
 };
 

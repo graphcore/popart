@@ -6,9 +6,12 @@
 #include <memory>
 #include <sstream>
 
+#include <poplar/Target.hpp>
+
 #include <popart/aliasesmap.hpp>
 #include <popart/error.hpp>
 #include <popart/graph.hpp>
+#include <popart/graphutils.hpp>
 #include <popart/ir.hpp>
 #include <popart/names.hpp>
 #include <popart/op.hpp>
@@ -16,6 +19,7 @@
 #include <popart/op/call.hpp>
 #include <popart/op/dropout.hpp>
 #include <popart/op/exchange/exchange.hpp>
+#include <popart/op/expand.hpp>
 #include <popart/op/init.hpp>
 #include <popart/op/ipucopy.hpp>
 #include <popart/subgraph/iosubgraphcostmodel.hpp>
@@ -27,6 +31,9 @@
 #include <popart/transforms/subgraphoutline.hpp>
 #include <popart/util.hpp>
 #include <popart/vendored/optional.hpp>
+
+#include <popart/op/if.hpp>
+#include <popart/op/nop.hpp>
 
 using boost::find;
 using boost::algorithm::any_of;
@@ -849,6 +856,200 @@ Op *SubgraphOutline::replaceWithCallOp(const SubgraphableOpCluster &instance,
                                        const std::map<Op *, int> &index_map,
                                        AliasesMap &aliasesMap) {
 
+  // Create the call op. Note that toLoss and fromLoss are set in the
+  // constructor
+  auto up_call_op = std::make_unique<CallOp>(
+      Onnx::CustomOperators::Call_1,
+      subgraph,
+      Op::Settings{instance.getGraph(), "", instance.getGraph().getScope()});
+  auto call_op_id = instance.getGraph().moveIntoGraph(std::move(up_call_op));
+  CallOp *callOp =
+      dynamic_cast<CallOp *>(instance.getGraph().getOp(call_op_id));
+
+  setSubgraphOpSettingsFromClusterInstance(callOp, instance);
+  addCallOutlineDebugInfo(callOp, instance, index_map);
+
+  auto &aliases = aliasesMap.getAliases(instance.getGraph());
+
+  // Check aliasing and modifying before disconnecting the old ops
+  for (int i = 0; i < instance.external_inputs.size(); i++) {
+    Tensor *inTensor = instance.external_inputs[i];
+
+    auto modifiedRegions =
+        inTensor->modifiedRegionsByOps(instance.ops, aliases);
+    callOp->addModified(i, modifiedRegions);
+
+    for (int j = 0; j < instance.external_outputs.size(); j++) {
+      Tensor *outTensor = instance.external_outputs[j];
+
+      if (inTensor->id == outTensor->id) {
+        throw internal_error(
+            "[SubgraphOutline] {} is both subgraph input and output.",
+            inTensor);
+      }
+
+      // alias Regions in input Tensor:
+      auto fwdAliasRegions = aliases.getChainsFromTo(inTensor, outTensor);
+      auto bwdAliasRegions = aliases.getChainsFromTo(outTensor, inTensor);
+
+      callOp->addAlias(i, j, fwdAliasRegions, bwdAliasRegions);
+      if (logging::shouldLog(logging::Module::transform,
+                             logging::Level::Trace)) {
+        logging::transform::trace("[SubgraphOutline] Alias {} ({}) -> {} ({})",
+                                  i,
+                                  inTensor->id,
+                                  j,
+                                  outTensor->id);
+      }
+    }
+  }
+
+  // Disconnect the old ops
+  for (auto opid : instance.ops) {
+    auto oldOp = instance.getGraph().getOp(opid);
+    oldOp->disconnectAllInputs();
+    oldOp->disconnectAllOutputs();
+  }
+
+  // Connect inputs
+  for (int i = 0; i < instance.external_inputs.size(); i++) {
+    auto input = instance.external_inputs.at(i);
+    callOp->connectInTensor(i, input->id);
+  }
+
+  // Connect outputs
+  for (int i = 0; i < instance.external_outputs.size(); i++) {
+    auto output = instance.external_outputs.at(i);
+    callOp->connectOutTensor(i, output->id);
+  }
+
+  std::map<Op *, std::vector<Op *>> opRemaps;
+
+  // Remap between instance ops and subgraph ops (used to transfer topocons)
+  for (auto &opAndIndex : index_map) {
+    opRemaps.insert({instance.graph->getOp(instance.ops.at(opAndIndex.second)),
+                     {opAndIndex.first}});
+  }
+
+  TopoCons::transferToSubgraph(callOp, opRemaps);
+
+  // Erase the old ops
+  for (auto opid : instance.ops) {
+    instance.getGraph().eraseOp(opid);
+  }
+
+  callOp->setup();
+
+  return callOp;
+}
+
+Graph &SubgraphOutline::createEmptySubgraph(
+    const SubgraphableOpCluster &instance,
+    Ir &ir,
+    std::map<Op *, int> &index_map,
+    std::string subgraphId,
+    const std::map<InIndex, OutIndex> &identityInputToOutputIndiciesMapping,
+    const std::map<OutIndex, float> &outputIndiciesAndValues) {
+  auto &subgraph      = ir.createGraph(GraphId(subgraphId));
+  auto subgraph_scope = subgraph.getScope();
+  Op::Settings subgraphSettings(subgraph, subgraphId, subgraph.getScope());
+
+  // duplicate all the output tensors
+  std::map<Tensor *, Tensor *> tensor_map;
+  for (auto output : instance.all_outputs) {
+    auto new_id = (subgraph_scope / output->id).str();
+
+    auto clone = output->clone(subgraph);
+    clone->id  = new_id;
+    subgraph.getTensors().moveIntoTensors(std::move(clone));
+    auto clone_ptr = subgraph.getTensors().get(new_id);
+    tensor_map.insert({output, clone_ptr});
+  }
+
+  // create graph inputs
+  for (auto tensor : instance.external_inputs) {
+    auto input_id = addScope(subgraph, tensor->id);
+    subgraph.addInput(input_id, tensor->info);
+    auto t = subgraph.getTensors().get(input_id);
+    if (tensor_map.find(tensor) != tensor_map.end()) {
+      throw error(
+          "tensor {} is already in tensor map, cannot rebind to {} -> {}",
+          tensor->id,
+          tensor->id,
+          input_id);
+    }
+    tensor_map.insert({tensor, t});
+  }
+
+  // create graph outputs
+  for (auto tensor : instance.external_outputs) {
+    auto out_id = tensor_map.at(tensor)->id;
+    subgraph.markAsOutput(out_id);
+  }
+
+  // Create nopOps and hook up them to graph inputs and outputs
+  // based on user specifications.
+  for (auto opid : instance.ops) {
+    auto op = instance.getGraph().getOp(opid);
+    for (const auto &inOutNop : identityInputToOutputIndiciesMapping) {
+      auto nopOp     = subgraph.createOp<NopOp>(Onnx::CustomOperators::Nop_1,
+                                            subgraphSettings);
+      auto tensorIn  = op->input->tensorMap().at(inOutNop.first);
+      auto tensorOut = op->output->tensorMap().at(inOutNop.second);
+      nopOp->connectInTensor(NopOp::getInIndex(), tensor_map.at(tensorIn)->id);
+      nopOp->connectOutTensor(NopOp::getOutIndex(),
+                              tensor_map.at(tensorOut)->id);
+      nopOp->setup();
+    }
+  }
+
+  for (auto opid : instance.ops) {
+    auto op = instance.getGraph().getOp(opid);
+    for (const auto &outputIndexAndValue : outputIndiciesAndValues) {
+      auto tensorOut = op->output->tensorMap().at(outputIndexAndValue.first);
+      Shape shapeOut = tensorOut->info.shape();
+      DataType dataTypeOut = tensorOut->info.dataType();
+
+      TensorId outputValueId =
+          addScope(subgraph,
+                   op->str() + "_outputIndex_" +
+                       std::to_string(outputIndexAndValue.first));
+
+      TensorInfo tensorInfoOut(dataTypeOut, Shape{});
+      graphutils::addConstInitFromFloat(outputIndexAndValue.second,
+                                        outputValueId,
+                                        tensorInfoOut,
+                                        subgraph.getTensors());
+
+      TensorId shapeExpandTensorId = addScope(subgraph, "shapeExpandTensorId");
+      std::vector<int64_t> shapeOut1D =
+          shapeOut.empty()
+              ? std::vector<int64_t>{1}
+              : std::vector<int64_t>{static_cast<int64_t>(shapeOut.size())};
+      TensorInfo shapeExpandInfo{DataType::INT64, shapeOut1D};
+      std::vector<int64_t> shapeExpandData =
+          shapeOut.empty() ? std::vector<int64_t>{0} : shapeOut;
+      subgraph.getTensors().addConstInit(
+          shapeExpandTensorId, shapeExpandInfo, shapeExpandData.data());
+
+      auto expandOp = subgraph.createOp<ExpandOp>(Onnx::Operators::Expand_8,
+                                                  subgraphSettings);
+      expandOp->connectInTensor(ExpandOp::getInTensorIndex(), outputValueId);
+      expandOp->connectInTensor(ExpandOp::getInShapeIndex(),
+                                shapeExpandTensorId);
+      expandOp->connectOutTensor(ExpandOp::getOutIndex(),
+                                 tensor_map.at(tensorOut)->id);
+      expandOp->setup();
+    }
+  }
+
+  return subgraph;
+}
+
+void SubgraphOutline::setSubgraphOpSettingsFromClusterInstance(
+    Op *op,
+    const SubgraphableOpCluster &instance) {
+
   // Copy some attributes with heuristics from the instance ops
   nonstd::optional<Scope> scope;
   OptionalVGraphId ipu_copy_vgid;
@@ -899,101 +1100,114 @@ Op *SubgraphOutline::replaceWithCallOp(const SubgraphableOpCluster &instance,
     batchserial.reset();
   }
 
-  // Create the call op. Note that toLoss and fromLoss are set in the
-  // constructor
-  auto up_call_op = std::make_unique<CallOp>(
-      Onnx::CustomOperators::Call_1,
-      subgraph,
-      Op::Settings{instance.getGraph(), "", instance.getGraph().getScope()});
-  auto call_op_id = instance.getGraph().moveIntoGraph(std::move(up_call_op));
-  CallOp *callOp =
-      dynamic_cast<CallOp *>(instance.getGraph().getOp(call_op_id));
   if (scope) {
-    callOp->settings.scope = scope.value();
+    op->settings.scope = scope.value();
   }
   if (recompute) {
-    callOp->settings.recomputeType = recompute.value();
+    op->settings.recomputeType = recompute.value();
   }
-  callOp->setVirtualGraphId(vgid);
-  callOp->setExecutionPhase(phase);
-  callOp->setPipelineStage(pipeline_stage);
-  callOp->setBatchSerializedPhase(batchserial);
+  op->setVirtualGraphId(vgid);
+  op->setExecutionPhase(phase);
+  op->setPipelineStage(pipeline_stage);
+  op->setBatchSerializedPhase(batchserial);
   if (execution_context) {
-    callOp->settings.executionContext = execution_context.value();
+    op->settings.executionContext = execution_context.value();
   }
-  addCallOutlineDebugInfo(callOp, instance, index_map);
 
   // Set the position w.r.t loss, if possible. If any of the internal ops
-  // is connected to the final loss, then so is this CallOp. Note that we use
+  // is connected to the final loss, then so is this op. Note that we use
   // the Ops in the instance of this Match, and not the canonical subgraph.
   for (auto opid : instance.ops) {
     auto instanceOp = instance.graph->getOp(opid);
     if (instanceOp->toLoss == PathToLoss::Yes) {
-      callOp->toLoss = PathToLoss::Yes;
+      op->toLoss = PathToLoss::Yes;
     }
     if (instanceOp->fromLoss == PathFromLoss::Yes) {
-      callOp->fromLoss = PathFromLoss::Yes;
-    }
-  }
-
-  auto &aliases = aliasesMap.getAliases(instance.getGraph());
-
-  // Check aliasing and modifying before disconnecting the old ops
-  for (int i = 0; i < instance.external_inputs.size(); i++) {
-    Tensor *inTensor = instance.external_inputs[i];
-
-    auto modifiedRegions =
-        inTensor->modifiedRegionsByOps(instance.ops, aliases);
-    callOp->addModified(i, modifiedRegions);
-
-    for (int j = 0; j < instance.external_outputs.size(); j++) {
-      Tensor *outTensor = instance.external_outputs[j];
-
-      if (inTensor->id == outTensor->id) {
-        throw internal_error(
-            "[SubgraphOutline] {} is both subgraph input and output.",
-            inTensor);
-      }
-
-      // alias Regions in input Tensor:
-      auto fwdAliasRegions = aliases.getChainsFromTo(inTensor, outTensor);
-      auto bwdAliasRegions = aliases.getChainsFromTo(outTensor, inTensor);
-
-      callOp->addAlias(i, j, fwdAliasRegions, bwdAliasRegions);
-      if (logging::shouldLog(logging::Module::transform,
-                             logging::Level::Trace)) {
-        logging::transform::trace("[SubgraphOutline] Alias {} ({}) -> {} ({})",
-                                  i,
-                                  inTensor->id,
-                                  j,
-                                  outTensor->id);
-      }
+      op->fromLoss = PathFromLoss::Yes;
     }
   }
 
   double priority = -std::numeric_limits<double>::infinity();
+  for (auto opid : instance.ops) {
+    auto oldOp = instance.getGraph().getOp(opid);
+    priority   = std::max(priority, oldOp->settings.schedulePriority);
+  }
 
-  // Disconnect the old ops
+  // Op's priority should be the max priority of the Op's that it replaces
+  op->settings.schedulePriority = priority;
+}
+
+Op *SubgraphOutline::replaceWithEmptyElseBranchIfOp(
+    const SubgraphableOpCluster &instance,
+    Graph &subgraph,
+    Graph &emptySubgraph,
+    const std::map<Op *, int> &index_map,
+    AliasesMap &aliasesMap,
+    Tensor *flag) {
+
+  Graph &graph = instance.getGraph();
+  // Relation between IfOp inputs and its subgraphs inputs is
+  // given by mappings.
+  // IfOp has inputs:
+  // 0 - condition flag
+  // 1 - t0
+  // ...
+  // k+1 - tk
+  // ThenBranch inputs:
+  // 0 - t0
+  // ...
+  // k - tk
+  // ElseBranch inputs:
+  // none
+  //
+  // IfOp to ThenBranch inputs mapping:
+  // {{1, 0}, {2, 1} ,{3, 2} ...}
+  // This maps input 1 of the IfOp to input 0 of the ThenBranch and so on.
+  // IfOp to ElseBranch inputs mapping:
+  // {{}}
+  std::map<int, int> subgraphInputIndices;
+  for (int i = 0; i < instance.external_inputs.size(); i++) {
+    subgraphInputIndices.insert(std::pair<int, int>(i + 1, i));
+  }
+
+  std::map<int, int> subgraphOutputIndices;
+  for (int i = 0; i < instance.all_outputs.size(); i++) {
+    subgraphOutputIndices.insert(std::pair<int, int>(i, i));
+  }
+
+  BranchInfo branchInfoSubgraph{
+      subgraph.getGraphId(), subgraphInputIndices, subgraphOutputIndices};
+
+  BranchInfo branchInfoEmptySubgraph{
+      emptySubgraph.getGraphId(), subgraphInputIndices, subgraphOutputIndices};
+
+  auto ifOp = graph.createOp<IfOp>(Onnx::Operators::If_1,
+                                   branchInfoSubgraph,
+                                   branchInfoEmptySubgraph,
+                                   Op::Settings(graph, ""));
+
+  setSubgraphOpSettingsFromClusterInstance(ifOp, instance);
+
+  // ToDo T50509 can we add aliasing/inplace as in replaceWithCallOp case?
+
+  // Disconnect the old op
   for (auto opid : instance.ops) {
     auto oldOp = instance.getGraph().getOp(opid);
     oldOp->disconnectAllInputs();
     oldOp->disconnectAllOutputs();
-    priority = std::max(priority, oldOp->settings.schedulePriority);
   }
 
-  // CallOp's priority should be the max priority of the Op's that it replaces
-  callOp->settings.schedulePriority = priority;
-
   // Connect inputs
+  ifOp->connectInTensor(IfOp::getConditionInIndex(), flag->id);
   for (int i = 0; i < instance.external_inputs.size(); i++) {
     auto input = instance.external_inputs.at(i);
-    callOp->connectInTensor(i, input->id);
+    ifOp->connectInTensor(i + 1, input->id);
   }
 
   // Connect outputs
   for (int i = 0; i < instance.external_outputs.size(); i++) {
     auto output = instance.external_outputs.at(i);
-    callOp->connectOutTensor(i, output->id);
+    ifOp->connectOutTensor(i, output->id);
   }
 
   std::map<Op *, std::vector<Op *>> opRemaps;
@@ -1004,16 +1218,16 @@ Op *SubgraphOutline::replaceWithCallOp(const SubgraphableOpCluster &instance,
                      {opAndIndex.first}});
   }
 
-  TopoCons::transferToSubgraph(callOp, opRemaps);
+  TopoCons::transferToSubgraph(ifOp, opRemaps);
 
   // Erase the old ops
   for (auto opid : instance.ops) {
     instance.getGraph().eraseOp(opid);
   }
 
-  callOp->setup();
+  ifOp->setup();
 
-  return callOp;
+  return ifOp;
 }
 
 bool SubgraphOutline::apply(Graph &graph) const {

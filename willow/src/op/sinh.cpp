@@ -28,6 +28,9 @@ SinhInplaceOp::SinhInplaceOp(const SinhOp &sinh_op)
     : ElementWiseInplaceUnaryOp(Onnx::CustomOperators::SinhInplace,
                                 sinh_op.getSettings()) {}
 
+SinhInplaceOp::SinhInplaceOp(const Op::Settings &settings)
+    : ElementWiseInplaceUnaryOp(Onnx::CustomOperators::SinhInplace, settings) {}
+
 std::unique_ptr<Op> SinhInplaceOp::clone() const {
   return std::make_unique<SinhInplaceOp>(*this);
 }

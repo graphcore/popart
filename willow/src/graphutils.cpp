@@ -2,6 +2,8 @@
 #include <algorithm>
 #include <queue>
 
+#include <poplar/Target.hpp>
+
 #include <popart/graph.hpp>
 #include <popart/graphutils.hpp>
 #include <popart/op.hpp>
@@ -506,6 +508,76 @@ findMatchingOps(Graph &graph, OpPreds preds, Edges edges) {
   }
 
   return matches;
+}
+
+void addConstInitFromFloat(float value,
+                           const TensorId &valueId,
+                           const TensorInfo &tensorInfo,
+                           Tensors &tensors) {
+
+  switch (tensorInfo.dataType()) {
+  case DataType::FLOAT: {
+    std::vector<float> gradStarterData(1, value);
+    tensors.addConstInit(
+        valueId, tensorInfo, reinterpret_cast<void *>(gradStarterData.data()));
+    break;
+  }
+  case DataType::FLOAT16: {
+    std::vector<float> floatData(1, value);
+    std::vector<char> gradStarterData(2);
+    poplar::copyFloatToDeviceHalf(
+        poplar::Target(), floatData.data(), gradStarterData.data(), 1);
+    tensors.addConstInit(
+        valueId, tensorInfo, reinterpret_cast<void *>(gradStarterData.data()));
+    break;
+  }
+  case DataType::INT16: {
+    std::vector<int16_t> gradStarterData(1, static_cast<int16_t>(value));
+    tensors.addConstInit(
+        valueId, tensorInfo, reinterpret_cast<void *>(gradStarterData.data()));
+    break;
+  }
+  case DataType::INT32: {
+    std::vector<int32_t> gradStarterData(1, static_cast<int32_t>(value));
+    tensors.addConstInit(
+        valueId, tensorInfo, reinterpret_cast<void *>(gradStarterData.data()));
+    break;
+  }
+  case DataType::INT64: {
+    std::vector<int64_t> gradStarterData(1, static_cast<int64_t>(value));
+    tensors.addConstInit(
+        valueId, tensorInfo, reinterpret_cast<void *>(gradStarterData.data()));
+    break;
+  }
+  case DataType::UINT32: {
+    std::vector<uint32_t> gradStarterData(1, static_cast<uint32_t>(value));
+    tensors.addConstInit(
+        valueId, tensorInfo, reinterpret_cast<void *>(gradStarterData.data()));
+    break;
+  }
+  case DataType::UINT64: {
+    std::vector<uint64_t> gradStarterData(1, static_cast<uint64_t>(value));
+    tensors.addConstInit(
+        valueId, tensorInfo, reinterpret_cast<void *>(gradStarterData.data()));
+    break;
+  }
+  // Making it explicit which data types we're not handling. Note that
+  // the logic will fall through to the error.
+  case DataType::UINT8:
+  case DataType::INT8:
+  case DataType::UINT16:
+  case DataType::BOOL:
+  case DataType::BFLOAT16:
+  case DataType::DOUBLE:
+  case DataType::COMPLEX64:
+  case DataType::COMPLEX128:
+  case DataType::STRING:
+  case DataType::UNDEFINED:
+  default: {
+    throw error("Unexpected data-type, '{}'",
+                tensorInfo.getDataTypeInfo()->name());
+  }
+  }
 }
 
 } // namespace graphutils

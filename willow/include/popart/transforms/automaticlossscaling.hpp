@@ -166,12 +166,112 @@
 //
 // (where a.o.f means is assigned to the
 //  ExecutionContext::AccumulateOuterFragment)
+//
+// executeOpNTimesEveryMTimes:
+//
+// A function that transforms the graph in a way changes the frequency
+// of execution of an operation.
+// The user provides two positive integers - N and M - that control
+// the frequency of execution of the operation.
+// Take the example where N=2, M=6.
+// The execution pattern of the op will be:
+// Execution is:
+// Yes, Yes, No, No, No, No, Yes, Yes, No, No, No, No, Yes, Yes,
+// No, No, No, No
 
+// How it works:
+// It builds a counter tensor for the input op.
+// The counter is incremented by one for each normal execution of the op.
+// There is a simple logic provided by modulo, less operations and N, M to set
+// the execution flag for if op.
+// It creates an if op with its two branches. The op is moved to one branch
+// which is for executing the op.
+// The second branch is an "empty subgraph" for not executing the op.
+// For the "empty subgraph" it is possible to connect inputs and outputs
+// via nop. And it is possible to set up default values of outputs
+// by creating scalars and expanding them to the outputs.
+// Those are set up by two maps identityInputToOutputIndiciesMapping and
+// outputIndiciesAndValues.
+//
+// Before using executeOpNTimesEveryMTimes():
+//  t0   t1 ...
+//   \  /
+//    OpA
+//   /  \
+// t_k  t_k+1 ...
+//
+// After:
+//   counter
+//     |
+//     v
+//   IncrementModInplaceOp(1, M)
+//     |
+//    flag_inc
+//     |
+//    LessOp(N)   t0   t1 ...
+//     |         \  /
+//    flag-------IfOp(Sg0, Sg1)
+//               /  \          
+//             t_k   t_k+1 ...
+//
+// Where Sg0:
+//     t0  t1 ...
+//     |   |
+//     v   v
+//  ----\--|------
+// |     \ |      |
+// |      OpA     |
+// |     / |      |
+//  ----/--|------
+//     v   v
+//    /    |
+//  t_k   t_k+1 ...
+//
+// Where Sg1:
+//     t0  t1 ...
+//     |   |
+//     v   v
+//  ---|---|--------------------
+// |       |                    |
+// |      Nop     0->Expand     |
+// |     /             |        |
+//  ----/--|-----------|--------
+//     v   v           v
+//    /    |           |
+//  t_k   t_k+1 ...  t_k+7 ...
+//
+// t_in, t_out, Nop, Expand connections are specified by user.
 namespace popart {
 
 class AutomaticLossScale : public Transform {
 public:
   static std::size_t id();
+
+  /**
+   * When applied to an op it will be effectively executed
+   * n times every m times.
+   * It returns a pointer to an IfOp which either calls an 'empty' subgraph,
+   * or calls a subgraph containing the op passed as the argument.
+   * The 'empty' subgraph is meant to be low intensity compute.
+   * It is possible to connect inputs and outputs via nop operations
+   * and set up default values of outputs in the 'empty' subgraph.
+   * \param op Operator whose execution frequency is modified.
+   * \param n Execute the op n times every m times.
+   * \param m Execute the op n times every m times.
+   * \param identityInputToOutputIndiciesMapping Specifies the connections
+   *  of inputs to outputs via nop operations in the 'empty' subgraph.
+   *  Each pair must have the same shape and type.
+   * \param outputIndiciesAndValues Map of pairs of output indices and values.
+   * Note: inplacing and aliasing of inputs are not supported.
+   * If the op inplace-modifies or aliases an input, in the transformed graph
+   * after this method is called, this will not longer be the case.
+   */
+  static Op *executeOpNTimesEveryMTimes(
+      Op *op,
+      unsigned n,
+      unsigned m,
+      const std::map<InIndex, OutIndex> &identityInputToOutputIndiciesMapping,
+      const std::map<OutIndex, float> &outputIndiciesAndValues);
 
   AutomaticLossScale() : Transform() {}
   virtual ~AutomaticLossScale() override {}

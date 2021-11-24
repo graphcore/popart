@@ -2,6 +2,7 @@
 #include <onnxutil.hpp>
 #include <popart/alias/aliasmodel.hpp>
 #include <popart/alias/aliasmodelgrower.hpp>
+#include <popart/aliasesmap.hpp>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/op/accumulatorzero.hpp>
@@ -11,6 +12,8 @@
 #include <popart/op/convbase.hpp>
 #include <popart/op/div.hpp>
 #include <popart/op/histogram.hpp>
+#include <popart/op/incrementmod.hpp>
+#include <popart/op/less.hpp>
 #include <popart/op/lossscaleupdate.hpp>
 #include <popart/op/matmul.hpp>
 #include <popart/op/mul.hpp>
@@ -21,6 +24,8 @@
 #include <popart/topocons.hpp>
 #include <popart/transforms/automaticlossscaling.hpp>
 #include <popart/util.hpp>
+
+#include <popart/transforms/subgraphoutline.hpp>
 
 namespace popart {
 
@@ -143,6 +148,169 @@ OptionalPipelineStage findLowestPipelineStage(std::vector<Tensor *> tensors) {
   }
 }
 
+void checkOutputConsumers(Op *op) {
+  for (auto &index_tensor : op->output->tensorMap()) {
+    auto output = index_tensor.second;
+    if (output->consumers.getOps().empty()) {
+      throw error(
+          "[AutomaticLossScale transform][[executeOpNTimesEveryMTimes] "
+          "Output tensor {} of operator {} does not have consumer. "
+          "executeOpNTimesEveryMTimes requires that otputs of the operator"
+          ", on which we apply executeOpNTimesEveryMTimes, have consumers. ",
+          output->id,
+          op->str());
+    }
+  }
+}
+
+void checkFrequencyModifierSettings(
+    const std::map<InIndex, OutIndex> &identityInputToOutputIndiciesMapping,
+    const std::map<OutIndex, float> &outputIndiciesAndValues,
+    const std::string &opid) {
+
+  std::set<OutIndex> seenIdentityOutIndices;
+  for (const auto &el : identityInputToOutputIndiciesMapping) {
+    seenIdentityOutIndices.insert(el.second);
+  }
+
+  for (const auto &el : outputIndiciesAndValues) {
+    if (seenIdentityOutIndices.count(el.first)) {
+      throw error(
+          "[AutomaticLossScale transform][[executeOpNTimesEveryMTimes] "
+          "Incorrect frequency modifier settings for {} operator "
+          "Identity output and default output can not have the same index {}.",
+          opid,
+          el.first);
+    }
+  }
+}
+
+void checkIdentityInputToOutputIndiciesMapping(
+    const std::map<InIndex, OutIndex> &identityInputToOutputIndiciesMapping,
+    Op *op) {
+  std::set<int> inputIndices;
+  for (const auto &el : op->input->tensorMap()) {
+    inputIndices.insert(el.first);
+  }
+  std::set<int> outputIndices;
+  for (const auto &el : op->output->tensorMap()) {
+    outputIndices.insert(el.first);
+  }
+
+  for (const auto &el : identityInputToOutputIndiciesMapping) {
+    InIndex inIndex = el.first;
+    if (inputIndices.count(inIndex) == 0) {
+      throw error(
+          "[AutomaticLossScale transform][[executeOpNTimesEveryMTimes] "
+          "identityInputToOutputIndiciesMapping has invalid input index {} "
+          "for operator {}.",
+          inIndex,
+          op->str());
+    }
+
+    OutIndex outIndex = el.second;
+    if (outputIndices.count(outIndex) == 0) {
+      throw error(
+          "[AutomaticLossScale transform][[executeOpNTimesEveryMTimes] "
+          "identityInputToOutputIndiciesMapping has invalid output index {} "
+          "for operator {}.",
+          outIndex,
+          op->str());
+    }
+
+    auto tensorIn  = op->input->tensorMap().at(inIndex);
+    auto tensorOut = op->output->tensorMap().at(outIndex);
+
+    Shape shapeIn  = tensorIn->info.shape();
+    Shape shapeOut = tensorOut->info.shape();
+    if (shapeIn != shapeOut) {
+      throw error(
+          "[AutomaticLossScale transform][[executeOpNTimesEveryMTimes] "
+          "identityInputToOutputIndiciesMapping. You can not connect input "
+          "and output with different shapes."
+          "Shape of input {} is {} and "
+          "Shape of output {} is {} of operator {}.",
+          inIndex,
+          shapeIn,
+          outIndex,
+          shapeOut,
+          op->str());
+    }
+
+    DataType dataTypeIn  = tensorIn->info.dataType();
+    DataType dataTypeOut = tensorOut->info.dataType();
+    if (dataTypeIn != dataTypeOut) {
+      throw error(
+          "[AutomaticLossScale transform][[executeOpNTimesEveryMTimes] "
+          "identityInputToOutputIndiciesMapping. You can not connect input "
+          "and output with different data types."
+          "Data types of input {} is {} and "
+          "data types of output {} is {} of operator {}.",
+          inIndex,
+          dataTypeIn,
+          outIndex,
+          dataTypeOut,
+          op->str());
+    }
+  }
+}
+
+void checkOutputIndiciesAndValues(
+    const std::map<OutIndex, float> &outputIndiciesAndValues,
+    Op *op) {
+
+  std::set<int> outputIndices;
+  for (const auto &el : op->output->tensorMap()) {
+    outputIndices.insert(el.first);
+  }
+
+  for (const auto &el : outputIndiciesAndValues) {
+    OutIndex outIndex = el.first;
+    if (outputIndices.count(outIndex) == 0) {
+      throw error("[AutomaticLossScale transform][[executeOpNTimesEveryMTimes] "
+                  "outputIndiciesAndValues has invalid output index {} "
+                  "for operator {}.",
+                  outIndex,
+                  op->str());
+    }
+  }
+}
+
+void checkNM(unsigned n, unsigned m, Op *op, const Ir &ir) {
+
+  if (n > m) {
+    throw error("[AutomaticLossScale transform][[executeOpNTimesEveryMTimes]."
+                "Arguments N and M of executeOpNTimesEveryMTimes are {}, {} . "
+                "N must not be larger than M.",
+                n,
+                m);
+  }
+
+  if (op->settings.executionContext == ExecutionContext::Normal &&
+      ir.getSessionOptions().enableGradientAccumulation) {
+    if (ir.getSessionOptions().accumulationFactor % m != 0) {
+      throw error(
+          "[AutomaticLossScale transform][[executeOpNTimesEveryMTimes]."
+          "Argument M of executeOpNTimesEveryMTimes has inconsistent value {}. "
+          "Operation {} is in the Normal execution context and "
+          "gradient accumulation is enabled hence M should be a factor of "
+          "gradient accumulation factor {}.",
+          m,
+          op->str(),
+          ir.getSessionOptions().accumulationFactor);
+    }
+  } else {
+    if (ir.getDataFlow().batchesPerStep() % m != 0) {
+      throw error(
+          "[AutomaticLossScaletransform][[executeOpNTimesEveryMTimes]. "
+          "Argument M of executeOpNTimesEveryMTimes has inconsistent value {}. "
+          "M should be a factor of batches per step {}.",
+          m,
+          ir.getDataFlow().batchesPerStep());
+    }
+  }
+}
+
 } // namespace
 
 std::size_t AutomaticLossScale::id() {
@@ -177,6 +345,108 @@ addOnesTensor(Graph &graph, const TensorId &tensorId, const TensorInfo info) {
     ir.addAdditionalModelProtoTensor(tensorId);
   }
   return graph.getTensors().get(tensorId);
+}
+
+// Todo: Merge with addOnesTensor
+Tensor *addOneTensor(Graph &graph, const TensorId &tensorId, int32_t value) {
+  auto &ir = graph.getIr();
+
+  if (ir.tensorExistsInInitialisers(tensorId)) {
+    auto tp = onnxutil::getTensorProto(ir.getModel(), tensorId);
+    graph.getTensors().addVarInit(tensorId, &tp);
+  } else {
+    std::vector<int32_t> d(1, value);
+    graph.getTensors().addVarInit(
+        tensorId, TensorInfo{DataType::INT32, {}}, d.data());
+
+    logging::transform::trace("[AutomaticLossScale transform]:"
+                              "Creating Ones Tensor {}",
+                              tensorId);
+
+    ir.addAdditionalModelProtoTensor(tensorId);
+  }
+
+  return graph.getTensors().get(tensorId);
+}
+
+Op *AutomaticLossScale::executeOpNTimesEveryMTimes(
+    Op *op,
+    unsigned n,
+    unsigned m,
+    const std::map<InIndex, OutIndex> &identityInputToOutputIndiciesMapping,
+    const std::map<OutIndex, float> &outputIndiciesAndValues) {
+  Graph &graph = op->getGraph();
+  auto &ir     = graph.getIr();
+  checkNM(n, m, op, ir);
+  checkFrequencyModifierSettings(
+      identityInputToOutputIndiciesMapping, outputIndiciesAndValues, op->str());
+  checkIdentityInputToOutputIndiciesMapping(
+      identityInputToOutputIndiciesMapping, op);
+  checkOutputIndiciesAndValues(outputIndiciesAndValues, op);
+  checkOutputConsumers(op);
+  if (n == m) {
+    popart::logging::debug(
+        "[AutomaticLossScale transform][[executeOpNTimesEveryMTimes] "
+        "Arguments N and M of executeOpNTimesEveryMTimes have the same value.");
+    return op;
+  }
+
+  TensorId counterId = op->str() + "_counter";
+  Tensor *counter    = addOneTensor(graph, counterId, -1);
+
+  auto incrementModInplaceOp =
+      graph.createOp<IncrementModInplaceOp>(1, m, Op::Settings(graph, ""));
+  incrementModInplaceOp->connectInTensor(IncrementModInplaceOp::getInIndex(),
+                                         counter->id);
+  incrementModInplaceOp->createAndConnectOutTensor(
+      IncrementModInplaceOp::getOutIndex(),
+      ir.createIntermediateTensorId(counter->id));
+  incrementModInplaceOp->setup();
+
+  TensorId lessId               = op->str() + "_less";
+  std::vector<int32_t> lessData = {static_cast<int32_t>(n)};
+  graph.getTensors().addConstInit(
+      lessId, {DataType::INT32, {}}, lessData.data());
+
+  auto lessOp =
+      graph.createOp<LessOp>(Onnx::Operators::Less_9, Op::Settings(graph, ""));
+  lessOp->connectInTensor(
+      LessOp::getArg0InIndex(),
+      incrementModInplaceOp->outTensor(IncrementModInplaceOp::getOutIndex())
+          ->id);
+  lessOp->connectInTensor(LessOp::getArg1InIndex(), lessId);
+  lessOp->createAndConnectOutTensor(
+      LessOp::getOutIndex(),
+      ir.createIntermediateTensorId(
+          incrementModInplaceOp->outTensor(IncrementModInplaceOp::getOutIndex())
+              ->id));
+  lessOp->setup();
+
+  std::vector<OpId> opToReplace  = {op->id};
+  SubgraphableOpCluster instance = SubgraphableOpCluster(opToReplace, &graph);
+
+  std::vector<SubgraphableOpCluster> instances = {instance};
+
+  std::map<Op *, int> index_map_subgraph;
+  Graph &subgraph = SubgraphOutline::createSubgraph(
+      instances, ir, index_map_subgraph, "ComputeSubgraph");
+
+  std::map<Op *, int> index_map_empty_subgraph;
+  Graph &emptySubgraph =
+      SubgraphOutline::createEmptySubgraph(instance,
+                                           ir,
+                                           index_map_empty_subgraph,
+                                           "EmptySubgraph",
+                                           identityInputToOutputIndiciesMapping,
+                                           outputIndiciesAndValues);
+
+  AliasesMap aliasesMap{&ir};
+
+  Tensor *flag = lessOp->outTensor(LessOp::getOutIndex());
+  op           = SubgraphOutline::replaceWithEmptyElseBranchIfOp(
+      instance, subgraph, emptySubgraph, index_map_subgraph, aliasesMap, flag);
+
+  return op;
 }
 
 bool AutomaticLossScale::apply(Graph &graph) const {

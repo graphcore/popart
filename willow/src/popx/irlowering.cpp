@@ -905,6 +905,16 @@ IrLowering::getCreatorEndpoints(const Tensor *startTensor,
           for (auto &opxOnPath : pathToInput) {
             if (opxOnPath.isDelegate) {
               // Is a delegate: Get the caller Op
+
+              Op *op = &opxOnPath.opx->getOp<Op>();
+              if (!op->isConvertibleTo<SubgraphOp>()) {
+                // subgraphEscape only supports cases where the caller Op
+                // is of type SubgraphOp.
+                // TODO: T13654 Support remaining cases
+                // (24/11/2021 currently only IfOp)
+                return;
+              }
+
               SubgraphOp *subgraphOp = &opxOnPath.opx->getOp<SubgraphOp>();
               for (auto graph : subgraphOp->getCalledGraphs()) {
                 // Loop over all callees
