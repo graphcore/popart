@@ -335,7 +335,7 @@ snap::Tensor PopOpx::cloneNcopy(snap::program::Sequence &prog,
                                                   debugContext(name));
   prog.getPoplarSequence().add(poplar::program::Copy(
       tensor.getPoplarTensor(), outTensor, false, debugContext()));
-  return snap::Tensor{outTensor, const_cast<snap::Tensor &>(tensor)};
+  return snap::Tensor{outTensor, tensor};
 }
 
 const Devicex *PopOpx::getDevicex() const { return dv_p; }
