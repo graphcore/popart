@@ -2964,26 +2964,45 @@ PYBIND11_MODULE(popart_core, m) {
       return std::unique_ptr<DeviceManager, py::nodelete>(
           &DeviceManager::createDeviceManager());
     }));
-    cls.def("acquireAvailableDevice",
-            static_cast<std::shared_ptr<DeviceInfo> (DeviceManager::*)(
-                int,
-                int,
-                SyncPattern,
-                DeviceConnectionType,
-                DeviceSelectionCriterion,
-                bool)>(&DeviceManager::acquireAvailableDevice),
-            py::arg("numIpus")               = 1,
-            py::arg("tilesPerIpu")           = 0,
-            py::arg("pattern")               = SyncPattern::Full,
-            py::arg("connectionType")        = DeviceConnectionType::Always,
-            py::arg("selectionCriterion")    = DeviceSelectionCriterion::First,
-            py::arg("allowReturnNullDevice") = true);
+    cls.def(
+        "tryAcquireAvailableDevice",
+        static_cast<std::shared_ptr<DeviceInfo> (DeviceManager::*)(
+            int,
+            int,
+            SyncPattern,
+            DeviceConnectionType,
+            DeviceSelectionCriterion)>(&DeviceManager::tryAcquireAvailableDevice),
+        py::arg("numIpus")            = 1,
+        py::arg("tilesPerIpu")        = 0,
+        py::arg("pattern")            = SyncPattern::Full,
+        py::arg("connectionType")     = DeviceConnectionType::Always,
+        py::arg("selectionCriterion") = DeviceSelectionCriterion::First,
+        DOC(popart, DeviceManager, tryAcquireAvailableDevice));
+    cls.def(
+        "acquireAvailableDevice",
+        static_cast<std::shared_ptr<DeviceInfo> (DeviceManager::*)(
+            int,
+            int,
+            SyncPattern,
+            DeviceConnectionType,
+            DeviceSelectionCriterion)>(&DeviceManager::acquireAvailableDevice),
+        py::arg("numIpus")            = 1,
+        py::arg("tilesPerIpu")        = 0,
+        py::arg("pattern")            = SyncPattern::Full,
+        py::arg("connectionType")     = DeviceConnectionType::Always,
+        py::arg("selectionCriterion") = DeviceSelectionCriterion::First,
+        DOC(popart, DeviceManager, acquireAvailableDevice));
+    cls.def("tryAcquireDeviceById",
+            &DeviceManager::tryAcquireDeviceById,
+            py::arg("id"),
+            py::arg("pattern")        = SyncPattern::Full,
+            py::arg("connectionType") = DeviceConnectionType::Always,
+            DOC(popart, DeviceManager, tryAcquireDeviceById));
     cls.def("acquireDeviceById",
             &DeviceManager::acquireDeviceById,
             py::arg("id"),
-            py::arg("pattern")               = SyncPattern::Full,
-            py::arg("connectionType")        = DeviceConnectionType::Always,
-            py::arg("allowReturnNullDevice") = true,
+            py::arg("pattern")        = SyncPattern::Full,
+            py::arg("connectionType") = DeviceConnectionType::Always,
             DOC(popart, DeviceManager, acquireDeviceById));
     cls.def("createCpuDevice", &DeviceManager::createCpuDevice);
     cls.def("createIpuModelDevice", [](DeviceManager &dm, py::dict e) {

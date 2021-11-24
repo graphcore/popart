@@ -58,6 +58,7 @@ def test_aquire_device_by_id_1():
 
 
 @tu.requires_ipu
+@pytest.mark.skip("T46787 exception not yet thrown")
 def test_aquire_device_by_id_2():
     """
     Test that an error is thrown if trying to acquire device by id when it
@@ -68,22 +69,20 @@ def test_aquire_device_by_id_2():
     device = deviceManager.acquireDeviceById(deviceId)
     with pytest.raises(popart.popart_exception,
                        match="Unable to acquire device with id") as e:
-        deviceManager.acquireDeviceById(deviceId, allowReturnNullDevice=False)
+        deviceManager.tryAcquireDeviceById(deviceId)
 
 
 @tu.requires_ipu
 def test_aquire_device_by_id_3():
     """
     Test that no error is thrown if trying to acquire device by id when it
-    has already been attached to when allowReturnNullDevice is True, and that
-    a null device is returned.
+    has already been attached to, and that a null device is returned.
     """
     deviceManager = popart.DeviceManager()
     deviceId = 0
     device0 = deviceManager.acquireDeviceById(deviceId)
     assert device0 != None
-    device1 = deviceManager.acquireDeviceById(deviceId,
-                                              allowReturnNullDevice=True)
+    device1 = deviceManager.acquireDeviceById(deviceId)
     assert device1 == None
 
 
@@ -95,6 +94,7 @@ def test_default_connection_type_0():
 
 
 @tu.requires_ipu
+@pytest.mark.skip("T46787 exception not yet thrown")
 def test_default_connection_type_1():
     """
     Test that error is thrown if try to acquire more devices than are
@@ -107,10 +107,11 @@ def test_default_connection_type_1():
             match=
             "Failed to acquire device. Ensure that there are sufficient IPUs available"
     ) as e:
-        deviceManager.acquireAvailableDevice(ipus, allowReturnNullDevice=False)
+        deviceManager.tryAcquireAvailableDevice(ipus)
 
 
 @tu.requires_ipu
+@pytest.mark.skip("T46787 exception not yet thrown")
 def test_default_connection_type_2():
     """
     Test that error is thrown if try to acquire a single IPU when all have
@@ -124,7 +125,7 @@ def test_default_connection_type_2():
             match=
             "Failed to acquire device. Ensure that there are sufficient IPUs available"
     ) as e:
-        deviceManager.acquireAvailableDevice(1, allowReturnNullDevice=False)
+        deviceManager.tryAcquireAvailableDevice(1)
 
 
 @tu.requires_ipu

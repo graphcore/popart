@@ -3907,8 +3907,8 @@ static const char *__singlelinedoc_popart_DeviceInfo_type = R"doc()doc";
 static const char *__doc_popart_DeviceManager =
     R"doc(A class to manage devices.)doc";
 
-static const char *__singlelinedoc_popart_DeviceManager =
-    R"doc(A class to manage devices.)doc";
+static const char *__doc_popart_DeviceManager_tryAcquireAvailableDevice =
+    R"doc()doc";
 
 static const char *__doc_popart_DeviceManager_acquireAvailableDevice =
     R"doc(Finds the first available hardware device, with a certain number of IPUs.
@@ -3926,6 +3926,9 @@ no device is available.)doc";
 
 static const char *__singlelinedoc_popart_DeviceManager_acquireAvailableDevice =
     R"doc(Finds the first available hardware device, with a certain number of IPUs. This method will attach to the device. Args: numIpus: The number of IPUs on the device [=1]. tilesPerIPU: The number of tiles per IPU (0 will match any number) [=0] Returns: A device, which can be used with a session. If ``allowReturnNullDevice`` is set to 'true' then this will be a nullptr if no device is available.)doc";
+
+static const char *__doc_popart_DeviceManager_tryAcquireDeviceById =
+    R"doc()doc";
 
 static const char *__doc_popart_DeviceManager_acquireDeviceById =
     R"doc(Allocates the hardware device by id. This id can be found running :code:`gc-info

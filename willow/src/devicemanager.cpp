@@ -65,7 +65,7 @@ DeviceManager::getDevice(SyncPattern syncPattern,
       return device;
     }
   }
-  throw error("Unable to get device with id '{}'", deviceManagerId);
+  return nullptr;
 }
 
 std::vector<std::shared_ptr<DeviceInfo>>
@@ -135,13 +135,12 @@ std::shared_ptr<DeviceInfo> DeviceManager::createOfflineIPUDevice(
   return createHostDevice(DeviceType::OfflineIpu, options);
 }
 
-std::shared_ptr<DeviceInfo> DeviceManager::acquireAvailableDevice(
+std::shared_ptr<DeviceInfo> DeviceManager::tryAcquireAvailableDevice(
     int numIpus,
     int tilesPerIPU,
     SyncPattern pattern,
     DeviceConnectionType connectionType,
-    DeviceSelectionCriterion selectionCriterion,
-    bool allowReturnNullDevice) {
+    DeviceSelectionCriterion selectionCriterion) {
   if (numIpus > 0 && ((numIpus & (numIpus - 1)) != 0)) {
     throw error("You have attempted to acquire {} IPUs. The number of IPUs "
                 "requested must be a power of two",
@@ -174,25 +173,34 @@ std::shared_ptr<DeviceInfo> DeviceManager::acquireAvailableDevice(
     }
   }
 
-  if (allowReturnNullDevice) {
+  // Return nullptr if no device is acquired.
+  return nullptr;
+}
+
+std::shared_ptr<DeviceInfo> DeviceManager::acquireAvailableDevice(
+    int numIpus,
+    int tilesPerIPU,
+    SyncPattern pattern,
+    DeviceConnectionType connectionType,
+    DeviceSelectionCriterion selectionCriterion) {
+  auto device = tryAcquireAvailableDevice(
+      numIpus, tilesPerIPU, pattern, connectionType, selectionCriterion);
+
+  // Warn if acquiring device is unsuccessful. TODO T46787: error instead.
+  if (!device) {
     logging::warn(
-        "No avaialble device was found. Returning a null device because "
-        "'allowReturnNullDevice' is set to 'true'. Note that in a future "
-        "release this option will be set to 'false' by default.");
-    return nullptr;
-  } else {
-    throw error(
-        "Failed to acquire device. Ensure that there are sufficient IPUs "
-        "available. If you have enabled the Poplar SDK you can check device "
-        "availability with the `gc-monitor` command-line utility.");
+        "No avaialble device was found. Returning a null device. Note that in "
+        "a future release an exception will be thrown in this instance. If you "
+        "would like to have a nullptr returned, use "
+        "'tryAcquireAvailableDevice' instead.");
   }
+  return device;
 }
 
 std::shared_ptr<DeviceInfo>
-DeviceManager::acquireDeviceById(int id,
-                                 SyncPattern pattern,
-                                 DeviceConnectionType connectionType,
-                                 bool allowReturnNullDevice) {
+DeviceManager::tryAcquireDeviceById(int id,
+                                    SyncPattern pattern,
+                                    DeviceConnectionType connectionType) {
   if (connectionType == DeviceConnectionType::Never) {
     throw error("Trying to acquire a hardware device when connectionType is "
                 "DeviceConnectionType::Never");
@@ -205,25 +213,27 @@ DeviceManager::acquireDeviceById(int id,
     if (device->attach()) {
       return device;
     } else {
-      if (allowReturnNullDevice) {
-        logging::warn(
-            "Device with id '{}' is not availble. Returning a null device "
-            "because 'allowReturnNullDevice' is set to 'true'. Note that in a "
-            "future release this option will be set to 'false' by default.",
-            id);
-        return nullptr;
-      } else {
-        throw error(
-            "Unable to acquire device with id '{}' and connection type "
-            "'DeviceConnectionType::Always'. Ensure it is available. If "
-            "you have enabled the Poplar SDK you can check device "
-            "availability with the `gc-monitor` command-line utility.",
-            id);
-      }
+      // Return nullptr if no device is acquired.
+      return nullptr;
     }
   }
+  return device;
+}
 
-  // Guaranteed not to be nullptr by getDevice
+std::shared_ptr<DeviceInfo>
+DeviceManager::acquireDeviceById(int id,
+                                 SyncPattern pattern,
+                                 DeviceConnectionType connectionType) {
+  auto device = tryAcquireDeviceById(id, pattern, connectionType);
+
+  // Warn if acquiring device is unsuccessful. TODO T46787: error instead.
+  if (!device) {
+    logging::warn("Device with id '{}' is not availble. Returning a null "
+                  "device. Note that in a future release an exception will be "
+                  "thrown in this instance. If you would like to have a "
+                  "nullptr returned, use 'tryAcquireDeviceById' instead",
+                  id);
+  }
   return device;
 }
 

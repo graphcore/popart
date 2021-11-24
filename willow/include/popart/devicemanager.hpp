@@ -190,14 +190,42 @@ public:
   createHostDevice(DeviceType type,
                    const std::map<std::string, std::string> &options);
 
-  /** Finds the first available hardware device, with a certain number of IPUs.
-   * This method will attach to the device.
+  /** Finds an available hardware device, with a certain number of IPUs.
+   * This method will attach to the device if \c connectionType is equal to
+   * DeviceConnectionType::Always. It will not except if this fails, making
+   * it suitable when polling for an available device when resources are
+   * constrained.
    * \param numIpus The number of IPUs on the device [=1].
    * \param tilesPerIPU The number of tiles per IPU (0 will match any number)
    * [=0]
-   * \return A device, which can be used with a session. If
-   * \c allowReturnNullDevice is set to 'true' then this will be a nullptr if
-   * no device is available.
+   * \param pattern The sync pattern to use.
+   * \param connectionType The connection type, for deciding when to attach to
+   * the device.
+   * \param selectionCriterion How to select a device from the list of valid
+   * selections.
+   * \return A device, which can be used with a session. If no device is
+   * acquired, a nullptr is returned.
+   */
+  std::shared_ptr<DeviceInfo> tryAcquireAvailableDevice(
+      int numIpus                         = 1,
+      int tilesPerIPU                     = 0,
+      SyncPattern pattern                 = SyncPattern::Full,
+      DeviceConnectionType connectionType = DeviceConnectionType::Always,
+      DeviceSelectionCriterion selectionCriterion =
+          DeviceSelectionCriterion::First);
+
+  /** Finds an available hardware device, with a certain number of IPUs.
+   * This method will attach to the device if \c connectionType is equal to
+   * DeviceConnectionType::Always.
+   * \param numIpus The number of IPUs on the device [=1].
+   * \param tilesPerIPU The number of tiles per IPU (0 will match any number)
+   * [=0]
+   * \param pattern The sync pattern to use.
+   * \param connectionType The connection type, for deciding when to attach to
+   * the device.
+   * \param selectionCriterion How to select a device from the list of valid
+   * selections.
+   * \return A device, which can be used with a session.
    */
   std::shared_ptr<DeviceInfo> acquireAvailableDevice(
       int numIpus                         = 1,
@@ -205,21 +233,38 @@ public:
       SyncPattern pattern                 = SyncPattern::Full,
       DeviceConnectionType connectionType = DeviceConnectionType::Always,
       DeviceSelectionCriterion selectionCriterion =
-          DeviceSelectionCriterion::First,
-      bool allowReturnNullDevice = true);
+          DeviceSelectionCriterion::First);
 
   /** Allocates the hardware device by id. This id can be found running `gc-info
-   *  -l`. This method will attach to the device.
+   *  -l`. This method will try to attach to the device if \c connectionType is
+   * equal to DeviceConnectionType::Always. It will not except if this fails,
+   * making it suitable when polling for an available device when resources are
+   * constrained.
    * \param id The index of the IPU to be used.
-   * \return A device, which can be used with a session. If
-   * \c allowReturnNullDevice is set to 'true' then this will be a nullptr if
-   * the specified device is not available.
+   * \param pattern The sync pattern to use.
+   * \param connectionType The connection type, for deciding when to attach to
+   * the device.
+   * \return A device, which can be used with a session. If no device is
+   * acquired, a nullptr is returned.
+   */
+  std::shared_ptr<DeviceInfo> tryAcquireDeviceById(
+      int id,
+      SyncPattern pattern                 = SyncPattern::Full,
+      DeviceConnectionType connectionType = DeviceConnectionType::Always);
+
+  /** Allocates the hardware device by id. This id can be found running `gc-info
+   *  -l`. This method will attach to the device if \c connectionType is equal
+   * to DeviceConnectionType::Always.
+   * \param id The index of the IPU to be used.
+   * \param pattern The sync pattern to use.
+   * \param connectionType The connection type, for deciding when to attach to
+   * the device.
+   * \return A device, which can be used with a session.
    */
   std::shared_ptr<DeviceInfo> acquireDeviceById(
       int id,
       SyncPattern pattern                 = SyncPattern::Full,
-      DeviceConnectionType connectionType = DeviceConnectionType::Always,
-      bool allowReturnNullDevice          = true);
+      DeviceConnectionType connectionType = DeviceConnectionType::Always);
 
   /** Create a 'simulated' CPU device.
    * \return A device.
