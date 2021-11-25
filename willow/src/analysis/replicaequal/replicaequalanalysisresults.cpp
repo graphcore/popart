@@ -64,10 +64,7 @@ bool ReplicaEqualAnalysisResults::setValueAt(const Tensor *tensor,
                                              const IsReplicaEqual &value) {
   assert(tensor != nullptr);
 
-  bool changed = true;
-
-  // Local name to distinguish from existing values.
-  const auto &newValue = value;
+  bool changed = false;
 
   // Time to use.
   Time time = (op) ? opTimeMap.at(*op) : initTime;
@@ -77,6 +74,7 @@ bool ReplicaEqualAnalysisResults::setValueAt(const Tensor *tensor,
   if (tensorIt == results.end()) {
     // No mapping for this tensor yet.
     results.insert(tensorIt, {tensor, {{time, value}}});
+    changed = true;
   } else {
     // There is a mapping already.
     auto &existingMap = tensorIt->second;
@@ -84,26 +82,28 @@ bool ReplicaEqualAnalysisResults::setValueAt(const Tensor *tensor,
     if (timeIt == existingMap.end()) {
       // No mapping for this time.
       existingMap.insert(timeIt, {time, value});
+      changed = true;
     } else {
       // Already have a value.
       IsReplicaEqual oldValue = timeIt->second;
+      IsReplicaEqual newValue = oldValue && value;
 
       if (oldValue != newValue) {
-        // Value differs -> take conjunction.
-        timeIt->second = oldValue && newValue;
-        if (timeIt->second == oldValue) {
-          // We didn't change the value from false to true.
-          haveDisagreement = true;
-          disagreements.insert(tensor);
-        } else {
-          // We changed the value.
-          haveChange = true;
-        }
-      } else {
-        // We didn't change the result object.
-        changed = false;
+        // We're changing the value.
+        timeIt->second = newValue;
+        changed        = true;
+      }
+
+      if (newValue != value) {
+        // We didn't change the value to what was asked for.
+        haveDisagreement = true;
+        disagreements.insert(tensor);
       }
     }
+  }
+
+  if (changed) {
+    haveChange = true;
   }
 
   return changed;
@@ -255,22 +255,32 @@ std::ostream &operator<<(std::ostream &out,
     auto tensor   = entry1.first;
     auto &timeMap = entry1.second;
     out << "'" << tensor->id << "': [";
+    if (timeMap.size() > 1) {
+      out << "\n";
+    }
     bool isFirst = true;
-    for (const auto &entry2 : timeMap) {
+    // Reverse order as it's stored in descending time order.
+    for (auto entry2 = timeMap.rbegin(); entry2 != timeMap.rend(); ++entry2) {
       if (!isFirst) {
-        out << ", " << std::endl;
+        out << "\n";
       }
-      auto time  = entry2.first;
-      auto value = entry2.second;
+      if (timeMap.size() > 1) {
+        out << "  ";
+      }
+      auto time  = entry2->first;
+      auto value = entry2->second;
       if (time == ReplicaEqualAnalysisResults::initTime) {
         out << "initTime->" << value;
       } else {
         auto op = results.graphSchedules.at(tensor->getGraph().id).at(time);
-        out << "  " << op->str() << "->" << value;
+        out << op->str() << "->" << value;
       }
       isFirst = false;
     }
-    out << "]" << std::endl;
+    if (timeMap.size() > 1) {
+      out << "\n";
+    }
+    out << "]\n";
   }
   return out;
 }
