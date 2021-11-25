@@ -90,7 +90,7 @@ public:
 /**
  * Forwards pass:
  *
- *   [inputs]         [labels]        [weights  ]
+ *   [inputs]         [labels]        ["weights"]
  *     |                 |             |       |
  *     v                 |             |       |
  *   Identity            |             |       |
@@ -127,19 +127,40 @@ public:
  *     v  v                                    |
  *    MatMul                                   |
  *     |                                       |
- *     v                                       |
- *    ReplicatedAllReduce                      |
+ * ....(.. [sg1] ......................        |
+ * :   | subgraph'ed if SG1::Yes      :        |
+ * :   v                              :        |
+ * :  ReplicatedAllReduce             :        |
+ * :   |                              :        |
+ * :...(..............................:        |
  *     |                                       |
  *     |         .-----------------------------'
- *     v         v
- *    SGD0VarUpdate
+ *     |         |
+ * ....(. [sg2] .(.....................
+ * :   |         |                    :
+ * :   v         v                    :
+ * :  SGD0VarUpdate                   :
+ * :   |                              :
+ * :   | subgraph'ed if SG2::Yes      :
+ * :...(..............................:
  *     |
  *   [...]
  *
  **/
 class GraphTestModel5 : public GraphTestModel {
 public:
-  GraphTestModel5();
+  enum class SG1 {
+    No  = 0,
+    Yes = 1,
+    N,
+  };
+  enum class SG2 {
+    No  = 0,
+    Yes = 1,
+    N,
+  };
+
+  GraphTestModel5(SG1 sg1, SG2 sg2);
 };
 
 enum class TestOptimizer {

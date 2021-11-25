@@ -43,6 +43,11 @@ public:
 
   float getSubgraphValue() const final { return getLowSubgraphValue(); }
 
+  std::tuple<ReplEqOutputMap, ReplEqModifiedInputMap>
+  fwdPropagateIsReplicaEqual(const AliasModel &aliasModel,
+                             const ReplEqInputMap &inputMap,
+                             ReplicaEqualAnalysisProxy &proxy) const override;
+
   std::vector<const Graph *> getCalledGraphs() const override;
 
   virtual InIndex opInToSubgraphInIndex(SubgraphIndex subgraphIndex,

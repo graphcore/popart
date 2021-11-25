@@ -99,6 +99,73 @@ view::RegMap MultiExchangeOp::bwdRegMap(InIndex inIndex,
   return Op::bwdRegMap(inIndex, outIndex);
 }
 
+std::tuple<ReplEqOutputMap, ReplEqModifiedInputMap>
+MultiExchangeOp::fwdPropagateIsReplicaEqual(
+    const AliasModel &aliasModel,
+    const ReplEqInputMap &inputMap,
+    ReplicaEqualAnalysisProxy &proxy) const {
+
+  // Prepare result map.
+  ReplEqOutputMap result;
+  for (auto &output : output->tensorMap()) {
+
+    auto outDescriptorIndex = outIndexToDescriptorIndex(output.first);
+    auto outDescriptor      = getExchangeDescriptor(outDescriptorIndex.first);
+    if (outDescriptor.isHostExchange()) {
+
+      if (outDescriptor.getDirection() == ExchangeDirection::Load) {
+        // A host load is equal across replicas iff the tensor is broadcast.
+        auto hostStreamId = outDescriptor.getHostStreamTensorId();
+        auto mode = getIr().getTensor(hostStreamId)->getReplicatedStreamMode();
+        IsReplicaEqual value = (mode == ReplicatedStreamMode::Broadcast);
+        result[output.first] = value;
+
+      } else if (outDescriptor.getDirection() == ExchangeDirection::Store) {
+        // This shouldn't happen -- host stores don't have outputs.
+        throw internal_error("[MultiExchangeOp] Unexpectedly have an output "
+                             "associated with a host store");
+
+      } else {
+        // Not a supported direction.
+        throw internal_error("[MultiExchangeOp] Unsupported value for "
+                             "ExchangeDirection ({})",
+                             static_cast<int>(outDescriptor.getDirection()));
+      }
+
+    } else if (outDescriptor.isRemoteExchange()) {
+
+      if (outDescriptor.getDirection() == ExchangeDirection::Load) {
+        // A remote load's output is equal across replicas iff associated inputs
+        // are.
+        auto value = true;
+        for (auto &input : input->tensorMap()) {
+          auto inDescriptorIndex = inIndexToDescriptorIndex(input.first);
+          // Only look at inputs associated with the same descriptor.
+          if (inDescriptorIndex.first == outDescriptorIndex.first) {
+            value = value && inputMap.at(input.first);
+          }
+        }
+        result[output.first] = value;
+
+      } else if (outDescriptor.getDirection() == ExchangeDirection::Store) {
+        // This shouldn't happen -- remote stores don't have outputs.
+        throw internal_error("[MultiExchangeOp] Unexpectedly have an output "
+                             "associated with a remote store");
+
+      } else {
+        // Not a supported direction.
+        throw internal_error("[MultiExchangeOp] Unsupported value for "
+                             "ExchangeDirection ({})",
+                             static_cast<int>(outDescriptor.getDirection()));
+      }
+    } else {
+      throw internal_error("[MultiExchangeOp] Unsupported descriptor type");
+    }
+  }
+
+  return {result, proxy.getModifiedInputMapFromAliases(this, result)};
+}
+
 int MultiExchangeOp::numLoads() const {
   return std::count_if(
       descriptors.begin(), descriptors.end(), [](const ExchangeDescriptor &ed) {

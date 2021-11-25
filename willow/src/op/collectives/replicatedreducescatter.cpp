@@ -65,6 +65,36 @@ ReplicatedReduceScatterOp::getReplicatedTensorShardingIndices() const {
   return {{{}, {ReplicatedReduceScatterOp::getOutIndex()}}};
 }
 
+std::tuple<ReplEqOutputMap, ReplEqModifiedInputMap>
+ReplicatedReduceScatterOp::fwdPropagateIsReplicaEqual(
+    const AliasModel &aliasModel,
+    const ReplEqInputMap &inputMap,
+    ReplicaEqualAnalysisProxy &proxy) const {
+
+  // TODO(T51589): Amend logic to be more fine-grained, taking into account
+  // CommGroup settings. We should work out replica-equalness over subsets
+  // of replicas instead instead of having only tracking if a tensor is
+  // replica-equal for all replicas or not.
+
+  const auto groupType = getGCLCommGroup().type;
+  const auto groupSize = getGCLCommGroup().replicaGroupSize;
+  const auto isLocal   = (op == CollectiveOperator::Local);
+  const auto isReductionOverOneReplica =
+      (groupType == CommGroupType::None) ||
+      (groupType == CommGroupType::Consecutive && groupSize == 1) ||
+      (groupType == CommGroupType::Orthogonal && groupSize == 1);
+
+  // If a local reduction or a scatter over multiple replicas, the output is
+  // definitely non-equal.
+  if (isLocal || !isReductionOverOneReplica) {
+    ReplEqOutputMap result;
+    result[getOutIndex()] = false;
+    return {result, proxy.getModifiedInputMapFromAliases(this, result)};
+  } else {
+    return Op::fwdPropagateIsReplicaEqual(aliasModel, inputMap, proxy);
+  }
+}
+
 static OpDefinition::DataTypes T = {DataType::FLOAT,
                                     DataType::FLOAT16,
                                     DataType::INT32,

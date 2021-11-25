@@ -90,7 +90,7 @@ BOOST_AUTO_TEST_CASE(
   constexpr int numReplicas    = 2;
   constexpr int64_t inputSize  = 10;
   constexpr int64_t labelSize  = 5;
-  constexpr int64_t numBatches = 50;
+  constexpr int64_t numBatches = 1;
 
   static OperatorIdentifier weirdPrngOpOperatorIdentifier(
       "TestOps", "WeirdPrngOp", 1);
@@ -131,7 +131,7 @@ BOOST_AUTO_TEST_CASE(
   public:
     WeirdPrngOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {}
 
-    void grow(poplar::program::Sequence &prog) const {
+    void grow(snap::program::Sequence &prog) const {
 
       // Do some PRNG stuff when input0's first element is 0.0. To do this,
       // first we need to isolate the first element of input0, then map it to a
@@ -155,7 +155,7 @@ BOOST_AUTO_TEST_CASE(
       auto condition = popops::eq(graph().getPoplarGraph(),
                                   in0FirstElem.getPoplarTensor(),
                                   zeroHalfPoplarConst,
-                                  prog);
+                                  prog.getPoplarSequence());
 
       condition = condition.reshape({});
 
@@ -172,7 +172,8 @@ BOOST_AUTO_TEST_CASE(
                        1.0f,
                        thenProg);
 
-      prog.add(poplar::program::If(condition, thenProg, elseProg));
+      prog.getPoplarSequence().add(
+          poplar::program::If(condition, thenProg, elseProg));
       for (auto entry : op_p->output->tensorMap()) {
         setOutTensor(entry.first, getInTensor(entry.first));
       }
@@ -248,6 +249,12 @@ BOOST_AUTO_TEST_CASE(
   opts.enableReplicatedGraphs   = true;
   opts.replicatedGraphCount     = numReplicas;
 
+  // TODO (T48752): Remove.
+  opts._enableRngStateManagement = true;
+
+  // Uncomment when profiling (see T32263).
+  // opts.engineOptions["target.syncReplicasIndependently"] = "true";
+
   auto session = TrainingSession::createFromOnnxModel(
       builder->getModelProto(),
       dataFlow,
@@ -282,12 +289,6 @@ BOOST_AUTO_TEST_CASE(
 
   session->run(stepio);
 
-  // Uncomment to see weight values.
-  // std::cout << wAnchorData.size() << std::endl;
-  // for (size_t i = 0; i < wAnchorData.size(); ++i) {
-  //  std::cout << i << ": " << halfToFloat(wAnchorData[i]) << std::endl;
-  //}
-
   // Now check if all replicas agree on all weight values.
   for (int replica_i = 0; replica_i < numReplicas; ++replica_i) {
     for (int replica_j = replica_i + 1; replica_j < numReplicas; ++replica_j) {
@@ -299,7 +300,19 @@ BOOST_AUTO_TEST_CASE(
         ss << "Replica " << replica_i << " and " << replica_j
            << " unexpectedly disagree on weight ('" << w << "') at index " << m
            << " after " << numBatches << " batches (" << halfToFloat(data_i)
-           << " != " << halfToFloat(data_j) << ")";
+           << " != " << halfToFloat(data_j) << ")\n\n";
+
+        ss << "  with replica " << replica_i << " weights being\n ";
+        for (size_t i = 0; i < wInfo.nelms(); ++i) {
+          ss << halfToFloat(wAnchorData[replica_i * wInfo.nelms() + i]) << " ";
+        }
+        ss << "\n\n";
+
+        ss << "  with replica " << replica_j << " weights being\n ";
+        for (size_t i = 0; i < wInfo.nelms(); ++i) {
+          ss << halfToFloat(wAnchorData[replica_j * wInfo.nelms() + i]) << " ";
+        }
+        ss << "\n";
 
         BOOST_REQUIRE_MESSAGE(data_i == data_j, ss.str());
       }

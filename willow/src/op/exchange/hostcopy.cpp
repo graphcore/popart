@@ -52,6 +52,23 @@ view::RegMap HostLoadOp::bwdRegMap(InIndex inIndex, OutIndex outIndex) const {
   return Op::bwdRegMap(inIndex, outIndex);
 }
 
+std::tuple<ReplEqOutputMap, ReplEqModifiedInputMap>
+HostLoadOp::fwdPropagateIsReplicaEqual(const AliasModel &aliasModel,
+                                       const ReplEqInputMap &inputMap,
+                                       ReplicaEqualAnalysisProxy &proxy) const {
+
+  auto mode = getIr().getTensor(hostStreamTensorId)->getReplicatedStreamMode();
+  IsReplicaEqual value = (mode == ReplicatedStreamMode::Broadcast);
+
+  // Prepare result map.
+  ReplEqOutputMap result;
+  for (auto &output : output->tensorMap()) {
+    result[output.first] = value;
+  }
+
+  return {result, proxy.getModifiedInputMapFromAliases(this, result)};
+}
+
 ExchangeDescriptor HostLoadOp::getExchangeDescriptor(int index) const {
   return ExchangeDescriptor(ExchangeDirection::Load,
                             hostStreamTensorId,

@@ -308,6 +308,55 @@ IfOp::getBranchOutIndicesMap(const Graph &branchGraph) const {
   }
 }
 
+std::tuple<ReplEqOutputMap, ReplEqModifiedInputMap>
+IfOp::fwdPropagateIsReplicaEqual(const AliasModel &aliasModel,
+                                 const ReplEqInputMap &opInputMap,
+                                 ReplicaEqualAnalysisProxy &proxy) const {
+
+  auto getOpOutputMap = [&](const Graph *subgraph,
+                            SubgraphIndex subgraphIndex) {
+    // Map Op inputs mapping to subgraph input mapping.
+    ReplEqInputMap subgraphInputMap;
+    for (InIndex i = 0; i < subgraph->getInputIds().size(); ++i) {
+      InIndex opInIndex   = subgraphInToOpInIndex(subgraphIndex, i);
+      subgraphInputMap[i] = opInputMap.at(opInIndex);
+    }
+
+    // Forward propagate on subgraph.
+    auto subgraphRes = proxy.fwdPropagateIsReplicaEqualThroughGraph(
+        subgraph, subgraphInputMap);
+    auto &subgraphOutputMap = std::get<0>(subgraphRes);
+
+    // Map Op output mapping back to subgraph output mapping.
+    ReplEqInputMap opOutputMap;
+    for (auto &entry : output->tensorMap()) {
+      OutIndex opOutIndex = entry.first;
+      OutIndex subgraphOutIndex =
+          opOutToSubgraphOutIndex(subgraphIndex, opOutIndex);
+      opOutputMap[opOutIndex] = subgraphOutputMap.at(subgraphOutIndex);
+    }
+
+    return opOutputMap;
+  };
+
+  // Get the output map for each subgraph independently.
+  auto thenOpOutputMap = getOpOutputMap(&getThenGraph(), thenSubgraphIndex);
+  auto elseOpOutputMap = getOpOutputMap(&getElseGraph(), elseSubgraphIndex);
+
+  // Merge the results, we can only guarantee an output is replica equal if it's
+  // replica equal for both subgraphs.
+  ReplEqInputMap opOutputMap;
+  for (auto &entry : output->tensorMap()) {
+    OutIndex opOutIndex = entry.first;
+    opOutputMap[opOutIndex] =
+        thenOpOutputMap.at(opOutIndex) && elseOpOutputMap.at(opOutIndex);
+  }
+
+  // At the moment, it is not possible to modify an input with an IfOp, so we
+  // return an empty modified inputs value list.
+  return {opOutputMap, {}};
+}
+
 void IfOp::setup() {
 
   auto trySetOutInfoFromGraph = [this](const Graph &graph, int outIndex) {

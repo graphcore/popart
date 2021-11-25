@@ -108,6 +108,31 @@ view::RegMap Op::bwdRegMap(InIndex i, OutIndex o) const {
   return defaultRegMapImpl(*this, i, o, "bwdRegMap");
 }
 
+std::tuple<ReplEqOutputMap, ReplEqModifiedInputMap>
+Op::fwdPropagateIsReplicaEqual(const AliasModel &aliasModel,
+                               const ReplEqInputMap &inputMap,
+                               ReplicaEqualAnalysisProxy &proxy) const {
+
+  // Return a mapping where each output tensor is mapped to the logical
+  // conjunction of the value assigned to input tensors. That is, by default
+  // outputs are considered replica equal if *all* input tensors are.
+
+  auto value = true;
+
+  for (auto &input : input->tensorMap()) {
+    // Four-valued equivalent of a logical and over inputs.
+    value = value && inputMap.at(input.first);
+  }
+
+  // Prepare result map.
+  ReplEqOutputMap outputMap;
+  for (auto &output : output->tensorMap()) {
+    outputMap[output.first] = value;
+  }
+
+  return {outputMap, proxy.getModifiedInputMapFromAliases(this, outputMap)};
+}
+
 bool Op::isLossOp() const { return false; }
 bool Op::isIpuCopyOp() const { return false; }
 bool Op::copiesOptimizerTensors() const { return false; }

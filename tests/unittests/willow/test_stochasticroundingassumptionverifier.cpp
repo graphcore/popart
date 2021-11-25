@@ -30,7 +30,7 @@ BOOST_AUTO_TEST_CASE(verify) {
   auto test = [](StochasticRounding sr,
                  StochasticRoundingMethodSet set,
                  ExpectError err) {
-    GraphTestModel5 model;
+    GraphTestModel5 model(GraphTestModel5::SG1::No, GraphTestModel5::SG2::No);
     auto &ir = model.getIr();
 
     // Enable stochastic rounding in IR depending on parameter 'sr'

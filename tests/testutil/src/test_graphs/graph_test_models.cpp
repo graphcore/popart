@@ -468,7 +468,7 @@ GraphTestModel4::GraphTestModel4(popart::ReplicatedStreamMode xMode) {
   ir.setIsPrepared();
 }
 
-GraphTestModel5::GraphTestModel5() {
+GraphTestModel5::GraphTestModel5(SG1 sg1, SG2 sg2) {
 
   Graph &graph = ir.getMainGraph();
 
@@ -556,21 +556,80 @@ GraphTestModel5::GraphTestModel5() {
       DataType::FLOAT,
       MatMulPartialsType::FLOAT);
 
-  auto allReduceOp = graph.createConnectedOp<ReplicatedAllReduceOp>(
-      {{ReplicatedAllReduceOp::getInIndex(),
-        gradMatMul->outId(MatMulOp::getOutIndex())}},
-      {{ReplicatedAllReduceOp::getOutIndex(), "inputsgradrepl"}},
-      Onnx::CustomOperators::ReplicatedAllReduce,
-      Op::Settings{graph, "ReplicatedAllReduce"});
+  Op *allReduce           = nullptr;
+  TensorId allReduceOutId = "inputsgradrepl";
 
-  graph.createConnectedOp<SGD0VarUpdateOp>(
-      {{SGD0VarUpdateOp::getVarToUpdateInIndex(), weights},
-       {SGD0VarUpdateOp::getUpdaterInIndex(),
-        allReduceOp->outId(ReplicatedAllReduceOp::getOutIndex())}},
-      {{SGD0VarUpdateOp::getUpdatedVarOutIndex(), "weights__updated"}},
-      OptimizerValue(0.5, true),
-      OptimizerValue(0.5, true),
-      Op::Settings{graph, "SGD0VarUpdate"});
+  if (sg1 == SG1::No) {
+
+    allReduce = graph.createConnectedOp<ReplicatedAllReduceOp>(
+        {{ReplicatedAllReduceOp::getInIndex(),
+          gradMatMul->outId(MatMulOp::getOutIndex())}},
+        {{ReplicatedAllReduceOp::getOutIndex(), allReduceOutId}},
+        Onnx::CustomOperators::ReplicatedAllReduce,
+        Op::Settings{graph, "ReplicatedAllReduce"});
+
+  } else {
+
+    auto &sg1Graph    = ir.createGraph(GraphId{"sg1"});
+    auto allReduceIn  = addScope(sg1Graph, "in");
+    auto allReduceOut = addScope(sg1Graph, "out");
+
+    sg1Graph.addInput(allReduceIn,
+                      gradMatMul->outTensor(MatMulOp::getOutIndex())->info);
+
+    allReduce = sg1Graph.createConnectedOp<ReplicatedAllReduceOp>(
+        {{ReplicatedAllReduceOp::getInIndex(), allReduceIn}},
+        {{ReplicatedAllReduceOp::getOutIndex(), allReduceOut}},
+        Onnx::CustomOperators::ReplicatedAllReduce,
+        Op::Settings{graph, "ReplicatedAllReduce"});
+
+    sg1Graph.markAsOutput(allReduceOut);
+
+    graph.createConnectedOp<CallOp>(
+        {{0, gradMatMul->outId(MatMulOp::getOutIndex())}},
+        {{0, allReduceOutId}},
+        Onnx::CustomOperators::Call_1,
+        sg1Graph,
+        Op::Settings{graph, "Call"});
+  }
+
+  if (sg2 == SG2::No) {
+
+    graph.createConnectedOp<SGD0VarUpdateOp>(
+        {{SGD0VarUpdateOp::getVarToUpdateInIndex(), weights},
+         {SGD0VarUpdateOp::getUpdaterInIndex(), allReduceOutId}},
+        {{SGD0VarUpdateOp::getUpdatedVarOutIndex(), "weights__updated"}},
+        OptimizerValue(0.5, true),
+        OptimizerValue(0.5, true),
+        Op::Settings{graph, "SGD0VarUpdate"});
+
+  } else {
+
+    auto &sg2Graph  = ir.createGraph(GraphId{"sg2"});
+    auto weightsIn  = addScope(sg2Graph, "weightsIn");
+    auto varIn      = addScope(sg2Graph, "varIn");
+    auto weightsOut = addScope(sg2Graph, "weightsOut");
+
+    sg2Graph.addInput(weightsIn, weightsInfo);
+    sg2Graph.addInput(
+        varIn,
+        allReduce->outTensor(ReplicatedAllReduceOp::getOutIndex())->info);
+
+    sg2Graph.createConnectedOp<SGD0VarUpdateOp>(
+        {{SGD0VarUpdateOp::getVarToUpdateInIndex(), weightsIn},
+         {SGD0VarUpdateOp::getUpdaterInIndex(), varIn}},
+        {{SGD0VarUpdateOp::getUpdatedVarOutIndex(), weightsOut}},
+        OptimizerValue(0.5, true),
+        OptimizerValue(0.5, true),
+        Op::Settings{graph, "SGD0VarUpdate"});
+
+    graph.createConnectedOp<CallOp>({{0, weights}, {1, allReduceOutId}},
+                                    {},
+                                    Onnx::CustomOperators::Call_1,
+                                    sg2Graph,
+                                    std::vector<int>{0}, /* modifies  weight */
+                                    Op::Settings{graph, "Call"});
+  }
 }
 
 OptimizerTestModel::OptimizerTestModel(TestOptimizer opt,

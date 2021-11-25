@@ -146,6 +146,43 @@ view::RegMap SubgraphOp::bwdRegMap(InIndex inIndex, OutIndex outIndex) const {
   };
 }
 
+std::tuple<ReplEqOutputMap, ReplEqModifiedInputMap>
+SubgraphOp::fwdPropagateIsReplicaEqual(const AliasModel &aliasModel,
+                                       const ReplEqInputMap &opInputMap,
+                                       ReplicaEqualAnalysisProxy &proxy) const {
+
+  // Map Op inputs mapping to subgraph input mapping.
+  ReplEqInputMap subgraphInputMap;
+  for (InIndex i = 0; i < getCalledGraph().getInputIds().size(); ++i) {
+    subgraphInputMap[i] = opInputMap.at(subgraphInToOpInIndex(i));
+  }
+
+  // Forward propagate on subgraph.
+  auto subgraphRes = proxy.fwdPropagateIsReplicaEqualThroughGraph(
+      &getCalledGraph(), subgraphInputMap);
+  auto &subgraphOutputMap         = std::get<0>(subgraphRes);
+  auto &subgraphModifiedInputsMap = std::get<1>(subgraphRes);
+
+  // Map Op output mapping back to subgraph output mapping.
+  ReplEqInputMap opOutputMap;
+  for (auto &entry : output->tensorMap()) {
+    OutIndex o     = entry.first;
+    opOutputMap[o] = subgraphOutputMap.at(opOutToSubgraphOutIndex(o));
+  }
+
+  // Get replica-equalness of modified inputs from subgraph.
+  ReplEqModifiedInputMap modifiedInputs;
+  for (const auto &input : input->tensorMap()) {
+    // Ignore this index if it is not modified.
+    if (modifiesIndex(input.first)) {
+      modifiedInputs[input.first] =
+          subgraphModifiedInputsMap.at(opInToSubgraphInIndex(input.first));
+    }
+  }
+
+  return {opOutputMap, modifiedInputs};
+}
+
 view::Regions SubgraphOp::aliases(InIndex in, OutIndex out) const {
   // If not in aliasMap, return empty region
   if (aliasMap.count({in, out}) == 0) {

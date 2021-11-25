@@ -79,4 +79,35 @@ ReplicatedAllGatherOp::getReplicatedTensorShardingIndices() const {
   return {{{ReplicatedAllGatherOp::getInIndex()}, {}}};
 }
 
+std::tuple<ReplEqOutputMap, ReplEqModifiedInputMap>
+ReplicatedAllGatherOp::fwdPropagateIsReplicaEqual(
+    const AliasModel &aliasModel,
+    const ReplEqInputMap &inputMap,
+    ReplicaEqualAnalysisProxy &proxy) const {
+
+  // TODO(T51589): Amend logic to be more fine-grained, taking into account
+  // CommGroup settings. We should work out replica-equalness over subsets
+  // of replicas instead instead of having only tracking if a tensor is
+  // replica-equal for all replicas or not.
+
+  const auto groupType = getGCLCommGroup().type;
+  const auto groupSize = getGCLCommGroup().replicaGroupSize;
+  const auto maxGroupSize =
+      getIr().getSessionOptions().getGlobalReplicationFactor();
+  const auto isReductionOverAllReplicas =
+      (groupType == CommGroupType::All) ||
+      (groupType == CommGroupType::Consecutive && groupSize == maxGroupSize) ||
+      (groupType == CommGroupType::Orthogonal && groupSize == maxGroupSize);
+
+  // The output should be identical across replicas within a group. So outputs
+  // are equal across all replicas only if the grouping includes all replicas.
+  if (isReductionOverAllReplicas) {
+    ReplEqOutputMap result;
+    result[getOutIndex()] = true;
+    return {result, proxy.getModifiedInputMapFromAliases(this, result)};
+  } else {
+    return Op::fwdPropagateIsReplicaEqual(aliasModel, inputMap, proxy);
+  }
+}
+
 } // namespace popart

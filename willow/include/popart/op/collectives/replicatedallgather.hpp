@@ -24,6 +24,11 @@ public:
   ReplicatedTensorShardingIndices
   getReplicatedTensorShardingIndices() const override;
 
+  std::tuple<ReplEqOutputMap, ReplEqModifiedInputMap>
+  fwdPropagateIsReplicaEqual(const AliasModel &aliasModel,
+                             const ReplEqInputMap &inputMap,
+                             ReplicaEqualAnalysisProxy &proxy) const override;
+
 private:
   TensorInfo gatheredOutInfo;
 };

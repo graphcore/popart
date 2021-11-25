@@ -176,6 +176,12 @@ public:
   std::vector<Tensor *> allAliases(const Tensor &t) const;
 
   /**
+   * \return true if all of the 'allocation' elements of \a sub and are also
+   *         in \a super.
+   * */
+  bool contains(const Tensor &super, const Tensor &sub) const;
+
+  /**
    * The poprithms Graph
    * */
   poprithms::memory::inplace::Graph g;

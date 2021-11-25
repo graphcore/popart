@@ -380,4 +380,23 @@ TensorId removeScope(const Graph &g, const TensorId &t) {
   return pTId.getId();
 }
 
+std::ostream &operator<<(std::ostream &ss,
+                         const StochasticRoundingMethod &srm) {
+  switch (srm) {
+  case StochasticRoundingMethod::DifferingSeeds: {
+    ss << "DifferingSeeds";
+    break;
+  }
+  case StochasticRoundingMethod::IdenticalSeeds: {
+    ss << "IdenticalSeeds";
+    break;
+  }
+  default:
+    throw error("Unsupported StochasticRoundingMethod value {}",
+                static_cast<int>(srm));
+  }
+
+  return ss;
+}
+
 } // namespace popart

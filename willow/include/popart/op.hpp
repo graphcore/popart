@@ -2,12 +2,14 @@
 #ifndef GUARD_NEURALNET_OP_HPP
 #define GUARD_NEURALNET_OP_HPP
 
+#include <functional>
 #include <memory>
 #include <set>
 #include <unordered_set>
 #include <vector>
 
 #include <popart/alias/aliasmodel.hpp>
+#include <popart/analysis/replicaequal/replicaequalanalysisproxy.hpp>
 #include <popart/attributes.hpp>
 #include <popart/basicoptionals.hpp>
 #include <popart/bwdgraphinfo.hpp>
@@ -487,6 +489,33 @@ public:
   virtual view::RegMap bwdRegMap(InIndex, OutIndex) const;
 
   /**
+   * Determine whether output tensors are guaranteed to have an equal value
+   * across all replicas (terminology: are 'replica equal') given information
+   * about the replica equal-ness status of input tensors (and the same for any
+   * inputs that are modified by the Op).
+   *
+   * The default implementation sets each output tensor as being replica-equal
+   * if and only if all tensor inputs are replica-equal. For modified inputs,
+   * the default is to assume it's replica-equal only if there is an output that
+   * is deemed replica-equal that fully aliases all elements of the input. This
+   * default implementation is not correct for all Ops. Ops that need a
+   * specialized implementation should override this virtual function.
+   *
+   * \param aliasModel An alias model object.
+   * \param inputMap A map that stores, for each input, whether the
+   *     inputs are data-equivalent over all replicas.
+   * \param proxy A helper object passed in by the replica-equal analysis.
+   * \return A tuple comprising of 1) a mapping from output index to a replica
+   *     equal status with an entry for each output tensor and 2) a vector of
+   *     input indices for inputs that were modified by the op to a value that
+   *     is not replica-equal.
+   **/
+  virtual std::tuple<ReplEqOutputMap, ReplEqModifiedInputMap>
+  fwdPropagateIsReplicaEqual(const AliasModel &aliasModel,
+                             const ReplEqInputMap &inputMap,
+                             ReplicaEqualAnalysisProxy &proxy) const;
+
+  /**
    * \return True if there is an input which aliases an output.
    * */
   bool doesAlias() const;
@@ -857,7 +886,7 @@ std::ostream &operator<<(std::ostream &, const GradOpInType &);
 /// To prevent non-determinism, POpCmp is used on any sets and maps that use
 /// pointers to operators as a set/map key.
 struct POpCmp {
-  bool operator()(Op *const &a, Op *const &b) const { return a->id < b->id; }
+  bool operator()(const Op *a, const Op *b) const { return a->id < b->id; }
 };
 
 struct POpIntCmp {

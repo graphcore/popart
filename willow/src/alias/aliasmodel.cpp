@@ -226,4 +226,12 @@ std::vector<Tensor *> AliasModel::allAliases(const Tensor &t) const {
   return result;
 }
 
+bool AliasModel::contains(const Tensor &super, const Tensor &sub) const {
+
+  auto gSuper = getPoprithmsTensorId(super.id);
+  auto gSub   = getPoprithmsTensorId(sub.id);
+
+  return g.contains(gSuper, gSub);
+}
+
 } // namespace popart

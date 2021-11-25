@@ -382,6 +382,11 @@ TensorId addScope(const Graph &g, const TensorId &t);
  */
 TensorId removeScope(const Graph &g, const TensorId &t);
 
+/**
+ * Stream operator for StochasticRoundingMethod.
+ */
+std::ostream &operator<<(std::ostream &ss, const StochasticRoundingMethod &srm);
+
 } // namespace popart
 
 #endif

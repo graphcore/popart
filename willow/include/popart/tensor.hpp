@@ -315,7 +315,7 @@ private:
 };
 
 struct PTensorCmp {
-  bool operator()(Tensor *const &a, Tensor *const &b) const {
+  bool operator()(const Tensor *const &a, const Tensor *const &b) const {
     return a->id < b->id;
   }
 };

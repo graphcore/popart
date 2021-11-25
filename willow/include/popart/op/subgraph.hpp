@@ -43,6 +43,11 @@ public:
   view::RegMap fwdRegMap(InIndex, OutIndex) const final;
   view::RegMap bwdRegMap(InIndex, OutIndex) const final;
 
+  std::tuple<ReplEqOutputMap, ReplEqModifiedInputMap>
+  fwdPropagateIsReplicaEqual(const AliasModel &aliasModel,
+                             const ReplEqInputMap &inputMap,
+                             ReplicaEqualAnalysisProxy &proxy) const override;
+
   virtual InIndex subgraphInToOpInIndex(InIndex index) const = 0;
   virtual InIndex opInToSubgraphInIndex(InIndex index) const = 0;
 

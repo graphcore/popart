@@ -36,6 +36,11 @@ public:
   view::RegMap fwdRegMap(InIndex, OutIndex) const final;
   view::RegMap bwdRegMap(InIndex, OutIndex) const final;
 
+  virtual std::tuple<ReplEqOutputMap, ReplEqModifiedInputMap>
+  fwdPropagateIsReplicaEqual(const AliasModel &aliasModel,
+                             const ReplEqInputMap &inputMap,
+                             ReplicaEqualAnalysisProxy &proxy) const override;
+
   void growAliasModel(AliasModel &m) const override { growAliasModelMulti(m); }
 
   void appendOutlineAttributes(OpSerialiserBase &) const override;

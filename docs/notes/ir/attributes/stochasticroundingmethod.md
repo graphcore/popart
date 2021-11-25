@@ -47,7 +47,7 @@ sync' (i.e. be guaranteed to be identical) we rely on the following invariant:
   the Op has completed.**
 
   A typically sufficient (but not necessary) condition is that all input tensors
-  of the Op have the same value across replicas. 
+  of the Op have the same value across replicas.
 
 ## IR Assumptions
 
@@ -64,20 +64,16 @@ on the PopART IR:
    `StochasticRoundingMethod::IdenticalSeeds` maintain [the
    invariant](#identicalseeds-invariant).
 
-## Transformations
+> **NOTE:** This assumption is verified by
+> `StochasticRoundingAssumptionVerifier` at the end of `Ir::prepareIr` (but not
+> currently checked for `popart.ir` IRs).
 
-This section details the transforms involved with stochastic rounding:
+## Associated transformations
 
-* The `StochasticRounding` transform runs as the last transform in
-  `Ir::prepareImpl` and is responsible for assigning `stochasticRoundingMethod`
-  attributes in a way that is compatble with the [assumptions](#ir-assumptions)
-  outlined above.
-
-  NOTE: In it's current incarnation the `StochasticRounding` transform does not
-  meet the second assumption. This will be accomplished by T44321. Note that we
-  currently assign each Op to use `IdenticalSeeds` to preserve existing
-  behaviour, which may violates assumption 2. for Ops that change the RNG state
-  in a way that depends on the input data (see `prng_test` and T46218).
+The `StochasticRounding` transform is responsible for assigning
+`stochasticRoundingMethod` attributes in a way that is compatble with the
+[assumptions](#ir-assumptions) outlined above. See
+[stochasticrounding.md](../../transforms/stochasticrounding.md) for details.
 
 ## Lowering stochastic rounding logic
 

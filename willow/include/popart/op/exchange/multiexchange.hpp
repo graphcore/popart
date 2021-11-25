@@ -27,6 +27,11 @@ public:
   view::RegMap fwdRegMap(InIndex, OutIndex) const final;
   view::RegMap bwdRegMap(InIndex, OutIndex) const final;
 
+  virtual std::tuple<ReplEqOutputMap, ReplEqModifiedInputMap>
+  fwdPropagateIsReplicaEqual(const AliasModel &aliasModel,
+                             const ReplEqInputMap &inputMap,
+                             ReplicaEqualAnalysisProxy &proxy) const override;
+
   void appendOutlineAttributes(OpSerialiserBase &) const override;
 
   int numLoads() const;
@@ -63,7 +68,26 @@ public:
   int getNumExchanges() const final { return descriptors.size(); }
   ExchangeDescriptor getExchangeDescriptor(int index) const final;
 
+  /**
+   * Map input index to a tuple of integers `(a,b)` that corresponds to the
+   * input associated with `index`. That is, the `b`th input of
+   * `getExchangeDescriptor(a)` corresponds to the input at `index`.
+   *
+   * \param index the input index to look up.
+   * \return a pair of integers comprising the index of the descriptor and the
+   * index of the input associated with the input within the descriptor.
+   **/
   std::pair<int, int> inIndexToDescriptorIndex(InIndex index) const;
+
+  /**
+   * Map output index to a tuple of integers `(a,b)` that corresponds to the
+   * output associated with `index`. That is, the `b`th output of
+   * `getExchangeDescriptor(a)` corresponds to the output at `index`.
+   *
+   * \param index the output index to look up.
+   * \return a pair of integers comprising the index of the descriptor and the
+   * index of the output associated with the output within the descriptor.
+   **/
   std::pair<int, int> outIndexToDescriptorIndex(OutIndex index) const;
 
   std::vector<InIndex> descriptorIndexToInIndices(int index) const;

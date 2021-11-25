@@ -64,6 +64,8 @@ using OpVersion = unsigned;
 /// Label put on a operator to distinguish it from the others in the graph.
 using OpId         = int;
 using ReturnPeriod = int;
+/// The index of a replica.
+using ReplicaIndex = int;
 /// The index of a subgraph for an Op.
 using SubgraphIndex = int;
 /// The index of the subgraph part.
@@ -200,6 +202,21 @@ using OnnxTensors    = std::map<TensorId, ONNX_NAMESPACE::TensorProto>;
 using Node           = ONNX_NAMESPACE::NodeProto;
 using OnnxTensorPtrs = std::map<TensorId, const ONNX_NAMESPACE::TensorProto *>;
 using OpsBeforeKey   = std::map<Op *, std::vector<Op *>, POpCmp>;
+
+// Value representing if a tensor is equal across replica.
+using IsReplicaEqual = bool;
+// Mapping from input indices to replica-equal values.
+using ReplEqInputMap = std::map<InIndex, IsReplicaEqual>;
+// Mapping from ouput indices to replica-equal values.
+using ReplEqOutputMap = std::map<InIndex, IsReplicaEqual>;
+// Mapping from  of inputs that were modified to a value.
+using ReplEqModifiedInputMap = ReplEqInputMap;
+// Function with signature akin to Op::fwdPropagateIsReplicaEqual.
+using ReplEqFun =
+    std::function<std::tuple<ReplEqOutputMap, ReplEqModifiedInputMap>(
+        const ReplEqInputMap &)>;
+// Function that gives the ReplEqFun for a graph.
+using ReplEqGraphFuns = std::function<ReplEqFun(const Graph *)>;
 
 // Custom node attribute names
 static constexpr const char *sVirtualGraphAttribute     = "__ipu_number";
