@@ -68,7 +68,7 @@ int main(int argc, char **argv) {
   std::vector<std::string> dotStrings;
 
   // Currently only the FINAL .dot file. Append others here as required.
-  session_opts.dotChecks.insert(DotCheck::Final);
+  session_opts.dotChecks.insert("Final");
 
   session_opts.logDir = opts.outputDir();
 

@@ -204,9 +204,9 @@ BOOST_AUTO_TEST_CASE(Inplace_numericsIpNip1) {
     auto dataFlow = DataFlow(1, {{finalSum, art}});
 
     auto opts = SessionOptions();
-    // opts.dotChecks.insert(DotCheck::BWD0);
-    // opts.dotChecks.insert(DotCheck::Fwd0);
-    // opts.dotChecks.insert(DotCheck::FINAL);
+    // opts.dotChecks.insert("Bwd0");
+    // opts.dotChecks.insert("Fwd0");
+    // opts.dotChecks.insert("Final");
     // opts.dotOpNames      = false;
     // opts.logDir          = "./dotfiles";
     // if (!boost::filesystem::exists(opts.logDir)) {

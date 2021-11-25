@@ -96,7 +96,7 @@ def test_manual_serialization():
     userOptions = popart.SessionOptions()
 
     # To obtain the final dot graph, uncomment this:
-    # userOptions.dotChecks = {popart.DotCheck.FINAL}
+    # userOptions.dotChecks = {"Final"};
 
     patterns = popart.Patterns()
 

@@ -354,7 +354,7 @@ public:
   OpId getFinalLossOpId() const;
   // if check is in userOptions.dotChecks, then write the .dot file
   // in userOptions.logDir
-  void dotCheckpoint(DotCheck check) const;
+  void dotCheckpoint(const Ir &ir, std::string check) const;
 
   /**
    * \returns const reference to the Onnx model.

@@ -57,20 +57,34 @@ Generating DOT files
 POPART_DOT_CHECKS
 ~~~~~~~~~~~~~~~~~~
 
-PopART can output a graphical representation of the graph, in DOT format, when it
-constructs the intermediate representation (IR). The stages of IR construction
-where the DOT files is generated is controlled by this variable.
+PopART can output a graphical representation of the graph, in DOT format.
+This variable controls what DOT files which will be created.
+For a DOT file to be created the variable must either match the ``check``
+variable of a ``dotCheckpoint`` call in the code, or ``POPART_DOT_CHECKS``
+must be set to ALL.
+In the latter case a DOT file will be created for all ``dotCheckpoint``s in
+the code.
 
-Supported values:
+The following ``check`` values are already present when preparing the IR with the traditional API:
 
 - FWD0
 - FWD1
 - BWD0
 - PREALIAS
 - FINAL
-- ALL
 
-These values may be combined using ":" as a separator.
+If using the ``popart.ir`` API, only FINAL will be present.
+However, the user can add a ``dot_checkpoint`` using any ``check`` name anywhere during the creation of the model.
+The following example shows how the user can add checkpoints after ops:
+
+.. code-block:: python
+
+  c = ops.add(a, b)
+  ir.dot_checkpoint("ADD1")
+  d = ops.mul(a, c)
+  ir.dot_checkpoint("MULTIPLY")
+
+The ``POPART_DOT_CHECKS`` may be combined using ":" as a separator.
 The example below shows how to set ``POPART_DOT_CHECKS`` to export
 DOT graphs for the FWD0 and FINAL stages.
 
@@ -80,6 +94,8 @@ DOT graphs for the FWD0 and FINAL stages.
 
 The values in ``POPART_DOT_CHECKS`` will be combined with any values
 that are defined in the session options.
+
+
 
 Inspecting the Ir
 -----------------
