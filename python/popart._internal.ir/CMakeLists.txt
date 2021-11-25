@@ -132,6 +132,10 @@ add_custom_command(
 # A corresponding target to the command above.
 add_custom_target(popart_op_bindings ALL DEPENDS ${op_bindings})
 
+# Turn off LTO as otherwise it causes a long single threaded build target compiling popart.
+# see https://pybind11.readthedocs.io/en/stable/compiling.html#pybind11-add-module
+set(CMAKE_INTERPROCEDURAL_OPTIMIZATION OFF)
+
 # Python bindings for the PopART IR.
 # ------------------------------------------------------------------------------
 add_popart_python_module(
@@ -204,3 +208,5 @@ install(
   DESTINATION "${INSTALL_PYDIR}/popart/_internal/ir/"
   RENAME "__init__.pyi"
   OPTIONAL)
+
+set(CMAKE_INTERPROCEDURAL_OPTIMIZATION ON)
