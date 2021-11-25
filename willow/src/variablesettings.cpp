@@ -119,12 +119,6 @@ unsigned VariableSettings::getGroupRepresentative(unsigned group) {
 }
 
 void VariableSettings::verify() {
-  logging::debug("Verifying VariableSettings: (CommGroup=(.type={}, .size={}), "
-                 "VariableRetrievalMode={})",
-                 sharedVariableDomain.type,
-                 sharedVariableDomain.replicaGroupSize,
-                 retrievalMode);
-
   int throw_error = 0;
   auto type       = static_cast<int64_t>(sharedVariableDomain.type);
 
