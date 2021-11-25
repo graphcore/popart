@@ -8,6 +8,10 @@ import torch
 
 from op_tester import op_tester
 
+# The poplar groups are strided, but the pytorch are not so the output and
+# and gradient tensors are different.
+
+
 def test_groupnorm_0(op_tester):
 
     epsilon = 1e-05
@@ -321,7 +325,7 @@ def test_groupnorm_4(op_tester):
     op_tester.atol = 1e-6
     op_tester.rtol = 1e-3
 
-    op_tester.options.groupNormStridedChannelGrouping = False
+    op_tester.options.groupNormStridedChannelGrouping = True
 
     op_tester.setPatterns(['PreUniRepl', 'ReciprocalGradOp'],
                           enableRuntimeAsserts=False)
@@ -346,6 +350,24 @@ def refGroupNormFwd(inputs,
     num_channels = inputs.shape[feature_index]
     group_size = num_channels // groups
     original_shape = inputs.shape
+
+    # Implementation detail - in Poplibs group norm, the groups are not
+    # contiguous, but strided - we replicate that here
+    # Move the channels to the first dimension for inputs, gamma and beta
+    inputs = np.swapaxes(inputs, 0, feature_index)
+
+    reshuffled_inputs = np.empty(inputs.shape, inputs.dtype)
+    reshuffled_gamma = np.empty(gamma.shape, gamma.dtype)
+    reshuffled_beta = np.empty(beta.shape, beta.dtype)
+
+    for from_idx in range(num_channels):
+        to_idx = (from_idx % groups) * group_size + from_idx // groups
+        reshuffled_inputs[to_idx] = inputs[from_idx]
+        reshuffled_gamma[to_idx] = gamma[from_idx]
+        reshuffled_beta[to_idx] = beta[from_idx]
+    inputs = np.swapaxes(reshuffled_inputs, 0, feature_index)
+    gamma = reshuffled_gamma
+    beta = reshuffled_beta
 
     if feature_index == 1:
         N, C, H, W = inputs.shape
@@ -381,8 +403,15 @@ def refGroupNormFwd(inputs,
     input_whitened = np.reshape(input_whitened, original_shape)
     output = input_whitened * gamma + beta
 
+    # Undo the shuffle.
+    output = np.swapaxes(output, 0, feature_index)
+
+    reshuffled_output = np.empty(output.shape, output.dtype)
+    for to_idx in range(num_channels):
+        from_idx = (to_idx % groups) * group_size + to_idx // groups
+        reshuffled_output[to_idx] = output[from_idx]
     inv_std_dev = np.power(variance + epsilon, -0.5)
-    return (output,
+    return (np.swapaxes(reshuffled_output, 0, feature_index),
             np.reshape(np.squeeze(mean), (mean.size)),
             np.reshape(np.squeeze(inv_std_dev), (inv_std_dev.size)))
 
