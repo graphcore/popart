@@ -404,6 +404,14 @@ public:
 
   std::vector<Op *> getAllOps() const;
 
+  /**
+   * Returns the Op if it exists in any graph.
+   * Throws an error if the Op could not be found.
+   * \param opId The unique ID of the Op to find
+   * \return     The Op pointer if found
+   */
+  Op *getOp(OpId opId) const;
+
   Tensors &getMainGraphTensors();
   const Tensors &getMainGraphTensors() const;
 

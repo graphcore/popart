@@ -117,6 +117,14 @@ Op *Graph::getOp(OpId opId) const {
   return found->second.get();
 }
 
+Op *Graph::getOpUnsafe(OpId opId) const {
+  auto found = ops.find(opId);
+  if (found == ops.end()) {
+    return nullptr;
+  }
+  return found->second.get();
+}
+
 const Tensors &Graph::getTensors() const { return *(up_tensors.get()); }
 
 Tensors &Graph::getTensors() { return *(up_tensors.get()); }
