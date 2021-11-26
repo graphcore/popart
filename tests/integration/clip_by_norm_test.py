@@ -470,7 +470,8 @@ def test_serialized_matmul(optimizerType):
         assert np.allclose(r1[key], r2[key])
 
 
-def test_clipping_all_weights():
+@pytest.mark.parametrize("optimizerType", allOptimizerTypes)
+def test_clipping_all_weights(optimizerType):
     input_channels = 6
     np.random.seed(0)
 
@@ -510,8 +511,8 @@ def test_clipping_all_weights():
     opts = popart.SessionOptions()
     opts.reportOptions = {"showExecutionSteps": "true"}
 
-    optimizer = popart.SGD({"defaultLearningRate": (0.1, True)},
-                           [popart.ClipNormSettings.clipAllWeights(0.1)])
+    optimizer = _get_popart_optimizer(
+        optimizerType, [popart.ClipNormSettings.clipAllWeights(0.1)])
 
     session = popart.TrainingSession(
         fnModel=proto,

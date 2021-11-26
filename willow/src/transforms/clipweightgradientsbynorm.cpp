@@ -32,7 +32,7 @@ namespace {
 
 struct GradientInfo {
   Tensor *gradToClip;
-  Op *clippedGradientConsumer;
+  std::vector<Op *> clippedGradientConsumers;
 
   GradientInfo()                     = default;
   GradientInfo(const GradientInfo &) = default;
@@ -41,9 +41,10 @@ struct GradientInfo {
   GradientInfo &operator=(GradientInfo &&) = default;
   ~GradientInfo()                          = default;
 
-  explicit GradientInfo(Tensor *gradToClip, Op *clippedGradientConsumer)
+  explicit GradientInfo(Tensor *gradToClip,
+                        std::vector<Op *> clippedGradientConsumers)
       : gradToClip(gradToClip),
-        clippedGradientConsumer(clippedGradientConsumer) {}
+        clippedGradientConsumers(clippedGradientConsumers) {}
 };
 
 // Helper method for creating new ops.
@@ -246,7 +247,7 @@ Tensor *createGlobalNorm(int clipGroupIndex,
 }
 
 void addClipByNorm(Tensor *grad,
-                   Op *gradientOp,
+                   const std::vector<Op *> &clippedGradientConsumers,
                    Tensor *clipFactor,
                    Graph &graph) {
   auto &ir = graph.getIr();
@@ -282,10 +283,12 @@ void addClipByNorm(Tensor *grad,
   }
   logging::debug("{}", ss.str());
 
-  auto indices = gradientOp->input->indices(grad);
-  for (auto idx : indices) {
-    gradientOp->disconnectInTensor(idx);
-    gradientOp->connectInTensor(idx, mulOp->outId(MulOp::getOutIndex()));
+  for (auto gradientOp : clippedGradientConsumers) {
+    auto indices = gradientOp->input->indices(grad);
+    for (auto idx : indices) {
+      gradientOp->disconnectInTensor(idx);
+      gradientOp->connectInTensor(idx, mulOp->outId(MulOp::getOutIndex()));
+    }
   }
 }
 
@@ -294,7 +297,7 @@ void addClipByNorms(const std::vector<GradientInfo> &gradInfos,
                     Graph &graph) {
   for (const auto &gradInfo : gradInfos) {
     addClipByNorm(gradInfo.gradToClip,
-                  gradInfo.clippedGradientConsumer,
+                  gradInfo.clippedGradientConsumers,
                   clipFactor,
                   graph);
   }
@@ -355,7 +358,7 @@ std::vector<GradientInfo> getGrads(Graph &graph,
     if (op->isConvertibleTo<SGD0VarUpdateOp>() ||
         op->isConvertibleTo<SGD1VarUpdateOp>()) {
       auto grad = op->inTensor(VarUpdateWithUpdaterOp::getUpdaterInIndex());
-      result.emplace_back(grad, op);
+      result.emplace_back(grad, std::vector<Op *>{op});
     } else if (op->isConvertibleTo<AdamVarUpdateOp>()) {
       auto adamUpdater =
           op->inTensor(VarUpdateWithUpdaterOp::getUpdaterInIndex())
@@ -368,8 +371,11 @@ std::vector<GradientInfo> getGrads(Graph &graph,
       if (!accl1->isConvertibleTo<AccumulateOp>()) {
         throw internal_error("These should be AccumulateOps.");
       }
+      auto accl2 = adamUpdater->inTensor(AdamUpdaterOp::getAccl2InIndex())
+                       ->getProducer();
+
       auto grad = accl1->inTensor(AccumulateOp::getUpdaterInIndex());
-      result.emplace_back(grad, accl1);
+      result.emplace_back(grad, std::vector<Op *>{accl1, accl2});
     } else {
       throw internal_error("Unable to handle op {}", op->str());
     }
