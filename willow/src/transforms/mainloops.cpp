@@ -550,20 +550,14 @@ void MainLoops::setupAnchors(Graph &graph,
         oldId  = currId;
         currId = addScope(outerGraph, accumIn);
         outerLoop->addLoopInput(
-            outerLoop->subgraphInToOpInIndex(LoopOp::getFirstInputInIndex()),
-            oldId,
-            currId,
-            false);
+            LoopOp::getFirstInputInIndex(), oldId, currId, false);
       }
 
       if (innerLoop) {
         oldId  = currId;
         currId = addScope(innerGraph, accumIn);
         innerLoop->addLoopInput(
-            innerLoop->subgraphInToOpInIndex(LoopOp::getFirstInputInIndex()),
-            oldId,
-            currId,
-            false);
+            LoopOp::getFirstInputInIndex(), oldId, currId, false);
       }
 
       oldId  = currId;
@@ -584,22 +578,16 @@ void MainLoops::setupAnchors(Graph &graph,
       if (innerLoop && outerLoop) {
         oldId  = currId;
         currId = addScope(outerGraph, accumOut);
-        innerLoop->addLoopOutput(innerLoop->subgraphOutToOpOutIndex(
-                                     LoopOp::getFirstOutputOutIndex()),
-                                 currId,
-                                 oldId,
-                                 false);
+        innerLoop->addLoopOutput(
+            LoopOp::getFirstOutputOutIndex(), currId, oldId, false);
       }
 
       if (innerLoop || outerLoop) {
         oldId             = currId;
         currId            = addScope(mainGraph, accumOut);
         auto existingLoop = outerLoop ? outerLoop : innerLoop;
-        existingLoop->addLoopOutput(existingLoop->subgraphOutToOpOutIndex(
-                                        LoopOp::getFirstOutputOutIndex()),
-                                    currId,
-                                    oldId,
-                                    false);
+        existingLoop->addLoopOutput(
+            LoopOp::getFirstOutputOutIndex(), currId, oldId, false);
       } else {
         throw internal_error(
             "Attempting to setup AnchorReturnType::Sum for anchor `{}`, but "

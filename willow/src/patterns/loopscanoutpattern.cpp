@@ -71,7 +71,7 @@ bool LoopScanOutPattern::apply(Op *op) const {
           newLoopSubgraph.getOutputIds().at(loopScanSgOutIdx);
       Tensor *loopScanSgOut = newLoopSubgraph.getTensors().get(loopScanSgOutId);
       TensorId loopSgItId   = newLoopSubgraph.getInputIds().at(
-          loopOp->opInToSubgraphInIndex(LoopOp::getMaximumTripCountInIndex()));
+          LoopOp::getLoopGraphIterationInIndex());
 
       TensorId initId          = ir.createIntermediateTensorId(loopScanOutId);
       TensorId loopSgInitId    = addScope(newLoopSubgraph, initId);

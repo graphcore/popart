@@ -1987,8 +1987,7 @@ ExplicitPipelineHelper::modifyInputAndOutputInInnerLoop(
       // Add the tensor which is an output of the copy operator as the input for
       // the next iteration
       pipelineMainLoop->addLoopInput(
-          pipelineMainLoop->subgraphInToOpInIndex(
-              LoopOp::getFirstInputInIndex()),
+          LoopOp::getFirstInputInIndex(),
           lastOriginalAndClonedTensorId.at(outTensor->id),
           loopInId,
           false);
@@ -1998,11 +1997,8 @@ ExplicitPipelineHelper::modifyInputAndOutputInInnerLoop(
       // The output in this pipeline stage in the main loop will be connected to
       // the next pipeline stage in the flush stage, thus we add 1 to pStage
       tensorIdsToFlushStage[{pStage + 1, outTensor->id}] = loopOutId;
-      pipelineMainLoop->addLoopOutput(pipelineMainLoop->subgraphOutToOpOutIndex(
-                                          LoopOp::getFirstOutputOutIndex()),
-                                      loopOutId,
-                                      outTensor->id,
-                                      false);
+      pipelineMainLoop->addLoopOutput(
+          LoopOp::getFirstOutputOutIndex(), loopOutId, outTensor->id, false);
 
       // Disconnect the input tensor (which is the output tensor of the copy op)
       // of the ops consuming the output tensor The data in the tensor will be

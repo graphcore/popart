@@ -386,10 +386,9 @@ void LoopOpx::grow(snap::program::Sequence &prog) const {
   copyBodyOutputsToExplicitBodyInputs(loopContinueProg);
 
   // 9: Copy iterator to body input
-  auto bodyInputTensor =
-      get(op.getCalledGraph().getInputId(
-              op.opInToSubgraphInIndex(LoopOp::getMaximumTripCountInIndex())))
-          .getPoplarTensor();
+  auto bodyInputTensor = get(op.getCalledGraph().getInputId(
+                                 LoopOp::getLoopGraphIterationInIndex()))
+                             .getPoplarTensor();
   poplar::program::Copy copyProg(
       iteratorTensor, bodyInputTensor, false, debugContext());
   loopContinueProg.getPoplarSequence().add(copyProg);

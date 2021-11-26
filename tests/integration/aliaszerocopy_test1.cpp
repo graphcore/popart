@@ -73,7 +73,7 @@ BOOST_AUTO_TEST_CASE(AliasZeroCopyLoopTest0) {
   Op *addOp = addOpUp.get();
   subgraph.moveIntoGraph(std::move(addOpUp));
 
-  loopOp->addLoopInput(LoopOp::getFirstInputInIndex(), taId, staId, false);
+  loopOp->addLoopInput(LoopOp::getFirstInputInIndex() + 0, taId, staId, false);
   loopOp->addLoopInput(LoopOp::getFirstInputInIndex() + 1, tbId, stbId, false);
 
   addOp->connectInTensor(AddOp::getArg0InIndex(), stbId);
@@ -81,8 +81,10 @@ BOOST_AUTO_TEST_CASE(AliasZeroCopyLoopTest0) {
   addOp->createAndConnectOutTensor(AddOp::getOutIndex(), stdId);
   addOp->setup();
 
-  loopOp->addLoopOutput(0, tcId, staId, false);
-  loopOp->addLoopOutput(1, tdId, stdId, false);
+  loopOp->addLoopOutput(
+      LoopOp::getFirstOutputOutIndex() + 0, tcId, staId, false);
+  loopOp->addLoopOutput(
+      LoopOp::getFirstOutputOutIndex() + 1, tdId, stdId, false);
   loopOp->setup();
 
   graph.markAsOutput(tdId);

@@ -225,11 +225,11 @@ CallbackIO setupCallbackInputs(PackedDataBlockOp *op, const TensorId resultId) {
   // condition.
   inputInfo.loopIteration = addScope(graph, "loopIndex");
   inputInfo.loopCondition = addScope(graph, "loopCondition");
-  graph.addInput(LoopOp::getLoopIterationInIndex(),
+  graph.addInput(LoopOp::getLoopGraphIterationInIndex(),
                  inputInfo.loopIteration,
                  {DataType::INT32, {}},
                  false);
-  graph.addInput(LoopOp::getTerminationConditionInIndex(),
+  graph.addInput(LoopOp::getLoopGraphTerminationConditionInIndex(),
                  inputInfo.loopCondition,
                  {DataType::BOOL, {}},
                  false);
@@ -238,8 +238,10 @@ CallbackIO setupCallbackInputs(PackedDataBlockOp *op, const TensorId resultId) {
   // inputs.
   auto &resultInfo    = op->outInfo(0);
   auto scopedResultId = addScope(graph, resultId);
-  graph.addInput(
-      LoopOp::getFirstInputInIndex(), scopedResultId, resultInfo, false);
+  graph.addInput(LoopOp::getLoopGraphFirstInputInIndex(),
+                 scopedResultId,
+                 resultInfo,
+                 false);
 
   // Inputs should only be added once. The inputs and result may share lengths
   // and offsets.

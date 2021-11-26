@@ -289,8 +289,8 @@ RandomSetup::determineSeedIndexMaps(const Ir &ir) const {
   GraphToInIndex inIndices;
   GraphToOutIndex outIndices;
 
-  const int loopFirstInput  = LoopOp::getFirstInputInIndex();
-  const int loopFirstOutput = LoopOp::getFirstOutputOutIndex();
+  const int loopFirstInput  = LoopOp::getLoopGraphFirstInputInIndex();
+  const int loopFirstOutput = LoopOp::getLoopGraphFirstOutputOutIndex();
 
   for (const auto &graph : ir.getAllGraphs()) {
     // Work out a suitable place to put the input index for a base seed input
@@ -635,8 +635,12 @@ void RandomSetup::connectOp(Graph &graph,
   } else if (auto callOp = dynamic_cast<CallOp *>(op)) {
     connectSubgraphOp(graph, cfg, opSeeds, callOp, 0, 0);
   } else if (auto loopOp = dynamic_cast<LoopOp *>(op)) {
-    connectSubgraphOp(
-        graph, cfg, opSeeds, loopOp, 0, LoopOp::getFirstOutputOutIndex());
+    connectSubgraphOp(graph,
+                      cfg,
+                      opSeeds,
+                      loopOp,
+                      0,
+                      LoopOp::getLoopGraphFirstOutputOutIndex());
   } else {
     throw internal_error("[RandomSetup] Random behaviour that requires "
                          "instrumentation of {} ops is currently not "

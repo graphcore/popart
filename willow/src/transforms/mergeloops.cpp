@@ -582,10 +582,10 @@ void MergeLoops::prunePaths(LoopOp *loop) const {
   }
 
   // Loop inputs 0: trip count & 1: termination condition can't be pruned
-  front.push_back(sgraph.getTensors().get(sgraph.getInputId(
-      loop->opInToSubgraphInIndex(LoopOp::getMaximumTripCountInIndex()))));
-  front.push_back(sgraph.getTensors().get(sgraph.getInputId(
-      loop->opInToSubgraphInIndex(LoopOp::getTerminationConditionInIndex()))));
+  front.push_back(sgraph.getTensors().get(
+      sgraph.getInputId(LoopOp::getLoopGraphIterationInIndex())));
+  front.push_back(sgraph.getTensors().get(
+      sgraph.getInputId(LoopOp::getLoopGraphTerminationConditionInIndex())));
 
   for (auto &opidAndOp : sgraph.getOps()) {
     if (opidAndOp.second->hasSideEffect()) {

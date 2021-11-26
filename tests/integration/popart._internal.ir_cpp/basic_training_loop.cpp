@@ -230,7 +230,8 @@ BOOST_AUTO_TEST_CASE(TestBasicTrainingLoop) {
         OptimizerValue{-lr},
         loopSettings.copy("Accumulate"));
 
-    loopOp->addLoopOutput(0, weightsOut, loopWeightsOut, false);
+    loopOp->addLoopOutput(
+        LoopOp::getFirstOutputOutIndex(), weightsOut, loopWeightsOut, false);
     loopOp->setup();
 
     // Transfer modified inputs. This allows changes to loopWeights in the

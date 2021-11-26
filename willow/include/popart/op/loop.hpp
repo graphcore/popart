@@ -97,20 +97,62 @@ public:
   getIntrospectionOutVirtualGraphId(OutIndex,
                                     std::set<OpId> &visited) const override;
 
-  // The input specifying the maximum number of loop iterations
+  /**
+   * Indexing on the LoopOp
+   * \return The LoopOp input index for the maximum number of loop iterations
+   */
   static InIndex getMaximumTripCountInIndex() { return 0; }
 
-  // The loop body graph input specifying the current loop iteration
-  static InIndex getLoopIterationInIndex() { return 0; }
-
-  // Termination condition: if true, loop keeps going, if false, loop stops
+  /**
+   * Indexing on the LoopOp
+   * \return The LoopOp input index specifying the termination condition status
+   */
   static InIndex getTerminationConditionInIndex() { return 1; }
 
-  // The first regular, user-defined loop input
+  /**
+   * Indexing on the LoopOp
+   * \return The first regular, user-defined LoopOp input index
+   */
   static InIndex getFirstInputInIndex() { return 2; }
 
-  // The first regular, user-defined loop output
-  static OutIndex getFirstOutputOutIndex() { return 1; }
+  /**
+   * Indexing on the LoopOp
+   * \return The first regular, user-defined LoopOp output index
+   */
+  static OutIndex getFirstOutputOutIndex() { return 0; }
+
+  /**
+   * Indexing on the body graph
+   * \return The loop body graph input index specifying the current loop
+   *         iteration
+   */
+  static InIndex getLoopGraphIterationInIndex() { return 0; }
+
+  /**
+   * Indexing on the body graph
+   * \return The loop body graph input index specifying the current termination
+   *         condition status
+   */
+  static InIndex getLoopGraphTerminationConditionInIndex() { return 1; }
+
+  /**
+   * Indexing on the body graph
+   * \return The first regular, user-defined loop body graph input index
+   */
+  static InIndex getLoopGraphFirstInputInIndex() { return 2; }
+
+  /**
+   * Indexing on the body graph
+   * \return The loop body graph output index for the termination condition
+   *         status after the loop body graph has run
+   */
+  static OutIndex getLoopGraphTerminationConditionOutIndex() { return 0; }
+
+  /**
+   * Indexing on the body graph
+   * \return The first regular, user-defined loop body graph output index
+   */
+  static OutIndex getLoopGraphFirstOutputOutIndex() { return 1; }
 
   /**
    * Add a variadic input to the loop operator.

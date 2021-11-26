@@ -244,6 +244,13 @@ void Graph::markAsOutput(const OutIndex &index,
     }
     graph_outputs.at(index) = tensorId;
   } else {
+    if (graph_outputs.size() < index) {
+      throw error("[Graph::markAsOutput] Cannot insert at index {} because "
+                  "only {} outputs exist ({}).",
+                  index,
+                  graph_outputs.size(),
+                  graph_outputs);
+    }
     graph_outputs.insert(graph_outputs.begin() + index, tensorId);
   }
 }

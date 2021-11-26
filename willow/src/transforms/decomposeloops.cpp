@@ -632,8 +632,10 @@ void DecomposeLoops::decomposeLoop(Graph &graph,
                                      opTensorIdInNext,
                                      sgTensorIdOut,
                                      false);
-                loopOp->addLoopOutput(
-                    0, opTensorIdOutNext, sgTensorIdOutNext, false);
+                loopOp->addLoopOutput(LoopOp::getFirstOutputOutIndex(),
+                                      opTensorIdOutNext,
+                                      sgTensorIdOutNext,
+                                      false);
 
                 loopTensorIterMap[{input.second->id, apparentIteration + 1}] =
                     sgTensorIdOut;
@@ -654,7 +656,10 @@ void DecomposeLoops::decomposeLoop(Graph &graph,
                                opTensorIdIn,
                                sgTensorIdIn,
                                false);
-          loopOp->addLoopOutput(0, opTensorIdOut, sgTensorIdOut, false);
+          loopOp->addLoopOutput(LoopOp::getFirstOutputOutIndex(),
+                                opTensorIdOut,
+                                sgTensorIdOut,
+                                false);
 
           loopTensorIterMap[{input.second->id, apparentIteration}] =
               sgTensorIdIn;
