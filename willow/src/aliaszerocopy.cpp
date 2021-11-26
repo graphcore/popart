@@ -191,20 +191,19 @@ void AliasZeroCopy::apply() {
     }
   }
 
+  // TODO(T51075): Revisit allowing aliasing between InitOp outputs.
   // Init tensor aliasing
-  std::map<int64_t, std::set<Tensor *, PTensorCmp>, std::greater<int64_t>>
-      initCandidates;
-
-  for (Op *op : ir->getAllOps()) {
-    if (dynamic_cast<InitOp *>(op)) {
-      Tensor *init = op->output->tensor(InitOp::getOutIndex());
-      initCandidates[init->info.nelms()].insert(init);
-    }
-  }
-
-  for (auto &cacheCandidate : initCandidates) {
-    processTensorAliasGroups(cacheCandidate.second);
-  }
+  // std::map<int64_t, std::set<Tensor *, PTensorCmp>, std::greater<int64_t>>
+  //     initCandidates;
+  // for (Op *op : ir->getAllOps()) {
+  //   if (dynamic_cast<InitOp *>(op)) {
+  //     Tensor *init = op->output->tensor(InitOp::getOutIndex());
+  //     initCandidates[init->info.nelms()].insert(init);
+  //   }
+  // }
+  // for (auto &cacheCandidate : initCandidates) {
+  //   processTensorAliasGroups(cacheCandidate.second);
+  // }
 
   // Graph input/output aliasing
   for (auto &priorityEntry : graphIOPriorityMap) {
