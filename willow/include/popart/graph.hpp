@@ -54,22 +54,7 @@ public:
   // Obtain counts for each vitual graphs Id used across ops
   const std::map<int64_t, int> getVirtualGraphCounts() const;
 
-  /**
-   * Return a pointer to the Op if it exists.
-   * Throws an error if the Op could not be found.
-   * \sa getOpUnsafe
-   * \param opId The unique ID of the Op to find
-   * \return     The Op pointer if found
-   */
   Op *getOp(OpId opId) const;
-
-  /**
-   * Returns a pointer to the Op if it exists, or nullptr otherwise.
-   * \sa getOp
-   * \param opId The unique ID of the Op to find
-   * \return     The Op pointer if found, or nullptr otherwise
-   */
-  Op *getOpUnsafe(OpId opId) const;
 
   const Tensors &getTensors() const;
   Tensors &getTensors();

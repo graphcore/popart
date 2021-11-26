@@ -3849,17 +3849,6 @@ std::vector<Op *> Ir::getAllOps() const {
   return ops;
 }
 
-Op *Ir::getOp(OpId opId) const {
-  for (auto graph : getAllGraphs()) {
-    // This works because opId is unique in the whole IR
-    auto op = graph->getOpUnsafe(opId);
-    if (op != nullptr) {
-      return op;
-    }
-  }
-  throw error("[Ir::getOp] Op {} not in IR.", opId);
-}
-
 Tensors &Ir::getMainGraphTensors() { return getMainGraph().getTensors(); }
 
 const Tensors &Ir::getMainGraphTensors() const {

@@ -7,7 +7,6 @@
 #include <popart/op/identity.hpp>
 #include <popart/op/mean.hpp>
 #include <popart/op/sum.hpp>
-#include <popart/opattributehelper.hpp>
 #include <popart/opdebuginfo.hpp>
 #include <popart/opmanager.hpp>
 #include <popart/opserialiser.hpp>
@@ -875,7 +874,280 @@ PipelineStage Op::getPipelineStage() const {
 
 void Op::inheritPlacementAttributes(bool inheritSerializations,
                                     AliasModel &aliasModel) {
-  InheritOpAttributeHelper::apply(this, inheritSerializations, aliasModel);
+  const Ir &ir = getGraph().getIr();
+
+  enum ConnectedOpRelation {
+    // The op from which to inherit is a producer of an input to this op
+    Producer = 0,
+    // The op from which to inherit is a consumer of an output to this op
+    Consumer
+  };
+
+  auto getOpVGID = [](Op *op, ConnectedOpRelation rel) {
+    OptionalVGraphId vgid;
+    if (op->isIpuCopyOp()) {
+      IpuCopyOp *copyOp = dynamic_cast<IpuCopyOp *>(op);
+      // If the lhsOp is a producer to the current op, the DestIpu is relevant
+      // otherwise, the source IPU is relevant
+      vgid = rel == ConnectedOpRelation::Producer ? copyOp->getDestIpu()
+                                                  : copyOp->getSourceIpu();
+    } else {
+      vgid = op->getOptionalVGraphId();
+    }
+    return vgid;
+  };
+
+  auto getOpExecutionPhase = [](Op *op, ConnectedOpRelation rel) {
+    OptionalExecutionPhase phase;
+    if (op->isIpuCopyOp()) {
+      IpuCopyOp *copyOp = dynamic_cast<IpuCopyOp *>(op);
+      if (copyOp->getSourceIpu() % 2 != copyOp->getDestIpu() % 2 &&
+          rel == ConnectedOpRelation::Producer && op->hasExecutionPhase()) {
+        // Inter-phase copy: Destination phase
+        phase = op->getExecutionPhase() + 1;
+        return phase;
+      }
+    }
+    phase = op->getOptionalExecutionPhase();
+    return phase;
+  };
+
+  OptionalVGraphId requiredVgid;
+  std::vector<std::pair<Op *, ConnectedOpRelation>> connectedOps;
+
+  // Scan if the current operation modifies any weights. This modification
+  // may occur through an inplace aliasing of the weight, e.g. with MatMul
+  // serialization, therefore we have to search through the aliasing chains
+  // to find any directly (or through an alias) modified weights, and ensure
+  // the modifying op is placed on the virtual graph that owns the weight.
+  for (auto inIndexAndTensor : input->tensorMap()) {
+
+    std::set<Tensor *, PTensorCmp> associatedVariableTensors;
+
+    if (inIndexAndTensor.second->tensorType() == TensorType::Variable) {
+      associatedVariableTensors.insert(inIndexAndTensor.second);
+    }
+
+    // Work out aliases of input the input that are variables.
+    Tensor *inputTensor = inIndexAndTensor.second;
+    if (aliasModel.contains(inputTensor->id)) {
+      for (auto &alias : aliasModel.allAliases(*inputTensor)) {
+        if (alias->tensorType() == TensorType::Variable) {
+          associatedVariableTensors.insert(alias);
+          associatedVariableTensors.insert(inIndexAndTensor.second);
+        }
+      }
+    } else {
+      logging::debug(
+          "[Op::inheritPlacementAttributes] Tensor '{}' not modelled "
+          "in provided AliasModel",
+          inputTensor->id);
+      // There are historic code paths that call this function with an alias
+      // model that does not model all tensor inputs of the op (for example: the
+      // gradient inputs in GradGrowerSumOp::growGradSumOp). We therefore don't
+      // currently error when this is the case.
+    }
+
+    for (Tensor *varTensor : associatedVariableTensors) {
+      auto modifiedRegions = modifies(inIndexAndTensor.first);
+
+      bool variableModOrAlias =
+          std::any_of(modifiedRegions.begin(),
+                      modifiedRegions.end(),
+                      [](view::Region &r) { return !r.isEmpty(); });
+
+      for (auto outIndexAndTensor : output->tensorMap()) {
+        auto aliasedRegions =
+            aliases(inIndexAndTensor.first, outIndexAndTensor.first);
+
+        variableModOrAlias |=
+            std::any_of(aliasedRegions.begin(),
+                        aliasedRegions.end(),
+                        [](view::Region &r) { return !r.isEmpty(); });
+      }
+      logging::op::trace("Op {} consumes variable tensor {} ({}), touches: {}",
+                         debugName(),
+                         varTensor->id,
+                         inIndexAndTensor.second->id,
+                         variableModOrAlias ? "yes" : "no");
+      if (variableModOrAlias) {
+        // Variable tensors force the VGID to be such that the weight
+        // is not modified or aliased on any other VGID than the one where
+        // the weight is stored.
+        for (Op *consumer : varTensor->consumers.getOps()) {
+          if (consumer != this && consumer->hasVirtualGraphId()) {
+            for (auto &indices : consumer->input->indicesMap()) {
+              if (indices.first == inIndexAndTensor.second) {
+                auto rvgid =
+                    consumer
+                        ->getIntrospectionInVirtualGraphId(indices.second[0])
+                        .first;
+                if (rvgid != unusedVGraphId) {
+                  if (requiredVgid) {
+                    requiredVgid = std::min(*requiredVgid, rvgid);
+                  } else {
+                    requiredVgid = rvgid;
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  bool pipeline = ir.getSessionOptions().enablePipelining;
+  bool executionphased =
+      ir.getSessionOptions().executionPhaseSettings.phases > 1;
+  bool vgraphs =
+      ir.getSessionOptions().virtualGraphMode != VirtualGraphMode::Off;
+
+  // Sort function to find the Op from which to inherit attributes
+  // Sorting criteria:
+  // - Producers of inputs before consumers of outputs
+  // - Producers in descending order of
+  //    - PipelineStage
+  //    - ExecutionPhase
+  //    - VGID
+  //    - BatchSerializedPhase
+  // - Consumers in ascending order of
+  //    - PipelineStage
+  //    - ExecutionPhase
+  //    - VGID
+  //    - BatchSerializedPhase
+  auto opSorter = [pipeline,
+                   executionphased,
+                   vgraphs,
+                   &getOpVGID,
+                   &getOpExecutionPhase](
+                      const std::pair<Op *, ConnectedOpRelation> &lhs,
+                      const std::pair<Op *, ConnectedOpRelation> &rhs) {
+    Op *lhsOp                  = lhs.first;
+    ConnectedOpRelation lhsRel = lhs.second;
+    bool lhsProducer           = lhsRel != ConnectedOpRelation::Consumer;
+    bool lhsPipeline           = pipeline && lhsOp->hasPipelineStage();
+    bool lhsExecutionphase     = executionphased && lhsOp->hasExecutionPhase();
+    bool lhsVirtual =
+        vgraphs && (lhsOp->hasVirtualGraphId() || lhsOp->isIpuCopyOp());
+    Op *rhsOp                  = rhs.first;
+    ConnectedOpRelation rhsRel = rhs.second;
+    bool rhsProducer           = rhsRel != ConnectedOpRelation::Consumer;
+    bool rhsPipeline           = pipeline && rhsOp->hasPipelineStage();
+    bool rhsExecutionphase     = executionphased && rhsOp->hasExecutionPhase();
+    bool rhsVirtual =
+        vgraphs && (rhsOp->hasVirtualGraphId() || rhsOp->isIpuCopyOp());
+
+    std::tuple<bool,
+               PipelineStage,
+               ExecutionPhase,
+               VGraphId,
+               BatchSerializedPhase,
+               OpId>
+        lhsTuple(
+            lhsProducer,
+            (lhsProducer ? 1 : -1) *
+                (lhsPipeline ? lhsOp->getPipelineStage() : unusedPipelineStage),
+            (lhsProducer ? 1 : -1) * (lhsExecutionphase
+                                          ? *getOpExecutionPhase(lhsOp, lhsRel)
+                                          : unusedExecutionPhase),
+            (lhsProducer ? 1 : -1) *
+                (lhsVirtual ? *getOpVGID(lhsOp, lhsRel) : unusedVGraphId),
+            (lhsProducer ? 1 : -1) * (lhsOp->hasBatchSerializedPhase()
+                                          ? lhsOp->getBatchSerializedPhase()
+                                          : unusedBatchSerializedPhase),
+            lhsOp->id);
+
+    std::tuple<bool,
+               PipelineStage,
+               ExecutionPhase,
+               VGraphId,
+               BatchSerializedPhase,
+               OpId>
+        rhsTuple(
+            rhsProducer,
+            (rhsProducer ? 1 : -1) *
+                (rhsPipeline ? rhsOp->getPipelineStage() : unusedPipelineStage),
+            (rhsProducer ? 1 : -1) * (rhsExecutionphase
+                                          ? *getOpExecutionPhase(rhsOp, rhsRel)
+                                          : unusedExecutionPhase),
+            (rhsProducer ? 1 : -1) *
+                (rhsVirtual ? *getOpVGID(rhsOp, rhsRel) : unusedVGraphId),
+            (rhsProducer ? 1 : -1) * (rhsOp->hasBatchSerializedPhase()
+                                          ? rhsOp->getBatchSerializedPhase()
+                                          : unusedBatchSerializedPhase),
+            rhsOp->id);
+    return lhsTuple > rhsTuple;
+  };
+
+  for (auto inIndexAndTensor : input->tensorMap()) {
+    if (inIndexAndTensor.second->hasProducer()) {
+      connectedOps.emplace_back(inIndexAndTensor.second->getProducer(),
+                                ConnectedOpRelation::Producer);
+    }
+  }
+
+  for (auto outIndexAndTensor : output->tensorMap()) {
+    for (Op *consumer : outIndexAndTensor.second->consumers.getOps()) {
+      connectedOps.emplace_back(consumer, ConnectedOpRelation::Consumer);
+    }
+  }
+
+  bool inherited = false;
+  if (!connectedOps.empty()) {
+    auto connectedOp =
+        *std::min_element(connectedOps.begin(), connectedOps.end(), opSorter);
+    Op *op                  = connectedOp.first;
+    ConnectedOpRelation rel = connectedOp.second;
+
+    settings.executionContext = op->settings.executionContext;
+
+    if (pipeline) {
+      setPipelineStage(op->getOptionalPipelineStage());
+    }
+
+    if (executionphased) {
+      setExecutionPhase(getOpExecutionPhase(op, rel));
+    }
+
+    if (vgraphs && !isIpuCopyOp()) {
+      setVirtualGraphId(getOpVGID(op, rel));
+    }
+
+    if (inheritSerializations) {
+      setBatchSerializedPhase(op->getOptionalBatchSerializedPhase());
+    }
+
+    inherited = true;
+  }
+
+  // If inheritance did not yield the correct VGID, rectify
+  // Example where this happens:
+  //__________________________ phase 0, vgid 0
+  // Var0 ------------ Op
+  //  |                |
+  //__|________________|______ phase 1, vgid 1
+  //  |              OpGrad
+  //  |                |
+  //__|________________|______ phase 2, vgid 0
+  //  `------------ VarUpdate <- will inherit wrong phase and vgid
+  //
+  if (requiredVgid &&
+      (!hasVirtualGraphId() || getVirtualGraphId() != *requiredVgid)) {
+    logging::op::debug("Changing Op {} placement to required VGID: {}",
+                       debugName(),
+                       *requiredVgid);
+    setVirtualGraphId(requiredVgid);
+    if (hasExecutionPhase()) {
+      setExecutionPhase(getExecutionPhase() + 1);
+    }
+    inherited = true;
+  }
+
+  if (!inherited) {
+    logging::op::info("Could not inherit placement attributes to Op {}",
+                      debugName());
+  }
 }
 
 const Shape &Op::inShape(InIndex index) const {

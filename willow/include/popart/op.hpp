@@ -264,7 +264,6 @@ public:
   /**
    * Helper function to set Op's placement attributes by inheriting them from
    * other ops in the graph. Attributes that are set include:
-   * - Execution context
    * - Pipeline stage
    * - Execution phase
    * - Virtual graph ID
