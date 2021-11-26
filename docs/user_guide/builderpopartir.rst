@@ -1,8 +1,5 @@
-Creating a model
-^^^^^^^^^^^^^^^^
-
-Creating a model with ``popart.ir``
-""""""""""""""""""""""""""""""""""""
+Simple example
+^^^^^^^^^^^^^^
 
 To use ``popart.ir`` you first need to import it as a Python package:
 
@@ -43,7 +40,7 @@ Finally, the ``host_store`` streams the result data back from the device to the 
 
 
 Data types
-"""""""""""
+^^^^^^^^^^
 
 Currently, ``popart.ir`` supports the data types listed in :numref:`ir_datatypes_table`.
 These data types are defined in ``popart.ir`` directly and
@@ -53,12 +50,11 @@ if the session option ``enableSupportedDataTypeCasting`` is set to ``True``.
 
 .. include:: popartir_datatype.rst
 
+Tensors
+^^^^^^^
 
-..
-  Variables
-  ^^^^^^^^^
+.. include:: popartir_tensor.rst
 
-  - Explain what variables are and how to add them.
 
 ..
   Adding operations to a graph

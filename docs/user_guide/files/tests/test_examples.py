@@ -74,6 +74,11 @@ class TestPythonDocExamples(ExamplesTester):
         filename = "simple_addition_popart_ir.py"
         self.run_python(filename, self.base_path)
 
+    def test_documentation_popart_ir_addition_variable(self):
+        """Test the popart.ir simple addition example"""
+        filename = "tensor_addition_popart_ir.py"
+        self.run_python(filename, self.base_path)
+
 
 class TestPopartCustomOperatorCube(ExamplesTester):
     """Tests for example of Popart cube custom operator"""
