@@ -516,3 +516,6 @@ Or the op can be referenced from an ONNX file using a `NodeProto
 definition that matches the domain, name and version of the op.
 
 .. TODO: Do we have an example of this?
+
+If you are using PyTorch you can also call this custom op
+`using PopTorch <https://docs.graphcore.ai/projects/poptorch-user-guide/en/latest/overview.html#make-the-op-available-to-pytorch>`_.
