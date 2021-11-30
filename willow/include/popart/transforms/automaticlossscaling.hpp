@@ -211,7 +211,7 @@
 //    LessOp(N)   t0   t1 ...
 //     |         \  /
 //    flag-------IfOp(Sg0, Sg1)
-//               /  \          
+//               /  \
 //             t_k   t_k+1 ...
 //
 // Where Sg0:

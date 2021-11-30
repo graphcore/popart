@@ -10,7 +10,7 @@
 namespace popart {
 
 class Ir;
-class SessionOptions;
+struct SessionOptions;
 
 /**
  *  Helper class to set Op's placement attributes by inheriting them from
@@ -61,7 +61,7 @@ public:
 
     bool operator<(const TraversalTensorInfo &o) const {
       return sortValue() < o.sortValue();
-    };
+    }
   };
 
   /**
@@ -126,7 +126,8 @@ private:
       std::tuple<TraversalTensorInfo, InfoSortPriority, T, OpId>>::iterator
   getBestSetElement(
       std::set<OpId> &preferredOpIds,
-      std::set<std::tuple<TraversalTensorInfo, InfoSortPriority, T, OpId>> set,
+      const std::set<std::tuple<TraversalTensorInfo, InfoSortPriority, T, OpId>>
+          &set,
       bool allowNewOpId);
 
   /**

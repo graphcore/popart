@@ -387,7 +387,8 @@ typename std::set<std::tuple<InheritOpAttributeHelper::TraversalTensorInfo,
                              OpId>>::iterator
 InheritOpAttributeHelper::getBestSetElement(
     std::set<OpId> &preferredOpIds,
-    std::set<std::tuple<TraversalTensorInfo, InfoSortPriority, T, OpId>> set,
+    const std::set<std::tuple<TraversalTensorInfo, InfoSortPriority, T, OpId>>
+        &set,
     bool allowNewOpId) {
 
   auto begin = set.begin();
