@@ -208,8 +208,10 @@ void HostLoadDescriptorx::exchange(snap::Graph &graph,
         rearrangeOnHost);
     auto stream = streams.at(descriptor.getHostStreamTensorId());
 
-    poplar::program::Copy copy_prog(
-        stream, streamTensor.getPoplarTensor(), rearrangeOnHost, context);
+    poplar::program::Copy copy_prog(stream.getPoplarDataStream(),
+                                    streamTensor.getPoplarTensor(),
+                                    rearrangeOnHost,
+                                    context);
     prog.getPoplarSequence().add(copy_prog);
 
   } else {
@@ -301,8 +303,10 @@ void HostStoreDescriptorx::exchange(snap::Graph &graph,
                            nElmsStream);
     }
 
-    poplar::program::Copy copy_prog(
-        streamTensor.getPoplarTensor(), stream, rearrangeOnHost, context);
+    poplar::program::Copy copy_prog(streamTensor.getPoplarTensor(),
+                                    stream.getPoplarDataStream(),
+                                    rearrangeOnHost,
+                                    context);
     prog.getPoplarSequence().add(copy_prog);
 
   } else {

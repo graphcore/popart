@@ -6,7 +6,6 @@
 
 #include <popart/vendored/optional.hpp>
 
-#include <poplar/DataStream.hpp>
 #include <poplar/DeviceManager.hpp>
 #include <poplar/Engine.hpp>
 #include <poplar/IPUModel.hpp>
@@ -14,6 +13,7 @@
 #include <poplin/MatMul.hpp>
 #include <poputil/TileMapping.hpp>
 
+#include <snap/DataStream.hpp>
 #include <snap/Graph.hpp>
 #include <snap/Tensor.hpp>
 
@@ -189,11 +189,11 @@ private:
 
   //  poplar::Streams for snap::Tensors,
   //  1) from host to device;
-  std::map<TensorId, poplar::DataStream> fromHostStreams;
+  std::map<TensorId, snap::DataStream> fromHostStreams;
 
   // and 2) from device to host;
-  std::map<TensorId, poplar::DataStream> toHostAnchorStreams;
-  std::map<TensorId, poplar::DataStream> toHostWeightStreams;
+  std::map<TensorId, snap::DataStream> toHostAnchorStreams;
+  std::map<TensorId, snap::DataStream> toHostWeightStreams;
 
   // Remote buffers
   std::map<RemoteBufferId,
@@ -207,9 +207,9 @@ private:
   std::map<TensorId, snap::Tensor> streamTensors;
 
   // Streams for doing allreduce on host side
-  std::map<TensorId, poplar::DataStream> toHostGradientStreams;
-  std::map<TensorId, poplar::DataStream> fromHostGradientStreams;
-  std::map<TensorId, poplar::DataStream> fromHostWeightLoadStreams;
+  std::map<TensorId, snap::DataStream> toHostGradientStreams;
+  std::map<TensorId, snap::DataStream> fromHostGradientStreams;
+  std::map<TensorId, snap::DataStream> fromHostWeightLoadStreams;
 
   // The maximum number of inputs on any Op
   int maxOpInputs;
@@ -624,22 +624,21 @@ public:
    */
   void setStreamTensor(TensorId tid, snap::Tensor t);
 
-  poplar::DataStream &
+  snap::DataStream &
   insertGradientStoreStream(TensorId, TensorInfo, snap::Graph &);
-  poplar::DataStream &
+  snap::DataStream &
   insertGradientLoadStream(TensorId, TensorInfo, snap::Graph &);
-  poplar::DataStream &
-  insertWeightLoadStream(TensorId, TensorInfo, snap::Graph &);
+  snap::DataStream &insertWeightLoadStream(TensorId, TensorInfo, snap::Graph &);
 
-  const std::map<TensorId, poplar::DataStream> &getFromHostStreams() const {
+  const std::map<TensorId, snap::DataStream> &getFromHostStreams() const {
     return fromHostStreams;
   }
 
-  const std::map<TensorId, poplar::DataStream> &getToHostAnchorStreams() const {
+  const std::map<TensorId, snap::DataStream> &getToHostAnchorStreams() const {
     return toHostAnchorStreams;
   }
 
-  const std::map<TensorId, poplar::DataStream> &getToHostWeightStreams() const {
+  const std::map<TensorId, snap::DataStream> &getToHostWeightStreams() const {
     return toHostWeightStreams;
   }
 

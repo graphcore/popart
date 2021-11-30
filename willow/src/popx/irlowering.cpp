@@ -1300,13 +1300,12 @@ PriTask IrLowering::streamFromHostTask(TensorId streamTensorId,
       } else {
         graph = pGraph.get();
       }
-      fromHostStreams.emplace(
-          streamTensorId,
-          graph->getPoplarGraph().addHostToDeviceFIFO(h2dId(streamTensorId),
-                                                      popType(tensor->info),
-                                                      tensor->info.nelms(),
-                                                      mode,
-                                                      options));
+      fromHostStreams.emplace(streamTensorId,
+                              graph->addHostToDeviceFIFO(h2dId(streamTensorId),
+                                                         popType(tensor->info),
+                                                         tensor->info.nelms(),
+                                                         mode,
+                                                         options));
     }
     return SequenceMap(graph());
   };
@@ -1343,12 +1342,12 @@ PriTask IrLowering::streamToHostTask(TensorId streamTensorId,
       pToHostStreams = &toHostWeightStreams;
     }
 
-    pToHostStreams->emplace(streamTensorId,
-                            graph().getPoplarGraph().addDeviceToHostFIFO(
-                                d2hId(streamTensorId, isAnchorStream),
-                                popType(tensors.front()->info),
-                                tensors.front()->info.nelms(),
-                                options));
+    pToHostStreams->emplace(
+        streamTensorId,
+        graph().addDeviceToHostFIFO(d2hId(streamTensorId, isAnchorStream),
+                                    popType(tensors.front()->info),
+                                    tensors.front()->info.nelms(),
+                                    options));
     return SequenceMap(graph());
   };
 
@@ -3550,10 +3549,11 @@ PriTask IrLowering::fromHostTask(Tensor *tensor, snap::program::Sequence &sq) {
     seqs.getSequence(&sq).getPoplarSequence().add(
         // Tensors with views: Use the view instead, so that e.g.
         // replicated tensor sharding padding is ignored
-        poplar::program::Copy(fromHostStreams.at(tensor->id),
-                              tensors_.getView(tensor->id).getPoplarTensor(),
-                              doRearrangeOnHost(tensor),
-                              {"copyFromHost"}));
+        poplar::program::Copy(
+            fromHostStreams.at(tensor->id).getPoplarDataStream(),
+            tensors_.getView(tensor->id).getPoplarTensor(),
+            doRearrangeOnHost(tensor),
+            {"copyFromHost"}));
     return seqs;
   };
   return {priority,
@@ -3609,7 +3609,7 @@ PriTask IrLowering::toHostTask(Tensor *tensor,
 
     seqs.getSequence(&sq).getPoplarSequence().add(
         poplar::program::Copy(anchorTensor.getPoplarTensor(),
-                              poplarStream,
+                              poplarStream.getPoplarDataStream(),
                               doRearrangeOnHost(tensor),
                               {"copyToHost"}));
     return seqs;
@@ -3837,11 +3837,11 @@ PriTask IrLowering::toHostEveryNBatchesTask(Tensor *tensor,
     snap::Tensor isNthBatch = batchCountCheckingTensors.at(N);
 
     snap::program::Sequence copyseq(poplar::DebugContext{"copy"}, graph());
-    copyseq.getPoplarSequence().add(
-        poplar::program::Copy(tensors_.get(tensor->id).getPoplarTensor(),
-                              toHostAnchorStreams.at(tensor->id),
-                              doRearrangeOnHost(tensor),
-                              {"copyToHostEveryNBatches"}));
+    copyseq.getPoplarSequence().add(poplar::program::Copy(
+        tensors_.get(tensor->id).getPoplarTensor(),
+        toHostAnchorStreams.at(tensor->id).getPoplarDataStream(),
+        doRearrangeOnHost(tensor),
+        {"copyToHostEveryNBatches"}));
 
     // Placeholder 'do nothing' branch if not running copy program
     snap::program::Sequence emptyseq(poplar::DebugContext{"empty"}, graph());
@@ -4100,18 +4100,17 @@ std::string IrLowering::cycleCountStreamId(std::string id) {
   return "d2h_" + std::string(cycleCountPrefix()) + "_" + id;
 }
 
-poplar::DataStream &IrLowering::insertGradientStoreStream(TensorId tensorId,
-                                                          TensorInfo tensorInfo,
-                                                          snap::Graph &graph) {
+snap::DataStream &IrLowering::insertGradientStoreStream(TensorId tensorId,
+                                                        TensorInfo tensorInfo,
+                                                        snap::Graph &graph) {
   auto streamMapEntry = toHostGradientStreams.find(tensorId);
 
   if (streamMapEntry == toHostGradientStreams.end()) {
-    toHostGradientStreams.emplace(
-        tensorId,
-        poplar::DataStream(graph.getPoplarGraph().addDeviceToHostFIFO(
-            gradientStoreStreamId(tensorId),
-            popType(tensorInfo),
-            tensorInfo.nelms())));
+    toHostGradientStreams.emplace(tensorId,
+                                  snap::DataStream(graph.addDeviceToHostFIFO(
+                                      gradientStoreStreamId(tensorId),
+                                      popType(tensorInfo),
+                                      tensorInfo.nelms())));
     streamMapEntry = toHostGradientStreams.find(tensorId);
   } else {
     throw error("Tensor Id " + tensorId +
@@ -4121,15 +4120,15 @@ poplar::DataStream &IrLowering::insertGradientStoreStream(TensorId tensorId,
   return streamMapEntry->second;
 }
 
-poplar::DataStream &IrLowering::insertGradientLoadStream(TensorId tensorId,
-                                                         TensorInfo tensorInfo,
-                                                         snap::Graph &graph) {
+snap::DataStream &IrLowering::insertGradientLoadStream(TensorId tensorId,
+                                                       TensorInfo tensorInfo,
+                                                       snap::Graph &graph) {
   auto streamMapEntry = fromHostGradientStreams.find(tensorId);
 
   if (streamMapEntry == fromHostGradientStreams.end()) {
     fromHostGradientStreams.emplace(
         tensorId,
-        poplar::DataStream(graph.getPoplarGraph().addHostToDeviceFIFO(
+        snap::DataStream(graph.addHostToDeviceFIFO(
             gradientLoadStreamId(tensorId),
             popType(tensorInfo),
             tensorInfo.nelms(),
@@ -4143,15 +4142,15 @@ poplar::DataStream &IrLowering::insertGradientLoadStream(TensorId tensorId,
   return streamMapEntry->second;
 }
 
-poplar::DataStream &IrLowering::insertWeightLoadStream(TensorId tensorId,
-                                                       TensorInfo tensorInfo,
-                                                       snap::Graph &graph) {
+snap::DataStream &IrLowering::insertWeightLoadStream(TensorId tensorId,
+                                                     TensorInfo tensorInfo,
+                                                     snap::Graph &graph) {
   auto streamMapEntry = fromHostWeightLoadStreams.find(tensorId);
 
   if (streamMapEntry == fromHostWeightLoadStreams.end()) {
     fromHostWeightLoadStreams.emplace(
         tensorId,
-        poplar::DataStream(graph.getPoplarGraph().addHostToDeviceFIFO(
+        snap::DataStream(graph.addHostToDeviceFIFO(
             weightLoadStreamId(tensorId),
             popType(tensorInfo),
             tensorInfo.nelms(),
