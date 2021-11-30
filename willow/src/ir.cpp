@@ -1057,6 +1057,21 @@ void Ir::verifyConstExprFolding() {
   }
 }
 
+void Ir::prepareCache(const HashesMap &cacheEntries) {
+  if (getDeviceInfo() == nullptr) {
+    throw("Device info must be set before calling prepareCache.");
+  }
+
+  computeHash();
+
+  compareWithSavedHash(cacheEntries);
+  if (hashMatched()) {
+    logging::ir::info("Ir hash matched cached value. Skipping Ir preparation");
+    setIsPrepared();
+    return;
+  }
+}
+
 void Ir::prepare(const IrBundle &gb, const HashesMap &cacheEntries) {
   auto tryDumpIr = [&](auto logLevel) {
     auto irDumpDest = getPopartEnvVar("IR_DUMP");

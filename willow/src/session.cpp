@@ -69,7 +69,16 @@ Session::Session(std::shared_ptr<Ir> ir_,
     : ir(std::move(ir_)), name(_name) {
   ctorCommonLogic();
   setDevice(std::move(deviceInfo));
-  initProgressLogger(ir->getSessionOptions());
+  const SessionOptions userOptions = ir->getSessionOptions();
+  initProgressLogger(userOptions);
+
+  if (userOptions.enableEngineCaching) {
+    cacheEntries = getCacheEntries(userOptions.cachePath);
+  }
+
+  ir->setIsPrepared();
+  ir->setDeviceInfo(*deviceInfo_);
+  ir->prepareCache(cacheEntries);
 }
 
 void Session::setDevice(std::shared_ptr<DeviceInfo> deviceInfo) {
@@ -110,10 +119,14 @@ bool Session::tryLoadExecutable() {
   const SessionOptions &userOptions = ir->getSessionOptions();
 
   if (false == Ir::usingEngineCache(userOptions, deviceInfo_.get())) {
+    logging::session::info("Skipping to load cached PopART executable: user "
+                           "options have disabled it or wrong device type.");
     return false;
   }
 
   if (false == ir->hashMatched()) {
+    logging::session::debug(
+        "Skipping to load cached PopART executable: no hash match");
     return false;
   }
 
@@ -658,7 +671,6 @@ InferenceSession::createFromIr(std::shared_ptr<Ir> ir,
   DotVisualizer viz("Final");
   viz.write(*ir);
 
-  ir->setIsPrepared();
   auto session = std::unique_ptr<InferenceSession>(
       new InferenceSession(std::move(ir), std::move(deviceInfo), name));
 
@@ -710,7 +722,6 @@ TrainingSession::createFromIr(std::shared_ptr<Ir> ir,
     throw error("TrainingSession::createFromIr: Must pass valid DeviceInfo.");
   }
 
-  ir->setIsPrepared();
   auto session = std::unique_ptr<TrainingSession>(
       new TrainingSession(std::move(ir), std::move(deviceInfo), name));
 

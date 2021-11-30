@@ -214,7 +214,6 @@ deserializeTensor(popart::Ir &ir,
                   bool deserializeData = true) {
   auto gid = popart::GraphId("");
   popart::Graph dummyGraph(ir, gid);
-  const auto &onnxModel = ir.getModel();
   std::string id        = capnpTensor.getId();
   auto popartTensorType = toPopartTensorType(capnpTensor.getTensorType());
   auto tensor =
@@ -239,10 +238,15 @@ deserializeTensor(popart::Ir &ir,
       capnpTensorLocationInfo.getRemoteBufferInfo().getIndex());
 
   if (deserializeData) {
-    if (popartTensorType == popart::TensorType::Variable &&
-        popart::onnxutil::isInitializer(onnxModel, id)) {
-      const auto &tensorProto = popart::onnxutil::getTensorProto(onnxModel, id);
-      auto constData          = popart::onnxutil::getConstData(tensorProto);
+    // For Onnx-Ir Models, the tensor data of weights is only stored in the
+    // ONNX models. For non-Onnx-Ir Models and every other kind of Variable,
+    // it is stored in the capnpTensor.
+    if (ir.hasOnnxModel() && popartTensorType == popart::TensorType::Variable &&
+        popart::onnxutil::isInitializer(ir.getModel(), id)) {
+
+      const auto &tensorProto =
+          popart::onnxutil::getTensorProto(ir.getModel(), id);
+      auto constData = popart::onnxutil::getConstData(tensorProto);
       if (constData.data == nullptr) {
         throw error("Data for Tensor {} is null", id);
       }
@@ -347,19 +351,25 @@ void serializePopartExecutable(std::ostream &out,
     }
 
     auto tensors = executablexBuilder.initTensors(numTensorsToSerialize);
-    const auto &onnxModel = ir.getModel();
 
     size_t i = 0;
+
     for (auto &id : variableTensors) {
       Tensor *tensor = ir.getTensor(id);
       if (!tensor->hasProducer()) {
         auto tensorBuilder = tensors[i];
 
-        // We don't store the tensorData for the variable tensors
-        // with initializers since they will be loaded from the onnx file.
-        bool isInitializer = popart::onnxutil::isInitializer(onnxModel, id);
-        bool serializeTensorData =
-            !isInitializer || tensor->isOptimizerStateTensor();
+        // For Onnx-Ir models, we don't store the tensorData
+        // for the variable tensors with initializers since
+        // they will be loaded from the onnx file.
+        // For Ir models, and others, the tensor data is always serialized
+        bool serializeTensorData = true;
+        if (ir.hasOnnxModel()) {
+          bool isInitializer =
+              popart::onnxutil::isInitializer(ir.getModel(), id);
+          serializeTensorData =
+              !isInitializer || tensor->isOptimizerStateTensor();
+        }
 
         serializeTensor(tensor, tensorBuilder, serializeTensorData);
         ++i;

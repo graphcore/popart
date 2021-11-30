@@ -208,6 +208,13 @@ public:
   // the rest of the Ir preparation will be skipped.
   void prepare(const IrBundle &, const HashesMap &cacheEntries = {});
 
+  // Prepare the IR based for a "IR model"
+  // If engine caching is enabled then the IR hash which is
+  // based on the IR graph will be compared to a saved file.
+  // If the hash matches then the rest of the Ir preparation
+  // will be skipped.
+  void prepareCache(const HashesMap &cacheEntries);
+
   // Called once the IR 'prepare' is complete to finalize DebugInfo for each Op
   void finalizeOpDebugInfo();
 

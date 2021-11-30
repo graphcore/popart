@@ -1020,6 +1020,16 @@ struct SessionOptions {
   /// greater than max(fp16). This is also recommended when automatic loss
   /// scaling is enabled.
   bool ensureFp32LossScaleTensor = false;
+
+  SessionOptions() {
+    // Automatically set `enableEngineCaching` and `cachePath` if the
+    // environment variable `POPART_CACHE_DIR` is provided
+    auto cachePathEnv = getPopartEnvVar("CACHE_DIR");
+    if (cachePathEnv) {
+      enableEngineCaching = true;
+      cachePath           = cachePathEnv;
+    }
+  }
 };
 
 } // namespace popart
