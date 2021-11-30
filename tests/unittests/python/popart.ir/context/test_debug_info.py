@@ -2,6 +2,7 @@
 import json
 import gc
 import os
+import pathlib
 import popart
 import popart.ir as pir
 
@@ -37,8 +38,10 @@ def test_basic(tmpdir):
     assert op_ctx["api"] == 'add'
     assert set(op_ctx["inputs"]) == {a.id, b.id}
     assert set(op_ctx["outputs"]) == {c.id}
-    assert op_ctx["location"]["lineNumber"] == 20
-    assert __file__ == data["stringTable"][op_ctx["location"]["fileName"]]
+    assert op_ctx["location"]["lineNumber"] == 21
+    # Use pathlib to resolve any symlinks
+    assert str(pathlib.Path(__file__).resolve()) == data["stringTable"][
+        op_ctx["location"]["fileName"]]
     assert 'test_basic' == data["stringTable"][op_ctx["location"]
                                                ["functionName"]]
 
