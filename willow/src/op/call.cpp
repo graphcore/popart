@@ -28,6 +28,26 @@ CallOp::CallOp(const OperatorIdentifier &opid_,
       modifiedInputsViaAttrs(modifiedInputsViaAttrs_) {}
 
 void CallOp::setup() {
+
+  // Verify op inputs match graph inputs
+  for (int i = 0; i < callee.get().getInputIds().size(); i++) {
+    auto subgraph_i = subgraphInToOpInIndex(i);
+    if (callee.get().getInputTensor(i)->info != inInfo(subgraph_i)) {
+      auto opIn       = inTensor(subgraphInToOpInIndex(i));
+      auto subgraphIn = callee.get().getInputTensor(i);
+      throw error(
+          "CallOp input (@{}) does not match callee input tensor (@{}):\n"
+          "   {} -> {}\n"
+          "   {} vs {}",
+          i,
+          subgraph_i,
+          opIn->id,
+          subgraphIn->id,
+          opIn->info,
+          subgraphIn->info);
+    }
+  }
+
   // Assume output tensors are ordered the same as those
   // in the callee subgraph
   for (int i = 0; i < callee.get().getOutputIds().size(); i++) {

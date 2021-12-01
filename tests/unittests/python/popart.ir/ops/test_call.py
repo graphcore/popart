@@ -1,6 +1,7 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 import pytest
 
+import popart
 import popart.ir as pir
 import popart.ir.ops as ops
 
@@ -146,5 +147,18 @@ class TestCall:
             add_g = ir.create_graph(lambda x, y: x + y, a, a)
             b = ops.call(add_g, a, a)
 
+    def test_mismatch_inputs_error(self):
+        ir = pir.Ir()
 
-# TODO: Test nested subgraphs
+        with ir.main_graph():
+            a = pir.variable(1, pir.float32)
+            add_g = ir.create_graph(lambda x: x + 1, a)
+            b = pir.variable(1, pir.float16)
+
+            with pytest.raises(popart.popart_exception):
+                ops.call(add_g, b)
+
+            c = pir.variable([1, 2], pir.float32)
+
+            with pytest.raises(popart.popart_exception):
+                ops.call(add_g, c)
