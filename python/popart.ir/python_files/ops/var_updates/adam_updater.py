@@ -11,6 +11,8 @@ __all__ = ['adam_updater', 'lamb_updater', 'adamax_updater']
 
 
 def weight_decay_is_required(weight_decay: Union[None, float, Tensor]):
+    if isinstance(weight_decay, Tensor):
+        return True
     if weight_decay is not None:
         return weight_decay != 0.0
     return False

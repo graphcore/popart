@@ -142,15 +142,20 @@ class Graph:
             _id = self._pb_graph.getIr().createIntermediateTensorId(_id)
         return _id
 
-    def __contains__(self, value: Any) -> bool:
-        if isinstance(value, Tensor):
-            return value.id in self._pb_graph
-        return False
+    def __contains__(self, value: Tensor) -> bool:
+        if not isinstance(value, Tensor):
+            raise TypeError(
+                f"Value must be of type pir.Tensor. Value: {value}. Type: {type(value)}"
+            )
+        return value.id in self._pb_graph
 
-    def __eq__(self, other: Any) -> bool:
+    def __eq__(self, value: 'Graph') -> bool:
         """Graph equality, based on graph and Ir `id`"""
-        return isinstance(
-            other, Graph) and self.id == other.id and self.ir() == other.ir()
+        if not isinstance(value, Graph):
+            raise TypeError(
+                f"Value must be of type pir.Graph. Value: {value}. Type: {type(value)}"
+            )
+        return self.id == value.id and self.ir() == value.ir()
 
     def __hash__(self):
         """Hashes the Graph, based on graph and Ir `id`"""

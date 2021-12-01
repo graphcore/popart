@@ -122,10 +122,13 @@ class Tensor:
         """Hashes the Tensor, based on Tensor and Ir `id`"""
         return hash((self.id, self.ir()))
 
-    def __eq__(self, other: Any) -> bool:
+    def __eq__(self, value: 'Tensor') -> bool:
         """Tensor equality, based on Tensor and Ir `id`"""
-        return isinstance(
-            other, Tensor) and self.id == other.id and self.ir() == other.ir()
+        if not isinstance(value, Tensor):
+            raise TypeError(
+                f"Value must be of type pir.Tensor. Value: {value}. Type: {type(value)}"
+            )
+        return self.id == value.id and self.ir() == value.ir()
 
     def __len__(self) -> int:
         """Size of 0th axis"""

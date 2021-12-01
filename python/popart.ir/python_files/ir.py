@@ -260,8 +260,12 @@ class Ir:
     def __hash__(self) -> int:
         return hash(self.id)
 
-    def __eq__(self, other) -> bool:
-        return isinstance(other, Ir) and self.id == other.id
+    def __eq__(self, value: 'Ir') -> bool:
+        if not isinstance(value, Ir):
+            raise TypeError(
+                f"Value must be of type pir.Ir. Value: {value}. Type: {type(value)}"
+            )
+        return self.id == value.id
 
     def __repr__(self) -> str:
         return f"Ir[id={self.id}]"
