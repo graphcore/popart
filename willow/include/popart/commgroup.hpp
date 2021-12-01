@@ -26,9 +26,7 @@ enum class CommGroupType {
    */
   Orthogonal,
 
-  /**
-   * Empty group, used as a complement group to \a CommGroupType::All
-   */
+  /** Each replica is in it's own group, replica group size is ignored. */
   None,
 
   /**
