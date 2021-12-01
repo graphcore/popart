@@ -3,20 +3,21 @@ from typing import Optional
 import popart._internal.ir as _ir
 from popart.ir.context import get_current_context
 from popart.ir.tensor import Tensor
-from .collectives import CommGroup, CollectiveOperator
+from .collectives import CommGroup, to_collective_op, CollectiveOps
 from popart.ir.ops.utils import check_in_graph
 
 __all__ = ["replicated_reduce_scatter"]
 
 
 def replicated_reduce_scatter(t: Tensor,
-                              op: CollectiveOperator = CollectiveOperator.Add,
+                              op: CollectiveOps = 'add',
                               group: Optional[CommGroup] = None) -> Tensor:
     """Reduces tensor `t` across replicas. Each replica will only receive a unique slice of `t`.
 
     Args:
         t (Tensor): Tensor to be reduced. Inputs will be flattened.
-        op (CollectiveOperator, optional): Operation to reduce with. Defaults to CollectiveOperator.Add.
+        op (str, optional): Operation to reduce with. Defaults to 'add'.
+            Options: 'add', 'mean', 'mul', 'min', 'max', 'and', 'or', 'square_add', 'local'.
         group (Optional[CommGroup], optional): Replicas to reduce across. Defaults to All replicas.
 
     Returns:
@@ -25,6 +26,8 @@ def replicated_reduce_scatter(t: Tensor,
     ctx = get_current_context()
     g = ctx.graph
     pb_g = g._pb_graph
+
+    op = to_collective_op(op)
 
     check_in_graph(g, t)
 
