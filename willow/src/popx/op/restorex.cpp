@@ -16,12 +16,13 @@ namespace popx {
 template <typename Derived>
 RestoreBaseOpx<Derived>::RestoreBaseOpx(Op *op, Devicex *devicex)
     : PopOpx(op, devicex) {
+  // Note RestoreInplaceOp derives RestoreOp.
   verifyOp<typename Derived::OpType>(op);
 
-  // Note RestoreInplaceOp derives RestoreOp.
-  canDynamicSliceRestore =
-      !(inInfo(RestoreOp::getStashInIndex()).dataType() == DataType::INT8 ||
-        inInfo(RestoreOp::getStashInIndex()).dataType() == DataType::UINT8);
+  // INT8/UINT8 now supported. Leaving the fallbacks until stashx/restorex
+  // will get removed wholesale
+  // TODO: T51331
+  canDynamicSliceRestore = true;
 }
 
 template <typename Derived>

@@ -106,9 +106,10 @@ void StashOpx::grow(snap::program::Sequence &prog) const {
 StashOpx::StashOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
   verifyOp<StashOp>(op);
   hStashSize = static_cast<size_t>(getOp<StashOp>().getStashSize());
-  canDynamicUpdateStash =
-      !(inInfo(StashOp::getInIndex()).dataType() == DataType::INT8 ||
-        inInfo(StashOp::getInIndex()).dataType() == DataType::UINT8);
+  // INT8/UINT8 now supported. Leaving the fallbacks until stashx/restorex
+  // will get removed wholesale
+  // TODO: T51331
+  canDynamicUpdateStash = true;
 }
 
 namespace {
