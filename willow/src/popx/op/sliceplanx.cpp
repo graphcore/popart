@@ -14,7 +14,7 @@ poplar::OptionFlags
 createSlicePlanOptions(SlicePlanUsedFor usedFor,
                        nonstd::optional<float> availableMemoryProportion) {
   // TODO(T40999): this can be removed once "cycles" is made the default
-  poplar::OptionFlags opts{{"planMinimisationTarget", "cycles"}};
+  poplar::OptionFlags opts{};
 
   if (availableMemoryProportion.has_value()) {
     opts.set("availableMemoryProportion",
