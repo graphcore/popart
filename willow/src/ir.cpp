@@ -3908,10 +3908,13 @@ void Ir::mergeRandomReferenceIds(std::set<RandomReferenceId> &ids) {
 }
 
 void Ir::setRemoteBufferInfo(RemoteBufferId id, RemoteBufferInfo info) {
-  remoteBufferInfoMap.insert({id, info});
+  remoteBufferInfoMap[id] = info;
 }
 
 const RemoteBufferInfo Ir::getRemoteBufferInfo(RemoteBufferId id) const {
+  if (remoteBufferInfoMap.find(id) == remoteBufferInfoMap.end()) {
+    throw error("RemoteBufferId {} not found in the remoteBufferInfoMap.", id);
+  }
   return remoteBufferInfoMap.at(id);
 }
 

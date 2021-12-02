@@ -21,8 +21,8 @@ from popart.ir.tensor import *
 from popart.ir.streams import *
 from popart.ir.random_seed import *
 from popart.ir.module import *
+from popart.ir.remote_buffer import *
 import popart.ir.transforms
-import popart.ir.remote_buffer_handle
 
 del sys
 del actualVersion

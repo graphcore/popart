@@ -1,38 +1,44 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-from typing import Optional
+from typing import Optional, Union
 import popart._internal.ir as _ir
 from popart.ir.context import get_current_context, op_debug_context
 from popart.ir.tensor import Tensor
-from popart.ir.graph import Graph
-from popart.ir.remote_buffer_handle import RemoteBufferHandle
-from .utils import check_in_graph, prepare_remote_buffer
+from popart.ir.remote_buffer import RemoteBuffer
+from popart.ir import constant
+from popart.ir.dtypes import uint32
+from .utils import check_in_graph
+from .init import init
 
 __all__ = ["remote_load", "remote_load_"]
 
 
 @op_debug_context
-def remote_load(
-        t: Tensor,
-        offset: Optional[Tensor] = None,
-        remote_buffer_handle: Optional[RemoteBufferHandle] = None) -> Tensor:
-    """Load a tensor from remote (off-chip) buffer.
+def remote_load(remote_buffer: RemoteBuffer,
+                offset: Union[int, Tensor],
+                name: Optional[str] = None) -> Tensor:
+    """Load a tensor from the remote buffer residing in the off-chip streaming memory.
 
     The tensor will be loaded from the memory location corresponding to
-    `remote_buffer_id` (specified in the `remote_buffer_handle`),
-    and will be stored in the memory location corresponding to `t`.
+    ``remote_buffer_id`` (specified in the ``remote_buffer``).
 
-    The relationship between `offset` and `remote_buffer_id` is thoroughly
-    described in `remote_store`.
+    The relationship between ``offset`` and ``remote_buffer_id`` is thoroughly
+    described in ``remote_store``.
 
-    See also: `remote_buffer_handle`, `remote_store`, `remote_load_`
+    Note:
+        There is no data dependency (in the graph) between remote store and remote load.
+        Thus, the remote load operator may end up before the remote store operator in the
+        serialized graph.
+        One way to circumvent this is by using ``with pir.in_sequence(True)``
+
+    See also: 
+        ``remote_buffer``, ``remote_store``, ``remote_load_``
 
     Args:
-        t (Tensor): This tensor will be cloned, and the loaded data will written to the clone.
-        offset (Optional[Tensor], optional): Optional 0-rank Tensor.
-          Specify the row in the remote buffer the inTensor will be loaded from.
-          Defaults to None.
-        remote_buffer_handle (Optional[RemoteBufferHandle], optional): The handle to the remote
-          buffer. Defaults to None.
+        remote_buffer (RemoteBuffer): The handle to the remote buffer
+        offset (Union[int, Tensor]): Integer or rank-0 tensor indicating what row/entry in the
+          remote buffer to load from
+        name (str): Name to use for the returned tensor
+
     Returns:
         Tensor: The tensor loaded from the remote buffer
     """
@@ -40,54 +46,60 @@ def remote_load(
     g = ctx.graph
     pb_g = g._pb_graph
 
-    check_in_graph(g, t)
+    shape = remote_buffer.tensor_shape
+    dtype = remote_buffer.tensor_dtype
+    remote_buffer_id = remote_buffer.remote_buffer_id
 
-    if offset is not None:
-        check_in_graph(g, offset)
+    # Create tensors
+    if isinstance(offset, int):
+        offset = constant(offset, uint32, name="offset")
 
-    remote_buffer_handle = prepare_remote_buffer(t, remote_buffer_handle, g)
+    if name is None:
+        name = f"id_{remote_buffer_id}_offset_{offset.name}"
+
+    remote_load_tensor = init(shape, dtype, name + '_remote_load')
+
+    check_in_graph(g, remote_load_tensor, offset)
+
+    remote_buffer.validate_tensor_matches_buffer(remote_load_tensor)
 
     settings = ctx._get_op_settings('remote_load')
     opid = _ir.OperatorIdentifier("ai.graphcore", "RemoteLoad", 1,
                                   _ir.NumInputs(1, 2), 1)
 
-    if offset is not None:
-        op = pb_g.createConnectedOp_RemoteLoadOp(
-            {
-                0: t.id,
-                1: offset.id
-            }, {0: g._create_tensor_id("remote_load_out")}, opid, settings,
-            remote_buffer_handle.remote_buffer_id)
-    else:
-        op = pb_g.createConnectedOp_RemoteLoadOp(
-            {
-                0: t.id,
-            }, {0: g._create_tensor_id("remote_load_out")}, opid, settings,
-            remote_buffer_handle.remote_buffer_id)
+    op = pb_g.createConnectedOp_RemoteLoadOp(
+        {
+            0: remote_load_tensor.id,
+            1: offset.id
+        }, {0: g._create_tensor_id(name + "_remote_loaded")}, opid, settings,
+        remote_buffer.remote_buffer_id)
 
     return Tensor._from_pb_tensor(op.outTensor(0))
 
 
 @op_debug_context
-def remote_load_(
-        t: Tensor,
-        offset: Optional[Tensor] = None,
-        remote_buffer_handle: Optional[RemoteBufferHandle] = None) -> Tensor:
-    """Load a tensor from remote (off-chip) buffer inplace.
+def remote_load_(remote_buffer: RemoteBuffer, offset: Union[int, Tensor],
+                 t: Tensor) -> Tensor:
+    """Load a tensor inplace from the remote buffer residing in the off-chip streaming memory.
 
-    This op is identical to `remote_load` with the exception of how `t` is handled.
-    In `remote_load` `t` is cloned and the output is written to the clone, whereas
-    in this version `t` is written to directly.
+    This op is identical to ``remote_load``, but with the exception that the tensor loaded from
+    the remote buffer will be written to ``t`` directly.
 
-    See also: `remote_buffer_handle`, `remote_store`, `remote_load`
+    Note:
+        There is no data dependency (in the graph) between remote store and remote load.
+        Thus, the remote load operator may end up before the remote store operator in the
+        serialized graph.
+        One way to circumvent this is by using ``with pir.in_sequence(True)``
+
+    See also: 
+        ``remote_buffer``, ``remote_store``, ``remote_load``
 
     Args:
-        t (Tensor): The tensor the loaded data will written to the clone.
-        offset (Optional[Tensor], optional): Optional 0-rank Tensor.
-          Specify the row in the remote buffer the inTensor will be loaded from.
-          Defaults to None.
-        remote_buffer_handle (Optional[RemoteBufferHandle], optional): The handle to the remote
-          buffer. Defaults to None.
+        remote_buffer (RemoteBuffer): The handle to the remote buffer
+        offset (Union[int, Tensor]): Integer or rank-0 tensor indicating what row/entry in the
+          remote buffer to load from
+        t (Tensor): The tensor the loaded data will written to
+
     Returns:
         Tensor: The tensor loaded from the remote buffer
     """
@@ -95,29 +107,23 @@ def remote_load_(
     g = ctx.graph
     pb_g = g._pb_graph
 
-    check_in_graph(g, t)
+    # Create tensors
+    if isinstance(offset, int):
+        offset = constant(offset, uint32, name="offset")
 
-    if offset is not None:
-        check_in_graph(g, offset)
+    check_in_graph(g, t, offset)
 
-    remote_buffer_handle = prepare_remote_buffer(t, remote_buffer_handle, g)
+    remote_buffer.validate_tensor_matches_buffer(t)
 
     settings = ctx._get_op_settings('remote_load_inplace')
     opid = _ir.OperatorIdentifier("ai.graphcore", "RemoteLoadInplace", 1,
                                   _ir.NumInputs(1, 2), 1)
 
-    if offset is not None:
-        op = pb_g.createConnectedOp_RemoteLoadInplaceOp(
-            {
-                0: t.id,
-                1: offset.id
-            }, {0: g._create_tensor_id("remote_load_inplace_out")}, opid,
-            settings, remote_buffer_handle.remote_buffer_id)
-    else:
-        op = pb_g.createConnectedOp_RemoteLoadInplaceOp(
-            {
-                0: t.id,
-            }, {0: g._create_tensor_id("remote_load_inplace_out")}, opid,
-            settings, remote_buffer_handle.remote_buffer_id)
+    op = pb_g.createConnectedOp_RemoteLoadInplaceOp(
+        {
+            0: t.id,
+            1: offset.id
+        }, {0: g._create_tensor_id("remote_load_inplace_out")}, opid, settings,
+        remote_buffer.remote_buffer_id)
 
     return Tensor._from_pb_tensor(op.outTensor(0))

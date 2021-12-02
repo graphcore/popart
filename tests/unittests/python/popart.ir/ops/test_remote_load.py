@@ -5,74 +5,63 @@ import pytest
 import numpy as np
 import popart.ir as pir
 import popart.ir.ops as ops
-from popart.ir.remote_buffer_handle import RemoteBufferHandle
+from popart.ir.remote_buffer import RemoteBuffer
 from popart.ir.dtypes import dtype, float16, float32
 import popart._internal.ir as _ir
 from utils import contains_op_of_type
 
 
 class TestRemoteLoad:
-    @pytest.mark.parametrize("use_offset", [True, False])
     @pytest.mark.parametrize("tensor_shape", [(7, 11, 13), (17, 19)])
-    @pytest.mark.parametrize("repeats", [3, 5])
+    @pytest.mark.parametrize("entries", [3, 5])
     @pytest.mark.parametrize("tensor_dtype", [float16, float32])
+    @pytest.mark.parametrize("offset_as_int", [True, False])
     @pytest.mark.parametrize("inplace", [True, False])
-    def test_remote_load_graph(self, use_offset: bool,
-                               tensor_shape: Tuple[int, ...], repeats: int,
-                               tensor_dtype: dtype, inplace: bool) -> None:
+    def test_remote_load_graph(self, tensor_shape: Tuple[int, ...],
+                               entries: int, tensor_dtype: dtype,
+                               offset_as_int: bool, inplace: bool) -> None:
         """Test that the graph is correct when using the remote load op
 
         Args:
-            use_offset (bool): Whether or not to use offset
             tensor_shape (Tuple[int, ...]): The shape of the tensor to be loaded
-            repeats (int): The number of tensors potentially stored in the buffer
+            entries (int): The number of tensors potentially stored in the buffer
             tensor_dtype (dtype): The type of the tensors to be loaded
+            offset_as_int (bool): If true the offset input to the op will be given as an int
             inplace (bool): Whether or not to use the inplace version of the op
         """
         ir = pir.Ir()
         g = ir.main_graph()
 
         with g:
-            t = pir.variable(
-                np.random.rand(*tensor_shape).astype(tensor_dtype.as_numpy()))
-            if use_offset:
-                offset = pir.constant([1], name='offset')
-                # With this option the graph should contain
-                # 1. t
-                # 2. offset
-                # 3. out
-                n_tensors = 3
+            if offset_as_int:
+                offset = 0
             else:
-                offset = None
-                # With this option the graph should contain
-                # 1. t
-                # 2. out
-                n_tensors = 2
+                offset = pir.constant([0], name='offset')
+            # With this option the graph should contain
+            # 1. t
+            # 2. offset
+            # 3. out
+            n_tensors = 3
 
-            rbh = RemoteBufferHandle(remote_buffer_id=1,
-                                     tensor_shape=tensor_shape,
-                                     tensor_dtype=tensor_dtype,
-                                     repeats=repeats)
+            remote_buffer = RemoteBuffer(ir=ir,
+                                         tensor_shape=tensor_shape,
+                                         tensor_dtype=tensor_dtype,
+                                         entries=entries)
 
-            op = ops.remote_load if not inplace else ops.remote_load_
-            op(t, offset, rbh)
+            if not inplace:
+                ops.remote_load(remote_buffer, offset)
+                n_variables = 0
+            else:
+                t = pir.variable(
+                    np.random.rand(*tensor_shape).astype(
+                        tensor_dtype.as_numpy()))
+                ops.remote_load_(remote_buffer, offset, t)
+                # t is the only variable
+                n_variables = 1
 
         assert len(g.get_tensors()) == n_tensors
         # Only t is a variable
-        assert len(g.get_variables()) == 1
+        assert len(g.get_variables()) == n_variables
         type_string = "RemoteLoad" if not inplace else "RemoteLoadInplace"
         pb_type = _ir.op.exchange.RemoteLoadOp if not inplace else _ir.op.exchange.RemoteLoadInplaceOp
         assert contains_op_of_type(type_string, pb_type, g)
-
-        # Clean-up so that the RemoteBufferHandle gets reset
-        RemoteBufferHandle._buffers = {}
-
-    def test_raises(self):
-        """Test that remote_buffer_id=-1 raises NotImplementedError."""
-        with pytest.raises(NotImplementedError):
-            _ = RemoteBufferHandle(remote_buffer_id=-1,
-                                   tensor_shape=None,
-                                   tensor_dtype=None,
-                                   repeats=1)
-        # Clean-up so that the RemoteBufferHandle gets reset
-        RemoteBufferHandle._buffers = {}

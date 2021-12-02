@@ -1,4 +1,5 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
+#include "popart/error.hpp"
 #include "popart/opidentifier.hpp"
 #include <algorithm>
 #include <popart/alias/aliasmodel.hpp>
@@ -16,15 +17,10 @@ namespace popart {
 RemoteStoreOp::RemoteStoreOp(const OperatorIdentifier &_opid,
                              const Op::Settings &settings_,
                              RemoteBufferId rbid_)
-    : ExchangeBaseOp(_opid, settings_), remoteBufferId(rbid_) {}
+    : RemoteBaseOp(_opid, settings_, rbid_) {}
 
 std::unique_ptr<Op> RemoteStoreOp::clone() const {
   return std::make_unique<RemoteStoreOp>(*this);
-}
-
-void RemoteStoreOp::appendOutlineAttributes(OpSerialiserBase &os) const {
-  Op::appendOutlineAttributes(os);
-  os.appendAttribute("bufferid", remoteBufferId);
 }
 
 ReplicatedTensorShardingIndices
@@ -45,7 +41,7 @@ ExchangeDescriptor RemoteStoreOp::getExchangeDescriptor(int index) const {
 RemoteLoadOp::RemoteLoadOp(const OperatorIdentifier &_opid,
                            const Op::Settings &settings_,
                            RemoteBufferId rbid_)
-    : ExchangeBaseOp(_opid, settings_), remoteBufferId(rbid_) {}
+    : RemoteBaseOp(_opid, settings_, rbid_) {}
 
 std::unique_ptr<Op> RemoteLoadOp::clone() const {
   return std::make_unique<RemoteLoadOp>(*this);
@@ -53,11 +49,6 @@ std::unique_ptr<Op> RemoteLoadOp::clone() const {
 
 void RemoteLoadOp::setup() {
   outInfo(getLocalTensorOutIndex()) = inInfo(getLocalTensorInIndex());
-}
-
-void RemoteLoadOp::appendOutlineAttributes(OpSerialiserBase &os) const {
-  Op::appendOutlineAttributes(os);
-  os.appendAttribute("bufferid", remoteBufferId);
 }
 
 ReplicatedTensorShardingIndices

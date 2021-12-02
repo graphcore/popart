@@ -3,8 +3,7 @@
 #define GUARD_NEURALNET_REMOTE_HPP
 
 #include <popart/op.hpp>
-#include <popart/op/elementwise.hpp>
-#include <popart/op/exchange/exchange.hpp>
+#include <popart/op/exchange/remotebase.hpp>
 
 namespace popart {
 
@@ -52,7 +51,7 @@ namespace popart {
  *
  * See also \see RemoteLoadOp.
  **/
-class RemoteStoreOp : public ExchangeBaseOp {
+class RemoteStoreOp : public RemoteBaseOp {
 public:
   /**
    * Construct the \c RemoteStoreOp
@@ -73,29 +72,14 @@ public:
                 RemoteBufferId rbid_ = -1UL);
 
   std::unique_ptr<Op> clone() const final;
-  void setup() final {}
-
-  static InIndex getRemoteBufferOffsetInIndex() { return 1; }
-  static InIndex getLocalTensorInIndex() { return 0; }
-
-  void appendOutlineAttributes(OpSerialiserBase &) const final;
-
-  void setRemoteBufferId(RemoteBufferId remoteBufferId_) {
-    remoteBufferId = remoteBufferId_;
-  }
-  RemoteBufferId getRemoteBufferId() const { return remoteBufferId; }
+  void setup() final{};
 
   bool hasSideEffect() const override { return true; }
-
-  bool canShard() const final { return true; }
 
   ReplicatedTensorShardingIndices
   getReplicatedTensorShardingIndices() const override;
 
   ExchangeDescriptor getExchangeDescriptor(int index) const final;
-
-private:
-  RemoteBufferId remoteBufferId;
 };
 
 /**
@@ -125,7 +109,7 @@ private:
  *
  * See also \see RemoteStoreOp.
  **/
-class RemoteLoadOp : public ExchangeBaseOp {
+class RemoteLoadOp : public RemoteBaseOp {
 public:
   /**
    * Construct the \c RemoteLoadOp
@@ -148,18 +132,7 @@ public:
   std::unique_ptr<Op> clone() const override;
   void setup() final;
 
-  static InIndex getRemoteBufferOffsetInIndex() { return 1; }
-  static InIndex getLocalTensorInIndex() { return 0; }
   static OutIndex getLocalTensorOutIndex() { return 0; }
-
-  void appendOutlineAttributes(OpSerialiserBase &) const final;
-
-  void setRemoteBufferId(RemoteBufferId remoteBufferId_) {
-    remoteBufferId = remoteBufferId_;
-  }
-  RemoteBufferId getRemoteBufferId() const { return remoteBufferId; }
-
-  bool canShard() const final { return true; }
 
   ReplicatedTensorShardingIndices
   getReplicatedTensorShardingIndices() const final;
@@ -176,9 +149,6 @@ public:
 
   poprithms::memory::inplace::Proposal
   mapInplaceProposal(const AliasModel &, OperatorIdentifier) const final;
-
-protected:
-  RemoteBufferId remoteBufferId;
 };
 
 /**

@@ -4,7 +4,6 @@ from typing import Any, Dict
 import pytest
 from utils import *
 
-import popart
 import popart._internal.ir as _ir
 
 
@@ -223,33 +222,24 @@ def test_remote_store_op(connected: bool, use_offset: bool) -> None:
             just create<opname>
         use_offset (bool): Whether or not to specify the optional offset Tensor
     """
-    _, graphs = create_ir()
+    ir, graphs = create_ir()
     g = graphs[0]
     t = add_actgrad_tensor("t", [1, 2, 3], g)
+    offset = add_actgrad_tensor("offset", [1], g)
     opid = _ir.OperatorIdentifier("ai.onnx", "Init", 1, _ir.NumInputs(0, 0), 1)
     settings = _ir.Settings(g, "new_settings")
-
-    offset = add_actgrad_tensor("offset", [1], g)
+    remote_buffer_id = 42
+    attributes = (opid, settings, remote_buffer_id)
+    tensor_in_map = {0: t.id}
     if use_offset:
-        if connected:
-            op = g.createConnectedOp_RemoteStoreOp({
-                0: t.id,
-                1: offset.id
-            }, {}, opid, settings, 1)
-        else:
-            op = g.createOp_RemoteStoreOp(opid, settings, 1)
-            op.connectInTensor(0, t.id)
-            op.connectInTensor(1, offset.id)
-    else:
-        if connected:
-            op = g.createConnectedOp_RemoteStoreOp({
-                0: t.id,
-            }, {}, opid, settings, 1)
-        else:
-            op = g.createOp_RemoteStoreOp(opid, settings, 1)
-            op.connectInTensor(0, t.id)
+        tensor_in_map[1] = offset.id
 
-    op.setup()
+    # Set the remote buffer info
+    ir.setRemoteBufferInfo(remote_buffer_id,
+                           _ir.RemoteBufferInfo(t.info, remote_buffer_id))
+
+    # Test that the ops are working with the remote buffer info set
+    op = create_remote_store_op(g, connected, tensor_in_map, attributes)
 
     assert op.hasInput(0)
     assert op.inTensor(0) == t
@@ -261,6 +251,31 @@ def test_remote_store_op(connected: bool, use_offset: bool) -> None:
     else:
         assert not op.hasInput(1)
     assert not op.hasOutput(0)
+
+
+def create_remote_store_op(
+        g: _ir.Graph, connected: bool, tensor_in_map: Dict[int, str],
+        attributes: Tuple[_ir.OperatorIdentifier, _ir.Settings, int]) -> Any:
+    """Setup and return a remote store op.
+
+    Args:
+        g (_ir.Graph): The graph to set the op in
+        connected (bool): Creates a connected op if true
+        tensor_in_map (Dict[int, str]): Dict of in index and tensor id
+        attributes (Tuple[_ir.OperatorIdentifier, _ir.Settings, int]): Attributes to set in the op
+
+    Returns:
+        Any: The op
+    """
+    if connected:
+        op = g.createConnectedOp_RemoteStoreOp(tensor_in_map, {}, *attributes)
+    else:
+        op = g.createOp_RemoteStoreOp(*attributes)
+        for index, t_id in tensor_in_map.items():
+            op.connectInTensor(index, t_id)
+
+    op.setup()
+    return op
 
 
 @pytest.mark.parametrize("connected", [True, False])
@@ -276,40 +291,27 @@ def test_remote_load_op(connected: bool, use_offset: bool,
         use_offset (bool): Whether or not to specify the optional offset Tensor
         inplace (bool): Whether or not to use the inplace version
     """
-    _, graphs = create_ir()
+    ir, graphs = create_ir()
     g = graphs[0]
     t = add_actgrad_tensor("t", [1, 2, 3], g)
+    offset = add_actgrad_tensor("offset", [1], g)
     opid = _ir.OperatorIdentifier("ai.onnx", "Init", 1, _ir.NumInputs(0, 0), 1)
     settings = _ir.Settings(g, "new_settings")
-    out_id = "out_id"
-
-    offset = add_actgrad_tensor("offset", [1], g)
-
-    opCreator = g.createOp_RemoteLoadOp if not inplace else g.createOp_RemoteLoadInplaceOp
-    connectedOpCreator = g.createConnectedOp_RemoteLoadOp if not inplace else g.createConnectedOp_RemoteLoadInplaceOp
-
+    remote_buffer_id = 42
+    attributes = (opid, settings, remote_buffer_id)
+    tensor_in_map = {0: t.id}
     if use_offset:
-        if connected:
-            op = connectedOpCreator({
-                0: t.id,
-                1: offset.id
-            }, {0: "out_id"}, opid, settings, 1)
-        else:
-            op = opCreator(opid, settings, 1)
-            op.connectInTensor(0, t.id)
-            op.connectInTensor(1, offset.id)
-            op.createAndConnectOutTensor(0, out_id)
-    else:
-        if connected:
-            op = connectedOpCreator({
-                0: t.id,
-            }, {0: "out_id"}, opid, settings, 1)
-        else:
-            op = opCreator(opid, settings, 1)
-            op.connectInTensor(0, t.id)
-            op.createAndConnectOutTensor(0, out_id)
+        tensor_in_map[1] = offset.id
 
-    op.setup()
+    # Set the remote buffer info
+    ir.setRemoteBufferInfo(remote_buffer_id,
+                           _ir.RemoteBufferInfo(t.info, remote_buffer_id))
+
+    # Test that the ops are working with the remote buffer info set
+    output = add_actgrad_tensor("output", [1, 2, 3], g)
+    tensor_out_map = {0: output.id}
+    op = create_remote_load_op(g, connected, inplace, tensor_in_map,
+                               tensor_out_map, attributes)
 
     assert op.hasInput(0)
     assert op.inTensor(0) == t
@@ -321,7 +323,40 @@ def test_remote_load_op(connected: bool, use_offset: bool,
     else:
         assert not op.hasInput(1)
     assert op.hasOutput(0)
-    assert op.outId(0) == out_id
+    assert op.outId(0) == output.id
+
+
+def create_remote_load_op(
+        g: _ir.Graph, connected: bool, inplace: bool,
+        tensor_in_map: Dict[int, str], tensor_out_map: Dict[int, str],
+        attributes: Tuple[_ir.OperatorIdentifier, _ir.Settings, int]) -> Any:
+    """Setup and return a remote load op.
+
+    Args:
+        g (_ir.Graph): The graph to set the op in
+        connected (bool): Creates a connected op if true
+        inplace (bool): Creates an inplace op if true
+        tensor_in_map (Dict[int, str]): Dict of in index and tensor id
+        tensor_out_map (Dict[int, str]): Dict of in index and tensor id
+        attributes (Tuple[_ir.OperatorIdentifier, _ir.Settings, int]): Attributes to set in the op
+
+    Returns:
+        Any: The op
+    """
+    opCreator = g.createOp_RemoteLoadOp if not inplace else g.createOp_RemoteLoadInplaceOp
+    connectedOpCreator = g.createConnectedOp_RemoteLoadOp if not inplace else g.createConnectedOp_RemoteLoadInplaceOp
+
+    if connected:
+        op = connectedOpCreator(tensor_in_map, tensor_out_map, *attributes)
+    else:
+        op = opCreator(*attributes)
+        for index, t_id in tensor_in_map.items():
+            op.connectInTensor(index, t_id)
+        for index, t_id in tensor_out_map.items():
+            op.connectOutTensor(index, t_id)
+
+    op.setup()
+    return op
 
 
 @pytest.mark.parametrize("connected", [True, False])

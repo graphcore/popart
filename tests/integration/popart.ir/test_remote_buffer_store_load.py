@@ -2,13 +2,13 @@
 """Testing of pipelining with one forward pass for a simple model without pipeline stages."""
 
 from popart.ir.tensor import Variable
-from typing import Callable, Tuple, Dict, Optional
+from typing import Tuple, Dict
 from popart.ir.streams import DeviceToHostStream
 import numpy as np
 import popart.ir as pir
 import popart.ir.ops as ops
-from popart.ir.remote_buffer_handle import RemoteBufferHandle
-from popart.ir.dtypes import dtype, float32
+from popart.ir.remote_buffer import RemoteBuffer
+from popart.ir.dtypes import dtype
 import popart._internal.ir as _ir
 import popart
 
@@ -150,49 +150,69 @@ def build_model(data: Dict[str, np.array]
         # Placeholder for device to host streams
         d2h_streams = {}
 
-        # Store and load the first tensor without specifying the remote buffer handle or offset
-        ops.remote_store(t=tensors["store_in_1"])
-        tensors["load_out_1"] = ops.remote_load(t=tensors["load_in_1"])
-        tensors["load_out_1_inplace"] = ops.remote_load_(
-            t=tensors["load_in_1_inplace"])
-        # Anchor the input tensors to the load operator
-        d2h_streams = make_anchor(d2h_streams, tensors, "load_in_1")
-        d2h_streams = make_anchor(d2h_streams, tensors, "load_in_1_inplace")
-        # Anchor the output tensors of the load operator
-        d2h_streams = make_anchor(d2h_streams, tensors, "load_out_1")
-        d2h_streams = make_anchor(d2h_streams, tensors, "load_out_1_inplace")
-
-        # Store and load the second and third tensor using the same buffer id
-        # Buffer 1 should already be assigned implicitly, so we chose a different id
-        rbh = RemoteBufferHandle(
-            remote_buffer_id=42,
-            tensor_shape=tensors["store_in_2"]._pb_tensor.info.shape(),
+        # Store and load the first tensor
+        remote_buffer_1 = RemoteBuffer(
+            ir=ir,
+            tensor_shape=tensors["store_in_1"]._pb_tensor.info.shape(),
             tensor_dtype=dtype.as_dtype(
-                tensors["store_in_2"]._pb_tensor.info.data_type_lcase()),
-            repeats=2)
-        # Index starts at 0
-        offset_tensor_2 = pir.constant(0, name="offset_2")
-        offset_tensor_3 = pir.constant(1, name="offset_3")
-        ops.remote_store(t=tensors["store_in_2"],
-                         offset=offset_tensor_2,
-                         remote_buffer_handle=rbh)
-        ops.remote_store(t=tensors["store_in_3"],
-                         offset=offset_tensor_3,
-                         remote_buffer_handle=rbh)
-        tensors["load_out_2"] = ops.remote_load(t=tensors["load_in_2"],
-                                                offset=offset_tensor_2,
-                                                remote_buffer_handle=rbh)
-        tensors["load_out_3_inplace"] = ops.remote_load_(
-            t=tensors["load_in_3_inplace"],
-            offset=offset_tensor_3,
-            remote_buffer_handle=rbh)
+                tensors["store_in_1"]._pb_tensor.info.data_type_lcase()),
+            entries=1)
+        offset_tensor_1 = pir.constant(0, name="offset_1")
+        # Ensure that the ops are in the order we define them in
+        with pir.in_sequence(True):
+            ops.remote_store(remote_buffer=remote_buffer_1,
+                             offset=offset_tensor_1,
+                             t=tensors["store_in_1"])
+            tensors["load_out_1"] = ops.remote_load(
+                remote_buffer=remote_buffer_1,
+                offset=offset_tensor_1,
+                name="load_out_1")
+            tensors["load_out_1_inplace"] = ops.remote_load_(
+                remote_buffer=remote_buffer_1,
+                offset=offset_tensor_1,
+                t=tensors["load_in_1_inplace"])
+            # Anchor the input tensors to the load operator
+            d2h_streams = make_anchor(d2h_streams, tensors, "load_in_1")
+            d2h_streams = make_anchor(d2h_streams, tensors,
+                                      "load_in_1_inplace")
+            # Anchor the output tensors of the load operator
+            d2h_streams = make_anchor(d2h_streams, tensors, "load_out_1")
+            d2h_streams = make_anchor(d2h_streams, tensors,
+                                      "load_out_1_inplace")
 
-        # Anchor the input tensors to the load operator
-        d2h_streams = make_anchor(d2h_streams, tensors, "load_in_2")
-        d2h_streams = make_anchor(d2h_streams, tensors, "load_in_3_inplace")
-        # Anchor the output tensors of the load operator
-        d2h_streams = make_anchor(d2h_streams, tensors, "load_out_2")
-        d2h_streams = make_anchor(d2h_streams, tensors, "load_out_3_inplace")
+            # Store and load the second and third tensor using a new buffer id
+            remote_buffer_2 = RemoteBuffer(
+                ir=ir,
+                tensor_shape=tensors["store_in_2"]._pb_tensor.info.shape(),
+                tensor_dtype=dtype.as_dtype(
+                    tensors["store_in_2"]._pb_tensor.info.data_type_lcase()),
+                entries=2)
+            # Index starts at 0
+            offset_tensor_2 = pir.constant(0, name="offset_2")
+            offset_tensor_3 = 1  # Test that the int version of offset works
+            ops.remote_store(remote_buffer=remote_buffer_2,
+                             offset=offset_tensor_2,
+                             t=tensors["store_in_2"])
+            ops.remote_store(remote_buffer=remote_buffer_2,
+                             offset=offset_tensor_3,
+                             t=tensors["store_in_3"])
+            tensors["load_out_2"] = ops.remote_load(
+                remote_buffer=remote_buffer_2,
+                offset=offset_tensor_2,
+                name="load_out_2")
+            tensors["load_out_3_inplace"] = ops.remote_load_(
+                remote_buffer=remote_buffer_2,
+                offset=offset_tensor_3,
+                t=tensors["load_in_3_inplace"])
+
+            # Anchor the input tensors to the load operator
+            d2h_streams = make_anchor(d2h_streams, tensors, "load_in_2")
+            d2h_streams = make_anchor(d2h_streams, tensors,
+                                      "load_in_3_inplace")
+            # Anchor the output tensors of the load operator
+            d2h_streams = make_anchor(d2h_streams, tensors, "load_out_2")
+            d2h_streams = make_anchor(d2h_streams, tensors,
+                                      "load_out_3_inplace")
 
     return ir._pb_ir, d2h_streams
 
@@ -212,6 +232,6 @@ def make_anchor(d2h_streams: Dict[str, str], tensors: Dict[str, Variable],
     d2h_streams[label] = pir.d2h_stream(
         tensors[label]._pb_tensor.info.shape(),
         dtype.as_dtype(tensors[label]._pb_tensor.info.data_type_lcase()),
-        name=f"{label}_stream")
+        name=f"{label}_d2h_stream")
     ops.host_store(d2h_streams[label], tensors[label])
     return d2h_streams

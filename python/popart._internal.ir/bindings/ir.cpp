@@ -56,6 +56,12 @@ void bindIr(py::module &m) {
       .def("setPatterns", &Ir::setPatterns)
       .def("applyPreAliasPatterns", &Ir::applyPreAliasPatterns)
       .def("applyInplacePattern", &Ir::applyInplacePattern)
+      .def("getAllRemoteBufferInfos",
+           &Ir::getAllRemoteBufferInfos,
+           py::return_value_policy::reference)
+      .def("getRemoteBufferInfo",
+           &Ir::getRemoteBufferInfo,
+           py::return_value_policy::reference)
       .def("setRemoteBufferInfo", &Ir::setRemoteBufferInfo)
       .def("removeIsolatedTensors", &Ir::removeIsolatedTensors)
       .def("removeIsolatedGraphs", &Ir::removeIsolatedGraphs)

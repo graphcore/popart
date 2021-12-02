@@ -15,7 +15,9 @@ void bindRemoteBufferInfo(py::module &m) {
   py::class_<RemoteBufferInfo>(m, "RemoteBufferInfo")
       .def(py::init<TensorInfo &, uint64_t &>(),
            py::arg("info"),
-           py::arg("repeats"));
+           py::arg("repeats"))
+      .def_readonly("TensorInfo", &RemoteBufferInfo::info)
+      .def_readonly("repeats", &RemoteBufferInfo::repeats);
 }
 
 } // namespace ir

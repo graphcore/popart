@@ -70,6 +70,7 @@ public:
    */
   RemoteBufferInfo(TensorInfo info_, uint64_t repeats_)
       : info(info_), repeats(repeats_) {}
+  RemoteBufferInfo() = default;
   TensorInfo info;
   uint64_t repeats;
 };
