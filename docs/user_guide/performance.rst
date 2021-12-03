@@ -12,7 +12,7 @@ parallelizing the execution of model partitions, with each partition operating
 on a separate mini-batch of data. We refer to these partitions here as pipeline
 stages.
 
-A simple `example of pipelining in PopART <https://github.com/graphcore/tutorials/tree/sdk-release-2.3/feature_examples/popart/pipelining>`_
+A simple `example of pipelining in PopART <https://github.com/graphcore/tutorials/tree/sdk-release-2.4/feature_examples/popart/pipelining>`_
 is available in the Graphcore tutorials repository.
 
 You can split a model into pipeline stages by annotating operations in the
