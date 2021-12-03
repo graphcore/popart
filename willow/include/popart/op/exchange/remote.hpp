@@ -72,7 +72,7 @@ public:
                 RemoteBufferId rbid_ = -1UL);
 
   std::unique_ptr<Op> clone() const final;
-  void setup() final{};
+  void setup() final {}
 
   bool hasSideEffect() const override { return true; }
 
