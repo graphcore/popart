@@ -223,6 +223,28 @@ void Session::setRandomSeed(uint64_t seedValue) {
   device_->setRandomSeedFromHost();
 }
 
+uint64_t Session::getRandomSeed() {
+  POPART_TRACEPOINT();
+  if (!ir->getRequiresRandomSeed()) {
+    logging::session::warn("Trying to get the random seed, but this session "
+                           "has no random behaviour. Doing nothing.");
+    return 0ull;
+  }
+
+  assertExecutableLoaded();
+
+  // ... Then stream from device
+  if (!device_->prepareHasBeenCalled()) {
+    throw runtime_error("Devicex::prepare() must be called before "
+                        "Devicex::getRandomSeedToHost() is called.");
+  }
+  uint64_t seedValue = device_->getRandomSeedToHost();
+
+  logging::session::trace("Session::getRandomSeed() = {}", seedValue);
+
+  return seedValue;
+}
+
 uint64_t Session::getCycleCount(std::string id) {
   POPART_TRACEPOINT();
   logging::session::trace("Session::getCycleCount()");

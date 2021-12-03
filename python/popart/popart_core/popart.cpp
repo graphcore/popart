@@ -1840,6 +1840,9 @@ PYBIND11_MODULE(popart_core, m) {
         py::arg("loadEngine") = true,
         py::arg("err").none(),
         DOC(popart, Session, prepareDevice));
+    cls.def("getRandomSeed",
+            &InferenceSession::getRandomSeed,
+            DOC(popart, Session, getRandomSeed));
     cls.def("setRandomSeed",
             &InferenceSession::setRandomSeed,
             py::arg("seedValue"),
@@ -1980,6 +1983,9 @@ PYBIND11_MODULE(popart_core, m) {
         py::arg("loadEngine") = true,
         py::arg("err").none(),
         DOC(popart, Session, prepareDevice));
+    cls.def("getRandomSeed",
+            &TrainingSession::getRandomSeed,
+            DOC(popart, Session, getRandomSeed));
     cls.def("setRandomSeed",
             &TrainingSession::setRandomSeed,
             py::arg("seedValue"),

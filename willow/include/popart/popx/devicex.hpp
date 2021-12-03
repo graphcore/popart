@@ -68,6 +68,8 @@ public:
   // Streams the random seed value from host, and sets the rng registers on
   // the device
   void setRandomSeedFromHost();
+  // Streams the random seed value to host.
+  uint64_t getRandomSeedToHost();
 
   // Stream RNG state host -> device
   void setRngStateFromHost();
@@ -262,6 +264,9 @@ private:
 
   // Stream buffer for storing RNG states for replicas (HwSeeds)
   std::map<uint16_t, std::vector<uint32_t>> rngBuffer;
+
+  // Stream buffer for storing result of getRandomSeed for one replica
+  uint64_t getRandomSeedBuffer;
 
   // We may have prefetched data ready to be fed into the model, but we have
   // provided a new buffer which we want to be fetched. We invalidate the

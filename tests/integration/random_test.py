@@ -143,3 +143,71 @@ def test_stochastic_rounding_behaviour():
         print("   ", new_result1)
         assert np.array_equal(new_result0, result0) is True
         assert np.array_equal(new_result1, result1) is True
+
+
+@tu.requires_ipu
+def test_reproducible_randomness_from_checkpoint(tmpdir):
+    np.random.seed(seed=1)
+    shape = [10, 10]
+    d0_data = np.random.rand(*shape).astype(np.float32)
+    in_data = np.random.rand(*shape).astype(np.float32)
+    model_file_name = "model.onnx"
+
+    builder = popart.Builder()
+    t0 = builder.addInitializedInputTensor(d0_data)
+    t1 = builder.addInputTensor("FLOAT", shape)
+    t2 = builder.aiOnnx.dropout([t1], 1, 0.4)[0]
+    mm = builder.aiOnnx.matmul([t0, t2])
+    loss = builder.aiGraphcore.l1loss([mm], 0.1)
+
+    def getSession(modelPath=""):
+        if modelPath == "":
+            fnProto = builder.getModelProto()
+        else:
+            fnProto = modelPath
+
+        opts = popart.SessionOptions()
+        opts.enableLoadAndOffloadRNGState = True
+
+        session = popart.TrainingSession(userOptions=opts,
+                                         fnModel=fnProto,
+                                         dataFlow=popart.DataFlow(1, [mm]),
+                                         loss=loss,
+                                         optimizer=popart.ConstSGD(0.1),
+                                         deviceInfo=tu.create_test_device())
+
+        session.prepareDevice()
+        session.weightsFromHost()
+        return session
+
+    # reference:
+    #  - run once
+    #  - save model after first session.run
+    #  - run second time
+    s0 = getSession()
+    s0.prepareDevice()
+    anchors0 = s0.initAnchorArrays()
+    stepio0 = popart.PyStepIO({t1: in_data}, anchors0)
+    s0.run(stepio0)
+    s0.modelToHost(str(tmpdir / model_file_name))
+    seed = s0.getRandomSeed()
+    rngState = s0.getRNGState()  # Not really needed when SR is off.
+    s0.run(stepio0)
+    del (s0)  # free up IPU
+
+    # from checkpoint:
+    #  - load model from after s0's first session.run
+    #  - run once
+    s1 = getSession(modelPath=str(tmpdir / model_file_name))
+    s1.prepareDevice()
+    s1.setRandomSeed(seed)
+    s1.setRNGState(rngState)  # Not really needed when SR is off.
+    # NOTE: Order is important as setRandomSeed affects
+    # RNG state.
+    anchors1 = s1.initAnchorArrays()
+    stepio1 = popart.PyStepIO({t1: in_data}, anchors1)
+    s1.run(stepio1)
+
+    # assert random behaviour is the same in the two
+    # 'second session.runs'
+    assert np.allclose(anchors0[mm], anchors1[mm])

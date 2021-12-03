@@ -54,6 +54,7 @@ public:
     InitRngStateTensorTask,
     InitTensorTask,
     PipelinedCopyTask,
+    RandomSeedToHostTask,
     RngStateFromHostTask,
     RngStateToHostTask,
     SetInitTensorValTask,

@@ -57,12 +57,46 @@ public:
   void setRNGState(const std::vector<uint32_t>);
 
   /**
-   * Sets the random number generator seed on all tiles of the device. This
-   * ensures deterministic behaviour of random operations in the graph.
+   * Sets the random number generator seed that explicitly seeds all random
+   * operations and, as a side-effect, derive a new RNG state from the seed and
+   * sets it on the device. This RNG state is used to resolve stochastic
+   * rounding. Note that to deterministically store and restore the combined
+   * random state for a session, do the following:
+   *
+   * C++:
+   * ```
+   * // Store random state (session s0).
+   * auto seed = s0.getRandomSeed();
+   * auto rngState = s0.getRNGState();
+   *
+   * // Restore random state (session s1).
+   * s1.setRandomSeed(seed);   // <-- affects RNG state, order important
+   * s1.setRNGState(rngState);
+   * ```
+   *
+   * Python:
+   * ```
+   * # Store random state (session s0).
+   * seed = s0.getRandomSeed()
+   * rngState = s0.getRNGState()
+   *
+   * # Restore random state (session s1).
+   * s1.setRandomSeed(seed)   // <-- affects RNG state, order important
+   * s1.setRNGState(rngState)
+   * ```
    *
    * \param The seed value.
    */
   void setRandomSeed(uint64_t seedValue);
+
+  /**
+   * Get the value of the random number seed. By later calling `setRandomSeed`
+   * with this value you can reinstate the random state logic that seeds random
+   * operations.
+   *
+   * \returns The seed value.
+   */
+  uint64_t getRandomSeed();
 
   /**
    * Compiles the graph and exports it to the specified path.

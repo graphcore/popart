@@ -100,6 +100,11 @@ public:
   PriTask initRngStateTensor();
 
   /**
+   * @return Task to set up lowering random seed to host stream copy:
+   */
+  PriTask randomSeedToHost();
+
+  /**
    * @return Task to set up lowering of rng state tensors from host to device
    * The lowered program is equivalent to the following pseudocode:
    * ```
@@ -166,6 +171,7 @@ private:
 
   // TaskIds for the different tasks
   static const TaskId initRngStateTensorTaskId;
+  static const TaskId randomSeedToHostTaskId;
   static const TaskId rngStateFromHostTaskId;
   static const TaskId rngStateToHostTaskId;
 };

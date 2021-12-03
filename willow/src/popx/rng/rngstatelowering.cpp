@@ -11,6 +11,7 @@
 
 #include <popx/rng/rngstatelowering.hpp>
 
+#include <popart/op/getrandomseed.hpp>
 #include <popart/popx/pritask.hpp>
 
 namespace popart {
@@ -198,6 +199,36 @@ PriTask RngStateLowering::initRngStateTensor() {
   return {+1e6, initRngStateTensorTaskId, {}, initRngStateTensorTask};
 }
 
+PriTask RngStateLowering::randomSeedToHost() {
+  auto streamedSeedId = GetRandomSeedOp::getStreamedSeedTensorId();
+
+  auto randomSeedToHostTask = [this, streamedSeedId]() {
+    // Copy the value of the 'streamed seed' back to the host.
+    auto &streamedSeed = irLowering.get().tensors().get(streamedSeedId);
+
+    auto streamSeedToHost = graph.get().getPoplarGraph().addDeviceToHostFIFO(
+        "d2h_randomSeed", poplar::UNSIGNED_INT, 2);
+
+    logging::devicex::debug("Initializing random seed d2h.");
+
+    SequenceMap seqs(graph.get());
+    auto &seq =
+        seqs.getSequence(&irLowering.get().progs.randomSeedToHostFragment());
+
+    seq.getPoplarSequence().add(
+        poplar::program::Copy(streamedSeed.getPoplarTensor(),
+                              streamSeedToHost,
+                              false,
+                              {"randomSeedToHost"}));
+    return seqs;
+  };
+
+  std::vector<PriTaskDependency> deps;
+  deps.push_back(irLowering.get().taskWhichCreates(streamedSeedId));
+
+  return {0, randomSeedToHostTaskId, deps, randomSeedToHostTask};
+}
+
 PriTask RngStateLowering::rngStateFromHost() {
   auto rngStateFromHostTask = [this]() {
     auto streamRngFromHost = graph.get().addHostToDeviceFIFO(
@@ -285,6 +316,8 @@ unsigned RngStateLowering::getCombinedRngStateSize() {
 
 const TaskId RngStateLowering::initRngStateTensorTaskId =
     TaskId(TaskId::Type::InitRngStateTensorTask);
+const TaskId RngStateLowering::randomSeedToHostTaskId =
+    TaskId(TaskId::Type::RandomSeedToHostTask);
 const TaskId RngStateLowering::rngStateFromHostTaskId =
     TaskId(TaskId::Type::RngStateFromHostTask);
 const TaskId RngStateLowering::rngStateToHostTaskId =

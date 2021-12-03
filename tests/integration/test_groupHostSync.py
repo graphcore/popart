@@ -80,7 +80,7 @@ def test_groupHostSync():
             continue
         if re.search(r"Sequence", l):
             countSeq += 1
-            if countSeq > 6:
+            if countSeq > 7:
                 break
         if re.search(r"OnTileExecute: ", l):
             order.append("execution")

@@ -43,7 +43,8 @@ public:
   enum ProgramIndex {
     WeightsFromHost = 0,
     OptimizerFromHost,
-    SetRandomSeedFromHost,
+    RandomSeedFromHost,
+    RandomSeedToHost,
     RngStateFromHost,
     Program,
     RngStateToHost,
@@ -56,7 +57,8 @@ public:
   enum class ProgramFragmentIndex {
     StreamWeightsFromHost = 0,
     StreamOptimizerFromHost,
-    SetRandomSeedFromHost,
+    RandomSeedFromHost,
+    RandomSeedToHost,
     RngStateFromHost,
     Init,
     PreForward,
@@ -76,8 +78,10 @@ public:
   snap::program::Sequence &streamWeightsFromHostFragment();
   const snap::program::Sequence &streamOptimizerFromHostFragment() const;
   snap::program::Sequence &streamOptimizerFromHostFragment();
-  const snap::program::Sequence &setRandomSeedFromHostFragment() const;
-  snap::program::Sequence &setRandomSeedFromHostFragment();
+  const snap::program::Sequence &randomSeedFromHostFragment() const;
+  snap::program::Sequence &randomSeedFromHostFragment();
+  const snap::program::Sequence &randomSeedToHostFragment() const;
+  snap::program::Sequence &randomSeedToHostFragment();
   const snap::program::Sequence &cycleCountTensorToHostFragment() const;
   snap::program::Sequence &rngStateFromHostFragment();
   const snap::program::Sequence &rngStateFromHostFragment() const;
@@ -221,7 +225,8 @@ private:
 
   snap::program::Sequence weightsFromHost() const;
   snap::program::Sequence optimizerFromHost() const;
-  snap::program::Sequence setRandomSeedFromHost() const;
+  snap::program::Sequence randomSeedFromHost() const;
+  snap::program::Sequence randomSeedToHost() const;
   snap::program::Sequence rngStateFromHost() const;
   snap::program::Sequence cycleCountTensorToHost() const;
   snap::program::Sequence program() const;

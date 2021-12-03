@@ -31,8 +31,12 @@ std::ostream &operator<<(std::ostream &out,
     out << "StreamOptimizerFromHost";
     break;
   }
-  case PopPrograms::ProgramFragmentIndex::SetRandomSeedFromHost: {
-    out << "SetRandomSeedFromHost";
+  case PopPrograms::ProgramFragmentIndex::RandomSeedFromHost: {
+    out << "RandomSeedFromHost";
+    break;
+  }
+  case PopPrograms::ProgramFragmentIndex::RandomSeedToHost: {
+    out << "RandomSeedToHost";
     break;
   }
   case PopPrograms::ProgramFragmentIndex::RngStateFromHost: {
@@ -118,12 +122,17 @@ snap::program::Sequence &PopPrograms::streamOptimizerFromHostFragment() {
       static_cast<int>(ProgramFragmentIndex::StreamOptimizerFromHost));
 }
 
-const snap::program::Sequence &
-PopPrograms::setRandomSeedFromHostFragment() const {
-  return seqs.at(static_cast<int>(ProgramFragmentIndex::SetRandomSeedFromHost));
+const snap::program::Sequence &PopPrograms::randomSeedFromHostFragment() const {
+  return seqs.at(static_cast<int>(ProgramFragmentIndex::RandomSeedFromHost));
 }
-snap::program::Sequence &PopPrograms::setRandomSeedFromHostFragment() {
-  return seqs.at(static_cast<int>(ProgramFragmentIndex::SetRandomSeedFromHost));
+snap::program::Sequence &PopPrograms::randomSeedFromHostFragment() {
+  return seqs.at(static_cast<int>(ProgramFragmentIndex::RandomSeedFromHost));
+}
+const snap::program::Sequence &PopPrograms::randomSeedToHostFragment() const {
+  return seqs.at(static_cast<int>(ProgramFragmentIndex::RandomSeedToHost));
+}
+snap::program::Sequence &PopPrograms::randomSeedToHostFragment() {
+  return seqs.at(static_cast<int>(ProgramFragmentIndex::RandomSeedToHost));
 }
 
 const snap::program::Sequence &PopPrograms::rngStateFromHostFragment() const {
@@ -224,10 +233,17 @@ snap::program::Sequence PopPrograms::optimizerFromHost() const {
   return prog;
 }
 
-snap::program::Sequence PopPrograms::setRandomSeedFromHost() const {
-  snap::program::Sequence prog(poplar::DebugContext{"setRandomSeedFromHost"},
+snap::program::Sequence PopPrograms::randomSeedFromHost() const {
+  snap::program::Sequence prog(poplar::DebugContext{"randomSeedFromHost"},
                                ir_lowering_p->graph());
-  prog.add(setRandomSeedFromHostFragment());
+  prog.add(randomSeedFromHostFragment());
+  return prog;
+}
+
+snap::program::Sequence PopPrograms::randomSeedToHost() const {
+  snap::program::Sequence prog(poplar::DebugContext{"randomSeedToHost"},
+                               ir_lowering_p->graph());
+  prog.add(randomSeedToHostFragment());
   return prog;
 }
 
@@ -502,7 +518,8 @@ const std::vector<snap::program::Program> PopPrograms::progs() const {
 
   ps[ProgramIndex::WeightsFromHost]        = weightsFromHost();
   ps[ProgramIndex::OptimizerFromHost]      = optimizerFromHost();
-  ps[ProgramIndex::SetRandomSeedFromHost]  = setRandomSeedFromHost();
+  ps[ProgramIndex::RandomSeedFromHost]     = randomSeedFromHost();
+  ps[ProgramIndex::RandomSeedToHost]       = randomSeedToHost();
   ps[ProgramIndex::RngStateFromHost]       = rngStateFromHost();
   ps[ProgramIndex::Program]                = program();
   ps[ProgramIndex::RngStateToHost]         = rngStateToHost();

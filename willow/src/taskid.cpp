@@ -137,6 +137,10 @@ std::ostream &operator<<(std::ostream &out, const TaskId::Type &type) {
     out << "pipelinedCopyTask";
     break;
   }
+  case (TaskId::Type::RandomSeedToHostTask): {
+    out << "randomSeedToHostTask";
+    break;
+  }
   case (TaskId::Type::RngStateFromHostTask): {
     out << "rngStateFromHostTask";
     break;

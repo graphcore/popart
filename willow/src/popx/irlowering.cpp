@@ -1080,7 +1080,7 @@ PriTask IrLowering::initRandomSeed(Tensor *tensor) {
   auto initRandomSeedTask = [this, streamedSeedId, tensor]() {
     logging::devicex::debug("Initializing random seed.");
     SequenceMap seqs(graph());
-    auto &prog = seqs.getSequence(&progs.setRandomSeedFromHostFragment());
+    auto &prog = seqs.getSequence(&progs.randomSeedFromHostFragment());
 
     // NOTE: The `streamedSeedId` tensor is a 2xUINT32 tensor streamed from the
     // host to the device and serves as the basis of two mechanisms:
@@ -1127,7 +1127,7 @@ PriTask IrLowering::initRandomSeed(Tensor *tensor) {
 
   std::vector<PriTaskDependency> deps;
   deps.push_back(taskWhichCreates(streamedSeedId));
-  // Stream the seed tensor to device before using to set RNGs
+  // Stream the seed tensor to device before using it to set RNGs
   deps.push_back({fromHostTaskId(streamedSeedId), DependencyType::Scheduler});
 
   return {
@@ -3053,8 +3053,9 @@ void IrLowering::prepareGraph() {
   // Init the random seed
   if (RandomSetup::hasRandomSeed(ir()) and !ir().useSyntheticData()) {
     auto seedTen = ir().getTensor(RandomSetup::getStreamedSeedTensorId());
-    tasks.add(fromHostTask(seedTen, progs.setRandomSeedFromHostFragment()));
+    tasks.add(fromHostTask(seedTen, progs.randomSeedFromHostFragment()));
     tasks.add(initRandomSeed(seedTen));
+    tasks.add(rngStateLowering->randomSeedToHost());
   }
 
   if (ir().getSessionOptions().enableLoadAndOffloadRNGState) {

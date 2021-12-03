@@ -3426,10 +3426,10 @@ static const char *__singlelinedoc_popart_CommGroupType_N =
     R"doc(Number of values)doc";
 
 static const char *__doc_popart_CommGroupType_None =
-    R"doc(Empty group, used as a complement group to *CommGroupType::All*)doc";
+    R"doc(Each replica is in it's own group, replica group size is ignored. */)doc";
 
 static const char *__singlelinedoc_popart_CommGroupType_None =
-    R"doc(Empty group, used as a complement group to *CommGroupType::All*)doc";
+    R"doc(Each replica is in it's own group, replica group size is ignored. */)doc";
 
 static const char *__doc_popart_CommGroupType_Orthogonal =
     R"doc(Groups are sliced orthogonal to the replica ordering.
@@ -4225,6 +4225,8 @@ static const char *__singlelinedoc_popart_DomainOpSet_getOpsetVersion =
     R"doc()doc";
 
 static const char *__doc_popart_DomainOpSet_impl = R"doc()doc";
+
+static const char *__singlelinedoc_popart_DomainOpSet_impl = R"doc()doc";
 
 static const char *__doc_popart_ErrorSource = R"doc()doc";
 
@@ -5900,6 +5902,19 @@ static const char *__doc_popart_Ir_getNumPipelineStages = R"doc()doc";
 
 static const char *__singlelinedoc_popart_Ir_getNumPipelineStages = R"doc()doc";
 
+static const char *__doc_popart_Ir_getOp =
+    R"doc(Returns the Op if it exists in any graph.
+Throws an error if the Op could not be found.
+
+Args:
+ opId: The unique ID of the Op to find
+
+Returns:
+ The Op pointer if found)doc";
+
+static const char *__singlelinedoc_popart_Ir_getOp =
+    R"doc(Returns the Op if it exists in any graph. Throws an error if the Op could not be found. Args: opId: The unique ID of the Op to find Returns: The Op pointer if found)doc";
+
 static const char *__doc_popart_Ir_getOpSchedule = R"doc()doc";
 
 static const char *__singlelinedoc_popart_Ir_getOpSchedule = R"doc()doc";
@@ -6166,6 +6181,10 @@ static const char *__singlelinedoc_popart_Ir_pipelineInfo = R"doc()doc";
 static const char *__doc_popart_Ir_prepare = R"doc()doc";
 
 static const char *__singlelinedoc_popart_Ir_prepare = R"doc()doc";
+
+static const char *__doc_popart_Ir_prepareCache = R"doc()doc";
+
+static const char *__singlelinedoc_popart_Ir_prepareCache = R"doc()doc";
 
 static const char *__doc_popart_Ir_prepareImpl = R"doc()doc";
 
@@ -7936,6 +7955,7 @@ static const char *__singlelinedoc_popart_Op_inTensorCount = R"doc()doc";
 static const char *__doc_popart_Op_inheritPlacementAttributes =
     R"doc(Helper function to set Op's placement attributes by inheriting them from
 other ops in the graph. Attributes that are set include:
+- Execution context
 - Pipeline stage
 - Execution phase
 - Virtual graph ID
@@ -7947,7 +7967,7 @@ Args:
  aliasModel: An AliasModel containing alias info for this op's graph.)doc";
 
 static const char *__singlelinedoc_popart_Op_inheritPlacementAttributes =
-    R"doc(Helper function to set Op's placement attributes by inheriting them from other ops in the graph. Attributes that are set include: - Pipeline stage - Execution phase - Virtual graph ID - Batch serial phase (optional) Args: inheritSerializations: Set batch serialial phase or not. aliasModel: An AliasModel containing alias info for this op's graph.)doc";
+    R"doc(Helper function to set Op's placement attributes by inheriting them from other ops in the graph. Attributes that are set include: - Execution context - Pipeline stage - Execution phase - Virtual graph ID - Batch serial phase (optional) Args: inheritSerializations: Set batch serialial phase or not. aliasModel: An AliasModel containing alias info for this op's graph.)doc";
 
 static const char *__doc_popart_Op_inplacePriorityDefault = R"doc()doc";
 
@@ -9523,11 +9543,11 @@ static const char *__singlelinedoc_popart_ReductionType_N =
 
 static const char *__doc_popart_ReductionType_NoReduction =
     R"doc(Don't reduce the input values, keeping them stacked into a single
-tensor. More specifically, values :math:`t_1, ..., t_k` get collected
+tensor. So values :math:`t_1, ..., t_k` get collected
 into a tensor :math:`[t_1, ..., t_k]`.)doc";
 
 static const char *__singlelinedoc_popart_ReductionType_NoReduction =
-    R"doc(Don't reduce the input values, keeping them stacked into a single tensor. More specifically, values :math:`t_1, ..., t_k` get collected into a tensor :math:`[t_1, ..., t_k]`.)doc";
+    R"doc(Don't reduce the input values, keeping them stacked into a single tensor. So values :math:`t_1, ..., t_k` get collected into a tensor :math:`[t_1, ..., t_k]`.)doc";
 
 static const char *__doc_popart_ReductionType_Sum =
     R"doc(Sum the input values and do not scale the output.)doc";
@@ -10151,6 +10171,11 @@ static const char
 static const char *__doc_popart_SessionOptions_NumIOTiles_value = R"doc()doc";
 
 static const char *__singlelinedoc_popart_SessionOptions_NumIOTiles_value =
+    R"doc()doc";
+
+static const char *__doc_popart_SessionOptions_SessionOptions = R"doc()doc";
+
+static const char *__singlelinedoc_popart_SessionOptions_SessionOptions =
     R"doc()doc";
 
 static const char *__doc_popart_SessionOptions_accumulateOuterFragmentSettings =
@@ -11106,6 +11131,18 @@ static const char *__doc_popart_Session_getRNGState = R"doc()doc";
 
 static const char *__singlelinedoc_popart_Session_getRNGState = R"doc()doc";
 
+static const char *__doc_popart_Session_getRandomSeed =
+    R"doc(Get the value of the random number seed. By later calling :code:`setRandomSeed`
+with this value you can reinstate the random state logic that seeds random
+operations.
+
+
+Returns:
+ The seed value.)doc";
+
+static const char *__singlelinedoc_popart_Session_getRandomSeed =
+    R"doc(Get the value of the random number seed. By later calling :code:`setRandomSeed` with this value you can reinstate the random state logic that seeds random operations. Returns: The seed value.)doc";
+
 static const char *__doc_popart_Session_getReport =
     R"doc(Retrieve the graph report from the ``poplar::Engine.``
 
@@ -11326,15 +11363,40 @@ static const char *__doc_popart_Session_setRNGState = R"doc()doc";
 static const char *__singlelinedoc_popart_Session_setRNGState = R"doc()doc";
 
 static const char *__doc_popart_Session_setRandomSeed =
-    R"doc(Sets the random number generator seed on all tiles of the device. This
-ensures deterministic behaviour of random operations in the graph.
+    R"doc(Sets the random number generator seed that explicitly seeds all random
+operations and, as a side-effect, derive a new RNG state from the seed and
+sets it on the device. This RNG state is used to resolve stochastic
+rounding. Note that to deterministically store and restore the combined
+random state for a session, do the following:
+
+C++:
+```
+// Store random state (session s0).
+auto seed = s0.getRandomSeed();
+auto rngState = s0.getRNGState();
+
+// Restore random state (session s1).
+s1.setRandomSeed(seed);   // <-- affects RNG state, order important
+s1.setRNGState(rngState);
+```
+
+Python:
+```
+# Store random state (session s0).
+seed = s0.getRandomSeed()
+rngState = s0.getRNGState()
+
+# Restore random state (session s1).
+s1.setRandomSeed(seed)   // <-- affects RNG state, order important
+s1.setRNGState(rngState)
+```
 
 
 Args:
  The: seed value.)doc";
 
 static const char *__singlelinedoc_popart_Session_setRandomSeed =
-    R"doc(Sets the random number generator seed on all tiles of the device. This ensures deterministic behaviour of random operations in the graph. Args: The: seed value.)doc";
+    R"doc(Sets the random number generator seed that explicitly seeds all random operations and, as a side-effect, derive a new RNG state from the seed and sets it on the device. This RNG state is used to resolve stochastic rounding. Note that to deterministically store and restore the combined random state for a session, do the following: C++: ``` // Store random state (session s0). auto seed = s0.getRandomSeed(); auto rngState = s0.getRNGState(); // Restore random state (session s1). s1.setRandomSeed(seed);   // <-- affects RNG state, order important s1.setRNGState(rngState); ``` Python: ``` # Store random state (session s0). seed = s0.getRandomSeed() rngState = s0.getRNGState() # Restore random state (session s1). s1.setRandomSeed(seed)   // <-- affects RNG state, order important s1.setRNGState(rngState) ``` Args: The: seed value.)doc";
 
 static const char *__doc_popart_Session_tryLoadExecutable =
     R"doc(Attempts to load a serialized executable. If successful then IR
@@ -12718,8 +12780,6 @@ static const char *__doc_popart_cycleCountPrefix = R"doc()doc";
 
 static const char *__singlelinedoc_popart_cycleCountPrefix = R"doc()doc";
 
-static const char *__singlelinedoc_popart_dotCheckFromString = R"doc()doc";
-
 static const char *__doc_popart_error = R"doc(Exception class for popart)doc";
 
 static const char *__singlelinedoc_popart_error =
@@ -13650,6 +13710,16 @@ static const char *__doc_popart_popx_Devicex_getLinearlyCreatedInputTensors =
 static const char
     *__singlelinedoc_popart_popx_Devicex_getLinearlyCreatedInputTensors =
         R"doc()doc";
+
+static const char *__doc_popart_popx_Devicex_getRandomSeedBuffer = R"doc()doc";
+
+static const char *__singlelinedoc_popart_popx_Devicex_getRandomSeedBuffer =
+    R"doc()doc";
+
+static const char *__doc_popart_popx_Devicex_getRandomSeedToHost = R"doc()doc";
+
+static const char *__singlelinedoc_popart_popx_Devicex_getRandomSeedToHost =
+    R"doc()doc";
 
 static const char *__doc_popart_popx_Devicex_getReplicationFactor = R"doc()doc";
 

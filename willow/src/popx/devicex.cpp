@@ -723,6 +723,7 @@ void Devicex::run(IStepIO &stepio, std::string debugName) {
 void Devicex::connectRandomSeedStream() {
   POPART_TRACEPOINT();
 
+  // Host to device stream.
   // Generate a separate random seed for each replicant.
   for (uint16_t replicaId = 0; replicaId < getReplicationFactor();
        ++replicaId) {
@@ -744,6 +745,19 @@ void Devicex::connectRandomSeedStream() {
         lowering().h2dId(RandomSetup::getStreamedSeedTensorId()),
         replicaId,
         callback);
+  }
+
+  // Device to host stream.
+  for (uint16_t replicaId = 0; replicaId < getReplicationFactor();
+       ++replicaId) {
+
+    auto callback = [this, replicaId](void *ptr) {
+      if (replicaId == 0) {
+        getRandomSeedBuffer = *reinterpret_cast<uint64_t *>(ptr);
+      }
+    };
+
+    pEngine->connectStreamToCallback("d2h_randomSeed", replicaId, callback);
   }
 }
 
@@ -781,8 +795,18 @@ void Devicex::setRandomSeedFromHost() {
   POPART_TRACEPOINT();
   if (ir().useSyntheticData() == false) {
     pEngine->disableExecutionProfiling();
-    run(PopPrograms::ProgramIndex::SetRandomSeedFromHost, "SetRandomSeed");
+    run(PopPrograms::ProgramIndex::RandomSeedFromHost, "SetRandomSeed");
   }
+}
+
+uint64_t Devicex::getRandomSeedToHost() {
+  POPART_TRACEPOINT();
+  if (ir().useSyntheticData() == false) {
+    pEngine->disableExecutionProfiling();
+    run(PopPrograms::ProgramIndex::RandomSeedToHost, "GetRandomSeed");
+  }
+
+  return getRandomSeedBuffer;
 }
 
 void Devicex::setRngStateFromHost() {
