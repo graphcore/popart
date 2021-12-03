@@ -970,7 +970,7 @@ PYBIND11_MODULE(popart_core, m) {
             py::arg("enabled"),
             py::arg("toTrackTensors") =
                 nonstd::optional<std::vector<TensorId>>(),
-            py::arg("binEdgeLocation")               = 1.0,
+            py::arg("binEdgeLocation")               = 0.0625f,
             py::arg("thresholdUpperCountProportion") = 1e-7);
     cls.def_readwrite("enabled", &AutomaticLossScalingSettings::enabled);
     cls.def_readwrite("binEdgeLocation",
