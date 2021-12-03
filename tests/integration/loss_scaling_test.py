@@ -370,7 +370,7 @@ def test_auto_loss_scaling_expected_loss_scale_tensor_values():
 
         # Therefore the loss scale will increase for each batch in the step
         if i > 0:
-            assert anchors[loss_scale_id][i] > prev_loss_scale
+            assert anchors[loss_scale_id][i] == 2 * prev_loss_scale
             prev_loss_scale = anchors[loss_scale_id][i]
 
 
