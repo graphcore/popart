@@ -51,8 +51,15 @@ if (BUILD_DOCS)
     OUTPUT ${SUPPORTED_OPS_GEN}
     COMMAND python3 gen_supported_ops.py ${SUPPORTED_OPS_PYTHONPATH} ${SUPPORTED_OPS_GEN}
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-    COMMENT "Creating supported ops"
+    COMMENT "Creating supported ops in ${SUPPORTED_OPS_GEN}"
     DEPENDS popart-py
+  )
+  add_custom_command(
+    OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/user_guide
+    COMMAND cmake -E copy_directory user_guide ${CMAKE_CURRENT_BINARY_DIR}/user_guide
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+    COMMENT "Copying user-guide sources to ${CMAKE_CURRENT_BINARY_DIR}/user_guide"
+    DEPENDS ${SUPPORTED_OPS_GEN}
   )
 
   add_custom_command(
@@ -79,7 +86,7 @@ if (BUILD_DOCS)
 
   add_custom_command(
     OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/pdfgen
-    COMMAND ${GCDOC} -v -r ${DOCS_VERSION} --onesided -b pdf ${CMAKE_CURRENT_SOURCE_DIR}/user_guide ${CMAKE_CURRENT_BINARY_DIR}/latex/popart_user_guide.pdf
+    COMMAND ${GCDOC} -v -r ${DOCS_VERSION} --onesided -b pdf ${CMAKE_CURRENT_BINARY_DIR}/user_guide ${CMAKE_CURRENT_BINARY_DIR}/latex/popart_user_guide.pdf
     COMMAND ${GCDOC} -v -x ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile -r ${DOCS_VERSION} --onesided -b pdf ${CMAKE_CURRENT_SOURCE_DIR}/api_cpp ${CMAKE_CURRENT_BINARY_DIR}/latex/popart_api_cpp.pdf
     COMMAND bash ${CMAKE_CURRENT_BINARY_DIR}/gen_docs.sh ${GCDOC} -v -r ${DOCS_VERSION} --onesided -b pdf ${CMAKE_CURRENT_SOURCE_DIR}/api_python ${CMAKE_CURRENT_BINARY_DIR}/latex/popart_api_python.pdf
     COMMENT "Building PDF documentation"
@@ -89,15 +96,17 @@ if (BUILD_DOCS)
     ${PROJECT_BINARY_DIR}/enable.sh
     ${CMAKE_CURRENT_BINARY_DIR}/latex
     ${SUPPORTED_OPS_GEN}
+    ${CMAKE_CURRENT_BINARY_DIR}/user_guide
     popart-py
   )
 
   add_custom_command(
     OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/html/popart_user_guide
-    COMMAND ${GCDOC} -v -r ${DOCS_VERSION} -b html ${CMAKE_CURRENT_SOURCE_DIR}/user_guide ${CMAKE_CURRENT_BINARY_DIR}/html/popart_user_guide
+    COMMAND ${GCDOC} -v -r ${DOCS_VERSION} -b html ${CMAKE_CURRENT_BINARY_DIR}/user_guide ${CMAKE_CURRENT_BINARY_DIR}/html/popart_user_guide
     COMMENT "Building html user guide documentation"
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
     DEPENDS ${SUPPORTED_OPS_GEN}
+    ${CMAKE_CURRENT_BINARY_DIR}/user_guide
     popart-py
   )
 
@@ -107,7 +116,6 @@ if (BUILD_DOCS)
     COMMENT "Building html C++ API documentation"
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
     DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
-    ${SUPPORTED_OPS_GEN}
     popart-py
   )
 
@@ -118,7 +126,6 @@ if (BUILD_DOCS)
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
     DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/gen_docs.sh
     ${PROJECT_BINARY_DIR}/enable.sh
-    ${SUPPORTED_OPS_GEN}
     popart-py
   )
 
