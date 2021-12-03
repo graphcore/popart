@@ -27,3 +27,5 @@ import popart.ir.transforms
 del sys
 del actualVersion
 del requiredVersion
+
+__all__ = [name for name in dir()]
