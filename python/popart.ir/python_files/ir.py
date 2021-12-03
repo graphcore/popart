@@ -120,13 +120,6 @@ class Ir:
         subgraph = Graph._from_pb(_pb_subgraph)
 
         with subgraph:
-            dupes = self._find_duplicate_tensors(
-                [arg for arg in args if isinstance(arg, Tensor)])
-            if len(dupes) > 0:
-                raise ValueError(
-                    f"There are duplicate tensors in the inputs to {name}: {[d.id for d in dupes]} "
-                    "Please ensure tensor inputs to subgraphs are unique.")
-
             in_args = []
             params = list(parameters.items())
             for idx, arg in enumerate(args):
@@ -171,29 +164,6 @@ class Ir:
                 subgraph_output(out)
 
         return subgraph
-
-    def _find_duplicate_tensors(self,
-                                tensors: Iterable[Tensor]) -> List[Tensor]:
-        """Get the duplicate tensors (by tensor id) from a list.
-
-        Args:
-            tensors (Iterable[Tensor]): Tensors to check
-
-        Returns:
-            List[Tensor]: The duplicates (once each).
-        """
-        seen = {}
-        dupes = []
-
-        for t in tensors:
-            if t.id not in seen:
-                seen[t.id] = 1
-            else:
-                if seen[t.id] == 1:
-                    dupes.append(t)
-                seen[t.id] += 1
-
-        return dupes
 
     def create_empty_graph(self, name: Optional[str] = None):
         """Create a new graph.

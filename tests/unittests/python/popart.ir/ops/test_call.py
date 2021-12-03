@@ -138,5 +138,13 @@ class TestCall:
         assert info._op.modifiesIndex(0)
         assert not info._op.modifiesIndex(1)
 
+    def test_can_pass_same_tensor_multiple_times(self):
+        ir = pir.Ir()
+
+        with ir.main_graph():
+            a = pir.variable(1)
+            add_g = ir.create_graph(lambda x, y: x + y, a, a)
+            b = ops.call(add_g, a, a)
+
 
 # TODO: Test nested subgraphs
