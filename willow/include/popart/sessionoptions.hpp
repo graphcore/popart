@@ -31,7 +31,7 @@ struct AutomaticLossScalingSettings {
   AutomaticLossScalingSettings(
       bool enabled_,
       const nonstd::optional<std::vector<TensorId>> &toTrackTensors_,
-      float binEdgeLocation_               = 1.0,
+      float binEdgeLocation_               = 0.0625f,
       float thresholdUpperCountProportion_ = 1e-7);
 
   AutomaticLossScalingSettings &
@@ -48,7 +48,7 @@ struct AutomaticLossScalingSettings {
   /// represents the smallest representable value, and `1` the maximum. This is
   /// the single bin edge of the histogram that is an input to the loss scale
   /// updater algorithm.
-  float binEdgeLocation = 1.0;
+  float binEdgeLocation = 0.0625f;
 
   /// The proportion of the elements in the upper bin above which the loss scale
   /// is increased, and below which the loss scale is decreased. Should be in
