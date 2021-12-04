@@ -78,27 +78,30 @@ DataType getOutputDataType(const TensorInfo &i0,
 }
 
 void MulOp::setup() {
-  auto outShape =
-      prettyNpOut(inShape(getArg0InIndex()), inShape(getArg1InIndex()));
+  auto out =
+      prettyNpOut(inInfo(getArg0InIndex()), inInfo(getArg1InIndex()), false);
   auto outType = getOutputDataType(
       inInfo(getArg0InIndex()), inInfo(getArg1InIndex()), str());
-  outInfo(getOutIndex()) = {outType, outShape};
+  out.set(outType);
+  outInfo(getOutIndex()) = out;
 }
 
 void MulLhsInplaceOp::setup() {
-  auto outShape =
-      prettyNpOut(inShape(getArg0InIndex()), inShape(getArg1InIndex()));
+  auto out =
+      prettyNpOut(inInfo(getArg0InIndex()), inInfo(getArg1InIndex()), false);
   auto outType = getOutputDataType(
       inInfo(getArg0InIndex()), inInfo(getArg1InIndex()), str());
-  outInfo(getOutIndex()) = {outType, outShape};
+  out.set(outType);
+  outInfo(getOutIndex()) = out;
 }
 
 void MulRhsInplaceOp::setup() {
-  auto outShape =
-      prettyNpOut(inShape(getArg0InIndex()), inShape(getArg1InIndex()));
+  auto out =
+      prettyNpOut(inInfo(getArg0InIndex()), inInfo(getArg1InIndex()), false);
   auto outType = getOutputDataType(
       inInfo(getArg0InIndex()), inInfo(getArg1InIndex()), str());
-  outInfo(getOutIndex()) = {outType, outShape};
+  out.set(outType);
+  outInfo(getOutIndex()) = out;
 }
 
 MulArg0GradOp::MulArg0GradOp(const Op &op_,

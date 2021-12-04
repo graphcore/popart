@@ -610,6 +610,7 @@ private:
   void verifyTensorProducerConnectivity() const;
   void verifyTensorConsumerConnectivity() const;
   void verifyTensorIds() const;
+  void verifyReplicatedTensorSharding() const;
 
   // Verifies that the virtual graph IDs (if used) are valid, on ops and losses
   // if specified

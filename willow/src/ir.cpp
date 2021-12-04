@@ -35,6 +35,7 @@
 #include <popart/op/exchange/hostcopy.hpp>
 #include <popart/op/exchange/multiexchange.hpp>
 #include <popart/op/getrandomseed.hpp>
+#include <popart/op/if.hpp>
 #include <popart/op/init.hpp>
 #include <popart/op/loss.hpp>
 #include <popart/op/pad.hpp>
@@ -881,6 +882,65 @@ void Ir::verifyRecomputeAttributes() const noexcept(false) {
   }
 }
 
+void Ir::verifyReplicatedTensorSharding() const {
+  for (const auto &op : getAllOps()) {
+
+    // Subgraph Ops are currently excluded from this check, because they
+    // delegate RTS to the Ops within the subgraph.
+    if (op->isConvertibleTo<SubgraphOp>() || op->isConvertibleTo<IfOp>()) {
+      continue;
+    }
+
+    auto rtsIndices = op->getReplicatedTensorShardingIndices();
+
+    for (const auto &input : op->input->tensorMap()) {
+      const auto &inInfo = input.second->info;
+      if (inInfo.metaShape().size()) {
+        if (!std::any_of(rtsIndices.begin(),
+                         rtsIndices.end(),
+                         [&input](const auto &rtsIndex) {
+                           return std::any_of(rtsIndex.first.begin(),
+                                              rtsIndex.first.end(),
+                                              [&input](const auto &inIndex) {
+                                                return inIndex == input.first;
+                                              });
+                         })) {
+          throw internal_error("Op {} encountered on a replicated tensor "
+                               "sharding (RTS) path, but the Op does not "
+                               "specify that it can consume an RTS tensor "
+                               "at InIndex {}",
+                               op->debugName(),
+                               input.first);
+        }
+      }
+    }
+
+    for (auto &rtsIndex : rtsIndices) {
+      for (const InIndex &inIndex : rtsIndex.first) {
+        for (const OutIndex &outIndex : rtsIndex.second) {
+          if (op->hasInput(inIndex) && op->hasOutput(outIndex)) {
+            const auto &inInfo  = op->inInfo(inIndex);
+            const auto &outInfo = op->outInfo(outIndex);
+
+            if (inInfo.shape() == outInfo.shape() &&
+                inInfo.metaShape().size() &&
+                inInfo.metaShape() != outInfo.metaShape()) {
+
+              throw internal_error("Op {} encountered on a replicated tensor "
+                                   "sharding (RTS) path, but the "
+                                   "tensor shapes ("
+                                   "input: {} shape: {} / meta-shape: {} -> "
+                                   "output: {} shape: {} / meta-shape: {}"
+                                   ") are not handled correctly.",
+                                   op->debugName());
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
 bool Ir::hasOverlappedIO() const {
   auto isOverlappingExchangeStrategy = [](ExchangeStrategy strategy) {
     return strategy == ExchangeStrategy::OverlapStep ||
@@ -1398,6 +1458,8 @@ void Ir::prepareImpl(const IrBundle &gb, const HashesMap &cacheEntries) {
   // Remove extra RemoteLoad, RemoteStore and Replicated ops that are not used
   applyTransform(Prune::id(), getMainGraph());
   updateVertices();
+  // Check all Ops implement RTS correctly
+  verifyReplicatedTensorSharding();
 
   if (canTrain()) {
     getMainGraph().setVarUpdateConstraints();
@@ -1607,6 +1669,7 @@ void Ir::prepareImpl(const IrBundle &gb, const HashesMap &cacheEntries) {
     verifyRecomputeAttributes();
     verifyExecutionContexts();
     verifyPipelineStageAttributes();
+    verifyReplicatedTensorSharding();
 
     StochasticRoundingAssumptionVerifier srVerifier{*this};
     srVerifier.verify();

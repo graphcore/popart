@@ -242,8 +242,11 @@ void bindOp(py::module &m) {
            py::overload_cast<const Shape &, const Shape &>(&Op::prettyNpOut,
                                                            py::const_))
       .def("prettyNpOut",
-           py::overload_cast<const TensorInfo &, const TensorInfo &>(
-               &Op::prettyNpOut, py::const_))
+           py::overload_cast<const TensorInfo &, const TensorInfo &, bool>(
+               &Op::prettyNpOut, py::const_),
+           py::arg("s0"),
+           py::arg("s1"),
+           py::arg("checkDataType") = true)
       .def("getCalledGraphs",
            &Op::getCalledGraphs,
            py::return_value_policy::reference)

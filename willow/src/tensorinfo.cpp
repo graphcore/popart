@@ -247,6 +247,7 @@ TensorInfo::npOutDataTypeExceptionMessage(const TensorInfo &i0,
 
 TensorInfo npOut(const TensorInfo &i0,
                  const TensorInfo &i1,
+                 bool checkDataType,
                  const std::string &debugName) {
 
   // Propagate meta shape correctly (used for replicated tensor sharding)
@@ -265,7 +266,7 @@ TensorInfo npOut(const TensorInfo &i0,
     metaShape = i1.metaShape();
   }
 
-  if (i0.dataType() != i1.dataType()) {
+  if (checkDataType && i0.dataType() != i1.dataType()) {
     throw error(TensorInfo::npOutDataTypeExceptionMessage(i0, i1, debugName));
   }
 
