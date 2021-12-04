@@ -95,6 +95,7 @@ DataType getOutputDataType(const TensorInfo &i0,
 /// and does not necessarily match that of numpy.
 TensorInfo npOut(const TensorInfo &i0,
                  const TensorInfo &i1,
+                 bool checkDataType,
                  const std::string &debugName = "");
 
 /// Compute the reduction axis for a reduction op.

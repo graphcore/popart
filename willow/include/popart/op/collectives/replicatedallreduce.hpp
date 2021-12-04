@@ -24,6 +24,9 @@ public:
   CollectiveOperator getCollectiveOp() const { return op; }
   virtual void growAliasModel(AliasModel &) const override;
 
+  ReplicatedTensorShardingIndices
+  getReplicatedTensorShardingIndices() const override;
+
 protected:
   CollectiveOperator op;
 };

@@ -134,6 +134,7 @@ ReplicatedTensorShardingIndices
 ElementWiseBinaryBaseOp::getReplicatedTensorShardingIndices() const {
   if (isOptimizerOp()) {
     std::set<InIndex> rtsInIndices;
+    std::set<InIndex> rtsOutIndices;
 
     auto arg0Inf = inInfo(ElementWiseBinaryBaseOp::getArg0InIndex());
     auto arg1Inf = inInfo(ElementWiseBinaryBaseOp::getArg1InIndex());
@@ -169,7 +170,11 @@ ElementWiseBinaryBaseOp::getReplicatedTensorShardingIndices() const {
       rtsInIndices.insert(ElementWiseBinaryBaseOp::getArg1InIndex());
     }
 
-    return {{rtsInIndices, {ElementWiseBinaryBaseOp::getOutIndex()}}};
+    if (!rtsInIndices.empty()) {
+      rtsOutIndices.insert(ElementWiseBinaryBaseOp::getOutIndex());
+    }
+
+    return {{rtsInIndices, rtsOutIndices}};
   } else {
     return {};
   }

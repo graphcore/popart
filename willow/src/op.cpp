@@ -417,11 +417,13 @@ Shape Op::prettyNpOut(const Shape &s0, const Shape &s1) const {
   return npOut(s0, s1, ss.str());
 }
 
-TensorInfo Op::prettyNpOut(const TensorInfo &i0, const TensorInfo &i1) const {
+TensorInfo Op::prettyNpOut(const TensorInfo &i0,
+                           const TensorInfo &i1,
+                           bool checkDataType) const {
   std::stringstream ss;
   ss << "Op " << str();
 
-  return npOut(i0, i1, ss.str());
+  return npOut(i0, i1, checkDataType, ss.str());
 }
 
 InIndex Op::opInToSubgraphInIndex(SubgraphIndex subgraphIndex,

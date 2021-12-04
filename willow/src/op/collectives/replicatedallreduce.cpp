@@ -46,6 +46,12 @@ void ReplicatedAllReduceOp::appendOutlineAttributes(
   os.appendAttribute(sCollectiveOperator, static_cast<int>(op));
 }
 
+ReplicatedTensorShardingIndices
+ReplicatedAllReduceOp::getReplicatedTensorShardingIndices() const {
+  return {{{ReplicatedAllReduceOp::getInIndex()},
+           {ReplicatedAllReduceOp::getOutIndex()}}};
+}
+
 ReplicatedAllReduceInplaceOp::ReplicatedAllReduceInplaceOp(
     const OperatorIdentifier &_opid,
     CollectiveOperator op_,

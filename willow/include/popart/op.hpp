@@ -627,10 +627,30 @@ public:
 
   virtual void appendMore(OpSerialiserBase &) const;
 
-  // Calculate numpy broadcast shape for two shapes or generate an error if
-  // the broadcast is not aligned. The error will have operator context.
+  /**
+   * Calculate numpy broadcast shape for two shapes or generate an error if
+   * the broadcast is not aligned. The error will have operator context.
+   * Note: If the RTS meta-shape is required, use prettyNpOut with TensorInfo
+   * instead.
+   * \param s0 First shape
+   * \param s1 Second shape
+   * \return   Numpy-like broadcasted output shape
+   */
   Shape prettyNpOut(const Shape &s0, const Shape &s1) const;
-  TensorInfo prettyNpOut(const TensorInfo &i0, const TensorInfo &i1) const;
+
+  /**
+   * Calculate numpy broadcast shape for two shapes or generate an error if
+   * the broadcast is not aligned. The error will have operator context.
+   * \param i0            First tensor info containing shape and meta-shape
+   * \param i1            Second tensor info containing shape and meta-shape
+   * \param checkDataType If true, verifies that the data types are identical
+   *                      and throws an error if not.
+   * \return              Numpy-like broadcast output info containing correct
+   *                      shape and meta-shape. The data type is taken from i0.
+   */
+  TensorInfo prettyNpOut(const TensorInfo &i0,
+                         const TensorInfo &i1,
+                         bool checkDataType = true) const;
 
   // All graph that this op may call during its execution
   virtual std::vector<const Graph *> getCalledGraphs() const;
