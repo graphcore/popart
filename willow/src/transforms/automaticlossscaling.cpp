@@ -521,18 +521,11 @@ bool AutomaticLossScale::apply(Graph &graph) const {
   std::set<Tensor *> inverseLossScaleTensors =
       getInverseLossScaleTensors(graph);
 
-  // The inverse loss scale tensor is always fp32. If the loss scale factor is
-  // fp16, then we must ensure the algorithm does not increase the final loss
-  // scale to above max(fp16). Othwerwise the gradient scaling and unscaling
-  // will not be result in an identity operation.
-  bool clipOutput = lossScaleTensor->info.dataType() == DataType::FLOAT16;
-
   // Pass loss scale tensor and HistogramOp outputs into the LossScaleUpdateOp
   auto lossScaleUpdateOp =
       graph.createOp<LossScaleUpdateOp>(Onnx::CustomOperators::LossScaleUpdate,
                                         lossScaleTensor->info.dataType(),
-                                        clipOutput,
-                                        Op::Settings(graph, ""));
+                                        Op::Settings(graph, "LossScaleUpdate"));
 
   // Case 0, 1, 2 or 3: Sum the statistics tensors
   // Sum the histogram tensors
@@ -643,8 +636,6 @@ bool AutomaticLossScale::apply(Graph &graph) const {
 
   lossScaleUpdateOp->connectInTensor(
       LossScaleUpdateOp::getLossScaleUpdateFactorInIndex(), lsUpdateFactor->id);
-  lossScaleUpdateOp->connectInTensor(LossScaleUpdateOp::getLossScalingInIndex(),
-                                     lossScaleTensor->id);
   lossScaleUpdateOp->createAndConnectOutTensor(
       LossScaleUpdateOp::getUpdatedLossScaleUpdateFactorOutIndex(),
       reservedUpdatedVarPrefix() + lsUpdateFactor->id);

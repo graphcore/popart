@@ -24,8 +24,6 @@ template <typename T> void run_test() {
   // loss scale update factor
   TensorInfo ls_info{getTypeName<T>(), std::vector<int64_t>{}};
   auto ls_update_factor = builder->addInputTensor(ls_info);
-  // loss scale
-  auto ls_tensor = builder->addInputTensor(ls_info);
 
   // gradient statistics, 2 bins:
   // (0) not saturated
@@ -33,8 +31,8 @@ template <typename T> void run_test() {
   TensorInfo statistics_info{"UINT32", std::vector<int64_t>{2}};
   auto statistics_tensor_id = builder->addInputTensor(statistics_info);
 
-  std::vector<TensorId> all_ls_update_inputs = {
-      ls_update_factor, ls_tensor, statistics_tensor_id};
+  std::vector<TensorId> all_ls_update_inputs = {ls_update_factor,
+                                                statistics_tensor_id};
 
   // The LossScaleUpdateOp has not been exposed directly in the Builder class,
   // but can still be added to an Onnx model via the customOp method.
@@ -71,10 +69,6 @@ template <typename T> void run_test() {
   std::vector<T> ls_update_val{4.0};
   popart::NDArrayWrapper<T> ls_update_wrapper(ls_update_val.data(), ls_info);
   inputs.emplace(ls_update_factor, ls_update_wrapper);
-
-  std::vector<T> ls_val{0.1};
-  popart::NDArrayWrapper<T> ls_wrapper(ls_val.data(), ls_info);
-  inputs.emplace(ls_tensor, ls_wrapper);
 
   std::vector<uint32_t> grad_stats_vals{8, 56};
   popart::NDArrayWrapper<uint32_t> grad_stats_wrapper(grad_stats_vals.data(),

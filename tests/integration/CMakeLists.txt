@@ -97,7 +97,6 @@ add_popart_py_unit_test(graph_replication_test graph_replication_test.py VARIANT
 add_popart_py_unit_test(import_test import_test.py)
 add_popart_py_unit_test(ipu_copy_test ipu_copy_test.py VARIANTS IpuModel)
 add_popart_py_unit_test(loader_test loader_test.py)
-add_popart_py_unit_test(loss_scaling_clip_test loss_scaling_clip_test.py)
 add_popart_py_unit_test(loss_scaling_test loss_scaling_test.py VARIANTS IpuModel)
 add_popart_py_unit_test(net_test net_test.py)
 add_popart_py_unit_test(np_memory_layout_test np_memory_layout_test.py)
