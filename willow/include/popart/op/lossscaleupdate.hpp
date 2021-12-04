@@ -9,23 +9,18 @@ namespace popart {
 // This op takes as inputs:
 // - The loss scale update factor, used to update the loss scale tensor and
 //   inverse loss scale tensors.
-// - The loss scale.
 // - 'gradient statistics' tensors, which is 1D tensor with 2 elements.
 //
 // and outputs:
 // - The loss scale update factor - a scalar tensor. This can be used to
 //   inplace-modify the loss scale and inverse loss scale optimizer tensors
-//   in the automatic loss scaling Transform. This can be optionally clipped to
-//   the largest power of 2 that fits in fp16 (32768) by setting clipOutput to
-//   true.
+//   in the automatic loss scaling Transform.
 class LossScaleUpdateOp : public Op {
 public:
   LossScaleUpdateOp(const OperatorIdentifier &_opid,
                     const DataType &updateFactorDType_,
-                    bool clipOutput_,
                     const Op::Settings &settings_)
-      : Op(_opid, settings_), updateFactorDType(updateFactorDType_),
-        clipOutput(clipOutput_) {}
+      : Op(_opid, settings_), updateFactorDType(updateFactorDType_) {}
 
   void setup() final;
 
@@ -33,10 +28,7 @@ public:
   static InIndex getLossScaleUpdateFactorInIndex() { return 0; }
 
   // Gradient tensor statistics
-  static InIndex getStatisticsTensorInIndex() { return 2; }
-
-  // The loss scale
-  static InIndex getLossScalingInIndex() { return 1; }
+  static InIndex getStatisticsTensorInIndex() { return 1; }
 
   // The factor by which to multiply the loss scale tensor
   static OutIndex getUpdatedLossScaleUpdateFactorOutIndex() { return 0; }
@@ -46,7 +38,6 @@ public:
   std::unique_ptr<Op> clone() const override;
 
   DataType getUpdateFactorDType() const { return updateFactorDType; }
-  bool getClipOutput() const { return clipOutput; }
 
   // This Op aliases and modifies the input at index
   // getLossScaleUpdateFactorInIndex()
@@ -56,7 +47,6 @@ public:
 
 private:
   DataType updateFactorDType;
-  bool clipOutput;
 };
 
 } // namespace popart

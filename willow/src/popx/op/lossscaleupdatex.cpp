@@ -27,8 +27,8 @@ void LossScaleUpdateOpx::grow(snap::program::Sequence &prog) const {
                 op.getStatisticsTensorInIndex());
   }
 
-  if (op.input->n() != 3) {
-    throw error("LossScaleUpdateOpx has {} inputs, but 3 inputs are expected.",
+  if (op.input->n() != 2) {
+    throw error("LossScaleUpdateOpx has {} inputs, but 2 inputs are expected.",
                 op.input->n());
   }
 
@@ -103,32 +103,6 @@ void LossScaleUpdateOpx::grow(snap::program::Sequence &prog) const {
                           scaleDown.getPoplarSequence(),
                           scaleUp.getPoplarSequence(),
                           debugContext("lossScaleUpdate")));
-  if (op.getClipOutput()) {
-    // Whenever the finalLossScale is in fp16 or the weights are in fp16, the
-    // finalLossScale should be clipped so that its value fits in the fp16
-    // range. We chose to clip it at the largest power of 2 that fits in fp16 -
-    // (2^15 = 32768). The finalLossScale is calculated as:
-    //     finalLossScale = lossScaleUpdateFactor * lossScaling
-    // As a result, the lossScaleUpdateFactor should be clipped at
-    // 2^15 / lossScaling to satisfy the requirement above.
-    auto lossScaling =
-        getInTensor(op.getLossScalingInIndex()).getPoplarTensor();
-
-    auto clipAt_ = graph().getPoplarGraph().addConstant<float>(
-        lossScaling.elementType(), {1}, std::numeric_limits<short>::max() + 1);
-    graph().getPoplarGraph().setTileMapping(clipAt_, 0);
-
-    auto clipAt = popops::div(graph().getPoplarGraph(),
-                              clipAt_,
-                              lossScaling,
-                              prog.getPoplarSequence(),
-                              debugContext("clipAtValue"));
-    popops::minInPlace(graph().getPoplarGraph(),
-                       lossScaleUpdateFactor,
-                       clipAt,
-                       prog.getPoplarSequence(),
-                       debugContext("clipOutput"));
-  }
 
   setOutTensor(op.getUpdatedLossScaleUpdateFactorOutIndex(),
                snap::Tensor{lossScaleUpdateFactor, graph()});

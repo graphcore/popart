@@ -1344,8 +1344,10 @@ void Ir::prepareImpl(const IrBundle &gb, const HashesMap &cacheEntries) {
 
   // Convert the fp16 loss scale tensor to fp32. This relies on assumptions of
   // the ability of the Opx implementations for the consumers of the loss scale
-  // tensor to handle mixed-precision inputs
-  if (getSessionOptions().ensureFp32LossScaleTensor) {
+  // tensor to handle mixed-precision inputs. Loss scale being represented in
+  // fp32 is a requirement for using automatic loss scaling.
+  if (getSessionOptions().ensureFp32LossScaleTensor ||
+      getSessionOptions().automaticLossScalingSettings.enabled) {
     applyTransform(EnsureFp32LossScale::id(), getMainGraph());
   }
 
