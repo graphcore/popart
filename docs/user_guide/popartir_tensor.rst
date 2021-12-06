@@ -29,6 +29,7 @@ These literals are implicitly converted to constant tensors.
 That is, these lines
 
 .. code-block:: python
+
   b = pir.constant(1, dtype=pir.int8, name="constant_b")
   o = a + b
 
