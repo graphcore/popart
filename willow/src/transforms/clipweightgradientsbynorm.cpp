@@ -92,6 +92,7 @@ Tensor *addReduceSumSquare(Tensor *grad, Graph &graph) {
 
   Op::Settings settings(graph, "", {});
   settings.executionContext = decideExecutionContext(graph);
+  settings.optimizerOp      = true;
 
   nonstd::optional<std::vector<int64_t>> axes;
   Op *reduction = graph.createOp<ReduceSumSquareOp>(
@@ -184,6 +185,7 @@ Tensor *createCopyOnVGraph(Tensor *t, VGraphId destination, Graph &graph) {
 
   Op::Settings settings(graph, "", {});
   settings.executionContext = decideExecutionContext(graph);
+  settings.optimizerOp      = true;
 
   Op *op = graph.createOp<IpuCopyOp>(
       Onnx::CustomOperators::IpuCopy, destination, settings);
@@ -220,6 +222,7 @@ Tensor *createGlobalNorm(int clipGroupIndex,
                          Graph &graph) {
   Op::Settings settings(graph, "", {});
   settings.executionContext = decideExecutionContext(graph);
+  settings.optimizerOp      = true;
 
   Op *sum = graph.createOp<SumOp>(Onnx::AiOnnx::OpSet8::Sum, settings);
   transferBaseProperties(gradNorms.at(0)->getProducer(), sum);
@@ -254,6 +257,7 @@ void addClipByNorm(Tensor *grad,
 
   Op::Settings settings(graph, "", {});
   settings.executionContext = decideExecutionContext(graph);
+  settings.optimizerOp      = true;
 
   Op *mulOp = graph.createOp<MulOp>(Onnx::AiOnnx::OpSet6::Mul, settings);
   transferBaseProperties(grad->consumers.getOps().at(0), mulOp);
@@ -309,6 +313,7 @@ Tensor *createClipFactor(Tensor *globalNorm, Tensor *clipNorm, Graph &graph) {
 
   Op::Settings settings(graph, "", {});
   settings.executionContext = decideExecutionContext(graph);
+  settings.optimizerOp      = true;
 
   Op *maxOp = graph.createOp<MaxOp>(Onnx::AiOnnx::OpSet6::Max, settings);
   transferBaseProperties(globalNorm->getProducer(), maxOp);
