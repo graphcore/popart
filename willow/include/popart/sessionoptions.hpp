@@ -1027,7 +1027,7 @@ struct SessionOptions {
     auto cachePathEnv = getPopartEnvVar("CACHE_DIR");
     if (cachePathEnv) {
       enableEngineCaching = true;
-      cachePath           = cachePathEnv;
+      cachePath           = *cachePathEnv;
     }
   }
 };

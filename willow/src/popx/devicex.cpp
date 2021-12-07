@@ -879,10 +879,8 @@ void Devicex::loadEngineAndConnectStreams() {
       if (di.getOnDemandAttachTimeout() > 0) {
         di.tryAttachUntilTimeout();
       }
-      // If still not attached, error
-      if (!di.attach()) {
-        throw runtime_error("Failed to attach to device");
-      }
+    } else {
+      di.writeToDeviceAccessLog("attach");
     }
   }
 

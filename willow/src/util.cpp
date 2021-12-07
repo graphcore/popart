@@ -101,8 +101,17 @@ std::set<Tensor *> getInverseLossScaleTensors(const Graph &graph) {
   return inverseLossScaleTensors;
 }
 
-char *getPopartEnvVar(std::string env_var) {
-  return std::getenv(logging::format("POPART_{}", env_var).c_str());
+nonstd::optional<std::string> getEnvVar(const std::string& env_var) {
+  char * res = std::getenv(env_var.c_str());
+  if (res) {
+    return std::string(res);
+  } else {
+    return nonstd::nullopt;
+  }
+}
+
+nonstd::optional<std::string> getPopartEnvVar(const std::string& env_var) {
+  return getEnvVar(logging::format("POPART_{}", env_var));
 }
 
 std::ostream &operator<<(std::ostream &ss, const std::vector<std::size_t> &v) {

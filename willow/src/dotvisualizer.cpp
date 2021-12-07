@@ -277,9 +277,9 @@ std::set<std::string> DotVisualizer::getDotChecks(const Ir &ir) {
 
   auto popartDotChecks = getPopartEnvVar("DOT_CHECKS");
 
-  if (popartDotChecks && std::strcmp(popartDotChecks, "") != 0) {
+  if (popartDotChecks && (*popartDotChecks != "")) {
     std::vector<std::string> dotCheckFromPopartEnv;
-    boost::split(dotCheckFromPopartEnv, popartDotChecks, [](char c) {
+    boost::split(dotCheckFromPopartEnv, *popartDotChecks, [](char c) {
       return c == ':';
     });
 
