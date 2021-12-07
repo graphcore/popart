@@ -1454,6 +1454,14 @@ void Ir::prepareImpl(const IrBundle &gb, const HashesMap &cacheEntries) {
 
   updateVertices();
 
+  // Touches optimizers which might later go through replicated tensor sharding
+  // and streaming memory, and therefore needs to be applied before
+  // StreamingMemory::id(2)
+  if (optimizer && optimizer->getClipNormSettings().size() > 0) {
+    applyTransform(ClipWeightGradientsByNorm::id(), getMainGraph());
+    updateVertices();
+  }
+
   // Second streaming memory transformation pass (cut)
   // Streaming memory transformation 2 needs up-to-date aliasing information
   applyTransform(StreamingMemory::id(2), getMainGraph());
@@ -1565,11 +1573,6 @@ void Ir::prepareImpl(const IrBundle &gb, const HashesMap &cacheEntries) {
     for (auto &id_graph : graphs) {
       applyTransform(MergeExchange::id(), *id_graph.second);
     }
-  }
-
-  if (optimizer && optimizer->getClipNormSettings().size() > 0) {
-    applyTransform(ClipWeightGradientsByNorm::id(), getMainGraph());
-    updateVertices();
   }
 
   if (getSessionOptions().enableOutlining) {
