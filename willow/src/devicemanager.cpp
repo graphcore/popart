@@ -186,13 +186,12 @@ std::shared_ptr<DeviceInfo> DeviceManager::acquireAvailableDevice(
   auto device = tryAcquireAvailableDevice(
       numIpus, tilesPerIPU, pattern, connectionType, selectionCriterion);
 
-  // Warn if acquiring device is unsuccessful. TODO T46787: error instead.
   if (!device) {
-    logging::warn(
-        "No avaialble device was found. Returning a null device. Note that in "
-        "a future release an exception will be thrown in this instance. If you "
-        "would like to have a nullptr returned, use "
-        "'tryAcquireAvailableDevice' instead.");
+    throw error(
+        "Failed to acquire device with {} IPUs. Ensure that there are "
+        "sufficient IPUs available. If you have enabled the Poplar SDK you can "
+        "check device availability with the `gc-monitor` command-line utility.",
+        numIpus);
   }
   return device;
 }
@@ -228,11 +227,11 @@ DeviceManager::acquireDeviceById(int id,
 
   // Warn if acquiring device is unsuccessful. TODO T46787: error instead.
   if (!device) {
-    logging::warn("Device with id '{}' is not availble. Returning a null "
-                  "device. Note that in a future release an exception will be "
-                  "thrown in this instance. If you would like to have a "
-                  "nullptr returned, use 'tryAcquireDeviceById' instead",
-                  id);
+    throw error(
+        "Failed to acquire device with id '{}'. Ensure it is available. If you "
+        "have enabled the Poplar SDK you can check device availability with "
+        "the `gc-monitor` command-line utility.",
+        id);
   }
   return device;
 }

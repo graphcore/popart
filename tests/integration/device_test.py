@@ -58,7 +58,6 @@ def test_aquire_device_by_id_1():
 
 
 @tu.requires_ipu
-@pytest.mark.skip("T46787 exception not yet thrown")
 def test_aquire_device_by_id_2():
     """
     Test that an error is thrown if trying to acquire device by id when it
@@ -68,8 +67,8 @@ def test_aquire_device_by_id_2():
     deviceId = 0
     device = deviceManager.acquireDeviceById(deviceId)
     with pytest.raises(popart.popart_exception,
-                       match="Unable to acquire device with id") as e:
-        deviceManager.tryAcquireDeviceById(deviceId)
+                       match="Failed to acquire device with id '0'") as e:
+        deviceManager.acquireDeviceById(deviceId)
 
 
 @tu.requires_ipu
@@ -82,7 +81,7 @@ def test_aquire_device_by_id_3():
     deviceId = 0
     device0 = deviceManager.acquireDeviceById(deviceId)
     assert device0 != None
-    device1 = deviceManager.acquireDeviceById(deviceId)
+    device1 = deviceManager.tryAcquireDeviceById(deviceId)
     assert device1 == None
 
 
@@ -94,7 +93,6 @@ def test_default_connection_type_0():
 
 
 @tu.requires_ipu
-@pytest.mark.skip("T46787 exception not yet thrown")
 def test_default_connection_type_1():
     """
     Test that error is thrown if try to acquire more devices than are
@@ -105,13 +103,12 @@ def test_default_connection_type_1():
     with pytest.raises(
             popart.popart_exception,
             match=
-            "Failed to acquire device. Ensure that there are sufficient IPUs available"
+            "Failed to acquire device with 256 IPUs. Ensure that there are sufficient IPUs available"
     ) as e:
-        deviceManager.tryAcquireAvailableDevice(ipus)
+        deviceManager.acquireAvailableDevice(ipus)
 
 
 @tu.requires_ipu
-@pytest.mark.skip("T46787 exception not yet thrown")
 def test_default_connection_type_2():
     """
     Test that error is thrown if try to acquire a single IPU when all have
@@ -123,9 +120,9 @@ def test_default_connection_type_2():
     with pytest.raises(
             popart.popart_exception,
             match=
-            "Failed to acquire device. Ensure that there are sufficient IPUs available"
+            f"Failed to acquire device with {1} IPUs. Ensure that there are sufficient IPUs available"
     ) as e:
-        deviceManager.tryAcquireAvailableDevice(1)
+        deviceManager.acquireAvailableDevice(1)
 
 
 @tu.requires_ipu
