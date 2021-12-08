@@ -1,3 +1,4 @@
+# Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 # cmake option definitions for popart
 
 if(DEFINED POPLAR_INSTALL_DIR AND POPLAR_INSTALL_DIR AND NOT EXISTS "${POPLAR_INSTALL_DIR}")
@@ -52,6 +53,8 @@ if (${POPART_USE_STACKTRACE})
 endif()
 
 option(POPART_BUILD_TESTING "Build the popart tests" ON)
+
+option(POPART_LOG_DEVICE_ACCESS_IN_TESTS "Write a device access log (deviceaccess.log) when running ctest" OFF)
 
 # Generate compile_commands.json file for IDE integration
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)

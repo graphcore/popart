@@ -345,7 +345,7 @@ IrLowering::IrLowering(const Ir &ir,
 
   // Set the opxTrace flag based on the environment variable
   auto POPART_OPX_TRACE = getPopartEnvVar("OPX_TRACE");
-  opxTrace = POPART_OPX_TRACE ? strncmp(POPART_OPX_TRACE, "1", 1) == 0 : false;
+  opxTrace              = POPART_OPX_TRACE ? (*POPART_OPX_TRACE == "1") : false;
 
   if (ir.getExecutionMode() == Ir::ExecutionMode::Training) {
     lstmOptions.set("inferenceOnly", "false");
@@ -2747,9 +2747,9 @@ void IrLowering::prepareGraph() {
   logging::devicex::info("Poplar release githash: {}", poplar::packageHash());
 
   auto popartPrintTensors = getPopartEnvVar("PRINT_TENSORS");
-  if (popartPrintTensors && std::strcmp(popartPrintTensors, "") != 0) {
+  if (popartPrintTensors && (*popartPrintTensors != "") != 0) {
     boost::split(
-        printTensorIds, popartPrintTensors, [](char c) { return c == ' '; });
+        printTensorIds, *popartPrintTensors, [](char c) { return c == ' '; });
     logging::devicex::debug("Printing tensors {}", printTensorIds);
   }
 

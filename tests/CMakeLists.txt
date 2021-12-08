@@ -198,11 +198,16 @@ function(add_popart_cpp_unit_test name)
     if (${TEST_CONFIG} STREQUAL "cpp")
       list(APPEND test_env "IPU_POPLAR_RT_GP_SUFFIX=_c")
     endif()
+    if (POPART_LOG_DEVICE_ACCESS_IN_TESTS)
+      list(APPEND test_env "POPART_LOG_DEVICE_ACCESS_IN_TESTS=${CMAKE_BINARY_DIR}/deviceaccess.log")
+      list(APPEND test_env "POPART_TEST_NAME=${test_name}")
+    endif()
 
     set_tests_properties(${test_name} PROPERTIES
                          ENVIRONMENT "${test_env}")
     set_tests_properties(${test_name} PROPERTIES
                           LABELS "${test_args_LABELS}")
+
     if (${TEST_TARGET} STREQUAL "Hw")
       # Make sure tests that use physical IPUs only run if an appropriate
       # number were available according to the relevant test fixture:
@@ -261,8 +266,16 @@ function(add_popart_py_unit_test name filename)
     # Setting TMPDIR=${PYTEST_BASETEMP} as `pytest --forked` is somehow 
     # preventing poplar from cleaning up its temporary files if the test raises 
     # an exception.
+    set(test_env ${TEST_ENVIRONMENT})
+    list(APPEND test_env "TEST_TARGET=${TEST_TARGET}")
+    list(APPEND test_env "TMPDIR=${PYTEST_BASETEMP}")
+    if (POPART_LOG_DEVICE_ACCESS_IN_TESTS)
+      list(APPEND test_env "POPART_LOG_DEVICE_ACCESS_IN_TESTS=${CMAKE_BINARY_DIR}/deviceaccess.log")
+      list(APPEND test_env "POPART_TEST_NAME=${test_name}")
+    endif()
+
     set_tests_properties(${test_name} PROPERTIES
-                         ENVIRONMENT "TEST_TARGET=${TEST_TARGET};TMPDIR=${PYTEST_BASETEMP}")
+                         ENVIRONMENT "${test_env}")
   endforeach()
 endfunction()
 

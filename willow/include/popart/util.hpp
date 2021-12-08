@@ -11,6 +11,7 @@
 #include <vector>
 
 #include <popart/tensorinfo.hpp>
+#include <popart/vendored/optional.hpp>
 
 namespace popart {
 
@@ -67,7 +68,16 @@ cast(DataType src, DataType dst, const void *data, size_t nbytes);
 std::vector<char>
 cast(DataType src, DataType dst, const std::vector<char> &data);
 
-char *getPopartEnvVar(std::string env_var);
+nonstd::optional<std::string> getEnvVar(const std::string &env_var);
+nonstd::optional<std::string> getPopartEnvVar(const std::string &env_var);
+
+/**
+ * Return the ctest name (e.g.,
+ * "Hw_default_global_batch_size_test-[SGDM1-Sum-Loop-True]") if there is one.
+ * That is, if and only if PopART is running via ctest. This function reads the
+ * TEST_NAME environment variable which is set via cmake.
+ **/
+nonstd::optional<std::string> getTestName();
 
 std::vector<char> convertFloatToDataType(DataType dtype, float data);
 template <typename T> std::vector<char> convertFloatTo(float data);

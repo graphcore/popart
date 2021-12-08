@@ -90,6 +90,15 @@ public:
 
   bool tryAttachUntilTimeout();
 
+  /// Log an event for device debugging purposes. This event will get logged to
+  /// the file location set by evironment variable
+  /// POPART_LOG_DEVICE_ACCESS_IN_TESTS, if it is set. \param event A textual
+  /// description of the device event. \param auxKeyVals Additional parameters
+  /// to log.
+  void writeToDeviceAccessLog(
+      const std::string &event,
+      const std::map<std::string, std::string> &auxKeyVals = {});
+
 private:
   DeviceProvider &provider;
   DeviceType type;

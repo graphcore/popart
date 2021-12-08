@@ -1,6 +1,8 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
 #include <algorithm>
 #include <chrono>
+#include <fstream>
+#include <iomanip>
 #include <random>
 #include <sstream>
 #include <thread>
@@ -12,6 +14,7 @@
 #include <poplar/exceptions.hpp>
 #include <popart/devicemanager.hpp>
 #include <popart/error.hpp>
+#include <popart/util.hpp>
 
 namespace popart {
 
@@ -165,9 +168,11 @@ std::shared_ptr<DeviceInfo> DeviceManager::tryAcquireAvailableDevice(
       // Attach to the device. Will succeed if available
       if (connectionType == DeviceConnectionType::Always) {
         if (device->attach()) {
+          device->writeToDeviceAccessLog("attach");
           return device;
         }
       } else {
+        device->writeToDeviceAccessLog("select");
         return device;
       }
     }
@@ -210,6 +215,7 @@ DeviceManager::tryAcquireDeviceById(int id,
   // Attach to the device. Will succeed if available
   if (connectionType == DeviceConnectionType::Always) {
     if (device->attach()) {
+      device->writeToDeviceAccessLog("attach");
       return device;
     } else {
       // Return nullptr if no device is acquired.
@@ -322,6 +328,13 @@ void DeviceInfo::setOnDemandAttachTimeout(const unsigned seconds) {
 }
 
 bool DeviceInfo::tryAttachUntilTimeout() {
+
+  auto start = std::chrono::steady_clock::now();
+
+  writeToDeviceAccessLog(
+      "try-attach-start",
+      {{"timeout", std::to_string(getOnDemandAttachTimeout())}});
+
   // Periodically try to attach until either timeout reached or
   // successfully attached
   auto startTime = std::chrono::steady_clock::now();
@@ -335,7 +348,54 @@ bool DeviceInfo::tryAttachUntilTimeout() {
         std::chrono::duration_cast<std::chrono::seconds>(delayTime - startTime)
             .count();
   }
+
+  auto end = std::chrono::steady_clock::now();
+  auto total =
+      std::chrono::duration_cast<std::chrono::seconds>(end - start).count();
+
+  if (attached) {
+    writeToDeviceAccessLog(
+        "try-attach-success",
+        {{"try-time", std::to_string(total)},
+         {"timeout", std::to_string(getOnDemandAttachTimeout())}});
+  } else {
+    writeToDeviceAccessLog(
+        "try-attach-fail",
+        {{"try-time", std::to_string(total)},
+         {"timeout", std::to_string(getOnDemandAttachTimeout())}});
+  }
+
   return attached;
+}
+
+void DeviceInfo::writeToDeviceAccessLog(
+    const std::string &event,
+    const std::map<std::string, std::string> &auxKeyVals) {
+  auto deviceLog = getPopartEnvVar("LOG_DEVICE_ACCESS_IN_TESTS");
+  if (deviceLog) {
+    auto now       = std::chrono::system_clock::now();
+    auto nowTime   = std::chrono::system_clock::to_time_t(now);
+    auto localTime = std::localtime(&nowTime);
+
+    std::ofstream outfile;
+    outfile.open(*deviceLog, std::ios_base::app);
+    outfile << std::put_time(localTime, "%FT%T") << "Z";
+    auto testName = getPopartEnvVar("TEST_NAME");
+    outfile << ", event:" << event;
+    outfile << ", numIpus:" << getNumIpus();
+    outfile << ", id:" << getId();
+
+    for (const auto &entry : auxKeyVals) {
+      outfile << ", " << entry.first << ":" << entry.second;
+    }
+
+    if (testName) {
+      outfile << ", test:" << *testName;
+    }
+
+    outfile << "\n";
+    outfile.close();
+  }
 }
 
 std::ostream &operator<<(std::ostream &os, const DeviceInfo &di) {
