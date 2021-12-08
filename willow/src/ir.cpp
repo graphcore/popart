@@ -1138,15 +1138,15 @@ void Ir::prepare(const IrBundle &gb, const HashesMap &cacheEntries) {
     if (irDumpDest) {
       logging::log(logging::Module::ir,
                    logLevel,
-                   logging::format("Writing ir to {}", *irDumpDest));
+                   logging::format("Writing ir to {}", irDumpDest));
       std::ofstream ofs;
-      ofs.open(*irDumpDest, std::ofstream::out);
+      ofs.open(irDumpDest, std::ofstream::out);
       if (ofs.is_open()) {
         std::stringstream ss;
         serialise(Ir::SerialiseFormat::JSON, ss, false);
         ofs << ss.str();
       } else {
-        logging::ir::err("Failed to open file {} to dump ir.", *irDumpDest);
+        logging::ir::err("Failed to open file {} to dump ir.", irDumpDest);
       }
     }
   };

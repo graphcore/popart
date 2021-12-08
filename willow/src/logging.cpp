@@ -168,7 +168,7 @@ LoggingContext::LoggingContext() {
   auto POPART_LOG_FORMAT = getPopartEnvVar("LOG_FORMAT");
 
   if (POPART_LOG_FORMAT) {
-    logFormat = *POPART_LOG_FORMAT;
+    logFormat = std::string(POPART_LOG_FORMAT);
   } else {
     logFormat = "%^%Y-%m-%dT%H:%M:%S.%fZ %n %P.%t %L: %v%$";
   }
@@ -177,15 +177,15 @@ LoggingContext::LoggingContext() {
   // The valid options are "stdout", "stderr", or if it is neither
   // of those it is treated as a filename. The default is stderr.
   std::string logDest =
-      POPART_LOG_DEST ? *POPART_LOG_DEST : defaultLoggerDestination;
+      POPART_LOG_DEST ? POPART_LOG_DEST : defaultLoggerDestination;
 
   // Get logging level from OS ENV. The default level is off.
-  defaultLevel = logLevelFromString(POPART_LOG_LEVEL ? *POPART_LOG_LEVEL
+  defaultLevel = logLevelFromString(POPART_LOG_LEVEL ? POPART_LOG_LEVEL
                                                      : defaultLoggerLevel);
 
   if (POPART_LOG_CONFIG) {
     try {
-      boost::property_tree::read_json(*POPART_LOG_CONFIG, loggingConfig);
+      boost::property_tree::read_json(POPART_LOG_CONFIG, loggingConfig);
     } catch (const boost::exception &) {
       std::cerr << "Error reading log configuration file: "
                 << boost::current_exception_diagnostic_information()

@@ -261,10 +261,6 @@ bool DevicexInfo::attach() {
 }
 
 void DevicexInfo::detach() {
-  if (isAttached_) {
-    writeToDeviceAccessLog("detach");
-  }
-
   isAttached_ = false;
   device.detach();
 }

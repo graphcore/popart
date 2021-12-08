@@ -262,7 +262,7 @@ function(add_popart_py_unit_test name filename)
     # preventing poplar from cleaning up its temporary files if the test raises 
     # an exception.
     set_tests_properties(${test_name} PROPERTIES
-                         ENVIRONMENT "POPART_TEST_NAME=${test_name};TEST_TARGET=${TEST_TARGET};TMPDIR=${PYTEST_BASETEMP}")
+                         ENVIRONMENT "TEST_TARGET=${TEST_TARGET};TMPDIR=${PYTEST_BASETEMP}")
   endforeach()
 endfunction()
 
