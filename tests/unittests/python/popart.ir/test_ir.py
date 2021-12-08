@@ -299,3 +299,35 @@ class TestCreateGraph:
         with ir.main_graph():
             with pytest.raises(ValueError):
                 g = ir.create_graph(fun)
+
+    def test_create_graph_tensor_spec(self):
+        ir = pir.Ir()
+
+        def foo(x: pir.TensorByRef, y: pir.Tensor, c: int):
+            return (x * c) + y
+
+        with ir.main_graph():
+            v1 = pir.variable(1)
+            v2 = pir.variable(2)
+
+            g = ir.create_graph(foo, v1.tensor_spec, v2.tensor_spec, 5)
+
+        assert len(g._by_ref_inputs) == 1
+        x = g.get_input_tensors()[0]
+        assert x == g._by_ref_inputs.pop()
+        assert x.name == "x"
+
+    def test_create_graph_tensor_spec_standalone(self):
+        ir = pir.Ir()
+
+        def foo(x: pir.TensorByRef, y: pir.Tensor, c: int):
+            return (x * c) + y
+
+        with ir.main_graph():
+            g = ir.create_graph(foo, pir.TensorSpec((), pir.int32),
+                                pir.TensorSpec((), pir.int32), 5)
+
+        assert len(g._by_ref_inputs) == 1
+        x = g.get_input_tensors()[0]
+        assert x == g._by_ref_inputs.pop()
+        assert x.name == "x"

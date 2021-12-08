@@ -41,6 +41,26 @@ TILE_SET_MAP = {
 }
 
 
+class TensorSpec:
+    def __init__(self,
+                 shape: Tuple[int, ...],
+                 dtype: dtypes.dtype,
+                 meta_shape: Tuple[int, ...] = ()):
+        """Description of a Tensor.
+            Instances of this class can be used as arguments in
+            ir.create_graph to provide a specification of the input tensors.
+
+        Args:
+            shape (Tuple[int, ...]): shape of a Tensor
+            dtype (dtypes.dtype): data type of a Tensor
+            meta_shape (Tuple[int, ...], optional):
+                Shape of the full Tensor when using replicated tensor sharding. Defaults to ().
+        """
+        self.shape = shape
+        self.dtype = dtype
+        self.meta_shape = meta_shape
+
+
 class Tensor:
     def __init__(self):
         """popart.ir Tensor."""
@@ -96,6 +116,11 @@ class Tensor:
         replicated tensor sharding was applied.
         """
         return tuple(self._pb_tensor.info.metaShape())
+
+    @property
+    def tensor_spec(self):
+        """Return a TensorSpec instance using properties of `self`"""
+        return TensorSpec(self.shape, self.dtype, self.meta_shape)
 
     @property
     def rank(self) -> int:

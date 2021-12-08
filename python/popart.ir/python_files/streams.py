@@ -1,6 +1,6 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 from .context import gcg
-from .tensor import Tensor
+from .tensor import Tensor, TensorSpec
 from .dtypes import dtype
 
 import popart._internal.ir as _ir
@@ -26,6 +26,10 @@ class _Stream:
     @property
     def shape(self) -> Tuple[int, ...]:
         return self._stream_tensor.shape
+
+    @property
+    def tensor_spec(self) -> TensorSpec:
+        return self._stream_tensor.tensor_spec
 
     def tensor_id(self) -> str:
         return self._stream_tensor.id

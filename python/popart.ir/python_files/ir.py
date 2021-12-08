@@ -9,10 +9,9 @@ import os
 
 import popart
 import popart._internal.ir as _ir
-from .context import get_main_graph
 from .graph import Graph
 from .module import Module
-from .tensor import Tensor, TensorByRef, subgraph_input, subgraph_output
+from .tensor import Tensor, TensorByRef, subgraph_input, subgraph_output, TensorSpec
 
 if TYPE_CHECKING:
     IrCache = WeakValueDictionary[int, 'Ir']
@@ -92,8 +91,8 @@ class Ir:
         """
         Create a subgraph from a Python callable `fn` or a `Module`'s build method.
         The graph inputs are determined using the signature of the function `fn`
-        and the supplied arguments `args` and `kwargs`. Tensors passed via the
-        arguments are used to determine the tensor info of the graph inputs (the
+        and the supplied arguments `args` and `kwargs`. Tensors or TensorSpecs passed via the
+        arguments are used to determine the shape and dtype of the graph inputs (the
         tensors are not actually passed to the graph). The graph outputs are
         determined using the outputs of the function when called.
 
@@ -163,7 +162,7 @@ class Ir:
             for name, arg in bound_args.arguments.items():
                 type_hint = signature.parameters[name].annotation
 
-                if isinstance(arg, Tensor):
+                if isinstance(arg, (Tensor, TensorSpec)):
                     by_ref = type_hint is TensorByRef
                     arguments[name] = subgraph_input(arg.shape,
                                                      arg.dtype,
@@ -176,6 +175,7 @@ class Ir:
                 # 2. Variable length argument `def func(*x)`
                 # 3. Variable keyword arguments `def func(**x)`
                 elif isinstance(arg, (tuple, list, dict)):
+                    by_ref = False
                     signature_kind = signature.parameters[name].kind
 
                     if (signature_kind is inspect.Parameter.VAR_POSITIONAL or
@@ -201,8 +201,8 @@ class Ir:
                     contains_tensor = False
 
                     for i, (subarg_name, subarg) in enumerate(items):
-                        if i > 0 and (isinstance(subarg, Tensor) !=
-                                      contains_tensor):
+                        if i > 0 and (isinstance(subarg, (Tensor, TensorSpec))
+                                      != contains_tensor):
                             raise TypeError(
                                 f"A {type(arg)} argument can't contain a "
                                 f"mixture of Tensors and other types. Arg name:"
