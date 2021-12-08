@@ -72,7 +72,10 @@ void bindTensorInfo(py::module &m) {
       .def("data_type", &TensorInfo::data_type)
       .def("data_type_lcase", &TensorInfo::data_type_lcase)
       .def(py::self == py::self)
-      .def(py::self != py::self);
+      .def(py::self != py::self)
+      .def("set",
+           py::overload_cast<DataType, const Shape &, const Shape &>(
+               &TensorInfo::set));
 }
 
 } // namespace ir

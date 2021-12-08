@@ -1,5 +1,5 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-from typing import Optional, Union
+from typing import Optional, Tuple, Union
 import popart._internal.ir as _ir
 from popart.ir.context import get_current_context, op_debug_context
 from popart.ir.tensor import Tensor
@@ -61,6 +61,17 @@ def remote_load(remote_buffer: RemoteBuffer,
 
     check_in_graph(g, remote_load_tensor, offset)
 
+    # Set the meta_shape of the input tensor. Required for RTS.
+    remote_load_tensor._pb_tensor.info.set(
+        remote_load_tensor._pb_tensor.info.dataType(),
+        remote_load_tensor._pb_tensor.info.shape(), remote_buffer.meta_shape)
+    opts = g.ir()._pb_ir.getSessionOptions()
+    if opts.enableReplicatedGraphs and opts.replicatedGraphCount > 1:
+        assert multiply_tuple(
+            remote_buffer.meta_shape
+        ) == opts.replicatedGraphCount * remote_load_tensor._pb_tensor.info.nelms(
+        )
+
     remote_buffer.validate_tensor_matches_buffer(remote_load_tensor)
 
     settings = ctx._get_op_settings('remote_load')
@@ -113,6 +124,15 @@ def remote_load_(remote_buffer: RemoteBuffer, offset: Union[int, Tensor],
 
     check_in_graph(g, t, offset)
 
+    # Set the meta_shape of the input tensor. Required for RTS.
+    t._pb_tensor.info.set(t._pb_tensor.info.dataType(),
+                          t._pb_tensor.info.shape(), remote_buffer.meta_shape)
+    opts = g.ir()._pb_ir.getSessionOptions()
+    if opts.enableReplicatedGraphs and opts.replicatedGraphCount > 1:
+        assert multiply_tuple(
+            remote_buffer.meta_shape
+        ) == opts.replicatedGraphCount * t._pb_tensor.info.nelms()
+
     remote_buffer.validate_tensor_matches_buffer(t)
 
     settings = ctx._get_op_settings('remote_load_inplace')
@@ -127,3 +147,19 @@ def remote_load_(remote_buffer: RemoteBuffer, offset: Union[int, Tensor],
         remote_buffer.remote_buffer_id)
 
     return Tensor._from_pb_tensor(op.outTensor(0))
+
+
+def multiply_tuple(tup: Tuple) -> int:
+    """Multiple the elements of a tuple
+
+    Args:
+        tup (Tuple): The tuple.
+
+    Returns:
+        int: The product of the elements.
+    """
+    temp = list(tup)
+    product = 1
+    for x in temp:
+        product *= x
+    return product

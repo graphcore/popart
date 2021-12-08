@@ -13,4 +13,5 @@ add_popart_py_unit_test(unittest_python_popart.ir_io_tiles context/test_io_tiles
 add_popart_py_unit_test(unittest_python_popart.ir_virtual_graph context/test_virtual_graph.py)
 add_popart_py_unit_test(unittest_python_popart.ir_pipeline_stage context/test_pipeline_stage.py)
 add_popart_py_unit_test(unittest_python_popart.ir_autodiff transforms/test_autodiff.py)
+add_popart_py_unit_test(unittest_python_popart.ir_variable_location test_variable_location.py VARIANTS IpuModel)
 add_subdirectory(ops)

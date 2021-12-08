@@ -136,6 +136,10 @@ public:
     inputSettings.setReplicatedStreamMode(mode);
   }
 
+  void setTensorLocationInfo(
+      TensorLocation &,
+      std::pair<RemoteBufferId, RemoteBufferIndex> &remoteBufferInfo);
+
   // Return all the pipeline stages the tensor is used in.
   std::set<PipelineStage> getPipelineStages() const;
 

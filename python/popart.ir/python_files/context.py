@@ -13,8 +13,8 @@ if TYPE_CHECKING:
     from popart.ir.tensor import Tensor
 
 __all__ = [
-    'get_current_graph', 'get_main_graph', 'gcg', 'gmg', 'ipu',
-    'virtual_graph', 'pipeline_stage', 'in_sequence', 'name_scope', 'io_tiles'
+    'get_current_graph', 'get_main_graph', 'gcg', 'gmg', 'virtual_graph',
+    'pipeline_stage', 'in_sequence', 'name_scope', 'ipu', 'io_tiles'
 ]
 
 
@@ -34,6 +34,7 @@ class Context:
         self._debug_context_frame_offset: int = 0
         self._name_scope: List[str] = []
         self._io_tile_set: bool = False
+        self._execution_context: _ir.ExecutionContext = _ir.ExecutionContext.Normal
 
         self._hook_handle: int = 0
         self._op_created_hooks: Dict[int, Callable[[_ir.Op], Any]] = {}
@@ -51,6 +52,8 @@ class Context:
         pstage = self.pipeline_stage
         if pstage is not None:
             settings.pipelineStage = _ir.OptionalPipelineStage(pstage)
+
+        settings.executionContext = self._execution_context
 
         if self.io_tile_set:
             settings.tileSet = _ir.TileSet.IO
@@ -318,6 +321,15 @@ def debug_context_frame_offset(i: int):
     ctx._debug_context_frame_offset += (i + 1)
     yield ctx._debug_context_frame_offset
     ctx._debug_context_frame_offset -= (i + 1)
+
+
+@contextmanager
+def _execution_context(execution_context: _ir.ExecutionContext):
+    ctx = get_current_context()
+    prev = ctx._execution_context
+    ctx._execution_context = execution_context
+    yield execution_context
+    ctx._execution_context = prev
 
 
 def _tensor_ids_from_maybe_tensors(

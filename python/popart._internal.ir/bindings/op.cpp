@@ -35,7 +35,20 @@ void bindOp(py::module &m) {
       .def_readwrite("inferTensorMappingToFrom",
                      &Op::Settings::inferTensorMappingToFrom)
       .def_readwrite("debugInfoId", &Op::Settings::debugInfoId)
+      .def_readwrite("executionContext", &Op::Settings::executionContext)
       .def_readwrite("tileSet", &Op::Settings::tileSet);
+
+  py::enum_<ExecutionContext>(m, "ExecutionContext", py::module_local())
+      .value("Normal", ExecutionContext::Normal)
+      .value("AccumulateOuterFragment",
+             ExecutionContext::AccumulateOuterFragment)
+      .value("WeightsFromHostFragment",
+             ExecutionContext::WeightsFromHostFragment)
+      .value("WeightsToHostFragment", ExecutionContext::WeightsToHostFragment)
+      .value("OptimizerFromHostFragment",
+             ExecutionContext::OptimizerFromHostFragment)
+      .value("Subgraph", ExecutionContext::Subgraph);
+
   py::class_<Op, PyOp<>, std::shared_ptr<Op>>(m, "Op")
       .def(py::init<const OperatorIdentifier &, const Op::Settings &>())
       .def_readwrite("id", &Op::id)

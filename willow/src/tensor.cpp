@@ -545,6 +545,17 @@ std::vector<char> Tensor::getDataViaGraphTraversal() const {
   }
 }
 
+void Tensor::setTensorLocationInfo(
+    TensorLocation &tLocation,
+    std::pair<RemoteBufferId, RemoteBufferIndex> &remoteBufferInfo) {
+
+  tensorLocationInfo.setRemote(tLocation.isRemote());
+  tensorLocationInfo.setSharded(tLocation.replicatedTensorSharding ==
+                                ReplicatedTensorSharding::On);
+  tensorLocationInfo.setRemoteBufferInfo(remoteBufferInfo.first,
+                                         remoteBufferInfo.second);
+}
+
 std::set<PipelineStage> Tensor::getPipelineStages() const {
   auto result = consumers.getPipelineStages();
   if (hasProducer() && getProducer()->hasPipelineStage()) {

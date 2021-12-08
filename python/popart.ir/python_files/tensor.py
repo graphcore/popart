@@ -4,15 +4,17 @@ import numpy as np
 
 import popart._internal.ir as _ir
 from popart.ir import dtypes
-from popart.ir.context import gcg, debug_context_frame_offset
+from popart.ir.context import gcg, debug_context_frame_offset, _execution_context, get_main_graph
 from popart.ir.typing_ import NewAliasAnnotation
 
 if TYPE_CHECKING:
     from popart.ir import Ir
+    from popart.ir.remote_buffer import RemoteBuffer
 
 __all__ = [
-    'Tensor', 'variable', 'constant', 'subgraph_input', 'subgraph_output',
-    'TensorByRef'
+    'Tensor', 'variable', 'remote_variable', 'remote_replica_sharded_variable',
+    'replica_sharded_variable', 'constant', 'subgraph_input',
+    'subgraph_output', 'TensorByRef'
 ]
 
 
@@ -56,6 +58,10 @@ class Tensor:
     @property
     def shape(self) -> Tuple[int, ...]:
         return tuple(self._pb_tensor.info.shape())
+
+    @property
+    def meta_shape(self) -> Tuple[int, ...]:
+        return self._pb_tensor.info.metaShape()
 
     @property
     def rank(self) -> int:
@@ -122,13 +128,10 @@ class Tensor:
         """Hashes the Tensor, based on Tensor and Ir `id`"""
         return hash((self.id, self.ir()))
 
-    def __eq__(self, value: 'Tensor') -> bool:
+    def __eq__(self, other: Any) -> bool:
         """Tensor equality, based on Tensor and Ir `id`"""
-        if not isinstance(value, Tensor):
-            raise TypeError(
-                f"Value must be of type pir.Tensor. Value: {value}. Type: {type(value)}"
-            )
-        return self.id == value.id and self.ir() == value.ir()
+        return isinstance(
+            other, Tensor) and self.id == other.id and self.ir() == other.ir()
 
     def __len__(self) -> int:
         """Size of 0th axis"""
@@ -151,6 +154,10 @@ class Tensor:
         else:
             dtype = self.dtype if dtype is None else dtype
             return constant(value, dtype)
+
+    @property
+    def location_info(self):
+        return self._pb_tensor.tensorLocationInfo
 
     @debug_context_frame_offset(1)
     def __add__(self, value: Any) -> 'Tensor':
@@ -358,6 +365,114 @@ def variable(
     pb_id = g._create_tensor_id(name)
     pb_g.addVarInit(pb_id, info, np_data)
     return Variable._from_pb_tensor(pb_g.getTensor(pb_id))
+
+
+def remote_variable(var: Variable, remote_buffer: "RemoteBuffer",
+                    offset: int) -> Constant:
+    """Store the tensor off-chip in remote memory. 
+
+    Args:
+        var (Variable): The variable to be stored remotely.
+        remote_buffer (RemoteBuffer): The handle to the remote buffer.
+        offset (int): The offset to index the tensor in the remote tensor.
+
+    Returns:
+        Constant: The tensor associated with the remote variable. Note: this is not the remote 
+            variable, but a tensor associated with it. In future this tensor will not be required.
+    """
+    var._pb_tensor.setTensorLocationInfo(
+        _ir.TensorLocation(_ir.TensorStorage.OffChip,
+                           _ir.ReplicatedTensorSharding.Off),
+        remote_buffer.remote_buffer_id, offset)
+
+    return constant(offset, name=f"RemoteArg___{var.id}")
+
+
+def remote_replica_sharded_variable(
+        var: Variable, remote_buffer: "RemoteBuffer", offset: int) -> Constant:
+    """Scatter a tensor in equal shards across replicas (replicated tensor sharding (RTS)/
+        data parallelism) of the same model/graph.​ Eliminates redundant data storage when the full 
+        (un-sharded) tensor does not need to be present on each IPU. Stores the full tensor in remote 
+        memory (usually DDR memory).
+
+        RTS tensors for which each replica needs a full copy of need to be recombined with a 
+        replicated AllGather operation.​
+
+        Fully updated tensors that need to be sharded and/or reduced again require a replicated 
+        ReduceScatter operation.
+
+    Args:
+        var (Variable): The variable to be sharded remotely.
+        remote_buffer (RemoteBuffer): The handle to the remote buffer.
+        offset (int): The offset to index the tensor shard in the remote tensor.
+
+    Raises:
+        ValueError: If replication has not been enabled.
+        ValueError: If the number of elements of `var` is not divisible by the number of variables.
+
+    Returns:
+        Constant: The tensor associated with the remote variable. Note: this is not the remote 
+            variable, but a tensor associated with it. In future this tensor will not be required.
+    """
+    remote_arg = remote_variable(var, remote_buffer, offset)
+
+    # Set the meta_shape for the RemoteBuffer, this will be required later in ops.remote_load
+    if remote_buffer.meta_shape == ():
+        remote_buffer.meta_shape = var.shape
+    else:
+        raise ValueError(
+            f"The meta_shape of the remote_buffer (id: {remote_buffer.remote_buffer_id})"
+            f"has already been set to: {remote_buffer.meta_shape}")
+
+    opts = gcg().ir()._pb_ir.getSessionOptions()
+    if not opts.enableReplicatedGraphs:
+        raise ValueError("Replication has not been enabled on the current IR")
+
+    replicas: int = opts.replicatedGraphCount
+    if (var.nelms % replicas) != 0:
+        raise ValueError(
+            "Variable is not divisible by the number of replicas.")
+
+    var._pb_tensor.setTensorLocationInfo(
+        _ir.TensorLocation(_ir.TensorStorage.OffChip,
+                           _ir.ReplicatedTensorSharding.On),
+        remote_buffer.remote_buffer_id, offset)
+    return remote_arg
+
+
+def replica_sharded_variable(var: Variable, remote_buffer: "RemoteBuffer",
+                             offset: int) -> Tuple[Constant, Tensor]:
+    """Scatter a tensor in equal shards across replicas (data parallelism) of the 
+        same model/graph.​ Eliminates redundant data storage when the full (un-sharded) tensor does 
+        not need to be present on each IPU. Does not store the full tensor in remote memory.
+
+    Args:
+        var (Variable): The variable to be sharded.
+        remote_buffer (RemoteBuffer): [The handle to the remote buffer.
+        offset (int): The offset to index the tensor shard in the full tensor.
+
+    Returns:
+        Tuple[Constant, Tensor]:
+            A tuple of tensors:
+            1. The tensor associated with the remote variable. Note: this is not the remote 
+            variable, but a tensor associated with it. In future this tensor will not be required.
+            2. The sharded variable.
+    """
+    import popart.ir.ops as ops
+
+    # Create a remote RTS variable
+    remote_arg = remote_replica_sharded_variable(var, remote_buffer, offset)
+
+    # Load/Store the variable in the WeightsFromHost/WeightsToHost programs.
+    with get_main_graph():
+        with _execution_context(_ir.ExecutionContext.WeightsFromHostFragment):
+            var_shard = ops.remote_load(remote_buffer, offset,
+                                        var.name + "_rts")
+
+        with _execution_context(_ir.ExecutionContext.WeightsToHostFragment):
+            ops.remote_store(remote_buffer, offset, var_shard)
+
+    return remote_arg, var_shard
 
 
 def constant(

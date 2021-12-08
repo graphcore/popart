@@ -34,6 +34,7 @@ class RemoteBuffer:
 
         # Get the python bound ir
         self._current_ir = ir._pb_ir
+        self._meta_shape: Tuple[int, ...] = tuple()
 
         # Obtain the buffer id
         remote_buffer_info_map = self._current_ir.getAllRemoteBufferInfos()
@@ -155,6 +156,14 @@ class RemoteBuffer:
             self.set_remote_buffer_info(tensor_dtype=self.tensor_dtype,
                                         tensor_shape=self.tensor_shape,
                                         entries=_entries)
+
+    @property
+    def meta_shape(self) -> Tuple[int, ...]:
+        return self._meta_shape
+
+    @meta_shape.setter
+    def meta_shape(self, shape: Tuple[int, ...]) -> None:
+        self._meta_shape = shape
 
 
 def remote_buffer(tensor_shape: Tuple[int, ...], tensor_dtype: dtype,

@@ -153,7 +153,18 @@ void bindTensor(py::module &m) {
       .def_readwrite("info", &Tensor::info)
       .def_readonly("tensorLocationInfo", &Tensor::tensorLocationInfo)
       .def_readonly("inputSettings", &Tensor::inputSettings)
-      .def_readonly("id", &Tensor::id);
+      .def_readonly("id", &Tensor::id)
+      .def("setTensorLocationInfo",
+           [](Tensor &self, TensorLocation &tLocation, int a, int b) {
+             auto pair = std::pair<RemoteBufferId, RemoteBufferIndex>(a, b);
+             self.setTensorLocationInfo(tLocation, pair);
+           });
+
+  py::class_<TensorLocationInfo>(m, "TensorLocationInfo")
+      .def("setRemoteBufferInfo", &TensorLocationInfo::setRemoteBufferInfo)
+      .def("getRemoteBufferInfo", &TensorLocationInfo::getRemoteBufferInfo)
+      .def("isRemote", &TensorLocationInfo::isRemote)
+      .def("isSharded", &TensorLocationInfo::isSharded);
 }
 
 } // namespace ir

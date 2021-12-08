@@ -5,7 +5,7 @@ from popart.ir.dtypes import dtype
 
 import popart._internal.ir as _ir
 
-from typing import Any, Iterable, Optional
+from typing import Any, Iterable, Optional, Tuple
 
 __all__ = [
     'HostToDeviceStream', 'DeviceToHostStream', 'h2d_stream', 'd2h_stream'
@@ -24,14 +24,14 @@ class _Stream:
         return self
 
     @property
-    def dtype(self):
+    def dtype(self) -> dtype:
         return self._stream_tensor.dtype
 
     @property
-    def shape(self):
+    def shape(self) -> Tuple[int, ...]:
         return self._stream_tensor.shape
 
-    def tensor_id(self):
+    def tensor_id(self) -> str:
         return self._stream_tensor.id
 
     def __hash__(self):
