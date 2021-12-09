@@ -50,10 +50,8 @@ class TestTensorLocation():
             self.W: Tensor = None
 
         def build(self, d0: Tensor) -> Tensor:
-            self.W = pir.subgraph_input((16, ), pir.float32, "w0")
-            W = self.W.reshape([4, 4])
-            y = d0 @ W
-
+            self.W = pir.subgraph_input((4, 4), pir.float32, "w0")
+            y = d0 @ self.W
             return y
 
     @tu.requires_ipu_model
@@ -94,7 +92,7 @@ class TestTensorLocation():
             loaded_w = ops.remote_load(remote_buffer, remote_arg)
 
             full_w = ops.collectives.replicated_all_gather(
-                loaded_w, remote_arg)
+                loaded_w, remote_arg).reshape_((4, 4))
 
             fwd = self.Linear()
             fwd_graph = ir.create_graph(fwd, d0)
