@@ -1,6 +1,9 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #include <algorithm>
 #include <memory>
+#include <popart/graph.hpp>
+#include <popart/ir.hpp>
+#include <popart/op/collectives/replicatedallreduce.hpp>
 #include <popart/op/reducesumsquare.hpp>
 #include <popart/opmanager.hpp>
 #include <popart/opserialiser.hpp>
@@ -24,6 +27,55 @@ std::vector<std::unique_ptr<Op>> ReduceSumSquareOp::getGradOps() {
   result.emplace_back(
       std::make_unique<ReduceSumSquareGradOp>(*this, backward_shape));
   return result;
+}
+
+ReplicatedTensorShardingIndices
+ReduceSumSquareOp::getReplicatedTensorShardingIndices() const {
+  if (isOptimizerOp()) {
+    return {{{ReduceSumSquareOp::getInIndex()}, {}}};
+  } else {
+    return {};
+  }
+}
+
+void ReduceSumSquareOp::configureForReplicatedTensorSharding(
+    ReplicatedTensorShardingIndices indices,
+    CommGroup shardingDomain) {
+  if (indices == getReplicatedTensorShardingIndices()) {
+    auto out = outTensor(ReduceSumSquareOp::getOutIndex());
+
+    // Make sure reduction is only added once
+    auto consumers = out->consumers.getOps();
+    if (!std::any_of(consumers.begin(), consumers.end(), [](Op *op) {
+          return dynamic_cast<ReplicatedAllReduceOp *>(op) ||
+                 dynamic_cast<ReplicatedAllReduceInplaceOp *>(op);
+        })) {
+
+      TensorId intoReduceId =
+          getGraph().getIr().createIntermediateTensorId(out->id);
+
+      disconnectOutTensor(out);
+      createAndConnectOutTensor(ReplicatedAllReduceOp::getOutIndex(),
+                                intoReduceId);
+      setup();
+
+      auto reduceOp = getGraph().createOp<ReplicatedAllReduceInplaceOp>(
+          Onnx::CustomOperators::ReplicatedAllReduceInplace,
+          CollectiveOperator::Add,
+          shardingDomain,
+          settings);
+
+      reduceOp->connectInTensor(ReplicatedAllReduceInplaceOp::getInIndex(),
+                                intoReduceId);
+      reduceOp->connectOutTensor(ReplicatedAllReduceInplaceOp::getOutIndex(),
+                                 out->id);
+
+      reduceOp->setup();
+    }
+  } else {
+    throw error("ReduceSumSquareOp::configureForReplicatedTensorSharding "
+                "Unexpected input indices.");
+  }
 }
 
 ReduceSumSquareGradOp::ReduceSumSquareGradOp(const ReduceSumSquareOp &fwdOp,

@@ -16,6 +16,13 @@ public:
                     const Op::Settings &settings);
   std::unique_ptr<Op> clone() const override;
   std::vector<std::unique_ptr<Op>> getGradOps() final;
+
+  ReplicatedTensorShardingIndices
+  getReplicatedTensorShardingIndices() const final;
+
+  void
+  configureForReplicatedTensorSharding(ReplicatedTensorShardingIndices indices,
+                                       CommGroup shardingDomain) final;
 };
 
 class ReduceSumSquareGradOp : public ReduceGradOp {
