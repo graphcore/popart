@@ -133,20 +133,19 @@ void LSTMOpx::growBias(snap::program::Sequence &prog) const {
       snap::Tensor{getLSTMWeights().biases, graph()}, false);
 
   if (lstm_op.hasBiasInput()) {
-    auto bias_input = getInTensor(LSTMOp::getBiasInIndex()).getPoplarTensor();
+    auto bias_input = getInTensor(LSTMOp::getBiasInIndex());
 
-    poplar::program::Copy copyProg(bias_input.slice(0, 4 * hidden_size, 1),
-                                   biases.getPoplarTensor(),
-                                   false,
-                                   debugContext());
-    prog.getPoplarSequence().add(copyProg);
+    snap::program::Copy copyProg(
+        bias_input.slice(0, 4 * hidden_size, 1), biases, false, debugContext());
+    prog.add(copyProg);
 
-    popops::mapInPlace(graph().getPoplarGraph(),
-                       popops::expr::BinaryOpType::ADD,
-                       biases.getPoplarTensor(),
-                       bias_input.slice(4 * hidden_size, 8 * hidden_size, 1),
-                       prog.getPoplarSequence(),
-                       debugContext("add"));
+    popops::mapInPlace(
+        graph().getPoplarGraph(),
+        popops::expr::BinaryOpType::ADD,
+        biases.getPoplarTensor(),
+        bias_input.slice(4 * hidden_size, 8 * hidden_size, 1).getPoplarTensor(),
+        prog.getPoplarSequence(),
+        debugContext("add"));
   } else {
     popops::zero(graph().getPoplarGraph(),
                  biases.getPoplarTensor(),
@@ -301,18 +300,16 @@ std::set<TensorId> LSTMOpx::mustExistBeforeCreate(InIndex) const {
 
 void LSTMOpx::prepareWeights(snap::program::Sequence &prog) const {
   // check to see if the weights were created
-  prog.getPoplarSequence().add(poplar::program::Copy(
-      getInTensor(LSTMOp::getWeightsInIndex()).getPoplarTensor(),
+  prog.add(snap::program::Copy(
+      getInTensor(LSTMOp::getWeightsInIndex()),
       reshapePoplibWeightsForOnnx(
-          snap::Tensor{getLSTMWeights().inputWeights, graph()}, true)
-          .getPoplarTensor(),
+          snap::Tensor{getLSTMWeights().inputWeights, graph()}, true),
       false,
       debugContext()));
-  prog.getPoplarSequence().add(poplar::program::Copy(
-      getInTensor(LSTMOp::getRecurrenceInIndex()).getPoplarTensor(),
+  prog.add(snap::program::Copy(
+      getInTensor(LSTMOp::getRecurrenceInIndex()),
       reshapePoplibWeightsForOnnx(
-          snap::Tensor{getLSTMWeights().outputWeights, graph()}, true)
-          .getPoplarTensor(),
+          snap::Tensor{getLSTMWeights().outputWeights, graph()}, true),
       false,
       debugContext()));
 }
@@ -322,11 +319,7 @@ snap::Tensor LSTMOpx::getInput(snap::program::Sequence &prog) const {
     auto input     = createInputTensor(LSTMOp::getInputInIndex(),
                                    getDebugNameAndId("input"));
     auto raw_input = getInTensor(LSTMOp::getInputInIndex());
-    prog.getPoplarSequence().add(
-        poplar::program::Copy(raw_input.getPoplarTensor(),
-                              input.getPoplarTensor(),
-                              false,
-                              debugContext()));
+    prog.add(snap::program::Copy(raw_input, input, false, debugContext()));
     return input;
   } else {
     return getInTensor(LSTMOp::getInputInIndex());
@@ -362,25 +355,23 @@ void LSTMOpx::prepareInitialState(popnn::lstm::LstmState &init_state,
 
   // Copy initC input to initialState.cellState is initC is provided.
   if (hasInitC) {
-    auto init_c = getInitialState().cellState;
+    auto init_c = snap::Tensor{getInitialState().cellState, graph()};
     init_c      = init_c.reshape({num_directions, batch_size, hidden_size});
 
-    prog.getPoplarSequence().add(poplar::program::Copy(
-        getInTensor(LSTMOp::getInitialCInIndex()).getPoplarTensor(),
-        init_c,
-        false,
-        debugContext()));
+    prog.add(snap::program::Copy(getInTensor(LSTMOp::getInitialCInIndex()),
+                                 init_c,
+                                 false,
+                                 debugContext()));
   }
   // Copy initH input to initialState.output is initH is provided.
   if (hasInitH) {
-    auto init_h = getInitialState().output;
+    auto init_h = snap::Tensor{getInitialState().output, graph()};
     init_h      = init_h.reshape({num_directions, batch_size, hidden_size});
 
-    prog.getPoplarSequence().add(poplar::program::Copy(
-        getInTensor(LSTMOp::getInitialHInIndex()).getPoplarTensor(),
-        init_h,
-        false,
-        debugContext()));
+    prog.add(snap::program::Copy(getInTensor(LSTMOp::getInitialHInIndex()),
+                                 init_h,
+                                 false,
+                                 debugContext()));
   }
 }
 

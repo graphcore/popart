@@ -49,34 +49,35 @@ IdentityLossOpx::IdentityLossOpx(Op *op, Devicex *devicex)
 
 void IdentityLossGradOpx::grow(snap::program::Sequence &prog) const {
   IdentityLossGradOp &identitylossop = getOp<IdentityLossGradOp>();
-  auto output                        = getInTensor(0).getPoplarTensor();
-  poplar::Tensor reference           = getOutTensor(0).getPoplarTensor();
+  auto output                        = getInTensor(0);
+  auto reference                     = getOutTensor(0);
   if (identitylossop.getReductionType() == ReductionType::NoReduction) {
     // Same as IdentityGradOpx
-    prog.getPoplarSequence().add(poplar::program::Copy(
+    prog.add(snap::program::Copy(
         output, reference, false, debugContext("copy_identity")));
   } else {
     if (identitylossop.getReductionType() == ReductionType::Mean) {
       // Divide broadcasted tensor by total number of samples
       float scale = static_cast<float>(reference.numElements());
 
-      output = popops::map(graph().getPoplarGraph(),
-                           pe::Divide(pe::_1, pe::Const(scale)),
-                           {getInTensor(0).getPoplarTensor()},
-                           prog.getPoplarSequence(),
-                           debugContext("div"));
+      output = snap::Tensor{popops::map(graph().getPoplarGraph(),
+                                        pe::Divide(pe::_1, pe::Const(scale)),
+                                        {getInTensor(0).getPoplarTensor()},
+                                        prog.getPoplarSequence(),
+                                        debugContext("div")),
+                            graph()};
     } else if (identitylossop.getReductionType() != ReductionType::Sum) {
       // Only mean and sum are supported.
       throw error("Unsupported reduction type for Loss {}",
                   debugContext().getPathName());
     }
     popops::zero(graph().getPoplarGraph(),
-                 reference,
+                 reference.getPoplarTensor(),
                  prog.getPoplarSequence(),
                  debugContext("zero_identity_reference_tensor"));
     popops::addInPlace(graph().getPoplarGraph(),
-                       reference,
-                       output,
+                       reference.getPoplarTensor(),
+                       output.getPoplarTensor(),
                        prog.getPoplarSequence(),
                        debugContext("add_gradient_to_reference"));
   }

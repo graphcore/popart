@@ -40,16 +40,12 @@ void CopyVarUpdateOpx::grow(snap::program::Sequence &prog) const {
 
   if (twoTensorsParallelWritable(updater.getPoplarTensor(),
                                  toUpdate.getPoplarTensor())) {
-    poplar::program::Copy copy(updater.getPoplarTensor(),
-                               toUpdate.getPoplarTensor(),
-                               false,
-                               debugContext());
-    prog.getPoplarSequence().add(copy);
+    snap::program::Copy copy(updater, toUpdate, false, debugContext());
+    prog.add(copy);
   } else {
-    auto newUpdater = cloneNcopy(prog, updater).getPoplarTensor();
-    poplar::program::Copy copy(
-        newUpdater, toUpdate.getPoplarTensor(), false, debugContext());
-    prog.getPoplarSequence().add(copy);
+    auto newUpdater = cloneNcopy(prog, updater);
+    snap::program::Copy copy(newUpdater, toUpdate, false, debugContext());
+    prog.add(copy);
   }
   // output is a reference to destination of the copy
   setOutTensor(VarUpdateOp::getUpdatedVarOutIndex(),

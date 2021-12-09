@@ -2139,11 +2139,8 @@ void IrLowering::growOpx(PopOpx *opx,
               graph().getPoplarGraph().clone(inTensor.getPoplarTensor(),
                                              opx->debugContext("orig")),
               graph()};
-          seqIt->getPoplarSequence().add(
-              poplar::program::Copy(inTensor.getPoplarTensor(),
-                                    inTensorClone.getPoplarTensor(),
-                                    false,
-                                    opx->debugContext("check")));
+          seqIt->add(snap::program::Copy(
+              inTensor, inTensorClone, false, opx->debugContext("check")));
           nonModifiedTensors[inputMap.first] =
               std::make_pair(inTensor, inTensorClone);
         }
@@ -3734,11 +3731,8 @@ PriTask IrLowering::initBatchCounterTensorsTask(snap::program::Sequence &sq) {
                    batchCountingTensors[N].getPoplarTensor(),
                    sq.getPoplarSequence(),
                    logging::format("initBatchCountTensors[{}]", N));
-      sq.getPoplarSequence().add(
-          poplar::program::Copy(falseConst.getPoplarTensor(),
-                                batchCountCheckingTensors[N].getPoplarTensor(),
-                                false,
-                                {"copyFalse"}));
+      sq.add(snap::program::Copy(
+          falseConst, batchCountCheckingTensors[N], false, {"copyFalse"}));
     }
 
     // Make sure const 1 tensor exists
@@ -3781,14 +3775,13 @@ PriTask IrLowering::updateBatchCountTask(snap::program::Sequence &sq) {
 
       // Reset batch count once it has reached N
       auto zero = getConst(graph(), poplar::INT, {}, 0, "batchCount/zero");
-      seqs.getSequence(&sq).getPoplarSequence().add(poplar::program::If(
-          batchCountCheckingTensors[N].getPoplarTensor(),
-          poplar::program::Copy(zero.getPoplarTensor(),
-                                batchCountingTensors[N].getPoplarTensor(),
-                                false,
-                                {"copyZero"}),
-          emptyseq.getPoplarSequence(),
-          {"batchCountResetCheck"}));
+      snap::program::Copy trueBody(
+          zero, batchCountingTensors[N], false, {"copyZero"});
+      seqs.getSequence(&sq).getPoplarSequence().add(
+          poplar::program::If(batchCountCheckingTensors[N].getPoplarTensor(),
+                              trueBody.getPoplarProgram(),
+                              emptyseq.getPoplarSequence(),
+                              {"batchCountResetCheck"}));
     }
     return seqs;
   };

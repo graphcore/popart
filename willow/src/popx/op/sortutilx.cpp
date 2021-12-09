@@ -20,34 +20,38 @@ snap::Tensor getIotaTensor(snap::Graph &graph,
   std::vector<int> iotaVals(sortSize);
   std::iota(iotaVals.begin(), iotaVals.end(), 0);
 
-  auto singleRowIota =
+  auto singleRowIota = snap::Tensor{
       graph.getPoplarGraph().addConstant(poplar::INT,
                                          {sortSize},
                                          poplar::ArrayRef<int>(iotaVals),
-                                         {dnai, "constant"});
-  poputil::mapTensorLinearly(graph.getPoplarGraph(), singleRowIota);
+                                         {dnai, "constant"}),
+      graph};
+  poputil::mapTensorLinearly(graph.getPoplarGraph(),
+                             singleRowIota.getPoplarTensor());
 
   // Fill a tensor with [0, 1, 2, ... nToSort-1] along "axis"
-  auto indices = graph.getPoplarGraph().clone(
-      poplar::INT, input.getPoplarTensor(), {dnai, "clone"});
-  prog.getPoplarSequence().add(
-      poplar::program::WriteUndef(indices, {dnai, "writeUndef"}));
+  auto indices =
+      snap::Tensor{graph.getPoplarGraph().clone(
+                       poplar::INT, input.getPoplarTensor(), {dnai, "clone"}),
+                   graph};
+  prog.getPoplarSequence().add(poplar::program::WriteUndef(
+      indices.getPoplarTensor(), {dnai, "writeUndef"}));
 
   // new view of indices, dim-shuffling the given axis
   // to the back, and making 2-D
   std::vector<unsigned> permutation(indices.rank());
   std::iota(permutation.begin(), permutation.end(), 0);
   std::swap(permutation[axis], permutation.back());
-  poplar::Tensor shuffledView =
+  snap::Tensor shuffledView =
       indices.dimShuffle(permutation).reshape({nToSort, sortSize});
 
   // Loop over the front dimension and copy in the constant.
   for (int i = 0; i < nToSort; ++i) {
-    prog.getPoplarSequence().add(poplar::program::Copy(
+    prog.add(snap::program::Copy(
         singleRowIota, shuffledView[i], false, {dnai, "copy"}));
   }
 
-  return snap::Tensor{indices, graph};
+  return indices;
 }
 
 } // namespace sortutilx

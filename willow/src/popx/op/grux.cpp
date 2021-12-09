@@ -71,13 +71,11 @@ void GRUOpx::prepareInitialState(snap::Tensor &init_state_h,
 
   // Check the inputs have been created
   if (hasInitH) {
-    prog.getPoplarSequence().add(poplar::program::Copy(
-        getInTensor(GRUOp::getInitialHInIndex()).getPoplarTensor(),
-        createInputTensor(GRUOp::getInitialHInIndex(),
-                          getDebugNameAndId("initH"))
-            .getPoplarTensor(),
-        false,
-        debugContext()));
+    prog.add(snap::program::Copy(getInTensor(GRUOp::getInitialHInIndex()),
+                                 createInputTensor(GRUOp::getInitialHInIndex(),
+                                                   getDebugNameAndId("initH")),
+                                 false,
+                                 debugContext()));
   }
 }
 
@@ -169,11 +167,11 @@ void GRUOpx::reshapeAndInsert(OutIndex index,
 void GRUOpx::growBias(snap::program::Sequence &prog) const {
   auto &gru_op         = getOp<GRUOp>();
   unsigned hidden_size = static_cast<unsigned>(gru_op.getHiddenSize());
-  auto biases          = getGRUWeights().biases;
+  auto biases          = snap::Tensor{getGRUWeights().biases, graph()};
 
   if (!gru_op.hasBiasInput()) {
     popops::zero(graph().getPoplarGraph(),
-                 biases,
+                 biases.getPoplarTensor(),
                  prog.getPoplarSequence(),
                  debugContext("zero"));
     return;
@@ -182,9 +180,8 @@ void GRUOpx::growBias(snap::program::Sequence &prog) const {
   // Onnx format is [1, 6 * hidden_size]
   // First subtensors are the input biases [bz, br, bh]
   // Following are the hidden biases [bhz, bhr, bhh]
-  auto bias_input = getInTensor(GRUOp::getBiasInIndex())
-                        .getPoplarTensor()
-                        .reshape({6, hidden_size});
+  auto bias_input =
+      getInTensor(GRUOp::getBiasInIndex()).reshape({6, hidden_size});
 
   std::vector<poplar::Interval> intervals{
       {0, 1}, {1, 2}, {2, 3}, {3, 4}, {4, 5}, {5, 6}};
@@ -205,27 +202,27 @@ void GRUOpx::growBias(snap::program::Sequence &prog) const {
     // If the reset hgate is applied after the linear transformation
     // the bias tensor is of shape [3, 2, hidden_size]. Inner planes
     // contains the input and hidden biases for the same gate.
-    bias_input = poplar::concat({br, bhr, bz, bhz, bh, bhh});
+    bias_input = snap::concat({br, bhr, bz, bhz, bh, bhh});
     bias_input = bias_input.reshape({3, 2, hidden_size});
 
-    poplar::program::Copy copyProg(bias_input, biases, false, debugContext());
-    prog.getPoplarSequence().add(copyProg);
+    snap::program::Copy copyProg(bias_input, biases, false, debugContext());
+    prog.add(copyProg);
     return;
   }
 
   // If the reset gate is applied beofore the linear transformation,
   // the bias tensor shaope is [3, hidden_size]. It is sufficient
   // to add the inpput and hidden biases together.
-  auto input_bias  = poplar::concat({br, bz, bh});
-  auto hidden_bias = poplar::concat({bhr, bhz, bhh});
+  auto input_bias  = snap::concat({br, bz, bh});
+  auto hidden_bias = snap::concat({bhr, bhz, bhh});
 
-  poplar::program::Copy copyProg(input_bias, biases, false, debugContext());
-  prog.getPoplarSequence().add(copyProg);
+  snap::program::Copy copyProg(input_bias, biases, false, debugContext());
+  prog.add(copyProg);
 
   popops::mapInPlace(graph().getPoplarGraph(),
                      popops::expr::BinaryOpType::ADD,
-                     biases,
-                     hidden_bias,
+                     biases.getPoplarTensor(),
+                     hidden_bias.getPoplarTensor(),
                      prog.getPoplarSequence(),
                      debugContext("add"));
 }
@@ -382,20 +379,16 @@ std::set<TensorId> GRUOpx::mustExistBeforeCreate(InIndex) const { return {}; }
 
 void GRUOpx::prepareWeights(snap::program::Sequence &prog) const {
   // check to see if the weights were created
-  prog.getPoplarSequence().add(poplar::program::Copy(
-      getInTensor(GRUOp::getWeightsInIndex()).getPoplarTensor(),
-      reshapePoplibWeightsForOnnx(
-          snap::Tensor{getGRUWeights().inputWeights, graph()})
-          .getPoplarTensor(),
-      false,
-      debugContext()));
-  prog.getPoplarSequence().add(poplar::program::Copy(
-      getInTensor(GRUOp::getRecurrenceInIndex()).getPoplarTensor(),
-      reshapePoplibWeightsForOnnx(
-          snap::Tensor{getGRUWeights().outputWeights, graph()})
-          .getPoplarTensor(),
-      false,
-      debugContext()));
+  prog.add(snap::program::Copy(getInTensor(GRUOp::getWeightsInIndex()),
+                               reshapePoplibWeightsForOnnx(snap::Tensor{
+                                   getGRUWeights().inputWeights, graph()}),
+                               false,
+                               debugContext()));
+  prog.add(snap::program::Copy(getInTensor(GRUOp::getRecurrenceInIndex()),
+                               reshapePoplibWeightsForOnnx(snap::Tensor{
+                                   getGRUWeights().outputWeights, graph()}),
+                               false,
+                               debugContext()));
 }
 
 snap::Tensor GRUOpx::getInput(snap::program::Sequence &prog) const {
@@ -403,11 +396,7 @@ snap::Tensor GRUOpx::getInput(snap::program::Sequence &prog) const {
     auto input =
         createInputTensor(GRUOp::getInputInIndex(), getDebugNameAndId("input"));
     auto raw_input = getInTensor(GRUOp::getInputInIndex());
-    prog.getPoplarSequence().add(
-        poplar::program::Copy(raw_input.getPoplarTensor(),
-                              input.getPoplarTensor(),
-                              false,
-                              debugContext()));
+    prog.add(snap::program::Copy(raw_input, input, false, debugContext()));
     return input;
   } else {
     return getInTensor(GRUOp::getInputInIndex());

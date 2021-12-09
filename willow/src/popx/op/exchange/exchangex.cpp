@@ -235,11 +235,9 @@ void HostLoadDescriptorx::post(snap::Graph &graph,
                               graph,
                               outTensors.at(0),
                               context);
-  poplar::program::Copy tmp_copy_prog(streamTensor.getPoplarTensor(),
-                                      outTensors.at(0).getPoplarTensor(),
-                                      false,
-                                      context);
-  prog.getPoplarSequence().add(tmp_copy_prog);
+  snap::program::Copy tmp_copy_prog(
+      streamTensor, outTensors.at(0), false, context);
+  prog.add(tmp_copy_prog);
 }
 
 snap::Tensor HostLoadDescriptorx::unwind(snap::Graph &graph,
@@ -265,11 +263,9 @@ void HostStoreDescriptorx::pre(snap::Graph &graph,
                               inTensors.at(0).second,
                               context);
 
-  poplar::program::Copy tmp_copy_prog(inTensors.at(0).second.getPoplarTensor(),
-                                      streamTensor.getPoplarTensor(),
-                                      false,
-                                      context);
-  prog.getPoplarSequence().add(tmp_copy_prog);
+  snap::program::Copy tmp_copy_prog(
+      inTensors.at(0).second, streamTensor, false, context);
+  prog.add(tmp_copy_prog);
 }
 
 void HostStoreDescriptorx::exchange(snap::Graph &graph,
@@ -377,11 +373,8 @@ void RemoteLoadDescriptorx::post(snap::Graph &graph,
   auto buffer =
       dv_p->lowering().getRemoteBuffer(descriptor.getRemoteBufferId());
   snap::Tensor rbTensor = buffer.second.value();
-  poplar::program::Copy tmp_copy_prog(rbTensor.getPoplarTensor(),
-                                      outTensors.at(0).getPoplarTensor(),
-                                      false,
-                                      context);
-  prog.getPoplarSequence().add(tmp_copy_prog);
+  snap::program::Copy tmp_copy_prog(rbTensor, outTensors.at(0), false, context);
+  prog.add(tmp_copy_prog);
 }
 
 snap::Tensor RemoteLoadDescriptorx::unwind(snap::Graph &graph,
@@ -416,11 +409,9 @@ void RemoteStoreDescriptorx::pre(snap::Graph &graph,
   auto buffer =
       dv_p->lowering().getRemoteBuffer(descriptor.getRemoteBufferId());
   rbTensor = buffer.second.value();
-  poplar::program::Copy tmp_copy_prog(inTensors.at(0).second.getPoplarTensor(),
-                                      rbTensor.getPoplarTensor(),
-                                      false,
-                                      context);
-  prog.getPoplarSequence().add(tmp_copy_prog);
+  snap::program::Copy tmp_copy_prog(
+      inTensors.at(0).second, rbTensor, false, context);
+  prog.add(tmp_copy_prog);
 }
 
 void RemoteStoreDescriptorx::exchange(snap::Graph &graph,

@@ -30,11 +30,8 @@ snap::Tensor scatter(const popart::popx::PopOpx &opx,
   auto out   = popart::popx::createDataTensor(
       graph, dataInfo, plan, uaxis, opx.getDebugNameAndId(""));
 
-  prog.getPoplarSequence().add(
-      poplar::program::Copy(data.getPoplarTensor(),
-                            out.getPoplarTensor(),
-                            false,
-                            opx.debugContext("copyToScatter")));
+  prog.add(
+      snap::program::Copy(data, out, false, opx.debugContext("copyToScatter")));
 
   auto data2d    = out.dimRoll(uaxis);
   auto updates2d = updates.dimRoll(uaxis);

@@ -181,12 +181,11 @@ snap::Tensor EwuComputex::cloneNcopy(snap::program::Sequence &prog,
                                      snap::Graph &graph,
                                      const snap::Tensor &tensor,
                                      const poplar::DebugNameAndId &dnai) const {
-  auto outTensor =
-      graph.getPoplarGraph().clone(tensor.getPoplarTensor(), {dnai});
-  poplar::program::Copy copyProg(
-      tensor.getPoplarTensor(), outTensor, false, {dnai});
-  prog.getPoplarSequence().add(copyProg);
-  return snap::Tensor{outTensor, graph};
+  auto outTensor = snap::Tensor{
+      graph.getPoplarGraph().clone(tensor.getPoplarTensor(), {dnai}), graph};
+  snap::program::Copy copyProg(tensor, outTensor, false, {dnai});
+  prog.add(copyProg);
+  return outTensor;
 }
 
 snap::Tensor EwuComputex::outplace(snap::program::Sequence &prog,

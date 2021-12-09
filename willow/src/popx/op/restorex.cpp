@@ -133,11 +133,8 @@ void RestoreInplaceOpx::grow(snap::program::Sequence &prog) const {
 
   const auto actFromStash = growRestore(prog, stash);
 
-  prog.getPoplarSequence().add(
-      poplar::program::Copy(actFromStash.getPoplarTensor(),
-                            actToRestore.getPoplarTensor(),
-                            false,
-                            debugContext()));
+  prog.add(
+      snap::program::Copy(actFromStash, actToRestore, false, debugContext()));
   setOutTensor(RestoreInplaceOp::getRestoredActOutIndex(), actToRestore);
 }
 

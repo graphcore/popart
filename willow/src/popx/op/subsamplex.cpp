@@ -12,8 +12,8 @@
 namespace popart {
 namespace popx {
 
-static poplar::Tensor subsample(poplar::Tensor &t,
-                                const std::vector<uint32_t> &strides) {
+static snap::Tensor subsample(snap::Tensor &t,
+                              const std::vector<uint32_t> &strides) {
 
   auto result   = t;
   int dimension = 0;
@@ -35,18 +35,17 @@ SubsampleOpx::SubsampleOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
 void SubsampleOpx::grow(snap::program::Sequence &prog) const {
 
   SubsampleOp &op = getOp<SubsampleOp>();
-  auto outTensor  = getInTensor(SubsampleOp::getInIndex()).getPoplarTensor();
+  auto outTensor  = getInTensor(SubsampleOp::getInIndex());
   outTensor       = subsample(outTensor, op.strides_u32());
   // Need to clone/copy a new output tensor so is not in place
-  setOutTensor(SubsampleOp::getOutIndex(),
-               cloneNcopy(prog, snap::Tensor{outTensor, graph()}));
+  setOutTensor(SubsampleOp::getOutIndex(), cloneNcopy(prog, outTensor));
 }
 
 void SubsampleInplaceOpx::grow(snap::program::Sequence &) const {
   SubsampleInplaceOp &op = getOp<SubsampleInplaceOp>();
-  auto outTensor = getInTensor(SubsampleOp::getInIndex()).getPoplarTensor();
-  outTensor      = subsample(outTensor, op.strides_u32());
-  setOutTensor(SubsampleOp::getOutIndex(), snap::Tensor{outTensor, graph()});
+  auto outTensor         = getInTensor(SubsampleOp::getInIndex());
+  outTensor              = subsample(outTensor, op.strides_u32());
+  setOutTensor(SubsampleOp::getOutIndex(), outTensor);
 }
 
 SubsampleGradOpx::SubsampleGradOpx(Op *op, Devicex *devicex)
@@ -61,7 +60,7 @@ SubsampleGradOpx::SubsampleGradOpx(Op *op, Devicex *devicex)
 void SubsampleGradOpx::grow(snap::program::Sequence &prog) const {
 
   SubsampleGradOp &gradOp = getOp<SubsampleGradOp>();
-  auto &in = getInTensor(SubsampleGradOp::getInIndex()).getPoplarTensor();
+  auto &in                = getInTensor(SubsampleGradOp::getInIndex());
 
   // Design decision: make a scalar zero variable that we expand to create
   // a tensor of the same size as the output
@@ -84,11 +83,10 @@ void SubsampleGradOpx::grow(snap::program::Sequence &prog) const {
                              outTensor.getPoplarTensor());
 
   // Create a subsample view of the output
-  auto ss_output = subsample(outTensor.getPoplarTensor(), gradOp.strides_u32());
+  auto ss_output = subsample(outTensor, gradOp.strides_u32());
 
   // Copy the input tensor into the subsampled view of the output
-  prog.getPoplarSequence().add(
-      poplar::program::Copy(in, ss_output, false, debugContext()));
+  prog.add(snap::program::Copy(in, ss_output, false, debugContext()));
 
   // Return the output
   setOutTensor(SubsampleGradOp::getOutIndex(), outTensor);

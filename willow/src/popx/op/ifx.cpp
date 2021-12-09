@@ -25,11 +25,11 @@ void IfOpx::copyInputs(snap::program::Sequence &thenProg,
     auto ifInputId     = inId(ifopInputIndex);
     auto branchInputId = graph.getInputId(branchInputIndex);
 
-    auto ifInput     = get(ifInputId).getPoplarTensor();
-    auto branchInput = get(branchInputId).getPoplarTensor();
+    auto ifInput     = get(ifInputId);
+    auto branchInput = get(branchInputId);
 
-    poplar::program::Copy copyProg(ifInput, branchInput, false, debugContext());
-    prog.getPoplarSequence().add(copyProg);
+    snap::program::Copy copyProg(ifInput, branchInput, false, debugContext());
+    prog.add(copyProg);
   };
 
   auto copyBranchInputs = [&](snap::program::Sequence &prog,
@@ -69,10 +69,9 @@ void IfOpx::copyOutputs(snap::program::Sequence &thenProg,
     auto branchId = graph.getOutputId(branchIndex);
 
     auto opOutput     = outputs.at(opIndex);
-    auto branchOutput = get(branchId).getPoplarTensor();
-    poplar::program::Copy copyProg(
-        branchOutput, opOutput.getPoplarTensor(), false, debugContext());
-    prog.getPoplarSequence().add(copyProg);
+    auto branchOutput = get(branchId);
+    snap::program::Copy copyProg(branchOutput, opOutput, false, debugContext());
+    prog.add(copyProg);
   };
 
   auto zeroOutput = [&](snap::program::Sequence &prog, OutIndex opIndex) {

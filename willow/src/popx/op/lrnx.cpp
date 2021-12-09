@@ -33,11 +33,13 @@ poplar::Tensor getScale(snap::Graph &graph,
                         const int64_t size,
                         const poplar::DebugContext &debugContext) {
   const poplar::DebugInfo di(debugContext, "");
-  auto square = popops::square(
-      graph.getPoplarGraph(), input, prog.getPoplarSequence(), {di});
-  auto square_sum = graph.getPoplarGraph().clone(square, {di});
-  prog.getPoplarSequence().add(
-      poplar::program::Copy(square, square_sum, false, {di}));
+  auto square = snap::Tensor{
+      popops::square(
+          graph.getPoplarGraph(), input, prog.getPoplarSequence(), {di}),
+      graph};
+  auto square_sum = snap::Tensor{
+      graph.getPoplarGraph().clone(square.getPoplarTensor(), {di}), graph};
+  prog.add(snap::program::Copy(square, square_sum, false, {di}));
   auto channels = input.dim(1);
 
   auto left  = ((size - 1) / 2);
@@ -48,12 +50,16 @@ poplar::Tensor getScale(snap::Graph &graph,
     if ((i != 0L) &&
         (channels - std::max<int64_t>(0L, i)) - std::max<int64_t>(0L, -i) > 0)
       popops::addInPlace(graph.getPoplarGraph(),
-                         square_sum.slice(std::max<int64_t>(0L, -i),
-                                          channels - std::max<int64_t>(0L, i),
-                                          1),
-                         square.slice(std::max<int64_t>(0L, i),
-                                      channels - std::max<int64_t>(0L, -i),
-                                      1),
+                         square_sum
+                             .slice(std::max<int64_t>(0L, -i),
+                                    channels - std::max<int64_t>(0L, i),
+                                    1)
+                             .getPoplarTensor(),
+                         square
+                             .slice(std::max<int64_t>(0L, i),
+                                    channels - std::max<int64_t>(0L, -i),
+                                    1)
+                             .getPoplarTensor(),
                          prog.getPoplarSequence(),
                          {di});
   }
@@ -61,7 +67,7 @@ poplar::Tensor getScale(snap::Graph &graph,
   auto scale = popops::map(
       graph.getPoplarGraph(),
       pe::Add(pe::Const(bias), pe::Mul(pe::Const(alpha / size), pe::_1)),
-      {square_sum},
+      {square_sum.getPoplarTensor()},
       prog.getPoplarSequence(),
       {di});
 

@@ -36,8 +36,8 @@ void CallOpx::copyModified(snap::program::Sequence &prog,
                   modifiedRegions.end(),
                   [](const view::Region &r) { return !r.isEmpty(); })) {
     TensorId call_input_id = callop.inId(i);
-    auto call_input        = get(call_input_id).getPoplarTensor();
-    auto graph_input       = get(graph_input_id).getPoplarTensor();
+    auto call_input        = get(call_input_id);
+    auto graph_input       = get(graph_input_id);
 
     auto aliases = dv_p->lowering().getAliasZeroCopy()->getActiveAliasedTensors(
         {callop.input->tensor(i)}, true);
@@ -54,9 +54,9 @@ void CallOpx::copyModified(snap::program::Sequence &prog,
       logging::opx::trace("[CallOpx] Copying modified input {}->{}",
                           graph_input_id,
                           callop.inId(i));
-      poplar::program::Copy copy_prog(
+      snap::program::Copy copy_prog(
           graph_input, call_input, false, debugContext());
-      prog.getPoplarSequence().add(copy_prog);
+      prog.add(copy_prog);
     } else {
       logging::opx::trace("[CallOpx] Skipping copy modified input {}->{}",
                           graph_input_id,
@@ -71,9 +71,9 @@ void CallOpx::copyInput(snap::program::Sequence &prog,
   auto &i      = inputIndex;
 
   TensorId call_input_id  = callop.inId(i);
-  auto call_input         = get(call_input_id).getPoplarTensor();
+  auto call_input         = get(call_input_id);
   TensorId graph_input_id = callop.getCalledGraph().getInputId(i);
-  auto graph_input        = get(graph_input_id).getPoplarTensor();
+  auto graph_input        = get(graph_input_id);
 
   auto aliases = dv_p->lowering().getAliasZeroCopy()->getActiveAliasedTensors(
       {callop.input->tensor(i)}, true);
@@ -93,9 +93,9 @@ void CallOpx::copyInput(snap::program::Sequence &prog,
         dv_p->lowering().getAliasZeroCopy()->copyInputRequired(&callop, i)) {
       logging::opx::trace(
           "[CallOpx] Copying input {}->{}", call_input_id, graph_input_id);
-      poplar::program::Copy copy_prog(
+      snap::program::Copy copy_prog(
           call_input, graph_input, false, debugContext());
-      prog.getPoplarSequence().add(copy_prog);
+      prog.add(copy_prog);
     } else {
       logging::opx::trace("[CallOpx] Skipping copy input {}->{} "
                           "(tensor not read in subgraph)",
@@ -108,7 +108,8 @@ void CallOpx::copyInput(snap::program::Sequence &prog,
   }
   if (accessType == view::AccessType::Write) {
     logging::opx::trace("[CallOpx] Write undef tensor {}", graph_input_id);
-    prog.getPoplarSequence().add(poplar::program::WriteUndef(graph_input));
+    prog.getPoplarSequence().add(poplar::program::WriteUndef(
+        graph_input.getPoplarTensor(), debugContext()));
   }
 }
 
@@ -118,9 +119,9 @@ void CallOpx::copyOutput(snap::program::Sequence &prog,
   auto &i      = outputIndex;
 
   TensorId call_output_id = callop.outId(i);
-  auto call_output        = getOutTensor(i).getPoplarTensor();
+  auto call_output        = getOutTensor(i);
   auto graph_output_id    = callop.getCalledGraph().getOutputId(i);
-  auto graph_output       = get(graph_output_id).getPoplarTensor();
+  auto graph_output       = get(graph_output_id);
 
   auto aliases = dv_p->lowering().getAliasZeroCopy()->getActiveAliasedTensors(
       {callop.getIr().getTensor(graph_output_id)}, true);
@@ -148,9 +149,9 @@ void CallOpx::copyOutput(snap::program::Sequence &prog,
     if (dv_p->lowering().getAliasZeroCopy()->copyOutputRequired(&callop, i)) {
       logging::opx::trace(
           "[CallOpx] Copying output {}->{}", graph_output_id, callop.outId(i));
-      poplar::program::Copy copy_prog(
+      snap::program::Copy copy_prog(
           graph_output, call_output, false, debugContext());
-      prog.getPoplarSequence().add(copy_prog);
+      prog.add(copy_prog);
     } else {
       logging::opx::trace(
           "[CallOpx] Skipping output {}->{}", graph_output_id, callop.outId(i));

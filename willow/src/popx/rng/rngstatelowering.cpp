@@ -175,8 +175,7 @@ void RngStateLowering::lowerGetHwSeeds(
                                              seq.getPoplarSequence(),
                                              dbgCtx),
                           graph.get()};
-  seq.getPoplarSequence().add(poplar::program::Copy(
-      tmp.getPoplarTensor(), rngState.getPoplarTensor(), false, dbgCtx));
+  seq.add(snap::program::Copy(tmp, rngState, false, dbgCtx));
 }
 
 PriTask RngStateLowering::initRngStateTensor() {
@@ -221,16 +220,16 @@ PriTask RngStateLowering::rngStateFromHost() {
                               false,
                               {"copyStreamRngStateTensor"}));
     // Copy first half of combinedRngStateTensor to identicalSeedsRngStateTensor
-    seq.getPoplarSequence().add(poplar::program::Copy(
-        combinedRngStateTensor.getPoplarTensor()[0],
-        identicalSeedsRngStateTensor.getPoplarTensor(),
+    seq.add(snap::program::Copy(
+        combinedRngStateTensor[0],
+        identicalSeedsRngStateTensor,
         false,
         {"copyRngStateTensorToIdenticalSeedsRngStateTensor"}));
     // Copy second half of combinedRngStateTensor to
     // differingSeedsRngStateTensor
-    seq.getPoplarSequence().add(poplar::program::Copy(
-        combinedRngStateTensor.getPoplarTensor()[1],
-        differingSeedsRngStateTensor.getPoplarTensor(),
+    seq.add(snap::program::Copy(
+        combinedRngStateTensor[1],
+        differingSeedsRngStateTensor,
         false,
         {"copyRngStateTensorToDifferingSeedsRngStateTensor"}));
     return seqs;
@@ -255,11 +254,10 @@ PriTask RngStateLowering::rngStateToHost() {
 
     // Update combinedRngStateTensor with the new values of
     // identicalSeedsRngStateTensor and differingSeedsRngStateTensor
-    seq.getPoplarSequence().add(poplar::program::Copy(
-        poplar::concat(
-            identicalSeedsRngStateTensor.expand({0}).getPoplarTensor(),
-            differingSeedsRngStateTensor.expand({0}).getPoplarTensor()),
-        combinedRngStateTensor.getPoplarTensor(),
+    seq.add(snap::program::Copy(
+        snap::concat(identicalSeedsRngStateTensor.expand({0}),
+                     differingSeedsRngStateTensor.expand({0})),
+        combinedRngStateTensor,
         false,
         "seedsToRngStateTensor"));
     // Stream combinedRngStateTensor to host

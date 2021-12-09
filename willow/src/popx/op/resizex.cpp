@@ -34,8 +34,8 @@ ResizeParams getResizeParams(const ResizeOp &x) {
           x.getCoordinateTransformationMode()};
 }
 
-std::vector<poplar::Tensor> split(const poplar::Tensor &input, int dim) {
-  std::vector<poplar::Tensor> result;
+std::vector<snap::Tensor> split(const snap::Tensor &input, int dim) {
+  std::vector<snap::Tensor> result;
   for (int i = 0; i < input.dim(dim); i++) {
     result.push_back(input.slice(i, i + 1, dim));
   }
@@ -124,8 +124,10 @@ int64_t applyNearestMode(float idx, const ResizeParams &params) {
   }
 }
 
-poplar::Tensor
-resizeNearest1D(poplar::Tensor &input, int dim, const ResizeParams &params) {
+snap::Tensor resizeNearest1D(snap::Tensor &input,
+                             int dim,
+                             const ResizeParams &params,
+                             snap::Graph &graph) {
   // Check float is an int.
   // https://stackoverflow.com/a/25274904
   constexpr float eps      = 0.00001f;
@@ -161,7 +163,7 @@ resizeNearest1D(poplar::Tensor &input, int dim, const ResizeParams &params) {
   } else {
     auto slices = split(input, dim);
 
-    std::vector<poplar::Tensor> toConcat;
+    std::vector<snap::Tensor> toConcat;
     for (int i = 0; i < params.outShape.at(dim); i++) {
       int idx =
           applyNearestMode(coordinateTransformation(i, dim, params), params);
@@ -169,30 +171,31 @@ resizeNearest1D(poplar::Tensor &input, int dim, const ResizeParams &params) {
       toConcat.push_back(slices.at(idx));
     }
 
-    return poplar::concat(toConcat, dim);
+    return snap::concat(toConcat, dim);
   }
 }
 
-poplar::Tensor resizeNearest(poplar::Tensor input,
-                             const ResizeParams &params,
-                             snap::program::Sequence &prog,
-                             snap::Graph &graph,
-                             poplar::DebugContext debugContext) {
-  auto result = graph.getPoplarGraph().clone(input, debugContext);
-  prog.getPoplarSequence().add(
-      poplar::program::Copy(input, result, false, debugContext));
+snap::Tensor resizeNearest(snap::Tensor input,
+                           const ResizeParams &params,
+                           snap::program::Sequence &prog,
+                           snap::Graph &graph,
+                           poplar::DebugContext debugContext) {
+  auto result = snap::Tensor{
+      graph.getPoplarGraph().clone(input.getPoplarTensor(), debugContext),
+      graph};
+  prog.add(snap::program::Copy(input, result, false, debugContext));
 
   for (int i = 0; i < input.rank(); i++) {
     if (params.nearestMode == ResizeNearestMode::Pytorch) {
       if (result.shape().at(i) != params.outShape.at(i)) {
-        result = resizeNearest1D(result, i, params);
+        result = resizeNearest1D(result, i, params, graph);
       }
     } else {
       // Even if the output shape is the same, resize can still have an affect
       // on the values. Instead scale is checked.
       auto scale = params.scales.at(i);
       if (scale != 1.0f) {
-        result = resizeNearest1D(result, i, params);
+        result = resizeNearest1D(result, i, params, graph);
       }
     }
   }
@@ -200,14 +203,15 @@ poplar::Tensor resizeNearest(poplar::Tensor input,
   return result;
 }
 
-poplar::Tensor resizeLinear(poplar::Tensor input,
-                            const ResizeParams &params,
-                            snap::program::Sequence &prog,
-                            snap::Graph &graph,
-                            poplar::DebugContext debugContext) {
-  auto result = graph.getPoplarGraph().clone(input, debugContext);
-  prog.getPoplarSequence().add(
-      poplar::program::Copy(input, result, false, debugContext));
+snap::Tensor resizeLinear(snap::Tensor input,
+                          const ResizeParams &params,
+                          snap::program::Sequence &prog,
+                          snap::Graph &graph,
+                          poplar::DebugContext debugContext) {
+  auto result = snap::Tensor{
+      graph.getPoplarGraph().clone(input.getPoplarTensor(), debugContext),
+      graph};
+  prog.add(snap::program::Copy(input, result, false, debugContext));
 
   // Generate new params for calculating nearest floor.
   ResizeParams paramsFloor = params;
@@ -224,8 +228,8 @@ poplar::Tensor resizeLinear(poplar::Tensor input,
     // on the values. Instead scale is checked.
     auto scale = params.scales.at(dim);
     if (scale != 1.0f) {
-      auto resultFloor = resizeNearest1D(result, dim, paramsFloor);
-      auto resultCeil  = resizeNearest1D(result, dim, paramsCeil);
+      auto resultFloor = resizeNearest1D(result, dim, paramsFloor, graph);
+      auto resultCeil  = resizeNearest1D(result, dim, paramsCeil, graph);
 
       std::vector<float> coeffs;
       for (int outIndex = 0; outIndex < params.outShape.at(dim); outIndex++) {
@@ -250,21 +254,24 @@ poplar::Tensor resizeLinear(poplar::Tensor input,
                                         prog.getPoplarSequence(),
                                         debugContext);
 
-      resultCeil  = popops::mul(graph.getPoplarGraph(),
-                               resultCeil,
-                               coeffsTensor,
-                               prog.getPoplarSequence(),
-                               debugContext);
-      resultFloor = popops::mul(graph.getPoplarGraph(),
-                                resultFloor,
-                                oneMinusCoeffs,
-                                prog.getPoplarSequence(),
-                                debugContext);
-      result      = popops::add(graph.getPoplarGraph(),
-                           resultFloor,
-                           resultCeil,
-                           prog.getPoplarSequence(),
-                           debugContext);
+      resultCeil  = snap::Tensor{popops::mul(graph.getPoplarGraph(),
+                                            resultCeil.getPoplarTensor(),
+                                            coeffsTensor,
+                                            prog.getPoplarSequence(),
+                                            debugContext),
+                                graph};
+      resultFloor = snap::Tensor{popops::mul(graph.getPoplarGraph(),
+                                             resultFloor.getPoplarTensor(),
+                                             oneMinusCoeffs,
+                                             prog.getPoplarSequence(),
+                                             debugContext),
+                                 graph};
+      result      = snap::Tensor{popops::add(graph.getPoplarGraph(),
+                                        resultFloor.getPoplarTensor(),
+                                        resultCeil.getPoplarTensor(),
+                                        prog.getPoplarSequence(),
+                                        debugContext),
+                            graph};
     }
   }
 
@@ -385,11 +392,11 @@ public:
     }
   }
 
-  poplar::Tensor run(std::vector<int64_t> indices = {}) {
+  snap::Tensor run(std::vector<int64_t> indices = {}) {
     if (indices.size() < input.rank()) {
       indices.push_back(0);
 
-      std::vector<poplar::Tensor> elems;
+      std::vector<snap::Tensor> elems;
 
       for (int i = 0; i < params.outShape.at(indices.size() - 1); i++) {
         indices.at(indices.size() - 1) = i;
@@ -401,19 +408,21 @@ public:
 
         elems.push_back(x);
       }
-      return poplar::concat(elems, 0);
+      return snap::concat(elems, 0);
     } else {
-      return interpolateND(params.scales, indices, {});
+      return snap::Tensor{interpolateND(params.scales, indices, {}), graph};
     }
   }
 };
 
-poplar::Tensor resizeCubic(poplar::Tensor input,
-                           const ResizeParams &params,
-                           snap::program::Sequence &prog,
-                           snap::Graph &graph,
-                           poplar::DebugContext debugContext) {
-  return ResizeCubicHelper(input, graph, params, prog, debugContext).run();
+snap::Tensor resizeCubic(snap::Tensor input,
+                         const ResizeParams &params,
+                         snap::program::Sequence &prog,
+                         snap::Graph &graph,
+                         poplar::DebugContext debugContext) {
+  return ResizeCubicHelper(
+             input.getPoplarTensor(), graph, params, prog, debugContext)
+      .run();
 }
 } // namespace
 
@@ -426,8 +435,8 @@ void ResizeOpx::grow(snap::program::Sequence &prog) const {
   auto params    = getResizeParams(resizeOp);
   auto outShape  = resizeOp.outShape(ResizeOp::getOutIndex());
 
-  auto input = getInTensor(ResizeOp::getInIndex()).getPoplarTensor();
-  poplar::Tensor result;
+  auto input = getInTensor(ResizeOp::getInIndex());
+  snap::Tensor result;
   switch (params.mode) {
   case ResizeMode::Nearest:
     result = resizeNearest(input, params, prog, graph(), debugContext());
@@ -442,7 +451,7 @@ void ResizeOpx::grow(snap::program::Sequence &prog) const {
     throw error("Unsupported resize mode {}", params.mode);
   }
 
-  setOutTensor(ResizeOp::getOutIndex(), snap::Tensor{result, graph()});
+  setOutTensor(ResizeOp::getOutIndex(), result);
 }
 
 ResizeGradOpx::ResizeGradOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
@@ -479,27 +488,30 @@ snap::Tensor ResizeGradOpx::reduceDimension(snap::program::Sequence &prog,
                                             const snap::Tensor &input,
                                             int dimension,
                                             float scale) const {
-  auto slices = split(input.getPoplarTensor(), dimension);
+  auto slices = split(input, dimension);
 
-  std::map<int, poplar::Tensor> resultMap;
+  std::map<int, snap::Tensor> resultMap;
   for (int i = 0; i < slices.size(); i++) {
     int idx = static_cast<int>(std::floor(i * scale));
     if (resultMap.find(idx) == resultMap.end()) {
       resultMap[idx] = slices[i];
     } else {
-      resultMap[idx] = popops::map(graph().getPoplarGraph(),
+      resultMap[idx] =
+          snap::Tensor{popops::map(graph().getPoplarGraph(),
                                    popops::expr::BinaryOpType::ADD,
-                                   resultMap[idx],
-                                   slices[i],
-                                   prog.getPoplarSequence());
+                                   resultMap[idx].getPoplarTensor(),
+                                   slices[i].getPoplarTensor(),
+                                   prog.getPoplarSequence(),
+                                   debugContext()),
+                       graph()};
     }
   }
 
-  std::vector<poplar::Tensor> toConcat;
+  std::vector<snap::Tensor> toConcat;
   for (int i = 0; i < resultMap.size(); i++) {
     toConcat.push_back(resultMap.at(i));
   }
-  return snap::Tensor{poplar::concat(toConcat, dimension), graph()};
+  return snap::concat(toConcat, dimension);
 }
 
 snap::Tensor ResizeGradOpx::padDimension(snap::program::Sequence &prog,
@@ -507,23 +519,25 @@ snap::Tensor ResizeGradOpx::padDimension(snap::program::Sequence &prog,
                                          int dimension,
                                          int64_t newSize,
                                          float scale) const {
-  auto slices        = split(input.getPoplarTensor(), dimension);
-  auto paddingTensor = graph().getPoplarGraph().addVariable(
-      input.elementType(),
-      slices.at(0).shape(),
-      poplar::VariableMappingMethod::LINEAR);
+  auto slices        = split(input, dimension);
+  auto paddingTensor = snap::Tensor{graph().getPoplarGraph().addVariable(
+                                        input.elementType(),
+                                        slices.at(0).shape(),
+                                        poplar::VariableMappingMethod::LINEAR,
+                                        debugContext()),
+                                    graph()};
   popops::zero(graph().getPoplarGraph(),
-               paddingTensor,
+               paddingTensor.getPoplarTensor(),
                prog.getPoplarSequence(),
                debugContext("zeroPadding"));
 
-  std::vector<poplar::Tensor> toConcat(newSize, paddingTensor);
+  std::vector<snap::Tensor> toConcat(newSize, paddingTensor);
   for (int i = 0; i < slices.size(); i++) {
     int idx          = static_cast<int>(std::floor(i * scale));
     toConcat.at(idx) = slices.at(i);
   }
 
-  return snap::Tensor{poplar::concat(toConcat, dimension), graph()};
+  return snap::concat(toConcat, dimension);
 }
 
 namespace {
