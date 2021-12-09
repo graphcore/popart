@@ -165,7 +165,7 @@ The boost library in Ubuntu 18.04 (`libboost-dev`) is 1.65.1, which is not compa
 
 ```
 export BOOST_INSTALL_DIR=$(pwd)/boost_1_70_0/install_dir/
-wget https://dl.bintray.com/boostorg/release/1.70.0/source/boost_1_70_0.tar.gz
+wget https://boostorg.jfrog.io/artifactory/main/release/1.70.0/source/boost_1_70_0.tar.gz
 tar xvfz boost_1_70_0.tar.gz
 rm boost_1_70_0.tar.gz
 pushd boost_1_70_0
