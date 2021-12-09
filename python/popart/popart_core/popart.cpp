@@ -966,12 +966,14 @@ PYBIND11_MODULE(popart_core, m) {
     cls.def(py::init<bool,
                      const nonstd::optional<std::vector<TensorId>> &,
                      float,
-                     float>(),
+                     float,
+                     int>(),
             py::arg("enabled"),
             py::arg("toTrackTensors") =
                 nonstd::optional<std::vector<TensorId>>(),
             py::arg("binEdgeLocation")               = 0.0625f,
-            py::arg("thresholdUpperCountProportion") = 1e-7);
+            py::arg("thresholdUpperCountProportion") = 1e-7,
+            py::arg("updatePeriod")                  = 1);
     cls.def_readwrite("enabled", &AutomaticLossScalingSettings::enabled);
     cls.def_readwrite("binEdgeLocation",
                       &AutomaticLossScalingSettings::binEdgeLocation);
@@ -980,6 +982,8 @@ PYBIND11_MODULE(popart_core, m) {
         &AutomaticLossScalingSettings::thresholdUpperCountProportion);
     cls.def_readwrite("toTrackTensors",
                       &AutomaticLossScalingSettings::toTrackTensors);
+    cls.def_readwrite("updatePeriod",
+                      &AutomaticLossScalingSettings::updatePeriod);
   }
   {
     py::class_<TensorLocationSettings> cls(m, "TensorLocationSettings");

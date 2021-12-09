@@ -949,7 +949,8 @@ Graph &SubgraphOutline::createEmptySubgraph(
     std::map<Op *, int> &index_map,
     std::string subgraphId,
     const std::map<InIndex, OutIndex> &identityInputToOutputIndiciesMapping,
-    const std::map<OutIndex, float> &outputIndiciesAndValues) {
+    const std::map<OutIndex, float> &outputIndiciesAndValues,
+    AliasModel &aliasModel) {
   auto &subgraph      = ir.createGraph(GraphId(subgraphId));
   auto subgraph_scope = subgraph.getScope();
   Op::Settings subgraphSettings(subgraph, subgraphId, subgraph.getScope());
@@ -999,6 +1000,8 @@ Graph &SubgraphOutline::createEmptySubgraph(
       nopOp->connectInTensor(NopOp::getInIndex(), tensor_map.at(tensorIn)->id);
       nopOp->connectOutTensor(NopOp::getOutIndex(),
                               tensor_map.at(tensorOut)->id);
+      nopOp->inheritPlacementAttributes(false, aliasModel);
+      nopOp->setVirtualGraphId(op->getOptionalVGraphId());
       nopOp->setup();
     }
   }
@@ -1039,6 +1042,8 @@ Graph &SubgraphOutline::createEmptySubgraph(
                                 shapeExpandTensorId);
       expandOp->connectOutTensor(ExpandOp::getOutIndex(),
                                  tensor_map.at(tensorOut)->id);
+      expandOp->inheritPlacementAttributes(false, aliasModel);
+      expandOp->setVirtualGraphId(op->getOptionalVGraphId());
       expandOp->setup();
     }
   }

@@ -271,7 +271,8 @@ public:
       unsigned n,
       unsigned m,
       const std::map<InIndex, OutIndex> &identityInputToOutputIndiciesMapping,
-      const std::map<OutIndex, float> &outputIndiciesAndValues);
+      const std::map<OutIndex, float> &outputIndiciesAndValues,
+      AliasModel &aliasMode);
 
   AutomaticLossScale() : Transform() {}
   virtual ~AutomaticLossScale() override {}

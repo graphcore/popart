@@ -64,12 +64,14 @@ BOOST_AUTO_TEST_CASE(TestFrequency1input1output2Ops) {
   std::map<OutIndex, float> outputIndiciesAndValues;
   constexpr int bps = 18;
   ir->setDataFlow(DataFlow{bps, {{tout, AnchorReturnType("All")}}});
+  AliasModel aliasModel;
   sinhOp = AutomaticLossScale::executeOpNTimesEveryMTimes(
       sinhOp,
       2,
       6,
       identityInputToOutputIndiciesMapping,
-      outputIndiciesAndValues);
+      outputIndiciesAndValues,
+      aliasModel);
 
   ir->updateVertices();
   ir->setIsPrepared();
@@ -146,12 +148,14 @@ BOOST_AUTO_TEST_CASE(TestExecuteOpNTimesEveryMTimesShapes) {
 
     constexpr int bps = 18;
     ir->setDataFlow(DataFlow{bps, {{tout, AnchorReturnType("All")}}});
+    AliasModel aliasModel;
     addOp = AutomaticLossScale::executeOpNTimesEveryMTimes(
         addOp,
         2,
         6,
         identityInputToOutputIndiciesMapping,
-        outputIndiciesAndValues);
+        outputIndiciesAndValues,
+        aliasModel);
 
     ir->updateVertices();
     ir->setIsPrepared();
@@ -291,12 +295,14 @@ BOOST_AUTO_TEST_CASE(
   std::map<InIndex, OutIndex> identityInputToOutputIndiciesMapping;
   std::map<OutIndex, float> outputIndiciesAndValues{{0, 11}};
 
+  AliasModel aliasModel;
   histogramOp = AutomaticLossScale::executeOpNTimesEveryMTimes(
       histogramOp,
       2,
       6,
       identityInputToOutputIndiciesMapping,
-      outputIndiciesAndValues);
+      outputIndiciesAndValues,
+      aliasModel);
 
   ir->updateVertices();
   ir->setIsPrepared();
@@ -397,12 +403,14 @@ void testType(
 
   ir->setDataFlow(DataFlow{bps, {{tout, AnchorReturnType("All")}}});
 
+  AliasModel aliasModel;
   addOp = AutomaticLossScale::executeOpNTimesEveryMTimes(
       addOp,
       n,
       m,
       identityInputToOutputIndiciesMapping,
-      outputIndiciesAndValues);
+      outputIndiciesAndValues,
+      aliasModel);
 
   ir->updateVertices();
   ir->setIsPrepared();
@@ -605,11 +613,11 @@ BOOST_AUTO_TEST_CASE(TestExecuteOpNTimesEveryMTimesTypes) {
       6, 6, 1, 1, 1, 1, 6, 6, 1, 1, 1, 1, 6, 6, 1, 1, 1, 1};
 
   const auto checkErrorFn8 = checkErrorMsgHasPrefixFn<error>(
-      "[AutomaticLossScale transform][[executeOpNTimesEveryMTimes]."
+      "[AutomaticLossScale transform][[executeOpNTimesEveryMTimes]. "
       "Argument M of executeOpNTimesEveryMTimes has inconsistent value 6. "
       "Operation 100 (ai.onnx.Add:7) is in the Normal execution context and "
-      "gradient accumulation is enabled hence M should be a factor of "
-      "gradient accumulation factor 10.");
+      "gradient accumulation is enabled hence M should be a factor "
+      "or multiple of gradient accumulation factor 10.");
 
   BOOST_REQUIRE_EXCEPTION(testType<float>(4,
                                           6,

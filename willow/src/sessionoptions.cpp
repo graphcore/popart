@@ -15,10 +15,11 @@ AutomaticLossScalingSettings::AutomaticLossScalingSettings(
     bool enabled_,
     const nonstd::optional<std::vector<TensorId>> &toTrackTensors_,
     float binEdgeLocation_,
-    float thresholdUpperCountProportion_)
+    float thresholdUpperCountProportion_,
+    int updatePeriod_)
     : enabled{enabled_}, binEdgeLocation{binEdgeLocation_},
       thresholdUpperCountProportion{thresholdUpperCountProportion_},
-      toTrackTensors{toTrackTensors_} {}
+      toTrackTensors{toTrackTensors_}, updatePeriod{updatePeriod_} {}
 
 std::size_t AutomaticLossScalingSettings::hash() const {
   std::size_t seed = 0;
@@ -28,6 +29,7 @@ std::size_t AutomaticLossScalingSettings::hash() const {
   if (toTrackTensors) {
     boost::hash_combine(seed, toTrackTensors.value());
   }
+  boost::hash_combine(seed, updatePeriod);
   return seed;
 }
 

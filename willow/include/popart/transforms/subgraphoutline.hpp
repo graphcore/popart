@@ -100,7 +100,8 @@ public:
       std::map<Op *, int> &index_map,
       std::string subgraphId,
       const std::map<InIndex, OutIndex> &identityInputToOutputIndiciesMapping,
-      const std::map<OutIndex, float> &outputIndiciesAndValues);
+      const std::map<OutIndex, float> &outputIndiciesAndValues,
+      AliasModel &aliasModel);
 
   // Helper function to reuse code.
   static void setSubgraphOpSettingsFromClusterInstance(

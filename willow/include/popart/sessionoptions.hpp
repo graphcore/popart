@@ -32,7 +32,8 @@ struct AutomaticLossScalingSettings {
       bool enabled_,
       const nonstd::optional<std::vector<TensorId>> &toTrackTensors_,
       float binEdgeLocation_               = 0.0625f,
-      float thresholdUpperCountProportion_ = 1e-7);
+      float thresholdUpperCountProportion_ = 1e-7,
+      int updatePeriod_                    = 1);
 
   AutomaticLossScalingSettings &
   operator=(const AutomaticLossScalingSettings &rhs) = default;
@@ -59,6 +60,10 @@ struct AutomaticLossScalingSettings {
   /// will be collected. If unset, the gradients of all tensors produced
   /// by a default operations (matmul, conv) will be used.
   nonstd::optional<std::vector<TensorId>> toTrackTensors;
+
+  /// How often loss scale update factor should be updated with respect to
+  /// optimizer steps.
+  int updatePeriod = 1;
 };
 
 /**

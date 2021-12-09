@@ -10,8 +10,10 @@
 #include <popart/op/cast.hpp>
 #include <popart/op/collectives/replicatedallreduce.hpp>
 #include <popart/op/convbase.hpp>
+#include <popart/op/copyvarupdate.hpp>
 #include <popart/op/div.hpp>
 #include <popart/op/histogram.hpp>
+#include <popart/op/identity.hpp>
 #include <popart/op/incrementmod.hpp>
 #include <popart/op/less.hpp>
 #include <popart/op/lossscaleupdate.hpp>
@@ -288,13 +290,14 @@ void checkNM(unsigned n, unsigned m, Op *op, const Ir &ir) {
 
   if (op->settings.executionContext == ExecutionContext::Normal &&
       ir.getSessionOptions().enableGradientAccumulation) {
-    if (ir.getSessionOptions().accumulationFactor % m != 0) {
+    if (m % ir.getSessionOptions().accumulationFactor != 0 &&
+        ir.getSessionOptions().accumulationFactor % m != 0) {
       throw error(
-          "[AutomaticLossScale transform][[executeOpNTimesEveryMTimes]."
+          "[AutomaticLossScale transform][[executeOpNTimesEveryMTimes]. "
           "Argument M of executeOpNTimesEveryMTimes has inconsistent value {}. "
           "Operation {} is in the Normal execution context and "
-          "gradient accumulation is enabled hence M should be a factor of "
-          "gradient accumulation factor {}.",
+          "gradient accumulation is enabled hence M should be a factor "
+          "or multiple of gradient accumulation factor {}.",
           m,
           op->str(),
           ir.getSessionOptions().accumulationFactor);
@@ -309,6 +312,52 @@ void checkNM(unsigned n, unsigned m, Op *op, const Ir &ir) {
           ir.getDataFlow().batchesPerStep());
     }
   }
+}
+
+Op *executeHistogramNTimesEveryMTimes(Op *op,
+                                      const Ir &ir,
+                                      AliasModel aliasMode) {
+
+  int updatePeriod =
+      ir.getSessionOptions().automaticLossScalingSettings.updatePeriod;
+  unsigned n;
+  unsigned m;
+  if (ir.getSessionOptions().enableGradientAccumulation) {
+    int accumFactor = ir.getSessionOptions().accumulationFactor;
+    n               = accumFactor;
+    m               = accumFactor * updatePeriod;
+
+  } else {
+    n = 1;
+    m = updatePeriod;
+  }
+
+  std::map<InIndex, OutIndex> identityInputToOutputIndiciesMapping;
+  std::map<OutIndex, float> outputIndiciesAndValues{{0, 0}};
+
+  return AutomaticLossScale::executeOpNTimesEveryMTimes(
+      op,
+      n,
+      m,
+      identityInputToOutputIndiciesMapping,
+      outputIndiciesAndValues,
+      aliasMode);
+}
+
+Op *executeLossScaleUpdateNTimesEveryMTimes(Op *op,
+                                            int updatePeriod,
+                                            AliasModel aliasMode) {
+
+  std::map<InIndex, OutIndex> identityInputToOutputIndiciesMapping{{0, 0}};
+  std::map<OutIndex, float> outputIndiciesAndValues;
+
+  return AutomaticLossScale::executeOpNTimesEveryMTimes(
+      op,
+      1,
+      updatePeriod,
+      identityInputToOutputIndiciesMapping,
+      outputIndiciesAndValues,
+      aliasMode);
 }
 
 } // namespace
@@ -374,7 +423,8 @@ Op *AutomaticLossScale::executeOpNTimesEveryMTimes(
     unsigned n,
     unsigned m,
     const std::map<InIndex, OutIndex> &identityInputToOutputIndiciesMapping,
-    const std::map<OutIndex, float> &outputIndiciesAndValues) {
+    const std::map<OutIndex, float> &outputIndiciesAndValues,
+    AliasModel &aliasModel) {
   Graph &graph = op->getGraph();
   auto &ir     = graph.getIr();
   checkNM(n, m, op, ir);
@@ -401,6 +451,18 @@ Op *AutomaticLossScale::executeOpNTimesEveryMTimes(
   incrementModInplaceOp->createAndConnectOutTensor(
       IncrementModInplaceOp::getOutIndex(),
       ir.createIntermediateTensorId(counter->id));
+  incrementModInplaceOp->inheritPlacementAttributes(false, aliasModel);
+  incrementModInplaceOp->setVirtualGraphId(op->getOptionalVGraphId());
+  if (op->settings.executionContext ==
+      ExecutionContext::AccumulateOuterFragment) {
+    incrementModInplaceOp->settings.executionContext =
+        ExecutionContext::AccumulateOuterFragment;
+  } else if (op->settings.executionContext == ExecutionContext::Normal) {
+    if (op->hasPipelineStage()) {
+      incrementModInplaceOp->setPipelineStage(op->getOptionalPipelineStage());
+    }
+  }
+
   incrementModInplaceOp->setup();
 
   TensorId lessId               = op->str() + "_less";
@@ -420,6 +482,16 @@ Op *AutomaticLossScale::executeOpNTimesEveryMTimes(
       ir.createIntermediateTensorId(
           incrementModInplaceOp->outTensor(IncrementModInplaceOp::getOutIndex())
               ->id));
+  lessOp->inheritPlacementAttributes(false, aliasModel);
+  if (op->settings.executionContext ==
+      ExecutionContext::AccumulateOuterFragment) {
+    lessOp->settings.executionContext =
+        ExecutionContext::AccumulateOuterFragment;
+  } else if (op->settings.executionContext == ExecutionContext::Normal) {
+    if (op->hasPipelineStage()) {
+      lessOp->setPipelineStage(op->getOptionalPipelineStage());
+    }
+  }
   lessOp->setup();
 
   std::vector<OpId> opToReplace  = {op->id};
@@ -432,13 +504,15 @@ Op *AutomaticLossScale::executeOpNTimesEveryMTimes(
       instances, ir, index_map_subgraph, "ComputeSubgraph");
 
   std::map<Op *, int> index_map_empty_subgraph;
+  std::string subgraphId = op->str() + "_EmptySubgraph";
   Graph &emptySubgraph =
       SubgraphOutline::createEmptySubgraph(instance,
                                            ir,
                                            index_map_empty_subgraph,
-                                           "EmptySubgraph",
+                                           subgraphId,
                                            identityInputToOutputIndiciesMapping,
-                                           outputIndiciesAndValues);
+                                           outputIndiciesAndValues,
+                                           aliasModel);
 
   AliasesMap aliasesMap{&ir};
 
@@ -484,6 +558,7 @@ bool AutomaticLossScale::apply(Graph &graph) const {
   // Get all tensors whose statistics are to be tracked.
   std::vector<Tensor *> toTrackTensors = getToTrackTensors(graph);
   std::vector<Tensor *> histogramOutputs;
+  std::vector<Op *> histograms;
   for (Tensor *tensor : toTrackTensors) {
     logging::transform::debug("Collecting statistics for tensor '{}' for "
                               "control of loss-scale value.",
@@ -494,7 +569,7 @@ bool AutomaticLossScale::apply(Graph &graph) const {
         ir.getSessionOptions().automaticLossScalingSettings.binEdgeLocation;
 
     // Attach a newly created HistogramOp to each tensor
-    auto histogramOp =
+    Op *histogramOp =
         graph.createOp<HistogramOp>(Onnx::CustomOperators::Histogram,
                                     getLevels(tensor, binEdgeLocation),
                                     absoluteOfInput(),
@@ -513,6 +588,7 @@ bool AutomaticLossScale::apply(Graph &graph) const {
       histogramOp->settings.schedulePriority =
           std::numeric_limits<double>::max();
     }
+    histograms.push_back(histogramOp);
   }
 
   // Get the loss scale tensor and the inverse loss scale tensor:
@@ -522,7 +598,7 @@ bool AutomaticLossScale::apply(Graph &graph) const {
       getInverseLossScaleTensors(graph);
 
   // Pass loss scale tensor and HistogramOp outputs into the LossScaleUpdateOp
-  auto lossScaleUpdateOp =
+  Op *lossScaleUpdateOp =
       graph.createOp<LossScaleUpdateOp>(Onnx::CustomOperators::LossScaleUpdate,
                                         lossScaleTensor->info.dataType(),
                                         Op::Settings(graph, "LossScaleUpdate"));
@@ -654,6 +730,30 @@ bool AutomaticLossScale::apply(Graph &graph) const {
     lossScaleUpdateOp->settings.executionContext = ExecutionContext::Normal;
   }
 
+  int updatePeriod =
+      ir.getSessionOptions().automaticLossScalingSettings.updatePeriod;
+
+  Op *copyVarUpdates;
+  if (updatePeriod > 1) {
+    auto copyVarUpdateOp =
+        graph.createOp<CopyVarUpdateOp>(Op::Settings(graph, ""));
+    copyVarUpdateOp->connectInTensor(CopyVarUpdateOp::getVarToUpdateInIndex(),
+                                     lsUpdateFactor->id);
+    copyVarUpdateOp->connectInTensor(
+        CopyVarUpdateOp::getUpdaterInIndex(),
+        lossScaleUpdateOp
+            ->outTensor(
+                LossScaleUpdateOp::getUpdatedLossScaleUpdateFactorOutIndex())
+            ->id);
+    copyVarUpdateOp->createAndConnectOutTensor(
+        CopyVarUpdateOp::getUpdatedVarOutIndex(),
+        lsUpdateFactor->id + "_updated");
+    copyVarUpdateOp->inheritPlacementAttributes(false, aliasModel);
+    copyVarUpdateOp->setup();
+    copyVarUpdateOp->pruneable = false;
+    copyVarUpdates             = copyVarUpdateOp;
+  }
+
   std::vector<Op *> preLossScaleUpdateOps;
   // Apply the loss scale update factor to:
   // - loss scale tensor
@@ -774,6 +874,22 @@ bool AutomaticLossScale::apply(Graph &graph) const {
     op->setPipelineStage(pStage);
   }
   lossScaleUpdateOp->setVirtualGraphId(vgId);
+
+  // When updatePeriod is larger than one we apply executeOpNTimesEveryMTimes
+  // tool on histogram ops and on loss scale update op which reduces
+  // the frequency of computations of these ops,
+  // with the intended outcome of improving throughput.
+  if (updatePeriod > 1) {
+    copyVarUpdates->setVirtualGraphId(vgId);
+
+    for (Op *histogramOp : histograms) {
+      histogramOp =
+          executeHistogramNTimesEveryMTimes(histogramOp, ir, aliasModel);
+    }
+
+    lossScaleUpdateOp = executeLossScaleUpdateNTimesEveryMTimes(
+        lossScaleUpdateOp, updatePeriod, aliasModel);
+  }
 
   return true;
 }
