@@ -15,6 +15,7 @@ add_popart_py_unit_test(streamingmemory_test_0 streamingmemory_test_0.py MATCHEX
 add_popart_py_unit_test(streamingmemory_test_0 streamingmemory_test_0.py MATCHEXPR "test_replicated_sgd1and2_weight_update" VARIANTS "Hw")
 add_popart_py_unit_test(streamingmemory_test_0 streamingmemory_test_0.py MATCHEXPR "test_replicated_adam_weight_update" VARIANTS "Hw")
 add_popart_py_unit_test(streamingmemory_test_0 streamingmemory_test_0.py MATCHEXPR "test_replicated_lamb_weight_update" VARIANTS "Hw")
+add_popart_py_unit_test(streamingmemory_test_0 streamingmemory_test_0.py MATCHEXPR "test_gradient_clipping" VARIANTS "Hw")
 
 add_popart_py_unit_test(streamingmemory_test_1 streamingmemory_test_1.py VARIANTS "Hw")
 add_popart_py_unit_test(streamingmemory_test_2 streamingmemory_test_2.py VARIANTS "Hw")

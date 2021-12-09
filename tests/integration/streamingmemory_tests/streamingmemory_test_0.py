@@ -561,3 +561,54 @@ def test_replicated_lamb_weight_update(tmpdir, isConst, reduction):
     check_model(phased, phased_replicated_rws)
     check_model(phased, phased_replicated_rws_acc)
     check_model(phased, phased_replicated_rws_acc_nw)
+
+
+@tu.requires_ipu
+def test_gradient_clipping(tmpdir):
+    # Weights and optimizer off-chip, RTS
+    run_model(
+        tmpdir,
+        "gradient_clipping_without_rts.onnx",
+        batch_size=2,
+        num_iterations=5,
+        num_replicas=2,
+        optimizer=popart.Adam(
+            {
+                "defaultLearningRate": (0.005, False),
+                "defaultBeta1": (0.7, False),
+                "defaultBeta2": (0.8, False),
+                "defaultWeightDecay": (0.1, False),
+                "defaultEps": (1e-6, False),
+                "lossScaling": (10.0, False),
+            },
+            popart.AdamMode.Lamb,
+            weight_decay_mode=popart.WeightDecayMode.Decay,
+            clip_norm_settings=[popart.ClipNormSettings.clipAllWeights(0.1)]))
+
+    run_model(
+        tmpdir,
+        "gradient_clipping_with_rts.onnx",
+        activation_tensor_location_settings=offChipLocation,
+        weight_tensor_location_settings=offChipRtsLocation,
+        optimizer_state_tensor_location_settings=offChipRtsLocation,
+        accumulator_tensor_location_settings=offChipLocation,
+        batch_size=2,
+        num_iterations=5,
+        num_replicas=2,
+        optimizer=popart.Adam(
+            {
+                "defaultLearningRate": (0.005, False),
+                "defaultBeta1": (0.7, False),
+                "defaultBeta2": (0.8, False),
+                "defaultWeightDecay": (0.1, False),
+                "defaultEps": (1e-6, False),
+                "lossScaling": (10.0, False),
+            },
+            popart.AdamMode.Lamb,
+            weight_decay_mode=popart.WeightDecayMode.Decay,
+            clip_norm_settings=[popart.ClipNormSettings.clipAllWeights(0.1)]))
+
+    without_rts = onnx.load(str(tmpdir / 'gradient_clipping_without_rts.onnx'))
+    with_rts = onnx.load(str(tmpdir / 'gradient_clipping_with_rts.onnx'))
+
+    check_model(without_rts, with_rts)
