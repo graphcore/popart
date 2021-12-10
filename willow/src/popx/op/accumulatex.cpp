@@ -10,6 +10,7 @@
 #include <popart/popx/irlowering.hpp>
 #include <popart/popx/op/accumulatex.hpp>
 #include <popart/popx/op/gatherx.hpp>
+#include <popart/popx/op/sliceplanx.hpp>
 #include <popart/popx/opxmanager.hpp>
 
 #include <popops/DynamicSlice.hpp>
@@ -373,10 +374,18 @@ OpxCreator<AccumulateOpx>
 /********** SparseAccumulateOpx **********/
 
 SparseAccumulateOpx::SparseAccumulateOpx(Op *op, Devicex *devicex)
-    : AccumulateBaseOpx(op, devicex) {
+    : AccumulateBaseOpx(op, devicex), options(), plan() {
   verifyOp<SparseAccumulateOp>(op, {Onnx::CustomOperators::SparseAccumulate});
 
   inputCreatorPriority = std::numeric_limits<double>::max();
+
+  auto &saop = getOp<SparseAccumulateOp>();
+  options    = createSlicePlanOptions(SlicePlanUsedFor::UpdateAdd);
+  plan       = createSlicePlan(graph(),
+                         inInfo(saop.getVarToUpdateInIndex()),
+                         inInfo(saop.getIndicesInIndex()),
+                         options,
+                         saop.getAxis());
 }
 
 snap::Tensor SparseAccumulateOpx::createInputTensor(
@@ -503,8 +512,8 @@ void SparseAccumulateOpx::grow(snap::program::Sequence &prog) const {
                          {0},
                          {1},
                          prog.getPoplarSequence(),
-                         popops::SlicePlan(),
-                         poplar::OptionFlags(),
+                         plan,
+                         options,
                          debugContext("nonConstSparseSGD1Accl"));
 
   // reference accl returned

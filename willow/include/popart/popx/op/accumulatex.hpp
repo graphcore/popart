@@ -5,6 +5,9 @@
 #include <popart/names.hpp>
 #include <popart/popx/op/varupdatex.hpp>
 
+#include <poplar/OptionFlags.hpp>
+#include <popops/DynamicSlice.hpp>
+
 namespace popart {
 namespace popx {
 
@@ -49,6 +52,10 @@ public:
   createInputTensor(InIndex, const poplar::DebugNameAndId &dnai) const final;
 
   std::set<TensorId> mustExistBeforeCreate(InIndex) const final;
+
+private:
+  poplar::OptionFlags options;
+  popops::SlicePlan plan;
 };
 
 } // namespace popx
