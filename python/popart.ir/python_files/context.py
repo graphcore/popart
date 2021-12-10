@@ -28,8 +28,8 @@ class Context:
         self._virtual_graph_id: int = 0
         self._pipeline_stage: Optional[int] = None
         self._in_sequence: Optional[bool] = None
-        self._previous_ops: DefaultDict[_ir.GraphId, List[
-            _ir.Op]] = defaultdict(list)
+        self._previous_ops: DefaultDict[_ir.GraphId, List[int]] = defaultdict(
+            list)
         self._debug_info: Optional[_ir.DebugInfo] = None
         self._debug_context_frame_offset: int = 0
         self._name_scope: List[str] = []
@@ -196,9 +196,9 @@ class Context:
         g = op.getGraph()
         ops = g.getOpIds()
 
-        def insert_topocon(before):
-            if before.id != op.id and before.id in ops:
-                g.topoCons().insert(before, op, False)
+        def insert_topocon(before_id: int):
+            if before_id != op.id and before_id in ops:
+                g.topoCons().insert(g.getOp(before_id), op, False)
 
         if self._in_sequence is not None:
             if self._in_sequence:
@@ -209,7 +209,7 @@ class Context:
                 prev_ops = self._previous_ops[g.id]
                 if len(prev_ops) > 0:
                     insert_topocon(prev_ops[0])
-            self._previous_ops[g.id].append(op)
+            self._previous_ops[g.id].append(op.id)
 
 
 _CURRENT_CONTEXT = Context()

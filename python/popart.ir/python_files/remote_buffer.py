@@ -5,7 +5,7 @@ import popart._internal.ir as _ir
 from popart.ir.dtypes import dtype
 from popart.ir import Ir, Tensor
 
-__all__ = ["RemoteBuffer"]
+__all__ = ["RemoteBuffer", "remote_buffer"]
 
 
 class RemoteBuffer:

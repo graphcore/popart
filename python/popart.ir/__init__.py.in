@@ -29,3 +29,9 @@ del actualVersion
 del requiredVersion
 
 __all__ = [name for name in dir()]
+
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    # Static Type Checking requires "import .. as"
+    # however this causes a circular import at runtime
+    import popart.ir.transforms as transforms

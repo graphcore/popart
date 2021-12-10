@@ -80,7 +80,8 @@ bool hasDataDependency(Op *const op,
   return dataDependency;
 }
 
-void addInitOpCons(Op *const op, OpsBeforeKey &beforeKeys) {
+OpsBeforeKey initOpConstraints(std::vector<Op *> &initOps,
+                               ExchangeOps exchangeOps) {
   // Ensure the scheduler allows InitOps to be scheduled before
   // RemoteLoad/HostLoad/RemoteStore/HostStore/MultiExchange
   //
@@ -89,13 +90,11 @@ void addInitOpCons(Op *const op, OpsBeforeKey &beforeKeys) {
   //     |            |
   //  RemoteLoad0     |         } mergeable to MultiExchangeOp
   //               RemoteLoad1  }
-
-  beforeKeys.insert({op, {}});
-  for (auto &beforeKey : beforeKeys) {
-    if (beforeKey.first->isConvertibleTo<InitOp>()) {
-      beforeKeys.at(op).push_back(beforeKey.first);
-    }
+  OpsBeforeKey beforeKeys;
+  for (auto &exchangeOp : exchangeOps) {
+    beforeKeys.insert({exchangeOp.second, initOps});
   }
+  return beforeKeys;
 }
 
 bool isMergableOp(Op *const op) {
@@ -234,6 +233,7 @@ MergeExchange::applyToOps(Graph &graph,
   }
 
   ExchangeOps exchangeOps;
+  std::vector<Op *> initOps;
 
   bool seenRemoteLoads  = false;
   bool seenRemoteStores = false;
@@ -259,6 +259,10 @@ MergeExchange::applyToOps(Graph &graph,
     bool isInit     = op->isConvertibleTo<InitOp>();
     bool isMergable = isMergableOp(op);
 
+    if (isInit) {
+      initOps.push_back(op);
+    }
+
     bool contextChanged = prevOp && op->settings.executionContext !=
                                         prevOp->settings.executionContext;
     bool bspChanged = prevOp && op->hasBatchSerializedPhase() !=
@@ -268,23 +272,19 @@ MergeExchange::applyToOps(Graph &graph,
     bool isAof = (op->settings.executionContext ==
                   ExecutionContext::AccumulateOuterFragment);
 
-    if ((isInit || isMergable) && !exchangeOps.empty()) {
-      addInitOpCons(op, beforeKeys);
-    }
-
     bool dataDependency = (isInit || isMergable) &&
                           hasDataDependency(op, exchangeOps, opToPosition);
 
     if (contextChanged || dataDependency || !(isInit || isMergable) ||
         bspChanged || (inhibitMerging && isAof && isMerge)) {
-      auto multiOp =
-          conditionallyInsertMultiExchange(graph, exchangeOps, beforeKeys);
+      auto multiOp = conditionallyInsertMultiExchange(
+          graph, exchangeOps, initOpConstraints(initOps, exchangeOps));
       if (multiOp != nullptr) {
         createdOps.push_back(multiOp);
       }
 
       exchangeOps.clear();
-      beforeKeys.clear();
+      initOps.clear();
       seenRemoteLoads  = false;
       seenRemoteStores = false;
     }
@@ -298,8 +298,8 @@ MergeExchange::applyToOps(Graph &graph,
       }
     }
   }
-  auto multiOp =
-      conditionallyInsertMultiExchange(graph, exchangeOps, beforeKeys);
+  auto multiOp = conditionallyInsertMultiExchange(
+      graph, exchangeOps, initOpConstraints(initOps, exchangeOps));
   if (multiOp != nullptr) {
     createdOps.push_back(multiOp);
   }
