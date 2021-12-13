@@ -38,6 +38,11 @@ void DropoutOp::setup() {
   }
 }
 
+bool DropoutOp::canBeReplacedByIdentity() const {
+  // Can't replace by identity if mask output is produced.
+  return (DropoutBaseOp::canBeReplacedByIdentity() && !outputMask);
+}
+
 std::vector<std::unique_ptr<Op>> DropoutOp::getGradOps() {
   std::vector<std::unique_ptr<Op>> upops;
   upops.emplace_back(std::make_unique<DropoutGradOp>(*this));

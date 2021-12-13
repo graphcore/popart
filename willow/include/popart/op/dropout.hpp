@@ -24,6 +24,8 @@ public:
   std::vector<std::unique_ptr<Op>> getGradOps() override;
   void setup() override;
 
+  bool canBeReplacedByIdentity() const override;
+
   void appendAttributes(OpSerialiserBase &os) const override;
 
   // Additional mask output
