@@ -48,7 +48,7 @@ def test_subgraph():
     assert len(ss_graph.get_input_tensors()) == 3
     assert len(ss_graph.get_output_tensors()) == 1
 
-    ss_bwd_info = pir.transforms.autodiff.autodiff(ss_graph)
+    ss_bwd_info = pir.transforms.autodiff(ss_graph)
 
     # Check an additional output has been added to the fwd graph.
     assert len(ss_graph.get_output_tensors()) == 2
@@ -69,8 +69,7 @@ def test_subgraph():
 
     with main:
         grad_seed = pir.constant(np.ones((16, 16), np.float32))
-        activations = pir.transforms.autodiff.get_expected_forward_inputs_from_call(
-            call_info, ss_bwd_info)
+        activations = ss_bwd_info.get_inputs_from_forward_call_info(call_info)
         grads = ops.call(bwd_graph,
                          grad_seed,
                          subgraph_in_to_parent_in=activations)

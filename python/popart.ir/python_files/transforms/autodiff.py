@@ -8,10 +8,7 @@ from popart.ir.graph import Graph
 from popart.ir.tensor import Tensor
 from popart.ir.ops.call import CallInfo
 
-__all__ = [
-    'autodiff', 'get_expected_forward_inputs_from_call',
-    'ExpectedConnectionType', 'ExpectedConnection', 'GradGraphInfo'
-]
+__all__ = ['autodiff']
 
 
 class ExpectedConnectionType(Enum):
@@ -122,6 +119,31 @@ class GradGraphInfo:
     def get_output_tensors(self) -> Tuple[Tensor, ...]:
         return tuple(map(lambda ec: ec.fwd_tensor, self._expected_outputs))
 
+    def get_inputs_from_forward_call_info(
+            self, call_info: CallInfo) -> Mapping[Tensor, Tensor]:
+        """Utility function for constructing inputs to calling a grad graph.
+
+        Args:
+            call_info: `popart.ir.ops.call.CallInfo`
+                Callsite info of a call to the graph that was auto-differentiated. This can be accessed by
+                using `ops.call_with_info()`
+
+        Returns: `Mapping[Tensor, Tensor]`
+            from: a Tensor in the gradient Graph
+            to: an input or output tensor at a callsite of the corresponding forward Graph.
+        """
+        if call_info.called_graph != self.forward_graph:
+            raise TypeError(
+                "The called graph does not match the graph that was auto-differentiated."
+            )
+
+        return {
+            Tensor._from_pb_tensor(self.graph._pb_graph.getInputTensor(idx)):
+            call_info.subgraph_to_op_tensor(act.fwd_tensor)
+            for idx, act in enumerate(self.expected_inputs)
+            if act.connection_type == ExpectedConnectionType.Fwd
+        }
+
 
 def autodiff(graph: Graph,
              grads_provided: Optional[Iterable[Tensor]] = None,
@@ -183,32 +205,3 @@ def autodiff(graph: Graph,
         return result
 
     return result[graph]
-
-
-def get_expected_forward_inputs_from_call(
-        call_info: CallInfo,
-        grad_info: GradGraphInfo) -> Mapping[Tensor, Tensor]:
-    """Utility function for constructing inputs to calling a grad graph.
-
-      Args:
-        call_info: `popart.ir.ops.call.CallInfo`
-            Callsite info of a call to the graph that was auto-differentiated. This can be accessed by
-            using `ops.call_with_info()`
-        grad_info: `GradGraphInfo`
-            Output of autodiff on a graph.
-
-      Returns: `Mapping[Tensor, Tensor]`
-        from: a Tensor in the gradient Graph
-        to: an input or output tensor at a callsite of the corresponding forward Graph.
-    """
-    if call_info.called_graph != grad_info.forward_graph:
-        raise TypeError(
-            "The called graph does not match the graph that was auto-differentiated."
-        )
-
-    return {
-        Tensor._from_pb_tensor(grad_info.graph._pb_graph.getInputTensor(idx)):
-        call_info.subgraph_to_op_tensor(act.fwd_tensor)
-        for idx, act in enumerate(grad_info.expected_inputs)
-        if act.connection_type == ExpectedConnectionType.Fwd
-    }

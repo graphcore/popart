@@ -7,7 +7,7 @@ import popart.ir.ops as ops
 import popart._internal.ir as _ir
 
 import popart
-
+from popart.ir.transforms.autodiff import ExpectedConnection, ExpectedConnectionType
 import numpy as np
 
 from typing import Tuple
@@ -80,13 +80,13 @@ def build_model(
         y_d2h = pir.d2h_stream(y.shape, y.dtype, name="x_stream")
         ops.host_store(y_d2h, y)
 
-    lin_bwd_info = pir.transforms.autodiff.autodiff(lin_graph)
+    lin_bwd_info = pir.transforms.autodiff(lin_graph)
     lin_bwd_graph = lin_bwd_info.graph
 
     with main:
         grad_seed = pir.constant(np.ones(_OUT_SHAPE, np.float32))
-        tensors_required_for_bwd = pir.transforms.autodiff.get_expected_forward_inputs_from_call(
-            lin_call_info, lin_bwd_info)
+        tensors_required_for_bwd = lin_bwd_info.get_inputs_from_forward_call_info(
+            lin_call_info)
         lin_bwd_call_info = ops.call_with_info(
             lin_bwd_graph,
             grad_seed,
@@ -102,9 +102,9 @@ def build_model(
     sg_b = lin_call_info.op_in_to_subgraph_in_tensor(b)
 
     def get_grad_tensor_in_main_graph_from_fwdgrad_expected_connection(
-            ec: pir.transforms.autodiff.ExpectedConnection) -> pir.Tensor:
+            ec: ExpectedConnection) -> pir.Tensor:
         # If (t, FwdGrad) appears at index i in expected_outputs, it is
-        # guaranteed that t’ (the grad of t) appears at output index i in the
+        # guaranteed that tâ (the grad of t) appears at output index i in the
         # grad graph.
         sg_out_idx = expected_outputs.index(ec)
         op_out_idx = lin_bwd_call_info.subgraph_in_to_op_in_index(sg_out_idx)
@@ -114,7 +114,7 @@ def build_model(
 
     for ec in expected_outputs:
         # Should always be the case for expected_outputs
-        assert ec.connection_type == pir.transforms.autodiff.ExpectedConnectionType.FwdGrad
+        assert ec.connection_type == ExpectedConnectionType.FwdGrad
 
         sg_fwd_tensor = ec.fwd_tensor
 

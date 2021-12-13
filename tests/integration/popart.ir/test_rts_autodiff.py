@@ -15,7 +15,7 @@ import popart.ir.dtypes as dtypes
 import popart.ir.ops as ops
 from popart.ir.remote_buffer import RemoteBuffer
 from popart.ir.tensor import Tensor
-
+from popart.ir.transforms.autodiff import ExpectedConnection, ExpectedConnectionType
 # `import test_util` requires adding to sys.path
 sys.path.append(str(Path(__file__).resolve().parents[1]))
 import test_util as tu
@@ -108,12 +108,12 @@ class TestTensorLocation():
             loss, dx = ops.nll_loss_with_softmax_grad(probs, l0, loss_grad=1)
 
         ### Backward pass ###
-        bwd_info = pir.transforms.autodiff.autodiff(fwd_graph)
+        bwd_info = pir.transforms.autodiff(fwd_graph)
         bwd_graph = bwd_info.graph
 
         with main:
-            tensors_required_for_bwd = pir.transforms.autodiff.get_expected_forward_inputs_from_call(
-                fwd_call_info, bwd_info)
+            tensors_required_for_bwd = bwd_info.get_inputs_from_forward_call_info(
+                fwd_call_info)
             bwd_call_info = ops.call_with_info(
                 bwd_graph,
                 dx,
@@ -127,9 +127,9 @@ class TestTensorLocation():
         sg_w0 = fwd_call_info.op_in_to_subgraph_in_tensor(full_w)
 
         def get_grad_tensor_in_main_graph_from_fwdgrad_expected_connection(
-                ec: pir.transforms.autodiff.ExpectedConnection) -> Tensor:
+                ec: ExpectedConnection) -> Tensor:
             # If (t, FwdGrad) appears at index i in expected_outputs, it is
-            # guaranteed that t’ (the grad of t) appears at output index i in the
+            # guaranteed that tâ (the grad of t) appears at output index i in the
             # grad graph.
             sg_out_idx = expected_outputs.index(ec)
             op_out_idx = bwd_call_info.subgraph_in_to_op_in_index(sg_out_idx)
@@ -139,7 +139,7 @@ class TestTensorLocation():
 
         for ec in expected_outputs:
             # Should always be the case for expected_outputs
-            assert ec.connection_type == pir.transforms.autodiff.ExpectedConnectionType.FwdGrad
+            assert ec.connection_type == ExpectedConnectionType.FwdGrad
 
             sg_fwd_tensor = ec.fwd_tensor
 
