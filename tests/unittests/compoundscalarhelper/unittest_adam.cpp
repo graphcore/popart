@@ -8,7 +8,7 @@
 using namespace popart;
 
 namespace {
-void validate(Adam adam,
+void validate(const Adam &adam,
               float expected_lr,
               float expected_gs,
               float expected_eps) {

@@ -30,26 +30,30 @@ const std::vector<std::string> &getSpecificNames() {
 
 } // namespace
 
-SGD SGD::fromDefaultMap(const std::map<std::string, OptimizerValue> &m) {
+SGD SGD::fromDefaultMap(const std::map<std::string, OptimizerValue> &m,
+                        const DebugContext &debugContext) {
   return SGD(getComplete(m),
              {},
              SGDAccumulatorAndMomentum::Combined,
              DataType::UNDEFINED,
              DataType::UNDEFINED,
-             1011);
+             1011,
+             debugContext);
 }
 
 SGD::SGD(const std::map<std::string, std::pair<float, bool>> &m,
          const std::vector<ClipNormSettings> &clipNormSettings,
          SGDAccumulatorAndMomentum sgdAccMm,
          DataType accumType,
-         DataType accl1Type)
+         DataType accl1Type,
+         const DebugContext &debugContext)
     : SGD(getComplete(getOptMap(m)),
           clipNormSettings,
           sgdAccMm,
           accumType,
           accl1Type,
-          31415) {}
+          31415,
+          debugContext) {}
 
 void SGD::insertSpecific(
     const TensorId &id,
@@ -185,7 +189,8 @@ SGD::SGD(const std::map<std::string, OptimizerValue> &cmap,
          SGDAccumulatorAndMomentum sgdAccMm,
          DataType accumType,
          DataType accl1Type,
-         int)
+         int,
+         const DebugContext &debugContext)
     : SGD(cmap.at("defaultLearningRate"),
           cmap.at("defaultWeightDecay"),
           cmap.at("defaultMomentum"),
@@ -195,7 +200,8 @@ SGD::SGD(const std::map<std::string, OptimizerValue> &cmap,
           clipNormSettings,
           sgdAccMm,
           accumType,
-          accl1Type) {}
+          accl1Type,
+          debugContext) {}
 
 SGD::SGD(OptimizerValue lr,
          OptimizerValue wd,
@@ -206,10 +212,11 @@ SGD::SGD(OptimizerValue lr,
          const std::vector<ClipNormSettings> &clipNormSettings,
          SGDAccumulatorAndMomentum sgdAccMm_,
          DataType accumType_,
-         DataType accl1Type_)
+         DataType accl1Type_,
+         const DebugContext &debugContext_)
     : Optimizer(lossScaling, clipNormSettings), lrs(lr), wds(wd), mms(mm),
       dps(dp), vss(vs), sgdAccMm(sgdAccMm_), sgdAccumType(accumType_),
-      sgd2Accl1Type(accl1Type_) {
+      sgd2Accl1Type(accl1Type_), debugContext(debugContext_) {
   runValueChecks(lr, wd, mm, dp, vs);
 }
 
@@ -257,7 +264,8 @@ std::unique_ptr<Op> SGD::createOp(const Tensor &w, Graph &graph) const {
 
   bool withMomentum = hasMomentum(w);
 
-  auto opSettings = Op::Settings(graph, "");
+  DebugInfo debugInfo(debugContext, "popart_builder");
+  auto opSettings = Op::Settings(graph, "", debugInfo.getId());
 
   for (Op *op : w.consumers.getOps()) {
     for (auto &outlineAttribute : op->settings.extraOutlineAttributes) {

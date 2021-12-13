@@ -75,7 +75,10 @@ std::pair<Op *, TensorId> OptimizerDecompose::accl(Graph &graph,
                                                    std::string acclName,
                                                    bool gradAccum) const {
   auto acclOpUp = std::make_unique<AccumulateOp>(
-      type, value, Op::Settings(graph, combo->name() + acclName));
+      type,
+      value,
+      Op::Settings(
+          graph, combo->name() + acclName, combo->settings.debugInfoId));
   auto acclOp = acclOpUp.get();
   transferBaseProperties(combo, acclOp);
   graph.moveIntoGraph(std::move(acclOpUp));
@@ -147,7 +150,9 @@ OptimizerDecompose::counterIncrement(Graph &graph,
       {{VarUpdateOp::getUpdatedVarOutIndex(), updatedCounterId}},
       AccumulationType::Add,
       OptimizerValue(1.0f),
-      Op::Settings(graph, combo->name() + "_counterIncrement"));
+      Op::Settings(graph,
+                   combo->name() + "_counterIncrement",
+                   combo->settings.debugInfoId));
 
   transferBaseProperties(combo, counterIncrementOp);
 
@@ -163,7 +168,8 @@ OptimizerDecompose::counterReset(Graph &graph,
   auto counterResetOp = graph.createConnectedOp<AccumulatorZeroOp>(
       {{AccumulatorZeroOp::getVarToUpdateInIndex(), counterId}},
       {{AccumulatorZeroOp::getUpdatedVarOutIndex(), resetCounterId}},
-      Op::Settings(graph, combo->name() + "_counterReset"));
+      Op::Settings(
+          graph, combo->name() + "_counterReset", combo->settings.debugInfoId));
 
   transferBaseProperties(combo, counterResetOp);
   counterResetOp->settings.executionContext =
@@ -227,7 +233,8 @@ TensorId OptimizerDecompose::gradAccum(Graph &graph,
   auto accumOpUp = std::make_unique<AccumulateOp>(
       runningAccum ? AccumulationType::Mean : AccumulationType::Add,
       OptimizerValue(1.0f, !runningAccum),
-      Op::Settings(graph, combo->name() + "_accumulate"));
+      Op::Settings(
+          graph, combo->name() + "_accumulate", combo->settings.debugInfoId));
   auto accumOp = accumOpUp.get();
   transferBaseProperties(combo, accumOp);
   graph.moveIntoGraph(std::move(accumOpUp));
@@ -287,7 +294,8 @@ TensorId OptimizerDecompose::gradAccum(Graph &graph,
         Onnx::CustomOperators::ReplicatedAllReduceInplace,
         runningReplica ? CollectiveOperator::Mean : CollectiveOperator::Add,
         CommGroup{},
-        Op::Settings(graph, combo->name() + "_reduce"));
+        Op::Settings(
+            graph, combo->name() + "_reduce", combo->settings.debugInfoId));
     auto reduceOp = reduceOpUp.get();
     transferBaseProperties(combo, reduceOp);
     graph.moveIntoGraph(std::move(reduceOpUp));
@@ -323,9 +331,9 @@ Op *OptimizerDecompose::zeroAccumulator(Graph &graph,
                                         Op *combo,
                                         std::vector<Op *> beforeOps,
                                         TensorId accumId) const {
-  auto accumZeroOpUp = std::make_unique<AccumulatorZeroOp>(
-      Op::Settings(graph, combo->name() + "_accumupdate"));
-  auto accumZeroOp = accumZeroOpUp.get();
+  auto accumZeroOpUp = std::make_unique<AccumulatorZeroOp>(Op::Settings(
+      graph, combo->name() + "_accumupdate", combo->settings.debugInfoId));
+  auto accumZeroOp   = accumZeroOpUp.get();
   transferBaseProperties(combo, accumZeroOp);
   graph.moveIntoGraph(std::move(accumZeroOpUp));
 
@@ -364,7 +372,8 @@ TensorId OptimizerDecompose::gradReduce(Graph &graph,
       Onnx::CustomOperators::ReplicatedAllReduce,
       runningMean ? CollectiveOperator::Mean : CollectiveOperator::Add,
       CommGroup{},
-      Op::Settings(graph, combo->name() + "_reduce"));
+      Op::Settings(
+          graph, combo->name() + "_reduce", combo->settings.debugInfoId));
   auto reduceOp = reduceOpUp.get();
   transferBaseProperties(combo, reduceOp);
   graph.moveIntoGraph(std::move(reduceOpUp));
@@ -398,7 +407,8 @@ TensorId OptimizerDecompose::gradCast(Graph &graph,
   auto gradCastUp = std::make_unique<CastOp>(
       Onnx::Operators::Cast_9,
       gradType,
-      Op::Settings(graph, combo->name() + "_gradCast"));
+      Op::Settings(
+          graph, combo->name() + "_gradCast", combo->settings.debugInfoId));
   auto gradCastOp = gradCastUp.get();
   transferBaseProperties(combo, gradCastOp);
   graph.moveIntoGraph(std::move(gradCastUp));
@@ -432,19 +442,23 @@ TensorId OptimizerDecompose::gradUnscale(Graph &graph,
   OutIndex gradUnscaleOutIdx = 0;
 
   if (gs.isConst()) {
-    auto gradUnscaleUp = std::make_unique<ScaleOp>(
-        Onnx::AiGraphcore::OpSet1::Scale,
-        gs.val(),
-        Op::Settings(graph, combo->name() + "_gradUnscale"));
+    auto gradUnscaleUp =
+        std::make_unique<ScaleOp>(Onnx::AiGraphcore::OpSet1::Scale,
+                                  gs.val(),
+                                  Op::Settings(graph,
+                                               combo->name() + "_gradUnscale",
+                                               combo->settings.debugInfoId));
     gradUnscaleOp = gradUnscaleUp.get();
     transferBaseProperties(combo, gradUnscaleOp);
     graph.moveIntoGraph(std::move(gradUnscaleUp));
     gradUnscaleOp->connectInTensor(ScaleOp::getInIndex(), gradIntoAcclId);
     gradUnscaleOutIdx = ScaleOp::getOutIndex();
   } else {
-    auto gradUnscaleUp = std::make_unique<MulOp>(
-        Onnx::Operators::Mul_7,
-        Op::Settings(graph, combo->name() + "_gradUnscale"));
+    auto gradUnscaleUp =
+        std::make_unique<MulOp>(Onnx::Operators::Mul_7,
+                                Op::Settings(graph,
+                                             combo->name() + "_gradUnscale",
+                                             combo->settings.debugInfoId));
     gradUnscaleOp = gradUnscaleUp.get();
     transferBaseProperties(combo, gradUnscaleOp);
     graph.moveIntoGraph(std::move(gradUnscaleUp));
@@ -484,7 +498,9 @@ TensorId OptimizerDecompose::regularizeL2(Graph &graph,
         Onnx::AiGraphcore::OpSet1::ScaledAdd,
         1.0f,
         wd.val(),
-        Op::Settings(graph, combo->name() + "_weightDecayScale"));
+        Op::Settings(graph,
+                     combo->name() + "_weightDecayScale",
+                     combo->settings.debugInfoId));
     scaledAddOp = scaledAddUp.get();
     transferBaseProperties(combo, scaledAddOp);
     graph.moveIntoGraph(std::move(scaledAddUp));
@@ -493,7 +509,9 @@ TensorId OptimizerDecompose::regularizeL2(Graph &graph,
         Onnx::AiGraphcore::OpSet1::ScaledAdd,
         1.0f,
         1.0f,
-        Op::Settings(graph, combo->name() + "_weightDecayScale"));
+        Op::Settings(graph,
+                     combo->name() + "_weightDecayScale",
+                     combo->settings.debugInfoId));
     scaledAddOp = scaledAddUp.get();
     transferBaseProperties(combo, scaledAddOp);
     graph.moveIntoGraph(std::move(scaledAddUp));

@@ -5,6 +5,7 @@ import popart
 import onnx
 from onnx import numpy_helper
 from onnx import TensorProto
+import json
 
 # `import test_util` requires adding to sys.path
 import sys
@@ -279,4 +280,28 @@ def test_adam_mixed_mode_1(tmpdir):
     outlining = [True, True, True]
 
     run_adam_mixed_mode(10, optMaps, outlining, tmpdir, np.float32)
+
+    debug_filename = str(tmpdir) + "/debug.json"
+    popart.initializePoplarDebugInfo(debug_filename, "json")
+
     run_adam_mixed_mode(10, optMaps, outlining, tmpdir, np.float16)
+
+    # Ensure Adam operations have correct debug context
+    popart.closePoplarDebugInfo()
+    num_adams = 0
+    parents = set()
+    with open(debug_filename) as json_file:
+        data = json.load(json_file)
+        for context in data["contexts"]:
+            if context['layer'] == "popart" and \
+               'opid' in context and \
+               'Adam' in context['opid']:
+                parents.add(context['parentId'])
+                num_adams += 1
+        for context in data["contexts"]:
+            if context['id'] in parents:
+                parents.remove(context['id'])
+                assert context['layer'] == "popart_builder"
+                assert data['stringTable'][context['name']] == "adam"
+    assert num_adams == 84
+    assert len(parents) == 0

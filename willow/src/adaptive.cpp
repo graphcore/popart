@@ -22,7 +22,8 @@ Adaptive::fromDefaultMap(const std::map<std::string, OptimizerValue> &m,
                          DataType accumType_,
                          DataType accl1Type_,
                          DataType accl2Type_,
-                         DataType accl3Type_) {
+                         DataType accl3Type_,
+                         const DebugContext &debugContext) {
   return Adaptive(getComplete(m),
                   adaptiveMode_,
                   decayMode_,
@@ -30,7 +31,9 @@ Adaptive::fromDefaultMap(const std::map<std::string, OptimizerValue> &m,
                   accl1Type_,
                   accl2Type_,
                   accl3Type_,
-                  1011);
+                  1011,
+                  false,
+                  debugContext);
 }
 
 namespace {
@@ -48,7 +51,8 @@ Adaptive::Adaptive(const std::map<std::string, std::pair<float, bool>> &m,
                    DataType accl1Type_,
                    DataType accl2Type_,
                    DataType accl3Type_,
-                   bool rmspropTFVariant)
+                   bool rmspropTFVariant,
+                   const DebugContext &debugContext)
     : Adaptive(getComplete(getOptMap(m)),
                adaptiveMode_,
                decayMode_,
@@ -57,7 +61,8 @@ Adaptive::Adaptive(const std::map<std::string, std::pair<float, bool>> &m,
                accl2Type_,
                accl3Type_,
                31415,
-               rmspropTFVariant) {}
+               rmspropTFVariant,
+               debugContext) {}
 
 void Adaptive::insertSpecific(
     const TensorId &id,
@@ -200,7 +205,8 @@ Adaptive::Adaptive(const std::map<std::string, OptimizerValue> &cmap,
                    DataType accl2Type_,
                    DataType accl3Type_,
                    int,
-                   bool rmspropTFVariant)
+                   bool rmspropTFVariant,
+                   const DebugContext &debugContext)
     : Adaptive(cmap.at("defaultLearningRate"),
                cmap.at("defaultWeightDecay"),
                cmap.at("defaultAlpha"),
@@ -213,7 +219,8 @@ Adaptive::Adaptive(const std::map<std::string, OptimizerValue> &cmap,
                accl1Type_,
                accl2Type_,
                accl3Type_,
-               rmspropTFVariant) {}
+               rmspropTFVariant,
+               debugContext) {}
 
 Adaptive::Adaptive(OptimizerValue lr,
                    OptimizerValue wd,
@@ -227,11 +234,12 @@ Adaptive::Adaptive(OptimizerValue lr,
                    DataType accl1Type_,
                    DataType accl2Type_,
                    DataType accl3Type_,
-                   bool rmspropTFVariant_)
+                   bool rmspropTFVariant_,
+                   const DebugContext &debugContext_)
     : Optimizer(lossScaling, {}), lrs(lr), wds(wd), as(a), ms(m), epsvs(eps),
       mode(mode_), decayMode(decayMode_), accumType(accumType_),
       accl1Type(accl1Type_), accl2Type(accl1Type_), accl3Type(accl3Type_),
-      rmspropTFVariant(rmspropTFVariant_) {
+      rmspropTFVariant(rmspropTFVariant_), debugContext(debugContext_) {
   if (rmspropTFVariant_ && mode != AdaptiveMode::RMSProp &&
       mode != AdaptiveMode::CenteredRMSProp) {
     throw error("The rmspropTFVariant parameter is only valid with the RMSProp "
@@ -279,7 +287,8 @@ Adaptive::getComplete(const std::map<std::string, OptimizerValue> &m) {
 
 std::unique_ptr<Op> Adaptive::createOp(const Tensor &w, Graph &graph) const {
 
-  auto opSettings = Op::Settings(graph, "");
+  DebugInfo debugInfo(debugContext, "popart_builder");
+  auto opSettings = Op::Settings(graph, "", debugInfo.getId());
 
   for (Op *op : w.consumers.getOps()) {
     for (auto &outlineAttribute : op->settings.extraOutlineAttributes) {

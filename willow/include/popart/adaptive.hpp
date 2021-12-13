@@ -378,8 +378,9 @@ public:
   ///     momentum optimizer state.
   /// \param accl2Type Data type to use for tensor that stores second-order
   ///     momentum optimizer state.
-  /// \param accl2Type Data type to use for tensor that stores third-order
+  /// \param accl3Type Data type to use for tensor that stores third-order
   ///     momentum optimizer state.
+  /// \param debugContext Optional debug context.
   Adaptive(OptimizerValue defaultLearningRate,
            OptimizerValue defaultWeightDecay,
            OptimizerValue defaultAlpha,
@@ -392,7 +393,8 @@ public:
            DataType accl1Type,
            DataType accl2Type,
            DataType accl3Type,
-           bool rmspropTFVariant = false);
+           bool rmspropTFVariant            = false,
+           const DebugContext &debugContext = {});
 
   // Example:
   //
@@ -422,8 +424,9 @@ public:
   ///     momentum optimizer state.
   /// \param accl2Type Data type to use for tensor that stores second-order
   ///     momentum optimizer state.
-  /// \param accl2Type Data type to use for tensor that stores third-order
+  /// \param accl3Type Data type to use for tensor that stores third-order
   ///     momentum optimizer state.
+  /// \param debugContext Optional debug context.
   ///
   /// **EXAMPLE**:
   /// ```
@@ -443,14 +446,16 @@ public:
            DataType accl1Type,
            DataType accl2Type,
            DataType accl3Type,
-           bool rmspropTFVariant = false);
+           bool rmspropTFVariant            = false,
+           const DebugContext &debugContext = {});
   static Adaptive fromDefaultMap(const std::map<std::string, OptimizerValue> &,
                                  AdaptiveMode adaptiveMode_,
                                  WeightDecayMode decayMode_,
                                  DataType accumType_,
                                  DataType accl1Type_,
                                  DataType accl2Type_,
-                                 DataType accl3Type_);
+                                 DataType accl3Type_,
+                                 const DebugContext &debugContext = {});
 
   Adaptive(const Adaptive &) = default;
   ~Adaptive()                = default;
@@ -567,6 +572,8 @@ private:
   AdaptiveLossScalingHelper lshelper;
   AdaptiveGradientScalingHelper gshelper;
 
+  DebugContext debugContext;
+
   // int argument only to disambiguate from the other SGD constructor
   Adaptive(const std::map<std::string, OptimizerValue> &,
            AdaptiveMode mode_,
@@ -576,7 +583,8 @@ private:
            DataType accl2Type_,
            DataType accl3Type_,
            int,
-           bool rmspropTFVariant_ = false);
+           bool rmspropTFVariant_           = false,
+           const DebugContext &debugContext = {});
 
   static std::map<std::string, OptimizerValue>
   getComplete(const std::map<std::string, OptimizerValue> &);

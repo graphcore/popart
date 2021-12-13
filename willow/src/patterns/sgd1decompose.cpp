@@ -135,7 +135,8 @@ bool SGD1Decompose::apply(Op *op) const {
     // GradReduceOp
     auto reduceOp = graph.createOp<ReplicatedAllReduceOp>(
         Onnx::CustomOperators::ReplicatedAllReduce,
-        Op::Settings(graph, combo->name() + "_reduce"));
+        Op::Settings(
+            graph, combo->name() + "_reduce", combo->settings.debugInfoId));
     transferBaseProperties(combo, reduceOp);
 
     logging::pattern::trace("Connecting input {} to {} at {}",
@@ -167,7 +168,8 @@ bool SGD1Decompose::apply(Op *op) const {
   auto acclOp = graph.createOp<AccumulateOp>(
       AccumulationType::DampenedAdd,
       combo->initDpsf1,
-      Op::Settings(graph, combo->name() + "_accumulate"));
+      Op::Settings(
+          graph, combo->name() + "_accumulate", combo->settings.debugInfoId));
   transferBaseProperties(combo, acclOp);
 
   // (1)
@@ -224,7 +226,8 @@ bool SGD1Decompose::apply(Op *op) const {
     // (2) alias of input
     auto reduceOp = graph.createOp<ReplicatedAllReduceInplaceOp>(
         Onnx::CustomOperators::ReplicatedAllReduceInplace,
-        Op::Settings(graph, combo->name() + "_reduce"));
+        Op::Settings(
+            graph, combo->name() + "_reduce", combo->settings.debugInfoId));
     transferBaseProperties(combo, reduceOp);
 
     // (1)
@@ -261,7 +264,8 @@ bool SGD1Decompose::apply(Op *op) const {
   auto acclUpdateOp = graph.createOp<SGD1AcclUpdateOp>(
       combo->initSmm1,
       combo->initSwd1,
-      Op::Settings(graph, combo->name() + "_accl_update"));
+      Op::Settings(
+          graph, combo->name() + "_accl_update", combo->settings.debugInfoId));
   transferBaseProperties(combo, acclUpdateOp);
 
   // (1)
@@ -305,7 +309,9 @@ bool SGD1Decompose::apply(Op *op) const {
   // Outputs
   // (4) W_new
   auto sgd1VarUpdateOp = graph.createOp<SGD1VarUpdateOp>(
-      combo->initSlr1, Op::Settings(graph, combo->name() + "_var_update"));
+      combo->initSlr1,
+      Op::Settings(
+          graph, combo->name() + "_var_update", combo->settings.debugInfoId));
   transferBaseProperties(combo, sgd1VarUpdateOp);
 
   // (1)

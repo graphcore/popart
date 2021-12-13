@@ -20,7 +20,8 @@ Adam Adam::fromDefaultMap(const std::map<std::string, OptimizerValue> &m,
                           WeightDecayMode decayMode_,
                           DataType accumType_,
                           DataType accl1Type_,
-                          DataType accl2Type_) {
+                          DataType accl2Type_,
+                          const DebugContext &debugContext) {
   return Adam(getComplete(m),
               adamMode_,
               decayMode_,
@@ -28,7 +29,8 @@ Adam Adam::fromDefaultMap(const std::map<std::string, OptimizerValue> &m,
               accl1Type_,
               accl2Type_,
               {},
-              1011);
+              1011,
+              debugContext);
 }
 
 namespace {
@@ -46,7 +48,8 @@ Adam::Adam(const std::map<std::string, std::pair<float, bool>> &m,
            DataType accl1Type_,
            DataType accl2Type_,
            const std::vector<ClipNormSettings> &clipNormSettings,
-           bool scaledOptimizerState)
+           bool scaledOptimizerState,
+           const DebugContext &debugContext)
     : Adam(getComplete(getOptMap(m)),
            adamMode_,
            decayMode_,
@@ -54,7 +57,8 @@ Adam::Adam(const std::map<std::string, std::pair<float, bool>> &m,
            accl1Type_,
            accl2Type_,
            clipNormSettings,
-           scaledOptimizerState) {}
+           scaledOptimizerState,
+           debugContext) {}
 
 void Adam::insertSpecific(
     const TensorId &id,
@@ -200,7 +204,8 @@ Adam::Adam(const std::map<std::string, OptimizerValue> &cmap,
            DataType accl1Type_,
            DataType accl2Type_,
            const std::vector<ClipNormSettings> &clipNormSettings,
-           bool scaledOptimizerState_)
+           bool scaledOptimizerState_,
+           const DebugContext &debugContext)
     : Adam(cmap.at("defaultLearningRate"),
            cmap.at("defaultWeightDecay"),
            cmap.at("defaultBeta1"),
@@ -214,7 +219,8 @@ Adam::Adam(const std::map<std::string, OptimizerValue> &cmap,
            accl1Type_,
            accl2Type_,
            clipNormSettings,
-           scaledOptimizerState_) {}
+           scaledOptimizerState_,
+           debugContext) {}
 
 Adam::Adam(OptimizerValue lr,
            OptimizerValue wd,
@@ -228,7 +234,8 @@ Adam::Adam(OptimizerValue lr,
            DataType accl1Type_,
            DataType accl2Type_,
            const std::vector<ClipNormSettings> &clipNormSettings,
-           bool scaledOptimizerState_)
+           bool scaledOptimizerState_,
+           const DebugContext &debugContext)
     : Adam(lr,
            wd,
            b1,
@@ -242,7 +249,8 @@ Adam::Adam(OptimizerValue lr,
            accl1Type_,
            accl2Type_,
            clipNormSettings,
-           scaledOptimizerState_) {}
+           scaledOptimizerState_,
+           debugContext) {}
 
 Adam::Adam(OptimizerValue lr,
            OptimizerValue wd,
@@ -256,7 +264,8 @@ Adam::Adam(OptimizerValue lr,
            DataType accl1Type_,
            DataType accl2Type_,
            const std::vector<ClipNormSettings> &clipNormSettings,
-           bool scaledOptimizerState_)
+           bool scaledOptimizerState_,
+           const DebugContext &debugContext)
     : Adam(lr,
            wd,
            b1,
@@ -270,7 +279,8 @@ Adam::Adam(OptimizerValue lr,
            accl1Type_,
            accl2Type_,
            clipNormSettings,
-           scaledOptimizerState_) {}
+           scaledOptimizerState_,
+           debugContext) {}
 
 Adam::Adam(OptimizerValue lr,
            OptimizerValue wd,
@@ -283,7 +293,8 @@ Adam::Adam(OptimizerValue lr,
            DataType accl1Type_,
            DataType accl2Type_,
            const std::vector<ClipNormSettings> &clipNormSettings,
-           bool scaledOptimizerState_)
+           bool scaledOptimizerState_,
+           const DebugContext &debugContext)
     : Adam(lr,
            wd,
            b1,
@@ -297,7 +308,8 @@ Adam::Adam(OptimizerValue lr,
            accl1Type_,
            accl2Type_,
            clipNormSettings,
-           scaledOptimizerState_) {}
+           scaledOptimizerState_,
+           debugContext) {}
 
 Adam::Adam(OptimizerValue lr,
            OptimizerValue wd,
@@ -312,11 +324,12 @@ Adam::Adam(OptimizerValue lr,
            DataType accl1Type_,
            DataType accl2Type_,
            const std::vector<ClipNormSettings> &clipNormSettings,
-           bool scaledOptimizerState_)
+           bool scaledOptimizerState_,
+           const DebugContext &debugContext_)
     : Optimizer(lossScaling, clipNormSettings), lrs(lr), wds(wd), b1s(b1),
       b2s(b2), epsvs(eps), mwns(mwn_), mode(mode_), decayMode(decayMode_),
       accumType(accumType_), accl1Type(accl1Type_), accl2Type(accl2Type_),
-      scaledOptimizerState(scaledOptimizerState_) {
+      scaledOptimizerState(scaledOptimizerState_), debugContext(debugContext_) {
   runValueChecks(lr, wd, b1, b2, eps);
 }
 
@@ -376,7 +389,8 @@ Adam::getComplete(const std::map<std::string, OptimizerValue> &m) {
 
 std::unique_ptr<Op> Adam::createOp(const Tensor &w, Graph &graph) const {
 
-  auto opSettings = Op::Settings(graph, "");
+  DebugInfo debugInfo(debugContext, "popart_builder");
+  auto opSettings = Op::Settings(graph, "", debugInfo.getId());
 
   for (Op *op : w.consumers.getOps()) {
     for (auto &outlineAttribute : op->settings.extraOutlineAttributes) {

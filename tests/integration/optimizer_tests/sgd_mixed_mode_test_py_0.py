@@ -12,7 +12,7 @@ sys.path.append(str(Path(__file__).resolve().parent.parent))
 import test_util as tu
 
 
-def test_sgd_mixed_mode():
+def test_sgd_mixed_mode(tmpdir):
 
     w0name = "__w0__"
     w1name = "__w1__"
@@ -134,4 +134,27 @@ def test_sgd_mixed_mode():
         'constSwdf': False
     }
 
+    debug_filename = str(tmpdir) + "/debug.json"
+    popart.initializePoplarDebugInfo(debug_filename, "json")
+
     test(opt0, opt1, e0, e1, e2)
+
+    # Ensure SGD operations have correct debug context
+    popart.closePoplarDebugInfo()
+    num_sgds = 0
+    parents = set()
+    with open(debug_filename) as json_file:
+        data = json.load(json_file)
+        for context in data["contexts"]:
+            if context['layer'] == "popart" and \
+               'opid' in context and \
+               'SGD' in context['opid']:
+                parents.add(context['parentId'])
+                num_sgds += 1
+        for context in data["contexts"]:
+            if context['id'] in parents:
+                parents.remove(context['id'])
+                assert context['layer'] == "popart_builder"
+                assert data['stringTable'][context['name']] == "sgd"
+    assert num_sgds == 6
+    assert len(parents) == 0

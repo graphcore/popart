@@ -182,7 +182,9 @@ bool AdaptiveDecompose::apply(Op *op) const {
   if (combo->mode == AdaptiveMode::AdaDelta) {
     auto adaptiveUpdOpUp = std::make_unique<AdaDeltaUpdaterOp>(
         combo->initEps,
-        Op::Settings(graph, combo->name() + "_adadeltaupdater"));
+        Op::Settings(graph,
+                     combo->name() + "_adadeltaupdater",
+                     combo->settings.debugInfoId));
     adaptiveUpdOp = adaptiveUpdOpUp.get();
     transferBaseProperties(combo, adaptiveUpdOp);
     graph.moveIntoGraph(std::move(adaptiveUpdOpUp));
@@ -222,7 +224,9 @@ bool AdaptiveDecompose::apply(Op *op) const {
     auto adaptiveUpdOpUp = std::make_unique<RMSPropUpdaterOp>(
         combo->initEps,
         combo->rmspropTFVariant,
-        Op::Settings(graph, combo->name() + "_rmspropupdater"));
+        Op::Settings(graph,
+                     combo->name() + "_rmspropupdater",
+                     combo->settings.debugInfoId));
     adaptiveUpdOp = adaptiveUpdOpUp.get();
     transferBaseProperties(combo, adaptiveUpdOp);
     graph.moveIntoGraph(std::move(adaptiveUpdOpUp));
@@ -306,7 +310,9 @@ bool AdaptiveDecompose::apply(Op *op) const {
         auto updaterScaleOpUp = std::make_unique<ScaleOp>(
             Onnx::AiGraphcore::OpSet1::Scale,
             combo->initLr.val(),
-            Op::Settings(graph, combo->name() + "_tfrmspropupdatescaler"));
+            Op::Settings(graph,
+                         combo->name() + "_tfrmspropupdatescaler",
+                         combo->settings.debugInfoId));
         updaterScaleOp = updaterScaleOpUp.get();
         transferBaseProperties(combo, updaterScaleOp);
         graph.moveIntoGraph(std::move(updaterScaleOpUp));
@@ -325,7 +331,9 @@ bool AdaptiveDecompose::apply(Op *op) const {
       } else {
         auto updaterScaleOpUp = std::make_unique<MulOp>(
             Onnx::AiOnnx::OpSet11::Mul,
-            Op::Settings(graph, combo->name() + "_tfrmspropupdatescaler"));
+            Op::Settings(graph,
+                         combo->name() + "_tfrmspropupdatescaler",
+                         combo->settings.debugInfoId));
         updaterScaleOp = updaterScaleOpUp.get();
         transferBaseProperties(combo, updaterScaleOp);
         graph.moveIntoGraph(std::move(updaterScaleOpUp));
@@ -382,7 +390,8 @@ bool AdaptiveDecompose::apply(Op *op) const {
       combo->decayMode == WeightDecayMode::Decay ? combo->initWd
                                                  : OptimizerValue(0.0f, true),
       combo->rmspropTFVariant && useMomentum,
-      Op::Settings(graph, combo->name() + "_var_update"));
+      Op::Settings(
+          graph, combo->name() + "_var_update", combo->settings.debugInfoId));
   auto scaledVarUpdOp = scaledVarUpdOpUp.get();
   transferBaseProperties(combo, scaledVarUpdOp);
   graph.moveIntoGraph(std::move(scaledVarUpdOpUp));

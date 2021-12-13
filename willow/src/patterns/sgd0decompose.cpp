@@ -96,7 +96,8 @@ Op *SGD0Decompose::varUpdateAndEraseCombo(
   auto sgd0VarUpdate = graph.createOp<SGD0VarUpdateOp>(
       combo->initSlr0,
       combo->initWdsf0,
-      Op::Settings(graph, combo->name() + "_var_update"));
+      Op::Settings(
+          graph, combo->name() + "_var_update", combo->settings.debugInfoId));
   transferBaseProperties(combo, sgd0VarUpdate);
 
   sgd0VarUpdate->connectInTensor(VarUpdateOp::getVarToUpdateInIndex(),

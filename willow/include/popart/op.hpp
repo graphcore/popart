@@ -130,6 +130,8 @@ public:
         : graph(graph_), name(name_) {}
     Settings(Graph &graph_, const std::string &name_, const Scope &scope_)
         : graph(graph_), name(name_), scope(scope_) {}
+    Settings(Graph &graph_, const std::string &name_, const uint64_t parentId_)
+        : graph(graph_), name(name_), debugInfoId(parentId_) {}
     virtual ~Settings()        = default;
     Settings(const Settings &) = default;
 

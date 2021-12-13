@@ -242,3 +242,5 @@ std::string DebugContext::getPathName() const { return impl->getPathName(); }
 
 DebugContext::DebugContext(DebugContext &&) = default;
 DebugContext::~DebugContext()               = default;
+DebugContext::DebugContext(const DebugContext &dc)
+    : DebugContext(dc.getPathName(), *(dc.impl->loc)) {}

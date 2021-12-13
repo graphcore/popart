@@ -575,6 +575,7 @@ public:
   ///     UNDEFINED, the same type as the weights will be used. If accumType is
   ///     FLOAT16 and accl1Type is FLOAT, this parameter causes accum to be
   ///     upcasted before being passed to the op that updates accl1.
+  /// \param debugContext Optional debug context.
   SGD(OptimizerValue defaultLearningRate,
       OptimizerValue defaultWeightDecay,
       OptimizerValue defaultMomentum,
@@ -584,7 +585,8 @@ public:
       const std::vector<ClipNormSettings> &clipNormSettings = {},
       SGDAccumulatorAndMomentum sgdAccMm = SGDAccumulatorAndMomentum::Combined,
       DataType accumType                 = DataType::UNDEFINED,
-      DataType accl1Type                 = DataType::UNDEFINED);
+      DataType accl1Type                 = DataType::UNDEFINED,
+      const DebugContext &debugContext   = {});
 
   /// Constructor.
   /// \param params A parameter map where the keys are one or more of
@@ -614,6 +616,7 @@ public:
   ///     UNDEFINED, the same type as the weights will be used. If accumType is
   ///     FLOAT16 and accl1Type is FLOAT, this parameter causes accum to be
   ///     upcasted before being passed to the op that updates accl1.
+  /// \param debugContext Optional debug context.
   ///
   /// **EXAMPLE**:
   /// ```
@@ -627,8 +630,10 @@ public:
       const std::vector<ClipNormSettings> &clipNormSettings = {},
       SGDAccumulatorAndMomentum sgdAccMm = SGDAccumulatorAndMomentum::Combined,
       DataType accumType                 = DataType::UNDEFINED,
-      DataType accl1Type                 = DataType::UNDEFINED);
-  static SGD fromDefaultMap(const std::map<std::string, OptimizerValue> &);
+      DataType accl1Type                 = DataType::UNDEFINED,
+      const DebugContext &debugContext   = {});
+  static SGD fromDefaultMap(const std::map<std::string, OptimizerValue> &,
+                            const DebugContext &debugContext = {});
 
   /// Default constructor
   /// Creates SGD with default scalars (equivalent to getUnset<scalar>()
@@ -796,13 +801,16 @@ private:
   // SGD2 only: accl1 tensors can be specified.
   DataType sgd2Accl1Type;
 
+  DebugContext debugContext;
+
   // int argument only to disambiguate from the other SGD constructor
   SGD(const std::map<std::string, OptimizerValue> &,
       const std::vector<ClipNormSettings> &,
       SGDAccumulatorAndMomentum sgdAccMm,
       DataType accumType,
       DataType accl1Type,
-      int);
+      int,
+      const DebugContext &debugContext = {});
 
   static std::map<std::string, OptimizerValue>
   getComplete(const std::map<std::string, OptimizerValue> &);

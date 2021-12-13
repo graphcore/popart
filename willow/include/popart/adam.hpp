@@ -362,6 +362,7 @@ public:
   ///     DataType::FLOAT16. Note: When loading a model that includes
   ///     initialised optimizer state, ensure that accl1 and accl2 are scaled by
   ///     lossScaling and lossScaling^2 respectively.
+  /// \param debugContext Optional debug context.
   Adam(OptimizerValue defaultLearningRate,
        OptimizerValue defaultWeightDecay,
        OptimizerValue defaultBeta1,
@@ -375,12 +376,14 @@ public:
        DataType accl1Type,
        DataType accl2Type,
        const std::vector<ClipNormSettings> &clipNormSettings = {},
-       bool scaledOptimizerState                             = false);
+       bool scaledOptimizerState                             = false,
+       const DebugContext &debugContext                      = {});
 
   // Equivalent to calling Adam(defaultLearningRate, defaultWeightDecay,
   // defaultBeta1, defaultBeta2, defaultEps, lossScaling,
   // Adam::getUnsetMaxWeightNorm(), adamMode, weightDecayMode, accumType,
-  // accl1Type, accl2Type, clipNormSettings).
+  // accl1Type, accl2Type, clipNormSettings, scaledOptimizerState,
+  // debugContext).
   Adam(OptimizerValue defaultLearningRate,
        OptimizerValue defaultWeightDecay,
        OptimizerValue defaultBeta1,
@@ -393,12 +396,14 @@ public:
        DataType accl1Type,
        DataType accl2Type,
        const std::vector<ClipNormSettings> &clipNormSettings = {},
-       bool scaledOptimizerState                             = false);
+       bool scaledOptimizerState                             = false,
+       const DebugContext &debugContext                      = {});
 
   // Equivalent to calling Adam(defaultLearningRate, defaultWeightDecay,
   // defaultBeta1, defaultBeta2, defaultEps, lossScaling,
   // maxWeightNorm, adamMode, WeightDecayMode::Decay, accumType,
-  // accl1Type, accl2Type, clipNormSettings).
+  // accl1Type, accl2Type, clipNormSettings, scaledOptimizerState,
+  // debugContext).
   Adam(OptimizerValue defaultLearningRate,
        OptimizerValue defaultWeightDecay,
        OptimizerValue defaultBeta1,
@@ -411,12 +416,14 @@ public:
        DataType accl1Type,
        DataType accl2Type,
        const std::vector<ClipNormSettings> &clipNormSettings = {},
-       bool scaledOptimizerState                             = false);
+       bool scaledOptimizerState                             = false,
+       const DebugContext &debugContext                      = {});
 
   // Equivalent to calling Adam(defaultLearningRate, defaultWeightDecay,
   // defaultBeta1, defaultBeta2, defaultEps, lossScaling,
   // Adam::getUnsetMaxWeightNorm(), adamMode, WeightDecayMode::Decay,
-  // accumType, accl1Type, accl2Type, clipNormSettings).
+  // accumType, accl1Type, accl2Type, clipNormSettings, scaledOptimizerState,
+  // debugContext).
   Adam(OptimizerValue defaultLearningRate,
        OptimizerValue defaultWeightDecay,
        OptimizerValue defaultBeta1,
@@ -428,7 +435,8 @@ public:
        DataType accl1Type,
        DataType accl2Type,
        const std::vector<ClipNormSettings> &clipNormSettings = {},
-       bool scaledOptimizerState                             = false);
+       bool scaledOptimizerState                             = false,
+       const DebugContext &debugContext                      = {});
 
   /// Constructor.
   /// \param params A parameter map where keys are one of
@@ -455,6 +463,7 @@ public:
   ///     DataType::FLOAT16. Note: When loading a model that includes
   ///     initialised optimizer state, ensure that accl1 and accl2 are scaled by
   ///     lossScaling and lossScaling^2 respectively.
+  //// \param debugContext Optional debug context.
   ///
   /// **EXAMPLE**:
   /// ```
@@ -474,14 +483,16 @@ public:
        DataType accl1Type,
        DataType accl2Type,
        const std::vector<ClipNormSettings> &clipNormSettings = {},
-       bool scaledOptimizerState                             = false);
+       bool scaledOptimizerState                             = false,
+       const DebugContext &debugContext                      = {});
 
   static Adam fromDefaultMap(const std::map<std::string, OptimizerValue> &,
                              AdamMode adamMode_,
                              WeightDecayMode decayMode_,
                              DataType accumType_,
                              DataType accl1Type_,
-                             DataType accl2Type_);
+                             DataType accl2Type_,
+                             const DebugContext &debugContext = {});
 
   Adam(const Adam &) = default;
   ~Adam()            = default;
@@ -615,6 +626,8 @@ private:
   AdamMaxWeightNormHelper mwnhelper;
   AdamGradientScalingHelper gshelper;
 
+  DebugContext debugContext;
+
   Adam(const std::map<std::string, OptimizerValue> &,
        AdamMode mode_,
        WeightDecayMode decayMode_,
@@ -622,7 +635,8 @@ private:
        DataType accl1Type_,
        DataType accl2Type_,
        const std::vector<ClipNormSettings> &clipNormSettings,
-       bool scaledOptimizerState_);
+       bool scaledOptimizerState_,
+       const DebugContext &debugContext = {});
 
   static std::map<std::string, OptimizerValue>
   getComplete(const std::map<std::string, OptimizerValue> &);

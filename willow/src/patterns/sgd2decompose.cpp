@@ -135,7 +135,9 @@ TensorId SGD2Decompose::acclUpdate(Graph &graph,
     auto acclUpdate0 = graph.createOp<SGD2PartialAcclUpdateOp>(
         combo->initSmm1,
         combo->initSwd1,
-        Op::Settings(graph, combo->name() + "_accl_update_0_prev_v_w"));
+        Op::Settings(graph,
+                     combo->name() + "_accl_update_0_prev_v_w",
+                     combo->settings.debugInfoId));
     transferBaseProperties(combo, acclUpdate0);
 
     // (1)
@@ -185,7 +187,9 @@ TensorId SGD2Decompose::acclUpdate(Graph &graph,
     auto acclUpdate1 = graph.createOp<AccumulateOp>(
         AccumulationType::DampenedAdd,
         combo->initDpsf1,
-        Op::Settings(graph, combo->name() + "_accl_update_1_grads"));
+        Op::Settings(graph,
+                     combo->name() + "_accl_update_1_grads",
+                     combo->settings.debugInfoId));
     transferBaseProperties(combo, acclUpdate1);
 
     // (1)
@@ -243,7 +247,9 @@ void SGD2Decompose::varUpdateAndEraseCombo(
   // (4) updatedWeightId
 
   auto sgd2VarUpdate = graph.createOp<SGD2VarUpdateOp>(
-      combo->initSlr1, Op::Settings(graph, combo->name() + "_var_update"));
+      combo->initSlr1,
+      Op::Settings(
+          graph, combo->name() + "_var_update", combo->settings.debugInfoId));
   transferBaseProperties(combo, sgd2VarUpdate);
 
   // (1)

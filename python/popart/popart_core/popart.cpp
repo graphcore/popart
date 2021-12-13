@@ -782,20 +782,23 @@ PYBIND11_MODULE(popart_core, m) {
                           std::vector<ClipNormSettings> clipNormSettings,
                           SGDAccumulatorAndMomentum accumulatorAndMomentum,
                           DataType accumType,
-                          DataType accl1Type) {
+                          DataType accl1Type,
+                          const popart::DebugContext &dc) {
                 auto cppm = getOptimizerValueDictionary(pyd);
                 return SGD(cppm,
                            clipNormSettings,
                            accumulatorAndMomentum,
                            accumType,
-                           accl1Type);
+                           accl1Type,
+                           dc);
               }),
               py::arg("pyd"),
               py::arg("clip_norm_settings") = std::vector<ClipNormSettings>{},
               py::arg("accumulatorAndMomentum") =
                   SGDAccumulatorAndMomentum::Combined,
-              py::arg("accumType") = DataType::UNDEFINED,
-              py::arg("accl1Type") = DataType::UNDEFINED);
+              py::arg("accumType")    = DataType::UNDEFINED,
+              py::arg("accl1Type")    = DataType::UNDEFINED,
+              py::arg("debugContext") = "sgd");
       sgd.def("insertSpecific", [](SGD &self, TensorId id, py::dict pyd) {
         self.insertSpecific(id, getOptimizerValueDictionary(pyd));
       });
@@ -841,7 +844,8 @@ PYBIND11_MODULE(popart_core, m) {
                            DataType accl1Type,
                            DataType accl2Type,
                            std::vector<ClipNormSettings> clipNormSettings,
-                           bool scaledOptimizerState) {
+                           bool scaledOptimizerState,
+                           const popart::DebugContext &dc) {
                  auto cppm = getOptimizerValueDictionary(pyd);
                  return Adam(cppm,
                              mode,
@@ -850,7 +854,8 @@ PYBIND11_MODULE(popart_core, m) {
                              accl1Type,
                              accl2Type,
                              clipNormSettings,
-                             scaledOptimizerState);
+                             scaledOptimizerState,
+                             dc);
                }),
                py::arg("values"),
                py::arg("mode")              = AdamMode::Adam,
@@ -861,7 +866,8 @@ PYBIND11_MODULE(popart_core, m) {
                py::arg("accl1_type")         = DataType::FLOAT,
                py::arg("accl2_type")         = DataType::FLOAT,
                py::arg("clip_norm_settings") = std::vector<ClipNormSettings>{},
-               py::arg("scaled_optimizer_state") = false);
+               py::arg("scaled_optimizer_state") = false,
+               py::arg("debugContext")           = "adam");
 
       adam.def("insertSpecific", [](Adam &self, TensorId id, py::dict pyd) {
         self.insertSpecific(id, getOptimizerValueDictionary(pyd));
@@ -891,7 +897,8 @@ PYBIND11_MODULE(popart_core, m) {
                       DataType accl1Type,
                       DataType accl2Type,
                       DataType accl3Type,
-                      bool rmspropTFVariant) {
+                      bool rmspropTFVariant,
+                      const popart::DebugContext &dc) {
             auto cppm = getOptimizerValueDictionary(pyd);
             return Adaptive(cppm,
                             mode,
@@ -900,7 +907,8 @@ PYBIND11_MODULE(popart_core, m) {
                             accl1Type,
                             accl2Type,
                             accl3Type,
-                            rmspropTFVariant);
+                            rmspropTFVariant,
+                            dc);
           }),
           py::arg("values"),
           py::arg("mode")              = AdaptiveMode::RMSProp,
@@ -912,7 +920,8 @@ PYBIND11_MODULE(popart_core, m) {
           py::arg("accl2_type") = DataType::FLOAT,
           // Choose same data type as weight for the Accl3 by default
           py::arg("accl3_type")         = DataType::UNDEFINED,
-          py::arg("rmsprop_tf_variant") = false);
+          py::arg("rmsprop_tf_variant") = false,
+          py::arg("debugContext")       = "adaptive");
 
       adaptive.def("insertSpecific",
                    [](Adaptive &self, TensorId id, py::dict pyd) {

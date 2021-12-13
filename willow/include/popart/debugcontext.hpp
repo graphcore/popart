@@ -194,6 +194,7 @@ public:
                std::string name   = "",
                SourceLocation loc = SourceLocation::Current());
   DebugContext(DebugContext &&);
+  DebugContext(const DebugContext &);
 
   ~DebugContext();
   std::string getPathName() const;

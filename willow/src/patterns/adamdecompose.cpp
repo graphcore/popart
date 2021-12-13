@@ -77,7 +77,8 @@ AdamDecompose::rescaleAccl(Graph &graph,
       {{VarUpdateOp::getUpdatedVarOutIndex(), updatedAcclId}},
       type,
       value,
-      Op::Settings(graph, combo->name() + acclName));
+      Op::Settings(
+          graph, combo->name() + acclName, combo->settings.debugInfoId));
   transferBaseProperties(combo, acclOp);
 
   if (!value.isConst()) {
@@ -136,7 +137,8 @@ TensorId AdamDecompose::rescaleRatio(Graph &graph, AdamComboOp *combo) const {
         {{0, lossScalingId}, {1, prevLossScalingId}},
         {{0, ratioId}},
         Onnx::Operators::Div_7,
-        Op::Settings(graph, combo->name() + "_lsRatio"));
+        Op::Settings(
+            graph, combo->name() + "_lsRatio", combo->settings.debugInfoId));
     transferBaseProperties(combo, calcRatio);
 
     TensorId updatedPrevLossScalingId =
@@ -144,7 +146,9 @@ TensorId AdamDecompose::rescaleRatio(Graph &graph, AdamComboOp *combo) const {
     auto updatePrevLossScaling = graph.createConnectedOp<CopyVarUpdateOp>(
         {{0, prevLossScalingId}, {1, lossScalingId}},
         {{0, updatedPrevLossScalingId}},
-        Op::Settings(graph, combo->name() + "_updatePrevLossScaling"));
+        Op::Settings(graph,
+                     combo->name() + "_updatePrevLossScaling",
+                     combo->settings.debugInfoId));
     transferBaseProperties(combo, updatePrevLossScaling);
 
     if (combo->withGradAccum) {
@@ -333,7 +337,8 @@ bool AdamDecompose::apply(Op *op) const {
       combo->initB1,
       combo->initB2,
       combo->initEps,
-      Op::Settings(graph, combo->name() + "_adamupdater"));
+      Op::Settings(
+          graph, combo->name() + "_adamupdater", op->settings.debugInfoId));
   auto adamUpdOp = adamUpdOpUp.get();
   transferBaseProperties(combo, adamUpdOp);
   graph.moveIntoGraph(std::move(adamUpdOpUp));
@@ -410,9 +415,9 @@ bool AdamDecompose::apply(Op *op) const {
       (combo->mode == AdamMode::Lamb || combo->mode == AdamMode::LambNoBias) &&
       !(combo->initMwn.isConst() && combo->initMwn.val() == 0);
   if (use_lamb) {
-    auto lambR1OpUp = std::make_unique<LambSquareOp>(
-        Op::Settings(graph, combo->name() + "_lamb1"));
-    auto lambR1Op = lambR1OpUp.get();
+    auto lambR1OpUp = std::make_unique<LambSquareOp>(Op::Settings(
+        graph, combo->name() + "_lamb1", op->settings.debugInfoId));
+    auto lambR1Op   = lambR1OpUp.get();
     transferBaseProperties(combo, lambR1Op);
     graph.moveIntoGraph(std::move(lambR1OpUp));
 
@@ -425,9 +430,9 @@ bool AdamDecompose::apply(Op *op) const {
                                         lambR1SqId);
     lambR1Op->setup();
 
-    auto lambR2OpUp = std::make_unique<LambSquareOp>(
-        Op::Settings(graph, combo->name() + "_lamb2"));
-    auto lambR2Op = lambR2OpUp.get();
+    auto lambR2OpUp = std::make_unique<LambSquareOp>(Op::Settings(
+        graph, combo->name() + "_lamb2", op->settings.debugInfoId));
+    auto lambR2Op   = lambR2OpUp.get();
     transferBaseProperties(combo, lambR2Op);
     graph.moveIntoGraph(std::move(lambR2OpUp));
 
@@ -456,7 +461,8 @@ bool AdamDecompose::apply(Op *op) const {
   auto adamVarUpdOpUp = std::make_unique<AdamVarUpdateOp>(
       combo->initLr,
       combo->initMwn,
-      Op::Settings(graph, combo->name() + "_var_update"));
+      Op::Settings(
+          graph, combo->name() + "_var_update", op->settings.debugInfoId));
   auto adamVarUpdOp = adamVarUpdOpUp.get();
   transferBaseProperties(combo, adamVarUpdOp);
   graph.moveIntoGraph(std::move(adamVarUpdOpUp));

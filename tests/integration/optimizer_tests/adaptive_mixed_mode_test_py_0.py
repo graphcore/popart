@@ -5,6 +5,7 @@ import popart
 import onnx
 from onnx import numpy_helper
 from onnx import TensorProto
+import json
 
 # `import test_util` requires adding to sys.path
 import sys
@@ -299,4 +300,28 @@ def test_adaptive_mixed_mode_1(tmpdir):
     outlining = [True, True, True]
 
     run_adaptive_mixed_mode(10, optMaps, outlining, tmpdir, np.float32)
+
+    debug_filename = str(tmpdir) + "/debug.json"
+    popart.initializePoplarDebugInfo(debug_filename, "json")
+
     run_adaptive_mixed_mode(10, optMaps, outlining, tmpdir, np.float16)
+
+    # Ensure adaptive operations have correct debug context
+    popart.closePoplarDebugInfo()
+    num_adaptives = 0
+    parents = set()
+    with open(debug_filename) as json_file:
+        data = json.load(json_file)
+        for context in data["contexts"]:
+            if context['layer'] == "popart" and \
+               'opid' in context and \
+               'Adaptive' in context['opid']:
+                parents.add(context['parentId'])
+                num_adaptives += 1
+        for context in data["contexts"]:
+            if context['id'] in parents:
+                parents.remove(context['id'])
+                assert context['layer'] == "popart_builder"
+                assert data['stringTable'][context['name']] == "adaptive"
+    assert num_adaptives == 24
+    assert len(parents) == 0
