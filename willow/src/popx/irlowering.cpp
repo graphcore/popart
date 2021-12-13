@@ -74,6 +74,7 @@
 #include <popart/tensors.hpp>
 #include <popart/topocons.hpp>
 #include <popart/transforms/randomsetup.hpp>
+#include <popart/variablesettings.hpp>
 
 #include <popart/op/varupdate.hpp>
 #include <popart/popx/op/ipucopyx.hpp>
@@ -3890,6 +3891,15 @@ IrLowering::getReplicatedStreamMode(Tensor *tensor) const {
   poplar::ReplicatedStreamMode mode = poplar::ReplicatedStreamMode::BROADCAST;
 
   if (tensor->tensorType() == TensorType::Variable) {
+    // If returned != 1 then streaming will have to handle different
+    // replicas more dynamically, and broadcast will not work for the
+    // necessary transfers.
+    auto replicas   = ir().getSessionOptions().replicatedGraphCount;
+    auto groupCount = tensor->getVariableSettings().groupCount(replicas);
+
+    mode = groupCount != 1 ? poplar::ReplicatedStreamMode::REPLICATE
+                           : poplar::ReplicatedStreamMode::BROADCAST;
+  } else if (tensor->tensorType() == TensorType::Variable) {
     // If it is a variable we 'broadcast' the same tensor
     // to all replicants
     mode = poplar::ReplicatedStreamMode::BROADCAST;

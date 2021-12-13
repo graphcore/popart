@@ -1,4 +1,5 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
+#include <onnxutil.hpp>
 #include <poprithms/logging/timepartitionlogger.hpp>
 #include <popart/chains.hpp>
 #include <popart/commgroup.hpp>
@@ -179,9 +180,23 @@ void Tensors::addConstInit(const TensorId &name,
 void Tensors::addVarInit(const TensorId &name,
                          const ONNX_NAMESPACE::TensorProto *pt,
                          const DebugContext &debugContext) {
+  addVarInit(name, pt, VariableSettings(), debugContext);
+}
+
+void Tensors::addVarInit(const TensorId &name,
+                         const TensorInfo &info,
+                         const void *src,
+                         const DebugContext &debugContext) {
+  addVarInit(name, info, src, VariableSettings(), debugContext);
+}
+
+void Tensors::addVarInit(const TensorId &name,
+                         const ONNX_NAMESPACE::TensorProto *pt,
+                         const VariableSettings &vs,
+                         const DebugContext &debugContext) {
   logging::debug("Adding VarInit Tensor {}", name);
   popart::TensorDebugInfo di(debugContext, name, TensorType::Variable);
-  addInit(name, pt, TensorType::Variable, di);
+  addInit(name, pt, TensorType::Variable, vs, di);
 
   // A sanity check: if the tensor is fixed point, it is Const
   if (get(name)->info.getDataTypeInfo()->isFixedPoint()) {
@@ -204,15 +219,39 @@ void Tensors::addVarInit(const TensorId &name,
 void Tensors::addVarInit(const TensorId &name,
                          const TensorInfo &info,
                          const void *src,
+                         const VariableSettings &vs,
                          const DebugContext &debugContext) {
   popart::TensorDebugInfo di(debugContext, name, info, TensorType::Variable);
-  insert(name,
-         std::unique_ptr<Tensor>(
-             new Tensor(name, TensorType::Variable, graph, di)));
+  logging::devicex::debug("AddVarInit.info {}, {}", name, info.shape());
+  insert(name, std::unique_ptr<Tensor>(new Tensor(name, vs, graph, di)));
 
   Tensor *init = get(name);
   init->info   = info;
-  init->setTensorData(info, src);
+
+  bool iflock =
+      vs.numReplicasReturningVariable(
+          graph.getIr().getSessionOptions().replicatedGraphCount) != 1;
+
+  logging::debug("addVarInit({}) --({})-->", name, init->info.shape());
+
+  if (iflock) {
+    // When seeding variables different per replica group, the shape of the
+    // tensor data (what the host interacts with and is streamed to the IPUs)
+    // has an additional dimension compared to the shape of the tensor residing
+    // on the IPU/replica.
+    Shape expanded_shape;
+    expanded_shape.push_back(vs.numReplicasReturningVariable(
+        graph.getIr().getSessionOptions().replicatedGraphCount));
+    for (auto i = 0; i < info.shape().size(); i++) {
+      expanded_shape.push_back(info.shape()[i]);
+    }
+
+    TensorInfo re_info(info.dataType(), expanded_shape);
+
+    init->setTensorData(re_info, src);
+  } else {
+    init->setTensorData(info, src);
+  }
 }
 
 void Tensors::addConstInit(const TensorId &name,
@@ -244,11 +283,29 @@ void Tensors::addInit(const TensorId &name,
                       const ONNX_NAMESPACE::TensorProto *pt,
                       TensorType tt,
                       const DebugInfo &di) {
+  addInit(name, pt, tt, VariableSettings(), di);
+}
 
-  insert(name, std::make_unique<Tensor>(name, tt, graph, di));
+void Tensors::addInit(const TensorId &name,
+                      const ONNX_NAMESPACE::TensorProto *pt,
+                      TensorType tt,
+                      const VariableSettings &vs,
+                      const DebugInfo &di) {
+  if (tt == TensorType::Variable) {
+    insert(name, std::make_unique<Tensor>(name, vs, graph, di));
+  } else {
+    insert(name, std::make_unique<Tensor>(name, tt, graph, di));
+  }
 
-  Tensor *init = get(name);
-  init->info   = TensorInfo(*pt);
+  // make sure the info shape match the shape it should have on the graph, and
+  // not the total data unit
+  Tensor *init    = get(name);
+  TensorInfo info = TensorInfo(*pt);
+  init->info      = TensorInfo(
+      info.dataType(),
+      vs.shapeOnReplica(info.shape(),
+                        graph.getIr().getSessionOptions().replicatedGraphCount,
+                        name));
   init->setTensorData(*pt);
 }
 

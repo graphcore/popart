@@ -86,17 +86,53 @@ public:
   /**
    * Calculate the number of replicas that will
    * return this variable
-   * \param replicaCount Number of global replicas
-   * \return Number of variables returned
+   * \param  replicaCount Number of global replicas.
+   * \return              Number of variables returned.
    */
-  unsigned numReplicasReturningVariable(unsigned replicaCount);
+  unsigned numReplicasReturningVariable(unsigned replicaCount) const;
+
+  /**
+   * \param replicaCount The replicationFactor of the graph.
+   * \return             The number of groups given the replicaFactor and the
+   *                     VariableSettings.
+   */
+  unsigned groupCount(unsigned replicaCount) const;
 
   /**
    * Get the default \a first member of a group
-   * \param group The group to return the representative for.
-   * \return the representative replica of this group
+   * \param  group The group to return the representative for.
+   * \return       The representative replica of this group.
    */
-  unsigned getGroupRepresentative(unsigned group);
+  unsigned getGroupRepresentative(unsigned group) const;
+
+  /**
+   * The shape Onnx reads holds an extra outer dimension in certain cases,
+   * where the outer dimension represents the number of returning replica
+   * variables. This function takes an Onnx full-shape and removes the outer
+   * dimension safely (ie. checks if the outer dimension matches an expected
+   * outer dimension). A quick-function to avoid duplicate code.
+   * \param  full_shape   The shape as presented by Onnx.
+   * \param  replicaCount The local replication factor, used to calculate
+   *                      the return factor.
+   * \param  name         The TensorId of the function, used to give good
+   *                      error feedback.
+   * \return              The shape of the data on the replica.
+   */
+  Shape shapeOnReplica(Shape full_shape,
+                       unsigned replicaCount,
+                       const TensorId name) const;
+
+  /**
+   * This function returns a set of vectors where each vector contains all
+   * the replicaId's of the replicas with a sharedVariableDomain given the
+   * variableSettings and the replicaCount.
+   *
+   * \param  replicaCount The local replication factor
+   * \return              A set of sets, such that set.at(a).set(b) is member
+   *                      nr. b of group a, and set.size() is the number og
+   *                      groups and set.at(A).size() is the size of the group.
+   */
+  std::vector<std::vector<std::int64_t>> groups(unsigned replicaCount) const;
 };
 } // namespace popart
 

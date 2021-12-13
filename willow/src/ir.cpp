@@ -54,6 +54,7 @@
 #include <popart/tensors.hpp>
 #include <popart/topocons.hpp>
 #include <popart/util.hpp>
+#include <popart/variablesettings.hpp>
 #include <poparttracepoint.hpp>
 
 // The transformations
@@ -2068,6 +2069,7 @@ void Ir::registerInputTensors() {
       for (auto m : onnxModel->metadata_props()) {
         if (m.key() == key) {
           debugid = std::stoi(m.value());
+          break;
         }
       }
 
@@ -2081,8 +2083,47 @@ void Ir::registerInputTensors() {
         logCreationInfo("Constant", tenId);
         getTensors().addConstInit(tenId, &initializer, DebugContext(onnxDi));
       } else {
+
+        CommGroupType type = CommGroupType::All;
+        auto size          = 0;
+        VariableRetrievalMode retrievalMode =
+            VariableRetrievalMode::OnePerGroup;
+
+        {
+          auto key =
+              std::string(sCommGroupType) + std::string(sNameDelimiter) + tenId;
+          for (auto m : onnxModel->metadata_props()) {
+            if (m.key() == key) {
+              type = static_cast<CommGroupType>(std::stoi(m.value()));
+              break;
+            }
+          }
+        }
+        {
+          auto key =
+              std::string(sCommGroupSize) + std::string(sNameDelimiter) + tenId;
+          for (auto m : onnxModel->metadata_props()) {
+            if (m.key() == key) {
+              size = static_cast<unsigned>(std::stoi(m.value()));
+              break;
+            }
+          }
+        }
+        {
+          auto key = std::string(sVariableSettings) +
+                     std::string(sNameDelimiter) + tenId;
+          for (auto m : onnxModel->metadata_props()) {
+            if (m.key() == key) {
+              retrievalMode =
+                  static_cast<VariableRetrievalMode>(std::stoi(m.value()));
+              break;
+            }
+          }
+        }
+        VariableSettings vs(CommGroup(type, size), retrievalMode);
+
         logCreationInfo("Variable", tenId);
-        getTensors().addVarInit(tenId, &initializer, DebugContext(onnxDi));
+        getTensors().addVarInit(tenId, &initializer, vs, DebugContext(onnxDi));
       }
       onnxInitializers.emplace(tenId);
     }

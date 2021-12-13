@@ -99,6 +99,12 @@ private:
                TensorType,
                const DebugInfo &di);
 
+  void addInit(const TensorId &,
+               const ONNX_NAMESPACE::TensorProto *,
+               TensorType,
+               const VariableSettings &,
+               const DebugInfo &di);
+
   Graph &graph;
 };
 

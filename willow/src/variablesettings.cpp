@@ -2,7 +2,9 @@
 
 #include <popart/commgroup.hpp>
 #include <popart/error.hpp>
+#include <popart/names.hpp>
 #include <popart/variablesettings.hpp>
+
 namespace popart {
 
 std::ostream &operator<<(std::ostream &os, const VariableRetrievalMode &vrm) {
@@ -27,9 +29,7 @@ std::ostream &operator<<(std::ostream &os, const VariableRetrievalMode &vrm) {
 /// OnePerGroup
 VariableSettings::VariableSettings()
     : sharedVariableDomain(CommGroup(CommGroupType::All, 0)),
-      retrievalMode(VariableRetrievalMode::OnePerGroup) {
-  verify();
-}
+      retrievalMode(VariableRetrievalMode::OnePerGroup) {}
 
 /// Defaults VariableRetrievalMode to OnePerGroup
 VariableSettings::VariableSettings(CommGroup sharedVariableDomain_)
@@ -53,7 +53,8 @@ VariableSettings::VariableSettings(CommGroup sharedVariableDomain_,
   verify();
 }
 
-unsigned VariableSettings::numReplicasReturningVariable(unsigned replicaCount) {
+unsigned
+VariableSettings::numReplicasReturningVariable(unsigned replicaCount) const {
 
   // If instruction is to return from all,
   // replicas are ungrouped, or if group size
@@ -71,9 +72,9 @@ unsigned VariableSettings::numReplicasReturningVariable(unsigned replicaCount) {
   // Make sure the dimension of the commGroup is a valid number.
   if (sharedVariableDomain.type != CommGroupType::All &&
       sharedVariableDomain.replicaGroupSize < 1) {
-    logging::err("Attempting to use 0 as a CommGroupSize, "
-                 "groups of type {} must have legal size.\n",
-                 sharedVariableDomain.type);
+    throw internal_error("Attempting to use 0 as a CommGroupSize, "
+                         "groups of type {} must have legal size.\n",
+                         sharedVariableDomain.type);
   }
 
   // differentiate between options returning one and group-size.
@@ -99,7 +100,32 @@ unsigned VariableSettings::numReplicasReturningVariable(unsigned replicaCount) {
   return -1;
 }
 
-unsigned VariableSettings::getGroupRepresentative(unsigned group) {
+unsigned VariableSettings::groupCount(unsigned replicaCount) const {
+  if (sharedVariableDomain.type == CommGroupType::None ||
+      sharedVariableDomain.replicaGroupSize == 1)
+    return replicaCount;
+
+  switch (sharedVariableDomain.type) {
+  case CommGroupType::All:
+    return 1;
+  case CommGroupType::None:
+    return replicaCount;
+  case CommGroupType::Consecutive:
+  case CommGroupType::Orthogonal:
+    if (!sharedVariableDomain.replicaGroupSize) {
+      throw internal_error("Attempting to use 0 as a CommGroupSize, "
+                           "groups of type {} must have legal size.\n",
+                           sharedVariableDomain.type);
+    }
+    return replicaCount / sharedVariableDomain.replicaGroupSize;
+  case CommGroupType::N:
+  default:
+    throw internal_error("Bad CommGroupType {} in VariableSetting.\n",
+                         sharedVariableDomain.type);
+  }
+}
+
+unsigned VariableSettings::getGroupRepresentative(unsigned group) const {
   switch (sharedVariableDomain.type) {
   case CommGroupType::All:
     return 0;
@@ -146,6 +172,72 @@ void VariableSettings::verify() {
   if (throw_error) {
     throw internal_error("VariableSettings had {} errors!", throw_error);
   }
+}
+
+Shape VariableSettings::shapeOnReplica(const Shape full_shape,
+                                       unsigned replicaCount,
+                                       const TensorId name) const {
+  auto numGroups = groupCount(replicaCount);
+
+  if (numGroups == 1) {
+    return Shape(full_shape);
+  }
+  if (numGroups != full_shape[0]) {
+    throw internal_error("Return mismatch with possibly appended "
+                         "outer dimension ({}) of Tensor: \"{}\". "
+                         "should match replicatedGraphCount: {}",
+                         full_shape[0],
+                         name,
+                         replicaCount);
+  }
+
+  Shape reshape;
+  for (int i = 1; i < full_shape.size(); i++) {
+    reshape.push_back(full_shape[i]);
+  }
+
+  return reshape;
+}
+
+std::vector<std::vector<std::int64_t>>
+VariableSettings::groups(unsigned replicaCount) const {
+  std::vector<std::vector<std::int64_t>> groups;
+  std::vector<std::int64_t> group;
+  if (sharedVariableDomain.type == CommGroupType::All) {
+    for (auto i = 0; i < replicaCount; i++) {
+      group.push_back(i);
+    }
+    groups.push_back(group);
+    return groups;
+  }
+  if (sharedVariableDomain.type == CommGroupType::None) {
+    for (auto i = 0; i < replicaCount; i++) {
+      group = std::vector<std::int64_t>();
+      group.push_back(i);
+      groups.push_back(group);
+    }
+    return groups;
+  }
+
+  auto returned = numReplicasReturningVariable(replicaCount);
+
+  auto groupCount = sharedVariableDomain.replicaGroupSize
+                        ? replicaCount / sharedVariableDomain.replicaGroupSize
+                        : returned;
+  auto groupInc = sharedVariableDomain.type != CommGroupType::Orthogonal
+                      ? 1
+                      : sharedVariableDomain.replicaGroupSize;
+
+  for (auto groupIdx = 0; groupIdx < groupCount; groupIdx++) {
+    group      = std::vector<std::int64_t>();
+    auto start = getGroupRepresentative(groupIdx);
+    auto end   = start + (groupInc * sharedVariableDomain.replicaGroupSize);
+    for (auto repId = start; repId < end; repId += groupInc) {
+      group.push_back(repId);
+    }
+    groups.push_back(group);
+  }
+  return groups;
 }
 
 std::ostream &operator<<(std::ostream &os, VariableSettings &vs) {

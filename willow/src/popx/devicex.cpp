@@ -360,10 +360,11 @@ void Devicex::remoteBufferWeightsToHost() {
                group_member++) {
             unsigned replica_id = (group_main + group_member) * group_increment;
             unsigned long index =
-                replica_id * nelms / returned *
-                static_cast<int64_t>(tensor->info.getDataTypeInfo()->nbytes());
-            copyFromRemoteBuffer(&data0[index],
-                                 group * returnedPerGroup + group_member);
+                replica_id * nelms *
+                static_cast<int64_t>(tensor->info.getDataTypeInfo()->nbytes()) /
+                returned;
+            unsigned id = group * returnedPerGroup + group_member;
+            copyFromRemoteBuffer(&data0[index], id);
           }
         }
       }
@@ -540,7 +541,11 @@ void Devicex::weightsFromHost() {
     // Weights in the remote buffers
     remoteBufferWeightsFromHost();
     // Weights on the IPU
+
+    initializeH2dWeightBuffers();
     run(PopPrograms::ProgramIndex::WeightsFromHost, "WeightsFromHost");
+    deinitializeH2dWeightBuffers();
+
     logging::devicex::debug("done.");
   }
 }
@@ -899,8 +904,19 @@ void Devicex::loadEngineAndConnectStreams() {
         const auto &id = tensor->id;
         if (!ir().streamingIsDisabledForTensor(tensor)) {
           logging::devicex::debug("   {}", tensor->str());
-          pEngine->connectStream(lowering().h2dId(id),
-                                 tensor->tensorData()->data());
+
+          auto replicationFactor =
+              ir().getSessionOptions().replicatedGraphCount;
+          auto groupCount =
+              tensor->getVariableSettings().groupCount(replicationFactor);
+
+          if (groupCount == 1 || groupCount == replicationFactor) {
+            //  The underlying data of the tensor has the correct number and
+            //  order of data elements for the stream to be able to directly
+            //  copy from it.
+            pEngine->connectStream(lowering().h2dId(id),
+                                   tensor->tensorData()->data());
+          } // else see initializeH2dWeightBuffers
         }
       }
     }
@@ -999,28 +1015,53 @@ void Devicex::loadEngineAndConnectStreams() {
       }
     };
 
-    // Special case for variables (i.e. weights). This should be the same on
-    // every replicant so we only return one copy. The poplar api requires a
-    // callback for every replicant. So here we will only return replicant 0.
-    auto engineToStreamVariables =
-        [&pEngine = pEngine, replicationFactor = getReplicationFactor()](
-            char *data0, int64_t n_bytes, PopStreamId streamId, TensorId id) {
-          for (uint16_t replicaId = 0; replicaId < replicationFactor;
-               ++replicaId) {
+    // Variables can return different number of data based on their
+    // VariableSettings this makes certain that the replicas that are required
+    // to return their values do so
+    auto engineToStreamVariables = [&pEngine          = pEngine,
+                                    replicationFactor = getReplicationFactor()](
+                                       char *data0,
+                                       int64_t n_bytes,
+                                       PopStreamId streamId,
+                                       Tensor *tensor) {
+      auto id = tensor->id;
 
-            logging::devicex::debug(
-                "Connecting stream variable {}@{}", id, replicaId);
+      auto groups = tensor->getVariableSettings().groups(replicationFactor);
+      auto returned =
+          tensor->getVariableSettings().numReplicasReturningVariable(
+              replicationFactor);
 
-            auto callback = [replicaId, data0, n_bytes](void *ptr) mutable {
-              if (replicaId == 0) {
-                char *data = reinterpret_cast<char *>(ptr);
-                memcpy(data0, data, n_bytes);
-              }
-            };
+      for (auto g = 0; g < groups.size(); g++) {
+        auto group     = groups[g];
+        bool returnAll = replicationFactor == returned;
 
-            pEngine->connectStreamToCallback(streamId, replicaId, callback);
-          }
-        };
+        for (auto i = 0; i < group.size(); i++) {
+          // return if first in group
+          // or returning all
+          bool returning = (i == 0) || returnAll;
+          auto replicaId = group[i];
+
+          auto segment = (returnAll ? replicaId : g);
+
+          char *data = &data0[(n_bytes * segment)];
+
+          logging::devicex::debug("Connecting stream variable {}@{} -{}-> {}",
+                                  id,
+                                  replicaId,
+                                  (returning ? "-" : "/"),
+                                  segment);
+
+          auto callback = [returning, data, n_bytes, id, replicaId, segment](
+                              void *ptr) mutable {
+            if (returning) {
+              char *re_data = reinterpret_cast<char *>(ptr);
+              memcpy(data, re_data, n_bytes);
+            }
+          };
+          pEngine->connectStreamToCallback(streamId, replicaId, callback);
+        }
+      }
+    };
 
     logging::devicex::debug("Connected h2d input data streams");
     for (Tensor *tensor : executable_.getDataStreamTensors()) {
@@ -1055,10 +1096,10 @@ void Devicex::loadEngineAndConnectStreams() {
         logging::devicex::debug(
             "Connecting {} [type={}]", initId, tensor->tensorType());
         if (tensor->tensorType() == TensorType::Variable) {
-          d2hWeightBuffers[initId] = std::vector<char>(
+          auto ret_factor =
               tensor->getVariableSettings().numReplicasReturningVariable(
-                  getReplicationFactor()) *
-              n_bytes);
+                  getReplicationFactor());
+          d2hWeightBuffers[initId] = std::vector<char>(ret_factor * n_bytes);
         } else {
           d2hWeightBuffers[initId] = std::vector<char>(n_bytes);
         }
@@ -1070,7 +1111,7 @@ void Devicex::loadEngineAndConnectStreams() {
           bool isAnchorStream  = false;
           PopStreamId streamId = lowering().d2hId(initId, isAnchorStream);
           logging::devicex::debug(" {}", initId);
-          engineToStreamVariables(data0, n_bytes, streamId, tensor->id);
+          engineToStreamVariables(data0, n_bytes, streamId, tensor);
           logging::devicex::debug(
               "Created buffer (size {} B) and stream for {}",
               n_bytes,
@@ -1295,6 +1336,51 @@ void Devicex::copyToRemoteBuffer(void *w,
                                  unsigned replication_index) {
   POPART_TRACEPOINT();
   pEngine->copyToRemoteBuffer(w, buffer, repeat_index, replication_index);
+}
+
+void Devicex::initializeH2dWeightBuffers() {
+  auto replicationFactor = getReplicationFactor();
+
+  if (ir().useSyntheticData() == false) {
+    logging::devicex::debug("Connecting temporary initializer streams");
+
+    for (auto *tensor : executable_.getWeightTensors()) {
+      auto id = tensor->id;
+      if (!tensor->hasProducer()) {
+        int64_t nbytes   = tensor->info.nbytes();
+        int64_t fullsize = nbytes * replicationFactor;
+
+        auto groups = tensor->getVariableSettings().groups(replicationFactor);
+
+        if (groups.size() != 1 && groups.size() != replicationFactor) {
+          h2dWeightBuffers[id] = std::vector<char>(fullsize);
+
+          char *source = static_cast<char *>(tensor->tensorData()->data());
+          char *destin = static_cast<char *>(h2dWeightBuffers[id].data());
+
+          for (auto g = 0; g < groups.size(); g++) {
+            auto group = groups[g];
+            char *addr = source + (g * nbytes);
+            for (auto r = 0; r < group.size(); r++) {
+              auto replicaId = group[r];
+              char *dest     = destin + (replicaId * nbytes);
+              memcpy(dest, addr, nbytes);
+            }
+          }
+          pEngine->connectStream(lowering().h2dId(id),
+                                 h2dWeightBuffers[id].data());
+        }
+      }
+    }
+  }
+}
+
+void Devicex::deinitializeH2dWeightBuffers() {
+  for (auto &pair : h2dWeightBuffers) {
+    auto id = pair.first;
+    logging::devicex::debug(" * deinitialize_h2dWeightBuffers: {}", id);
+    h2dWeightBuffers[id].clear();
+  }
 }
 
 } // namespace popx

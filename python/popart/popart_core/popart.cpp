@@ -2478,6 +2478,21 @@ PYBIND11_MODULE(popart_core, m) {
         py::arg("initVal"),
         py::arg("debugContext") = std::string());
     cls.def(
+        "addInitializedInputTensor",
+        [](Builder &builder,
+           py::array array,
+           VariableSettings vs,
+           popart::DebugContext &dc) {
+          array = makeContiguous(array);
+          ConstVoidData initData;
+          initData.data = array.request().ptr;
+          initData.info = getTensorInfo(array);
+          return builder.addInitializedInputTensor(initData, vs, dc);
+        },
+        py::arg("initVal"),
+        py::arg("variableSettings"),
+        py::arg("debugContext") = std::string());
+    cls.def(
         "addOutputTensor", &Builder::addOutputTensor, py::arg("outputName"));
     cls.def("_createSubgraphBuilder",
             &Builder::createSubgraphBuilder,
@@ -2957,6 +2972,9 @@ PYBIND11_MODULE(popart_core, m) {
     cls.def("getGroupRepresentative",
             &VariableSettings::getGroupRepresentative,
             py::arg("group"));
+    cls.def("getSharedVariableDomain",
+            &VariableSettings::getSharedVariableDomain);
+    cls.def("getRetrievalMode", &VariableSettings::getRetrievalMode);
   }
   { m.attr("CommGroupType") = popart_internal_ir.attr("CommGroupType"); }
   { m.attr("CommGroup") = popart_internal_ir.attr("CommGroup"); }

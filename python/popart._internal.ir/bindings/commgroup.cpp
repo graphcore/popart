@@ -24,7 +24,9 @@ void bindCommGroup(py::module &m) {
              DOC(popart, CommGroupType, Consecutive))
       .value("Orthogonal",
              CommGroupType::Orthogonal,
-             DOC(popart, CommGroupType, Orthogonal));
+             DOC(popart, CommGroupType, Orthogonal))
+      .value(
+          "Ungrouped", CommGroupType::None, DOC(popart, CommGroupType, None));
 
   py::class_<CommGroup>(m, "CommGroup", DOC(popart, CommGroup))
       .def(py::init<>())
