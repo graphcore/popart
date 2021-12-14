@@ -1,4 +1,7 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
+#ifndef GUARD_SGD_HPP
+#define GUARD_SGD_HPP
+
 #include <popart/optimizer.hpp>
 #include <popart/optimizervalue.hpp>
 
@@ -848,3 +851,5 @@ public:
 };
 
 } // namespace popart
+
+#endif
