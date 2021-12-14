@@ -6,7 +6,7 @@ Importing graphs
 The PopART ``Session`` class creates the runtime environment for executing graphs on IPU
 hardware. It can read an ONNX graph from a serialised ONNX model protobuf
 (ModelProto), either directly from a file or from memory. A session object can be
-constructed either as an ``InferenceSession`` or a ``TrainingSession``
+constructed either as an ``InferenceSession`` or a ``TrainingSession``.
 
 Some metadata must be supplied to augment the data present in the ONNX graph in order to run it,
 as described below.
@@ -19,27 +19,35 @@ contains an entry to fetch that anchor.
 .. literalinclude:: files/importing_graphs.py
   :language: python
 
+.. only:: html
+
+    :download:`files/importing_graphs.py`
 
 The DataFlow object is described in more detail in :any:`popart_executing`.
 
 Creating a session
 ~~~~~~~~~~~~~~~~~~
 
-The ``Session`` class takes the name of a protobuf file, or the protobuf
-itself.  It also takes a ``DataFlow`` object which has information about
+The ``Session`` class takes a number of parameters which are listed in the `PopART Python API reference
+<https://docs.graphcore.ai/projects/popart-python-api/en/latest/api-python.html#training-session>`_.
+In order to get the ONNX graph, the ``Session`` class takes the name of a protobuf file,
+or the protobuf itself.  It also takes a ``DataFlow`` object which has information about
 how to execute the graph:
 
 * Batches per step: The number of batches to run in a single call to ``Session::run``
-    * For an ``InferenceSession`` this is equal to the number of executions of the model.
-    * For a ``TrainingSession`` this is equal to the number of weight updates.
+
+  * For an ``InferenceSession`` this is equal to the number of executions of the model.
+
+  * For a ``TrainingSession`` this is equal to the number of weight updates.
+
 * The names of the tensors in the graph used to return the results to the host.
 
 In some ONNX graphs, the sizes of input tensors might not be specified.
-In this case, the ``inputShapeInfo`` parameter can be used to specify the
+In this case, the optional ``inputShapeInfo`` parameter can be used to specify the
 input shapes.  The Poplar framework uses statically allocated memory buffers
 and so it needs to know the size of tensors before the compilation.
 
-The ``patterns`` parameter allows the user to select a set of graph transformation
+The optional ``patterns`` parameter allows the user to select a set of graph transformation
 patterns which will be applied to the graph.  Without this parameter, a default
 set of optimisation transformations will be applied.
 
@@ -52,6 +60,10 @@ An example of creating a session object from an ONNX model is shown below.
 .. literalinclude:: files/importing_session.py
   :language: python
 
+.. only:: html
+
+    :download:`files/importing_session.py`
+
 
 In this example, when the ``Session`` object is asked to train the graph, an Nll
 loss node will be added to the end of the graph, and a ``ConstSGD`` optimiser
@@ -60,11 +72,11 @@ will be used to optimise the parameters in the network.
 Session control options
 ~~~~~~~~~~~~~~~~~~~~~~~
 
-The ``userOptions`` parameter passes options to the session. The available options
+The optional ``userOptions`` parameter passes options to the session. The available options
 are listed in the `PopART C++ API Reference
-<https://www.graphcore.ai/docs/popart-c-api-reference>`_.
-As well as options to control specific features of
-the PopART session, there are also some that allow you to pass options to the underlying
+<https://docs.graphcore.ai/projects/popart-cpp-api/en/latest/api-cpp.html#session-options>`_.
+In addition to passing options that control specific features of
+the PopART session, you can also use ``userOptions`` to pass options to the underlying
 Poplar functions:
 
 * ``engineOptions`` passes options to the Poplar ``Engine`` object created to run the graph.
