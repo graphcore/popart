@@ -1,8 +1,6 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
 #include <vector>
 
-#include <boost/algorithm/string.hpp>
-
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/op/accumulate.hpp>
@@ -91,8 +89,9 @@ Tensor *addReduceSumSquare(Tensor *grad, Graph &graph) {
   logging::debug("addReduceSumSuareOp({}, graph)", grad->id);
 
   Op::Settings settings(graph, "", {});
-  settings.executionContext = decideExecutionContext(graph);
-  settings.optimizerOp      = true;
+  settings.executionContext   = decideExecutionContext(graph);
+  settings.optimizerOp        = true;
+  settings.gradientClippingOp = true;
 
   nonstd::optional<std::vector<int64_t>> axes;
   Op *reduction = graph.createOp<ReduceSumSquareOp>(
@@ -184,8 +183,9 @@ Tensor *createCopyOnVGraph(Tensor *t, VGraphId destination, Graph &graph) {
   auto &ir = graph.getIr();
 
   Op::Settings settings(graph, "", {});
-  settings.executionContext = decideExecutionContext(graph);
-  settings.optimizerOp      = true;
+  settings.executionContext   = decideExecutionContext(graph);
+  settings.optimizerOp        = true;
+  settings.gradientClippingOp = true;
 
   Op *op = graph.createOp<IpuCopyOp>(
       Onnx::CustomOperators::IpuCopy, destination, settings);
@@ -221,8 +221,9 @@ Tensor *createGlobalNorm(int clipGroupIndex,
                          std::vector<Tensor *> gradNorms,
                          Graph &graph) {
   Op::Settings settings(graph, "", {});
-  settings.executionContext = decideExecutionContext(graph);
-  settings.optimizerOp      = true;
+  settings.executionContext   = decideExecutionContext(graph);
+  settings.optimizerOp        = true;
+  settings.gradientClippingOp = true;
 
   Op *sum = graph.createOp<SumOp>(Onnx::AiOnnx::OpSet8::Sum, settings);
   transferBaseProperties(gradNorms.at(0)->getProducer(), sum);
@@ -256,8 +257,9 @@ void addClipByNorm(Tensor *grad,
   auto &ir = graph.getIr();
 
   Op::Settings settings(graph, "", {});
-  settings.executionContext = decideExecutionContext(graph);
-  settings.optimizerOp      = true;
+  settings.executionContext   = decideExecutionContext(graph);
+  settings.optimizerOp        = true;
+  settings.gradientClippingOp = true;
 
   Op *mulOp = graph.createOp<MulOp>(Onnx::AiOnnx::OpSet6::Mul, settings);
   transferBaseProperties(grad->consumers.getOps().at(0), mulOp);
@@ -312,8 +314,9 @@ Tensor *createClipFactor(Tensor *globalNorm, Tensor *clipNorm, Graph &graph) {
   auto &ir = graph.getIr();
 
   Op::Settings settings(graph, "", {});
-  settings.executionContext = decideExecutionContext(graph);
-  settings.optimizerOp      = true;
+  settings.executionContext   = decideExecutionContext(graph);
+  settings.optimizerOp        = true;
+  settings.gradientClippingOp = true;
 
   Op *maxOp = graph.createOp<MaxOp>(Onnx::AiOnnx::OpSet6::Max, settings);
   transferBaseProperties(globalNorm->getProducer(), maxOp);
@@ -436,57 +439,6 @@ void clipWeightGradientsByNorm(int clipGroupIndex,
   addClipByNorms(gradInfos, clipFactor, graph);
 }
 
-// Find all the gradient clipping ops linked to the `globalNormProducer`.
-std::vector<Op *> findGradientClippingOps(Op *globalNormProducer) {
-  if (!globalNormProducer->isConvertibleTo<SqrtOp>()) {
-    throw internal_error("Global norm op should be a SqrtOp.");
-  }
-  auto sum = globalNormProducer->getPrecedingOp<SumOp>(SqrtOp::getInIndex());
-
-  std::vector<Op *> result{globalNormProducer, sum};
-
-  // The sums inputs are the ReduceSumSquareOps.
-  // These might go through an IpuCopyOp
-  for (auto &index_tensor : sum->input->tensorMap()) {
-    auto index = index_tensor.first;
-    auto x     = sum->getPrecedingOp(index);
-    if (x->isConvertibleTo<IpuCopyOp>()) {
-      result.push_back(x);
-      x = x->getPrecedingOp(0);
-    }
-
-    if (!x->isConvertibleTo<ReduceSumSquareOp>()) {
-      throw error("Unexpected op {}. Expected ReduceSumSquareOp here.",
-                  x->debugName());
-    }
-    result.push_back(x);
-  }
-
-  // Add the clip factor ops
-  auto maxOp = globalNormProducer->getFollowingOp<MaxOp>();
-  result.push_back(maxOp);
-  auto divOp = maxOp->getFollowingOp<DivOp>();
-  result.push_back(divOp);
-
-  // Finally add the MulOp that does the scaling
-  for (auto x : divOp->getFollowingOps()) {
-    if (x->isConvertibleTo<IpuCopyOp>()) {
-      result.push_back(x);
-      x = x->getFollowingOp();
-    }
-
-    if (x->isConvertibleTo<MulOp>() || x->isConvertibleTo<MulLhsInplaceOp>() ||
-        x->isConvertibleTo<MulRhsInplaceOp>()) {
-      result.push_back(x);
-    } else {
-      throw error("Expected a MulOp following the clip factor, found op {}",
-                  x->debugName());
-    }
-  }
-
-  return result;
-}
-
 void verifyClipNormSettings(const std::vector<ClipNormSettings> &settings) {
   for (auto clipGroup : settings) {
     if (settings.size() > 1 &&
@@ -528,32 +480,6 @@ bool ClipWeightGradientsByNorm::apply(Graph &graph) const {
   }
 
   return true;
-}
-
-std::vector<std::vector<Op *>>
-ClipWeightGradientsByNorm::findGradientClippingGroups(const Graph &graph) {
-  using boost::algorithm::starts_with;
-
-  // Find all the global norm tensors and get their producers.
-  std::vector<Op *> globalNorms;
-  for (auto tid : graph.getTensors().getIds(TensorType::ActGrad)) {
-    if (starts_with(tid, reservedGlobalNormPrefix())) {
-      auto t = graph.getTensors().get(tid);
-      globalNorms.push_back(t->getProducer());
-    }
-  }
-
-  // If no global norms were found, there are no gradient clipping ops in the
-  // graph.
-  if (globalNorms.size() == 0) {
-    return {};
-  }
-
-  std::vector<std::vector<Op *>> result;
-  for (auto x : globalNorms) {
-    result.push_back(findGradientClippingOps(x));
-  }
-  return result;
 }
 
 namespace {

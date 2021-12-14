@@ -137,6 +137,7 @@ bool Op::isLossOp() const { return false; }
 bool Op::isIpuCopyOp() const { return false; }
 bool Op::copiesOptimizerTensors() const { return false; }
 bool Op::isOptimizerOp() const { return settings.optimizerOp; }
+bool Op::isGradientClippingOp() const { return settings.gradientClippingOp; }
 
 bool Op::requiresRandomSeed() const { return false; }
 InIndex Op::getSeedInIndex() const {

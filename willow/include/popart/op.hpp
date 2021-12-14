@@ -196,6 +196,9 @@ public:
     // To flag an Op as being part of the optimizer
     bool optimizerOp{false};
 
+    // To flag an Op as being part of gradient clipping
+    bool gradientClippingOp{false};
+
     // This method will append the optional attributes (vgraphId, etc)
     // depending on whether the attribute has been
     // set in the onnx model.
@@ -609,6 +612,9 @@ public:
 
   // Op that is part of the optimizer
   virtual bool isOptimizerOp() const;
+
+  // Op that is part of gradient clipping
+  bool isGradientClippingOp() const;
 
   // The random seed tensor used to set the IPU's RNGs is created
   // in the IR, and connected to the Ops that require it

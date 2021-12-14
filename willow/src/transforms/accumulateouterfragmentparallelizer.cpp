@@ -1,4 +1,6 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
+#include <boost/algorithm/string.hpp>
+
 #include <poprithms/logging/timepartitionlogger.hpp>
 #include <popart/ir.hpp>
 #include <popart/op.hpp>
@@ -384,35 +386,50 @@ AccumulateOuterFragmentParallelizer::getGradientClippingClusters(
   // clipping ops, and create a OpCluster for each gradient clipping group. Then
   // when we create the rest of the clusters we can exclude the gradient
   // clipping ops.
-  auto gradClipGroups =
-      ClipWeightGradientsByNorm::findGradientClippingGroups(graph);
-  // Create a cluster for each gradient clipping group
-  OpClusters gradClipClusters;
-  for (auto group : gradClipGroups) {
-    // Use the first op of the group to create the initial op cluster.
-    OpCluster groupCluster({&graph, *group.begin()});
-    group.erase(group.begin());
-    // Add all the other ops in the group into the initial op cluster.
-    for (auto op : group) {
-      groupCluster.absorb({&graph, op});
+  using boost::algorithm::starts_with;
 
-      // There may be a one or two ops before the ReduceSumSquareOps which are
-      // also AccumulateOuterFragment ops. It makes sense to absorb these into
-      // the gradient clipping op clusters.
-      if (op->isConvertibleTo<ReduceSumSquareOp>()) {
-        OpSearchHelper toCheck;
-        toCheck.pushInputProducers(op);
-        while (!toCheck.empty()) {
-          auto x = toCheck.pop();
-          if (x->settings.executionContext ==
-              ExecutionContext::AccumulateOuterFragment) {
-            groupCluster.absorb({&graph, x});
-            toCheck.pushInputProducers(x);
-          }
-        }
+  // Find all the global norm tensors and get their producers.
+  std::vector<Op *> globalNorms;
+  for (auto tid : graph.getTensors().getIds(TensorType::ActGrad)) {
+    if (starts_with(tid, reservedGlobalNormPrefix())) {
+      auto t = graph.getTensors().get(tid);
+      globalNorms.push_back(t->getProducer());
+    }
+  }
+
+  OpClusters gradClipClusters;
+  for (auto globalNormProducer : globalNorms) {
+    // Use the global norm producer to create the initial op cluster.
+    OpCluster gradCluster({&graph, globalNormProducer});
+
+    // Add all ops that preceed the globalNormProducer and are in the
+    // AccumulateOuterFragment. This will catch all the gradient clipping ops
+    // that preceed the globalNormProducer, and also some other ops before
+    // gradient clipping that it makes sense to absord into the gradient
+    // clipping op clusters.
+    OpSearchHelper opSearch;
+    opSearch.pushInputProducers(globalNormProducer);
+    while (!opSearch.empty()) {
+      Op *x = opSearch.pop();
+      if (x->settings.executionContext ==
+          ExecutionContext::AccumulateOuterFragment) {
+        gradCluster.absorb({&graph, x});
+        opSearch.pushInputProducers(x);
       }
     }
-    gradClipClusters.push_back(groupCluster);
+
+    // Add all ops following the globalNormProducer that are flagged as gradient
+    // clipping ops.
+    opSearch.pushOutputConsumers(globalNormProducer);
+    while (!opSearch.empty()) {
+      Op *x = opSearch.pop();
+      if (x->isGradientClippingOp()) {
+        gradCluster.absorb({&graph, x});
+        opSearch.pushOutputConsumers(x);
+      }
+    }
+
+    gradClipClusters.push_back(gradCluster);
   }
 
   return gradClipClusters;
