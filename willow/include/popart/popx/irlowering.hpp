@@ -15,6 +15,7 @@
 
 #include <snap/DataStream.hpp>
 #include <snap/Graph.hpp>
+#include <snap/RemoteBuffer.hpp>
 #include <snap/Tensor.hpp>
 
 #include <popart/aliaszerocopy.hpp>
@@ -197,7 +198,7 @@ private:
 
   // Remote buffers
   std::map<RemoteBufferId,
-           std::pair<poplar::RemoteBuffer, nonstd::optional<snap::Tensor>>>
+           std::pair<snap::RemoteBuffer, nonstd::optional<snap::Tensor>>>
       remoteBuffers;
 
   // Stream tensors are temporary landing pad tensors for host exchanges
@@ -596,7 +597,7 @@ public:
 
   bool hasRemoteBuffer(RemoteBufferId) const;
 
-  const std::pair<poplar::RemoteBuffer, nonstd::optional<snap::Tensor>> &
+  const std::pair<snap::RemoteBuffer, nonstd::optional<snap::Tensor>> &
       getRemoteBuffer(RemoteBufferId) const;
 
   static const std::string getRemoteBufferName(RemoteBufferId);

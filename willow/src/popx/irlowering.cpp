@@ -1366,7 +1366,7 @@ const std::string IrLowering::getRemoteBufferName(RemoteBufferId id) {
   return "RB_" + std::to_string(id);
 }
 
-const std::pair<poplar::RemoteBuffer, nonstd::optional<snap::Tensor>> &
+const std::pair<snap::RemoteBuffer, nonstd::optional<snap::Tensor>> &
 IrLowering::getRemoteBuffer(RemoteBufferId id) const {
   return remoteBuffers.at(id);
 }
@@ -1385,10 +1385,10 @@ void IrLowering::createRemoteBuffer(RemoteBufferId id, snap::Tensor tensor) {
       size,
       repeats);
 
-  remoteBuffers.insert({id,
-                        {graph().getPoplarGraph().addRemoteBuffer(
-                             name, type, size, repeats, true),
-                         nonstd::optional<snap::Tensor>(tensor)}});
+  remoteBuffers.insert(
+      {id,
+       {graph().addRemoteBuffer(name, type, size, repeats, true),
+        nonstd::optional<snap::Tensor>(tensor)}});
 }
 
 bool IrLowering::hasStreamTensor(TensorId tid) const {
