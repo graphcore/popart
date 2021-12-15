@@ -200,7 +200,7 @@ PriTask RngStateLowering::initRngStateTensor() {
 
 PriTask RngStateLowering::rngStateFromHost() {
   auto rngStateFromHostTask = [this]() {
-    auto streamRngFromHost = graph.get().getPoplarGraph().addHostToDeviceFIFO(
+    auto streamRngFromHost = graph.get().addHostToDeviceFIFO(
         "h2d_rngStateTensor",
         poplar::UNSIGNED_INT,
         getCombinedRngStateSize(),
@@ -214,11 +214,10 @@ PriTask RngStateLowering::rngStateFromHost() {
         seqs.getSequence(&irLowering.get().progs.rngStateFromHostFragment());
 
     // Stream newRngState to combinedRngStateTensor
-    seq.getPoplarSequence().add(
-        poplar::program::Copy(streamRngFromHost,
-                              combinedRngStateTensor.getPoplarTensor(),
-                              false,
-                              {"copyStreamRngStateTensor"}));
+    seq.add(snap::program::Copy(streamRngFromHost,
+                                combinedRngStateTensor,
+                                false,
+                                {"copyStreamRngStateTensor"}));
     // Copy first half of combinedRngStateTensor to identicalSeedsRngStateTensor
     seq.add(snap::program::Copy(
         combinedRngStateTensor[0],
@@ -242,7 +241,7 @@ PriTask RngStateLowering::rngStateFromHost() {
 
 PriTask RngStateLowering::rngStateToHost() {
   auto rngStateToHostTask = [this]() {
-    auto streamRngToHost = graph.get().getPoplarGraph().addDeviceToHostFIFO(
+    auto streamRngToHost = graph.get().addDeviceToHostFIFO(
         "d2h_rngStateTensor", poplar::UNSIGNED_INT, getCombinedRngStateSize());
 
     logging::devicex::debug("Initializing RNG d2h.");
@@ -261,11 +260,8 @@ PriTask RngStateLowering::rngStateToHost() {
         false,
         "seedsToRngStateTensor"));
     // Stream combinedRngStateTensor to host
-    seq.getPoplarSequence().add(
-        poplar::program::Copy(combinedRngStateTensor.getPoplarTensor(),
-                              streamRngToHost,
-                              false,
-                              {"rngStateToHost"}));
+    seq.add(snap::program::Copy(
+        combinedRngStateTensor, streamRngToHost, false, {"rngStateToHost"}));
     return seqs;
   };
 

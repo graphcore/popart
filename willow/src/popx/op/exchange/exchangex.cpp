@@ -208,11 +208,9 @@ void HostLoadDescriptorx::exchange(snap::Graph &graph,
         rearrangeOnHost);
     auto stream = streams.at(descriptor.getHostStreamTensorId());
 
-    poplar::program::Copy copy_prog(stream.getPoplarDataStream(),
-                                    streamTensor.getPoplarTensor(),
-                                    rearrangeOnHost,
-                                    context);
-    prog.getPoplarSequence().add(copy_prog);
+    snap::program::Copy copy_prog(
+        stream, streamTensor, rearrangeOnHost, context);
+    prog.add(copy_prog);
 
   } else {
     throw error("Stream for tensor {} not found",
@@ -303,11 +301,9 @@ void HostStoreDescriptorx::exchange(snap::Graph &graph,
                            nElmsStream);
     }
 
-    poplar::program::Copy copy_prog(streamTensor.getPoplarTensor(),
-                                    stream.getPoplarDataStream(),
-                                    rearrangeOnHost,
-                                    context);
-    prog.getPoplarSequence().add(copy_prog);
+    snap::program::Copy copy_prog(
+        streamTensor, stream, rearrangeOnHost, context);
+    prog.add(copy_prog);
 
   } else {
     throw error("Stream for tensor {} not found",

@@ -8,7 +8,7 @@
 namespace popart {
 namespace popx {
 // Pair of copy {source, target} tensor
-using PreparedCopyTensor = std::pair<poplar::Tensor, poplar::Tensor>;
+using PreparedCopyTensor = std::pair<snap::Tensor, snap::Tensor>;
 // IpuCopy input index to source and target tensor pair
 using PreparedCopyTensors = std::map<InIndex, PreparedCopyTensor>;
 

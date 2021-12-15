@@ -17,22 +17,19 @@ IoTileCopyOpx::IoTileCopyOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
 }
 
 void IoTileCopyOpx::grow(snap::program::Sequence &prog) const {
-  poplar::Tensor outTensor =
-      getOutTensor(IoTileCopyOp::getOutIndex()).getPoplarTensor();
-  poplar::Tensor inView =
-      getInView(IoTileCopyOp::getInIndex()).getPoplarTensor();
-  poplar::Tensor outView =
-      getOutView(IoTileCopyOp::getOutIndex()).getPoplarTensor();
+  snap::Tensor outTensor = getOutTensor(IoTileCopyOp::getOutIndex());
+  snap::Tensor inView    = getInView(IoTileCopyOp::getInIndex());
+  snap::Tensor outView   = getOutView(IoTileCopyOp::getOutIndex());
 
   // Write undef the whole output tensor, which can be larger
   // than the getOutView tensor.
-  poplar::program::WriteUndef writeUndef(outTensor);
+  poplar::program::WriteUndef writeUndef(outTensor.getPoplarTensor());
 
   // Copy from view to view
-  poplar::program::Copy outCopy(inView, outView, false, debugContext());
+  snap::program::Copy outCopy(inView, outView, false, debugContext());
 
   prog.getPoplarSequence().add(writeUndef);
-  prog.getPoplarSequence().add(outCopy);
+  prog.add(outCopy);
 }
 
 InputCreatorType IoTileCopyOpx::getInputCreatorType(InIndex index) const {

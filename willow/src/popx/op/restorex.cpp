@@ -81,13 +81,14 @@ snap::Tensor RestoreBaseOpx<Derived>::growStaticSliceRestore(
   // stash is (N, a, b, c). Output is (a, b, c) at index stashIndex.
 
   // Creates (1, a, b, c) tensor.
-  poplar::Tensor actFromStash =
+  snap::Tensor actFromStash = {
       popops::createSliceTensor(graph().getPoplarGraph(),
                                 stash.getPoplarTensor(),
                                 {0},
                                 {1},
                                 1,
-                                debugContext("static-restore/out-slice"));
+                                debugContext("static-restore/out-slice")),
+      graph()};
 
   poplar::program::Switch switchCase(
       stashIndex.reshape({}).getPoplarTensor(),
@@ -97,16 +98,17 @@ snap::Tensor RestoreBaseOpx<Derived>::growStaticSliceRestore(
     const auto inSliceAtIdx = stash.slice(i, i + 1, 0);
     switchCase.add(
         i,
-        poplar::program::Copy(
-            inSliceAtIdx.getPoplarTensor(),
+        snap::program::Copy(
+            inSliceAtIdx,
             actFromStash,
             false,
-            debugContext("static-restore/switch-copy-" + std::to_string(i))));
+            debugContext("static-restore/switch-copy-" + std::to_string(i)))
+            .getPoplarProgram());
   }
 
   prog.getPoplarSequence().add(switchCase);
 
-  return snap::Tensor{actFromStash.squeeze({0}), graph()};
+  return actFromStash.squeeze({0});
 }
 
 template <typename Derived>

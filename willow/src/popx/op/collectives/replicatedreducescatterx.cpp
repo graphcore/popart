@@ -51,22 +51,19 @@ void ReplicatedReduceScatterOpx::grow(snap::program::Sequence &prog) const {
                    c.getPoplarTensor(),
                    prog.getPoplarSequence(),
                    debugContext());
-      auto ref = cbr->undoRearrangeForCollective(c.getPoplarTensor());
+      auto ref = snap::Tensor{
+          cbr->undoRearrangeForCollective(c.getPoplarTensor()), graph()};
       if (hasInViewChangers(ReplicatedReduceScatterOp::getInIndex())) {
-        prog.getPoplarSequence().add(poplar::program::Copy(
+        prog.add(snap::program::Copy(
             getInViewChangers(ReplicatedReduceScatterOp::getInIndex())
                 .apply(toReduceScatter)
-                .getPoplarTensor()
                 .flatten(),
             ref.flatten(),
             false,
             debugContext()));
       } else {
-        prog.getPoplarSequence().add(
-            poplar::program::Copy(toReduceScatter.flatten().getPoplarTensor(),
-                                  ref.flatten(),
-                                  false,
-                                  debugContext()));
+        prog.add(snap::program::Copy(
+            toReduceScatter.flatten(), ref.flatten(), false, debugContext()));
       }
       toReduceScatter = c;
     }

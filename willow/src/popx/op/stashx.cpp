@@ -30,11 +30,12 @@ void StashOpx::growStaticStashUpdate(snap::program::Sequence &prog,
   for (unsigned i = 0; i != hStashSize; ++i) {
     const auto outSliceAtIdx = outTensor.slice(i, i + 1, 0);
     switchCase.add(i,
-                   poplar::program::Copy(inTensor.getPoplarTensor(),
-                                         outSliceAtIdx.getPoplarTensor(),
-                                         false,
-                                         debugContext("static-stash/switch-" +
-                                                      std::to_string(i))));
+                   snap::program::Copy(
+                       inTensor,
+                       outSliceAtIdx,
+                       false,
+                       debugContext("static-stash/switch-" + std::to_string(i)))
+                       .getPoplarProgram());
   }
 
   prog.getPoplarSequence().add(switchCase);

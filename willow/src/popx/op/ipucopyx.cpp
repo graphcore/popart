@@ -54,14 +54,17 @@ PreparedCopyTensors IpuCopyOpx::createPipelinedOutput() const {
 
     // When pipelining, create the copy destination, but don't add the copy
     // program.
-    poplar::Tensor tLocalForCopy, tForCopy;
-    auto t = poputil::createIpuCopy(dv_p->lowering().graph().getPoplarGraph(),
-                                    getInTensor(idx).getPoplarTensor(),
-                                    static_cast<int>(op.getDestIpu()),
-                                    tForCopy,
-                                    tLocalForCopy,
-                                    debugContext("createOutput"));
-    setOutTensor(idx, snap::Tensor{t, dstVirtualGraph(idx)});
+    snap::Tensor tLocalForCopy{{}, srcVirtualGraph(idx)};
+    snap::Tensor tForCopy{{}, dstVirtualGraph(idx)};
+    auto t = snap::Tensor{
+        poputil::createIpuCopy(dv_p->lowering().graph().getPoplarGraph(),
+                               getInTensor(idx).getPoplarTensor(),
+                               static_cast<int>(op.getDestIpu()),
+                               tForCopy.getPoplarTensor(),
+                               tLocalForCopy.getPoplarTensor(),
+                               debugContext("createOutput")),
+        dstVirtualGraph(idx)};
+    setOutTensor(idx, t);
     copyTensors[idx] = {tForCopy, tLocalForCopy};
   }
   return copyTensors;
@@ -80,11 +83,10 @@ void IpuCopyOpx::growPipelined(snap::program::Sequence &prog,
 
     // Using dontOutline=false will ensure the copies (buffers & code) are
     // reused.
-    prog.getPoplarSequence().add(
-        poplar::program::Copy(copyTensors.at(idx).first,
-                              copyTensors.at(idx).second,
-                              false,
-                              debugContext()));
+    prog.add(snap::program::Copy(copyTensors.at(idx).first,
+                                 copyTensors.at(idx).second,
+                                 false,
+                                 debugContext()));
   }
 }
 
