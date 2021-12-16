@@ -39,7 +39,8 @@ HashesMap getCacheEntries(const std::string &cachePath) {
     if (boost::filesystem::is_regular_file(entry)) {
       std::ifstream in(entry.path().string(), std::ifstream::binary);
       try {
-        auto hash = popart::popx::serialization::readExecutableHash(in);
+        popart::popx::serialization::Reader reader(in);
+        auto hash = reader.readExecutableHash();
         cacheEntries.emplace(hash, entry.path().string());
       } catch (const std::exception &e) {
         logging::session::trace("Ignoring invalid cache file {}: {}",
@@ -170,13 +171,11 @@ void Session::loadExecutableFromStream(std::istream &in) {
   bool skipGraphCompilation = true;
   lowering_.reset(new popx::IrLowering(*ir, deviceInfo_, skipGraphCompilation));
 
-  lowering_->loadPoplarExecutable(in);
-
-  executable_ = popx::serialization::deserializeExecutable(in, *ir, *lowering_);
+  popx::serialization::Reader reader(in);
+  lowering_->loadPoplarExecutable(reader);
+  executable_ = reader.deserializeExecutable(*ir, *lowering_);
 
   device_.reset(new popx::Devicex(*executable_, deviceInfo_));
-
-  popx::serialization::moveStreamToEnd(in);
 }
 
 void Session::assertExecutableLoaded() const {

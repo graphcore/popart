@@ -11,6 +11,7 @@
     "trompeloeil"
   ],
   "optional_dependencies": [
+      "popef",
       "poplar",
       "poplibs",
       "popir",

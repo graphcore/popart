@@ -200,13 +200,13 @@ BOOST_AUTO_TEST_CASE(serialize_deserialize) {
     ir.setUserOptions(opts);
     ir.setOnnxModel(modelProto);
     std::ifstream ifs(serializedExecutableFilePath);
-    BOOST_CHECK(popx::serialization::containsExecutable(ifs));
-    BOOST_CHECK(!popx::serialization::containsPoplarExecutable(ifs));
+    popx::serialization::Reader reader(ifs);
+    BOOST_CHECK(reader.containsExecutable());
+    BOOST_CHECK(!reader.containsPoplarExecutable());
 
     bool skipGraphCompilation = true;
     popx::IrLowering ir_lowering(ir, device, skipGraphCompilation);
-    auto deserializedExecutable =
-        popx::serialization::deserializeExecutable(ifs, ir, ir_lowering);
+    auto deserializedExecutable = reader.deserializeExecutable(ir, ir_lowering);
     compare_executables(executable, *deserializedExecutable);
   }
 }
@@ -273,13 +273,13 @@ BOOST_AUTO_TEST_CASE(serialize_deserialize_adam) {
     ir.setOnnxModel(modelProto);
 
     std::ifstream ifs(serializedExecutableFilePath);
-    BOOST_CHECK(popx::serialization::containsExecutable(ifs));
-    BOOST_CHECK(!popx::serialization::containsPoplarExecutable(ifs));
+    popx::serialization::Reader reader(ifs);
+    BOOST_CHECK(reader.containsExecutable());
+    BOOST_CHECK(!reader.containsPoplarExecutable());
 
     bool skipGraphCompilation = true;
     popx::IrLowering ir_lowering(ir, device, skipGraphCompilation);
-    auto deserializedExecutable =
-        popx::serialization::deserializeExecutable(ifs, ir, ir_lowering);
+    auto deserializedExecutable = reader.deserializeExecutable(ir, ir_lowering);
     compare_executables(executable, *deserializedExecutable);
   }
 }
@@ -347,13 +347,13 @@ BOOST_AUTO_TEST_CASE(serialize_deserialize_adam_pre_prepared_ir) {
                 popart::Patterns(PatternsLevel::Default)});
 
     std::ifstream ifs(serializedExecutableFilePath);
-    BOOST_CHECK(popx::serialization::containsExecutable(ifs));
-    BOOST_CHECK(!popx::serialization::containsPoplarExecutable(ifs));
+    popx::serialization::Reader reader(ifs);
+    BOOST_CHECK(reader.containsExecutable());
+    BOOST_CHECK(!reader.containsPoplarExecutable());
 
     bool skipGraphCompilation = true;
     popx::IrLowering ir_lowering(ir, device, skipGraphCompilation);
-    auto deserializedExecutable =
-        popx::serialization::deserializeExecutable(ifs, ir, ir_lowering);
+    auto deserializedExecutable = reader.deserializeExecutable(ir, ir_lowering);
     compare_executables(executable, *deserializedExecutable);
   }
 }
@@ -424,17 +424,17 @@ BOOST_AUTO_TEST_CASE(
                 popart::Patterns(PatternsLevel::Default)});
 
     std::ifstream ifs(serializedExecutableFilePath);
-    BOOST_CHECK(popx::serialization::containsExecutable(ifs));
-    BOOST_CHECK(!popx::serialization::containsPoplarExecutable(ifs));
+    popx::serialization::Reader reader(ifs);
+    BOOST_CHECK(reader.containsExecutable());
+    BOOST_CHECK(!reader.containsPoplarExecutable());
 
     bool skipGraphCompilation = true;
     popx::IrLowering ir_lowering(ir, device, skipGraphCompilation);
 
     // Ir passed by reference to 'deserializeExecutable' has different
     // 'additionalModelProtoTensors' to Ir used to serialize executable.
-    BOOST_CHECK_THROW(
-        popx::serialization::deserializeExecutable(ifs, ir, ir_lowering),
-        popart::error);
+    BOOST_CHECK_THROW(reader.deserializeExecutable(ir, ir_lowering),
+                      popart::error);
   }
 }
 
@@ -571,12 +571,12 @@ BOOST_AUTO_TEST_CASE(
     ir.setUserOptions(opts);
     ir.setOnnxModel(modelProto);
     std::ifstream ifs(serializedExecutableFilePath);
-    BOOST_CHECK(popx::serialization::containsExecutable(ifs));
-    BOOST_CHECK(!popx::serialization::containsPoplarExecutable(ifs));
+    popx::serialization::Reader reader(ifs);
+    BOOST_CHECK(reader.containsExecutable());
+    BOOST_CHECK(!reader.containsPoplarExecutable());
     bool skipGraphCompilation = true;
     popx::IrLowering ir_lowering(ir, device, skipGraphCompilation);
-    auto deserializedExecutable =
-        popx::serialization::deserializeExecutable(ifs, ir, ir_lowering);
+    auto deserializedExecutable = reader.deserializeExecutable(ir, ir_lowering);
     compare_executables(executable, *deserializedExecutable);
   }
 }

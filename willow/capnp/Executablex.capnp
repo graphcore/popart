@@ -38,13 +38,6 @@ struct CollectiveBalancedHostRearrangements{
   }
 }
 
-struct Header{
-  hash @0 :UInt64;
-  popartExeOffset @1 :Int64;
-  poplarExeOffset @2 :Int64;
-  totalSize @3 :Int64;
-}
-
 struct Executablex{
   irLowering @0: IrLowering.IrLowering;
   tensors @1: List(Tensor);

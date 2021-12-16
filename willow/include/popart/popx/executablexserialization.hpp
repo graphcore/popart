@@ -7,11 +7,27 @@
 #include <set>
 
 #include <iostream>
-#include <popart/popx/irlowering.hpp>
+
+namespace poplar {
+// Forward declaration.
+class Executable;
+} // namespace poplar
 
 namespace popart {
+
+// Forward declaration.
+class Ir;
+
 namespace popx {
+
+// Forward declaration.
+class IrLowering;
+class Executablex;
+
 namespace serialization {
+
+// Forward declaration.
+class ReaderImpl;
 
 // Serialize both the poplar executable, popart executable and the
 // hash to the given ostream.
@@ -21,40 +37,31 @@ void serializeExecutable(std::ostream &out,
                          const popart::popx::Executablex *executable,
                          size_t hash);
 
-// Returns the executable hash or 0 if the stream doesn't point at a valid
-// serialized Header.
-// The input stream must be pointing at the beginning of a Header
-// Note: this function will not change the stream position
-size_t readExecutableHash(std::istream &in);
+class Reader {
+public:
+  Reader(const std::istream &in);
+  ~Reader();
 
-// Return true if the stream contains a Poplar executable
-// The input stream must be pointing at the beginning of a Header
-// Note: this function will not change the stream position
-bool containsPoplarExecutable(std::istream &in);
+  // Returns the executable hash or 0 if the stream contains
+  // corrupted data
+  size_t readExecutableHash();
 
-// Return true if the stream contains a Popart executable
-// The input stream must be pointing at the beginning of a Header
-// Note: this function will not change the stream position
-bool containsExecutable(std::istream &in);
+  // Return true if the stream contains a Poplar executable
+  bool containsPoplarExecutable();
 
-// Move the given stream to the end of the data.
-// The input stream must be pointing at the beginning of a Header
-void moveStreamToEnd(std::istream &in);
+  // Return true if the stream contains a Popart executable
+  bool containsExecutable();
 
-// Load a popart executable from the given stream.
-//
-// The input stream must be pointing at the beginning of a Header
-// Note: this function will not change the stream position
-std::unique_ptr<popart::popx::Executablex>
-deserializeExecutable(std::istream &in,
-                      popart::Ir &ir,
-                      popart::popx::IrLowering &lowering);
+  // Load a poplar executable
+  poplar::Executable deserializePoplarExecutable();
 
-// Load a popart executable from the given stream.
-//
-// The input stream must be pointing at the beginning of a Header
-// Note: this function will not change the stream position
-poplar::Executable deserializePoplarExecutable(std::istream &in);
+  // Load a popart executable
+  std::unique_ptr<popart::popx::Executablex>
+  deserializeExecutable(popart::Ir &ir, popart::popx::IrLowering &lowering);
+
+private:
+  std::unique_ptr<ReaderImpl> _impl;
+};
 
 } // namespace serialization
 } // namespace popx

@@ -1,5 +1,7 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
 
+#include <algorithm>
+
 #include <onnxutil.hpp>
 #include <popart/graph.hpp>
 #include <popart/intervals.hpp>
@@ -20,6 +22,11 @@
 #include <popart/popx/irlowering.hpp>
 #include <popart/popx/op/collectives/collectivesx.hpp>
 
+#include <popart/vendored/optional.hpp>
+
+#include <popef/Reader.hpp>
+#include <popef/Writer.hpp>
+
 #include <gcl/CollectiveBalancedReorder.hpp>
 
 #include <capnp/compat/json.h>
@@ -37,19 +44,7 @@ namespace popx {
 namespace serialization {
 namespace {
 
-struct Header {
-  Header(kj::std::StdInputStream &sis) {
-    capnp::InputStreamMessageReader message(sis);
-    auto header     = message.getRoot<popart::popx::cap::Header>();
-    hash            = header.getHash();
-    poplarExeOffset = header.getPoplarExeOffset();
-    popartExeOffset = header.getPopartExeOffset();
-  }
-  size_t hash;
-  int64_t poplarExeOffset;
-  int64_t popartExeOffset;
-  int64_t totalSize;
-};
+const std::string popartOpaqueName("popart");
 
 popart::cap::TensorType toCapnpTensorType(popart::TensorType type) {
   switch (type) {
@@ -460,117 +455,12 @@ void serializePopartExecutable(std::ostream &out,
   kj::std::StdOutputStream sos(out);
   capnp::writeMessage(sos, message);
 }
-} // namespace
-
-void serializeExecutable(std::ostream &out,
-                         const poplar::Executable *poplarExecutable,
-                         const popart::popx::Executablex *executable,
-                         size_t hash) {
-  std::streampos start = out.tellp();
-  kj::std::StdOutputStream sos(out);
-  ::capnp::MallocMessageBuilder message;
-
-  auto headerBuilder = message.initRoot<popart::popx::cap::Header>();
-  headerBuilder.setHash(hash);
-  headerBuilder.setPoplarExeOffset(0);
-  headerBuilder.setPopartExeOffset(0);
-  headerBuilder.setTotalSize(0);
-  int64_t popartOffset = 0;
-  int64_t poplarOffset = 0;
-
-  // placeholder
-  capnp::writeMessage(sos, message);
-
-  // Export Popart IR
-  if (executable) {
-    popartOffset = out.tellp() - start;
-    serializePopartExecutable(out, *executable);
-  }
-
-  // Export Poplar executable
-  if (poplarExecutable) {
-    poplarOffset = out.tellp() - start;
-    poplarExecutable->serialize(out);
-  }
-  auto totalSize = out.tellp() - start;
-
-  // Move back to the beginning of the file and write the real header
-  // now that we know the offsets.
-  out.seekp(start);
-  headerBuilder.setPoplarExeOffset(poplarOffset);
-  headerBuilder.setPopartExeOffset(popartOffset);
-  headerBuilder.setTotalSize(totalSize);
-  capnp::writeMessage(sos, message);
-
-  // Move the stream position back to the end.
-  out.seekp(start + totalSize);
-}
-
-size_t readExecutableHash(std::istream &in) {
-  auto start = in.tellg();
-  kj::std::StdInputStream sis(in);
-  Header header{sis};
-  // Reset feed position
-  in.clear(); // Just in case we reached eof
-  in.seekg(start);
-
-  return header.hash;
-}
-
-bool containsPoplarExecutable(std::istream &in) {
-  auto start = in.tellg();
-  kj::std::StdInputStream sis(in);
-  Header header{sis};
-  // Reset feed position
-  in.clear(); // Just in case we reached eof
-  in.seekg(start);
-
-  return header.poplarExeOffset != 0;
-}
-
-bool containsExecutable(std::istream &in) {
-  auto start = in.tellg();
-  kj::std::StdInputStream sis(in);
-  Header header{sis};
-  // Reset feed position
-  in.clear(); // Just in case we reached eof
-  in.seekg(start);
-
-  return header.popartExeOffset != 0;
-}
-
-poplar::Executable deserializePoplarExecutable(std::istream &in) {
-  auto start = in.tellg();
-
-  kj::std::StdInputStream sis(in);
-  Header header{sis};
-
-  in.seekg(start + header.poplarExeOffset);
-  auto exe = poplar::Executable::deserialize(in);
-  // Reset feed position
-  in.clear(); // Just in case we reached eof
-  in.seekg(start);
-  return exe;
-}
-
-void moveStreamToEnd(std::istream &in) {
-  auto start = in.tellg();
-
-  kj::std::StdInputStream sis(in);
-  Header header{sis};
-
-  in.seekg(start + header.totalSize);
-}
 
 std::unique_ptr<popart::popx::Executablex>
-deserializeExecutable(std::istream &in,
-                      popart::Ir &ir,
-                      popart::popx::IrLowering &lowering) {
-  auto start = in.tellg();
-
+deserializePopartMetadata(std::istream &in,
+                          popart::Ir &ir,
+                          popart::popx::IrLowering &lowering) {
   kj::std::StdInputStream sis(in);
-  Header header{sis};
-  in.seekg(start + header.popartExeOffset);
 
   capnp::ReaderOptions opts;
   // Increase default size from 64 MB to handle larger models.
@@ -716,10 +606,170 @@ deserializeExecutable(std::istream &in,
       std::move(cbrHostRearrangementIds),
       std::move(cbrHostRearrangements));
 
-  // Reset feed position
-  in.clear(); // Just in case we reached eof
-  in.seekg(start);
   return exe;
+}
+} // namespace
+
+void serializeExecutable(std::ostream &out,
+                         const poplar::Executable *poplarExecutable,
+                         const popart::popx::Executablex *executable,
+                         size_t hash) {
+  const std::string programHash = std::to_string(hash);
+  popef::Writer popefWriter(out);
+
+  // Export Popart specific data
+  if (executable) {
+    std::shared_ptr<popef::BlobWriter> popefOpaque =
+        popefWriter.createOpaqueBlob(popartOpaqueName, programHash);
+    serializePopartExecutable(popefOpaque->stream, *executable);
+  }
+
+  // Export Poplar executable
+  if (poplarExecutable) {
+    static constexpr bool compress = false;
+    std::shared_ptr<popef::BlobWriter> popefExe =
+        popefWriter.createExecutable(programHash, compress);
+    poplarExecutable->serialize(popefExe->stream);
+  }
+}
+
+class ReaderImpl {
+public:
+  template <typename T>
+  using optional_ref    = nonstd::optional<std::reference_wrapper<T>>;
+  using OpaqueReaderOpt = optional_ref<const popef::OpaqueReader>;
+  using ExecReaderOpt   = optional_ref<const popef::ExecutableReader>;
+  using OpaqueReaderIt  = std::vector<popef::OpaqueReader>::const_iterator;
+  using ExecReaderIt    = std::vector<popef::ExecutableReader>::const_iterator;
+
+  ReaderImpl(const std::istream &in)
+      : popefReader(setupReader(in)), popartMetadata(findPopartMetadata()),
+        poplarExecutable(findPoplarExecutable()), hash(getExecutableHash()) {}
+
+  popef::Reader popefReader;
+  OpaqueReaderOpt popartMetadata;
+  ExecReaderOpt poplarExecutable;
+  size_t hash;
+
+private:
+  popef::Reader setupReader(const std::istream &in) {
+    auto in_ptr = std::make_shared<std::istream>(in.rdbuf());
+    popef::Reader reader;
+    reader.parseStream(in_ptr);
+    return reader;
+  }
+
+  OpaqueReaderOpt findPopartMetadata() {
+    auto popartOpaqueMatcher = [](const popef::OpaqueReader &opaque) {
+      return opaque.name.find(popartOpaqueName) != std::string::npos;
+    };
+
+    const std::vector<popef::OpaqueReader> &opaques = popefReader.opaqueBlobs();
+    const int numOfMatchedPopartMetadata =
+        std::count_if(opaques.begin(), opaques.end(), popartOpaqueMatcher);
+    if (numOfMatchedPopartMetadata > 1) {
+      throw error("Contains more than one Popart metadata");
+    }
+    OpaqueReaderIt opaqueIt =
+        std::find_if(opaques.begin(), opaques.end(), popartOpaqueMatcher);
+
+    const bool opaqueExists = opaqueIt != opaques.end();
+    return opaqueExists ? OpaqueReaderOpt(*opaqueIt) : nonstd::nullopt;
+  }
+
+  ExecReaderOpt findPoplarExecutable() {
+    const std::vector<popef::ExecutableReader> &execs =
+        popefReader.executables();
+
+    ExecReaderIt execIt = execs.end();
+    if (popartMetadata.has_value()) {
+      auto poplarExecMatcher =
+          [this](const popef::ExecutableReader &executable) {
+            return executable.name == popartMetadata->get().executable;
+          };
+
+      const int numOfMatchedPoplarExecs =
+          std::count_if(execs.begin(), execs.end(), poplarExecMatcher);
+      if (numOfMatchedPoplarExecs > 1) {
+        throw error("The file contains more than one poplar executables "
+                    "that matches popart metadata.");
+      }
+
+      execIt = std::find_if(execs.begin(), execs.end(), poplarExecMatcher);
+    } else {
+      if (execs.size() > 1) {
+        throw error("The popart metadata associated with poplar "
+                    "executable does not exist and the popef file "
+                    "contains more than one executable, hence the "
+                    "correct one cannot be selected.");
+      }
+      execIt = execs.begin();
+    }
+
+    const bool executableExists = execIt != execs.end();
+    ExecReaderOpt execReader =
+        executableExists ? ExecReaderOpt(*execIt) : nonstd::nullopt;
+    return execReader;
+  }
+
+  size_t getExecutableHash() {
+    size_t hash = 0;
+
+    if (!poplarExecutable.has_value() && !popartMetadata.has_value()) {
+      throw error(
+          "The file contains neither poplar executable nor popart metadata.");
+    }
+
+    const std::string &hashString = poplarExecutable.has_value()
+                                        ? poplarExecutable->get().name
+                                        : popartMetadata->get().executable;
+
+    std::stringstream ss(hashString);
+    ss >> hash;
+    if (ss.fail()) {
+      throw error("Neither the poplar executable nor the popart metadata "
+                  "contains a hash number.");
+    }
+
+    return hash;
+  }
+};
+
+Reader::Reader(const std::istream &in)
+    : _impl(std::make_unique<ReaderImpl>(in)) {}
+Reader::~Reader() = default;
+
+size_t Reader::readExecutableHash() { return _impl->hash; }
+
+bool Reader::containsPoplarExecutable() {
+  return _impl->poplarExecutable.has_value();
+}
+
+bool Reader::containsExecutable() { return _impl->popartMetadata.has_value(); }
+
+poplar::Executable Reader::deserializePoplarExecutable() {
+  if (!containsPoplarExecutable()) {
+    throw error("The file does not contain poplar executable.");
+  }
+
+  const popef::ExecutableReader &exeReader = _impl->poplarExecutable->get();
+  return poplar::Executable::deserialize(
+      std::move(exeReader.getStandaloneExecutableStream()));
+}
+
+std::unique_ptr<popart::popx::Executablex>
+Reader::deserializeExecutable(popart::Ir &ir,
+                              popart::popx::IrLowering &lowering) {
+  if (!containsExecutable()) {
+    throw error("The file does not contain popart metadata.");
+  }
+
+  const popef::OpaqueReader &metadataReader = _impl->popartMetadata->get();
+  std::unique_ptr<std::istream> opaque_stream(
+      std::move(metadataReader.getStandaloneDataStream()));
+  auto popartMetadata = deserializePopartMetadata(*opaque_stream, ir, lowering);
+
+  return popartMetadata;
 }
 
 } // namespace serialization

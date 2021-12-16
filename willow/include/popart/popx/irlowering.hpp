@@ -44,9 +44,14 @@
 
 namespace popart {
 namespace liveness {
+// Forward declaration.
 class LivenessAnalyzer;
 } // namespace liveness
 namespace popx {
+namespace serialization {
+// Forward declaration.
+class Reader;
+} // namespace serialization
 
 // Forward declaration.
 class RngStateLowering;
@@ -419,9 +424,9 @@ public:
   // Prepares the graph ready for poplar compilation
   void prepareGraph();
 
-  // Load a poplar::Executable from a stream and set
-  // `this->cachedExecutable'.
-  void loadPoplarExecutable(std::istream &in);
+  // Load a poplar::Executable using reader object
+  // and set `this->cachedExecutable'.
+  void loadPoplarExecutable(serialization::Reader &reader);
 
   // Either return the executable in cachedExecutable
   // or compile `rootGraph' and try to save the generated executable before

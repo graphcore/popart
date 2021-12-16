@@ -112,7 +112,8 @@ list(TRANSFORM boost_components PREPEND Boost:: OUTPUT_VARIABLE boost_targets)
 list(APPEND boost_targets Boost::boost)
 
 find_package(spdlog 1.8.0 REQUIRED)
- 
+
+find_package(popef REQUIRED)
 find_package(poplar REQUIRED)
 find_package(popir REQUIRED)
 find_package(poplibs REQUIRED)

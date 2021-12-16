@@ -3423,11 +3423,10 @@ poplar::Executable IrLowering::getExecutable() {
   }
 }
 
-void IrLowering::loadPoplarExecutable(std::istream &in) {
+void IrLowering::loadPoplarExecutable(serialization::Reader &reader) {
   POPART_TRACEPOINT();
 
-  cachedExecutable.emplace(
-      popx::serialization::deserializePoplarExecutable(in));
+  cachedExecutable.emplace(reader.deserializePoplarExecutable());
   usingCachedExecutable_ = true;
 }
 
