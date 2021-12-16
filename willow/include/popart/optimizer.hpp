@@ -58,7 +58,7 @@ getOptMap(const std::map<std::string, std::pair<float, bool>> &m);
 
 template <typename... Args>
 runtime_error optimizer_replacement_error(const std::string &s,
-                                          const Args &...args) {
+                                          const Args &... args) {
   return runtime_error("New optimizer is not a valid replacement. " + s,
                        args...);
 }
@@ -240,10 +240,10 @@ private:
   OptimizerValue ls;
   std::vector<ClipNormSettings> clipNormSettings;
 
-  bool enableGradientAccumulation;
-  bool meanReduction;
-  bool postMeanAccumulation;
-  bool postMeanReplication;
+  bool enableGradientAccumulation{false};
+  bool meanReduction{false};
+  bool postMeanAccumulation{false};
+  bool postMeanReplication{false};
   int64_t accumulationFactor;
   int64_t replicatedGraphCount;
 
