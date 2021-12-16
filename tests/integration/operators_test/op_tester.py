@@ -108,6 +108,7 @@ def op_tester(tmpdir):
             self.equal_nan = False
             self.inplacing = True
             self.lossReduction = popart.ReductionType.Mean
+            self.device = None
 
             # TODO (T33079): This can be removed when all tests pass model validation.
             self.check_model = False
@@ -152,6 +153,11 @@ def op_tester(tmpdir):
             if enableRuntimeAsserts is not None:
                 self.patterns.enableRuntimeAsserts(enableRuntimeAsserts)
 
+        def tearDown(self):
+            """ Clear up resources, fixture is no longer needed. """
+            if self.device is not None:
+                self.device.detach()
+
         def run(self,
                 init_builder,
                 reference,
@@ -180,19 +186,19 @@ def op_tester(tmpdir):
             self.options.logDir = self.logging_dir
 
             if self.tilesPerIPU is not None:
-                device = tu.create_test_device(numIpus=self.numIPUs,
-                                               tilesPerIPU=self.tilesPerIPU)
-                print(f"Created device {device} with {self.numIPUs}"
+                self.device = tu.create_test_device(
+                    numIpus=self.numIPUs, tilesPerIPU=self.tilesPerIPU)
+                print(f"Created device {self.device} with {self.numIPUs}"
                       f" IPUs and {self.tilesPerIPU} tiles per IPU")
             else:
-                device = tu.create_test_device(numIpus=self.numIPUs)
-                print(f"Created device {device} with {self.numIPUs} IPUs")
+                self.device = tu.create_test_device(numIpus=self.numIPUs)
+                print(f"Created device {self.device} with {self.numIPUs} IPUs")
 
             self.patterns.InPlace = self.inplacing
             if step_type == 'infer':
                 session = popart.InferenceSession(fnModel=bld.getModelProto(),
                                                   dataFlow=dataFlow,
-                                                  deviceInfo=device,
+                                                  deviceInfo=self.device,
                                                   patterns=self.patterns,
                                                   userOptions=self.options)
             else:
@@ -207,7 +213,7 @@ def op_tester(tmpdir):
                                                  dataFlow=dataFlow,
                                                  loss=lossId,
                                                  optimizer=optimizer,
-                                                 deviceInfo=device,
+                                                 deviceInfo=self.device,
                                                  patterns=self.patterns,
                                                  userOptions=self.options)
 
@@ -301,4 +307,6 @@ def op_tester(tmpdir):
 
             return session
 
-    return OpTester(str(tmpdir))
+    op_tester = OpTester(str(tmpdir))
+    yield op_tester
+    op_tester.tearDown()
