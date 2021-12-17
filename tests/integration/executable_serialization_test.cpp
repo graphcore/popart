@@ -868,9 +868,35 @@ BOOST_AUTO_TEST_CASE(session_run_on_ipu_from_offlineipu_serialized_exe) {
   std::vector<float> A_readback1(A_info.nelms(), -9.0f);
   std::vector<float> B_readback1(B_info.nelms(), -99.0f);
 
-  auto initialDevice   = popart::createTestDevice(TestDeviceType::Hw);
-  auto initialDeviceId = initialDevice->getId();
+  auto devManager = popart::DeviceManager::createDeviceManager();
+  devManager.setOnDemandAttachTimeout(900);
+  std::vector<std::shared_ptr<popart::DeviceInfo>> devices;
+
+  // NOTE: We work out the devices we will use ahead of time so we don't have
+  // to rely on the mechanism that the second device will be different from the
+  // first device because we're still attached to the first device, as this can
+  // contribute to deadlocks.
+  devManager.enumerate(devices,
+                       1,
+                       SyncPattern::Full,
+                       DeviceType::Ipu,
+                       DeviceConnectionType::OnDemand,
+                       0);
+
+  BOOST_REQUIRE(devices.size() >= 2);
+
+  int initialDeviceId = 0;
+  std::string initialDeviceArchString;
+
   {
+
+    auto initialDevice =
+        devManager.tryAcquireDeviceById(devices.at(0)->getId(),
+                                        SyncPattern::Full,
+                                        DeviceConnectionType::OnDemand);
+    BOOST_REQUIRE(initialDevice);
+    initialDeviceId         = initialDevice->getId();
+    initialDeviceArchString = initialDevice->getTarget().getTargetArchString();
 
     // Engine caching is enabled so this session will store
     // the serialized PopART state and poplar executable
@@ -907,13 +933,12 @@ BOOST_AUTO_TEST_CASE(session_run_on_ipu_from_offlineipu_serialized_exe) {
   size_t irBundleHash1     = 0;
   std::string cacheFile;
   {
-    const auto &archString = initialDevice->getTarget().getTargetArchString();
-    initialDevice->setOnDemandAttachTimeout(0);
-    auto device = popart::createTestDevice(TestDeviceType::OfflineIpu,
-                                           1,
-                                           0,
-                                           SyncPattern::Full,
-                                           {{"ipuVersion", archString}});
+    auto device =
+        popart::createTestDevice(TestDeviceType::OfflineIpu,
+                                 1,
+                                 0,
+                                 SyncPattern::Full,
+                                 {{"ipuVersion", initialDeviceArchString}});
 
     // Engine caching is enabled so this session will store
     // the serialized PopART state and poplar executable
@@ -950,15 +975,13 @@ BOOST_AUTO_TEST_CASE(session_run_on_ipu_from_offlineipu_serialized_exe) {
   size_t irBundleHash2     = 0;
   int deserializedDeviceId = -1;
   {
-    // Ensure that this device connects immediately so that deserialized
-    // executable runs on a different device. This forces data to be copied
-    // instead of relying on unchanged memory on the device.
-    auto device          = popart::createTestDevice(TestDeviceType::Hw,
-                                           1,
-                                           0,
-                                           SyncPattern::Full,
-                                           {},
-                                           DeviceConnectionType::Always);
+    // Run on a different device to the initialDevice. This forces data to be
+    // copied instead of relying on unchanged memory on the device.
+    auto device =
+        devManager.tryAcquireDeviceById(devices.at(1)->getId(),
+                                        SyncPattern::Full,
+                                        DeviceConnectionType::OnDemand);
+    BOOST_REQUIRE(device);
     deserializedDeviceId = device->getId();
     BOOST_REQUIRE_NE(initialDeviceId, deserializedDeviceId);
 

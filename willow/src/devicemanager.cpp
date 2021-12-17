@@ -54,6 +54,23 @@ void DeviceManager::registerDeviceProvider(DeviceProvider *provider) {
   providers.push_back(provider);
 }
 
+void DeviceManager::enumerate(
+    std::vector<std::shared_ptr<popart::DeviceInfo>> &devices,
+    unsigned requiredNumIPUs,
+    SyncPattern syncPattern,
+    DeviceType type,
+    DeviceConnectionType connectionType,
+    uint32_t requiredTilesPerIPU) {
+  for (auto provider : providers) {
+    provider->enumerate(devices,
+                        requiredNumIPUs,
+                        syncPattern,
+                        type,
+                        connectionType,
+                        requiredTilesPerIPU);
+  }
+}
+
 std::shared_ptr<DeviceInfo>
 DeviceManager::getDevice(SyncPattern syncPattern,
                          unsigned deviceManagerId,
@@ -212,6 +229,7 @@ DeviceManager::tryAcquireDeviceById(int id,
   }
 
   auto device = getDevice(pattern, id, connectionType);
+  device->setOnDemandAttachTimeout(attachTimeout);
 
   // Attach to the device. Will succeed if available
   if (connectionType == DeviceConnectionType::Always) {

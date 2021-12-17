@@ -171,6 +171,17 @@ public:
   void registerDeviceProvider(DeviceProvider *provider);
 
   /**
+   * See DeviceProvider::enumerate.
+   **/
+  virtual void
+  enumerate(std::vector<std::shared_ptr<popart::DeviceInfo>> &devices,
+            unsigned requiredNumIPUs,
+            SyncPattern syncPattern,
+            DeviceType type,
+            DeviceConnectionType connectionType,
+            uint32_t requiredTilesPerIPU);
+
+  /**
    * Get the Device object of a device by ID.
    *
    * \param syncPattern Sync pattern.
