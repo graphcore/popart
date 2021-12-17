@@ -238,7 +238,7 @@ public:
   void saveInitializersExternally(const std::vector<TensorId> &ids,
                                   const std::string &fn);
 
-  std::string getModelProto() const;
+  std::string getModelProto(bool humanReadable) const;
 
   std::vector<TensorId> getInputTensorIds() const;
 

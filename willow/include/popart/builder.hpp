@@ -1635,9 +1635,11 @@ public:
   /**
    * Retrieve the ONNX serialized ModelProto.
    *
+   * \param humanReadable If true, return a human readable text representation
+   *                      of the model, otherwise use a binary format.
    * \return A serialized ONNX ModelProto.
    */
-  std::string getModelProto() const;
+  std::string getModelProto(bool humanReadable = false) const;
 
   /**
    * Save the builder's ONNX ModelProto into the builder and validate it.

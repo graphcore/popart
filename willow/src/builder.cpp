@@ -1626,7 +1626,9 @@ void Builder::saveInitializersExternally(const std::vector<TensorId> &ids,
   impl_->saveInitializersExternally(ids, fn);
 }
 
-std::string Builder::getModelProto() const { return impl_->getModelProto(); }
+std::string Builder::getModelProto(bool humanReadable) const {
+  return impl_->getModelProto(humanReadable);
+}
 
 std::vector<TensorId> Builder::getInputTensorIds() const {
   return impl_->getInputTensorIds();

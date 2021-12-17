@@ -1149,9 +1149,13 @@ void BuilderImpl::saveInitializersExternally(const std::vector<TensorId> &ids,
   onnxutil::saveInitializersExternally(model_, ids, fn);
 }
 
-std::string BuilderImpl::getModelProto() const {
+std::string BuilderImpl::getModelProto(bool humanReadable) const {
   std::string output;
-  model_.SerializeToString(&output);
+  if (humanReadable) {
+    output = model_.DebugString();
+  } else {
+    model_.SerializeToString(&output);
+  }
   return output;
 }
 
