@@ -9,20 +9,31 @@ from popart.ir.ops.utils import check_in_graph
 __all__ = ["replicated_reduce_scatter"]
 
 
-def replicated_reduce_scatter(t: Tensor,
-                              remote_arg: Optional[Tensor] = None,
-                              op: CollectiveOps = 'add',
-                              group: Optional[CommGroup] = None) -> Tensor:
+def replicated_reduce_scatter(
+        t: Tensor,
+        op: CollectiveOps = 'add',
+        group: Optional[CommGroup] = None,
+        configure_output_for_replicated_tensor_sharding=False,
+        link: Optional[Tensor] = None) -> Tensor:
     """Reduces tensor `t` across replicas. Each replica will only receive a unique slice of `t`.
 
     Args:
         t (Tensor): Tensor to be reduced. Inputs will be flattened.
-        remote_arg (Optional[Tensor]):The tensor associated with a remote variable, 
-            returned from remote_variable/remote_replica_sharded_variable.
         op (str, optional): Operation to reduce with. Defaults to 'add'.
             Options: 'add', 'mean', 'mul', 'min', 'max', 'and', 'or', 'square_add', 'local'.
         group (Optional[CommGroup]): Replicas to reduce across. Defaults to All replicas.
-
+        configure_output_for_replicated_tensor_sharding (Optional[bool]): Configures the output to be a replica sharded tensor. Defaults to false.
+            Replicated tensor sharded tensors do not follow the data element order of the original tensor, and can only be
+            used in operations that belong to the same replicated tensor sharding group, where all tensor inputs
+            follow the same data order.
+        link (Optional[Tensor]): The tensor to link the collective operation with other collective
+            operations for replicated tensor sharding. All collective operations, whose link tensor
+            leads to the same root tensor in the graph, are added to the same replicated tensor
+            sharding group such that their input/output tensors have compatible data orders.
+            (such that elementwise operations on the sharded tensor give the semantically correct result).
+            The input is optional, if omitted, the group will be determined heuristically.
+            The tensor is used for graph traversal only and not consumed by the Op, therefore
+            shape and data type do not matter.
     Returns:
         Tensor: A slice of the reduced tensor. Always a 1D tensor.
     """
@@ -42,11 +53,11 @@ def replicated_reduce_scatter(t: Tensor,
                                   _ir.NumInputs(1, 2), 1)
 
     ins: Dict[int, str] = {0: t.id}
-    if remote_arg is not None:
-        ins[1] = remote_arg.id
+    if link is not None:
+        ins[1] = link.id
 
     op = pb_g.createConnectedOp_ReplicatedReduceScatterOp(
         ins, {0: g._create_tensor_id(t.name + "_reduce_scattered")}, opid, op,
-        group, settings)
+        group, configure_output_for_replicated_tensor_sharding, settings)
 
     return Tensor._from_pb_tensor(op.outTensor(0))

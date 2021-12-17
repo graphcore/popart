@@ -339,6 +339,7 @@ IrLowering::IrLowering(const Ir &ir,
                        std::shared_ptr<DeviceInfo> deviceInfo_,
                        bool prepareGraphHasBeenCalled)
     : _ir(ir), deviceInfo(deviceInfo_), progressLogger(ir.getSessionOptions()),
+      replicatedTensorShardingBundle(_ir),
       prepareGraphHasBeenCalled_(prepareGraphHasBeenCalled),
       tileCounterGraphConstVar(0), tileCounterGraphScalarVar(-1), tensors_(ir),
       progs(PopPrograms(this)), rngStateLowering() {
@@ -1399,23 +1400,6 @@ snap::Tensor IrLowering::getStreamTensor(TensorId tid) const {
 }
 void IrLowering::setStreamTensor(TensorId tid, snap::Tensor t) {
   streamTensors[tid] = t;
-}
-
-std::shared_ptr<gcl::CollectiveBalancedReorder>
-IrLowering::getCollectiveBalancedReorder(TensorId tensor_id) {
-  return collectiveReorders[tensor_id];
-}
-
-const gcl::CollectiveBalancedHostRearrangement &
-IrLowering::getCollectiveBalancedHostRearrangement(
-    const TensorId &tensor_id) const {
-  return collectiveReorders.at(tensor_id)->getHostRearrangement();
-}
-
-void IrLowering::setCollectiveBalancedReorder(
-    TensorId tensor_id,
-    std::shared_ptr<gcl::CollectiveBalancedReorder> cbr) {
-  collectiveReorders[tensor_id] = cbr;
 }
 
 int IrLowering::getNumFragments(const Graph &graph) const {

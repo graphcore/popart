@@ -7,6 +7,7 @@
 #include <popart/op/collectives/collectives.hpp>
 #include <popart/popx/popopx.hpp>
 #include <popart/popx/viewchangers.hpp>
+#include <popart/replicatedtensorsharding.hpp>
 
 #include <popops/CollectiveTypes.hpp>
 
@@ -38,8 +39,9 @@ struct ReorderMetadata {
 // serves to provide an IR-compatible view of the tensor
 class ReplicatedGatherInScatterOutViewChanger : public ViewChanger {
 public:
-  ReplicatedGatherInScatterOutViewChanger(int64_t nelms_,
-                                          const std::set<TensorId> group_)
+  ReplicatedGatherInScatterOutViewChanger(
+      int64_t nelms_,
+      ReplicatedTensorShardingGroupId group_)
       : nelms(nelms_), group(group_) {}
   snap::Tensor apply(snap::Tensor tensor) const final {
     return tensor.slice(0, nelms, 0);
@@ -56,7 +58,7 @@ public:
 
 private:
   int64_t nelms;
-  std::set<TensorId> group;
+  ReplicatedTensorShardingGroupId group;
 };
 
 // If the (tile-balanced) input/output to a collective op is rearranged and/or
@@ -68,7 +70,7 @@ class ReplicatedGatherOutScatterInViewChanger : public ViewChanger {
 public:
   ReplicatedGatherOutScatterInViewChanger(
       const gcl::CollectiveBalancedReorder *cbr_,
-      const std::set<TensorId> group_)
+      ReplicatedTensorShardingGroupId group_)
       : cbr(cbr_), group(group_) {}
   snap::Tensor apply(snap::Tensor tensor) const final {
     return snap::Tensor{
@@ -87,7 +89,7 @@ public:
 
 private:
   const gcl::CollectiveBalancedReorder *cbr;
-  std::set<TensorId> group;
+  ReplicatedTensorShardingGroupId group;
 };
 
 class CollectivesBaseOpx : public PopOpx {
@@ -152,8 +154,7 @@ public:
    * \return  Returns all linked tensors and their connected ops to coordinate
    *          tensor mapping of collective inputs and outputs
    */
-  std::pair<std::set<TensorId>, std::vector<Op *>>
-  getCollectiveLinkedGroup() const;
+  ReplicatedTensorShardingGroup getCollectiveLinkedGroup() const;
 
   /**
    * Get the existing \a CBR

@@ -10,19 +10,25 @@ __all__ = ["replicated_all_reduce", "replicated_all_reduce_"]
 
 
 def replicated_all_reduce(t: Tensor,
-                          remote_arg: Optional[Tensor] = None,
                           op: CollectiveOps = 'add',
-                          group: Optional[CommGroup] = None) -> Tensor:
+                          group: Optional[CommGroup] = None,
+                          link: Optional[Tensor] = None) -> Tensor:
     """Reduces tensor `t` across replicas.
 
     Args:
         t (Tensor): Tensor to be reduced
-        remote_arg (Optional[Tensor]):The tensor associated with a remote variable, 
-            returned from remote_variable/remote_replica_sharded_variable.
         op (str, optional): Operation to reduce with. Defaults to 'add'.
             Options: 'add', 'mean', 'mul', 'min', 'max', 'and', 'or', 'square_add', 'local'.
         group (Optional[CommGroup]): Replicas to reduce across. Defaults to All replicas.
-
+        link (Optional[Tensor]): The tensor to link the collective operation with other collective
+            operations for replicated tensor sharding. All collective operations, whose link tensor
+            leads to the same root tensor in the graph, are added to the same replicated tensor
+            sharding group such that their input/output tensors are elementwise compatible data orders
+            (such that elementwise operations on the sharded tensor give the semantically correct result).
+            The input is optional, if omitted, the group will be determined heuristically.
+            The tensor is used for graph traversal only and not consumed by the Op, therefore
+            shape and data type do not matter.
+            
     Returns:
         Tensor: Reduced tensor
     """
@@ -42,8 +48,8 @@ def replicated_all_reduce(t: Tensor,
                                   _ir.NumInputs(1, 2), 1)
 
     ins: Dict[int, str] = {0: t.id}
-    if remote_arg is not None:
-        ins[1] = remote_arg.id
+    if link is not None:
+        ins[1] = link.id
 
     op = pb_g.createConnectedOp_ReplicatedAllReduceOp(
         ins, {0: g._create_tensor_id(t.name + "_all_reduce")}, opid, op, group,
@@ -53,19 +59,26 @@ def replicated_all_reduce(t: Tensor,
 
 
 def replicated_all_reduce_(t: Tensor,
-                           remote_arg: Optional[Tensor] = None,
                            op: CollectiveOps = 'add',
-                           group: Optional[CommGroup] = None) -> Tensor:
+                           group: Optional[CommGroup] = None,
+                           link: Optional[Tensor] = None) -> Tensor:
     """Reduces tensor `t` across replicas inplace on `t`.
 
     Args:
         t (Tensor): Tensor to be reduced
-        remote_arg (Optional[Tensor]):The tensor associated with a remote variable, 
-            returned from remote_variable/remote_replica_sharded_variable.
+        operations for replicated tensor sharding.
         op (str, optional): Operation to reduce with. Defaults to 'add'.
             Options: 'add', 'mean', 'mul', 'min', 'max', 'and', 'or', 'square_add', 'local'.
         group (Optional[CommGroup]): Replicas to reduce across. Defaults to All replicas.
-
+        link (Optional[Tensor]): The tensor to link the collective operation with other collective
+            operations for replicated tensor sharding. All collective operations, whose link tensor
+            leads to the same root tensor in the graph, are added to the same replicated tensor
+            sharding group such that their input/output tensors have compatible data orders.
+            (such that elementwise operations on the sharded tensor give the semantically correct result).
+            The input is optional, if omitted, the group will be determined heuristically.
+            The tensor is used for graph traversal only and not consumed by the Op, therefore
+            shape and data type do not matter.
+            
     Returns:
         Tensor: Reduced tensor
     """
@@ -85,7 +98,7 @@ def replicated_all_reduce_(t: Tensor,
                                   1, _ir.NumInputs(1, 2), 1)
 
     ins: Dict[int, str] = {0: t.id}
-    if remote_arg is not None:
+    if link is not None:
         ins[1] = remote_arg.id
 
     op = pb_g.createConnectedOp_ReplicatedAllReduceInplaceOp(

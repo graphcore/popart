@@ -24,6 +24,12 @@ public:
   ReplicatedTensorShardingIndices
   getReplicatedTensorShardingIndices() const override;
 
+  /**
+   * Check \a RTS mode (see collectives.hpp)
+   * \return True if this operation is configured for replicated tensor sharding
+   */
+  bool isconfigureOutputForReplicatedTensorSharding() const override;
+
   std::tuple<ReplEqOutputMap, ReplEqModifiedInputMap>
   fwdPropagateIsReplicaEqual(const AliasModel &aliasModel,
                              const ReplEqInputMap &inputMap,

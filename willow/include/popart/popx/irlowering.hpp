@@ -2,8 +2,6 @@
 #ifndef GUARD_NEURALNET_IRLOWERING_HPP
 #define GUARD_NEURALNET_IRLOWERING_HPP
 
-#include <gcl/CollectiveBalancedReorder.hpp>
-
 #include <popart/vendored/optional.hpp>
 
 #include <poplar/DeviceManager.hpp>
@@ -30,6 +28,7 @@
 #include <popart/popx/popprograms.hpp>
 #include <popart/popx/poptensors.hpp>
 #include <popart/popx/pritask.hpp>
+#include <popart/popx/replicatedtensorshardingbundle.hpp>
 #include <popart/popx/virtualgraph.hpp>
 
 #include <popart/subgraphcopyingstrategy.hpp>
@@ -128,9 +127,10 @@ private:
       contextOpRegistry;
   std::map<TaskId, std::vector<Op *>> requiredRecomputes;
 
-  // Collective balanced reordering information for replicated ops
-  std::map<TensorId, std::shared_ptr<gcl::CollectiveBalancedReorder>>
-      collectiveReorders;
+  /**
+   * Container for replicated tensor sharding related lowering state
+   */
+  ReplicatedTensorShardingBundle replicatedTensorShardingBundle;
 
   // Store input tensors based on how they are allocated
   std::set<TensorId> linearlyCreatedInputTensors;
@@ -519,18 +519,13 @@ public:
                         double val,
                         const poplar::DebugContext &dc = {});
 
-  std::shared_ptr<gcl::CollectiveBalancedReorder>
-  getCollectiveBalancedReorder(TensorId tensor_id);
-  const gcl::CollectiveBalancedHostRearrangement &
-  getCollectiveBalancedHostRearrangement(const TensorId &tensor_id) const;
+  const ReplicatedTensorShardingBundle &
+  getReplicatedTensorShardingBundle() const {
+    return replicatedTensorShardingBundle;
+  }
 
-  void
-  setCollectiveBalancedReorder(TensorId tensor_id,
-                               std::shared_ptr<gcl::CollectiveBalancedReorder>);
-
-  const std::map<TensorId, std::shared_ptr<gcl::CollectiveBalancedReorder>> &
-  getCollectiveReorders() const {
-    return collectiveReorders;
+  ReplicatedTensorShardingBundle &getReplicatedTensorShardingBundle() {
+    return replicatedTensorShardingBundle;
   }
 
   snap::Tensor getScalarVariable(snap::Graph &graph,

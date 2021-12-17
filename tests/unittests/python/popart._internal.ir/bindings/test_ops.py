@@ -192,8 +192,9 @@ def test_binary_ops(op_name: str, inplace: bool, connected: bool,
 ("VarUpdateWithUpdaterOp", {}),
 ("IncrementModOp", {"increment_": 1, "modulus_": 3}),
 ("IncrementModInplaceOp", {"increment_": 1, "modulus_": 3}),
-("ReplicatedAllReduceOp", {"op_": _ir.CollectiveOperator.Add, "group": _ir.CommGroup()}),
-("ReplicatedReduceScatterOp", {"op_": _ir.CollectiveOperator.Add, "group": _ir.CommGroup()}),
+("ReplicatedAllReduceOp", {"op": _ir.CollectiveOperator.Add, "group": _ir.CommGroup()}),
+("ReplicatedReduceScatterOp", {"op": _ir.CollectiveOperator.Add, "group": _ir.CommGroup(), "configureOutputForReplicatedTensorSharding": False}),
+("ReplicatedReduceScatterOp", {"op": _ir.CollectiveOperator.Add, "group": _ir.CommGroup(), "configureOutputForReplicatedTensorSharding": True}),
 ("ReplicatedAllGatherOp", {"group": _ir.CommGroup()}),
 ])
 # yapf: enable, pylint: enable-all

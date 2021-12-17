@@ -91,8 +91,8 @@ class TestTensorLocation():
                 w, remote_buffer, 0)
             loaded_w = ops.remote_load(remote_buffer, remote_arg)
 
-            full_w = ops.collectives.replicated_all_gather(
-                loaded_w, remote_arg).reshape_((4, 4))
+            full_w = ops.collectives.replicated_all_gather(loaded_w).reshape_(
+                (4, 4))
 
             fwd = self.Linear()
             fwd_graph = ir.create_graph(fwd, d0)
@@ -154,7 +154,9 @@ class TestTensorLocation():
         # Note the pir.in_sequence() : forces ops in the correct order.
         with main, pir.in_sequence():
             grad_shard: Tensor = ops.collectives.replicated_reduce_scatter(
-                w0_grad, remote_arg, 'add')
+                w0_grad,
+                op='add',
+                configure_output_for_replicated_tensor_sharding=True)
             ops.var_updates.accumulate_(loaded_w, grad_shard)
             ops.remote_store(remote_buffer, remote_arg, loaded_w)
 

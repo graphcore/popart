@@ -75,12 +75,8 @@ void ElementWiseUnaryOp::setup() {
 
 ReplicatedTensorShardingIndices
 ElementWiseUnaryOp::getReplicatedTensorShardingIndices() const {
-  if (isOptimizerOp()) {
-    return {{{ElementWiseUnaryOp::getInIndex()},
-             {ElementWiseUnaryOp::getOutIndex()}}};
-  } else {
-    return {};
-  }
+  return {{{ElementWiseUnaryOp::getInIndex()},
+           {ElementWiseUnaryOp::getOutIndex()}}};
 }
 
 ElementWiseUnaryBooleanOp::ElementWiseUnaryBooleanOp(
@@ -132,52 +128,48 @@ void ElementWiseBinaryBaseOp::setup() {
 
 ReplicatedTensorShardingIndices
 ElementWiseBinaryBaseOp::getReplicatedTensorShardingIndices() const {
-  if (isOptimizerOp()) {
-    std::set<InIndex> rtsInIndices;
-    std::set<InIndex> rtsOutIndices;
+  std::set<InIndex> rtsInIndices;
+  std::set<InIndex> rtsOutIndices;
 
-    auto arg0Inf = inInfo(ElementWiseBinaryBaseOp::getArg0InIndex());
-    auto arg1Inf = inInfo(ElementWiseBinaryBaseOp::getArg1InIndex());
-    auto outInf  = outInfo(ElementWiseBinaryBaseOp::getOutIndex());
+  auto arg0Inf = inInfo(ElementWiseBinaryBaseOp::getArg0InIndex());
+  auto arg1Inf = inInfo(ElementWiseBinaryBaseOp::getArg1InIndex());
+  auto outInf  = outInfo(ElementWiseBinaryBaseOp::getOutIndex());
 
-    // Non-broadcasted inputs that match the output need to be RTS
-    // Catch all cases where the input tensor may already be sharded, but the
-    // output is not yet, or vice versa
-    // Cases:
-    // a.) Input and output are not sharded yet (no meta shape)
-    // b.) Input and output are sharded (both have meta shape)
-    // c.) Input is sharded (has meta shape) but output is not yet
-    // d.) Input is not sharded, but the output is (has meta shape)
-    //
-    // the meta-shape stores the shape that the tensor had before sharding
-    // (the combined shape over all replicas that shard the tensor)
+  // Non-broadcasted inputs that match the output need to be RTS
+  // Catch all cases where the input tensor may already be sharded, but the
+  // output is not yet, or vice versa
+  // Cases:
+  // a.) Input and output are not sharded yet (no meta shape)
+  // b.) Input and output are sharded (both have meta shape)
+  // c.) Input is sharded (has meta shape) but output is not yet
+  // d.) Input is not sharded, but the output is (has meta shape)
+  //
+  // the meta-shape stores the shape that the tensor had before sharding
+  // (the combined shape over all replicas that shard the tensor)
 
-    bool arg0ms = arg0Inf.metaShape().empty();
-    bool arg1ms = arg1Inf.metaShape().empty();
-    bool outms  = outInf.metaShape().empty();
+  bool arg0ms = arg0Inf.metaShape().empty();
+  bool arg1ms = arg1Inf.metaShape().empty();
+  bool outms  = outInf.metaShape().empty();
 
-    if ((arg0ms && arg0Inf.shape() == outInf.shape() && outms) ||
-        (!arg0ms && arg0Inf.metaShape() == outInf.metaShape() && !outms) ||
-        (!arg0ms && arg0Inf.metaShape() == outInf.shape() && outms) ||
-        (arg0ms && arg0Inf.shape() == outInf.metaShape() && !outms)) {
-      rtsInIndices.insert(ElementWiseBinaryBaseOp::getArg0InIndex());
-    }
-
-    if ((arg1ms && arg1Inf.shape() == outInf.shape() && outms) ||
-        (!arg1ms && arg1Inf.metaShape() == outInf.metaShape() && !outms) ||
-        (!arg1ms && arg1Inf.metaShape() == outInf.shape() && outms) ||
-        (arg1ms && arg1Inf.shape() == outInf.metaShape() && !outms)) {
-      rtsInIndices.insert(ElementWiseBinaryBaseOp::getArg1InIndex());
-    }
-
-    if (!rtsInIndices.empty()) {
-      rtsOutIndices.insert(ElementWiseBinaryBaseOp::getOutIndex());
-    }
-
-    return {{rtsInIndices, rtsOutIndices}};
-  } else {
-    return {};
+  if ((arg0ms && arg0Inf.shape() == outInf.shape() && outms) ||
+      (!arg0ms && arg0Inf.metaShape() == outInf.metaShape() && !outms) ||
+      (!arg0ms && arg0Inf.metaShape() == outInf.shape() && outms) ||
+      (arg0ms && arg0Inf.shape() == outInf.metaShape() && !outms)) {
+    rtsInIndices.insert(ElementWiseBinaryBaseOp::getArg0InIndex());
   }
+
+  if ((arg1ms && arg1Inf.shape() == outInf.shape() && outms) ||
+      (!arg1ms && arg1Inf.metaShape() == outInf.metaShape() && !outms) ||
+      (!arg1ms && arg1Inf.metaShape() == outInf.shape() && outms) ||
+      (arg1ms && arg1Inf.shape() == outInf.metaShape() && !outms)) {
+    rtsInIndices.insert(ElementWiseBinaryBaseOp::getArg1InIndex());
+  }
+
+  if (!rtsInIndices.empty()) {
+    rtsOutIndices.insert(ElementWiseBinaryBaseOp::getOutIndex());
+  }
+
+  return {{rtsInIndices, rtsOutIndices}};
 }
 
 ElementWiseBinaryOp::ElementWiseBinaryOp(const OperatorIdentifier &_opid,

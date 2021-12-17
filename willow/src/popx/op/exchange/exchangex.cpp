@@ -364,7 +364,7 @@ void RemoteLoadDescriptorx::post(snap::Graph &graph,
                                        descriptor.getRemoteBufferId(),
                                        graph,
                                        inTensors.at(0).second,
-                                       descriptor.inplace));
+                                       descriptor.isInplace()));
 
   auto buffer =
       dv_p->lowering().getRemoteBuffer(descriptor.getRemoteBufferId());
@@ -382,7 +382,7 @@ snap::Tensor RemoteLoadDescriptorx::unwind(snap::Graph &graph,
                                        descriptor.getRemoteBufferId(),
                                        graph,
                                        tensor,
-                                       descriptor.inplace);
+                                       descriptor.isInplace());
   return unwound;
 }
 

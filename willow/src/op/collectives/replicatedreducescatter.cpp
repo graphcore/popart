@@ -13,15 +13,27 @@ namespace popart {
 ReplicatedReduceScatterOp::ReplicatedReduceScatterOp(
     const OperatorIdentifier &_opid,
     CollectiveOperator op_,
-    CommGroup group,
+    CommGroup group_,
+    bool configureOutputForReplicatedTensorSharding_,
     const Op::Settings &settings_)
-    : CollectivesBaseOp(_opid, group, settings_), op(op_) {}
+    : CollectivesBaseOp(_opid, group_, settings_), op(op_),
+      configureOutputForReplicatedTensorSharding(
+          configureOutputForReplicatedTensorSharding_) {}
+
+ReplicatedReduceScatterOp::ReplicatedReduceScatterOp(
+    const OperatorIdentifier &_opid,
+    CollectiveOperator op_,
+    CommGroup group_,
+    const Op::Settings &settings_)
+    : CollectivesBaseOp(_opid, group_, settings_), op(op_),
+      configureOutputForReplicatedTensorSharding(false) {}
 
 ReplicatedReduceScatterOp::ReplicatedReduceScatterOp(
     const OperatorIdentifier &_opid,
     const Op::Settings &settings_)
     : CollectivesBaseOp(_opid, CommGroup{}, settings_),
-      op(CollectiveOperator::Add) {}
+      op(CollectiveOperator::Add),
+      configureOutputForReplicatedTensorSharding(false) {}
 
 std::unique_ptr<Op> ReplicatedReduceScatterOp::clone() const {
   return std::make_unique<ReplicatedReduceScatterOp>(*this);
@@ -45,8 +57,12 @@ void ReplicatedReduceScatterOp::setup() {
   // ceil(numElements / replicationFactor)
   auto outElms = (nelms + replicationFactor - 1) / replicationFactor;
 
-  outInfo(getOutIndex()) =
-      TensorInfo(inInfo_.dataType(), {outElms}, inInfo_.shape());
+  Shape metaShape;
+  if (isconfigureOutputForReplicatedTensorSharding()) {
+    metaShape = inInfo_.shape();
+  }
+
+  outInfo(getOutIndex()) = TensorInfo(inInfo_.dataType(), {outElms}, metaShape);
 
   logging::op::trace("[ReplicatedReduceScatterOp] Global replication factor: "
                      "{}, sharding factor: {}",
@@ -63,6 +79,13 @@ void ReplicatedReduceScatterOp::appendOutlineAttributes(
 ReplicatedTensorShardingIndices
 ReplicatedReduceScatterOp::getReplicatedTensorShardingIndices() const {
   return {{{}, {ReplicatedReduceScatterOp::getOutIndex()}}};
+}
+
+bool ReplicatedReduceScatterOp::isconfigureOutputForReplicatedTensorSharding()
+    const {
+  return configureOutputForReplicatedTensorSharding ||
+         hasInput(ReplicatedReduceScatterOp::getCollectiveLinkedIndex()) ||
+         !outInfo(ReplicatedReduceScatterOp::getOutIndex()).metaShape().empty();
 }
 
 std::tuple<ReplEqOutputMap, ReplEqModifiedInputMap>
@@ -114,8 +137,12 @@ static OpCreator<ReplicatedReduceScatterOp> ReplicatedReduceScatterOpCreator(
           info.attributes.getAttribute<Attributes::Int>(
               sCollectiveOperator, static_cast<int>(CollectiveOperator::Add)));
       CommGroup group = extractCommGroupFromAttrs(info.attributes);
+      bool replicatedTensorSharding =
+          static_cast<bool>(info.attributes.getAttribute<Attributes::Int>(
+              sReplicatedTensorSharding, 0));
       return std::unique_ptr<ReplicatedReduceScatterOp>(
-          new ReplicatedReduceScatterOp(info.opid, op, group, info.settings));
+          new ReplicatedReduceScatterOp(
+              info.opid, op, group, replicatedTensorSharding, info.settings));
     },
     true);
 

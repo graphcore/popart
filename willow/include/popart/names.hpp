@@ -76,6 +76,10 @@ using OpxGrowPartId = int;
 using InIndex = int;
 /// The position at which a tensor is output by an Op.
 using OutIndex = int;
+
+/// The identifier of the collective balanced host rearrangement
+using CollectiveBalancedReorderId = int;
+
 /**
  * The set of indices that have to be replica sharded together, and the outputs
  * that will be replica sharded as a result.
@@ -272,6 +276,9 @@ static constexpr const char *weightLoadStreamPrefix    = "weightLoad__";
 static constexpr const char *onnxDebugIdInputMetaDataKey = "__debug_id/input/";
 static constexpr const char *sCollectiveOperator  = "__collectiveOperator";
 static constexpr const char *sCollectiveCommGroup = "__collectiveCommGroup";
+static constexpr const char *sReplicatedTensorSharding =
+    "__replicatedTensorSharding";
+
 } // namespace popart
 
 #endif

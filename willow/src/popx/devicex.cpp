@@ -308,8 +308,8 @@ void Devicex::remoteBufferWeightsToHost() {
         if (tensor->tensorLocationInfo.isSharded()) {
           // Replicated weight sharding, each replica holds 1/repfactor
           // parts of the weight
-          const auto &cbr = executable_.getCollectiveBalancedHostRearrangement(
-              getRemoteArgTensorId(stripAllReservedPrefixes(tensor->id)));
+          const auto &cbr =
+              executable_.getCollectiveBalancedHostRearrangement(tensor->id);
 
           auto elemSize =
               static_cast<int64_t>(tensor->info.getDataTypeInfo()->nbytes());
@@ -565,8 +565,8 @@ void Devicex::remoteBufferWeightsFromHost() {
       if (tensor->tensorLocationInfo.isSharded()) {
         // Replicated weight sharding, each replica holds 1/repfactor
         // parts of the weight
-        const auto &cbr = executable_.getCollectiveBalancedHostRearrangement(
-            getRemoteArgTensorId(stripAllReservedPrefixes(tensor->id)));
+        const auto &cbr =
+            executable_.getCollectiveBalancedHostRearrangement(initId);
 
         auto elemSize =
             static_cast<int64_t>(tensor->info.getDataTypeInfo()->nbytes());

@@ -42,6 +42,20 @@ public:
 
   void appendOutlineAttributes(OpSerialiserBase &os) const override;
 
+  /**
+   * Check \a Replicated tensor sharding (RTS) mode
+   * Collective operations setup for RTS are allowed to scramble the data
+   * element order of the input (AllGather) / output (ReduceScatter) tensor
+   * such that the tensor layouts minimize inter-tile exchanges.
+   * As a consequence, the RTS sharded tensor does not follow the original data
+   * order and can only be used in elementwise, RTS-enabled operations, such
+   * as optimizers, where all inputs consumed are rearranged in the same way.
+   * \return True if this operation is configured for replicated tensor sharding
+   */
+  virtual bool isconfigureOutputForReplicatedTensorSharding() const {
+    return false;
+  }
+
 private:
   CommGroup group;
 };

@@ -54,12 +54,16 @@ Executablex::Executablex(IrLowering &ir_lowering_)
 Executablex::Executablex(
     IrLowering &ir_lowering_,
     std::unordered_map<TensorId, std::unique_ptr<Tensor>> &&tensorMap,
-    std::map<TensorId, gcl::CollectiveBalancedHostRearrangement> &&cbrMap)
+    std::map<TensorId, CollectiveBalancedReorderId> &&cbrIdMap,
+    std::map<CollectiveBalancedReorderId,
+             gcl::CollectiveBalancedHostRearrangement> &&cbrMap)
     : ir_lowering(ir_lowering_), deserialized(true),
       dataFlow(ir_lowering.ir().getDataFlow()),
       options(ir_lowering.ir().getSessionOptions()),
       executionMode(ir_lowering.ir().getExecutionMode()),
-      tensors(std::move(tensorMap)), cbrHostRearrangement(std::move(cbrMap)) {
+      tensors(std::move(tensorMap)),
+      cbrHostRearrangementIds(std::move(cbrIdMap)),
+      cbrHostRearrangements(std::move(cbrMap)) {
   auto weightTensorIds = getTensorIds(TensorType::Variable);
   weightTensors.reserve(weightTensorIds.size());
   for (auto &id : weightTensorIds) {
@@ -98,10 +102,14 @@ Executablex::createFromLoweredIr(IrLowering &ir_lowering_) {
 std::unique_ptr<Executablex> Executablex::createFromStream(
     IrLowering &ir_lowering_,
     std::unordered_map<TensorId, std::unique_ptr<Tensor>> &&tensorMap,
-    std::map<TensorId, gcl::CollectiveBalancedHostRearrangement> &&cbrMap) {
+    std::map<TensorId, CollectiveBalancedReorderId> &&cbrIdMap,
+    std::map<CollectiveBalancedReorderId,
+             gcl::CollectiveBalancedHostRearrangement> &&cbrMap) {
 
-  return std::make_unique<Executablex>(
-      ir_lowering_, std::move(tensorMap), std::move(cbrMap));
+  return std::make_unique<Executablex>(ir_lowering_,
+                                       std::move(tensorMap),
+                                       std::move(cbrIdMap),
+                                       std::move(cbrMap));
 }
 
 const IrLowering &Executablex::lowering() const { return ir_lowering; }
@@ -224,34 +232,61 @@ void Executablex::updateOptimizerTensors() {
 const gcl::CollectiveBalancedHostRearrangement &
 Executablex::getCollectiveBalancedHostRearrangement(const TensorId &id) const {
   if (!deserialized) {
-    return lowering().getCollectiveBalancedHostRearrangement(id);
+    return lowering()
+        .getReplicatedTensorShardingBundle()
+        .getCollectiveBalancedHostRearrangement(id);
   }
 
-  const auto &cbrHostRearrangement_ = cbrHostRearrangement.value();
-  auto found                        = cbrHostRearrangement_.find(id);
-  if (found == cbrHostRearrangement_.end()) {
+  auto remoteArgId = getRemoteArgTensorId(stripAllReservedPrefixes(id));
+
+  const auto &cbrHostRearrangementId_ = cbrHostRearrangementIds.value();
+  const auto &cbrHostRearrangement_   = cbrHostRearrangements.value();
+  auto found                          = cbrHostRearrangementId_.find(id);
+  auto foundRemoteArg = cbrHostRearrangementId_.find(remoteArgId);
+  if (found != cbrHostRearrangementId_.end()) {
+    return cbrHostRearrangement_.at(found->second);
+  } else if (foundRemoteArg != cbrHostRearrangementId_.end()) {
+    return cbrHostRearrangement_.at(foundRemoteArg->second);
+  } else {
     throw error("CollectiveBalancedReorderHostRearrangement does not exist for "
                 "tensor {}",
                 id);
   }
-  return found->second;
 }
 
-const std::map<TensorId, gcl::CollectiveBalancedHostRearrangement>
+const std::map<CollectiveBalancedReorderId,
+               gcl::CollectiveBalancedHostRearrangement>
 Executablex::getCollectiveBalancedHostRearrangements() const {
   if (!deserialized) {
-    std::map<TensorId, gcl::CollectiveBalancedHostRearrangement>
+    std::map<CollectiveBalancedReorderId,
+             gcl::CollectiveBalancedHostRearrangement>
         hostRearrangements;
-    const auto &cbrs = lowering().getCollectiveReorders();
+    const auto &cbrs =
+        lowering().getReplicatedTensorShardingBundle().getCollectiveReorders();
     for (const auto &kv : cbrs) {
-      const auto id                = kv.first;
-      const auto hostRearrangement = getCollectiveBalancedHostRearrangement(id);
-      hostRearrangements[id]       = hostRearrangement;
+      const auto cbrId             = kv.first;
+      const auto hostRearrangement = kv.second->getHostRearrangement();
+      hostRearrangements[cbrId]    = hostRearrangement;
     }
     return hostRearrangements;
   }
 
-  return cbrHostRearrangement.value();
+  return cbrHostRearrangements.value();
+}
+
+const std::map<TensorId, CollectiveBalancedReorderId>
+Executablex::getCollectiveBalancedHostRearrangementIds() const {
+  if (!deserialized) {
+    std::map<CollectiveBalancedReorderId,
+             gcl::CollectiveBalancedHostRearrangement>
+        hostRearrangements;
+    const auto &cbrIds = lowering()
+                             .getReplicatedTensorShardingBundle()
+                             .getCollectiveReorderIds();
+    return cbrIds;
+  }
+
+  return cbrHostRearrangementIds.value();
 }
 
 std::string

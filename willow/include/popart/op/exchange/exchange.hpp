@@ -183,6 +183,8 @@ public:
   int getNumInputs() const { return numInputs; }
   int getNumOutputs() const { return numOutputs; }
 
+  bool isInplace() const { return inplace; }
+
 private:
   /// To IPU (load) or from IPU (store)
   ExchangeDirection direction;
@@ -205,7 +207,6 @@ private:
   /// Number of outputs required
   int numOutputs;
 
-public:
   /// Whether a remote loaded tensor should be inplaced
   bool inplace;
 };
@@ -228,6 +229,36 @@ public:
 
   float getSubgraphValue() const final { return getHighSubgraphValue(); }
   bool isOutlineable() const final { return true; }
+
+  /**
+   * Get the descriptor index associated with the input index
+   * \param index input index
+   * \return      pair of descriptor index and input index relative to the
+   *              descriptor
+   */
+  virtual std::pair<int, int> inIndexToDescriptorIndex(InIndex index) const;
+
+  /**
+   * Get the descriptor index associated with the output index
+   * \param index output index
+   * \return      pair of descriptor index and output index relative to the
+   *              descriptor
+   */
+  virtual std::pair<int, int> outIndexToDescriptorIndex(OutIndex index) const;
+
+  /**
+   * Get the input indices associated with the descriptor index
+   * \param index exchange descriptor index
+   * \return      descriptor index
+   */
+  virtual std::vector<InIndex> descriptorIndexToInIndices(int index) const;
+
+  /**
+   * Get the output indices associated with the descriptor index
+   * \param index exchange descriptor index
+   * \return      descriptor index
+   */
+  virtual std::vector<OutIndex> descriptorIndexToOutIndices(int index) const;
 
 private:
 };

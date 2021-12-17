@@ -55,6 +55,7 @@ add_popart_cpp_unit_test(unittest_Session_createFromIr session_createFromIr.cpp)
 
 add_popart_cpp_unit_test(unittest_region unittest_region.cpp)
 add_popart_cpp_unit_test(unittest_parsedtensorid unittest_parsedtensorid.cpp)
+add_popart_cpp_unit_test(unittest_replicatedtensorsharding unittest_replicatedtensorsharding.cpp TEST_UTILS test-graphs-test-util ir-query-test-util)
 
 add_popart_cpp_unit_test(unittest_pattern_optimizerdecompose patterns/optimizerdecompose.cpp)
 add_popart_cpp_unit_test(unittest_pattern_lambserialisedweight patterns/lambserialisedweight.cpp)

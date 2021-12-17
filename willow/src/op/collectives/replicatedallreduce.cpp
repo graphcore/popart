@@ -14,9 +14,9 @@ namespace popart {
 
 ReplicatedAllReduceOp::ReplicatedAllReduceOp(const OperatorIdentifier &_opid,
                                              CollectiveOperator op_,
-                                             CommGroup group,
+                                             CommGroup group_,
                                              const Op::Settings &settings_)
-    : CollectivesBaseOp(_opid, group, settings_), op(op_) {}
+    : CollectivesBaseOp(_opid, group_, settings_), op(op_) {}
 
 ReplicatedAllReduceOp::ReplicatedAllReduceOp(const OperatorIdentifier &_opid,
                                              const Op::Settings &settings_)

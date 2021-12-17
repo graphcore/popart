@@ -97,7 +97,7 @@ OpsBeforeKey initOpConstraints(std::vector<Op *> &initOps,
   return beforeKeys;
 }
 
-bool isMergableOp(Op *const op) {
+bool isMergeableOp(Op *const op) {
   return op->isConvertibleTo<RemoteLoadOp>() ||
          op->isConvertibleTo<RemoteStoreOp>() ||
          op->isConvertibleTo<HostLoadOp>() ||
@@ -202,8 +202,39 @@ Op *MergeExchange::conditionallyInsertMultiExchange(
     ExchangeOps exchangeOps,
     const OpsBeforeKey &keys) const {
 
+  if (logging::shouldLog(logging::Module::transform, logging::Level::Trace)) {
+    std::stringstream ss;
+    ss << std::endl;
+    for (auto &opPair : keys) {
+      ss << "    ";
+      ss << opPair.first->debugName() << ", befores: ";
+      std::vector<std::string> opNames(opPair.second.size());
+      auto &ops = opPair.second;
+      std::transform(ops.begin(), ops.end(), opNames.begin(), [](const Op *op) {
+        return op->debugName();
+      });
+      ss << logging::join(opNames.begin(), opNames.end(), ", ");
+      ss << std::endl;
+    }
+    logging::transform::trace(
+        "[MergeExchange::conditionallyInsertMultiExchange] Requiring "
+        "topological order for merge: {}",
+        ss.str());
+  }
+
   if (exchangeOps.size() > 1 && graph.isSchedulable(keys, true)) {
-    return insertMultiExchange(graph, exchangeOps);
+    auto op = insertMultiExchange(graph, exchangeOps);
+    logging::transform::trace(
+        "[MergeExchange::conditionallyInsertMultiExchange] Inserted merged "
+        "MultiExchangeOp {} for {} candidates.",
+        op->debugName(),
+        exchangeOps.size());
+    return op;
+  } else {
+    logging::transform::trace(
+        "[MergeExchange::conditionallyInsertMultiExchange] Could not insert "
+        "merged MultiExchangeOp for {} candidates.",
+        exchangeOps.size());
   }
   return nullptr;
 }
@@ -256,8 +287,8 @@ MergeExchange::applyToOps(Graph &graph,
       continue;
     }
 
-    bool isInit     = op->isConvertibleTo<InitOp>();
-    bool isMergable = isMergableOp(op);
+    bool isInit      = op->isConvertibleTo<InitOp>();
+    bool isMergeable = isMergeableOp(op);
 
     if (isInit) {
       initOps.push_back(op);
@@ -272,10 +303,10 @@ MergeExchange::applyToOps(Graph &graph,
     bool isAof = (op->settings.executionContext ==
                   ExecutionContext::AccumulateOuterFragment);
 
-    bool dataDependency = (isInit || isMergable) &&
+    bool dataDependency = (isInit || isMergeable) &&
                           hasDataDependency(op, exchangeOps, opToPosition);
 
-    if (contextChanged || dataDependency || !(isInit || isMergable) ||
+    if (contextChanged || dataDependency || !(isInit || isMergeable) ||
         bspChanged || (inhibitMerging && isAof && isMerge)) {
       auto multiOp = conditionallyInsertMultiExchange(
           graph, exchangeOps, initOpConstraints(initOps, exchangeOps));
@@ -292,9 +323,12 @@ MergeExchange::applyToOps(Graph &graph,
     seenRemoteLoads  = seenRemoteLoads || op->isConvertibleTo<RemoteLoadOp>();
     seenRemoteStores = seenRemoteStores || op->isConvertibleTo<RemoteStoreOp>();
 
-    if (isMergable) {
+    if (isMergeable) {
       if (ExchangeBaseOp *exchOp = dynamic_cast<ExchangeBaseOp *>(op)) {
         exchangeOps.push_back({i, exchOp});
+        logging::transform::trace(
+            "[MergeExchange::applyToOps] Adding mergeable Op {}",
+            exchOp->debugName());
       }
     }
   }

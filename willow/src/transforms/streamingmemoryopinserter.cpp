@@ -609,6 +609,25 @@ void StreamingMemoryOpInserter::applyTensor(
   }
 }
 
+ReplicatedTensorShardingIndices
+StreamingMemoryOpInserter::getReplicatedTensorShardingIndices(Op *op) const {
+  ReplicatedTensorShardingIndices rtsIndices = {};
+
+  if (!op->isOptimizerOp() && !op->isConvertibleTo<ExchangeBaseOp>() &&
+      !op->isConvertibleTo<CollectivesBaseOp>()) {
+    // Encountered an Op that is not part of the optimizer setup, and as
+    // such, can't be RTS
+    // TODO: Can be improved/enhanced with replica-equal analysis instead
+    // See T52660
+    logging::transform::trace("[StreamingMemory] {} cannot be RTS because "
+                              "the Op is not an optimizer Op.",
+                              op->debugName());
+  } else {
+    rtsIndices = op->getReplicatedTensorShardingIndices();
+  }
+  return rtsIndices;
+}
+
 const StreamingMemoryOpInserter::ReplicatedTensorShardingProposal
 StreamingMemoryOpInserter::getReplicatedTensorShardingProposal(
     const ReplicationShardedTensors &rtsTensors) const {
@@ -701,21 +720,22 @@ StreamingMemoryOpInserter::getReplicatedTensorShardingProposal(
     OpsSet currentOpsToProcess = opsToProcess;
     rtsChanged                 = false;
     for (Op *op : currentOpsToProcess) {
-      logging::transform::trace(
-          "[StreamingMemory] Analyzing {} for replicated tensor sharding",
-          op->debugName());
+      logging::transform::trace("[StreamingMemory] Analyzing {} for replicated "
+                                "tensor sharding, is optimizer Op: {}",
+                                op->debugName(),
+                                op->isOptimizerOp());
       TensorId refId = proposedRTS.getRefTensorId(op->id);
 
       if (!checkRemoteBufferRTS(op)) {
         // Encountered RemoteLoad/RemoteStore that can't be RTS because the
         // remote buffer itself won't be RTS
         logging::transform::trace("[StreamingMemory] {} cannot be RTS because "
-                                  "the associated remote buffer is not RTS",
+                                  "the associated remote buffer is not RTS.",
                                   op->debugName());
         continue;
       }
 
-      auto rtsIndices = op->getReplicatedTensorShardingIndices();
+      auto rtsIndices = getReplicatedTensorShardingIndices(op);
 
       // Loop over one set of indices
       for (auto indices : rtsIndices) {
@@ -2097,6 +2117,7 @@ StreamingMemoryOpInserter::insertReplicatedReduceScatterOp(
       Onnx::CustomOperators::ReplicatedReduceScatter,
       collectiveOp,
       group,
+      true,
       tensorConfig.settings);
   auto replicatedReduceScatter = replicatedReduceScatterOp.get();
   graph.moveIntoGraph(std::move(replicatedReduceScatterOp));

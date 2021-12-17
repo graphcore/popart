@@ -8,12 +8,16 @@ namespace popart {
 
 class ReplicatedReduceScatterOp : public CollectivesBaseOp {
 public:
-  ReplicatedReduceScatterOp(const OperatorIdentifier &_opid,
-                            CollectiveOperator op_,
+  ReplicatedReduceScatterOp(const OperatorIdentifier &,
+                            CollectiveOperator op,
                             CommGroup group,
-                            const Op::Settings &settings_);
-  ReplicatedReduceScatterOp(const OperatorIdentifier &_opid,
-                            const Op::Settings &settings_);
+                            bool configureOutputForReplicatedTensorSharding,
+                            const Op::Settings &);
+  ReplicatedReduceScatterOp(const OperatorIdentifier &,
+                            CollectiveOperator op,
+                            CommGroup group,
+                            const Op::Settings &);
+  ReplicatedReduceScatterOp(const OperatorIdentifier &, const Op::Settings &);
 
   std::unique_ptr<Op> clone() const final;
   void setup() final;
@@ -24,6 +28,12 @@ public:
   ReplicatedTensorShardingIndices
   getReplicatedTensorShardingIndices() const override;
 
+  /**
+   * Check \a RTS mode (see collectives.hpp)
+   * \return True if this operation is configured for replicated tensor sharding
+   */
+  bool isconfigureOutputForReplicatedTensorSharding() const override;
+
   std::tuple<ReplEqOutputMap, ReplEqModifiedInputMap>
   fwdPropagateIsReplicaEqual(const AliasModel &aliasModel,
                              const ReplEqInputMap &inputMap,
@@ -31,6 +41,10 @@ public:
 
 protected:
   CollectiveOperator op;
+  /**
+   * If enabled, configures the Op for replicated tensor sharding
+   */
+  bool configureOutputForReplicatedTensorSharding;
 };
 
 } // namespace popart

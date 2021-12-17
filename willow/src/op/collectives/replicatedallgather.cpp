@@ -11,15 +11,15 @@
 namespace popart {
 
 ReplicatedAllGatherOp::ReplicatedAllGatherOp(const OperatorIdentifier &_opid,
-                                             CommGroup group,
+                                             CommGroup group_,
                                              const Op::Settings &settings_)
-    : CollectivesBaseOp(_opid, group, settings_) {}
+    : CollectivesBaseOp(_opid, group_, settings_) {}
 
 ReplicatedAllGatherOp::ReplicatedAllGatherOp(const OperatorIdentifier &_opid,
-                                             CommGroup group,
+                                             CommGroup group_,
                                              const Op::Settings &settings_,
                                              TensorInfo gatheredOutInfo_)
-    : CollectivesBaseOp(_opid, group, settings_),
+    : CollectivesBaseOp(_opid, group_, settings_),
       gatheredOutInfo(gatheredOutInfo_) {}
 
 std::unique_ptr<Op> ReplicatedAllGatherOp::clone() const {
@@ -77,6 +77,12 @@ static OpCreator<ReplicatedAllGatherOp> ReplicatedAllGatherOpCreator(
 ReplicatedTensorShardingIndices
 ReplicatedAllGatherOp::getReplicatedTensorShardingIndices() const {
   return {{{ReplicatedAllGatherOp::getInIndex()}, {}}};
+}
+
+bool ReplicatedAllGatherOp::isconfigureOutputForReplicatedTensorSharding()
+    const {
+  return hasInput(ReplicatedAllGatherOp::getCollectiveLinkedIndex()) ||
+         !inInfo(ReplicatedAllGatherOp::getInIndex()).metaShape().empty();
 }
 
 std::tuple<ReplEqOutputMap, ReplEqModifiedInputMap>

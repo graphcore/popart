@@ -31,7 +31,8 @@ void ReplicatedAllGatherOpx::grow(snap::program::Sequence &prog) const {
       toGCLCommGroup(op.getGCLCommGroup()),
       debugContext("replicatedAllGather"),
       allGatherOptions);
-  if (hasInput(ReplicatedAllGatherOp::getCollectiveLinkedIndex())) {
+  if (getOp<ReplicatedAllGatherOp>()
+          .isconfigureOutputForReplicatedTensorSharding()) {
     auto cbr = getCollectiveBalancedReorder();
     if (cbr) {
       gathered = cbr->undoRearrangeForCollective(gathered);
@@ -53,7 +54,8 @@ void ReplicatedAllGatherOpx::grow(snap::program::Sequence &prog) const {
 InputCreatorType
 ReplicatedAllGatherOpx::getInputCreatorType(InIndex index) const {
   return index == ReplicatedAllGatherOp::getInIndex() &&
-                 hasInput(ReplicatedAllGatherOp::getCollectiveLinkedIndex())
+                 getOp<ReplicatedAllGatherOp>()
+                     .isconfigureOutputForReplicatedTensorSharding()
              ? InputCreatorType::CanCreateOrUnwind
              : PopOpx::getInputCreatorType(index);
 }
@@ -104,10 +106,11 @@ bool ReplicatedAllGatherOpx::hasCreatorViewChangers(InIndex index) const {
 ViewChangers
 ReplicatedAllGatherOpx::getCreatorViewChangers(InIndex index) const {
   if (index == ReplicatedAllGatherOp::getInIndex()) {
+    auto group = getCollectiveLinkedGroup();
+
     ViewChangers viewChangers(
         {std::make_shared<ReplicatedGatherInScatterOutViewChanger>(
-            inInfo(ReplicatedAllGatherOp::getInIndex()).nelms(),
-            getCollectiveLinkedGroup().first)});
+            inInfo(ReplicatedAllGatherOp::getInIndex()).nelms(), group.id)});
     return viewChangers;
   }
   throw error(

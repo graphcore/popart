@@ -89,12 +89,8 @@ void ScaledAddOp::setup() { outInfo(getOutIndex()) = inInfo(getArg0InIndex()); }
 
 ReplicatedTensorShardingIndices
 ScaledAddOp::getReplicatedTensorShardingIndices() const {
-  if (isOptimizerOp()) {
-    return {{{ScaledAddOp::getArg0InIndex(), ScaledAddOp::getArg1InIndex()},
-             {ScaledAddOp::getOutIndex()}}};
-  } else {
-    return {};
-  }
+  return {{{ScaledAddOp::getArg0InIndex(), ScaledAddOp::getArg1InIndex()},
+           {ScaledAddOp::getOutIndex()}}};
 }
 
 void ScaledAddOp::appendOutlineAttributes(OpSerialiserBase &os) const {

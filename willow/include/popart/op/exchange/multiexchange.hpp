@@ -77,7 +77,7 @@ public:
    * \return a pair of integers comprising the index of the descriptor and the
    * index of the input associated with the input within the descriptor.
    **/
-  std::pair<int, int> inIndexToDescriptorIndex(InIndex index) const;
+  std::pair<int, int> inIndexToDescriptorIndex(InIndex index) const override;
 
   /**
    * Map output index to a tuple of integers `(a,b)` that corresponds to the
@@ -88,10 +88,10 @@ public:
    * \return a pair of integers comprising the index of the descriptor and the
    * index of the output associated with the output within the descriptor.
    **/
-  std::pair<int, int> outIndexToDescriptorIndex(OutIndex index) const;
+  std::pair<int, int> outIndexToDescriptorIndex(OutIndex index) const override;
 
-  std::vector<InIndex> descriptorIndexToInIndices(int index) const;
-  std::vector<OutIndex> descriptorIndexToOutIndices(int index) const;
+  std::vector<InIndex> descriptorIndexToInIndices(int index) const override;
+  std::vector<OutIndex> descriptorIndexToOutIndices(int index) const override;
 
 private:
   ExchangeDescriptors descriptors;

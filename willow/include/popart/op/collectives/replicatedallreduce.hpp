@@ -8,12 +8,11 @@ namespace popart {
 
 class ReplicatedAllReduceOp : public CollectivesBaseOp {
 public:
-  ReplicatedAllReduceOp(const OperatorIdentifier &_opid,
-                        CollectiveOperator op_,
+  ReplicatedAllReduceOp(const OperatorIdentifier &,
+                        CollectiveOperator op,
                         CommGroup group,
-                        const Op::Settings &settings_);
-  ReplicatedAllReduceOp(const OperatorIdentifier &_opid,
-                        const Op::Settings &settings_);
+                        const Op::Settings &);
+  ReplicatedAllReduceOp(const OperatorIdentifier &, const Op::Settings &);
 
   std::unique_ptr<Op> clone() const override;
   virtual std::unique_ptr<Op>

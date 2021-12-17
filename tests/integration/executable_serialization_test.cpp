@@ -94,6 +94,10 @@ void compare_executables(const popx::Executablex &exe1,
   BOOST_CHECK(exe1.lowering().getEfficientlyCreatedInputTensors() ==
               exe2.lowering().getEfficientlyCreatedInputTensors());
 
+  const auto &cbrIdsExe1 = exe1.getCollectiveBalancedHostRearrangementIds();
+  const auto &cbrIdsExe2 = exe2.getCollectiveBalancedHostRearrangementIds();
+  BOOST_CHECK(cbrIdsExe1 == cbrIdsExe2);
+
   const auto &cbhrsExe1 = exe1.getCollectiveBalancedHostRearrangements();
   const auto &cbhrsExe2 = exe2.getCollectiveBalancedHostRearrangements();
   BOOST_CHECK(cbhrsExe1.size() == cbhrsExe2.size());

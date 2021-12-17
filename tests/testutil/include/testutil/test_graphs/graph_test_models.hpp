@@ -185,4 +185,39 @@ public:
                      popart::SessionOptions options);
 };
 
+/**
+ * Repeated 4 times with varying shapes and remote buffer IDs:
+ *
+ *  (InitOp)              (InitOp)
+ *      |                     |
+ * [D*_sharded] [index_*] [D*_full]
+ *      |        |            |
+ *     (RemoteLoad)       (ReduceScatter)
+ *      |                     |
+ * [D*_scattered]         [D*_loaded]
+ *      |       .-------------'
+ * (CopyVarUpdate)
+ *      |
+ * [D*_updated]
+ *
+ * All operators are flagged as optimizer Ops and support RTS.
+ *
+ */
+class RemoteRTSTestModel : public GraphTestModel {
+public:
+  /**
+   * Construct simple test graph with a few disjunct RTS domains using remote
+   * variables
+   * \param options Options for the session
+   */
+  RemoteRTSTestModel(popart::SessionOptions options);
+
+  std::vector<popart::Tensor *> domainTensors;
+
+  std::vector<popart::Op *> initOps;
+  std::vector<popart::Op *> loadOps;
+  std::vector<popart::Op *> reduceScatterOps;
+  std::vector<popart::Op *> varUpdateOps;
+};
+
 #endif

@@ -6,14 +6,18 @@
 #include <popart/dataflow.hpp>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
+#include <popart/logging.hpp>
 #include <popart/op.hpp>
 #include <popart/op/accumulate.hpp>
 #include <popart/op/add.hpp>
 #include <popart/op/call.hpp>
+#include <popart/op/collectives/replicatedallgather.hpp>
 #include <popart/op/collectives/replicatedallreduce.hpp>
+#include <popart/op/collectives/replicatedreducescatter.hpp>
 #include <popart/op/concat.hpp>
 #include <popart/op/copyvarupdate.hpp>
 #include <popart/op/exchange/hostcopy.hpp>
+#include <popart/op/exchange/remote.hpp>
 #include <popart/op/identity.hpp>
 #include <popart/op/init.hpp>
 #include <popart/op/iotilecopy.hpp>
@@ -34,6 +38,7 @@
 #include <popart/sgd.hpp>
 #include <popart/tensor.hpp>
 #include <popart/topocons.hpp>
+#include <popart/transforms/mergeexchange.hpp>
 #include <popart/util.hpp>
 
 #include <poplar/ReplicatedStreamMode.hpp>
@@ -778,4 +783,116 @@ OptimizerTestModel::OptimizerTestModel(TestOptimizer opt,
 
   df = DataFlow(batchesPerStep);
   ir.setDataFlow(df);
+}
+
+RemoteRTSTestModel::RemoteRTSTestModel(popart::SessionOptions options) {
+
+  Graph &graph = ir.getMainGraph();
+
+  Op::Settings gSettings(graph, "op", {});
+
+  // For most ops, optimizer status is required to enable RTS
+  gSettings.optimizerOp = true;
+
+  auto repFactor = options.replicatedGraphCount;
+
+  // Non-sharded shapes. The first three are intentionally the same, but only
+  // the first and the third will be in the same RTS domain
+  std::vector<Shape> d{{5, 5, 3}, {5, 5, 3}, {5, 5, 3}, {10, 12, 4}};
+  std::vector<RemoteBufferId> remoteBufferIds = {0, 1, 0, 2};
+  std::vector<uint64_t> remoteBufferRepeats   = {2, 1, 2, 1};
+
+  std::vector<int> dnelms(d.size());
+  std::vector<Shape> ds(d.size());
+  std::vector<TensorInfo> domainTSInfos;
+  std::vector<TensorInfo> domainTInfos;
+
+  for (size_t i = 0; i < d.size(); ++i) {
+    // Number of elements
+    dnelms[i] = std::accumulate(d[i].begin(), d[i].end(), 0);
+    // Sharded shapes
+    ds[i] = {(dnelms[i] + repFactor - 1) / repFactor};
+
+    // Domain tensor infos (non-sharded, just the shape)
+    domainTInfos.push_back({DataType::FLOAT, d[i]});
+
+    // Domain tensor infos (sharded tensors, add shape and meta shape)
+    domainTSInfos.push_back({DataType::FLOAT, ds[i], d[i]});
+
+    auto initOpS = graph.createConnectedOp<InitOp>(
+        {},
+        {{InitOp::getOutIndex(), logging::format("D{}_sharded", i)}},
+        Onnx::CustomOperators::Init_1,
+        domainTSInfos[i],
+        TensorType::ActGrad,
+        InitType::Zero,
+        gSettings);
+    initOps.push_back(initOpS);
+
+    auto initOpF = graph.createConnectedOp<InitOp>(
+        {},
+        {{InitOp::getOutIndex(), logging::format("D{}_full", i)}},
+        Onnx::CustomOperators::Init_1,
+        domainTInfos[i],
+        TensorType::ActGrad,
+        InitType::Zero,
+        gSettings);
+    initOps.push_back(initOpF);
+
+    std::vector<int32_t> data(1, i);
+    graph.addConstInit(logging::format("index_{}", i),
+                       TensorInfo(DataType::INT32, {}),
+                       static_cast<void *>(data.data()),
+                       DebugContext{});
+
+    ir.setRemoteBufferInfo(
+        remoteBufferIds[i],
+        RemoteBufferInfo{domainTInfos[i], remoteBufferRepeats[i]});
+
+    auto loadOp = graph.createConnectedOp<RemoteLoadOp>(
+        {{RemoteLoadOp::getLocalTensorInIndex(),
+          logging::format("D{}_sharded", i)},
+         {RemoteLoadOp::getRemoteBufferOffsetInIndex(),
+          logging::format("index_{}", i)}},
+        {{RemoteLoadOp::getLocalTensorOutIndex(),
+          logging::format("D{}_loaded", i)}},
+        Onnx::CustomOperators::RemoteLoad,
+        gSettings,
+        remoteBufferIds[i]);
+
+    // Facilitate merging
+    loadOps.push_back(loadOp);
+    if (loadOps.size() > 1) {
+      graph.topoCons->insert(loadOps[i - 1], loadOps[i], true);
+    }
+
+    auto reduceScatterOp = graph.createConnectedOp<ReplicatedReduceScatterOp>(
+        {{ReplicatedReduceScatterOp::getInIndex(),
+          logging::format("D{}_full", i)}},
+        {{ReplicatedReduceScatterOp::getOutIndex(),
+          logging::format("D{}_scattered", i)}},
+        Onnx::CustomOperators::ReplicatedReduceScatter,
+        CollectiveOperator::Add,
+        CommGroup(CommGroupType::All, 0),
+        true,
+        gSettings);
+
+    reduceScatterOps.push_back(reduceScatterOp);
+
+    auto copyVarUpdate = graph.createConnectedOp<CopyVarUpdateOp>(
+        {{CopyVarUpdateOp::getVarToUpdateInIndex(),
+          logging::format("D{}_loaded", i)},
+         {CopyVarUpdateOp::getUpdaterInIndex(),
+          logging::format("D{}_scattered", i)}},
+        {{CopyVarUpdateOp::getUpdatedVarOutIndex(),
+          logging::format("D{}_updated", i)}},
+        gSettings);
+
+    varUpdateOps.push_back(copyVarUpdate);
+
+    domainTensors.push_back(
+        graph.getTensors().get(logging::format("D{}_updated", i)));
+  }
+
+  ir.applyTransform(MergeExchange::id(), graph);
 }

@@ -28,11 +28,14 @@ void ReplicatedReduceScatterOpx::grow(snap::program::Sequence &prog) const {
   const auto inIndex   = ReplicatedReduceScatterOp::getInIndex();
   auto toReduceScatter = getInTensor(inIndex);
 
-  if (hasInput(ReplicatedAllGatherOp::getCollectiveLinkedIndex())) {
+  if (getOp<ReplicatedReduceScatterOp>()
+          .isconfigureOutputForReplicatedTensorSharding()) {
+    auto group = getCollectiveLinkedGroup();
+
     ViewChangers viewChangers(
         {std::make_shared<ReplicatedGatherInScatterOutViewChanger>(
-            outInfo(ReplicatedAllGatherOp::getOutIndex()).nelms(),
-            getCollectiveLinkedGroup().first)});
+            outInfo(ReplicatedReduceScatterOp::getOutIndex()).nelms(),
+            group.id)});
     setOutViewChangers(ReplicatedReduceScatterOp::getOutIndex(), viewChangers);
 
     if (!hasInViewChangers(ReplicatedReduceScatterOp::getInIndex()) ||
@@ -92,9 +95,9 @@ ReplicatedReduceScatterOpx::getInputCreatorType(InIndex index) const {
 
   if (hasInput(ReplicatedAllGatherOp::getCollectiveLinkedIndex())) {
     auto group = getCollectiveLinkedGroup();
-    for (Op *cbrOp : group.second) {
+    for (auto cbrOpId : group.collectiveOpIds) {
       // Can't exist on itself
-      if (cbrOp->id != rrsOp.id) {
+      if (cbrOpId.first != rrsOp.id) {
         // This ReplicatedReduceScatterOp is not alone in a group, and can
         // use a pre-existing CBR to create the tensor layout
         // T34831 currently always disable creator, because it can lead to
@@ -145,9 +148,10 @@ ReplicatedReduceScatterOpx::mustExistBeforeCreateDNF(InIndex) const {
   const auto &rrsOp = getOp<ReplicatedReduceScatterOp>();
   auto group        = getCollectiveLinkedGroup();
   DnfTensorIds mustExist;
-  for (Op *cbrOp : group.second) {
-    // Can't exist on itself
-    if (cbrOp->id != rrsOp.id) {
+  for (auto cbrOpId : group.collectiveOpIds) {
+    // Can't depend on itself
+    if (cbrOpId.first != rrsOp.id) {
+      auto cbrOp = dv_p->ir().getOp(cbrOpId.first);
       mustExist.push_back({cbrOp->inId(CollectivesBaseOp::getInIndex()),
                            cbrOp->outId(CollectivesBaseOp::getOutIndex())});
     }
@@ -172,7 +176,7 @@ ReplicatedReduceScatterOpx::getCreatorViewChangers(InIndex index) const {
     auto cbr = getCollectiveBalancedReorder();
     ViewChangers viewChangers(
         {std::make_shared<ReplicatedGatherOutScatterInViewChanger>(
-            cbr, getCollectiveLinkedGroup().first)});
+            cbr, getCollectiveLinkedGroup().id)});
     return viewChangers;
   }
   throw error(

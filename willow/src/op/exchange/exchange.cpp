@@ -43,7 +43,7 @@ ExchangeDescriptor::ExchangeDescriptor(ExchangeDirection direction_,
                                        int numOutputs_)
     : direction(direction_), remoteBufferId(-1), hostStreamTensorId(id_),
       vgid(vgid_), tileSet(tileSet_), numInputs(numInputs_),
-      numOutputs(numOutputs_) {}
+      numOutputs(numOutputs_), inplace(false) {}
 
 ExchangeDescriptor::ExchangeDescriptor(ExchangeDirection direction_,
                                        RemoteBufferId id_,
@@ -92,6 +92,50 @@ std::ostream &operator<<(std::ostream &ost, const ExchangeDescriptor &ed) {
   ost << ", tiles=" << ed.getTileSet();
   ost << ")";
   return ost;
+}
+
+std::pair<int, int>
+ExchangeBaseOp::inIndexToDescriptorIndex(InIndex index) const {
+  if (hasInput(index)) {
+    return {0, index};
+  } else {
+    throw error("[ExchangeBaseOp] No input at index {}", index);
+  }
+}
+
+std::pair<int, int>
+ExchangeBaseOp::outIndexToDescriptorIndex(OutIndex index) const {
+  if (hasOutput(index)) {
+    return {0, index};
+  } else {
+    throw error("[ExchangeBaseOp] No input at index {}", index);
+  }
+}
+
+std::vector<InIndex>
+ExchangeBaseOp::descriptorIndexToInIndices(int index) const {
+  if (index == 0) {
+    std::vector<InIndex> indices;
+    for (auto &i : input->tensorMap()) {
+      indices.push_back(i.first);
+    }
+    return indices;
+  } else {
+    throw error("[ExchangeBaseOp] No descriptor at index {}", index);
+  }
+}
+
+std::vector<OutIndex>
+ExchangeBaseOp::descriptorIndexToOutIndices(int index) const {
+  if (index == 0) {
+    std::vector<OutIndex> indices;
+    for (auto &i : output->tensorMap()) {
+      indices.push_back(i.first);
+    }
+    return indices;
+  } else {
+    throw error("[ExchangeBaseOp] No descriptor at index {}", index);
+  }
 }
 
 } // namespace popart

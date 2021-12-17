@@ -12,6 +12,8 @@
 #include <popart/popx/irlowering.hpp>
 #include <popart/popx/op/collectives/collectivesx.hpp>
 #include <popart/popx/opxmanager.hpp>
+#include <popart/popx/replicatedtensorshardingbundle.hpp>
+#include <popart/replicatedtensorsharding.hpp>
 
 #include <poputil/Util.hpp>
 
@@ -46,164 +48,68 @@ popops::CollectiveOperator getPoplarCollectiveOperator(CollectiveOperator op) {
 CollectivesBaseOpx::CollectivesBaseOpx(Op *op, Devicex *devicex)
     : PopOpx(op, devicex) {}
 
-std::pair<std::set<TensorId>, std::vector<Op *>>
+ReplicatedTensorShardingGroup
 CollectivesBaseOpx::getCollectiveLinkedGroup() const {
 
-  std::set<TensorId> groupTensorIds;
-  std::vector<Op *> groupCollectiveOps;
+  auto &tracer = dv_p->lowering()
+                     .getReplicatedTensorShardingBundle()
+                     .getReplicatedTensorShardingTracer();
 
-  Shape shape;
-  Shape metaShape;
-  if (op_p->isConvertibleTo<ReplicatedReduceScatterOp>()) {
-    shape =
-        op_p->outTensor(ReplicatedReduceScatterOp::getOutIndex())->info.shape();
-    metaShape = op_p->outTensor(ReplicatedReduceScatterOp::getOutIndex())
-                    ->info.metaShape();
+  auto rtsIndices = op_p->getReplicatedTensorShardingIndices();
+
+  ReplicatedTensorShardingOpInfo id{
+      op_p->id, rtsIndices.begin()->first, rtsIndices.begin()->second};
+
+  if (!tracer.hasGroup(id)) {
+    bool hasLinkedInput =
+        op_p->hasInput(CollectivesBaseOp::getCollectiveLinkedIndex());
+
+    std::set<Tensor *, PTensorCmp> startTensors;
+
+    if (hasLinkedInput) {
+      startTensors.insert(
+          op_p->inTensor(CollectivesBaseOp::getCollectiveLinkedIndex()));
+    }
+
+    if (op_p->isConvertibleTo<ReplicatedReduceScatterOp>()) {
+      startTensors.insert(
+          op_p->outTensor(ReplicatedReduceScatterOp::getOutIndex()));
+    }
+
+    if (op_p->isConvertibleTo<ReplicatedAllGatherOp>()) {
+      startTensors.insert(op_p->inTensor(ReplicatedAllGatherOp::getInIndex()));
+    }
+
+    tracer.trace(startTensors);
   }
-  if (op_p->isConvertibleTo<ReplicatedAllGatherOp>()) {
-    shape = op_p->inTensor(ReplicatedAllGatherOp::getInIndex())->info.shape();
-    metaShape =
-        op_p->inTensor(ReplicatedAllGatherOp::getInIndex())->info.metaShape();
-  }
-
-  auto visitor =
-      [&shape, &metaShape, &groupTensorIds, &groupCollectiveOps](Tensor *t) {
-        bool keep_going = false;
-
-        for (Op *c : t->consumers.getOps()) {
-          if (CollectivesBaseOp *collectiveOp =
-                  dynamic_cast<CollectivesBaseOp *>(c)) {
-            auto indices = collectiveOp->input->indices(t);
-            if (std::find(indices.begin(),
-                          indices.end(),
-                          CollectivesBaseOp::getCollectiveLinkedIndex()) !=
-                indices.end()) {
-              for (auto root : graphutils::rootTensors(t)) {
-                groupTensorIds.insert(root->id);
-              }
-              groupCollectiveOps.push_back(collectiveOp);
-              keep_going = true;
-            }
-          }
-        }
-
-        if (t->isRemoteArgTensor()) {
-          keep_going = true;
-        }
-
-        // Same meta shape -> connected RTS domain
-        if (t->info.metaShape() == metaShape) {
-          keep_going = true;
-        }
-
-        if (t->info.shape() == shape && t->info.metaShape() != metaShape) {
-          logging::opx::warn("[CollectivesBaseOpx::getCollectiveLinkedGroup] "
-                             "tensor {} matches in shape ({} vs. {}) but not "
-                             "meta-shape ({} vs. {})",
-                             t->id,
-                             t->info.shape(),
-                             shape,
-                             t->info.metaShape(),
-                             metaShape);
-        }
-
-        logging::opx::trace("[CollectivesBaseOpx::getCollectiveLinkedGroup] "
-                            "visiting: {} (keep_going: {})",
-                            t->id,
-                            keep_going ? "true" : "false");
-
-        return keep_going;
-      };
-
-  auto filter = [](Op *op, Tensor *tq, Tensor *tn) {
-    // Subgraph inputs/outputs should be traversed
-    if (op->isConvertibleTo<SubgraphOp>()) {
-      return true;
-    }
-
-    // Collective ops should be traversed
-    if (op->isConvertibleTo<CollectivesBaseOp>()) {
-      return true;
-    }
-
-    // All other ops should be traversed if the input/output tensors
-    // are RTS related
-    auto rtsIndices = op->getReplicatedTensorShardingIndices();
-
-    std::vector<InIndex> tqIn;
-    std::vector<InIndex> tnIn;
-    std::vector<OutIndex> tqOut;
-    std::vector<OutIndex> tnOut;
-
-    if (op->input->contains(tq)) {
-      tqIn = op->input->indices(tq);
-    }
-    if (op->input->contains(tn)) {
-      tnIn = op->input->indices(tn);
-    }
-    if (op->output->contains(tq)) {
-      tqOut = op->output->indices(tq);
-    }
-    if (op->output->contains(tn)) {
-      tnOut = op->output->indices(tn);
-    }
-
-    for (auto rtsIndex : rtsIndices) {
-      bool tqInSet = false;
-      bool tnInSet = false;
-      for (auto index : tqIn) {
-        tqInSet |= rtsIndex.first.find(index) != rtsIndex.first.end();
-      }
-      for (auto index : tqOut) {
-        tqInSet |= rtsIndex.second.find(index) != rtsIndex.second.end();
-      }
-      for (auto index : tnIn) {
-        tnInSet |= rtsIndex.first.find(index) != rtsIndex.first.end();
-      }
-      for (auto index : tnOut) {
-        tnInSet |= rtsIndex.second.find(index) != rtsIndex.second.end();
-      }
-      if (tqInSet && tnInSet) {
-        // Input and output tensor are in the same RTS domain
-        return true;
-      }
-    }
-
-    return false;
-  };
-
-  graphutils::traverse(
-      {op_p->inTensor(CollectivesBaseOp::getCollectiveLinkedIndex())},
-      visitor,
-      filter,
-      graphutils::TraversalType::DepthFirst,
-      graphutils::VisitType::Pre,
-      graphutils::TraversalDirection::ForwardBackward);
-
-  const liveness::LivenessAnalyzer *liveness =
-      dv_p->lowering().getLivenessAnalyzer();
-
-  // Sort by schedule order in the IR
-  std::sort(groupCollectiveOps.begin(),
-            groupCollectiveOps.end(),
-            [liveness](Op *lhs, Op *rhs) {
-              return liveness->getScheduleIndices(lhs).front() <
-                     liveness->getScheduleIndices(rhs).front();
-            });
+  auto group = tracer.getGroup(id);
 
   logging::opx::trace(
-      "[CollectivesBaseOpx::getCollectiveLinkedGroup] group: {}",
-      groupTensorIds);
-  return {groupTensorIds, groupCollectiveOps};
+      "[CollectivesBaseOpx::getCollectiveLinkedGroup] group: {}", group);
+  return group;
 }
 
 gcl::CollectiveBalancedReorder *
 CollectivesBaseOpx::getCollectiveBalancedReorder() const {
   auto group = getCollectiveLinkedGroup();
+
+  TensorId tensorIdForCBR;
+
+  if (!group.collectiveLinkedTensorIds.empty()) {
+    tensorIdForCBR = *group.collectiveLinkedTensorIds.begin();
+  } else if (!group.shardedTensorIds.empty()) {
+    tensorIdForCBR = *group.shardedTensorIds.begin();
+  } else {
+    throw error("[CollectivesBaseOpx::getCollectiveBalancedReorder] Could not "
+                "find replicated tensor sharding group for {}",
+                op_p->debugName());
+  }
+
   logging::opx::trace("[CollectivesBaseOpx] Getting CBR for {}",
-                      *group.first.begin());
-  auto cbr =
-      dv_p->lowering().getCollectiveBalancedReorder(*group.first.begin());
+                      tensorIdForCBR);
+  auto cbr = dv_p->lowering()
+                 .getReplicatedTensorShardingBundle()
+                 .getCollectiveBalancedReorder(tensorIdForCBR);
   return cbr.get();
 }
 
@@ -213,8 +119,22 @@ CollectivesBaseOpx::createCollectiveBalancedReorder(snap::Tensor tensor) const {
   auto replicationFactor       = globalReplicationFactor;
   auto group                   = getCollectiveLinkedGroup();
 
-  for (auto op : group.second) {
-    if (auto collective = dynamic_cast<CollectivesBaseOp *>(op)) {
+  TensorId tensorIdForCBR;
+
+  if (!group.collectiveLinkedTensorIds.empty()) {
+    tensorIdForCBR = *group.collectiveLinkedTensorIds.begin();
+  } else if (!group.shardedTensorIds.empty()) {
+    tensorIdForCBR = *group.shardedTensorIds.begin();
+  } else {
+    throw error(
+        "[CollectivesBaseOpx::createCollectiveBalancedReorder] Could not "
+        "find replicated tensor sharding group for {}",
+        op_p->debugName());
+  }
+
+  for (auto opId : group.collectiveOpIds) {
+    if (auto collective =
+            dynamic_cast<CollectivesBaseOp *>(dv_p->ir().getOp(opId.first))) {
       auto shardingDomain = collective->getGCLCommGroup();
       if (shardingDomain.replicaGroupSize > 0 &&
           (shardingDomain.type == CommGroupType::Consecutive ||
@@ -224,24 +144,51 @@ CollectivesBaseOpx::createCollectiveBalancedReorder(snap::Tensor tensor) const {
     }
   }
 
-  auto cbr =
-      dv_p->lowering().getCollectiveBalancedReorder(*group.first.begin());
-  if (!cbr.get()) {
-    cbr = std::make_shared<gcl::CollectiveBalancedReorder>(
+  gcl::CollectiveBalancedReorder *cbrPtr;
+  bool hasCbr = dv_p->lowering()
+                    .getReplicatedTensorShardingBundle()
+                    .hasCollectiveBalancedReorder(tensorIdForCBR);
+  if (hasCbr) {
+    auto cbr = dv_p->lowering()
+                   .getReplicatedTensorShardingBundle()
+                   .getCollectiveBalancedReorder(tensorIdForCBR);
+    cbrPtr = cbr.get();
+  } else {
+    auto cbr = std::make_shared<gcl::CollectiveBalancedReorder>(
         graph().getPoplarGraph(),
         tensor.getPoplarTensor(),
         replicationFactor,
         getDebugNameAndId());
-    for (auto tensor_id : group.first) {
-      logging::opx::trace("[CollectivesBaseOpx] CBR created for {}, sharding "
-                          "factor: {}, global replication factor: {}",
-                          tensor_id,
-                          replicationFactor,
-                          globalReplicationFactor);
-      dv_p->lowering().setCollectiveBalancedReorder(tensor_id, cbr);
+    auto cbrId = dv_p->lowering()
+                     .getReplicatedTensorShardingBundle()
+                     .registerCollectiveBalancedReorder(cbr);
+    cbrPtr = cbr.get();
+
+    auto setCBR = [this, &cbrId, &replicationFactor, &globalReplicationFactor](
+                      TensorId &tensorId) {
+      logging::opx::trace(
+          "[CollectivesBaseOpx] CBR with ID {} created for {}, sharding "
+          "factor: {}, global replication factor: {}",
+          cbrId,
+          tensorId,
+          replicationFactor,
+          globalReplicationFactor);
+      dv_p->lowering()
+          .getReplicatedTensorShardingBundle()
+          .setCollectiveBalancedReorder(tensorId, cbrId);
+    };
+
+    for (auto tensorId : group.remoteTensorIds) {
+      setCBR(tensorId);
+    }
+    for (auto tensorId : group.collectiveLinkedTensorIds) {
+      setCBR(tensorId);
+    }
+    for (auto tensorId : group.shardedTensorIds) {
+      setCBR(tensorId);
     }
   }
-  return cbr.get();
+  return cbrPtr;
 }
 
 gcl::CommGroup toGCLCommGroup(const popart::CommGroup &group) {

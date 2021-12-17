@@ -66,6 +66,10 @@ public:
                           bool onDemandOptimizerState,
                           ExecutionPhaseSchedule schedule);
 
+  // Get RTS indices modified as required by this transform
+  ReplicatedTensorShardingIndices
+  getReplicatedTensorShardingIndices(Op *op) const;
+
 protected:
   // Types used.
   using Ops               = std::vector<Op *>;

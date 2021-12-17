@@ -10,16 +10,21 @@ __all__ = ["replicated_all_gather"]
 
 
 def replicated_all_gather(t: Tensor,
-                          remote_arg: Optional[Tensor] = None,
-                          group: Optional[CommGroup] = None) -> Tensor:
+                          group: Optional[CommGroup] = None,
+                          link: Optional[Tensor] = None) -> Tensor:
     """Gathers tensor `t` across replicas. Output tensor contains in the values of `t` from each replica.
 
     Args:
         t (Tensor): Tensor to be reduced. Must be rank=1.
-        remote_arg (Optional[Tensor]):The tensor associated with a remote variable, 
-            returned from remote_variable/remote_replica_sharded_variable.
         group (Optional[CommGroup]): Replicas to gather from. Defaults to All replicas.
-
+        link (Optional[Tensor]): The tensor to link the collective operation with other collective
+            operations for replicated tensor sharding. All collective operations, whose link tensor
+            leads to the same root tensor in the graph, are added to the same replicated tensor
+            sharding group such that their input/output tensors have compatible data orders.
+            (such that elementwise operations on the sharded tensor give the semantically correct result).
+            The input is optional, if omitted, the group will be determined heuristically.
+            The tensor is used for graph traversal only and not consumed by the Op, therefore
+            shape and data type do not matter.
     Returns:
         Tensor: Gathered tensor.
     """
@@ -37,8 +42,8 @@ def replicated_all_gather(t: Tensor,
                                   _ir.NumInputs(1, 2), 1)
 
     ins: Dict[int, str] = {0: t.id}
-    if remote_arg is not None:
-        ins[1] = remote_arg.id
+    if link is not None:
+        ins[1] = link.id
 
     op = pb_g.createConnectedOp_ReplicatedAllGatherOp(
         ins, {0: g._create_tensor_id(t.name + "_all_gathered")}, opid, group,

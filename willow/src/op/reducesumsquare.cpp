@@ -31,11 +31,7 @@ std::vector<std::unique_ptr<Op>> ReduceSumSquareOp::getGradOps() {
 
 ReplicatedTensorShardingIndices
 ReduceSumSquareOp::getReplicatedTensorShardingIndices() const {
-  if (isOptimizerOp()) {
-    return {{{ReduceSumSquareOp::getInIndex()}, {}}};
-  } else {
-    return {};
-  }
+  return {{{ReduceSumSquareOp::getInIndex()}, {}}};
 }
 
 void ReduceSumSquareOp::configureForReplicatedTensorSharding(

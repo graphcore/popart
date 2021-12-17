@@ -405,8 +405,25 @@ void serializePopartExecutable(std::ostream &out,
   }
 
   {
+    const auto &collectiveBalancedReorderIds =
+        ir_lowering.getReplicatedTensorShardingBundle()
+            .getCollectiveReorderIds();
+    auto hostRearrangementIdsBuilder =
+        executablexBuilder.initCollectiveBalancedHostRearrangementIds();
+    auto rearrangementIdsBuilder = hostRearrangementIdsBuilder.initIdPairs(
+        collectiveBalancedReorderIds.size());
+
+    int i = 0;
+    for (const auto &kv : collectiveBalancedReorderIds) {
+      rearrangementIdsBuilder[i].setId(kv.first);
+      rearrangementIdsBuilder[i].setCbrId(kv.second);
+      ++i;
+    }
+  }
+
+  {
     const auto &collectiveBalancedReorders =
-        ir_lowering.getCollectiveReorders();
+        ir_lowering.getReplicatedTensorShardingBundle().getCollectiveReorders();
 
     auto hostRearrangementsBuilder =
         executablexBuilder.initCollectiveBalancedHostRearrangements();
@@ -415,7 +432,7 @@ void serializePopartExecutable(std::ostream &out,
 
     int i = 0;
     for (const auto &kv : collectiveBalancedReorders) {
-      rearrangementsBuilder[i].setId(kv.first);
+      rearrangementsBuilder[i].setCbrId(kv.first);
 
       const auto &hostRearrangement = kv.second->getHostRearrangement();
       auto rearrangementBuilder = rearrangementsBuilder[i].initRearrangement();
@@ -648,8 +665,24 @@ deserializeExecutable(std::istream &in,
     }
   }
 
-  std::map<TensorId, gcl::CollectiveBalancedHostRearrangement>
-      cbrHostRearrangement;
+  std::map<TensorId, CollectiveBalancedReorderId> cbrHostRearrangementIds;
+  {
+    auto collectiveBalancedHostRearrangementIdsReader =
+        executablexReader.getCollectiveBalancedHostRearrangementIds();
+    auto idPairsReader =
+        collectiveBalancedHostRearrangementIdsReader.getIdPairs();
+
+    for (const auto cbr : idPairsReader) {
+      TensorId id                       = cbr.getId();
+      CollectiveBalancedReorderId cbrId = cbr.getCbrId();
+
+      cbrHostRearrangementIds[id] = cbrId;
+    }
+  }
+
+  std::map<CollectiveBalancedReorderId,
+           gcl::CollectiveBalancedHostRearrangement>
+      cbrHostRearrangements;
   {
     auto collectiveBalancedHostRearrangementsReader =
         executablexReader.getCollectiveBalancedHostRearrangements();
@@ -657,8 +690,8 @@ deserializeExecutable(std::istream &in,
         collectiveBalancedHostRearrangementsReader.getRearrangements();
 
     for (const auto cbr : rearrangementsReader) {
-      std::string id           = cbr.getId();
-      auto rearrangementReader = cbr.getRearrangement();
+      CollectiveBalancedReorderId cbrId = cbr.getCbrId();
+      auto rearrangementReader          = cbr.getRearrangement();
 
       gcl::CollectiveBalancedHostRearrangement cbhr;
       cbhr.replicationFactor = rearrangementReader.getReplicationFactor();
@@ -673,14 +706,15 @@ deserializeExecutable(std::istream &in,
             poplar::Interval(s.getBegin(), s.getEnd()));
       }
 
-      cbrHostRearrangement[id] = cbhr;
+      cbrHostRearrangements[cbrId] = cbhr;
     }
   }
 
   auto exe = popart::popx::Executablex::createFromStream(
       lowering,
       std::move(deserializedTensors),
-      std::move(cbrHostRearrangement));
+      std::move(cbrHostRearrangementIds),
+      std::move(cbrHostRearrangements));
 
   // Reset feed position
   in.clear(); // Just in case we reached eof

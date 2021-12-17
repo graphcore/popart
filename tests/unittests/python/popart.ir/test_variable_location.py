@@ -57,12 +57,12 @@ def test_remote_replia_sharded_variable_gather():
         # loaded_x.shape = (1,)
         loaded_x = ops.remote_load(buffer, remote_x)
         # full_x.shape = (2,)
-        full_x = ops.collectives.replicated_all_gather(loaded_x, remote_x)
+        full_x = ops.collectives.replicated_all_gather(loaded_x)
 
         updated_x = full_x + y
 
         updated_shard = ops.collectives.replicated_reduce_scatter(
-            updated_x, remote_x, 'local')
+            updated_x, 'local', None, True)
         ops.remote_store(buffer, remote_x, updated_shard)
 
         y_d2h = pir.d2h_stream(updated_x.shape, updated_x.dtype)
@@ -89,12 +89,12 @@ def test_replia_sharded_variable_gather():
         y = pir.variable([3, 4])
 
         # full_x.shape = (2,)
-        full_x = ops.collectives.replicated_all_gather(loaded_x, remote_x)
+        full_x = ops.collectives.replicated_all_gather(loaded_x)
 
         updated_x = ops.scaled_add_(full_x, y)
 
         updated_shard = ops.collectives.replicated_reduce_scatter(
-            updated_x, remote_x, 'local')
+            updated_x, 'local', None, True)
         # Extra copy_var_update_ required to update `loaded_x`
         ops.var_updates.copy_var_update_(loaded_x, updated_shard)
 
@@ -121,7 +121,7 @@ def test_replica_sharded_variable_no_gather():
 
         y = pir.variable([3, 4])
         sharded_y = ops.collectives.replicated_reduce_scatter(
-            y, remote_x, 'local')
+            y, 'local', None, True)
 
         # Add to sharded x
         updated_x = ops.scaled_add_(loaded_x, sharded_y)
@@ -150,7 +150,7 @@ def test_remote_replia_sharded_variable_no_gather():
 
         y = pir.variable([3, 4])
         sharded_y = ops.collectives.replicated_reduce_scatter(
-            y, remote_x, 'local')
+            y, 'local', None, True)
 
         # loaded_x.shape = (1,)
         loaded_x = ops.remote_load(buffer, remote_x, "x")

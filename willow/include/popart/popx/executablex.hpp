@@ -54,15 +54,19 @@ private:
   // avoid unneccessary copies
   nonstd::optional<std::unordered_map<TensorId, std::unique_ptr<Tensor>>>
       tensors;
-  nonstd::optional<std::map<TensorId, gcl::CollectiveBalancedHostRearrangement>>
-      cbrHostRearrangement;
+  nonstd::optional<std::map<TensorId, CollectiveBalancedReorderId>>
+      cbrHostRearrangementIds;
+  nonstd::optional<std::map<CollectiveBalancedReorderId,
+                            gcl::CollectiveBalancedHostRearrangement>>
+      cbrHostRearrangements;
 
 public:
   Executablex(IrLowering &ir_lowering_);
-  Executablex(
-      IrLowering &ir_lowering_,
-      std::unordered_map<TensorId, std::unique_ptr<Tensor>> &&tensorMap,
-      std::map<TensorId, gcl::CollectiveBalancedHostRearrangement> &&cbrMap);
+  Executablex(IrLowering &ir_lowering_,
+              std::unordered_map<TensorId, std::unique_ptr<Tensor>> &&tensorMap,
+              std::map<TensorId, CollectiveBalancedReorderId> &&cbrIdMap,
+              std::map<CollectiveBalancedReorderId,
+                       gcl::CollectiveBalancedHostRearrangement> &&cbrMap);
 
   static std::unique_ptr<Executablex>
   createFromLoweredIr(IrLowering &ir_lowering_);
@@ -70,7 +74,9 @@ public:
   static std::unique_ptr<Executablex> createFromStream(
       IrLowering &ir_lowering_,
       std::unordered_map<TensorId, std::unique_ptr<Tensor>> &&tensorMap,
-      std::map<TensorId, gcl::CollectiveBalancedHostRearrangement> &&cbrMap);
+      std::map<TensorId, CollectiveBalancedReorderId> &&cbrIdMap,
+      std::map<CollectiveBalancedReorderId,
+               gcl::CollectiveBalancedHostRearrangement> &&cbrMap);
 
   IrLowering &lowering();
   const IrLowering &lowering() const;
@@ -112,8 +118,12 @@ public:
   const gcl::CollectiveBalancedHostRearrangement &
   getCollectiveBalancedHostRearrangement(const TensorId &id) const;
 
-  const std::map<TensorId, gcl::CollectiveBalancedHostRearrangement>
+  const std::map<CollectiveBalancedReorderId,
+                 gcl::CollectiveBalancedHostRearrangement>
   getCollectiveBalancedHostRearrangements() const;
+
+  const std::map<TensorId, CollectiveBalancedReorderId>
+  getCollectiveBalancedHostRearrangementIds() const;
 
   std::string getExecutablexCachePath(const std::string &cacheDir) const;
 
