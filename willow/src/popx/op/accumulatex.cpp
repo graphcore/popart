@@ -318,10 +318,12 @@ void AccumulateOpx::grow(snap::program::Sequence &prog) const {
           getInTensor(AccumulateOp::getFactorInIndex()).getPoplarTensor();
       popops::mapInPlace(
           graph().getPoplarGraph(),
-          pe::Add(pe::Mul(pe::Cast(pe::_3, accum.elementType()), pe::_1),
-                  pe::Mul(pe::Mul(pe::Sub(pe::Const(1.0f), pe::_3),
-                                  pe::Cast(pe::_2, accum.elementType())),
-                          pe::Cast(pe::_2, accum.elementType()))),
+          pe::Add(
+              pe::Mul(pe::Cast(pe::_3, accum.elementType()), pe::_1),
+              pe::Mul(pe::Mul(pe::Sub(pe::Const(1.0f),
+                                      pe::Cast(pe::_3, accum.elementType())),
+                              pe::Cast(pe::_2, accum.elementType())),
+                      pe::Cast(pe::_2, accum.elementType()))),
           {accum, grad, factor},
           prog.getPoplarSequence(),
           debugContext("movingAverageSquare"));
