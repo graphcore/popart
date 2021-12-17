@@ -67,6 +67,13 @@ public:
 
   /// Get the device id.
   virtual int getId() const = 0;
+  /// Get the child device ids. The value returned by `getId()` for a multi-IPU
+  /// device is a 'parent ID' and does not relate to the IDs of the devices
+  /// it comprises. This function, in the case of real devices, uses the Poplar
+  /// API to work out which single-IPU device IDs it relates to. In the case
+  /// of replication a device includes all IPUs involved, so a 2-IPU model with
+  /// 2x replication would expect to have 4 child IDs returned here.
+  virtual std::vector<int> getChildIds() const = 0;
   /// Get the version of the software on the IPU.
   virtual std::string getVersion() const = 0;
   /// Get the number of IPUs in the device.
@@ -106,6 +113,9 @@ private:
   const std::unique_ptr<const poplar::OptionFlags> flags;
   // How many seconds to wait when trying to attach to an IPU
   unsigned attachTimeout = 0;
+
+  // Format of device access log stored so we can log in the destructor.
+  std::string deviceAccessLogEntryFmt;
 };
 
 std::ostream &operator<<(std::ostream &os, const DeviceInfo &di);

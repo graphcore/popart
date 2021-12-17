@@ -46,6 +46,8 @@ public:
       : popart::DeviceInfo(_provider, _type, _connectionType, _flags),
         device(std::move(_device)), isAttached_(false) {}
 
+  virtual ~DevicexInfo();
+
   bool attach() override;
   void detach() override;
 
@@ -83,8 +85,9 @@ public:
                     _device,
                     {}) {}
 
-  virtual int getId() const { return 0; }
-  virtual std::string getVersion() const { return "<unknown-cpu>"; }
+  virtual int getId() const override { return 0; }
+  virtual std::vector<int> getChildIds() const override { return {}; };
+  virtual std::string getVersion() const override { return "<unknown-cpu>"; }
 };
 class DevicexSimInfo : public DevicexInfo {
 public:
@@ -95,8 +98,9 @@ public:
                     _device,
                     {}) {}
 
-  virtual int getId() const { return 0; }
-  virtual std::string getVersion() const { return "<unknown-sim>"; }
+  virtual int getId() const override { return 0; }
+  virtual std::vector<int> getChildIds() const override { return {}; };
+  virtual std::string getVersion() const override { return "<unknown-sim>"; }
 };
 class DevicexIpuModelInfo : public DevicexInfo {
 public:
@@ -110,8 +114,9 @@ public:
                     {}),
         ipuVersion(_ipuVersion) {}
 
-  virtual int getId() const { return 0; }
-  virtual std::string getVersion() const { return ipuVersion; }
+  virtual int getId() const override { return 0; }
+  virtual std::vector<int> getChildIds() const override { return {}; };
+  virtual std::string getVersion() const override { return ipuVersion; }
 
 private:
   std::string ipuVersion;
@@ -126,10 +131,11 @@ public:
       : DevicexInfo(_provider, popart::DeviceType::Ipu, _dct, _device, _flags),
         id(_id) {}
 
-  virtual int getId() const { return id; }
-  virtual std::string getVersion() const;
+  virtual int getId() const override { return id; }
+  virtual std::vector<int> getChildIds() const override;
+  virtual std::string getVersion() const override;
 
-  virtual bool canCompileOffline() const { return true; }
+  virtual bool canCompileOffline() const override { return true; }
 
 private:
   int id;
@@ -155,6 +161,7 @@ public:
   }
 
   virtual int getId() const override { return 0; }
+  virtual std::vector<int> getChildIds() const override { return {}; }
   virtual std::string getVersion() const override { return "<offline-ipu>"; }
 
   virtual int getNumIpus() const override { return target.getNumIPUs(); }

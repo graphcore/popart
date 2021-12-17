@@ -255,6 +255,12 @@ std::shared_ptr<popart::DeviceInfo> DevicexManager::createHostDevice(
   return nullptr;
 }
 
+DevicexInfo::~DevicexInfo() {
+  if (isAttached_) {
+    writeToDeviceAccessLog("detach-on-destruct");
+  }
+}
+
 bool DevicexInfo::attach() {
   isAttached_ = device.attach();
   return isAttached_;
@@ -267,6 +273,23 @@ void DevicexInfo::detach() {
 
   isAttached_ = false;
   device.detach();
+}
+
+std::vector<int> DevicexIpuInfo::getChildIds() const {
+  auto numIpus = getNumIpus();
+  if (numIpus == 1) {
+    return {id};
+  } else {
+    auto deviceManager = poplar::DeviceManager::createDeviceManager();
+    auto childIds      = deviceManager.getChildDeviceIds(id, 1);
+
+    std::vector<int> res;
+    res.reserve(childIds.size());
+    for (auto childId : childIds) {
+      res.push_back(childId);
+    }
+    return res;
+  }
 }
 
 std::string DevicexIpuInfo::getVersion() const {

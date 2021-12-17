@@ -371,8 +371,31 @@ bool DeviceInfo::tryAttachUntilTimeout() {
 void DeviceInfo::writeToDeviceAccessLog(
     const std::string &event,
     const std::map<std::string, std::string> &auxKeyVals) {
+
   auto deviceLog = getPopartEnvVar("LOG_DEVICE_ACCESS_IN_TESTS");
+
   if (deviceLog) {
+
+    if (deviceAccessLogEntryFmt.empty()) {
+      // NOTE: This string is cached because constructing it involves calls to
+      // virtual functions. Calling virtual functions from the destructor causes
+      // run-time issues, so by caching the string we can still log the destruct
+      // in the constructor.
+      std::stringstream ss;
+      auto testName = getPopartEnvVar("TEST_NAME");
+      if (testName) {
+        ss << ", test:" << *testName;
+      }
+      ss << ", event:{}";
+      ss << ", ipus:"
+         << "[";
+      auto childIds = getChildIds();
+      ss << logging::join(childIds.begin(), childIds.end(), ",");
+      ss << "]";
+
+      deviceAccessLogEntryFmt = ss.str();
+    }
+
     auto now       = std::chrono::system_clock::now();
     auto nowTime   = std::chrono::system_clock::to_time_t(now);
     auto localTime = std::localtime(&nowTime);
@@ -380,17 +403,10 @@ void DeviceInfo::writeToDeviceAccessLog(
     std::ofstream outfile;
     outfile.open(*deviceLog, std::ios_base::app);
     outfile << std::put_time(localTime, "%FT%T") << "Z";
-    auto testName = getPopartEnvVar("TEST_NAME");
-    outfile << ", event:" << event;
-    outfile << ", numIpus:" << getNumIpus();
-    outfile << ", id:" << getId();
+    outfile << logging::format(deviceAccessLogEntryFmt, event);
 
     for (const auto &entry : auxKeyVals) {
       outfile << ", " << entry.first << ":" << entry.second;
-    }
-
-    if (testName) {
-      outfile << ", test:" << *testName;
     }
 
     outfile << "\n";
