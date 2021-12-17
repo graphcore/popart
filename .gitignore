@@ -16,3 +16,5 @@ experimental
 *compile_commands.json*
 .cache/
 *.code-workspace
+.idea
+

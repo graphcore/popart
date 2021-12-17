@@ -8,7 +8,7 @@ from popart.ir.tensor import Tensor
 
 from .utils import check_in_graph
 
-from typing import Mapping, Union, Tuple, Optional
+from typing import Mapping, Union, Tuple, Optional, List
 
 
 class CallInfo:
@@ -124,7 +124,7 @@ class CallInfo:
 
 @debug_context_frame_offset(1)
 def call(subgraph: Graph,
-         *subgraph_fn_param_inputs: Tensor,
+         *subgraph_fn_param_inputs: Union[Tensor, List[Tensor]],
          subgraph_in_to_parent_in: Optional[Mapping[Tensor, Tensor]] = None
          ) -> Union[None, Tensor, Tuple[Tensor, ...]]:
     """
@@ -132,11 +132,11 @@ def call(subgraph: Graph,
 
     Args:
         subgraph (Graph): The called graph.
-        *subgraph_fn_param_inputs (Tensor):
+        *subgraph_fn_param_inputs  (Tensor, List[Tensor]):
             parent tensors that correspond to the inputs of the callable passed
             to ir.create_graph(callable, ...) when constructing `subgraph` earlier.
             The inputs passed MUST be provided here in the EXACT SAME ORDER as
-            to ir.get_graph(callable, ...).
+            to ir.create_graph(callable, ...).
         subgraph_in_to_parent_in (Mapping[Tensor, Tensor] = {}):
             Mapping of `subgraph tensor -> parent tensor` that corresponds to
             the inputs that the callable defined internally, e.g. by using
@@ -170,7 +170,7 @@ def call(subgraph: Graph,
 @op_debug_context("call")
 def call_with_info(
         subgraph: Graph,
-        *subgraph_fn_param_inputs: Tensor,
+        *subgraph_fn_param_inputs: Union[Tensor, List[Tensor]],
         subgraph_in_to_parent_in: Optional[Mapping[Tensor, Tensor]] = None,
         check_inputs: bool = True,
 ) -> CallInfo:
@@ -180,11 +180,11 @@ def call_with_info(
 
     Args:
         subgraph (Graph): The called graph.
-        *subgraph_fn_param_inputs (Tensor):
+        *subgraph_fn_param_inputs (Tensor, List[Tensor]):
             parent tensors that correspond to the inputs of the callable passed
-            to ir.get_graph(callable, ...) when constructing `subgraph` earlier.
+            to ir.create_graph(callable, ...) when constructing `subgraph` earlier.
             The inputs passed MUST be provided here in the EXACT SAME ORDER as
-            to ir.get_graph(callable, ...).
+            to ir.create_graph(callable, ...).
         subgraph_in_to_parent_in (Mapping[Tensor, Tensor] = {}):
             Mapping of `subgraph tensor -> parent tensor` that corresponds to
             the inputs that the callable defined internally, e.g. by using
@@ -197,13 +197,20 @@ def call_with_info(
     """
     subgraph_in_to_parent_in = subgraph_in_to_parent_in if subgraph_in_to_parent_in is not None else {}
 
-    if check_inputs and len(subgraph_fn_param_inputs) + len(
+    subgraph_fn_param_inputs_flat = []
+    for x in subgraph_fn_param_inputs:
+        if isinstance(x, (list, tuple)):
+            subgraph_fn_param_inputs_flat.extend(x)
+        else:
+            subgraph_fn_param_inputs_flat.append(x)
+
+    if check_inputs and len(subgraph_fn_param_inputs_flat) + len(
             subgraph_in_to_parent_in) != len(subgraph.get_input_tensors()):
         raise ValueError(
             "Not enough inputs have been provided: the number of graph inputs does not equal the number of "
             "subgraph_fn_param_inputs plus subgraph_in_to_parent_in inputs: {} != {} + {}"
             .format(len(subgraph.get_input_tensors()),
-                    len(subgraph_fn_param_inputs),
+                    len(subgraph_fn_param_inputs_flat),
                     len(subgraph_in_to_parent_in)))
 
     ctx = get_current_context()
@@ -226,7 +233,7 @@ def call_with_info(
     #    these inputs in the exact same order, so we can trivially reconstruct
     #    the input indices here.
     sgInIdx = 0
-    for t in subgraph_fn_param_inputs:
+    for t in subgraph_fn_param_inputs_flat:
         callInIdx = pb_callop.subgraphInToOpInIndex(sgInIdx)
         pb_callop.connectInTensor(callInIdx, t.id)
         sgInIdx += 1

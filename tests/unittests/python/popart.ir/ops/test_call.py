@@ -7,6 +7,7 @@ import popart.ir.ops as ops
 
 import popart._internal.ir as _ir
 from utils import contains_op_of_type, num_op_of_type
+from typing import List
 
 
 class TestCall:
@@ -162,3 +163,22 @@ class TestCall:
 
             with pytest.raises(popart.popart_exception):
                 ops.call(add_g, c)
+
+    def test_input_list_of_tensors(self):
+        ir = pir.Ir()
+
+        def sum_(a: pir.Tensor, bs: List[pir.Tensor], c: pir.Tensor):
+            x = a + c
+            for b in bs:
+                x += b
+            return x
+
+        with ir.main_graph():
+            a = pir.variable(1)
+
+            g = ir.create_graph(sum_, a, [a, a, a], a)
+
+            x = ops.call(g, a, [a, a, a], a)
+
+        assert len(g.get_input_tensors()) == 5
+        assert len(g.get_output_tensors()) == 1

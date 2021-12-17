@@ -2,7 +2,8 @@
 """Definition of a class that represents the PopART IR."""
 import inspect
 from weakref import WeakValueDictionary
-from typing import TYPE_CHECKING, Any, Callable, Dict, Iterable, List, Optional
+from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Tuple
+from collections import OrderedDict
 
 import popart
 import popart._internal.ir as _ir
@@ -86,16 +87,44 @@ class Ir:
             *args: Any,
             **kwargs: Any,
     ) -> 'Graph':
-        """Create a graph from a python callable.
+        """
+        Create a subgraph from a python callable or `Module`.
+        The graph inputs are determined using the signature of the function `fn`
+        and the supplied arguments `args` and `kwargs`. Tensors passed via the
+        arguments are used to determine the tensor info of the graph inputs (the
+        tensors are not actually passed to the graph). The graph outputs are
+        determined using the outputs of the function when called.
+
+        The order of inputs in the returned subgraph will be the same as the
+        order of the tensor inputs in the function signature and the provided
+        order of kwargs. This determines the order in which you pass the parent
+        tensors as inputs at the callsite.
+
+        The function `fn` can take any arguments. Any Tensor arguments are
+        automatically detected. Any Tensor arguments inside a tuple, list,
+        `*arg` or `**kwargs` are also detected. `*args`, `**kwargs`, lists
+        cannot contain a mixture of tensors and other types. Nested lists 
+        or dicts of tensors are not supported.
+
+        If an input is type hinted with `TensorByRef` or `List[TensorByRef]`
+        where appropriate in the signature of `fn` then the corresponding inputs
+        will be passed by reference instead of by value when the graph is called.
+
+        Variable number of outputs from `fn` are also supported.
 
         Args:
             fn (Callable[..., Any]):
-                The Python function that defines the graph.
+                The Python function that defines the graph. The signature of
+                `fn` with the provided arguments are used to determine the
+                inputs of the graph.
             *args (Any):
-                Arguments passed to the Python function that defines the graph.
+                Arguments passed to the Python function that defines the graph
+                that can be a mixture of tensors and other types. Tensors are
+                used to determine the tensor info of the inputs.
             **kwargs (Any):
                 Keyword arguments passed to the Python function that defines the
-                graph.
+                graph that can be a mixture of tensors and other types. Tensors
+                are used to determine the tensor info of the inputs.
 
         Returns:
             Graph:
@@ -103,56 +132,92 @@ class Ir:
         """
         if isinstance(fn, Module):
             qualname = fn.__class__.__qualname__
-            parameters = inspect.signature(fn.build,
-                                           follow_wrapped=True).parameters
+            func = fn.build
         else:
             # Note all Python functions will have __qualname__.
             if not callable(fn) or not hasattr(fn, '__qualname__'):
                 raise TypeError(
-                    "Callable `fn` must be either a function or a class that extends popart.ir.Module"
-                )
+                    "Callable `fn` must be either a function or a class that "
+                    "extends popart.ir.Module")
             else:
                 qualname = fn.__qualname__
-            parameters = inspect.signature(fn, follow_wrapped=True).parameters
+                func = fn
+
+        signature = inspect.signature(func, follow_wrapped=True)
+        try:
+            bound_args = signature.bind(*args, **kwargs)
+        except TypeError as e:
+            raise ValueError(
+                "The arguments, `args` and `kwargs`, do not match the signature"
+                " of the function `fn`.") from e
+        bound_args.apply_defaults()
+        arguments = bound_args.arguments
 
         name = self._create_name(qualname)
         _pb_subgraph = self._pb_ir.createGraph(name)
         subgraph = Graph._from_pb(_pb_subgraph)
 
         with subgraph:
-            in_args = []
-            params = list(parameters.items())
-            for idx, arg in enumerate(args):
+            for name, arg in bound_args.arguments.items():
+                type_hint = signature.parameters[name].annotation
+
                 if isinstance(arg, Tensor):
-                    t = arg
-                    try:
-                        name, param = params[idx]
-                        by_ref = param.annotation is TensorByRef
-                    except IndexError:
-                        name = t.id
-                        by_ref = False
-                    in_args.append(
-                        subgraph_input(t.shape, t.dtype, name, by_ref=by_ref))
-                else:
-                    in_args.append(arg)
+                    by_ref = type_hint is TensorByRef
+                    arguments[name] = subgraph_input(arg.shape,
+                                                     arg.dtype,
+                                                     name,
+                                                     by_ref=by_ref)
 
-            in_kwargs = {}
-            for k, v in kwargs.items():
-                if isinstance(v, Tensor):
-                    t = v
-                    try:
-                        param = parameters[k]
-                        by_ref = param.annotation is TensorByRef
-                    except AttributeError:
-                        by_ref = False
-                    in_kwargs[k] = subgraph_input(t.shape,
-                                                  t.dtype,
-                                                  k,
-                                                  by_ref=by_ref)
-                else:
-                    in_kwargs[k] = v
+                # Supported args:
+                # 1. Argument that is a list `def func(x: List[Tensor])`
+                # 2. Variable length argument `def func(*x)`
+                # 3. Variable keyword arguments `def func(**x)`
+                elif isinstance(arg, (tuple, list, dict)):
+                    signature_kind = signature.parameters[name].kind
 
-            outputs = fn(*in_args, **in_kwargs)
+                    if (signature_kind is inspect.Parameter.VAR_POSITIONAL or
+                            signature_kind is inspect.Parameter.VAR_KEYWORD):
+                        # Variable length argument (*arg)
+                        # or variable keyword argument (**kwarg)
+                        by_ref = type_hint is TensorByRef
+                    elif isinstance(arg, (tuple, list)):
+                        # Argument that is a list
+                        by_ref = type_hint is List[
+                            TensorByRef] or type_hint is Tuple[TensorByRef]
+                    elif isinstance(arg, dict):
+                        # Argument that is a dict
+                        continue
+
+                    if isinstance(arg, dict):
+                        items = arg.items()
+                    else:
+                        items = zip([name + f'_{i}' for i in range(len(arg))],
+                                    arg)
+
+                    in_args_sub = OrderedDict()
+                    contains_tensor = False
+
+                    for i, (subarg_name, subarg) in enumerate(items):
+                        if i > 0 and (isinstance(subarg, Tensor) !=
+                                      contains_tensor):
+                            raise TypeError(
+                                f"A {type(arg)} argument can't contain a "
+                                f"mixture of Tensors and other types. Arg name:"
+                                f" {name}. Value: {arg}")
+                        if isinstance(subarg, Tensor):
+                            contains_tensor = True
+                            in_args_sub[subarg_name] = subgraph_input(
+                                subarg.shape,
+                                subarg.dtype,
+                                subarg_name,
+                                by_ref=by_ref)
+                    if contains_tensor and isinstance(arg, dict):
+                        arguments[name] = in_args_sub
+                    elif contains_tensor and isinstance(arg, (tuple, list)):
+                        arguments[name] = list(in_args_sub.values())
+
+            bounds_args_new = inspect.BoundArguments(signature, arguments)
+            outputs = fn(*bounds_args_new.args, **bounds_args_new.kwargs)
 
             if outputs is None:
                 outputs = []
@@ -169,7 +234,8 @@ class Ir:
         """Create a new graph.
 
         Args:
-            name (Optional[str], optional): Name of the graph. Defaults to "graph".
+            name (Optional[str], optional): Name of the graph. Defaults to
+            "graph".
 
         Returns:
             Graph
