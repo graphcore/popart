@@ -1019,10 +1019,10 @@ Graph &SubgraphOutline::createEmptySubgraph(
                        std::to_string(outputIndexAndValue.first));
 
       TensorInfo tensorInfoOut(dataTypeOut, Shape{});
-      graphutils::addConstInitFromFloat(outputIndexAndValue.second,
-                                        outputValueId,
-                                        tensorInfoOut,
-                                        subgraph.getTensors());
+      addConstInitFromFloat(outputIndexAndValue.second,
+                            outputValueId,
+                            tensorInfoOut,
+                            subgraph.getTensors());
 
       TensorId shapeExpandTensorId = addScope(subgraph, "shapeExpandTensorId");
       std::vector<int64_t> shapeOut1D =

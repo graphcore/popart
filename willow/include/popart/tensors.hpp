@@ -108,6 +108,18 @@ private:
   Graph &graph;
 };
 
+/**
+ * Helper to adds const init tensor to tensors.
+ * \param value float value of tensor to be added to \a tensors.
+ * \param valueId tensor id of tensor to be added to \a tensors.
+ * \param tensorInfo tensor info of tensor to be added to \a tensors.
+ * \param tensors \a Tensors to which we add the tensor.
+ */
+void addConstInitFromFloat(float value,
+                           const TensorId &valueId,
+                           const TensorInfo &tensorInfo,
+                           Tensors &tensors);
+
 } // namespace popart
 
 #endif

@@ -36,7 +36,7 @@ Op *GradGrowerLoss::growLossGradients() {
   if (optimizer.lossScaling().isConst()) {
     float lossScale = optimizer.getFinalLossScalingVal();
 
-    graphutils::addConstInitFromFloat(
+    addConstInitFromFloat(
         lossScale, gradStarterId, gradStarterInfo, dep.get().getTensors());
 
     return nullptr;
