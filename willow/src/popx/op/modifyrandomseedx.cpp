@@ -42,8 +42,11 @@ void ModifyRandomSeedOpx::grow(snap::program::Sequence &prog) const {
   auto inSeedR = inSeed.slice(1, 2);
 
   // Calculate R + modifier.
-  auto rPlusMod = popops::add(
-      graph().getPoplarGraph(), inSeedR, modifier, prog.getPoplarSequence());
+  auto rPlusMod = popops::add(graph().getPoplarGraph(),
+                              inSeedR,
+                              modifier,
+                              prog.getPoplarSequence(),
+                              debugContext("preSeed"));
   auto metaSeed = poplar::concat({inSeedL, rPlusMod});
   // Calculate randint(R + modifier).
   auto outSeedRAsInt = poprand::uniform(

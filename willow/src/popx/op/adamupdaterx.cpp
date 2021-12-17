@@ -57,7 +57,8 @@ void AdamUpdaterOpx::grow(snap::program::Sequence &prog) const {
     popops::mapInPlace(graph().getPoplarGraph(),
                        pe::Add(pe::_1, pe::Const(1)),
                        {step},
-                       prog.getPoplarSequence());
+                       prog.getPoplarSequence(),
+                       debugContext("updateStep"));
 
     tensors.push_back(step);
     stepIndex = tensors.size();

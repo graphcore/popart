@@ -244,7 +244,7 @@ private:
 
   static TaskId initTensorTaskId(TensorId);
 
-  PriTask initRandomSeed();
+  PriTask initRandomSeed(Tensor *tensor);
   static TaskId initRandomSeedTaskId();
 
   PriTask setInitTensorValTask(Tensor *);

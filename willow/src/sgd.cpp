@@ -214,9 +214,9 @@ SGD::SGD(OptimizerValue lr,
          DataType accumType_,
          DataType accl1Type_,
          const DebugContext &debugContext_)
-    : Optimizer(lossScaling, clipNormSettings), lrs(lr), wds(wd), mms(mm),
-      dps(dp), vss(vs), sgdAccMm(sgdAccMm_), sgdAccumType(accumType_),
-      sgd2Accl1Type(accl1Type_), debugContext(debugContext_) {
+    : Optimizer(lossScaling, clipNormSettings, debugContext_), lrs(lr), wds(wd),
+      mms(mm), dps(dp), vss(vs), sgdAccMm(sgdAccMm_), sgdAccumType(accumType_),
+      sgd2Accl1Type(accl1Type_) {
   runValueChecks(lr, wd, mm, dp, vs);
 }
 

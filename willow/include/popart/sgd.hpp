@@ -804,8 +804,6 @@ private:
   // SGD2 only: accl1 tensors can be specified.
   DataType sgd2Accl1Type;
 
-  DebugContext debugContext;
-
   // int argument only to disambiguate from the other SGD constructor
   SGD(const std::map<std::string, OptimizerValue> &,
       const std::vector<ClipNormSettings> &,

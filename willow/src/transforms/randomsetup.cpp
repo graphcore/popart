@@ -497,7 +497,8 @@ void RandomSetup::addGetRandomSeedOp(Ir &ir, const Config &cfg) const {
   // 1. Create [randomSeed___fromHost] tensor.
   TensorId randomSeedFromHost = GetRandomSeedOp::getStreamedSeedTensorId();
 
-  graph.getTensors().addStream(randomSeedFromHost, seedTensorInfo);
+  DebugInfo di({randomSeedFromHost}, "popart_builder");
+  graph.getTensors().addStream(randomSeedFromHost, seedTensorInfo, {di});
   Tensor &seedTensor = *graph.getTensors().get(randomSeedFromHost);
   seedTensor.setReplicatedStreamMode(ReplicatedStreamMode::Replicate);
 

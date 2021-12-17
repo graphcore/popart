@@ -1074,10 +1074,10 @@ InitTensorPtrs IrLowering::getInitTensorCreators(const Tensor *tensor,
   }
 }
 
-PriTask IrLowering::initRandomSeed() {
+PriTask IrLowering::initRandomSeed(Tensor *tensor) {
   auto streamedSeedId = GetRandomSeedOp::getStreamedSeedTensorId();
 
-  auto initRandomSeedTask = [this, streamedSeedId]() {
+  auto initRandomSeedTask = [this, streamedSeedId, tensor]() {
     logging::devicex::debug("Initializing random seed.");
     SequenceMap seqs(graph());
     auto &prog = seqs.getSequence(&progs.setRandomSeedFromHostFragment());
@@ -1102,7 +1102,10 @@ PriTask IrLowering::initRandomSeed() {
     }
 
     rngStateLowering->lowerInitRngStatesFromSeed(
-        prog, {seed.getPoplarTensor(), graph()}, "initRngStatesFromSeed");
+        prog,
+        {seed.getPoplarTensor(), graph()},
+        {{tensor->getDebugInfo().getPathName(), tensor->getDebugInfo().getId()},
+         "initRngStatesFromSeed"});
 
     // Now, change `streamedSeedId` in a way that is distinct for each replica
     // so that 1) the explicit seeds for random ops derived from
@@ -1111,10 +1114,13 @@ PriTask IrLowering::initRandomSeed() {
 
     auto offset = graph().getPoplarGraph().addReplicationIndexConstant();
     graph().getPoplarGraph().setTileMapping(offset, 0);
-    popops::addInPlace(graph().getPoplarGraph(),
-                       seed[0].getPoplarTensor(),
-                       offset,
-                       prog.getPoplarSequence());
+    popops::addInPlace(
+        graph().getPoplarGraph(),
+        seed[0].getPoplarTensor(),
+        offset,
+        prog.getPoplarSequence(),
+        {{tensor->getDebugInfo().getPathName(), tensor->getDebugInfo().getId()},
+         "initStreamedSeedId"});
 
     return seqs;
   };
@@ -3048,7 +3054,7 @@ void IrLowering::prepareGraph() {
   if (RandomSetup::hasRandomSeed(ir()) and !ir().useSyntheticData()) {
     auto seedTen = ir().getTensor(RandomSetup::getStreamedSeedTensorId());
     tasks.add(fromHostTask(seedTen, progs.setRandomSeedFromHostFragment()));
-    tasks.add(initRandomSeed());
+    tasks.add(initRandomSeed(seedTen));
   }
 
   if (ir().getSessionOptions().enableLoadAndOffloadRNGState) {
@@ -3403,11 +3409,13 @@ poplar::Executable IrLowering::getExecutable() {
     try {
       logging::devicex::info("Starting compilation");
 
-      auto executable = poplar::compileGraph(graph().getPoplarGraph(),
-                                             toPoplarProgs(progs.progs()),
-                                             engineOptions,
-                                             std::ref(progressLogger),
-                                             getPoplarGraphDebugName());
+      DebugInfo di{{}, "popart"};
+      auto executable = poplar::compileGraph(
+          graph().getPoplarGraph(),
+          toPoplarProgs(progs.progs()),
+          engineOptions,
+          std::ref(progressLogger),
+          {{di.getPathName(), di.getId()}, getPoplarGraphDebugName()});
 
       logging::devicex::info("Graph compiled");
       return executable;
@@ -3525,7 +3533,9 @@ PriTask IrLowering::fromHostTask(Tensor *tensor, snap::program::Sequence &sq) {
         popops::zero(graph().getPoplarGraph(),
                      tensors_.get(tensor->id).getPoplarTensor(),
                      seqs.getSequence(&sq).getPoplarSequence(),
-                     {"copyFromHost"});
+                     {{tensor->getDebugInfo().getPathName(),
+                       tensor->getDebugInfo().getId()},
+                      "copyFromHost"});
       }
     }
 
@@ -3535,7 +3545,9 @@ PriTask IrLowering::fromHostTask(Tensor *tensor, snap::program::Sequence &sq) {
         snap::program::Copy(fromHostStreams.at(tensor->id),
                             tensors_.getView(tensor->id),
                             doRearrangeOnHost(tensor),
-                            {"copyFromHost"}));
+                            {{tensor->getDebugInfo().getPathName(),
+                              tensor->getDebugInfo().getId()},
+                             "copyFromHost"}));
     return seqs;
   };
   return {priority,
@@ -3590,7 +3602,11 @@ PriTask IrLowering::toHostTask(Tensor *tensor,
     }
 
     seqs.getSequence(&sq).add(snap::program::Copy(
-        anchorTensor, poplarStream, doRearrangeOnHost(tensor), {"copyToHost"}));
+        anchorTensor,
+        poplarStream,
+        doRearrangeOnHost(tensor),
+        {{tensor->getDebugInfo().getPathName(), tensor->getDebugInfo().getId()},
+         "copyToHost"}));
     return seqs;
   };
 
@@ -3648,16 +3664,20 @@ PriTask IrLowering::anchorReturnTypeSumTask(Tensor *tensor,
     tensors_.insertUnsafe(accumulatorId, accumulatorTensor);
 
     logging::devicex::debug("Adding AnchorSum operations to {}", tensor->id);
-    popops::addInPlace(graph().getPoplarGraph(),
-                       accumulatorTensor.getPoplarTensor(),
-                       poplarTensor.getPoplarTensor(),
-                       seqs.getSequence(&sq).getPoplarSequence(),
-                       "AnchorSum_" + tensor->id);
+    popops::addInPlace(
+        graph().getPoplarGraph(),
+        accumulatorTensor.getPoplarTensor(),
+        poplarTensor.getPoplarTensor(),
+        seqs.getSequence(&sq).getPoplarSequence(),
+        {{tensor->getDebugInfo().getPathName(), tensor->getDebugInfo().getId()},
+         "AnchorSum_" + tensor->id});
     // Zero the accumulator
-    popops::zero(graph().getPoplarGraph(),
-                 accumulatorTensor.getPoplarTensor(),
-                 seqs.getSequence(&progs.initFragment()).getPoplarSequence(),
-                 "AnchorSumZero_" + tensor->id);
+    popops::zero(
+        graph().getPoplarGraph(),
+        accumulatorTensor.getPoplarTensor(),
+        seqs.getSequence(&progs.initFragment()).getPoplarSequence(),
+        {{tensor->getDebugInfo().getPathName(), tensor->getDebugInfo().getId()},
+         "AnchorSumZero_" + tensor->id});
 
     return seqs;
   };
@@ -3816,10 +3836,12 @@ PriTask IrLowering::toHostEveryNBatchesTask(Tensor *tensor,
     snap::Tensor isNthBatch = batchCountCheckingTensors.at(N);
 
     snap::program::Sequence copyseq(poplar::DebugContext{"copy"}, graph());
-    copyseq.add(snap::program::Copy(tensors_.get(tensor->id),
-                                    toHostAnchorStreams.at(tensor->id),
-                                    doRearrangeOnHost(tensor),
-                                    {"copyToHostEveryNBatches"}));
+    copyseq.add(snap::program::Copy(
+        tensors_.get(tensor->id),
+        toHostAnchorStreams.at(tensor->id),
+        doRearrangeOnHost(tensor),
+        {{tensor->getDebugInfo().getPathName(), tensor->getDebugInfo().getId()},
+         "copyToHostEveryNBatches"}));
 
     // Placeholder 'do nothing' branch if not running copy program
     snap::program::Sequence emptyseq(poplar::DebugContext{"empty"}, graph());

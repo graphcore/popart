@@ -136,8 +136,10 @@ TensorId Optimizer::getLossScalingTensorId(DataType t) {
 }
 
 Optimizer::Optimizer(OptimizerValue ls_,
-                     const std::vector<ClipNormSettings> &clipNormSettings_)
-    : ls(ls_), clipNormSettings(clipNormSettings_) {
+                     const std::vector<ClipNormSettings> &clipNormSettings_,
+                     const DebugContext &debugContext_)
+    : debugContext(debugContext_), ls(ls_),
+      clipNormSettings(clipNormSettings_) {
   // Reject loss scaling of 0.
   if (!(ls.val() > 0.0f || ls.val() < 0.0f)) {
     throw error("Loss scaling cannot be 0");

@@ -134,7 +134,8 @@ class Optimizer {
 public:
   virtual ~Optimizer() = default;
   Optimizer(OptimizerValue lossScaling,
-            const std::vector<ClipNormSettings> &clipNormSettings);
+            const std::vector<ClipNormSettings> &clipNormSettings,
+            const DebugContext &debugContext);
   Optimizer(const Optimizer &) = default;
 
   // If a graph that has been constructed with this optimizer can be
@@ -220,6 +221,8 @@ public:
 
   virtual size_t hash() const;
 
+  DebugContext getDebugContext() const { return debugContext; }
+
 protected:
   // T can be of type OptimizerValue or OptimizerValueMap.
   template <typename T>
@@ -235,6 +238,9 @@ protected:
       throw optimizer_replacement_error(error_message);
     }
   }
+
+protected:
+  DebugContext debugContext;
 
 private:
   OptimizerValue ls;

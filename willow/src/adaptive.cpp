@@ -236,10 +236,10 @@ Adaptive::Adaptive(OptimizerValue lr,
                    DataType accl3Type_,
                    bool rmspropTFVariant_,
                    const DebugContext &debugContext_)
-    : Optimizer(lossScaling, {}), lrs(lr), wds(wd), as(a), ms(m), epsvs(eps),
-      mode(mode_), decayMode(decayMode_), accumType(accumType_),
+    : Optimizer(lossScaling, {}, debugContext_), lrs(lr), wds(wd), as(a), ms(m),
+      epsvs(eps), mode(mode_), decayMode(decayMode_), accumType(accumType_),
       accl1Type(accl1Type_), accl2Type(accl1Type_), accl3Type(accl3Type_),
-      rmspropTFVariant(rmspropTFVariant_), debugContext(debugContext_) {
+      rmspropTFVariant(rmspropTFVariant_) {
   if (rmspropTFVariant_ && mode != AdaptiveMode::RMSProp &&
       mode != AdaptiveMode::CenteredRMSProp) {
     throw error("The rmspropTFVariant parameter is only valid with the RMSProp "

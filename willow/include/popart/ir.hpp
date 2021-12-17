@@ -166,7 +166,8 @@ public:
   void setOptimizer(const Optimizer &);
 
   void ensureOptimizerTensorCreated(const TensorId &optId,
-                                    const TensorInfo &info);
+                                    const TensorInfo &info,
+                                    const DebugContext &debugContext = {});
 
   // Get the optimizer
   const Optimizer &getOptimizer() const { return *optimizer; }

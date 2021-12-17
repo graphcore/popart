@@ -97,11 +97,13 @@ void StashOpx::grow(snap::program::Sequence &prog) const {
   popops::addInPlace(graph().getPoplarGraph(),
                      stashIndex.getPoplarTensor(),
                      one,
-                     prog.getPoplarSequence());
+                     prog.getPoplarSequence(),
+                     debugContext());
   popops::remInPlace(graph().getPoplarGraph(),
                      stashIndex.getPoplarTensor(),
                      stashSize.getPoplarTensor(),
-                     prog.getPoplarSequence());
+                     prog.getPoplarSequence(),
+                     debugContext());
 }
 
 StashOpx::StashOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {

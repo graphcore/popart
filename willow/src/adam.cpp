@@ -326,10 +326,10 @@ Adam::Adam(OptimizerValue lr,
            const std::vector<ClipNormSettings> &clipNormSettings,
            bool scaledOptimizerState_,
            const DebugContext &debugContext_)
-    : Optimizer(lossScaling, clipNormSettings), lrs(lr), wds(wd), b1s(b1),
-      b2s(b2), epsvs(eps), mwns(mwn_), mode(mode_), decayMode(decayMode_),
-      accumType(accumType_), accl1Type(accl1Type_), accl2Type(accl2Type_),
-      scaledOptimizerState(scaledOptimizerState_), debugContext(debugContext_) {
+    : Optimizer(lossScaling, clipNormSettings, debugContext_), lrs(lr), wds(wd),
+      b1s(b1), b2s(b2), epsvs(eps), mwns(mwn_), mode(mode_),
+      decayMode(decayMode_), accumType(accumType_), accl1Type(accl1Type_),
+      accl2Type(accl2Type_), scaledOptimizerState(scaledOptimizerState_) {
   runValueChecks(lr, wd, b1, b2, eps);
 }
 

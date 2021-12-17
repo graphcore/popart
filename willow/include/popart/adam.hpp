@@ -626,8 +626,6 @@ private:
   AdamMaxWeightNormHelper mwnhelper;
   AdamGradientScalingHelper gshelper;
 
-  DebugContext debugContext;
-
   Adam(const std::map<std::string, OptimizerValue> &,
        AdamMode mode_,
        WeightDecayMode decayMode_,

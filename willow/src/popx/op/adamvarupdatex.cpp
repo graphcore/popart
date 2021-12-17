@@ -107,17 +107,23 @@ void AdamVarUpdateOpx::grow(snap::program::Sequence &prog) const {
                         var,
                         updater,
                         -adamVarUpdateOp.initLr.val(),
-                        prog.getPoplarSequence());
+                        prog.getPoplarSequence(),
+                        debugContext("varUpdate"));
   } else {
     // Calculate final non-const learning rate tensor from expression
     poplar::Tensor lrt = popops::map(graph().getPoplarGraph(),
                                      pe::Neg(lr),
                                      tensors,
-                                     prog.getPoplarSequence());
+                                     prog.getPoplarSequence(),
+                                     debugContext("leaningRate"));
 
     // Variable update: var -= lr * updater
-    popops::scaledAddTo(
-        graph().getPoplarGraph(), var, updater, lrt, prog.getPoplarSequence());
+    popops::scaledAddTo(graph().getPoplarGraph(),
+                        var,
+                        updater,
+                        lrt,
+                        prog.getPoplarSequence(),
+                        debugContext("varUpdate"));
   }
 
   if (hasInViewChangers(AdamVarUpdateOp::getVarToUpdateInIndex())) {

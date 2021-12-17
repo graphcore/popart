@@ -572,8 +572,6 @@ private:
   AdaptiveLossScalingHelper lshelper;
   AdaptiveGradientScalingHelper gshelper;
 
-  DebugContext debugContext;
-
   // int argument only to disambiguate from the other SGD constructor
   Adaptive(const std::map<std::string, OptimizerValue> &,
            AdaptiveMode mode_,

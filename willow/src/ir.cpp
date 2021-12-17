@@ -440,7 +440,8 @@ void Ir::setOptimizer(const Optimizer &o) {
   // construction
   for (DataType dt : {DataType::FLOAT, DataType::FLOAT16}) {
     auto id = optimizer->getLossScalingTensorId(dt);
-    ensureOptimizerTensorCreated(id, {dt, {}});
+    DebugInfo debugInfo(optimizer->getDebugContext(), "popart_builder");
+    ensureOptimizerTensorCreated(id, {dt, {}}, {debugInfo, id});
   }
 }
 
@@ -2909,7 +2910,8 @@ void Ir::growGradientVarUpdateOp(const TensorId &varId,
     for (auto opt : optimizerInputs) {
       auto optId   = std::get<0>(opt);
       auto optInfo = std::get<1>(opt);
-      ensureOptimizerTensorCreated(optId, optInfo);
+      DebugInfo debugInfo(optimizer->getDebugContext(), "popart_builder");
+      ensureOptimizerTensorCreated(optId, optInfo, {debugInfo, optId});
     }
 
     OpId opId =
@@ -2921,10 +2923,11 @@ void Ir::growGradientVarUpdateOp(const TensorId &varId,
 }
 
 void Ir::ensureOptimizerTensorCreated(const TensorId &optId,
-                                      const TensorInfo &info) {
+                                      const TensorInfo &info,
+                                      const DebugContext &debugContext) {
   if (!getTensors().contains(optId)) {
 
-    getTensors().addStream(optId, info);
+    getTensors().addStream(optId, info, debugContext);
     Tensor &optTensor = *getTensors().get(optId);
     optimizer->setTensorData(optTensor);
 
