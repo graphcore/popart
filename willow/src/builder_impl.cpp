@@ -1359,7 +1359,6 @@ std::string BuilderImpl::getTensorDtypeString(const TensorId &id) {
 }
 
 bool BuilderImpl::isInitializer(const TensorId &id) const {
-  std::vector<std::string> initIds;
   for (const auto &initializer : model_.graph().initializer()) {
     if (initializer.name() == id) {
       return true;

@@ -336,8 +336,6 @@ void StreamingMemoryOpInserter::updateOptimizerOperations() {
 }
 
 void StreamingMemoryOpInserter::apply() {
-  std::set<Op *, POpCmp> opsToSetup;
-
   if (isPhasedExecution()) {
     // Make sure no priorities outside of the range needed by
     // phased execution are being used.
@@ -1332,7 +1330,6 @@ void StreamingMemoryOpInserter::applyReplicatedOptimizerSharding(
       }
     }
     // Re-setup every Op
-    std::stringstream ss;
     logging::transform::trace("[StreamingMemory] Setting up {}",
                               op->debugName());
     op->setup();

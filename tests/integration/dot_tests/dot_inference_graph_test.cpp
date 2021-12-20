@@ -60,8 +60,6 @@ int runTest(std::string modelPath, std::string outputDir, bool convertPdf) {
 
   auto modelProto = onnxutil::getModelProto(modelPath);
 
-  std::vector<std::string> dotStrings;
-
   // Only the FINAL .dot file. Append others here as required.
   sessionOpts.dotChecks.insert("Final");
 

@@ -714,7 +714,6 @@ void SubgraphPartitioner::logSubgraphPartitionTmp(
     logging::devicex::trace("[SubgraphPartitioner] Extracted a subgraph "
                             "partition for one instance of {}:",
                             graph.getGraphString());
-    std::stringstream ss;
     size_t i               = 0;
     SubgraphPartIndex part = 0;
     const auto &nodes      = std::get<0>(partition);

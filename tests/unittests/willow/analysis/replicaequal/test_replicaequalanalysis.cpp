@@ -36,7 +36,6 @@ void simpleRequireValue(const Ir &ir,
   auto tensor = ir.getTensor(t);
 
   // Check replica-equal values for all producers and consumers.
-  std::vector<bool> values;
   if (tensor->hasProducer()) {
     Op *producer = tensor->getProducer();
     auto actValue =

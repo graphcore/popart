@@ -65,8 +65,6 @@ int main(int argc, char **argv) {
   auto modelProtoString = gt.getModelProto();
   auto modelProto       = io::getModelFromString(modelProtoString);
 
-  std::vector<std::string> dotStrings;
-
   // Currently only the FINAL .dot file. Append others here as required.
   session_opts.dotChecks.insert("Final");
 

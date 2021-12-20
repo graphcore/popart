@@ -61,8 +61,6 @@ buildBatchSerialModel(Builder &builder, int M, int N, int size) {
   // Weights are [size, size]
   // Input and Acts are [M, size]
   TensorInfo wInfo{"FLOAT", std::vector<int64_t>{size, size}};
-  std::vector<TestTensor> inputs;
-  std::vector<TestTensor> outputs;
   std::vector<float> wData(wInfo.nelms(), 0);
   ConstVoidData wCVData{wData.data(), wInfo};
 

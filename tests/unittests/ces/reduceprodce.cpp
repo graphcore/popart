@@ -56,7 +56,6 @@ void check_combination(nonstd::optional_lite::optional<Shape> axes,
       settings);
 
   ConstExprReduceProd ce_reduce_prod(op);
-  ce_reduce_prod;
 
   int64_t expected_element = 1
                              << (SHAPE[0] * SHAPE[1] * SHAPE[2] / num_elements);

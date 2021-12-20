@@ -50,9 +50,6 @@ std::unique_ptr<Op> SplitOp::clone() const {
 }
 
 std::vector<std::unique_ptr<Op>> SplitOp::getGradOps() {
-  std::vector<GradInOutMapper> gradInInfo;
-  std::map<int, int> outInfoMap;
-
   std::vector<std::unique_ptr<Op>> upops;
   upops.emplace_back(std::make_unique<SplitGradOp>(*this, getSettings()));
   return upops;

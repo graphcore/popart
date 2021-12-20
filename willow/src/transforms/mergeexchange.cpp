@@ -247,9 +247,6 @@ bool MergeExchange::apply(Graph &graph) const {
 std::vector<Op *>
 MergeExchange::applyToOps(Graph &graph,
                           const std::set<OpId> include_ops) const {
-  // Keep a record of which tensors have been copied to/from IO tiles
-  std::set<TensorId> copiedTensors;
-  std::set<TensorId> processedTensors;
   std::vector<Op *> createdOps;
 
   auto schedule = graph.getOpSchedule({}, RequireOptimalSchedule::Yes);

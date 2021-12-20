@@ -277,9 +277,6 @@ Executablex::getCollectiveBalancedHostRearrangements() const {
 const std::map<TensorId, CollectiveBalancedReorderId>
 Executablex::getCollectiveBalancedHostRearrangementIds() const {
   if (!deserialized) {
-    std::map<CollectiveBalancedReorderId,
-             gcl::CollectiveBalancedHostRearrangement>
-        hostRearrangements;
     const auto &cbrIds = lowering()
                              .getReplicatedTensorShardingBundle()
                              .getCollectiveReorderIds();

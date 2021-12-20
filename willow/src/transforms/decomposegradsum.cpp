@@ -239,7 +239,6 @@ bool DecomposeGradSum::apply(Graph &graph) const {
     graph.eraseOp(gradSumOp->id);
 
     // Now replace with a series of Adds
-    std::vector<Op *> addOps;
 
     // Create InitOp to produce the initial gradient partial input to the
     // addition tree, gpi. It inherits settings from the producer of the first

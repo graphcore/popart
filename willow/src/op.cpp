@@ -1048,7 +1048,6 @@ float Op::calcAutoVirtualGraphCost(std::set<int> &inputs_seen) {
   float total = 0.0f;
 
   // Check if backwards pass
-  std::set<TensorId> backwardsTensors;
   for (auto &gradOp : getGradOps()) {
     for (auto &inOutMapper : gradOp->gradInputInfo()) {
       int indexFwd      = inOutMapper.iNonGrad;
