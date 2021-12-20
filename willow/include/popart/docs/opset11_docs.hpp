@@ -65,15 +65,15 @@ This operator supports **multidirectional (i.e., Numpy-style) broadcasting**; fo
 static const char *__doc_popart_argmax_opset11 =
     R"doc(
 Computes the indices of the max elements of the input tensor's element along the 
-provided axis. The resulting tensor has the same rank as the input if keepdims equal 1. 
-If keepdims equal 0, then the resulting tensor have the reduced dimension pruned. 
+provided axis. The resulted tensor has the same rank as the input if keepdims equal 1.
+If keepdims equal 0, then the resulted tensor have the reduced dimension pruned. 
 The type of the output tensor is integer.)doc";
 
 static const char *__doc_popart_argmin_opset11 =
     R"doc(
 Computes the indices of the min elements of the input tensor's element along the 
-provided axis. The resulting tensor has the same rank as the input if keepdims equal 1. 
-If keepdims equal 0, then the resulting tensor have the reduced dimension pruned. 
+provided axis. The resulted tensor has the same rank as the input if keepdims equal 1.
+If keepdims equal 0, then the resulted tensor have the reduced dimension pruned. 
 The type of the output tensor is integer.)doc";
 
 static const char *__doc_popart_asin_opset11 =
@@ -360,7 +360,7 @@ Scale is calculated as:
 ```
 Zero point is calculated as:
 ```
-intermediate_zero_point = qmin - min(x)/y_scale
+intermediate_zero_point = (qmin - min(x))/(qmax - qmin)
 y_zero_point = cast(round(saturate(itermediate_zero_point)))
 * where qmax and qmin are max and min values for quantization range .i.e [0, 255] in case of uint8
 * for saturation, it saturates to [0, 255] if it's uint8, or [-127, 127] if it's int8. Right now only uint8 is supported.
@@ -1374,8 +1374,6 @@ a quantized filter, its scale and zero point, and output's scale and zero point,
 and computes the quantized output. Each scale and zero-point pair must have same shape.
 It means they must be either scalars (per tensor) or 1-D tensors (per output channel).
 Each input or output and its related zero point must have same type.
-When bias is present it must be quantized using scale = input scale * weight scale and 
-zero point as 0.
 )doc";
 
 static const char *__doc_popart_qlinearmatmul_opset11 =
@@ -1507,7 +1505,7 @@ TensorProto message and be valid as an output type.
 
 static const char *__doc_popart_range_opset11 =
     R"doc(
-Generate a tensor containing a sequence of numbers that begin at `start` and extends by increments of `delta`
+Generate a tensor containing a sequence of numbers that begin at `start` and extends by increments of `delta` 
 up to `limit` (exclusive).
 
 The number of elements in the output of range is computed as below-
@@ -1519,10 +1517,10 @@ The pseudocode determining the contents of the output is shown below-
 `for(int i=0; i<number_of_elements; ++i)`
 
 `{`
+   
+`    output[i] =  start + (i * delta);  ` 
 
-`    output[i] =  start + (i * delta);  `
-
-`}`
+`}`	
 
 `Example 1`
 Inputs: start = 3, limit = 9, delta = 3
@@ -2116,13 +2114,11 @@ https://docs.scipy.org/doc/numpy/reference/arrays.indexing.html
 Slices uses `starts`, `ends`, `axes` and `steps` inputs to specify the start and end
 dimension and step for each axis in the list of axes, it uses this information to
 slice the input `data` tensor. If a negative value is passed for any of the
-start or end indices, it represents number of elements before the end of that
+start or end indices, it represent number of elements before the end of that
 dimension. If the value passed to start or end is larger than the `n` (the
 number of elements in this dimension), it represents `n`. For slicing to the
-end of a dimension with unknown size, it is recommended to pass in `INT_MAX` 
-when sclicing forward and 'INT_MIN' when slicing backward.
-If a negative value is passed for step, it represents slicing backward. 
-However step value cannot be 0.
+end of a dimension with unknown size, it is recommended to pass in `INT_MAX`.
+If a negative value is passed for step, it represents slicing backward.
 If `axes` are omitted, they are set to `[0, ..., ndim-1]`.
 If `steps` are omitted, they are set to `[1, ..., 1]` of length `len(starts)`
 Example 1:

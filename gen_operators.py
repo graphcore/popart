@@ -4,6 +4,7 @@ import io
 import os
 import numpy as np  # type: ignore
 import textwrap
+import subprocess
 
 
 # Remove leading new lines and then set the identation on a
@@ -640,6 +641,8 @@ def genBuilderHpp(filename: str, schema: Schema) -> None:
                 f.write("};\n")
                 f.write("\n")
 
+    subprocess.run(["clang-format", "-i", filename])
+
 
 def genBuilderCpp(filename: str, schema: Schema):
     with io.open(filename, 'w') as f:
@@ -832,6 +835,8 @@ def genBuilderCpp(filename: str, schema: Schema):
                     f.write("}\n")
                     f.write("\n")
 
+    subprocess.run(["clang-format", "-i", filename])
+
 
 def genPythonBuilderBinds(schema: Schema) -> None:
     """
@@ -852,10 +857,9 @@ def genPythonBuilderBinds(schema: Schema) -> None:
             opset_dir = os.path.join("python", "popart",
                                      f"popart_opset{opset_version}")
             os.makedirs(opset_dir, exist_ok=True)
-            with io.open(
-                    os.path.join(opset_dir,
-                                 f"popart_opset{opset_version}.gen.cpp"),
-                    'w') as f:
+            filename = os.path.join(opset_dir,
+                                    f"popart_opset{opset_version}.gen.cpp")
+            with io.open(filename, 'w') as f:
                 addHeader(f, opset_version)
                 # Add the include file.
                 f.write(f"""#include <pybind11/functional.h>
@@ -1013,6 +1017,8 @@ def genPythonBuilderBinds(schema: Schema) -> None:
                 f.write(";\n")
                 f.write("}\n")
 
+            subprocess.run(["clang-format", "-i", filename])
+
 
 def genPythonDocs(schema: Schema) -> None:
     for k, v, in schema.domains.items():
@@ -1023,9 +1029,8 @@ def genPythonDocs(schema: Schema) -> None:
 
         for opset_version, opset in sorted(v.opsets.items(),
                                            key=lambda x: int(x[0])):
-            with io.open(
-                    f"willow/include/popart/docs/opset{opset_version}_docs.hpp",
-                    'w') as f:
+            filename = f"willow/include/popart/docs/opset{opset_version}_docs.hpp"
+            with io.open(filename, 'w') as f:
                 write_docs_header(f, opset_version)
 
                 # Add all ops in the this op set
@@ -1045,8 +1050,11 @@ def genPythonDocs(schema: Schema) -> None:
                     f.write(f"R\"doc({op.onnx_schema.doc})doc\";\n\n")
                 f.write("#endif")
 
+            subprocess.run(["clang-format", "-i", filename])
+
 
 def write_docs_header(f: io.TextIOWrapper, opset_version: int) -> None:
+    f.write("// Copyright (c) 2021 Graphcore Ltd. All rights reserved.\n")
     f.write(f"#ifndef GUARD_OPSET{opset_version}_DOCS_HPP\n")
     f.write(f"#define GUARD_OPSET{opset_version}_DOCS_HPP")
 
@@ -1235,6 +1243,7 @@ OpsetMap getOpsets() {
 }
 } // namespace popart
 """)
+    subprocess.run(["clang-format", "-i", filename])
 
 
 def main():
