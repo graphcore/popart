@@ -39,6 +39,7 @@
 #include <tuple>
 #include <popart/names.hpp>
 // MutableVoidData is defined in here:
+#include <popart/pointercomparators.hpp>
 #include <popart/stepio.hpp>
 #include <popart/tensordata.hpp>
 

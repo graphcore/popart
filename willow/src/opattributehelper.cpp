@@ -5,6 +5,7 @@
 #include <popart/ir.hpp>
 #include <popart/op/ipucopy.hpp>
 #include <popart/opattributehelper.hpp>
+#include <popart/pointercomparators.hpp>
 #include <popart/sessionoptions.hpp>
 
 namespace popart {

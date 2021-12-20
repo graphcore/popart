@@ -15,6 +15,7 @@
 #include <popart/op/ipucopy.hpp>
 #include <popart/op/reshape.hpp>
 #include <popart/op/slice.hpp>
+#include <popart/pointercomparators.hpp>
 #include <popart/tensor.hpp>
 #include <popart/tensors.hpp>
 #include <popart/topocons.hpp>

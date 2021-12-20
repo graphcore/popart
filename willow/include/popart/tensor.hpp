@@ -11,6 +11,7 @@
 #include <popart/istepio.hpp>
 #include <popart/names.hpp>
 #include <popart/op.hpp>
+#include <popart/pointercomparators.hpp>
 #include <popart/replicatedstreammode.hpp>
 #include <popart/tensordata.hpp>
 #include <popart/tensordebuginfo.hpp>
@@ -312,12 +313,6 @@ private:
 
   // If the type is copy, this will identity where to copy from
   TensorId copyFromTensor;
-};
-
-struct PTensorCmp {
-  bool operator()(const Tensor *const &a, const Tensor *const &b) const {
-    return a->id < b->id;
-  }
 };
 
 } // namespace popart

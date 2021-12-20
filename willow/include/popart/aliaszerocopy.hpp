@@ -56,6 +56,8 @@
 //    If possible, but not necessarily, tc will also alias to tb.
 
 namespace popart {
+struct PTensorCmp;
+
 namespace liveness {
 
 // Enum describing how to handle tensor producers for determining tensor

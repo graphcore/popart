@@ -1,6 +1,7 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #include <popart/graph.hpp>
 #include <popart/op.hpp>
+#include <popart/pointercomparators.hpp>
 #include <popart/tensor.hpp>
 #include <popart/topocons.hpp>
 
@@ -83,13 +84,8 @@ void TopoCons::transferToSubgraph(Op *replacementOp,
 
   auto opInRemaps = [&](Op *op) { return opRemaps.find(op) != opRemaps.end(); };
 
-  auto OpCompare = [](const std::pair<Op *, bool> &a,
-                      const std::pair<Op *, bool> &b) {
-    return std::pair<OpId, bool>(a.first->id, a.second) <
-           std::pair<OpId, bool>(b.first->id, b.second);
-  };
-  std::set<std::pair<Op *, bool>, decltype(OpCompare)> befores(OpCompare);
-  std::set<std::pair<Op *, bool>, decltype(OpCompare)> afters(OpCompare);
+  std::set<std::pair<Op *, bool>, POpBoolCmp> befores;
+  std::set<std::pair<Op *, bool>, POpBoolCmp> afters;
 
   for (auto &opRemap : opRemaps) {
     for (auto before : graph.topoCons->getBefores(opRemap.first)) {

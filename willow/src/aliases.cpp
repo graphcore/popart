@@ -6,6 +6,7 @@
 #include <popart/ir.hpp>
 #include <popart/names.hpp>
 #include <popart/op.hpp>
+#include <popart/pointercomparators.hpp>
 #include <popart/tensor.hpp>
 #include <popart/tensorindex.hpp>
 

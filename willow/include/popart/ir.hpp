@@ -28,6 +28,7 @@ class TimePartitionLogger;
 
 namespace popart {
 
+struct PTensorCmp;
 enum class RequireOptimalSchedule; /*
   Yes = true,
   No = false

@@ -14,6 +14,7 @@
 #include <popart/op/init.hpp>
 #include <popart/op/ipucopy.hpp>
 #include <popart/op/loop.hpp>
+#include <popart/pointercomparators.hpp>
 #include <popart/region.hpp>
 #include <popart/tensors.hpp>
 #include <popart/topocons.hpp>

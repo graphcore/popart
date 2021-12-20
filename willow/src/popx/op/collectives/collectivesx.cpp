@@ -8,6 +8,7 @@
 #include <popart/op/collectives/replicatedallgather.hpp>
 #include <popart/op/collectives/replicatedreducescatter.hpp>
 #include <popart/op/subgraph.hpp>
+#include <popart/pointercomparators.hpp>
 #include <popart/popx/devicex.hpp>
 #include <popart/popx/irlowering.hpp>
 #include <popart/popx/op/collectives/collectivesx.hpp>

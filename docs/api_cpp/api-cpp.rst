@@ -257,9 +257,6 @@ Op definition for PopART IR
 .. doxygenclass:: popart::Op
    :members:
 
-.. doxygenstruct:: popart::POpCmp
-   :members:
-
 .. code-block:: cpp
 
   #include <popart/opmanager.hpp>

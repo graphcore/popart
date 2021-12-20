@@ -11,6 +11,8 @@
 
 namespace popart {
 
+struct PTensorCmp;
+
 class Aliases {
 public:
   Aliases() {}

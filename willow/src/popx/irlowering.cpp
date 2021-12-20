@@ -77,6 +77,7 @@
 #include <popart/variablesettings.hpp>
 
 #include <popart/op/varupdate.hpp>
+#include <popart/pointercomparators.hpp>
 #include <popart/popx/op/ipucopyx.hpp>
 #include <popart/tensornames.hpp>
 

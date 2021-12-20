@@ -7,6 +7,7 @@
 #include <popart/graph.hpp>
 #include <popart/logging.hpp>
 #include <popart/op/getrandomseed.hpp>
+#include <popart/pointercomparators.hpp>
 
 namespace popart {
 

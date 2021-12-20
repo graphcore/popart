@@ -13,6 +13,8 @@
 #include <popart/analysis/replicaequal/replicaequalanalysis.hpp>
 
 namespace popart {
+struct POpCmp;
+struct PTensorCmp;
 
 /**
  * This class stores replica-equal values for tensors.

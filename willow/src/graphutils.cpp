@@ -8,6 +8,7 @@
 #include <popart/op.hpp>
 #include <popart/op/init.hpp>
 #include <popart/op/subgraph.hpp>
+#include <popart/pointercomparators.hpp>
 #include <popart/tensorindex.hpp>
 #include <popart/tensors.hpp>
 #include <popart/topocons.hpp>

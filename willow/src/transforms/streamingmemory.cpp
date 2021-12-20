@@ -17,6 +17,7 @@
 #include <popart/op/lamb.hpp>
 #include <popart/op/sgd0varupdate.hpp>
 #include <popart/op/varupdate.hpp>
+#include <popart/pointercomparators.hpp>
 #include <popart/tensor.hpp>
 #include <popart/tensornames.hpp>
 #include <popart/tensors.hpp>

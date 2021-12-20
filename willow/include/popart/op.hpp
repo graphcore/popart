@@ -887,24 +887,6 @@ private:
 
 std::ostream &operator<<(std::ostream &, const GradInOutMapper &);
 std::ostream &operator<<(std::ostream &, const GradOpInType &);
-
-// A note on non-determinism. For maps with
-// pointers as keys, iterating through them
-// is non-deterministic with the default comparator.
-/// To prevent non-determinism, POpCmp is used on any sets and maps that use
-/// pointers to operators as a set/map key.
-struct POpCmp {
-  bool operator()(const Op *a, const Op *b) const { return a->id < b->id; }
-};
-
-struct POpIntCmp {
-  bool operator()(std::pair<Op *, int> const &a,
-                  std::pair<Op *, int> const &b) const {
-    return std::pair<OpId, int>(a.first->id, a.second) <
-           std::pair<OpId, int>(b.first->id, b.second);
-  }
-};
-
 } // namespace popart
 
 #endif

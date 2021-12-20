@@ -8,6 +8,8 @@
 
 namespace popart {
 
+struct PTensorCmp;
+
 using ReplicatedTensorShardingGroupId = int;
 
 /**

@@ -14,6 +14,7 @@
 #include <popart/op/ipucopy.hpp>
 #include <popart/op/lamb.hpp>
 #include <popart/op/varupdate.hpp>
+#include <popart/pointercomparators.hpp>
 #include <popart/tensornames.hpp>
 #include <popart/topocons.hpp>
 #include <popart/transforms/remotesetup.hpp>

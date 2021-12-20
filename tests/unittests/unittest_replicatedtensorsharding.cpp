@@ -8,6 +8,7 @@
 
 #include <popart/op/copyvarupdate.hpp>
 #include <popart/op/exchange/multiexchange.hpp>
+#include <popart/pointercomparators.hpp>
 #include <popart/replicatedtensorsharding.hpp>
 
 using namespace popart;

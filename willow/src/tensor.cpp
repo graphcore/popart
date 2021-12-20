@@ -29,6 +29,7 @@
 
 #include <popart/alias/aliasmodel.hpp>
 #include <popart/alias/aliasmodelgrower.hpp>
+#include <popart/pointercomparators.hpp>
 
 namespace popart {
 
@@ -1128,8 +1129,8 @@ std::vector<Op *> Consumers::getOps() const {
   return ops;
 }
 
-const std::map<Tensor *, std::vector<int>, TensorIndexMap::TensorPtrComparator>
-    &TensorIndexMap::indicesMap() const {
+const std::map<Tensor *, std::vector<int>, PTensorCmp> &
+TensorIndexMap::indicesMap() const {
   return indices_map;
 }
 

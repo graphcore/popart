@@ -11,6 +11,7 @@ namespace popart {
 
 class AliasModel;
 class Op;
+struct POpCmp;
 
 class DynamicOpTransform : public Transform {
 public:

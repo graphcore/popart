@@ -36,6 +36,7 @@
 #include <popart/op/sgd1varupdate.hpp>
 #include <popart/op/slice.hpp>
 #include <popart/op/varupdate.hpp>
+#include <popart/pointercomparators.hpp>
 
 #include <onnxpasses/onnxtoonnx.hpp>
 
@@ -397,8 +398,7 @@ void Graph::setVarUpdateConstraints() {
             graphutils::VisitType::Pre,
             graphutils::TraversalDirection::Forward);
 
-        auto OpCompare = [](Op *a, Op *b) { return a->id < b->id; };
-        std::set<Op *, decltype(OpCompare)> befores(OpCompare);
+        std::set<Op *, POpCmp> befores;
 
         auto applyTopoCons = [&excludes, &befores, &modifier](Tensor *t) {
           if (excludes.find(t->id) != excludes.end()) {

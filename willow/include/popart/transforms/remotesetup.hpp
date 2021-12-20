@@ -6,6 +6,7 @@
 #include <popart/transforms/transform.hpp>
 
 namespace popart {
+struct POpIntCmp;
 
 using RemoteArgOpMap =
     std::map<TensorId, std::set<std::pair<Op *, InIndex>, POpIntCmp>>;

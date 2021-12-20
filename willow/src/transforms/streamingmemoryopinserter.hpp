@@ -19,6 +19,8 @@ class RemoteStoreOp;
 class ReplicatedAllGatherOp;
 class ReplicatedAllReduceOp;
 class ReplicatedReduceScatterOp;
+struct POpCmp;
+struct PTensorCmp;
 
 class StreamingMemoryOpInserter {
 public:

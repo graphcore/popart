@@ -14,6 +14,7 @@
 #include <popart/op/init.hpp>
 #include <popart/op/sum.hpp>
 #include <popart/patterns/inplace.hpp>
+#include <popart/pointercomparators.hpp>
 #include <popart/tensor.hpp>
 #include <popart/tensors.hpp>
 #include <popart/topocons.hpp>

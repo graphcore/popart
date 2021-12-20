@@ -6,6 +6,8 @@
 
 namespace popart {
 
+struct PTensorCmp;
+
 // Inputs and outputs to Ops will use this class.
 // inputs (outputs) enter (leave) at certain indices
 // of an Op. There is 1 tensor per index,
@@ -25,18 +27,6 @@ public:
   void clear();
   bool contains(Tensor *) const;
 
-  // In order to compare dereferenced Tensor pointers
-  struct TensorPtrComparator {
-    bool operator()(const Tensor *a, const Tensor *b) const {
-      if (a == nullptr || b == nullptr) {
-        // (nullptr<TensorPtr) since assumed as equal if not a<b and not b<a
-        return (a == nullptr && b != nullptr);
-      } else {
-        return a->str() < b->str();
-      }
-    }
-  };
-
   // get the Tensor at index
   Tensor *tensor(int);
   const Tensor *tensor(int) const;
@@ -45,8 +35,7 @@ public:
   TensorId id(int) const;
   bool hasIndex(int) const;
   const std::vector<int> &indices(Tensor *) const;
-  const std::map<Tensor *, std::vector<int>, TensorPtrComparator> &
-  indicesMap() const;
+  const std::map<Tensor *, std::vector<int>, PTensorCmp> &indicesMap() const;
   const std::map<int, Tensor *> &tensorMap() const;
   // Unique list of tensors in the TensorIndexMap
   const std::vector<Tensor *> tensors() const;
@@ -70,7 +59,7 @@ public:
 
 private:
   std::map<int, Tensor *> tensor_map;
-  std::map<Tensor *, std::vector<int>, TensorPtrComparator> indices_map;
+  std::map<Tensor *, std::vector<int>, PTensorCmp> indices_map;
 };
 
 } // namespace popart

@@ -12,6 +12,7 @@
 #include <popart/op/init.hpp>
 #include <popart/op/loop.hpp>
 #include <popart/op/reshape.hpp>
+#include <popart/pointercomparators.hpp>
 #include <popart/tensor.hpp>
 #include <popart/tensors.hpp>
 #include <popart/topocons.hpp>

@@ -6,6 +6,7 @@
 #include <popart/op/exchange/hostcopy.hpp>
 #include <popart/op/exchange/multiexchange.hpp>
 #include <popart/op/exchange/remote.hpp>
+#include <popart/pointercomparators.hpp>
 #include <popart/replicatedtensorsharding.hpp>
 
 namespace popart {

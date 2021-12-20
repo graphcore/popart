@@ -130,14 +130,16 @@ void TensorIndexMap::reset(int index, Tensor *ptensor) {
 
   // clean up previous tensor
   std::vector<int> newIndices;
-  for (auto &ind : indices_map[previous]) {
-    if (ind != index) {
-      newIndices.push_back(ind);
+  if (previous != nullptr) {
+    for (auto &ind : indices_map.at(previous)) {
+      if (ind != index) {
+        newIndices.push_back(ind);
+      }
     }
   }
   if (newIndices.size() != 0) {
     indices_map[previous] = newIndices;
-  } else {
+  } else if (previous != nullptr) {
     indices_map.erase(previous);
   }
 }

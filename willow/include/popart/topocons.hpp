@@ -6,6 +6,7 @@
 #include <popart/op.hpp>
 
 namespace popart {
+struct POpCmp;
 
 // Topological constraints
 //

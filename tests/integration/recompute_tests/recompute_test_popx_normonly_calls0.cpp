@@ -11,6 +11,7 @@
 #include <popart/op.hpp>
 #include <popart/op/identity.hpp>
 #include <popart/op/l1.hpp>
+#include <popart/pointercomparators.hpp>
 #include <popart/sgd.hpp>
 
 #define private public
