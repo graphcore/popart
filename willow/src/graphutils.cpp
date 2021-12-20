@@ -4,6 +4,7 @@
 
 #include <popart/graph.hpp>
 #include <popart/graphutils.hpp>
+#include <popart/names.hpp>
 #include <popart/op.hpp>
 #include <popart/op/init.hpp>
 #include <popart/op/subgraph.hpp>
@@ -436,7 +437,7 @@ findMatchingOps(Graph &graph, OpPreds preds, Edges edges) {
     }
 
     if (index != -1) {
-      std::set<Op *> candidates;
+      std::set<Op *, POpCmp> candidates;
 
       auto inEdges = inEdgeMap.find(index);
 
@@ -460,7 +461,7 @@ findMatchingOps(Graph &graph, OpPreds preds, Edges edges) {
               tensors.insert(fromOp->output->tensor(inEdge.getOut()));
             }
           }
-          std::set<Op *> localCandidates;
+          std::set<Op *, POpCmp> localCandidates;
           for (auto t : tensors) {
             for (auto c : t->consumers.getOps()) {
               if (((inEdge.getIn() == -1) ||
@@ -474,13 +475,14 @@ findMatchingOps(Graph &graph, OpPreds preds, Edges edges) {
           if (first) {
             candidates = localCandidates;
           } else {
-            std::set<Op *> intersectCandidates;
-            std::set_intersection(candidates.begin(),
-                                  candidates.end(),
-                                  localCandidates.begin(),
-                                  localCandidates.end(),
-                                  std::inserter(intersectCandidates,
-                                                intersectCandidates.begin()));
+            std::set<Op *, POpCmp> intersectCandidates;
+            std::set_intersection(
+                candidates.begin(),
+                candidates.end(),
+                localCandidates.begin(),
+                localCandidates.end(),
+                std::inserter(intersectCandidates, intersectCandidates.begin()),
+                [](const Op *a, const Op *b) { return a->id < b->id; });
             candidates = intersectCandidates;
           }
           first = false;
@@ -507,7 +509,6 @@ findMatchingOps(Graph &graph, OpPreds preds, Edges edges) {
 
   return matches;
 }
-
 
 } // namespace graphutils
 } // namespace popart
