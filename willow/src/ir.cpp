@@ -262,7 +262,7 @@ std::vector<Tensor *> Ir::optimizerTensors() const {
 
 std::vector<Tensor *> Ir::optimizerStateTensors() const {
   std::vector<Tensor *> optimizerStateTensors;
-  for (auto tensor : getTensors().getOfType(TensorType::Variable)) {
+  for (auto tensor : additionalModelProtoTensors) {
     if (tensor->isOptimizerStateTensor()) {
       optimizerStateTensors.push_back(tensor);
     }
@@ -4232,8 +4232,8 @@ std::size_t std::hash<popart::Ir>::operator()(const popart::Ir &ir) const {
   return seed;
 }
 
-std::size_t
-std::hash<popart::IrBundle>::operator()(const popart::IrBundle &bundle) const {
+std::size_t std::hash<popart::IrBundle>::
+operator()(const popart::IrBundle &bundle) const {
   size_t seed = 0;
 
   boost::hash_combine(

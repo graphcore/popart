@@ -40,12 +40,26 @@ BOOST_AUTO_TEST_CASE(TestOptimizerStateTensorAccessor) {
 
   // Some example optimizer state tensor ids with prefixes that should
   // be picked up
-  tensors.addVarInit("Accl1___model.lin.weight", w_info, dummy_buffer.data());
-  tensors.addVarInit("Accl2___model.lin.weight", w_info, dummy_buffer.data());
-  tensors.addVarInit("Accl1___model.lin.bias", b_info, dummy_buffer.data());
-  tensors.addVarInit("Accl2___model.lin.bias", b_info, dummy_buffer.data());
-  tensors.addVarInit("Step___model.lin.weight", step_info, dummy_buffer.data());
-  tensors.addVarInit("Step___model.lin.bias", step_info, dummy_buffer.data());
+  const TensorId t1 = "Accl1___model.lin.weight";
+  const TensorId t2 = "Accl2___model.lin.weight";
+  const TensorId t3 = "Accl1___model.lin.bias";
+  const TensorId t4 = "Accl2___model.lin.bias";
+  const TensorId t5 = "Step___model.lin.weight";
+  const TensorId t6 = "Step___model.lin.bias";
+
+  tensors.addVarInit(t1, w_info, dummy_buffer.data());
+  tensors.addVarInit(t2, w_info, dummy_buffer.data());
+  tensors.addVarInit(t3, b_info, dummy_buffer.data());
+  tensors.addVarInit(t4, b_info, dummy_buffer.data());
+  tensors.addVarInit(t5, step_info, dummy_buffer.data());
+  tensors.addVarInit(t6, step_info, dummy_buffer.data());
+
+  BOOST_REQUIRE_NO_THROW(ir->addAdditionalModelProtoTensor(ir->getTensor(t1)));
+  BOOST_REQUIRE_NO_THROW(ir->addAdditionalModelProtoTensor(ir->getTensor(t2)));
+  BOOST_REQUIRE_NO_THROW(ir->addAdditionalModelProtoTensor(ir->getTensor(t3)));
+  BOOST_REQUIRE_NO_THROW(ir->addAdditionalModelProtoTensor(ir->getTensor(t4)));
+  BOOST_REQUIRE_NO_THROW(ir->addAdditionalModelProtoTensor(ir->getTensor(t5)));
+  BOOST_REQUIRE_NO_THROW(ir->addAdditionalModelProtoTensor(ir->getTensor(t6)));
 
   std::vector<Tensor *> state_tensors = ir->optimizerStateTensors();
   BOOST_REQUIRE(state_tensors.size() == 6);
