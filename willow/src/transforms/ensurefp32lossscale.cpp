@@ -180,12 +180,13 @@ void EnsureFp32LossScale::upCastTensor(Op *op, InIndex index) const {
                                   Onnx::Operators::Cast_9,
                                   DataType::FLOAT,
                                   Op::Settings(g, ""));
+
+  op->connectInTensor(index, upCastTensorId);
+
   AliasModel aliasModel;
   AliasModelGrower aliasModelGrower{aliasModel};
   aliasModelGrower.growFullGraph(g, DataDependenciesOnly::Yes);
   castOp->inheritPlacementAttributes(false, aliasModel);
-
-  op->connectInTensor(index, upCastTensorId);
 }
 
 /**
