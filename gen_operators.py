@@ -815,7 +815,7 @@ def genBuilderCpp(filename: str, schema: Schema):
                     if op.verifyInput():
                         f.write(",\n")
                         f.write(
-                            "                  [this](std::vector<TensorId> inputs_,\n"
+                            "                  [this](const std::vector<TensorId> &inputs_,\n"
                         )
                         f.write(
                             "                         std::map<std::string, popart::any> attributes_) {\n"

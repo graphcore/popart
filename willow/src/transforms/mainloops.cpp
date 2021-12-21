@@ -31,7 +31,7 @@ namespace {
 
 class OpsToMove {
 public:
-  OpsToMove(Graph &graph_, std::vector<Op *> ops_, Aliases &aliases_)
+  OpsToMove(Graph &graph_, const std::vector<Op *> &ops_, Aliases &aliases_)
       : graph(graph_), ops(ops_), aliases(aliases_) {
     std::set<OpId> opIdSet;
     // Inputs

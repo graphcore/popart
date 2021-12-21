@@ -221,7 +221,7 @@ BOOST_AUTO_TEST_CASE(TestSerialise) {
       - Any other graph's key is graph->id.
    */
 
-  const auto test = [](const auto initIrFn, const std::string subgraphName) {
+  const auto test = [](const auto initIrFn, const std::string &subgraphName) {
     Ir ir;
     initIrFn(ir);
 

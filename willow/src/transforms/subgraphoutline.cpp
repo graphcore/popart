@@ -148,7 +148,8 @@ std::vector<int64_t> getBoundariesCrossed(const SessionOptions &opts,
 // Cost model for computing runs of parallelizable sequences
 class SoftParallelismModel {
 public:
-  SoftParallelismModel(std::vector<Op *> schedule_) : schedule(schedule_) {
+  SoftParallelismModel(const std::vector<Op *> &schedule_)
+      : schedule(schedule_) {
     parallelSchedule.resize(schedule.size());
     for (size_t i = 0; i < schedule.size(); ++i) {
       // Op at position i can overlap with itself: [i, i + 1)

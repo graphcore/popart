@@ -153,8 +153,8 @@ VerticesDisconnectedByReplacement
 replaceOp(popart::Graph &graph,
           const popart::OpId opIdToReplace,
           std::unique_ptr<popart::Op> newOpUp,
-          const std::vector<popart::InIndex> mapInputsToNewOp,
-          const std::vector<popart::OutIndex> mapOutputsToNewOp) {
+          const std::vector<popart::InIndex> &mapInputsToNewOp,
+          const std::vector<popart::OutIndex> &mapOutputsToNewOp) {
 
   Op *oldOp = nullptr;
   try {

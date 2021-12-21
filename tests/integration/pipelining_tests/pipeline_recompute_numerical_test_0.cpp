@@ -72,7 +72,7 @@ BOOST_AUTO_TEST_CASE(PipelineRecomputeNumericalTest0x) {
   class WeightPair {
   public:
     using Wts = std::vector<std::vector<float>>;
-    WeightPair(Wts s, Wts e) : start(s), end(e) {}
+    WeightPair(const Wts &s, const Wts &e) : start(s), end(e) {}
     Wts start;
     Wts end;
   };

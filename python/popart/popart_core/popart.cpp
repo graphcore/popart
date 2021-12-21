@@ -253,7 +253,8 @@ private:
 
 class PyWeightsIO : public IWeightsIO {
 public:
-  PyWeightsIO(std::map<TensorId, py::array> weights_) : weights(weights_) {}
+  PyWeightsIO(const std::map<TensorId, py::array> &weights_)
+      : weights(weights_) {}
 
   template <typename T>
   T get(TensorId id,
@@ -322,7 +323,7 @@ class KeyValueContextManager {
 public:
   KeyValueContextManager(Builder &_builder,
                          const std::string &_attribute,
-                         std::map<std::string, std::string> value_)
+                         const std::map<std::string, std::string> &value_)
       : builder(_builder), attribute(_attribute), value(value_) {}
 
   void enter() {
@@ -3165,7 +3166,7 @@ PYBIND11_MODULE(popart_core, m) {
   // interface.
   m.def(
       "initializePoplarDebugInfo",
-      [&](std::string filename, std::string format) {
+      [&](std::string filename, const std::string &format) {
         poplar::DebugSerializationFormat sformat =
             poplar::DebugSerializationFormat::JSON;
         if (format == "json") {

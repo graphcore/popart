@@ -40,7 +40,7 @@ struct GradientInfo {
   ~GradientInfo()                          = default;
 
   explicit GradientInfo(Tensor *gradToClip,
-                        std::vector<Op *> clippedGradientConsumers)
+                        const std::vector<Op *> &clippedGradientConsumers)
       : gradToClip(gradToClip),
         clippedGradientConsumers(clippedGradientConsumers) {}
 };
@@ -199,7 +199,7 @@ Tensor *createCopyOnVGraph(Tensor *t, VGraphId destination, Graph &graph) {
   return ipuCopy->outTensor(0);
 }
 
-std::vector<Tensor *> copyToSameVGraph(const std::vector<Tensor *> ts,
+std::vector<Tensor *> copyToSameVGraph(const std::vector<Tensor *> &ts,
                                        VGraphId destination,
                                        Graph &graph) {
   std::vector<Tensor *> result;

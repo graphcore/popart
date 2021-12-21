@@ -370,7 +370,9 @@ void MultiConvBaseOp::appendConvParameterAttributes(
     const std::string &suffix,
     OpSerialiserBase &os) {
 
-  auto sfx = [&suffix](std::string attrName) { return attrName + suffix; };
+  auto sfx = [&suffix](const std::string &attrName) {
+    return attrName + suffix;
+  };
 
   // The original conv caching  canonicalize the parameter that went into the
   // cache key

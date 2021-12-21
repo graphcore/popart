@@ -221,7 +221,7 @@ static void serializeMatMul(TransformBuilder &builder,
                             OptionalVGraphId virtualGraphId,
                             OptionalPipelineStage pipelineStage,
                             OptionalExecutionPhase executionPhase,
-                            std::string name) {
+                            const std::string &name) {
 
   for (int i = 0; i < matmul->getSerialiseSettings().factor; ++i) {
 
@@ -317,7 +317,7 @@ static void sumByAddInplace(TransformBuilder &builder,
                             OptionalVGraphId virtualGraphId,
                             OptionalPipelineStage pipelineStage,
                             OptionalExecutionPhase executionPhase,
-                            std::string name) {
+                            const std::string &name) {
   auto out = outputTensors[0];
   for (size_t i = 1; i < outputTensors.size(); i++) {
     std::vector<TensorId> inputs = {out, outputTensors[i]};
@@ -377,7 +377,7 @@ static void serializeVarUpdate(int sliceDim,
                                OptionalVGraphId virtualGraphId,
                                OptionalPipelineStage pipelineStage,
                                OptionalExecutionPhase executionPhase,
-                               std::string name) {
+                               const std::string &name) {
   auto chaseme = matMulOutput;
   std::vector<Op *> path;
   bool validPath               = true;
@@ -586,7 +586,7 @@ serializeFwdMatMul_InputChannels(TransformBuilder &builder,
                                  OptionalVGraphId virtualGraphId,
                                  OptionalPipelineStage pipelineStage,
                                  OptionalExecutionPhase executionPhase,
-                                 std::string name) {
+                                 const std::string &name) {
   serializeMatMul(builder,
                   lhs,
                   indices.LHSInputChannelsIndex,
@@ -622,7 +622,7 @@ serializeBwdLhsMatMul_InputChannels(TransformBuilder &builder,
                                     OptionalVGraphId virtualGraphId,
                                     OptionalPipelineStage pipelineStage,
                                     OptionalExecutionPhase executionPhase,
-                                    std::string name) {
+                                    const std::string &name) {
 
   serializeMatMul(builder,
                   lhs,
@@ -657,7 +657,7 @@ serializeBwdRhsMatMul_InputChannels(TransformBuilder &builder,
                                     OptionalVGraphId virtualGraphId,
                                     OptionalPipelineStage pipelineStage,
                                     OptionalExecutionPhase executionPhase,
-                                    std::string name) {
+                                    const std::string &name) {
   serializeMatMul(builder,
                   lhs,
                   indices.LHSInputChannelsIndex,
@@ -692,7 +692,7 @@ serializeFwdMatMul_ReducingDim(TransformBuilder &builder,
                                OptionalVGraphId virtualGraphId,
                                OptionalPipelineStage pipelineStage,
                                OptionalExecutionPhase executionPhase,
-                               std::string name) {
+                               const std::string &name) {
   serializeMatMul(builder,
                   lhs,
                   indices.LHSReducingIndex,
@@ -729,7 +729,7 @@ serializeBwdLhsMatMul_ReducingDim(TransformBuilder &builder,
                                   OptionalVGraphId virtualGraphId,
                                   OptionalPipelineStage pipelineStage,
                                   OptionalExecutionPhase executionPhase,
-                                  std::string name) {
+                                  const std::string &name) {
   serializeMatMul(builder,
                   lhs,
                   indices.LHSReducingIndex,
@@ -763,7 +763,7 @@ serializeBwdRhsMatMul_ReducingDim(TransformBuilder &builder,
                                   OptionalVGraphId virtualGraphId,
                                   OptionalPipelineStage pipelineStage,
                                   OptionalExecutionPhase executionPhase,
-                                  std::string name) {
+                                  const std::string &name) {
   serializeMatMul(builder,
                   lhs,
                   indices.LHSReducingIndex,
@@ -799,7 +799,7 @@ serializeFwdMatMul_OutputChannels(TransformBuilder &builder,
                                   OptionalVGraphId virtualGraphId,
                                   OptionalPipelineStage pipelineStage,
                                   OptionalExecutionPhase executionPhase,
-                                  std::string name) {
+                                  const std::string &name) {
   serializeMatMul(builder,
                   lhs,
                   indices.LHSOutputChannelsIndex,
@@ -835,7 +835,7 @@ serializeBwdLhsMatMul_OutputChannels(TransformBuilder &builder,
                                      OptionalVGraphId virtualGraphId,
                                      OptionalPipelineStage pipelineStage,
                                      OptionalExecutionPhase executionPhase,
-                                     std::string name) {
+                                     const std::string &name) {
 
   serializeMatMul(builder,
                   lhs,
@@ -871,7 +871,7 @@ serializeBwdRhsMatMul_OutputChannels(TransformBuilder &builder,
                                      OptionalVGraphId virtualGraphId,
                                      OptionalPipelineStage pipelineStage,
                                      OptionalExecutionPhase executionPhase,
-                                     std::string name) {
+                                     const std::string &name) {
   serializeMatMul(builder,
                   lhs,
                   indices.LHSOutputChannelsIndex,

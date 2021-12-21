@@ -29,7 +29,10 @@
 #include <popart/transforms/autodiff.hpp>
 #include <popart/util.hpp>
 
-float generateReferenceWeights(float, std::vector<float>, int, float);
+float generateReferenceWeights(const float,
+                               const std::vector<float> &,
+                               const int,
+                               const float);
 
 namespace popart {
 /**
@@ -321,7 +324,7 @@ BOOST_AUTO_TEST_CASE(TestBasicTrainingLoop) {
  * \param lr The learning rate for weight updates.
  */
 float generateReferenceWeights(const float weightsInitValue,
-                               const std::vector<float> data,
+                               const std::vector<float> &data,
                                const int loopTripCount,
                                const float lr) {
   float weights = weightsInitValue;

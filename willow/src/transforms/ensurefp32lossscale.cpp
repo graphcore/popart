@@ -261,7 +261,7 @@ bool EnsureFp32LossScale::apply(Graph &graph) const {
   // 2. Re-call Op setup functions to propagate the loss scale data type change
   // to the MPLGO inputs
   auto tensorTypeCheck =
-      [](Op *op, Tensor *t, DataType dataType, std::string direction) {
+      [](Op *op, Tensor *t, DataType dataType, const std::string &direction) {
         if (t->info.dataType() != dataType) {
           std::stringstream ss;
           ss << "EnsureFp32LossScale: Pass-through Op " << op->str();

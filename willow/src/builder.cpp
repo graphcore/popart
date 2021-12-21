@@ -44,7 +44,7 @@ static void verifyWindowParameters(std::unique_ptr<BuilderImpl> &impl,
                                    std::vector<int64_t> strides,
                                    std::vector<int64_t> padding,
                                    std::vector<int64_t> outPadding,
-                                   const std::vector<int64_t> kernel_shape,
+                                   const std::vector<int64_t> &kernel_shape,
                                    std::vector<int64_t> dilation   = {},
                                    std::vector<int64_t> inDilation = {},
                                    const std::string &auto_pad     = "NOTSET",
@@ -245,73 +245,73 @@ static void verifyConvBase(std::unique_ptr<BuilderImpl> &impl,
       popart::any_cast<std::string>(attributes["auto_pad"]));
 }
 
-static void
-verify_AiOnnxOpset6_Conv_1(std::unique_ptr<BuilderImpl> &impl,
-                           std::vector<TensorId> inputs,
-                           std::map<std::string, popart::any> attributes) {
+static void verify_AiOnnxOpset6_Conv_1(
+    std::unique_ptr<BuilderImpl> &impl,
+    const std::vector<TensorId> &inputs,
+    const std::map<std::string, popart::any> &attributes) {
   verifyConvBase(impl, inputs, attributes);
 }
 
-static void
-verify_AiOnnxOpset11_Conv_11(std::unique_ptr<BuilderImpl> &impl,
-                             std::vector<TensorId> inputs,
-                             std::map<std::string, popart::any> attributes) {
+static void verify_AiOnnxOpset11_Conv_11(
+    std::unique_ptr<BuilderImpl> &impl,
+    const std::vector<TensorId> &inputs,
+    const std::map<std::string, popart::any> &attributes) {
   verifyConvBase(impl, inputs, attributes);
 }
 
 static void verify_AiOnnxOpset6_AveragePool_1(
     std::unique_ptr<BuilderImpl> &impl,
-    std::vector<TensorId> inputs,
-    std::map<std::string, popart::any> attributes) {
+    const std::vector<TensorId> &inputs,
+    const std::map<std::string, popart::any> &attributes) {
   verifyPoolBase(impl, inputs, attributes);
 }
 
 static void verify_AiOnnxOpset7_AveragePool_7(
     std::unique_ptr<BuilderImpl> &impl,
-    std::vector<TensorId> inputs,
-    std::map<std::string, popart::any> attributes) {
+    const std::vector<TensorId> &inputs,
+    const std::map<std::string, popart::any> &attributes) {
   verifyPoolBase(impl, inputs, attributes);
 }
 
 static void verify_AiOnnxOpset10_AveragePool_10(
     std::unique_ptr<BuilderImpl> &impl,
-    std::vector<TensorId> inputs,
-    std::map<std::string, popart::any> attributes) {
+    const std::vector<TensorId> &inputs,
+    const std::map<std::string, popart::any> &attributes) {
   verifyPoolBase(impl, inputs, attributes);
 }
 
 static void verify_AiOnnxOpset11_AveragePool_11(
     std::unique_ptr<BuilderImpl> &impl,
-    std::vector<TensorId> inputs,
-    std::map<std::string, popart::any> attributes) {
+    const std::vector<TensorId> &inputs,
+    const std::map<std::string, popart::any> &attributes) {
   verifyPoolBase(impl, inputs, attributes);
 }
 
-static void
-verify_AiOnnxOpset6_MaxPool_1(std::unique_ptr<BuilderImpl> &impl,
-                              std::vector<TensorId> inputs,
-                              std::map<std::string, popart::any> attributes) {
+static void verify_AiOnnxOpset6_MaxPool_1(
+    std::unique_ptr<BuilderImpl> &impl,
+    const std::vector<TensorId> &inputs,
+    const std::map<std::string, popart::any> &attributes) {
   verifyPoolBase(impl, inputs, attributes);
 }
 
-static void
-verify_AiOnnxOpset8_MaxPool_8(std::unique_ptr<BuilderImpl> &impl,
-                              std::vector<TensorId> inputs,
-                              std::map<std::string, popart::any> attributes) {
+static void verify_AiOnnxOpset8_MaxPool_8(
+    std::unique_ptr<BuilderImpl> &impl,
+    const std::vector<TensorId> &inputs,
+    const std::map<std::string, popart::any> &attributes) {
   verifyPoolBase(impl, inputs, attributes);
 }
 
-static void
-verify_AiOnnxOpset10_MaxPool_10(std::unique_ptr<BuilderImpl> &impl,
-                                std::vector<TensorId> inputs,
-                                std::map<std::string, popart::any> attributes) {
+static void verify_AiOnnxOpset10_MaxPool_10(
+    std::unique_ptr<BuilderImpl> &impl,
+    const std::vector<TensorId> &inputs,
+    const std::map<std::string, popart::any> &attributes) {
   verifyPoolBase(impl, inputs, attributes);
 }
 
-static void
-verify_AiOnnxOpset11_MaxPool_11(std::unique_ptr<BuilderImpl> &impl,
-                                std::vector<TensorId> inputs,
-                                std::map<std::string, popart::any> attributes) {
+static void verify_AiOnnxOpset11_MaxPool_11(
+    std::unique_ptr<BuilderImpl> &impl,
+    const std::vector<TensorId> &inputs,
+    const std::map<std::string, popart::any> &attributes) {
   verifyPoolBase(impl, inputs, attributes);
 }
 
@@ -331,10 +331,10 @@ static void verifyPadBase(std::unique_ptr<BuilderImpl> &impl,
   }
 }
 
-static void
-verify_AiOnnxOpset6_Pad_2(std::unique_ptr<BuilderImpl> &impl,
-                          std::vector<TensorId> inputs,
-                          std::map<std::string, popart::any> attributes) {
+static void verify_AiOnnxOpset6_Pad_2(
+    std::unique_ptr<BuilderImpl> &impl,
+    const std::vector<TensorId> &inputs,
+    const std::map<std::string, popart::any> &attributes) {
   verifyPadBase(impl, inputs, attributes);
 }
 

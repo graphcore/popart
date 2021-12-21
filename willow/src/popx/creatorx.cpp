@@ -17,7 +17,7 @@ namespace {
 
 std::vector<std::pair<view::Region, snap::Tensor>> fragment(
     const view::Region fullRegion,
-    const std::vector<std::pair<view::Region, snap::Tensor>> tensorRegions) {
+    const std::vector<std::pair<view::Region, snap::Tensor>> &tensorRegions) {
 
   std::vector<std::set<int64_t>> cuts(fullRegion.rank());
 
@@ -41,7 +41,7 @@ std::vector<std::pair<view::Region, snap::Tensor>> fragment(
 }
 
 snap::Tensor
-compose(const std::vector<std::pair<view::Region, snap::Tensor>> tensorRegions,
+compose(const std::vector<std::pair<view::Region, snap::Tensor>> &tensorRegions,
         const view::Region fullRegion,
         snap::Tensor fullTensor) {
   std::vector<std::pair<view::Region, snap::Tensor>> currentTensorRegions =

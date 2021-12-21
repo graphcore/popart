@@ -34,14 +34,14 @@ struct ProfileValueImpl {
 // Need to subclass to make setValue public
 class _DebugInfo : public poplar::DebugInfo {
 public:
-  _DebugInfo(poplar::DebugContext &dc, std::string layer)
+  _DebugInfo(poplar::DebugContext &dc, const std::string &layer)
       : poplar::DebugInfo(dc, layer) {}
 
   using poplar::DebugInfo::setValue;
 };
 
 struct DebugInfoImpl {
-  DebugInfoImpl(DebugContextImpl &impl, std::string layer);
+  DebugInfoImpl(DebugContextImpl &impl, const std::string &layer);
   DebugId getId() const { return di.getId(); }
   std::string getPathName() const { return di.getPathName(); }
   bool setValue(std::string name, ProfileValueImpl &impl) {
@@ -51,31 +51,35 @@ struct DebugInfoImpl {
 };
 
 struct DebugNameAndIdImpl {
-  DebugNameAndIdImpl(std::string name, DebugId id, std::string parentPath)
+  DebugNameAndIdImpl(const std::string &name,
+                     DebugId id,
+                     const std::string &parentPath)
       : dnai(name, id, parentPath) {}
 
   DebugNameAndIdImpl(DebugId id) : dnai(id) {}
 
   DebugNameAndIdImpl(const char *name) : dnai(name) {}
 
-  DebugNameAndIdImpl(DebugInfoImpl &impl, std::string name)
+  DebugNameAndIdImpl(DebugInfoImpl &impl, const std::string &name)
       : dnai(impl.di, name) {}
 
-  DebugNameAndIdImpl(DebugNameAndIdImpl &impl, std::string name)
+  DebugNameAndIdImpl(DebugNameAndIdImpl &impl, const std::string &name)
       : dnai(impl.dnai, name) {}
 
   poplar::DebugNameAndId dnai;
 };
 
 struct DebugContextImpl {
-  DebugContextImpl(std::string name, SourceLocation &_loc)
+  DebugContextImpl(const std::string &name, SourceLocation &_loc)
       : loc(std::make_shared<SourceLocation>(_loc)),
         dc(name,
            poplar::SourceLocation(loc->getFunctionName().c_str(),
                                   loc->getFileName().c_str(),
                                   loc->getLineNumber())) {}
 
-  DebugContextImpl(DebugInfoImpl &impl, std::string name, SourceLocation &_loc)
+  DebugContextImpl(DebugInfoImpl &impl,
+                   const std::string &name,
+                   SourceLocation &_loc)
       : loc(std::make_shared<SourceLocation>(_loc)),
         dc(impl.di,
            name,
@@ -84,7 +88,7 @@ struct DebugContextImpl {
                                   loc->getLineNumber())) {}
 
   DebugContextImpl(DebugNameAndIdImpl &impl,
-                   std::string name,
+                   const std::string &name,
                    SourceLocation &_loc)
       : loc(std::make_shared<SourceLocation>(_loc)),
         dc(impl.dnai,
@@ -102,7 +106,7 @@ struct DebugContextImpl {
   poplar::DebugContext dc;
 };
 
-DebugInfoImpl::DebugInfoImpl(DebugContextImpl &impl, std::string layer)
+DebugInfoImpl::DebugInfoImpl(DebugContextImpl &impl, const std::string &layer)
     : di(impl.dc, layer) {}
 } // namespace popart
 

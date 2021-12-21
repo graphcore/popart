@@ -62,7 +62,7 @@ void compareOpSchedules(const Graph &originalSubGraph,
 }
 
 void checkClonedTensors(Ir &ir,
-                        const std::string cloneName,
+                        const std::string &cloneName,
                         const std::map<OpId, OpId> &originalOpIdAndClonedOpIds,
                         const std::vector<TensorId> &expectedSubGraphInput,
                         const std::vector<TensorId> &expectedSubGraphOutput) {

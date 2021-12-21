@@ -22,7 +22,7 @@ class PopartTracepoint : public pvti::Tracepoint {
   static pvti::TraceChannel tracePopart;
 
 public:
-  PopartTracepoint(const std::string traceLabel)
+  PopartTracepoint(const std::string &traceLabel)
       : pvti::Tracepoint(&PopartTracepoint::tracePopart, traceLabel) {}
 
   PopartTracepoint(const char *traceLabel)

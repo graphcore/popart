@@ -37,7 +37,7 @@ SGD2ComboOp::SGD2ComboOp(OptimizerValue initialSmm1,
   }
 
   const auto validateIsFloatingPoint = [](const DataType dt,
-                                          const std::string name) {
+                                          const std::string &name) {
     if (!((dt == DataType::FLOAT) || (dt == DataType::FLOAT16))) {
       throw error("SGD2 only supports FLOAT or FLOAT16 for DataType of {}. You "
                   "passed {}.",

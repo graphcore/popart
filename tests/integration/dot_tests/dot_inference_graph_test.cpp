@@ -53,7 +53,9 @@ std::string create_model() {
   return modelPath;
 }
 
-int runTest(std::string modelPath, std::string outputDir, bool convertPdf) {
+int runTest(std::string modelPath,
+            const std::string &outputDir,
+            bool convertPdf) {
 
   SessionOptions sessionOpts;
   sessionOpts.finalDotOp = 1;

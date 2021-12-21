@@ -51,8 +51,10 @@ BOOST_AUTO_TEST_CASE(PipelineNoMultiSourceTest0) {
     auto input3 = builder->addInputTensor(info);
     auto w3     = builder->addInitializedInputTensor(wData);
 
-    auto getPipe = [&aiOnnx, &builder, &aiGraphcore](
-                       TensorId id1, TensorId id2, std::string num, int vgid) {
+    auto getPipe = [&aiOnnx, &builder, &aiGraphcore](TensorId id1,
+                                                     TensorId id2,
+                                                     const std::string &num,
+                                                     int vgid) {
       auto act = aiOnnx.add({id1, id2}, "add1-" + num);
       builder->virtualGraph(act, vgid);
       act = aiOnnx.sigmoid({act}, "sigmoid-" + num);

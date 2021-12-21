@@ -141,8 +141,9 @@ DataFlow::DataFlow(int bps, const AnchorReturnTypeMap &m)
   }
 }
 
-static AnchorReturnTypeMap anchorMapFromVector(const std::vector<TensorId> tIds,
-                                               const AnchorReturnType &art) {
+static AnchorReturnTypeMap
+anchorMapFromVector(const std::vector<TensorId> &tIds,
+                    const AnchorReturnType &art) {
   AnchorReturnTypeMap anchor_map;
   for (const auto &id : tIds) {
     anchor_map.emplace(id, art);

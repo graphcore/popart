@@ -990,7 +990,7 @@ bool Tensor::isRestoreInplaceTensor() const {
 bool Tensor::idIncludesPrefix(const std::vector<std::string> &prefixes) const {
   using boost::algorithm::starts_with;
   return std::any_of(
-      prefixes.begin(), prefixes.end(), [this](const std::string prefix) {
+      prefixes.begin(), prefixes.end(), [this](const std::string &prefix) {
         return starts_with(id, prefix);
       });
 }

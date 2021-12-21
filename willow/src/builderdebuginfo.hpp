@@ -15,18 +15,18 @@ public:
   BuilderDebugInfo(const DebugContext &debugContext,
                    const std::string &api,
                    const std::vector<TensorId> &inputs,
-                   const std::map<std::string, popart::any> attributes,
+                   const std::map<std::string, popart::any> &attributes,
                    const std::vector<TensorId> &outputs = {});
 
   BuilderDebugInfo(const DebugContext &debugContext,
                    const std::string &api,
-                   const std::map<std::string, popart::any> args)
+                   const std::map<std::string, popart::any> &args)
       : BuilderDebugInfo(debugContext, api, {}, args) {}
 
   BuilderDebugInfo(const DebugContext &debugContext,
                    const popart::string_view api,
                    const std::vector<TensorId> &inputs,
-                   const std::map<std::string, popart::any> attributes,
+                   const std::map<std::string, popart::any> &attributes,
                    const std::vector<TensorId> &outputs = {})
       : BuilderDebugInfo(debugContext,
                          std::string(api.ptr, api.len),

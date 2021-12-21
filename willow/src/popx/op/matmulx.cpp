@@ -168,8 +168,8 @@ lhsReshapeGroups(std::vector<std::size_t> lhsShape,
 }
 
 static std::vector<std::size_t>
-rhsReshapeGroups(std::vector<std::size_t> lhsShape,
-                 std::vector<std::size_t> rhsShape) {
+rhsReshapeGroups(const std::vector<std::size_t> &lhsShape,
+                 const std::vector<std::size_t> &rhsShape) {
   return lhsReshapeGroups(rhsShape, lhsShape);
 }
 

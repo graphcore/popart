@@ -14,7 +14,7 @@ BuilderDebugInfo::BuilderDebugInfo(
     const DebugContext &debugContext,
     const std::string &api,
     const std::vector<TensorId> &inputs,
-    const std::map<std::string, popart::any> attributes,
+    const std::map<std::string, popart::any> &attributes,
     const std::vector<TensorId> &outputs)
     : DebugInfo(debugContext, "popartbuilder") {
 
