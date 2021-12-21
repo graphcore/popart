@@ -13,10 +13,10 @@
 namespace popart {
 
 /**
- * Parses a TensorId into scopes prefixes and names
+ * Parse a TensorId into scopes prefixes and names
  *
  * Scopes and prefixes can be added and removed to the object
- * The resulting TensorId is on the format <scoeps><prefixes><names>
+ * The resulting TensorId is on the format <scopes><prefixes><names>
  *
  * Example:
  *    Ir ir;
@@ -42,7 +42,7 @@ namespace popart {
 class ParsedTensorId {
 public:
   /**
-   * Parses the \a TensorId into scopes, prefixes and names
+   * Parse the \a TensorId into scopes, prefixes and names
    * The \a scopes will be identified by the graphs in Ir
    * The \a prefixes will be identified by the prefixes in \see
    * reservedPrefixes() The \a name is whatever remains of the string
@@ -53,11 +53,6 @@ public:
    * separated by sNameDelimiter.
    * An ill formatted \a TensorId like ``foo_myScope_bar`` will be returned as
    * ``myScope/foo__bar`` without throwing a warning.
-   * 2.
-   * It's assumed that one of the scopes (or prefixes) is not fully contained
-   * in another In a \a TensorId like ``g1/g/myNme``, where ``g1`` and ``g``
-   * are scopes ``g1`` will be detected as a scope as ``g`` is fully contained
-   * in ``g1``
    *
    * \param tId_ The TensorId to be parsed
    * \param ir The ir to check for scopes
@@ -68,14 +63,14 @@ public:
   }
 
   /**
-   * Adds a prefix to the back off other prefixes and regenerates \a tId
+   * Add a prefix to the back off other prefixes and regenerates \a tId
    *
    * \param prefix The prefix to be parsed
    * \return The TensorId with the added prefix
    */
   TensorId addPrefix(const std::string &prefix);
   /**
-   * Removes a prefix if it's found in the vector of prefixes and regenerates \a
+   * Remove a prefix if it's found in the vector of prefixes and regenerates \a
    * tId A warning is given if none is found
    *
    * \param prefix The prefix to remove
@@ -84,7 +79,7 @@ public:
   TensorId removePrefixIfExist(const std::string &prefix);
 
   /**
-   * Adds a \a Scope to the beginning of \a scopes and regenerates \a tId
+   * Add a \a Scope to the beginning of \a scopes and regenerates \a tId
    *
    * Note: This does not require that \a s is in the Ir
    *
@@ -93,7 +88,8 @@ public:
    */
   TensorId addScope(const Scope &s);
   /**
-   * Removes a \a Scope from the beginning of Scopes and regenerates \a tId
+   * Remove a \a Scope from the beginning of Scopes and regenerates \a tId
+   *
    * An error is thrown if the \a Scope to be removed does not match the start
    * of Scopes
    *
@@ -105,7 +101,7 @@ public:
   TensorId removeScope(const Scope &s);
 
   /**
-   * Returns whether or not a scope is present in the ParsedTensorId
+   * Return whether or not a scope is present in the ParsedTensorId
    *
    * Note: This does not require that \a s is in the Ir
    *
@@ -114,7 +110,7 @@ public:
    */
   bool scopeExist(const Scope &s);
   /**
-   * Returns whether or not a prefix is present in the ParsedTensorId
+   * Return whether or not a prefix is present in the ParsedTensorId
    *
    * \param p The prefix to check
    * \returns True if the prefix is found
@@ -122,7 +118,7 @@ public:
   bool prefixExist(const std::string &p);
 
   /**
-   * Returns the \a TensorId on the form <scopes><prefixes><name>
+   * Return the \a TensorId on the form <scopes><prefixes><name>
    *
    * \returns The TensorId
    */
@@ -136,19 +132,17 @@ private:
    */
   void setIrScopes(const Ir &ir);
   /**
-   * Parses the \a TensorId into scopes, prefixes and names
+   * Parse the \a TensorId into scopes, prefixes and names
    * The \a scopes will be identified by the graphs in \a Ir
    * The \a prefixes will be identified by the prefixes in \see
    * reservedPrefixes() The \a name is whatever remains of the string
    */
   void parse();
-  /**
-   * Parses the \a scopes (identified by the graphs in the \a Ir)
-   */
+  //! Parse the \a scopes (identified by the graphs in the \a Ir)
   void parseScopes();
-  //! Parses the \a prefixes (identified by \see reservedPrefixes())
+  //! Parse the \a prefixes (identified by \see reservedPrefixes())
   void parsePrefixes();
-  //! Parses the \a name (what is neither scopes nor prefixes)
+  //! Parse the \a name (what is neither scopes nor prefixes)
   void parseName();
 
   /**
@@ -167,7 +161,7 @@ private:
   findMatches(const std::string &s,
               const std::vector<std::string> &potentialMatches);
 
-  //! Constructs \a tId on the form <scopes><prefixes><name>
+  //! Construct \a tId on the form <scopes><prefixes><name>
   void generateId();
 
   //! The scopes of the \a TensorId
@@ -183,6 +177,43 @@ private:
   //! The \a TensorId after parsing and possible manipulations
   TensorId tId;
 };
+
+/**
+ * Prune the input for overlaps between a begin element and another
+ * begin+length element.
+ *
+ * The algorithm assumes that the map is sorted in ascending order and that
+ * there is only one match per position.
+ * ParsedTensorId::findMatches takes care of the last assumption.
+ *
+ * Example:
+ * Assume that we have the following columns
+ * The first column represents the element in strBeginAndStrLengths, whereas the
+ * second column is for illustration purpose only
+ *
+ * {Begin, Length}    {Begin, End}
+ * { 0, 2}            { 0,  2}
+ * { 3, 6}            { 3,  9}
+ * { 4, 4}            { 4,  8} <- overlaps with {3, 9}
+ * { 5, 1}            { 5,  6} <- overlaps with {3, 9} and {4, 8}
+ * {11, 2}            {11, 13}
+ * {14, 2}            {14, 16}
+ * {15, 1}            {15, 16} <- overlaps with {14, 16}
+ * {21, 5}            {21, 26}
+ *
+ * Calling pruneOverlappedMatches on the above will result in
+ *
+ * {Begin, Length}    {Begin, End}
+ * { 0, 2}            { 0,  2}
+ * { 3, 6}            { 3,  9}
+ * {11, 2}            {11, 13}
+ * {14, 2}            {14, 16}
+ * {21, 5}            {21, 26}
+ *
+ * \param strBeginAndStrLengths Map containing begin and lengths of matches
+ */
+void pruneOverlappedMatches(
+    std::map<std::size_t, std::size_t> &strBeginAndStrLengths);
 
 } // namespace popart
 

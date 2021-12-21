@@ -35,7 +35,7 @@ void ParsedTensorId::parseName() {
   if (!scopes.empty()) {
     // Remove the scopes
     auto lastScope = scopes.back();
-    pos            = name.find(lastScope);
+    pos            = name.rfind(lastScope);
     if (pos != std::string::npos) {
       name.erase(
           0, pos + std::string(sNameDelimiter).length() + lastScope.length());
@@ -45,7 +45,7 @@ void ParsedTensorId::parseName() {
   if (!prefixes.empty()) {
     // Remove the prefixes
     auto lastPrefix = prefixes.back();
-    pos             = name.find(lastPrefix);
+    pos             = name.rfind(lastPrefix);
     if (pos != std::string::npos) {
       name.erase(0, pos + lastPrefix.length());
     }
@@ -152,16 +152,26 @@ void ParsedTensorId::setIrScopes(const Ir &ir) {
 std::vector<std::string>
 ParsedTensorId::findMatches(const std::string &s,
                             const std::vector<std::string> &potentialMatches) {
-
   std::vector<std::string> matches;
   // Store begin and length of the match in s
   std::map<std::size_t, std::size_t> strBeginAndStrLengths;
   for (const auto &pm : potentialMatches) {
+    // Find all matches
     auto pos = s.find(pm);
-    if (pos != std::string::npos) {
-      strBeginAndStrLengths[pos] = pm.length();
+    while (pos != std::string::npos) {
+      // If the pos is already present in the map we will choose the longest
+      auto it = strBeginAndStrLengths.find(pos);
+      if (it == strBeginAndStrLengths.end()) {
+        strBeginAndStrLengths[pos] = pm.length();
+      } else {
+        auto length = it->second > pm.length() ? it->second : pm.length();
+        strBeginAndStrLengths[pos] = length;
+      }
+      pos = s.find(pm, pos + 1);
     }
   }
+
+  pruneOverlappedMatches(strBeginAndStrLengths);
 
   // Extract in correct order
   for (const auto &beginAndLen : strBeginAndStrLengths) {
@@ -183,6 +193,44 @@ void ParsedTensorId::generateId() {
   }
   // Add the name
   tId += name;
+}
+
+void pruneOverlappedMatches(
+    std::map<std::size_t, std::size_t> &strBeginAndStrLengths) {
+  // Populate the absolute end point
+  std::vector<std::size_t> strEnd;
+  for (const auto &sl : strBeginAndStrLengths) {
+    strEnd.push_back(sl.first + sl.second);
+  }
+  // Check if there is an overlap
+  std::set<std::size_t> keysToPrune;
+  // As map keys are sorted ascending order by default, that means that an
+  // overlap must come after the element it overlaps. Hence we can iterate
+  // strBeginAndStrLengths and strEnd in reverse order to find the overlaps We
+  // will compare the current match begin with the previous match end
+  auto matchBeginLRIt = strBeginAndStrLengths.rbegin();
+  auto matchEndRIt    = strEnd.rbegin() + 1;
+  auto itEnd          = strEnd.rend();
+
+  if (matchBeginLRIt != strBeginAndStrLengths.rend()) {
+    while (matchEndRIt != itEnd) {
+      // In human words:
+      // For two substrings A and B, where B starts before A
+      // if A.start < B.end:
+      //   there is overlap, prune A as it is fully contained in B
+      if (matchBeginLRIt->first < *matchEndRIt) {
+        keysToPrune.insert(matchBeginLRIt->first);
+      }
+      ++matchBeginLRIt;
+      ++matchEndRIt;
+    }
+  }
+
+  // Erase keys
+  for (const auto &keyToPrune : keysToPrune) {
+    auto it = strBeginAndStrLengths.find(keyToPrune);
+    strBeginAndStrLengths.erase(it);
+  }
 }
 
 } // namespace popart

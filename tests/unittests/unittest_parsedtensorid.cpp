@@ -102,13 +102,7 @@ BOOST_AUTO_TEST_CASE(testParsingParsedTensorId) {
   BOOST_CHECK_EQUAL(pTId.getId(), name);
   BOOST_ASSERT(pTId.scopeExist(g1g11g111));
 
-  // Test limitation: The scope is not in the start
-  name = "foo_g1_bar";
-  pTId = {name, ir};
-  // The following check shows the limitation
-  BOOST_CHECK_EQUAL(pTId.getId(), "g1/bar");
-
-  // Test limitation: The a scope is fully contained in another
+  // Test when a scope is fully contained in another
   popart::Scope g;
   g = g / "g";
   ir.createGraph({"g"});
@@ -116,8 +110,13 @@ BOOST_AUTO_TEST_CASE(testParsingParsedTensorId) {
   pTId = {name, ir};
   BOOST_CHECK_EQUAL(pTId.getId(), "g1/g/myName");
   BOOST_ASSERT(pTId.scopeExist(g1));
+  BOOST_ASSERT(pTId.scopeExist(g));
+
+  // Test limitation: The scope is not in the start
+  name = "foo_g1_bar";
+  pTId = {name, ir};
   // The following check shows the limitation
-  BOOST_ASSERT(!pTId.scopeExist(g));
+  BOOST_CHECK_EQUAL(pTId.getId(), "g1/bar");
 }
 
 BOOST_AUTO_TEST_CASE(testParsedTensorIdPrefixes) {
@@ -298,4 +297,72 @@ BOOST_AUTO_TEST_CASE(testDocumentationParsedTensorId) {
 
   popart::TensorId expected = "g3/g2/Step___Gradient___name";
   BOOST_CHECK_EQUAL(pTId.getId(), expected);
+}
+
+BOOST_AUTO_TEST_CASE(testPruneOverlappedMatches) {
+  // Test that the pruneOverlappedMatches function work as expected
+  // Define the expected map
+  std::map<std::size_t, std::size_t> expected;
+  expected[0]  = 2;
+  expected[3]  = 6;
+  expected[11] = 2;
+  expected[14] = 2;
+  expected[21] = 5;
+
+  // Add overlaps for strBeginAndStrLengths
+  std::map<std::size_t, std::size_t> strBeginAndStrLengths = expected;
+  strBeginAndStrLengths[4]                                 = 4;
+  strBeginAndStrLengths[5] = 1; // Nested overlap
+  // Overlap matching beginning is not possible as we are dealing with maps
+  strBeginAndStrLengths[15] = 1; // Overlap matching end
+
+  popart::pruneOverlappedMatches(strBeginAndStrLengths);
+
+  BOOST_ASSERT(expected.size() == strBeginAndStrLengths.size());
+  for (const auto valueKey : expected) {
+    BOOST_CHECK_EQUAL(expected.at(valueKey.first),
+                      strBeginAndStrLengths.at(valueKey.first));
+  }
+}
+
+BOOST_AUTO_TEST_CASE(testPrefixOverlap) {
+  // Test that there are no spurious hits when a prefix overlaps with another
+  popart::Ir ir;
+
+  popart::TensorId tId = std::string(popart::reservedConcatInitPrefix()) + "t1";
+  popart::ParsedTensorId pTId(tId, ir);
+  BOOST_CHECK_EQUAL(pTId.getId(), tId);
+
+  tId = std::string(popart::reservedInitPrefix()) +
+        std::string(popart::reservedConcatInitPrefix()) + "t1";
+  pTId = {tId, ir};
+  BOOST_CHECK_EQUAL(pTId.getId(), tId);
+
+  tId = std::string(popart::reservedConcatInitPrefix()) +
+        std::string(popart::reservedInitPrefix()) + "t1";
+  pTId = {tId, ir};
+  BOOST_CHECK_EQUAL(pTId.getId(), tId);
+
+  tId = std::string(popart::reservedInitPrefix()) +
+        std::string(popart::reservedConcatInitPrefix()) +
+        std::string(popart::reservedInitPrefix()) + "t1";
+  pTId = {tId, ir};
+  BOOST_CHECK_EQUAL(pTId.getId(), tId);
+}
+
+BOOST_AUTO_TEST_CASE(testScopeOverlap) {
+  // Test that there are no spurious hits when a scope overlaps with another
+  std::string g1  = "g1";
+  std::string g12 = "g12";
+  popart::Ir ir;
+  ir.createGraph({g1});
+  ir.createGraph({g12});
+
+  popart::TensorId tId = g1 + "/" + g12 + "/";
+  popart::ParsedTensorId pTId(tId, ir);
+  BOOST_CHECK_EQUAL(pTId.getId(), tId);
+
+  tId  = g12 + "/" + g1 + "/";
+  pTId = {tId, ir};
+  BOOST_CHECK_EQUAL(pTId.getId(), tId);
 }
