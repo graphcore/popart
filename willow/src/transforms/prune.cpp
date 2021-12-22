@@ -1,4 +1,5 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
+#include "popart/pointercomparators.hpp"
 #include <popart/error.hpp>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
@@ -157,7 +158,7 @@ bool Prune::apply(Graph &graph) const {
         return true;
       }
 
-      std::set<Op *> consumers;
+      std::set<Op *, POpCmp> consumers;
       std::set<TensorId> excludes;
 
       // Visit any tensor downstream of the modifier

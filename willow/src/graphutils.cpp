@@ -302,8 +302,9 @@ std::vector<Tensor *> rootTensors(Tensor *tensor) {
   return roots;
 }
 
-std::map<Op *, std::set<Op *>> getOpsWithBefores(const std::set<Op *> &ops) {
-  std::map<Op *, std::set<Op *>> opsWithBefores;
+std::map<Op *, std::set<Op *, POpCmp>, POpCmp>
+getOpsWithBefores(const std::set<Op *, POpCmp> &ops) {
+  std::map<Op *, std::set<Op *, POpCmp>, POpCmp> opsWithBefores;
 
   for (Op *op0 : ops) {
     opsWithBefores.insert({op0, {}});
@@ -367,8 +368,9 @@ std::map<Op *, std::set<Op *>> getOpsWithBefores(const std::set<Op *> &ops) {
   return opsWithBefores;
 }
 
-std::map<Op *, std::set<Op *>> getOpsWithBefores(const std::vector<Op *> &ops) {
-  std::set<Op *> opss;
+std::map<Op *, std::set<Op *, POpCmp>, POpCmp>
+getOpsWithBefores(const std::vector<Op *> &ops) {
+  std::set<Op *, POpCmp> opss;
   opss.insert(ops.begin(), ops.end());
   return getOpsWithBefores(opss);
 }

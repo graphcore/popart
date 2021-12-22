@@ -1,4 +1,5 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
+#include "popart/pointercomparators.hpp"
 #define BOOST_TEST_MODULE GraphUtilsTest
 
 #include <testutil/test_graphs/graph_test_models.hpp>
@@ -260,7 +261,7 @@ BOOST_AUTO_TEST_CASE(TestOpsWithBefores) {
   GraphTestModel1 model;
   auto &ops = model.getIr().getMainGraph().getOps();
 
-  std::set<Op *> opsToOrder;
+  std::set<Op *, POpCmp> opsToOrder;
   for (auto &op : ops) {
     opsToOrder.insert(op.second.get());
   }

@@ -133,8 +133,10 @@ std::vector<Tensor *> rootTensors(Tensor *tensor);
  * (by topo cons and input/output relations)
  * before the current Op
  */
-std::map<Op *, std::set<Op *>> getOpsWithBefores(const std::set<Op *> &ops);
-std::map<Op *, std::set<Op *>> getOpsWithBefores(const std::vector<Op *> &ops);
+std::map<Op *, std::set<Op *, POpCmp>, POpCmp>
+getOpsWithBefores(const std::set<Op *, POpCmp> &ops);
+std::map<Op *, std::set<Op *, POpCmp>, POpCmp>
+getOpsWithBefores(const std::vector<Op *> &ops);
 
 class Edge {
 public:
