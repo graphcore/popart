@@ -84,6 +84,7 @@ public:
   TensorData *getInputTensorData(int index) const;
   TensorInfo &getInputTensorInfo(int index) const;
   bool hasInputTensor(int index) const;
+  std::string debugName() const;
 
   template <typename T>
   std::vector<T> getInputData(int index,

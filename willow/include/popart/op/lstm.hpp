@@ -4,26 +4,11 @@
 
 #include <popart/names.hpp>
 #include <popart/op.hpp>
+#include <popart/op/lstmutil.hpp>
 
 #include <popart/vendored/optional.hpp>
 
 namespace popart {
-
-enum class ActivationFunction {
-  Sigmoid = 0,
-  Relu,
-  Tanh,
-  Gelu,
-  Swish,
-  Softmax,
-  SoftmaxStable,
-  SoftmaxScaled,
-  N,
-  Invalid
-};
-
-ActivationFunction fromString(const std::string &s);
-std::ostream &operator<<(std::ostream &, const ActivationFunction &);
 
 class LSTMOp : public Op {
 public:

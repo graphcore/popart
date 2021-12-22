@@ -364,6 +364,21 @@ snap::Tensor PopOpx::getScalarVariable(const poplar::Type &type,
   return dv_p->lowering().getScalarVariable(graph(), type, debugContext(name));
 }
 
+snap::Tensor PopOpx::getZerosTensor(std::vector<std::size_t> shape,
+                                    poplar::Type elem_type,
+                                    std::string name = "") const {
+  // create scalar variable with provided elem_type and name
+  auto zero = getScalarVariable(elem_type, name).getPoplarTensor();
+  // set the variable's value to 0
+  graph().getPoplarGraph().setInitialValue(zero, 0);
+  // broadcast variable to required shape
+  for (int i = shape.size() - 1; i >= 0; i--) {
+    zero = zero.expand({0});
+    zero = zero.broadcast(shape[i], 0);
+  }
+  return snap::Tensor{zero, graph()};
+}
+
 std::vector<std::tuple<TensorId, TensorId, bool>>
 PopOpx::getOutputsToPrepare() const {
   return {};

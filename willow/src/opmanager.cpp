@@ -104,6 +104,21 @@ bool OpCreatorInfo::hasInputTensor(int index) const {
   }
 }
 
+// Returns formatted information about the op.
+// Similar to Op::debugName
+std::string OpCreatorInfo::debugName() const {
+  std::string debug_id = settings.name + "[" + opid.domain + "." + opid.type +
+                         ":" + std::to_string(opid.version) + "]";
+
+  std::vector<TensorId> in_ids  = getInputIds();
+  std::vector<TensorId> out_ids = getOutputIds();
+
+  return logging::format("Op({}, inputs=[{}], outputs=[{}])",
+                         debug_id,
+                         logging::join(in_ids.begin(), in_ids.end(), ", "),
+                         logging::join(out_ids.begin(), out_ids.end(), ", "));
+}
+
 OpManager &OpManager::getInstance() {
   static OpManager instance;
   return instance;

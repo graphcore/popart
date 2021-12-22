@@ -270,6 +270,11 @@ public:
   snap::Tensor getScalarVariable(const poplar::Type &type,
                                  const std::string &name) const;
 
+  // Create a tensor of 0s of specified shape
+  // The tensor is broadcasted from a scalar value to reduce memory footprint
+  snap::Tensor
+      getZerosTensor(std::vector<std::size_t>, poplar::Type, std::string) const;
+
   // The PopOpx outputs that come from any subgraph and need to be prepared
   // This allows growing the data flows through subgraphs independently, and
   // growing the PopOpx that calls the subgraph can be deferred until after all

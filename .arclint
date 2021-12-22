@@ -21,7 +21,7 @@
         },
         "autopatch": {
             "type": "autopatch",
-            "exclude": "(scripts/pybind11_mkdoc)"
+            "exclude": ["(scripts/pybind11_mkdoc)", "(tests/integration/operators_test/rnn_helper.py)"]
         }
     }
 }
