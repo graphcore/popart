@@ -1,4 +1,5 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
+#include "popart/pointercomparators.hpp"
 #include <algorithm>
 #include <boost/algorithm/cxx11/any_of.hpp>
 #include <boost/range/algorithm/find.hpp>
@@ -924,7 +925,7 @@ Op *SubgraphOutline::replaceWithCallOp(const SubgraphableOpCluster &instance,
     callOp->connectOutTensor(i, output->id);
   }
 
-  std::map<Op *, std::vector<Op *>> opRemaps;
+  std::map<Op *, std::vector<Op *>, POpCmp> opRemaps;
 
   // Remap between instance ops and subgraph ops (used to transfer topocons)
   for (auto &opAndIndex : index_map) {
@@ -1216,7 +1217,7 @@ Op *SubgraphOutline::replaceWithEmptyElseBranchIfOp(
     ifOp->connectOutTensor(i, output->id);
   }
 
-  std::map<Op *, std::vector<Op *>> opRemaps;
+  std::map<Op *, std::vector<Op *>, POpCmp> opRemaps;
 
   // Remap between instance ops and subgraph ops (used to transfer topocons)
   for (auto &opAndIndex : index_map) {

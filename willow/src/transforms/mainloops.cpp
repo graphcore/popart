@@ -1,4 +1,5 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
+#include "popart/pointercomparators.hpp"
 #include <memory>
 #include <queue>
 #include <vector>
@@ -260,7 +261,7 @@ void moveIntoLoop(LoopOp *loop,
   }
 
   // Map from old (existing) Op -> new (replacement) Op(s)
-  std::map<Op *, std::vector<Op *>> opRemaps;
+  std::map<Op *, std::vector<Op *>, POpCmp> opRemaps;
 
   for (Op *op : opsToMove.getOps()) {
     logging::transform::trace("[moveIntoLoop] Moving Op {} from {} to {}",

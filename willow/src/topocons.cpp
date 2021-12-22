@@ -77,9 +77,10 @@ void TopoCons::transfer(Op *beforeTransfer, Op *afterTransfer, bool removeOld) {
   transferToMultiple(beforeTransfer, {afterTransfer}, removeOld);
 }
 
-void TopoCons::transferToSubgraph(Op *replacementOp,
-                                  std::map<Op *, std::vector<Op *>> opRemaps,
-                                  bool removeOld) {
+void TopoCons::transferToSubgraph(
+    Op *replacementOp,
+    std::map<Op *, std::vector<Op *>, POpCmp> opRemaps,
+    bool removeOld) {
   Graph &graph = replacementOp->getGraph();
 
   auto opInRemaps = [&](Op *op) { return opRemaps.find(op) != opRemaps.end(); };

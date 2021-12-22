@@ -63,9 +63,10 @@ public:
   // After (E replaces B, C):
   //    A -> E -> D
   //    E: B -> C
-  static void transferToSubgraph(Op *replacementOp,
-                                 std::map<Op *, std::vector<Op *>> opRemaps,
-                                 bool removeOld = true);
+  static void
+  transferToSubgraph(Op *replacementOp,
+                     std::map<Op *, std::vector<Op *>, POpCmp> opRemaps,
+                     bool removeOld = true);
 
   bool contains(Op *before, Op *after) const;
   std::vector<Op *> getAfters(Op *before) const;
