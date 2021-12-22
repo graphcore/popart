@@ -54,6 +54,7 @@ add_popart_cpp_unit_test(unittest_utils unittest_utils.cpp TEST_UTILS trompeloei
 add_popart_cpp_unit_test(unittest_Session_createFromIr session_createFromIr.cpp)
 
 add_popart_cpp_unit_test(unittest_region unittest_region.cpp)
+add_popart_cpp_unit_test(unittest_pointercomparators unittest_pointercomparators.cpp)
 add_popart_cpp_unit_test(unittest_parsedtensorid unittest_parsedtensorid.cpp)
 add_popart_cpp_unit_test(unittest_replicatedtensorsharding unittest_replicatedtensorsharding.cpp TEST_UTILS test-graphs-test-util ir-query-test-util)
 

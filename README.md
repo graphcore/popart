@@ -340,6 +340,7 @@ You could use any method supported by CMake to point it at dependencies. See the
 
 * `-DPOPART_BUILD_TESTING=0` - Switch that can be used to avoid compiling PopART test.
 * `-DPOPLIBS_INCLUDE_DIR=<dir>`, `-DLIBPVTI_INCLUDE_DIR=<dir>`, etc. - Internal switches that could be used to target alternative internal Poplar libraries.
+* `-DPOPART_STRICT_COMPARATOR_CHECKS=1` - Check for `nullptr` and invalid pointers when comparing containers of pointers.
 
 **NOTE**: If you prefer building with `make` instead of `ninja`, remove the `-GNinja` switch.
 

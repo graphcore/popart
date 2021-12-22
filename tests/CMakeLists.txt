@@ -33,6 +33,11 @@ set(ENABLED_TEST_VARIANTS "Cpu;IpuModel" CACHE STRING "Default (non-hw) test var
 set(PYTEST_BASETEMP ${CMAKE_CURRENT_BINARY_DIR}/pytest_tmp)
 file(MAKE_DIRECTORY ${PYTEST_BASETEMP})
 
+# Add comparator checks to the test files
+if(${POPART_STRICT_COMPARATOR_CHECKS})
+  add_compile_definitions(POPART_STRICT_COMPARATOR_CHECKS)
+endif(${POPART_STRICT_COMPARATOR_CHECKS})
+
 # Remove any requested variants not present in ${ENABLED_TEST_VARIANTS}
 # If no variants were requested filtered ${DEFAULT_TEST_VARIANTS} are returned.
 function(sanitise_variants variant_name)

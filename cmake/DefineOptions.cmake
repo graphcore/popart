@@ -56,6 +56,8 @@ option(POPART_BUILD_TESTING "Build the popart tests" ON)
 
 option(POPART_LOG_DEVICE_ACCESS_IN_TESTS "Write a device access log (deviceaccess.log) when running ctest" OFF)
 
+option(POPART_STRICT_COMPARATOR_CHECKS "Check for nullptr and invalid pointers when comparing containers of pointers" OFF)
+
 # Generate compile_commands.json file for IDE integration
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 

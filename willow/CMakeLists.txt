@@ -229,6 +229,11 @@ target_compile_definitions(popart-only
     ${popart_common_definitions}
 )
 
+if(${POPART_STRICT_COMPARATOR_CHECKS})
+  target_compile_definitions(popart-only PRIVATE POPART_STRICT_COMPARATOR_CHECKS)
+endif(${POPART_STRICT_COMPARATOR_CHECKS})
+
+
 # These includes are private to popart-only, as the external user does not
 # need them, but they are needed by all internal targets.
 set(popart_common_includes
