@@ -623,7 +623,6 @@ static OpCreator<IfOp> ifOpCreator(
             tensors.get(addScope(parentGraph, input.name()))->info;
       }
 
-      std::vector<TensorId> parentScopedImplicitTensorIds;
       auto thenImplicitTensorIds = onnxutil::getImplicitTensorIds(thenBranch);
       for (auto implicitTensorId : thenImplicitTensorIds) {
         thenInputIds.push_back(implicitTensorId);

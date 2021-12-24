@@ -291,8 +291,13 @@ static OpCreator<LoopOp> loopOpCreator(
             addScope(parentGraph, implicitTensorId);
         Tensor *tensor =
             parentGraph.getTensors().get(parentScopedImplicitTensorId);
-        opInputs.push_back({implicitTensorId, tensor->info});
-        parentScopedImplicitTensorIds.push_back(parentScopedImplicitTensorId);
+        if (std::find(parentScopedImplicitTensorIds.begin(),
+                      parentScopedImplicitTensorIds.end(),
+                      parentScopedImplicitTensorId) ==
+            parentScopedImplicitTensorIds.end()) {
+          opInputs.push_back({implicitTensorId, tensor->info});
+          parentScopedImplicitTensorIds.push_back(parentScopedImplicitTensorId);
+        }
       }
 
       logging::op::trace("[LoopOp] Callee: {}, implicit tensors: {}",

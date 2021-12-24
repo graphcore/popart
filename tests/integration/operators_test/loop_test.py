@@ -95,7 +95,8 @@ def test_loop_matmul(op_tester):
         loop_builder.addInputTensor(popart.TensorInfo("INT64", []))
         keepgoing = loop_builder.addInputTensor(popart.TensorInfo("BOOL", []))
         a_in = loop_builder.addUntypedInputTensor(a)
-        a_out = loop_builder.aiOnnx.matmul([a_in, b])
+        tmp = loop_builder.aiOnnx.matmul([a_in, b])
+        a_out = loop_builder.aiOnnx.matmul([tmp, b])
 
         # Outputs: [condition_out, a_out]
         loop_builder.addOutputTensor(keepgoing)
@@ -111,7 +112,7 @@ def test_loop_matmul(op_tester):
 
         x = a
         for i in range(trip_count):
-            x = np.matmul(x, b)
+            x = np.matmul(np.matmul(x, b), b)
 
         return [x]
 
