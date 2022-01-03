@@ -17,8 +17,7 @@
         "popart-test-linter": {
             "type": "popart-test-linter",
             "include": "(\\.py$)",
-            "exclude": "(docs/user_guide/files/tests/test_examples.py)",
-            "exclude": "(tests/linters/.*)"
+            "exclude": ["(docs/user_guide/files/tests/test_examples.py)", "(tests/linters/.*)"]
         },
         "autopatch": {
             "type": "autopatch",
