@@ -32,7 +32,8 @@ void bindAccumulatorScale(py::module &m) {
              std::shared_ptr<AccumulatorScaleOp>>(sm, "AccumulatorScaleOp")
       .def(py::init<const OptimizerValue, const Op::Settings &>(),
            py::arg("factor"),
-           py::arg("settings"));
+           py::arg("settings"))
+      .def("getFactor", &AccumulatorScaleOp::getFactor);
 }
 } // namespace op
 } // namespace ir

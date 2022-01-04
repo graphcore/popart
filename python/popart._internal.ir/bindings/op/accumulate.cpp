@@ -71,7 +71,9 @@ void bindAccumulate(py::module &m) {
            py::arg("accumulationType"),
            py::arg("optimizer_value"),
            py::arg("axis"),
-           py::arg("settings"));
+           py::arg("settings"))
+      .def("getAxis", &SparseAccumulateOp::getAxis)
+      .def("getFactor", &SparseAccumulateOp::getFactor);
 }
 } // namespace op
 } // namespace ir
