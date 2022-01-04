@@ -754,7 +754,7 @@ poplar::Executable Reader::deserializePoplarExecutable() {
 
   const popef::ExecutableReader &exeReader = _impl->poplarExecutable->get();
   return poplar::Executable::deserialize(
-      std::move(exeReader.getStandaloneExecutableStream()));
+      exeReader.getStandaloneExecutableStream());
 }
 
 std::unique_ptr<popart::popx::Executablex>
@@ -766,7 +766,7 @@ Reader::deserializeExecutable(popart::Ir &ir,
 
   const popef::OpaqueReader &metadataReader = _impl->popartMetadata->get();
   std::unique_ptr<std::istream> opaque_stream(
-      std::move(metadataReader.getStandaloneDataStream()));
+      metadataReader.getStandaloneDataStream());
   auto popartMetadata = deserializePopartMetadata(*opaque_stream, ir, lowering);
 
   return popartMetadata;

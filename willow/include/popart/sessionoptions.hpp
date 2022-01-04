@@ -35,9 +35,6 @@ struct AutomaticLossScalingSettings {
       float thresholdUpperCountProportion_ = 1e-7,
       int updatePeriod_                    = 1);
 
-  AutomaticLossScalingSettings &
-  operator=(const AutomaticLossScalingSettings &rhs) = default;
-
   std::size_t hash() const;
   /// If true, keep track of the distribution of gradient tensor elements over
   /// the floating point range. Adjust the value loss scaling tensor
@@ -175,9 +172,6 @@ struct TensorLocationSettings {
                          int minElementsForOffChip_                  = 2,
                          int minElementsForReplicatedTensorSharding_ = 8192);
 
-  TensorLocationSettings &
-  operator=(const TensorLocationSettings &rhs) = default;
-
   /// The default tensor location for this tensor type.
   TensorLocation location = TensorLocation();
 
@@ -260,8 +254,6 @@ struct BatchSerializationSettings {
       BatchSerializationBatchSchedule batchSchedule_ =
           BatchSerializationBatchSchedule::Isomorphic);
 
-  BatchSerializationSettings &
-  operator=(const BatchSerializationSettings &rhs) = default;
   /// The number of compute batches to split operations into.
   int factor = 0;
   /// Break batch serialization chains when the virtual graph
@@ -342,9 +334,6 @@ struct ExecutionPhaseSettings {
         optimizerStateIOSchedule{optimizerStateIOSchedule_},
         accumulatorIOSchedule{accumulatorIOSchedule_}, schedule{schedule_} {}
 
-  ExecutionPhaseSettings &
-  operator=(const ExecutionPhaseSettings &rhs) = default;
-
   /// Number of ExecutionPhases for the whole model
   int phases = 0;
 
@@ -393,9 +382,6 @@ struct AccumulateOuterFragmentSettings {
       AccumulateOuterFragmentSchedule schedule_,
       const std::vector<int> &excludedVirtualGraphs_)
       : schedule{schedule_}, excludedVirtualGraphs{excludedVirtualGraphs_} {}
-
-  AccumulateOuterFragmentSettings &
-  operator=(const AccumulateOuterFragmentSettings &rhs) = default;
 
   /// Tell PopART how you would like to schedule the accumulate outer fragment.
   /// This setting is experimental and may change.
@@ -489,8 +475,6 @@ struct AutodiffSettings {
   AutodiffSettings(AutodiffStitchStrategy stitchStrategy_)
       : stitchStrategy{stitchStrategy_} {}
 
-  AutodiffSettings &operator=(const AutodiffSettings &rhs) = default;
-
   /// The strategy PopART should use to ensure that all graph inputs of a
   /// backwards graph are available as either inputs or outputs of the forward
   /// graph or gradients of outputs of the forward graph.
@@ -506,8 +490,6 @@ struct AutodiffSettings {
 /// NOTE: These options are not subject to deprecation notices and may be
 // changed or removed at any time.
 struct DeveloperSettings {
-
-  DeveloperSettings &operator=(const DeveloperSettings &rhs) = default;
   // The minimum percentage of the total time a scope must take in order
   // for it to be logged by the TimePartitionLogger.
   double timePartitionLoggerThresholdPercentage = 1.0f;
@@ -517,9 +499,6 @@ struct DeveloperSettings {
  * A structure containing user configuration options for the Session class.
  */
 struct SessionOptions {
-
-  SessionOptions &operator=(const SessionOptions &rhs) = default;
-
   /// A directory for log traces to be written into.
   std::string logDir;
 

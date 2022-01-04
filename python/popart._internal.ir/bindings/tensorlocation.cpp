@@ -23,7 +23,6 @@ void bindTensorLocation(py::module &m) {
       .def(py::init<TensorStorage>())
       .def(py::init<TensorStorage, ReplicatedTensorSharding>())
       .def(py::init<TensorStorage, ReplicatedTensorSharding, CommGroup>())
-      .def("operator=", &TensorLocation::operator=)
       .def("operator==", &TensorLocation::operator==)
       .def("operator!=", &TensorLocation::operator!=)
       .def("serialize", &TensorLocation::serialize)

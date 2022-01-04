@@ -50,6 +50,8 @@ public:
   fwdPropagateIsReplicaEqualThroughGraph(
       const Graph *graph,
       const ReplEqInputMap &replEqGraphInputMap) = 0;
+
+  virtual ~ReplicaEqualAnalysisProxy() {}
 };
 
 } // namespace popart

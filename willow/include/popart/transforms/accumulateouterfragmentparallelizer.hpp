@@ -46,8 +46,7 @@ protected:
     using TensorIds = std::vector<TensorId>;
 
     OpCluster(const Graph *graph, Op *op);
-    OpCluster()                     = delete;
-    OpCluster(const OpCluster &rhs) = default;
+    OpCluster() = delete;
 
     // True if we know OpClusters to use the same tensors.
     bool overlaps(const OpCluster &rhs) const;

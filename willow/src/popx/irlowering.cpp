@@ -3966,8 +3966,9 @@ void IrLowering::initPoplarGraph() {
     auto localReplicationFactor  = getReplicationFactor();
     auto numInstances = globalReplicationFactor / localReplicationFactor;
 
-    auto globalNumIpus  = deviceInfo->getNumIpus() * numInstances;
-    auto archString     = deviceInfo->getTarget().getTargetArchString();
+    auto globalNumIpus = deviceInfo->getNumIpus() * numInstances;
+    auto archString    = deviceInfo->getTarget().getTargetArchString();
+
     const auto &options = deviceInfo->getTarget().getTargetOptions();
 
     replicationFactor = globalReplicationFactor;

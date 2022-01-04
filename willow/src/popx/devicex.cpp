@@ -1051,8 +1051,7 @@ void Devicex::loadEngineAndConnectStreams() {
                                   (returning ? "-" : "/"),
                                   segment);
 
-          auto callback = [returning, data, n_bytes, id, replicaId, segment](
-                              void *ptr) mutable {
+          auto callback = [returning, data, n_bytes, id](void *ptr) mutable {
             if (returning) {
               char *re_data = reinterpret_cast<char *>(ptr);
               memcpy(data, re_data, n_bytes);

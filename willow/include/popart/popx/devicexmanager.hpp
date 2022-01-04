@@ -86,7 +86,7 @@ public:
                     {}) {}
 
   virtual int getId() const override { return 0; }
-  virtual std::vector<int> getChildIds() const override { return {}; };
+  virtual std::vector<int> getChildIds() const override { return {}; }
   virtual std::string getVersion() const override { return "<unknown-cpu>"; }
 };
 class DevicexSimInfo : public DevicexInfo {
@@ -99,7 +99,7 @@ public:
                     {}) {}
 
   virtual int getId() const override { return 0; }
-  virtual std::vector<int> getChildIds() const override { return {}; };
+  virtual std::vector<int> getChildIds() const override { return {}; }
   virtual std::string getVersion() const override { return "<unknown-sim>"; }
 };
 class DevicexIpuModelInfo : public DevicexInfo {
@@ -115,7 +115,7 @@ public:
         ipuVersion(_ipuVersion) {}
 
   virtual int getId() const override { return 0; }
-  virtual std::vector<int> getChildIds() const override { return {}; };
+  virtual std::vector<int> getChildIds() const override { return {}; }
   virtual std::string getVersion() const override { return ipuVersion; }
 
 private:

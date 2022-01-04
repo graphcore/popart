@@ -143,9 +143,6 @@ public:
   // (not currently part of public API).
   TensorLocation(std::vector<int64_t> serialized);
 
-  // Assignment operator for TensorLocation
-  // (not currently part of public API).
-  TensorLocation &operator=(const TensorLocation &rhs) = default;
   // Equality operator for TensorLocation
   // (not currently part of public API).
   bool operator==(const TensorLocation &rhs) const;

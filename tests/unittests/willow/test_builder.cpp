@@ -148,7 +148,7 @@ BOOST_AUTO_TEST_CASE(Builder_CustomOp_Into_Registered_Shape_Inference_Op) {
   auto a1   = builder->addInputTensor(info_c);
   auto a2   = builder->addInputTensor(info_c);
   auto a3   = builder->addInputTensor(info_c);
-  auto outs = aiOnnx.batchnormalization({t0, a0, a1, a2, a3}, 1, 0.2, 0.3);
+  auto outs = aiOnnx.batchnormalization({t0, a0, a1, a2, a3}, 1, 0.2, 0L, 0.3);
 }
 
 // Testing shape inference functions.

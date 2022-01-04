@@ -1,3 +1,4 @@
+# Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 ## Strict warning level
 if (MSVC)
     # Use the highest warning level for visual studio.
@@ -27,6 +28,7 @@ else()
             # Warnings we don't want to promote to errors (but keep as warnings).
             -Wno-error=undef
             -Wno-error=shadow
+            -Wno-error=deprecated-declarations
             # Warnings we want to silence altogether.
             -Wno-double-promotion
             -Wno-missing-noreturn
@@ -65,7 +67,6 @@ else()
 
                 # Turn off more warnings that are exclusive to g++.
                 -Wno-missing-field-initializers
-                -Wno-deprecated-declarations
                 -Wno-sign-conversion
             )
         endif()
