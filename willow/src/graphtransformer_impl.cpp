@@ -13,9 +13,8 @@
 namespace popart {
 
 GraphTransformerImpl::GraphTransformerImpl(
-    const std::string &modelProtoOrFilename) {
-  model = onnxutil::getModelProto(modelProtoOrFilename);
-
+    const std::string &modelProtoOrFilename)
+    : model(onnxutil::getModelProto(modelProtoOrFilename)) {
   // Check imported model is valid.
   ONNX_NAMESPACE::checker::check_model(model);
 }

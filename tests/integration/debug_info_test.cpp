@@ -27,10 +27,8 @@
 class TemporaryFileManager {
 
 public:
-  TemporaryFileManager(const char *ext) {
-    // create temporary file name
-    name = std::string(std::tmpnam(nullptr)) + "." + ext;
-  }
+  TemporaryFileManager(const char *ext)
+      : name(std::string(std::tmpnam(nullptr)) + "." + ext) {}
 
   std::string name;
 

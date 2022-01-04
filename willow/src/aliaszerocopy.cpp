@@ -1046,7 +1046,7 @@ void AliasZeroCopy::printLivenessIntervals(
       size_t j = 0;
       for (IntervalsImpl::iterator it = livenessIntervals.intervals->begin();
            it != livenessIntervals.intervals->end();
-           it++) {
+           ++it) {
         if (it->lower() < 0) {
           throw error("[AliasZeroCopy] Interval starts below 0.");
         }
