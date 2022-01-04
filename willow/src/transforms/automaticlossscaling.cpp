@@ -503,12 +503,10 @@ Op *AutomaticLossScale::executeOpNTimesEveryMTimes(
   Graph &subgraph = SubgraphOutline::createSubgraph(
       instances, ir, index_map_subgraph, "ComputeSubgraph");
 
-  std::map<Op *, int> index_map_empty_subgraph;
   std::string subgraphId = op->str() + "_EmptySubgraph";
   Graph &emptySubgraph =
       SubgraphOutline::createEmptySubgraph(instance,
                                            ir,
-                                           index_map_empty_subgraph,
                                            subgraphId,
                                            identityInputToOutputIndiciesMapping,
                                            outputIndiciesAndValues,
@@ -517,7 +515,8 @@ Op *AutomaticLossScale::executeOpNTimesEveryMTimes(
   AliasesMap aliasesMap{&ir};
 
   Tensor *flag = lessOp->outTensor(LessOp::getOutIndex());
-  op           = SubgraphOutline::replaceWithEmptyElseBranchIfOp(
+  std::map<Op *, int> index_map_empty_subgraph;
+  op = SubgraphOutline::replaceWithEmptyElseBranchIfOp(
       instance, subgraph, emptySubgraph, index_map_subgraph, aliasesMap, flag);
 
   return op;

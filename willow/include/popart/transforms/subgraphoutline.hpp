@@ -82,10 +82,6 @@ public:
    *                 inputs and output tensors can be connected via
    *                 nops and output tensors can be set to default values.
    * \param ir The IR.
-   * \param index_map An empty map, passed by reference. Used to map from op in
-   *                  the new subgraph to their corresponding indices in the
-   *                  SubgraphableOpCluster instance. Required as input
-   *                  argument to 'replaceWithEmptyElseBranchIfOp'.
    * \param subgraphId The returned subgraph's id.
    * \param identityInputToOutputIndiciesMapping Specifies the connections
    *  of inputs to outputs via nop operations in the 'empty' subgraph.
@@ -97,7 +93,6 @@ public:
   static Graph &createEmptySubgraph(
       const SubgraphableOpCluster &instance,
       Ir &ir,
-      std::map<Op *, int> &index_map,
       std::string subgraphId,
       const std::map<InIndex, OutIndex> &identityInputToOutputIndiciesMapping,
       const std::map<OutIndex, float> &outputIndiciesAndValues,

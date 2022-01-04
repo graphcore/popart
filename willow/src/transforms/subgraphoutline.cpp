@@ -948,7 +948,6 @@ Op *SubgraphOutline::replaceWithCallOp(const SubgraphableOpCluster &instance,
 Graph &SubgraphOutline::createEmptySubgraph(
     const SubgraphableOpCluster &instance,
     Ir &ir,
-    std::map<Op *, int> &index_map,
     std::string subgraphId,
     const std::map<InIndex, OutIndex> &identityInputToOutputIndiciesMapping,
     const std::map<OutIndex, float> &outputIndiciesAndValues,
