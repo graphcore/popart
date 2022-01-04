@@ -7,6 +7,7 @@
 #include <sstream>
 #include <thread>
 
+#include <boost/algorithm/string.hpp>
 #include <boost/functional/hash.hpp>
 
 #include <poplar/DeviceManager.hpp>
@@ -382,10 +383,32 @@ void DeviceInfo::writeToDeviceAccessLog(
       // run-time issues, so by caching the string we can still log the destruct
       // in the constructor.
       std::stringstream ss;
+
       auto testName = getPopartEnvVar("TEST_NAME");
       if (testName) {
         ss << ", test:" << *testName;
+
+        // Try and add pytest test name if there is one. This environment
+        // variable is set by pytest (see, e.g.,
+        // https://docs.pytest.org/en/6.2.x/example/simple.html#pytest-current-test-environment-variable).
+        auto pytestTestName = getEnvVar("PYTEST_CURRENT_TEST");
+        if (pytestTestName) {
+          // Use name from pytest if there is one.
+          auto slash = pytestTestName->find_last_of('/');
+          auto space = pytestTestName->find_last_of(' ');
+
+          if (slash != std::string::npos && space != std::string::npos) {
+            // Format "/path/to/test_foo.py::test1 (call)" as
+            // "test_foo.py::test1"
+            ss << "(" << pytestTestName->substr(slash + 1, space - slash - 1)
+               << ")";
+          } else {
+            // Don't format.
+            ss << "(" << *pytestTestName << ")";
+          }
+        }
       }
+
       ss << ", event:{}";
       ss << ", ipus:"
          << "[";
