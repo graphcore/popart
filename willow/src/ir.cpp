@@ -43,6 +43,7 @@
 #include <popart/opmanager.hpp>
 #include <popart/optimizer.hpp>
 #include <popart/pbwrap.hpp>
+#include <popart/pointercomparators.hpp>
 #include <popart/replicatedstreammode.hpp>
 #include <popart/scheduler.hpp>
 #include <popart/sessionoptions.hpp>
@@ -3720,7 +3721,7 @@ void Ir::applyInplacePattern(Graph &graph) {
         if (inplaceBlocking) {
           break;
         }
-        std::map<Op *, std::set<InIndex>> consumersInIndices;
+        std::map<Op *, std::set<InIndex>, POpCmp> consumersInIndices;
 
         auto populateConsumersInIndices = [&consumersInIndices, op](Tensor *t) {
           for (auto consumer : t->consumers.getOps()) {
@@ -4232,8 +4233,8 @@ std::size_t std::hash<popart::Ir>::operator()(const popart::Ir &ir) const {
   return seed;
 }
 
-std::size_t std::hash<popart::IrBundle>::
-operator()(const popart::IrBundle &bundle) const {
+std::size_t
+std::hash<popart::IrBundle>::operator()(const popart::IrBundle &bundle) const {
   size_t seed = 0;
 
   boost::hash_combine(
