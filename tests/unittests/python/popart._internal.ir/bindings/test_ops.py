@@ -1061,3 +1061,32 @@ def test_adam_updater_op(connected: bool) -> None:
 
     op.connectOutTensor(0, out.id)
     op.setup()
+
+
+@pytest.mark.parametrize("connected", [True, False])
+def test_lambsquare_op(connected: bool) -> None:
+    """Test the LambSquare Op.
+    
+    Args:
+        connected (bool): Whether to use the createConnected<opname> function or
+            just create<opname>
+    """
+    _, graphs = create_ir()
+    main = graphs[0]
+    num_inputs = _ir.NumInputs(2, 2)
+    in_ = add_random_tensor("in_", _ir.TensorType.Variable, [4], main)
+    out = add_actgrad_tensor("out", [4], main)
+
+    opid = _ir.OperatorIdentifier("ai.graphcore", "LambSquare", 1, num_inputs,
+                                  1)
+    settings = _ir.Settings(main, "lambsquare")
+
+    if connected:
+        ins: Dict[int, str] = {0: in_.id}
+        outs: Dict[int, str] = {0: out.id}
+        op = main.createConnectedOp_LambSquareOp(ins, outs, settings=settings)
+        return
+    op = main.createOp_LambSquareOp(settings=settings)
+    op.connectInTensor(0, in_.id)
+    op.connectOutTensor(0, out.id)
+    op.setup()

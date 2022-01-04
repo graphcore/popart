@@ -18,6 +18,7 @@ from .increment_mod import *
 from .init import *
 from .io_tile_copy import *
 from .ipu_copy import *
+from .lamb import *
 from .logical_and import *
 from .logical_not import *
 from .logical_or import *
