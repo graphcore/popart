@@ -21,6 +21,7 @@
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/opmanager.hpp>
+#include <popart/pointercomparators.hpp>
 #include <popart/tensor.hpp>
 #include <popart/tensors.hpp>
 
@@ -63,7 +64,7 @@ const Op *ConstExprOp::getBaseOp() const { return this->op; }
 
 void ConstExprUtil::foldConstants(Graph &graph) {
   // get ops that may be computable
-  std::unordered_set<Op *> computable_ops;
+  std::set<Op *, POpCmp> computable_ops;
   for (auto &id_op : graph.getOps()) {
     auto &op = id_op.second;
     if (isComputable(op.get(), graph)) {
