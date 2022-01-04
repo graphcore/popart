@@ -1,5 +1,5 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-from typing import Optional, Tuple
+from typing import Optional
 import popart._internal.ir as _ir
 from popart.ir.context import get_current_context, op_debug_context
 from popart.ir.tensor import Tensor

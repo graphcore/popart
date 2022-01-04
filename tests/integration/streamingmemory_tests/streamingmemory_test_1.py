@@ -1,12 +1,6 @@
 # Copyright (c) 2020 Graphcore Ltd. All rights reserved.
-import os
 import popart
-import numpy as np
-import torch
 import onnx
-from onnx import numpy_helper
-import math
-import pytest
 
 # `import test_util` requires adding to sys.path
 import sys

@@ -1,14 +1,4 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-import numpy as np
-import popart
-import torch
-import pytest
-from op_tester import op_tester
-import sys
-from pathlib import Path
-sys.path.append(Path(__file__).resolve().parent.parent)
-import test_util as tu
-
 import matmul_test_broadcasting_base as mtb
 
 # generated test cases

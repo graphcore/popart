@@ -1,10 +1,8 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 
 import numpy as np
-import popart
 import pytest
 import torch
-from op_tester import op_tester
 
 
 @pytest.mark.parametrize("rev_d0", [False, True])

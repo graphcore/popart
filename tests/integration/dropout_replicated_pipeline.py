@@ -1,10 +1,7 @@
 # Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 import popart
 import torch
-import torchvision
-import torchvision.transforms as transforms
 import torch.nn as nn
-import torch.nn.functional as F
 import torch.optim as optim
 import numpy as np
 import numpy.random as npr

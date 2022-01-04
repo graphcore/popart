@@ -1,14 +1,10 @@
 # Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 import numpy as np
 import popart
-import pytest
 import test_util as tu
-import torch
 import onnx
-from onnx import helper, numpy_helper, version_converter
-from onnx import AttributeProto, TensorProto, GraphProto
-from onnx.backend.base import Backend
-from onnx import numpy_helper
+from onnx import helper, version_converter
+from onnx import TensorProto
 
 
 def test_type_cast_UINT8ToINT32():

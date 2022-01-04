@@ -8,7 +8,6 @@ import sys
 from pathlib import Path
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 import test_util as tu
-from operators_test.op_tester import op_tester
 
 
 def get_model_with_dim_param(tmpdir):

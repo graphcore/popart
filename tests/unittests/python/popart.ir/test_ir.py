@@ -9,7 +9,7 @@ import gc
 import pytest
 import popart.ir as pir
 from popart.ir import ops
-from typing import List, Dict
+from typing import List
 
 
 def test_constructor():

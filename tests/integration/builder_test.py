@@ -8,7 +8,6 @@ import test_util as tu
 import numpy as np
 import onnx
 import pytest
-from onnx import AttributeProto, GraphProto, TensorProto, helper
 
 
 def getDevice():

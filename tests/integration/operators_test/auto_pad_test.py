@@ -6,13 +6,7 @@
 # tests that test auto_pad via onnx models
 import itertools
 from typing import Sequence, Text
-
-import numpy as np  # type: ignore
-import pytest
-import torch
-
-import popart
-from op_tester import op_tester
+import numpy as np
 
 
 # Taken from onnx/onnx/backend/test/case/node/pool_op_common.py

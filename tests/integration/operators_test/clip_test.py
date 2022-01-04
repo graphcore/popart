@@ -5,7 +5,6 @@
 import pytest
 import popart
 import numpy as np
-import re
 import sys
 from pathlib import Path
 

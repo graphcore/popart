@@ -4,7 +4,6 @@ import popart
 import torch
 import pytest
 import torch.nn as nn
-from op_tester import op_tester
 
 # `import test_util` requires adding to sys.path
 import sys

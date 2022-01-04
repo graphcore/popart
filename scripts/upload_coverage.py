@@ -2,8 +2,6 @@
 import argparse
 import json
 import os
-import re
-import subprocess
 from datetime import datetime
 from pathlib import Path, PosixPath
 

@@ -2,7 +2,6 @@
 import numpy as np
 import popart
 import pytest
-from op_tester import op_tester
 
 
 def test_atan2_arg0_grad_error(op_tester):

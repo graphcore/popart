@@ -3,7 +3,6 @@ import numpy as np
 import popart
 import pytest
 import test_util as tu
-import json
 import tempfile
 import pva
 

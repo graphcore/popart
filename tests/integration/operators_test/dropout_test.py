@@ -4,7 +4,6 @@ import popart
 import pytest
 import torch
 import itertools
-from op_tester import op_tester
 
 # `import test_util` requires adding to sys.path
 import sys

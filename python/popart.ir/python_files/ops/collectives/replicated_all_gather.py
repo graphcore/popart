@@ -1,5 +1,5 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-from typing import Dict, Iterable, Optional
+from typing import Dict, Optional
 import popart._internal.ir as _ir
 from popart.ir.context import get_current_context
 from popart.ir.tensor import Tensor

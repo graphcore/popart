@@ -3,7 +3,6 @@ import pytest
 import numpy as np
 import popart
 import json
-import pprint
 
 # importing test_session requires adding to sys.path
 import sys

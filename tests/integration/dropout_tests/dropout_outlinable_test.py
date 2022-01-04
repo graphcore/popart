@@ -1,11 +1,7 @@
 # Copyright (c) 2020 Graphcore Ltd. All rights reserved.
 import numpy as np
-import pytest
 import popart
-import pprint
 import json
-import onnx
-from onnx import numpy_helper
 
 # `import test_util` requires adding to sys.path
 import sys

@@ -1,7 +1,6 @@
 # Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 import popart
 import numpy as np
-import torch
 import onnx
 from onnx import numpy_helper
 import test_util as tu

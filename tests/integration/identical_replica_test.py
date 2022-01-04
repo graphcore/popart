@@ -7,13 +7,8 @@ from pathlib import Path
 sys.path.append(str(Path(__file__).resolve().parent))
 
 import numpy as np
-import pytest
 import popart
 import test_util as tu
-import pprint
-import json
-import onnx
-from onnx import numpy_helper
 
 
 def test_replica_bitwise_identical_update():

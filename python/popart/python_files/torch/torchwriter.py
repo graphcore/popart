@@ -5,7 +5,7 @@ import torch.utils
 import torch.utils.data
 import popart
 from popart.writer import NetWriter
-from popart import TensorInfo, DataFlow, SGD, ConstSGD
+from popart import ConstSGD, SGD
 import onnx
 
 

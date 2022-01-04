@@ -1,7 +1,6 @@
 # Copyright (c) 2020 Graphcore Ltd. All rights reserved.
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 import numpy as np
 import popart
 import test_util as tu

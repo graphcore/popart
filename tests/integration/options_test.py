@@ -1,9 +1,7 @@
 # Copyright (c) 2018 Graphcore Ltd. All rights reserved.
-import numpy as np
 import popart
 import pytest
 import test_util as tu
-import logging
 
 
 def test_create_empty_options():

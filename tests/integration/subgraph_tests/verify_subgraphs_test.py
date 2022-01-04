@@ -1,13 +1,6 @@
 # Copyright (c) 2020 Graphcore Ltd. All rights reserved.
 import numpy as np
 import popart
-import pytest
-
-# `import test_util` requires adding to sys.path
-import sys
-from pathlib import Path
-sys.path.append(str(Path(__file__).resolve().parent.parent))
-import test_util as tu
 
 
 def test_subgraph_conv():

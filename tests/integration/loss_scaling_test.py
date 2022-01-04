@@ -2,14 +2,12 @@
 from contextlib import ExitStack
 import numpy as np
 import popart
-import onnx
-from onnx import TensorProto, mapping
 import pytest
 import test_util as tu
 import torch
 import json
 
-from loss_scaling_util_test import getModelProto, compare_weights, run_automatic_loss_scaling_comparison_test, getOptimizers
+from loss_scaling_util_test import getModelProto, getOptimizers, run_automatic_loss_scaling_comparison_test
 
 
 def loss_scaling_test(constLossScaling):

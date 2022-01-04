@@ -5,7 +5,6 @@ import popart
 import torch
 import pytest
 import re
-from op_tester import op_tester
 from unittest.mock import patch
 
 # `import test_util` requires adding to sys.path

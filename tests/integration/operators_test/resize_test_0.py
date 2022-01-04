@@ -4,9 +4,7 @@ import pytest
 import popart
 import torch
 import torch.nn.functional as F
-from op_tester import op_tester
 import test_util as tu
-import os
 from packaging import version
 import numbers
 

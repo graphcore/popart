@@ -2,7 +2,6 @@
 import json
 import os
 import popart
-import pytest
 
 
 def test_version_number():

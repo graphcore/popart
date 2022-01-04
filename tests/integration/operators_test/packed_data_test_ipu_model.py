@@ -1,9 +1,7 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 import numpy as np
-import random
 
 import popart
-from op_tester import op_tester
 
 # `import test_util` requires adding to sys.path
 import sys

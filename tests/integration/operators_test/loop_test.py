@@ -1,9 +1,7 @@
 # Copyright (c) 2020 Graphcore Ltd. All rights reserved.
 import numpy as np
 import popart
-import pytest
 import torch
-from op_tester import op_tester
 
 
 def test_simple_for_loop(op_tester):

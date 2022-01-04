@@ -1,5 +1,4 @@
 # Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-import popart
 import numpy as np
 from popart_core import _TensorInfoCore
 from typing import List, Union, Iterable, Tuple

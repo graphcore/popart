@@ -3,7 +3,6 @@ import numpy as np
 import pytest
 import popart
 import torch
-from op_tester import op_tester
 
 
 # Test a set of non-overlapping dynamic slices, with both the two and three

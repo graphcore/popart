@@ -4,9 +4,8 @@ import json
 import os
 import re
 from multiprocessing import Pool
-from glob import glob
 from pathlib import Path
-from typing import Any, Dict, Iterator, List, Text, Tuple
+from typing import Any, Dict, Iterator, List, Tuple
 
 # clang is not a common install. Raise error and point to readme in case of missing package.
 try:

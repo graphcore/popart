@@ -5,7 +5,6 @@ import popart
 # 'import test_util' requires adding to sys.path
 import sys
 from pathlib import Path
-from _ast import Or
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 import test_util as tu
 

@@ -2,9 +2,7 @@
 import numpy as np
 import pytest
 import popart
-from op_tester import op_tester
 import json
-from typing import List
 
 # `import test_util` requires adding to sys.path
 import sys

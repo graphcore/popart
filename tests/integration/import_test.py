@@ -3,9 +3,9 @@ import pytest
 
 
 def test_import_order():
-    import onnx
+    import onnx  # type: ignore
     with pytest.raises(ImportError) as error:
-        import popart
+        import popart  # type: ignore
 
     assert error.value.args[0] == (
         'It looks like onnx has already been imported. Due to an ongoing '

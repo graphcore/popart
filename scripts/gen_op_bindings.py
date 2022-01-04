@@ -16,7 +16,6 @@ import json
 import os
 from multiprocessing import Pool
 from pathlib import Path
-from subprocess import CalledProcessError, check_output
 from typing import Dict, Text
 
 # jinja2 is not a common install. Raise error and point to readme in case of missing package.

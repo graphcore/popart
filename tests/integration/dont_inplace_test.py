@@ -1,6 +1,6 @@
 # Copyright (c) 2020 Graphcore Ltd. All rights reserved.
 import numpy as np
-from operators_test.op_tester import op_tester
+from operators_test.conftest import op_tester  # type: ignore
 
 
 def test_dont_inplace_output_consumers(op_tester):

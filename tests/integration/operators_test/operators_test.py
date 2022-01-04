@@ -7,7 +7,6 @@ import numpy as np
 import pytest
 import torch
 import torch.nn.functional as F
-from op_tester import op_tester
 
 import popart
 

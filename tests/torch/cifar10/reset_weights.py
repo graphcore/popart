@@ -2,7 +2,6 @@
 import sys
 import os
 import numpy as np
-import tempfile
 import popart
 from popart.torch import torchwriter
 # we require torch in this file to create the torch Module

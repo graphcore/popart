@@ -3,9 +3,7 @@ import pytest
 import numpy as np
 import popart
 import torch
-import onnx
 import json
-from op_tester import op_tester
 
 from pathlib import Path
 from test_session import PopartTestSession

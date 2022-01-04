@@ -1,9 +1,6 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 import numpy as np
-import popart
-import torch
 import pytest
-from op_tester import op_tester
 
 
 @pytest.mark.parametrize("dtype",

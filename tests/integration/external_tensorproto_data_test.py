@@ -3,7 +3,6 @@ import numpy as np
 import os
 import popart
 import pytest
-import tempfile
 from tempfile import TemporaryDirectory
 from contextlib import contextmanager
 from pathlib import Path

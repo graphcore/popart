@@ -1,11 +1,9 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 from typing import List
 
-import numpy as np
 import popart
 import popart._internal.ir as _ir
 import pytest
-from attr import attr
 
 from utils import *
 

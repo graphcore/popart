@@ -2,11 +2,7 @@
 # see model0.py for a more detailed
 # description of what's going on.
 
-import sys
-import os
 import torch
-import numpy as np
-from torchvision import transforms, datasets
 import c10driver
 import popart
 import cmdline

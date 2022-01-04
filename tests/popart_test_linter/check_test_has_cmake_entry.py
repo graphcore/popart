@@ -10,7 +10,6 @@
 # and returns with return code 1.
 from pathlib import Path
 import re
-import os
 import sys
 
 

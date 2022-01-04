@@ -2,9 +2,7 @@
 import numpy as np
 import popart
 import torch
-import pytest
-import torch.nn.functional as F
-from operators_test.op_tester import op_tester
+from operators_test.conftest import op_tester  # type: ignore
 
 
 def test_pad_sum1(op_tester):

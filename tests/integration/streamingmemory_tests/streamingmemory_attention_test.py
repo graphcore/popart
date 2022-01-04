@@ -1,20 +1,13 @@
 # Copyright (c) 2020 Graphcore Ltd. All rights reserved.
 
 import numpy as np
-import pytest
 import popart
-import pprint
-import json
-import platform
-import itertools
-import torch
 import onnx
 from onnx import numpy_helper
 
 # 'import test_util' requires adding to sys.path
 import sys
 from pathlib import Path
-from _ast import Or
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 import test_util as tu
 

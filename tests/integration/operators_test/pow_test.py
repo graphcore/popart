@@ -1,11 +1,7 @@
 # Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 import numpy as np
-import pytest
 import popart
 import torch
-from op_tester import op_tester
-import test_util as tu
-from pprint import pprint
 
 
 def test_pow(op_tester):

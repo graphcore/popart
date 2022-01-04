@@ -1,9 +1,5 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-from typing import List, Type
-import numpy as np
-import pytest
 
-import popart._internal.ir as _ir
 import popart.ir as pir
 
 

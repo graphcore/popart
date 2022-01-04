@@ -1,7 +1,6 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 import popart
 import numpy as np
-import torch
 import onnx
 from onnx import numpy_helper
 

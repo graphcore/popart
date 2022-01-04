@@ -1,5 +1,5 @@
 # Copyright (c) 2018 Graphcore Ltd. All rights reserved.
-from typing import Dict, List, Union
+from typing import Dict, Union
 
 import numpy as np
 import os

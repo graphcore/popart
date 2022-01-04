@@ -1,5 +1,4 @@
 # Copyright (c) 2020 Graphcore Ltd. All rights reserved.
-import numpy as np
 import popart
 import pytest
 import test_util as tu

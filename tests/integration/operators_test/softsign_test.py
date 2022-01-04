@@ -3,7 +3,6 @@ import numpy as np
 import popart
 import torch
 import torch.nn.functional as F
-from op_tester import op_tester
 
 
 def create_input():

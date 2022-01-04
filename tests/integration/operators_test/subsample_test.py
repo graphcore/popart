@@ -2,7 +2,6 @@
 import numpy as np
 import pytest
 import popart
-from op_tester import op_tester
 
 
 def _subsample_helper(op_tester, input, strides, output, grad_ouput):

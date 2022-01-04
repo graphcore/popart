@@ -5,7 +5,6 @@
 # This test checks the output of const folding after the DecomposeBinaryConstScalar pattern has been applied.
 # gemm_ce_test.cpp checks the const folding actually happens
 import numpy as np
-from op_tester import op_tester
 
 
 def test_gemm_basic(op_tester):

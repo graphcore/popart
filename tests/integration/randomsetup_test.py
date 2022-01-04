@@ -4,7 +4,6 @@ import itertools
 import numpy as np
 import pytest
 import popart
-import onnx
 """
 NOTE: In theory random ops can produce identical output despite having different
 seeds, so checking for distinct outputs as a way of testing probabilistic

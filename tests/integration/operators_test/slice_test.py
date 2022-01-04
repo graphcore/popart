@@ -3,13 +3,6 @@ import numpy as np
 import popart
 import torch
 import pytest
-from op_tester import op_tester
-
-# `import test_util` requires adding to sys.path
-import sys
-from pathlib import Path
-sys.path.append(Path(__file__).resolve().parent.parent)
-import test_util as tu
 
 
 def test_slice_opset9(op_tester):

@@ -1,8 +1,6 @@
 # Copyright (c) 2018 Graphcore Ltd. All rights reserved.
 import numpy as np
-import pytest
 import popart
-import torch
 import test_util as tu
 
 

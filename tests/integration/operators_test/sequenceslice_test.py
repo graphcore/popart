@@ -1,16 +1,6 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 import numpy as np
-import popart
-import torch
 import pytest
-import torch.nn.functional as F
-from op_tester import op_tester
-
-# `import test_util` requires adding to sys.path
-import sys
-from pathlib import Path
-sys.path.append(Path(__file__).resolve().parent.parent)
-import test_util as tu
 
 
 @pytest.mark.parametrize("inplacing", [False, True])

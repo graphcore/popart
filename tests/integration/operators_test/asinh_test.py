@@ -1,8 +1,6 @@
 # Copyright (c) 2020 Graphcore Ltd. All rights reserved.
 import numpy as np
 import popart
-import torch
-from op_tester import op_tester
 
 
 def test_asinh(op_tester):

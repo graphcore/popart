@@ -4,7 +4,6 @@ import pytest
 import popart
 import torch
 import os
-from op_tester import op_tester
 import platform
 import test_util as tu
 

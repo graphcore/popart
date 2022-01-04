@@ -66,23 +66,19 @@ class ILinter(ABC):
         important to override in your linter, as it is what does the 'work'
         of linting. 
         """
-        pass
 
     @abstractmethod
     def get_version(self) -> Tuple:
         """Return the version of the linter package or binary as a 
         tuple, leading with major version numbers"""
-        pass
 
     @abstractmethod
     def is_available(self) -> bool:
         """"Check if the linter is installed"""
-        pass
 
     @abstractmethod
     def install_instructions(self, required_version='') -> str:
         """"Return a string describing how the linter should be installed."""
-        pass
 
     def is_applicable(self, filename: str) -> bool:
         """Returns true if this linter is applicable to filename,

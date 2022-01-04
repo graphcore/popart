@@ -7,7 +7,6 @@ from __future__ import unicode_literals
 import popart
 
 import itertools
-import os
 import unittest
 import onnx.backend.base
 import onnx.backend.test
@@ -17,7 +16,7 @@ from onnx.backend.test.runner import BackendIsNotSupposedToImplementIt
 import onnx.shape_inference
 import onnx.version_converter
 from typing import Optional, Text, Any, Tuple, Sequence
-from onnx import NodeProto, ModelProto, TensorProto
+from onnx import ModelProto, NodeProto
 import numpy  # type: ignore
 
 # The following just executes the fake backend through the backend test

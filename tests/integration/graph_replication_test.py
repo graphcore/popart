@@ -1,6 +1,5 @@
 # Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 import numpy as np
-import pytest
 import popart
 import torch
 
@@ -10,7 +9,7 @@ from pathlib import Path
 
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 import test_util as tu
-from operators_test.op_tester import op_tester
+from operators_test.conftest import op_tester  # type: ignore
 
 
 def test_weight_update(op_tester):

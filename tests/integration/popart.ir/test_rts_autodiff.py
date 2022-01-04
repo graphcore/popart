@@ -1,12 +1,9 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-import os
-import shutil
 import sys
 from pathlib import Path
 from typing import List, Mapping, Tuple
 
 import numpy as np
-import pytest
 
 import popart
 import popart._internal.ir as _ir

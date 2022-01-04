@@ -1,7 +1,5 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 
-import pytest
-import numpy as np
 import popart.ir as pir
 import os
 

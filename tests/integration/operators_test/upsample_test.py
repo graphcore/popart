@@ -1,10 +1,8 @@
 # Copyright (c) 2020 Graphcore Ltd. All rights reserved.
 import numpy as np
-import pytest
 import popart
 import torch
 import torch.nn.functional as F
-from op_tester import op_tester
 from packaging import version
 import numbers
 

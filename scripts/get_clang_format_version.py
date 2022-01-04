@@ -3,7 +3,6 @@
 A Python program to print the major version of clang-format
 """
 
-import sys
 import subprocess
 out = subprocess.run(["clang-format", "--version"], stdout=subprocess.PIPE)
 

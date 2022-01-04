@@ -3,12 +3,11 @@ import numpy as np
 import popart
 import torch
 import json
-
 # `import op_tester` requires adding to sys.path
 import sys
 from pathlib import Path
 sys.path.append(str(Path(__file__).resolve().parent.parent / 'operators_test'))
-from op_tester import op_tester
+from conftest import op_tester  # type: ignore
 
 
 def test_issue(op_tester):

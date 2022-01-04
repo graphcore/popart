@@ -1,6 +1,5 @@
 # Copyright (c) 2020 Graphcore Ltd. All rights reserved.
 import numpy as np
-import os
 import popart
 import pytest
 

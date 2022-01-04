@@ -1,6 +1,5 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 import popart
-import pytest
 import numpy as np
 
 # `import test_util` requires adding to sys.path

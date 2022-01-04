@@ -6,7 +6,6 @@
 #   python3 boost_free_interface_test.py path_to_include_folder
 import sys
 from pathlib import Path
-from itertools import chain
 
 
 def parse_include(line):

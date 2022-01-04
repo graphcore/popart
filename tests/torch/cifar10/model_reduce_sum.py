@@ -1,6 +1,4 @@
 # Copyright (c) 2018 Graphcore Ltd. All rights reserved.
-import sys
-import os
 import c10driver
 import cmdline
 import popart

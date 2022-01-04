@@ -6,8 +6,6 @@
 # to check that the test is doing what it is supposed to, we check:
 # scaling sum_pt in softmaxx.cpp by 1.001 correctly makes the test fail
 
-import sys
-import os
 
 import c10driver
 import popart

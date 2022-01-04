@@ -4,7 +4,6 @@ import popart
 import pytest
 import torch
 
-from op_tester import op_tester
 
 
 @pytest.mark.skipif(not hasattr(torch.nn, 'SiLU'),

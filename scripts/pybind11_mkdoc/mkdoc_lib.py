@@ -10,7 +10,6 @@ import os
 import sys
 import platform
 import re
-import textwrap
 
 import ctypes.util
 

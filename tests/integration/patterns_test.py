@@ -1,7 +1,6 @@
 # Copyright (c) 2018 Graphcore Ltd. All rights reserved.
 # Test for basic importing
 
-import pytest
 from test_session import PopartTestSession
 import numpy as np
 

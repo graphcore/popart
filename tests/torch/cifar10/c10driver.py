@@ -6,10 +6,8 @@ import popart
 import torch
 import numpy as np
 import math
-import re
 from tempfile import TemporaryDirectory
 from torchvision import transforms, datasets
-from popart.torch import torchwriter
 import tempfile
 
 # `import test_util` requires adding to sys.path

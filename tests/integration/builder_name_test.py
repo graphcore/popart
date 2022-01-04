@@ -1,10 +1,7 @@
 # Copyright (c) 2020 Graphcore Ltd. All rights reserved.
 import numpy as np
 import json
-import pytest
 import popart
-import pytest
-import test_util as tu
 from test_session import PopartTestSession
 
 

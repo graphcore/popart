@@ -1,11 +1,6 @@
 # Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-import numpy as np
-import pytest
 import popart
-import test_util as tu
-import pprint
 import json
-import tempfile
 
 # Example how customer make instrument their own python code
 
@@ -79,5 +74,5 @@ def test_basic(tmpdir):
             fooLocation["functionName"])] == 'test_basic'
         assert data["stringTable"][int(barLocation["functionName"])] == 'foo'
 
-        assert fooLocation["lineNumber"] == 43
-        assert barLocation["lineNumber"] == 35
+        assert fooLocation["lineNumber"] == 38
+        assert barLocation["lineNumber"] == 30

@@ -1,13 +1,10 @@
 # Copyright (c) 2018 Graphcore Ltd. All rights reserved.
-import sys
-import os
 import c10driver
 import popart
 import cmdline
 from popart.torch import torchwriter
 #we require torch in this file to create the torch Module
 import torch
-import numpy as np
 
 args = cmdline.parse()
 

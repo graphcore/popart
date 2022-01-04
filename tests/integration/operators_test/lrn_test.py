@@ -1,12 +1,8 @@
 # Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 import math
-import itertools
 import numpy as np
 import popart
 import torch
-import pytest
-import torch.nn.functional as F
-from op_tester import op_tester
 
 
 def test_lrn(op_tester):

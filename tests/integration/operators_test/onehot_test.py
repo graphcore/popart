@@ -1,9 +1,6 @@
 # Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 import numpy as np
-import pytest
 import popart
-import torch
-from op_tester import op_tester
 
 
 def test_onehot_2d_with_axis_testing(op_tester):

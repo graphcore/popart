@@ -3,7 +3,6 @@
 # To see that the const expr is actually being applied,
 # see the tests in constexpr_tests directory
 import numpy as np
-from op_tester import op_tester
 
 
 def test_slice_basic(op_tester):

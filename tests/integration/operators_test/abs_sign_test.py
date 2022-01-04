@@ -2,8 +2,6 @@
 import numpy as np
 import popart
 import torch
-import pytest
-from op_tester import op_tester
 
 
 def test_abs_training(op_tester):

@@ -1,6 +1,4 @@
 # Copyright (c) 2018 Graphcore Ltd. All rights reserved.
-import enum
-from enum import Enum
 import fnmatch
 import functools
 import inspect

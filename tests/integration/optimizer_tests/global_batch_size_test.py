@@ -10,8 +10,6 @@ import numpy as np
 import pytest
 import popart
 import test_util as tu
-import pprint
-import json
 import onnx
 from onnx import numpy_helper
 

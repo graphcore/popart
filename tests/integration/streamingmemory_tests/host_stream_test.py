@@ -8,18 +8,13 @@ import numpy as np
 import popart
 import json
 import pytest
-import torch
-import torch.nn as nn
 from typing import Dict, List, Tuple
-import torch.optim as optim
-from torch.utils.data import TensorDataset, DataLoader
 
 # `import test_util` requires adding to sys.path
 import sys
 from pathlib import Path
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 import test_util as tu
-from operators_test.op_tester import op_tester
 
 BPS = 12
 LR = 1e-1

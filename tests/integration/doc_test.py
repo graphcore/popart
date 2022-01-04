@@ -1,6 +1,5 @@
 # Copyright (c) 2020 Graphcore Ltd. All rights reserved.
 from pathlib import Path
-import os
 import sys
 
 PYTHON_EXAMPLE_PATH = (Path(__file__).parent.parent.parent /

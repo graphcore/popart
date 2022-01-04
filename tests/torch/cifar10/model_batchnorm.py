@@ -1,8 +1,6 @@
 # Copyright (c) 2018 Graphcore Ltd. All rights reserved.
 #This test is not live until T7159 has been resolved
 
-import sys
-import os
 import c10driver
 import popart
 import cmdline

@@ -1,6 +1,5 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 from typing import Optional
-from typing_extensions import Literal
 from enum import Enum
 
 import popart._internal.ir as _ir

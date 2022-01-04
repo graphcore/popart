@@ -6,8 +6,6 @@
 # to check that the test is doing what it is supposed to,
 # I scale "oneHot" in nllx.cpp by 1.01, and the test then fails
 
-import sys
-import os
 
 import c10driver
 import popart

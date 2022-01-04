@@ -1,7 +1,6 @@
 # Copyright (c) 2020 Graphcore Ltd. All rights reserved.
 import numpy as np
 import popart
-from op_tester import op_tester
 
 
 def test_atanh(op_tester):

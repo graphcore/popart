@@ -1,7 +1,5 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-import pytest
 
-import popart
 import popart._internal.ir as _ir
 
 
@@ -68,4 +66,3 @@ def test_scope_get_common_parent_static():
     """ Test getCommonParent_static(). """
     # TODO T42243: Add unittest for _ir.Scope.getCommonParent_static binding
     # once we have bindings for ops.
-    pass

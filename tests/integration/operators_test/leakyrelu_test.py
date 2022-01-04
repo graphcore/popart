@@ -3,7 +3,6 @@ import pytest
 import numpy as np
 import popart
 import torch
-from op_tester import op_tester
 
 default_alpha = 0.01
 

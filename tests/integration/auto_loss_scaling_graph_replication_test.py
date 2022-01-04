@@ -1,8 +1,4 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-import numpy as np
-import popart
-import onnx
-from onnx import numpy_helper
 import pytest
 import test_util as tu
 

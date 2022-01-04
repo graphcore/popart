@@ -2,7 +2,7 @@
 import pytest
 import test_util as tu
 
-from loss_scaling_util_test import getModelProto, compare_weights, run_automatic_loss_scaling_comparison_test, getOptimizers
+from loss_scaling_util_test import getOptimizers, run_automatic_loss_scaling_comparison_test
 
 
 @pytest.mark.parametrize("optimizer", getOptimizers())

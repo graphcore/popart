@@ -2,7 +2,6 @@
 import numpy as np
 import popart
 import torch
-from op_tester import op_tester
 from unittest.mock import Mock
 
 

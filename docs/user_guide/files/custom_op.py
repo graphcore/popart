@@ -6,7 +6,6 @@ import numpy as np
 import popart
 import torch
 import torch.nn as nn
-import torch.optim as optim
 
 # Load the .so file in the same directory.
 myso = os.path.join(os.path.dirname(os.path.realpath(__file__)),

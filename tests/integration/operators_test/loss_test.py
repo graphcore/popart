@@ -4,10 +4,6 @@ import numpy as np
 import popart
 import pytest
 import torch
-import torch.optim as optim
-import torch.nn as nn
-import torch.nn.functional as F
-from op_tester import op_tester
 
 # `import test_util` requires adding to sys.path
 import sys

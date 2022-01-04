@@ -1,10 +1,8 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 import popart
-from popart import TensorInfo
 import onnx
 from onnx import numpy_helper
 import numpy as np
-import os
 import pytest
 
 

@@ -1,12 +1,8 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-import json
-import platform
-import pprint
 import sys
 from pathlib import Path
 
 import numpy as np
-import pytest
 
 import popart
 

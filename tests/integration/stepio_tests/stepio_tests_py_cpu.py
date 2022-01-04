@@ -2,14 +2,12 @@
 import numpy as np
 import pytest
 import popart
-import torch
 import time
 
 # importing test_session and test_util requires adding to sys.path
 import sys
 from pathlib import Path
 sys.path.append(str(Path(__file__).resolve().parent.parent))
-from test_session import PopartTestSession
 import test_util as tu
 
 

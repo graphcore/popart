@@ -1,10 +1,7 @@
 # Copyright (c) 2020 Graphcore Ltd. All rights reserved.
-import itertools
 import numpy as np
 import popart
 import torch
-import pytest
-from op_tester import op_tester
 
 
 def hardsigmoid_torch(input, alpha, beta):

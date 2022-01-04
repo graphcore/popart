@@ -1,11 +1,8 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-import itertools
 import numpy as np
 import popart
 import torch
 import torch.nn.functional as F
-import pytest
-from op_tester import op_tester
 
 
 def create_input():

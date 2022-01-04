@@ -2,9 +2,7 @@
 import popart
 import popart.ir as pir
 import popart.ir.ops as ops
-import popart._internal.ir as _ir
 from popart.ir import dtypes
-import numpy as np
 
 
 def test_random_seed_setup():

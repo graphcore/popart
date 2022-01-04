@@ -1,6 +1,4 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-from typing import Any, Dict, Iterable, Mapping, NewType, Optional, Tuple, Type, Union
-import numpy as np
 from enum import Enum
 
 import popart._internal.ir as _ir

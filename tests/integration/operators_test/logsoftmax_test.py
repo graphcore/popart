@@ -3,7 +3,6 @@ import numpy as np
 import popart
 import pytest
 import torch
-from op_tester import op_tester
 
 
 def logsoftmax_reference(data, axis):

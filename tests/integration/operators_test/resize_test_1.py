@@ -3,9 +3,6 @@ import numpy as np
 import pytest
 import popart
 import torch
-import torch.nn.functional as F
-from op_tester import op_tester
-import test_util as tu
 from resize_test_0 import interpolate
 
 import onnx.backend.test.case.node.resize as onnx_resize

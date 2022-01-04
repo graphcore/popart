@@ -2,9 +2,6 @@
 import json
 import popart
 import numpy as np
-import torch
-import onnx
-from onnx import numpy_helper
 
 # `import test_util` requires adding to sys.path
 import sys

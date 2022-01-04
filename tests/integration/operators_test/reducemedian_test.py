@@ -5,7 +5,6 @@ import popart
 import pytest
 import torch
 
-from op_tester import op_tester
 
 import test_util as tu
 

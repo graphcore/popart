@@ -3,9 +3,6 @@ import itertools
 import numpy as np
 import popart
 import torch
-import pytest
-import torch.nn.functional as F
-from op_tester import op_tester
 
 USE_DEFAULT_AXES = None
 

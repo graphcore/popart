@@ -6,7 +6,6 @@ from pathlib import Path
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 
 import numpy as np
-import pytest
 import popart
 import test_util as tu
 

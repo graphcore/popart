@@ -1,12 +1,10 @@
 # Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 import numpy as np
-import os
 import pytest
 import popart
 import random
 import torch
 
-from op_tester import op_tester
 
 # The poplar groups are strided, but the pytorch are not so the output and
 # and gradient tensors are different.

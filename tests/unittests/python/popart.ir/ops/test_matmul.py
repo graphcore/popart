@@ -1,5 +1,4 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-import json
 import popart.ir as pir
 import popart.ir.ops as ops
 import numpy as np

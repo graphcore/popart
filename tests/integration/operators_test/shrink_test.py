@@ -1,10 +1,7 @@
 # Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-import itertools
 import numpy as np
 import popart
 import torch
-import pytest
-from op_tester import op_tester
 
 
 def test_hardshrink(op_tester):
