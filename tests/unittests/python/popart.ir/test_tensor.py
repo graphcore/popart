@@ -123,3 +123,16 @@ class TestTensor:
             assert a != b  # test __eq__
             assert len(set([a, b])) == 2  # test __hash__
             str(a)  # test __repr__
+
+    def test_iter_dunder(self):
+        with pir.Ir().main_graph():
+            x = pir.variable(0)
+            l = []
+            with pytest.raises(TypeError):
+                l += x
+
+    def test_contains_dunder(self):
+        with pir.Ir().main_graph():
+            x = pir.variable(0)
+            with pytest.raises(TypeError):
+                1 in x

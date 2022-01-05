@@ -287,6 +287,11 @@ class Tensor:
                 "Only integers, slices (`:`) and integer arrays are valid indices."
             )
 
+    # Prevents fallback of __iter__ and __contains__ to __getitem__
+    # which can produce unhelpful errors
+    __iter__ = None
+    __contains__ = None
+
 
 class Variable(Tensor, tensor_type="Variable"):
     """
