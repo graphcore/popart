@@ -36,7 +36,7 @@ private:
   T ss_dB{0};
   T ss_dAB{0};
 
-  T calculateRelativeError() {}
+  void calculateRelativeError() {}
 
 public:
   void insert(T v_AStarts, T v_AEnds, T v_BStarts, T v_BEnds) {

@@ -516,7 +516,8 @@ struct is_nothrow_swappable {
 
   template <typename T>
   static auto test(int /*unused*/)
-      -> std::integral_constant<bool, satisfies<T>()> {}
+      -> std::integral_constant<bool, satisfies<T>()> {
+  } // cppcheck-suppress missingReturn // Not touched as 3rd party code
 
   template <typename> static auto test(...) -> std::false_type;
 };
