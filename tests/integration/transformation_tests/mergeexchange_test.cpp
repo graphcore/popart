@@ -31,7 +31,7 @@
 #include <popart/transforms/mergeexchange.hpp>
 #include <popart/transforms/remotesetup.hpp>
 
-namespace popart {
+using namespace popart;
 
 namespace {
 
@@ -167,5 +167,3 @@ BOOST_AUTO_TEST_CASE(TestMergeRemoteExchange) {
   BOOST_REQUIRE_EQUAL(run0_out0, run1_out0);
   BOOST_REQUIRE_EQUAL(run0_out1, run1_out1);
 }
-
-} // namespace popart

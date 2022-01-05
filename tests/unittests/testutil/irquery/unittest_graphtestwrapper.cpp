@@ -113,6 +113,7 @@ addTestGraph(Ir &ir) {
            addScope(subgraphA, "o1"),
            addScope(subgraphA, "o2")}};
 }
+} // namespace
 
 BOOST_AUTO_TEST_CASE(tensorindexmaptestwrapper_ops) {
 
@@ -158,5 +159,3 @@ BOOST_AUTO_TEST_CASE(tensorindexmaptestwrapper_outputs) {
                   tw.outputs().unwrap().at(s));
   }
 }
-
-} // namespace

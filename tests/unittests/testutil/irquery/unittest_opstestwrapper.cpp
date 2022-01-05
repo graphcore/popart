@@ -44,6 +44,8 @@ public:
   }
 };
 
+} // namespace
+
 BOOST_AUTO_TEST_CASE(opstestwrapper_hasGraph) {
 
   Ir ir;
@@ -190,5 +192,3 @@ BOOST_AUTO_TEST_CASE(opstestwrapper_hasGraph) {
     BOOST_REQUIRE(!tw.hasOp<TestOp>(opPred2, Require::MustBeFalse));
   }
 }
-
-} // namespace

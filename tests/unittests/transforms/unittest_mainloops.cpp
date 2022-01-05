@@ -12,7 +12,7 @@
 #include <popart/transforms/mainloops.hpp>
 #include <popart/util.hpp>
 
-namespace popart {
+using namespace popart;
 
 std::function<bool(const error &)>
 checkErrorMsgFunc(const std::string &prefix) {
@@ -81,5 +81,3 @@ BOOST_AUTO_TEST_CASE(mainloops_throw_art_not_supported) {
     test(art);
   }
 }
-
-} // namespace popart

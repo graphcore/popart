@@ -22,11 +22,11 @@ using namespace popart;
 using namespace popart::irquery;
 
 namespace {
-
 template <typename T>
 bool checkSchedule(const std::vector<Op *> &schedule, size_t &j) {
   return schedule.at(j++)->isConvertibleTo<T>();
 }
+} // namespace
 
 // Test overlap IO graph when all inputs and outputs are overlapped for the
 // inner loop
@@ -318,5 +318,3 @@ BOOST_AUTO_TEST_CASE(OverlapInnerLoopC) {
     BOOST_REQUIRE(checkSchedule<IoTileCopyOp>(accumGraphSchedule, j));
   }
 }
-
-} // namespace

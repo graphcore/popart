@@ -22,8 +22,8 @@ using namespace popart;
 using namespace popart::irquery;
 
 namespace {
-
 auto _ = trompeloeil::_;
+} // namespace
 
 BOOST_AUTO_TEST_CASE(tensorindextestwrapper_index) {
 
@@ -54,4 +54,3 @@ BOOST_AUTO_TEST_CASE(tensorindextestwrapper_tensor) {
 
   BOOST_REQUIRE(t0 == tw.tensor().unwrap());
 }
-} // namespace

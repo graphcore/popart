@@ -26,7 +26,7 @@
 
 namespace ublas = boost::numeric::ublas;
 
-namespace popart {
+using namespace popart;
 
 ublas::matrix<float> buff2mat(std::vector<float>, int, int);
 std::vector<float> mat2buff(ublas::matrix<float>);
@@ -243,5 +243,3 @@ std::vector<float> mat2buff(ublas::matrix<float> mat) {
     buff[i] = mat.data()[i];
   return buff;
 }
-
-} // namespace popart

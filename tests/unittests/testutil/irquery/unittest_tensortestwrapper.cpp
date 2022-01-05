@@ -23,8 +23,8 @@ using namespace popart;
 using namespace popart::irquery;
 
 namespace {
-
 auto _ = trompeloeil::_;
+}
 
 BOOST_AUTO_TEST_CASE(tensortestwrapper_index) {
 
@@ -89,5 +89,3 @@ BOOST_AUTO_TEST_CASE(tensortestwrapper_index) {
   std::multiset<Op *> t1ConsumersActual(t1Unwrap.begin(), t1Unwrap.end());
   BOOST_REQUIRE(t1ConsumersExpected == t1ConsumersActual);
 }
-
-} // namespace

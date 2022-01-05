@@ -5,7 +5,7 @@
 #include <string>
 #include <popart/error.hpp>
 
-namespace popart {
+using namespace popart;
 
 template <typename Ex>
 std::function<bool(const Ex &)> checkErrorMsgFn(const std::string &expected) {
@@ -41,5 +41,3 @@ BOOST_AUTO_TEST_CASE(without_error_uid) {
     BOOST_REQUIRE_EXCEPTION(exception(s), error, checkErrorFn);
   }
 }
-
-} // namespace popart

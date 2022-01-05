@@ -22,7 +22,7 @@
 #include <popart/transforms/preautomaticlossscaling.hpp>
 #include <popart/util.hpp>
 
-namespace popart {
+using namespace popart;
 
 void addMulOp(TensorId, TensorId, TensorId, Graph &, int);
 template <typename Ex>
@@ -292,4 +292,3 @@ checkErrorMsgHasPrefixFn(const std::string &prefix) {
     return boost::algorithm::starts_with(ex.what(), prefix);
   };
 }
-} // namespace popart
