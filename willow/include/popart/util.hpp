@@ -3,6 +3,7 @@
 #define GUARD_NEURALNET_UTIL_HPP
 
 #include <cmath>
+#include <limits>
 #include <memory>
 #include <set>
 #include <sstream>
