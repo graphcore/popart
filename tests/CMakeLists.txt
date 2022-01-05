@@ -290,7 +290,7 @@ if(${POPART_ENABLE_COVERAGE} AND ${UPLOAD_COVERAGE_REPORT})
     add_test(NAME upload_coverage_report
       COMMAND "${Python3_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/scripts/upload_coverage.py" 
               ${CMAKE_BINARY_DIR} 
-              https://elasticsearch.sourcevertex.net
+              https://elasticsearch.eks.sourcevertex.net
               --cookie-file=${RESULTS_SERVER_COOKIE_FILE}
               )
     # We want the coverage report generation to run after all other tests to 
