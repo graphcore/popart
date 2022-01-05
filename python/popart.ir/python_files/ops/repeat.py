@@ -29,28 +29,28 @@ def repeat(repeat_subgraph: Graph,
     # yapf: disable
 
               LoopOp         Keep
-                 │          Going     User
-                 │  Iterator  │      Inputs
-                 │     │      │      │ │ │
-                 ▼     ▼      ▼      ▼ ▼ ▼
-                 ┌─Wrapper_subgraph──┬─┬─┬──────────┐
-Parent graph     │                   │ │ │          │
-                 │                   │ │ │          │
-                 │                   │ │ │          │
-                 │                   ▼ ▼ ▼          │
-                 │ CallOp ┌─Loop_subgraph───┐       │
-                 │    │   │ (user provided) │       │
-                 │    └──►│                 │       │
-                 │        │     (Ops)       │       │
-                 │        │                 │       │
-                 │        │                 │       │
-                 │        └──────────┬─┬─┬──┘       │
-                 │                   │ │ │          │
-                 │                   ▼ ▼ ▼          │
-                 └───┬───────────────┬─┬─┬──────────┘
-                     │               │ │ │
-                     │               │ │ │
-                     ▼               ▼ ▼ ▼
+                 |          Going     User
+                 |  Iterator  |      Inputs
+                 |     |      |      | | |
+                 V     V      V      V V V
+                 .-Wrapper_subgraph--+-+-+----------.
+Parent graph     |                   | | |          |
+                 |                   | | |          |
+                 |                   | | |          |
+                 |                   V V V          |
+                 | CallOp .-Loop_subgraph---.       |
+                 |    |   | (user provided) |       |
+                 |    '-->|                 |       |
+                 |        |     (Ops)       |       |
+                 |        |                 |       |
+                 |        |                 |       |
+                 |        '----------+-+-+--'       |
+                 |                   | | |          |
+                 |                   V V V          |
+                 '---+---------------+-+-+----------'
+                     |               | | |
+                     |               | | |
+                     V               V V V
                     Keep            User outputs
                    Going
 

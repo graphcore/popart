@@ -390,15 +390,15 @@ def remote_variable(var: Variable, remote_buffer: "RemoteBuffer",
 
 def remote_replica_sharded_variable(
         var: Variable, remote_buffer: "RemoteBuffer", offset: int) -> Constant:
-    """Scatter a tensor in equal shards across replicas (replicated tensor sharding (RTS)/
-        data parallelism) of the same model/graph.​ Eliminates redundant data storage when the full 
-        (un-sharded) tensor does not need to be present on each IPU. Stores the full tensor in remote 
+    """Scatter a tensor in equal shards across replicas (replicated tensor sharding (RTS)
+        data parallelism) of the same model/graph. Eliminates redundant data storage when the full
+        (un-sharded) tensor does not need to be present on each IPU. Stores the full tensor in remote
         memory (usually DDR memory).
 
-        RTS tensors for which each replica needs a full copy of need to be recombined with a 
-        replicated AllGather operation.​
+        RTS tensors for which each replica needs a full copy of need to be recombined with a
+        replicated AllGather operation.
 
-        Fully updated tensors that need to be sharded and/or reduced again require a replicated 
+        Fully updated tensors that need to be sharded and/or reduced again require a replicated
         ReduceScatter operation.
 
     Args:
@@ -411,7 +411,7 @@ def remote_replica_sharded_variable(
         ValueError: If the number of elements of `var` is not divisible by the number of variables.
 
     Returns:
-        Constant: The tensor associated with the remote variable. Note: this is not the remote 
+        Constant: The tensor associated with the remote variable. Note: this is not the remote
             variable, but a tensor associated with it. In future this tensor will not be required.
     """
     remote_arg = remote_variable(var, remote_buffer, offset)
@@ -443,7 +443,7 @@ def remote_replica_sharded_variable(
 def replica_sharded_variable(var: Variable, remote_buffer: "RemoteBuffer",
                              offset: int) -> Tuple[Constant, Tensor]:
     """Scatter a tensor in equal shards across replicas (data parallelism) of the 
-        same model/graph.​ Eliminates redundant data storage when the full (un-sharded) tensor does 
+        same model/graph. Eliminates redundant data storage when the full (un-sharded) tensor does 
         not need to be present on each IPU. Does not store the full tensor in remote memory.
 
     Args:

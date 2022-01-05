@@ -27,8 +27,8 @@ public:
   ~PostNRepl() override = default;
 
   // AddGrad (where N = 2)
-  // Pad with pad size zero (where N = 1) *€
-  // Sum with one input (where N = 1) *€
+  // Pad with pad size zero (where N = 1) *
+  // Sum with one input (where N = 1) *
   bool matches(Op *) const final;
   // rep1, rep2 and rep3 are touched (as they are deleted)
   // ori might be touched, if one its new consumers performs
@@ -36,7 +36,7 @@ public:
   std::vector<const Tensor *> touches(Op *) const final;
   bool apply(Op *) const final;
 
-  // *€ : this pattern matches and removes []->()
+  // * : this pattern matches and removes []->()
   // whereas PreUniRepl matches and removes ()->[].
   // This pattern can be considered PostUniRepl when N = 1
 };

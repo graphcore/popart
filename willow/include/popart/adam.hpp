@@ -108,7 +108,7 @@ enum class AdamMode {
 //
 //
 // Lamb r1 (FP32):
-// r1 = ||w||_2                    (without Lamb or φ(r1) == 0: r1/r2 = 1)
+// r1 = ||w||_2                    (without Lamb or phi(r1) == 0: r1/r2 = 1)
 //   special case: replicated weight sharding; every replica only stores a
 //   shard of w, therefore the sum-of-squares is computed replicated, and
 //   thereafter all-reduced before every replica takes the square root of r1sq
@@ -120,11 +120,11 @@ enum class AdamMode {
 //   thereafter all-reduced before every replica takes the square root of r2sq
 //
 // scale factor:
-// φ(r1) = min(r1, mwn)
+// phi(r1) = min(r1, mwn)
 //
 // variable update:
-// w -= φ(r1) / r2 * lr * x
-//      ^^^^^^^^^^
+// w -= phi(r1) / r2 * lr * x
+//      ^^^^^^^^^^^^
 //      Lamb trust ratio
 //
 // accumulator update:

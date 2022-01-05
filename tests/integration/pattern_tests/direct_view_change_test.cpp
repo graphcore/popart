@@ -25,25 +25,25 @@
 using namespace popart;
 
 /**
-    ┌───Input────┐
-    │            │
-    ▼            ▼
+    .---Input----.
+    |            |
+    V            V
  reshape       sqrt
-    │            │
-    ▼            ▼
+    |            |
+    V            V
  identity    reshape
-    │            │
-    ▼            ▼
+    |            |
+    V            V
 transpose    identity
-    │            │
-    │            ▼
-    │        transpose
-    │            ┼
+    |            |
+    |            V
+    |        transpose
+    |            +
    t0            t1
-    ──►  Add ◄────
-          │
-          │
-          ▼
+    -->  Add <----
+          |
+          |
+          V
         L1Loss
 
   Where t0 and t1 are anchored to avoid them getting removed.
@@ -133,16 +133,16 @@ BOOST_AUTO_TEST_CASE(DirectViewChangeTest0) {
 
 // clang-format off
 //                              BuilderGraph_2
-//          ┌───────────────────────────────────────────────────────────────┐
-//          │                                                               │
-//          │          ┌───► transpose───►reshape ─►transpose ──►identity───┼───► acts[0]
-//          │          │                                                    │
-//          │          │                                                    │
-// SuperIn0 ├─► SuperIn0'                                                   │
-//          │          │                                                    │
-//          │          └───► reshape────►transpose──► cos───────────────────┼───► acts[1]
-//          │                                                               │
-//          └───────────────────────────────────────────────────────────────┘
+//          .---------------------------------------------------------------.
+//          |                                                               |
+//          |          .---> transpose--->reshape ->transpose -->identity---+---> acts[0]
+//          |          |                                                    |
+//          |          |                                                    |
+// SuperIn0 +-> SuperIn0'                                                   |
+//          |          |                                                    |
+//          |          '---> reshape---->transpose--> cos-------------------+---> acts[1]
+//          |                                                               |
+//          '---------------------------------------------------------------'
 // clang-format on
 
 BOOST_AUTO_TEST_CASE(DirectViewChangeTest1) {

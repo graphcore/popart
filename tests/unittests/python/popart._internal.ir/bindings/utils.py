@@ -173,19 +173,19 @@ def make_main_graph(num_inputs: int = 2
     alternating data inputs and variable inputs.
 
     Init (act) Init (var)  Init (act) Init (var)
-    │          │           │          │
-    ▼          ▼           ▼          ▼
+    |          |           |          |
+    V          V           V          V
     Hostload   Hostload    Hostload   Hostload    etc..
-    │          │           │          │
-    │          │           │          │
-    ▼          ▼           ▼          ▼
-    ┌────────────────────────────────────┐
-    │                Call                │
-    │                                    │
-    └──────────────────┬─────────────────┘
-                        │
-                        │
-                        ▼
+    |          |           |          |
+    |          |           |          |
+    V          V           V          V
+    .------------------------------------.
+    |                Call                |
+    |                                    |
+    '------------------+-----------------'
+                       |
+                       |
+                       V
                     HostStore
     Args:
         num_inputs (int, optional): Number of main graph inputs. Defaults to 2.
@@ -266,24 +266,24 @@ def make_sub_graph(ir: _ir.Ir, ins: Dict[int, _ir.TensorInfo]) -> _ir.Graph:
     Makes the following subgraph, with len(ins) inputs. 
 
     input0  input1  input2  ...  input n
-    │       │       │            │
-    │       │       │            │
-    │       │       │            │
-    └─►add ◄┘       │            │
-        │           │            │
-        └──────►add◄┘            │
-                │                │
-                │                │
-                │                │
-                └────►add ...    ▼
+    |       |       |            |
+    |       |       |            |
+    |       |       |            |
+    '->add <'       |            |
+        |           |            |
+        '------>add<'            |
+                |                |
+                |                |
+                |                |
+                '---->add ...    V
 
 
                                add
-                                │
-                                ▼
+                                |
+                                V
                              softmax
-                                │
-                                ▼
+                                |
+                                V
                                out
 
     Args:

@@ -457,7 +457,7 @@ void CHECK_commonAddOpChecks(const int numLayers,
   Recomputation is not explicitly in the graph. The ops to be recomputed are
   annotated, then we add them to poplar twice. That is not the best explanation,
   but the important point is that there is no recomputation in the graph, so the
-  scheduler just sees a regular graph; it doesn’t know about recomputation!
+  scheduler just sees a regular graph; it doesn't know about recomputation!
 
   ------------------------------------------------------------------------------
 
@@ -465,17 +465,17 @@ void CHECK_commonAddOpChecks(const int numLayers,
   layers share weights, and activations are much larger than weights. We will
   show why the scheduler fails to find the optimal strategy.
 
-  Using the same reasoning as above, once we’ve done backpropagation on a
+  Using the same reasoning as above, once we've done backpropagation on a
   segment, we will still need to merge all the partial weight grads, because we
   chose to delay them to the end as activations are much larger.
 
-  Now, because we’re doing recomputation, none of the activations from the next
+  Now, because we're doing recomputation, none of the activations from the next
   segment have been allocated yet, thus they are not contributing to sum
   liveness. The still live weight partials are though, so we should merge them
   immediately!
 
-  However, because the scheduler doesn’t know that next segment’s activations
-  aren’t live, it uses the usual logic to decide it needs to keep proceeding
+  However, because the scheduler doesn't know that next segment's activations
+  aren't live, it uses the usual logic to decide it needs to keep proceeding
   backwards to minimise sum liveness, rather than merging the weight partials
   first.
 
@@ -484,6 +484,6 @@ void CHECK_commonAddOpChecks(const int numLayers,
 
   Note, if the weights were much larger than the activations, we are always
   merging the weight partials immediately anyway. Whether or not the next
-  segment’s activations really are live has no effect, so the scheduler still
+  segment's activations really are live has no effect, so the scheduler still
   does the right thing without knowing about recomputation.
 */

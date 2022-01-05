@@ -31,7 +31,7 @@ Graphs
   :align: center
   :alt: `popart.ir` calling a subgraph.
 
-  In this example the IR’s main graph (MG) calls subgraph 1 (G1) which in turn calls subgraph 2 (G2).
+  In this example the IR's main graph (MG) calls subgraph 1 (G1) which in turn calls subgraph 2 (G2).
   This creates a call tree which is depicted on the right.
   Op nodes are green, intermediate tensors are red and constants are yellow.
 

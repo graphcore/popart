@@ -126,7 +126,7 @@ class TestTensorLocation():
         def get_grad_tensor_in_main_graph_from_fwdgrad_expected_connection(
                 ec: ExpectedConnection) -> Tensor:
             # If (t, FwdGrad) appears at index i in expected_outputs, it is
-            # guaranteed that tâ (the grad of t) appears at output index i in the
+            # guaranteed that t' (the grad of t) appears at output index i in the
             # grad graph.
             sg_out_idx = expected_outputs.index(ec)
             op_out_idx = bwd_call_info.subgraph_in_to_op_in_index(sg_out_idx)

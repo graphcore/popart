@@ -140,7 +140,7 @@ public:
   inplace operation on it, it does not matter whether it is a graph input.
   Similarly, it does not matter if the updated optimiser accum tensor is a graph
   output. Even if the original optimiser accum is an input and the updated accum
-  an output, we can still ap∂ply this transform; we are just performing more
+  an output, we can still apply this transform; we are just performing more
   AccumulateOps inbetween.
 */
 
