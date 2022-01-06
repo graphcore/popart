@@ -29,15 +29,16 @@ def scatter(t: Tensor,
     dimension != axis is obtained from the index of the entry itself.
 
     Pseudo example:
-    ```
-    x1 = x.copy()
-    scatter(x, [1, 2, 3], [-1, -2, -3])
-    x2 = x.copy()
-    x[1] = -1
-    x[2] = -2
-    x[3] = -3
-    x1 == x2
-    ```
+
+    .. code-block:: python
+
+        x1 = x.copy()
+        scatter(x, [1, 2, 3], [-1, -2, -3])
+        x2 = x.copy()
+        x[1] = -1
+        x[2] = -2
+        x[3] = -3
+        x1 == x2
 
     Args:
         t: Tensor

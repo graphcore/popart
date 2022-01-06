@@ -82,7 +82,9 @@ Parent graph     |                   | | |          |
 
 
     Example:
-    ```
+
+    .. code-block:: python
+
         # popart.ir.Module to repeat
         class AddWeight(pir.Module):
         def __init__(self):
@@ -101,7 +103,6 @@ Parent graph     |                   | | |          |
                                 8,
                                 x0,
                                 subgraph_in_to_parent_in={add_weight0.w: w0})
-    ```
     """
 
     if repeat_trip_count <= 1:

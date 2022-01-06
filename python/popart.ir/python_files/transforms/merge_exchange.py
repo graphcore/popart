@@ -53,11 +53,12 @@ def merge_exchange():
         to execute in parallel.
 
         Only applies to operations the current graph. Used as a contextmanager:
-        ```
-        with pir.merge_exchange():
-            ops.host_load(..)
-            ops.host_store(..)
-        ```
+
+        .. code-block:: python
+
+            with pir.merge_exchange():
+                ops.host_load(..)
+                ops.host_store(..)
 
         Note: Operations must be able to be scheduled in any order to be merged. For this reason it is recommended to combine with
             `with pir.in_sequence(False)` to avoid topological constraints that would prevent merging. Related py:meth:`io_tile_exchange`.

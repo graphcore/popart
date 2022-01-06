@@ -19,9 +19,10 @@ def gather(t: Tensor,
     When `axis == 0`, it is equivlent to numpy "fancy indexing".
 
     Pseudo example:
-    ```
-    gather(x, [1, 2, 3]) == [x[3], x[7], x[2]]
-    ```
+
+    .. code-block:: python
+
+        gather(x, [1, 2, 3]) == [x[3], x[7], x[2]]
 
     Args:
         t: Tensor
@@ -81,9 +82,10 @@ def tied_gather(t: Tensor,
     This has a has lower memory footprint but costs extra cycles due to the exchange.
 
     Pseudo example:
-    ```
-    tied_gather(x, [1, 2, 3]) == [x[3], x[7], x[2]]
-    ```
+
+    .. code-block:: python
+
+        tied_gather(x, [1, 2, 3]) == [x[3], x[7], x[2]]
 
     Args:
         t: Tensor

@@ -310,18 +310,19 @@ class Tensor:
         If a single index is selected during slicing the dimention will be squeezed - this matches numpy slicing rules.
 
         Examples:
-        ```
-        # Slicing
-        x[0]        # Select all elements where i==0 for axis 0
-        x[0,1]      # Select all elements where i==0, j==1 for axis 0 and 1
-        x[0:2]      # Slice axis 0 between index 0 and 2
-        x[:2,3:]    # Slice axis 0 upto 2 and axis 1 from index 3
-        x[:,::-1]   # Select all elements for axis 0 and reverse axis 1
 
-        # Integer indexing
-        indices = Tensor([[0,1], [1,0]], dtype='int32')
-        x[indices]  # Select elements [0,1] and [1,0] from `x`
-        ```
+        .. code-block:: python
+
+            # Slicing
+            x[0]        # Select all elements where i==0 for axis 0
+            x[0,1]      # Select all elements where i==0, j==1 for axis 0 and 1
+            x[0:2]      # Slice axis 0 between index 0 and 2
+            x[:2,3:]    # Slice axis 0 upto 2 and axis 1 from index 3
+            x[:,::-1]   # Select all elements for axis 0 and reverse axis 1
+
+            # Integer indexing
+            indices = Tensor([[0,1], [1,0]], dtype='int32')
+            x[indices]  # Select elements [0,1] and [1,0] from `x`
         """
 
         import popart.ir.ops as ops
@@ -419,11 +420,12 @@ def variable(
     parameter that can change while running a model.
 
     Must be created in the main graph scope. Example:
-    ```
-    import popart.ir as pir
-    with pir.Ir().main_graph():
-        a = pir.variable(0)
-    ```
+
+    .. code-block:: python
+
+        import popart.ir as pir
+        with pir.Ir().main_graph():
+            a = pir.variable(0)
 
     Args:
         data (np.ndarray, or a value numpy can use to construct an np.ndarray):
@@ -571,14 +573,15 @@ def constant(
     list or tuples of numbers.
 
     Example:
-    ```
-    import popart.ir as pir
-    ir = pir.Ir()
-    with ir.main_graph():
-        a = pir.constant(0)
-        # The `1` will be implicitly converted to a `Constant`.
-        b = a + 1
-    ```
+
+    .. code-block:: python
+
+        import popart.ir as pir
+        ir = pir.Ir()
+        with ir.main_graph():
+            a = pir.constant(0)
+            # The `1` will be implicitly converted to a `Constant`.
+            b = a + 1
 
     Args:
         data (np.array, or a value numpy can use to construct an np.ndarray):
@@ -613,20 +616,21 @@ def subgraph_input(shape: Iterable[int],
     subgraph for this input.
 
     Example:
-    ```
-    import popart.ir as pir
 
-    def add_w(x):
-        w = pir.subgraph_input(x.shape, x.dtype, "w")
-        return w + x
+    .. code-block:: python
 
-    ir = pir.Ir()
-    with ir.main_graph():
-        w = pir.variable(1)
-        x = pir.variable(3)
-        add_w_graph = ir.create_graph(add_w, x, w)
-        y = ops.call(add_w_graph, x, w)
-    ```
+        import popart.ir as pir
+
+        def add_w(x):
+            w = pir.subgraph_input(x.shape, x.dtype, "w")
+            return w + x
+
+        ir = pir.Ir()
+        with ir.main_graph():
+            w = pir.variable(1)
+            x = pir.variable(3)
+            add_w_graph = ir.create_graph(add_w, x, w)
+            y = ops.call(add_w_graph, x, w)
 
     Args:
         shape (Tuple[int, ...])
@@ -660,21 +664,22 @@ def subgraph_output(t: Tensor) -> None:
     return that tensor in the parent graph.
 
     Example:
-    ```
-    import popart.ir as pir
 
-    def add_w(x):
-        w = pir.subgraph_input(x.shape, x.dtype, "w")
-        y = w + x
-        pir.subgraph_output(y)
+    .. code-block:: python
 
-    ir = pir.Ir()
-    with ir.main_graph():
-        w = pir.variable(1)
-        x = pir.variable(3)
-        add_w_graph = ir.create_graph(add_w, x, w)
-        y = ops.call(add_w_graph, x, w)
-    ```
+        import popart.ir as pir
+
+        def add_w(x):
+            w = pir.subgraph_input(x.shape, x.dtype, "w")
+            y = w + x
+            pir.subgraph_output(y)
+
+        ir = pir.Ir()
+        with ir.main_graph():
+            w = pir.variable(1)
+            x = pir.variable(3)
+            add_w_graph = ir.create_graph(add_w, x, w)
+            y = ops.call(add_w_graph, x, w)
 
     Args:
         t (Tensor):
@@ -697,10 +702,12 @@ def subgraph_output(t: Tensor) -> None:
 """TensorByRef
 This type alias can be used in function argument annotations to specify that
 a graph input should be flagged as copyModified. Example:
-```
-def increment(a: TensorByRef):
-    ops.var_update.accumulate(a, pir.constant(1))
-```
+
+.. code-block:: python
+
+    def increment(a: TensorByRef):
+        ops.var_update.accumulate(a, pir.constant(1))
+
 When converted to a graph and called, the modification to the graph input `a` will be propagated to the
 corresponding input tensor at the callsite.
 This is the same as using `pir.subgraph_input(..., by_ref=True)`.

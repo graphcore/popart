@@ -118,14 +118,16 @@ def accumulate_mean_(t: Tensor, X: Tensor,
     Intended to be used to keep track of the mean of a series of values.
 
     For example:
-    ```
-    with g:
-        accum = pir.variable(0, dtype=pir.float32)
-        a = pir.variable(1, dtype=pir.float32)
-        b = pir.variable(2, dtype=pir.float32)
-        accumulate_mean(accum, a, 0.0)
-        accumulate_mean(accum, b, 1.0)
-    ```
+
+    .. code-block:: python
+
+        with g:
+            accum = pir.variable(0, dtype=pir.float32)
+            a = pir.variable(1, dtype=pir.float32)
+            b = pir.variable(2, dtype=pir.float32)
+            accumulate_mean(accum, a, 0.0)
+            accumulate_mean(accum, b, 1.0)
+
     will result with `accum` having the value `(a+b)/2 = 1.5`.
 
     Does not apply numpy broadcasting.

@@ -27,13 +27,14 @@ def slice(t: Tensor,
     If axis is not specified, each slice will correspond to axis 0 to N where N is the number of slices.
 
     Examples:
-    ```
-    t == slice(t) == slice(t, axis=1)
-    slice(t, start=1)           # Slice axis 0 from start index 1
-    slice(t, start=[1,2]) == slice(t, start=[1,2], axis=[0,1])
-    slice(t, stop=-2)           # Slice axis 0 upto second last element (exclusive)
-    slice(t, stop=3, step=-1)   # Slice backwards from last element (inclusive) to third last element (exclusive)
-    ```
+
+    .. code-block:: python
+
+        t == slice(t) == slice(t, axis=1)
+        slice(t, start=1)           # Slice axis 0 from start index 1
+        slice(t, start=[1,2]) == slice(t, start=[1,2], axis=[0,1])
+        slice(t, stop=-2)           # Slice axis 0 upto second last element (exclusive)
+        slice(t, stop=3, step=-1)   # Slice backwards from last element (inclusive) to third last element (exclusive)
 
     Args:
         t (Tensor): Tensor to slice
@@ -85,7 +86,6 @@ def slice_(t: Tensor,
 
     This is the inplace version of :func:`~ops.slice`. Behaviour is the same, but modifies the
         tensor inplace.
-    ```
 
     Args:
         t (Tensor): Tensor to slice
