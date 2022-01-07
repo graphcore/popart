@@ -36,13 +36,13 @@ public:
     PYBIND11_OVERRIDE_PURE(std::size_t,   /* Return type */
                            TransformBase, /* Parent class */
                            getId,         /* Name of function */
-    );
+    ); // cppcheck-suppress syntaxError // Variadic macro requires >=1 argument
   }
   std::string getName() const override {
     PYBIND11_OVERRIDE_PURE(std::string,   /* Return type */
                            TransformBase, /* Parent class */
                            getName,       /* Name of function */
-    );
+    ); // cppcheck-suppress syntaxError // Variadic macro requires >=1 argument
   }
 };
 

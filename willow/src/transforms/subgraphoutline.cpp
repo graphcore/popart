@@ -1,5 +1,4 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#include "popart/pointercomparators.hpp"
 #include <algorithm>
 #include <boost/algorithm/cxx11/any_of.hpp>
 #include <boost/range/algorithm/find.hpp>
@@ -23,6 +22,7 @@
 #include <popart/op/expand.hpp>
 #include <popart/op/init.hpp>
 #include <popart/op/ipucopy.hpp>
+#include <popart/pointercomparators.hpp>
 #include <popart/subgraph/iosubgraphcostmodel.hpp>
 #include <popart/subgraph/match.hpp>
 #include <popart/subgraph/outliner.hpp>
@@ -70,8 +70,8 @@ std::vector<int64_t> getBoundariesCrossed(const SessionOptions &opts,
   OptionalExecutionPhase phase;
   OptionalExecutionPhase last_phase;
 
-  ExecutionContext exec_cont;
-  ExecutionContext last_exec_cont;
+  nonstd::optional<ExecutionContext> exec_cont;
+  nonstd::optional<ExecutionContext> last_exec_cont;
 
   OptionalBatchSerializedPhase batchserial;
   OptionalBatchSerializedPhase last_batchserial;

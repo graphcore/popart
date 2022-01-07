@@ -41,14 +41,14 @@ public:
         Op *,   /* Return type */
         BaseOp, /* Parent class */
         clone,  /* Name of function in C++ (must match Python name) */
-    );
+    ); // cppcheck-suppress syntaxError // Variadic macro requires >=1 argument
   }
   float getSubgraphValue() const override {
     PYBIND11_OVERRIDE_PURE(
         float,            /* Return type */
         BaseOp,           /* Parent class */
         getSubgraphValue, /* Name of function in C++ (must match Python name) */
-    );
+    ); // cppcheck-suppress syntaxError // Variadic macro requires >=1 argument
   }
 
   std::unique_ptr<Op>
