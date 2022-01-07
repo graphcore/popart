@@ -4,7 +4,7 @@ import popart._internal.ir as _ir
 from popart.ir.context import get_current_context, op_debug_context
 from popart.ir.tensor import Tensor
 
-from .utils import check_in_graph
+from .utils import check_in_graph, check_tensor_ipu_and_tile_set
 
 __all__ = ['scaled_add', 'scaled_add_']
 
@@ -33,17 +33,22 @@ def scaled_add(X: Tensor,
     g = ctx.graph
     pb_g = g._pb_graph
 
-    check_in_graph(g, X, Y)
+    tensors_to_check = dict(X=X, Y=Y)
 
     ins = {0: X.id, 1: Y.id}
 
     if isinstance(a, Tensor):
+        tensors_to_check['a'] = a
         ins[2] = a.id
         a = 1.0
 
     if isinstance(b, Tensor):
+        tensors_to_check['b'] = b
         ins[3] = b.id
         b = 1.0
+
+    check_in_graph(g, **tensors_to_check)
+    check_tensor_ipu_and_tile_set(**tensors_to_check)
 
     settings = ctx._get_op_settings('scaled_add')
     opid = _ir.OperatorIdentifier("ai.graphcore", "ScaledAdd", 1,
@@ -80,17 +85,22 @@ def scaled_add_(X: Tensor,
     g = ctx.graph
     pb_g = g._pb_graph
 
-    check_in_graph(g, X, Y)
+    tensors_to_check = dict(X=X, Y=Y)
 
     ins = {0: X.id, 1: Y.id}
 
     if isinstance(a, Tensor):
+        tensors_to_check['a'] = a
         ins[2] = a.id
         a = 1.0
 
     if isinstance(b, Tensor):
+        tensors_to_check['b'] = b
         ins[3] = b.id
         b = 1.0
+
+    check_in_graph(g, **tensors_to_check)
+    check_tensor_ipu_and_tile_set(**tensors_to_check)
 
     settings = ctx._get_op_settings('scaled_add')
     op = pb_g.createConnectedOp_ScaledAddLhsInplaceOp(

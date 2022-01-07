@@ -3,7 +3,7 @@ from typing import Iterable
 import popart._internal.ir as _ir
 from popart.ir.context import get_current_context, op_debug_context
 from popart.ir.tensor import Tensor
-from .utils import check_in_graph
+from .utils import check_in_graph, check_tensor_ipu_and_tile_set
 
 __all__ = ["dynamic_update", "dynamic_update_"]
 
@@ -61,7 +61,8 @@ def dynamic_update(t: Tensor, index: Tensor, t_update: Tensor,
     g = ctx.graph
     pb_g = g._pb_graph
 
-    check_in_graph(g, t, index)
+    check_in_graph(g, t=t, index=index, t_update=t_update)
+    check_tensor_ipu_and_tile_set(t=t, index=index, t_update=t_update)
 
     settings = ctx._get_op_settings('dynamicupdate')
     opid = _ir.OperatorIdentifier("ai.graphcore", "DynamicUpdate", 1,
@@ -134,7 +135,8 @@ def dynamic_update_(t: Tensor, index: Tensor, t_update: Tensor,
     g = ctx.graph
     pb_g = g._pb_graph
 
-    check_in_graph(g, t, index)
+    check_in_graph(g, t=t, index=index, t_update=t_update)
+    check_tensor_ipu_and_tile_set(t=t, index=index, t_update=t_update)
 
     settings = ctx._get_op_settings('dynamicupdate_inplace')
     # This ensures that `t` is created by calling `popops::createSliceableTensorFromSlice`

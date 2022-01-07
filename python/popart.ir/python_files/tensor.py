@@ -1,11 +1,13 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 from typing import Any, Dict, Iterable, Optional, Tuple, Type, Union, TYPE_CHECKING
+from typing_extensions import Literal
 import numpy as np
 
 import popart._internal.ir as _ir
 from popart.ir import dtypes
 from popart.ir.context import gcg, debug_context_frame_offset, _execution_context, get_main_graph
 from popart.ir.typing_ import NewAliasAnnotation
+from popart.ir.errors import UndefinedValue
 
 if TYPE_CHECKING:
     from popart.ir import Ir
@@ -16,6 +18,12 @@ __all__ = [
     'replica_sharded_variable', 'constant', 'subgraph_input',
     'subgraph_output', 'TensorByRef'
 ]
+
+TILE_SET_MAP = {
+    _ir.TileSet.Compute: 'compute',
+    _ir.TileSet.IO: 'io',
+    _ir.TileSet.Undefined: 'undefined',
+}
 
 
 class Tensor:
@@ -74,6 +82,37 @@ class Tensor:
     @property
     def name(self) -> str:
         return _ir.removeScope(self._pb_tensor.getGraph(), self.id)
+
+    @property
+    def ipu(self) -> int:
+        """
+        Return the IPU the Tensor is assigned to.
+        A `UndefinedValue` is raised if the IPU is undefined.
+        """
+        ipu, _ = self._ipu_and_tile_set(raise_on_undefined_tile_set=False,
+                                        raise_on_undefined_ipu=True)
+        return ipu
+
+    @property
+    def tile_set(self) -> Literal["compute", "io"]:
+        """
+        Return the tile set (`compute` or `io`) the Tensor is assigned to.
+        A `UndefinedValue` is raised if the tile set is undefined.
+        """
+        _, tile_set = self._ipu_and_tile_set(raise_on_undefined_tile_set=True,
+                                             raise_on_undefined_ipu=False)
+        return tile_set
+
+    def _ipu_and_tile_set(self,
+                          raise_on_undefined_tile_set=True,
+                          raise_on_undefined_ipu=True):
+        ipu, tile_set = self._pb_tensor.getVirtualGraphIdAndTileSetUnsafe()
+        tile_set = TILE_SET_MAP[tile_set]
+        if raise_on_undefined_tile_set and tile_set == 'undefined':
+            raise UndefinedValue("Tensor's tile set is undefined.")
+        if raise_on_undefined_ipu and ipu == -1:
+            raise UndefinedValue("Tensor's IPU is undefined.")
+        return ipu, tile_set
 
     def ir(self) -> 'Ir':
         from popart.ir import Ir
@@ -612,7 +651,7 @@ def subgraph_output(t: Tensor) -> None:
 
     from popart.ir.ops.utils import check_in_graph
 
-    check_in_graph(g, t)
+    check_in_graph(g, t=t)
 
     pb_g.markAsOutput(t.id)
 

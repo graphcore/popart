@@ -20,9 +20,8 @@ OP_MAP = {
     'local': _ir.CollectiveOperator.Local,
 }
 
-CollectiveOps = Union[Literal['add'], Literal['mean'], Literal['mul'],
-                      Literal['min'], Literal['max'], Literal['and'],
-                      Literal['or'], Literal['square_add'], Literal['local'], ]
+CollectiveOps = Literal['add', 'mean', 'mul', 'min', 'max', 'and', 'or',
+                        'square_add', 'local']
 
 
 def to_collective_op(op: CollectiveOps) -> _ir.CollectiveOperator:

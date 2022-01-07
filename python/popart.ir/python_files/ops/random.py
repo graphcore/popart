@@ -40,7 +40,7 @@ def random_uniform(seed_tensor: Tensor,
     g = ctx.graph
     pb_g = g._pb_graph
 
-    check_in_graph(g, seed_tensor)
+    check_in_graph(g, seed_tensor=seed_tensor)
 
     settings = ctx._get_op_settings('random_uniform')
     opid = _ir.OperatorIdentifier("ai.onnx", "RandomUniform", 1,
@@ -90,7 +90,7 @@ def random_normal(seed_tensor: Tensor,
     g = ctx.graph
     pb_g = g._pb_graph
 
-    check_in_graph(g, seed_tensor)
+    check_in_graph(g, seed_tensor=seed_tensor)
 
     settings = ctx._get_op_settings('random_normal')
     opid = _ir.OperatorIdentifier("ai.onnx", "RandomNormal", 1,

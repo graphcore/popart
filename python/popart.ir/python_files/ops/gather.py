@@ -3,7 +3,7 @@ from typing import Optional
 import popart._internal.ir as _ir
 from popart.ir.context import get_current_context, op_debug_context
 from popart.ir.tensor import Tensor
-from .utils import check_in_graph, convert_optional_float
+from .utils import check_in_graph, convert_optional_float, check_tensor_ipu_and_tile_set
 
 __all__ = ["gather", "tied_gather"]
 
@@ -43,8 +43,8 @@ def gather(t: Tensor,
     g = ctx.graph
     pb_g = g._pb_graph
 
-    check_in_graph(g, t)
-    check_in_graph(g, indices)
+    check_in_graph(g, t=t, indices=indices)
+    check_tensor_ipu_and_tile_set(t=t, indices=indices)
 
     available_memory_proportion = convert_optional_float(
         available_memory_proportion)
@@ -106,8 +106,8 @@ def tied_gather(t: Tensor,
     g = ctx.graph
     pb_g = g._pb_graph
 
-    check_in_graph(g, t)
-    check_in_graph(g, indices)
+    check_in_graph(g, t=t, indices=indices)
+    check_tensor_ipu_and_tile_set(t=t, indices=indices)
 
     available_memory_proportion = convert_optional_float(
         available_memory_proportion)

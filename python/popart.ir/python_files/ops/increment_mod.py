@@ -26,7 +26,7 @@ def increment_mod(t: Tensor, increment: float, modulus: float) -> Tensor:
     g = ctx.graph
     pb_g = g._pb_graph
 
-    check_in_graph(g, t)
+    check_in_graph(g, t=t)
 
     settings = ctx._get_op_settings('increment_mod')
     opid = _ir.OperatorIdentifier("ai.graphcore", "IncrementMod", 1,
@@ -66,7 +66,7 @@ def increment_mod_(t: Tensor, increment: float, modulus: float) -> Tensor:
     g = ctx.graph
     pb_g = g._pb_graph
 
-    check_in_graph(g, t)
+    check_in_graph(g, t=t)
 
     settings = ctx._get_op_settings('increment_mod_inplace')
     op = pb_g.createConnectedOp_IncrementModInplaceOp(

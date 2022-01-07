@@ -4,7 +4,7 @@ import popart
 from popart.ir.context import get_current_context, op_debug_context
 from popart.ir.tensor import Tensor, constant
 from popart.ir.dtypes import float32
-from .utils import check_in_graph, convert_optional_int
+from .utils import check_in_graph, convert_optional_int, check_tensor_ipu_and_tile_set
 
 __all__ = ['nll_loss_with_softmax_grad']
 
@@ -34,10 +34,13 @@ def nll_loss_with_softmax_grad(
     g = ctx.graph
     pb_g = g._pb_graph
 
-    check_in_graph(g, probs, labels)
-
     if not isinstance(loss_grad, Tensor):
         loss_grad = constant(loss_grad, float32)
+
+    check_in_graph(g, probs=probs, labels=labels, loss_grad=loss_grad)
+    check_tensor_ipu_and_tile_set(probs=probs,
+                                  labels=labels,
+                                  loss_grad=loss_grad)
 
     settings = ctx._get_op_settings('nll_loss_with_softmax_grad')
     op = pb_g.createConnectedOp_NlllWithSoftmaxGradDirectOp(

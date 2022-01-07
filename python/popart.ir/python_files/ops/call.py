@@ -240,8 +240,19 @@ def call_with_info(
 
     # 2. Connect internally created inputs.
     for sg_tensor, parent_tensor in subgraph_in_to_parent_in.items():
-        check_in_graph(g, parent_tensor)
-        check_in_graph(subgraph, sg_tensor)
+        try:
+            check_in_graph(
+                g,
+                parent_tensor=parent_tensor,
+            )
+        except ValueError:
+            raise ValueError(
+                f'The tensor {parent_tensor} is not in the graph {g}.')
+        try:
+            check_in_graph(subgraph, sg_tensor=sg_tensor)
+        except ValueError:
+            raise ValueError(
+                f'The tensor {sg_tensor} is not in the graph {subgraph}.')
 
         sgInIdx = pb_sg.getInputIndex(sg_tensor.id)
         callInIdx = pb_callop.subgraphInToOpInIndex(sgInIdx)

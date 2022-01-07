@@ -38,7 +38,7 @@ def replicated_all_reduce(t: Tensor,
 
     op = to_collective_op(op)
 
-    check_in_graph(g, t)
+    check_in_graph(g, t=t)
 
     if group is None:
         group = CommGroup()
@@ -88,7 +88,7 @@ def replicated_all_reduce_(t: Tensor,
 
     op = to_collective_op(op)
 
-    check_in_graph(g, t)
+    check_in_graph(g, t=t)
 
     if group is None:
         group = CommGroup()

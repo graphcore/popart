@@ -4,7 +4,7 @@ import popart._internal.ir as _ir
 from popart.ir.context import get_current_context, op_debug_context
 from popart.ir.tensor import Tensor
 
-from ..utils import check_in_graph
+from ..utils import check_in_graph, check_tensor_ipu_and_tile_set
 from .utils import handle_optimizer_value
 
 __all__ = ['adam_updater', 'lamb_updater', 'adamax_updater']
@@ -33,13 +33,18 @@ def create_adamupdater(acc_first_order: Tensor,
     g = ctx.graph
     pb_g = g._pb_graph
 
-    check_in_graph(g, acc_first_order, acc_second_order)
+    tensors_to_check = dict(acc_first_order=acc_first_order,
+                            acc_second_order=acc_second_order)
+
     if weight is not None:
-        check_in_graph(g, weight)
+        tensors_to_check['weight'] = weight
     if time_step is not None:
-        check_in_graph(g, time_step)
+        tensors_to_check['time_step'] = time_step
     if weight_decay is not None:
-        check_in_graph(g, weight)
+        tensors_to_check['weight_decay'] = weight_decay
+
+    check_in_graph(g, **tensors_to_check)
+    check_tensor_ipu_and_tile_set(**tensors_to_check)
 
     outs = {
         0: g._create_tensor_id('Updater'),

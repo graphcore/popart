@@ -23,7 +23,7 @@ def detach(t: Tensor) -> Tensor:
     g = ctx.graph
     pb_g = g._pb_graph
 
-    check_in_graph(g, t)
+    check_in_graph(g, t=t)
 
     settings = ctx._get_op_settings('detach')
     opid = _ir.OperatorIdentifier("ai.graphcore", "Detach", 1,
@@ -39,13 +39,13 @@ def detach(t: Tensor) -> Tensor:
 
 
 @op_debug_context
-def detach_(x: Tensor) -> Tensor:
+def detach_(t: Tensor) -> Tensor:
     """
     This is the inplace version of :func:`~ops.detach`. Behaviour is the same, but blocks gradient
         propagation inplace on the input tensor.
 
     Args:
-        x: Tensor
+        t: Tensor
             Input tensor.
     Returns:
         out: Tensor
@@ -54,11 +54,11 @@ def detach_(x: Tensor) -> Tensor:
     g = ctx.graph
     pb_g = g._pb_graph
 
-    check_in_graph(g, x)
+    check_in_graph(g, t=t)
 
     settings = ctx._get_op_settings('detach_inplace')
     op = pb_g.createConnectedOp_DetachInplaceOp(
-        {0: x.id},
+        {0: t.id},
         {0: g._create_tensor_id("detach_out")},
         settings,
     )

@@ -4,7 +4,7 @@ import popart._internal.ir as _ir
 from popart.ir.context import get_current_context
 from popart.ir.tensor import Tensor
 from .collectives import CommGroup
-from popart.ir.ops.utils import check_in_graph
+from popart.ir.ops.utils import check_in_graph, check_tensor_ipu_and_tile_set
 
 __all__ = ["replicated_all_gather"]
 
@@ -32,18 +32,21 @@ def replicated_all_gather(t: Tensor,
     g = ctx.graph
     pb_g = g._pb_graph
 
-    check_in_graph(g, t)
+    check_in_graph(g, t=t)
 
     if group is None:
         group = CommGroup()
 
+    ins: Dict[int, str] = {0: t.id}
+
+    if link is not None:
+        check_in_graph(g, link=link)
+        check_tensor_ipu_and_tile_set(t=t, link=link)
+        ins[1] = link.id
+
     settings = ctx._get_op_settings('replicated_all_gathered')
     opid = _ir.OperatorIdentifier("ai.graphcore", "ReplicatedAllGather", 1,
                                   _ir.NumInputs(1, 2), 1)
-
-    ins: Dict[int, str] = {0: t.id}
-    if link is not None:
-        ins[1] = link.id
 
     op = pb_g.createConnectedOp_ReplicatedAllGatherOp(
         ins, {0: g._create_tensor_id(t.name + "_all_gathered")}, opid, group,

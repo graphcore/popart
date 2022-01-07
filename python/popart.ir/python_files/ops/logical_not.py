@@ -24,7 +24,7 @@ def logical_not(t: Tensor) -> Tensor:
     g = ctx.graph
     pb_g = g._pb_graph
 
-    check_in_graph(g, t)
+    check_in_graph(g, t=t)
 
     t = cast_if_needed(t, dtypes.bool)
 

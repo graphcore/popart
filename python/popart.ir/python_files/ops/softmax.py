@@ -27,7 +27,7 @@ def softmax(t: Tensor, axis: int) -> Tensor:
     g = ctx.graph
     pb_g = g._pb_graph
 
-    check_in_graph(g, t)
+    check_in_graph(g, t=t)
 
     settings = ctx._get_op_settings('softmax')
     opid = _ir.OperatorIdentifier("ai.onnx", "Softmax", 11, _ir.NumInputs(

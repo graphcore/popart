@@ -3,7 +3,7 @@ import popart._internal.ir as _ir
 from popart.ir import dtypes
 from popart.ir.context import get_current_context, op_debug_context
 from popart.ir.tensor import Tensor
-from .utils import check_in_graph, cast_if_needed
+from .utils import check_in_graph, cast_if_needed, check_tensor_ipu_and_tile_set
 
 __all__ = ['logical_or']
 
@@ -26,7 +26,8 @@ def logical_or(lhs: Tensor, rhs: Tensor) -> Tensor:
     g = ctx.graph
     pb_g = g._pb_graph
 
-    check_in_graph(g, lhs, rhs)
+    check_in_graph(g, lhs=lhs, rhs=rhs)
+    check_tensor_ipu_and_tile_set(lhs=lhs, rhs=rhs)
 
     lhs = cast_if_needed(lhs, dtypes.bool)
     rhs = cast_if_needed(rhs, dtypes.bool)

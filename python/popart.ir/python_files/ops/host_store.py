@@ -24,8 +24,8 @@ def host_store(d2h_stream: DeviceToHostStream, t: Tensor) -> None:
     g = ctx.graph
     pb_g = g._pb_graph
 
-    check_in_graph(g, t)
-    check_in_graph(g.ir().main_graph(), d2h_stream._stream_tensor)
+    check_in_graph(g, t=t)
+    check_in_graph(g.ir().main_graph(), d2h_stream=d2h_stream._stream_tensor)
 
     if d2h_stream.dtype != t.dtype:
         raise ValueError(

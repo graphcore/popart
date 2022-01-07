@@ -24,7 +24,7 @@ def io_tile_copy(t: Tensor) -> Tensor:
     g = ctx.graph
     pb_g = g._pb_graph
 
-    check_in_graph(g, t)
+    check_in_graph(g, t=t)
 
     settings = ctx._get_op_settings('iotilecopy')
 

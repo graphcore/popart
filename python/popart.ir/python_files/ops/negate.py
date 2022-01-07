@@ -23,7 +23,7 @@ def negate(t: Tensor) -> Tensor:
     g = ctx.graph
     pb_g = g._pb_graph
 
-    check_in_graph(g, t)
+    check_in_graph(g, t=t)
 
     settings = ctx._get_op_settings('negate')
     opid = _ir.OperatorIdentifier("ai.onnx", "Neg", 6, _ir.NumInputs(1, 1), 1)

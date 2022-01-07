@@ -33,7 +33,7 @@ def reshape(t: Tensor, shape: Tuple[int, ...]) -> Tensor:
     g = ctx.graph
     pb_g = g._pb_graph
 
-    check_in_graph(g, t)
+    check_in_graph(g, t=t)
 
     if any(map(lambda axis: axis < -1, shape)) or shape.count(0) > 0:
         raise ValueError(
@@ -75,7 +75,7 @@ def reshape_(t: Tensor, shape: Tuple[int, ...]) -> Tensor:
     g = ctx.graph
     pb_g = g._pb_graph
 
-    check_in_graph(g, t)
+    check_in_graph(g, t=t)
 
     if any(map(lambda axis: axis < -1, shape)) or shape.count(0) > 0:
         raise ValueError(

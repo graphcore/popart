@@ -5,7 +5,7 @@ from popart.ir import dtypes
 from popart.ir.context import get_current_context, op_debug_context
 from popart.ir.tensor import Tensor
 
-from ..utils import check_in_graph
+from ..utils import check_in_graph, check_tensor_ipu_and_tile_set
 from .utils import handle_optimizer_value
 
 __all__ = [
@@ -41,7 +41,8 @@ def accumulate_(t: Tensor, X: Tensor,
     g = ctx.graph
     pb_g = g._pb_graph
 
-    check_in_graph(g, t, X)
+    check_in_graph(g, t=t, X=X)
+    check_tensor_ipu_and_tile_set(t=t, X=X)
 
     ins = {0: t.id, 1: X.id}
 
@@ -88,7 +89,8 @@ def accumulate_square_(t: Tensor, X: Tensor,
     g = ctx.graph
     pb_g = g._pb_graph
 
-    check_in_graph(g, t, X)
+    check_in_graph(g, t=t, X=X)
+    check_tensor_ipu_and_tile_set(t=t, X=X)
 
     ins = {0: t.id, 1: X.id}
 
@@ -148,7 +150,8 @@ def accumulate_mean_(t: Tensor, X: Tensor,
 
     step = t._ensure_tensor(step, dtype=dtypes.float32)
 
-    check_in_graph(g, t, X, step)
+    check_in_graph(g, t=t, X=X, step=step)
+    check_tensor_ipu_and_tile_set(t=t, X=X, step=step)
 
     settings = ctx._get_op_settings('accumulate')
     op = pb_g.createConnectedOp_AccumulateOp(
@@ -194,7 +197,8 @@ def accumulate_moving_average_(t: Tensor, X: Tensor,
     g = ctx.graph
     pb_g = g._pb_graph
 
-    check_in_graph(g, t, X)
+    check_in_graph(g, t=t, X=X)
+    check_tensor_ipu_and_tile_set(t=t, X=X)
 
     ins = {0: t.id, 1: X.id}
 
@@ -240,7 +244,8 @@ def accumulate_moving_average_square_(t: Tensor, X: Tensor,
     g = ctx.graph
     pb_g = g._pb_graph
 
-    check_in_graph(g, t, X)
+    check_in_graph(g, t=t, X=X)
+    check_tensor_ipu_and_tile_set(t=t, X=X)
 
     ins = {0: t.id, 1: X.id}
 
@@ -283,7 +288,7 @@ def accumulator_scale_(t: Tensor, f: Union[float, Tensor]) -> Tensor:
     g = ctx.graph
     pb_g = g._pb_graph
 
-    check_in_graph(g, t)
+    check_in_graph(g, t=t)
 
     ins = {0: t.id}
 
@@ -381,12 +386,12 @@ def sparse_accumulate_(t: Tensor,
     g = ctx.graph
     pb_g = g._pb_graph
 
-    check_in_graph(g, t, X, indices)
+    tensors_to_check = dict(t=t, X=X, indices=indices)
     ins = {0: t.id, 1: X.id, 3: indices.id}
 
     ov: _ir.OptimizerValue
     if isinstance(f, Tensor):
-        check_in_graph(g, f)
+        tensors_to_check['f'] = f
         ins[2] = f.id
         ov = _ir.OptimizerValue(0.0, False)
     elif f is None:
@@ -395,8 +400,11 @@ def sparse_accumulate_(t: Tensor,
         ov = _ir.OptimizerValue(f)
 
     if W is not None:
-        check_in_graph(g, W)
+        tensors_to_check['W'] = W
         ins[4] = W.id
+
+    check_in_graph(g, **tensors_to_check)
+    check_tensor_ipu_and_tile_set(**tensors_to_check)
 
     settings = ctx._get_op_settings('sparse_accumulate')
     op = pb_g.createConnectedOp_SparseAccumulateOp(

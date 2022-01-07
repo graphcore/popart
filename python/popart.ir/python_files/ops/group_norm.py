@@ -2,7 +2,7 @@
 import popart._internal.ir as _ir
 from popart.ir.context import debug_context_frame_offset, get_current_context, op_debug_context
 from popart.ir.tensor import Tensor
-from .utils import check_in_graph
+from .utils import check_in_graph, check_tensor_ipu_and_tile_set
 
 __all__ = ['group_norm', 'layer_norm']
 
@@ -33,7 +33,8 @@ def group_norm(t: Tensor,
     g = ctx.graph
     pb_g = g._pb_graph
 
-    check_in_graph(g, t, weight, bias)
+    check_in_graph(g, t=t, weight=weight, bias=bias)
+    check_tensor_ipu_and_tile_set(t=t, weight=weight, bias=bias)
 
     settings = ctx._get_op_settings('group_norm')
     opid = _ir.OperatorIdentifier("ai.graphcore", "GroupNormalization", 1,

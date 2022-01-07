@@ -50,7 +50,7 @@ def slice(t: Tensor,
     g = ctx.graph
     pb_g = g._pb_graph
 
-    check_in_graph(g, t)
+    check_in_graph(g, t=t)
 
     if start is None and stop is None and step is None:
         return t
@@ -102,7 +102,7 @@ def slice_(t: Tensor,
     g = ctx.graph
     pb_g = g._pb_graph
 
-    check_in_graph(g, t)
+    check_in_graph(g, t=t)
 
     if start is None and stop is None and step is None:
         return t
@@ -129,7 +129,8 @@ def slice_(t: Tensor,
 def process_args(start: Optional[Union[int, List[Optional[int]]]] = None,
                  stop: Optional[Union[int, List[Optional[int]]]] = None,
                  step: Optional[Union[int, List[Optional[int]]]] = None,
-                 axis: Optional[Union[int, List[int]]] = None) -> Tuple:
+                 axis: Optional[Union[int, List[int]]] = None
+                 ) -> Tuple[List[int], List[int], List[int], List[int]]:
 
     # Convert to list if scalar
     start = [start] if start is not None and isinstance(start, int) else start

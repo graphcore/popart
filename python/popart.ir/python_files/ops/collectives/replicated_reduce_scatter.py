@@ -43,7 +43,7 @@ def replicated_reduce_scatter(
 
     op = to_collective_op(op)
 
-    check_in_graph(g, t)
+    check_in_graph(g, t=t)
 
     if group is None:
         group = CommGroup()

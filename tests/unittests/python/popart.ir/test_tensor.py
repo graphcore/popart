@@ -5,6 +5,7 @@ import pytest
 import popart._internal.ir as _ir
 import popart.ir as pir
 from popart.ir.tensor import Variable, Constant, downcast_np_dtypes
+from popart.ir.errors import UndefinedValue
 
 type_map = {Variable: _ir.TensorType.Variable, Constant: _ir.TensorType.Const}
 ctor_map = {Variable: pir.variable, Constant: pir.constant}
@@ -136,3 +137,58 @@ class TestTensor:
             x = pir.variable(0)
             with pytest.raises(TypeError):
                 1 in x
+
+class TestTensorIpuAndTileSet:
+    def test_ipu_undefined(self):
+        ir = pir.Ir()
+        main = ir.main_graph()
+
+        with main:
+            a = pir.variable(1)
+
+            with pytest.raises(UndefinedValue):
+                a.ipu
+
+    def test_ipu_defined_default(self):
+        ir = pir.Ir()
+        main = ir.main_graph()
+
+        with main:
+            a = pir.variable(1) + 0
+            assert a.ipu == 0
+
+    def test_ipu_set(self):
+        ir = pir.Ir()
+        main = ir.main_graph()
+
+        with main:
+            with pir.ipu(1):
+                a = pir.variable(1) + 0
+            assert a.ipu == 1
+
+    def test_tile_set_undefined(self):
+        ir = pir.Ir()
+        main = ir.main_graph()
+
+        with main:
+            a = pir.variable(1)
+
+            with pytest.raises(UndefinedValue):
+                a.tile_set
+
+    def test_tile_set_compute(self):
+        ir = pir.Ir()
+        main = ir.main_graph()
+
+        with main:
+            a = pir.variable(1) + 0
+            assert a.tile_set == 'compute'
+
+    def test_ipu_defined_default(self):
+        ir = pir.Ir()
+        main = ir.main_graph()
+
+        with main:
+            with pir.io_tiles():
+                a = pir.variable(1) + 0
+            assert a.tile_set == 'io'

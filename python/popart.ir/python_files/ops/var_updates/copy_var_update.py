@@ -2,7 +2,7 @@
 from popart.ir.context import get_current_context, op_debug_context
 from popart.ir.tensor import Tensor
 
-from ..utils import check_in_graph
+from ..utils import check_in_graph, check_tensor_ipu_and_tile_set
 
 __all__ = ['copy_var_update_']
 
@@ -25,7 +25,8 @@ def copy_var_update_(t: Tensor, X: Tensor) -> Tensor:
     g = ctx.graph
     pb_g = g._pb_graph
 
-    check_in_graph(g, t, X)
+    check_in_graph(g, t=t, X=X)
+    check_tensor_ipu_and_tile_set(t=t, X=X)
 
     settings = ctx._get_op_settings('copy_var_update')
     op = pb_g.createConnectedOp_CopyVarUpdateOp(

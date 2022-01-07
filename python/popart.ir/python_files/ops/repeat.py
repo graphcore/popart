@@ -148,7 +148,11 @@ Parent graph     |                   | | |          |
     pb_loop_op.setTripCountValue(repeat_trip_count)
     # Check all the parent tensors are in the right graph.
     for _, parent_tensor in subgraph_in_to_parent_in.items():
-        check_in_graph(top_graph, parent_tensor)
+        try:
+            check_in_graph(top_graph, parent_tensor=parent_tensor)
+        except ValueError:
+            raise ValueError(
+                f"Tensor {top_graph} is not in graph {parent_tensor}")
 
     # 1, 2. Connect inputs.
     _setup_inputs(subgraph_fn_param_inputs, subgraph_in_to_parent_in,

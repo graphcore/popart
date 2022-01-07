@@ -59,7 +59,7 @@ def remote_load(remote_buffer: RemoteBuffer,
 
     remote_load_tensor = init(shape, dtype, name + '_remote_load')
 
-    check_in_graph(g, remote_load_tensor, offset)
+    check_in_graph(g, remote_load_tensor=remote_load_tensor, offset=offset)
 
     # Set the meta_shape of the input tensor. Required for RTS.
     remote_load_tensor._pb_tensor.info.set(
@@ -122,7 +122,7 @@ def remote_load_(remote_buffer: RemoteBuffer, offset: Union[int, Tensor],
     if isinstance(offset, int):
         offset = constant(offset, uint32, name="offset")
 
-    check_in_graph(g, t, offset)
+    check_in_graph(g, t=t, offset=offset)
 
     # Set the meta_shape of the input tensor. Required for RTS.
     t._pb_tensor.info.set(t._pb_tensor.info.dataType(),

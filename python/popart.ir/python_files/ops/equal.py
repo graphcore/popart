@@ -2,7 +2,7 @@
 import popart._internal.ir as _ir
 from popart.ir.context import get_current_context, op_debug_context
 from popart.ir.tensor import Tensor
-from .utils import check_in_graph
+from .utils import check_in_graph, check_tensor_ipu_and_tile_set
 
 __all__ = ['equal']
 
@@ -24,7 +24,8 @@ def equal(lhs: Tensor, rhs: Tensor) -> Tensor:
     g = ctx.graph
     pb_g = g._pb_graph
 
-    check_in_graph(g, lhs, rhs)
+    check_in_graph(g, lhs=lhs, rhs=rhs)
+    check_tensor_ipu_and_tile_set(lhs=lhs, rhs=rhs)
 
     settings = ctx._get_op_settings('equal')
     opid = _ir.OperatorIdentifier("ai.onnx", "Equal", 7, _ir.NumInputs(2, 2),

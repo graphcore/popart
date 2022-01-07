@@ -30,7 +30,7 @@ def transpose(t: Tensor,
     g = ctx.graph
     pb_g = g._pb_graph
 
-    check_in_graph(g, t)
+    check_in_graph(g, t=t)
 
     settings = ctx._get_op_settings('transpose')
     opid = _ir.OperatorIdentifier("ai.onnx", "Transpose", 1, _ir.NumInputs(
@@ -71,7 +71,7 @@ def transpose_(t: Tensor,
     g = ctx.graph
     pb_g = g._pb_graph
 
-    check_in_graph(g, t)
+    check_in_graph(g, t=t)
 
     settings = ctx._get_op_settings('transpose_inplace')
     opid = _ir.OperatorIdentifier("ai.graphcore", "TransposeInplace", 1,

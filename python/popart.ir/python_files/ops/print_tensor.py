@@ -29,7 +29,7 @@ def print_tensor(t: Tensor,
     g = ctx.graph
     pb_g = g._pb_graph
 
-    check_in_graph(g, t)
+    check_in_graph(g, t=t)
 
     settings = ctx._get_op_settings('print_tensor')
     opid = _ir.OperatorIdentifier("ai.graphcore", "PrintTensor", 1,

@@ -54,7 +54,7 @@ def remote_store(remote_buffer: RemoteBuffer, offset: Union[int, Tensor],
     if isinstance(offset, int):
         offset = constant(offset, uint32, name="offset")
 
-    check_in_graph(g, t, offset)
+    check_in_graph(g, t=t, offset=offset)
 
     remote_buffer.validate_tensor_matches_buffer(t)
 
