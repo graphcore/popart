@@ -2561,7 +2561,10 @@ def test_instancenorm_grad(op_tester):
 
         return [out, normed, i_data.grad, m.weight.grad, m.bias.grad, None]
 
-    op_tester.atol *= 10
+    # We decrease atol as the reference tensor computed has slightly changed in
+    # torch 1.10 and the test fails on one value very close to 0.
+    op_tester.atol = 1e-6
+
     op_tester.setPatterns(['PreUniRepl', 'ReciprocalGradOp', 'MulArgGradOp'],
                           enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference, 'train')
