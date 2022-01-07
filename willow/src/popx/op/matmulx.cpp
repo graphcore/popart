@@ -11,7 +11,7 @@
 #include <popart/tensorinfo.hpp>
 #include <popart/util.hpp>
 
-#include <poplin/MatMul.hpp>
+#include <snap/poplin/MatMul.hpp>
 #include <popops/Reduce.hpp>
 
 #include <boost/range/algorithm.hpp>
@@ -450,29 +450,28 @@ void MatMulOpx::grow(snap::program::Sequence &prog) const {
   auto outputType = getOutputType(combinedBroadcastTs.first);
 
   auto cacheSize = dv_p->matmulCache.size();
-  auto outTensor = snap::Tensor{
-      poplin::matMulGrouped(graph().getPoplarGraph(), // graph
-                            combinedBroadcastTs.first.getPoplarTensor(),  // A
-                            combinedBroadcastTs.second.getPoplarTensor(), // B
-                            prog.getPoplarSequence(), // prog
-                            outputType,
-                            debugContext("matmulGrouped"), // debugContext
-                            opts,                          // options
-                            &dv_p->matmulCache),
-      graph()}; // cache
+  auto outTensor =
+      snap::poplin::matMulGrouped(graph(),                    // graph
+                                  combinedBroadcastTs.first,  // A
+                                  combinedBroadcastTs.second, // B
+                                  prog,                       // prog
+                                  outputType,
+                                  debugContext("matmulGrouped"), // debugContext
+                                  opts,                          // options
+                                  &dv_p->matmulCache);           // cache
 
   verifyCacheSizeUnchanged(cacheSize);
 
   // Log the report plan
   std::stringstream ss;
-  poplin::matMulGroupedReportPlan(ss,
-                                  graph().getPoplarGraph(),
-                                  combinedBroadcastTs.first.elementType(),
-                                  outTensor.elementType(),
-                                  combinedBroadcastTs.first.shape(),
-                                  combinedBroadcastTs.second.shape(),
-                                  opts,
-                                  &dv_p->matmulCache);
+  snap::poplin::matMulGroupedReportPlan(ss,
+                                        graph(),
+                                        combinedBroadcastTs.first.elementType(),
+                                        outTensor.elementType(),
+                                        combinedBroadcastTs.first.shape(),
+                                        combinedBroadcastTs.second.shape(),
+                                        opts,
+                                        &dv_p->matmulCache);
   logging::opx::debug("Grouped Matmul {} plan", op_p->str());
   logging::log(logging::Module::opx, logging::Level::Debug, ss.str());
 
@@ -597,8 +596,8 @@ MatMulOpx::createInputTensor(InIndex index,
   appendPoplarOptionsForOp(matmul, opts);
 
   if (index == MatMulOp::getLhsInIndex()) {
-    auto result = poplin::createMatMulGroupedInputLHS(
-        graph().getPoplarGraph(),
+    auto result = snap::poplin::createMatMulGroupedInputLHS(
+        graph(),
         popType(getMatMulOp()->lhsIn()->info.dataType()),
         popType(getMatMulOp()->lhsIn()->info.dataType()),
         lhsShape,
@@ -610,11 +609,10 @@ MatMulOpx::createInputTensor(InIndex index,
     result = result.reshape(lhsShapeP);
     result = result.dimShuffle(invertPermutation(permutation));
 
-    return snap::Tensor{result.reshape(matmul.lhsIn()->info.shape_szt()),
-                        graph()};
+    return result.reshape(matmul.lhsIn()->info.shape_szt());
   } else if (index == MatMulOp::getRhsInIndex()) {
-    auto result = poplin::createMatMulGroupedInputRHS(
-        graph().getPoplarGraph(),
+    auto result = snap::poplin::createMatMulGroupedInputRHS(
+        graph(),
         popType(getMatMulOp()->lhsIn()->info.dataType()),
         popType(getMatMulOp()->lhsIn()->info.dataType()),
         lhsShape,
@@ -626,8 +624,7 @@ MatMulOpx::createInputTensor(InIndex index,
     result = result.reshape(rhsShapeP);
     result = result.dimShuffle(invertPermutation(permutation));
 
-    return snap::Tensor{result.reshape(matmul.rhsIn()->info.shape_szt()),
-                        graph()};
+    return result.reshape(matmul.rhsIn()->info.shape_szt());
   } else {
     throw error("MatMulOpx::createInput invalid input index {}", index);
   }
