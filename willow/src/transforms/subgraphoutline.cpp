@@ -598,8 +598,9 @@ void applyReplacement(SubgraphableOpCluster &instance,
                            replacement.ops.begin(),
                            replacement.ops.end());
   if (start != instance.ops.end()) {
-    instance.ops.erase(start, start + replacement.ops.size());
-    instance.ops.insert(start, replacement.replacement_op->id);
+    auto firstItAfterLastErase =
+        instance.ops.erase(start, start + replacement.ops.size());
+    instance.ops.insert(firstItAfterLastErase, replacement.replacement_op->id);
   } else {
     for (OpId id : replacement.ops) {
       if (std::find(instance.ops.begin(), instance.ops.end(), id) !=

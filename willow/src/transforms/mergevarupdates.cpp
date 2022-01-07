@@ -225,8 +225,10 @@ MergeTightThreshold::getFinal(const Graph &g) const {
       auto tensorToUpdate = vop->input->tensor(vop->getVarToUpdateInIndex());
       int64_t start       = 0;
       auto end            = tensorToUpdate->info.nelms();
-      std::tuple<int, VarUpdateStartEnd> tup(schedIndex.at(vop),
-                                             {vop, start, end});
+      std::tuple<int, VarUpdateStartEnd> tup(
+          // cppcheck-suppress containerOutOfBounds // .at already checks oob
+          schedIndex.at(vop),
+          {vop, start, end});
       bySchedIndex.push_back(tup);
     }
   }

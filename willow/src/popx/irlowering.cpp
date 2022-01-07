@@ -128,24 +128,24 @@ template <typename Predicate> void walkProducers(Op *op, Predicate f) {
   std::vector<Op *> toCheck;
   std::set<Op *> seen;
 
-  auto addProducers = [&toCheck, &seen](Op *x) {
+  auto addProducers = [&seen](Op *x, std::vector<Op *> &toCheck_) {
     for (auto t : x->input->tensors()) {
       if (t->hasProducer()) {
         auto p = t->getProducer();
         if (seen.find(p) == seen.end()) {
-          toCheck.push_back(p);
+          toCheck_.push_back(p);
           seen.insert(p);
         }
       }
     }
   };
 
-  addProducers(op);
+  addProducers(op, toCheck);
   while (!toCheck.empty()) {
     auto x = toCheck.back();
     toCheck.pop_back();
     if (f(x)) {
-      addProducers(x);
+      addProducers(x, toCheck);
     }
   }
 }
