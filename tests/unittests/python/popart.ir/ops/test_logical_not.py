@@ -27,3 +27,14 @@ class TestNot:
         assert len(g.get_tensors()) == 3
         assert len(g.get_variables()) == 1
         assert contains_op_of_type("Not", _ir.op.NotOp, g)
+
+    def test_dunder(self):
+        ir = pir.Ir()
+        g = ir.main_graph()
+
+        with g:
+            a = pir.variable(True, pir.bool)
+            c = ~a
+        assert len(g.get_tensors()) == 2
+        assert len(g.get_variables()) == 1
+        assert contains_op_of_type("Not", _ir.op.NotOp, g)

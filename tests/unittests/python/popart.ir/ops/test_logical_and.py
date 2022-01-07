@@ -29,3 +29,15 @@ class TestAnd:
         assert len(g.get_tensors()) == 5
         assert len(g.get_variables()) == 2
         assert contains_op_of_type("And", _ir.op.AndOp, g)
+
+    def test_dunder(self):
+        ir = pir.Ir()
+        g = ir.main_graph()
+
+        with g:
+            a = pir.variable(True, pir.bool)
+            b = pir.variable(False, pir.bool)
+            c = a & b
+        assert len(g.get_tensors()) == 3
+        assert len(g.get_variables()) == 2
+        assert contains_op_of_type("And", _ir.op.AndOp, g)

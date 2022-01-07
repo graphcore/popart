@@ -19,6 +19,25 @@ __all__ = [
     'subgraph_output', 'TensorByRef'
 ]
 
+ScalarType = Union[int, float, bool]
+"""Scalar types that can be coerced into a Tensor"""
+
+HostTensor = Union[np.ndarray, Iterable[ScalarType]]
+"""Container types that can be coerced into a Tensor"""
+
+try:
+    import torch
+    HostTensor = Union[HostTensor, torch.tensor]
+except ModuleNotFoundError:
+    pass
+
+HostScalarTensor = Union[ScalarType, HostTensor]
+"""Container and scalar types that can be coerced into a Tensor"""
+
+TensorLike = Union['Tensor', HostScalarTensor]
+"""Tensors and types that can be coerced into a Tensor"""
+
+
 TILE_SET_MAP = {
     _ir.TileSet.Compute: 'compute',
     _ir.TileSet.IO: 'io',
@@ -176,7 +195,8 @@ class Tensor:
         """Size of 0th axis"""
         return self.shape[0]
 
-    def _ensure_tensor(self, value: Any,
+    def _ensure_tensor(self,
+                       value: TensorLike,
                        dtype: Optional[dtypes.dtype] = None) -> 'Tensor':
         """A helper method that's used in operator overloading to ensure that
         all operands are of type `Tensor`.
@@ -199,25 +219,25 @@ class Tensor:
         return self._pb_tensor.tensorLocationInfo
 
     @debug_context_frame_offset(1)
-    def __add__(self, value: Any) -> 'Tensor':
+    def __add__(self, value: TensorLike) -> 'Tensor':
         """Returns `ops.add(self, value)`."""
         import popart.ir.ops as ops
         return ops.add(self, self._ensure_tensor(value))
 
     @debug_context_frame_offset(1)
-    def __sub__(self, value: Any) -> 'Tensor':
+    def __sub__(self, value: TensorLike) -> 'Tensor':
         """Returns `ops.sub(self, value)`."""
         import popart.ir.ops as ops
         return ops.sub(self, self._ensure_tensor(value))
 
     @debug_context_frame_offset(1)
-    def __mul__(self, value: Any) -> 'Tensor':
+    def __mul__(self, value: TensorLike) -> 'Tensor':
         """Returns `ops.mul(self, value)`."""
         import popart.ir.ops as ops
         return ops.mul(self, self._ensure_tensor(value))
 
     @debug_context_frame_offset(1)
-    def __truediv__(self, value: Any) -> 'Tensor':
+    def __truediv__(self, value: TensorLike) -> 'Tensor':
         """Returns `ops.div(self, value)`."""
         import popart.ir.ops as ops
         return ops.div(self, self._ensure_tensor(value))
@@ -260,10 +280,28 @@ class Tensor:
         return self.transpose_()
 
     @debug_context_frame_offset(1)
-    def __matmul__(self, other: Any) -> 'Tensor':
+    def __matmul__(self, other: TensorLike) -> 'Tensor':
         """Returns `ops.matmul(self, other)`."""
         import popart.ir.ops as ops
         return ops.matmul(self, self._ensure_tensor(other))
+
+    @debug_context_frame_offset(1)
+    def __and__(self, value: TensorLike) -> 'Tensor':
+        """Returns `ops.logical_and(self, value)`."""
+        import popart.ir.ops as ops
+        return ops.logical_and(self, self._ensure_tensor(value))
+
+    @debug_context_frame_offset(1)
+    def __or__(self, value: TensorLike) -> 'Tensor':
+        """Returns `ops.logical_or(self, value)`."""
+        import popart.ir.ops as ops
+        return ops.logical_or(self, self._ensure_tensor(value))
+
+    @debug_context_frame_offset(1)
+    def __invert__(self) -> 'Tensor':
+        """Returns `ops.logical_not(self, value)`."""
+        import popart.ir.ops as ops
+        return ops.logical_not(self)
 
     @debug_context_frame_offset(1)
     def __getitem__(self, key) -> 'Tensor':
@@ -369,7 +407,7 @@ downcast_np_dtypes = {
 
 
 def variable(
-        data: Union[np.ndarray, Iterable[Any], int, float, bool],
+        data: HostTensor,
         dtype: Optional[dtypes.dtype] = None,
         name: Optional[str] = None,
         downcast: bool = True,
@@ -520,7 +558,7 @@ def replica_sharded_variable(var: Variable, remote_buffer: "RemoteBuffer",
 
 
 def constant(
-        data: Union[np.ndarray, Iterable[Any], int, float],
+        data: HostTensor,
         dtype: Optional[dtypes.dtype] = None,
         name: Optional[str] = None,
         downcast: bool = True,

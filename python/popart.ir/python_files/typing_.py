@@ -1,5 +1,6 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-# NOTE: This file is intentionally name `typing_.py` to avoid conflicts with the typing module.
+# NOTE: This file is intentionally named `typing_.py` to avoid conflicts with the typing module.
+
 from typing import TypeVar
 
 T = TypeVar('T')
