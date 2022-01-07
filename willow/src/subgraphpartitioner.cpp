@@ -361,18 +361,30 @@ SubgraphPartitioner::getSubgraphPartitionForInstance(
       } else if (isCallOpWithStatus(graph, node, OpStatus::Exit)) {
 
         // It's a call op (ending).
-        syncCalls();
-        auto &calledGraph = activeCallOp->getCalledGraph();
-        if (discoveredPart + 1 != getNumSubgraphParts(calledGraph)) {
-          throw internal_error("[SubgraphPartitioner] The graph sequence for "
-                               "{} (op {}) comprises {} calls to subgraph "
-                               "parts of {} (expected {}).",
-                               graph.getGraphString(),
-                               activeCallOp->debugName(),
-                               discoveredPart + 1,
-                               calledGraph.getGraphString(),
-                               getNumSubgraphParts(calledGraph));
+
+        auto &calledGraph      = activeCallOp->getCalledGraph();
+        auto expDiscoveredPart = getNumSubgraphParts(calledGraph) - 1;
+        if (discoveredPart < expDiscoveredPart) {
+          // On rare occasions the last subgraph parts of the called graph
+          // contain only a CallSubgraphParts to child subgraph. In this case,
+          // we won't discover them. Therefore, once we get to the exit node, we
+          // should add these 'forgotten' subgraph parts.
+          logging::devicex::trace("[SubgraphPartitioner] Liveness node #{} "
+                                  "signals the end of CallOp (op {}); "
+                                  "adding the {} remaining "
+                                  "CallSubgraphPart(..) to {} in the subgraph "
+                                  "partition for {}",
+                                  index,
+                                  activeCallOp->debugName(),
+                                  expDiscoveredPart - discoveredPart,
+                                  calledGraph.getGraphString(),
+                                  graph.getGraphString());
+
+          discoveredPart = expDiscoveredPart;
         }
+
+        // Sync calls after we know we got the right discoveredParts value.
+        syncCalls();
         activeCallOp = nullptr;
 
       } else if (isCallOpWithStatus(graph, node, OpStatus::CopyInput)) {
@@ -452,9 +464,10 @@ SubgraphPartitioner::getSubgraphPartitionForInstance(
 
           logging::devicex::trace("[SubgraphPartitioner] Liveness node #{} "
                                   "implies the need for a CallSubgraphPart({}) "
-                                  " in the subgraph partition for {}",
+                                  "to {} in the subgraph partition for {}",
                                   i,
                                   end - 1,
+                                  node.getOp()->getGraph().getGraphString(),
                                   graph.getGraphString());
 
           // Make sure to insert calls to these subgraph parts in the schedule.
@@ -504,10 +517,11 @@ SubgraphPartitioner::getSubgraphPartitionForInstance(
           if (doLog) {
             logging::devicex::trace("[SubgraphPartitioner] Liveness node #{} "
                                     "implies a need for "
-                                    "CallSubgraphPart({}) in the subgraph "
-                                    "partition for {}",
+                                    "CallSubgraphPart({}) to {} in the "
+                                    "subgraph partition for {}",
                                     i,
                                     discoveredPart,
+                                    callOp->getGraph().getGraphString(),
                                     graph.getGraphString());
           }
         }
