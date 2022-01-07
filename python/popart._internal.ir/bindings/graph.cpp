@@ -155,7 +155,8 @@ void bindGraph(py::module &m) {
       .def("eraseOp", &Graph::eraseOp)
       .def("getCalledGraphs",
            &Graph::getCalledGraphs,
-           py::return_value_policy::reference);
+           py::return_value_policy::reference)
+      .def("getAllVirtualGraphIds", &Graph::getAllVirtualGraphIds);
 
   bindCreateOpFunctionToGraphClass(g);
 
