@@ -279,3 +279,23 @@ class TestCreateGraph:
         assert len(g.get_input_tensors()) == len(x)
         assert len(g.get_output_tensors()) == 1
         assert len(g._by_ref_inputs) == 2
+
+    def test_bad_output(self):
+        ir = pir.Ir()
+
+        def fun():
+            return True
+
+        with ir.main_graph():
+            with pytest.raises(ValueError):
+                g = ir.create_graph(fun)
+
+    def test_bad_list_output(self):
+        ir = pir.Ir()
+
+        def fun():
+            return [True, True]
+
+        with ir.main_graph():
+            with pytest.raises(ValueError):
+                g = ir.create_graph(fun)

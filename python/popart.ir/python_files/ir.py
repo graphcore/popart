@@ -2,7 +2,7 @@
 """Definition of a class that represents the PopART IR."""
 import inspect
 from weakref import WeakValueDictionary
-from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Tuple, Iterable, Union
 from collections import OrderedDict
 
 import popart
@@ -83,12 +83,13 @@ class Ir:
 
     def create_graph(
             self,
-            fn: Callable[..., Any],
+            fn: Union[Callable[..., Union[None, Tensor, Iterable[Tensor]]],
+                      Module],
             *args: Any,
             **kwargs: Any,
     ) -> 'Graph':
         """
-        Create a subgraph from a python callable or `Module`.
+        Create a subgraph from a python callable `fn` or a `Module`'s build method.
         The graph inputs are determined using the signature of the function `fn`
         and the supplied arguments `args` and `kwargs`. Tensors passed via the
         arguments are used to determine the tensor info of the graph inputs (the
@@ -110,7 +111,7 @@ class Ir:
         where appropriate in the signature of `fn` then the corresponding inputs
         will be passed by reference instead of by value when the graph is called.
 
-        Variable number of outputs from `fn` are also supported.
+        The output of `fn` must be either None, a Tensor or an iterable of Tensors.
 
         Args:
             fn (Callable[..., Any]):
@@ -218,6 +219,13 @@ class Ir:
 
             bounds_args_new = inspect.BoundArguments(signature, arguments)
             outputs = fn(*bounds_args_new.args, **bounds_args_new.kwargs)
+
+            if not (outputs is None or isinstance(outputs, Tensor) or
+                    (isinstance(outputs, Iterable)
+                     and all(isinstance(e, Tensor) for e in outputs))):
+                raise ValueError(
+                    "Output of subgraph must be None, a Tensor or an iterable of Tensors."
+                    f" Output type: {type(outputs)}. Value {outputs}")
 
             if outputs is None:
                 outputs = []

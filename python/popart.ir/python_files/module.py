@@ -1,4 +1,11 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
+
+from typing import TYPE_CHECKING, Union, Iterable
+
+if TYPE_CHECKING:
+    from popart.ir import Tensor
+
+
 class Module:
     """
   Callable class from which user-defined layers can inherit.
@@ -11,9 +18,11 @@ class Module:
   corresponding parent tensor you wish to pass.
   """
 
-    def __call__(self, *args, **kwargs):
+    def __call__(self, *args,
+                 **kwargs) -> Union[None, 'Tensor', Iterable['Tensor']]:
         return self.build(*args, **kwargs)
 
-    def build(self, *args, **kwargs):
+    def build(self, *args,
+              **kwargs) -> Union[None, 'Tensor', Iterable['Tensor']]:
         raise NotImplementedError(
             "Your popart.ir.Module must override `build` method")

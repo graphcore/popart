@@ -207,7 +207,7 @@ def call_with_info(
     if check_inputs and len(subgraph_fn_param_inputs_flat) + len(
             subgraph_in_to_parent_in) != len(subgraph.get_input_tensors()):
         raise ValueError(
-            "Not enough inputs have been provided: the number of graph inputs does not equal the number of "
+            "An incorrect number of inputs have been provided: the number of graph inputs does not equal the number of "
             "subgraph_fn_param_inputs plus subgraph_in_to_parent_in inputs: {} != {} + {}"
             .format(len(subgraph.get_input_tensors()),
                     len(subgraph_fn_param_inputs_flat),
