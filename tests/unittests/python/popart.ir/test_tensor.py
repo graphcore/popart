@@ -1,5 +1,6 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 import numpy as np
+from numpy.core.numeric import indices
 import pytest
 
 import popart._internal.ir as _ir
@@ -138,6 +139,7 @@ class TestTensor:
             with pytest.raises(TypeError):
                 1 in x
 
+
 class TestTensorIpuAndTileSet:
     def test_ipu_undefined(self):
         ir = pir.Ir()
@@ -192,3 +194,57 @@ class TestTensorIpuAndTileSet:
             with pir.io_tiles():
                 a = pir.variable(1) + 0
             assert a.tile_set == 'io'
+
+
+class TestTensorGetItem:
+    def test_integer_slicing(self):
+        with pir.Ir().main_graph():
+            x = pir.variable(np.arange(10))
+            y = x[1]
+            assert y.shape == tuple()  # Empty as dim squeezed
+
+    def test_slice_slicing(self):
+        with pir.Ir().main_graph():
+            x = pir.variable(np.random.rand(10, 10))
+            y = x[1:3]
+            assert y.shape == (2, 10)
+
+    def test_both_int_and_slice_slicing(self):
+        with pir.Ir().main_graph():
+            x = pir.variable(np.random.rand(10, 10))
+            y = x[1:3, 2]
+            assert y.shape == (2, )
+
+    @pytest.mark.parametrize('tensorlike', [pir.variable, np.array, list])
+    def test_integer_indexing_tensor(self, tensorlike):
+        with pir.Ir().main_graph():
+            indices = [[0, 1], [1, 1]]
+            indices = tensorlike(indices)
+            x = pir.variable(np.random.rand(10, 10))
+            y = x[indices]
+            assert y.shape == (2, 2, 10)
+
+    @pytest.mark.parametrize('tensorlike', [pir.variable, np.array, list])
+    def test_bool_indexing_tensor(self, tensorlike):
+        with pir.Ir().main_graph():
+            mask = [[True, False], [True, False], [False, True], [True, True]]
+            mask = tensorlike(mask)
+            x = pir.variable(np.random.rand(4, 2))
+            y = x[mask]
+            assert y.shape == (4, 2)
+
+    @pytest.mark.parametrize('tensorlike', [pir.variable, np.array, list])
+    def test_bool_indexing_tensor_broadcast(self, tensorlike):
+        with pir.Ir().main_graph():
+            mask = [[True], [True], [False], [True]]
+            mask = tensorlike(mask)
+            x = pir.variable(np.random.rand(4, 2))
+            y = x[mask]
+            assert y.shape == (4, 2)
+
+    @pytest.mark.parametrize("key", ['a', True, 1.1])
+    def test_bad_key(self, key):
+        with pir.Ir().main_graph():
+            x = pir.variable(np.arange(2))
+            with pytest.raises(TypeError):
+                y = x[key]

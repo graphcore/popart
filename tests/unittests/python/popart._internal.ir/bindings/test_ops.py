@@ -110,6 +110,7 @@ def op_assertions(op: Any, ins: Dict[int, "_ir.Tensor"],
 [
 ("DynamicUpdateOp", False, {"axes_":[0], "sizes_":[1], "noOverlap_":False, "updateInInfo_": _ir.TensorInfo()}),
 ("DynamicUpdateInplaceOp", False, {"axes_":[0], "sizes_":[1], "noOverlap_":False, "updateInInfo_": _ir.TensorInfo()}),
+("WhereOp", False, {}),
 ])
 # yapf: enable, pylint: enable-all
 def test_ternary_ops(connected: bool, inplace: bool, op_name: str,

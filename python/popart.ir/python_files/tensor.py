@@ -25,9 +25,12 @@ ScalarType = Union[int, float, bool]
 HostTensor = Union[np.ndarray, Iterable[ScalarType]]
 """Container types that can be coerced into a Tensor"""
 
+host_tensor_types = [np.ndarray, Iterable]
+
 try:
     import torch
     HostTensor = Union[HostTensor, torch.tensor]
+    host_tensor_types += [torch.tensor]
 except ModuleNotFoundError:
     pass
 
@@ -36,7 +39,6 @@ HostScalarTensor = Union[ScalarType, HostTensor]
 
 TensorLike = Union['Tensor', HostScalarTensor]
 """Tensors and types that can be coerced into a Tensor"""
-
 
 TILE_SET_MAP = {
     _ir.TileSet.Compute: 'compute',
@@ -193,7 +195,10 @@ class Tensor:
 
     def __len__(self) -> int:
         """Size of 0th axis"""
-        return self.shape[0]
+        if len(self.shape) > 0:
+            return self.shape[0]
+        else:
+            raise ValueError("Tensor is a scalar and doesn't have a length.")
 
     def _ensure_tensor(self,
                        value: TensorLike,
@@ -303,32 +308,57 @@ class Tensor:
         import popart.ir.ops as ops
         return ops.logical_not(self)
 
-    @debug_context_frame_offset(1)
-    def __getitem__(self, key) -> 'Tensor':
+    def __getitem__(self, key: Union[int, slice, Tuple[Union[int, slice], ...],
+                                     'Tensor', HostTensor]) -> 'Tensor':
         """
-        Supports slicing and integer indexing.
-        If a single index is selected during slicing the dimention will be squeezed - this matches numpy slicing rules.
+        Supports slicing, integer and boolean indexing. Tensors or host tensors (Numpy/pytorch arrays and sequences)
+        will be converted to a constant Tensor and can be used for integer or boolean indexing.
+
+        Slicing is triggered when the input is an integer, slice (e.g. `0:2`) or a tuple of the two. Slicing
+        either selects a single index of an axis using an integer or range using a slice. If a single index
+        is selected the dimension will be squeezed - this matches numpy slicing rules.
+
+        Integer indexing is triggered when the input is a tensor or host tensor of integers.
+        Elements are selected using the indices in the input - see `ops.gather` for details.
+
+        Boolean indexing is triggered when the input is a ensor or host tensor of booleans.
+        The input is interpreted as a mask: True propagates the value to the output while False zeros
+        the element. This differs to numpy-style boolean indexing, as numpy removed elements indicated
+        by False and the output shape is dynamic dependent on the mask's data.
 
         Examples:
 
         .. code-block:: python
-
             # Slicing
-            x[0]        # Select all elements where i==0 for axis 0
+            x[0]        # Select all elements where i==0 for axis 0. The output will not include the 0th axis (squeezed)
             x[0,1]      # Select all elements where i==0, j==1 for axis 0 and 1
             x[0:2]      # Slice axis 0 between index 0 and 2
             x[:2,3:]    # Slice axis 0 upto 2 and axis 1 from index 3
             x[:,::-1]   # Select all elements for axis 0 and reverse axis 1
 
             # Integer indexing
-            indices = Tensor([[0,1], [1,0]], dtype='int32')
-            x[indices]  # Select elements [0,1] and [1,0] from `x`
+            indices = pir.variable([0, 2], dtype=pir.int32)
+            x[indices] == Tensor([x[0], x[2]]) # Select elements [0, 2] from `x`
+
+            # Boolean indexing
+            x.shape == (3, 1)
+            mask = pir.variable([True, False, True], dtype=pir.bool)
+            x[mask] == Tensor([x[0], 0, x[1]]) # Keep elements 0 and 2. Zero element 1.
+
+            x.shape == (3, 2)
+            mask = pir.variable([True, False, True], dtype=pir.bool)
+            x[mask] == Tensor([x[0], 0, x[1]]) # Broadcast mask: zero row 1
+        
         """
 
         import popart.ir.ops as ops
 
-        if isinstance(key, (slice, int)) or (isinstance(key, tuple) and all(
-                isinstance(e, (slice, int)) for e in key)):
+        if isinstance(key, (bool, str)):
+            pass  # will raise error at end of function
+
+        elif (isinstance(key, (slice, int))
+              or (isinstance(key, tuple)
+                  and all(isinstance(e, (slice, int)) for e in key))):
             # Basic slicing (integer or slices)
             key = (key, ) if isinstance(key, (slice, int)) else key
 
@@ -356,14 +386,23 @@ class Tensor:
 
             return out
 
-        elif (isinstance(key, Tensor) and key.dtype.is_int):
-            # Integer indexing
-            return ops.gather(self, key)
+        # Don't capture scalars
+        elif isinstance(key, Tensor) or isinstance(key,
+                                                   tuple(host_tensor_types)):
+            if not isinstance(key, Tensor):
+                key = constant(key)
 
-        else:
-            raise IndexError(
-                "Only integers, slices (`:`) and integer arrays are valid indices."
-            )
+            if key.dtype.is_int:
+                # Integer indexing
+                return ops.gather(self, key)
+            elif key.dtype == dtypes.bool:
+                # Boolean indexing
+                zero = constant(0, dtype=self.dtype)
+                return ops.where(condition=key, lhs=self, rhs=zero)
+
+        raise TypeError(
+            "Only integers, slices (`:`), integer tensors and boolean tensors are valid indices. "
+            f"Not a valid Type: {type(key)}. Value: {key}.")
 
     # Prevents fallback of __iter__ and __contains__ to __getitem__
     # which can produce unhelpful errors

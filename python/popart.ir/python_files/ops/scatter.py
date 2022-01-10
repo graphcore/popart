@@ -33,7 +33,7 @@ def scatter(t: Tensor,
     .. code-block:: python
 
         x1 = x.copy()
-        scatter(x, [1, 2, 3], [-1, -2, -3])
+        scatter(x1, [1, 2, 3], [-1, -2, -3])
         x2 = x.copy()
         x[1] = -1
         x[2] = -2

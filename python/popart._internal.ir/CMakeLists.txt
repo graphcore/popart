@@ -67,7 +67,9 @@ list(
   ${popart_op_headers_dir}/lamb.hpp
   ${popart_op_headers_dir}/randomuniform.hpp
   ${popart_op_headers_dir}/randomnormal.hpp
-  ${popart_op_headers_dir}/tanh.hpp)
+  ${popart_op_headers_dir}/tanh.hpp
+  ${popart_op_headers_dir}/where.hpp
+  )
 # file(GLOB_RECURSE op_headers ${popart_op_headers_dir}/*.hpp)
 
 

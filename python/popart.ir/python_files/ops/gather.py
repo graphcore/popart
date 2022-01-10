@@ -15,14 +15,27 @@ def gather(t: Tensor,
            available_memory_proportion: Optional[float] = None) -> Tensor:
     """
     Select multiple elements from an array, given by `indices`, along a specified axis.
+    Equivlent to `numpy.take`. Note that this is different from `torch.gather`.
 
-    When `axis == 0`, it is equivlent to numpy "fancy indexing".
-
-    Pseudo example:
-
+    Examples:
+    
     .. code-block:: python
+        x = pir.variable(np.arange(16).reshape(4,4))
+        # [[ 0,  1,  2,  3],
+        #  [ 4,  5,  6,  7],
+        #  [ 8,  9, 10, 11],
+        #  [12, 13, 14, 15]]
 
-        gather(x, [1, 2, 3]) == [x[3], x[7], x[2]]
+        gather(x, [3, 1, 2]) == Tensor([x[3], x[1], x[2]])
+        # [[12, 13, 14, 15],
+        #  [ 4,  5,  6,  7],
+        #  [ 8,  9, 10, 11]]
+
+        gather(x, [[0,1], [1, 2]]) == gather(x, [0,1,1,2]).reshape(2, 2, 4)
+        #  [[[ 0,  1,  2,  3],
+        #    [ 4,  5,  6,  7]],
+        #   [[ 4,  5,  6,  7],
+        #    [ 8,  9, 10, 11]]]
 
     Args:
         t: Tensor
@@ -73,19 +86,32 @@ def tied_gather(t: Tensor,
                 available_memory_proportion: Optional[float] = None) -> Tensor:
     """
     Select multiple elements from an array, given by `indices`, along a specified axis.
-
-    When `axis == 0`, it is equivlent to numpy "fancy indexing".
+    Equivlent to `numpy.take`. Note that this is different from `torch.gather`.
 
     Numerically the same as the `gather` op but does not specify the tile
     layout of the `indices` tensor. When preceding a `matmul` op the tile
     layout of the indices is determined by the `matmul`, not the `tied_gather`.
     This has a has lower memory footprint but costs extra cycles due to the exchange.
 
-    Pseudo example:
+    Examples:
 
     .. code-block:: python
+        x = pir.variable(np.arange(16).reshape(4,4))
+        # [[ 0,  1,  2,  3],
+        #  [ 4,  5,  6,  7],
+        #  [ 8,  9, 10, 11],
+        #  [12, 13, 14, 15]]
 
-        tied_gather(x, [1, 2, 3]) == [x[3], x[7], x[2]]
+        gather(x, [3, 1, 2]) == Tensor([x[3], x[1], x[2]])
+        # [[12, 13, 14, 15],
+        #  [ 4,  5,  6,  7],
+        #  [ 8,  9, 10, 11]]
+
+        gather(x, [[0,1], [1, 2]]) == gather(x, [0,1,1,2]).reshape(2, 2, 4)
+        #  [[[ 0,  1,  2,  3],
+        #    [ 4,  5,  6,  7]],
+        #   [[ 4,  5,  6,  7],
+        #    [ 8,  9, 10, 11]]]
 
     Args:
         t: Tensor

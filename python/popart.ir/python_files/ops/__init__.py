@@ -40,6 +40,7 @@ from .split import *
 from .squeeze import *
 from .sub import *
 from .transpose import *
+from .where import *
 
 import popart.ir.ops.collectives
 import popart.ir.ops.var_updates
