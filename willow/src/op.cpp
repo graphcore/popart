@@ -320,10 +320,58 @@ void Op::createAndConnectOutTensor(OutIndex outIndex, TensorId tenId) {
   ptensor->setProducer(this);
 }
 
-std::string Op::getSubgraphEquivId() const {
+std::string Op::getSubgraphEquivId(
+    const std::map<std::string, popart::any> &externalAttrs) const {
   std::stringstream ss;
   if (isOutlineable()) { // && !aliasAndNotVarUpdate) {
     OpEquivIdCreator os(this);
+    OpSerialiserBase &opb = os;
+
+    for (const auto &externalAttr : externalAttrs) {
+      const std::string &key          = externalAttr.first;
+      const any &value                = externalAttr.second;
+      const std::type_info &valueType = value.type();
+
+      if (valueType == typeid(float)) {
+        opb.appendAttribute(key, any_cast<float>(value));
+      } else if (valueType == typeid(double)) {
+        opb.appendAttribute(key, any_cast<double>(value));
+      } else if (valueType == typeid(int)) {
+        opb.appendAttribute(key, any_cast<int>(value));
+      } else if (valueType == typeid(int64_t)) {
+        opb.appendAttribute(key, any_cast<int64_t>(value));
+      } else if (valueType == typeid(uint32_t)) {
+        opb.appendAttribute(key, any_cast<uint32_t>(value));
+      } else if (valueType == typeid(uint64_t)) {
+        opb.appendAttribute(key, any_cast<uint64_t>(value));
+      } else if (valueType == typeid(std::string)) {
+        opb.appendAttribute(key, any_cast<std::string>(value));
+      } else if (valueType == typeid(std::vector<float>)) {
+        opb.appendAttribute(key, any_cast<std::vector<float>>(value));
+      } else if (valueType == typeid(std::vector<double>)) {
+        opb.appendAttribute(key, any_cast<std::vector<double>>(value));
+      } else if (valueType == typeid(std::vector<int64_t>)) {
+        opb.appendAttribute(key, any_cast<std::vector<int64_t>>(value));
+      } else if (valueType == typeid(Scope)) {
+        opb.appendAttribute(key, any_cast<Scope>(value));
+      } else if (valueType == typeid(bool)) {
+        opb.appendAttribute(key, any_cast<bool>(value));
+      } else if (valueType == typeid(nonstd::optional<int64_t>)) {
+        opb.appendAttribute(key, any_cast<nonstd::optional<int64_t>>(value));
+      } else if (valueType == typeid(nonstd::optional<float>)) {
+        opb.appendAttribute(key, any_cast<nonstd::optional<float>>(value));
+      } else if (valueType == typeid(nonstd::optional<double>)) {
+        opb.appendAttribute(key, any_cast<nonstd::optional<double>>(value));
+      } else if (valueType == typeid(std::map<TensorId, uint64_t>)) {
+        opb.appendAttribute(key, any_cast<std::map<TensorId, uint64_t>>(value));
+      } else {
+        throw error("[Op::getSubgraphEquivId] Unsupported attribute type for"
+                    "attribute '{}' ({})",
+                    key,
+                    valueType.name());
+      }
+    }
+
     // TODO: Figure out which attributes really are relevant to outlining!
     // Certainly, not all are, and this makes subgraph outlining ineffective.
     appendOutlineAttributes(os);

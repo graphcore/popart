@@ -29,12 +29,17 @@ public:
   /**
    * See ReplicaEqualAnalysis.
    **/
-  virtual IsReplicaEqual isOpInputEqual(Op *op, InIndex inIndex) const;
+  virtual IsReplicaEqual isOpInputEqual(const Op *op, InIndex inIndex) const;
 
   /**
    * See ReplicaEqualAnalysis.
    **/
-  virtual IsReplicaEqual isOpOutputEqual(Op *op, OutIndex outIndex) const;
+  virtual IsReplicaEqual isOpOutputEqual(const Op *op, OutIndex outIndex) const;
+
+  /**
+   * See ReplicaEqualAnalysis.
+   **/
+  virtual std::map<std::string, popart::any> getOpAttrs(const Op *op) const;
 
   /**
    * See ReplicaEqualAnalysisProxy.

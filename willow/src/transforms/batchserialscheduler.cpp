@@ -1,6 +1,7 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
 
 #include <transforms/batchserialscheduler.hpp>
+#include <popart/analysis/replicaequal/replicaequalanalysis.hpp>
 #include <popart/error.hpp>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
@@ -53,12 +54,16 @@ void BatchSerialScheduler::apply() {
   int64_t batchSerFactor = settings.factor;
   auto schedule          = graph.getOpSchedule({}, RequireOptimalSchedule::Yes);
 
+  ReplicaEqualAnalysis reAnalysis{graph.getIr()};
+  reAnalysis.apply();
+
   // Crystallize schedule within batch serialized phase by inserting topo
   // cons
 
   for (size_t i = 0; i < schedule.size(); ++i) {
     opScheduleIndex[schedule.at(i)]   = i;
-    opSubgraphEquivId[schedule.at(i)] = schedule.at(i)->getSubgraphEquivId();
+    opSubgraphEquivId[schedule.at(i)] = schedule.at(i)->getSubgraphEquivId(
+        reAnalysis.getOpAttrs(schedule.at(i)));
   }
 
   // Find equivalence classes, derive positions
@@ -75,7 +80,7 @@ void BatchSerialScheduler::apply() {
         position,
         op->settings.schedulePriority,
         op->debugName(),
-        op->getSubgraphEquivId());
+        op->getSubgraphEquivId(reAnalysis.getOpAttrs(op)));
     if (op->hasBatchSerializedPhase()) {
       auto bsp = op->getBatchSerializedPhase();
       if (bsp == 0) {

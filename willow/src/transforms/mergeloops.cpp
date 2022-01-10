@@ -1,6 +1,7 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
 #include <memory>
 #include <queue>
+#include <popart/analysis/replicaequal/replicaequalanalysis.hpp>
 #include <popart/error.hpp>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
@@ -232,7 +233,8 @@ bool MergeLoops::canMerge(const std::vector<LoopOp *> loopOps,
   return merge;
 }
 
-void MergeLoops::merge(const std::vector<LoopOp *> loops) const {
+void MergeLoops::merge(const std::vector<LoopOp *> loops,
+                       std::function<std::string(Op *)> getEquivId) const {
   logging::transform::trace("[MergeLoops] Processing {} loops.", loops.size());
 
   LoopOp *loop0 = loops.front();
@@ -293,8 +295,12 @@ void MergeLoops::merge(const std::vector<LoopOp *> loops) const {
         bool new_input = true;
         for (auto &input0 : loop0->input->tensorMap()) {
           if (input0.second->id == input1.second->id &&
-              checkIdenticalPaths(
-                  loop0, loop1, input0.first, input1.first, sgTensorRemap)) {
+              checkIdenticalPaths(loop0,
+                                  loop1,
+                                  input0.first,
+                                  input1.first,
+                                  sgTensorRemap,
+                                  getEquivId)) {
             new_input = false;
             TensorId loop0sgInId =
                 graph0.getInputId(loop0->opInToSubgraphInIndex(input0.first));
@@ -346,7 +352,7 @@ void MergeLoops::merge(const std::vector<LoopOp *> loops) const {
         TensorId loop0sgId = sgTensorRemap.at(input.second->id);
         Tensor *t          = graph0.getTensors().get(loop0sgId);
         for (Op *consumer : t->consumers.getOps()) {
-          if (consumer->getSubgraphEquivId() == op->getSubgraphEquivId() &&
+          if (getEquivId(consumer) == getEquivId(op) &&
               consumer->input->indices(t) == op->input->indices(input.second)) {
             equivOps[consumer]++;
           }
@@ -683,7 +689,8 @@ bool MergeLoops::checkIdenticalPaths(
     LoopOp *loop1,
     InIndex opIn0,
     InIndex opIn1,
-    std::map<TensorId, TensorId> sgTensorRemap) const {
+    std::map<TensorId, TensorId> sgTensorRemap,
+    std::function<std::string(Op *)> getEquivId) const {
   Tensor *opInT0 = loop0->input->tensor(opIn0);
   Tensor *opInT1 = loop1->input->tensor(opIn1);
 
@@ -723,7 +730,7 @@ bool MergeLoops::checkIdenticalPaths(
         // Check if the tensor producer is equivalent between Loop0 and Loop1
         Op *op0 = front.first->getProducer();
         Op *op1 = front.second->getProducer();
-        if (op0->getSubgraphEquivId() != op1->getSubgraphEquivId()) {
+        if (getEquivId(op0) != getEquivId(op1)) {
           return false;
         } else {
           auto m0 = op0->input->tensorMap();
@@ -754,6 +761,12 @@ bool MergeLoops::apply(Graph &graph) const {
   auto schedule = graph.getOpSchedule({}, RequireOptimalSchedule::No);
 
   std::vector<std::vector<LoopOp *>> mergeSets;
+  ReplicaEqualAnalysis reAnalysis{graph.getIr()};
+  reAnalysis.apply();
+
+  auto getEquivId = [&](Op *op) {
+    return op->getSubgraphEquivId(reAnalysis.getOpAttrs(op));
+  };
 
   int64_t loopOpCount = 0;
 
@@ -803,7 +816,7 @@ bool MergeLoops::apply(Graph &graph) const {
       logging::transform::trace(
           "[MergeLoops] Can merge: {} {}", loopOpNames.size(), loopOpNames);
 
-      merge(mergeSet);
+      merge(mergeSet, getEquivId);
     }
   }
 

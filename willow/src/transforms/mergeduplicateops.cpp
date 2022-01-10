@@ -1,4 +1,5 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
+#include <popart/analysis/replicaequal/replicaequalanalysis.hpp>
 #include <popart/error.hpp>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
@@ -14,22 +15,24 @@ using EquivId = std::string;
 
 namespace {
 
-EquivId getEquivId(const Op *op) {
-  EquivId equivId = "Inputs[";
+EquivId getEquivId(const Op *op, const ReplicaEqualAnalysis &reAnalysis) {
+  auto reAttrs = reAnalysis.getOpAttrs(op);
+
+  // Add attributes for inputs.
   for (auto &idx_id : op->input->tensorIdMap()) {
-    auto idx = idx_id.first;
-    auto id  = idx_id.second;
-    equivId += logging::format("{}: {}, ", idx, id);
+    auto idx                                 = idx_id.first;
+    auto id                                  = idx_id.second;
+    reAttrs["InputId" + std::to_string(idx)] = id;
   }
-  equivId += "],";
-  equivId += op->getSubgraphEquivId();
-  return equivId;
+
+  return op->getSubgraphEquivId(reAttrs);
 }
 
-std::map<EquivId, std::vector<Op *>> getConsumerIdMap(const Tensor *tensor) {
+std::map<EquivId, std::vector<Op *>>
+getConsumerIdMap(const Tensor *tensor, const ReplicaEqualAnalysis &reAnalysis) {
   std::map<EquivId, std::vector<Op *>> equivIds;
   for (auto consumer : tensor->consumers.getOps()) {
-    auto equivId = getEquivId(consumer);
+    auto equivId = getEquivId(consumer, reAnalysis);
     equivIds[equivId].push_back(consumer);
   }
 
@@ -147,6 +150,8 @@ std::size_t MergeDuplicateOps::id() {
 bool MergeDuplicateOps::apply(Graph &graph) const {
 
   TensorSearchHelper frontier;
+  ReplicaEqualAnalysis reAnalysis{graph.getIr()};
+  reAnalysis.apply();
 
   // Populate pending with all tensors that don't have a producer.
   for (auto tensorId : graph.getTensors().getNoProducerIds()) {
@@ -178,7 +183,7 @@ bool MergeDuplicateOps::apply(Graph &graph) const {
     auto tensor = frontier.pop();
     popped.insert(tensor);
 
-    auto consumerIdMap = getConsumerIdMap(tensor);
+    auto consumerIdMap = getConsumerIdMap(tensor, reAnalysis);
     for (auto &id_consumers : consumerIdMap) {
       auto &consumers = id_consumers.second;
 

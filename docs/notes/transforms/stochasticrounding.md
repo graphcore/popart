@@ -203,13 +203,6 @@ having been marked as being `false`. They will not change value, because of the
 logical AND, but we do warn the users about these tensors. Generally, this
 kind of disagreement on value should only happen for graph inputs.
 
-> **TODO(T48510):** The outlining transform may introduce disagreements
-> between call sites and must be modified to explicitly avoid this by running
-> replica-equal analysis and not outlining Ops together that disagree on
-> replica-equalness.
->
-> This note should be removed as part of completing T48510.
-
 > **TODO(T51589):** The currently replica-equal analysis is quite coarse-grained
 > in that we mark tensor values as either being replica-equal (`true`) or not
 > (`false`). When using collectives with comms groups, it is possible for these

@@ -274,7 +274,7 @@ def test_default_properties():
             method(0, 0)
             assert e_info.value.args[0].startswith(
                 "Op Op(new_settings (ai.onnx.dummy:1), inputs=[], outputs=[])")
-    assert op.getSubgraphEquivId() == "ai.onnx::dummy::1___NO_none_0_"
+    assert op.getSubgraphEquivId({}) == "ai.onnx::dummy::1___NO_none_0_"
     assert op.getSubgraphInputs() == {}
     assert op.getSubgraphOutputs() == {}
     assert op.calcAutoVirtualGraphCost(set()) == 0.0

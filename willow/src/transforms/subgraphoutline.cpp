@@ -36,6 +36,8 @@
 #include <popart/op/if.hpp>
 #include <popart/op/nop.hpp>
 
+#include <subgraph/wrappedop.hpp>
+
 using boost::find;
 using boost::algorithm::any_of;
 
@@ -504,7 +506,8 @@ bool matchIsAliasCompatible(const Match &match, AliasesMap &aliasesMap) {
 // Returns a vector of Match instance
 // sorted so the smallest matches are at the back
 std::vector<Match>
-getRinseMatches(const std::vector<Op *> &ops,
+getRinseMatches(const std::vector<popart::Op *> &ops,
+                const std::vector<fwtools::subgraph::WrappedOp *> &wrappedOps,
                 const std::vector<std::pair<size_t, size_t>> &sequences,
                 float threshold,
                 float sequenceBreakCost,
@@ -512,7 +515,8 @@ getRinseMatches(const std::vector<Op *> &ops,
                 AliasesMap &aliasesMap) {
 
   if (logging::shouldLog(logging::Module::transform, logging::Level::Trace)) {
-    std::vector<int> intSchedule = fwtools::subgraph::getIntSchedule(ops);
+    std::vector<int> intSchedule =
+        fwtools::subgraph::getIntSchedule(wrappedOps);
     for (size_t i = 0; i < ops.size(); ++i) {
       Op *op = ops[i];
       logging::transform::trace(
@@ -531,7 +535,7 @@ getRinseMatches(const std::vector<Op *> &ops,
   }
 
   auto fw_matches = fwtools::subgraph::getRinseMatches(
-      ops,
+      wrappedOps,
       sequences,
       threshold,
       sequenceBreakCost,
@@ -557,10 +561,11 @@ getRinseMatches(const std::vector<Op *> &ops,
   std::copy_if(fw_matches.begin(),
                fw_matches.end(),
                std::back_inserter(filtered_fw_matches),
-               [&ops](const fwtools::subgraph::Match &match) {
-                 return !(
-                     match.length == 1 &&
-                     ops.at(match.starts.front())->isConvertibleTo<CallOp>());
+               [&wrappedOps](const fwtools::subgraph::Match &match) {
+                 return !(match.length == 1 &&
+                          wrappedOps.at(match.starts.front())
+                              ->unwrap()
+                              ->isConvertibleTo<CallOp>());
                });
   fw_matches = filtered_fw_matches;
 
@@ -1241,16 +1246,22 @@ bool SubgraphOutline::apply(Graph &graph) const {
 
   auto &ir = graph.getIr();
 
-  auto schedule = getFullSchedule(ir);
+  auto opSched = getFullSchedule(ir);
 
   // Change schedule to include boundaries that can't be outlined
-  localoutline::insertBoundariesOps(ir.getSessionOptions(), schedule);
+  localoutline::insertBoundariesOps(ir.getSessionOptions(), opSched);
 
   // Get updated schedule with boundaries
-  schedule = getFullSchedule(ir);
+  opSched = getFullSchedule(ir);
 
-  for (size_t i = 0; i < schedule.size(); ++i) {
-    Op *op = schedule.at(i);
+  ReplicaEqualAnalysis reAnalysis{graph.getIr()};
+  reAnalysis.apply();
+
+  auto wrappedOpSched =
+      fwtools::subgraph::toWrappedOpSched(graph.getIr(), reAnalysis, opSched);
+
+  for (size_t i = 0; i < opSched.size(); ++i) {
+    Op *op = opSched.at(i);
     logging::transform::trace("[SubgraphOutline] {} - graph {}, opid {}, op {}",
                               i,
                               op->getGraph().id,
@@ -1260,7 +1271,7 @@ bool SubgraphOutline::apply(Graph &graph) const {
 
   // Get the software parallel schedule to generate sequences that should
   // be outlined as a whole
-  localoutline::SoftParallelismModel softParallelismModel(schedule);
+  localoutline::SoftParallelismModel softParallelismModel(opSched);
   if (logging::shouldLog(logging::Module::transform, logging::Level::Trace)) {
     softParallelismModel.log();
   }
@@ -1268,7 +1279,8 @@ bool SubgraphOutline::apply(Graph &graph) const {
   AliasesMap aliasesMap{&ir};
 
   auto matches =
-      getRinseMatches(schedule,
+      getRinseMatches(opSched,
+                      wrappedOpSched.rawPtrs,
                       softParallelismModel.getParallelSchedule(),
                       ir.getSessionOptions().outlineThreshold,
                       ir.getSessionOptions().outlineSequenceBreakCost,

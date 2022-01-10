@@ -9,6 +9,7 @@
 #include <popart/names.hpp>
 #include <popart/op.hpp>
 #include <popart/optimizer.hpp>
+#include <popart/scope.hpp>
 #include <popart/tensor.hpp>
 #include <popart/tensorindex.hpp>
 #include <popart/util.hpp>
@@ -16,6 +17,51 @@
 #include <parsedtensorid.hpp>
 
 #include <boost/lexical_cast.hpp>
+
+namespace std {
+
+std::ostream &operator<<(std::ostream &ss, const popart::any &value) {
+  const std::type_info &valueType = value.type();
+
+  if (valueType == typeid(float)) {
+    ss << popart::any_cast<float>(value);
+  } else if (valueType == typeid(double)) {
+    ss << popart::any_cast<double>(value);
+  } else if (valueType == typeid(int)) {
+    ss << popart::any_cast<int>(value);
+  } else if (valueType == typeid(int64_t)) {
+    ss << popart::any_cast<int64_t>(value);
+  } else if (valueType == typeid(uint32_t)) {
+    ss << popart::any_cast<uint32_t>(value);
+  } else if (valueType == typeid(uint64_t)) {
+    ss << popart::any_cast<uint64_t>(value);
+  } else if (valueType == typeid(std::string)) {
+    ss << popart::any_cast<std::string>(value);
+  } else if (valueType == typeid(std::vector<float>)) {
+    ss << popart::any_cast<std::vector<float>>(value);
+  } else if (valueType == typeid(std::vector<double>)) {
+    ss << popart::any_cast<std::vector<double>>(value);
+  } else if (valueType == typeid(std::vector<int64_t>)) {
+    ss << popart::any_cast<std::vector<int64_t>>(value);
+  } else if (valueType == typeid(popart::Scope)) {
+    ss << popart::any_cast<popart::Scope>(value);
+  } else if (valueType == typeid(bool)) {
+    ss << popart::any_cast<bool>(value);
+  } else if (valueType == typeid(nonstd::optional<int64_t>)) {
+    ss << popart::any_cast<nonstd::optional<int64_t>>(value);
+  } else if (valueType == typeid(nonstd::optional<float>)) {
+    ss << popart::any_cast<nonstd::optional<float>>(value);
+  } else if (valueType == typeid(nonstd::optional<double>)) {
+    ss << popart::any_cast<nonstd::optional<double>>(value);
+  } else if (valueType == typeid(std::map<popart::TensorId, uint64_t>)) {
+    ss << popart::any_cast<std::map<popart::TensorId, uint64_t>>(value);
+  } else {
+    throw popart::error("Unsupported popart::any type for operator<< ({})",
+                        valueType.name());
+  }
+  return ss;
+}
+} // namespace std
 
 namespace popart {
 

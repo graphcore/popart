@@ -68,11 +68,11 @@ public:
    * being in the context of an Op) because querying on the level of tensors can
    * be ambiguous when an IR contains Ops that modify tensors.
    *
-   * \param tensor The tensor to query.
+   * \param op The op.
    * \param inIndex The input index to query.
    * \return Whether the input tensor is equal across replication.
    */
-  virtual IsReplicaEqual isOpInputEqual(Op *op, InIndex inIndex) const;
+  virtual IsReplicaEqual isOpInputEqual(const Op *op, InIndex inIndex) const;
 
   /**
    * Once the analysis is complete, use this function to determine for a given
@@ -82,11 +82,20 @@ public:
    * being in the context of an Op) because querying on the level of tensors can
    * be ambiguous when an IR contains Ops that modify tensors.
    *
-   * \param tensor The tensor to query.
+   * \param op The op.
    * \param outIndex The input index to query.
    * \return Whether the input tensor is equal across replication.
    */
-  virtual IsReplicaEqual isOpOutputEqual(Op *op, OutIndex outIndex) const;
+  virtual IsReplicaEqual isOpOutputEqual(const Op *op, OutIndex outIndex) const;
+
+  /**
+   * Once the analysis is complete, use this function to get a set of attributes
+   * that describe the replica-equalness of all Op inputs and outputs.
+   *
+   * \param op The op.
+   * \return A map of attributes describing the Op's replica-equalness.
+   */
+  virtual std::map<std::string, popart::any> getOpAttrs(const Op *op) const;
 
 private:
   // Hide implementation (PIMPL).

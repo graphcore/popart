@@ -25,6 +25,8 @@
 #include <popart/util.hpp>
 #include <popart/vertex.hpp>
 
+#include <popart/vendored/any.hpp>
+
 #include <poprithms/memory/inplace/proposal.hpp>
 
 namespace popart {
@@ -722,7 +724,24 @@ public:
   using SubgraphInSig =
       std::tuple<Op *, fwtools::subgraph::OutIndex, std::string>;
 
-  std::string getSubgraphEquivId() const;
+  /**
+   * Get a string that represents the equivalence class that this Op belongs to.
+   * This is used by, e.g., transforms to determine if two ops are the same. If
+   * and only if two Ops return the same equivalence ID then those Ops can be
+   * considered of the same equivalence class.
+   *
+   * @param externalAttrs Additional attributes by which to distinguish this op.
+   *    The value types must be one of: float, double, int, int64_t, uint32_t,
+   *    uint64_t, std::string, std::vector<float>, std::vector<double>,
+   *    std::vector<int64_t>, popart::Scope, bool, nonstd::optional<int64_t>,
+   *    nonstd::optional<float>, nonstd::optional<double> or
+   *    std::map<TensorId, uint64_t>. We use this to add, e.g.,
+   *    replica-equalness properties to the equivalence ID, which is a property
+   *    that is calculated on-the-fly as opposed to stored in the Op.
+   * @return std::string The equivalence ID.
+   */
+  std::string getSubgraphEquivId(
+      const std::map<std::string, popart::any> &externalAttrs = {}) const;
 
   std::map<fwtools::subgraph::InIndex, SubgraphInSig> getSubgraphInputs() const;
 

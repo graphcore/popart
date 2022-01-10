@@ -22,63 +22,68 @@ ReplicaEqualAnalysisImpl::ReplicaEqualAnalysisImpl(const Ir &ir_,
 
 void ReplicaEqualAnalysisImpl::apply() {
 
-  initialise();
+  // TODO(T48752): Remove temporary switch that default disables this.
+  if (ir.get().getSessionOptions()._enableRngStateManagement) {
 
-  // Initialise values for variables, streams and consts.
-  addVariableTensorsToAnalysisResults();
-  addStreamTensorsToAnalysisResults();
+    initialise();
 
-  for (auto graph : ir.get().getAllGraphs()) {
-    addConstTensorsToAnalysisResults(graph);
-  }
+    // Initialise values for variables, streams and consts.
+    addVariableTensorsToAnalysisResults();
+    addStreamTensorsToAnalysisResults();
 
-  auto doAnalysisIter = [&]() {
-    // Clear flag so we'll detect changes from this point.
-    analysisResults.clearChanges();
-    // Do one forward propagation.
-    fwdPropagateIsReplicaEqualThroughGraph(&ir.get().getMainGraph(), {});
-    // Deal with tensors aliased to variable tensors that have changed.
-    processMainGraphAliases();
-  };
+    for (auto graph : ir.get().getAllGraphs()) {
+      addConstTensorsToAnalysisResults(graph);
+    }
 
-  // Loop until fixpoint.
-  while (true) {
+    auto doAnalysisIter = [&]() {
+      // Clear flag so we'll detect changes from this point.
+      analysisResults.clearChanges();
+      // Do one forward propagation.
+      fwdPropagateIsReplicaEqualThroughGraph(&ir.get().getMainGraph(), {});
+      // Deal with tensors aliased to variable tensors that have changed.
+      processMainGraphAliases();
+    };
 
-    // Do an analysis iteration.
+    // Loop until fixpoint.
+    while (true) {
+
+      // Do an analysis iteration.
+      doAnalysisIter();
+
+      if (!analysisResults.hasChanged()) {
+        // We're done.
+        break;
+      }
+    }
+
+    // Do one more iteration. The next iteration shouldn't change anything
+    // result-wise, but we use it to show up any disagreements between call
+    // sites that we should warn our users about. This happens if in our result
+    // set a tensor is assigned `false` (not replica-equal) but in some code
+    // path we observe it is equal and call `setValueAt(..., true)` for that
+    // tensor. It will resolve to false and hence be unchanged, but there is
+    // disagreement.
     doAnalysisIter();
 
-    if (!analysisResults.hasChanged()) {
-      // We're done.
-      break;
-    }
-  }
-
-  // Do one more iteration. The next iteration shouldn't change anything
-  // result-wise, but we use it to show up any disagreements between call sites
-  // that we should warn our users about. This happens if in our result set a
-  // tensor is assigned `false` (not replica-equal) but in some code path we
-  // observe it is equal and call `setValueAt(..., true)` for that tensor. It
-  // will resolve to false and hence be unchanged, but there is disagreement.
-  doAnalysisIter();
-
-  if (analysisResults.hasDisagreements()) {
-    for (auto tensor : analysisResults.getDisagreements()) {
-      logging::warn(
-          "[ReplicaEqualAnalysis] There is disagreement between code "
-          "paths involving tensor '{}' as to whether its value is "
-          "identical between replicas or not. Because the same code "
-          "is lowered for all code paths we can't guarantee its values "
-          "will be identical between replicas for any of these code "
-          "paths. This problem could originate from the tensors being "
-          "in a subgraph that is instantiated by several CallOps, "
-          "IfOps or LoopOps that are not compatible with each other "
-          "in this sense.",
-          tensor->id);
+    if (analysisResults.hasDisagreements()) {
+      for (auto tensor : analysisResults.getDisagreements()) {
+        logging::warn(
+            "[ReplicaEqualAnalysis] There is disagreement between code "
+            "paths involving tensor '{}' as to whether its value is "
+            "identical between replicas or not. Because the same code "
+            "is lowered for all code paths we can't guarantee its values "
+            "will be identical between replicas for any of these code "
+            "paths. This problem could originate from the tensors being "
+            "in a subgraph that is instantiated by several CallOps, "
+            "IfOps or LoopOps that are not compatible with each other "
+            "in this sense.",
+            tensor->id);
+      }
     }
   }
 }
 
-IsReplicaEqual ReplicaEqualAnalysisImpl::isOpInputEqual(Op *op,
+IsReplicaEqual ReplicaEqualAnalysisImpl::isOpInputEqual(const Op *op,
                                                         InIndex inIndex) const {
   if (!op->hasInput(inIndex)) {
     throw internal_error("[ReplicaEqualAnalysis] '{}' does not have an input "
@@ -93,7 +98,8 @@ IsReplicaEqual ReplicaEqualAnalysisImpl::isOpInputEqual(Op *op,
 }
 
 IsReplicaEqual
-ReplicaEqualAnalysisImpl::isOpOutputEqual(Op *op, OutIndex outIndex) const {
+ReplicaEqualAnalysisImpl::isOpOutputEqual(const Op *op,
+                                          OutIndex outIndex) const {
   if (!op->hasOutput(outIndex)) {
     throw internal_error("[ReplicaEqualAnalysis] '{}' does not have an output "
                          "at index {}",
@@ -104,6 +110,23 @@ ReplicaEqualAnalysisImpl::isOpOutputEqual(Op *op, OutIndex outIndex) const {
   // Get the analysis result for a specific Op output.
   auto tensor = op->outTensor(outIndex);
   return analysisResults.getValueAt(tensor, op);
+}
+
+std::map<std::string, popart::any>
+ReplicaEqualAnalysisImpl::getOpAttrs(const Op *op) const {
+  std::map<std::string, popart::any> attrs;
+  // TODO(T48752): Remove temporary switch that default disables this.
+  if (ir.get().getSessionOptions()._enableRngStateManagement) {
+    for (const auto &in : op->input->tensorMap()) {
+      attrs["replEqIn" + std::to_string(in.first)] =
+          isOpInputEqual(op, in.first);
+    }
+    for (const auto &out : op->output->tensorMap()) {
+      attrs["replEqOut" + std::to_string(out.first)] =
+          isOpOutputEqual(op, out.first);
+    }
+  }
+  return attrs;
 }
 
 ReplEqModifiedInputMap ReplicaEqualAnalysisImpl::getModifiedInputMapFromAliases(

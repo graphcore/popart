@@ -12,6 +12,7 @@
 #include <vector>
 
 #include <popart/tensorinfo.hpp>
+#include <popart/vendored/any.hpp>
 #include <popart/vendored/optional.hpp>
 
 namespace popart {
@@ -352,6 +353,9 @@ std::ostream &operator<<(std::ostream &ss, const std::map<Key, Value> &v) {
 
   return ss;
 }
+
+std::ostream &operator<<(std::ostream &ss, const popart::any &value);
+
 } // namespace std
 
 namespace popart {

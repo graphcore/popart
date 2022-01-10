@@ -24,12 +24,14 @@
 #include <popart/tensornames.hpp>
 #include <popart/testdevice.hpp>
 
+#include <subgraph/wrappedop.hpp>
+
 namespace {
 
 using namespace fwtools::subgraph;
 using namespace popart;
 
-std::vector<std::set<Match>> getSets(const std::vector<Op *> &sched,
+std::vector<std::set<Match>> getSets(const std::vector<WrappedOp *> &sched,
                                      const std::vector<Match> &expected_matches,
                                      float threshold,
                                      int algo) {
@@ -41,17 +43,17 @@ std::vector<std::set<Match>> getSets(const std::vector<Op *> &sched,
   //
   std::vector<Match> matches;
   if (algo == 0) {
-    matches = getRinseMatches<Op>(sched,
-                                  sequences,
-                                  threshold,
-                                  sequenceBreakCost,
-                                  OutlinerAlgorithm::ALGO0);
+    matches = getRinseMatches<WrappedOp>(sched,
+                                         sequences,
+                                         threshold,
+                                         sequenceBreakCost,
+                                         OutlinerAlgorithm::ALGO0);
   } else if (algo == 1) {
-    matches = getRinseMatches<Op>(sched,
-                                  sequences,
-                                  threshold,
-                                  sequenceBreakCost,
-                                  OutlinerAlgorithm::ALGO1);
+    matches = getRinseMatches<WrappedOp>(sched,
+                                         sequences,
+                                         threshold,
+                                         sequenceBreakCost,
+                                         OutlinerAlgorithm::ALGO1);
   } else {
     throw std::runtime_error("invalid algo number");
   }
@@ -87,7 +89,7 @@ BOOST_AUTO_TEST_CASE(Op0_Subgraph) {
   using namespace fwtools::subgraph;
   using namespace popart;
 
-  auto test = [](const std::vector<Op *> &sched,
+  auto test = [](const std::vector<WrappedOp *> &sched,
                  const std::vector<Match> &expected_matches,
                  float threshold,
                  int algo) {
@@ -258,8 +260,12 @@ BOOST_AUTO_TEST_CASE(Op0_Subgraph) {
       std::cout << i++ << " " << op->opid.type << std::endl;
     }
 
-    test(sched, expected_matches_algo0, threshold, 0);
-    test(sched, expected_matches_algo1, threshold, 1);
+    ReplicaEqualAnalysis reAnalysis{ir};
+    reAnalysis.apply();
+    auto res = toWrappedOpSched(ir, reAnalysis, sched);
+
+    test(res.rawPtrs, expected_matches_algo0, threshold, 0);
+    test(res.rawPtrs, expected_matches_algo1, threshold, 1);
   };
 
   std::vector<Match> expected_test_matches{{{0, 2, 4, 6}, 2}};
@@ -305,7 +311,7 @@ BOOST_AUTO_TEST_CASE(Anchor0_Subgraph) {
   using namespace fwtools::subgraph;
   using namespace popart;
 
-  auto test = [](const std::vector<Op *> &sched,
+  auto test = [](const std::vector<WrappedOp *> &sched,
                  const std::vector<Match> &expected_matches,
                  float threshold,
                  int algo) {
@@ -382,11 +388,15 @@ BOOST_AUTO_TEST_CASE(Anchor0_Subgraph) {
   std::vector<Match> expected_matches{};
   auto sched = ir.getOpSchedule({}, RequireOptimalSchedule::Yes);
 
+  ReplicaEqualAnalysis reAnalysis{ir};
+  reAnalysis.apply();
+  auto res = toWrappedOpSched(ir, reAnalysis, sched);
+
   popart::logging::debug("Testing Anchor0_Subgraph, algo 0, threshold -1");
-  test(sched, expected_train_matches, -1.0f, 0);
+  test(res.rawPtrs, expected_train_matches, -1.0f, 0);
 
   popart::logging::debug("Testing Anchor0_Subgraph, algo 1, threshold -1");
-  test(sched, expected_train_matches, -1.0f, 1);
+  test(res.rawPtrs, expected_train_matches, -1.0f, 1);
 
   for (int i = 0; i < sched.size(); ++i) {
     auto x = sched[i];

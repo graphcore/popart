@@ -4,8 +4,6 @@
 
 #include <testutil/test_graphs/graph_test_models.hpp>
 
-//#include <popart/devicemanager.hpp>
-//#include <popart/session.hpp>
 #include <popart/graph.hpp>
 #include <popart/op/collectives/replicatedallreduce.hpp>
 #include <popart/op/identity.hpp>
@@ -13,6 +11,7 @@
 #include <popart/op/matmul.hpp>
 #include <popart/op/sgd0varupdate.hpp>
 #include <popart/op/subtract.hpp>
+#include <popart/sessionoptions.hpp>
 
 #include <string>
 #include <popart/analysis/replicaequal/replicaequalanalysis.hpp>
@@ -99,6 +98,11 @@ BOOST_AUTO_TEST_CASE(ReplicaEqualsAnalysis_hostLoad) {
     GraphTestModel4 model(ReplicatedStreamMode::Broadcast);
     auto &ir = model.getIr();
 
+    // TODO (T48752): Remove.
+    SessionOptions opts;
+    opts._enableRngStateManagement = true;
+    ir.setUserOptions(opts);
+
     ReplicaEqualAnalysis analysis{ir};
     analysis.apply();
 
@@ -113,6 +117,11 @@ BOOST_AUTO_TEST_CASE(ReplicaEqualsAnalysis_hostLoad) {
   {
     GraphTestModel4 model(ReplicatedStreamMode::Replicate);
     auto &ir = model.getIr();
+
+    // TODO (T48752): Remove.
+    SessionOptions opts;
+    opts._enableRngStateManagement = true;
+    ir.setUserOptions(opts);
 
     ReplicaEqualAnalysis analysis{ir};
     analysis.apply();
@@ -214,6 +223,11 @@ BOOST_AUTO_TEST_CASE(ReplicaEqualsAnalysis_simpleTrain) {
                 << "sg2=" << static_cast<int>(sg2) << std::endl;
       GraphTestModel5 model(sg1, sg2);
       auto &ir = model.getIr();
+
+      // TODO (T48752): Remove.
+      SessionOptions opts;
+      opts._enableRngStateManagement = true;
+      ir.setUserOptions(opts);
 
       ReplicaEqualAnalysis analysis{ir};
       analysis.apply();
@@ -329,4 +343,45 @@ BOOST_AUTO_TEST_CASE(ReplicaEqualsAnalysis_simpleTrain) {
       simpleRequireValue(ir, analysis, t11, true);
     }
   }
+}
+
+BOOST_AUTO_TEST_CASE(ReplicaEqualsAnalysis_checkOpAttrs) {
+  GraphTestModel5 model(GraphTestModel5::SG1::No, GraphTestModel5::SG2::No);
+  auto &ir = model.getIr();
+
+  // TODO (T48752): Remove.
+  SessionOptions opts;
+  opts._enableRngStateManagement = true;
+  ir.setUserOptions(opts);
+
+  ReplicaEqualAnalysis analysis{ir};
+  analysis.apply();
+
+  // Get a test wrapper for the main graph.
+  IrTestWrapper tw_ir{ir};
+  auto tw_mainGraph = tw_ir.hasGraph(ir.getMainGraph().id);
+
+  // Check getOpAttrs for Ops. Check result of operator<< because theres no
+  // implementation for operator== on popart::any.
+  auto getOpAttrStr = [&](Op *op) {
+    std::stringstream ss;
+    ss << (analysis.getOpAttrs(op));
+    return ss.str();
+  };
+
+  // Check the all reduce.
+  auto allReduceOp =
+      tw_mainGraph->ops().hasOp<ReplicatedAllReduceOp>()->unwrap();
+  BOOST_REQUIRE_EQUAL("[replEqIn0: 0, replEqOut0: 1, ]",
+                      getOpAttrStr(allReduceOp));
+
+  // Check the identity.
+  auto identityOp = tw_mainGraph->ops().hasOp<IdentityOp>()->unwrap();
+  BOOST_REQUIRE_EQUAL("[replEqIn0: 0, replEqOut0: 0, ]",
+                      getOpAttrStr(identityOp));
+
+  // Check the var update.
+  auto varUpdateOp = tw_mainGraph->ops().hasOp<SGD0VarUpdateOp>()->unwrap();
+  BOOST_REQUIRE_EQUAL("[replEqIn0: 1, replEqIn1: 1, replEqOut0: 1, ]",
+                      getOpAttrStr(varUpdateOp));
 }

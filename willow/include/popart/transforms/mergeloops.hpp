@@ -9,6 +9,9 @@
 // Transform that merges multiple compatible loops together
 namespace popart {
 
+// Forward declaration.
+class ReplicaEqualAnalysis;
+
 class MergeLoops : public Transform {
 public:
   static std::size_t id();
@@ -25,7 +28,8 @@ public:
 private:
   bool canMerge(const LoopOp *const, const LoopOp *const) const;
   bool canMerge(const std::vector<LoopOp *>, const LoopOp *const) const;
-  void merge(const std::vector<LoopOp *>) const;
+  void merge(const std::vector<LoopOp *>,
+             std::function<std::string(Op *)> getEquivId) const;
 
   // Shortcuts paths such as:
   // Op -> Reshape -> DynamicUpdate -> DynamicSlice -> Reshape -> Op
@@ -60,7 +64,8 @@ private:
                            LoopOp *,
                            InIndex,
                            InIndex,
-                           std::map<TensorId, TensorId>) const;
+                           std::map<TensorId, TensorId>,
+                           std::function<std::string(Op *)> getEquivId) const;
 };
 
 } // namespace popart
