@@ -48,11 +48,13 @@ void CallOp::setup() {
     }
   }
 
-  // Assume output tensors are ordered the same as those
-  // in the callee subgraph
+  // Assume output tensors are ordered the same as those in the callee subgraph.
   for (int i = 0; i < callee.get().getOutputIds().size(); i++) {
-    TensorId calleeOutputId = callee.get().getOutputId(i);
-    outInfo(i) = callee.get().getTensors().get(calleeOutputId)->info;
+    if (hasOutput(i)) {
+      TensorId calleeOutputId =
+          callee.get().getOutputId(opOutToSubgraphOutIndex(i));
+      outInfo(i) = callee.get().getTensors().get(calleeOutputId)->info;
+    }
   }
 
   // For testing purposes, allow setting modified regions via "modifiedInputs"
