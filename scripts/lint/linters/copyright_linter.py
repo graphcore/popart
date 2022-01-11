@@ -116,7 +116,7 @@ class CopyrightLinter:
             new_contents = self._insert_copyright_notice(file_path, lines)
         # If its an empty file then we just include the notice
         else:
-            new_contents = GC_COPYRIGHT_NOTICE
+            new_contents = self._determine_notice_from_name(file_path)
         return new_contents
 
     def _head(self, file_contents: str) -> List[str]:

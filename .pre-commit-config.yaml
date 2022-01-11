@@ -1,28 +1,17 @@
 # Copyright (c) 2022 Graphcore Ltd. All rights reserved.
 ---
 repos:
-    # The following linters are currently disabled
-    # - repo: https://github.com/pre-commit/mirrors-yapf
-    #   rev: v0.27.0
-    #   hooks:
-    #       - id: yapf
-    # - repo: https://github.com/pocc/pre-commit-hooks
-    #   rev: v1.3.5
-    #   hooks:
-    #       # Install with pip3 install clang-format==9.0.0
-    #       - id: clang-format
-    #         args: [
-    #             -i,  # Fix inplace
-    #             --style=file  # Use .clang-tidy
-    #         ]
-    #      - id: clang-tidy
-    #      - id: oclint
-    #      - id: uncrustify
-    #      - id: cppcheck
-    #      - id: cpplint
-    #      - id: include-what-you-use
     - repo: local
       hooks:
+          - id: version-checker
+            name: Version checker
+            description: Ensures that the correct version of the linters are used.
+            entry: python3 -m scripts.lint.install.check_versions
+            language: python
+            exclude: ".*"  # Does not run on files
+            always_run: true
+            additional_dependencies:
+                - pyyaml
           - id: copyright-linter
             name: Copyright linter
             description: Ensures that files have the proper copyright line.
@@ -58,3 +47,27 @@ repos:
                     docs/user_guide/files/tests/test_examples.py|
                     tests/linters/.*
                 )$
+    # The following linters are currently disabled
+    # - repo: https://github.com/pre-commit/mirrors-yapf
+    #   rev: v0.27.0
+    #   hooks:
+    #       - id: yapf
+    # - repo: https://github.com/pocc/pre-commit-hooks
+    #   rev: v1.3.5
+    #   hooks:
+    #       # Install with pip3 install clang-format==9.0.0
+    #       - id: clang-format
+    #         args: [
+    #             -i,  # Fix inplace
+    #             --style=file  # Use .clang-tidy
+    #         ]
+    #      - id: clang-tidy
+    #      - id: oclint
+    #      - id: uncrustify
+    #      - id: cppcheck
+    #        exclude: willow/include/popart/vendored/
+    #      - id: cpplint
+    #      - id: include-what-you-use
+    #      - id: uncrustify
+    #      - id: cpplint
+    #      - id: include-what-you-use

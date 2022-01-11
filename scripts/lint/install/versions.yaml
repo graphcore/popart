@@ -1,0 +1,18 @@
+# Copyright (c) 2022 Graphcore Ltd. All rights reserved.
+# Specifies version of linters
+---
+cppcheck: "2.6.3"
+# llvm sets the version of all clang* binaries
+llvm: "13.0.0"
+# Note: clang-format is included in the suite above
+#       However, as clang-format 9.0.0 is widely used amongst developers
+#       We stick with version 9.0.0 for now
+clang-format: "9.0.0"
+# Note: Must match the llvm version
+# https://github.com/include-what-you-use/include-what-you-use
+include-what-you-use: "0.17"
+# Note: Must match the llvm version
+# https://github.com/oclint/oclint
+oclint: "21.10"
+uncrustify: "0.74.0"
+yapf: "0.27.0"
